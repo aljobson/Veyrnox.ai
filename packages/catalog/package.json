@@ -1,0 +1,9 @@
+{
+  "name": "@veyrnox/catalog",
+  "version": "0.0.1",
+  "description": "Veyrnox catalog: models, prices, provider costs",
+  "type": "module",
+  "exports": {
+    ".": "./index.ts"
+  }
+}
