@@ -3,14 +3,36 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { ImageStudio, VideoStudio, ClippingStudio, VibeMotionStudio, LipSyncStudio, RecastStudio, CinemaStudio, AudioStudio, MarketingStudio, WorkflowStudio, AgentStudio, AppsStudio, getUserBalance } from 'studio';
-
-const DesignAgentStudio = dynamic(() => import('studio').then(mod => mod.DesignAgentStudio), {
-  ssr: false,
-  loading: () => <div className="h-full w-full bg-black flex items-center justify-center text-white/20">Loading Design Studio...</div>
-});
+import { getUserBalance } from 'studio';
 import axios from 'axios';
 import ApiKeyModal from './ApiKeyModal';
+
+// Studios are large; load each one on demand to keep initial bundle small.
+const studioLoader = (name) => dynamic(
+  () => import('studio').then((mod) => mod[name]),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-full w-full bg-black flex items-center justify-center text-white/20">
+        Loading…
+      </div>
+    ),
+  }
+);
+
+const ImageStudio = studioLoader('ImageStudio');
+const VideoStudio = studioLoader('VideoStudio');
+const ClippingStudio = studioLoader('ClippingStudio');
+const VibeMotionStudio = studioLoader('VibeMotionStudio');
+const LipSyncStudio = studioLoader('LipSyncStudio');
+const RecastStudio = studioLoader('RecastStudio');
+const CinemaStudio = studioLoader('CinemaStudio');
+const AudioStudio = studioLoader('AudioStudio');
+const MarketingStudio = studioLoader('MarketingStudio');
+const WorkflowStudio = studioLoader('WorkflowStudio');
+const AgentStudio = studioLoader('AgentStudio');
+const AppsStudio = studioLoader('AppsStudio');
+const DesignAgentStudio = studioLoader('DesignAgentStudio');
 
 const TABS = [
   { id: 'image',   label: 'Image Studio' },
@@ -28,16 +50,15 @@ const TABS = [
   { id: 'apps', label: 'Explore Apps' },
 ];
 
-const STORAGE_KEY = 'muapi_key';
+const SESSION_ENDPOINT = '/api/session/muapi';
 
 export default function StandaloneShell() {
   const params = useParams();
   const router = useRouter();
-  const slug = params?.slug || []; 
+  const slug = params?.slug || [];
   const idFromParams = params?.id;
   const tabFromParams = params?.tab;
 
-  // Helper to extract workflow details precisely from either route structure
   const getWorkflowInfo = useCallback(() => {
     if (idFromParams) {
         return { id: idFromParams, tab: tabFromParams || null };
@@ -52,7 +73,6 @@ export default function StandaloneShell() {
 
   const { id: urlWorkflowId } = getWorkflowInfo();
 
-  // Initialize activeTab from URL slug/params or default to 'image'
   const getInitialTab = () => {
     if (idFromParams || slug.includes('workflow')) return 'workflows';
     if (slug.includes('agents')) return 'agents';
@@ -62,7 +82,8 @@ export default function StandaloneShell() {
     if (firstSegment && TABS.find(t => t.id === firstSegment)) return firstSegment;
     return 'image';
   };
-  
+
+  // apiKey is kept in memory only for the current tab session (no localStorage).
   const [apiKey, setApiKey] = useState(null);
   const [activeTab, setActiveTab] = useState(getInitialTab());
 
@@ -75,11 +96,9 @@ export default function StandaloneShell() {
     return true;
   });
 
-  // Drag and Drop State
   const [isDragging, setIsDragging] = useState(false);
   const [droppedFiles, setDroppedFiles] = useState(null);
 
-  // Sync tab with URL if user navigates manually or via browser back/forward
   useEffect(() => {
     const info = getWorkflowInfo();
     if (info.id) {
@@ -100,14 +119,12 @@ export default function StandaloneShell() {
 
   const handleTabChange = (tabId) => {
     router.push(`/studio/${tabId}`);
-    // setActiveTab(tabId);
   };
 
-  // Auto-hide header when inside a specific workflow view or design agent
   useEffect(() => {
     const isEditingWorkflow = (activeTab === 'workflows' || !!idFromParams) && urlWorkflowId;
     const isDesignAgent = activeTab === 'design-agent';
-    
+
     if (isEditingWorkflow || isDesignAgent) {
       setIsHeaderVisible(false);
     } else {
@@ -115,11 +132,10 @@ export default function StandaloneShell() {
     }
   }, [activeTab, urlWorkflowId, idFromParams]);
 
-  // Global builder CSS cleanup when switching away from Workflows or Design Agent tabs
   useEffect(() => {
     const fromBuilder = sessionStorage.getItem("fromWorkflowBuilder");
     const fromDesignAgent = sessionStorage.getItem("fromDesignAgent");
-    
+
     if ((fromBuilder && activeTab !== 'workflows') || (fromDesignAgent && activeTab !== 'design-agent')) {
       sessionStorage.removeItem("fromWorkflowBuilder");
       sessionStorage.removeItem("fromDesignAgent");
@@ -138,46 +154,41 @@ export default function StandaloneShell() {
 
   useEffect(() => {
     setHasMounted(true);
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      setApiKey(stored);
-      fetchBalance(stored);
-      // Sync cookie immediately on mount to establish identity for background requests
-      document.cookie = `muapi_key=${stored}; path=/; max-age=31536000; SameSite=Lax`;
-    }
-  }, [fetchBalance]);
-
-  const handleKeySave = useCallback((key) => {
-    localStorage.setItem(STORAGE_KEY, key);
-    setApiKey(key);
-    fetchBalance(key);
-    document.cookie = `muapi_key=${key}; path=/; max-age=31536000; SameSite=Lax`;
-  }, [fetchBalance]);
-
-  const handleKeyChange = useCallback(() => {
-    localStorage.removeItem(STORAGE_KEY);
-    setApiKey(null);
-    setBalance(null);
-    document.cookie = "muapi_key=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
   }, []);
 
-  // Inject API key into all outgoing Axios requests (prop-based approach)
-  // We use an interceptor to be selective and NOT send the key to external domains like S3
+  const handleKeySave = useCallback(async (key) => {
+    try {
+      await axios.post(SESSION_ENDPOINT, { key });
+    } catch (err) {
+      console.error('Failed to persist key server-side:', err);
+    }
+    setApiKey(key);
+    fetchBalance(key);
+  }, [fetchBalance]);
+
+  const handleKeyChange = useCallback(async () => {
+    try {
+      await axios.delete(SESSION_ENDPOINT);
+    } catch (err) {
+      console.error('Failed to clear key server-side:', err);
+    }
+    setApiKey(null);
+    setBalance(null);
+  }, []);
+
   useEffect(() => {
-    // Safety: Clear any global defaults that might have been set previously
     delete axios.defaults.headers.common['x-api-key'];
 
     if (!apiKey) return;
 
     const interceptorId = axios.interceptors.request.use((config) => {
-      // Check if URL is local/proxied
       const isRelative = config.url.startsWith('/') || !config.url.startsWith('http');
       const isInternalProxy = config.url.includes('/api/app') || config.url.includes('/api/workflow') || config.url.includes('/api/agents') || config.url.includes('/api/api') || config.url.includes('/api/v1');
 
       if (isRelative || isInternalProxy) {
         config.headers['x-api-key'] = apiKey;
       }
-      
+
       return config;
     });
 
@@ -186,14 +197,12 @@ export default function StandaloneShell() {
     };
   }, [apiKey]);
 
-  // Poll for balance every 30 seconds if key is present
   useEffect(() => {
     if (!apiKey) return;
     const interval = setInterval(() => fetchBalance(apiKey), 30000);
     return () => clearInterval(interval);
   }, [apiKey, fetchBalance]);
 
-  // Drag and Drop Handlers
   const handleDragOver = useCallback((e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -210,7 +219,6 @@ export default function StandaloneShell() {
   const handleDragLeave = useCallback((e) => {
     e.preventDefault();
     e.stopPropagation();
-    // Only set to false if we're leaving the container itself, not moving between children
     if (e.currentTarget.contains(e.relatedTarget)) return;
     setIsDragging(false);
   }, []);
@@ -241,14 +249,13 @@ export default function StandaloneShell() {
   }
 
   return (
-    <div 
+    <div
       className="h-screen bg-[#030303] flex flex-col overflow-hidden text-white relative"
       onDragOver={handleDragOver}
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      {/* Drag Overlay */}
       {isDragging && (
         <div className="fixed inset-0 z-[100] bg-[#22d3ee]/10 backdrop-blur-md border-4 border-dashed border-[#22d3ee]/50 flex items-center justify-center pointer-events-none transition-all duration-300">
           <div className="bg-[#0a0a0a] p-8 rounded-3xl border border-white/10 shadow-2xl flex flex-col items-center gap-4 scale-110 animate-pulse">
@@ -265,7 +272,6 @@ export default function StandaloneShell() {
         </div>
       )}
 
-      {/* Vadoo promo banner */}
       {showVadooBanner && (
         <div className="flex-shrink-0 w-full bg-indigo-600 flex items-center justify-center px-4 py-2 gap-3 relative z-50">
           <a
@@ -289,10 +295,8 @@ export default function StandaloneShell() {
         </div>
       )}
 
-      {/* Header */}
       {isHeaderVisible && (
         <header className="flex-shrink-0 h-14 border-b border-white/[0.03] flex items-center justify-between px-6 bg-black/20 backdrop-blur-md z-40 gap-4">
-          {/* Left: Logo */}
           <div className="flex-shrink-0 flex items-center gap-2">
             <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -302,11 +306,9 @@ export default function StandaloneShell() {
             <span className="text-sm font-bold tracking-tight hidden sm:block">OpenGenerativeAI</span>
           </div>
 
-          {/* Center: Navigation Container with fade edges */}
           <div className="flex-1 min-w-0 mx-4 sm:mx-6 relative overflow-hidden h-full flex items-center justify-start lg:justify-center">
-            {/* Fade Left Overlay */}
             <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-[#030303] to-transparent pointer-events-none z-10 block lg:hidden" />
-            
+
             <nav className="flex items-center gap-4 overflow-x-auto scrollbar-none w-full lg:w-auto h-full px-4 lg:px-0">
               {TABS.map((tab) => (
                 <button
@@ -325,12 +327,10 @@ export default function StandaloneShell() {
                 </button>
               ))}
             </nav>
-            
-            {/* Fade Right Overlay */}
+
             <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-[#030303] to-transparent pointer-events-none z-10 block lg:hidden" />
           </div>
 
-          {/* Right: Actions */}
           <div className="flex-shrink-0 flex items-center gap-4">
             <div className="flex items-center gap-3 bg-white/5 px-3 py-1.5 rounded-full border border-white/5 transition-colors">
               <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
@@ -356,7 +356,6 @@ export default function StandaloneShell() {
         </header>
       )}
 
-      {/* Studio Content */}
       <div className="flex-1 min-h-0 relative overflow-hidden">
         {activeTab === 'image'   && <ImageStudio   apiKey={apiKey} droppedFiles={droppedFiles} onFilesHandled={handleFilesHandled} />}
         {activeTab === 'video'   && <VideoStudio   apiKey={apiKey} droppedFiles={droppedFiles} onFilesHandled={handleFilesHandled} />}
@@ -373,7 +372,6 @@ export default function StandaloneShell() {
         {activeTab === 'apps' && <AppsStudio apiKey={apiKey} />}
       </div>
 
-      {/* Settings Modal */}
       {showSettings && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in-up">
           <div className="bg-[#0a0a0a] border border-white/10 rounded-xl p-8 w-full max-w-sm shadow-2xl">
@@ -381,7 +379,7 @@ export default function StandaloneShell() {
             <p className="text-white/40 text-[13px] mb-8">
               Manage your AI studio preferences and authentication.
             </p>
-            
+
             <div className="space-y-4 mb-8">
               <div className="bg-white/5 border border-white/[0.03] rounded-md p-4">
                 <label className="block text-xs font-bold text-white/30 mb-2">

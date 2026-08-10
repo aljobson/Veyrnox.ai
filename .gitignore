@@ -31,6 +31,10 @@ release/
 .next/
 out/
 
+# OpenNext / Cloudflare Workers
+.open-next/
+.wrangler/
+
 # Misc
 *.pem
 .env

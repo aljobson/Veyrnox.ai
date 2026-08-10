@@ -1,7 +1,16 @@
 import { NextResponse } from 'next/server';
-import { validateUploadProxyTarget } from '../../../../src/lib/uploadProxyTarget';
+import { validateUploadProxyTarget } from '../../../../lib/uploadProxyTarget';
+
+function getApiKey(request) {
+    const headerKey = request.headers.get('x-api-key');
+    if (headerKey) return headerKey;
+    return request.cookies.get('muapi_key')?.value;
+}
 
 export async function POST(request) {
+    if (!getApiKey(request)) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     try {
         const formData = await request.formData();
 
@@ -41,6 +50,6 @@ export async function POST(request) {
         }
     } catch (error) {
         console.error('Upload Proxy Exception:', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json({ error: 'Upload failed' }, { status: 500 });
     }
 }
