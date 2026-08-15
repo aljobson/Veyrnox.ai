@@ -4,7 +4,10 @@ import { validateUploadProxyTarget } from '../../../lib/uploadProxyTarget';
 function getApiKey(request) {
     const headerKey = request.headers.get('x-api-key');
     if (headerKey) return headerKey;
-    return request.cookies.get('muapi_key')?.value;
+    return (
+        request.cookies.get('__Host-muapi_key')?.value ||
+        request.cookies.get('muapi_key')?.value
+    );
 }
 
 export async function POST(request) {

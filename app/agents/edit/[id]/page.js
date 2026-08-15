@@ -20,7 +20,7 @@ async function fetchUserData(apiKey) {
 export default async function EditAgentPage({ params }) {
   const { id } = await params; // although we don't use id on server here, it's used by useParams in client
   const cookieStore = await cookies();
-  const apiKey = cookieStore.get("muapi_key")?.value;
+  const apiKey = cookieStore.get("__Host-muapi_key")?.value || cookieStore.get("muapi_key")?.value;
 
   const userData = await fetchUserData(apiKey);
 

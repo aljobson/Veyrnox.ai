@@ -70,7 +70,7 @@ async function fetchUserData(apiKey) {
 export default async function AgentPage({ params }) {
   const { agent_id } = await params;
   const cookieStore = await cookies();
-  const apiKey = cookieStore.get("muapi_key")?.value;
+  const apiKey = cookieStore.get("__Host-muapi_key")?.value || cookieStore.get("muapi_key")?.value;
 
   console.log(`[AgentPage] Loading page for agent: ${agent_id}, hasKey: ${!!apiKey}`);
 

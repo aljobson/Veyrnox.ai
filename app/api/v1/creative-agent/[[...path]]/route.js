@@ -9,8 +9,10 @@ function getApiKey(request) {
     }
     const headerKey = request.headers.get('x-api-key');
     if (headerKey) return headerKey;
-    const cookieKey = request.cookies.get('muapi_key')?.value;
-    return cookieKey;
+    return (
+        request.cookies.get('__Host-muapi_key')?.value ||
+        request.cookies.get('muapi_key')?.value
+    );
 }
 
 function cleanHeaders(request) {
@@ -20,6 +22,11 @@ function cleanHeaders(request) {
     headers.delete('cookie');
     headers.delete('Authorization');
     headers.delete('x-api-key');
+    headers.delete('x-forwarded-for');
+    headers.delete('x-forwarded-host');
+    headers.delete('x-forwarded-proto');
+    headers.delete('x-forwarded-port');
+    headers.delete('x-real-ip');
     return headers;
 }
 

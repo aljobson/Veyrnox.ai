@@ -91,7 +91,7 @@ async function fetchUserData(apiKey) {
 export default async function AgentConversationPage({ params }) {
   const { agent_id, conversation_id } = await params;
   const cookieStore = await cookies();
-  const apiKey = cookieStore.get("muapi_key")?.value;
+  const apiKey = cookieStore.get("__Host-muapi_key")?.value || cookieStore.get("muapi_key")?.value;
 
   console.log(`[ConvPage] Loading for agent: ${agent_id}, conv: ${conversation_id}, hasKey: ${!!apiKey}`);
 
