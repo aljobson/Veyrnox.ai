@@ -2,58 +2,23 @@
 
 import { AiAgent } from "ai-agent";
 import "ai-agent/dist/tailwind.css";
-import { useCallback, useEffect, useRef } from "react";
-import axios from "axios";
-
-const STORAGE_KEY = "muapi_key";
+import { useCallback, useEffect } from "react";
 
 /**
  * AgentChatClient — mirrors muapiapp's AgentClient.js.
  * Renders the AiAgent library component with server-fetched agent details
  * and optional initial history.
  *
- * IMPORTANT: StandaloneShell is NOT in the tree on /agents/* pages, so we
- * must set up our own axios interceptor here to inject the API key into
- * all requests made by the AiAgent library.
+ * Auth: the browser attaches the `__Host-muapi_key` cookie automatically
+ * on same-origin fetches to `/api/*`. Nothing to inject client-side.
  */
 export default function AgentChatClient({ agentDetails, initialHistory, userData }) {
-  const interceptorRef = useRef(null);
-
-  console.log("[AgentChatClient] Rendering", { 
-    hasAgentDetails: !!agentDetails, 
-    hasHistory: !!initialHistory, 
-    hasUserData: !!userData 
-  });
-
+  // One-time purge of the legacy localStorage key so no residue is left
+  // for XSS to exfiltrate. Safe no-op if already absent.
   useEffect(() => {
-    const getKey = () => {
-      if (typeof window === "undefined") return null;
-      const fromStorage = localStorage.getItem(STORAGE_KEY);
-      if (fromStorage) return fromStorage;
-      const match = document.cookie.match(/muapi_key=([^;]+)/);
-      return match ? match[1] : null;
-    };
-
-    const apiKey = getKey();
-    if (!apiKey) return;
-
-    interceptorRef.current = axios.interceptors.request.use((config) => {
-      const isRelative =
-        config.url.startsWith("/") || !config.url.startsWith("http");
-      // Include specific proxy paths to be sure
-      const isInternalProxy = config.url.includes('/api/app') || config.url.includes('/api/workflow') || config.url.includes('/api/agents') || config.url.includes('/api/api') || config.url.includes('/api/v1');
-      
-      if (isRelative || isInternalProxy) {
-        config.headers["x-api-key"] = apiKey;
-      }
-      return config;
-    });
-
-    return () => {
-      if (interceptorRef.current !== null) {
-        axios.interceptors.request.eject(interceptorRef.current);
-      }
-    };
+    if (typeof window !== "undefined") {
+      try { localStorage.removeItem("muapi_key"); } catch {}
+    }
   }, []);
 
   const useUser = useCallback(
