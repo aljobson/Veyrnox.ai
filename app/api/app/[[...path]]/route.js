@@ -5,11 +5,8 @@ const COOKIE_NAME = '__Host-muapi_key';
 const LEGACY_COOKIE_NAME = 'muapi_key';
 
 function getApiKey(request) {
-    // Priority 1: Direct x-api-key header
-    const headerKey = request.headers.get('x-api-key');
-    if (headerKey) return headerKey;
-
-    // Priority 2: server-set cookie (prefer __Host- prefixed).
+    // Cookie only. A client-supplied x-api-key header would let anyone use
+    // this proxy as a MuAPI amplifier with an attacker-supplied key.
     return (
         request.cookies.get(COOKIE_NAME)?.value ||
         request.cookies.get(LEGACY_COOKIE_NAME)?.value
@@ -18,11 +15,12 @@ function getApiKey(request) {
 
 function cleanHeaders(request) {
     const headers = new Headers(request.headers);
-    // Strip anything that could leak client identity to the upstream API.
+    // Strip anything that could leak client identity or inject auth upstream.
     headers.delete('host');
     headers.delete('connection');
     headers.delete('cookie');
     headers.delete('authorization');
+    headers.delete('x-api-key');
     headers.delete('x-forwarded-for');
     headers.delete('x-forwarded-host');
     headers.delete('x-forwarded-proto');

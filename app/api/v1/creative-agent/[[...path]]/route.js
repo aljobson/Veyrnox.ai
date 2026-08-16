@@ -2,12 +2,17 @@ import { NextResponse } from 'next/server';
 
 const MUAPI_BASE = 'https://api.muapi.ai';
 
+// Hard cutoff for the unprefixed legacy cookie fallback. After this instant
+// only the __Host-muapi_key cookie is accepted. Bake in a fixed timestamp so
+// the fallback cannot linger indefinitely across redeploys.
+const LEGACY_COOKIE_CUTOFF_MS = Date.UTC(2026, 7, 23); // 2026-08-23 UTC
+
 function getApiKey(request) {
     // Cookie only — see /api/v1 route for rationale.
-    return (
-        request.cookies.get('__Host-muapi_key')?.value ||
-        request.cookies.get('muapi_key')?.value
-    );
+    const hostCookie = request.cookies.get('__Host-muapi_key')?.value;
+    if (hostCookie) return hostCookie;
+    if (Date.now() >= LEGACY_COOKIE_CUTOFF_MS) return undefined;
+    return request.cookies.get('muapi_key')?.value;
 }
 
 function cleanHeaders(request) {

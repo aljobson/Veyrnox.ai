@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server';
 import { validateUploadProxyTarget } from '../../../lib/uploadProxyTarget';
 
 function getApiKey(request) {
-    const headerKey = request.headers.get('x-api-key');
-    if (headerKey) return headerKey;
+    // Cookie only — client-supplied x-api-key would let anyone use this
+    // proxy as a MuAPI amplifier with an attacker-supplied key.
     return (
         request.cookies.get('__Host-muapi_key')?.value ||
         request.cookies.get('muapi_key')?.value
@@ -12,16 +12,55 @@ function getApiKey(request) {
 
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024; // 10 MB
 
+// Buffer the body while enforcing a hard byte cap. Content-Length is
+// optional/spoofable (chunked or omitted), so we must count bytes as they
+// arrive rather than trusting the header, and must not call
+// request.formData() before the cap check — that would buffer the full
+// body first and defeat the cap (memory DoS).
+async function readBodyWithCap(request, maxBytes) {
+    const reader = request.body?.getReader();
+    if (!reader) return { ok: true, bytes: new Uint8Array(0) };
+    const chunks = [];
+    let total = 0;
+    for (;;) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        total += value.byteLength;
+        if (total > maxBytes) {
+            try { await reader.cancel(); } catch {}
+            return { ok: false };
+        }
+        chunks.push(value);
+    }
+    const buf = new Uint8Array(total);
+    let offset = 0;
+    for (const c of chunks) { buf.set(c, offset); offset += c.byteLength; }
+    return { ok: true, bytes: buf };
+}
+
 export async function POST(request) {
     if (!getApiKey(request)) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    const contentLength = Number(request.headers.get('content-length') || 0);
-    if (contentLength > MAX_UPLOAD_BYTES) {
+    // Fast reject on an honestly-declared oversized body; the streaming
+    // counter below is the source of truth for spoofed/omitted CL.
+    const declaredLength = Number(request.headers.get('content-length') || 0);
+    if (declaredLength > MAX_UPLOAD_BYTES) {
+        return NextResponse.json({ error: 'Payload too large' }, { status: 413 });
+    }
+    const capped = await readBodyWithCap(request, MAX_UPLOAD_BYTES);
+    if (!capped.ok) {
         return NextResponse.json({ error: 'Payload too large' }, { status: 413 });
     }
     try {
-        const formData = await request.formData();
+        const contentType = request.headers.get('content-type') || '';
+        // Re-parse the capped body as multipart FormData via a synthetic
+        // Request so we still get the same form-field API downstream.
+        const formData = await new Request('http://local/upload', {
+            method: 'POST',
+            headers: { 'content-type': contentType },
+            body: capped.bytes,
+        }).formData();
 
         // Extract the original S3 target URL we injected earlier
         const targetUrl = formData.get('x-proxy-target-url');
