@@ -3,12 +3,7 @@ import { NextResponse } from 'next/server';
 const MUAPI_BASE = 'https://api.muapi.ai';
 
 function getApiKey(request) {
-    const authHeader = request.headers.get('Authorization');
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-        return authHeader.substring(7);
-    }
-    const headerKey = request.headers.get('x-api-key');
-    if (headerKey) return headerKey;
+    // Cookie only — see /api/v1 route for rationale.
     return (
         request.cookies.get('__Host-muapi_key')?.value ||
         request.cookies.get('muapi_key')?.value

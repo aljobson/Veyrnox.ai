@@ -5,11 +5,7 @@ const COOKIE_NAME = '__Host-muapi_key';
 const LEGACY_COOKIE_NAME = 'muapi_key';
 
 function getApiKey(request) {
-    // Priority 1: Direct x-api-key header
-    const headerKey = request.headers.get('x-api-key');
-    if (headerKey) return headerKey;
-
-    // Priority 2: server-set cookie (prefer __Host- prefixed).
+    // Cookie only — see /api/v1 route for rationale.
     return (
         request.cookies.get(COOKIE_NAME)?.value ||
         request.cookies.get(LEGACY_COOKIE_NAME)?.value
@@ -47,10 +43,19 @@ async function proxy(request, method, pathSegments) {
 
     try {
         const response = await fetch(targetUrl, init);
-        const data = await response.json();
-        return NextResponse.json(data, { status: response.status });
+        const contentType = response.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+            const data = await response.json();
+            return NextResponse.json(data, { status: response.status });
+        }
+        const body = await response.arrayBuffer();
+        return new Response(body, {
+            status: response.status,
+            headers: { 'content-type': contentType || 'application/octet-stream' },
+        });
     } catch (error) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        console.error(`[workflow proxy ${method}] upstream error`);
+        return NextResponse.json({ error: 'Upstream request failed' }, { status: 502 });
     }
 }
 

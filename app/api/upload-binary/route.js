@@ -10,9 +10,15 @@ function getApiKey(request) {
     );
 }
 
+const MAX_UPLOAD_BYTES = 10 * 1024 * 1024; // 10 MB
+
 export async function POST(request) {
     if (!getApiKey(request)) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const contentLength = Number(request.headers.get('content-length') || 0);
+    if (contentLength > MAX_UPLOAD_BYTES) {
+        return NextResponse.json({ error: 'Payload too large' }, { status: 413 });
     }
     try {
         const formData = await request.formData();

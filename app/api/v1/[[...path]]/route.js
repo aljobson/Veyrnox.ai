@@ -12,10 +12,8 @@ const COOKIE_NAME = '__Host-muapi_key';
 const LEGACY_COOKIE_NAME = 'muapi_key';
 
 function getApiKey(request) {
-    const authHeader = request.headers.get('Authorization');
-    if (authHeader && authHeader.startsWith('Bearer ')) return authHeader.substring(7);
-    const headerKey = request.headers.get('x-api-key');
-    if (headerKey) return headerKey;
+    // Cookie only. Client-supplied Authorization/x-api-key headers would let
+    // an XSS or malicious extension override the server-set HttpOnly cookie.
     return (
         request.cookies.get(COOKIE_NAME)?.value ||
         request.cookies.get(LEGACY_COOKIE_NAME)?.value

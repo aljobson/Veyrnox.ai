@@ -1,10 +1,13 @@
 /** @type {import('next').NextConfig} */
 
 // Enforced CSP. `unsafe-inline` on script-src is retained for Next 15 RSC
-// hydration (nonce-based CSP is a larger refactor tracked separately).
-// `unsafe-eval` has been dropped — no code path relies on eval-time
-// evaluation; add it back only if a specific runtime demonstrably requires it.
-// ponytail: unsafe-inline on script-src, nonce-per-request if audit requires.
+// streaming hydration (see vercel/next.js#50659 — nonce propagation to
+// inline flight/hydration scripts is still gated; adding a nonce alone
+// breaks hydration under App Router + OpenNext-Cloudflare). Tracked in
+// a follow-up issue on this repo. `unsafe-eval` has been dropped.
+// ponytail: keep unsafe-inline until Next.js nonce support is stable in
+// App Router SSR + OpenNext workerd runtime; then switch to per-request
+// nonce via middleware.js and drop unsafe-inline.
 const CSP = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline'",

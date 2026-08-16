@@ -45,6 +45,20 @@ async function parseJsonOr502(response, pathname) {
     }
 }
 
+// GET can return binary (thumbnails, exported files). Forward the body
+// verbatim when upstream signals a non-JSON content-type.
+async function forwardResponse(response) {
+    const contentType = response.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+        return NextResponse.json(await response.json(), { status: response.status });
+    }
+    const body = await response.arrayBuffer();
+    return new Response(body, {
+        status: response.status,
+        headers: { 'content-type': contentType || 'application/octet-stream' },
+    });
+}
+
 export async function GET(request, { params }) {
     const slug = await params;
     const pathSegments = slug.path || [];
@@ -62,19 +76,23 @@ export async function GET(request, { params }) {
 
     try {
         const response = await fetch(targetUrl, { headers, method: 'GET' });
-        const { data, status } = await parseJsonOr502(response, pathname);
 
-        // SPECIAL CASE: Intercept upload URL and redirect to local binary proxy
-        if (status < 300 && effectivePath === 'get_file_upload_url' && data && data.url) {
-            const originalS3Url = data.url;
-            data.url = `/api/upload-binary`;
-            data.fields = {
-                ...data.fields,
-                'x-proxy-target-url': originalS3Url,
-            };
+        // SPECIAL CASE: get_file_upload_url returns JSON we must rewrite.
+        if (effectivePath === 'get_file_upload_url') {
+            const { data, status } = await parseJsonOr502(response, pathname);
+            if (status < 300 && data && data.url) {
+                const originalS3Url = data.url;
+                data.url = `/api/upload-binary`;
+                data.fields = {
+                    ...data.fields,
+                    'x-proxy-target-url': originalS3Url,
+                };
+            }
+            return NextResponse.json(data, { status });
         }
 
-        return NextResponse.json(data, { status });
+        // Generic: forward JSON or binary body verbatim.
+        return await forwardResponse(response);
     } catch (error) {
         console.error(`[api/app GET] ${pathname}:`, error.message);
         return NextResponse.json({ error: 'Upstream request failed' }, { status: 500 });
