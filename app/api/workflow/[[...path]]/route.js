@@ -19,6 +19,7 @@ function cleanHeaders(request) {
     headers.delete('connection');
     headers.delete('cookie');
     headers.delete('authorization');
+    headers.delete('x-api-key');
     headers.delete('x-forwarded-for');
     headers.delete('x-forwarded-host');
     headers.delete('x-forwarded-proto');

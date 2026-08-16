@@ -10,9 +10,12 @@ export default function DesignAgentStudio({ apiKey, isHeaderVisible, onToggleHea
 
   useEffect(() => {
     sessionStorage.setItem("fromDesignAgent", "true");
+    // Purge any legacy raw MuAPI key that older builds wrote to localStorage.
+    // Auth now flows via the __Host-muapi_key HttpOnly cookie through the
+    // /api/v1/creative-agent proxy (server attaches x-api-key upstream).
+    try { localStorage.removeItem("token"); } catch {}
     if (!apiKey) return;
-    localStorage.setItem("token", apiKey);
-    
+
     const fetchUser = async () => {
       try {
         const data = await getUserBalance(apiKey);
