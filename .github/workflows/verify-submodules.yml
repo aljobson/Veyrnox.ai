@@ -1,0 +1,17 @@
+name: verify-submodules
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout with submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Verify submodule pins
+        run: bash scripts/verify-submodules.sh

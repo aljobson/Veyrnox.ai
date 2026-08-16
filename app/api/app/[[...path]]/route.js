@@ -1,22 +1,33 @@
 import { NextResponse } from 'next/server';
 
 const MUAPI_BASE = 'https://api.muapi.ai';
+const COOKIE_NAME = '__Host-muapi_key';
+const LEGACY_COOKIE_NAME = 'muapi_key';
 
 function getApiKey(request) {
     // Priority 1: Direct x-api-key header
     const headerKey = request.headers.get('x-api-key');
     if (headerKey) return headerKey;
 
-    // Priority 2: muapi_key cookie (used by the fixed builder library)
-    const cookieKey = request.cookies.get('muapi_key')?.value;
-    return cookieKey;
+    // Priority 2: server-set cookie (prefer __Host- prefixed).
+    return (
+        request.cookies.get(COOKIE_NAME)?.value ||
+        request.cookies.get(LEGACY_COOKIE_NAME)?.value
+    );
 }
 
 function cleanHeaders(request) {
     const headers = new Headers(request.headers);
+    // Strip anything that could leak client identity to the upstream API.
     headers.delete('host');
     headers.delete('connection');
-    headers.delete('cookie'); // CRITICAL: Stop forwarding browser cookies to MuAPI to avoid auth conflicts
+    headers.delete('cookie');
+    headers.delete('authorization');
+    headers.delete('x-forwarded-for');
+    headers.delete('x-forwarded-host');
+    headers.delete('x-forwarded-proto');
+    headers.delete('x-forwarded-port');
+    headers.delete('x-real-ip');
     return headers;
 }
 

@@ -1,12 +1,16 @@
 import { NextResponse } from 'next/server';
 
 const MUAPI_BASE = 'https://api.muapi.ai';
+const COOKIE_NAME = '__Host-muapi_key';
+const LEGACY_COOKIE_NAME = 'muapi_key';
 
 function getApiKey(request) {
     const headerKey = request.headers.get('x-api-key');
     if (headerKey) return headerKey;
-    const cookieKey = request.cookies.get('muapi_key')?.value;
-    return cookieKey;
+    return (
+        request.cookies.get(COOKIE_NAME)?.value ||
+        request.cookies.get(LEGACY_COOKIE_NAME)?.value
+    );
 }
 
 function cleanHeaders(request) {
@@ -14,6 +18,12 @@ function cleanHeaders(request) {
     headers.delete('host');
     headers.delete('connection');
     headers.delete('cookie');
+    headers.delete('authorization');
+    headers.delete('x-forwarded-for');
+    headers.delete('x-forwarded-host');
+    headers.delete('x-forwarded-proto');
+    headers.delete('x-forwarded-port');
+    headers.delete('x-real-ip');
     return headers;
 }
 
