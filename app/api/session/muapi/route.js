@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { isLegacyCookieAllowed } from '@/lib/legacyCookieCutoff';
 
 // __Host- prefix pins the cookie to the exact origin, no subdomain leaks,
 // and requires Secure + Path=/ + no Domain. Do not weaken these.
@@ -32,10 +33,12 @@ function requireSameOrigin(request) {
 }
 
 // Report whether a key is already stored for this session (never returns the key).
+// After the legacy-cookie cutoff the legacy cookie is ignored so the UI does
+// not report `hasKey: true` for a cookie that every proxy will reject.
 export async function GET(request) {
     const has = Boolean(
         request.cookies.get(COOKIE_NAME)?.value ||
-        request.cookies.get(LEGACY_COOKIE_NAME)?.value
+        (isLegacyCookieAllowed() && request.cookies.get(LEGACY_COOKIE_NAME)?.value)
     );
     return NextResponse.json({ hasKey: has });
 }

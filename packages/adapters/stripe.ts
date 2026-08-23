@@ -69,6 +69,15 @@ export class StripeAdapter {
 
       if (!timestamp || !providedSignature) return null;
 
+      // Reject replays outside Stripe's 5-minute tolerance window.
+      const tsNum = Number(timestamp);
+      if (!Number.isFinite(tsNum)) return null;
+      const nowSec = Math.floor(Date.now() / 1000);
+      if (Math.abs(nowSec - tsNum) > 300) {
+        console.warn('Stripe webhook timestamp outside 5-min tolerance');
+        return null;
+      }
+
       // Compute expected signature
       const signedContent = `${timestamp}.${body}`;
       const hmac = crypto

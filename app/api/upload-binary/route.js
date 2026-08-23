@@ -4,6 +4,14 @@ import { getApiKeyFromCookies } from '@/lib/legacyCookieCutoff';
 
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024; // 10 MB
 
+// Fail closed on requests that were not initiated from this same site so a
+// leaked cookie / extension with host permissions cannot invoke the
+// upload-proxy with a victim's cookie. Old browsers without Sec-Fetch-Site
+// hit the closed branch — acceptable for a settings-style endpoint.
+function requireSameOrigin(request) {
+    return request.headers.get('sec-fetch-site') === 'same-origin';
+}
+
 // Buffer the body while enforcing a hard byte cap. Content-Length is
 // optional/spoofable (chunked or omitted), so we must count bytes as they
 // arrive rather than trusting the header, and must not call
@@ -31,6 +39,9 @@ async function readBodyWithCap(request, maxBytes) {
 }
 
 export async function POST(request) {
+    if (!requireSameOrigin(request)) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
     if (!getApiKeyFromCookies(request)) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
