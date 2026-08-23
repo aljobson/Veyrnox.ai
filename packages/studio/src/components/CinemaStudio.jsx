@@ -490,7 +490,7 @@ export default function CinemaStudio({
     setImageUploadProgress(0);
 
     try {
-      const url = await uploadFile(apiKey, file, (progress) => {
+      const url = await uploadFile(file, (progress) => {
         setImageUploadProgress(progress);
       });
       if (url) setUploadedImage(url);
@@ -588,7 +588,7 @@ export default function CinemaStudio({
     );
 
     try {
-      const res = await generateImage(apiKey, {
+      const res = await generateImage({
         model: uploadedImage ? "nano-banana-pro-edit" : "nano-banana-pro",
         prompt: finalPrompt,
         aspect_ratio: settings.aspect_ratio,

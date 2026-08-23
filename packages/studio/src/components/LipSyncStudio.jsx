@@ -477,7 +477,7 @@ export default function LipSyncStudio({
       setImageState(UPLOAD_STATE.UPLOADING);
       setImageProgress(0);
       try {
-        const url = await uploadFile(apiKey, file, (pct) => {
+        const url = await uploadFile(file, (pct) => {
           setImageProgress(pct);
         });
         setImageUrl(url);
@@ -502,7 +502,7 @@ export default function LipSyncStudio({
       setVideoState(UPLOAD_STATE.UPLOADING);
       setVideoProgress(0);
       try {
-        const url = await uploadFile(apiKey, file, (pct) => {
+        const url = await uploadFile(file, (pct) => {
           setVideoProgress(pct);
         });
         setVideoUrl(url);
@@ -527,7 +527,7 @@ export default function LipSyncStudio({
       setAudioState(UPLOAD_STATE.UPLOADING);
       setAudioProgress(0);
       try {
-        const url = await uploadFile(apiKey, file, (pct) => {
+        const url = await uploadFile(file, (pct) => {
           setAudioProgress(pct);
         });
         setAudioUrl(url);
@@ -652,7 +652,7 @@ export default function LipSyncStudio({
       if (showResolution) lipsyncParams.resolution = selectedResolution;
       if (selectedModel?.hasSeed) lipsyncParams.seed = -1;
 
-      const res = await processLipSync(apiKey, lipsyncParams);
+      const res = await processLipSync(lipsyncParams);
 
       if (!res?.url) throw new Error("No video URL returned by API");
 

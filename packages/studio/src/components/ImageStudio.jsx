@@ -138,7 +138,7 @@ function UploadButton({ apiKey, maxImages, onSelect, onClear, initialUrls = [], 
           setUploadHistory((prev) => [placeholder, ...prev]);
 
           try {
-            const uploadedUrl = await uploadFile(apiKey, file, (pct) => {
+            const uploadedUrl = await uploadFile(file, (pct) => {
               setLastUploadProgress(pct);
               setUploadHistory((prev) =>
                 prev.map((h) => (h.id === id ? { ...h, progress: pct } : h)),
@@ -882,7 +882,7 @@ export default function ImageStudio({
       const urls = await Promise.all(
         toUpload.map(async (file) => {
           try {
-            return await uploadFile(apiKey, file);
+            return await uploadFile(file);
           } catch (err) {
             console.error(
               "[ImageStudio] Drop upload failed for",
@@ -1066,7 +1066,7 @@ export default function ImageStudio({
               genParams[currentQualityField] = selectedQuality;
             }
             if (showEffectBtn && selectedEffect) genParams.name = selectedEffect;
-            return await generateI2I(apiKey, genParams);
+            return await generateI2I(genParams);
           } else {
             const genParams = {
               model: selectedModelId,
@@ -1076,7 +1076,7 @@ export default function ImageStudio({
             if (currentQualityField && selectedQuality) {
               genParams[currentQualityField] = selectedQuality;
             }
-            return await generateImage(apiKey, genParams);
+            return await generateImage(genParams);
           }
         })
       );

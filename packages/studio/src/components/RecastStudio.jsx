@@ -380,7 +380,7 @@ export default function RecastStudio({
       setVideoState(UPLOAD_STATE.UPLOADING);
       setVideoProgress(0);
       try {
-        const url = await uploadFile(apiKey, file, (pct) => setVideoProgress(pct));
+        const url = await uploadFile(file, (pct) => setVideoProgress(pct));
         setVideoUrl(url);
         setVideoName(file.name);
         setVideoState(UPLOAD_STATE.READY);
@@ -403,7 +403,7 @@ export default function RecastStudio({
       setImageState(UPLOAD_STATE.UPLOADING);
       setImageProgress(0);
       try {
-        const url = await uploadFile(apiKey, file, (pct) => setImageProgress(pct));
+        const url = await uploadFile(file, (pct) => setImageProgress(pct));
         setImageUrl(url);
         setImageName(file.name);
         setImageState(UPLOAD_STATE.READY);
@@ -482,7 +482,7 @@ export default function RecastStudio({
       if (showAspect) params.aspect_ratio = selectedAspectRatio;
       if (prompt && selectedModel?.hasPrompt) params.prompt = prompt;
 
-      const res = await processRecast(apiKey, params);
+      const res = await processRecast(params);
 
       if (!res?.url) throw new Error("No video URL returned by API");
 

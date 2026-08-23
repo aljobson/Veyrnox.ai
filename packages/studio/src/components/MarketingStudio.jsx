@@ -308,14 +308,14 @@ export default function MarketingStudio({ apiKey, droppedFiles, onFilesHandled }
       const toUpload = files.slice(0, remaining);
       for (const file of toUpload) {
         try {
-          const url = await uploadFile(apiKey, file, (pct) => setUploadProgress(p => ({ ...p, additional: pct })));
+          const url = await uploadFile(file, (pct) => setUploadProgress(p => ({ ...p, additional: pct })));
           setAdditionalImages(prev => [...prev, url].slice(0, 6));
         } catch (err) { alert(err.message); }
       }
     } else {
       const file = files[0];
       try {
-        const url = await uploadFile(apiKey, file, (pct) => setUploadProgress(p => ({ ...p, [target]: pct })));
+        const url = await uploadFile(file, (pct) => setUploadProgress(p => ({ ...p, [target]: pct })));
         if (target === 'product') setProductImage(url);
         else setAvatarImage(url);
       } catch (err) { alert(err.message); }
@@ -329,7 +329,7 @@ export default function MarketingStudio({ apiKey, droppedFiles, onFilesHandled }
 
     setIsGenerating(true);
     try {
-      const result = await generateMarketingStudioAd(apiKey, {
+      const result = await generateMarketingStudioAd({
         prompt,
         aspect_ratio: params.ratio,
         duration: params.duration,

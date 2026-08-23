@@ -94,7 +94,7 @@ function AudioFileUploader({ label, value, onChange, apiKey }) {
     setProgress(0);
 
     try {
-      const url = await uploadFile(apiKey, file, (pct) => {
+      const url = await uploadFile(file, (pct) => {
         setProgress(pct);
       });
       setFileName(file.name);
@@ -570,14 +570,14 @@ export default function AudioStudio({
         if (firstAudioField) {
           const [key] = firstAudioField;
           // Trigger file upload helper
-          uploadFile(apiKey, audioFiles[0], () => {})
+          uploadFile(audioFiles[0], () => {})
             .then(url => {
               setParams(prev => ({ ...prev, [key]: url }));
             })
             .catch(err => alert(`Failed to upload dropped file: ${err.message}`));
         } else if (firstAudioListField) {
           const [key] = firstAudioListField;
-          uploadFile(apiKey, audioFiles[0], () => {})
+          uploadFile(audioFiles[0], () => {})
             .then(url => {
               setParams(prev => {
                 const currentList = Array.isArray(prev[key]) ? [...prev[key]] : [];
@@ -627,7 +627,7 @@ export default function AudioStudio({
       };
 
       // Call generateAudio
-      const res = await generateAudio(apiKey, audioParams);
+      const res = await generateAudio(audioParams);
 
       if (!res?.url) {
         throw new Error("No audio URL returned by the API.");

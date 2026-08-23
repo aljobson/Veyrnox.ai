@@ -213,7 +213,7 @@ export default function ClippingStudio({
       if (videoFiles.length > 0) {
         setVideoUploading(true);
         setVideoProgress(0);
-        uploadFile(apiKey, videoFiles[0], (pct) => {
+        uploadFile(videoFiles[0], (pct) => {
           setVideoProgress(pct);
         })
           .then(url => {
@@ -300,7 +300,7 @@ export default function ClippingStudio({
     setVideoUploading(true);
     setVideoProgress(0);
     try {
-      const url = await uploadFile(apiKey, file, (pct) => {
+      const url = await uploadFile(file, (pct) => {
         setVideoProgress(pct);
       });
       setVideoUrl(url);
@@ -337,7 +337,7 @@ export default function ClippingStudio({
         return_coordinates_only: returnCoordinatesOnly,
       };
 
-      const res = await runClipping(apiKey, params);
+      const res = await runClipping(params);
 
       // Parse the result
       const clips = res.outputs || [];

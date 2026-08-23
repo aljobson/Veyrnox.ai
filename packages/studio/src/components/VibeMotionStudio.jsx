@@ -125,7 +125,7 @@ export default function VibeMotionStudio({ apiKey }) {
     try {
       let result;
       if (editMode) {
-        result = await runMotionGraphicsEdit(apiKey, {
+        result = await runMotionGraphicsEdit({
           request_id: editSourceId,
           edit_prompt: prompt.trim(),
           aspect_ratio: aspectRatio,
@@ -133,7 +133,7 @@ export default function VibeMotionStudio({ apiKey }) {
           onRequestId: (id) => { pendingRequestId.current = id; },
         });
       } else {
-        result = await runMotionGraphics(apiKey, {
+        result = await runMotionGraphics({
           prompt: prompt.trim(),
           aspect_ratio: aspectRatio,
           duration_seconds: duration,

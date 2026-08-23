@@ -551,7 +551,7 @@ export default function VideoStudio({
     setImageUploading(true);
     setImageProgress(0);
     try {
-      const url = await uploadFile(apiKey, file, (pct) => {
+      const url = await uploadFile(file, (pct) => {
         setImageProgress(pct);
       });
       setUploadedImageUrl(url);
@@ -599,7 +599,7 @@ export default function VideoStudio({
     setVideoUploading(true);
     setVideoProgress(0);
     try {
-      const url = await uploadFile(apiKey, file, (pct) => {
+      const url = await uploadFile(file, (pct) => {
         setVideoProgress(pct);
       });
       setUploadedVideoUrl(url);
@@ -678,7 +678,7 @@ export default function VideoStudio({
     setImageProgress(0);
 
     try {
-      const url = await uploadFile(apiKey, file, (pct) => {
+      const url = await uploadFile(file, (pct) => {
         setImageProgress(pct);
       });
       setUploadedImageUrl(url);
@@ -771,7 +771,7 @@ export default function VideoStudio({
     setEndImageUploading(true);
     setEndImageProgress(0);
     try {
-      const url = await uploadFile(apiKey, file, (pct) => {
+      const url = await uploadFile(file, (pct) => {
         setEndImageProgress(pct);
       });
       setUploadedEndImageUrl(url);
@@ -797,7 +797,7 @@ export default function VideoStudio({
     setVideoUploading(true);
     setVideoProgress(0);
     try {
-      const url = await uploadFile(apiKey, file, (pct) => {
+      const url = await uploadFile(file, (pct) => {
         setVideoProgress(pct);
       });
       setUploadedVideoUrl(url);
@@ -957,7 +957,7 @@ export default function VideoStudio({
         if (currentModel?.hasPrompt && trimmedPrompt) {
           v2vParams.prompt = trimmedPrompt;
         }
-        res = await processV2V(apiKey, v2vParams);
+        res = await processV2V(v2vParams);
         if (!res?.url) throw new Error("No video URL returned by API");
 
         const genId = res.id || Date.now().toString();
@@ -1001,7 +1001,7 @@ export default function VideoStudio({
         if (selectedMode) i2vParams.mode = selectedMode;
         if (showEffect && selectedEffect) i2vParams.name = selectedEffect;
 
-        res = await generateI2V(apiKey, i2vParams);
+        res = await generateI2V(i2vParams);
         if (!res?.url) throw new Error("No video URL returned by API");
 
         const genId = res.id || Date.now().toString();
@@ -1048,7 +1048,7 @@ export default function VideoStudio({
         if (selectedQuality) params.quality = selectedQuality;
         if (selectedMode) params.mode = selectedMode;
 
-        res = await generateVideo(apiKey, params);
+        res = await generateVideo(params);
         if (!res?.url) throw new Error("No video URL returned by API");
 
         const genId = res.id || Date.now().toString();
