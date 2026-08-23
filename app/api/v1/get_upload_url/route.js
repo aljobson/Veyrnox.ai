@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { parseJsonOr502 } from '@/lib/parseJsonOr502';
 
 const MUAPI_BASE = 'https://api.muapi.ai';
 const COOKIE_NAME = '__Host-muapi_key';
@@ -29,7 +30,7 @@ function cleanHeaders(request) {
 }
 
 export async function GET(request) {
-    const { search } = new URL(request.url);
+    const { search, pathname } = new URL(request.url);
     const targetUrl = `${MUAPI_BASE}/app/get_file_upload_url${search}`;
 
     const headers = cleanHeaders(request);
@@ -42,10 +43,12 @@ export async function GET(request) {
             method: 'GET',
         });
 
-        const data = await response.json();
-
-        return NextResponse.json(data, { status: response.status });
+        const { data, status } = await parseJsonOr502(response, pathname);
+        return NextResponse.json(data, { status });
     } catch (error) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        // Log detail server-side; never echo raw error text back to the client
+        // (it can leak upstream host/path/headers on network/DNS errors).
+        console.error('[api/v1/get_upload_url] proxy error:', error?.message || error);
+        return NextResponse.json({ error: 'Upstream request failed' }, { status: 500 });
     }
 }

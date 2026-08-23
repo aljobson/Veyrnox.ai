@@ -83,8 +83,11 @@ export default function StandaloneShell() {
     return 'image';
   };
 
-  // apiKey is kept in memory only for the current tab session (no localStorage).
-  const [apiKey, setApiKey] = useState(null);
+  // Auth flows entirely via the __Host-muapi_key HttpOnly cookie set by
+  // /api/session/muapi. The raw key MUST NOT live in React state — an XSS
+  // gadget or React DevTools reader would leak it. We only track a boolean
+  // "is the user connected?" flag here.
+  const [hasApiKey, setHasApiKey] = useState(false);
   const [activeTab, setActiveTab] = useState(getInitialTab());
 
   const [balance, setBalance] = useState(null);
@@ -143,9 +146,12 @@ export default function StandaloneShell() {
     }
   }, [activeTab]);
 
-  const fetchBalance = useCallback(async (key) => {
+  const fetchBalance = useCallback(async () => {
     try {
-      const data = await getUserBalance(key);
+      // No arg — the muapi_key cookie is attached automatically by the
+      // browser on same-origin fetches to /api/*, and the proxy re-attaches
+      // it as x-api-key upstream.
+      const data = await getUserBalance();
       setBalance(data.balance);
     } catch (err) {
       console.error('Balance fetch failed:', err);
@@ -154,16 +160,32 @@ export default function StandaloneShell() {
 
   useEffect(() => {
     setHasMounted(true);
-  }, []);
+    // Purge any legacy raw-key storage from earlier builds. The current
+    // build never writes these — this only migrates old sessions.
+    try { sessionStorage.removeItem('token'); } catch {}
+    try { localStorage.removeItem('token'); } catch {}
+    try { localStorage.removeItem('muapi_key'); } catch {}
+    // Also ensure no stale axios default header lingers from an old bundle.
+    try { delete axios.defaults.headers.common['x-api-key']; } catch {}
+    // Hydrate connection state from the server (never returns the key).
+    axios.get(SESSION_ENDPOINT).then(({ data }) => {
+      if (data?.hasKey) {
+        setHasApiKey(true);
+        fetchBalance();
+      }
+    }).catch(() => {});
+  }, [fetchBalance]);
 
   const handleKeySave = useCallback(async (key) => {
     try {
       await axios.post(SESSION_ENDPOINT, { key });
     } catch (err) {
       console.error('Failed to persist key server-side:', err);
+      return;
     }
-    setApiKey(key);
-    fetchBalance(key);
+    // Do NOT retain the raw key. Cookie is now set; downstream fetches use it.
+    setHasApiKey(true);
+    fetchBalance();
   }, [fetchBalance]);
 
   const handleKeyChange = useCallback(async () => {
@@ -172,36 +194,15 @@ export default function StandaloneShell() {
     } catch (err) {
       console.error('Failed to clear key server-side:', err);
     }
-    setApiKey(null);
+    setHasApiKey(false);
     setBalance(null);
   }, []);
 
   useEffect(() => {
-    delete axios.defaults.headers.common['x-api-key'];
-
-    if (!apiKey) return;
-
-    const interceptorId = axios.interceptors.request.use((config) => {
-      const isRelative = config.url.startsWith('/') || !config.url.startsWith('http');
-      const isInternalProxy = config.url.includes('/api/app') || config.url.includes('/api/workflow') || config.url.includes('/api/agents') || config.url.includes('/api/api') || config.url.includes('/api/v1');
-
-      if (isRelative || isInternalProxy) {
-        config.headers['x-api-key'] = apiKey;
-      }
-
-      return config;
-    });
-
-    return () => {
-      axios.interceptors.request.eject(interceptorId);
-    };
-  }, [apiKey]);
-
-  useEffect(() => {
-    if (!apiKey) return;
-    const interval = setInterval(() => fetchBalance(apiKey), 30000);
+    if (!hasApiKey) return;
+    const interval = setInterval(fetchBalance, 30000);
     return () => clearInterval(interval);
-  }, [apiKey, fetchBalance]);
+  }, [hasApiKey, fetchBalance]);
 
   const handleDragOver = useCallback((e) => {
     e.preventDefault();
@@ -244,7 +245,7 @@ export default function StandaloneShell() {
     </div>
   );
 
-  if (!apiKey) {
+  if (!hasApiKey) {
     return <ApiKeyModal onSave={handleKeySave} />;
   }
 
@@ -357,19 +358,22 @@ export default function StandaloneShell() {
       )}
 
       <div className="flex-1 min-h-0 relative overflow-hidden">
-        {activeTab === 'image'   && <ImageStudio   apiKey={apiKey} droppedFiles={droppedFiles} onFilesHandled={handleFilesHandled} />}
-        {activeTab === 'video'   && <VideoStudio   apiKey={apiKey} droppedFiles={droppedFiles} onFilesHandled={handleFilesHandled} />}
-        {activeTab === 'clipping' && <ClippingStudio apiKey={apiKey} droppedFiles={droppedFiles} onFilesHandled={handleFilesHandled} />}
-        {activeTab === 'vibe-motion' && <VibeMotionStudio apiKey={apiKey} />}
-        {activeTab === 'lipsync' && <LipSyncStudio apiKey={apiKey} droppedFiles={droppedFiles} onFilesHandled={handleFilesHandled} />}
-        {activeTab === 'body-swap' && <RecastStudio apiKey={apiKey} droppedFiles={droppedFiles} onFilesHandled={handleFilesHandled} />}
-        {activeTab === 'cinema'  && <CinemaStudio  apiKey={apiKey} />}
-        {activeTab === 'audio'   && <AudioStudio   apiKey={apiKey} droppedFiles={droppedFiles} onFilesHandled={handleFilesHandled} />}
-        {activeTab === 'marketing' && <MarketingStudio apiKey={apiKey} droppedFiles={droppedFiles} onFilesHandled={handleFilesHandled} />}
-        {activeTab === 'workflows' && <WorkflowStudio apiKey={apiKey} isHeaderVisible={isHeaderVisible} onToggleHeader={setIsHeaderVisible} />}
-        {activeTab === 'agents' && <AgentStudio apiKey={apiKey} isHeaderVisible={isHeaderVisible} onToggleHeader={setIsHeaderVisible} />}
-        {activeTab === 'design-agent' && <DesignAgentStudio apiKey={apiKey} isHeaderVisible={isHeaderVisible} onToggleHeader={setIsHeaderVisible} />}
-        {activeTab === 'apps' && <AppsStudio apiKey={apiKey} />}
+        {/* No apiKey prop — auth flows via the __Host-muapi_key cookie on
+            every same-origin fetch to /api/*. Studios must not receive the
+            raw key. */}
+        {activeTab === 'image'   && <ImageStudio   droppedFiles={droppedFiles} onFilesHandled={handleFilesHandled} />}
+        {activeTab === 'video'   && <VideoStudio   droppedFiles={droppedFiles} onFilesHandled={handleFilesHandled} />}
+        {activeTab === 'clipping' && <ClippingStudio droppedFiles={droppedFiles} onFilesHandled={handleFilesHandled} />}
+        {activeTab === 'vibe-motion' && <VibeMotionStudio />}
+        {activeTab === 'lipsync' && <LipSyncStudio droppedFiles={droppedFiles} onFilesHandled={handleFilesHandled} />}
+        {activeTab === 'body-swap' && <RecastStudio droppedFiles={droppedFiles} onFilesHandled={handleFilesHandled} />}
+        {activeTab === 'cinema'  && <CinemaStudio  />}
+        {activeTab === 'audio'   && <AudioStudio   droppedFiles={droppedFiles} onFilesHandled={handleFilesHandled} />}
+        {activeTab === 'marketing' && <MarketingStudio droppedFiles={droppedFiles} onFilesHandled={handleFilesHandled} />}
+        {activeTab === 'workflows' && <WorkflowStudio isHeaderVisible={isHeaderVisible} onToggleHeader={setIsHeaderVisible} />}
+        {activeTab === 'agents' && <AgentStudio isHeaderVisible={isHeaderVisible} onToggleHeader={setIsHeaderVisible} />}
+        {activeTab === 'design-agent' && <DesignAgentStudio isHeaderVisible={isHeaderVisible} onToggleHeader={setIsHeaderVisible} />}
+        {activeTab === 'apps' && <AppsStudio />}
       </div>
 
       {showSettings && (
@@ -383,10 +387,11 @@ export default function StandaloneShell() {
             <div className="space-y-4 mb-8">
               <div className="bg-white/5 border border-white/[0.03] rounded-md p-4">
                 <label className="block text-xs font-bold text-white/30 mb-2">
-                   Active API Key
+                   Session
                 </label>
-                <div className="text-[13px] font-mono text-white/80">
-                  {apiKey.slice(0, 8)}••••••••••••••••
+                <div className="text-[13px] font-mono text-white/80 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-green-500" />
+                  Connected via secure cookie
                 </div>
               </div>
             </div>
