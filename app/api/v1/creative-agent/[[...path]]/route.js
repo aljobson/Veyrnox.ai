@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getApiKeyFromCookies } from '@/lib/legacyCookieCutoff';
+import { parseJsonOr502 } from '@/lib/parseJsonOr502';
 
 const MUAPI_BASE = 'https://api.muapi.ai';
 
@@ -32,9 +33,8 @@ async function proxy(request, method, path) {
 
     try {
         const response = await fetch(targetUrl, init);
-        console.log(`[creative-agent proxy ${method}] ${pathname} ${response.status}`);
-        const data = await response.json();
-        return NextResponse.json(data, { status: response.status });
+        const { data, status } = await parseJsonOr502(response, pathname);
+        return NextResponse.json(data, { status });
     } catch (error) {
         console.error(`[creative-agent proxy ${method} ERROR] ${pathname}:`, error.message);
         return NextResponse.json({ error: 'Upstream request failed' }, { status: 502 });

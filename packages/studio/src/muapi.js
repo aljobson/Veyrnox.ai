@@ -573,77 +573,11 @@ export async function getNodeStatus(apiKey, runId) {
     return await response.json();
 }
 
-/**
- * Handle proxy requests centralizing communication logic with MuAPI.
- * This is used by the server-side entry points.
- *
- * SECURITY: This function is bundled into the client build. It intentionally
- * does NOT accept an api key or set an `x-api-key` header. Auth is injected
- * by the server-side proxy routes under `app/api/*` using the HttpOnly
- * `__Host-muapi_key` cookie. Passing an api key from a client-callable path
- * would leak it into the browser bundle.
- */
-export async function handleProxyRequest(prefix, path, method, headers, body) {
-    const url = `${BASE_URL}/${prefix}/${path}`;
-
-    const finalHeaders = new Headers(headers);
-    finalHeaders.delete('host');
-    finalHeaders.delete('connection');
-    finalHeaders.delete('content-length'); // Let fetch recalculate this for safety
-    finalHeaders.delete('x-api-key'); // never trust a client-supplied key
-
-    try {
-        const response = await fetch(url, {
-            method,
-            headers: finalHeaders,
-            body: (method !== 'GET' && method !== 'HEAD') ? body : undefined,
-            redirect: 'follow',
-        });
-
-        const contentType = response.headers.get('Content-Type') || 'application/json';
-        const buffer = await response.arrayBuffer();
-        
-        return {
-            status: response.status,
-            contentType,
-            data: buffer
-        };
-    } catch (error) {
-        console.error(`MuAPI Proxy error for ${url}:`, error);
-        throw error;
-    }
-}
-
-/**
- * A centralized handler for Next.js API routes or middleware.
- */
-export async function handleServerSideProxy(prefix, request, params) {
-    try {
-        const slug = await params;
-        const pathSegments = slug.path || [];
-        const path = pathSegments.join('/');
-
-        const method = request.method;
-        let body = null;
-        if (method !== 'GET' && method !== 'HEAD') {
-            body = await request.arrayBuffer();
-        }
-
-        const { search } = new URL(request.url);
-        const pathWithSearch = search ? `${path}${search}` : path;
-
-        return await handleProxyRequest(
-            prefix,
-            pathWithSearch,
-            method,
-            request.headers,
-            body
-        );
-    } catch (error) {
-        console.error(`Server proxy failed:`, error);
-        throw error;
-    }
-}
+// R7 audit: `handleProxyRequest` / `handleServerSideProxy` removed. They were
+// dead exports (no callers outside this file) that forwarded every request
+// header — including the browser's `__Host-muapi_key` cookie and any
+// `Authorization` header — to the upstream, contradicting their own security
+// comment. Every live proxy uses the per-route allowlist under `app/api/*`.
 
 export async function calculateDynamicCost(apiKey, taskName, payload) {
     const response = await fetch(`${BASE_URL}/api/v1/app/calculate_dynamic_cost`, {
