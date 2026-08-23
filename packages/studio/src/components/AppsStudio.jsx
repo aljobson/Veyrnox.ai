@@ -146,7 +146,7 @@ export default function AppsStudio() {
 
     setIsRequesting(true);
     try {
-      await registerAppInterest(undefined, selectedApp.name);
+      await registerAppInterest(selectedApp.name);
       setRequestedApps(prev => [...prev, selectedApp.name]);
       toast.success("Got it! We'll send you the template details shortly.");
       setTimeout(() => setSelectedApp(null), 1500);

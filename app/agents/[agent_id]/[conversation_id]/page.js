@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { getApiKeyFromCookieStore } from "@/lib/legacyCookieCutoff";
 import AgentChatClient from "../AgentChatClient";
 
 /**
@@ -91,7 +92,7 @@ async function fetchUserData(apiKey) {
 export default async function AgentConversationPage({ params }) {
   const { agent_id, conversation_id } = await params;
   const cookieStore = await cookies();
-  const apiKey = cookieStore.get("__Host-muapi_key")?.value || cookieStore.get("muapi_key")?.value;
+  const apiKey = getApiKeyFromCookieStore(cookieStore);
 
   const [agentDetails, initialHistory, userData] = await Promise.all([
     fetchAgentDetails(agent_id, apiKey),

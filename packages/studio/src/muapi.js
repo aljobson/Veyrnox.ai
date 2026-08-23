@@ -4,11 +4,9 @@ import { getModelById, getVideoModelById, getI2IModelById, getI2VModelById, getV
 // exclusively by the __Host-muapi_key HttpOnly cookie, which the browser
 // attaches automatically on same-origin fetches/XHRs to /api/*. The Next.js
 // proxy routes strip any client-supplied x-api-key and re-attach the real
-// key from the cookie server-side. The `apiKey` parameter that many exported
-// functions still declare is a dead argument kept for call-site compatibility
-// during the client-state removal; callers may pass anything (or nothing) —
-// nothing is placed on the wire. ponytail: drop the dead arg in a follow-up
-// once every studio call site is updated in one pass.
+// key from the cookie server-side. Every exported helper here has had the
+// legacy `apiKey` positional argument dropped; call sites pass real args
+// only. The proxy is the sole trust boundary that sees the key.
 //
 // In an http(s) browser we route through the host app's proxy (Next.js routes
 // under /api/* re-issue the call server-side) so api.muapi.ai CORS is bypassed.
@@ -28,7 +26,7 @@ function notifyAuthRequired(status, detail) {
     window.dispatchEvent(new CustomEvent('muapi:auth-required', { detail: { status, message: detail } }));
 }
 
-async function pollForResult(requestId, key, maxAttempts = 900, interval = 2000) {
+async function pollForResult(requestId, maxAttempts = 900, interval = 2000) {
     const pollUrl = `${BASE_URL}/api/v1/predictions/${requestId}/result`;
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
         await new Promise(resolve => setTimeout(resolve, interval));
@@ -53,7 +51,7 @@ async function pollForResult(requestId, key, maxAttempts = 900, interval = 2000)
     throw new Error('Generation timed out after polling.');
 }
 
-async function submitAndPoll(endpoint, payload, key, onRequestId, maxAttempts = 60) {
+async function submitAndPoll(endpoint, payload, onRequestId, maxAttempts = 60) {
     const url = `${BASE_URL}/api/v1/${endpoint}`;
     const response = await fetch(url, {
         method: 'POST',
@@ -69,12 +67,12 @@ async function submitAndPoll(endpoint, payload, key, onRequestId, maxAttempts = 
     const requestId = submitData.request_id || submitData.id;
     if (!requestId) return submitData;
     if (onRequestId) onRequestId(requestId);
-    const result = await pollForResult(requestId, key, maxAttempts);
+    const result = await pollForResult(requestId, maxAttempts);
     const outputUrl = result.outputs?.[0] || result.url || result.output?.url;
     return { ...result, url: outputUrl };
 }
 
-export async function generateImage(apiKey, params) {
+export async function generateImage(params) {
     const modelInfo = getModelById(params.model);
     const endpoint = modelInfo?.endpoint || params.model;
     const payload = { prompt: params.prompt };
@@ -90,10 +88,10 @@ export async function generateImage(apiKey, params) {
         payload.image_url = null;
     }
     if (params.seed && params.seed !== -1) payload.seed = params.seed;
-    return submitAndPoll(endpoint, payload, apiKey, params.onRequestId, 60);
+    return submitAndPoll(endpoint, payload, params.onRequestId, 60);
 }
 
-export async function generateI2I(apiKey, params) {
+export async function generateI2I(params) {
     const modelInfo = getI2IModelById(params.model);
     const endpoint = modelInfo?.endpoint || params.model;
     const payload = {};
@@ -113,10 +111,10 @@ export async function generateI2I(apiKey, params) {
     if (modelInfo?.inputs?.name) {
         payload.name = params.name || modelInfo.inputs.name.default;
     }
-    return submitAndPoll(endpoint, payload, apiKey, params.onRequestId, 60);
+    return submitAndPoll(endpoint, payload, params.onRequestId, 60);
 }
 
-export async function generateVideo(apiKey, params) {
+export async function generateVideo(params) {
     const modelInfo = getVideoModelById(params.model);
     const endpoint = modelInfo?.endpoint || params.model;
     const payload = {};
@@ -127,10 +125,10 @@ export async function generateVideo(apiKey, params) {
     if (params.quality) payload.quality = params.quality;
     if (params.mode) payload.mode = params.mode;
     if (params.image_url) payload.image_url = params.image_url;
-    return submitAndPoll(endpoint, payload, apiKey, params.onRequestId, 900);
+    return submitAndPoll(endpoint, payload, params.onRequestId, 900);
 }
 
-export async function generateI2V(apiKey, params) {
+export async function generateI2V(params) {
     const modelInfo = getI2VModelById(params.model);
     const endpoint = modelInfo?.endpoint || params.model;
     const payload = {};
@@ -162,10 +160,10 @@ export async function generateI2V(apiKey, params) {
     if (modelInfo?.inputs?.name) {
         payload.name = params.name || modelInfo.inputs.name.default;
     }
-    return submitAndPoll(endpoint, payload, apiKey, params.onRequestId, 900);
+    return submitAndPoll(endpoint, payload, params.onRequestId, 900);
 }
 
-export async function generateMarketingStudioAd(apiKey, params) {
+export async function generateMarketingStudioAd(params) {
     const endpoint = params.resolution === '1080p' ? 'sd-2-vip-omni-reference-1080p' : 'seedance-2-vip-omni-reference';
     const payload = {
         prompt: params.prompt,
@@ -174,10 +172,10 @@ export async function generateMarketingStudioAd(apiKey, params) {
         images_list: params.images_list || [],
         video_files: params.video_files || []
     };
-    return submitAndPoll(endpoint, payload, apiKey, params.onRequestId, 900);
+    return submitAndPoll(endpoint, payload, params.onRequestId, 900);
 }
 
-export async function processV2V(apiKey, params) {
+export async function processV2V(params) {
     const modelInfo = getV2VModelById(params.model);
     const endpoint = modelInfo?.endpoint || params.model;
     const videoField = modelInfo?.videoField || 'video_url';
@@ -188,10 +186,10 @@ export async function processV2V(apiKey, params) {
     if (modelInfo?.hasPrompt && params.prompt) {
         payload.prompt = params.prompt;
     }
-    return submitAndPoll(endpoint, payload, apiKey, params.onRequestId, 900);
+    return submitAndPoll(endpoint, payload, params.onRequestId, 900);
 }
 
-export async function processRecast(apiKey, params) {
+export async function processRecast(params) {
     const modelInfo = getRecastModelById(params.model);
     const endpoint = modelInfo?.endpoint || params.model;
     const videoField = modelInfo?.videoField || 'video_url';
@@ -205,10 +203,10 @@ export async function processRecast(apiKey, params) {
     if (params.aspect_ratio) {
         payload.aspect_ratio = params.aspect_ratio;
     }
-    return submitAndPoll(endpoint, payload, apiKey, params.onRequestId, 900);
+    return submitAndPoll(endpoint, payload, params.onRequestId, 900);
 }
 
-export async function processLipSync(apiKey, params) {
+export async function processLipSync(params) {
     const modelInfo = getLipSyncModelById(params.model);
     const endpoint = modelInfo?.endpoint || params.model;
     const payload = {};
@@ -218,10 +216,10 @@ export async function processLipSync(apiKey, params) {
     if (modelInfo?.hasPrompt) payload.prompt = params.prompt || '';
     if (params.resolution) payload.resolution = params.resolution;
     if (params.seed !== undefined && params.seed !== -1) payload.seed = params.seed;
-    return submitAndPoll(endpoint, payload, apiKey, params.onRequestId, 900);
+    return submitAndPoll(endpoint, payload, params.onRequestId, 900);
 }
 
-export async function generateAudio(apiKey, params) {
+export async function generateAudio(params) {
     const modelId = params._modelId || params.model;
     const modelInfo = getAudioModelById(modelId);
     const endpoint = modelInfo?.endpoint || modelId;
@@ -232,10 +230,10 @@ export async function generateAudio(apiKey, params) {
             payload[key] = params[key];
         }
     }
-    return submitAndPoll(endpoint, payload, apiKey, params.onRequestId, 900);
+    return submitAndPoll(endpoint, payload, params.onRequestId, 900);
 }
 
-export function uploadFile(apiKey, file, onProgress) {
+export function uploadFile(file, onProgress) {
     return new Promise((resolve, reject) => {
         const url = `${BASE_URL}/api/v1/upload_file`;
         const formData = new FormData();
@@ -284,7 +282,7 @@ export function uploadFile(apiKey, file, onProgress) {
     });
 }
 
-export async function getUserBalance(apiKey) {
+export async function getUserBalance() {
     const response = await fetch(`${BASE_URL}/api/v1/account/balance`, {
         headers: {
             'Content-Type': 'application/json'
@@ -338,7 +336,7 @@ export async function getPublishedWorkflows() {
 };
 
 // Agents — uses direct URL → https://api.muapi.ai/agents/...
-export async function getTemplateAgents(apiKey) {
+export async function getTemplateAgents() {
     const response = await fetch(`${BASE_URL}/agents/templates/agents`, {
         headers: {
             'Content-Type': 'application/json'
@@ -352,7 +350,7 @@ export async function getTemplateAgents(apiKey) {
     return Array.isArray(data) ? data : (data.agents || data.items || []);
 };
 
-export async function getUserAgents(apiKey) {
+export async function getUserAgents() {
     const response = await fetch(`${BASE_URL}/agents/user/agents`, {
         headers: {
             'Content-Type': 'application/json'
@@ -366,7 +364,7 @@ export async function getUserAgents(apiKey) {
     return Array.isArray(data) ? data : (data.agents || data.items || []);
 };
 
-export async function getPublishedAgents(apiKey) {
+export async function getPublishedAgents() {
     // MuAPI: GET /agents/featured/agents
     const response = await fetch(`${BASE_URL}/agents/featured/agents`, {
         headers: {
@@ -382,7 +380,7 @@ export async function getPublishedAgents(apiKey) {
 };
 
 // GET /agents/user/conversations — returns the user's chat history across all agents
-export async function getUserConversations(apiKey) {
+export async function getUserConversations() {
     const response = await fetch(`${BASE_URL}/agents/user/conversations`, {
         headers: {
             'Content-Type': 'application/json'
@@ -522,7 +520,7 @@ export async function getWorkflowData(workflowId) {
     return await response.json();
 };
 
-export async function getNodeSchemas(apiKey, workflowId) {
+export async function getNodeSchemas(workflowId) {
     const response = await fetch(`${BASE_URL}/workflow/${workflowId}/api-node-schemas`, {
         headers: {
             'Content-Type': 'application/json'
@@ -535,7 +533,7 @@ export async function getNodeSchemas(apiKey, workflowId) {
     return await response.json();
 }
 
-export async function runSingleNode(apiKey, workflowId, nodeId, payload) {
+export async function runSingleNode(workflowId, nodeId, payload) {
     const response = await fetch(`${BASE_URL}/workflow/${workflowId}/node/${nodeId}/run`, {
         method: 'POST',
         headers: {
@@ -550,7 +548,7 @@ export async function runSingleNode(apiKey, workflowId, nodeId, payload) {
     return await response.json();
 }
 
-export async function deleteNodeRun(apiKey, nodeRunId) {
+export async function deleteNodeRun(nodeRunId) {
     const response = await fetch(`${BASE_URL}/workflow/node-run/${nodeRunId}`, {
         method: 'DELETE',
         headers: {
@@ -564,7 +562,7 @@ export async function deleteNodeRun(apiKey, nodeRunId) {
     return await response.json();
 }
 
-export async function getNodeStatus(apiKey, runId) {
+export async function getNodeStatus(runId) {
     const response = await fetch(`${BASE_URL}/workflow/run/${runId}/status`, {
         headers: {
             'Content-Type': 'application/json'
@@ -583,7 +581,7 @@ export async function getNodeStatus(apiKey, runId) {
 // `Authorization` header — to the upstream, contradicting their own security
 // comment. Every live proxy uses the per-route allowlist under `app/api/*`.
 
-export async function calculateDynamicCost(apiKey, taskName, payload) {
+export async function calculateDynamicCost(taskName, payload) {
     const response = await fetch(`${BASE_URL}/api/v1/app/calculate_dynamic_cost`, {
         method: 'POST',
         headers: {
@@ -598,7 +596,7 @@ export async function calculateDynamicCost(apiKey, taskName, payload) {
     return await response.json();
 }
 
-export async function registerAppInterest(apiKey, appName) {
+export async function registerAppInterest(appName) {
     const response = await fetch(`${BASE_URL}/app/interest`, {
         method: 'POST',
         headers: {
@@ -613,7 +611,7 @@ export async function registerAppInterest(apiKey, appName) {
     return await response.json();
 }
 
-export async function getAppInterests(apiKey) {
+export async function getAppInterests() {
     const response = await fetch(`${BASE_URL}/app/interests`, {
         headers: {
             'Content-Type': 'application/json'
@@ -626,31 +624,31 @@ export async function getAppInterests(apiKey) {
     return await response.json();
 }
 
-export async function runClipping(apiKey, params) {
+export async function runClipping(params) {
     const payload = {
         video_url: params.video_url,
         num_highlights: params.num_highlights || 3,
         aspect_ratio: params.aspect_ratio || "9:16",
         return_coordinates_only: !!params.return_coordinates_only
     };
-    return submitAndPoll("ai-clipping", payload, apiKey, params.onRequestId, 900);
+    return submitAndPoll("ai-clipping", payload, params.onRequestId, 900);
 }
 
-export async function runMotionGraphics(apiKey, params) {
+export async function runMotionGraphics(params) {
     const payload = {
         prompt: params.prompt,
         aspect_ratio: params.aspect_ratio || "16:9",
         duration_seconds: params.duration_seconds || 6,
     };
-    return submitAndPoll("motion-graphics", payload, apiKey, params.onRequestId, 900);
+    return submitAndPoll("motion-graphics", payload, params.onRequestId, 900);
 }
 
-export async function runMotionGraphicsEdit(apiKey, params) {
+export async function runMotionGraphicsEdit(params) {
     const payload = {
         request_id: params.request_id,
         edit_prompt: params.edit_prompt,
         aspect_ratio: params.aspect_ratio || "16:9",
         duration_seconds: params.duration_seconds || 6,
     };
-    return submitAndPoll("motion-graphics-edit", payload, apiKey, params.onRequestId, 900);
+    return submitAndPoll("motion-graphics-edit", payload, params.onRequestId, 900);
 }
