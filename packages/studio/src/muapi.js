@@ -13,8 +13,12 @@ import { getModelById, getVideoModelById, getI2IModelById, getI2VModelById, getV
 // In an http(s) browser we route through the host app's proxy (Next.js routes
 // under /api/* re-issue the call server-side) so api.muapi.ai CORS is bypassed.
 // SSR (no window) and Electron's file:// renderer call the upstream directly.
+// R7 fix: BASE_URL is the origin (or empty for same-origin) — endpoints below
+// prepend `/api/v1/...` themselves. Previously `/api` here doubled with the
+// endpoint's own `/api/v1/...` producing `/api/api/v1/...` which matched no
+// Next route (silent 404 on every direct client call).
 const BASE_URL = (typeof window !== 'undefined' && window.location?.protocol?.startsWith('http'))
-    ? '/api'
+    ? ''
     : 'https://api.muapi.ai';
 const PROXY_WF_BASE = '/api/workflow';
 

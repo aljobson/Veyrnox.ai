@@ -15,9 +15,10 @@ const CSP = [
   "img-src 'self' data: blob: https:",
   "media-src 'self' data: blob: https:",
   "font-src 'self' data:",
-  // S3 uploads go through /api/upload-binary (same-origin), so the browser
-  // never needs a direct connect to any *.s3.amazonaws.com host.
-  "connect-src 'self' https://api.muapi.ai",
+  // S3 uploads go through /api/upload-binary (same-origin) and every MuAPI
+  // call is proxied through /api/* (same-origin) so the browser never needs
+  // a direct connect to api.muapi.ai or any *.s3.amazonaws.com host.
+  "connect-src 'self'",
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",
