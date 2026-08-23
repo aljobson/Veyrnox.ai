@@ -8,6 +8,53 @@
 
 import { ProviderAdapter, JobSpec, SubmitResult, VerifiedEvent, ProviderResult } from './types';
 
+const FAL_JWKS_URL = 'https://rest.alpha.fal.ai/.well-known/jwks.json';
+const JWKS_TTL_MS = 24 * 60 * 60 * 1000;
+
+// ponytail: per-instance JWKS cache; move to shared KV/Cache if fal rotates faster than 24h.
+let jwksCache: { fetchedAt: number; keys: CryptoKey[] } | null = null;
+
+function b64urlToBytes(s: string): Uint8Array {
+  const pad = s.length % 4 === 0 ? '' : '='.repeat(4 - (s.length % 4));
+  const b64 = (s + pad).replace(/-/g, '+').replace(/_/g, '/');
+  const bin = typeof atob === 'function' ? atob(b64) : Buffer.from(b64, 'base64').toString('binary');
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+function b64ToBytes(s: string): Uint8Array {
+  const bin = typeof atob === 'function' ? atob(s) : Buffer.from(s, 'base64').toString('binary');
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+async function loadFalPublicKeys(): Promise<CryptoKey[]> {
+  const now = Date.now();
+  if (jwksCache && now - jwksCache.fetchedAt < JWKS_TTL_MS) return jwksCache.keys;
+  const res = await fetch(FAL_JWKS_URL);
+  if (!res.ok) throw new Error(`fal JWKS fetch failed: ${res.status}`);
+  const jwks = await res.json() as { keys: Array<Record<string, string>> };
+  const keys: CryptoKey[] = [];
+  for (const jwk of jwks.keys || []) {
+    if (jwk.kty !== 'OKP' || jwk.crv !== 'Ed25519' || !jwk.x) continue;
+    try {
+      const key = await crypto.subtle.importKey(
+        'jwk',
+        { kty: 'OKP', crv: 'Ed25519', x: jwk.x },
+        { name: 'Ed25519' },
+        false,
+        ['verify']
+      );
+      keys.push(key);
+    } catch { /* skip unusable key */ }
+  }
+  if (keys.length === 0) throw new Error('fal JWKS contained no usable Ed25519 keys');
+  jwksCache = { fetchedAt: now, keys };
+  return keys;
+}
+
 export class FalAdapter implements ProviderAdapter {
   private apiKey: string;
   private baseUrl = 'https://api.fal.ai/v1';
@@ -71,9 +118,22 @@ export class FalAdapter implements ProviderAdapter {
     if (!signature) return null;
 
     try {
-      // TODO: Fetch fal JWKS and verify ed25519 signature
-      // For now: parse body and return VerifiedEvent
-      const body = await req.json() as any;
+      const rawBody = new Uint8Array(await req.arrayBuffer());
+      // fal ships base64 (may or may not be url-safe); accept either.
+      const sigBytes = /[-_]/.test(signature) ? b64urlToBytes(signature) : b64ToBytes(signature);
+      if (sigBytes.length !== 64) return null;
+
+      const keys = await loadFalPublicKeys();
+      let verified = false;
+      for (const key of keys) {
+        if (await crypto.subtle.verify({ name: 'Ed25519' }, key, sigBytes, rawBody)) {
+          verified = true;
+          break;
+        }
+      }
+      if (!verified) return null;
+
+      const body = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(rawBody)) as any;
 
       return {
         provider: 'fal',
