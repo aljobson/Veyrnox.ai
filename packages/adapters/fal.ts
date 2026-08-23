@@ -77,10 +77,20 @@ export class FalAdapter implements ProviderAdapter {
     const endpoint = this.modelToEndpoint(job.model_id);
     const url = `${this.baseUrl}${endpoint}`;
 
+    // Reject any job_id that would smuggle URL syntax; then build the webhook
+    // URL via the URL API so parameters are properly encoded and cannot
+    // override existing query params or fragment the URL.
+    if (!/^[A-Za-z0-9._-]{1,128}$/.test(job.job_id)) {
+      throw new Error('fal.ai submit: invalid job_id');
+    }
+    const webhookUrl = new URL(this.webhookUrl);
+    webhookUrl.searchParams.set('provider', 'fal');
+    webhookUrl.searchParams.set('job_id', job.job_id);
+
     const payload = {
       prompt: job.prompt,
       negative_prompt: job.negative_prompt,
-      webhook_url: `${this.webhookUrl}?provider=fal&job_id=${job.job_id}`,
+      webhook_url: webhookUrl.toString(),
       // TODO: Map other params (aspect_ratio, seed, etc.) from job
     };
 

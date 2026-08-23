@@ -74,16 +74,31 @@ export class ReplicateAdapter implements ProviderAdapter {
    */
   async verifyWebhook(req: Request): Promise<VerifiedEvent | null> {
     const signature = req.headers.get('x-replicate-signature');
-    if (!signature) return null;
+    const timestamp = req.headers.get('x-replicate-timestamp');
+    // Fail closed: both signature and timestamp are required so a captured
+    // webhook cannot be replayed. HMAC input binds the timestamp.
+    if (!signature || !timestamp) return null;
+
+    const tsNum = Number(timestamp);
+    if (!Number.isFinite(tsNum)) return null;
+    const nowSec = Math.floor(Date.now() / 1000);
+    if (Math.abs(nowSec - tsNum) > 300) {
+      console.warn('Replicate webhook timestamp outside 5-min tolerance');
+      return null;
+    }
 
     try {
       const body = await req.text();
       const event = JSON.parse(body);
 
-      // Compute expected signature
+      // Compute expected signature over "{timestamp}.{body}" (same shape as
+      // Stripe) so a captured (timestamp, body, sig) triple stops verifying
+      // once the timestamp window expires. Caller must additionally dedupe
+      // by eventId to defend against in-window replays.
+      const signedContent = `${timestamp}.${body}`;
       const hmac = crypto
         .createHmac('sha256', this.webhookSecret)
-        .update(body)
+        .update(signedContent)
         .digest('hex');
 
       // Constant-time comparison
