@@ -125,7 +125,8 @@ function WorkflowCard({ workflow, onClick, activeTab, onRename, onDelete }) {
   );
 }
 
-export default function WorkflowStudio({ apiKey, isHeaderVisible = true, onToggleHeader }) {
+// SECURITY: no `apiKey` prop — auth flows via the __Host-muapi_key cookie.
+export default function WorkflowStudio({ isHeaderVisible = true, onToggleHeader }) {
   const params = useParams();
   const router = useRouter();
   const slug = params?.slug || [];
@@ -195,9 +196,9 @@ export default function WorkflowStudio({ apiKey, isHeaderVisible = true, onToggl
         
         // Fetch everything in parallel with allSettled so one failure doesn't block the others
         const results = await Promise.allSettled([
-          getWorkflowInputs(apiKey, wfId),
-          getAllNodeSchemas(apiKey, wfId),
-          getWorkflowData(apiKey, wfId)
+          getWorkflowInputs(wfId),
+          getAllNodeSchemas(wfId),
+          getWorkflowData(wfId)
         ]);
 
         // Process Input Schema
@@ -244,7 +245,7 @@ export default function WorkflowStudio({ apiKey, isHeaderVisible = true, onToggl
     }
 
     loadWorkflowDetails();
-  }, [selectedWorkflow?.id, apiKey]);
+  }, [selectedWorkflow?.id]);
 
   const handleCreateWorkflow = useCallback(
     async (fromUrl = false) => {
@@ -257,7 +258,7 @@ export default function WorkflowStudio({ apiKey, isHeaderVisible = true, onToggl
             edges: [],
             data: { nodes: [] },
           };
-          const response = await createWorkflow(apiKey, payload);
+          const response = await createWorkflow(payload);
           // Route to /workflow/[id] so useParams().id works in the builder library
           router.push(`/workflow/${response.workflow_id}/builder`);
           return;
@@ -274,14 +275,14 @@ export default function WorkflowStudio({ apiKey, isHeaderVisible = true, onToggl
         setLoading(false);
       }
     },
-    [apiKey, router],
+    [router],
   );
 
   const handleDeleteWorkflow = async (wfId) => {
     if (!confirm("Are you sure you want to delete this workflow?")) return;
     setIsDeletingId(wfId);
     try {
-      await deleteWorkflow(apiKey, wfId);
+      await deleteWorkflow(wfId);
       setWorkflows((prev) => prev.filter((w) => w.id !== wfId));
     } catch (err) {
       console.error("Delete failed:", err);
@@ -297,7 +298,7 @@ export default function WorkflowStudio({ apiKey, isHeaderVisible = true, onToggl
 
     const wfId = renamingWorkflow.id;
     try {
-      await updateWorkflowName(apiKey, wfId, newWorkflowName);
+      await updateWorkflowName(wfId, newWorkflowName);
       setWorkflows((prev) =>
         prev.map((w) => (w.id === wfId ? { ...w, name: newWorkflowName } : w)),
       );
@@ -377,11 +378,11 @@ export default function WorkflowStudio({ apiKey, isHeaderVisible = true, onToggl
         setLoading(true);
         let data = [];
         if (activeMainTab === "templates") {
-          data = await getTemplateWorkflows(apiKey);
+          data = await getTemplateWorkflows();
         } else if (activeMainTab === "my-workflows") {
-          data = await getUserWorkflows(apiKey);
+          data = await getUserWorkflows();
         } else if (activeMainTab === "published") {
-          data = await getPublishedWorkflows(apiKey);
+          data = await getPublishedWorkflows();
         }
         setWorkflows(data);
       } catch (err) {
@@ -392,7 +393,7 @@ export default function WorkflowStudio({ apiKey, isHeaderVisible = true, onToggl
       }
     }
     loadWorkflows();
-  }, [apiKey, activeMainTab]);
+  }, [activeMainTab]);
 
   const handleRun = async (e) => {
     e.preventDefault();
@@ -412,7 +413,7 @@ export default function WorkflowStudio({ apiKey, isHeaderVisible = true, onToggl
         else inputs[key] = value;
       });
 
-      const data = await executeWorkflow(apiKey, selectedWorkflow.id, inputs);
+      const data = await executeWorkflow(selectedWorkflow.id, inputs);
       setResult(data);
     } catch (err) {
       console.error("Execution failed:", err);

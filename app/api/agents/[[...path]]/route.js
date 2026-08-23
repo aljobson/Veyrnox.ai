@@ -1,16 +1,7 @@
 import { NextResponse } from 'next/server';
+import { getApiKeyFromCookies } from '@/lib/legacyCookieCutoff';
 
 const MUAPI_BASE = 'https://api.muapi.ai';
-const COOKIE_NAME = '__Host-muapi_key';
-const LEGACY_COOKIE_NAME = 'muapi_key';
-
-function getApiKey(request) {
-    // Cookie only — see /api/v1 route for rationale.
-    return (
-        request.cookies.get(COOKIE_NAME)?.value ||
-        request.cookies.get(LEGACY_COOKIE_NAME)?.value
-    );
-}
 
 function cleanHeaders(request) {
     const headers = new Headers(request.headers);
@@ -40,7 +31,7 @@ async function proxy(request, method, pathSegments) {
     const targetUrl = buildTargetUrl(pathSegments, search);
 
     const headers = cleanHeaders(request);
-    const apiKey = getApiKey(request);
+    const apiKey = getApiKeyFromCookies(request);
     if (apiKey) headers.set('x-api-key', apiKey);
 
     const init = { method, headers };

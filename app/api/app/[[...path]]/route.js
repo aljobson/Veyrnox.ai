@@ -1,18 +1,8 @@
 import { NextResponse } from 'next/server';
 import { parseJsonOr502 as sharedParseJsonOr502 } from '@/lib/parseJsonOr502';
+import { getApiKeyFromCookies } from '@/lib/legacyCookieCutoff';
 
 const MUAPI_BASE = 'https://api.muapi.ai';
-const COOKIE_NAME = '__Host-muapi_key';
-const LEGACY_COOKIE_NAME = 'muapi_key';
-
-function getApiKey(request) {
-    // Cookie only. A client-supplied x-api-key header would let anyone use
-    // this proxy as a MuAPI amplifier with an attacker-supplied key.
-    return (
-        request.cookies.get(COOKIE_NAME)?.value ||
-        request.cookies.get(LEGACY_COOKIE_NAME)?.value
-    );
-}
 
 function cleanHeaders(request) {
     const headers = new Headers(request.headers);
@@ -58,7 +48,7 @@ export async function GET(request, { params }) {
     const targetUrl = `${MUAPI_BASE}/app/${effectivePath}${search}`;
 
     const headers = cleanHeaders(request);
-    const apiKey = getApiKey(request);
+    const apiKey = getApiKeyFromCookies(request);
     if (apiKey) headers.set('x-api-key', apiKey);
 
     try {
@@ -95,7 +85,7 @@ export async function POST(request, { params }) {
     const targetUrl = `${MUAPI_BASE}/app/${path}${search}`;
 
     const headers = cleanHeaders(request);
-    const apiKey = getApiKey(request);
+    const apiKey = getApiKeyFromCookies(request);
     if (apiKey) headers.set('x-api-key', apiKey);
 
     try {
@@ -118,7 +108,7 @@ export async function DELETE(request, { params }) {
     const targetUrl = `${MUAPI_BASE}/app/${path}${search}`;
 
     const headers = cleanHeaders(request);
-    const apiKey = getApiKey(request);
+    const apiKey = getApiKeyFromCookies(request);
     if (apiKey) headers.set('x-api-key', apiKey);
 
     try {
@@ -140,7 +130,7 @@ export async function PUT(request, { params }) {
     const targetUrl = `${MUAPI_BASE}/app/${path}${search}`;
 
     const headers = cleanHeaders(request);
-    const apiKey = getApiKey(request);
+    const apiKey = getApiKeyFromCookies(request);
     if (apiKey) headers.set('x-api-key', apiKey);
 
     try {

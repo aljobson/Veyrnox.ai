@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { getApiKeyFromCookies } from '@/lib/legacyCookieCutoff';
 
 // Internal proxy for /api/v1/* -> https://api.muapi.ai/api/v1/*.
 // Replaces the previous middleware-based NextResponse.rewrite() approach,
@@ -8,17 +9,6 @@ import { NextResponse } from 'next/server';
 // segments and take precedence over this catch-all.
 
 const MUAPI_BASE = 'https://api.muapi.ai';
-const COOKIE_NAME = '__Host-muapi_key';
-const LEGACY_COOKIE_NAME = 'muapi_key';
-
-function getApiKey(request) {
-    // Cookie only. Client-supplied Authorization/x-api-key headers would let
-    // an XSS or malicious extension override the server-set HttpOnly cookie.
-    return (
-        request.cookies.get(COOKIE_NAME)?.value ||
-        request.cookies.get(LEGACY_COOKIE_NAME)?.value
-    );
-}
 
 function cleanHeaders(request) {
     const headers = new Headers(request.headers);
@@ -42,7 +32,7 @@ async function proxy(request, method, pathSegments) {
     const targetUrl = `${MUAPI_BASE}/api/v1/${path}${search}`;
 
     const headers = cleanHeaders(request);
-    const apiKey = getApiKey(request);
+    const apiKey = getApiKeyFromCookies(request);
     if (apiKey) headers.set('x-api-key', apiKey);
 
     const init = { method, headers };

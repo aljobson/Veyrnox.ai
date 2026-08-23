@@ -20,9 +20,13 @@ UPLOAD_PROXY_ALLOWED_HOSTS=uploads-prod.your-bucket.s3.eu-west-1.amazonaws.com,u
   immediately (fail-closed). Any request that hits the upload proxy in prod
   without the variable set returns an error to the client instead of silently
   falling back to the broad `*.s3.amazonaws.com` heuristic.
-- **Non-production**: the variable is optional. When unset, the built-in
-  S3 host heuristic (`*.s3.amazonaws.com`, `*.s3.<region>.amazonaws.com`)
-  is used. This is intended only for local development and CI.
+- **When set**: the allowlist **replaces** the default `*.s3.amazonaws.com`
+  heuristic — only the exact hostnames enumerated in the variable are
+  permitted. Union with the S3 heuristic is intentionally disabled so that
+  narrowing the allowlist actually narrows the blast radius.
+- **Non-production and unset**: the built-in S3 host heuristic
+  (`*.s3.amazonaws.com`, `*.s3.<region>.amazonaws.com`) is used as a fallback.
+  This is intended only for local development and CI.
 
 ### What to put in it
 

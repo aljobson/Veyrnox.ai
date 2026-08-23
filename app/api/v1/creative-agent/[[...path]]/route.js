@@ -1,19 +1,7 @@
 import { NextResponse } from 'next/server';
+import { getApiKeyFromCookies } from '@/lib/legacyCookieCutoff';
 
 const MUAPI_BASE = 'https://api.muapi.ai';
-
-// Hard cutoff for the unprefixed legacy cookie fallback. After this instant
-// only the __Host-muapi_key cookie is accepted. Bake in a fixed timestamp so
-// the fallback cannot linger indefinitely across redeploys.
-const LEGACY_COOKIE_CUTOFF_MS = Date.UTC(2026, 7, 23); // 2026-08-23 UTC
-
-function getApiKey(request) {
-    // Cookie only — see /api/v1 route for rationale.
-    const hostCookie = request.cookies.get('__Host-muapi_key')?.value;
-    if (hostCookie) return hostCookie;
-    if (Date.now() >= LEGACY_COOKIE_CUTOFF_MS) return undefined;
-    return request.cookies.get('muapi_key')?.value;
-}
 
 function cleanHeaders(request) {
     const headers = new Headers(request.headers);
@@ -34,7 +22,7 @@ async function proxy(request, method, path) {
     const { search, pathname } = new URL(request.url);
     const targetUrl = `${MUAPI_BASE}/api/v1/creative-agent/${path}${search}`;
     const headers = cleanHeaders(request);
-    const apiKey = getApiKey(request);
+    const apiKey = getApiKeyFromCookies(request);
     if (apiKey) headers.set('x-api-key', apiKey);
 
     const init = { method, headers };
