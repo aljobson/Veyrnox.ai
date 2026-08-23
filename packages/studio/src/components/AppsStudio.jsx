@@ -129,25 +129,24 @@ const dummyAppsData = [
   { thumbnail: "https://cdn.muapi.ai/apps/Lumea_Residence.webp", name: "Lumea Residence", description: "Smart home property management and tenant portal.", icon: FaHome, category: "Real Estate" }
 ];
 
-export default function AppsStudio({ apiKey }) {
+// SECURITY: no `apiKey` prop — auth flows via the __Host-muapi_key cookie.
+export default function AppsStudio() {
   const [selectedApp, setSelectedApp] = useState(null);
   const [isRequesting, setIsRequesting] = useState(false);
   const [requestedApps, setRequestedApps] = useState([]);
 
   useEffect(() => {
-    if (apiKey) {
-      getAppInterests(apiKey)
-        .then(setRequestedApps)
-        .catch(err => console.error("Error fetching interests:", err));
-    }
-  }, [apiKey]);
+    getAppInterests()
+      .then(setRequestedApps)
+      .catch(err => console.error("Error fetching interests:", err));
+  }, []);
 
   const handleRequestAccess = async () => {
-    if (!selectedApp || !apiKey) return;
-    
+    if (!selectedApp) return;
+
     setIsRequesting(true);
     try {
-      await registerAppInterest(apiKey, selectedApp.name);
+      await registerAppInterest(undefined, selectedApp.name);
       setRequestedApps(prev => [...prev, selectedApp.name]);
       toast.success("Got it! We'll send you the template details shortly.");
       setTimeout(() => setSelectedApp(null), 1500);

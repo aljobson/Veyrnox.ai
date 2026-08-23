@@ -186,7 +186,7 @@ export default function WorkflowStudio({ apiKey, isHeaderVisible = true, onToggl
 
   // Dedicated data fetching effect for the active workflow
   useEffect(() => {
-    if (!selectedWorkflow?.id || !apiKey) return;
+    if (!selectedWorkflow?.id) return;
 
     async function loadWorkflowDetails() {
       try {

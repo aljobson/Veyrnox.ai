@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { parseJsonOr502 as sharedParseJsonOr502 } from '@/lib/parseJsonOr502';
 
 const MUAPI_BASE = 'https://api.muapi.ai';
 const COOKIE_NAME = '__Host-muapi_key';
@@ -29,19 +30,7 @@ function cleanHeaders(request) {
     return headers;
 }
 
-async function parseJsonOr502(response, pathname) {
-    const contentType = response.headers.get('content-type') || '';
-    if (!contentType.includes('application/json')) {
-        console.error(`[api/app] upstream non-JSON ${response.status} for ${pathname}`);
-        return { data: { error: 'Bad upstream response' }, status: 502 };
-    }
-    try {
-        return { data: await response.json(), status: response.status };
-    } catch (err) {
-        console.error(`[api/app] JSON parse error for ${pathname}:`, err.message);
-        return { data: { error: 'Bad upstream response' }, status: 502 };
-    }
-}
+const parseJsonOr502 = (response, pathname) => sharedParseJsonOr502(response, pathname);
 
 // GET can return binary (thumbnails, exported files). Forward the body
 // verbatim when upstream signals a non-JSON content-type.
