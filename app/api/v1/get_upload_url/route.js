@@ -1,18 +1,8 @@
 import { NextResponse } from 'next/server';
 import { parseJsonOr502 } from '@/lib/parseJsonOr502';
+import { getApiKeyFromCookies } from '@/lib/legacyCookieCutoff';
 
 const MUAPI_BASE = 'https://api.muapi.ai';
-const COOKIE_NAME = '__Host-muapi_key';
-const LEGACY_COOKIE_NAME = 'muapi_key';
-
-function getApiKey(request) {
-    // Cookie only — client-supplied x-api-key would let anyone use this
-    // proxy as a MuAPI amplifier with an attacker-supplied key.
-    return (
-        request.cookies.get(COOKIE_NAME)?.value ||
-        request.cookies.get(LEGACY_COOKIE_NAME)?.value
-    );
-}
 
 function cleanHeaders(request) {
     const headers = new Headers(request.headers);
@@ -34,7 +24,7 @@ export async function GET(request) {
     const targetUrl = `${MUAPI_BASE}/app/get_file_upload_url${search}`;
 
     const headers = cleanHeaders(request);
-    const apiKey = getApiKey(request);
+    const apiKey = getApiKeyFromCookies(request);
     if (apiKey) headers.set('x-api-key', apiKey);
 
     try {

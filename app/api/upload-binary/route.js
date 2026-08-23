@@ -1,14 +1,6 @@
 import { NextResponse } from 'next/server';
 import { validateUploadProxyTarget } from '../../../lib/uploadProxyTarget';
-
-function getApiKey(request) {
-    // Cookie only — client-supplied x-api-key would let anyone use this
-    // proxy as a MuAPI amplifier with an attacker-supplied key.
-    return (
-        request.cookies.get('__Host-muapi_key')?.value ||
-        request.cookies.get('muapi_key')?.value
-    );
-}
+import { getApiKeyFromCookies } from '@/lib/legacyCookieCutoff';
 
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024; // 10 MB
 
@@ -39,7 +31,7 @@ async function readBodyWithCap(request, maxBytes) {
 }
 
 export async function POST(request) {
-    if (!getApiKey(request)) {
+    if (!getApiKeyFromCookies(request)) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     // Fast reject on an honestly-declared oversized body; the streaming

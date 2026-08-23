@@ -294,7 +294,7 @@ export async function getUserBalance(apiKey) {
     return await response.json();
 }
 
-export async function getTemplateWorkflows(apiKey) {
+export async function getTemplateWorkflows() {
     const response = await fetch(`${BASE_URL}/workflow/get-template-workflows`, {
         headers: {
             'Content-Type': 'application/json'
@@ -307,7 +307,7 @@ export async function getTemplateWorkflows(apiKey) {
     return await response.json();
 };
 
-export async function getUserWorkflows(apiKey) {
+export async function getUserWorkflows() {
     const response = await fetch(`${BASE_URL}/workflow/get-workflow-defs`, {
         headers: {
             'Content-Type': 'application/json'
@@ -320,7 +320,7 @@ export async function getUserWorkflows(apiKey) {
     return await response.json();
 };
 
-export async function getPublishedWorkflows(apiKey) {
+export async function getPublishedWorkflows() {
     const response = await fetch(`${BASE_URL}/workflow/get-published-workflows`, {
         headers: {
             'Content-Type': 'application/json'
@@ -392,7 +392,7 @@ export async function getUserConversations(apiKey) {
     return Array.isArray(data) ? data : [];
 };
 
-export async function createWorkflow(apiKey, payload) {
+export async function createWorkflow(payload) {
     const response = await fetch(`${BASE_URL}/workflow/create`, {
         method: 'POST',
         headers: {
@@ -407,7 +407,7 @@ export async function createWorkflow(apiKey, payload) {
     return await response.json();
 };
 
-export async function updateWorkflowName(apiKey, workflowId, name) {
+export async function updateWorkflowName(workflowId, name) {
     const response = await fetch(`${BASE_URL}/workflow/update-name/${workflowId}`, {
         method: 'POST',
         headers: {
@@ -422,7 +422,7 @@ export async function updateWorkflowName(apiKey, workflowId, name) {
     return await response.json();
 };
 
-export async function deleteWorkflow(apiKey, workflowId) {
+export async function deleteWorkflow(workflowId) {
     const response = await fetch(`${BASE_URL}/workflow/delete-workflow-def/${workflowId}`, {
         method: 'DELETE',
         headers: {
@@ -436,7 +436,7 @@ export async function deleteWorkflow(apiKey, workflowId) {
     return await response.json();
 };
 
-export async function getWorkflowInputs(apiKey, workflowId) {
+export async function getWorkflowInputs(workflowId) {
     const response = await fetch(`${BASE_URL}/workflow/${workflowId}/api-inputs`, {
         headers: {
             'Content-Type': 'application/json'
@@ -449,7 +449,7 @@ export async function getWorkflowInputs(apiKey, workflowId) {
     return await response.json();
 };
 
-export async function executeWorkflow(apiKey, workflowId, inputs) {
+export async function executeWorkflow(workflowId, inputs) {
     const response = await fetch(`${BASE_URL}/workflow/${workflowId}/api-execute`, {
         method: 'POST',
         headers: {
@@ -466,10 +466,10 @@ export async function executeWorkflow(apiKey, workflowId, inputs) {
     if (!runId) return submitData;
     
     // Poll for results
-    return await pollWorkflowResult(runId, apiKey);
+    return await pollWorkflowResult(runId);
 };
 
-async function pollWorkflowResult(runId, apiKey, maxAttempts = 900, interval = 2000) {
+async function pollWorkflowResult(runId, maxAttempts = 900, interval = 2000) {
     const pollUrl = `${BASE_URL}/workflow/run/${runId}/api-outputs`;
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
         await new Promise(resolve => setTimeout(resolve, interval));
@@ -492,7 +492,7 @@ async function pollWorkflowResult(runId, apiKey, maxAttempts = 900, interval = 2
     throw new Error('Workflow timed out after polling.');
 };
 
-export async function getAllNodeSchemas(apiKey, workflowId) {
+export async function getAllNodeSchemas(workflowId) {
     const response = await fetch(`${BASE_URL}/workflow/${workflowId}/node-schemas`, {
         headers: {
             'Content-Type': 'application/json'
@@ -505,7 +505,7 @@ export async function getAllNodeSchemas(apiKey, workflowId) {
     return await response.json();
 };
 
-export async function getWorkflowData(apiKey, workflowId) {
+export async function getWorkflowData(workflowId) {
     const response = await fetch(`${BASE_URL}/workflow/get-workflow-def/${workflowId}`, {
         headers: {
             'Content-Type': 'application/json'
@@ -576,18 +576,21 @@ export async function getNodeStatus(apiKey, runId) {
 /**
  * Handle proxy requests centralizing communication logic with MuAPI.
  * This is used by the server-side entry points.
+ *
+ * SECURITY: This function is bundled into the client build. It intentionally
+ * does NOT accept an api key or set an `x-api-key` header. Auth is injected
+ * by the server-side proxy routes under `app/api/*` using the HttpOnly
+ * `__Host-muapi_key` cookie. Passing an api key from a client-callable path
+ * would leak it into the browser bundle.
  */
-export async function handleProxyRequest(prefix, path, method, headers, body, apiKey) {
+export async function handleProxyRequest(prefix, path, method, headers, body) {
     const url = `${BASE_URL}/${prefix}/${path}`;
-    
+
     const finalHeaders = new Headers(headers);
     finalHeaders.delete('host');
     finalHeaders.delete('connection');
     finalHeaders.delete('content-length'); // Let fetch recalculate this for safety
-
-    if (apiKey) {
-        finalHeaders.set('x-api-key', apiKey);
-    }
+    finalHeaders.delete('x-api-key'); // never trust a client-supplied key
 
     try {
         const response = await fetch(url, {
@@ -614,12 +617,12 @@ export async function handleProxyRequest(prefix, path, method, headers, body, ap
 /**
  * A centralized handler for Next.js API routes or middleware.
  */
-export async function handleServerSideProxy(prefix, request, params, apiKey) {
+export async function handleServerSideProxy(prefix, request, params) {
     try {
         const slug = await params;
         const pathSegments = slug.path || [];
         const path = pathSegments.join('/');
-        
+
         const method = request.method;
         let body = null;
         if (method !== 'GET' && method !== 'HEAD') {
@@ -630,12 +633,11 @@ export async function handleServerSideProxy(prefix, request, params, apiKey) {
         const pathWithSearch = search ? `${path}${search}` : path;
 
         return await handleProxyRequest(
-            prefix, 
-            pathWithSearch, 
-            method, 
-            request.headers, 
-            body, 
-            apiKey
+            prefix,
+            pathWithSearch,
+            method,
+            request.headers,
+            body
         );
     } catch (error) {
         console.error(`Server proxy failed:`, error);
