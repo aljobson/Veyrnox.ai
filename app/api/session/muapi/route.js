@@ -1,9 +1,12 @@
 import { NextResponse } from 'next/server';
-import { getApiKeyFromCookies } from '@/lib/legacyCookieCutoff';
+import { getApiKeyFromCookies } from '@/lib/authCookie';
 
 // __Host- prefix pins the cookie to the exact origin, no subdomain leaks,
 // and requires Secure + Path=/ + no Domain. Do not weaken these.
 const COOKIE_NAME = '__Host-muapi_key';
+// Kept for one release so users still carrying the old unprefixed cookie get
+// it scrubbed on next login/logout. Safe to remove after 2026-12.
+// ponytail: legacy scrub, drop after 2026-12 once telemetry shows no hits.
 const LEGACY_COOKIE_NAME = 'muapi_key';
 const MAX_AGE = 60 * 60 * 24 * 365; // 1 year
 
@@ -27,18 +30,11 @@ function cookieOptions() {
 // (very old) will fail closed here — acceptable for a settings endpoint.
 function requireSameOrigin(request) {
     const site = request.headers.get('sec-fetch-site');
-    // 'same-origin' for fetch from our own pages; 'none' for user-typed URL
-    // (which shouldn't be POSTing JSON anyway).
     return site === 'same-origin';
 }
 
 // Report whether a key is already stored for this session (never returns the key).
-// After the legacy-cookie cutoff the legacy cookie is ignored so the UI does
-// not report `hasKey: true` for a cookie that every proxy will reject.
 export async function GET(request) {
-    // getApiKeyFromCookies enforces the legacy-cookie cutoff so a stale
-    // unprefixed cookie past the deadline reports hasKey:false — UI
-    // re-authenticates instead of desyncing.
     const has = Boolean(getApiKeyFromCookies(request));
     return NextResponse.json({ hasKey: has });
 }

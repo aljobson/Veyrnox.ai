@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import { getApiKeyFromCookieStore } from "@/lib/legacyCookieCutoff";
+import { getApiKeyFromCookieStore } from "@/lib/authCookie";
 import AgentChatClient from "../AgentChatClient";
 
 /**
@@ -19,19 +19,22 @@ const BASE_URL = 'https://api.muapi.ai';
 
 async function fetchAgentDetails(agentId, apiKey) {
   if (!apiKey) return null;
+  // Encode the slug so `?`, `#`, `%` in a user-supplied agentId can't reshape
+  // the upstream URL. Next blocks `/`.
+  const encodedAgentId = encodeURIComponent(agentId);
   try {
     const res = await fetch(
-      `${BASE_URL}/agents/by-slug/${agentId}`,
+      `${BASE_URL}/agents/by-slug/${encodedAgentId}`,
       {
         cache: "no-store",
         headers: { "x-api-key": apiKey },
       }
     );
     if (res.ok) return await res.json();
-    
+
     if (agentId.length > 20) {
       const resId = await fetch(
-        `${BASE_URL}/agents/${agentId}`,
+        `${BASE_URL}/agents/${encodedAgentId}`,
         {
           cache: "no-store",
           headers: { "x-api-key": apiKey },
@@ -47,21 +50,23 @@ async function fetchAgentDetails(agentId, apiKey) {
 
 async function fetchHistory(agentId, conversationId, apiKey) {
   if (!apiKey) return null;
+  const encodedAgentId = encodeURIComponent(agentId);
+  const encodedConversationId = encodeURIComponent(conversationId);
   try {
     // Try by slug first
     const res = await fetch(
-      `${BASE_URL}/agents/by-slug/${agentId}/${conversationId}`,
+      `${BASE_URL}/agents/by-slug/${encodedAgentId}/${encodedConversationId}`,
       {
         cache: "no-store",
         headers: { "x-api-key": apiKey },
       }
     );
     if (res.ok) return await res.json();
-    
+
     // Fallback to direct agent ID if needed
     if (agentId.length > 20) {
       const resId = await fetch(
-        `${BASE_URL}/agents/${agentId}/${conversationId}`,
+        `${BASE_URL}/agents/${encodedAgentId}/${encodedConversationId}`,
         {
           cache: "no-store",
           headers: { "x-api-key": apiKey },
