@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { validateUploadProxyTarget } from '../../../lib/uploadProxyTarget';
-import { getApiKeyFromCookies } from '@/lib/legacyCookieCutoff';
+import { getApiKeyFromCookies } from '@/lib/authCookie';
 
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024; // 10 MB
 
@@ -101,11 +101,12 @@ export async function POST(request) {
 
         if (s3Response.ok || s3Response.status === 204) {
             return new Response(null, { status: 204 });
-        } else {
-            const errorText = await s3Response.text();
-            console.error('S3 Proxy Error:', errorText);
-            return new Response(errorText, { status: s3Response.status });
         }
+        // Log the raw S3 error server-side; never echo it back to the client
+        // (it can leak signed URL fields, bucket/host, and request-id headers).
+        const errorText = await s3Response.text();
+        console.error(`S3 Proxy Error (status ${s3Response.status}):`, errorText);
+        return NextResponse.json({ error: 'Upload failed' }, { status: s3Response.status });
     } catch (error) {
         console.error('Upload Proxy Exception:', error);
         return NextResponse.json({ error: 'Upload failed' }, { status: 500 });

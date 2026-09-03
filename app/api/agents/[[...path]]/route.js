@@ -1,78 +1,31 @@
-import { NextResponse } from 'next/server';
-import { getApiKeyFromCookies } from '@/lib/legacyCookieCutoff';
-
-const MUAPI_BASE = 'https://api.muapi.ai';
-
-function cleanHeaders(request) {
-    const headers = new Headers(request.headers);
-    headers.delete('host');
-    headers.delete('connection');
-    headers.delete('cookie');
-    headers.delete('authorization');
-    headers.delete('x-api-key');
-    headers.delete('x-forwarded-for');
-    headers.delete('x-forwarded-host');
-    headers.delete('x-forwarded-proto');
-    headers.delete('x-forwarded-port');
-    headers.delete('x-real-ip');
-    return headers;
-}
+import { proxyToMuapi } from '@/lib/muapiProxy';
 
 // e.g. GET /api/agents?is_template=true  → https://api.muapi.ai/agents?is_template=true
 // e.g. GET /api/agents/by-slug/foo       → https://api.muapi.ai/agents/by-slug/foo
-function buildTargetUrl(pathSegments, search) {
+function upstreamPath(pathSegments) {
     const path = pathSegments.join('/');
-    const base = `${MUAPI_BASE}/agents`;
-    return path ? `${base}/${path}${search}` : `${base}${search}`;
+    return path ? `/agents/${path}` : '/agents';
 }
 
-async function proxy(request, method, pathSegments) {
-    const { search } = new URL(request.url);
-    const targetUrl = buildTargetUrl(pathSegments, search);
-
-    const headers = cleanHeaders(request);
-    const apiKey = getApiKeyFromCookies(request);
-    if (apiKey) headers.set('x-api-key', apiKey);
-
-    const init = { method, headers };
-    if (method !== 'GET' && method !== 'DELETE' && method !== 'HEAD') {
-        init.body = await request.arrayBuffer();
-    }
-
-    try {
-        const response = await fetch(targetUrl, init);
-        const contentType = response.headers.get('content-type') || '';
-        if (contentType.includes('application/json')) {
-            const data = await response.json();
-            return NextResponse.json(data, { status: response.status });
-        }
-        const body = await response.arrayBuffer();
-        return new Response(body, {
-            status: response.status,
-            headers: { 'content-type': contentType || 'application/octet-stream' },
-        });
-    } catch (error) {
-        console.error(`[agents proxy ${method}] upstream error`);
-        return NextResponse.json({ error: 'Upstream request failed' }, { status: 502 });
-    }
-}
+// forwardBinary: some agent endpoints return non-JSON payloads (e.g. exports).
+const OPTS = { forwardBinary: true };
 
 export async function GET(request, { params }) {
     const { path = [] } = await params;
-    return proxy(request, 'GET', path);
+    return proxyToMuapi(request, upstreamPath(path), 'GET', OPTS);
 }
 
 export async function POST(request, { params }) {
     const { path = [] } = await params;
-    return proxy(request, 'POST', path);
+    return proxyToMuapi(request, upstreamPath(path), 'POST', OPTS);
 }
 
 export async function PUT(request, { params }) {
     const { path = [] } = await params;
-    return proxy(request, 'PUT', path);
+    return proxyToMuapi(request, upstreamPath(path), 'PUT', OPTS);
 }
 
 export async function DELETE(request, { params }) {
     const { path = [] } = await params;
-    return proxy(request, 'DELETE', path);
+    return proxyToMuapi(request, upstreamPath(path), 'DELETE', OPTS);
 }

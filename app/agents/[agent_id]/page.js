@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import { getApiKeyFromCookieStore } from "@/lib/legacyCookieCutoff";
+import { getApiKeyFromCookieStore } from "@/lib/authCookie";
 import AgentChatClient from "./AgentChatClient";
 
 /**
@@ -21,23 +21,26 @@ const BASE_URL = 'https://api.muapi.ai';
 async function fetchAgentDetails(agentId, apiKey) {
   if (!apiKey) return null;
   
+  // Encode the slug so `?`, `#`, `%` etc. in a user-supplied agentId cannot
+  // reshape the upstream URL (query-string injection). Next blocks `/`.
+  const encodedAgentId = encodeURIComponent(agentId);
   // Try fetching by slug first
   try {
     console.log(`[AgentPage] Fetching agent by slug: ${agentId}`);
     const res = await fetch(
-      `${BASE_URL}/agents/by-slug/${agentId}`,
+      `${BASE_URL}/agents/by-slug/${encodedAgentId}`,
       {
         cache: "no-store",
         headers: { "x-api-key": apiKey },
       }
     );
     if (res.ok) return await res.json();
-    
+
     // If by-slug fails, try fetching by direct ID (if it looks like a UUID)
     if (agentId.length > 20) {
       console.log(`[AgentPage] Fetch by slug failed, trying by ID: ${agentId}`);
       const resId = await fetch(
-        `${BASE_URL}/agents/${agentId}`,
+        `${BASE_URL}/agents/${encodedAgentId}`,
         {
           cache: "no-store",
           headers: { "x-api-key": apiKey },

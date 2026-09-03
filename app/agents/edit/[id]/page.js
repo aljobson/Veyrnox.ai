@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import { getApiKeyFromCookieStore } from "@/lib/legacyCookieCutoff";
+import { getApiKeyFromCookieStore } from "@/lib/authCookie";
 import AgentEditClient from "./AgentEditClient";
 
 const BASE_URL = 'https://api.muapi.ai';
