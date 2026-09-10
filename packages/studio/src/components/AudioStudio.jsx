@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { generateAudio, uploadFile } from "../muapi.js";
 import { audioModels, getAudioModelById } from "../models.js";
+import { showError, showValidation, showSuccess, showInfo } from "../lib/errorToast";
 
 // ---------------------------------------------------------------------------
 // Upload button states
@@ -86,7 +87,7 @@ function AudioFileUploader({ label, value, onChange, apiKey }) {
     if (!file) return;
 
     if (file.size > 20 * 1024 * 1024) {
-      alert("Audio file exceeds 20MB limit.");
+      showValidation("Audio file exceeds 20MB limit.");
       return;
     }
 
@@ -102,7 +103,7 @@ function AudioFileUploader({ label, value, onChange, apiKey }) {
       onChange(url);
     } catch (err) {
       setUploadState(UPLOAD_STATE.IDLE);
-      alert(`Upload failed: ${err.message}`);
+      showError(err, "Upload failed");
     } finally {
       setProgress(0);
     }
@@ -574,7 +575,7 @@ export default function AudioStudio({
             .then(url => {
               setParams(prev => ({ ...prev, [key]: url }));
             })
-            .catch(err => alert(`Failed to upload dropped file: ${err.message}`));
+            .catch(err => showError(err, "Failed to upload dropped file"));
         } else if (firstAudioListField) {
           const [key] = firstAudioListField;
           uploadFile(audioFiles[0], () => {})
@@ -585,7 +586,7 @@ export default function AudioStudio({
                 return { ...prev, [key]: currentList };
               });
             })
-            .catch(err => alert(`Failed to upload dropped file: ${err.message}`));
+            .catch(err => showError(err, "Failed to upload dropped file"));
         }
       }
       onFilesHandled?.();
@@ -611,7 +612,7 @@ export default function AudioStudio({
     if (selectedModel.required) {
       for (const field of selectedModel.required) {
         if (!params[field] || (Array.isArray(params[field]) && params[field].length === 0)) {
-          alert(`Please complete the required field: ${selectedModel.inputs?.[field]?.title || field}`);
+          showValidation(`Please complete the required field: ${selectedModel.inputs?.[field]?.title || field}`);
           return;
         }
       }

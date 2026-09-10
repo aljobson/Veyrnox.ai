@@ -16,6 +16,7 @@ import {
   getDefaultEffectForI2IModel,
   getI2IModelById,
 } from "../models.js";
+import { showError, showValidation, showSuccess, showInfo } from "../lib/errorToast";
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -116,9 +117,7 @@ function UploadButton({ apiKey, maxImages, onSelect, onClear, initialUrls = [], 
     const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
     const tooLarge = files.filter((f) => f.size > MAX_IMAGE_SIZE);
     if (tooLarge.length > 0) {
-      alert(
-        `The following images are too large (max 10MB): ${tooLarge.map((f) => f.name).join(", ")}`,
-      );
+      showValidation(`The following images are too large (max 10MB): ${tooLarge.map((f) => f.name).join(", ")}`);
       return;
     }
 
@@ -173,7 +172,7 @@ function UploadButton({ apiKey, maxImages, onSelect, onClear, initialUrls = [], 
         }),
       );
     } catch (err) {
-      alert(`Image upload failed: ${err.message}`);
+      showError(err, "Image upload failed");
     } finally {
       setUploading(false);
       setLastUploadProgress(0);
@@ -869,9 +868,7 @@ export default function ImageStudio({
     const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
     const tooLarge = files.filter((f) => f.size > MAX_IMAGE_SIZE);
     if (tooLarge.length > 0) {
-      alert(
-        `The following images are too large (max 10MB): ${tooLarge.map((f) => f.name).join(", ")}`
-      );
+      showValidation(`The following images are too large (max 10MB): ${tooLarge.map((f) => f.name).join(", ")}`);
       return;
     }
 
@@ -896,7 +893,7 @@ export default function ImageStudio({
 
       handleUploadSelect({ urls });
     } catch (err) {
-      alert(`Image upload failed: ${err.message}`);
+      showError(err, "Image upload failed");
     } finally {
       setGenerating(false);
     }
@@ -1032,17 +1029,17 @@ export default function ImageStudio({
 
     if (imageMode) {
       if (uploadedImageUrls.length === 0) {
-        alert("Please upload a reference image first.");
+        showValidation("Please upload a reference image first.");
         return;
       }
       const modelInfo = getI2IModelById(selectedModelId);
       if (modelInfo?.swapField && !swapImageUrl) {
-        alert("Please upload a swap face image.");
+        showValidation("Please upload a swap face image.");
         return;
       }
     } else {
       if (!prompt.trim()) {
-        alert("Please enter a prompt to generate an image.");
+        showValidation("Please enter a prompt to generate an image.");
         return;
       }
     }

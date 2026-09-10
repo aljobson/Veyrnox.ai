@@ -15,6 +15,7 @@ import {
   getWorkflowData,
 } from "../muapi.js";
 import dynamic from "next/dynamic";
+import { showError, showValidation, showSuccess, showInfo } from "../lib/errorToast";
 
 const WorkflowUI = dynamic(() => import("./WorkflowUI"), {
   ssr: false,
@@ -286,7 +287,7 @@ export default function WorkflowStudio({ isHeaderVisible = true, onToggleHeader 
       setWorkflows((prev) => prev.filter((w) => w.id !== wfId));
     } catch (err) {
       console.error("Delete failed:", err);
-      alert("Failed to delete workflow");
+      showError(null, "Failed to delete workflow");
     } finally {
       setIsDeletingId(null);
     }
@@ -308,7 +309,7 @@ export default function WorkflowStudio({ isHeaderVisible = true, onToggleHeader 
       setRenamingWorkflow(null);
     } catch (err) {
       console.error("Rename failed:", err);
-      alert("Failed to rename workflow");
+      showError(null, "Failed to rename workflow");
     }
   };
 

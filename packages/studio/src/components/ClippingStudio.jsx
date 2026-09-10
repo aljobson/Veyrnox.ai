@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { runClipping, uploadFile } from "../muapi.js";
+import { showError, showValidation, showSuccess, showInfo } from "../lib/errorToast";
 
 // ---------------------------------------------------------------------------
 // Inline SVG Icons
@@ -222,7 +223,7 @@ export default function ClippingStudio({
           })
           .catch(err => {
             setVideoUploading(false);
-            alert(`Failed to upload dropped file: ${err.message}`);
+            showError(err, "Failed to upload dropped file");
           });
       }
       onFilesHandled?.();
@@ -261,7 +262,7 @@ export default function ClippingStudio({
   // ── Copy Link & Download Helpers ─────────────────────────────────────────
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text);
-    alert("URL copied to clipboard!");
+    showSuccess("URL copied to clipboard!");
   };
 
   const downloadVideo = async (url, title = "clipped_video") => {
@@ -294,7 +295,7 @@ export default function ClippingStudio({
     const file = e.target.files[0];
     if (!file) return;
     if (file.size > 100 * 1024 * 1024) {
-      alert("Video exceeds 100MB limit.");
+      showValidation("Video exceeds 100MB limit.");
       return;
     }
     setVideoUploading(true);
@@ -306,7 +307,7 @@ export default function ClippingStudio({
       setVideoUrl(url);
     } catch (err) {
       console.error("[ClippingStudio] Video upload failed:", err);
-      alert(`Video upload failed: ${err.message}`);
+      showError(err, "Video upload failed");
     } finally {
       setVideoUploading(false);
       setVideoProgress(0);
@@ -321,7 +322,7 @@ export default function ClippingStudio({
   // ── Dispatch Run / Call submitAndPoll ────────────────────────────────────
   const handleGenerate = async () => {
     if (!videoUrl) {
-      alert("Please upload a video or paste a video URL first.");
+      showValidation("Please upload a video or paste a video URL first.");
       return;
     }
 

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { generateImage, uploadFile } from "../muapi.js";
+import { showError, showValidation, showSuccess, showInfo } from "../lib/errorToast";
 
 // ─── Constants (inlined from promptUtils) ───────────────────────────────────
 
@@ -632,7 +633,7 @@ export default function CinemaStudio({
       }
     } catch (e) {
       console.error(e);
-      alert("Generation Failed: " + e.message);
+      showError(e, "Generation Failed");
     } finally {
       setIsGenerating(false);
     }

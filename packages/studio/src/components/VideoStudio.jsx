@@ -17,6 +17,7 @@ import {
   getModesForModel,
   getMaxImagesForI2VModel,
 } from "../models.js";
+import { showError, showValidation, showSuccess, showInfo } from "../lib/errorToast";
 
 // ── tiny helpers ──────────────────────────────────────────────────────────────
 
@@ -562,7 +563,7 @@ export default function VideoStudio({
 
   const processDroppedImage = async (file) => {
     if (file.size > 10 * 1024 * 1024) {
-      alert("Image exceeds 10MB limit.");
+      showValidation("Image exceeds 10MB limit.");
       return;
     }
     setImageUploading(true);
@@ -601,7 +602,7 @@ export default function VideoStudio({
       }
       setPromptDisabled(false);
     } catch (err) {
-      alert(`Image upload failed: ${err.message}`);
+      showError(err, "Image upload failed");
     } finally {
       setImageUploading(false);
       setImageProgress(0);
@@ -610,7 +611,7 @@ export default function VideoStudio({
 
   const processDroppedVideo = async (file) => {
     if (file.size > 50 * 1024 * 1024) {
-      alert("Video exceeds 50MB limit.");
+      showValidation("Video exceeds 50MB limit.");
       return;
     }
     setVideoUploading(true);
@@ -633,7 +634,7 @@ export default function VideoStudio({
       setPrompt("");
       setPromptDisabled(true);
     } catch (err) {
-      alert(`Video upload failed: ${err.message}`);
+      showError(err, "Video upload failed");
     } finally {
       setVideoUploading(false);
       setVideoProgress(0);
@@ -688,7 +689,7 @@ export default function VideoStudio({
     const file = e.target.files[0];
     if (!file) return;
     if (file.size > 10 * 1024 * 1024) {
-      alert("Image exceeds 10MB limit.");
+      showValidation("Image exceeds 10MB limit.");
       return;
     }
     setImageUploading(true);
@@ -737,7 +738,7 @@ export default function VideoStudio({
       }
     } catch (err) {
       console.error("[VideoStudio] Image upload failed:", err);
-      alert(`Image upload failed: ${err.message}`);
+      showError(err, "Image upload failed");
     } finally {
       setImageUploading(false);
       setImageProgress(0);
@@ -782,7 +783,7 @@ export default function VideoStudio({
     const file = e.target.files[0];
     if (!file) return;
     if (file.size > 10 * 1024 * 1024) {
-      alert("Image exceeds 10MB limit.");
+      showValidation("Image exceeds 10MB limit.");
       return;
     }
     setEndImageUploading(true);
@@ -793,7 +794,7 @@ export default function VideoStudio({
       });
       setUploadedEndImageUrl(url);
     } catch (err) {
-      alert(`End frame upload failed: ${err.message}`);
+      showError(err, "End frame upload failed");
     } finally {
       setEndImageUploading(false);
       setEndImageProgress(0);
@@ -808,7 +809,7 @@ export default function VideoStudio({
     const file = e.target.files[0];
     if (!file) return;
     if (file.size > 50 * 1024 * 1024) {
-      alert("Video exceeds 50MB limit.");
+      showValidation("Video exceeds 50MB limit.");
       return;
     }
     setVideoUploading(true);
@@ -839,7 +840,7 @@ export default function VideoStudio({
       }
     } catch (err) {
       console.error("[VideoStudio] Video upload failed:", err);
-      alert(`Video upload failed: ${err.message}`);
+      showError(err, "Video upload failed");
     } finally {
       setVideoUploading(false);
       setVideoProgress(0);
@@ -915,40 +916,38 @@ export default function VideoStudio({
 
     if (v2vMode) {
       if (!uploadedVideoUrl) {
-        alert("Please upload a video first.");
+        showValidation("Please upload a video first.");
         return;
       }
       if (currentModel?.imageField && !uploadedImageUrl) {
-        alert("Please upload a reference image for motion control.");
+        showValidation("Please upload a reference image for motion control.");
         return;
       }
       if (currentModel?.promptRequired && !trimmedPrompt) {
-        alert("Please describe the motion you want.");
+        showValidation("Please describe the motion you want.");
         return;
       }
     } else if (isExtendMode) {
       if (!lastGenerationId) {
-        alert(
-          "No Seedance 2.0 generation found to extend. Generate a video first.",
-        );
+        showValidation("No Seedance 2.0 generation found to extend. Generate a video first.",);
         return;
       }
     } else if (imageMode) {
       const maxImgs = getMaxImagesForI2VModel(selectedModel);
       if (maxImgs > 2) {
         if (uploadedImageUrls.length === 0) {
-          alert("Please upload at least one reference image first.");
+          showValidation("Please upload at least one reference image first.");
           return;
         }
       } else {
         if (!uploadedImageUrl) {
-          alert("Please upload a start frame image first.");
+          showValidation("Please upload a start frame image first.");
           return;
         }
       }
     } else {
       if (!trimmedPrompt) {
-        alert("Please enter a prompt to generate a video.");
+        showValidation("Please enter a prompt to generate a video.");
         return;
       }
     }

@@ -7,6 +7,7 @@ import {
   getRecastModelById,
   getAspectRatiosForRecastModel,
 } from "../models.js";
+import { showError, showValidation, showSuccess, showInfo } from "../lib/errorToast";
 
 // ---------------------------------------------------------------------------
 // Upload button states
@@ -374,7 +375,7 @@ export default function RecastStudio({
   const handleVideoPick = useCallback(
     async (file) => {
       if (file.size > 50 * 1024 * 1024) {
-        alert("Video exceeds 50MB limit.");
+        showValidation("Video exceeds 50MB limit.");
         return;
       }
       setVideoState(UPLOAD_STATE.UPLOADING);
@@ -386,7 +387,7 @@ export default function RecastStudio({
         setVideoState(UPLOAD_STATE.READY);
       } catch (err) {
         setVideoState(UPLOAD_STATE.IDLE);
-        alert(`Video upload failed: ${err.message}`);
+        showError(err, "Video upload failed");
       } finally {
         setVideoProgress(0);
       }
@@ -397,7 +398,7 @@ export default function RecastStudio({
   const handleImageUpload = useCallback(
     async (file) => {
       if (file.size > 10 * 1024 * 1024) {
-        alert("Image exceeds 10MB limit.");
+        showValidation("Image exceeds 10MB limit.");
         return;
       }
       setImageState(UPLOAD_STATE.UPLOADING);
@@ -409,7 +410,7 @@ export default function RecastStudio({
         setImageState(UPLOAD_STATE.READY);
       } catch (err) {
         setImageState(UPLOAD_STATE.IDLE);
-        alert(`Image upload failed: ${err.message}`);
+        showError(err, "Image upload failed");
       } finally {
         setImageProgress(0);
       }
@@ -462,11 +463,11 @@ export default function RecastStudio({
   // ── Generation ──────────────────────────────────────────────────────────────
   const handleGenerate = async () => {
     if (!videoUrl) {
-      alert("Please upload a source video first.");
+      showValidation("Please upload a source video first.");
       return;
     }
     if (!imageUrl) {
-      alert("Please upload a character image first.");
+      showValidation("Please upload a character image first.");
       return;
     }
 
