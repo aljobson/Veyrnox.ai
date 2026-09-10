@@ -1,10 +1,13 @@
 # ADR-0001 — Authentication provider
 
-- **Status**: Proposed
+- **Status**: Superseded by [ADR-0004](004-auth-and-db-bundle.md)
 - **Date**: 2026-09-10
 - **Deciders**: Product owner (approver), Architect, Security reviewer
 - **Blocks**: ADR-0002 (Postgres host — Supabase bundles auth so the choice collapses), all Phase 1 work
 - **Related**: architecture.md §9.2, §11.2, §14
+
+> **Superseded by [ADR-0004 — Auth + Postgres bundle](0004-auth-and-db-bundle.md).**
+> The original ADR-0001 and ADR-0002 were circular — each recommended a choice contingent on the other. ADR-0004 is the honest, bundled form of that decision and adds Cloudflare D1, MFA-day-one, and anonymous-signup considerations that were missing here. This file is kept for history; do not act on its recommendation.
 
 ## Context
 
