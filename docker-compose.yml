@@ -1,18 +1,5 @@
-# Docker Compose for local Veyrnox development.
-#
-# `app` — the container build for the Next.js production image (upstream default).
-# `postgres` — local Postgres for Phase 1 ledger / catalog / jobs development
-#   and acceptance tests. Port 54329 (not default 5432) to avoid clashing with
-#   a Postgres a developer already has running.
-#
-# Usage:
-#   docker compose up -d postgres            # just the DB
-#   DATABASE_URL=postgres://veyrnox:veyrnox_dev@localhost:54329/veyrnox \
-#     node scripts/migrate.mjs               # apply packages/db/schema/*.sql
-#   npm run test:ledger                      # run acceptance tests
-
 services:
-  app:
+  open-generative-ai:
     build: .
     container_name: open-generative-ai
     ports:
@@ -20,23 +7,3 @@ services:
     environment:
       - NODE_ENV=production
     restart: unless-stopped
-
-  postgres:
-    image: postgres:16-alpine
-    container_name: veyrnox-pg
-    environment:
-      POSTGRES_USER: veyrnox
-      POSTGRES_PASSWORD: veyrnox_dev
-      POSTGRES_DB: veyrnox
-    ports:
-      - "54329:5432"
-    volumes:
-      - veyrnox_pg_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U veyrnox -d veyrnox"]
-      interval: 2s
-      timeout: 2s
-      retries: 30
-
-volumes:
-  veyrnox_pg_data:
