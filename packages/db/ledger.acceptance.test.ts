@@ -45,11 +45,23 @@ describe("Ledger acceptance", { skip: !DATABASE_URL && "DATABASE_URL not set" },
             `INSERT INTO users (clerk_id, email) VALUES ($1, $2) RETURNING id`,
             [clerkId, email]
         );
-        const userId = insU.rows[0].id;
-        await pool.query(
-            `INSERT INTO credit_balances (user_id, balance) VALUES ($1, $2)`,
-            [userId, startingCredits]
-        );
+        const userId: string = insU.rows[0].id;
+        // Route the starting balance through ledger.grant so the
+        // `balance = SUM(delta)` invariant holds from the first row.
+        // ledger.grant creates the credit_balances row on first grant.
+        if (startingCredits > 0) {
+            await ledger.grant({
+                user_id: userId,
+                credits: startingCredits,
+                reason: "grant:test_seed",
+                source_event_id: `seed-${randomUUID()}`,
+            });
+        } else {
+            await pool.query(
+                `INSERT INTO credit_balances (user_id, balance) VALUES ($1, 0)`,
+                [userId]
+            );
+        }
         return userId;
     }
 
