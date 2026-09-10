@@ -11172,7 +11172,9 @@ export const i2iModels = [
         "type": "string",
         "title": "API Key",
         "name": "api_key",
-        "description": "API key for authentication",
+        "format": "password",
+        "sensitive": true,
+        "description": "API key for the wavespeed model. Forwarded to MuAPI; never leaves your session unmasked. Do not paste an unrelated provider key here.",
         "examples": [
           ""
         ]
