@@ -5,6 +5,7 @@ on:
     paths:
       - "packages/db/**"
       - "packages/catalog/**"
+      - "packages/auth/**"
       - "scripts/migrate.mjs"
       - "package.json"
       - "package-lock.json"
@@ -14,6 +15,7 @@ on:
     paths:
       - "packages/db/**"
       - "packages/catalog/**"
+      - "packages/auth/**"
       - "scripts/migrate.mjs"
 
 jobs:
@@ -50,10 +52,13 @@ jobs:
       # packages fail without their private origins). pg and tsx are all we
       # need to migrate + run the acceptance tests.
       - name: Install pg + tsx
-        run: npm install --no-save --no-audit --no-fund pg@^8.13.0 tsx@^4.19.2
+        run: npm install --no-save --no-audit --no-fund pg@^8.13.0 tsx@^4.19.2 jose@^5.9.6
 
       - name: Run catalog margin-floor tests
         run: npx tsx --test packages/catalog/margin-validator.test.ts
+
+      - name: Run auth JWT verifier tests
+        run: npx tsx --test packages/auth/verify.test.ts
 
       - name: Apply migrations
         run: node scripts/migrate.mjs

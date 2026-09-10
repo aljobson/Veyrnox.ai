@@ -46,12 +46,35 @@ Each slice is one PR-sized unit. Ship in order. Slice N cannot merge before slic
 - Margin-floor validator: `packages/catalog/margin-validator.ts` — CI check that every `credit_price × conversion_rate ≥ provider_cost × (1 + margin_floor)`
 - **Exit gate:** CI job that fails if any row breaches margin floor. Currently requires the pricing hypothesis to be filled in.
 
-### Slice 3 — Auth (Clerk) — needs vendor account
-- Clerk project created (US region unless data residency says EU)
-- `middleware.ts` at repo root: Clerk JWT verification for `/api/v1/*` routes
-- Clerk webhook `POST /api/webhook/clerk` inserts a `users` row on user.created
-- Existing `__Host-muapi_key` route deprecated — sunset banner + 30-day dual-run
-- **Exit gate:** signup + login flow works; users appear in Postgres `users` table
+### Slice 3 — Auth (Supabase per ADR-0006)
+
+Sub-slice 3a (this PR, ships without a vendor account):
+- `packages/auth/` — Supabase JWT verifier (`verifyToken` / `verifyRequest`)
+  using `jose`. Works in Cloudflare Workers via Web Crypto.
+- `verify.test.ts` unit tests cover happy path, wrong secret, wrong
+  issuer, expired token, Bearer header, cookie fallback, SSR JSON-array
+  cookie shape.
+- Schema: `users.clerk_id` → `users.auth_id` (was named for the earlier
+  Clerk plan; Supabase's `auth.users.id` fills this).
+- RLS policies migration lives at `packages/db/schema/supabase/0003_rls_policies.sql`
+  — Supabase-only (uses `auth.uid()` / `auth.role()`). Local Postgres
+  ignores it; a future migration script applies both dirs against Supabase.
+- `.env.example` gets `SUPABASE_URL`, `SUPABASE_JWT_SECRET`,
+  `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`,
+  `SUPABASE_WEBHOOK_SIGNING_SECRET`.
+
+Sub-slice 3b (blocked on Supabase provisioning):
+- `middleware.ts` at repo root — gates `/api/v1/*` on a verified JWT,
+  forwards `x-veyrnox-auth-id` header downstream.
+- Supabase webhook `POST /api/webhook/supabase` inserts a `users` row
+  on `user.created`, emits a 50-credit `grant:signup` via Ledger.grant.
+- Existing `__Host-muapi_key` route deprecated — sunset banner + 30-day
+  dual-run.
+
+- **Exit gate (3a):** JWT verifier unit tests pass; users.auth_id rename
+  landed; RLS policies file present.
+- **Exit gate (3b):** signup + login flow works against a real Supabase
+  project; users appear in Postgres `users` table via the webhook.
 
 ### Slice 4 — Neon Postgres + Hyperdrive — needs vendor account
 - Neon project created (region per data-residency decision)

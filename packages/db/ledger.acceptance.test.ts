@@ -39,11 +39,11 @@ describe("Ledger acceptance", { skip: !DATABASE_URL && "DATABASE_URL not set" },
 
     /** Fresh isolated user per test — no cross-test contamination. */
     async function makeUser(startingCredits = 0) {
-        const clerkId = `clerk_${randomUUID()}`;
+        const authId = `sb_${randomUUID()}`;
         const email = `${randomUUID()}@test.veyrnox.ai`;
         const insU = await pool.query(
-            `INSERT INTO users (clerk_id, email) VALUES ($1, $2) RETURNING id`,
-            [clerkId, email]
+            `INSERT INTO users (auth_id, email) VALUES ($1, $2) RETURNING id`,
+            [authId, email]
         );
         const userId: string = insU.rows[0].id;
         // Route the starting balance through ledger.grant so the

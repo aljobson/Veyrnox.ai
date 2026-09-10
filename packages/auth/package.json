@@ -1,0 +1,14 @@
+{
+  "name": "@veyrnox/auth",
+  "version": "0.1.0",
+  "description": "Supabase JWT verification for Cloudflare Workers (Phase 1 slice 3)",
+  "private": true,
+  "type": "module",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./verify": "./verify.ts",
+    "./types": "./types.ts"
+  }
+}
