@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - "packages/db/**"
+      - "packages/catalog/**"
       - "scripts/migrate.mjs"
       - "package.json"
       - "package-lock.json"
@@ -12,6 +13,7 @@ on:
     branches: [main]
     paths:
       - "packages/db/**"
+      - "packages/catalog/**"
       - "scripts/migrate.mjs"
 
 jobs:
@@ -49,6 +51,9 @@ jobs:
       # need to migrate + run the acceptance tests.
       - name: Install pg + tsx
         run: npm install --no-save --no-audit --no-fund pg@^8.13.0 tsx@^4.19.2
+
+      - name: Run catalog margin-floor tests
+        run: npx tsx --test packages/catalog/margin-validator.test.ts
 
       - name: Apply migrations
         run: node scripts/migrate.mjs
