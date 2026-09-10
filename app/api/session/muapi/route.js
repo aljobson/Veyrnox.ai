@@ -34,31 +34,58 @@ function requireSameOrigin(request) {
 }
 
 // Report whether a key is already stored for this session (never returns the key).
+
+// ────────────────────────────────────────────────────────────────────────
+// DEPRECATION BANNER (added Slice 3b, 2026-09-10)
+//
+// This bring-your-own-MuAPI-key session route is superseded by the
+// Supabase auth + gateway ledger. It runs in a 30-day dual-run window;
+// sunset date is 2026-10-10. After the sunset, this route returns 410
+// Gone. Existing cookie holders should complete a Supabase signup
+// before then.
+//
+// Every response from this route now carries `Deprecation: true` and
+// `Sunset: Fri, 10 Oct 2026 00:00:00 GMT` (RFC 8594) so clients can
+// surface a migration prompt without polling.
+// ────────────────────────────────────────────────────────────────────────
+
+const DEPRECATION_HEADERS = {
+    Deprecation: 'true',
+    Sunset: 'Fri, 10 Oct 2026 00:00:00 GMT',
+    Link: '</api/webhook/supabase>; rel="successor-version"',
+};
+
+function withDeprecation(response) {
+    for (const [k, v] of Object.entries(DEPRECATION_HEADERS)) response.headers.set(k, v);
+    return response;
+}
+
 export async function GET(request) {
     const has = Boolean(getApiKeyFromCookies(request));
-    return NextResponse.json({ hasKey: has });
+    return withDeprecation(NextResponse.json({ hasKey: has }));
 }
 
 // Save the MuAPI key server-side as an HttpOnly cookie.
 export async function POST(request) {
     if (!requireSameOrigin(request)) {
-        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        return withDeprecation(NextResponse.json({ error: 'Forbidden' }, { status: 403 }));
     }
 
     let body;
     try {
         body = await request.json();
     } catch {
-        return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+        return withDeprecation(NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }));
     }
     const key = typeof body?.key === 'string' ? body.key.trim() : '';
     if (!key) {
-        return NextResponse.json({ error: 'Missing key' }, { status: 400 });
+        return withDeprecation(NextResponse.json({ error: 'Missing key' }, { status: 400 }));
     }
     if (!MUAPI_KEY_REGEX.test(key)) {
-        return NextResponse.json({ error: 'Invalid key format' }, { status: 400 });
+        return withDeprecation(NextResponse.json({ error: 'Invalid key format' }, { status: 400 }));
     }
     const res = NextResponse.json({ ok: true });
+    withDeprecation(res);
     res.cookies.set(COOKIE_NAME, key, cookieOptions());
     // Best-effort scrub of any legacy insecure cookie left over from before
     // the __Host- prefix rollout.
@@ -69,9 +96,10 @@ export async function POST(request) {
 // Clear the cookie.
 export async function DELETE(request) {
     if (!requireSameOrigin(request)) {
-        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        return withDeprecation(NextResponse.json({ error: 'Forbidden' }, { status: 403 }));
     }
     const res = NextResponse.json({ ok: true });
+    withDeprecation(res);
     res.cookies.set(COOKIE_NAME, '', { ...cookieOptions(), maxAge: 0 });
     res.cookies.set(LEGACY_COOKIE_NAME, '', { ...cookieOptions(), maxAge: 0 });
     return res;
