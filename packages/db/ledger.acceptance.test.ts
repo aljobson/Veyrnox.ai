@@ -152,11 +152,13 @@ describe("Ledger acceptance", { skip: !DATABASE_URL && "DATABASE_URL not set" },
         assert.equal(res.code, "INSUFFICIENT_BALANCE");
         assert.equal(await ledger.readBalance(userId), 10, "balance unchanged");
 
+        // makeUser seeded a grant entry, so count only debit-shaped rows.
         const ledgerRows = await pool.query(
-            `SELECT count(*)::int AS n FROM ledger_entries WHERE user_id = $1`,
+            `SELECT count(*)::int AS n FROM ledger_entries
+             WHERE user_id = $1 AND delta < 0`,
             [userId]
         );
-        assert.equal(ledgerRows.rows[0].n, 0, "no ledger entry on failed debit");
+        assert.equal(ledgerRows.rows[0].n, 0, "no debit ledger entry on failed debit");
     });
 
     // §6.4 — Refund returns compensating +delta and restores balance.
