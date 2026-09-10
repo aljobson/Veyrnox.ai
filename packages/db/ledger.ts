@@ -28,7 +28,7 @@ export class Ledger {
   /**
    * Debit user balance for a generation job.
    * 
-   * §25.3 transaction: idempotency guard → lock → debit → outbox.
+   * §25.3 transaction: idempotency guard → lock → debit. Queue emission (job.submit) is Inngest's job, sent by the caller after this Promise resolves — see packages/queue/ (Phase 1 slice 6).
    * Idempotent: same (user_id, idempotency_key) returns existing job, never double-charges.
    * 
    * @throws if user has insufficient balance or database error
@@ -90,20 +90,6 @@ export class Ledger {
         [req.credits, req.user_id]
       );
 
-      // Step 5: Create outbox row for queue relay
-      await conn.query(
-        `INSERT INTO outbox (topic, payload)
-         VALUES ($1, $2)`,
-        [
-          'job.submit',
-          JSON.stringify({
-            job_id: req.job_id,
-            user_id: req.user_id,
-            credits: req.credits,
-          }),
-        ]
-      );
-
       await conn.query('COMMIT');
 
       return {
@@ -121,7 +107,7 @@ export class Ledger {
 
   /**
    * Refund a failed job.
-   * Append a compensating +delta entry, outbox a refund event.
+   * Append a compensating +delta entry. The refund event (job.refunded) is emitted to Inngest by the caller after this Promise resolves.
    */
   async refund(job_id: string, user_id: string, credits: number): Promise<void> {
     const conn = await this.db.getClient();
@@ -142,16 +128,6 @@ export class Ledger {
          SET balance = balance + $1
          WHERE user_id = $2`,
         [credits, user_id]
-      );
-
-      // Outbox refund event
-      await conn.query(
-        `INSERT INTO outbox (topic, payload)
-         VALUES ($1, $2)`,
-        [
-          'job.refund',
-          JSON.stringify({ job_id, user_id, credits }),
-        ]
       );
 
       await conn.query('COMMIT');

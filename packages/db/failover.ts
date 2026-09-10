@@ -44,20 +44,9 @@ export class FailoverManager {
 
     console.log(`Job ${jobId} failover triggered (fal failed: ${error.message})`);
 
-    // Queue failover event for queue to pick up
-    await this.db.query(
-      `INSERT INTO outbox (topic, payload)
-       VALUES ($1, $2)`,
-      [
-        'job.failover',
-        JSON.stringify({
-          job_id: jobId,
-          user_id: userId,
-          provider: 'replicate', // Try Replicate
-          model_id: job.model_id,
-        }),
-      ]
-    );
+    // Caller emits the Inngest `job.failover` event after this Promise
+    // resolves. Payload shape: { job_id, user_id, provider: 'replicate',
+    // model_id }. See packages/queue/ (Phase 1 slice 6).
   }
 
   /**

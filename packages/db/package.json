@@ -1,0 +1,29 @@
+{
+  "name": "@veyrnox/db",
+  "version": "0.1.0",
+  "description": "Veyrnox datastore: ledger, jobs, catalog, R2 URL signing (Phase 1 in progress)",
+  "private": true,
+  "type": "module",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./ledger": "./ledger.ts",
+    "./job-state": "./job-state.ts",
+    "./failover": "./failover.ts",
+    "./grants": "./grants.ts",
+    "./r2-urls": "./r2-urls.ts",
+    "./premium-gating": "./premium-gating.ts",
+    "./presets": "./presets.ts",
+    "./margin-validator": "./margin-validator.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^0.9.5"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5"
+  }
+}
