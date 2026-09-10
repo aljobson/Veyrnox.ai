@@ -53,15 +53,6 @@ describe("Ledger acceptance", { skip: !DATABASE_URL && "DATABASE_URL not set" },
         return userId;
     }
 
-    async function makePricedJob(userId, credits, idempotencyKey) {
-        const res = await pool.query(
-            `INSERT INTO jobs (user_id, idempotency_key, model_id, credits, inputs)
-             VALUES ($1, $2, 'test-model', $3, '{}'::jsonb)
-             RETURNING id`,
-            [userId, idempotencyKey, credits]
-        );
-        return res.rows[0].id;
-    }
 
     // §6.1 — Debit invariant under repeated calls: exactly N successes for
     // balance supporting N, remainder rejected with INSUFFICIENT_BALANCE,
@@ -83,13 +74,13 @@ describe("Ledger acceptance", { skip: !DATABASE_URL && "DATABASE_URL not set" },
         let failCount = 0;
         for (let i = 0; i < N_ATTEMPTS; i++) {
             const key = `seq-${i}`;
-            const jobId = await makePricedJob(userId, CREDITS_PER, key);
             const res = await ledger.debit({
                 user_id: userId,
                 idempotency_key: key,
-                job_id: jobId,
                 credits: CREDITS_PER,
                 reason: "debit:generation",
+                model_id: "test-model",
+                inputs: {},
             });
             if (res.ok) okCount++;
             else failCount++;
@@ -108,21 +99,21 @@ describe("Ledger acceptance", { skip: !DATABASE_URL && "DATABASE_URL not set" },
     it("§6.2 idempotency: duplicate key returns same job, single debit", async () => {
         const userId = await makeUser(100);
         const key = `idem-${randomUUID()}`;
-        const jobId = await makePricedJob(userId, 30, key);
-
         const first = await ledger.debit({
             user_id: userId,
             idempotency_key: key,
-            job_id: jobId,
             credits: 30,
             reason: "debit:generation",
+            model_id: "test-model",
+            inputs: {},
         });
         const second = await ledger.debit({
             user_id: userId,
             idempotency_key: key,
-            job_id: jobId,
             credits: 30,
             reason: "debit:generation",
+            model_id: "test-model",
+            inputs: {},
         });
 
         assert.ok(first.ok && second.ok);
@@ -136,14 +127,13 @@ describe("Ledger acceptance", { skip: !DATABASE_URL && "DATABASE_URL not set" },
     it("§6.3 insufficient balance: no debit, INSUFFICIENT_BALANCE error", async () => {
         const userId = await makeUser(10);
         const key = `insuf-${randomUUID()}`;
-        const jobId = await makePricedJob(userId, 100, key);
-
         const res = await ledger.debit({
             user_id: userId,
             idempotency_key: key,
-            job_id: jobId,
             credits: 100,
             reason: "debit:generation",
+            model_id: "test-model",
+            inputs: {},
         });
 
         assert.ok(!res.ok);
@@ -161,17 +151,17 @@ describe("Ledger acceptance", { skip: !DATABASE_URL && "DATABASE_URL not set" },
     it("§6.4 refund: compensating entry, balance restored, idempotent", async () => {
         const userId = await makeUser(50);
         const key = `refund-${randomUUID()}`;
-        const jobId = await makePricedJob(userId, 20, key);
-
         const debit = await ledger.debit({
             user_id: userId,
             idempotency_key: key,
-            job_id: jobId,
             credits: 20,
             reason: "debit:generation",
+            model_id: "test-model",
+            inputs: {},
         });
         assert.ok(debit.ok);
         assert.equal(await ledger.readBalance(userId), 30);
+        const jobId = debit.job_id;
 
         const refund1 = await ledger.refund({
             job_id: jobId,
@@ -229,13 +219,13 @@ describe("Ledger acceptance", { skip: !DATABASE_URL && "DATABASE_URL not set" },
             source_event_id: `evt-${randomUUID()}`,
         });
         const key = `reco-${randomUUID()}`;
-        const jobId = await makePricedJob(userId, 30, key);
-        await ledger.debit({
+        const res = await ledger.debit({
             user_id: userId,
             idempotency_key: key,
-            job_id: jobId,
             credits: 30,
             reason: "debit:generation",
+            model_id: "test-model",
+            inputs: {},
         });
 
         const drift = await ledger.reconcile();
