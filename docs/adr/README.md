@@ -10,7 +10,9 @@ Phase-0 decision-support documents for the target architecture at `/Users/aljobs
 | [ADR-0001 — Authentication provider](0001-auth-provider.md) | Superseded by 0004 | Original single-vendor auth ADR. Circular with 0002. | — |
 | [ADR-0002 — Postgres host & serverless driver](0002-postgres-host.md) | Superseded by 0004 | Original single-vendor DB ADR. Circular with 0001. | — |
 | [ADR-0003 — Billing / merchant-of-record](0003-billing-provider.md) | **Accepted 2026-09-10 — LemonSqueezy at launch** | Migrate to Stripe Direct at ~$20k MRR sustained 3 months. | — |
-| [ADR-0004 — Auth + Postgres bundle](0004-auth-and-db-bundle.md) | **Accepted 2026-09-10 — Clerk + Neon** | Per the Replacer-path fallback in this ADR. | — |
+| [ADR-0004 — Auth + Postgres bundle](0004-auth-and-db-bundle.md) | Amended by 0006 | Original: Clerk + Neon. Superseded by 0006 on EU-residency grounds. | — |
+| [ADR-0005 — Phase-0 business preconditions](0005-phase-0-business-preconditions.md) | **Accepted 2026-09-10** | UK Ltd, UK tax, EU-only data, 50-credit free tier, C2PA+ToS Article 50, registered-agent DMCA. | (unblocks Phase 1 Slice 3) |
+| [ADR-0006 — Auth + DB amendment for EU residency](0006-auth-and-db-amendment-eu-residency.md) | **Accepted 2026-09-10 — Supabase Auth + Supabase Postgres (Frankfurt)** | Clerk EU-tier at ~$250–400/mo forced re-evaluation; Supabase EU on $25/mo Pro. MFA becomes a Phase-4 deliverable. | Slice 3+ |
 
 ## Decision graph
 

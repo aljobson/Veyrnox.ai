@@ -11,12 +11,12 @@ Phase 1 exists to prove the money invariants — nothing user-visible until the 
 
 Six open questions from ADR-0000 gate vendor onboarding. Engineering can proceed on schema/logic in parallel, but Phase 1's Exit gate requires Clerk + Neon + Inngest + fal.ai + R2 accounts, which in turn require:
 
-- [ ] Legal entity for Veyrnox (sole-prop / LLC / Ltd / GmbH) — signs every vendor contract
-- [ ] Product-owner tax residency
-- [ ] Data-residency requirement (EU-only vs. global)
-- [ ] EU AI Act Article 50 transparency wording (goes in ToS + UI)
-- [ ] DMCA designated agent (US e-filing)
-- [ ] Pricing hypothesis — plan credits × retail rate
+- [x] Legal entity for Veyrnox — **UK Ltd** ([ADR-0005 §1](adr/0005-phase-0-business-preconditions.md))
+- [x] Product-owner tax residency — **United Kingdom** ([ADR-0005 §2](adr/0005-phase-0-business-preconditions.md))
+- [x] Data residency — **EU-only** ([ADR-0005 §3](adr/0005-phase-0-business-preconditions.md)) — triggers auth-provider switch, see [ADR-0006](adr/0006-auth-and-db-amendment-eu-residency.md)
+- [x] EU AI Act Article 50 — **C2PA + UI badge + ToS notice** ([ADR-0005 §5](adr/0005-phase-0-business-preconditions.md))
+- [x] DMCA designated agent — **registered-agent / virtual-mailbox service** ([ADR-0005 §6](adr/0005-phase-0-business-preconditions.md)); onboarding out-of-band
+- [x] Pricing hypothesis — Free 50 / Starter 200 / Plus 1000 / Ultra 3000 credits/mo ([Slice 2 catalog](../packages/catalog/index.ts), [ADR-0005 §4](adr/0005-phase-0-business-preconditions.md))
 
 ## Sprint slices
 
