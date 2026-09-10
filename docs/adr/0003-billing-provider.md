@@ -1,6 +1,6 @@
 # ADR-0003 — Billing / merchant-of-record
 
-- **Status**: Proposed
+- **Status**: Accepted (2026-09-10) — LemonSqueezy at launch, migrate to Stripe Direct at ~$20k MRR sustained 3 months
 - **Date**: 2026-09-10
 - **Deciders**: Product owner (approver), Architect, Finance/Legal
 - **Blocks**: Phase 2 (billing + free tier)
