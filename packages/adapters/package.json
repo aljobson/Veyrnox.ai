@@ -1,0 +1,23 @@
+{
+  "name": "@veyrnox/adapters",
+  "version": "0.1.0",
+  "description": "Provider adapters — fal.ai, Replicate, Stripe/LMS, DeepSeek (Phase 1+ in progress)",
+  "private": true,
+  "type": "module",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./fal": "./fal.ts",
+    "./replicate": "./replicate.ts",
+    "./stripe": "./stripe.ts",
+    "./deepseek-moderation": "./deepseek-moderation.ts",
+    "./types": "./types.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5"
+  }
+}

@@ -1,6 +1,7 @@
 -- §25.3 Debit Transaction (Veyrnox invariant #2)
 -- 
--- Atomic debit: idempotency guard → lock balance → append entry → update balance → outbox row.
+-- Atomic debit: idempotency guard → lock balance → append entry → update balance.
+-- Queue emission (job.submit) is Inngest's job, sent by the TypeScript caller after this transaction commits.
 -- Must be called inside a transaction with SERIALIZABLE isolation.
 -- 
 -- Parameters:
@@ -46,17 +47,6 @@ BEGIN
   UPDATE credit_balances
   SET balance = balance - p_credits, updated_at = now()
   WHERE user_id = p_user_id;
-
-  -- Create outbox row (job.submit event for queue relay)
-  INSERT INTO outbox (topic, payload)
-  VALUES (
-    'job.submit',
-    jsonb_build_object(
-      'job_id', p_job_id,
-      'user_id', p_user_id,
-      'credits', p_credits
-    )
-  );
 
   RETURN p_job_id;
 END $$;

@@ -7,5 +7,29 @@
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
-  }
+  },
+  // ------------------------------------------------------------------
+  // Phase 1 binding placeholders. All commented until each Slice's
+  // vendor account exists. Uncomment as each slice lands.
+  // ------------------------------------------------------------------
+  // Slice 7 — R2 for generated media
+  // "r2_buckets": [
+  //   { "binding": "MEDIA", "bucket_name": "veyrnox-media" }
+  // ],
+  //
+  // Slice 4 — Neon DATABASE_URL is a secret, set via `wrangler secret put
+  // DATABASE_URL`, not committed. Do not add it here.
+  //
+  // Optional Hyperdrive overlay in front of Neon (Slice 4+)
+  // "hyperdrive": [
+  //   { "binding": "HYPERDRIVE", "id": "REPLACE_ME_AFTER_CREATING" }
+  // ],
+  //
+  // Slice 6 — Inngest signing key: `wrangler secret put INNGEST_SIGNING_KEY`
+  //
+  // Slice 3 — Clerk secrets: `wrangler secret put CLERK_SECRET_KEY`, etc.
+  //
+  // Slice 5 — fal.ai key: `wrangler secret put FAL_KEY`
+  //
+  // Phase 2 — LemonSqueezy secrets: `wrangler secret put LEMONSQUEEZY_API_KEY`
 }
