@@ -22,9 +22,15 @@ import type { PgLikePool, PgLikeClient, UUID } from "./types.ts";
 export interface DebitRequest {
     user_id: UUID;
     idempotency_key: string;
-    job_id: UUID;
     credits: number;
     reason: string;
+    /**
+     * The generation the caller wants to run. We insert the jobs row
+     * inside the same transaction as the -delta ledger entry so job
+     * creation and money movement are atomic.
+     */
+    model_id: string;
+    inputs: Record<string, unknown>;
 }
 
 export interface DebitSuccess {
@@ -101,11 +107,13 @@ export class Ledger {
 
         const client = await this.pool.connect();
         try {
-            await client.query("BEGIN ISOLATION LEVEL SERIALIZABLE");
+            await client.query("BEGIN");
 
-            // Idempotency guard
-            const existing = await client.query<{ id: UUID; state: string }>(
-                `SELECT id, state::text AS state FROM jobs
+            // Idempotency guard — if a jobs row already exists for
+            // (user_id, idempotency_key), the debit already ran. Return
+            // that job unchanged; do not move any money.
+            const existing = await client.query<{ id: UUID }>(
+                `SELECT id FROM jobs
                  WHERE user_id = $1 AND idempotency_key = $2`,
                 [req.user_id, req.idempotency_key]
             );
@@ -121,7 +129,8 @@ export class Ledger {
                 };
             }
 
-            // Lock balance row
+            // Lock balance row — FOR UPDATE serialises concurrent debits
+            // for the same user without needing SERIALIZABLE isolation.
             const balanceRes = await client.query<{ balance: number }>(
                 `SELECT balance FROM credit_balances
                  WHERE user_id = $1 FOR UPDATE`,
@@ -146,11 +155,28 @@ export class Ledger {
                 };
             }
 
-            // Append ledger entry
+            // Create the jobs row (state = DEBITED — we're doing the debit
+            // right here in the same transaction, no need for the PRICED
+            // intermediate).
+            const jobIns = await client.query<{ id: UUID }>(
+                `INSERT INTO jobs (user_id, idempotency_key, model_id, credits, inputs, state)
+                 VALUES ($1, $2, $3, $4, $5::jsonb, 'DEBITED')
+                 RETURNING id`,
+                [
+                    req.user_id,
+                    req.idempotency_key,
+                    req.model_id,
+                    req.credits,
+                    JSON.stringify(req.inputs),
+                ]
+            );
+            const newJobId = jobIns.rows[0].id;
+
+            // Append -delta ledger entry
             await client.query(
                 `INSERT INTO ledger_entries (user_id, delta, reason, job_id)
                  VALUES ($1, $2, $3, $4)`,
-                [req.user_id, -req.credits, req.reason, req.job_id]
+                [req.user_id, -req.credits, req.reason, newJobId]
             );
 
             // Update materialised balance
@@ -161,18 +187,10 @@ export class Ledger {
                 [req.credits, req.user_id]
             );
 
-            // Transition job PRICED → DEBITED
-            await client.query(
-                `UPDATE jobs
-                 SET state = 'DEBITED', updated_at = now()
-                 WHERE id = $1 AND state = 'PRICED'`,
-                [req.job_id]
-            );
-
             await client.query("COMMIT");
             return {
                 ok: true,
-                job_id: req.job_id,
+                job_id: newJobId,
                 idempotent: false,
                 balance_after: currentBalance - req.credits,
             };
@@ -180,7 +198,7 @@ export class Ledger {
             try {
                 await client.query("ROLLBACK");
             } catch {
-                /* rollback failure — the outer catch/throw path handles it */
+                /* rollback failure — outer throw handles it */
             }
             throw err;
         } finally {
@@ -203,7 +221,7 @@ export class Ledger {
 
         const client = await this.pool.connect();
         try {
-            await client.query("BEGIN ISOLATION LEVEL SERIALIZABLE");
+            await client.query("BEGIN");
 
             // Idempotency: has a refund already landed for this job?
             const existing = await client.query<{ id: UUID }>(
@@ -280,7 +298,7 @@ export class Ledger {
 
         const client = await this.pool.connect();
         try {
-            await client.query("BEGIN ISOLATION LEVEL SERIALIZABLE");
+            await client.query("BEGIN");
 
             // Ensure balance row exists
             await client.query(

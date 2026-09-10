@@ -17,7 +17,7 @@ on:
 jobs:
   acceptance:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 5
 
     services:
       postgres:
@@ -40,21 +40,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: "22"
-          cache: npm
 
-      - name: Install (root only — no submodule build needed for ledger tests)
-        run: |
-          npm install --no-audit --no-fund --ignore-scripts --workspaces=false
-
-      - name: Install packages/db deps
-        run: |
-          cd packages/db && npm install --no-audit --no-fund --ignore-scripts || true
-          # Falls back to root-installed pg / tsx if package-local install fails
-          # (e.g. private workspace deps that aren't published).
+      # Isolated install — do NOT pull the whole workspace tree (submodule
+      # packages fail without their private origins). pg and tsx are all we
+      # need to migrate + run the acceptance tests.
+      - name: Install pg + tsx
+        run: npm install --no-save --no-audit --no-fund pg@^8.13.0 tsx@^4.19.2
 
       - name: Apply migrations
         run: node scripts/migrate.mjs
