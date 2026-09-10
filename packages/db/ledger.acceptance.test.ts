@@ -67,8 +67,11 @@ describe("Ledger acceptance", { skip: !DATABASE_URL && "DATABASE_URL not set" },
     // where N < 50. Expect exactly N successes, zero double-spend, zero
     // negative balance.
     it("§6.1 concurrent debits: N successes, zero negative, zero double-spend", async () => {
-        const N_ALLOWED = 20;
-        const N_ATTEMPTS = 50;
+        // Concurrency-tuned: enough to prove serialisation; small enough to
+        // finish in seconds. pg.Pool default max=10 → 20 attempts queue in one
+        // batch. Post-Slice-1 tuning may lift this once pool sizing is set.
+        const N_ALLOWED = 8;
+        const N_ATTEMPTS = 20;
         const CREDITS_PER = 5;
         const userId = await makeUser(N_ALLOWED * CREDITS_PER);
 

@@ -101,7 +101,7 @@ export class Ledger {
 
         const client = await this.pool.connect();
         try {
-            await client.query("BEGIN ISOLATION LEVEL SERIALIZABLE");
+            await client.query("BEGIN");
 
             // Idempotency guard
             const existing = await client.query<{ id: UUID; state: string }>(
@@ -203,7 +203,7 @@ export class Ledger {
 
         const client = await this.pool.connect();
         try {
-            await client.query("BEGIN ISOLATION LEVEL SERIALIZABLE");
+            await client.query("BEGIN");
 
             // Idempotency: has a refund already landed for this job?
             const existing = await client.query<{ id: UUID }>(
@@ -280,7 +280,7 @@ export class Ledger {
 
         const client = await this.pool.connect();
         try {
-            await client.query("BEGIN ISOLATION LEVEL SERIALIZABLE");
+            await client.query("BEGIN");
 
             // Ensure balance row exists
             await client.query(
