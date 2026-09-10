@@ -1,6 +1,6 @@
 # ADR-0000 — Product strategy: MuAPI-replacer vs MuAPI-reseller
 
-- **Status**: Proposed
+- **Status**: Accepted (2026-09-10) — Option A (Replacer)
 - **Date**: 2026-09-10
 - **Deciders**: Product owner (sole)
 - **Blocks**: Every other ADR. Nothing else can be decided until this is.

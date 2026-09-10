@@ -6,11 +6,11 @@ Phase-0 decision-support documents for the target architecture at `/Users/aljobs
 
 | ADR | Status | Summary | Blocks |
 |-----|--------|---------|--------|
-| [ADR-0000 — Product strategy: Replacer vs Reseller](0000-product-strategy.md) | Proposed | The meta-decision. Do we replace MuAPI (20-24 wk build) or resell MuAPI (6-8 wk build)? Recommendation: Hybrid, entered via Reseller. | Every other ADR |
+| [ADR-0000 — Product strategy: Replacer vs Reseller](0000-product-strategy.md) | **Accepted 2026-09-10 — Option A (Replacer)** | The meta-decision. Product owner picked full-stack rebuild over MuAPI reseller. Timeline 20-24 wk to first paying customer. | — |
 | [ADR-0001 — Authentication provider](0001-auth-provider.md) | Superseded by 0004 | Original single-vendor auth ADR. Circular with 0002. | — |
 | [ADR-0002 — Postgres host & serverless driver](0002-postgres-host.md) | Superseded by 0004 | Original single-vendor DB ADR. Circular with 0001. | — |
-| [ADR-0003 — Billing / merchant-of-record](0003-billing-provider.md) | Proposed | LemonSqueezy at launch, migrate to Stripe Direct at ~$20k MRR. | Phase 2 (billing) |
-| [ADR-0004 — Auth + Postgres bundle](0004-auth-and-db-bundle.md) | Proposed | Bundle of 0001+0002. Recommendation: Clerk + Cloudflare D1 for Reseller/Hybrid; Clerk + Neon for Replacer. | Phase 1 (money spine) |
+| [ADR-0003 — Billing / merchant-of-record](0003-billing-provider.md) | **Accepted 2026-09-10 — LemonSqueezy at launch** | Migrate to Stripe Direct at ~$20k MRR sustained 3 months. | — |
+| [ADR-0004 — Auth + Postgres bundle](0004-auth-and-db-bundle.md) | **Accepted 2026-09-10 — Clerk + Neon** | Per the Replacer-path fallback in this ADR. | — |
 
 ## Decision graph
 

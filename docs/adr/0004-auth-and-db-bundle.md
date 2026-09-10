@@ -1,6 +1,6 @@
 # ADR-0004 — Auth + Postgres bundle
 
-- **Status**: Proposed
+- **Status**: Accepted (2026-09-10) — Clerk + Neon (Replacer path fallback per this ADR)
 - **Date**: 2026-09-10
 - **Deciders**: Product owner (approver), Architect, Security reviewer
 - **Depends on**: ADR-0000 (product strategy). If B (Reseller) accepted, scope is smaller than if A (Replacer) accepted.
