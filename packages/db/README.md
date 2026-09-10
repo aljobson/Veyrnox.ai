@@ -31,6 +31,16 @@ The `Ledger` class in `ledger.ts` is the sole writer to `ledger_entries`. Every 
 
 The class is driver-agnostic: it takes any `PgLikePool` (see `types.ts`). Tests wire `pg.Pool` against local Postgres; production wires `@neondatabase/serverless`'s `Pool` against Neon.
 
+
+## Test dependencies
+
+`pg` and `tsx` are **not** in the root `package.json` devDependencies — they trip
+Cloudflare Workers Builds when included there (tsx's native binaries specifically).
+They are installed ad-hoc:
+
+- CI: the `ledger-tests` workflow runs `npm install --no-save pg tsx`.
+- Local: run the same command before `npm run test:ledger`.
+
 ## Tests
 
 ```bash
