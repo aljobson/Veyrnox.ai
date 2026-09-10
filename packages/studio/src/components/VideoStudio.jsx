@@ -119,9 +119,26 @@ function ModelDropdown({ imageMode, selectedModel, onSelect, onClose }) {
 
   const getIconColor = (m, isV2V) => {
     if (isV2V) return "bg-orange-500/10 text-orange-400";
-    if (m.id.includes("kling")) return "bg-blue-500/10 text-blue-400";
-    if (m.id.includes("veo")) return "bg-purple-500/10 text-purple-400";
-    if (m.id.includes("sora")) return "bg-rose-500/10 text-rose-400";
+    // Match by provider first (stable/coarse), then family substring, then id
+    // substring. Tailwind JIT needs each class literal in source, so the set
+    // below is fixed — new providers fall through to the primary color.
+    const key = (m.provider || m.family || m.id || "").toLowerCase();
+    if (key.includes("kling")) return "bg-blue-500/10 text-blue-400";
+    if (key.includes("google") || key.includes("veo")) return "bg-purple-500/10 text-purple-400";
+    if (key.includes("openai") || key.includes("sora")) return "bg-rose-500/10 text-rose-400";
+    if (key.includes("bytedance") || key.includes("seedance")) return "bg-cyan-500/10 text-cyan-400";
+    if (key.includes("minimax") || key.includes("hailuo")) return "bg-emerald-500/10 text-emerald-400";
+    if (key.includes("midjourney")) return "bg-violet-500/10 text-violet-400";
+    if (key.includes("blackforest") || key.includes("flux")) return "bg-amber-500/10 text-amber-400";
+    if (key.includes("grok") || key.includes("xai")) return "bg-red-500/10 text-red-400";
+    if (key.includes("ideogram")) return "bg-yellow-500/10 text-yellow-400";
+    if (key.includes("alibaba")) return "bg-orange-400/10 text-orange-300";
+    if (key.includes("leonardo")) return "bg-pink-500/10 text-pink-400";
+    if (key.includes("happy-horse")) return "bg-lime-500/10 text-lime-400";
+    if (key.includes("pixverse")) return "bg-fuchsia-500/10 text-fuchsia-400";
+    if (key.includes("vidu")) return "bg-teal-500/10 text-teal-400";
+    if (key.includes("ltx") || key.includes("lightricks")) return "bg-indigo-500/10 text-indigo-400";
+    if (key.includes("wavespeed")) return "bg-sky-500/10 text-sky-400";
     return "bg-primary/10 text-primary";
   };
 
