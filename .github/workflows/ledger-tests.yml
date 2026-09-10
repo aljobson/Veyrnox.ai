@@ -1,0 +1,63 @@
+name: ledger-tests
+
+on:
+  pull_request:
+    paths:
+      - "packages/db/**"
+      - "scripts/migrate.mjs"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/ledger-tests.yml"
+  push:
+    branches: [main]
+    paths:
+      - "packages/db/**"
+      - "scripts/migrate.mjs"
+
+jobs:
+  acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: veyrnox
+          POSTGRES_PASSWORD: veyrnox_dev
+          POSTGRES_DB: veyrnox
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U veyrnox -d veyrnox"
+          --health-interval=2s
+          --health-timeout=2s
+          --health-retries=30
+
+    env:
+      DATABASE_URL: postgres://veyrnox:veyrnox_dev@localhost:5432/veyrnox
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install (root only — no submodule build needed for ledger tests)
+        run: |
+          npm install --no-audit --no-fund --ignore-scripts --workspaces=false
+
+      - name: Install packages/db deps
+        run: |
+          cd packages/db && npm install --no-audit --no-fund --ignore-scripts || true
+          # Falls back to root-installed pg / tsx if package-local install fails
+          # (e.g. private workspace deps that aren't published).
+
+      - name: Apply migrations
+        run: node scripts/migrate.mjs
+
+      - name: Run ledger acceptance tests
+        run: npx tsx --test packages/db/ledger.acceptance.test.ts
