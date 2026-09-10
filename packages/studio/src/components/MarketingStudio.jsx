@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { uploadFile, generateMarketingStudioAd } from "../muapi.js";
+import { showError, showValidation, showSuccess, showInfo } from "../lib/errorToast";
 
 const SCROLLBAR_STYLE = `
   .custom-scrollbar-thin::-webkit-scrollbar {
@@ -310,7 +311,7 @@ export default function MarketingStudio({ apiKey, droppedFiles, onFilesHandled }
         try {
           const url = await uploadFile(file, (pct) => setUploadProgress(p => ({ ...p, additional: pct })));
           setAdditionalImages(prev => [...prev, url].slice(0, 6));
-        } catch (err) { alert(err.message); }
+        } catch (err) { showError(err); }
       }
     } else {
       const file = files[0];
@@ -318,14 +319,14 @@ export default function MarketingStudio({ apiKey, droppedFiles, onFilesHandled }
         const url = await uploadFile(file, (pct) => setUploadProgress(p => ({ ...p, [target]: pct })));
         if (target === 'product') setProductImage(url);
         else setAvatarImage(url);
-      } catch (err) { alert(err.message); }
+      } catch (err) { showError(err); }
     }
     setUploadProgress(p => ({ ...p, [target]: 0 }));
   };
 
   const handleGenerate = async () => {
-    if (!prompt.trim()) return alert("Please enter an ad script.");
-    if (!productImage) return alert("Please upload a product image.");
+    if (!prompt.trim()) return showValidation("Please enter an ad script.");
+    if (!productImage) return showValidation("Please upload a product image.");
 
     setIsGenerating(true);
     try {
@@ -350,7 +351,7 @@ export default function MarketingStudio({ apiKey, droppedFiles, onFilesHandled }
         setFullscreenUrl(result.url);
       }
     } catch (err) {
-      alert("Generation failed: " + err.message);
+      showError(err, "Generation failed");
     } finally {
       setIsGenerating(false);
     }

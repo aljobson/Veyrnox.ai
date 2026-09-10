@@ -1,5 +1,6 @@
 import './globals.css';
 import { Inter } from "next/font/google";
+import ToasterMount from '../components/ToasterMount';
 
 const inter = Inter({
   variable: "--font-inter",
@@ -14,7 +15,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body className={inter.variable}>{children}</body>
+      <body className={inter.variable}>{children}<ToasterMount /></body>
     </html>
   );
 }

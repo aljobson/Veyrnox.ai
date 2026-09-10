@@ -8,7 +8,7 @@ import {
   FaGithub, FaExternalLinkAlt, FaDollarSign, FaRocket, FaCreditCard 
 } from "react-icons/fa";
 import { registerAppInterest, getAppInterests } from '../muapi.js';
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 
 const templateApps = [
   {
@@ -254,7 +254,6 @@ export default function AppsStudio() {
 
   return (
     <div className="h-full w-full flex flex-col items-center bg-[#030303] overflow-y-auto custom-scrollbar relative">
-      <Toaster position="bottom-right" reverseOrder={false} />
       
       <div className="flex flex-col gap-10 items-center w-full max-w-7xl pt-12 pb-24 px-6">
         
