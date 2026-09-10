@@ -14,13 +14,16 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 -- --------------------------------------------------------------------
 CREATE TABLE users (
     id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-    clerk_id        TEXT        NOT NULL UNIQUE,
+    -- auth_id: Supabase auth.users.id::text. We keep a shadow row for
+    -- FK targets (jobs, ledger_entries, etc.). No cross-schema FK — the
+    -- users.created webhook is the sync point.
+    auth_id         TEXT        NOT NULL UNIQUE,
     email           TEXT        NOT NULL,
     plan            TEXT        NOT NULL DEFAULT 'free',
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-CREATE INDEX users_clerk_id_idx ON users (clerk_id);
+CREATE INDEX users_auth_id_idx  ON users (auth_id);
 CREATE INDEX users_email_idx    ON users (email);
 
 -- --------------------------------------------------------------------
