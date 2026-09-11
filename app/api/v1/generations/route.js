@@ -78,7 +78,7 @@ export async function POST(req) {
                 );
             }
             if (rl.code === 'USER_NOT_FOUND') {
-                return NextResponse.json({ error: 'user_not_provisioned' }, { status: 401 });
+                return NextResponse.json({ error: 'user_not_provisioned' }, { status: 409 });
             }
             const rlCode = rl.code ? String(rl.code).toLowerCase() : 'rate_check_failed';
             return NextResponse.json({ error: rlCode }, { status: 400 });
@@ -119,7 +119,7 @@ export async function POST(req) {
         console.error('[generations] user lookup failed:', err);
         return NextResponse.json({ error: 'user_lookup_failed' }, { status: 502 });
     }
-    if (!userId) return NextResponse.json({ error: 'user_not_provisioned' }, { status: 401 });
+    if (!userId) return NextResponse.json({ error: 'user_not_provisioned' }, { status: 409 });
 
     // 3. Debit atomically. Creates jobs row too.
     let debit;
