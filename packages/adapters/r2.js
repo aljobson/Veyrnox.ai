@@ -122,7 +122,9 @@ export async function putObject(key, body, contentType, cfg) {
         body: bodyBytes,
     });
     if (!res.ok) {
-        return { ok: false, error: `R2 PUT ${res.status}: ${(await res.text()).slice(0, 200)}` };
+        const text = await res.text().catch(() => '');
+        console.error('R2 PUT non-ok:', res.status, text.slice(0, 200));
+        return { ok: false, error: `R2 PUT ${res.status}: ${text.slice(0, 200)}` };
     }
     return { ok: true, status: res.status, r2Key: key, size: bodyBytes.length };
 }
@@ -173,18 +175,33 @@ export async function presignGetUrl(key, expiresSeconds, cfg) {
 export async function copyUrlToR2(sourceUrl, r2Key, cfg, { timeoutMs = 30000 } = {}) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
-    let src;
     try {
-        src = await fetch(sourceUrl, { signal: controller.signal });
-    } catch (err) {
+        let src;
+        try {
+            src = await fetch(sourceUrl, { signal: controller.signal });
+        } catch (err) {
+            const msg = err && err.message;
+            console.error('R2 copy source fetch failed:', msg);
+            return { ok: false, error: `fetch source: ${msg}` };
+        }
+        if (!src.ok) {
+            console.error('R2 copy source non-ok:', src.status);
+            return { ok: false, error: `source ${src.status}` };
+        }
+        const contentType = src.headers.get('content-type') || 'application/octet-stream';
+        // Body read is kept inside the timeout window so a hung stream still aborts.
+        let bytes;
+        try {
+            bytes = new Uint8Array(await src.arrayBuffer());
+        } catch (err) {
+            const msg = err && err.message;
+            console.error('R2 copy source body read failed:', msg);
+            return { ok: false, error: `read source: ${msg}` };
+        }
+        const put = await putObject(r2Key, bytes, contentType, cfg);
+        if (!put.ok) return put;
+        return { ok: true, r2Key: put.r2Key, size: put.size, mimeType: contentType };
+    } finally {
         clearTimeout(timer);
-        return { ok: false, error: `fetch source: ${err && err.message}` };
     }
-    clearTimeout(timer);
-    if (!src.ok) return { ok: false, error: `source ${src.status}` };
-    const contentType = src.headers.get('content-type') || 'application/octet-stream';
-    const bytes = new Uint8Array(await src.arrayBuffer());
-    const put = await putObject(r2Key, bytes, contentType, cfg);
-    if (!put.ok) return put;
-    return { ok: true, r2Key: put.r2Key, size: put.size, mimeType: contentType };
 }
