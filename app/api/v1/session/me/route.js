@@ -21,7 +21,7 @@ export async function GET(req) {
     if (!authId) {
         // Should be impossible — the middleware fail-closes before reaching
         // this handler. Guard anyway.
-        return NextResponse.json({ error: 'not authenticated' }, { status: 401 });
+        return NextResponse.json({ error: 'not_authenticated' }, { status: 401 });
     }
     return NextResponse.json({ authId, email, role });
 }

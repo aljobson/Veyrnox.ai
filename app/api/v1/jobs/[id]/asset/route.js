@@ -22,17 +22,17 @@ const DEFAULT_EXPIRES_SEC = 900; // 15 min
 
 export async function GET(req, { params }) {
     const authId = req.headers.get('x-veyrnox-auth-id');
-    if (!authId) return NextResponse.json({ error: 'not authenticated' }, { status: 401 });
+    if (!authId) return NextResponse.json({ error: 'not_authenticated' }, { status: 401 });
 
     const { id } = await params;
     if (!id || !UUID_RE.test(id)) {
-        return NextResponse.json({ error: 'invalid job id' }, { status: 400 });
+        return NextResponse.json({ error: 'invalid_job_id' }, { status: 400 });
     }
 
     const cfg = envConfig();
     const r2cfg = r2EnvConfig();
     if (!cfg.supabaseUrl || !cfg.serviceRoleKey || !r2cfg.accountId) {
-        return NextResponse.json({ error: 'not configured' }, { status: 503 });
+        return NextResponse.json({ error: 'not_configured' }, { status: 503 });
     }
 
     let asset;
@@ -43,7 +43,7 @@ export async function GET(req, { params }) {
         return NextResponse.json({ error: 'internal' }, { status: 502 });
     }
     if (!asset || asset.ok !== true) {
-        return NextResponse.json({ error: 'not found' }, { status: 404 });
+        return NextResponse.json({ error: 'not_found' }, { status: 404 });
     }
 
     let signed;

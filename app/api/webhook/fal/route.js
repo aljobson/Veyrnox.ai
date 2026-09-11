@@ -25,7 +25,7 @@ const SOURCE = 'fal';
 export async function POST(req) {
     const cfg = envConfig();
     if (!cfg.supabaseUrl || !cfg.serviceRoleKey) {
-        return NextResponse.json({ error: 'not configured' }, { status: 503 });
+        return NextResponse.json({ error: 'not_configured' }, { status: 503 });
     }
 
     // Fal splits its signature across four headers, per
@@ -47,18 +47,18 @@ export async function POST(req) {
         console.error('[fal-webhook] verify threw:', err);
         return NextResponse.json({ error: 'internal' }, { status: 500 });
     }
-    if (!verified) return NextResponse.json({ error: 'signature' }, { status: 401 });
+    if (!verified) return NextResponse.json({ error: 'invalid_signature' }, { status: 401 });
 
     /** @type {any} */
     let event;
     try {
         event = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(raw));
     } catch {
-        return NextResponse.json({ error: 'invalid json' }, { status: 400 });
+        return NextResponse.json({ error: 'invalid_json' }, { status: 400 });
     }
     const requestId = event && (event.request_id || event.id);
     if (typeof requestId !== 'string' || !requestId) {
-        return NextResponse.json({ error: 'missing request_id' }, { status: 400 });
+        return NextResponse.json({ error: 'missing_request_id' }, { status: 400 });
     }
     const status = event && event.status;
 

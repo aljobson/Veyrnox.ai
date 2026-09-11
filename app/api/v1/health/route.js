@@ -17,7 +17,7 @@ import { select, envConfig, SupabaseError } from '../../../../packages/db/supaba
 export async function GET(req) {
     const cfg = envConfig();
     if (!cfg.supabaseUrl || !cfg.serviceRoleKey) {
-        return NextResponse.json({ ok: false, error: 'supabase not configured' }, { status: 503 });
+        return NextResponse.json({ ok: false, error: 'supabase_not_configured' }, { status: 503 });
     }
 
     const authId = req.headers.get('x-veyrnox-auth-id');
@@ -30,7 +30,7 @@ export async function GET(req) {
         const status = err instanceof SupabaseError ? err.status : 0;
         console.error('[api/v1/health] supabase unreachable:', status, err && err.body);
         return NextResponse.json(
-            { ok: false, error: 'supabase unreachable' },
+            { ok: false, error: 'supabase_unreachable' },
             { status: 502 }
         );
     }

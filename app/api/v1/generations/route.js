@@ -27,26 +27,26 @@ const IDEMPOTENCY_RE = /^[A-Za-z0-9._-]{8,128}$/;
 
 export async function POST(req) {
     const authId = req.headers.get('x-veyrnox-auth-id');
-    if (!authId) return NextResponse.json({ error: 'not authenticated' }, { status: 401 });
+    if (!authId) return NextResponse.json({ error: 'not_authenticated' }, { status: 401 });
 
     const cfg = envConfig();
     const falKey = process.env.FAL_KEY;
     const publicHost = process.env.PUBLIC_HOST;
     if (!cfg.supabaseUrl || !cfg.serviceRoleKey || !falKey || !publicHost) {
-        return NextResponse.json({ error: 'gateway not configured' }, { status: 503 });
+        return NextResponse.json({ error: 'gateway_not_configured' }, { status: 503 });
     }
 
     let body;
-    try { body = await req.json(); } catch { return NextResponse.json({ error: 'invalid json' }, { status: 400 }); }
+    try { body = await req.json(); } catch { return NextResponse.json({ error: 'invalid_json' }, { status: 400 }); }
     const modelId = body && body.model_id;
     const idempotencyKey = body && body.idempotency_key;
     const inputs = body && body.inputs;
-    if (typeof modelId !== 'string' || !modelId) return NextResponse.json({ error: 'model_id required' }, { status: 400 });
+    if (typeof modelId !== 'string' || !modelId) return NextResponse.json({ error: 'model_id_required' }, { status: 400 });
     if (typeof idempotencyKey !== 'string' || !IDEMPOTENCY_RE.test(idempotencyKey)) {
-        return NextResponse.json({ error: 'idempotency_key required (8-128 chars, [A-Za-z0-9._-])' }, { status: 400 });
+        return NextResponse.json({ error: 'idempotency_key_required' }, { status: 400 });
     }
     if (!inputs || typeof inputs !== 'object' || Array.isArray(inputs)) {
-        return NextResponse.json({ error: 'inputs must be an object' }, { status: 400 });
+        return NextResponse.json({ error: 'inputs_must_be_object' }, { status: 400 });
     }
 
     // 0. Per-user rate-limit check. Postgres-backed sliding window against
@@ -78,9 +78,10 @@ export async function POST(req) {
                 );
             }
             if (rl.code === 'USER_NOT_FOUND') {
-                return NextResponse.json({ error: 'user not provisioned' }, { status: 401 });
+                return NextResponse.json({ error: 'user_not_provisioned' }, { status: 401 });
             }
-            return NextResponse.json({ error: rl.code || 'rate check failed' }, { status: 400 });
+            const rlCode = rl.code ? String(rl.code).toLowerCase() : 'rate_check_failed';
+            return NextResponse.json({ error: rlCode }, { status: 400 });
         }
     } catch (err) {
         // Rate-limit check failure is not fatal — the downstream ledger_debit
@@ -99,11 +100,11 @@ export async function POST(req) {
         modelRow = Array.isArray(rows) && rows[0];
     } catch (err) {
         console.error('[generations] catalog lookup failed:', err);
-        return NextResponse.json({ error: 'catalog lookup failed' }, { status: 502 });
+        return NextResponse.json({ error: 'catalog_lookup_failed' }, { status: 502 });
     }
-    if (!modelRow || !modelRow.active) return NextResponse.json({ error: 'unknown model' }, { status: 404 });
-    if (modelRow.provider !== 'fal') return NextResponse.json({ error: 'model not on fal.ai (Slice 5)' }, { status: 501 });
-    if (modelRow.gated_flag) return NextResponse.json({ error: 'gated model — plan check pending (Phase 4)' }, { status: 402 });
+    if (!modelRow || !modelRow.active) return NextResponse.json({ error: 'model_not_found' }, { status: 404 });
+    if (modelRow.provider !== 'fal') return NextResponse.json({ error: 'provider_unsupported' }, { status: 501 });
+    if (modelRow.gated_flag) return NextResponse.json({ error: 'model_gated' }, { status: 402 });
 
     // 2. Resolve users.id from auth_id.
     let userId;
@@ -116,9 +117,9 @@ export async function POST(req) {
         userId = Array.isArray(userRows) && userRows[0] && userRows[0].id;
     } catch (err) {
         console.error('[generations] user lookup failed:', err);
-        return NextResponse.json({ error: 'user lookup failed' }, { status: 502 });
+        return NextResponse.json({ error: 'user_lookup_failed' }, { status: 502 });
     }
-    if (!userId) return NextResponse.json({ error: 'user not provisioned' }, { status: 401 });
+    if (!userId) return NextResponse.json({ error: 'user_not_provisioned' }, { status: 401 });
 
     // 3. Debit atomically. Creates jobs row too.
     let debit;
@@ -133,13 +134,15 @@ export async function POST(req) {
         }, cfg);
     } catch (err) {
         console.error('[generations] ledger_debit failed:', err);
-        return NextResponse.json({ error: 'debit failed' }, { status: 502 });
+        return NextResponse.json({ error: 'debit_failed' }, { status: 502 });
     }
     if (!debit || debit.ok === false) {
         const status = debit && debit.code === 'INSUFFICIENT_BALANCE' ? 402 : 400;
         // Don't leak DB/RPC messages to the client — log server-side only.
         if (debit && debit.message) console.error('[generations] debit rejected:', debit.code, debit.message);
-        return NextResponse.json({ error: (debit && debit.code) || 'debit rejected' }, { status });
+        // Convert DB SCREAMING_SNAKE across the trust boundary to snake_case.
+        const debitCode = debit && debit.code ? String(debit.code).toLowerCase() : 'debit_rejected';
+        return NextResponse.json({ error: debitCode }, { status });
     }
 
     const jobId = debit.job_id;
@@ -176,7 +179,7 @@ export async function POST(req) {
         }
         console.error('[generations] fal submit failed:', falResult.error);
         // Don't leak upstream vendor payloads to the client — log only.
-        return NextResponse.json({ error: 'provider submit failed' }, { status: 502 });
+        return NextResponse.json({ error: 'provider_submit_failed' }, { status: 502 });
     }
 
     // 5. Move state to SUBMITTED and record provider job id.

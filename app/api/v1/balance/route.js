@@ -17,12 +17,12 @@ import { rpc, envConfig, SupabaseError } from '../../../../packages/db/supabase-
 export async function GET(req) {
     const authId = req.headers.get('x-veyrnox-auth-id');
     if (!authId) {
-        return NextResponse.json({ error: 'not authenticated' }, { status: 401 });
+        return NextResponse.json({ error: 'not_authenticated' }, { status: 401 });
     }
 
     const cfg = envConfig();
     if (!cfg.supabaseUrl || !cfg.serviceRoleKey) {
-        return NextResponse.json({ error: 'supabase not configured' }, { status: 503 });
+        return NextResponse.json({ error: 'supabase_not_configured' }, { status: 503 });
     }
 
     let balance;
