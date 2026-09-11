@@ -32,7 +32,21 @@ export const config = {
 const JWKS_TTL_MS = 24 * 60 * 60 * 1000;
 let jwksCache = null; // { fetchedAt, byKid: Map<string, CryptoKey> }
 
+// Retired legacy Muapi passthrough routes — let their handlers reply with
+// the honest 410 + Sunset header instead of an intermediate 401.
+const DEPRECATED_PREFIXES = [
+    '/api/v1/get_upload_url',
+    '/api/v1/creative-agent',
+];
+
 export async function middleware(req) {
+    const path = new URL(req.url).pathname;
+    for (const prefix of DEPRECATED_PREFIXES) {
+        if (path === prefix || path.startsWith(prefix + '/')) {
+            return; // fall through to the route handler
+        }
+    }
+
     const supabaseUrl = process.env.SUPABASE_URL;
     if (!supabaseUrl) {
         return jsonError(503, { error: 'auth not configured' });
