@@ -1,0 +1,55 @@
+/* Veyrnox.ai — shared page CSS scoped under .vx-root */
+.vx-root { color-scheme: dark; }
+.vx-root * { box-sizing: border-box; }
+.vx-root ::selection { background: rgba(62, 230, 196, 0.28); color: #F2F2F3; }
+.vx-root ::-webkit-scrollbar { width: 10px; height: 10px; }
+.vx-root ::-webkit-scrollbar-thumb { background: #26262A; border-radius: 999px; }
+.vx-root ::-webkit-scrollbar-track { background: transparent; }
+
+/* tabular numerals wherever credits/money show */
+.vx-num { font-variant-numeric: tabular-nums; }
+
+/* motion — mirrors handoff spec */
+@keyframes vxScan { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+@keyframes vxPulse { 0%,100% { opacity: 1; } 50% { opacity: .25; } }
+@keyframes vxSlideUp { 0% { transform: translateY(100%); } 100% { transform: none; } }
+@keyframes vxFade { 0% { opacity: 0; } 100% { opacity: 1; } }
+@keyframes vxDrift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+@keyframes vxTickUp { 0% { opacity: 0; transform: translateY(6px); } 40% { opacity: 1; } 100% { opacity: 0; transform: translateY(-12px); } }
+
+.vx-shimmer { position: relative; overflow: hidden; }
+.vx-shimmer::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(100deg, transparent 34%, rgba(62,230,196,.16) 50%, transparent 66%);
+  transform: translateX(-100%);
+  animation: vxScan 1.6s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vx-root *, .vx-root *::before, .vx-root *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Accessibility ─── colour-blind + high-contrast safety net */
+.vx-root :focus-visible {
+  outline: 2px solid #3EE6C4;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (prefers-contrast: more) {
+  .vx-root {
+    --vx-border-boost: #3E3E44;
+  }
+  .vx-root .border-vx-border { border-color: var(--vx-border-boost) !important; }
+  .vx-root .text-vx-fg-muted { color: #B8B8BE !important; }
+  .vx-root .text-vx-fg-body  { color: #E4E4E8 !important; }
+}
+
+/* Forced-colors (Windows High Contrast) — keep essential structure visible */
+@media (forced-colors: active) {
+  .vx-root .bg-vx-accent { forced-color-adjust: none; }
+  .vx-root .bg-vx-money  { forced-color-adjust: none; }
+}
