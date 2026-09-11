@@ -8,9 +8,14 @@
 // ponytail: keep unsafe-inline until Next.js nonce support is stable in
 // App Router SSR + OpenNext workerd runtime; then switch to per-request
 // nonce via middleware.js and drop unsafe-inline.
+// `next dev` ships its HMR / React Refresh runtime through eval(); without
+// 'unsafe-eval' hydration dies silently in local dev and every onClick is
+// inert. Production builds contain no eval, so the directive is dev-only.
+const isDev = process.env.NODE_ENV === 'development';
+
 const CSP = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline'",
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https:",
   "media-src 'self' data: blob: https:",

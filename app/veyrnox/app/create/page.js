@@ -2,9 +2,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppNav } from '../../_components/NavBar';
 import { Chip } from '../../_components/Chip';
-import { MODELS, ASPECT_RATIOS, DURATIONS, RESOLUTIONS } from '../../_lib/tokens';
+import { ASPECT_RATIOS, DURATIONS, RESOLUTIONS } from '../../_lib/tokens';
 import { gatewayFetch, makeIdempotencyKey, notifyBalanceChanged, GatewayError } from '../../_lib/gateway';
 import { pushJobHistory } from '../../_lib/jobHistory';
+import { useCatalog } from '../../_lib/useCatalog';
 
 // State glyphs — colour-blind safety net matches the design system §08.
 const STATE_UI = {
@@ -15,15 +16,24 @@ const STATE_UI = {
 };
 
 const ERROR_COPY = {
-  moderation:        'Prompt or reference failed moderation. Credits refunded.',
-  provider_timeout:  'The model took too long. Credits refunded — try again.',
-  provider_error:    'The model returned an error. Credits refunded.',
-  internal:          'Something on our side broke. Credits refunded.',
-  rate_limited:      'Too many generations in a short window. Wait a moment.',
+  moderation:            'Prompt or reference failed moderation. Credits refunded.',
+  provider_timeout:      'The model took too long. Credits refunded — try again.',
+  provider_error:        'The model returned an error. Credits refunded.',
+  internal:              'Something on our side broke. Credits refunded.',
+  rate_limited:          'Too many generations in a short window. Wait a moment.',
+  model_gated:           'This model is premium-gated on your plan. Nothing was charged.',
+  insufficient_balance:  'Not enough credits for this generation. Nothing was charged — top up to continue.',
+  user_not_provisioned:  'Your account is still being set up. Try again in a moment.',
+  debit_rejected:        'The ledger declined this debit. Nothing was charged.',
+  no_token:              'Sign in to generate.',
+  unauthenticated:       'Sign in to generate.',
 };
 
+const DEFAULT_MODEL = 'wan-2.5';
+
 export default function CreateStudio() {
-  const [modelId, setModelId] = useState('wan-25');
+  const { models, live: catalogLive } = useCatalog();
+  const [modelId, setModelId] = useState(DEFAULT_MODEL);
   const [duration, setDuration] = useState('5s');
   const [aspect, setAspect] = useState('16:9');
   const [res, setRes] = useState('2K');
@@ -34,7 +44,25 @@ export default function CreateStudio() {
   const [error, setError] = useState(null);
 
   const pollRef = useRef(null);
-  const model = MODELS.find((m) => m.id === modelId);
+
+  // ?model=<id> from landing tiles / hero cards. Read once on mount —
+  // avoids the Suspense boundary useSearchParams demands on client pages.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const wanted = new URLSearchParams(window.location.search).get('model');
+    if (wanted) setModelId(wanted);
+  }, []);
+
+  // If the selected id isn't in the (live or fallback) catalog, fall back to
+  // the first open model so cost never silently reads 0.
+  useEffect(() => {
+    if (!models.length) return;
+    if (models.some((m) => m.id === modelId)) return;
+    const first = models.find((m) => !m.gated) || models[0];
+    setModelId(first.id);
+  }, [models, modelId]);
+
+  const model = models.find((m) => m.id === modelId) || null;
   const cost = model ? model.credits * (duration === '10s' && model.kind === 'video' ? 2 : 1) : 0;
   const generating = job && (job.state === 'queued' || job.state === 'running');
 
@@ -87,7 +115,8 @@ export default function CreateStudio() {
 
   // ── submit ────────────────────────────────────────────────────────
   async function onSubmit() {
-    if (generating || balance == null || cost > balance) return;
+    if (generating || !model || balance == null || cost > balance) return;
+    if (model.gated) { setError({ code: 'model_gated' }); return; }
     setError(null);
     const idempotency_key = makeIdempotencyKey();
     const inputs = {
@@ -223,28 +252,36 @@ export default function CreateStudio() {
         {/* ============ CONTROLS ============ */}
         <aside className="flex flex-col gap-5">
           <div className="rounded-2xl border border-vx-border bg-vx-panel p-5">
-            <div className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted mb-3">MODEL</div>
+            <div className="flex items-baseline justify-between mb-3">
+              <span className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">MODEL</span>
+              {catalogLive ? (
+                <span className="inline-flex items-center gap-1 font-vx-mono text-[9px] tracking-[0.12em] text-vx-accent">
+                  <span aria-hidden="true">●</span> LIVE
+                </span>
+              ) : (
+                <span className="font-vx-mono text-[9px] tracking-[0.12em] text-vx-fg-faint">CACHED</span>
+              )}
+            </div>
             <div className="flex flex-col gap-1.5">
-              {MODELS.map((m) => (
+              {models.map((m) => (
                 <button
                   key={m.id}
                   onClick={() => setModelId(m.id)}
+                  aria-pressed={modelId === m.id}
                   className={`flex items-center justify-between rounded-lg px-3 py-2.5 border ${
                     modelId === m.id
                       ? 'border-vx-accent bg-vx-accent/[0.07]'
                       : 'border-transparent hover:bg-white/[0.03]'
                   }`}
                 >
-                  <span className="flex items-center gap-2">
-                    <span className="text-sm font-bold">{m.name}</span>
-                    {m.tag && (
-                      <span className={`font-vx-mono text-[8.5px] tracking-[0.1em] ${
-                        m.premium ? 'text-vx-money' : 'text-vx-fg-muted'
-                      }`}>{m.premium ? '◆ ' : ''}{m.tag}</span>
+                  <span className="flex items-center gap-2 min-w-0">
+                    <span className="text-sm font-bold truncate">{m.name}</span>
+                    {m.gated && (
+                      <span className="font-vx-mono text-[8.5px] tracking-[0.1em] text-vx-money shrink-0">◆ PREMIUM</span>
                     )}
-                    <span className="font-vx-mono text-[8.5px] tracking-[0.1em] text-vx-fg-faint uppercase">{m.kind}</span>
+                    <span className="font-vx-mono text-[8.5px] tracking-[0.1em] text-vx-fg-faint uppercase shrink-0">{m.kind}</span>
                   </span>
-                  <span className="font-vx-mono text-[12px] font-bold text-vx-money vx-num">{m.credits} cr</span>
+                  <span className="font-vx-mono text-[12px] font-bold text-vx-money vx-num shrink-0">{m.credits} cr</span>
                 </button>
               ))}
             </div>
@@ -269,13 +306,13 @@ export default function CreateStudio() {
             <button
               onClick={generating ? cancel : onSubmit}
               className="mt-4 w-full flex items-center justify-between bg-vx-accent text-vx-accent-ink rounded-full px-6 py-3.5 font-extrabold hover:bg-vx-accent-hover disabled:opacity-40 disabled:cursor-not-allowed"
-              disabled={!generating && (balance == null || cost > balance)}
+              disabled={!generating && (!model || model.gated || balance == null || cost > balance)}
             >
-              <span>{generating ? 'Cancel' : 'Generate'}</span>
+              <span>{generating ? 'Cancel' : model?.gated ? 'Premium — gated' : 'Generate'}</span>
               <span className="font-vx-mono text-sm">−{cost} cr</span>
             </button>
             <div className="mt-2 font-vx-mono text-[9.5px] tracking-[0.1em] text-vx-fg-faint text-center">
-              REFUND ON FAILURE · ALWAYS
+              {model?.gated ? '◆ PREMIUM MODEL · UPGRADE TO UNLOCK' : 'REFUND ON FAILURE · ALWAYS'}
             </div>
           </div>
         </aside>
