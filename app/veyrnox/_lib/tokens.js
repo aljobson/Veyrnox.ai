@@ -161,23 +161,62 @@ export const RESOLUTIONS = ['1K', '2K', '4K'];
 // Ponytail: hand-authored copy — swap for CMS later. Veyrnox voice: honesty first.
 
 export const NAV_CATEGORIES = [
-  { href: '/veyrnox',              label: 'Explore' },
-  { href: '/veyrnox/video',        label: 'Video' },
-  { href: '/veyrnox/image',        label: 'Image' },
-  { href: '/veyrnox/audio',        label: 'Audio' },
-  { href: '/veyrnox/cinema',       label: 'Cinema Studio' },
-  { href: '/veyrnox/mcp',          label: 'MCP · CLI',      badge: 'NEW' },
-  { href: '/veyrnox/effects',      label: 'Effects',        badge: 'FREE' },
-  { href: '/veyrnox/pricing',      label: 'Pricing' },
-  { href: '/veyrnox/enterprise',   label: 'Enterprise' },
+  { href: '/veyrnox#wallet',    label: 'Wallet' },
+  { href: '/veyrnox#studio',    label: 'Studio' },
+  { href: '/veyrnox#models',    label: 'Models' },
+  { href: '/veyrnox#community', label: 'Community' },
+  { href: '/veyrnox/pricing',   label: 'Pricing' },
 ];
 
+// Four surfaces = the marketing top-line: wallet, studio, models, payouts.
 export const FEATURE_CARDS = [
-  { key: 'astra',    kicker: 'VEYRNOX × ASTRA',       title: 'One prompt in. A playable world out.',  body: 'Story, mechanics, every asset — priced before you spend.',  bg: 'linear-gradient(135deg,#0e0620 0%,#3a0e6a 55%,#8b46e4 100%)' },
-  { key: 'genjutsu', kicker: 'REALITY SWAP',        title: 'One upload. Every possible take.',       body: 'Motion transfer + object swap on your own footage.',        bg: 'linear-gradient(135deg,#0a1a2c 0%,#144a7a 55%,#3ec1e8 100%)' },
-  { key: 'cinema',   kicker: 'CINEMA STUDIO 4.0',   title: 'A movie set on the page.',               body: 'Real cameras, real lenses. Type the shot, see the ledger.', bg: 'linear-gradient(160deg,#2b1a0a 0%,#7a4a1e 60%,#f0b060 100%)' },
-  { key: 'effects',  kicker: 'VEYRNOX EFFECTS',        title: 'Viral presets, one tap.',                body: 'Wired to ChatGPT and Claude MCP. Free browse, credit to run.',bg: 'linear-gradient(135deg,#1b0632 0%,#5a0e6a 55%,#e4318f 100%)' },
-  { key: 'super',    kicker: 'SUPERCOMPUTER',       title: 'One agent, every model.',                body: 'Pick by capability or price. The router does the rest.',     bg: 'linear-gradient(135deg,#08120b 0%,#0e3a1e 60%,#2ea258 100%)' },
+  { key: 'wallet',
+    kicker: 'WALLET',
+    title: 'Multichain by default',
+    body: 'BSC, Ethereum, Base, Solana. One address, one balance. Recover with a passkey, not a phrase.',
+    bg: 'linear-gradient(135deg,#0a1a2c 0%,#144a7a 55%,#3ec1e8 100%)' },
+  { key: 'studio',
+    kicker: 'STUDIO',
+    title: 'Image · video · voice',
+    body: 'Prompt once, generate across the model shelf. No credits burn until you accept.',
+    bg: 'linear-gradient(135deg,#1b0632 0%,#5a0e6a 55%,#e4318f 100%)' },
+  { key: 'models',
+    kicker: 'MODELS',
+    title: 'Latest, always',
+    body: 'Seedance, Nano Banana, Genjutsu, GPT-Image 2, Kling — routed by task, not brand.',
+    bg: 'linear-gradient(160deg,#2b1a0a 0%,#7a4a1e 60%,#f0b060 100%)' },
+  { key: 'payouts',
+    kicker: 'PAYOUTS',
+    title: 'Get paid on ship',
+    body: 'Every asset is a receipt. Every sale settles to your wallet the second it clears.',
+    bg: 'linear-gradient(135deg,#08120b 0%,#0e3a1e 55%,#2ea258 100%)' },
+];
+
+// Two workflow strips beneath the four-surface grid.
+export const WORKFLOW_STRIPS = [
+  { kicker: 'STUDIO · GENJUTSU', title: 'One upload in. Endless variants out.', body: 'Drop a photo, a rough sketch, or a still. Ship a campaign by lunch.',
+    bg: 'linear-gradient(135deg,#1b0632 0%,#5a0e6a 55%,#e4318f 100%)' },
+  { kicker: 'PAYOUTS · LIVE',     title: 'Sell it before you finish it.',        body: 'Pre-orders, drops, tips — all in your wallet the moment they clear.',
+    bg: 'linear-gradient(135deg,#08120b 0%,#0e3a1e 55%,#2ea258 100%)' },
+];
+
+export const HERO_STATS = [
+  { value: '128k+', label: 'creators shipping' },
+  { value: '$4.2M', label: 'paid to date' },
+  { value: '17',    label: 'chains supported' },
+];
+
+export const METRIC_STRIP = [
+  { value: '$4.2M', label: 'PAID TO CREATORS' },
+  { value: '0.3s',  label: 'AVG. SETTLEMENT' },
+  { value: '17',    label: 'CHAINS ROUTED' },
+  { value: '0%',    label: 'PLATFORM TAKE' },
+];
+
+export const MODEL_SHELF = [
+  'Seedance 2.5', 'Nano Banana Pro', 'Genjutsu', 'GPT-Image 2',
+  'Kling 2.5', 'Flux Kontext', 'Wan 2.2', 'Topaz',
+  'Sora 2', 'Google Veo 3', 'Claude MCP', 'MiniMax',
 ];
 
 export const PRODUCT_TILES = [
@@ -218,27 +257,15 @@ export const CREATOR_PROJECTS = [
   { title: 'Azul Cobalto',              handle: '@seeyousoonx',     likes: 333, views: '143.6K',bg: 'linear-gradient(135deg,#0a2b1a,#60f0b0)' },
 ];
 
+// Four-column footer forest — matches shipping site's PRODUCT / CREATORS / COMPANY / LEGAL.
 export const MORE_FEATURES = [
-  { group: 'Create',        items: ['AI Video', 'AI Image', 'Edit Image', 'Inpaint', 'Upscale', 'Mixed Media', 'Face Swap', 'Character Studio'] },
-  { group: 'Video Models',  items: ['Wan 2.5', 'Veo 3.1', 'Kling 3.0', 'Seedance 2.0', 'Hailuo 02', 'Kling 2.6 Pro'] },
-  { group: 'Image Models',  items: ['Nano Banana', 'Flux.2 [pro]', 'Seedream 4.5', 'Flux Kontext'] },
-  { group: 'Camera',        items: ['Camera Controls', 'Aperture', 'Focal Length', 'Anamorphic Set', '70mm Set', '16mm Set'] },
-  { group: 'Cinema',        items: ['Cinema Studio', 'Cinema Presets', 'Motion Transfer', 'Object Swap', 'Depth Map', 'LiDAR Cut'] },
-  { group: 'Publish',       items: ['TikTok', 'Instagram Reels', 'YouTube Shorts', 'Marketing Studio', 'Ad Multiplier'] },
-  { group: 'Automate',      items: ['MCP · Claude', 'CLI', 'REST API', 'Webhooks', 'Recipes', 'Batch Run'] },
-  { group: 'Community',     items: ['Explore', 'Contests', 'Creator Hub', 'Playbook', 'Discord'] },
+  { group: 'Product',   items: ['Wallet', 'Studio', 'Models', 'Payouts'] },
+  { group: 'Creators',  items: ['Community', 'Academy', 'Contests', 'Referrals'] },
+  { group: 'Company',   items: ['About', 'Careers', 'Press', 'Contact'] },
+  { group: 'Legal',     items: ['Terms', 'Privacy', 'Security', 'Status'] },
 ];
 
-export const PROMO_STRIP = {
-  message: 'Early access — 200 credits on the house when you join the waitlist',
-  cta: 'Claim credits',
-  href: '/veyrnox/pricing',
-};
+export const FOOTER_TAGLINE = 'The AI-native wallet for creators. Ship, sell, settle — in one loop.';
+export const FOOTER_STAMP   = `© ${new Date().getFullYear()} Veyrnox, Inc. · Built in the open · v1.0.1`;
 
-export const CONTEST = {
-  eyebrow: 'LIVE NOW · 6 DAYS LEFT',
-  title: 'Veyrnox Launch Showcase · 10,000 credits',
-  body: 'Make it in Cinema Studio and submit by Sep 17. Any genre, solo or team.',
-  primary: { label: 'Start my film', href: '/veyrnox/app/create' },
-  secondary: { label: 'Read the brief', href: '/veyrnox/contest' },
-};
+export const HERO_CHIP = 'LIVE · V1.0.1 SHIPPED';
