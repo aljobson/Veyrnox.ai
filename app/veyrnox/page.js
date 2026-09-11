@@ -487,7 +487,17 @@ function FAQBlock() {
                 +
               </span>
             </summary>
-            <p className="mt-3 text-[14px] text-vx-fg-body leading-[1.65]">{row.a}</p>
+            <p className="mt-3 text-[14px] text-vx-fg-body leading-[1.65]">
+              {row.a}
+              {row.link && (
+                <>
+                  {' '}
+                  <Link href={row.link.href} className="text-vx-accent underline underline-offset-4 hover:text-vx-accent-hover">
+                    {row.link.label} →
+                  </Link>
+                </>
+              )}
+            </p>
           </details>
         ))}
       </div>
@@ -553,13 +563,21 @@ function FooterForest() {
                 {col.group.toUpperCase()}
               </div>
               <ul className="space-y-2">
-                {col.items.map((it) => (
-                  <li key={it}>
-                    <span className="text-[13px] text-vx-fg-body">
-                      {it}
-                    </span>
-                  </li>
-                ))}
+                {col.items.map((it) => {
+                  const label = typeof it === 'string' ? it : it.label;
+                  const href = typeof it === 'string' ? null : it.href;
+                  return (
+                    <li key={label}>
+                      {href ? (
+                        <Link href={href} className="text-[13px] text-vx-fg-body hover:text-vx-fg underline-offset-4 hover:underline">
+                          {label}
+                        </Link>
+                      ) : (
+                        <span className="text-[13px] text-vx-fg-body">{label}</span>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           ))}
