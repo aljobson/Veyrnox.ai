@@ -131,14 +131,16 @@ export async function putObject(key, body, contentType, cfg) {
 
 /**
  * Build a presigned GET URL for an R2 object. `expiresSeconds` is
- * clamped to [60, 604800] per SigV4 constraints.
+ * clamped to [60, 900] — CLAUDE.md rule: presigned URL TTL <=15 min,
+ * longer TTLs need an ADR. Defense in depth against future callers;
+ * the API route already caps at 900.
  * Returns { url } or throws for config errors.
  */
 export async function presignGetUrl(key, expiresSeconds, cfg) {
     if (!cfg.accountId || !cfg.accessKeyId || !cfg.secretAccessKey || !cfg.bucket) {
         throw new Error('R2 not configured');
     }
-    const expires = Math.max(60, Math.min(604800, expiresSeconds | 0));
+    const expires = Math.max(60, Math.min(900, expiresSeconds | 0));
     const amzDate = iso8601BasicNow();
     const dateStamp = amzDate.slice(0, 8);
     const host = `${cfg.accountId}.r2.cloudflarestorage.com`;
