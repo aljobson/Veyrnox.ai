@@ -55,7 +55,16 @@ export async function submitJob(job, cfg) {
 
     // fal takes the webhook URL as a `fal_webhook` query parameter on the
     // POST URL, NOT a JSON body field. Docs: fal.ai/docs/model-endpoints/webhooks.
-    const webhookUrl = new URL(cfg.webhookBaseUrl);
+    let webhookUrl;
+    try {
+        webhookUrl = new URL(cfg.webhookBaseUrl);
+    } catch {
+        return { ok: false, error: 'invalid webhookBaseUrl' };
+    }
+    // Fal POSTs webhook payloads over the public internet — must be TLS.
+    if (webhookUrl.protocol !== 'https:') {
+        return { ok: false, error: 'webhookBaseUrl must be https' };
+    }
     webhookUrl.searchParams.set('job_id', job.job_id);
 
     const postUrl = new URL(`${FAL_QUEUE_BASE}/${endpoint}`);
@@ -65,33 +74,44 @@ export async function submitJob(job, cfg) {
 
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), cfg.timeoutMs ?? 15000);
-    let res;
     try {
-        res = await fetch(postUrl.toString(), {
-            method: 'POST',
-            signal: controller.signal,
-            headers: {
-                Authorization: `Key ${cfg.falKey}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(payload),
-        });
-    } catch (err) {
-        clearTimeout(timer);
-        return { ok: false, error: `transport: ${err && err.message}` };
-    }
-    clearTimeout(timer);
+        let res;
+        try {
+            res = await fetch(postUrl.toString(), {
+                method: 'POST',
+                signal: controller.signal,
+                headers: {
+                    Authorization: `Key ${cfg.falKey}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload),
+            });
+        } catch (err) {
+            const msg = err && err.message;
+            console.error('fal submit transport error:', msg);
+            return { ok: false, error: `transport: ${msg}` };
+        }
 
-    if (!res.ok) {
-        const text = await res.text().catch(() => '');
-        return { ok: false, error: `fal ${res.status}: ${text.slice(0, 200)}` };
+        if (!res.ok) {
+            const text = await res.text().catch(() => '');
+            console.error('fal submit non-ok:', res.status, text.slice(0, 200));
+            return { ok: false, error: `fal ${res.status}: ${text.slice(0, 200)}` };
+        }
+        /** @type {any} */
+        let data;
+        try { data = await res.json(); } catch {
+            console.error('fal submit returned non-JSON');
+            return { ok: false, error: 'fal returned non-JSON' };
+        }
+        const providerJobId = data.request_id || data.id;
+        if (!providerJobId) {
+            console.error('fal submit missing request_id');
+            return { ok: false, error: 'fal did not return request_id' };
+        }
+        return { ok: true, providerJobId, statusUrl: data.status_url };
+    } finally {
+        clearTimeout(timer);
     }
-    /** @type {any} */
-    let data;
-    try { data = await res.json(); } catch { return { ok: false, error: 'fal returned non-JSON' }; }
-    const providerJobId = data.request_id || data.id;
-    if (!providerJobId) return { ok: false, error: 'fal did not return request_id' };
-    return { ok: true, providerJobId, statusUrl: data.status_url };
 }
 
 // ─── Webhook verification ──────────────────────────────────────────────────
@@ -99,7 +119,14 @@ export async function submitJob(job, cfg) {
 async function loadFalPublicKeys() {
     const now = Date.now();
     if (jwksCache && now - jwksCache.fetchedAt < JWKS_TTL_MS) return jwksCache.keys;
-    const res = await fetch(FAL_JWKS_URL);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 5000);
+    let res;
+    try {
+        res = await fetch(FAL_JWKS_URL, { signal: controller.signal });
+    } finally {
+        clearTimeout(timer);
+    }
     if (!res.ok) throw new Error(`fal JWKS fetch failed: ${res.status}`);
     const jwks = await res.json();
     const keys = [];
@@ -184,7 +211,14 @@ export async function verifyWebhookSignature(rawBody, headers) {
         `${requestId}\n${userId}\n${timestamp}\n${bodyHashHex}`
     );
 
-    const keys = await loadFalPublicKeys();
+    let keys;
+    try {
+        keys = await loadFalPublicKeys();
+    } catch (err) {
+        // JWKS unavailable — fail closed (unverified) and log for ops.
+        console.error('fal JWKS load failed:', err && err.message);
+        return false;
+    }
     for (const key of keys) {
         if (await crypto.subtle.verify({ name: 'Ed25519' }, key, sigBytes, message)) return true;
     }
