@@ -38,6 +38,8 @@ const nextConfig = {
   env: {
     NEXT_PUBLIC_SUPABASE_URL: 'https://yrqzwqywxfesmbvhzjgj.supabase.co',
     NEXT_PUBLIC_SUPABASE_ANON_KEY: 'sb_publishable_bAxQiodzBhI6bV7lmo9gMQ_Hlg9_Ish',
+    // Edge middleware bakes env at build time.
+    SUPABASE_URL: 'https://yrqzwqywxfesmbvhzjgj.supabase.co',
   },
   transpilePackages: ['studio', 'ai-agent', 'workflow-builder', 'design-agent'],
   async headers() {
