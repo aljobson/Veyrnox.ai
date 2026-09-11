@@ -350,20 +350,32 @@ export class Ledger {
     }
 
     /**
-     * §6.6 Reconciliation. Returns any user whose materialised balance
-     * disagrees with the ledger sum. Empty result = healthy.
+     * §6.6 Reconciliation. Returns any user where the invariant
+     * `credit_balances.balance = SUM(ledger_entries.delta)` fails.
+     * Empty result = healthy.
+     *
+     * FULL OUTER JOIN catches three defect modes:
+     *   1. drift — balance != SUM(delta) for a user in both tables.
+     *   2. orphan ledger — user has ledger rows but no balance row
+     *      (materialised = NULL treated as 0, so any nonzero sum flags).
+     *   3. balance without ledger — user has a nonzero balance and no
+     *      ledger row backing it (SUM=NULL treated as 0).
      */
     async reconcile(): Promise<ReconcileRow[]> {
         const res = await this.pool.query<ReconcileRow>(
-            `SELECT
-                cb.user_id,
-                cb.balance      AS materialised_balance,
-                COALESCE(SUM(le.delta), 0)::int AS ledger_sum,
-                (cb.balance - COALESCE(SUM(le.delta), 0))::int AS drift
+            `WITH sums AS (
+                SELECT user_id, SUM(delta)::int AS ledger_sum
+                FROM ledger_entries
+                GROUP BY user_id
+             )
+             SELECT
+                COALESCE(cb.user_id, s.user_id) AS user_id,
+                COALESCE(cb.balance, 0)         AS materialised_balance,
+                COALESCE(s.ledger_sum, 0)       AS ledger_sum,
+                (COALESCE(cb.balance, 0) - COALESCE(s.ledger_sum, 0))::int AS drift
              FROM credit_balances cb
-             LEFT JOIN ledger_entries le ON le.user_id = cb.user_id
-             GROUP BY cb.user_id, cb.balance
-             HAVING cb.balance <> COALESCE(SUM(le.delta), 0)`
+             FULL OUTER JOIN sums s ON s.user_id = cb.user_id
+             WHERE COALESCE(cb.balance, 0) <> COALESCE(s.ledger_sum, 0)`
         );
         return res.rows;
     }
