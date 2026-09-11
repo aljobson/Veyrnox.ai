@@ -3,8 +3,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { generateImage, generateI2I, uploadFile } from "../muapi.js";
 import { generateViaGateway, gatewayEnabled, GatewayError } from "../gatewayClient.js";
-import dynamic from "next/dynamic";
-const AuthGate = dynamic(() => import("./AuthGate.jsx"), { ssr: false });
 import {
   t2iModels,
   i2iModels,
@@ -750,7 +748,6 @@ export default function ImageStudio({
 
   // ── Model / mode state ──────────────────────────────────────────────────
   const [imageMode, setImageMode] = useState(false); // false=t2i, true=i2i
-  const [authGateOpen, setAuthGateOpen] = useState(false);
   const [selectedModelId, setSelectedModelId] = useState(t2iModels[0].id);
   const [selectedModelName, setSelectedModelName] = useState(t2iModels[0].name);
   const [selectedAr, setSelectedAr] = useState(
@@ -1125,12 +1122,8 @@ export default function ImageStudio({
       });
     } catch (e) {
       console.error("[ImageStudio] Generation failed:", e);
-      if (e instanceof GatewayError && e.status === 401) {
-        setAuthGateOpen(true);
-      } else {
-        setGenerateError(e.message.slice(0, 80));
-        setTimeout(() => setGenerateError(null), 4000);
-      }
+      setGenerateError(e.message.slice(0, 80));
+      setTimeout(() => setGenerateError(null), 4000);
     } finally {
       setGenerating(false);
     }
@@ -1512,6 +1505,5 @@ export default function ImageStudio({
         </div>
       )}
     </div>
-      {authGateOpen && <AuthGate onSignedIn={() => setAuthGateOpen(false)} />}
   );
 }
