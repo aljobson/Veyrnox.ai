@@ -1,107 +1,13 @@
 {
-  "hooks": {
-    "SessionStart": [
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "CLAUDE_PLUGIN_ROOT=\"$CLAUDE_PROJECT_DIR/.claude/ecc\" node \"$CLAUDE_PROJECT_DIR/.claude/ecc/scripts/hooks/run-with-flags.js\" session:start scripts/hooks/session-start.js minimal,standard,strict",
-            "timeout": 10
-          }
-        ]
+  "extraKnownMarketplaces": {
+    "ecc": {
+      "source": {
+        "source": "git",
+        "url": "https://github.com/affaan-m/ECC.git"
       }
-    ],
-    "SessionEnd": [
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "CLAUDE_PLUGIN_ROOT=\"$CLAUDE_PROJECT_DIR/.claude/ecc\" node \"$CLAUDE_PROJECT_DIR/.claude/ecc/scripts/hooks/run-with-flags.js\" session:end scripts/hooks/session-end.js minimal,standard,strict",
-            "timeout": 10,
-            "async": true
-          }
-        ]
-      }
-    ],
-    "PreCompact": [
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "CLAUDE_PLUGIN_ROOT=\"$CLAUDE_PROJECT_DIR/.claude/ecc\" node \"$CLAUDE_PROJECT_DIR/.claude/ecc/scripts/hooks/run-with-flags.js\" pre:compact scripts/hooks/pre-compact.js standard,strict",
-            "timeout": 10
-          }
-        ]
-      }
-    ],
-    "PreToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "CLAUDE_PLUGIN_ROOT=\"$CLAUDE_PROJECT_DIR/.claude/ecc\" node \"$CLAUDE_PROJECT_DIR/.claude/ecc/scripts/hooks/run-with-flags.js\" pre:bash:block-no-verify scripts/hooks/block-no-verify.js minimal,standard,strict",
-            "timeout": 5
-          },
-          {
-            "type": "command",
-            "command": "CLAUDE_PLUGIN_ROOT=\"$CLAUDE_PROJECT_DIR/.claude/ecc\" node \"$CLAUDE_PROJECT_DIR/.claude/ecc/scripts/hooks/run-with-flags.js\" pre:bash:dev-server-block scripts/hooks/pre-bash-dev-server-block.js standard,strict",
-            "timeout": 5
-          }
-        ]
-      },
-      {
-        "matcher": "Write|Edit|MultiEdit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "CLAUDE_PLUGIN_ROOT=\"$CLAUDE_PROJECT_DIR/.claude/ecc\" node \"$CLAUDE_PROJECT_DIR/.claude/ecc/scripts/hooks/run-with-flags.js\" pre:config-protection scripts/hooks/config-protection.js standard,strict",
-            "timeout": 5
-          },
-          {
-            "type": "command",
-            "command": "CLAUDE_PLUGIN_ROOT=\"$CLAUDE_PROJECT_DIR/.claude/ecc\" node \"$CLAUDE_PROJECT_DIR/.claude/ecc/scripts/hooks/run-with-flags.js\" pre:edit-write:suggest-compact scripts/hooks/suggest-compact.js standard,strict",
-            "timeout": 5
-          }
-        ]
-      }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "Edit|Write|MultiEdit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "CLAUDE_PLUGIN_ROOT=\"$CLAUDE_PROJECT_DIR/.claude/ecc\" node \"$CLAUDE_PROJECT_DIR/.claude/ecc/scripts/hooks/run-with-flags.js\" post:edit:design-quality-check scripts/hooks/design-quality-check.js standard,strict",
-            "timeout": 10
-          }
-        ]
-      },
-      {
-        "matcher": "Edit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "CLAUDE_PLUGIN_ROOT=\"$CLAUDE_PROJECT_DIR/.claude/ecc\" node \"$CLAUDE_PROJECT_DIR/.claude/ecc/scripts/hooks/run-with-flags.js\" post:edit:console-warn scripts/hooks/post-edit-console-warn.js standard,strict",
-            "timeout": 5
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "CLAUDE_PLUGIN_ROOT=\"$CLAUDE_PROJECT_DIR/.claude/ecc\" node \"$CLAUDE_PROJECT_DIR/.claude/ecc/scripts/hooks/run-with-flags.js\" stop:check-console-log scripts/hooks/check-console-log.js standard,strict",
-            "timeout": 30
-          }
-        ]
-      }
-    ]
+    }
+  },
+  "enabledPlugins": {
+    "ecc@ecc": true
   }
 }
