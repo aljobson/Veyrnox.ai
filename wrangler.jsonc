@@ -8,6 +8,13 @@
     "directory": ".open-next/assets",
     "binding": "ASSETS"
   },
+  // Public config — safe to commit. SUPABASE_URL used by middleware.js;
+  // NEXT_PUBLIC_* by client bundle.
+  "vars": {
+    "SUPABASE_URL": "https://yrqzwqywxfesmbvhzjgj.supabase.co",
+    "NEXT_PUBLIC_SUPABASE_URL": "https://yrqzwqywxfesmbvhzjgj.supabase.co",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_bAxQiodzBhI6bV7lmo9gMQ_Hlg9_Ish"
+  },
   // ------------------------------------------------------------------
   // Phase 1 binding placeholders. All commented until each Slice's
   // vendor account exists. Uncomment as each slice lands.
