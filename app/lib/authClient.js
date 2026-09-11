@@ -17,6 +17,15 @@
  * middleware.js reads Bearer first.
  */
 
+/**
+ * @typedef {object} VeyrnoxSession
+ * @property {string} access_token   raw Supabase JWT (ES256, forwarded as
+ *                                   `Authorization: Bearer` on /api/v1/*)
+ * @property {string|null} refresh_token
+ * @property {number} expires_at     unix seconds
+ * @property {any|null} user         Supabase user record (may be null)
+ */
+
 const STORAGE_KEY = "veyrnox_supabase_session";
 const listeners = new Set();
 
@@ -32,6 +41,11 @@ function ensureCfg() {
     return c;
 }
 
+/**
+ * Read the persisted session from localStorage. Returns null if the session
+ * is missing, malformed, or has expired past the 5-second skew window.
+ * @returns {VeyrnoxSession|null}
+ */
 export function getSession() {
     if (typeof localStorage === "undefined") return null;
     try {
@@ -45,6 +59,12 @@ export function getSession() {
         return null;
     }
 }
+/**
+ * Convenience wrapper. Returns the raw JWT string, or null if no valid
+ * session. Use as: `Authorization: Bearer ${getAccessToken()}` on every
+ * /api/v1/* fetch.
+ * @returns {string|null}
+ */
 export function getAccessToken() {
     return getSession()?.access_token || null;
 }
@@ -54,6 +74,12 @@ function setSession(s) {
     else localStorage.removeItem(STORAGE_KEY);
     for (const cb of listeners) cb(s);
 }
+/**
+ * Subscribe to session changes (sign-in, sign-out, expiry). Fires with the
+ * new session (or null) whenever setSession is called from any code path.
+ * @param {(session: VeyrnoxSession|null) => void} cb
+ * @returns {() => boolean} unsubscribe
+ */
 export function onSessionChange(cb) {
     listeners.add(cb);
     return () => listeners.delete(cb);
@@ -86,12 +112,25 @@ function normalise(data) {
     };
 }
 
+/**
+ * Email + password sign-in. Persists the session on success.
+ * @param {string} email
+ * @param {string} password
+ * @returns {Promise<VeyrnoxSession>}
+ */
 export async function signInWithPassword(email, password) {
     const data = await post("/auth/v1/token?grant_type=password", { email, password });
     const s = normalise(data);
     setSession(s);
     return s;
 }
+/**
+ * Create a new account. If Supabase requires email confirmation the returned
+ * session is null and needsConfirmation is true; otherwise session is set.
+ * @param {string} email
+ * @param {string} password
+ * @returns {Promise<{session: VeyrnoxSession|null, needsConfirmation: boolean}>}
+ */
 export async function signUp(email, password) {
     const data = await post("/auth/v1/signup", { email, password });
     if (data?.access_token) {
@@ -101,9 +140,21 @@ export async function signUp(email, password) {
     }
     return { session: null, needsConfirmation: true };
 }
+/**
+ * Send an email OTP / magic-link. `create_user: true` so a new address
+ * signs the user up on their first click.
+ * @param {string} email
+ */
 export async function sendMagicLink(email) {
     await post("/auth/v1/otp", { email, create_user: true });
 }
+/**
+ * Redirect to Supabase's OAuth authorize endpoint. Provider must be one
+ * enabled in the Supabase dashboard. redirectTo defaults to the app's
+ * /auth/callback route.
+ * @param {"apple"|"google"} provider
+ * @param {string} [redirectTo]
+ */
 export function signInWithOAuth(provider, redirectTo) {
     const { url } = ensureCfg();
     const back = redirectTo || `${window.location.origin}/auth/callback`;
@@ -112,6 +163,12 @@ export function signInWithOAuth(provider, redirectTo) {
     authorize.searchParams.set("redirect_to", back);
     window.location.assign(authorize.toString());
 }
+/**
+ * Parse tokens out of a `#access_token=...` URL fragment (called by the
+ * /auth/callback page). Persists the session and returns it; null when
+ * the fragment doesn't carry tokens.
+ * @returns {VeyrnoxSession|null}
+ */
 export function completeOAuthFromHash() {
     if (typeof window === "undefined") return null;
     const h = window.location.hash.startsWith("#") ? window.location.hash.slice(1) : "";
@@ -129,6 +186,11 @@ export function completeOAuthFromHash() {
     setSession(s);
     return s;
 }
+/**
+ * Revoke the Supabase session server-side and clear localStorage.
+ * Both steps always run; server errors are swallowed so the client is
+ * never wedged in a signed-in-but-can't-sign-out state.
+ */
 export async function signOut() {
     const s = getSession();
     if (s?.access_token) {
