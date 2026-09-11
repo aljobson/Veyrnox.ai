@@ -63,13 +63,25 @@ Sub-slice 3a (this PR, ships without a vendor account):
   `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`,
   `SUPABASE_WEBHOOK_SIGNING_SECRET`.
 
-Sub-slice 3b (blocked on Supabase provisioning):
-- `middleware.ts` at repo root — gates `/api/v1/*` on a verified JWT,
-  forwards `x-veyrnox-auth-id` header downstream.
-- Supabase webhook `POST /api/webhook/supabase` inserts a `users` row
-  on `user.created`, emits a 50-credit `grant:signup` via Ledger.grant.
-- Existing `__Host-muapi_key` route deprecated — sunset banner + 30-day
-  dual-run.
+Sub-slice 3b (shipped 2026-09-10, PR forthcoming):
+- **`middleware.js` at repo root** — gates `/api/v1/*` on a verified
+  Supabase JWT via `jose`. Reads Bearer header or Supabase SSR cookie.
+  Fails closed on missing/invalid tokens. Forwards `x-veyrnox-auth-id`,
+  `x-veyrnox-auth-email`, `x-veyrnox-auth-role` downstream.
+- **`GET /api/v1/session/me`** — smoke-test endpoint reflecting the
+  verified auth headers. Proves the gateway receives authenticated
+  traffic before any money-touching route exists.
+- **`POST /api/webhook/supabase`** — receives Supabase Database Webhook
+  events on `auth.users` INSERT. Shared-secret authenticated,
+  constant-time compared. Dedups via `webhook_events(source, external_id)`
+  and calls the `signup_grant` Postgres RPC (migration 0005) which
+  atomically creates the users row + credit_balances row + 50-credit
+  `grant:signup` ledger entry.
+- **`app/api/session/muapi/route.js`** carries `Deprecation: true` and
+  `Sunset: Fri, 10 Oct 2026 00:00:00 GMT` (RFC 8594) plus a
+  `Link: successor-version` header. 30-day dual-run; hard cutover 2026-10-10.
+- `jose` added to root dependencies (pure JS, no native binaries — safe
+  for Cloudflare Workers per Slice 1 tsx lesson).
 
 - **Exit gate (3a):** JWT verifier unit tests pass; users.auth_id rename
   landed; RLS policies file present.
