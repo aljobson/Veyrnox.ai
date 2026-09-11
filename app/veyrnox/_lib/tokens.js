@@ -249,7 +249,8 @@ export const FAQ = [
   { q: 'What happens if a generation fails?',
     a: 'Automatic refund, ledger-backed. Moderation rejects, provider timeouts and model errors all refund. Failed rows still show in your Library so you can retry.' },
   { q: 'Can I use the output commercially?',
-    a: "Outputs are yours to use commercially, subject to each model provider's licence. Full commercial-use terms will ship with the Terms of Service page." },
+    a: "Outputs are yours to use commercially, subject to each model provider's licence.",
+    link: { label: 'See our Terms of Service', href: '/legal/terms' } },
   { q: 'Where is my data hosted?',
     a: 'Frankfurt, EU. All generation compute, storage and logging runs in an EU region. GDPR data-rights requests routed through the Data Rights page.' },
   { q: 'Is the output signed?',
@@ -257,7 +258,8 @@ export const FAQ = [
   { q: 'Are there rate limits?',
     a: '10 generations per 60 seconds per account. If you hit it, the API returns 429 with a Retry-After header and no credit debit.' },
   { q: 'Do credits expire?',
-    a: "Purchased credits don't expire while your account is active. Free sign-up credits are provided to get you started — treat them as a trial pool." },
+    a: 'Purchased credits never expire. Free sign-up credits expire 90 days after grant if unused. Free credits are spent first.',
+    link: { label: 'Refund Policy', href: '/legal/refund' } },
 ];
 
 // Two workflow strips beneath the four-surface grid.
@@ -338,7 +340,17 @@ export const MORE_FEATURES = [
   { group: 'Product',   items: ['Explore', 'Models', 'Pricing', 'Presets', 'Status'] },
   { group: 'Models',    items: ['Wan 2.5', 'Nano Banana', 'Seedance 2.0 Fast', 'Kling 2.6 Pro', 'Kling 3.0 I2V', 'MiniMax H3', 'Seedream 4', 'Flux.2 [pro]', 'Veo 3.1 ◆', 'ACE Step'] },
   { group: 'Tools',     items: ['Image Generator', 'Video Generator', 'Image-to-Video', 'Audio', 'Upscaler'] },
-  { group: 'Company',   items: ['About', 'Terms', 'Privacy', 'GDPR & Data Rights', 'Refund Policy', 'Contact'] },
+  // Items are either a plain string (static label — page not shipped yet)
+  // or { label, href } (real route). About / Contact stay static until
+  // those pages exist.
+  { group: 'Company',   items: [
+    'About',
+    { label: 'Terms',              href: '/legal/terms' },
+    { label: 'Privacy',            href: '/legal/privacy' },
+    { label: 'GDPR & Data Rights', href: '/legal/gdpr' },
+    { label: 'Refund Policy',      href: '/legal/refund' },
+    'Contact',
+  ] },
 ];
 
 export const FOOTER_TAGLINE = 'Credit-metered AI generation for creators. Priced on the button — refund on failure, always. EU-hosted, C2PA-signed.';
