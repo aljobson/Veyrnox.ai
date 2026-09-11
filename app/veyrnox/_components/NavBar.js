@@ -16,8 +16,7 @@ export function MarketingNav() {
   return (
     <div className="sticky top-0 z-40 flex items-center justify-between px-8 h-16 border-b border-vx-border bg-vx-base/[0.88] backdrop-blur">
       <Link href="/veyrnox" className="flex items-center gap-2.5">
-        <Logo />
-        <span className="font-extrabold text-[15px] tracking-[0.18em]">VEYRNOX</span>
+        <Logo wordmark />
       </Link>
       <div className="flex gap-1.5 text-sm font-semibold">
         {items.map((it) => {
@@ -80,8 +79,7 @@ export function AppNav({ balance, active = 'explore' }) {
   return (
     <div className="sticky top-0 z-40 flex items-center justify-between px-8 h-16 border-b border-vx-border bg-vx-base/[0.88] backdrop-blur">
       <Link href="/veyrnox/app" className="flex items-center gap-2.5">
-        <Logo />
-        <span className="font-extrabold text-[15px] tracking-[0.18em]">VEYRNOX</span>
+        <Logo wordmark />
       </Link>
       <div className="flex gap-1 text-sm font-semibold">
         {items.map((it) => (
