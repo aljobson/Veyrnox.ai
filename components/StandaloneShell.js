@@ -245,7 +245,10 @@ export default function StandaloneShell() {
     </div>
   );
 
-  if (!hasApiKey) {
+  // ponytail: veyrnox_gateway flag routes through /api/v1/* which uses
+  // Supabase auth (AuthGate handles sign-in). Skip the legacy Muapi gate.
+  const gatewayOn = typeof window !== 'undefined' && window.localStorage.getItem('veyrnox_gateway') === 'on';
+  if (!hasApiKey && !gatewayOn) {
     return <ApiKeyModal onSave={handleKeySave} />;
   }
 
