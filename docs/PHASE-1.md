@@ -88,12 +88,32 @@ Sub-slice 3b (shipped 2026-09-10, PR forthcoming):
 - **Exit gate (3b):** signup + login flow works against a real Supabase
   project; users appear in Postgres `users` table via the webhook.
 
-### Slice 4 — Neon Postgres + Hyperdrive — needs vendor account
-- Neon project created (region per data-residency decision)
-- Neon serverless driver `@neondatabase/serverless` in `packages/db`
-- Cloudflare Hyperdrive optional overlay for connection pooling (add later if latency)
-- Migrations run via CLI `wrangler d1` equivalent — a `scripts/migrate.mjs` that reads `packages/db/schema/*.sql` in order
-- **Exit gate:** `scripts/migrate.mjs` deploys the schema to Neon; `SELECT NOW()` roundtrip <100ms from a Worker
+### Slice 4 — Postgres wired to the Worker (Supabase per ADR-0006)
+
+Sub-slice 4a (shipped, project already provisioned in Slice 3-2):
+- Supabase staging Postgres live at `yrqzwqywxfesmbvhzjgj` (us-east-2 — see supabase-staging.md re: Frankfurt migration before Slice 9)
+- Migrations 0001–0005 applied via Supabase MCP; catalog seeded
+
+Sub-slice 4b (this PR):
+- **`packages/db/schema/supabase/0006_ledger_rpc_functions.sql`** — atomic
+  `ledger_debit`, `ledger_refund`, `ledger_grant`, `read_user_balance`
+  Postgres functions. SECURITY DEFINER, `SET search_path = ''`, service_role
+  only. Applied to staging.
+- **`packages/db/supabase-client.js`** — minimal fetch-based PostgREST
+  client. `rpc(name, args, cfg)` and `select(table, opts, cfg)`. No
+  `@supabase/supabase-js` dep (heavy libs trip Workers Builds; the
+  Slice 1 tsx / Slice 3b jose lessons apply).
+- **`GET /api/v1/health`** — smoke test. Returns `select_latency_ms`
+  (round-trip to Supabase via PostgREST) and `catalog_alive`.
+- **`GET /api/v1/balance`** — reads `read_user_balance(auth_id)` using the
+  middleware-verified `x-veyrnox-auth-id` header. Never trusts a
+  client-supplied id.
+
+Exit gate: with `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`,
+`SUPABASE_JWT_SECRET` set as wrangler secrets, an authenticated user
+hitting `GET /api/v1/health` sees `select_latency_ms < 100` and
+`catalog_alive: true`; `GET /api/v1/balance` returns their materialised
+credit balance.
 
 ### Slice 5 — fal.ai adapter (real endpoints)
 - Adapt `packages/adapters/fal.ts` — keep Ed25519 webhook verification from R7, real endpoint map for the top-priority model (Wan 2.5 for T2V per §25.4)
