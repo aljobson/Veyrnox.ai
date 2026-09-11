@@ -166,11 +166,32 @@ phantom auth_id.
 Exit gate: 11th generation submission inside 60s returns HTTP 429
 with `Retry-After`; the 10th succeeds.
 
-### Slice 7 — R2 media pipeline
-- R2 bucket `veyrnox-media` created in Cloudflare
-- Adapter fetches result URL, copies to R2 with signed-URL retention per plan (§10.6)
-- Signed-URL helper: `packages/db/r2-urls.ts` (already in archive, adapt)
-- **Exit gate:** completed job's `assets` row points to an R2 key; signed URL returns the image
+### Slice 7 — R2 media pipeline (shipped)
+
+Approach: **S3-compatible API + SigV4 over fetch**, not the `env.MEDIA`
+R2 binding. Avoids `getCloudflareContext()` at runtime (unproven for
+middleware/route contexts) and uses the same plain-fetch pattern the
+rest of the gateway already uses. ~190 lines of SigV4 in Web Crypto.
+
+- **`packages/adapters/r2.js`** — `putObject`, `presignGetUrl`,
+  `copyUrlToR2`. Config: `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`,
+  `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`.
+- **`packages/db/schema/supabase/0009_job_stored_and_asset_lookup.sql`**
+  — `job_stored(provider_job_id, provider, r2_key, mime_type, size_bytes)`
+  atomically moves the job SUBMITTED/SUCCEEDED → STORED AND inserts the
+  assets row. `get_user_asset(auth_id, job_id)` — ownership-gated read,
+  NOT_FOUND masks existence.
+- **`POST /api/webhook/fal`** — success flow extended: job_succeeded →
+  extract output URL (probes `output.url`, `output.video.url`,
+  `output.images[].url`, top-level variants) → `copyUrlToR2` → `job_stored`.
+  R2-copy failures leave the job SUCCEEDED with no asset row; a future
+  reconcile job (Phase 4) can retry.
+- **`GET /api/v1/jobs/:id/asset`** — returns a presigned R2 URL
+  (default 1h). Client fetches R2 directly, no proxy hop.
+
+Exit gate: with R2 credentials + a bucket configured, a completed fal
+job's `assets` row points to an R2 key and the presigned URL returns
+the media.
 
 ### Slice 8 — Refund saga
 - Job failure → compensating `+delta` ledger entry (`reason='refund:job_failed'`)
