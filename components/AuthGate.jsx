@@ -229,7 +229,7 @@ export default function AuthGate() {
                 </div>
 
                 <p className="mt-4 text-[10px] text-zinc-500 leading-tight">
-                    By continuing you accept the Veyrnox Terms &amp; Privacy Policy. AI outputs are marked as
+                    By continuing you accept the Veyrnox <a href="/legal/terms" className="underline hover:text-zinc-300">Terms</a> &amp; <a href="/legal/privacy" className="underline hover:text-zinc-300">Privacy Policy</a>. AI outputs are marked as
                     AI-generated per EU AI Act Article 50.
                 </p>
             </div>
