@@ -1,10 +1,9 @@
-import { proxyToMuapi } from '@/lib/muapiProxy';
+import { proxyToMuapi, safeUpstreamPath } from '@/lib/muapiProxy';
 
 // e.g. GET /api/agents?is_template=true  → https://api.muapi.ai/agents?is_template=true
 // e.g. GET /api/agents/by-slug/foo       → https://api.muapi.ai/agents/by-slug/foo
 function upstreamPath(pathSegments) {
-    const path = pathSegments.join('/');
-    return path ? `/agents/${path}` : '/agents';
+    return safeUpstreamPath('/agents', pathSegments);
 }
 
 // forwardBinary: some agent endpoints return non-JSON payloads (e.g. exports).

@@ -34,7 +34,11 @@ BANNED=(
 
 SCOPE=(
   'app/veyrnox'
+  'app/legal'
   'app/layout.js'
+  'app/sitemap.js'
+  'components'
+  'public'
   'README.md'
 )
 

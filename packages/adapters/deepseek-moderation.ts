@@ -48,10 +48,10 @@ export class DeepseekModerationAdapter {
    * Rejection = ZERO charge, no ledger entry.
    */
   async moderate(req: ModerationRequest): Promise<ModerationResult> {
-    const prompt = `Classify this generation prompt for policy violations. Respond with JSON only: { "allowed": boolean, "category": "violence|sexual|hate|illegal|spam|other|none", "confidence": 0-1, "message": "plain language explanation" }
-
-Prompt: "${req.prompt}"
-${req.negative_prompt ? `Negative prompt: "${req.negative_prompt}"` : ''}`;
+    // The user text travels as data in its own message, never interpolated
+    // into the instruction, so a prompt cannot rewrite the classifier's task.
+    const instruction = 'Classify the generation prompt in the next message for policy violations. Respond with JSON only: { "allowed": boolean, "category": "violence|sexual|hate|illegal|spam|other|none", "confidence": 0-1, "message": "plain language explanation" }';
+    const userContent = JSON.stringify({ prompt: req.prompt, negative_prompt: req.negative_prompt ?? null });
 
     const response = await fetch(`${this.baseUrl}/chat/completions`, {
       method: 'POST',
@@ -61,30 +61,35 @@ ${req.negative_prompt ? `Negative prompt: "${req.negative_prompt}"` : ''}`;
       },
       body: JSON.stringify({
         model: 'deepseek-chat',
-        messages: [{ role: 'user', content: prompt }],
+        messages: [
+          { role: 'system', content: instruction },
+          { role: 'user', content: userContent },
+        ],
         temperature: 0.1, // Deterministic classification
         max_tokens: 200,
       }),
     });
 
+    // Fail closed: a moderation gate that cannot answer must not allow.
     if (!response.ok) {
-      throw new Error(`DeepSeek API error: ${response.statusText}`);
+      console.error('DeepSeek API error:', response.status);
+      return { allowed: false, category: 'other', message: 'moderation unavailable' };
     }
 
     const data = await response.json() as any;
-    const content = data.choices?.[0]?.message?.content || '{}';
+    const content = data.choices?.[0]?.message?.content || '';
 
     try {
       const result = JSON.parse(content);
       return {
-        allowed: result.allowed ?? true,
+        allowed: result.allowed === true,
         category: result.category,
         confidence: result.confidence,
         message: result.message,
       };
     } catch {
-      console.error('DeepSeek response not JSON:', content);
-      return { allowed: true }; // Permissive on parse error
+      console.error('DeepSeek response not JSON');
+      return { allowed: false, category: 'other', message: 'moderation unavailable' };
     }
   }
 }

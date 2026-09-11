@@ -25,6 +25,45 @@
 const REGION = 'auto';
 const SERVICE = 's3';
 
+// Hosts fal serves generated assets from. Anything else is refused by
+// copyUrlToR2 — the URL arrives in a provider payload, never trusted blindly.
+const ALLOWED_SOURCE_SUFFIXES = ['.fal.media', '.fal.run', '.fal.ai'];
+const ALLOWED_SOURCE_HOSTS = ['fal.media', 'fal.run', 'fal.ai'];
+// ponytail: 100 MB cap, the Worker holds the body in memory. Stream to R2 multipart if outputs grow.
+const COPY_MAX_BYTES = 100 * 1024 * 1024;
+
+function isAllowedSourceHost(hostname) {
+    const h = String(hostname || '').toLowerCase();
+    return ALLOWED_SOURCE_HOSTS.includes(h) || ALLOWED_SOURCE_SUFFIXES.some((s) => h.endsWith(s));
+}
+
+/** Read a ReadableStream into bytes; returns null once `maxBytes` is exceeded. */
+async function readCapped(stream, maxBytes) {
+    if (!stream) return new Uint8Array(0);
+    const reader = stream.getReader();
+    const chunks = [];
+    let total = 0;
+    for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        total += value.byteLength;
+        if (total > maxBytes) {
+            await reader.cancel().catch(() => {});
+            return null;
+        }
+        chunks.push(value);
+    }
+    const out = new Uint8Array(total);
+    let off = 0;
+    for (const c of chunks) { out.set(c, off); off += c.byteLength; }
+    return out;
+}
+
+/** RFC 3986 percent-encoding: encodeURIComponent leaves !'()* unencoded, SigV4 does not. */
+function rfc3986(s) {
+    return encodeURIComponent(s).replace(/[!'()*]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`);
+}
+
 /** @returns {{accountId, accessKeyId, secretAccessKey, bucket}} */
 export function envConfig() {
     return {
@@ -90,7 +129,7 @@ export async function putObject(key, body, contentType, cfg) {
     const amzDate = iso8601BasicNow();
     const dateStamp = amzDate.slice(0, 8);
     const host = `${cfg.accountId}.r2.cloudflarestorage.com`;
-    const canonicalUri = `/${cfg.bucket}/${key.split('/').map(encodeURIComponent).join('/')}`;
+    const canonicalUri = `/${cfg.bucket}/${key.split('/').map(rfc3986).join('/')}`;
 
     const payloadHash = await sha256Hex(bodyBytes);
     const canonicalHeaders =
@@ -141,7 +180,7 @@ export async function deleteObject(key, cfg) {
     const amzDate = iso8601BasicNow();
     const dateStamp = amzDate.slice(0, 8);
     const host = `${cfg.accountId}.r2.cloudflarestorage.com`;
-    const canonicalUri = `/${cfg.bucket}/${key.split('/').map(encodeURIComponent).join('/')}`;
+    const canonicalUri = `/${cfg.bucket}/${key.split('/').map(rfc3986).join('/')}`;
 
     const payloadHash = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
     const canonicalHeaders =
@@ -194,7 +233,7 @@ export async function presignGetUrl(key, expiresSeconds, cfg) {
     const amzDate = iso8601BasicNow();
     const dateStamp = amzDate.slice(0, 8);
     const host = `${cfg.accountId}.r2.cloudflarestorage.com`;
-    const canonicalUri = `/${cfg.bucket}/${key.split('/').map(encodeURIComponent).join('/')}`;
+    const canonicalUri = `/${cfg.bucket}/${key.split('/').map(rfc3986).join('/')}`;
     const credentialScope = `${dateStamp}/${REGION}/${SERVICE}/aws4_request`;
 
     const params = new URLSearchParams({
@@ -224,13 +263,21 @@ export async function presignGetUrl(key, expiresSeconds, cfg) {
  * fal webhook to copy a provider-hosted output into our bucket
  * before it expires.
  */
-export async function copyUrlToR2(sourceUrl, r2Key, cfg, { timeoutMs = 30000 } = {}) {
+export async function copyUrlToR2(sourceUrl, r2Key, cfg, { timeoutMs = 30000, maxBytes = COPY_MAX_BYTES } = {}) {
+    // Outbound fetch targets must be constants or provider CDNs (CLAUDE.md
+    // OWASP #10). The URL comes from a provider payload, so pin the host.
+    let parsed;
+    try { parsed = new URL(sourceUrl); } catch { return { ok: false, error: 'source url invalid' }; }
+    if (parsed.protocol !== 'https:' || !isAllowedSourceHost(parsed.hostname)) {
+        console.error('R2 copy source host not allowed:', parsed.hostname);
+        return { ok: false, error: 'source host not allowed' };
+    }
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
         let src;
         try {
-            src = await fetch(sourceUrl, { signal: controller.signal });
+            src = await fetch(parsed.toString(), { signal: controller.signal, redirect: 'error' });
         } catch (err) {
             const msg = err && err.message;
             console.error('R2 copy source fetch failed:', msg);
@@ -240,16 +287,21 @@ export async function copyUrlToR2(sourceUrl, r2Key, cfg, { timeoutMs = 30000 } =
             console.error('R2 copy source non-ok:', src.status);
             return { ok: false, error: `source ${src.status}` };
         }
+        const declared = Number(src.headers.get('content-length'));
+        if (Number.isFinite(declared) && declared > maxBytes) {
+            return { ok: false, error: 'source too large' };
+        }
         const contentType = src.headers.get('content-type') || 'application/octet-stream';
         // Body read is kept inside the timeout window so a hung stream still aborts.
         let bytes;
         try {
-            bytes = new Uint8Array(await src.arrayBuffer());
+            bytes = await readCapped(src.body, maxBytes);
         } catch (err) {
             const msg = err && err.message;
             console.error('R2 copy source body read failed:', msg);
             return { ok: false, error: `read source: ${msg}` };
         }
+        if (!bytes) return { ok: false, error: 'source too large' };
         const put = await putObject(r2Key, bytes, contentType, cfg);
         if (!put.ok) return put;
         return { ok: true, r2Key: put.r2Key, size: put.size, mimeType: contentType };

@@ -94,10 +94,21 @@ export async function POST(request) {
 
         // Perform the server-to-server POST to S3
         // This bypasses browser CORS/Preflight security entirely
-        const s3Response = await fetch(validatedTarget.url, {
-            method: 'POST',
-            body: s3FormData,
-        });
+        // No redirect following (a presigned policy could 303 elsewhere) and a
+        // hard upstream timeout so a stalled S3 endpoint cannot pin the Worker.
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 60000);
+        let s3Response;
+        try {
+            s3Response = await fetch(validatedTarget.url, {
+                method: 'POST',
+                body: s3FormData,
+                redirect: 'manual',
+                signal: controller.signal,
+            });
+        } finally {
+            clearTimeout(timer);
+        }
 
         if (s3Response.ok || s3Response.status === 204) {
             return new Response(null, { status: 204 });

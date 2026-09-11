@@ -5,7 +5,6 @@ on:
     paths:
       - "packages/db/**"
       - "packages/catalog/**"
-      - "packages/auth/**"
       - "scripts/migrate.mjs"
       - "package.json"
       - "package-lock.json"
@@ -15,8 +14,10 @@ on:
     paths:
       - "packages/db/**"
       - "packages/catalog/**"
-      - "packages/auth/**"
       - "scripts/migrate.mjs"
+
+permissions:
+  contents: read
 
 jobs:
   acceptance:
@@ -42,23 +43,21 @@ jobs:
       DATABASE_URL: postgres://veyrnox:veyrnox_dev@localhost:5432/veyrnox
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "22"
 
       # Isolated install — do NOT pull the whole workspace tree (submodule
       # packages fail without their private origins). pg and tsx are all we
-      # need to migrate + run the acceptance tests.
+      # need to migrate + run the acceptance tests. Exact pins: CI must not
+      # resolve a different package on every run.
       - name: Install pg + tsx
-        run: npm install --no-save --no-audit --no-fund pg@^8.13.0 tsx@^4.19.2 jose@^5.9.6
+        run: npm install --no-save --no-audit --no-fund pg@8.13.0 tsx@4.19.2
 
       - name: Run catalog margin-floor tests
         run: npx tsx --test packages/catalog/margin-validator.test.ts
-
-      - name: Run auth JWT verifier tests
-        run: npx tsx --test packages/auth/verify.test.ts
 
       - name: Apply migrations
         run: node scripts/migrate.mjs

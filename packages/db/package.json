@@ -8,14 +8,7 @@
   "types": "./index.ts",
   "exports": {
     ".": "./index.ts",
-    "./ledger": "./ledger.ts",
-    "./job-state": "./job-state.ts",
-    "./failover": "./failover.ts",
-    "./grants": "./grants.ts",
-    "./r2-urls": "./r2-urls.ts",
-    "./premium-gating": "./premium-gating.ts",
-    "./presets": "./presets.ts",
-    "./margin-validator": "./margin-validator.ts"
+    "./ledger": "./ledger.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

@@ -1,10 +1,10 @@
-import { proxyToMuapi } from '@/lib/muapiProxy';
+import { proxyToMuapi, safeUpstreamPath } from '@/lib/muapiProxy';
 
 // forwardBinary: some workflow endpoints stream non-JSON bodies.
 const OPTS = { forwardBinary: true };
 
 function upstreamPath(pathSegments) {
-    return `/workflow/${pathSegments.join('/')}`;
+    return safeUpstreamPath('/workflow', pathSegments);
 }
 
 export async function GET(request, { params }) {

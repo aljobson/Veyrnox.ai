@@ -25,6 +25,59 @@ import { submitJob } from '../../../../packages/adapters/fal.js';
 // Constrain idempotency keys to a safe printable range.
 const IDEMPOTENCY_RE = /^[A-Za-z0-9._-]{8,128}$/;
 
+// Provider payload allowlist. `inputs` is forwarded to fal verbatim, so
+// every key the user may set is enumerated here with a bound; anything
+// else is rejected. Quantity knobs (num_images, num_frames, duration
+// beyond the priced unit, ...) are deliberately absent: the catalog price
+// is per 5-second unit / single output and the payload must not buy more.
+const MAX_INPUTS_BYTES = 8 * 1024;
+const UNIT_SECONDS = 5;
+const ALLOWED_INPUTS = {
+    prompt: { kind: 'string', max: 2000 },
+    negative_prompt: { kind: 'string', max: 2000 },
+    aspect_ratio: { kind: 'enum', values: ['16:9', '9:16', '1:1', '4:3', '3:4', '4:5', '21:9'] },
+    resolution: { kind: 'enum', values: ['1K', '2K', '4K', '480p', '720p', '1080p'] },
+    duration_seconds: { kind: 'enum', values: [5, 10] },
+    seed: { kind: 'int', min: 0, max: 2147483647 },
+    image_url: { kind: 'url' },
+};
+
+/** @returns {{ok:true}|{ok:false,error:string}} */
+function validateInputs(inputs) {
+    if (JSON.stringify(inputs).length > MAX_INPUTS_BYTES) return { ok: false, error: 'inputs_too_large' };
+    for (const [key, value] of Object.entries(inputs)) {
+        const rule = ALLOWED_INPUTS[key];
+        if (!rule) return { ok: false, error: `inputs_key_not_allowed:${key.slice(0, 32)}` };
+        switch (rule.kind) {
+            case 'string':
+                if (typeof value !== 'string' || value.length > rule.max) return { ok: false, error: `inputs_invalid:${key}` };
+                break;
+            case 'enum':
+                if (!rule.values.includes(value)) return { ok: false, error: `inputs_invalid:${key}` };
+                break;
+            case 'int':
+                if (!Number.isInteger(value) || value < rule.min || value > rule.max) return { ok: false, error: `inputs_invalid:${key}` };
+                break;
+            case 'url': {
+                let u;
+                try { u = new URL(value); } catch { return { ok: false, error: `inputs_invalid:${key}` }; }
+                if (u.protocol !== 'https:' || value.length > 2048) return { ok: false, error: `inputs_invalid:${key}` };
+                break;
+            }
+            default:
+                return { ok: false, error: `inputs_invalid:${key}` };
+        }
+    }
+    return { ok: true };
+}
+
+/** Credits owed: catalog price is per UNIT_SECONDS of video, per single image/audio output. */
+function priceFor(modelRow, inputs) {
+    const isVideo = typeof modelRow.modality === 'string' && modelRow.modality.endsWith('video');
+    const seconds = isVideo ? (inputs.duration_seconds || UNIT_SECONDS) : UNIT_SECONDS;
+    return modelRow.credits_5s * Math.ceil(seconds / UNIT_SECONDS);
+}
+
 export async function POST(req) {
     const authId = req.headers.get('x-veyrnox-auth-id');
     if (!authId) return NextResponse.json({ error: 'not_authenticated' }, { status: 401 });
@@ -48,6 +101,8 @@ export async function POST(req) {
     if (!inputs || typeof inputs !== 'object' || Array.isArray(inputs)) {
         return NextResponse.json({ error: 'inputs_must_be_object' }, { status: 400 });
     }
+    const inputsCheck = validateInputs(inputs);
+    if (!inputsCheck.ok) return NextResponse.json({ error: inputsCheck.error }, { status: 400 });
 
     // 0. Per-user rate-limit check. Postgres-backed sliding window against
     //    jobs.created_at — no dedicated table, no external cache. One RPC
@@ -84,9 +139,10 @@ export async function POST(req) {
             return NextResponse.json({ error: rlCode }, { status: 400 });
         }
     } catch (err) {
-        // Rate-limit check failure is not fatal — the downstream ledger_debit
-        // still gates money movement. Log and continue.
-        console.warn('[generations] rate check errored, continuing:', err);
+        // Fail closed: the rate limit is the entry-point control. A degraded
+        // rate check must not turn into an unlimited submission path.
+        console.error('[generations] rate check errored:', err);
+        return NextResponse.json({ error: 'rate_check_unavailable' }, { status: 503 });
     }
 
     // 1. Look up the model in the catalog.
@@ -94,7 +150,7 @@ export async function POST(req) {
     try {
         const rows = await select(
             'model_catalog',
-            { columns: 'id,provider,provider_endpoint,credits_5s,gated_flag,active', filter: `id=eq.${encodeURIComponent(modelId)}` },
+            { columns: 'id,provider,provider_endpoint,modality,credits_5s,gated_flag,active', filter: `id=eq.${encodeURIComponent(modelId)}` },
             cfg,
         );
         modelRow = Array.isArray(rows) && rows[0];
@@ -121,13 +177,15 @@ export async function POST(req) {
     }
     if (!userId) return NextResponse.json({ error: 'user_not_provisioned' }, { status: 409 });
 
-    // 3. Debit atomically. Creates jobs row too.
+    // 3. Debit atomically. Creates jobs row too. Price = catalog unit price
+    //    times the validated unit count; never a client-supplied number.
+    const credits = priceFor(modelRow, inputs);
     let debit;
     try {
         debit = await rpc('ledger_debit', {
             p_user_id: userId,
             p_idempotency_key: idempotencyKey,
-            p_credits: modelRow.credits_5s,
+            p_credits: credits,
             p_reason: 'debit:generation',
             p_model_id: modelId,
             p_inputs: inputs,
@@ -170,7 +228,7 @@ export async function POST(req) {
             await rpc('ledger_refund', {
                 p_job_id: jobId,
                 p_user_id: userId,
-                p_credits: modelRow.credits_5s,
+                p_credits: credits,
                 p_reason: 'refund:submit_failed',
             }, cfg);
         } catch (err) {

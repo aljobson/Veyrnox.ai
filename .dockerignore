@@ -1,0 +1,15 @@
+.git
+.gitmodules
+node_modules
+**/node_modules
+.env
+.env.*
+!.env.example
+.dev.vars*
+*.pem
+.next
+.open-next
+.wrangler
+.claude
+docs
+tests
