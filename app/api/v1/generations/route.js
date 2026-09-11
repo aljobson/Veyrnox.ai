@@ -137,7 +137,9 @@ export async function POST(req) {
     }
     if (!debit || debit.ok === false) {
         const status = debit && debit.code === 'INSUFFICIENT_BALANCE' ? 402 : 400;
-        return NextResponse.json({ error: (debit && debit.code) || 'debit rejected', message: debit && debit.message }, { status });
+        // Don't leak DB/RPC messages to the client — log server-side only.
+        if (debit && debit.message) console.error('[generations] debit rejected:', debit.code, debit.message);
+        return NextResponse.json({ error: (debit && debit.code) || 'debit rejected' }, { status });
     }
 
     const jobId = debit.job_id;
@@ -173,7 +175,8 @@ export async function POST(req) {
             console.error('[generations] refund-on-submit-fail failed:', err);
         }
         console.error('[generations] fal submit failed:', falResult.error);
-        return NextResponse.json({ error: 'provider submit failed', detail: falResult.error }, { status: 502 });
+        // Don't leak upstream vendor payloads to the client — log only.
+        return NextResponse.json({ error: 'provider submit failed' }, { status: 502 });
     }
 
     // 5. Move state to SUBMITTED and record provider job id.
