@@ -16,11 +16,11 @@ export default function DesignSystem() {
     <div className="min-h-dvh px-14 py-16 pb-24 max-w-[1200px] mx-auto">
       <div className="flex items-center gap-2.5">
         <Logo />
-        <span className="font-extrabold text-[15px] tracking-[0.18em]">MUON</span>
+        <span className="font-extrabold text-[15px] tracking-[0.18em]">VEYRNOX</span>
       </div>
       <h1 className="text-[48px] font-black tracking-[-0.03em] leading-[1.05] mt-3">Design system v2</h1>
       <p className="text-muon-fg-muted mt-3 max-w-[640px] leading-[1.6]">
-        Tokens and components for the Higgsfield-genre restyle.
+        Tokens and components for Veyrnox.ai.
         Rule of the system: <b className="text-muon-accent">aqua does things</b>,{' '}
         <b className="text-muon-money">amber is money</b>.
         Chrome stays monochrome; content thumbnails carry the color.

@@ -3,10 +3,10 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const TABS = [
-  { key: 'create',  href: '/muon/m/create',  label: 'Create',  icon: '✧' },
-  { key: 'explore', href: '/muon/m/explore', label: 'Explore', icon: '⌘' },
-  { key: 'library', href: '/muon/m/library', label: 'Library', icon: '▤' },
-  { key: 'credits', href: '/muon/m/credits', label: 'Credits', icon: '$' },
+  { key: 'create',  href: '/veyrnox/m/create',  label: 'Create',  icon: '✧' },
+  { key: 'explore', href: '/veyrnox/m/explore', label: 'Explore', icon: '⌘' },
+  { key: 'library', href: '/veyrnox/m/library', label: 'Library', icon: '▤' },
+  { key: 'credits', href: '/veyrnox/m/credits', label: 'Credits', icon: '$' },
 ];
 
 export function MobileTabs() {
@@ -37,12 +37,12 @@ export function MobileTabs() {
 export function MobileJumps() {
   const path = usePathname();
   const jumps = [
-    { href: '/muon/m/plans',   label: 'PLANS' },
-    { href: '/muon/m/create',  label: 'CREATE' },
-    { href: '/muon/m/job',     label: 'JOB' },
-    { href: '/muon/m/explore', label: 'EXPLORE' },
-    { href: '/muon/m/library', label: 'LIBRARY' },
-    { href: '/muon/m/credits', label: 'CREDITS' },
+    { href: '/veyrnox/m/plans',   label: 'PLANS' },
+    { href: '/veyrnox/m/create',  label: 'CREATE' },
+    { href: '/veyrnox/m/job',     label: 'JOB' },
+    { href: '/veyrnox/m/explore', label: 'EXPLORE' },
+    { href: '/veyrnox/m/library', label: 'LIBRARY' },
+    { href: '/veyrnox/m/credits', label: 'CREDITS' },
   ];
   return (
     <div className="flex gap-1.5 flex-wrap justify-center py-4 px-3">

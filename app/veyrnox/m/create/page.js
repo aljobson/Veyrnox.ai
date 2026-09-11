@@ -48,7 +48,7 @@ export default function MobileCreate() {
         <div className="flex-1" />
 
         <Link
-          href="/muon/m/job"
+          href="/veyrnox/m/job"
           className="flex justify-between items-center bg-muon-accent text-muon-accent-ink rounded-full px-5 py-3.5 text-[15px] font-extrabold min-h-[50px] mt-2"
         >
           <span>Generate</span>

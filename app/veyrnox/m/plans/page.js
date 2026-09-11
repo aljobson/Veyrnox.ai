@@ -40,7 +40,7 @@ export default function MobilePlans() {
       <div className="flex-1" />
 
       <Link
-        href="/muon/m/create"
+        href="/veyrnox/m/create"
         className="mt-4 flex justify-center items-center bg-muon-money text-muon-money-ink rounded-full py-3.5 text-[15px] font-extrabold min-h-[50px]"
       >
         Continue with Plus

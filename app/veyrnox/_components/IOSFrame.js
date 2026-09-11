@@ -1,4 +1,4 @@
-// iPhone bezel — 390pt logical width, mobile-web wrapper for the /muon/m/* screens.
+// iPhone bezel — 390pt logical width, mobile-web wrapper for the /veyrnox/m/* screens.
 // Simplified from the design handoff's ios-frame.jsx.
 export function IOSFrame({ children }) {
   return (

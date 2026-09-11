@@ -46,22 +46,22 @@ export default function MuonLanding() {
         kicker="NEW"
         title="One canvas. Every workflow."
         body="Moodboard, chain workflows, share with your team — one page. Every step shows its debit, so no surprise bills."
-        cta={{ label: 'Try Canvas', href: '/muon/app/create' }}
+        cta={{ label: 'Try Canvas', href: '/veyrnox/app/create' }}
         bg="linear-gradient(135deg,#0a1a2c 0%,#144a7a 55%,#3ec1e8 100%)"
       />
       <FeatureStrip
         kicker="CINEMA STUDIO"
         title="Different scenes. Same star."
         body="Character stays. Lens, look, weather change. One click does the rest — you still see the price first."
-        cta={{ label: 'Open Cinema', href: '/muon/app/create' }}
+        cta={{ label: 'Open Cinema', href: '/veyrnox/app/create' }}
         bg="linear-gradient(135deg,#1b0632 0%,#5a0e6a 55%,#e4318f 100%)"
         reverse
       />
       <FeatureStrip
         kicker="MCP · CLI"
         title="Turn Claude into a creative engine."
-        body="Point Claude Code at Muon. It picks the model, watches the cost, refunds on failure. Your balance is the ceiling."
-        cta={{ label: 'Install the plugin', href: '/muon/mcp' }}
+        body="Point Claude Code at Veyrnox.ai. It picks the model, watches the cost, refunds on failure. Your balance is the ceiling."
+        cta={{ label: 'Install the plugin', href: '/veyrnox/mcp' }}
         bg="linear-gradient(135deg,#08120b 0%,#0e3a1e 55%,#2ea258 100%)"
       />
 
@@ -95,9 +95,9 @@ function WideNav() {
   return (
     <div className="sticky top-0 z-40 h-16 border-b border-muon-border bg-muon-base/90 backdrop-blur">
       <div className="h-full px-6 flex items-center gap-6">
-        <Link href="/muon" className="flex items-center gap-2.5 shrink-0">
+        <Link href="/veyrnox" className="flex items-center gap-2.5 shrink-0">
           <Logo size={30} />
-          <span className="font-extrabold text-[14px] tracking-[0.18em]">MUON</span>
+          <span className="font-extrabold text-[14px] tracking-[0.18em]">VEYRNOX</span>
         </Link>
 
         <nav className="flex gap-1 items-center overflow-x-auto scrollbar-none flex-1">
@@ -122,7 +122,7 @@ function WideNav() {
         <div className="flex items-center gap-2 shrink-0">
           <button className="text-muon-fg-body text-sm font-semibold px-3 py-2 hover:text-muon-fg">Sign in</button>
           <Link
-            href="/muon/app"
+            href="/veyrnox/app"
             className="rounded-full bg-muon-accent text-muon-accent-ink text-sm font-bold px-5 py-2.5 hover:bg-muon-accent-hover"
           >
             Start creating
@@ -182,13 +182,13 @@ function SignupIncentive() {
             </ul>
             <div className="mt-6 flex gap-3">
               <Link
-                href="/muon/pricing"
+                href="/veyrnox/pricing"
                 className="rounded-full bg-muon-accent text-muon-accent-ink px-6 py-3 text-sm font-extrabold hover:bg-muon-accent-hover"
               >
                 Claim credits
               </Link>
               <Link
-                href="/muon/presets"
+                href="/veyrnox/presets"
                 className="rounded-full border border-white/30 text-white px-6 py-3 text-sm font-bold hover:border-white"
               >
                 Browse presets
@@ -292,7 +292,7 @@ function EffectsWall() {
           <div className="font-muon-mono text-[11px] tracking-[0.14em] text-muon-accent mb-2">VISUAL EFFECTS</div>
           <h2 className="text-3xl font-black tracking-[-0.02em]">Big-budget effects, one tap.</h2>
         </div>
-        <Link href="/muon/presets" className="text-sm font-semibold text-muon-fg-muted hover:text-muon-fg">View all →</Link>
+        <Link href="/veyrnox/presets" className="text-sm font-semibold text-muon-fg-muted hover:text-muon-fg">View all →</Link>
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
         {EFFECT_PRESETS.map((e, i) => (
@@ -357,7 +357,7 @@ function CreatorGrid() {
           <div className="font-muon-mono text-[11px] tracking-[0.14em] text-muon-accent mb-2">CREATING IN PUBLIC</div>
           <h2 className="text-3xl font-black tracking-[-0.02em]">Watch it get made.</h2>
         </div>
-        <Link href="/muon/community" className="text-sm font-semibold text-muon-fg-muted hover:text-muon-fg">Explore all →</Link>
+        <Link href="/veyrnox/community" className="text-sm font-semibold text-muon-fg-muted hover:text-muon-fg">Explore all →</Link>
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {CREATOR_PROJECTS.map((p) => (
@@ -420,10 +420,10 @@ function ClosingCTA() {
           Start with 200 credits.<br/>See the ledger. Cancel any time.
         </h2>
         <div className="mt-6 flex gap-3 justify-center flex-wrap">
-          <Link href="/muon/pricing" className="rounded-full bg-muon-accent text-muon-accent-ink px-8 py-4 text-base font-extrabold hover:bg-muon-accent-hover">
+          <Link href="/veyrnox/pricing" className="rounded-full bg-muon-accent text-muon-accent-ink px-8 py-4 text-base font-extrabold hover:bg-muon-accent-hover">
             Claim credits
           </Link>
-          <Link href="/muon/app" className="rounded-full border border-muon-border text-muon-fg px-8 py-4 text-base font-bold hover:border-muon-accent">
+          <Link href="/veyrnox/app" className="rounded-full border border-muon-border text-muon-fg px-8 py-4 text-base font-bold hover:border-muon-accent">
             Open the studio
           </Link>
         </div>
@@ -460,14 +460,14 @@ function FooterForest() {
         <div className="px-6 py-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 text-xs text-muon-fg-muted">
           <div className="flex items-center gap-3">
             <Logo size={22} />
-            <span className="font-muon-mono tracking-[0.18em] font-extrabold text-muon-fg">MUON</span>
+            <span className="font-muon-mono tracking-[0.18em] font-extrabold text-muon-fg">VEYRNOX</span>
             <span>© {new Date().getFullYear()} · UK / EU first</span>
           </div>
           <div className="flex gap-5">
-            <Link href="/muon/pricing" className="hover:text-muon-fg">Pricing</Link>
-            <Link href="/muon/presets" className="hover:text-muon-fg">Gallery</Link>
-            <Link href="/muon/design-system" className="hover:text-muon-fg">Design</Link>
-            <Link href="/muon/app/admin" className="hover:text-muon-fg">Status</Link>
+            <Link href="/veyrnox/pricing" className="hover:text-muon-fg">Pricing</Link>
+            <Link href="/veyrnox/presets" className="hover:text-muon-fg">Gallery</Link>
+            <Link href="/veyrnox/design-system" className="hover:text-muon-fg">Design</Link>
+            <Link href="/veyrnox/app/admin" className="hover:text-muon-fg">Status</Link>
           </div>
         </div>
       </div>

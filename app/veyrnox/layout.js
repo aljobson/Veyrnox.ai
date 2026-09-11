@@ -1,5 +1,5 @@
 import { Archivo, JetBrains_Mono } from 'next/font/google';
-import './muon.css';
+import './veyrnox.css';
 
 const archivo = Archivo({
   subsets: ['latin'],
@@ -16,7 +16,7 @@ const jetbrains = JetBrains_Mono({
 });
 
 export const metadata = {
-  title: 'Muon — AI video & image, priced per generation',
+  title: 'Veyrnox.ai — AI video & image, priced per generation',
   description: 'Credit-metered AI video and image studio. Every generation shows its price before you spend.',
 };
 
