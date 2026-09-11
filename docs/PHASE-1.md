@@ -115,10 +115,27 @@ hitting `GET /api/v1/health` sees `select_latency_ms < 100` and
 `catalog_alive: true`; `GET /api/v1/balance` returns their materialised
 credit balance.
 
-### Slice 5 — fal.ai adapter (real endpoints)
-- Adapt `packages/adapters/fal.ts` — keep Ed25519 webhook verification from R7, real endpoint map for the top-priority model (Wan 2.5 for T2V per §25.4)
-- `packages/adapters/fal.integration.test.ts` — hits fal.ai sandbox / uses recorded fixtures
-- **Exit gate:** submit a Wan 2.5 job to fal.ai, receive the webhook, verify signature, extract output URL
+### Slice 5 — fal.ai adapter + submit endpoint + webhook (shipped)
+
+- **`packages/adapters/fal.js`** — Worker-runtime adapter. `submitJob(job, cfg)`
+  posts to `queue.fal.run/<endpoint>`; `verifyWebhookSignature(rawBody, sig)`
+  Ed25519-verifies against fal's JWKS via Web Crypto. §5.4 invariant
+  preserved (fal = Ed25519, never HMAC). JWKS cached 24h in-worker.
+- **`packages/db/schema/supabase/0007_job_state_transitions.sql`** —
+  `job_submitted`, `job_succeeded`, `job_failed` RPCs. service_role only.
+- **`POST /api/v1/generations`** — auth → catalog lookup → user resolution
+  → `ledger_debit` RPC → `fal.submitJob` → `job_submitted` RPC. Idempotent
+  replay via jobs(user_id, idempotency_key). Refund on submit failure.
+- **`POST /api/webhook/fal`** — Ed25519 verify → dedup via webhook_events
+  → route by status: success → `job_succeeded`; failure → `job_failed` +
+  `ledger_refund`. Never trusts the body until signature verification passes.
+- Endpoint map sourced from `model_catalog.provider_endpoint` (Slice 2 seed).
+
+Exit gate: with `FAL_KEY`, `PUBLIC_HOST`, and the Supabase secrets configured,
+a POST to `/api/v1/generations` for a LAUNCH model triggers a real fal
+submission; the fal webhook arriving back moves the job through SUBMITTED →
+SUCCEEDED (or → FAILED → REFUNDED). Verified once against staging with a
+real FAL_KEY.
 
 ### Slice 6 — Inngest wiring — needs vendor account
 - Inngest project + signing key
