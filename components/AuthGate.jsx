@@ -30,6 +30,26 @@ export default function AuthGate() {
     const [password, setPassword] = useState("");
     const [busy, setBusy] = useState(false);
     const [notice, setNotice] = useState(null);
+    // Which OAuth providers are actually enabled on the Supabase side.
+    // Fetching once on first mount avoids showing broken buttons that
+    // redirect to a Supabase 400 "provider is not enabled" page.
+    const [oauth, setOauth] = useState({ apple: false, google: false });
+
+    useEffect(() => {
+        const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+        if (!url || !anon) return;
+        let cancelled = false;
+        fetch(`${url}/auth/v1/settings`, { headers: { apikey: anon } })
+            .then((r) => (r.ok ? r.json() : null))
+            .then((data) => {
+                if (cancelled || !data) return;
+                const ext = data.external || {};
+                setOauth({ apple: !!ext.apple, google: !!ext.google });
+            })
+            .catch(() => {});
+        return () => { cancelled = true; };
+    }, []);
 
     // Listen for the app-wide "please authenticate" signal.
     useEffect(() => {
@@ -116,17 +136,25 @@ export default function AuthGate() {
                     New users get 50 free credits. Data stays in the EU (Frankfurt).
                 </p>
 
-                <div className="space-y-2 mb-3">
-                    <button type="button" onClick={() => signInWithOAuth("apple")} disabled={busy} className="w-full rounded-lg bg-white text-black font-semibold py-2 text-sm hover:bg-zinc-200 disabled:opacity-60">
-                        Continue with Apple
-                    </button>
-                    <button type="button" onClick={() => signInWithOAuth("google")} disabled={busy} className="w-full rounded-lg bg-zinc-800 border border-white/10 text-white font-semibold py-2 text-sm hover:bg-zinc-700 disabled:opacity-60">
-                        Continue with Google
-                    </button>
-                </div>
-                <div className="flex items-center gap-3 mb-3 text-[10px] text-zinc-500 uppercase tracking-wider">
-                    <div className="h-px bg-white/10 flex-1" /> or email <div className="h-px bg-white/10 flex-1" />
-                </div>
+                {(oauth.apple || oauth.google) && (
+                    <>
+                        <div className="space-y-2 mb-3">
+                            {oauth.apple && (
+                                <button type="button" onClick={() => signInWithOAuth("apple")} disabled={busy} className="w-full rounded-lg bg-white text-black font-semibold py-2 text-sm hover:bg-zinc-200 disabled:opacity-60">
+                                    Continue with Apple
+                                </button>
+                            )}
+                            {oauth.google && (
+                                <button type="button" onClick={() => signInWithOAuth("google")} disabled={busy} className="w-full rounded-lg bg-zinc-800 border border-white/10 text-white font-semibold py-2 text-sm hover:bg-zinc-700 disabled:opacity-60">
+                                    Continue with Google
+                                </button>
+                            )}
+                        </div>
+                        <div className="flex items-center gap-3 mb-3 text-[10px] text-zinc-500 uppercase tracking-wider">
+                            <div className="h-px bg-white/10 flex-1" /> or email <div className="h-px bg-white/10 flex-1" />
+                        </div>
+                    </>
+                )}
                 <form onSubmit={handleSubmit} className="space-y-3">
                     <label className="block">
                         <span className="text-xs text-zinc-400">Email</span>
