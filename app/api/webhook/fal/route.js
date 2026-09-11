@@ -184,6 +184,17 @@ export async function POST(req) {
  * Returns null if none found — caller logs + no-ops.
  */
 function extractOutputUrl(event) {
+    // Fal's real shape wraps the payload under `.payload` and puts arrays
+    // under `.images`; try that first before falling back to older shapes.
+    const p = event && event.payload;
+    if (p) {
+        if (Array.isArray(p.images) && p.images[0] && typeof p.images[0].url === 'string') {
+            return p.images[0].url;
+        }
+        if (p.video && typeof p.video.url === 'string') return p.video.url;
+        if (p.audio && typeof p.audio.url === 'string') return p.audio.url;
+        if (typeof p.url === 'string') return p.url;
+    }
     const out = (event && event.output) || event || {};
     if (out && typeof out.url === 'string') return out.url;
     if (out.video && typeof out.video.url === 'string') return out.video.url;
