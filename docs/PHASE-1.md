@@ -217,22 +217,17 @@ Sub-slice 9a (this PR):
   existing `showError` helper renders a friendly toast (401 = sign
   in, 402 = insufficient credits, 429 = rate limited with Retry-After).
 
-Sub-slice 9b (ship-blocked 2026-09-11 — see PR #38 for the bisect):
+Sub-slice 9b (shipped 2026-09-11 via option 3 — auth UI in `app/`):
 
-Attempted three implementations of a browser sign-in / sign-up UI:
-  1. `@supabase/supabase-js` in root deps, static import
-  2. `@supabase/supabase-js` in `packages/studio` deps, dynamic import + `next/dynamic({ssr:false})`
-  3. Plain-fetch to `/auth/v1/*` — no library dep at all
+- **`app/lib/authClient.js`** — plain-fetch Supabase auth (signIn / signUp / magicLink / signOut). No library dep. Session in localStorage.
+- **`components/AuthGate.jsx`** — root-mounted modal listening for `veyrnox:auth-required` events. Opens on any 401 from `/api/v1/*`.
+- **`app/layout.js`** — mounts `<AuthGate/>` once alongside `<ToasterMount/>`. Runs on every route so any studio can trigger the modal.
+- **`packages/studio/src/gatewayClient.js`** — reads the same `veyrnox_supabase_session` localStorage key directly (no cross-package import), attaches `Authorization: Bearer` on every `/api/v1/*` call, dispatches `veyrnox:auth-required` on 401 before throwing.
 
-All three failed Cloudflare Workers Builds. Same failure class as Slice 1 tsx and Slice 3b jose, but manifests even with **zero library dep** — the trigger appears to be adding `packages/studio/src/authClient.js` and `packages/studio/src/components/AuthGate.jsx` to the transpiled workspace at all, not the code inside them.
+Why this shape (from PR #38 bisect):
+  Putting any new file — even a plain `.js` with no deps — under `packages/studio/src/` broke the OpenNext / Cloudflare Workers Builds bundler. `app/lib/**` and top-level `components/**` are on Next's standard client/server split and behave. `packages/studio` stays generation-focused, unaware of auth; the studio → gateway → auth dependency runs one-way via the browser event bus.
 
-PR #38 was closed after a full revert restored green. Slice 9b is deferred until a bundler-compatibility investigation lands. Options being tracked:
-
-- Deploy the studio as its own Next app on Cloudflare Pages (not Workers), where the SSR-vs-client split behaves differently
-- Find a `next.config.mjs` incantation that keeps `packages/studio/**` off the SSR/Worker bundle path
-- Move the auth UI outside `packages/studio` into `app/` so it's never part of the transpiled workspace tree — untested but the most surgical
-
-Legacy `__Host-muapi_key` sunset stays on schedule (2026-10-10, per Slice 3b headers).
+Legacy `__Host-muapi_key` sunset stays on schedule (2026-10-10).
 
 **Phase-1 Exit gate** (pending): with the flag on and a Supabase
 session cookie present, click generate in ImageStudio → job flows
