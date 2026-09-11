@@ -18,7 +18,7 @@ const CSP = [
   // S3 uploads go through /api/upload-binary (same-origin) and every MuAPI
   // call is proxied through /api/* (same-origin) so the browser never needs
   // a direct connect to api.muapi.ai or any *.s3.amazonaws.com host.
-  "connect-src 'self'",
+  "connect-src 'self' https://yrqzwqywxfesmbvhzjgj.supabase.co",
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",
@@ -35,6 +35,10 @@ const securityHeaders = [
 ];
 
 const nextConfig = {
+  env: {
+    NEXT_PUBLIC_SUPABASE_URL: 'https://yrqzwqywxfesmbvhzjgj.supabase.co',
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: 'sb_publishable_bAxQiodzBhI6bV7lmo9gMQ_Hlg9_Ish',
+  },
   transpilePackages: ['studio', 'ai-agent', 'workflow-builder', 'design-agent'],
   async headers() {
     return [
