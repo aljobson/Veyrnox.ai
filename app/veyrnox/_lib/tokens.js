@@ -161,56 +161,62 @@ export const RESOLUTIONS = ['1K', '2K', '4K'];
 // Ponytail: hand-authored copy — swap for CMS later. Veyrnox voice: honesty first.
 
 export const NAV_CATEGORIES = [
-  { href: '/veyrnox#wallet',    label: 'Wallet' },
   { href: '/veyrnox#studio',    label: 'Studio' },
   { href: '/veyrnox#models',    label: 'Models' },
+  { href: '/veyrnox#honesty',   label: 'How it works' },
   { href: '/veyrnox#community', label: 'Community' },
   { href: '/veyrnox/pricing',   label: 'Pricing' },
 ];
 
-// Four surfaces = the marketing top-line: wallet, studio, models, payouts.
+// Four surfaces: Studio + Models + Honest Math + EU/C2PA sovereignty.
+// Veyrnox.ai is credit-metered AI generation — no wallet, no on-chain,
+// no payouts. That is a different product in a different repo.
 export const FEATURE_CARDS = [
-  { key: 'wallet',
-    kicker: 'WALLET',
-    title: 'Multichain by default',
-    body: 'BSC, Ethereum, Base, Solana. One address, one balance. Recover with a passkey, not a phrase.',
-    bg: 'linear-gradient(135deg,#0a1a2c 0%,#144a7a 55%,#3ec1e8 100%)' },
   { key: 'studio',
     kicker: 'STUDIO',
     title: 'Image · video · voice',
-    body: 'Prompt once, generate across the model shelf. No credits burn until you accept.',
+    body: 'Prompt once, generate across the model shelf. The button shows the exact cost before you press it.',
     bg: 'linear-gradient(135deg,#1b0632 0%,#5a0e6a 55%,#e4318f 100%)' },
   { key: 'models',
     kicker: 'MODELS',
     title: 'Latest, always',
-    body: 'Seedance, Nano Banana, Genjutsu, GPT-Image 2, Kling — routed by task, not brand.',
+    body: 'Nano Banana, Seedance, Flux Kontext, Kling, Veo, Wan — routed by task, not brand.',
     bg: 'linear-gradient(160deg,#2b1a0a 0%,#7a4a1e 60%,#f0b060 100%)' },
-  { key: 'payouts',
-    kicker: 'PAYOUTS',
-    title: 'Get paid on ship',
-    body: 'Every asset is a receipt. Every sale settles to your wallet the second it clears.',
+  { key: 'honesty',
+    kicker: 'HONEST MATH',
+    title: "No hidden 'unlimited'",
+    body: 'Every generation names its price on the button. Failed jobs refund automatically. No surprise bills.',
+    bg: 'linear-gradient(135deg,#0a1a2c 0%,#144a7a 55%,#3ec1e8 100%)' },
+  { key: 'sovereign',
+    kicker: 'EU · C2PA',
+    title: 'Sovereign infrastructure',
+    body: 'EU-hosted compute. Every asset signed with C2PA provenance. Auditable by default.',
     bg: 'linear-gradient(135deg,#08120b 0%,#0e3a1e 55%,#2ea258 100%)' },
 ];
 
 // Two workflow strips beneath the four-surface grid.
 export const WORKFLOW_STRIPS = [
-  { kicker: 'STUDIO · GENJUTSU', title: 'One upload in. Endless variants out.', body: 'Drop a photo, a rough sketch, or a still. Ship a campaign by lunch.',
+  { kicker: 'STUDIO · GENJUTSU',
+    title: 'One upload in. Endless variants out.',
+    body: 'Drop a photo, a rough sketch, or a still. Ship a campaign by lunch — every variant priced before you press generate.',
     bg: 'linear-gradient(135deg,#1b0632 0%,#5a0e6a 55%,#e4318f 100%)' },
-  { kicker: 'PAYOUTS · LIVE',     title: 'Sell it before you finish it.',        body: 'Pre-orders, drops, tips — all in your wallet the moment they clear.',
-    bg: 'linear-gradient(135deg,#08120b 0%,#0e3a1e 55%,#2ea258 100%)' },
+  { kicker: 'CREDITS · HONEST',
+    title: 'The button is the price tag.',
+    body: 'Every generation names its cost. Failed jobs refund automatically. One balance across every model — never a per-model wallet.',
+    bg: 'linear-gradient(135deg,#0a1a2c 0%,#144a7a 55%,#3ec1e8 100%)' },
 ];
 
 export const HERO_STATS = [
   { value: '128k+', label: 'creators shipping' },
-  { value: '$4.2M', label: 'paid to date' },
-  { value: '17',    label: 'chains supported' },
+  { value: '50+',   label: 'models on one balance' },
+  { value: 'EU',    label: 'hosted · C2PA-signed' },
 ];
 
 export const METRIC_STRIP = [
-  { value: '$4.2M', label: 'PAID TO CREATORS' },
-  { value: '0.3s',  label: 'AVG. SETTLEMENT' },
-  { value: '17',    label: 'CHAINS ROUTED' },
-  { value: '0%',    label: 'PLATFORM TAKE' },
+  { value: '128k+', label: 'CREATORS SHIPPING' },
+  { value: '100%',  label: 'REFUND ON FAILURE' },
+  { value: '50+',   label: 'MODELS ROUTED' },
+  { value: 'EU',    label: 'HOSTED · C2PA' },
 ];
 
 export const MODEL_SHELF = [
@@ -257,15 +263,16 @@ export const CREATOR_PROJECTS = [
   { title: 'Azul Cobalto',              handle: '@seeyousoonx',     likes: 333, views: '143.6K',bg: 'linear-gradient(135deg,#0a2b1a,#60f0b0)' },
 ];
 
-// Four-column footer forest — matches shipping site's PRODUCT / CREATORS / COMPANY / LEGAL.
+// Four-column footer forest. Product column is Studio + Models + Pricing —
+// Wallet and Payouts belong to the separate VEYRNOX/veyrnox repo, not here.
 export const MORE_FEATURES = [
-  { group: 'Product',   items: ['Wallet', 'Studio', 'Models', 'Payouts'] },
+  { group: 'Product',   items: ['Studio', 'Models', 'Pricing', 'Design system'] },
   { group: 'Creators',  items: ['Community', 'Academy', 'Contests', 'Referrals'] },
   { group: 'Company',   items: ['About', 'Careers', 'Press', 'Contact'] },
   { group: 'Legal',     items: ['Terms', 'Privacy', 'Security', 'Status'] },
 ];
 
-export const FOOTER_TAGLINE = 'The AI-native wallet for creators. Ship, sell, settle — in one loop.';
+export const FOOTER_TAGLINE = 'Credit-metered AI generation for creators. Priced on the button — refund on failure, always. EU-hosted, C2PA-signed.';
 export const FOOTER_STAMP   = `© ${new Date().getFullYear()} Veyrnox, Inc.`;
 
 export const HERO_CHIP = 'LIVE · V1.0.1 SHIPPED';
