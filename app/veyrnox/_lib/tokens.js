@@ -258,7 +258,8 @@ export const FAQ = [
   { q: 'Are there rate limits?',
     a: '10 generations per 60 seconds per account. If you hit it, the API returns 429 with a Retry-After header and no credit debit.' },
   { q: 'Do credits expire?',
-    a: "Purchased credits don't expire while your account is active. Free sign-up credits are provided to get you started — treat them as a trial pool." },
+    a: 'Purchased credits never expire. Free sign-up credits expire 90 days after grant if unused. Free credits are spent first.',
+    link: { label: 'Refund Policy', href: '/legal/refund' } },
 ];
 
 // Two workflow strips beneath the four-surface grid.
