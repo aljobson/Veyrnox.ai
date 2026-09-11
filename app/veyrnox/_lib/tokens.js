@@ -169,8 +169,7 @@ export const NAV_CATEGORIES = [
 ];
 
 // Four surfaces: Studio + Models + Honest Math + EU/C2PA sovereignty.
-// Veyrnox.ai is credit-metered AI generation — no wallet, no on-chain,
-// no payouts. That is a different product in a different repo.
+// Veyrnox.ai is credit-metered AI image and video generation.
 export const FEATURE_CARDS = [
   { key: 'studio',
     kicker: 'STUDIO',
@@ -202,7 +201,7 @@ export const WORKFLOW_STRIPS = [
     bg: 'linear-gradient(135deg,#1b0632 0%,#5a0e6a 55%,#e4318f 100%)' },
   { kicker: 'CREDITS · HONEST',
     title: 'The button is the price tag.',
-    body: 'Every generation names its cost. Failed jobs refund automatically. One balance across every model — never a per-model wallet.',
+    body: 'Every generation names its cost. Failed jobs refund automatically. One balance across the whole catalog — every price visible before you spend.',
     bg: 'linear-gradient(135deg,#0a1a2c 0%,#144a7a 55%,#3ec1e8 100%)' },
 ];
 
@@ -263,8 +262,7 @@ export const CREATOR_PROJECTS = [
   { title: 'Azul Cobalto',              handle: '@seeyousoonx',     likes: 333, views: '143.6K',bg: 'linear-gradient(135deg,#0a2b1a,#60f0b0)' },
 ];
 
-// Four-column footer forest. Product column is Studio + Models + Pricing —
-// Wallet and Payouts belong to the separate VEYRNOX/veyrnox repo, not here.
+// Four-column footer forest. Product column: Studio · Models · Pricing · Design system.
 export const MORE_FEATURES = [
   { group: 'Product',   items: ['Studio', 'Models', 'Pricing', 'Design system'] },
   { group: 'Creators',  items: ['Community', 'Academy', 'Contests', 'Referrals'] },

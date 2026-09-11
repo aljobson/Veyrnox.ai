@@ -16,7 +16,6 @@ import {
 
 // Landing — credit-metered AI image and video generation.
 // EU-hosted, C2PA-signed. The button is the price tag.
-// No wallet, no on-chain, no payouts (that is a separate product).
 export default function VeyrnoxLanding() {
   return (
     <div className="min-h-dvh">
@@ -135,7 +134,7 @@ function FourSurfaces() {
           Every layer talks to the next.
         </h2>
         <p className="mt-3 text-vx-fg-body leading-[1.6]">
-          Studio names its price, Models keep it honest, Honest Math backs it, EU + C2PA prove it. One balance across the whole stack — no per-model wallets, no surprise bills.
+          Studio names the price, Models keep it honest, EU + C2PA prove it. One balance across the whole catalog — every cost visible before you spend.
         </p>
       </div>
 
