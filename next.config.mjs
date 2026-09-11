@@ -53,6 +53,20 @@ const nextConfig = {
   // Marketing site lives at the root, sourced from app/veyrnox/* so the
   // design peer's tree stays intact. /studio, /agents, /workflow, /api,
   // /auth stay first-class.
+  // Canonicalize: /veyrnox/... becomes /...  — the /veyrnox subtree is an
+  // internal implementation detail, not a public URL.
+  async redirects() {
+    return [
+      { source: '/veyrnox', destination: '/', permanent: true },
+      { source: '/veyrnox/pricing', destination: '/pricing', permanent: true },
+      { source: '/veyrnox/presets', destination: '/presets', permanent: true },
+      { source: '/veyrnox/design-system', destination: '/design-system', permanent: true },
+      { source: '/veyrnox/app', destination: '/app', permanent: true },
+      { source: '/veyrnox/app/:path*', destination: '/app/:path*', permanent: true },
+      { source: '/veyrnox/m', destination: '/m', permanent: true },
+      { source: '/veyrnox/m/:path*', destination: '/m/:path*', permanent: true },
+    ];
+  },
   async rewrites() {
     return {
       beforeFiles: [
