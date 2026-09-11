@@ -276,7 +276,7 @@ function FooterForest() {
               <ul className="space-y-2">
                 {col.items.map((it) => (
                   <li key={it}>
-                    <span className="text-[13px] text-vx-fg-body hover:text-vx-fg cursor-pointer">
+                    <span className="text-[13px] text-vx-fg-muted">
                       {it}
                     </span>
                   </li>
