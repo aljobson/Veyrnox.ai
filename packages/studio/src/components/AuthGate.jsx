@@ -3,48 +3,40 @@
 /**
  * AuthGate — inline sign-in / sign-up modal for the studio.
  *
- * Shown when the caller detects no active Supabase session AND the
- * `veyrnox_gateway` feature flag is on. Without a session the
- * /api/v1/* middleware returns 401 and generation fails; this gate
- * gets the user to a session before they try to spend credits.
+ * No @supabase/supabase-js dependency — uses the plain-fetch REST
+ * client in authClient.js. Session lives in localStorage; the
+ * gatewayClient adds `Authorization: Bearer <access_token>` to every
+ * /api/v1/* call.
  *
- * Deliberately minimal: email + password, magic-link fallback, no
- * OAuth. OAuth (Google/Apple) is a Phase-4 add-on with per-provider
- * consent screens and a proper landing page — beyond the Slice 9b
- * exit-gate scope.
+ * Shown when the caller detects no active session AND the
+ * `veyrnox_gateway` feature flag is on.
  */
 
 import { useEffect, useState } from "react";
-import { getSupabase } from "../authClient.js";
+import {
+    getSession,
+    onSessionChange,
+    signInWithPassword,
+    signUp,
+    sendMagicLink,
+} from "../authClient.js";
 import { showError, showSuccess } from "../lib/errorToast.js";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function AuthGate({ onSignedIn }) {
-    const [mode, setMode] = useState("sign_in"); // "sign_in" | "sign_up" | "magic"
+    const [mode, setMode] = useState("sign_in");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [busy, setBusy] = useState(false);
     const [notice, setNotice] = useState(null);
 
-    // If a session already exists, close ourselves and hand it back.
     useEffect(() => {
-        let unsubscribe = null;
-        let cancelled = false;
-        (async () => {
-            const supabase = await getSupabase();
-            if (cancelled) return;
-            const { data } = await supabase.auth.getSession();
-            if (data?.session && !cancelled) onSignedIn?.(data.session);
-            const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-                if (session && !cancelled) onSignedIn?.(session);
-            });
-            unsubscribe = () => sub.subscription.unsubscribe();
-        })();
-        return () => {
-            cancelled = true;
-            if (unsubscribe) unsubscribe();
-        };
+        const existing = getSession();
+        if (existing) onSignedIn?.(existing);
+        return onSessionChange((s) => {
+            if (s) onSignedIn?.(s);
+        });
     }, [onSignedIn]);
 
     async function handleSubmit(e) {
@@ -58,27 +50,20 @@ export default function AuthGate({ onSignedIn }) {
             setNotice({ kind: "error", text: "Password must be at least 8 characters." });
             return;
         }
-        const supabase = await getSupabase();
         setBusy(true);
         try {
             if (mode === "sign_up") {
-                const { error } = await supabase.auth.signUp({
-                    email,
-                    password,
-                    options: { emailRedirectTo: window.location.origin },
-                });
-                if (error) throw error;
-                setNotice({ kind: "success", text: "Check your email to confirm your account." });
+                const { session, needsConfirmation } = await signUp(email, password);
+                if (needsConfirmation) {
+                    setNotice({ kind: "success", text: "Check your email to confirm your account." });
+                } else if (session) {
+                    showSuccess("Account created");
+                }
             } else if (mode === "sign_in") {
-                const { error } = await supabase.auth.signInWithPassword({ email, password });
-                if (error) throw error;
+                await signInWithPassword(email, password);
                 showSuccess("Signed in");
             } else {
-                const { error } = await supabase.auth.signInWithOtp({
-                    email,
-                    options: { emailRedirectTo: window.location.origin },
-                });
-                if (error) throw error;
+                await sendMagicLink(email);
                 setNotice({ kind: "success", text: "Check your email for a sign-in link." });
             }
         } catch (err) {
@@ -177,7 +162,7 @@ export default function AuthGate({ onSignedIn }) {
                 </div>
 
                 <p className="mt-4 text-[10px] text-zinc-500 leading-tight">
-                    By continuing you accept the Veyrnox Terms & Privacy Policy. AI outputs are marked as
+                    By continuing you accept the Veyrnox Terms &amp; Privacy Policy. AI outputs are marked as
                     AI-generated per EU AI Act Article 50.
                 </p>
             </div>

@@ -19,6 +19,16 @@
  */
 
 const FLAG_KEY = "veyrnox_gateway";
+
+/** Lazy resolver — never fails, returns null when not in the browser. */
+async function readBearer() {
+    try {
+        const mod = await import("./authClient.js");
+        return mod.getAccessToken ? mod.getAccessToken() : null;
+    } catch {
+        return null;
+    }
+}
 const IDEMPOTENCY_ALPHABET = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-";
 
 /** Feature-flag check. Reads localStorage synchronously. */
@@ -65,10 +75,14 @@ export class GatewayError extends Error {
  */
 export async function generateViaGateway(params) {
     const idempotencyKey = params.idempotency_key || makeIdempotencyKey();
+    const bearer = await readBearer();
     const submit = await fetch("/api/v1/generations", {
         method: "POST",
         credentials: "same-origin",
-        headers: { "content-type": "application/json" },
+        headers: {
+            "content-type": "application/json",
+            ...(bearer ? { authorization: `Bearer ${bearer}` } : {}),
+        },
         signal: params.signal,
         body: JSON.stringify({
             model_id: params.model_id,
@@ -111,6 +125,7 @@ export async function generateViaGateway(params) {
 
         const asset = await fetch(`/api/v1/jobs/${encodeURIComponent(jobId)}/asset`, {
             credentials: "same-origin",
+            headers: bearer ? { authorization: `Bearer ${bearer}` } : {},
             signal: params.signal,
         });
         if (asset.status === 404) {
@@ -138,7 +153,11 @@ export async function generateViaGateway(params) {
 
 /** Fetch current credit balance. Returns 0 on 401. */
 export async function fetchBalance() {
-    const res = await fetch("/api/v1/balance", { credentials: "same-origin" });
+    const bearer = await readBearer();
+    const res = await fetch("/api/v1/balance", {
+        credentials: "same-origin",
+        headers: bearer ? { authorization: `Bearer ${bearer}` } : {},
+    });
     if (res.status === 401) return null;
     if (!res.ok) throw new GatewayError("balance lookup failed", { status: res.status });
     const body = await res.json();
