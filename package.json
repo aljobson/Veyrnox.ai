@@ -26,6 +26,7 @@
     "preview": "opennextjs-cloudflare preview",
     "deploy": "opennextjs-cloudflare deploy",
     "migrate": "node scripts/migrate.mjs",
+    "test": "node --test \"tests/**/*.test.{js,mjs}\"",
     "test:ledger": "tsx --test packages/db/*.test.ts"
   },
   "dependencies": {
@@ -45,13 +46,13 @@
     "eslint": "^9",
     "eslint-config-next": "^15.0.0",
     "postcss": "^8.5.26",
-    "sharp": "^0.35.3",
+    "sharp": "^0.35.4",
     "tailwindcss": "^3.4.0",
     "wrangler": "^4.120.0"
   },
   "overrides": {
     "postcss": "^8.5.26",
-    "sharp": "^0.35.3",
+    "sharp": "^0.35.4",
     "prismjs": "^1.30.0"
   }
 }
