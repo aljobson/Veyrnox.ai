@@ -102,7 +102,7 @@ If the product owner strongly wants retention as an upsell, revisit as B and acc
 
 ## Decision
 
-_To be completed by Al._
+Approved by Al 2026-09-11 — 90d uniform + pg_cron sweep. Migration 0016 applied. Worker consumer at /api/admin/reap-assets guarded by ADMIN_REAP_TOKEN env.
 
 ## Consequences (if C + (ii) is accepted)
 

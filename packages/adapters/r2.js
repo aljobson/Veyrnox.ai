@@ -130,6 +130,56 @@ export async function putObject(key, body, contentType, cfg) {
 }
 
 /**
+ * Delete an R2 object. SigV4-signed DELETE against the account's R2 S3 API.
+ * Body is empty; payload hash is the SHA-256 of the empty string, per spec.
+ * Returns { ok: true, status } on success, { ok: false, error } on failure.
+ */
+export async function deleteObject(key, cfg) {
+    if (!cfg.accountId || !cfg.accessKeyId || !cfg.secretAccessKey || !cfg.bucket) {
+        return { ok: false, error: 'R2 not configured' };
+    }
+    const amzDate = iso8601BasicNow();
+    const dateStamp = amzDate.slice(0, 8);
+    const host = `${cfg.accountId}.r2.cloudflarestorage.com`;
+    const canonicalUri = `/${cfg.bucket}/${key.split('/').map(encodeURIComponent).join('/')}`;
+
+    const payloadHash = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
+    const canonicalHeaders =
+        `host:${host}\n` +
+        `x-amz-content-sha256:${payloadHash}\n` +
+        `x-amz-date:${amzDate}\n`;
+    const signedHeaders = 'host;x-amz-content-sha256;x-amz-date';
+    const canonicalRequest =
+        `DELETE\n${canonicalUri}\n\n${canonicalHeaders}\n${signedHeaders}\n${payloadHash}`;
+
+    const credentialScope = `${dateStamp}/${REGION}/${SERVICE}/aws4_request`;
+    const stringToSign =
+        `AWS4-HMAC-SHA256\n${amzDate}\n${credentialScope}\n${await sha256Hex(new TextEncoder().encode(canonicalRequest))}`;
+    const kSigning = await signingKey(cfg.secretAccessKey, dateStamp);
+    const signature = bytesToHex(await hmacSha256(kSigning, stringToSign));
+    const authorization =
+        `AWS4-HMAC-SHA256 Credential=${cfg.accessKeyId}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
+
+    const res = await fetch(`${endpointOrigin(cfg.accountId)}${canonicalUri}`, {
+        method: 'DELETE',
+        headers: {
+            host,
+            'x-amz-content-sha256': payloadHash,
+            'x-amz-date': amzDate,
+            authorization,
+        },
+    });
+    // R2 returns 204 on delete of an existing object, 204 also when the
+    // object is already gone. Treat both as success — idempotent by design.
+    if (res.status !== 204 && !res.ok) {
+        const text = await res.text().catch(() => '');
+        console.error('R2 DELETE non-ok:', res.status, text.slice(0, 200));
+        return { ok: false, error: `R2 DELETE ${res.status}: ${text.slice(0, 200)}` };
+    }
+    return { ok: true, status: res.status };
+}
+
+/**
  * Build a presigned GET URL for an R2 object. `expiresSeconds` is
  * clamped to [60, 900] — CLAUDE.md rule: presigned URL TTL <=15 min,
  * longer TTLs need an ADR. Defense in depth against future callers;
