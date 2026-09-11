@@ -199,10 +199,37 @@ the media.
 - Test: force a fal.ai failure, assert refund lands within 5s
 - **Exit gate:** balance restored on provider failure; user sees "refunded" toast
 
-### Slice 9 — End-to-end walk-through
-- Wire ImageStudio's `generateImage()` call to POST `/api/v1/generations` instead of the MuAPI proxy
-- Behind a feature flag: `USE_NEW_GATEWAY=true` in Clerk user metadata
-- **Exit gate (Phase 1 done):** with the flag on, log in → click generate → see the image → balance debited. Repeat under 50-concurrent-user load without any double-spend or lost job.
+### Slice 9 — End-to-end walk-through (wiring shipped, exit gate pending)
+
+Sub-slice 9a (this PR):
+- **`packages/studio/src/gatewayClient.js`** — `generateViaGateway`
+  posts to `/api/v1/generations` and polls `/api/v1/jobs/:id/asset`
+  every 2s until STORED (5-min ceiling). Adapts the response back
+  to the `{ url, id }` shape ImageStudio downstream expects, so no
+  further studio code changes are needed.
+- **Feature flag: `localStorage.veyrnox_gateway === "on"`**. Enable
+  per-browser via devtools. Adopted (rather than Clerk user_metadata)
+  because ADR-0006 flipped auth to Supabase and per-user metadata
+  gating lands with Phase 4.
+- **ImageStudio.jsx wired**: both T2I and I2I paths check the flag,
+  attempt the gateway, and fall back to the legacy MuAPI path on
+  non-`GatewayError` failures. `GatewayError` propagates so the
+  existing `showError` helper renders a friendly toast (401 = sign
+  in, 402 = insufficient credits, 429 = rate limited with Retry-After).
+
+Sub-slice 9b (blocked on Supabase-JWT-in-browser plumbing):
+- Login/signup UI backed by `@supabase/supabase-js` in the studio
+  (client-side; the Worker constraints against `@supabase/supabase-js`
+  don't apply in the browser)
+- Cookie is set by supabase-js on successful sign-in, satisfying
+  middleware.js's cookie fallback
+- Legacy `__Host-muapi_key` cookie flow deprecates on 2026-10-10
+
+**Phase-1 Exit gate** (pending): with the flag on and a Supabase
+session cookie present, click generate in ImageStudio → job flows
+DEBITED → SUBMITTED → SUCCEEDED → STORED → image returns → balance
+decrements. Concurrent-load test (50 users, zero double-spend) is a
+staging/prod verification, not a code artefact.
 
 ## Not in Phase 1
 

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { generateImage, generateI2I, uploadFile } from "../muapi.js";
+import { generateViaGateway, gatewayEnabled, GatewayError } from "../gatewayClient.js";
 import {
   t2iModels,
   i2iModels,
@@ -1063,6 +1064,17 @@ export default function ImageStudio({
               genParams[currentQualityField] = selectedQuality;
             }
             if (showEffectBtn && selectedEffect) genParams.name = selectedEffect;
+            if (gatewayEnabled()) {
+              try {
+                return await generateViaGateway({
+                  model_id: selectedModelId,
+                  inputs: genParams,
+                });
+              } catch (err) {
+                if (err instanceof GatewayError) throw err;
+                console.warn("[ImageStudio] gateway path failed, falling back:", err);
+              }
+            }
             return await generateI2I(genParams);
           } else {
             const genParams = {
@@ -1072,6 +1084,17 @@ export default function ImageStudio({
             };
             if (currentQualityField && selectedQuality) {
               genParams[currentQualityField] = selectedQuality;
+            }
+            if (gatewayEnabled()) {
+              try {
+                return await generateViaGateway({
+                  model_id: selectedModelId,
+                  inputs: { prompt: genParams.prompt, aspect_ratio: genParams.aspect_ratio },
+                });
+              } catch (err) {
+                if (err instanceof GatewayError) throw err;
+                console.warn("[ImageStudio] gateway path failed, falling back:", err);
+              }
             }
             return await generateImage(genParams);
           }
