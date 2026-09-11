@@ -21,7 +21,7 @@ import {
 } from './_lib/tokens';
 
 // Landing — credit-metered AI image and video generation.
-// EU-hosted, C2PA-signed. The button is the price tag.
+// C2PA-signed. The button is the price tag.
 
 /** Server-side fetch of the live catalog with a hard fallback to tokens.js. */
 async function loadCatalog() {
@@ -166,7 +166,7 @@ function Hero() {
         </h1>
         <p className="text-lg text-vx-fg-body max-w-[640px] leading-[1.6]">
           Credit-metered AI image, video and audio. See the exact cost before you press generate —
-          refund on failure, always. EU-hosted, C2PA-signed.
+          refund on failure, always. C2PA-signed.
         </p>
         <div className="flex gap-3 mt-2 flex-wrap justify-center">
           <Link
@@ -362,7 +362,7 @@ function WhyVeyrnox() {
     <section className="px-6 pt-20 pb-6 max-w-[1400px] mx-auto">
       <div className="text-center mb-8">
         <div className="font-vx-mono text-[11px] tracking-[0.14em] text-vx-accent mb-2">WHY VEYRNOX</div>
-        <h2 className="text-3xl md:text-4xl font-black tracking-[-0.02em]">Honest math. Sovereign infra. Signed by default.</h2>
+        <h2 className="text-3xl md:text-4xl font-black tracking-[-0.02em]">Honest math. One balance. Signed by default.</h2>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {PILLARS.map((p) => (
@@ -438,9 +438,9 @@ function FeatureStripsSection() {
         reverse
       />
       <FeatureStrip
-        kicker="EU · C2PA"
-        title="Frankfurt-hosted. Signed by default."
-        body="Compute stays in the EU. Every generation carries a C2PA signature — auditable origin, model, creator."
+        kicker="C2PA"
+        title="Signed by default."
+        body="Every generation carries a C2PA signature — auditable origin, model, creator."
         cta={{ label: 'Read the honesty ledger', href: '/veyrnox/design-system' }}
         bg="linear-gradient(135deg,#08120b 0%,#0e3a1e 55%,#2ea258 100%)"
       />
