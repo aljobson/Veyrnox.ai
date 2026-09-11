@@ -17,7 +17,8 @@ import { rpc, envConfig } from '../../../../../../packages/db/supabase-client.js
 import { presignGetUrl, envConfig as r2EnvConfig } from '../../../../../../packages/adapters/r2.js';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const DEFAULT_EXPIRES_SEC = 3600; // 1h
+// CLAUDE.md R2 rule: "Presigned URL TTL <=15 min. Longer TTLs need an ADR."
+const DEFAULT_EXPIRES_SEC = 900; // 15 min
 
 export async function GET(req, { params }) {
     const authId = req.headers.get('x-veyrnox-auth-id');
