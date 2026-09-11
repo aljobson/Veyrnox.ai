@@ -143,7 +143,7 @@ export default function AuthGate() {
                     </button>
                 </div>
                 <p className="text-sm text-zinc-400 mb-4">
-                    New users get 50 free credits. Data stays in the EU (Frankfurt).
+                    New users get 50 free credits.
                 </p>
 
                 {(oauth.apple || oauth.google) && (
