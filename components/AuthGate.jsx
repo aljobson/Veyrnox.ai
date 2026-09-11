@@ -18,6 +18,7 @@ import {
     signInWithPassword,
     signUp,
     sendMagicLink,
+    signInWithOAuth,
 } from "../app/lib/authClient.js";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -111,6 +112,17 @@ export default function AuthGate() {
                     New users get 50 free credits. Data stays in the EU (Frankfurt).
                 </p>
 
+                <div className="space-y-2 mb-3">
+                    <button type="button" onClick={() => signInWithOAuth("apple")} disabled={busy} className="w-full rounded-lg bg-white text-black font-semibold py-2 text-sm hover:bg-zinc-200 disabled:opacity-60">
+                        Continue with Apple
+                    </button>
+                    <button type="button" onClick={() => signInWithOAuth("google")} disabled={busy} className="w-full rounded-lg bg-zinc-800 border border-white/10 text-white font-semibold py-2 text-sm hover:bg-zinc-700 disabled:opacity-60">
+                        Continue with Google
+                    </button>
+                </div>
+                <div className="flex items-center gap-3 mb-3 text-[10px] text-zinc-500 uppercase tracking-wider">
+                    <div className="h-px bg-white/10 flex-1" /> or email <div className="h-px bg-white/10 flex-1" />
+                </div>
                 <form onSubmit={handleSubmit} className="space-y-3">
                     <label className="block">
                         <span className="text-xs text-zinc-400">Email</span>

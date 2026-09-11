@@ -104,6 +104,31 @@ export async function signUp(email, password) {
 export async function sendMagicLink(email) {
     await post("/auth/v1/otp", { email, create_user: true });
 }
+export function signInWithOAuth(provider, redirectTo) {
+    const { url } = ensureCfg();
+    const back = redirectTo || `${window.location.origin}/auth/callback`;
+    const authorize = new URL("/auth/v1/authorize", url);
+    authorize.searchParams.set("provider", provider);
+    authorize.searchParams.set("redirect_to", back);
+    window.location.assign(authorize.toString());
+}
+export function completeOAuthFromHash() {
+    if (typeof window === "undefined") return null;
+    const h = window.location.hash.startsWith("#") ? window.location.hash.slice(1) : "";
+    if (!h) return null;
+    const p = new URLSearchParams(h);
+    const access_token = p.get("access_token");
+    if (!access_token) return null;
+    const now = Math.floor(Date.now() / 1000);
+    const s = {
+        access_token,
+        refresh_token: p.get("refresh_token"),
+        expires_at: Number(p.get("expires_at")) || now + Number(p.get("expires_in") || 3600),
+        user: null,
+    };
+    setSession(s);
+    return s;
+}
 export async function signOut() {
     const s = getSession();
     if (s?.access_token) {
