@@ -28,8 +28,9 @@ export async function GET(req) {
         catalog = await select('model_catalog', { columns: 'id', limit: 1 }, cfg);
     } catch (err) {
         const status = err instanceof SupabaseError ? err.status : 0;
+        console.error('[api/v1/health] supabase unreachable:', status, err && err.body);
         return NextResponse.json(
-            { ok: false, error: 'supabase unreachable', status },
+            { ok: false, error: 'supabase unreachable' },
             { status: 502 }
         );
     }
