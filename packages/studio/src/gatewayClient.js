@@ -19,6 +19,30 @@
  */
 
 const FLAG_KEY = "veyrnox_gateway";
+const SESSION_KEY = "veyrnox_supabase_session";
+
+/** Read the access token localStorage sets. Never throws. */
+function readAccessToken() {
+    try {
+        const raw = globalThis.localStorage?.getItem(SESSION_KEY);
+        if (!raw) return null;
+        const s = JSON.parse(raw);
+        if (!s?.access_token || !s.expires_at) return null;
+        if (s.expires_at * 1000 < Date.now() - 5_000) return null;
+        return s.access_token;
+    } catch {
+        return null;
+    }
+}
+
+/** Fire the app-wide "please sign in" event. AuthGate listens for it. */
+function requestAuth() {
+    try {
+        globalThis.dispatchEvent?.(new CustomEvent("veyrnox:auth-required"));
+    } catch {
+        /* SSR — noop */
+    }
+}
 const IDEMPOTENCY_ALPHABET = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-";
 
 /** Feature-flag check. Reads localStorage synchronously. */
@@ -65,10 +89,14 @@ export class GatewayError extends Error {
  */
 export async function generateViaGateway(params) {
     const idempotencyKey = params.idempotency_key || makeIdempotencyKey();
+    const bearer = readAccessToken();
     const submit = await fetch("/api/v1/generations", {
         method: "POST",
         credentials: "same-origin",
-        headers: { "content-type": "application/json" },
+        headers: {
+            "content-type": "application/json",
+            ...(bearer ? { authorization: `Bearer ${bearer}` } : {}),
+        },
         signal: params.signal,
         body: JSON.stringify({
             model_id: params.model_id,
@@ -81,6 +109,7 @@ export async function generateViaGateway(params) {
         const body = await safeJson(submit);
         const code = body && (body.error || body.code);
         const retryAfter = Number(submit.headers.get("retry-after")) || null;
+        if (submit.status === 401) requestAuth();
         throw new GatewayError(gatewayErrorMessage(submit.status, code), {
             status: submit.status,
             code,
@@ -111,6 +140,7 @@ export async function generateViaGateway(params) {
 
         const asset = await fetch(`/api/v1/jobs/${encodeURIComponent(jobId)}/asset`, {
             credentials: "same-origin",
+            headers: bearer ? { authorization: `Bearer ${bearer}` } : {},
             signal: params.signal,
         });
         if (asset.status === 404) {
@@ -118,6 +148,7 @@ export async function generateViaGateway(params) {
             continue;
         }
         if (asset.status === 401) {
+            requestAuth();
             throw new GatewayError("session expired", { status: 401 });
         }
         if (!asset.ok) {
@@ -138,7 +169,11 @@ export async function generateViaGateway(params) {
 
 /** Fetch current credit balance. Returns 0 on 401. */
 export async function fetchBalance() {
-    const res = await fetch("/api/v1/balance", { credentials: "same-origin" });
+    const bearer = readAccessToken();
+    const res = await fetch("/api/v1/balance", {
+        credentials: "same-origin",
+        headers: bearer ? { authorization: `Bearer ${bearer}` } : {},
+    });
     if (res.status === 401) return null;
     if (!res.ok) throw new GatewayError("balance lookup failed", { status: res.status });
     const body = await res.json();
