@@ -33,9 +33,13 @@ export default function AuthGate() {
 
     // Listen for the app-wide "please authenticate" signal.
     useEffect(() => {
-        function onAuthRequired() {
+        function onAuthRequired(ev) {
             // If a session already exists (race with a refresh), skip.
             if (getSession()) return;
+            const wanted = ev && ev.detail && ev.detail.mode;
+            if (wanted === "sign_up" || wanted === "sign_in" || wanted === "magic") {
+                setMode(wanted);
+            }
             setOpen(true);
         }
         window.addEventListener("veyrnox:auth-required", onAuthRequired);

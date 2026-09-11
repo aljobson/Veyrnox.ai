@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Logo } from './_components/Logo';
 import { Chip } from './_components/Chip';
+import { NavAuthButtons } from './_components/NavAuthButtons';
 import {
   NAV_CATEGORIES,
   FEATURE_CARDS,
@@ -53,13 +54,7 @@ function WideNav() {
         </nav>
 
         <div className="flex items-center gap-2 shrink-0">
-          <button className="text-vx-fg-body text-sm font-semibold px-3 py-2 hover:text-vx-fg">Log in</button>
-          <Link
-            href="/veyrnox/app"
-            className="rounded-full bg-vx-accent text-vx-accent-ink text-sm font-bold px-5 py-2.5 hover:bg-vx-accent-hover"
-          >
-            Sign up
-          </Link>
+          <NavAuthButtons />
         </div>
       </div>
     </div>
