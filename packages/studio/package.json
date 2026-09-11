@@ -26,7 +26,8 @@
     "remark-gfm": "^4.0.1",
     "workflow-builder": "file:../Vibe-Workflow/packages/workflow-builder",
     "ai-agent": "file:../Open-Poe-AI/packages/agents",
-    "design-agent": "file:../Open-AI-Design-Agent/packages/design-agent"
+    "design-agent": "file:../Open-AI-Design-Agent/packages/design-agent",
+    "@supabase/supabase-js": "^2.45.4"
   },
   "peerDependencies": {
     "react": ">=18.0.0",

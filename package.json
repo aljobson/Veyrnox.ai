@@ -36,8 +36,7 @@
     "react-dom": "^19.0.0",
     "react-hot-toast": "^2.4.1",
     "studio": "file:./packages/studio",
-    "workflow-builder": "file:./packages/Vibe-Workflow/packages/workflow-builder",
-    "@supabase/supabase-js": "^2.45.4"
+    "workflow-builder": "file:./packages/Vibe-Workflow/packages/workflow-builder"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
