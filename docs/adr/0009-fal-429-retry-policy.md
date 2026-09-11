@@ -70,7 +70,7 @@ Revisit if telemetry shows the p95 fal 429 rate above ~2% — at that point (B) 
 
 ## Decision
 
-_To be completed by Al._
+Approved by Al 2026-09-11 — **Option A** (no adapter-side retry). Current fal.js already matches. Client owns retry UX.
 
 ## Consequences (if A is accepted)
 

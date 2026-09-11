@@ -86,7 +86,7 @@ Reject (C) unless volume grows large enough that resumable per-part retries matt
 
 ## Decision
 
-_To be completed by Al._
+Deferred by Al 2026-09-11. **Bench required before implementation** — needs p99 body-size distribution over the first 30 days of live traffic. Revisit when telemetry lands.
 
 ## Consequences (if B is accepted)
 

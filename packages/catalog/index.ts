@@ -121,9 +121,9 @@ export const CATALOG: readonly CatalogRow[] = Object.freeze([
         status: "LAUNCH",
     },
     {
-        id: "kling-3.0",
-        name: "Kling 3.0 / Omni",
-        modality: "text-to-video",
+        id: "kling-3.0-i2v",
+        name: "Kling 3.0 (image-to-video)",
+        modality: "image-to-video",
         providers: ["fal", "replicate"],
         provider_cost_usd: 0.50,
         retail_usd: 1.30,
@@ -133,8 +133,8 @@ export const CATALOG: readonly CatalogRow[] = Object.freeze([
         notes: "$0.10/s 4K multi-shot",
     },
     {
-        id: "hailuo-02",
-        name: "MiniMax Hailuo 02 / 2.3",
+        id: "minimax-h3",
+        name: "MiniMax H3",
         modality: "text-to-video",
         providers: ["fal", "replicate"],
         provider_cost_usd: 0.30,
@@ -171,8 +171,8 @@ export const CATALOG: readonly CatalogRow[] = Object.freeze([
         notes: "$0.03/MP cinematic",
     },
     {
-        id: "seedream-4.5",
-        name: "Seedream 4.5 / 5.0",
+        id: "seedream-4",
+        name: "Seedream v4",
         modality: "text-to-image",
         providers: ["fal", "replicate"],
         provider_cost_usd: 0.04,
@@ -196,18 +196,6 @@ export const CATALOG: readonly CatalogRow[] = Object.freeze([
     },
 
     // ── Audio (per generation) ──
-    {
-        id: "cosyvoice-2",
-        name: "CosyVoice2 (Alibaba TTS)",
-        modality: "text-to-audio",
-        providers: ["fal"],
-        provider_cost_usd: 0.012,
-        retail_usd: 0.05,
-        credits: usdToCredits(0.05),
-        gated: false,
-        status: "LAUNCH",
-        notes: "TTS / voice",
-    },
     {
         id: "ace-step",
         name: "ACE-Step (music/SFX)",
