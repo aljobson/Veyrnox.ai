@@ -40,3 +40,6 @@ out/
 .env
 .env.*
 !.env.example
+
+# Session scratch
+.scratch/
