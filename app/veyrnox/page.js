@@ -14,7 +14,8 @@ import {
   FOOTER_STAMP,
 } from './_lib/tokens';
 
-// Landing — AI-native wallet for creators. Ship, sell, settle in one loop.
+// Landing — credit-metered AI image and video generation.
+// EU-hosted, C2PA-signed. The button is the price tag.
 export default function VeyrnoxLanding() {
   return (
     <div className="min-h-dvh">
@@ -87,12 +88,12 @@ function Hero() {
         <h1 className="text-[64px] md:text-[80px] font-black leading-[0.98] tracking-[-0.035em] text-balance max-w-[900px]">
           One prompt in.<br />
           Endless creations out.<br />
-          <span className="text-vx-accent">Paid in a click.</span>
+          <span className="text-vx-accent">Priced on the button.</span>
         </h1>
 
-        <p className="text-lg text-vx-fg-body max-w-[620px] leading-[1.6]">
-          The AI-native wallet built for creators. Generate, ship, and get paid on-chain —
-          without leaving the canvas.
+        <p className="text-lg text-vx-fg-body max-w-[640px] leading-[1.6]">
+          Credit-metered AI image and video. See the exact cost before you press generate —
+          refund on failure, always. EU-hosted, C2PA-signed.
         </p>
 
         <div className="flex gap-3 mt-2 flex-wrap justify-center">
@@ -126,14 +127,14 @@ function Hero() {
 /* ─── Four surfaces ─── */
 function FourSurfaces() {
   return (
-    <section id="wallet" className="px-8 pt-12 pb-4 max-w-[1300px] mx-auto">
+    <section id="studio" className="px-8 pt-12 pb-4 max-w-[1300px] mx-auto">
       <div className="max-w-[720px]">
         <div className="font-vx-mono text-[11px] tracking-[0.14em] text-vx-accent mb-2">FOUR SURFACES. ONE CREATOR STACK.</div>
         <h2 className="text-[36px] md:text-[44px] font-black leading-[1.05] tracking-[-0.03em]">
           Every layer talks to the next.
         </h2>
         <p className="mt-3 text-vx-fg-body leading-[1.6]">
-          Wallet writes to Studio. Studio pays through Wallet. Nothing routes through a middleman.
+          Studio names the price, Models keep it honest, EU + C2PA prove it. One balance across the whole catalog — every cost visible before you spend.
         </p>
       </div>
 
@@ -195,7 +196,7 @@ function ShippingSection() {
 /* ─── Metric strip ─── */
 function MetricStrip() {
   return (
-    <section id="payouts" className="max-w-[1300px] mx-auto px-8 pt-16 pb-12">
+    <section id="honesty" className="max-w-[1300px] mx-auto px-8 pt-16 pb-12">
       <div className="rounded-3xl border border-vx-border bg-vx-panel grid grid-cols-2 md:grid-cols-4 divide-x divide-y md:divide-y-0 divide-vx-border/60">
         {METRIC_STRIP.map((m) => (
           <div key={m.label} className="p-6 md:p-8 text-center">
@@ -242,10 +243,10 @@ function ClosingCTA() {
         </div>
         <h2 className="text-[40px] md:text-[52px] font-black tracking-[-0.03em] leading-[1.05] text-balance max-w-[820px] mx-auto">
           Ship your first asset today.<br />
-          <span className="text-vx-accent">Get paid the same click.</span>
+          <span className="text-vx-accent">See the price before you spend.</span>
         </h2>
         <p className="mt-4 text-vx-fg-body max-w-[560px] mx-auto">
-          Sign up in a passkey. Your wallet is your account. Your creations are receipts.
+          200 credits on the house when you join. One balance across every model. Failed jobs refund automatically.
         </p>
         <div className="mt-6 flex gap-3 justify-center flex-wrap">
           <Link href="/veyrnox/app" className="rounded-full bg-vx-accent text-vx-accent-ink px-8 py-4 text-base font-extrabold hover:bg-vx-accent-hover">
