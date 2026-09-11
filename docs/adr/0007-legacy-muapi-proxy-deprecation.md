@@ -69,7 +69,9 @@ Two implementation notes for whoever executes:
 
 ## Decision
 
-_To be completed by Al._
+Approved by Al 2026-09-11 — **Option B** (410 Gone + Sunset header, 14-day grace). Sunset date: 2026-09-26.
+
+Applied to `app/api/v1/[[...path]]/route.js`, `app/api/v1/creative-agent/[[...path]]/route.js`, `app/api/v1/get_upload_url/route.js`.
 
 ## Consequences (if B is accepted)
 

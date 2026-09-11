@@ -1,26 +1,25 @@
-import { proxyToMuapi } from '@/lib/muapiProxy';
+import { NextResponse } from "next/server";
 
-// Internal proxy for /api/v1/* -> https://api.muapi.ai/api/v1/*.
-// Replaces the previous middleware-based NextResponse.rewrite() approach,
-// whose semantics differ across Vercel Edge vs OpenNext-Cloudflare (external
-// rewrites can 404 or leak internals). Sibling routes with custom logic
-// (creative-agent, get_upload_url, upload-binary) live at more specific
-// segments and take precedence over this catch-all.
+// Retired per ADR-0007. This route was a passthrough to api.muapi.ai from a
+// previous product; the two brands are now separate. 410 Gone with a Sunset
+// header signals the removal to any lingering client.
 
-// forwardBinary: some upstream endpoints return non-JSON bodies.
-const OPTS = { forwardBinary: true };
+const HEADERS = {
+    "Sunset": "Fri, 26 Sep 2026 00:00:00 GMT",
+    "Deprecation": "true",
+    "Link": "<https://veyrnox.ai/changelog>; rel=\"sunset\"",
+};
 
-function upstreamPath(pathSegments) {
-    return `/api/v1/${pathSegments.join('/')}`;
+function gone() {
+    return NextResponse.json(
+        { error: "endpoint_deprecated", detail: "This route is retired; see the Sunset header for the effective date." },
+        { status: 410, headers: HEADERS }
+    );
 }
 
-async function handle(request, ctx, method) {
-    const { path = [] } = await ctx.params;
-    return proxyToMuapi(request, upstreamPath(path), method, OPTS);
-}
+export const GET = gone;
+export const POST = gone;
+export const PUT = gone;
+export const PATCH = gone;
+export const DELETE = gone;
 
-export const GET = (req, ctx) => handle(req, ctx, 'GET');
-export const POST = (req, ctx) => handle(req, ctx, 'POST');
-export const PUT = (req, ctx) => handle(req, ctx, 'PUT');
-export const PATCH = (req, ctx) => handle(req, ctx, 'PATCH');
-export const DELETE = (req, ctx) => handle(req, ctx, 'DELETE');
