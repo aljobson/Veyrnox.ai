@@ -28,13 +28,21 @@ export async function POST(req) {
         return NextResponse.json({ error: 'not configured' }, { status: 503 });
     }
 
-    const signature = req.headers.get('x-fal-signature-256');
+    // Fal splits its signature across four headers, per
+    // fal.ai/docs/model-endpoints/webhooks — signature is hex, message is
+    // request_id + \n + user_id + \n + timestamp + \n + sha256(body).hex.
+    const sigHeaders = {
+        signature: req.headers.get('x-fal-webhook-signature'),
+        timestamp: req.headers.get('x-fal-webhook-timestamp'),
+        requestId: req.headers.get('x-fal-webhook-request-id'),
+        userId: req.headers.get('x-fal-webhook-user-id'),
+    };
     const rawBuf = await req.arrayBuffer();
     const raw = new Uint8Array(rawBuf);
 
     let verified;
     try {
-        verified = await verifyWebhookSignature(raw, signature);
+        verified = await verifyWebhookSignature(raw, sigHeaders);
     } catch (err) {
         console.error('[fal-webhook] verify threw:', err);
         return NextResponse.json({ error: 'internal' }, { status: 500 });

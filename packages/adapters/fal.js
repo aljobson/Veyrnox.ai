@@ -132,20 +132,61 @@ function b64ToBytes(s) {
     return out;
 }
 
+function hexToBytes(hex) {
+    if (typeof hex !== 'string' || hex.length % 2 !== 0) throw new Error('bad hex');
+    const out = new Uint8Array(hex.length / 2);
+    for (let i = 0; i < out.length; i++) {
+        const v = parseInt(hex.substr(i * 2, 2), 16);
+        if (Number.isNaN(v)) throw new Error('bad hex');
+        out[i] = v;
+    }
+    return out;
+}
+
+async function bytesToHex(buf) {
+    const arr = new Uint8Array(buf);
+    let hex = '';
+    for (let i = 0; i < arr.length; i++) hex += arr[i].toString(16).padStart(2, '0');
+    return hex;
+}
+
+const FAL_TIMESTAMP_SKEW_SECONDS = 5 * 60;
+
 /**
  * Verify a fal webhook signature against the JWKS.
- * @param {Uint8Array} rawBody      the exact request body bytes (unparsed)
- * @param {string|null} signatureB64 x-fal-signature-256 header value
+ *
+ * Fal signs an ED25519 message of shape:
+ *   `${request_id}\n${user_id}\n${timestamp}\n${sha256(body).hex}`
+ *
+ * Signature is hex-encoded (not base64). Timestamp is checked against a
+ * ±5-minute window to blunt replay. Docs: fal.ai/docs/model-endpoints/webhooks.
+ *
+ * @param {Uint8Array} rawBody
+ * @param {object} headers  { signature, timestamp, requestId, userId }
  * @returns {Promise<boolean>}
  */
-export async function verifyWebhookSignature(rawBody, signatureB64) {
-    if (!signatureB64 || typeof signatureB64 !== 'string') return false;
+export async function verifyWebhookSignature(rawBody, headers) {
+    if (!headers || typeof headers !== 'object') return false;
+    const { signature, timestamp, requestId, userId } = headers;
+    if (!signature || !timestamp || !requestId || !userId) return false;
+    const ts = Number(timestamp);
+    if (!Number.isFinite(ts)) return false;
+    const nowSec = Math.floor(Date.now() / 1000);
+    if (Math.abs(nowSec - ts) > FAL_TIMESTAMP_SKEW_SECONDS) return false;
+
     let sigBytes;
-    try { sigBytes = b64ToBytes(signatureB64.trim()); } catch { return false; }
+    try { sigBytes = hexToBytes(signature.trim()); } catch { return false; }
     if (sigBytes.length !== 64) return false;
+
+    const bodyHash = await crypto.subtle.digest('SHA-256', rawBody);
+    const bodyHashHex = await bytesToHex(bodyHash);
+    const message = new TextEncoder().encode(
+        `${requestId}\n${userId}\n${timestamp}\n${bodyHashHex}`
+    );
+
     const keys = await loadFalPublicKeys();
     for (const key of keys) {
-        if (await crypto.subtle.verify({ name: 'Ed25519' }, key, sigBytes, rawBody)) return true;
+        if (await crypto.subtle.verify({ name: 'Ed25519' }, key, sigBytes, message)) return true;
     }
     return false;
 }
