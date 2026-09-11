@@ -90,8 +90,10 @@ export async function POST(req) {
 
     // Route by status. fal's success shape has status='completed' or
     // 'OK'; failure shape has status='failed' or a non-null error.
-    const isSuccess = status === 'completed' || status === 'OK' || status === 'SUCCESS';
-    const isFail = status === 'failed' || status === 'ERROR' || (event && event.error);
+    // Failure wins: a payload carrying `error` is never a success even if
+    // its status field says otherwise — money path, fail toward refund.
+    const isFail = status === 'failed' || status === 'ERROR' || Boolean(event && event.error);
+    const isSuccess = !isFail && (status === 'completed' || status === 'OK' || status === 'SUCCESS');
 
     try {
         if (isSuccess) {

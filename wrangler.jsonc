@@ -16,27 +16,17 @@
     "NEXT_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_bAxQiodzBhI6bV7lmo9gMQ_Hlg9_Ish"
   },
   // ------------------------------------------------------------------
-  // Phase 1 binding placeholders. All commented until each Slice's
-  // vendor account exists. Uncomment as each slice lands.
-  // ------------------------------------------------------------------
-  // Slice 7 — R2 for generated media
-  // "r2_buckets": [
-  //   { "binding": "MEDIA", "bucket_name": "veyrnox-media" }
-  // ],
+  // Secrets (never here — `wrangler secret put <NAME>`), per ADR-0004
+  // (Supabase auth + Postgres) and the shipped Phase 1 slices:
+  //   SUPABASE_SERVICE_ROLE_KEY   PostgREST RPCs, bypasses RLS (packages/db/supabase-client.js)
+  //   FAL_KEY                     fal.ai queue submit (packages/adapters/fal.js)
+  //   FAL_WEBHOOK_USER_ID         our fal tenant id; webhook callbacks for any other are rejected
+  //   PUBLIC_HOST                 https origin fal calls back on (/api/webhook/fal)
+  //   R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET
+  //                               SigV4 R2 client (packages/adapters/r2.js)
+  //   ADMIN_REAP_TOKEN            /api/admin/reap-assets shared secret (ADR-0008)
+  //   UPLOAD_PROXY_ALLOWED_HOSTS  legacy upload proxy allowlist (docs/UPLOAD_PROXY_CONFIG.md)
   //
-  // Slice 4 — Neon DATABASE_URL is a secret, set via `wrangler secret put
-  // DATABASE_URL`, not committed. Do not add it here.
-  //
-  // Optional Hyperdrive overlay in front of Neon (Slice 4+)
-  // "hyperdrive": [
-  //   { "binding": "HYPERDRIVE", "id": "REPLACE_ME_AFTER_CREATING" }
-  // ],
-  //
-  // Slice 6 — Inngest signing key: `wrangler secret put INNGEST_SIGNING_KEY`
-  //
-  // Slice 3 — Clerk secrets: `wrangler secret put CLERK_SECRET_KEY`, etc.
-  //
-  // Slice 5 — fal.ai key: `wrangler secret put FAL_KEY`
-  //
-  // Phase 2 — LemonSqueezy secrets: `wrangler secret put LEMONSQUEEZY_API_KEY`
+  // No R2 binding: r2.js signs plain fetch against the S3 endpoint so the
+  // Worker never needs `env.MEDIA` / getCloudflareContext() in middleware.
 }

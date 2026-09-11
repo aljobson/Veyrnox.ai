@@ -33,7 +33,7 @@ jobs:
         run: |
           set -euo pipefail
           # No new dangerouslySetInnerHTML / dangerously-* outside third-party submodules.
-          if git grep -nE 'dangerously' -- 'app' 'components' 'lib' 'middleware.js' 'packages/db' 'packages/adapters' 'packages/auth' 'packages/catalog'; then
+          if git grep -nE 'dangerously' -- 'app' 'components' 'lib' 'middleware.js' 'packages/db' 'packages/adapters' 'packages/catalog'; then
             echo 'dangerously-* usage found in first-party code'; exit 1
           fi
           # No console.log of a credential-shaped variable.

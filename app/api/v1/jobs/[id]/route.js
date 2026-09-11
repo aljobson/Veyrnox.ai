@@ -7,8 +7,9 @@
  *
  * DB → UI state mapping (kept here so UI stays honest with the ledger):
  *   PRICED, DEBITED, FAILOVER   → queued  (nothing user-visible yet)
- *   SUBMITTED                   → running (provider is working)
- *   SUCCEEDED, STORED           → succeeded (STORED = asset copied to R2)
+ *   SUBMITTED, SUCCEEDED        → running (provider working / asset copying
+ *                                  to R2 — no asset row until STORED)
+ *   STORED                      → succeeded (asset copied, /asset resolves)
  *   FAILED, REFUNDED            → failed  (credits already back on ledger)
  *
  * 404 fires when the job doesn't exist OR belongs to someone else —
@@ -27,8 +28,8 @@ function mapState(dbState) {
         case 'FAILOVER':
             return 'queued';
         case 'SUBMITTED':
-            return 'running';
         case 'SUCCEEDED':
+            return 'running';
         case 'STORED':
             return 'succeeded';
         case 'FAILED':

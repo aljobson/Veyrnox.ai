@@ -49,11 +49,12 @@ Each slice is one PR-sized unit. Ship in order. Slice N cannot merge before slic
 ### Slice 3 — Auth (Supabase per ADR-0006)
 
 Sub-slice 3a (this PR, ships without a vendor account):
-- `packages/auth/` — Supabase JWT verifier (`verifyToken` / `verifyRequest`)
-  using `jose`. Works in Cloudflare Workers via Web Crypto.
-- `verify.test.ts` unit tests cover happy path, wrong secret, wrong
-  issuer, expired token, Bearer header, cookie fallback, SSR JSON-array
-  cookie shape.
+- ~~`packages/auth/`~~ — the original `jose` + HS256 verifier was never
+  wired (jose tripped Workers Builds, and Supabase signs ES256). Removed
+  2026-09-12. The live verifier is `lib/supabaseJwt.js` (ES256 + JWKS via
+  Web Crypto, Bearer-only), used by `middleware.js` and covered by
+  `tests/supabaseJwt.test.mjs` (signature, alg, kid rotation + throttle,
+  JWKS outage, issuer, audience, expiry skew, anonymous, Bearer parsing).
 - Schema: `users.clerk_id` → `users.auth_id` (was named for the earlier
   Clerk plan; Supabase's `auth.users.id` fills this).
 - RLS policies migration lives at `packages/db/schema/supabase/0003_rls_policies.sql`
