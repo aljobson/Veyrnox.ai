@@ -29,14 +29,22 @@ export default function AuthGate({ onSignedIn }) {
 
     // If a session already exists, close ourselves and hand it back.
     useEffect(() => {
-        const supabase = getSupabase();
-        supabase.auth.getSession().then(({ data }) => {
-            if (data?.session) onSignedIn?.(data.session);
-        });
-        const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-            if (session) onSignedIn?.(session);
-        });
-        return () => sub.subscription.unsubscribe();
+        let unsubscribe = null;
+        let cancelled = false;
+        (async () => {
+            const supabase = await getSupabase();
+            if (cancelled) return;
+            const { data } = await supabase.auth.getSession();
+            if (data?.session && !cancelled) onSignedIn?.(data.session);
+            const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+                if (session && !cancelled) onSignedIn?.(session);
+            });
+            unsubscribe = () => sub.subscription.unsubscribe();
+        })();
+        return () => {
+            cancelled = true;
+            if (unsubscribe) unsubscribe();
+        };
     }, [onSignedIn]);
 
     async function handleSubmit(e) {
@@ -50,7 +58,7 @@ export default function AuthGate({ onSignedIn }) {
             setNotice({ kind: "error", text: "Password must be at least 8 characters." });
             return;
         }
-        const supabase = getSupabase();
+        const supabase = await getSupabase();
         setBusy(true);
         try {
             if (mode === "sign_up") {

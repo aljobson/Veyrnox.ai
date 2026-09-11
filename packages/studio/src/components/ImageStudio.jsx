@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { generateImage, generateI2I, uploadFile } from "../muapi.js";
 import { generateViaGateway, gatewayEnabled, GatewayError } from "../gatewayClient.js";
-import AuthGate from "./AuthGate.jsx";
+import dynamic from "next/dynamic";
+const AuthGate = dynamic(() => import("./AuthGate.jsx"), { ssr: false });
 import {
   t2iModels,
   i2iModels,
