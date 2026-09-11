@@ -191,3 +191,22 @@ If a build starts failing after a dependency change, bisect these three first.
   migration has landed and the reconciliation job has run for 24h clean.
 - Every PR touching the money spine (ledger, jobs, webhooks) needs an ADR
   update if behavior visible to the user or auditor changes.
+
+## HARD WALL vs. the Veyrnox wallet product
+
+**Veyrnox.ai and Veyrnox are separate businesses in separate repos.** This
+repo is the AI generation platform (credit-metered image/video/voice).
+The sibling **Veyrnox** wallet product (multichain, on-chain payouts,
+passkey wallet recovery) lives in `VEYRNOX/veyrnox` — never in here.
+
+- Never mix wallet copy, on-chain framing, or crypto payout language
+  into any customer-facing surface (`app/veyrnox/**`, `app/layout.js`,
+  `README.md`).
+- Never message sessions working in the wallet repo about product,
+  content, or roadmap decisions — they are a different company.
+- `scripts/check-hard-wall.sh` runs in CI (`.github/workflows/hard-wall.yml`)
+  and fails the build if a banned wallet term lands in the marketing tree.
+  Extend the BANNED list when new wallet vocabulary appears.
+- The list is enforcement, not doctrine. If a product decision ever
+  merges the two brands, remove the terms one at a time with a comment
+  in the script explaining the joint-launch context.

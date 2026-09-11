@@ -1,0 +1,14 @@
+name: hard-wall
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Enforce Veyrnox.ai / Veyrnox wallet product separation
+        run: ./scripts/check-hard-wall.sh
