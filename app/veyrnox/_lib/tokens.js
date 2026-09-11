@@ -266,6 +266,6 @@ export const MORE_FEATURES = [
 ];
 
 export const FOOTER_TAGLINE = 'The AI-native wallet for creators. Ship, sell, settle — in one loop.';
-export const FOOTER_STAMP   = `© ${new Date().getFullYear()} Veyrnox, Inc. · Built in the open · v1.0.1`;
+export const FOOTER_STAMP   = `© ${new Date().getFullYear()} Veyrnox, Inc.`;
 
 export const HERO_CHIP = 'LIVE · V1.0.1 SHIPPED';
