@@ -95,9 +95,8 @@ function WideNav() {
   return (
     <div className="sticky top-0 z-40 h-16 border-b border-vx-border bg-vx-base/90 backdrop-blur">
       <div className="h-full px-6 flex items-center gap-6">
-        <Link href="/veyrnox" className="flex items-center gap-2.5 shrink-0">
-          <Logo size={30} />
-          <span className="font-extrabold text-[14px] tracking-[0.18em]">VEYRNOX</span>
+        <Link href="/veyrnox" className="flex items-center shrink-0">
+          <Logo size={30} wordmark />
         </Link>
 
         <nav className="flex gap-1 items-center overflow-x-auto scrollbar-none flex-1">
@@ -462,8 +461,7 @@ function FooterForest() {
       <div className="border-t border-vx-border">
         <div className="px-6 py-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 text-xs text-vx-fg-muted">
           <div className="flex items-center gap-3">
-            <Logo size={22} />
-            <span className="font-vx-mono tracking-[0.18em] font-extrabold text-vx-fg">VEYRNOX</span>
+            <Logo size={22} wordmark />
             <span>© {new Date().getFullYear()} · UK / EU first</span>
           </div>
           <div className="flex gap-5">

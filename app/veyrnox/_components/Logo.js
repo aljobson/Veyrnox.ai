@@ -1,11 +1,22 @@
-// Veyrnox.ai mark — V glyph on aqua tile.
-export function Logo({ size = 30 }) {
+// Veyrnox.ai mark — filled aqua V glyph (SVG) with optional VEYRNOX.ai wordmark.
+// Match set with the marketing prototype so both surfaces read as one brand.
+export function Logo({ size = 30, wordmark = false, className = '' }) {
   return (
-    <div
-      className="rounded-[9px] bg-vx-accent flex items-center justify-center font-vx font-black text-vx-accent-ink"
-      style={{ width: size, height: size, fontSize: Math.round(size * 0.55), letterSpacing: '-0.06em' }}
-    >
-      V
-    </div>
+    <span className={`inline-flex items-center gap-2.5 ${className}`}>
+      <svg
+        viewBox="0 0 120 120"
+        xmlns="http://www.w3.org/2000/svg"
+        aria-hidden="true"
+        style={{ width: size, height: size, display: 'block' }}
+      >
+        <path d="M8 12 L38 12 L60 62 L82 12 L112 12 L60 112 Z" fill="#3EE6C4" />
+      </svg>
+      {wordmark && (
+        <span className="font-vx font-extrabold tracking-[-0.01em] text-[15px] leading-none">
+          <span>VEYRNOX</span>
+          <span className="text-vx-accent">.ai</span>
+        </span>
+      )}
+    </span>
   );
 }
