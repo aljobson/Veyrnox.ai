@@ -29,17 +29,17 @@ export default function Library() {
       <section className="max-w-[1400px] mx-auto px-8 pt-10 pb-4">
         <Chip tone="accent" className="mb-3">LIBRARY · YOUR GENERATIONS</Chip>
         <h1 className="text-[40px] font-black tracking-[-0.02em]">Everything you've made</h1>
-        <p className="text-muon-fg-body mt-2">Failed jobs refund automatically — they still show here so you can retry.</p>
+        <p className="text-vx-fg-body mt-2">Failed jobs refund automatically — they still show here so you can retry.</p>
 
         <div className="mt-6 flex gap-2">
           {['all', 'done', 'running', 'failed'].map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`font-muon-mono text-[11px] tracking-[0.12em] font-bold rounded-full px-4 py-2 border ${
+              className={`font-vx-mono text-[11px] tracking-[0.12em] font-bold rounded-full px-4 py-2 border ${
                 tab === t
-                  ? 'bg-muon-panel text-muon-fg border-muon-border'
-                  : 'border-transparent text-muon-fg-muted hover:text-muon-fg'
+                  ? 'bg-vx-panel text-vx-fg border-vx-border'
+                  : 'border-transparent text-vx-fg-muted hover:text-vx-fg'
               }`}
             >
               {t.toUpperCase()}
@@ -53,25 +53,25 @@ export default function Library() {
           {list.map((j) => {
             const s = STATUS[j.status];
             return (
-              <div key={j.id} className="rounded-2xl border border-muon-border bg-muon-panel overflow-hidden">
+              <div key={j.id} className="rounded-2xl border border-vx-border bg-vx-panel overflow-hidden">
                 <div
-                  className={`h-48 relative ${j.status === 'running' ? 'muon-shimmer' : ''}`}
+                  className={`h-48 relative ${j.status === 'running' ? 'vx-shimmer' : ''}`}
                   style={{ background: j.bg }}
                 >
                   <div className="absolute top-3 left-3">
                     <Chip tone={s.chip}>{s.label}</Chip>
                   </div>
-                  <div className="absolute top-3 right-3 font-muon-mono text-[11px] font-bold text-white/85 bg-black/45 backdrop-blur rounded-full px-2.5 py-1 muon-num">
+                  <div className="absolute top-3 right-3 font-vx-mono text-[11px] font-bold text-white/85 bg-black/45 backdrop-blur rounded-full px-2.5 py-1 vx-num">
                     {j.dur}
                   </div>
                 </div>
                 <div className="px-4 py-3 flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <div className="text-sm font-bold truncate">{j.name}</div>
-                    <div className="text-xs text-muon-fg-muted mt-0.5 truncate">{j.model} · {j.when}</div>
+                    <div className="text-xs text-vx-fg-muted mt-0.5 truncate">{j.model} · {j.when}</div>
                   </div>
-                  <div className="shrink-0 font-muon-mono text-[13px] font-bold muon-num pt-1">
-                    <span className={j.status === 'failed' ? 'text-muon-accent' : 'text-muon-money'}>
+                  <div className="shrink-0 font-vx-mono text-[13px] font-bold vx-num pt-1">
+                    <span className={j.status === 'failed' ? 'text-vx-accent' : 'text-vx-money'}>
                       {j.status === 'failed' ? `+${j.credits}` : `−${j.credits}`} cr
                     </span>
                   </div>

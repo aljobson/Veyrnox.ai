@@ -12,31 +12,31 @@ export default function MobileJob() {
         </div>
 
         <div
-          className="rounded-[14px] border border-muon-border overflow-hidden relative muon-shimmer"
+          className="rounded-[14px] border border-vx-border overflow-hidden relative vx-shimmer"
           style={{ aspectRatio: '16/9', background: 'linear-gradient(135deg,#0a1a2c,#144a7a,#3ec1e8)' }}
         >
           <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
-            <div className="font-muon-mono text-[10px] tracking-[0.14em] text-white/80">GENERATING · WAN 2.5</div>
-            <div className="font-muon-mono text-[42px] font-bold mt-1 muon-num">18s</div>
+            <div className="font-vx-mono text-[10px] tracking-[0.14em] text-white/80">GENERATING · WAN 2.5</div>
+            <div className="font-vx-mono text-[42px] font-bold mt-1 vx-num">18s</div>
           </div>
         </div>
 
-        <div className="mt-4 rounded-2xl border border-muon-border bg-muon-panel p-4">
+        <div className="mt-4 rounded-2xl border border-vx-border bg-vx-panel p-4">
           <div className="flex justify-between items-baseline">
-            <span className="font-muon-mono text-[10px] tracking-[0.14em] text-muon-fg-muted">STATE</span>
-            <span className="font-muon-mono text-[11px] font-bold text-muon-accent">RENDERING</span>
+            <span className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">STATE</span>
+            <span className="font-vx-mono text-[11px] font-bold text-vx-accent">RENDERING</span>
           </div>
-          <div className="mt-3 h-1.5 rounded-full bg-muon-border overflow-hidden">
-            <div className="h-full bg-muon-accent" style={{ width: '62%' }} />
+          <div className="mt-3 h-1.5 rounded-full bg-vx-border overflow-hidden">
+            <div className="h-full bg-vx-accent" style={{ width: '62%' }} />
           </div>
-          <div className="mt-3 flex justify-between text-[11px] text-muon-fg-muted">
+          <div className="mt-3 flex justify-between text-[11px] text-vx-fg-muted">
             <span>Queued 0:02</span>
             <span>Rendering 0:18</span>
             <span>Encode —</span>
           </div>
-          <div className="mt-4 text-[11.5px] text-muon-fg-body leading-[1.5]">
+          <div className="mt-4 text-[11.5px] text-vx-fg-body leading-[1.5]">
             You can leave this screen. We'll push a notification when it's ready.
-            <b className="text-muon-accent"> Fails auto-refund.</b>
+            <b className="text-vx-accent"> Fails auto-refund.</b>
           </div>
         </div>
 
@@ -44,7 +44,7 @@ export default function MobileJob() {
 
         <Link
           href="/veyrnox/m/library"
-          className="mt-4 flex justify-center items-center bg-transparent border border-muon-border text-muon-fg rounded-full py-3.5 text-[14px] font-bold"
+          className="mt-4 flex justify-center items-center bg-transparent border border-vx-border text-vx-fg rounded-full py-3.5 text-[14px] font-bold"
         >
           Go to Library
         </Link>

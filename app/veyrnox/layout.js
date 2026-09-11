@@ -20,9 +20,9 @@ export const metadata = {
   description: 'Credit-metered AI video and image studio. Every generation shows its price before you spend.',
 };
 
-export default function MuonLayout({ children }) {
+export default function VeyrnoxLayout({ children }) {
   return (
-    <div className={`${archivo.variable} ${jetbrains.variable} muon-root font-muon bg-muon-base text-muon-fg min-h-dvh`}>
+    <div className={`${archivo.variable} ${jetbrains.variable} vx-root font-vx bg-vx-base text-vx-fg min-h-dvh`}>
       {children}
     </div>
   );

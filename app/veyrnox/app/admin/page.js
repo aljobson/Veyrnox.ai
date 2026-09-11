@@ -28,11 +28,11 @@ export default function Admin() {
 
         <div className="mt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
           {KPIS.map((k) => (
-            <div key={k.label} className="rounded-[10px] border border-muon-border bg-muon-panel p-4">
-              <div className="font-muon-mono text-[9.5px] tracking-[0.12em] text-muon-fg-muted">{k.label.toUpperCase()}</div>
-              <div className="mt-1 font-muon-mono text-[26px] font-bold muon-num">{k.value}</div>
-              <div className={`font-muon-mono text-[11px] font-bold mt-0.5 muon-num ${
-                k.tone === 'money' ? 'text-muon-money' : 'text-muon-accent'
+            <div key={k.label} className="rounded-[10px] border border-vx-border bg-vx-panel p-4">
+              <div className="font-vx-mono text-[9.5px] tracking-[0.12em] text-vx-fg-muted">{k.label.toUpperCase()}</div>
+              <div className="mt-1 font-vx-mono text-[26px] font-bold vx-num">{k.value}</div>
+              <div className={`font-vx-mono text-[11px] font-bold mt-0.5 vx-num ${
+                k.tone === 'money' ? 'text-vx-money' : 'text-vx-accent'
               }`}>{k.delta}</div>
             </div>
           ))}
@@ -41,22 +41,22 @@ export default function Admin() {
 
       <section className="max-w-[1400px] mx-auto px-8 pb-16">
         <h2 className="text-lg font-black tracking-[-0.02em] mb-3">Model circuit breakers</h2>
-        <div className="rounded-[10px] border border-muon-border bg-muon-panel overflow-hidden">
-          <div className="grid grid-cols-[1fr_120px_140px_140px_120px] px-5 py-3 border-b border-muon-border font-muon-mono text-[10px] tracking-[0.12em] text-muon-fg-muted">
+        <div className="rounded-[10px] border border-vx-border bg-vx-panel overflow-hidden">
+          <div className="grid grid-cols-[1fr_120px_140px_140px_120px] px-5 py-3 border-b border-vx-border font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted">
             <div>MODEL</div><div>STATE</div><div className="text-right">P95 LATENCY</div><div className="text-right">FAILURE RATE</div><div className="text-right">ACTION</div>
           </div>
           {BREAKERS.map((b) => (
-            <div key={b.model} className="grid grid-cols-[1fr_120px_140px_140px_120px] items-center px-5 py-3 border-b border-muon-border/60 last:border-b-0">
+            <div key={b.model} className="grid grid-cols-[1fr_120px_140px_140px_120px] items-center px-5 py-3 border-b border-vx-border/60 last:border-b-0">
               <div className="text-sm font-bold">{b.model}</div>
               <div>
-                <span className={`font-muon-mono text-[10px] tracking-[0.1em] font-bold ${
-                  b.state === 'ok' ? 'text-muon-accent' : 'text-muon-money'
+                <span className={`font-vx-mono text-[10px] tracking-[0.1em] font-bold ${
+                  b.state === 'ok' ? 'text-vx-accent' : 'text-vx-money'
                 }`}>{b.state.toUpperCase()}</span>
               </div>
-              <div className="text-right font-muon-mono text-sm muon-num">{b.latency}</div>
-              <div className="text-right font-muon-mono text-sm muon-num">{b.failure}</div>
+              <div className="text-right font-vx-mono text-sm vx-num">{b.latency}</div>
+              <div className="text-right font-vx-mono text-sm vx-num">{b.failure}</div>
               <div className="text-right">
-                <button className="font-muon-mono text-[10px] tracking-[0.1em] font-bold text-muon-danger hover:brightness-110">
+                <button className="font-vx-mono text-[10px] tracking-[0.1em] font-bold text-vx-danger hover:brightness-110">
                   OPEN BREAKER
                 </button>
               </div>

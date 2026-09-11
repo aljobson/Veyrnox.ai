@@ -20,24 +20,24 @@ export default function MobileCredits() {
           <Chip tone="money">PLUS · $39/MO</Chip>
         </div>
 
-        <div className="rounded-2xl border border-muon-border bg-muon-panel p-5">
-          <div className="font-muon-mono text-[10px] tracking-[0.12em] text-muon-fg-muted">CURRENT BALANCE</div>
-          <div className="font-muon-mono text-[52px] font-bold text-muon-money leading-none mt-1 muon-num">
-            823<span className="text-lg text-muon-fg-muted ml-1.5">cr</span>
+        <div className="rounded-2xl border border-vx-border bg-vx-panel p-5">
+          <div className="font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted">CURRENT BALANCE</div>
+          <div className="font-vx-mono text-[52px] font-bold text-vx-money leading-none mt-1 vx-num">
+            823<span className="text-lg text-vx-fg-muted ml-1.5">cr</span>
           </div>
-          <div className="text-[12px] text-muon-fg-body mt-3">
+          <div className="text-[12px] text-vx-fg-body mt-3">
             Renews <b>3 Oct</b> · 1,000 cr on the Plus plan.
           </div>
           <button
             onClick={() => setSheet(true)}
-            className="mt-4 w-full flex justify-center items-center bg-muon-money text-muon-money-ink rounded-full py-3 text-[14px] font-extrabold"
+            className="mt-4 w-full flex justify-center items-center bg-vx-money text-vx-money-ink rounded-full py-3 text-[14px] font-extrabold"
           >
             Top up
           </button>
         </div>
 
-        <div className="mt-5 font-muon-mono text-[10px] tracking-[0.12em] text-muon-fg-muted">RECENT</div>
-        <div className="mt-2 flex flex-col divide-y divide-muon-border/60 rounded-2xl border border-muon-border bg-muon-panel overflow-hidden">
+        <div className="mt-5 font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted">RECENT</div>
+        <div className="mt-2 flex flex-col divide-y divide-vx-border/60 rounded-2xl border border-vx-border bg-vx-panel overflow-hidden">
           {[
             { l: 'Wan 2.5 · Neon alley test',        d: -15 },
             { l: 'Hailuo 02 · Sunset drift v2',      d: -20 },
@@ -47,8 +47,8 @@ export default function MobileCredits() {
           ].map((row, i) => (
             <div key={i} className="flex items-center justify-between px-4 py-2.5">
               <div className="text-[13px] truncate">{row.l}</div>
-              <div className={`font-muon-mono text-[13px] font-bold muon-num ${
-                row.refund ? 'text-muon-accent' : 'text-muon-money'
+              <div className={`font-vx-mono text-[13px] font-bold vx-num ${
+                row.refund ? 'text-vx-accent' : 'text-vx-money'
               }`}>
                 {row.d > 0 ? '+' : ''}{row.d} cr
               </div>
@@ -63,26 +63,26 @@ export default function MobileCredits() {
         <div className="absolute inset-0 z-40 bg-black/60 flex items-end" onClick={() => setSheet(false)}>
           <div
             onClick={(e) => e.stopPropagation()}
-            className="w-full bg-muon-panel border-t border-muon-border rounded-t-3xl p-5 pb-8"
-            style={{ animation: 'muonSlideUp 280ms ease-out' }}
+            className="w-full bg-vx-panel border-t border-vx-border rounded-t-3xl p-5 pb-8"
+            style={{ animation: 'vxSlideUp 280ms ease-out' }}
           >
-            <div className="mx-auto h-1 w-10 rounded-full bg-muon-border mb-4" />
+            <div className="mx-auto h-1 w-10 rounded-full bg-vx-border mb-4" />
             <div className="text-[18px] font-extrabold">Top up credits</div>
-            <div className="text-[12px] text-muon-fg-muted mt-1">One-time. Credits never expire while your plan is active.</div>
+            <div className="text-[12px] text-vx-fg-muted mt-1">One-time. Credits never expire while your plan is active.</div>
             <div className="mt-4 flex flex-col gap-2">
               {TOPUPS.map((t) => (
                 <button
                   key={t.cr}
-                  className="flex items-center justify-between rounded-xl border border-muon-border bg-muon-base/60 px-4 py-3 hover:border-muon-money"
+                  className="flex items-center justify-between rounded-xl border border-vx-border bg-vx-base/60 px-4 py-3 hover:border-vx-money"
                 >
-                  <span className="font-muon-mono text-[16px] font-bold text-muon-money muon-num">+{t.cr} cr</span>
-                  <span className="font-muon-mono text-[13px] font-bold">{t.price}</span>
+                  <span className="font-vx-mono text-[16px] font-bold text-vx-money vx-num">+{t.cr} cr</span>
+                  <span className="font-vx-mono text-[13px] font-bold">{t.price}</span>
                 </button>
               ))}
             </div>
             <button
               onClick={() => setSheet(false)}
-              className="mt-4 w-full text-center text-[13px] text-muon-fg-muted"
+              className="mt-4 w-full text-center text-[13px] text-vx-fg-muted"
             >
               Cancel
             </button>

@@ -11,7 +11,7 @@ export function PresetCard({ preset, size = 'md', onClick }) {
   return (
     <button
       onClick={onClick}
-      className="group text-left w-full rounded-2xl border border-muon-border bg-muon-panel overflow-hidden transition-transform duration-200 ease-out hover:scale-[1.015]"
+      className="group text-left w-full rounded-2xl border border-vx-border bg-vx-panel overflow-hidden transition-transform duration-200 ease-out hover:scale-[1.015]"
     >
       <div
         className={`${s.h} relative`}
@@ -23,7 +23,7 @@ export function PresetCard({ preset, size = 'md', onClick }) {
           </span>
         )}
         {preset.views && (
-          <span className="absolute top-3 right-3 font-muon-mono text-[11px] font-bold text-white/85 bg-black/45 backdrop-blur rounded-full px-2.5 py-1 muon-num">
+          <span className="absolute top-3 right-3 font-vx-mono text-[11px] font-bold text-white/85 bg-black/45 backdrop-blur rounded-full px-2.5 py-1 vx-num">
             ▶ {preset.views}
           </span>
         )}
@@ -31,9 +31,9 @@ export function PresetCard({ preset, size = 'md', onClick }) {
       <div className="px-4 py-3 flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className={`font-extrabold tracking-tight truncate ${s.title}`}>{preset.name}</div>
-          <div className="mt-0.5 text-muon-fg-muted text-xs truncate">{preset.model}</div>
+          <div className="mt-0.5 text-vx-fg-muted text-xs truncate">{preset.model}</div>
         </div>
-        <div className="shrink-0 font-muon-mono text-[13px] font-bold text-muon-money muon-num pt-1">{preset.credits} cr</div>
+        <div className="shrink-0 font-vx-mono text-[13px] font-bold text-vx-money vx-num pt-1">{preset.credits} cr</div>
       </div>
     </button>
   );

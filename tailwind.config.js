@@ -22,7 +22,7 @@ module.exports = {
                 'card-bg': '#141414',
                 secondary: '#a1a1aa',
                 muted: '#52525b',
-                muon: {
+                vx: {
                     base: '#0A0A0B',
                     panel: '#141416',
                     border: '#26262A',
@@ -40,8 +40,8 @@ module.exports = {
             },
             fontFamily: {
                 sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
-                muon: ['var(--font-archivo)', 'system-ui', 'sans-serif'],
-                'muon-mono': ['var(--font-jetbrains)', 'ui-monospace', 'monospace'],
+                vx: ['var(--font-archivo)', 'system-ui', 'sans-serif'],
+                'vx-mono': ['var(--font-jetbrains)', 'ui-monospace', 'monospace'],
             },
             borderRadius: {
                 'xl': '1rem',

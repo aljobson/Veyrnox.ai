@@ -1,4 +1,4 @@
-// Muon v2 data constants — source of truth: platform_model.xlsx / handoff README
+// Veyrnox.ai data constants — source of truth: platform_model.xlsx / handoff README
 // Do not drift these numbers. Credit costs & plan prices are contractual.
 
 export const MODELS = [
@@ -18,7 +18,7 @@ export const MODELS = [
 export const COST_MULTIPLIER_10S = 2;
 
 // Annual discounts mirror Higgsfield's structural shape (30% / 20% / 23%).
-// Prices are Muon's own — the shape is what's borrowed.
+// Prices are Veyrnox's own — the shape is what's borrowed.
 export const PLANS = [
   {
     id: 'starter',
@@ -108,7 +108,7 @@ export const PLAN_TOGGLE = [
 ];
 
 // Higgsfield-shape per-resolution cost matrix.
-// Muon's own numbers — kept honest and derivable.
+// Veyrnox's own numbers — kept honest and derivable.
 export const MODEL_COST_MATRIX = [
   { model: 'Wan 2.5',             kind: 'video', tag: 'RECOMMENDED', rows: [
     { label: '720p',  cost: 15 }, { label: '1080p', cost: 22 }, { label: '4K', cost: 44 },
@@ -158,7 +158,7 @@ export const DURATIONS = ['5s', '10s'];
 export const RESOLUTIONS = ['1K', '2K', '4K'];
 
 // ─── Landing-page content ────────────────────────────────────────────────
-// Ponytail: hand-authored copy — swap for CMS later. Muon voice: honesty first.
+// Ponytail: hand-authored copy — swap for CMS later. Veyrnox voice: honesty first.
 
 export const NAV_CATEGORIES = [
   { href: '/veyrnox',              label: 'Explore' },

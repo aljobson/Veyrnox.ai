@@ -14,29 +14,29 @@ export default function MobileLibrary() {
       <div className="flex-1 overflow-y-auto p-[14px_18px_16px]">
         <div className="flex justify-between items-center mb-3">
           <span className="text-[22px] font-extrabold tracking-[-0.02em]">Library</span>
-          <span className="font-muon-mono text-[10px] tracking-[0.12em] text-muon-fg-muted">FAILS REFUND</span>
+          <span className="font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted">FAILS REFUND</span>
         </div>
 
         <div className="flex flex-col gap-2.5">
           {JOBS.map((j, i) => (
-            <div key={i} className="flex gap-3 items-center bg-muon-panel border border-muon-border rounded-2xl p-2.5">
+            <div key={i} className="flex gap-3 items-center bg-vx-panel border border-vx-border rounded-2xl p-2.5">
               <div
-                className={`w-16 h-16 rounded-xl shrink-0 ${j.status === 'running' ? 'muon-shimmer' : ''}`}
+                className={`w-16 h-16 rounded-xl shrink-0 ${j.status === 'running' ? 'vx-shimmer' : ''}`}
                 style={{ background: j.bg }}
               />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
                   <div className="text-[14px] font-bold truncate">{j.name}</div>
                 </div>
-                <div className="text-[11px] text-muon-fg-muted mt-0.5 truncate">{j.model} · {j.when}</div>
+                <div className="text-[11px] text-vx-fg-muted mt-0.5 truncate">{j.model} · {j.when}</div>
                 <div className="mt-1">
                   {j.status === 'done'    && <Chip tone="accent">DONE</Chip>}
                   {j.status === 'running' && <Chip tone="accent">RUNNING</Chip>}
                   {j.status === 'failed'  && <Chip tone="danger">FAILED · REFUNDED</Chip>}
                 </div>
               </div>
-              <div className={`font-muon-mono text-[13px] font-bold pr-2 muon-num ${
-                j.credits > 0 ? 'text-muon-accent' : 'text-muon-money'
+              <div className={`font-vx-mono text-[13px] font-bold pr-2 vx-num ${
+                j.credits > 0 ? 'text-vx-accent' : 'text-vx-money'
               }`}>
                 {j.credits > 0 ? '+' : ''}{j.credits} cr
               </div>

@@ -10,7 +10,7 @@ export default function MobilePlans() {
         <Logo size={28} />
         <span className="text-[22px] font-extrabold tracking-[-0.02em]">Pick your plan</span>
       </div>
-      <p className="text-[13px] text-muon-fg-muted mt-2 leading-[1.5]">
+      <p className="text-[13px] text-vx-fg-muted mt-2 leading-[1.5]">
         Credits buy generations. Every model shows its price before you spend.
       </p>
 
@@ -19,7 +19,7 @@ export default function MobilePlans() {
           <div
             key={p.id}
             className={`relative rounded-2xl border p-4 ${
-              p.hot ? 'border-muon-money bg-muon-panel' : 'border-muon-border bg-muon-panel'
+              p.hot ? 'border-vx-money bg-vx-panel' : 'border-vx-border bg-vx-panel'
             }`}
           >
             {p.hot && (
@@ -29,10 +29,10 @@ export default function MobilePlans() {
             )}
             <div className="flex items-baseline justify-between">
               <span className="text-[17px] font-extrabold">{p.name}</span>
-              <span className="font-muon-mono text-[14px] font-bold muon-num">{p.price}<span className="text-[10px] text-muon-fg-muted">/mo</span></span>
+              <span className="font-vx-mono text-[14px] font-bold vx-num">{p.price}<span className="text-[10px] text-vx-fg-muted">/mo</span></span>
             </div>
-            <div className="font-muon-mono text-[12px] font-bold text-muon-money mt-1 muon-num">{p.creditsFmt} / month</div>
-            <div className="text-[11.5px] text-muon-fg-muted mt-1">{p.note}</div>
+            <div className="font-vx-mono text-[12px] font-bold text-vx-money mt-1 vx-num">{p.creditsFmt} / month</div>
+            <div className="text-[11.5px] text-vx-fg-muted mt-1">{p.note}</div>
           </div>
         ))}
       </div>
@@ -41,11 +41,11 @@ export default function MobilePlans() {
 
       <Link
         href="/veyrnox/m/create"
-        className="mt-4 flex justify-center items-center bg-muon-money text-muon-money-ink rounded-full py-3.5 text-[15px] font-extrabold min-h-[50px]"
+        className="mt-4 flex justify-center items-center bg-vx-money text-vx-money-ink rounded-full py-3.5 text-[15px] font-extrabold min-h-[50px]"
       >
         Continue with Plus
       </Link>
-      <div className="font-muon-mono text-[8.5px] tracking-[0.1em] text-muon-fg-faint text-center mt-2.5">
+      <div className="font-vx-mono text-[8.5px] tracking-[0.1em] text-vx-fg-faint text-center mt-2.5">
         CREDITS RESET MONTHLY · NO ROLLOVER · CANCEL ANYTIME
       </div>
     </div>

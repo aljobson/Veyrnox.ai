@@ -12,7 +12,7 @@ export function MarketingNav() {
     { href: '/veyrnox/pricing', label: 'Pricing' },
   ];
   return (
-    <div className="sticky top-0 z-40 flex items-center justify-between px-8 h-16 border-b border-muon-border bg-muon-base/[0.88] backdrop-blur">
+    <div className="sticky top-0 z-40 flex items-center justify-between px-8 h-16 border-b border-vx-border bg-vx-base/[0.88] backdrop-blur">
       <Link href="/veyrnox" className="flex items-center gap-2.5">
         <Logo />
         <span className="font-extrabold text-[15px] tracking-[0.18em]">VEYRNOX</span>
@@ -25,7 +25,7 @@ export function MarketingNav() {
               key={it.href}
               href={it.href}
               className={`px-4 py-2 rounded-full transition-colors ${
-                active ? 'bg-muon-panel text-muon-fg' : 'text-muon-fg-muted hover:text-muon-fg'
+                active ? 'bg-vx-panel text-vx-fg' : 'text-vx-fg-muted hover:text-vx-fg'
               }`}
             >
               {it.label}
@@ -34,12 +34,12 @@ export function MarketingNav() {
         })}
       </div>
       <div className="flex items-center gap-2">
-        <button className="text-muon-fg-muted text-sm font-semibold px-3 py-2 hover:text-muon-fg">
+        <button className="text-vx-fg-muted text-sm font-semibold px-3 py-2 hover:text-vx-fg">
           Sign in
         </button>
         <Link
           href="/veyrnox/app"
-          className="rounded-full bg-muon-accent text-muon-accent-ink text-sm font-bold px-5 py-2.5 hover:bg-muon-accent-hover"
+          className="rounded-full bg-vx-accent text-vx-accent-ink text-sm font-bold px-5 py-2.5 hover:bg-vx-accent-hover"
         >
           Start creating
         </Link>
@@ -57,7 +57,7 @@ export function AppNav({ balance = 1000, active = 'explore' }) {
   ];
   const fmt = new Intl.NumberFormat('en-US').format(balance);
   return (
-    <div className="sticky top-0 z-40 flex items-center justify-between px-8 h-16 border-b border-muon-border bg-muon-base/[0.88] backdrop-blur">
+    <div className="sticky top-0 z-40 flex items-center justify-between px-8 h-16 border-b border-vx-border bg-vx-base/[0.88] backdrop-blur">
       <Link href="/veyrnox/app" className="flex items-center gap-2.5">
         <Logo />
         <span className="font-extrabold text-[15px] tracking-[0.18em]">VEYRNOX</span>
@@ -68,7 +68,7 @@ export function AppNav({ balance = 1000, active = 'explore' }) {
             key={it.key}
             href={it.href}
             className={`px-4 py-2 rounded-full transition-colors ${
-              active === it.key ? 'bg-muon-panel text-muon-fg' : 'text-muon-fg-muted hover:text-muon-fg'
+              active === it.key ? 'bg-vx-panel text-vx-fg' : 'text-vx-fg-muted hover:text-vx-fg'
             }`}
           >
             {it.label}
@@ -76,9 +76,9 @@ export function AppNav({ balance = 1000, active = 'explore' }) {
         ))}
       </div>
       <div className="flex items-center gap-3">
-        <Link href="/veyrnox/app/credits" className="flex items-center gap-2 rounded-full border border-muon-border bg-muon-panel px-3 py-1.5">
-          <span className="h-1.5 w-1.5 rounded-full bg-muon-money" />
-          <span className="font-muon-mono text-[12px] font-bold text-muon-money muon-num">{fmt} cr</span>
+        <Link href="/veyrnox/app/credits" className="flex items-center gap-2 rounded-full border border-vx-border bg-vx-panel px-3 py-1.5">
+          <span className="h-1.5 w-1.5 rounded-full bg-vx-money" />
+          <span className="font-vx-mono text-[12px] font-bold text-vx-money vx-num">{fmt} cr</span>
         </Link>
       </div>
     </div>

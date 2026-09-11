@@ -20,19 +20,19 @@ export default function Pricing() {
         <h1 className="text-[56px] font-black tracking-[-0.03em] leading-[1.02] text-balance max-w-[820px] mx-auto">
           One balance. Every model.<br/>No add-ons.
         </h1>
-        <p className="text-muon-fg-body mt-5 max-w-[600px] mx-auto leading-[1.65]">
+        <p className="text-vx-fg-body mt-5 max-w-[600px] mx-auto leading-[1.65]">
           Pick a plan; credits refresh monthly. Failed jobs refund automatically.
           Ultra unlocks 4K and the full premium tier. Cancel any time.
         </p>
 
         {/* Individual / Business toggle */}
-        <div className="mt-8 inline-flex items-center gap-1 border border-muon-border rounded-full p-1">
+        <div className="mt-8 inline-flex items-center gap-1 border border-vx-border rounded-full p-1">
           {PLAN_TOGGLE.map((t) => (
             <button
               key={t.key}
               onClick={() => setAudience(t.key)}
               className={`px-5 py-2 text-sm font-bold rounded-full transition-colors ${
-                audience === t.key ? 'bg-muon-panel text-muon-fg' : 'text-muon-fg-muted'
+                audience === t.key ? 'bg-vx-panel text-vx-fg' : 'text-vx-fg-muted'
               }`}
             >
               {t.label}
@@ -41,19 +41,19 @@ export default function Pricing() {
         </div>
 
         {/* Monthly / Annual toggle */}
-        <div className="mt-4 inline-flex items-center gap-1 border border-muon-border rounded-full p-1 ml-3">
+        <div className="mt-4 inline-flex items-center gap-1 border border-vx-border rounded-full p-1 ml-3">
           <button
             onClick={() => setAnnual(false)}
-            className={`px-4 py-2 text-xs font-bold rounded-full ${!annual ? 'bg-muon-panel text-muon-fg' : 'text-muon-fg-muted'}`}
+            className={`px-4 py-2 text-xs font-bold rounded-full ${!annual ? 'bg-vx-panel text-vx-fg' : 'text-vx-fg-muted'}`}
           >
             Monthly
           </button>
           <button
             onClick={() => setAnnual(true)}
-            className={`px-4 py-2 text-xs font-bold rounded-full flex items-center gap-2 ${annual ? 'bg-muon-panel text-muon-fg' : 'text-muon-fg-muted'}`}
+            className={`px-4 py-2 text-xs font-bold rounded-full flex items-center gap-2 ${annual ? 'bg-vx-panel text-vx-fg' : 'text-vx-fg-muted'}`}
           >
             Annual
-            <span className="font-muon-mono text-[9.5px] tracking-[0.1em] text-muon-money">SAVE UP TO 30%</span>
+            <span className="font-vx-mono text-[9.5px] tracking-[0.1em] text-vx-money">SAVE UP TO 30%</span>
           </button>
         </div>
       </section>
@@ -76,16 +76,16 @@ export default function Pricing() {
       <section className="max-w-[1200px] mx-auto px-8 pb-20">
         <div className="flex items-end justify-between mb-4 flex-wrap gap-2">
           <div>
-            <div className="font-muon-mono text-[11px] tracking-[0.14em] text-muon-accent mb-2">COMPARE MODEL COSTS</div>
+            <div className="font-vx-mono text-[11px] tracking-[0.14em] text-vx-accent mb-2">COMPARE MODEL COSTS</div>
             <h2 className="text-3xl font-black tracking-[-0.02em]">Every model. Every resolution. Priced up front.</h2>
           </div>
-          <div className="font-muon-mono text-[10px] tracking-[0.12em] text-muon-fg-muted">
+          <div className="font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted">
             5s VIDEO CLIP · 10s = 2×
           </div>
         </div>
 
-        <div className="rounded-2xl border border-muon-border bg-muon-panel overflow-hidden overflow-x-auto">
-          <div className="grid grid-cols-[1.4fr_1fr_1fr_1fr_120px] px-5 py-3 border-b border-muon-border font-muon-mono text-[10px] tracking-[0.12em] text-muon-fg-muted min-w-[720px]">
+        <div className="rounded-2xl border border-vx-border bg-vx-panel overflow-hidden overflow-x-auto">
+          <div className="grid grid-cols-[1.4fr_1fr_1fr_1fr_120px] px-5 py-3 border-b border-vx-border font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted min-w-[720px]">
             <div>MODEL</div>
             <div className="text-right">720p</div>
             <div className="text-right">1080p</div>
@@ -93,39 +93,39 @@ export default function Pricing() {
             <div className="text-right">TYPE</div>
           </div>
           {MODEL_COST_MATRIX.map((m) => (
-            <div key={m.model} className="grid grid-cols-[1.4fr_1fr_1fr_1fr_120px] px-5 py-3 border-b border-muon-border/60 last:border-b-0 items-center min-w-[720px]">
+            <div key={m.model} className="grid grid-cols-[1.4fr_1fr_1fr_1fr_120px] px-5 py-3 border-b border-vx-border/60 last:border-b-0 items-center min-w-[720px]">
               <div className="flex items-center gap-2">
                 <span className="text-sm font-bold">{m.model}</span>
                 {m.tag && (
-                  <span className={`font-muon-mono text-[9px] tracking-[0.1em] ${
-                    m.tag.includes('PREMIUM') ? 'text-muon-money' : 'text-muon-fg-faint'
+                  <span className={`font-vx-mono text-[9px] tracking-[0.1em] ${
+                    m.tag.includes('PREMIUM') ? 'text-vx-money' : 'text-vx-fg-faint'
                   }`}>{m.tag}</span>
                 )}
               </div>
               {m.rows.map((r, i) => (
-                <div key={i} className="text-right font-muon-mono text-sm font-bold text-muon-money muon-num">
+                <div key={i} className="text-right font-vx-mono text-sm font-bold text-vx-money vx-num">
                   {r.cost != null ? `${r.cost} cr` : '—'}
                 </div>
               ))}
-              <div className="text-right font-muon-mono text-[10px] tracking-[0.12em] text-muon-fg-muted">
+              <div className="text-right font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted">
                 {m.kind.toUpperCase()}
               </div>
             </div>
           ))}
-          <div className="px-5 py-3 border-t border-muon-border font-muon-mono text-[10px] tracking-[0.12em] text-muon-fg-muted text-center">
+          <div className="px-5 py-3 border-t border-vx-border font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted text-center">
             THE BUTTON IS THE PRICE TAG · FAILED JOBS REFUND AUTOMATICALLY
           </div>
         </div>
       </section>
 
       {/* ============ CLOSING ============ */}
-      <section className="border-t border-muon-border">
+      <section className="border-t border-vx-border">
         <div className="max-w-[900px] mx-auto px-8 py-14 text-center">
           <div className="text-3xl font-black tracking-[-0.02em]">Questions before you commit?</div>
-          <div className="text-muon-fg-muted mt-2">Free preset gallery, no card — see the models live.</div>
+          <div className="text-vx-fg-muted mt-2">Free preset gallery, no card — see the models live.</div>
           <Link
             href="/veyrnox/presets"
-            className="inline-block mt-6 rounded-full bg-muon-accent text-muon-accent-ink px-6 py-3 text-sm font-extrabold hover:bg-muon-accent-hover"
+            className="inline-block mt-6 rounded-full bg-vx-accent text-vx-accent-ink px-6 py-3 text-sm font-extrabold hover:bg-vx-accent-hover"
           >
             Browse the gallery
           </Link>
@@ -148,7 +148,7 @@ function PlanCard({ plan, annual, audience, ultraTierIdx, setUltraTierIdx }) {
   return (
     <div
       className={`relative rounded-2xl border p-6 flex flex-col ${
-        plan.hot ? 'border-muon-money bg-muon-panel' : 'border-muon-border bg-muon-panel'
+        plan.hot ? 'border-vx-money bg-vx-panel' : 'border-vx-border bg-vx-panel'
       }`}
     >
       {/* Discount badge (annual only) */}
@@ -169,14 +169,14 @@ function PlanCard({ plan, annual, audience, ultraTierIdx, setUltraTierIdx }) {
       )}
 
       {/* Header */}
-      <div className="font-muon-mono text-[10px] tracking-[0.14em] text-muon-fg-muted uppercase">{plan.tagline}</div>
+      <div className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted uppercase">{plan.tagline}</div>
       <div className="mt-1 text-2xl font-black">{plan.name}</div>
 
       {/* Credits + equivalence */}
-      <div className="mt-4 font-muon-mono text-[22px] font-bold text-muon-money muon-num">
-        {new Intl.NumberFormat('en-US').format(credits * businessMult)} cr<span className="text-[13px] text-muon-fg-muted"> / mo</span>
+      <div className="mt-4 font-vx-mono text-[22px] font-bold text-vx-money vx-num">
+        {new Intl.NumberFormat('en-US').format(credits * businessMult)} cr<span className="text-[13px] text-vx-fg-muted"> / mo</span>
       </div>
-      <div className="mt-1 font-muon-mono text-[11px] text-muon-fg-body leading-relaxed">
+      <div className="mt-1 font-vx-mono text-[11px] text-vx-fg-body leading-relaxed">
         {plan.equivalence}
       </div>
 
@@ -187,10 +187,10 @@ function PlanCard({ plan, annual, audience, ultraTierIdx, setUltraTierIdx }) {
             <button
               key={t.credits}
               onClick={() => setUltraTierIdx(i)}
-              className={`flex-1 font-muon-mono text-[11px] font-bold py-2 rounded-lg border transition-colors ${
+              className={`flex-1 font-vx-mono text-[11px] font-bold py-2 rounded-lg border transition-colors ${
                 ultraTierIdx === i
-                  ? 'border-muon-money bg-muon-money/10 text-muon-money'
-                  : 'border-muon-border text-muon-fg-muted hover:text-muon-fg'
+                  ? 'border-vx-money bg-vx-money/10 text-vx-money'
+                  : 'border-vx-border text-vx-fg-muted hover:text-vx-fg'
               }`}
             >
               {t.credits >= 1000 ? `${t.credits / 1000}K` : t.credits}
@@ -202,15 +202,15 @@ function PlanCard({ plan, annual, audience, ultraTierIdx, setUltraTierIdx }) {
       {/* Price */}
       <div className="mt-5 flex items-baseline gap-2">
         {annual && (
-          <span className="font-muon-mono text-[18px] text-muon-fg-faint line-through muon-num">
+          <span className="font-vx-mono text-[18px] text-vx-fg-faint line-through vx-num">
             ${activeTier ? activeTier.priceMo : plan.priceMo}
           </span>
         )}
-        <span className="font-muon-mono text-[36px] font-bold muon-num">${priceMo * businessMult}</span>
-        <span className="text-[11px] text-muon-fg-muted">/mo{annual ? ', billed annually' : ''}</span>
+        <span className="font-vx-mono text-[36px] font-bold vx-num">${priceMo * businessMult}</span>
+        <span className="text-[11px] text-vx-fg-muted">/mo{annual ? ', billed annually' : ''}</span>
       </div>
       {annual && (
-        <div className="mt-1 font-muon-mono text-[11px] text-muon-money muon-num">
+        <div className="mt-1 font-vx-mono text-[11px] text-vx-money vx-num">
           Save ${(savings * businessMult).toLocaleString()} vs monthly
         </div>
       )}
@@ -219,40 +219,40 @@ function PlanCard({ plan, annual, audience, ultraTierIdx, setUltraTierIdx }) {
       <button
         className={`mt-5 rounded-full py-3 text-sm font-extrabold transition-colors ${
           plan.hot
-            ? 'bg-muon-money text-muon-money-ink hover:brightness-110'
-            : 'bg-muon-accent text-muon-accent-ink hover:bg-muon-accent-hover'
+            ? 'bg-vx-money text-vx-money-ink hover:brightness-110'
+            : 'bg-vx-accent text-vx-accent-ink hover:bg-vx-accent-hover'
         }`}
       >
         Get {plan.name}
       </button>
 
       {/* Unlocked models */}
-      <div className="mt-6 border-t border-muon-border pt-4">
-        <div className="font-muon-mono text-[9.5px] tracking-[0.12em] text-muon-fg-muted mb-2.5">PREMIUM MODELS UNLOCKED</div>
+      <div className="mt-6 border-t border-vx-border pt-4">
+        <div className="font-vx-mono text-[9.5px] tracking-[0.12em] text-vx-fg-muted mb-2.5">PREMIUM MODELS UNLOCKED</div>
         <ul className="space-y-2">
           {plan.unlockedModels.map((m) => (
             <li key={m.name} className="flex items-start gap-2">
-              <span className="text-muon-accent shrink-0 mt-0.5">✓</span>
+              <span className="text-vx-accent shrink-0 mt-0.5">✓</span>
               <div className="min-w-0">
                 <div className="text-[13px] font-semibold">{m.name}</div>
-                <div className="text-[11px] text-muon-fg-muted font-muon-mono">{m.hint}</div>
+                <div className="text-[11px] text-vx-fg-muted font-vx-mono">{m.hint}</div>
               </div>
             </li>
           ))}
         </ul>
         {plan.lockedNote && (
-          <div className="mt-3 font-muon-mono text-[10px] text-muon-fg-faint tracking-[0.05em]">
+          <div className="mt-3 font-vx-mono text-[10px] text-vx-fg-faint tracking-[0.05em]">
             {plan.lockedNote}
           </div>
         )}
       </div>
 
       {/* Features */}
-      <div className="mt-4 border-t border-muon-border pt-4">
-        <div className="font-muon-mono text-[9.5px] tracking-[0.12em] text-muon-fg-muted mb-2.5">INCLUDED</div>
-        <ul className="space-y-1.5 text-[12.5px] text-muon-fg-body">
+      <div className="mt-4 border-t border-vx-border pt-4">
+        <div className="font-vx-mono text-[9.5px] tracking-[0.12em] text-vx-fg-muted mb-2.5">INCLUDED</div>
+        <ul className="space-y-1.5 text-[12.5px] text-vx-fg-body">
           {plan.features.map((f) => (
-            <li key={f} className="flex gap-2"><span className="text-muon-accent">✓</span> {f}</li>
+            <li key={f} className="flex gap-2"><span className="text-vx-accent">✓</span> {f}</li>
           ))}
         </ul>
       </div>

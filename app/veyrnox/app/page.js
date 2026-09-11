@@ -18,7 +18,7 @@ export default function Explore() {
         <h1 className="text-[44px] font-black tracking-[-0.03em] leading-[1.05]">
           One-tap looks. Exact prices.
         </h1>
-        <p className="text-muon-fg-body mt-3 max-w-[640px] leading-[1.6]">
+        <p className="text-vx-fg-body mt-3 max-w-[640px] leading-[1.6]">
           Every preset is pinned to its best-fit model and shows its credit cost up front.
           Demos play free from cache — nothing debits until you generate.
         </p>
@@ -28,10 +28,10 @@ export default function Explore() {
             <button
               key={c}
               onClick={() => setCat(c)}
-              className={`font-muon-mono text-[11px] tracking-[0.12em] font-bold rounded-full px-4 py-2 border ${
+              className={`font-vx-mono text-[11px] tracking-[0.12em] font-bold rounded-full px-4 py-2 border ${
                 cat === c
-                  ? 'bg-muon-accent text-muon-accent-ink border-transparent'
-                  : 'border-muon-border text-muon-fg-muted hover:text-muon-fg'
+                  ? 'bg-vx-accent text-vx-accent-ink border-transparent'
+                  : 'border-vx-border text-vx-fg-muted hover:text-vx-fg'
               }`}
             >
               {c}
@@ -42,7 +42,7 @@ export default function Explore() {
 
       <section className="max-w-[1400px] mx-auto px-8 pt-4 pb-4 flex items-baseline justify-between">
         <h2 className="text-xl font-black tracking-[-0.02em]">Trending this week</h2>
-        <div className="font-muon-mono text-[10px] tracking-[0.12em] text-muon-fg-muted">
+        <div className="font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted">
           {list.length} PRESETS · 8 MODELS · CACHED DEMOS FREE
         </div>
       </section>

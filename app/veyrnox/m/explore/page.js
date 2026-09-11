@@ -13,7 +13,7 @@ export default function MobileExplore() {
       <div className="flex-1 overflow-y-auto p-[14px_18px_16px]">
         <div className="flex justify-between items-center mb-3">
           <span className="text-[22px] font-extrabold tracking-[-0.02em]">Explore</span>
-          <span className="font-muon-mono text-[10px] tracking-[0.12em] text-muon-fg-muted">CACHED FREE</span>
+          <span className="font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted">CACHED FREE</span>
         </div>
 
         <div className="flex gap-1.5 overflow-x-auto pb-2 -mx-1 px-1 mb-3">
@@ -21,10 +21,10 @@ export default function MobileExplore() {
             <button
               key={c}
               onClick={() => setCat(c)}
-              className={`shrink-0 font-muon-mono text-[10px] tracking-[0.12em] font-bold rounded-full px-3.5 py-1.5 border ${
+              className={`shrink-0 font-vx-mono text-[10px] tracking-[0.12em] font-bold rounded-full px-3.5 py-1.5 border ${
                 cat === c
-                  ? 'bg-muon-accent text-muon-accent-ink border-transparent'
-                  : 'border-muon-border text-muon-fg-muted'
+                  ? 'bg-vx-accent text-vx-accent-ink border-transparent'
+                  : 'border-vx-border text-vx-fg-muted'
               }`}
             >
               {c}

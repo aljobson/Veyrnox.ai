@@ -16,7 +16,7 @@ export default function MobileCreate() {
         </div>
 
         <div
-          className="rounded-[14px] border border-muon-border overflow-hidden relative mb-3 shrink-0"
+          className="rounded-[14px] border border-vx-border overflow-hidden relative mb-3 shrink-0"
           style={{ aspectRatio: '16/9', background: 'linear-gradient(135deg,#1b0632 0%,#5a0e6a 55%,#e4318f 100%)' }}
         >
           <div className="absolute inset-0 flex items-center justify-center">
@@ -30,17 +30,17 @@ export default function MobileCreate() {
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           rows={3}
-          className="w-full bg-muon-panel border border-muon-border rounded-[10px] px-3 py-2.5 text-[13px] text-muon-fg leading-[1.5] resize-none mb-3 focus:outline-none focus:border-muon-accent"
+          className="w-full bg-vx-panel border border-vx-border rounded-[10px] px-3 py-2.5 text-[13px] text-vx-fg leading-[1.5] resize-none mb-3 focus:outline-none focus:border-vx-accent"
         />
 
         <div className="flex gap-1.5 flex-wrap mb-3">
-          <span className="font-muon-mono text-[9.5px] tracking-[0.1em] font-bold px-3.5 py-2 rounded-full text-muon-accent border border-muon-accent/40 bg-muon-accent/[0.07]">
+          <span className="font-vx-mono text-[9.5px] tracking-[0.1em] font-bold px-3.5 py-2 rounded-full text-vx-accent border border-vx-accent/40 bg-vx-accent/[0.07]">
             WAN 2.5 · RECOMMENDED
           </span>
-          <button className="font-muon-mono text-[9.5px] tracking-[0.1em] font-bold px-3.5 py-2 rounded-full text-muon-fg-muted border border-muon-border">
+          <button className="font-vx-mono text-[9.5px] tracking-[0.1em] font-bold px-3.5 py-2 rounded-full text-vx-fg-muted border border-vx-border">
             5s
           </button>
-          <button className="font-muon-mono text-[9.5px] tracking-[0.1em] font-bold px-3.5 py-2 rounded-full text-muon-fg-muted border border-muon-border">
+          <button className="font-vx-mono text-[9.5px] tracking-[0.1em] font-bold px-3.5 py-2 rounded-full text-vx-fg-muted border border-vx-border">
             16:9
           </button>
         </div>
@@ -49,12 +49,12 @@ export default function MobileCreate() {
 
         <Link
           href="/veyrnox/m/job"
-          className="flex justify-between items-center bg-muon-accent text-muon-accent-ink rounded-full px-5 py-3.5 text-[15px] font-extrabold min-h-[50px] mt-2"
+          className="flex justify-between items-center bg-vx-accent text-vx-accent-ink rounded-full px-5 py-3.5 text-[15px] font-extrabold min-h-[50px] mt-2"
         >
           <span>Generate</span>
-          <span className="font-muon-mono text-[13px]">−15 cr</span>
+          <span className="font-vx-mono text-[13px]">−15 cr</span>
         </Link>
-        <div className="font-muon-mono text-[8.5px] tracking-[0.1em] text-muon-fg-faint text-center mt-2">
+        <div className="font-vx-mono text-[8.5px] tracking-[0.1em] text-vx-fg-faint text-center mt-2">
           REFUND ON FAILURE · ALWAYS
         </div>
       </div>

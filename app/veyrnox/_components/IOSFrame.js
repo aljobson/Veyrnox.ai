@@ -13,8 +13,8 @@ export function IOSFrame({ children }) {
           <div className="h-2 w-2 rounded-full bg-[#1a1a1a]" />
         </div>
         {/* Status bar */}
-        <div className="absolute top-0 inset-x-0 h-12 flex items-center justify-between px-8 z-20 text-white font-muon text-[13px] font-semibold">
-          <span className="muon-num">9:41</span>
+        <div className="absolute top-0 inset-x-0 h-12 flex items-center justify-between px-8 z-20 text-white font-vx text-[13px] font-semibold">
+          <span className="vx-num">9:41</span>
           <span className="flex items-center gap-1.5 text-[11px]">
             <span>􀙇</span><span>􀛨</span><span>􀛩</span>
           </span>
