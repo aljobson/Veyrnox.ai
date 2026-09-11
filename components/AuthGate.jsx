@@ -66,6 +66,16 @@ export default function AuthGate() {
         return () => window.removeEventListener("veyrnox:auth-required", onAuthRequired);
     }, []);
 
+    // Deep-link: /any-route?auth=sign_up|sign_in|magic opens the gate on
+    // mount via the same event path (so the getSession() short-circuit
+    // still applies). Lets static/marketing CTAs target sign-up directly.
+    useEffect(() => {
+        const p = new URLSearchParams(window.location.search).get("auth");
+        if (p === "sign_up" || p === "sign_in" || p === "magic") {
+            window.dispatchEvent(new CustomEvent("veyrnox:auth-required", { detail: { mode: p } }));
+        }
+    }, []);
+
     // Close when a session appears (from any tab).
     useEffect(() => {
         return onSessionChange((s) => {
