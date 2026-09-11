@@ -1,7 +1,9 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useCallback, useEffect, useState } from 'react';
 import { Logo } from './Logo';
+import { gatewayFetch, GatewayError } from '../_lib/gateway';
 
 // Marketing site nav (Home / Gallery / Pricing).
 export function MarketingNav() {
@@ -48,14 +50,33 @@ export function MarketingNav() {
   );
 }
 
-// Web app nav (Explore / Create / Library) with balance pill.
-export function AppNav({ balance = 1000, active = 'explore' }) {
+// Web app nav (Explore / Create / Library) with a live balance pill.
+// If `balance` prop is provided the parent owns it; otherwise the pill
+// self-fetches and subscribes to veyrnox:balance-changed.
+export function AppNav({ balance, active = 'explore' }) {
   const items = [
     { key: 'explore', href: '/veyrnox/app',         label: 'Explore' },
     { key: 'create',  href: '/veyrnox/app/create',  label: 'Create' },
     { key: 'library', href: '/veyrnox/app/library', label: 'Library' },
   ];
-  const fmt = new Intl.NumberFormat('en-US').format(balance);
+  const [ownBalance, setOwnBalance] = useState(null);
+  const loadOwn = useCallback(async () => {
+    try {
+      const b = await gatewayFetch('/balance');
+      setOwnBalance(b.balance);
+    } catch (e) {
+      if (e instanceof GatewayError && e.status === 401) setOwnBalance(null);
+    }
+  }, []);
+  useEffect(() => {
+    if (balance != null) return;              // parent owns it
+    loadOwn();
+    const onBal = () => loadOwn();
+    window.addEventListener('veyrnox:balance-changed', onBal);
+    return () => window.removeEventListener('veyrnox:balance-changed', onBal);
+  }, [balance, loadOwn]);
+  const shown = balance != null ? balance : ownBalance;
+  const fmt = shown != null ? new Intl.NumberFormat('en-US').format(shown) : '—';
   return (
     <div className="sticky top-0 z-40 flex items-center justify-between px-8 h-16 border-b border-vx-border bg-vx-base/[0.88] backdrop-blur">
       <Link href="/veyrnox/app" className="flex items-center gap-2.5">
