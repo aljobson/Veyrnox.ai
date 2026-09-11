@@ -1,0 +1,33 @@
+/* Muon v2 — shared page CSS scoped under .muon-root */
+.muon-root { color-scheme: dark; }
+.muon-root * { box-sizing: border-box; }
+.muon-root ::selection { background: rgba(62, 230, 196, 0.28); color: #F2F2F3; }
+.muon-root ::-webkit-scrollbar { width: 10px; height: 10px; }
+.muon-root ::-webkit-scrollbar-thumb { background: #26262A; border-radius: 999px; }
+.muon-root ::-webkit-scrollbar-track { background: transparent; }
+
+/* tabular numerals wherever credits/money show */
+.muon-num { font-variant-numeric: tabular-nums; }
+
+/* motion — mirrors handoff spec */
+@keyframes muonScan { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+@keyframes muonPulse { 0%,100% { opacity: 1; } 50% { opacity: .25; } }
+@keyframes muonSlideUp { 0% { transform: translateY(100%); } 100% { transform: none; } }
+@keyframes muonFade { 0% { opacity: 0; } 100% { opacity: 1; } }
+@keyframes muonDrift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+@keyframes muonTickUp { 0% { opacity: 0; transform: translateY(6px); } 40% { opacity: 1; } 100% { opacity: 0; transform: translateY(-12px); } }
+
+.muon-shimmer { position: relative; overflow: hidden; }
+.muon-shimmer::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(100deg, transparent 34%, rgba(62,230,196,.16) 50%, transparent 66%);
+  transform: translateX(-100%);
+  animation: muonScan 1.6s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .muon-root *, .muon-root *::before, .muon-root *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
