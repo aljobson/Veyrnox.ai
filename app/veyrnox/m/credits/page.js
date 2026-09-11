@@ -40,7 +40,7 @@ export default function MobileCredits() {
         <div className="mt-2 flex flex-col divide-y divide-vx-border/60 rounded-2xl border border-vx-border bg-vx-panel overflow-hidden">
           {[
             { l: 'Wan 2.5 · Neon alley test',        d: -15 },
-            { l: 'Hailuo 02 · Sunset drift v2',      d: -20 },
+            { l: 'MiniMax H3 · Sunset drift v2',     d: -22 },
             { l: 'CCTV night · refund',              d: +15, refund: true },
             { l: 'Nano Banana · Portrait warm',      d: -5  },
             { l: 'Plus renewal',                     d: +1000, topup: true },

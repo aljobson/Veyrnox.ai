@@ -33,11 +33,11 @@ export const PLANS = [
     creditsFmt: '200 cr',
     equivalence: '= 40 Nano Banana stills   ~ 13 Wan 2.5 clips',
     unlockedModels: [
-      { name: 'Nano Banana', hint: 'image · 5 cr' },
+      { name: 'Nano Banana', hint: 'image · 6 cr' },
       { name: 'Seedance 2.0 Fast', hint: 'video · 5 cr' },
       { name: 'Wan 2.5', hint: 'video · 15 cr' },
     ],
-    lockedNote: 'Veo 3.1 & Kling 3.0 4K locked — upgrade to unlock',
+    lockedNote: 'Veo 3.1 ◆ premium locked — upgrade to unlock',
     features: [
       'One balance across every unlocked model',
       'Failed jobs refund automatically',
@@ -57,17 +57,17 @@ export const PLANS = [
     equivalence: '= 200 Nano Banana stills   ~ 66 Wan 2.5 clips',
     hot: true,
     unlockedModels: [
-      { name: 'Every image model', hint: 'Nano Banana, Flux.2, Seedream 4.5' },
-      { name: 'Every standard video model', hint: 'Wan, Seedance, Hailuo, Kling 2.6' },
-      { name: 'Kling 3.0 (up to 1080p)', hint: 'video · 33 cr / 5s' },
+      { name: 'Every image model', hint: 'Nano Banana, Flux.2 [pro], Seedream 4' },
+      { name: 'Every standard video model', hint: 'Wan, Seedance, MiniMax, Kling 2.6' },
+      { name: 'Kling 3.0 · I2V', hint: 'video · 33 cr / 5s' },
       { name: 'Veo 3.1', hint: '◆ premium · 125 cr / 5s' },
+      { name: 'ACE Step', hint: 'audio · 4 cr' },
     ],
-    lockedNote: 'Kling 3.0 4K & Ultra parallel unlocked at Ultra',
+    lockedNote: 'Higher concurrency and early access unlock at Ultra',
     features: [
       'One balance across every model',
       'Failed jobs refund automatically',
       '4 concurrent jobs',
-      'MCP · CLI access · Supercomputer routing',
       'Priority queue',
     ],
   },
@@ -88,10 +88,10 @@ export const PLANS = [
       { credits: 9000, priceMo: 249, priceAnnualMo: 192 },
     ],
     unlockedModels: [
-      { name: 'Every model', hint: 'including Veo 3.1 & Kling 3.0 4K' },
-      { name: 'Kling 3.0 · 4K', hint: 'video · 66 cr / 5s' },
+      { name: 'Every model', hint: 'including Veo 3.1 ◆ and Kling 3.0 · I2V' },
+      { name: 'Kling 3.0 · I2V', hint: 'video · 33 cr / 5s' },
       { name: 'Veo 3.1', hint: '◆ premium · 125 cr / 5s' },
-      { name: 'Cinema Studio 4.0', hint: 'full lens/camera library' },
+      { name: 'Every image + audio model', hint: 'Nano Banana, Flux.2 [pro], Seedream 4, ACE Step' },
     ],
     lockedNote: null,
     features: [
@@ -109,49 +109,14 @@ export const PLAN_TOGGLE = [
   { key: 'business',   label: 'Business' },
 ];
 
-// Higgsfield-shape per-resolution cost matrix.
-// Veyrnox's own numbers — kept honest and derivable.
-export const MODEL_COST_MATRIX = [
-  { model: 'Wan 2.5',             kind: 'video', tag: 'RECOMMENDED', rows: [
-    { label: '720p',  cost: 15 }, { label: '1080p', cost: 22 }, { label: '4K', cost: 44 },
-  ]},
-  { model: 'Seedance 2.0 Fast',   kind: 'video', tag: 'FASTEST',     rows: [
-    { label: '720p',  cost: 5  }, { label: '1080p', cost: 8  }, { label: '4K', cost: null },
-  ]},
-  { model: 'Seedance 1.0 Lite',   kind: 'video', rows: [
-    { label: '720p',  cost: 8  }, { label: '1080p', cost: 12 }, { label: '4K', cost: null },
-  ]},
-  { model: 'Hailuo 02',           kind: 'video', rows: [
-    { label: '720p',  cost: 20 }, { label: '1080p', cost: 28 }, { label: '4K', cost: null },
-  ]},
-  { model: 'Kling 2.6 Pro',       kind: 'video', rows: [
-    { label: '720p',  cost: 23 }, { label: '1080p', cost: 30 }, { label: '4K', cost: null },
-  ]},
-  { model: 'Kling 3.0',           kind: 'video', rows: [
-    { label: '720p',  cost: 22 }, { label: '1080p', cost: 33 }, { label: '4K', cost: 66 },
-  ]},
-  { model: 'Veo 3.1',             kind: 'video', tag: '◆ PREMIUM',   rows: [
-    { label: '720p',  cost: 80 }, { label: '1080p', cost: 125}, { label: '4K', cost: 250 },
-  ]},
-  { model: 'Nano Banana',         kind: 'image', rows: [
-    { label: 'image', cost: 5  }, { label: null,     cost: null }, { label: null, cost: null },
-  ]},
-  { model: 'Flux.2 [pro]',        kind: 'image', rows: [
-    { label: 'image', cost: 3  }, { label: null,     cost: null }, { label: null, cost: null },
-  ]},
-  { model: 'Seedream 4.5',        kind: 'image', rows: [
-    { label: 'image', cost: 3  }, { label: null,     cost: null }, { label: null, cost: null },
-  ]},
-];
-
 export const PRESET_CATEGORIES = ['ALL', 'CINEMATIC', 'UGC', 'VFX', 'ADS'];
 
 export const PRESETS = [
   { id: 'crowd-surf', name: 'CROWD SURF',   model: 'Seedance 2.0 Fast', credits: 5,  category: 'UGC',        bg: 'linear-gradient(135deg,#0e2b3c 0%,#0a5a70 55%,#2ec8b3 100%)', views: '12.4k', cached: true, badge: 'CACHED' },
   { id: 'cctv-night', name: 'CCTV NIGHT',   model: 'Wan 2.5',           credits: 15, category: 'CINEMATIC',  bg: 'linear-gradient(180deg,#08120b 0%,#0e3a1e 60%,#2ea258 100%)', views: '8.7k',  cached: true, badge: 'CACHED' },
-  { id: 'sunset-drift',name: 'SUNSET DRIFT', model: 'Hailuo 02',         credits: 20, category: 'CINEMATIC',  bg: 'linear-gradient(135deg,#2b1a0a 0%,#7a4a1e 60%,#f0b060 100%)', views: '9.1k',  cached: false },
+  { id: 'sunset-drift',name: 'SUNSET DRIFT', model: 'MiniMax H3',        credits: 22, category: 'CINEMATIC',  bg: 'linear-gradient(135deg,#2b1a0a 0%,#7a4a1e 60%,#f0b060 100%)', views: '9.1k',  cached: false },
   { id: 'neon-alley', name: 'NEON ALLEY',   model: 'Kling 2.6 Pro',     credits: 23, category: 'VFX',        bg: 'linear-gradient(135deg,#1b0632 0%,#5a0e6a 55%,#e4318f 100%)', views: '5.8k',  cached: true, badge: 'CACHED' },
-  { id: 'warm-portrait',name: 'WARM PORTRAIT',model: 'Nano Banana',      credits: 5,  category: 'UGC',        bg: 'linear-gradient(160deg,#2c1a12 0%,#7a3520 60%,#c9713f 100%)', views: '2.9k' },
+  { id: 'warm-portrait',name: 'WARM PORTRAIT',model: 'Nano Banana',      credits: 6,  category: 'UGC',        bg: 'linear-gradient(160deg,#2c1a12 0%,#7a3520 60%,#c9713f 100%)', views: '2.9k' },
   { id: 'sports-cut', name: 'SPORTS CUT',   model: 'Seedance 2.0 Fast', credits: 5,  category: 'ADS',        bg: 'linear-gradient(135deg,#0a1a2c 0%,#144a7a 60%,#3ec1e8 100%)', views: '6.2k',  cached: true, badge: 'CACHED' },
 ];
 

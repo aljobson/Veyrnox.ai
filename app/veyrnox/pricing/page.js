@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { MarketingNav } from '../_components/NavBar';
 import { Chip } from '../_components/Chip';
-import { PLANS, PLAN_TOGGLE, MODEL_COST_MATRIX, MODELS as MODELS_FALLBACK } from '../_lib/tokens';
+import { PLANS, PLAN_TOGGLE, MODELS as MODELS_FALLBACK } from '../_lib/tokens';
 
 // Live catalog fetch — public, unauthenticated. Falls back to tokens.js
 // MODELS if the endpoint is unreachable so the page never renders blank.
