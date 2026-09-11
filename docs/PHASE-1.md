@@ -137,13 +137,34 @@ submission; the fal webhook arriving back moves the job through SUBMITTED →
 SUCCEEDED (or → FAILED → REFUNDED). Verified once against staging with a
 real FAL_KEY.
 
-### Slice 6 — Inngest wiring — needs vendor account
-- Inngest project + signing key
-- `packages/queue/` — new package with Inngest client + function definitions
-- Two functions: `job.submit` (submit to fal, transition to SUBMITTED), `job.completed` (transition to STORED, copy to R2, no refund)
-- Per-user concurrency key: `event.user_id`
-- Circuit breaker per (model, provider) — Redis-backed later, in-memory for now
-- **Exit gate:** submit a job via POST `/api/v1/generations`, watch it flow through Inngest, land completed in DB
+### Slice 6 — Per-user rate limiting (Inngest scope collapsed)
+
+Fal.ai's own queue + webhook (Slice 5) covers the async orchestration
+Inngest would have provided — enqueue, fan-out, retry, callback. What we
+still need is a **fair-use guard** so one user can't monopolise the
+gateway. Full Inngest wiring is deferred to a real Slice 6' if durable
+multi-step workflows are ever needed.
+
+Shipped:
+- **`packages/db/schema/supabase/0008_rate_limit_check.sql`** —
+  `check_generation_rate_limit(auth_id, limit_per_window, window_seconds)`
+  RPC. Sliding-window count against `jobs.created_at`, no dedicated
+  table (existing `jobs_user_id_idx` covers it). Returns
+  `{ok, count, limit}` or `{ok:false, code:'RATE_LIMITED',
+  retry_after_seconds, ...}`. service_role only.
+- **`POST /api/v1/generations`** — calls the rate check as step 0,
+  before catalog lookup or debit. Rejected requests never move
+  credits. Baseline: **10 generations per 60 seconds per user**.
+  429 response carries a `Retry-After` header (RFC 9110).
+  Tier-differentiated limits (Free/Starter/Plus/Ultra) arrive
+  with Phase 4 premium gating.
+
+Sanity-tested on staging: rate-check returned RATE_LIMITED with
+retry_after_seconds populated correctly, USER_NOT_FOUND for a
+phantom auth_id.
+
+Exit gate: 11th generation submission inside 60s returns HTTP 429
+with `Retry-After`; the 10th succeeds.
 
 ### Slice 7 — R2 media pipeline
 - R2 bucket `veyrnox-media` created in Cloudflare

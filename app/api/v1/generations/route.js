@@ -49,6 +49,45 @@ export async function POST(req) {
         return NextResponse.json({ error: 'inputs must be an object' }, { status: 400 });
     }
 
+    // 0. Per-user rate-limit check. Postgres-backed sliding window against
+    //    jobs.created_at — no dedicated table, no external cache. One RPC
+    //    call adds ~10-30ms to the hot path; acceptable, we already do
+    //    several Postgres calls per submission.
+    //
+    //    Baseline: 10 generations per 60 seconds per user. Applies to
+    //    every plan for now; tier-specific limits arrive with Phase 4
+    //    premium gating.
+    try {
+        const rl = await rpc('check_generation_rate_limit', {
+            p_auth_id: authId,
+            p_limit_per_window: 10,
+            p_window_seconds: 60,
+        }, cfg);
+        if (rl && rl.ok === false) {
+            if (rl.code === 'RATE_LIMITED') {
+                const retryAfter = Math.max(1, Math.min(600, Number(rl.retry_after_seconds) || 60));
+                return new NextResponse(
+                    JSON.stringify({ error: 'rate_limited', limit: rl.limit, count: rl.count, retry_after_seconds: retryAfter }),
+                    {
+                        status: 429,
+                        headers: {
+                            'content-type': 'application/json',
+                            'retry-after': String(retryAfter),
+                        },
+                    }
+                );
+            }
+            if (rl.code === 'USER_NOT_FOUND') {
+                return NextResponse.json({ error: 'user not provisioned' }, { status: 401 });
+            }
+            return NextResponse.json({ error: rl.code || 'rate check failed' }, { status: 400 });
+        }
+    } catch (err) {
+        // Rate-limit check failure is not fatal — the downstream ledger_debit
+        // still gates money movement. Log and continue.
+        console.warn('[generations] rate check errored, continuing:', err);
+    }
+
     // 1. Look up the model in the catalog.
     let modelRow;
     try {
