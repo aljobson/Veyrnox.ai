@@ -262,15 +262,18 @@ function PlanCard({ plan, annual, audience, ultraTierIdx, setUltraTierIdx }) {
       )}
 
       {/* CTA */}
-      <button
-        className={`mt-5 rounded-full py-3 text-sm font-extrabold transition-colors ${
+      {/* ?auth=sign_up opens AuthGate on mount (89aad5c); ?plan= is ignored
+          today but survives into the callback URL for Phase 4 checkout. */}
+      <Link
+        href={`/app?auth=sign_up&plan=${plan.id}`}
+        className={`mt-5 block text-center rounded-full py-3 text-sm font-extrabold transition-colors ${
           plan.hot
             ? 'bg-vx-money text-vx-money-ink hover:brightness-110'
             : 'bg-vx-accent text-vx-accent-ink hover:bg-vx-accent-hover'
         }`}
       >
         Get {plan.name}
-      </button>
+      </Link>
 
       {/* Unlocked models */}
       <div className="mt-6 border-t border-vx-border pt-4">
