@@ -29,10 +29,10 @@ export default function MobilePlans() {
             )}
             <div className="flex items-baseline justify-between">
               <span className="text-[17px] font-extrabold">{p.name}</span>
-              <span className="font-vx-mono text-[14px] font-bold vx-num">{p.price}<span className="text-[10px] text-vx-fg-muted">/mo</span></span>
+              <span className="font-vx-mono text-[14px] font-bold vx-num">${p.priceMo}<span className="text-[10px] text-vx-fg-muted">/mo</span></span>
             </div>
             <div className="font-vx-mono text-[12px] font-bold text-vx-money mt-1 vx-num">{p.creditsFmt} / month</div>
-            <div className="text-[11.5px] text-vx-fg-muted mt-1">{p.note}</div>
+            <div className="text-[11.5px] text-vx-fg-muted mt-1">{p.equivalence}</div>
           </div>
         ))}
       </div>
