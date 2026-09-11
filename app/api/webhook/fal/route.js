@@ -18,6 +18,7 @@
 import { NextResponse } from 'next/server';
 import { verifyWebhookSignature } from '../../../../packages/adapters/fal.js';
 import { rpc, envConfig } from '../../../../packages/db/supabase-client.js';
+import { copyUrlToR2, envConfig as r2EnvConfig } from '../../../../packages/adapters/r2.js';
 
 const SOURCE = 'fal';
 
@@ -81,7 +82,47 @@ export async function POST(req) {
 
     try {
         if (isSuccess) {
-            await rpc('job_succeeded', { p_provider_job_id: requestId, p_provider: SOURCE }, cfg);
+            // 1. Mark job SUCCEEDED. Even if R2 copy fails, the state
+            //    reflects that the provider succeeded — we can retry
+            //    the R2 copy later via a reconcile job (Phase 4).
+            const succeededRes = await rpc('job_succeeded',
+                { p_provider_job_id: requestId, p_provider: SOURCE }, cfg);
+            if (!succeededRes || succeededRes.ok !== true) {
+                console.warn('[fal-webhook] job_succeeded returned', succeededRes);
+            }
+
+            // 2. Extract the provider-hosted URL from the fal payload.
+            //    Shape varies per model — best-effort probe of common
+            //    fields. If we can't find one, log and stop (job stays
+            //    SUCCEEDED without an asset; reconcile job can retry).
+            const outputUrl = extractOutputUrl(event);
+            if (!outputUrl) {
+                console.error('[fal-webhook] no output url in payload for', requestId);
+                return NextResponse.json({ ok: true, warn: 'no output url' });
+            }
+
+            // 3. Copy the object into R2. The key is content-addressable
+            //    on the fal request id + a modality hint so retries
+            //    upsert to the same R2 key (0009 ON CONFLICT handles it).
+            const r2cfg = r2EnvConfig();
+            const key = `fal/${requestId}/${suggestFilename(event, outputUrl)}`;
+            const copy = await copyUrlToR2(outputUrl, key, r2cfg);
+            if (!copy.ok) {
+                console.error('[fal-webhook] R2 copy failed for', requestId, copy.error);
+                return NextResponse.json({ ok: true, warn: 'r2 copy failed' });
+            }
+
+            // 4. Transition job to STORED and record the asset row.
+            const storedRes = await rpc('job_stored', {
+                p_provider_job_id: requestId,
+                p_provider: SOURCE,
+                p_r2_key: copy.r2Key,
+                p_mime_type: copy.mimeType,
+                p_size_bytes: copy.size,
+            }, cfg);
+            if (!storedRes || storedRes.ok !== true) {
+                console.warn('[fal-webhook] job_stored returned', storedRes);
+            }
         } else if (isFail) {
             const errCode = (event && event.error && event.error.code) || 'provider_error';
             const failRes = await rpc('job_failed', {
@@ -119,4 +160,67 @@ export async function POST(req) {
     }).catch((err) => console.error('[fal-webhook] processed patch failed:', err));
 
     return NextResponse.json({ ok: true });
+}
+
+
+// ─── payload helpers ────────────────────────────────────────────────────────
+
+/**
+ * Best-effort extraction of the provider-hosted asset URL from a fal
+ * completion payload. Shapes we've seen:
+ *   { output: { url } }              simple video/audio
+ *   { output: { video: { url } } }
+ *   { output: { images: [{ url }] } } image generators
+ *   { images: [{ url }] }             sometimes at top level
+ *   { video: { url } }                sometimes at top level
+ * Returns null if none found — caller logs + no-ops.
+ */
+function extractOutputUrl(event) {
+    const out = (event && event.output) || event || {};
+    if (out && typeof out.url === 'string') return out.url;
+    if (out.video && typeof out.video.url === 'string') return out.video.url;
+    if (out.audio && typeof out.audio.url === 'string') return out.audio.url;
+    if (Array.isArray(out.images) && out.images[0] && typeof out.images[0].url === 'string') {
+        return out.images[0].url;
+    }
+    if (event.video && typeof event.video.url === 'string') return event.video.url;
+    if (Array.isArray(event.images) && event.images[0] && typeof event.images[0].url === 'string') {
+        return event.images[0].url;
+    }
+    return null;
+}
+
+function suggestFilename(event, url) {
+    // Trailing path segment of the fal URL if it looks like a file; else
+    // fall back to a mime-based name.
+    try {
+        const path = new URL(url).pathname;
+        const seg = path.split('/').pop();
+        if (seg && /\.[A-Za-z0-9]{2,5}$/.test(seg)) return seg;
+    } catch { /* ignore */ }
+    const guess = (event && event.output && event.output.content_type)
+        || (event && event.content_type)
+        || 'application/octet-stream';
+    const ext = mimeExt(guess);
+    return `output${ext}`;
+}
+
+function mimeExt(mime) {
+    if (mime.startsWith('image/')) {
+        if (mime.includes('png')) return '.png';
+        if (mime.includes('webp')) return '.webp';
+        if (mime.includes('jpeg') || mime.includes('jpg')) return '.jpg';
+        return '.img';
+    }
+    if (mime.startsWith('video/')) {
+        if (mime.includes('mp4')) return '.mp4';
+        if (mime.includes('webm')) return '.webm';
+        return '.vid';
+    }
+    if (mime.startsWith('audio/')) {
+        if (mime.includes('mpeg')) return '.mp3';
+        if (mime.includes('wav')) return '.wav';
+        return '.aud';
+    }
+    return '.bin';
 }
