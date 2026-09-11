@@ -189,11 +189,11 @@ export const PILLARS = [
     stat:   '100%',
     title:  'Failed jobs refund automatically.',
     body:   'Moderation reject, provider timeout, model error — credits return to your balance the moment we know. Ledger-backed and auditable.' },
-  { key: 'eu',
-    kicker: 'EU HOSTED',
-    stat:   'FRANKFURT',
-    title:  'Compute stays in the EU.',
-    body:   'Frankfurt-region infrastructure. GDPR-native. Data residency without a per-request negotiation.' },
+  { key: 'balance',
+    kicker: 'ONE BALANCE',
+    stat:   'ALL MODELS',
+    title:  'One credit balance across the catalog.',
+    body:   'Image, video and audio models draw from a single balance. No add-ons, no per-model top-ups, no surprise bills.' },
   { key: 'c2pa',
     kicker: 'C2PA-SIGNED',
     stat:   'EVERY ASSET',
@@ -216,8 +216,9 @@ export const FAQ = [
   { q: 'Can I use the output commercially?',
     a: "Outputs are yours to use commercially, subject to each model provider's licence.",
     link: { label: 'See our Terms of Service', href: '/legal/terms' } },
-  { q: 'Where is my data hosted?',
-    a: 'Frankfurt, EU. All generation compute, storage and logging runs in an EU region. GDPR data-rights requests routed through the Data Rights page.' },
+  { q: 'How do I exercise my data rights?',
+    a: 'Access, export and deletion requests go through the Data Rights page.',
+    link: { label: 'Data Rights', href: '/legal/gdpr' } },
   { q: 'Is the output signed?',
     a: 'Yes. Every asset carries a C2PA signature with model, creator and timestamp. Verifiable with any C2PA reader.' },
   { q: 'Are there rate limits?',
@@ -242,14 +243,14 @@ export const WORKFLOW_STRIPS = [
 export const HERO_STATS = [
   { value: '50',    label: 'free credits on sign-up' },
   { value: '10+',   label: 'models on one balance' },
-  { value: 'EU',    label: 'hosted · C2PA-signed' },
+  { value: 'C2PA',  label: 'signed at source' },
 ];
 
 export const METRIC_STRIP = [
   { value: '50',    label: 'FREE CREDITS ON SIGN-UP' },
   { value: '100%',  label: 'REFUND ON FAILURE' },
   { value: '10+',   label: 'MODELS ROUTED' },
-  { value: 'EU',    label: 'HOSTED · C2PA-SIGNED' },
+  { value: 'C2PA',  label: 'SIGNED AT SOURCE' },
 ];
 
 export const MODEL_SHELF = [
@@ -318,7 +319,7 @@ export const MORE_FEATURES = [
   ] },
 ];
 
-export const FOOTER_TAGLINE = 'Credit-metered AI generation for creators. Priced on the button — refund on failure, always. EU-hosted, C2PA-signed.';
+export const FOOTER_TAGLINE = 'Credit-metered AI generation for creators. Priced on the button — refund on failure, always. C2PA-signed.';
 export const FOOTER_STAMP   = `© ${new Date().getFullYear()} Veyrnox Ltd`;
 
 export const HERO_CHIP = 'LIVE · V1.0.1 SHIPPED';
