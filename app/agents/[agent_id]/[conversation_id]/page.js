@@ -11,7 +11,7 @@ import AgentChatClient from "../AgentChatClient";
  */
 export async function generateMetadata({ params }) {
   return {
-    title: `Agent Chat — Open Generative AI`,
+    title: `Agent Chat — Veyrnox`,
   };
 }
 
