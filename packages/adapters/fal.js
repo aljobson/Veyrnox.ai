@@ -53,16 +53,21 @@ export async function submitJob(job, cfg) {
         return { ok: false, error: 'invalid provider_endpoint' };
     }
 
+    // fal takes the webhook URL as a `fal_webhook` query parameter on the
+    // POST URL, NOT a JSON body field. Docs: fal.ai/docs/model-endpoints/webhooks.
     const webhookUrl = new URL(cfg.webhookBaseUrl);
     webhookUrl.searchParams.set('job_id', job.job_id);
 
-    const payload = { ...job.inputs, webhook_url: webhookUrl.toString() };
+    const postUrl = new URL(`${FAL_QUEUE_BASE}/${endpoint}`);
+    postUrl.searchParams.set('fal_webhook', webhookUrl.toString());
+
+    const payload = { ...job.inputs };
 
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), cfg.timeoutMs ?? 15000);
     let res;
     try {
-        res = await fetch(`${FAL_QUEUE_BASE}/${endpoint}`, {
+        res = await fetch(postUrl.toString(), {
             method: 'POST',
             signal: controller.signal,
             headers: {
