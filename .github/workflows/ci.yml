@@ -1,0 +1,51 @@
+name: ci
+
+# The gate CLAUDE.md "Testing & CI" promises: build succeeds, tests pass,
+# no new `dangerously-` usage, no console.log of a secret, no high/critical
+# advisories. Runs on every PR and every push to main.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install
+        run: npm ci --no-audit --no-fund
+
+      - name: Grep gates
+        run: |
+          set -euo pipefail
+          # No new dangerouslySetInnerHTML / dangerously-* outside third-party submodules.
+          if git grep -nE 'dangerously' -- 'app' 'components' 'lib' 'middleware.js' 'packages/db' 'packages/adapters' 'packages/auth' 'packages/catalog'; then
+            echo 'dangerously-* usage found in first-party code'; exit 1
+          fi
+          # No console.log of a credential-shaped variable.
+          if git grep -nE 'console\.log\([^)]*(SECRET|_KEY|TOKEN|PASSWORD|serviceRoleKey|falKey)' -- 'app' 'components' 'lib' 'middleware.js' 'packages'; then
+            echo 'console.log of a secret-shaped value found'; exit 1
+          fi
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Audit (high and above)
+        run: npm audit --audit-level=high

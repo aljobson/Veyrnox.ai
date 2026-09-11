@@ -1,0 +1,11 @@
+# Policy gates and their inputs need an owner review; a PR must not be able
+# to edit the gate it is being checked by. Pair with branch protection
+# "Require review from Code Owners" on main.
+/scripts/               @aljobson
+/.github/               @aljobson
+/.gitmodules            @aljobson
+/middleware.js          @aljobson
+/next.config.mjs        @aljobson
+/wrangler.jsonc         @aljobson
+/packages/db/schema/    @aljobson
+/app/api/webhook/       @aljobson

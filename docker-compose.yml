@@ -29,7 +29,7 @@ services:
       POSTGRES_PASSWORD: veyrnox_dev
       POSTGRES_DB: veyrnox
     ports:
-      - "54329:5432"
+      - "127.0.0.1:54329:5432"
     volumes:
       - veyrnox_pg_data:/var/lib/postgresql/data
     healthcheck:
