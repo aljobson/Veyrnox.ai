@@ -217,13 +217,25 @@ Sub-slice 9a (this PR):
   existing `showError` helper renders a friendly toast (401 = sign
   in, 402 = insufficient credits, 429 = rate limited with Retry-After).
 
-Sub-slice 9b (blocked on Supabase-JWT-in-browser plumbing):
-- Login/signup UI backed by `@supabase/supabase-js` in the studio
-  (client-side; the Worker constraints against `@supabase/supabase-js`
-  don't apply in the browser)
-- Cookie is set by supabase-js on successful sign-in, satisfying
-  middleware.js's cookie fallback
-- Legacy `__Host-muapi_key` cookie flow deprecates on 2026-10-10
+Sub-slice 9b (shipped 2026-09-11):
+- **`packages/studio/src/authClient.js`** — browser Supabase client
+  singleton. Reads `NEXT_PUBLIC_SUPABASE_URL` + `_ANON_KEY` from the
+  client bundle. PKCE flow, session cookie auto-set.
+- **`packages/studio/src/components/AuthGate.jsx`** — modal with
+  email+password sign-in / sign-up / magic-link. Minimal on purpose;
+  OAuth (Google/Apple) is Phase 4.
+- **ImageStudio**: catches `GatewayError` with status 401 and opens
+  the AuthGate modal instead of erroring. Once the user signs in,
+  the cookie is present and the next generation attempt succeeds.
+- `@supabase/supabase-js` is client-side only in this codebase. Never
+  imported from `middleware.js` or route handlers — those still use
+  the plain-fetch PostgREST client in `packages/db/supabase-client.js`
+  to avoid the OpenNext / Workers-Builds compatibility risk we saw
+  with jose in Slice 3b.
+
+Legacy `__Host-muapi_key` cookie flow still deprecates on 2026-10-10
+(Deprecation + Sunset headers already live on the session/muapi
+ route from Slice 3b).
 
 **Phase-1 Exit gate** (pending): with the flag on and a Supabase
 session cookie present, click generate in ImageStudio → job flows
