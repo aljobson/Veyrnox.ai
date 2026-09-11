@@ -342,7 +342,7 @@ export const MORE_FEATURES = [
 ];
 
 export const FOOTER_TAGLINE = 'Credit-metered AI generation for creators. Priced on the button — refund on failure, always. EU-hosted, C2PA-signed.';
-export const FOOTER_STAMP   = `© ${new Date().getFullYear()} Veyrnox, Inc.`;
+export const FOOTER_STAMP   = `© ${new Date().getFullYear()} Veyrnox Ltd`;
 
 export const HERO_CHIP = 'LIVE · V1.0.1 SHIPPED';
 
