@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { parseJsonOr502 } from '@/lib/parseJsonOr502';
-import { cleanHeaders, MUAPI_BASE, proxyToMuapi } from '@/lib/muapiProxy';
+import { cleanHeaders, MUAPI_BASE, proxyToMuapi, safeUpstreamPath } from '@/lib/muapiProxy';
 import { getApiKeyFromCookies } from '@/lib/authCookie';
 
 // GET can return binary (thumbnails, exported files). Everything except the
@@ -9,7 +9,7 @@ import { getApiKeyFromCookies } from '@/lib/authCookie';
 const OPTS = { forwardBinary: true };
 
 function upstreamPath(pathSegments) {
-    return `/app/${pathSegments.join('/')}`;
+    return safeUpstreamPath('/app', pathSegments);
 }
 
 export async function GET(request, { params }) {
@@ -25,9 +25,10 @@ export async function GET(request, { params }) {
     if (effectivePath === 'get_file_upload_url') {
         const { search, pathname } = new URL(request.url);
         const targetUrl = `${MUAPI_BASE}/app/${effectivePath}${search}`;
-        const headers = cleanHeaders(request);
         const apiKey = getApiKeyFromCookies(request);
-        if (apiKey) headers.set('x-api-key', apiKey);
+        if (!apiKey) return NextResponse.json({ error: 'not_authenticated' }, { status: 401 });
+        const headers = cleanHeaders(request);
+        headers.set('x-api-key', apiKey);
         try {
             const response = await fetch(targetUrl, { headers, method: 'GET' });
             const { data, status } = await parseJsonOr502(response, pathname);
@@ -46,7 +47,7 @@ export async function GET(request, { params }) {
         }
     }
 
-    return proxyToMuapi(request, `/app/${effectivePath}`, 'GET', OPTS);
+    return proxyToMuapi(request, upstreamPath(pathSegments), 'GET', OPTS);
 }
 
 export async function POST(request, { params }) {

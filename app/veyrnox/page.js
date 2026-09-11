@@ -19,27 +19,38 @@ import {
   FOOTER_STAMP,
   MODELS as MODELS_FALLBACK,
 } from './_lib/tokens';
+import { select, envConfig } from '../../packages/db/supabase-client.js';
+
+export const revalidate = 300;
 
 // Landing — credit-metered AI image and video generation.
 // EU-hosted, C2PA-signed. The button is the price tag.
 
-/** Server-side fetch of the live catalog with a hard fallback to tokens.js. */
+/**
+ * Server-side read of the live catalog with a hard fallback to tokens.js.
+ * Queries Postgres directly (same columns as /api/catalog) — a self-fetch
+ * of our own origin does not work inside the Worker and silently served
+ * the hardcoded fallback prices.
+ */
 async function loadCatalog() {
-  const origin = process.env.NEXT_PUBLIC_SITE_ORIGIN || 'http://localhost:3000';
   try {
-    const res = await fetch(`${origin}/api/catalog`, { next: { revalidate: 300 } });
-    if (!res.ok) throw new Error(String(res.status));
-    const data = await res.json();
-    if (!data?.models?.length) throw new Error('empty');
+    const cfg = envConfig();
+    if (!cfg.supabaseUrl || !cfg.serviceRoleKey) throw new Error('not_configured');
+    const rows = await select(
+      'model_catalog',
+      { columns: 'id,name,modality,credits_5s,gated_flag', filter: 'active=eq.true&order=modality.asc,name.asc' },
+      cfg,
+    );
+    if (!Array.isArray(rows) || rows.length === 0) throw new Error('empty');
     // Normalise to the shape our page expects: { id, name, credits, kind, tag?, premium?, gated? }
-    return data.models.map((m) => ({
+    return rows.map((m) => ({
       id: m.id,
       name: m.name,
-      credits: m.credits,
+      credits: m.credits_5s,
       kind: m.modality,
-      premium: m.gated,
-      gated: m.gated,
-      tag: m.gated ? 'PREMIUM' : undefined,
+      premium: !!m.gated_flag,
+      gated: !!m.gated_flag,
+      tag: m.gated_flag ? 'PREMIUM' : undefined,
     }));
   } catch {
     return MODELS_FALLBACK;

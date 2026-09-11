@@ -155,34 +155,56 @@ export async function sendMagicLink(email) {
  * @param {"apple"|"google"} provider
  * @param {string} [redirectTo]
  */
-export function signInWithOAuth(provider, redirectTo) {
+export async function signInWithOAuth(provider, redirectTo) {
     const { url } = ensureCfg();
     const back = redirectTo || `${window.location.origin}/auth/callback`;
+    // PKCE: the callback carries a one-time `code` that only this browser
+    // can exchange, because only this browser holds the verifier. A pasted
+    // or attacker-planted callback URL has no verifier and fails.
+    const verifier = randomVerifier();
+    sessionStorage.setItem(PKCE_KEY, verifier);
     const authorize = new URL("/auth/v1/authorize", url);
     authorize.searchParams.set("provider", provider);
     authorize.searchParams.set("redirect_to", back);
+    authorize.searchParams.set("code_challenge", await s256(verifier));
+    authorize.searchParams.set("code_challenge_method", "s256");
     window.location.assign(authorize.toString());
 }
+
+const PKCE_KEY = "veyrnox_pkce_verifier";
+
+function randomVerifier() {
+    const bytes = new Uint8Array(32);
+    crypto.getRandomValues(bytes);
+    return b64url(bytes);
+}
+async function s256(input) {
+    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(input));
+    return b64url(new Uint8Array(digest));
+}
+function b64url(bytes) {
+    let bin = "";
+    for (const b of bytes) bin += String.fromCharCode(b);
+    return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
 /**
- * Parse tokens out of a `#access_token=...` URL fragment (called by the
- * /auth/callback page). Persists the session and returns it; null when
- * the fragment doesn't carry tokens.
- * @returns {VeyrnoxSession|null}
+ * Finish the PKCE flow on /auth/callback: exchange `?code=` plus the
+ * verifier this browser stored for a session. Returns null when there is
+ * no code or no verifier (a callback this browser did not start). Never
+ * overwrites a still-valid session.
+ * @returns {Promise<VeyrnoxSession|null>}
  */
-export function completeOAuthFromHash() {
+export async function completeOAuthFromCode() {
     if (typeof window === "undefined") return null;
-    const h = window.location.hash.startsWith("#") ? window.location.hash.slice(1) : "";
-    if (!h) return null;
-    const p = new URLSearchParams(h);
-    const access_token = p.get("access_token");
-    if (!access_token) return null;
-    const now = Math.floor(Date.now() / 1000);
-    const s = {
-        access_token,
-        refresh_token: p.get("refresh_token"),
-        expires_at: Number(p.get("expires_at")) || now + Number(p.get("expires_in") || 3600),
-        user: null,
-    };
+    const code = new URL(window.location.href).searchParams.get("code");
+    if (!code) return null;
+    const verifier = sessionStorage.getItem(PKCE_KEY);
+    sessionStorage.removeItem(PKCE_KEY);
+    if (!verifier) return null;
+    if (getSession()) return getSession();
+    const data = await post("/auth/v1/token?grant_type=pkce", { auth_code: code, code_verifier: verifier });
+    const s = normalise(data);
     setSession(s);
     return s;
 }
@@ -191,6 +213,11 @@ export function completeOAuthFromHash() {
  * Both steps always run; server errors are swallowed so the client is
  * never wedged in a signed-in-but-can't-sign-out state.
  */
+/** Drop the local session without a server round-trip (gateway said 401). */
+export function clearSession() {
+    setSession(null);
+}
+
 export async function signOut() {
     const s = getSession();
     if (s?.access_token) {

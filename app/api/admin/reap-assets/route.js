@@ -16,6 +16,21 @@ import { deleteObject, envConfig as r2EnvConfig } from '../../../../packages/ada
 
 const BATCH = 100;
 
+// Constant-time compare via SHA-256 digests: equal-length inputs, no early exit.
+async function tokenMatches(presented, expected) {
+    if (typeof presented !== 'string' || !presented) return false;
+    const enc = new TextEncoder();
+    const [a, b] = await Promise.all([
+        crypto.subtle.digest('SHA-256', enc.encode(presented)),
+        crypto.subtle.digest('SHA-256', enc.encode(expected)),
+    ]);
+    const va = new Uint8Array(a);
+    const vb = new Uint8Array(b);
+    let diff = 0;
+    for (let i = 0; i < va.length; i++) diff |= va[i] ^ vb[i];
+    return diff === 0;
+}
+
 async function selectQueue(cfg, limit) {
     const url = new URL('/rest/v1/asset_reap_queue', cfg.supabaseUrl);
     url.searchParams.set('select', 'id,r2_key,attempts');
@@ -62,7 +77,7 @@ async function markFail(cfg, id, attempts, err) {
 export async function POST(req) {
     const token = process.env.ADMIN_REAP_TOKEN;
     if (!token) return NextResponse.json({ error: 'not_configured' }, { status: 503 });
-    if (req.headers.get('x-veyrnox-admin-token') !== token) {
+    if (!(await tokenMatches(req.headers.get('x-veyrnox-admin-token'), token))) {
         return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
     }
 

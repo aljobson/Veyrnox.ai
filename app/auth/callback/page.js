@@ -1,24 +1,24 @@
 "use client";
 
-// OAuth callback. Supabase returns tokens in the URL fragment.
+// OAuth callback (PKCE). Supabase returns a one-time `?code=`; we exchange
+// it with the verifier this browser stored when it started the flow.
 
 import { useEffect, useState } from "react";
-import { completeOAuthFromHash } from "../../lib/authClient.js";
+import { completeOAuthFromCode } from "../../lib/authClient.js";
 
 export default function AuthCallback() {
     const [status, setStatus] = useState("Signing you in…");
     useEffect(() => {
-        try {
-            const s = completeOAuthFromHash();
-            if (s) {
-                setStatus("Signed in. Redirecting…");
-                window.location.replace("/");
-            } else {
-                setStatus("No auth token in URL. Try signing in again.");
-            }
-        } catch (err) {
-            setStatus(err?.message || "Sign-in failed.");
-        }
+        completeOAuthFromCode()
+            .then((s) => {
+                if (s) {
+                    setStatus("Signed in. Redirecting…");
+                    window.location.replace("/");
+                } else {
+                    setStatus("This sign-in link is not valid for this browser. Try signing in again.");
+                }
+            })
+            .catch((err) => setStatus(err?.message || "Sign-in failed."));
     }, []);
     return (
         <div className="min-h-screen bg-black text-white flex items-center justify-center">
