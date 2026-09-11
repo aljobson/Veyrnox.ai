@@ -191,14 +191,23 @@ const FAL_TIMESTAMP_SKEW_SECONDS = 5 * 60;
  * Signature is hex-encoded (not base64). Timestamp is checked against a
  * ±5-minute window to blunt replay. Docs: fal.ai/docs/model-endpoints/webhooks.
  *
+ * A valid signature only proves that fal signed the delivery for the
+ * `user_id` in the header — any fal tenant can point a job's webhook at
+ * us. `cfg.expectedUserId` (our own fal user id, FAL_WEBHOOK_USER_ID) is
+ * therefore mandatory: a callback for another tenant is not ours.
+ *
  * @param {Uint8Array} rawBody
  * @param {object} headers  { signature, timestamp, requestId, userId }
+ * @param {object} cfg
+ * @param {string} cfg.expectedUserId  our fal user id; callbacks for any other tenant are rejected
  * @returns {Promise<boolean>}
  */
-export async function verifyWebhookSignature(rawBody, headers) {
+export async function verifyWebhookSignature(rawBody, headers, cfg) {
     if (!headers || typeof headers !== 'object') return false;
+    if (!cfg || typeof cfg.expectedUserId !== 'string' || !cfg.expectedUserId) return false;
     const { signature, timestamp, requestId, userId } = headers;
     if (!signature || !timestamp || !requestId || !userId) return false;
+    if (userId !== cfg.expectedUserId) return false;
     const ts = Number(timestamp);
     if (!Number.isFinite(ts)) return false;
     const nowSec = Math.floor(Date.now() / 1000);

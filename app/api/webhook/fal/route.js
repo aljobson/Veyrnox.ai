@@ -24,7 +24,10 @@ const SOURCE = 'fal';
 
 export async function POST(req) {
     const cfg = envConfig();
-    if (!cfg.supabaseUrl || !cfg.serviceRoleKey) {
+    // FAL_WEBHOOK_USER_ID is our own fal user id. Without it we cannot tell
+    // our callbacks from any other fal tenant's, so fail closed.
+    const expectedUserId = process.env.FAL_WEBHOOK_USER_ID;
+    if (!cfg.supabaseUrl || !cfg.serviceRoleKey || !expectedUserId) {
         return NextResponse.json({ error: 'not_configured' }, { status: 503 });
     }
 
@@ -42,7 +45,7 @@ export async function POST(req) {
 
     let verified;
     try {
-        verified = await verifyWebhookSignature(raw, sigHeaders);
+        verified = await verifyWebhookSignature(raw, sigHeaders, { expectedUserId });
     } catch (err) {
         console.error('[fal-webhook] verify threw:', err);
         return NextResponse.json({ error: 'internal' }, { status: 500 });
@@ -56,9 +59,11 @@ export async function POST(req) {
     } catch {
         return NextResponse.json({ error: 'invalid_json' }, { status: 400 });
     }
-    const requestId = event && (event.request_id || event.id);
-    if (typeof requestId !== 'string' || !requestId) {
-        return NextResponse.json({ error: 'missing_request_id' }, { status: 400 });
+    // The signed header is the authoritative request id; the body must agree.
+    const requestId = sigHeaders.requestId;
+    const bodyRequestId = event && (event.request_id || event.id);
+    if (typeof bodyRequestId !== 'string' || bodyRequestId !== requestId) {
+        return NextResponse.json({ error: 'request_id_mismatch' }, { status: 400 });
     }
     const status = event && event.status;
 
@@ -96,7 +101,10 @@ export async function POST(req) {
             const succeededRes = await rpc('job_succeeded',
                 { p_provider_job_id: requestId, p_provider: SOURCE }, cfg);
             if (!succeededRes || succeededRes.ok !== true) {
+                // Not one of our jobs (or already terminal). Stop here: never
+                // fetch a provider URL for a job we did not submit.
                 console.warn('[fal-webhook] job_succeeded returned', succeededRes);
+                return NextResponse.json({ ok: true, warn: 'unknown job' });
             }
 
             // 2. Extract the provider-hosted URL from the fal payload.
@@ -109,11 +117,11 @@ export async function POST(req) {
                 return NextResponse.json({ ok: true, warn: 'no output url' });
             }
 
-            // 3. Copy the object into R2. The key is content-addressable
-            //    on the fal request id + a modality hint so retries
-            //    upsert to the same R2 key (0009 ON CONFLICT handles it).
+            // 3. Copy the object into R2. Key is fal request id + a random
+            //    UUID (CLAUDE.md: never a provider-controlled path); only
+            //    the extension is derived from the payload.
             const r2cfg = r2EnvConfig();
-            const key = `fal/${requestId}/${suggestFilename(event, outputUrl)}`;
+            const key = `fal/${requestId}/${crypto.randomUUID()}${suggestExt(event, outputUrl)}`;
             const copy = await copyUrlToR2(outputUrl, key, r2cfg);
             if (!copy.ok) {
                 console.error('[fal-webhook] R2 copy failed for', requestId, copy.error);
@@ -209,19 +217,19 @@ function extractOutputUrl(event) {
     return null;
 }
 
-function suggestFilename(event, url) {
-    // Trailing path segment of the fal URL if it looks like a file; else
-    // fall back to a mime-based name.
+function suggestExt(event, url) {
+    // Extension of the fal URL's trailing segment if it looks like a file;
+    // else a mime-based guess. Only the extension is used in the R2 key.
     try {
         const path = new URL(url).pathname;
         const seg = path.split('/').pop();
-        if (seg && /\.[A-Za-z0-9]{2,5}$/.test(seg)) return seg;
+        const m = seg && /\.([A-Za-z0-9]{2,5})$/.exec(seg);
+        if (m) return `.${m[1].toLowerCase()}`;
     } catch { /* ignore */ }
     const guess = (event && event.output && event.output.content_type)
         || (event && event.content_type)
         || 'application/octet-stream';
-    const ext = mimeExt(guess);
-    return `output${ext}`;
+    return mimeExt(guess);
 }
 
 function mimeExt(mime) {
