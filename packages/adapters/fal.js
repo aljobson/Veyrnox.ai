@@ -52,6 +52,9 @@ export async function submitJob(job, cfg) {
     if (!endpoint || !/^[A-Za-z0-9/_.-]{3,128}$/.test(endpoint)) {
         return { ok: false, error: 'invalid provider_endpoint' };
     }
+    if (endpoint.includes('..') || endpoint.includes('//')) {
+        return { ok: false, error: 'invalid provider_endpoint' };
+    }
 
     // fal takes the webhook URL as a `fal_webhook` query parameter on the
     // POST URL, NOT a JSON body field. Docs: fal.ai/docs/model-endpoints/webhooks.
