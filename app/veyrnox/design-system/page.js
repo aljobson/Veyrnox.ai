@@ -126,6 +126,56 @@ export default function DesignSystem() {
         </div>
       </Section>
 
+      {/* 08 ACCESSIBILITY */}
+      <Section num="08" title="ACCESSIBILITY — COLOUR-BLIND SAFE">
+        <div className="border border-vx-border rounded-2xl p-7 grid grid-cols-1 lg:grid-cols-[1fr_1.3fr] gap-6">
+          <div>
+            <div className="font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted">NEVER COLOUR ALONE</div>
+            <p className="mt-2 text-[13px] text-vx-fg-body leading-[1.6]">
+              Every semantic state carries an unambiguous glyph. Aqua ✓ (action / success),
+              amber ◆ (money / premium), red ✕ (failure), amber △ (warning), amber ★ (featured).
+              A monochrome print, deutan / protan / tritan vision, or Windows High Contrast
+              still separates them.
+            </p>
+            <ul className="mt-4 space-y-2 text-[13px] text-vx-fg-body">
+              <li className="flex gap-2"><span className="text-vx-accent">✓</span> Body text at #C9C9CF on #0A0A0B — 12.6:1, AAA</li>
+              <li className="flex gap-2"><span className="text-vx-accent">✓</span> Aqua on black only for large text / buttons / chart edges</li>
+              <li className="flex gap-2"><span className="text-vx-accent">✓</span> Amber reserved for money / premium — same rule, same glyph</li>
+              <li className="flex gap-2"><span className="text-vx-accent">✓</span> Red used only with ✕ glyph and a text label</li>
+              <li className="flex gap-2"><span className="text-vx-accent">✓</span> Focus ring 2px aqua, offset 2px, on every interactive element</li>
+              <li className="flex gap-2"><span className="text-vx-accent">✓</span> <code>prefers-contrast: more</code> boosts hairlines and mutes</li>
+              <li className="flex gap-2"><span className="text-vx-accent">✓</span> <code>prefers-reduced-motion</code> kills every animation</li>
+            </ul>
+          </div>
+          <div>
+            <div className="font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted mb-3">STATE CHIPS · WITH GLYPH</div>
+            <div className="flex flex-wrap gap-2">
+              <span className="inline-flex items-center gap-1.5 font-vx-mono text-[10px] font-bold uppercase tracking-[0.12em] rounded-full border px-3 py-1.5 border-vx-accent/40 text-vx-accent bg-vx-accent/[0.07]">
+                <span aria-hidden="true">✓</span>DONE
+              </span>
+              <span className="inline-flex items-center gap-1.5 font-vx-mono text-[10px] font-bold uppercase tracking-[0.12em] rounded-full border px-3 py-1.5 border-vx-accent/40 text-vx-accent bg-vx-accent/[0.07]">
+                <span aria-hidden="true">●</span>RUNNING
+              </span>
+              <span className="inline-flex items-center gap-1.5 font-vx-mono text-[10px] font-bold uppercase tracking-[0.12em] rounded-full border px-3 py-1.5 border-vx-danger/40 text-vx-danger bg-vx-danger/[0.07]">
+                <span aria-hidden="true">✕</span>FAILED · REFUNDED
+              </span>
+              <span className="inline-flex items-center gap-1.5 font-vx-mono text-[10px] font-bold uppercase tracking-[0.12em] rounded-full border px-3 py-1.5 border-vx-money/40 text-vx-money bg-vx-money/[0.07]">
+                <span aria-hidden="true">◆</span>PREMIUM
+              </span>
+              <span className="inline-flex items-center gap-1.5 font-vx-mono text-[10px] font-bold uppercase tracking-[0.12em] rounded-full border px-3 py-1.5 border-vx-money/40 text-vx-money bg-vx-money/[0.07]">
+                <span aria-hidden="true">△</span>ATTENTION
+              </span>
+              <span className="inline-flex items-center gap-1.5 font-vx-mono text-[10px] font-bold uppercase tracking-[0.12em] rounded-full px-3 py-1.5 bg-vx-money text-vx-money-ink">
+                <span aria-hidden="true">★</span>MOST PICKED
+              </span>
+            </div>
+            <div className="font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-faint mt-6">
+              PROHIBITED — RED / GREEN AS ONLY DIFFERENTIATOR · AQUA-ON-BLACK BODY TEXT · LIME (#B0FF00–#D8FF80)
+            </div>
+          </div>
+        </div>
+      </Section>
+
       {/* 07 SHAPE MOTION */}
       <Section num="07" title="SHAPE, MOTION">
         <div className="border border-vx-border rounded-2xl p-7 grid grid-cols-1 md:grid-cols-2 gap-6">

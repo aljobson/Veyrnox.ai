@@ -30,9 +30,21 @@ export default function MobileLibrary() {
                 </div>
                 <div className="text-[11px] text-vx-fg-muted mt-0.5 truncate">{j.model} · {j.when}</div>
                 <div className="mt-1">
-                  {j.status === 'done'    && <Chip tone="accent">DONE</Chip>}
-                  {j.status === 'running' && <Chip tone="accent">RUNNING</Chip>}
-                  {j.status === 'failed'  && <Chip tone="danger">FAILED · REFUNDED</Chip>}
+                  {j.status === 'done' && (
+                    <Chip tone="accent" noGlyph>
+                      <span aria-hidden="true" className="mr-1">✓</span>DONE
+                    </Chip>
+                  )}
+                  {j.status === 'running' && (
+                    <Chip tone="accent" noGlyph>
+                      <span aria-hidden="true" className="mr-1">●</span>RUNNING
+                    </Chip>
+                  )}
+                  {j.status === 'failed' && (
+                    <Chip tone="danger" noGlyph>
+                      <span aria-hidden="true" className="mr-1">✕</span>FAILED · REFUNDED
+                    </Chip>
+                  )}
                 </div>
               </div>
               <div className={`font-vx-mono text-[13px] font-bold pr-2 vx-num ${

@@ -12,10 +12,12 @@ const JOBS = [
   { id: 'j-06', name: 'Kling epic 10s',        model: 'Kling 3.0',         credits: 66,  status: 'done',    dur: '10s',when: '3 h ago',     bg: 'linear-gradient(135deg,#2b1a0a,#7a4a1e,#f0b060)' },
 ];
 
+// Status glyphs distinct across all three states so color is never the
+// only signal (deuteran/tritan pass, forced-colors pass).
 const STATUS = {
-  done:    { chip: 'accent',  label: 'DONE' },
-  running: { chip: 'accent',  label: 'RUNNING' },
-  failed:  { chip: 'danger',  label: 'FAILED · REFUNDED' },
+  done:    { chip: 'accent',  label: 'DONE',              glyph: '✓' },
+  running: { chip: 'accent',  label: 'RUNNING',           glyph: '●' },
+  failed:  { chip: 'danger',  label: 'FAILED · REFUNDED', glyph: '✕' },
 };
 
 export default function Library() {
@@ -59,7 +61,10 @@ export default function Library() {
                   style={{ background: j.bg }}
                 >
                   <div className="absolute top-3 left-3">
-                    <Chip tone={s.chip}>{s.label}</Chip>
+                    <Chip tone={s.chip} noGlyph>
+                      <span aria-hidden="true" className="text-[10px] mr-1">{s.glyph}</span>
+                      {s.label}
+                    </Chip>
                   </div>
                   <div className="absolute top-3 right-3 font-vx-mono text-[11px] font-bold text-white/85 bg-black/45 backdrop-blur rounded-full px-2.5 py-1 vx-num">
                     {j.dur}

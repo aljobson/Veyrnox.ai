@@ -31,3 +31,25 @@
     transition: none !important;
   }
 }
+
+/* Accessibility ─── colour-blind + high-contrast safety net */
+.vx-root :focus-visible {
+  outline: 2px solid #3EE6C4;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (prefers-contrast: more) {
+  .vx-root {
+    --vx-border-boost: #3E3E44;
+  }
+  .vx-root .border-vx-border { border-color: var(--vx-border-boost) !important; }
+  .vx-root .text-vx-fg-muted { color: #B8B8BE !important; }
+  .vx-root .text-vx-fg-body  { color: #E4E4E8 !important; }
+}
+
+/* Forced-colors (Windows High Contrast) — keep essential structure visible */
+@media (forced-colors: active) {
+  .vx-root .bg-vx-accent { forced-color-adjust: none; }
+  .vx-root .bg-vx-money  { forced-color-adjust: none; }
+}

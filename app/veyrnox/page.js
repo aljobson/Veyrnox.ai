@@ -319,7 +319,10 @@ function ContestRibbon() {
     <section className="px-6 pt-6 pb-14">
       <div className="rounded-3xl border border-vx-border bg-vx-panel overflow-hidden grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="p-10">
-          <Chip tone="danger" className="mb-4">{CONTEST.eyebrow}</Chip>
+          <Chip tone="accent" className="mb-4" noGlyph>
+            <span aria-hidden="true" className="mr-1 text-vx-accent">●</span>
+            {CONTEST.eyebrow}
+          </Chip>
           <h2 className="text-[36px] font-black leading-[1.05] tracking-[-0.02em] text-balance">
             {CONTEST.title}
           </h2>
