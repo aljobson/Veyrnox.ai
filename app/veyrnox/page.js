@@ -71,7 +71,7 @@ export default async function VeyrnoxLanding() {
       <FeaturedHeroCards />
       <SignupIncentive />
       <ProductTilesRow />
-      <HeroStatement catalog={catalog} />
+      <HeroStatement />
       <EffectsWall />
       <ModelShelf catalog={catalog} />
       <WhyVeyrnox />
@@ -300,41 +300,34 @@ function ProductTilesRow() {
   );
 }
 
-/* ─── Hero statement + live catalog ledger ─── */
-function HeroStatement({ catalog }) {
+/* ─── Hero statement ─── */
+// The priced model list lives in one place now: ModelShelf, below the
+// presets wall. This section carries the promise, not a second copy of
+// the catalog.
+function HeroStatement() {
   return (
     <section id="honesty" className="px-6 pt-20 pb-6 max-w-[1400px] mx-auto">
-      <div className="grid grid-cols-1 lg:grid-cols-[1.3fr_1fr] gap-10 items-center">
-        <div>
-          <div className="font-vx-mono text-[11px] tracking-[0.14em] text-vx-accent mb-4">THE HONESTY SIGNATURE</div>
-          <h2 className="text-[54px] md:text-[64px] font-black leading-[0.98] tracking-[-0.035em] text-balance">
-            EVERY GENERATION<br/>
-            SHOWS ITS PRICE<br/>
-            <span className="text-vx-money">BEFORE YOU SPEND.</span>
-          </h2>
-          <p className="mt-6 text-[16px] text-vx-fg-body leading-[1.6] max-w-[540px]">
-            The button is the price tag. Failed jobs refund automatically.
-            One balance across every model — visible math.
-          </p>
-        </div>
-        <div className="rounded-2xl border border-vx-border bg-vx-panel overflow-hidden">
-          <div className="px-5 py-3 border-b border-vx-border font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted flex justify-between">
-            <span>MODEL · MODALITY</span>
-            <span>CREDITS</span>
-          </div>
-          {catalog.slice(0, 10).map((m) => (
-            <div key={m.id} className="grid grid-cols-[1fr_auto_auto] items-center gap-2 px-5 py-2.5 border-b border-vx-border/60 last:border-b-0">
-              <div className="flex items-center gap-2 min-w-0">
-                <span className="text-sm font-bold truncate">{m.name}</span>
-                {m.premium && <span className="font-vx-mono text-[8.5px] tracking-[0.1em] text-vx-money shrink-0">◆</span>}
-              </div>
-              <span className="font-vx-mono text-[9px] tracking-[0.1em] text-vx-fg-faint uppercase">{m.kind}</span>
-              <div className="font-vx-mono text-sm font-bold text-vx-money vx-num text-right w-16">{m.credits} cr</div>
-            </div>
-          ))}
-          <div className="px-5 py-3 border-t border-vx-border font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted text-center">
+      <div className="max-w-[900px]">
+        <div className="font-vx-mono text-[11px] tracking-[0.14em] text-vx-accent mb-4">THE HONESTY SIGNATURE</div>
+        <h2 className="text-[54px] md:text-[72px] font-black leading-[0.98] tracking-[-0.035em] text-balance">
+          EVERY GENERATION<br/>
+          SHOWS ITS PRICE<br/>
+          <span className="text-vx-money">BEFORE YOU SPEND.</span>
+        </h2>
+        <p className="mt-6 text-[16px] text-vx-fg-body leading-[1.6] max-w-[540px]">
+          The button is the price tag. Failed jobs refund automatically.
+          One balance across every model — visible math.
+        </p>
+        <div className="mt-6 flex flex-wrap items-center gap-4">
+          <Link
+            href="#shelf"
+            className="font-vx-mono text-[11px] tracking-[0.12em] text-vx-accent hover:text-vx-fg"
+          >
+            SEE EVERY MODEL AND ITS PRICE →
+          </Link>
+          <span className="font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted">
             REFUND ON FAILURE · ALWAYS
-          </div>
+          </span>
         </div>
       </div>
     </section>
@@ -522,7 +515,7 @@ function FeatureStripsSection() {
       <FeatureStrip
         kicker="CATALOG"
         title="One balance across every model."
-        body="Nano Banana, Wan, Seedance, Kling, Veo, ACE Step. Debit on submit, refund on fail, one balance across the whole catalog."
+        body="Nano Banana, Flux.2, Seedream, Wan, Kling, MiniMax, Veo, ACE-Step. Debit on submit, refund on fail, one balance across the whole catalog."
         cta={{ label: 'Open the studio', href: '/veyrnox/app' }}
         bg="linear-gradient(135deg,#0a1a2c 0%,#144a7a 55%,#3ec1e8 100%)"
       />
