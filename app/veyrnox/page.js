@@ -32,6 +32,14 @@ export const revalidate = 300;
  * of our own origin does not work inside the Worker and silently served
  * the hardcoded fallback prices.
  */
+function coarseKind(modality) {
+  const m = String(modality || '');
+  if (m.includes('video')) return 'video';
+  if (m.includes('image')) return 'image';
+  if (m.includes('audio') || m.includes('speech')) return 'audio';
+  return m;
+}
+
 async function loadCatalog() {
   try {
     const cfg = envConfig();
@@ -47,7 +55,10 @@ async function loadCatalog() {
       id: m.id,
       name: m.name,
       credits: m.credits_5s,
-      kind: m.modality,
+      // model_catalog.modality is fine-grained (text-to-video, image-to-video,
+      // text-to-image, text-to-audio); the page groups on a coarse bucket.
+      kind: coarseKind(m.modality),
+      modality: m.modality,
       premium: !!m.gated_flag,
       gated: !!m.gated_flag,
       tag: m.gated_flag ? 'PREMIUM' : undefined,
@@ -68,6 +79,7 @@ export default async function VeyrnoxLanding() {
       <ProductTilesRow />
       <HeroStatement catalog={catalog} />
       <EffectsWall />
+      <ModelShelf catalog={catalog} />
       <WhyVeyrnox />
       <CreatorGrid />
       <FeatureStripsSection />
@@ -363,6 +375,79 @@ function EffectsWall() {
           </button>
         ))}
       </div>
+    </section>
+  );
+}
+
+/* ─── Model shelf — live rows from the catalog (same source as /api/catalog) ─── */
+const SHELF_GROUPS = [
+  { kind: 'video', label: 'VIDEO', blurb: 'Text-to-video and image-to-video.' },
+  { kind: 'image', label: 'IMAGE', blurb: 'Stills, edits and photoreal frames.' },
+  { kind: 'audio', label: 'AUDIO', blurb: 'Music and voice, same balance.' },
+];
+
+function ModelShelf({ catalog }) {
+  const groups = SHELF_GROUPS
+    .map((g) => ({ ...g, rows: catalog.filter((m) => m.kind === g.kind) }))
+    .filter((g) => g.rows.length > 0);
+  if (groups.length === 0) return null;
+  const total = groups.reduce((n, g) => n + g.rows.length, 0);
+
+  return (
+    <section id="models" className="px-6 pt-20 pb-8 max-w-[1400px] mx-auto">
+      <div className="flex items-baseline justify-between mb-6 flex-wrap gap-2">
+        <div>
+          <div className="font-vx-mono text-[11px] tracking-[0.14em] text-vx-accent mb-2">
+            THE SHELF · {total} LIVE MODELS
+          </div>
+          <h2 className="text-3xl font-black tracking-[-0.02em]">Every model. Every price. No tiers to decode.</h2>
+        </div>
+        <Link href="/veyrnox/pricing" className="text-sm font-semibold text-vx-fg-muted hover:text-vx-fg">
+          Full pricing →
+        </Link>
+      </div>
+
+      <div className="space-y-8">
+        {groups.map((g) => (
+          <div key={g.kind}>
+            <div className="flex items-baseline gap-3 mb-3">
+              <span className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">{g.label}</span>
+              <span className="text-[13px] text-vx-fg-faint">{g.blurb}</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+              {g.rows.map((m) => (
+                <Link
+                  key={m.id}
+                  href={`/veyrnox/app/create?model=${m.id}`}
+                  className="group rounded-2xl border border-vx-border bg-vx-panel p-4 flex flex-col gap-3 transition-colors hover:border-vx-accent/60"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="font-bold text-[15px] leading-tight">{m.name}</span>
+                    {m.gated && (
+                      <span className="font-vx-mono text-[8.5px] tracking-[0.12em] text-vx-money shrink-0 mt-0.5">
+                        ◆ PREMIUM
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-end justify-between gap-2 mt-auto">
+                    <span className="font-vx-mono text-[9px] tracking-[0.1em] text-vx-fg-faint uppercase">{m.modality || m.kind}</span>
+                    <span className="font-vx-mono text-lg font-bold text-vx-money vx-num leading-none">
+                      {m.credits} <span className="text-[10px] font-semibold">cr</span>
+                    </span>
+                  </div>
+                  <div className="font-vx-mono text-[9.5px] tracking-[0.1em] text-vx-accent opacity-0 group-hover:opacity-100 transition-opacity">
+                    GENERATE →
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <p className="mt-6 font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted">
+        PRICES READ FROM THE LIVE CATALOG · REFUND ON FAILURE · ALWAYS
+      </p>
     </section>
   );
 }
