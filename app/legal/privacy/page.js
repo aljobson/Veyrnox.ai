@@ -24,7 +24,8 @@ export default function Privacy() {
             </ul>
 
             <h2>Where your data lives</h2>
-            <p>Account data and generation metadata are stored in the European Union. Generated media is stored in EU object storage. Your prompts and reference files are transmitted to the third-party model provider that runs the model you selected, for the sole purpose of producing your output.</p>
+            <p>We run on Supabase for the database and authentication, and on Cloudflare for edge hosting and object storage. Account data, credit ledger and generation metadata sit in our Supabase database, which is currently hosted in the United States. Generated media is stored in Cloudflare R2. Your prompts and reference files are transmitted to the third-party model provider that runs the model you selected, for the sole purpose of producing your output.</p>
+            <p>Where your personal data is processed outside the United Kingdom or the EEA, we rely on the UK International Data Transfer Agreement or the EU Standard Contractual Clauses with the processor concerned. If we move the database to another region we will update this page before the move takes effect.</p>
 
             <h2>Retention</h2>
             <ul>

@@ -21,7 +21,7 @@ export default function Gdpr() {
             <p>Email <a href={`mailto:${ENTITY.privacyEmail}`}>{ENTITY.privacyEmail}</a> from the address on your account. We respond within one month; complex requests may take up to two further months and we will tell you if so. Requests are free unless manifestly unfounded or excessive.</p>
 
             <h2>Where data is processed</h2>
-            <p>Core data is stored in the European Union. Model providers may process your prompt and reference files outside the EU or UK for the duration of the generation; where that happens, transfers rely on the UK International Data Transfer Agreement or EU Standard Contractual Clauses.</p>
+            <p>Our database, which holds account data, the credit ledger and generation metadata, is currently hosted in the United States. Generated media is stored in Cloudflare R2. Model providers may process your prompt and reference files outside the UK or EEA for the duration of the generation. For every transfer outside the UK or EEA we rely on the UK International Data Transfer Agreement or the EU Standard Contractual Clauses with the processor concerned.</p>
 
             <h2>Automated decisions</h2>
             <p>We do not make decisions with legal or similarly significant effects about you solely by automated means. Content-safety filtering may block a generation; you can ask us to review a block.</p>
