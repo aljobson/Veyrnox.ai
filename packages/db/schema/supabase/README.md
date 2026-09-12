@@ -104,3 +104,32 @@ the file already contains the effect, so a replay reaches the same end state.
 
 Folding is fine. Folding silently is how the first of those went unrecorded
 for a day.
+
+### The eu-central-1 project applies the same files in batches
+
+The production database moved to `veyrnox-ai-production-eu`
+(`xdxdzmsztyzbnzeforxx`) on 2026-09-12. It was built by replaying this
+directory, but several files were applied together under one name each, so its
+ledger records these batch names instead of one name per file:
+
+| Applied name | Files it covers |
+| --- | --- |
+| `0001_initial` | `../0001_initial.sql` |
+| `0002_0005_seed_rls_advisor_signup_grant` | `../0002_model_catalog_seed.sql`, `0003`–`0005` |
+| `0006_0009_ledger_rpcs_job_transitions_rate_limit_stored` | `0006`–`0009` |
+| `0010_0017_auth_trigger_catalog_jobs_rls_retention` | `0010`–`0017` |
+| `0018_0024_reconcile_sweep_pricing_catalog_locks` | `0018`–`0024` |
+| `0025_0029_ledger_hardening_catalog_costs_units` | `0025`–`0029` |
+| `0030_0032_debit_rate_limit_watch_definer_revoke_admin_metrics` | `0030`–`0032`, minus the `track_event()` revokes in `0031` |
+| `0033_nano_banana_endpoint` | `0033` |
+| `0034_applied_migration_names_for_ci` | `0034` |
+
+The `0031` revokes on `public.track_event()` were not replayed because that
+function belongs to the wallet product and was never created in this project.
+
+After the replay the new database was diffed against `us-east-2` and matched on
+functions, execute grants, table grants, RLS and FORCE flags, policies,
+triggers, cron jobs and a hash of every model catalog row.
+
+New migrations go in one file per change and are applied under their own
+name, as everywhere else in this directory.
