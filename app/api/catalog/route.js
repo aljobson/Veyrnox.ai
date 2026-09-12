@@ -13,6 +13,7 @@
 
 import { NextResponse } from 'next/server';
 import { select, envConfig } from '../../../packages/db/supabase-client.js';
+import { durationsFor } from '../../../lib/providerDuration.js';
 
 // Workers do not honour s-maxage for Worker-generated responses, so an
 // unauthenticated flood would be one service-role PostgREST call each.
@@ -40,7 +41,9 @@ export async function GET() {
     try {
         rows = await select(
             'model_catalog',
-            { columns: 'id,name,modality,credits_5s,gated_flag', filter: 'active=eq.true&order=modality.asc,name.asc' },
+            // provider_endpoint is read to derive `durations` and is never returned:
+            // it is our routing detail, and the margin lock keeps it off the anon key.
+            { columns: 'id,name,modality,credits_5s,gated_flag,provider_endpoint', filter: 'active=eq.true&order=modality.asc,name.asc' },
             cfg,
         );
     } catch (err) {
@@ -54,6 +57,9 @@ export async function GET() {
         modality: r.modality,
         credits: r.credits_5s,
         gated: !!r.gated_flag,
+        // Clip lengths this model may be bought at. The create page renders
+        // exactly these, so it can never offer a length the gateway rejects.
+        durations: durationsFor(r),
     }));
 
     const res = NextResponse.json(

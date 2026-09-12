@@ -3,16 +3,22 @@ import { useEffect, useState } from 'react';
 import { MODELS, kindOf } from './tokens';
 
 // Normalised shape shared by every consumer:
-// { id, name, kind ('video'|'image'|'audio'), credits, gated }
+// { id, name, kind ('video'|'image'|'audio'), credits, gated, durations }
+const FALLBACK_DURATIONS = [5];
+
 function fromFallback() {
   return MODELS.map((m) => ({
     id: m.id, name: m.name, kind: m.kind, credits: m.credits, gated: !!m.gated || !!m.premium,
+    durations: m.durations || FALLBACK_DURATIONS,
   }));
 }
 
 function fromApi(models) {
   return models.map((m) => ({
     id: m.id, name: m.name, kind: kindOf(m.modality), credits: m.credits, gated: !!m.gated,
+    // An older Worker that predates `durations` omits it; 5s only is the
+    // safe read, and it is what the gateway accepts everywhere.
+    durations: Array.isArray(m.durations) && m.durations.length ? m.durations : FALLBACK_DURATIONS,
   }));
 }
 
