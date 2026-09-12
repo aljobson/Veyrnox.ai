@@ -21,7 +21,7 @@ const ERROR_COPY = {
   provider_error:        'The model returned an error. Credits refunded.',
   internal:              'Something on our side broke. Credits refunded.',
   rate_limited:          'Too many generations in a short window. Wait a moment.',
-  model_gated:           'This model is premium-gated on your plan. Nothing was charged.',
+  model_gated:           'This model is not open for generation yet. Nothing was charged.',
   duration_not_supported:'This model only makes 5s clips. Nothing was charged.',
   duration_invalid:      'Pick a 5s or 10s clip. Nothing was charged.',
   insufficient_balance:  'Not enough credits for this generation. Nothing was charged — top up to continue.',
@@ -324,7 +324,7 @@ export default function CreateStudio() {
               <span className="font-vx-mono text-sm">−{cost} cr</span>
             </button>
             <div className="mt-2 font-vx-mono text-[9.5px] tracking-[0.1em] text-vx-fg-faint text-center">
-              {model?.gated ? '◆ PREMIUM MODEL · UPGRADE TO UNLOCK' : 'REFUND ON FAILURE · ALWAYS'}
+              {model?.gated ? '◆ PREMIUM MODEL · NOT OPEN YET' : 'REFUND ON FAILURE · ALWAYS'}
             </div>
           </div>
         </aside>

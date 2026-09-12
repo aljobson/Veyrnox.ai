@@ -82,13 +82,13 @@ export default function Credits() {
               <span className="text-2xl align-middle ml-2 text-vx-fg-muted">cr</span>
             </div>
             <div className="mt-4 text-sm text-vx-fg-body">
-              Pay-as-you-go — top up to add credits. Failed jobs refund automatically.
+              Every account runs on the same balance. Failed jobs refund automatically.
             </div>
 
             {error === 'sign_in_required' && (
               <div className="mt-4 rounded-lg border border-vx-money/40 bg-vx-money/[0.07] px-4 py-3 text-sm text-vx-money flex items-start gap-2">
                 <span aria-hidden="true">△</span>
-                <span>Sign in to see your balance and buy credits.</span>
+                <span>Sign in to see your balance.</span>
               </div>
             )}
 
@@ -96,7 +96,10 @@ export default function Credits() {
               {TOPUPS.map((t) => (
                 <button
                   key={t.c}
-                  className="flex flex-col items-start rounded-xl border border-vx-border bg-vx-base/60 px-4 py-3 hover:border-vx-money focus-visible:outline-2 focus-visible:outline-vx-accent"
+                  type="button"
+                  disabled
+                  title="Top-ups are not available yet"
+                  className="flex flex-col items-start rounded-xl border border-vx-border bg-vx-base/60 px-4 py-3 opacity-50 cursor-not-allowed"
                 >
                   <span className="font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted">TOP-UP</span>
                   <span className="font-vx-mono text-[18px] font-bold text-vx-money mt-1 vx-num">+{t.c} cr</span>
@@ -105,18 +108,18 @@ export default function Credits() {
               ))}
             </div>
             <div className="mt-3 font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-faint">
-              CHECKOUT WIRING · PHASE 4
+              TOP-UPS NOT AVAILABLE YET · PRICES SHOWN ARE INDICATIVE
             </div>
           </div>
 
           <div className="rounded-2xl border border-vx-border bg-vx-panel p-6 flex flex-col">
-            <div className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">YOUR PLAN</div>
-            <div className="mt-1 text-2xl font-black">Pay-as-you-go</div>
+            <div className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">HOW BILLING WORKS</div>
+            <div className="mt-1 text-2xl font-black">One balance, no tiers</div>
             <ul className="mt-4 space-y-2 text-sm text-vx-fg-body flex-1">
               <li className="flex gap-2"><span className="text-vx-accent">✓</span> One balance across every model</li>
               <li className="flex gap-2"><span className="text-vx-accent">✓</span> Failed jobs refund automatically</li>
               <li className="flex gap-2"><span className="text-vx-accent">✓</span> No subscription required</li>
-              <li className="flex gap-2 text-vx-fg-muted"><span className="text-vx-fg-faint">◦</span> Plans in Phase 4</li>
+              <li className="flex gap-2 text-vx-fg-muted"><span className="text-vx-fg-faint">◦</span> No subscription tiers today — every account works the same way</li>
             </ul>
           </div>
         </div>
@@ -127,7 +130,7 @@ export default function Credits() {
         <div className="flex items-baseline justify-between mb-4">
           <h2 className="text-xl font-black tracking-[-0.02em]">Recent generations</h2>
           <div className="font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted">
-            LOCAL HISTORY · SERVER LEDGER LIST IN PHASE 4
+            FROM THIS BROWSER'S HISTORY
           </div>
         </div>
         {ledger.length === 0 ? (

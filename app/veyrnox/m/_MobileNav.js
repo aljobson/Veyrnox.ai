@@ -37,7 +37,6 @@ export function MobileTabs() {
 export function MobileJumps() {
   const path = usePathname();
   const jumps = [
-    { href: '/veyrnox/m/plans',   label: 'PLANS' },
     { href: '/veyrnox/m/create',  label: 'CREATE' },
     { href: '/veyrnox/m/job',     label: 'JOB' },
     { href: '/veyrnox/m/explore', label: 'EXPLORE' },
