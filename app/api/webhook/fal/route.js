@@ -22,6 +22,41 @@ import { copyUrlToR2, envConfig as r2EnvConfig } from '../../../../packages/adap
 
 const SOURCE = 'fal';
 
+function serviceHeaders(cfg) {
+    return { apikey: cfg.serviceRoleKey, Authorization: `Bearer ${cfg.serviceRoleKey}` };
+}
+
+// Our job for this fal request id, if it is in one of `states`. Used on
+// redelivery: the state RPCs are one-shot (SUBMITTED→SUCCEEDED/FAILED), so
+// a retried webhook needs the job facts from the row itself.
+async function findOurJob(cfg, requestId, states) {
+    const url = new URL('/rest/v1/jobs', cfg.supabaseUrl);
+    url.searchParams.set('select', 'id,user_id,credits,state');
+    url.searchParams.set('provider', `eq.${SOURCE}`);
+    url.searchParams.set('provider_job_id', `eq.${requestId}`);
+    url.searchParams.set('state', `in.(${states.join(',')})`);
+    url.searchParams.set('limit', '1');
+    const res = await fetch(url, { headers: serviceHeaders(cfg) });
+    if (!res.ok) return null;
+    const rows = await res.json().catch(() => []);
+    return Array.isArray(rows) && rows[0] ? rows[0] : null;
+}
+
+// Was an earlier delivery of this request id fully processed? A row with
+// processed_at IS NULL is a delivery we 500'd on part-way (refund or R2
+// copy failed); fal retries non-2xx, and that retry must run again.
+async function alreadyProcessed(cfg, requestId) {
+    const url = new URL('/rest/v1/webhook_events', cfg.supabaseUrl);
+    url.searchParams.set('select', 'processed_at');
+    url.searchParams.set('source', `eq.${SOURCE}`);
+    url.searchParams.set('external_id', `eq.${requestId}`);
+    url.searchParams.set('limit', '1');
+    const res = await fetch(url, { headers: serviceHeaders(cfg) });
+    if (!res.ok) return true; // can't tell — treat as duplicate, never double-process
+    const rows = await res.json().catch(() => []);
+    return !(Array.isArray(rows) && rows[0] && rows[0].processed_at === null);
+}
+
 export async function POST(req) {
     const cfg = envConfig();
     // FAL_WEBHOOK_USER_ID is our own fal user id. Without it we cannot tell
@@ -85,7 +120,12 @@ export async function POST(req) {
     let dedupBody;
     try { dedupBody = await dedupRes.json(); } catch { dedupBody = []; }
     if (Array.isArray(dedupBody) && dedupBody.length === 0) {
-        return NextResponse.json({ ok: true, duplicate: true });
+        if (await alreadyProcessed(cfg, requestId)) {
+            return NextResponse.json({ ok: true, duplicate: true });
+        }
+        // Unprocessed row: a previous attempt failed after dedup. Fall
+        // through and finish the job; every step below is idempotent.
+        console.warn('[fal-webhook] reprocessing unfinished delivery', requestId);
     }
 
     // Route by status. fal's success shape has status='completed' or
@@ -103,10 +143,15 @@ export async function POST(req) {
             const succeededRes = await rpc('job_succeeded',
                 { p_provider_job_id: requestId, p_provider: SOURCE }, cfg);
             if (!succeededRes || succeededRes.ok !== true) {
-                // Not one of our jobs (or already terminal). Stop here: never
-                // fetch a provider URL for a job we did not submit.
-                console.warn('[fal-webhook] job_succeeded returned', succeededRes);
-                return NextResponse.json({ ok: true, warn: 'unknown job' });
+                // Either not our job, or a retry of a delivery whose R2 copy
+                // failed (job already SUCCEEDED, no asset yet). Only the
+                // latter may continue: never fetch a provider URL for a job
+                // we did not submit.
+                const ours = await findOurJob(cfg, requestId, ['SUCCEEDED']);
+                if (!ours) {
+                    console.warn('[fal-webhook] job_succeeded returned', succeededRes);
+                    return NextResponse.json({ ok: true, warn: 'unknown job' });
+                }
             }
 
             // 2. Extract the provider-hosted URL from the fal payload.
@@ -126,8 +171,12 @@ export async function POST(req) {
             const key = `fal/${requestId}/${crypto.randomUUID()}${suggestExt(event, outputUrl)}`;
             const copy = await copyUrlToR2(outputUrl, key, r2cfg);
             if (!copy.ok) {
+                // 500 without marking processed: fal retries non-2xx, and
+                // the unprocessed webhook_events row is the replay queue if
+                // it gives up. Returning 2xx here would strand the job in
+                // SUCCEEDED with no asset (client shows RUNNING forever).
                 console.error('[fal-webhook] R2 copy failed for', requestId, copy.error);
-                return NextResponse.json({ ok: true, warn: 'r2 copy failed' });
+                return NextResponse.json({ error: 'asset_store_failed' }, { status: 500 });
             }
 
             // 4. Transition job to STORED and record the asset row.
@@ -148,13 +197,25 @@ export async function POST(req) {
                 p_provider: SOURCE,
                 p_error_code: String(errCode).slice(0, 128),
             }, cfg);
-            if (failRes && failRes.ok && failRes.user_id && failRes.credits) {
-                await rpc('ledger_refund', {
-                    p_job_id: failRes.job_id,
-                    p_user_id: failRes.user_id,
-                    p_credits: failRes.credits,
+            // job_failed is one-shot; on a retry the job is already FAILED.
+            // ledger_refund is idempotent per job, so always reach it with
+            // the job facts — from the RPC on first delivery, from the row
+            // on a retry. A refund that throws surfaces as 500 (below) and
+            // is retried; the job is never left FAILED-but-debited silently.
+            let owed = failRes && failRes.ok && failRes.user_id && failRes.credits
+                ? { id: failRes.job_id, user_id: failRes.user_id, credits: failRes.credits }
+                : await findOurJob(cfg, requestId, ['FAILED']);
+            if (owed) {
+                const refund = await rpc('ledger_refund', {
+                    p_job_id: owed.id,
+                    p_user_id: owed.user_id,
+                    p_credits: owed.credits,
                     p_reason: 'refund:provider_failed',
                 }, cfg);
+                if (!refund || refund.ok !== true) {
+                    console.error('[fal-webhook] ledger_refund rejected', requestId, refund && refund.code);
+                    return NextResponse.json({ error: 'refund_failed' }, { status: 500 });
+                }
             }
         }
         // else: intermediate/unknown status — leave the job row alone.

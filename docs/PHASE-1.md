@@ -60,14 +60,14 @@ Sub-slice 3a (this PR, ships without a vendor account):
 - RLS policies migration lives at `packages/db/schema/supabase/0003_rls_policies.sql`
   — Supabase-only (uses `auth.uid()` / `auth.role()`). Local Postgres
   ignores it; a future migration script applies both dirs against Supabase.
-- `.env.example` gets `SUPABASE_URL`, `SUPABASE_JWT_SECRET`,
-  `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`,
-  `SUPABASE_WEBHOOK_SIGNING_SECRET`.
+- `.env.example` gets `SUPABASE_URL`, `SUPABASE_ANON_KEY`,
+  `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_WEBHOOK_SIGNING_SECRET`.
+  (`SUPABASE_JWT_SECRET` is not used: the verifier is ES256 + public JWKS.)
 
 Sub-slice 3b (shipped 2026-09-10, PR forthcoming):
 - **`middleware.js` at repo root** — gates `/api/v1/*` on a verified
-  Supabase JWT via `jose`. Reads Bearer header or Supabase SSR cookie.
-  Fails closed on missing/invalid tokens. Forwards `x-veyrnox-auth-id`,
+  Supabase JWT via `lib/supabaseJwt.js` (ES256 + JWKS, Web Crypto).
+  Bearer header only. Fails closed on missing/invalid tokens. Forwards `x-veyrnox-auth-id`,
   `x-veyrnox-auth-email`, `x-veyrnox-auth-role` downstream.
 - **`GET /api/v1/session/me`** — smoke-test endpoint reflecting the
   verified auth headers. Proves the gateway receives authenticated
@@ -110,8 +110,8 @@ Sub-slice 4b (this PR):
   middleware-verified `x-veyrnox-auth-id` header. Never trusts a
   client-supplied id.
 
-Exit gate: with `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`,
-`SUPABASE_JWT_SECRET` set as wrangler secrets, an authenticated user
+Exit gate: with `SUPABASE_URL` (var) and `SUPABASE_SERVICE_ROLE_KEY`
+(secret) set in wrangler, an authenticated user
 hitting `GET /api/v1/health` sees `select_latency_ms < 100` and
 `catalog_alive: true`; `GET /api/v1/balance` returns their materialised
 credit balance.

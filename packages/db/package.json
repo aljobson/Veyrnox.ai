@@ -1,14 +1,15 @@
 {
   "name": "@veyrnox/db",
   "version": "0.1.0",
-  "description": "Veyrnox datastore: ledger, jobs, catalog, R2 URL signing (Phase 1 in progress)",
+  "description": "Veyrnox datastore: append-only ledger contract + acceptance tests (the Worker calls PostgREST RPCs via supabase-client.js)",
   "private": true,
   "type": "module",
   "main": "./index.ts",
   "types": "./index.ts",
   "exports": {
     ".": "./index.ts",
-    "./ledger": "./ledger.ts"
+    "./ledger": "./ledger.ts",
+    "./supabase-client": "./supabase-client.js"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

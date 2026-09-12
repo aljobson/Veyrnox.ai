@@ -95,15 +95,27 @@ export async function getFreshAccessToken() {
     if (s.expires_at - now > REFRESH_AHEAD_SEC) return s.access_token;
     if (!s.refresh_token) return getAccessToken();
     if (!refreshInFlight) {
-        refreshInFlight = post("/auth/v1/token?grant_type=refresh_token", { refresh_token: s.refresh_token })
+        const startedWith = s.refresh_token;
+        refreshInFlight = post("/auth/v1/token?grant_type=refresh_token", { refresh_token: startedWith })
             .then((data) => {
+                // Signed out or switched account while this was in flight:
+                // do not resurrect the old session from a stale response.
+                const current = readStored();
+                if (!current || current.refresh_token !== startedWith) return null;
                 const next = normalise(data);
                 setSession(next);
                 return next.access_token;
             })
-            .catch(() => {
-                setSession(null);
-                return null;
+            .catch((err) => {
+                // Only a definitive rejection (4xx: invalid_grant, revoked)
+                // ends the session. Network errors and 5xx are Supabase's
+                // problem; keep whatever access token is still valid.
+                const status = err && err.status;
+                if (status >= 400 && status < 500) {
+                    setSession(null);
+                    return null;
+                }
+                return getAccessToken();
             })
             .finally(() => { refreshInFlight = null; });
     }

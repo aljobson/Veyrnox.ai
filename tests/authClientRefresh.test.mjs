@@ -74,3 +74,28 @@ test('no refresh token: expired → null, valid → token', async () => {
     seed({ refresh_token: null, expires_at: now() + 10 });
     assert.equal(await getFreshAccessToken(), 'old');
 });
+
+test('sign-out during an in-flight refresh does not resurrect the session', async () => {
+    seed({ expires_at: now() + 10 });
+    let release;
+    stubRefresh(() => new Promise((r) => { release = () => r(okJson({ access_token: 'new', refresh_token: 'r2', expires_in: 3600 })); }));
+    const pending = getFreshAccessToken();
+    await new Promise((r) => setTimeout(r, 0));
+    store.delete(KEY); // user signed out meanwhile
+    release();
+    assert.equal(await pending, null);
+    assert.equal(store.has(KEY), false);
+});
+
+test('transient 5xx / network failure keeps a still-valid session', async () => {
+    seed({ expires_at: now() + 30 });
+    stubRefresh(() => new Response('bad gateway', { status: 502 }));
+    assert.equal(await getFreshAccessToken(), 'old');
+    assert.equal(getSession().access_token, 'old');
+    stubRefresh(() => { throw new TypeError('fetch failed'); });
+    assert.equal(await getFreshAccessToken(), 'old');
+    // But an already-expired token with a failed refresh is unusable.
+    seed({ expires_at: now() - 600 });
+    assert.equal(await getFreshAccessToken(), null);
+    assert.equal(store.has(KEY), true, 'session kept for the next retry');
+});

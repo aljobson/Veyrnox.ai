@@ -1,23 +1,13 @@
 {
   "name": "@veyrnox/adapters",
   "version": "0.1.0",
-  "description": "Provider adapters — fal.ai, Replicate, Stripe/LMS, DeepSeek (Phase 1+ in progress)",
+  "description": "Provider adapters for the Worker runtime — fal.ai queue + Ed25519 webhooks, R2 via SigV4",
   "private": true,
   "type": "module",
-  "main": "./index.ts",
-  "types": "./index.ts",
+  "main": "./fal.js",
   "exports": {
-    ".": "./index.ts",
-    "./fal": "./fal.ts",
-    "./replicate": "./replicate.ts",
-    "./stripe": "./stripe.ts",
-    "./deepseek-moderation": "./deepseek-moderation.ts",
-    "./types": "./types.ts"
-  },
-  "scripts": {
-    "typecheck": "tsc --noEmit"
-  },
-  "devDependencies": {
-    "typescript": "^5.4.5"
+    ".": "./fal.js",
+    "./fal": "./fal.js",
+    "./r2": "./r2.js"
   }
 }
