@@ -93,3 +93,55 @@ test('namesFromRpc maps PostgREST rows and rejects a malformed body', () => {
     assert.throws(() => namesFromRpc({ message: 'permission denied' }));
     assert.throws(() => namesFromRpc([{ id: 1 }]));
 });
+
+// Batched replays: a fresh project built from this folder records several
+// files as one ledger entry named for the range, e.g. 0002_0005_… on the EU
+// project in PR #80. Legitimate, but only if every file in the range exists.
+const numbered = (...nums) => nums.map((n) => file(`${String(n).padStart(4, '0')}_x.sql`));
+
+test('a batched range is accounted for when every numbered file exists', () => {
+    const repo = numbered(2, 3, 4, 5);
+    assert.deepEqual(unaccounted(['0002_0005_seed_rls_advisor_signup_grant'], repo), []);
+});
+
+test('a batched range with a missing file inside it is reported', () => {
+    // Deleting 0004 must not be hidden just because a batch once covered it.
+    const repo = numbered(2, 3, 5);
+    assert.deepEqual(
+        unaccounted(['0002_0005_seed_rls_advisor_signup_grant'], repo),
+        ['0002_0005_seed_rls_advisor_signup_grant'],
+    );
+});
+
+test('a malformed range never counts as accounted for', () => {
+    const repo = numbered(1, 2, 3, 4, 5, 6, 7, 8, 9);
+    assert.deepEqual(unaccounted(['0009_0002_backwards'], repo), ['0009_0002_backwards'], 'start after end');
+    assert.deepEqual(unaccounted(['0001_9999_everything'], repo), ['0001_9999_everything'], 'implausibly wide');
+});
+
+test('ordinary names are unaffected by the range rule', () => {
+    // 0018_rate_limit_lock has one number; it must not be read as a range.
+    const repo = [file('0023_rate_limit_lock.sql')];
+    assert.deepEqual(unaccounted(['0018_rate_limit_lock'], repo), []);
+});
+
+test('the EU project ledger from PR #80 is fully accounted for', () => {
+    const euLedger = [
+        '0001_initial',
+        '0002_0005_seed_rls_advisor_signup_grant',
+        '0006_0009_ledger_rpcs_job_transitions_rate_limit_stored',
+        '0010_0017_auth_trigger_catalog_jobs_rls_retention',
+        '0018_0024_reconcile_sweep_pricing_catalog_locks',
+        '0025_0029_ledger_hardening_catalog_costs_units',
+        '0030_0032_debit_rate_limit_watch_definer_revoke_admin_metrics',
+        '0033_nano_banana_endpoint',
+        '0034_applied_migration_names_for_ci',
+    ];
+    const repo = [
+        file('0001_initial.sql'),
+        ...numbered(...Array.from({ length: 32 }, (_, i) => i + 2)),
+        file('0033_nano_banana_endpoint.sql'),
+        file('0034_applied_migration_names_for_ci.sql'),
+    ];
+    assert.deepEqual(unaccounted(euLedger, repo), []);
+});

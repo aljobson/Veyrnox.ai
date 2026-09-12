@@ -15,7 +15,12 @@
  *     (0018_floor_pricing_and_veo_fast is now 0020_…); or
  *   - its full applied name is written inside a schema file or README. That
  *     is how a deliberate fold is recorded, so a follow-up merged into an
- *     earlier file is not reported as missing.
+ *     earlier file is not reported as missing; or
+ *   - it is a batched replay named for a range, NNNN_MMMM_…, and every file
+ *     numbered NNNN through MMMM exists. A fresh project built from this
+ *     folder records several files as one entry that way (PR #80's EU
+ *     project). Requiring every number in the range keeps a deleted file
+ *     from hiding inside a batch.
  *
  * Usage:
  *
@@ -47,12 +52,36 @@ export function descriptiveName(name) {
  * @param {{name:string, text:string}[]} repoFiles  schema files and READMEs
  * @returns {string[]} applied names with no trace in the repository
  */
+// A replay batch is named for the span it covers. Anything wider than this is
+// not a batch anyone wrote; treat it as unaccounted rather than as a blanket.
+const MAX_BATCH_SPAN = 50;
+
+/** '0002_0005_seed…' -> {from: 2, to: 5}; anything else -> null. */
+export function batchRange(name) {
+    const m = /^(?:phase\d+_)?(\d{4})_(\d{4})_/.exec(String(name));
+    if (!m) return null;
+    const from = Number(m[1]);
+    const to = Number(m[2]);
+    if (to < from || to - from > MAX_BATCH_SPAN) return { invalid: true };
+    return { from, to };
+}
+
 export function unaccounted(appliedNames, repoFiles) {
-    const fileStems = new Set(
-        repoFiles.filter((f) => f.name.endsWith('.sql')).map((f) => descriptiveName(f.name)),
+    const sqlFiles = repoFiles.filter((f) => f.name.endsWith('.sql'));
+    const fileStems = new Set(sqlFiles.map((f) => descriptiveName(f.name)));
+    const fileNumbers = new Set(
+        sqlFiles.map((f) => /^(\d{4})_/.exec(f.name)).filter(Boolean).map((m) => Number(m[1])),
     );
     const corpus = repoFiles.map((f) => f.text).join('\n');
     return appliedNames.filter((applied) => {
+        const range = batchRange(applied);
+        if (range) {
+            if (range.invalid) return true;
+            for (let n = range.from; n <= range.to; n++) {
+                if (!fileNumbers.has(n)) return true;
+            }
+            return false;
+        }
         if (fileStems.has(descriptiveName(applied))) return false;
         return !corpus.includes(applied);
     });
