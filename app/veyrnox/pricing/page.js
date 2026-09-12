@@ -86,7 +86,7 @@ export default function Pricing() {
             className={`px-4 py-2 text-xs font-bold rounded-full flex items-center gap-2 ${annual ? 'bg-vx-panel text-vx-fg' : 'text-vx-fg-muted'}`}
           >
             Annual
-            <span className="font-vx-mono text-[9.5px] tracking-[0.1em] text-vx-money">SAVE UP TO 30%</span>
+            <span className="font-vx-mono text-[9.5px] tracking-[0.1em] text-vx-money">SAVE UP TO 27%</span>
           </button>
         </div>
       </section>
