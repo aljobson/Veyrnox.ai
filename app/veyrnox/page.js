@@ -25,7 +25,7 @@ import { select, envConfig } from '../../packages/db/supabase-client.js';
 export const revalidate = 300;
 
 // Landing — credit-metered AI image and video generation.
-// C2PA-signed. The button is the price tag.
+// The button is the price tag.
 
 /**
  * Server-side read of the live catalog with a hard fallback to tokens.js.
@@ -183,7 +183,7 @@ function Hero() {
         </h1>
         <p className="text-lg text-vx-fg-body max-w-[640px] leading-[1.6]">
           Credit-metered AI image, video and audio. See the exact cost before you press generate —
-          refund on failure, always. C2PA-signed.
+          refund on failure, always.
         </p>
         <div className="flex gap-3 mt-2 flex-wrap justify-center">
           <Link
@@ -528,10 +528,10 @@ function FeatureStripsSection() {
         reverse
       />
       <FeatureStrip
-        kicker="C2PA"
-        title="Signed by default."
-        body="Every generation carries a C2PA signature — auditable origin, model, creator."
-        cta={{ label: 'Read the honesty ledger', href: '/veyrnox/design-system' }}
+        kicker="LEDGER"
+        title="Every credit accounted for."
+        body="Debits and refunds are append-only ledger rows, never edits. Your balance is the sum of them, and you can read the history back."
+        cta={{ label: 'See your balance', href: '/veyrnox/app/credits' }}
         bg="linear-gradient(135deg,#08120b 0%,#0e3a1e 55%,#2ea258 100%)"
       />
     </section>

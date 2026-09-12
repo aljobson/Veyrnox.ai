@@ -29,7 +29,7 @@ export default function Terms() {
             <ul>
                 <li>You keep whatever rights you hold in the prompts and reference files you upload. You grant us a licence to process them solely to run the service.</li>
                 <li>Subject to these terms and each underlying model provider&rsquo;s licence, you may use generated outputs for personal and commercial purposes.</li>
-                <li>Outputs are AI-generated and carry C2PA content credentials marking them as such, in line with EU AI Act Article 50. You must not remove or alter those credentials.</li>
+                <li>Outputs are AI-generated. We do not currently attach content credentials or a machine-readable provenance signature to generated files. Where you publish an output, you are responsible for any labelling a platform or applicable law requires of you. If we begin attaching credentials we will say so here, and you must not then remove or alter them.</li>
                 <li>You must not use the service to generate unlawful content, content that infringes others&rsquo; rights, sexual content involving minors, non-consensual intimate imagery, or content intended to deceive in a way that causes harm.</li>
             </ul>
 

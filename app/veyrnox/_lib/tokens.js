@@ -213,11 +213,11 @@ export const PILLARS = [
     stat:   'ALL MODELS',
     title:  'One credit balance across the catalog.',
     body:   'Image, video and audio models draw from a single balance. No add-ons, no per-model top-ups, no surprise bills.' },
-  { key: 'c2pa',
-    kicker: 'C2PA-SIGNED',
-    stat:   'EVERY ASSET',
-    title:  'Provenance signed at generation.',
-    body:   'Every image, video and audio clip ships with a C2PA signature. Verifiable origin, model and creator — auditable by default.' },
+  { key: 'ledger',
+    kicker: 'APPEND-ONLY LEDGER',
+    stat:   'EVERY CREDIT',
+    title:  'Every debit and refund on the record.',
+    body:   'Credits move through an append-only ledger — nothing is edited after the fact, corrections are new rows. Read your own history any time.' },
 ];
 
 // FAQ — 10 Qs. Hedged where legal/policy is still in flight.
@@ -238,8 +238,8 @@ export const FAQ = [
   { q: 'How do I exercise my data rights?',
     a: 'Access, export and deletion requests go through the Data Rights page.',
     link: { label: 'Data Rights', href: '/legal/gdpr' } },
-  { q: 'Is the output signed?',
-    a: 'Yes. Every asset carries a C2PA signature with model, creator and timestamp. Verifiable with any C2PA reader.' },
+  { q: 'Are outputs watermarked or signed?',
+    a: 'Not today. We do not attach content credentials to generated files. Outputs are AI-generated, and where a platform or the law asks you to label them as such, that is on you for now. We will update this answer when signing ships.' },
   { q: 'Are there rate limits?',
     a: '10 generations per 60 seconds per account. If you hit it, the API returns 429 with a Retry-After header and no credit debit.' },
   { q: 'Do credits expire?',
@@ -251,14 +251,14 @@ export const FAQ = [
 export const HERO_STATS = [
   { value: '50',    label: 'free credits on sign-up' },
   { value: '10',    label: 'models on one balance' },
-  { value: 'C2PA',  label: 'signed at source' },
+  { value: '1 cr',  label: 'cheapest generation' },
 ];
 
 export const METRIC_STRIP = [
   { value: '50',    label: 'FREE CREDITS ON SIGN-UP' },
   { value: '100%',  label: 'REFUND ON FAILURE' },
   { value: '10',    label: 'MODELS ROUTED' },
-  { value: 'C2PA',  label: 'SIGNED AT SOURCE' },
+  { value: 'APPEND-ONLY', label: 'CREDIT LEDGER' },
 ];
 
 // Real active catalog rows — matches fal-side gateway rows so the pricing
@@ -320,7 +320,7 @@ export const MORE_FEATURES = [
   ] },
 ];
 
-export const FOOTER_TAGLINE = 'Credit-metered AI generation for creators. Priced on the button — refund on failure, always. C2PA-signed.';
+export const FOOTER_TAGLINE = 'Credit-metered AI generation for creators. Priced on the button — refund on failure, always.';
 export const FOOTER_STAMP   = `© ${new Date().getFullYear()} Veyrnox Ltd`;
 
 export const HERO_CHIP = 'LIVE · CREDIT-METERED';
