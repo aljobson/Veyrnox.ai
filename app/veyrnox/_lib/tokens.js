@@ -250,12 +250,6 @@ export const METRIC_STRIP = [
   { value: 'C2PA',  label: 'SIGNED AT SOURCE' },
 ];
 
-export const MODEL_SHELF = [
-  'Seedance 2.5', 'Nano Banana Pro', 'Genjutsu', 'GPT-Image 2',
-  'Kling 2.5', 'Flux Kontext', 'Wan 2.2', 'Topaz',
-  'Sora 2', 'Google Veo 3', 'Claude MCP', 'MiniMax',
-];
-
 // Real active catalog rows — matches fal-side gateway rows so the pricing
 // on the tiles is honest at build time. Wire to /api/catalog for live
 // updates in a follow-up.
