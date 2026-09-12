@@ -39,7 +39,7 @@ export default function MobileCredits() {
         <div className="mt-5 font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted">RECENT</div>
         <div className="mt-2 flex flex-col divide-y divide-vx-border/60 rounded-2xl border border-vx-border bg-vx-panel overflow-hidden">
           {[
-            { l: 'Wan 2.5 · Neon alley test',        d: -15 },
+            { l: 'Wan 2.5 · Neon alley test',        d: -16 },
             { l: 'MiniMax Hailuo 02 · Sunset drift', d: -14 },
             { l: 'CCTV night · refund',              d: +15, refund: true },
             { l: 'Nano Banana · Portrait warm',      d: -3  },

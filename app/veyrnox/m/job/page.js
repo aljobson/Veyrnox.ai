@@ -8,7 +8,7 @@ export default function MobileJob() {
       <div className="flex-1 flex flex-col p-[14px_18px_12px] overflow-y-auto">
         <div className="flex justify-between items-center mb-3">
           <span className="text-[22px] font-extrabold tracking-[-0.02em]">Job running</span>
-          <BalancePill balance={808} tick="−15" tickTone="money" />
+          <BalancePill balance={808} tick="−16" tickTone="money" />
         </div>
 
         <div

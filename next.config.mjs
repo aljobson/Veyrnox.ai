@@ -54,8 +54,9 @@ const nextConfig = {
     ];
   },
   // Marketing site lives at the root, sourced from app/veyrnox/* so the
-  // design peer's tree stays intact. /studio, /agents, /workflow, /api,
-  // /auth stay first-class.
+  // design peer's tree stays intact. /api and /auth stay first-class.
+  // /studio, /agents and /workflow were removed with the legacy studio
+  // (ADR-0015) and now 404.
   // Canonicalize: /veyrnox/... becomes /...  — the /veyrnox subtree is an
   // internal implementation detail, not a public URL.
   async redirects() {

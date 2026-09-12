@@ -11,7 +11,7 @@ export default function MobileCreate() {
     <div className="flex-1 flex flex-col min-h-0">
       <div className="flex-1 flex flex-col p-[14px_18px_12px] overflow-y-auto">
         <div className="flex justify-between items-center mb-3">
-          <span className="text-[22px] font-extrabold tracking-[-0.02em]">Studio</span>
+          <span className="text-[22px] font-extrabold tracking-[-0.02em]">Create</span>
           <BalancePill balance={823} />
         </div>
 
@@ -52,7 +52,7 @@ export default function MobileCreate() {
           className="flex justify-between items-center bg-vx-accent text-vx-accent-ink rounded-full px-5 py-3.5 text-[15px] font-extrabold min-h-[50px] mt-2"
         >
           <span>Generate</span>
-          <span className="font-vx-mono text-[13px]">−15 cr</span>
+          <span className="font-vx-mono text-[13px]">−16 cr</span>
         </Link>
         <div className="font-vx-mono text-[8.5px] tracking-[0.1em] text-vx-fg-faint text-center mt-2">
           REFUND ON FAILURE · ALWAYS

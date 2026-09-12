@@ -516,7 +516,7 @@ function FeatureStripsSection() {
         kicker="CATALOG"
         title="One balance across every model."
         body="Nano Banana, Flux.2, Seedream, Wan, Kling, MiniMax, Veo, ACE-Step. Debit on submit, refund on fail, one balance across the whole catalog."
-        cta={{ label: 'Open the studio', href: '/veyrnox/app' }}
+        cta={{ label: 'Open the app', href: '/veyrnox/app' }}
         bg="linear-gradient(135deg,#0a1a2c 0%,#144a7a 55%,#3ec1e8 100%)"
       />
       <FeatureStrip
