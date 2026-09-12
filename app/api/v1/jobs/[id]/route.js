@@ -7,8 +7,15 @@
  *
  * DB → UI state mapping (kept here so UI stays honest with the ledger):
  *   PRICED, DEBITED, FAILOVER   → queued  (nothing user-visible yet)
- *   SUBMITTED                   → running (provider is working)
- *   SUCCEEDED, STORED           → succeeded (STORED = asset copied to R2)
+ *   SUBMITTED, SUCCEEDED        → running (provider working / asset copying
+ *                                  to R2 — no asset row until STORED)
+ *   STORED                      → succeeded (asset copied, /asset resolves)
+ *
+ * A job whose R2 copy keeps failing therefore reads `running` rather than
+ * a lying `succeeded`. It does not read that way forever: the webhook
+ * answers 500 so fal retries, and sweep_stuck_jobs (0023) fails and
+ * refunds a SUCCEEDED job that still has no asset after the grace window,
+ * at which point this returns `failed`.
  *   FAILED, REFUNDED            → failed  (credits already back on ledger)
  *
  * 404 fires when the job doesn't exist OR belongs to someone else —
@@ -27,8 +34,8 @@ function mapState(dbState) {
         case 'FAILOVER':
             return 'queued';
         case 'SUBMITTED':
-            return 'running';
         case 'SUCCEEDED':
+            return 'running';
         case 'STORED':
             return 'succeeded';
         case 'FAILED':

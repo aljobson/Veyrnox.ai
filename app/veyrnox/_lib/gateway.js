@@ -4,7 +4,7 @@
 // veyrnox:auth-required on 401, propagates 429 retry-after, throws a
 // typed GatewayError otherwise so callers can branch on .code.
 
-import { getAccessToken, clearSession } from '../../lib/authClient';
+import { getFreshAccessToken, clearSession } from '../../lib/authClient';
 
 export class GatewayError extends Error {
   constructor(message, { status, code, retryAfter, body } = {}) {
@@ -29,7 +29,7 @@ export class GatewayError extends Error {
  * @param {RequestInit} [init]
  */
 export async function gatewayFetch(path, init = {}) {
-  const token = getAccessToken();
+  const token = await getFreshAccessToken();
   if (!token) {
     dispatchAuthRequired();
     throw new GatewayError('not authenticated', { status: 401, code: 'no_token' });

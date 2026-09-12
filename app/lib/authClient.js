@@ -14,7 +14,9 @@
  *
  * Session stored in localStorage. gatewayClient sends the access
  * token as Authorization: Bearer on every /api/v1/* call;
- * middleware.js reads Bearer first.
+ * middleware.js reads Bearer first. Access tokens live ~1h; gatewayFetch
+ * calls getFreshAccessToken(), which swaps the refresh token for a new
+ * pair shortly before expiry so a working session never dies mid-task.
  */
 
 /**
@@ -27,7 +29,11 @@
  */
 
 const STORAGE_KEY = "veyrnox_supabase_session";
+// Refresh when this close to expiry (seconds). Matches the 5s server skew
+// with room for a slow round trip.
+const REFRESH_AHEAD_SEC = 60;
 const listeners = new Set();
+let refreshInFlight = null;
 
 function cfg() {
     return {
@@ -47,13 +53,20 @@ function ensureCfg() {
  * @returns {VeyrnoxSession|null}
  */
 export function getSession() {
+    const s = readStored();
+    if (!s) return null;
+    if (s.expires_at * 1000 < Date.now() - 5000) return null;
+    return s;
+}
+// Stored session regardless of expiry — refresh needs the refresh_token
+// of an already-expired access token.
+function readStored() {
     if (typeof localStorage === "undefined") return null;
     try {
         const raw = localStorage.getItem(STORAGE_KEY);
         if (!raw) return null;
         const s = JSON.parse(raw);
         if (!s?.access_token || !s.expires_at) return null;
-        if (s.expires_at * 1000 < Date.now() - 5000) return null;
         return s;
     } catch {
         return null;
@@ -67,6 +80,46 @@ export function getSession() {
  */
 export function getAccessToken() {
     return getSession()?.access_token || null;
+}
+/**
+ * Access token that is good for at least REFRESH_AHEAD_SEC more seconds,
+ * refreshing via the Supabase refresh grant when needed. Concurrent callers
+ * share one in-flight refresh. Resolves null (and clears the session) when
+ * there is nothing to refresh with or the refresh is rejected.
+ * @returns {Promise<string|null>}
+ */
+export async function getFreshAccessToken() {
+    const s = readStored();
+    if (!s) return null;
+    const now = Math.floor(Date.now() / 1000);
+    if (s.expires_at - now > REFRESH_AHEAD_SEC) return s.access_token;
+    if (!s.refresh_token) return getAccessToken();
+    if (!refreshInFlight) {
+        const startedWith = s.refresh_token;
+        refreshInFlight = post("/auth/v1/token?grant_type=refresh_token", { refresh_token: startedWith })
+            .then((data) => {
+                // Signed out or switched account while this was in flight:
+                // do not resurrect the old session from a stale response.
+                const current = readStored();
+                if (!current || current.refresh_token !== startedWith) return null;
+                const next = normalise(data);
+                setSession(next);
+                return next.access_token;
+            })
+            .catch((err) => {
+                // Only a definitive rejection (4xx: invalid_grant, revoked)
+                // ends the session. Network errors and 5xx are Supabase's
+                // problem; keep whatever access token is still valid.
+                const status = err && err.status;
+                if (status >= 400 && status < 500) {
+                    setSession(null);
+                    return null;
+                }
+                return getAccessToken();
+            })
+            .finally(() => { refreshInFlight = null; });
+    }
+    return refreshInFlight;
 }
 function setSession(s) {
     if (typeof localStorage === "undefined") return;

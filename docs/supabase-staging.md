@@ -34,12 +34,12 @@ Retrieved via `get_publishable_keys`. Safe to commit — publishable keys are me
 Retrieve from the Supabase dashboard → Settings → API and put into `.env.local`:
 
 - `SUPABASE_SERVICE_ROLE_KEY` — backend-only, bypasses RLS
-- `SUPABASE_JWT_SECRET` — needed by `packages/auth/verify.ts` to verify tokens (also visible under Settings → API → JWT Settings)
+- ~~`SUPABASE_JWT_SECRET`~~ — not needed. The gateway verifies ES256 tokens against the public JWKS (`lib/supabaseJwt.js`); never put the HS256 shared secret in the Worker.
 - `SUPABASE_WEBHOOK_SIGNING_SECRET` — configured per-webhook when we wire the users.created handler in Slice 3b
 
 ## Next steps (Slice 3b)
 
-- `middleware.ts` at repo root — Supabase JWT verification via `packages/auth/verify`, gates `/api/v1/*`, forwards `x-veyrnox-auth-id` header
+- `middleware.js` at repo root — Supabase JWT verification via `lib/supabaseJwt.js`, gates `/api/v1/*`, forwards `x-veyrnox-auth-id` header
 - `app/api/webhook/supabase/route.js` — receives `user.created` events, inserts a `users` row, emits a 50-credit `grant:signup` via `Ledger.grant`
 - Deprecation banner on `app/api/session/muapi/route.js`
 
