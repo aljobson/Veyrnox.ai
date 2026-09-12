@@ -395,7 +395,7 @@ function ModelShelf({ catalog }) {
   const total = groups.reduce((n, g) => n + g.rows.length, 0);
 
   return (
-    <section id="models" className="px-6 pt-20 pb-8 max-w-[1400px] mx-auto">
+    <section id="shelf" className="px-6 pt-20 pb-8 max-w-[1400px] mx-auto">
       <div className="flex items-baseline justify-between mb-6 flex-wrap gap-2">
         <div>
           <div className="font-vx-mono text-[11px] tracking-[0.14em] text-vx-accent mb-2">
