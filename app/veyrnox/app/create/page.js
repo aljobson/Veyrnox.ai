@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppNav } from '../../_components/NavBar';
 import { Chip } from '../../_components/Chip';
-import { ASPECT_RATIOS, DURATIONS } from '../../_lib/tokens';
+import { ASPECT_RATIOS } from '../../_lib/tokens';
 import { gatewayFetch, makeIdempotencyKey, notifyBalanceChanged, GatewayError } from '../../_lib/gateway';
 import { pushJobHistory } from '../../_lib/jobHistory';
 import { useCatalog } from '../../_lib/useCatalog';
@@ -22,6 +22,8 @@ const ERROR_COPY = {
   internal:              'Something on our side broke. Credits refunded.',
   rate_limited:          'Too many generations in a short window. Wait a moment.',
   model_gated:           'This model is premium-gated on your plan. Nothing was charged.',
+  duration_not_supported:'This model only makes 5s clips. Nothing was charged.',
+  duration_invalid:      'Pick a 5s or 10s clip. Nothing was charged.',
   insufficient_balance:  'Not enough credits for this generation. Nothing was charged — top up to continue.',
   user_not_provisioned:  'Your account is still being set up. Try again in a moment.',
   debit_rejected:        'The ledger declined this debit. Nothing was charged.',
@@ -62,8 +64,19 @@ export default function CreateStudio() {
   }, [models, modelId]);
 
   const model = models.find((m) => m.id === modelId) || null;
+  // Lengths the gateway will actually sell for this model, from the catalog.
+  // Rendering anything else offers a price the server then refuses.
+  const durations = (model && model.durations && model.durations.length ? model.durations : [5]).map((s) => `${s}s`);
   const cost = model ? model.credits * (duration === '10s' && model.kind === 'video' ? 2 : 1) : 0;
+  const durationKey = durations.join(',');
   const generating = job && (job.state === 'queued' || job.state === 'running');
+
+  // A 10s selection must not survive a switch to a model that only sells 5s:
+  // the gateway would reject it and the quoted price would have been double.
+  useEffect(() => {
+    if (!durations.includes(duration)) setDuration(durations[0]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [durationKey]);
 
   // ── balance fetch + focus revalidation ────────────────────────────
   const loadBalance = useCallback(async () => {
@@ -287,7 +300,9 @@ export default function CreateStudio() {
 
           {model?.kind === 'video' && (
             <>
-              <ControlRow label="DURATION" options={DURATIONS} value={duration} onChange={setDuration} />
+              {durations.length > 1 && (
+                <ControlRow label="DURATION" options={durations} value={duration} onChange={setDuration} />
+              )}
               <ControlRow label="ASPECT"   options={ASPECT_RATIOS} value={aspect} onChange={setAspect} />
             </>
           )}

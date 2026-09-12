@@ -21,6 +21,7 @@
 import { NextResponse } from 'next/server';
 import { rpc, select, envConfig, SupabaseError } from '../../../../packages/db/supabase-client.js';
 import { submitJob } from '../../../../packages/adapters/fal.js';
+import { durationSpec, shapeForProvider } from '../../../../lib/providerDuration.js';
 
 // Constrain idempotency keys to a safe printable range.
 const IDEMPOTENCY_RE = /^[A-Za-z0-9._-]{8,128}$/;
@@ -45,29 +46,6 @@ const ALLOWED_INPUTS = {
     seed: { kind: 'int', min: 0, max: 2147483647 },
     image_url: { kind: 'url' },
 };
-
-// How each fal endpoint family expresses a clip length. `duration_seconds`
-// is our field, not fal's; without this mapping the model runs at its
-// default length while we bill for the requested one. Families not listed
-// only accept the 5-second unit and receive no length field at all.
-// ponytail: two families known; extend from each endpoint's OpenAPI as models land.
-const DURATION_FIELDS = [
-    { prefix: 'fal-ai/wan', field: 'duration', values: { 5: '5', 10: '10' } },
-    { prefix: 'fal-ai/kling-video', field: 'duration', values: { 5: '5', 10: '10' } },
-];
-
-function durationSpec(modelRow) {
-    const ep = String(modelRow.provider_endpoint || '');
-    return DURATION_FIELDS.find((d) => ep.startsWith(d.prefix)) || null;
-}
-
-/** Translate validated inputs into the provider payload: only fal's own fields go out. */
-function shapeForProvider(modelRow, inputs) {
-    const { duration_seconds, ...rest } = inputs;
-    const spec = durationSpec(modelRow);
-    if (spec && duration_seconds) rest[spec.field] = spec.values[duration_seconds];
-    return rest;
-}
 
 /** @returns {{ok:true}|{ok:false,error:string}} */
 function validateInputs(inputs) {

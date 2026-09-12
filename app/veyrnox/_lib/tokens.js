@@ -3,17 +3,21 @@
 
 // Active gateway catalog — kept in lockstep with fal rows exposed by
 // /api/v1/generations and (once shipped) GET /api/v1/catalog.
+// `durations` mirrors what GET /api/catalog derives from provider_endpoint:
+// only the wan and kling families can be asked for a 10s clip, so only they
+// may be sold one. Keep these in step with lib/providerDuration.js — the
+// fallback renders the same picker the live catalog does.
 export const MODELS = [
-  { id: 'wan-2.5',            name: 'Wan 2.5',             credits: 16,  tag: 'RECOMMENDED', preselected: true, kind: 'video' },
-  { id: 'kling-2.6-pro',      name: 'Kling 2.6 Pro',       credits: 22,                                         kind: 'video' },
-  { id: 'kling-3.0-i2v',      name: 'Kling 3.0 · I2V',     credits: 34,  tag: '4K',                             kind: 'video' },
-  { id: 'minimax-hailuo-02',  name: 'MiniMax Hailuo 02',   credits: 14,                                         kind: 'video' },
-  { id: 'veo-3.1',            name: 'Veo 3.1',             credits: 122, tag: 'PREMIUM',    premium: true, gated: true, kind: 'video' },
-  { id: 'veo-3.1-fast',       name: 'Veo 3.1 Fast',        credits: 46,  tag: 'NEW',                            kind: 'video' },
-  { id: 'nano-banana',        name: 'Nano Banana',         credits: 3,                                          kind: 'image' },
-  { id: 'flux-2-pro',         name: 'Flux.2 [pro]',        credits: 2,                                          kind: 'image' },
-  { id: 'seedream-4',         name: 'Seedream 4',          credits: 3,                                          kind: 'image' },
-  { id: 'ace-step',           name: 'ACE Step',            credits: 1,                                          kind: 'audio' },
+  { id: 'wan-2.5',            name: 'Wan 2.5',             credits: 16,  tag: 'RECOMMENDED', preselected: true, kind: 'video', durations: [5, 10] },
+  { id: 'kling-2.6-pro',      name: 'Kling 2.6 Pro',       credits: 22,                                         kind: 'video', durations: [5, 10] },
+  { id: 'kling-3.0-i2v',      name: 'Kling 3.0 · I2V',     credits: 34,  tag: '4K',                             kind: 'video', durations: [5, 10] },
+  { id: 'minimax-hailuo-02',  name: 'MiniMax Hailuo 02',   credits: 14,                                         kind: 'video', durations: [5] },
+  { id: 'veo-3.1',            name: 'Veo 3.1',             credits: 122, tag: 'PREMIUM',    premium: true, gated: true, kind: 'video', durations: [5] },
+  { id: 'veo-3.1-fast',       name: 'Veo 3.1 Fast',        credits: 46,  tag: 'NEW',                            kind: 'video', durations: [5] },
+  { id: 'nano-banana',        name: 'Nano Banana',         credits: 3,                                          kind: 'image', durations: [5] },
+  { id: 'flux-2-pro',         name: 'Flux.2 [pro]',        credits: 2,                                          kind: 'image', durations: [5] },
+  { id: 'seedream-4',         name: 'Seedream 4',          credits: 3,                                          kind: 'image', durations: [5] },
+  { id: 'ace-step',           name: 'ACE Step',            credits: 1,                                          kind: 'audio', durations: [5] },
 ];
 
 // 10s video = exactly 2x credits. Non-negotiable.
@@ -137,7 +141,6 @@ export const PRESETS = [
 ];
 
 export const ASPECT_RATIOS = ['16:9', '9:16', '1:1', '4:5', '21:9'];
-export const DURATIONS = ['5s', '10s'];
 export const RESOLUTIONS = ['1K', '2K', '4K'];
 
 // ─── Landing-page content ────────────────────────────────────────────────
