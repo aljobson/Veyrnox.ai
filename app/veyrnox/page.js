@@ -386,6 +386,13 @@ const SHELF_GROUPS = [
   { kind: 'audio', label: 'AUDIO', blurb: 'Music and voice, same balance.' },
 ];
 
+// Catalog names carry a trailing parenthetical that restates the modality
+// ("Kling 3.0 (image-to-video)", "ACE-Step (music/SFX)"); the card already
+// prints the modality underneath, so drop it for display only.
+function shelfName(name) {
+  return String(name || '').replace(/\s*\([^()]*\)\s*$/, '');
+}
+
 function ModelShelf({ catalog }) {
   const groups = SHELF_GROUPS
     .map((g) => ({ ...g, rows: catalog.filter((m) => m.kind === g.kind) }))
@@ -422,7 +429,7 @@ function ModelShelf({ catalog }) {
                   className="group rounded-2xl border border-vx-border bg-vx-panel p-4 flex flex-col gap-3 transition-colors hover:border-vx-accent/60"
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <span className="font-bold text-[15px] leading-tight">{m.name}</span>
+                    <span className="font-bold text-[15px] leading-tight">{shelfName(m.name)}</span>
                     {m.gated && (
                       <span className="font-vx-mono text-[8.5px] tracking-[0.12em] text-vx-money shrink-0 mt-0.5">
                         ◆ PREMIUM
