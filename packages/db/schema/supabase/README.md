@@ -59,3 +59,48 @@ is last, so a fresh replay ends locked — the state the live database is in.
 
 `0022_cost_unit_and_deactivate_seedance` was applied at 14:56 UTC, after
 `0028`, and was still uncommitted when this landed. It belongs at `0029`.
+
+### Every applied migration must be accounted for
+
+`check-migration-numbers.sh` compares this directory's files with each
+other, so it cannot see a migration applied straight to the database and
+never committed. `scripts/check-migration-ledger.mjs` closes that gap: feed it the
+names from `supabase_migrations.schema_migrations` and it reports any with no
+trace here.
+
+The `migration-ledger` workflow runs it on every pull request, on every push
+to main, and hourly. The hourly run on main opens a single
+`migration-drift` issue when something is missing. Run it locally too:
+
+```bash
+node scripts/check-migration-ledger.mjs
+```
+
+With no argument it reads the live ledger through the anon-callable
+`applied_migration_names()` function (0034), using the URL and publishable
+key from `wrangler.jsonc`. PostgREST does not expose `supabase_migrations`,
+and CI deliberately holds no service-role key since PR #61, so that function
+is the only ledger read the anon role has. It returns names only. Pass a JSON
+file of names instead to check offline.
+
+It exits 0 when everything is accounted for, 1 on drift, and 2 when the
+ledger could not be read, so an outage never reads as a pass.
+
+A migration is accounted for when a file carries its descriptive name — the
+number is ignored, because files were renumbered to apply order while the
+database kept its original names — or when its **full applied name** is
+written in a schema file or here. That second rule is how a deliberate fold is
+recorded. Two exist:
+
+- `phase1_0006_ledger_rpc_functions_perm_fix` is folded into
+  `0006_ledger_rpc_functions.sql`, which revokes `read_user_balance` from
+  `authenticated`.
+- `0032_ops_metrics_p95_stored_only` is folded into
+  `0032_admin_flag_and_ops_metrics.sql`, which measures p95 on `STORED` jobs
+  only.
+
+Both were confirmed against the ledger's recorded statements on 2026-09-12:
+the file already contains the effect, so a replay reaches the same end state.
+
+Folding is fine. Folding silently is how the first of those went unrecorded
+for a day.
