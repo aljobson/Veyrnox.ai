@@ -1,0 +1,41 @@
+name: verify
+
+# Supplies the `verify` required status check, previously produced by
+# verify-submodules.yml. ADR-0015 removed the submodules, so this asserts
+# they stay gone and that no MuAPI surface comes back with them.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: No submodules
+        run: |
+          set -euo pipefail
+          if [ -f .gitmodules ]; then
+            echo '.gitmodules is back — ADR-0015 removed every submodule from this repo'; exit 1
+          fi
+          if git ls-files --stage | grep -q '^160000'; then
+            echo 'a gitlink (submodule) entry is present in the index'; exit 1
+          fi
+
+      - name: No live MuAPI surface in first-party code
+        run: |
+          set -euo pipefail
+          # Comments may still describe the retired routes (ADR-0007) and the
+          # brand's origins; what must not come back is executable code —
+          # the api.muapi.ai host, the muapi_key cookie, an import of the
+          # extracted package. Drop comment lines, then fail on the rest.
+          if git grep -nEi 'muapi' -- 'app' 'components' 'lib' 'middleware.js' 'packages' \
+             | grep -vE ':[0-9]+:[[:space:]]*(//|\*|#)' ; then
+            echo 'live MuAPI reference found in first-party code — see ADR-0015'; exit 1
+          fi

@@ -20,9 +20,8 @@ const CSP = [
   "img-src 'self' data: blob: https:",
   "media-src 'self' data: blob: https:",
   "font-src 'self' data:",
-  // S3 uploads go through /api/upload-binary (same-origin) and every MuAPI
-  // call is proxied through /api/* (same-origin) so the browser never needs
-  // a direct connect to api.muapi.ai or any *.s3.amazonaws.com host.
+  // Same-origin only: generation traffic goes through /api/v1/* and assets
+  // through presigned R2 URLs fetched from our own origin.
   "connect-src 'self' https://yrqzwqywxfesmbvhzjgj.supabase.co",
   "frame-ancestors 'none'",
   "base-uri 'self'",
@@ -46,7 +45,6 @@ const nextConfig = {
     // Edge middleware bakes env at build time.
     SUPABASE_URL: 'https://yrqzwqywxfesmbvhzjgj.supabase.co',
   },
-  transpilePackages: ['studio', 'ai-agent', 'workflow-builder', 'design-agent'],
   async headers() {
     return [
       {
