@@ -25,16 +25,23 @@
 const REGION = 'auto';
 const SERVICE = 's3';
 
-// Hosts fal serves generated assets from. Anything else is refused by
-// copyUrlToR2 — the URL arrives in a provider payload, never trusted blindly.
-const ALLOWED_SOURCE_SUFFIXES = ['.fal.media', '.fal.run', '.fal.ai'];
-const ALLOWED_SOURCE_HOSTS = ['fal.media', 'fal.run', 'fal.ai'];
+// Hosts each provider serves generated assets from. Anything else is refused
+// by copyUrlToR2 — the URL arrives in a provider payload, never trusted
+// blindly, and each provider's copy may only fetch from that provider's CDN.
+// ponytail: kie's list is from its docs examples (tempfile/templateb
+// .aiquickdraw.com); confirm against a live output before activating a kie row.
+const SOURCE_HOSTS = {
+    fal: { hosts: ['fal.media', 'fal.run', 'fal.ai'], suffixes: ['.fal.media', '.fal.run', '.fal.ai'] },
+    kie: { hosts: [], suffixes: ['.aiquickdraw.com'] },
+};
 // ponytail: 100 MB cap, the Worker holds the body in memory. Stream to R2 multipart if outputs grow.
 const COPY_MAX_BYTES = 100 * 1024 * 1024;
 
-function isAllowedSourceHost(hostname) {
+function isAllowedSourceHost(hostname, provider) {
+    const allow = Object.prototype.hasOwnProperty.call(SOURCE_HOSTS, provider) ? SOURCE_HOSTS[provider] : null;
+    if (!allow) return false;
     const h = String(hostname || '').toLowerCase();
-    return ALLOWED_SOURCE_HOSTS.includes(h) || ALLOWED_SOURCE_SUFFIXES.some((s) => h.endsWith(s));
+    return allow.hosts.includes(h) || allow.suffixes.some((s) => h.endsWith(s));
 }
 
 /** Read a ReadableStream into bytes; returns null once `maxBytes` is exceeded. */
@@ -269,15 +276,16 @@ export async function presignGetUrl(key, expiresSeconds, cfg) {
 
 /**
  * Convenience: fetch a URL and stream the bytes into R2. Used by the
- * fal webhook to copy a provider-hosted output into our bucket
- * before it expires.
+ * provider webhooks to copy a provider-hosted output into our bucket
+ * before it expires. `provider` selects that provider's CDN allowlist;
+ * it defaults to fal so the existing fal webhook is unchanged.
  */
-export async function copyUrlToR2(sourceUrl, r2Key, cfg, { timeoutMs = 30000, maxBytes = COPY_MAX_BYTES } = {}) {
+export async function copyUrlToR2(sourceUrl, r2Key, cfg, { timeoutMs = 30000, maxBytes = COPY_MAX_BYTES, provider = 'fal' } = {}) {
     // Outbound fetch targets must be constants or provider CDNs (CLAUDE.md
     // OWASP #10). The URL comes from a provider payload, so pin the host.
     let parsed;
     try { parsed = new URL(sourceUrl); } catch { return { ok: false, error: 'source url invalid' }; }
-    if (parsed.protocol !== 'https:' || !isAllowedSourceHost(parsed.hostname)) {
+    if (parsed.protocol !== 'https:' || !isAllowedSourceHost(parsed.hostname, provider)) {
         console.error('R2 copy source host not allowed:', parsed.hostname);
         return { ok: false, error: 'source host not allowed' };
     }
