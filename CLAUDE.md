@@ -210,3 +210,17 @@ passkey wallet recovery) lives in `VEYRNOX/veyrnox` — never in here.
 - The list is enforcement, not doctrine. If a product decision ever
   merges the two brands, remove the terms one at a time with a comment
   in the script explaining the joint-launch context.
+
+## Agent skills
+
+### Issue tracker
+
+GitHub Issues on `aljobson/Veyrnox.ai` via `gh` (never the `upstream` fork). See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default five-role vocabulary (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`). See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: root `CONTEXT.md` + `docs/adr/`. See `docs/agents/domain.md`.
