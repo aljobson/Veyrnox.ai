@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppNav } from '../../_components/NavBar';
 import { Chip } from '../../_components/Chip';
-import { ASPECT_RATIOS, DURATIONS, RESOLUTIONS } from '../../_lib/tokens';
+import { ASPECT_RATIOS, DURATIONS } from '../../_lib/tokens';
 import { gatewayFetch, makeIdempotencyKey, notifyBalanceChanged, GatewayError } from '../../_lib/gateway';
 import { pushJobHistory } from '../../_lib/jobHistory';
 import { useCatalog } from '../../_lib/useCatalog';
@@ -16,7 +16,7 @@ const STATE_UI = {
 };
 
 const ERROR_COPY = {
-  moderation:            'Prompt or reference failed moderation. Credits refunded.',
+  moderation:            'The provider declined this prompt on safety grounds. Credits refunded.',
   provider_timeout:      'The model took too long. Credits refunded — try again.',
   provider_error:        'The model returned an error. Credits refunded.',
   internal:              'Something on our side broke. Credits refunded.',
@@ -36,7 +36,6 @@ export default function CreateStudio() {
   const [modelId, setModelId] = useState(DEFAULT_MODEL);
   const [duration, setDuration] = useState('5s');
   const [aspect, setAspect] = useState('16:9');
-  const [res, setRes] = useState('2K');
   const [prompt, setPrompt] = useState('A neon-lit Tokyo alley at 3am, low anamorphic tracking shot');
 
   const [balance, setBalance] = useState(null);
@@ -123,7 +122,6 @@ export default function CreateStudio() {
       prompt: prompt.trim(),
       aspect_ratio: aspect,
       duration_seconds: model.kind === 'video' ? Number(duration.replace('s', '')) : undefined,
-      resolution: res,
     };
     // strip undefined so server sees a clean object
     Object.keys(inputs).forEach((k) => inputs[k] === undefined && delete inputs[k]);
@@ -291,7 +289,6 @@ export default function CreateStudio() {
             <>
               <ControlRow label="DURATION" options={DURATIONS} value={duration} onChange={setDuration} />
               <ControlRow label="ASPECT"   options={ASPECT_RATIOS} value={aspect} onChange={setAspect} />
-              <ControlRow label="QUALITY"  options={RESOLUTIONS} value={res} onChange={setRes} />
             </>
           )}
 

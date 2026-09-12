@@ -15,18 +15,20 @@ UPLOAD_PROXY_ALLOWED_HOSTS=uploads-prod.your-bucket.s3.eu-west-1.amazonaws.com,u
 
 ### Behaviour
 
-- **Production (`NODE_ENV=production`)**: this variable **must** be set to a
-  non-empty value. If it is missing, `validateUploadProxyTarget()` throws
-  immediately (fail-closed). Any request that hits the upload proxy in prod
-  without the variable set returns an error to the client instead of silently
-  falling back to the broad `*.s3.amazonaws.com` heuristic.
+- **Every environment**: this variable **must** be set to a non-empty value.
+  If it is missing, `validateUploadProxyTarget()` throws immediately
+  (fail-closed) and the client sees a generic upload error. There is no
+  `NODE_ENV` gate: the Workers runtime does not reliably expose `NODE_ENV`,
+  so a gate keyed on it would silently fall back to the broad heuristic in
+  production.
 - **When set**: the allowlist **replaces** the default `*.s3.amazonaws.com`
   heuristic — only the exact hostnames enumerated in the variable are
   permitted. Union with the S3 heuristic is intentionally disabled so that
   narrowing the allowlist actually narrows the blast radius.
-- **Non-production and unset**: the built-in S3 host heuristic
-  (`*.s3.amazonaws.com`, `*.s3.<region>.amazonaws.com`) is used as a fallback.
-  This is intended only for local development and CI.
+- **Local development and CI only**: set `UPLOAD_PROXY_S3_HEURISTIC=1` to
+  use the built-in S3 host heuristic (`*.s3.amazonaws.com`,
+  `*.s3.<region>.amazonaws.com`) instead of an allowlist. Never set this on
+  the production Worker; it re-opens every public S3 bucket as a POST target.
 
 ### What to put in it
 

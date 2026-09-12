@@ -68,6 +68,14 @@ test('rejected refresh clears the session and resolves null', async () => {
     assert.equal(store.has(KEY), false);
 });
 
+test('a 429 from the token endpoint keeps the session and the still-valid token', async () => {
+    seed({ expires_at: now() + 10 });
+    stubRefresh(() => new Response(JSON.stringify({ error: 'over_request_rate_limit' }), { status: 429, headers: { 'content-type': 'application/json' } }));
+    assert.equal(await getFreshAccessToken(), 'old');
+    assert.equal(store.has(KEY), true);
+    assert.equal(getSession().refresh_token, 'r1');
+});
+
 test('no refresh token: expired → null, valid → token', async () => {
     seed({ refresh_token: null, expires_at: now() - 600 });
     assert.equal(await getFreshAccessToken(), null);

@@ -23,6 +23,8 @@
 const FAL_QUEUE_BASE = 'https://queue.fal.run';
 const FAL_JWKS_URL = 'https://rest.alpha.fal.ai/.well-known/jwks.json';
 const JWKS_TTL_MS = 24 * 60 * 60 * 1000;
+// A verify miss refetches the JWKS at most once per this window (key rotation).
+const JWKS_MISS_REFRESH_MS = 5 * 60 * 1000;
 
 /** @type {{fetchedAt:number, keys:CryptoKey[]} | null} */
 let jwksCache = null;
@@ -233,6 +235,17 @@ export async function verifyWebhookSignature(rawBody, headers, cfg) {
     }
     for (const key of keys) {
         if (await crypto.subtle.verify({ name: 'Ed25519' }, key, sigBytes, message)) return true;
+    }
+    // Miss on a cache older than the miss-refresh window: fal may have
+    // rotated its key. Refetch once and re-verify before failing closed, so
+    // a rotation does not strand every callback for the 24h TTL.
+    if (jwksCache && Date.now() - jwksCache.fetchedAt > JWKS_MISS_REFRESH_MS) {
+        jwksCache = null;
+        let fresh;
+        try { fresh = await loadFalPublicKeys(); } catch { return false; }
+        for (const key of fresh) {
+            if (await crypto.subtle.verify({ name: 'Ed25519' }, key, sigBytes, message)) return true;
+        }
     }
     return false;
 }

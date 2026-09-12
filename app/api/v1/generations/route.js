@@ -32,15 +32,42 @@ const IDEMPOTENCY_RE = /^[A-Za-z0-9._-]{8,128}$/;
 // is per 5-second unit / single output and the payload must not buy more.
 const MAX_INPUTS_BYTES = 8 * 1024;
 const UNIT_SECONDS = 5;
+const RATE_LIMIT_PER_WINDOW = 10;
+const RATE_WINDOW_SECONDS = 60;
+// `resolution` is deliberately absent: fal bills per tier and the catalog
+// holds one cost per model (its priced tier), so the server never lets a
+// request select a pricier tier. The provider default is the priced one.
 const ALLOWED_INPUTS = {
     prompt: { kind: 'string', max: 2000 },
     negative_prompt: { kind: 'string', max: 2000 },
     aspect_ratio: { kind: 'enum', values: ['16:9', '9:16', '1:1', '4:3', '3:4', '4:5', '21:9'] },
-    resolution: { kind: 'enum', values: ['1K', '2K', '4K', '480p', '720p', '1080p'] },
     duration_seconds: { kind: 'enum', values: [5, 10] },
     seed: { kind: 'int', min: 0, max: 2147483647 },
     image_url: { kind: 'url' },
 };
+
+// How each fal endpoint family expresses a clip length. `duration_seconds`
+// is our field, not fal's; without this mapping the model runs at its
+// default length while we bill for the requested one. Families not listed
+// only accept the 5-second unit and receive no length field at all.
+// ponytail: two families known; extend from each endpoint's OpenAPI as models land.
+const DURATION_FIELDS = [
+    { prefix: 'fal-ai/wan', field: 'duration', values: { 5: '5', 10: '10' } },
+    { prefix: 'fal-ai/kling-video', field: 'duration', values: { 5: '5', 10: '10' } },
+];
+
+function durationSpec(modelRow) {
+    const ep = String(modelRow.provider_endpoint || '');
+    return DURATION_FIELDS.find((d) => ep.startsWith(d.prefix)) || null;
+}
+
+/** Translate validated inputs into the provider payload: only fal's own fields go out. */
+function shapeForProvider(modelRow, inputs) {
+    const { duration_seconds, ...rest } = inputs;
+    const spec = durationSpec(modelRow);
+    if (spec && duration_seconds) rest[spec.field] = spec.values[duration_seconds];
+    return rest;
+}
 
 /** @returns {{ok:true}|{ok:false,error:string}} */
 function validateInputs(inputs) {
@@ -115,10 +142,15 @@ export async function POST(req) {
     try {
         const rl = await rpc('check_generation_rate_limit', {
             p_auth_id: authId,
-            p_limit_per_window: 10,
-            p_window_seconds: 60,
+            p_limit_per_window: RATE_LIMIT_PER_WINDOW,
+            p_window_seconds: RATE_WINDOW_SECONDS,
         }, cfg);
-        if (rl && rl.ok === false) {
+        if (!rl || typeof rl.ok !== 'boolean') {
+            // A null/odd body is not a pass; fail closed like a thrown RPC.
+            console.error('[generations] rate check returned no verdict');
+            return NextResponse.json({ error: 'rate_check_unavailable' }, { status: 503 });
+        }
+        if (rl.ok === false) {
             if (rl.code === 'RATE_LIMITED') {
                 const retryAfter = Math.max(1, Math.min(600, Number(rl.retry_after_seconds) || 60));
                 return new NextResponse(
@@ -161,6 +193,10 @@ export async function POST(req) {
     if (!modelRow || !modelRow.active) return NextResponse.json({ error: 'model_not_found' }, { status: 404 });
     if (modelRow.provider !== 'fal') return NextResponse.json({ error: 'provider_unsupported' }, { status: 501 });
     if (modelRow.gated_flag) return NextResponse.json({ error: 'model_gated' }, { status: 402 });
+    // A longer clip is only sold where we can actually request it from fal.
+    if (inputs.duration_seconds && inputs.duration_seconds !== UNIT_SECONDS && !durationSpec(modelRow)) {
+        return NextResponse.json({ error: 'duration_not_supported' }, { status: 400 });
+    }
 
     // 2. Resolve users.id from auth_id.
     let userId;
@@ -189,10 +225,21 @@ export async function POST(req) {
             p_reason: 'debit:generation',
             p_model_id: modelId,
             p_inputs: inputs,
+            // Authoritative rate limit, counted under the same row lock as
+            // the insert (0030). The RPC above is only the cheap early 429.
+            p_limit_per_window: RATE_LIMIT_PER_WINDOW,
+            p_window_seconds: RATE_WINDOW_SECONDS,
         }, cfg);
     } catch (err) {
         console.error('[generations] ledger_debit failed:', err);
         return NextResponse.json({ error: 'debit_failed' }, { status: 502 });
+    }
+    if (debit && debit.ok === false && debit.code === 'RATE_LIMITED') {
+        const retryAfter = Math.max(1, Math.min(600, Number(debit.retry_after_seconds) || RATE_WINDOW_SECONDS));
+        return new NextResponse(
+            JSON.stringify({ error: 'rate_limited', limit: debit.limit, count: debit.count, retry_after_seconds: retryAfter }),
+            { status: 429, headers: { 'content-type': 'application/json', 'retry-after': String(retryAfter) } },
+        );
     }
     if (!debit || debit.ok === false) {
         const status = debit && debit.code === 'INSUFFICIENT_BALANCE' ? 402 : 400;
@@ -219,7 +266,7 @@ export async function POST(req) {
     const falResult = await submitJob({
         job_id: jobId,
         provider_endpoint: modelRow.provider_endpoint,
-        inputs,
+        inputs: shapeForProvider(modelRow, inputs),
     }, { falKey, webhookBaseUrl });
 
     if (!falResult.ok) {

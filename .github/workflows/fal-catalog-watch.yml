@@ -11,18 +11,24 @@ permissions:
 
 jobs:
   watch:
+    # Only main: a workflow_dispatch on another branch would run that
+    # branch's copy of the script with this job's secrets.
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '22'
 
+      # Reads through the anon-callable catalog_watch() RPC (migration 0029):
+      # no service-role key in Actions for a five-column SELECT.
       - name: Check fal endpoints + provider prices
         id: check
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
           set +e
           node scripts/check-fal-catalog.mjs > report.txt 2>&1
