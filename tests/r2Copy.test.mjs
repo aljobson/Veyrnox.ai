@@ -22,3 +22,21 @@ test('rejects a declared body over the cap without reading it', async () => {
         globalThis.fetch = realFetch;
     }
 });
+
+// The Workers runtime throws on redirect: 'error', which made every copy fail
+// in production while this suite (on Node, where 'error' is valid) passed.
+test('fetches the source with redirect manual, the only non-following mode Workers accept', async () => {
+    const realFetch = globalThis.fetch;
+    let seen;
+    globalThis.fetch = async (url, init) => {
+        if (String(url).includes('fal.media')) { seen = init && init.redirect; return new Response('x', { status: 302, headers: { location: 'https://evil.example.com/x' } }); }
+        throw new Error('unexpected fetch ' + url);
+    };
+    try {
+        const res = await copyUrlToR2('https://v3.fal.media/out.wav', 'k', cfg);
+        assert.equal(seen, 'manual');
+        assert.equal(res.error, 'source 302');
+    } finally {
+        globalThis.fetch = realFetch;
+    }
+});

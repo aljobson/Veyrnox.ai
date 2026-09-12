@@ -286,7 +286,12 @@ export async function copyUrlToR2(sourceUrl, r2Key, cfg, { timeoutMs = 30000, ma
     try {
         let src;
         try {
-            src = await fetch(parsed.toString(), { signal: controller.signal, redirect: 'error' });
+            // 'manual', not 'error': the Workers runtime rejects redirect: 'error'
+            // ("won't be implemented since it does not make sense at the edge"),
+            // which failed every copy. 'manual' still never follows a redirect —
+            // a 3xx comes back as a non-ok response and is refused below, so a
+            // redirect cannot walk the fetch off the allowlisted fal CDN host.
+            src = await fetch(parsed.toString(), { signal: controller.signal, redirect: 'manual' });
         } catch (err) {
             const msg = err && err.message;
             console.error('R2 copy source fetch failed:', msg);

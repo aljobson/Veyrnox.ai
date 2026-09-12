@@ -74,7 +74,9 @@ async function markProcessed(cfg, requestId) {
 // copyUrlToR2 failures fal cannot fix by redelivering: refused host, over
 // the size cap, or a source the CDN no longer serves. Answer 200 for these
 // and let sweep_stuck_jobs (0023) refund; only transient faults get a 500.
-const NON_RETRYABLE_COPY = /^(source url invalid|source host not allowed|source too large|source 4\d\d)$/;
+// A 3xx is refused rather than followed (see copyUrlToR2), and redelivery
+// would get the same redirect, so it is final like a 4xx.
+const NON_RETRYABLE_COPY = /^(source url invalid|source host not allowed|source too large|source [34]\d\d)$/;
 
 /** Deterministic per-delivery key so a retry overwrites instead of orphaning. */
 async function assetKey(requestId, outputUrl, ext) {
