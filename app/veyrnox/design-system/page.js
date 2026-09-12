@@ -59,7 +59,7 @@ export default function DesignSystem() {
           <TypeRow sample="Card / section title 15–17" klass="text-[17px] font-bold"                        spec="ARCHIVO 700" />
           <TypeRow sample="Body 13–14 / 1.55 — neutral #C9C9CF on black, never aqua" klass="text-[14px] text-vx-fg-body leading-[1.6]" spec="ARCHIVO 500" />
           <TypeRow sample="MICRO-LABEL 10–11 · +0.12EM TRACKING · UPPERCASE" klass="font-vx-mono text-[11px] tracking-[0.12em] text-vx-fg-muted" spec="JETBRAINS MONO 700" />
-          <TypeRow sample="−125 cr · 823 / 1,000" klass="font-vx-mono text-[20px] font-bold text-vx-money vx-num" spec="ALL CREDIT NUMERALS + JOB STATES: MONO, TABULAR FIGURES — NON-NEGOTIABLE" />
+          <TypeRow sample="−122 cr · 96 / 1,000" klass="font-vx-mono text-[20px] font-bold text-vx-money vx-num" spec="ALL CREDIT NUMERALS + JOB STATES: MONO, TABULAR FIGURES — NON-NEGOTIABLE" />
         </div>
       </Section>
 
@@ -68,7 +68,7 @@ export default function DesignSystem() {
         <div className="border border-vx-border rounded-2xl p-7 flex flex-wrap gap-4 items-center">
           <button className="flex items-center gap-10 bg-vx-accent text-vx-accent-ink rounded-full px-6 py-3.5 font-extrabold hover:bg-vx-accent-hover">
             <span>Generate</span>
-            <span className="font-vx-mono text-[13px] font-bold">−15 cr</span>
+            <span className="font-vx-mono text-[13px] font-bold">−16 cr</span>
           </button>
           <button className="bg-vx-money text-vx-money-ink rounded-full px-6 py-3 font-extrabold">Top up · $9</button>
           <button className="bg-transparent border border-vx-border text-vx-fg rounded-full px-6 py-3 font-bold hover:border-vx-accent">Ghost</button>
@@ -101,7 +101,7 @@ export default function DesignSystem() {
                 <div className="font-extrabold text-base">NEON ALLEY</div>
                 <div className="mt-0.5 text-vx-fg-muted text-xs">Kling 2.6 Pro</div>
               </div>
-              <div className="shrink-0 font-vx-mono text-[13px] font-bold text-vx-money vx-num pt-1">23 cr</div>
+              <div className="shrink-0 font-vx-mono text-[13px] font-bold text-vx-money vx-num pt-1">22 cr</div>
             </div>
           </div>
           <ul className="mt-5 text-[12px] text-vx-fg-body space-y-1.5">
@@ -117,10 +117,10 @@ export default function DesignSystem() {
         <div className="border border-vx-border rounded-2xl p-7 flex gap-4 items-center">
           <span className="inline-flex items-center gap-2 rounded-full border border-vx-border bg-vx-panel px-3 py-1.5">
             <span className="h-1.5 w-1.5 rounded-full bg-vx-money" />
-            <span className="font-vx-mono text-[12px] font-bold text-vx-money vx-num">823 cr</span>
+            <span className="font-vx-mono text-[12px] font-bold text-vx-money vx-num">96 cr</span>
           </span>
           <div className="text-[12px] text-vx-fg-body">
-            The counter tick <b className="text-vx-money font-vx-mono vx-num">−15</b> floats up 12px and fades over 1.8s ease-out after a spend.
+            The counter tick <b className="text-vx-money font-vx-mono vx-num">−16</b> floats up 12px and fades over 1.8s ease-out after a spend.
           </div>
         </div>
       </Section>

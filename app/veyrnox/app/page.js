@@ -11,7 +11,10 @@ export default function Explore() {
 
   return (
     <div className="min-h-dvh">
-      <AppNav balance={823} active="explore" />
+      {/* No balance prop: AppNav reads the signed-in balance itself. This
+          used to pass a hardcoded 823, so the pill showed a number that
+          belonged to nobody. */}
+      <AppNav active="explore" />
 
       <section className="max-w-[1400px] mx-auto px-8 pt-10 pb-4">
         <Chip tone="accent" className="mb-3">EXPLORE · CURATED PRESETS</Chip>
@@ -43,7 +46,7 @@ export default function Explore() {
       <section className="max-w-[1400px] mx-auto px-8 pt-4 pb-4 flex items-baseline justify-between">
         <h2 className="text-xl font-black tracking-[-0.02em]">Trending this week</h2>
         <div className="font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted">
-          {list.length} PRESETS · 8 MODELS · CACHED DEMOS FREE
+          {list.length} PRESETS · 10 MODELS · CACHED DEMOS FREE
         </div>
       </section>
 

@@ -101,6 +101,7 @@ export default function Pricing() {
             audience={audience}
             ultraTierIdx={ultraTierIdx}
             setUltraTierIdx={setUltraTierIdx}
+            liveModels={liveModels}
           />
         ))}
       </section>
@@ -182,13 +183,31 @@ export default function Pricing() {
 }
 
 /* ─── Plan card ─── */
-function PlanCard({ plan, annual, audience, ultraTierIdx, setUltraTierIdx }) {
+// The static equivalence strings went stale whenever a price moved or a
+// credit tier was selected. Derive it from the credits on the card and the
+// catalog the page already loaded.
+function equivalence(credits, models) {
+  const priceOf = (id, fallback) => {
+    const row = models.find((m) => m.id === id);
+    return row && row.credits > 0 ? row.credits : fallback;
+  };
+  const stills = Math.floor(credits / priceOf('nano-banana', 3));
+  const clips = Math.floor(credits / priceOf('wan-2.5', 16));
+  const fmt = new Intl.NumberFormat('en-US');
+  return `= ${fmt.format(stills)} Nano Banana stills   ~ ${fmt.format(clips)} Wan 2.5 clips`;
+}
+
+function PlanCard({ plan, annual, audience, ultraTierIdx, setUltraTierIdx, liveModels }) {
   const isUltra = plan.id === 'ultra';
   const activeTier = isUltra ? plan.creditTiers[ultraTierIdx] : null;
   const priceMo = activeTier ? (annual ? activeTier.priceAnnualMo : activeTier.priceMo)
                               : (annual ? plan.priceAnnualMo : plan.priceMo);
   const credits = activeTier ? activeTier.credits : plan.credits;
-  const savings = annual ? (plan.priceMo * 12 - priceMo * 12) : 0;
+  // Compare like with like: the selected tier's own monthly price against
+  // its annual price. Using the plan headline made every Ultra tier above
+  // the first print a negative "saving".
+  const monthlyForSelection = activeTier ? activeTier.priceMo : plan.priceMo;
+  const savings = annual ? (monthlyForSelection - priceMo) * 12 : 0;
   const businessMult = audience === 'business' ? 3 : 1; // ponytail: business = 3× seats
 
   return (
@@ -223,7 +242,7 @@ function PlanCard({ plan, annual, audience, ultraTierIdx, setUltraTierIdx }) {
         {new Intl.NumberFormat('en-US').format(credits * businessMult)} cr<span className="text-[13px] text-vx-fg-muted"> / mo</span>
       </div>
       <div className="mt-1 font-vx-mono text-[11px] text-vx-fg-body leading-relaxed">
-        {plan.equivalence}
+        {equivalence(credits * businessMult, liveModels)}
       </div>
 
       {/* Ultra credit tier selector */}

@@ -50,14 +50,14 @@ export const PLANS = [
     name: 'Starter',
     tagline: 'For first-time AI creators',
     priceMo: 15,
-    priceAnnualMo: 11,        // 30% off billed annually
-    annualDiscountPct: 30,
+    priceAnnualMo: 11,        // 27% off billed annually (11/15)
+    annualDiscountPct: 27,
     credits: 200,
     creditsFmt: '200 cr',
     equivalence: '= 66 Nano Banana stills   ~ 12 Wan 2.5 clips',
     unlockedModels: [
-      { name: 'Nano Banana', hint: 'image · 6 cr' },
-      { name: 'Wan 2.5', hint: 'video · 15 cr' },
+      { name: 'Nano Banana', hint: 'image · 3 cr' },
+      { name: 'Wan 2.5', hint: 'video · 16 cr' },
     ],
     lockedNote: 'Veo 3.1 ◆ premium locked — upgrade to unlock',
     features: [
@@ -81,9 +81,9 @@ export const PLANS = [
     unlockedModels: [
       { name: 'Every image model', hint: 'Nano Banana, Flux.2 [pro], Seedream 4' },
       { name: 'Every standard video model', hint: 'Wan, MiniMax, Kling 2.6' },
-      { name: 'Kling 3.0 · I2V', hint: 'video · 33 cr / 5s' },
-      { name: 'Veo 3.1', hint: '◆ premium · 125 cr / 5s' },
-      { name: 'ACE Step', hint: 'audio · 4 cr' },
+      { name: 'Kling 3.0 · I2V', hint: 'video · 34 cr / 5s' },
+      { name: 'Veo 3.1', hint: '◆ premium · 122 cr / 5s' },
+      { name: 'ACE Step', hint: 'audio · 1 cr' },
     ],
     lockedNote: 'Higher concurrency and early access unlock at Ultra',
     features: [
@@ -111,8 +111,8 @@ export const PLANS = [
     ],
     unlockedModels: [
       { name: 'Every model', hint: 'including Veo 3.1 ◆ and Kling 3.0 · I2V' },
-      { name: 'Kling 3.0 · I2V', hint: 'video · 33 cr / 5s' },
-      { name: 'Veo 3.1', hint: '◆ premium · 125 cr / 5s' },
+      { name: 'Kling 3.0 · I2V', hint: 'video · 34 cr / 5s' },
+      { name: 'Veo 3.1', hint: '◆ premium · 122 cr / 5s' },
       { name: 'Every image + audio model', hint: 'Nano Banana, Flux.2 [pro], Seedream 4, ACE Step' },
     ],
     lockedNote: null,
@@ -183,7 +183,7 @@ export const FEATURE_CARDS = [
   { key: 'presets',
     kicker: 'PRESETS',
     title: 'One-tap looks. Exact prices.',
-    body: '15 curated preset gradients wired to model + prompt combos. Browse free, generate on-tap.',
+    body: 'Curated looks wired to a model and a prompt, each showing its credit cost. Browse free, generate on-tap.',
     cta: 'Browse presets',
     href: '/veyrnox/presets',
     bg: 'linear-gradient(135deg,#0e0620 0%,#3a0e6a 55%,#8b46e4 100%)' },
@@ -196,7 +196,7 @@ export const FEATURE_CARDS = [
     bg: 'linear-gradient(135deg,#08120b 0%,#0e3a1e 55%,#2ea258 100%)' },
 ];
 
-// Four "Why Veyrnox" pillars, Muapi-style: kicker + stat + body.
+// Four "Why Veyrnox" pillars: kicker + stat + body.
 export const PILLARS = [
   { key: 'honest',
     kicker: 'HONEST PRICING',
@@ -220,7 +220,7 @@ export const PILLARS = [
     body:   'Every image, video and audio clip ships with a C2PA signature. Verifiable origin, model and creator — auditable by default.' },
 ];
 
-// FAQ — Muapi-style, 10 Qs. Hedged where legal/policy is still in flight.
+// FAQ — 10 Qs. Hedged where legal/policy is still in flight.
 export const FAQ = [
   { q: 'What is Veyrnox.ai?',
     a: 'Veyrnox.ai is a credit-metered AI image, video and audio generation gateway. One balance across the whole catalog, price visible on the button, refund on failure.' },
@@ -247,28 +247,17 @@ export const FAQ = [
     link: { label: 'Refund Policy', href: '/legal/refund' } },
 ];
 
-// Two workflow strips beneath the four-surface grid.
-export const WORKFLOW_STRIPS = [
-  { kicker: 'STUDIO · GENJUTSU',
-    title: 'One upload in. Endless variants out.',
-    body: 'Drop a photo, a rough sketch, or a still. Ship a campaign by lunch — every variant priced before you press generate.',
-    bg: 'linear-gradient(135deg,#1b0632 0%,#5a0e6a 55%,#e4318f 100%)' },
-  { kicker: 'CREDITS · HONEST',
-    title: 'The button is the price tag.',
-    body: 'Every generation names its cost. Failed jobs refund automatically. One balance across the whole catalog — every price visible before you spend.',
-    bg: 'linear-gradient(135deg,#0a1a2c 0%,#144a7a 55%,#3ec1e8 100%)' },
-];
 
 export const HERO_STATS = [
   { value: '50',    label: 'free credits on sign-up' },
-  { value: '10+',   label: 'models on one balance' },
+  { value: '10',    label: 'models on one balance' },
   { value: 'C2PA',  label: 'signed at source' },
 ];
 
 export const METRIC_STRIP = [
   { value: '50',    label: 'FREE CREDITS ON SIGN-UP' },
   { value: '100%',  label: 'REFUND ON FAILURE' },
-  { value: '10+',   label: 'MODELS ROUTED' },
+  { value: '10',    label: 'MODELS ROUTED' },
   { value: 'C2PA',  label: 'SIGNED AT SOURCE' },
 ];
 
@@ -317,7 +306,7 @@ export const CREATOR_PROJECTS = [
 export const MORE_FEATURES = [
   { group: 'Product',   items: ['Explore', 'Models', 'Pricing', 'Presets', 'Status'] },
   { group: 'Models',    items: ['Wan 2.5', 'Nano Banana', 'Kling 2.6 Pro', 'Kling 3.0 I2V', 'MiniMax Hailuo 02', 'Seedream 4', 'Flux.2 [pro]', 'Veo 3.1 ◆', 'Veo 3.1 Fast', 'ACE Step'] },
-  { group: 'Tools',     items: ['Image Generator', 'Video Generator', 'Image-to-Video', 'Audio', 'Upscaler'] },
+  { group: 'Tools',     items: ['Image Generator', 'Video Generator', 'Image-to-Video', 'Audio'] },
   // Items are either a plain string (static label — page not shipped yet)
   // or { label, href } (real route). About / Contact stay static until
   // those pages exist.
@@ -334,7 +323,7 @@ export const MORE_FEATURES = [
 export const FOOTER_TAGLINE = 'Credit-metered AI generation for creators. Priced on the button — refund on failure, always. C2PA-signed.';
 export const FOOTER_STAMP   = `© ${new Date().getFullYear()} Veyrnox Ltd`;
 
-export const HERO_CHIP = 'LIVE · V1.0.1 SHIPPED';
+export const HERO_CHIP = 'LIVE · CREDIT-METERED';
 
 // Amber promo strip above the nav.
 export const PROMO_STRIP = {
