@@ -1,5 +1,12 @@
 -- Admin gating for the ops dashboard.
 --
+-- Numbered 0032 here: another session applied 0031_revoke_public_definer_functions
+-- first (2026-09-12 16:53 UTC), then this one (17:09), then a follow-up that
+-- narrowed the p95 (17:12). Supabase applies by timestamp, so the repo numbering
+-- follows the database's own order. Applied names:
+--   0031_admin_flag_and_ops_metrics
+--   0032_ops_metrics_p95_stored_only   (folded into the function body below)
+--
 -- The dashboard previously rendered hardcoded numbers to anyone who found
 -- the URL. Real figures require a real gate: an explicit per-user flag,
 -- checked inside a SECURITY DEFINER function so the API route cannot be
