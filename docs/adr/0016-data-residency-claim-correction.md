@@ -16,9 +16,7 @@ The deployment did not follow. The Supabase project wired into production
 (`yrqzwqywxfesmbvhzjgj`, named `veyrnox-staging`, baked into `wrangler.jsonc`
 and the CSP) is in **us-east-2**. `docs/supabase-staging.md` has said so since
 2026-09-10, including the line "must migrate to Frankfurt before Slice 9 exit
-(real user signups)". Signups are live. A separate project named
-`Veyrnox PRODUCTION (live)` exists in `eu-central-1` and is not wired to
-anything.
+(real user signups)". Signups are live.
 
 Meanwhile the Privacy Policy said "Account data and generation metadata are
 stored in the European Union. Generated media is stored in EU object storage."
@@ -83,3 +81,22 @@ What the pages now say:
 - This ADR is not legal advice. The wording is factual rather than drafted by a
   solicitor, and a review is worth having before any funding or enterprise
   diligence.
+
+## Correction (2026-09-12, later the same day)
+
+An earlier version of this ADR said a project named `Veyrnox PRODUCTION (live)`
+existed in `eu-central-1` "not wired to anything", and treated it as a ready
+migration target. That was inferred from the project list alone. Its contents
+show it is the **wallet product's** live database — referrals, a waitlist,
+device-keyed events and bonus-claim throttles, with thousands of rows and no
+Veyrnox.ai tables. Migrating into it would have merged two separate businesses'
+data. It must not be used for Veyrnox.ai.
+
+A dedicated project was created instead: `veyrnox-ai-production-eu`
+(`xdxdzmsztyzbnzeforxx`, `eu-central-1`). Every migration in
+`packages/db/schema/supabase` has been replayed into it and verified at parity
+with `us-east-2` — functions, grants, RLS, policies, triggers, cron jobs, and a
+byte-identical model catalog. The wallet-product objects that also sit in the
+`us-east-2` database (`events`, `funnel_dropoff_alert_log`, `track_event`,
+`check_funnel_dropoff_alerts` and an hourly cron) were deliberately not carried
+over. The runtime cutover has not happened yet.

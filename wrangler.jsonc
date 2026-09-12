@@ -11,9 +11,9 @@
   // Public config — safe to commit. SUPABASE_URL used by middleware.js;
   // NEXT_PUBLIC_* by client bundle.
   "vars": {
-    "SUPABASE_URL": "https://yrqzwqywxfesmbvhzjgj.supabase.co",
-    "NEXT_PUBLIC_SUPABASE_URL": "https://yrqzwqywxfesmbvhzjgj.supabase.co",
-    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_bAxQiodzBhI6bV7lmo9gMQ_Hlg9_Ish"
+    "SUPABASE_URL": "https://xdxdzmsztyzbnzeforxx.supabase.co",
+    "NEXT_PUBLIC_SUPABASE_URL": "https://xdxdzmsztyzbnzeforxx.supabase.co",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_HwEQqi6FXJOmWpy5eqR9-A_Zvy8_ii1"
   },
   // ------------------------------------------------------------------
   // Secrets (never here — `wrangler secret put <NAME>`), per ADR-0004
