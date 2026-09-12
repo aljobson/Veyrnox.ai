@@ -27,7 +27,7 @@ export default function Gdpr() {
             <p>We do not make decisions with legal or similarly significant effects about you solely by automated means. Content-safety filtering may block a generation; you can ask us to review a block.</p>
 
             <h2>Content provenance</h2>
-            <p>Generated outputs carry C2PA content credentials identifying them as AI-generated, as required by EU AI Act Article 50. These credentials do not contain your personal data.</p>
+            <p>We do not currently embed content credentials or provenance metadata in generated files, so no personal data of yours is carried inside an output by us. A model provider may embed its own watermark or identifier; that is outside our control and we do not add one on top.</p>
 
             <h2>Complaints</h2>
             <p>UK: Information Commissioner&rsquo;s Office, ico.org.uk. EU: your local supervisory authority. We would appreciate the chance to resolve any concern first.</p>
