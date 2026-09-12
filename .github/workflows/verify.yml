@@ -1,0 +1,36 @@
+name: verify
+
+# Supplies the `verify` required status check, previously produced by
+# verify-submodules.yml. ADR-0015 removed the submodules, so this asserts
+# they stay gone and that no MuAPI surface comes back with them.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: No submodules
+        run: |
+          set -euo pipefail
+          if [ -f .gitmodules ]; then
+            echo '.gitmodules is back — ADR-0015 removed every submodule from this repo'; exit 1
+          fi
+          if git ls-files --stage | grep -q '^160000'; then
+            echo 'a gitlink (submodule) entry is present in the index'; exit 1
+          fi
+
+      - name: No MuAPI surface in first-party code
+        run: |
+          set -euo pipefail
+          if git grep -nEi 'muapi' -- 'app' 'components' 'lib' 'middleware.js' 'packages' ':!*adr*'; then
+            echo 'MuAPI reference found outside the ADR record — see ADR-0015'; exit 1
+          fi
