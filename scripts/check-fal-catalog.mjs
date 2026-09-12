@@ -34,6 +34,12 @@ async function loadCatalog() {
     q.searchParams.set('provider', 'eq.fal');
     q.searchParams.set('active', 'eq.true');
     const res = await fetch(q, { headers: { apikey: key, Authorization: `Bearer ${key}` } });
+    if (res.status === 401 || res.status === 403) {
+        throw new Error(
+            `catalog read ${res.status} — SUPABASE_SERVICE_ROLE_KEY is wrong or truncated. ` +
+            `model_catalog is service-role only (migration 0020); the publishable key cannot read it.`
+        );
+    }
     if (!res.ok) throw new Error(`catalog read ${res.status}`);
     return res.json();
 }
