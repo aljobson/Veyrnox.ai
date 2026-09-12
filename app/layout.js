@@ -9,8 +9,8 @@ const inter = Inter({
 });
 
 export const metadata = {
-  title: 'Veyrnox — AI Image & Video Studio',
-  description: 'Veyrnox — generate AI images and videos with 200+ models. EU-hosted, C2PA-signed, credit-based.',
+  title: 'Veyrnox.ai — AI video & image, priced per generation',
+  description: 'Credit-metered AI video, image and audio generation. Every generation shows its price before you spend, and failed jobs refund automatically.',
 };
 
 export default function RootLayout({ children }) {
