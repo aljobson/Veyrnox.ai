@@ -40,9 +40,9 @@ export default function MobileCredits() {
         <div className="mt-2 flex flex-col divide-y divide-vx-border/60 rounded-2xl border border-vx-border bg-vx-panel overflow-hidden">
           {[
             { l: 'Wan 2.5 · Neon alley test',        d: -15 },
-            { l: 'MiniMax H3 · Sunset drift v2',     d: -22 },
+            { l: 'MiniMax Hailuo 02 · Sunset drift', d: -14 },
             { l: 'CCTV night · refund',              d: +15, refund: true },
-            { l: 'Nano Banana · Portrait warm',      d: -5  },
+            { l: 'Nano Banana · Portrait warm',      d: -3  },
             { l: 'Plus renewal',                     d: +1000, topup: true },
           ].map((row, i) => (
             <div key={i} className="flex items-center justify-between px-4 py-2.5">
