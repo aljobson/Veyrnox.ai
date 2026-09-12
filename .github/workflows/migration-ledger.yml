@@ -1,0 +1,104 @@
+name: migration-ledger
+
+# Every migration the database has applied must be accounted for in this
+# repository. check-migration-numbers.sh cannot see a migration applied
+# straight to the database and never committed; on 2026-09-12 that gap hid
+# four unapplied security migrations and, later, a catalog fix that existed
+# only in production. This workflow reads the live ledger and fails on it.
+#
+# Reads through the anon-callable applied_migration_names() RPC (0034), with
+# the URL and publishable key from wrangler.jsonc — both public by design.
+# No secret, and no service-role key in Actions (PR #61).
+#
+# Not a required check, deliberately. It can go red because of something
+# applied to the database outside this pull request, and blocking an
+# unrelated merge on someone else's drift is the wrong incentive. The hourly
+# run on main is the backstop: it opens one issue when drift appears.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '43 * * * *'   # hourly: drift should not wait a day to surface
+  workflow_dispatch:
+
+# Nothing by default. Each job asks for exactly what it uses, so a pull
+# request run never holds a token that can write issues.
+permissions: {}
+
+jobs:
+  ledger:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      exit: ${{ steps.check.outputs.exit }}
+      report: ${{ steps.check.outputs.report }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+
+      # Node builtins and global fetch only, so no npm install.
+      # Exit 0 = accounted for, 1 = drift, 2 = could not read the ledger.
+      - name: Compare applied migrations with the repository
+        id: check
+        run: |
+          set +e
+          node scripts/check-migration-ledger.mjs > report.txt 2>&1
+          code=$?
+          cat report.txt
+          echo "exit=$code" >> "$GITHUB_OUTPUT"
+          {
+            echo 'report<<LEDGER_REPORT_EOF'
+            cat report.txt
+            echo 'LEDGER_REPORT_EOF'
+          } >> "$GITHUB_OUTPUT"
+          {
+            echo '### Migration ledger'
+            case "$code" in
+              0) echo 'Every applied migration is accounted for.' ;;
+              1) echo '**Drift:** the database has applied migrations this tree does not account for.' ;;
+              *) echo '**Could not check:** the ledger was unreadable. This is not a pass.' ;;
+            esac
+            echo '```'
+            cat report.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit "$code"
+
+  # Only real drift on main files an issue. An outage (exit 2) already fails
+  # the run above; it must not file drift that is not there. Scoped to its
+  # own job so issues: write exists only here, only on main.
+  report-drift:
+    needs: ledger
+    if: always() && needs.ledger.outputs.exit == '1' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - name: Open one issue per episode of drift
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          REPORT: ${{ needs.ledger.outputs.report }}
+        run: |
+          # One open issue is enough; the hourly job summary shows current state.
+          # Commenting every hour would bury the signal.
+          existing=$(gh issue list --label migration-drift --state open --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            echo "Drift already tracked in #$existing"
+            exit 0
+          fi
+          gh label create migration-drift --color B60205 \
+            --description 'Applied migration missing from the repository' 2>/dev/null || true
+          printf '%s\n\n%s\n\n```\n%s\n```\n' \
+            'The database has applied migrations that main does not account for.' \
+            'Commit each missing migration under packages/db/schema/supabase/. If one was folded into another file on purpose, write its full applied name there or in the schema README. This issue stays open until someone closes it; the hourly workflow summary shows the current state.' \
+            "$REPORT" > body.md
+          gh issue create --title "Migration ledger drift — $(date -u +%Y-%m-%d)" \
+            --label migration-drift --body-file body.md

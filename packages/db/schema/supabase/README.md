@@ -68,13 +68,23 @@ never committed. `scripts/check-migration-ledger.mjs` closes that gap: feed it t
 names from `supabase_migrations.schema_migrations` and it reports any with no
 trace here.
 
+The `migration-ledger` workflow runs it on every pull request, on every push
+to main, and hourly. The hourly run on main opens a single
+`migration-drift` issue when something is missing. Run it locally too:
+
 ```bash
-node scripts/check-migration-ledger.mjs ledger.json
+node scripts/check-migration-ledger.mjs
 ```
 
-It needs the ledger as input because PostgREST does not expose the
-`supabase_migrations` schema, and CI deliberately holds no service-role key
-(PR #61). Run it whenever you apply a migration, until CI can do it.
+With no argument it reads the live ledger through the anon-callable
+`applied_migration_names()` function (0034), using the URL and publishable
+key from `wrangler.jsonc`. PostgREST does not expose `supabase_migrations`,
+and CI deliberately holds no service-role key since PR #61, so that function
+is the only ledger read the anon role has. It returns names only. Pass a JSON
+file of names instead to check offline.
+
+It exits 0 when everything is accounted for, 1 on drift, and 2 when the
+ledger could not be read, so an outage never reads as a pass.
 
 A migration is accounted for when a file carries its descriptive name — the
 number is ignored, because files were renumbered to apply order while the

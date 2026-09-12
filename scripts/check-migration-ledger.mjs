@@ -17,14 +17,20 @@
  *     is how a deliberate fold is recorded, so a follow-up merged into an
  *     earlier file is not reported as missing.
  *
- * Usage — the ledger comes from wherever has database access:
+ * Usage:
  *
- *   select name from supabase_migrations.schema_migrations order by version
+ *   node scripts/check-migration-ledger.mjs             # fetch the live ledger
+ *   node scripts/check-migration-ledger.mjs ledger.json # or read a saved one
  *
- *   node scripts/check-migration-ledger.mjs ledger.json
+ * With no argument it calls the anon-callable applied_migration_names() RPC
+ * (migration 0034). The Supabase URL and publishable key come from
+ * SUPABASE_URL / SUPABASE_ANON_KEY if set, otherwise from wrangler.jsonc —
+ * both are public by design, so CI needs no secret. A file argument is a JSON
+ * array of names, for offline use.
  *
- * where ledger.json is a JSON array of those names. Exit 0 when every entry
- * is accounted for, 1 otherwise.
+ * Exit 0 when every entry is accounted for, 1 when something is missing, 2
+ * when the ledger could not be read. The distinction matters in CI: an
+ * outage must not look like drift, and must not look like a pass either.
  */
 
 import { readdirSync, readFileSync } from 'node:fs';
@@ -52,6 +58,55 @@ export function unaccounted(appliedNames, repoFiles) {
     });
 }
 
+/**
+ * Parse wrangler.jsonc. Two JSONC features appear there: full-line // comments
+ * (dropped whole, so the '//' inside URLs is never touched) and a trailing
+ * comma that the dropped comment block leaves dangling before the closing
+ * brace. No string value in that file contains ',}' or ',]', so the comma
+ * rule cannot corrupt one.
+ */
+export function parseJsonc(text) {
+    const withoutComments = String(text)
+        .split('\n')
+        .filter((line) => !line.trimStart().startsWith('//'))
+        .join('\n');
+    return JSON.parse(withoutComments.replace(/,(\s*[}\]])/g, '$1'));
+}
+
+/** PostgREST returns RETURNS TABLE(name) as [{name}]; reduce to names. */
+export function namesFromRpc(rows) {
+    if (!Array.isArray(rows)) throw new Error('ledger RPC did not return an array');
+    return rows.map((r) => {
+        if (!r || typeof r.name !== 'string') throw new Error('ledger RPC row has no name');
+        return r.name;
+    });
+}
+
+function supabaseConfig(root) {
+    let url = process.env.SUPABASE_URL;
+    let key = process.env.SUPABASE_ANON_KEY;
+    if (!url || !key) {
+        const vars = parseJsonc(readFileSync(join(root, 'wrangler.jsonc'), 'utf8')).vars || {};
+        url = url || vars.SUPABASE_URL;
+        key = key || vars.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    }
+    if (!url || !key) throw new Error('no Supabase URL or publishable key in env or wrangler.jsonc');
+    return { url, key };
+}
+
+async function fetchLedger({ url, key }) {
+    const res = await fetch(new URL('/rest/v1/rpc/applied_migration_names', url), {
+        method: 'POST',
+        headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+        body: '{}',
+        signal: AbortSignal.timeout(15000),
+    });
+    if (!res.ok) {
+        throw new Error(`ledger RPC answered ${res.status} — is migration 0034 applied?`);
+    }
+    return namesFromRpc(await res.json());
+}
+
 function readSchemaFiles(root) {
     const out = [];
     for (const dir of ['packages/db/schema', 'packages/db/schema/supabase']) {
@@ -67,13 +122,18 @@ function readSchemaFiles(root) {
 
 const isMain = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1];
 if (isMain) {
+    const root = join(dirname(fileURLToPath(import.meta.url)), '..');
     const ledgerPath = process.argv[2];
-    if (!ledgerPath) {
-        console.error('usage: node scripts/check-migration-ledger.mjs <ledger.json>');
+    let applied;
+    try {
+        applied = ledgerPath
+            ? JSON.parse(readFileSync(ledgerPath, 'utf8'))
+            : await fetchLedger(supabaseConfig(root));
+    } catch (err) {
+        // Exit 2, not 1: CI should show "could not check", never "drift" or "OK".
+        console.error(`could not read the migration ledger: ${err && err.message}`);
         process.exit(2);
     }
-    const applied = JSON.parse(readFileSync(ledgerPath, 'utf8'));
-    const root = join(dirname(fileURLToPath(import.meta.url)), '..');
     const missing = unaccounted(applied, readSchemaFiles(root));
     if (missing.length === 0) {
         console.log(`migration ledger OK — all ${applied.length} applied migrations accounted for`);
