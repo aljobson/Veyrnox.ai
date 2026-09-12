@@ -222,7 +222,7 @@ export const FAQ = [
   { q: 'What is Veyrnox.ai?',
     a: 'Veyrnox.ai is a credit-metered AI image, video and audio generation gateway. One balance across the whole catalog, price visible on the button, refund on failure.' },
   { q: 'Which models can I run?',
-    a: 'Nano Banana, Wan 2.5, Kling 2.6 Pro, Kling 3.0 I2V, MiniMax H3, Seedream 4, Flux.2 [pro], Veo 3.1 (◆ premium, gated), and ACE Step for audio. The full catalog is live on Pricing.' },
+    a: 'Nano Banana, Wan 2.5, Kling 2.6 Pro, Kling 3.0 I2V, MiniMax Hailuo 02, Seedream 4, Flux.2 [pro], Veo 3.1 (◆ premium, gated) and Veo 3.1 Fast, and ACE Step for audio. The full catalog is live on Pricing.' },
   { q: 'How do credits work?',
     a: 'Every generation names its cost on the button before you press it. Credits debit at submit. If the job fails at any point the credits return to your balance automatically.' },
   { q: 'Do I get free credits when I sign up?',
@@ -313,7 +313,7 @@ export const CREATOR_PROJECTS = [
 // catalog entry so a follow-up wiring can link them by id.
 export const MORE_FEATURES = [
   { group: 'Product',   items: ['Explore', 'Models', 'Pricing', 'Presets', 'Status'] },
-  { group: 'Models',    items: ['Wan 2.5', 'Nano Banana', 'Kling 2.6 Pro', 'Kling 3.0 I2V', 'MiniMax H3', 'Seedream 4', 'Flux.2 [pro]', 'Veo 3.1 ◆', 'ACE Step'] },
+  { group: 'Models',    items: ['Wan 2.5', 'Nano Banana', 'Kling 2.6 Pro', 'Kling 3.0 I2V', 'MiniMax Hailuo 02', 'Seedream 4', 'Flux.2 [pro]', 'Veo 3.1 ◆', 'Veo 3.1 Fast', 'ACE Step'] },
   { group: 'Tools',     items: ['Image Generator', 'Video Generator', 'Image-to-Video', 'Audio', 'Upscaler'] },
   // Items are either a plain string (static label — page not shipped yet)
   // or { label, href } (real route). About / Contact stay static until

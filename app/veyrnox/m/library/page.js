@@ -3,8 +3,8 @@ import { Chip } from '../../_components/Chip';
 
 const JOBS = [
   { name: 'Neon alley test',       model: 'Wan 2.5',           credits: -15, status: 'done',    when: '2m ago',  bg: 'linear-gradient(135deg,#1b0632,#5a0e6a,#e4318f)' },
-  { name: 'Sunset drift v2',       model: 'MiniMax H3',        credits: -22, status: 'done',    when: '14m ago', bg: 'linear-gradient(135deg,#2b1a0a,#7a4a1e,#f0b060)' },
-  { name: 'Product cut — coffee',  model: 'Seedance 2.0 Fast', credits: -5,  status: 'running', when: 'now',     bg: 'linear-gradient(135deg,#0a1a2c,#144a7a,#3ec1e8)' },
+  { name: 'Sunset drift v2',       model: 'MiniMax Hailuo 02', credits: -14, status: 'done',    when: '14m ago', bg: 'linear-gradient(135deg,#2b1a0a,#7a4a1e,#f0b060)' },
+  { name: 'Product cut — coffee',  model: 'Seedream v4',       credits: -3,  status: 'running', when: 'now',     bg: 'linear-gradient(135deg,#0a1a2c,#144a7a,#3ec1e8)' },
   { name: 'CCTV night hero',       model: 'Wan 2.5',           credits: +15, status: 'failed',  when: '2h ago',  bg: 'linear-gradient(180deg,#08120b,#0e3a1e,#2ea258)' },
 ];
 

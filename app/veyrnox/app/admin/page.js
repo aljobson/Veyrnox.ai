@@ -12,8 +12,8 @@ const BREAKERS = [
   { model: 'Wan 2.5',           state: 'ok',     latency: '18.2s', failure: '1.8%' },
   { model: 'Veo 3.1',           state: 'ok',     latency: '42.1s', failure: '3.1%' },
   { model: 'Kling 3.0',         state: 'degraded', latency: '58.4s', failure: '6.7%' },
-  { model: 'Seedance 2.0 Fast', state: 'ok',     latency: '9.2s',  failure: '0.9%' },
-  { model: 'MiniMax H3',        state: 'ok',     latency: '22.8s', failure: '2.4%' },
+  { model: 'Flux.2 [pro]',      state: 'ok',     latency: '4.6s',  failure: '0.9%' },
+  { model: 'MiniMax Hailuo 02', state: 'ok',     latency: '22.8s', failure: '2.4%' },
   { model: 'Nano Banana',       state: 'ok',     latency: '3.1s',  failure: '0.4%' },
 ];
 
