@@ -64,6 +64,15 @@ function rfc3986(s) {
     return encodeURIComponent(s).replace(/[!'()*]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`);
 }
 
+/**
+ * True when every credential putObject needs is present. Callers that
+ * mutate state before uploading should check this first and refuse the
+ * request, rather than discovering a missing secret halfway through.
+ */
+export function isConfigured(cfg) {
+    return Boolean(cfg && cfg.accountId && cfg.accessKeyId && cfg.secretAccessKey && cfg.bucket);
+}
+
 /** @returns {{accountId, accessKeyId, secretAccessKey, bucket}} */
 export function envConfig() {
     return {

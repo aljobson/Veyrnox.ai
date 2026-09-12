@@ -12,7 +12,7 @@
 
 import { NextResponse } from 'next/server';
 import { rpc, envConfig } from '../../../../packages/db/supabase-client.js';
-import { deleteObject, envConfig as r2EnvConfig } from '../../../../packages/adapters/r2.js';
+import { deleteObject, isConfigured as r2IsConfigured, envConfig as r2EnvConfig } from '../../../../packages/adapters/r2.js';
 
 const BATCH = 100;
 
@@ -83,7 +83,7 @@ export async function POST(req) {
 
     const cfg = envConfig();
     const r2cfg = r2EnvConfig();
-    if (!cfg.supabaseUrl || !cfg.serviceRoleKey || !r2cfg.accountId) {
+    if (!cfg.supabaseUrl || !cfg.serviceRoleKey || !r2IsConfigured(r2cfg)) {
         return NextResponse.json({ error: 'not_configured' }, { status: 503 });
     }
 
