@@ -40,4 +40,4 @@ Ultra is the only tier that sells at exactly the reference rate.
   daily dep-audit should include a fal price re-check (follow-up).
 - Landing/pricing tiles read `/api/catalog` live; `app/veyrnox/_lib/tokens.js`
   fallback credits need a sync (design peer).
-- Migration `0018_floor_pricing_and_veo_fast.sql`.
+- Migration `0020_floor_pricing_and_veo_fast.sql` (renumbered from `0018_*` to match apply order; see `packages/db/schema/supabase/README.md`).

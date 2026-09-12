@@ -41,6 +41,9 @@ jobs:
             echo 'console.log of a secret-shaped value found'; exit 1
           fi
 
+      - name: Migration numbering
+        run: ./scripts/check-migration-numbers.sh
+
       - name: Unit tests
         run: npm test
 
