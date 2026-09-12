@@ -43,6 +43,30 @@ Retrieve from the Supabase dashboard → Settings → API and put into `.env.loc
 - `app/api/webhook/supabase/route.js` — receives `user.created` events, inserts a `users` row, emits a 50-credit `grant:signup` via `Ledger.grant`
 - Deprecation banner on `app/api/session/muapi/route.js`
 
+## Security advisors
+
+`get_advisors(type: "security")` should come back with only the items below.
+Anything else is new and wants triage.
+
+**Dashboard-only, still open.** Leaked password protection is disabled.
+Supabase checks candidate passwords against HaveIBeenPwned when it is on;
+today the project enforces only the 8-character minimum. There is no SQL or
+MCP route to this — turn it on under Authentication → Policies → Password
+protection.
+
+**Deliberate, expected to stay flagged.** `catalog_watch()` is callable by
+`anon`: the fal catalog watcher in GitHub Actions reads it with
+`SUPABASE_ANON_KEY` so CI never holds the service-role key (PR #61), and
+ADR-0014 declares provider costs public. Worth re-reading that ADR before
+accepting it again, because the RPC also returns `provider_endpoint`, which
+`0028_relock_model_catalog_from_anon` withholds from the same role.
+
+**Informational, correct as-is.** `public.events` and
+`public.funnel_dropoff_alert_log` have RLS on with no policies. That denies
+every role except `service_role` and the definer functions, which is the
+intent — both tables are wallet-product leftovers and have never held a row
+in this project.
+
 ## Migrating to Frankfurt later
 
 Before Slice 9 (real users), migrate this project's schema to a Frankfurt project:
