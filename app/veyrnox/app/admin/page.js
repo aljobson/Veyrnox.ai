@@ -1,69 +1,128 @@
+'use client';
+
+/**
+ * Ops dashboard. Every number here comes from /api/v1/admin/metrics, which
+ * requires a verified session AND users.is_admin. A non-admin sees the
+ * refusal and nothing else — there is no placeholder data to leak, because
+ * there is no placeholder data.
+ *
+ * Grant access deliberately:
+ *   update public.users set is_admin = true where email = '<person>';
+ */
+
+import { useCallback, useEffect, useState } from 'react';
 import { AppNav } from '../../_components/NavBar';
 import { Chip } from '../../_components/Chip';
+import { gatewayFetch, GatewayError } from '../../_lib/gateway';
 
-const KPIS = [
-  { label: 'Active users · 24h',   value: '3,124',  delta: '+8.2%', tone: 'accent' },
-  { label: 'Credits burned · 24h', value: '148,220', delta: '+11.4%', tone: 'money' },
-  { label: 'Failure rate',         value: '2.1%',   delta: '−0.4pp', tone: 'accent' },
-  { label: 'Refunds · 24h',        value: '3,110 cr', delta: '−7.9%', tone: 'accent' },
-];
+const nf = new Intl.NumberFormat('en-US');
 
-const BREAKERS = [
-  { model: 'Wan 2.5',           state: 'ok',     latency: '18.2s', failure: '1.8%' },
-  { model: 'Veo 3.1',           state: 'ok',     latency: '42.1s', failure: '3.1%' },
-  { model: 'Kling 3.0',         state: 'degraded', latency: '58.4s', failure: '6.7%' },
-  { model: 'Flux.2 [pro]',      state: 'ok',     latency: '4.6s',  failure: '0.9%' },
-  { model: 'MiniMax Hailuo 02', state: 'ok',     latency: '22.8s', failure: '2.4%' },
-  { model: 'Nano Banana',       state: 'ok',     latency: '3.1s',  failure: '0.4%' },
-];
+function pct(part, whole) {
+  if (!whole) return '—';
+  return `${((part / whole) * 100).toFixed(1)}%`;
+}
 
 export default function Admin() {
+  const [metrics, setMetrics] = useState(null);
+  const [state, setState] = useState('loading');
+
+  const load = useCallback(async () => {
+    setState('loading');
+    try {
+      const m = await gatewayFetch('/admin/metrics');
+      setMetrics(m);
+      setState('ready');
+    } catch (err) {
+      if (err instanceof GatewayError && err.status === 403) setState('forbidden');
+      else if (err instanceof GatewayError && err.status === 401) setState('unauthenticated');
+      else setState('error');
+    }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
   return (
     <div className="min-h-dvh">
-      <AppNav balance={823} active="explore" />
+      <AppNav active="explore" />
 
       <section className="max-w-[1400px] mx-auto px-8 pt-10 pb-6">
-        <Chip tone="danger" className="mb-3">ADMIN · OPS DASHBOARD</Chip>
-        <h1 className="text-[36px] font-black tracking-[-0.02em]">Live health</h1>
+        <Chip tone="danger" className="mb-3">ADMIN · OPS</Chip>
+        <h1 className="text-[36px] font-black tracking-[-0.02em]">Last 24 hours</h1>
 
-        <div className="mt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
-          {KPIS.map((k) => (
-            <div key={k.label} className="rounded-[10px] border border-vx-border bg-vx-panel p-4">
-              <div className="font-vx-mono text-[9.5px] tracking-[0.12em] text-vx-fg-muted">{k.label.toUpperCase()}</div>
-              <div className="mt-1 font-vx-mono text-[26px] font-bold vx-num">{k.value}</div>
-              <div className={`font-vx-mono text-[11px] font-bold mt-0.5 vx-num ${
-                k.tone === 'money' ? 'text-vx-money' : 'text-vx-accent'
-              }`}>{k.delta}</div>
-            </div>
-          ))}
-        </div>
+        {state !== 'ready' && (
+          <p className="mt-5 text-[15px] text-vx-fg-body max-w-[540px]">
+            {state === 'loading' && 'Loading…'}
+            {state === 'forbidden' && 'This account is not an administrator.'}
+            {state === 'unauthenticated' && 'Sign in with an administrator account to view operations metrics.'}
+            {state === 'error' && 'Metrics are unavailable right now.'}
+          </p>
+        )}
+
+        {state === 'ready' && metrics && (
+          <>
+            <Kpis m={metrics} />
+            <ModelTable rows={metrics.models || []} />
+            <p className="mt-6 font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted">
+              READ FROM JOBS AND THE LEDGER AT {new Date(metrics.generated_at).toISOString().replace('T', ' ').slice(0, 19)} UTC
+            </p>
+          </>
+        )}
       </section>
+    </div>
+  );
+}
 
-      <section className="max-w-[1400px] mx-auto px-8 pb-16">
-        <h2 className="text-lg font-black tracking-[-0.02em] mb-3">Model circuit breakers</h2>
-        <div className="rounded-[10px] border border-vx-border bg-vx-panel overflow-hidden">
-          <div className="grid grid-cols-[1fr_120px_140px_140px_120px] px-5 py-3 border-b border-vx-border font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted">
-            <div>MODEL</div><div>STATE</div><div className="text-right">P95 LATENCY</div><div className="text-right">FAILURE RATE</div><div className="text-right">ACTION</div>
+function Kpis({ m }) {
+  const cards = [
+    { label: 'Users who generated', value: nf.format(m.generating_users ?? 0), tone: 'accent' },
+    { label: 'Generations', value: nf.format(m.jobs_total ?? 0), tone: 'accent' },
+    { label: 'Credits debited', value: nf.format(m.credits_debited ?? 0), tone: 'money' },
+    { label: 'Credits refunded', value: nf.format(m.credits_refunded ?? 0), tone: 'money' },
+    { label: 'Failed or refunded', value: pct(m.jobs_failed ?? 0, m.jobs_total ?? 0), tone: 'accent' },
+  ];
+  return (
+    <div className="mt-5 grid grid-cols-2 md:grid-cols-5 gap-3">
+      {cards.map((c) => (
+        <div key={c.label} className="rounded-[10px] border border-vx-border bg-vx-panel p-4">
+          <div className="font-vx-mono text-[9.5px] tracking-[0.12em] text-vx-fg-muted">{c.label.toUpperCase()}</div>
+          <div className={`mt-1 font-vx-mono text-[26px] font-bold vx-num ${c.tone === 'money' ? 'text-vx-money' : ''}`}>
+            {c.value}
           </div>
-          {BREAKERS.map((b) => (
-            <div key={b.model} className="grid grid-cols-[1fr_120px_140px_140px_120px] items-center px-5 py-3 border-b border-vx-border/60 last:border-b-0">
-              <div className="text-sm font-bold">{b.model}</div>
-              <div>
-                <span className={`font-vx-mono text-[10px] tracking-[0.1em] font-bold ${
-                  b.state === 'ok' ? 'text-vx-accent' : 'text-vx-money'
-                }`}>{b.state.toUpperCase()}</span>
-              </div>
-              <div className="text-right font-vx-mono text-sm vx-num">{b.latency}</div>
-              <div className="text-right font-vx-mono text-sm vx-num">{b.failure}</div>
-              <div className="text-right">
-                <button className="font-vx-mono text-[10px] tracking-[0.1em] font-bold text-vx-danger hover:brightness-110">
-                  OPEN BREAKER
-                </button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ModelTable({ rows }) {
+  return (
+    <div className="mt-8">
+      <h2 className="text-lg font-black tracking-[-0.02em] mb-3">By model</h2>
+      <div className="rounded-[10px] border border-vx-border bg-vx-panel overflow-x-auto">
+        <div className="min-w-[720px]">
+          <div className="grid grid-cols-[1fr_110px_110px_130px_150px] px-5 py-3 border-b border-vx-border font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted">
+            <div>MODEL</div>
+            <div className="text-right">JOBS</div>
+            <div className="text-right">STORED</div>
+            <div className="text-right">FAILED</div>
+            <div className="text-right">P95 TO FINISH</div>
+          </div>
+          {rows.length === 0 && (
+            <div className="px-5 py-4 text-sm text-vx-fg-muted">No generations in this window.</div>
+          )}
+          {rows.map((r) => (
+            <div key={r.model_id} className="grid grid-cols-[1fr_110px_110px_130px_150px] items-center px-5 py-3 border-b border-vx-border/60 last:border-b-0">
+              <div className="text-sm font-bold truncate">{r.model_id}</div>
+              <div className="text-right font-vx-mono text-sm vx-num">{nf.format(r.jobs)}</div>
+              <div className="text-right font-vx-mono text-sm vx-num">{nf.format(r.stored)}</div>
+              <div className="text-right font-vx-mono text-sm vx-num">{nf.format(r.failed)}</div>
+              <div className="text-right font-vx-mono text-sm vx-num">
+                {r.p95_seconds == null ? '—' : `${r.p95_seconds}s`}
               </div>
             </div>
           ))}
         </div>
-      </section>
+      </div>
     </div>
   );
 }
