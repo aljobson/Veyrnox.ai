@@ -18,7 +18,7 @@
 import { NextResponse } from 'next/server';
 import { verifyWebhookSignature } from '../../../../packages/adapters/fal.js';
 import { rpc, envConfig } from '../../../../packages/db/supabase-client.js';
-import { copyUrlToR2, envConfig as r2EnvConfig } from '../../../../packages/adapters/r2.js';
+import { copyUrlToR2, isConfigured as r2IsConfigured, envConfig as r2EnvConfig } from '../../../../packages/adapters/r2.js';
 
 const SOURCE = 'fal';
 
@@ -88,7 +88,15 @@ export async function POST(req) {
     // FAL_WEBHOOK_USER_ID is our own fal user id. Without it we cannot tell
     // our callbacks from any other fal tenant's, so fail closed.
     const expectedUserId = process.env.FAL_WEBHOOK_USER_ID;
-    if (!cfg.supabaseUrl || !cfg.serviceRoleKey || !expectedUserId) {
+    // R2 is checked here, before anything is consumed. A success delivery
+    // cannot be completed without it, and every step below mutates state:
+    // the dedup row marks the delivery used and job_succeeded moves the job
+    // out of SUBMITTED. Discovering the missing secret after that leaves a
+    // SUCCEEDED job with no asset, which the sweep refunds — throwing away
+    // a generation fal actually performed and we actually paid for.
+    // Refusing up front keeps the delivery replayable, so the retry after
+    // an operator fixes the config still lands the asset.
+    if (!cfg.supabaseUrl || !cfg.serviceRoleKey || !expectedUserId || !r2IsConfigured(r2EnvConfig())) {
         return NextResponse.json({ error: 'not_configured' }, { status: 503 });
     }
 

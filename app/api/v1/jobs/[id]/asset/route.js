@@ -14,7 +14,7 @@
 
 import { NextResponse } from 'next/server';
 import { rpc, envConfig } from '../../../../../../packages/db/supabase-client.js';
-import { presignGetUrl, envConfig as r2EnvConfig } from '../../../../../../packages/adapters/r2.js';
+import { presignGetUrl, isConfigured as r2IsConfigured, envConfig as r2EnvConfig } from '../../../../../../packages/adapters/r2.js';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 // CLAUDE.md R2 rule: "Presigned URL TTL <=15 min. Longer TTLs need an ADR."
@@ -31,7 +31,7 @@ export async function GET(req, { params }) {
 
     const cfg = envConfig();
     const r2cfg = r2EnvConfig();
-    if (!cfg.supabaseUrl || !cfg.serviceRoleKey || !r2cfg.accountId) {
+    if (!cfg.supabaseUrl || !cfg.serviceRoleKey || !r2IsConfigured(r2cfg)) {
         return NextResponse.json({ error: 'not_configured' }, { status: 503 });
     }
 
