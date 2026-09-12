@@ -24,6 +24,10 @@
   //   PUBLIC_HOST                 https origin fal calls back on (/api/webhook/fal)
   //   R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET
   //                               SigV4 R2 client (packages/adapters/r2.js)
+  //   KIE_API_KEY, KIE_WEBHOOK_HMAC_KEY
+  //                               kie.ai submit + callback HMAC (ADR-0018)
+  //   OPENROUTER_API_KEY, OPENROUTER_WEBHOOK_SECRET
+  //                               OpenRouter video submit + webhook signature (ADR-0018)
   //   ADMIN_REAP_TOKEN            /api/admin/reap-assets shared secret (ADR-0008)
   //   UPLOAD_PROXY_ALLOWED_HOSTS  legacy upload proxy allowlist (docs/UPLOAD_PROXY_CONFIG.md)
   //

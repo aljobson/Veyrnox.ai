@@ -21,6 +21,8 @@
 import { NextResponse } from 'next/server';
 import { rpc, select, envConfig, SupabaseError } from '../../../../packages/db/supabase-client.js';
 import { submitJob } from '../../../../packages/adapters/fal.js';
+import * as kie from '../../../../packages/adapters/kie.js';
+import * as openrouter from '../../../../packages/adapters/openrouter.js';
 import { durationSpec, shapeForProvider } from '../../../../lib/providerDuration.js';
 
 // Constrain idempotency keys to a safe printable range.
@@ -76,6 +78,35 @@ function validateInputs(inputs) {
     return { ok: true };
 }
 
+// Per-provider submit. Each entry: the secret it needs, a pre-debit check that
+// the inputs map onto a request the catalog price covers, and the submit call.
+const PROVIDERS = {
+    fal: {
+        key: () => process.env.FAL_KEY,
+        check: (modelRow, inputs) => (inputs.duration_seconds && inputs.duration_seconds !== UNIT_SECONDS && !durationSpec(modelRow)
+            ? { ok: false, error: 'duration_not_supported' } : { ok: true }),
+        submit: (job, modelRow, apiKey, publicHost) => submitJob(
+            { ...job, inputs: shapeForProvider(modelRow, job.inputs) },
+            { falKey: apiKey, webhookBaseUrl: new URL('/api/webhook/fal', publicHost).toString() },
+        ),
+    },
+    kie: {
+        key: () => process.env.KIE_API_KEY,
+        check: (modelRow, inputs) => {
+            const target = kie.parseEndpoint(modelRow.provider_endpoint);
+            return target ? kie.buildRequest(target, inputs) : { ok: false, error: 'provider_unsupported' };
+        },
+        submit: (job, _modelRow, apiKey, publicHost) => kie.submitTask(job,
+            { apiKey, callbackUrl: new URL('/api/webhook/kie', publicHost).toString() }),
+    },
+    openrouter: {
+        key: () => process.env.OPENROUTER_API_KEY,
+        check: (modelRow, inputs) => openrouter.buildRequest(modelRow.provider_endpoint, inputs),
+        submit: (job, _modelRow, apiKey, publicHost) => openrouter.submitVideo(job,
+            { apiKey, callbackUrl: new URL('/api/webhook/openrouter', publicHost).toString() }),
+    },
+};
+
 /** Credits owed: catalog price is per UNIT_SECONDS of video, per single image/audio output. */
 function priceFor(modelRow, inputs) {
     const isVideo = typeof modelRow.modality === 'string' && modelRow.modality.endsWith('video');
@@ -88,9 +119,8 @@ export async function POST(req) {
     if (!authId) return NextResponse.json({ error: 'not_authenticated' }, { status: 401 });
 
     const cfg = envConfig();
-    const falKey = process.env.FAL_KEY;
     const publicHost = process.env.PUBLIC_HOST;
-    if (!cfg.supabaseUrl || !cfg.serviceRoleKey || !falKey || !publicHost) {
+    if (!cfg.supabaseUrl || !cfg.serviceRoleKey || !publicHost) {
         return NextResponse.json({ error: 'gateway_not_configured' }, { status: 503 });
     }
 
@@ -169,12 +199,15 @@ export async function POST(req) {
         return NextResponse.json({ error: 'catalog_lookup_failed' }, { status: 502 });
     }
     if (!modelRow || !modelRow.active) return NextResponse.json({ error: 'model_not_found' }, { status: 404 });
-    if (modelRow.provider !== 'fal') return NextResponse.json({ error: 'provider_unsupported' }, { status: 501 });
+    const provider = Object.prototype.hasOwnProperty.call(PROVIDERS, modelRow.provider) ? PROVIDERS[modelRow.provider] : null;
+    if (!provider) return NextResponse.json({ error: 'provider_unsupported' }, { status: 501 });
     if (modelRow.gated_flag) return NextResponse.json({ error: 'model_gated' }, { status: 402 });
-    // A longer clip is only sold where we can actually request it from fal.
-    if (inputs.duration_seconds && inputs.duration_seconds !== UNIT_SECONDS && !durationSpec(modelRow)) {
-        return NextResponse.json({ error: 'duration_not_supported' }, { status: 400 });
-    }
+    const providerKey = provider.key();
+    if (!providerKey) return NextResponse.json({ error: 'gateway_not_configured' }, { status: 503 });
+    // Refuse before the debit anything the provider request cannot express at
+    // the priced unit (a longer clip, an aspect ratio the model lacks, ...).
+    const providerCheck = provider.check(modelRow, inputs);
+    if (!providerCheck.ok) return NextResponse.json({ error: providerCheck.error }, { status: 400 });
 
     // 2. Resolve users.id from auth_id.
     let userId;
@@ -239,15 +272,13 @@ export async function POST(req) {
         return NextResponse.json({ job_id: jobId, idempotent: true, balance_after: balanceAfter });
     }
 
-    // 4. Submit to fal.
-    const webhookBaseUrl = new URL('/api/webhook/fal', publicHost).toString();
-    const falResult = await submitJob({
-        job_id: jobId,
-        provider_endpoint: modelRow.provider_endpoint,
-        inputs: shapeForProvider(modelRow, inputs),
-    }, { falKey, webhookBaseUrl });
+    // 4. Submit to the provider.
+    const submitResult = await provider.submit(
+        { job_id: jobId, provider_endpoint: modelRow.provider_endpoint, inputs },
+        modelRow, providerKey, publicHost,
+    );
 
-    if (!falResult.ok) {
+    if (!submitResult.ok) {
         // Refund immediately — fal wouldn't take the job so we owe the credits back.
         try {
             await rpc('ledger_refund', {
@@ -260,7 +291,7 @@ export async function POST(req) {
             // Log — the job stays in DEBITED and the reconcile job will flag it.
             console.error('[generations] refund-on-submit-fail failed:', err);
         }
-        console.error('[generations] fal submit failed:', falResult.error);
+        console.error('[generations] provider submit failed:', modelRow.provider, submitResult.error);
         // Don't leak upstream vendor payloads to the client — log only.
         return NextResponse.json({ error: 'provider_submit_failed' }, { status: 502 });
     }
@@ -269,8 +300,8 @@ export async function POST(req) {
     try {
         await rpc('job_submitted', {
             p_job_id: jobId,
-            p_provider: 'fal',
-            p_provider_job_id: falResult.providerJobId,
+            p_provider: modelRow.provider,
+            p_provider_job_id: submitResult.providerJobId,
         }, cfg);
     } catch (err) {
         // The debit + fal submit both succeeded — the state row is
