@@ -22,7 +22,7 @@ const CSP = [
   "font-src 'self' data:",
   // Same-origin only: generation traffic goes through /api/v1/* and assets
   // through presigned R2 URLs fetched from our own origin.
-  "connect-src 'self' https://yrqzwqywxfesmbvhzjgj.supabase.co",
+  "connect-src 'self' https://xdxdzmsztyzbnzeforxx.supabase.co",
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",
@@ -40,10 +40,10 @@ const securityHeaders = [
 
 const nextConfig = {
   env: {
-    NEXT_PUBLIC_SUPABASE_URL: 'https://yrqzwqywxfesmbvhzjgj.supabase.co',
-    NEXT_PUBLIC_SUPABASE_ANON_KEY: 'sb_publishable_bAxQiodzBhI6bV7lmo9gMQ_Hlg9_Ish',
+    NEXT_PUBLIC_SUPABASE_URL: 'https://xdxdzmsztyzbnzeforxx.supabase.co',
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: 'sb_publishable_HwEQqi6FXJOmWpy5eqR9-A_Zvy8_ii1',
     // Edge middleware bakes env at build time.
-    SUPABASE_URL: 'https://yrqzwqywxfesmbvhzjgj.supabase.co',
+    SUPABASE_URL: 'https://xdxdzmsztyzbnzeforxx.supabase.co',
   },
   async headers() {
     return [
