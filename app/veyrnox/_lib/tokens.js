@@ -19,6 +19,25 @@ export const MODELS = [
 // 10s video = exactly 2x credits. Non-negotiable.
 export const COST_MULTIPLIER_10S = 2;
 
+/**
+ * Collapse a `model_catalog.modality` to the coarse bucket the UI branches
+ * on. The catalog is fine-grained ('text-to-video', 'image-to-video',
+ * 'text-to-image', 'text-to-audio'); MODELS above is coarse, so every live
+ * catalog read has to pass through here or the live and fallback paths
+ * disagree — which is how the 10s video multiplier went missing once
+ * already.
+ *
+ * Video is tested first on purpose: 'image-to-video' contains both words,
+ * and it is a video. The default is the non-video bucket, so a modality we
+ * have never seen can never accidentally earn the 10s price multiplier.
+ */
+export function kindOf(modality) {
+  const m = String(modality || '').toLowerCase();
+  if (m.includes('video')) return 'video';
+  if (/audio|speech|tts|music/.test(m)) return 'audio';
+  return 'image';
+}
+
 // Annual discounts mirror Higgsfield's structural shape (30% / 20% / 23%).
 // Prices are Veyrnox's own — the shape is what's borrowed.
 export const PLANS = [

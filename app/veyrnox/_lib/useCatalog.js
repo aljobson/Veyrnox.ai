@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { MODELS } from './tokens';
+import { MODELS, kindOf } from './tokens';
 
 // Normalised shape shared by every consumer:
 // { id, name, kind ('video'|'image'|'audio'), credits, gated }
@@ -10,18 +10,9 @@ function fromFallback() {
   }));
 }
 
-// Catalog modalities are specific ('text-to-video', 'image-to-video',
-// 'image', ...). Collapse to the coarse kind the UI branches on so a video
-// model never loses its duration picker / 10s pricing.
-function kindOf(modality) {
-  if (/video/.test(modality)) return 'video';
-  if (/audio|tts|speech|music/.test(modality)) return 'audio';
-  return 'image';
-}
-
 function fromApi(models) {
   return models.map((m) => ({
-    id: m.id, name: m.name, kind: kindOf(String(m.modality || '')), credits: m.credits, gated: !!m.gated,
+    id: m.id, name: m.name, kind: kindOf(m.modality), credits: m.credits, gated: !!m.gated,
   }));
 }
 

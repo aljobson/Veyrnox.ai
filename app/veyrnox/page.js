@@ -18,6 +18,7 @@ import {
   FOOTER_TAGLINE,
   FOOTER_STAMP,
   MODELS as MODELS_FALLBACK,
+  kindOf,
 } from './_lib/tokens';
 import { select, envConfig } from '../../packages/db/supabase-client.js';
 
@@ -32,14 +33,6 @@ export const revalidate = 300;
  * of our own origin does not work inside the Worker and silently served
  * the hardcoded fallback prices.
  */
-function coarseKind(modality) {
-  const m = String(modality || '');
-  if (m.includes('video')) return 'video';
-  if (m.includes('image')) return 'image';
-  if (m.includes('audio') || m.includes('speech')) return 'audio';
-  return m;
-}
-
 async function loadCatalog() {
   try {
     const cfg = envConfig();
@@ -56,8 +49,9 @@ async function loadCatalog() {
       name: m.name,
       credits: m.credits_5s,
       // model_catalog.modality is fine-grained (text-to-video, image-to-video,
-      // text-to-image, text-to-audio); the page groups on a coarse bucket.
-      kind: coarseKind(m.modality),
+      // text-to-audio); the page groups on the coarse bucket and keeps the
+      // fine-grained value below for display.
+      kind: kindOf(m.modality),
       modality: m.modality,
       premium: !!m.gated_flag,
       gated: !!m.gated_flag,
