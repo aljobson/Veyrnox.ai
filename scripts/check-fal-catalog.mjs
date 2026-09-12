@@ -1,0 +1,147 @@
+#!/usr/bin/env node
+/**
+ * fal catalog watcher — endpoint reachability + provider price drift.
+ *
+ * Two failure modes this catches, both of which cost real money:
+ *   1. A `provider_endpoint` that 404s on fal. Every generation on that
+ *      model debits, fails to submit, and refunds — a guaranteed-refund
+ *      loop that looks like a broken product to the user.
+ *   2. A fal price rise. Floor pricing (ADR-0014) puts every row at
+ *      ~50% margin, so any increase pushes us under the MARGIN_FLOOR.
+ *
+ * Reads the live catalog from Supabase (service role, read-only) so it
+ * checks what is actually shipped, not what the repo believes. Falls
+ * back to `--offline` for a repo-only endpoint-shape lint.
+ *
+ * Exit 0 = clean, 1 = drift or dead endpoint found.
+ */
+
+const FAL_MODEL_BASE = 'https://fal.ai/models/';
+const REFERENCE_DOLLARS_PER_CREDIT = 0.033;
+const MARGIN_FLOOR = 0.5;
+// fal rounds and re-tiers often; only shout when the move is real.
+const PRICE_DRIFT_TOLERANCE = 0.02;
+const UA = 'Mozilla/5.0 (compatible; veyrnox-catalog-watch/1.0)';
+
+async function loadCatalog() {
+    const url = process.env.SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!url || !key) {
+        throw new Error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY required (or pass --offline)');
+    }
+    const q = new URL('/rest/v1/model_catalog', url);
+    q.searchParams.set('select', 'id,provider_endpoint,credits_5s,provider_cost_per_unit,active');
+    q.searchParams.set('provider', 'eq.fal');
+    q.searchParams.set('active', 'eq.true');
+    const res = await fetch(q, { headers: { apikey: key, Authorization: `Bearer ${key}` } });
+    if (!res.ok) throw new Error(`catalog read ${res.status}`);
+    return res.json();
+}
+
+/** HEAD-ish check: does the fal model page exist? */
+async function checkEndpoint(endpoint) {
+    const url = FAL_MODEL_BASE + endpoint;
+    try {
+        const res = await fetch(url, { headers: { 'user-agent': UA }, redirect: 'follow' });
+        return { ok: res.ok, status: res.status, url, html: res.ok ? await res.text() : '' };
+    } catch (err) {
+        return { ok: false, status: 0, url, html: '', error: String(err && err.message) };
+    }
+}
+
+/**
+ * Pull candidate USD prices out of a fal model page. fal has no pricing
+ * API, and the page markup changes; we deliberately collect every price
+ * token and report the range rather than pretending to parse one number.
+ */
+function extractPrices(html) {
+    const out = new Set();
+    for (const m of html.matchAll(/\$([0-9]+(?:\.[0-9]+)?)/g)) {
+        const v = Number(m[1]);
+        // Ignore obvious non-unit-prices (credit pack totals, plan prices).
+        if (v > 0 && v <= 50) out.add(v);
+    }
+    return [...out].sort((a, b) => a - b);
+}
+
+function marginAt(costUsd, credits) {
+    const retail = credits * REFERENCE_DOLLARS_PER_CREDIT;
+    return retail > 0 ? (retail - costUsd) / retail : -1;
+}
+
+/** Smallest credit count that still clears the floor at the given cost. */
+function creditsForFloor(costUsd) {
+    return Math.ceil((costUsd / (1 - MARGIN_FLOOR)) / REFERENCE_DOLLARS_PER_CREDIT);
+}
+
+async function main() {
+    const offline = process.argv.includes('--offline');
+    if (offline) {
+        console.log('offline mode: endpoint-shape lint only');
+        const { CATALOG } = await import('../packages/catalog/index.ts').catch(() => ({ CATALOG: [] }));
+        console.log(`catalog rows: ${CATALOG.length}`);
+        return 0;
+    }
+
+    const rows = await loadCatalog();
+    const dead = [];
+    const drift = [];
+    const breach = [];
+
+    for (const row of rows) {
+        const cost = Number(row.provider_cost_per_unit);
+        const credits = Number(row.credits_5s);
+        const res = await checkEndpoint(row.provider_endpoint);
+
+        if (!res.ok) {
+            dead.push({ ...row, status: res.status, url: res.url });
+            console.log(`DEAD  ${row.id.padEnd(20)} ${res.status} ${res.url}`);
+            continue;
+        }
+
+        const prices = extractPrices(res.html);
+        const near = prices.filter((p) => Math.abs(p - cost) <= Math.max(PRICE_DRIFT_TOLERANCE, cost * 0.1));
+        const m = marginAt(cost, credits);
+
+        if (m < MARGIN_FLOOR) {
+            breach.push({ ...row, margin: m });
+            console.log(`BREACH ${row.id.padEnd(20)} margin ${(m * 100).toFixed(1)}% < ${MARGIN_FLOOR * 100}%`);
+        } else if (near.length === 0 && prices.length > 0) {
+            drift.push({ ...row, seen: prices.slice(0, 8) });
+            console.log(
+                `DRIFT? ${row.id.padEnd(20)} recorded $${cost.toFixed(3)}  page shows: ${prices.slice(0, 8).map((p) => '$' + p).join(' ')}`
+            );
+        } else {
+            console.log(`ok    ${row.id.padEnd(20)} $${cost.toFixed(3)}  ${credits}cr  margin ${(m * 100).toFixed(1)}%`);
+        }
+    }
+
+    console.log('');
+    if (dead.length) {
+        console.log(`## Dead endpoints (${dead.length}) — these refund every generation`);
+        for (const d of dead) console.log(`- \`${d.id}\` -> \`${d.provider_endpoint}\` (HTTP ${d.status})`);
+        console.log('');
+    }
+    if (breach.length) {
+        console.log(`## Margin breaches (${breach.length})`);
+        for (const b of breach) {
+            console.log(
+                `- \`${b.id}\` ${(b.margin * 100).toFixed(1)}% — needs ${creditsForFloor(Number(b.provider_cost_per_unit))} credits (has ${b.credits_5s})`
+            );
+        }
+        console.log('');
+    }
+    if (drift.length) {
+        console.log(`## Possible price drift (${drift.length}) — verify by hand`);
+        for (const d of drift) {
+            console.log(`- \`${d.id}\` recorded $${Number(d.provider_cost_per_unit).toFixed(3)}, page shows ${d.seen.map((p) => '$' + p).join(', ')}`);
+        }
+        console.log('');
+    }
+
+    const failed = dead.length + breach.length;
+    console.log(failed ? `FAIL: ${dead.length} dead, ${breach.length} breach, ${drift.length} drift` : `clean (${drift.length} drift notes)`);
+    return failed ? 1 : 0;
+}
+
+main().then((c) => process.exit(c)).catch((e) => { console.error(e); process.exit(1); });

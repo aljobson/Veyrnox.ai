@@ -8,7 +8,7 @@ export const MODELS = [
   { id: 'seedance-2.0-fast',  name: 'Seedance 2.0 Fast',   credits: 28,   tag: 'FASTEST',                        kind: 'video' },
   { id: 'kling-2.6-pro',      name: 'Kling 2.6 Pro',       credits: 22,                                         kind: 'video' },
   { id: 'kling-3.0-i2v',      name: 'Kling 3.0 · I2V',     credits: 31,  tag: '4K',                             kind: 'video' },
-  { id: 'minimax-h3',         name: 'MiniMax H3',          credits: 19,                                         kind: 'video' },
+  { id: 'minimax-hailuo-02',  name: 'MiniMax Hailuo 02',   credits: 14,                                         kind: 'video' },
   { id: 'veo-3.1',            name: 'Veo 3.1',             credits: 122, tag: 'PREMIUM',    premium: true, gated: true, kind: 'video' },
   { id: 'veo-3.1-fast',       name: 'Veo 3.1 Fast',        credits: 46,  tag: 'NEW',                            kind: 'video' },
   { id: 'nano-banana',        name: 'Nano Banana',         credits: 4,                                          kind: 'image' },
@@ -115,7 +115,7 @@ export const PRESET_CATEGORIES = ['ALL', 'CINEMATIC', 'UGC', 'VFX', 'ADS'];
 export const PRESETS = [
   { id: 'crowd-surf', name: 'CROWD SURF',   model: 'Seedance 2.0 Fast', credits: 28, category: 'UGC',        bg: 'linear-gradient(135deg,#0e2b3c 0%,#0a5a70 55%,#2ec8b3 100%)', views: '12.4k', cached: true, badge: 'CACHED' },
   { id: 'cctv-night', name: 'CCTV NIGHT',   model: 'Wan 2.5',           credits: 16, category: 'CINEMATIC',  bg: 'linear-gradient(180deg,#08120b 0%,#0e3a1e 60%,#2ea258 100%)', views: '8.7k',  cached: true, badge: 'CACHED' },
-  { id: 'sunset-drift',name: 'SUNSET DRIFT', model: 'MiniMax H3',        credits: 19, category: 'CINEMATIC',  bg: 'linear-gradient(135deg,#2b1a0a 0%,#7a4a1e 60%,#f0b060 100%)', views: '9.1k',  cached: false },
+  { id: 'sunset-drift',name: 'SUNSET DRIFT', model: 'MiniMax Hailuo 02', credits: 14, category: 'CINEMATIC',  bg: 'linear-gradient(135deg,#2b1a0a 0%,#7a4a1e 60%,#f0b060 100%)', views: '9.1k',  cached: false },
   { id: 'neon-alley', name: 'NEON ALLEY',   model: 'Kling 2.6 Pro',     credits: 22, category: 'VFX',        bg: 'linear-gradient(135deg,#1b0632 0%,#5a0e6a 55%,#e4318f 100%)', views: '5.8k',  cached: true, badge: 'CACHED' },
   { id: 'warm-portrait',name: 'WARM PORTRAIT',model: 'Nano Banana',      credits: 4,  category: 'UGC',        bg: 'linear-gradient(160deg,#2c1a12 0%,#7a3520 60%,#c9713f 100%)', views: '2.9k' },
   { id: 'sports-cut', name: 'SPORTS CUT',   model: 'Seedance 2.0 Fast', credits: 28, category: 'ADS',        bg: 'linear-gradient(135deg,#0a1a2c 0%,#144a7a 60%,#3ec1e8 100%)', views: '6.2k',  cached: true, badge: 'CACHED' },
