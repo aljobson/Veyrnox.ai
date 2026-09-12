@@ -48,11 +48,32 @@ Retrieve from the Supabase dashboard → Settings → API and put into `.env.loc
 `get_advisors(type: "security")` should come back with only the items below.
 Anything else is new and wants triage.
 
-**Dashboard-only, still open.** Leaked password protection is disabled.
-Supabase checks candidate passwords against HaveIBeenPwned when it is on;
-today the project enforces only the 8-character minimum. There is no SQL or
-MCP route to this — turn it on under Authentication → Policies → Password
-protection.
+**Still open, no SQL or MCP route.** Leaked password protection is disabled.
+With it on, Supabase checks each new password against HaveIBeenPwned at
+sign-up and password change. Today nothing checks against a breach corpus:
+the app's 8-character rule is client-side (`AuthGate.jsx`) and Supabase
+applies its own server-side minimum, but both only measure length. `password`
+is a registrable password right now.
+
+Enable it with one Management API call — `<token>` is a personal access
+token from your Supabase account settings, not the service-role key:
+
+```bash
+PROJECT_REF=yrqzwqywxfesmbvhzjgj
+curl -X PATCH "https://api.supabase.com/v1/projects/$PROJECT_REF/config/auth" \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"password_hibp_enabled": true}'
+```
+
+The dashboard can do it too, under
+[password strength and leaked password protection](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection).
+The menu path is deliberately not written down here: Supabase has moved this
+setting between sections across dashboard versions, and a stale path sends
+the reader hunting. The API call above does not drift.
+
+Confirm either way with `get_advisors(type: "security")` — the
+`auth_leaked_password_protection` warning should disappear.
 
 **Deliberate, expected to stay flagged.** `catalog_watch()` is callable by
 `anon`: the fal catalog watcher in GitHub Actions reads it with
