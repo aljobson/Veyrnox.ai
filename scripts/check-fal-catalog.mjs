@@ -30,7 +30,7 @@ async function loadCatalog() {
         throw new Error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY required (or pass --offline)');
     }
     const q = new URL('/rest/v1/model_catalog', url);
-    q.searchParams.set('select', 'id,provider_endpoint,credits_5s,provider_cost_per_unit,active');
+    q.searchParams.set('select', 'id,provider_endpoint,credits_5s,provider_cost_per_unit,cost_unit,billing_seconds,active');
     q.searchParams.set('provider', 'eq.fal');
     q.searchParams.set('active', 'eq.true');
     const res = await fetch(q, { headers: { apikey: key, Authorization: `Bearer ${key}` } });
@@ -57,17 +57,37 @@ async function checkEndpoint(endpoint) {
 
 /**
  * Pull candidate USD prices out of a fal model page. fal has no pricing
- * API, and the page markup changes; we deliberately collect every price
- * token and report the range rather than pretending to parse one number.
+ * API and the markup changes, so we collect every price token and let
+ * the caller decide which unit applies.
+ *
+ * Credit-pack and plan prices ($1 / $2 / $15 / $24 ...) pollute the set,
+ * so drop round dollar amounts >= $1 — no per-unit fal rate is a whole
+ * dollar, and the expensive video rows are matched on their per-second
+ * rate rather than the clip total.
  */
 function extractPrices(html) {
     const out = new Set();
     for (const m of html.matchAll(/\$([0-9]+(?:\.[0-9]+)?)/g)) {
         const v = Number(m[1]);
-        // Ignore obvious non-unit-prices (credit pack totals, plan prices).
-        if (v > 0 && v <= 50) out.add(v);
+        if (v <= 0 || v > 50) continue;
+        if (v >= 1 && Number.isInteger(v)) continue; // credit packs / plans
+        out.add(v);
     }
     return [...out].sort((a, b) => a - b);
+}
+
+/**
+ * The comparison unit. For per-second rows the page quotes a rate, so we
+ * divide our recorded total by billing_seconds before matching — this is
+ * exactly the mistake migration 0021 had to undo.
+ */
+function comparisonRate(row) {
+    const total = Number(row.provider_cost_per_unit);
+    if (row.cost_unit === 'per_second') {
+        const secs = Number(row.billing_seconds) || 5;
+        return { rate: total / secs, unit: `/s x ${secs}s`, total };
+    }
+    return { rate: total, unit: 'per generation', total };
 }
 
 function marginAt(costUsd, credits) {
@@ -106,19 +126,22 @@ async function main() {
         }
 
         const prices = extractPrices(res.html);
-        const near = prices.filter((p) => Math.abs(p - cost) <= Math.max(PRICE_DRIFT_TOLERANCE, cost * 0.1));
-        const m = marginAt(cost, credits);
+        const { rate, unit, total } = comparisonRate(row);
+        // Match on the unit fal actually quotes.
+        const tol = Math.max(0.0005, rate * 0.05);
+        const near = prices.filter((p) => Math.abs(p - rate) <= tol);
+        const m = marginAt(total, credits);
 
         if (m < MARGIN_FLOOR) {
             breach.push({ ...row, margin: m });
             console.log(`BREACH ${row.id.padEnd(20)} margin ${(m * 100).toFixed(1)}% < ${MARGIN_FLOOR * 100}%`);
         } else if (near.length === 0 && prices.length > 0) {
-            drift.push({ ...row, seen: prices.slice(0, 8) });
+            drift.push({ ...row, rate, unit, seen: prices.slice(0, 8) });
             console.log(
-                `DRIFT? ${row.id.padEnd(20)} recorded $${cost.toFixed(3)}  page shows: ${prices.slice(0, 8).map((p) => '$' + p).join(' ')}`
+                `DRIFT? ${row.id.padEnd(20)} expect $${rate.toFixed(4)} ${unit}  page: ${prices.slice(0, 8).map((p) => '$' + p).join(' ')}`
             );
         } else {
-            console.log(`ok    ${row.id.padEnd(20)} $${cost.toFixed(3)}  ${credits}cr  margin ${(m * 100).toFixed(1)}%`);
+            console.log(`ok    ${row.id.padEnd(20)} $${rate.toFixed(4)} ${unit.padEnd(14)} ${credits}cr  margin ${(m * 100).toFixed(1)}%`);
         }
     }
 
@@ -140,7 +163,7 @@ async function main() {
     if (drift.length) {
         console.log(`## Possible price drift (${drift.length}) — verify by hand`);
         for (const d of drift) {
-            console.log(`- \`${d.id}\` recorded $${Number(d.provider_cost_per_unit).toFixed(3)}, page shows ${d.seen.map((p) => '$' + p).join(', ')}`);
+            console.log(`- \`${d.id}\` expected $${d.rate.toFixed(4)} ${d.unit}, page shows ${d.seen.map((p) => '$' + p).join(', ')}`);
         }
         console.log('');
     }

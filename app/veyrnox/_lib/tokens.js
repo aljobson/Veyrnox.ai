@@ -5,7 +5,6 @@
 // /api/v1/generations and (once shipped) GET /api/v1/catalog.
 export const MODELS = [
   { id: 'wan-2.5',            name: 'Wan 2.5',             credits: 16,  tag: 'RECOMMENDED', preselected: true, kind: 'video' },
-  { id: 'seedance-2.0-fast',  name: 'Seedance 2.0 Fast',   credits: 74,   tag: 'FASTEST',                        kind: 'video' },
   { id: 'kling-2.6-pro',      name: 'Kling 2.6 Pro',       credits: 22,                                         kind: 'video' },
   { id: 'kling-3.0-i2v',      name: 'Kling 3.0 · I2V',     credits: 34,  tag: '4K',                             kind: 'video' },
   { id: 'minimax-hailuo-02',  name: 'MiniMax Hailuo 02',   credits: 14,                                         kind: 'video' },
@@ -35,7 +34,6 @@ export const PLANS = [
     equivalence: '= 66 Nano Banana stills   ~ 12 Wan 2.5 clips',
     unlockedModels: [
       { name: 'Nano Banana', hint: 'image · 6 cr' },
-      { name: 'Seedance 2.0 Fast', hint: 'video · 5 cr' },
       { name: 'Wan 2.5', hint: 'video · 15 cr' },
     ],
     lockedNote: 'Veo 3.1 ◆ premium locked — upgrade to unlock',
@@ -59,7 +57,7 @@ export const PLANS = [
     hot: true,
     unlockedModels: [
       { name: 'Every image model', hint: 'Nano Banana, Flux.2 [pro], Seedream 4' },
-      { name: 'Every standard video model', hint: 'Wan, Seedance, MiniMax, Kling 2.6' },
+      { name: 'Every standard video model', hint: 'Wan, MiniMax, Kling 2.6' },
       { name: 'Kling 3.0 · I2V', hint: 'video · 33 cr / 5s' },
       { name: 'Veo 3.1', hint: '◆ premium · 125 cr / 5s' },
       { name: 'ACE Step', hint: 'audio · 4 cr' },
@@ -113,12 +111,10 @@ export const PLAN_TOGGLE = [
 export const PRESET_CATEGORIES = ['ALL', 'CINEMATIC', 'UGC', 'VFX', 'ADS'];
 
 export const PRESETS = [
-  { id: 'crowd-surf', name: 'CROWD SURF',   model: 'Seedance 2.0 Fast', credits: 74, category: 'UGC',        bg: 'linear-gradient(135deg,#0e2b3c 0%,#0a5a70 55%,#2ec8b3 100%)', views: '12.4k', cached: true, badge: 'CACHED' },
   { id: 'cctv-night', name: 'CCTV NIGHT',   model: 'Wan 2.5',           credits: 16, category: 'CINEMATIC',  bg: 'linear-gradient(180deg,#08120b 0%,#0e3a1e 60%,#2ea258 100%)', views: '8.7k',  cached: true, badge: 'CACHED' },
   { id: 'sunset-drift',name: 'SUNSET DRIFT', model: 'MiniMax Hailuo 02', credits: 14, category: 'CINEMATIC',  bg: 'linear-gradient(135deg,#2b1a0a 0%,#7a4a1e 60%,#f0b060 100%)', views: '9.1k',  cached: false },
   { id: 'neon-alley', name: 'NEON ALLEY',   model: 'Kling 2.6 Pro',     credits: 22, category: 'VFX',        bg: 'linear-gradient(135deg,#1b0632 0%,#5a0e6a 55%,#e4318f 100%)', views: '5.8k',  cached: true, badge: 'CACHED' },
   { id: 'warm-portrait',name: 'WARM PORTRAIT',model: 'Nano Banana',      credits: 3,  category: 'UGC',        bg: 'linear-gradient(160deg,#2c1a12 0%,#7a3520 60%,#c9713f 100%)', views: '2.9k' },
-  { id: 'sports-cut', name: 'SPORTS CUT',   model: 'Seedance 2.0 Fast', credits: 74, category: 'ADS',        bg: 'linear-gradient(135deg,#0a1a2c 0%,#144a7a 60%,#3ec1e8 100%)', views: '6.2k',  cached: true, badge: 'CACHED' },
 ];
 
 export const ASPECT_RATIOS = ['16:9', '9:16', '1:1', '4:5', '21:9'];
@@ -141,12 +137,12 @@ export const NAV_CATEGORIES = [
 // Real active-catalog rows only. No Cinema Studio, no MCP·CLI (those live in
 // a separate product, not here).
 export const FEATURE_CARDS = [
-  { key: 'seedance-fast',
-    kicker: 'SEEDANCE 2.0 FAST',
-    title: 'Fastest video model on the shelf.',
-    body: '5 seconds of motion for 74 credits. Sharp, safe, quick — perfect for drafting.',
-    cta: 'Open Seedance',
-    href: '/veyrnox/app/create?model=seedance-2.0-fast',
+  { key: 'wan-2.5',
+    kicker: 'WAN 2.5',
+    title: 'The default. Fast, cinematic.',
+    body: '5 seconds of motion for 16 credits. The workhorse — priced on the button before you press it.',
+    cta: 'Open Wan 2.5',
+    href: '/veyrnox/app/create?model=wan-2.5',
     bg: 'linear-gradient(135deg,#0a1a2c 0%,#144a7a 55%,#3ec1e8 100%)' },
   { key: 'nano-banana',
     kicker: 'NANO BANANA',
@@ -207,7 +203,7 @@ export const FAQ = [
   { q: 'What is Veyrnox.ai?',
     a: 'Veyrnox.ai is a credit-metered AI image, video and audio generation gateway. One balance across the whole catalog, price visible on the button, refund on failure.' },
   { q: 'Which models can I run?',
-    a: 'Nano Banana, Wan 2.5, Seedance 2.0 Fast, Kling 2.6 Pro, Kling 3.0 I2V, MiniMax H3, Seedream 4, Flux.2 [pro], Veo 3.1 (◆ premium, gated), and ACE Step for audio. The full catalog is live on Pricing.' },
+    a: 'Nano Banana, Wan 2.5, Kling 2.6 Pro, Kling 3.0 I2V, MiniMax H3, Seedream 4, Flux.2 [pro], Veo 3.1 (◆ premium, gated), and ACE Step for audio. The full catalog is live on Pricing.' },
   { q: 'How do credits work?',
     a: 'Every generation names its cost on the button before you press it. Credits debit at submit. If the job fails at any point the credits return to your balance automatically.' },
   { q: 'Do I get free credits when I sign up?',
@@ -266,7 +262,6 @@ export const MODEL_SHELF = [
 export const PRODUCT_TILES = [
   { key: 'wan-2.5',           name: 'Wan 2.5',            kind: 'Video',  credits: 16,  hint: 'The default. Fast, cinematic.',                    badge: 'TOP',       icon: '⚡' },
   { key: 'nano-banana',       name: 'Nano Banana',        kind: 'Image',  credits: 3,   hint: 'Cheapest photoreal frame on the shelf.',                                 icon: '◐' },
-  { key: 'seedance-2.0-fast', name: 'Seedance 2.0 Fast',  kind: 'Video',  credits: 74,  hint: 'Fastest draft cycle for shorts.',                                        icon: '⇢' },
   { key: 'kling-3.0-i2v',     name: 'Kling 3.0 · I2V',    kind: 'Video',  credits: 34,  hint: '4K image-to-video, cinematic grade.',              badge: 'NEW',       icon: '▶' },
   { key: 'veo-3.1',           name: 'Veo 3.1',            kind: 'Video',  credits: 122, hint: 'Premium video (◆). Sign-up required, gated.',      badge: 'PREMIUM',   icon: '◆' },
   { key: 'ace-step',          name: 'ACE Step',           kind: 'Audio',  credits: 1,   hint: 'Music and voice generation on the same balance.',                        icon: '♪' },
@@ -305,7 +300,7 @@ export const CREATOR_PROJECTS = [
 // catalog entry so a follow-up wiring can link them by id.
 export const MORE_FEATURES = [
   { group: 'Product',   items: ['Explore', 'Models', 'Pricing', 'Presets', 'Status'] },
-  { group: 'Models',    items: ['Wan 2.5', 'Nano Banana', 'Seedance 2.0 Fast', 'Kling 2.6 Pro', 'Kling 3.0 I2V', 'MiniMax H3', 'Seedream 4', 'Flux.2 [pro]', 'Veo 3.1 ◆', 'ACE Step'] },
+  { group: 'Models',    items: ['Wan 2.5', 'Nano Banana', 'Kling 2.6 Pro', 'Kling 3.0 I2V', 'MiniMax H3', 'Seedream 4', 'Flux.2 [pro]', 'Veo 3.1 ◆', 'ACE Step'] },
   { group: 'Tools',     items: ['Image Generator', 'Video Generator', 'Image-to-Video', 'Audio', 'Upscaler'] },
   // Items are either a plain string (static label — page not shipped yet)
   // or { label, href } (real route). About / Contact stay static until
