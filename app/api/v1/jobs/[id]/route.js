@@ -2,7 +2,7 @@
  * GET /api/v1/jobs/:id — ownership-checked job state.
  *
  * Response (200):
- *   { state, credits, model_id, provider_job_id, error_code? }
+ *   { state, credits, model_id, error_code? }
  *   state ∈ ("queued" | "running" | "succeeded" | "failed")
  *
  * DB → UI state mapping (kept here so UI stays honest with the ledger):
@@ -46,6 +46,15 @@ function mapState(dbState) {
     }
 }
 
+// Provider error codes are vendor strings; only our own short codes and a
+// safe slug shape cross to the client.
+const PUBLIC_ERROR_RE = /^[a-z0-9_]{1,64}$/;
+function publicErrorCode(code) {
+    if (!code) return undefined;
+    const s = String(code).toLowerCase();
+    return PUBLIC_ERROR_RE.test(s) ? s : 'provider_error';
+}
+
 export async function GET(req, { params }) {
     const authId = req.headers.get('x-veyrnox-auth-id');
     if (!authId) return NextResponse.json({ error: 'not_authenticated' }, { status: 401 });
@@ -75,7 +84,6 @@ export async function GET(req, { params }) {
         state: mapState(row.state),
         credits: row.credits,
         model_id: row.model_id,
-        provider_job_id: row.provider_job_id,
-        error_code: row.error_code || undefined,
+        error_code: publicErrorCode(row.error_code),
     });
 }

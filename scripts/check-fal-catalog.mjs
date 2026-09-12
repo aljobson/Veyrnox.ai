@@ -9,7 +9,7 @@
  *   2. A fal price rise. Floor pricing (ADR-0014) puts every row at
  *      ~50% margin, so any increase pushes us under the MARGIN_FLOOR.
  *
- * Reads the live catalog from Supabase (service role, read-only) so it
+ * Reads the live catalog through the anon-callable catalog_watch() RPC so it
  * checks what is actually shipped, not what the repo believes. Falls
  * back to `--offline` for a repo-only endpoint-shape lint.
  *
@@ -25,23 +25,27 @@ const UA = 'Mozilla/5.0 (compatible; veyrnox-catalog-watch/1.0)';
 
 async function loadCatalog() {
     const url = process.env.SUPABASE_URL;
-    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const key = process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     if (!url || !key) {
-        throw new Error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY required (or pass --offline)');
+        throw new Error('SUPABASE_URL and SUPABASE_ANON_KEY required (or pass --offline)');
     }
-    const q = new URL('/rest/v1/model_catalog', url);
-    q.searchParams.set('select', 'id,provider_endpoint,credits_5s,provider_cost_per_unit,cost_unit,billing_seconds,active');
-    q.searchParams.set('provider', 'eq.fal');
-    q.searchParams.set('active', 'eq.true');
-    const res = await fetch(q, { headers: { apikey: key, Authorization: `Bearer ${key}` } });
-    if (res.status === 401 || res.status === 403) {
+    // catalog_watch() (migration 0030) is the only catalog read the anon role
+    // has: exactly the columns this script needs (id, provider,
+    // provider_endpoint, credits_5s, provider_cost_per_unit, cost_unit,
+    // billing_seconds, active). No service-role key in Actions.
+    const res = await fetch(new URL('/rest/v1/rpc/catalog_watch', url), {
+        method: 'POST',
+        headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+        body: '{}',
+    });
+    if (res.status === 401 || res.status === 403 || res.status === 404) {
         throw new Error(
-            `catalog read ${res.status} — SUPABASE_SERVICE_ROLE_KEY is wrong or truncated. ` +
-            `model_catalog is service-role only (migration 0020); the publishable key cannot read it.`
+            `catalog read ${res.status} — SUPABASE_ANON_KEY is wrong, or migration 0030 (catalog_watch) is not applied.`
         );
     }
     if (!res.ok) throw new Error(`catalog read ${res.status}`);
-    return res.json();
+    const rows = await res.json();
+    return rows.filter((r) => r.active && r.provider === 'fal');
 }
 
 /** HEAD-ish check: does the fal model page exist? */

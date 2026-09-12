@@ -14,11 +14,27 @@
 import { NextResponse } from 'next/server';
 import { select, envConfig } from '../../../packages/db/supabase-client.js';
 
+// Workers do not honour s-maxage for Worker-generated responses, so an
+// unauthenticated flood would be one service-role PostgREST call each.
+// Cache the finished response in the Workers Cache API for 5 minutes.
+const CACHE_KEY = 'https://veyrnox.ai/api/catalog';
+const CACHE_TTL_SECONDS = 300;
+
+async function cacheGet() {
+    try { return await caches.default.match(CACHE_KEY); } catch { return undefined; }
+}
+async function cachePut(res) {
+    try { await caches.default.put(CACHE_KEY, res.clone()); } catch { /* not on Workers */ }
+}
+
 export async function GET() {
     const cfg = envConfig();
     if (!cfg.supabaseUrl || !cfg.serviceRoleKey) {
         return NextResponse.json({ error: 'not_configured' }, { status: 503 });
     }
+
+    const cached = await cacheGet();
+    if (cached) return cached;
 
     let rows;
     try {
@@ -40,8 +56,10 @@ export async function GET() {
         gated: !!r.gated_flag,
     }));
 
-    return NextResponse.json(
+    const res = NextResponse.json(
         { models },
-        { headers: { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=60' } },
+        { headers: { 'Cache-Control': `public, max-age=60, s-maxage=${CACHE_TTL_SECONDS}, stale-while-revalidate=60` } },
     );
+    await cachePut(res);
+    return res;
 }

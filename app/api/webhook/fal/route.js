@@ -52,9 +52,35 @@ async function alreadyProcessed(cfg, requestId) {
     url.searchParams.set('external_id', `eq.${requestId}`);
     url.searchParams.set('limit', '1');
     const res = await fetch(url, { headers: serviceHeaders(cfg) });
-    if (!res.ok) return true; // can't tell — treat as duplicate, never double-process
+    // Can't tell: throw so the route answers 500 and fal retries. Every
+    // step after dedup is idempotent, so a replay is safe; a swallowed
+    // retry is a lost delivery.
+    if (!res.ok) throw new Error(`webhook_events read ${res.status}`);
     const rows = await res.json().catch(() => []);
     return !(Array.isArray(rows) && rows[0] && rows[0].processed_at === null);
+}
+
+async function markProcessed(cfg, requestId) {
+    await fetch(new URL(
+        `/rest/v1/webhook_events?source=eq.${encodeURIComponent(SOURCE)}&external_id=eq.${encodeURIComponent(requestId)}`,
+        cfg.supabaseUrl,
+    ), {
+        method: 'PATCH',
+        headers: { ...serviceHeaders(cfg), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ processed_at: new Date().toISOString() }),
+    }).catch((err) => console.error('[fal-webhook] processed patch failed:', err));
+}
+
+// copyUrlToR2 failures fal cannot fix by redelivering: refused host, over
+// the size cap, or a source the CDN no longer serves. Answer 200 for these
+// and let sweep_stuck_jobs (0023) refund; only transient faults get a 500.
+const NON_RETRYABLE_COPY = /^(source url invalid|source host not allowed|source too large|source 4\d\d)$/;
+
+/** Deterministic per-delivery key so a retry overwrites instead of orphaning. */
+async function assetKey(requestId, outputUrl, ext) {
+    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(outputUrl));
+    const hex = Array.from(new Uint8Array(digest).slice(0, 8), (b) => b.toString(16).padStart(2, '0')).join('');
+    return `fal/${requestId}/${hex}${ext}`;
 }
 
 export async function POST(req) {
@@ -103,7 +129,10 @@ export async function POST(req) {
     const status = event && event.status;
 
     // Dedup — insert-only on webhook_events; duplicate = silent success.
-    const dedupRes = await fetch(new URL('/rest/v1/webhook_events', cfg.supabaseUrl), {
+    // `on_conflict` must name the (source, external_id) unique constraint:
+    // PostgREST's ignore-duplicates resolves on the primary key otherwise,
+    // and the PK is an auto UUID, so a redelivery would 409 → 500 forever.
+    const dedupRes = await fetch(new URL('/rest/v1/webhook_events?on_conflict=source,external_id', cfg.supabaseUrl), {
         method: 'POST',
         headers: {
             apikey: cfg.serviceRoleKey,
@@ -150,6 +179,7 @@ export async function POST(req) {
                 const ours = await findOurJob(cfg, requestId, ['SUCCEEDED']);
                 if (!ours) {
                     console.warn('[fal-webhook] job_succeeded returned', succeededRes);
+                    await markProcessed(cfg, requestId);
                     return NextResponse.json({ ok: true, warn: 'unknown job' });
                 }
             }
@@ -161,21 +191,26 @@ export async function POST(req) {
             const outputUrl = extractOutputUrl(event);
             if (!outputUrl) {
                 console.error('[fal-webhook] no output url in payload for', requestId);
+                await markProcessed(cfg, requestId);
                 return NextResponse.json({ ok: true, warn: 'no output url' });
             }
 
-            // 3. Copy the object into R2. Key is fal request id + a random
-            //    UUID (CLAUDE.md: never a provider-controlled path); only
+            // 3. Copy the object into R2. Key is fal request id + a hash of
+            //    the source URL (never a provider-controlled path); a retry
+            //    of the same delivery overwrites instead of orphaning. Only
             //    the extension is derived from the payload.
             const r2cfg = r2EnvConfig();
-            const key = `fal/${requestId}/${crypto.randomUUID()}${suggestExt(event, outputUrl)}`;
+            const key = await assetKey(requestId, outputUrl, suggestExt(event, outputUrl));
             const copy = await copyUrlToR2(outputUrl, key, r2cfg);
             if (!copy.ok) {
-                // 500 without marking processed: fal retries non-2xx, and
-                // the unprocessed webhook_events row is the replay queue if
-                // it gives up. Returning 2xx here would strand the job in
-                // SUCCEEDED with no asset (client shows RUNNING forever).
                 console.error('[fal-webhook] R2 copy failed for', requestId, copy.error);
+                if (NON_RETRYABLE_COPY.test(String(copy.error || ''))) {
+                    // Redelivery cannot help; the sweep refunds the job.
+                    await markProcessed(cfg, requestId);
+                    return NextResponse.json({ ok: true, warn: 'asset_store_failed' });
+                }
+                // Transient: 500 without marking processed so fal retries and
+                // the unprocessed row stays the replay queue if it gives up.
                 return NextResponse.json({ error: 'asset_store_failed' }, { status: 500 });
             }
 
@@ -188,7 +223,11 @@ export async function POST(req) {
                 p_size_bytes: copy.size,
             }, cfg);
             if (!storedRes || storedRes.ok !== true) {
+                // The object is in R2 under a deterministic key; a retry
+                // re-copies onto the same key and re-runs job_stored, so
+                // 500 here loses nothing and keeps the row unprocessed.
                 console.warn('[fal-webhook] job_stored returned', storedRes);
+                return NextResponse.json({ error: 'job_stored_failed' }, { status: 500 });
             }
         } else if (isFail) {
             const errCode = (event && event.error && event.error.code) || 'provider_error';
@@ -225,18 +264,7 @@ export async function POST(req) {
     }
 
     // Mark processed.
-    await fetch(new URL(
-        `/rest/v1/webhook_events?source=eq.${encodeURIComponent(SOURCE)}&external_id=eq.${encodeURIComponent(requestId)}`,
-        cfg.supabaseUrl,
-    ), {
-        method: 'PATCH',
-        headers: {
-            apikey: cfg.serviceRoleKey,
-            Authorization: `Bearer ${cfg.serviceRoleKey}`,
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ processed_at: new Date().toISOString() }),
-    }).catch((err) => console.error('[fal-webhook] processed patch failed:', err));
+    await markProcessed(cfg, requestId);
 
     return NextResponse.json({ ok: true });
 }

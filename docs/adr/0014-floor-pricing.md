@@ -41,3 +41,14 @@ Ultra is the only tier that sells at exactly the reference rate.
 - Landing/pricing tiles read `/api/catalog` live; `app/veyrnox/_lib/tokens.js`
   fallback credits need a sync (design peer).
 - Migration `0020_floor_pricing_and_veo_fast.sql` (renumbered from `0018_*` to match apply order; see `packages/db/schema/supabase/README.md`).
+
+## Addendum 2026-09-12 — cost visibility
+
+Provider unit costs are **not treated as a secret**. They are fal's list
+prices, public on fal.ai, and they appear in `packages/catalog/index.ts`,
+the pricing migrations, this ADR, and the weekly catalog watcher's output
+in a public repository. Locking `model_catalog` from the anon role
+(`0022_lock_model_catalog_from_anon.sql`, `0028_relock_*`) stays as
+least-privilege hygiene, not as concealment. Anything that must actually be
+confidential (negotiated rates, volume discounts) must live outside this
+repository and outside the watcher's output.

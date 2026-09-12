@@ -107,11 +107,13 @@ export async function getFreshAccessToken() {
                 return next.access_token;
             })
             .catch((err) => {
-                // Only a definitive rejection (4xx: invalid_grant, revoked)
-                // ends the session. Network errors and 5xx are Supabase's
+                // Only a definitive rejection (invalid_grant: revoked, reused,
+                // or unknown refresh token) ends the session. A 429 from the
+                // token endpoint, network errors and 5xx are Supabase's
                 // problem; keep whatever access token is still valid.
                 const status = err && err.status;
-                if (status >= 400 && status < 500) {
+                const code = err && err.code;
+                if ((status === 400 || status === 401) && (code === "invalid_grant" || code === "refresh_token_not_found")) {
                     setSession(null);
                     return null;
                 }
