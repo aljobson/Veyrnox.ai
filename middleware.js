@@ -9,10 +9,6 @@
  * Downstream route handlers read `x-veyrnox-auth-id` (set here after
  * verification) to identify the caller.
  *
- * NOT wired at the studio proxy paths (`/api/agents/*`, `/api/workflow/*`,
- * `/api/app/*`, `/api/upload-binary`, `/api/session/*`) which still use
- * the legacy `__Host-muapi_key` cookie until the 2026-10-10 sunset.
- *
  * Runtime env:
  *   SUPABASE_URL   e.g. https://<ref>.supabase.co  (required)
  * Without it the middleware fail-closes with 503 — a misconfigured
