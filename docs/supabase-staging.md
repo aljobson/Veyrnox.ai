@@ -82,6 +82,14 @@ ADR-0014 declares provider costs public. Worth re-reading that ADR before
 accepting it again, because the RPC also returns `provider_endpoint`, which
 `0028_relock_model_catalog_from_anon` withholds from the same role.
 
+**Deliberate, expected to stay flagged.** `applied_migration_names()` is
+callable by `anon` for the same reason: the `migration-ledger` workflow reads
+it so CI can detect a migration applied without being committed, without
+holding a database credential. It returns migration names and nothing else —
+no statements, versions or data. The cost is that the order of schema
+changes, including security fixes by name, is readable with the publishable
+key.
+
 **Informational, correct as-is.** `public.events` and
 `public.funnel_dropoff_alert_log` have RLS on with no policies. That denies
 every role except `service_role` and the definer functions, which is the
