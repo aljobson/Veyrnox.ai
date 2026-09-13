@@ -23,7 +23,7 @@ import { rpc, select, envConfig, SupabaseError } from '../../../../packages/db/s
 import { submitJob } from '../../../../packages/adapters/fal.js';
 import * as kie from '../../../../packages/adapters/kie.js';
 import * as openrouter from '../../../../packages/adapters/openrouter.js';
-import { durationSpec, shapeForProvider } from '../../../../lib/providerDuration.js';
+import { durationSpec, shapeForProvider, payloadCheck } from '../../../../lib/providerDuration.js';
 import { refundRejectedSubmit } from '../../../../lib/submitRejection.js';
 
 // Constrain idempotency keys to a safe printable range.
@@ -85,7 +85,7 @@ const PROVIDERS = {
     fal: {
         key: () => process.env.FAL_KEY,
         check: (modelRow, inputs) => (inputs.duration_seconds && inputs.duration_seconds !== UNIT_SECONDS && !durationSpec(modelRow)
-            ? { ok: false, error: 'duration_not_supported' } : { ok: true }),
+            ? { ok: false, error: 'duration_not_supported' } : payloadCheck(modelRow, inputs)),
         submit: (job, modelRow, apiKey, publicHost) => submitJob(
             { ...job, inputs: shapeForProvider(modelRow, job.inputs) },
             { falKey: apiKey, webhookBaseUrl: new URL('/api/webhook/fal', publicHost).toString() },

@@ -42,9 +42,9 @@ test('shapeForProvider renames our field and drops it when unsupported', () => {
         shapeForProvider(wan, { prompt: 'x', duration_seconds: 10 }),
         { prompt: 'x', duration: '10' },
     );
-    const veo = { provider_endpoint: 'fal-ai/veo3.1' };
+    const hailuo = { provider_endpoint: 'fal-ai/minimax/hailuo-02/standard/text-to-video' };
     assert.deepEqual(
-        shapeForProvider(veo, { prompt: 'x', duration_seconds: 5 }),
+        shapeForProvider(hailuo, { prompt: 'x', duration_seconds: 5 }),
         { prompt: 'x' },
         'no length field for a family that cannot honour one',
     );
@@ -77,4 +77,17 @@ test('audio payloads rename to the fal field and pin the billed quantity', () =>
     assert.deepEqual(shapeForProvider({ provider_endpoint: 'fal-ai/ace-step-1.5' }, inputs),
         { prompt: 'rain on a tin roof', seed: 7, duration: 60, thinking: true, num_outputs: 1 });
     assert.deepEqual(shapeForProvider({ provider_endpoint: 'fal-ai/inworld-tts' }, inputs), { text: 'rain on a tin roof' });
+});
+
+test('Veo 3.1 requests are pinned to 4s 720p with audio, and only 16:9 / 9:16', async () => {
+    const { payloadCheck } = await import('../lib/providerDuration.js');
+    for (const ep of ['fal-ai/veo3.1/fast', 'fal-ai/veo3.1']) {
+        assert.deepEqual(
+            shapeForProvider({ provider_endpoint: ep }, { prompt: 'p', aspect_ratio: '9:16', seed: 3, image_url: 'https://x/y.png', duration_seconds: 5 }),
+            { prompt: 'p', aspect_ratio: '9:16', seed: 3, duration: '4s', resolution: '720p', generate_audio: true },
+        );
+        assert.deepEqual(payloadCheck({ provider_endpoint: ep }, { aspect_ratio: '1:1' }), { ok: false, error: 'inputs_invalid:aspect_ratio' });
+        assert.deepEqual(payloadCheck({ provider_endpoint: ep }, { aspect_ratio: '16:9' }), { ok: true });
+    }
+    assert.deepEqual(payloadCheck({ provider_endpoint: 'fal-ai/wan-25-preview/text-to-video' }, { aspect_ratio: '1:1' }), { ok: true });
 });
