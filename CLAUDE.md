@@ -62,6 +62,8 @@ If a build starts failing after a dependency change, bisect these three first.
 - No raw string interpolation into SQL. `execute_sql` takes user input only
   through parameters; PostgREST filters go through `encodeURIComponent`.
 - Reconciliation nightly (`ledger.reconcile()`) must return zero rows in prod.
+  The `veyrnox-reconcile-balances` cron job fails on any row from
+  `reconcile_balances()`, `reconcile_free_credits()` or `reconcile_top_ups()`.
 
 ## API gateway (`/api/v1/*`)
 

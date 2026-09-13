@@ -1,3 +1,6 @@
+-- Applied name: 0067_veo_4s_clip_costs.
+-- Merged as 0066 in #153, which duplicated 0066_freeze_since_purchase (#152,
+-- already applied to production); renumbered before it was applied.
 -- Veo 3.1 on fal now requests 4-second 720p clips with audio (owner decision
 -- 2026-09-13, option c). fal defaulted to 8s, so the recorded per-clip costs
 -- ($0.75 / $2.00) were below what fal billed ($1.20 / $3.20), leaving both
