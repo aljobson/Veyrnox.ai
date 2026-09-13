@@ -21,6 +21,8 @@ const ERROR_COPY = {
 };
 
 const TOP_UP_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+const ORDER_ID_RE = /^[0-9]{1,20}$/;
+const ORDER_IDENTIFIER_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const POLL_MS = 2000;
 const POLL_GIVE_UP_MS = 3 * 60 * 1000;
 
@@ -33,8 +35,24 @@ export function TopUpReturn() {
   const [credits, setCredits] = useState(null);
 
   useEffect(() => {
-    const id = new URLSearchParams(window.location.search).get('top_up');
-    if (id && TOP_UP_ID_RE.test(id)) setTopUpId(id);
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('top_up');
+    if (!id || !TOP_UP_ID_RE.test(id)) return;
+    setTopUpId(id);
+    // LemonSqueezy fills these link variables on the redirect (#94). Record
+    // the order so the backfill can credit it if the webhook is lost, then
+    // drop the identifier from the address bar and history.
+    const orderId = params.get('order_id');
+    const orderIdentifier = params.get('order_identifier');
+    if (orderId || orderIdentifier) {
+      window.history.replaceState(null, '', `${window.location.pathname}?top_up=${id}`);
+    }
+    if (orderId && ORDER_ID_RE.test(orderId) && orderIdentifier && ORDER_IDENTIFIER_RE.test(orderIdentifier)) {
+      gatewayFetch(`/top-ups/${id}/order`, {
+        method: 'POST',
+        body: JSON.stringify({ order_id: orderId, order_identifier: orderIdentifier }),
+      }).catch(() => { /* the webhook still credits; the backfill just can't help */ });
+    }
   }, []);
 
   useEffect(() => {

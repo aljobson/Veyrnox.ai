@@ -38,6 +38,7 @@
   //                               OpenRouter video submit + webhook signature (ADR-0020)
   //   LEMONSQUEEZY_API_KEY        checkout creation + order re-fetch (packages/adapters/lemonsqueezy.js); test-mode key until launch (#101)
   //   LEMONSQUEEZY_WEBHOOK_SECRET HMAC for /api/webhook/lemonsqueezy (#93)
+  //   TOP_UP_BACKFILL_TOKEN       bearer for /api/admin/backfill-top-ups; same value as the GitHub Actions secret (#94)
   //   ADMIN_REAP_TOKEN            /api/admin/reap-assets shared secret (ADR-0008)
   //   UPLOAD_PROXY_ALLOWED_HOSTS  legacy upload proxy allowlist (docs/UPLOAD_PROXY_CONFIG.md)
   //

@@ -35,7 +35,12 @@ test('carries the Top-up id in custom data, the redirect from PUBLIC_HOST, store
     const body = JSON.parse(calls[0].init.body);
     assert.equal(body.data.type, 'checkouts');
     assert.deepEqual(body.data.attributes.checkout_data.custom, { top_up_id: TOP_UP_ID });
-    assert.equal(body.data.attributes.product_options.redirect_url, `https://veyrnox.ai/app/credits?top_up=${TOP_UP_ID}`);
+    // Link variables stay literal: LemonSqueezy swaps [order_id] and
+    // [order_identifier] for the paid order's values on the way back (#94).
+    assert.equal(
+        body.data.attributes.product_options.redirect_url,
+        `https://veyrnox.ai/app/credits?top_up=${TOP_UP_ID}&order_id=[order_id]&order_identifier=[order_identifier]`,
+    );
     assert.deepEqual(body.data.attributes.product_options.enabled_variants, [2120823]);
     assert.equal(body.data.attributes.expires_at, '2026-09-13T10:00:00.000Z');
     assert.deepEqual(body.data.relationships.store.data, { type: 'stores', id: '473468' });

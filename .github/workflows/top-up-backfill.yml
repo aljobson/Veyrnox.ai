@@ -1,0 +1,42 @@
+name: top-up-backfill
+
+# Credits paid Top-ups whose LemonSqueezy webhook was lost (#94).
+# LemonSqueezy retries a webhook only 3 times over ~2.5 minutes, so this
+# sweep is required, not optional. The endpoint does the work; this only
+# calls it with the dedicated bearer secret.
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: top-up-backfill
+  cancel-in-progress: false
+
+jobs:
+  backfill:
+    # Only main: a workflow_dispatch on another branch must not run with
+    # this job's secret.
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Call the backfill endpoint
+        env:
+          TOKEN: ${{ secrets.TOP_UP_BACKFILL_TOKEN }}
+        run: |
+          if [ -z "$TOKEN" ]; then
+            echo "::warning::TOP_UP_BACKFILL_TOKEN is not set; skipping the Top-up backfill."
+            exit 0
+          fi
+          status=$(curl -sS -o response.json -w '%{http_code}' --max-time 240 \
+            -X POST -H "Authorization: Bearer $TOKEN" \
+            https://veyrnox.ai/api/admin/backfill-top-ups)
+          cat response.json; echo
+          if [ "$status" != "200" ]; then
+            echo "::error::Top-up backfill returned HTTP $status"
+            exit 1
+          fi

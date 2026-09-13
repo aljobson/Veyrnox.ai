@@ -17,6 +17,11 @@ const JSON_API = 'application/vnd.api+json';
 const NUMERIC_ID_RE = /^[0-9]{1,20}$/;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const RETURN_PATH = '/app/credits';
+// LemonSqueezy link variables, replaced with the paid order's values on the
+// redirect. Appended raw: URLSearchParams would percent-encode the brackets
+// and LemonSqueezy would no longer recognise them. The API order object has
+// no custom data, so this is how the backfill learns a Top-up's order (#94).
+const ORDER_LINK_VARIABLES = '&order_id=[order_id]&order_identifier=[order_identifier]';
 
 /**
  * Create a hosted checkout for one pending Top-up.
@@ -49,7 +54,7 @@ export async function createCheckout(input, cfg) {
             type: 'checkouts',
             attributes: {
                 product_options: {
-                    redirect_url: redirect.toString(),
+                    redirect_url: redirect.toString() + ORDER_LINK_VARIABLES,
                     enabled_variants: [Number(input.variantId)],
                 },
                 checkout_data: { custom: { top_up_id: input.topUpId } },
@@ -168,6 +173,25 @@ export function normaliseOrder(order, customData, { expectTestMode, expectStoreI
             testMode,
         },
     };
+}
+
+const ANY_CASE_UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * True when the order re-fetched from the API has the identifier the checkout
+ * redirect brought back. The numeric order id is guessable; the identifier is
+ * a UUID only the buyer's redirect and receipt carry, so it is what binds a
+ * returning user to the order they paid (#94). Fails closed.
+ *
+ * @param {any} order  JSON:API order resource from fetchOrder
+ * @param {unknown} identifier  the redirect's order_identifier
+ * @returns {boolean}
+ */
+export function orderIdentifierMatches(order, identifier) {
+    const actual = order && order.attributes && order.attributes.identifier;
+    if (typeof identifier !== 'string' || typeof actual !== 'string') return false;
+    if (!ANY_CASE_UUID_RE.test(identifier) || !ANY_CASE_UUID_RE.test(actual)) return false;
+    return identifier.toLowerCase() === actual.toLowerCase();
 }
 
 /**
