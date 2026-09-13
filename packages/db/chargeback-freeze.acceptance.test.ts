@@ -1,8 +1,9 @@
 /**
  * Chargeback Freeze — acceptance tests (#97, ADR-0018 decision 8, ADR-0019).
  *
- * Exercises schema/supabase/0059_chargeback_freeze.sql and
- * 0062_freeze_credits_taken.sql on top of 0037/0038 (Free Credits), 0041
+ * Exercises schema/supabase/0059_chargeback_freeze.sql,
+ * 0062_freeze_credits_taken.sql and 0066_freeze_since_purchase.sql (#151:
+ * generation counts from checkout start) on top of 0037/0038 (Free Credits), 0041
  * (top_ups), 0054 (credit_top_up) and 0058 (apply_top_up_refund), applied
  * twice to prove idempotency. Skipped unless DATABASE_URL is set.
  */
@@ -57,8 +58,8 @@ describe("Chargeback Freeze", { skip: !DATABASE_URL && "DATABASE_URL not set" },
         return (await pool.query(sql, params)).rows[0];
     }
 
-    /** A signed-up user (50 Free Credits) with a credited 300-credit Top-up. */
-    async function creditedTopUp() {
+    /** A signed-up user (50 Free Credits) with a pending 300-credit Top-up, not yet credited. */
+    async function pendingTopUp() {
         const authId = `sb_${randomUUID()}`;
         const userId = (await one(`SELECT public.signup_grant($1, $2) AS id`,
             [authId, `${randomUUID()}@test.veyrnox.ai`])).id as string;
@@ -70,10 +71,20 @@ describe("Chargeback Freeze", { skip: !DATABASE_URL && "DATABASE_URL not set" },
         const pending = (await one(`SELECT public.create_pending_top_up($1, $2, $3, '2026-09-13', 10, 600) AS r`,
             [authId, packId, `test-${randomUUID()}`])).r;
         const order = String(randomInt(1e9, 2e9));
+        return { authId, userId, packId, variant, topUpId: pending.top_up_id as string, order };
+    }
+
+    async function credit(t: Awaited<ReturnType<typeof pendingTopUp>>) {
         const credited = (await one(`SELECT public.credit_top_up($1, $2, $3, 'USD', $4) AS r`,
-            [pending.top_up_id, order, PRICE, variant])).r;
+            [t.topUpId, t.order, PRICE, t.variant])).r;
         assert.equal(credited.ok, true);
-        return { authId, userId, packId, topUpId: pending.top_up_id as string, order };
+    }
+
+    /** A signed-up user (50 Free Credits) with a credited 300-credit Top-up. */
+    async function creditedTopUp() {
+        const t = await pendingTopUp();
+        await credit(t);
+        return t;
     }
 
     async function debit(userId: string, credits: number, key = randomUUID()) {
@@ -191,6 +202,37 @@ describe("Chargeback Freeze", { skip: !DATABASE_URL && "DATABASE_URL not set" },
         await one(`SELECT public.ledger_refund($1, $2, 60, 'refund:job_failed') AS r`, [job.job_id, t.userId]);
         assert.equal((await refund(t.order)).frozen, false);
         assert.equal(await frozen(t.userId), false);
+    });
+
+    it("webhook order: a job between checkout starting and a late credit Freezes on refund", async () => {
+        const t = await pendingTopUp();
+        await pool.query(`UPDATE public.top_ups SET created_at = now() - interval '5 minutes' WHERE id = $1`, [t.topUpId]);
+        // 10 Free Credits generated while order_created is delayed.
+        assert.equal((await debit(t.userId, 10)).ok, true);
+        await credit(t); // order_created lands, then the route applies the refund
+        const res = await refund(t.order);
+        assert.equal(res.frozen, true);
+        assert.equal(res.taken, 300);
+        assert.equal(res.shortfall, 0);
+        assert.equal(await frozen(t.userId), true);
+        assert.deepEqual(await actions(t.userId), [{ action: "freeze", actor: "system", top_up_id: t.topUpId }]);
+        await assertInvariants(t.userId);
+    });
+
+    it("a job from before the Top-up started does not Freeze on refund", async () => {
+        const t = await pendingTopUp();
+        const job = await debit(t.userId, 10);
+        assert.equal(job.ok, true);
+        await pool.query(
+            `UPDATE public.jobs SET created_at = (SELECT created_at FROM public.top_ups WHERE id = $2) - interval '1 minute'
+             WHERE id = $1`, [job.job_id, t.topUpId]);
+        await credit(t);
+        const res = await refund(t.order);
+        assert.equal(res.frozen, false);
+        assert.equal(res.taken, 300);
+        assert.equal(await frozen(t.userId), false);
+        assert.deepEqual(await actions(t.userId), []);
+        await assertInvariants(t.userId);
     });
 
     it("a Frozen account's debit returns ACCOUNT_FROZEN; a pre-Freeze key still replays its job", async () => {
