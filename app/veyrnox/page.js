@@ -231,16 +231,16 @@ function SignupIncentive() {
               <li className="flex gap-2"><span className="text-vx-accent">✓</span> Failed jobs refund automatically</li>
               <li className="flex gap-2"><span className="text-vx-accent">✓</span> No card required to browse</li>
             </ul>
-            <div className="mt-6 flex gap-3">
+            <div className="mt-6 flex flex-wrap gap-3">
               <Link
                 href="/veyrnox/app"
-                className="rounded-full bg-vx-accent text-vx-accent-ink px-6 py-3 text-sm font-extrabold hover:bg-vx-accent-hover"
+                className="whitespace-nowrap rounded-full bg-vx-accent text-vx-accent-ink px-6 py-3 text-sm font-extrabold hover:bg-vx-accent-hover"
               >
                 Claim 50 credits
               </Link>
               <Link
                 href="/veyrnox/presets"
-                className="rounded-full border border-white/30 text-white px-6 py-3 text-sm font-bold hover:border-white"
+                className="whitespace-nowrap rounded-full border border-white/30 text-white px-6 py-3 text-sm font-bold hover:border-white"
               >
                 Browse presets free
               </Link>
