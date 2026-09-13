@@ -346,11 +346,11 @@ function EffectsWall() {
         </Link>
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-        {EFFECT_PRESETS.map((e, i) => (
+        {EFFECT_PRESETS.map((e) => (
           <button
             key={e.name}
             className="group relative rounded-2xl overflow-hidden border border-vx-border transition-transform duration-200 hover:scale-[1.02]"
-            style={{ background: e.bg, aspectRatio: i % 5 === 0 ? '3/4' : '1/1' }}
+            style={{ background: e.bg, aspectRatio: '1/1' }}
           >
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-90 group-hover:opacity-100" />
             <div className="absolute inset-x-0 bottom-0 p-3 text-left">
