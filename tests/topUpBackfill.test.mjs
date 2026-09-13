@@ -38,6 +38,8 @@ test('a paid order matching the returned identifier is credited to our Top-up ro
             p_paid_usd_cents: 2500,
             p_currency: 'USD',
             p_variant_id: '2120823',
+            p_refunded_cents: 0,
+            p_total_cents: 3000,
         },
     });
 });
@@ -79,12 +81,32 @@ test('variant, amount and currency travel from the order to credit_top_up, which
     assert.equal(v.credit.p_variant_id, '7');
 });
 
-test('a still-pending order is retried next run; a refunded or failed one is an anomaly', () => {
+test('a still-pending order is retried next run; a failed or fraudulent one is an anomaly', () => {
     assert.deepEqual(backfillVerdict(row(), order({ status: 'pending' }), opts), { skip: 'order pending', anomaly: false, retry: true });
-    for (const status of ['refunded', 'failed', 'fraudulent']) {
+    for (const status of ['failed', 'fraudulent']) {
         const v = backfillVerdict(row(), order({ status }), opts);
         assert.equal(v.skip, 'order not paid');
         assert.equal(v.anomaly, true);
+    }
+});
+
+// #142: the webhook credits a refunded or partly refunded order, then claws
+// back the refunded share. The backfill must do the same, or a lost
+// order_created leaves the buyer without the credits they kept.
+test('refunded and partly refunded orders are credited with the refunded amount for the clawback', () => {
+    for (const [status, refunded] of [['partial_refund', 1500], ['refunded', 3000]]) {
+        const v = backfillVerdict(row(), order({ status, refunded_amount: refunded }), opts);
+        assert.ok(v.credit, status);
+        assert.equal(v.credit.p_refunded_cents, refunded);
+        assert.equal(v.credit.p_total_cents, 3000, 'refunds are measured against the tax-inclusive total');
+    }
+});
+
+test('the backfill credits exactly the statuses the webhook credits', async () => {
+    const { CREDITABLE_ORDER_STATUSES } = await import('../packages/adapters/lemonsqueezy.js');
+    assert.deepEqual([...CREDITABLE_ORDER_STATUSES].sort(), ['paid', 'partial_refund', 'refunded']);
+    for (const status of ['paid', 'partial_refund', 'refunded']) {
+        assert.ok(backfillVerdict(row(), order({ status }), opts).credit, status);
     }
 });
 
@@ -190,6 +212,18 @@ test('the time budget stops the run before the next call', async () => {
     assert.equal(res.stopped, 'time_budget');
     assert.ok(h.fetched.length < rows.length);
     assert.equal(res.checked, h.fetched.length);
+});
+
+test('a clawback shortfall or an inferred Freeze from the refund is logged', async () => {
+    const h = harness({
+        orders: { 1234: ok(order({ status: 'partial_refund', refunded_amount: 1500 })) },
+        credit: async () => ({ ok: true, idempotent: false, refund: { ok: true, taken: 100, shortfall: 50, frozen: true } }),
+    });
+    const res = await runBackfill([row()], h.deps);
+    assert.equal(res.credited, 1);
+    assert.equal(h.credited[0].p_refunded_cents, 1500);
+    assert.ok(h.errors.some((e) => /shortfall/.test(e)));
+    assert.ok(h.errors.some((e) => /Frozen/.test(e)));
 });
 
 test('a skipped verdict never reaches credit_top_up', async () => {

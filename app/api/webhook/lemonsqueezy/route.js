@@ -30,7 +30,7 @@
  */
 
 import { NextResponse } from 'next/server';
-import { verifyWebhookSignature, fetchOrder, normaliseOrder, checkOrderOrigin, disputeOrderId } from '../../../../packages/adapters/lemonsqueezy.js';
+import { verifyWebhookSignature, fetchOrder, normaliseOrder, checkOrderOrigin, disputeOrderId, CREDITABLE_ORDER_STATUSES } from '../../../../packages/adapters/lemonsqueezy.js';
 import { rpc, envConfig } from '../../../../packages/db/supabase-client.js';
 import { dedup, markProcessed } from '../../../../lib/providerCompletion.js';
 
@@ -42,7 +42,6 @@ const FLAGGED = new Set(['ALREADY_CREDITED', 'VARIANT_MISMATCH', 'AMOUNT_MISMATC
 // Final refusals a redelivery cannot change.
 const REFUSED = new Set(['TOP_UP_NOT_FOUND', 'ORDER_ALREADY_USED', 'INVALID_ORDER_ID']);
 const REFUND_REFUSED = new Set(['ORDER_NOT_FOUND', 'INVALID_ORDER_ID', 'INVALID_AMOUNT']);
-const PAID_STATUSES = new Set(['paid', 'refunded', 'partial_refund']);
 const DISPUTE_REFUSED = new Set(['TOP_UP_NOT_FOUND', 'INVALID_ORDER_ID']);
 
 export async function POST(req) {
@@ -119,7 +118,7 @@ export async function POST(req) {
         }
         // A refund can land before this event is processed; the order is still
         // credited, and the refund below takes its share back.
-        if (!PAID_STATUSES.has(o.status)) {
+        if (!CREDITABLE_ORDER_STATUSES.has(o.status)) {
             console.error(LOG, 'order not paid, not credited:', orderId, o.status, o.topUpId);
             await markProcessed(cfg, SOURCE, externalId);
             return NextResponse.json({ ok: true, warn: 'order_not_paid' });
