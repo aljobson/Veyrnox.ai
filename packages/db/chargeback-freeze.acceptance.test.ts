@@ -265,6 +265,8 @@ describe("Chargeback Freeze", { skip: !DATABASE_URL && "DATABASE_URL not set" },
                     has_function_privilege('authenticated', $1::regprocedure, 'EXECUTE') AS auth`,
             ["public.freeze_account(uuid,text,uuid,integer,integer)"]);
         assert.deepEqual([internal.svc, internal.auth], [false, false], "freeze_account is internal");
+        const overloads = await one(`SELECT count(*)::int AS n FROM pg_proc WHERE proname = 'freeze_account' AND pronamespace = 'public'::regnamespace`);
+        assert.equal(overloads.n, 1, "one freeze_account signature");
         const rls = await one(`SELECT relrowsecurity, relforcerowsecurity FROM pg_class WHERE oid = 'public.account_actions'::regclass`);
         assert.deepEqual([rls.relrowsecurity, rls.relforcerowsecurity], [true, true]);
     });

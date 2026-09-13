@@ -76,6 +76,11 @@ REVOKE ALL ON TABLE public.account_actions FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.account_actions_append_only() FROM PUBLIC, anon, authenticated;
 
 -- ── freeze_account: the shared Freeze. Internal, called by definer functions.
+-- The first version of this migration defined freeze_account(UUID, TEXT, UUID).
+-- With the two defaulted arguments below, a 3-argument call would match both
+-- and fail as ambiguous, so the old signature is dropped first.
+DROP FUNCTION IF EXISTS public.freeze_account(UUID, TEXT, UUID);
+
 -- The caller must hold the user's credit_balances row lock. p_taken and
 -- p_shortfall are set by the inferred Freeze only (NULL for a dispute).
 CREATE OR REPLACE FUNCTION public.freeze_account(
