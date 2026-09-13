@@ -1,6 +1,6 @@
 # ADR-0018 — Credit Pack Top-ups before Subscriptions
 
-- **Status**: Accepted (2026-09-13), subject to the preconditions below
+- **Status**: Accepted (2026-09-13), subject to the preconditions below. Decision 8 amended by [ADR-0019](0019-dispute-webhooks-freeze.md).
 - **Date**: 2026-09-13
 - **Deciders**: Product owner (approver); Finance/Legal to confirm tax display and consent wording
 - **Related**: [ADR-0003 — Billing / merchant-of-record](0003-billing-provider.md), [ADR-0013 — Credit expiry policy](0013-credit-expiry-policy.md), [ADR-0014 — Floor pricing](0014-floor-pricing.md), `CONTEXT.md` (Credits and buying, Reversals)
