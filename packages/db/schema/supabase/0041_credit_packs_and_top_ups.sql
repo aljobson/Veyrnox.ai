@@ -56,6 +56,7 @@ CREATE TABLE IF NOT EXISTS public.top_ups (
     id               UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id          UUID        NOT NULL REFERENCES public.users(id) ON DELETE RESTRICT,
     pack_id          TEXT        NOT NULL REFERENCES public.credit_packs(id) ON DELETE RESTRICT,
+    idempotency_key  TEXT        NOT NULL CHECK (idempotency_key ~ '^[A-Za-z0-9._-]{8,128}$'),
     sales_channel    TEXT        NOT NULL,
     credits          INTEGER     NOT NULL CHECK (credits > 0),
     price_usd_cents  INTEGER     NOT NULL CHECK (price_usd_cents > 0),
@@ -63,7 +64,8 @@ CREATE TABLE IF NOT EXISTS public.top_ups (
     status           TEXT        NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'credited')),
     consent_at       TIMESTAMPTZ NOT NULL,
     consent_version  TEXT        NOT NULL CHECK (consent_version ~ '^[A-Za-z0-9._-]{1,32}$'),
-    created_at       TIMESTAMPTZ NOT NULL DEFAULT now()
+    created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE (user_id, idempotency_key)
 );
 CREATE INDEX IF NOT EXISTS top_ups_user_created_idx ON public.top_ups (user_id, created_at DESC);
 
@@ -78,10 +80,16 @@ GRANT SELECT ON TABLE public.credit_packs TO service_role;
 
 -- create_pending_top_up: the only writer of top_ups.
 --
--- Returns {ok:true, top_up_id, credits, price_usd_cents, variant_id} or
--- {ok:false, code} with code USER_NOT_FOUND, CONSENT_VERSION_REQUIRED,
+-- Returns {ok:true, top_up_id, idempotent, credits, price_usd_cents,
+-- variant_id} or {ok:false, code} with code USER_NOT_FOUND,
+-- IDEMPOTENCY_KEY_REQUIRED, IDEMPOTENCY_KEY_REUSED, CONSENT_VERSION_REQUIRED,
 -- PACK_NOT_FOUND or RATE_LIMITED (+ retry_after_seconds). The caller has
 -- already required explicit consent = true; the timestamp is taken here.
+--
+-- Idempotent on (user, idempotency_key): a replay returns the existing
+-- Top-up with its copied values, before the pack or rate-limit checks, so a
+-- retry never creates a second row or uses up the limit. The same key for a
+-- different pack is IDEMPOTENCY_KEY_REUSED.
 --
 -- The rate limit counts under a lock on the user's row, so concurrent
 -- requests cannot all pass the check. NO KEY UPDATE, not UPDATE, so FK
@@ -89,6 +97,7 @@ GRANT SELECT ON TABLE public.credit_packs TO service_role;
 CREATE OR REPLACE FUNCTION public.create_pending_top_up(
     p_auth_id TEXT,
     p_pack_id TEXT,
+    p_idempotency_key TEXT,
     p_consent_version TEXT,
     p_limit_per_window INTEGER,
     p_window_seconds INTEGER
@@ -103,6 +112,7 @@ DECLARE
     v_count INTEGER;
     v_retry INTEGER;
     v_top_up_id UUID;
+    v_existing public.top_ups%ROWTYPE;
 BEGIN
     IF p_limit_per_window IS NULL OR p_limit_per_window <= 0
        OR p_window_seconds IS NULL OR p_window_seconds <= 0 THEN
@@ -114,6 +124,28 @@ BEGIN
     FOR NO KEY UPDATE;
     IF v_user_id IS NULL THEN
         RETURN jsonb_build_object('ok', false, 'code', 'USER_NOT_FOUND');
+    END IF;
+
+    IF p_idempotency_key IS NULL OR p_idempotency_key !~ '^[A-Za-z0-9._-]{8,128}$' THEN
+        RETURN jsonb_build_object('ok', false, 'code', 'IDEMPOTENCY_KEY_REQUIRED');
+    END IF;
+
+    -- The user-row lock above serialises same-key calls, so a replay sees
+    -- the committed row; the UNIQUE constraint backs this up.
+    SELECT * INTO v_existing FROM public.top_ups t
+    WHERE t.user_id = v_user_id AND t.idempotency_key = p_idempotency_key;
+    IF FOUND THEN
+        IF v_existing.pack_id <> p_pack_id THEN
+            RETURN jsonb_build_object('ok', false, 'code', 'IDEMPOTENCY_KEY_REUSED');
+        END IF;
+        RETURN jsonb_build_object(
+            'ok', true,
+            'idempotent', true,
+            'top_up_id', v_existing.id,
+            'credits', v_existing.credits,
+            'price_usd_cents', v_existing.price_usd_cents,
+            'variant_id', v_existing.variant_id
+        );
     END IF;
 
     IF p_consent_version IS NULL OR p_consent_version !~ '^[A-Za-z0-9._-]{1,32}$' THEN
@@ -140,14 +172,15 @@ BEGIN
             'retry_after_seconds', COALESCE(v_retry, p_window_seconds));
     END IF;
 
-    INSERT INTO public.top_ups (user_id, pack_id, sales_channel, credits, price_usd_cents,
-                                variant_id, consent_at, consent_version)
-    VALUES (v_user_id, v_pack.id, v_pack.sales_channel, v_pack.credits, v_pack.price_usd_cents,
-            v_pack.variant_id, now(), p_consent_version)
+    INSERT INTO public.top_ups (user_id, pack_id, idempotency_key, sales_channel, credits,
+                                price_usd_cents, variant_id, consent_at, consent_version)
+    VALUES (v_user_id, v_pack.id, p_idempotency_key, v_pack.sales_channel, v_pack.credits,
+            v_pack.price_usd_cents, v_pack.variant_id, now(), p_consent_version)
     RETURNING id INTO v_top_up_id;
 
     RETURN jsonb_build_object(
         'ok', true,
+        'idempotent', false,
         'top_up_id', v_top_up_id,
         'credits', v_pack.credits,
         'price_usd_cents', v_pack.price_usd_cents,
@@ -155,5 +188,5 @@ BEGIN
     );
 END $$;
 
-REVOKE ALL ON FUNCTION public.create_pending_top_up(TEXT, TEXT, TEXT, INTEGER, INTEGER) FROM PUBLIC, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.create_pending_top_up(TEXT, TEXT, TEXT, INTEGER, INTEGER) TO service_role;
+REVOKE ALL ON FUNCTION public.create_pending_top_up(TEXT, TEXT, TEXT, TEXT, INTEGER, INTEGER) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.create_pending_top_up(TEXT, TEXT, TEXT, TEXT, INTEGER, INTEGER) TO service_role;

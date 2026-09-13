@@ -14,7 +14,7 @@ import pg from "pg";
 
 const DATABASE_URL = process.env.DATABASE_URL;
 const MIGRATION = new URL("./schema/supabase/0041_credit_packs_and_top_ups.sql", import.meta.url);
-const FN = "public.create_pending_top_up(text,text,text,integer,integer)";
+const FN = "public.create_pending_top_up(text,text,text,text,integer,integer)";
 
 describe("Credit Pack Top-ups", { skip: !DATABASE_URL && "DATABASE_URL not set" }, () => {
     let pool: pg.Pool;
@@ -52,8 +52,15 @@ describe("Credit Pack Top-ups", { skip: !DATABASE_URL && "DATABASE_URL not set" 
         return { id, variant };
     }
 
-    async function createTopUp(authId: string, packId: string, version = "2026-09-13", limit = 10, windowSeconds = 600) {
-        const r = await pool.query(`SELECT public.create_pending_top_up($1, $2, $3, $4, $5) AS res`, [authId, packId, version, limit, windowSeconds]);
+    async function createTopUp(
+        authId: string,
+        packId: string,
+        { version = "2026-09-13", limit = 10, windowSeconds = 600, key = `test-${randomUUID()}` } = {}
+    ) {
+        const r = await pool.query(
+            `SELECT public.create_pending_top_up($1, $2, $3, $4, $5, $6) AS res`,
+            [authId, packId, key, version, limit, windowSeconds]
+        );
         return r.rows[0].res;
     }
 
@@ -89,7 +96,7 @@ describe("Credit Pack Top-ups", { skip: !DATABASE_URL && "DATABASE_URL not set" 
     it("creates a pending Top-up that records consent and copies the pack's credits, price and variant", async () => {
         const authId = await makeUser();
         const pack = await makePack({ credits: 300, price: 2500 });
-        const res = await createTopUp(authId, pack.id, "2026-09-13");
+        const res = await createTopUp(authId, pack.id);
         assert.equal(res.ok, true);
         assert.match(res.top_up_id, /^[0-9a-f-]{36}$/);
         assert.equal(res.variant_id, pack.variant);
@@ -131,18 +138,56 @@ describe("Credit Pack Top-ups", { skip: !DATABASE_URL && "DATABASE_URL not set" 
     it("refuses an unknown user and a blank consent version", async () => {
         const pack = await makePack();
         assert.equal((await createTopUp(`sb_${randomUUID()}`, pack.id)).code, "USER_NOT_FOUND");
-        assert.equal((await createTopUp(await makeUser(), pack.id, "")).code, "CONSENT_VERSION_REQUIRED");
+        assert.equal((await createTopUp(await makeUser(), pack.id, { version: "" })).code, "CONSENT_VERSION_REQUIRED");
+    });
+
+    it("replays an idempotency key: same Top-up, one row, no rate-limit use", async () => {
+        const authId = await makeUser();
+        const pack = await makePack();
+        const key = `replay-${randomUUID()}`;
+        const first = await createTopUp(authId, pack.id, { key, limit: 1 });
+        const second = await createTopUp(authId, pack.id, { key, limit: 1 });
+        assert.equal(first.ok, true);
+        assert.equal(first.idempotent, false);
+        assert.equal(second.ok, true, "a replay is not rate-limited");
+        assert.equal(second.idempotent, true);
+        assert.equal(second.top_up_id, first.top_up_id);
+        assert.equal(second.variant_id, pack.variant);
+        const n = await pool.query(
+            `SELECT count(*)::int AS n FROM public.top_ups t JOIN users u ON u.id = t.user_id WHERE u.auth_id = $1`,
+            [authId]
+        );
+        assert.equal(n.rows[0].n, 1);
+
+        const other = await makeUser();
+        const theirs = await createTopUp(other, pack.id, { key });
+        assert.equal(theirs.ok, true);
+        assert.notEqual(theirs.top_up_id, first.top_up_id, "keys are scoped per user");
+    });
+
+    it("refuses an idempotency key reused for a different pack", async () => {
+        const authId = await makeUser();
+        const a = await makePack();
+        const b = await makePack({ credits: 300, price: 2500 });
+        const key = `reuse-${randomUUID()}`;
+        assert.equal((await createTopUp(authId, a.id, { key })).ok, true);
+        assert.equal((await createTopUp(authId, b.id, { key })).code, "IDEMPOTENCY_KEY_REUSED");
+    });
+
+    it("refuses a malformed idempotency key", async () => {
+        const pack = await makePack();
+        assert.equal((await createTopUp(await makeUser(), pack.id, { key: "short" })).code, "IDEMPOTENCY_KEY_REQUIRED");
     });
 
     it("rate-limits Top-up creation per user", async () => {
         const authId = await makeUser();
         const pack = await makePack();
-        assert.equal((await createTopUp(authId, pack.id, "v1", 2)).ok, true);
-        assert.equal((await createTopUp(authId, pack.id, "v1", 2)).ok, true);
-        const third = await createTopUp(authId, pack.id, "v1", 2);
+        assert.equal((await createTopUp(authId, pack.id, { limit: 2 })).ok, true);
+        assert.equal((await createTopUp(authId, pack.id, { limit: 2 })).ok, true);
+        const third = await createTopUp(authId, pack.id, { limit: 2 });
         assert.equal(third.code, "RATE_LIMITED");
         assert.ok(third.retry_after_seconds >= 1);
-        assert.equal((await createTopUp(await makeUser(), pack.id, "v1", 2)).ok, true, "limit is per user");
+        assert.equal((await createTopUp(await makeUser(), pack.id, { limit: 2 })).ok, true, "limit is per user");
     });
 
     it("forces RLS on both tables and leaves the function to service_role only", async () => {
