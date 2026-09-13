@@ -1,10 +1,10 @@
 /**
  * Chargeback Freeze — acceptance tests (#97, ADR-0018 decision 8, ADR-0019).
  *
- * Exercises schema/supabase/0059_chargeback_freeze.sql on top of 0037/0038
- * (Free Credits), 0041 (top_ups), 0054 (credit_top_up) and 0058
- * (apply_top_up_refund), applied twice to prove idempotency. Skipped unless
- * DATABASE_URL is set.
+ * Exercises schema/supabase/0059_chargeback_freeze.sql and
+ * 0062_freeze_credits_taken.sql on top of 0037/0038 (Free Credits), 0041
+ * (top_ups), 0054 (credit_top_up) and 0058 (apply_top_up_refund), applied
+ * twice to prove idempotency. Skipped unless DATABASE_URL is set.
  */
 import { after, before, describe, it } from "node:test";
 import assert from "node:assert/strict";
@@ -20,6 +20,7 @@ const MIGRATIONS = [
     "0054_credit_top_up.sql",
     "0058_top_up_refund_clawback.sql",
     "0059_chargeback_freeze.sql",
+    "0062_freeze_credits_taken.sql",
 ].map((f) => new URL(`./schema/supabase/${f}`, import.meta.url));
 
 const CREDITS = 300;
