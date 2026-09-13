@@ -211,6 +211,10 @@ export default function CreateStudio() {
                   playsInline
                   className="absolute inset-0 w-full h-full object-contain bg-black"
                 />
+              ) : job?.mime_type?.startsWith('audio/') ? (
+                <div className="absolute inset-0 flex items-center justify-center bg-black px-8">
+                  <audio src={job.asset_url} controls autoPlay className="w-full max-w-xl" />
+                </div>
               ) : (
                 <img
                   src={job.asset_url}

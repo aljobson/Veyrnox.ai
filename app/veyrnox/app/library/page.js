@@ -4,7 +4,7 @@ import { AppNav } from '../../_components/NavBar';
 import { Chip } from '../../_components/Chip';
 import { gatewayFetch, GatewayError, notifyBalanceChanged } from '../../_lib/gateway';
 import { readJobHistory } from '../../_lib/jobHistory';
-import { MODELS } from '../../_lib/tokens';
+import { useCatalog } from '../../_lib/useCatalog';
 
 // Client-side ring buffer supplies the ids; server has no /jobs list yet.
 const STATE_UI = {
@@ -17,6 +17,7 @@ const STATE_UI = {
 const POLL_MS = 3000;
 
 export default function Library() {
+  const { models } = useCatalog();
   const [tab, setTab] = useState('all');
   const [balance, setBalance] = useState(null);
   const [rows, setRows] = useState(() => readJobHistory().map(hydrateFromHistory));
@@ -131,7 +132,7 @@ export default function Library() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {list.map((r) => <JobCard key={r.job_id} row={r} />)}
+            {list.map((r) => <JobCard key={r.job_id} row={r} models={models} />)}
           </div>
         )}
       </section>
@@ -139,11 +140,12 @@ export default function Library() {
   );
 }
 
-function JobCard({ row }) {
+function JobCard({ row, models }) {
   const s = STATE_UI[row.state] || STATE_UI.queued;
   const delta = row.state === 'failed' ? `+${row.credits}` : `−${row.credits}`;
   const deltaCls = row.state === 'failed' ? 'text-vx-accent' : 'text-vx-money';
-  const model = MODELS.find((m) => m.id === row.model_id);
+  // Live catalog (tokens.js fallback) so newly added models show their name.
+  const model = models.find((m) => m.id === row.model_id);
   return (
     <div className="rounded-2xl border border-vx-border bg-vx-panel overflow-hidden">
       <div
@@ -153,7 +155,12 @@ function JobCard({ row }) {
         {row.asset_url && row.mime_type?.startsWith('video/') && (
           <video src={row.asset_url} className="absolute inset-0 w-full h-full object-cover" muted playsInline autoPlay loop />
         )}
-        {row.asset_url && !row.mime_type?.startsWith('video/') && (
+        {row.asset_url && row.mime_type?.startsWith('audio/') && (
+          <div className="absolute inset-0 flex items-end px-4 pb-4">
+            <audio src={row.asset_url} controls className="w-full" />
+          </div>
+        )}
+        {row.asset_url && row.mime_type?.startsWith('image/') && (
           <img src={row.asset_url} alt={row.name || 'generation'} className="absolute inset-0 w-full h-full object-cover" />
         )}
         <div className="absolute top-3 left-3">
