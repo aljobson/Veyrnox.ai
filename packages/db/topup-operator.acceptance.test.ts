@@ -296,6 +296,20 @@ describe("Operator Top-up reads and reconciliation", { skip: !DATABASE_URL && "D
         [{ problem: "frozen_state_mismatch", top_up_id: null }], "last logged action is a Freeze but not frozen");
     });
 
+    it("does not report a Freeze and an unfreeze in one transaction, which share a timestamp", async () => {
+        const t = await credit(await pendingTopUp());
+        await debit(t.userId, 10);
+        const rows = await problemsAfter(t.userId, async (c) => {
+            const res = (await c.query(`SELECT public.apply_top_up_refund($1, $2, $3) AS r`, [t.order, TOTAL, TOTAL])).rows[0].r;
+            assert.equal(res.frozen, true);
+            assert.equal((await c.query(`SELECT public.unfreeze_account($1, 'Al Jobson', 'Reviewed') AS r`, [t.userId])).rows[0].r.ok, true);
+            const tie = (await c.query(
+                `SELECT count(DISTINCT created_at)::int AS n FROM public.account_actions WHERE user_id = $1`, [t.userId])).rows[0];
+            assert.equal(tie.n, 1, "same transaction time");
+        });
+        assert.deepEqual(rows, []);
+    });
+
     it("keeps the new functions service_role only, SECURITY DEFINER with an empty search_path", async () => {
         for (const fn of [
             "public.operator_user_top_ups(uuid)",

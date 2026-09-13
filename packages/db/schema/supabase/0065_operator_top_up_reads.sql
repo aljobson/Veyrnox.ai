@@ -43,6 +43,9 @@
 --                             carry no Top-up id, so this is per user.
 --   frozen_state_mismatch     users.frozen_at set without a Freeze as the last
 --                             freeze/unfreeze in account_actions, or the reverse.
+--                             created_at is transaction time, so a freeze and
+--                             unfreeze in one transaction tie; a tie matches
+--                             either state rather than guessing an order.
 -- credited_without_order and clawback_exceeds_credits are also CHECK
 -- constraints (0054, 0058); the report catches a constraint that was dropped
 -- or never applied.
@@ -50,7 +53,13 @@
 -- The nightly veyrnox-reconcile-balances cron job now fails on any of these
 -- rows too, like reconcile_balances and reconcile_free_credits (0037).
 --
--- Idempotent: CREATE OR REPLACE, guarded cron reschedule, REVOKE/GRANT re-run.
+-- top_ups_pending_created_idx backs operator_pending_top_ups across all users.
+--
+-- Idempotent: IF NOT EXISTS, CREATE OR REPLACE, guarded cron reschedule,
+-- REVOKE/GRANT re-run.
+
+CREATE INDEX IF NOT EXISTS top_ups_pending_created_idx ON public.top_ups (created_at DESC)
+    WHERE status = 'pending';
 
 CREATE OR REPLACE FUNCTION public.operator_user_top_ups(
     p_user_id UUID
@@ -210,13 +219,18 @@ AS $$
 
     UNION ALL
     SELECT 'frozen_state_mismatch', u.id, NULL,
-           jsonb_build_object('frozen_at', u.frozen_at, 'last_action', l.action)
+           jsonb_build_object('frozen_at', u.frozen_at, 'last_freeze', l.freeze, 'last_unfreeze', l.unfreeze)
     FROM public.users u
-    LEFT JOIN (SELECT DISTINCT ON (a.user_id) a.user_id, a.action
+    LEFT JOIN (SELECT a.user_id,
+                      bool_or(a.action = 'freeze') AS freeze,
+                      bool_or(a.action = 'unfreeze') AS unfreeze
                FROM public.account_actions a
                WHERE a.action IN ('freeze', 'unfreeze')
-               ORDER BY a.user_id, a.created_at DESC) l ON l.user_id = u.id
-    WHERE (u.frozen_at IS NOT NULL) <> COALESCE(l.action = 'freeze', false);
+                 AND a.created_at = (SELECT max(b.created_at) FROM public.account_actions b
+                                     WHERE b.user_id = a.user_id AND b.action IN ('freeze', 'unfreeze'))
+               GROUP BY a.user_id) l ON l.user_id = u.id
+    WHERE CASE WHEN u.frozen_at IS NOT NULL THEN NOT COALESCE(l.freeze, false)
+               ELSE COALESCE(l.freeze AND NOT l.unfreeze, false) END;
 $$;
 
 DO $$
