@@ -66,8 +66,6 @@ list includes "services of any kind" and says nothing about AI generation.
 6. **Consent.** The buy dialog requires a ticked acknowledgement that credits are
    supplied immediately and the right to cancel ends once the user generates. It
    is stored on the pending Top-up with a timestamp and wording version.
-   The owner approved the wording as `supply-consent-v1` on 2026-09-13 (#99);
-   `POST /api/v1/top-ups` accepts no other version (#100).
 7. **Top-up Refunds.** Operators issue them in the LemonSqueezy dashboard, within
    14 days and only if nothing was generated since that Top-up. Every
    `order_refunded` event, whoever issued it, claws back a proportional share of
@@ -147,3 +145,17 @@ list includes "services of any kind" and says nothing about AI generation.
   Its clawback check is per user, not per Top-up: `reverse:topup_refund` ledger
   rows carry no Top-up id, so an over-count on one Top-up and an equal
   under-count on another of the same user cancel out and are not reported.
+
+## Update (2026-09-13): tax display and consent wording approved
+
+The product owner approved the customer-facing Credit Pack wording as version 1
+in #99: tax-exclusive display, the Supply Consent checkbox, the refund bullet,
+Lemon Squeezy as Merchant of Record in the Privacy Policy and Terms, and the
+pricing page header. This is the owner's approval, not external legal advice.
+It meets the Finance/Legal precondition above; LemonSqueezy eligibility (#91)
+is still open.
+
+Decision 6's wording version is `supply-consent-v1`. `POST /api/v1/top-ups`
+rejects any other version with `400 consent_version_required` (#100), so a
+new wording needs a new sign-off and a new version in the buy dialog and the
+route together.
