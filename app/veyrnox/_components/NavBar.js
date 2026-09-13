@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { Logo } from './Logo';
+import { NavAuthButtons } from './NavAuthButtons';
 import { gatewayFetch, GatewayError } from '../_lib/gateway';
 
 // Marketing site nav (Home / Gallery / Pricing).
@@ -14,11 +15,11 @@ export function MarketingNav() {
     { href: '/veyrnox/pricing', label: 'Pricing' },
   ];
   return (
-    <div className="sticky top-0 z-40 flex items-center justify-between px-8 h-16 border-b border-vx-border bg-vx-base/[0.88] backdrop-blur">
-      <Link href="/veyrnox" className="flex items-center gap-2.5">
+    <div className="sticky top-0 z-40 flex items-center justify-between px-4 sm:px-8 h-16 border-b border-vx-border bg-vx-base/[0.88] backdrop-blur">
+      <Link href="/veyrnox" className="flex items-center gap-2.5 shrink-0">
         <Logo wordmark />
       </Link>
-      <div className="flex gap-1.5 text-sm font-semibold">
+      <div className="hidden sm:flex gap-1.5 text-sm font-semibold">
         {items.map((it) => {
           const active = it.href === '/veyrnox' ? path === '/veyrnox' : path.startsWith(it.href);
           return (
@@ -34,16 +35,8 @@ export function MarketingNav() {
           );
         })}
       </div>
-      <div className="flex items-center gap-2">
-        <button className="text-vx-fg-muted text-sm font-semibold px-3 py-2 hover:text-vx-fg">
-          Sign in
-        </button>
-        <Link
-          href="/veyrnox/app"
-          className="rounded-full bg-vx-accent text-vx-accent-ink text-sm font-bold px-5 py-2.5 hover:bg-vx-accent-hover"
-        >
-          Start creating
-        </Link>
+      <div className="flex items-center gap-2 shrink-0">
+        <NavAuthButtons />
       </div>
     </div>
   );
