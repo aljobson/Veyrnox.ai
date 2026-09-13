@@ -1,5 +1,5 @@
 'use client';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Chip } from './Chip';
 import { gatewayFetch } from '../_lib/gateway';
 
@@ -12,21 +12,30 @@ const num = new Intl.NumberFormat('en-US');
 export function TopUpHistory() {
   const [topUps, setTopUps] = useState(null);
   const [failed, setFailed] = useState(false);
+  // Loads can overlap (mount, focus, balance change); only the latest applies.
+  const latest = useRef(0);
 
   const load = useCallback(async () => {
+    const seq = ++latest.current;
     try {
       const b = await gatewayFetch('/top-ups');
+      if (seq !== latest.current) return;
       setTopUps(Array.isArray(b?.top_ups) ? b.top_ups : []);
       setFailed(false);
     } catch {
-      setFailed(true);
+      if (seq === latest.current) setFailed(true);
     }
   }, []);
 
   useEffect(() => {
     load();
+    // focus: coming back from an abandoned checkout tab shows its pending row.
+    window.addEventListener('focus', load);
     window.addEventListener('veyrnox:balance-changed', load);
-    return () => window.removeEventListener('veyrnox:balance-changed', load);
+    return () => {
+      window.removeEventListener('focus', load);
+      window.removeEventListener('veyrnox:balance-changed', load);
+    };
   }, [load]);
 
   return (
