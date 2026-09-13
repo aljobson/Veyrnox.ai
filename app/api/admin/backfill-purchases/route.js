@@ -1,6 +1,6 @@
 /**
  * POST /api/admin/backfill-purchases — credit paid Top-ups whose webhook never
- * landed (ADR-0018 decision 5, ADR-0019).
+ * landed (ADR-0018 decision 5, ADR-0020).
  *
  *   1. Pending purchases created between 10 minutes and 24 hours ago. Younger
  *      ones may still get their webhook; older ones' Checkout Sessions have

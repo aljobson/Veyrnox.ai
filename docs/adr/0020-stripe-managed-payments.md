@@ -1,9 +1,9 @@
-# ADR-0019 — Stripe Managed Payments as the web Merchant of Record
+# ADR-0020 — Stripe Managed Payments as the web Merchant of Record
 
 - **Status**: Accepted (2026-09-13)
 - **Deciders**: Product owner
 - **Amends**: [ADR-0018 — Credit Pack Top-ups](0018-credit-pack-top-ups.md) decision 2 (web Merchant of Record); supersedes [ADR-0003](0003-billing-provider.md)
-- **Related**: [ADR-0005](0005-phase-0-business-preconditions.md) (UK Ltd), [ADR-0013](0013-credit-expiry-policy.md), [ADR-0014](0014-floor-pricing.md), `CONTEXT.md`
+- **Related**: [ADR-0019](0019-dispute-webhooks-freeze.md) (dispute webhooks Freeze), [ADR-0005](0005-phase-0-business-preconditions.md) (UK Ltd), [ADR-0013](0013-credit-expiry-policy.md), [ADR-0014](0014-floor-pricing.md), `CONTEXT.md`
 
 ## Context
 
@@ -36,7 +36,20 @@ Web Top-ups are sold through **Stripe Checkout with `managed_payments[enabled]=t
 | 2. Sales Channel recorded on every grant; packs priced per channel | Done (0039): `credit_packs.sales_channel` (`web`, `app_store`, `google_play`) makes each channel's packs their own rows at their own prices; `purchases.sales_channel` is tied to its pack by a composite foreign key; the grant is `grant:topup:<channel>`; `POST /api/v1/checkout` is the `web` channel and `purchase_create` only sells that channel's packs. Store channels still need their own product-id columns |
 | 6. Supply Consent stored on the pending Top-up | Done (0036): the buy dialog requires the checkbox; `purchase_create` records `supply_consent_version` and a server `supply_consent_at`; the checkout route only accepts the current version from `lib/supplyConsent.js`. Wording is `supply-consent-2026-09-13-draft` until Finance/Legal approve it |
 | 7. Top-up Refunds claw back a proportional share | Done (0037): every `charge.refunded`, full or partial, moves the purchase's `refunded_credits` to floor(credits × `amount_refunded` / `amount`) and takes only the increase, never below a zero balance. Dedupe is by the cumulative refunded amount |
-| 8. Chargebacks Freeze the account | Done (0038): a refund or lost dispute that increases a purchase's `refunded_share`, when a job that did not fail or get refunded exists after `paid_at`, inserts an `account_freezes` row. `ledger_debit` and `purchase_create` refuse Frozen accounts (`403 account_frozen`); `operator_unfreeze` (admin users only, not self, reason required) records who and why. No Operator UI or route yet |
+| 8. Chargebacks Freeze the account (as amended by ADR-0019) | Inference done (0038): a refund or lost dispute that increases a purchase's `refunded_share`, when a job that did not fail or get refunded exists after `paid_at`, inserts an `account_freezes` row. `ledger_debit` and `purchase_create` refuse Frozen accounts (`403 account_frozen`); `operator_unfreeze` (admin users only, not self, reason required) records who and why. No Operator UI or route yet. See "ADR-0019 on Stripe" for the reported-dispute path |
+
+## ADR-0019 on Stripe
+
+ADR-0019 was written for LemonSqueezy's `dispute_created` and `dispute_resolved` webhooks. Its decisions carry over to Stripe as follows.
+
+| ADR-0019 decision | Stripe equivalent | This slice |
+|---|---|---|
+| 1. A reported dispute Freezes the owning user, never trusting a user in the payload | `charge.dispute.created`, matched to our purchase by `payment_intent` | **Not yet.** An open dispute changes nothing; a lost one (`charge.dispute.closed`, `lost`) takes back the pack's credits and Freezes if credits were spent since that Top-up |
+| 2. Dispute resolution never unfreezes | `charge.dispute.closed` | Holds: a won dispute does nothing, and only `operator_unfreeze` lifts a Freeze |
+| 3. Refund-after-spend inference stays as a backstop | `charge.refunded` | Done (0038) |
+| 4. Freezing is idempotent and appends an account-action log entry | — | **Partly.** One active Freeze per user; there is no account-action log yet |
+
+ADR-0019's LemonSqueezy workarounds do not apply: Stripe dispute events are documented, signed with a timestamp, carry `payment_intent`, and are retried for up to three days, so there is no order re-fetch and no undocumented payload to pin.
 
 ## Flow
 
@@ -67,6 +80,8 @@ Web Top-ups are sold through **Stripe Checkout with `managed_payments[enabled]=t
 - Buy buttons stay behind `localStorage.veyrnox_billing = '1'` until the "not yet" rows above that block live mode are done.
 
 ## Before live mode
+
+- `charge.dispute.created` Freezes the account (ADR-0019 decision 1), and Freezes are recorded in an account-action log (decision 4).
 
 - Finance/Legal approve the Supply Consent wording; publish it under a version without `-draft`.
 - An Operator route for `operator_unfreeze` that takes the Operator's identity from the verified `x-veyrnox-auth-id` header, never from the request body.

@@ -1,4 +1,4 @@
--- Proportional Top-up Refund clawback (ADR-0018 decision 7, ADR-0019).
+-- Proportional Top-up Refund clawback (ADR-0018 decision 7, ADR-0020).
 --
 -- A refund, full or partial and whoever issued it, takes back
 -- floor(pack credits × refunded / charged) of that Top-up's credits, never

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Price a web Credit Pack from its Stripe Price (ADR-0018 decision 4, ADR-0019).
+ * Price a web Credit Pack from its Stripe Price (ADR-0018 decision 4, ADR-0020).
  *
  *   node scripts/set-credit-pack-price.mjs <pack_id> <price_id> [--activate]
  *

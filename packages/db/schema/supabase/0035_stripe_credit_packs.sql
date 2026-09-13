@@ -1,4 +1,4 @@
--- Stripe Managed Payments credit top-ups (ADR-0019).
+-- Stripe Managed Payments credit top-ups (ADR-0020).
 --
 -- credit_packs  — credits per pack + the Stripe Price that sells it. The
 --                 money amount lives on the Stripe Price only; a pack is

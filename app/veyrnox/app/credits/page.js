@@ -9,7 +9,7 @@ import { MODELS } from '../../_lib/tokens';
 import { SUPPLY_CONSENT_TEXT, SUPPLY_CONSENT_VERSION } from '../../../../lib/supplyConsent';
 
 // Display only — credits come from credit_packs, the charge from the Stripe
-// Price (ADR-0019). Keep the labels in step with the Stripe dashboard.
+// Price (ADR-0020). Keep the labels in step with the Stripe dashboard.
 const TOPUPS = [
   { id: 'pack_100',  c: 100,  price: '$10' },
   { id: 'pack_300',  c: 300,  price: '$25' },

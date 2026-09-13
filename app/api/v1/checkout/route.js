@@ -1,5 +1,5 @@
 /**
- * POST /api/v1/checkout — start a Stripe Checkout for a credit pack (ADR-0019).
+ * POST /api/v1/checkout — start a Stripe Checkout for a credit pack (ADR-0020).
  *
  *   1. middleware.js verified the JWT and set x-veyrnox-auth-id
  *   2. Validate { pack_id, idempotency_key, supply_consent_version } — the

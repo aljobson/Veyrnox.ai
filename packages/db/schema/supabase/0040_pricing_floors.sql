@@ -1,4 +1,4 @@
--- Credit Pack pricing floors (ADR-0018 decision 4, ADR-0014, ADR-0019).
+-- Credit Pack pricing floors (ADR-0018 decision 4, ADR-0014, ADR-0020).
 --
 -- An active Credit Pack must satisfy both floors, checked whenever a pack is
 -- activated or repriced and whenever a channel's fee changes:

@@ -1,7 +1,7 @@
 name: purchase-backfill
 
 # Credits paid Top-ups whose Stripe webhook never landed (ADR-0018 decision 5,
-# ADR-0019). The endpoint does the work; this only calls it on a schedule.
+# ADR-0020). The endpoint does the work; this only calls it on a schedule.
 #
 # ADMIN_BACKFILL_TOKEN can do nothing but trigger that backfill, which only
 # grants credits for Checkout Sessions Stripe reports as paid. No database or

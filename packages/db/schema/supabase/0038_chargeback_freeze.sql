@@ -1,4 +1,4 @@
--- Chargeback Freeze (ADR-0018 decision 8, ADR-0019).
+-- Chargeback Freeze (ADR-0018 decision 8, ADR-0020).
 --
 -- A Chargeback is a Top-up Refund (or lost dispute) that arrives after
 -- credits were spent since that Top-up. It Freezes the account: generating

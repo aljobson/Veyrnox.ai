@@ -1,4 +1,4 @@
--- Sales Channel on every Top-up grant (ADR-0018 decision 2, ADR-0019).
+-- Sales Channel on every Top-up grant (ADR-0018 decision 2, ADR-0020).
 --
 -- A Sales Channel is where a Top-up is bought: web, the iOS App Store or
 -- Google Play. Each channel has its own Merchant of Record and its own Credit

@@ -9,13 +9,13 @@ Phase-0 decision-support documents for the target architecture at `/Users/aljobs
 | [ADR-0000 — Product strategy: Replacer vs Reseller](0000-product-strategy.md) | **Accepted 2026-09-10 — Option A (Replacer)** | The meta-decision. Product owner picked full-stack rebuild over MuAPI reseller. Timeline 20-24 wk to first paying customer. | — |
 | [ADR-0001 — Authentication provider](0001-auth-provider.md) | Superseded by 0004 | Original single-vendor auth ADR. Circular with 0002. | — |
 | [ADR-0002 — Postgres host & serverless driver](0002-postgres-host.md) | Superseded by 0004 | Original single-vendor DB ADR. Circular with 0001. | — |
-| [ADR-0003 — Billing / merchant-of-record](0003-billing-provider.md) | Superseded by 0019 | Original: LemonSqueezy at launch, Stripe Direct at ~$20k MRR. | — |
+| [ADR-0003 — Billing / merchant-of-record](0003-billing-provider.md) | Superseded by 0020 | Original: LemonSqueezy at launch, Stripe Direct at ~$20k MRR. | — |
 | [ADR-0004 — Auth + Postgres bundle](0004-auth-and-db-bundle.md) | Amended by 0006 | Original: Clerk + Neon. Superseded by 0006 on EU-residency grounds. | — |
 | [ADR-0005 — Phase-0 business preconditions](0005-phase-0-business-preconditions.md) | **Accepted 2026-09-10** | UK Ltd, UK tax, EU-only data, 50-credit free tier, C2PA+ToS Article 50, registered-agent DMCA. | (unblocks Phase 1 Slice 3) |
 | [ADR-0006 — Auth + DB amendment for EU residency](0006-auth-and-db-amendment-eu-residency.md) | **Accepted 2026-09-10 — Supabase Auth + Supabase Postgres (Frankfurt)** | Clerk EU-tier at ~$250–400/mo forced re-evaluation; Supabase EU on $25/mo Pro. MFA becomes a Phase-4 deliverable. | Slice 3+ |
 | [ADR-0018 — Credit Pack Top-ups before Subscriptions](0018-credit-pack-top-ups.md) | **Accepted 2026-09-13** (pending LemonSqueezy eligibility + Finance/Legal) | Web Credit Packs 100/$10 · 300/$25 · 1,000/$75 via LemonSqueezy; net ≥ $0.033 and ≥ $0.075/credit floors; refunds claw back pro-rata; inferred chargebacks Freeze. Subscriptions next. | Top-ups slice |
 | [ADR-0019 — Dispute webhooks Freeze the account](0019-dispute-webhooks-freeze.md) | **Accepted 2026-09-13** | Amends ADR-0018 decision 8: LemonSqueezy `dispute_created` Freezes the owning user (order re-fetched, payload user never trusted); `dispute_resolved` is logged only, Operator unfreezes; refund-after-spend inference stays as backstop. | #97 |
-| [ADR-0019 — Stripe Managed Payments as the web Merchant of Record](0019-stripe-managed-payments.md) | **Accepted 2026-09-13** (amends 0018 decision 2) | Stripe Checkout with Managed Payments replaces LemonSqueezy; timestamped signed webhooks and dispute events; lists which 0018 decisions the first slice implements. | Top-ups slice |
+| [ADR-0020 — Stripe Managed Payments as the web Merchant of Record](0020-stripe-managed-payments.md) | **Accepted 2026-09-13** (amends 0018 decision 2) | Stripe Checkout with Managed Payments replaces LemonSqueezy; timestamped signed webhooks and dispute events; maps ADR-0019 onto Stripe's dispute events; lists which 0018 and 0019 decisions the first slice implements. | Top-ups slice |
 
 ## Decision graph
 

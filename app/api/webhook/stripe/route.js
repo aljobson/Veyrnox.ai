@@ -1,5 +1,5 @@
 /**
- * POST /api/webhook/stripe — Stripe events for credit top-ups (ADR-0019).
+ * POST /api/webhook/stripe — Stripe events for credit top-ups (ADR-0020).
  *
  *   1. Read raw bytes; verify Stripe-Signature (HMAC-SHA256, 5 min window).
  *   2. Dedup on webhook_events(source='stripe', external_id=event.id).

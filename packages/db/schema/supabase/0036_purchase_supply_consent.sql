@@ -1,4 +1,4 @@
--- Supply Consent on the pending Top-up (ADR-0018 decision 6, ADR-0019).
+-- Supply Consent on the pending Top-up (ADR-0018 decision 6, ADR-0020).
 --
 -- purchase_create now requires the consent wording version the buyer ticked
 -- and records it with a server timestamp. The version is checked for shape

@@ -1,5 +1,5 @@
 /**
- * Stripe adapter — Checkout Sessions with Managed Payments (ADR-0019).
+ * Stripe adapter — Checkout Sessions with Managed Payments (ADR-0020).
  *
  *   1. `createCheckoutSession(input, cfg)` — POST /v1/checkout/sessions,
  *      form-encoded, one-time payment, Stripe as merchant of record.
