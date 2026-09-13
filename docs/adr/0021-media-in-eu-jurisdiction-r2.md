@@ -51,13 +51,13 @@ Target: EU `veyrnox-ai-media`.
 4. **Catch up.** Repeat step 2 for assets created after the step 2 copy (2026-09-13, 8 assets) and before step 3.
    **Done:** no assets or jobs were created between the step 2 copy and step 3.
 5. **Verify.** Generate one asset and download it; open one pre-cutover asset from the library. Both must load from `<account>.eu.r2.cloudflarestorage.com/veyrnox-ai-media/...`.
-   **Done, partly confirmed:** the owner reported both checks working. Production's database recorded no jobs after 10:38 UTC at the time, so the first upload to `veyrnox-ai-media` from production was not yet observed; confirm the next production generation lands there.
+   **Done:** the owner reported both checks working. The first production generation after the cutover (a fal video submitted 11:22:39 UTC) reached `STORED`; its asset is in `veyrnox-ai-media` (EU) at its recorded `size_bytes` and not in the default-jurisdiction `veyrnox-media`, and presigned asset requests (`GET /api/v1/jobs/:id/asset`) returned OK in the Worker logs. No R2 errors were logged after the cutover.
 6. **Copy.** Update the Privacy Policy and GDPR page to say generated media is stored in the EU (Cloudflare R2 EU jurisdiction), and record ADR-0005 §3 as met for media.
    **Done** in this change. ADR-0005 §3 (EU-only user data) is now met for media as well as the database.
 7. **Old copies.** `veyrnox-staging-media` keeps production's pre-cutover copies and the one pre-#85 object. Deleting them is a separate, owner-approved step.
-   **Done 2026-09-13 ~11:06 UTC.** The owner deleted all 9 objects (the 8 production assets and the pre-#85 object) with `wrangler r2 object delete`. Checked afterwards: a direct `get` of each of the 9 keys in `veyrnox-staging-media` returns "The specified key does not exist", and all 8 production assets are present in `veyrnox-ai-media` (EU) at their recorded size. The bucket itself still exists and is empty; its dashboard object count lagged at 9 when checked. No production jobs had run since the cutover, so nothing was lost.
+   **Done 2026-09-13 ~11:06 UTC.** The owner deleted all 9 objects (the 8 production assets and the pre-#85 object) with `wrangler r2 object delete`. Checked afterwards: a direct `get` of each of the 9 keys in `veyrnox-staging-media` returns "The specified key does not exist", and all 8 production assets are present in `veyrnox-ai-media` (EU) at their recorded size. The empty bucket was then deleted (`wrangler r2 bucket delete veyrnox-staging-media`), after checking no Worker binding or Pages project referenced it. No production jobs had run since the cutover, so nothing was lost.
 
-Rollback before step 7: set `R2_BUCKET` back to `veyrnox-staging-media` and `wrangler secret delete R2_JURISDICTION`. Assets created after step 3 exist only in the EU bucket and would need copying back. Step 7 is done, so a rollback now also needs every asset copied back from `veyrnox-ai-media` first.
+Rollback before step 7: set `R2_BUCKET` back to `veyrnox-staging-media` and `wrangler secret delete R2_JURISDICTION`. Assets created after step 3 exist only in the EU bucket and would need copying back. Step 7 is done and `veyrnox-staging-media` no longer exists, so a rollback now needs that bucket recreated and every asset copied back from `veyrnox-ai-media` first.
 
 ## Consequences
 
