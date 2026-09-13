@@ -6,9 +6,9 @@ export const ENTITY = {
     companyNo: '17299951',
     jurisdiction: 'England & Wales',
     office: 'Suite RA01, 195-197 Wood Street, London, England, E17 3NU',
-    email: 'legal@veyrnox.ai',
-    privacyEmail: 'privacy@veyrnox.ai',
-    updated: '12 September 2026',
+    email: 'legal@veyrnox.com',
+    privacyEmail: 'privacy@veyrnox.com',
+    updated: '13 September 2026',
 };
 
 export function LegalPage({ title, children }) {
