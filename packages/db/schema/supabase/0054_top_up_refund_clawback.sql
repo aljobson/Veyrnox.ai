@@ -23,6 +23,11 @@
 --            `shortfall` and is not collected later from other Top-ups'
 --            credits; a refund after spending is a Chargeback (#97).
 --
+-- A refund can be delivered before order_created has credited the Top-up.
+-- Given the Top-up id from the order's custom data, a still-pending Top-up
+-- returns NOT_CREDITED_YET so the webhook retries; crediting an already
+-- refunded order applies the refund right after (route).
+--
 -- Replaying an amount already applied, or an older one, is a no-op. The
 -- Top-up row is locked first and the balance row second, the same order as
 -- credit_top_up, so concurrent deliveries serialise.
@@ -45,11 +50,12 @@ END $$;
 -- Returns {ok:true, idempotent, top_up_id, user_id, share, taken, shortfall,
 -- balance_after} or {ok:true, flagged:true, taken:0} for a paid order that was
 -- flagged and never granted, or {ok:false, code} with code INVALID_ORDER_ID,
--- INVALID_AMOUNT or ORDER_NOT_FOUND.
+-- INVALID_AMOUNT, NOT_CREDITED_YET (retry) or ORDER_NOT_FOUND.
 CREATE OR REPLACE FUNCTION public.apply_top_up_refund(
     p_order_id TEXT,
     p_refunded_cents BIGINT,
-    p_total_cents BIGINT
+    p_total_cents BIGINT,
+    p_top_up_id UUID DEFAULT NULL
 ) RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -76,6 +82,9 @@ BEGIN
         -- A flagged order was never granted, so there is nothing to take back.
         IF EXISTS (SELECT 1 FROM public.top_up_flagged_orders f WHERE f.order_id = p_order_id) THEN
             RETURN jsonb_build_object('ok', true, 'idempotent', false, 'flagged', true, 'taken', 0, 'shortfall', 0);
+        END IF;
+        IF EXISTS (SELECT 1 FROM public.top_ups t WHERE t.id = p_top_up_id AND t.status = 'pending') THEN
+            RETURN jsonb_build_object('ok', false, 'code', 'NOT_CREDITED_YET');
         END IF;
         RETURN jsonb_build_object('ok', false, 'code', 'ORDER_NOT_FOUND');
     END IF;
@@ -113,5 +122,5 @@ BEGIN
                               'balance_after', v_balance - v_taken);
 END $$;
 
-REVOKE ALL ON FUNCTION public.apply_top_up_refund(TEXT, BIGINT, BIGINT) FROM PUBLIC, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.apply_top_up_refund(TEXT, BIGINT, BIGINT) TO service_role;
+REVOKE ALL ON FUNCTION public.apply_top_up_refund(TEXT, BIGINT, BIGINT, UUID) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.apply_top_up_refund(TEXT, BIGINT, BIGINT, UUID) TO service_role;

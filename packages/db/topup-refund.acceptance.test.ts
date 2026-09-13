@@ -208,6 +208,31 @@ describe("Top-up Refund clawback", { skip: !DATABASE_URL && "DATABASE_URL not se
         await assertInvariants(t.userId);
     });
 
+    it("a refund for a Top-up not credited yet asks for a retry, then applies once credited", async () => {
+        const authId = `sb_${randomUUID()}`;
+        const userId = (await one(`SELECT public.signup_grant($1, $2) AS id`,
+            [authId, `${randomUUID()}@test.veyrnox.ai`])).id as string;
+        const packId = `test-${randomUUID().slice(0, 8)}`;
+        const variant = String(randomInt(1e9, 2e9));
+        await pool.query(
+            `INSERT INTO public.credit_packs (id, sales_channel, credits, price_usd_cents, variant_id, active)
+             VALUES ($1, 'web', $2, $3, $4, true)`, [packId, CREDITS, PRICE, variant]);
+        const pending = (await one(`SELECT public.create_pending_top_up($1, $2, $3, '2026-09-13', 10, 600) AS r`,
+            [authId, packId, `test-${randomUUID()}`])).r;
+        const order = String(randomInt(1e9, 2e9));
+
+        const early = (await one(`SELECT public.apply_top_up_refund($1, $2, $3, $4) AS r`,
+            [order, TOTAL, TOTAL, pending.top_up_id])).r;
+        assert.equal(early.code, "NOT_CREDITED_YET");
+
+        await one(`SELECT public.credit_top_up($1, $2, $3, 'USD', $4) AS r`, [pending.top_up_id, order, PRICE, variant]);
+        const late = (await one(`SELECT public.apply_top_up_refund($1, $2, $3, $4) AS r`,
+            [order, TOTAL, TOTAL, pending.top_up_id])).r;
+        assert.equal(late.taken, 300);
+        assert.deepEqual(await balances(userId), { balance: 50, free: 50 });
+        await assertInvariants(userId);
+    });
+
     it("a refunded flagged order has nothing to claw back", async () => {
         const t = await creditedTopUp();
         const variant = (await one(`SELECT variant_id FROM public.top_ups WHERE id = $1`, [t.topUpId])).variant_id;

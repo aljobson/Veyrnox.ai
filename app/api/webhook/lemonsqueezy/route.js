@@ -39,6 +39,7 @@ const FLAGGED = new Set(['ALREADY_CREDITED', 'VARIANT_MISMATCH', 'AMOUNT_MISMATC
 // Final refusals a redelivery cannot change.
 const REFUSED = new Set(['TOP_UP_NOT_FOUND', 'ORDER_ALREADY_USED', 'INVALID_ORDER_ID']);
 const REFUND_REFUSED = new Set(['ORDER_NOT_FOUND', 'INVALID_ORDER_ID', 'INVALID_AMOUNT']);
+const PAID_STATUSES = new Set(['paid', 'refunded', 'partial_refund']);
 
 export async function POST(req) {
     const cfg = envConfig();
@@ -104,7 +105,9 @@ export async function POST(req) {
         if (o.status === 'pending') {
             return NextResponse.json({ error: 'order_pending' }, { status: 503 });
         }
-        if (o.status !== 'paid') {
+        // A refund can land before this event is processed; the order is still
+        // credited, and the refund below takes its share back.
+        if (!PAID_STATUSES.has(o.status)) {
             console.error(LOG, 'order not paid, not credited:', orderId, o.status, o.topUpId);
             await markProcessed(cfg, SOURCE, externalId);
             return NextResponse.json({ ok: true, warn: 'order_not_paid' });
@@ -124,6 +127,8 @@ export async function POST(req) {
         if (res.ok === false) {
             const why = FLAGGED.has(res.code) ? 'paid order flagged for Operator refund' : 'order refused';
             console.error(LOG, `${why}:`, res.code, 'order', orderId, 'top_up', o.topUpId);
+        } else if (o.refundedCents > 0 && !(await applyRefund(cfg, o))) {
+            return NextResponse.json({ error: 'internal' }, { status: 500 });
         }
         await markProcessed(cfg, SOURCE, externalId);
         return NextResponse.json({ ok: true });
@@ -157,10 +162,34 @@ async function handleRefund(cfg, event, orderId, { apiKey, testMode, storeId }) 
         p_order_id: o.orderId,
         p_refunded_cents: o.refundedCents,
         p_total_cents: o.totalCents,
+        p_top_up_id: o.topUpId,
     }, cfg);
+    if (res && res.code === 'NOT_CREDITED_YET') {
+        // order_created hasn't credited it yet. Retry; when it does, it
+        // applies the re-fetched refund itself.
+        return NextResponse.json({ error: 'not_credited_yet' }, { status: 503 });
+    }
+    if (!refundVerdict(o.orderId, res)) return NextResponse.json({ error: 'internal' }, { status: 500 });
+    await markProcessed(cfg, SOURCE, externalId);
+    return NextResponse.json({ ok: true });
+}
+
+// After crediting an order that has already been refunded. False = retry.
+async function applyRefund(cfg, o) {
+    const res = await rpc('apply_top_up_refund', {
+        p_order_id: o.orderId,
+        p_refunded_cents: o.refundedCents,
+        p_total_cents: o.totalCents,
+        p_top_up_id: o.topUpId,
+    }, cfg);
+    return refundVerdict(o.orderId, res);
+}
+
+// Logs the outcome. False when the result is unusable and the event must be retried.
+function refundVerdict(orderId, res) {
     if (!res || typeof res.ok !== 'boolean' || (res.ok === false && !REFUND_REFUSED.has(res.code))) {
         console.error(LOG, 'apply_top_up_refund gave no usable verdict:', orderId, res && res.code);
-        return NextResponse.json({ error: 'internal' }, { status: 500 });
+        return false;
     }
     if (res.ok === false) {
         console.error(LOG, 'refund not applied:', res.code, 'order', orderId);
@@ -168,6 +197,5 @@ async function handleRefund(cfg, event, orderId, { apiKey, testMode, storeId }) 
         // Credits already spent: the Chargeback path (#97) acts on this.
         console.error(LOG, 'refund clawback short:', 'order', orderId, 'taken', res.taken, 'shortfall', res.shortfall);
     }
-    await markProcessed(cfg, SOURCE, externalId);
-    return NextResponse.json({ ok: true });
+    return true;
 }
