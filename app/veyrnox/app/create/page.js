@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppNav } from '../../_components/NavBar';
 import { Chip } from '../../_components/Chip';
 import { ASPECT_RATIOS } from '../../_lib/tokens';
-import { gatewayFetch, makeIdempotencyKey, notifyBalanceChanged, GatewayError } from '../../_lib/gateway';
+import { gatewayFetch, makeIdempotencyKey, notifyBalanceChanged, GatewayError, ACCOUNT_PAUSED_COPY } from '../../_lib/gateway';
 import { pushJobHistory } from '../../_lib/jobHistory';
 import { useCatalog } from '../../_lib/useCatalog';
 
@@ -25,6 +25,7 @@ const ERROR_COPY = {
   duration_not_supported:'This model only makes 5s clips. Nothing was charged.',
   duration_invalid:      'Pick a 5s or 10s clip. Nothing was charged.',
   insufficient_balance:  'Not enough credits for this generation. Nothing was charged — top up to continue.',
+  account_frozen:        ACCOUNT_PAUSED_COPY,
   user_not_provisioned:  'Your account is still being set up. Try again in a moment.',
   debit_rejected:        'The ledger declined this debit. Nothing was charged.',
   no_token:              'Sign in to generate.',

@@ -6,6 +6,11 @@
 
 import { getFreshAccessToken, clearSession } from '../../lib/authClient';
 
+// A Frozen account (Chargeback, #97): generating and buying are refused.
+export const ACCOUNT_PAUSED_COPY =
+  'Your account is paused while we review a payment dispute, so generating and buying are unavailable. '
+  + 'Your library and downloads still work. Contact support@veyrnox.com to resolve it.';
+
 export class GatewayError extends Error {
   constructor(message, { status, code, retryAfter, body } = {}) {
     super(message);
