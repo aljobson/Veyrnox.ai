@@ -38,6 +38,11 @@ describe("Chargeback Freeze", { skip: !DATABASE_URL && "DATABASE_URL not set" },
                     EXECUTE format('CREATE ROLE %I NOLOGIN', r);
                 END IF;
             END LOOP; END $$`);
+        // Production ran 0059 before #136 and still had the three-argument
+        // freeze_account when 0062 arrived. Recreate that signature so 0062's
+        // DROP is exercised here, not only on a fresh build that never had it.
+        await pool.query(`CREATE OR REPLACE FUNCTION public.freeze_account(UUID, TEXT, UUID)
+            RETURNS BOOLEAN LANGUAGE sql AS $$ SELECT false $$`);
         for (const round of [1, 2]) {
             for (const m of MIGRATIONS) await pool.query(await readFile(m, "utf8"));
         }
@@ -266,6 +271,9 @@ describe("Chargeback Freeze", { skip: !DATABASE_URL && "DATABASE_URL not set" },
                     has_function_privilege('authenticated', $1::regprocedure, 'EXECUTE') AS auth`,
             ["public.freeze_account(uuid,text,uuid,integer,integer)"]);
         assert.deepEqual([internal.svc, internal.auth], [false, false], "freeze_account is internal");
+        const overloads = await one(
+            `SELECT count(*)::int AS n FROM pg_proc WHERE proname = 'freeze_account' AND pronamespace = 'public'::regnamespace`);
+        assert.equal(overloads.n, 1, "one freeze_account signature: a leftover overload makes apply_dispute_event's call ambiguous");
         const rls = await one(`SELECT relrowsecurity, relforcerowsecurity FROM pg_class WHERE oid = 'public.account_actions'::regclass`);
         assert.deepEqual([rls.relrowsecurity, rls.relforcerowsecurity], [true, true]);
     });
