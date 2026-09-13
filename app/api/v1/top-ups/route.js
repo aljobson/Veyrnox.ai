@@ -54,7 +54,8 @@ export async function POST(req) {
     const apiKey = process.env.LEMONSQUEEZY_API_KEY;
     const storeId = process.env.LEMONSQUEEZY_STORE_ID;
     const publicHost = process.env.PUBLIC_HOST;
-    if (!cfg.supabaseUrl || !cfg.serviceRoleKey || !apiKey || !storeId || !publicHost) {
+    const signingSecret = process.env.LEMONSQUEEZY_WEBHOOK_SECRET;
+    if (!cfg.supabaseUrl || !cfg.serviceRoleKey || !apiKey || !storeId || !publicHost || !signingSecret) {
         return NextResponse.json({ error: 'top_ups_not_configured' }, { status: 503 });
     }
 
@@ -116,7 +117,7 @@ export async function POST(req) {
             expiresAt: new Date(Date.now() + CHECKOUT_TTL_MS).toISOString(),
         },
         // Bound: Workers throw "Illegal invocation" for an unbound cfg.fetch().
-        { fetch: fetch.bind(globalThis), apiKey, storeId, publicHost },
+        { fetch: fetch.bind(globalThis), apiKey, storeId, publicHost, signingSecret },
     );
     if (!checkout.ok) {
         console.error('[api/v1/top-ups] checkout failed:', checkout.error, created.top_up_id);

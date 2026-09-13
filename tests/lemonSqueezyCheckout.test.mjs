@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createCheckout } from '../packages/adapters/lemonsqueezy.js';
+import { createCheckout, verifyTopUpCustomData } from '../packages/adapters/lemonsqueezy.js';
 
 const TOP_UP_ID = '0b6f3c1e-8d2a-4f5b-9c7e-1a2b3c4d5e6f';
 const OK_URL = 'https://veyrnox-ai.lemonsqueezy.com/checkout/custom/5e8b546c-c561-4a2c-a586-40c18bb2a195?signature=abc';
@@ -15,7 +15,8 @@ function recorder(response = { data: { attributes: { url: OK_URL } } }, status =
 }
 
 const input = { variantId: '2120823', topUpId: TOP_UP_ID, expiresAt: '2026-09-13T10:00:00.000Z' };
-const cfg = (fetch, over = {}) => ({ fetch, apiKey: 'test_key', storeId: '473468', publicHost: 'https://veyrnox.ai', ...over });
+const SIGNING_SECRET = '0123456789abcdef0123456789abcdef01234567';
+const cfg = (fetch, over = {}) => ({ fetch, apiKey: 'test_key', storeId: '473468', publicHost: 'https://veyrnox.ai', signingSecret: SIGNING_SECRET, ...over });
 
 test('posts a JSON:API checkout to the constant LemonSqueezy host with bearer auth', async () => {
     const { calls, fetch } = recorder();
@@ -34,7 +35,10 @@ test('carries the Top-up id in custom data, the redirect from PUBLIC_HOST, store
     await createCheckout(input, cfg(fetch));
     const body = JSON.parse(calls[0].init.body);
     assert.equal(body.data.type, 'checkouts');
-    assert.deepEqual(body.data.attributes.checkout_data.custom, { top_up_id: TOP_UP_ID });
+    const custom = body.data.attributes.checkout_data.custom;
+    assert.deepEqual(Object.keys(custom).sort(), ['top_up_id', 'top_up_sig']);
+    assert.equal(custom.top_up_id, TOP_UP_ID);
+    assert.equal(await verifyTopUpCustomData(custom, SIGNING_SECRET), true, 'the webhook accepts what the checkout signed');
     // Literal link variables: LemonSqueezy fills in the order the buyer paid (#94).
     const returnUrl = `https://veyrnox.ai/app/credits?top_up=${TOP_UP_ID}&order_id=[order_id]&order_identifier=[order_identifier]`;
     assert.equal(body.data.attributes.product_options.redirect_url, returnUrl);
@@ -56,11 +60,12 @@ test('no input reaches the request host', async () => {
     assert.equal(new URL(calls[0].url).host, 'api.lemonsqueezy.com');
 });
 
-test('refuses a non-https PUBLIC_HOST and a missing api key without fetching', async () => {
+test('refuses a non-https PUBLIC_HOST, a missing api key or signing secret without fetching', async () => {
     const { calls, fetch } = recorder();
     assert.equal((await createCheckout(input, cfg(fetch, { publicHost: 'http://veyrnox.ai' }))).ok, false);
     assert.equal((await createCheckout(input, cfg(fetch, { publicHost: 'not a url' }))).ok, false);
     assert.equal((await createCheckout(input, cfg(fetch, { apiKey: '' }))).ok, false);
+    assert.equal((await createCheckout(input, cfg(fetch, { signingSecret: '' }))).ok, false);
     assert.equal(calls.length, 0);
 });
 
@@ -83,4 +88,17 @@ test('a transport failure is an error, not a throw', async () => {
     const fetch = async () => { throw new Error('boom'); };
     const res = await createCheckout(input, cfg(fetch));
     assert.equal(res.ok, false);
+});
+
+test('verifyTopUpCustomData: a buy link naming a Top-up without our signature is refused', async () => {
+    const { calls, fetch } = recorder();
+    await createCheckout(input, cfg(fetch));
+    const { top_up_sig } = JSON.parse(calls[0].init.body).data.attributes.checkout_data.custom;
+    const OTHER = '9a8b7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d';
+    assert.equal(await verifyTopUpCustomData({ top_up_id: TOP_UP_ID }, SIGNING_SECRET), false, 'unsigned');
+    assert.equal(await verifyTopUpCustomData({ top_up_id: OTHER, top_up_sig }, SIGNING_SECRET), false, 'signature copied onto another id');
+    assert.equal(await verifyTopUpCustomData({ top_up_id: TOP_UP_ID, top_up_sig }, 'f'.repeat(40)), false, 'wrong secret');
+    assert.equal(await verifyTopUpCustomData({ top_up_id: TOP_UP_ID, top_up_sig }, ''), false, 'no secret');
+    assert.equal(await verifyTopUpCustomData({ top_up_id: 'not-a-uuid', top_up_sig }, SIGNING_SECRET), false);
+    assert.equal(await verifyTopUpCustomData(null, SIGNING_SECRET), false);
 });

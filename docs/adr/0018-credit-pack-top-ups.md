@@ -159,3 +159,27 @@ Decision 6's wording version is `supply-consent-v1`. `POST /api/v1/top-ups`
 rejects any other version with `400 consent_version_required` (#100), so a
 new wording needs a new sign-off and a new version in the buy dialog and the
 route together.
+
+## Update (2026-09-13): the webhook credits only a Top-up id our checkout signed
+
+Decision 5 trusted the Top-up id in checkout custom data because the webhook
+body is signed. LemonSqueezy signs whatever custom data the order carries, and
+a buyer can set it on a buy link (`checkout[custom][top_up_id]=...`). Someone
+who learned another user's pending Top-up id could pay it and then dispute the
+charge, which Freezes that user (ADR-0019).
+
+`createCheckout` now adds `top_up_sig`, a hex HMAC-SHA256 of `top_up:<id>`
+under `LEMONSQUEEZY_WEBHOOK_SECRET`, next to `top_up_id`. On `order_created`
+the webhook credits only when that signature verifies; otherwise it logs,
+marks the event processed and answers 200 without crediting. Such an order is
+still credited by the backfill if the buyer came back through the return link,
+because that path checks the order's email against the Top-up owner (0068), and
+otherwise it is left for an Operator. Refund and dispute events are unchanged:
+they act on the order id, which only a credited order holds.
+
+Consequences:
+- Checkouts opened before this deploy carry no signature. Their webhook no
+  longer credits; the email-bound backfill does. Checkout links live 60 minutes.
+- Rotating `LEMONSQUEEZY_WEBHOOK_SECRET` invalidates the signature on checkouts
+  still open, with the same backfill fallback.
+- No migration: `credit_top_up` is unchanged.
