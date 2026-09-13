@@ -1,2 +1,2 @@
 import { redirect } from 'next/navigation';
-export default function MobileRoot() { redirect('/veyrnox/m/create'); }
+export default function MobileRoot() { redirect('/m/create'); }

@@ -197,7 +197,7 @@ export default function Pricing() {
           <div className="text-3xl font-black tracking-[-0.02em]">Want to see it first?</div>
           <div className="text-vx-fg-muted mt-2">Browse the preset gallery. No card, no account.</div>
           <Link
-            href="/veyrnox/presets"
+            href="/presets"
             className="inline-block mt-6 rounded-full bg-vx-accent text-vx-accent-ink px-6 py-3 text-sm font-extrabold hover:bg-vx-accent-hover"
           >
             Browse the gallery
