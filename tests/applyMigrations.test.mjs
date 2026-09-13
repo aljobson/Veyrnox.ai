@@ -12,7 +12,9 @@ const sql = (name, text = `-- ${name}\nselect 1;\n`) => ({ name, text });
 
 test('projectRef reads the ref from the public Supabase URL and refuses anything else', () => {
     assert.equal(projectRef('https://xdxdzmsztyzbnzeforxx.supabase.co'), 'xdxdzmsztyzbnzeforxx');
-    for (const bad of ['https://evil.example.com', 'http://xdxdzmsztyzbnzeforxx.supabase.co', 'https://short.supabase.co', '', undefined]) {
+    assert.equal(projectRef('https://abcdefghij0123456789.supabase.co'), 'abcdefghij0123456789', 'refs may contain digits');
+    for (const bad of ['https://evil.example.com', 'http://xdxdzmsztyzbnzeforxx.supabase.co', 'https://short.supabase.co',
+        'https://ABCDEFGHIJ0123456789.supabase.co', 'https://abcdefghij0123456789.supabase.co.evil.com', '', undefined]) {
         assert.throws(() => projectRef(bad), /Supabase URL/, String(bad));
     }
 });
@@ -52,13 +54,29 @@ test('a file that only mentions an applied migration in prose is still pending',
 });
 
 test('a batched replay name covers every file in its range', () => {
-    const files = [sql('0006_ledger_rpc_functions.sql'), sql('0007_job_state_transitions.sql'), sql('0009_x.sql')];
+    const files = [sql('0006_ledger_rpc_functions.sql'), sql('0007_job_state_transitions.sql'), sql('0008_y.sql'), sql('0009_x.sql')];
     assert.deepEqual(pendingMigrations(['0006_0009_ledger_rpcs_job_transitions_rate_limit_stored'], files), []);
 });
 
 test('refuses to plan a file numbered below an applied one instead of applying it out of order', () => {
     const files = [sql('0053_forgotten.sql'), sql('0054_credit_top_up.sql')];
     assert.throws(() => pendingMigrations(['0054_credit_top_up'], files), /out of order.*0053_forgotten/s);
+});
+
+test('refuses to plan while production has a migration the repository does not account for', () => {
+    // 0069_hotfix was applied but never committed: highestApplied from files
+    // alone would be 0054, and 0068 would be applied after 0069.
+    const files = [sql('0054_credit_top_up.sql'), sql('0068_backfill_order_binding.sql')];
+    assert.throws(() => pendingMigrations(['0054_credit_top_up', '0069_hotfix'], files), /not accounted for.*0069_hotfix/s);
+});
+
+test('accounts for the ledger against every schema file and README, not only the ones it would apply', () => {
+    const files = [sql('0054_credit_top_up.sql'), sql('0068_backfill_order_binding.sql')];
+    const repoFiles = [...files, sql('0001_initial.sql'), { name: 'README.md', text: 'Applied as 0030_folded_fix, folded into 0031.' }];
+    assert.deepEqual(
+        pendingMigrations(['0001_initial', '0030_folded_fix', '0054_credit_top_up'], files, repoFiles).map((f) => f.name),
+        ['0068_backfill_order_binding.sql'],
+    );
 });
 
 test('ignores files without a four-digit number', () => {
@@ -114,6 +132,20 @@ test('stops at the first failure and applies nothing after it', async () => {
     assert.equal(deps.calls.apply.length, 1);
 });
 
+test('an unaccounted ledger entry stops the run before any apply', async () => {
+    const files = [sql('0054_a.sql'), sql('0068_b.sql')];
+    const deps = fakeDeps({ appliedSeq: [['0054_a', '0069_hotfix']] });
+    await assert.rejects(applyPending(files, deps), /not accounted for/);
+    assert.equal(deps.calls.apply.length, 0);
+});
+
+test('an unaccounted migration appearing mid-run stops before the next apply', async () => {
+    const files = [sql('0054_a.sql'), sql('0068_b.sql'), sql('0069_c.sql')];
+    const deps = fakeDeps({ appliedSeq: [['0054_a'], ['0054_a'], ['0054_a', '0068_b', '0070_hotfix']] });
+    await assert.rejects(applyPending(files, deps), /not accounted for.*0070_hotfix/s);
+    assert.deepEqual(deps.calls.apply.map((r) => r.name), ['0068_b']);
+});
+
 test('an out-of-order ledger stops the run before any apply', async () => {
     const files = [sql('0053_forgotten.sql'), sql('0054_a.sql')];
     const deps = fakeDeps({ appliedSeq: [['0054_a']] });
@@ -126,7 +158,7 @@ test('managementClient calls the constant API host with bearer auth and the idem
     const fetch = async (url, init = {}) => {
         seen.push({ url: String(url), init });
         if ((init.method ?? 'GET') === 'GET') {
-            return new Response(JSON.stringify([{ version: '20260913114058', name: '0068_backfill_order_binding' }, { version: '1' }]), { status: 200 });
+            return new Response(JSON.stringify([{ version: '20260913114058', name: '0068_backfill_order_binding' }]), { status: 200 });
         }
         return new Response('{}', { status: 200 });
     };
@@ -138,6 +170,15 @@ test('managementClient calls the constant API host with bearer auth and the idem
     assert.equal(seen[1].init.method, 'POST');
     assert.equal(seen[1].init.headers['Idempotency-Key'], 'k1');
     assert.deepEqual(JSON.parse(seen[1].init.body), { name: '0069_c', query: 'select 1;' });
+});
+
+test('managementClient refuses a migrations list with a nameless row instead of dropping it', async () => {
+    // Dropping the row would make that applied migration look pending and replay its SQL.
+    const fetch = async () => new Response(JSON.stringify([{ version: '1', name: '0054_a' }, { version: '2' }]), { status: 200 });
+    const c = managementClient({ token: 't', ref: 'xdxdzmsztyzbnzeforxx', fetch });
+    await assert.rejects(c.listApplied(), /no name/);
+    const notArray = managementClient({ token: 't', ref: 'xdxdzmsztyzbnzeforxx', fetch: async () => new Response('{}', { status: 200 }) });
+    await assert.rejects(notArray.listApplied(), /not an array/);
 });
 
 test('managementClient reports a failed apply without leaking the response body', async () => {

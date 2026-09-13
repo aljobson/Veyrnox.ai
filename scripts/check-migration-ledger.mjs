@@ -136,7 +136,7 @@ export async function fetchLedger({ url, key }) {
     return namesFromRpc(await res.json());
 }
 
-function readSchemaFiles(root) {
+export function readSchemaFiles(root) {
     const out = [];
     for (const dir of ['packages/db/schema', 'packages/db/schema/supabase']) {
         let names;

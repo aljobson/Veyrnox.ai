@@ -17,9 +17,14 @@
  * applying, e.g. 0067_veo_4s_clip_costs was applied as 0066_…), when its
  * "-- Applied name: X" header names an applied X, or when an applied batch
  * name NNNN_MMMM_… spans its number. A name merely mentioned in prose does
- * not count, so a new file that refers to older migrations is still applied.
+ * not count, so a new file that refers to older migrations is still pending.
  *
  * Safety:
+ *   - Every migration production has applied must be accounted for in the
+ *     repository (the migration-ledger rule). An applied migration with no
+ *     file, e.g. an uncommitted hotfix numbered above the pending files,
+ *     would otherwise be invisible to the order check. Nothing is planned
+ *     until the ledger is clean.
  *   - A pending file numbered below an applied one stops the run: either
  *     the accounting is wrong (and applying would re-run old DDL) or a file
  *     was merged out of order. A human decides.
@@ -36,16 +41,16 @@ import { createHash } from 'node:crypto';
 import { appendFileSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { batchRange, descriptiveName, fetchLedger, supabaseConfig } from './check-migration-ledger.mjs';
+import { batchRange, descriptiveName, fetchLedger, readSchemaFiles, supabaseConfig, unaccounted } from './check-migration-ledger.mjs';
 
 const MANAGEMENT_API = 'https://api.supabase.com/v1';
 const FILE_RE = /^(\d{4})_[a-z0-9_]+\.sql$/;
 const APPLIED_HEADER_RE = /^--\s*Applied name:\s*([0-9]{4}_[a-z0-9_]+)/gim;
 const TIMEOUT_MS = 60000;
 
-/** 'https://<20 lowercase letters>.supabase.co' -> ref. Anything else throws. */
+/** 'https://<20 lowercase letters or digits>.supabase.co' -> ref. Anything else throws. */
 export function projectRef(url) {
-    const m = /^https:\/\/([a-z]{20})\.supabase\.co\/?$/.exec(String(url ?? ''));
+    const m = /^https:\/\/([a-z0-9]{20})\.supabase\.co\/?$/.exec(String(url ?? ''));
     if (!m) throw new Error('not a Supabase URL: expected https://<project ref>.supabase.co');
     return m[1];
 }
@@ -65,10 +70,18 @@ function isApplied(file, applied, appliedStems, ranges) {
 
 /**
  * @param {string[]} appliedNames  production's migration names
- * @param {{name: string, text: string}[]} files  supabase schema files
+ * @param {{name: string, text: string}[]} files  supabase schema files (the ones that can be applied)
+ * @param {{name: string, text: string}[]} [repoFiles]  every schema file and README, for the ledger check
  * @returns {{name: string, text: string}[]} unapplied files, lowest number first
  */
-export function pendingMigrations(appliedNames, files) {
+export function pendingMigrations(appliedNames, files, repoFiles = files) {
+    const missing = unaccounted(appliedNames, repoFiles);
+    if (missing.length) {
+        throw new Error(
+            `production has migrations not accounted for in this repository: ${missing.join(', ')}. ` +
+            'Commit them (or record their applied names) first; nothing was applied.',
+        );
+    }
     const applied = new Set(appliedNames);
     const appliedStems = new Set(appliedNames.map(descriptiveName));
     const ranges = appliedNames.map(batchRange).filter((r) => r && !r.invalid);
@@ -103,14 +116,14 @@ const stem = (name) => name.replace(/\.sql$/, '');
  *   apply: (req: {name: string, query: string, idempotencyKey: string}) => Promise<{ok: boolean, error?: string}>,
  *   log?: (...a: any[]) => void}} deps
  */
-export async function applyPending(files, deps) {
+export async function applyPending(files, deps, repoFiles = files) {
     const log = deps.log ?? console.log;
     const out = { applied: [], skipped: [], failed: null };
-    const planned = pendingMigrations(await deps.listApplied(), files);
+    const planned = pendingMigrations(await deps.listApplied(), files, repoFiles);
 
     for (const file of planned) {
         const name = stem(file.name);
-        const stillPending = pendingMigrations(await deps.listApplied(), files).some((f) => f.name === file.name);
+        const stillPending = pendingMigrations(await deps.listApplied(), files, repoFiles).some((f) => f.name === file.name);
         if (!stillPending) {
             log(`skip ${name}: applied by someone else since the plan`);
             out.skipped.push(name);
@@ -139,7 +152,11 @@ export function managementClient({ token, ref, fetch }) {
             if (!res.ok) throw new Error(`supabase ${res.status}`);
             const rows = await res.json();
             if (!Array.isArray(rows)) throw new Error('supabase migrations list is not an array');
-            return rows.map((r) => r && r.name).filter((n) => typeof n === 'string');
+            // A dropped row would make an applied migration look pending.
+            return rows.map((r) => {
+                if (!r || typeof r.name !== 'string' || r.name === '') throw new Error('supabase migrations list has a row with no name');
+                return r.name;
+            });
         },
         async apply({ name, query, idempotencyKey }) {
             const res = await fetch(url, {
@@ -173,7 +190,7 @@ if (isMain) {
     if (mode === 'plan') {
         let pending;
         try {
-            pending = pendingMigrations(await fetchLedger(supabaseConfig(root)), files);
+            pending = pendingMigrations(await fetchLedger(supabaseConfig(root)), files, readSchemaFiles(root));
         } catch (err) {
             console.error(`could not plan: ${err && err.message}`);
             process.exit(2);
@@ -193,7 +210,7 @@ if (isMain) {
                 ref: projectRef(supabaseConfig(root).url),
                 fetch: globalThis.fetch,
             });
-            result = await applyPending(files, client);
+            result = await applyPending(files, client, readSchemaFiles(root));
         } catch (err) {
             console.error(`could not apply: ${err && err.message}`);
             process.exit(2);
