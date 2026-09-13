@@ -43,7 +43,7 @@ Where a Top-up is bought: web, iOS App Store, or Google Play. Each channel has i
 _Avoid_: Platform, store (when meaning the channel)
 
 **Merchant of Record**:
-The company that legally sells to the user in a Sales Channel and collects and remits sales tax. LemonSqueezy on web.
+The company that legally sells to the user in a Sales Channel and collects and remits sales tax. Stripe (Managed Payments, sold through Link) on web.
 _Avoid_: Payment processor, billing provider (when meaning the legal seller)
 
 ### Reversals
@@ -57,7 +57,7 @@ Returning the credits spent on a generation that failed or was rejected. No mone
 _Avoid_: Refund (on its own), reversal
 
 **Chargeback**:
-A Top-up Refund that arrives after credits were spent since that Top-up. Treated as a likely card dispute and Freezes the account, since the Merchant of Record does not report disputes separately.
+A Top-up Refund that arrives after credits were spent since that Top-up. Treated as a likely card dispute and Freezes the account.
 _Avoid_: Dispute (when meaning the reversal itself)
 
 **Operator**:

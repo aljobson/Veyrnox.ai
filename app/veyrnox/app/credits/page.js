@@ -6,11 +6,20 @@ import { gatewayFetch, GatewayError } from '../../_lib/gateway';
 import { readJobHistory } from '../../_lib/jobHistory';
 import { MODELS } from '../../_lib/tokens';
 
+// Display only — credits come from credit_packs, the charge from the Stripe
+// Price (ADR-0019). Keep the labels in step with the Stripe dashboard.
 const TOPUPS = [
-  { c: 300,  price: '$9' },
-  { c: 750,  price: '$19' },
-  { c: 2000, price: '$49' },
+  { id: 'pack_100',  c: 100,  price: '$10' },
+  { id: 'pack_300',  c: 300,  price: '$25' },
+  { id: 'pack_1000', c: 1000, price: '$75' },
 ];
+
+// Feature flag until 0035 has run clean in prod: localStorage.veyrnox_billing = '1'.
+function billingEnabled() {
+  try { return localStorage.getItem('veyrnox_billing') === '1'; } catch { return false; }
+}
+
+const CHECKOUT_ORIGIN = 'https://checkout.stripe.com/';
 
 const STATE_UI = {
   succeeded: { chip: 'accent', glyph: '✓' },
@@ -23,6 +32,34 @@ export default function Credits() {
   const [balance, setBalance] = useState(null);
   const [error, setError] = useState(null);
   const [ledger, setLedger] = useState([]);
+  const [billing, setBilling] = useState(false);
+  const [buying, setBuying] = useState(null);
+  const [checkout, setCheckout] = useState(null);
+
+  useEffect(() => {
+    setBilling(billingEnabled());
+    const status = new URLSearchParams(window.location.search).get('checkout');
+    if (status === 'success' || status === 'cancel') setCheckout(status);
+  }, []);
+
+  const buy = useCallback(async (packId) => {
+    setBuying(packId);
+    setCheckout(null);
+    try {
+      const { url } = await gatewayFetch('/checkout', {
+        method: 'POST',
+        body: JSON.stringify({ pack_id: packId, idempotency_key: crypto.randomUUID() }),
+      });
+      if (typeof url !== 'string' || !url.startsWith(CHECKOUT_ORIGIN)) throw new Error('bad checkout url');
+      window.location.assign(url);
+    } catch (e) {
+      // 401: the auth gate is already prompting sign-in.
+      if (!(e instanceof GatewayError && e.status === 401)) {
+        setCheckout(e instanceof GatewayError && e.status === 429 ? 'rate_limited' : 'failed');
+      }
+      setBuying(null);
+    }
+  }, []);
 
   const load = useCallback(async () => {
     try {
@@ -97,9 +134,10 @@ export default function Credits() {
                 <button
                   key={t.c}
                   type="button"
-                  disabled
-                  title="Top-ups are not available yet"
-                  className="flex flex-col items-start rounded-xl border border-vx-border bg-vx-base/60 px-4 py-3 opacity-50 cursor-not-allowed"
+                  disabled={!billing || buying !== null}
+                  onClick={() => buy(t.id)}
+                  title={billing ? `Buy ${t.c} credits` : 'Top-ups are not available yet'}
+                  className={`flex flex-col items-start rounded-xl border border-vx-border bg-vx-base/60 px-4 py-3 ${billing ? 'hover:border-vx-money/60 disabled:opacity-50 disabled:cursor-wait' : 'opacity-50 cursor-not-allowed'}`}
                 >
                   <span className="font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted">TOP-UP</span>
                   <span className="font-vx-mono text-[18px] font-bold text-vx-money mt-1 vx-num">+{t.c} cr</span>
@@ -107,8 +145,13 @@ export default function Credits() {
                 </button>
               ))}
             </div>
+            {checkout && (
+              <div role="status" className="mt-3 text-sm text-vx-fg-body">
+                {CHECKOUT_MESSAGES[checkout]}
+              </div>
+            )}
             <div className="mt-3 font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-faint">
-              TOP-UPS NOT AVAILABLE YET · PRICES SHOWN ARE INDICATIVE
+              {billing ? 'CHECKOUT BY STRIPE · FINAL PRICE INCL. TAX SHOWN AT CHECKOUT' : 'TOP-UPS NOT AVAILABLE YET · PRICES SHOWN ARE INDICATIVE'}
             </div>
           </div>
 
@@ -176,6 +219,13 @@ export default function Credits() {
     </div>
   );
 }
+
+const CHECKOUT_MESSAGES = {
+  success: 'Payment received. Credits appear here once Stripe confirms it — usually within a minute.',
+  cancel: 'Checkout cancelled. You have not been charged.',
+  rate_limited: 'Too many checkout attempts. Try again in a few minutes.',
+  failed: 'Checkout is unavailable right now. You have not been charged.',
+};
 
 function formatWhen(ts) {
   if (!ts) return '—';
