@@ -1,6 +1,6 @@
 # ADR-0021 — Generated media moves to the EU-jurisdiction R2 bucket
 
-- **Status**: Accepted (2026-09-13). Code merged in #116. **Cutover blocked** on decision 3 (credentials); decisions 1 and 2 are answered, and runbook step 2 is done.
+- **Status**: Accepted (2026-09-13). Code merged in #116. **Cut over 2026-09-13 10:44:53 UTC.** Old copies (step 7) pending owner approval.
 - **Date**: 2026-09-13
 - **Deciders**: Product owner
 - **Related**: [ADR-0005 §3](0005-phase-0-business-preconditions.md) (EU-only user data), [ADR-0008](0008-asset-retention-policy-and-sweep.md) (retention sweep), [ADR-0016](0016-data-residency-claim-correction.md) (residency claims and the bucket correction)
@@ -47,9 +47,13 @@ Target: EU `veyrnox-ai-media`.
    `wrangler r2 object get veyrnox-ai-media/<key> --file <check> --jurisdiction eu --remote`
    All 8 live assets were copied and verified. Keys are unchanged, so no database row changes. Production still reads and writes `veyrnox-staging-media` until step 3.
 3. **Flip both secrets, back to back.** `wrangler secret put R2_BUCKET` = `veyrnox-ai-media`, then `wrangler secret put R2_JURISDICTION` = `eu`. Each `secret put` deploys a new version, so between the two the Worker briefly targets the wrong bucket; do them in immediate succession, or upload one version with both.
+   **Done 10:44:53 UTC** with `wrangler secret bulk` (both secrets in one version, `02a9ab98`), after confirming the previous deployment was built after #116 merged. The owner confirmed the R2 token covers all buckets.
 4. **Catch up.** Repeat step 2 for assets created after the step 2 copy (2026-09-13, 8 assets) and before step 3.
+   **Done:** no assets or jobs were created between the step 2 copy and step 3.
 5. **Verify.** Generate one asset and download it; open one pre-cutover asset from the library. Both must load from `<account>.eu.r2.cloudflarestorage.com/veyrnox-ai-media/...`.
+   **Done, partly confirmed:** the owner reported both checks working. Production's database recorded no jobs after 10:38 UTC at the time, so the first upload to `veyrnox-ai-media` from production was not yet observed; confirm the next production generation lands there.
 6. **Copy.** Update the Privacy Policy and GDPR page to say generated media is stored in the EU (Cloudflare R2 EU jurisdiction), and record ADR-0005 §3 as met for media.
+   **Done** in this change. ADR-0005 §3 (EU-only user data) is now met for media as well as the database.
 7. **Old copies.** `veyrnox-staging-media` keeps production's pre-cutover copies and the one pre-#85 object. Deleting them is a separate, owner-approved step.
 
 Rollback before step 7: set `R2_BUCKET` back to `veyrnox-staging-media` and `wrangler secret delete R2_JURISDICTION`. Assets created after step 3 exist only in the EU bucket and would need copying back.
