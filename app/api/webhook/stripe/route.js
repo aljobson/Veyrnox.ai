@@ -8,6 +8,8 @@
  *      charge.refunded (full or partial) → purchase_reverse('reversal:refund')
  *        with the cumulative amount_refunded / amount, so each Top-up gives
  *        back a proportional, rounded-down share of its credits
+ *      charge.dispute.created            → purchase_dispute_opened: Freezes
+ *        the purchase's owner (ADR-0019 decision 1)
  *      charge.dispute.closed (lost)      → purchase_reverse('reversal:dispute')
  *        as a whole-charge reversal
  *      Either Freezes the account when credits were spent since that
@@ -27,6 +29,7 @@ const SOURCE = 'stripe';
 const EVENT_ID_RE = /^evt_[A-Za-z0-9]{1,255}$/;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const PI_RE = /^pi_[A-Za-z0-9]{1,255}$/;
+const DISPUTE_ID_RE = /^(dp|du)_[A-Za-z0-9]{1,255}$/;
 // A lost dispute returns the whole charge: refunded / amount = 1 / 1.
 const WHOLE_CHARGE = { refunded: 1, amount: 1 };
 // A reversal whose purchase is still missing this long after the event is
@@ -126,6 +129,26 @@ async function reverse(cfg, paymentIntent, reason, eventCreated, share) {
     return { done: true };
 }
 
+async function disputeOpened(cfg, dispute) {
+    if (typeof dispute.payment_intent !== 'string' || !PI_RE.test(dispute.payment_intent)
+        || typeof dispute.id !== 'string' || !DISPUTE_ID_RE.test(dispute.id)) {
+        console.error('[stripe-webhook] dispute without usable ids', dispute.id);
+        return { done: true, warn: 'invalid_dispute' };
+    }
+    const res = await rpc('purchase_dispute_opened', { p_payment_intent: dispute.payment_intent, p_dispute_id: dispute.id }, cfg);
+    if (res && res.ok === true) {
+        if (res.frozen === true) {
+            console.error('[stripe-webhook] dispute opened: account frozen', res.user_id, dispute.id, res.already_frozen ? '(already frozen)' : '');
+        }
+        return { done: true };
+    }
+    // ADR-0019: no matching Top-up means we cannot safely name a user. Log for
+    // an Operator and acknowledge; the refund backstop still applies.
+    console.error('[stripe-webhook] purchase_dispute_opened rejected', dispute.payment_intent, dispute.id, res && res.code);
+    if (res && res.code === 'PURCHASE_NOT_FOUND') return { done: true, warn: 'unmatched_dispute' };
+    return { done: false };
+}
+
 export async function POST(req) {
     const cfg = envConfig();
     const secret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -190,6 +213,9 @@ export async function POST(req) {
             case 'charge.refunded':
                 result = await reverse(cfg, object.payment_intent, 'reversal:refund', event.created,
                     { refunded: object.amount_refunded, amount: object.amount });
+                break;
+            case 'charge.dispute.created':
+                result = await disputeOpened(cfg, object);
                 break;
             case 'charge.dispute.closed':
                 if (object.status === 'lost') result = await reverse(cfg, object.payment_intent, 'reversal:dispute', event.created, WHOLE_CHARGE);

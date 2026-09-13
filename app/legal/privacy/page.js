@@ -19,7 +19,7 @@ export default function Privacy() {
             <ul>
                 <li>To run the service and fulfil your generations (performance of a contract).</li>
                 <li>To keep an accurate credit ledger and prevent abuse (legitimate interests).</li>
-                <li>To act on refunds and card disputes, including freezing an account when a purchase is reversed after its credits were used (legitimate interests in preventing fraud). A named member of our team reviews every unfreeze; contact us to ask for one.</li>
+                <li>To act on refunds and card disputes, including freezing an account when a card dispute is opened against a purchase, or when a purchase is reversed after its credits were used (legitimate interests in preventing fraud). A named member of our team reviews every unfreeze; contact us to ask for one.</li>
                 <li>To meet legal obligations, including tax and content-provenance requirements.</li>
                 <li>To send service messages. We do not send marketing email without consent.</li>
             </ul>

@@ -31,13 +31,14 @@ async function signedRequest(type, object) {
     });
 }
 
-function stubDb() {
+function stubDb(rpcResponse = () => ({ ok: true, idempotent: false, taken: 30, shortfall: 0 })) {
     const rpcCalls = [];
     globalThis.fetch = async (url, init) => {
         const u = String(url);
         if (u.includes('/rest/v1/rpc/')) {
-            rpcCalls.push({ name: u.split('/rpc/')[1], args: JSON.parse(init.body) });
-            return Response.json({ ok: true, idempotent: false, taken: 30, shortfall: 0 });
+            const call = { name: u.split('/rpc/')[1], args: JSON.parse(init.body) };
+            rpcCalls.push(call);
+            return Response.json(rpcResponse(call));
         }
         if (init && init.method === 'POST') return Response.json([{ id: 'row' }], { status: 201 }); // dedup insert
         return new Response(null, { status: 204 }); // processed_at patch
@@ -79,5 +80,36 @@ test('malformed refund amounts never reach the database', async () => {
         const res = await POST(await signedRequest('charge.refunded', { id: 'ch_2', payment_intent: 'pi_2', amount, amount_refunded }));
         assert.equal(res.status, 200);
         assert.equal(rpcCalls.length, 0, `amount=${amount} refunded=${amount_refunded}`);
+    }
+});
+
+test('an opened dispute Freezes through purchase_dispute_opened, by payment intent', async () => {
+    const rpcCalls = stubDb(() => ({ ok: true, idempotent: false, user_id: 'u1', frozen: true, already_frozen: false }));
+    const res = await POST(await signedRequest('charge.dispute.created', {
+        id: 'dp_1', payment_intent: 'pi_1', amount: 1000, status: 'needs_response',
+    }));
+    assert.equal(res.status, 200);
+    assert.deepEqual(rpcCalls, [{ name: 'purchase_dispute_opened', args: { p_payment_intent: 'pi_1', p_dispute_id: 'dp_1' } }]);
+});
+
+test('a dispute with no matching Top-up is logged and acknowledged', async () => {
+    stubDb(() => ({ ok: false, code: 'PURCHASE_NOT_FOUND' }));
+    const res = await POST(await signedRequest('charge.dispute.created', { id: 'dp_2', payment_intent: 'pi_unknown' }));
+    assert.equal(res.status, 200);
+    assert.deepEqual(await res.json(), { ok: true, warn: 'unmatched_dispute' });
+});
+
+test('a dispute the database cannot process is retried', async () => {
+    stubDb(() => ({ ok: false, code: 'SOMETHING_ELSE' }));
+    const res = await POST(await signedRequest('charge.dispute.created', { id: 'dp_3', payment_intent: 'pi_3' }));
+    assert.equal(res.status, 500);
+});
+
+test('a dispute without usable ids never reaches the database', async () => {
+    for (const object of [{ id: 'dp_4' }, { id: 'dp_4', payment_intent: 'ch_notapi' }, { id: 'bad id', payment_intent: 'pi_4' }]) {
+        const rpcCalls = stubDb();
+        const res = await POST(await signedRequest('charge.dispute.created', object));
+        assert.equal(res.status, 200);
+        assert.equal(rpcCalls.length, 0, JSON.stringify(object));
     }
 });

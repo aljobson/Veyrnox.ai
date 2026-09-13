@@ -30,7 +30,7 @@ export default function Refund() {
             </ul>
 
             <h2>Payment reversals and card disputes</h2>
-            <p>If a purchase is refunded or reversed &mdash; for example after a card dispute &mdash; and credits have been used since that purchase, we freeze the account. While it is frozen you cannot generate or buy credits. You can still sign in, view and download your library, and delete your account. Contact <a href={`mailto:${ENTITY.email}`}>{ENTITY.email}</a> to resolve it; a named member of our team reviews every unfreeze.</p>
+            <p>If you open a card dispute against a purchase, we freeze the account. We also freeze it if a purchase is refunded or reversed and credits have been used since that purchase. While it is frozen you cannot generate or buy credits. You can still sign in, view and download your library, and delete your account. Contact <a href={`mailto:${ENTITY.email}`}>{ENTITY.email}</a> to resolve it; a named member of our team reviews every unfreeze.</p>
 
             <h2>Duplicate charges</h2>
             <p>Submissions are idempotent: the same request is never debited twice. If you believe you were double-charged, send the job reference to <a href={`mailto:${ENTITY.email}`}>{ENTITY.email}</a> and we will check the ledger.</p>

@@ -44,7 +44,7 @@ ADR-0019 was written for LemonSqueezy's `dispute_created` and `dispute_resolved`
 
 | ADR-0019 decision | Stripe equivalent | This slice |
 |---|---|---|
-| 1. A reported dispute Freezes the owning user, never trusting a user in the payload | `charge.dispute.created`, matched to our purchase by `payment_intent` | **Not yet.** An open dispute changes nothing; a lost one (`charge.dispute.closed`, `lost`) takes back the pack's credits and Freezes if credits were spent since that Top-up |
+| 1. A reported dispute Freezes the owning user, never trusting a user in the payload | `charge.dispute.created`, matched to our purchase by `payment_intent` | Done (0041): `purchase_dispute_opened` Freezes the purchase's owner (reason `dispute`, `external_ref` = the Stripe dispute id), spent or not. No matching Top-up → logged, 200. A redelivered event for the same dispute never re-freezes. A lost dispute then also takes back the pack's credits |
 | 2. Dispute resolution never unfreezes | `charge.dispute.closed` | Holds: a won dispute does nothing, and only `operator_unfreeze` lifts a Freeze |
 | 3. Refund-after-spend inference stays as a backstop | `charge.refunded` | Done (0038) |
 | 4. Freezing is idempotent and appends an account-action log entry | — | **Partly.** One active Freeze per user; there is no account-action log yet |
@@ -66,7 +66,7 @@ ADR-0019's LemonSqueezy workarounds do not apply: Stripe dispute events are docu
 - **Receipts name Onelink, Stripe's buyer-facing service, and card statements show `LINK.COM* <descriptor>`** ("Sold through Onelink"). Customers raise payment support with Onelink; Stripe may refund within 60 days on its own if an escalation goes unanswered for 48 hours. Keep the dashboard support email current. The Privacy Policy names Stripe as the Merchant of Record and links Stripe's and Onelink's privacy policies.
 - **Stripe can refund without us**, which is why every `charge.refunded` claws back regardless of who issued it (ADR-0018 decision 7).
 - **Clawback follows Stripe's cumulative refunded amount.** A purchase keeps `refunded_credits` (share owed back, rounded down) and `reversed_credits` (actually taken). A replay or a late, older event has a target at or below the recorded one and does nothing. When the credits were already spent the shortfall is logged and not chased on later refunds, because later balance belongs to other Top-ups.
-- **The Freeze trigger is inferred from our own ledger, not from Stripe's dispute state**, as ADR-0018 decided: an Operator refund issued under the 14-days-nothing-generated rule never Freezes. Stripe's `charge.dispute.created` is not used; an open dispute changes nothing until it is lost.
+- **Two Freeze triggers, as ADR-0019 decided:** Stripe reporting a dispute (`charge.dispute.created`) Freezes immediately, and a refund or lost dispute after credits were spent since that Top-up Freezes by inference. An Operator refund issued under the 14-days-nothing-generated rule never Freezes.
 - **A replay or late, older refund event can never re-freeze** an account an Operator unfroze, because progress is measured by the purchase's cumulative `refunded_share`. A new, larger refund can.
 - **A Checkout Session opened before a Freeze can still be paid.** The payment has been taken, so `purchase_fulfil` grants the credits and the webhook logs `top-up paid into frozen account`; the Freeze stops them being spent. `purchase_create` refuses new and replayed purchases while Frozen so no further session is opened.
 - **The web net floor uses one worst-case fee: 11.00% + 30¢.** From stripe.com/gb/pricing on 2026-09-13: 3.5% Managed Payments + 3.15% non-EEA card + 2% currency conversion = 8.65%, assumed charged on a total including 27% VAT (Stripe does not say) = 10.99%, plus 20p (~30¢). ADR-0018's packs clear it: net 860¢ for 100 credits, 2,195¢ for 300, 6,645¢ for 1,000. `pack_1000` sits exactly on the gross floor. Update `sales_channels` when Stripe's pricing changes; the trigger refuses a change that breaks an active pack.
@@ -81,7 +81,7 @@ ADR-0019's LemonSqueezy workarounds do not apply: Stripe dispute events are docu
 
 ## Before live mode
 
-- `charge.dispute.created` Freezes the account (ADR-0019 decision 1), and Freezes are recorded in an account-action log (decision 4).
+- Freezes, including repeat Freezes of an already Frozen account and dispute outcomes, are recorded in an account-action log (ADR-0019 decisions 2 and 4). Until then, a dispute that lands on an account already Frozen for another reason leaves no row naming it.
 
 - Finance/Legal approve the Supply Consent wording; publish it under a version without `-draft`.
 - An Operator route for `operator_unfreeze` that takes the Operator's identity from the verified `x-veyrnox-auth-id` header, never from the request body.
@@ -89,4 +89,4 @@ ADR-0019's LemonSqueezy workarounds do not apply: Stripe dispute events are docu
 - Stripe account business description matches the product: AI image/video/voice generation sold as prepaid credits.
 - Managed Payments enabled after Stripe's eligibility review and terms acceptance.
 - In test mode, confirm `checkout.session.completed` carries `payment_intent` for Managed Payments sessions; reversal matching depends on it.
-- Webhook endpoint on API version `2025-03-31.basil`, subscribed to exactly the four events above.
+- Webhook endpoint on API version `2025-03-31.basil`, subscribed to exactly five events: `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `charge.refunded`, `charge.dispute.created`, `charge.dispute.closed`.

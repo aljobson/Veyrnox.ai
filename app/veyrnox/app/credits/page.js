@@ -286,7 +286,7 @@ const CHECKOUT_MESSAGES = {
   success: 'Payment received. Credits appear here once Stripe confirms it — usually within a minute.',
   cancel: 'Checkout cancelled. You have not been charged.',
   rate_limited: 'Too many checkout attempts. Try again in a few minutes.',
-  frozen: 'Your account is frozen after a payment reversal, so buying credits is paused. Contact support to resolve it.',
+  frozen: 'Your account is frozen after a card dispute or payment reversal, so buying credits is paused. Contact support to resolve it.',
   failed: 'Checkout is unavailable right now. You have not been charged.',
 };
 
