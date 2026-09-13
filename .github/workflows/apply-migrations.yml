@@ -1,0 +1,122 @@
+name: apply-migrations
+
+# The one path for a migration to reach production (ADR-0023).
+#
+# On 2026-09-13 any session could call apply_migration, so merged migrations
+# were applied two or three times within seconds (0058, 0062, 0065), some
+# with comments stripped. This workflow applies main's unapplied files itself:
+#   - plan    (no secret) lists files production has not applied, via the
+#             public applied_migration_names() ledger (0034). It stops if a
+#             pending file is numbered below an applied one.
+#   - apply   runs in the production-database environment, so each run waits
+#             for the owner's approval. It re-reads the ledger before every
+#             file, sends each file byte for byte with an Idempotency-Key, and
+#             stops at the first failure. Then the ledger check must pass.
+#
+# One run at a time; a newer push replaces a waiting run, and a running apply
+# is never cancelled half-way.
+#
+# Setup (owner):
+#   1. Settings -> Environments -> production-database: add yourself as a
+#      required reviewer and allow only the main branch.
+#   2. Add SUPABASE_ACCESS_TOKEN as a secret of that environment, not of
+#      the repository.
+# Until both exist the apply job does nothing and fails closed: it checks
+# the environment has a required reviewer before it uses the token.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "packages/db/schema/supabase/**"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: production-migrations
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      count: ${{ steps.plan.outputs.count }}
+      names: ${{ steps.plan.outputs.names }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "22"
+
+      # Node builtins and global fetch only, so no npm install.
+      - name: Plan
+        id: plan
+        run: |
+          node scripts/apply-migrations.mjs plan | tee plan.txt
+          { echo '### Migrations pending on production'; echo '```'; cat plan.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
+  apply:
+    needs: plan
+    if: needs.plan.outputs.count != '0' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production-database
+    permissions:
+      contents: read
+    env:
+      HAS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN != '' }}
+    steps:
+      - name: Skip until the token is configured
+        if: env.HAS_TOKEN != 'true'
+        env:
+          PENDING: ${{ needs.plan.outputs.names }}
+        run: |
+          echo "::notice::SUPABASE_ACCESS_TOKEN not set on production-database; nothing applied. Pending: $PENDING"
+
+      # A token stored as a repository secret would reach an environment that
+      # GitHub auto-created with no reviewers, silently skipping the approval.
+      - name: Require a reviewer on production-database
+        if: env.HAS_TOKEN == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          reviewers=$(gh api "repos/${GITHUB_REPOSITORY}/environments/production-database" \
+            --jq '[.protection_rules[]? | select(.type == "required_reviewers") | .reviewers[]?] | length')
+          if [ "${reviewers:-0}" -lt 1 ]; then
+            echo "::error::production-database has no required reviewer; refusing to apply."
+            exit 1
+          fi
+
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        if: env.HAS_TOKEN == 'true'
+        with:
+          fetch-depth: 0
+
+      - name: Still main's tip?
+        if: env.HAS_TOKEN == 'true'
+        id: tip
+        run: |
+          git fetch --quiet origin main
+          if [ "$(git rev-parse origin/main)" != "$GITHUB_SHA" ]; then
+            echo "::notice::$GITHUB_SHA is no longer main's tip; the newer run applies."
+            echo "stale=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        if: env.HAS_TOKEN == 'true' && steps.tip.outputs.stale != 'true'
+        with:
+          node-version: "22"
+
+      - name: Apply
+        if: env.HAS_TOKEN == 'true' && steps.tip.outputs.stale != 'true'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: node scripts/apply-migrations.mjs apply
+
+      - name: Ledger accounts for every applied migration
+        if: env.HAS_TOKEN == 'true' && steps.tip.outputs.stale != 'true'
+        run: node scripts/check-migration-ledger.mjs

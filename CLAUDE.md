@@ -52,13 +52,15 @@ If a build starts failing after a dependency change, bisect these three first.
   `webhook_events` UNIQUE on `(source, external_id)`). Replay must be a no-op.
 - **SECURITY DEFINER** functions must `SET search_path = ''` (schema-qualify
   every reference) so a user can't hijack them by shadowing an unqualified name.
-- Migrations live in `packages/db/schema/supabase/`. Apply via the Supabase MCP
-  `apply_migration` tool with a `NNNN_<snake_case>` name — never `execute_sql`
-  for DDL. Every migration must be idempotent (`IF NOT EXISTS`, `OR REPLACE`).
-- Never apply a migration to production from an unmerged branch without the
-  owner's explicit approval in chat. Take the next free number on `main` and
-  check open PRs first; the applied name is permanent, so a later renumber
-  leaves `migration-ledger` red until every branch that applied one merges.
+- Migrations live in `packages/db/schema/supabase/` with a `NNNN_<snake_case>`
+  name — never `execute_sql` for DDL. Every migration must be idempotent
+  (`IF NOT EXISTS`, `OR REPLACE`).
+- Production migrations are applied only by the `apply-migrations` workflow on
+  `main`, after the owner approves the run (ADR-0023). Sessions do not call
+  `apply_migration` on production unless the owner says in chat that the
+  workflow can't be used. Take the next free number on `main` and check open
+  PRs first; the applied name is permanent, so a later renumber leaves
+  `migration-ledger` red until every branch that applied one merges.
 - No raw string interpolation into SQL. `execute_sql` takes user input only
   through parameters; PostgREST filters go through `encodeURIComponent`.
 - Reconciliation nightly (`ledger.reconcile()`) must return zero rows in prod.

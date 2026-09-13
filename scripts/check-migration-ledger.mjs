@@ -111,7 +111,7 @@ export function namesFromRpc(rows) {
     });
 }
 
-function supabaseConfig(root) {
+export function supabaseConfig(root) {
     let url = process.env.SUPABASE_URL;
     let key = process.env.SUPABASE_ANON_KEY;
     if (!url || !key) {
@@ -123,7 +123,7 @@ function supabaseConfig(root) {
     return { url, key };
 }
 
-async function fetchLedger({ url, key }) {
+export async function fetchLedger({ url, key }) {
     const res = await fetch(new URL('/rest/v1/rpc/applied_migration_names', url), {
         method: 'POST',
         headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
