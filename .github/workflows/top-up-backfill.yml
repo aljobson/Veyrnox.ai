@@ -1,0 +1,36 @@
+name: top-up-backfill
+
+# Credits paid Top-ups whose LemonSqueezy webhook was missed (#94). The
+# Worker does the work at POST /api/admin/top-up-backfill; this only calls it.
+on:
+  schedule:
+    - cron: '*/5 * * * *'   # GitHub may delay or skip runs under load
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: top-up-backfill
+  cancel-in-progress: false
+
+jobs:
+  backfill:
+    # Only main: a workflow_dispatch on another branch must not get this
+    # job's secret.
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Call the backfill endpoint
+        env:
+          PUBLIC_HOST: ${{ secrets.PUBLIC_HOST }}
+          TOP_UP_BACKFILL_TOKEN: ${{ secrets.TOP_UP_BACKFILL_TOKEN }}
+        run: |
+          set -euo pipefail
+          case "$PUBLIC_HOST" in https://*) ;; *) echo "PUBLIC_HOST secret must be an https origin" >&2; exit 1 ;; esac
+          if [ -z "$TOP_UP_BACKFILL_TOKEN" ]; then echo "TOP_UP_BACKFILL_TOKEN secret is not set" >&2; exit 1; fi
+          # Header from stdin so the token never appears in the process list.
+          printf 'Authorization: Bearer %s\n' "$TOP_UP_BACKFILL_TOKEN" | \
+            curl -sS --fail-with-body --max-time 60 -X POST -H @- "${PUBLIC_HOST%/}/api/admin/top-up-backfill"
+          echo

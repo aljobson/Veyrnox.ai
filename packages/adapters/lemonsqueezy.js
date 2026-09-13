@@ -43,13 +43,17 @@ export async function createCheckout(input, cfg) {
     try { redirect = new URL(RETURN_PATH, cfg.publicHost); } catch { return { ok: false, error: 'invalid publicHost' }; }
     if (redirect.protocol !== 'https:') return { ok: false, error: 'publicHost must be https' };
     redirect.searchParams.set('top_up', input.topUpId);
+    // Link variables LemonSqueezy fills in after payment, appended unencoded so
+    // the brackets survive. The return page records them for the backfill (#94).
+    const returnUrl = `${redirect.toString()}&order_id=[order_id]&order_identifier=[order_identifier]`;
 
     const body = {
         data: {
             type: 'checkouts',
             attributes: {
                 product_options: {
-                    redirect_url: redirect.toString(),
+                    redirect_url: returnUrl,
+                    receipt_link_url: returnUrl,
                     enabled_variants: [Number(input.variantId)],
                 },
                 checkout_data: { custom: { top_up_id: input.topUpId } },
