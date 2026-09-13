@@ -48,12 +48,13 @@ test('no purchase or Stripe call without Supply Consent', async () => {
     }
 });
 
-test('current consent version is recorded on the purchase and checkout opens', async () => {
+test('current consent version and the web Sales Channel are recorded on the purchase and checkout opens', async () => {
     const calls = stubUpstream();
     const res = await checkout({ ...base, supply_consent_version: SUPPLY_CONSENT_VERSION });
     assert.equal(res.status, 200);
     assert.deepEqual(await res.json(), { url: 'https://checkout.stripe.com/c/pay/cs_test_1' });
     const rpcArgs = JSON.parse(calls[0].body);
     assert.equal(rpcArgs.p_supply_consent_version, SUPPLY_CONSENT_VERSION);
+    assert.equal(rpcArgs.p_sales_channel, 'web');
     assert.match(calls[1].url, /api\.stripe\.com\/v1\/checkout\/sessions$/);
 });
