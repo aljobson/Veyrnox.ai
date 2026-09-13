@@ -11,12 +11,13 @@
  *      so no CSP connect-src change is needed.
  *
  * A pending Top-up whose checkout is never created or never paid stays
- * pending (spec #90). Credits are granted only by the verified webhook (#96).
+ * pending (spec #90). Credits are granted only by the verified webhook
+ * (/api/webhook/lemonsqueezy, #93).
  *
  * A replayed key returns the same Top-up and gets a fresh checkout for it.
  * ponytail: the earlier checkout link stays payable until it expires, so two
- * paid orders can name one Top-up; #96's crediting must credit once and flag
- * the second order for an Operator refund. Store the checkout URL on the
+ * paid orders can name one Top-up; credit_top_up (0047) credits the first and
+ * flags the rest for an Operator refund. Store the checkout URL on the
  * Top-up and return it on replay if that proves common.
  */
 

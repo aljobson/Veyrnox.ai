@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { AppNav } from '../../_components/NavBar';
 import { Chip } from '../../_components/Chip';
-import { TopUpPacks } from '../../_components/TopUpPacks';
+import { TopUpPacks, TopUpReturn } from '../../_components/TopUpPacks';
 import { gatewayFetch, GatewayError } from '../../_lib/gateway';
 import { readJobHistory } from '../../_lib/jobHistory';
 import { MODELS } from '../../_lib/tokens';
@@ -107,6 +107,8 @@ export default function Credits() {
                 <span>Sign in to see your balance.</span>
               </div>
             )}
+
+            <TopUpReturn />
 
             {topupsEnabled ? (
               // Wait for the balance call to settle so packs never load for a signed-out visitor.

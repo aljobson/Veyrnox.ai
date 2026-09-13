@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { Button } from './Button';
-import { gatewayFetch, GatewayError, makeIdempotencyKey } from '../_lib/gateway';
+import { gatewayFetch, GatewayError, makeIdempotencyKey, notifyBalanceChanged } from '../_lib/gateway';
 import { useCatalog } from '../_lib/useCatalog';
 
 // Supply Consent (CONTEXT.md). Bump the version whenever the wording changes:
@@ -18,6 +18,65 @@ const ERROR_COPY = {
   idempotency_key_reused: 'Pick your pack again to start a new checkout.',
   user_not_provisioned: 'Your account is still being set up. Try again in a moment.',
 };
+
+const TOP_UP_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+const POLL_MS = 2000;
+const POLL_GIVE_UP_MS = 3 * 60 * 1000;
+
+// Shown after LemonSqueezy redirects back with ?top_up=<id>. Polls the
+// Top-up until the webhook credits it, then refreshes every balance on the
+// page. Credits come only from the webhook; this never grants anything.
+export function TopUpReturn() {
+  const [topUpId, setTopUpId] = useState(null);
+  const [phase, setPhase] = useState('processing');
+  const [credits, setCredits] = useState(null);
+
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get('top_up');
+    if (id && TOP_UP_ID_RE.test(id)) setTopUpId(id);
+  }, []);
+
+  useEffect(() => {
+    if (!topUpId) return;
+    let stopped = false;
+    let timer;
+    const started = Date.now();
+    async function poll() {
+      try {
+        const t = await gatewayFetch(`/top-ups/${topUpId}`);
+        if (stopped) return;
+        if (t.status === 'credited') {
+          setCredits(t.credits);
+          setPhase('credited');
+          notifyBalanceChanged();
+          window.history.replaceState(null, '', window.location.pathname);
+          return;
+        }
+      } catch (e) {
+        if (stopped) return;
+        if (e instanceof GatewayError && (e.status === 404 || e.status === 400)) { setPhase('not_found'); return; }
+      }
+      if (Date.now() - started > POLL_GIVE_UP_MS) { setPhase('slow'); return; }
+      timer = setTimeout(poll, POLL_MS);
+    }
+    poll();
+    return () => { stopped = true; clearTimeout(timer); };
+  }, [topUpId]);
+
+  if (!topUpId) return null;
+  const copy = {
+    processing: 'Payment received. Adding your credits…',
+    credited: `${credits == null ? 'Your' : new Intl.NumberFormat('en-US').format(credits)} credits added to your balance.`,
+    slow: 'Still processing. Your credits usually arrive within a few minutes. Don’t pay again; if they haven’t arrived within the hour, contact support.',
+    not_found: 'We couldn’t find that purchase on this account. If you were charged, contact support.',
+  }[phase];
+  return (
+    <div role="status" aria-live="polite" className={`mt-4 rounded-lg border px-4 py-3 text-sm ${phase === 'credited' ? 'border-vx-money/40 bg-vx-money/[0.07] text-vx-money' : 'border-vx-border bg-vx-base/60 text-vx-fg-body'}`}>
+      {phase === 'processing' && <span className="font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted mr-2">PROCESSING</span>}
+      {copy}
+    </div>
+  );
+}
 
 const usd = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
 
