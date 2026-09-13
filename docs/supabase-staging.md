@@ -97,8 +97,8 @@ intent — both tables are wallet-product leftovers and have never held a row
 in this project.
 
 **Informational, correct as-is.** `public.credit_packs`, `public.purchases`
-(0035) and `public.account_freezes` (0038), all ADR-0019, have RLS forced with
-no policies on purpose: only the Worker's `service_role` and the `purchase_*` /
+(0035), `public.account_freezes` (0038) and `public.sales_channels` (0040), all
+ADR-0019, have RLS forced with no policies on purpose: only the Worker's `service_role` and the `purchase_*` /
 `operator_unfreeze` definer functions may touch them.
 
 ## Migrating to Frankfurt later
