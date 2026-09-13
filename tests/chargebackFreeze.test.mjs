@@ -156,9 +156,23 @@ test('a Frozen account gets 403 account_frozen from top-ups, and no checkout is 
     const res = await topUps.POST(new Request('https://veyrnox.test/api/v1/top-ups', {
         method: 'POST',
         headers: { 'x-veyrnox-auth-id': 'auth-user-1', 'content-type': 'application/json' },
-        body: JSON.stringify({ pack_id: 'web-300', idempotency_key: 'topup-key-0001', consent: true, consent_version: '2026-09-13' }),
+        body: JSON.stringify({ pack_id: 'web-300', idempotency_key: 'topup-key-0001', consent: true, consent_version: 'supply-consent-v1' }),
     }));
     assert.equal(res.status, 403);
     assert.deepEqual(await res.json(), { error: 'account_frozen' });
     assert.ok(!calls.some((c) => c.url.includes('lemonsqueezy')), 'no checkout');
+});
+
+test('top-ups accepts only the approved Supply Consent version, before any DB call', async () => {
+    for (const consent_version of [undefined, '', '2026-09-13', 'supply-consent-v2', 'SUPPLY-CONSENT-V1', ['supply-consent-v1']]) {
+        const calls = stubFetch([]);
+        const res = await topUps.POST(new Request('https://veyrnox.test/api/v1/top-ups', {
+            method: 'POST',
+            headers: { 'x-veyrnox-auth-id': 'auth-user-1', 'content-type': 'application/json' },
+            body: JSON.stringify({ pack_id: 'web-300', idempotency_key: 'topup-key-0001', consent: true, consent_version }),
+        }));
+        assert.equal(res.status, 400, String(consent_version));
+        assert.deepEqual(await res.json(), { error: 'consent_version_required' });
+        assert.equal(calls.length, 0, 'no Top-up created');
+    }
 });

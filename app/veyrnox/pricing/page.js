@@ -63,7 +63,8 @@ function useCreditPacks() {
   return packs;
 }
 
-const usd = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+// "$10", not "$10.00": the approved wording (#99 item 1).
+const usd = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', trailingZeroDisplay: 'stripIfInteger' });
 const num = new Intl.NumberFormat('en-US');
 
 export default function Pricing() {
@@ -111,7 +112,7 @@ export default function Pricing() {
             {packs.map((p) => (
               <li key={p.id} className="rounded-2xl border border-vx-border bg-vx-panel p-6">
                 <div className="font-vx-mono text-[28px] font-bold text-vx-money vx-num">{num.format(p.credits)} cr</div>
-                {/* Draft wording from #99 item 1, not yet approved by Finance/Legal. */}
+                {/* #99 item 1, approved v1: keep verbatim. */}
                 <div className="mt-1 text-sm text-vx-fg-body">
                   {num.format(p.credits)} credits — {usd.format(p.price_usd_cents / 100)} + applicable tax
                 </div>

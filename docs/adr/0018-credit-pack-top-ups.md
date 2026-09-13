@@ -66,6 +66,8 @@ list includes "services of any kind" and says nothing about AI generation.
 6. **Consent.** The buy dialog requires a ticked acknowledgement that credits are
    supplied immediately and the right to cancel ends once the user generates. It
    is stored on the pending Top-up with a timestamp and wording version.
+   The owner approved the wording as `supply-consent-v1` on 2026-09-13 (#99);
+   `POST /api/v1/top-ups` accepts no other version (#100).
 7. **Top-up Refunds.** Operators issue them in the LemonSqueezy dashboard, within
    14 days and only if nothing was generated since that Top-up. Every
    `order_refunded` event, whoever issued it, claws back a proportional share of
