@@ -452,7 +452,7 @@ function WhyVeyrnox() {
     <section className="px-6 pt-20 pb-6 max-w-[1400px] mx-auto">
       <div className="text-center mb-8">
         <div className="font-vx-mono text-[11px] tracking-[0.14em] text-vx-accent mb-2">WHY VEYRNOX</div>
-        <h2 className="text-3xl md:text-4xl font-black tracking-[-0.02em]">Honest math. One balance. Signed by default.</h2>
+        <h2 className="text-3xl md:text-4xl font-black tracking-[-0.02em]">Honest math. One balance. Every credit on the record.</h2>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {PILLARS.map((p) => (
