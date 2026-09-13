@@ -115,3 +115,26 @@ met for the database only.
 The `us-east-2` project (`yrqzwqywxfesmbvhzjgj`) is now staging. Whether it
 still holds any real user's data from before the cutover has not been checked
 here; if it does, that data should be deleted or the pages should mention it.
+
+## Update (2026-09-13): R2 location verified
+
+Checked with `wrangler r2 bucket list` / `wrangler r2 bucket info` and the S3
+endpoint in `packages/adapters/r2.js`:
+
+- Production media is written to `veyrnox-media` in the **default
+  jurisdiction** (created 2026-09-05, location `WEUR`, 111 objects / 109 MB at
+  the time). `r2.js` signs against `https://<account>.r2.cloudflarestorage.com`,
+  which cannot reach a jurisdiction-restricted bucket, and production recorded
+  new assets through it the same day.
+- `WEUR` is a location hint: Cloudflare places the bucket in Western Europe on
+  a best-effort basis and reports the placement, but only a jurisdictional
+  restriction guarantees objects are stored and processed in the EU.
+- A second `veyrnox-media` exists in the **EU jurisdiction** (created
+  2026-07-03, location `EEUR`) with 0 objects. Nothing uses it.
+- `veyrnox-staging-media` is default-jurisdiction, `WEUR`, with no EU twin.
+
+The Privacy Policy and GDPR page now say generated media is stored in
+Cloudflare R2 in Western Europe, and claim no EU restriction. ADR-0005 §3
+(EU-only user data) is therefore met for the database but **not** for media.
+Moving media into the EU-jurisdiction bucket is tracked in its own ADR.
+
