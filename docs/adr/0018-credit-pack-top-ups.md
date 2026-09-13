@@ -55,6 +55,9 @@ list includes "services of any kind" and says nothing about AI generation.
    and any further paid order for it (a replayed buy request can open a second
    checkout) or a paid order that doesn't match the pack's variant, pre-tax
    price and USD is recorded for an Operator refund and never granted (#93).
+   The backfill also re-fetches an order the buyer came back with after a
+   different order credited the Top-up, so a second paid order is recorded for
+   refund even when its own webhook is lost (#143).
    An order that was paid and has since been refunded, in full or in part, still
    counts as paid for both the webhook and the backfill: it is credited and its
    refunded share clawed back as in decision 7. The backfill does both in one

@@ -6,15 +6,17 @@
  * compared in constant time. Anything else -> 401. Called about every 5
  * minutes by .github/workflows/top-up-backfill.yml (main only).
  *
- *   1. next_top_up_backfill_batch hands out up to BATCH Top-ups that are
- *      pending, returned from checkout more than 10 minutes ago and created
- *      less than 7 days ago (0060).
+ *   1. next_top_up_backfill_batch hands out up to BATCH Top-ups returned from
+ *      checkout more than 10 minutes ago and created less than 7 days ago:
+ *      pending ones, and credited ones whose returned order isn't the one
+ *      that credited them, so a second paid order gets flagged (0060, 0064).
  *   2. For each, one at a time and SPACING_MS apart, re-fetch the returned
  *      order from LemonSqueezy. If the order's identifier matches and it
  *      passes the webhook's checks (lib/topUpBackfill.js), credit it through
  *      credit_top_up_with_refund, which also claws back any refund (0063).
- *   3. Stop at the time budget or on a LemonSqueezy 429. Transient failures
- *      stay pending and are due again after their backoff.
+ *   3. Close a row whose check reached a final answer (close_top_up_return).
+ *   4. Stop at the time budget or on a LemonSqueezy 429. Transient failures
+ *      stay open and are due again after their backoff.
  *
  * Response: { checked, credited, idempotent, flagged, refused, skipped, retry, stopped }.
  */
@@ -63,6 +65,7 @@ export async function POST(req) {
         // Bound: Workers throw "Illegal invocation" for an unbound fetch.
         fetchOrder: (orderId) => fetchOrder(orderId, { fetch: fetch.bind(globalThis), apiKey }),
         credit: (args) => rpc('credit_top_up_with_refund', args, cfg),
+        close: (row) => rpc('close_top_up_return', { p_top_up_id: row.top_up_id, p_order_id: row.order_id }, cfg),
         expectTestMode: testMode === 'true',
         expectStoreId: storeId,
         budgetMs: BUDGET_MS,
