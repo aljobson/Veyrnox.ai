@@ -21,6 +21,7 @@ const STATE_UI = {
 
 export default function Credits() {
   const [balance, setBalance] = useState(null);
+  const [free, setFree] = useState(null);
   const [error, setError] = useState(null);
   const [ledger, setLedger] = useState([]);
 
@@ -28,6 +29,7 @@ export default function Credits() {
     try {
       const b = await gatewayFetch('/balance');
       setBalance(b.balance);
+      setFree(b.free_credits > 0 && b.free_expires_at ? { credits: b.free_credits, expiresAt: b.free_expires_at } : null);
     } catch (e) {
       if (e instanceof GatewayError && e.status === 401) {
         setError('sign_in_required');
@@ -81,8 +83,14 @@ export default function Credits() {
               {balance == null ? '—' : new Intl.NumberFormat('en-US').format(balance)}
               <span className="text-2xl align-middle ml-2 text-vx-fg-muted">cr</span>
             </div>
+            {free && (
+              <div className="mt-3 font-vx-mono text-[12px] tracking-[0.06em] text-vx-fg-muted vx-num">
+                {new Intl.NumberFormat('en-US').format(free.credits)} free credits, expire{' '}
+                {new Date(free.expiresAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+              </div>
+            )}
             <div className="mt-4 text-sm text-vx-fg-body">
-              Every account runs on the same balance. Failed jobs refund automatically.
+              Every account runs on the same balance. Free credits are spent first. Failed jobs refund automatically.
             </div>
 
             {error === 'sign_in_required' && (

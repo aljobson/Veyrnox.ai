@@ -16,7 +16,7 @@
     "deploy": "opennextjs-cloudflare deploy",
     "migrate": "node scripts/migrate.mjs",
     "test": "node --test \"tests/**/*.test.{js,mjs}\"",
-    "test:ledger": "tsx --test packages/db/*.test.ts"
+    "test:ledger": "tsx --test --test-concurrency=1 packages/db/*.test.ts"
   },
   "dependencies": {
     "next": "^15.5.25",
