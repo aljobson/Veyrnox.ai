@@ -1,7 +1,8 @@
 # Supabase Staging — deployment log
 
-**Project**: `veyrnox-staging` (`yrqzwqywxfesmbvhzjgj`)
-**Region**: us-east-2 — **NOT EU-compliant per ADR-0005 §3**. Fine for dev/staging with test-only data; **must migrate to Frankfurt before Slice 9 exit** (real user signups).
+**Project**: `veyrnox.ai staging` (`yrqzwqywxfesmbvhzjgj`; named `veyrnox-staging` until 2026-09-13)
+**Region**: us-east-2 — **NOT EU-compliant per ADR-0005 §3**. Staging only, test data only. Production moved to `veyrnox-ai-production-eu` (`xdxdzmsztyzbnzeforxx`, eu-central-1) on 2026-09-12 (#85, ADR-0016).
+**Not the wallet**: the Veyrnox wallet's staging is a different project in the same organization (`nszlbcmcysftwyudthjz`). Never touch it from this repo.
 **URL**: `https://yrqzwqywxfesmbvhzjgj.supabase.co`
 **Postgres**: 17.6.1.147
 **Purpose**: Phase 1 gateway development. No real user data. Emptied and re-migrated freely.
