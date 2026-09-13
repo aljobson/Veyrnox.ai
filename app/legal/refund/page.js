@@ -18,14 +18,14 @@ export default function Refund() {
             <p>The 50 credits granted on sign-up have no cash value, are not refundable in money, and expire 90 days after they are granted if unused. Purchased credits never expire.</p>
 
             <h2>Buying credits</h2>
-            <p>Credit packs are sold through Stripe, which acts as merchant of record and adds any sales tax or VAT at checkout. Your receipt and card statement show Link (&ldquo;LINK.COM&rdquo;). Before checkout you tick this confirmation:</p>
+            <p>Credit packs are sold through Stripe, which acts as merchant of record and adds any sales tax or VAT at checkout. Your receipt comes from Onelink, Stripe&rsquo;s checkout and order service, and your card statement shows &ldquo;LINK.COM&rdquo;. Before checkout you tick this confirmation:</p>
             <blockquote className="border-l-2 border-vx-border pl-4 italic">{SUPPLY_CONSENT_TEXT}</blockquote>
 
             <h2>Refunds of purchased credits</h2>
             <ul>
                 <li>You can ask for a refund of a credit pack within 14 days of buying it, as long as you have not generated anything since that purchase. Email <a href={`mailto:${ENTITY.email}`}>{ENTITY.email}</a> with the date of purchase. The money goes back to your original payment method.</li>
                 <li>Once you generate after buying, your right to cancel that purchase has ended, as you confirmed at checkout, and we do not refund it.</li>
-                <li>Refunds can also be issued by Link&rsquo;s customer support. Whoever issues it, a refund takes back that pack&rsquo;s credits in proportion to the money returned &mdash; half the money back removes half the pack&rsquo;s credits, rounded down &mdash; but never takes your balance below zero.</li>
+                <li>Refunds can also be issued by Onelink&rsquo;s customer support. Whoever issues it, a refund takes back that pack&rsquo;s credits in proportion to the money returned &mdash; half the money back removes half the pack&rsquo;s credits, rounded down &mdash; but never takes your balance below zero.</li>
                 <li>Nothing here limits your rights if the service is faulty or not as described.</li>
             </ul>
 

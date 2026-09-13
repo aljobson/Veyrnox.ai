@@ -43,7 +43,7 @@ Where a Top-up is bought: web, iOS App Store, or Google Play. Each channel has i
 _Avoid_: Platform, store (when meaning the channel)
 
 **Merchant of Record**:
-The company that legally sells to the user in a Sales Channel and collects and remits sales tax. Stripe (Managed Payments, sold through Link) on web.
+The company that legally sells to the user in a Sales Channel and collects and remits sales tax. Stripe (Managed Payments, sold through Onelink) on web.
 _Avoid_: Payment processor, billing provider (when meaning the legal seller)
 
 ### Reversals
