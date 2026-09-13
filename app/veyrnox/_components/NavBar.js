@@ -11,13 +11,13 @@ export function MarketingNav() {
   // Rewrites serve /veyrnox/* at /*, so the browser path has no prefix.
   const path = usePathname().replace(/^\/veyrnox/, '') || '/';
   const items = [
-    { href: '/veyrnox',         label: 'Home' },
-    { href: '/veyrnox/presets', label: 'Gallery' },
-    { href: '/veyrnox/pricing', label: 'Pricing' },
+    { href: '/',         label: 'Home' },
+    { href: '/presets', label: 'Gallery' },
+    { href: '/pricing', label: 'Pricing' },
   ];
   return (
     <div className="sticky top-0 z-40 flex items-center justify-between px-4 sm:px-8 h-16 border-b border-vx-border bg-vx-base/[0.88] backdrop-blur">
-      <Link href="/veyrnox" className="flex items-center gap-2.5 shrink-0">
+      <Link href="/" className="flex items-center gap-2.5 shrink-0">
         <Logo wordmark />
       </Link>
       <div className="hidden sm:flex gap-1.5 text-sm font-semibold">
@@ -49,9 +49,9 @@ export function MarketingNav() {
 // self-fetches and subscribes to veyrnox:balance-changed.
 export function AppNav({ balance, active = 'explore' }) {
   const items = [
-    { key: 'explore', href: '/veyrnox/app',         label: 'Explore' },
-    { key: 'create',  href: '/veyrnox/app/create',  label: 'Create' },
-    { key: 'library', href: '/veyrnox/app/library', label: 'Library' },
+    { key: 'explore', href: '/app',         label: 'Explore' },
+    { key: 'create',  href: '/app/create',  label: 'Create' },
+    { key: 'library', href: '/app/library', label: 'Library' },
   ];
   const [ownBalance, setOwnBalance] = useState(null);
   const loadOwn = useCallback(async () => {
@@ -73,7 +73,7 @@ export function AppNav({ balance, active = 'explore' }) {
   const fmt = shown != null ? new Intl.NumberFormat('en-US').format(shown) : '—';
   return (
     <div className="sticky top-0 z-40 flex items-center justify-between px-8 h-16 border-b border-vx-border bg-vx-base/[0.88] backdrop-blur">
-      <Link href="/veyrnox/app" className="flex items-center gap-2.5">
+      <Link href="/app" className="flex items-center gap-2.5">
         <Logo wordmark />
       </Link>
       <div className="flex gap-1 text-sm font-semibold">
@@ -90,7 +90,7 @@ export function AppNav({ balance, active = 'explore' }) {
         ))}
       </div>
       <div className="flex items-center gap-3">
-        <Link href="/veyrnox/app/credits" className="flex items-center gap-2 rounded-full border border-vx-border bg-vx-panel px-3 py-1.5">
+        <Link href="/app/credits" className="flex items-center gap-2 rounded-full border border-vx-border bg-vx-panel px-3 py-1.5">
           <span className="h-1.5 w-1.5 rounded-full bg-vx-money" />
           <span className="font-vx-mono text-[12px] font-bold text-vx-money vx-num">{fmt} cr</span>
         </Link>
