@@ -41,8 +41,9 @@ export async function POST(req) {
     const secret = process.env.LEMONSQUEEZY_WEBHOOK_SECRET;
     const apiKey = process.env.LEMONSQUEEZY_API_KEY;
     const testMode = process.env.LEMONSQUEEZY_TEST_MODE;
+    const storeId = process.env.LEMONSQUEEZY_STORE_ID;
     // Fail closed: without an explicit mode we can't tell test orders from live.
-    if (!cfg.supabaseUrl || !cfg.serviceRoleKey || !secret || !apiKey || (testMode !== 'true' && testMode !== 'false')) {
+    if (!cfg.supabaseUrl || !cfg.serviceRoleKey || !secret || !apiKey || !storeId || (testMode !== 'true' && testMode !== 'false')) {
         return NextResponse.json({ error: 'not_configured' }, { status: 503 });
     }
 
@@ -96,7 +97,7 @@ export async function POST(req) {
             return NextResponse.json({ error: 'order_fetch_failed' }, { status: fetched.transient ? 503 : 502 });
         }
 
-        const norm = normaliseOrder(fetched.order, event.meta.custom_data, { expectTestMode: testMode === 'true' });
+        const norm = normaliseOrder(fetched.order, event.meta.custom_data, { expectTestMode: testMode === 'true', expectStoreId: storeId });
         if (!norm.ok) {
             // Not from our checkout, or the wrong mode: nothing to credit, ever.
             console.error(LOG, 'order not creditable:', orderId, norm.error);

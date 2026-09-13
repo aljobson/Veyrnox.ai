@@ -130,11 +130,11 @@ const isCents = (n) => Number.isSafeInteger(n) && n >= 0;
  *
  * @param {any} order        JSON:API order resource ({id, attributes})
  * @param {any} customData   verified webhook meta.custom_data
- * @param {{expectTestMode: boolean}} opts
+ * @param {{expectTestMode: boolean, expectStoreId: string}} opts
  * @returns {{ok: true, order: {orderId: string, status: string, paidCents: number, currency: string,
  *   variantId: string, refundedCents: number, topUpId: string, testMode: boolean}} | {ok: false, error: string}}
  */
-export function normaliseOrder(order, customData, { expectTestMode }) {
+export function normaliseOrder(order, customData, { expectTestMode, expectStoreId }) {
     const topUpId = customData && customData.top_up_id;
     if (typeof topUpId !== 'string' || !UUID_RE.test(topUpId)) return { ok: false, error: 'invalid top_up_id' };
 
@@ -146,6 +146,11 @@ export function normaliseOrder(order, customData, { expectTestMode }) {
     if (!NUMERIC_ID_RE.test(variantId) || !isCents(a.subtotal) || !isCents(a.discount_total ?? 0) || !isCents(refunded)
         || typeof a.currency !== 'string' || typeof a.status !== 'string') {
         return { ok: false, error: 'malformed order' };
+    }
+
+    // An order from another store on the same account is never ours to credit.
+    if (!NUMERIC_ID_RE.test(String(expectStoreId)) || String(a.store_id) !== String(expectStoreId)) {
+        return { ok: false, error: 'store mismatch' };
     }
 
     // Both flags must match: a test order is never credited in live mode.
