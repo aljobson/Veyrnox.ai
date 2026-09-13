@@ -38,7 +38,7 @@ enforced in `ledger_debit`.
 
 ## Enforcement addendum — 2026-09-13 (#102)
 
-Enforced by migration `0035_free_credit_expiry`, ahead of Subscriptions
+Enforced by migrations `0037_free_credit_expiry` and `0038_free_credit_sweep_fixes`, ahead of Subscriptions
 (ADR-0018). Vocabulary follows `CONTEXT.md`: Free Credits, Pack Credits.
 
 - Only `grant:signup` credits are Free Credits. `ledger_entries.free_delta`
@@ -49,7 +49,7 @@ Enforced by migration `0035_free_credit_expiry`, ahead of Subscriptions
   Credit Refund to the source the debit took it from.
 - A Top-up Refund clawback (#96) must cap at `balance - free_balance`; the
   constraint rejects any write that would reduce Free Credits instead.
-- `expire_free_credits()` runs daily on pg_cron and writes one
+- `expire_free_credits()` runs hourly on pg_cron and writes one
   `expire:free` row per user for the unspent remainder 90 days after the
   grant. A partial unique index allows only one. It waits while a
   generation that took Free Credits is still unsettled, so a later Credit

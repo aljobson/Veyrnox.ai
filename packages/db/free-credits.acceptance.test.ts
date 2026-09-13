@@ -4,7 +4,7 @@
  * Exercises the production RPCs (not the Ledger class): signup_grant,
  * ledger_grant, ledger_debit, ledger_refund, expire_free_credits,
  * read_user_credits and reconcile_free_credits, as defined by
- * schema/supabase/0035_free_credit_expiry.sql applied on top of
+ * schema/supabase/0037_free_credit_expiry.sql and 0038 applied on top of
  * schema/0001_initial.sql.
  *
  * Skipped unless DATABASE_URL is set. The Supabase roles the migration
@@ -18,7 +18,8 @@ import { readFile } from "node:fs/promises";
 import pg from "pg";
 
 const DATABASE_URL = process.env.DATABASE_URL;
-const MIGRATION = new URL("./schema/supabase/0035_free_credit_expiry.sql", import.meta.url);
+const MIGRATIONS = ["0037_free_credit_expiry.sql", "0038_free_credit_sweep_fixes.sql"]
+    .map((f) => new URL(`./schema/supabase/${f}`, import.meta.url));
 const DAY_MS = 24 * 60 * 60 * 1000;
 const daysFromNow = (d: number) => new Date(Date.now() + d * DAY_MS).toISOString();
 
@@ -33,9 +34,9 @@ describe("Free Credits (ADR-0013)", { skip: !DATABASE_URL && "DATABASE_URL not s
                     EXECUTE format('CREATE ROLE %I NOLOGIN', r);
                 END IF;
             END LOOP; END $$`);
-        const sql = await readFile(MIGRATION, "utf8");
-        await pool.query(sql);
-        await pool.query(sql); // migration must be idempotent
+        for (const round of [1, 2]) { // migrations must be idempotent
+            for (const m of MIGRATIONS) await pool.query(await readFile(m, "utf8"));
+        }
     });
 
     after(async () => {
@@ -190,6 +191,21 @@ describe("Free Credits (ADR-0013)", { skip: !DATABASE_URL && "DATABASE_URL not s
         await sweep(daysFromNow(91));
         assert.deepEqual(await expiries(u), [], "in-flight job could still refund free credits");
 
+        await refund(job.job_id, u, 10);
+        await sweep(daysFromNow(91));
+        assert.deepEqual(await expiries(u), [{ delta: -50, free_delta: -50 }]);
+        await assertInvariants(u);
+    });
+
+    it("defers expiry while a delivered job has no stored asset", async () => {
+        // sweep_stuck_jobs (0019) fails and refunds these after the grace window.
+        const u = await signup();
+        const job = await debit(u, 10);
+        await pool.query(`UPDATE jobs SET state = 'SUCCEEDED' WHERE id = $1`, [job.job_id]);
+        await sweep(daysFromNow(91));
+        assert.deepEqual(await expiries(u), [], "an unstored success can still be refunded");
+
+        await pool.query(`UPDATE jobs SET state = 'FAILED' WHERE id = $1`, [job.job_id]);
         await refund(job.job_id, u, 10);
         await sweep(daysFromNow(91));
         assert.deepEqual(await expiries(u), [{ delta: -50, free_delta: -50 }]);
