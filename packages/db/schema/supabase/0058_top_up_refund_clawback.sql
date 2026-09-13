@@ -1,7 +1,7 @@
 -- Top-up Refund clawback (#96, ADR-0018 decision 7).
--- Applied name: 0057_top_up_refund_clawback.
--- Numbered 0057: main holds 0053 and 0054, and feat/activate-elevenlabs-sfx
--- holds 0055 and 0056.
+-- Applied name: 0058_top_up_refund_clawback.
+-- Numbered 0058: production has applied 0053, 0055, 0056 and 0057, and #124
+-- takes 0054 for credit_top_up.
 --
 -- When money comes back on a Top-up (an Operator refund in the LemonSqueezy
 -- dashboard, or LemonSqueezy's own), a proportional share of that Top-up's
