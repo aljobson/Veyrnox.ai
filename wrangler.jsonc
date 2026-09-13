@@ -29,6 +29,9 @@
   //   OPENROUTER_API_KEY, OPENROUTER_WEBHOOK_SECRET
   //                               OpenRouter video submit + webhook signature (ADR-0020)
   //   ADMIN_REAP_TOKEN            /api/admin/reap-assets shared secret (ADR-0008)
+  //   STRIPE_SECRET_KEY           restricted key, Checkout Sessions write (packages/adapters/stripe.js, ADR-0020)
+  //   STRIPE_WEBHOOK_SECRET       whsec_ signing secret for /api/webhook/stripe
+  //   ADMIN_BACKFILL_TOKEN        /api/admin/backfill-purchases shared secret; same value as the GitHub Actions secret
   //   UPLOAD_PROXY_ALLOWED_HOSTS  legacy upload proxy allowlist (docs/UPLOAD_PROXY_CONFIG.md)
   //
   // No R2 binding: r2.js signs plain fetch against the S3 endpoint so the

@@ -1,16 +1,27 @@
 'use client';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppNav } from '../../_components/NavBar';
 import { Chip } from '../../_components/Chip';
+import { Button } from '../../_components/Button';
 import { gatewayFetch, GatewayError } from '../../_lib/gateway';
 import { readJobHistory } from '../../_lib/jobHistory';
 import { MODELS } from '../../_lib/tokens';
+import { SUPPLY_CONSENT_TEXT, SUPPLY_CONSENT_VERSION } from '../../../../lib/supplyConsent';
 
+// Display only — credits come from credit_packs, the charge from the Stripe
+// Price (ADR-0020). Keep the labels in step with the Stripe dashboard.
 const TOPUPS = [
-  { c: 300,  price: '$9' },
-  { c: 750,  price: '$19' },
-  { c: 2000, price: '$49' },
+  { id: 'pack_100',  c: 100,  price: '$10' },
+  { id: 'pack_300',  c: 300,  price: '$25' },
+  { id: 'pack_1000', c: 1000, price: '$75' },
 ];
+
+// Feature flag until 0035 has run clean in prod: localStorage.veyrnox_billing = '1'.
+function billingEnabled() {
+  try { return localStorage.getItem('veyrnox_billing') === '1'; } catch { return false; }
+}
+
+const CHECKOUT_ORIGIN = 'https://checkout.stripe.com/';
 
 const STATE_UI = {
   succeeded: { chip: 'accent', glyph: '✓' },
@@ -23,6 +34,51 @@ export default function Credits() {
   const [balance, setBalance] = useState(null);
   const [error, setError] = useState(null);
   const [ledger, setLedger] = useState([]);
+  const [billing, setBilling] = useState(false);
+  const [buying, setBuying] = useState(null);
+  const [checkout, setCheckout] = useState(null);
+  const [pack, setPack] = useState(null);
+  const [consented, setConsented] = useState(false);
+  const dialogRef = useRef(null);
+
+  // Consent is per Top-up: every opening starts unticked.
+  const openBuy = useCallback((t) => {
+    setPack(t);
+    setConsented(false);
+    setCheckout(null);
+    dialogRef.current?.showModal();
+  }, []);
+
+  useEffect(() => {
+    setBilling(billingEnabled());
+    const status = new URLSearchParams(window.location.search).get('checkout');
+    if (status === 'success' || status === 'cancel') setCheckout(status);
+  }, []);
+
+  const buy = useCallback(async (packId) => {
+    setBuying(packId);
+    setCheckout(null);
+    try {
+      const { url } = await gatewayFetch('/checkout', {
+        method: 'POST',
+        body: JSON.stringify({
+          pack_id: packId,
+          idempotency_key: crypto.randomUUID(),
+          supply_consent_version: SUPPLY_CONSENT_VERSION,
+        }),
+      });
+      if (typeof url !== 'string' || !url.startsWith(CHECKOUT_ORIGIN)) throw new Error('bad checkout url');
+      window.location.assign(url);
+    } catch (e) {
+      dialogRef.current?.close();
+      // 401: the auth gate is already prompting sign-in.
+      if (!(e instanceof GatewayError && e.status === 401)) {
+        setCheckout(e instanceof GatewayError && e.status === 429 ? 'rate_limited'
+          : e instanceof GatewayError && e.code === 'account_frozen' ? 'frozen' : 'failed');
+      }
+      setBuying(null);
+    }
+  }, []);
 
   const load = useCallback(async () => {
     try {
@@ -97,9 +153,10 @@ export default function Credits() {
                 <button
                   key={t.c}
                   type="button"
-                  disabled
-                  title="Top-ups are not available yet"
-                  className="flex flex-col items-start rounded-xl border border-vx-border bg-vx-base/60 px-4 py-3 opacity-50 cursor-not-allowed"
+                  disabled={!billing || buying !== null}
+                  onClick={() => openBuy(t)}
+                  title={billing ? `Buy ${t.c} credits` : 'Top-ups are not available yet'}
+                  className={`flex flex-col items-start rounded-xl border border-vx-border bg-vx-base/60 px-4 py-3 ${billing ? 'hover:border-vx-money/60 disabled:opacity-50 disabled:cursor-wait' : 'opacity-50 cursor-not-allowed'}`}
                 >
                   <span className="font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted">TOP-UP</span>
                   <span className="font-vx-mono text-[18px] font-bold text-vx-money mt-1 vx-num">+{t.c} cr</span>
@@ -107,8 +164,13 @@ export default function Credits() {
                 </button>
               ))}
             </div>
+            {checkout && (
+              <div role="status" className="mt-3 text-sm text-vx-fg-body">
+                {CHECKOUT_MESSAGES[checkout]}
+              </div>
+            )}
             <div className="mt-3 font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-faint">
-              TOP-UPS NOT AVAILABLE YET · PRICES SHOWN ARE INDICATIVE
+              {billing ? 'CHECKOUT BY STRIPE · FINAL PRICE INCL. TAX SHOWN AT CHECKOUT' : 'TOP-UPS NOT AVAILABLE YET · PRICES SHOWN ARE INDICATIVE'}
             </div>
           </div>
 
@@ -124,6 +186,49 @@ export default function Credits() {
           </div>
         </div>
       </section>
+
+      <dialog
+        ref={dialogRef}
+        aria-labelledby="buy-title"
+        onClose={() => setPack(null)}
+        className="m-auto w-[min(440px,calc(100vw-2rem))] rounded-2xl border border-vx-border bg-vx-panel p-6 text-vx-fg backdrop:bg-black/60"
+      >
+        {pack && (
+          <form
+            method="dialog"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (consented && buying === null) buy(pack.id);
+            }}
+          >
+            <div className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">TOP-UP</div>
+            <h2 id="buy-title" className="mt-1 text-2xl font-black">
+              +{new Intl.NumberFormat('en-US').format(pack.c)} cr <span className="text-vx-fg-muted font-bold">· {pack.price}</span>
+            </h2>
+            <p className="mt-2 text-sm text-vx-fg-body">One-time purchase. Tax is added at checkout.</p>
+
+            <label className="mt-5 flex items-start gap-3 rounded-xl border border-vx-border bg-vx-base/60 p-4 text-sm text-vx-fg-body cursor-pointer">
+              <input
+                type="checkbox"
+                required
+                checked={consented}
+                onChange={(e) => setConsented(e.target.checked)}
+                className="mt-0.5 h-4 w-4 shrink-0 accent-vx-money"
+              />
+              <span>{SUPPLY_CONSENT_TEXT}</span>
+            </label>
+
+            <div className="mt-6 flex justify-end gap-2">
+              <Button variant="ghost" size="sm" type="button" onClick={() => dialogRef.current?.close()}>
+                Cancel
+              </Button>
+              <Button variant="money" size="sm" type="submit" disabled={!consented || buying !== null}>
+                {buying ? 'Opening checkout…' : 'Continue to checkout'}
+              </Button>
+            </div>
+          </form>
+        )}
+      </dialog>
 
       {/* ============ RECENT GENERATIONS (client-side ledger) ============ */}
       <section className="max-w-[1200px] mx-auto px-8 pb-16">
@@ -176,6 +281,14 @@ export default function Credits() {
     </div>
   );
 }
+
+const CHECKOUT_MESSAGES = {
+  success: 'Payment received. Credits appear here once Stripe confirms it — usually within a minute.',
+  cancel: 'Checkout cancelled. You have not been charged.',
+  rate_limited: 'Too many checkout attempts. Try again in a few minutes.',
+  frozen: 'Your account is frozen after a card dispute or payment reversal, so buying credits is paused. Contact support to resolve it.',
+  failed: 'Checkout is unavailable right now. You have not been charged.',
+};
 
 function formatWhen(ts) {
   if (!ts) return '—';
