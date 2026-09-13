@@ -480,7 +480,7 @@ function FeatureStripsSection() {
       <FeatureStrip
         kicker="PRESETS"
         title="Big-budget effects, one tap."
-        body="Curated preset gradients wired to model + prompt combos. Browse free, generate on-tap — cost shown up front."
+        body="Curated presets wired to model + prompt combos. Browse free, generate on-tap — cost shown up front."
         cta={{ label: 'Browse presets', href: '/veyrnox/presets' }}
         bg="linear-gradient(135deg,#1b0632 0%,#5a0e6a 55%,#e4318f 100%)"
         reverse
