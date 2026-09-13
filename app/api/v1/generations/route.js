@@ -254,7 +254,8 @@ export async function POST(req) {
         );
     }
     if (!debit || debit.ok === false) {
-        const status = debit && debit.code === 'INSUFFICIENT_BALANCE' ? 402 : 400;
+        const status = debit && debit.code === 'INSUFFICIENT_BALANCE' ? 402
+            : debit && debit.code === 'ACCOUNT_FROZEN' ? 403 : 400;
         // Don't leak DB/RPC messages to the client — log server-side only.
         if (debit && debit.message) console.error('[generations] debit rejected:', debit.code, debit.message);
         // Convert DB SCREAMING_SNAKE across the trust boundary to snake_case.

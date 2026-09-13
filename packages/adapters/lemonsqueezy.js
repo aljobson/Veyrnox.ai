@@ -148,14 +148,9 @@ export function normaliseOrder(order, customData, { expectTestMode, expectStoreI
         return { ok: false, error: 'malformed order' };
     }
 
-    // An order from another store on the same account is never ours to credit.
-    if (!NUMERIC_ID_RE.test(String(expectStoreId)) || String(a.store_id) !== String(expectStoreId)) {
-        return { ok: false, error: 'store mismatch' };
-    }
-
-    // Both flags must match: a test order is never credited in live mode.
-    const testMode = a.test_mode === true || item.test_mode === true;
-    if (testMode !== (expectTestMode === true)) return { ok: false, error: 'test_mode mismatch' };
+    const origin = checkOrderOrigin(order, { expectTestMode, expectStoreId });
+    if (!origin.ok) return origin;
+    const testMode = origin.testMode;
 
     return {
         ok: true,
@@ -208,4 +203,52 @@ export async function fetchOrder(orderId, cfg) {
     const resource = data && data.data;
     if (!resource || String(resource.id) !== String(orderId)) return { ok: false, error: 'order id mismatch', transient: false };
     return { ok: true, order: resource };
+}
+
+/**
+ * Whether a re-fetched order came from our store in the expected mode. An
+ * order from another store on the same account, or a test order in live mode
+ * (either flag set), is never ours to act on.
+ *
+ * @param {any} order  JSON:API order resource
+ * @param {{expectTestMode: boolean, expectStoreId: string}} opts
+ * @returns {{ok: true, testMode: boolean} | {ok: false, error: string}}
+ */
+export function checkOrderOrigin(order, { expectTestMode, expectStoreId }) {
+    const a = order && order.attributes;
+    if (!a || !NUMERIC_ID_RE.test(String(order.id))) return { ok: false, error: 'malformed order' };
+    if (!NUMERIC_ID_RE.test(String(expectStoreId)) || String(a.store_id) !== String(expectStoreId)) {
+        return { ok: false, error: 'store mismatch' };
+    }
+    const testMode = a.test_mode === true || (a.first_order_item && a.first_order_item.test_mode === true);
+    if (testMode !== (expectTestMode === true)) return { ok: false, error: 'test_mode mismatch' };
+    return { ok: true, testMode };
+}
+
+/**
+ * The order id a dispute_created / dispute_resolved event names (ADR-0019).
+ * The payload shape is undocumented, so only explicit order fields count:
+ * data.attributes.order_id, a JSON:API order relationship, or the resource
+ * itself when it is an order. A dispute's own id is never mistaken for an
+ * order id. Null when there is no usable order id.
+ *
+ * ponytail: pin this against a captured dispute_created body (#97) and drop
+ * the shapes it doesn't use.
+ *
+ * @param {any} event  the verified webhook body
+ * @returns {string|null}
+ */
+export function disputeOrderId(event) {
+    const data = event && event.data;
+    if (!data || typeof data !== 'object') return null;
+    const candidates = [
+        data.attributes && data.attributes.order_id,
+        data.relationships && data.relationships.order && data.relationships.order.data
+            && data.relationships.order.data.type === 'orders' && data.relationships.order.data.id,
+        data.type === 'orders' && data.id,
+    ];
+    for (const c of candidates) {
+        if ((typeof c === 'string' || Number.isSafeInteger(c)) && NUMERIC_ID_RE.test(String(c))) return String(c);
+    }
+    return null;
 }

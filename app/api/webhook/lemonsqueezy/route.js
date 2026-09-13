@@ -3,8 +3,8 @@
  *
  *   1. Verify X-Signature (hex HMAC-SHA256 of the raw body). Invalid -> 401
  *      plus console.error. Nothing in the body is read before this.
- *   2. Only order_created and order_refunded are handled; every other
- *      event -> 200 ignored.
+ *   2. Only order_created, order_refunded, dispute_created and
+ *      dispute_resolved are handled; every other event -> 200 ignored.
  *   3. Dedupe in webhook_events(source 'billing:lemonsqueezy'):
  *      'order_created:<order id>', or for a refund
  *      'order_refunded:<order id>:<refunded amount cents>' so each distinct
@@ -17,7 +17,10 @@
  *      ITS user, once. A second paid order for a credited Top-up, or a
  *      mismatched one, is flagged for an Operator refund and never granted.
  *      order_refunded: apply_top_up_refund claws back the Top-up's share of
- *      Pack Credits for the re-fetched cumulative refunded amount (#96).
+ *      Pack Credits for the re-fetched cumulative refunded amount (#96), and
+ *      Freezes the account if the user generated since that Top-up (#97).
+ *      dispute_created Freezes the order's owner; dispute_resolved only logs
+ *      (ADR-0019).
  *   6. Transient LemonSqueezy or database failure -> 5xx so LemonSqueezy
  *      retries; the event row stays unprocessed.
  *
@@ -27,7 +30,7 @@
  */
 
 import { NextResponse } from 'next/server';
-import { verifyWebhookSignature, fetchOrder, normaliseOrder } from '../../../../packages/adapters/lemonsqueezy.js';
+import { verifyWebhookSignature, fetchOrder, normaliseOrder, checkOrderOrigin, disputeOrderId } from '../../../../packages/adapters/lemonsqueezy.js';
 import { rpc, envConfig } from '../../../../packages/db/supabase-client.js';
 import { dedup, markProcessed } from '../../../../lib/providerCompletion.js';
 
@@ -40,6 +43,7 @@ const FLAGGED = new Set(['ALREADY_CREDITED', 'VARIANT_MISMATCH', 'AMOUNT_MISMATC
 const REFUSED = new Set(['TOP_UP_NOT_FOUND', 'ORDER_ALREADY_USED', 'INVALID_ORDER_ID']);
 const REFUND_REFUSED = new Set(['ORDER_NOT_FOUND', 'INVALID_ORDER_ID', 'INVALID_AMOUNT']);
 const PAID_STATUSES = new Set(['paid', 'refunded', 'partial_refund']);
+const DISPUTE_REFUSED = new Set(['TOP_UP_NOT_FOUND', 'INVALID_ORDER_ID']);
 
 export async function POST(req) {
     const cfg = envConfig();
@@ -72,6 +76,14 @@ export async function POST(req) {
         return NextResponse.json({ error: 'invalid_json' }, { status: 400 });
     }
     const eventName = event && event.meta && event.meta.event_name;
+    if (eventName === 'dispute_created' || eventName === 'dispute_resolved') {
+        try {
+            return await handleDispute(cfg, event, eventName, { apiKey, testMode, storeId });
+        } catch (err) {
+            console.error(LOG, 'dispute processing failed:', err && (err.status ?? err.message));
+            return NextResponse.json({ error: 'internal' }, { status: 500 });
+        }
+    }
     if (eventName !== 'order_created' && eventName !== 'order_refunded') {
         return NextResponse.json({ ok: true, ignored: true });
     }
@@ -193,9 +205,58 @@ function refundVerdict(orderId, res) {
     }
     if (res.ok === false) {
         console.error(LOG, 'refund not applied:', res.code, 'order', orderId);
-    } else if (res.shortfall > 0) {
-        // Credits already spent: the Chargeback path (#97) acts on this.
-        console.error(LOG, 'refund clawback short:', 'order', orderId, 'taken', res.taken, 'shortfall', res.shortfall);
+    } else {
+        if (res.shortfall > 0) {
+            console.error(LOG, 'refund clawback short:', 'order', orderId, 'taken', res.taken, 'shortfall', res.shortfall);
+        }
+        if (res.frozen) console.error(LOG, 'account Frozen on refund after generating:', 'order', orderId, 'user', res.user_id);
     }
     return true;
+}
+
+// dispute_created Freezes the order's owner; dispute_resolved only logs
+// (ADR-0019). Only the order id is taken from the payload; the user is the
+// credited Top-up's owner. No usable order id or no Top-up: log, 200, no Freeze.
+async function handleDispute(cfg, event, eventName, { apiKey, testMode, storeId }) {
+    const orderId = disputeOrderId(event);
+    const reference = String((event.data && event.data.id) ?? '').slice(0, 64);
+    if (!orderId) {
+        console.error(LOG, `${eventName} without a usable order id, not applied:`, reference);
+        return NextResponse.json({ ok: true, warn: 'no_order_id' });
+    }
+
+    const externalId = `${eventName}:${reference || orderId}`;
+    const seen = await dedup(cfg, SOURCE, externalId, { event_name: eventName, order_id: orderId });
+    if (seen === 'duplicate') return NextResponse.json({ ok: true, duplicate: true });
+
+    const fetched = await fetchOrder(orderId, { fetch: fetch.bind(globalThis), apiKey });
+    if (!fetched.ok) {
+        console.error(LOG, `${eventName} order re-fetch failed:`, orderId, fetched.error);
+        if (fetched.transient) return NextResponse.json({ error: 'order_fetch_failed' }, { status: 503 });
+        await markProcessed(cfg, SOURCE, externalId);
+        return NextResponse.json({ ok: true, warn: 'order_not_found' });
+    }
+    const origin = checkOrderOrigin(fetched.order, { expectTestMode: testMode === 'true', expectStoreId: storeId });
+    if (!origin.ok) {
+        console.error(LOG, `${eventName} order not ours:`, orderId, origin.error);
+        await markProcessed(cfg, SOURCE, externalId);
+        return NextResponse.json({ ok: true, warn: 'order_not_ours' });
+    }
+
+    const res = await rpc('apply_dispute_event', {
+        p_order_id: orderId,
+        p_event: eventName === 'dispute_created' ? 'created' : 'resolved',
+        p_reference: reference,
+    }, cfg);
+    if (!res || typeof res.ok !== 'boolean' || (res.ok === false && !DISPUTE_REFUSED.has(res.code))) {
+        console.error(LOG, 'apply_dispute_event gave no usable verdict:', orderId, res && res.code);
+        return NextResponse.json({ error: 'internal' }, { status: 500 });
+    }
+    if (res.ok === false) {
+        console.error(LOG, `${eventName} not applied:`, res.code, 'order', orderId);
+    } else if (eventName === 'dispute_created') {
+        console.error(LOG, 'account Frozen on dispute:', 'order', orderId, 'user', res.user_id);
+    }
+    await markProcessed(cfg, SOURCE, externalId);
+    return NextResponse.json({ ok: true });
 }

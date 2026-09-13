@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { Button } from './Button';
-import { gatewayFetch, GatewayError, makeIdempotencyKey, notifyBalanceChanged } from '../_lib/gateway';
+import { gatewayFetch, GatewayError, makeIdempotencyKey, notifyBalanceChanged, ACCOUNT_PAUSED_COPY } from '../_lib/gateway';
 import { useCatalog } from '../_lib/useCatalog';
 
 // Supply Consent (CONTEXT.md). Bump the version whenever the wording changes:
@@ -17,6 +17,7 @@ const ERROR_COPY = {
   rate_limited: 'Too many checkout attempts. Try again in a few minutes.',
   idempotency_key_reused: 'Pick your pack again to start a new checkout.',
   user_not_provisioned: 'Your account is still being set up. Try again in a moment.',
+  account_frozen: ACCOUNT_PAUSED_COPY,
 };
 
 const TOP_UP_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
