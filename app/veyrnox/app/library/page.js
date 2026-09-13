@@ -153,7 +153,12 @@ function JobCard({ row }) {
         {row.asset_url && row.mime_type?.startsWith('video/') && (
           <video src={row.asset_url} className="absolute inset-0 w-full h-full object-cover" muted playsInline autoPlay loop />
         )}
-        {row.asset_url && !row.mime_type?.startsWith('video/') && (
+        {row.asset_url && row.mime_type?.startsWith('audio/') && (
+          <div className="absolute inset-0 flex items-end px-4 pb-4">
+            <audio src={row.asset_url} controls className="w-full" />
+          </div>
+        )}
+        {row.asset_url && row.mime_type?.startsWith('image/') && (
           <img src={row.asset_url} alt={row.name || 'generation'} className="absolute inset-0 w-full h-full object-cover" />
         )}
         <div className="absolute top-3 left-3">
