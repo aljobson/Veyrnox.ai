@@ -25,6 +25,7 @@ const ERROR_COPY = {
   duration_not_supported:'This model only makes 5s clips. Nothing was charged.',
   duration_invalid:      'Pick a 5s or 10s clip. Nothing was charged.',
   insufficient_balance:  'Not enough credits for this generation. Nothing was charged — top up to continue.',
+  account_frozen:        'Your account is frozen after a payment reversal, so generating is paused. Your library and downloads still work. Contact support to resolve it.',
   user_not_provisioned:  'Your account is still being set up. Try again in a moment.',
   debit_rejected:        'The ledger declined this debit. Nothing was charged.',
   no_token:              'Sign in to generate.',

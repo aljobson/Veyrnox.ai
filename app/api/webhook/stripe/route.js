@@ -10,6 +10,8 @@
  *        back a proportional, rounded-down share of its credits
  *      charge.dispute.closed (lost)      → purchase_reverse('reversal:dispute')
  *        as a whole-charge reversal
+ *      Either Freezes the account when credits were spent since that
+ *      Top-up (a Chargeback).
  *   4. Mark processed. Any non-2xx makes Stripe redeliver; every RPC is
  *      idempotent, so a replay is safe.
  *
@@ -74,7 +76,13 @@ async function fulfil(cfg, session) {
         p_session_id: session.id,
         p_payment_intent: typeof session.payment_intent === 'string' ? session.payment_intent : null,
     }, cfg);
-    if (res && res.ok === true) return { done: true };
+    if (res && res.ok === true) {
+        // Checkout opened before a Freeze and paid after it: credits granted, not spendable.
+        if (res.frozen === true && !res.idempotent) {
+            console.error('[stripe-webhook] top-up paid into frozen account', res.user_id, purchaseId);
+        }
+        return { done: true };
+    }
     // Redelivery cannot fix these: paid money with no matching purchase.
     console.error('[stripe-webhook] purchase_fulfil rejected', purchaseId, session.id, res && res.code);
     if (res && (res.code === 'PURCHASE_NOT_FOUND' || res.code === 'SESSION_MISMATCH')) {
@@ -111,6 +119,9 @@ async function reverse(cfg, paymentIntent, reason, eventCreated, share) {
     }
     if (res.shortfall > 0 && !res.idempotent) {
         console.error('[stripe-webhook] reversal shortfall', paymentIntent, reason, res.shortfall);
+    }
+    if (res.frozen === true) {
+        console.error('[stripe-webhook] chargeback: account frozen', res.user_id, paymentIntent, reason);
     }
     return { done: true };
 }
