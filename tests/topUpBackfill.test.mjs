@@ -138,6 +138,7 @@ function harness({ orders = {}, credit = async () => ({ ok: true, idempotent: fa
         },
         credit: async (args) => { credited.push(args); return credit(args); },
         close: async (r) => { closed.push(r.order_id); return { ok: true }; },
+        // runBackfill passes the whole row: close_top_up_return matches id and identifier.
         log: (...a) => errors.push(a.join(' ')),
     };
     return { deps, fetched, credited, sleeps, errors, closed, advance: (ms) => { clock += ms; } };
@@ -254,7 +255,15 @@ test('final outcomes close the row: flagged, refused, not creditable, not found'
     assert.deepEqual(h.closed, ['1', '2', '3', '4', '5']);
 });
 
-test('outcomes that may still change leave the row open', async () => {
+test('the close is given the order id and identifier that were checked', async () => {
+    const h = harness({ orders: { 1234: ok(order({ status: 'failed' })) } });
+    const seen = [];
+    h.deps.close = async (r) => { seen.push(r); return { ok: true }; };
+    await runBackfill([row()], h.deps);
+    assert.deepEqual(seen, [row()]);
+});
+
+test('outcomes that may still change leave the row open, including a 401 or 403 (our key or config)', async () => {
     const verdicts = [
         async () => ({ ok: true, idempotent: false }),
         async () => { throw new Error('db down'); },
@@ -267,11 +276,13 @@ test('outcomes that may still change leave the row open', async () => {
             3: ok({ ...order(), id: '3' }),
             4: ok({ ...order({ status: 'pending' }), id: '4' }),
             5: { ok: false, error: 'lemonsqueezy 503', transient: true },
+            7: { ok: false, error: 'lemonsqueezy 401', transient: false },
+            8: { ok: false, error: 'lemonsqueezy 403', transient: false },
             6: { ok: false, error: 'lemonsqueezy 429', transient: true },
         },
         credit: () => verdicts.shift()(),
     });
-    await runBackfill(['1', '2', '3', '4', '5', '6'].map((id) => row({ order_id: id })), h.deps);
+    await runBackfill(['1', '2', '3', '4', '5', '7', '8', '6'].map((id) => row({ order_id: id })), h.deps);
     assert.deepEqual(h.closed, [], 'credited rows leave the batch on their own; the rest are retried');
 });
 

@@ -25,7 +25,8 @@
 --                  writes the flag, and never grants.
 -- close_top_up_return  called by the backfill after a final answer (flagged,
 --                  refused, not creditable, not found). Only closes the
---                  return it checked, so a newer return stays open.
+--                  return it checked (order id and identifier), so a newer
+--                  return stays open.
 --
 -- Same signatures as 0060, so re-applying 0060 stays valid. Service_role only.
 
@@ -113,10 +114,12 @@ $$;
 
 -- close_top_up_return: {ok:true} or {ok:false, code:'NOT_CURRENT'} when the
 -- Top-up's return has since changed (or never matched), so a check of an older
--- return can't close a newer one.
+-- return can't close a newer one. record_top_up_return treats a new identifier
+-- as a new return, so both parts must match.
 CREATE OR REPLACE FUNCTION public.close_top_up_return(
     p_top_up_id UUID,
-    p_order_id TEXT
+    p_order_id TEXT,
+    p_order_identifier UUID
 ) RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -125,7 +128,7 @@ AS $$
 BEGIN
     UPDATE public.top_ups
     SET return_closed_at = COALESCE(return_closed_at, now())
-    WHERE id = p_top_up_id AND return_order_id = p_order_id;
+    WHERE id = p_top_up_id AND return_order_id = p_order_id AND return_order_identifier = p_order_identifier;
     IF NOT FOUND THEN
         RETURN jsonb_build_object('ok', false, 'code', 'NOT_CURRENT');
     END IF;
@@ -136,5 +139,5 @@ REVOKE ALL ON FUNCTION public.record_top_up_return(TEXT, UUID, TEXT, UUID) FROM 
 GRANT EXECUTE ON FUNCTION public.record_top_up_return(TEXT, UUID, TEXT, UUID) TO service_role;
 REVOKE ALL ON FUNCTION public.next_top_up_backfill_batch(INTEGER) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.next_top_up_backfill_batch(INTEGER) TO service_role;
-REVOKE ALL ON FUNCTION public.close_top_up_return(UUID, TEXT) FROM PUBLIC, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.close_top_up_return(UUID, TEXT) TO service_role;
+REVOKE ALL ON FUNCTION public.close_top_up_return(UUID, TEXT, UUID) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.close_top_up_return(UUID, TEXT, UUID) TO service_role;

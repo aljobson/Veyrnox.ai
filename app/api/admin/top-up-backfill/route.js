@@ -65,7 +65,9 @@ export async function POST(req) {
         // Bound: Workers throw "Illegal invocation" for an unbound fetch.
         fetchOrder: (orderId) => fetchOrder(orderId, { fetch: fetch.bind(globalThis), apiKey }),
         credit: (args) => rpc('credit_top_up_with_refund', args, cfg),
-        close: (row) => rpc('close_top_up_return', { p_top_up_id: row.top_up_id, p_order_id: row.order_id }, cfg),
+        close: (row) => rpc('close_top_up_return', {
+            p_top_up_id: row.top_up_id, p_order_id: row.order_id, p_order_identifier: row.order_identifier,
+        }, cfg),
         expectTestMode: testMode === 'true',
         expectStoreId: storeId,
         budgetMs: BUDGET_MS,

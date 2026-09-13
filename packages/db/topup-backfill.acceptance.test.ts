@@ -38,7 +38,7 @@ describe("Top-up backfill", { skip: !DATABASE_URL && "DATABASE_URL not set" }, (
         }
         // Other suites leave due rows behind; only this suite's rows matter.
         await pool.query(`UPDATE public.top_ups SET return_order_id = NULL, return_order_identifier = NULL, returned_at = NULL
-                          WHERE return_order_id IS NOT NULL`);
+                          WHERE status = 'pending' AND return_order_id IS NOT NULL`);
     });
 
     after(async () => {
@@ -86,8 +86,10 @@ describe("Top-up backfill", { skip: !DATABASE_URL && "DATABASE_URL not set" }, (
             [topUpId, order, cents, variant])).rows[0].r;
     }
 
-    async function closeReturn(topUpId: string, order: string) {
-        return (await pool.query(`SELECT public.close_top_up_return($1, $2) AS r`, [topUpId, order])).rows[0].r;
+    async function closeReturn(topUpId: string, order: string, identifier?: string) {
+        const current = identifier ?? (await pool.query(
+            `SELECT return_order_identifier FROM public.top_ups WHERE id = $1`, [topUpId])).rows[0].return_order_identifier;
+        return (await pool.query(`SELECT public.close_top_up_return($1, $2, $3) AS r`, [topUpId, order, current])).rows[0].r;
     }
 
     async function grants(userId: string) {
@@ -206,6 +208,8 @@ describe("Top-up backfill", { skip: !DATABASE_URL && "DATABASE_URL not set" }, (
         await age(t.topUpId, { createdMin: 60, returnedMin: 15 });
 
         assert.deepEqual(await closeReturn(t.topUpId, orderId()), { ok: false, code: "NOT_CURRENT" }, "a close for an older return");
+        assert.deepEqual(await closeReturn(t.topUpId, order, randomUUID()), { ok: false, code: "NOT_CURRENT" },
+            "same order id, different identifier: a different return");
         assert.ok((await batch()).some((b) => b.top_up_id === t.topUpId));
 
         assert.deepEqual(await closeReturn(t.topUpId, order), { ok: true });
@@ -313,7 +317,7 @@ describe("Top-up backfill", { skip: !DATABASE_URL && "DATABASE_URL not set" }, (
 
     it("the new functions are service_role only", async () => {
         for (const fn of ["public.record_top_up_return(text,uuid,text,uuid)", "public.next_top_up_backfill_batch(integer)",
-                          "public.close_top_up_return(uuid,text)"]) {
+                          "public.close_top_up_return(uuid,text,uuid)"]) {
             for (const role of ["anon", "authenticated"]) {
                 const r = (await pool.query(`SELECT has_function_privilege($1, $2, 'EXECUTE') AS ok`, [role, fn])).rows[0];
                 assert.equal(r.ok, false, `${role} on ${fn}`);
