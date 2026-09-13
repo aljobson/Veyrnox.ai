@@ -107,3 +107,11 @@ test('transient 5xx / network failure keeps a still-valid session', async () => 
     assert.equal(await getFreshAccessToken(), null);
     assert.equal(store.has(KEY), true, 'session kept for the next retry');
 });
+
+test('oauthCallbackError reads a provider refusal from query or fragment', async () => {
+    const { oauthCallbackError } = await import('../app/lib/authClient.js');
+    assert.equal(oauthCallbackError('https://veyrnox.ai/auth/callback?error=server_error&error_description=x'), 'server_error');
+    assert.equal(oauthCallbackError('https://veyrnox.ai/auth/callback#error=invalid_client'), 'invalid_client');
+    assert.equal(oauthCallbackError('https://veyrnox.ai/auth/callback?code=abc'), null);
+    assert.equal(oauthCallbackError('not a url'), null);
+});

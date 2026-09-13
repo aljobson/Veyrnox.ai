@@ -250,6 +250,19 @@ function b64url(bytes) {
  * overwrites a still-valid session.
  * @returns {Promise<VeyrnoxSession|null>}
  */
+/**
+ * The error Supabase put on the callback URL when the provider or Auth config
+ * refused the sign-in (e.g. `invalid_client`, `server_error`). It arrives in
+ * the query or the fragment instead of `?code=`. Null when there is none.
+ */
+export function oauthCallbackError(href) {
+    let u;
+    try { u = new URL(href); } catch { return null; }
+    const hash = new URLSearchParams(u.hash.replace(/^#/, ""));
+    const code = u.searchParams.get("error") || hash.get("error");
+    return code ? code.slice(0, 64) : null;
+}
+
 export async function completeOAuthFromCode() {
     if (typeof window === "undefined") return null;
     const code = new URL(window.location.href).searchParams.get("code");
