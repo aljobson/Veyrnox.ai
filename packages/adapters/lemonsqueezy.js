@@ -127,6 +127,13 @@ export async function verifyWebhookSignature(rawBody, signatureHeader, secret) {
 const isCents = (n) => Number.isSafeInteger(n) && n >= 0;
 
 /**
+ * Order statuses that mean the buyer paid. A refunded or partly refunded order
+ * was still paid: it is credited, then its refunded share is clawed back.
+ * The webhook and the backfill both use this set so they can't drift (#142).
+ */
+export const CREDITABLE_ORDER_STATUSES = new Set(['paid', 'refunded', 'partial_refund']);
+
+/**
  * Our shape for a LemonSqueezy order. The money facts come from the order
  * re-fetched from the API; the Top-up id comes from the signed webhook's
  * meta.custom_data, because the API's order object does not carry custom

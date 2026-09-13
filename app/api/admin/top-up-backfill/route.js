@@ -10,9 +10,9 @@
  *      pending, returned from checkout more than 10 minutes ago and created
  *      less than 7 days ago (0060).
  *   2. For each, one at a time and SPACING_MS apart, re-fetch the returned
- *      order from LemonSqueezy and credit it through credit_top_up if the
- *      order's identifier matches and it passes the webhook's checks
- *      (lib/topUpBackfill.js).
+ *      order from LemonSqueezy. If the order's identifier matches and it
+ *      passes the webhook's checks (lib/topUpBackfill.js), credit it through
+ *      credit_top_up_with_refund, which also claws back any refund (0063).
  *   3. Stop at the time budget or on a LemonSqueezy 429. Transient failures
  *      stay pending and are due again after their backoff.
  *
@@ -62,7 +62,7 @@ export async function POST(req) {
     const result = await runBackfill(rows, {
         // Bound: Workers throw "Illegal invocation" for an unbound fetch.
         fetchOrder: (orderId) => fetchOrder(orderId, { fetch: fetch.bind(globalThis), apiKey }),
-        credit: (args) => rpc('credit_top_up', args, cfg),
+        credit: (args) => rpc('credit_top_up_with_refund', args, cfg),
         expectTestMode: testMode === 'true',
         expectStoreId: storeId,
         budgetMs: BUDGET_MS,

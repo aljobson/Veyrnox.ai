@@ -55,6 +55,11 @@ list includes "services of any kind" and says nothing about AI generation.
    and any further paid order for it (a replayed buy request can open a second
    checkout) or a paid order that doesn't match the pack's variant, pre-tax
    price and USD is recorded for an Operator refund and never granted (#93).
+   An order that was paid and has since been refunded, in full or in part, still
+   counts as paid for both the webhook and the backfill: it is credited and its
+   refunded share clawed back as in decision 7. The backfill does both in one
+   transaction, so a clawback that fails leaves the Top-up pending to retry
+   rather than credited without it (#142).
 6. **Consent.** The buy dialog requires a ticked acknowledgement that credits are
    supplied immediately and the right to cancel ends once the user generates. It
    is stored on the pending Top-up with a timestamp and wording version.
