@@ -192,3 +192,16 @@ GDPR page need no mention of the `us-east-2` project.
 The 4 sessions were still valid logins on staging (last active 2026-09-12). All
 4 were ended and their refresh tokens revoked; the accounts themselves were
 left in place.
+
+## Update (2026-09-13): media moved to the EU
+
+Production cut over to the EU-jurisdiction bucket `veyrnox-ai-media` at
+10:44:53 UTC (ADR-0021). The Privacy Policy and GDPR page now say generated
+media is stored in the European Union, in Cloudflare R2 with an EU
+jurisdictional restriction. ADR-0005 §3 is met for both the database and
+media.
+
+Production's pre-cutover copies remain in `veyrnox-staging-media`
+(default jurisdiction, `WEUR`) until their owner-approved deletion
+(ADR-0021 step 7).
+
