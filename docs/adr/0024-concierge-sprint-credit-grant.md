@@ -29,12 +29,14 @@ The ways to get them:
 CLAUDE.md allows credits only through `signup_grant` or `ledger_grant`, and a
 manual grant needs an ADR and a `reason` naming the human who decided.
 
-Credit cost per image, from `model_catalog.credits_5s` in
-`0020_floor_pricing_and_veo_fast.sql` (confirm against the live catalog
-before the first grant): `flux-2-pro` 2, `seedream-4` 3, `nano-banana` 4.
-One sprint is 60 delivered images. Allowing one discarded attempt per
-delivered image, a sprint on the most expensive model costs
-60 × 2 × 4 = 480 credits.
+Credit cost per image, read from the live production `model_catalog` on
+2026-09-13 (active image models): `flux-2-pro` 2, `seedream-4` 3,
+`nano-banana` 3. The repository disagrees for `nano-banana`: migration
+`0020_floor_pricing_and_veo_fast.sql` sets it to 4, and no later file changes
+it. One sprint is 60 delivered images. Allowing one discarded attempt per
+delivered image, a sprint on the most expensive live model costs
+60 × 2 × 3 = 360 credits. A 500-credit grant leaves room for the revision
+round.
 
 ## Decision
 
@@ -78,8 +80,8 @@ tied to a step of the test, so unpaid work never gets a grant.
 
 ## Open questions
 
-- Confirm the live `credits_5s` for the chosen image model before the
-  practice grant. If it differs from 0020, recompute the 500-credit stage.
+- If the live `credits_5s` of the chosen model rises above 4 before a grant,
+  recompute the 500-credit stage.
 - Commercial-use terms of the chosen model for client ads must be confirmed
   before the first offer.
 
