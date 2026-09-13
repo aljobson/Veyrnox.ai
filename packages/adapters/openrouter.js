@@ -24,6 +24,19 @@ export const OPENROUTER_BASE = 'https://openrouter.ai';
 const SIGNATURE_WINDOW_SECONDS = 300;
 const JOB_ID_RE = /^[A-Za-z0-9._-]{1,128}$/;
 
+// Submit rejection -> the typed jobs.error_code we record. Never the vendor's
+// message: it can echo prompts or account details. Snake case, because
+// /api/v1/jobs only lets /^[a-z0-9_]{1,64}$/ codes through to the client.
+function rejectionCode(status) {
+    if (status === 402) return 'provider_payment_required';
+    if (status === 401 || status === 403) return 'provider_auth_failed';
+    if (status === 404) return 'provider_model_unavailable';
+    if (status === 429) return 'provider_rate_limited';
+    if (status >= 400 && status < 500) return 'provider_request_rejected';
+    return 'provider_unavailable';
+}
+const JOB_FAIL_CODES = { failed: 'provider_error', cancelled: 'provider_cancelled', expired: 'provider_timeout' };
+
 // Per-model request limits, from GET /api/v1/videos/models (2026-09-12).
 // One priced unit = what the catalog row is costed at; the request is pinned
 // to it so billing cannot drift from price.
@@ -68,16 +81,18 @@ export function buildRequest(modelSlug, inputs) {
 /**
  * @param {{job_id:string, provider_endpoint:string, inputs:object}} job
  * @param {{apiKey:string, callbackUrl:string, timeoutMs?:number}} cfg
- * @returns {Promise<{ok:true, providerJobId:string}|{ok:false, error:string, clientError?:string}>}
+ * `error` is for the server log; `errorCode` is the typed code for jobs.error_code.
+ * @returns {Promise<{ok:true, providerJobId:string}|{ok:false, error:string, errorCode:string, clientError?:string}>}
  */
 export async function submitVideo(job, cfg) {
-    if (!JOB_ID_RE.test(String(job.job_id || ''))) return { ok: false, error: 'invalid job_id' };
+    const config = 'submit_config_invalid';
+    if (!JOB_ID_RE.test(String(job.job_id || ''))) return { ok: false, error: 'invalid job_id', errorCode: config };
     const req = buildRequest(String(job.provider_endpoint || ''), job.inputs || {});
-    if (!req.ok) return { ok: false, error: req.error, clientError: req.error };
+    if (!req.ok) return { ok: false, error: req.error, errorCode: 'provider_request_invalid', clientError: req.error };
 
     let callback;
-    try { callback = new URL(cfg.callbackUrl); } catch { return { ok: false, error: 'invalid callbackUrl' }; }
-    if (callback.protocol !== 'https:') return { ok: false, error: 'callbackUrl must be https' };
+    try { callback = new URL(cfg.callbackUrl); } catch { return { ok: false, error: 'invalid callbackUrl', errorCode: config }; }
+    if (callback.protocol !== 'https:') return { ok: false, error: 'callbackUrl must be https', errorCode: config };
 
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), cfg.timeoutMs ?? 15000);
@@ -91,14 +106,21 @@ export async function submitVideo(job, cfg) {
                 body: JSON.stringify({ ...req.body, callback_url: callback.toString() }),
             });
         } catch (err) {
-            return { ok: false, error: `transport: ${err && err.message}` };
+            const errorCode = err && err.name === 'AbortError' ? 'provider_timeout' : 'provider_unreachable';
+            return { ok: false, error: `transport: ${err && err.message}`, errorCode };
         }
         const data = await res.json().catch(() => null);
         if (res.status !== 202 && res.status !== 200) {
-            return { ok: false, error: `openrouter ${res.status}: ${String(JSON.stringify(data && data.error) || '').slice(0, 200)}` };
+            return {
+                ok: false,
+                error: `openrouter ${res.status}: ${String(JSON.stringify(data && data.error) || '').slice(0, 200)}`,
+                errorCode: rejectionCode(res.status),
+            };
         }
         const id = data && data.id;
-        if (typeof id !== 'string' || !JOB_ID_RE.test(id)) return { ok: false, error: 'openrouter did not return an id' };
+        if (typeof id !== 'string' || !JOB_ID_RE.test(id)) {
+            return { ok: false, error: 'openrouter did not return an id', errorCode: 'provider_bad_response' };
+        }
         return { ok: true, providerJobId: id };
     } finally {
         clearTimeout(timer);
@@ -109,9 +131,8 @@ export async function submitVideo(job, cfg) {
 export function interpretJob(job) {
     const status = job && job.status;
     if (status === 'completed') return { ok: true, state: 'success' };
-    if (status === 'failed' || status === 'cancelled' || status === 'expired') {
-        const code = (job.error && (job.error.code || job.error.message)) || status;
-        return { ok: true, state: 'fail', errorCode: String(code).slice(0, 128) };
+    if (Object.prototype.hasOwnProperty.call(JOB_FAIL_CODES, status)) {
+        return { ok: true, state: 'fail', errorCode: JOB_FAIL_CODES[status] };
     }
     return { ok: true, state: 'pending' };
 }

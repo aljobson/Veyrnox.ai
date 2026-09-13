@@ -24,6 +24,7 @@ import { submitJob } from '../../../../packages/adapters/fal.js';
 import * as kie from '../../../../packages/adapters/kie.js';
 import * as openrouter from '../../../../packages/adapters/openrouter.js';
 import { durationSpec, shapeForProvider } from '../../../../lib/providerDuration.js';
+import { refundRejectedSubmit } from '../../../../lib/submitRejection.js';
 
 // Constrain idempotency keys to a safe printable range.
 const IDEMPOTENCY_RE = /^[A-Za-z0-9._-]{8,128}$/;
@@ -279,18 +280,9 @@ export async function POST(req) {
     );
 
     if (!submitResult.ok) {
-        // Refund immediately — fal wouldn't take the job so we owe the credits back.
-        try {
-            await rpc('ledger_refund', {
-                p_job_id: jobId,
-                p_user_id: userId,
-                p_credits: credits,
-                p_reason: 'refund:submit_failed',
-            }, cfg);
-        } catch (err) {
-            // Log — the job stays in DEBITED and the reconcile job will flag it.
-            console.error('[generations] refund-on-submit-fail failed:', err);
-        }
+        // Record why on the job, then refund — the provider wouldn't take the
+        // job so we owe the credits back.
+        await refundRejectedSubmit({ jobId, userId, credits, errorCode: submitResult.errorCode }, cfg);
         console.error('[generations] provider submit failed:', modelRow.provider, submitResult.error);
         // Don't leak upstream vendor payloads to the client — log only.
         return NextResponse.json({ error: 'provider_submit_failed' }, { status: 502 });

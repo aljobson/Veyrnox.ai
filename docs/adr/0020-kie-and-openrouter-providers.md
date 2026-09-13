@@ -52,6 +52,19 @@ ledger, the job state machine, or the refund rules.
   callback names a task we have not recorded yet, so the provider redelivers
   instead of the callback being dropped before `job_submitted` lands.
 
+### Submit rejections (#117, 2026-09-13)
+
+A provider refusing a submit leaves the job without a `provider_job_id`, so
+`job_failed` cannot record a reason. The gateway now calls
+`job_submit_rejected` (migration 0053) to set a typed `error_code` on the
+still-DEBITED job, then `ledger_refund` exactly as before. Codes match
+`^[a-z0-9_]{1,64}$` and name the class of failure (for OpenRouter:
+`provider_payment_required`, `provider_auth_failed`, `provider_request_rejected`,
+`provider_rate_limited`, `provider_unavailable`, `provider_timeout`, ...);
+vendor messages stay in the Worker log only. OpenRouter job failures record
+`provider_error`, `provider_cancelled` or `provider_timeout`, not the vendor's
+error text. fal and kie rejections record `provider_submit_failed`.
+
 ## Consequences
 
 - New secrets: `KIE_API_KEY`, `KIE_WEBHOOK_HMAC_KEY`, `OPENROUTER_API_KEY`,
