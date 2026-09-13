@@ -121,22 +121,53 @@ here; if it does, that data should be deleted or the pages should mention it.
 Checked with `wrangler r2 bucket list` / `wrangler r2 bucket info` and the S3
 endpoint in `packages/adapters/r2.js`:
 
-- Production media is written to `veyrnox-media` in the **default
-  jurisdiction** (created 2026-09-05, location `WEUR`, 111 objects / 109 MB at
-  the time). `r2.js` signs against `https://<account>.r2.cloudflarestorage.com`,
-  which cannot reach a jurisdiction-restricted bucket, and production recorded
-  new assets through it the same day.
+- Production media is written to a **default-jurisdiction** bucket with
+  location `WEUR`. `r2.js` signs against
+  `https://<account>.r2.cloudflarestorage.com`, which cannot reach a
+  jurisdiction-restricted bucket, and production recorded new assets through it
+  the same day. (This bullet first named `veyrnox-media` as that bucket; it is
+  `veyrnox-staging-media`. See the correction below.)
 - `WEUR` is a location hint: Cloudflare places the bucket in Western Europe on
   a best-effort basis and reports the placement, but only a jurisdictional
   restriction guarantees objects are stored and processed in the EU.
 - A second `veyrnox-media` exists in the **EU jurisdiction** (created
   2026-07-03, location `EEUR`) with 0 objects. Nothing uses it.
-- `veyrnox-staging-media` is default-jurisdiction, `WEUR`, with no EU twin.
+- `veyrnox-media` in the default jurisdiction (created 2026-09-05, `WEUR`,
+  111 objects / 109 MB) and `veyrnox-staging-media` (default jurisdiction,
+  `WEUR`, no EU twin) both exist.
 
 The Privacy Policy and GDPR page now say generated media is stored in
 Cloudflare R2 in Western Europe, and claim no EU restriction. ADR-0005 §3
 (EU-only user data) is therefore met for the database but **not** for media.
 Moving media into the EU-jurisdiction bucket is tracked in its own ADR.
+
+## Correction (2026-09-13, later the same day): production's media bucket
+
+The update above said production writes to `veyrnox-media`. That was inferred
+from the S3 endpoint alone; the Worker's `R2_BUCKET` value was never checked
+(it is a secret, so only its name is visible).
+
+Evidence from the ADR-0021 cutover attempt, which stopped before changing
+anything:
+
+- None of production's 8 live `assets.r2_key` values exists in the
+  default-jurisdiction `veyrnox-media` ("The specified key does not exist" for
+  all 8).
+- One of those keys was found in `veyrnox-staging-media` at the size recorded in
+  `assets.size_bytes`. That bucket holds exactly 8 objects (43.4 MB), matching
+  production's 8 asset rows (about 46 MB, 43.4 MiB).
+
+So production's Worker has `R2_BUCKET` = `veyrnox-staging-media`, inferred from
+the matching objects. The default-jurisdiction `veyrnox-media` is not
+production's live media bucket; what its 112 objects are was not checked.
+
+The legal pages are unaffected: `veyrnox-staging-media` is also
+default-jurisdiction with location `WEUR`, so "stored in Cloudflare R2 in
+Western Europe" remains accurate, and ADR-0005 §3 is still unmet for media.
+
+Open: a production Worker writing to a bucket named for staging suggests the
+staging Worker may use the same bucket, mixing staging and production media.
+That has not been checked.
 
 
 ## Update (2026-09-13): no customer data left in the us-east-2 project
