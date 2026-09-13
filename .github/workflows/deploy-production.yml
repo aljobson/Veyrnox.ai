@@ -32,6 +32,9 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    # CLOUDFLARE_API_TOKEN lives in this environment, which only main may use.
+    # A repository secret would reach any workflow a pushed branch adds.
+    environment: production
     env:
       CLOUDFLARE_ACCOUNT_ID: fb18d9f7052afbea5a5e0eae69948af2
       HAS_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}

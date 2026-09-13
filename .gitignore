@@ -40,6 +40,10 @@ out/
 .env
 .env.*
 !.env.example
+# wrangler local Worker secrets
+.dev.vars*
+# gstack local security reports
+.gstack/
 
 # Session scratch
 .scratch/

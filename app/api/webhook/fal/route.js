@@ -26,18 +26,22 @@ function serviceHeaders(cfg) {
     return { apikey: cfg.serviceRoleKey, Authorization: `Bearer ${cfg.serviceRoleKey}` };
 }
 
-// Our job for this fal request id, if it is in one of `states`. Used on
-// redelivery: the state RPCs are one-shot (SUBMITTED→SUCCEEDED/FAILED), so
-// a retried webhook needs the job facts from the row itself.
-async function findOurJob(cfg, requestId, states) {
+// Our job for this fal request id, if it is in one of `states` (any state
+// when omitted). Used on redelivery: the state RPCs are one-shot
+// (SUBMITTED→SUCCEEDED/FAILED), so a retried webhook needs the job facts from
+// the row itself. `strict` throws on a read failure instead of returning null.
+async function findOurJob(cfg, requestId, states, { strict = false } = {}) {
     const url = new URL('/rest/v1/jobs', cfg.supabaseUrl);
     url.searchParams.set('select', 'id,user_id,credits,state');
     url.searchParams.set('provider', `eq.${SOURCE}`);
     url.searchParams.set('provider_job_id', `eq.${requestId}`);
-    url.searchParams.set('state', `in.(${states.join(',')})`);
+    if (states) url.searchParams.set('state', `in.(${states.join(',')})`);
     url.searchParams.set('limit', '1');
     const res = await fetch(url, { headers: serviceHeaders(cfg) });
-    if (!res.ok) return null;
+    if (!res.ok) {
+        if (strict) throw new Error(`jobs read ${res.status}`);
+        return null;
+    }
     const rows = await res.json().catch(() => []);
     return Array.isArray(rows) && rows[0] ? rows[0] : null;
 }
@@ -137,6 +141,18 @@ export async function POST(req) {
         return NextResponse.json({ error: 'request_id_mismatch' }, { status: 400 });
     }
     const status = event && event.status;
+
+    // Signed for our tenant, so this is our request. No job carries its id
+    // yet when the callback beat job_submitted: answer non-2xx before the
+    // dedup row so fal delivers again, as the kie and OpenRouter hooks do.
+    let known;
+    try {
+        known = await findOurJob(cfg, requestId, null, { strict: true });
+    } catch (err) {
+        console.error('[fal-webhook] job lookup failed:', err && err.message);
+        return NextResponse.json({ error: 'internal' }, { status: 500 });
+    }
+    if (!known) return NextResponse.json({ error: 'job_not_found' }, { status: 409 });
 
     // Dedup — insert-only on webhook_events; duplicate = silent success.
     // `on_conflict` must name the (source, external_id) unique constraint:

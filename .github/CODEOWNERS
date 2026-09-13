@@ -9,3 +9,8 @@
 /wrangler.jsonc         @aljobson
 /packages/db/schema/    @aljobson
 /app/api/webhook/       @aljobson
+# Hooks under .claude/ run on the owner's machine each session; a lockfile
+# swap runs install scripts in the deploy job.
+/.claude/               @aljobson
+/package.json           @aljobson
+/package-lock.json      @aljobson

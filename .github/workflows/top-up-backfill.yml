@@ -19,6 +19,9 @@ jobs:
     # Only main: a workflow_dispatch on another branch must not get this
     # job's secret.
     if: github.ref == 'refs/heads/main'
+    # TOP_UP_BACKFILL_TOKEN lives in this environment, which only main may
+    # use; the `if` above is only as strong as the branch's copy of this file.
+    environment: production
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
