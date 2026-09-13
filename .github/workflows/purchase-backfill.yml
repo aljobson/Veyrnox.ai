@@ -1,0 +1,38 @@
+name: purchase-backfill
+
+# Credits paid Top-ups whose Stripe webhook never landed (ADR-0018 decision 5,
+# ADR-0019). The endpoint does the work; this only calls it on a schedule.
+#
+# ADMIN_BACKFILL_TOKEN can do nothing but trigger that backfill, which only
+# grants credits for Checkout Sessions Stripe reports as paid. No database or
+# Stripe credential lives in Actions (PR #61).
+#
+# Until the secret is set — billing is not live — the job is a no-op.
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: purchase-backfill
+  cancel-in-progress: false
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Credit paid Top-ups still pending
+        env:
+          TOKEN: ${{ secrets.ADMIN_BACKFILL_TOKEN }}
+        run: |
+          if [ -z "$TOKEN" ]; then
+            echo "ADMIN_BACKFILL_TOKEN is not set; billing is not live, nothing to do."
+            exit 0
+          fi
+          curl --fail-with-body --silent --show-error --max-time 60 \
+            -X POST -H "x-veyrnox-admin-token: $TOKEN" \
+            https://veyrnox.ai/api/admin/backfill-purchases

@@ -69,6 +69,44 @@ export async function createCheckoutSession(input, cfg) {
 }
 
 /**
+ * Completed Checkout Sessions created at or after `createdGte` (unix seconds),
+ * newest first, following pagination up to `maxPages` pages of 100.
+ *
+ * @param {number} createdGte
+ * @param {object} cfg
+ * @param {string} cfg.secretKey
+ * @param {number} [cfg.maxPages=10]
+ * @returns {Promise<{ok:true,sessions:object[],truncated:boolean}|{ok:false,error:string}>}
+ */
+export async function listCompletedCheckoutSessions(createdGte, cfg) {
+    const maxPages = cfg.maxPages ?? 10;
+    const sessions = [];
+    let startingAfter = null;
+    for (let page = 0; page < maxPages; page++) {
+        const url = new URL(`${STRIPE_API_BASE}/v1/checkout/sessions`);
+        url.searchParams.set('status', 'complete');
+        url.searchParams.set('created[gte]', String(createdGte));
+        url.searchParams.set('limit', '100');
+        if (startingAfter) url.searchParams.set('starting_after', startingAfter);
+        let res;
+        try {
+            res = await fetch(url, { headers: { Authorization: `Bearer ${cfg.secretKey}`, 'Stripe-Version': STRIPE_API_VERSION } });
+        } catch {
+            return { ok: false, error: 'stripe transport' };
+        }
+        const payload = await res.json().catch(() => null);
+        if (!res.ok || !payload || !Array.isArray(payload.data)) {
+            const e = payload && payload.error;
+            return { ok: false, error: `stripe ${res.status}${e ? ` ${e.type}/${e.code || '-'}` : ''}` };
+        }
+        sessions.push(...payload.data);
+        if (!payload.has_more || payload.data.length === 0) return { ok: true, sessions, truncated: false };
+        startingAfter = payload.data[payload.data.length - 1].id;
+    }
+    return { ok: true, sessions, truncated: true };
+}
+
+/**
  * Read a Price with its Product, for pricing a Credit Pack.
  *
  * @param {string} priceId
