@@ -119,4 +119,7 @@ list includes "services of any kind" and says nothing about AI generation.
   ADR-0014's per-model credits and the catalog gap (no image-edit models,
   Seedance 2.5 or Seedream 5), handled in a separate pricing review.
 - Operator tooling is audited service-role functions only; an admin UI for
-  Top-ups and unfreezing is a follow-up.
+  Top-ups and unfreezing is a follow-up. The read functions (a user's Top-ups,
+  generated since a Top-up, pending Top-ups, flagged orders, the account-action
+  log) and `reconcile_top_ups()`, which the nightly reconcile fails on, are in
+  migration 0065 (#98).
