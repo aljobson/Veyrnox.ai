@@ -1,6 +1,6 @@
 # ADR-0021 — Generated media moves to the EU-jurisdiction R2 bucket
 
-- **Status**: Accepted (2026-09-13). Code merged in #116. **Cutover blocked** on the decisions below.
+- **Status**: Accepted (2026-09-13). Code merged in #116. **Cutover blocked** on decisions 1 and 3 below; decision 2 is answered.
 - **Date**: 2026-09-13
 - **Deciders**: Product owner
 - **Related**: [ADR-0005 §3](0005-phase-0-business-preconditions.md) (EU-only user data), [ADR-0008](0008-asset-retention-policy-and-sweep.md) (retention sweep), [ADR-0016](0016-data-residency-claim-correction.md) (residency claims and the bucket correction)
@@ -14,7 +14,7 @@ Verified on 2026-09-13 (ADR-0016 update and correction):
 - `packages/adapters/r2.js` signs against `https://<account>.r2.cloudflarestorage.com`, so production cannot be writing to a jurisdiction-restricted bucket.
 - Production's Worker has `R2_BUCKET` = **`veyrnox-staging-media`**: default jurisdiction, location hint `WEUR`, 8 objects (43.4 MB), matching production's 8 live asset rows. A location hint is best-effort placement; only a jurisdictional restriction guarantees objects are stored and processed in the EU.
 - An empty **`veyrnox-media` in the EU jurisdiction** exists (created 2026-07-03, `EEUR`).
-- A separate `veyrnox-media` in the default jurisdiction (112 objects, 109 MB) is not production's live bucket.
+- A separate `veyrnox-media` in the default jurisdiction (112 objects, 109 MB) is not production's live bucket. It belongs to the `veyrnox-gbp-gemini` Worker (a Google Business Profile / marketing tool), bound as `MEDIA_BUCKET` with a public `r2.dev` URL.
 - Cloudflare: a jurisdiction bucket is reachable only through `https://<account>.<jurisdiction>.r2.cloudflarestorage.com`, and a bucket-scoped R2 API token names the jurisdiction (`<account>_eu_<bucket>` vs `<account>_default_<bucket>`).
 - The browser only uses presigned URLs in `<img>`, `<video>` and links, which the CSP already allows from any `https:` host.
 
@@ -28,13 +28,17 @@ An earlier version of this ADR assumed production used `veyrnox-media` and plann
 
 ## Decisions needed before cutover
 
-1. **Target bucket.** Recommended: the existing empty EU-jurisdiction `veyrnox-media`, so production and staging stop sharing a name. The alternative is a new EU bucket.
-2. **Staging's bucket.** Check whether the staging Worker also uses `veyrnox-staging-media`. If it does, staging and production media are mixed today, and the copy in step 2 must select production's keys only (it does, by reading production's `assets` table).
+1. **Target bucket.** Either the existing empty EU-jurisdiction `veyrnox-media`, or a new EU bucket with a distinct name (for example `veyrnox-ai-media`). There is no technical clash with `veyrnox-gbp-gemini`'s default-jurisdiction `veyrnox-media`, because its binding names no jurisdiction, but two buckets sharing a name serving two products invites the same mistake ADR-0016 records. A distinct name avoids it.
+2. **Staging's bucket — answered 2026-09-13: not shared.** Checked through the Cloudflare API across every Worker in the account (secret names and bindings only, no secret values):
+   - Only `veyrnox-ai` has R2 credentials (`R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`). `wrangler.jsonc` defines no staging environment, and no other Worker has R2 credentials or a binding to `veyrnox-staging-media` (`veyrnox-staging-staging` has no configuration; the rest belong to other products).
+   - The staging database's one asset (created 2026-09-11, before the #85 database cutover) is in `veyrnox-staging-media` at its recorded size: `veyrnox-ai` wrote it while it still used the us-east-2 database.
+
+   So `veyrnox-staging-media` holds production's live assets plus that one pre-cutover object, not a live staging environment's media. Copying by production's `assets` table selects exactly production's objects. Cloudflare Pages projects and other Cloudflare accounts were not checked.
 3. **Credentials.** Confirm the Worker's R2 API token (`R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY`) covers the target: an all-buckets token, or a bucket-scoped token that includes the target bucket in the `eu` jurisdiction. If not, create one and `wrangler secret put` both values first.
 
 ## Cutover runbook
 
-Using the recommended target, EU `veyrnox-media`:
+Written for the existing EU `veyrnox-media`; substitute the bucket name if decision 1 picks a new one (create it with `wrangler r2 bucket create <name> --jurisdiction eu`):
 
 1. **Credentials** confirmed per decision 3.
 2. **Copy live media.** For every production `assets.r2_key` whose `expires_at` is in the future, copy from the current bucket to the target under the same key, and check the downloaded size equals `assets.size_bytes`:
@@ -45,7 +49,7 @@ Using the recommended target, EU `veyrnox-media`:
 4. **Catch up.** Repeat step 2 for assets created between step 2 and step 3.
 5. **Verify.** Generate one asset and download it; open one pre-cutover asset from the library. Both must load from `<account>.eu.r2.cloudflarestorage.com/veyrnox-media/...`.
 6. **Copy.** Update the Privacy Policy and GDPR page to say generated media is stored in the EU (Cloudflare R2 EU jurisdiction), and record ADR-0005 §3 as met for media.
-7. **Old copies.** `veyrnox-staging-media` keeps production's pre-cutover copies. Deleting them is a separate, owner-approved step, and must not remove staging's own objects if decision 2 finds the bucket shared.
+7. **Old copies.** `veyrnox-staging-media` keeps production's pre-cutover copies and the one pre-#85 object. Deleting them is a separate, owner-approved step.
 
 Rollback before step 7: set `R2_BUCKET` back to `veyrnox-staging-media` and `wrangler secret delete R2_JURISDICTION`. Assets created after step 3 exist only in the EU bucket and would need copying back.
 
@@ -53,4 +57,4 @@ Rollback before step 7: set `R2_BUCKET` back to `veyrnox-staging-media` and `wra
 
 - ADR-0005 §3 is met for media once step 6 lands; until then ADR-0016's Western Europe wording stands.
 - The retention sweep (ADR-0008) deletes from whichever bucket the Worker targets. Pre-cutover copies left in `veyrnox-staging-media` are outside its reach; step 7 covers them.
-- The default-jurisdiction `veyrnox-media` (112 objects) is unrelated to this cutover and was not examined.
+- The default-jurisdiction `veyrnox-media` (112 objects) belongs to `veyrnox-gbp-gemini` and is untouched by this cutover; its contents were not examined.
