@@ -37,8 +37,38 @@ function useLiveCatalog() {
   };
 }
 
+// Credit Packs stay hidden until launch (#101): opt in per browser with
+// localStorage.setItem('veyrnox_topups', '1'), as on the credits page.
+// Prices and credits come from public.credit_packs via /api/credit-packs;
+// nothing is priced here. Null while hidden, loading or unavailable.
+function useCreditPacks() {
+  const [packs, setPacks] = useState(null);
+  useEffect(() => {
+    let enabled = false;
+    try { enabled = localStorage.getItem('veyrnox_topups') === '1'; } catch {}
+    if (!enabled) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/credit-packs', { cache: 'no-store' });
+        if (!res.ok) throw new Error(String(res.status));
+        const data = await res.json();
+        if (!cancelled && Array.isArray(data?.packs) && data.packs.length) setPacks(data.packs);
+      } catch {
+        // Leave the "not available yet" copy in place.
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+  return packs;
+}
+
+const usd = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+const num = new Intl.NumberFormat('en-US');
+
 export default function Pricing() {
   const { models: liveModels, live } = useLiveCatalog();
+  const packs = useCreditPacks();
 
   return (
     <div className="min-h-dvh">
@@ -60,8 +90,8 @@ export default function Pricing() {
             50 FREE CREDITS ON SIGN-UP
           </div>
           <p className="text-[13px] text-vx-fg-muted max-w-[460px]">
-            That is roughly 16 Nano Banana stills or 3 Wan 2.5 clips, on us. Paid
-            top-ups are not available yet — when they are, the prices will be here.
+            That is roughly 16 Nano Banana stills or 3 Wan 2.5 clips, on us.
+            {packs ? ' Need more? Buy a credit pack below.' : ' Paid top-ups are not available yet — when they are, the prices will be here.'}
           </p>
           <Link
             href="/app?auth=sign_up"
@@ -71,6 +101,35 @@ export default function Pricing() {
           </Link>
         </div>
       </section>
+
+      {/* ============ CREDIT PACKS (flagged until launch, #101) ============ */}
+      {packs && (
+        <section className="max-w-[1200px] mx-auto px-8 pb-14" aria-labelledby="credit-packs-heading">
+          <div className="font-vx-mono text-[11px] tracking-[0.14em] text-vx-money mb-2">CREDIT PACKS · ONE-OFF · NEVER EXPIRE</div>
+          <h2 id="credit-packs-heading" className="text-3xl font-black tracking-[-0.02em] mb-4">Top up when you need to.</h2>
+          <ul className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {packs.map((p) => (
+              <li key={p.id} className="rounded-2xl border border-vx-border bg-vx-panel p-6">
+                <div className="font-vx-mono text-[28px] font-bold text-vx-money vx-num">{num.format(p.credits)} cr</div>
+                {/* Draft wording from #99 item 1, not yet approved by Finance/Legal. */}
+                <div className="mt-1 text-sm text-vx-fg-body">
+                  {num.format(p.credits)} credits — {usd.format(p.price_usd_cents / 100)} + applicable tax
+                </div>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-4 text-[13px] text-vx-fg-muted max-w-[640px]">
+            Prices are in USD and exclude tax. Your total, including any VAT or sales tax for your location,
+            is shown at checkout before you pay.
+          </p>
+          <Link
+            href="/app/credits"
+            className="inline-block mt-5 rounded-full bg-vx-money text-vx-money-ink px-6 py-3 text-sm font-extrabold hover:brightness-110"
+          >
+            Buy credits
+          </Link>
+        </section>
+      )}
 
       {/* ============ LIVE MODEL CATALOG ============ */}
       <section className="max-w-[1200px] mx-auto px-8 pb-20">
