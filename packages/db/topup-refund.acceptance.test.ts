@@ -2,7 +2,7 @@
  * Top-up Refund clawback — acceptance tests (#96, ADR-0018 decision 7).
  *
  * Exercises apply_top_up_refund from schema/supabase/0058_top_up_refund_clawback.sql
- * on top of 0037/0038 (Free Credits), 0041 (top_ups) and 0052 (credit_top_up),
+ * on top of 0037/0038 (Free Credits), 0041 (top_ups) and 0054 (credit_top_up),
  * applied twice to prove idempotency. Skipped unless DATABASE_URL is set.
  */
 import { after, before, describe, it } from "node:test";
@@ -16,7 +16,7 @@ const MIGRATIONS = [
     "0037_free_credit_expiry.sql",
     "0038_free_credit_sweep_fixes.sql",
     "0041_credit_packs_and_top_ups.sql",
-    "0052_credit_top_up.sql",
+    "0054_credit_top_up.sql",
     "0058_top_up_refund_clawback.sql",
 ].map((f) => new URL(`./schema/supabase/${f}`, import.meta.url));
 
