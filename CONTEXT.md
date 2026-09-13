@@ -57,7 +57,7 @@ Returning the credits spent on a generation that failed or was rejected. No mone
 _Avoid_: Refund (on its own), reversal
 
 **Chargeback**:
-A Top-up Refund that arrives after credits were spent since that Top-up. Treated as a likely card dispute and Freezes the account, since the Merchant of Record does not report disputes separately.
+A card dispute against a Top-up, either reported by the Merchant of Record or inferred from a Top-up Refund that arrives after credits were spent since that Top-up. Freezes the account.
 _Avoid_: Dispute (when meaning the reversal itself)
 
 **Operator**:

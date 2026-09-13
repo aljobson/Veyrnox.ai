@@ -14,6 +14,7 @@ Phase-0 decision-support documents for the target architecture at `/Users/aljobs
 | [ADR-0005 — Phase-0 business preconditions](0005-phase-0-business-preconditions.md) | **Accepted 2026-09-10** | UK Ltd, UK tax, EU-only data, 50-credit free tier, C2PA+ToS Article 50, registered-agent DMCA. | (unblocks Phase 1 Slice 3) |
 | [ADR-0006 — Auth + DB amendment for EU residency](0006-auth-and-db-amendment-eu-residency.md) | **Accepted 2026-09-10 — Supabase Auth + Supabase Postgres (Frankfurt)** | Clerk EU-tier at ~$250–400/mo forced re-evaluation; Supabase EU on $25/mo Pro. MFA becomes a Phase-4 deliverable. | Slice 3+ |
 | [ADR-0018 — Credit Pack Top-ups before Subscriptions](0018-credit-pack-top-ups.md) | **Accepted 2026-09-13** (pending LemonSqueezy eligibility + Finance/Legal) | Web Credit Packs 100/$10 · 300/$25 · 1,000/$75 via LemonSqueezy; net ≥ $0.033 and ≥ $0.075/credit floors; refunds claw back pro-rata; inferred chargebacks Freeze. Subscriptions next. | Top-ups slice |
+| [ADR-0019 — Dispute webhooks Freeze the account](0019-dispute-webhooks-freeze.md) | **Accepted 2026-09-13** | Amends ADR-0018 decision 8: LemonSqueezy `dispute_created` Freezes the owning user (order re-fetched, payload user never trusted); `dispute_resolved` is logged only, Operator unfreezes; refund-after-spend inference stays as backstop. | #97 |
 
 ## Decision graph
 
