@@ -31,7 +31,7 @@ Web Top-ups are sold through **Stripe Checkout with `managed_payments[enabled]=t
 | 1. Packs before Subscriptions | Done |
 | 2. Web MoR | Stripe Managed Payments (this ADR) |
 | 3. Packs 100/$10 · 300/$25 · 1,000/$75, never expire | Pack credits seeded; prices set on Stripe Prices |
-| 4. Pricing floors enforced when a price is set | **Not yet.** Recheck the net floor against Stripe Managed Payments fees before setting live prices |
+| 4. Pricing floors enforced when a price is set | Done (0040): triggers refuse an active pack under $0.075/credit gross or $0.033/credit net of its channel's worst-case fee, and refuse a fee change that would break an active pack. `scripts/set-credit-pack-price.mjs` records `price_cents` from the Stripe Price itself |
 | 5. Pending Top-up + signed webhook + dedupe + grant to row's user | Done. Order re-fetch replaced by Stripe's timestamped signature; no backfill job yet |
 | 2. Sales Channel recorded on every grant; packs priced per channel | Done (0039): `credit_packs.sales_channel` (`web`, `app_store`, `google_play`) makes each channel's packs their own rows at their own prices; `purchases.sales_channel` is tied to its pack by a composite foreign key; the grant is `grant:topup:<channel>`; `POST /api/v1/checkout` is the `web` channel and `purchase_create` only sells that channel's packs. Store channels still need their own product-id columns |
 | 6. Supply Consent stored on the pending Top-up | Done (0036): the buy dialog requires the checkbox; `purchase_create` records `supply_consent_version` and a server `supply_consent_at`; the checkout route only accepts the current version from `lib/supplyConsent.js`. Wording is `supply-consent-2026-09-13-draft` until Finance/Legal approve it |
@@ -56,6 +56,8 @@ Web Top-ups are sold through **Stripe Checkout with `managed_payments[enabled]=t
 - **The Freeze trigger is inferred from our own ledger, not from Stripe's dispute state**, as ADR-0018 decided: an Operator refund issued under the 14-days-nothing-generated rule never Freezes. Stripe's `charge.dispute.created` is not used; an open dispute changes nothing until it is lost.
 - **A replay or late, older refund event can never re-freeze** an account an Operator unfroze, because progress is measured by the purchase's cumulative `refunded_share`. A new, larger refund can.
 - **A Checkout Session opened before a Freeze can still be paid.** The payment has been taken, so `purchase_fulfil` grants the credits and the webhook logs `top-up paid into frozen account`; the Freeze stops them being spent. `purchase_create` refuses new and replayed purchases while Frozen so no further session is opened.
+- **The web net floor uses one worst-case fee: 11.00% + 30¢.** From stripe.com/gb/pricing on 2026-09-13: 3.5% Managed Payments + 3.15% non-EEA card + 2% currency conversion = 8.65%, assumed charged on a total including 27% VAT (Stripe does not say) = 10.99%, plus 20p (~30¢). ADR-0018's packs clear it: net 860¢ for 100 credits, 2,195¢ for 300, 6,645¢ for 1,000. `pack_1000` sits exactly on the gross floor. Update `sales_channels` when Stripe's pricing changes; the trigger refuses a change that breaks an active pack.
+- **The recorded price is only as true as how it was written.** The script reads it from Stripe; a hand-written `UPDATE` is still floor-checked but not checked against Stripe.
 - **A refund that later fails is not re-granted.** If Stripe reports a refund failing after `charge.refunded`, the credits already taken stay taken; restoring them is a manual grant under the `CLAUDE.md` rule (written ADR, `reason` naming the Operator).
 - A reversal whose purchase is not found is retried while it may be racing fulfilment, then acknowledged after an hour and logged as `unmatched_reversal`.
 - `webhook_events.payload` for Stripe stores `{type, object_id}` only; Checkout events carry name, email and address we have no reason to keep.
@@ -67,7 +69,7 @@ Web Top-ups are sold through **Stripe Checkout with `managed_payments[enabled]=t
 
 - Finance/Legal approve the Supply Consent wording; publish it under a version without `-draft`.
 - An Operator route for `operator_unfreeze` that takes the Operator's identity from the verified `x-veyrnox-auth-id` header, never from the request body.
-- Pricing floors rechecked with Stripe Managed Payments fees.
+- Price packs only with `scripts/set-credit-pack-price.mjs <pack_id> <price_id> --activate`, using a key that can read Prices and Products.
 - Stripe account business description matches the product: AI image/video/voice generation sold as prepaid credits.
 - Managed Payments enabled after Stripe's eligibility review and terms acceptance.
 - In test mode, confirm `checkout.session.completed` carries `payment_intent` for Managed Payments sessions; reversal matching depends on it.

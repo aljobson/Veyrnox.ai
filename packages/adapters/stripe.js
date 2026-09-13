@@ -69,6 +69,32 @@ export async function createCheckoutSession(input, cfg) {
 }
 
 /**
+ * Read a Price with its Product, for pricing a Credit Pack.
+ *
+ * @param {string} priceId
+ * @param {object} cfg
+ * @param {string} cfg.secretKey  a key that can read Prices and Products
+ * @returns {Promise<{ok:true,price:object}|{ok:false,error:string}>}
+ */
+export async function retrievePrice(priceId, cfg) {
+    const url = `${STRIPE_API_BASE}/v1/prices/${encodeURIComponent(priceId)}?expand[]=product`;
+    let res;
+    try {
+        res = await fetch(url, {
+            headers: { Authorization: `Bearer ${cfg.secretKey}`, 'Stripe-Version': STRIPE_API_VERSION },
+        });
+    } catch {
+        return { ok: false, error: 'stripe transport' };
+    }
+    const payload = await res.json().catch(() => null);
+    if (!res.ok || !payload || payload.object !== 'price') {
+        const e = payload && payload.error;
+        return { ok: false, error: `stripe ${res.status}${e ? ` ${e.type}/${e.code || '-'}` : ''}` };
+    }
+    return { ok: true, price: payload };
+}
+
+/**
  * @param {Uint8Array} rawBody  exact request bytes
  * @param {string|null} header  Stripe-Signature header
  * @param {string} secret       STRIPE_WEBHOOK_SECRET (whsec_...)
