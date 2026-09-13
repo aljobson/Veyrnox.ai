@@ -33,6 +33,13 @@ const ERROR_COPY = {
 
 const DEFAULT_MODEL = 'wan-2.5';
 
+// Models measured well over a minute end to end in live tests (2026-09-13).
+// ponytail: hand-kept list; move to the catalog if more slow models land.
+const SLOW_MODEL_WAIT = {
+  'ace-step-1.5': 'Music takes about 3–4 minutes.',
+  'seedance-2.0-fast': 'Video takes about 2 minutes.',
+};
+
 export default function CreateStudio() {
   const { models, live: catalogLive } = useCatalog();
   const [modelId, setModelId] = useState(DEFAULT_MODEL);
@@ -218,6 +225,9 @@ export default function CreateStudio() {
                       <span aria-hidden="true">●</span> {STATE_UI[job.state].label} · {model.name.toUpperCase()}
                     </div>
                     <div className="mt-2 font-vx-mono text-[42px] font-bold vx-num">…</div>
+                    {SLOW_MODEL_WAIT[model.id] && (
+                      <div className="text-xs text-vx-fg-body mt-2">{SLOW_MODEL_WAIT[model.id]} You can leave this page; it lands in your library.</div>
+                    )}
                     <div className="text-xs text-vx-fg-muted mt-2">Refund on failure — always.</div>
                   </div>
                 ) : job?.state === 'failed' ? (

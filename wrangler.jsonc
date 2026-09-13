@@ -4,6 +4,9 @@
   "main": ".open-next/worker.js",
   "compatibility_date": "2026-09-01",
   "compatibility_flags": ["nodejs_compat"],
+  // Keep Worker logs (console.error on provider rejects, webhook signature
+  // failures) in the dashboard instead of needing a live `wrangler tail`.
+  "observability": { "enabled": true },
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
