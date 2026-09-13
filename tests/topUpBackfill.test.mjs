@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { backfillVerdict, runBackfill } from '../lib/topUpBackfill.js';
+import { backfillVerdict, runBackfill, sweepCandidates, runOrderSweep } from '../lib/topUpBackfill.js';
 
 const TOP_UP_ID = '0b6f3c1e-8d2a-4f5b-9c7e-1a2b3c4d5e6f';
 const IDENTIFIER = '104e18a2-d755-4d4b-80c4-a6c1dcbe1c10';
@@ -15,6 +15,8 @@ function order(over = {}, itemOver = {}) {
         attributes: {
             store_id: 473468,
             identifier: IDENTIFIER,
+            user_email: 'buyer@example.com',
+            created_at: '2026-09-13T10:30:00.000000Z',
             currency: 'USD',
             subtotal: 2500,
             discount_total: 0,
@@ -35,6 +37,7 @@ test('a paid order matching the returned identifier is credited to our Top-up ro
         credit: {
             p_top_up_id: TOP_UP_ID,
             p_order_id: '1234',
+            p_order_email: 'buyer@example.com',
             p_paid_usd_cents: 2500,
             p_currency: 'USD',
             p_variant_id: '2120823',
@@ -56,6 +59,18 @@ test('an order without an identifier is never credited', () => {
     for (const identifier of [undefined, null, '', 42]) {
         const v = backfillVerdict(row(), order({ identifier }), opts);
         assert.equal(v.skip, 'identifier mismatch');
+    }
+});
+
+// #147: the order's checkout email travels to backfill_credit_top_up, which
+// refuses it unless it is the Top-up owner's. Without one, nothing is credited.
+test('the order email is passed on for the owner check; an order without one is never credited', () => {
+    assert.equal(backfillVerdict(row(), order({ user_email: 'Buyer@Example.com' }), opts).credit.p_order_email, 'Buyer@Example.com');
+    for (const user_email of [undefined, null, '', '   ', 42]) {
+        const v = backfillVerdict(row(), order({ user_email }), opts);
+        assert.equal(v.credit, undefined, String(user_email));
+        assert.equal(v.skip, 'order email missing');
+        assert.equal(v.anomaly, true);
     }
 });
 
@@ -292,4 +307,149 @@ test('a failed close is logged and the run carries on', async () => {
     const res = await runBackfill([row(), row()], h.deps);
     assert.equal(res.checked, 2);
     assert.ok(h.errors.some((e) => /close_top_up_return failed/.test(e)));
+});
+
+test('an email mismatch is refused, logged, and never credited', async () => {
+    const h = harness({ orders: { 1234: ok(order()) }, credit: async () => ({ ok: false, code: 'EMAIL_MISMATCH' }) });
+    const res = await runBackfill([row()], h.deps);
+    assert.equal(res.refused, 1);
+    assert.equal(res.credited, 0);
+    assert.equal(h.errors.length, 1);
+    assert.match(h.errors[0], /EMAIL_MISMATCH/);
+});
+
+test('an order already credited to another Top-up is logged as a recorded collision', async () => {
+    const h = harness({ orders: { 1234: ok(order()) }, credit: async () => ({ ok: false, code: 'ORDER_ALREADY_USED', collision: true }) });
+    const res = await runBackfill([row()], h.deps);
+    assert.equal(res.refused, 1);
+    assert.match(h.errors[0], /ORDER_ALREADY_USED/);
+});
+
+// --- order sweep (#143) ------------------------------------------------------
+
+const CREDITED = '9001';
+const sweepRow = (over = {}) => ({
+    top_up_id: TOP_UP_ID, order_id: CREDITED, variant_id: '2120823',
+    created_at: '2026-09-13T10:00:00+00:00', user_email: 'buyer@example.com', ...over,
+});
+const listed = (id, over = {}, itemOver = {}) => ({ ...order(over, itemOver), id });
+
+test('sweep candidates: other paid orders of this pack by the owner since the Top-up started', () => {
+    const orders = [
+        listed(CREDITED),                                               // the credited order itself
+        listed('9002'),                                                 // a second payment
+        listed('9003', { user_email: ' BUYER@example.com' }),           // same buyer, other case
+        listed('9004', {}, { variant_id: 7 }),                          // another pack
+        listed('9005', { status: 'failed' }),                           // never paid
+        listed('9006', { status: 'refunded', refunded_amount: 3000 }),  // paid, since refunded
+        listed('9007', { created_at: '2026-09-13T09:00:00.000000Z' }),  // before the Top-up
+        listed('9008', { created_at: '2026-09-13T09:56:00.000000Z' }),  // 4 minutes of clock skew
+        listed('9009', { store_id: 1 }),                                // another store
+        listed('9010', { user_email: 'someone@else.test' }),            // not the owner
+        listed('9011', { test_mode: false }, { test_mode: false }),     // other mode
+        listed('9012', { created_at: 'not a date' }),
+        null,
+    ];
+    const got = sweepCandidates(sweepRow(), orders, opts);
+    assert.deepEqual(got.map((c) => c.p_order_id), ['9002', '9003', '9006', '9008']);
+    assert.deepEqual(got[0], {
+        p_top_up_id: TOP_UP_ID,
+        p_order_id: '9002',
+        p_order_email: 'buyer@example.com',
+        p_order_created_at: '2026-09-13T10:30:00.000Z',
+        p_paid_usd_cents: 2500,
+        p_currency: 'USD',
+        p_variant_id: '2120823',
+    });
+});
+
+function sweepHarness({ lists = {}, flag = async () => ({ ok: true, flagged: true, idempotent: false }), budgetMs = 60000 } = {}) {
+    const listedEmails = [];
+    const flagged = [];
+    const errors = [];
+    let clock = 0;
+    const deps = {
+        ...opts,
+        budgetMs,
+        spacingMs: 250,
+        now: () => clock,
+        sleep: async (ms) => { clock += ms; },
+        listOrders: async (email) => { listedEmails.push(email); clock += 100; return lists[email]; },
+        flag: async (args) => { flagged.push(args); return flag(args); },
+        log: (...a) => errors.push(a.join(' ')),
+    };
+    return { deps, listedEmails, flagged, errors };
+}
+
+test('the sweep flags a found second payment, only through flag_swept_top_up_order', async () => {
+    const h = sweepHarness({ lists: { 'buyer@example.com': { ok: true, orders: [listed(CREDITED), listed('9002')], more: false } } });
+    const res = await runOrderSweep([sweepRow()], h.deps);
+    assert.deepEqual(h.listedEmails, ['buyer@example.com']);
+    assert.deepEqual(h.flagged.map((f) => f.p_order_id), ['9002']);
+    assert.equal(res.flagged, 1);
+    assert.equal(res.checked, 1);
+    assert.equal(h.errors.length, 1);
+    assert.match(h.errors[0], /flagged for Operator refund/);
+});
+
+test('known and already flagged orders are quiet; ambiguous and refused ones are logged', async () => {
+    const verdicts = [
+        { ok: false, code: 'KNOWN_ORDER' },
+        { ok: true, flagged: true, idempotent: true },
+        { ok: false, code: 'AMBIGUOUS' },
+        { ok: false, code: 'EMAIL_MISMATCH' },
+    ];
+    const orders = ['9002', '9003', '9004', '9005'].map((id) => listed(id));
+    const h = sweepHarness({ lists: { 'buyer@example.com': { ok: true, orders, more: false } }, flag: async () => verdicts.shift() });
+    const res = await runOrderSweep([sweepRow()], h.deps);
+    assert.equal(res.flagged, 0);
+    assert.equal(res.ambiguous, 1);
+    assert.equal(res.refused, 1);
+    assert.equal(h.errors.length, 2);
+    assert.match(h.errors[0], /AMBIGUOUS/);
+});
+
+test('the sweep stops on a LemonSqueezy 429 and skips a transient or failed listing', async () => {
+    const rows = [sweepRow({ user_email: 'a@x.test' }), sweepRow({ user_email: 'b@x.test' }), sweepRow({ user_email: 'c@x.test' })];
+    const h = sweepHarness({ lists: {
+        'a@x.test': { ok: false, error: 'lemonsqueezy 503', transient: true },
+        'b@x.test': { ok: false, error: 'lemonsqueezy 429', transient: true },
+        'c@x.test': { ok: true, orders: [], more: false },
+    } });
+    const res = await runOrderSweep(rows, h.deps);
+    assert.deepEqual(h.listedEmails, ['a@x.test', 'b@x.test']);
+    assert.equal(res.stopped, 'rate_limited');
+    assert.equal(res.retry, 2);
+    assert.equal(h.flagged.length, 0);
+});
+
+test('a flag RPC error is logged and the rest of the orders are still checked', async () => {
+    const verdicts = [async () => { throw Object.assign(new Error('rpc'), { status: 503 }); }, async () => ({ ok: true, flagged: true, idempotent: false })];
+    const h = sweepHarness({
+        lists: { 'buyer@example.com': { ok: true, orders: [listed('9002'), listed('9003')], more: false } },
+        flag: () => verdicts.shift()(),
+    });
+    const res = await runOrderSweep([sweepRow()], h.deps);
+    assert.equal(res.retry, 1);
+    assert.equal(res.flagged, 1);
+    assert.ok(h.errors.some((e) => /flag_swept_top_up_order failed/.test(e)));
+});
+
+test('a truncated listing that may hide older orders in the window is logged', async () => {
+    const h = sweepHarness({ lists: { 'buyer@example.com': { ok: true, orders: [listed('9002')], more: true } } });
+    await runOrderSweep([sweepRow()], h.deps);
+    assert.ok(h.errors.some((e) => /truncated/.test(e)));
+
+    const older = sweepHarness({ lists: { 'buyer@example.com': { ok: true, orders: [listed('9002', { created_at: '2026-09-12T10:00:00Z' })], more: true } } });
+    await runOrderSweep([sweepRow()], older.deps);
+    assert.ok(!older.errors.some((e) => /truncated/.test(e)), 'the page already reaches back before the Top-up');
+});
+
+test('the sweep respects its time budget', async () => {
+    const rows = Array.from({ length: 10 }, () => sweepRow());
+    const h = sweepHarness({ lists: { 'buyer@example.com': { ok: true, orders: [], more: false } }, budgetMs: 1000 });
+    const res = await runOrderSweep(rows, h.deps);
+    assert.equal(res.stopped, 'time_budget');
+    assert.equal(res.checked, h.listedEmails.length);
+    assert.ok(res.checked < rows.length);
 });

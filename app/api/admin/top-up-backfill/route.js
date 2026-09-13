@@ -13,18 +13,25 @@
  *   2. For each, one at a time and SPACING_MS apart, re-fetch the returned
  *      order from LemonSqueezy. If the order's identifier matches and it
  *      passes the webhook's checks (lib/topUpBackfill.js), credit it through
- *      credit_top_up_with_refund, which also claws back any refund (0063).
+ *      backfill_credit_top_up: the order's email must be the Top-up owner's,
+ *      an order credited elsewhere is recorded as a collision (0068), and any
+ *      refund is clawed back (0063).
  *   3. Close a row whose check reached a final answer (close_top_up_return).
  *   4. Stop at the time budget or on a LemonSqueezy 429. Transient failures
  *      stay open and are due again after their backoff.
+ *   5. If the backfill finished, next_top_up_order_sweep_batch hands out up to
+ *      SWEEP_BATCH credited Top-ups due a sweep. Each owner's orders are listed
+ *      and any second paid order for the pack is flagged for an Operator
+ *      refund through flag_swept_top_up_order, never credited (#143, 0068).
  *
- * Response: { checked, credited, idempotent, flagged, refused, skipped, retry, stopped }.
+ * Response: { checked, credited, idempotent, flagged, refused, skipped, retry, stopped,
+ *   sweep: { checked, flagged, ambiguous, refused, retry, stopped } | null }.
  */
 
 import { NextResponse } from 'next/server';
 import { rpc, envConfig } from '../../../../packages/db/supabase-client.js';
-import { fetchOrder } from '../../../../packages/adapters/lemonsqueezy.js';
-import { runBackfill } from '../../../../lib/topUpBackfill.js';
+import { fetchOrder, listOrders } from '../../../../packages/adapters/lemonsqueezy.js';
+import { runBackfill, runOrderSweep } from '../../../../lib/topUpBackfill.js';
 import { tokenMatches, bearerToken } from '../../../../lib/tokenMatches.js';
 
 const LOG = '[top-up-backfill]';
@@ -32,6 +39,10 @@ const BATCH = 25;
 // LemonSqueezy allows 300 API calls a minute; one every 250ms stays far below.
 const SPACING_MS = 250;
 const BUDGET_MS = 20000;
+// Each sweep is one list call plus a flag call per candidate. A row handed out
+// but cut off by the budget waits for its next scheduled sweep.
+const SWEEP_BATCH = 10;
+const SWEEP_BUDGET_MS = 15000;
 
 export async function POST(req) {
     const token = process.env.TOP_UP_BACKFILL_TOKEN;
@@ -61,10 +72,11 @@ export async function POST(req) {
         return NextResponse.json({ error: 'internal' }, { status: 502 });
     }
 
+    // Bound: Workers throw "Illegal invocation" for an unbound fetch.
+    const lsFetch = fetch.bind(globalThis);
     const result = await runBackfill(rows, {
-        // Bound: Workers throw "Illegal invocation" for an unbound fetch.
-        fetchOrder: (orderId) => fetchOrder(orderId, { fetch: fetch.bind(globalThis), apiKey }),
-        credit: (args) => rpc('credit_top_up_with_refund', args, cfg),
+        fetchOrder: (orderId) => fetchOrder(orderId, { fetch: lsFetch, apiKey }),
+        credit: (args) => rpc('backfill_credit_top_up', args, cfg),
         close: (row) => rpc('close_top_up_return', {
             p_top_up_id: row.top_up_id, p_order_id: row.order_id, p_order_identifier: row.order_identifier,
         }, cfg),
@@ -73,5 +85,22 @@ export async function POST(req) {
         budgetMs: BUDGET_MS,
         spacingMs: SPACING_MS,
     });
-    return NextResponse.json(result);
+    if (result.stopped) return NextResponse.json({ ...result, sweep: null });
+
+    let sweepRows;
+    try {
+        sweepRows = await rpc('next_top_up_order_sweep_batch', { p_limit: SWEEP_BATCH }, cfg);
+    } catch (err) {
+        console.error(LOG, 'sweep batch read failed:', err && err.status);
+        return NextResponse.json({ ...result, sweep: null });
+    }
+    const sweep = await runOrderSweep(Array.isArray(sweepRows) ? sweepRows : [], {
+        listOrders: (email) => listOrders({ storeId, email }, { fetch: lsFetch, apiKey }),
+        flag: (args) => rpc('flag_swept_top_up_order', args, cfg),
+        expectTestMode: testMode === 'true',
+        expectStoreId: storeId,
+        budgetMs: SWEEP_BUDGET_MS,
+        spacingMs: SPACING_MS,
+    });
+    return NextResponse.json({ ...result, sweep });
 }
