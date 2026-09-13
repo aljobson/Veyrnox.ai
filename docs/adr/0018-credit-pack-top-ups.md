@@ -91,6 +91,13 @@ list includes "services of any kind" and says nothing about AI generation.
   window. LemonSqueezy sends no timestamp, so none is enforced. Replays are made
   harmless instead: signed body, re-fetched order as source of truth, and
   `webhook_events` dedupe.
+- **Backfill needs the buyer to come back (#94).** LemonSqueezy's order API
+  has no custom data and no filter for it, so an order can't be found from a
+  Top-up id. The checkout return URL (confirmation button and receipt link)
+  carries LemonSqueezy's `[order_id]` and `[order_identifier]`; the return page
+  records them on the buyer's own pending Top-up, and the backfill credits the
+  re-fetched order only if its identifier matches. A buyer who never follows
+  either link and whose webhook is lost stays pending for an Operator.
 - **Preconditions before building:** LemonSqueezy support confirms that prepaid
   AI-generation credits are not a prohibited "service"; if refused, reopen
   ADR-0003 (Paddle or Stripe Managed Payments). Finance/Legal confirm

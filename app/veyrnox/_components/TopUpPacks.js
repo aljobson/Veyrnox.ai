@@ -33,8 +33,21 @@ export function TopUpReturn() {
   const [credits, setCredits] = useState(null);
 
   useEffect(() => {
-    const id = new URLSearchParams(window.location.search).get('top_up');
-    if (id && TOP_UP_ID_RE.test(id)) setTopUpId(id);
+    const q = new URLSearchParams(window.location.search);
+    const id = q.get('top_up');
+    if (!id || !TOP_UP_ID_RE.test(id)) return;
+    setTopUpId(id);
+    // LemonSqueezy's link variables name the paid order. Recording it lets the
+    // backfill credit this Top-up if the webhook is lost (#94). Best effort:
+    // polling below doesn't depend on it.
+    const orderId = q.get('order_id');
+    const orderIdentifier = q.get('order_identifier');
+    if (orderId && /^[0-9]{1,20}$/.test(orderId) && orderIdentifier && TOP_UP_ID_RE.test(orderIdentifier.toLowerCase())) {
+      gatewayFetch(`/top-ups/${id}/return`, {
+        method: 'POST',
+        body: JSON.stringify({ order_id: orderId, order_identifier: orderIdentifier }),
+      }).catch(() => {});
+    }
   }, []);
 
   useEffect(() => {
