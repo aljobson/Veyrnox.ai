@@ -13,7 +13,7 @@ chose Supabase over Clerk specifically because Supabase offers an EU region at
 standard pricing.
 
 The deployment did not follow. The Supabase project wired into production
-(`yrqzwqywxfesmbvhzjgj`, named `veyrnox-staging`, baked into `wrangler.jsonc`
+(`yrqzwqywxfesmbvhzjgj`, then named `veyrnox-staging`, now `veyrnox.ai staging`, baked into `wrangler.jsonc`
 and the CSP) is in **us-east-2**. `docs/supabase-staging.md` has said so since
 2026-09-10, including the line "must migrate to Frankfurt before Slice 9 exit
 (real user signups)". Signups are live.
