@@ -40,3 +40,11 @@ test('fetches the source with redirect manual, the only non-following mode Worke
         globalThis.fetch = realFetch;
     }
 });
+
+test('each provider may only copy from its own CDN', async () => {
+    // A kie output host is refused on the fal path, and vice versa.
+    assert.equal((await copyUrlToR2('https://tempfile.aiquickdraw.com/x.mp4', 'k', cfg)).error, 'source host not allowed');
+    assert.equal((await copyUrlToR2('https://v3.fal.media/x.png', 'k', cfg, { provider: 'kie' })).error, 'source host not allowed');
+    assert.equal((await copyUrlToR2('https://v3.fal.media/x.png', 'k', cfg, { provider: 'nope' })).error, 'source host not allowed');
+    assert.equal((await copyUrlToR2('https://aiquickdraw.com.evil.com/x', 'k', cfg, { provider: 'kie' })).error, 'source host not allowed');
+});
