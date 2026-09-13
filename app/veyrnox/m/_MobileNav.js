@@ -10,12 +10,12 @@ const TABS = [
 ];
 
 export function MobileTabs() {
-  const path = usePathname();
+  const path = usePathname().replace(/^\/veyrnox/, '');
   return (
     <div className="flex-shrink-0 border-t border-vx-border bg-vx-base pb-2 pt-2 px-3">
       <div className="flex justify-around">
         {TABS.map((t) => {
-          const active = path.startsWith(t.href);
+          const active = path.startsWith(t.href.replace(/^\/veyrnox/, ''));
           return (
             <Link
               key={t.key}
@@ -35,7 +35,7 @@ export function MobileTabs() {
 }
 
 export function MobileJumps() {
-  const path = usePathname();
+  const path = usePathname().replace(/^\/veyrnox/, '');
   const jumps = [
     { href: '/veyrnox/m/create',  label: 'CREATE' },
     { href: '/veyrnox/m/job',     label: 'JOB' },
@@ -46,7 +46,7 @@ export function MobileJumps() {
   return (
     <div className="flex gap-1.5 flex-wrap justify-center py-4 px-3">
       {jumps.map((j) => {
-        const active = path === j.href;
+        const active = path === j.href.replace(/^\/veyrnox/, '');
         return (
           <Link
             key={j.href}
