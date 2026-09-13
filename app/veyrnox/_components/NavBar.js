@@ -8,7 +8,8 @@ import { gatewayFetch, GatewayError } from '../_lib/gateway';
 
 // Marketing site nav (Home / Gallery / Pricing).
 export function MarketingNav() {
-  const path = usePathname();
+  // Rewrites serve /veyrnox/* at /*, so the browser path has no prefix.
+  const path = usePathname().replace(/^\/veyrnox/, '') || '/';
   const items = [
     { href: '/veyrnox',         label: 'Home' },
     { href: '/veyrnox/presets', label: 'Gallery' },
@@ -21,7 +22,8 @@ export function MarketingNav() {
       </Link>
       <div className="hidden sm:flex gap-1.5 text-sm font-semibold">
         {items.map((it) => {
-          const active = it.href === '/veyrnox' ? path === '/veyrnox' : path.startsWith(it.href);
+          const target = it.href.replace(/^\/veyrnox/, '') || '/';
+          const active = target === '/' ? path === '/' : path.startsWith(target);
           return (
             <Link
               key={it.href}
