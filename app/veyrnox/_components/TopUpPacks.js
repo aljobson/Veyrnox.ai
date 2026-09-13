@@ -46,7 +46,14 @@ export function TopUpReturn() {
       gatewayFetch(`/top-ups/${id}/return`, {
         method: 'POST',
         body: JSON.stringify({ order_id: orderId, order_identifier: orderIdentifier }),
-      }).catch(() => {});
+      }).catch(() => {}).finally(() => {
+        // LemonSqueezy only fills these into the query string. Once posted,
+        // take them out of the address bar, history and later screenshots (#147).
+        const url = new URL(window.location.href);
+        url.searchParams.delete('order_id');
+        url.searchParams.delete('order_identifier');
+        window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash);
+      });
     }
   }, []);
 

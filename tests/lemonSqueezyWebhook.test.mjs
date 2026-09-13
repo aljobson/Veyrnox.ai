@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHmac } from 'node:crypto';
-import { verifyWebhookSignature, normaliseOrder, fetchOrder } from '../packages/adapters/lemonsqueezy.js';
+import { verifyWebhookSignature, normaliseOrder, fetchOrder, listOrders } from '../packages/adapters/lemonsqueezy.js';
 
 const SECRET = '0123456789abcdef0123456789abcdef01234567';
 const STORE_ID = '473468';
@@ -174,4 +174,40 @@ test('normaliseOrder: rejects an order from another store, or no configured stor
     for (const bad of [undefined, '', 'abc']) {
         assert.deepEqual(normaliseOrder(order(), custom, { expectTestMode: true, expectStoreId: bad }), { ok: false, error: 'store mismatch' }, String(bad));
     }
+});
+
+// #143: the backfill's order sweep lists a buyer's orders in our store.
+test('listOrders: GETs the constant host filtered by store and encoded email, newest page of 100', async () => {
+    const { calls, fetch } = recorder({ data: [order()], meta: { page: { currentPage: 1, lastPage: 1 } } });
+    const res = await listOrders({ storeId: STORE_ID, email: 'a+b@example.com' }, { fetch, apiKey: 'test_key' });
+    assert.deepEqual(res, { ok: true, orders: [order()], more: false });
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].url,
+        'https://api.lemonsqueezy.com/v1/orders?filter[store_id]=473468&filter[user_email]=a%2Bb%40example.com&page[size]=100&sort=-createdAt');
+    assert.equal(calls[0].init.method, 'GET');
+    assert.equal(calls[0].init.headers.Authorization, 'Bearer test_key');
+});
+
+test('listOrders: reports more pages', async () => {
+    const { fetch } = recorder({ data: [], meta: { page: { currentPage: 1, lastPage: 3 } } });
+    assert.equal((await listOrders({ storeId: STORE_ID, email: 'a@b.test' }, { fetch, apiKey: 'k' })).more, true);
+});
+
+test('listOrders: refuses a bad store id or email without calling the network', async () => {
+    const { calls, fetch } = recorder();
+    assert.deepEqual(await listOrders({ storeId: 'abc', email: 'a@b.test' }, { fetch, apiKey: 'k' }), { ok: false, error: 'invalid storeId', transient: false });
+    for (const email of ['', 'no-at', 'a@b.test&filter[store_id]=1 x', null, `${'a'.repeat(320)}@b.test`]) {
+        assert.deepEqual(await listOrders({ storeId: STORE_ID, email }, { fetch, apiKey: 'k' }), { ok: false, error: 'invalid email', transient: false }, String(email));
+    }
+    assert.deepEqual(await listOrders({ storeId: STORE_ID, email: 'a@b.test' }, { fetch, apiKey: '' }), { ok: false, error: 'missing apiKey', transient: false });
+    assert.equal(calls.length, 0);
+});
+
+test('listOrders: 429 and 5xx are transient; a body without a data array is refused', async () => {
+    const cfg = (r, s) => ({ fetch: recorder(r, s).fetch, apiKey: 'k' });
+    const q = { storeId: STORE_ID, email: 'a@b.test' };
+    assert.deepEqual(await listOrders(q, cfg({}, 429)), { ok: false, error: 'lemonsqueezy 429', transient: true });
+    assert.deepEqual(await listOrders(q, cfg({}, 502)), { ok: false, error: 'lemonsqueezy 502', transient: true });
+    assert.deepEqual(await listOrders(q, cfg({}, 401)), { ok: false, error: 'lemonsqueezy 401', transient: false });
+    assert.deepEqual(await listOrders(q, cfg({ data: {} }, 200)), { ok: false, error: 'malformed order list', transient: false });
 });

@@ -181,23 +181,14 @@ export function normaliseOrder(order, customData, { expectTestMode, expectStoreI
     };
 }
 
-/**
- * Re-fetch one order from the constant API host. `transient` tells the
- * webhook whether LemonSqueezy should retry (5xx, 429, network).
- *
- * @param {string} orderId  numeric LemonSqueezy order id
- * @param {{fetch: typeof fetch, apiKey: string, timeoutMs?: number}} cfg
- * @returns {Promise<{ok: true, order: any} | {ok: false, error: string, transient: boolean}>}
- */
-export async function fetchOrder(orderId, cfg) {
-    if (!NUMERIC_ID_RE.test(String(orderId ?? ''))) return { ok: false, error: 'invalid orderId', transient: false };
+// GET a path on the constant API host. Vendor error bodies never leave here.
+async function apiGet(path, cfg) {
     if (!cfg.apiKey) return { ok: false, error: 'missing apiKey', transient: false };
-
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), cfg.timeoutMs ?? 10000);
     let res;
     try {
-        res = await cfg.fetch(`${LEMONSQUEEZY_API_BASE}/orders/${orderId}`, {
+        res = await cfg.fetch(`${LEMONSQUEEZY_API_BASE}${path}`, {
             method: 'GET',
             signal: controller.signal,
             headers: { Accept: JSON_API, Authorization: `Bearer ${cfg.apiKey}` },
@@ -208,12 +199,48 @@ export async function fetchOrder(orderId, cfg) {
         clearTimeout(timer);
     }
     if (!res.ok) return { ok: false, error: `lemonsqueezy ${res.status}`, transient: res.status >= 500 || res.status === 429 };
+    try { return { ok: true, body: await res.json() }; } catch { return { ok: false, error: 'lemonsqueezy returned non-JSON', transient: true }; }
+}
 
-    let data;
-    try { data = await res.json(); } catch { return { ok: false, error: 'lemonsqueezy returned non-JSON', transient: true }; }
-    const resource = data && data.data;
+/**
+ * Re-fetch one order from the constant API host. `transient` tells the
+ * webhook whether LemonSqueezy should retry (5xx, 429, network).
+ *
+ * @param {string} orderId  numeric LemonSqueezy order id
+ * @param {{fetch: typeof fetch, apiKey: string, timeoutMs?: number}} cfg
+ * @returns {Promise<{ok: true, order: any} | {ok: false, error: string, transient: boolean}>}
+ */
+export async function fetchOrder(orderId, cfg) {
+    if (!NUMERIC_ID_RE.test(String(orderId ?? ''))) return { ok: false, error: 'invalid orderId', transient: false };
+    const got = await apiGet(`/orders/${orderId}`, cfg);
+    if (!got.ok) return got;
+    const resource = got.body && got.body.data;
     if (!resource || String(resource.id) !== String(orderId)) return { ok: false, error: 'order id mismatch', transient: false };
     return { ok: true, order: resource };
+}
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+$/;
+const ORDER_PAGE_SIZE = 100;
+
+/**
+ * The newest page of a buyer's orders in one store (#143). The order API has
+ * no custom data, so the backfill's sweep finds second payments by email.
+ * `more` means older orders exist beyond this page.
+ *
+ * @param {{storeId: string, email: string}} query
+ * @param {{fetch: typeof fetch, apiKey: string, timeoutMs?: number}} cfg
+ * @returns {Promise<{ok: true, orders: any[], more: boolean} | {ok: false, error: string, transient: boolean}>}
+ */
+export async function listOrders({ storeId, email }, cfg) {
+    if (!NUMERIC_ID_RE.test(String(storeId))) return { ok: false, error: 'invalid storeId', transient: false };
+    if (typeof email !== 'string' || email.length > 320 || !EMAIL_RE.test(email)) return { ok: false, error: 'invalid email', transient: false };
+    const got = await apiGet(
+        `/orders?filter[store_id]=${storeId}&filter[user_email]=${encodeURIComponent(email)}&page[size]=${ORDER_PAGE_SIZE}&sort=-createdAt`, cfg);
+    if (!got.ok) return got;
+    const data = got.body && got.body.data;
+    if (!Array.isArray(data)) return { ok: false, error: 'malformed order list', transient: false };
+    const page = got.body.meta && got.body.meta.page;
+    return { ok: true, orders: data, more: !!page && Number(page.lastPage) > Number(page.currentPage) };
 }
 
 /**

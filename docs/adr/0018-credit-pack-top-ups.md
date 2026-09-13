@@ -107,6 +107,21 @@ list includes "services of any kind" and says nothing about AI generation.
   records them on the buyer's own pending Top-up, and the backfill credits the
   re-fetched order only if its identifier matches. A buyer who never follows
   either link and whose webhook is lost stays pending for an Operator.
+- **The backfill binds an order to its buyer (#147).** The identifier travels in
+  the return URL's query string (LemonSqueezy documents no other place for link
+  variables), so it can leak; the return page removes it from the address bar
+  once recorded. The backfill also credits only an order whose checkout email is
+  the Top-up owner's account email, so a leaked identifier can't credit anyone
+  else. A buyer who pays with a different email and whose webhook is lost is left
+  for an Operator. An order the backfill finds already credited to another
+  Top-up is recorded in the append-only `top_up_order_collisions` (Operator read
+  `operator_order_collisions`), never granted.
+- **Second payments are found even when the buyer never comes back (#143).** The
+  backfill lists the owner's orders in our store by email 70 minutes, 6 hours,
+  1 day and 3 days after a credited Top-up started, and flags any other paid
+  order for that pack for an Operator refund. It never credits one, and it
+  leaves an order unflagged (logged) while the owner has a pending Top-up of the
+  same pack that the order could still pay.
 - **Preconditions before building:** LemonSqueezy support confirms that prepaid
   AI-generation credits are not a prohibited "service"; if refused, reopen
   ADR-0003 (Paddle or Stripe Managed Payments). Finance/Legal confirm
