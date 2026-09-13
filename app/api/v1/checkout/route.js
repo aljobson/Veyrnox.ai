@@ -21,6 +21,9 @@ import { SUPPLY_CONSENT_VERSION } from '../../../../lib/supplyConsent.js';
 const IDEMPOTENCY_RE = /^[A-Za-z0-9._-]{8,128}$/;
 const PACK_ID_RE = /^[a-z0-9_]{1,32}$/;
 const RATE_WINDOW_SECONDS = 600;
+// This route is the web Sales Channel: Stripe is its Merchant of Record, and
+// purchase_create only sells packs priced for it.
+const SALES_CHANNEL = 'web';
 
 const RPC_ERRORS = {
     USER_NOT_FOUND: [404, 'user_not_found'],
@@ -63,6 +66,7 @@ export async function POST(req) {
         purchase = await rpc('purchase_create', {
             p_auth_id: authId, p_pack_id: packId, p_idempotency_key: idempotencyKey,
             p_supply_consent_version: SUPPLY_CONSENT_VERSION,
+            p_sales_channel: SALES_CHANNEL,
         }, cfg);
     } catch (err) {
         console.error('[checkout] purchase_create failed:', err && err.status);
