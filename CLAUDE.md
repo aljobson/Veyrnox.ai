@@ -35,8 +35,14 @@ If a build starts failing after a dependency change, bisect these three first.
   (positive delta = refund/grant, negative = debit).
 - **Balance invariant**: `credit_balances.balance = SUM(ledger_entries.delta)`
   per `user_id`. Every mutation goes through `ledger_debit` / `ledger_refund` /
-  `ledger_grant` / `signup_grant` RPC — never a raw `INSERT INTO ledger_entries`
-  or a raw `UPDATE credit_balances`.
+  `ledger_grant` / `signup_grant` / `expire_free_credits` RPC — never a raw
+  `INSERT INTO ledger_entries` or a raw `UPDATE credit_balances`.
+- **Free Credits** (ADR-0013): only `grant:signup` credits are free. Every
+  ledger row sets `free_delta` (the part of `delta` that moved Free Credits;
+  0 for anything else) and `credit_balances.free_balance` moves with it,
+  `0 <= free_balance <= balance`. Debits spend free first; a Credit Refund
+  returns to the source it came from; a clawback caps at
+  `balance - free_balance`. `reconcile_free_credits()` must return zero rows.
 - **Idempotency**: every state-changing RPC takes an idempotency key
   (`jobs.idempotency_key` UNIQUE on `(user_id, idempotency_key)`,
   `webhook_events` UNIQUE on `(source, external_id)`). Replay must be a no-op.

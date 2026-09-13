@@ -62,5 +62,7 @@ jobs:
       - name: Apply migrations
         run: node scripts/migrate.mjs
 
+      # One file at a time: free-credits applies supabase/0035 to this
+      # database, which must not land mid-way through another file's run.
       - name: Run ledger acceptance tests
-        run: npx tsx --test packages/db/ledger.acceptance.test.ts
+        run: npx tsx --test --test-concurrency=1 packages/db/*.acceptance.test.ts
