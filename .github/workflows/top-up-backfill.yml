@@ -1,10 +1,10 @@
 name: top-up-backfill
 
-# Credits paid Top-ups whose LemonSqueezy webhook was missed (#94). The
-# Worker does the work at POST /api/admin/top-up-backfill; this only calls it.
+# Manual run of the Top-up backfill (#94). The Worker does the work at
+# POST /api/admin/top-up-backfill. The every-5-minutes run is the Worker's own
+# Cron Trigger (wrangler.jsonc, worker.js): this workflow's GitHub schedule
+# never fired, so it only runs on demand now.
 on:
-  schedule:
-    - cron: '*/5 * * * *'   # GitHub may delay or skip runs under load
   workflow_dispatch:
 
 permissions:
