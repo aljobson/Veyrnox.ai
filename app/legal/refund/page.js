@@ -17,9 +17,9 @@ export default function Refund() {
             <p>The 50 credits granted on sign-up have no cash value, are not refundable in money, and expire 90 days after they are granted if unused. Purchased credits never expire.</p>
 
             <h2>Purchased credits</h2>
+            <p>Credit packs are not on sale yet. When they are, the following applies.</p>
             <ul>
-                <li>Unused purchased credits are refundable within 14 days of purchase on request, less any credits already spent.</li>
-                <li>Refunds go back to the original payment method.</li>
+                <li>You can request a full refund of a credit pack within 14 days of purchase, as long as you have not generated anything since that purchase. Once you generate after buying, that purchase can no longer be refunded. Refunds go back to the original payment method, and the credits from that pack are removed from your balance.</li>
                 <li>If you are a UK or EU consumer, this does not limit your statutory cancellation rights.</li>
             </ul>
 

@@ -4,12 +4,12 @@ import { Button } from './Button';
 import { gatewayFetch, GatewayError, makeIdempotencyKey, notifyBalanceChanged, ACCOUNT_PAUSED_COPY } from '../_lib/gateway';
 import { useCatalog } from '../_lib/useCatalog';
 
-// Supply Consent (CONTEXT.md). Bump the version whenever the wording changes:
-// every pending Top-up stores the version its buyer agreed to.
-// Wording awaits Finance/Legal sign-off (ADR-0018 preconditions, #99).
-export const SUPPLY_CONSENT_VERSION = '2026-09-13';
+// Supply Consent (CONTEXT.md), approved as v1 in #99: keep the text verbatim.
+// Changing it needs a new sign-off and a new version, here and in
+// SUPPLY_CONSENT_VERSION in app/api/v1/top-ups/route.js.
+export const SUPPLY_CONSENT_VERSION = 'supply-consent-v1';
 const SUPPLY_CONSENT_TEXT =
-  'Add my credits straight away. I understand that once I use any of them to generate, I lose my right to cancel this purchase.';
+  'I want my credits added to my account straight away. I understand that once I use any of these credits to generate, I lose my right to cancel this purchase.';
 
 const ERROR_COPY = {
   consent_required: 'Tick the box above to continue.',
@@ -99,7 +99,8 @@ export function TopUpReturn() {
   );
 }
 
-const usd = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+// "$10", not "$10.00": the approved wording (#99 item 1).
+const usd = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', trailingZeroDisplay: 'stripIfInteger' });
 
 function median(nums) {
   if (!nums.length) return null;
@@ -195,7 +196,7 @@ export function TopUpPacks({ signedIn }) {
                   <span className="font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted">CREDIT PACK</span>
                   <span className="font-vx-mono text-[18px] font-bold text-vx-money mt-1 vx-num">+{new Intl.NumberFormat('en-US').format(p.credits)} cr</span>
                   <span className="font-vx-mono text-[12px] text-vx-fg-body mt-1">
-                    {usd.format(p.price_usd_cents / 100)} <span className="text-vx-fg-muted">+ applicable tax</span>
+                    {new Intl.NumberFormat('en-US').format(p.credits)} credits — {usd.format(p.price_usd_cents / 100)} <span className="text-vx-fg-muted">+ applicable tax</span>
                   </span>
                   <span className="text-[11px] text-vx-fg-muted mt-1">Never expire</span>
                   {typical && (
@@ -211,8 +212,12 @@ export function TopUpPacks({ signedIn }) {
             })}
           </div>
 
+          <p className="mt-3 text-[12px] text-vx-fg-muted max-w-[640px]">
+            Prices are in USD and exclude tax. Your total, including any VAT or sales tax for your location, is shown at checkout before you pay.
+          </p>
+
           <label className="mt-4 flex items-start gap-2 text-sm text-vx-fg-body cursor-pointer">
-            <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} className="mt-1" />
+            <input type="checkbox" required checked={consent} onChange={(e) => setConsent(e.target.checked)} className="mt-1" />
             <span>
               {SUPPLY_CONSENT_TEXT}{' '}
               <a href="/legal/refund" className="underline text-vx-fg-muted">Refund policy</a>

@@ -12,7 +12,7 @@ export default function Privacy() {
                 <li><strong>Account data</strong> — email address, authentication identifiers, and if you sign in with Apple or Google, the identifier they share.</li>
                 <li><strong>Usage data</strong> — the prompts and reference files you submit, the generations you request, credit balance and ledger history, and job status.</li>
                 <li><strong>Technical data</strong> — IP address, browser and device information, and request logs needed to keep the service secure.</li>
-                <li><strong>Payment data</strong> — handled by our payment processor. We never see or store full card numbers.</li>
+                <li><strong>Payment data</strong> — purchases are processed by Lemon Squeezy, LLC, which acts as Merchant of Record and is the seller of your credit purchase. Lemon Squeezy collects your payment details, billing address and tax information under its own privacy policy. We receive your order id, amount, country and email so we can add the credits to your account. We never see or store full card numbers.</li>
             </ul>
 
             <h2>Why we process it</h2>
@@ -25,7 +25,7 @@ export default function Privacy() {
 
             <h2>Where your data lives</h2>
             <p>We run on Supabase for the database and authentication, and on Cloudflare for edge hosting and object storage. Account data, credit ledger and generation metadata sit in our Supabase database, which is hosted in the European Union (Frankfurt, Germany). Generated media is stored in the European Union, in Cloudflare R2 with an EU jurisdictional restriction. Your prompts and reference files are transmitted to the third-party model provider that runs the model you selected, for the sole purpose of producing your output.</p>
-            <p>Where your personal data is processed outside the United Kingdom or the EEA, we rely on the UK International Data Transfer Agreement or the EU Standard Contractual Clauses with the processor concerned. If we move the database to another region we will update this page before the move takes effect.</p>
+            <p>Some of the companies that process your personal data are outside the United Kingdom and the EEA: our edge hosting, the model providers, and Lemon Squeezy, LLC (United States), which handles credit pack payments. Where your personal data is processed outside the United Kingdom or the EEA, we rely on the UK International Data Transfer Agreement or the EU Standard Contractual Clauses with the company concerned. If we move the database to another region we will update this page before the move takes effect.</p>
 
             <h2>Retention</h2>
             <ul>

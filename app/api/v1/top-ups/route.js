@@ -3,7 +3,8 @@
  * GET  /api/v1/top-ups — the caller's Top-up history (#95), at the bottom.
  *
  *   1. middleware.js verified the JWT and set x-veyrnox-auth-id
- *   2. Validate { pack_id, idempotency_key, consent: true, consent_version }
+ *   2. Validate { pack_id, idempotency_key, consent: true,
+ *      consent_version: 'supply-consent-v1' }
  *   3. create_pending_top_up RPC: idempotent on (user, idempotency_key), rate
  *      limit under a row lock, copies the pack's credits/price/variant,
  *      records Supply Consent. No credits move.
@@ -29,7 +30,9 @@ import { createCheckout } from '../../../../packages/adapters/lemonsqueezy.js';
 const PACK_ID_RE = /^[a-z0-9-]{1,32}$/;
 // Same shape as POST /api/v1/generations and the top_ups CHECK.
 const IDEMPOTENCY_RE = /^[A-Za-z0-9._-]{8,128}$/;
-const CONSENT_VERSION_RE = /^[A-Za-z0-9._-]{1,32}$/;
+// The only Supply Consent wording approved (#99). The buy dialog sends the
+// same constant; a new wording needs a new sign-off and a new version.
+const SUPPLY_CONSENT_VERSION = 'supply-consent-v1';
 const RATE_LIMIT_PER_WINDOW = 5;
 const RATE_WINDOW_SECONDS = 600;
 const CHECKOUT_TTL_MS = 60 * 60 * 1000;
@@ -68,7 +71,7 @@ export async function POST(req) {
     }
     // Explicit true only: a truthy string or 1 is not Supply Consent.
     if (body.consent !== true) return NextResponse.json({ error: 'consent_required' }, { status: 400 });
-    if (typeof body.consent_version !== 'string' || !CONSENT_VERSION_RE.test(body.consent_version)) {
+    if (body.consent_version !== SUPPLY_CONSENT_VERSION) {
         return NextResponse.json({ error: 'consent_version_required' }, { status: 400 });
     }
 
