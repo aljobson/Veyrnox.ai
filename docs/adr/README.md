@@ -13,6 +13,7 @@ Phase-0 decision-support documents for the target architecture at `/Users/aljobs
 | [ADR-0004 — Auth + Postgres bundle](0004-auth-and-db-bundle.md) | Amended by 0006 | Original: Clerk + Neon. Superseded by 0006 on EU-residency grounds. | — |
 | [ADR-0005 — Phase-0 business preconditions](0005-phase-0-business-preconditions.md) | **Accepted 2026-09-10** | UK Ltd, UK tax, EU-only data, 50-credit free tier, C2PA+ToS Article 50, registered-agent DMCA. | (unblocks Phase 1 Slice 3) |
 | [ADR-0006 — Auth + DB amendment for EU residency](0006-auth-and-db-amendment-eu-residency.md) | **Accepted 2026-09-10 — Supabase Auth + Supabase Postgres (Frankfurt)** | Clerk EU-tier at ~$250–400/mo forced re-evaluation; Supabase EU on $25/mo Pro. MFA becomes a Phase-4 deliverable. | Slice 3+ |
+| [ADR-0018 — Credit Pack Top-ups before Subscriptions](0018-credit-pack-top-ups.md) | **Accepted 2026-09-13** (pending LemonSqueezy eligibility + Finance/Legal) | Web Credit Packs 100/$10 · 300/$25 · 1,000/$75 via LemonSqueezy; net ≥ $0.033 and ≥ $0.075/credit floors; refunds claw back pro-rata; inferred chargebacks Freeze. Subscriptions next. | Top-ups slice |
 
 ## Decision graph
 
