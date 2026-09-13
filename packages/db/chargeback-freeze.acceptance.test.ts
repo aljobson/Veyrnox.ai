@@ -142,6 +142,49 @@ describe("Chargeback Freeze", { skip: !DATABASE_URL && "DATABASE_URL not set" },
         assert.deepEqual(await actions(t.userId), []);
     });
 
+    /** Signed up, pack created, then `between` runs before the pending Top-up (when "before") or before its credit (when "after"). */
+    async function topUpAround(when: "before" | "after", between: (userId: string) => Promise<void>) {
+        const authId = `sb_${randomUUID()}`;
+        const userId = (await one(`SELECT public.signup_grant($1, $2) AS id`,
+            [authId, `${randomUUID()}@test.veyrnox.ai`])).id as string;
+        const packId = `test-${randomUUID().slice(0, 8)}`;
+        const variant = String(randomInt(1e9, 2e9));
+        await pool.query(
+            `INSERT INTO public.credit_packs (id, sales_channel, credits, price_usd_cents, variant_id, active)
+             VALUES ($1, 'web', $2, $3, $4, true)`, [packId, CREDITS, PRICE, variant]);
+        if (when === "before") await between(userId);
+        const pending = (await one(`SELECT public.create_pending_top_up($1, $2, $3, '2026-09-13', 10, 600) AS r`,
+            [authId, packId, `test-${randomUUID()}`])).r;
+        if (when === "after") await between(userId);
+        const order = String(randomInt(1e9, 2e9));
+        const credited = (await one(`SELECT public.credit_top_up($1, $2, $3, 'USD', $4) AS r`,
+            [pending.top_up_id, order, PRICE, variant])).r;
+        assert.equal(credited.ok, true);
+        return { userId, topUpId: pending.top_up_id as string, order };
+    }
+
+    it("webhook order: a job between checkout starting and the credit, then a refund, Freezes (0066)", async () => {
+        const t = await topUpAround("after", async (userId) => {
+            assert.equal((await debit(userId, 20)).ok, true); // Free Credits, before the Top-up is credited
+        });
+        const res = await refund(t.order);
+        assert.equal(res.frozen, true);
+        assert.equal(await frozen(t.userId), true);
+        assert.deepEqual(await actions(t.userId), [{ action: "freeze", actor: "system", top_up_id: t.topUpId }]);
+        await assertInvariants(t.userId);
+    });
+
+    it("a job from before the Top-up's checkout started does not count as generated (0066)", async () => {
+        const t = await topUpAround("before", async (userId) => {
+            assert.equal((await debit(userId, 20)).ok, true);
+        });
+        const res = await refund(t.order);
+        assert.equal(res.frozen, false);
+        assert.equal(await frozen(t.userId), false);
+        assert.deepEqual(await actions(t.userId), []);
+        await assertInvariants(t.userId);
+    });
+
     it("a job that ended in a Credit Refund does not count as generated", async () => {
         const t = await creditedTopUp();
         const job = await debit(t.userId, 60);
