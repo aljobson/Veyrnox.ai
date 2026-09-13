@@ -1,12 +1,16 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "veyrnox-ai",
-  "main": ".open-next/worker.js",
+  // worker.js wraps the generated .open-next/worker.js to add the Cron Trigger.
+  "main": "worker.js",
   "compatibility_date": "2026-09-01",
   "compatibility_flags": ["nodejs_compat"],
   // Keep Worker logs (console.error on provider rejects, webhook signature
   // failures) in the dashboard instead of needing a live `wrangler tail`.
   "observability": { "enabled": true },
+  // Top-up backfill (#94): GitHub Actions schedules proved unreliable, so the
+  // Worker runs POST /api/admin/top-up-backfill itself (worker.js).
+  "triggers": { "crons": ["*/5 * * * *"] },
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
