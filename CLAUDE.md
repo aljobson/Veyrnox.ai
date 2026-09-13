@@ -121,11 +121,14 @@ If a build starts failing after a dependency change, bisect these three first.
 - CSRF: same-site cookies aren't in play (we're Bearer-only), but any state-
   changing GET is forbidden. Mutations are POST/PUT/PATCH/DELETE only.
 
-## Provider webhooks (fal.ai, Stripe/Lemon, etc.)
+## Provider webhooks (fal.ai, LemonSqueezy, etc.)
 
 - Every webhook verifies a cryptographic signature. Fal is Ed25519 via JWKS
-  (see `packages/adapters/fal.js#verifyWebhookSignature`). Stripe is HMAC with
-  replay window <=5 min. Missing/invalid signature -> 401, never 200.
+  (see `packages/adapters/fal.js#verifyWebhookSignature`). LemonSqueezy is
+  HMAC-SHA256 over the raw body (`packages/adapters/lemonsqueezy.js`); it sends
+  no timestamp, so there is no replay window (ADR-0018). Replays are harmless
+  instead: the order is re-fetched from the API and `webhook_events` dedupes.
+  Missing/invalid signature -> 401, never 200.
 - Every webhook is idempotent via `webhook_events(source, external_id)`.
   Duplicate -> early return, no side effects.
 - Webhook handlers must not trust the payload's `user_id`. Look the job up
