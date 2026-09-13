@@ -16,7 +16,7 @@
  *
  * A replayed key returns the same Top-up and gets a fresh checkout for it.
  * ponytail: the earlier checkout link stays payable until it expires, so two
- * paid orders can name one Top-up; credit_top_up (0047) credits the first and
+ * paid orders can name one Top-up; credit_top_up (0052) credits the first and
  * flags the rest for an Operator refund. Store the checkout URL on the
  * Top-up and return it on replay if that proves common.
  */

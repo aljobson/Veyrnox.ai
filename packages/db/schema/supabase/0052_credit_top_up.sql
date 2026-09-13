@@ -1,6 +1,7 @@
 -- Credit a paid Top-up exactly once (#93, ADR-0018 decision 5).
--- Applied name: 0047_credit_top_up.
--- Numbered 0047: #114 took 0042-0046 while this was being written.
+-- Applied name: 0052_credit_top_up.
+-- Numbered 0052: 0042-0046 (#114), 0047-0050 (#119, already applied in
+-- production) and 0051 (feat/activate-elevenlabs-sfx) were taken first.
 --
 -- top_ups gains    order_id        the LemonSqueezy order that paid it (unique)
 --                  credited_at
