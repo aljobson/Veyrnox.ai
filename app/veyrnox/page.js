@@ -309,7 +309,7 @@ function HeroStatement() {
     <section id="honesty" className="px-6 pt-20 pb-6 max-w-[1400px] mx-auto">
       <div className="max-w-[900px]">
         <div className="font-vx-mono text-[11px] tracking-[0.14em] text-vx-accent mb-4">THE HONESTY SIGNATURE</div>
-        <h2 className="text-[54px] md:text-[72px] font-black leading-[0.98] tracking-[-0.035em] text-balance">
+        <h2 className="text-[40px] sm:text-[54px] md:text-[72px] font-black leading-[0.98] tracking-[-0.035em] text-balance">
           EVERY GENERATION<br/>
           SHOWS ITS PRICE<br/>
           <span className="text-vx-money">BEFORE YOU SPEND.</span>
