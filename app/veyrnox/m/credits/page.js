@@ -17,7 +17,7 @@ export default function MobileCredits() {
       <div className="flex-1 overflow-y-auto p-[14px_18px_16px]">
         <div className="flex justify-between items-center mb-3">
           <span className="text-[22px] font-extrabold tracking-[-0.02em]">Credits</span>
-          <Chip tone="money">PLUS · $39/MO</Chip>
+          <Chip tone="money">NO TIERS</Chip>
         </div>
 
         <div className="rounded-2xl border border-vx-border bg-vx-panel p-5">
@@ -26,7 +26,7 @@ export default function MobileCredits() {
             823<span className="text-lg text-vx-fg-muted ml-1.5">cr</span>
           </div>
           <div className="text-[12px] text-vx-fg-body mt-3">
-            Renews <b>3 Oct</b> · 1,000 cr on the Plus plan.
+            Every account runs on the same balance. Failed jobs refund automatically.
           </div>
           <button
             onClick={() => setSheet(true)}
@@ -43,7 +43,6 @@ export default function MobileCredits() {
             { l: 'MiniMax Hailuo 02 · Sunset drift', d: -14 },
             { l: 'CCTV night · refund',              d: +15, refund: true },
             { l: 'Nano Banana · Portrait warm',      d: -3  },
-            { l: 'Plus renewal',                     d: +1000, topup: true },
           ].map((row, i) => (
             <div key={i} className="flex items-center justify-between px-4 py-2.5">
               <div className="text-[13px] truncate">{row.l}</div>
@@ -68,17 +67,23 @@ export default function MobileCredits() {
           >
             <div className="mx-auto h-1 w-10 rounded-full bg-vx-border mb-4" />
             <div className="text-[18px] font-extrabold">Top up credits</div>
-            <div className="text-[12px] text-vx-fg-muted mt-1">One-time. Credits never expire while your plan is active.</div>
+            <div className="text-[12px] text-vx-fg-muted mt-1">Purchased credits never expire. Free sign-up credits expire 90 days after they're granted.</div>
             <div className="mt-4 flex flex-col gap-2">
               {TOPUPS.map((t) => (
                 <button
                   key={t.cr}
-                  className="flex items-center justify-between rounded-xl border border-vx-border bg-vx-base/60 px-4 py-3 hover:border-vx-money"
+                  type="button"
+                  disabled
+                  title="Top-ups are not available yet"
+                  className="flex items-center justify-between rounded-xl border border-vx-border bg-vx-base/60 px-4 py-3 opacity-50 cursor-not-allowed"
                 >
                   <span className="font-vx-mono text-[16px] font-bold text-vx-money vx-num">+{t.cr} cr</span>
                   <span className="font-vx-mono text-[13px] font-bold">{t.price}</span>
                 </button>
               ))}
+            </div>
+            <div className="mt-3 font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-faint">
+              TOP-UPS NOT AVAILABLE YET · PRICES SHOWN ARE INDICATIVE
             </div>
             <button
               onClick={() => setSheet(false)}

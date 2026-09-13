@@ -67,3 +67,14 @@ test('every fallback model declares durations', () => {
         assert.ok(m.durations.includes(5), `${m.id} must offer the 5s unit`);
     }
 });
+
+test('audio payloads rename to the fal field and pin the billed quantity', () => {
+    const inputs = { prompt: 'rain on a tin roof', duration_seconds: 10, aspect_ratio: '16:9', seed: 7 };
+    assert.deepEqual(shapeForProvider({ provider_endpoint: 'fal-ai/elevenlabs/sound-effects/v2' }, inputs),
+        { text: 'rain on a tin roof', duration_seconds: 10 });
+    assert.deepEqual(shapeForProvider({ provider_endpoint: 'fal-ai/elevenlabs/sound-effects/v2' }, { ...inputs, duration_seconds: 5 }),
+        { text: 'rain on a tin roof', duration_seconds: 10 });
+    assert.deepEqual(shapeForProvider({ provider_endpoint: 'fal-ai/ace-step-1.5' }, inputs),
+        { prompt: 'rain on a tin roof', seed: 7, duration: 60, thinking: true, num_outputs: 1 });
+    assert.deepEqual(shapeForProvider({ provider_endpoint: 'fal-ai/inworld-tts' }, inputs), { text: 'rain on a tin roof' });
+});
