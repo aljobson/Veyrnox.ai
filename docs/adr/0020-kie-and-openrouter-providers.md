@@ -1,4 +1,4 @@
-# ADR-0018 — kie.ai and OpenRouter as generation providers
+# ADR-0020 — kie.ai and OpenRouter as generation providers
 
 - **Status**: Accepted, dormant (2026-09-12)
 - **Date**: 2026-09-12

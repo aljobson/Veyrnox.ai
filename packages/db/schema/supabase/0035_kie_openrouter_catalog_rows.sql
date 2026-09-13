@@ -1,4 +1,4 @@
--- Catalog rows for the kie.ai and OpenRouter providers (ADR-0018).
+-- Catalog rows for the kie.ai and OpenRouter providers (ADR-0020).
 -- Every row lands INACTIVE: none is sold until its endpoint has run a live
 -- generation end to end (CLAUDE.md, Money & billing).
 --
