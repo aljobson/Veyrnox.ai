@@ -1,10 +1,11 @@
 import { LegalPage, ENTITY } from '../_lib/Legal';
+import { SUPPLY_CONSENT_TEXT } from '../../../lib/supplyConsent';
 
 export const metadata = { title: 'Refund Policy — Veyrnox.ai' };
 
 export default function Refund() {
     return (
-        <LegalPage title="Refund Policy">
+        <LegalPage title="Refund Policy" updated="13 September 2026">
             <p>Veyrnox.ai is pay-per-generation. This page sets out exactly when credits come back to you.</p>
 
             <h2>Failed generations — automatic</h2>
@@ -16,12 +17,20 @@ export default function Refund() {
             <h2>Free credits</h2>
             <p>The 50 credits granted on sign-up have no cash value, are not refundable in money, and expire 90 days after they are granted if unused. Purchased credits never expire.</p>
 
-            <h2>Purchased credits</h2>
+            <h2>Buying credits</h2>
+            <p>Credit packs are sold through Stripe, which acts as merchant of record and adds any sales tax or VAT at checkout. Your receipt and card statement show Link (&ldquo;LINK.COM&rdquo;). Before checkout you tick this confirmation:</p>
+            <blockquote className="border-l-2 border-vx-border pl-4 italic">{SUPPLY_CONSENT_TEXT}</blockquote>
+
+            <h2>Refunds of purchased credits</h2>
             <ul>
-                <li>Unused purchased credits are refundable within 14 days of purchase on request, less any credits already spent.</li>
-                <li>Refunds go back to the original payment method.</li>
-                <li>If you are a UK or EU consumer, this does not limit your statutory cancellation rights.</li>
+                <li>You can ask for a refund of a credit pack within 14 days of buying it, as long as you have not generated anything since that purchase. Email <a href={`mailto:${ENTITY.email}`}>{ENTITY.email}</a> with the date of purchase. The money goes back to your original payment method.</li>
+                <li>Once you generate after buying, your right to cancel that purchase has ended, as you confirmed at checkout, and we do not refund it.</li>
+                <li>Refunds can also be issued by Link&rsquo;s customer support. Whoever issues it, a refund takes back that pack&rsquo;s credits in proportion to the money returned &mdash; half the money back removes half the pack&rsquo;s credits, rounded down &mdash; but never takes your balance below zero.</li>
+                <li>Nothing here limits your rights if the service is faulty or not as described.</li>
             </ul>
+
+            <h2>Payment reversals and card disputes</h2>
+            <p>If a purchase is refunded or reversed &mdash; for example after a card dispute &mdash; and credits have been used since that purchase, we freeze the account. While it is frozen you cannot generate or buy credits. You can still sign in, view and download your library, and delete your account. Contact <a href={`mailto:${ENTITY.email}`}>{ENTITY.email}</a> to resolve it; a named member of our team reviews every unfreeze.</p>
 
             <h2>Duplicate charges</h2>
             <p>Submissions are idempotent: the same request is never debited twice. If you believe you were double-charged, send the job reference to <a href={`mailto:${ENTITY.email}`}>{ENTITY.email}</a> and we will check the ledger.</p>
