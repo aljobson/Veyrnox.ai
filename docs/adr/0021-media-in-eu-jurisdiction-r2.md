@@ -1,6 +1,6 @@
 # ADR-0021 — Generated media moves to the EU-jurisdiction R2 bucket
 
-- **Status**: Accepted (2026-09-13). Code merged in #116. **Cut over 2026-09-13 10:44:53 UTC.** Old copies (step 7) pending owner approval.
+- **Status**: Accepted (2026-09-13). Code merged in #116. **Cut over 2026-09-13 10:44:53 UTC; old copies deleted.** Runbook complete.
 - **Date**: 2026-09-13
 - **Deciders**: Product owner
 - **Related**: [ADR-0005 §3](0005-phase-0-business-preconditions.md) (EU-only user data), [ADR-0008](0008-asset-retention-policy-and-sweep.md) (retention sweep), [ADR-0016](0016-data-residency-claim-correction.md) (residency claims and the bucket correction)
@@ -55,8 +55,9 @@ Target: EU `veyrnox-ai-media`.
 6. **Copy.** Update the Privacy Policy and GDPR page to say generated media is stored in the EU (Cloudflare R2 EU jurisdiction), and record ADR-0005 §3 as met for media.
    **Done** in this change. ADR-0005 §3 (EU-only user data) is now met for media as well as the database.
 7. **Old copies.** `veyrnox-staging-media` keeps production's pre-cutover copies and the one pre-#85 object. Deleting them is a separate, owner-approved step.
+   **Done 2026-09-13 ~11:06 UTC.** The owner deleted all 9 objects (the 8 production assets and the pre-#85 object) with `wrangler r2 object delete`. Checked afterwards: a direct `get` of each of the 9 keys in `veyrnox-staging-media` returns "The specified key does not exist", and all 8 production assets are present in `veyrnox-ai-media` (EU) at their recorded size. The bucket itself still exists and is empty; its dashboard object count lagged at 9 when checked. No production jobs had run since the cutover, so nothing was lost.
 
-Rollback before step 7: set `R2_BUCKET` back to `veyrnox-staging-media` and `wrangler secret delete R2_JURISDICTION`. Assets created after step 3 exist only in the EU bucket and would need copying back.
+Rollback before step 7: set `R2_BUCKET` back to `veyrnox-staging-media` and `wrangler secret delete R2_JURISDICTION`. Assets created after step 3 exist only in the EU bucket and would need copying back. Step 7 is done, so a rollback now also needs every asset copied back from `veyrnox-ai-media` first.
 
 ## Consequences
 

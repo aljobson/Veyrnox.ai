@@ -205,3 +205,6 @@ Production's pre-cutover copies remain in `veyrnox-staging-media`
 (default jurisdiction, `WEUR`) until their owner-approved deletion
 (ADR-0021 step 7).
 
+The owner deleted those copies later the same day (ADR-0021 step 7), so no
+generated media is held outside the EU-jurisdiction bucket.
+
