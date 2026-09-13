@@ -139,7 +139,8 @@ export const FAQ = [
   { q: 'What is Veyrnox.ai?',
     a: 'Veyrnox.ai is a credit-metered AI image, video and audio generation gateway. One balance across the whole catalog, price visible on the button, refund on failure.' },
   { q: 'Which models can I run?',
-    a: 'Nano Banana, Wan 2.5, Kling 2.6 Pro, Kling 3.0 I2V, MiniMax Hailuo 02, Seedream 4, Flux.2 [pro], Veo 3.1 (◆ premium, gated) and Veo 3.1 Fast, and ACE Step for audio. The full catalog is live on Pricing.' },
+    a: 'Image, video, audio and speech models, all on one balance. Premium models (◆) are gated. The live list, with every price, is on Pricing.',
+    link: { label: 'Pricing', href: '/veyrnox/pricing' } },
   { q: 'How do credits work?',
     a: 'Every generation names its cost on the button before you press it. Credits debit at submit. If the job fails at any point the credits return to your balance automatically.' },
   { q: 'Do I get free credits when I sign up?',
@@ -164,14 +165,14 @@ export const FAQ = [
 
 export const HERO_STATS = [
   { value: '50',    label: 'free credits on sign-up' },
-  { value: '10',    label: 'models on one balance' },
+  { value: null,    label: 'models on one balance' }, // null = live catalog count, filled in page.js
   { value: '1 cr',  label: 'cheapest generation' },
 ];
 
 export const METRIC_STRIP = [
   { value: '50',    label: 'FREE CREDITS ON SIGN-UP' },
   { value: '100%',  label: 'REFUND ON FAILURE' },
-  { value: '10',    label: 'MODELS ROUTED' },
+  { value: null,    label: 'MODELS ROUTED' }, // null = live catalog count, filled in page.js
   { value: 'APPEND-ONLY', label: 'CREDIT LEDGER' },
 ];
 
@@ -208,7 +209,7 @@ export const EFFECT_PRESETS = [
 // catalog entry so a follow-up wiring can link them by id.
 export const MORE_FEATURES = [
   { group: 'Product',   items: ['Explore', 'Models', 'Pricing', 'Presets', 'Status'] },
-  { group: 'Models',    items: ['Wan 2.5', 'Nano Banana', 'Kling 2.6 Pro', 'Kling 3.0 I2V', 'MiniMax Hailuo 02', 'Seedream 4', 'Flux.2 [pro]', 'Veo 3.1 ◆', 'Veo 3.1 Fast', 'ACE Step'] },
+  { group: 'Models',    items: [] }, // filled from the live catalog in page.js
   { group: 'Tools',     items: ['Image Generator', 'Video Generator', 'Image-to-Video', 'Audio'] },
   // Items are either a plain string (static label — page not shipped yet)
   // or { label, href } (real route). About / Contact stay static until

@@ -67,17 +67,17 @@ export default async function VeyrnoxLanding() {
     <div className="min-h-dvh">
       <PromoStrip />
       <WideNav />
-      <FeaturedHeroCards />
+      <FeaturedHeroCards modelCount={catalog.length} />
       <SignupIncentive />
-      <ProductTilesRow />
+      <ProductTilesRow modelCount={catalog.length} />
       <HeroStatement />
       <EffectsWall />
       <ModelShelf catalog={catalog} />
       <WhyVeyrnox />
       <FeatureStripsSection />
       <FAQBlock />
-      <ClosingCTA />
-      <FooterForest />
+      <ClosingCTA modelCount={catalog.length} />
+      <FooterForest catalog={catalog} />
     </div>
   );
 }
@@ -126,10 +126,10 @@ function WideNav() {
 }
 
 /* ─── Featured hero cards (5 wide, kicker + title + Open) ─── */
-function FeaturedHeroCards() {
+function FeaturedHeroCards({ modelCount }) {
   return (
     <section id="explore" className="px-6 pt-8 max-w-[1400px] mx-auto">
-      <Hero />
+      <Hero modelCount={modelCount} />
       <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
         {FEATURE_CARDS.map((f) => (
           <Link
@@ -158,7 +158,7 @@ function FeaturedHeroCards() {
 }
 
 /* ─── Hero (headline + sub + CTAs + trust row) ─── */
-function Hero() {
+function Hero({ modelCount }) {
   return (
     <div className="relative overflow-hidden">
       <div
@@ -200,7 +200,7 @@ function Hero() {
         <div className="mt-8 grid grid-cols-3 gap-8 max-w-[720px] w-full">
           {HERO_STATS.map((s) => (
             <div key={s.label} className="text-center">
-              <div className="font-vx-mono text-[24px] font-bold text-vx-accent vx-num">{s.value}</div>
+              <div className="font-vx-mono text-[24px] font-bold text-vx-accent vx-num">{s.value ?? modelCount}</div>
               <div className="mt-1 text-xs text-vx-fg-muted">{s.label}</div>
             </div>
           ))}
@@ -254,13 +254,13 @@ function SignupIncentive() {
 }
 
 /* ─── Product tiles (6, live catalog rows) ─── */
-function ProductTilesRow() {
+function ProductTilesRow({ modelCount }) {
   return (
     <section id="models" className="px-6 pt-16 max-w-[1400px] mx-auto">
       <div className="flex items-baseline justify-between mb-6 flex-wrap gap-2">
         <div>
           <div className="font-vx-mono text-[11px] tracking-[0.14em] text-vx-accent mb-2">EVERY MODEL. ONE BALANCE.</div>
-          <h2 className="text-3xl font-black tracking-[-0.02em]">Ten models on the shelf.</h2>
+          <h2 className="text-3xl font-black tracking-[-0.02em]">{modelCount} models on the shelf.</h2>
         </div>
         <Link href="/veyrnox/pricing" className="text-sm font-semibold text-vx-fg-muted hover:text-vx-fg">
           Full catalog →
@@ -554,7 +554,7 @@ function FAQBlock() {
 }
 
 /* ─── Closing CTA ─── */
-function ClosingCTA() {
+function ClosingCTA({ modelCount }) {
   return (
     <section className="px-6 pt-16 pb-16 max-w-[1400px] mx-auto">
       <div className="rounded-3xl border border-vx-border bg-vx-panel p-14 text-center">
@@ -577,17 +577,17 @@ function ClosingCTA() {
           </Link>
         </div>
       </div>
-      <MetricStripBlock />
+      <MetricStripBlock modelCount={modelCount} />
     </section>
   );
 }
 
-function MetricStripBlock() {
+function MetricStripBlock({ modelCount }) {
   return (
     <div className="mt-8 rounded-3xl border border-vx-border bg-vx-panel grid grid-cols-2 md:grid-cols-4 divide-x divide-y md:divide-y-0 divide-vx-border/60">
       {METRIC_STRIP.map((m) => (
         <div key={m.label} className="p-6 md:p-8 text-center">
-          <div className="font-vx-mono text-[32px] md:text-[40px] font-bold text-vx-accent vx-num leading-none">{m.value}</div>
+          <div className="font-vx-mono text-[32px] md:text-[40px] font-bold text-vx-accent vx-num leading-none">{m.value ?? modelCount}</div>
           <div className="mt-3 font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">{m.label}</div>
         </div>
       ))}
@@ -596,7 +596,10 @@ function MetricStripBlock() {
 }
 
 /* ─── Footer forest ─── */
-function FooterForest() {
+function FooterForest({ catalog }) {
+  const columns = MORE_FEATURES.map((col) =>
+    col.group === 'Models' ? { ...col, items: catalog.map((m) => shelfName(m.name) + (m.premium ? ' ◆' : '')) } : col,
+  );
   return (
     <footer className="border-t border-vx-border">
       <div className="max-w-[1400px] mx-auto px-6 py-14">
@@ -605,7 +608,7 @@ function FooterForest() {
             <Logo size={28} wordmark />
             <p className="mt-4 text-sm text-vx-fg-body max-w-[320px] leading-[1.6]">{FOOTER_TAGLINE}</p>
           </div>
-          {MORE_FEATURES.map((col) => (
+          {columns.map((col) => (
             <div key={col.group}>
               <div className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted mb-3">
                 {col.group.toUpperCase()}
