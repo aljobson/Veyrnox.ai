@@ -1,5 +1,6 @@
 /**
  * POST /api/v1/top-ups — start a Top-up and get a hosted checkout URL (#92).
+ * GET  /api/v1/top-ups — the caller's Top-up history (#95), at the bottom.
  *
  *   1. middleware.js verified the JWT and set x-veyrnox-auth-id
  *   2. Validate { pack_id, idempotency_key, consent: true, consent_version }
@@ -22,7 +23,7 @@
  */
 
 import { NextResponse } from 'next/server';
-import { rpc, envConfig } from '../../../../packages/db/supabase-client.js';
+import { rpc, select, envConfig } from '../../../../packages/db/supabase-client.js';
 import { createCheckout } from '../../../../packages/adapters/lemonsqueezy.js';
 
 const PACK_ID_RE = /^[a-z0-9-]{1,32}$/;
@@ -123,4 +124,56 @@ export async function POST(req) {
         idempotent: created.idempotent === true,
         checkout_url: checkout.url,
     });
+}
+
+const HISTORY_LIMIT = 20;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+/**
+ * GET /api/v1/top-ups — the caller's own Top-up history, newest first (#95).
+ *
+ * The user row is resolved from the middleware-verified auth id and the
+ * Top-ups are filtered by that row's id, so no request input picks whose
+ * history is read.
+ *
+ * Response: { top_ups: [{ id, pack_id, credits, price_usd_cents, status, created_at }] }
+ */
+export async function GET(req) {
+    const authId = req.headers.get('x-veyrnox-auth-id');
+    if (!authId) return NextResponse.json({ error: 'not_authenticated' }, { status: 401 });
+
+    const cfg = envConfig();
+    if (!cfg.supabaseUrl || !cfg.serviceRoleKey) {
+        return NextResponse.json({ error: 'supabase_not_configured' }, { status: 503 });
+    }
+
+    let rows;
+    try {
+        const users = await select('users', { columns: 'id', filter: `auth_id=eq.${encodeURIComponent(authId)}` }, cfg);
+        const userId = Array.isArray(users) && users[0] && users[0].id;
+        // A signed-in user whose row hasn't been provisioned has no Top-ups yet.
+        if (!userId || !UUID_RE.test(userId)) return NextResponse.json({ top_ups: [] });
+        rows = await select(
+            'top_ups',
+            {
+                columns: 'id,pack_id,credits,price_usd_cents,status,created_at',
+                filter: `user_id=eq.${encodeURIComponent(userId)}&order=created_at.desc`,
+                limit: HISTORY_LIMIT,
+            },
+            cfg,
+        );
+    } catch (err) {
+        console.error('[api/v1/top-ups] history select failed:', err && err.status);
+        return NextResponse.json({ error: 'internal' }, { status: 502 });
+    }
+
+    const topUps = (Array.isArray(rows) ? rows : []).map((r) => ({
+        id: r.id,
+        pack_id: r.pack_id,
+        credits: r.credits,
+        price_usd_cents: r.price_usd_cents,
+        status: r.status,
+        created_at: r.created_at,
+    }));
+    return NextResponse.json({ top_ups: topUps });
 }
