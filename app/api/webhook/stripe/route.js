@@ -5,8 +5,11 @@
  *   2. Dedup on webhook_events(source='stripe', external_id=event.id).
  *   3. checkout.session.completed / async_payment_succeeded (paid)
  *        → purchase_fulfil (user comes from our purchases row)
- *      charge.refunded (full)       → purchase_reverse('reversal:refund')
- *      charge.dispute.closed (lost) → purchase_reverse('reversal:dispute')
+ *      charge.refunded (full or partial) → purchase_reverse('reversal:refund')
+ *        with the cumulative amount_refunded / amount, so each Top-up gives
+ *        back a proportional, rounded-down share of its credits
+ *      charge.dispute.closed (lost)      → purchase_reverse('reversal:dispute')
+ *        as a whole-charge reversal
  *   4. Mark processed. Any non-2xx makes Stripe redeliver; every RPC is
  *      idempotent, so a replay is safe.
  *
@@ -22,6 +25,8 @@ const SOURCE = 'stripe';
 const EVENT_ID_RE = /^evt_[A-Za-z0-9]{1,255}$/;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const PI_RE = /^pi_[A-Za-z0-9]{1,255}$/;
+// A lost dispute returns the whole charge: refunded / amount = 1 / 1.
+const WHOLE_CHARGE = { refunded: 1, amount: 1 };
 // A reversal whose purchase is still missing this long after the event is
 // not racing fulfilment; stop redelivery and leave the log for an operator.
 const REVERSAL_RETRY_SECONDS = 60 * 60;
@@ -78,12 +83,22 @@ async function fulfil(cfg, session) {
     return { done: false };
 }
 
-async function reverse(cfg, paymentIntent, reason, eventCreated) {
+async function reverse(cfg, paymentIntent, reason, eventCreated, share) {
     if (typeof paymentIntent !== 'string' || !PI_RE.test(paymentIntent)) {
         console.error('[stripe-webhook] reversal without payment intent', reason);
         return { done: true, warn: 'no_payment_intent' };
     }
-    const res = await rpc('purchase_reverse', { p_payment_intent: paymentIntent, p_reason: reason }, cfg);
+    if (!Number.isSafeInteger(share.refunded) || !Number.isSafeInteger(share.amount)
+        || share.amount <= 0 || share.refunded < 0 || share.refunded > share.amount) {
+        console.error('[stripe-webhook] reversal with invalid amounts', paymentIntent, share.refunded, share.amount);
+        return { done: true, warn: 'invalid_amount' };
+    }
+    const res = await rpc('purchase_reverse', {
+        p_payment_intent: paymentIntent,
+        p_reason: reason,
+        p_amount_refunded: share.refunded,
+        p_amount: share.amount,
+    }, cfg);
     if (!res || res.ok !== true) {
         console.error('[stripe-webhook] purchase_reverse rejected', paymentIntent, res && res.code);
         // PURCHASE_NOT_FOUND may be a refund racing ahead of fulfilment:
@@ -162,11 +177,11 @@ export async function POST(req) {
                 result = await fulfil(cfg, object);
                 break;
             case 'charge.refunded':
-                if (object.refunded === true) result = await reverse(cfg, object.payment_intent, 'reversal:refund', event.created);
-                else console.warn('[stripe-webhook] partial refund, credits kept', object.payment_intent);
+                result = await reverse(cfg, object.payment_intent, 'reversal:refund', event.created,
+                    { refunded: object.amount_refunded, amount: object.amount });
                 break;
             case 'charge.dispute.closed':
-                if (object.status === 'lost') result = await reverse(cfg, object.payment_intent, 'reversal:dispute', event.created);
+                if (object.status === 'lost') result = await reverse(cfg, object.payment_intent, 'reversal:dispute', event.created, WHOLE_CHARGE);
                 break;
             default:
                 break;
