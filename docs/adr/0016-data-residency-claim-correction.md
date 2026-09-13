@@ -100,3 +100,18 @@ byte-identical model catalog. The wallet-product objects that also sit in the
 `us-east-2` database (`events`, `funnel_dropoff_alert_log`, `track_event`,
 `check_funnel_dropoff_alerts` and an hourly cron) were deliberately not carried
 over. The runtime cutover has not happened yet.
+
+## Update (2026-09-13): database cutover done, copy restored
+
+Production cut over to `veyrnox-ai-production-eu` (`xdxdzmsztyzbnzeforxx`,
+`eu-central-1`) in #85. The live site's CSP `connect-src` names only that
+project, and `wrangler.jsonc` points the Worker at it.
+
+The Privacy Policy and GDPR page now say the database is hosted in the European
+Union (Frankfurt, Germany). They still claim no region for Cloudflare R2: the
+bucket's jurisdiction remains unverified (Consequence 2 above). ADR-0005 §3 is
+met for the database only.
+
+The `us-east-2` project (`yrqzwqywxfesmbvhzjgj`) is now staging. Whether it
+still holds any real user's data from before the cutover has not been checked
+here; if it does, that data should be deleted or the pages should mention it.
