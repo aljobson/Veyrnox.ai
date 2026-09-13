@@ -138,3 +138,26 @@ Cloudflare R2 in Western Europe, and claim no EU restriction. ADR-0005 §3
 (EU-only user data) is therefore met for the database but **not** for media.
 Moving media into the EU-jurisdiction bucket is tracked in its own ADR.
 
+
+## Update (2026-09-13): no customer data left in the us-east-2 project
+
+Checked `yrqzwqywxfesmbvhzjgj` (now staging) using counts and one-way email
+hashes only; no addresses, prompts or media were read.
+
+- 4 accounts, all internal or test: 1 on `@test.veyrnox.ai` (an acceptance-test
+  leftover with no login) and 3 on company domains (veyrnox.ai, veyrnox.com,
+  21stclick.co.uk). None on any other domain, none anonymous, no Apple or
+  Google sign-ins. Last job 2026-09-11.
+- None of the 4 exists in production (hashes compared), so no one was carried
+  over in the cutover.
+- Personal data about those accounts: 13 job prompts, 4 fal webhook payloads,
+  1 asset row, and 4 login sessions with IP address and user agent. Supabase
+  Storage and the wallet-product tables (`events`, `funnel_dropoff_alert_log`)
+  are empty.
+
+No real user's data from before the cutover remains, so the Privacy Policy and
+GDPR page need no mention of the `us-east-2` project.
+
+The 4 sessions were still valid logins on staging (last active 2026-09-12). All
+4 were ended and their refresh tokens revoked; the accounts themselves were
+left in place.
