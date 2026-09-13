@@ -1,17 +1,11 @@
 'use client';
-import { useState } from 'react';
+import Link from 'next/link';
 import { MobileTabs } from '../_MobileNav';
 import { Chip } from '../../_components/Chip';
 
-const TOPUPS = [
-  { cr: 300,  price: '$9'  },
-  { cr: 750,  price: '$19' },
-  { cr: 2000, price: '$49' },
-];
-
+// Top-ups are bought on the web credits page, which reads pack prices from
+// the catalog; nothing is priced here.
 export default function MobileCredits() {
-  const [sheet, setSheet] = useState(false);
-
   return (
     <div className="flex-1 flex flex-col min-h-0 relative">
       <div className="flex-1 overflow-y-auto p-[14px_18px_16px]">
@@ -28,12 +22,12 @@ export default function MobileCredits() {
           <div className="text-[12px] text-vx-fg-body mt-3">
             Every account runs on the same balance. Failed jobs refund automatically.
           </div>
-          <button
-            onClick={() => setSheet(true)}
+          <Link
+            href="/app/credits"
             className="mt-4 w-full flex justify-center items-center bg-vx-money text-vx-money-ink rounded-full py-3 text-[14px] font-extrabold"
           >
             Top up
-          </button>
+          </Link>
         </div>
 
         <div className="mt-5 font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted">RECENT</div>
@@ -56,44 +50,6 @@ export default function MobileCredits() {
         </div>
       </div>
       <MobileTabs />
-
-      {/* ============ TOP-UP BOTTOM SHEET ============ */}
-      {sheet && (
-        <div className="absolute inset-0 z-40 bg-black/60 flex items-end" onClick={() => setSheet(false)}>
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="w-full bg-vx-panel border-t border-vx-border rounded-t-3xl p-5 pb-8"
-            style={{ animation: 'vxSlideUp 280ms ease-out' }}
-          >
-            <div className="mx-auto h-1 w-10 rounded-full bg-vx-border mb-4" />
-            <div className="text-[18px] font-extrabold">Top up credits</div>
-            <div className="text-[12px] text-vx-fg-muted mt-1">Purchased credits never expire. Free sign-up credits expire 90 days after they're granted.</div>
-            <div className="mt-4 flex flex-col gap-2">
-              {TOPUPS.map((t) => (
-                <button
-                  key={t.cr}
-                  type="button"
-                  disabled
-                  title="Top-ups are not available yet"
-                  className="flex items-center justify-between rounded-xl border border-vx-border bg-vx-base/60 px-4 py-3 opacity-50 cursor-not-allowed"
-                >
-                  <span className="font-vx-mono text-[16px] font-bold text-vx-money vx-num">+{t.cr} cr</span>
-                  <span className="font-vx-mono text-[13px] font-bold">{t.price}</span>
-                </button>
-              ))}
-            </div>
-            <div className="mt-3 font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-faint">
-              TOP-UPS NOT AVAILABLE YET · PRICES SHOWN ARE INDICATIVE
-            </div>
-            <button
-              onClick={() => setSheet(false)}
-              className="mt-4 w-full text-center text-[13px] text-vx-fg-muted"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
