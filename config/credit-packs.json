@@ -1,0 +1,9 @@
+{
+  "_comment": "LemonSqueezy variant id per Credit Pack, per mode. Not secret. Prices live in migration 0041; apply with scripts/seed-credit-packs.mjs <mode>. Test ids from #91.",
+  "test": {
+    "web-100": "2120823",
+    "web-300": "2120828",
+    "web-1000": "2120831"
+  },
+  "live": {}
+}
