@@ -42,7 +42,7 @@ export default function Gallery() {
       </section>
 
       <section className="max-w-[1200px] mx-auto px-10 pb-8 flex items-baseline justify-between">
-        <h2 className="text-2xl font-black tracking-[-0.02em]">Trending this week</h2>
+        <h2 className="text-2xl font-black tracking-[-0.02em]">Presets</h2>
         <div className="font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted">
           {list.length} PRESETS · {new Set(list.map((p) => p.model)).size} MODELS · CACHED DEMOS FREE
         </div>

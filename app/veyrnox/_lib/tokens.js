@@ -49,10 +49,10 @@ export function kindOf(modality) {
 export const PRESET_CATEGORIES = ['ALL', 'CINEMATIC', 'UGC', 'VFX', 'ADS'];
 
 export const PRESETS = [
-  { id: 'cctv-night', name: 'CCTV NIGHT',   model: 'Wan 2.5',           credits: 16, category: 'CINEMATIC',  bg: 'linear-gradient(180deg,#08120b 0%,#0e3a1e 60%,#2ea258 100%)', views: '8.7k',  cached: true, badge: 'CACHED' },
-  { id: 'sunset-drift',name: 'SUNSET DRIFT', model: 'MiniMax Hailuo 02', credits: 14, category: 'CINEMATIC',  bg: 'linear-gradient(135deg,#2b1a0a 0%,#7a4a1e 60%,#f0b060 100%)', views: '9.1k',  cached: false },
-  { id: 'neon-alley', name: 'NEON ALLEY',   model: 'Kling 2.6 Pro',     credits: 22, category: 'VFX',        bg: 'linear-gradient(135deg,#1b0632 0%,#5a0e6a 55%,#e4318f 100%)', views: '5.8k',  cached: true, badge: 'CACHED' },
-  { id: 'warm-portrait',name: 'WARM PORTRAIT',model: 'Nano Banana',      credits: 3,  category: 'UGC',        bg: 'linear-gradient(160deg,#2c1a12 0%,#7a3520 60%,#c9713f 100%)', views: '2.9k' },
+  { id: 'cctv-night', name: 'CCTV NIGHT',   model: 'Wan 2.5',           credits: 16, category: 'CINEMATIC',  bg: 'linear-gradient(180deg,#08120b 0%,#0e3a1e 60%,#2ea258 100%)',  cached: true, badge: 'CACHED' },
+  { id: 'sunset-drift',name: 'SUNSET DRIFT', model: 'MiniMax Hailuo 02', credits: 14, category: 'CINEMATIC',  bg: 'linear-gradient(135deg,#2b1a0a 0%,#7a4a1e 60%,#f0b060 100%)',  cached: false },
+  { id: 'neon-alley', name: 'NEON ALLEY',   model: 'Kling 2.6 Pro',     credits: 22, category: 'VFX',        bg: 'linear-gradient(135deg,#1b0632 0%,#5a0e6a 55%,#e4318f 100%)',  cached: true, badge: 'CACHED' },
+  { id: 'warm-portrait',name: 'WARM PORTRAIT',model: 'Nano Banana',      credits: 3,  category: 'UGC',        bg: 'linear-gradient(160deg,#2c1a12 0%,#7a3520 60%,#c9713f 100%)' },
 ];
 
 export const ASPECT_RATIOS = ['16:9', '9:16', '1:1', '4:5', '21:9'];
