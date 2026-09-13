@@ -50,7 +50,7 @@ Web Top-ups are sold through **Stripe Checkout with `managed_payments[enabled]=t
 
 ## Consequences
 
-- **Receipts and statements name Link** (`LINK.COM* <descriptor>`, "Sold through Link"). Customers raise payment support with Link; Stripe may refund within 60 days on its own if an escalation goes unanswered for 48 hours. Keep the dashboard support email current. The privacy policy must name Stripe as the Merchant of Record.
+- **Receipts name Onelink, Stripe's buyer-facing service, and card statements show `LINK.COM* <descriptor>`** ("Sold through Onelink"). Customers raise payment support with Onelink; Stripe may refund within 60 days on its own if an escalation goes unanswered for 48 hours. Keep the dashboard support email current. The Privacy Policy names Stripe as the Merchant of Record and links Stripe's and Onelink's privacy policies.
 - **Stripe can refund without us**, which is why every `charge.refunded` claws back regardless of who issued it (ADR-0018 decision 7).
 - **Clawback follows Stripe's cumulative refunded amount.** A purchase keeps `refunded_credits` (share owed back, rounded down) and `reversed_credits` (actually taken). A replay or a late, older event has a target at or below the recorded one and does nothing. When the credits were already spent the shortfall is logged and not chased on later refunds, because later balance belongs to other Top-ups.
 - **The Freeze trigger is inferred from our own ledger, not from Stripe's dispute state**, as ADR-0018 decided: an Operator refund issued under the 14-days-nothing-generated rule never Freezes. Stripe's `charge.dispute.created` is not used; an open dispute changes nothing until it is lost.
