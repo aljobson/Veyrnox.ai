@@ -62,7 +62,11 @@ list includes "services of any kind" and says nothing about AI generation.
    14 days and only if nothing was generated since that Top-up. Every
    `order_refunded` event, whoever issued it, claws back a proportional share of
    that Top-up's Pack Credits, rounded down and never taking the balance below
-   zero. Refund events dedupe on order id plus refunded amount.
+   zero. Refund events dedupe on order id plus refunded amount. The share is
+   the refunded amount over the order total, tax included, since that is what
+   LemonSqueezy's `refunded_amount` is measured against. A clawback takes Pack
+   Credits only, never Free Credits (ADR-0013), and a shortfall is not collected
+   later from the user's other Top-ups (#96).
 8. **Chargebacks are inferred.** A refund arriving after credits were spent since
    that Top-up Freezes the account: generating and buying are blocked; sign-in,
    library, downloads and deletion still work. Only an Operator unfreezes, through
