@@ -49,10 +49,10 @@ export function kindOf(modality) {
 export const PRESET_CATEGORIES = ['ALL', 'CINEMATIC', 'UGC', 'VFX', 'ADS'];
 
 export const PRESETS = [
-  { id: 'cctv-night', name: 'CCTV NIGHT',   model: 'Wan 2.5',           credits: 16, category: 'CINEMATIC',  bg: 'linear-gradient(180deg,#08120b 0%,#0e3a1e 60%,#2ea258 100%)', views: '8.7k',  cached: true, badge: 'CACHED' },
-  { id: 'sunset-drift',name: 'SUNSET DRIFT', model: 'MiniMax Hailuo 02', credits: 14, category: 'CINEMATIC',  bg: 'linear-gradient(135deg,#2b1a0a 0%,#7a4a1e 60%,#f0b060 100%)', views: '9.1k',  cached: false },
-  { id: 'neon-alley', name: 'NEON ALLEY',   model: 'Kling 2.6 Pro',     credits: 22, category: 'VFX',        bg: 'linear-gradient(135deg,#1b0632 0%,#5a0e6a 55%,#e4318f 100%)', views: '5.8k',  cached: true, badge: 'CACHED' },
-  { id: 'warm-portrait',name: 'WARM PORTRAIT',model: 'Nano Banana',      credits: 3,  category: 'UGC',        bg: 'linear-gradient(160deg,#2c1a12 0%,#7a3520 60%,#c9713f 100%)', views: '2.9k' },
+  { id: 'cctv-night', name: 'CCTV NIGHT',   model: 'Wan 2.5',           credits: 16, category: 'CINEMATIC',  bg: 'linear-gradient(180deg,#08120b 0%,#0e3a1e 60%,#2ea258 100%)',  cached: true, badge: 'CACHED' },
+  { id: 'sunset-drift',name: 'SUNSET DRIFT', model: 'MiniMax Hailuo 02', credits: 14, category: 'CINEMATIC',  bg: 'linear-gradient(135deg,#2b1a0a 0%,#7a4a1e 60%,#f0b060 100%)',  cached: false },
+  { id: 'neon-alley', name: 'NEON ALLEY',   model: 'Kling 2.6 Pro',     credits: 22, category: 'VFX',        bg: 'linear-gradient(135deg,#1b0632 0%,#5a0e6a 55%,#e4318f 100%)',  cached: true, badge: 'CACHED' },
+  { id: 'warm-portrait',name: 'WARM PORTRAIT',model: 'Nano Banana',      credits: 3,  category: 'UGC',        bg: 'linear-gradient(160deg,#2c1a12 0%,#7a3520 60%,#c9713f 100%)' },
 ];
 
 export const ASPECT_RATIOS = ['16:9', '9:16', '1:1', '4:5', '21:9'];
@@ -67,7 +67,6 @@ export const NAV_CATEGORIES = [
   { href: '/veyrnox/presets',   label: 'Presets' },
   { href: '/veyrnox/pricing',   label: 'Pricing' },
   { href: '/veyrnox#faq',       label: 'Docs' },
-  { href: '/veyrnox#community', label: 'Community' },
 ];
 
 // Featured hero cards — 5 wide, each opens a model or the preset gallery.
@@ -140,7 +139,8 @@ export const FAQ = [
   { q: 'What is Veyrnox.ai?',
     a: 'Veyrnox.ai is a credit-metered AI image, video and audio generation gateway. One balance across the whole catalog, price visible on the button, refund on failure.' },
   { q: 'Which models can I run?',
-    a: 'Nano Banana, Wan 2.5, Kling 2.6 Pro, Kling 3.0 I2V, MiniMax Hailuo 02, Seedream 4, Flux.2 [pro], Veo 3.1 (◆ premium, gated) and Veo 3.1 Fast, and ACE Step for audio. The full catalog is live on Pricing.' },
+    a: 'Image, video, audio and speech models, all on one balance. Premium models (◆) are gated. The live list, with every price, is on Pricing.',
+    link: { label: 'Pricing', href: '/veyrnox/pricing' } },
   { q: 'How do credits work?',
     a: 'Every generation names its cost on the button before you press it. Credits debit at submit. If the job fails at any point the credits return to your balance automatically.' },
   { q: 'Do I get free credits when I sign up?',
@@ -165,14 +165,14 @@ export const FAQ = [
 
 export const HERO_STATS = [
   { value: '50',    label: 'free credits on sign-up' },
-  { value: '10',    label: 'models on one balance' },
+  { value: null,    label: 'models on one balance' }, // null = live catalog count, filled in page.js
   { value: '1 cr',  label: 'cheapest generation' },
 ];
 
 export const METRIC_STRIP = [
   { value: '50',    label: 'FREE CREDITS ON SIGN-UP' },
   { value: '100%',  label: 'REFUND ON FAILURE' },
-  { value: '10',    label: 'MODELS ROUTED' },
+  { value: null,    label: 'MODELS ROUTED' }, // null = live catalog count, filled in page.js
   { value: 'APPEND-ONLY', label: 'CREDIT LEDGER' },
 ];
 
@@ -205,22 +205,11 @@ export const EFFECT_PRESETS = [
   { name: 'CUTOUT',           bg: 'linear-gradient(135deg,#1a1a0a 0%,#4a4a1e 55%,#c0c060 100%)' },
 ];
 
-export const CREATOR_PROJECTS = [
-  { title: 'Detour',                    handle: '@aist',            likes: 261, views: '21.7K', bg: 'linear-gradient(135deg,#0a1a2c,#3ec1e8)' },
-  { title: 'The Zero Slasher',          handle: '@zerotohero',      likes: 177, views: '17.0K', bg: 'linear-gradient(135deg,#2b0a0a,#f06060)' },
-  { title: 'Fallen Leaves',             handle: '@jacob_everett',   likes: 323, views: '72.1K', bg: 'linear-gradient(135deg,#2b1a0a,#f0b060)' },
-  { title: 'The Tortoise and the Hare', handle: '@benhamin',        likes: 239, views: '20.9K', bg: 'linear-gradient(135deg,#08120b,#2ea258)' },
-  { title: 'VARMINTS · Bodas',          handle: '@outrealproduction',likes: 226,views: '15.0K', bg: 'linear-gradient(135deg,#1b0632,#e4318f)' },
-  { title: 'APEIROPHOBIA',              handle: '@seksifratello',   likes: 216, views: '18.1K', bg: 'linear-gradient(135deg,#0e0620,#8b46e4)' },
-  { title: 'Ballast',                   handle: '@lejardinier',     likes: 98,  views: '7.3K',  bg: 'linear-gradient(160deg,#2c1a12,#c9713f)' },
-  { title: 'Azul Cobalto',              handle: '@seeyousoonx',     likes: 333, views: '143.6K',bg: 'linear-gradient(135deg,#0a2b1a,#60f0b0)' },
-];
-
 // Four-column footer forest (plus tools). Every listed model row is a real
 // catalog entry so a follow-up wiring can link them by id.
 export const MORE_FEATURES = [
-  { group: 'Product',   items: ['Explore', 'Models', 'Pricing', 'Presets', 'Status'] },
-  { group: 'Models',    items: ['Wan 2.5', 'Nano Banana', 'Kling 2.6 Pro', 'Kling 3.0 I2V', 'MiniMax Hailuo 02', 'Seedream 4', 'Flux.2 [pro]', 'Veo 3.1 ◆', 'Veo 3.1 Fast', 'ACE Step'] },
+  { group: 'Product',   items: ['Explore', 'Models', 'Pricing', 'Presets'] },
+  { group: 'Models',    items: [] }, // filled from the live catalog in page.js
   { group: 'Tools',     items: ['Image Generator', 'Video Generator', 'Image-to-Video', 'Audio'] },
   // Items are either a plain string (static label — page not shipped yet)
   // or { label, href } (real route). About / Contact stay static until

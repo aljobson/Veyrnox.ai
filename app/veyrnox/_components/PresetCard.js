@@ -22,11 +22,6 @@ export function PresetCard({ preset, size = 'md', onClick }) {
             <Chip tone="neutral" className="bg-black/45 backdrop-blur">{preset.badge}</Chip>
           </span>
         )}
-        {preset.views && (
-          <span className="absolute top-3 right-3 font-vx-mono text-[11px] font-bold text-white/85 bg-black/45 backdrop-blur rounded-full px-2.5 py-1 vx-num">
-            ▶ {preset.views}
-          </span>
-        )}
       </div>
       <div className="px-4 py-3 flex items-start justify-between gap-3">
         <div className="min-w-0">

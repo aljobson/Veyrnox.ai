@@ -44,9 +44,9 @@ export default function Explore() {
       </section>
 
       <section className="max-w-[1400px] mx-auto px-8 pt-4 pb-4 flex items-baseline justify-between">
-        <h2 className="text-xl font-black tracking-[-0.02em]">Trending this week</h2>
+        <h2 className="text-xl font-black tracking-[-0.02em]">Presets</h2>
         <div className="font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted">
-          {list.length} PRESETS · 10 MODELS · CACHED DEMOS FREE
+          {list.length} PRESETS · {new Set(list.map((p) => p.model)).size} MODELS · CACHED DEMOS FREE
         </div>
       </section>
 

@@ -7,7 +7,6 @@ import {
   FEATURE_CARDS,
   PRODUCT_TILES,
   EFFECT_PRESETS,
-  CREATOR_PROJECTS,
   MORE_FEATURES,
   HERO_STATS,
   METRIC_STRIP,
@@ -68,18 +67,17 @@ export default async function VeyrnoxLanding() {
     <div className="min-h-dvh">
       <PromoStrip />
       <WideNav />
-      <FeaturedHeroCards />
+      <FeaturedHeroCards modelCount={catalog.length} />
       <SignupIncentive />
-      <ProductTilesRow />
+      <ProductTilesRow modelCount={catalog.length} />
       <HeroStatement />
       <EffectsWall />
       <ModelShelf catalog={catalog} />
       <WhyVeyrnox />
-      <CreatorGrid />
       <FeatureStripsSection />
       <FAQBlock />
-      <ClosingCTA />
-      <FooterForest />
+      <ClosingCTA modelCount={catalog.length} />
+      <FooterForest catalog={catalog} />
     </div>
   );
 }
@@ -128,10 +126,10 @@ function WideNav() {
 }
 
 /* ─── Featured hero cards (5 wide, kicker + title + Open) ─── */
-function FeaturedHeroCards() {
+function FeaturedHeroCards({ modelCount }) {
   return (
     <section id="explore" className="px-6 pt-8 max-w-[1400px] mx-auto">
-      <Hero />
+      <Hero modelCount={modelCount} />
       <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
         {FEATURE_CARDS.map((f) => (
           <Link
@@ -160,7 +158,7 @@ function FeaturedHeroCards() {
 }
 
 /* ─── Hero (headline + sub + CTAs + trust row) ─── */
-function Hero() {
+function Hero({ modelCount }) {
   return (
     <div className="relative overflow-hidden">
       <div
@@ -202,7 +200,7 @@ function Hero() {
         <div className="mt-8 grid grid-cols-3 gap-8 max-w-[720px] w-full">
           {HERO_STATS.map((s) => (
             <div key={s.label} className="text-center">
-              <div className="font-vx-mono text-[24px] font-bold text-vx-accent vx-num">{s.value}</div>
+              <div className="font-vx-mono text-[24px] font-bold text-vx-accent vx-num">{s.value ?? modelCount}</div>
               <div className="mt-1 text-xs text-vx-fg-muted">{s.label}</div>
             </div>
           ))}
@@ -256,13 +254,13 @@ function SignupIncentive() {
 }
 
 /* ─── Product tiles (6, live catalog rows) ─── */
-function ProductTilesRow() {
+function ProductTilesRow({ modelCount }) {
   return (
     <section id="models" className="px-6 pt-16 max-w-[1400px] mx-auto">
       <div className="flex items-baseline justify-between mb-6 flex-wrap gap-2">
         <div>
           <div className="font-vx-mono text-[11px] tracking-[0.14em] text-vx-accent mb-2">EVERY MODEL. ONE BALANCE.</div>
-          <h2 className="text-3xl font-black tracking-[-0.02em]">Ten models on the shelf.</h2>
+          <h2 className="text-3xl font-black tracking-[-0.02em]">{modelCount} models on the shelf.</h2>
         </div>
         <Link href="/veyrnox/pricing" className="text-sm font-semibold text-vx-fg-muted hover:text-vx-fg">
           Full catalog →
@@ -452,7 +450,7 @@ function WhyVeyrnox() {
     <section className="px-6 pt-20 pb-6 max-w-[1400px] mx-auto">
       <div className="text-center mb-8">
         <div className="font-vx-mono text-[11px] tracking-[0.14em] text-vx-accent mb-2">WHY VEYRNOX</div>
-        <h2 className="text-3xl md:text-4xl font-black tracking-[-0.02em]">Honest math. One balance. Signed by default.</h2>
+        <h2 className="text-3xl md:text-4xl font-black tracking-[-0.02em]">Honest math. One balance. Every credit on the record.</h2>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {PILLARS.map((p) => (
@@ -462,46 +460,6 @@ function WhyVeyrnox() {
             <div className="mt-4 text-[15px] font-bold leading-snug text-balance">{p.title}</div>
             <div className="mt-2 text-[12.5px] text-vx-fg-body leading-[1.55]">{p.body}</div>
           </div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-/* ─── Creator grid ─── */
-function CreatorGrid() {
-  return (
-    <section id="community" className="px-6 pt-20 pb-8 max-w-[1400px] mx-auto">
-      <div className="flex items-baseline justify-between mb-6 flex-wrap gap-2">
-        <div>
-          <div className="font-vx-mono text-[11px] tracking-[0.14em] text-vx-accent mb-2">MADE ON VEYRNOX</div>
-          <h2 className="text-3xl font-black tracking-[-0.02em]">Watch it get made.</h2>
-        </div>
-        <Link href="/veyrnox/community" className="text-sm font-semibold text-vx-fg-muted hover:text-vx-fg">Explore all →</Link>
-      </div>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {CREATOR_PROJECTS.map((p) => (
-          <button
-            key={p.title}
-            className="text-left rounded-2xl overflow-hidden border border-vx-border bg-vx-panel hover:border-vx-accent transition-colors"
-          >
-            <div className="aspect-[4/5] relative" style={{ background: p.bg }}>
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-              <div className="absolute top-3 left-3 flex items-center gap-2">
-                <div className="w-6 h-6 rounded-full bg-black/60 border border-white/30 flex items-center justify-center font-vx-mono text-[10px] text-vx-accent">
-                  {p.handle[1]?.toUpperCase() || 'V'}
-                </div>
-                <span className="font-vx-mono text-[10px] text-white/85">{p.handle}</span>
-              </div>
-              <div className="absolute inset-x-0 bottom-0 p-3">
-                <div className="font-extrabold text-white text-sm tracking-tight">{p.title}</div>
-                <div className="mt-1 flex gap-3 font-vx-mono text-[10px] text-white/80 vx-num">
-                  <span>♥ {p.likes}</span>
-                  <span>▶ {p.views}</span>
-                </div>
-              </div>
-            </div>
-          </button>
         ))}
       </div>
     </section>
@@ -596,7 +554,7 @@ function FAQBlock() {
 }
 
 /* ─── Closing CTA ─── */
-function ClosingCTA() {
+function ClosingCTA({ modelCount }) {
   return (
     <section className="px-6 pt-16 pb-16 max-w-[1400px] mx-auto">
       <div className="rounded-3xl border border-vx-border bg-vx-panel p-14 text-center">
@@ -619,17 +577,17 @@ function ClosingCTA() {
           </Link>
         </div>
       </div>
-      <MetricStripBlock />
+      <MetricStripBlock modelCount={modelCount} />
     </section>
   );
 }
 
-function MetricStripBlock() {
+function MetricStripBlock({ modelCount }) {
   return (
     <div className="mt-8 rounded-3xl border border-vx-border bg-vx-panel grid grid-cols-2 md:grid-cols-4 divide-x divide-y md:divide-y-0 divide-vx-border/60">
       {METRIC_STRIP.map((m) => (
         <div key={m.label} className="p-6 md:p-8 text-center">
-          <div className="font-vx-mono text-[32px] md:text-[40px] font-bold text-vx-accent vx-num leading-none">{m.value}</div>
+          <div className="font-vx-mono text-[32px] md:text-[40px] font-bold text-vx-accent vx-num leading-none">{m.value ?? modelCount}</div>
           <div className="mt-3 font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">{m.label}</div>
         </div>
       ))}
@@ -638,7 +596,10 @@ function MetricStripBlock() {
 }
 
 /* ─── Footer forest ─── */
-function FooterForest() {
+function FooterForest({ catalog }) {
+  const columns = MORE_FEATURES.map((col) =>
+    col.group === 'Models' ? { ...col, items: catalog.map((m) => shelfName(m.name) + (m.premium ? ' ◆' : '')) } : col,
+  );
   return (
     <footer className="border-t border-vx-border">
       <div className="max-w-[1400px] mx-auto px-6 py-14">
@@ -647,7 +608,7 @@ function FooterForest() {
             <Logo size={28} wordmark />
             <p className="mt-4 text-sm text-vx-fg-body max-w-[320px] leading-[1.6]">{FOOTER_TAGLINE}</p>
           </div>
-          {MORE_FEATURES.map((col) => (
+          {columns.map((col) => (
             <div key={col.group}>
               <div className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted mb-3">
                 {col.group.toUpperCase()}
@@ -678,7 +639,6 @@ function FooterForest() {
           <div>{FOOTER_STAMP}</div>
           <div className="flex gap-4">
             <Link href="/veyrnox/design-system" className="hover:text-vx-fg">Design</Link>
-            <Link href="/veyrnox/app/admin" className="hover:text-vx-fg">Status</Link>
           </div>
         </div>
       </div>
