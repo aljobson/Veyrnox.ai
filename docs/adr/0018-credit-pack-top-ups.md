@@ -76,7 +76,8 @@ list includes "services of any kind" and says nothing about AI generation.
    Credits only, never Free Credits (ADR-0013), and a shortfall is not collected
    later from the user's other Top-ups (#96).
 8. **Chargebacks are inferred.** A refund arriving after credits were spent since
-   that Top-up Freezes the account: generating and buying are blocked; sign-in,
+   that Top-up was bought (its checkout started, not when it was credited, so a
+   backfilled order is judged the same as a webhook-credited one) Freezes the account: generating and buying are blocked; sign-in,
    library, downloads and deletion still work. Only an Operator unfreezes, through
    an audited function recording who and why.
 

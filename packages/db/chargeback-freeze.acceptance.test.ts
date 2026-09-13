@@ -21,6 +21,7 @@ const MIGRATIONS = [
     "0058_top_up_refund_clawback.sql",
     "0059_chargeback_freeze.sql",
     "0062_freeze_credits_taken.sql",
+    "0066_freeze_since_purchase.sql",
 ].map((f) => new URL(`./schema/supabase/${f}`, import.meta.url));
 
 const CREDITS = 300;
