@@ -13,7 +13,7 @@ Verified on 2026-09-13 (ADR-0016 update and correction):
 
 - `packages/adapters/r2.js` signs against `https://<account>.r2.cloudflarestorage.com`, so production cannot be writing to a jurisdiction-restricted bucket.
 - Production's Worker has `R2_BUCKET` = **`veyrnox-staging-media`**: default jurisdiction, location hint `WEUR`, 8 objects (43.4 MB), matching production's 8 live asset rows. A location hint is best-effort placement; only a jurisdictional restriction guarantees objects are stored and processed in the EU.
-- An empty **`veyrnox-media` in the EU jurisdiction** exists (created 2026-07-03, `EEUR`).
+- An empty **`veyrnox-media` in the EU jurisdiction** existed (created 2026-07-03, `EEUR`). It was never used and was deleted on 2026-09-13 after the cutover.
 - A separate `veyrnox-media` in the default jurisdiction (112 objects, 109 MB) is not production's live bucket. It belongs to the `veyrnox-gbp-gemini` Worker (a Google Business Profile / marketing tool), bound as `MEDIA_BUCKET` with a public `r2.dev` URL.
 - Cloudflare: a jurisdiction bucket is reachable only through `https://<account>.<jurisdiction>.r2.cloudflarestorage.com`, and a bucket-scoped R2 API token names the jurisdiction (`<account>_eu_<bucket>` vs `<account>_default_<bucket>`).
 - The browser only uses presigned URLs in `<img>`, `<video>` and links, which the CSP already allows from any `https:` host.
@@ -28,7 +28,7 @@ An earlier version of this ADR assumed production used `veyrnox-media` and plann
 
 ## Decisions needed before cutover
 
-1. **Target bucket — decided 2026-09-13: a new EU bucket, `veyrnox-ai-media`.** Chosen over the existing empty EU `veyrnox-media` because a default-jurisdiction `veyrnox-media` already serves `veyrnox-gbp-gemini`; two same-named buckets for two products invites the mistake ADR-0016 records. Created 2026-09-13 with `wrangler r2 bucket create veyrnox-ai-media --jurisdiction eu` (location `EEUR`). The empty EU `veyrnox-media` is unused.
+1. **Target bucket — decided 2026-09-13: a new EU bucket, `veyrnox-ai-media`.** Chosen over the existing empty EU `veyrnox-media` because a default-jurisdiction `veyrnox-media` already serves `veyrnox-gbp-gemini`; two same-named buckets for two products invites the mistake ADR-0016 records. Created 2026-09-13 with `wrangler r2 bucket create veyrnox-ai-media --jurisdiction eu` (location `EEUR`). The empty EU `veyrnox-media` was deleted on 2026-09-13 (`wrangler r2 bucket delete veyrnox-media --jurisdiction eu`), after checking that the only R2 binding in the account, `veyrnox-gbp-gemini`'s `MEDIA_BUCKET`, targets the default-jurisdiction `veyrnox-media` and that no Pages project binds R2.
 2. **Staging's bucket — answered 2026-09-13: not shared.** Checked through the Cloudflare API across every Worker in the account (secret names and bindings only, no secret values):
    - Only `veyrnox-ai` has R2 credentials (`R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`). `wrangler.jsonc` defines no staging environment, and no other Worker has R2 credentials or a binding to `veyrnox-staging-media` (`veyrnox-staging-staging` has no configuration; the rest belong to other products).
    - The staging database's one asset (created 2026-09-11, before the #85 database cutover) is in `veyrnox-staging-media` at its recorded size: `veyrnox-ai` wrote it while it still used the us-east-2 database.
