@@ -7,7 +7,6 @@ import {
   FEATURE_CARDS,
   PRODUCT_TILES,
   EFFECT_PRESETS,
-  CREATOR_PROJECTS,
   MORE_FEATURES,
   HERO_STATS,
   METRIC_STRIP,
@@ -75,7 +74,6 @@ export default async function VeyrnoxLanding() {
       <EffectsWall />
       <ModelShelf catalog={catalog} />
       <WhyVeyrnox />
-      <CreatorGrid />
       <FeatureStripsSection />
       <FAQBlock />
       <ClosingCTA />
@@ -462,46 +460,6 @@ function WhyVeyrnox() {
             <div className="mt-4 text-[15px] font-bold leading-snug text-balance">{p.title}</div>
             <div className="mt-2 text-[12.5px] text-vx-fg-body leading-[1.55]">{p.body}</div>
           </div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-/* ─── Creator grid ─── */
-function CreatorGrid() {
-  return (
-    <section id="community" className="px-6 pt-20 pb-8 max-w-[1400px] mx-auto">
-      <div className="flex items-baseline justify-between mb-6 flex-wrap gap-2">
-        <div>
-          <div className="font-vx-mono text-[11px] tracking-[0.14em] text-vx-accent mb-2">MADE ON VEYRNOX</div>
-          <h2 className="text-3xl font-black tracking-[-0.02em]">Watch it get made.</h2>
-        </div>
-        <Link href="/veyrnox/presets" className="text-sm font-semibold text-vx-fg-muted hover:text-vx-fg">Explore all →</Link>
-      </div>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {CREATOR_PROJECTS.map((p) => (
-          <button
-            key={p.title}
-            className="text-left rounded-2xl overflow-hidden border border-vx-border bg-vx-panel hover:border-vx-accent transition-colors"
-          >
-            <div className="aspect-[4/5] relative" style={{ background: p.bg }}>
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-              <div className="absolute top-3 left-3 flex items-center gap-2">
-                <div className="w-6 h-6 rounded-full bg-black/60 border border-white/30 flex items-center justify-center font-vx-mono text-[10px] text-vx-accent">
-                  {p.handle[1]?.toUpperCase() || 'V'}
-                </div>
-                <span className="font-vx-mono text-[10px] text-white/85">{p.handle}</span>
-              </div>
-              <div className="absolute inset-x-0 bottom-0 p-3">
-                <div className="font-extrabold text-white text-sm tracking-tight">{p.title}</div>
-                <div className="mt-1 flex gap-3 font-vx-mono text-[10px] text-white/80 vx-num">
-                  <span>♥ {p.likes}</span>
-                  <span>▶ {p.views}</span>
-                </div>
-              </div>
-            </div>
-          </button>
         ))}
       </div>
     </section>
