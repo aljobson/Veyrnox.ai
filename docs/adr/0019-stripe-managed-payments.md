@@ -34,13 +34,13 @@ Web Top-ups are sold through **Stripe Checkout with `managed_payments[enabled]=t
 | 4. Pricing floors enforced when a price is set | **Not yet.** Recheck the net floor against Stripe Managed Payments fees before setting live prices |
 | 5. Pending Top-up + signed webhook + dedupe + grant to row's user | Done. Order re-fetch replaced by Stripe's timestamped signature; no backfill job yet |
 | 5. Sales Channel recorded on every grant | **Not yet** (web is the only channel) |
-| 6. Supply Consent stored on the pending Top-up | **Not yet** — required before live mode |
+| 6. Supply Consent stored on the pending Top-up | Done (0036): the buy dialog requires the checkbox; `purchase_create` records `supply_consent_version` and a server `supply_consent_at`; the checkout route only accepts the current version from `lib/supplyConsent.js`. Wording is `supply-consent-2026-09-13-draft` until Finance/Legal approve it |
 | 7. Top-up Refunds claw back a proportional share | **Partly.** A full refund takes back the pack's credits, capped at the balance; partial refunds are logged, not clawed back |
 | 8. Chargebacks Freeze the account | **Not yet.** A lost dispute (`charge.dispute.closed`, `lost`) takes back the pack's credits, capped at the balance; no Freeze |
 
 ## Flow
 
-1. `POST /api/v1/checkout {pack_id, idempotency_key}` → `purchase_create` inserts a `PENDING` purchase (idempotent on `(user_id, idempotency_key)`, at most 5 per user per 10 minutes) → Checkout Session with `Idempotency-Key: checkout-<purchase.id>` → client redirects.
+1. `POST /api/v1/checkout {pack_id, idempotency_key, supply_consent_version}` → `purchase_create` inserts a `PENDING` purchase with the consent version and time (idempotent on `(user_id, idempotency_key)`, at most 5 per user per 10 minutes) → Checkout Session with `Idempotency-Key: checkout-<purchase.id>` → client redirects.
 2. `POST /api/webhook/stripe` verifies `Stripe-Signature`, dedupes on `webhook_events('stripe', event.id)`, then:
    - `checkout.session.completed` / `checkout.session.async_payment_succeeded` with `payment_status = 'paid'` → `purchase_fulfil` grants via `ledger_grant`.
    - `charge.refunded` with `refunded = true` → `purchase_reverse('reversal:refund')`.
@@ -60,7 +60,8 @@ Web Top-ups are sold through **Stripe Checkout with `managed_payments[enabled]=t
 
 ## Before live mode
 
-- Supply Consent (ADR-0018 decision 6), proportional refunds (7) and Freeze (8).
+- Finance/Legal approve the Supply Consent wording; publish it under a version without `-draft`.
+- Proportional refunds (ADR-0018 decision 7) and Freeze (8).
 - Pricing floors rechecked with Stripe Managed Payments fees.
 - Stripe account business description matches the product: AI image/video/voice generation sold as prepaid credits.
 - Managed Payments enabled after Stripe's eligibility review and terms acceptance.

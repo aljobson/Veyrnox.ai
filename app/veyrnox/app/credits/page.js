@@ -1,10 +1,12 @@
 'use client';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppNav } from '../../_components/NavBar';
 import { Chip } from '../../_components/Chip';
+import { Button } from '../../_components/Button';
 import { gatewayFetch, GatewayError } from '../../_lib/gateway';
 import { readJobHistory } from '../../_lib/jobHistory';
 import { MODELS } from '../../_lib/tokens';
+import { SUPPLY_CONSENT_TEXT, SUPPLY_CONSENT_VERSION } from '../../../../lib/supplyConsent';
 
 // Display only — credits come from credit_packs, the charge from the Stripe
 // Price (ADR-0019). Keep the labels in step with the Stripe dashboard.
@@ -35,6 +37,17 @@ export default function Credits() {
   const [billing, setBilling] = useState(false);
   const [buying, setBuying] = useState(null);
   const [checkout, setCheckout] = useState(null);
+  const [pack, setPack] = useState(null);
+  const [consented, setConsented] = useState(false);
+  const dialogRef = useRef(null);
+
+  // Consent is per Top-up: every opening starts unticked.
+  const openBuy = useCallback((t) => {
+    setPack(t);
+    setConsented(false);
+    setCheckout(null);
+    dialogRef.current?.showModal();
+  }, []);
 
   useEffect(() => {
     setBilling(billingEnabled());
@@ -48,11 +61,16 @@ export default function Credits() {
     try {
       const { url } = await gatewayFetch('/checkout', {
         method: 'POST',
-        body: JSON.stringify({ pack_id: packId, idempotency_key: crypto.randomUUID() }),
+        body: JSON.stringify({
+          pack_id: packId,
+          idempotency_key: crypto.randomUUID(),
+          supply_consent_version: SUPPLY_CONSENT_VERSION,
+        }),
       });
       if (typeof url !== 'string' || !url.startsWith(CHECKOUT_ORIGIN)) throw new Error('bad checkout url');
       window.location.assign(url);
     } catch (e) {
+      dialogRef.current?.close();
       // 401: the auth gate is already prompting sign-in.
       if (!(e instanceof GatewayError && e.status === 401)) {
         setCheckout(e instanceof GatewayError && e.status === 429 ? 'rate_limited' : 'failed');
@@ -135,7 +153,7 @@ export default function Credits() {
                   key={t.c}
                   type="button"
                   disabled={!billing || buying !== null}
-                  onClick={() => buy(t.id)}
+                  onClick={() => openBuy(t)}
                   title={billing ? `Buy ${t.c} credits` : 'Top-ups are not available yet'}
                   className={`flex flex-col items-start rounded-xl border border-vx-border bg-vx-base/60 px-4 py-3 ${billing ? 'hover:border-vx-money/60 disabled:opacity-50 disabled:cursor-wait' : 'opacity-50 cursor-not-allowed'}`}
                 >
@@ -167,6 +185,49 @@ export default function Credits() {
           </div>
         </div>
       </section>
+
+      <dialog
+        ref={dialogRef}
+        aria-labelledby="buy-title"
+        onClose={() => setPack(null)}
+        className="m-auto w-[min(440px,calc(100vw-2rem))] rounded-2xl border border-vx-border bg-vx-panel p-6 text-vx-fg backdrop:bg-black/60"
+      >
+        {pack && (
+          <form
+            method="dialog"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (consented && buying === null) buy(pack.id);
+            }}
+          >
+            <div className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">TOP-UP</div>
+            <h2 id="buy-title" className="mt-1 text-2xl font-black">
+              +{new Intl.NumberFormat('en-US').format(pack.c)} cr <span className="text-vx-fg-muted font-bold">· {pack.price}</span>
+            </h2>
+            <p className="mt-2 text-sm text-vx-fg-body">One-time purchase. Tax is added at checkout.</p>
+
+            <label className="mt-5 flex items-start gap-3 rounded-xl border border-vx-border bg-vx-base/60 p-4 text-sm text-vx-fg-body cursor-pointer">
+              <input
+                type="checkbox"
+                required
+                checked={consented}
+                onChange={(e) => setConsented(e.target.checked)}
+                className="mt-0.5 h-4 w-4 shrink-0 accent-vx-money"
+              />
+              <span>{SUPPLY_CONSENT_TEXT}</span>
+            </label>
+
+            <div className="mt-6 flex justify-end gap-2">
+              <Button variant="ghost" size="sm" type="button" onClick={() => dialogRef.current?.close()}>
+                Cancel
+              </Button>
+              <Button variant="money" size="sm" type="submit" disabled={!consented || buying !== null}>
+                {buying ? 'Opening checkout…' : 'Continue to checkout'}
+              </Button>
+            </div>
+          </form>
+        )}
+      </dialog>
 
       {/* ============ RECENT GENERATIONS (client-side ledger) ============ */}
       <section className="max-w-[1200px] mx-auto px-8 pb-16">

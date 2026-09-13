@@ -2,9 +2,11 @@
  * POST /api/v1/checkout — start a Stripe Checkout for a credit pack (ADR-0019).
  *
  *   1. middleware.js verified the JWT and set x-veyrnox-auth-id
- *   2. Validate { pack_id, idempotency_key }
- *   3. purchase_create RPC — PENDING purchase row, idempotent per key,
- *      rate-limited per user, credits copied from credit_packs
+ *   2. Validate { pack_id, idempotency_key, supply_consent_version } — the
+ *      version must be the Supply Consent wording currently shown
+ *   3. purchase_create RPC — PENDING purchase row with the consent version
+ *      and time, idempotent per key, rate-limited per user, credits copied
+ *      from credit_packs
  *   4. Stripe Checkout Session (Managed Payments), idempotent per purchase
  *   5. Return { url } — the client navigates there
  *
@@ -14,6 +16,7 @@
 import { NextResponse } from 'next/server';
 import { rpc, envConfig } from '../../../../packages/db/supabase-client.js';
 import { createCheckoutSession } from '../../../../packages/adapters/stripe.js';
+import { SUPPLY_CONSENT_VERSION } from '../../../../lib/supplyConsent.js';
 
 const IDEMPOTENCY_RE = /^[A-Za-z0-9._-]{8,128}$/;
 const PACK_ID_RE = /^[a-z0-9_]{1,32}$/;
@@ -24,6 +27,7 @@ const RPC_ERRORS = {
     PACK_UNAVAILABLE: [400, 'pack_unavailable'],
     IDEMPOTENCY_KEY_REUSED: [409, 'idempotency_key_reused'],
     PURCHASE_EXPIRED: [409, 'purchase_expired'],
+    SUPPLY_CONSENT_REQUIRED: [400, 'supply_consent_required'],
     RATE_LIMITED: [429, 'rate_limited'],
 };
 
@@ -48,11 +52,16 @@ export async function POST(req) {
     if (typeof idempotencyKey !== 'string' || !IDEMPOTENCY_RE.test(idempotencyKey)) {
         return NextResponse.json({ error: 'invalid_idempotency_key' }, { status: 400 });
     }
+    // Missing, unticked, or ticked against wording we no longer show.
+    if (body.supply_consent_version !== SUPPLY_CONSENT_VERSION) {
+        return NextResponse.json({ error: 'supply_consent_required' }, { status: 400 });
+    }
 
     let purchase;
     try {
         purchase = await rpc('purchase_create', {
             p_auth_id: authId, p_pack_id: packId, p_idempotency_key: idempotencyKey,
+            p_supply_consent_version: SUPPLY_CONSENT_VERSION,
         }, cfg);
     } catch (err) {
         console.error('[checkout] purchase_create failed:', err && err.status);
