@@ -477,7 +477,7 @@ function CreatorGrid() {
           <div className="font-vx-mono text-[11px] tracking-[0.14em] text-vx-accent mb-2">MADE ON VEYRNOX</div>
           <h2 className="text-3xl font-black tracking-[-0.02em]">Watch it get made.</h2>
         </div>
-        <Link href="/veyrnox/community" className="text-sm font-semibold text-vx-fg-muted hover:text-vx-fg">Explore all →</Link>
+        <Link href="/veyrnox/presets" className="text-sm font-semibold text-vx-fg-muted hover:text-vx-fg">Explore all →</Link>
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {CREATOR_PROJECTS.map((p) => (
