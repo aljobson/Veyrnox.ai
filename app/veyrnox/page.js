@@ -64,13 +64,14 @@ async function loadCatalog() {
 
 export default async function VeyrnoxLanding() {
   const catalog = await loadCatalog();
+  const modelCount = catalog.length;
   return (
     <div className="min-h-dvh">
       <PromoStrip />
       <WideNav />
-      <FeaturedHeroCards />
+      <FeaturedHeroCards modelCount={modelCount} />
       <SignupIncentive />
-      <ProductTilesRow />
+      <ProductTilesRow modelCount={modelCount} />
       <HeroStatement />
       <EffectsWall />
       <ModelShelf catalog={catalog} />
@@ -78,7 +79,7 @@ export default async function VeyrnoxLanding() {
       <CreatorGrid />
       <FeatureStripsSection />
       <FAQBlock />
-      <ClosingCTA />
+      <ClosingCTA modelCount={modelCount} />
       <FooterForest />
     </div>
   );
@@ -128,10 +129,10 @@ function WideNav() {
 }
 
 /* ─── Featured hero cards (5 wide, kicker + title + Open) ─── */
-function FeaturedHeroCards() {
+function FeaturedHeroCards({ modelCount }) {
   return (
     <section id="explore" className="px-6 pt-8 max-w-[1400px] mx-auto">
-      <Hero />
+      <Hero modelCount={modelCount} />
       <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
         {FEATURE_CARDS.map((f) => (
           <Link
@@ -160,7 +161,7 @@ function FeaturedHeroCards() {
 }
 
 /* ─── Hero (headline + sub + CTAs + trust row) ─── */
-function Hero() {
+function Hero({ modelCount }) {
   return (
     <div className="relative overflow-hidden">
       <div
@@ -202,7 +203,7 @@ function Hero() {
         <div className="mt-8 grid grid-cols-3 gap-8 max-w-[720px] w-full">
           {HERO_STATS.map((s) => (
             <div key={s.label} className="text-center">
-              <div className="font-vx-mono text-[24px] font-bold text-vx-accent vx-num">{s.value}</div>
+              <div className="font-vx-mono text-[24px] font-bold text-vx-accent vx-num">{s.key === 'models' ? modelCount : s.value}</div>
               <div className="mt-1 text-xs text-vx-fg-muted">{s.label}</div>
             </div>
           ))}
@@ -255,20 +256,20 @@ function SignupIncentive() {
   );
 }
 
-/* ─── Product tiles (6, live catalog rows) ─── */
-function ProductTilesRow() {
+/* ─── Product tiles (5, featured catalog rows) ─── */
+function ProductTilesRow({ modelCount }) {
   return (
     <section id="models" className="px-6 pt-16 max-w-[1400px] mx-auto">
       <div className="flex items-baseline justify-between mb-6 flex-wrap gap-2">
         <div>
           <div className="font-vx-mono text-[11px] tracking-[0.14em] text-vx-accent mb-2">EVERY MODEL. ONE BALANCE.</div>
-          <h2 className="text-3xl font-black tracking-[-0.02em]">Ten models on the shelf.</h2>
+          <h2 className="text-3xl font-black tracking-[-0.02em]">{modelCount} models on the shelf.</h2>
         </div>
         <Link href="/veyrnox/pricing" className="text-sm font-semibold text-vx-fg-muted hover:text-vx-fg">
           Full catalog →
         </Link>
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
         {PRODUCT_TILES.map((p) => (
           <Link
             key={p.key}
@@ -596,7 +597,7 @@ function FAQBlock() {
 }
 
 /* ─── Closing CTA ─── */
-function ClosingCTA() {
+function ClosingCTA({ modelCount }) {
   return (
     <section className="px-6 pt-16 pb-16 max-w-[1400px] mx-auto">
       <div className="rounded-3xl border border-vx-border bg-vx-panel p-14 text-center">
@@ -619,17 +620,17 @@ function ClosingCTA() {
           </Link>
         </div>
       </div>
-      <MetricStripBlock />
+      <MetricStripBlock modelCount={modelCount} />
     </section>
   );
 }
 
-function MetricStripBlock() {
+function MetricStripBlock({ modelCount }) {
   return (
     <div className="mt-8 rounded-3xl border border-vx-border bg-vx-panel grid grid-cols-2 md:grid-cols-4 divide-x divide-y md:divide-y-0 divide-vx-border/60">
       {METRIC_STRIP.map((m) => (
         <div key={m.label} className="p-6 md:p-8 text-center">
-          <div className="font-vx-mono text-[32px] md:text-[40px] font-bold text-vx-accent vx-num leading-none">{m.value}</div>
+          <div className="font-vx-mono text-[32px] md:text-[40px] font-bold text-vx-accent vx-num leading-none">{m.key === 'models' ? modelCount : m.value}</div>
           <div className="mt-3 font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">{m.label}</div>
         </div>
       ))}

@@ -165,14 +165,14 @@ export const FAQ = [
 
 export const HERO_STATS = [
   { value: '50',    label: 'free credits on sign-up' },
-  { value: '10',    label: 'models on one balance' },
+  { key: 'models', value: '10', label: 'models on one balance' },
   { value: '1 cr',  label: 'cheapest generation' },
 ];
 
 export const METRIC_STRIP = [
   { value: '50',    label: 'FREE CREDITS ON SIGN-UP' },
   { value: '100%',  label: 'REFUND ON FAILURE' },
-  { value: '10',    label: 'MODELS ROUTED' },
+  { key: 'models', value: '10', label: 'MODELS ROUTED' },
   { value: 'APPEND-ONLY', label: 'CREDIT LEDGER' },
 ];
 
