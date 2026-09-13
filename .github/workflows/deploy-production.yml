@@ -1,0 +1,72 @@
+name: deploy-production
+
+# One production deploy at a time, newest main wins.
+#
+# Cloudflare Workers Builds ran a separate build per push to main, in
+# parallel, and whichever finished last went live, so an older commit could
+# overwrite a newer one (2026-09-13: #148 finished after #152). GitHub merge
+# queues are not available on a user-owned repository, so this workflow
+# serialises deploys instead:
+#   - the concurrency group lets one deploy run; a newer push replaces any
+#     pending one, and a running deploy is never cancelled half-way.
+#   - each run re-checks that its commit is still main's tip before deploying.
+#
+# Cutover: once CLOUDFLARE_API_TOKEN is set and a run here has deployed,
+# the Cloudflare production branch deploy command becomes
+# `npx opennextjs-cloudflare upload` so Workers Builds stops deploying.
+# Until the secret exists this job skips, and Workers Builds keeps deploying.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CLOUDFLARE_ACCOUNT_ID: fb18d9f7052afbea5a5e0eae69948af2
+      HAS_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}
+    steps:
+      - name: Skip until the deploy token is configured
+        if: env.HAS_TOKEN != 'true'
+        run: echo "::notice::CLOUDFLARE_API_TOKEN not set; Workers Builds still deploys main."
+
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        if: env.HAS_TOKEN == 'true'
+        with:
+          fetch-depth: 0
+
+      - name: Still main's tip?
+        if: env.HAS_TOKEN == 'true'
+        id: tip
+        run: |
+          git fetch --quiet origin main
+          if [ "$(git rev-parse origin/main)" != "$GITHUB_SHA" ]; then
+            echo "::notice::$GITHUB_SHA is no longer main's tip; the newer run deploys."
+            echo "stale=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        if: env.HAS_TOKEN == 'true' && steps.tip.outputs.stale != 'true'
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Build
+        if: env.HAS_TOKEN == 'true' && steps.tip.outputs.stale != 'true'
+        run: npm ci --legacy-peer-deps --no-audit --no-fund && npm run build:worker
+
+      - name: Deploy
+        if: env.HAS_TOKEN == 'true' && steps.tip.outputs.stale != 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: npx opennextjs-cloudflare deploy
