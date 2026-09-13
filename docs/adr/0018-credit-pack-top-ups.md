@@ -142,3 +142,6 @@ list includes "services of any kind" and says nothing about AI generation.
   generated since a Top-up, pending Top-ups, flagged orders, the account-action
   log) and `reconcile_top_ups()`, which the nightly reconcile fails on, are in
   migration 0065 (#98).
+  Its clawback check is per user, not per Top-up: `reverse:topup_refund` ledger
+  rows carry no Top-up id, so an over-count on one Top-up and an equal
+  under-count on another of the same user cancel out and are not reported.
