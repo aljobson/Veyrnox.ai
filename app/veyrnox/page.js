@@ -540,7 +540,7 @@ function FeatureStripsSection() {
 
 function FeatureStrip({ kicker, title, body, cta, bg, reverse = false }) {
   return (
-    <div className={`rounded-3xl border border-vx-border bg-vx-panel overflow-hidden grid grid-cols-1 lg:grid-cols-2 ${reverse ? 'lg:[&>*:first-child]:col-start-2' : ''}`}>
+    <div className={`rounded-3xl border border-vx-border bg-vx-panel overflow-hidden grid grid-cols-1 lg:grid-cols-2 ${reverse ? 'lg:grid-flow-dense lg:[&>*:first-child]:col-start-2' : ''}`}>
       <div className="p-10 lg:p-14">
         <div className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-accent mb-3">{kicker}</div>
         <h3 className="text-[30px] md:text-[34px] font-black leading-[1.05] tracking-[-0.02em] text-balance">{title}</h3>
