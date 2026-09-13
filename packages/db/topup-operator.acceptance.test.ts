@@ -3,7 +3,8 @@
  *
  * Exercises schema/supabase/0065_operator_top_up_reads.sql on top of 0037/0038
  * (Free Credits), 0041 (top_ups), 0054 (credit_top_up), 0058/0059/0062
- * (clawback, Freeze) and 0060 (backfill columns), applied twice to prove
+ * (clawback, Freeze), 0060 (backfill columns) and 0066 (Freeze window from
+ * checkout start), applied twice to prove
  * idempotency. Skipped unless DATABASE_URL is set.
  *
  * Drift is seeded inside a transaction that is rolled back, so the shared
@@ -28,6 +29,7 @@ const MIGRATIONS = [
     "0060_top_up_backfill.sql",
     "0062_freeze_credits_taken.sql",
     "0065_operator_top_up_reads.sql",
+    "0066_freeze_since_purchase.sql",
 ].map((f) => new URL(`./schema/supabase/${f}`, import.meta.url));
 
 // A 300-credit pack at $25.00 pre-tax, $30.00 total with tax.
@@ -155,7 +157,16 @@ describe("Operator Top-up reads and reconciliation", { skip: !DATABASE_URL && "D
         assert.equal((await pool.query(`SELECT * FROM public.operator_user_top_ups($1)`, [randomUUID()])).rowCount, 0);
     });
 
-    it("operator_top_up_generated_since uses the Freeze definition: a job after crediting that was not refunded", async () => {
+    it("operator_top_up_generated_since counts a job between starting checkout and crediting, like the Freeze (0066)", async () => {
+        const t = await pendingTopUp();
+        await debit(t.userId, 10);
+        await credit(t);
+        const r = (await one(`SELECT public.operator_top_up_generated_since($1) AS r`, [t.topUpId])).r;
+        assert.equal(r.generated_since, true);
+        assert.equal((await refund(t, TOTAL)).frozen, true, "the refund Freezes on the same definition");
+    });
+
+    it("operator_top_up_generated_since uses the Freeze definition: a job since checkout that was not refunded", async () => {
         const t = await credit(await pendingTopUp());
         const read = async (id: string) => (await one(`SELECT public.operator_top_up_generated_since($1) AS r`, [id])).r;
 

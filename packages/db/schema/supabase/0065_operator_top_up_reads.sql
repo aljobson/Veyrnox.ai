@@ -13,9 +13,11 @@
 --                                       clawed back, backfill state.
 -- operator_top_up_generated_since(top-up)
 --                                       whether the user generated since that
---                                       Top-up was credited, with the Freeze's
---                                       definition (0059): a job created after
---                                       credited_at that did not end REFUNDED.
+--                                       Top-up, with the Freeze's definition
+--                                       (0066): a job created after the Top-up
+--                                       (checkout start) that did not end
+--                                       REFUNDED. Answered for credited Top-ups
+--                                       only, as a refund needs one.
 -- operator_pending_top_ups(minutes, limit)
 --                                       Top-ups still pending after N minutes,
 --                                       newest first. Abandoned checkouts stay
@@ -82,7 +84,7 @@ AS $$
     ORDER BY t.created_at DESC;
 $$;
 
--- Returns {ok:true, top_up_id, user_id, credited_at, generated_since} or
+-- Returns {ok:true, top_up_id, user_id, created_at, credited_at, generated_since} or
 -- {ok:false, code} with code TOP_UP_NOT_FOUND or NOT_CREDITED.
 CREATE OR REPLACE FUNCTION public.operator_top_up_generated_since(
     p_top_up_id UUID
@@ -96,11 +98,12 @@ AS $$
         (SELECT CASE WHEN t.status <> 'credited'
                      THEN jsonb_build_object('ok', false, 'code', 'NOT_CREDITED')
                      ELSE jsonb_build_object(
-                         'ok', true, 'top_up_id', t.id, 'user_id', t.user_id, 'credited_at', t.credited_at,
+                         'ok', true, 'top_up_id', t.id, 'user_id', t.user_id,
+                         'created_at', t.created_at, 'credited_at', t.credited_at,
                          'generated_since', EXISTS (
                              SELECT 1 FROM public.jobs j
                              WHERE j.user_id = t.user_id
-                               AND j.created_at > t.credited_at
+                               AND j.created_at > t.created_at
                                AND j.state <> 'REFUNDED'))
                 END
          FROM public.top_ups t WHERE t.id = p_top_up_id),
