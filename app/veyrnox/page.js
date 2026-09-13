@@ -639,7 +639,6 @@ function FooterForest({ catalog }) {
           <div>{FOOTER_STAMP}</div>
           <div className="flex gap-4">
             <Link href="/veyrnox/design-system" className="hover:text-vx-fg">Design</Link>
-            <Link href="/veyrnox/app/admin" className="hover:text-vx-fg">Status</Link>
           </div>
         </div>
       </div>

@@ -208,7 +208,7 @@ export const EFFECT_PRESETS = [
 // Four-column footer forest (plus tools). Every listed model row is a real
 // catalog entry so a follow-up wiring can link them by id.
 export const MORE_FEATURES = [
-  { group: 'Product',   items: ['Explore', 'Models', 'Pricing', 'Presets', 'Status'] },
+  { group: 'Product',   items: ['Explore', 'Models', 'Pricing', 'Presets'] },
   { group: 'Models',    items: [] }, // filled from the live catalog in page.js
   { group: 'Tools',     items: ['Image Generator', 'Video Generator', 'Image-to-Video', 'Audio'] },
   // Items are either a plain string (static label — page not shipped yet)
