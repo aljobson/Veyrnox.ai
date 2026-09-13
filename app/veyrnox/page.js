@@ -347,9 +347,10 @@ function EffectsWall() {
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
         {EFFECT_PRESETS.map((e) => (
-          <button
+          <Link
             key={e.name}
-            className="group relative rounded-2xl overflow-hidden border border-vx-border transition-transform duration-200 hover:scale-[1.02]"
+            href="/veyrnox/presets"
+            className="group block relative rounded-2xl overflow-hidden border border-vx-border transition-transform duration-200 hover:scale-[1.02]"
             style={{ background: e.bg, aspectRatio: '1/1' }}
           >
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-90 group-hover:opacity-100" />
@@ -357,7 +358,7 @@ function EffectsWall() {
               <div className="font-black text-white text-sm tracking-tight">{e.name}</div>
               <div className="mt-1 font-vx-mono text-[9.5px] tracking-[0.1em] text-vx-accent">RECREATE →</div>
             </div>
-          </button>
+          </Link>
         ))}
       </div>
     </section>
