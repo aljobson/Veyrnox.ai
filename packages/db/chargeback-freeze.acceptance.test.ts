@@ -116,6 +116,14 @@ describe("Chargeback Freeze", { skip: !DATABASE_URL && "DATABASE_URL not set" },
         assert.equal(res.frozen, true);
         assert.equal(await frozen(t.userId), true);
         assert.deepEqual(await actions(t.userId), [{ action: "freeze", actor: "system", top_up_id: t.topUpId }]);
+        // 60 generated: 50 Free Credits then 10 Pack Credits. The full refund
+        // owes 300 but only 290 Pack Credits are left: 10 written off.
+        assert.equal(res.taken, 290);
+        assert.equal(res.shortfall, 10);
+        const logged = await one(
+            `SELECT credits_taken, credits_shortfall FROM public.account_actions WHERE user_id = $1 AND action = 'freeze'`,
+            [t.userId]);
+        assert.deepEqual(logged, { credits_taken: 290, credits_shortfall: 10 });
         await assertInvariants(t.userId);
     });
 
@@ -252,6 +260,11 @@ describe("Chargeback Freeze", { skip: !DATABASE_URL && "DATABASE_URL not set" },
             assert.deepEqual(row.proconfig, ['search_path=""'], fn);
             assert.deepEqual([row.anon, row.auth, row.svc], [false, false, true], fn);
         }
+        const internal = await one(
+            `SELECT has_function_privilege('service_role', $1::regprocedure, 'EXECUTE') AS svc,
+                    has_function_privilege('authenticated', $1::regprocedure, 'EXECUTE') AS auth`,
+            ["public.freeze_account(uuid,text,uuid,integer,integer)"]);
+        assert.deepEqual([internal.svc, internal.auth], [false, false], "freeze_account is internal");
         const rls = await one(`SELECT relrowsecurity, relforcerowsecurity FROM pg_class WHERE oid = 'public.account_actions'::regclass`);
         assert.deepEqual([rls.relrowsecurity, rls.relforcerowsecurity], [true, true]);
     });
