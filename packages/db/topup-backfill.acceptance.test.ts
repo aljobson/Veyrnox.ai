@@ -19,6 +19,7 @@ const MIGRATIONS = [
     "0041_credit_packs_and_top_ups.sql",
     "0054_credit_top_up.sql",
     "0060_top_up_backfill.sql",
+    "0064_flag_second_paid_order.sql",
 ].map((f) => new URL(`./schema/supabase/${f}`, import.meta.url));
 
 describe("Top-up backfill", { skip: !DATABASE_URL && "DATABASE_URL not set" }, () => {
@@ -85,6 +86,12 @@ describe("Top-up backfill", { skip: !DATABASE_URL && "DATABASE_URL not set" }, (
             [topUpId, order, cents, variant])).rows[0].r;
     }
 
+    async function closeReturn(topUpId: string, order: string, identifier?: string) {
+        const current = identifier ?? (await pool.query(
+            `SELECT return_order_identifier FROM public.top_ups WHERE id = $1`, [topUpId])).rows[0].return_order_identifier;
+        return (await pool.query(`SELECT public.close_top_up_return($1, $2, $3) AS r`, [topUpId, order, current])).rows[0].r;
+    }
+
     async function grants(userId: string) {
         return (await pool.query(`SELECT delta FROM ledger_entries WHERE user_id = $1 AND reason = 'grant:topup'`, [userId])).rows;
     }
@@ -135,13 +142,84 @@ describe("Top-up backfill", { skip: !DATABASE_URL && "DATABASE_URL not set" }, (
         assert.ok(!(await batch()).some((r) => r.top_up_id === t.topUpId), "a fresh return waits 10 minutes again");
     });
 
-    it("a credited Top-up ignores a later return", async () => {
+    it("a credited Top-up ignores a return of the order that credited it", async () => {
         const t = await pendingTopUp();
         const order = orderId();
         assert.equal((await credit(t.topUpId, order, t.price, t.variant)).ok, true);
-        assert.deepEqual(await recordReturn(t.authId, t.topUpId, orderId(), randomUUID()), { ok: true });
+        assert.deepEqual(await recordReturn(t.authId, t.topUpId, order, randomUUID()), { ok: true });
         const row = (await pool.query(`SELECT return_order_id FROM public.top_ups WHERE id = $1`, [t.topUpId])).rows[0];
         assert.equal(row.return_order_id, null);
+    });
+
+    // #143: a second paid order whose own webhook is lost must still be flagged.
+    it("a credited Top-up records a return of a different order, so the backfill can flag it", async () => {
+        const t = await pendingTopUp();
+        const credited = orderId();
+        const second = orderId();
+        const identifier = randomUUID();
+        assert.equal((await credit(t.topUpId, credited, t.price, t.variant)).ok, true);
+        assert.deepEqual(await recordReturn(t.authId, t.topUpId, second, identifier), { ok: true });
+        const row = (await pool.query(`SELECT status, order_id, return_order_id FROM public.top_ups WHERE id = $1`, [t.topUpId])).rows[0];
+        assert.deepEqual(row, { status: "credited", order_id: credited, return_order_id: second });
+        await age(t.topUpId, { createdMin: 60, returnedMin: 15 });
+        const due = (await batch()).find((b) => b.top_up_id === t.topUpId);
+        assert.deepEqual(due, { top_up_id: t.topUpId, order_id: second, order_identifier: identifier });
+    });
+
+    it("the returned second order is flagged once, grants nothing, and is never handed out again", async () => {
+        const t = await pendingTopUp();
+        const credited = orderId();
+        const second = orderId();
+        // Order A returned first and its webhook was lost; order B's webhook credited the Top-up.
+        await recordReturn(t.authId, t.topUpId, second, randomUUID());
+        assert.equal((await credit(t.topUpId, credited, t.price, t.variant)).ok, true);
+        await age(t.topUpId, { createdMin: 60, returnedMin: 15 });
+
+        const row = (await batch()).find((b) => b.top_up_id === t.topUpId)!;
+        assert.equal(row.order_id, second, "the return survives the Top-up being credited");
+        const res = await credit(row.top_up_id, row.order_id, t.price, t.variant);
+        assert.deepEqual(res, { ok: false, code: "ALREADY_CREDITED", flagged: true });
+        assert.deepEqual(await closeReturn(t.topUpId, second), { ok: true });
+
+        const flags = (await pool.query(`SELECT order_id, reason FROM public.top_up_flagged_orders WHERE top_up_id = $1`, [t.topUpId])).rows;
+        assert.deepEqual(flags, [{ order_id: second, reason: "already_credited" }]);
+        assert.equal((await grants(t.userId)).length, 1, "only the crediting order granted");
+        await assertBalanceInvariant(t.userId);
+
+        await pool.query(`UPDATE public.top_ups SET backfill_checked_at = NULL WHERE id = $1`, [t.topUpId]);
+        assert.ok(!(await batch()).some((b) => b.top_up_id === t.topUpId), "closed: no further LemonSqueezy call");
+    });
+
+    it("a returned order already flagged (say by its own late webhook) is not handed out", async () => {
+        const t = await pendingTopUp();
+        const credited = orderId();
+        const second = orderId();
+        assert.equal((await credit(t.topUpId, credited, t.price, t.variant)).ok, true);
+        await recordReturn(t.authId, t.topUpId, second, randomUUID());
+        await age(t.topUpId, { createdMin: 60, returnedMin: 15 });
+        assert.equal((await credit(t.topUpId, second, t.price, t.variant)).flagged, true);
+        assert.ok(!(await batch()).some((b) => b.top_up_id === t.topUpId));
+    });
+
+    it("closing a return stops the scan; a stale close is ignored and a new return reopens it", async () => {
+        const t = await pendingTopUp();
+        const order = orderId();
+        await recordReturn(t.authId, t.topUpId, order, randomUUID());
+        await age(t.topUpId, { createdMin: 60, returnedMin: 15 });
+
+        assert.deepEqual(await closeReturn(t.topUpId, orderId()), { ok: false, code: "NOT_CURRENT" }, "a close for an older return");
+        assert.deepEqual(await closeReturn(t.topUpId, order, randomUUID()), { ok: false, code: "NOT_CURRENT" },
+            "same order id, different identifier: a different return");
+        assert.ok((await batch()).some((b) => b.top_up_id === t.topUpId));
+
+        assert.deepEqual(await closeReturn(t.topUpId, order), { ok: true });
+        await pool.query(`UPDATE public.top_ups SET backfill_checked_at = NULL WHERE id = $1`, [t.topUpId]);
+        assert.ok(!(await batch()).some((b) => b.top_up_id === t.topUpId), "closed rows are skipped");
+
+        const next = orderId();
+        await recordReturn(t.authId, t.topUpId, next, randomUUID());
+        await age(t.topUpId, { createdMin: 60, returnedMin: 15 });
+        assert.ok((await batch()).some((b) => b.top_up_id === t.topUpId && b.order_id === next), "a different return reopens it");
     });
 
     it("picks pending returned Top-ups older than 10 minutes and younger than 7 days", async () => {
@@ -157,7 +235,8 @@ describe("Top-up backfill", { skip: !DATABASE_URL && "DATABASE_URL not set" }, (
         await pool.query(`UPDATE public.top_ups SET created_at = now() - interval '1 hour' WHERE id = $1`, [noReturn.topUpId]);
         await age(credited.topUpId, { createdMin: 60, returnedMin: 30 });
         const r = (await pool.query(`SELECT return_order_id FROM public.top_ups WHERE id = $1`, [credited.topUpId])).rows[0];
-        await credit(credited.topUpId, orderId(), credited.price, credited.variant);
+        // Credited by the order it returned with: nothing left to check.
+        await credit(credited.topUpId, r.return_order_id, credited.price, credited.variant);
         assert.ok(r.return_order_id);
 
         const ids = (await batch()).map((b) => b.top_up_id);
@@ -237,7 +316,8 @@ describe("Top-up backfill", { skip: !DATABASE_URL && "DATABASE_URL not set" }, (
     });
 
     it("the new functions are service_role only", async () => {
-        for (const fn of ["public.record_top_up_return(text,uuid,text,uuid)", "public.next_top_up_backfill_batch(integer)"]) {
+        for (const fn of ["public.record_top_up_return(text,uuid,text,uuid)", "public.next_top_up_backfill_batch(integer)",
+                          "public.close_top_up_return(uuid,text,uuid)"]) {
             for (const role of ["anon", "authenticated"]) {
                 const r = (await pool.query(`SELECT has_function_privilege($1, $2, 'EXECUTE') AS ok`, [role, fn])).rows[0];
                 assert.equal(r.ok, false, `${role} on ${fn}`);

@@ -122,6 +122,7 @@ function harness({ orders = {}, credit = async () => ({ ok: true, idempotent: fa
     const credited = [];
     const sleeps = [];
     const errors = [];
+    const closed = [];
     let clock = 0;
     const deps = {
         ...opts,
@@ -136,9 +137,11 @@ function harness({ orders = {}, credit = async () => ({ ok: true, idempotent: fa
             return typeof o === 'function' ? o() : o;
         },
         credit: async (args) => { credited.push(args); return credit(args); },
+        close: async (r) => { closed.push(r.order_id); return { ok: true }; },
+        // runBackfill passes the whole row: close_top_up_return matches id and identifier.
         log: (...a) => errors.push(a.join(' ')),
     };
-    return { deps, fetched, credited, sleeps, errors, advance: (ms) => { clock += ms; } };
+    return { deps, fetched, credited, sleeps, errors, closed, advance: (ms) => { clock += ms; } };
 }
 
 const ok = (o) => ({ ok: true, order: o });
@@ -232,4 +235,61 @@ test('a skipped verdict never reaches credit_top_up', async () => {
     assert.equal(h.credited.length, 0);
     assert.equal(res.skipped, 1);
     assert.equal(h.errors.length, 1);
+});
+
+// #143: a row whose check reached a final answer is closed, so the backfill
+// stops re-fetching it; anything that might still change is left open.
+test('final outcomes close the row: flagged, refused, not creditable, not found', async () => {
+    const verdicts = [{ ok: false, code: 'ALREADY_CREDITED', flagged: true }, { ok: false, code: 'ORDER_ALREADY_USED' }];
+    const h = harness({
+        orders: {
+            1: ok({ ...order(), id: '1' }),
+            2: ok({ ...order(), id: '2' }),
+            3: ok({ ...order({ identifier: '204e18a2-d755-4d4b-80c4-a6c1dcbe1c10' }), id: '3' }),
+            4: ok({ ...order({ status: 'failed' }), id: '4' }),
+            5: { ok: false, error: 'lemonsqueezy 404', transient: false },
+        },
+        credit: async () => verdicts.shift(),
+    });
+    await runBackfill(['1', '2', '3', '4', '5'].map((id) => row({ order_id: id })), h.deps);
+    assert.deepEqual(h.closed, ['1', '2', '3', '4', '5']);
+});
+
+test('the close is given the order id and identifier that were checked', async () => {
+    const h = harness({ orders: { 1234: ok(order({ status: 'failed' })) } });
+    const seen = [];
+    h.deps.close = async (r) => { seen.push(r); return { ok: true }; };
+    await runBackfill([row()], h.deps);
+    assert.deepEqual(seen, [row()]);
+});
+
+test('outcomes that may still change leave the row open, including a 401 or 403 (our key or config)', async () => {
+    const verdicts = [
+        async () => ({ ok: true, idempotent: false }),
+        async () => { throw new Error('db down'); },
+        async () => ({ ok: false, code: 'SOMETHING_NEW' }),
+    ];
+    const h = harness({
+        orders: {
+            1: ok({ ...order(), id: '1' }),
+            2: ok({ ...order(), id: '2' }),
+            3: ok({ ...order(), id: '3' }),
+            4: ok({ ...order({ status: 'pending' }), id: '4' }),
+            5: { ok: false, error: 'lemonsqueezy 503', transient: true },
+            7: { ok: false, error: 'lemonsqueezy 401', transient: false },
+            8: { ok: false, error: 'lemonsqueezy 403', transient: false },
+            6: { ok: false, error: 'lemonsqueezy 429', transient: true },
+        },
+        credit: () => verdicts.shift()(),
+    });
+    await runBackfill(['1', '2', '3', '4', '5', '7', '8', '6'].map((id) => row({ order_id: id })), h.deps);
+    assert.deepEqual(h.closed, [], 'credited rows leave the batch on their own; the rest are retried');
+});
+
+test('a failed close is logged and the run carries on', async () => {
+    const h = harness({ orders: { 1234: ok(order({ status: 'failed' })) } });
+    h.deps.close = async () => { throw new Error('rpc down'); };
+    const res = await runBackfill([row(), row()], h.deps);
+    assert.equal(res.checked, 2);
+    assert.ok(h.errors.some((e) => /close_top_up_return failed/.test(e)));
 });

@@ -25,6 +25,7 @@ const MIGRATIONS = [
     "0060_top_up_backfill.sql",
     "0062_freeze_credits_taken.sql",
     "0063_credit_top_up_with_refund.sql",
+    "0066_freeze_since_purchase.sql",
 ].map((f) => new URL(`./schema/supabase/${f}`, import.meta.url));
 const FN = "public.credit_top_up_with_refund(uuid,text,integer,text,text,bigint,bigint)";
 
@@ -143,6 +144,34 @@ describe("Backfilling a refunded order", { skip: !DATABASE_URL && "DATABASE_URL 
         // next_top_up_backfill_batch hands out pending rows only, so it is not retried.
         assert.equal(s.topUp.status, "credited");
         await assertInvariants(t.userId);
+    });
+
+    it("generating after checkout started, then a backfilled refund, Freezes the account", async () => {
+        const t = await pendingTopUp();
+        // 30 Free Credits spent while the order_created webhook is lost.
+        const job = (await pool.query(
+            `SELECT public.ledger_debit($1, $2, 30, 'debit:generation', 'test-model', '{}'::jsonb) AS r`,
+            [t.userId, randomUUID()])).rows[0].r;
+        assert.equal(job.ok, true);
+        const res = await backfill(t, TOTAL);
+        assert.equal(res.refund.frozen, true);
+        assert.equal(res.refund.taken, 300);
+        assert.equal(res.refund.shortfall, 0);
+        const frozen = (await pool.query(`SELECT frozen_at IS NOT NULL AS f FROM public.users WHERE id = $1`, [t.userId])).rows[0].f;
+        assert.equal(frozen, true);
+        const logged = (await pool.query(
+            `SELECT action, top_up_id, credits_taken, credits_shortfall FROM public.account_actions WHERE user_id = $1`,
+            [t.userId])).rows;
+        assert.deepEqual(logged, [{ action: "freeze", top_up_id: t.topUpId, credits_taken: 300, credits_shortfall: 0 }]);
+        await assertInvariants(t.userId);
+    });
+
+    it("a backfilled refund with no generation since checkout started does not Freeze", async () => {
+        const t = await pendingTopUp();
+        const res = await backfill(t, TOTAL);
+        assert.equal(res.refund.frozen, false);
+        const frozen = (await pool.query(`SELECT frozen_at IS NOT NULL AS f FROM public.users WHERE id = $1`, [t.userId])).rows[0].f;
+        assert.equal(frozen, false);
     });
 
     it("an order without a refund is just credited, with no refund call", async () => {
