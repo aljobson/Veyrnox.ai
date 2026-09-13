@@ -208,19 +208,22 @@ export const EFFECT_PRESETS = [
 // Four-column footer forest (plus tools). Every listed model row is a real
 // catalog entry so a follow-up wiring can link them by id.
 export const MORE_FEATURES = [
-  { group: 'Product',   items: ['Explore', 'Models', 'Pricing', 'Presets'] },
+  { group: 'Product',   items: [
+    { label: 'Explore', href: '/veyrnox#explore' },
+    { label: 'Models',  href: '/veyrnox#shelf' },
+    { label: 'Pricing', href: '/veyrnox/pricing' },
+    { label: 'Presets', href: '/veyrnox/presets' },
+  ] },
   { group: 'Models',    items: [] }, // filled from the live catalog in page.js
   { group: 'Tools',     items: ['Image Generator', 'Video Generator', 'Image-to-Video', 'Audio'] },
-  // Items are either a plain string (static label — page not shipped yet)
-  // or { label, href } (real route). About / Contact stay static until
-  // those pages exist.
+  // Items are either a plain string (a label, rendered muted so it does not
+  // read as a link) or { label, href } (real route).
   { group: 'Company',   items: [
-    'About',
     { label: 'Terms',              href: '/legal/terms' },
     { label: 'Privacy',            href: '/legal/privacy' },
     { label: 'GDPR & Data Rights', href: '/legal/gdpr' },
     { label: 'Refund Policy',      href: '/legal/refund' },
-    'Contact',
+    { label: 'Contact',            href: 'mailto:legal@veyrnox.com' },
   ] },
 ];
 

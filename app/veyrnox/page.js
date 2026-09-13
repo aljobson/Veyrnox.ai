@@ -625,7 +625,7 @@ function FooterForest({ catalog }) {
                           {label}
                         </Link>
                       ) : (
-                        <span className="text-[13px] text-vx-fg-body">{label}</span>
+                        <span className="text-[13px] text-vx-fg-muted">{label}</span>
                       )}
                     </li>
                   );
