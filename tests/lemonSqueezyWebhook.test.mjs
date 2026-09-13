@@ -69,6 +69,7 @@ test('normaliseOrder: returns our shape with a string Top-up id from custom data
             currency: 'USD',
             variantId: '2120828',
             refundedCents: 0,
+            totalCents: 3000,
             topUpId: TOP_UP_ID,
             testMode: true,
         },
@@ -83,6 +84,7 @@ test('normaliseOrder: pre-tax paid amount is subtotal less discount', () => {
 test('normaliseOrder: parses the cumulative refunded amount', () => {
     const res = normaliseOrder(order({ status: 'partial_refund', refunded_amount: 1250 }), { top_up_id: TOP_UP_ID }, { expectTestMode: true, expectStoreId: STORE_ID });
     assert.equal(res.order.refundedCents, 1250);
+    assert.equal(res.order.totalCents, 3000, 'the refund share is measured against the tax-inclusive total');
 });
 
 test('normaliseOrder: rejects a non-UUID or missing Top-up id', () => {
@@ -114,6 +116,8 @@ test('normaliseOrder: rejects a malformed order', () => {
     assert.equal(normaliseOrder(null, custom, { expectTestMode: true, expectStoreId: STORE_ID }).ok, false);
     assert.equal(normaliseOrder({ id: 'abc', attributes: order().attributes }, custom, { expectTestMode: true, expectStoreId: STORE_ID }).ok, false);
     assert.equal(normaliseOrder(order({ subtotal: '2500' }), custom, { expectTestMode: true, expectStoreId: STORE_ID }).ok, false);
+    assert.equal(normaliseOrder(order({ total: null }), custom, { expectTestMode: true, expectStoreId: STORE_ID }).ok, false);
+    assert.equal(normaliseOrder(order({ refunded_amount: -1 }), custom, { expectTestMode: true, expectStoreId: STORE_ID }).ok, false);
     assert.equal(normaliseOrder(order({}, { variant_id: null }), custom, { expectTestMode: true, expectStoreId: STORE_ID }).ok, false);
     assert.equal(normaliseOrder(order({ first_order_item: null }), custom, { expectTestMode: true, expectStoreId: STORE_ID }).ok, false);
 });

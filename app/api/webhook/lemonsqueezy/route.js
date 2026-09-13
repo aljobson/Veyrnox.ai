@@ -3,18 +3,21 @@
  *
  *   1. Verify X-Signature (hex HMAC-SHA256 of the raw body). Invalid -> 401
  *      plus console.error. Nothing in the body is read before this.
- *   2. Only order_created is handled here. order_refunded is recorded in
- *      webhook_events unprocessed for the clawback path (#97) to replay;
- *      every other event -> 200 ignored.
- *   3. Dedupe in webhook_events(source 'billing:lemonsqueezy',
- *      'order_created:<order id>'). Already processed -> 200.
- *   4. Re-fetch the order from the LemonSqueezy API: its status, pre-tax
- *      amount, currency, variant and test mode are the source of truth.
+ *   2. Only order_created and order_refunded are handled; every other
+ *      event -> 200 ignored.
+ *   3. Dedupe in webhook_events(source 'billing:lemonsqueezy'):
+ *      'order_created:<order id>', or for a refund
+ *      'order_refunded:<order id>:<refunded amount cents>' so each distinct
+ *      refund amount is processed once. Already processed -> 200.
+ *   4. Re-fetch the order from the LemonSqueezy API: its status, amounts,
+ *      currency, variant and test mode are the source of truth.
  *      Only the Top-up id comes from the signed body (meta.custom_data),
  *      because the API's order object has no custom data.
- *   5. credit_top_up locks the pending Top-up and grants to ITS user, once.
- *      A second paid order for a credited Top-up, or a mismatched one, is
- *      flagged for an Operator refund and never granted.
+ *   5. order_created: credit_top_up locks the pending Top-up and grants to
+ *      ITS user, once. A second paid order for a credited Top-up, or a
+ *      mismatched one, is flagged for an Operator refund and never granted.
+ *      order_refunded: apply_top_up_refund claws back the Top-up's share of
+ *      Pack Credits for the re-fetched cumulative refunded amount (#96).
  *   6. Transient LemonSqueezy or database failure -> 5xx so LemonSqueezy
  *      retries; the event row stays unprocessed.
  *
@@ -35,6 +38,7 @@ const ORDER_ID_RE = /^[0-9]{1,20}$/;
 const FLAGGED = new Set(['ALREADY_CREDITED', 'VARIANT_MISMATCH', 'AMOUNT_MISMATCH', 'CURRENCY_MISMATCH']);
 // Final refusals a redelivery cannot change.
 const REFUSED = new Set(['TOP_UP_NOT_FOUND', 'ORDER_ALREADY_USED', 'INVALID_ORDER_ID']);
+const REFUND_REFUSED = new Set(['ORDER_NOT_FOUND', 'INVALID_ORDER_ID', 'INVALID_AMOUNT']);
 
 export async function POST(req) {
     const cfg = envConfig();
@@ -77,15 +81,7 @@ export async function POST(req) {
     }
 
     try {
-        if (eventName === 'order_refunded') {
-            // ponytail: clawback is #97. Keep the event unprocessed so it is
-            // replayed then instead of lost after LemonSqueezy's 3 retries.
-            const refunded = event.data.attributes && event.data.attributes.refunded_amount;
-            const externalId = `order_refunded:${orderId}:${Number.isSafeInteger(refunded) ? refunded : 'unknown'}`;
-            await dedup(cfg, SOURCE, externalId, { event_name: eventName, order_id: orderId });
-            console.error(LOG, 'order_refunded recorded, clawback not built yet (#97):', orderId);
-            return NextResponse.json({ ok: true, deferred: true });
-        }
+        if (eventName === 'order_refunded') return await handleRefund(cfg, event, orderId, { apiKey, testMode, storeId });
 
         const externalId = `order_created:${orderId}`;
         const seen = await dedup(cfg, SOURCE, externalId, { event_name: eventName, order_id: orderId });
@@ -135,4 +131,43 @@ export async function POST(req) {
         console.error(LOG, 'processing failed:', err && (err.status ?? err.message));
         return NextResponse.json({ error: 'internal' }, { status: 500 });
     }
+}
+
+// order_refunded: dedupe on the re-fetched cumulative refunded amount, then
+// claw back that Top-up's share. The order is looked up by id, never by a
+// user named in the payload.
+async function handleRefund(cfg, event, orderId, { apiKey, testMode, storeId }) {
+    const fetched = await fetchOrder(orderId, { fetch: fetch.bind(globalThis), apiKey });
+    if (!fetched.ok) {
+        console.error(LOG, 'refunded order re-fetch failed:', orderId, fetched.error);
+        return NextResponse.json({ error: 'order_fetch_failed' }, { status: fetched.transient ? 503 : 502 });
+    }
+    const norm = normaliseOrder(fetched.order, event.meta.custom_data, { expectTestMode: testMode === 'true', expectStoreId: storeId });
+    if (!norm.ok) {
+        console.error(LOG, 'refunded order not ours:', orderId, norm.error);
+        return NextResponse.json({ ok: true, warn: 'order_not_creditable' });
+    }
+    const o = norm.order;
+
+    const externalId = `order_refunded:${orderId}:${o.refundedCents}`;
+    const seen = await dedup(cfg, SOURCE, externalId, { event_name: 'order_refunded', order_id: orderId });
+    if (seen === 'duplicate') return NextResponse.json({ ok: true, duplicate: true });
+
+    const res = await rpc('apply_top_up_refund', {
+        p_order_id: o.orderId,
+        p_refunded_cents: o.refundedCents,
+        p_total_cents: o.totalCents,
+    }, cfg);
+    if (!res || typeof res.ok !== 'boolean' || (res.ok === false && !REFUND_REFUSED.has(res.code))) {
+        console.error(LOG, 'apply_top_up_refund gave no usable verdict:', orderId, res && res.code);
+        return NextResponse.json({ error: 'internal' }, { status: 500 });
+    }
+    if (res.ok === false) {
+        console.error(LOG, 'refund not applied:', res.code, 'order', orderId);
+    } else if (res.shortfall > 0) {
+        // Credits already spent: the Chargeback path (#97) acts on this.
+        console.error(LOG, 'refund clawback short:', 'order', orderId, 'taken', res.taken, 'shortfall', res.shortfall);
+    }
+    await markProcessed(cfg, SOURCE, externalId);
+    return NextResponse.json({ ok: true });
 }

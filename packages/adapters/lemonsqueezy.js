@@ -132,7 +132,7 @@ const isCents = (n) => Number.isSafeInteger(n) && n >= 0;
  * @param {any} customData   verified webhook meta.custom_data
  * @param {{expectTestMode: boolean, expectStoreId: string}} opts
  * @returns {{ok: true, order: {orderId: string, status: string, paidCents: number, currency: string,
- *   variantId: string, refundedCents: number, topUpId: string, testMode: boolean}} | {ok: false, error: string}}
+ *   variantId: string, refundedCents: number, totalCents: number, topUpId: string, testMode: boolean}} | {ok: false, error: string}}
  */
 export function normaliseOrder(order, customData, { expectTestMode, expectStoreId }) {
     const topUpId = customData && customData.top_up_id;
@@ -143,7 +143,7 @@ export function normaliseOrder(order, customData, { expectTestMode, expectStoreI
     if (!a || !item || !NUMERIC_ID_RE.test(String(order.id))) return { ok: false, error: 'malformed order' };
     const variantId = String(item.variant_id);
     const refunded = a.refunded_amount ?? 0;
-    if (!NUMERIC_ID_RE.test(variantId) || !isCents(a.subtotal) || !isCents(a.discount_total ?? 0) || !isCents(refunded)
+    if (!NUMERIC_ID_RE.test(variantId) || !isCents(a.subtotal) || !isCents(a.discount_total ?? 0) || !isCents(refunded) || !isCents(a.total)
         || typeof a.currency !== 'string' || typeof a.status !== 'string') {
         return { ok: false, error: 'malformed order' };
     }
@@ -167,6 +167,8 @@ export function normaliseOrder(order, customData, { expectTestMode, expectStoreI
             currency: a.currency,
             variantId,
             refundedCents: refunded,
+            // Tax included: refunded_amount is measured against this.
+            totalCents: a.total,
             topUpId,
             testMode,
         },
