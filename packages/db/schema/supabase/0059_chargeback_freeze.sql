@@ -17,6 +17,10 @@
 -- account_actions     append-only log (trigger, like ledger_entries): user,
 --                     freeze / unfreeze / dispute_resolved, actor ('system' or
 --                     the Operator's name), reason, related Top-up, timestamp.
+--                     An inferred Freeze also records credits_taken and
+--                     credits_shortfall: the Pack Credits the refund took back
+--                     and the part it could not, so an Operator can see what
+--                     was written off without the Worker logs.
 -- unfreeze_account    (user, Operator name, reason): the only way out. Both
 --                     must be non-blank. It clears the marker and appends to
 --                     the log.
@@ -42,6 +46,8 @@ CREATE TABLE IF NOT EXISTS public.account_actions (
     top_up_id   UUID        NULL REFERENCES public.top_ups(id) ON DELETE RESTRICT,
     created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+ALTER TABLE public.account_actions ADD COLUMN IF NOT EXISTS credits_taken     INTEGER NULL CHECK (credits_taken >= 0);
+ALTER TABLE public.account_actions ADD COLUMN IF NOT EXISTS credits_shortfall INTEGER NULL CHECK (credits_shortfall >= 0);
 CREATE INDEX IF NOT EXISTS account_actions_user_idx ON public.account_actions (user_id, created_at);
 
 CREATE OR REPLACE FUNCTION public.account_actions_append_only()
@@ -55,7 +61,9 @@ END $$;
 
 DO $$
 BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'account_actions_no_update') THEN
+    IF NOT EXISTS (SELECT 1 FROM pg_trigger
+                   WHERE tgname = 'account_actions_no_update'
+                     AND tgrelid = 'public.account_actions'::regclass) THEN
         CREATE TRIGGER account_actions_no_update
             BEFORE UPDATE OR DELETE ON public.account_actions
             FOR EACH ROW EXECUTE FUNCTION public.account_actions_append_only();
@@ -68,11 +76,14 @@ REVOKE ALL ON TABLE public.account_actions FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.account_actions_append_only() FROM PUBLIC, anon, authenticated;
 
 -- ── freeze_account: the shared Freeze. Internal, called by definer functions.
--- The caller must hold the user's credit_balances row lock.
+-- The caller must hold the user's credit_balances row lock. p_taken and
+-- p_shortfall are set by the inferred Freeze only (NULL for a dispute).
 CREATE OR REPLACE FUNCTION public.freeze_account(
     p_user_id UUID,
     p_reason TEXT,
-    p_top_up_id UUID
+    p_top_up_id UUID,
+    p_taken INTEGER DEFAULT NULL,
+    p_shortfall INTEGER DEFAULT NULL
 ) RETURNS BOOLEAN
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -85,12 +96,14 @@ BEGIN
     IF NOT v_already THEN
         UPDATE public.users SET frozen_at = now() WHERE id = p_user_id;
     END IF;
-    INSERT INTO public.account_actions (user_id, action, actor, reason, top_up_id)
-    VALUES (p_user_id, 'freeze', 'system', p_reason, p_top_up_id);
+    INSERT INTO public.account_actions (user_id, action, actor, reason, top_up_id, credits_taken, credits_shortfall)
+    VALUES (p_user_id, 'freeze', 'system', p_reason, p_top_up_id, p_taken, p_shortfall);
     RETURN v_already;
 END $$;
 
-REVOKE ALL ON FUNCTION public.freeze_account(UUID, TEXT, UUID) FROM PUBLIC, anon, authenticated, service_role;
+-- No EXECUTE grant on purpose: apply_top_up_refund and apply_dispute_event call
+-- it through the owner's privilege, so all three must keep the same owner.
+REVOKE ALL ON FUNCTION public.freeze_account(UUID, TEXT, UUID, INTEGER, INTEGER) FROM PUBLIC, anon, authenticated, service_role;
 
 -- ── ledger_debit: 0037 body, plus the Frozen check after the replay probe ──
 CREATE OR REPLACE FUNCTION public.ledger_debit(
@@ -366,7 +379,7 @@ BEGIN
     ) THEN
         PERFORM public.freeze_account(v_top_up.user_id,
             format('Top-up Refund of %s cents on order %s after generating', p_refunded_cents, p_order_id),
-            v_top_up.id);
+            v_top_up.id, v_taken, v_owed - v_taken);
         v_frozen := true;
     END IF;
 
