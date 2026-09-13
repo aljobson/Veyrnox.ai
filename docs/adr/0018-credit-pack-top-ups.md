@@ -50,7 +50,11 @@ list includes "services of any kind" and says nothing about AI generation.
    webhook verifies the signature, re-fetches the order from the LemonSqueezy
    API, dedupes in `webhook_events`, and grants via `ledger_grant` to the pending
    row's user, never to a user named in the payload. A scheduled backfill credits
-   paid orders whose Top-up is still pending after 10 minutes.
+   paid orders whose Top-up is still pending after 10 minutes. Each Top-up is
+   credited exactly once, keyed on the Top-up row: the first paid order wins,
+   and any further paid order for it (a replayed buy request can open a second
+   checkout) or a paid order that doesn't match the pack's variant, pre-tax
+   price and USD is recorded for an Operator refund and never granted (#93).
 6. **Consent.** The buy dialog requires a ticked acknowledgement that credits are
    supplied immediately and the right to cancel ends once the user generates. It
    is stored on the pending Top-up with a timestamp and wording version.

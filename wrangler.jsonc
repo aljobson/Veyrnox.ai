@@ -16,7 +16,11 @@
     "NEXT_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_HwEQqi6FXJOmWpy5eqR9-A_Zvy8_ii1",
     // LemonSqueezy store (#91). Test and live mode share the store id; the
     // API key decides the mode. Variant ids live in public.credit_packs.
-    "LEMONSQUEEZY_STORE_ID": "473468"
+    "LEMONSQUEEZY_STORE_ID": "473468",
+    // Which orders the webhook credits (#93). "true" while the store and API
+    // key are test mode; flip to "false" with the live key at launch (#101).
+    // Anything else and /api/webhook/lemonsqueezy answers 503.
+    "LEMONSQUEEZY_TEST_MODE": "true"
   },
   // ------------------------------------------------------------------
   // Secrets (never here — `wrangler secret put <NAME>`), per ADR-0004
@@ -31,8 +35,8 @@
   //                               kie.ai submit + callback HMAC (ADR-0020)
   //   OPENROUTER_API_KEY, OPENROUTER_WEBHOOK_SECRET
   //                               OpenRouter video submit + webhook signature (ADR-0020)
-  //   LEMONSQUEEZY_API_KEY        checkout creation (packages/adapters/lemonsqueezy.js); test-mode key until launch (#101)
-  //   LEMONSQUEEZY_WEBHOOK_SECRET HMAC for /api/webhook/lemonsqueezy (#96)
+  //   LEMONSQUEEZY_API_KEY        checkout creation + order re-fetch (packages/adapters/lemonsqueezy.js); test-mode key until launch (#101)
+  //   LEMONSQUEEZY_WEBHOOK_SECRET HMAC for /api/webhook/lemonsqueezy (#93)
   //   ADMIN_REAP_TOKEN            /api/admin/reap-assets shared secret (ADR-0008)
   //   UPLOAD_PROXY_ALLOWED_HOSTS  legacy upload proxy allowlist (docs/UPLOAD_PROXY_CONFIG.md)
   //

@@ -35,7 +35,7 @@ If a build starts failing after a dependency change, bisect these three first.
   (positive delta = refund/grant, negative = debit).
 - **Balance invariant**: `credit_balances.balance = SUM(ledger_entries.delta)`
   per `user_id`. Every mutation goes through `ledger_debit` / `ledger_refund` /
-  `ledger_grant` / `signup_grant` / `expire_free_credits` RPC — never a raw
+  `ledger_grant` / `signup_grant` / `expire_free_credits` / `credit_top_up` RPC — never a raw
   `INSERT INTO ledger_entries` or a raw `UPDATE credit_balances`.
 - **Free Credits** (ADR-0013): only `grant:signup` credits are free. Every
   ledger row sets `free_delta` (the part of `delta` that moved Free Credits;
