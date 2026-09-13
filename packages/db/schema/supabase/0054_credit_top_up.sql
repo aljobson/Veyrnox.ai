@@ -1,7 +1,8 @@
 -- Credit a paid Top-up exactly once (#93, ADR-0018 decision 5).
--- Applied name: 0052_credit_top_up.
--- Numbered 0052: 0042-0046 (#114), 0047-0050 (#119, already applied in
--- production) and 0051 (feat/activate-elevenlabs-sfx) were taken first.
+-- Applied name: 0054_credit_top_up.
+-- Merged as 0052 in #120 but never applied under that name: production had
+-- already applied 0052_deactivate_seedance_webhook_signature and
+-- 0053_job_submit_rejected, so this file moved to the next free number.
 --
 -- top_ups gains    order_id        the LemonSqueezy order that paid it (unique)
 --                  credited_at

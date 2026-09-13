@@ -2,7 +2,7 @@
  * Crediting a paid Top-up — acceptance tests (#93, ADR-0018 decision 5).
  *
  * Exercises credit_top_up and read_top_up from
- * schema/supabase/0052_credit_top_up.sql, on top of 0037/0038 (ledger_grant
+ * schema/supabase/0054_credit_top_up.sql, on top of 0037/0038 (ledger_grant
  * with free_delta) and 0041 (credit_packs, top_ups), applied here twice to
  * prove idempotency. Skipped unless DATABASE_URL is set.
  */
@@ -17,7 +17,7 @@ const MIGRATIONS = [
     "0037_free_credit_expiry.sql",
     "0038_free_credit_sweep_fixes.sql",
     "0041_credit_packs_and_top_ups.sql",
-    "0052_credit_top_up.sql",
+    "0054_credit_top_up.sql",
 ].map((f) => new URL(`./schema/supabase/${f}`, import.meta.url));
 const CREDIT_FN = "public.credit_top_up(uuid,text,integer,text,text)";
 const READ_FN = "public.read_top_up(text,uuid)";
