@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { AppNav } from '../../_components/NavBar';
 import { Chip } from '../../_components/Chip';
+import { TopUpPacks } from '../../_components/TopUpPacks';
 import { gatewayFetch, GatewayError } from '../../_lib/gateway';
 import { readJobHistory } from '../../_lib/jobHistory';
 import { MODELS } from '../../_lib/tokens';
@@ -24,6 +25,13 @@ export default function Credits() {
   const [free, setFree] = useState(null);
   const [error, setError] = useState(null);
   const [ledger, setLedger] = useState([]);
+  // Live Credit Packs stay hidden until launch (#101): opt in per browser with
+  // localStorage.setItem('veyrnox_topups', '1').
+  const [topupsEnabled, setTopupsEnabled] = useState(false);
+
+  useEffect(() => {
+    try { setTopupsEnabled(localStorage.getItem('veyrnox_topups') === '1'); } catch {}
+  }, []);
 
   const load = useCallback(async () => {
     try {
@@ -100,6 +108,10 @@ export default function Credits() {
               </div>
             )}
 
+            {topupsEnabled ? (
+              // Wait for the balance call to settle so packs never load for a signed-out visitor.
+              (error === 'sign_in_required' || balance != null) && <TopUpPacks signedIn={error !== 'sign_in_required'} />
+            ) : (<>
             <div className="mt-6 flex flex-wrap gap-2">
               {TOPUPS.map((t) => (
                 <button
@@ -118,6 +130,7 @@ export default function Credits() {
             <div className="mt-3 font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-faint">
               TOP-UPS NOT AVAILABLE YET · PRICES SHOWN ARE INDICATIVE
             </div>
+            </>)}
           </div>
 
           <div className="rounded-2xl border border-vx-border bg-vx-panel p-6 flex flex-col">
