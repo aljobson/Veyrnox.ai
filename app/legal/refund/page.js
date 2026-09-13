@@ -18,8 +18,7 @@ export default function Refund() {
 
             <h2>Purchased credits</h2>
             <ul>
-                <li>Unused purchased credits are refundable within 14 days of purchase on request, less any credits already spent.</li>
-                <li>Refunds go back to the original payment method.</li>
+                <li>You can request a full refund of a credit pack within 14 days of purchase, as long as you have not generated anything since that purchase. Once you generate after buying, that purchase can no longer be refunded. Refunds go back to the original payment method, and the credits from that pack are removed from your balance.</li>
                 <li>If you are a UK or EU consumer, this does not limit your statutory cancellation rights.</li>
             </ul>
 

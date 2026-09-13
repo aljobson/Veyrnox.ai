@@ -6,10 +6,10 @@ import { useCatalog } from '../_lib/useCatalog';
 
 // Supply Consent (CONTEXT.md). Bump the version whenever the wording changes:
 // every pending Top-up stores the version its buyer agreed to.
-// Wording awaits Finance/Legal sign-off (ADR-0018 preconditions, #99).
-export const SUPPLY_CONSENT_VERSION = '2026-09-13';
+// Wording is version 1, approved by the product owner on 2026-09-13 (#99).
+export const SUPPLY_CONSENT_VERSION = 'supply-consent-v1';
 const SUPPLY_CONSENT_TEXT =
-  'Add my credits straight away. I understand that once I use any of them to generate, I lose my right to cancel this purchase.';
+  'I want my credits added to my account straight away. I understand that once I use any of these credits to generate, I lose my right to cancel this purchase.';
 
 const ERROR_COPY = {
   consent_required: 'Tick the box above to continue.',
