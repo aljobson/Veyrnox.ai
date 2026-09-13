@@ -36,7 +36,7 @@ Web Top-ups are sold through **Stripe Checkout with `managed_payments[enabled]=t
 | 5. Sales Channel recorded on every grant | **Not yet** (web is the only channel) |
 | 6. Supply Consent stored on the pending Top-up | Done (0036): the buy dialog requires the checkbox; `purchase_create` records `supply_consent_version` and a server `supply_consent_at`; the checkout route only accepts the current version from `lib/supplyConsent.js`. Wording is `supply-consent-2026-09-13-draft` until Finance/Legal approve it |
 | 7. Top-up Refunds claw back a proportional share | Done (0037): every `charge.refunded`, full or partial, moves the purchase's `refunded_credits` to floor(credits × `amount_refunded` / `amount`) and takes only the increase, never below a zero balance. Dedupe is by the cumulative refunded amount |
-| 8. Chargebacks Freeze the account | **Not yet.** A lost dispute (`charge.dispute.closed`, `lost`) takes back the pack's credits, capped at the balance; no Freeze |
+| 8. Chargebacks Freeze the account | Done (0038): a refund or lost dispute that increases a purchase's `refunded_share`, when a job that did not fail or get refunded exists after `paid_at`, inserts an `account_freezes` row. `ledger_debit` and `purchase_create` refuse Frozen accounts (`403 account_frozen`); `operator_unfreeze` (admin users only, not self, reason required) records who and why. No Operator UI or route yet |
 
 ## Flow
 
@@ -53,6 +53,9 @@ Web Top-ups are sold through **Stripe Checkout with `managed_payments[enabled]=t
 - **Receipts and statements name Link** (`LINK.COM* <descriptor>`, "Sold through Link"). Customers raise payment support with Link; Stripe may refund within 60 days on its own if an escalation goes unanswered for 48 hours. Keep the dashboard support email current. The privacy policy must name Stripe as the Merchant of Record.
 - **Stripe can refund without us**, which is why every `charge.refunded` claws back regardless of who issued it (ADR-0018 decision 7).
 - **Clawback follows Stripe's cumulative refunded amount.** A purchase keeps `refunded_credits` (share owed back, rounded down) and `reversed_credits` (actually taken). A replay or a late, older event has a target at or below the recorded one and does nothing. When the credits were already spent the shortfall is logged and not chased on later refunds, because later balance belongs to other Top-ups.
+- **The Freeze trigger is inferred from our own ledger, not from Stripe's dispute state**, as ADR-0018 decided: an Operator refund issued under the 14-days-nothing-generated rule never Freezes. Stripe's `charge.dispute.created` is not used; an open dispute changes nothing until it is lost.
+- **A replay or late, older refund event can never re-freeze** an account an Operator unfroze, because progress is measured by the purchase's cumulative `refunded_share`. A new, larger refund can.
+- **A Checkout Session opened before a Freeze can still be paid.** The payment has been taken, so `purchase_fulfil` grants the credits and the webhook logs `top-up paid into frozen account`; the Freeze stops them being spent. `purchase_create` refuses new and replayed purchases while Frozen so no further session is opened.
 - **A refund that later fails is not re-granted.** If Stripe reports a refund failing after `charge.refunded`, the credits already taken stay taken; restoring them is a manual grant under the `CLAUDE.md` rule (written ADR, `reason` naming the Operator).
 - A reversal whose purchase is not found is retried while it may be racing fulfilment, then acknowledged after an hour and logged as `unmatched_reversal`.
 - `webhook_events.payload` for Stripe stores `{type, object_id}` only; Checkout events carry name, email and address we have no reason to keep.
@@ -63,7 +66,7 @@ Web Top-ups are sold through **Stripe Checkout with `managed_payments[enabled]=t
 ## Before live mode
 
 - Finance/Legal approve the Supply Consent wording; publish it under a version without `-draft`.
-- Freeze (ADR-0018 decision 8).
+- An Operator route for `operator_unfreeze` that takes the Operator's identity from the verified `x-veyrnox-auth-id` header, never from the request body.
 - Pricing floors rechecked with Stripe Managed Payments fees.
 - Stripe account business description matches the product: AI image/video/voice generation sold as prepaid credits.
 - Managed Payments enabled after Stripe's eligibility review and terms acceptance.

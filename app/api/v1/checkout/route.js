@@ -28,6 +28,7 @@ const RPC_ERRORS = {
     IDEMPOTENCY_KEY_REUSED: [409, 'idempotency_key_reused'],
     PURCHASE_EXPIRED: [409, 'purchase_expired'],
     SUPPLY_CONSENT_REQUIRED: [400, 'supply_consent_required'],
+    ACCOUNT_FROZEN: [403, 'account_frozen'],
     RATE_LIMITED: [429, 'rate_limited'],
 };
 
