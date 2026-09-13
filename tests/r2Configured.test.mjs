@@ -36,3 +36,11 @@ test('an unconfigured copy still reports the config fault rather than uploading'
         globalThis.fetch = realFetch;
     }
 });
+
+test('an EU jurisdiction is accepted; anything else reads as not configured', () => {
+    assert.equal(isConfigured({ ...FULL, jurisdiction: 'eu' }), true);
+    assert.equal(isConfigured({ ...FULL, jurisdiction: undefined }), true);
+    for (const bad of ['EU', 'us', 'fedramp', 'eu.evil.com', 'x']) {
+        assert.equal(isConfigured({ ...FULL, jurisdiction: bad }), false, bad);
+    }
+});

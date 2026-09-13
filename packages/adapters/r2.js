@@ -17,8 +17,13 @@
  *   R2_ACCESS_KEY_ID       R2 access key
  *   R2_SECRET_ACCESS_KEY   R2 secret
  *   R2_BUCKET              bucket name (e.g. veyrnox-media)
+ *   R2_JURISDICTION        optional; 'eu' for a bucket created with an EU
+ *                          jurisdictional restriction (ADR-0021). A bucket in
+ *                          a jurisdiction is only reachable through that
+ *                          jurisdiction's endpoint, so an unknown value is
+ *                          treated as not configured rather than guessed.
  *
- * Endpoint: https://<account>.r2.cloudflarestorage.com/<bucket>/<key>
+ * Endpoint: https://<account>[.<jurisdiction>].r2.cloudflarestorage.com/<bucket>/<key>
  * Region: 'auto' per R2 docs.
  */
 
@@ -82,21 +87,30 @@ function rfc3986(s) {
  * request, rather than discovering a missing secret halfway through.
  */
 export function isConfigured(cfg) {
-    return Boolean(cfg && cfg.accountId && cfg.accessKeyId && cfg.secretAccessKey && cfg.bucket);
+    return Boolean(cfg && cfg.accountId && cfg.accessKeyId && cfg.secretAccessKey && cfg.bucket && jurisdictionOk(cfg));
 }
 
-/** @returns {{accountId, accessKeyId, secretAccessKey, bucket}} */
+const JURISDICTIONS = new Set(['eu']);
+
+function jurisdictionOk(cfg) {
+    return !cfg.jurisdiction || JURISDICTIONS.has(cfg.jurisdiction);
+}
+
+/** @returns {{accountId, accessKeyId, secretAccessKey, bucket, jurisdiction}} */
 export function envConfig() {
     return {
         accountId: process.env.R2_ACCOUNT_ID,
         accessKeyId: process.env.R2_ACCESS_KEY_ID,
         secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
         bucket: process.env.R2_BUCKET,
+        jurisdiction: process.env.R2_JURISDICTION || undefined,
     };
 }
 
-function endpointOrigin(accountId) {
-    return `https://${accountId}.r2.cloudflarestorage.com`;
+function endpointHost(cfg) {
+    return cfg.jurisdiction
+        ? `${cfg.accountId}.${cfg.jurisdiction}.r2.cloudflarestorage.com`
+        : `${cfg.accountId}.r2.cloudflarestorage.com`;
 }
 
 async function sha256Hex(buf) {
@@ -138,7 +152,7 @@ async function signingKey(secret, dateStamp) {
  * Returns { ok, status, r2Key, size } or { ok:false, error }.
  */
 export async function putObject(key, body, contentType, cfg) {
-    if (!cfg.accountId || !cfg.accessKeyId || !cfg.secretAccessKey || !cfg.bucket) {
+    if (!isConfigured(cfg)) {
         return { ok: false, error: 'R2 not configured' };
     }
     const bodyBytes = body instanceof Uint8Array
@@ -149,7 +163,7 @@ export async function putObject(key, body, contentType, cfg) {
 
     const amzDate = iso8601BasicNow();
     const dateStamp = amzDate.slice(0, 8);
-    const host = `${cfg.accountId}.r2.cloudflarestorage.com`;
+    const host = endpointHost(cfg);
     const canonicalUri = `/${cfg.bucket}/${key.split('/').map(rfc3986).join('/')}`;
 
     const payloadHash = await sha256Hex(bodyBytes);
@@ -170,7 +184,7 @@ export async function putObject(key, body, contentType, cfg) {
     const authorization =
         `AWS4-HMAC-SHA256 Credential=${cfg.accessKeyId}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
 
-    const res = await fetch(`${endpointOrigin(cfg.accountId)}${canonicalUri}`, {
+    const res = await fetch(`https://${host}${canonicalUri}`, {
         method: 'PUT',
         headers: {
             'content-type': contentType,
@@ -195,12 +209,12 @@ export async function putObject(key, body, contentType, cfg) {
  * Returns { ok: true, status } on success, { ok: false, error } on failure.
  */
 export async function deleteObject(key, cfg) {
-    if (!cfg.accountId || !cfg.accessKeyId || !cfg.secretAccessKey || !cfg.bucket) {
+    if (!isConfigured(cfg)) {
         return { ok: false, error: 'R2 not configured' };
     }
     const amzDate = iso8601BasicNow();
     const dateStamp = amzDate.slice(0, 8);
-    const host = `${cfg.accountId}.r2.cloudflarestorage.com`;
+    const host = endpointHost(cfg);
     const canonicalUri = `/${cfg.bucket}/${key.split('/').map(rfc3986).join('/')}`;
 
     const payloadHash = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
@@ -220,7 +234,7 @@ export async function deleteObject(key, cfg) {
     const authorization =
         `AWS4-HMAC-SHA256 Credential=${cfg.accessKeyId}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
 
-    const res = await fetch(`${endpointOrigin(cfg.accountId)}${canonicalUri}`, {
+    const res = await fetch(`https://${host}${canonicalUri}`, {
         method: 'DELETE',
         headers: {
             host,
@@ -247,13 +261,13 @@ export async function deleteObject(key, cfg) {
  * Returns { url } or throws for config errors.
  */
 export async function presignGetUrl(key, expiresSeconds, cfg) {
-    if (!cfg.accountId || !cfg.accessKeyId || !cfg.secretAccessKey || !cfg.bucket) {
+    if (!isConfigured(cfg)) {
         throw new Error('R2 not configured');
     }
     const expires = Math.max(60, Math.min(900, expiresSeconds | 0));
     const amzDate = iso8601BasicNow();
     const dateStamp = amzDate.slice(0, 8);
-    const host = `${cfg.accountId}.r2.cloudflarestorage.com`;
+    const host = endpointHost(cfg);
     const canonicalUri = `/${cfg.bucket}/${key.split('/').map(rfc3986).join('/')}`;
     const credentialScope = `${dateStamp}/${REGION}/${SERVICE}/aws4_request`;
 
@@ -276,7 +290,7 @@ export async function presignGetUrl(key, expiresSeconds, cfg) {
     const signature = bytesToHex(await hmacSha256(kSigning, stringToSign));
     sorted.append('X-Amz-Signature', signature);
 
-    return { url: `${endpointOrigin(cfg.accountId)}${canonicalUri}?${sorted.toString()}`, expires };
+    return { url: `https://${host}${canonicalUri}?${sorted.toString()}`, expires };
 }
 
 /**
