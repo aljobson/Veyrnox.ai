@@ -13,7 +13,7 @@ export default function MobileLayout({ children }) {
     <div className="min-h-dvh flex flex-col items-center py-6">
       <div role="note" className="mb-3 mx-4 max-w-[420px] rounded-full border border-vx-money/40 bg-vx-money/[0.08] px-4 py-2 text-center font-vx-mono text-[10px] tracking-[0.1em] text-vx-money">
         DESIGN PROTOTYPE · SAMPLE DATA, NOT YOUR ACCOUNT ·{' '}
-        <Link href="/veyrnox/app" className="underline underline-offset-2 hover:text-vx-fg">OPEN THE APP</Link>
+        <Link href="/app" className="underline underline-offset-2 hover:text-vx-fg">OPEN THE APP</Link>
       </div>
       <MobileJumps />
       <IOSFrame>{children}</IOSFrame>

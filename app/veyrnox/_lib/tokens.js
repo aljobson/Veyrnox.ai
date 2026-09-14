@@ -140,7 +140,7 @@ export const FAQ = [
     a: 'Veyrnox.ai is a credit-metered AI image, video and audio generation gateway. One balance across the whole catalog, price visible on the button, refund on failure.' },
   { q: 'Which models can I run?',
     a: 'Image, video, audio and speech models, all on one balance. Premium models (◆) are gated. The live list, with every price, is on Pricing.',
-    link: { label: 'Pricing', href: '/veyrnox/pricing' } },
+    link: { label: 'Pricing', href: '/pricing' } },
   { q: 'How do credits work?',
     a: 'Every generation names its cost on the button before you press it. Credits debit at submit. If the job fails at any point the credits return to your balance automatically.' },
   { q: 'Do I get free credits when I sign up?',
