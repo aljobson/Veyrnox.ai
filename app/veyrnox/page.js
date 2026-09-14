@@ -103,7 +103,7 @@ function WideNav() {
   return (
     <div className="sticky top-0 z-40 h-16 border-b border-vx-border bg-vx-base/90 backdrop-blur">
       <div className="h-full px-6 flex items-center gap-6 max-w-[1300px] mx-auto">
-        <Link href="/veyrnox" className="flex items-center shrink-0" aria-label="Veyrnox.ai">
+        <Link href="/" className="flex items-center shrink-0" aria-label="Veyrnox.ai">
           <Logo size={30} wordmark />
         </Link>
         <nav className="flex gap-1 items-center overflow-x-auto scrollbar-none flex-1">
@@ -185,13 +185,13 @@ function Hero({ modelCount }) {
         </p>
         <div className="flex gap-3 mt-2 flex-wrap justify-center">
           <Link
-            href="/veyrnox/app/create"
+            href="/app/create"
             className="rounded-full bg-vx-accent text-vx-accent-ink px-8 py-4 text-base font-extrabold hover:bg-vx-accent-hover"
           >
             Start creating
           </Link>
           <Link
-            href="/veyrnox/pricing"
+            href="/pricing"
             className="rounded-full border border-vx-border text-vx-fg px-8 py-4 text-base font-bold hover:border-vx-accent"
           >
             See how it works
@@ -231,16 +231,16 @@ function SignupIncentive() {
               <li className="flex gap-2"><span className="text-vx-accent">✓</span> Failed jobs refund automatically</li>
               <li className="flex gap-2"><span className="text-vx-accent">✓</span> No card required to browse</li>
             </ul>
-            <div className="mt-6 flex gap-3">
+            <div className="mt-6 flex flex-wrap gap-3">
               <Link
-                href="/veyrnox/app"
-                className="rounded-full bg-vx-accent text-vx-accent-ink px-6 py-3 text-sm font-extrabold hover:bg-vx-accent-hover"
+                href="/app"
+                className="whitespace-nowrap rounded-full bg-vx-accent text-vx-accent-ink px-6 py-3 text-sm font-extrabold hover:bg-vx-accent-hover"
               >
                 Claim 50 credits
               </Link>
               <Link
-                href="/veyrnox/presets"
-                className="rounded-full border border-white/30 text-white px-6 py-3 text-sm font-bold hover:border-white"
+                href="/presets"
+                className="whitespace-nowrap rounded-full border border-white/30 text-white px-6 py-3 text-sm font-bold hover:border-white"
               >
                 Browse presets free
               </Link>
@@ -262,7 +262,7 @@ function ProductTilesRow({ modelCount }) {
           <div className="font-vx-mono text-[11px] tracking-[0.14em] text-vx-accent mb-2">EVERY MODEL. ONE BALANCE.</div>
           <h2 className="text-3xl font-black tracking-[-0.02em]">{modelCount} models on the shelf.</h2>
         </div>
-        <Link href="/veyrnox/pricing" className="text-sm font-semibold text-vx-fg-muted hover:text-vx-fg">
+        <Link href="/pricing" className="text-sm font-semibold text-vx-fg-muted hover:text-vx-fg">
           Full catalog →
         </Link>
       </div>
@@ -270,7 +270,7 @@ function ProductTilesRow({ modelCount }) {
         {PRODUCT_TILES.map((p) => (
           <Link
             key={p.key}
-            href={`/veyrnox/app/create?model=${p.key}`}
+            href={`/app/create?model=${p.key}`}
             className="relative rounded-2xl border border-vx-border bg-vx-panel p-4 hover:border-vx-accent transition-colors block"
           >
             <div className="flex items-start justify-between">
@@ -307,7 +307,7 @@ function HeroStatement() {
     <section id="honesty" className="px-6 pt-20 pb-6 max-w-[1400px] mx-auto">
       <div className="max-w-[900px]">
         <div className="font-vx-mono text-[11px] tracking-[0.14em] text-vx-accent mb-4">THE HONESTY SIGNATURE</div>
-        <h2 className="text-[54px] md:text-[72px] font-black leading-[0.98] tracking-[-0.035em] text-balance">
+        <h2 className="text-[40px] sm:text-[54px] md:text-[72px] font-black leading-[0.98] tracking-[-0.035em] text-balance">
           EVERY GENERATION<br/>
           SHOWS ITS PRICE<br/>
           <span className="text-vx-money">BEFORE YOU SPEND.</span>
@@ -341,23 +341,24 @@ function EffectsWall() {
           <div className="font-vx-mono text-[11px] tracking-[0.14em] text-vx-accent mb-2">PRESETS · ONE-TAP LOOKS</div>
           <h2 className="text-3xl font-black tracking-[-0.02em]">Big-budget effects. Priced on tap.</h2>
         </div>
-        <Link href="/veyrnox/presets" className="text-sm font-semibold text-vx-fg-muted hover:text-vx-fg">
+        <Link href="/presets" className="text-sm font-semibold text-vx-fg-muted hover:text-vx-fg">
           Browse all →
         </Link>
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-        {EFFECT_PRESETS.map((e, i) => (
-          <button
+        {EFFECT_PRESETS.map((e) => (
+          <Link
             key={e.name}
-            className="group relative rounded-2xl overflow-hidden border border-vx-border transition-transform duration-200 hover:scale-[1.02]"
-            style={{ background: e.bg, aspectRatio: i % 5 === 0 ? '3/4' : '1/1' }}
+            href="/presets"
+            className="group block relative rounded-2xl overflow-hidden border border-vx-border transition-transform duration-200 hover:scale-[1.02]"
+            style={{ background: e.bg, aspectRatio: '1/1' }}
           >
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-90 group-hover:opacity-100" />
             <div className="absolute inset-x-0 bottom-0 p-3 text-left">
               <div className="font-black text-white text-sm tracking-tight">{e.name}</div>
               <div className="mt-1 font-vx-mono text-[9.5px] tracking-[0.1em] text-vx-accent">RECREATE →</div>
             </div>
-          </button>
+          </Link>
         ))}
       </div>
     </section>
@@ -394,7 +395,7 @@ function ModelShelf({ catalog }) {
           </div>
           <h2 className="text-3xl font-black tracking-[-0.02em]">Every model. Every price. No tiers to decode.</h2>
         </div>
-        <Link href="/veyrnox/pricing" className="text-sm font-semibold text-vx-fg-muted hover:text-vx-fg">
+        <Link href="/pricing" className="text-sm font-semibold text-vx-fg-muted hover:text-vx-fg">
           Full pricing →
         </Link>
       </div>
@@ -410,7 +411,7 @@ function ModelShelf({ catalog }) {
               {g.rows.map((m) => (
                 <Link
                   key={m.id}
-                  href={`/veyrnox/app/create?model=${m.id}`}
+                  href={`/app/create?model=${m.id}`}
                   className="group rounded-2xl border border-vx-border bg-vx-panel p-4 flex flex-col gap-3 transition-colors hover:border-vx-accent/60"
                 >
                   <div className="flex items-start justify-between gap-2">
@@ -474,14 +475,14 @@ function FeatureStripsSection() {
         kicker="CATALOG"
         title="One balance across every model."
         body="Nano Banana, Flux.2, Seedream, Wan, Kling, MiniMax, Veo, ACE-Step. Debit on submit, refund on fail, one balance across the whole catalog."
-        cta={{ label: 'Open the app', href: '/veyrnox/app' }}
+        cta={{ label: 'Open the app', href: '/app' }}
         bg="linear-gradient(135deg,#0a1a2c 0%,#144a7a 55%,#3ec1e8 100%)"
       />
       <FeatureStrip
         kicker="PRESETS"
         title="Big-budget effects, one tap."
-        body="Curated preset gradients wired to model + prompt combos. Browse free, generate on-tap — cost shown up front."
-        cta={{ label: 'Browse presets', href: '/veyrnox/presets' }}
+        body="Curated presets wired to model + prompt combos. Browse free, generate on-tap — cost shown up front."
+        cta={{ label: 'Browse presets', href: '/presets' }}
         bg="linear-gradient(135deg,#1b0632 0%,#5a0e6a 55%,#e4318f 100%)"
         reverse
       />
@@ -489,7 +490,7 @@ function FeatureStripsSection() {
         kicker="LEDGER"
         title="Every credit accounted for."
         body="Debits and refunds are append-only ledger rows, never edits. Your balance is the sum of them, and you can read the history back."
-        cta={{ label: 'See your balance', href: '/veyrnox/app/credits' }}
+        cta={{ label: 'See your balance', href: '/app/credits' }}
         bg="linear-gradient(135deg,#08120b 0%,#0e3a1e 55%,#2ea258 100%)"
       />
     </section>
@@ -498,7 +499,7 @@ function FeatureStripsSection() {
 
 function FeatureStrip({ kicker, title, body, cta, bg, reverse = false }) {
   return (
-    <div className={`rounded-3xl border border-vx-border bg-vx-panel overflow-hidden grid grid-cols-1 lg:grid-cols-2 ${reverse ? 'lg:[&>*:first-child]:col-start-2' : ''}`}>
+    <div className={`rounded-3xl border border-vx-border bg-vx-panel overflow-hidden grid grid-cols-1 lg:grid-cols-2 ${reverse ? 'lg:grid-flow-dense lg:[&>*:first-child]:col-start-2' : ''}`}>
       <div className="p-10 lg:p-14">
         <div className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-accent mb-3">{kicker}</div>
         <h3 className="text-[30px] md:text-[34px] font-black leading-[1.05] tracking-[-0.02em] text-balance">{title}</h3>
@@ -569,10 +570,10 @@ function ClosingCTA({ modelCount }) {
           50 credits on the house when you join. One balance across every model. Failed jobs refund automatically.
         </p>
         <div className="mt-6 flex gap-3 justify-center flex-wrap">
-          <Link href="/veyrnox/app" className="rounded-full bg-vx-accent text-vx-accent-ink px-8 py-4 text-base font-extrabold hover:bg-vx-accent-hover">
+          <Link href="/app" className="rounded-full bg-vx-accent text-vx-accent-ink px-8 py-4 text-base font-extrabold hover:bg-vx-accent-hover">
             Claim 50 credits
           </Link>
-          <Link href="/veyrnox/pricing" className="rounded-full border border-vx-border text-vx-fg px-8 py-4 text-base font-bold hover:border-vx-accent">
+          <Link href="/pricing" className="rounded-full border border-vx-border text-vx-fg px-8 py-4 text-base font-bold hover:border-vx-accent">
             See pricing
           </Link>
         </div>
@@ -624,7 +625,7 @@ function FooterForest({ catalog }) {
                           {label}
                         </Link>
                       ) : (
-                        <span className="text-[13px] text-vx-fg-body">{label}</span>
+                        <span className="text-[13px] text-vx-fg-muted">{label}</span>
                       )}
                     </li>
                   );
@@ -638,7 +639,7 @@ function FooterForest({ catalog }) {
         <div className="max-w-[1400px] mx-auto px-6 py-6 text-xs text-vx-fg-muted flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
           <div>{FOOTER_STAMP}</div>
           <div className="flex gap-4">
-            <Link href="/veyrnox/design-system" className="hover:text-vx-fg">Design</Link>
+            <Link href="/design-system" className="hover:text-vx-fg">Design</Link>
           </div>
         </div>
       </div>

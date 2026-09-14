@@ -3,24 +3,27 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { Logo } from './Logo';
+import { NavAuthButtons } from './NavAuthButtons';
 import { gatewayFetch, GatewayError } from '../_lib/gateway';
 
 // Marketing site nav (Home / Gallery / Pricing).
 export function MarketingNav() {
-  const path = usePathname();
+  // Rewrites serve /veyrnox/* at /*, so the browser path has no prefix.
+  const path = usePathname().replace(/^\/veyrnox/, '') || '/';
   const items = [
-    { href: '/veyrnox',         label: 'Home' },
-    { href: '/veyrnox/presets', label: 'Gallery' },
-    { href: '/veyrnox/pricing', label: 'Pricing' },
+    { href: '/',         label: 'Home' },
+    { href: '/presets', label: 'Gallery' },
+    { href: '/pricing', label: 'Pricing' },
   ];
   return (
-    <div className="sticky top-0 z-40 flex items-center justify-between px-8 h-16 border-b border-vx-border bg-vx-base/[0.88] backdrop-blur">
-      <Link href="/veyrnox" className="flex items-center gap-2.5">
+    <div className="sticky top-0 z-40 flex items-center justify-between px-4 sm:px-8 h-16 border-b border-vx-border bg-vx-base/[0.88] backdrop-blur">
+      <Link href="/" className="flex items-center gap-2.5 shrink-0">
         <Logo wordmark />
       </Link>
-      <div className="flex gap-1.5 text-sm font-semibold">
+      <div className="hidden sm:flex gap-1.5 text-sm font-semibold">
         {items.map((it) => {
-          const active = it.href === '/veyrnox' ? path === '/veyrnox' : path.startsWith(it.href);
+          const target = it.href.replace(/^\/veyrnox/, '') || '/';
+          const active = target === '/' ? path === '/' : path.startsWith(target);
           return (
             <Link
               key={it.href}
@@ -34,16 +37,8 @@ export function MarketingNav() {
           );
         })}
       </div>
-      <div className="flex items-center gap-2">
-        <button className="text-vx-fg-muted text-sm font-semibold px-3 py-2 hover:text-vx-fg">
-          Sign in
-        </button>
-        <Link
-          href="/veyrnox/app"
-          className="rounded-full bg-vx-accent text-vx-accent-ink text-sm font-bold px-5 py-2.5 hover:bg-vx-accent-hover"
-        >
-          Start creating
-        </Link>
+      <div className="flex items-center gap-2 shrink-0">
+        <NavAuthButtons />
       </div>
     </div>
   );
@@ -54,9 +49,9 @@ export function MarketingNav() {
 // self-fetches and subscribes to veyrnox:balance-changed.
 export function AppNav({ balance, active = 'explore' }) {
   const items = [
-    { key: 'explore', href: '/veyrnox/app',         label: 'Explore' },
-    { key: 'create',  href: '/veyrnox/app/create',  label: 'Create' },
-    { key: 'library', href: '/veyrnox/app/library', label: 'Library' },
+    { key: 'explore', href: '/app',         label: 'Explore' },
+    { key: 'create',  href: '/app/create',  label: 'Create' },
+    { key: 'library', href: '/app/library', label: 'Library' },
   ];
   const [ownBalance, setOwnBalance] = useState(null);
   const loadOwn = useCallback(async () => {
@@ -78,7 +73,7 @@ export function AppNav({ balance, active = 'explore' }) {
   const fmt = shown != null ? new Intl.NumberFormat('en-US').format(shown) : '—';
   return (
     <div className="sticky top-0 z-40 flex items-center justify-between px-8 h-16 border-b border-vx-border bg-vx-base/[0.88] backdrop-blur">
-      <Link href="/veyrnox/app" className="flex items-center gap-2.5">
+      <Link href="/app" className="flex items-center gap-2.5">
         <Logo wordmark />
       </Link>
       <div className="flex gap-1 text-sm font-semibold">
@@ -95,7 +90,7 @@ export function AppNav({ balance, active = 'explore' }) {
         ))}
       </div>
       <div className="flex items-center gap-3">
-        <Link href="/veyrnox/app/credits" className="flex items-center gap-2 rounded-full border border-vx-border bg-vx-panel px-3 py-1.5">
+        <Link href="/app/credits" className="flex items-center gap-2 rounded-full border border-vx-border bg-vx-panel px-3 py-1.5">
           <span className="h-1.5 w-1.5 rounded-full bg-vx-money" />
           <span className="font-vx-mono text-[12px] font-bold text-vx-money vx-num">{fmt} cr</span>
         </Link>

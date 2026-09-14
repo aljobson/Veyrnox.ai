@@ -174,7 +174,7 @@ export default function AuthGate() {
                             autoComplete="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            className="mt-1 w-full rounded-lg bg-zinc-800 border border-white/10 px-3 py-2 text-sm text-white outline-none focus:border-white/30"
+                            className="mt-1 w-full rounded-lg bg-zinc-800 border border-white/10 px-3 py-2 text-sm text-white outline-none focus:border-vx-accent focus-visible:ring-2 focus-visible:ring-vx-accent/40"
                         />
                     </label>
 
@@ -188,7 +188,7 @@ export default function AuthGate() {
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 minLength={8}
-                                className="mt-1 w-full rounded-lg bg-zinc-800 border border-white/10 px-3 py-2 text-sm text-white outline-none focus:border-white/30"
+                                className="mt-1 w-full rounded-lg bg-zinc-800 border border-white/10 px-3 py-2 text-sm text-white outline-none focus:border-vx-accent focus-visible:ring-2 focus-visible:ring-vx-accent/40"
                             />
                         </label>
                     )}
@@ -208,7 +208,7 @@ export default function AuthGate() {
                     <button
                         type="submit"
                         disabled={busy}
-                        className="w-full rounded-lg bg-white text-zinc-900 font-semibold py-2 text-sm hover:bg-zinc-200 disabled:opacity-60"
+                        className="w-full rounded-full bg-vx-accent text-vx-accent-ink font-extrabold py-2.5 text-sm hover:bg-vx-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vx-accent disabled:opacity-60"
                     >
                         {busy
                             ? "Working…"

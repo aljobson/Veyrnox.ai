@@ -62,11 +62,11 @@ export const RESOLUTIONS = ['1K', '2K', '4K'];
 // Ponytail: hand-authored copy — swap for CMS later. Veyrnox voice: honesty first.
 
 export const NAV_CATEGORIES = [
-  { href: '/veyrnox#explore',   label: 'Explore' },
-  { href: '/veyrnox#models',    label: 'Models' },
-  { href: '/veyrnox/presets',   label: 'Presets' },
-  { href: '/veyrnox/pricing',   label: 'Pricing' },
-  { href: '/veyrnox#faq',       label: 'Docs' },
+  { href: '/#explore',   label: 'Explore' },
+  { href: '/#models',    label: 'Models' },
+  { href: '/presets',   label: 'Presets' },
+  { href: '/pricing',   label: 'Pricing' },
+  { href: '/#faq',       label: 'Docs' },
 ];
 
 // Featured hero cards — 5 wide, each opens a model or the preset gallery.
@@ -78,35 +78,35 @@ export const FEATURE_CARDS = [
     title: 'The default. Fast, cinematic.',
     body: '5 seconds of motion for 16 credits. The workhorse — priced on the button before you press it.',
     cta: 'Open Wan 2.5',
-    href: '/veyrnox/app/create?model=wan-2.5',
+    href: '/app/create?model=wan-2.5',
     bg: 'linear-gradient(135deg,#0a1a2c 0%,#144a7a 55%,#3ec1e8 100%)' },
   { key: 'nano-banana',
     kicker: 'NANO BANANA',
     title: 'Photoreal stills, three credits a frame.',
     body: 'The cheapest photoreal image on the catalog. Perfect for product shots and stills.',
     cta: 'Open Nano Banana',
-    href: '/veyrnox/app/create?model=nano-banana',
+    href: '/app/create?model=nano-banana',
     bg: 'linear-gradient(160deg,#2b1a0a 0%,#7a4a1e 60%,#f0b060 100%)' },
   { key: 'kling-26',
     kicker: 'KLING 2.6 PRO',
     title: 'Cinematic video, cost visible.',
     body: 'The go-to for narrative video work. 22 credits per 5-second shot, priced on the button.',
     cta: 'Open Kling',
-    href: '/veyrnox/app/create?model=kling-2.6-pro',
+    href: '/app/create?model=kling-2.6-pro',
     bg: 'linear-gradient(135deg,#1b0632 0%,#5a0e6a 55%,#e4318f 100%)' },
   { key: 'presets',
     kicker: 'PRESETS',
     title: 'One-tap looks. Exact prices.',
     body: 'Curated looks wired to a model and a prompt, each showing its credit cost. Browse free, generate on-tap.',
     cta: 'Browse presets',
-    href: '/veyrnox/presets',
+    href: '/presets',
     bg: 'linear-gradient(135deg,#0e0620 0%,#3a0e6a 55%,#8b46e4 100%)' },
   { key: 'ace-step',
     kicker: 'ACE STEP',
     title: 'Music and voice, priced up front.',
     body: 'Audio generation on the same credit balance. 1 credit per clip — see it before you spend.',
     cta: 'Open ACE Step',
-    href: '/veyrnox/app/create?model=ace-step',
+    href: '/app/create?model=ace-step',
     bg: 'linear-gradient(135deg,#08120b 0%,#0e3a1e 55%,#2ea258 100%)' },
 ];
 
@@ -140,7 +140,7 @@ export const FAQ = [
     a: 'Veyrnox.ai is a credit-metered AI image, video and audio generation gateway. One balance across the whole catalog, price visible on the button, refund on failure.' },
   { q: 'Which models can I run?',
     a: 'Image, video, audio and speech models, all on one balance. Premium models (◆) are gated. The live list, with every price, is on Pricing.',
-    link: { label: 'Pricing', href: '/veyrnox/pricing' } },
+    link: { label: 'Pricing', href: '/pricing' } },
   { q: 'How do credits work?',
     a: 'Every generation names its cost on the button before you press it. Credits debit at submit. If the job fails at any point the credits return to your balance automatically.' },
   { q: 'Do I get free credits when I sign up?',
@@ -208,19 +208,22 @@ export const EFFECT_PRESETS = [
 // Four-column footer forest (plus tools). Every listed model row is a real
 // catalog entry so a follow-up wiring can link them by id.
 export const MORE_FEATURES = [
-  { group: 'Product',   items: ['Explore', 'Models', 'Pricing', 'Presets'] },
+  { group: 'Product',   items: [
+    { label: 'Explore', href: '/#explore' },
+    { label: 'Models',  href: '/#shelf' },
+    { label: 'Pricing', href: '/pricing' },
+    { label: 'Presets', href: '/presets' },
+  ] },
   { group: 'Models',    items: [] }, // filled from the live catalog in page.js
   { group: 'Tools',     items: ['Image Generator', 'Video Generator', 'Image-to-Video', 'Audio'] },
-  // Items are either a plain string (static label — page not shipped yet)
-  // or { label, href } (real route). About / Contact stay static until
-  // those pages exist.
+  // Items are either a plain string (a label, rendered muted so it does not
+  // read as a link) or { label, href } (real route).
   { group: 'Company',   items: [
-    'About',
     { label: 'Terms',              href: '/legal/terms' },
     { label: 'Privacy',            href: '/legal/privacy' },
     { label: 'GDPR & Data Rights', href: '/legal/gdpr' },
     { label: 'Refund Policy',      href: '/legal/refund' },
-    'Contact',
+    { label: 'Contact',            href: 'mailto:legal@veyrnox.com' },
   ] },
 ];
 
@@ -233,5 +236,5 @@ export const HERO_CHIP = 'LIVE · CREDIT-METERED';
 export const PROMO_STRIP = {
   message: '50 free credits on sign-up · no charge for failed generations',
   cta: 'Sign up free',
-  href: '/veyrnox/app',
+  href: '/app',
 };

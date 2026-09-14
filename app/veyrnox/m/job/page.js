@@ -43,7 +43,7 @@ export default function MobileJob() {
         <div className="flex-1" />
 
         <Link
-          href="/veyrnox/m/library"
+          href="/m/library"
           className="mt-4 flex justify-center items-center bg-transparent border border-vx-border text-vx-fg rounded-full py-3.5 text-[14px] font-bold"
         >
           Go to Library
