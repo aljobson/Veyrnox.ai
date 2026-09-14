@@ -8,12 +8,6 @@ import { gatewayFetch, GatewayError } from '../../_lib/gateway';
 import { readJobHistory } from '../../_lib/jobHistory';
 import { MODELS } from '../../_lib/tokens';
 
-const TOPUPS = [
-  { c: 300,  price: '$9' },
-  { c: 750,  price: '$19' },
-  { c: 2000, price: '$49' },
-];
-
 const STATE_UI = {
   succeeded: { chip: 'accent', glyph: '✓' },
   failed:    { chip: 'danger', glyph: '✕' },
@@ -26,14 +20,6 @@ export default function Credits() {
   const [free, setFree] = useState(null);
   const [error, setError] = useState(null);
   const [ledger, setLedger] = useState([]);
-  // Live Credit Packs stay hidden until launch (#101): opt in per browser with
-  // localStorage.setItem('veyrnox_topups', '1').
-  const [topupsEnabled, setTopupsEnabled] = useState(false);
-
-  useEffect(() => {
-    try { setTopupsEnabled(localStorage.getItem('veyrnox_topups') === '1'); } catch {}
-  }, []);
-
   const load = useCallback(async () => {
     try {
       const b = await gatewayFetch('/balance');
@@ -111,29 +97,8 @@ export default function Credits() {
 
             <TopUpReturn />
 
-            {topupsEnabled ? (
-              // Wait for the balance call to settle so packs never load for a signed-out visitor.
-              (error === 'sign_in_required' || balance != null) && <TopUpPacks signedIn={error !== 'sign_in_required'} />
-            ) : (<>
-            <div className="mt-6 flex flex-wrap gap-2">
-              {TOPUPS.map((t) => (
-                <button
-                  key={t.c}
-                  type="button"
-                  disabled
-                  title="Top-ups are not available yet"
-                  className="flex flex-col items-start rounded-xl border border-vx-border bg-vx-base/60 px-4 py-3 opacity-50 cursor-not-allowed"
-                >
-                  <span className="font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted">TOP-UP</span>
-                  <span className="font-vx-mono text-[18px] font-bold text-vx-money mt-1 vx-num">+{t.c} cr</span>
-                  <span className="font-vx-mono text-[12px] text-vx-fg-body mt-1">{t.price}</span>
-                </button>
-              ))}
-            </div>
-            <div className="mt-3 font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-faint">
-              TOP-UPS NOT AVAILABLE YET · PRICES SHOWN ARE INDICATIVE
-            </div>
-            </>)}
+            {/* Wait for the balance call to settle so packs never load for a signed-out visitor. */}
+            {(error === 'sign_in_required' || balance != null) && <TopUpPacks signedIn={error !== 'sign_in_required'} />}
           </div>
 
           <div className="rounded-2xl border border-vx-border bg-vx-panel p-6 flex flex-col">
@@ -149,7 +114,7 @@ export default function Credits() {
         </div>
       </section>
 
-      {topupsEnabled && balance != null && <TopUpHistory />}
+      {balance != null && <TopUpHistory />}
 
       {/* ============ RECENT GENERATIONS (client-side ledger) ============ */}
       <section className="max-w-[1200px] mx-auto px-8 pb-16">
