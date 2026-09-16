@@ -16,6 +16,7 @@ import { NextResponse } from 'next/server';
 import { rpc, envConfig } from '../../../../packages/db/supabase-client.js';
 import { tokenMatches } from '../../../../lib/tokenMatches.js';
 import { retryAfterSeconds, recordFailure } from '../../../../lib/adminThrottle.js';
+import { fetchWithTimeout } from '../../../../lib/fetchWithTimeout.js';
 import { deleteObject, isConfigured as r2IsConfigured, envConfig as r2EnvConfig } from '../../../../packages/adapters/r2.js';
 
 const BATCH = 100;
@@ -26,7 +27,7 @@ async function selectQueue(cfg, limit) {
     url.searchParams.set('select', 'id,r2_key,attempts');
     url.searchParams.set('order', 'queued_at.asc');
     url.searchParams.set('limit', String(limit));
-    const res = await fetch(url, {
+    const res = await fetchWithTimeout(url, {
         headers: {
             apikey: cfg.serviceRoleKey,
             Authorization: `Bearer ${cfg.serviceRoleKey}`,
@@ -39,7 +40,7 @@ async function selectQueue(cfg, limit) {
 async function markSuccess(cfg, id) {
     const url = new URL('/rest/v1/asset_reap_queue', cfg.supabaseUrl);
     url.searchParams.set('id', `eq.${id}`);
-    return fetch(url, {
+    return fetchWithTimeout(url, {
         method: 'DELETE',
         headers: {
             apikey: cfg.serviceRoleKey,
@@ -52,7 +53,7 @@ async function markSuccess(cfg, id) {
 async function markFail(cfg, id, attempts, err) {
     const url = new URL('/rest/v1/asset_reap_queue', cfg.supabaseUrl);
     url.searchParams.set('id', `eq.${id}`);
-    return fetch(url, {
+    return fetchWithTimeout(url, {
         method: 'PATCH',
         headers: {
             apikey: cfg.serviceRoleKey,

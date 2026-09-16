@@ -27,7 +27,12 @@
     // Which orders the webhook credits (#93). "true" while the store and API
     // key are test mode; flip to "false" with the live key at launch (#101).
     // Anything else and /api/webhook/lemonsqueezy answers 503.
-    "LEMONSQUEEZY_TEST_MODE": "true"
+    "LEMONSQUEEZY_TEST_MODE": "true",
+    // "true" makes /api/v1/admin/metrics refuse any session that has not
+    // satisfied a second factor (Supabase `aal` claim must be "aal2").
+    // Leave "false" until an admin has enrolled a factor on /app/admin —
+    // turning it on first locks every admin out of their own dashboard.
+    "ADMIN_REQUIRE_AAL2": "false"
   },
   // ------------------------------------------------------------------
   // Secrets (never here — `wrangler secret put <NAME>`), per ADR-0004

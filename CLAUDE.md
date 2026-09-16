@@ -52,6 +52,12 @@ If a build starts failing after a dependency change, bisect these three first.
   `webhook_events` UNIQUE on `(source, external_id)`). Replay must be a no-op.
 - **SECURITY DEFINER** functions must `SET search_path = ''` (schema-qualify
   every reference) so a user can't hijack them by shadowing an unqualified name.
+- **Every new function and table revokes explicitly.** `0070` points the
+  schema's default privileges away from `anon` and `authenticated`, but a
+  changed argument list makes a *new* function that inherits nothing from the
+  old one's ACL — `REVOKE ALL ... FROM PUBLIC, anon, authenticated` then
+  `GRANT EXECUTE ... TO service_role`, naming the full signature. RLS does not
+  cover `TRUNCATE`, so a table grant to a browser role is never harmless.
 - Migrations live in `packages/db/schema/supabase/` with a `NNNN_<snake_case>`
   name — never `execute_sql` for DDL. Every migration must be idempotent
   (`IF NOT EXISTS`, `OR REPLACE`).
@@ -101,9 +107,16 @@ If a build starts failing after a dependency change, bisect these three first.
   `localStorage`. Both, always.
 - OAuth `redirect_to` MUST be an origin we control. Never accept a return URL
   from user input; construct it from `window.location.origin`.
-- The `auth.users -> public.users + credit_balances + grant:signup` trigger
-  (migration `0010`) is the only path that provisions a user. Do not create
+- The `auth.users -> public.users + credit_balances` triggers (migrations
+  `0010`, `0071`) are the only path that provisions a user. Do not create
   `public.users` rows any other way.
+- **The signup grant follows confirmation, not creation** (`0071`). An
+  unconfirmed sign-up gets a shadow row and a zero balance; `grant:signup`
+  lands when `auth.users.email_confirmed_at` is first set. That is only worth
+  anything while Supabase Auth "Confirm email" is ON and sign-up carries
+  Attack Protection — with autoconfirm on, 50 credits is ~$0.75 of provider
+  spend for anyone who can POST an email address. Check both settings before
+  any launch that widens sign-up.
 
 ## Web security
 
@@ -184,7 +197,11 @@ If a build starts failing after a dependency change, bisect these three first.
 6. **Vulnerable & Outdated Components** — Round-N dependency audits run on
    every green main. Any critical/high CVE is a same-day PR.
 7. **Identification & Authentication Failures** — Supabase Auth handles rate
-   limits, breach checks, and lockout. Middleware rejects malformed tokens.
+   limits and lockout. Middleware rejects malformed tokens. Breach checking
+   (HaveIBeenPwned) is a project setting that must stay ON — it was found off
+   in the 2026-09-16 audit, so verify it after any Auth config change.
+   Second factors are TOTP through Supabase; `/api/v1/admin/metrics` demands
+   `aal2` once `ADMIN_REQUIRE_AAL2` is "true".
 8. **Software & Data Integrity Failures** — migrations in git, RPC-only writes,
    R2 objects immutable after upload.
 9. **Security Logging & Monitoring Failures** — `console.error` for every

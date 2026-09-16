@@ -23,7 +23,15 @@ export const config = {
 };
 
 // Identity headers set by this middleware and trusted by /api/v1 handlers.
-const IDENTITY_HEADERS = ['x-veyrnox-auth-id', 'x-veyrnox-auth-email', 'x-veyrnox-auth-role'];
+const IDENTITY_HEADERS = [
+    'x-veyrnox-auth-id',
+    'x-veyrnox-auth-email',
+    'x-veyrnox-auth-role',
+    // Supabase's authenticator assurance level: 'aal1' password/OAuth only,
+    // 'aal2' a second factor was satisfied this session. Forwarded so a
+    // handler can demand aal2 without re-parsing the token.
+    'x-veyrnox-auth-aal',
+];
 
 // Retired legacy Muapi passthrough routes — let their handlers reply with
 // the honest 410 + Sunset header instead of an intermediate 401.
@@ -72,6 +80,7 @@ export async function middleware(req) {
     headers.set('x-veyrnox-auth-id', claims.sub);
     if (claims.email) headers.set('x-veyrnox-auth-email', String(claims.email));
     if (claims.role) headers.set('x-veyrnox-auth-role', String(claims.role));
+    if (claims.aal) headers.set('x-veyrnox-auth-aal', String(claims.aal));
 
     return NextResponse.next({ request: { headers } });
 }
