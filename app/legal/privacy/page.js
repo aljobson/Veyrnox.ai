@@ -4,6 +4,7 @@ export const metadata = {
     title: 'Privacy Policy',
     description:
         'What personal data Veyrnox.ai processes, why, where it is stored, and how long it is kept.',
+    alternates: { canonical: '/legal/privacy' },
 };
 
 export default function Privacy() {
