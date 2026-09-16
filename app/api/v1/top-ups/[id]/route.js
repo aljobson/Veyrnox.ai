@@ -46,5 +46,5 @@ export async function GET(req, { params }) {
         price_usd_cents: t.price_usd_cents,
         created_at: t.created_at,
         credited_at: t.credited_at,
-    });
+    }, { headers: { 'Cache-Control': 'no-store' } });
 }

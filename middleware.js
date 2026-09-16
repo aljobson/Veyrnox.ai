@@ -76,9 +76,19 @@ export async function middleware(req) {
     return NextResponse.next({ request: { headers } });
 }
 
+// Responses the middleware returns itself never pass through next.config.mjs
+// `headers()`, so they would ship without CSP or HSTS. These are tiny JSON
+// bodies with no scripts, styles or frames, so the strictest policy applies.
+const ERROR_HEADERS = {
+    'content-type': 'application/json',
+    'cache-control': 'no-store',
+    'content-security-policy': "default-src 'none'; frame-ancestors 'none'; base-uri 'none'",
+    'strict-transport-security': 'max-age=63072000; includeSubDomains; preload',
+    'x-content-type-options': 'nosniff',
+    'x-frame-options': 'DENY',
+    'referrer-policy': 'strict-origin-when-cross-origin',
+};
+
 function jsonError(status, body) {
-    return new NextResponse(JSON.stringify(body), {
-        status,
-        headers: { 'content-type': 'application/json' },
-    });
+    return new NextResponse(JSON.stringify(body), { status, headers: ERROR_HEADERS });
 }

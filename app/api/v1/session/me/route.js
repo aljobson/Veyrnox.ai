@@ -23,5 +23,5 @@ export async function GET(req) {
         // this handler. Guard anyway.
         return NextResponse.json({ error: 'not_authenticated' }, { status: 401 });
     }
-    return NextResponse.json({ authId, email, role });
+    return NextResponse.json({ authId, email, role }, { headers: { 'Cache-Control': 'no-store' } });
 }

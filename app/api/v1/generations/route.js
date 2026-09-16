@@ -28,6 +28,9 @@ import { refundRejectedSubmit } from '../../../../lib/submitRejection.js';
 
 // Constrain idempotency keys to a safe printable range.
 const IDEMPOTENCY_RE = /^[A-Za-z0-9._-]{8,128}$/;
+// Catalog ids are lowercase slugs ('wan-2.5', 'veo-3.1-fast-kie'). Bounded
+// here so an unbounded string never reaches the PostgREST query string.
+const MODEL_ID_RE = /^[a-z0-9][a-z0-9.-]{0,63}$/;
 
 // Provider payload allowlist. `inputs` is forwarded to fal verbatim, so
 // every key the user may set is enumerated here with a bound; anything
@@ -130,7 +133,7 @@ export async function POST(req) {
     const modelId = body && body.model_id;
     const idempotencyKey = body && body.idempotency_key;
     const inputs = body && body.inputs;
-    if (typeof modelId !== 'string' || !modelId) return NextResponse.json({ error: 'model_id_required' }, { status: 400 });
+    if (typeof modelId !== 'string' || !MODEL_ID_RE.test(modelId)) return NextResponse.json({ error: 'model_id_required' }, { status: 400 });
     if (typeof idempotencyKey !== 'string' || !IDEMPOTENCY_RE.test(idempotencyKey)) {
         return NextResponse.json({ error: 'idempotency_key_required' }, { status: 400 });
     }

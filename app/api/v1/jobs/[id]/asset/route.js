@@ -54,10 +54,12 @@ export async function GET(req, { params }) {
         return NextResponse.json({ error: 'internal' }, { status: 502 });
     }
 
+    // The body carries a presigned URL that is valid for anyone holding it,
+    // so no cache anywhere may keep it after the response is delivered.
     return NextResponse.json({
         url: signed.url,
         mime_type: asset.mime_type,
         size_bytes: asset.size_bytes,
         expires_in: signed.expires,
-    });
+    }, { headers: { 'Cache-Control': 'no-store' } });
 }
