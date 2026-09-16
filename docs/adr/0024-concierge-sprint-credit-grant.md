@@ -31,9 +31,11 @@ manual grant needs an ADR and a `reason` naming the human who decided.
 
 Credit cost per image, read from the live production `model_catalog` on
 2026-09-13 (active image models): `flux-2-pro` 2, `seedream-4` 3,
-`nano-banana` 3. The repository disagrees for `nano-banana`: migration
-`0020_floor_pricing_and_veo_fast.sql` sets it to 4, and no later file changes
-it. One sprint is 60 delivered images. Allowing one discarded attempt per
+`nano-banana` 3. The repository agrees: `0020_floor_pricing_and_veo_fast.sql`
+set `nano-banana` to 4, and `0027_correct_fal_costs_from_watcher.sql` brought
+it to 3 once the cost watcher showed the recorded $0.06 per image was really
+$0.039, which holds a 60.6% margin at 3 credits. There is no catalog drift.
+One sprint is 60 delivered images. Allowing one discarded attempt per
 delivered image, a sprint on the most expensive live model costs
 60 × 2 × 3 = 360 credits. A 500-credit grant leaves room for the revision
 round.
