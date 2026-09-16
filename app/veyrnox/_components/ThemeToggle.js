@@ -7,10 +7,12 @@ import { useCallback, useEffect, useState } from 'react';
 // this only has to flip one attribute on <html>.
 //
 // There is deliberately no inline bootstrap <script>: the CI grep gate in
-// .github/workflows/ci.yml forbids dangerouslySetInnerHTML in first-party
-// code (it is the control that stands in for the CSP's `unsafe-inline`),
-// so a returning light-theme visitor sees one frame of dark before
-// hydration. The alternative is an XSS sink on every page.
+// .github/workflows/ci.yml bans every raw-markup escape hatch in
+// first-party code, and it matches its own vocabulary — so this comment
+// cannot name the React prop it would need. That gate is the control
+// standing in for the CSP's script-src 'unsafe-inline', so a returning
+// light-theme visitor sees one frame of dark before hydration. The
+// alternative is an XSS sink on every page.
 const KEY = 'veyrnox_theme';
 
 export function readStoredTheme() {
