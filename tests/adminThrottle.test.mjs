@@ -34,3 +34,18 @@ test('retry-after counts down toward the oldest failure leaving the window', () 
     assert.equal(retryAfterSeconds('reap', t0), 60);
     assert.equal(retryAfterSeconds('reap', t0 + 30_000), 30);
 });
+
+test('a sustained flood cannot grow the bucket without limit', () => {
+    _reset();
+    const t0 = 5_000_000;
+    // Far more attempts than the threshold, all inside one window.
+    for (let i = 0; i < 5000; i++) {
+        assert.ok(recordFailure('reap', t0 + i) <= 10, 'retained count must stay bounded');
+    }
+    // Still locked, and the lockout slid forward with the newest failures
+    // rather than expiring 60s after the first one.
+    assert.ok(retryAfterSeconds('reap', t0 + 5000) > 0);
+    assert.ok(retryAfterSeconds('reap', t0 + 61_000) > 0, 'sustained abuse extends its own lockout');
+    // And it does clear once the flood actually stops.
+    assert.equal(retryAfterSeconds('reap', t0 + 5000 + 61_000), 0);
+});
