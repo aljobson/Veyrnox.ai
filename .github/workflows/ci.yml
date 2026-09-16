@@ -32,9 +32,20 @@ jobs:
       - name: Grep gates
         run: |
           set -euo pipefail
+          FIRST_PARTY="app components lib middleware.js packages/db packages/adapters packages/catalog"
           # No new dangerouslySetInnerHTML / dangerously-* outside third-party submodules.
-          if git grep -nE 'dangerously' -- 'app' 'components' 'lib' 'middleware.js' 'packages/db' 'packages/adapters' 'packages/catalog'; then
+          if git grep -nE 'dangerously' -- $FIRST_PARTY; then
             echo 'dangerously-* usage found in first-party code'; exit 1
+          fi
+          # Every other way to turn a string into markup or code. The CSP still
+          # carries script-src 'unsafe-inline' (next.config.mjs explains why:
+          # Next streams un-nonced inline RSC scripts and the pages are
+          # statically prerendered, so a per-request nonce is not available).
+          # That makes "there is no XSS sink in first-party code" the control
+          # that stands between an injection and a stolen session, so it is
+          # enforced here rather than left to review.
+          if git grep -nE 'innerHTML|outerHTML|insertAdjacentHTML|document\.write|srcdoc|\beval\(|new Function\(|javascript:' -- $FIRST_PARTY; then
+            echo 'HTML/code-from-string sink found in first-party code — see next.config.mjs on why the CSP cannot catch it'; exit 1
           fi
           # No console.log of a credential-shaped variable.
           if git grep -nE 'console\.log\([^)]*(SECRET|_KEY|TOKEN|PASSWORD|serviceRoleKey|falKey)' -- 'app' 'components' 'lib' 'middleware.js' 'packages'; then

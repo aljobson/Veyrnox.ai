@@ -3,11 +3,26 @@
 // Enforced CSP. `unsafe-inline` on script-src is retained for Next 15 RSC
 // streaming hydration (see vercel/next.js#50659 — nonce propagation to
 // inline flight/hydration scripts is still gated; adding a nonce alone
-// breaks hydration under App Router + OpenNext-Cloudflare). Tracked in
-// a follow-up issue on this repo. `unsafe-eval` has been dropped.
-// ponytail: keep unsafe-inline until Next.js nonce support is stable in
-// App Router SSR + OpenNext workerd runtime; then switch to per-request
-// nonce via middleware.js and drop unsafe-inline.
+// breaks hydration under App Router + OpenNext-Cloudflare). `unsafe-eval`
+// has been dropped.
+//
+// The blocker is not only that issue. A nonce has to be minted per request,
+// and almost every route here is statically prerendered (`next build` marks
+// them `○ (Static)`), so the inline <script> tags are baked into the HTML at
+// build time. A per-request nonce from middleware.js would never match the
+// baked ones and hydration would die silently — every onClick inert. Adopting
+// a nonce therefore means forcing dynamic rendering site-wide, turning every
+// marketing page view into a Worker SSR invocation. That is an architecture
+// decision with a real cost, not a header change: it needs an ADR.
+//
+// So `unsafe-inline` stands, and the control that actually protects the
+// session token in localStorage is that first-party code contains no
+// HTML/code-from-string sink at all. That is enforced by the "Grep gates"
+// step in .github/workflows/ci.yml, not left to review. tests/
+// securityHeaders.test.mjs pins everything below so it cannot drift.
+//
+// ponytail: revisit only with an ADR that accepts full dynamic rendering, or
+// when Next can nonce a prerendered page's inline scripts.
 // `next dev` ships its HMR / React Refresh runtime through eval(); without
 // 'unsafe-eval' hydration dies silently in local dev and every onClick is
 // inert. Production builds contain no eval, so the directive is dev-only.
