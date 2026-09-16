@@ -30,7 +30,10 @@ export function useCatalog() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch('/api/catalog', { cache: 'no-store' });
+        // Default caching on purpose: /api/catalog serves
+        // `public, max-age=60, s-maxage=300`. `no-store` threw that away and
+        // made every page mount a fresh Worker round trip.
+        const res = await fetch('/api/catalog');
         if (!res.ok) throw new Error(String(res.status));
         const data = await res.json();
         if (!Array.isArray(data?.models) || !data.models.length) throw new Error('empty');
