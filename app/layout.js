@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import ToasterMount from '../components/ToasterMount';
 import AuthGate from '../components/AuthGate.jsx';
 import SiteChrome from './veyrnox/_components/SiteChrome';
+import { OG_IMAGE, ORG_LD, JsonLd } from './seo';
 
 const inter = Inter({
   variable: "--font-inter",
@@ -31,8 +32,11 @@ export const metadata = {
     title: TITLE,
     description: DESCRIPTION,
     url: '/',
+    images: [OG_IMAGE],
   },
-  twitter: { card: 'summary', title: TITLE, description: DESCRIPTION },
+  // summary_large_image, not summary: with a 1200x630 card the small variant
+  // crops it to a square thumbnail.
+  twitter: { card: 'summary_large_image', title: TITLE, description: DESCRIPTION, images: [OG_IMAGE.url] },
 };
 
 // Dark is the brand default; the theme toggle overrides it per browser.
@@ -54,6 +58,7 @@ export default function RootLayout({ children }) {
         <SiteChrome />
         <ToasterMount />
         <AuthGate />
+        <JsonLd data={ORG_LD} />
       </body>
     </html>
   );

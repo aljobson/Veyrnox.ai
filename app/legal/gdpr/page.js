@@ -4,6 +4,7 @@ export const metadata = {
     title: 'GDPR & Data Rights',
     description:
         'How to exercise access, export, rectification and deletion rights over the data Veyrnox.ai holds about you.',
+    alternates: { canonical: '/legal/gdpr' },
 };
 
 export default function Gdpr() {

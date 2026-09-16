@@ -25,6 +25,20 @@ import {
   kindOf,
 } from './_lib/tokens';
 import { select, envConfig } from '../../packages/db/supabase-client.js';
+import { SITE_URL, JsonLd } from '../seo';
+
+// FAQPage built from the same FAQ constant the page renders, so the markup
+// and the structured data cannot drift apart.
+const FAQ_LD = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  '@id': `${SITE_URL}/#faq`,
+  mainEntity: FAQ.map(({ q, a }) => ({
+    '@type': 'Question',
+    name: q,
+    acceptedAnswer: { '@type': 'Answer', text: a },
+  })),
+};
 
 export const revalidate = 300;
 
@@ -83,6 +97,7 @@ export default async function VeyrnoxLanding() {
       <FAQBlock />
       <ClosingCTA modelCount={catalog.length} />
       <FooterForest catalog={catalog} />
+      <JsonLd data={FAQ_LD} />
     </div>
   );
 }

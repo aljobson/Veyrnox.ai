@@ -4,6 +4,7 @@ export const metadata = {
     title: 'Terms of Service',
     description:
         'The contract between you and Veyrnox Ltd — acceptable use, credits, licensing of generated output, and liability.',
+    alternates: { canonical: '/legal/terms' },
 };
 
 export default function Terms() {
