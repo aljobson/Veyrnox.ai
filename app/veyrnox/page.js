@@ -2,6 +2,9 @@ import Link from 'next/link';
 import { Logo } from './_components/Logo';
 import { Chip } from './_components/Chip';
 import { NavAuthButtons } from './_components/NavAuthButtons';
+import { MobileMenu } from './_components/MobileMenu';
+import { SiteSearch } from './_components/SiteSearch';
+import { ThemeToggle } from './_components/ThemeToggle';
 import {
   NAV_CATEGORIES,
   FEATURE_CARDS,
@@ -15,7 +18,9 @@ import {
   PROMO_STRIP,
   HERO_CHIP,
   FOOTER_TAGLINE,
-  FOOTER_STAMP,
+  footerStamp,
+  SITE_UPDATED,
+  SUPPORT_EMAIL,
   MODELS as MODELS_FALLBACK,
   kindOf,
 } from './_lib/tokens';
@@ -85,12 +90,12 @@ export default async function VeyrnoxLanding() {
 /* ─── Amber promo strip ─── */
 function PromoStrip() {
   return (
-    <div className="bg-vx-money text-vx-money-ink text-[13px] font-bold px-6 py-2 flex items-center justify-center gap-3 flex-wrap">
+    <div data-print="hide" className="bg-vx-money text-vx-money-ink text-[12px] sm:text-[13px] font-bold px-4 sm:px-6 py-2 flex items-center justify-center gap-2 sm:gap-3 flex-wrap text-center">
       <span aria-hidden="true" className="font-vx-mono text-[11px] tracking-[0.14em]">◆</span>
       <span>{PROMO_STRIP.message}</span>
       <Link
         href={PROMO_STRIP.href}
-        className="bg-vx-base text-vx-fg rounded-full px-3 py-1 text-[11px] font-bold hover:bg-black/80"
+        className="bg-vx-base text-vx-fg rounded-full px-3 py-1 text-[11px] font-bold hover:opacity-80"
       >
         {PROMO_STRIP.cta}
       </Link>
@@ -101,24 +106,30 @@ function PromoStrip() {
 /* ─── Wide sticky nav ─── */
 function WideNav() {
   return (
-    <div className="sticky top-0 z-40 h-16 border-b border-vx-border bg-vx-base/90 backdrop-blur">
-      <div className="h-full px-6 flex items-center gap-6 max-w-[1300px] mx-auto">
-        <Link href="/" className="flex items-center shrink-0" aria-label="Veyrnox.ai">
+    <div data-print="hide" className="sticky top-0 z-40 h-16 border-b border-vx-border bg-vx-base/90 backdrop-blur">
+      <div className="h-full px-4 sm:px-6 flex items-center gap-3 lg:gap-6 max-w-[1300px] mx-auto">
+        <Link href="/" className="flex items-center shrink-0" aria-label="Veyrnox.ai — home">
           <Logo size={30} wordmark />
         </Link>
-        <nav className="flex gap-1 items-center overflow-x-auto scrollbar-none flex-1">
+        {/* The links used to live in a horizontal scroller that, on a phone,
+            looked like a truncated row nobody swipes. Below lg they move
+            into the menu instead. */}
+        <nav aria-label="Primary" className="hidden lg:flex gap-1 items-center flex-1 min-w-0">
           {NAV_CATEGORIES.map((c) => (
             <a
               key={c.href}
               href={c.href}
-              className="shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-full text-[13px] font-semibold text-vx-fg-body hover:text-vx-fg hover:bg-vx-panel"
+              className="shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-full text-[13px] font-semibold text-vx-fg-body transition-colors hover:text-vx-fg hover:bg-vx-panel"
             >
               {c.label}
             </a>
           ))}
         </nav>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex flex-1 lg:flex-none items-center justify-end gap-2 shrink-0">
+          <SiteSearch className="hidden sm:inline-flex" />
+          <ThemeToggle className="hidden lg:inline-flex" />
           <NavAuthButtons />
+          <MobileMenu items={NAV_CATEGORIES} className="lg:hidden" />
         </div>
       </div>
     </div>
@@ -128,7 +139,7 @@ function WideNav() {
 /* ─── Featured hero cards (5 wide, kicker + title + Open) ─── */
 function FeaturedHeroCards({ modelCount }) {
   return (
-    <section id="explore" className="px-6 pt-8 max-w-[1400px] mx-auto">
+    <section id="explore" className="px-4 sm:px-6 pt-8 max-w-[1400px] mx-auto">
       <Hero modelCount={modelCount} />
       <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
         {FEATURE_CARDS.map((f) => (
@@ -170,16 +181,16 @@ function Hero({ modelCount }) {
             'radial-gradient(45% 40% at 15% 80%, rgba(228,169,60,0.12), transparent 65%)',
         }}
       />
-      <div className="relative max-w-[1000px] mx-auto pt-16 pb-8 flex flex-col items-center text-center gap-6">
+      <div className="relative max-w-[1000px] mx-auto pt-10 sm:pt-16 pb-8 flex flex-col items-center text-center gap-5 sm:gap-6">
         <Chip tone="accent" noGlyph>
           <span aria-hidden="true" className="mr-1 text-vx-accent">●</span>
           {HERO_CHIP}
         </Chip>
-        <h1 className="text-[56px] md:text-[72px] font-black leading-[0.98] tracking-[-0.035em] text-balance max-w-[900px]">
+        <h1 className="text-[34px] sm:text-[48px] md:text-[72px] font-black leading-[1.02] md:leading-[0.98] tracking-[-0.03em] md:tracking-[-0.035em] text-balance max-w-[900px]">
           One prompt in. Endless creations out.<br />
           <span className="text-vx-accent">Priced on the button.</span>
         </h1>
-        <p className="text-lg text-vx-fg-body max-w-[640px] leading-[1.6]">
+        <p className="text-base sm:text-lg text-vx-fg-body max-w-[640px] leading-[1.6]">
           Credit-metered AI image, video and audio. See the exact cost before you press generate —
           refund on failure, always.
         </p>
@@ -197,11 +208,11 @@ function Hero({ modelCount }) {
             See how it works
           </Link>
         </div>
-        <div className="mt-8 grid grid-cols-3 gap-8 max-w-[720px] w-full">
+        <div className="mt-8 grid grid-cols-3 gap-3 sm:gap-8 max-w-[720px] w-full">
           {HERO_STATS.map((s) => (
             <div key={s.label} className="text-center">
-              <div className="font-vx-mono text-[24px] font-bold text-vx-accent vx-num">{s.value ?? modelCount}</div>
-              <div className="mt-1 text-xs text-vx-fg-muted">{s.label}</div>
+              <div className="font-vx-mono text-[20px] sm:text-[24px] font-bold text-vx-accent vx-num">{s.value ?? modelCount}</div>
+              <div className="mt-1 text-[11px] sm:text-xs text-vx-fg-muted leading-snug">{s.label}</div>
             </div>
           ))}
         </div>
@@ -213,16 +224,16 @@ function Hero({ modelCount }) {
 /* ─── Sign-up incentive over hero gradient ─── */
 function SignupIncentive() {
   return (
-    <section className="px-6 pt-8 max-w-[1400px] mx-auto">
+    <section className="px-4 sm:px-6 pt-8 max-w-[1400px] mx-auto">
       <div
         className="relative rounded-3xl overflow-hidden border border-vx-border"
         style={{ background: 'linear-gradient(135deg,#0a1a2c 0%,#0e3a4a 45%,#2ec8a3 100%)' }}
       >
         <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-transparent" />
-        <div className="relative grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] gap-8 p-10 lg:p-14 items-center">
-          <div>
+        <div className="relative p-6 sm:p-10 lg:p-14">
+          <div className="max-w-[560px]">
             <Chip tone="money" className="mb-4">SIGN-UP BONUS</Chip>
-            <h2 className="text-[44px] font-black leading-[1.02] tracking-[-0.03em] text-balance">
+            <h2 className="text-[28px] sm:text-[36px] lg:text-[44px] font-black leading-[1.05] lg:leading-[1.02] tracking-[-0.03em] text-balance">
               50 free credits.<br/>
               <span className="text-vx-accent">Every button shows its price.</span>
             </h2>
@@ -246,7 +257,6 @@ function SignupIncentive() {
               </Link>
             </div>
           </div>
-          <div />
         </div>
       </div>
     </section>
@@ -256,11 +266,11 @@ function SignupIncentive() {
 /* ─── Product tiles (6, live catalog rows) ─── */
 function ProductTilesRow({ modelCount }) {
   return (
-    <section id="models" className="px-6 pt-16 max-w-[1400px] mx-auto">
+    <section id="models" className="px-4 sm:px-6 pt-16 max-w-[1400px] mx-auto">
       <div className="flex items-baseline justify-between mb-6 flex-wrap gap-2">
         <div>
           <div className="font-vx-mono text-[11px] tracking-[0.14em] text-vx-accent mb-2">EVERY MODEL. ONE BALANCE.</div>
-          <h2 className="text-3xl font-black tracking-[-0.02em]">{modelCount} models on the shelf.</h2>
+          <h2 className="text-2xl sm:text-3xl font-black tracking-[-0.02em]">{modelCount} models on the shelf.</h2>
         </div>
         <Link href="/pricing" className="text-sm font-semibold text-vx-fg-muted hover:text-vx-fg">
           Full catalog →
@@ -304,7 +314,7 @@ function ProductTilesRow({ modelCount }) {
 // the catalog.
 function HeroStatement() {
   return (
-    <section id="honesty" className="px-6 pt-20 pb-6 max-w-[1400px] mx-auto">
+    <section id="honesty" className="px-4 sm:px-6 pt-20 pb-6 max-w-[1400px] mx-auto">
       <div className="max-w-[900px]">
         <div className="font-vx-mono text-[11px] tracking-[0.14em] text-vx-accent mb-4">THE HONESTY SIGNATURE</div>
         <h2 className="text-[40px] sm:text-[54px] md:text-[72px] font-black leading-[0.98] tracking-[-0.035em] text-balance">
@@ -335,11 +345,11 @@ function HeroStatement() {
 /* ─── Effects preset wall ─── */
 function EffectsWall() {
   return (
-    <section className="px-6 pt-20 pb-8 max-w-[1400px] mx-auto">
+    <section className="px-4 sm:px-6 pt-20 pb-8 max-w-[1400px] mx-auto">
       <div className="flex items-baseline justify-between mb-6 flex-wrap gap-2">
         <div>
           <div className="font-vx-mono text-[11px] tracking-[0.14em] text-vx-accent mb-2">PRESETS · ONE-TAP LOOKS</div>
-          <h2 className="text-3xl font-black tracking-[-0.02em]">Big-budget effects. Priced on tap.</h2>
+          <h2 className="text-2xl sm:text-3xl font-black tracking-[-0.02em]">Big-budget effects. Priced on tap.</h2>
         </div>
         <Link href="/presets" className="text-sm font-semibold text-vx-fg-muted hover:text-vx-fg">
           Browse all →
@@ -387,13 +397,13 @@ function ModelShelf({ catalog }) {
   const total = groups.reduce((n, g) => n + g.rows.length, 0);
 
   return (
-    <section id="shelf" className="px-6 pt-20 pb-8 max-w-[1400px] mx-auto">
+    <section id="shelf" className="px-4 sm:px-6 pt-20 pb-8 max-w-[1400px] mx-auto">
       <div className="flex items-baseline justify-between mb-6 flex-wrap gap-2">
         <div>
           <div className="font-vx-mono text-[11px] tracking-[0.14em] text-vx-accent mb-2">
             THE SHELF · {total} LIVE MODELS
           </div>
-          <h2 className="text-3xl font-black tracking-[-0.02em]">Every model. Every price. No tiers to decode.</h2>
+          <h2 className="text-2xl sm:text-3xl font-black tracking-[-0.02em]">Every model. Every price. No tiers to decode.</h2>
         </div>
         <Link href="/pricing" className="text-sm font-semibold text-vx-fg-muted hover:text-vx-fg">
           Full pricing →
@@ -448,16 +458,16 @@ function ModelShelf({ catalog }) {
 /* ─── Why Veyrnox — 4 pillars ─── */
 function WhyVeyrnox() {
   return (
-    <section className="px-6 pt-20 pb-6 max-w-[1400px] mx-auto">
+    <section className="px-4 sm:px-6 pt-20 pb-6 max-w-[1400px] mx-auto">
       <div className="text-center mb-8">
         <div className="font-vx-mono text-[11px] tracking-[0.14em] text-vx-accent mb-2">WHY VEYRNOX</div>
-        <h2 className="text-3xl md:text-4xl font-black tracking-[-0.02em]">Honest math. One balance. Every credit on the record.</h2>
+        <h2 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-[-0.02em] text-balance">Honest math. One balance. Every credit on the record.</h2>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {PILLARS.map((p) => (
           <div key={p.key} className="rounded-2xl border border-vx-border bg-vx-panel p-6 flex flex-col">
             <div className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-accent">{p.kicker}</div>
-            <div className="mt-3 font-vx-mono text-[36px] font-bold text-vx-accent vx-num leading-none">{p.stat}</div>
+            <div className="mt-3 font-vx-mono text-[26px] sm:text-[36px] font-bold text-vx-accent vx-num leading-none">{p.stat}</div>
             <div className="mt-4 text-[15px] font-bold leading-snug text-balance">{p.title}</div>
             <div className="mt-2 text-[12.5px] text-vx-fg-body leading-[1.55]">{p.body}</div>
           </div>
@@ -470,7 +480,7 @@ function WhyVeyrnox() {
 /* ─── Alternating feature strips ─── */
 function FeatureStripsSection() {
   return (
-    <section className="px-6 pt-16 pb-6 max-w-[1400px] mx-auto flex flex-col gap-4">
+    <section className="px-4 sm:px-6 pt-16 pb-6 max-w-[1400px] mx-auto flex flex-col gap-4">
       <FeatureStrip
         kicker="CATALOG"
         title="One balance across every model."
@@ -500,9 +510,9 @@ function FeatureStripsSection() {
 function FeatureStrip({ kicker, title, body, cta, bg, reverse = false }) {
   return (
     <div className={`rounded-3xl border border-vx-border bg-vx-panel overflow-hidden grid grid-cols-1 lg:grid-cols-2 ${reverse ? 'lg:grid-flow-dense lg:[&>*:first-child]:col-start-2' : ''}`}>
-      <div className="p-10 lg:p-14">
+      <div className="p-6 sm:p-10 lg:p-14">
         <div className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-accent mb-3">{kicker}</div>
-        <h3 className="text-[30px] md:text-[34px] font-black leading-[1.05] tracking-[-0.02em] text-balance">{title}</h3>
+        <h3 className="text-[24px] sm:text-[30px] md:text-[34px] font-black leading-[1.05] tracking-[-0.02em] text-balance">{title}</h3>
         <p className="mt-4 text-vx-fg-body max-w-[500px] leading-[1.6]">{body}</p>
         <Link
           href={cta.href}
@@ -519,10 +529,10 @@ function FeatureStrip({ kicker, title, body, cta, bg, reverse = false }) {
 /* ─── FAQ ─── */
 function FAQBlock() {
   return (
-    <section id="faq" className="px-6 pt-16 pb-6 max-w-[900px] mx-auto">
+    <section id="faq" className="px-4 sm:px-6 pt-16 pb-6 max-w-[900px] mx-auto">
       <div className="text-center mb-8">
         <div className="font-vx-mono text-[11px] tracking-[0.14em] text-vx-accent mb-2">FAQ</div>
-        <h2 className="text-3xl md:text-4xl font-black tracking-[-0.02em]">Everything you'd ask.</h2>
+        <h2 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-[-0.02em]">Everything you&rsquo;d ask.</h2>
       </div>
       <div className="rounded-2xl border border-vx-border bg-vx-panel divide-y divide-vx-border/60">
         {FAQ.map((row) => (
@@ -557,12 +567,12 @@ function FAQBlock() {
 /* ─── Closing CTA ─── */
 function ClosingCTA({ modelCount }) {
   return (
-    <section className="px-6 pt-16 pb-16 max-w-[1400px] mx-auto">
-      <div className="rounded-3xl border border-vx-border bg-vx-panel p-14 text-center">
+    <section className="px-4 sm:px-6 pt-16 pb-16 max-w-[1400px] mx-auto">
+      <div className="rounded-3xl border border-vx-border bg-vx-panel p-6 sm:p-10 lg:p-14 text-center">
         <div className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-accent mb-3">
           <span aria-hidden="true" className="mr-1">●</span>{HERO_CHIP}
         </div>
-        <h2 className="text-[40px] md:text-[52px] font-black tracking-[-0.03em] leading-[1.05] text-balance max-w-[820px] mx-auto">
+        <h2 className="text-[28px] sm:text-[40px] md:text-[52px] font-black tracking-[-0.03em] leading-[1.05] text-balance max-w-[820px] mx-auto">
           Ship your first asset today.<br />
           <span className="text-vx-accent">See the price before you spend.</span>
         </h2>
@@ -588,7 +598,7 @@ function MetricStripBlock({ modelCount }) {
     <div className="mt-8 rounded-3xl border border-vx-border bg-vx-panel grid grid-cols-2 md:grid-cols-4 divide-x divide-y md:divide-y-0 divide-vx-border/60">
       {METRIC_STRIP.map((m) => (
         <div key={m.label} className="p-6 md:p-8 text-center">
-          <div className="font-vx-mono text-[32px] md:text-[40px] font-bold text-vx-accent vx-num leading-none">{m.value ?? modelCount}</div>
+          <div className="font-vx-mono text-[24px] sm:text-[32px] md:text-[40px] font-bold text-vx-accent vx-num leading-none break-words">{m.value ?? modelCount}</div>
           <div className="mt-3 font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">{m.label}</div>
         </div>
       ))}
@@ -598,16 +608,36 @@ function MetricStripBlock({ modelCount }) {
 
 /* ─── Footer forest ─── */
 function FooterForest({ catalog }) {
+  // The Models column used to be plain text — every row is a real catalog
+  // id, so each one now opens the studio on that model.
   const columns = MORE_FEATURES.map((col) =>
-    col.group === 'Models' ? { ...col, items: catalog.map((m) => shelfName(m.name) + (m.premium ? ' ◆' : '')) } : col,
+    col.group === 'Models'
+      ? {
+          ...col,
+          items: catalog.map((m) => ({
+            label: shelfName(m.name) + (m.premium ? ' ◆' : ''),
+            href: `/app/create?model=${encodeURIComponent(m.id)}`,
+          })),
+        }
+      : col,
   );
   return (
     <footer className="border-t border-vx-border">
-      <div className="max-w-[1400px] mx-auto px-6 py-14">
-        <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_repeat(4,1fr)] gap-10">
-          <div>
-            <Logo size={28} wordmark />
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 py-10 sm:py-14">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-[1.4fr_repeat(4,1fr)] gap-8 sm:gap-10">
+          <div className="col-span-2 sm:col-span-3 lg:col-span-1">
+            {/* The wordmark is the conventional way back to the top of a
+                site; it used to be inert down here. */}
+            <Link href="/" aria-label="Veyrnox.ai — home" className="inline-flex">
+              <Logo size={28} wordmark />
+            </Link>
             <p className="mt-4 text-sm text-vx-fg-body max-w-[320px] leading-[1.6]">{FOOTER_TAGLINE}</p>
+            <a
+              href={`mailto:${SUPPORT_EMAIL}`}
+              className="mt-4 inline-block text-[13px] text-vx-accent underline underline-offset-4 hover:text-vx-accent-hover"
+            >
+              {SUPPORT_EMAIL}
+            </a>
           </div>
           {columns.map((col) => (
             <div key={col.group}>
@@ -615,34 +645,54 @@ function FooterForest({ catalog }) {
                 {col.group.toUpperCase()}
               </div>
               <ul className="space-y-2">
-                {col.items.map((it) => {
-                  const label = typeof it === 'string' ? it : it.label;
-                  const href = typeof it === 'string' ? null : it.href;
-                  return (
-                    <li key={label}>
-                      {href ? (
-                        <Link href={href} className="text-[13px] text-vx-fg-body hover:text-vx-fg underline-offset-4 hover:underline">
-                          {label}
-                        </Link>
-                      ) : (
-                        <span className="text-[13px] text-vx-fg-muted">{label}</span>
-                      )}
-                    </li>
-                  );
-                })}
+                {col.items.map((it) => (
+                  <li key={it.label}>
+                    <FooterLink href={it.href}>{it.label}</FooterLink>
+                  </li>
+                ))}
               </ul>
             </div>
           ))}
         </div>
       </div>
       <div className="border-t border-vx-border">
-        <div className="max-w-[1400px] mx-auto px-6 py-6 text-xs text-vx-fg-muted flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
-          <div>{FOOTER_STAMP}</div>
-          <div className="flex gap-4">
-            <Link href="/design-system" className="hover:text-vx-fg">Design</Link>
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 py-6 text-xs text-vx-fg-muted flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            {/* Called at render, not at module load: a constant froze the
+                year to whenever the Worker bundle happened to boot. */}
+            <span>{footerStamp()}</span>
+            <span aria-hidden="true">·</span>
+            <span>
+              Last updated <time dateTime={SITE_UPDATED}>{formatUpdated(SITE_UPDATED)}</time>
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-4">
+            <Link href="/legal/terms" className="transition-colors hover:text-vx-fg">Terms</Link>
+            <Link href="/legal/privacy" className="transition-colors hover:text-vx-fg">Privacy</Link>
+            <Link href="/design-system" className="transition-colors hover:text-vx-fg">Design</Link>
           </div>
         </div>
       </div>
     </footer>
   );
+}
+
+// mailto: and other external schemes go through a plain anchor — next/link
+// is for routes it can prefetch.
+function FooterLink({ href, children }) {
+  const cls = 'text-[13px] text-vx-fg-body transition-colors hover:text-vx-fg underline-offset-4 hover:underline';
+  if (!href) return <span className="text-[13px] text-vx-fg-muted">{children}</span>;
+  if (/^[a-z]+:/i.test(href)) {
+    return <a href={href} className={cls}>{children}</a>;
+  }
+  return <Link href={href} className={cls}>{children}</Link>;
+}
+
+function formatUpdated(iso) {
+  return new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
 }

@@ -9,7 +9,8 @@ export function Logo({ size = 30, wordmark = false, className = '' }) {
         aria-hidden="true"
         style={{ width: size, height: size, display: 'block' }}
       >
-        <path d="M8 12 L38 12 L60 62 L82 12 L112 12 L60 112 Z" fill="#3EE6C4" />
+        {/* Themed: the literal aqua was a 1.9:1 wash on the light palette. */}
+        <path d="M8 12 L38 12 L60 62 L82 12 L112 12 L60 112 Z" fill="rgb(var(--vx-accent))" />
       </svg>
       {wordmark && (
         <span className="font-vx font-extrabold tracking-[-0.01em] text-[15px] leading-none">

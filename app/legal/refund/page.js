@@ -1,6 +1,10 @@
 import { LegalPage, ENTITY } from '../_lib/Legal';
 
-export const metadata = { title: 'Refund Policy — Veyrnox.ai' };
+export const metadata = {
+    title: 'Refund Policy',
+    description:
+        'Exactly when credits come back to your balance: automatic refunds on failed generations, and what happens to purchased credits.',
+};
 
 export default function Refund() {
     return (

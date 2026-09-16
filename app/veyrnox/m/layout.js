@@ -5,7 +5,11 @@ import { MobileJumps } from './_MobileNav';
 // These screens are a design prototype with sample data (balance, jobs,
 // ledger rows). Say so on every screen and keep them out of search until
 // they read a real account.
-export const metadata = { robots: { index: false, follow: false } };
+export const metadata = {
+  title: { default: 'Mobile prototype', template: '%s — Veyrnox.ai' },
+  description: 'Design prototype of the Veyrnox mobile screens, rendered with sample data.',
+  robots: { index: false, follow: false },
+};
 
 // Mobile-web wrapper: iPhone bezel for desktop viewing, jumps strip up top.
 export default function MobileLayout({ children }) {

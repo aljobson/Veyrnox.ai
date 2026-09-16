@@ -186,13 +186,13 @@ export default function CreateStudio() {
     <div className="min-h-dvh">
       <AppNav balance={balance ?? 0} active="create" />
 
-      <div className="max-w-[1500px] mx-auto px-8 pt-6 pb-16 grid grid-cols-[1fr_360px] gap-6">
+      <div className="max-w-[1500px] mx-auto px-4 sm:px-8 pt-6 pb-16 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-6">
         {/* ============ CANVAS ============ */}
         <div>
           <div className="flex items-center justify-between mb-3">
             <div>
               <div className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">STUDIO · UNTITLED</div>
-              <h1 className="text-3xl font-black tracking-[-0.02em] mt-1">Create</h1>
+              <h1 className="text-2xl sm:text-3xl font-black tracking-[-0.02em] mt-1">Create</h1>
             </div>
             <Chip tone="accent">AUTO-SAVING</Chip>
           </div>
@@ -247,7 +247,7 @@ export default function CreateStudio() {
                 ) : (
                   <div className="text-center">
                     <div className="w-16 h-16 rounded-full border border-vx-border/60 flex items-center justify-center mx-auto opacity-70">
-                      <div className="w-0 h-0 border-l-[16px] border-l-white border-y-[10px] border-y-transparent ml-1" />
+                      <div className="w-0 h-0 border-l-[16px] border-l-vx-fg-muted border-y-[10px] border-y-transparent ml-1" />
                     </div>
                     <div className="mt-3 text-sm text-vx-fg-muted">Type a prompt or pick a preset</div>
                   </div>

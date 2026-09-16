@@ -15,10 +15,9 @@ const jetbrains = JetBrains_Mono({
   display: 'swap',
 });
 
-export const metadata = {
-  title: 'Veyrnox.ai — AI video & image, priced per generation',
-  description: 'Credit-metered AI video and image studio. Every generation shows its price before you spend.',
-};
+// No title/description here: the landing page is the site default, which
+// app/layout.js already sets. Restating it would run it through the
+// `%s — Veyrnox.ai` template and print the brand twice.
 
 export default function VeyrnoxLayout({ children }) {
   return (

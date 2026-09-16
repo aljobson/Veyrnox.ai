@@ -30,6 +30,7 @@ export default function AuthGate() {
     const [password, setPassword] = useState("");
     const [busy, setBusy] = useState(false);
     const [notice, setNotice] = useState(null);
+    const [showPassword, setShowPassword] = useState(false);
     // Which OAuth providers are actually enabled on the Supabase side.
     // Fetching once on first mount avoids showing broken buttons that
     // redirect to a Supabase 400 "provider is not enabled" page.
@@ -128,21 +129,21 @@ export default function AuthGate() {
             aria-label="Sign in to Veyrnox"
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4"
         >
-            <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-zinc-900 p-6 shadow-2xl">
+            <div className="w-full max-w-sm rounded-2xl border border-vx-border bg-vx-panel p-6 shadow-2xl">
                 <div className="flex items-start justify-between mb-1">
-                    <h2 className="text-lg font-semibold text-white">
+                    <h2 className="text-lg font-semibold text-vx-fg">
                         {mode === "sign_up" ? "Create your account" : mode === "magic" ? "Email sign-in link" : "Sign in to Veyrnox"}
                     </h2>
                     <button
                         type="button"
                         aria-label="Close"
                         onClick={dismiss}
-                        className="text-zinc-400 hover:text-white text-xl leading-none"
+                        className="text-vx-fg-muted hover:text-vx-fg text-xl leading-none"
                     >
                         ×
                     </button>
                 </div>
-                <p className="text-sm text-zinc-400 mb-4">
+                <p className="text-sm text-vx-fg-muted mb-4">
                     New users get 50 free credits.
                 </p>
 
@@ -150,60 +151,79 @@ export default function AuthGate() {
                     <>
                         <div className="space-y-2 mb-3">
                             {oauth.apple && (
-                                <button type="button" onClick={() => signInWithOAuth("apple")} disabled={busy} className="w-full rounded-lg bg-white text-black font-semibold py-2 text-sm hover:bg-zinc-200 disabled:opacity-60">
+                                <button type="button" onClick={() => signInWithOAuth("apple")} disabled={busy} className="w-full rounded-lg bg-vx-fg text-vx-base font-semibold py-2 text-sm hover:opacity-90 disabled:opacity-60">
                                     Continue with Apple
                                 </button>
                             )}
                             {oauth.google && (
-                                <button type="button" onClick={() => signInWithOAuth("google")} disabled={busy} className="w-full rounded-lg bg-zinc-800 border border-white/10 text-white font-semibold py-2 text-sm hover:bg-zinc-700 disabled:opacity-60">
+                                <button type="button" onClick={() => signInWithOAuth("google")} disabled={busy} className="w-full rounded-lg bg-vx-base border border-vx-border text-vx-fg font-semibold py-2 text-sm hover:border-vx-accent disabled:opacity-60">
                                     Continue with Google
                                 </button>
                             )}
                         </div>
-                        <div className="flex items-center gap-3 mb-3 text-[10px] text-zinc-500 uppercase tracking-wider">
-                            <div className="h-px bg-white/10 flex-1" /> or email <div className="h-px bg-white/10 flex-1" />
+                        <div className="flex items-center gap-3 mb-3 text-[10px] text-vx-fg-faint uppercase tracking-wider">
+                            <div className="h-px bg-vx-border flex-1" /> or email <div className="h-px bg-vx-border flex-1" />
                         </div>
                     </>
                 )}
                 <form onSubmit={handleSubmit} className="space-y-3">
                     <label className="block">
-                        <span className="text-xs text-zinc-400">Email</span>
+                        <span className="text-xs text-vx-fg-muted">Email</span>
                         <input
                             type="email"
                             required
                             autoComplete="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            className="mt-1 w-full rounded-lg bg-zinc-800 border border-white/10 px-3 py-2 text-sm text-white outline-none focus:border-vx-accent focus-visible:ring-2 focus-visible:ring-vx-accent/40"
+                            className="mt-1 w-full rounded-lg bg-vx-base border border-vx-border px-3 py-2 text-sm text-vx-fg outline-none focus:border-vx-accent focus-visible:ring-2 focus-visible:ring-vx-accent/40"
                         />
                     </label>
 
                     {mode !== "magic" && (
                         <label className="block">
-                            <span className="text-xs text-zinc-400">Password</span>
-                            <input
-                                type="password"
-                                required
-                                autoComplete={mode === "sign_up" ? "new-password" : "current-password"}
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                minLength={8}
-                                className="mt-1 w-full rounded-lg bg-zinc-800 border border-white/10 px-3 py-2 text-sm text-white outline-none focus:border-vx-accent focus-visible:ring-2 focus-visible:ring-vx-accent/40"
-                            />
+                            <span className="text-xs text-vx-fg-muted">Password</span>
+                            <span className="relative mt-1 block">
+                                <input
+                                    type={showPassword ? "text" : "password"}
+                                    required
+                                    autoComplete={mode === "sign_up" ? "new-password" : "current-password"}
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    minLength={8}
+                                    className="w-full rounded-lg bg-vx-base border border-vx-border pl-3 pr-16 py-2 text-sm text-vx-fg outline-none focus:border-vx-accent focus-visible:ring-2 focus-visible:ring-vx-accent/40"
+                                />
+                                {/* A typo in a masked 8-character minimum is the
+                                    commonest reason a sign-up bounces. */}
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword((v) => !v)}
+                                    aria-pressed={showPassword}
+                                    aria-label={showPassword ? "Hide password" : "Show password"}
+                                    className="absolute inset-y-0 right-0 px-3 text-[11px] font-bold uppercase tracking-wide text-vx-fg-muted hover:text-vx-fg"
+                                >
+                                    {showPassword ? "Hide" : "Show"}
+                                </button>
+                            </span>
+                            <span className="mt-1 block text-[11px] text-vx-fg-faint">At least 8 characters.</span>
                         </label>
                     )}
 
-                    {notice && (
-                        <div
-                            className={`text-xs rounded-md px-3 py-2 ${
-                                notice.kind === "error"
-                                    ? "bg-red-500/10 text-red-300 border border-red-500/20"
-                                    : "bg-emerald-500/10 text-emerald-300 border border-emerald-500/20"
-                            }`}
-                        >
-                            {notice.text}
-                        </div>
-                    )}
+                    {/* Always mounted so a screen reader hears the message
+                        appear instead of the whole region being inserted. */}
+                    <div role="status" aria-live="polite" className={notice ? "block" : "sr-only"}>
+                        {notice && (
+                            <div
+                                className={`flex items-start gap-2 text-xs rounded-md px-3 py-2 border ${
+                                    notice.kind === "error"
+                                        ? "bg-vx-danger/10 text-vx-danger border-vx-danger/30"
+                                        : "bg-vx-accent/10 text-vx-accent border-vx-accent/30"
+                                }`}
+                            >
+                                <span aria-hidden="true">{notice.kind === "error" ? "✕" : "✓"}</span>
+                                <span>{notice.text}</span>
+                            </div>
+                        )}
+                    </div>
 
                     <button
                         type="submit"
@@ -220,26 +240,26 @@ export default function AuthGate() {
                     </button>
                 </form>
 
-                <div className="mt-4 flex flex-wrap gap-3 text-xs text-zinc-400">
+                <div className="mt-4 flex flex-wrap gap-3 text-xs text-vx-fg-muted">
                     {mode !== "sign_in" && (
-                        <button type="button" className="underline hover:text-white" onClick={() => setMode("sign_in")}>
+                        <button type="button" className="underline hover:text-vx-fg" onClick={() => setMode("sign_in")}>
                             Have an account? Sign in
                         </button>
                     )}
                     {mode !== "sign_up" && (
-                        <button type="button" className="underline hover:text-white" onClick={() => setMode("sign_up")}>
+                        <button type="button" className="underline hover:text-vx-fg" onClick={() => setMode("sign_up")}>
                             New? Create an account
                         </button>
                     )}
                     {mode !== "magic" && (
-                        <button type="button" className="underline hover:text-white" onClick={() => setMode("magic")}>
+                        <button type="button" className="underline hover:text-vx-fg" onClick={() => setMode("magic")}>
                             Email me a link instead
                         </button>
                     )}
                 </div>
 
-                <p className="mt-4 text-[10px] text-zinc-500 leading-tight">
-                    By continuing you accept the Veyrnox <a href="/legal/terms" className="underline hover:text-zinc-300">Terms</a> &amp; <a href="/legal/privacy" className="underline hover:text-zinc-300">Privacy Policy</a>.
+                <p className="mt-4 text-[10px] text-vx-fg-faint leading-tight">
+                    By continuing you accept the Veyrnox <a href="/legal/terms" className="underline hover:text-vx-fg">Terms</a> &amp; <a href="/legal/privacy" className="underline hover:text-vx-fg">Privacy Policy</a>.
                 </p>
             </div>
         </div>

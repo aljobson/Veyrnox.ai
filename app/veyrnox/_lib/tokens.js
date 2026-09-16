@@ -61,12 +61,31 @@ export const RESOLUTIONS = ['1K', '2K', '4K'];
 // ─── Landing-page content ────────────────────────────────────────────────
 // Ponytail: hand-authored copy — swap for CMS later. Veyrnox voice: honesty first.
 
+// Where support mail goes — the footer Contact row and the floating contact
+// button both read it, so there is one address to change.
+export const SUPPORT_EMAIL = 'legal@veyrnox.com';
+
 export const NAV_CATEGORIES = [
   { href: '/#explore',   label: 'Explore' },
   { href: '/#models',    label: 'Models' },
   { href: '/presets',   label: 'Presets' },
   { href: '/pricing',   label: 'Pricing' },
-  { href: '/#faq',       label: 'Docs' },
+  { href: '/#faq',       label: 'FAQ' },
+];
+
+// Every public route, with the blurb search and the 404 page reuse.
+export const SITE_PAGES = [
+  { href: '/',                  label: 'Home',               description: 'Credit-metered AI image, video and audio generation.' },
+  { href: '/pricing',           label: 'Pricing',            description: 'Every model, every credit price, one balance.' },
+  { href: '/presets',           label: 'Presets',            description: 'Curated one-tap looks, priced up front.' },
+  { href: '/app/create',        label: 'Create',             description: 'The studio — pick a model, see the cost, generate.' },
+  { href: '/app/library',       label: 'Library',            description: 'Every generation you have run, successes and refunds.' },
+  { href: '/app/credits',       label: 'Credits & billing',  description: 'Your balance, free-credit expiry and recent ledger rows.' },
+  { href: '/legal/terms',       label: 'Terms of Service',   description: 'The contract between you and Veyrnox Ltd.' },
+  { href: '/legal/privacy',     label: 'Privacy Policy',     description: 'What we process, why, and for how long.' },
+  { href: '/legal/gdpr',        label: 'GDPR & Data Rights', description: 'Access, export and deletion requests.' },
+  { href: '/legal/refund',      label: 'Refund Policy',      description: 'When credits come back to your balance.' },
+  { href: '/design-system',     label: 'Design system',      description: 'Colour, type and component reference.' },
 ];
 
 // Featured hero cards — 5 wide, each opens a model or the preset gallery.
@@ -215,7 +234,12 @@ export const MORE_FEATURES = [
     { label: 'Presets', href: '/presets' },
   ] },
   { group: 'Models',    items: [] }, // filled from the live catalog in page.js
-  { group: 'Tools',     items: ['Image Generator', 'Video Generator', 'Image-to-Video', 'Audio'] },
+  { group: 'Tools',     items: [
+    { label: 'Image Generator', href: '/app/create?model=nano-banana' },
+    { label: 'Video Generator', href: '/app/create?model=wan-2.5' },
+    { label: 'Image-to-Video',  href: '/app/create?model=kling-3.0-i2v' },
+    { label: 'Audio',           href: '/app/create?model=ace-step' },
+  ] },
   // Items are either a plain string (a label, rendered muted so it does not
   // read as a link) or { label, href } (real route).
   { group: 'Company',   items: [
@@ -223,12 +247,24 @@ export const MORE_FEATURES = [
     { label: 'Privacy',            href: '/legal/privacy' },
     { label: 'GDPR & Data Rights', href: '/legal/gdpr' },
     { label: 'Refund Policy',      href: '/legal/refund' },
-    { label: 'Contact',            href: 'mailto:legal@veyrnox.com' },
+    { label: 'Contact',            href: `mailto:${SUPPORT_EMAIL}` },
   ] },
 ];
 
 export const FOOTER_TAGLINE = 'Credit-metered AI generation for creators. Priced on the button — refund on failure, always.';
-export const FOOTER_STAMP   = `© ${new Date().getFullYear()} Veyrnox Ltd`;
+
+// A function, not a constant. `new Date()` at module scope is evaluated once
+// per Worker isolate — the footer showed whatever year the bundle happened to
+// boot in and would have read 2026 all through 2027.
+export function footerStamp() {
+  return `© ${new Date().getFullYear()} Veyrnox Ltd`;
+}
+
+
+// Stamped on the pages that make claims about prices and policy, so a
+// visitor can tell how fresh what they are reading is. Bump it when the
+// marketing copy or the pricing story changes.
+export const SITE_UPDATED = '2026-09-16';
 
 export const HERO_CHIP = 'LIVE · CREDIT-METERED';
 

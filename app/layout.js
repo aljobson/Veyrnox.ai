@@ -2,22 +2,56 @@ import './globals.css';
 import { Inter } from "next/font/google";
 import ToasterMount from '../components/ToasterMount';
 import AuthGate from '../components/AuthGate.jsx';
+import SiteChrome from './veyrnox/_components/SiteChrome';
 
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
 });
 
+const TITLE = 'Veyrnox.ai — AI video & image, priced per generation';
+const DESCRIPTION =
+  'Credit-metered AI video, image and audio generation. Every generation shows its price before you spend, and failed jobs refund automatically.';
+
 export const metadata = {
-  title: 'Veyrnox.ai — AI video & image, priced per generation',
-  description: 'Credit-metered AI video, image and audio generation. Every generation shows its price before you spend, and failed jobs refund automatically.',
+  // Absolute URLs for canonical + Open Graph. Without it Next emits
+  // relative og:url values that no crawler resolves.
+  metadataBase: new URL('https://veyrnox.ai'),
+  title: {
+    default: TITLE,
+    // Per-page titles set only their own half.
+    template: '%s — Veyrnox.ai',
+  },
+  description: DESCRIPTION,
+  applicationName: 'Veyrnox.ai',
+  alternates: { canonical: '/' },
+  openGraph: {
+    type: 'website',
+    siteName: 'Veyrnox.ai',
+    title: TITLE,
+    description: DESCRIPTION,
+    url: '/',
+  },
+  twitter: { card: 'summary', title: TITLE, description: DESCRIPTION },
+};
+
+// Dark is the brand default; the theme toggle overrides it per browser.
+export const viewport = {
+  themeColor: '#0A0A0B',
+  colorScheme: 'dark light',
 };
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body className={inter.variable}>
-        <main>{children}</main>
+        <a href="#main" className="vx-skip rounded-full bg-vx-accent px-4 py-2 text-sm font-extrabold text-vx-accent-ink">
+          Skip to content
+        </a>
+        {/* tabIndex -1 so the skip link and the back-to-top button can land
+            focus here without making the region itself tabbable. */}
+        <main id="main" tabIndex={-1}>{children}</main>
+        <SiteChrome />
         <ToasterMount />
         <AuthGate />
       </body>
