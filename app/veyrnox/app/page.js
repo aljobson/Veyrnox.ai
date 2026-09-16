@@ -16,9 +16,9 @@ export default function Explore() {
           belonged to nobody. */}
       <AppNav active="explore" />
 
-      <section className="max-w-[1400px] mx-auto px-8 pt-10 pb-4">
+      <section className="max-w-[1400px] mx-auto px-4 sm:px-8 pt-10 pb-4">
         <Chip tone="accent" className="mb-3">EXPLORE · CURATED PRESETS</Chip>
-        <h1 className="text-[44px] font-black tracking-[-0.03em] leading-[1.05]">
+        <h1 className="text-[28px] sm:text-[36px] md:text-[44px] font-black tracking-[-0.03em] leading-[1.08] sm:leading-[1.05] text-balance">
           One-tap looks. Exact prices.
         </h1>
         <p className="text-vx-fg-body mt-3 max-w-[640px] leading-[1.6]">
@@ -31,7 +31,8 @@ export default function Explore() {
             <button
               key={c}
               onClick={() => setCat(c)}
-              className={`font-vx-mono text-[11px] tracking-[0.12em] font-bold rounded-full px-4 py-2 border ${
+              aria-pressed={cat === c}
+              className={`font-vx-mono text-[11px] tracking-[0.12em] font-bold rounded-full px-4 py-2 border transition-colors ${
                 cat === c
                   ? 'bg-vx-accent text-vx-accent-ink border-transparent'
                   : 'border-vx-border text-vx-fg-muted hover:text-vx-fg'
@@ -43,14 +44,14 @@ export default function Explore() {
         </div>
       </section>
 
-      <section className="max-w-[1400px] mx-auto px-8 pt-4 pb-4 flex items-baseline justify-between">
+      <section className="max-w-[1400px] mx-auto px-4 sm:px-8 pt-4 pb-4 flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="text-xl font-black tracking-[-0.02em]">Presets</h2>
         <div className="font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted">
           {list.length} PRESETS · {new Set(list.map((p) => p.model)).size} MODELS · CACHED DEMOS FREE
         </div>
       </section>
 
-      <section className="max-w-[1400px] mx-auto px-8 pb-16">
+      <section className="max-w-[1400px] mx-auto px-4 sm:px-8 pb-16">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {list.map((p) => <PresetCard key={p.id} preset={p} size="md" />)}
         </div>

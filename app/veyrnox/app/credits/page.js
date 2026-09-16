@@ -81,14 +81,14 @@ export default function Credits() {
     <div className="min-h-dvh">
       <AppNav balance={balance ?? 0} active="credits" />
 
-      <section className="max-w-[1200px] mx-auto px-8 pt-10 pb-8">
+      <section className="max-w-[1200px] mx-auto px-4 sm:px-8 pt-10 pb-8">
         <Chip tone="money" className="mb-3">CREDITS & BILLING</Chip>
-        <h1 className="text-[40px] font-black tracking-[-0.02em]">Your balance</h1>
+        <h1 className="text-[28px] sm:text-[34px] md:text-[40px] font-black tracking-[-0.02em]">Your balance</h1>
 
         <div className="mt-6 grid grid-cols-1 md:grid-cols-[1fr_360px] gap-5">
-          <div className="rounded-2xl border border-vx-border bg-vx-panel p-8">
+          <div className="rounded-2xl border border-vx-border bg-vx-panel p-5 sm:p-8">
             <div className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">CURRENT BALANCE</div>
-            <div className="mt-1 font-vx-mono text-[72px] font-bold text-vx-money leading-none vx-num">
+            <div className="mt-1 font-vx-mono text-[48px] sm:text-[60px] md:text-[72px] font-bold text-vx-money leading-none vx-num">
               {balance == null ? '—' : new Intl.NumberFormat('en-US').format(balance)}
               <span className="text-2xl align-middle ml-2 text-vx-fg-muted">cr</span>
             </div>
@@ -136,7 +136,7 @@ export default function Credits() {
             </>)}
           </div>
 
-          <div className="rounded-2xl border border-vx-border bg-vx-panel p-6 flex flex-col">
+          <div className="rounded-2xl border border-vx-border bg-vx-panel p-5 sm:p-6 flex flex-col">
             <div className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">HOW BILLING WORKS</div>
             <div className="mt-1 text-2xl font-black">One balance, no tiers</div>
             <ul className="mt-4 space-y-2 text-sm text-vx-fg-body flex-1">
@@ -152,8 +152,8 @@ export default function Credits() {
       {topupsEnabled && balance != null && <TopUpHistory />}
 
       {/* ============ RECENT GENERATIONS (client-side ledger) ============ */}
-      <section className="max-w-[1200px] mx-auto px-8 pb-16">
-        <div className="flex items-baseline justify-between mb-4">
+      <section className="max-w-[1200px] mx-auto px-4 sm:px-8 pb-16">
+        <div className="flex flex-wrap items-baseline justify-between gap-2 mb-4">
           <h2 className="text-xl font-black tracking-[-0.02em]">Recent generations</h2>
           <div className="font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted">
             FROM THIS BROWSER'S HISTORY
@@ -174,23 +174,26 @@ export default function Credits() {
               return (
                 <div
                   key={l.job_id}
-                  className="grid grid-cols-[140px_1fr_120px_100px] items-center px-5 py-3 border-b border-vx-border/60 last:border-b-0 gap-3"
+                  className="flex flex-col gap-2 px-4 py-3 sm:grid sm:grid-cols-[120px_minmax(0,1fr)_auto_90px] sm:items-center sm:gap-3 sm:px-5 border-b border-vx-border/60 last:border-b-0"
                 >
-                  <div className="font-vx-mono text-[11px] tracking-[0.06em] text-vx-fg-muted">
+                  <div className="order-2 font-vx-mono text-[11px] tracking-[0.06em] text-vx-fg-muted sm:order-none">
                     {formatWhen(l.submitted_at)}
                   </div>
-                  <div className="min-w-0">
+                  <div className="order-1 min-w-0 sm:order-none">
                     <div className="text-sm truncate">
                       {model?.name || l.model_id} · {l.name || l.prompt || l.job_id.slice(0, 8)}
                     </div>
                   </div>
-                  <div>
+                  <div className="order-3 flex items-center justify-between gap-3 sm:order-none sm:justify-start">
                     <Chip tone={s.chip} noGlyph>
                       <span aria-hidden="true" className="mr-1">{s.glyph}</span>
                       {l.state.toUpperCase()}
                     </Chip>
+                    <div className={`font-vx-mono text-[14px] font-bold vx-num sm:hidden ${cls}`}>
+                      {delta} cr
+                    </div>
                   </div>
-                  <div className={`text-right font-vx-mono text-[14px] font-bold vx-num ${cls}`}>
+                  <div className={`hidden text-right font-vx-mono text-[14px] font-bold vx-num sm:block ${cls}`}>
                     {delta} cr
                   </div>
                 </div>

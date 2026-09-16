@@ -115,14 +115,14 @@ export default function Library() {
     <div className="min-h-dvh">
       <AppNav balance={balance ?? 0} active="library" />
 
-      <section className="max-w-[1400px] mx-auto px-8 pt-10 pb-4">
+      <section className="max-w-[1400px] mx-auto px-4 sm:px-8 pt-10 pb-4">
         <Chip tone="accent" className="mb-3">LIBRARY · YOUR GENERATIONS</Chip>
-        <h1 className="text-[40px] font-black tracking-[-0.02em]">Everything you've made</h1>
+        <h1 className="text-[28px] sm:text-[34px] md:text-[40px] font-black tracking-[-0.02em]">Everything you&rsquo;ve made</h1>
         <p className="text-vx-fg-body mt-2">
           Failed jobs refund automatically — they still show here so you can retry.
         </p>
 
-        <div className="mt-6 flex gap-2">
+        <div className="mt-6 flex flex-wrap gap-2">
           {['all', 'succeeded', 'running', 'queued', 'failed'].map((t) => (
             <button
               key={t}
@@ -139,7 +139,7 @@ export default function Library() {
         </div>
       </section>
 
-      <section className="max-w-[1400px] mx-auto px-8 pb-16">
+      <section className="max-w-[1400px] mx-auto px-4 sm:px-8 pb-16">
         {list.length === 0 ? (
           <div className="rounded-2xl border border-vx-border bg-vx-panel p-12 text-center">
             <div className="font-vx-mono text-[11px] tracking-[0.12em] text-vx-fg-muted">EMPTY</div>

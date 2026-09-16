@@ -13,11 +13,11 @@ const COLORS = [
 
 export default function DesignSystem() {
   return (
-    <div className="min-h-dvh px-14 py-16 pb-24 max-w-[1200px] mx-auto">
+    <div className="min-h-dvh px-4 sm:px-8 lg:px-14 py-10 sm:py-16 pb-24 max-w-[1200px] mx-auto">
       <div className="flex items-center gap-2.5">
         <Logo wordmark />
       </div>
-      <h1 className="text-[48px] font-black tracking-[-0.03em] leading-[1.05] mt-3">Design system v2</h1>
+      <h1 className="text-[30px] sm:text-[38px] md:text-[48px] font-black tracking-[-0.03em] leading-[1.08] sm:leading-[1.05] mt-3">Design system v2</h1>
       <p className="text-vx-fg-muted mt-3 max-w-[640px] leading-[1.6]">
         Tokens and components for Veyrnox.ai.
         Rule of the system: <b className="text-vx-accent">aqua does things</b>,{' '}

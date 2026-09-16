@@ -39,7 +39,7 @@ export function TopUpHistory() {
   }, [load]);
 
   return (
-    <section className="max-w-[1200px] mx-auto px-8 pb-10" aria-labelledby="topup-history-heading">
+    <section className="max-w-[1200px] mx-auto px-4 sm:px-8 pb-10" aria-labelledby="topup-history-heading">
       <h2 id="topup-history-heading" className="text-xl font-black tracking-[-0.02em] mb-4">Top-ups</h2>
       {failed && (
         <div role="alert" className="rounded-2xl border border-vx-border bg-vx-panel p-6 text-sm text-vx-fg-muted">
