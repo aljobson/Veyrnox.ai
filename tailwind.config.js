@@ -29,7 +29,9 @@ module.exports = {
                     fg: '#F2F2F3',
                     'fg-body': '#C9C9CF',
                     'fg-muted': '#9A9AA3',
-                    'fg-faint': '#5A5A61',
+                    // 4.82:1 on vx-panel, 5.19:1 on vx-base — WCAG AA for body text.
+                    // #5A5A61 sat at 2.69:1 and failed the audit on every surface.
+                    'fg-faint': '#828289',
                     accent: '#3EE6C4',
                     'accent-hover': '#6FF2D8',
                     'accent-ink': '#06231F',

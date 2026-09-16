@@ -6,7 +6,7 @@ import { Logo } from './veyrnox/_components/Logo';
 export default function NotFound() {
   return (
     <VeyrnoxLayout>
-      <main className="min-h-dvh flex flex-col items-center justify-center gap-5 px-6 text-center">
+      <div className="min-h-dvh flex flex-col items-center justify-center gap-5 px-6 text-center">
         <Link href="/" aria-label="Veyrnox.ai">
           <Logo size={36} wordmark />
         </Link>
@@ -19,7 +19,7 @@ export default function NotFound() {
         >
           Back to Veyrnox.ai
         </Link>
-      </main>
+      </div>
     </VeyrnoxLayout>
   );
 }

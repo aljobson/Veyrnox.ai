@@ -16,7 +16,11 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body className={inter.variable}>{children}<ToasterMount /><AuthGate /></body>
+      <body className={inter.variable}>
+        <main>{children}</main>
+        <ToasterMount />
+        <AuthGate />
+      </body>
     </html>
   );
 }

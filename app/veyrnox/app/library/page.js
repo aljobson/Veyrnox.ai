@@ -5,6 +5,7 @@ import { Chip } from '../../_components/Chip';
 import { gatewayFetch, GatewayError, notifyBalanceChanged } from '../../_lib/gateway';
 import { readJobHistory } from '../../_lib/jobHistory';
 import { useCatalog } from '../../_lib/useCatalog';
+import { mergeHydrated, shouldPoll } from '../../_lib/jobWindow';
 
 // Client-side ring buffer supplies the ids; server has no /jobs list yet.
 const STATE_UI = {
@@ -15,12 +16,18 @@ const STATE_UI = {
 };
 
 const POLL_MS = 3000;
+// History holds up to 50 jobs and each one costs two authenticated gateway
+// calls to hydrate (/jobs/:id then /jobs/:id/asset). Hydrating the whole ring
+// buffer on mount was up to 100 requests in one burst. Hydrate a page at a
+// time instead; rows outside the window still render from localStorage.
+const PAGE = 12;
 
 export default function Library() {
   const { models } = useCatalog();
   const [tab, setTab] = useState('all');
   const [balance, setBalance] = useState(null);
   const [rows, setRows] = useState(() => readJobHistory().map(hydrateFromHistory));
+  const [visible, setVisible] = useState(PAGE);
   const pollRef = useRef(null);
 
   // load balance
@@ -37,12 +44,15 @@ export default function Library() {
     return () => window.removeEventListener('veyrnox:balance-changed', onBalance);
   }, [loadBalance]);
 
-  // initial fetch: hydrate every row's real state; then start a poller for in-flight
+  // fetch: hydrate the visible window's real state; then poll the in-flight ones.
+  // ponytail: growing the window re-hydrates rows already fetched. That is a
+  // click-driven handful of requests; add a hydrated-id set if it ever bites.
   useEffect(() => {
     let cancelled = false;
     (async () => {
       const history = readJobHistory();
-      const results = await Promise.all(history.map(async (h) => {
+      const window_ = history.slice(0, visible);
+      const results = await Promise.all(window_.map(async (h) => {
         try {
           const j = await gatewayFetch(`/jobs/${h.job_id}`);
           const merged = { ...hydrateFromHistory(h), ...j };
@@ -60,19 +70,21 @@ export default function Library() {
           return hydrateFromHistory(h);
         }
       }));
-      if (!cancelled) setRows(results);
+      if (!cancelled) {
+        setRows((prev) => mergeHydrated(prev, results));
+      }
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [visible]);
 
   // poll any in-flight rows
   useEffect(() => {
     if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
-    const hasInFlight = rows.some((r) => r.state === 'queued' || r.state === 'running');
+    const hasInFlight = rows.some((r, i) => shouldPoll(r, i, visible));
     if (!hasInFlight) return;
     pollRef.current = setInterval(async () => {
-      const updates = await Promise.all(rows.map(async (r) => {
-        if (r.state !== 'queued' && r.state !== 'running') return r;
+      const updates = await Promise.all(rows.map(async (r, i) => {
+        if (!shouldPoll(r, i, visible)) return r;
         try {
           const j = await gatewayFetch(`/jobs/${r.job_id}`);
           if (j.state === 'succeeded') {
@@ -83,15 +95,21 @@ export default function Library() {
             } catch { notifyBalanceChanged(); return { ...r, ...j }; }
           }
           if (j.state === 'failed') { notifyBalanceChanged(); return { ...r, ...j }; }
+          // Same state as last tick: return the identical object so `rows` keeps
+          // its reference, the grid does not re-render, and this effect does not
+          // tear down and rebuild the interval every 3s.
+          if (j.state === r.state) return r;
           return { ...r, ...j };
         } catch { return r; }
       }));
-      setRows(updates);
+      if (updates.some((u, i) => u !== rows[i])) setRows(updates);
     }, POLL_MS);
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
-  }, [rows]);
+  }, [rows, visible]);
 
-  const list = tab === 'all' ? rows : rows.filter((r) => r.state === tab);
+  const shown = rows.slice(0, visible);
+  const list = tab === 'all' ? shown : shown.filter((r) => r.state === tab);
+  const hasMore = rows.length > visible;
 
   return (
     <div className="min-h-dvh">
@@ -133,6 +151,16 @@ export default function Library() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {list.map((r) => <JobCard key={r.job_id} row={r} models={models} />)}
+          </div>
+        )}
+        {hasMore && (
+          <div className="mt-6 flex justify-center">
+            <button
+              onClick={() => setVisible((v) => v + PAGE)}
+              className="font-vx-mono text-[11px] tracking-[0.12em] font-bold rounded-full px-5 py-2.5 border border-vx-border bg-vx-panel text-vx-fg hover:text-vx-fg"
+            >
+              LOAD MORE · {rows.length - visible} OLDER
+            </button>
           </div>
         )}
       </section>
