@@ -1,6 +1,10 @@
 import { LegalPage, ENTITY } from '../_lib/Legal';
 
-export const metadata = { title: 'Terms of Service — Veyrnox.ai' };
+export const metadata = {
+    title: 'Terms of Service',
+    description:
+        'The contract between you and Veyrnox Ltd — acceptable use, credits, licensing of generated output, and liability.',
+};
 
 export default function Terms() {
     return (
