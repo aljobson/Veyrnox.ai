@@ -84,8 +84,15 @@ export function notifyBalanceChanged() {
   }
 }
 
-/** Generate an idempotency key that survives page reloads on the same client. */
+/**
+ * Generate an idempotency key that survives page reloads on the same client.
+ *
+ * crypto.randomUUID, not Math.random: the key is the uniqueness guarantee on
+ * a money path. jobs.idempotency_key is UNIQUE on (user_id, key), so a
+ * collision does not double-spend — it silently returns the earlier job
+ * instead of running the new one. Math.random gave ~40 bits from a generator
+ * with no collision guarantee; this gives 122 bits from the CSPRNG.
+ */
 export function makeIdempotencyKey() {
-  const rand = Math.random().toString(36).slice(2, 10);
-  return `vx-${Date.now().toString(36)}-${rand}`;
+  return `vx-${crypto.randomUUID()}`;
 }

@@ -1,9 +1,13 @@
 /**
  * GET /api/v1/admin/metrics — 24h operational metrics for admins.
  *
- * Two gates, deliberately:
+ * Three gates, deliberately:
  *   1. middleware.js verifies the Supabase JWT and sets x-veyrnox-auth-id.
- *   2. ops_metrics_24h() re-checks users.is_admin and raises 42501 if the
+ *   2. With ADMIN_REQUIRE_AAL2='true', the session must have satisfied a
+ *      second factor (Supabase `aal` claim = 'aal2'). An admin password is
+ *      the highest-value credential in the product, and the ledger is one
+ *      read away from it.
+ *   3. ops_metrics_24h() re-checks users.is_admin and raises 42501 if the
  *      caller is not an admin, so the data is protected even if a future
  *      route change forgets to check.
  *
@@ -17,10 +21,23 @@ import { rpc, envConfig, SupabaseError } from '../../../../../packages/db/supaba
 // Postgres insufficient_privilege — ops_metrics_24h raises it for non-admins.
 const NOT_ADMIN = '42501';
 
+// Off until at least one admin has enrolled a factor in Supabase Auth —
+// turning it on first locks every admin out of their own dashboard. Flip the
+// Worker var to 'true' straight after enrolment (ADR-0001 §MFA, Phase 4).
+// A flag rather than a hard requirement because there is no third state to
+// get right: either MFA exists for admins or it does not.
+const requireAal2 = () => process.env.ADMIN_REQUIRE_AAL2 === 'true';
+
 export async function GET(req) {
     const authId = req.headers.get('x-veyrnox-auth-id');
     if (!authId) {
         return NextResponse.json({ error: 'not_authenticated' }, { status: 401 });
+    }
+
+    if (requireAal2() && req.headers.get('x-veyrnox-auth-aal') !== 'aal2') {
+        // Same terseness as not_admin: the caller learns what to do, nothing
+        // about whether they would have been an admin if they had done it.
+        return NextResponse.json({ error: 'mfa_required' }, { status: 403 });
     }
 
     const cfg = envConfig();

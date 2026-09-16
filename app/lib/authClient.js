@@ -140,6 +140,33 @@ export function onSessionChange(cb) {
     return () => listeners.delete(cb);
 }
 
+/**
+ * Authenticated call against GoTrue with the current access token. Used by
+ * the MFA factor endpoints, which act on the signed-in user.
+ */
+async function authed(path, { method = "POST", body } = {}) {
+    const { url, anonKey } = ensureCfg();
+    const token = await getFreshAccessToken();
+    if (!token) throw Object.assign(new Error("not signed in"), { status: 401 });
+    const res = await fetch(new URL(path, url), {
+        method,
+        headers: {
+            apikey: anonKey,
+            Authorization: `Bearer ${token}`,
+            ...(body ? { "Content-Type": "application/json" } : {}),
+        },
+        ...(body ? { body: JSON.stringify(body) } : {}),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+        const e = new Error(data?.error_description || data?.msg || `HTTP ${res.status}`);
+        e.status = res.status;
+        e.code = data?.error || data?.code;
+        throw e;
+    }
+    return data;
+}
+
 async function post(path, body) {
     const { url, anonKey } = ensureCfg();
     const res = await fetch(new URL(path, url), {
@@ -296,4 +323,71 @@ export async function signOut() {
         }).catch(() => {});
     }
     setSession(null);
+}
+
+// ─── MFA (TOTP) ─────────────────────────────────────────────────────────────
+//
+// Supabase issues an aal1 token for password/OAuth and an aal2 token only
+// after a factor is satisfied. middleware.js forwards the `aal` claim as
+// x-veyrnox-auth-aal, and /api/v1/admin/metrics refuses anything but aal2
+// once ADMIN_REQUIRE_AAL2 is on. Enrolment has to exist before that flag can
+// be turned on, which is why it lives here rather than in a later phase.
+//
+// No QR image: Supabase returns its QR as an SVG string, and injecting raw
+// markup is banned outright by the CI grep gate. The otpauth:// URI and the
+// secret are shown as text instead, and every authenticator app takes either.
+
+/** The current session's assurance level: "aal1", "aal2", or null. */
+export function getAal() {
+    const token = getAccessToken();
+    if (!token) return null;
+    try {
+        const [, payload] = token.split(".");
+        const json = JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/")));
+        return typeof json.aal === "string" ? json.aal : null;
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * The signed-in user's MFA factors.
+ * @returns {Promise<Array<{id: string, status: string, friendly_name?: string}>>}
+ */
+export async function listFactors() {
+    const user = await authed("/auth/v1/user", { method: "GET" });
+    return (user?.factors || []).filter((f) => f.factor_type === "totp");
+}
+
+/**
+ * Begin TOTP enrolment. The factor is created `unverified` and does nothing
+ * until verifyFactor succeeds with a code from the app.
+ * @returns {Promise<{factorId: string, secret: string, uri: string}>}
+ */
+export async function enrollTotp(friendlyName = "Authenticator") {
+    const data = await authed("/auth/v1/factors", {
+        body: { factor_type: "totp", friendly_name: friendlyName },
+    });
+    return { factorId: data.id, secret: data?.totp?.secret || "", uri: data?.totp?.uri || "" };
+}
+
+/**
+ * Satisfy a factor with a 6-digit code — both to finish enrolment and to step
+ * an existing aal1 session up to aal2. Supabase returns a fresh token pair on
+ * success, so the stored session becomes the aal2 one.
+ * @param {string} factorId
+ * @param {string} code
+ */
+export async function verifyFactor(factorId, code) {
+    const challenge = await authed(`/auth/v1/factors/${encodeURIComponent(factorId)}/challenge`);
+    const data = await authed(`/auth/v1/factors/${encodeURIComponent(factorId)}/verify`, {
+        body: { challenge_id: challenge.id, code },
+    });
+    if (data?.access_token) setSession(normalise(data));
+    return getAal();
+}
+
+/** Remove a factor. Requires an aal2 session, which Supabase enforces. */
+export async function unenrollFactor(factorId) {
+    await authed(`/auth/v1/factors/${encodeURIComponent(factorId)}`, { method: "DELETE" });
 }

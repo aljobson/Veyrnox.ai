@@ -19,6 +19,7 @@ import { NextResponse } from 'next/server';
 import { verifyWebhookSignature } from '../../../../packages/adapters/fal.js';
 import { rpc, envConfig } from '../../../../packages/db/supabase-client.js';
 import { copyUrlToR2, isConfigured as r2IsConfigured, envConfig as r2EnvConfig } from '../../../../packages/adapters/r2.js';
+import { fetchWithTimeout } from '../../../../lib/fetchWithTimeout.js';
 
 const SOURCE = 'fal';
 
@@ -37,7 +38,7 @@ async function findOurJob(cfg, requestId, states, { strict = false } = {}) {
     url.searchParams.set('provider_job_id', `eq.${requestId}`);
     if (states) url.searchParams.set('state', `in.(${states.join(',')})`);
     url.searchParams.set('limit', '1');
-    const res = await fetch(url, { headers: serviceHeaders(cfg) });
+    const res = await fetchWithTimeout(url, { headers: serviceHeaders(cfg) });
     if (!res.ok) {
         if (strict) throw new Error(`jobs read ${res.status}`);
         return null;
@@ -55,7 +56,7 @@ async function alreadyProcessed(cfg, requestId) {
     url.searchParams.set('source', `eq.${SOURCE}`);
     url.searchParams.set('external_id', `eq.${requestId}`);
     url.searchParams.set('limit', '1');
-    const res = await fetch(url, { headers: serviceHeaders(cfg) });
+    const res = await fetchWithTimeout(url, { headers: serviceHeaders(cfg) });
     // Can't tell: throw so the route answers 500 and fal retries. Every
     // step after dedup is idempotent, so a replay is safe; a swallowed
     // retry is a lost delivery.
@@ -65,7 +66,7 @@ async function alreadyProcessed(cfg, requestId) {
 }
 
 async function markProcessed(cfg, requestId) {
-    await fetch(new URL(
+    await fetchWithTimeout(new URL(
         `/rest/v1/webhook_events?source=eq.${encodeURIComponent(SOURCE)}&external_id=eq.${encodeURIComponent(requestId)}`,
         cfg.supabaseUrl,
     ), {
@@ -158,7 +159,7 @@ export async function POST(req) {
     // `on_conflict` must name the (source, external_id) unique constraint:
     // PostgREST's ignore-duplicates resolves on the primary key otherwise,
     // and the PK is an auto UUID, so a redelivery would 409 → 500 forever.
-    const dedupRes = await fetch(new URL('/rest/v1/webhook_events?on_conflict=source,external_id', cfg.supabaseUrl), {
+    const dedupRes = await fetchWithTimeout(new URL('/rest/v1/webhook_events?on_conflict=source,external_id', cfg.supabaseUrl), {
         method: 'POST',
         headers: {
             apikey: cfg.serviceRoleKey,

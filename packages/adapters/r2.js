@@ -46,6 +46,18 @@ const SOURCE_HOSTS = {
 const AUTHENTICATED_SOURCES = new Set(['openrouter']);
 // ponytail: 100 MB cap, the Worker holds the body in memory. Stream to R2 multipart if outputs grow.
 const COPY_MAX_BYTES = 100 * 1024 * 1024;
+// Deadline for the S3 round trips. Without one, an R2 edge that accepts the
+// connection and stalls hangs the whole webhook delivery, the provider times
+// out, and its retry starts the copy again — a stall becomes a retry storm.
+// Generous because a PUT carries up to COPY_MAX_BYTES.
+const S3_TIMEOUT_MS = 30000;
+
+/** fetch with a deadline. Kept local: this module intentionally has no imports. */
+function fetchDeadline(input, init, timeoutMs) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    return fetch(input, { ...init, signal: controller.signal }).finally(() => clearTimeout(timer));
+}
 
 function isAllowedSourceHost(hostname, provider) {
     const allow = Object.prototype.hasOwnProperty.call(SOURCE_HOSTS, provider) ? SOURCE_HOSTS[provider] : null;
@@ -184,17 +196,23 @@ export async function putObject(key, body, contentType, cfg) {
     const authorization =
         `AWS4-HMAC-SHA256 Credential=${cfg.accessKeyId}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
 
-    const res = await fetch(`https://${host}${canonicalUri}`, {
-        method: 'PUT',
-        headers: {
-            'content-type': contentType,
-            host,
-            'x-amz-content-sha256': payloadHash,
-            'x-amz-date': amzDate,
-            authorization,
-        },
-        body: bodyBytes,
-    });
+    let res;
+    try {
+        res = await fetchDeadline(`https://${host}${canonicalUri}`, {
+            method: 'PUT',
+            headers: {
+                'content-type': contentType,
+                host,
+                'x-amz-content-sha256': payloadHash,
+                'x-amz-date': amzDate,
+                authorization,
+            },
+            body: bodyBytes,
+        }, S3_TIMEOUT_MS);
+    } catch (err) {
+        console.error('R2 PUT failed:', err && err.name);
+        return { ok: false, error: `R2 PUT transport: ${err && err.name}` };
+    }
     if (!res.ok) {
         const text = await res.text().catch(() => '');
         console.error('R2 PUT non-ok:', res.status, text.slice(0, 200));
@@ -234,15 +252,21 @@ export async function deleteObject(key, cfg) {
     const authorization =
         `AWS4-HMAC-SHA256 Credential=${cfg.accessKeyId}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
 
-    const res = await fetch(`https://${host}${canonicalUri}`, {
-        method: 'DELETE',
-        headers: {
-            host,
-            'x-amz-content-sha256': payloadHash,
-            'x-amz-date': amzDate,
-            authorization,
-        },
-    });
+    let res;
+    try {
+        res = await fetchDeadline(`https://${host}${canonicalUri}`, {
+            method: 'DELETE',
+            headers: {
+                host,
+                'x-amz-content-sha256': payloadHash,
+                'x-amz-date': amzDate,
+                authorization,
+            },
+        }, S3_TIMEOUT_MS);
+    } catch (err) {
+        console.error('R2 DELETE failed:', err && err.name);
+        return { ok: false, error: `R2 DELETE transport: ${err && err.name}` };
+    }
     // R2 returns 204 on delete of an existing object, 204 also when the
     // object is already gone. Treat both as success — idempotent by design.
     if (res.status !== 204 && !res.ok) {
@@ -348,6 +372,8 @@ export async function copyUrlToR2(sourceUrl, r2Key, cfg, { timeoutMs = 30000, ma
             return { ok: false, error: `read source: ${msg}` };
         }
         if (!bytes) return { ok: false, error: 'source too large' };
+        // putObject carries its own S3_TIMEOUT_MS deadline; this function's
+        // controller only ever covered the source fetch and body read.
         const put = await putObject(r2Key, bytes, contentType, cfg);
         if (!put.ok) return put;
         return { ok: true, r2Key: put.r2Key, size: put.size, mimeType: contentType };
