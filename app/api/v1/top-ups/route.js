@@ -157,7 +157,7 @@ export async function GET(req) {
         const users = await select('users', { columns: 'id', filter: `auth_id=eq.${encodeURIComponent(authId)}` }, cfg);
         const userId = Array.isArray(users) && users[0] && users[0].id;
         // A signed-in user whose row hasn't been provisioned has no Top-ups yet.
-        if (!userId || !UUID_RE.test(userId)) return NextResponse.json({ top_ups: [] });
+        if (!userId || !UUID_RE.test(userId)) return NextResponse.json({ top_ups: [] }, { headers: { 'Cache-Control': 'no-store' } });
         rows = await select(
             'top_ups',
             {
@@ -180,5 +180,5 @@ export async function GET(req) {
         status: r.status,
         created_at: r.created_at,
     }));
-    return NextResponse.json({ top_ups: topUps });
+    return NextResponse.json({ top_ups: topUps }, { headers: { 'Cache-Control': 'no-store' } });
 }

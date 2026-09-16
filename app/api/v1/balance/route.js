@@ -35,9 +35,10 @@ export async function GET(req) {
         return NextResponse.json({ error: 'internal' }, { status: 502 });
     }
 
+    // Per-user figures: never let a browser or intermediary keep a copy.
     return NextResponse.json({
         balance: Number(credits && credits.balance) || 0,
         free_credits: Number(credits && credits.free_credits) || 0,
         free_expires_at: (credits && credits.free_expires_at) || null,
-    });
+    }, { headers: { 'Cache-Control': 'no-store' } });
 }

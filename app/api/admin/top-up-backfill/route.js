@@ -3,8 +3,10 @@
  * missed (#94, ADR-0018 decision 5).
  *
  * Auth: `Authorization: Bearer <TOP_UP_BACKFILL_TOKEN>` (Worker secret),
- * compared in constant time. Anything else -> 401. Called about every 5
- * minutes by .github/workflows/top-up-backfill.yml (main only).
+ * compared in constant time and throttled after repeated failures
+ * (lib/adminThrottle.js). Anything else -> 401. Called about every 5 minutes by
+ * the Worker's own Cron Trigger (lib/scheduledBackfill.js) and by
+ * .github/workflows/top-up-backfill.yml (main only).
  *
  *   1. next_top_up_backfill_batch hands out up to BATCH Top-ups returned from
  *      checkout more than 10 minutes ago and created less than 7 days ago:
@@ -33,8 +35,10 @@ import { rpc, envConfig } from '../../../../packages/db/supabase-client.js';
 import { fetchOrder, listOrders } from '../../../../packages/adapters/lemonsqueezy.js';
 import { runBackfill, runOrderSweep } from '../../../../lib/topUpBackfill.js';
 import { tokenMatches, bearerToken } from '../../../../lib/tokenMatches.js';
+import { retryAfterSeconds, recordFailure } from '../../../../lib/adminThrottle.js';
 
 const LOG = '[top-up-backfill]';
+const THROTTLE_BUCKET = 'top-up-backfill';
 const BATCH = 25;
 // LemonSqueezy allows 300 API calls a minute; one every 250ms stays far below.
 const SPACING_MS = 250;
@@ -47,8 +51,18 @@ const SWEEP_BUDGET_MS = 15000;
 export async function POST(req) {
     const token = process.env.TOP_UP_BACKFILL_TOKEN;
     if (!token) return NextResponse.json({ error: 'not_configured' }, { status: 503 });
+    // Compared before the throttle is consulted: the Cron Trigger and the
+    // Actions run must never be locked out by someone else's wrong guesses.
     if (!(await tokenMatches(bearerToken(req.headers.get('authorization')), token))) {
-        console.error(LOG, 'unauthorized call');
+        const seen = recordFailure(THROTTLE_BUCKET);
+        const wait = retryAfterSeconds(THROTTLE_BUCKET);
+        console.error(LOG, 'unauthorized call, failures in window:', seen);
+        if (wait) {
+            return NextResponse.json({ error: 'too_many_requests' }, {
+                status: 429,
+                headers: { 'retry-after': String(wait) },
+            });
+        }
         return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
     }
 

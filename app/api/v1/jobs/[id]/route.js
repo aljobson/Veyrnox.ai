@@ -85,5 +85,5 @@ export async function GET(req, { params }) {
         credits: row.credits,
         model_id: row.model_id,
         error_code: publicErrorCode(row.error_code),
-    });
+    }, { headers: { 'Cache-Control': 'no-store' } });
 }

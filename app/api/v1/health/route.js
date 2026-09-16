@@ -41,5 +41,5 @@ export async function GET(req) {
         auth_id: authId,
         select_latency_ms: latencyMs,
         catalog_alive: Array.isArray(catalog) && catalog.length > 0,
-    });
+    }, { headers: { 'Cache-Control': 'no-store' } });
 }
