@@ -47,11 +47,12 @@ const TEST_IMAGE = process.env.TEST_IMAGE_URL
 
 const QUEUE = 'https://queue.fal.run';
 const POLL_INTERVAL_MS = 3000;
-const POLL_TIMEOUT_MS = 180000;
+const POLL_TIMEOUT_MS = 420000;
 
 const args = process.argv.slice(2);
 const doSubmit = args.includes('--submit');
 const only = (args.find((a) => a.startsWith('--only=')) || '').split('=')[1];
+const onlyIds = only ? only.split(',').map((x) => x.trim()).filter(Boolean) : null;
 
 function loadKey() {
     if (process.env.FAL_KEY) return process.env.FAL_KEY;
@@ -134,14 +135,20 @@ async function submit(c) {
         await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
         const s = await fetch(statusUrl || `${QUEUE}/${c.endpoint}/requests/${requestId}/status`, { headers: auth });
         if (!s.ok) continue;
-        const { status } = await s.json();
+        const statusBody = await s.json();
+        const { status } = statusBody;
         if (status === 'COMPLETED') {
+            const inferenceSeconds = statusBody?.metrics?.inference_time ?? null;
             const r = await fetch(responseUrl || `${QUEUE}/${c.endpoint}/requests/${requestId}`, { headers: auth });
             const out = await r.json().catch(() => ({}));
             const outUrl = out?.image?.url || out?.images?.[0]?.url || out?.video?.url || null;
             return {
                 ...c, submitted: true, ok: true, requestId,
+                // Wall clock includes queue wait; inference is the provider's
+                // own number. A cold endpoint can queue for minutes while
+                // computing for seconds, and the user waits for both.
                 seconds: Math.round((Date.now() - started) / 1000),
+                inferenceSeconds,
                 outputUrl: outUrl,
                 outputKeys: Object.keys(out || {}),
             };
@@ -153,7 +160,7 @@ async function submit(c) {
     return { ...c, submitted: true, ok: false, requestId, note: 'timed out waiting for the result' };
 }
 
-const targets = only ? CANDIDATES.filter((c) => c.id === only) : CANDIDATES;
+const targets = onlyIds ? CANDIDATES.filter((c) => onlyIds.includes(c.id)) : CANDIDATES;
 if (!targets.length) {
     console.error(`--only=${only} matched nothing. Ids: ${CANDIDATES.map((c) => c.id).join(', ')}`);
     process.exit(2);

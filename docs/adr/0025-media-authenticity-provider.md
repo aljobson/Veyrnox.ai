@@ -128,13 +128,36 @@ be pinned in KV or the claim is false. And adding IPTC `DigitalSourceType` and
 EXIF to the same pass raises the hit rate to an estimated **5–15%** — inference,
 not measurement — because Midjourney and Meta AI write IPTC without C2PA.
 
-**fal joined the C2PA trust list in August 2026.** No document says which
-endpoints sign. This is a ten-minute test — generate one image per model we ship
-and run `c2patool` — and it is worth running before any decision, because our
-delivery path is byte-preserving end to end (verified: no `sharp` import, no
-`next/image`, no Cloudflare Images; `copyUrlToR2` streams verbatim and assets
-reach the browser by presigned GET), so any manifest fal writes survives to the
-user intact.
+### 5.6 fal signs its output — tested, not assumed
+
+**Run 2026-09-18 against a real `fal-ai/retoucher` output.** The returned PNG
+carries a **12.7 KB C2PA manifest** in its `caBX` chunk:
+
+| Field | Value |
+|---|---|
+| Claim generator | `fal.ai`, `c2pa_rs 0.79.0` |
+| Signer | `fal - Features & Labels Inc.`, own Root CA |
+| Assertions | `c2pa.actions.v2` (action `c2pa.created`), `c2pa.hash.data`, `ai.fal.info` |
+| IPTC | `digitalSourceType: .../trainedAlgorithmicMedia` |
+
+`c2pa.hash.data` is the important one: the manifest is **cryptographically bound
+to the pixels**, so alteration is detectable. This is real provenance, not a
+metadata label.
+
+It reaches the user intact, because the delivery path is byte-preserving end to
+end — verified: no `sharp` import anywhere in app code, no `next/image`, no
+Cloudflare Images transform; `copyUrlToR2` streams provider bytes verbatim and
+assets are served by presigned GET straight from R2.
+
+**Two honest limits.** The signature chains to fal's *own* Root CA; whether that
+root sits on the public C2PA production trust list is a separate question and
+must be checked before any UI says "trusted" — `c2pa-ts` will report
+`signingCredential.trusted` on chain coherence alone (§5.5). And only fal-served
+models were tested; a kie or openrouter row proves nothing here.
+
+**This inverts the §5.5 conclusion for our own assets.** C2PA adoption in the
+wild is 0.067%; adoption on media *we generate* is, on this evidence, 100%. The
+0.067% figure governs third-party uploads and nothing else.
 
 ## 6. Trade-offs
 
@@ -154,10 +177,17 @@ customer, and never as an unqualified verdict. C not at all.**
 
 Engineering's opinion, which is not the decision:
 
-**E is free and exact.** Every asset Veyrnox generates already has perfect
-provenance in `jobs`. Exposing that — a verifiable page or signed record per
-asset — is a real feature, costs nothing, cannot be wrong, and is the honest
-version of what a customer asking for "authenticity" usually wants.
+**E is free and exact, and §5.6 makes it stronger than first written.** Every
+asset Veyrnox generates has perfect provenance in `jobs` — and, on the evidence,
+also carries fal's own signed C2PA manifest bound to the pixels. So the record
+and the file agree, and the file can prove it independently of us. That closes
+the gap the provenance route currently declares: a database row says "we made
+this", the manifest says "and this specific file is it".
+
+**D is now worth building for our own assets first**, not as a general reader.
+Reading the manifest on a Veyrnox asset returns a real answer essentially every
+time, where reading it on an arbitrary upload returns nothing 99.9% of the time.
+Same code, two hit rates three orders of magnitude apart.
 
 **D is cheap and honest but nearly silent.** Ship it only combined with IPTC/EXIF,
 with the trust list pinned, and with the negative case worded so it cannot be
