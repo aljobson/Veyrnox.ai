@@ -168,9 +168,29 @@ human" is worse off than before we shipped.
 **B is the product as originally described and it is buildable in an afternoon.**
 That is exactly why it needs a decision rather than a sprint. At ~80% accuracy
 with errors concentrated on women and darker-skinned subjects, an unqualified
-verdict is a systematic harm with our name on it. If it ships, it ships as
-"signals", never as a determination, with the vendor named and the confidence
-shown — and only once §8 is complete.
+verdict is a systematic harm with our name on it.
+
+The research did find a configuration in which B is defensible, and it is narrow.
+**All of these together, not a menu:** B2B only; precision-tuned and
+**one-directional**, so the product asserts "synthetic" at a threshold where
+precision is near 1.0 and says nothing otherwise; **no consumer verdict about a
+named person**; **no intimate-image intake** (§8.4 — that is the Art 9 sex-life
+limb and no technique avoids it); human review before any verdict is published;
+per-generator and per-demographic performance published; and explicit non-law-
+enforcement scoping in docs, contract and marketing.
+
+That configuration has an argument behind it: the best commercial image model in
+Deepfake-Eval-2024 ran **precision 0.99 / recall 0.71**, so a one-directional
+claim is defensible where a two-directional one is not, and the honest-measurement
+niche is empty — three independent audits found vendors overclaiming, and
+Deepfake-Eval-2024's commercial participants required their names be withheld
+under contract. A vendor publishing its own adverse numbers occupies ground
+nobody currently holds.
+
+**The obvious product — a consumer box that answers "is this video of [name]
+real?" — fails on the accuracy evidence, the demographic evidence, the
+defamation analysis and the Workado precedent simultaneously.** The bounded
+version is a real business. The obvious one is not.
 
 **C is rejected** — not on cost, which was my error, but on maintenance. The best
 funded organisation in this field quit rather than carry it.
@@ -297,9 +317,38 @@ A detector reading compression artefacts and frequency-domain fingerprints —
 never building or matching a face template — processes biometric data that is
 not special-category biometric data. **Same decision as §8.3.**
 
+**Correction to the paragraph above: the Art 9 escape covers the biometric limb
+only.** Intimate imagery is special-category data under the **sex life** limb via
+C-184/20 *OT* **regardless of the technique used to analyse it**. Artefact-only
+analysis buys nothing there. "Is this nude of me real?" is among the most likely
+consumer queries this product would receive, so the design rule is **by use case,
+not by technique**: excluding intimate-image intake is the only thing that keeps
+us out of Art 9, and it is a product decision rather than an engineering one.
+
+**SCHUFA (C-634/21) puts the Article 22 obligation on us, not only on our
+customer.** Para 73: establishing a probability value **is itself** automated
+decision-making where a third party draws strongly on it; para 61 warns that a
+restrictive reading would permit circumvention. So "we only supply a score, the
+platform decides" is not a defence — the obligation follows the scorer. The
+second limb ("similarly significantly affects") is arguable and depends on the
+recipient: strongest where a platform auto-removes, an employer or an insurer
+acts; weakest for a journalist.
+
+**C-203/22 *Dun & Bradstreet*** (27 Feb 2025) adds a right to an explanation of
+the procedure and principles applied, and holds that **trade secrets are not a
+blanket exemption** — "the model is proprietary" is not an answer.
+
+A **DPIA is mandatory** on six independent grounds of the ICO's list, including
+"any processing of biometric data" with no unique-identification qualifier — so
+the §8.4 engineering escape does not remove the DPIA duty either.
+
+UK adequacy is current: Implementing Decision (EU) 2025/2574, adopted
+19 December 2025, expires 27 December 2031.
+
 Note the UK diverged: DUAA 2025 s.80 replaced Art 22 with Arts 22A–22D from
 5 February 2026, and solely automated decisions are now permitted by default
-subject to safeguards. EU Art 22 is unchanged, so **build to the EU standard.**
+subject to safeguards. EU Art 22 is unchanged and reaches our EU users via
+Art 3(2), so **build to the EU standard.**
 
 An **EU representative is almost certainly required** (Art 27) — the derogation
 fails on three independent grounds. Put them in Germany, where the data is.
