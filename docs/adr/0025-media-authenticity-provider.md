@@ -1,151 +1,205 @@
 # ADR-0025 — Media authenticity: provider, or no product
 
-**Status:** Proposed 2026-09-18
-**Blocks:** Track B of [docs/face-filters/PRD.md](../face-filters/PRD.md) (B1 image check, B2 video deepfake check, B3 voice clone check)
-**Related:** [ADR-0017](0017-c2pa-claims-withdrawn.md) (C2PA claims withdrawn), [ADR-0005 §5](0005-phase-0-business-preconditions.md) (EU AI Act Article 50), [ADR-0020](0020-kie-and-openrouter-providers.md) (adding a second provider)
+**Status:** Proposed 2026-09-18 · revised 2026-09-18 after research · **legal section incomplete, see §8**
+**Blocks:** Track B of [docs/face-filters/PRD.md](../face-filters/PRD.md) (B1 image, B2 video, B3 voice)
+**Related:** [ADR-0017](0017-c2pa-claims-withdrawn.md) (C2PA claims withdrawn), [ADR-0005 §5](0005-phase-0-business-preconditions.md) (EU AI Act Article 50), [ADR-0020](0020-kie-and-openrouter-providers.md) (adding a provider)
 
-## 1. Context
+## 1. What changed since the first draft
 
-The product owner asked for deepfake analysis of video, audio, and photos
-alongside the face filters in Track A. Track A is an extension of the existing
-money spine: a filter is a `model_catalog` row, priced in credits, submitted to
-fal, stored in R2. Track B is not.
+The first draft of this ADR was written from assumption. Research corrected
+three of its load-bearing claims, all in ways that matter:
 
-Three facts make it a separate decision:
+| First draft said | Evidence says |
+|---|---|
+| Option B needs a vendor contract, "weeks" | **Four vendors are self-serve today.** Reality Defender $399/yr, Hive with $50 free credits, BitMind $100/mo, Resemble pay-as-you-go |
+| Option C is out on cost | **Cost was never the barrier.** The best open detector is a 22M-param ViT that runs on CPU — ~$24/mo, or single-digit dollars on Cloudflare Containers inside the existing Workers plan |
+| Detectors run 70–85% in the wild | **No commercial detector in an independent benchmark reaches 90%.** Several open-source models score at or below chance |
+| Option D (read C2PA) is the honest alternative | **C2PA adoption is 0.067%** of images in the one hard measurement available. A reader alone answers "no data" essentially always |
 
-**fal has nothing.** Searched fal's model index on 2026-09-18 for `deepfake`,
-`ai detector`, and `classifier`. Zero results for authenticity or detection of
-any kind. `fal-ai/moondream3-preview/detect` and the Florence-2 endpoints are
-*object* detection — they find a dog in a photo, they do not judge whether the
-photo was generated. There is no version of Track B that is a catalog row
-against our existing provider.
+The technical question is therefore settled and it is not the interesting one.
+Any of these can be built cheaply, this week. The question is whether the output
+is defensible.
 
-**The output is not an asset.** Every job today ends with bytes in R2 and a row
-in `assets`, which describes an object with a MIME type and a byte count. A
-verdict is a label, a confidence, and the version of the model that produced
-it. It has nowhere to live. `packages/db/schema/0001_initial.sql` has no column
-for it and `jobs` has no result field.
+## 2. Context
 
-**The claim is about a person.** "This video of X is 87% likely to be
-synthetic" is an assertion about identifiable people, published by Veyrnox, on
-the strength of a third party's model. Published detector accuracy is measured
-on clean academic datasets. On re-compressed social uploads — which is what a
-user will actually paste in — reported accuracy degrades substantially, and
-degrades unevenly across skin tones and video codecs. We would be selling a
-confident number whose real error rate we cannot state.
+fal has no authenticity endpoint — verified twice, independently, against its
+catalog API rather than its rendered site (`keywords=deepfake|ai detector|
+classifier|authenticity|forensic` all return `total: 0`). Replicate and
+OpenRouter have none either. Cloudflare Workers AI, which would have avoided a
+new vendor entirely, has no detection model — its image classification is
+ResNet-50 on ImageNet labels.
 
-There is a fourth fact that is commercial rather than technical: Veyrnox would
-be selling a face-swap tool and a face-swap detector from the same brand. That
-is not automatically wrong — the security industry does it — but it is a
-positioning decision the product owner has to make deliberately.
+A verdict is also not an `assets` row. `assets` describes an R2 object with a
+MIME type and a byte count; a verdict is a label, a confidence, and a model
+version. It has nowhere to live in the current schema.
 
-## 2. Options considered
+## 3. The reframe that shrinks the problem
 
-### Option A — Do not build it
+**Veyrnox is the generator.** For any asset produced on this platform, the
+`jobs` row and the ledger are a complete, exact, permanent provenance record —
+which model, which prompt, which user, which second. No classifier, no vendor,
+no decay, and 100% accurate by construction.
 
-Track A ships. Track B is declined. The PRD keeps B1–B3 as recorded,
-deliberately-unbuilt scope.
+Detection is therefore only relevant to **media Veyrnox did not make**: the
+third-party uploads the Track A work in `77e182b` now accepts. That is a much
+narrower product than "deepfake analysis of video, audio and photos", and the
+narrow version may be worth more than the broad one.
 
-### Option B — Resell a detection API
+## 4. Options
 
-Integrate one vendor (Reality Defender, Hive, Sensity, or similar) as a new
-provider alongside fal, kie, and openrouter. A check becomes a job with a new
-result shape and a new table. Priced in credits like everything else.
+- **A — Decline.** Track B is recorded as deliberately unbuilt.
+- **B — Resell a detection API.** Self-serve vendor, a new provider entry, a new
+  results table. Buildable in days.
+- **C — Self-host an open detector.** MIT-licensed ViT on a Cloudflare
+  Container. Cheap to run, expensive to keep working.
+- **D — Read provenance, do not judge.** C2PA manifest plus IPTC/XMP/EXIF in one
+  pass. Reports what a file discloses about itself; asserts nothing.
+- **E — Publish our own provenance.** Make every Veyrnox asset verifiable from
+  our own records. No detection at all.
 
-### Option C — Self-host an open detector
+## 5. Evidence
 
-Run an open-source detector on our own inference. No vendor contract, no
-per-call fee, full control of the model version.
+### 5.1 Accuracy — the precision/recall trap
 
-### Option D — Provenance instead of detection
+NewsGuard (May 2026) tested five named commercial tools against 15 authentic,
+unedited press photographs from Reuters, AP, NYT, the Guardian and Google Earth.
+**13.3% of genuine press photographs were collectively declared AI-generated**;
+the worst tool, 40%.
 
-Do not judge whether media is fake. Read C2PA / Content Credentials manifests
-where they exist and report what the file *claims* about itself, plainly, with
-"no provenance data" as the common answer.
+The same data contains the trap. Hive and Sightengine had **0% false positives
+but caught only 73% and 33%** of significantly-altered images, and 27% of
+lightly AI-edited ones. There is no threshold that gives both. The choice is
+between accusing real people and reassuring the victims of fakes.
 
-## 3. Decision drivers, ranked
+Deepfake-Eval-2024 (in-the-wild media, 88 sites, 52 languages) states plainly:
+*"No commercial models that we evaluated had an accuracy of 90% or above."* Best
+commercial results: video 0.78 acc / 0.79 AUC, audio 0.89 / 0.93, image 0.82 /
+0.90 with **precision 0.99 and recall 0.71** — tuned against false alarms, and
+therefore missing 29% of fakes. Open-source detectors lose ~45–50% of AUC moving
+from their own benchmarks to real media; AASIST goes 1.00 → 0.43, worse than
+chance.
 
-1. **Truthfulness of the claim** — can we state an error rate we believe?
-2. **Liability** — what happens when we are wrong about a named person?
-3. **Fit with the money spine** — how much of the ledger, jobs, and webhook
-   machinery survives?
-4. **Time to first paying use** — Track A is not shipped yet.
-5. **Ongoing cost** — per-call fees, or GPU spend, against credits charged.
+Anything quoting "0.90 AUC" as "90% accurate" is wrong, and that error is how
+this product gets mis-sold internally.
 
-## 4. Trade-offs
+### 5.2 The errors are demographically skewed
 
-| | A · Decline | B · Resell a vendor | C · Self-host | D · Provenance only |
-|---|---|---|---|---|
-| Truthful claim | n/a | Vendor's number, not ours | Ours, and we own the measurement | Fully — reports a fact, not a guess |
-| Liability | none | Shared in contract, ours in public | entirely ours | low — no accusation is made |
-| Money spine fit | n/a | new provider, new webhook, new table | same, plus inference hosting | new table, no provider |
-| Time | zero | weeks, plus contract | months | days |
-| Cost | zero | per call, margin unknown until quoted | GPU, always on | negligible |
-| Honest failure mode | — | confident wrong answers | confident wrong answers | "no data", frequently |
+Trinh & Liu (IJCAI-21): female Asian and female African faces are **1.5–3× more
+likely to be wrongly labelled fake** than male Caucasian faces; 10.7 percentage
+points between best and worst intersectional subgroup. The disparity concentrates
+in **false positives against real faces** — the accusation direction.
 
-## 5. Recommendation
+Non-English audio runs 7.21 points lower accuracy than English even after
+finetuning. Veyrnox serves EU users.
 
-**Option D now, Option B only behind a named commercial reason.**
+For a UK Ltd this is an Equality Act 2010 indirect-discrimination question, not
+an ethics footnote. See §8.
 
-Engineering's view, which is not the decision:
+### 5.3 It fails against anyone actually trying
 
-Option D is the only one that ships a claim we can defend. Reading a C2PA
-manifest and reporting it is a statement of fact — this file carries a
-signed claim from this tool, or it carries nothing. Most files will carry
-nothing, and saying so honestly is more useful to a user than a fabricated
-percentage. It needs no vendor, no new provider adapter, and no webhook.
+Adversarial perturbation succeeds **>95%** against commercial detectors. The
+detector works on adversaries who are not trying — which excludes the
+sophisticated deepfakes that would justify the product.
 
-Option B is the product the owner actually described, and it is buildable, but
-it should not start until there is a customer who has said what they would pay
-for it. The engineering cost is a new provider adapter, a new signature scheme,
-a new results table, and a UI that communicates uncertainty well enough not to
-be defamatory. That is comparable to the entire Track A build, for a feature
-with no verified demand.
+### 5.4 Self-hosting decays faster than it can be maintained
 
-Option C is out on cost and timeline for a pre-launch product.
+Detectors learn generator-specific artefacts, so every new model release is
+out-of-distribution by construction. TrueMedia.org — funded nonprofit, founded
+by Oren Etzioni, 60,000+ items analysed — shut its detector down in January 2025
+citing maintenance cost, open-sourced it under MIT, and **nobody has picked it
+up**. Most video detectors are also licence-contaminated at the training-data
+layer, because FaceForensics++ is non-commercial and flows downstream.
 
-Option A remains reasonable and is strictly better than shipping B badly.
+### 5.5 Provenance has the opposite problem: honest, but silent
 
-Note that ADR-0017 already withdrew Veyrnox's own C2PA *output* claims. Option D
-is the reverse direction — reading other people's provenance, not asserting our
-own — so it does not reopen that decision. It should not be described in
-marketing as anything more than manifest inspection.
+C2PA reading is technically easy and verified working on this runtime:
+`@trustnxt/c2pa-ts`, 260 KB gzipped, pure TS, Web Crypto, no Node builtins, and
+a tamper test flips `isValid` correctly. Cloudflare removed the Worker bundle
+limit on 2026-09-04 (now 64 MiB), so size is not a constraint.
 
-## 6. Consequences
+But the one hard measurement puts adoption at **0.067%** of images. Midjourney
+has never shipped C2PA. Instagram, Facebook, X and YouTube strip manifests on
+re-encode. C2PA's own watermark-based recovery has 3 confirmed instances in
+2.8M images scanned.
 
-If **D** is taken:
-- A new surface that accepts an upload and returns a provenance report. The
-  Track A upload path (`/api/v1/uploads`, `lib/uploadSource.js`) is reused
-  as-is.
-- No new provider, no new webhook, no fal dependency.
-- Public copy must say "provenance", never "detection", and the UI must state
-  that absent provenance means nothing either way.
-- Pricing: likely free or a token cost. It consumes no provider spend.
+Two caveats in our favour: the library ships **no trust-list logic** and will
+report `signingCredential.trusted` for a test certificate, so the trust list must
+be pinned in KV or the claim is false. And adding IPTC `DigitalSourceType` and
+EXIF to the same pass raises the hit rate to an estimated **5–15%** — inference,
+not measurement — because Midjourney and Meta AI write IPTC without C2PA.
 
-If **B** is taken:
-- A new provider entry alongside `fal`, `kie`, `openrouter` in the
-  `PROVIDERS` map, with its own signature verification, and an entry in
-  `webhook_events` for idempotency.
-- The `authenticity_checks` table sketched in
-  [docs/face-filters/SCHEMA.md §5](../face-filters/SCHEMA.md), with RLS enabled
-  and forced, explicit revokes, and `SET search_path = ''` on any function.
-- Every verdict stores the detector version, so an old verdict can be
-  re-assessed when the model changes.
-- The UI must never render a bare percentage without the model's measured
-  error rate beside it.
-- Legal review before launch, not after. A wrong "synthetic" verdict about a
-  real person is a defamation exposure that the ToS does not cover.
+**fal joined the C2PA trust list in August 2026.** No document says which
+endpoints sign. This is a ten-minute test — generate one image per model we ship
+and run `c2patool` — and it is worth running before any decision, because our
+delivery path is byte-preserving end to end (verified: no `sharp` import, no
+`next/image`, no Cloudflare Images; `copyUrlToR2` streams verbatim and assets
+reach the browser by presigned GET), so any manifest fal writes survives to the
+user intact.
 
-If **A** is taken:
-- PRD §4 Track B is marked declined, with this ADR cited.
+## 6. Trade-offs
 
-## 7. Open questions
+| | A · Decline | B · Buy | C · Self-host | D · Provenance | E · Our own records |
+|---|---|---|---|---|---|
+| Build cost | zero | days | ~1 week | ~3 days | ~2 days |
+| Run cost | zero | $399/yr–$0.006/img | ~$24/mo | negligible | zero |
+| Accuracy of the claim | n/a | ~80%, skewed | worse | exact when present | **exact, always** |
+| Answers "is this fake?" | no | badly | badly | 5–15% of the time | only for our own assets |
+| Liability | none | **high** | **highest** | low | none |
+| Decay | n/a | vendor's problem | ours, quarterly | none | none |
 
-1. Is there a named customer for Track B, or is it a feature we assume is
-   wanted? This decides B versus A outright.
-2. Would Veyrnox publish a verdict about media depicting a person who is not
-   the uploader? If no, the product is much narrower and much safer.
-3. Does selling a face-swap tool and a swap detector from one brand help or
-   hurt? Ownership call.
-4. If B: is the vendor contract's accuracy claim something we can repeat to
-   users, or is it marketing we would be laundering?
+## 7. Recommendation
+
+**E now. D alongside it if the fal test shows manifests. B only for a named
+customer, and never as an unqualified verdict. C not at all.**
+
+Engineering's opinion, which is not the decision:
+
+**E is free and exact.** Every asset Veyrnox generates already has perfect
+provenance in `jobs`. Exposing that — a verifiable page or signed record per
+asset — is a real feature, costs nothing, cannot be wrong, and is the honest
+version of what a customer asking for "authenticity" usually wants.
+
+**D is cheap and honest but nearly silent.** Ship it only combined with IPTC/EXIF,
+with the trust list pinned, and with the negative case worded so it cannot be
+read as exoneration: *"this file carries no provenance metadata — most files
+don't, and most platforms remove it."* A user who reads "no data" as "verified
+human" is worse off than before we shipped.
+
+**B is the product as originally described and it is buildable in an afternoon.**
+That is exactly why it needs a decision rather than a sprint. At ~80% accuracy
+with errors concentrated on women and darker-skinned subjects, an unqualified
+verdict is a systematic harm with our name on it. If it ships, it ships as
+"signals", never as a determination, with the vendor named and the confidence
+shown — and only once §8 is complete.
+
+**C is rejected** — not on cost, which was my error, but on maintenance. The best
+funded organisation in this field quit rather than carry it.
+
+## 8. Legal — INCOMPLETE, DO NOT ACCEPT THIS ADR UNTIL FILLED
+
+Research on the following was still running when this revision was written, and
+the session's search budget was exhausted, so what returns may be thin. These
+questions must be answered before Option B is taken:
+
+1. **UK defamation** — exposure for publishing an automated probabilistic
+   assertion that media depicting a named person is manipulated. Does a ToS
+   disclaimer protect the platform? All vendor terms are AS-IS with no accuracy
+   warranty, and **none restricts showing verdicts to end users** — the liability
+   sits entirely with us.
+2. **EU AI Act Article 50** — what applies to a provider of a detection service,
+   as distinct from a provider of generation tools. In-force dates.
+3. **UK GDPR Article 22** — is a verdict about an identifiable person automated
+   decision-making producing legal or similarly significant effects?
+4. **Equality Act 2010** — does shipping a detector with the §5.2 measured
+   disparity constitute indirect discrimination?
+5. **Online Safety Act** — relevance to a detection service.
+
+## 9. Open questions for the product owner
+
+1. **Is there a named customer for Track B, or is it assumed?** This decides
+   B versus A outright and nothing else in this ADR matters more.
+2. Would Veyrnox publish a verdict about media depicting someone who is not the
+   uploader? If no, the product is far narrower and far safer.
+3. Does selling a face-swap tool and a swap detector from one brand help or hurt?
+4. Run the fal `c2patool` test — it may make Option D substantially better, or
+   rule it out, for ten minutes of work.
