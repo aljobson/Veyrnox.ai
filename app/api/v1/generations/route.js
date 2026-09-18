@@ -25,6 +25,8 @@ import * as kie from '../../../../packages/adapters/kie.js';
 import * as openrouter from '../../../../packages/adapters/openrouter.js';
 import { durationSpec, shapeForProvider, payloadCheck } from '../../../../lib/providerDuration.js';
 import { refundRejectedSubmit } from '../../../../lib/submitRejection.js';
+import { resolveUploadedSource } from '../../../../lib/resolveSource.js';
+import { envConfig as r2EnvConfig, isConfigured as r2IsConfigured } from '../../../../packages/adapters/r2.js';
 
 // Constrain idempotency keys to a safe printable range.
 const IDEMPOTENCY_RE = /^[A-Za-z0-9._-]{8,128}$/;
@@ -51,6 +53,10 @@ const ALLOWED_INPUTS = {
     duration_seconds: { kind: 'enum', values: [5, 10] },
     seed: { kind: 'int', min: 0, max: 2147483647 },
     image_url: { kind: 'url' },
+    // Transform filters that operate on a clip (PRD A6). Same rule as
+    // image_url: HTTPS only, bounded length, and in practice always a
+    // presigned URL this server minted — never a client-supplied host.
+    video_url: { kind: 'url' },
 };
 
 /** @returns {{ok:true}|{ok:false,error:string}} */
@@ -140,6 +146,32 @@ export async function POST(req) {
     if (!inputs || typeof inputs !== 'object' || Array.isArray(inputs)) {
         return NextResponse.json({ error: 'inputs_must_be_object' }, { status: 400 });
     }
+    // A Transform job names an uploaded source by its R2 key. The client
+    // never sends a URL for it: the key is checked for ownership, the bytes
+    // are checked against what was declared at signing time, and only then
+    // does this server mint the short-lived URL the provider will fetch.
+    // The key is what persists in jobs.inputs; the signed URL does not.
+    const sourceKey = body && body.source_key;
+    if (sourceKey !== undefined) {
+        if (typeof sourceKey !== 'string' || sourceKey.length > 200) {
+            return NextResponse.json({ error: 'source_key_invalid' }, { status: 400 });
+        }
+        const r2cfg = r2EnvConfig();
+        if (!r2IsConfigured(r2cfg)) {
+            return NextResponse.json({ error: 'gateway_not_configured' }, { status: 503 });
+        }
+        const source = await resolveUploadedSource(authId, sourceKey, r2cfg);
+        if (!source.ok) {
+            const status = source.error === 'source_not_found' ? 404 : source.error === 'internal' ? 502 : 400;
+            return NextResponse.json({ error: source.error }, { status });
+        }
+        // A client-sent image_url/video_url is replaced, never merged: the
+        // only source a Transform job may read is one this server signed.
+        delete inputs.image_url;
+        delete inputs.video_url;
+        inputs[source.field] = source.url;
+    }
+
     const inputsCheck = validateInputs(inputs);
     if (!inputsCheck.ok) return NextResponse.json({ error: inputsCheck.error }, { status: 400 });
 
