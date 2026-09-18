@@ -50,3 +50,28 @@ test('a transform modality prices the same way its bucket implies', () => {
         assert.equal(isVideo(m), kindOf(m) === 'video', `${m} must price the way it is grouped`);
     }
 });
+
+// Filter feature selectors, bounded to the provider's own enums and ranges
+// as read from the live fal schemas on 2026-09-18. A value this allowlist
+// accepts must be one the provider accepts, or we debit and then fail.
+test('filter selectors are bounded to what the provider actually accepts', async () => {
+    const mod = await import('node:fs');
+    const src = mod.readFileSync(new URL('../app/api/v1/generations/route.js', import.meta.url), 'utf8');
+
+    // target_age: the provider range is 6-100 inclusive.
+    assert.match(src, /target_age:\s*\{ kind: 'int', min: 6, max: 100 \}/);
+    // preserve_identity is a boolean, and the validator must have a case for
+    // that kind or every value would fall through to inputs_invalid.
+    assert.match(src, /preserve_identity:\s*\{ kind: 'bool' \}/);
+    assert.match(src, /case 'bool':/);
+    // The eleven makeup styles and four intensities the provider enumerates.
+    assert.match(src, /'korean_style'/);
+    assert.match(src, /intensity:\s*\{ kind: 'enum', values: \['light', 'medium', 'heavy', 'dramatic'\] \}/);
+
+    // Quantity knobs stay out: these buy more output than the catalog price
+    // covers. iclight-v2 exposes num_images (default 1, max 4) and the video
+    // relight exposes num_frames — neither may ever be client-settable.
+    for (const forbidden of ['num_images', 'num_frames', 'num_inference_steps', 'image_size', 'resolution']) {
+        assert.ok(!new RegExp(`^\\\\s*${forbidden}:`, 'm').test(src), `${forbidden} must not be client-settable`);
+    }
+});

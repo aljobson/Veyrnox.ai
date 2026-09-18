@@ -57,6 +57,20 @@ const ALLOWED_INPUTS = {
     // image_url: HTTPS only, bounded length, and in practice always a
     // presigned URL this server minted — never a client-supplied host.
     video_url: { kind: 'url' },
+
+    // Filter feature selectors, verified against the live fal schemas on
+    // 2026-09-18 (scripts/verify-filter-endpoints.mjs). These are NOT the
+    // quantity knobs the comment above excludes: choosing a makeup style or
+    // a target age buys exactly one output, same as the default. Without
+    // them the filter has no controls and is not a product — you cannot
+    // "age modify" without saying to what age.
+    //
+    // Bounds mirror the provider's own enum and range, so a value this
+    // allowlist accepts is one the provider accepts.
+    makeup_style: { kind: 'enum', values: ['natural', 'glamorous', 'smoky_eyes', 'bold_lips', 'no_makeup', 'remove_makeup', 'dramatic', 'bridal', 'professional', 'korean_style', 'artistic'] },
+    intensity: { kind: 'enum', values: ['light', 'medium', 'heavy', 'dramatic'] },
+    target_age: { kind: 'int', min: 6, max: 100 },
+    preserve_identity: { kind: 'bool' },
 };
 
 /** @returns {{ok:true}|{ok:false,error:string}} */
@@ -74,6 +88,9 @@ function validateInputs(inputs) {
                 break;
             case 'int':
                 if (!Number.isInteger(value) || value < rule.min || value > rule.max) return { ok: false, error: `inputs_invalid:${key}` };
+                break;
+            case 'bool':
+                if (typeof value !== 'boolean') return { ok: false, error: `inputs_invalid:${key}` };
                 break;
             case 'url': {
                 let u;
