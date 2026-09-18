@@ -405,6 +405,21 @@ knowledge of falsity plus intent to cause harm.
 Note the "internal business services" exemption (Sch 1 paras 7/8) does **not**
 cover B2B SaaS; it requires the customer to be the provider of the service.
 
+### 8.7b The design contract, if this is built at all
+
+Four choices each reduce exposure across several regimes at once. All are cheap
+now and expensive to retrofit, so they belong in the spec before any code.
+
+| Decision | What it resolves |
+|---|---|
+| Never match faces against our own gallery; take the identity assertion from the uploader | AI Act Annex III 1(a) **and** the GDPR Art 9 biometric limb |
+| Exclude intimate-image intake entirely | The Art 9 **sex-life** limb, which no technique avoids (§8.4) |
+| Every verdict is an attributed, versioned, confidence-bounded **model opinion with a stated basis** — never a bare number | Defamation s.3 honest opinion, *Charleston* meaning, GDPR Art 16 rectification |
+| "Not for law-enforcement evidence evaluation or judicial use" in docs, contract **and** marketing | AI Act Annex III 6(c) and 8(a); engages the Art 25(2) escape |
+| Validate and calibrate **per content distribution**, publish limitations and subgroup performance | FTC *Workado* / *IntelliVision* substantiation, defamation s.4 reasonable belief, GDPR Art 5(1)(d), ASA CAP 3.7 |
+| Human review before any verdict is published | The UKJT point that defences fail for wholly AI-generated statements |
+| No sharing functionality of any kind, including dormant | OSA s.3(2)(a), which tests capability rather than use |
+
 ### 8.8 Unverified — do not rely on without checking
 
 The researcher flagged that no EUR-Lex primary text could be retrieved (every
