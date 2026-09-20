@@ -248,6 +248,7 @@ export async function POST(req) {
                 p_r2_key: copy.r2Key,
                 p_mime_type: copy.mimeType,
                 p_size_bytes: copy.size,
+                p_sha256: copy.sha256,
             }, cfg);
             if (!storedRes || storedRes.ok !== true) {
                 // The object is in R2 under a deterministic key; a retry

@@ -79,6 +79,25 @@ export async function GET(req, { params }) {
         console.error('[jobs/provenance] catalog read failed:', err);
     }
 
+    // The digest taken when the bytes were stored (migration 0077). Ownership
+    // is already proven above, so this read adds no access surface. Assets
+    // written before 0077 have no hash and degrade to null rather than
+    // failing — an absent digest is honest, a fabricated one is not.
+    let content = null;
+    try {
+        const rows = await select(
+            'assets',
+            { columns: 'sha256,mime_type,size_bytes', filter: `job_id=eq.${encodeURIComponent(id)}` },
+            cfg,
+        );
+        const asset = Array.isArray(rows) && rows[0];
+        if (asset) {
+            content = { sha256: asset.sha256 || null, mime_type: asset.mime_type, size_bytes: asset.size_bytes };
+        }
+    } catch (err) {
+        console.error('[jobs/provenance] asset read failed:', err);
+    }
+
     return NextResponse.json({
         job_id: id,
         platform: 'Veyrnox.ai',
@@ -87,8 +106,13 @@ export async function GET(req, { params }) {
         credits: row.credits,
         created_at: row.created_at,
         completed_at: row.updated_at,
+        content,
         // Say what this is and is not, in the payload, so a consumer cannot
-        // mistake a record for a cryptographic proof.
-        record_scope: 'Generation record held by Veyrnox.ai. Identifies how this job produced its output; does not bind an arbitrary file to this record.',
+        // mistake a record for more than it is. With a digest present a holder
+        // of the file can check it themselves; without one, this is a record
+        // of a generation and nothing more.
+        record_scope: content && content.sha256
+            ? 'Generation record held by Veyrnox.ai. content.sha256 is the SHA-256 of the bytes stored for this job: hash the file you hold and compare to bind it to this record.'
+            : 'Generation record held by Veyrnox.ai. Identifies how this job produced its output; does not bind an arbitrary file to this record.',
     }, { headers: { 'Cache-Control': 'no-store' } });
 }
