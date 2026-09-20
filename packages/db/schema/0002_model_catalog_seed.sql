@@ -1,9 +1,23 @@
--- Seed model_catalog from packages/catalog/index.ts.
+-- Model catalog seed - LOCAL AND TEST DATABASES ONLY.
 --
--- Auto-derived from the LAUNCH + GATE rows of packages/catalog/index.ts.
--- Keep in sync manually until Slice 4 adds a scripts/seed-catalog.mjs
--- that re-emits this file from the TS source. Any drift trips the
--- margin_floor CI check via packages/catalog/margin-validator.test.ts.
+-- Production is built exclusively from packages/db/schema/supabase/. This
+-- file exists so a fresh local Postgres has rows to work against.
+--
+-- It used to end in a DO UPDATE that overwrote credits_5s and active, and
+-- scripts/migrate.mjs points SCHEMA_DIR at this directory. Anyone running
+-- `npm run migrate` with DATABASE_URL aimed at a real database silently
+-- reverted ADR-0014 floor pricing (veo-3.1 122 to 152, wan-2.5 16 to 19,
+-- flux-2-pro 2 to 4) and re-activated cosyvoice-2, which supabase/0017
+-- deleted - a dead endpoint, so a guaranteed debit-then-refund loop.
+--
+-- It now takes the DO NOTHING branch: this file may create rows that are
+-- absent and can never change a row that exists. The prices below are
+-- therefore historical and deliberately unmaintained. The catalog is
+-- normative; this is scaffolding.
+--
+-- An earlier header claimed a margin_floor CI check guarded these values.
+-- Nothing reads this file. That claim is removed rather than repaired,
+-- because DO NOTHING is the actual guard.
 
 BEGIN;
 
@@ -26,15 +40,6 @@ VALUES
     -- Audio
     ('cosyvoice-2',       'CosyVoice2 (Alibaba TTS)', 'fal', 'cosyvoice-2',       'text-to-audio',  2, 0.012, false, true),
     ('ace-step',          'ACE-Step (music/SFX)',     'fal', 'ace-step',          'text-to-audio',  2, 0.010, false, true)
-ON CONFLICT (id) DO UPDATE SET
-    name = EXCLUDED.name,
-    provider = EXCLUDED.provider,
-    provider_endpoint = EXCLUDED.provider_endpoint,
-    modality = EXCLUDED.modality,
-    credits_5s = EXCLUDED.credits_5s,
-    provider_cost_per_unit = EXCLUDED.provider_cost_per_unit,
-    gated_flag = EXCLUDED.gated_flag,
-    active = EXCLUDED.active,
-    updated_at = now();
+ON CONFLICT (id) DO NOTHING;
 
 COMMIT;

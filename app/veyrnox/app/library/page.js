@@ -113,7 +113,7 @@ export default function Library() {
 
   return (
     <div className="min-h-dvh">
-      <AppNav balance={balance ?? 0} active="library" />
+      <AppNav balance={balance} active="library" />
 
       <section className="max-w-[1400px] mx-auto px-4 sm:px-8 pt-10 pb-4">
         <Chip tone="accent" className="mb-3">LIBRARY · YOUR GENERATIONS</Chip>

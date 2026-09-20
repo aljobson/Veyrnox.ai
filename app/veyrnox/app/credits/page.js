@@ -79,7 +79,7 @@ export default function Credits() {
 
   return (
     <div className="min-h-dvh">
-      <AppNav balance={balance ?? 0} active="credits" />
+      <AppNav balance={balance} active="credits" />
 
       <section className="max-w-[1200px] mx-auto px-4 sm:px-8 pt-10 pb-8">
         <Chip tone="money" className="mb-3">CREDITS & BILLING</Chip>

@@ -19,8 +19,18 @@
 
 import { NextResponse } from 'next/server';
 import { rpc, envConfig } from '../../../../packages/db/supabase-client.js';
-import { presignPutUrl, isConfigured as r2IsConfigured, envConfig as r2EnvConfig } from '../../../../packages/adapters/r2.js';
-import { checkDeclared, uploadKeyFor, UPLOAD_URL_TTL_SECONDS } from '../../../../lib/uploadSource.js';
+import { presignPutUrl, listObjects, isConfigured as r2IsConfigured, envConfig as r2EnvConfig } from '../../../../packages/adapters/r2.js';
+import { checkDeclared, uploadKeyFor, UPLOAD_URL_TTL_SECONDS, UPLOAD_PREFIX } from '../../../../lib/uploadSource.js';
+
+// How many un-swept sources one account may be holding. Sources are consumed
+// within seconds of upload and swept after 24h, so a caller with more than a
+// handful pending is not using the product.
+//
+// This is a standing cap, not a rate limit, and it is deliberately the former:
+// the risk here is stored bytes, not request volume, and a cap bounds total
+// exposure per account at MAX_PENDING x the per-type size ceiling. It also
+// needs no counter table, so it holds today rather than after a migration.
+const MAX_PENDING_UPLOADS = 10;
 
 export async function POST(req) {
     const authId = req.headers.get('x-veyrnox-auth-id');
@@ -59,6 +69,18 @@ export async function POST(req) {
     }
     if (balance <= 0) {
         return NextResponse.json({ error: 'insufficient_credits' }, { status: 402 });
+    }
+
+    // Bound what this account can be holding. Without this the only gate was
+    // `balance > 0`, so one credit bought unlimited presigned PUTs.
+    const held = await listObjects(`${UPLOAD_PREFIX}/${authId.toLowerCase()}/`, r2cfg, { maxKeys: MAX_PENDING_UPLOADS + 1 });
+    if (!held.ok) {
+        // Fail closed: an unreadable bucket must not become an open endpoint.
+        console.error('[uploads] could not count pending uploads:', held.error);
+        return NextResponse.json({ error: 'upload_check_unavailable' }, { status: 503 });
+    }
+    if (held.objects.length > MAX_PENDING_UPLOADS) {
+        return NextResponse.json({ error: 'too_many_pending_uploads' }, { status: 429 });
     }
 
     // Gate: the key is built from the verified auth id and a fresh UUID. No

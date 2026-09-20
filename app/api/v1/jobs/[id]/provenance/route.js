@@ -25,7 +25,13 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 
 // A job only has meaningful provenance once its output is actually stored.
 // Anything earlier describes an intention, not a thing that exists.
-const SETTLED = new Set(['SUCCEEDED', 'STORED']);
+//
+// SUCCEEDED is deliberately NOT here. It means the provider answered, not that
+// an asset row exists — jobs/[id]/route.js maps it to `running` for exactly
+// that reason — and sweep_stuck_jobs can still move a SUCCEEDED job to FAILED
+// and refund it. Including it produced provenance for generations that were
+// refunded and never wrote a file.
+const SETTLED = new Set(['STORED']);
 
 export async function GET(req, { params }) {
     const authId = req.headers.get('x-veyrnox-auth-id');

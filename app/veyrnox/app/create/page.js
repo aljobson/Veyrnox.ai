@@ -184,7 +184,7 @@ export default function CreateStudio() {
 
   return (
     <div className="min-h-dvh">
-      <AppNav balance={balance ?? 0} active="create" />
+      <AppNav balance={balance} active="create" />
 
       <div className="max-w-[1500px] mx-auto px-4 sm:px-8 pt-6 pb-16 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-6">
         {/* ============ CANVAS ============ */}

@@ -166,11 +166,15 @@ function FeaturedHeroCards({ modelCount }) {
             <div className="aspect-[4/5] relative" style={{ background: f.bg }}>
               <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
               <div className="absolute inset-x-0 bottom-0 p-4 flex flex-col gap-2">
-                <div className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-body/85">
+                {/* Fixed light ink, not theme tokens: this sits on a hardcoded
+                    dark gradient under a from-black scrim, so --vx-fg would
+                    resolve to near-black in light theme and the card would
+                    read at 1.06:1. Same reasoning as EffectsWall below. */}
+                <div className="font-vx-mono text-[10px] tracking-[0.14em] text-white/85">
                   {f.kicker}
                 </div>
-                <div className="font-black text-[16px] leading-tight text-balance">{f.title}</div>
-                <div className="text-[12px] text-vx-fg-body/85 leading-snug">{f.body}</div>
+                <div className="font-black text-[16px] leading-tight text-balance text-white">{f.title}</div>
+                <div className="text-[12px] text-white/85 leading-snug">{f.body}</div>
                 <span className="mt-1 inline-flex items-center gap-1 font-vx-mono text-[10px] tracking-[0.12em] text-vx-accent">
                   {f.cta} →
                 </span>
@@ -248,11 +252,12 @@ function SignupIncentive() {
         <div className="relative p-6 sm:p-10 lg:p-14">
           <div className="max-w-[560px]">
             <Chip tone="money" className="mb-4">SIGN-UP BONUS</Chip>
-            <h2 className="text-[28px] sm:text-[36px] lg:text-[44px] font-black leading-[1.05] lg:leading-[1.02] tracking-[-0.03em] text-balance">
+            {/* Fixed dark surface again - see FeaturedHeroCards. */}
+            <h2 className="text-[28px] sm:text-[36px] lg:text-[44px] font-black leading-[1.05] lg:leading-[1.02] tracking-[-0.03em] text-balance text-white">
               50 free credits.<br/>
               <span className="text-vx-accent">Every button shows its price.</span>
             </h2>
-            <ul className="mt-5 space-y-2 text-[14px] text-vx-fg-body">
+            <ul className="mt-5 space-y-2 text-[14px] text-white/85">
               <li className="flex gap-2"><span className="text-vx-accent">✓</span> Every model on one balance</li>
               <li className="flex gap-2"><span className="text-vx-accent">✓</span> Failed jobs refund automatically</li>
               <li className="flex gap-2"><span className="text-vx-accent">✓</span> No card required to browse</li>
