@@ -21,6 +21,7 @@ export default function MobileExplore() {
             <button
               key={c}
               onClick={() => setCat(c)}
+              aria-pressed={cat === c}
               className={`shrink-0 font-vx-mono text-[10px] tracking-[0.12em] font-bold rounded-full px-3.5 py-1.5 border ${
                 cat === c
                   ? 'bg-vx-accent text-vx-accent-ink border-transparent'

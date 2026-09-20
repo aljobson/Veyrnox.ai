@@ -168,6 +168,7 @@ export default function Library() {
             <button
               key={t}
               onClick={() => setTab(t)}
+              aria-pressed={tab === t}
               className={`font-vx-mono text-[11px] tracking-[0.12em] font-bold rounded-full px-4 py-2 border ${
                 tab === t
                   ? 'bg-vx-panel text-vx-fg border-vx-border'

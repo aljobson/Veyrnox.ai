@@ -46,7 +46,7 @@ export default function Admin() {
     <div className="min-h-dvh">
       <AppNav active="explore" />
 
-      <section className="max-w-[1400px] mx-auto px-8 pt-10 pb-6">
+      <section className="max-w-[1400px] mx-auto px-4 sm:px-8 pt-10 pb-6">
         <Chip tone="danger" className="mb-3">ADMIN · OPS</Chip>
         <h1 className="text-[36px] font-black tracking-[-0.02em]">Last 24 hours</h1>
 

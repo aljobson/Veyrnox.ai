@@ -286,6 +286,7 @@ export default function CreateStudio() {
           <textarea
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
+            aria-label="Prompt"
             rows={3}
             className="mt-3 w-full bg-vx-panel border border-vx-border rounded-lg p-3.5 text-sm text-vx-fg placeholder:text-vx-fg-faint resize-none focus:outline-none focus:border-vx-accent"
             placeholder="Describe the shot…"
@@ -324,15 +325,15 @@ export default function CreateStudio() {
                   className={`flex items-center justify-between rounded-lg px-3 py-2.5 border ${
                     modelId === m.id
                       ? 'border-vx-accent bg-vx-accent/[0.07]'
-                      : 'border-transparent hover:bg-white/[0.03]'
+                      : 'border-transparent hover:bg-vx-fg/[0.04]'
                   }`}
                 >
                   <span className="flex items-center gap-2 min-w-0">
                     <span className="text-sm font-bold truncate">{m.name}</span>
                     {m.gated && (
-                      <span className="font-vx-mono text-[8.5px] tracking-[0.1em] text-vx-money shrink-0">◆ PREMIUM</span>
+                      <span className="font-vx-mono text-[10px] tracking-[0.1em] text-vx-money shrink-0">◆ PREMIUM</span>
                     )}
-                    <span className="font-vx-mono text-[8.5px] tracking-[0.1em] text-vx-fg-faint uppercase shrink-0">{m.kind}</span>
+                    <span className="font-vx-mono text-[10px] tracking-[0.1em] text-vx-fg-faint uppercase shrink-0">{m.kind}</span>
                   </span>
                   <span className="font-vx-mono text-[12px] font-bold text-vx-money vx-num shrink-0">{m.credits} cr</span>
                 </button>

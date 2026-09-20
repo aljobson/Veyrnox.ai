@@ -287,3 +287,9 @@ export const PROMO_STRIP = {
   cta: 'Sign up free',
   href: '/app',
 };
+
+// Shelf cards print the modality underneath the name, so the parenthetical in
+// a catalog name ("Kling 3.0 (image-to-video)") is redundant for display.
+export function shelfName(name) {
+  return String(name || '').replace(/\s*\([^()]*\)\s*$/, '');
+}
