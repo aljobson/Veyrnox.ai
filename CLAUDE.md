@@ -20,8 +20,10 @@ Tripwires from PRs #25, #27, #38, #40:
 - **`tsx`** in root `devDependencies` -> build fails. Install ad-hoc in CI.
 - **`jose`** anywhere on the SSR import graph -> build fails. Use Web Crypto
   (`crypto.subtle.importKey`, `crypto.subtle.verify`) directly.
-- **`@supabase/supabase-js`** anywhere the transpiled `packages/studio` bundle
-  drags in -> build fails. Auth UI + auth client live under `app/` and
+- **`@supabase/supabase-js`** anywhere on the SSR import graph -> build
+  fails. (The original trap was the transpiled `packages/studio` bundle;
+  that package went with ADR-0015, but the constraint still binds `app/`
+  and `components/`.) Auth UI + auth client live under `app/` and
   `components/` and use plain `fetch` against `/auth/v1/*` and `/rest/v1/*`.
 
 If a build starts failing after a dependency change, bisect these three first.

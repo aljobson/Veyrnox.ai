@@ -34,7 +34,7 @@ const CANDIDATES = [
     { id: 'retoucher', feature: 'A1 alternate', endpoint: 'fal-ai/retoucher' },
     { id: 'face-enhance', feature: 'A2 face enhancement', endpoint: 'fal-ai/image-editing/face-enhancement' },
     { id: 'iclight', feature: 'A3 relight (image)', endpoint: 'fal-ai/iclight-v2' },
-    { id: 'lightx-relight', feature: 'A3 alternate', endpoint: 'fal-ai/lightx/relight' },
+    { id: 'lightx-relight', feature: 'A6 alternate (video)', endpoint: 'fal-ai/lightx/relight' },
     { id: 'makeup', feature: 'A4 digital makeup', endpoint: 'fal-ai/image-apps-v2/makeup-application' },
     { id: 'age-modify', feature: 'A5 age modify', endpoint: 'fal-ai/image-apps-v2/age-modify' },
     { id: 'relight-video', feature: 'A6 relight (video)', endpoint: 'fal-ai/id-v2v/relight' },

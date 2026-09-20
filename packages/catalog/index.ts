@@ -47,7 +47,12 @@ export const MARGIN_FLOOR = 0.5; // 50% gross margin floor over provider cost.
 // ─── Model catalog ────────────────────────────────────────────────────────
 
 export type ModelStatus = "LAUNCH" | "GATE" | "PHASE_2" | "SKIP";
-export type Modality = "text-to-video" | "text-to-image" | "text-to-audio";
+export type Modality =
+    | "text-to-video"
+    | "image-to-video"
+    | "text-to-image"
+    | "text-to-audio"
+    | "text-to-speech";
 
 export interface CatalogRow {
     /** Stable id used in URLs, ledger rows, jobs.model_id. */

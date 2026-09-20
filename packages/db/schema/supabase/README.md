@@ -133,3 +133,20 @@ triggers, cron jobs and a hash of every model catalog row.
 
 New migrations go in one file per change and are applied under their own
 name, as everywhere else in this directory.
+
+## Numbering gaps
+
+Migration numbers are permanent once applied, so a number burned by an
+abandoned branch is never reused.
+
+| Gap | Why |
+|-----|-----|
+| 0033–0034 | see 0035's header |
+| 0039–0040 | recorded in `0041_credit_packs_and_top_ups.sql:3` — unmerged branches already held 0035–0040 |
+| 0061 | burned by an abandoned branch. Verified 2026-09-20 against the production ledger: never applied. |
+| 0069 | burned by an abandoned branch. Verified 2026-09-20 against the production ledger: never applied. |
+
+`check-migration-numbers.sh` only detects duplicates, so it cannot see a gap.
+An unexplained one is the shape of "applied to production, never committed" —
+`scripts/check-migration-ledger.mjs` is what actually rules that out, because
+it reads the live `applied_migration_names()` ledger.

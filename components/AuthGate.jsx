@@ -11,7 +11,7 @@
  * modal.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
     getSession,
     onSessionChange,
@@ -22,6 +22,29 @@ import {
 } from "../app/lib/authClient.js";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// GoTrue's strings are developer-facing ("Email rate limit exceeded",
+// "AuthApiError: Invalid login credentials"). Translate the ones users
+// actually hit; anything unrecognised falls back to a plain sentence rather
+// than a raw error object, and the original stays in console.error.
+const AUTH_ERROR_COPY = [
+    [/invalid login credentials/i, "That email and password don't match. Check both and try again."],
+    [/email not confirmed/i, "Confirm your email first — check your inbox for the link."],
+    [/rate limit/i, "Too many attempts. Wait a minute and try again."],
+    [/user already registered/i, "There's already an account with that email. Try signing in."],
+    [/password should be at least/i, "Passwords need at least 8 characters."],
+    [/network|fetch|failed to fetch/i, "Couldn't reach the server. Check your connection."],
+];
+
+function humanAuthError(err) {
+    const raw = err && err.message ? String(err.message) : "";
+    if (raw) {
+        const hit = AUTH_ERROR_COPY.find(([re]) => re.test(raw));
+        if (hit) return hit[1];
+        console.error("[auth] unmapped error:", raw);
+    }
+    return "That didn't work. Try again.";
+}
 
 export default function AuthGate() {
     const [open, setOpen] = useState(false);
@@ -51,6 +74,37 @@ export default function AuthGate() {
             .catch(() => {});
         return () => { cancelled = true; };
     }, []);
+
+    // This dialog appears unannounced on a 401, so it has to take focus and
+    // accept Escape — ConfirmDialog already does both. Without it a keyboard
+    // user had to Tab blindly through the whole page to reach the modal that
+    // had just appeared, and could not dismiss it.
+    const panelRef = useRef(null);
+    const closeRef = useRef(null);
+
+    useEffect(() => {
+        if (!open) return undefined;
+        // Remember where focus was so dismissing returns it, rather than
+        // dropping the user at the top of the document.
+        const previous = document.activeElement;
+        closeRef.current?.focus();
+        return () => { if (previous && previous.focus) previous.focus(); };
+    }, [open]);
+
+    // Keep Tab inside the dialog. Everything behind it stays in the tab order
+    // otherwise, which is what aria-modal promises is not the case.
+    function onKeyDown(e) {
+        if (e.key === "Escape") { dismiss(); return; }
+        if (e.key !== "Tab") return;
+        const focusable = panelRef.current?.querySelectorAll(
+            'a[href], button:not([disabled]), input:not([disabled]), select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        if (!focusable || !focusable.length) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
 
     // Listen for the app-wide "please authenticate" signal.
     useEffect(() => {
@@ -114,7 +168,7 @@ export default function AuthGate() {
                 setNotice({ kind: "success", text: "Check your email for a sign-in link." });
             }
         } catch (err) {
-            setNotice({ kind: "error", text: err?.message || "Sign-in failed" });
+            setNotice({ kind: "error", text: humanAuthError(err) || "Sign-in failed" });
         } finally {
             setBusy(false);
         }
@@ -127,6 +181,8 @@ export default function AuthGate() {
             role="dialog"
             aria-modal="true"
             aria-label="Sign in to Veyrnox"
+            ref={panelRef}
+            onKeyDown={onKeyDown}
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4"
         >
             <div className="w-full max-w-sm rounded-2xl border border-vx-border bg-vx-panel p-6 shadow-2xl">
@@ -136,6 +192,7 @@ export default function AuthGate() {
                     </h2>
                     <button
                         type="button"
+                        ref={closeRef}
                         aria-label="Close"
                         onClick={dismiss}
                         className="text-vx-fg-muted hover:text-vx-fg text-xl leading-none"

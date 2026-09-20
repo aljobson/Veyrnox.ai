@@ -23,7 +23,12 @@ and record the results.
 - **Exit gate:** a written table of endpoint → verified output → measured
   `provider_cost_per_unit` → proposed `credits_5s` clearing the ADR-0014 floor.
 
-**Status 2026-09-18 — 6 of 8 verified, prices still missing.**
+**Status — 5 of 8 submitted real jobs; prices still missing.**
+
+_Corrected 2026-09-20: this read "6 of 8". `scripts/.slice0-results.json`
+holds five rows. `fal-ai/retoucher` did produce output, but on an earlier
+run whose request id was overwritten, so it cannot be costed against the
+dashboard and must be re-run before it is priced._
 `scripts/verify-filter-endpoints.mjs` probes schemas for free and submits real
 jobs with `--submit`.
 
@@ -36,7 +41,7 @@ jobs with `--submit`.
 | A4 makeup | `fal-ai/image-apps-v2/makeup-application` | 22s | 21.4s | yes |
 | A5 age modify | `fal-ai/image-apps-v2/age-modify` | 28s | 26.6s | yes |
 | A6 video relight | `fal-ai/id-v2v/relight` | — | — | **not run** |
-| A6 alt | `fal-ai/lightx/relight` | — | — | **not run** |
+| A6 alt (registered as "A3 alternate" in the script — script is wrong, the schema has no image_url) | `fal-ai/lightx/relight` | — | — | **not run** |
 
 The two video models were held back: they cost materially more per call and
 need a real clip, not the test image.
