@@ -86,3 +86,14 @@ test('OpenRouter download carries the key only to openrouter.ai', async () => {
         assert.equal(net.calls.find((c) => c.name === 'source').auth, 'Bearer key');
     } finally { net.restore(); }
 });
+
+// The digest reaches the database, not just the adapter's return value.
+test('job_stored receives the content hash', async () => {
+    const net = fakeNet({});
+    try {
+        await completeJob({ source: 'kie', job, providerJobId: 't1', outcome: { state: 'success', outputUrl: 'https://tempfile.aiquickdraw.com/a.mp4' }, ext: '.mp4', cfg });
+        const stored = net.calls.find((c) => c.name === 'job_stored');
+        // SHA-256 of the fake source body, "vid".
+        assert.match(stored.args.p_sha256, /^[0-9a-f]{64}$/);
+    } finally { net.restore(); }
+});

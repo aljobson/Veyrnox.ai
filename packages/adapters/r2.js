@@ -523,11 +523,17 @@ export async function copyUrlToR2(sourceUrl, r2Key, cfg, { timeoutMs = 30000, ma
             return { ok: false, error: `read source: ${msg}` };
         }
         if (!bytes) return { ok: false, error: 'source too large' };
+        // Hash the provider's bytes before they are stored, so the digest
+        // describes what the user receives (ADR-0025 option E). The delivery
+        // path is byte-preserving, so this value stays true of the served
+        // file — which is what lets a holder of a file check it against our
+        // record instead of taking our word for it.
+        const sha256 = await sha256Hex(bytes);
         // putObject carries its own S3_TIMEOUT_MS deadline; this function's
         // controller only ever covered the source fetch and body read.
         const put = await putObject(r2Key, bytes, contentType, cfg);
         if (!put.ok) return put;
-        return { ok: true, r2Key: put.r2Key, size: put.size, mimeType: contentType };
+        return { ok: true, r2Key: put.r2Key, size: put.size, mimeType: contentType, sha256 };
     } finally {
         clearTimeout(timer);
     }

@@ -48,3 +48,34 @@ test('each provider may only copy from its own CDN', async () => {
     assert.equal((await copyUrlToR2('https://v3.fal.media/x.png', 'k', cfg, { provider: 'nope' })).error, 'source host not allowed');
     assert.equal((await copyUrlToR2('https://aiquickdraw.com.evil.com/x', 'k', cfg, { provider: 'kie' })).error, 'source host not allowed');
 });
+
+// ADR-0025 option E: the digest is what lets a holder of a file check it
+// against our record, so it has to be the hash of the exact bytes stored.
+test('returns the SHA-256 of the copied bytes', async () => {
+    const realFetch = globalThis.fetch;
+    // Known vector: SHA-256 of "abc".
+    const expected = 'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad';
+    globalThis.fetch = async (url) => {
+        if (String(url).includes('fal.media')) return new Response('abc', { status: 200, headers: { 'content-type': 'image/png' } });
+        return new Response(null, { status: 200 });
+    };
+    try {
+        const res = await copyUrlToR2('https://v3.fal.media/out.png', 'k', cfg);
+        assert.equal(res.ok, true);
+        assert.equal(res.sha256, expected);
+    } finally {
+        globalThis.fetch = realFetch;
+    }
+});
+
+test('a failed copy carries no digest', async () => {
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = async () => new Response('nope', { status: 404 });
+    try {
+        const res = await copyUrlToR2('https://v3.fal.media/out.png', 'k', cfg);
+        assert.equal(res.ok, false);
+        assert.equal(res.sha256, undefined);
+    } finally {
+        globalThis.fetch = realFetch;
+    }
+});
