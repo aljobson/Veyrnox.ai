@@ -32,7 +32,7 @@
  * Reads KIE_API_KEY from the environment. Never prints it.
  */
 
-import { writeFileSync } from 'node:fs';
+import { writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { submitTask, fetchTask, buildRequest, parseEndpoint } from '../packages/adapters/kie.js';
 
 // The catalog rows as migration 0074 leaves them. Costs are what kie.ai/pricing
@@ -212,7 +212,20 @@ for (const row of submittable) {
     });
 }
 
-writeFileSync('scripts/.kie-verify-results.json', JSON.stringify(results, null, 2));
+// Merge rather than overwrite: a --only run must not erase the evidence for
+// the rows verified before it. A migration cites this file for all of them.
+const RESULTS_PATH = 'scripts/.kie-verify-results.json';
+let merged = results;
+if (existsSync(RESULTS_PATH)) {
+    try {
+        const prior = JSON.parse(readFileSync(RESULTS_PATH, 'utf8'));
+        if (Array.isArray(prior)) {
+            const fresh = new Set(results.map((r) => r.id));
+            merged = [...prior.filter((r) => !fresh.has(r.id)), ...results];
+        }
+    } catch { /* unreadable file: this run's results replace it */ }
+}
+writeFileSync(RESULTS_PATH, JSON.stringify(merged, null, 2));
 
 const passed = results.filter((r) => r.ok);
 console.error(`\n${passed.length}/${results.length} rows produced a usable output.`);
