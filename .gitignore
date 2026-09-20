@@ -47,3 +47,6 @@ out/
 
 # Session scratch
 .scratch/
+
+# Slice 0 endpoint verification output (contains provider urls, not secrets)
+scripts/.slice0-*.json

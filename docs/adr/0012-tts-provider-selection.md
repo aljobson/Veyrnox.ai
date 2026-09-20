@@ -28,3 +28,12 @@ _None yet — requires research pass._
 ## Decision
 
 _To be completed by Al._
+
+> **Drift note, 2026-09-20 (audit).** This decision is still open, but TTS is
+> live in production: `supabase/0036` seeded `inworld-tts` and `supabase/0044`
+> activated it. Inworld is not among the four options weighed above, so the
+> shipped state does not correspond to any branch of this ADR.
+>
+> Deliberately not resolved here — picking a provider is the owner's call and
+> writing one in would misrepresent a decision that was never made. Either
+> record Inworld as the decision with its reasoning, or supersede this ADR.

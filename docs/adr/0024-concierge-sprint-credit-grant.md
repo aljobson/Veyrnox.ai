@@ -57,7 +57,7 @@ tied to a step of the test, so unpaid work never gets a grant.
 - The founder account's email is recorded in the first entry appended below.
 - Each grant is approved by the product owner in chat, with its reason text,
   before it runs.
-- `ledger_grant` takes no idempotency key. Before every call, query
+- `ledger_grant` takes no idempotency key. **Superseded 2026-09-20:** `supabase/0073` added a 4-argument overload that does, plus a unique index. Pass a key and skip the manual pre-check below. Before every call, query
   `ledger_entries` for that account and exact reason text. If a row exists,
   do not call again. The per-invoice reason makes each sprint grant unique.
 - The credits are paid-equivalent (`free_delta` 0) and are spent only on
