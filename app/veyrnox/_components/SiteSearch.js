@@ -146,6 +146,11 @@ function SearchOverlay({ onClose }) {
           <input
             ref={inputRef}
             type="search"
+            role="combobox"
+            aria-expanded={results.length > 0}
+            aria-controls="vx-search-results"
+            aria-activedescendant={results.length ? `vx-search-opt-${cursor}` : undefined}
+            aria-autocomplete="list"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={onKeyDown}
@@ -163,7 +168,7 @@ function SearchOverlay({ onClose }) {
           </button>
         </div>
 
-        <div className="max-h-[52vh] overflow-y-auto" role="listbox" aria-label="Search results">
+        <div id="vx-search-results" className="max-h-[52vh] overflow-y-auto" role="listbox" aria-label="Search results">
           {results.length === 0 ? (
             <p className="px-5 py-6 text-[13px] text-vx-fg-muted">
               {query.trim() === ''
@@ -177,8 +182,12 @@ function SearchOverlay({ onClose }) {
               <button
                 key={`${item.group}:${item.title}:${item.href}`}
                 type="button"
+                id={`vx-search-opt-${i}`}
                 role="option"
                 aria-selected={i === cursor}
+                // Focus stays in the input; the listbox is driven by
+                // aria-activedescendant, so options must not be tab stops.
+                tabIndex={-1}
                 onMouseEnter={() => setCursor(i)}
                 onClick={() => go(item)}
                 className={`flex w-full items-start gap-3 px-5 py-3 text-left transition-colors ${

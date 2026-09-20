@@ -15,9 +15,17 @@ export function MobileMenu({ items, className = '' }) {
   // opened; close it whenever it opens a link, and on Escape.
   useEffect(() => {
     if (!open) return;
+    // Lock the page behind the panel. Without this the body scrolls under an
+    // open menu, which on touch reads as the menu failing to scroll rather
+    // than the page moving.
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
     const onKey = (e) => { if (e.key === 'Escape') setOpen(false); };
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', onKey);
+    };
   }, [open]);
 
   return (

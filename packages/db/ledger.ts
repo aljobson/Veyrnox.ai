@@ -1,4 +1,25 @@
 /**
+ * ⚠️  TEST HARNESS ONLY — NEVER IMPORT THIS FROM app/ OR lib/.
+ *
+ * This is the legacy gateway-v1 ledger: raw `INSERT INTO ledger_entries` and
+ * `UPDATE credit_balances` against a pg pool. It predates Free Credits
+ * (ADR-0013) and writes **no `free_delta`**, so a single debit through this
+ * class would put `free_balance` out of step with `balance` and make
+ * `reconcile_free_credits()` return rows — the invariant CLAUDE.md calls
+ * non-negotiable.
+ *
+ * Production writes go through the RPCs only: ledger_debit / ledger_refund /
+ * ledger_grant / signup_grant / credit_top_up / apply_top_up_refund /
+ * expire_free_credits.
+ *
+ * It survives because ledger.acceptance.test.ts drives a real Postgres
+ * through it to prove the schema's constraints and triggers hold. That test
+ * is required by CLAUDE.md before any RPC change, so deleting the class would
+ * cost real coverage. tests/ledgerNotWired.test.mjs fails the build if
+ * anything outside packages/db/*.test.ts ever imports it.
+ */
+
+/**
  * Veyrnox Ledger — append-only credit transactions.
  *
  * §25.3 Invariant: for every user_id, balance = SUM(ledger_entries.delta)
