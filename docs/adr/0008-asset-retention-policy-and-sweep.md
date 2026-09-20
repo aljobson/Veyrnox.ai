@@ -1,6 +1,6 @@
 # ADR-0008 — Asset retention policy + sweep
 
-- **Status**: Proposed (2026-09-11)
+- **Status**: Accepted (2026-09-11) — corrected 2026-09-20. It read Proposed while the decision was signed off in this document and migration 0016 is applied.
 - **Date**: 2026-09-11
 - **Deciders**: Product owner (sole)
 - **Related**: [ADR-0005 — Phase-0 business preconditions](0005-phase-0-business-preconditions.md), [ADR-0006 — EU residency amendment](0006-auth-and-db-amendment-eu-residency.md)

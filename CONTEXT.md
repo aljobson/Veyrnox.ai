@@ -39,7 +39,7 @@ A recurring plan that grants a monthly allotment of credits. Planned, not yet of
 _Avoid_: Tier, membership
 
 **Sales Channel**:
-Where a Top-up is bought: web, iOS App Store, or Google Play. Each channel has its own Merchant of Record and its own Credit Pack prices.
+Where a Top-up is bought. Today the `sales_channel` CHECK constraint (`supabase/0041`) allows **web** only; iOS App Store and Google Play are planned, each with its own Merchant of Record and its own Credit Pack prices. Each channel has its own Merchant of Record and its own Credit Pack prices.
 _Avoid_: Platform, store (when meaning the channel)
 
 **Merchant of Record**:

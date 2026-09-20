@@ -28,6 +28,8 @@
  * @property {any|null} user         Supabase user record (may be null)
  */
 
+import { clearJobHistory } from "../veyrnox/_lib/jobHistory.js";
+
 const STORAGE_KEY = "veyrnox_supabase_session";
 // Refresh when this close to expiry (seconds). Matches the 5s server skew
 // with room for a slow round trip.
@@ -123,12 +125,28 @@ export async function getFreshAccessToken() {
     }
     return refreshInFlight;
 }
+// False once a write has failed, so the UI can explain why a sign-in will not
+// survive a reload instead of silently forgetting the user.
+let storagePersisted = true;
+export function sessionIsPersisted() { return storagePersisted; }
+
 function setSession(s) {
     if (typeof localStorage === "undefined") return;
-    if (s) localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
-    else localStorage.removeItem(STORAGE_KEY);
+    // Safari private browsing and blocked site data throw on setItem, not on
+    // access. The read path was already guarded; this was not, so the throw
+    // propagated out of signInWithPassword and surfaced a raw DOMException.
+    // A session we cannot persist is still a usable session for this tab, so
+    // notify listeners either way and let the caller decide what to say.
+    try {
+        if (s) localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+        else localStorage.removeItem(STORAGE_KEY);
+    } catch (err) {
+        console.error("[auth] could not persist the session to localStorage:", err && err.name);
+        storagePersisted = false;
+    }
     for (const cb of listeners) cb(s);
 }
+
 /**
  * Subscribe to session changes (sign-in, sign-out, expiry). Fires with the
  * new session (or null) whenever setSession is called from any code path.
@@ -323,6 +341,12 @@ export async function signOut() {
         }).catch(() => {});
     }
     setSession(null);
+    // The session key was the only thing cleared here, so up to 50 rows of the
+    // previous user's job history — each carrying 60 characters of their
+    // prompt — stayed on the device, and Library renders that before any auth
+    // check. On a shared machine the next person read it. NavAuthButtons
+    // promises this ends your session on this device; make that true.
+    try { clearJobHistory(); } catch { /* storage blocked; nothing to clear */ }
 }
 
 // ─── MFA (TOTP) ─────────────────────────────────────────────────────────────

@@ -6,6 +6,8 @@ on:
       - "packages/db/**"
       - "packages/catalog/**"
       - "scripts/migrate.mjs"
+      # A change to a route that alters RPC arguments could not run these.
+      - "app/api/v1/**"
       - "package.json"
       - "package-lock.json"
       - ".github/workflows/ledger-tests.yml"
@@ -15,6 +17,8 @@ on:
       - "packages/db/**"
       - "packages/catalog/**"
       - "scripts/migrate.mjs"
+      # A change to a route that alters RPC arguments could not run these.
+      - "app/api/v1/**"
 
 permissions:
   contents: read

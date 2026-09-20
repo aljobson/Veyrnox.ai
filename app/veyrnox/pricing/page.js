@@ -182,40 +182,50 @@ export default function Pricing() {
           </ul>
 
           <div className="hidden md:block">
-            <div className="grid grid-cols-[1.4fr_1fr_140px_120px] px-5 py-3 border-b border-vx-border font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted">
-              <div>MODEL</div>
-              <div>MODALITY</div>
-              <div className="text-right">CREDITS · 5s</div>
-              <div className="text-right">ACCESS</div>
-            </div>
+            {/* Real table semantics. This was div grids, so a screen reader
+                got a flat run of text — "Wan 2.5 text-to-video 16 cr OPEN" —
+                with no way to tell which number was which column. The grid
+                classes move onto the rows via display:grid. */}
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="grid grid-cols-[1.4fr_1fr_140px_120px] px-5 py-3 border-b border-vx-border font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted">
+                  <th scope="col" className="text-left font-normal">MODEL</th>
+                  <th scope="col" className="text-left font-normal">MODALITY</th>
+                  <th scope="col" className="text-right font-normal">CREDITS · 5s</th>
+                  <th scope="col" className="text-right font-normal">ACCESS</th>
+                </tr>
+              </thead>
+              <tbody>
             {liveModels.map((m) => (
-              <div key={m.id} className="grid grid-cols-[1.4fr_1fr_140px_120px] px-5 py-3 border-b border-vx-border/60 last:border-b-0 items-center">
-                <div className="flex items-center gap-2 min-w-0">
+              <tr key={m.id} className="grid grid-cols-[1.4fr_1fr_140px_120px] px-5 py-3 border-b border-vx-border/60 last:border-b-0 items-center">
+                <th scope="row" className="flex items-center gap-2 min-w-0 text-left font-normal">
                   <span className="text-sm font-bold truncate">{m.name}</span>
                   {m.gated && (
                     <span className="font-vx-mono text-[9px] tracking-[0.1em] text-vx-money shrink-0">◆ PREMIUM</span>
                   )}
-                </div>
-                <div className="flex items-center gap-2 min-w-0">
+                </th>
+                <td className="flex items-center gap-2 min-w-0">
                   <span className="font-vx-mono text-[11px] tracking-[0.1em] text-vx-fg-muted uppercase truncate">
                     {m.modality}
                   </span>
                   {/* The model id is what goes in an API call — the one
                       string on this page somebody retypes by hand. */}
                   <CopyButton value={m.id} label="id" copiedLabel="copied" />
-                </div>
-                <div className="text-right font-vx-mono text-sm font-bold text-vx-money vx-num">
+                </td>
+                <td className="text-right font-vx-mono text-sm font-bold text-vx-money vx-num">
                   {m.credits} cr
-                </div>
-                <div className="text-right font-vx-mono text-[10px] tracking-[0.1em]">
+                </td>
+                <td className="text-right font-vx-mono text-[10px] tracking-[0.1em]">
                   {m.gated ? (
                     <span className="text-vx-money">GATED</span>
                   ) : (
                     <span className="text-vx-accent">OPEN</span>
                   )}
-                </div>
-              </div>
+                </td>
+              </tr>
             ))}
+              </tbody>
+            </table>
           </div>
 
           <div className="px-4 sm:px-5 py-3 border-t border-vx-border font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted text-center">

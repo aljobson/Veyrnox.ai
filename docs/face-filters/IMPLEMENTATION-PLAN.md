@@ -23,6 +23,38 @@ and record the results.
 - **Exit gate:** a written table of endpoint → verified output → measured
   `provider_cost_per_unit` → proposed `credits_5s` clearing the ADR-0014 floor.
 
+**Status — 5 of 8 submitted real jobs; prices still missing.**
+
+_Corrected 2026-09-20: this read "6 of 8". `scripts/.slice0-results.json`
+holds five rows. `fal-ai/retoucher` did produce output, but on an earlier
+run whose request id was overwritten, so it cannot be costed against the
+dashboard and must be re-run before it is priced._
+`scripts/verify-filter-endpoints.mjs` probes schemas for free and submits real
+jobs with `--submit`.
+
+| Feature | Endpoint | Wall | Inference | Output |
+|---|---|---|---|---|
+| A1 retouch | `fal-ai/image-editing/retouch` | 19s | 18.3s | yes |
+| A1 alt | `fal-ai/retoucher` | >180s cold | 13.8s | yes |
+| A2 face enhance | `fal-ai/image-editing/face-enhancement` | 16s | 14.8s | yes |
+| A3 relight | `fal-ai/iclight-v2` | 53s | 18.5s | yes |
+| A4 makeup | `fal-ai/image-apps-v2/makeup-application` | 22s | 21.4s | yes |
+| A5 age modify | `fal-ai/image-apps-v2/age-modify` | 28s | 26.6s | yes |
+| A6 video relight | `fal-ai/id-v2v/relight` | — | — | **not run** |
+| A6 alt (registered as "A3 alternate" in the script — script is wrong, the schema has no image_url) | `fal-ai/lightx/relight` | — | — | **not run** |
+
+The two video models were held back: they cost materially more per call and
+need a real clip, not the test image.
+
+**Wall clock is not inference time.** `fal-ai/retoucher` computed in 13.8s and
+took over three minutes end to end on a cold endpoint. Users wait for the wall
+clock, so the Studio needs wait-time hints for these from day one.
+
+**Still blocking `active = true`:** fal does not return cost per call, so
+`provider_cost_per_unit` has to be read off the dashboard against the request
+ids in `scripts/.slice0-results.json` and checked against the ADR-0014 floor.
+No catalog migration until that exists.
+
 ## Slice 1 — Presigned PUT in the R2 adapter
 
 - Add `presignPutUrl(key, contentType, expiresSeconds, cfg)` to

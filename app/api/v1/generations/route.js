@@ -25,6 +25,8 @@ import * as kie from '../../../../packages/adapters/kie.js';
 import * as openrouter from '../../../../packages/adapters/openrouter.js';
 import { durationSpec, shapeForProvider, payloadCheck } from '../../../../lib/providerDuration.js';
 import { refundRejectedSubmit } from '../../../../lib/submitRejection.js';
+import { resolveUploadedSource } from '../../../../lib/resolveSource.js';
+import { envConfig as r2EnvConfig, isConfigured as r2IsConfigured } from '../../../../packages/adapters/r2.js';
 
 // Constrain idempotency keys to a safe printable range.
 const IDEMPOTENCY_RE = /^[A-Za-z0-9._-]{8,128}$/;
@@ -51,6 +53,24 @@ const ALLOWED_INPUTS = {
     duration_seconds: { kind: 'enum', values: [5, 10] },
     seed: { kind: 'int', min: 0, max: 2147483647 },
     image_url: { kind: 'url' },
+    // Transform filters that operate on a clip (PRD A6). Same rule as
+    // image_url: HTTPS only, bounded length, and in practice always a
+    // presigned URL this server minted — never a client-supplied host.
+    video_url: { kind: 'url' },
+
+    // Filter feature selectors, verified against the live fal schemas on
+    // 2026-09-18 (scripts/verify-filter-endpoints.mjs). These are NOT the
+    // quantity knobs the comment above excludes: choosing a makeup style or
+    // a target age buys exactly one output, same as the default. Without
+    // them the filter has no controls and is not a product — you cannot
+    // "age modify" without saying to what age.
+    //
+    // Bounds mirror the provider's own enum and range, so a value this
+    // allowlist accepts is one the provider accepts.
+    makeup_style: { kind: 'enum', values: ['natural', 'glamorous', 'smoky_eyes', 'bold_lips', 'no_makeup', 'remove_makeup', 'dramatic', 'bridal', 'professional', 'korean_style', 'artistic'] },
+    intensity: { kind: 'enum', values: ['light', 'medium', 'heavy', 'dramatic'] },
+    target_age: { kind: 'int', min: 6, max: 100 },
+    preserve_identity: { kind: 'bool' },
 };
 
 /** @returns {{ok:true}|{ok:false,error:string}} */
@@ -68,6 +88,9 @@ function validateInputs(inputs) {
                 break;
             case 'int':
                 if (!Number.isInteger(value) || value < rule.min || value > rule.max) return { ok: false, error: `inputs_invalid:${key}` };
+                break;
+            case 'bool':
+                if (typeof value !== 'boolean') return { ok: false, error: `inputs_invalid:${key}` };
                 break;
             case 'url': {
                 let u;
@@ -187,6 +210,36 @@ export async function POST(req) {
         // rate check must not turn into an unlimited submission path.
         console.error('[generations] rate check errored:', err);
         return NextResponse.json({ error: 'rate_check_unavailable' }, { status: 503 });
+    }
+
+    // Resolved AFTER the rate-limit check, deliberately. This does a SigV4
+    // presign plus an R2 round trip, so running it first meant a request
+    // that was about to be 429'd had already spent that work — an unmetered
+    // path through a metered endpoint.
+    // A Transform job names an uploaded source by its R2 key. The client
+    // never sends a URL for it: the key is checked for ownership, the bytes
+    // are checked against what was declared at signing time, and only then
+    // does this server mint the short-lived URL the provider will fetch.
+    // The key is what persists in jobs.inputs; the signed URL does not.
+    const sourceKey = body && body.source_key;
+    if (sourceKey !== undefined) {
+        if (typeof sourceKey !== 'string' || sourceKey.length > 200) {
+            return NextResponse.json({ error: 'source_key_invalid' }, { status: 400 });
+        }
+        const r2cfg = r2EnvConfig();
+        if (!r2IsConfigured(r2cfg)) {
+            return NextResponse.json({ error: 'gateway_not_configured' }, { status: 503 });
+        }
+        const source = await resolveUploadedSource(authId, sourceKey, r2cfg);
+        if (!source.ok) {
+            const status = source.error === 'source_not_found' ? 404 : source.error === 'internal' ? 502 : 400;
+            return NextResponse.json({ error: source.error }, { status });
+        }
+        // A client-sent image_url/video_url is replaced, never merged: the
+        // only source a Transform job may read is one this server signed.
+        delete inputs.image_url;
+        delete inputs.video_url;
+        inputs[source.field] = source.url;
     }
 
     // 1. Look up the model in the catalog.

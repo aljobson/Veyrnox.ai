@@ -58,6 +58,22 @@ jobs:
       - name: Unit tests
         run: npm test
 
+      # tsx strips types without checking them, so packages/catalog and
+      # packages/db were never type-checked anywhere. That is how a Modality
+      # union that its own rows violated sat in the file CLAUDE.md calls
+      # normative for pricing. Installed ad-hoc, like tsx in ledger-tests.yml,
+      # because a root devDependency is the exact shape of the three libraries
+      # that break Workers Builds.
+      - name: Type check
+        run: |
+          npm i --no-save --no-audit --no-fund typescript@5
+          # Source only. The acceptance tests import `pg`, which
+          # ledger-tests.yml installs ad-hoc; type-checking them belongs there.
+          npx tsc --noEmit --skipLibCheck --allowImportingTsExtensions \
+            --target es2022 --module esnext --moduleResolution bundler \
+            --strict false \
+            $(ls packages/catalog/*.ts packages/db/*.ts | grep -v '\.test\.ts$')
+
       - name: Build
         run: npm run build
 

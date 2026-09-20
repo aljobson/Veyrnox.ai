@@ -1,14 +1,12 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+    // Only directories that exist. src/ and the design-agent package went with
+    // ADR-0015; globs for missing paths cost a filesystem walk on every build
+    // and quietly suggest code lives somewhere it does not.
     content: [
         "./index.html",
-        "./src/**/*.{js,ts,jsx,tsx}",
         "./app/**/*.{js,ts,jsx,tsx}",
         "./components/**/*.{js,ts,jsx,tsx}",
-        "./packages/studio/src/**/*.{js,jsx}",
-        "./packages/Open-AI-Design-Agent/packages/design-agent/src/**/*.{js,jsx}",
-        "./packages/Open-Poe-AI/packages/agents/src/**/*.{js,jsx,ts,tsx}",
-        "./packages/Vibe-Workflow/packages/workflow-builder/src/**/*.{js,jsx,ts,tsx}",
     ],
     theme: {
         extend: {

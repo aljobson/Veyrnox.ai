@@ -8,9 +8,9 @@ Early-stage development. Closed beta launch target: Q3 2026.
 
 ## Architecture
 
-See `docs/architecture_v0.3.1.md` for the full system design.
+See [`CONTEXT.md`](CONTEXT.md) for the domain language and [`docs/adr/`](docs/adr/) for the decisions behind the architecture.
 
-See `docs/veyrnox-build-brief.md` for the 12-week build plan.
+See [`docs/PHASE-1.md`](docs/PHASE-1.md) for the delivery plan.
 
 ## Development
 

@@ -6,11 +6,16 @@
  * `getCloudflareContext()` at runtime — the latter is unproven for
  * middleware/route contexts). SigV4 is ~60 lines of Web Crypto here.
  *
- * Two operations:
+ * Three operations:
  *   putObject(key, body, contentType, cfg)      — upload a fetched blob
  *   presignGetUrl(key, expiresSeconds, cfg)     — signed URL for the
  *                                                 client to download
  *                                                 directly, no proxy hop.
+ *   presignPutUrl(key, contentType, expiresSeconds, cfg)
+ *                                               — signed URL for the client
+ *                                                 to upload directly, so a
+ *                                                 user's source file never
+ *                                                 passes through the Worker.
  *
  * Config from env at the call site:
  *   R2_ACCOUNT_ID          Cloudflare account id
@@ -278,6 +283,97 @@ export async function deleteObject(key, cfg) {
 }
 
 /**
+ * List objects under a prefix (S3 ListObjectsV2). Used by the upload sweep,
+ * which is the only caller that needs to see objects it has no row for:
+ * generated assets are tracked in `assets`, but a user's uploaded source is
+ * a bare R2 object under `uploads/{auth_id}/{uuid}`.
+ *
+ * Returns at most `maxKeys` entries plus a continuation token, so a caller
+ * can bound the work it does in one scheduled run rather than walking a
+ * bucket of unknown size.
+ *
+ * @returns {Promise<{ok:true, objects:{key:string,lastModified:Date,size:number}[], nextToken:string|null}
+ *                 |{ok:false, error:string}>}
+ */
+export async function listObjects(prefix, cfg, { maxKeys = 200, continuationToken } = {}) {
+    if (!isConfigured(cfg)) return { ok: false, error: 'R2 not configured' };
+
+    const amzDate = iso8601BasicNow();
+    const dateStamp = amzDate.slice(0, 8);
+    const host = endpointHost(cfg);
+    const canonicalUri = `/${cfg.bucket}`;
+
+    // SigV4 needs the query sorted by key, each part RFC3986-encoded.
+    const params = [
+        ['list-type', '2'],
+        ['max-keys', String(Math.max(1, Math.min(1000, maxKeys | 0)))],
+        ['prefix', String(prefix || '')],
+    ];
+    if (continuationToken) params.push(['continuation-token', continuationToken]);
+    params.sort(([a], [b]) => a.localeCompare(b));
+    const canonicalQuery = params.map(([k, v]) => `${rfc3986(k)}=${rfc3986(v)}`).join('&');
+
+    // GET with no body: the payload hash is the SHA-256 of the empty string.
+    const payloadHash = await sha256Hex(new Uint8Array(0));
+    const canonicalHeaders = `host:${host}\nx-amz-content-sha256:${payloadHash}\nx-amz-date:${amzDate}\n`;
+    const signedHeaders = 'host;x-amz-content-sha256;x-amz-date';
+    const canonicalRequest =
+        `GET\n${canonicalUri}\n${canonicalQuery}\n${canonicalHeaders}\n${signedHeaders}\n${payloadHash}`;
+
+    const credentialScope = `${dateStamp}/${REGION}/${SERVICE}/aws4_request`;
+    const stringToSign =
+        `AWS4-HMAC-SHA256\n${amzDate}\n${credentialScope}\n${await sha256Hex(new TextEncoder().encode(canonicalRequest))}`;
+    const kSigning = await signingKey(cfg.secretAccessKey, dateStamp);
+    const signature = bytesToHex(await hmacSha256(kSigning, stringToSign));
+    const authorization =
+        `AWS4-HMAC-SHA256 Credential=${cfg.accessKeyId}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
+
+    let res;
+    try {
+        res = await fetchDeadline(`https://${host}${canonicalUri}?${canonicalQuery}`, {
+            method: 'GET',
+            headers: { host, 'x-amz-content-sha256': payloadHash, 'x-amz-date': amzDate, authorization },
+        }, S3_TIMEOUT_MS);
+    } catch (err) {
+        console.error('R2 LIST failed:', err && err.name);
+        return { ok: false, error: `R2 LIST transport: ${err && err.name}` };
+    }
+    if (!res.ok) {
+        const text = await res.text().catch(() => '');
+        console.error('R2 LIST non-ok:', res.status, text.slice(0, 200));
+        return { ok: false, error: `R2 LIST ${res.status}` };
+    }
+
+    // ListObjectsV2 answers XML. Pulling three fields out with a regex beats
+    // shipping a parser for a document this shape — and a key that does not
+    // match the upload-key pattern is refused by the sweep anyway.
+    const xml = await res.text();
+    const objects = [];
+    for (const m of xml.matchAll(/<Contents>([\s\S]*?)<\/Contents>/g)) {
+        const body = m[1];
+        const key = (/<Key>([\s\S]*?)<\/Key>/.exec(body) || [])[1];
+        const modified = (/<LastModified>([\s\S]*?)<\/LastModified>/.exec(body) || [])[1];
+        const size = (/<Size>(\d+)<\/Size>/.exec(body) || [])[1];
+        if (!key || !modified) continue;
+        const lastModified = new Date(modified);
+        if (Number.isNaN(lastModified.getTime())) continue;
+        objects.push({ key: decodeXmlText(key), lastModified, size: Number(size || 0) });
+    }
+    const truncated = /<IsTruncated>true<\/IsTruncated>/.test(xml);
+    const nextToken = truncated
+        ? (/<NextContinuationToken>([\s\S]*?)<\/NextContinuationToken>/.exec(xml) || [])[1] || null
+        : null;
+
+    return { ok: true, objects, nextToken };
+}
+
+/** The five XML entities S3 escapes in a key. */
+function decodeXmlText(s) {
+    return s.replace(/&(amp|lt|gt|quot|apos);/g, (_, e) =>
+        ({ amp: '&', lt: '<', gt: '>', quot: '"', apos: "'" })[e]);
+}
+
+/**
  * Build a presigned GET URL for an R2 object. `expiresSeconds` is
  * clamped to [60, 900] — CLAUDE.md rule: presigned URL TTL <=15 min,
  * longer TTLs need an ADR. Defense in depth against future callers;
@@ -315,6 +411,61 @@ export async function presignGetUrl(key, expiresSeconds, cfg) {
     sorted.append('X-Amz-Signature', signature);
 
     return { url: `https://${host}${canonicalUri}?${sorted.toString()}`, expires };
+}
+
+/**
+ * Build a presigned PUT URL so a browser can upload straight to R2 without
+ * the bytes passing through the Worker. `expiresSeconds` is clamped to
+ * [60, 900] like presignGetUrl — CLAUDE.md caps presigned TTLs at 15 min.
+ *
+ * `contentType` is a *signed* header, not a hint: the client must send
+ * exactly this Content-Type or R2 rejects the PUT. That is what stops a
+ * caller from requesting a signature for `image/png` and then uploading
+ * something else under it.
+ *
+ * The caller owns the key. It must never be derived from client input —
+ * R2 keys are random UUIDs under a `user_id` prefix (CLAUDE.md).
+ * Returns { url, expires, contentType } or throws for config errors.
+ */
+export async function presignPutUrl(key, contentType, expiresSeconds, cfg) {
+    if (!isConfigured(cfg)) {
+        throw new Error('R2 not configured');
+    }
+    // SigV4 canonicalises a header value by trimming and, for the name,
+    // lowercasing. A media type is case-insensitive, so lowercase the whole
+    // value: the client can then send either case and still match.
+    const ct = String(contentType || '').trim().toLowerCase();
+    if (!ct) throw new Error('contentType required');
+
+    const expires = Math.max(60, Math.min(900, expiresSeconds | 0));
+    const amzDate = iso8601BasicNow();
+    const dateStamp = amzDate.slice(0, 8);
+    const host = endpointHost(cfg);
+    const canonicalUri = `/${cfg.bucket}/${key.split('/').map(rfc3986).join('/')}`;
+    const credentialScope = `${dateStamp}/${REGION}/${SERVICE}/aws4_request`;
+
+    const params = new URLSearchParams({
+        'X-Amz-Algorithm': 'AWS4-HMAC-SHA256',
+        'X-Amz-Credential': `${cfg.accessKeyId}/${credentialScope}`,
+        'X-Amz-Date': amzDate,
+        'X-Amz-Expires': String(expires),
+        'X-Amz-SignedHeaders': 'content-type;host',
+    });
+    // Params sorted lexicographically per SigV4.
+    const sorted = new URLSearchParams();
+    for (const [k, v] of [...params.entries()].sort(([a], [b]) => a.localeCompare(b))) sorted.append(k, v);
+    const canonicalQuery = sorted.toString();
+
+    // Canonical headers are sorted by lowercased name: content-type, host.
+    const canonicalRequest =
+        `PUT\n${canonicalUri}\n${canonicalQuery}\ncontent-type:${ct}\nhost:${host}\n\ncontent-type;host\nUNSIGNED-PAYLOAD`;
+    const stringToSign =
+        `AWS4-HMAC-SHA256\n${amzDate}\n${credentialScope}\n${await sha256Hex(new TextEncoder().encode(canonicalRequest))}`;
+    const kSigning = await signingKey(cfg.secretAccessKey, dateStamp);
+    const signature = bytesToHex(await hmacSha256(kSigning, stringToSign));
+    sorted.append('X-Amz-Signature', signature);
+
+    return { url: `https://${host}${canonicalUri}?${sorted.toString()}`, expires, contentType: ct };
 }
 
 /**

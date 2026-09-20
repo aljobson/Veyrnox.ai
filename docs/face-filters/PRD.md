@@ -60,10 +60,10 @@ live, priced, or verified** — that happens per [ADR-0011](../adr/0011-model-ca
 |---|---------|-----------|--------------------|---------------|
 | A1 | Skin retouch | Remove blemishes and compression artefacts without the "wax museum" blur | `fal-ai/image-editing/retouch`, `fal-ai/retoucher` | none — edits the user's own photo |
 | A2 | Face enhancement | Restore facial detail in a soft or low-resolution photo | `fal-ai/image-editing/face-enhancement` | none |
-| A3 | Relight (image) | Match subject lighting to a described scene | `fal-ai/iclight-v2`, `fal-ai/lightx/relight` | none |
+| A3 | Relight (image) | Match subject lighting to a described scene | `fal-ai/iclight-v2` | none |
 | A4 | Digital makeup | Apply cosmetics that track the face | `fal-ai/image-apps-v2/makeup-application` | none |
 | A5 | Age modify | Age or de-age a subject | `fal-ai/image-apps-v2/age-modify` | low |
-| A6 | Relight (video) | Same as A3 across a clip | `fal-ai/id-v2v/relight` | none |
+| A6 | Relight (video) | Same as A3 across a clip | `fal-ai/id-v2v/relight`, `fal-ai/lightx/relight` | none |
 | A7 | Identity reference | Generate a new image that keeps one reference face | `fal-ai/ip-adapter-face-id` | **high** |
 | A8 | Face swap | Put a reference face onto another image | `fal-ai/hy-wu-edit` | **high** |
 

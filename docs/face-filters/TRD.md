@@ -96,12 +96,34 @@ Two code changes are needed:
   `image_url`, for A6. Add nothing else. The comment in that file explains why
   quantity knobs are absent — that reasoning still holds.
 
-## 6. Decision: no per-filter parameters at launch
+## 6. Decision: feature selectors yes, quantity knobs never
 
-Filter-specific knobs (strength, blend weight, expression weight) stay out of
-`ALLOWED_INPUTS` for the launch set. Every key added there is forwarded verbatim
-to the provider and is a surface the catalog price has to cover. Ship the
-provider defaults; add a knob only when a measured user need justifies pricing it.
+**Revised 2026-09-18 after reading the live schemas.** The first version of
+this decision said no per-filter parameters at launch. That was wrong for two
+of the six launch filters: `target_age` is not a knob on the age filter, it
+*is* the age filter, and a makeup filter with no `makeup_style` applies one
+hardcoded look. Shipping those without controls ships something nobody wants.
+
+The distinction that actually matters is not "parameter or no parameter", it is
+**does this buy more output than the catalog price covers**:
+
+- **Feature selectors are allowed.** `makeup_style` (11 values), `intensity`
+  (4 values), `target_age` (6-100), `preserve_identity` (boolean). Each
+  produces exactly one output, the same as the default. Bounds in
+  `ALLOWED_INPUTS` mirror the provider's own enum and range, verified against
+  the live schema, so a value we accept is a value the provider accepts.
+- **Quantity and tier knobs stay out**, as before and for the original reason.
+  The live schemas confirm the risk is real: `fal-ai/iclight-v2` exposes
+  `num_images` (default 1, max 4) and `image_size`; `fal-ai/id-v2v/relight`
+  exposes `num_frames` and `resolution`. Any of those reaching the provider
+  would buy more than one unit at a one-unit price. A test pins their absence.
+
+The defaults are safe where we rely on them — `num_images` defaults to 1 — but
+the allowlist, not the provider's default, is what enforces that.
+
+One consequence for the UI: `fal-ai/iclight-v2` marks `prompt` **required**, so
+the relight filter cannot submit without one. The Studio must treat prompt as
+mandatory for that model rather than optional as it is for a pure retouch.
 
 ## 7. Track B — not designed here
 
