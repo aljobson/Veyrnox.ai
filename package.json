@@ -15,6 +15,7 @@
     "preview": "opennextjs-cloudflare preview",
     "deploy": "opennextjs-cloudflare deploy",
     "migrate": "node scripts/migrate.mjs",
+    "check:signup-gate": "node scripts/check-signup-gate.mjs",
     "test": "node --test \"tests/**/*.test.{js,mjs}\"",
     "test:ledger": "tsx --test --test-concurrency=1 packages/db/*.test.ts"
   },

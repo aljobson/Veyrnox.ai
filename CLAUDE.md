@@ -112,9 +112,22 @@ If a build starts failing after a dependency change, bisect these three first.
 - The `auth.users -> public.users + credit_balances` triggers (migrations
   `0010`, `0071`) are the only path that provisions a user. Do not create
   `public.users` rows any other way.
-- **The signup grant follows confirmation, not creation** (`0071`). An
-  unconfirmed sign-up gets a shadow row and a zero balance; `grant:signup`
-  lands when `auth.users.email_confirmed_at` is first set. That is only worth
+- **The signup grant follows confirmation, not creation** (`0071`) — *once
+  0071 is actually applied*. An unconfirmed sign-up gets a shadow row and a
+  zero balance; `grant:signup` lands when `auth.users.email_confirmed_at` is
+  first set.
+
+  **Two independent switches, and only one stops money leaving:**
+
+  | | Effect |
+  |---|---|
+  | Confirm email ON (Supabase Auth) | **The load-bearing one.** Blocks the account, so no provider spend. |
+  | 0071 applied | Stops junk grants being minted. **Alone it does nothing** while autoconfirm is on — its INSERT branch sees a non-null `email_confirmed_at` and grants anyway. |
+
+  Production still runs the `0010` trigger, which grants on INSERT
+  unconditionally. Run `npm run check:signup-gate` to see the live state;
+  `signup-gate.yml` checks it hourly. Neither switch is visible from this
+  repo, which is how it drifted. That is only worth
   anything while Supabase Auth "Confirm email" is ON and sign-up carries
   Attack Protection — with autoconfirm on, 50 credits is ~$0.75 of provider
   spend for anyone who can POST an email address. Check both settings before

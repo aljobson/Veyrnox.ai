@@ -1,0 +1,56 @@
+name: signup-gate
+
+# Is the 50-credit signup grant a faucet right now?
+#
+# This drifted for weeks because it is invisible from the codebase: the repo
+# looked correct (0071 exists, the trigger is conditional) while production
+# ran the old unconditional trigger with autoconfirm on. Nothing in CI could
+# see that, because both halves live outside git — one in Supabase Auth's
+# settings, one in the applied-migration ledger.
+#
+# Reads public config only: the publishable key from wrangler.jsonc and the
+# anon-callable applied_migration_names(). No secret, same trade as
+# reconcile-watch and migration-ledger.
+#
+# Not a required check — it reports on production, so it would block PRs for
+# a condition no PR caused. Hourly, plus on demand.
+
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: signup-gate
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      state: ${{ steps.gate.outputs.state }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "22"
+
+      - name: Check the signup gate
+        id: gate
+        run: |
+          set +e
+          node scripts/check-signup-gate.mjs > gate.txt 2>&1
+          code=$?
+          set -e
+          cat gate.txt
+          { echo '### Signup gate'; echo '```'; cat gate.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          case "$code" in
+            0) echo "state=closed" >> "$GITHUB_OUTPUT" ;;
+            1) echo "state=open"   >> "$GITHUB_OUTPUT" ;;
+            # Could not check is never a pass.
+            *) echo "state=unknown" >> "$GITHUB_OUTPUT" ;;
+          esac
+          exit "$code"
