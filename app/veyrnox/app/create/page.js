@@ -15,7 +15,13 @@ const STATE_UI = {
   failed:    { glyph: '✕', tone: 'danger',  label: 'FAILED · REFUNDED' },
 };
 
+// How many consecutive poll failures before we stop and tell the user. At
+// 2s an interval that is ~1 minute of silence, which is long enough to ride
+// out a blip and short enough that nobody watches a dead shimmer.
+const POLL_GIVE_UP_AFTER = 30;
+
 const ERROR_COPY = {
+  poll_unreachable:      'Lost contact with the server, so we stopped checking. Your generation may still have run — open Library to see.',
   moderation:            'The provider declined this prompt on safety grounds. Credits refunded.',
   provider_timeout:      'The model took too long. Credits refunded — try again.',
   provider_error:        'The model returned an error. Credits refunded.',
@@ -78,6 +84,12 @@ export default function CreateStudio() {
   const cost = model ? model.credits * (duration === '10s' && model.kind === 'video' ? 2 : 1) : 0;
   const durationKey = durations.join(',');
   const generating = job && (job.state === 'queued' || job.state === 'running');
+  // `generating` is derived from `job`, which is only set AFTER the await in
+  // onSubmit. Between the click and that setState the button stayed enabled,
+  // so a second click minted a second idempotency key — a legitimately new
+  // job to ledger_debit, and a second debit. The server is idempotent per
+  // key; the client was defeating it by changing the key.
+  const inFlight = useRef(false);
 
   // A 10s selection must not survive a switch to a model that only sells 5s:
   // the gateway would reject it and the quoted price would have been double.
@@ -115,9 +127,16 @@ export default function CreateStudio() {
       if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
       return;
     }
+    // Consecutive failures used to be swallowed forever: offline or against a
+    // 500 the shimmer span at 2s intervals with no error and no end, and each
+    // failed call re-dispatched veyrnox:auth-required, so a dismissed sign-in
+    // modal reappeared every 2 seconds indefinitely. Give up like TopUpPacks
+    // already does.
+    let failures = 0;
     pollRef.current = setInterval(async () => {
       try {
         const next = await gatewayFetch(`/jobs/${job.job_id}`);
+        failures = 0;
         setJob((prev) => prev ? { ...prev, ...next } : prev);
         if (next.state === 'succeeded') {
           const asset = await gatewayFetch(`/jobs/${job.job_id}/asset`);
@@ -127,7 +146,12 @@ export default function CreateStudio() {
           notifyBalanceChanged();
         }
       } catch (e) {
+        failures += 1;
         console.error('[create/poll] failed', e);
+        if (failures >= POLL_GIVE_UP_AFTER) {
+          if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+          setError({ code: 'poll_unreachable' });
+        }
       }
     }, 2000);
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
@@ -135,8 +159,9 @@ export default function CreateStudio() {
 
   // ── submit ────────────────────────────────────────────────────────
   async function onSubmit() {
-    if (generating || !model || balance == null || cost > balance) return;
-    if (model.gated) { setError({ code: 'model_gated' }); return; }
+    if (inFlight.current || generating || !model || balance == null || cost > balance) return;
+    inFlight.current = true;
+    if (model.gated) { inFlight.current = false; setError({ code: 'model_gated' }); return; }
     setError(null);
     const idempotency_key = makeIdempotencyKey();
     const inputs = {
@@ -173,6 +198,8 @@ export default function CreateStudio() {
       } else {
         setError({ code: 'internal' });
       }
+    } finally {
+      inFlight.current = false;
     }
   }
 
@@ -268,7 +295,7 @@ export default function CreateStudio() {
             <div className="mt-3 rounded-lg border border-vx-danger/40 bg-vx-danger/[0.07] px-4 py-3 text-sm text-vx-danger flex items-start gap-2">
               <span aria-hidden="true">✕</span>
               <span>
-                {ERROR_COPY[error.code] || `Error: ${error.code}`}
+                {ERROR_COPY[error.code] || 'Something went wrong. Nothing was charged unless the panel above says otherwise.'}
                 {error.retryAfter && ` Retry in ${error.retryAfter}s.`}
               </span>
             </div>

@@ -55,6 +55,19 @@ export const PRESETS = [
   { id: 'warm-portrait',name: 'WARM PORTRAIT',model: 'Nano Banana',      credits: 3,  category: 'UGC',        bg: 'linear-gradient(160deg,#2c1a12 0%,#7a3520 60%,#c9713f 100%)' },
 ];
 
+/**
+ * PRESETS carry a model display name ("Wan 2.5"), the catalog carries ids
+ * ("wan-2.5"). A preset card needs the id to preselect anything, so map it
+ * here where both lists live. Returns null when the name has drifted — the
+ * caller then links without a model rather than preselecting a wrong one.
+ */
+export function modelIdForName(name) {
+  if (!name) return null;
+  const want = String(name).trim().toLowerCase();
+  const hit = MODELS.find((m) => m.name.toLowerCase() === want);
+  return hit ? hit.id : null;
+}
+
 export const ASPECT_RATIOS = ['16:9', '9:16', '1:1', '4:5', '21:9'];
 export const RESOLUTIONS = ['1K', '2K', '4K'];
 

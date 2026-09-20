@@ -1,6 +1,14 @@
+import Link from 'next/link';
 import { Chip } from './Chip';
+import { modelIdForName } from '../_lib/tokens';
 
 // Preset card: thumbnail carries color, monochrome chrome around it.
+//
+// Renders a Link, not a button. It used to be a <button onClick> and every
+// caller omitted onClick, so every card in the public gallery and the studio
+// Explore tab was focusable, cursor-pointer, hover-scaling — and completely
+// inert, while the landing page sent people here with "Browse presets free".
+// An onClick is still honoured for callers that want to intercept.
 export function PresetCard({ preset, size = 'md', onClick }) {
   const sizes = {
     sm: { h: 'h-40', title: 'text-sm', tag: 'text-[10px]' },
@@ -8,10 +16,19 @@ export function PresetCard({ preset, size = 'md', onClick }) {
     lg: { h: 'h-72', title: 'text-lg', tag: 'text-[10px]' },
   };
   const s = sizes[size];
+  // Carry both: Create reads ?model= on mount, and ?preset= records which
+  // card sent the user. If the preset's model name has drifted out of the
+  // catalog, link without one rather than preselecting something wrong.
+  const modelId = modelIdForName(preset.model);
+  const href = modelId
+    ? `/app/create?model=${encodeURIComponent(modelId)}&preset=${encodeURIComponent(preset.id)}`
+    : `/app/create?preset=${encodeURIComponent(preset.id)}`;
   return (
-    <button
+    <Link
+      href={href}
       onClick={onClick}
-      className="group text-left w-full rounded-2xl border border-vx-border bg-vx-panel overflow-hidden transition-transform duration-200 ease-out hover:scale-[1.015]"
+      aria-label={`Open the ${preset.name} preset in the studio`}
+      className="group block text-left w-full rounded-2xl border border-vx-border bg-vx-panel overflow-hidden transition-transform duration-200 ease-out hover:scale-[1.015]"
     >
       <div
         className={`${s.h} relative`}
@@ -30,6 +47,6 @@ export function PresetCard({ preset, size = 'md', onClick }) {
         </div>
         <div className="shrink-0 font-vx-mono text-[13px] font-bold text-vx-money vx-num pt-1">{preset.credits} cr</div>
       </div>
-    </button>
+    </Link>
   );
 }

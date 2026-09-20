@@ -88,7 +88,7 @@ export default async function VeyrnoxLanding() {
       <WideNav />
       <FeaturedHeroCards modelCount={catalog.length} />
       <SignupIncentive />
-      <ProductTilesRow modelCount={catalog.length} />
+      <ProductTilesRow modelCount={catalog.length} catalog={catalog} />
       <HeroStatement />
       <EffectsWall />
       <ModelShelf catalog={catalog} />
@@ -283,8 +283,17 @@ function SignupIncentive() {
   );
 }
 
-/* ─── Product tiles (6, live catalog rows) ─── */
-function ProductTilesRow({ modelCount }) {
+/* ─── Product tiles ─── */
+function ProductTilesRow({ modelCount, catalog }) {
+  // PRODUCT_TILES supplies presentation only — icon, hint, badge, label. The
+  // price comes from the live catalog, because CLAUDE.md makes the catalog
+  // normative and this section previously printed hand-typed credits directly
+  // under a headline counting live rows, so a re-priced model would be quoted
+  // wrong here while ModelShelf two sections down showed the truth.
+  const priceOf = (key, fallback) => {
+    const row = catalog && catalog.find((m) => m.id === key);
+    return row && typeof row.credits === 'number' ? row.credits : fallback;
+  };
   return (
     <section id="models" className="px-4 sm:px-6 pt-16 max-w-[1400px] mx-auto">
       <div className="flex items-baseline justify-between mb-6 flex-wrap gap-2">
@@ -319,7 +328,7 @@ function ProductTilesRow({ modelCount }) {
             <div className="mt-0.5 font-vx-mono text-[9.5px] tracking-[0.1em] text-vx-fg-muted">{p.kind.toUpperCase()}</div>
             <div className="mt-2 text-[11.5px] text-vx-fg-body leading-snug">{p.hint}</div>
             <div className="mt-3 font-vx-mono text-[12px] font-bold text-vx-money vx-num">
-              {p.credits} cr
+              {priceOf(p.key, p.credits)} cr
             </div>
           </Link>
         ))}
