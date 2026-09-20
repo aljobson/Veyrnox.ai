@@ -127,11 +127,11 @@ If a build starts failing after a dependency change, bisect these three first.
   Production still runs the `0010` trigger, which grants on INSERT
   unconditionally. Run `npm run check:signup-gate` to see the live state;
   `signup-gate.yml` checks it hourly. Neither switch is visible from this
-  repo, which is how it drifted. That is only worth
-  anything while Supabase Auth "Confirm email" is ON and sign-up carries
-  Attack Protection — with autoconfirm on, 50 credits is ~$0.75 of provider
-  spend for anyone who can POST an email address. Check both settings before
-  any launch that widens sign-up.
+  repo, which is how it drifted.
+
+  With autoconfirm on, 50 credits is ~$0.75 of provider spend for anyone who
+  can POST an email address. Sign-up should also carry Attack Protection
+  (CAPTCHA). Check all of this before any launch that widens sign-up.
 
 ## Web security
 
