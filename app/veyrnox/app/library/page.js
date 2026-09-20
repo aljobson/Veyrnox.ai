@@ -13,9 +13,16 @@ const STATE_UI = {
   running:   { chip: 'accent', glyph: '●', label: 'RUNNING' },
   succeeded: { chip: 'accent', glyph: '✓', label: 'DONE' },
   failed:    { chip: 'danger', glyph: '✕', label: 'FAILED · REFUNDED' },
+  // We could not read this job's state: it 404s (not ours, or aged out of the
+  // window) or the server was unreachable. Deliberately neutral — claiming
+  // either DONE or FAILED · REFUNDED would assert something about the ledger
+  // that we have not checked.
+  unknown:   { chip: 'neutral', glyph: '?', label: 'UNKNOWN' },
 };
 
 const POLL_MS = 3000;
+// ~1 minute of consecutive failure before we stop and say so.
+const POLL_GIVE_UP_AFTER = 20;
 // History holds up to 50 jobs and each one costs two authenticated gateway
 // calls to hydrate (/jobs/:id then /jobs/:id/asset). Hydrating the whole ring
 // buffer on mount was up to 100 requests in one burst. Hydrate a page at a
@@ -29,6 +36,7 @@ export default function Library() {
   const [rows, setRows] = useState(() => readJobHistory().map(hydrateFromHistory));
   const [visible, setVisible] = useState(PAGE);
   const pollRef = useRef(null);
+  const [unreachable, setUnreachable] = useState(false);
 
   // load balance
   const loadBalance = useCallback(async () => {
@@ -65,9 +73,14 @@ export default function Library() {
           return merged;
         } catch (e) {
           if (e instanceof GatewayError && e.status === 404) {
-            return { ...hydrateFromHistory(h), state: 'failed', error_code: 'internal' };
+            // 404 is also what the route returns for a job that is not ours,
+            // or one aged out of the window. Rendering it as `failed` made
+            // the card show a +credits refund delta that never happened.
+            return { ...hydrateFromHistory(h), state: 'unknown' };
           }
-          return hydrateFromHistory(h);
+          // Offline or a 5xx: say so rather than leaving every card reading
+          // QUEUED with a shimmer for a job that finished an hour ago.
+          return { ...hydrateFromHistory(h), state: 'unknown' };
         }
       }));
       if (!cancelled) {
@@ -82,7 +95,13 @@ export default function Library() {
     if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
     const hasInFlight = rows.some((r, i) => shouldPoll(r, i, visible));
     if (!hasInFlight) return;
+    // Give up rather than hammer a server that is not answering. Every tick
+    // costs one authenticated RPC per in-flight row plus an asset call for any
+    // that just finished, so an unattended tab against a 5xx was the single
+    // heaviest client in the system.
+    let failures = 0;
     pollRef.current = setInterval(async () => {
+      let tickFailed = false;
       const updates = await Promise.all(rows.map(async (r, i) => {
         if (!shouldPoll(r, i, visible)) return r;
         try {
@@ -100,8 +119,21 @@ export default function Library() {
           // tear down and rebuild the interval every 3s.
           if (j.state === r.state) return r;
           return { ...r, ...j };
-        } catch { return r; }
+        } catch { tickFailed = true; return r; }
       }));
+      // One tick where every in-flight row failed counts as one failure; a
+      // tick with any success resets. 20 consecutive at 3s is ~1 minute.
+      if (tickFailed) {
+        failures += 1;
+        if (failures >= POLL_GIVE_UP_AFTER) {
+          if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+          setUnreachable(true);
+          return;
+        }
+      } else {
+        failures = 0;
+        setUnreachable(false);
+      }
       if (updates.some((u, i) => u !== rows[i])) setRows(updates);
     }, POLL_MS);
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
@@ -114,6 +146,15 @@ export default function Library() {
   return (
     <div className="min-h-dvh">
       <AppNav balance={balance} active="library" />
+
+      {unreachable && (
+        <div className="max-w-[1500px] mx-auto px-4 sm:px-8 pt-4">
+          <div role="status" className="rounded-lg border border-vx-danger/40 bg-vx-danger/[0.07] px-4 py-3 text-sm text-vx-danger flex items-start gap-2">
+            <span aria-hidden="true">△</span>
+            <span>We stopped checking for updates — the server isn&apos;t responding. Cards marked UNKNOWN may have finished. Reload to try again.</span>
+          </div>
+        </div>
+      )}
 
       <section className="max-w-[1400px] mx-auto px-4 sm:px-8 pt-10 pb-4">
         <Chip tone="accent" className="mb-3">LIBRARY · YOUR GENERATIONS</Chip>
@@ -170,8 +211,10 @@ export default function Library() {
 
 function JobCard({ row, models }) {
   const s = STATE_UI[row.state] || STATE_UI.queued;
-  const delta = row.state === 'failed' ? `+${row.credits}` : `−${row.credits}`;
-  const deltaCls = row.state === 'failed' ? 'text-vx-accent' : 'text-vx-money';
+  // No delta for `unknown`: a +N would claim a refund landed and a −N would
+  // claim the debit stands, and we do not know which.
+  const delta = row.state === 'unknown' ? '' : row.state === 'failed' ? `+${row.credits}` : `−${row.credits}`;
+  const deltaCls = row.state === 'failed' ? 'text-vx-accent' : 'text-vx-fg-muted';
   // Live catalog (tokens.js fallback) so newly added models show their name.
   const model = models.find((m) => m.id === row.model_id);
   return (

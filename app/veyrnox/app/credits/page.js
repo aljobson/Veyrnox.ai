@@ -36,6 +36,10 @@ export default function Credits() {
 
   const load = useCallback(async () => {
     try {
+      // Clear first: a transient failure used to leave the previous error up
+      // permanently, so a signed-in user kept seeing "Sign in to see your
+      // balance" after the next successful load.
+      setError(null);
       const b = await gatewayFetch('/balance');
       setBalance(b.balance);
       setFree(b.free_credits > 0 && b.free_expires_at ? { credits: b.free_credits, expiresAt: b.free_expires_at } : null);
@@ -101,6 +105,13 @@ export default function Credits() {
             <div className="mt-4 text-sm text-vx-fg-body">
               Every account runs on the same balance. Free credits are spent first. Failed jobs refund automatically.
             </div>
+
+            {error === 'unavailable' && (
+              <div className="mt-4 rounded-lg border border-vx-danger/40 bg-vx-danger/[0.07] px-4 py-3 text-sm text-vx-danger flex items-start gap-2">
+                <span aria-hidden="true">△</span>
+                <span>We couldn&apos;t read your balance just now. Your credits are safe — reload to try again.</span>
+              </div>
+            )}
 
             {error === 'sign_in_required' && (
               <div className="mt-4 rounded-lg border border-vx-money/40 bg-vx-money/[0.07] px-4 py-3 text-sm text-vx-money flex items-start gap-2">

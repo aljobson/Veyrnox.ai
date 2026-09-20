@@ -35,4 +35,22 @@ REVOKE ALL ON FUNCTION public.reconcile_status() FROM authenticated;
 -- there. Same trade already made for catalog_watch() (0030) and
 -- applied_migration_names() (0034). If the counts ever stop being counts,
 -- revoke this and give the watcher a scoped secret instead.
+--
+-- AUDIT 2026-09-20, unresolved and deliberately left as-is.
+--
+-- The revoke condition above is written about the SHAPE of the output ("if
+-- the counts ever stop being counts"). The cost of PRODUCING them is the
+-- part that scales: each call runs three unbounded aggregates over
+-- ledger_entries, from an unauthenticated caller, against the database that
+-- also serves every generation. catalog_watch() and applied_migration_names()
+-- carry the same anon grant but read small bounded tables, so that trade does
+-- not transfer here.
+--
+-- Not changed in this migration because the watcher has no secret by design
+-- (PR #61) and revoking anon would blind ledger monitoring until one is
+-- added. The options, for whoever applies this:
+--   a) accept it while the ledger is small, and revisit on row count;
+--   b) give the watcher a scoped secret and revoke anon here;
+--   c) have the hourly cron write a snapshot table with service_role and let
+--      anon read only that — cheap, at the cost of up-to-an-hour staleness.
 GRANT EXECUTE ON FUNCTION public.reconcile_status() TO anon, service_role;

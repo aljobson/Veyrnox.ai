@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Chip } from './Chip';
-import { modelIdForName } from '../_lib/tokens';
+import { modelIdForName } from '../_lib/tokens.js';
 
 // Preset card: thumbnail carries color, monochrome chrome around it.
 //
