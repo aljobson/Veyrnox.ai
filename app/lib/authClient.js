@@ -216,10 +216,11 @@ function normalise(data) {
  * Email + password sign-in. Persists the session on success.
  * @param {string} email
  * @param {string} password
+ * @param {string} [captchaToken]  Turnstile token (ADR-0026)
  * @returns {Promise<VeyrnoxSession>}
  */
-export async function signInWithPassword(email, password) {
-    const data = await post("/auth/v1/token?grant_type=password", { email, password });
+export async function signInWithPassword(email, password, captchaToken) {
+    const data = await post("/auth/v1/token?grant_type=password", withCaptcha({ email, password }, captchaToken));
     const s = normalise(data);
     setSession(s);
     return s;
@@ -229,10 +230,11 @@ export async function signInWithPassword(email, password) {
  * session is null and needsConfirmation is true; otherwise session is set.
  * @param {string} email
  * @param {string} password
+ * @param {string} [captchaToken]  Turnstile token (ADR-0026)
  * @returns {Promise<{session: VeyrnoxSession|null, needsConfirmation: boolean}>}
  */
-export async function signUp(email, password) {
-    const data = await post("/auth/v1/signup", { email, password });
+export async function signUp(email, password, captchaToken) {
+    const data = await post("/auth/v1/signup", withCaptcha({ email, password }, captchaToken));
     if (data?.access_token) {
         const s = normalise(data);
         setSession(s);
@@ -244,9 +246,16 @@ export async function signUp(email, password) {
  * Send an email OTP / magic-link. `create_user: true` so a new address
  * signs the user up on their first click.
  * @param {string} email
+ * @param {string} [captchaToken]  Turnstile token (ADR-0026)
  */
-export async function sendMagicLink(email) {
-    await post("/auth/v1/otp", { email, create_user: true });
+export async function sendMagicLink(email, captchaToken) {
+    await post("/auth/v1/otp", withCaptcha({ email, create_user: true }, captchaToken));
+}
+
+// GoTrue reads the CAPTCHA token from here when Attack Protection is on and
+// ignores it when off, so it is sent whenever the widget produced one.
+function withCaptcha(body, captchaToken) {
+    return captchaToken ? { ...body, gotrue_meta_security: { captcha_token: captchaToken } } : body;
 }
 /**
  * Redirect to Supabase's OAuth authorize endpoint. Provider must be one

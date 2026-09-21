@@ -20,6 +20,7 @@ import {
     sendMagicLink,
     signInWithOAuth,
 } from "../app/lib/authClient.js";
+import { Turnstile, TURNSTILE_SITE_KEY } from "./Turnstile.jsx";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -34,6 +35,7 @@ const AUTH_ERROR_COPY = [
     [/user already registered/i, "There's already an account with that email. Try signing in."],
     [/password should be at least/i, "Passwords need at least 8 characters."],
     [/network|fetch|failed to fetch/i, "Couldn't reach the server. Check your connection."],
+    [/captcha/i, "The security check failed or expired. Try again."],
 ];
 
 function humanAuthError(err) {
@@ -54,6 +56,10 @@ export default function AuthGate() {
     const [busy, setBusy] = useState(false);
     const [notice, setNotice] = useState(null);
     const [showPassword, setShowPassword] = useState(false);
+    // Turnstile (ADR-0026). Tokens are single-use, so every submit bumps
+    // captchaReset and the widget issues a fresh one.
+    const [captcha, setCaptcha] = useState(null);
+    const [captchaReset, setCaptchaReset] = useState(0);
     // Which OAuth providers are actually enabled on the Supabase side.
     // Fetching once on first mount avoids showing broken buttons that
     // redirect to a Supabase 400 "provider is not enabled" page.
@@ -151,26 +157,31 @@ export default function AuthGate() {
             setNotice({ kind: "error", text: "Password must be at least 8 characters." });
             return;
         }
+        if (TURNSTILE_SITE_KEY && !captcha) {
+            setNotice({ kind: "error", text: "Complete the security check first." });
+            return;
+        }
         setBusy(true);
         try {
             if (mode === "sign_up") {
-                const { session, needsConfirmation } = await signUp(email, password);
+                const { session, needsConfirmation } = await signUp(email, password, captcha);
                 if (needsConfirmation) {
                     setNotice({ kind: "success", text: "Check your email to confirm your account." });
                 } else if (session) {
                     setOpen(false);
                 }
             } else if (mode === "sign_in") {
-                await signInWithPassword(email, password);
+                await signInWithPassword(email, password, captcha);
                 setOpen(false);
             } else {
-                await sendMagicLink(email);
+                await sendMagicLink(email, captcha);
                 setNotice({ kind: "success", text: "Check your email for a sign-in link." });
             }
         } catch (err) {
             setNotice({ kind: "error", text: humanAuthError(err) || "Sign-in failed" });
         } finally {
             setBusy(false);
+            if (TURNSTILE_SITE_KEY) setCaptchaReset((n) => n + 1);
         }
     }
 
@@ -264,6 +275,12 @@ export default function AuthGate() {
                             <span className="mt-1 block text-[11px] text-vx-fg-faint">At least 8 characters.</span>
                         </label>
                     )}
+
+                    <Turnstile
+                        onToken={setCaptcha}
+                        onError={() => setNotice({ kind: "error", text: "The security check couldn't load. Disable content blockers for this site, or sign in with Google." })}
+                        resetKey={captchaReset}
+                    />
 
                     {/* Always mounted so a screen reader hears the message
                         appear instead of the whole region being inserted. */}
