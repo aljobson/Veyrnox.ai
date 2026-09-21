@@ -13,6 +13,7 @@ import assert from 'node:assert/strict';
 import nextConfig from '../next.config.mjs';
 
 const SUPABASE_HOST = 'https://xdxdzmsztyzbnzeforxx.supabase.co';
+const TURNSTILE_HOST = 'https://challenges.cloudflare.com';
 const MIN_HSTS_AGE = 63072000;
 
 async function headerMap() {
@@ -48,8 +49,18 @@ test("no 'unsafe-eval' outside next dev, and no wildcard script source", async (
     const scriptSrc = directives(csp).get('script-src');
     assert.ok(scriptSrc, 'script-src is missing');
     assert.ok(!scriptSrc.includes("'unsafe-eval'"), "production script-src must not allow 'unsafe-eval'");
-    assert.ok(!scriptSrc.some((s) => s === '*' || s.startsWith('http')),
-        `script-src must not name a remote origin: ${scriptSrc.join(' ')}`);
+    // Turnstile is the one remote script origin, admitted by ADR-0026. Any
+    // other remote origin needs its own ADR before this list changes.
+    const remote = scriptSrc.filter((s) => s === '*' || s.startsWith('http'));
+    assert.deepEqual(remote, [TURNSTILE_HOST],
+        `script-src may name only Turnstile as a remote origin: ${scriptSrc.join(' ')}`);
+});
+
+test('frame-src admits Turnstile and nothing else', async () => {
+    // Without frame-src, frames fall back to default-src 'self' and the
+    // widget's challenge iframe is blocked. With it, it must stay this narrow.
+    const csp = (await headerMap()).get('content-security-policy');
+    assert.deepEqual(directives(csp).get('frame-src'), [TURNSTILE_HOST]);
 });
 
 test('connect-src reaches our own origin and the Supabase project only', async () => {

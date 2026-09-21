@@ -43,9 +43,14 @@ const R2_ENDPOINTS = [
   `https://${R2_ACCOUNT}.eu.r2.cloudflarestorage.com`,
 ].join(' ');
 
+// Cloudflare Turnstile (ADR-0026): its script and its challenge iframe. That
+// host in script-src and frame-src only; connect-src stays as it is.
+const TURNSTILE = 'https://challenges.cloudflare.com';
+
 const CSP = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''}`,
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''} ${TURNSTILE}`,
+  `frame-src ${TURNSTILE}`,
   "style-src 'self' 'unsafe-inline'",
   // Not `https:`. The session — refresh token included — lives in
   // localStorage, and `script-src 'unsafe-inline'` is still here for RSC
@@ -78,6 +83,10 @@ const nextConfig = {
   env: {
     NEXT_PUBLIC_SUPABASE_URL: 'https://xdxdzmsztyzbnzeforxx.supabase.co',
     NEXT_PUBLIC_SUPABASE_ANON_KEY: 'sb_publishable_HwEQqi6FXJOmWpy5eqR9-A_Zvy8_ii1',
+    // Public, like the anon key. Empty = no widget and no token sent, which is
+    // the pre-CAPTCHA behaviour. Never empty this while Supabase CAPTCHA is on:
+    // every email/password sign-in would fail (ADR-0026).
+    NEXT_PUBLIC_TURNSTILE_SITE_KEY: '0x4AAAAAAE-nahDRUDwD5HEx',
     // Edge middleware bakes env at build time.
     SUPABASE_URL: 'https://xdxdzmsztyzbnzeforxx.supabase.co',
   },
