@@ -38,6 +38,16 @@ const isDev = process.env.NODE_ENV === 'development';
 // Hardcoded, like SUPABASE_URL below: reading it from env at build time would
 // silently drop the host (it is a wrangler secret) and break every thumbnail.
 const R2_ACCOUNT = 'fb18d9f7052afbea5a5e0eae69948af2';
+
+// Cloudflare Turnstile for Supabase Attack Protection (ADR-0026). The site key
+// is public by design — it is sent to every browser — so it is committed like
+// the anon key below, not read from env. Empty means no widget and no CSP
+// change at all: the sign-in form behaves exactly as it did before.
+// Widening script-src and adding frame-src is the whole of what Turnstile
+// needs; the widget talks to Cloudflare from inside its own frame, so
+// connect-src is untouched.
+const TURNSTILE_SITE_KEY = '';
+const TURNSTILE_ORIGIN = 'https://challenges.cloudflare.com';
 const R2_ENDPOINTS = [
   `https://${R2_ACCOUNT}.r2.cloudflarestorage.com`,
   `https://${R2_ACCOUNT}.eu.r2.cloudflarestorage.com`,
@@ -45,7 +55,7 @@ const R2_ENDPOINTS = [
 
 const CSP = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''}`,
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''}${TURNSTILE_SITE_KEY ? ` ${TURNSTILE_ORIGIN}` : ''}`,
   "style-src 'self' 'unsafe-inline'",
   // Not `https:`. The session — refresh token included — lives in
   // localStorage, and `script-src 'unsafe-inline'` is still here for RSC
@@ -59,6 +69,9 @@ const CSP = [
   // Same-origin only: generation traffic goes through /api/v1/* and assets
   // through presigned R2 URLs fetched from our own origin.
   "connect-src 'self' https://xdxdzmsztyzbnzeforxx.supabase.co",
+  // Turnstile renders in an iframe; without a key there is no frame at all
+  // and default-src 'self' keeps covering frames as before.
+  ...(TURNSTILE_SITE_KEY ? [`frame-src ${TURNSTILE_ORIGIN}`] : []),
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",
@@ -78,6 +91,7 @@ const nextConfig = {
   env: {
     NEXT_PUBLIC_SUPABASE_URL: 'https://xdxdzmsztyzbnzeforxx.supabase.co',
     NEXT_PUBLIC_SUPABASE_ANON_KEY: 'sb_publishable_HwEQqi6FXJOmWpy5eqR9-A_Zvy8_ii1',
+    NEXT_PUBLIC_TURNSTILE_SITE_KEY: TURNSTILE_SITE_KEY,
     // Edge middleware bakes env at build time.
     SUPABASE_URL: 'https://xdxdzmsztyzbnzeforxx.supabase.co',
   },

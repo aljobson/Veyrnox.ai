@@ -20,6 +20,7 @@ import {
     sendMagicLink,
     signInWithOAuth,
 } from "../app/lib/authClient.js";
+import Turnstile, { TURNSTILE_SITE_KEY } from "./Turnstile.jsx";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -54,6 +55,10 @@ export default function AuthGate() {
     const [busy, setBusy] = useState(false);
     const [notice, setNotice] = useState(null);
     const [showPassword, setShowPassword] = useState(false);
+    // Turnstile (ADR-0026). A token is single-use, so every attempt bumps
+    // `attempt`, which remounts the widget for a fresh one.
+    const [captchaToken, setCaptchaToken] = useState(null);
+    const [attempt, setAttempt] = useState(0);
     // Which OAuth providers are actually enabled on the Supabase side.
     // Fetching once on first mount avoids showing broken buttons that
     // redirect to a Supabase 400 "provider is not enabled" page.
@@ -151,26 +156,36 @@ export default function AuthGate() {
             setNotice({ kind: "error", text: "Password must be at least 8 characters." });
             return;
         }
+        if (TURNSTILE_SITE_KEY && !captchaToken) {
+            setNotice({ kind: "error", text: "Finish the security check above the button, then try again." });
+            return;
+        }
+        const token = captchaToken || undefined;
         setBusy(true);
         try {
             if (mode === "sign_up") {
-                const { session, needsConfirmation } = await signUp(email, password);
+                const { session, needsConfirmation } = await signUp(email, password, token);
                 if (needsConfirmation) {
                     setNotice({ kind: "success", text: "Check your email to confirm your account." });
                 } else if (session) {
                     setOpen(false);
                 }
             } else if (mode === "sign_in") {
-                await signInWithPassword(email, password);
+                await signInWithPassword(email, password, token);
                 setOpen(false);
             } else {
-                await sendMagicLink(email);
+                await sendMagicLink(email, token);
                 setNotice({ kind: "success", text: "Check your email for a sign-in link." });
             }
         } catch (err) {
             setNotice({ kind: "error", text: humanAuthError(err) || "Sign-in failed" });
         } finally {
             setBusy(false);
+            // Spent either way — a failed attempt consumes the token too.
+            if (TURNSTILE_SITE_KEY) {
+                setCaptchaToken(null);
+                setAttempt((n) => n + 1);
+            }
         }
     }
 
@@ -264,6 +279,15 @@ export default function AuthGate() {
                             <span className="mt-1 block text-[11px] text-vx-fg-faint">At least 8 characters.</span>
                         </label>
                     )}
+
+                    <Turnstile
+                        key={attempt}
+                        onToken={setCaptchaToken}
+                        onError={() => setNotice({
+                            kind: "error",
+                            text: "The security check couldn't load. Turn off content blockers for this site, or try another network.",
+                        })}
+                    />
 
                     {/* Always mounted so a screen reader hears the message
                         appear instead of the whole region being inserted. */}

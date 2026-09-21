@@ -14,6 +14,10 @@ import nextConfig from '../next.config.mjs';
 
 const SUPABASE_HOST = 'https://xdxdzmsztyzbnzeforxx.supabase.co';
 const MIN_HSTS_AGE = 63072000;
+// ADR-0026: the one remote origin the CSP may name, and only while a Turnstile
+// site key is configured. Anything else remote is a new vendor and a new ADR.
+const TURNSTILE_ORIGIN = 'https://challenges.cloudflare.com';
+const turnstileOn = Boolean(nextConfig.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
 
 async function headerMap() {
     const groups = await nextConfig.headers();
@@ -48,8 +52,16 @@ test("no 'unsafe-eval' outside next dev, and no wildcard script source", async (
     const scriptSrc = directives(csp).get('script-src');
     assert.ok(scriptSrc, 'script-src is missing');
     assert.ok(!scriptSrc.includes("'unsafe-eval'"), "production script-src must not allow 'unsafe-eval'");
-    assert.ok(!scriptSrc.some((s) => s === '*' || s.startsWith('http')),
-        `script-src must not name a remote origin: ${scriptSrc.join(' ')}`);
+    const remote = scriptSrc.filter((s) => s === '*' || s.startsWith('http'));
+    assert.deepEqual(remote, turnstileOn ? [TURNSTILE_ORIGIN] : [],
+        `script-src may name no remote origin but Turnstile's, and that only with a site key: ${scriptSrc.join(' ')}`);
+});
+
+test('frames come from Turnstile only, and only when a site key is set', async () => {
+    // Without a key there is no frame-src at all, so default-src 'self'
+    // keeps covering frames exactly as before ADR-0026.
+    const csp = (await headerMap()).get('content-security-policy');
+    assert.deepEqual(directives(csp).get('frame-src'), turnstileOn ? [TURNSTILE_ORIGIN] : undefined);
 });
 
 test('connect-src reaches our own origin and the Supabase project only', async () => {

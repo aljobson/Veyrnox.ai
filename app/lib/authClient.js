@@ -213,13 +213,26 @@ function normalise(data) {
 }
 
 /**
+ * Attach a CAPTCHA token where Supabase Attack Protection reads it (ADR-0026).
+ * Supabase ignores the field while CAPTCHA is off, which is what lets this
+ * ship before the dashboard switch is flipped — flipping it first would reject
+ * every password sign-in, sign-up and magic link for a missing token.
+ * @param {object} body
+ * @param {string} [captchaToken]
+ */
+function withCaptcha(body, captchaToken) {
+    return captchaToken ? { ...body, gotrue_meta_security: { captcha_token: captchaToken } } : body;
+}
+
+/**
  * Email + password sign-in. Persists the session on success.
  * @param {string} email
  * @param {string} password
+ * @param {string} [captchaToken] Turnstile token, single-use
  * @returns {Promise<VeyrnoxSession>}
  */
-export async function signInWithPassword(email, password) {
-    const data = await post("/auth/v1/token?grant_type=password", { email, password });
+export async function signInWithPassword(email, password, captchaToken) {
+    const data = await post("/auth/v1/token?grant_type=password", withCaptcha({ email, password }, captchaToken));
     const s = normalise(data);
     setSession(s);
     return s;
@@ -229,10 +242,11 @@ export async function signInWithPassword(email, password) {
  * session is null and needsConfirmation is true; otherwise session is set.
  * @param {string} email
  * @param {string} password
+ * @param {string} [captchaToken] Turnstile token, single-use
  * @returns {Promise<{session: VeyrnoxSession|null, needsConfirmation: boolean}>}
  */
-export async function signUp(email, password) {
-    const data = await post("/auth/v1/signup", { email, password });
+export async function signUp(email, password, captchaToken) {
+    const data = await post("/auth/v1/signup", withCaptcha({ email, password }, captchaToken));
     if (data?.access_token) {
         const s = normalise(data);
         setSession(s);
@@ -244,9 +258,10 @@ export async function signUp(email, password) {
  * Send an email OTP / magic-link. `create_user: true` so a new address
  * signs the user up on their first click.
  * @param {string} email
+ * @param {string} [captchaToken] Turnstile token, single-use
  */
-export async function sendMagicLink(email) {
-    await post("/auth/v1/otp", { email, create_user: true });
+export async function sendMagicLink(email, captchaToken) {
+    await post("/auth/v1/otp", withCaptcha({ email, create_user: true }, captchaToken));
 }
 /**
  * Redirect to Supabase's OAuth authorize endpoint. Provider must be one
