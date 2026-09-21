@@ -1,22 +1,41 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import { getSession, onSessionChange, signOut } from '../../lib/authClient';
 import { ConfirmDialog } from './ConfirmDialog';
+import { accountLabel } from '../_lib/account.js';
 
-// Log in / Sign up in the marketing top nav. Both open the AuthGate
-// modal via the veyrnox:auth-required event (see components/AuthGate.jsx).
-// Sign up preselects the sign-up tab. Signed-in users get Sign out, which
-// revokes the Supabase session server-side AND clears localStorage.
+const ACCOUNT_LINKS = [
+  { href: '/app', label: 'Open Studio' },
+  { href: '/app/library', label: 'Library' },
+  { href: '/app/credits', label: 'Credits' },
+];
+
 export function NavAuthButtons() {
-  const [signedIn, setSignedIn] = useState(false);
+  const [account, setAccount] = useState(null);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [leaving, setLeaving] = useState(false);
+  const wrapRef = useRef(null);
 
   useEffect(() => {
-    setSignedIn(!!getSession());
-    return onSessionChange((s) => setSignedIn(!!s));
+    setAccount(accountLabel(getSession()));
+    return onSessionChange((s) => setAccount(accountLabel(s)));
   }, []);
+
+  // Close on Escape or a click anywhere outside the menu.
+  useEffect(() => {
+    if (!menuOpen) return undefined;
+    const onKey = (e) => { if (e.key === 'Escape') setMenuOpen(false); };
+    const onDown = (e) => { if (!wrapRef.current?.contains(e.target)) setMenuOpen(false); };
+    window.addEventListener('keydown', onKey);
+    window.addEventListener('pointerdown', onDown);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('pointerdown', onDown);
+    };
+  }, [menuOpen]);
 
   function openAuth(mode) {
     if (typeof window === 'undefined') return;
@@ -34,16 +53,56 @@ export function NavAuthButtons() {
       });
   }
 
-  if (signedIn) {
+  if (account) {
     return (
-      <>
+      <div ref={wrapRef} className="relative">
         <button
           type="button"
-          onClick={() => setConfirming(true)}
-          className="text-vx-fg-body text-sm font-semibold px-3 py-2 hover:text-vx-fg"
+          onClick={() => setMenuOpen((v) => !v)}
+          aria-haspopup="menu"
+          aria-expanded={menuOpen}
+          aria-label={`Account: ${account.name}`}
+          className="flex items-center gap-2 rounded-full pl-1 pr-1 sm:pr-3 py-1 text-sm font-semibold text-vx-fg-body hover:text-vx-fg hover:bg-vx-fg/[0.05]"
         >
-          Sign out
+          <span aria-hidden="true" className="flex h-8 w-8 items-center justify-center rounded-full bg-vx-accent text-vx-accent-ink font-extrabold">
+            {account.initial}
+          </span>
+          <span className="hidden sm:inline max-w-[12rem] truncate">{account.name}</span>
         </button>
+
+        {menuOpen && (
+          <div
+            role="menu"
+            className="absolute right-0 top-full mt-2 w-60 rounded-xl border border-vx-border bg-vx-panel p-1.5 shadow-2xl z-50"
+          >
+            <div className="px-3 py-2 border-b border-vx-border mb-1">
+              <div className="text-sm font-bold text-vx-fg truncate">{account.name}</div>
+              {account.email && account.email !== account.name && (
+                <div className="text-xs text-vx-fg-muted truncate">{account.email}</div>
+              )}
+            </div>
+            {ACCOUNT_LINKS.map((l) => (
+              <Link
+                key={l.href}
+                href={l.href}
+                role="menuitem"
+                onClick={() => setMenuOpen(false)}
+                className="block rounded-lg px-3 py-2 text-sm text-vx-fg-body hover:bg-vx-fg/[0.05] hover:text-vx-fg"
+              >
+                {l.label}
+              </Link>
+            ))}
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => { setMenuOpen(false); setConfirming(true); }}
+              className="block w-full text-left rounded-lg px-3 py-2 text-sm text-vx-fg-body hover:bg-vx-fg/[0.05] hover:text-vx-fg"
+            >
+              Sign out
+            </button>
+          </div>
+        )}
+
         {confirming && (
           // Sign-out revokes the session in Supabase — one misplaced click
           // used to end the session with no way back but signing in again.
@@ -55,7 +114,7 @@ export function NavAuthButtons() {
             onCancel={() => setConfirming(false)}
           />
         )}
-      </>
+      </div>
     );
   }
 
