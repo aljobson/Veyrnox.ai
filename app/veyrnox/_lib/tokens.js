@@ -12,8 +12,8 @@ export const MODELS = [
   { id: 'kling-2.6-pro',      name: 'Kling 2.6 Pro',       credits: 22,                                         kind: 'video', durations: [5, 10] },
   { id: 'kling-3.0-i2v',      name: 'Kling 3.0 · I2V',     credits: 34,  tag: '4K',                             kind: 'video', durations: [5, 10] },
   { id: 'minimax-hailuo-02',  name: 'MiniMax Hailuo 02',   credits: 14,                                         kind: 'video', durations: [5] },
-  { id: 'veo-3.1',            name: 'Veo 3.1',             credits: 122, tag: 'PREMIUM',    premium: true, gated: true, kind: 'video', durations: [5] },
-  { id: 'veo-3.1-fast',       name: 'Veo 3.1 Fast',        credits: 46,  tag: 'NEW',                            kind: 'video', durations: [5] },
+  { id: 'veo-3.1-kie',        name: 'Veo 3.1',             credits: 122, tag: 'PREMIUM',    premium: true, gated: true, kind: 'video', durations: [5] },
+  { id: 'veo-3.1-fast-kie',   name: 'Veo 3.1 Fast',        credits: 46,  tag: 'NEW',                            kind: 'video', durations: [5] },
   { id: 'nano-banana-kie',    name: 'Nano Banana',         credits: 3,                                          kind: 'image', durations: [5] },
   { id: 'flux-2-pro',         name: 'Flux.2 [pro]',        credits: 2,                                          kind: 'image', durations: [5] },
   { id: 'seedream-4',         name: 'Seedream 4',          credits: 3,                                          kind: 'image', durations: [5] },
@@ -215,7 +215,7 @@ export const PRODUCT_TILES = [
   { key: 'wan-2.5',           name: 'Wan 2.5',            kind: 'Video',  credits: 16,  hint: 'The default. Fast, cinematic.',                    badge: 'TOP',       icon: '⚡' },
   { key: 'nano-banana-kie',   name: 'Nano Banana',        kind: 'Image',  credits: 3,   hint: 'Cheapest photoreal frame on the shelf.',                                 icon: '◐' },
   { key: 'kling-3.0-i2v',     name: 'Kling 3.0 · I2V',    kind: 'Video',  credits: 34,  hint: '4K image-to-video, cinematic grade.',              badge: 'NEW',       icon: '▶' },
-  { key: 'veo-3.1',           name: 'Veo 3.1',            kind: 'Video',  credits: 122, hint: 'Premium video (◆). Sign-up required, gated.',      badge: 'PREMIUM',   icon: '◆' },
+  { key: 'veo-3.1-kie',       name: 'Veo 3.1',            kind: 'Video',  credits: 122, hint: 'Premium video (◆). Sign-up required, gated.',      badge: 'PREMIUM',   icon: '◆' },
   { key: 'ace-step',          name: 'ACE Step',           kind: 'Audio',  credits: 1,   hint: 'Music and voice generation on the same balance.',                        icon: '♪' },
 ];
 
