@@ -14,7 +14,7 @@ export const MODELS = [
   { id: 'minimax-hailuo-02',  name: 'MiniMax Hailuo 02',   credits: 14,                                         kind: 'video', durations: [5] },
   { id: 'veo-3.1',            name: 'Veo 3.1',             credits: 122, tag: 'PREMIUM',    premium: true, gated: true, kind: 'video', durations: [5] },
   { id: 'veo-3.1-fast',       name: 'Veo 3.1 Fast',        credits: 46,  tag: 'NEW',                            kind: 'video', durations: [5] },
-  { id: 'nano-banana',        name: 'Nano Banana',         credits: 3,                                          kind: 'image', durations: [5] },
+  { id: 'nano-banana-kie',    name: 'Nano Banana',         credits: 3,                                          kind: 'image', durations: [5] },
   { id: 'flux-2-pro',         name: 'Flux.2 [pro]',        credits: 2,                                          kind: 'image', durations: [5] },
   { id: 'seedream-4',         name: 'Seedream 4',          credits: 3,                                          kind: 'image', durations: [5] },
   { id: 'ace-step',           name: 'ACE Step',            credits: 1,                                          kind: 'audio', durations: [5] },
@@ -112,12 +112,12 @@ export const FEATURE_CARDS = [
     cta: 'Open Wan 2.5',
     href: '/app/create?model=wan-2.5',
     bg: 'linear-gradient(135deg,#0a1a2c 0%,#144a7a 55%,#3ec1e8 100%)' },
-  { key: 'nano-banana',
+  { key: 'nano-banana-kie',
     kicker: 'NANO BANANA',
     title: 'Photoreal stills, three credits a frame.',
     body: 'The cheapest photoreal image on the catalog. Perfect for product shots and stills.',
     cta: 'Open Nano Banana',
-    href: '/app/create?model=nano-banana',
+    href: '/app/create?model=nano-banana-kie',
     bg: 'linear-gradient(160deg,#2b1a0a 0%,#7a4a1e 60%,#f0b060 100%)' },
   { key: 'kling-26',
     kicker: 'KLING 2.6 PRO',
@@ -213,7 +213,7 @@ export const METRIC_STRIP = [
 // updates in a follow-up.
 export const PRODUCT_TILES = [
   { key: 'wan-2.5',           name: 'Wan 2.5',            kind: 'Video',  credits: 16,  hint: 'The default. Fast, cinematic.',                    badge: 'TOP',       icon: '⚡' },
-  { key: 'nano-banana',       name: 'Nano Banana',        kind: 'Image',  credits: 3,   hint: 'Cheapest photoreal frame on the shelf.',                                 icon: '◐' },
+  { key: 'nano-banana-kie',   name: 'Nano Banana',        kind: 'Image',  credits: 3,   hint: 'Cheapest photoreal frame on the shelf.',                                 icon: '◐' },
   { key: 'kling-3.0-i2v',     name: 'Kling 3.0 · I2V',    kind: 'Video',  credits: 34,  hint: '4K image-to-video, cinematic grade.',              badge: 'NEW',       icon: '▶' },
   { key: 'veo-3.1',           name: 'Veo 3.1',            kind: 'Video',  credits: 122, hint: 'Premium video (◆). Sign-up required, gated.',      badge: 'PREMIUM',   icon: '◆' },
   { key: 'ace-step',          name: 'ACE Step',           kind: 'Audio',  credits: 1,   hint: 'Music and voice generation on the same balance.',                        icon: '♪' },
@@ -248,7 +248,7 @@ export const MORE_FEATURES = [
   ] },
   { group: 'Models',    items: [] }, // filled from the live catalog in page.js
   { group: 'Tools',     items: [
-    { label: 'Image Generator', href: '/app/create?model=nano-banana' },
+    { label: 'Image Generator', href: '/app/create?model=nano-banana-kie' },
     { label: 'Video Generator', href: '/app/create?model=wan-2.5' },
     { label: 'Image-to-Video',  href: '/app/create?model=kling-3.0-i2v' },
     { label: 'Audio',           href: '/app/create?model=ace-step' },
