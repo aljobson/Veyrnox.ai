@@ -11,7 +11,9 @@ async function sign(taskId, ts, key) {
 test('parses only known endpoint shapes', () => {
     assert.deepEqual(parseEndpoint('market:google/nano-banana'), { kind: 'market', model: 'google/nano-banana' });
     assert.deepEqual(parseEndpoint('veo:veo3_fast'), { kind: 'veo', model: 'veo3_fast' });
-    assert.equal(parseEndpoint('veo:veo3_lite'), null);
+    assert.deepEqual(parseEndpoint('veo:veo3_lite'), { kind: 'veo', model: 'veo3_lite' });
+    // An unlisted tier is still refused: the allowlist, not kie, decides what we sell.
+    assert.equal(parseEndpoint('veo:veo3_ultra'), null);
     assert.equal(parseEndpoint('fal-ai/veo3.1'), null);
     assert.equal(parseEndpoint('market:../x'), null);
 });

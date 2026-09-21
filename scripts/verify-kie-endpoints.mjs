@@ -47,6 +47,14 @@ const ROWS = [
         inputs: { prompt: 'A lighthouse on a cliff at dawn, long exposure sea', aspect_ratio: '1:1' },
     },
     {
+        id: 'veo-3.1-lite-kie',
+        endpoint: 'veo:veo3_lite',
+        credits: 23,
+        cost: 0.15,
+        unit: '8s 720p clip with audio',
+        inputs: { prompt: 'Waves rolling onto a pebble beach at dusk, gentle wind', aspect_ratio: '16:9' },
+    },
+    {
         id: 'veo-3.1-fast-kie',
         endpoint: 'veo:veo3_fast',
         credits: 46,
