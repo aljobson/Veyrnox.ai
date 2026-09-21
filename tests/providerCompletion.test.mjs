@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { completeJob } from '../lib/providerCompletion.js';
-import { copyUrlToR2 } from '../packages/adapters/r2.js';
+import { copyUrlToR2 } from '../packages/adapters/r2Copy.js';
 
 Object.assign(process.env, { R2_ACCOUNT_ID: 'acc', R2_ACCESS_KEY_ID: 'k', R2_SECRET_ACCESS_KEY: 's', R2_BUCKET: 'b' });
 const cfg = { supabaseUrl: 'https://db.test', serviceRoleKey: 'svc' };
