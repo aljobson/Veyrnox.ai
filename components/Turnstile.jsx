@@ -63,6 +63,12 @@ export function Turnstile({ onToken, onError, resetKey }) {
             cancelled = true;
             if (widgetId.current && window.turnstile) window.turnstile.remove(widgetId.current);
             widgetId.current = null;
+            // The token belongs to the widget being destroyed. AuthGate keeps
+            // its state while the modal is closed, so without this a reopened
+            // modal could submit a token from a widget that no longer exists —
+            // expired, spent, or both — and Supabase answers captcha_failed.
+            // Seen in production 2026-09-21 10:20:01 UTC.
+            onToken(null);
         };
         // onToken/onError are state setters from AuthGate and never change.
         // eslint-disable-next-line react-hooks/exhaustive-deps
