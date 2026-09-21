@@ -18,7 +18,8 @@
 import { NextResponse } from 'next/server';
 import { verifyWebhookSignature } from '../../../../packages/adapters/fal.js';
 import { rpc, envConfig } from '../../../../packages/db/supabase-client.js';
-import { copyUrlToR2, isConfigured as r2IsConfigured, envConfig as r2EnvConfig } from '../../../../packages/adapters/r2.js';
+import { isConfigured as r2IsConfigured, envConfig as r2EnvConfig } from '../../../../packages/adapters/r2.js';
+import { copyUrlToR2 } from '../../../../packages/adapters/r2Copy.js';
 import { fetchWithTimeout } from '../../../../lib/fetchWithTimeout.js';
 
 const SOURCE = 'fal';

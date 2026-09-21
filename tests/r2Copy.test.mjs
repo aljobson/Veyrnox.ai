@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { copyUrlToR2 } from '../packages/adapters/r2.js';
+import { copyUrlToR2 } from '../packages/adapters/r2Copy.js';
 
 const cfg = { accountId: 'acc', accessKeyId: 'k', secretAccessKey: 's', bucket: 'b' };
 
