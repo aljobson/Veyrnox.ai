@@ -48,7 +48,7 @@ const SLOW_MODEL_WAIT = {
 };
 
 export default function CreateStudio() {
-  const { models, live: catalogLive } = useCatalog();
+  const { models, live: catalogLive, loading: catalogLoading } = useCatalog();
   const [modelId, setModelId] = useState(DEFAULT_MODEL);
   const [duration, setDuration] = useState('5s');
   const [aspect, setAspect] = useState('16:9');
@@ -69,13 +69,15 @@ export default function CreateStudio() {
   }, []);
 
   // If the selected id isn't in the (live or fallback) catalog, fall back to
-  // the first open model so cost never silently reads 0.
+  // the first open model so cost never silently reads 0. Wait for the live
+  // catalog first: the tokens.js fallback it starts from lacks newer models,
+  // and resetting against it threw away any ?model= it didn't list.
   useEffect(() => {
-    if (!models.length) return;
+    if (catalogLoading || !models.length) return;
     if (models.some((m) => m.id === modelId)) return;
     const first = models.find((m) => !m.gated) || models[0];
     setModelId(first.id);
-  }, [models, modelId]);
+  }, [models, modelId, catalogLoading]);
 
   const model = models.find((m) => m.id === modelId) || null;
   // Lengths the gateway will actually sell for this model, from the catalog.
