@@ -190,7 +190,7 @@ export function SignupIncentive() {
             </ul>
             <div className="mt-6 flex flex-wrap gap-3">
               <Link
-                href="/app"
+                href="/app?auth=sign_up"
                 className="whitespace-nowrap rounded-full bg-vx-accent text-vx-accent-ink px-6 py-3 text-sm font-extrabold hover:bg-vx-accent-hover"
               >
                 Claim 50 credits

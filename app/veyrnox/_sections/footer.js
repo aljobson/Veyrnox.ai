@@ -149,7 +149,7 @@ export function ClosingCTA({ modelCount }) {
           50 credits on the house when you join. One balance across every model. Failed jobs refund automatically.
         </p>
         <div className="mt-6 flex gap-3 justify-center flex-wrap">
-          <Link href="/app" className="rounded-full bg-vx-accent text-vx-accent-ink px-8 py-4 text-base font-extrabold hover:bg-vx-accent-hover">
+          <Link href="/app?auth=sign_up" className="rounded-full bg-vx-accent text-vx-accent-ink px-8 py-4 text-base font-extrabold hover:bg-vx-accent-hover">
             Claim 50 credits
           </Link>
           <Link href="/pricing" className="rounded-full border border-vx-border text-vx-fg px-8 py-4 text-base font-bold hover:border-vx-accent">
