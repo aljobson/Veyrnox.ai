@@ -262,6 +262,10 @@ export default function AuthGate() {
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     minLength={8}
+                                    // Safari's generator reads this when it suggests a
+                                    // password; a generated one is never in a breach list.
+                                    passwordrules={mode === "sign_up" ? "minlength: 12; required: lower; required: upper; required: digit;" : undefined}
+                                    aria-describedby="vx-password-hint"
                                     className="w-full rounded-lg bg-vx-base border border-vx-border pl-3 pr-16 py-2 text-sm text-vx-fg outline-none focus:border-vx-accent focus-visible:ring-2 focus-visible:ring-vx-accent/40"
                                 />
                                 {/* A typo in a masked 8-character minimum is the
@@ -276,7 +280,14 @@ export default function AuthGate() {
                                     {showPassword ? "Hide" : "Show"}
                                 </button>
                             </span>
-                            <span className="mt-1 block text-[11px] text-vx-fg-faint">At least 8 characters.</span>
+                            {/* Sign-up runs Supabase's leaked-password check (it
+                                stays on, CLAUDE.md OWASP #7). Say so before the
+                                first attempt rather than only after a rejection. */}
+                            <span id="vx-password-hint" className="mt-1 block text-[11px] text-vx-fg-faint">
+                                {mode === "sign_up"
+                                    ? "At least 8 characters. Passwords found in data breaches are rejected, so use a new one — let your browser or password manager suggest it."
+                                    : "At least 8 characters."}
+                            </span>
                         </label>
                     )}
 
