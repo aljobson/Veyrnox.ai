@@ -34,6 +34,10 @@ const AUTH_ERROR_COPY = [
     [/rate limit/i, "Too many attempts. Wait a minute and try again."],
     [/user already registered/i, "There's already an account with that email. Try signing in."],
     [/password should be at least/i, "Passwords need at least 8 characters."],
+    // Supabase's leaked-password check (HaveIBeenPwned; CLAUDE.md OWASP #7
+    // keeps it on). Without this line a breached password surfaced as the
+    // generic fallback, which never told the user the password was the problem.
+    [/known to be weak|easy to guess|weak.?password/i, "That password has appeared in a data breach. Choose a different one — ideally one you don't use anywhere else."],
     [/network|fetch|failed to fetch/i, "Couldn't reach the server. Check your connection."],
     [/captcha/i, "The security check failed or expired. Try again."],
 ];
