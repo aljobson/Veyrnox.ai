@@ -16,7 +16,7 @@
  *
  * `provider_endpoint` encodes which kie API a catalog row uses:
  *   market:<model>   POST /api/v1/jobs/createTask   (Nano Banana, Kling, ...)
- *   veo:<model>      POST /api/v1/veo/generate      (veo3_fast | veo3)
+ *   veo:<model>      POST /api/v1/veo/generate      (veo3_lite | veo3_fast | veo3)
  * Veo uses the tier-explicit endpoint because the unified `veo-3-1` model has
  * no documented way to choose Fast or Quality.
  *
@@ -29,7 +29,10 @@ export const KIE_API_BASE = 'https://api.kie.ai';
 const SIGNATURE_WINDOW_SECONDS = 300;
 
 const MARKET_RE = /^market:[a-z0-9][a-z0-9./_-]{1,96}$/i;
-const VEO_MODELS = new Set(['veo3_fast', 'veo3']);
+// veo3_lite: kie's cheapest tier, $0.15 per 8s 720p clip (kie.ai/pricing,
+// 2026-09-18). Allowed here so a catalog row can name it; the row itself stays
+// inactive until scripts/verify-kie-endpoints.mjs has run it live (ADR-0011).
+const VEO_MODELS = new Set(['veo3_lite', 'veo3_fast', 'veo3']);
 
 /**
  * @param {string} endpoint catalog provider_endpoint
