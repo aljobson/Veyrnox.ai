@@ -137,7 +137,7 @@ test('a dispute for an order from another store Freezes nobody', async () => {
 test('a Frozen account gets 403 account_frozen from generations, and nothing is submitted', async () => {
     const calls = stubFetch([
         ['/rpc/check_generation_rate_limit', { ok: true }],
-        ['/rest/v1/model_catalog', [{ id: 'm1', provider: 'fal', provider_endpoint: 'fal-ai/x', modality: 'text-to-image', credits_5s: 4, gated_flag: false, active: true }]],
+        ['/rest/v1/model_catalog', [{ id: 'm1', provider: 'fal', provider_endpoint: 'fal-ai/flux-2-pro', modality: 'text-to-image', credits_5s: 4, gated_flag: false, active: true }]],
         ['/rest/v1/users', [{ id: '00000000-0000-4000-8000-000000000009' }]],
         ['/rpc/ledger_debit', { ok: false, code: 'ACCOUNT_FROZEN' }],
     ]);
@@ -149,6 +149,38 @@ test('a Frozen account gets 403 account_frozen from generations, and nothing is 
     assert.equal(res.status, 403);
     assert.deepEqual(await res.json(), { error: 'account_frozen' });
     assert.ok(!calls.some((c) => c.url.includes('fal.run') || c.url.includes('queue.fal')), 'no provider submission');
+});
+
+// Gateway contract checks (ADR-0027) share this file's fetch stub.
+function genRequest(inputs) {
+    return new Request('https://veyrnox.test/api/v1/generations', {
+        method: 'POST',
+        headers: { 'x-veyrnox-auth-id': 'auth-user-1', 'content-type': 'application/json' },
+        body: JSON.stringify({ model_id: 'm1', idempotency_key: 'gen-key-0002', inputs }),
+    });
+}
+
+test('an active row with no capability record gets 501 before any debit', async () => {
+    const calls = stubFetch([
+        ['/rpc/check_generation_rate_limit', { ok: true }],
+        ['/rest/v1/model_catalog', [{ id: 'm1', provider: 'fal', provider_endpoint: 'fal-ai/unknown-model', modality: 'text-to-image', credits_5s: 4, gated_flag: false, active: true }]],
+    ]);
+    const res = await generations.POST(genRequest({ prompt: 'a cat' }));
+    assert.equal(res.status, 501);
+    assert.deepEqual(await res.json(), { error: 'provider_unsupported' });
+    assert.ok(!calls.some((c) => c.url.includes('/rpc/ledger_debit')), 'no debit');
+});
+
+test('undeclared keys never reach the job row', async () => {
+    const calls = stubFetch([
+        ['/rpc/check_generation_rate_limit', { ok: true }],
+        ['/rest/v1/model_catalog', [{ id: 'm1', provider: 'fal', provider_endpoint: 'fal-ai/elevenlabs/sound-effects/v2', modality: 'text-to-audio', credits_5s: 4, gated_flag: false, active: true }]],
+        ['/rest/v1/users', [{ id: '00000000-0000-4000-8000-000000000009' }]],
+        ['/rpc/ledger_debit', { ok: false, code: 'ACCOUNT_FROZEN' }],
+    ]);
+    await generations.POST(genRequest({ prompt: 'rain', aspect_ratio: '16:9' }));
+    const debit = calls.find((c) => c.url.includes('/rpc/ledger_debit'));
+    assert.deepEqual(debit.body.p_inputs, { prompt: 'rain' });
 });
 
 test('a Frozen account gets 403 account_frozen from top-ups, and no checkout is created', async () => {
