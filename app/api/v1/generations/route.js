@@ -262,6 +262,10 @@ export async function POST(req) {
     // The key is what persists in jobs.inputs; the signed URL does not.
     // Lip sync takes two uploads (a face and the speech), so `source_keys`
     // holds up to MAX_SOURCES; `source_key` is the one-upload form.
+    // An upload can carry someone's face or voice. The caller must state they
+    // own it or have consent (AUP, /legal/aup); the statement is recorded on
+    // the job by job_consent_attested (0096) once the debit has created it.
+    const consent = body && body.consent === true;
     const rawKeys = body && body.source_keys !== undefined ? body.source_keys
         : body && body.source_key !== undefined ? [body.source_key] : [];
     if (!Array.isArray(rawKeys) || rawKeys.length > MAX_SOURCES
@@ -271,6 +275,7 @@ export async function POST(req) {
     const sources = {};   // input field -> resolved source
     const sourceKeys = {}; // input field -> upload key
     if (rawKeys.length) {
+        if (!consent) return NextResponse.json({ error: 'consent_required' }, { status: 400 });
         const r2cfg = r2EnvConfig();
         if (!r2IsConfigured(r2cfg)) {
             return NextResponse.json({ error: 'gateway_not_configured' }, { status: 503 });
@@ -406,6 +411,16 @@ export async function POST(req) {
 
     const jobId = debit.job_id;
     const idempotent = debit.idempotent;
+    if (rawKeys.length && jobId) {
+        // Recorded before the provider call: a job that spends money on
+        // someone's likeness must carry the statement that allowed it.
+        try {
+            const noted = await rpc('job_consent_attested', { p_job_id: jobId }, cfg);
+            if (!noted || noted.ok !== true) console.error('[generations] consent not recorded:', noted && noted.code);
+        } catch (err) {
+            console.error('[generations] consent record failed:', err);
+        }
+    }
     const balanceAfter = debit.balance_after;
 
     // Idempotent replay — job already exists. Don't resubmit to fal; return

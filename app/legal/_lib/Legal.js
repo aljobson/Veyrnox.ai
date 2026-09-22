@@ -27,6 +27,7 @@ export function LegalPage({ title, children }) {
                     <Link href="/legal/terms">Terms</Link>
                     <Link href="/legal/privacy">Privacy</Link>
                     <Link href="/legal/refund">Refunds</Link>
+                    <Link href="/legal/aup">Acceptable Use</Link>
                     <Link href="/legal/gdpr">GDPR &amp; Data Rights</Link>
                 </nav>
             </div>

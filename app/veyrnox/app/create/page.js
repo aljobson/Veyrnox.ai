@@ -62,6 +62,9 @@ export default function CreateStudio() {
   // Uploads for the model's media slots: { image|video|audio: { file, previewUrl } }.
   const [sources, setSources] = useState({});
   const [drawing, setDrawing] = useState(false);
+  // Uploads can carry a real face or voice: the AUP consent statement is
+  // required before one is sent, and the gateway records it on the job (0096).
+  const [consent, setConsent] = useState(false);
   const [cinemaOn, setCinemaOn] = useState(false);
   const [cinema, setCinema] = useState(DEFAULT_CINEMA);
   const [characterOn, setCharacterOn] = useState(false);
@@ -98,6 +101,8 @@ export default function CreateStudio() {
   const durations = (model && model.durations && model.durations.length ? model.durations : [5]).map((s) => `${s}s`);
   const media = model?.media || {};
   const missingSource = Object.entries(media).some(([slot, spec]) => spec.required && !sources[slot]);
+  const hasUpload = Object.keys(media).some((slot) => sources[slot]);
+  const missingConsent = hasUpload && !consent;
   // Camera text suits pictures and clips; audio and speech would read it aloud.
   const isShort = !!model?.takesTopic;
   const takesCamera = !isShort && (model?.kind === 'image' || model?.kind === 'video');
@@ -234,6 +239,7 @@ export default function CreateStudio() {
     inFlight.current = true;
     if (model.gated) { inFlight.current = false; setError({ code: 'model_gated' }); return; }
     if (missingSource) { inFlight.current = false; setError({ code: 'source_required' }); return; }
+    if (missingConsent) { inFlight.current = false; setError({ code: 'consent_required' }); return; }
     setError(null);
     const idempotency_key = makeIdempotencyKey();
     // An Auto Short takes only its topic; the pipeline picks the format.
@@ -253,7 +259,11 @@ export default function CreateStudio() {
       }
       const submitted = await gatewayFetch('/generations', {
         method: 'POST',
-        body: JSON.stringify({ model_id: modelId, idempotency_key, inputs, source_keys: source_keys.length ? source_keys : undefined }),
+        body: JSON.stringify({
+          model_id: modelId, idempotency_key, inputs,
+          source_keys: source_keys.length ? source_keys : undefined,
+          consent: source_keys.length ? true : undefined,
+        }),
       });
       setJob({
         job_id: submitted.job_id,
@@ -378,6 +388,21 @@ export default function CreateStudio() {
           <SourcePickers media={media} sources={sources} onPick={pickSource}
             onDraw={model?.kind === 'image' ? () => setDrawing(true) : null} />
 
+          {hasUpload && (
+            <label className="mt-3 flex items-start gap-2.5 rounded-lg border border-vx-border bg-vx-panel px-4 py-3 text-sm text-vx-fg-body cursor-pointer">
+              <input
+                type="checkbox"
+                checked={consent}
+                onChange={(e) => setConsent(e.target.checked)}
+                className="mt-0.5 accent-vx-accent"
+              />
+              <span>
+                I own this file, or I have the permission of everyone identifiable in it. No real person is shown or
+                voiced without their consent (<a href="/legal/aup" target="_blank" rel="noreferrer" className="text-vx-accent underline">Acceptable Use</a>).
+              </span>
+            </label>
+          )}
+
           {drawing && sources.image && (
             <DrawOnImage file={sources.image.file} onDone={applyDrawing} onCancel={() => setDrawing(false)} />
           )}
@@ -457,7 +482,7 @@ export default function CreateStudio() {
             <ParticleButton
               onClick={generating ? cancel : onSubmit}
               className="mt-4 w-full flex items-center justify-between bg-vx-accent text-vx-accent-ink rounded-full px-6 py-3.5 font-extrabold hover:bg-vx-accent-hover disabled:opacity-40 disabled:cursor-not-allowed"
-              disabled={!generating && (!model || model.gated || balance == null || cost > balance || missingSource)}
+              disabled={!generating && (!model || model.gated || balance == null || cost > balance || missingSource || missingConsent)}
             >
               <span>{generating ? 'New generation' : model?.gated ? 'Premium — gated' : 'Generate'}</span>
               <span className="font-vx-mono text-sm">−{cost} cr</span>
