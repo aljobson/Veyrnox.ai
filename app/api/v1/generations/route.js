@@ -27,6 +27,9 @@ import { capabilityFor, declaredInputs, checkInputs, checkSource, shapePayload }
 import { refundRejectedSubmit } from '../../../../lib/submitRejection.js';
 import { resolveUploadedSource } from '../../../../lib/resolveSource.js';
 import { envConfig as r2EnvConfig, isConfigured as r2IsConfigured } from '../../../../packages/adapters/r2.js';
+import { start as startAutoShort, parentRef } from '../../../../lib/autoShort.js';
+import { TOPIC_RE } from '../../../../lib/autoShortSteps.js';
+import { runtimeDeps, runtimeKeys } from '../../../../lib/autoShortRuntime.js';
 
 // Constrain idempotency keys to a safe printable range.
 const IDEMPOTENCY_RE = /^[A-Za-z0-9._-]{8,128}$/;
@@ -50,6 +53,8 @@ const MAX_SOURCES = 2;
 const ALLOWED_INPUTS = {
     prompt: { kind: 'string', max: 2000 },
     negative_prompt: { kind: 'string', max: 2000 },
+    // Auto Short (ADR-0029); TOPIC_RE is checked again by its provider entry.
+    topic: { kind: 'string', max: 200 },
     aspect_ratio: { kind: 'enum', values: ['16:9', '9:16', '1:1', '4:3', '3:4', '4:5', '21:9'] },
     duration_seconds: { kind: 'enum', values: [5, 10] },
     seed: { kind: 'int', min: 0, max: 2147483647 },
@@ -139,6 +144,21 @@ const PROVIDERS = {
         },
         submit: (job, _record, apiKey, publicHost) => openrouter.submitVideo(job,
             { apiKey, callbackUrl: new URL('/api/webhook/openrouter', publicHost).toString() }),
+    },
+    // Auto Short: no single provider call. The orchestrator writes the script,
+    // then submits the voice and scenes; their webhooks drive the rest.
+    veyrnox: {
+        key: () => (runtimeKeys() && r2IsConfigured(r2EnvConfig()) ? 'configured' : null),
+        check: (record, _modelRow, inputs) => {
+            const own = checkInputs(record, inputs);
+            if (!own.ok) return own;
+            return TOPIC_RE.test(inputs.topic) ? { ok: true } : { ok: false, error: 'inputs_invalid:topic' };
+        },
+        submit: async (job, _record, _key, publicHost) => {
+            const deps = runtimeDeps({ cfg: envConfig(), r2cfg: r2EnvConfig(), publicHost, ...runtimeKeys() });
+            const r = await startAutoShort({ jobId: job.job_id, topic: job.inputs.topic }, deps);
+            return r.ok ? { ok: true, providerJobId: parentRef(job.job_id) } : { ok: false, error: r.error, errorCode: r.error };
+        },
     },
 };
 
@@ -380,6 +400,8 @@ export async function POST(req) {
         // job so we owe the credits back.
         await refundRejectedSubmit({ jobId, userId, credits, errorCode: submitResult.errorCode }, cfg);
         console.error('[generations] provider submit failed:', modelRow.provider, submitResult.error);
+        // A topic the script writer refused is the user's to change, not an outage.
+        if (submitResult.errorCode === 'script_refused') return NextResponse.json({ error: 'topic_refused' }, { status: 422 });
         // Don't leak upstream vendor payloads to the client — log only.
         return NextResponse.json({ error: 'provider_submit_failed' }, { status: 502 });
     }

@@ -21,6 +21,8 @@ import { rpc, envConfig } from '../../../../packages/db/supabase-client.js';
 import { isConfigured as r2IsConfigured, envConfig as r2EnvConfig } from '../../../../packages/adapters/r2.js';
 import { copyUrlToR2 } from '../../../../packages/adapters/r2Copy.js';
 import { fetchWithTimeout } from '../../../../lib/fetchWithTimeout.js';
+import { findStep, runtimeDeps, runtimeKeys } from '../../../../lib/autoShortRuntime.js';
+import { falOutcome, handleStepCallback } from '../../../../lib/autoShortWebhook.js';
 
 const SOURCE = 'fal';
 
@@ -154,7 +156,23 @@ export async function POST(req) {
         console.error('[fal-webhook] job lookup failed:', err && err.message);
         return NextResponse.json({ error: 'internal' }, { status: 500 });
     }
-    if (!known) return NextResponse.json({ error: 'job_not_found' }, { status: 409 });
+    if (!known) {
+        // Not a job: it may be one step of an Auto Short (ADR-0029).
+        try {
+            const step = await findStep(cfg, SOURCE, requestId);
+            if (step) {
+                const keys = runtimeKeys();
+                if (!keys || !process.env.PUBLIC_HOST) return NextResponse.json({ error: 'not_configured' }, { status: 503 });
+                const deps = runtimeDeps({ cfg, r2cfg: r2EnvConfig(), publicHost: process.env.PUBLIC_HOST, ...keys });
+                const r = await handleStepCallback({ source: SOURCE, providerJobId: requestId, step, outcome: falOutcome(step, event), deps, cfg });
+                return NextResponse.json(r.body, { status: r.status });
+            }
+        } catch (err) {
+            console.error('[fal-webhook] auto-short step failed:', err && err.message);
+            return NextResponse.json({ error: 'internal' }, { status: 500 });
+        }
+        return NextResponse.json({ error: 'job_not_found' }, { status: 409 });
+    }
 
     // Dedup — insert-only on webhook_events; duplicate = silent success.
     // `on_conflict` must name the (source, external_id) unique constraint:
