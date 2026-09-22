@@ -1,8 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { REGISTRY, capabilityFor, lengthsFor, checkInputs, shapePayload, publicCapabilities } from '../lib/modelCapabilities.js';
-import { shapeForProvider, payloadCheck, durationsFor } from '../lib/providerDuration.js';
+import { readFileSync } from 'node:fs';
+import { REGISTRY, capabilityFor, lengthsFor, declaredInputs, checkInputs, shapePayload, publicCapabilities } from '../lib/modelCapabilities.js';
+import { MODELS } from '../app/veyrnox/_lib/tokens.js';
+
+// Payloads the pre-registry builder (lib/providerDuration.js, removed in
+// step 2) produced for every fal row, captured just before it was deleted.
+const SNAPSHOT = JSON.parse(readFileSync(new URL('./fixtures/capability-payloads.json', import.meta.url), 'utf8'));
 import * as kie from '../packages/adapters/kie.js';
 import * as openrouter from '../packages/adapters/openrouter.js';
 
@@ -46,36 +51,33 @@ test('every catalog endpoint has a record, and unknown endpoints have none', () 
     assert.deepEqual(Object.keys(REGISTRY).sort(), [...CATALOG].sort(), 'no stray records');
 });
 
-test('fal payloads are identical to today\'s providerDuration.js for every valid input', () => {
-    for (const [ep, record] of Object.entries(REGISTRY)) {
-        if (record.provider !== 'fal' || CORRECTED.has(ep)) continue;
-        for (const inputs of fixtures(record)) {
+test('fal payloads are identical to the pre-registry builder for every captured case', () => {
+    const falEndpoints = Object.entries(REGISTRY).filter(([ep, r]) => r.provider === 'fal' && !CORRECTED.has(ep)).map(([ep]) => ep);
+    assert.deepEqual(Object.keys(SNAPSHOT).sort(), falEndpoints.sort(), 'snapshot covers every fal row');
+    for (const [ep, cases] of Object.entries(SNAPSHOT)) {
+        const record = capabilityFor(ep);
+        for (const { inputs, payload } of cases) {
             assert.deepEqual(checkInputs(record, inputs), { ok: true }, `${ep} ${JSON.stringify(inputs)}`);
-            assert.deepEqual(payloadCheck({ provider_endpoint: ep }, inputs), { ok: true }, `${ep} legacy check`);
-            assert.deepEqual(shapePayload(record, inputs), shapeForProvider({ provider_endpoint: ep }, inputs),
-                `${ep} ${JSON.stringify(inputs)}`);
+            assert.deepEqual(shapePayload(record, inputs), payload, `${ep} ${JSON.stringify(inputs)}`);
         }
     }
 });
 
-test('sellable lengths match what /api/catalog publishes today', () => {
-    const modality = { image: 'text-to-image', audio: 'text-to-audio', speech: 'text-to-speech', video: 'text-to-video' };
-    for (const [ep, record] of Object.entries(REGISTRY)) {
-        if (record.provider !== 'fal') continue;
-        assert.deepEqual(lengthsFor(record), durationsFor({ provider_endpoint: ep, modality: modality[record.kind] }), ep);
-    }
-});
-
-test('where today\'s check refuses an aspect ratio or length, so does the record', () => {
-    for (const [ep, record] of Object.entries(REGISTRY)) {
-        if (record.provider !== 'fal') continue;
-        for (const aspect of ['16:9', '9:16', '1:1', '4:3', '3:4', '4:5', '21:9']) {
-            const legacy = payloadCheck({ provider_endpoint: ep }, { prompt: 'p', aspect_ratio: aspect });
-            if (!legacy.ok) assert.equal(checkInputs(record, { prompt: 'p', aspect_ratio: aspect }).ok, false, `${ep} ${aspect}`);
-        }
-        const legacy10 = payloadCheck({ provider_endpoint: ep }, { prompt: 'p', duration_seconds: 10 });
-        if (!legacy10.ok) assert.equal(checkInputs(record, { prompt: 'p', duration_seconds: 10 }).ok, false, `${ep} 10s`);
-    }
+test('each fal video row buys the lengths it sold before the registry', () => {
+    const expected = {
+        'fal-ai/kling-video/v2.6/pro/text-to-video': [5, 10],
+        'fal-ai/wan-25-preview/text-to-video': [5, 10],
+        'fal-ai/kling-video/v3/pro/image-to-video': [5, 10],
+        'fal-ai/minimax/hailuo-02/standard/text-to-video': [5],
+        'fal-ai/veo3.1/fast': [5],
+        'fal-ai/veo3.1': [5],
+    };
+    for (const [ep, lengths] of Object.entries(expected)) assert.deepEqual(lengthsFor(capabilityFor(ep)), lengths, ep);
+    for (const [ep, record] of Object.entries(REGISTRY)) if (record.kind !== 'video') assert.deepEqual(lengthsFor(record), [5], ep);
+    // Refusals the old builder made before the debit, still made.
+    assert.equal(checkInputs(capabilityFor('fal-ai/minimax/hailuo-02/standard/text-to-video'), { prompt: 'p', duration_seconds: 10 }).ok, false);
+    assert.equal(checkInputs(capabilityFor('fal-ai/wan-25-preview/text-to-video'), { prompt: 'p', aspect_ratio: '4:3' }).ok, false);
+    assert.equal(checkInputs(capabilityFor('fal-ai/veo3.1/fast'), { prompt: 'p', aspect_ratio: '1:1' }).ok, false);
 });
 
 test('kie and OpenRouter records accept exactly what their adapters build', () => {
@@ -105,7 +107,16 @@ test('Kling 3.0 i2v record carries the corrected fal contract', () => {
     );
 });
 
-test('undeclared keys are refused, where today they pass through to the provider', () => {
+test('undeclared keys are dropped by the gateway, and refused if they reach the check', () => {
+    // The create page sends aspect_ratio to every model; audio takes none.
+    const sfx = capabilityFor('fal-ai/elevenlabs/sound-effects/v2');
+    assert.deepEqual(declaredInputs(sfx, { prompt: 'rain', aspect_ratio: '16:9', seed: 3 }), { prompt: 'rain' });
+    const hailuoInputs = declaredInputs(capabilityFor('fal-ai/minimax/hailuo-02/standard/text-to-video'),
+        { prompt: 'p', aspect_ratio: '16:9', duration_seconds: 5, image_url: 'https://x/y.png' });
+    assert.deepEqual(hailuoInputs, { prompt: 'p', duration_seconds: 5 });
+    // Media keys survive only where the model has that slot.
+    assert.deepEqual(declaredInputs(capabilityFor('fal-ai/kling-video/v3/pro/image-to-video'), { prompt: 'p', image_url: 'https://r2/a.png' }),
+        { prompt: 'p', image_url: 'https://r2/a.png' });
     const wan = capabilityFor('fal-ai/wan-25-preview/text-to-video');
     assert.deepEqual(checkInputs(wan, { prompt: 'p', image_url: 'https://x/y.png' }), { ok: false, error: 'inputs_key_not_allowed:image_url' });
     const hailuo = capabilityFor('fal-ai/minimax/hailuo-02/standard/text-to-video');
@@ -132,4 +143,23 @@ test('the public view carries no provider field names, pins or assumptions', () 
             aspect_ratio: { type: 'enum', values: ['16:9', '9:16'] } },
         media: {},
     });
+});
+
+test('the tokens.js fallback offers the lengths the live catalog does', () => {
+    // /api/catalog publishes lengthsFor(record); if the fallback drifts, the
+    // create page offers a length the gateway refuses.
+    const endpointById = {
+        'wan-2.5': 'fal-ai/wan-25-preview/text-to-video',
+        'kling-2.6-pro': 'fal-ai/kling-video/v2.6/pro/text-to-video',
+        'kling-3.0-i2v': 'fal-ai/kling-video/v3/pro/image-to-video',
+        'minimax-hailuo-02': 'fal-ai/minimax/hailuo-02/standard/text-to-video',
+        'veo-3.1-kie': 'veo:veo3', 'veo-3.1-fast-kie': 'veo:veo3_fast',
+        'nano-banana-kie': 'market:google/nano-banana', 'flux-2-pro': 'fal-ai/flux-2-pro',
+        'seedream-4': 'fal-ai/bytedance/seedream/v4/text-to-image', 'ace-step': 'fal-ai/ace-step',
+    };
+    for (const m of MODELS) {
+        assert.ok(Array.isArray(m.durations) && m.durations.includes(5), `${m.id} must offer the 5s unit`);
+        const ep = endpointById[m.id];
+        if (ep) assert.deepEqual(m.durations, lengthsFor(capabilityFor(ep)), `${m.id} fallback durations`);
+    }
 });

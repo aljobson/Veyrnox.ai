@@ -23,7 +23,7 @@ import { rpc, select, envConfig, SupabaseError } from '../../../../packages/db/s
 import { submitJob } from '../../../../packages/adapters/fal.js';
 import * as kie from '../../../../packages/adapters/kie.js';
 import * as openrouter from '../../../../packages/adapters/openrouter.js';
-import { durationSpec, shapeForProvider, payloadCheck } from '../../../../lib/providerDuration.js';
+import { capabilityFor, declaredInputs, checkInputs, shapePayload } from '../../../../lib/modelCapabilities.js';
 import { refundRejectedSubmit } from '../../../../lib/submitRejection.js';
 import { resolveUploadedSource } from '../../../../lib/resolveSource.js';
 import { envConfig as r2EnvConfig, isConfigured as r2IsConfigured } from '../../../../packages/adapters/r2.js';
@@ -107,29 +107,36 @@ function validateInputs(inputs) {
 
 // Per-provider submit. Each entry: the secret it needs, a pre-debit check that
 // the inputs map onto a request the catalog price covers, and the submit call.
+// Every model's own contract (inputs, lengths, pinned values) comes from its
+// capability record (lib/modelCapabilities.js, ADR-0027); the kie and
+// OpenRouter adapters still build their own bodies and must agree with it.
 const PROVIDERS = {
     fal: {
         key: () => process.env.FAL_KEY,
-        check: (modelRow, inputs) => (inputs.duration_seconds && inputs.duration_seconds !== UNIT_SECONDS && !durationSpec(modelRow)
-            ? { ok: false, error: 'duration_not_supported' } : payloadCheck(modelRow, inputs)),
-        submit: (job, modelRow, apiKey, publicHost) => submitJob(
-            { ...job, inputs: shapeForProvider(modelRow, job.inputs) },
+        check: (record, _modelRow, inputs) => checkInputs(record, inputs),
+        submit: (job, record, apiKey, publicHost) => submitJob(
+            { ...job, inputs: shapePayload(record, job.inputs) },
             { falKey: apiKey, webhookBaseUrl: new URL('/api/webhook/fal', publicHost).toString() },
         ),
     },
     kie: {
         key: () => process.env.KIE_API_KEY,
-        check: (modelRow, inputs) => {
+        check: (record, modelRow, inputs) => {
+            const own = checkInputs(record, inputs);
+            if (!own.ok) return own;
             const target = kie.parseEndpoint(modelRow.provider_endpoint);
             return target ? kie.buildRequest(target, inputs) : { ok: false, error: 'provider_unsupported' };
         },
-        submit: (job, _modelRow, apiKey, publicHost) => kie.submitTask(job,
+        submit: (job, _record, apiKey, publicHost) => kie.submitTask(job,
             { apiKey, callbackUrl: new URL('/api/webhook/kie', publicHost).toString() }),
     },
     openrouter: {
         key: () => process.env.OPENROUTER_API_KEY,
-        check: (modelRow, inputs) => openrouter.buildRequest(modelRow.provider_endpoint, inputs),
-        submit: (job, _modelRow, apiKey, publicHost) => openrouter.submitVideo(job,
+        check: (record, modelRow, inputs) => {
+            const own = checkInputs(record, inputs);
+            return own.ok ? openrouter.buildRequest(modelRow.provider_endpoint, inputs) : own;
+        },
+        submit: (job, _record, apiKey, publicHost) => openrouter.submitVideo(job,
             { apiKey, callbackUrl: new URL('/api/webhook/openrouter', publicHost).toString() }),
     },
 };
@@ -258,12 +265,23 @@ export async function POST(req) {
     if (!modelRow || !modelRow.active) return NextResponse.json({ error: 'model_not_found' }, { status: 404 });
     const provider = Object.prototype.hasOwnProperty.call(PROVIDERS, modelRow.provider) ? PROVIDERS[modelRow.provider] : null;
     if (!provider) return NextResponse.json({ error: 'provider_unsupported' }, { status: 501 });
+    // No capability record = no known contract for this endpoint: refuse rather
+    // than forward inputs the provider may bill differently for.
+    const record = capabilityFor(modelRow.provider_endpoint);
+    if (!record || record.provider !== modelRow.provider) {
+        console.error('[generations] no capability record for', modelRow.id, modelRow.provider_endpoint);
+        return NextResponse.json({ error: 'provider_unsupported' }, { status: 501 });
+    }
     if (modelRow.gated_flag) return NextResponse.json({ error: 'model_gated' }, { status: 402 });
     const providerKey = provider.key();
     if (!providerKey) return NextResponse.json({ error: 'gateway_not_configured' }, { status: 503 });
+    // From here on only the keys this model declares exist: the create page
+    // sends one control set for every model, and an undeclared key must not
+    // reach the provider, the job row, or the price.
+    const modelInputs = declaredInputs(record, inputs);
     // Refuse before the debit anything the provider request cannot express at
     // the priced unit (a longer clip, an aspect ratio the model lacks, ...).
-    const providerCheck = provider.check(modelRow, inputs);
+    const providerCheck = provider.check(record, modelRow, modelInputs);
     if (!providerCheck.ok) return NextResponse.json({ error: providerCheck.error }, { status: 400 });
 
     // 2. Resolve users.id from auth_id.
@@ -283,7 +301,7 @@ export async function POST(req) {
 
     // 3. Debit atomically. Creates jobs row too. Price = catalog unit price
     //    times the validated unit count; never a client-supplied number.
-    const credits = priceFor(modelRow, inputs);
+    const credits = priceFor(modelRow, modelInputs);
     let debit;
     try {
         debit = await rpc('ledger_debit', {
@@ -292,7 +310,7 @@ export async function POST(req) {
             p_credits: credits,
             p_reason: 'debit:generation',
             p_model_id: modelId,
-            p_inputs: inputs,
+            p_inputs: modelInputs,
             // Authoritative rate limit, counted under the same row lock as
             // the insert (0030). The RPC above is only the cheap early 429.
             p_limit_per_window: RATE_LIMIT_PER_WINDOW,
@@ -332,8 +350,8 @@ export async function POST(req) {
 
     // 4. Submit to the provider.
     const submitResult = await provider.submit(
-        { job_id: jobId, provider_endpoint: modelRow.provider_endpoint, inputs },
-        modelRow, providerKey, publicHost,
+        { job_id: jobId, provider_endpoint: modelRow.provider_endpoint, inputs: modelInputs },
+        record, providerKey, publicHost,
     );
 
     if (!submitResult.ok) {

@@ -3,10 +3,11 @@
 
 // Active gateway catalog — kept in lockstep with fal rows exposed by
 // /api/v1/generations and (once shipped) GET /api/v1/catalog.
-// `durations` mirrors what GET /api/catalog derives from provider_endpoint:
-// only the wan and kling families can be asked for a 10s clip, so only they
-// may be sold one. Keep these in step with lib/providerDuration.js — the
-// fallback renders the same picker the live catalog does.
+// `durations` mirrors what GET /api/catalog derives from each model's
+// capability record: only the wan and kling families can be asked for a 10s
+// clip, so only they may be sold one. Keep these in step with
+// lib/modelCapabilities.js — the fallback renders the same picker the live
+// catalog does (tests/modelCapabilities.test.mjs checks it).
 export const MODELS = [
   { id: 'wan-2.5',            name: 'Wan 2.5',             credits: 31,  tag: 'RECOMMENDED', preselected: true, kind: 'video', durations: [5, 10] },
   { id: 'kling-2.6-pro',      name: 'Kling 2.6 Pro',       credits: 22,                                         kind: 'video', durations: [5, 10] },

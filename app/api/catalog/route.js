@@ -6,14 +6,14 @@
  * middleware doesn't gate it. Never exposes provider_cost_per_unit —
  * that's our margin, not the customer's business.
  *
- * Response: { models: [{ id, name, modality, credits, gated }] }
+ * Response: { models: [{ id, name, modality, credits, gated, durations, capabilities }] }
  * Cached at the edge for 5 minutes; catalog changes are migrations, not
  * per-request state.
  */
 
 import { NextResponse } from 'next/server';
 import { select, envConfig } from '../../../packages/db/supabase-client.js';
-import { durationsFor } from '../../../lib/providerDuration.js';
+import { capabilityFor, lengthsFor, publicCapabilities } from '../../../lib/modelCapabilities.js';
 
 // Workers do not honour s-maxage for Worker-generated responses, so an
 // unauthenticated flood would be one service-role PostgREST call each.
@@ -51,16 +51,29 @@ export async function GET() {
         return NextResponse.json({ error: 'internal' }, { status: 502 });
     }
 
-    const models = (Array.isArray(rows) ? rows : []).map((r) => ({
-        id: r.id,
-        name: r.name,
-        modality: r.modality,
-        credits: r.credits_5s,
-        gated: !!r.gated_flag,
-        // Clip lengths this model may be bought at. The create page renders
-        // exactly these, so it can never offer a length the gateway rejects.
-        durations: durationsFor(r),
-    }));
+    const models = [];
+    for (const r of Array.isArray(rows) ? rows : []) {
+        // The gateway refuses a model with no capability record, so listing
+        // one would sell something that cannot be bought.
+        const record = capabilityFor(r.provider_endpoint);
+        if (!record) {
+            console.error('[api/catalog] active row has no capability record:', r.id);
+            continue;
+        }
+        models.push({
+            id: r.id,
+            name: r.name,
+            modality: r.modality,
+            credits: r.credits_5s,
+            gated: !!r.gated_flag,
+            // Clip lengths this model may be bought at. The create page renders
+            // exactly these, so it can never offer a length the gateway rejects.
+            durations: lengthsFor(record),
+            // Which controls apply: inputs, enum values, reference slots. No
+            // provider field names, pins or costs (ADR-0027).
+            capabilities: publicCapabilities(record),
+        });
+    }
 
     const res = NextResponse.json(
         { models },
