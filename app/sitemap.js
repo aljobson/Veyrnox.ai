@@ -24,5 +24,6 @@ export default function sitemap() {
     page('/legal/privacy', 'yearly', 0.3),
     page('/legal/gdpr', 'yearly', 0.3),
     page('/legal/refund', 'yearly', 0.3),
+    page('/legal/aup', 'yearly', 0.3),
   ];
 }
