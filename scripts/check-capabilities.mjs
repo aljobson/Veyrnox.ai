@@ -19,6 +19,7 @@
  */
 
 import { REGISTRY } from '../lib/modelCapabilities.js';
+import { STEPS } from '../lib/autoShortSteps.js';
 
 const BILLED = ['duration', 'duration_seconds', 'resolution', 'generate_audio', 'num_images',
     'num_outputs', 'max_images', 'image_size', 'thinking', 'video_quality', 'quality'];
@@ -86,21 +87,23 @@ function checkRecord(endpoint, record, schema) {
 }
 
 let failed = 0;
-for (const [endpoint, record] of Object.entries(REGISTRY)) {
+// Auto Short steps (ADR-0029) call fal outside the catalog; check them too.
+const stepRecords = Object.entries(STEPS).map(([name, s]) => [s.endpoint, s.record, `step:${name}`]);
+for (const [endpoint, record, label = endpoint] of [...Object.entries(REGISTRY), ...stepRecords]) {
     if (record.provider !== 'fal') continue;
     const schema = await schemaFor(endpoint);
     if (!schema) {
-        console.log(`FAIL ${endpoint}: no live schema`);
+        console.log(`FAIL ${label}: no live schema`);
         failed += 1;
         continue;
     }
     const problems = checkRecord(endpoint, record, schema);
     if (problems.length) {
         failed += 1;
-        console.log(`FAIL ${endpoint}`);
+        console.log(`FAIL ${label}`);
         for (const p of problems) console.log(`  - ${p}`);
     } else {
-        console.log(`ok   ${endpoint}`);
+        console.log(`ok   ${label}`);
     }
 }
 console.log(failed ? `\n${failed} endpoint(s) out of step with fal` : '\nall fal records match the live schema');
