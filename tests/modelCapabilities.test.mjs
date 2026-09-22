@@ -17,13 +17,14 @@ const CATALOG = [
     'fal-ai/flux-2-pro', 'fal-ai/bytedance/seedream/v4/text-to-image', 'fal-ai/nano-banana',
     'fal-ai/kling-video/v2.6/pro/text-to-video', 'fal-ai/minimax/hailuo-02/standard/text-to-video',
     'fal-ai/wan-25-preview/text-to-video', 'fal-ai/veo3.1/fast', 'fal-ai/veo3.1',
-    'fal-ai/kling-video/v3/pro/image-to-video',
+    'fal-ai/kling-video/v3/pro/image-to-video', 'fal-ai/nano-banana-pro', 'fal-ai/nano-banana-pro/edit',
     'veo:veo3_lite', 'veo:veo3_fast', 'veo:veo3', 'market:google/nano-banana',
     'bytedance/seedance-2.0-fast',
 ];
 
-// Endpoints whose record deliberately differs from today's payload builder.
-const CORRECTED = new Set(['fal-ai/kling-video/v3/pro/image-to-video']);
+// Endpoints the pre-registry snapshot does not cover: corrected on purpose
+// (Kling 3.0), or added after the old builder was deleted.
+const CORRECTED = new Set(['fal-ai/kling-video/v3/pro/image-to-video', 'fal-ai/nano-banana-pro', 'fal-ai/nano-banana-pro/edit']);
 
 /** Every valid combination of a record's inputs: all declared keys, each enum value, each length. */
 function fixtures(record) {
@@ -162,4 +163,17 @@ test('the tokens.js fallback offers the lengths the live catalog does', () => {
         const ep = endpointById[m.id];
         if (ep) assert.deepEqual(m.durations, lengthsFor(capabilityFor(ep)), `${m.id} fallback durations`);
     }
+});
+
+test('Nano Banana Pro pins every billed parameter, and Edit sends its source as a list', () => {
+    const pins = { resolution: '2K', num_images: 1, enable_web_search: false, sync_mode: false };
+    const pro = capabilityFor('fal-ai/nano-banana-pro');
+    assert.deepEqual(shapePayload(pro, { prompt: 'p', aspect_ratio: '16:9' }), { prompt: 'p', aspect_ratio: '16:9', ...pins });
+    // A client cannot lift the resolution to the 4K rate: the key is dropped.
+    assert.deepEqual(declaredInputs(pro, { prompt: 'p', resolution: '4K', enable_web_search: true }), { prompt: 'p' });
+
+    const edit = capabilityFor('fal-ai/nano-banana-pro/edit');
+    assert.equal(checkInputs(edit, { prompt: 'p' }).ok, false, 'a source image is required');
+    assert.deepEqual(shapePayload(edit, { prompt: 'p', image_url: 'https://r2/a.png' }),
+        { prompt: 'p', image_urls: ['https://r2/a.png'], ...pins });
 });
