@@ -61,9 +61,10 @@ const CSP = [
   `img-src 'self' data: blob: ${R2_ENDPOINTS}`,
   `media-src 'self' data: blob: ${R2_ENDPOINTS}`,
   "font-src 'self' data:",
-  // Same-origin only: generation traffic goes through /api/v1/* and assets
-  // through presigned R2 URLs fetched from our own origin.
-  "connect-src 'self' https://xdxdzmsztyzbnzeforxx.supabase.co",
+  // Generation traffic goes through /api/v1/*. The one other host is our own
+  // R2 S3 endpoint: the create page PUTs a start image there on a 15-minute
+  // URL /api/v1/uploads signed for one key and one Content-Type (ADR-0028).
+  `connect-src 'self' https://xdxdzmsztyzbnzeforxx.supabase.co ${R2_ENDPOINTS}`,
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",

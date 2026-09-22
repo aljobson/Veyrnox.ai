@@ -36,7 +36,17 @@ const ERROR_COPY = {
   debit_rejected:        'The ledger declined this debit. Nothing was charged.',
   no_token:              'Sign in to generate.',
   unauthenticated:       'Sign in to generate.',
+  source_required:       'This model needs a start image. Add one above. Nothing was charged.',
+  upload_failed:         'The image upload did not finish. Nothing was charged — try again.',
+  upload_type_not_allowed:'Use a PNG, JPEG or WebP image. Nothing was charged.',
+  upload_type_mismatch:  'That file is not the image type it claims to be. Nothing was charged.',
+  upload_too_large:      'That image is over 20 MB. Nothing was charged.',
+  upload_unreadable:     'We could not read that image. Nothing was charged.',
+  source_not_found:      'The uploaded image expired. Add it again. Nothing was charged.',
 };
+
+// Types /api/v1/uploads accepts for a start image (lib/uploadSource.js).
+const IMAGE_TYPES = 'image/png,image/jpeg,image/webp';
 
 const DEFAULT_MODEL = 'wan-2.5';
 
@@ -53,6 +63,8 @@ export default function CreateStudio() {
   const [duration, setDuration] = useState('5s');
   const [aspect, setAspect] = useState('16:9');
   const [prompt, setPrompt] = useState('A neon-lit Tokyo alley at 3am, low anamorphic tracking shot');
+  // Start image for models whose catalog capabilities declare an image slot.
+  const [source, setSource] = useState(null);    // { file, previewUrl }
 
   const [balance, setBalance] = useState(null);
   const [job, setJob] = useState(null);          // { job_id, state, credits, model_id, error_code?, asset_url? }
@@ -83,6 +95,8 @@ export default function CreateStudio() {
   // Lengths the gateway will actually sell for this model, from the catalog.
   // Rendering anything else offers a price the server then refuses.
   const durations = (model && model.durations && model.durations.length ? model.durations : [5]).map((s) => `${s}s`);
+  const takesImage = !!model?.media?.image;
+  const needsImage = !!model?.media?.image?.required;
   const cost = model ? model.credits * (duration === '10s' && model.kind === 'video' ? 2 : 1) : 0;
   const durationKey = durations.join(',');
   const generating = job && (job.state === 'queued' || job.state === 'running');
@@ -99,6 +113,31 @@ export default function CreateStudio() {
     if (!durations.includes(duration)) setDuration(durations[0]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [durationKey]);
+
+  useEffect(() => () => { if (source) URL.revokeObjectURL(source.previewUrl); }, [source]);
+
+  function pickSource(e) {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = '';
+    setSource(file ? { file, previewUrl: URL.createObjectURL(file) } : null);
+  }
+
+  // The browser PUTs the file straight to R2 on a 15-minute URL the gateway
+  // signed (ADR-0028); the generation then names it by key, never by URL.
+  async function uploadSource(file) {
+    const up = await gatewayFetch('/uploads', {
+      method: 'POST',
+      body: JSON.stringify({ content_type: file.type, size_bytes: file.size }),
+    });
+    let put;
+    try {
+      put = await fetch(up.upload_url, { method: 'PUT', headers: { 'Content-Type': up.content_type }, body: file });
+    } catch {
+      throw new GatewayError('upload_failed', { status: 0, code: 'upload_failed' });
+    }
+    if (!put.ok) throw new GatewayError('upload_failed', { status: put.status, code: 'upload_failed' });
+    return up.key;
+  }
 
   // ── balance fetch + focus revalidation ────────────────────────────
   const loadBalance = useCallback(async () => {
@@ -164,6 +203,7 @@ export default function CreateStudio() {
     if (inFlight.current || generating || !model || balance == null || cost > balance) return;
     inFlight.current = true;
     if (model.gated) { inFlight.current = false; setError({ code: 'model_gated' }); return; }
+    if (needsImage && !source) { inFlight.current = false; setError({ code: 'source_required' }); return; }
     setError(null);
     const idempotency_key = makeIdempotencyKey();
     const inputs = {
@@ -175,9 +215,10 @@ export default function CreateStudio() {
     Object.keys(inputs).forEach((k) => inputs[k] === undefined && delete inputs[k]);
 
     try {
+      const source_key = takesImage && source ? await uploadSource(source.file) : undefined;
       const submitted = await gatewayFetch('/generations', {
         method: 'POST',
-        body: JSON.stringify({ model_id: modelId, idempotency_key, inputs }),
+        body: JSON.stringify({ model_id: modelId, idempotency_key, inputs, source_key }),
       });
       setJob({
         job_id: submitted.job_id,
@@ -294,6 +335,32 @@ export default function CreateStudio() {
             placeholder="Describe the shot…"
           />
 
+          {takesImage && (
+            <div className="mt-3 flex items-center gap-3 rounded-lg border border-vx-border bg-vx-panel p-3">
+              {source ? (
+                <img src={source.previewUrl} alt="Start image" className="w-16 h-16 rounded object-cover bg-black shrink-0" />
+              ) : (
+                <div className="w-16 h-16 rounded border border-dashed border-vx-border shrink-0" aria-hidden="true" />
+              )}
+              <div className="min-w-0 flex-1">
+                <div className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">
+                  START IMAGE{needsImage ? ' · REQUIRED' : ' · OPTIONAL'}
+                </div>
+                <div className="text-xs text-vx-fg-body truncate mt-1">
+                  {source ? source.file.name : 'PNG, JPEG or WebP, up to 20 MB'}
+                </div>
+              </div>
+              <label className="font-vx-mono text-[11px] font-bold rounded-full px-3.5 py-1.5 border border-vx-border text-vx-fg-muted hover:text-vx-fg cursor-pointer shrink-0">
+                {source ? 'Replace' : 'Add image'}
+                <input type="file" accept={IMAGE_TYPES} onChange={pickSource} className="sr-only" />
+              </label>
+              {source && (
+                <button onClick={() => setSource(null)} aria-label="Remove start image"
+                  className="font-vx-mono text-[11px] text-vx-fg-muted hover:text-vx-fg shrink-0">✕</button>
+              )}
+            </div>
+          )}
+
           {error && (
             <div className="mt-3 rounded-lg border border-vx-danger/40 bg-vx-danger/[0.07] px-4 py-3 text-sm text-vx-danger flex items-start gap-2">
               <span aria-hidden="true">✕</span>
@@ -363,7 +430,7 @@ export default function CreateStudio() {
             <button
               onClick={generating ? cancel : onSubmit}
               className="mt-4 w-full flex items-center justify-between bg-vx-accent text-vx-accent-ink rounded-full px-6 py-3.5 font-extrabold hover:bg-vx-accent-hover disabled:opacity-40 disabled:cursor-not-allowed"
-              disabled={!generating && (!model || model.gated || balance == null || cost > balance)}
+              disabled={!generating && (!model || model.gated || balance == null || cost > balance || (needsImage && !source))}
             >
               <span>{generating ? 'Cancel' : model?.gated ? 'Premium — gated' : 'Generate'}</span>
               <span className="font-vx-mono text-sm">−{cost} cr</span>

@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { MODELS, kindOf } from './tokens';
 
 // Normalised shape shared by every consumer:
-// { id, name, kind ('video'|'image'|'audio'), credits, gated, durations }
+// { id, name, kind ('video'|'image'|'audio'), credits, gated, durations, media? }
 const FALLBACK_DURATIONS = [5];
 
 function fromFallback() {
@@ -19,6 +19,8 @@ function fromApi(models) {
     // An older Worker that predates `durations` omits it; 5s only is the
     // safe read, and it is what the gateway accepts everywhere.
     durations: Array.isArray(m.durations) && m.durations.length ? m.durations : FALLBACK_DURATIONS,
+    // Reference slots from the capability registry, e.g. { image: { required } }.
+    media: (m.capabilities && m.capabilities.media) || {},
   }));
 }
 
