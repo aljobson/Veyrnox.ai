@@ -111,6 +111,17 @@ body {
 }
 .animate-fade-in-up { animation: fade-in-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
+/* ParticleButton: each dot flies to (--dx, --dy) and fades. */
+@keyframes vx-particle {
+  0%   { transform: translate(0, 0) scale(0); }
+  50%  { transform: translate(calc(var(--dx) / 2), calc(var(--dy) / 2)) scale(1); }
+  100% { transform: translate(var(--dx), var(--dy)) scale(0); }
+}
+.vx-particle { animation: vx-particle 0.6s ease-out both; }
+@media (prefers-reduced-motion: reduce) {
+  .vx-particle { display: none; }
+}
+
 /* ─── Skip link ───────────────────────────────────────────────────────
    Off-screen until focused, then pinned top-left above the sticky nav. */
 .vx-skip {
