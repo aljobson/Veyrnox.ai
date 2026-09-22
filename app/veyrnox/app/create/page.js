@@ -3,7 +3,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppNav } from '../../_components/NavBar';
 import { Chip } from '../../_components/Chip';
 import { ASPECT_RATIOS } from '../../_lib/tokens';
-import { gatewayFetch, makeIdempotencyKey, notifyBalanceChanged, GatewayError, ACCOUNT_PAUSED_COPY } from '../../_lib/gateway';
+import { gatewayFetch, makeIdempotencyKey, notifyBalanceChanged, GatewayError } from '../../_lib/gateway';
+import { ERROR_COPY } from '../../_lib/createErrors';
 import { pushJobHistory } from '../../_lib/jobHistory';
 import { useCatalog } from '../../_lib/useCatalog';
 import { DEFAULT_CINEMA, buildCinemaPrompt } from '../../_lib/cinema';
@@ -23,31 +24,6 @@ const STATE_UI = {
 // out a blip and short enough that nobody watches a dead shimmer.
 const POLL_GIVE_UP_AFTER = 30;
 
-const ERROR_COPY = {
-  poll_unreachable:      'Lost contact with the server, so we stopped checking. Your generation may still have run — open Library to see.',
-  moderation:            'The provider declined this prompt on safety grounds. Credits refunded.',
-  provider_timeout:      'The model took too long. Credits refunded — try again.',
-  provider_error:        'The model returned an error. Credits refunded.',
-  internal:              'Something on our side broke. Credits refunded.',
-  rate_limited:          'Too many generations in a short window. Wait a moment.',
-  model_gated:           'This model is not open for generation yet. Nothing was charged.',
-  duration_not_supported:'This model only makes 5s clips. Nothing was charged.',
-  duration_invalid:      'Pick a 5s or 10s clip. Nothing was charged.',
-  insufficient_balance:  'Not enough credits for this generation. Nothing was charged — top up to continue.',
-  account_frozen:        ACCOUNT_PAUSED_COPY,
-  user_not_provisioned:  'Your account is still being set up. Try again in a moment.',
-  debit_rejected:        'The ledger declined this debit. Nothing was charged.',
-  no_token:              'Sign in to generate.',
-  unauthenticated:       'Sign in to generate.',
-  source_required:       'This model needs a start image. Add one above. Nothing was charged.',
-  upload_failed:         'The image upload did not finish. Nothing was charged — try again.',
-  upload_type_not_allowed:'Use a PNG, JPEG or WebP image. Nothing was charged.',
-  upload_type_mismatch:  'That file is not the image type it claims to be. Nothing was charged.',
-  upload_too_large:      'That image is over 20 MB. Nothing was charged.',
-  upload_unreadable:     'We could not read that image. Nothing was charged.',
-  source_not_found:      'The uploaded image expired. Add it again. Nothing was charged.',
-  'inputs_invalid:prompt':'The prompt is empty or too long for this model (speech takes up to 1000 characters). Nothing was charged.',
-};
 
 // Types /api/v1/uploads accepts for a start image (lib/uploadSource.js).
 const IMAGE_TYPES = 'image/png,image/jpeg,image/webp';
@@ -58,6 +34,7 @@ const DEFAULT_MODEL = 'wan-2.5';
 // ponytail: hand-kept list; move to the catalog if more slow models land.
 const SLOW_MODEL_WAIT = {
   'ace-step-1.5': 'Music takes about 3–4 minutes.',
+  'mmaudio-v2': 'Sound effects take about 3 minutes.',
   'seedance-2.0-fast': 'Video takes about 2 minutes.',
 };
 
@@ -106,6 +83,9 @@ export default function CreateStudio() {
   const needsImage = !!model?.media?.image?.required;
   // Camera text suits pictures and clips; audio and speech would read it aloud.
   const takesCamera = model?.kind === 'image' || model?.kind === 'video';
+  // The model's own aspect list when the catalog has one; every video takes the default set.
+  const aspectOptions = model?.aspects ? ASPECT_RATIOS.filter((a) => model.aspects.includes(a))
+    : model?.kind === 'video' ? ASPECT_RATIOS : [];
   const cost = model ? model.credits * (duration === '10s' && model.kind === 'video' ? 2 : 1) : 0;
   const durationKey = durations.join(',');
   const generating = job && (job.state === 'queued' || job.state === 'running');
@@ -152,6 +132,11 @@ export default function CreateStudio() {
     if (!put.ok) throw new GatewayError('upload_failed', { status: put.status, code: 'upload_failed' });
     return up.key;
   }
+
+  useEffect(() => {
+    if (aspectOptions.length && !aspectOptions.includes(aspect)) setAspect(aspectOptions[0]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [aspectOptions.join(',')]);
 
   // ── balance fetch + focus revalidation ────────────────────────────
   const loadBalance = useCallback(async () => {
@@ -434,13 +419,11 @@ export default function CreateStudio() {
             </div>
           </div>
 
-          {model?.kind === 'video' && (
-            <>
-              {durations.length > 1 && (
-                <ControlRow label="DURATION" options={durations} value={duration} onChange={setDuration} />
-              )}
-              <ControlRow label="ASPECT"   options={ASPECT_RATIOS} value={aspect} onChange={setAspect} />
-            </>
+          {model?.kind === 'video' && durations.length > 1 && (
+            <ControlRow label="DURATION" options={durations} value={duration} onChange={setDuration} />
+          )}
+          {aspectOptions.length > 0 && (
+            <ControlRow label="ASPECT" options={aspectOptions} value={aspect} onChange={setAspect} />
           )}
 
           {takesCamera && (

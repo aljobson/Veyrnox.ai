@@ -60,6 +60,7 @@ function checkRecord(endpoint, record, schema) {
         if (rule.type === 'enum') for (const v of rule.values) inEnum(field, v, 'input');
     }
     for (const spec of Object.values(record.media)) need(spec.field, 'media');
+    for (const field of record.derives || []) need(field, 'derived');
     if (record.lengths) {
         need(record.lengths.field, 'length');
         for (const v of Object.values(record.lengths.map)) inEnum(record.lengths.field, v, 'length');

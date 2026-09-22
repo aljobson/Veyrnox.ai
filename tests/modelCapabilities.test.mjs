@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { readFileSync } from 'node:fs';
-import { REGISTRY, capabilityFor, lengthsFor, declaredInputs, checkInputs, shapePayload, publicCapabilities } from '../lib/modelCapabilities.js';
+import { REGISTRY, capabilityFor, lengthsFor, declaredInputs, checkInputs, checkSource, expandCanvas, shapePayload, publicCapabilities } from '../lib/modelCapabilities.js';
 import { MODELS } from '../app/veyrnox/_lib/tokens.js';
 
 // Payloads the pre-registry builder (lib/providerDuration.js, removed in
@@ -19,6 +19,7 @@ const CATALOG = [
     'fal-ai/wan-25-preview/text-to-video', 'fal-ai/veo3.1/fast', 'fal-ai/veo3.1',
     'fal-ai/kling-video/v3/pro/image-to-video', 'fal-ai/nano-banana-pro', 'fal-ai/nano-banana-pro/edit',
     'fal-ai/elevenlabs/tts/turbo-v2.5', 'fal-ai/minimax/speech-2.6-hd', 'fal-ai/mmaudio-v2/text-to-audio', 'fal-ai/bria/background/remove',
+    'fal-ai/topaz/upscale/image', 'fal-ai/bria/expand',
     'veo:veo3_lite', 'veo:veo3_fast', 'veo:veo3', 'market:google/nano-banana',
     'bytedance/seedance-2.0-fast',
 ];
@@ -26,7 +27,8 @@ const CATALOG = [
 // Endpoints the pre-registry snapshot does not cover: corrected on purpose
 // (Kling 3.0), or added after the old builder was deleted.
 const CORRECTED = new Set(['fal-ai/kling-video/v3/pro/image-to-video', 'fal-ai/nano-banana-pro', 'fal-ai/nano-banana-pro/edit',
-    'fal-ai/elevenlabs/tts/turbo-v2.5', 'fal-ai/minimax/speech-2.6-hd', 'fal-ai/mmaudio-v2/text-to-audio', 'fal-ai/bria/background/remove']);
+    'fal-ai/elevenlabs/tts/turbo-v2.5', 'fal-ai/minimax/speech-2.6-hd', 'fal-ai/mmaudio-v2/text-to-audio', 'fal-ai/bria/background/remove',
+    'fal-ai/topaz/upscale/image', 'fal-ai/bria/expand']);
 
 /** Every valid combination of a record's inputs: all declared keys, each enum value, each length. */
 function fixtures(record) {
@@ -197,4 +199,24 @@ test('MMAudio buys one 8s clip, and background removal sends only the image', ()
     const inputs = declaredInputs(bria, { prompt: 'ignored', aspect_ratio: '16:9', image_url: 'https://r2/a.png' });
     assert.deepEqual(shapePayload(bria, inputs), { image_url: 'https://r2/a.png', sync_mode: false });
     assert.equal(checkInputs(bria, {}).ok, false, 'an image is required');
+});
+
+test('Topaz refuses a source over 6 MP, or one whose size is unreadable, before the debit', () => {
+    const topaz = capabilityFor('fal-ai/topaz/upscale/image');
+    assert.deepEqual(checkSource(topaz, { dimensions: { width: 3000, height: 2000 } }), { ok: true });
+    assert.deepEqual(checkSource(topaz, { dimensions: { width: 3001, height: 2000 } }), { ok: false, error: 'source_too_large' });
+    assert.deepEqual(checkSource(topaz, { dimensions: null }), { ok: false, error: 'source_size_unknown' });
+    assert.deepEqual(checkSource(capabilityFor('fal-ai/nano-banana-pro/edit'), { dimensions: null }), { ok: true }, 'no cap, no check');
+    assert.deepEqual(shapePayload(topaz, { image_url: 'https://r2/a.png' }, { dimensions: { width: 10, height: 10 } }),
+        { image_url: 'https://r2/a.png', upscale_factor: 2, model: 'Standard V2', output_format: 'jpeg', crop_to_fill: false });
+});
+
+test('Bria expand gets a canvas of the chosen ratio that holds the source, under its area limit', () => {
+    assert.deepEqual(expandCanvas({ width: 1000, height: 1000 }, '16:9'), [2222, 1250]);
+    assert.deepEqual(expandCanvas({ width: 1600, height: 900 }, '9:16'), [2000, 3555]);
+    const [w, h] = expandCanvas({ width: 8000, height: 3000 }, '1:1');
+    assert.ok(w * h < 5000 * 5000 && Math.abs(w - h) <= 1, `${w}x${h}`);
+    const bria = capabilityFor('fal-ai/bria/expand');
+    const payload = shapePayload(bria, { prompt: 'beach', aspect_ratio: '1:1', image_url: 'https://r2/a.png' }, { dimensions: { width: 800, height: 600 } });
+    assert.deepEqual(payload, { prompt: 'beach', aspect_ratio: '1:1', image_url: 'https://r2/a.png', canvas_size: [1000, 1000], sync_mode: false });
 });
