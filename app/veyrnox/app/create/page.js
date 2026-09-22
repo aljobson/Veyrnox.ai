@@ -13,6 +13,7 @@ import { CharacterPanel } from '../../_components/CharacterPanel';
 import { buildCharacterPrompt } from '../../_lib/character';
 import { DrawOnImage } from '../../_components/DrawOnImage';
 import { SourcePickers } from '../../_components/SourcePickers';
+import { ParticleButton } from '@/components/ParticleButton';
 
 // State glyphs — colour-blind safety net matches the design system §08.
 const STATE_UI = {
@@ -451,14 +452,14 @@ export default function CreateStudio() {
               </span>
             </div>
             <div className="mt-1 font-vx-mono text-[36px] font-bold text-vx-money vx-num">−{cost} cr</div>
-            <button
+            <ParticleButton
               onClick={generating ? cancel : onSubmit}
               className="mt-4 w-full flex items-center justify-between bg-vx-accent text-vx-accent-ink rounded-full px-6 py-3.5 font-extrabold hover:bg-vx-accent-hover disabled:opacity-40 disabled:cursor-not-allowed"
               disabled={!generating && (!model || model.gated || balance == null || cost > balance || missingSource)}
             >
               <span>{generating ? 'New generation' : model?.gated ? 'Premium — gated' : 'Generate'}</span>
               <span className="font-vx-mono text-sm">−{cost} cr</span>
-            </button>
+            </ParticleButton>
             <div className="mt-2 font-vx-mono text-[9.5px] tracking-[0.1em] text-vx-fg-faint text-center">
               {model?.gated ? '◆ PREMIUM MODEL · NOT OPEN YET' : 'REFUND ON FAILURE · ALWAYS'}
             </div>
