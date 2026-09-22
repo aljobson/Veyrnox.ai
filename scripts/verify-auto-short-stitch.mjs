@@ -107,9 +107,11 @@ const [voice, ...scenes] = await Promise.all([
     ...SCENES.map((p, i) => runScene(p, i).then((s) => { console.error(`  scene ${i} done ${elapsed()}`); return s; })),
 ]);
 
-const words = voice.output.timestamps || [];
-const last = words[words.length - 1];
-const voiceMs = Math.round(((last && (last.end ?? last.end_time)) || 30) * 1000);
+// ElevenLabs returns character alignment in chunks, not words:
+// [{characters[], character_start_times_seconds[], character_end_times_seconds[]}].
+const chunks = voice.output.timestamps || [];
+const ends = chunks.flatMap((c) => c.character_end_times_seconds || []);
+const voiceMs = ends.length ? Math.round(Math.max(...ends) * 1000) : 30000;
 const tracks = [
     {
         id: 'scenes', type: 'video',
@@ -128,7 +130,7 @@ writeFileSync(out, bytes);
 const report = {
     at: new Date().toISOString(),
     wallSeconds: Math.round((Date.now() - started) / 1000),
-    voice: { requestId: voice.requestId, words: words.length, voiceMs, sampleWord: words[0] ?? null },
+    voice: { requestId: voice.requestId, chunks: chunks.length, voiceMs },
     scenes: scenes.map((s) => s.taskId),
     stitch: { requestId: stitch.requestId, contentType: mp4.headers.get('content-type'), bytes: bytes.length, host: new URL(stitch.output.video_url).hostname },
     file: out,

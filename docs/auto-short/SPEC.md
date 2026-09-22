@@ -12,7 +12,7 @@
 ## 1. What it is
 
 The user types a topic, for example "3 facts about octopuses". About two
-minutes later they get a 32-second vertical video: four AI-generated
+to ten minutes later they get a 32-second vertical video: four AI-generated
 scenes, a voiceover reading a script written for it, and captions. It is
 one purchase and one Library item.
 
@@ -33,13 +33,34 @@ topic ─► [1 script]  LLM via OpenRouter: title, 4 scene prompts, narration (
 - Steps run in this order so the cheap ones fail first. A bad script or TTS
   error costs cents and is refunded before any clip spend.
 - Step 3 fans out: the stitch starts when all four scenes are STORED.
-- Veo clips carry their own audio, and compose has no volume control
-  (schema: `tracks[] {id, type: video|audio|image, keyframes[] {timestamp,
-  duration, url}}`). Slice 0 checks what happens to the clip audio under
-  the voice track. If it bleeds through, the scenes need a silent source.
+- Compose schema: `tracks[] {id, type: video|audio|image, keyframes[]
+  {timestamp, duration, url}}`. It has no volume control and no text track.
+  Slice 0 showed it keeps only the audio track's sound. The Veo clips' own
+  audio is dropped, so no muting step is needed.
 - Each step's output lands in R2 under the parent `job_id` before the next
   step reads it. Providers fetch inputs from short-lived presigned GETs
   (≤15 min), never from another provider's URL.
+
+## 2a. Slice 0 result (2026-09-22, `scripts/verify-auto-short-stitch.mjs --submit`)
+
+**The stitch works.** It produced one MP4 of 32.04s, H.264 720×1280 at
+24 fps, with 768 frames and all four scenes in order and on-topic, plus
+AAC mono 44.1 kHz audio at 25.26s. Stitch request
+`01a0c9af-9ea8-7723-9d5f-0b1dc1dcee00`, voice
+`01a0c9a7-3285-7412-9c38-4fbecc5a5586`, scenes (kie)
+`a76b4aeb…`, `8309c524…`, `9eda89f2…`, `83573abe…`.
+
+| Finding | Consequence for the build |
+|---|---|
+| The audio track is the voice only. The pauses measure true silence (−45 dB, 0.8s gaps), so none of Veo's own audio got mixed in | No muting step is needed |
+| 61 words gave 25.3s of voice, leaving the last 6.7s silent | The script prompt targets **75–80 words**. The stitch audio keyframe uses the measured voice length |
+| ElevenLabs `timestamps` are **character** alignment in chunks, not words | Captions build words from characters. The verifier's first parse was wrong and fell back to 30s. Fixed |
+| Scenes took 62, 62, 102 and **552s**. kie's tail is long | The per-step timeout must allow about 10 min. UI copy says "about 2–10 minutes", not 2 |
+| The stitch result is served as `application/octet-stream` from `v3b.fal.media` | R2 ingest must allow that host and set `video/mp4` from the file's magic number, not the header |
+| Voice took 11s and the stitch about 32s | Neither is on the critical path |
+
+Still open: cost per request from the fal and kie dashboards. The owner reads
+these, and they go into the activating migration.
 
 ## 3. Cost and price
 
@@ -48,7 +69,7 @@ topic ─► [1 script]  LLM via OpenRouter: title, 4 scene prompts, narration (
 | Script | OpenRouter (small model) | ~$0.01 | no |
 | Voice | fal TTS, ~80 words | ~$0.02–0.05 | no |
 | Scenes | 4 × kie Veo 3.1 Lite | $0.60 | **yes** (2026-09-21) |
-| Stitch | fal ffmpeg compose | unknown | **no, blocking** |
+| Stitch | fal ffmpeg compose | dashboard | **works** (slice 0); cost pending |
 | **Total** | | **~$0.65–0.70** | |
 
 Proposed price: **110 credits**. That is the same credits-per-dollar ratio
