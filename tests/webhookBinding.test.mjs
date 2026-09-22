@@ -117,6 +117,8 @@ test('a fal success callback with no job yet answers 409 before the dedup row, s
     const calls = stubFetch([
         ['rest.alpha.fal.ai/.well-known/jwks.json', { keys: [{ ...falJwk, kid: 'k1' }] }],
         ['/rest/v1/jobs', []],
+        // Composite-job steps (ADR-0029) are checked next; no step either.
+        ['/rest/v1/job_steps', []],
     ]);
     const res = await falWebhook.POST(await falSigned('req-early', { request_id: 'req-early', status: 'OK', payload: { images: [{ url: 'https://fal.media/x.png' }] } }));
     assert.equal(res.status, 409);

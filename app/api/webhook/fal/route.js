@@ -21,6 +21,7 @@ import { rpc, envConfig } from '../../../../packages/db/supabase-client.js';
 import { isConfigured as r2IsConfigured, envConfig as r2EnvConfig } from '../../../../packages/adapters/r2.js';
 import { copyUrlToR2 } from '../../../../packages/adapters/r2Copy.js';
 import { fetchWithTimeout } from '../../../../lib/fetchWithTimeout.js';
+import { engine as compositeEngine } from '../../../../lib/compositeJobs.js';
 
 const SOURCE = 'fal';
 
@@ -154,7 +155,29 @@ export async function POST(req) {
         console.error('[fal-webhook] job lookup failed:', err && err.message);
         return NextResponse.json({ error: 'internal' }, { status: 500 });
     }
-    if (!known) return NextResponse.json({ error: 'job_not_found' }, { status: 409 });
+    if (!known) {
+        // Not a single-provider job: it may be one step of a composite job
+        // (ADR-0029). The step path has its own dedup and completion, and
+        // returns null when no step matches either.
+        const isStepFail = status === 'failed' || status === 'ERROR' || Boolean(event && event.error);
+        let stepRes;
+        try {
+            const outputUrl = isStepFail ? null : extractOutputUrl(event);
+            stepRes = await compositeEngine.onStepCallback({
+                source: SOURCE,
+                providerJobId: requestId,
+                isFail: isStepFail,
+                outputUrl,
+                errorCode: 'provider_error',
+                ext: outputUrl ? suggestExt(event, outputUrl) : '.bin',
+            }, cfg, { falKey: process.env.FAL_KEY, publicHost: process.env.PUBLIC_HOST });
+        } catch (err) {
+            console.error('[fal-webhook] step callback failed:', err && err.message);
+            return NextResponse.json({ error: 'internal' }, { status: 500 });
+        }
+        if (stepRes) return NextResponse.json(stepRes.body, { status: stepRes.status });
+        return NextResponse.json({ error: 'job_not_found' }, { status: 409 });
+    }
 
     // Dedup — insert-only on webhook_events; duplicate = silent success.
     // `on_conflict` must name the (source, external_id) unique constraint:
