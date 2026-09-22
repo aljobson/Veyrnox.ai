@@ -100,3 +100,47 @@ ffmpeg and local files.
    and no volume control, so it cannot burn captions in. Burned-in captions
    are a follow-up if slice 0 shows a way.
 4. **Format:** vertical 9:16 only in v1.
+
+## Amendment (2026-09-22): the Clip Editor uses `job_steps` too
+
+**Status:** Proposed. Accepted when the owner merges the PR that carries it.
+**Related:** [Clip Editor PRD](../editor/PRD.md), migration 0092, #235.
+
+The Clip Editor (stitch, trim, add audio) is the second product built on
+this ADR. It reuses decisions 2 to 5 unchanged, with these additions:
+
+1. **One more priced row, same rule.** `clip-edit` is one catalog row at
+   1 credit per started 5 seconds of *output*. The gateway prices it from
+   the edit's output length, which it measures from the source files, never
+   from a number the client sends. The app still never adds up step prices.
+
+2. **Steps run one at a time.** An edit's steps (a trim per cut clip, then
+   one merge, then optional audio) are submitted strictly in order, each by
+   its predecessor's webhook. Only one step is ever in flight, so two
+   callbacks cannot race to submit the next one. `job_steps` has no claim
+   yet (raised on #230). Any product that runs steps in parallel needs that
+   claim first.
+
+3. **Decision 7's `compose` does not suit the editor.** Slice 0 of the
+   editor (PRD §9) found that `fal-ai/ffmpeg-api/compose` ignores clip
+   durations and stretches mixed aspect ratios. The editor instead chains
+   the three endpoints that hit their timings exactly: `trim-video`,
+   `merge-videos` and `merge-audio-video`. Mixed aspect ratios are refused
+   before the debit.
+
+4. **Inputs are the caller's own Assets.** A clip or soundtrack is named by
+   the id of the job that made it, and is resolved through
+   `get_user_asset`, which enforces ownership. The stored edit on the parent
+   job holds our R2 keys and the measured lengths, and every step callback
+   rebuilds the plan from that row, never from a provider payload.
+
+5. **Each step's output is copied to R2** under the parent job before the
+   next step reads it through a fresh presigned URL. So a retry never
+   depends on how long fal keeps its own files.
+
+6. **Step endpoints get no capability records,** as for Auto Short's stitch.
+   The orchestrator is the only caller, with fixed inputs; the sellable
+   contract is the `clip-edit:v1` record the gateway checks.
+
+The editor ships behind `localStorage.veyrnox_editor` under decision 8's
+rule, with the `clip-edit` row inactive until then.

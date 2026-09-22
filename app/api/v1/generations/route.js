@@ -30,6 +30,8 @@ import { envConfig as r2EnvConfig, isConfigured as r2IsConfigured } from '../../
 import { start as startAutoShort, parentRef } from '../../../../lib/autoShort.js';
 import { TOPIC_RE } from '../../../../lib/autoShortSteps.js';
 import { runtimeDeps, runtimeKeys } from '../../../../lib/autoShortRuntime.js';
+import { start as startClipEdit, parentRef as clipEditRef } from '../../../../lib/clipEdit.js';
+import { resolveEdit, defaultDeps as editDeps } from '../../../../lib/clipEditSources.js';
 
 // Constrain idempotency keys to a safe printable range.
 const IDEMPOTENCY_RE = /^[A-Za-z0-9._-]{8,128}$/;
@@ -55,6 +57,9 @@ const ALLOWED_INPUTS = {
     negative_prompt: { kind: 'string', max: 2000 },
     // Auto Short (ADR-0029); TOPIC_RE is checked again by its provider entry.
     topic: { kind: 'string', max: 200 },
+    // Clip Editor: structured, so checked by lib/clipEditSources.js (within MAX_INPUTS_BYTES).
+    clips: { kind: 'edit' },
+    audio: { kind: 'edit' },
     aspect_ratio: { kind: 'enum', values: ['16:9', '9:16', '1:1', '4:3', '3:4', '4:5', '21:9'] },
     duration_seconds: { kind: 'enum', values: [5, 10] },
     seed: { kind: 'int', min: 0, max: 2147483647 },
@@ -97,6 +102,8 @@ function validateInputs(inputs) {
                 break;
             case 'bool':
                 if (typeof value !== 'boolean') return { ok: false, error: `inputs_invalid:${key}` };
+                break;
+            case 'edit':
                 break;
             case 'url': {
                 let u;
@@ -151,11 +158,15 @@ const PROVIDERS = {
         key: () => (runtimeKeys() && r2IsConfigured(r2EnvConfig()) ? 'configured' : null),
         check: (record, _modelRow, inputs) => {
             const own = checkInputs(record, inputs);
-            if (!own.ok) return own;
+            if (!own.ok || record.edit) return own;
             return TOPIC_RE.test(inputs.topic) ? { ok: true } : { ok: false, error: 'inputs_invalid:topic' };
         },
-        submit: async (job, _record, _key, publicHost) => {
+        submit: async (job, record, _key, publicHost) => {
             const deps = runtimeDeps({ cfg: envConfig(), r2cfg: r2EnvConfig(), publicHost, ...runtimeKeys() });
+            if (record.edit) {
+                const r = await startClipEdit({ jobId: job.job_id, edit: job.inputs.edit }, deps);
+                return r.ok ? { ok: true, providerJobId: clipEditRef(job.job_id) } : { ok: false, error: r.error, errorCode: r.error };
+            }
             const r = await startAutoShort({ jobId: job.job_id, topic: job.inputs.topic }, deps);
             return r.ok ? { ok: true, providerJobId: parentRef(job.job_id) } : { ok: false, error: r.error, errorCode: r.error };
         },
@@ -321,9 +332,24 @@ export async function POST(req) {
     if (!sourceCheck.ok) return NextResponse.json({ error: sourceCheck.error }, { status: 400 });
     // The job row records which uploads were used, not the 15-minute URLs.
     const usedKeys = Object.fromEntries(Object.entries(sourceKeys).filter(([f]) => modelInputs[f] !== undefined));
-    const storedInputs = Object.keys(usedKeys).length
+    let storedInputs = Object.keys(usedKeys).length
         ? { ...Object.fromEntries(Object.entries(modelInputs).filter(([k]) => !(k in usedKeys))), source_keys: usedKeys }
         : modelInputs;
+    // A Clip Editor job stores the resolved edit (owned R2 keys, real lengths)
+    // and is priced on its output length, never on what the client sent.
+    let pricedInputs = modelInputs;
+    if (record.edit) {
+        let resolved;
+        try {
+            resolved = await resolveEdit(authId, modelInputs, editDeps(cfg, r2EnvConfig()));
+        } catch (err) {
+            console.error('[generations] edit lookup failed:', err && err.message);
+            return NextResponse.json({ error: 'edit_lookup_failed' }, { status: 502 });
+        }
+        if (!resolved.ok) return NextResponse.json({ error: resolved.error }, { status: resolved.status });
+        storedInputs = { edit: resolved.edit };
+        pricedInputs = { duration_seconds: resolved.edit.output_s };
+    }
 
     // 2. Resolve users.id from auth_id.
     let userId;
@@ -342,7 +368,7 @@ export async function POST(req) {
 
     // 3. Debit atomically. Creates jobs row too. Price = catalog unit price
     //    times the validated unit count; never a client-supplied number.
-    const credits = priceFor(modelRow, modelInputs);
+    const credits = priceFor(modelRow, pricedInputs);
     let debit;
     try {
         debit = await rpc('ledger_debit', {
@@ -391,7 +417,7 @@ export async function POST(req) {
 
     // 4. Submit to the provider.
     const submitResult = await provider.submit(
-        { job_id: jobId, provider_endpoint: modelRow.provider_endpoint, inputs: modelInputs },
+        { job_id: jobId, provider_endpoint: modelRow.provider_endpoint, inputs: record.edit ? storedInputs : modelInputs },
         record, providerKey, publicHost, sources,
     );
 
