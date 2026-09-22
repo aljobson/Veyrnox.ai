@@ -190,3 +190,26 @@ test('copyUrlToR2 with expectMp4 refuses bytes that are not an MP4', async () =>
         globalThis.fetch = real;
     }
 });
+
+test('fal results map to step outcomes: voice audio + timings, compose video_url, failures, pending', async () => {
+    const { falOutcome } = await import('../lib/autoShortWebhook.js');
+    const voice = { step: 'voice' };
+    const stitch = { step: 'stitch' };
+    assert.deepEqual(falOutcome(voice, { status: 'OK', payload: { audio: { url: 'https://v3b.fal.media/a.mp3' }, timestamps: [1] } }),
+        { state: 'success', outputUrl: 'https://v3b.fal.media/a.mp3', timestamps: [1] });
+    assert.deepEqual(falOutcome(stitch, { status: 'OK', payload: { video_url: 'https://v3b.fal.media/o.mp4', thumbnail_url: 'x' } }),
+        { state: 'success', outputUrl: 'https://v3b.fal.media/o.mp4' });
+    assert.equal(falOutcome(stitch, { status: 'OK', payload: {} }).errorCode, 'no_output');
+    // Failure wins over a success status, as for normal jobs.
+    assert.equal(falOutcome(voice, { status: 'OK', error: { code: 'x' } }).state, 'fail');
+    assert.equal(falOutcome(voice, { status: 'IN_PROGRESS' }).state, 'pending');
+});
+
+test('the sellable Auto Short record takes only a topic', async () => {
+    const { capabilityFor, publicCapabilities, checkInputs, declaredInputs } = await import('../lib/modelCapabilities.js');
+    const record = capabilityFor('auto-short:v1');
+    assert.equal(record.provider, 'veyrnox');
+    assert.deepEqual(publicCapabilities(record), { kind: 'video', lengths: [5], inputs: { topic: { type: 'string' } }, media: {} });
+    assert.deepEqual(declaredInputs(record, { topic: 'octopuses', prompt: 'x', aspect_ratio: '16:9' }), { topic: 'octopuses' });
+    assert.equal(checkInputs(record, {}).ok, false);
+});

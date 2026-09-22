@@ -117,6 +117,7 @@ test('a fal success callback with no job yet answers 409 before the dedup row, s
     const calls = stubFetch([
         ['rest.alpha.fal.ai/.well-known/jwks.json', { keys: [{ ...falJwk, kid: 'k1' }] }],
         ['/rest/v1/jobs', []],
+        ['/rest/v1/job_steps', []],
     ]);
     const res = await falWebhook.POST(await falSigned('req-early', { request_id: 'req-early', status: 'OK', payload: { images: [{ url: 'https://fal.media/x.png' }] } }));
     assert.equal(res.status, 409);
@@ -133,4 +134,79 @@ test('a fal callback whose job lookup fails answers 500, not 200', async () => {
     const res = await falWebhook.POST(await falSigned('req-db-down', { request_id: 'req-db-down', status: 'OK' }));
     assert.equal(res.status, 500);
     assert.ok(!calls.some((c) => c.url.includes('webhook_events')), 'delivery not consumed');
+});
+
+// ── fal: Auto Short steps (ADR-0029) ────────────────────────────────────────
+
+const JOB = '11111111-2222-4333-8444-555555555555';
+const VOICE_STEP = { job_id: JOB, step: 'voice', ordinal: 0, provider: 'fal', provider_endpoint: 'fal-ai/elevenlabs/tts/turbo-v2.5', provider_job_id: 'req-voice', state: 'SUBMITTED', attempts: 1, output_r2_key: null, output_text: null };
+const voiceEvent = { request_id: 'req-voice', status: 'OK', payload: { audio: { url: 'https://v3b.fal.media/voice.mp3' },
+    timestamps: [{ characters: ['H', 'i'], character_start_times_seconds: [0, 0.1], character_end_times_seconds: [0.1, 0.4] }] } };
+
+function stepRoutes({ duplicate = false, stored = { ok: true } } = {}) {
+    return [
+        ['rest.alpha.fal.ai/.well-known/jwks.json', { keys: [{ ...falJwk, kid: 'k1' }] }],
+        // The job lookup by provider id misses; the parent read by id finds it live.
+        ['/rest/v1/jobs', (u) => Response.json(u.includes('provider_job_id') ? [] : [{ id: JOB, user_id: 'u1', credits: 110, state: 'SUBMITTED' }])],
+        ['/rest/v1/job_steps', (u) => Response.json(u.includes('provider_job_id') ? [VOICE_STEP] : [])],
+        ['/rest/v1/webhook_events?on_conflict', () => (duplicate ? Response.json([]) : new Response('[{"id":"e1"}]', { status: 201 }))],
+        ['/rest/v1/webhook_events', (u, init) => (init.method === 'PATCH' ? new Response(null, { status: 204 }) : Response.json([{ processed_at: '2026-09-22T00:00:00Z' }]))],
+        ['v3b.fal.media', () => new Response(new Uint8Array([0x49, 0x44, 0x33, 4]), { headers: { 'content-type': 'audio/mpeg' } })],
+        ['r2.cloudflarestorage.com', () => new Response(null, { status: 200 })],
+        ['/rpc/job_step_stored', stored],
+    ];
+}
+
+async function withPipelineEnv(fn) {
+    const keys = { FAL_KEY: 'f', KIE_API_KEY: 'k', OPENROUTER_API_KEY: 'o', PUBLIC_HOST: 'https://veyrnox.test' };
+    Object.assign(process.env, keys);
+    try { return await fn(); } finally { for (const k of Object.keys(keys)) delete process.env[k]; }
+}
+
+test('a signed fal callback for an Auto Short step is applied to the step, never to a job', async () => {
+    await withPipelineEnv(async () => {
+        const calls = stubFetch(stepRoutes());
+        const res = await falWebhook.POST(await falSigned('req-voice', voiceEvent));
+        assert.equal(res.status, 200);
+        assert.deepEqual(await res.json(), { ok: true });
+        const stored = calls.find((c) => c.url.includes('/rpc/job_step_stored')).body;
+        assert.equal(stored.p_job_id, JOB, 'job id from our step row');
+        assert.equal(stored.p_step, 'voice');
+        assert.equal(stored.p_output_r2_key, `auto-short/${JOB}/voice-0.mp3`);
+        assert.equal(stored.p_output_text.voice_ms, 400);
+        assert.ok(calls.some((c) => c.method === 'PUT' && c.url.includes(`auto-short/${JOB}/captions-0.vtt`)), 'captions written');
+        assert.ok(!calls.some((c) => /\/rpc\/(job_succeeded|job_stored|ledger_refund)/.test(c.url)), 'no job RPCs');
+        assert.ok(calls.some((c) => c.method === 'PATCH' && c.url.includes('webhook_events')), 'marked processed');
+    });
+});
+
+test('a replayed step callback that was already processed changes nothing', async () => {
+    await withPipelineEnv(async () => {
+        const calls = stubFetch(stepRoutes({ duplicate: true }));
+        const res = await falWebhook.POST(await falSigned('req-voice', voiceEvent));
+        assert.equal(res.status, 200);
+        assert.deepEqual(await res.json(), { ok: true, duplicate: true });
+        assert.ok(!calls.some((c) => c.url.includes('/rpc/')), 'no RPC');
+        assert.ok(!calls.some((c) => c.url.includes('v3b.fal.media')), 'no download');
+    });
+});
+
+test('a step callback that cannot be recorded answers 500 and stays replayable', async () => {
+    await withPipelineEnv(async () => {
+        const calls = stubFetch(stepRoutes({ stored: { ok: false, code: 'JOB_NOT_FOUND_OR_BAD_STATE' } }));
+        const res = await falWebhook.POST(await falSigned('req-voice', voiceEvent));
+        assert.equal(res.status, 500);
+        assert.ok(!calls.some((c) => c.method === 'PATCH' && c.url.includes('webhook_events')), 'not marked processed');
+    });
+});
+
+test('a step callback with a bad signature is refused before any lookup', async () => {
+    await withPipelineEnv(async () => {
+        const calls = stubFetch(stepRoutes());
+        const req = await falSigned('req-voice', voiceEvent);
+        const forged = new Request(req.url, { method: 'POST', headers: { ...Object.fromEntries(req.headers), 'x-fal-webhook-signature': 'ab'.repeat(64) }, body: await req.text() });
+        const res = await falWebhook.POST(forged);
+        assert.equal(res.status, 401);
+        assert.ok(!calls.some((c) => c.url.includes('/rest/v1/')), 'no database read');
+    });
 });

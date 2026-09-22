@@ -21,7 +21,7 @@ const CATALOG = [
     'fal-ai/elevenlabs/tts/turbo-v2.5', 'fal-ai/minimax/speech-2.6-hd', 'fal-ai/mmaudio-v2/text-to-audio', 'fal-ai/bria/background/remove',
     'fal-ai/topaz/upscale/image', 'fal-ai/bria/expand', 'fal-ai/latentsync', 'fal-ai/kling-video/ai-avatar/v2/standard',
     'veo:veo3_lite', 'veo:veo3_fast', 'veo:veo3', 'market:google/nano-banana',
-    'bytedance/seedance-2.0-fast',
+    'bytedance/seedance-2.0-fast', 'auto-short:v1',
 ];
 
 // Endpoints the pre-registry snapshot does not cover: corrected on purpose
