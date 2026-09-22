@@ -52,7 +52,7 @@ export default function CreateStudio() {
   const { models: catalogModels, live: catalogLive, loading: catalogLoading } = useCatalog();
   const [autoShortOn, setAutoShortOn] = useState(false);
   useEffect(() => { setAutoShortOn(readFlag(AUTO_SHORT_FLAG)); }, []);
-  const models = autoShortOn ? catalogModels : catalogModels.filter((m) => !m.takesTopic);
+  const models = catalogModels.filter((m) => !m.isEdit && (autoShortOn || !m.takesTopic));
   const [modelId, setModelId] = useState(DEFAULT_MODEL);
   const [duration, setDuration] = useState('5s');
   const [aspect, setAspect] = useState('16:9');

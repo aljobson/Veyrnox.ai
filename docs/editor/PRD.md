@@ -89,7 +89,7 @@ order trim → stitch → audio, and only the steps the edit needs.
    **Edit (n)**. If the clips' aspect ratios differ, the bar says so and
    blocks stitching them.
 2. **Edit sheet.** The ordered list of clips, each with:
-   - drag to reorder
+   - move earlier / later (buttons in v1; drag later)
    - a native `<video>` player with **in/out handles** (maps to
      `trim-video` `start_time` / `end_time`)
    - remove from edit
@@ -99,9 +99,10 @@ order trim → stitch → audio, and only the steps the edit needs.
 4. **Price.** The button shows the total credit cost before submit, as
    everywhere else: `Create video · 3 cr`, from `clip-edit`'s `credits_5s`
    and the output length.
-5. **Submit.** A progress line shows the steps (trimming → stitching →
-   adding audio). The result lands in the Library as a new video Asset,
-   linked to its source Assets.
+5. **Submit.** The edit appears at the top of the Library as RUNNING and
+   lands there as a new video Asset. A per-step progress line (trimming →
+   stitching → adding audio) needs the job API to expose steps; it is later
+   work.
 
 Mobile follows the same flow as full-screen steps.
 
@@ -220,8 +221,8 @@ prices change.
 |---|---|---|
 | 0 | ~~Call the endpoints live; record price, latency, behaviour~~ | **Done 2026-09-22 (§9)** |
 | 1a | ~~Orchestrator on main's `job_steps`: validation, plan, one-at-a-time steps, retry then a single refund, webhook routing by step kind; migration 0092 (step kinds, trim positions 0–9, `clip-edit` row inactive)~~ | **Merged in #235** (unit tests + 0092 acceptance tests) |
-| 1b | Gateway wiring: `clip-edit` capability record, `clips`/`audio` schema check, Asset ownership and real source durations, price from output length, `start` from the generations route | An edit submitted through `/api/v1/generations` debits once and stores one Asset; a mid-chain failure refunds once; a replay is a no-op |
-| 2 | Library multi-select, edit sheet, in/out handles, audio picker, step progress | A user makes a stitched video with audio end to end |
+| 1b | ~~Gateway wiring: `clip-edit` capability record, `clips`/`audio` schema check, Asset ownership and real source durations, price from output length, `start` from the generations route~~ | **Merged in #240** |
+| 2 | Library multi-select, edit sheet, in/out points, audio picker, behind `localStorage.veyrnox_editor` | A user makes a stitched video with audio end to end |
 | 3 | Rows `active = true` after verification (ADR-0011), behind a `localStorage.veyrnox_editor` flag for 24 h, then open to everyone | Reconciliation clean for 24 h |
 
 **Money spine rule:** the editor touches jobs and the ledger, so ADR-0029
