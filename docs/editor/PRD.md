@@ -1,5 +1,5 @@
 # PRD — Clip Editor (stitch, trim, add audio)
-**Status:** Draft · 2026-09-22 · Slice 0 done (live results in §9)
+**Status:** Draft · 2026-09-22 · Slice 0 done (live results in §9) · Slice 1a (orchestrator, 0092) merged in #235
 **Owner:** product owner (Al Jobson)
 **Language:** terms are as defined in [CONTEXT.md](../../CONTEXT.md).
 **Precedence:** [CLAUDE.md](../../CLAUDE.md) and [docs/adr/](../adr/README.md)
@@ -21,11 +21,12 @@ debited once before it runs, refunded in full if any step fails, stored in
 R2 by the existing webhook path, and listed in the Library. There's no new
 billing, storage or auth path.
 
-**It runs on ADR-0029's composite-job engine** (a parent `jobs` row plus
-`job_steps`, advanced by signed webhooks, with one debit and an
-all-or-nothing refund). That engine is shared with Auto Short and gets built
-once. The Clip Editor is its first and simplest user: pure ffmpeg steps, no
-AI generation.
+**It runs on the `job_steps` table Auto Short built** (migration 0091, per
+ADR-0029): a parent `jobs` row plus one `job_steps` row per provider call,
+advanced by signed webhooks, with one debit and an all-or-nothing refund.
+There's no second engine. Migration 0092 adds the editor's step kinds
+(`trim`, `merge`, `audio`). The editor is the simplest user of that table:
+pure ffmpeg steps, no AI generation.
 
 ### Why not OpenCut (or any full editor)
 
@@ -107,18 +108,27 @@ Mobile follows the same flow as full-screen steps.
 ## 5. How it runs
 
 ### Request
-`POST /api/v1/edits` (same gateway rules as `/api/v1/generations`: JWT,
-rate limit, idempotency key, typed errors):
+An edit is an ordinary generation. It goes to `POST /api/v1/generations`
+with `model_id: "clip-edit"`, so it gets the gateway's JWT check, rate limit,
+idempotency key, catalog lookup, capability record (ADR-0027) and typed
+errors with no second endpoint. The catalog row's provider is the `veyrnox`
+pseudo-provider, the same path Auto Short's parent uses.
 ```json
 {
+  "model_id": "clip-edit",
   "idempotency_key": "…",
-  "clips": [
-    { "asset_id": "uuid", "in_s": 0,   "out_s": 5.0 },
-    { "asset_id": "uuid", "in_s": 1.5, "out_s": 8.0 }
-  ],
-  "audio": { "asset_id": "uuid", "offset_s": 0 }
+  "inputs": {
+    "clips": [
+      { "asset_id": "uuid", "in_s": 0,   "out_s": 5.0 },
+      { "asset_id": "uuid", "in_s": 1.5, "out_s": 8.0 }
+    ],
+    "audio": { "asset_id": "uuid", "offset_s": 0 }
+  }
 }
 ```
+The gateway's input checks today allow only flat string, bool, url, enum and
+int values, so `clips` and `audio` need their own schema check at the
+boundary (Slice 1b).
 
 ### Server steps
 1. **Validate at the boundary.** 1–10 clips; with one clip there has to be
@@ -129,21 +139,36 @@ rate limit, idempotency key, typed errors):
    output ≤ **60 s** (v1 cap). Anything else → `400 {error: "…"}`.
 2. **Price** from the catalog (§6) and debit **once** through the normal
    ledger path. The debit and the job row are written together, keyed on
-   `(user_id, idempotency_key)`.
+   `(user_id, idempotency_key)`. The validated edit (R2 keys, in/out
+   points, audio offset) is stored in `jobs.inputs.edit`.
 3. **Trim.** For each clip whose in/out isn't its full length, submit
    `trim-video` against a **presigned R2 GET** for the source. Clips used
-   whole go forward as their presigned URL.
-4. **Stitch** (2+ clips): submit `merge-videos` with the clip URLs in
-   order. Intermediates stay on fal's CDN; they're never copied to R2.
+   whole skip this step.
+4. **Stitch** (2+ clips): submit `merge-videos` with the clips' presigned
+   URLs in order.
 5. **Audio** (if set): submit `merge-audio-video` with `start_offset` =
    `offset_s`.
-6. **Store.** The final step's webhook runs the existing path: signature
-   check, `webhook_events` dedupe, `copyUrlToR2`. fal's output host is
-   already on the allowlist.
-7. **Failure at any step** refunds the whole edit through `ledger_refund`.
-   The edit is one charge, so a partial chain is never billed.
+6. **Store.** Every step's webhook runs the existing path: signature check,
+   `webhook_events` dedupe, then `copyUrlToR2` into
+   `edits/<job id>/<step>-<n>.mp4` and `job_step_stored`. The next step
+   reads its input from that R2 copy through a fresh presigned URL, so no
+   step depends on how long fal keeps its CDN files. After the last step,
+   `job_stored` marks the parent done with the final output.
+7. **Failure at any step** is retried once. A second failure fails the
+   parent and refunds the whole edit once through `ledger_refund`. The edit
+   is one charge, so a partial chain is never billed.
 
-Steps 3–5 run in sequence; each step's webhook starts the next.
+**Steps run strictly one at a time**, in the order trim (by clip) → stitch →
+audio. Each step is submitted by its predecessor's webhook, so there's only
+ever one step in flight. That's deliberate: nothing fans in, so two
+callbacks can never race to submit the next step (the missing claim on
+0091, raised on #230). The edit is rebuilt from `jobs.inputs.edit` on every
+callback, never from the provider's payload.
+
+A lost callback is caught by the step sweep (#233): a step still submitted
+after 12 minutes is re-read from fal and applied as if its callback had
+arrived, and one pending after 30 minutes counts as failed.
+`sweep_stuck_jobs` stays the backstop for the parent at 120 minutes.
 
 ## 6. Pricing
 
@@ -182,23 +207,27 @@ prices change.
 | Risk | Mitigation |
 |---|---|
 | Presigned R2 URLs (15-min cap) expire before fal fetches them | Measured queue wait **0.2–3.4 s**, total per step **≤ 14 s**, a very wide margin. Still fail and refund on a source 403, never hang. |
-| A chain half-completes | One debit, one refund covering everything; intermediates live on fal's CDN, not in R2 |
+| A chain half-completes | One debit, one refund covering everything. Intermediates are copied to R2 under the job, so a retry never depends on fal's CDN |
 | Mixed aspect ratios | Rejected at validation (§9, T9) |
 | `merge-videos` drops to the lowest input frame rate | Acceptable (T6: 30 + 24 fps → 24 fps). Say so in the UI if a user mixes rates. |
 | Output exceeds `copyUrlToR2`'s 100 MB cap | The 60 s v1 cap keeps output well under it; re-check with real 1080p bitrates |
-| Chain length adds latency | ≤ 3 sequential steps (trims run in parallel), about 30 s end to end. Show progress. |
+| Chain length adds latency | Steps run one at a time (§5), so the longest edit is 10 trims + stitch + audio = 12 steps at ≤ 14 s each, about 3 minutes; a typical 2–3 clip edit is under a minute. Show progress per step. Running trims in parallel needs the claim fix first. |
+| A callback never arrives | The step sweep (#233) re-reads the step from fal after 12 minutes; the parent sweep refunds at 120 minutes |
 
 ## 8. Delivery
 
 | Slice | What | Done when |
 |---|---|---|
 | 0 | ~~Call the endpoints live; record price, latency, behaviour~~ | **Done 2026-09-22 (§9)** |
-| 1 | ADR-0029 engine (`job_steps`, webhook lookup, sweep re-drive) with `clip-edit` as its first user: catalog row (inactive), `POST /api/v1/edits`, validation, ownership, one debit/refund | Acceptance tests cover debit → refund, mid-chain failure, lost-callback re-drive, and idempotent replay |
+| 1a | ~~Orchestrator on main's `job_steps`: validation, plan, one-at-a-time steps, retry then a single refund, webhook routing by step kind; migration 0092 (step kinds, trim positions 0–9, `clip-edit` row inactive)~~ | **Merged in #235** (unit tests + 0092 acceptance tests) |
+| 1b | Gateway wiring: `clip-edit` capability record, `clips`/`audio` schema check, Asset ownership and real source durations, price from output length, `start` from the generations route | An edit submitted through `/api/v1/generations` debits once and stores one Asset; a mid-chain failure refunds once; a replay is a no-op |
 | 2 | Library multi-select, edit sheet, in/out handles, audio picker, step progress | A user makes a stitched video with audio end to end |
 | 3 | Rows `active = true` after verification (ADR-0011), behind a `localStorage.veyrnox_editor` flag for 24 h, then open to everyone | Reconciliation clean for 24 h |
 
-**Money spine rule:** Slice 1 touches jobs and the ledger, so it needs its
-ADR update (CLAUDE.md "Delivery") before merge.
+**Money spine rule:** the editor touches jobs and the ledger, so ADR-0029
+needs an amendment (CLAUDE.md "Delivery") before Slice 1b merges: the
+editor as a second user of `job_steps`, its steps running one at a time,
+and `compose` replaced by the three exact endpoints.
 
 ## 9. Slice 0 results (2026-09-22, live fal calls)
 
