@@ -21,6 +21,12 @@ debited once before it runs, refunded in full if any step fails, stored in
 R2 by the existing webhook path, and listed in the Library. There's no new
 billing, storage or auth path.
 
+**It runs on ADR-0029's composite-job engine** (a parent `jobs` row plus
+`job_steps`, advanced by signed webhooks, with one debit and an
+all-or-nothing refund). That engine is shared with Auto Short and gets built
+once. The Clip Editor is its first and simplest user: pure ffmpeg steps, no
+AI generation.
+
 ### Why not OpenCut (or any full editor)
 
 [OpenCut](https://github.com/opencut-app/opencut) was evaluated on
@@ -90,7 +96,8 @@ order trim → stitch → audio, and only the steps the edit needs.
    one, then set **Start at** (seconds, default 0). The audio is cut to
    the video's length automatically.
 4. **Price.** The button shows the total credit cost before submit, as
-   everywhere else: `Create video · 3 cr`.
+   everywhere else: `Create video · 3 cr`, from `clip-edit`'s `credits_5s`
+   and the output length.
 5. **Submit.** A progress line shows the steps (trimming → stitching →
    adding audio). The result lands in the Library as a new video Asset,
    linked to its source Assets.
@@ -150,20 +157,25 @@ fal's prices (pricing API, 2026-09-22) and the compute measured in §9:
 
 A heavy v1 edit (4 trims, stitch, audio) costs about **$0.03** at fal.
 
-Proposal: new `model_catalog` rows `edit-trim`, `edit-stitch` and
-`edit-audio` at **1 credit per step run**. The edit's price is the sum:
-a 3-clip stitch with one trim and audio = 3 credits. Checked against
-ADR-0014's floor (50% margin at the $0.033/credit reference rate):
+**Pricing rule (ADR-0029, decision 2; CLAUDE.md "Money & billing"):** one
+catalog row, one debit, and the app never adds up step prices. So the
+editor is **one row, `clip-edit`**, priced like every video row: `credits_5s`
+per started 5 s of **output**. The price doesn't depend on how many steps an
+edit needs. Proposed: **1 credit per 5 s of output** (a 15 s edit = 3
+credits; the 60 s cap = 12 credits).
 
-| Step | Worst fal cost | 1 credit at $0.033 | Margin |
+Checked against ADR-0014's floor (50% margin at $0.033/credit) for the
+worst case, where every clip is trimmed and there's audio:
+
+| Output | Worst fal cost (trims + stitch + audio) | Price at $0.033 | Margin |
 |---|---|---|---|
-| trim | ≈ $0.005 | $0.033 | ≈ 85% |
-| stitch | ≈ $0.002 | $0.033 | ≈ 94% |
-| audio | ≤ $0.012 (if billed per output second, 60 s) | $0.033 | ≥ 64% |
+| 5 s, 1 clip trimmed + audio | ≈ $0.005 + $0.002 = $0.007 | 1 cr = $0.033 | ≈ 79% |
+| 15 s, 3 clips all trimmed + audio | ≈ $0.015 + $0.002 + $0.003 = $0.020 | 3 cr = $0.099 | ≈ 80% |
+| 60 s, 10 clips all trimmed + audio | ≈ $0.050 + $0.002 + $0.012 = $0.064 | 12 cr = $0.396 | ≈ 84% |
 
-Every step clears the floor. Never free, because free edits would be an
-abuse path. As with every row, the price lives in the catalog, not the app,
-and gets re-checked if fal's prices change.
+Every case clears the floor. Never free, because free edits would be an
+abuse path. The price lives in the catalog and gets re-checked if fal's
+prices change.
 
 ## 7. Risks
 
@@ -181,7 +193,7 @@ and gets re-checked if fal's prices change.
 | Slice | What | Done when |
 |---|---|---|
 | 0 | ~~Call the endpoints live; record price, latency, behaviour~~ | **Done 2026-09-22 (§9)** |
-| 1 | Catalog rows (inactive), `POST /api/v1/edits`, validation, ownership, one debit/refund, chained webhook steps | Acceptance tests cover debit → refund, mid-chain failure, and idempotent replay |
+| 1 | ADR-0029 engine (`job_steps`, webhook lookup, sweep re-drive) with `clip-edit` as its first user: catalog row (inactive), `POST /api/v1/edits`, validation, ownership, one debit/refund | Acceptance tests cover debit → refund, mid-chain failure, lost-callback re-drive, and idempotent replay |
 | 2 | Library multi-select, edit sheet, in/out handles, audio picker, step progress | A user makes a stitched video with audio end to end |
 | 3 | Rows `active = true` after verification (ADR-0011), behind a `localStorage.veyrnox_editor` flag for 24 h, then open to everyone | Reconciliation clean for 24 h |
 
