@@ -59,7 +59,15 @@ async function readCapped(stream, maxBytes) {
  * before it expires. `provider` selects that provider's CDN allowlist;
  * it defaults to fal so the existing fal webhook is unchanged.
  */
-export async function copyUrlToR2(sourceUrl, r2Key, cfg, { timeoutMs = 30000, maxBytes = COPY_MAX_BYTES, provider = 'fal', authorization } = {}) {
+/** ISO base media (MP4/MOV): bytes 4..8 are 'ftyp'. */
+const isMp4 = (b) => b.length >= 8 && b[4] === 0x66 && b[5] === 0x74 && b[6] === 0x79 && b[7] === 0x70;
+
+/**
+ * `expectMp4`: the output must be an MP4 whatever its Content-Type says. fal's
+ * compose serves application/octet-stream (Auto Short slice 0), so the type is
+ * taken from the bytes and anything else is refused.
+ */
+export async function copyUrlToR2(sourceUrl, r2Key, cfg, { timeoutMs = 30000, maxBytes = COPY_MAX_BYTES, provider = 'fal', authorization, expectMp4 = false } = {}) {
     // Outbound fetch targets must be constants or provider CDNs (CLAUDE.md
     // OWASP #10). The URL comes from a provider payload, so pin the host.
     let parsed;
@@ -97,7 +105,7 @@ export async function copyUrlToR2(sourceUrl, r2Key, cfg, { timeoutMs = 30000, ma
         if (Number.isFinite(declared) && declared > maxBytes) {
             return { ok: false, error: 'source too large' };
         }
-        const contentType = src.headers.get('content-type') || 'application/octet-stream';
+        let contentType = src.headers.get('content-type') || 'application/octet-stream';
         // Body read is kept inside the timeout window so a hung stream still aborts.
         let bytes;
         try {
@@ -108,6 +116,10 @@ export async function copyUrlToR2(sourceUrl, r2Key, cfg, { timeoutMs = 30000, ma
             return { ok: false, error: `read source: ${msg}` };
         }
         if (!bytes) return { ok: false, error: 'source too large' };
+        if (expectMp4) {
+            if (!isMp4(bytes)) return { ok: false, error: 'source not mp4' };
+            contentType = 'video/mp4';
+        }
         // Hash the provider's bytes before they are stored, so the digest
         // describes what the user receives (ADR-0025 option E). The delivery
         // path is byte-preserving, so this value stays true of the served
