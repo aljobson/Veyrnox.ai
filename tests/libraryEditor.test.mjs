@@ -26,3 +26,10 @@ test('the sheet refuses what the gateway would, before spending a request', () =
     }
     assert.match(sheet, /const MAX_OUTPUT_S = 60;/);
 });
+
+test('the landing shelf and site search never list the Clip Editor as a model', () => {
+    const landing = readFileSync(new URL('../app/veyrnox/page.js', import.meta.url), 'utf8');
+    const search = readFileSync(new URL('../app/veyrnox/_components/SiteSearch.js', import.meta.url), 'utf8');
+    assert.match(landing, /rows\.filter\(\(m\) => !capabilityFor\(m\.provider_endpoint\)\?\.edit\)/);
+    assert.match(search, /models\.filter\(\(m\) => !m\.capabilities\?\.inputs\?\.clips\)/);
+});
