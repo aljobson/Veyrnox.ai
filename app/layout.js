@@ -1,13 +1,16 @@
 import './globals.css';
-import { Inter } from "next/font/google";
+import localFont from "next/font/local";
 import ToasterMount from '../components/ToasterMount';
 import AuthGate from '../components/AuthGate.jsx';
 import SiteChrome from './veyrnox/_components/SiteChrome';
 import { OG_IMAGE, ORG_LD, JsonLd } from './seo';
 
-const inter = Inter({
+// Self-hosted (OFL, app/fonts): next/font/google fetched these from Google at
+// build time, and a failed fetch failed production deploys (2026-09-22).
+const inter = localFont({
+  src: "./fonts/inter-latin-wght-normal.woff2",
+  weight: "100 900",
   variable: "--font-inter",
-  subsets: ["latin"],
 });
 
 const TITLE = 'Veyrnox.ai — AI video & image, priced per generation';
