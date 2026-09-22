@@ -8,10 +8,10 @@
 // may be sold one. Keep these in step with lib/providerDuration.js — the
 // fallback renders the same picker the live catalog does.
 export const MODELS = [
-  { id: 'wan-2.5',            name: 'Wan 2.5',             credits: 16,  tag: 'RECOMMENDED', preselected: true, kind: 'video', durations: [5, 10] },
+  { id: 'wan-2.5',            name: 'Wan 2.5',             credits: 31,  tag: 'RECOMMENDED', preselected: true, kind: 'video', durations: [5, 10] },
   { id: 'kling-2.6-pro',      name: 'Kling 2.6 Pro',       credits: 22,                                         kind: 'video', durations: [5, 10] },
   { id: 'kling-3.0-i2v',      name: 'Kling 3.0 · I2V',     credits: 34,  tag: '4K',                             kind: 'video', durations: [5, 10] },
-  { id: 'minimax-hailuo-02',  name: 'MiniMax Hailuo 02',   credits: 14,                                         kind: 'video', durations: [5] },
+  { id: 'minimax-hailuo-02',  name: 'MiniMax Hailuo 02',   credits: 17,                                         kind: 'video', durations: [5] },
   { id: 'veo-3.1-kie',        name: 'Veo 3.1',             credits: 122, tag: 'PREMIUM',    premium: true, gated: true, kind: 'video', durations: [5] },
   { id: 'veo-3.1-fast-kie',   name: 'Veo 3.1 Fast',        credits: 46,  tag: 'NEW',                            kind: 'video', durations: [5] },
   { id: 'nano-banana-kie',    name: 'Nano Banana',         credits: 3,                                          kind: 'image', durations: [5] },
@@ -49,8 +49,8 @@ export function kindOf(modality) {
 export const PRESET_CATEGORIES = ['ALL', 'CINEMATIC', 'UGC', 'VFX', 'ADS'];
 
 export const PRESETS = [
-  { id: 'cctv-night', name: 'CCTV NIGHT',   model: 'Wan 2.5',           credits: 16, category: 'CINEMATIC',  bg: 'linear-gradient(180deg,#08120b 0%,#0e3a1e 60%,#2ea258 100%)',  cached: true, badge: 'CACHED' },
-  { id: 'sunset-drift',name: 'SUNSET DRIFT', model: 'MiniMax Hailuo 02', credits: 14, category: 'CINEMATIC',  bg: 'linear-gradient(135deg,#2b1a0a 0%,#7a4a1e 60%,#f0b060 100%)',  cached: false },
+  { id: 'cctv-night', name: 'CCTV NIGHT',   model: 'Wan 2.5',           credits: 31, category: 'CINEMATIC',  bg: 'linear-gradient(180deg,#08120b 0%,#0e3a1e 60%,#2ea258 100%)',  cached: true, badge: 'CACHED' },
+  { id: 'sunset-drift',name: 'SUNSET DRIFT', model: 'MiniMax Hailuo 02', credits: 17, category: 'CINEMATIC',  bg: 'linear-gradient(135deg,#2b1a0a 0%,#7a4a1e 60%,#f0b060 100%)',  cached: false },
   { id: 'neon-alley', name: 'NEON ALLEY',   model: 'Kling 2.6 Pro',     credits: 22, category: 'VFX',        bg: 'linear-gradient(135deg,#1b0632 0%,#5a0e6a 55%,#e4318f 100%)',  cached: true, badge: 'CACHED' },
   { id: 'warm-portrait',name: 'WARM PORTRAIT',model: 'Nano Banana',      credits: 3,  category: 'UGC',        bg: 'linear-gradient(160deg,#2c1a12 0%,#7a3520 60%,#c9713f 100%)' },
 ];
@@ -108,7 +108,7 @@ export const FEATURE_CARDS = [
   { key: 'wan-2.5',
     kicker: 'WAN 2.5',
     title: 'The default. Fast, cinematic.',
-    body: '5 seconds of motion for 16 credits. The workhorse — priced on the button before you press it.',
+    body: '5 seconds of 720p motion for 31 credits. The workhorse — priced on the button before you press it.',
     cta: 'Open Wan 2.5',
     href: '/app/create?model=wan-2.5',
     bg: 'linear-gradient(135deg,#0a1a2c 0%,#144a7a 55%,#3ec1e8 100%)' },
@@ -212,7 +212,7 @@ export const METRIC_STRIP = [
 // on the tiles is honest at build time. Wire to /api/catalog for live
 // updates in a follow-up.
 export const PRODUCT_TILES = [
-  { key: 'wan-2.5',           name: 'Wan 2.5',            kind: 'Video',  credits: 16,  hint: 'The default. Fast, cinematic.',                    badge: 'TOP',       icon: '⚡' },
+  { key: 'wan-2.5',           name: 'Wan 2.5',            kind: 'Video',  credits: 31,  hint: 'The default. Fast, cinematic.',                    badge: 'TOP',       icon: '⚡' },
   { key: 'nano-banana-kie',   name: 'Nano Banana',        kind: 'Image',  credits: 3,   hint: 'Cheapest photoreal frame on the shelf.',                                 icon: '◐' },
   { key: 'kling-3.0-i2v',     name: 'Kling 3.0 · I2V',    kind: 'Video',  credits: 34,  hint: '4K image-to-video, cinematic grade.',              badge: 'NEW',       icon: '▶' },
   { key: 'veo-3.1-kie',       name: 'Veo 3.1',            kind: 'Video',  credits: 122, hint: 'Premium video (◆). Sign-up required, gated.',      badge: 'PREMIUM',   icon: '◆' },

@@ -40,11 +40,11 @@ test('shapeForProvider renames our field and drops it when unsupported', () => {
     const wan = { provider_endpoint: 'fal-ai/wan-25-preview/text-to-video' };
     assert.deepEqual(
         shapeForProvider(wan, { prompt: 'x', duration_seconds: 10 }),
-        { prompt: 'x', duration: '10' },
+        { prompt: 'x', duration: '10', resolution: '720p' },
     );
-    const hailuo = { provider_endpoint: 'fal-ai/minimax/hailuo-02/standard/text-to-video' };
+    const seedream = { provider_endpoint: 'fal-ai/bytedance/seedream/v4/text-to-image' };
     assert.deepEqual(
-        shapeForProvider(hailuo, { prompt: 'x', duration_seconds: 5 }),
+        shapeForProvider(seedream, { prompt: 'x', duration_seconds: 5 }),
         { prompt: 'x' },
         'no length field for a family that cannot honour one',
     );
@@ -90,4 +90,25 @@ test('Veo 3.1 requests are pinned to 4s 720p with audio, and only 16:9 / 9:16', 
         assert.deepEqual(payloadCheck({ provider_endpoint: ep }, { aspect_ratio: '16:9' }), { ok: true });
     }
     assert.deepEqual(payloadCheck({ provider_endpoint: 'fal-ai/wan-25-preview/text-to-video' }, { aspect_ratio: '1:1' }), { ok: true });
+});
+
+test('fal defaults that bill above the priced tier are pinned (2026-09-22)', async () => {
+    const { payloadCheck } = await import('../lib/providerDuration.js');
+    const wan = { provider_endpoint: 'fal-ai/wan-25-preview/text-to-video' };
+    const kling = { provider_endpoint: 'fal-ai/kling-video/v2.6/pro/text-to-video' };
+    const hailuo = { provider_endpoint: 'fal-ai/minimax/hailuo-02/standard/text-to-video' };
+    // Wan: 720p every time, including the default 5s unit.
+    assert.deepEqual(shapeForProvider(wan, { prompt: 'p' }), { prompt: 'p', duration: '5', resolution: '720p' });
+    // Kling 2.6: audio off, the tier the row is priced at.
+    assert.deepEqual(shapeForProvider(kling, { prompt: 'p', duration_seconds: 10 }), { prompt: 'p', duration: '10', generate_audio: false });
+    // Hailuo: the 5s unit asks for its 6s clip explicitly; 10s is refused before the debit.
+    assert.deepEqual(shapeForProvider(hailuo, { prompt: 'p', duration_seconds: 5 }), { prompt: 'p', duration: '6' });
+    assert.deepEqual(durationsFor({ ...hailuo, modality: 'text-to-video' }), [5]);
+    assert.deepEqual(payloadCheck(hailuo, { duration_seconds: 10 }), { ok: false, error: 'duration_not_supported' });
+    // Aspect ratios outside the provider's enum are refused before the debit.
+    assert.deepEqual(payloadCheck(wan, { aspect_ratio: '4:3' }), { ok: false, error: 'inputs_invalid:aspect_ratio' });
+    assert.deepEqual(payloadCheck(kling, { aspect_ratio: '1:1' }), { ok: true });
+    // ACE-Step v1 takes `tags`, not `prompt`.
+    assert.deepEqual(shapeForProvider({ provider_endpoint: 'fal-ai/ace-step' }, { prompt: 'lofi piano', seed: 3 }),
+        { tags: 'lofi piano', seed: 3, duration: 60 });
 });
