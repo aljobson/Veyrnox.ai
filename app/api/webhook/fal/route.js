@@ -307,6 +307,7 @@ export async function POST(req) {
  *   { output: { url } }              simple video/audio
  *   { output: { video: { url } } }
  *   { output: { images: [{ url }] } } image generators
+ *   { payload: { image: { url } } }  single-image tools (Bria)
  *   { images: [{ url }] }             sometimes at top level
  *   { video: { url } }                sometimes at top level
  * Returns null if none found — caller logs + no-ops.
@@ -321,12 +322,14 @@ function extractOutputUrl(event) {
         }
         if (p.video && typeof p.video.url === 'string') return p.video.url;
         if (p.audio && typeof p.audio.url === 'string') return p.audio.url;
+        if (p.image && typeof p.image.url === 'string') return p.image.url;
         if (typeof p.url === 'string') return p.url;
     }
     const out = (event && event.output) || event || {};
     if (out && typeof out.url === 'string') return out.url;
     if (out.video && typeof out.video.url === 'string') return out.video.url;
     if (out.audio && typeof out.audio.url === 'string') return out.audio.url;
+    if (out.image && typeof out.image.url === 'string') return out.image.url;
     if (Array.isArray(out.images) && out.images[0] && typeof out.images[0].url === 'string') {
         return out.images[0].url;
     }

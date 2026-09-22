@@ -46,6 +46,7 @@ const ERROR_COPY = {
   upload_too_large:      'That image is over 20 MB. Nothing was charged.',
   upload_unreadable:     'We could not read that image. Nothing was charged.',
   source_not_found:      'The uploaded image expired. Add it again. Nothing was charged.',
+  'inputs_invalid:prompt':'The prompt is empty or too long for this model (speech takes up to 1000 characters). Nothing was charged.',
 };
 
 // Types /api/v1/uploads accepts for a start image (lib/uploadSource.js).
