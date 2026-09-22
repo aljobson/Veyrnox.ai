@@ -6,6 +6,9 @@ import { ASPECT_RATIOS } from '../../_lib/tokens';
 import { gatewayFetch, makeIdempotencyKey, notifyBalanceChanged, GatewayError, ACCOUNT_PAUSED_COPY } from '../../_lib/gateway';
 import { pushJobHistory } from '../../_lib/jobHistory';
 import { useCatalog } from '../../_lib/useCatalog';
+import { DEFAULT_CINEMA, buildCinemaPrompt } from '../../_lib/cinema';
+import { CameraPanel } from '../../_components/CameraPanel';
+import { DrawOnImage } from '../../_components/DrawOnImage';
 
 // State glyphs — colour-blind safety net matches the design system §08.
 const STATE_UI = {
@@ -65,6 +68,9 @@ export default function CreateStudio() {
   const [prompt, setPrompt] = useState('A neon-lit Tokyo alley at 3am, low anamorphic tracking shot');
   // Start image for models whose catalog capabilities declare an image slot.
   const [source, setSource] = useState(null);    // { file, previewUrl }
+  const [drawing, setDrawing] = useState(false);
+  const [cinemaOn, setCinemaOn] = useState(false);
+  const [cinema, setCinema] = useState(DEFAULT_CINEMA);
 
   const [balance, setBalance] = useState(null);
   const [job, setJob] = useState(null);          // { job_id, state, credits, model_id, error_code?, asset_url? }
@@ -97,6 +103,8 @@ export default function CreateStudio() {
   const durations = (model && model.durations && model.durations.length ? model.durations : [5]).map((s) => `${s}s`);
   const takesImage = !!model?.media?.image;
   const needsImage = !!model?.media?.image?.required;
+  // Camera text suits pictures and clips; audio and speech would read it aloud.
+  const takesCamera = model?.kind === 'image' || model?.kind === 'video';
   const cost = model ? model.credits * (duration === '10s' && model.kind === 'video' ? 2 : 1) : 0;
   const durationKey = durations.join(',');
   const generating = job && (job.state === 'queued' || job.state === 'running');
@@ -120,6 +128,11 @@ export default function CreateStudio() {
     const file = e.target.files && e.target.files[0];
     e.target.value = '';
     setSource(file ? { file, previewUrl: URL.createObjectURL(file) } : null);
+  }
+
+  function applyDrawing(file) {
+    setDrawing(false);
+    setSource({ file, previewUrl: URL.createObjectURL(file) });
   }
 
   // The browser PUTs the file straight to R2 on a 15-minute URL the gateway
@@ -207,7 +220,7 @@ export default function CreateStudio() {
     setError(null);
     const idempotency_key = makeIdempotencyKey();
     const inputs = {
-      prompt: prompt.trim(),
+      prompt: takesCamera && cinemaOn ? buildCinemaPrompt(prompt, cinema) : prompt.trim(),
       aspect_ratio: aspect,
       duration_seconds: model.kind === 'video' ? Number(duration.replace('s', '')) : undefined,
     };
@@ -350,6 +363,12 @@ export default function CreateStudio() {
                   {source ? source.file.name : 'PNG, JPEG or WebP, up to 20 MB'}
                 </div>
               </div>
+              {source && model?.kind === 'image' && (
+                <button onClick={() => setDrawing(true)}
+                  className="font-vx-mono text-[11px] font-bold rounded-full px-3.5 py-1.5 border border-vx-border text-vx-fg-muted hover:text-vx-fg shrink-0">
+                  Draw
+                </button>
+              )}
               <label className="font-vx-mono text-[11px] font-bold rounded-full px-3.5 py-1.5 border border-vx-border text-vx-fg-muted hover:text-vx-fg cursor-pointer shrink-0">
                 {source ? 'Replace' : 'Add image'}
                 <input type="file" accept={IMAGE_TYPES} onChange={pickSource} className="sr-only" />
@@ -359,6 +378,10 @@ export default function CreateStudio() {
                   className="font-vx-mono text-[11px] text-vx-fg-muted hover:text-vx-fg shrink-0">✕</button>
               )}
             </div>
+          )}
+
+          {drawing && source && (
+            <DrawOnImage file={source.file} onDone={applyDrawing} onCancel={() => setDrawing(false)} />
           )}
 
           {error && (
@@ -417,6 +440,10 @@ export default function CreateStudio() {
               )}
               <ControlRow label="ASPECT"   options={ASPECT_RATIOS} value={aspect} onChange={setAspect} />
             </>
+          )}
+
+          {takesCamera && (
+            <CameraPanel enabled={cinemaOn} onToggle={setCinemaOn} settings={cinema} onChange={setCinema} />
           )}
 
           <div className="mt-2 rounded-2xl border border-vx-border bg-vx-panel p-5">
