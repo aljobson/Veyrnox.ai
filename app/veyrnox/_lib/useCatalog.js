@@ -21,6 +21,8 @@ function fromApi(models) {
     durations: Array.isArray(m.durations) && m.durations.length ? m.durations : FALLBACK_DURATIONS,
     // Reference slots from the capability registry, e.g. { image: { required } }.
     media: (m.capabilities && m.capabilities.media) || {},
+    // Aspect ratios this model accepts, or null when it takes none.
+    aspects: m.capabilities?.inputs?.aspect_ratio?.values || null,
   }));
 }
 

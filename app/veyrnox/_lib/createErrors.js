@@ -1,0 +1,30 @@
+import { ACCOUNT_PAUSED_COPY } from './gateway';
+
+// What the create page says for each gateway error code.
+export const ERROR_COPY = {
+  poll_unreachable:      'Lost contact with the server, so we stopped checking. Your generation may still have run — open Library to see.',
+  moderation:            'The provider declined this prompt on safety grounds. Credits refunded.',
+  provider_timeout:      'The model took too long. Credits refunded — try again.',
+  provider_error:        'The model returned an error. Credits refunded.',
+  internal:              'Something on our side broke. Credits refunded.',
+  rate_limited:          'Too many generations in a short window. Wait a moment.',
+  model_gated:           'This model is not open for generation yet. Nothing was charged.',
+  duration_not_supported:'This model only makes 5s clips. Nothing was charged.',
+  duration_invalid:      'Pick a 5s or 10s clip. Nothing was charged.',
+  insufficient_balance:  'Not enough credits for this generation. Nothing was charged — top up to continue.',
+  account_frozen:        ACCOUNT_PAUSED_COPY,
+  user_not_provisioned:  'Your account is still being set up. Try again in a moment.',
+  debit_rejected:        'The ledger declined this debit. Nothing was charged.',
+  no_token:              'Sign in to generate.',
+  unauthenticated:       'Sign in to generate.',
+  source_required:       'This model needs a start image. Add one above. Nothing was charged.',
+  upload_failed:         'The image upload did not finish. Nothing was charged — try again.',
+  upload_type_not_allowed:'Use a PNG, JPEG or WebP image. Nothing was charged.',
+  upload_type_mismatch:  'That file is not the image type it claims to be. Nothing was charged.',
+  upload_too_large:      'That image is over 20 MB. Nothing was charged.',
+  upload_unreadable:     'We could not read that image. Nothing was charged.',
+  source_not_found:      'The uploaded image expired. Add it again. Nothing was charged.',
+  source_too_large:      'That image has too many pixels for this model. Use a smaller one. Nothing was charged.',
+  source_size_unknown:   'We could not read that image\'s size. Try a PNG. Nothing was charged.',
+  'inputs_invalid:prompt':'The prompt is empty or too long for this model (speech takes up to 1000 characters). Nothing was charged.',
+};

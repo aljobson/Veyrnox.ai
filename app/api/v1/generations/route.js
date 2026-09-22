@@ -23,7 +23,7 @@ import { rpc, select, envConfig, SupabaseError } from '../../../../packages/db/s
 import { submitJob } from '../../../../packages/adapters/fal.js';
 import * as kie from '../../../../packages/adapters/kie.js';
 import * as openrouter from '../../../../packages/adapters/openrouter.js';
-import { capabilityFor, declaredInputs, checkInputs, shapePayload } from '../../../../lib/modelCapabilities.js';
+import { capabilityFor, declaredInputs, checkInputs, checkSource, shapePayload } from '../../../../lib/modelCapabilities.js';
 import { refundRejectedSubmit } from '../../../../lib/submitRejection.js';
 import { resolveUploadedSource } from '../../../../lib/resolveSource.js';
 import { envConfig as r2EnvConfig, isConfigured as r2IsConfigured } from '../../../../packages/adapters/r2.js';
@@ -114,8 +114,8 @@ const PROVIDERS = {
     fal: {
         key: () => process.env.FAL_KEY,
         check: (record, _modelRow, inputs) => checkInputs(record, inputs),
-        submit: (job, record, apiKey, publicHost) => submitJob(
-            { ...job, inputs: shapePayload(record, job.inputs) },
+        submit: (job, record, apiKey, publicHost, source) => submitJob(
+            { ...job, inputs: shapePayload(record, job.inputs, source) },
             { falKey: apiKey, webhookBaseUrl: new URL('/api/webhook/fal', publicHost).toString() },
         ),
     },
@@ -229,6 +229,7 @@ export async function POST(req) {
     // does this server mint the short-lived URL the provider will fetch.
     // The key is what persists in jobs.inputs; the signed URL does not.
     const sourceKey = body && body.source_key;
+    let source = null;
     if (sourceKey !== undefined) {
         if (typeof sourceKey !== 'string' || sourceKey.length > 200) {
             return NextResponse.json({ error: 'source_key_invalid' }, { status: 400 });
@@ -237,7 +238,7 @@ export async function POST(req) {
         if (!r2IsConfigured(r2cfg)) {
             return NextResponse.json({ error: 'gateway_not_configured' }, { status: 503 });
         }
-        const source = await resolveUploadedSource(authId, sourceKey, r2cfg);
+        source = await resolveUploadedSource(authId, sourceKey, r2cfg);
         if (!source.ok) {
             const status = source.error === 'source_not_found' ? 404 : source.error === 'internal' ? 502 : 400;
             return NextResponse.json({ error: source.error }, { status });
@@ -283,6 +284,13 @@ export async function POST(req) {
     // the priced unit (a longer clip, an aspect ratio the model lacks, ...).
     const providerCheck = provider.check(record, modelRow, modelInputs);
     if (!providerCheck.ok) return NextResponse.json({ error: providerCheck.error }, { status: 400 });
+    // A model priced by output size caps its source's pixel count.
+    const sourceCheck = checkSource(record, source);
+    if (!sourceCheck.ok) return NextResponse.json({ error: sourceCheck.error }, { status: 400 });
+    // The job row records which upload was used, not the 15-minute URL to it.
+    const storedInputs = source && modelInputs[source.field] !== undefined
+        ? { ...Object.fromEntries(Object.entries(modelInputs).filter(([k]) => k !== source.field)), source_key: sourceKey }
+        : modelInputs;
 
     // 2. Resolve users.id from auth_id.
     let userId;
@@ -310,7 +318,7 @@ export async function POST(req) {
             p_credits: credits,
             p_reason: 'debit:generation',
             p_model_id: modelId,
-            p_inputs: modelInputs,
+            p_inputs: storedInputs,
             // Authoritative rate limit, counted under the same row lock as
             // the insert (0030). The RPC above is only the cheap early 429.
             p_limit_per_window: RATE_LIMIT_PER_WINDOW,
@@ -351,7 +359,7 @@ export async function POST(req) {
     // 4. Submit to the provider.
     const submitResult = await provider.submit(
         { job_id: jobId, provider_endpoint: modelRow.provider_endpoint, inputs: modelInputs },
-        record, providerKey, publicHost,
+        record, providerKey, publicHost, source,
     );
 
     if (!submitResult.ok) {
