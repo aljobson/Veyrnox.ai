@@ -9,6 +9,8 @@ import { pushJobHistory } from '../../_lib/jobHistory';
 import { useCatalog } from '../../_lib/useCatalog';
 import { DEFAULT_CINEMA, buildCinemaPrompt } from '../../_lib/cinema';
 import { CameraPanel } from '../../_components/CameraPanel';
+import { CharacterPanel } from '../../_components/CharacterPanel';
+import { buildCharacterPrompt } from '../../_lib/character';
 import { DrawOnImage } from '../../_components/DrawOnImage';
 import { SourcePickers } from '../../_components/SourcePickers';
 
@@ -49,6 +51,8 @@ export default function CreateStudio() {
   const [drawing, setDrawing] = useState(false);
   const [cinemaOn, setCinemaOn] = useState(false);
   const [cinema, setCinema] = useState(DEFAULT_CINEMA);
+  const [characterOn, setCharacterOn] = useState(false);
+  const [character, setCharacter] = useState({});
 
   const [balance, setBalance] = useState(null);
   const [job, setJob] = useState(null);          // { job_id, state, credits, model_id, error_code?, asset_url? }
@@ -199,6 +203,15 @@ export default function CreateStudio() {
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [job?.job_id, job?.state]);
 
+  // Character traits go first, the camera description last; each keeps the
+  // result under the gateway's 2000-character limit by cutting the user text.
+  function finalPrompt() {
+    let text = prompt.trim();
+    if (model.kind === 'image' && characterOn) text = buildCharacterPrompt(text, character);
+    if (takesCamera && cinemaOn) text = buildCinemaPrompt(text, cinema);
+    return text;
+  }
+
   // ── submit ────────────────────────────────────────────────────────
   async function onSubmit() {
     if (inFlight.current || generating || !model || balance == null || cost > balance) return;
@@ -208,7 +221,7 @@ export default function CreateStudio() {
     setError(null);
     const idempotency_key = makeIdempotencyKey();
     const inputs = {
-      prompt: takesCamera && cinemaOn ? buildCinemaPrompt(prompt, cinema) : prompt.trim(),
+      prompt: finalPrompt(),
       aspect_ratio: aspect,
       duration_seconds: model.kind === 'video' ? Number(duration.replace('s', '')) : undefined,
     };
@@ -401,6 +414,10 @@ export default function CreateStudio() {
           )}
           {aspectOptions.length > 0 && (
             <ControlRow label="ASPECT" options={aspectOptions} value={aspect} onChange={setAspect} />
+          )}
+
+          {model?.kind === 'image' && (
+            <CharacterPanel enabled={characterOn} onToggle={setCharacterOn} picks={character} onChange={setCharacter} />
           )}
 
           {takesCamera && (
