@@ -37,10 +37,22 @@ const SLOW_MODEL_WAIT = {
   'ace-step-1.5': 'Music takes about 3–4 minutes.',
   'mmaudio-v2': 'Sound effects take about 3 minutes.',
   'seedance-2.0-fast': 'Video takes about 2 minutes.',
+  'auto-short-32s': 'About 2–10 minutes: script, voiceover, four scenes, then the stitch.',
 };
 
+// Auto Short stays hidden until launch unless this browser opts in
+// (CLAUDE.md "Delivery": new user paths behind localStorage.veyrnox_*).
+const AUTO_SHORT_FLAG = 'veyrnox_auto_short';
+
+function readFlag(name) {
+  try { return window.localStorage.getItem(name) === '1'; } catch { return false; }
+}
+
 export default function CreateStudio() {
-  const { models, live: catalogLive, loading: catalogLoading } = useCatalog();
+  const { models: catalogModels, live: catalogLive, loading: catalogLoading } = useCatalog();
+  const [autoShortOn, setAutoShortOn] = useState(false);
+  useEffect(() => { setAutoShortOn(readFlag(AUTO_SHORT_FLAG)); }, []);
+  const models = autoShortOn ? catalogModels : catalogModels.filter((m) => !m.takesTopic);
   const [modelId, setModelId] = useState(DEFAULT_MODEL);
   const [duration, setDuration] = useState('5s');
   const [aspect, setAspect] = useState('16:9');
@@ -86,9 +98,11 @@ export default function CreateStudio() {
   const media = model?.media || {};
   const missingSource = Object.entries(media).some(([slot, spec]) => spec.required && !sources[slot]);
   // Camera text suits pictures and clips; audio and speech would read it aloud.
-  const takesCamera = model?.kind === 'image' || model?.kind === 'video';
+  const isShort = !!model?.takesTopic;
+  const takesCamera = !isShort && (model?.kind === 'image' || model?.kind === 'video');
   // The model's own aspect list when the catalog has one; every video takes the default set.
-  const aspectOptions = model?.aspects ? ASPECT_RATIOS.filter((a) => model.aspects.includes(a))
+  const aspectOptions = isShort ? []
+    : model?.aspects ? ASPECT_RATIOS.filter((a) => model.aspects.includes(a))
     : model?.kind === 'video' ? ASPECT_RATIOS : [];
   const cost = model ? model.credits * (duration === '10s' && model.kind === 'video' ? 2 : 1) : 0;
   const durationKey = durations.join(',');
@@ -221,7 +235,8 @@ export default function CreateStudio() {
     if (missingSource) { inFlight.current = false; setError({ code: 'source_required' }); return; }
     setError(null);
     const idempotency_key = makeIdempotencyKey();
-    const inputs = {
+    // An Auto Short takes only its topic; the pipeline picks the format.
+    const inputs = isShort ? { topic: prompt.trim() } : {
       prompt: finalPrompt(),
       aspect_ratio: aspect,
       duration_seconds: model.kind === 'video' ? Number(duration.replace('s', '')) : undefined,
@@ -290,7 +305,7 @@ export default function CreateStudio() {
 
           <div
             className={`relative rounded-2xl border border-vx-border bg-vx-panel overflow-hidden ${generating ? 'vx-shimmer' : ''}`}
-            style={{ aspectRatio: aspect.replace(':', '/') }}
+            style={{ aspectRatio: (isShort ? '9:16' : aspect).replace(':', '/') }}
           >
             {job?.asset_url ? (
               job?.mime_type?.startsWith('video/') ? (
@@ -350,10 +365,11 @@ export default function CreateStudio() {
           <textarea
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            aria-label="Prompt"
+            aria-label={isShort ? 'Topic' : 'Prompt'}
+            maxLength={isShort ? 200 : undefined}
             rows={3}
             className="mt-3 w-full bg-vx-panel border border-vx-border rounded-lg p-3.5 text-sm text-vx-fg placeholder:text-vx-fg-faint resize-none focus:outline-none focus:border-vx-accent"
-            placeholder="Describe the shot…"
+            placeholder={isShort ? 'A topic for a 32-second short, e.g. 3 facts about octopuses' : 'Describe the shot…'}
           />
 
           <SourcePickers media={media} sources={sources} onPick={pickSource}
