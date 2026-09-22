@@ -134,3 +134,33 @@ test('a failure part-way through reports the deletes it already made', async () 
     assert.equal(out.error, 'R2 LIST 500');
     assert.equal(out.deleted, 1, 'the delete that already happened is not discarded');
 });
+
+test('a finished job has its uploads deleted; foreign keys and junk are left alone', async () => {
+    const { sweepConsumedUploads } = await import('../lib/uploadSweep.js');
+    const A = 'uploads/11111111-2222-3333-4444-555555555555/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee.png';
+    const B = 'uploads/11111111-2222-3333-4444-555555555555/bbbbbbbb-bbbb-cccc-dddd-eeeeeeeeeeee.wav';
+    let query;
+    const find = async (table, opts) => {
+        query = { table, ...opts };
+        return [
+            { id: 'j1', inputs: { prompt: 'p', source_keys: { image_url: A, audio_url: B } } },
+            { id: 'j2', inputs: { source_keys: { image_url: 'results/someone/else.png', video_url: 42 } } },
+            { id: 'j3', inputs: { source_keys: { image_url: A } } },
+        ];
+    };
+    const removed = [];
+    const out = await sweepConsumedUploads({}, {}, { now: new Date('2026-09-22T16:00:00Z'), find, remove: async (k) => { removed.push(k); return { ok: true }; } });
+    assert.deepEqual(removed.sort(), [A, B]);
+    assert.deepEqual(out, { ok: true, jobs: 3, deleted: 2, failed: 0 });
+    assert.equal(query.table, 'jobs');
+    assert.match(query.filter, /state=in\.\(STORED,REFUNDED,FAILED\)/);
+    assert.match(query.filter, /updated_at=gte\.2026-09-22T15%3A30%3A00\.000Z/);
+});
+
+test('a failed job lookup deletes nothing', async () => {
+    const { sweepConsumedUploads } = await import('../lib/uploadSweep.js');
+    let calls = 0;
+    const out = await sweepConsumedUploads({}, {}, { find: async () => { throw new Error('down'); }, remove: async () => { calls += 1; return { ok: true }; } });
+    assert.equal(out.ok, false);
+    assert.equal(calls, 0);
+});

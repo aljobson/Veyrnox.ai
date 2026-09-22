@@ -74,3 +74,9 @@ decide whether a request fits its price.
    uploads for the same field are refused.
 5. **`jobs.inputs` stores `source_keys` (field → upload key)**, never the
    15-minute signed URLs, which go only into the provider request.
+6. **A finished job's uploads are deleted within minutes.** The 5-minute
+   cron (`sweepConsumedUploads`) deletes the `source_keys` of jobs that
+   reached STORED, REFUNDED or FAILED in the last 30 minutes. Before this,
+   used uploads stayed for the 24-hour age sweep and counted towards the
+   10-per-account cap, so a user was blocked after about 10 jobs a day (5 lip
+   syncs). The cap and the 24-hour sweep for abandoned uploads are unchanged.
