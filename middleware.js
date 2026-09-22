@@ -33,26 +33,11 @@ const IDENTITY_HEADERS = [
     'x-veyrnox-auth-aal',
 ];
 
-// Retired legacy Muapi passthrough routes — let their handlers reply with
-// the honest 410 + Sunset header instead of an intermediate 401.
-const DEPRECATED_PREFIXES = [
-    '/api/v1/get_upload_url',
-    '/api/v1/creative-agent',
-];
-
 export async function middleware(req) {
-    const path = new URL(req.url).pathname;
-    // Identity headers are ours to set. Strip any inbound copy on EVERY
-    // branch, including the deprecated passthrough, so no handler can ever
-    // read a client-supplied value.
+    // Identity headers are ours to set. Strip any inbound copy on every
+    // branch, so no handler can ever read a client-supplied value.
     const headers = new Headers(req.headers);
     for (const h of IDENTITY_HEADERS) headers.delete(h);
-
-    for (const prefix of DEPRECATED_PREFIXES) {
-        if (path === prefix || path.startsWith(prefix + '/')) {
-            return NextResponse.next({ request: { headers } }); // handler replies 410
-        }
-    }
 
     const supabaseUrl = process.env.SUPABASE_URL;
     if (!supabaseUrl) {

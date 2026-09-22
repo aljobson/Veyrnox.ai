@@ -73,6 +73,11 @@ Approved by Al 2026-09-11 — **Option B** (410 Gone + Sunset header, 14-day gra
 
 Applied to `app/api/v1/[[...path]]/route.js`, `app/api/v1/creative-agent/[[...path]]/route.js`, `app/api/v1/get_upload_url/route.js`.
 
+**Removed at the sunset, 2026-09-26.** `get_upload_url` and `creative-agent`
+are deleted, with their middleware exemption; the `[[...path]]` catch-all now
+answers a typed `404 {"error":"not_found"}` for unknown `/api/v1` paths
+instead of the 410. The `muapi_key` cookie code was already gone.
+
 ## Consequences (if B is accepted)
 
 - Any external tool still pointing at `api.veyrnox.ai/v1/*` (or wherever the app is deployed) breaks after the sunset date. Acceptable given the HARD WALL.
