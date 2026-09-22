@@ -43,6 +43,7 @@ const MAX_INPUTS_BYTES = 8 * 1024;
 const UNIT_SECONDS = 5;
 const RATE_LIMIT_PER_WINDOW = 10;
 const RATE_WINDOW_SECONDS = 60;
+const MAX_SOURCES = 2;
 // `resolution` is deliberately absent: fal bills per tier and the catalog
 // holds one cost per model (its priced tier), so the server never lets a
 // request select a pricier tier. The provider default is the priced one.
@@ -114,8 +115,8 @@ const PROVIDERS = {
     fal: {
         key: () => process.env.FAL_KEY,
         check: (record, _modelRow, inputs) => checkInputs(record, inputs),
-        submit: (job, record, apiKey, publicHost, source) => submitJob(
-            { ...job, inputs: shapePayload(record, job.inputs, source) },
+        submit: (job, record, apiKey, publicHost, sources) => submitJob(
+            { ...job, inputs: shapePayload(record, job.inputs, sources) },
             { falKey: apiKey, webhookBaseUrl: new URL('/api/webhook/fal', publicHost).toString() },
         ),
     },
@@ -228,26 +229,37 @@ export async function POST(req) {
     // are checked against what was declared at signing time, and only then
     // does this server mint the short-lived URL the provider will fetch.
     // The key is what persists in jobs.inputs; the signed URL does not.
-    const sourceKey = body && body.source_key;
-    let source = null;
-    if (sourceKey !== undefined) {
-        if (typeof sourceKey !== 'string' || sourceKey.length > 200) {
-            return NextResponse.json({ error: 'source_key_invalid' }, { status: 400 });
-        }
+    // Lip sync takes two uploads (a face and the speech), so `source_keys`
+    // holds up to MAX_SOURCES; `source_key` is the one-upload form.
+    const rawKeys = body && body.source_keys !== undefined ? body.source_keys
+        : body && body.source_key !== undefined ? [body.source_key] : [];
+    if (!Array.isArray(rawKeys) || rawKeys.length > MAX_SOURCES
+        || rawKeys.some((k) => typeof k !== 'string' || k.length > 200)) {
+        return NextResponse.json({ error: 'source_key_invalid' }, { status: 400 });
+    }
+    const sources = {};   // input field -> resolved source
+    const sourceKeys = {}; // input field -> upload key
+    if (rawKeys.length) {
         const r2cfg = r2EnvConfig();
         if (!r2IsConfigured(r2cfg)) {
             return NextResponse.json({ error: 'gateway_not_configured' }, { status: 503 });
-        }
-        source = await resolveUploadedSource(authId, sourceKey, r2cfg);
-        if (!source.ok) {
-            const status = source.error === 'source_not_found' ? 404 : source.error === 'internal' ? 502 : 400;
-            return NextResponse.json({ error: source.error }, { status });
         }
         // A client-sent image_url/video_url is replaced, never merged: the
         // only source a Transform job may read is one this server signed.
         delete inputs.image_url;
         delete inputs.video_url;
-        inputs[source.field] = source.url;
+        for (const key of rawKeys) {
+            const source = await resolveUploadedSource(authId, key, r2cfg);
+            if (!source.ok) {
+                const status = source.error === 'source_not_found' ? 404 : source.error === 'internal' ? 502 : 400;
+                return NextResponse.json({ error: source.error }, { status });
+            }
+            // Two uploads for one slot would leave one silently unused.
+            if (sources[source.field]) return NextResponse.json({ error: 'source_key_invalid' }, { status: 400 });
+            sources[source.field] = source;
+            sourceKeys[source.field] = key;
+            inputs[source.field] = source.url;
+        }
     }
 
     // 1. Look up the model in the catalog.
@@ -284,12 +296,13 @@ export async function POST(req) {
     // the priced unit (a longer clip, an aspect ratio the model lacks, ...).
     const providerCheck = provider.check(record, modelRow, modelInputs);
     if (!providerCheck.ok) return NextResponse.json({ error: providerCheck.error }, { status: 400 });
-    // A model priced by output size caps its source's pixel count.
-    const sourceCheck = checkSource(record, source);
+    // A model priced by output size or length caps its sources' pixels/seconds.
+    const sourceCheck = checkSource(record, sources);
     if (!sourceCheck.ok) return NextResponse.json({ error: sourceCheck.error }, { status: 400 });
-    // The job row records which upload was used, not the 15-minute URL to it.
-    const storedInputs = source && modelInputs[source.field] !== undefined
-        ? { ...Object.fromEntries(Object.entries(modelInputs).filter(([k]) => k !== source.field)), source_key: sourceKey }
+    // The job row records which uploads were used, not the 15-minute URLs.
+    const usedKeys = Object.fromEntries(Object.entries(sourceKeys).filter(([f]) => modelInputs[f] !== undefined));
+    const storedInputs = Object.keys(usedKeys).length
+        ? { ...Object.fromEntries(Object.entries(modelInputs).filter(([k]) => !(k in usedKeys))), source_keys: usedKeys }
         : modelInputs;
 
     // 2. Resolve users.id from auth_id.
@@ -359,7 +372,7 @@ export async function POST(req) {
     // 4. Submit to the provider.
     const submitResult = await provider.submit(
         { job_id: jobId, provider_endpoint: modelRow.provider_endpoint, inputs: modelInputs },
-        record, providerKey, publicHost, source,
+        record, providerKey, publicHost, sources,
     );
 
     if (!submitResult.ok) {

@@ -96,8 +96,10 @@ test('anything unrecognised is refused rather than guessed at', () => {
     assert.equal(sniffType(new Uint8Array(12)), null);
     assert.equal(sniffType(new Uint8Array([0xff, 0xd8])), null, 'too short to judge');
     assert.equal(sniffType(undefined), null);
-    // 'RIFF' alone is a WAV or an AVI, not a WebP.
-    assert.equal(sniffType(new Uint8Array([...b('RIFF'), 0, 0, 0, 0, ...b('WAVEfmt ')])), null);
+    // 'RIFF' alone is not a WebP: the form type decides. WAV is accepted
+    // for lip sync (ADR-0028); AVI is not.
+    assert.equal(sniffType(new Uint8Array([...b('RIFF'), 0, 0, 0, 0, ...b('WAVEfmt ')])), 'audio/wav');
+    assert.equal(sniffType(new Uint8Array([...b('RIFF'), 0, 0, 0, 0, ...b('AVI LIST')])), null);
 });
 
 test('a file that is not what it claims is rejected', () => {
@@ -111,7 +113,9 @@ test('a file that is not what it claims is rejected', () => {
 test('every allowlisted type can actually be recognised by gate 2', () => {
     // A type that gate 1 accepts but gate 2 can never confirm would be an
     // upload that always fails after a successful PUT.
-    const samples = { 'image/jpeg': JPEG, 'image/png': PNG, 'image/webp': WEBP, 'video/mp4': MP4 };
+    const samples = { 'image/jpeg': JPEG, 'image/png': PNG, 'image/webp': WEBP, 'video/mp4': MP4,
+        'audio/wav': new Uint8Array([...b('RIFF'), 0, 0, 0, 0, ...b('WAVEfmt ')]),
+        'audio/mpeg': new Uint8Array([...b('ID3'), 3, 0, 0, 0, 0, 0, 10, 0, 0]) };
     for (const type of Object.keys(ALLOWED_UPLOAD_TYPES)) {
         assert.ok(samples[type], `no gate-2 sample for ${type}`);
         assert.equal(checkSniffed(type, samples[type]).ok, true, `${type} must round-trip`);

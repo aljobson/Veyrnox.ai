@@ -11,6 +11,8 @@ test('the key records which provider input the source becomes', () => {
     assert.deepEqual(typeForKey(uploadKeyFor(AUTH, 'image/jpeg', UUID).key), { contentType: 'image/jpeg', field: 'image_url' });
     assert.deepEqual(typeForKey(uploadKeyFor(AUTH, 'image/webp', UUID).key), { contentType: 'image/webp', field: 'image_url' });
     assert.deepEqual(typeForKey(uploadKeyFor(AUTH, 'video/mp4', UUID).key), { contentType: 'video/mp4', field: 'video_url' });
+    assert.deepEqual(typeForKey(uploadKeyFor(AUTH, 'audio/mpeg', UUID).key), { contentType: 'audio/mpeg', field: 'audio_url' });
+    assert.deepEqual(typeForKey(uploadKeyFor(AUTH, 'audio/wav', UUID).key), { contentType: 'audio/wav', field: 'audio_url' });
 });
 
 test('a key this module did not mint describes nothing', () => {

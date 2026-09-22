@@ -19,7 +19,7 @@ const CATALOG = [
     'fal-ai/wan-25-preview/text-to-video', 'fal-ai/veo3.1/fast', 'fal-ai/veo3.1',
     'fal-ai/kling-video/v3/pro/image-to-video', 'fal-ai/nano-banana-pro', 'fal-ai/nano-banana-pro/edit',
     'fal-ai/elevenlabs/tts/turbo-v2.5', 'fal-ai/minimax/speech-2.6-hd', 'fal-ai/mmaudio-v2/text-to-audio', 'fal-ai/bria/background/remove',
-    'fal-ai/topaz/upscale/image', 'fal-ai/bria/expand',
+    'fal-ai/topaz/upscale/image', 'fal-ai/bria/expand', 'fal-ai/latentsync', 'fal-ai/kling-video/ai-avatar/v2/standard',
     'veo:veo3_lite', 'veo:veo3_fast', 'veo:veo3', 'market:google/nano-banana',
     'bytedance/seedance-2.0-fast',
 ];
@@ -28,7 +28,7 @@ const CATALOG = [
 // (Kling 3.0), or added after the old builder was deleted.
 const CORRECTED = new Set(['fal-ai/kling-video/v3/pro/image-to-video', 'fal-ai/nano-banana-pro', 'fal-ai/nano-banana-pro/edit',
     'fal-ai/elevenlabs/tts/turbo-v2.5', 'fal-ai/minimax/speech-2.6-hd', 'fal-ai/mmaudio-v2/text-to-audio', 'fal-ai/bria/background/remove',
-    'fal-ai/topaz/upscale/image', 'fal-ai/bria/expand']);
+    'fal-ai/topaz/upscale/image', 'fal-ai/bria/expand', 'fal-ai/latentsync', 'fal-ai/kling-video/ai-avatar/v2/standard']);
 
 /** Every valid combination of a record's inputs: all declared keys, each enum value, each length. */
 function fixtures(record) {
@@ -203,11 +203,12 @@ test('MMAudio buys one 8s clip, and background removal sends only the image', ()
 
 test('Topaz refuses a source over 6 MP, or one whose size is unreadable, before the debit', () => {
     const topaz = capabilityFor('fal-ai/topaz/upscale/image');
-    assert.deepEqual(checkSource(topaz, { dimensions: { width: 3000, height: 2000 } }), { ok: true });
-    assert.deepEqual(checkSource(topaz, { dimensions: { width: 3001, height: 2000 } }), { ok: false, error: 'source_too_large' });
-    assert.deepEqual(checkSource(topaz, { dimensions: null }), { ok: false, error: 'source_size_unknown' });
-    assert.deepEqual(checkSource(capabilityFor('fal-ai/nano-banana-pro/edit'), { dimensions: null }), { ok: true }, 'no cap, no check');
-    assert.deepEqual(shapePayload(topaz, { image_url: 'https://r2/a.png' }, { dimensions: { width: 10, height: 10 } }),
+    const img = (dimensions) => ({ image_url: { dimensions, seconds: null } });
+    assert.deepEqual(checkSource(topaz, img({ width: 3000, height: 2000 })), { ok: true });
+    assert.deepEqual(checkSource(topaz, img({ width: 3001, height: 2000 })), { ok: false, error: 'source_too_large' });
+    assert.deepEqual(checkSource(topaz, img(null)), { ok: false, error: 'source_size_unknown' });
+    assert.deepEqual(checkSource(capabilityFor('fal-ai/nano-banana-pro/edit'), img(null)), { ok: true }, 'no cap, no check');
+    assert.deepEqual(shapePayload(topaz, { image_url: 'https://r2/a.png' }, img({ width: 10, height: 10 })),
         { image_url: 'https://r2/a.png', upscale_factor: 2, model: 'Standard V2', output_format: 'jpeg', crop_to_fill: false });
 });
 
@@ -217,6 +218,22 @@ test('Bria expand gets a canvas of the chosen ratio that holds the source, under
     const [w, h] = expandCanvas({ width: 8000, height: 3000 }, '1:1');
     assert.ok(w * h < 5000 * 5000 && Math.abs(w - h) <= 1, `${w}x${h}`);
     const bria = capabilityFor('fal-ai/bria/expand');
-    const payload = shapePayload(bria, { prompt: 'beach', aspect_ratio: '1:1', image_url: 'https://r2/a.png' }, { dimensions: { width: 800, height: 600 } });
+    const payload = shapePayload(bria, { prompt: 'beach', aspect_ratio: '1:1', image_url: 'https://r2/a.png' }, { image_url: { dimensions: { width: 800, height: 600 } } });
     assert.deepEqual(payload, { prompt: 'beach', aspect_ratio: '1:1', image_url: 'https://r2/a.png', canvas_size: [1000, 1000], sync_mode: false });
+});
+
+test('lip sync caps each source at the length its price covers, before the debit', () => {
+    const latent = capabilityFor('fal-ai/latentsync');
+    const avatar = capabilityFor('fal-ai/kling-video/ai-avatar/v2/standard');
+    const src = (seconds) => ({ dimensions: null, seconds });
+    assert.deepEqual(checkSource(latent, { video_url: src(40), audio_url: src(39.5) }), { ok: true });
+    assert.deepEqual(checkSource(latent, { video_url: src(40.1), audio_url: src(5) }), { ok: false, error: 'source_too_long' });
+    assert.deepEqual(checkSource(avatar, { image_url: src(null), audio_url: src(10) }), { ok: true }, 'an image has no length cap');
+    assert.deepEqual(checkSource(avatar, { image_url: src(null), audio_url: src(10.2) }), { ok: false, error: 'source_too_long' });
+    assert.deepEqual(checkSource(avatar, { image_url: src(null), audio_url: src(null) }), { ok: false, error: 'source_length_unknown' });
+    // Both uploads are required, and both reach fal under their own fields.
+    assert.equal(checkInputs(avatar, { prompt: 'p', image_url: 'https://r2/f.png' }).ok, false);
+    const inputs = declaredInputs(avatar, { prompt: 'talks', aspect_ratio: '16:9', image_url: 'https://r2/f.png', audio_url: 'https://r2/s.mp3' });
+    assert.deepEqual(shapePayload(avatar, inputs), { prompt: 'talks', image_url: 'https://r2/f.png', audio_url: 'https://r2/s.mp3' });
+    assert.deepEqual(publicCapabilities(latent).media, { video: { required: true, maxSeconds: 40 }, audio: { required: true, maxSeconds: 40 } });
 });
