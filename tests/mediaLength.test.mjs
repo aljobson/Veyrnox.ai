@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { wavSeconds, mp3Seconds, mp4Seconds } from '../lib/mediaLength.js';
+import { wavSeconds, mp3Seconds, mp4Seconds, mp4Info } from '../lib/mediaLength.js';
 import { sniffType } from '../lib/uploadSource.js';
 
 function wav(seconds, rate = 16000) {
@@ -59,4 +59,13 @@ test('MP4 length from mvhd, with moov after mdat', async () => {
     const readRange = async (s, e) => { reads.push([s, e]); return new Uint8Array(file.subarray(s, e + 1)); };
     assert.equal(await mp4Seconds(readRange, file.length), 12.5);
     assert.ok(reads.every(([s, e]) => e - s < 300 * 1024), 'ranged reads only');
+});
+
+test('MP4 frame size from the first tkhd that has one (an audio track has none)', async () => {
+    const mvhd = Buffer.alloc(100); mvhd.writeUInt32BE(600, 12); mvhd.writeUInt32BE(3000, 16); // 5 s
+    const tkhd = (w, h) => { const t = Buffer.alloc(84); t.writeUInt32BE(w * 65536, 76); t.writeUInt32BE(h * 65536, 80); return box('tkhd', t); };
+    const moov = box('moov', Buffer.concat([box('mvhd', mvhd), box('trak', tkhd(0, 0)), box('trak', tkhd(720, 1280))]));
+    const file = Buffer.concat([box('ftyp', Buffer.from('isom0000')), moov]);
+    const readRange = async (s, e) => new Uint8Array(file.subarray(s, e + 1));
+    assert.deepEqual(await mp4Info(readRange, file.length), { seconds: 5, width: 720, height: 1280 });
 });

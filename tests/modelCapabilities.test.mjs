@@ -22,7 +22,7 @@ const CATALOG = [
     'fal-ai/topaz/upscale/image', 'fal-ai/bria/expand', 'fal-ai/latentsync', 'fal-ai/kling-video/ai-avatar/v2/standard',
     'fal-ai/elevenlabs/text-to-dialogue/eleven-v3',
     'veo:veo3_lite', 'veo:veo3_fast', 'veo:veo3', 'market:google/nano-banana',
-    'bytedance/seedance-2.0-fast', 'auto-short:v1',
+    'bytedance/seedance-2.0-fast', 'auto-short:v1', 'clip-edit:v1',
 ];
 
 // Endpoints the pre-registry snapshot does not cover: corrected on purpose

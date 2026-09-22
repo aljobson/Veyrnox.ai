@@ -126,9 +126,9 @@ pseudo-provider, the same path Auto Short's parent uses.
   }
 }
 ```
-The gateway's input checks today allow only flat string, bool, url, enum and
-int values, so `clips` and `audio` need their own schema check at the
-boundary (Slice 1b).
+An `asset_id` is the id of the job that produced the Asset, the same id
+`get_user_asset` takes. `clips` and `audio` are structured, so they get
+their own schema check at the boundary (`lib/clipEditSources.js`).
 
 ### Server steps
 1. **Validate at the boundary.** 1–10 clips; with one clip there has to be
