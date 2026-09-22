@@ -10,7 +10,9 @@ const errors = readFileSync(new URL('../app/veyrnox/_lib/createErrors.js', impor
 test('Auto Short is hidden from the picker unless localStorage.veyrnox_auto_short is "1"', () => {
     assert.match(page, /const AUTO_SHORT_FLAG = 'veyrnox_auto_short';/);
     assert.match(page, /localStorage\.getItem\(name\) === '1'/);
-    assert.match(page, /const models = autoShortOn \? catalogModels : catalogModels\.filter\(\(m\) => !m\.takesTopic\);/);
+    // The Clip Editor edits Library files, so Create never offers it, flag or not.
+    assert.match(page, /const models = catalogModels\.filter\(\(m\) => !m\.isEdit && \(autoShortOn \|\| !m\.takesTopic\)\);/);
+    assert.match(catalog, /isEdit: !!m\.capabilities\?\.inputs\?\.clips/);
     // The catalog marks it by its capability, not by a hard-coded id.
     assert.match(catalog, /takesTopic: !!m\.capabilities\?\.inputs\?\.topic/);
 });

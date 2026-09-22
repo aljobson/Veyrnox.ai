@@ -3,7 +3,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppNav } from '../../_components/NavBar';
 import { Chip } from '../../_components/Chip';
 import { gatewayFetch, GatewayError, notifyBalanceChanged } from '../../_lib/gateway';
-import { readJobHistory } from '../../_lib/jobHistory';
+import { readJobHistory, pushJobHistory } from '../../_lib/jobHistory';
+import { EditSheet } from '../../_components/EditSheet';
 import { useCatalog } from '../../_lib/useCatalog';
 import { mergeHydrated, shouldPoll } from '../../_lib/jobWindow';
 
@@ -28,6 +29,11 @@ const POLL_GIVE_UP_AFTER = 20;
 // buffer on mount was up to 100 requests in one burst. Hydrate a page at a
 // time instead; rows outside the window still render from localStorage.
 const PAGE = 12;
+// Clip Editor stays hidden until launch unless this browser opts in
+// (CLAUDE.md "Delivery": new user paths behind localStorage.veyrnox_*).
+const EDITOR_FLAG = 'veyrnox_editor';
+const isVideo = (r) => !!r.asset_url && !!r.mime_type?.startsWith('video/');
+const isAudio = (r) => !!r.asset_url && !!r.mime_type?.startsWith('audio/');
 
 export default function Library() {
   const { models } = useCatalog();
@@ -40,6 +46,12 @@ export default function Library() {
   const [visible, setVisible] = useState(PAGE);
   const pollRef = useRef(null);
   const [unreachable, setUnreachable] = useState(false);
+  const [editorOn, setEditorOn] = useState(false);
+  const [selected, setSelected] = useState([]);
+  const [editing, setEditing] = useState(false);
+  useEffect(() => {
+    try { setEditorOn(window.localStorage.getItem(EDITOR_FLAG) === '1'); } catch { /* storage blocked: editor stays off */ }
+  }, []);
 
   // load balance
   const loadBalance = useCallback(async () => {
@@ -151,6 +163,23 @@ export default function Library() {
   const shown = rows.slice(0, visible);
   const list = tab === 'all' ? shown : shown.filter((r) => r.state === tab);
   const hasMore = rows.length > visible;
+  const canSelect = (r) => editorOn && r.state === 'succeeded' && (isVideo(r) || isAudio(r));
+  const toggle = (id) => setSelected((xs) => (xs.includes(id) ? xs.filter((x) => x !== id) : [...xs, id]));
+  const picked = selected.map((id) => rows.find((r) => r.job_id === id)).filter(Boolean);
+  const pickedClips = picked.filter(isVideo);
+  // Audio the user ticked comes first in the picker, then the rest of the Library's.
+  const audios = [...picked.filter(isAudio), ...rows.filter((r) => r.state === 'succeeded' && isAudio(r) && !selected.includes(r.job_id))];
+  const editCredits = models.find((m) => m.id === 'clip-edit')?.credits ?? null;
+
+  function onEditSubmitted(job) {
+    const entry = { job_id: job.job_id, model_id: 'clip-edit', credits: job.credits, name: job.name, submitted_at: Date.now() };
+    pushJobHistory(entry);
+    setRows((prev) => [hydrateFromHistory(entry), ...prev]);
+    if (job.balance_after != null) setBalance(job.balance_after);
+    notifyBalanceChanged();
+    setSelected([]);
+    setEditing(false);
+  }
 
   return (
     <div className="min-h-dvh">
@@ -201,7 +230,10 @@ export default function Library() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {list.map((r) => <JobCard key={r.job_id} row={r} models={models} />)}
+            {list.map((r) => (
+              <JobCard key={r.job_id} row={r} models={models}
+                selectable={canSelect(r)} selected={selected.includes(r.job_id)} onToggle={() => toggle(r.job_id)} />
+            ))}
           </div>
         )}
         {hasMore && (
@@ -215,11 +247,34 @@ export default function Library() {
           </div>
         )}
       </section>
+
+      {editorOn && selected.length > 0 && (
+        <div className="fixed bottom-0 inset-x-0 z-40 border-t border-vx-border bg-vx-panel">
+          <div className="max-w-[1400px] mx-auto px-4 sm:px-8 py-3 flex items-center justify-between gap-3">
+            <span className="text-sm text-vx-fg-body">
+              {pickedClips.length} video{pickedClips.length === 1 ? '' : 's'}
+              {picked.length > pickedClips.length ? ` · ${picked.length - pickedClips.length} audio` : ''} selected
+            </span>
+            <span className="flex gap-2">
+              <button onClick={() => setSelected([])} className="rounded-full px-4 py-2 text-sm border border-vx-border text-vx-fg-muted hover:text-vx-fg">Clear</button>
+              <button onClick={() => setEditing(true)} disabled={!pickedClips.length}
+                className="rounded-full px-5 py-2 text-sm font-bold bg-vx-accent text-vx-accent-ink disabled:opacity-40">
+                Edit ({pickedClips.length})
+              </button>
+            </span>
+          </div>
+        </div>
+      )}
+
+      {editing && (
+        <EditSheet clips={pickedClips} audios={audios} credits5s={editCredits}
+          onClose={() => setEditing(false)} onSubmitted={onEditSubmitted} />
+      )}
     </div>
   );
 }
 
-function JobCard({ row, models }) {
+function JobCard({ row, models, selectable, selected, onToggle }) {
   const s = STATE_UI[row.state] || STATE_UI.queued;
   // No delta for `unknown`: a +N would claim a refund landed and a −N would
   // claim the debit stands, and we do not know which.
@@ -250,6 +305,14 @@ function JobCard({ row, models }) {
             {s.label}
           </Chip>
         </div>
+        {selectable && (
+          <button onClick={onToggle} aria-pressed={selected} aria-label={selected ? 'Remove from edit' : 'Add to edit'}
+            className={`absolute top-3 right-3 w-8 h-8 rounded-full border-2 flex items-center justify-center font-bold ${
+              selected ? 'bg-vx-accent border-vx-accent text-vx-accent-ink' : 'bg-black/50 border-white/70 text-transparent'
+            }`}>
+            ✓
+          </button>
+        )}
       </div>
       <div className="px-4 py-3 flex items-start justify-between gap-3">
         <div className="min-w-0">
