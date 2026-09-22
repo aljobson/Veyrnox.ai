@@ -33,7 +33,10 @@ export default function Library() {
   const { models } = useCatalog();
   const [tab, setTab] = useState('all');
   const [balance, setBalance] = useState(null);
-  const [rows, setRows] = useState(() => readJobHistory().map(hydrateFromHistory));
+  // History lives in localStorage, which the server cannot read. Start empty
+  // on both sides so hydration matches, then load it after mount.
+  const [rows, setRows] = useState([]);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
   const [visible, setVisible] = useState(PAGE);
   const pollRef = useRef(null);
   const [unreachable, setUnreachable] = useState(false);
@@ -51,6 +54,12 @@ export default function Library() {
     window.addEventListener('veyrnox:balance-changed', onBalance);
     return () => window.removeEventListener('veyrnox:balance-changed', onBalance);
   }, [loadBalance]);
+
+  // Must run before the hydrate effect below: mergeHydrated keeps prev's tail.
+  useEffect(() => {
+    setRows(readJobHistory().map(hydrateFromHistory));
+    setHistoryLoaded(true);
+  }, []);
 
   // fetch: hydrate the visible window's real state; then poll the in-flight ones.
   // ponytail: growing the window re-hydrates rows already fetched. That is a
@@ -182,7 +191,7 @@ export default function Library() {
       </section>
 
       <section className="max-w-[1400px] mx-auto px-4 sm:px-8 pb-16">
-        {list.length === 0 ? (
+        {!historyLoaded ? null : list.length === 0 ? (
           <div className="rounded-2xl border border-vx-border bg-vx-panel p-12 text-center">
             <div className="font-vx-mono text-[11px] tracking-[0.12em] text-vx-fg-muted">EMPTY</div>
             <div className="text-lg font-black mt-2">Nothing here yet.</div>
