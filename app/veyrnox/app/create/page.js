@@ -370,9 +370,7 @@ export default function CreateStudio() {
             rows={3}
             className="mt-3 w-full bg-vx-panel border border-vx-border rounded-lg p-3.5 text-sm text-vx-fg placeholder:text-vx-fg-faint resize-none focus:outline-none focus:border-vx-accent"
             placeholder={isShort ? 'A topic for a 32-second short, e.g. 3 facts about octopuses'
-              : model?.id === 'elevenlabs-dialogue' ? 'One line per speaker, e.g.
-Ana: Did you hear that?
-Ben: [whispers] Stay quiet.'
+              : model?.id === 'elevenlabs-dialogue' ? 'One line per speaker, e.g.' + '\n' + 'Ana: Did you hear that?' + '\n' + 'Ben: [whispers] Stay quiet.'
               : 'Describe the shot…'}
           />
 
