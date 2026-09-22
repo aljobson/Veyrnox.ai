@@ -1,6 +1,6 @@
 # Auto Short — spec
 
-- **Status**: Draft for owner review (2026-09-22)
+- **Status**: Accepted 2026-09-22 — owner took every recommendation (§9)
 - **Decision record**: [ADR-0029](../adr/0029-auto-short-composite-jobs.md)
 - **Reads with**: [docs/product/](../product/README.md) (app-wide PRD, flow, UI),
   [ADR-0027](../adr/0027-model-capability-registry.md), CLAUDE.md
@@ -24,17 +24,19 @@ runs, and publishing to TikTok or YouTube.
 
 ```
 topic ─► [1 script]  LLM via OpenRouter: title, 4 scene prompts, narration (~80 words)
-      ─► [2 voice]   TTS row on fal: narration ─► MP3 (+ word timings if offered)
+      ─► [2 voice]   fal ElevenLabs Turbo 2.5: narration ─► MP3 + word timings ─► WebVTT
       ─► [3 scenes]  4 × veo-3.1-lite-kie in parallel: 8s 9:16 720p each
-      ─► [4 stitch]  fal-ai/ffmpeg-api/compose: 4 clips + voice (+ captions) ─► MP4
+      ─► [4 stitch]  fal-ai/ffmpeg-api/compose: video track (4 clips) + audio track (voice) ─► MP4
       ─► STORED      copy to R2, sha256 at ingest, one asset on the parent job
 ```
 
 - Steps run in this order so the cheap ones fail first. A bad script or TTS
   error costs cents and is refunded before any clip spend.
 - Step 3 fans out: the stitch starts when all four scenes are STORED.
-- Veo clips carry their own audio. The stitch mutes them under the
-  voiceover.
+- Veo clips carry their own audio, and compose has no volume control
+  (schema: `tracks[] {id, type: video|audio|image, keyframes[] {timestamp,
+  duration, url}}`). Slice 0 checks what happens to the clip audio under
+  the voice track. If it bleeds through, the scenes need a silent source.
 - Each step's output lands in R2 under the parent `job_id` before the next
   step reads it. Providers fetch inputs from short-lived presigned GETs
   (≤15 min), never from another provider's URL.
@@ -151,9 +153,9 @@ Refunds are all-or-nothing (ADR-0029 §5).
 generation (LemonSqueezy refused on 2026-09-22). Slices 0–3 can proceed.
 Slice 5 waits for billing.
 
-## 9. Open questions (owner)
+## 9. Owner decisions (2026-09-22)
 
-1. Price of about 110 credits for 32 seconds?
-2. Default voice: ElevenLabs Turbo 2.5, MiniMax Speech 2.6 HD or Inworld?
-3. Captions burned into the video, or a caption file only?
-4. Vertical 9:16 only in v1? (Recommended: shorts are the use case.)
+1. **110 credits** for 32 seconds, re-checked against measured cost in the activating migration.
+2. **Voice:** ElevenLabs Turbo 2.5, for its word timings.
+3. **Captions:** a WebVTT file in v1. Compose cannot burn text in.
+4. **9:16 only** in v1.

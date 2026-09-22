@@ -1,6 +1,6 @@
 # ADR-0029 — Auto Short: one priced job that orchestrates several provider calls
 
-**Status:** Proposed 2026-09-22 (owner review)
+**Status:** Accepted 2026-09-22 (owner: "go with recommendation")
 **Related:** [Auto Short spec](../auto-short/SPEC.md), [ADR-0020](0020-kie-and-openrouter-providers.md) (kie.ai and OpenRouter), [ADR-0027](0027-model-capability-registry.md) (capability registry), [ADR-0014](0014-floor-pricing.md) (price floor), CLAUDE.md "Money & billing"
 
 ## Context
@@ -89,11 +89,14 @@ ffmpeg and local files.
 | Charge each step as a separate job | The user sees four charges for one product, and a failure half-way leaves a paid, useless clip |
 | Stock footage in v1 | New vendor, licence notice on every result, separate moderation; defer until AI-only is proven |
 
-## Open questions (owner)
+## Owner decisions (2026-09-22)
 
-1. Price: about 110 credits for 32 seconds (four 8s scenes)? This is set
-   in the migration after the stitch step is measured.
-2. Voice: which TTS row is the default (ElevenLabs Turbo 2.5, MiniMax
-   Speech 2.6 HD, Inworld)? It sets the voice quality and about 5% of the
-   cost.
-3. Burned-in captions in v1, or a caption file only?
+1. **Price:** 110 credits for 32 seconds (four 8s scenes). The activating
+   migration re-checks it against the measured cost and the ADR-0014 floor.
+2. **Voice:** ElevenLabs Turbo 2.5 (`fal-ai/elevenlabs/tts/turbo-v2.5`). It
+   returns word timings, which the captions need.
+3. **Captions:** a WebVTT file built from the word timings in v1. fal's
+   compose schema has only video, audio and image tracks, with no text track
+   and no volume control, so it cannot burn captions in. Burned-in captions
+   are a follow-up if slice 0 shows a way.
+4. **Format:** vertical 9:16 only in v1.

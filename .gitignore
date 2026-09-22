@@ -50,3 +50,7 @@ out/
 
 # Slice 0 endpoint verification output (contains provider urls, not secrets)
 scripts/.slice0-*.json
+
+# Local provider verification output (paid runs; evidence is copied into migrations)
+scripts/.kie-verify-results.json
+scripts/.auto-short-verify.json
