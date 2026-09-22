@@ -5,7 +5,7 @@ import { Chip } from '../../_components/Chip';
 import { ASPECT_RATIOS } from '../../_lib/tokens';
 import { gatewayFetch, makeIdempotencyKey, notifyBalanceChanged, GatewayError } from '../../_lib/gateway';
 import { ERROR_COPY } from '../../_lib/createErrors';
-import { pushJobHistory } from '../../_lib/jobHistory';
+import { pushJobHistory, markJobSettled } from '../../_lib/jobHistory';
 import { useCatalog } from '../../_lib/useCatalog';
 import { DEFAULT_CINEMA, buildCinemaPrompt } from '../../_lib/cinema';
 import { CameraPanel } from '../../_components/CameraPanel';
@@ -184,6 +184,7 @@ export default function CreateStudio() {
         const next = await gatewayFetch(`/jobs/${job.job_id}`);
         failures = 0;
         setJob((prev) => prev ? { ...prev, ...next } : prev);
+        if (next.state === 'succeeded' || next.state === 'failed') markJobSettled(job.job_id, next.state);
         if (next.state === 'succeeded') {
           const asset = await gatewayFetch(`/jobs/${job.job_id}/asset`);
           setJob((prev) => prev ? { ...prev, asset_url: asset.url, mime_type: asset.mime_type } : prev);
@@ -264,6 +265,8 @@ export default function CreateStudio() {
     }
   }
 
+  // Leaves the running job to finish in the background (JobWatcher announces
+  // it); the charge stands, so this never claimed to cancel anything.
   function cancel() {
     setJob(null);
     setError(null);
@@ -319,9 +322,9 @@ export default function CreateStudio() {
                     </div>
                     <div className="mt-2 font-vx-mono text-[42px] font-bold vx-num">…</div>
                     {SLOW_MODEL_WAIT[model.id] && (
-                      <div className="text-xs text-vx-fg-body mt-2">{SLOW_MODEL_WAIT[model.id]} You can leave this page; it lands in your library.</div>
+                      <div className="text-xs text-vx-fg-body mt-2">{SLOW_MODEL_WAIT[model.id]}</div>
                     )}
-                    <div className="text-xs text-vx-fg-muted mt-2">Refund on failure — always.</div>
+                    <div className="text-xs text-vx-fg-muted mt-2">Keeps running if you leave or start another — we'll tell you when it's ready. Refund on failure, always.</div>
                   </div>
                 ) : job?.state === 'failed' ? (
                   <div className="text-center max-w-md px-6">
@@ -437,7 +440,7 @@ export default function CreateStudio() {
               className="mt-4 w-full flex items-center justify-between bg-vx-accent text-vx-accent-ink rounded-full px-6 py-3.5 font-extrabold hover:bg-vx-accent-hover disabled:opacity-40 disabled:cursor-not-allowed"
               disabled={!generating && (!model || model.gated || balance == null || cost > balance || missingSource)}
             >
-              <span>{generating ? 'Cancel' : model?.gated ? 'Premium — gated' : 'Generate'}</span>
+              <span>{generating ? 'New generation' : model?.gated ? 'Premium — gated' : 'Generate'}</span>
               <span className="font-vx-mono text-sm">−{cost} cr</span>
             </button>
             <div className="mt-2 font-vx-mono text-[9.5px] tracking-[0.1em] text-vx-fg-faint text-center">
