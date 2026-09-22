@@ -1,5 +1,6 @@
 import { FAQ, MODELS as MODELS_FALLBACK, kindOf } from './_lib/tokens';
 import { select, envConfig } from '../../packages/db/supabase-client.js';
+import { capabilityFor } from '../../lib/modelCapabilities.js';
 import { SITE_URL, JsonLd } from '../seo';
 import { PromoStrip, WideNav, FeaturedHeroCards, SignupIncentive } from './_sections/hero';
 import { ProductTilesRow, HeroStatement, EffectsWall, ModelShelf } from './_sections/showcase';
@@ -35,12 +36,13 @@ async function loadCatalog() {
     if (!cfg.supabaseUrl || !cfg.serviceRoleKey) throw new Error('not_configured');
     const rows = await select(
       'model_catalog',
-      { columns: 'id,name,modality,credits_5s,gated_flag', filter: 'active=eq.true&order=modality.asc,name.asc' },
+      { columns: 'id,name,modality,credits_5s,gated_flag,provider_endpoint', filter: 'active=eq.true&order=modality.asc,name.asc' },
       cfg,
     );
     if (!Array.isArray(rows) || rows.length === 0) throw new Error('empty');
+    // The Clip Editor edits Library files; it is a tool, not a model on the shelf.
     // Normalise to the shape our page expects: { id, name, credits, kind, tag?, premium?, gated? }
-    return rows.map((m) => ({
+    return rows.filter((m) => !capabilityFor(m.provider_endpoint)?.edit).map((m) => ({
       id: m.id,
       name: m.name,
       credits: m.credits_5s,

@@ -34,7 +34,8 @@ function staticIndex() {
 }
 
 function modelsToIndex(models) {
-  return models.map((m) => ({
+  // The Clip Editor lives in the Library, not Create; it is not a searchable model.
+  return models.filter((m) => !m.capabilities?.inputs?.clips).map((m) => ({
     group: 'Models',
     title: m.name,
     detail: `${m.modality || m.kind} · ${m.credits} cr${m.gated ? ' · premium' : ''}`,
