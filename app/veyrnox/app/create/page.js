@@ -10,6 +10,7 @@ import { useCatalog } from '../../_lib/useCatalog';
 import { DEFAULT_CINEMA, buildCinemaPrompt } from '../../_lib/cinema';
 import { CameraPanel } from '../../_components/CameraPanel';
 import { DrawOnImage } from '../../_components/DrawOnImage';
+import { SourcePickers } from '../../_components/SourcePickers';
 
 // State glyphs — colour-blind safety net matches the design system §08.
 const STATE_UI = {
@@ -25,8 +26,6 @@ const STATE_UI = {
 const POLL_GIVE_UP_AFTER = 30;
 
 
-// Types /api/v1/uploads accepts for a start image (lib/uploadSource.js).
-const IMAGE_TYPES = 'image/png,image/jpeg,image/webp';
 
 const DEFAULT_MODEL = 'wan-2.5';
 
@@ -45,7 +44,8 @@ export default function CreateStudio() {
   const [aspect, setAspect] = useState('16:9');
   const [prompt, setPrompt] = useState('A neon-lit Tokyo alley at 3am, low anamorphic tracking shot');
   // Start image for models whose catalog capabilities declare an image slot.
-  const [source, setSource] = useState(null);    // { file, previewUrl }
+  // Uploads for the model's media slots: { image|video|audio: { file, previewUrl } }.
+  const [sources, setSources] = useState({});
   const [drawing, setDrawing] = useState(false);
   const [cinemaOn, setCinemaOn] = useState(false);
   const [cinema, setCinema] = useState(DEFAULT_CINEMA);
@@ -79,8 +79,8 @@ export default function CreateStudio() {
   // Lengths the gateway will actually sell for this model, from the catalog.
   // Rendering anything else offers a price the server then refuses.
   const durations = (model && model.durations && model.durations.length ? model.durations : [5]).map((s) => `${s}s`);
-  const takesImage = !!model?.media?.image;
-  const needsImage = !!model?.media?.image?.required;
+  const media = model?.media || {};
+  const missingSource = Object.entries(media).some(([slot, spec]) => spec.required && !sources[slot]);
   // Camera text suits pictures and clips; audio and speech would read it aloud.
   const takesCamera = model?.kind === 'image' || model?.kind === 'video';
   // The model's own aspect list when the catalog has one; every video takes the default set.
@@ -103,17 +103,19 @@ export default function CreateStudio() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [durationKey]);
 
-  useEffect(() => () => { if (source) URL.revokeObjectURL(source.previewUrl); }, [source]);
-
-  function pickSource(e) {
-    const file = e.target.files && e.target.files[0];
-    e.target.value = '';
-    setSource(file ? { file, previewUrl: URL.createObjectURL(file) } : null);
+  function pickSource(slot, file) {
+    setSources((prev) => {
+      if (prev[slot]) URL.revokeObjectURL(prev[slot].previewUrl);
+      const next = { ...prev };
+      if (file) next[slot] = { file, previewUrl: URL.createObjectURL(file) };
+      else delete next[slot];
+      return next;
+    });
   }
 
   function applyDrawing(file) {
     setDrawing(false);
-    setSource({ file, previewUrl: URL.createObjectURL(file) });
+    pickSource('image', file);
   }
 
   // The browser PUTs the file straight to R2 on a 15-minute URL the gateway
@@ -202,7 +204,7 @@ export default function CreateStudio() {
     if (inFlight.current || generating || !model || balance == null || cost > balance) return;
     inFlight.current = true;
     if (model.gated) { inFlight.current = false; setError({ code: 'model_gated' }); return; }
-    if (needsImage && !source) { inFlight.current = false; setError({ code: 'source_required' }); return; }
+    if (missingSource) { inFlight.current = false; setError({ code: 'source_required' }); return; }
     setError(null);
     const idempotency_key = makeIdempotencyKey();
     const inputs = {
@@ -214,10 +216,14 @@ export default function CreateStudio() {
     Object.keys(inputs).forEach((k) => inputs[k] === undefined && delete inputs[k]);
 
     try {
-      const source_key = takesImage && source ? await uploadSource(source.file) : undefined;
+      // Only the slots this model takes; a leftover upload from another model stays local.
+      const source_keys = [];
+      for (const slot of Object.keys(media)) {
+        if (sources[slot]) source_keys.push(await uploadSource(sources[slot].file));
+      }
       const submitted = await gatewayFetch('/generations', {
         method: 'POST',
-        body: JSON.stringify({ model_id: modelId, idempotency_key, inputs, source_key }),
+        body: JSON.stringify({ model_id: modelId, idempotency_key, inputs, source_keys: source_keys.length ? source_keys : undefined }),
       });
       setJob({
         job_id: submitted.job_id,
@@ -334,40 +340,11 @@ export default function CreateStudio() {
             placeholder="Describe the shot…"
           />
 
-          {takesImage && (
-            <div className="mt-3 flex items-center gap-3 rounded-lg border border-vx-border bg-vx-panel p-3">
-              {source ? (
-                <img src={source.previewUrl} alt="Start image" className="w-16 h-16 rounded object-cover bg-black shrink-0" />
-              ) : (
-                <div className="w-16 h-16 rounded border border-dashed border-vx-border shrink-0" aria-hidden="true" />
-              )}
-              <div className="min-w-0 flex-1">
-                <div className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">
-                  START IMAGE{needsImage ? ' · REQUIRED' : ' · OPTIONAL'}
-                </div>
-                <div className="text-xs text-vx-fg-body truncate mt-1">
-                  {source ? source.file.name : 'PNG, JPEG or WebP, up to 20 MB'}
-                </div>
-              </div>
-              {source && model?.kind === 'image' && (
-                <button onClick={() => setDrawing(true)}
-                  className="font-vx-mono text-[11px] font-bold rounded-full px-3.5 py-1.5 border border-vx-border text-vx-fg-muted hover:text-vx-fg shrink-0">
-                  Draw
-                </button>
-              )}
-              <label className="font-vx-mono text-[11px] font-bold rounded-full px-3.5 py-1.5 border border-vx-border text-vx-fg-muted hover:text-vx-fg cursor-pointer shrink-0">
-                {source ? 'Replace' : 'Add image'}
-                <input type="file" accept={IMAGE_TYPES} onChange={pickSource} className="sr-only" />
-              </label>
-              {source && (
-                <button onClick={() => setSource(null)} aria-label="Remove start image"
-                  className="font-vx-mono text-[11px] text-vx-fg-muted hover:text-vx-fg shrink-0">✕</button>
-              )}
-            </div>
-          )}
+          <SourcePickers media={media} sources={sources} onPick={pickSource}
+            onDraw={model?.kind === 'image' ? () => setDrawing(true) : null} />
 
-          {drawing && source && (
-            <DrawOnImage file={source.file} onDone={applyDrawing} onCancel={() => setDrawing(false)} />
+          {drawing && sources.image && (
+            <DrawOnImage file={sources.image.file} onDone={applyDrawing} onCancel={() => setDrawing(false)} />
           )}
 
           {error && (
@@ -441,7 +418,7 @@ export default function CreateStudio() {
             <button
               onClick={generating ? cancel : onSubmit}
               className="mt-4 w-full flex items-center justify-between bg-vx-accent text-vx-accent-ink rounded-full px-6 py-3.5 font-extrabold hover:bg-vx-accent-hover disabled:opacity-40 disabled:cursor-not-allowed"
-              disabled={!generating && (!model || model.gated || balance == null || cost > balance || (needsImage && !source))}
+              disabled={!generating && (!model || model.gated || balance == null || cost > balance || missingSource)}
             >
               <span>{generating ? 'Cancel' : model?.gated ? 'Premium — gated' : 'Generate'}</span>
               <span className="font-vx-mono text-sm">−{cost} cr</span>
