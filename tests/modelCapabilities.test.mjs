@@ -18,13 +18,15 @@ const CATALOG = [
     'fal-ai/kling-video/v2.6/pro/text-to-video', 'fal-ai/minimax/hailuo-02/standard/text-to-video',
     'fal-ai/wan-25-preview/text-to-video', 'fal-ai/veo3.1/fast', 'fal-ai/veo3.1',
     'fal-ai/kling-video/v3/pro/image-to-video', 'fal-ai/nano-banana-pro', 'fal-ai/nano-banana-pro/edit',
+    'fal-ai/elevenlabs/tts/turbo-v2.5', 'fal-ai/minimax/speech-2.6-hd', 'fal-ai/mmaudio-v2/text-to-audio', 'fal-ai/bria/background/remove',
     'veo:veo3_lite', 'veo:veo3_fast', 'veo:veo3', 'market:google/nano-banana',
     'bytedance/seedance-2.0-fast',
 ];
 
 // Endpoints the pre-registry snapshot does not cover: corrected on purpose
 // (Kling 3.0), or added after the old builder was deleted.
-const CORRECTED = new Set(['fal-ai/kling-video/v3/pro/image-to-video', 'fal-ai/nano-banana-pro', 'fal-ai/nano-banana-pro/edit']);
+const CORRECTED = new Set(['fal-ai/kling-video/v3/pro/image-to-video', 'fal-ai/nano-banana-pro', 'fal-ai/nano-banana-pro/edit',
+    'fal-ai/elevenlabs/tts/turbo-v2.5', 'fal-ai/minimax/speech-2.6-hd', 'fal-ai/mmaudio-v2/text-to-audio', 'fal-ai/bria/background/remove']);
 
 /** Every valid combination of a record's inputs: all declared keys, each enum value, each length. */
 function fixtures(record) {
@@ -176,4 +178,23 @@ test('Nano Banana Pro pins every billed parameter, and Edit sends its source as 
     assert.equal(checkInputs(edit, { prompt: 'p' }).ok, false, 'a source image is required');
     assert.deepEqual(shapePayload(edit, { prompt: 'p', image_url: 'https://r2/a.png' }),
         { prompt: 'p', image_urls: ['https://r2/a.png'], ...pins });
+});
+
+test('speech text is capped at the 1000 characters its price covers', () => {
+    for (const ep of ['fal-ai/elevenlabs/tts/turbo-v2.5', 'fal-ai/minimax/speech-2.6-hd']) {
+        const r = capabilityFor(ep);
+        assert.deepEqual(checkInputs(r, { prompt: 'x'.repeat(1000) }), { ok: true }, ep);
+        assert.equal(checkInputs(r, { prompt: 'x'.repeat(1001) }).ok, false, ep);
+    }
+    assert.deepEqual(shapePayload(capabilityFor('fal-ai/elevenlabs/tts/turbo-v2.5'), { prompt: 'hi' }), { text: 'hi', timestamps: false });
+    assert.deepEqual(shapePayload(capabilityFor('fal-ai/minimax/speech-2.6-hd'), { prompt: 'hi' }), { prompt: 'hi', output_format: 'url' });
+});
+
+test('MMAudio buys one 8s clip, and background removal sends only the image', () => {
+    assert.deepEqual(shapePayload(capabilityFor('fal-ai/mmaudio-v2/text-to-audio'), { prompt: 'rain' }), { prompt: 'rain', duration: 8, num_steps: 25 });
+    const bria = capabilityFor('fal-ai/bria/background/remove');
+    // The create page always sends a prompt; this model takes none.
+    const inputs = declaredInputs(bria, { prompt: 'ignored', aspect_ratio: '16:9', image_url: 'https://r2/a.png' });
+    assert.deepEqual(shapePayload(bria, inputs), { image_url: 'https://r2/a.png', sync_mode: false });
+    assert.equal(checkInputs(bria, {}).ok, false, 'an image is required');
 });
