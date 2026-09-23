@@ -213,7 +213,7 @@ export function TopUpPacks({ signedIn }) {
           </div>
 
           <p className="mt-3 text-[12px] text-vx-fg-muted max-w-[640px]">
-            Prices are in USD and exclude tax. Your total, including any VAT or sales tax for your location, is shown at checkout before you pay.
+            Prices are in USD and exclude tax. Stripe, Inc. is the Merchant of Record for credit pack purchases and charges and remits any VAT or sales tax for your location; your total including tax is shown at checkout before you pay.
           </p>
 
           <label className="mt-4 flex items-start gap-2 text-sm text-vx-fg-body cursor-pointer">
@@ -228,7 +228,7 @@ export function TopUpPacks({ signedIn }) {
             <Button variant="money" onClick={buy} disabled={!selected || !consent || busy}>
               {busy ? 'Opening checkout…' : 'Buy credits'}
             </Button>
-            <span className="font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-faint">SECURE CHECKOUT BY STRIPE · SOLD BY VEYRNOX LTD</span>
+            <span className="font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-faint">SECURE CHECKOUT BY STRIPE · STRIPE, INC. IS MERCHANT OF RECORD</span>
           </div>
         </fieldset>
       )}

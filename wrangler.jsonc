@@ -28,9 +28,12 @@
     // key are test mode; flip to "false" with the live key at launch (#101).
     // Anything else and /api/webhook/lemonsqueezy answers 503.
     "LEMONSQUEEZY_TEST_MODE": "true",
-    // Stripe Tax (ADR-0031 decision 3). We are the merchant of record, so VAT
-    // is ours to charge and remit — leave this unset or anything but "true"
-    // until Veyrnox Ltd holds the registrations. Unset means off.
+    // Stripe Tax (ADR-0031, amendment 2026-09-23). Managed Payments is enabled
+    // on both accounts, so Stripe is the Merchant of Record and charges and
+    // remits the tax. Automatic tax is ON; unset means ON. Setting this to
+    // the exact string "false" is the only way off, and Stripe refuses such a
+    // session with a 400 while Managed Payments is enabled — which is how
+    // POST /api/v1/top-ups returned 502 checkout_failed on 2026-09-23.
     // "STRIPE_AUTOMATIC_TAX": "false",
     // "true" makes /api/v1/admin/metrics refuse any session that has not
     // satisfied a second factor (Supabase `aal` claim must be "aal2").

@@ -127,9 +127,13 @@ export async function POST(req) {
             apiKey,
             publicHost,
             signingSecret,
-            // We are the merchant of record, so tax is ours until we register
-            // (ADR-0031); Stripe Tax stays off unless the var says otherwise.
-            automaticTax: process.env.STRIPE_AUTOMATIC_TAX === 'true',
+            // Stripe Managed Payments is enabled on both accounts, so Stripe
+            // is the Merchant of Record and handles the tax — and refuses a
+            // session with automatic tax off (ADR-0031, amendment 2026-09-23).
+            // On unless the var is exactly "false"; an unset var must not
+            // silently produce tax-off, which is what returned 502 on
+            // 2026-09-23.
+            automaticTax: process.env.STRIPE_AUTOMATIC_TAX !== 'false',
             idempotencyKey: `top_up:${created.top_up_id}:${bucket}`,
         },
     );
