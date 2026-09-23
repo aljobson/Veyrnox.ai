@@ -7,7 +7,7 @@ import { createCheckout, verifyWebhookSignature, verifyTopUpMetadata, interpretS
 const TOP_UP = '0b6f3c1e-8d2a-4f5b-9c7e-1a2b3c4d5e6f';
 const SECRET = 'whsec_0123456789abcdef0123456789abcdef';
 const cfg = (fetchImpl, over = {}) => ({ fetch: fetchImpl, apiKey: 'sk_test_x', publicHost: 'https://veyrnox.ai', signingSecret: SECRET, ...over });
-const okSession = () => Response.json({ id: 'cs_test_123', url: 'https://checkout.stripe.com/c/pay/cs_test_123', object: 'checkout_session' });
+const okSession = () => Response.json({ id: 'cs_test_123', url: 'https://checkout.stripe.com/c/pay/cs_test_123', object: 'checkout.session' });
 
 test('the checkout is built from our own price, with the AI tax code and both return URLs', async () => {
     let seen;
@@ -40,6 +40,15 @@ test('automatic tax can be turned off, and bad input never reaches Stripe', asyn
     assert.equal((await createCheckout({ topUpId: TOP_UP, priceUsdCents: 0, credits: 100 }, cfg(never))).error, 'invalid price');
     assert.equal((await createCheckout({ topUpId: TOP_UP, priceUsdCents: 1000, credits: 0 }, cfg(never))).error, 'invalid credits');
     assert.equal((await createCheckout({ topUpId: TOP_UP, priceUsdCents: 1000, credits: 100 }, cfg(never, { publicHost: 'http://veyrnox.ai' }))).error, 'publicHost must be https');
+});
+
+test('a checkout url that is not on stripe.com is refused, not handed to the browser', async () => {
+    // The caller navigates top-level to whatever comes back, so the host is checked.
+    for (const url of ['https://evil.example/c/pay/cs_test_123', 'http://checkout.stripe.com/c/pay/x', 'not a url']) {
+        const r = await createCheckout({ topUpId: TOP_UP, priceUsdCents: 1000, credits: 100 },
+            cfg(async () => Response.json({ id: 'cs_test_123', url, object: 'checkout.session' })));
+        assert.deepEqual(r, { ok: false, error: 'checkout url not on stripe.com' }, url);
+    }
 });
 
 test('a Stripe error is logged, never returned to the client', async () => {
@@ -80,7 +89,7 @@ test('only metadata we signed can name a Top-up', async () => {
 
 test('a session is credited only when it is paid, in the mode we expect', () => {
     const base = {
-        object: 'checkout_session', id: 'cs_test_123', payment_intent: 'pi_123', livemode: false,
+        object: 'checkout.session', id: 'cs_test_123', payment_intent: 'pi_123', livemode: false,
         payment_status: 'paid', amount_subtotal: 2500, amount_total: 3000, currency: 'USD',
         metadata: { top_up_id: TOP_UP },
     };

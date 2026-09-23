@@ -28,6 +28,10 @@
     // key are test mode; flip to "false" with the live key at launch (#101).
     // Anything else and /api/webhook/lemonsqueezy answers 503.
     "LEMONSQUEEZY_TEST_MODE": "true",
+    // Stripe Tax (ADR-0031 decision 3). We are the merchant of record, so VAT
+    // is ours to charge and remit — leave this unset or anything but "true"
+    // until Veyrnox Ltd holds the registrations. Unset means off.
+    // "STRIPE_AUTOMATIC_TAX": "false",
     // "true" makes /api/v1/admin/metrics refuse any session that has not
     // satisfied a second factor (Supabase `aal` claim must be "aal2").
     // Leave "false" until an admin has enrolled a factor on /app/admin —
@@ -48,8 +52,12 @@
   //                               kie.ai submit + callback HMAC (ADR-0020)
   //   OPENROUTER_API_KEY, OPENROUTER_WEBHOOK_SECRET
   //                               OpenRouter video submit + webhook signature (ADR-0020)
-  //   LEMONSQUEEZY_API_KEY        checkout creation + order re-fetch (packages/adapters/lemonsqueezy.js); test-mode key until launch (#101)
-  //   LEMONSQUEEZY_WEBHOOK_SECRET HMAC for /api/webhook/lemonsqueezy (#93)
+  //   STRIPE_SECRET_KEY           Checkout Session create + session re-fetch (packages/adapters/stripe.js);
+  //                               sk_test_… until the live account clears review (ADR-0031). Its prefix
+  //                               is what decides which livemode the webhook will credit.
+  //   STRIPE_WEBHOOK_SECRET       whsec_… signs /api/webhook/stripe AND the Top-up id in session metadata (#93)
+  //   LEMONSQUEEZY_API_KEY        retired by ADR-0031; the routes stay in the tree, unused
+  //   LEMONSQUEEZY_WEBHOOK_SECRET retired by ADR-0031; see above
   //   TOP_UP_BACKFILL_TOKEN       bearer for /api/admin/top-up-backfill (#94); same value in the TOP_UP_BACKFILL_TOKEN Actions secret
   //   ADMIN_REAP_TOKEN            /api/admin/reap-assets shared secret (ADR-0008)
   //   UPLOAD_PROXY_ALLOWED_HOSTS  legacy upload proxy allowlist (docs/UPLOAD_PROXY_CONFIG.md)

@@ -31,7 +31,7 @@ export default function Terms() {
             </ul>
             <p>Credit packs are not on sale yet. When they are, the following applies.</p>
             <ul>
-                <li>Credit packs are sold by our reseller Lemon Squeezy, LLC, which is the Merchant of Record for your purchase and handles payment, tax and invoicing. Lemon Squeezy&rsquo;s buyer terms apply to the payment; these terms apply to your use of the credits and the service.</li>
+                <li>Credit packs are sold to you directly by Veyrnox Ltd. We are the seller and Merchant of Record for your purchase, and we issue your invoice. Payments are processed on our behalf by Stripe, Inc.; Stripe handles your card details, we never see them. Where VAT or an equivalent sales tax applies, it is charged by Veyrnox Ltd and shown before you pay.</li>
                 <li>Before you buy, you must tick a box confirming: &ldquo;I want my credits added to my account straight away. I understand that once I use any of these credits to generate, I lose my right to cancel this purchase.&rdquo; See our <a href="/legal/refund">Refund Policy</a>.</li>
             </ul>
 
