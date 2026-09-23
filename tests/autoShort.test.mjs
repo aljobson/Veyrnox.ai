@@ -21,10 +21,18 @@ function world({ chat = { ok: true, content: JSON.stringify(SCRIPT) }, submitFai
                 if (job.state !== 'DEBITED') return { ok: false };
                 Object.assign(job, { state: 'SUBMITTED', provider: a.p_provider, provider_job_id: a.p_provider_job_id });
                 return { ok: true };
+            // 0101: UNIQUE (job_id, step, ordinal) decides who submits.
+            case 'job_step_claim': {
+                if (find(a)) return { ok: true, claimed: false };
+                steps.push({ job_id: job.id, step: a.p_step, ordinal: a.p_ordinal, provider: a.p_provider, provider_endpoint: a.p_provider_endpoint, provider_job_id: null, state: 'SUBMITTED', attempts: 1 });
+                return { ok: true, claimed: true };
+            }
             case 'job_step_submitted': {
                 const s = find(a);
                 if (!s) { steps.push({ job_id: job.id, step: a.p_step, ordinal: a.p_ordinal, provider: a.p_provider, provider_endpoint: a.p_provider_endpoint, provider_job_id: a.p_provider_job_id, state: 'SUBMITTED', attempts: 1 }); return { ok: true }; }
                 if (s.state !== 'SUBMITTED') return { ok: false, code: 'STEP_FINISHED' };
+                // A claimed row takes the id without spending an attempt.
+                if (s.provider_job_id == null) { s.provider_job_id = a.p_provider_job_id; return { ok: true }; }
                 if (s.attempts >= 2) return { ok: false, code: 'ATTEMPTS_EXHAUSTED' };
                 Object.assign(s, { provider_job_id: a.p_provider_job_id, attempts: s.attempts + 1 });
                 return { ok: true };
