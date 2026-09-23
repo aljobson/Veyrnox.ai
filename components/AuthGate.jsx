@@ -217,14 +217,24 @@ export default function AuthGate() {
     // a failure and should leave the dialog exactly as it was.
     async function startPasskey() {
         setNotice(null);
+        // GoTrue treats the passkey challenge as a sign-in, so Attack
+        // Protection applies to it exactly as it does to password sign-in.
+        // Without this the request is refused with captcha_failed before any
+        // WebAuthn prompt appears, which looks like a broken button.
+        if (TURNSTILE_SITE_KEY && !captcha) {
+            setNotice({ kind: "error", text: "Complete the security check first." });
+            return;
+        }
         setBusy(true);
         try {
-            const session = await signInWithPasskey();
+            const session = await signInWithPasskey(captcha);
             if (session) setOpen(false);
         } catch (err) {
             setNotice({ kind: "error", text: humanAuthError(err) });
         } finally {
             setBusy(false);
+            // Turnstile tokens are single-use; a retry needs a fresh one.
+            if (TURNSTILE_SITE_KEY) setCaptchaReset((n) => n + 1);
         }
     }
 

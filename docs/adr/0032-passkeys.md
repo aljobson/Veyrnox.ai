@@ -92,9 +92,19 @@ time with a comment explaining why; the comment is in the script.
   revocation is only possible through the Supabase admin API. This is a real
   gap, named rather than hidden.
 
-- **Passkey sign-in does not pass Turnstile**, for the same reason OAuth does
-  not (ADR-0026 covers `/signup`, `/token` and `/otp`). Registration requires
-  an existing confirmed account, so it opens no new path to `grant:signup`.
+- **Passkey sign-in DOES pass Turnstile**, unlike OAuth. GoTrue treats the
+  authentication challenge as a sign-in, so Attack Protection applies:
+  `/auth/v1/passkeys/authentication/options` refuses a tokenless request with
+  `captcha_failed` before any WebAuthn happens. The client therefore sends
+  `gotrue_meta_security.captcha_token` and the gate requires the widget first.
+  Registration is not captcha-gated — it answers `no_authorization` without a
+  Bearer token — and it requires an existing confirmed account, so it opens no
+  new path to `grant:signup`.
+
+  This was found by probing the live endpoints after the setting was turned on,
+  and it contradicts what an earlier draft of this ADR asserted. Written down
+  because the failure mode is invisible: no prompt appears, and the button
+  looks broken rather than blocked.
 
 ## Rollout
 
@@ -102,6 +112,9 @@ time with a comment explaining why; the comment is in the script.
    RP ID `veyrnox.ai`, origins `https://veyrnox.ai`.
 2. Confirm the options endpoints return a `challenge_id` rather than
    `passkey_disabled`, and check the live response shape against
-   `decodeOptions`.
+   `decodeOptions`. **Done in part:** the setting is on, and both endpoints
+   now answer past `passkey_disabled` — sign-in reaches the captcha check,
+   registration reaches the auth check. A successful options *payload* still
+   needs a real browser with a Turnstile token and a session.
 3. Register a passkey on a real account, sign out, sign in with it.
 4. Then, and only then, treat the verify bodies in decision 1 as confirmed.

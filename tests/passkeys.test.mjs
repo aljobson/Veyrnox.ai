@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 
 // The module is browser code but its encoders are pure, so they import and run
 // under node. Only `atob`/`btoa` are needed, and node has had both since 16.
-const { fromB64url, decodeOptions, encodeCredential } = await import('../app/lib/passkeys.js');
+const { fromB64url, decodeOptions, encodeCredential, signInBody } = await import('../app/lib/passkeys.js');
 
 const bytes = (...n) => new Uint8Array(n);
 const toB64url = (u8) => Buffer.from(u8).toString('base64')
@@ -108,4 +108,17 @@ test('authenticatorAttachment rides along only when the browser reports it', () 
         encodeCredential(credential(base, { authenticatorAttachment: 'platform' })).authenticatorAttachment,
         'platform',
     );
+});
+
+test('the sign-in challenge carries the Turnstile token GoTrue demands', () => {
+    // Confirmed against the live project: this endpoint is captcha-gated
+    // because it is a sign-in. Omitting the token fails with captcha_failed
+    // before any WebAuthn prompt, which presents as a dead button.
+    assert.deepEqual(signInBody('tok-123'), {
+        gotrue_meta_security: { captcha_token: 'tok-123' },
+    });
+});
+
+test('no token means no captcha envelope, for projects with it switched off', () => {
+    assert.deepEqual(signInBody(undefined), {});
 });

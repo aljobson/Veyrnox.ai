@@ -432,7 +432,7 @@ export async function unenrollFactor(factorId) {
 // mapping and writes to the same session. Exporting the three pieces it needs
 // keeps one implementation of each rather than a second copy that drifts.
 
-export { post as gotruePost, authed as gotrueAuthed, b64url };
+export { post as gotruePost, authed as gotrueAuthed, b64url, withCaptcha };
 
 /**
  * Take a GoTrue token response and make it the live session — same path

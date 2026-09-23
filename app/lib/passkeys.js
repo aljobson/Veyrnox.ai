@@ -21,7 +21,7 @@
  * authenticator resolves the account itself.
  */
 
-import { gotruePost, gotrueAuthed, b64url, adoptSession } from "./authClient.js";
+import { gotruePost, gotrueAuthed, b64url, adoptSession, withCaptcha } from "./authClient.js";
 
 const REGISTER_OPTIONS = "/auth/v1/passkeys/registration/options";
 const REGISTER_VERIFY = "/auth/v1/passkeys/registration/verify";
@@ -132,15 +132,29 @@ export async function registerPasskey(friendlyName) {
 }
 
 /**
+ * The body for the sign-in challenge request. GoTrue applies Attack Protection
+ * to this endpoint — it is a sign-in — so with Turnstile on, a request without
+ * a token is refused with `captcha_failed` before any WebAuthn happens.
+ * Registration is NOT captcha-gated: it requires a Bearer token instead. Both
+ * confirmed against the live project.
+ * @param {string} [captchaToken]
+ */
+export function signInBody(captchaToken) {
+    return withCaptcha({}, captchaToken);
+}
+
+/**
  * Sign in with a passkey. No email needed: the credential is discoverable, so
  * the authenticator picks the account. Persists the session on success, so
  * onSessionChange listeners fire exactly as they do for password sign-in.
+ * @param {string} [captchaToken]  Turnstile token (ADR-0026) — required
+ *                                 whenever Attack Protection is on
  * @returns {Promise<import("./authClient.js").VeyrnoxSession | null>} null if
  *          the user dismissed the prompt
  */
-export async function signInWithPasskey() {
+export async function signInWithPasskey(captchaToken) {
     if (!passkeysSupported()) throw new Error("This browser cannot use passkeys.");
-    const started = await gotruePost(SIGNIN_OPTIONS, {});
+    const started = await gotruePost(SIGNIN_OPTIONS, signInBody(captchaToken));
     let credential;
     try {
         credential = await navigator.credentials.get({
