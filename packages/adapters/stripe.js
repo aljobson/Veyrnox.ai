@@ -119,6 +119,15 @@ export async function createCheckout(input, cfg) {
         console.error('[stripe] checkout create failed:', res.status, data && data.error && data.error.code);
         return { ok: false, error: `stripe ${res.status}` };
     }
+    // The browser navigates top-level to this URL, so it must be Stripe's —
+    // same guard the LemonSqueezy adapter carried.
+    let checkoutUrl;
+    try { checkoutUrl = new URL(data.url); } catch { checkoutUrl = null; }
+    if (!checkoutUrl || checkoutUrl.protocol !== 'https:'
+        || !(checkoutUrl.hostname === 'stripe.com' || checkoutUrl.hostname.endsWith('.stripe.com'))) {
+        console.error('[stripe] checkout url not on stripe.com');
+        return { ok: false, error: 'checkout url not on stripe.com' };
+    }
     return { ok: true, url: data.url, sessionId: data.id };
 }
 
@@ -180,7 +189,8 @@ export async function fetchSession(sessionId, cfg) {
         return { ok: false, error: `transport: ${err && err.message}` };
     }
     const data = await res.json().catch(() => null);
-    if (!res.ok || !data || data.object !== 'checkout_session') return { ok: false, error: `stripe ${res.status}` };
+    // Stripe's own type name, dot and all — not the snake_case one.
+    if (!res.ok || !data || data.object !== 'checkout.session') return { ok: false, error: `stripe ${res.status}` };
     return { ok: true, session: data };
 }
 
@@ -194,7 +204,7 @@ export async function fetchSession(sessionId, cfg) {
  *        | {ok:false, error:string}}
  */
 export function interpretSession(session, opts) {
-    if (!session || session.object !== 'checkout_session') return { ok: false, error: 'not a session' };
+    if (!session || session.object !== 'checkout.session') return { ok: false, error: 'not a session' };
     if (Boolean(session.livemode) !== Boolean(opts.expectLiveMode)) return { ok: false, error: 'mode mismatch' };
     const topUpId = session.metadata && session.metadata.top_up_id;
     if (typeof topUpId !== 'string' || !UUID_RE.test(topUpId)) return { ok: false, error: 'no top_up_id' };

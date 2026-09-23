@@ -24,7 +24,7 @@ const TOP_UP_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{
 const POLL_MS = 2000;
 const POLL_GIVE_UP_MS = 3 * 60 * 1000;
 
-// Shown after LemonSqueezy redirects back with ?top_up=<id>. Polls the
+// Shown after the payment provider redirects back with ?top_up=<id>. Polls the
 // Top-up until the webhook credits it, then refreshes every balance on the
 // page. Credits come only from the webhook; this never grants anything.
 export function TopUpReturn() {
@@ -163,8 +163,8 @@ export function TopUpPacks({ signedIn }) {
           consent_version: SUPPLY_CONSENT_VERSION,
         }),
       });
-      // Top-level navigation to LemonSqueezy's hosted checkout; the server
-      // has already checked the URL is on lemonsqueezy.com.
+      // Top-level navigation to the provider's hosted checkout; the URL comes
+      // from the gateway, which built it with our own server-side key.
       window.location.assign(res.checkout_url);
     } catch (e) {
       const code = e instanceof GatewayError ? e.code : null;
@@ -228,7 +228,7 @@ export function TopUpPacks({ signedIn }) {
             <Button variant="money" onClick={buy} disabled={!selected || !consent || busy}>
               {busy ? 'Opening checkout…' : 'Buy credits'}
             </Button>
-            <span className="font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-faint">SECURE CHECKOUT BY LEMONSQUEEZY · TAX SHOWN AT CHECKOUT</span>
+            <span className="font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-faint">SECURE CHECKOUT BY STRIPE · SOLD BY VEYRNOX LTD</span>
           </div>
         </fieldset>
       )}

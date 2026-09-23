@@ -20,6 +20,9 @@ Object.assign(process.env, {
     LEMONSQUEEZY_STORE_ID: '473468',
     LEMONSQUEEZY_TEST_MODE: 'true',
     LEMONSQUEEZY_WEBHOOK_SECRET: SECRET,
+    STRIPE_SECRET_KEY: 'sk_test_x',
+    STRIPE_WEBHOOK_SECRET: 'whsec_0123456789abcdef0123456789abcdef',
+    PUBLIC_HOST: 'https://veyrnox.test',
 });
 
 const webhook = await import('../app/api/webhook/lemonsqueezy/route.js');
@@ -192,7 +195,7 @@ test('a Frozen account gets 403 account_frozen from top-ups, and no checkout is 
     }));
     assert.equal(res.status, 403);
     assert.deepEqual(await res.json(), { error: 'account_frozen' });
-    assert.ok(!calls.some((c) => c.url.includes('lemonsqueezy')), 'no checkout');
+    assert.ok(!calls.some((c) => c.url.includes('api.stripe.com')), 'no checkout');
 });
 
 test('top-ups accepts only the approved Supply Consent version, before any DB call', async () => {
