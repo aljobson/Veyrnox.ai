@@ -20,12 +20,16 @@ const { accountLabel } = await import('../app/veyrnox/_lib/account.js');
 // JSX component, so this reads the source, like createAutoShort.test.mjs.
 // Comments are stripped first: several of them explain the markup they sit
 // above, and matching those would pass on the explanation, not the code.
-const raw = readFileSync(new URL('../app/veyrnox/_components/NavBar.js', import.meta.url), 'utf8');
-const src = raw
+const strip = (t) => t
     .replace(/\{\/\*[\s\S]*?\*\/\}/g, '')
     .split('\n')
     .filter((l) => !l.trim().startsWith('//'))
     .join('\n');
+// AppNav puts the name on the bar by passing `account` to this button, so
+// the name's own markup lives here.
+const authSrc = strip(readFileSync(new URL('../app/veyrnox/_components/NavAuthButtons.js', import.meta.url), 'utf8'));
+const raw = readFileSync(new URL('../app/veyrnox/_components/NavBar.js', import.meta.url), 'utf8');
+const src = strip(raw);
 
 const appNav = src.slice(src.indexOf('export function AppNav'));
 const ternary = appNav.indexOf('{account ? (');
@@ -40,13 +44,13 @@ test('signed out there is a sign-in affordance and no figures at all', () => {
     assert.match(signedOut, /Sign in/, 'must offer a way in');
     assert.match(signedOut, /veyrnox:auth-required/, 'must open the existing AuthGate, not a new screen');
     assert.ok(!signedOut.includes('Credit balance:'), 'no balance pill for a visitor with no balance');
-    assert.ok(!signedOut.includes('Library assets:'), 'no asset count either');
+    assert.ok(!signedOut.includes('in your library'), 'no asset count either');
     assert.ok(!/vx-money/.test(signedOut), 'nothing amber: there is no money to show');
 });
 
 test('signed in the top right names the account, the balance and the asset count', () => {
     assert.match(signedIn, /aria-label=\{`Credit balance: \$\{fmt\} credits`\}/);
-    assert.match(signedIn, /aria-label=\{`Library assets: \$\{assetFmt\}`\}/);
+    assert.match(signedIn, /aria-label=\{`\$\{assetFmt\} \$\{assetWord\} in your library`\}/);
     // The account element opens the menu the marketing nav already ships
     // (who you are, links into the app, Sign out) rather than a new one,
     // and is named from the endpoint rather than a stale session copy.
@@ -58,9 +62,8 @@ test('signed in the top right names the account, the balance and the asset count
 
 test('neither figure is a bare number to a screen reader', () => {
     // Both digits sit in their own element; the meaning is on the link.
-    for (const label of ['Credit balance: ', 'Library assets: ']) {
-        assert.ok(signedIn.includes(`aria-label={\`${label}`), `${label} needs a spoken label`);
-    }
+    assert.ok(signedIn.includes('aria-label={`Credit balance: '), 'the balance needs a spoken label');
+    assert.ok(signedIn.includes('in your library`}'), 'and the count needs one that reads as a sentence');
     assert.match(signedIn, /aria-hidden="true" className="h-1\.5 w-1\.5 rounded-full bg-vx-money"/,
         'the amber dot is decoration, not content');
 });
@@ -132,6 +135,41 @@ test('the whole nav still fits a phone', () => {
         'the mark yields to the account block below sm, and only then');
     assert.match(appNav, /className="flex gap-0\.5 sm:gap-1 text-\[12px\] sm:text-sm font-semibold"/,
         'the tabs stay compact below sm');
+});
+
+// One asset is not "1 assets". Run the component's own two lines rather
+// than a copy of them, so the branch is what is under test.
+function figures(assets) {
+    const decl = appNav.slice(appNav.indexOf('const assetFmt ='), appNav.indexOf('return (', appNav.indexOf('const assetFmt =')));
+    return new Function('assets', `${decl} return assetFmt + ' ' + assetWord;`)(assets);
+}
+
+test('the count is singular at one and plural everywhere else', () => {
+    assert.equal(figures(0), '0 assets');
+    assert.equal(figures(1), '1 asset');
+    assert.equal(figures(2), '2 assets');
+    assert.equal(figures(1000), '1,000 assets', 'still grouped');
+    assert.equal(figures(null), '— assets', 'an unanswered read is still an em dash');
+    // Both the visible word and the spoken label use the same one.
+    assert.match(signedIn, /text-vx-fg-muted">\{assetWord\}<\/span>/);
+});
+
+test('the bar names the account beside the avatar, and hides that name below sm', () => {
+    assert.match(signedIn, /<NavAuthButtons account=\{account\} \/>/, 'the nav hands the label over');
+    // Not only inside the menu: the name is on the bar itself, next to the
+    // initial. The menu's own copy is a <div>, so this span is the bar's.
+    const span = authSrc.match(/<span className="([^"]*)">\{account\.name\}<\/span>/);
+    assert.ok(span, 'the name is rendered on the bar');
+    const cls = span[1];
+    assert.match(cls, /\bhidden\b/, 'below sm the tabs and the stacked figures already fill the bar');
+    assert.match(cls, /\bsm:(inline|inline-block|block|flex)\b/, 'and it comes back at sm');
+    assert.match(cls, /\btruncate\b/, 'a long name is cut, never wrapped');
+    assert.match(cls, /max-w-\[\d+(\.\d+)?rem\]/, 'and cut at a fixed width');
+    // `truncate` only bites on a block box. It works here because the span
+    // is a direct child of the flex button, which blockifies it — move it
+    // out of that row and the ellipsis silently stops.
+    const button = authSrc.slice(authSrc.indexOf('aria-haspopup="menu"'), authSrc.indexOf(span[0]));
+    assert.match(button, /className="flex items-center/, 'the name sits in the flex row that blockifies it');
 });
 
 // ── GET /api/v1/account ───────────────────────────────────────────────────

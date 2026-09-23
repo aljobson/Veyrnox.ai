@@ -105,6 +105,7 @@ export function AppNav({ balance, active = 'explore' }) {
   const shown = balance != null ? balance : summary?.credits ?? null;
   const fmt = shown != null ? new Intl.NumberFormat('en-US').format(shown) : '—';
   const assetFmt = assets != null ? new Intl.NumberFormat('en-US').format(assets) : '—';
+  const assetWord = assets === 1 ? 'asset' : 'assets';
   return (
     <div data-print="hide" className="sticky top-0 z-40 flex items-center justify-between gap-2 px-4 sm:px-8 h-16 border-b border-vx-border bg-vx-base/[0.88] backdrop-blur">
       <Link
@@ -152,13 +153,13 @@ export function AppNav({ balance, active = 'explore' }) {
               </Link>
               <Link
                 href="/app/library"
-                aria-label={`Library assets: ${assetFmt}`}
+                aria-label={`${assetFmt} ${assetWord} in your library`}
                 className="flex items-center gap-1.5 py-1 leading-none transition-opacity hover:opacity-80"
               >
                 {/* Keeps the count's first digit under the balance's. */}
                 <span aria-hidden="true" className="h-1.5 w-1.5" />
                 <span className="font-vx-mono text-[11px] font-bold text-vx-fg-body vx-num">{assetFmt}</span>
-                <span aria-hidden="true" className="font-vx-mono text-[11px] font-bold text-vx-fg-muted">assets</span>
+                <span aria-hidden="true" className="font-vx-mono text-[11px] font-bold text-vx-fg-muted">{assetWord}</span>
               </Link>
             </span>
             {/* The account menu the marketing nav already ships: who you
