@@ -30,19 +30,26 @@ describe("FAILED without a refund (0099)", { skip: !DATABASE_URL && "DATABASE_UR
                     EXECUTE format('CREATE ROLE %I NOLOGIN', r);
                 END IF;
             END LOOP; END $$`);
-        // 0018 schedules its crons unguarded, so a database without pg_cron
-        // needs a stand-in for the two calls it makes. Test-only: production
-        // has the extension.
+        // 0018 schedules its crons unguarded, and neither this fixture nor
+        // CI's postgres:16-alpine ships pg_cron. Identical to the stub in
+        // security-hardening.acceptance.test.ts on purpose: the files share a
+        // database, and CREATE OR REPLACE cannot rename a parameter, so two
+        // different stubs of cron.schedule would break whichever ran second.
         await pool.query(`DO $$ BEGIN
-            IF NOT EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_cron') THEN
-                CREATE SCHEMA IF NOT EXISTS cron;
-                CREATE TABLE IF NOT EXISTS cron.job (jobid BIGSERIAL, jobname TEXT);
-                CREATE OR REPLACE FUNCTION cron.schedule(TEXT, TEXT, TEXT) RETURNS BIGINT
-                    LANGUAGE sql AS $f$ INSERT INTO cron.job (jobname) VALUES ($1) RETURNING jobid $f$;
-                CREATE OR REPLACE FUNCTION cron.unschedule(TEXT) RETURNS BOOLEAN
-                    LANGUAGE sql AS $f$ DELETE FROM cron.job WHERE jobname = $1 RETURNING true $f$;
-            END IF;
-        END $$`);
+            IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_cron') THEN RETURN; END IF;
+            CREATE SCHEMA IF NOT EXISTS cron;
+            CREATE TABLE IF NOT EXISTS cron.job (jobid BIGSERIAL PRIMARY KEY, jobname TEXT, schedule TEXT, command TEXT);
+            CREATE OR REPLACE FUNCTION cron.schedule(p_name TEXT, p_schedule TEXT, p_command TEXT)
+            RETURNS BIGINT LANGUAGE sql AS $fn$
+                INSERT INTO cron.job (jobname, schedule, command)
+                VALUES (p_name, p_schedule, p_command) RETURNING jobid;
+            $fn$;
+            CREATE OR REPLACE FUNCTION cron.unschedule(p_name TEXT)
+            RETURNS BOOLEAN LANGUAGE sql AS $fn$
+                DELETE FROM cron.job WHERE jobname = p_name; SELECT true;
+            $fn$;
+        END $$;`);
+
         for (const round of [1, 2]) { // migrations must be idempotent
             for (const m of MIGRATIONS) await pool.query(await readFile(m, "utf8"));
         }
@@ -72,13 +79,16 @@ describe("FAILED without a refund (0099)", { skip: !DATABASE_URL && "DATABASE_UR
         pool.query(`UPDATE public.jobs SET updated_at = now() - make_interval(mins => $2) WHERE id = $1`, [jobId, minutes]);
     const balance = async (userId: string) =>
         Number((await one(`SELECT balance FROM public.credit_balances WHERE user_id = $1`, [userId])).balance);
+    // An explicit 30-minute grace, with fixtures aged 45: inside this file's
+    // window, outside the 60-minute default another file's reconcile_status()
+    // sample would pick up while these tests run.
     const drift = async (jobId: string) =>
-        Number((await one(`SELECT count(*) AS n FROM public.reconcile_failed_refunds() WHERE job_id = $1`, [jobId])).n);
+        Number((await one(`SELECT count(*) AS n FROM public.reconcile_failed_refunds(30) WHERE job_id = $1`, [jobId])).n);
 
     it("names a failure whose refund never landed, and only after the grace period", async () => {
         const job = await failedJob();
         assert.equal(await drift(job.jobId), 0, "a failure minutes old is not yet drift");
-        await age(job.jobId, 90);
+        await age(job.jobId, 45);
         assert.equal(await drift(job.jobId), 1);
         // The refund the Worker should have made clears it.
         const r = (await one(`SELECT public.ledger_refund($1, $2, $3, 'refund:provider_failed') AS r`,
@@ -90,7 +100,7 @@ describe("FAILED without a refund (0099)", { skip: !DATABASE_URL && "DATABASE_UR
     it("the sweep pays it once, and a second sweep changes nothing", async () => {
         const job = await failedJob();
         const before_ = await balance(job.userId);
-        await age(job.jobId, 60);
+        await age(job.jobId, 45);
 
         const first = (await one(`SELECT public.sweep_stuck_jobs() AS r`)).r;
         assert.equal(first.ok, true);
@@ -111,7 +121,7 @@ describe("FAILED without a refund (0099)", { skip: !DATABASE_URL && "DATABASE_UR
         assert.equal((await one(`SELECT public.ledger_refund($1, $2, $3, 'refund:provider_failed') AS r`,
             [job.jobId, job.userId, job.credits])).r.ok, true);
         const after_ = await balance(job.userId);
-        await age(job.jobId, 60);
+        await age(job.jobId, 45);
 
         await one(`SELECT public.sweep_stuck_jobs() AS r`);
         assert.equal(await balance(job.userId), after_);
