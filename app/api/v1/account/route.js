@@ -2,11 +2,11 @@
  * GET /api/v1/account — who the caller is, what they can spend and how
  * much they have actually made.
  *
- * Response (200): { email, name, credits, assets }
- *   email   — the verified identity, or null if the token carried none
- *   name    — public.users holds no display name, so this is null today
- *             and the UI falls back to the email. Adding one is a
- *             migration, which this route deliberately does not need.
+ * Response (200): { email, credits, assets }
+ *   email   — the verified identity, or null if the token carried none.
+ *             No display name: public.users has no such column, and the
+ *             browser already holds the one Google gave us, in the
+ *             session's user_metadata (app/veyrnox/_lib/account.js).
  *   credits — credit_balances.balance, via the same read_user_credits
  *             RPC /api/v1/balance uses. One source for the money figure.
  *   assets  — rows in public.assets belonging to this user's jobs, or
@@ -69,7 +69,6 @@ export async function GET(req) {
     // Per-user figures: never let a browser or intermediary keep a copy.
     return NextResponse.json({
         email: authEmail || (user && user.email) || null,
-        name: null,
         credits: Number(credits && credits.balance) || 0,
         assets,
     }, { headers: { 'Cache-Control': 'no-store' } });

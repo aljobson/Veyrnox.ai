@@ -15,6 +15,7 @@ Object.assign(process.env, {
 });
 
 const accountRoute = await import('../app/api/v1/account/route.js');
+const { accountLabel } = await import('../app/veyrnox/_lib/account.js');
 
 // JSX component, so this reads the source, like createAutoShort.test.mjs.
 // Comments are stripped first: several of them explain the markup they sit
@@ -71,17 +72,40 @@ test('the summary follows veyrnox:balance-changed', () => {
         'and it unsubscribes');
 });
 
-test('name, email, credits and assets all come from the endpoint', () => {
+test('credits and assets come from the endpoint, the name from the session', () => {
     assert.match(appNav, /await gatewayFetch\('\/account'\)/, 'one gateway read for the lot');
     assert.match(appNav, /const assets = summary\?\.assets \?\? null;/, 'the count is the server count');
     assert.match(appNav, /summary\?\.credits/, 'the balance is the server balance');
-    assert.match(appNav, /summary\?\.name \|\| summary\?\.email/, 'name if present, else email');
+    // The display name is the signed-in session's; the endpoint has none to
+    // give (no display-name column) and only backs the email.
+    assert.match(appNav, /const account = accountLabel\(session, summary\?\.email \|\| ''\);/);
+    assert.ok(!/summary\?\.name/.test(appNav), 'the endpoint returns no name to read');
     // The browser-local ring buffer is capped at 50 and empty on a fresh
     // browser — it was never the account's real asset count.
     assert.ok(!/readJobHistory/.test(raw), 'the nav must not count job history any more');
     // null until mount, so the server and client markup agree.
     assert.match(appNav, /const \[summary, setSummary\] = useState\(null\);/);
     assert.match(appNav, /const \[session, setSession\] = useState\(null\);/);
+});
+
+// What the header actually renders, through the helper AppNav calls.
+test('the header shows the name the session carries', () => {
+    const google = { user: { email: 'al@x.co', user_metadata: { full_name: 'Al Jobson' } } };
+    assert.deepEqual(accountLabel(google, 'al@x.co'), { name: 'Al Jobson', email: 'al@x.co', initial: 'A' });
+});
+
+test('an email sign-up carries no name, so the header shows the address', () => {
+    const signup = { user: { email: 'jo.smith@x.co', user_metadata: {} } };
+    const a = accountLabel(signup, 'jo.smith@x.co');
+    assert.equal(a.name, 'jo.smith', 'the address, never a user id');
+    assert.equal(a.email, 'jo.smith@x.co');
+});
+
+test('a session with no email at all falls back to the endpoint\u2019s', () => {
+    const a = accountLabel({ user: null, access_token: 'not-a-jwt' }, 'row@veyrnox.test');
+    assert.deepEqual(a, { name: 'row', email: 'row@veyrnox.test', initial: 'R' });
+    // And with nothing anywhere it is still a label, not a blank.
+    assert.equal(accountLabel({ user: null, access_token: 'not-a-jwt' }).name, 'Account');
 });
 
 test('a raw id never reaches the header, and a failed read never lies', () => {
@@ -150,18 +174,17 @@ test('no verified identity header is 401 not_authenticated, never a 500', async 
     }
 });
 
-test('the summary is email, name, credits and a server-side asset count', async () => {
+test('the summary is email, credits and a server-side asset count', async () => {
     stubFetch(countingRoutes());
     const res = await accountRoute.GET(accountRequest({
         'x-veyrnox-auth-id': AUTH_ID,
         'x-veyrnox-auth-email': 'owner@veyrnox.test',
     }));
     assert.equal(res.status, 200);
+    // No `name`: public.users has no display-name column, and the browser
+    // already holds the one Google gave it, in the session.
     assert.deepEqual(await res.json(), {
         email: 'owner@veyrnox.test',
-        // public.users has no display-name column, and this route adds no
-        // migration — so the UI falls back to the email.
-        name: null,
         credits: 1199,
         assets: 48,
     });
@@ -207,7 +230,7 @@ test('a user with no row yet reads zero, not an error', async () => {
     ]);
     const res = await accountRoute.GET(accountRequest({ 'x-veyrnox-auth-id': AUTH_ID }));
     assert.equal(res.status, 200);
-    assert.deepEqual(await res.json(), { email: null, name: null, credits: 0, assets: null });
+    assert.deepEqual(await res.json(), { email: null, credits: 0, assets: null });
 });
 
 test('a database failure is a typed 502, not a leaked message', async () => {

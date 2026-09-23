@@ -91,16 +91,15 @@ export function AppNav({ balance, active = 'explore' }) {
   // Who is signed in. The session in localStorage is the gate — it needs no
   // network, so the sign-in button is never wrong while /account is in
   // flight — and null until mount on both sides so the server and client
-  // markup match. The endpoint supplies the name and email it renders.
+  // markup match. It also already holds the display name: Google puts one
+  // in user_metadata, and public.users has no such column. The endpoint
+  // only supplies the email, for the sessions that carry none.
   const [session, setSession] = useState(null);
   useEffect(() => {
-    setSession(accountLabel(getSession()));
-    return onSessionChange((s) => setSession(accountLabel(s)));
+    setSession(getSession());
+    return onSessionChange(setSession);
   }, []);
-  const name = summary?.name || summary?.email || session?.name || '';
-  const account = session
-    ? { name, email: summary?.email || session.email, initial: (name[0] || '?').toUpperCase() }
-    : null;
+  const account = accountLabel(session, summary?.email || '');
 
   const assets = summary?.assets ?? null;
   const shown = balance != null ? balance : summary?.credits ?? null;
@@ -163,9 +162,8 @@ export function AppNav({ balance, active = 'explore' }) {
               </Link>
             </span>
             {/* The account menu the marketing nav already ships: who you
-                are, links into the app, sign out. Named from /account so
-                the studio header agrees with the server, not with a stale
-                copy of the session. */}
+                are, links into the app, sign out. Named from the signed-in
+                session, with /account's verified email behind it. */}
             <NavAuthButtons account={account} />
           </>
         ) : (

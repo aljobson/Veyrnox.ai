@@ -2,10 +2,13 @@
  * Who is signed in, from the session already in localStorage — no network.
  * Google sign-ins carry a name in user_metadata; email sign-ups only have the
  * address. The session's `user` can be null after a refresh, so fall back to
- * the email claim in the access token itself.
+ * the email claim in the access token itself, and then to `fallbackEmail`
+ * (AppNav passes the one /api/v1/account verified server-side).
+ * @param {object|null} session
+ * @param {string} [fallbackEmail]
  * @returns {{ name: string, email: string, initial: string } | null}
  */
-export function accountLabel(session) {
+export function accountLabel(session, fallbackEmail = '') {
   if (!session) return null;
   const meta = session.user?.user_metadata || {};
   let email = session.user?.email || '';
@@ -17,6 +20,7 @@ export function accountLabel(session) {
       email = '';
     }
   }
+  if (!email) email = fallbackEmail || '';
   const name = String(meta.full_name || meta.name || email.split('@')[0] || 'Account').trim();
   return { name, email, initial: (name[0] || '?').toUpperCase() };
 }
