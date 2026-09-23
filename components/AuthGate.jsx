@@ -20,6 +20,7 @@ import {
     sendMagicLink,
     signInWithOAuth,
 } from "../app/lib/authClient.js";
+import { signInWithPasskey, passkeysSupported } from "../app/lib/passkeys.js";
 import { Turnstile, TURNSTILE_SITE_KEY } from "./Turnstile.jsx";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -44,6 +45,11 @@ const AUTH_ERROR_COPY = [
     // which used to leave the provider buttons silently dead.
     [/storage|quota|securityerror/i, "Your browser is blocking site storage, so sign-in can't start. Turn off private browsing, or allow site data for this site."],
     [/captcha/i, "The security check failed or expired. Try again."],
+    // GoTrue's passkey codes. "not registered" is the one users actually hit:
+    // they tap the passkey button on a device that has never enrolled one.
+    [/webauthn_credential_not_found|no passkey/i, "No passkey for this site on this device. Sign in another way first, then add one."],
+    [/webauthn_challenge_expired/i, "That took too long. Try the passkey again."],
+    [/passkey_disabled/i, "Passkey sign-in isn't available right now. Use another method."],
 ];
 
 function humanAuthError(err) {
@@ -64,6 +70,17 @@ function AppleMark() {
     return (
         <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
             <path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701" />
+        </svg>
+    );
+}
+
+// A key, not a fingerprint: passkeys are not always biometric — a PIN or a
+// hardware key satisfies the same ceremony.
+function PasskeyMark() {
+    return (
+        <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="9" cy="9" r="4" />
+            <path d="M11.8 11.8 20 20m-3-3 1.5-1.5M14 14l2 2" />
         </svg>
     );
 }
@@ -95,6 +112,10 @@ export default function AuthGate() {
     // Fetching once on first mount avoids showing broken buttons that
     // redirect to a Supabase 400 "provider is not enabled" page.
     const [oauth, setOauth] = useState({ apple: false, google: false });
+    // Passkeys need BOTH the project setting and a browser that can do
+    // WebAuthn in a secure context, so the button is never offered where
+    // clicking it would only throw.
+    const [passkeys, setPasskeys] = useState(false);
 
     useEffect(() => {
         const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -107,6 +128,7 @@ export default function AuthGate() {
                 if (cancelled || !data) return;
                 const ext = data.external || {};
                 setOauth({ apple: !!ext.apple, google: !!ext.google });
+                setPasskeys(!!data.passkeys_enabled && passkeysSupported());
             })
             .catch(() => {});
         return () => { cancelled = true; };
@@ -191,6 +213,31 @@ export default function AuthGate() {
         }
     }
 
+    // Returns null when the user dismisses the OS prompt — a dismissal is not
+    // a failure and should leave the dialog exactly as it was.
+    async function startPasskey() {
+        setNotice(null);
+        // GoTrue treats the passkey challenge as a sign-in, so Attack
+        // Protection applies to it exactly as it does to password sign-in.
+        // Without this the request is refused with captcha_failed before any
+        // WebAuthn prompt appears, which looks like a broken button.
+        if (TURNSTILE_SITE_KEY && !captcha) {
+            setNotice({ kind: "error", text: "Complete the security check first." });
+            return;
+        }
+        setBusy(true);
+        try {
+            const session = await signInWithPasskey(captcha);
+            if (session) setOpen(false);
+        } catch (err) {
+            setNotice({ kind: "error", text: humanAuthError(err) });
+        } finally {
+            setBusy(false);
+            // Turnstile tokens are single-use; a retry needs a fresh one.
+            if (TURNSTILE_SITE_KEY) setCaptchaReset((n) => n + 1);
+        }
+    }
+
     async function handleSubmit(e) {
         e.preventDefault();
         setNotice(null);
@@ -260,9 +307,15 @@ export default function AuthGate() {
                     New users get 50 free credits.
                 </p>
 
-                {(oauth.apple || oauth.google) && (
+                {(oauth.apple || oauth.google || passkeys) && (
                     <>
                         <div className="space-y-2 mb-3">
+                            {passkeys && (
+                                <button type="button" onClick={startPasskey} disabled={busy} className="flex w-full items-center justify-center gap-2 rounded-lg bg-vx-base border border-vx-border text-vx-fg font-semibold py-2 text-sm hover:border-vx-accent disabled:opacity-60">
+                                    <PasskeyMark />
+                                    Sign in with a passkey
+                                </button>
+                            )}
                             {oauth.apple && (
                                 <button type="button" onClick={() => startOAuth("apple")} disabled={busy} className="flex w-full items-center justify-center gap-2 rounded-lg bg-vx-fg text-vx-base font-semibold py-2 text-sm hover:opacity-90 disabled:opacity-60">
                                     <AppleMark />
