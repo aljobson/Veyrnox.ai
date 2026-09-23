@@ -73,12 +73,18 @@ const paidSession = (metadata) => ({
     metadata,
 });
 
-const routes = ({ duplicate = false, session = paidSession(checkoutMetadata), credit = { ok: true, top_up_id: TOP_UP_ID } } = {}) => [
+const routes = ({
+    duplicate = false,
+    session = paidSession(checkoutMetadata),
+    credit = { ok: true, top_up_id: TOP_UP_ID },
+    dispute = { ok: true, user_id: 'u1' },
+} = {}) => [
     ['/rest/v1/webhook_events?on_conflict', () => (duplicate ? Response.json([]) : new Response('[{"id":"e1"}]', { status: 201 }))],
     ['/rest/v1/webhook_events', (u, init) => (init.method === 'PATCH' ? new Response(null, { status: 204 }) : Response.json([{ processed_at: '2026-09-23T00:00:00Z' }]))],
     [`api.stripe.com/v1/checkout/sessions/${SESSION_ID}`, session],
     ['/rpc/credit_top_up', credit],
     ['/rpc/apply_top_up_refund', { ok: true, taken: 300, shortfall: 0, frozen: false }],
+    ['/rpc/apply_dispute_event', dispute],
 ];
 
 test('a signed checkout.session.completed from our own checkout credits its Top-up', async () => {
@@ -158,4 +164,41 @@ test('a live-mode event never reaches a test-key account, and unknown types are 
         assert.deepEqual(await res.json(), { ok: true, ignored: true });
         assert.equal(calls.length, 0, 'nothing was read');
     }
+});
+
+
+// Stripe delivered charge.dispute.created six seconds AHEAD of the
+// checkout.session.completed that credited the charge (production, 2026-09-23):
+// the Top-up did not exist yet, the dispute froze nobody, and the credit landed
+// afterwards. The event must be retried while the credit can still be in flight.
+const disputeEvent = (id, created) => ({
+    id, type: 'charge.dispute.created', livemode: false, created,
+    data: { object: { id: 'du_1', object: 'dispute', payment_intent: PAYMENT_INTENT, status: 'needs_response' } },
+});
+
+test('charge.dispute.created Freezes the order owner', async () => {
+    const calls = stubFetch(routes());
+    const res = await stripeWebhook.POST(signed(disputeEvent('evt_dispute', Math.floor(Date.now() / 1000))));
+    assert.equal(res.status, 200);
+    assert.deepEqual(await res.json(), { ok: true });
+    const applied = calls.find((c) => c.url.includes('/rpc/apply_dispute_event')).body;
+    assert.deepEqual(applied, { p_order_id: PAYMENT_INTENT, p_event: 'created', p_reference: 'du_1' });
+    assert.ok(calls.some((c) => c.method === 'PATCH' && c.url.includes('webhook_events')), 'marked processed');
+});
+
+test('a dispute that arrives before its credit is retried, not dropped', async () => {
+    const calls = stubFetch(routes({ dispute: { ok: false, code: 'TOP_UP_NOT_FOUND' } }));
+    const res = await stripeWebhook.POST(signed(disputeEvent('evt_dispute_early', Math.floor(Date.now() / 1000))));
+    assert.equal(res.status, 503);
+    assert.deepEqual(await res.json(), { error: 'not_credited_yet' });
+    assert.ok(!calls.some((c) => c.method === 'PATCH'), 'left unprocessed so the redelivery runs it again');
+});
+
+test('a dispute for a charge that was never credited stops being retried', async () => {
+    const calls = stubFetch(routes({ dispute: { ok: false, code: 'TOP_UP_NOT_FOUND' } }));
+    const old = Math.floor(Date.now() / 1000) - 7200;
+    const res = await stripeWebhook.POST(signed(disputeEvent('evt_dispute_old', old)));
+    assert.equal(res.status, 200);
+    assert.deepEqual(await res.json(), { ok: true });
+    assert.ok(calls.some((c) => c.method === 'PATCH' && c.url.includes('webhook_events')), 'marked processed');
 });
