@@ -14,7 +14,8 @@ import { readFile } from "node:fs/promises";
 import pg from "pg";
 
 const DATABASE_URL = process.env.DATABASE_URL;
-const MIGRATIONS = ["0037_free_credit_expiry.sql", "0038_free_credit_sweep_fixes.sql", "0091_auto_short_job_steps.sql"]
+const MIGRATIONS = ["0037_free_credit_expiry.sql", "0038_free_credit_sweep_fixes.sql", "0091_auto_short_job_steps.sql",
+    "0101_job_step_claim.sql"]
     .map((f) => new URL(`./schema/supabase/${f}`, import.meta.url));
 
 describe("job_steps (Auto Short, 0091)", { skip: !DATABASE_URL && "DATABASE_URL not set" }, () => {
@@ -67,6 +68,38 @@ describe("job_steps (Auto Short, 0091)", { skip: !DATABASE_URL && "DATABASE_URL 
              WHERE job_id = $1 AND step = $2 AND ordinal = $3`, [jobId, step, ordinal]);
     const ledgerRows = async (jobId: string) =>
         Number((await one(`SELECT count(*) AS n FROM ledger_entries WHERE job_id = $1`, [jobId])).n);
+
+    const claim = async (jobId: string, step: string, ordinal: number) =>
+        (await one(`SELECT public.job_step_claim($1, $2, $3::smallint, 'kie', 'veo:veo3_lite') AS r`,
+            [jobId, step, ordinal])).r;
+
+    it("only one caller claims a step, and the loser is told so without an error (0101)", async () => {
+        const { jobId } = await debitedJob();
+        const first = await claim(jobId, "scene", 0);
+        assert.equal(first.claimed, true);
+        const second = await claim(jobId, "scene", 0);
+        assert.deepEqual(second, { ok: true, claimed: false }, "the loser never calls the provider");
+        assert.equal((await row(jobId, "scene", 0)).provider_job_id, null, "a claim carries no provider id yet");
+    });
+
+    it("the submit that follows a claim attaches its id without spending an attempt (0101)", async () => {
+        const { jobId } = await debitedJob();
+        assert.equal((await claim(jobId, "voice", 0)).claimed, true);
+        const rec = await submitted(jobId, "voice", 0, "claimed_then_submitted");
+        assert.equal(rec.ok, true);
+        const r = await row(jobId, "voice", 0);
+        assert.equal(r.provider_job_id, id("claimed_then_submitted"));
+        assert.equal(Number(r.attempts), 1, "attaching an id is the first attempt, not the second");
+        // The retry budget is intact: one re-submit still works, a second does not.
+        assert.equal((await submitted(jobId, "voice", 0, "retry_after_claim")).ok, true);
+        assert.equal((await submitted(jobId, "voice", 0, "third_try")).code, "ATTEMPTS_EXHAUSTED");
+    });
+
+    it("refuses a claim on a job that is not paid for and live (0101)", async () => {
+        const { jobId } = await debitedJob();
+        await pool.query(`UPDATE public.jobs SET state = 'FAILED' WHERE id = $1`, [jobId]);
+        assert.equal((await claim(jobId, "script", 0)).code, "JOB_NOT_FOUND_OR_BAD_STATE");
+    });
 
     it("browser roles have nothing; service_role may only read; RLS is forced", async () => {
         for (const role of ["anon", "authenticated"]) {

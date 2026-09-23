@@ -16,11 +16,19 @@ function world(edit) {
     const rpc = async (name, a) => {
         switch (name) {
             case 'job_submitted': job.state = 'SUBMITTED'; job.ref = a.p_provider_job_id; return { ok: true };
+            // 0101: UNIQUE (job_id, step, ordinal) decides who submits.
+            case 'job_step_claim': {
+                if (find(a)) return { ok: true, claimed: false };
+                steps.push({ job_id: JOB, step: a.p_step, ordinal: a.p_ordinal, provider: a.p_provider, provider_endpoint: a.p_provider_endpoint, provider_job_id: null, state: 'SUBMITTED', attempts: 1 });
+                return { ok: true, claimed: true };
+            }
             case 'job_step_submitted': {
                 const s = find(a);
-                if (!s) { steps.push({ job_id: JOB, step: a.p_step, ordinal: a.p_ordinal, provider: 'fal', provider_endpoint: a.p_provider_endpoint, state: 'SUBMITTED', attempts: 1 }); return { ok: true }; }
+                if (!s) { steps.push({ job_id: JOB, step: a.p_step, ordinal: a.p_ordinal, provider: 'fal', provider_endpoint: a.p_provider_endpoint, provider_job_id: a.p_provider_job_id, state: 'SUBMITTED', attempts: 1 }); return { ok: true }; }
+                // A claimed row takes the id without spending an attempt.
+                if (s.provider_job_id == null) { s.provider_job_id = a.p_provider_job_id; return { ok: true }; }
                 if (s.attempts >= 2) return { ok: false };
-                s.attempts += 1;
+                Object.assign(s, { provider_job_id: a.p_provider_job_id, attempts: s.attempts + 1 });
                 return { ok: true };
             }
             case 'job_step_stored': Object.assign(find(a), { state: 'STORED', output_r2_key: a.p_output_r2_key }); return { ok: true };
@@ -141,4 +149,22 @@ test('an edit is billed by the greater of its length and its step count', () => 
 
     // One trimmed clip: one step, one unit — unchanged.
     assert.equal(editUnits(validateEdit({ clips: [clip('a', 0, 4)] })), 1);
+});
+
+test('a callback and the sweep advancing at once submit the next step only once', async () => {
+    const edit = validateEdit({ clips: [clip('a', 1, 4), clip('b', 0, 10)] });
+    const w = world(edit);
+    await start({ jobId: JOB, edit }, w.deps);
+    const live = { ...w.steps.find((s) => s.state === 'SUBMITTED') };
+    const outcome = { state: 'success', outputUrl: 'https://fal.media/out.mp4' };
+
+    // Both hold the same finished trim: the webhook, and the 12-minute sweep.
+    const [a, b] = await Promise.all([
+        onStepOutcome({ step: live, outcome }, w.deps),
+        onStepOutcome({ step: live, outcome }, w.deps),
+    ]);
+    assert.ok(a.ok && b.ok, JSON.stringify([a, b]));
+    const merges = w.calls.submits.filter((c) => c.endpoint.includes('merge-videos'));
+    assert.equal(merges.length, 1, 'fal was paid for the merge once');
+    assert.equal(w.steps.filter((s) => s.step === 'merge').length, 1);
 });

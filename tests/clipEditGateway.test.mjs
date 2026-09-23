@@ -83,6 +83,7 @@ test('generations: a clip-edit is priced on its output, stores the resolved edit
         get_user_asset: { ok: true, state: 'STORED', mime_type: 'video/mp4', r2_key: 'jobs/src.mp4', size_bytes: file.length },
         ledger_debit: { ok: true, job_id: '55555555-5555-4555-8555-555555555555', idempotent: false, balance_after: 47 },
         job_submitted: { ok: true },
+        job_step_claim: { ok: true, claimed: true },
         job_step_submitted: { ok: true },
     };
     globalThis.fetch = async (url, init = {}) => {
