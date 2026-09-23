@@ -108,7 +108,7 @@ test('generations: a clip-edit is priced on its output, stores the resolved edit
     }));
     assert.equal(res.status, 200, JSON.stringify(await res.clone().json()));
     const debit = calls.find((c) => c.url.includes('/rpc/ledger_debit')).body;
-    assert.equal(debit.p_credits, 2, '6.5 s of output = two started 5 s units');
+    assert.equal(debit.p_credits, 2, '6.5 s of output = two started 5 s units, above its one step');
     assert.deepEqual(debit.p_inputs.edit.clips.map((c) => c.key), ['jobs/src.mp4']);
     assert.equal(calls.find((c) => c.url.includes('/rpc/get_user_asset')).body.p_auth_id, 'auth-user-1');
     const fal = calls.find((c) => c.url.includes('queue.fal.run'));

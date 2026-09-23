@@ -190,6 +190,14 @@ per started 5 s of **output**. The price doesn't depend on how many steps an
 edit needs. Proposed: **1 credit per 5 s of output** (a 15 s edit = 3
 credits; the 60 s cap = 12 credits).
 
+**A step floor, added 2026-09-23 after the audit.** Output length alone
+under-prices a many-clip edit, because our cost scales with steps rather
+than seconds: ten 0.3 s clips is 3 s of output but twelve fal calls, about
+$0.06 against $0.033 of revenue — under the ADR-0014 floor. So an edit is
+billed for **the greater of its started 5 s units and its step count**
+(`editUnits` in `lib/clipEdit.js`). Every edit at or below one step per unit
+is unaffected; the edit sheet shows the same number the gateway charges.
+
 Checked against ADR-0014's floor (50% margin at $0.033/credit) for the
 worst case, where every clip is trimmed and there's audio:
 
