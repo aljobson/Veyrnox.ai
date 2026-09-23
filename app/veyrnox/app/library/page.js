@@ -49,6 +49,8 @@ export default function Library() {
   const [visible, setVisible] = useState(PAGE);
   const pollRef = useRef(null);
   const [unreachable, setUnreachable] = useState(false);
+  const [nextCursor, setNextCursor] = useState(null);
+  const [listLive, setListLive] = useState(null);
   const [editorOn, setEditorOn] = useState(false);
   const [selected, setSelected] = useState([]);
   const [editing, setEditing] = useState(false);
@@ -70,10 +72,46 @@ export default function Library() {
     return () => window.removeEventListener('veyrnox:balance-changed', onBalance);
   }, [loadBalance]);
 
-  // Must run before the hydrate effect below: mergeHydrated keeps prev's tail.
+  // localStorage paints instantly and names the rows (the server has no
+  // display name), but it is one browser's 50-entry cache — it is no longer
+  // what the Library IS. The account's own list follows.
   useEffect(() => {
     setRows(readJobHistory().map(hydrateFromHistory));
     setHistoryLoaded(true);
+  }, []);
+
+  // The account's jobs, newest first, from GET /api/v1/jobs. A second device
+  // or a cleared cache used to show "Nothing here yet" while the files sat
+  // in R2 (audit finding 11).
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const page = await gatewayFetch(`/jobs?limit=${PAGE * 2}`);
+        if (cancelled || !Array.isArray(page.jobs)) return;
+        const labels = new Map(readJobHistory().map((h) => [h.job_id, h]));
+        setRows((prev) => {
+          const local = new Map(prev.map((r) => [r.job_id, r]));
+          const server = page.jobs.map((j) => {
+            const h = labels.get(j.job_id) || local.get(j.job_id) || {};
+            return { ...hydrateFromHistory({ ...h, job_id: j.job_id, model_id: j.model_id, credits: j.credits }),
+              name: h.name || j.label, prompt: h.prompt || j.label,
+              submitted_at: h.submitted_at || Date.parse(j.created_at) || undefined,
+              state: j.state, refunded: j.refunded, error_code: j.error_code, has_asset: j.has_asset };
+          });
+          // A job submitted seconds ago may not be in this page yet; keep it.
+          const seen = new Set(server.map((r) => r.job_id));
+          return [...prev.filter((r) => !seen.has(r.job_id) && r.state === 'queued'), ...server];
+        });
+        setNextCursor(page.next || null);
+        setListLive(true);
+      } catch {
+        // Offline, or an older Worker without the endpoint: the cache stands,
+        // and the banner below says the list may be incomplete.
+        if (!cancelled) setListLive(false);
+      }
+    })();
+    return () => { cancelled = true; };
   }, []);
 
   // fetch: hydrate the visible window's real state; then poll the in-flight ones.
@@ -163,6 +201,27 @@ export default function Library() {
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [rows, visible]);
 
+  // Older jobs, a page at a time, from the server's keyset cursor.
+  const loadOlder = useCallback(async () => {
+    if (!nextCursor) return;
+    try {
+      const q = new URLSearchParams({ limit: String(PAGE * 2), before: nextCursor.before, before_id: nextCursor.before_id });
+      const page = await gatewayFetch(`/jobs?${q}`);
+      if (!Array.isArray(page.jobs)) return;
+      setRows((prev) => {
+        const seen = new Set(prev.map((r) => r.job_id));
+        const older = page.jobs.filter((j) => !seen.has(j.job_id)).map((j) => ({
+          ...hydrateFromHistory({ job_id: j.job_id, model_id: j.model_id, credits: j.credits }),
+          name: j.label, prompt: j.label, submitted_at: Date.parse(j.created_at) || undefined,
+          state: j.state, refunded: j.refunded, error_code: j.error_code, has_asset: j.has_asset,
+        }));
+        return [...prev, ...older];
+      });
+      setVisible((v) => v + PAGE * 2);
+      setNextCursor(page.next || null);
+    } catch { /* the button stays; the next click retries */ }
+  }, [nextCursor]);
+
   const shown = rows.slice(0, visible);
   const list = tab === 'all' ? shown : shown.filter((r) => r.state === tab);
   const hasMore = rows.length > visible;
@@ -187,6 +246,15 @@ export default function Library() {
   return (
     <div className="min-h-dvh">
       <AppNav balance={balance} active="library" />
+
+      {listLive === false && (
+        <div className="max-w-[1500px] mx-auto px-4 sm:px-8 pt-4">
+          <div role="status" className="rounded-lg border border-vx-border bg-vx-panel px-4 py-3 text-sm text-vx-fg-body flex items-start gap-2">
+            <span aria-hidden="true">△</span>
+            <span>We couldn&apos;t reach your library, so this is what this browser remembers — up to 50 recent jobs. Reload to try again.</span>
+          </div>
+        </div>
+      )}
 
       {unreachable && (
         <div className="max-w-[1500px] mx-auto px-4 sm:px-8 pt-4">
@@ -239,13 +307,13 @@ export default function Library() {
             ))}
           </div>
         )}
-        {hasMore && (
+        {(hasMore || nextCursor) && (
           <div className="mt-6 flex justify-center">
             <button
-              onClick={() => setVisible((v) => v + PAGE)}
+              onClick={() => (hasMore ? setVisible((v) => v + PAGE) : loadOlder())}
               className="font-vx-mono text-[11px] tracking-[0.12em] font-bold rounded-full px-5 py-2.5 border border-vx-border bg-vx-panel text-vx-fg hover:text-vx-fg"
             >
-              LOAD MORE · {rows.length - visible} OLDER
+              {hasMore ? `LOAD MORE · ${rows.length - visible} OLDER` : 'LOAD OLDER'}
             </button>
           </div>
         )}
