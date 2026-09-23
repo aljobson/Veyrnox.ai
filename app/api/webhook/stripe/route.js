@@ -46,6 +46,12 @@ const FLAGGED = new Set(['ALREADY_CREDITED', 'VARIANT_MISMATCH', 'AMOUNT_MISMATC
 const REFUSED = new Set(['TOP_UP_NOT_FOUND', 'ORDER_ALREADY_USED', 'INVALID_ORDER_ID']);
 const REFUND_REFUSED = new Set(['ORDER_NOT_FOUND', 'INVALID_ORDER_ID', 'INVALID_AMOUNT']);
 const DISPUTE_REFUSED = new Set(['TOP_UP_NOT_FOUND', 'INVALID_ORDER_ID']);
+// Stripe does not order deliveries: a dispute can arrive before the
+// checkout.session.completed that credits the charge, and a dispute the Top-up
+// is not credited for yet freezes nobody. Retry TOP_UP_NOT_FOUND while the
+// event is young enough for the credit to still be on its way; after that the
+// charge was never credited and no redelivery will change that.
+const DISPUTE_RETRY_SECONDS = 3600;
 
 export async function POST(req) {
     const cfg = envConfig();
@@ -99,7 +105,7 @@ export async function POST(req) {
             return await handleCheckout(cfg, { object, eventId, secret, apiKey, expectLiveMode });
         }
         if (type === 'charge.refunded') return await handleRefund(cfg, { object, eventId, secret });
-        return await handleDispute(cfg, { object, eventId, type });
+        return await handleDispute(cfg, { object, eventId, type, eventCreated: event.created });
     } catch (err) {
         console.error(LOG, 'processing failed:', err && (err.status ?? err.message));
         return NextResponse.json({ error: 'internal' }, { status: 500 });
@@ -198,7 +204,7 @@ function refundVerdict(orderId, res) {
 // charge.dispute.created Freezes the order's owner; charge.dispute.closed only
 // logs (ADR-0019 dispute_resolved). Only the PaymentIntent is taken from the
 // payload; the user is the credited Top-up's owner.
-async function handleDispute(cfg, { object, eventId, type }) {
+async function handleDispute(cfg, { object, eventId, type, eventCreated }) {
     const orderId = String(object.payment_intent ?? '');
     const reference = String(object.id ?? '').slice(0, 64);
     if (!PAYMENT_INTENT_RE.test(orderId)) {
@@ -221,6 +227,10 @@ async function handleDispute(cfg, { object, eventId, type }) {
         console.error(LOG, 'apply_dispute_event gave no usable verdict:', orderId, res && res.code);
         return NextResponse.json({ error: 'internal' }, { status: 500 });
     }
+    if (res.ok === false && res.code === 'TOP_UP_NOT_FOUND' && isYoung(eventCreated)) {
+        console.error(LOG, 'dispute ahead of its credit, retrying:', 'order', orderId, 'dispute', reference);
+        return NextResponse.json({ error: 'not_credited_yet' }, { status: 503 });
+    }
     if (res.ok === false) {
         console.error(LOG, `${type} not applied:`, res.code, 'order', orderId);
     } else {
@@ -228,4 +238,12 @@ async function handleDispute(cfg, { object, eventId, type }) {
     }
     await markProcessed(cfg, SOURCE, eventId);
     return NextResponse.json({ ok: true });
+}
+
+// Whether a dispute may still be racing the credit it belongs to. An event
+// without a usable timestamp is treated as young: one more retry costs
+// nothing, granting credits on a disputed charge costs the pack.
+function isYoung(eventCreated, nowSeconds = Math.floor(Date.now() / 1000)) {
+    if (!Number.isSafeInteger(eventCreated)) return true;
+    return nowSeconds - eventCreated < DISPUTE_RETRY_SECONDS;
 }
