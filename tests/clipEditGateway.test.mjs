@@ -45,6 +45,17 @@ test('parseEditInputs refuses unknown keys, bad ids, junk numbers and too many c
     assert.equal(parseEditInputs({ clips: [{ ...clip, out_s: Infinity }] }).ok, false);
     assert.equal(parseEditInputs({ clips: Array(11).fill(clip) }).ok, false);
     assert.equal(parseEditInputs({ clips: [clip], audio: { asset_id: M, offset_s: -1 } }).ok, false);
+    // Refused on the client's own arithmetic, before any lookup or R2 read.
+    assert.equal(parseEditInputs({ clips: Array(10).fill({ asset_id: A, in_s: 0, out_s: 30 }) }).error, 'too_long');
+    assert.equal(parseEditInputs({ clips: [{ asset_id: A, in_s: 5, out_s: 5 }] }).error, 'inputs_invalid:clips');
+});
+
+test('an edit that is too long by the client\'s own numbers costs no lookup and no R2 read', async () => {
+    let touched = 0;
+    const counting = { asset: async () => { touched += 1; return null; }, mp4: async () => { touched += 1; return null; } };
+    const r = await resolveEdit('auth-1', { clips: Array(10).fill({ asset_id: A, in_s: 0, out_s: 30 }) }, counting);
+    assert.deepEqual(r, { ok: false, error: 'too_long', status: 400 });
+    assert.equal(touched, 0, 'nothing was resolved');
 });
 
 test('resolveEdit uses the stored length and frame, never the client', async () => {
