@@ -424,3 +424,24 @@ export async function verifyFactor(factorId, code) {
 export async function unenrollFactor(factorId) {
     await authed(`/auth/v1/factors/${encodeURIComponent(factorId)}`, { method: "DELETE" });
 }
+
+// ─── Shared with app/lib/passkeys.js ────────────────────────────────────────
+//
+// The passkey ceremony lives in its own file (this one is already at the
+// 500-line ceiling), but it talks to the same GoTrue with the same error
+// mapping and writes to the same session. Exporting the three pieces it needs
+// keeps one implementation of each rather than a second copy that drifts.
+
+export { post as gotruePost, authed as gotrueAuthed, b64url };
+
+/**
+ * Take a GoTrue token response and make it the live session — same path
+ * sign-in uses, so listeners fire and the gate closes.
+ * @param {any} data
+ * @returns {VeyrnoxSession}
+ */
+export function adoptSession(data) {
+    const s = normalise(data);
+    setSession(s);
+    return s;
+}
