@@ -12,9 +12,9 @@ const ACCOUNT_LINKS = [
   { href: '/app/credits', label: 'Credits' },
 ];
 
-// `account` is optional: pass one (AppNav reads it from /api/v1/account)
-// and the menu names the server's account instead of the local session.
-// The marketing nav passes nothing and keeps reading the session.
+// `account` is optional: pass one (AppNav does, so the email can come from
+// /api/v1/account when the stored session carries none). The marketing nav
+// passes nothing and reads the session on its own.
 export function NavAuthButtons({ account: given }) {
   const [sessionAccount, setSessionAccount] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
