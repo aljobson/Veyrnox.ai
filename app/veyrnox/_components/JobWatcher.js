@@ -33,7 +33,12 @@ export function JobWatcher() {
             </span>
           ), { duration: 10000 });
         } else {
-          toast.error(`${label} failed. Credits refunded.`, { duration: 10000 });
+          // Only claim the refund the ledger has actually made (/jobs/:id
+          // `refunded`); otherwise say what is true and what happens next.
+          toast.error(
+            next.refunded ? `${label} failed. Credits refunded.` : `${label} failed. Your credits are on their way back.`,
+            { duration: 10000 },
+          );
         }
       }
     }
