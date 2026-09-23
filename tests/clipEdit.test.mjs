@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { validateEdit, planEdit, start, onStepOutcome, parentRef } from '../lib/clipEdit.js';
+import { validateEdit, planEdit, editUnits, start, onStepOutcome, parentRef } from '../lib/clipEdit.js';
 import { handleStepCallback } from '../lib/autoShortWebhook.js';
 
 const JOB = '11111111-2222-4333-8444-555555555555';
@@ -125,4 +125,20 @@ test('webhook dispatch sends editor steps to the Clip Editor, not Auto Short', a
     } finally {
         globalThis.fetch = realFetch;
     }
+});
+
+test('an edit is billed by the greater of its length and its step count', () => {
+    // 10 clips of 0.3 s: 3 s of output, but ten trims + a merge = 11 calls.
+    const many = validateEdit({ clips: Array.from({ length: 10 }, (_, i) => clip(`c${i}`, 0.1, 0.4)) });
+    assert.equal(many.output_s, 3);
+    assert.equal(planEdit(many).length, 11);
+    assert.equal(editUnits(many), 11, 'the short edit pays for the work it causes');
+
+    // A long two-clip edit is still priced on its length.
+    const long = validateEdit({ clips: [clip('a', 0, 30, 30), clip('b', 1, 26, 30)] });
+    assert.equal(long.output_s, 55);
+    assert.equal(editUnits(long), 11, '55 s = 11 started units, above its 3 steps');
+
+    // One trimmed clip: one step, one unit — unchanged.
+    assert.equal(editUnits(validateEdit({ clips: [clip('a', 0, 4)] })), 1);
 });

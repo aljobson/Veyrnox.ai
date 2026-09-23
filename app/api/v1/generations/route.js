@@ -30,7 +30,7 @@ import { envConfig as r2EnvConfig, isConfigured as r2IsConfigured } from '../../
 import { start as startAutoShort, parentRef } from '../../../../lib/autoShort.js';
 import { TOPIC_RE } from '../../../../lib/autoShortSteps.js';
 import { runtimeDeps, runtimeKeys } from '../../../../lib/autoShortRuntime.js';
-import { start as startClipEdit, parentRef as clipEditRef } from '../../../../lib/clipEdit.js';
+import { start as startClipEdit, parentRef as clipEditRef, editUnits } from '../../../../lib/clipEdit.js';
 import { resolveEdit, defaultDeps as editDeps } from '../../../../lib/clipEditSources.js';
 
 // Constrain idempotency keys to a safe printable range.
@@ -358,7 +358,10 @@ export async function POST(req) {
         }
         if (!resolved.ok) return NextResponse.json({ error: resolved.error }, { status: resolved.status });
         storedInputs = { edit: resolved.edit };
-        pricedInputs = { duration_seconds: resolved.edit.output_s };
+        // Billed units, not raw seconds: a many-clip edit costs us per step
+        // (lib/clipEdit.js editUnits), and priceFor multiplies the catalog's
+        // credits_5s by the unit count either way.
+        pricedInputs = { duration_seconds: editUnits(resolved.edit) * UNIT_SECONDS };
     }
 
     // 2. Resolve users.id from auth_id.

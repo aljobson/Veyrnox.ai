@@ -113,6 +113,12 @@ this ADR. It reuses decisions 2 to 5 unchanged, with these additions:
    1 credit per started 5 seconds of *output*. The gateway prices it from
    the edit's output length, which it measures from the source files, never
    from a number the client sends. The app still never adds up step prices.
+   **Amended 2026-09-23:** the billed unit count is the greater of that
+   length and the edit's step count, because a many-clip edit's cost scales
+   with steps (ten 0.3 s clips = 3 s of output, twelve provider calls, under
+   the ADR-0014 floor). The unit price stays in the catalog; only the count
+   of units is computed, exactly as `duration_seconds` is for every video
+   row.
 
 2. **Steps run one at a time.** An edit's steps (a trim per cut clip, then
    one merge, then optional audio) are submitted strictly in order, each by

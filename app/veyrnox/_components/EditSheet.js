@@ -53,7 +53,12 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted }) {
   const mixed = new Set(items.filter((x) => x.ratio).map((x) => x.ratio)).size > 1;
   const badRange = items.some((x) => x.duration != null && !(x.in_s >= 0 && x.out_s > x.in_s && x.out_s <= x.duration));
   const noop = items.length === 1 && !audioId && loaded && items[0].in_s === 0 && items[0].out_s >= items[0].duration;
-  const cost = credits5s != null && output > 0 ? credits5s * Math.ceil(output / UNIT_S) : null;
+  // The same unit count the gateway bills (lib/clipEdit.js editUnits): a
+  // many-clip edit costs per step, so steps set the floor under the length.
+  const steps = items.filter((x) => !(x.duration != null && x.in_s === 0 && x.out_s >= x.duration)).length
+    + (items.length > 1 ? 1 : 0) + (audioId ? 1 : 0);
+  const units = Math.max(1, Math.ceil(output / UNIT_S), steps);
+  const cost = credits5s != null && output > 0 ? credits5s * units : null;
   const blocked = !items.length || !loaded || mixed || badRange || noop || output > MAX_OUTPUT_S || cost == null || busy;
 
   async function submit() {
