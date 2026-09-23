@@ -10,7 +10,6 @@ import { ThemeToggle } from './ThemeToggle';
 import { gatewayFetch, GatewayError } from '../_lib/gateway';
 import { getSession, onSessionChange } from '../../lib/authClient';
 import { accountLabel } from '../_lib/account';
-import { readJobHistory } from '../_lib/jobHistory';
 
 // Marketing site nav (Home / Gallery / Pricing).
 export function MarketingNav() {
@@ -67,45 +66,44 @@ export function AppNav({ balance, active = 'explore' }) {
     { key: 'create',  href: '/app/create',  label: 'Create' },
     { key: 'library', href: '/app/library', label: 'Library' },
   ];
-  const [ownBalance, setOwnBalance] = useState(null);
-  const loadOwn = useCallback(async () => {
+  // One server read for all three figures: who you are, the balance and
+  // the true asset count for the account (not this browser's history).
+  // A generation both spends credits and stores an asset, so the existing
+  // veyrnox:balance-changed is already the moment all of it moved.
+  const [summary, setSummary] = useState(null);
+  const loadSummary = useCallback(async () => {
     try {
-      const b = await gatewayFetch('/balance');
-      setOwnBalance(b.balance);
+      setSummary(await gatewayFetch('/account'));
     } catch (e) {
-      if (e instanceof GatewayError && e.status === 401) setOwnBalance(null);
+      // Signed out: drop the figures with the session. Any other failure
+      // keeps the last good read — a stale number beats a wrong one, and
+      // an unanswered read renders "—", never a spinner.
+      if (e instanceof GatewayError && e.status === 401) setSummary(null);
     }
   }, []);
   useEffect(() => {
-    if (balance != null) return;              // parent owns it
-    loadOwn();
-    const onBal = () => loadOwn();
+    loadSummary();
+    const onBal = () => loadSummary();
     window.addEventListener('veyrnox:balance-changed', onBal);
     return () => window.removeEventListener('veyrnox:balance-changed', onBal);
-  }, [balance, loadOwn]);
+  }, [loadSummary]);
 
-  // Who is signed in, read from the session already in localStorage.
-  // null until mount on both sides so the server and client markup match.
-  const [account, setAccount] = useState(null);
+  // Who is signed in. The session in localStorage is the gate — it needs no
+  // network, so the sign-in button is never wrong while /account is in
+  // flight — and null until mount on both sides so the server and client
+  // markup match. The endpoint supplies the name and email it renders.
+  const [session, setSession] = useState(null);
   useEffect(() => {
-    setAccount(accountLabel(getSession()));
-    return onSessionChange((s) => setAccount(accountLabel(s)));
+    setSession(accountLabel(getSession()));
+    return onSessionChange((s) => setSession(accountLabel(s)));
   }, []);
+  const name = summary?.name || summary?.email || session?.name || '';
+  const account = session
+    ? { name, email: summary?.email || session.email, initial: (name[0] || '?').toUpperCase() }
+    : null;
 
-  // Asset count. The gateway has no jobs-list endpoint, so this is the same
-  // client-side ring buffer Library lists from — stored generations on this
-  // browser, not every generation the account has ever made. A generation
-  // both spends credits and adds a row, so veyrnox:balance-changed is
-  // already the moment the count moved; no second event to invent.
-  const [assets, setAssets] = useState(null);
-  useEffect(() => {
-    const recount = () => setAssets(readJobHistory().length);
-    recount();
-    window.addEventListener('veyrnox:balance-changed', recount);
-    return () => window.removeEventListener('veyrnox:balance-changed', recount);
-  }, []);
-
-  const shown = balance != null ? balance : ownBalance;
+  const assets = summary?.assets ?? null;
+  const shown = balance != null ? balance : summary?.credits ?? null;
   const fmt = shown != null ? new Intl.NumberFormat('en-US').format(shown) : '—';
   const assetFmt = assets != null ? new Intl.NumberFormat('en-US').format(assets) : '—';
   return (
@@ -165,8 +163,10 @@ export function AppNav({ balance, active = 'explore' }) {
               </Link>
             </span>
             {/* The account menu the marketing nav already ships: who you
-                are, links into the app, sign out. */}
-            <NavAuthButtons />
+                are, links into the app, sign out. Named from /account so
+                the studio header agrees with the server, not with a stale
+                copy of the session. */}
+            <NavAuthButtons account={account} />
           </>
         ) : (
           <button
