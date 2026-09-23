@@ -1,6 +1,6 @@
 # ADR-0030 — Sign in with Apple as a first-time onboarding provider
 
-**Status:** Proposed 2026-09-22
+**Status:** Accepted 2026-09-22, configured and live 2026-09-23
 **Related:** CLAUDE.md "Identity & sessions" (signup grant, OAuth `redirect_to`),
 [ADR-0004](0004-auth-and-db-bundle.md) (Supabase Auth),
 [ADR-0026](0026-turnstile-captcha-on-auth.md) (Turnstile on the email paths)
@@ -88,9 +88,69 @@ diff that accompanies it is small.
   this a phishing-susceptibility problem. Not blocking, but it is the first
   thing a new user sees and it does not say Veyrnox.
 
+## As configured (2026-09-23)
+
+Apple Developer, team **Veyrnox LTD** (`R54268MWFV`):
+
+| | |
+|---|---|
+| App ID | `ai.veyrnox.app` — "Veyrnox AI Web", Sign In with Apple as primary |
+| Services ID | `ai.veyrnox.web` — the OAuth `client_id` |
+| Domain | `xdxdzmsztyzbnzeforxx.supabase.co` |
+| Return URL | `https://xdxdzmsztyzbnzeforxx.supabase.co/auth/v1/callback` |
+| Signing key | `LP7U6TPVNV` |
+| Client secret expires | **2027-03-24** |
+
+None of these are secrets: the Services ID travels in every authorize URL, and
+the Team and Key ids ride in the JWT header. The `.p8` is the secret and is not
+in this repo, in any environment, or in any chat log.
+
+A fresh App ID was registered rather than reusing `com.veyrnox.app`. That one
+belongs to the Veyrnox **wallet** product — a different company behind the hard
+wall in CLAUDE.md — and hanging this platform's Apple identities off it would
+have bound two businesses' user records together. Apple's Services ID form only
+offers App IDs with Sign in with Apple set as primary, so the separation is
+visible there too: the wallet App ID never appeared in the list.
+
+Two things worth knowing before anyone repeats this:
+
+- Apple rejects `.` in an identifier's **description** (and `-`, though the
+  form only warns about `@ & * ' "`). `Veyrnox.ai Web` was refused with
+  "not a valid name for an app id"; the bundle id `ai.veyrnox.app` was always
+  fine. The rejection arrives as a modal that then covers the Register button,
+  so it reads like a dead button rather than a validation error.
+- The domain Apple verifies is the **Supabase** host, not `veyrnox.ai`. Apple
+  registers whoever receives the `form_post`. Nothing is served from `public/`
+  for this and no CSP directive changed.
+
+## Verified
+
+Checked after the provider was saved:
+
+- `/auth/v1/settings` reports `apple: true`.
+- `/auth/v1/authorize?provider=apple` returns 302 to `appleid.apple.com` with
+  `client_id=ai.veyrnox.web`, the registered `redirect_uri` and
+  `response_mode=form_post`.
+- Apple's sign-in page loads and names the Services ID: "Use your Apple Account
+  to sign in to 'Veyrnox AI Web Sign In'." That is Apple validating the
+  Services ID, the primary grouping and the return URL.
+- `veyrnox.ai` renders the Apple button with no deploy — `AuthGate` reads
+  `external.apple` at mount.
+- The minted client secret verifies against its own key's public half, with
+  `alg ES256`, `kid LP7U6TPVNV`, `iss R54268MWFV`, `sub ai.veyrnox.web`,
+  `aud https://appleid.apple.com`, and a 183-day life (Apple's cap).
+
+**Not yet proven:** the client secret is only exercised at token exchange,
+which needs a real sign-in. Every check above passes without it being used
+once. The secret is therefore correct by construction, not by round trip,
+until a first Apple sign-up completes and the ledger shows exactly one
+`grant:signup` row with `reconcile_free_credits()` returning zero.
+
 ## Rollout
 
-Each step is safe on its own; the button appears only after the last one.
+
+Each step was safe on its own; the button appeared only after the last one.
+Steps 1-2 are done; step 3 is the outstanding live check above.
 
 1. Apple Developer: App ID with the Sign in with Apple capability
    (Server-to-Server notification endpoint left blank — Supabase does not
