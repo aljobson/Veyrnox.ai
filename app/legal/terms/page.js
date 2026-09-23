@@ -31,7 +31,7 @@ export default function Terms() {
             </ul>
             <p>Credit packs are not on sale yet. When they are, the following applies.</p>
             <ul>
-                <li>Credit packs are sold to you directly by Veyrnox Ltd. We are the seller and Merchant of Record for your purchase, and we issue your invoice. Payments are processed on our behalf by Stripe, Inc.; Stripe handles your card details, we never see them. Where VAT or an equivalent sales tax applies, it is charged by Veyrnox Ltd and shown before you pay.</li>
+                <li>Credit packs are sold through Stripe Checkout. Under Stripe Managed Payments, Stripe, Inc. is the Merchant of Record and the seller of record for your credit pack purchase: Stripe takes the payment, charges and remits any VAT or sales tax due for your location, and issues your receipt. The total including tax is shown before you pay. Veyrnox Ltd provides the Veyrnox.ai service that the credits are spent on, and these terms govern your use of it. Stripe handles your card details; we never see them.</li>
                 <li>Before you buy, you must tick a box confirming: &ldquo;I want my credits added to my account straight away. I understand that once I use any of these credits to generate, I lose my right to cancel this purchase.&rdquo; See our <a href="/legal/refund">Refund Policy</a>.</li>
             </ul>
 

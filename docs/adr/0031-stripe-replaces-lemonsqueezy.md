@@ -1,6 +1,6 @@
 # ADR-0031 — Stripe replaces LemonSqueezy as the payment provider
 
-**Status:** Accepted 2026-09-23
+**Status:** Accepted 2026-09-23 — amended 2026-09-23 (see Amendments)
 **Related:** [ADR-0003](0003-billing-provider.md) (billing / merchant-of-record —
 provider choice superseded), [ADR-0018](0018-credit-pack-top-ups.md) (Credit Pack
 Top-ups — §provider superseded, credit/refund rules kept),
@@ -86,6 +86,55 @@ eligibility list.
   `order_identifier` from the query string, which Stripe does not send. The
   backfill path is inert under Stripe until it is rebuilt against the
   Checkout Session id.
+
+## Amendments
+
+### 2026-09-23 — Stripe Managed Payments is enabled, so Stripe is the MoR and automatic tax is mandatory
+
+Decision 3 above ("Stripe, standard account", "we are the merchant of record,
+so VAT and sales tax are ours", "Stripe Tax is **off**") is **superseded**. The
+original text stays as written; this amendment is what holds.
+
+**What happened.** On 2026-09-23 `POST /api/v1/top-ups` returned 502
+`checkout_failed` in production. The Stripe API log shows the underlying
+`POST /v1/checkout/sessions` refused with 400:
+
+> Managed Payments handles taxes for you. `automatic_tax[enabled]` must be true
+> when Managed Payments is enabled. Omit this parameter or pass
+> `automatic_tax[enabled]=true`. Managed Payments is enabled by default on your
+> account, but you can disable it for this request by passing
+> `managed_payments[enabled]=false`.
+
+The route computed `automaticTax: process.env.STRIPE_AUTOMATIC_TAX === 'true'`,
+so an unset var sent an explicit `automatic_tax[enabled]=false` — exactly what
+Managed Payments refuses. No checkout could be opened at all.
+
+**What we learned.** The owner has confirmed Managed Payments is approved and
+enabled on **both** the sandbox and the live account. That is not the "standard
+account" the options table assumed:
+
+1. **Stripe, Inc. is the Merchant of Record and seller of record** for Credit
+   Pack purchases. Veyrnox Ltd provides the service the credits are spent on.
+2. **VAT and sales tax are not ours.** Stripe charges and remits them. The
+   "Open questions" entry asking which VAT registrations Veyrnox Ltd needs, and
+   the consequence "we now owe VAT/sales tax accounting we did not owe under an
+   MoR", no longer apply to Credit Pack sales.
+3. **Automatic tax is mandatory, not a switch to flip after a finance review.**
+   `automatic_tax[enabled]` is `true` unless a caller explicitly passes
+   `false`; `STRIPE_AUTOMATIC_TAX` only turns it off when set to the exact
+   string `"false"`, and doing so on these accounts makes Stripe refuse the
+   session. The switch survives only for an account with Managed Payments off.
+4. **Customer-facing copy was wrong and is corrected.** The Terms, the Privacy
+   Policy and the credits/pricing pages said Veyrnox Ltd sells directly, issues
+   the invoice and charges the tax, with Stripe as a payment processor. They now
+   say Stripe, Inc. is the Merchant of Record and seller of record through
+   Stripe Managed Payments, charges and remits VAT and sales tax, and that
+   Veyrnox Ltd provides the service.
+
+**Still open.** Whether the fee difference under Managed Payments changes the
+per-credit floors in ADR-0018; and what Stripe's MoR status means for the UK/EU
+consumer cancellation wording in the Refund Policy, which still describes a
+refund from us.
 
 ## Open questions
 

@@ -11,7 +11,15 @@
  * Configuration (read at the route layer):
  *   STRIPE_SECRET_KEY        Worker secret (sk_test_… or sk_live_…)
  *   STRIPE_WEBHOOK_SECRET    Worker secret (whsec_…), signs /api/webhook/stripe
- *   STRIPE_AUTOMATIC_TAX     Worker var, "true" (default) or "false"
+ *   STRIPE_AUTOMATIC_TAX     Worker var. Automatic tax is ON; only the exact
+ *                            string "false" turns it off. Stripe Managed
+ *                            Payments is approved and enabled on both the
+ *                            sandbox and the live account, which makes Stripe
+ *                            the Merchant of Record and makes automatic tax
+ *                            mandatory — a session without it is refused with
+ *                            400 (ADR-0031, amendment 2026-09-23). The "false"
+ *                            switch survives only for an account that has
+ *                            Managed Payments disabled.
  *   PUBLIC_HOST              https origin the buyer returns to
  */
 
@@ -62,7 +70,9 @@ const topUpMessage = (topUpId) => enc(`top_up:${topUpId}`);
  * @param {string} cfg.apiKey
  * @param {string} cfg.publicHost
  * @param {string} cfg.signingSecret   STRIPE_WEBHOOK_SECRET; signs the Top-up id
- * @param {boolean} [cfg.automaticTax=true]
+ * @param {boolean} [cfg.automaticTax=true] omitted or undefined leaves
+ *   automatic tax ON; only an explicit `false` disables it, and Stripe rejects
+ *   that while Managed Payments is enabled on the account.
  * @param {string} [cfg.idempotencyKey]
  * @returns {Promise<{ok:true, url:string, sessionId:string}|{ok:false, error:string}>}
  */
@@ -85,7 +95,9 @@ export async function createCheckout(input, cfg) {
         'line_items[0][price_data][unit_amount]': input.priceUsdCents,
         'line_items[0][price_data][product_data][name]': `${input.credits} Veyrnox credits`,
         'line_items[0][price_data][product_data][tax_code]': TAX_CODE,
-        // Prices are what the catalog says; Stripe adds any tax on top.
+        // Prices are what the catalog says; Stripe adds any tax on top, and
+        // under Managed Payments Stripe is the Merchant of Record that charges
+        // and remits it. On unless a caller explicitly passes false.
         'automatic_tax[enabled]': cfg.automaticTax === false ? 'false' : 'true',
         client_reference_id: input.topUpId,
         'metadata[top_up_id]': input.topUpId,

@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHmac } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 
 import { createCheckout, verifyWebhookSignature, verifyTopUpMetadata, interpretSession, TAX_CODE } from '../packages/adapters/stripe.js';
 
@@ -31,10 +32,34 @@ test('the checkout is built from our own price, with the AI tax code and both re
     assert.equal(seen.init.headers.Authorization, 'Bearer sk_test_x');
 });
 
-test('automatic tax can be turned off, and bad input never reaches Stripe', async () => {
-    const off = await createCheckout({ topUpId: TOP_UP, priceUsdCents: 1000, credits: 100 },
-        cfg(async (_u, init) => { assert.equal(new URLSearchParams(init.body).get('automatic_tax[enabled]'), 'false'); return okSession(); }, { automaticTax: false }));
-    assert.equal(off.ok, true);
+// Stripe Managed Payments is enabled on both accounts and refuses a session
+// with automatic_tax off: a checkout built with tax off is a 400, which is how
+// POST /api/v1/top-ups returned 502 checkout_failed on 2026-09-23.
+test('automatic tax is on unless a caller explicitly passes false', async () => {
+    const taxFlag = async (over) => {
+        let seen;
+        const r = await createCheckout({ topUpId: TOP_UP, priceUsdCents: 1000, credits: 100 },
+            cfg(async (_u, init) => { seen = new URLSearchParams(init.body); return okSession(); }, over));
+        assert.equal(r.ok, true);
+        return seen.get('automatic_tax[enabled]');
+    };
+    assert.equal(await taxFlag({}), 'true', 'omitted');
+    assert.equal(await taxFlag({ automaticTax: undefined }), 'true', 'undefined');
+    assert.equal(await taxFlag({ automaticTax: null }), 'true', 'null');
+    assert.equal(await taxFlag({ automaticTax: true }), 'true', 'true');
+    assert.equal(await taxFlag({ automaticTax: false }), 'false', 'the one explicit off switch');
+});
+
+// The 2026-09-23 outage: `=== 'true'` turned an unset var into an explicit
+// tax-off. The route is a Next.js module, so this pins its source the way
+// tests/uploadConsent.test.mjs does.
+test('the top-ups route cannot silently send tax-off from an unset env var', () => {
+    const route = readFileSync(new URL('../app/api/v1/top-ups/route.js', import.meta.url), 'utf8');
+    assert.match(route, /automaticTax: process\.env\.STRIPE_AUTOMATIC_TAX !== 'false',/);
+    assert.doesNotMatch(route, /STRIPE_AUTOMATIC_TAX === 'true'/);
+});
+
+test('bad input never reaches Stripe', async () => {
     const never = async () => { throw new Error('must not call Stripe'); };
     assert.equal((await createCheckout({ topUpId: 'nope', priceUsdCents: 1000, credits: 100 }, cfg(never))).error, 'invalid topUpId');
     assert.equal((await createCheckout({ topUpId: TOP_UP, priceUsdCents: 0, credits: 100 }, cfg(never))).error, 'invalid price');

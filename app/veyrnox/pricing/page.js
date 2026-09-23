@@ -121,8 +121,9 @@ export default function Pricing() {
             ))}
           </ul>
           <p className="mt-4 text-[13px] text-vx-fg-muted max-w-[640px]">
-            Prices are in USD and exclude tax. Your total, including any VAT or sales tax for your location,
-            is shown at checkout before you pay.
+            Prices are in USD and exclude tax. Stripe, Inc. is the Merchant of Record for credit pack
+            purchases and charges and remits any VAT or sales tax for your location; your total including
+            tax is shown at checkout before you pay.
           </p>
           <Link
             href="/app/credits"
