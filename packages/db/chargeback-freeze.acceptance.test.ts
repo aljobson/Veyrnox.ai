@@ -101,7 +101,7 @@ describe("Chargeback Freeze", { skip: !DATABASE_URL && "DATABASE_URL not set" },
 
     async function actions(userId: string) {
         return (await pool.query(
-            `SELECT action, actor, reason, top_up_id FROM public.account_actions WHERE user_id = $1 ORDER BY created_at, id`,
+            `SELECT action, actor, top_up_id FROM public.account_actions WHERE user_id = $1 ORDER BY created_at, id`,
             [userId])).rows;
     }
 
@@ -268,7 +268,7 @@ describe("Chargeback Freeze", { skip: !DATABASE_URL && "DATABASE_URL not set" },
         assert.equal(res.already_frozen, false);
         // The log an auditor reads back when the chargeback is argued. It named
         // LemonSqueezy until 0098, long after Stripe became the processor.
-        const [logged] = await actions(t.userId);
+        const logged = await one(`SELECT reason FROM public.account_actions WHERE user_id = $1`, [t.userId]);
         assert.equal(logged.reason, `Card dispute dsp_reason_check on order ${t.order}`);
         const firstFrozenAt = (await one(`SELECT frozen_at FROM public.users WHERE id = $1`, [t.userId])).frozen_at;
 
