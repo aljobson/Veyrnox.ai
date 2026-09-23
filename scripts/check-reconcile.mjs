@@ -27,6 +27,7 @@ const LABELS = {
     balance_drift: 'credit_balances.balance != SUM(ledger_entries.delta)',
     free_credit_drift: 'free_balance outside 0 <= free_balance <= balance',
     top_up_drift: 'credited Top-ups that do not tie out to their ledger entry',
+    failed_refund_drift: 'FAILED jobs still holding the credits they should have refunded',
 };
 
 export async function fetchStatus({ url, key }) {
