@@ -274,16 +274,21 @@ export async function POST(req) {
     }
     const sources = {};   // input field -> resolved source
     const sourceKeys = {}; // input field -> upload key
+    // A client-sent image_url/video_url is dropped here, ALWAYS — not only on
+    // the upload path. Inside `if (rawKeys.length)` these two deletes left a
+    // hole: a request with a media URL and no source key kept the client's
+    // host, and then checkSource saw no resolved source and enforced neither
+    // the model's maxPixels/maxSeconds cap (which its price is built on) nor
+    // the consent statement. The only source a model may read is one this
+    // server signed, so the key is the only way to name one.
+    delete inputs.image_url;
+    delete inputs.video_url;
     if (rawKeys.length) {
         if (!consent) return NextResponse.json({ error: 'consent_required' }, { status: 400 });
         const r2cfg = r2EnvConfig();
         if (!r2IsConfigured(r2cfg)) {
             return NextResponse.json({ error: 'gateway_not_configured' }, { status: 503 });
         }
-        // A client-sent image_url/video_url is replaced, never merged: the
-        // only source a Transform job may read is one this server signed.
-        delete inputs.image_url;
-        delete inputs.video_url;
         for (const key of rawKeys) {
             const source = await resolveUploadedSource(authId, key, r2cfg);
             if (!source.ok) {
