@@ -59,6 +59,35 @@ async function appliedMigrations({ url, key }) {
     return new Set(rows.map((r) => (typeof r === 'string' ? r : r && r.name)).filter(Boolean));
 }
 
+// Is Attack Protection (CAPTCHA) actually on? Neither /auth/v1/settings nor the
+// migration ledger says, so this is the same invisible-switch problem as
+// autoconfirm — ADR-0026 made Turnstile load-bearing against the 200/day email
+// quota, and nothing could tell you it had been turned off again.
+//
+// GoTrue rejects a request carrying no captcha_token with captcha_failed
+// BEFORE it evaluates the credentials, so a deliberately invalid login is a
+// definitive probe that cannot sign anything in. The address uses the reserved
+// .invalid TLD (RFC 2606), so it can never belong to a real account, and a
+// password grant sends no email either way.
+//
+// true = enforced, false = off, null = throttled, so we could not tell.
+async function captchaEnforced({ url, key }) {
+    const res = await fetch(new URL('/auth/v1/token?grant_type=password', url), {
+        method: 'POST',
+        headers: { apikey: key, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            email: 'signup-gate-probe@veyrnox.invalid',
+            password: 'this-probe-never-authenticates',
+        }),
+        signal: AbortSignal.timeout(15000),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (data && data.error_code === 'captcha_failed') return true;
+    // GoTrue throttles repeated bad logins. That says nothing about CAPTCHA.
+    if (res.status === 429) return null;
+    return false;
+}
+
 let cfg;
 try {
     cfg = publicConfig();
@@ -69,8 +98,13 @@ try {
 
 let settings;
 let applied;
+let captcha;
 try {
-    [settings, applied] = await Promise.all([authSettings(cfg), appliedMigrations(cfg)]);
+    [settings, applied, captcha] = await Promise.all([
+        authSettings(cfg),
+        appliedMigrations(cfg),
+        captchaEnforced(cfg),
+    ]);
 } catch (err) {
     // "Could not check" is never a pass — same rule as the migration ledger.
     console.error(`could not check the signup gate: ${err.message}`);
@@ -89,6 +123,19 @@ if (autoconfirm && signupOpen) {
         '    This is the change that actually stops provider spend.'
     );
 }
+if (captcha === null) {
+    // Same rule as the two fetches above: could not check is never a pass.
+    console.error('could not check the signup gate: the CAPTCHA probe was rate limited; re-run.');
+    process.exit(2);
+}
+if (!captcha) {
+    problems.push(
+        'CAPTCHA is OFF: /auth/v1/token accepted a request with no captcha_token. Nothing\n' +
+        '    throttles scripted sign-ups, and every one of them spends from the 200/day\n' +
+        '    Cloudflare Email Sending quota, which locks real users out of confirming.\n' +
+        '    Turn Attack Protection back on in Supabase Auth (ADR-0026).'
+    );
+}
 if (!has0071) {
     problems.push(
         'migration 0071 is not applied: production still runs the 0010 trigger, which grants on\n' +
@@ -101,6 +148,7 @@ console.log('signup gate');
 console.log(`  mailer_autoconfirm : ${autoconfirm ? 'ON  <- grants are instantly usable' : 'off'}`);
 console.log(`  signup             : ${signupOpen ? 'open' : 'disabled'}`);
 console.log(`  migration 0071     : ${has0071 ? 'applied' : 'NOT APPLIED  <- 0010 still grants on INSERT'}`);
+console.log(`  captcha            : ${captcha ? 'enforced' : 'OFF  <- scripted sign-ups are unthrottled'}`);
 console.log(`  providers          : ${Object.entries(settings.external || {}).filter(([, v]) => v).map(([k]) => k).join(', ')}`);
 
 if (!problems.length) {
@@ -110,5 +158,5 @@ if (!problems.length) {
 
 console.error('\nSIGNUP FAUCET OPEN');
 for (const p of problems) console.error(`  - ${p}`);
-console.error('\n  Both are needed for the clean state, and neither is visible from the repo.');
+console.error('\n  Every one of these is needed for the clean state, and none is visible from the repo.');
 process.exit(1);
