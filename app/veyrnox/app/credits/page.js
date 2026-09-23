@@ -178,7 +178,9 @@ export default function Credits() {
           <div className="rounded-2xl border border-vx-border bg-vx-panel overflow-hidden">
             {ledger.map((l) => {
               const model = MODELS.find((m) => m.id === l.model_id);
-              const isRefund = l.state === 'failed';
+              // `refunded` comes from /jobs/:id; a failure whose refund has
+              // not landed yet shows the debit it still is.
+              const isRefund = l.state === 'failed' && l.refunded === true;
               const delta = isRefund ? `+${l.credits}` : `−${l.credits}`;
               const cls = isRefund ? 'text-vx-accent' : 'text-vx-money';
               const s = STATE_UI[l.state] || STATE_UI.queued;

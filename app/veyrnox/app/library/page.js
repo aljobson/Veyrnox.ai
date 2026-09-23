@@ -13,7 +13,10 @@ const STATE_UI = {
   queued:    { chip: 'accent', glyph: '●', label: 'QUEUED' },
   running:   { chip: 'accent', glyph: '●', label: 'RUNNING' },
   succeeded: { chip: 'accent', glyph: '✓', label: 'DONE' },
+  // FAILED is not REFUNDED: the refund is a second call, and /jobs/:id says
+  // whether it has landed. Claiming it either way was the old bug.
   failed:    { chip: 'danger', glyph: '✕', label: 'FAILED · REFUNDED' },
+  failed_pending: { chip: 'danger', glyph: '✕', label: 'FAILED · REFUND DUE' },
   // We could not read this job's state: it 404s (not ours, or aged out of the
   // window) or the server was unreachable. Deliberately neutral — claiming
   // either DONE or FAILED · REFUNDED would assert something about the ledger
@@ -275,10 +278,13 @@ export default function Library() {
 }
 
 function JobCard({ row, models, selectable, selected, onToggle }) {
-  const s = STATE_UI[row.state] || STATE_UI.queued;
+  const refundPending = row.state === 'failed' && row.refunded === false;
+  const s = STATE_UI[refundPending ? 'failed_pending' : row.state] || STATE_UI.queued;
   // No delta for `unknown`: a +N would claim a refund landed and a −N would
   // claim the debit stands, and we do not know which.
-  const delta = row.state === 'unknown' ? '' : row.state === 'failed' ? `+${row.credits}` : `−${row.credits}`;
+  // No delta while a refund is owed but not yet made: +N would claim it landed.
+  const delta = row.state === 'unknown' || refundPending ? ''
+    : row.state === 'failed' ? `+${row.credits}` : `−${row.credits}`;
   const deltaCls = row.state === 'failed' ? 'text-vx-accent' : 'text-vx-fg-muted';
   // Live catalog (tokens.js fallback) so newly added models show their name.
   const model = models.find((m) => m.id === row.model_id);

@@ -358,7 +358,10 @@ export default function CreateStudio() {
                       <span aria-hidden="true">✕</span> FAILED · REFUNDED
                     </div>
                     <div className="mt-2 text-sm text-vx-fg-body">
-                      {ERROR_COPY[job.error_code] || 'Something went wrong. Credits refunded.'}
+                      {ERROR_COPY[job.error_code]
+                        || (job.refunded
+                          ? 'Something went wrong. Credits refunded.'
+                          : 'Something went wrong. Your credits are on their way back.')}
                     </div>
                   </div>
                 ) : (
