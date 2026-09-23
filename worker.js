@@ -17,6 +17,7 @@ import { runScheduledBackfill } from './lib/scheduledBackfill.js';
 import { sweepUploads, sweepConsumedUploads } from './lib/uploadSweep.js';
 import { isConfigured as r2IsConfigured } from './packages/adapters/r2.js';
 import { sweepSteps } from './lib/autoShortSweep.js';
+import { reapAssets } from './lib/assetReap.js';
 import { runtimeDeps, runtimeKeys } from './lib/autoShortRuntime.js';
 
 export default {
@@ -27,12 +28,31 @@ export default {
             runScheduledBackfill(handler.fetch, env, ctx),
             runUploadSweep(env),
             runAutoShortSweep(env),
+            runAssetReap(env),
         ]);
         for (const r of results) {
             if (r.status === 'rejected') console.error('[cron] task threw:', r.reason && r.reason.message);
         }
     },
 };
+
+/**
+ * R2 objects that expire_assets (0016) queued when it deleted their rows.
+ * Nothing drained this queue before, so the bytes outlived the account's
+ * access to them and the 90-day promise in the privacy notice.
+ */
+async function runAssetReap(env) {
+    const cfg = { supabaseUrl: env.SUPABASE_URL, serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY };
+    const r2cfg = r2EnvFrom(env);
+    if (!cfg.supabaseUrl || !cfg.serviceRoleKey || !r2IsConfigured(r2cfg)) {
+        console.error('[reap-assets] not configured; skipping');
+        return { ok: false, skipped: 'not_configured' };
+    }
+    const out = await reapAssets(cfg, r2cfg);
+    if (!out.ok) console.error('[reap-assets] failed:', out.error);
+    else if (out.processed) console.error('[reap-assets]', JSON.stringify(out));
+    return out;
+}
 
 /** Auto Short steps stuck past their provider's normal time (lib/autoShortSweep.js). */
 async function runAutoShortSweep(env) {
