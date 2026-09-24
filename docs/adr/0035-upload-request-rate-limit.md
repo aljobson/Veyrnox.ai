@@ -1,6 +1,6 @@
 # ADR-0035 — Bound upload URL requests before R2 work
 
-- Status: Proposed; staged with enforcement disabled pending migration 0116.
+- Status: Accepted; migration 0116 applied, activation prepared for deployment.
 - Date: 2026-09-24
 - Related: audit API rate-limit finding, ADR-0034 generation attempts
 
@@ -53,3 +53,14 @@ Test independent users, saturation, reset, replay, unknown accounts, forced RLS,
 function privileges and cleanup of provision-only fixtures. Route tests prove
 quota denials stop before balance/R2, retained balance and storage gates, signed
 URL scoping and TTL, the nine/ten-object boundary, and disabled compatibility.
+
+## Activation — 2026-09-24
+
+PR #293 deployed successfully. The owner-approved apply-migrations run
+[36003000312](https://github.com/aljobson/Veyrnox.ai/actions/runs/36003000312)
+applied 0116 at 13:03:45 UTC. The migration ledger accounts for all 91 applied
+migrations, and all four reconciliation counts were zero on the activation
+check. Set UPLOAD_REQUEST_RATE_LIMIT_ENABLED=true in the next deployment.
+This enables the 60-request quota before balance reads, R2 listing and signing;
+no further migration is needed. Revert the flag to false to roll enforcement
+back without removing the counter table or altering the migration ledger.

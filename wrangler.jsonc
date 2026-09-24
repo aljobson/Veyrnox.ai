@@ -18,8 +18,8 @@
   // Public config — safe to commit. SUPABASE_URL used by middleware.js;
   // NEXT_PUBLIC_* by client bundle.
   "vars": {
-    // Enable after owner-approved migration 0116 (ADR-0035).
-    "UPLOAD_REQUEST_RATE_LIMIT_ENABLED": "false",
+    // Migration 0116 applied 2026-09-24; ADR-0035 records activation checks.
+    "UPLOAD_REQUEST_RATE_LIMIT_ENABLED": "true",
     // Migration 0110 applied 2026-09-24; ADR-0008 records activation checks.
     "ASSET_LINK_RATE_LIMIT_ENABLED": "true",
     "SUPABASE_URL": "https://xdxdzmsztyzbnzeforxx.supabase.co",
