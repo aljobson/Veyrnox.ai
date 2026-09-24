@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import pg from 'pg';
 
-describe('generation attempt quota (0112)', { skip: !process.env.DATABASE_URL }, () => {
+describe('generation attempt quota (0113)', { skip: !process.env.DATABASE_URL }, () => {
     let pool: pg.Pool;
     const users: string[] = [];
     const one = async (sql: string, args: unknown[] = []) => (await pool.query(sql, args)).rows[0];
@@ -17,7 +17,7 @@ describe('generation attempt quota (0112)', { skip: !process.env.DATABASE_URL },
                 END IF;
             END LOOP; END $$`);
         for (const name of ['0037_free_credit_expiry.sql', '0038_free_credit_sweep_fixes.sql',
-            '0071_signup_grant_on_email_confirmation.sql', '0112_generation_attempt_rate_limit.sql', '0112_generation_attempt_rate_limit.sql']) {
+            '0071_signup_grant_on_email_confirmation.sql', '0113_generation_attempt_rate_limit.sql', '0113_generation_attempt_rate_limit.sql']) {
             await pool.query(await readFile(new URL(`./schema/supabase/${name}`, import.meta.url), 'utf8'));
         }
     });
@@ -62,7 +62,7 @@ describe('generation attempt quota (0112)', { skip: !process.env.DATABASE_URL },
         await pool.query('UPDATE public.generation_attempt_rate_limits SET request_count = 20 WHERE user_id = $1', [u.id]);
         const before = await one('SELECT window_started_at FROM public.generation_attempt_rate_limits WHERE user_id = $1', [u.id]);
         assert.equal((await consume(u.auth)).code, 'RATE_LIMITED');
-        await pool.query(await readFile(new URL('./schema/supabase/0112_generation_attempt_rate_limit.sql', import.meta.url), 'utf8'));
+        await pool.query(await readFile(new URL('./schema/supabase/0113_generation_attempt_rate_limit.sql', import.meta.url), 'utf8'));
         assert.equal((await consume(u.auth)).code, 'RATE_LIMITED');
         const after = await one('SELECT window_started_at FROM public.generation_attempt_rate_limits WHERE user_id = $1', [u.id]);
         assert.deepEqual(after, before);

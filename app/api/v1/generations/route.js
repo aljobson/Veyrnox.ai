@@ -211,7 +211,7 @@ export async function POST(req) {
     const inputsCheck = validateInputs(inputs);
     if (!inputsCheck.ok) return NextResponse.json({ error: inputsCheck.error }, { status: 400 });
 
-    // 0. Shared per-user entry check. After migration 0112 this atomically
+    // 0. Shared per-user entry check. After migration 0113 this atomically
     // counts attempts (20 per fixed 60-second window), including requests
     // rejected later without a job. The existing 10-job sliding-window check
     // remains, with the authoritative job limit enforced inside ledger_debit.
