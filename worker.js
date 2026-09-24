@@ -62,7 +62,7 @@ async function runAssetReap(env) {
     const out = await reapAssets(cfg, r2cfg);
     if (!out.ok) console.error('[reap-assets] failed:', out.error);
     else if (out.processed) console.error('[reap-assets]', JSON.stringify(out));
-    return out;
+    return reservationFailure ? { ...out, ok: false } : out;
 }
 
 /** Auto Short steps stuck past their provider's normal time (lib/autoShortSweep.js). */
@@ -76,7 +76,7 @@ async function runAutoShortSweep(env) {
     const deps = runtimeDeps({ cfg, r2cfg, publicHost: env.PUBLIC_HOST, ...keys });
     const out = await sweepSteps({ cfg, deps, falKey: keys.falKey, kieKey: keys.kieKey });
     if (out.checked) console.error('[auto-short-sweep]', JSON.stringify(out));
-    return out;
+    return reservationFailure ? { ...out, ok: false } : out;
 }
 
 function r2EnvFrom(env) {
@@ -104,9 +104,13 @@ async function runUploadSweep(env) {
     const strict = env.UPLOAD_INTEGRITY_ENABLED === 'true';
     if (strict && (!dbcfg.supabaseUrl || !dbcfg.serviceRoleKey)) return { ok: false, error: 'upload reservations not configured' };
     const opts = strict ? { remove: (key) => removeReservedUpload(key, cfg, dbcfg) } : {};
+    let reservationFailure = false;
     if (strict) {
         const reservations = await sweepUploadReservations(cfg, dbcfg);
-        if (!reservations.ok) console.error('[upload-reservations] cleanup failed');
+        if (!reservations.ok) {
+            reservationFailure = true;
+            console.error('[upload-reservations] cleanup failed');
+        }
     }
     const out = await sweepUploads(cfg, opts);
     if (!out.ok) console.error('[upload-sweep] failed:', out.error);
@@ -119,5 +123,5 @@ async function runUploadSweep(env) {
     } else {
         console.error('[upload-sweep] Supabase not configured; consumed uploads wait for the age sweep');
     }
-    return out;
+    return reservationFailure ? { ...out, ok: false } : out;
 }
