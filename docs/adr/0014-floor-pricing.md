@@ -52,3 +52,25 @@ in a public repository. Locking `model_catalog` from the anon role
 least-privilege hygiene, not as concealment. Anything that must actually be
 confidential (negotiated rates, volume discounts) must live outside this
 repository and outside the watcher's output.
+
+## Update 2026-09-24 — Seedream 4 cost correction (0114)
+
+The owner chose to retain Seedream 4 on fal and lower its customer price.
+The [official fal endpoint page](https://fal.ai/models/fal-ai/bytedance/seedream/v4/text-to-image)
+now explicitly lists **$0.03 per image**, matching our existing capability
+record; the live catalog still recorded $0.04. Migration 0114 corrects the
+cost and reduces 3 credits to **2**, since `ceil(0.03 / 0.0165) = 2`.
+The route, one-image request, model version and activation state are preserved.
+Kie's Seedream 4.5 remains inactive: its verified $0.0325 cost is higher than
+fal's v4 price, and a model upgrade is a separate product choice.
+
+The fallback picker and static reference catalog match the new price. At
+current pack rates the customer cost is $0.15–$0.20 instead of $0.225–$0.30,
+a one-third reduction. Supplier-only gross margin is 80–85% before payment
+fees, storage, taxes and other operating costs; at the $0.033 reference
+credit rate it is 54.5%. No pack prices change.
+
+A guarded update permits only the known old/new cost-credit pairs and exact
+fal route/unit; unexpected drift aborts. Production application uses the
+owner-approved workflow (ADR-0023). No additional paid generation is needed
+for this pricing-only correction.
