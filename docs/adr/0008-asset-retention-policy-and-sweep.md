@@ -180,9 +180,25 @@ lookups are unchanged. This protects URL minting, not subsequent R2 downloads,
 unauthenticated traffic, or the remaining API endpoints; edge controls remain
 separate audit work.
 
-Rollout: `ASSET_LINK_RATE_LIMIT_ENABLED` is explicitly false in wrangler.jsonc.
-Merge, obtain owner approval for 0110 through apply-migrations, verify the
-migration and normal rollout checks, then enable the server switch in a follow-up
-PR. No client setting can bypass an enabled limiter. Disabling the server switch
+Initial rollout staged `ASSET_LINK_RATE_LIMIT_ENABLED` as false in wrangler.jsonc.
+The sequence was merge, obtain owner approval for 0110 through apply-migrations,
+verify the migration and rollout checks, then enable the server switch in a
+follow-up PR (recorded below). No client setting can bypass an enabled limiter. Disabling the server switch
 is the application rollback; counter rows can remain. While false, protection
 is staged and the audit item is not yet closed in production.
+
+### Activation follow-up
+
+Migration 0110 was owner-approved and applied by `apply-migrations` run
+35989167997 at 2026-09-24 10:47:43 UTC. The migration ledger accounts for all
+85 applied migrations. At 10:52 UTC, a fresh production reconciliation returned
+zero balance, free-credit, Top-up and failed-refund drift. PR #285's production
+deployment and CI completed successfully.
+
+The follow-up sets `ASSET_LINK_RATE_LIMIT_ENABLED` to `true`; enforcement begins
+when that configuration is deployed. This is a security control on an existing
+authenticated endpoint, with no new browser path, so the new-user-path 24-hour
+browser-flag gate does not apply. This check does not claim 24 hours of clean
+reconciliation. The separate asset-expiry notice remains behind its browser
+rollout gate. Rollback is a deployment setting this server flag back to `false`;
+the additive migration does not need reverting.
