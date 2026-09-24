@@ -87,7 +87,7 @@ export default function Pricing() {
 
         <div className="mt-8 inline-flex flex-col items-center gap-2">
           <div className="font-vx-mono text-[11px] tracking-[0.14em] text-vx-accent">
-            50 FREE CREDITS ON SIGN-UP
+            10 FREE CREDITS ON SIGN-UP
           </div>
           <p className="text-[13px] text-vx-fg-muted max-w-[460px]">
             Use them on images, video or audio. Check the generation price before you spend.

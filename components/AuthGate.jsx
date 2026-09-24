@@ -304,7 +304,7 @@ export default function AuthGate() {
                     </button>
                 </div>
                 <p className="text-sm text-vx-fg-muted mb-4">
-                    New users get 50 free credits.
+                    New users get 10 free credits.
                 </p>
 
                 {(oauth.apple || oauth.google || passkeys) && (

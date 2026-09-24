@@ -26,7 +26,7 @@ export interface Plan {
 }
 
 export const PLANS: readonly Plan[] = Object.freeze([
-    { id: "free",    price_usd_per_month:  0, credits_per_month:   50, dollars_per_credit: 0     },
+    { id: "free",    price_usd_per_month:  0, credits_per_month:   10, dollars_per_credit: 0     },
     { id: "starter", price_usd_per_month: 15, credits_per_month:  200, dollars_per_credit: 0.075 },
     { id: "plus",    price_usd_per_month: 39, credits_per_month: 1000, dollars_per_credit: 0.039 },
     { id: "ultra",   price_usd_per_month: 99, credits_per_month: 3000, dollars_per_credit: 0.033 },

@@ -60,3 +60,15 @@ Enforced by migrations `0037_free_credit_expiry` and `0038_free_credit_sweep_fix
   zero rows.
 - `GET /api/v1/balance` returns `free_credits` and `free_expires_at`; the
   credits page shows them while any remain.
+
+## 2026-09-24 amendment: ten-credit signup allowance
+
+Owner approved reducing the one-time signup grant from 50 to 10 Free Credits
+to reduce acquisition spend. Migration 0127 changes only future grants. Existing
+ledger entries and balances are preserved, and an account already granted 50
+cannot claim another grant. Confirmation gating, free-first spending, 90-day
+expiry, row locking and service-role-only access remain unchanged.
+
+Apply the database migration through the owner-approved apply-migrations
+workflow; the web deployment alone does not change the grant amount. Website, auth,
+legal copy and the legacy catalog free allowance now describe 10 credits.

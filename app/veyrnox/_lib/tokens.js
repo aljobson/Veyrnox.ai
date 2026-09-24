@@ -197,7 +197,7 @@ export const FAQ = [
   { q: 'How do credits work?',
     a: 'Every generation names its cost on the button before you press it. Credits debit at submit. If the job fails at any point the credits return to your balance automatically.' },
   { q: 'Do I get free credits when I sign up?',
-    a: 'Yes — 50 credits granted on sign-up. Each generation shows its credit price before you spend. No card required.' },
+    a: 'Yes — 10 credits granted on sign-up. Each generation shows its credit price before you spend. No card required.' },
   { q: 'What happens if a generation fails?',
     a: 'Automatic refund, ledger-backed. Provider safety rejects, provider timeouts and model errors all refund. Failed rows still show in your Library so you can retry.' },
   { q: 'Can I use the output commercially?',
@@ -217,13 +217,13 @@ export const FAQ = [
 
 
 export const HERO_STATS = [
-  { value: '50',    label: 'free credits on sign-up' },
+  { value: '10',    label: 'free credits on sign-up' },
   { value: null,    label: 'models on one balance' }, // null = live catalog count, filled in page.js
   { value: '1 cr',  label: 'cheapest generation' },
 ];
 
 export const METRIC_STRIP = [
-  { value: '50',    label: 'FREE CREDITS ON SIGN-UP' },
+  { value: '10',    label: 'FREE CREDITS ON SIGN-UP' },
   { value: '100%',  label: 'REFUND ON FAILURE' },
   { value: null,    label: 'MODELS ROUTED' }, // null = live catalog count, filled in page.js
   { value: 'APPEND-ONLY', label: 'CREDIT LEDGER' },
@@ -310,7 +310,7 @@ export const HERO_CHIP = 'LIVE · CREDIT-METERED';
 
 // Amber promo strip above the nav.
 export const PROMO_STRIP = {
-  message: '50 free credits on sign-up · no charge for failed generations',
+  message: '10 free credits on sign-up · no charge for failed generations',
   cta: 'Sign up free',
   href: '/app',
 };

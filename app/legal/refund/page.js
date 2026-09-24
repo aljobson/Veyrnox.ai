@@ -19,7 +19,7 @@ export default function Refund() {
             <p>Once a generation completes and the output is delivered, the credits are spent. We cannot refund completed generations because the underlying model provider has already charged us for the compute.</p>
 
             <h2>Free credits</h2>
-            <p>The 50 credits granted on sign-up have no cash value, are not refundable in money, and expire 90 days after they are granted if unused. Purchased credits never expire.</p>
+            <p>The 10 credits granted on sign-up have no cash value, are not refundable in money, and expire 90 days after they are granted if unused. Purchased credits never expire.</p>
 
             <h2>Purchased credits</h2>
             <ul>

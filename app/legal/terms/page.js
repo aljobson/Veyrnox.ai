@@ -24,7 +24,7 @@ export default function Terms() {
 
             <h2>3. Credits</h2>
             <ul>
-                <li>New accounts receive 50 free credits. Free credits have no cash value, cannot be withdrawn, are used before purchased credits, and expire 90 days after they are granted if unused.</li>
+                <li>New accounts receive 10 free credits. Free credits have no cash value, cannot be withdrawn, are used before purchased credits, and expire 90 days after they are granted if unused.</li>
                 <li>Purchased credits never expire.</li>
                 <li>Purchased credits are debited when a generation is submitted. If the provider fails to complete the generation, the debit is automatically refunded to your balance. See our <a href="/legal/refund">Refund Policy</a>.</li>
                 <li>Credits are not transferable between accounts.</li>
