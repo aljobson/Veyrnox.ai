@@ -10,8 +10,12 @@
 -- validators at all — they are predicates that silently never match a Stripe
 -- row, which is why widening a regex would have changed nothing:
 --
---   1. top_ups_return_order_id_format (0060) — a table CHECK requiring
---      digits, so a `cs_...` cannot even be stored.
+--   1. top_ups_return_order_id_format — a LENGTH cap, not the digits cap the
+--      audit reported. 0060 wrote digits-only, but 0097 already replaced it
+--      with `^[A-Za-z0-9_]{1,64}$`. A Stripe Checkout Session id is about 66
+--      to 72 characters, so it is refused on length while looking like it
+--      ought to pass. The audit, ADR-0033 and this file's first draft all had
+--      this one wrong.
 --   2. record_top_up_return (0060) — digits guard, and demands an
 --      order_identifier UUID that Stripe has no equivalent for.
 --   3. next_top_up_backfill_batch (0064) — `return_order_identifier IS NOT
@@ -32,10 +36,10 @@
 -- Two deviations from ADR-0033 as written, both deliberate:
 --
 --   - The ADR says the LemonSqueezy shape is "retired, not widened". That
---     holds for the app-layer validators, but NOT for the table CHECK: rows
---     recorded during the LemonSqueezy era must stay legal or the constraint
---     cannot be re-added. So the CHECK accepts both shapes and the new
---     writer accepts only one.
+--     holds for the app-layer validators, but NOT for the table CHECK: every
+--     row already in the table must stay legal or ADD CONSTRAINT fails when it
+--     validates. So the CHECK becomes a superset and the writer is the strict
+--     one.
 --   - The ADR says record_top_up_return's argument list changes. Dropping the
 --     4-argument version would break the deployed app the moment this is
 --     applied, and a same-name 3-argument overload is ambiguous to PostgREST.
@@ -44,18 +48,24 @@
 --
 -- Idempotent: the CHECK is dropped and re-added, functions are OR REPLACE.
 
--- 1. The CHECK must accept a Stripe Checkout Session id.
---    Stripe session ids are `cs_` + alphanumerics and underscores (cs_test_…,
---    cs_live_…); the bound keeps the whole value inside 255 characters.
+-- 1. Raise the length cap so a Stripe Checkout Session id fits.
+--
+--    0097's `^[A-Za-z0-9_]{1,64}$` already allows the right character class;
+--    only 64 is wrong. Keeping that class and raising the bound to 255 makes
+--    this a strict SUPERSET of what is enforced today, so it cannot fail on an
+--    existing row — which matters, because ADD CONSTRAINT validates the whole
+--    table and this runs against live data.
+--
+--    The `cs_` prefix is deliberately NOT asserted here. A table CHECK is a
+--    coarse sanity bound; the writer below pins the Stripe shape, and a
+--    permissive constraint means no historical row can block the migration.
 DO $$
 BEGIN
     IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'top_ups_return_order_id_format') THEN
         ALTER TABLE public.top_ups DROP CONSTRAINT top_ups_return_order_id_format;
     END IF;
     ALTER TABLE public.top_ups ADD CONSTRAINT top_ups_return_order_id_format
-        CHECK (return_order_id IS NULL
-               OR return_order_id ~ '^[0-9]{1,20}$'
-               OR return_order_id ~ '^cs_[A-Za-z0-9_]{1,251}$');
+        CHECK (return_order_id IS NULL OR return_order_id ~ '^[A-Za-z0-9_]{1,255}$');
 END $$;
 
 -- 2. record_top_up_return_session — the Stripe return writer.

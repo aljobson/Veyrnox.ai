@@ -40,13 +40,31 @@ const MIGRATIONS = [
 // A realistic Stripe Checkout Session id: cs_ + test/live + 58 base58-ish chars.
 const sessionId = () => `cs_test_${randomUUID().replace(/-/g, "")}${randomUUID().replace(/-/g, "")}`;
 
-// Undo every recorded return, whichever provider shaped it. Setting the column
-// to NULL is legal under both the old and the new CHECK, so this is safe to run
-// before the migrations as well as after the tests.
-const CLEAR_RETURNS = `UPDATE public.top_ups
-    SET return_order_id = NULL, return_order_identifier = NULL,
-        returned_at = NULL, return_closed_at = now()
-    WHERE return_order_id IS NOT NULL`;
+// Undo every recorded return, whichever provider shaped it. NULL is legal under
+// every version of the CHECK, so this is safe before the migrations as well as
+// after the tests — but on a fresh database the columns do not exist yet, so
+// each one is guarded. plpgsql parses a branch's SQL only when it runs, which
+// is what makes the guard work.
+const CLEAR_RETURNS = `DO $do$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_schema = 'public' AND table_name = 'top_ups'
+                     AND column_name = 'return_order_id') THEN
+        RETURN;
+    END IF;
+    IF EXISTS (SELECT 1 FROM information_schema.columns
+               WHERE table_schema = 'public' AND table_name = 'top_ups'
+                 AND column_name = 'return_closed_at') THEN
+        UPDATE public.top_ups
+        SET return_order_id = NULL, return_order_identifier = NULL,
+            returned_at = NULL, return_closed_at = now()
+        WHERE return_order_id IS NOT NULL;
+    ELSE
+        UPDATE public.top_ups
+        SET return_order_id = NULL, return_order_identifier = NULL, returned_at = NULL
+        WHERE return_order_id IS NOT NULL;
+    END IF;
+END $do$`;
 
 describe("Stripe Top-up recovery (0108)", { skip: !DATABASE_URL && "DATABASE_URL not set" }, () => {
     let pool: pg.Pool;
@@ -60,11 +78,11 @@ describe("Stripe Top-up recovery (0108)", { skip: !DATABASE_URL && "DATABASE_URL
                 END IF;
             END LOOP; END $$`);
         await pool.query(await readFile(new URL("./schema/prereqs.sql", import.meta.url), "utf8"));
-        // Clear returns BEFORE the migrations, not after. 0060 adds the
-        // digits-only CHECK whenever it is absent, so re-applying it over a
-        // `cs_...` row left by an earlier run fails on "violated by some row".
-        // Every acceptance suite in ledger-tests.yml shares one database, so
-        // this is CI's hazard too, not just a local one.
+        // Clear returns BEFORE the migrations, not after. 0097 re-adds its
+        // 64-character CHECK every time it is applied, so a longer `cs_...`
+        // row left by an earlier run makes ADD CONSTRAINT fail on "violated by
+        // some row". Every acceptance suite in ledger-tests.yml shares one
+        // database, so this is CI's hazard too, not just a local one.
         await pool.query(CLEAR_RETURNS);
         for (const round of [1, 2]) {
             for (const m of MIGRATIONS) await pool.query(await readFile(m, "utf8"));
@@ -108,17 +126,28 @@ describe("Stripe Top-up recovery (0108)", { skip: !DATABASE_URL && "DATABASE_URL
 
     // ── 1. the CHECK ──────────────────────────────────────────────────────
 
-    it("the table accepts a Stripe session id, and still accepts a legacy numeric order", async () => {
+    it("the length cap was the real blocker, and the writer owns the cs_ shape", async () => {
         const t = await pendingTopUp();
         const cs = sessionId();
+        // 0097 already allowed these characters and capped the length at 64.
+        // That cap is what refused a Stripe session id, which is why the audit's
+        // "digits only" reading sent the first draft of this migration after the
+        // wrong thing.
+        assert.ok(cs.length > 64, `a realistic session id must exceed 0097's cap (got ${cs.length})`);
         await pool.query(`UPDATE public.top_ups SET return_order_id = $2 WHERE id = $1`, [t.topUpId, cs]);
         assert.equal((await one(`SELECT return_order_id AS r FROM public.top_ups WHERE id = $1`, [t.topUpId])).r, cs);
-        // The LemonSqueezy era's rows must stay legal or the constraint could
-        // not have been re-added at all.
+        // Every row already in the table stays legal: the new bound is a strict
+        // superset of 0097's, so ADD CONSTRAINT cannot fail on live data.
         await pool.query(`UPDATE public.top_ups SET return_order_id = '1234567890' WHERE id = $1`, [t.topUpId]);
+        // Still a coarse sanity bound, though — a dash is not in the class.
         await assert.rejects(
-            pool.query(`UPDATE public.top_ups SET return_order_id = 'pi_not_a_session' WHERE id = $1`, [t.topUpId]),
+            pool.query(`UPDATE public.top_ups SET return_order_id = 'cs_test_bad-dash' WHERE id = $1`, [t.topUpId]),
             /top_ups_return_order_id_format/);
+        // Pinning the Stripe shape is the writer's job, not the constraint's:
+        // a PaymentIntent id satisfies the CHECK and is still refused here.
+        const r = await recordSession(t.authId, t.topUpId, "pi_3abcdefghijklmnopqrstuv");
+        assert.equal(r.ok, false);
+        assert.equal(r.code, "INVALID_SESSION_ID");
     });
 
     // ── 2. the writer ─────────────────────────────────────────────────────
