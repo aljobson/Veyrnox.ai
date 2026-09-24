@@ -58,6 +58,9 @@ jobs:
       - name: Migration numbering
         run: ./scripts/check-migration-numbers.sh
 
+      - name: Catalog UPDATE guards
+        run: node scripts/check-catalog-update-guards.mjs
+
       - name: Unit tests
         run: npm test
 

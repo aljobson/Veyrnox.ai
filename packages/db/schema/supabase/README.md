@@ -10,6 +10,47 @@ Files here run **only against Supabase Postgres**, not against local Postgres.
 - Row-Level Security only meaningfully applies when the Postgres connection carries a JWT with an `auth.uid()` claim, which Supabase's PostgREST / connection-pooler wires up per request.
 - Running these on local Postgres would either fail (function missing) or silently no-op (auth.uid() returns NULL), neither of which is useful for the ledger acceptance tests.
 
+## New catalog UPDATEs must assert their row count
+
+From migration **0111** onward, every direct `UPDATE public.model_catalog` must
+immediately capture `ROW_COUNT` and raise an exception unless it equals the
+expected positive number of rows. CI runs `node scripts/check-catalog-update-guards.mjs`.
+This catches misspelled IDs and missing prerequisites instead of reporting a
+successful migration that changed nothing. Applied files through 0110 stay
+unchanged; fix an old migration with a new forward migration.
+
+Use this pattern inside a `DO` block (replace the ID and intended value):
+
+```sql
+DO $$
+DECLARE affected BIGINT;
+BEGIN
+    UPDATE public.model_catalog
+       SET credits_5s = 28, updated_at = now()
+     WHERE id = 'seedance-2.0-fast' AND provider = 'openrouter';
+    GET DIAGNOSTICS affected = ROW_COUNT;
+    IF affected <> 1 THEN
+        RAISE EXCEPTION 'Expected one seedance-2.0-fast/openrouter row, updated %', affected;
+    END IF;
+END $$;
+```
+
+Use an exact count for multi-row changes, and repeat the guard immediately after
+**each** UPDATE. No intervening statement may replace ROW_COUNT. Assign absolute
+values; do not filter on the old value or `IS DISTINCT FROM` the new value, since
+that would match zero rows on replay. PostgreSQL counts matched rows even when
+the assigned value is unchanged. An exception rolls back the containing DO
+block, so partial changes within that block cannot be mistaken for success.
+
+The checker enforces this narrow syntax (also accepting `!=` and `:=`), strips
+comments and string literals, and inspects dollar-quoted bodies. It is a style
+gate, not a SQL interpreter or proof of the predicate's correctness. Use direct,
+schema-qualified UPDATEs for catalog data migrations; do not hide them in dynamic
+SQL, helper functions, or exception handlers that swallow the assertion. Such
+alternatives need explicit review. Insert/upsert migrations and non-catalog
+updates are outside this check; migration replay and database acceptance tests
+remain required. No generic waiver comment bypasses the guard.
+
 ## Ordering
 
 Filenames follow the `NNNN_*.sql` convention. When a deploy applies both dirs, the intended order is:
