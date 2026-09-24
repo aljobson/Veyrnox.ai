@@ -117,3 +117,17 @@ Approved by Al 2026-09-11 — 90d uniform + pg_cron sweep. Migration 0016 applie
 - Does Cloudflare R2 lifecycle policies solve any of this natively (per-object TTLs)? If yes, mechanism (i)/(ii)/(iii) collapse into "just tag the object" and the DB row is the only thing we sweep. Requires a small spike.
 - What is the "user asks for erasure" latency SLA we want to promise? Common answers: 30 days (statutory maximum for DSARs), 7 days (better), 24 hours (aggressive). Drives whether the sweep needs an ad-hoc trigger path.
 - If a user's payment fails and they get suspended, does their retention window keep counting or freeze? Small policy decision, needs an answer before the sweep ships.
+
+## 2026-09-24 — refresh expired preview links
+
+A 15-minute signed link expiring does not mean the stored file expired. Library,
+Create and Clip Editor previews now request a fresh link from the existing
+owner-scoped `/api/v1/jobs/:id/asset` endpoint on a media-load error. The signed
+URL lifetime and 90-day retention policy are unchanged; no asset is recreated.
+
+Each preview permits one automatic signing request per returned URL lifetime
+and shares simultaneous error events. If the refreshed file still cannot load,
+it stops and offers Retry. Failed signing requests need an explicit retry;
+404 means unavailable, not a claim that retention caused deletion. Switching
+jobs or unmounting ignores late responses. No timers poll settled previews,
+and refreshed URLs stay in component memory rather than localStorage.
