@@ -49,6 +49,17 @@ export function parseEndpoint(endpoint) {
 // list; a value the model cannot take is refused before the debit.
 const VEO_ASPECTS = new Set(['16:9', '9:16']);
 const NANO_ASPECTS = new Set(['1:1', '9:16', '16:9', '3:4', '4:3', '3:2', '2:3', '5:4', '4:5', '21:9']);
+const NANO_PRO_ASPECTS = new Set([...NANO_ASPECTS, 'auto']);
+const CLIP_ASPECTS = new Set(['16:9', '9:16', '1:1']);
+// Clip lengths our 5s unit can buy on the video market models: 5s, or 10s at
+// exactly twice the price (kie bills both per video, 10s = 2x 5s).
+const CLIP_SECONDS = new Set([5, 10]);
+
+/** Clip length in seconds, or null when the request asks for one we cannot bill. */
+function clipSeconds(inputs) {
+    const s = inputs.duration_seconds === undefined ? 5 : inputs.duration_seconds;
+    return CLIP_SECONDS.has(s) ? s : null;
+}
 
 /**
  * Map our validated gateway inputs onto a kie request body. Returns an error
@@ -86,6 +97,28 @@ export function buildRequest(target, inputs) {
         if (aspect && !NANO_ASPECTS.has(aspect)) return { ok: false, error: 'inputs_invalid:aspect_ratio' };
         if (inputs.image_url) return { ok: false, error: 'inputs_key_not_allowed:image_url' };
         return { ok: true, body: { model: target.model, input: { prompt, aspect_ratio: aspect || '1:1', output_format: 'png' } } };
+    }
+
+    // Text-to-video market models. Each is pinned to the tier its catalog row is
+    // costed at (kie.ai/pricing, 2026-09-24): Wan 2.5 at 720p, Kling 2.6 with
+    // audio off. Neither takes a source image, so one is refused before the debit.
+    if (target.model === 'wan/2-5-text-to-video' || target.model === 'kling-2.6/text-to-video') {
+        if (aspect && !CLIP_ASPECTS.has(aspect)) return { ok: false, error: 'inputs_invalid:aspect_ratio' };
+        if (inputs.image_url) return { ok: false, error: 'inputs_key_not_allowed:image_url' };
+        const seconds = clipSeconds(inputs);
+        if (seconds === null) return { ok: false, error: 'duration_not_supported' };
+        const input = { prompt, duration: String(seconds), aspect_ratio: aspect || '16:9' };
+        if (target.model === 'wan/2-5-text-to-video') input.resolution = '720p';
+        else input.sound = false;
+        return { ok: true, body: { model: target.model, input } };
+    }
+
+    // 1K and 2K bill the same $0.09; 2K is pinned so a request can never reach
+    // the 4K rate. Text-to-image only: a reference image is refused.
+    if (target.model === 'nano-banana-pro') {
+        if (aspect && !NANO_PRO_ASPECTS.has(aspect)) return { ok: false, error: 'inputs_invalid:aspect_ratio' };
+        if (inputs.image_url) return { ok: false, error: 'inputs_key_not_allowed:image_url' };
+        return { ok: true, body: { model: target.model, input: { prompt, aspect_ratio: aspect || '1:1', resolution: '2K', output_format: 'png' } } };
     }
 
     // A market model with no mapping here is not sellable: fail closed rather

@@ -92,7 +92,7 @@ export default function Pricing() {
             50 FREE CREDITS ON SIGN-UP
           </div>
           <p className="text-[13px] text-vx-fg-muted max-w-[460px]">
-            That is roughly 16 Nano Banana stills or 3 Wan 2.5 clips, on us.
+            That is roughly 25 Nano Banana stills or 3 Wan 2.5 clips, on us.
             {packs ? ' Need more? Buy a credit pack below.' : ' Paid top-ups are not available yet — when they are, the prices will be here.'}
           </p>
           <Link

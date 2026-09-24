@@ -11,7 +11,9 @@ const SNAPSHOT = JSON.parse(readFileSync(new URL('./fixtures/capability-payloads
 import * as kie from '../packages/adapters/kie.js';
 import * as openrouter from '../packages/adapters/openrouter.js';
 
-// Every provider_endpoint in production's model_catalog on 2026-09-22.
+// Every provider_endpoint in production's model_catalog on 2026-09-22, plus the
+// kie twins staged inactive by migration 0105 (a row with no record can never
+// be listed or bought, so the record ships before the row is switched on).
 const CATALOG = [
     'fal-ai/ace-step', 'fal-ai/ace-step-1.5', 'fal-ai/elevenlabs/sound-effects/v2', 'fal-ai/inworld-tts',
     'fal-ai/flux-2-pro', 'fal-ai/bytedance/seedream/v4/text-to-image', 'fal-ai/nano-banana',
@@ -22,6 +24,7 @@ const CATALOG = [
     'fal-ai/topaz/upscale/image', 'fal-ai/bria/expand', 'fal-ai/latentsync', 'fal-ai/kling-video/ai-avatar/v2/standard',
     'fal-ai/elevenlabs/text-to-dialogue/eleven-v3',
     'veo:veo3_lite', 'veo:veo3_fast', 'veo:veo3', 'market:google/nano-banana',
+    'market:wan/2-5-text-to-video', 'market:kling-2.6/text-to-video', 'market:nano-banana-pro',
     'bytedance/seedance-2.0-fast', 'auto-short:v1', 'clip-edit:v1',
 ];
 
