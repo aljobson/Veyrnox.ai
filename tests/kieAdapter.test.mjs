@@ -36,7 +36,7 @@ test('unmapped market models fail closed', () => {
 
 test('Wan 2.5 and Kling 2.6 are pinned to the tier they are costed at, and a 10s clip is refused unless asked for', () => {
     const wan = buildRequest(parseEndpoint('market:wan/2-5-text-to-video'), { prompt: 'a cat' });
-    assert.deepEqual(wan.body, { model: 'wan/2-5-text-to-video', input: { prompt: 'a cat', duration: '5', aspect_ratio: '16:9', resolution: '720p' } });
+    assert.deepEqual(wan.body, { model: 'wan/2-5-text-to-video', input: { prompt: 'a cat', duration: '5', aspect_ratio: '16:9', resolution: '720p', nsfw_checker: true } });
     const kling = buildRequest(parseEndpoint('market:kling-2.6/text-to-video'), { prompt: 'a cat', duration_seconds: 10, aspect_ratio: '9:16' });
     assert.deepEqual(kling.body, { model: 'kling-2.6/text-to-video', input: { prompt: 'a cat', duration: '10', aspect_ratio: '9:16', sound: false } });
     for (const ep of ['market:wan/2-5-text-to-video', 'market:kling-2.6/text-to-video']) {
