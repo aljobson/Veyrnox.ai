@@ -265,3 +265,23 @@ This migration follows the owner-approved production workflow. Seedream's
 4 -> 4.5 decision, the failing kie speech row and GrsAI activation are separate.
 Rollback is a new guarded migration making the fal Hailuo row active and kie
 inactive, with the matching fallback/preset reversal.
+
+## Update 2026-09-24 — second verified GrsAI output host
+
+An isolated Docker integration run submitted one real Nano Banana Pro 2K
+request through the generation route handler. GrsAI task
+`11-ab2a57ac-a29f-46f6-8286-4e214e2498a4` succeeded but returned an image
+from `file1.aitohumanize.com`; the existing exact-host allowlist correctly
+refused it because only `file6.aitohumanize.com` was known.
+
+An authenticated read of the same task and a direct unauthenticated output
+fetch verified HTTPS, HTTP 200 without redirection, image/png, 5,241,901 bytes,
+and a decoded size of 2048 x 2048. Add only this exact hostname alongside
+file6. No wildcard, redirect, credential-forwarding or size-limit change.
+Regression tests cover successful storage from both hosts, absent CDN auth,
+lookalike hosts, unknown siblings and redirects.
+
+The integration uses local Postgres/PostgREST and a TLS S3 emulator, with
+direct route and sweep invocation. It does not verify production JWT
+middleware, Cloudflare cron scheduling or actual R2 deployment. GrsAI stays
+inactive pending those deployment checks. This fix requires no migration.

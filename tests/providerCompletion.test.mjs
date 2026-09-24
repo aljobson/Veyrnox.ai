@@ -98,13 +98,13 @@ test('job_stored receives the content hash', async () => {
     } finally { net.restore(); }
 });
 
-test('GrsAI scheduled completion uses explicit R2 config and keeps the key off the CDN', async () => {
+for (const host of ['file1.aitohumanize.com', 'file6.aitohumanize.com']) test(`GrsAI scheduled completion from ${host} uses explicit R2 config and keeps the key off the CDN`, async () => {
     const saved = process.env.R2_ACCOUNT_ID;
     delete process.env.R2_ACCOUNT_ID;
     const net = fakeNet({ source: () => new Response(new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 0, 0, 0, 0, 0])) });
     try {
         const r = await completeJob({ source: 'grsai', job, providerJobId: 'grs-1',
-            outcome: { state: 'success', outputUrl: 'https://file6.aitohumanize.com/a.png' }, ext: '.png', cfg,
+            outcome: { state: 'success', outputUrl: `https://${host}/a.png` }, ext: '.png', cfg,
             r2cfg: { accountId: 'cron-account', accessKeyId: 'key', secretAccessKey: 'secret', bucket: 'bucket' },
         });
         assert.equal(r.status, 200);
@@ -114,16 +114,18 @@ test('GrsAI scheduled completion uses explicit R2 config and keeps the key off t
     } finally { net.restore(); process.env.R2_ACCOUNT_ID = saved; }
 });
 
-test('GrsAI accepts only its verified exact CDN host and refuses redirects', async () => {
+test('GrsAI accepts only its verified exact CDN hosts and refuses redirects', async () => {
     const r2cfg = { accountId: 'a', accessKeyId: 'k', secretAccessKey: 's', bucket: 'b' };
     const net = fakeNet({ source: () => new Response(null, { status: 302, headers: { location: 'https://evil.test/a' } }) });
     try {
-        for (const host of ['file6.aitohumanize.com.evil.test', 'file7.aitohumanize.com', 'aitohumanize.com', 'tempfile.aiquickdraw.com', 'localhost']) {
+        for (const host of ['file1.aitohumanize.com.evil.test', 'file6.aitohumanize.com.evil.test', 'file7.aitohumanize.com', 'aitohumanize.com', 'tempfile.aiquickdraw.com', 'localhost']) {
             assert.equal((await copyUrlToR2(`https://${host}/a.png`, 'key', r2cfg, { provider: 'grsai' })).error, 'source host not allowed');
         }
         assert.equal(net.calls.length, 0);
-        assert.equal((await copyUrlToR2('https://file6.aitohumanize.com/a.png', 'key', r2cfg, { provider: 'grsai' })).error, 'source 302');
-        assert.equal(net.calls.filter((c) => c.name === 'source').length, 1);
+        for (const host of ['file1.aitohumanize.com', 'file6.aitohumanize.com']) {
+            assert.equal((await copyUrlToR2(`https://${host}/a.png`, 'key', r2cfg, { provider: 'grsai' })).error, 'source 302');
+        }
+        assert.equal(net.calls.filter((c) => c.name === 'source').length, 2);
         assert.equal(net.calls.some((c) => c.name === 'r2_put'), false);
     } finally { net.restore(); }
 });
