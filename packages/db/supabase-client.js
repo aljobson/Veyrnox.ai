@@ -122,6 +122,56 @@ export async function select(table, { columns = '*', filter = '', limit } = {}, 
     return res.json();
 }
 
+/**
+ * Exact row count without pulling the rows: PostgREST answers
+ * `Prefer: count=exact` in the Content-Range header, so one capped GET
+ * costs a single row of body whatever the table holds.
+ *
+ * `query` is a PostgREST query string — `select` plus any filters,
+ * including filters on an `!inner` embed. Interpolate only values you
+ * have already validated (a UUID from a verified JWT, not raw input).
+ */
+export async function count(table, { query = '' } = {}, options) {
+    const { supabaseUrl, serviceRoleKey, timeoutMs = 8000 } = options;
+    if (!supabaseUrl || !serviceRoleKey) {
+        throw new SupabaseError('supabase client not configured', { status: 0, body: null });
+    }
+    const url = new URL(`/rest/v1/${encodeURIComponent(table)}`, supabaseUrl);
+    for (const [k, v] of new URLSearchParams(query)) url.searchParams.set(k, v);
+    url.searchParams.set('limit', '1');
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    let res;
+    try {
+        res = await fetch(url, {
+            signal: controller.signal,
+            headers: {
+                apikey: serviceRoleKey,
+                Authorization: `Bearer ${serviceRoleKey}`,
+                Accept: 'application/json',
+                Prefer: 'count=exact',
+            },
+        });
+    } catch (err) {
+        clearTimeout(timer);
+        throw new SupabaseError(`count(${table}) transport error: ${err && err.message}`, { status: 0, body: null });
+    }
+    clearTimeout(timer);
+    if (!res.ok) {
+        throw new SupabaseError(`count(${table}) failed: ${res.status}`, {
+            status: res.status,
+            body: await res.text().catch(() => null),
+        });
+    }
+    // `0-0/42`, or `*/42` when the capped range came back empty.
+    const total = Number((res.headers.get('content-range') || '').split('/')[1]);
+    if (!Number.isInteger(total)) {
+        throw new SupabaseError(`count(${table}) had no exact count`, { status: res.status, body: null });
+    }
+    return total;
+}
+
 /** Read the Supabase config out of process.env once. */
 export function envConfig() {
     return {

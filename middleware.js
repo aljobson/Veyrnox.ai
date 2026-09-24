@@ -45,7 +45,7 @@ export async function middleware(req) {
     }
 
     const token = readToken(req);
-    if (!token) return jsonError(401, { error: 'unauthorized', reason: 'missing' });
+    if (!token) return reject(req, 'missing');
 
     let claims;
     try {
@@ -54,12 +54,15 @@ export async function middleware(req) {
         const reason = (err && err.reason) || 'signature';
         // A JWKS outage is our problem, not the caller's credentials:
         // 503 so clients do not bounce users to sign-in during an incident.
-        if (reason === 'jwks') return jsonError(503, { error: 'auth_unavailable' });
-        return jsonError(401, { error: 'unauthorized', reason });
+        if (reason === 'jwks') {
+            console.error('[auth] JWKS unavailable; answering 503');
+            return jsonError(503, { error: 'auth_unavailable' });
+        }
+        return reject(req, reason);
     }
 
     const claimError = validateClaims(claims, supabaseUrl);
-    if (claimError) return jsonError(401, { error: 'unauthorized', reason: claimError });
+    if (claimError) return reject(req, claimError);
 
     // Forward verified identity (inbound copies were deleted above).
     headers.set('x-veyrnox-auth-id', claims.sub);
@@ -85,4 +88,17 @@ const ERROR_HEADERS = {
 
 function jsonError(status, body) {
     return new NextResponse(JSON.stringify(body), { status, headers: ERROR_HEADERS });
+}
+
+/**
+ * Refuse a request, and say so in the log.
+ *
+ * Every rejection was silent, so a forged-token or credential-stuffing burst
+ * against /api/v1/* left no trace anywhere — the one thing CLAUDE.md's OWASP
+ * #9 line says this file does (audit 2026-09-23). The reason is one of our
+ * own short codes; no token, header or claim value is ever logged.
+ */
+function reject(req, reason) {
+    console.error('[auth] rejected', new URL(req.url).pathname, 'reason:', reason);
+    return jsonError(401, { error: 'unauthorized', reason });
 }

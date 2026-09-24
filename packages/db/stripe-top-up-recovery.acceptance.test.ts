@@ -1,0 +1,380 @@
+/**
+ * The lost-webhook recovery path must be reachable under Stripe, and must
+ * raise its hand when it is not working (schema/supabase/0108, ADR-0033,
+ * round-3 audit finding 08).
+ *
+ * The audit named two guards. Three of the five were predicates that silently
+ * never matched a Stripe row rather than validators that rejected one, so the
+ * tests that matter here are the ones asserting a Stripe row is actually
+ * handed out and can actually be closed.
+ *
+ * Migrations are applied twice to prove idempotency. Skipped unless
+ * DATABASE_URL is set.
+ */
+import { after, before, describe, it } from "node:test";
+import assert from "node:assert/strict";
+import { createHmac, randomInt, randomUUID } from "node:crypto";
+import { readFile } from "node:fs/promises";
+import pg from "pg";
+import { runBackfill } from "../../lib/topUpBackfill.js";
+
+const DATABASE_URL = process.env.DATABASE_URL;
+const MIGRATIONS = [
+    "0037_free_credit_expiry.sql",
+    "0038_free_credit_sweep_fixes.sql",
+    "0041_credit_packs_and_top_ups.sql",
+    "0054_credit_top_up.sql",
+    "0058_top_up_refund_clawback.sql",
+    "0059_chargeback_freeze.sql",
+    "0060_top_up_backfill.sql",
+    "0062_freeze_credits_taken.sql",
+    "0063_credit_top_up_with_refund.sql",
+    "0064_flag_second_paid_order.sql",
+    "0065_operator_top_up_reads.sql",
+    "0066_freeze_since_purchase.sql",
+    "0068_backfill_order_binding.sql",
+    // 0097 is what lets credit_top_up accept a `pi_...` order id at all.
+    "0097_stripe_money_path_ids.sql",
+    "0108_stripe_top_up_recovery.sql",
+].map((f) => new URL(`./schema/supabase/${f}`, import.meta.url));
+
+// A realistic Stripe Checkout Session id: cs_ + test/live + 58 base58-ish chars.
+const sessionId = () => `cs_test_${randomUUID().replace(/-/g, "")}${randomUUID().replace(/-/g, "")}`;
+
+// Undo every recorded return, whichever provider shaped it. NULL is legal under
+// every version of the CHECK, so this is safe before the migrations as well as
+// after the tests — but on a fresh database the columns do not exist yet, so
+// each one is guarded. plpgsql parses a branch's SQL only when it runs, which
+// is what makes the guard work.
+const CLEAR_RETURNS = `DO $do$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_schema = 'public' AND table_name = 'top_ups'
+                     AND column_name = 'return_order_id') THEN
+        RETURN;
+    END IF;
+    IF EXISTS (SELECT 1 FROM information_schema.columns
+               WHERE table_schema = 'public' AND table_name = 'top_ups'
+                 AND column_name = 'return_closed_at') THEN
+        UPDATE public.top_ups
+        SET return_order_id = NULL, return_order_identifier = NULL,
+            returned_at = NULL, return_closed_at = now()
+        WHERE return_order_id IS NOT NULL;
+    ELSE
+        UPDATE public.top_ups
+        SET return_order_id = NULL, return_order_identifier = NULL, returned_at = NULL
+        WHERE return_order_id IS NOT NULL;
+    END IF;
+END $do$`;
+
+describe("Stripe Top-up recovery (0108)", { skip: !DATABASE_URL && "DATABASE_URL not set" }, () => {
+    let pool: pg.Pool;
+
+    before(async () => {
+        pool = new pg.Pool({ connectionString: DATABASE_URL, max: 12 });
+        await pool.query(`DO $$ DECLARE r TEXT; BEGIN
+            FOREACH r IN ARRAY ARRAY['anon', 'authenticated', 'service_role'] LOOP
+                IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = r) THEN
+                    EXECUTE format('CREATE ROLE %I NOLOGIN', r);
+                END IF;
+            END LOOP; END $$`);
+        await pool.query(await readFile(new URL("./schema/prereqs.sql", import.meta.url), "utf8"));
+        // Clear returns BEFORE the migrations, not after. 0097 re-adds its
+        // 64-character CHECK every time it is applied, so a longer `cs_...`
+        // row left by an earlier run makes ADD CONSTRAINT fail on "violated by
+        // some row". Every acceptance suite in ledger-tests.yml shares one
+        // database, so this is CI's hazard too, not just a local one.
+        await pool.query(CLEAR_RETURNS);
+        for (const round of [1, 2]) {
+            for (const m of MIGRATIONS) await pool.query(await readFile(m, "utf8"));
+        }
+    });
+
+    after(async () => {
+        if (!pool) return;
+        // Leave no Stripe-shaped return behind: the topup-* suites run after
+        // this one against the same database and re-apply 0060.
+        try { await pool.query(CLEAR_RETURNS); } finally { await pool.end(); }
+    });
+
+    const one = async (sql: string, params: unknown[] = []) => (await pool.query(sql, params)).rows[0];
+
+    async function pendingTopUp({ credits = 300, price = 2500 } = {}) {
+        const authId = `sb_${randomUUID()}`;
+        await one(`SELECT public.signup_grant($1, $2) AS id`, [authId, `${randomUUID()}@test.veyrnox.ai`]);
+        const packId = `test-${randomUUID().slice(0, 8)}`;
+        const variant = String(randomInt(1e9, 2e9));
+        await pool.query(
+            `INSERT INTO public.credit_packs (id, sales_channel, credits, price_usd_cents, variant_id, active)
+             VALUES ($1, 'web', $2, $3, $4, true)`,
+            [packId, credits, price, variant]);
+        const res = (await one(`SELECT public.create_pending_top_up($1, $2, $3, '2026-09-13', 10, 600) AS r`,
+            [authId, packId, `test-${randomUUID()}`])).r;
+        assert.equal(res.ok, true);
+        return { authId, topUpId: res.top_up_id as string, credits, price, variant };
+    }
+
+    const recordSession = async (authId: string, topUpId: string, session: string) =>
+        (await one(`SELECT public.record_top_up_return_session($1, $2, $3) AS r`, [authId, topUpId, session])).r;
+
+    const age = (topUpId: string, hours: number) =>
+        pool.query(`UPDATE public.top_ups SET returned_at = now() - make_interval(hours => $2) WHERE id = $1`,
+            [topUpId, hours]);
+
+    const drift = async (topUpId: string) =>
+        Number((await one(`SELECT count(*) AS n FROM public.reconcile_top_ups()
+                           WHERE top_up_id = $1 AND problem = 'returned_not_credited'`, [topUpId])).n);
+
+    // ── 1. the CHECK ──────────────────────────────────────────────────────
+
+    it("the length cap was the real blocker, and the writer owns the cs_ shape", async () => {
+        const t = await pendingTopUp();
+        const cs = sessionId();
+        // 0097 already allowed these characters and capped the length at 64.
+        // That cap is what refused a Stripe session id, which is why the audit's
+        // "digits only" reading sent the first draft of this migration after the
+        // wrong thing.
+        assert.ok(cs.length > 64, `a realistic session id must exceed 0097's cap (got ${cs.length})`);
+        await pool.query(`UPDATE public.top_ups SET return_order_id = $2 WHERE id = $1`, [t.topUpId, cs]);
+        assert.equal((await one(`SELECT return_order_id AS r FROM public.top_ups WHERE id = $1`, [t.topUpId])).r, cs);
+        // Every row already in the table stays legal: the new bound is a strict
+        // superset of 0097's, so ADD CONSTRAINT cannot fail on live data.
+        await pool.query(`UPDATE public.top_ups SET return_order_id = '1234567890' WHERE id = $1`, [t.topUpId]);
+        // Still a coarse sanity bound, though — a dash is not in the class.
+        await assert.rejects(
+            pool.query(`UPDATE public.top_ups SET return_order_id = 'cs_test_bad-dash' WHERE id = $1`, [t.topUpId]),
+            /top_ups_return_order_id_format/);
+        // Pinning the Stripe shape is the writer's job, not the constraint's:
+        // a PaymentIntent id satisfies the CHECK and is still refused here.
+        const r = await recordSession(t.authId, t.topUpId, "pi_3abcdefghijklmnopqrstuv");
+        assert.equal(r.ok, false);
+        assert.equal(r.code, "INVALID_SESSION_ID");
+    });
+
+    // ── 2. the writer ─────────────────────────────────────────────────────
+
+    it("records the session, leaves the LemonSqueezy identifier empty, and resets the backoff", async () => {
+        const t = await pendingTopUp();
+        const cs = sessionId();
+        await pool.query(`UPDATE public.top_ups SET backfill_attempts = 4, backfill_checked_at = now() WHERE id = $1`,
+            [t.topUpId]);
+        assert.equal((await recordSession(t.authId, t.topUpId, cs)).ok, true);
+        const row = await one(`SELECT return_order_id, return_order_identifier, returned_at,
+                                     backfill_attempts, backfill_checked_at
+                              FROM public.top_ups WHERE id = $1`, [t.topUpId]);
+        assert.equal(row.return_order_id, cs);
+        assert.equal(row.return_order_identifier, null, "Stripe has no second token");
+        assert.ok(row.returned_at);
+        assert.equal(Number(row.backfill_attempts), 0);
+        assert.equal(row.backfill_checked_at, null);
+    });
+
+    it("refuses anything that is not a Checkout Session id", async () => {
+        const t = await pendingTopUp();
+        for (const bad of ["pi_3abc", "1234567890", "cs_", "cs_test_bad-dash", "", null]) {
+            const r = await recordSession(t.authId, t.topUpId, bad as string);
+            assert.equal(r.ok, false, `accepted ${JSON.stringify(bad)}`);
+            assert.equal(r.code, "INVALID_SESSION_ID");
+        }
+    });
+
+    it("will not write to another user's Top-up", async () => {
+        const mine = await pendingTopUp();
+        const theirs = await pendingTopUp();
+        const r = await recordSession(mine.authId, theirs.topUpId, sessionId());
+        assert.equal(r.ok, false);
+        assert.equal(r.code, "TOP_UP_NOT_FOUND");
+        assert.equal((await one(`SELECT return_order_id AS r FROM public.top_ups WHERE id = $1`, [theirs.topUpId])).r, null);
+    });
+
+    it("re-posting the same session id cannot postpone the backfill", async () => {
+        const t = await pendingTopUp();
+        const cs = sessionId();
+        await recordSession(t.authId, t.topUpId, cs);
+        await age(t.topUpId, 3);
+        const before_ = (await one(`SELECT returned_at AS r FROM public.top_ups WHERE id = $1`, [t.topUpId])).r;
+        assert.equal((await recordSession(t.authId, t.topUpId, cs)).ok, true);
+        assert.deepEqual((await one(`SELECT returned_at AS r FROM public.top_ups WHERE id = $1`, [t.topUpId])).r,
+            before_, "a reload of the return page must not reset the clock");
+    });
+
+    // ── 3. the due-row predicate: the silent failure ──────────────────────
+
+    it("hands a Stripe row to the backfill, which the identifier requirement prevented", async () => {
+        const t = await pendingTopUp();
+        const cs = sessionId();
+        await recordSession(t.authId, t.topUpId, cs);
+        await age(t.topUpId, 1); // past the 10-minute wait
+        const rows = (await pool.query(`SELECT * FROM public.next_top_up_backfill_batch(50)`)).rows;
+        const mine = rows.find((r) => r.top_up_id === t.topUpId);
+        assert.ok(mine, "a Stripe row with no order_identifier must still be due");
+        assert.equal(mine.order_id, cs);
+        assert.equal(mine.order_identifier, null, "NULL identifier is how the consumer spots a Stripe row");
+    });
+
+    // ── 4. closing a Stripe return ────────────────────────────────────────
+
+    it("closes a Stripe return whose identifier is NULL", async () => {
+        const t = await pendingTopUp();
+        const cs = sessionId();
+        await recordSession(t.authId, t.topUpId, cs);
+        const r = (await one(`SELECT public.close_top_up_return($1, $2, NULL) AS r`, [t.topUpId, cs])).r;
+        assert.equal(r.ok, true, "NULL = NULL must match, or the row is retried for ever");
+        assert.ok((await one(`SELECT return_closed_at AS r FROM public.top_ups WHERE id = $1`, [t.topUpId])).r);
+        // And a stale close still cannot close a newer return.
+        const stale = (await one(`SELECT public.close_top_up_return($1, $2, NULL) AS r`, [t.topUpId, sessionId()])).r;
+        assert.equal(stale.ok, false);
+        assert.equal(stale.code, "NOT_CURRENT");
+    });
+
+    it("still requires both halves to match for a LemonSqueezy return", async () => {
+        const t = await pendingTopUp();
+        const order = String(randomInt(1e9, 2e9));
+        const ident = randomUUID();
+        assert.equal((await one(`SELECT public.record_top_up_return($1, $2, $3, $4) AS r`,
+            [t.authId, t.topUpId, order, ident])).r.ok, true);
+        // Right order, wrong identifier — must not close.
+        assert.equal((await one(`SELECT public.close_top_up_return($1, $2, $3) AS r`,
+            [t.topUpId, order, randomUUID()])).r.ok, false);
+        // NULL must not close a row that has an identifier either.
+        assert.equal((await one(`SELECT public.close_top_up_return($1, $2, NULL) AS r`,
+            [t.topUpId, order])).r.ok, false);
+        assert.equal((await one(`SELECT public.close_top_up_return($1, $2, $3) AS r`,
+            [t.topUpId, order, ident])).r.ok, true);
+    });
+
+    // ── 5. the alarm ──────────────────────────────────────────────────────
+
+    it("flags a returned Top-up that is still uncredited a day later", async () => {
+        const t = await pendingTopUp();
+        await recordSession(t.authId, t.topUpId, sessionId());
+        assert.equal(await drift(t.topUpId), 0, "minutes old is not yet drift");
+        await age(t.topUpId, 23);
+        assert.equal(await drift(t.topUpId), 0, "inside the grace period");
+        await age(t.topUpId, 25);
+        assert.equal(await drift(t.topUpId), 1);
+    });
+
+    it("does not flag an abandoned checkout, which is the common case", async () => {
+        const t = await pendingTopUp();
+        // Never returned: pending for ever, and not a problem. A bare
+        // "pending and old" branch here would keep the nightly cron red.
+        await pool.query(`UPDATE public.top_ups SET created_at = now() - interval '30 days' WHERE id = $1`,
+            [t.topUpId]);
+        assert.equal(await drift(t.topUpId), 0);
+        assert.equal(Number((await one(`SELECT count(*) AS n FROM public.reconcile_top_ups()`)).n) >= 0, true);
+    });
+
+    it("clears once the return is closed, and once the Top-up is credited", async () => {
+        const closed = await pendingTopUp();
+        const cs = sessionId();
+        await recordSession(closed.authId, closed.topUpId, cs);
+        await age(closed.topUpId, 25);
+        assert.equal(await drift(closed.topUpId), 1);
+        await one(`SELECT public.close_top_up_return($1, $2, NULL) AS r`, [closed.topUpId, cs]);
+        assert.equal(await drift(closed.topUpId), 0, "return_closed_at is the operator's escape hatch");
+
+        const paid = await pendingTopUp();
+        await recordSession(paid.authId, paid.topUpId, sessionId());
+        await age(paid.topUpId, 25);
+        assert.equal(await drift(paid.topUpId), 1);
+        const credited = (await one(
+            `SELECT public.credit_top_up($1, $2, $3, 'USD', $4) AS r`,
+            [paid.topUpId, `pi_${randomUUID().replace(/-/g, "")}`, paid.price, paid.variant])).r;
+        assert.equal(credited.ok, true, JSON.stringify(credited));
+        assert.equal(await drift(paid.topUpId), 0, "crediting is what actually resolves it");
+    });
+
+    it("the Stripe runner races the webhook, grants once, and removes the Session from the queue", async () => {
+        const t = await pendingTopUp();
+        const cs = sessionId();
+        const pi = `pi_${randomUUID().replace(/-/g, "")}`;
+        await recordSession(t.authId, t.topUpId, cs);
+        await age(t.topUpId, 25);
+        const rows = (await pool.query(`SELECT * FROM public.next_top_up_backfill_batch(100)`)).rows;
+        const row = rows.find((r) => r.top_up_id === t.topUpId);
+        assert.ok(row);
+        const secret = "test-only-backfill-secret";
+        const creditArgs = [t.topUpId, pi, t.price, "USD", null];
+        const credit = async (args: any) => (await one(
+            `SELECT public.credit_top_up($1, $2, $3, $4, $5) AS r`,
+            [args.p_top_up_id, args.p_order_id, args.p_paid_usd_cents, args.p_currency, args.p_variant_id])).r;
+        const session = {
+            id: cs, object: "checkout.session", livemode: false, client_reference_id: t.topUpId,
+            metadata: { top_up_id: t.topUpId,
+                top_up_sig: createHmac("sha256", secret).update(`top_up:${t.topUpId}`).digest("hex") },
+            payment_status: "paid", payment_intent: pi, amount_subtotal: t.price,
+            amount_total: t.price + 500, currency: "usd",
+        };
+        const deps = {
+            fetchSession: async () => ({ ok: true, session }), credit,
+            close: async (r: any) => (await one(`SELECT public.close_top_up_return($1, $2, NULL) AS r`,
+                [r.top_up_id, r.order_id])).r,
+            signingSecret: secret, expectLiveMode: false, budgetMs: 20000, spacingMs: 0,
+        };
+        const [backfill, webhook] = await Promise.all([
+            runBackfill([row], deps),
+            one(`SELECT public.credit_top_up($1, $2, $3, $4, $5) AS r`, creditArgs),
+        ]);
+        assert.equal(webhook.r.ok, true);
+        assert.equal(backfill.credited + backfill.idempotent, 1);
+        const replay = await runBackfill([row], deps);
+        assert.equal(replay.idempotent, 1);
+        const stored = await one(`SELECT status, order_id, return_closed_at, user_id
+                                 FROM public.top_ups WHERE id = $1`, [t.topUpId]);
+        assert.equal(stored.status, "credited");
+        assert.equal(stored.order_id, pi);
+        assert.ok(stored.return_closed_at);
+        assert.equal(Number((await one(`SELECT count(*) AS n FROM public.ledger_entries
+                                      WHERE user_id = $1 AND reason = 'grant:topup'`, [stored.user_id])).n), 1);
+        assert.equal(await drift(t.topUpId), 0);
+        await pool.query(`UPDATE public.top_ups SET backfill_checked_at = now() - interval '1 day' WHERE id = $1`, [t.topUpId]);
+        assert.equal((await pool.query(`SELECT * FROM public.next_top_up_backfill_batch(100)`)).rows
+            .some((r) => r.top_up_id === t.topUpId), false);
+    });
+
+    it("the Stripe runner durably flags wrong price/currency without granting credits", async () => {
+        for (const currency of ["usd", "eur"]) {
+            const t = await pendingTopUp();
+            const cs = sessionId();
+            const pi = `pi_${randomUUID().replace(/-/g, "")}`;
+            const secret = "test-only-backfill-secret";
+            await recordSession(t.authId, t.topUpId, cs);
+            const result = await runBackfill([{ top_up_id: t.topUpId, order_id: cs, order_identifier: null }], {
+                fetchSession: async () => ({ ok: true, session: {
+                    id: cs, object: "checkout.session", livemode: false, client_reference_id: t.topUpId,
+                    metadata: { top_up_id: t.topUpId,
+                        top_up_sig: createHmac("sha256", secret).update(`top_up:${t.topUpId}`).digest("hex") },
+                    payment_status: "paid", payment_intent: pi,
+                    amount_subtotal: currency === "usd" ? t.price - 1 : t.price,
+                    amount_total: t.price + 500, currency,
+                } }),
+                credit: async (args: any) => (await one(`SELECT public.credit_top_up($1, $2, $3, $4, $5) AS r`,
+                    [args.p_top_up_id, args.p_order_id, args.p_paid_usd_cents, args.p_currency, args.p_variant_id])).r,
+                close: async (r: any) => (await one(`SELECT public.close_top_up_return($1, $2, NULL) AS r`,
+                    [r.top_up_id, r.order_id])).r,
+                signingSecret: secret, expectLiveMode: false, budgetMs: 20000, spacingMs: 0, log: () => {},
+            });
+            assert.equal(result.flagged, 1);
+            const stored = await one(`SELECT status, grant_entry_id FROM public.top_ups WHERE id = $1`, [t.topUpId]);
+            assert.equal(stored.status, "pending"); assert.equal(stored.grant_entry_id, null);
+            const flag = await one(`SELECT reason FROM public.top_up_flagged_orders WHERE order_id = $1`, [pi]);
+            assert.equal(flag.reason, currency === "usd" ? "amount_mismatch" : "currency_mismatch");
+        }
+    });
+
+    // ── 6. grants ─────────────────────────────────────────────────────────
+
+    it("the browser roles cannot run the new writer, and the reconcile keeps its grants", async () => {
+        for (const role of ["anon", "authenticated"]) {
+            for (const fn of ["public.record_top_up_return_session(TEXT, UUID, TEXT)", "public.reconcile_top_ups()"]) {
+                assert.equal((await one(`SELECT has_function_privilege($1, $2, 'EXECUTE') AS p`, [role, fn])).p,
+                    false, `${role} ${fn}`);
+            }
+        }
+        for (const fn of ["public.record_top_up_return_session(TEXT, UUID, TEXT)", "public.reconcile_top_ups()"]) {
+            assert.equal((await one(`SELECT has_function_privilege('service_role', $1, 'EXECUTE') AS p`, [fn])).p,
+                true, fn);
+        }
+    });
+});

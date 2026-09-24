@@ -12,17 +12,22 @@ const ACCOUNT_LINKS = [
   { href: '/app/credits', label: 'Credits' },
 ];
 
-export function NavAuthButtons() {
-  const [account, setAccount] = useState(null);
+// `account` is optional: pass one (AppNav does, so the email can come from
+// /api/v1/account when the stored session carries none). The marketing nav
+// passes nothing and reads the session on its own.
+export function NavAuthButtons({ account: given }) {
+  const [sessionAccount, setSessionAccount] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const wrapRef = useRef(null);
 
   useEffect(() => {
-    setAccount(accountLabel(getSession()));
-    return onSessionChange((s) => setAccount(accountLabel(s)));
+    setSessionAccount(accountLabel(getSession()));
+    return onSessionChange((s) => setSessionAccount(accountLabel(s)));
   }, []);
+
+  const account = given || sessionAccount;
 
   // Close on Escape or a click anywhere outside the menu.
   useEffect(() => {

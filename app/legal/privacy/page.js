@@ -17,7 +17,7 @@ export default function Privacy() {
                 <li><strong>Account data</strong> — email address, authentication identifiers, and if you sign in with Apple or Google, the identifier they share.</li>
                 <li><strong>Usage data</strong> — the prompts and reference files you submit, the generations you request, credit balance and ledger history, and job status.</li>
                 <li><strong>Technical data</strong> — IP address, browser and device information, and request logs needed to keep the service secure.</li>
-                <li><strong>Payment data</strong> — purchases are processed by Lemon Squeezy, LLC, which acts as Merchant of Record and is the seller of your credit purchase. Lemon Squeezy collects your payment details, billing address and tax information under its own privacy policy. We receive your order id, amount, country and email so we can add the credits to your account. We never see or store full card numbers.</li>
+                <li><strong>Payment data</strong> — credit packs are sold through Stripe Managed Payments, under which Stripe, Inc. is the Merchant of Record and seller of record, and charges and remits any VAT or sales tax. Stripe collects your payment details, billing address and any tax information as its own controller, under its own privacy policy. We receive the payment reference, amount, currency, country and email so we can add the credits to your account. We never see or store full card numbers.</li>
             </ul>
 
             <h2>Why we process it</h2>
@@ -30,7 +30,7 @@ export default function Privacy() {
 
             <h2>Where your data lives</h2>
             <p>We run on Supabase for the database and authentication, and on Cloudflare for edge hosting and object storage. Account data, credit ledger and generation metadata sit in our Supabase database, which is hosted in the European Union (Frankfurt, Germany). Generated media is stored in the European Union, in Cloudflare R2 with an EU jurisdictional restriction. Your prompts and reference files are transmitted to the third-party model provider that runs the model you selected, for the sole purpose of producing your output.</p>
-            <p>Some of the companies that process your personal data are outside the United Kingdom and the EEA: our edge hosting, the model providers, and Lemon Squeezy, LLC (United States), which handles credit pack payments. Where your personal data is processed outside the United Kingdom or the EEA, we rely on the UK International Data Transfer Agreement or the EU Standard Contractual Clauses with the company concerned. If we move the database to another region we will update this page before the move takes effect.</p>
+            <p>Some of the companies that process your personal data are outside the United Kingdom and the EEA: our edge hosting, the model providers, and Stripe, Inc. (United States), which is the Merchant of Record for credit pack purchases. Where your personal data is processed outside the United Kingdom or the EEA, we rely on the UK International Data Transfer Agreement or the EU Standard Contractual Clauses with the company concerned. If we move the database to another region we will update this page before the move takes effect.</p>
 
             <h2>Retention</h2>
             <ul>
@@ -40,7 +40,7 @@ export default function Privacy() {
             </ul>
 
             <h2>Sharing</h2>
-            <p>We share data only with the processors needed to run the service: authentication and database hosting, edge hosting and storage, AI model providers, and payment processing. Each is bound by a data-processing agreement. We do not sell personal data.</p>
+            <p>We share data only with the companies needed to run the service: authentication and database hosting, edge hosting and storage, AI model providers, and Stripe, Inc. for credit pack purchases. Each of our processors is bound by a data-processing agreement; Stripe, Inc. acts as its own controller for the purchase it makes as Merchant of Record. We do not sell personal data.</p>
 
             <h2>Your rights</h2>
             <p>You can access, correct, export or delete your data, and object to or restrict certain processing. See <a href="/legal/gdpr">GDPR &amp; Data Rights</a> for how. You may also complain to the UK Information Commissioner&rsquo;s Office or your local supervisory authority.</p>

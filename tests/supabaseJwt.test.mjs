@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-const { verifyES256, validateClaims, readToken, _resetJwksCache } = await import('../lib/supabaseJwt.js');
+const { verifyES256, validateClaims, readToken, _resetJwksCache, _ageJwksCache, JWKS_MAX_STALE_MS } = await import('../lib/supabaseJwt.js');
 
 const SUPABASE_URL = 'https://abcdefgh.supabase.co';
 const ISSUER = `${SUPABASE_URL}/auth/v1`;
@@ -90,6 +90,28 @@ test('verifyES256: JWKS outage with a warm cache keeps verifying', async () => {
     // credential problem, not an outage.
     await assert.rejects(verifyES256(await sign(stranger, claims()), SUPABASE_URL), { reason: 'signature' });
     assert.equal((await verifyES256(await sign(key, claims()), SUPABASE_URL)).sub, 'user-1');
+});
+
+test('verifyES256: a cached key set is not trusted forever', async () => {
+    stubJwks([key]);
+    await verifyES256(await sign(key, claims()), SUPABASE_URL);
+
+    // Past the TTL, inside the ceiling: the refetch fails and the cached set
+    // still verifies. That is the point of the cache.
+    _ageJwksCache(JWKS_MAX_STALE_MS - 60_000);
+    globalThis.fetch = async () => { throw new Error('ECONNRESET'); };
+    assert.equal((await verifyES256(await sign(key, claims()), SUPABASE_URL)).sub, 'user-1');
+
+    // Past it, the same outage is an outage — 503 upstairs — because a key
+    // Supabase revoked would otherwise stay trusted indefinitely.
+    _ageJwksCache(120_000);
+    await assert.rejects(verifyES256(await sign(key, claims()), SUPABASE_URL), { reason: 'jwks' });
+
+    // A 404, junk body or empty key set past the ceiling is the same refusal.
+    for (const bad of [new Response('gone', { status: 404 }), new Response('<html>'), new Response(JSON.stringify({ keys: [] }))]) {
+        globalThis.fetch = async () => bad;
+        await assert.rejects(verifyES256(await sign(key, claims()), SUPABASE_URL), { reason: 'jwks' });
+    }
 });
 
 test('verifyES256: JWKS outage with a cold cache → jwks (503 upstairs)', async () => {

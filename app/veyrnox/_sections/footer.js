@@ -239,6 +239,7 @@ export function FooterForest({ catalog }) {
           <div className="flex flex-wrap gap-4">
             <Link href="/legal/terms" className="transition-colors hover:text-vx-fg">Terms</Link>
             <Link href="/legal/privacy" className="transition-colors hover:text-vx-fg">Privacy</Link>
+            <Link href="/legal/aup" className="transition-colors hover:text-vx-fg">Acceptable Use</Link>
             <Link href="/design-system" className="transition-colors hover:text-vx-fg">Design</Link>
           </div>
         </div>

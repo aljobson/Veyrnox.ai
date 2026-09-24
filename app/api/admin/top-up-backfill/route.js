@@ -8,47 +8,36 @@
  * the Worker's own Cron Trigger (lib/scheduledBackfill.js) and by
  * .github/workflows/top-up-backfill.yml (main only).
  *
- *   1. next_top_up_backfill_batch hands out up to BATCH Top-ups returned from
- *      checkout more than 10 minutes ago and created less than 7 days ago:
- *      pending ones, and credited ones whose returned order isn't the one
- *      that credited them, so a second paid order gets flagged (0060, 0064).
- *   2. For each, one at a time and SPACING_MS apart, re-fetch the returned
- *      order from LemonSqueezy. If the order's identifier matches and it
- *      passes the webhook's checks (lib/topUpBackfill.js), credit it through
- *      backfill_credit_top_up: the order's email must be the Top-up owner's,
- *      an order credited elsewhere is recorded as a collision (0068), and any
- *      refund is clawed back (0063).
- *   3. Close a row whose check reached a final answer (close_top_up_return).
- *   4. Stop at the time budget or on a LemonSqueezy 429. Transient failures
- *      stay open and are due again after their backoff.
- *   5. If the backfill finished, next_top_up_order_sweep_batch hands out up to
- *      SWEEP_BATCH credited Top-ups due a sweep. Each owner's orders are listed
- *      and any second paid order for the pack is flagged for an Operator
- *      refund through flag_swept_top_up_order, never credited (#143, 0068).
- *
- * Response: { checked, credited, idempotent, flagged, refused, skipped, retry, stopped,
- *   sweep: { checked, flagged, ambiguous, refused, retry, stopped } | null }.
+ * Re-fetch each returned Stripe Session, verify its signed Top-up binding,
+ * then credit its PaymentIntent through credit_top_up. Close terminal returns
+ * using the Session id and a NULL identifier (0108). Transient failures remain
+ * due after their database backoff. The retired LemonSqueezy sweep is disabled;
+ * a Stripe search sweep is outside ADR-0033's scope.
+ * Response: { checked, credited, idempotent, flagged, refused, skipped, retry,
+ *   stopped, sweep: null }.
  */
 
 import { NextResponse } from 'next/server';
 import { rpc, envConfig } from '../../../../packages/db/supabase-client.js';
-import { fetchOrder, listOrders } from '../../../../packages/adapters/lemonsqueezy.js';
-import { runBackfill, runOrderSweep } from '../../../../lib/topUpBackfill.js';
+import { fetchSession } from '../../../../packages/adapters/stripe.js';
+import { runBackfill } from '../../../../lib/topUpBackfill.js';
 import { tokenMatches, bearerToken } from '../../../../lib/tokenMatches.js';
 import { retryAfterSeconds, recordFailure } from '../../../../lib/adminThrottle.js';
+import { requireAccess } from '../../../../lib/accessJwt.js';
 
 const LOG = '[top-up-backfill]';
 const THROTTLE_BUCKET = 'top-up-backfill';
 const BATCH = 25;
-// LemonSqueezy allows 300 API calls a minute; one every 250ms stays far below.
+// Space provider calls and keep each batch within the cron request budget.
 const SPACING_MS = 250;
 const BUDGET_MS = 20000;
-// Each sweep is one list call plus a flag call per candidate. A row handed out
-// but cut off by the budget waits for its next scheduled sweep.
-const SWEEP_BATCH = 10;
-const SWEEP_BUDGET_MS = 15000;
-
 export async function POST(req) {
+    // Cloudflare Access is the front door for anything that arrives from the
+    // internet; the Worker cron's own invocation never crosses the edge and
+    // is recognised by the absence of cf-ray (lib/accessJwt.js).
+    const gate = await requireAccess(req);
+    if (!gate.ok) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+
     const token = process.env.TOP_UP_BACKFILL_TOKEN;
     if (!token) return NextResponse.json({ error: 'not_configured' }, { status: 503 });
     // Compared before the throttle is consulted: the Cron Trigger and the
@@ -67,10 +56,9 @@ export async function POST(req) {
     }
 
     const cfg = envConfig();
-    const apiKey = process.env.LEMONSQUEEZY_API_KEY;
-    const storeId = process.env.LEMONSQUEEZY_STORE_ID;
-    const testMode = process.env.LEMONSQUEEZY_TEST_MODE;
-    if (!cfg.supabaseUrl || !cfg.serviceRoleKey || !apiKey || !storeId || (testMode !== 'true' && testMode !== 'false')) {
+    const apiKey = process.env.STRIPE_SECRET_KEY;
+    const signingSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    if (!cfg.supabaseUrl || !cfg.serviceRoleKey || !apiKey || !signingSecret) {
         return NextResponse.json({ error: 'not_configured' }, { status: 503 });
     }
 
@@ -86,35 +74,18 @@ export async function POST(req) {
         return NextResponse.json({ error: 'internal' }, { status: 502 });
     }
 
-    // Bound: Workers throw "Illegal invocation" for an unbound fetch.
-    const lsFetch = fetch.bind(globalThis);
+    // Bound through globalThis, with a timeout so a stalled provider can retry.
+    const stripeFetch = (url, init) => globalThis.fetch(url, { ...init, signal: AbortSignal.timeout(8000) });
     const result = await runBackfill(rows, {
-        fetchOrder: (orderId) => fetchOrder(orderId, { fetch: lsFetch, apiKey }),
-        credit: (args) => rpc('backfill_credit_top_up', args, cfg),
+        fetchSession: (sessionId) => fetchSession(sessionId, { fetch: stripeFetch, apiKey }),
+        credit: (args) => rpc('credit_top_up', args, cfg),
         close: (row) => rpc('close_top_up_return', {
-            p_top_up_id: row.top_up_id, p_order_id: row.order_id, p_order_identifier: row.order_identifier,
+            p_top_up_id: row.top_up_id, p_order_id: row.order_id, p_order_identifier: null,
         }, cfg),
-        expectTestMode: testMode === 'true',
-        expectStoreId: storeId,
+        expectLiveMode: apiKey.startsWith('sk_live_'),
+        signingSecret,
         budgetMs: BUDGET_MS,
         spacingMs: SPACING_MS,
     });
-    if (result.stopped) return NextResponse.json({ ...result, sweep: null });
-
-    let sweepRows;
-    try {
-        sweepRows = await rpc('next_top_up_order_sweep_batch', { p_limit: SWEEP_BATCH }, cfg);
-    } catch (err) {
-        console.error(LOG, 'sweep batch read failed:', err && err.status);
-        return NextResponse.json({ ...result, sweep: null });
-    }
-    const sweep = await runOrderSweep(Array.isArray(sweepRows) ? sweepRows : [], {
-        listOrders: (email) => listOrders({ storeId, email }, { fetch: lsFetch, apiKey }),
-        flag: (args) => rpc('flag_swept_top_up_order', args, cfg),
-        expectTestMode: testMode === 'true',
-        expectStoreId: storeId,
-        budgetMs: SWEEP_BUDGET_MS,
-        spacingMs: SPACING_MS,
-    });
-    return NextResponse.json({ ...result, sweep });
+    return NextResponse.json({ ...result, sweep: null });
 }

@@ -28,5 +28,9 @@ export const ERROR_COPY = {
   source_size_unknown:   'We could not read that image\'s size. Try a PNG. Nothing was charged.',
   source_too_long:       'That recording is longer than this model takes (see the limit on the upload). Nothing was charged.',
   source_length_unknown: 'We could not read that file\'s length. Try a WAV or an MP3 without cover art. Nothing was charged.',
+  consent_required:      'Tick the consent box: you need to own the file you uploaded, or have the permission of everyone in it. Nothing was charged.',
+  'inputs_invalid:topic':'A topic is 3 to 200 characters of plain text on one line. Nothing was charged.',
+  topic_refused:        'That topic can\'t be made into a short: try a factual subject without real people. Credits refunded.',
+  dialogue_invalid:      'Write one line per speaker, like "Ana: Hello!", with up to four speakers. Nothing was charged.',
   'inputs_invalid:prompt':'The prompt is empty or too long for this model (speech takes up to 1000 characters). Nothing was charged.',
 };

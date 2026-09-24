@@ -5,12 +5,15 @@ import { Chip } from '../../_components/Chip';
 import { ASPECT_RATIOS } from '../../_lib/tokens';
 import { gatewayFetch, makeIdempotencyKey, notifyBalanceChanged, GatewayError } from '../../_lib/gateway';
 import { ERROR_COPY } from '../../_lib/createErrors';
-import { pushJobHistory } from '../../_lib/jobHistory';
+import { pushJobHistory, markJobSettled } from '../../_lib/jobHistory';
 import { useCatalog } from '../../_lib/useCatalog';
 import { DEFAULT_CINEMA, buildCinemaPrompt } from '../../_lib/cinema';
 import { CameraPanel } from '../../_components/CameraPanel';
+import { CharacterPanel } from '../../_components/CharacterPanel';
+import { buildCharacterPrompt } from '../../_lib/character';
 import { DrawOnImage } from '../../_components/DrawOnImage';
 import { SourcePickers } from '../../_components/SourcePickers';
+import { ParticleButton } from '@/components/ParticleButton';
 
 // State glyphs — colour-blind safety net matches the design system §08.
 const STATE_UI = {
@@ -27,7 +30,7 @@ const POLL_GIVE_UP_AFTER = 30;
 
 
 
-const DEFAULT_MODEL = 'wan-2.5';
+const DEFAULT_MODEL = 'wan-2.5-kie';
 
 // Models measured well over a minute end to end in live tests (2026-09-13).
 // ponytail: hand-kept list; move to the catalog if more slow models land.
@@ -35,10 +38,22 @@ const SLOW_MODEL_WAIT = {
   'ace-step-1.5': 'Music takes about 3–4 minutes.',
   'mmaudio-v2': 'Sound effects take about 3 minutes.',
   'seedance-2.0-fast': 'Video takes about 2 minutes.',
+  'auto-short-32s': 'About 2–10 minutes: script, voiceover, four scenes, then the stitch.',
 };
 
+// Auto Short stays hidden until launch unless this browser opts in
+// (CLAUDE.md "Delivery": new user paths behind localStorage.veyrnox_*).
+const AUTO_SHORT_FLAG = 'veyrnox_auto_short';
+
+function readFlag(name) {
+  try { return window.localStorage.getItem(name) === '1'; } catch { return false; }
+}
+
 export default function CreateStudio() {
-  const { models, live: catalogLive, loading: catalogLoading } = useCatalog();
+  const { models: catalogModels, live: catalogLive, loading: catalogLoading } = useCatalog();
+  const [autoShortOn, setAutoShortOn] = useState(false);
+  useEffect(() => { setAutoShortOn(readFlag(AUTO_SHORT_FLAG)); }, []);
+  const models = catalogModels.filter((m) => !m.isEdit && (autoShortOn || !m.takesTopic));
   const [modelId, setModelId] = useState(DEFAULT_MODEL);
   const [duration, setDuration] = useState('5s');
   const [aspect, setAspect] = useState('16:9');
@@ -47,8 +62,13 @@ export default function CreateStudio() {
   // Uploads for the model's media slots: { image|video|audio: { file, previewUrl } }.
   const [sources, setSources] = useState({});
   const [drawing, setDrawing] = useState(false);
+  // Uploads can carry a real face or voice: the AUP consent statement is
+  // required before one is sent, and the gateway records it on the job (0096).
+  const [consent, setConsent] = useState(false);
   const [cinemaOn, setCinemaOn] = useState(false);
   const [cinema, setCinema] = useState(DEFAULT_CINEMA);
+  const [characterOn, setCharacterOn] = useState(false);
+  const [character, setCharacter] = useState({});
 
   const [balance, setBalance] = useState(null);
   const [job, setJob] = useState(null);          // { job_id, state, credits, model_id, error_code?, asset_url? }
@@ -81,10 +101,14 @@ export default function CreateStudio() {
   const durations = (model && model.durations && model.durations.length ? model.durations : [5]).map((s) => `${s}s`);
   const media = model?.media || {};
   const missingSource = Object.entries(media).some(([slot, spec]) => spec.required && !sources[slot]);
+  const hasUpload = Object.keys(media).some((slot) => sources[slot]);
+  const missingConsent = hasUpload && !consent;
   // Camera text suits pictures and clips; audio and speech would read it aloud.
-  const takesCamera = model?.kind === 'image' || model?.kind === 'video';
+  const isShort = !!model?.takesTopic;
+  const takesCamera = !isShort && (model?.kind === 'image' || model?.kind === 'video');
   // The model's own aspect list when the catalog has one; every video takes the default set.
-  const aspectOptions = model?.aspects ? ASPECT_RATIOS.filter((a) => model.aspects.includes(a))
+  const aspectOptions = isShort ? []
+    : model?.aspects ? ASPECT_RATIOS.filter((a) => model.aspects.includes(a))
     : model?.kind === 'video' ? ASPECT_RATIOS : [];
   const cost = model ? model.credits * (duration === '10s' && model.kind === 'video' ? 2 : 1) : 0;
   const durationKey = durations.join(',');
@@ -180,6 +204,7 @@ export default function CreateStudio() {
         const next = await gatewayFetch(`/jobs/${job.job_id}`);
         failures = 0;
         setJob((prev) => prev ? { ...prev, ...next } : prev);
+        if (next.state === 'succeeded' || next.state === 'failed') markJobSettled(job.job_id, next.state);
         if (next.state === 'succeeded') {
           const asset = await gatewayFetch(`/jobs/${job.job_id}/asset`);
           setJob((prev) => prev ? { ...prev, asset_url: asset.url, mime_type: asset.mime_type } : prev);
@@ -199,16 +224,27 @@ export default function CreateStudio() {
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [job?.job_id, job?.state]);
 
+  // Character traits go first, the camera description last; each keeps the
+  // result under the gateway's 2000-character limit by cutting the user text.
+  function finalPrompt() {
+    let text = prompt.trim();
+    if (model.kind === 'image' && characterOn) text = buildCharacterPrompt(text, character);
+    if (takesCamera && cinemaOn) text = buildCinemaPrompt(text, cinema);
+    return text;
+  }
+
   // ── submit ────────────────────────────────────────────────────────
   async function onSubmit() {
     if (inFlight.current || generating || !model || balance == null || cost > balance) return;
     inFlight.current = true;
     if (model.gated) { inFlight.current = false; setError({ code: 'model_gated' }); return; }
     if (missingSource) { inFlight.current = false; setError({ code: 'source_required' }); return; }
+    if (missingConsent) { inFlight.current = false; setError({ code: 'consent_required' }); return; }
     setError(null);
     const idempotency_key = makeIdempotencyKey();
-    const inputs = {
-      prompt: takesCamera && cinemaOn ? buildCinemaPrompt(prompt, cinema) : prompt.trim(),
+    // An Auto Short takes only its topic; the pipeline picks the format.
+    const inputs = isShort ? { topic: prompt.trim() } : {
+      prompt: finalPrompt(),
       aspect_ratio: aspect,
       duration_seconds: model.kind === 'video' ? Number(duration.replace('s', '')) : undefined,
     };
@@ -223,7 +259,11 @@ export default function CreateStudio() {
       }
       const submitted = await gatewayFetch('/generations', {
         method: 'POST',
-        body: JSON.stringify({ model_id: modelId, idempotency_key, inputs, source_keys: source_keys.length ? source_keys : undefined }),
+        body: JSON.stringify({
+          model_id: modelId, idempotency_key, inputs,
+          source_keys: source_keys.length ? source_keys : undefined,
+          consent: source_keys.length ? true : undefined,
+        }),
       });
       setJob({
         job_id: submitted.job_id,
@@ -251,6 +291,8 @@ export default function CreateStudio() {
     }
   }
 
+  // Leaves the running job to finish in the background (JobWatcher announces
+  // it); the charge stands, so this never claimed to cancel anything.
   function cancel() {
     setJob(null);
     setError(null);
@@ -274,7 +316,7 @@ export default function CreateStudio() {
 
           <div
             className={`relative rounded-2xl border border-vx-border bg-vx-panel overflow-hidden ${generating ? 'vx-shimmer' : ''}`}
-            style={{ aspectRatio: aspect.replace(':', '/') }}
+            style={{ aspectRatio: (isShort ? '9:16' : aspect).replace(':', '/') }}
           >
             {job?.asset_url ? (
               job?.mime_type?.startsWith('video/') ? (
@@ -306,9 +348,9 @@ export default function CreateStudio() {
                     </div>
                     <div className="mt-2 font-vx-mono text-[42px] font-bold vx-num">…</div>
                     {SLOW_MODEL_WAIT[model.id] && (
-                      <div className="text-xs text-vx-fg-body mt-2">{SLOW_MODEL_WAIT[model.id]} You can leave this page; it lands in your library.</div>
+                      <div className="text-xs text-vx-fg-body mt-2">{SLOW_MODEL_WAIT[model.id]}</div>
                     )}
-                    <div className="text-xs text-vx-fg-muted mt-2">Refund on failure — always.</div>
+                    <div className="text-xs text-vx-fg-muted mt-2">Keeps running if you leave or start another — we'll tell you when it's ready. Refund on failure, always.</div>
                   </div>
                 ) : job?.state === 'failed' ? (
                   <div className="text-center max-w-md px-6">
@@ -316,7 +358,10 @@ export default function CreateStudio() {
                       <span aria-hidden="true">✕</span> FAILED · REFUNDED
                     </div>
                     <div className="mt-2 text-sm text-vx-fg-body">
-                      {ERROR_COPY[job.error_code] || 'Something went wrong. Credits refunded.'}
+                      {ERROR_COPY[job.error_code]
+                        || (job.refunded
+                          ? 'Something went wrong. Credits refunded.'
+                          : 'Something went wrong. Your credits are on their way back.')}
                     </div>
                   </div>
                 ) : (
@@ -334,14 +379,32 @@ export default function CreateStudio() {
           <textarea
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            aria-label="Prompt"
+            aria-label={isShort ? 'Topic' : 'Prompt'}
+            maxLength={isShort ? 200 : undefined}
             rows={3}
             className="mt-3 w-full bg-vx-panel border border-vx-border rounded-lg p-3.5 text-sm text-vx-fg placeholder:text-vx-fg-faint resize-none focus:outline-none focus:border-vx-accent"
-            placeholder="Describe the shot…"
+            placeholder={isShort ? 'A topic for a 32-second short, e.g. 3 facts about octopuses'
+              : model?.id === 'elevenlabs-dialogue' ? 'One line per speaker, e.g.' + '\n' + 'Ana: Did you hear that?' + '\n' + 'Ben: [whispers] Stay quiet.'
+              : 'Describe the shot…'}
           />
 
           <SourcePickers media={media} sources={sources} onPick={pickSource}
             onDraw={model?.kind === 'image' ? () => setDrawing(true) : null} />
+
+          {hasUpload && (
+            <label className="mt-3 flex items-start gap-2.5 rounded-lg border border-vx-border bg-vx-panel px-4 py-3 text-sm text-vx-fg-body cursor-pointer">
+              <input
+                type="checkbox"
+                checked={consent}
+                onChange={(e) => setConsent(e.target.checked)}
+                className="mt-0.5 accent-vx-accent"
+              />
+              <span>
+                I own this file, or I have the permission of everyone identifiable in it. No real person is shown or
+                voiced without their consent (<a href="/legal/aup" target="_blank" rel="noreferrer" className="text-vx-accent underline">Acceptable Use</a>).
+              </span>
+            </label>
+          )}
 
           {drawing && sources.image && (
             <DrawOnImage file={sources.image.file} onDone={applyDrawing} onCancel={() => setDrawing(false)} />
@@ -403,6 +466,10 @@ export default function CreateStudio() {
             <ControlRow label="ASPECT" options={aspectOptions} value={aspect} onChange={setAspect} />
           )}
 
+          {model?.kind === 'image' && (
+            <CharacterPanel enabled={characterOn} onToggle={setCharacterOn} picks={character} onChange={setCharacter} />
+          )}
+
           {takesCamera && (
             <CameraPanel enabled={cinemaOn} onToggle={setCinemaOn} settings={cinema} onChange={setCinema} />
           )}
@@ -415,14 +482,14 @@ export default function CreateStudio() {
               </span>
             </div>
             <div className="mt-1 font-vx-mono text-[36px] font-bold text-vx-money vx-num">−{cost} cr</div>
-            <button
+            <ParticleButton
               onClick={generating ? cancel : onSubmit}
               className="mt-4 w-full flex items-center justify-between bg-vx-accent text-vx-accent-ink rounded-full px-6 py-3.5 font-extrabold hover:bg-vx-accent-hover disabled:opacity-40 disabled:cursor-not-allowed"
-              disabled={!generating && (!model || model.gated || balance == null || cost > balance || missingSource)}
+              disabled={!generating && (!model || model.gated || balance == null || cost > balance || missingSource || missingConsent)}
             >
-              <span>{generating ? 'Cancel' : model?.gated ? 'Premium — gated' : 'Generate'}</span>
+              <span>{generating ? 'New generation' : model?.gated ? 'Premium — gated' : 'Generate'}</span>
               <span className="font-vx-mono text-sm">−{cost} cr</span>
-            </button>
+            </ParticleButton>
             <div className="mt-2 font-vx-mono text-[9.5px] tracking-[0.1em] text-vx-fg-faint text-center">
               {model?.gated ? '◆ PREMIUM MODEL · NOT OPEN YET' : 'REFUND ON FAILURE · ALWAYS'}
             </div>

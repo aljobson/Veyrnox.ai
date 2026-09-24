@@ -38,6 +38,8 @@ function mapState(dbState) {
             return 'running';
         case 'STORED':
             return 'succeeded';
+        // Both map to `failed` for the client's flow control; `refunded`
+        // below carries the money fact.
         case 'FAILED':
         case 'REFUNDED':
             return 'failed';
@@ -82,6 +84,11 @@ export async function GET(req, { params }) {
 
     return NextResponse.json({
         state: mapState(row.state),
+        // FAILED is not REFUNDED: job_failed settles the job, and the refund
+        // is a second call that can still be in flight (or, before 0099, lost).
+        // The UI said "credits refunded" for both; now it can only say it when
+        // the ledger says so.
+        refunded: row.state === 'REFUNDED',
         credits: row.credits,
         model_id: row.model_id,
         error_code: publicErrorCode(row.error_code),

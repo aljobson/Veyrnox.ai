@@ -56,6 +56,7 @@ function checkRecord(endpoint, record, schema) {
     };
 
     for (const [key, rule] of Object.entries(record.inputs)) {
+        if (record.rename[key] === null) continue; // consumed by derive, never sent
         const field = record.rename[key] || key;
         need(field, 'input');
         if (rule.type === 'enum') for (const v of rule.values) inEnum(field, v, 'input');

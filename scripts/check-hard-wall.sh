@@ -20,7 +20,13 @@ BANNED=(
   'on-chain'
   'onchain'
   'payout'
-  'passkey'
+  # 'passkey' was here. Removed 2026-09-23 when Veyrnox.ai shipped passkey
+  # sign-in of its own (ADR-0032). It is not wallet vocabulary: it is the
+  # standard WebAuthn term, and Apple's own sign-in page offers "Sign in with
+  # Passkey". It was added for the wallet's "passkey wallet recovery", and
+  # that phrase still trips the 'wallet' term above, so the wall loses no
+  # coverage. This is a narrowing, NOT a brand convergence — every other term
+  # stands.
   'settle to'
   'get paid on ship'
   'chains routed'

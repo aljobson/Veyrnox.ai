@@ -11,7 +11,9 @@ const SNAPSHOT = JSON.parse(readFileSync(new URL('./fixtures/capability-payloads
 import * as kie from '../packages/adapters/kie.js';
 import * as openrouter from '../packages/adapters/openrouter.js';
 
-// Every provider_endpoint in production's model_catalog on 2026-09-22.
+// Every provider_endpoint in production's model_catalog on 2026-09-22, plus the
+// kie twins staged inactive by migration 0105 (a row with no record can never
+// be listed or bought, so the record ships before the row is switched on).
 const CATALOG = [
     'fal-ai/ace-step', 'fal-ai/ace-step-1.5', 'fal-ai/elevenlabs/sound-effects/v2', 'fal-ai/inworld-tts',
     'fal-ai/flux-2-pro', 'fal-ai/bytedance/seedream/v4/text-to-image', 'fal-ai/nano-banana',
@@ -20,15 +22,19 @@ const CATALOG = [
     'fal-ai/kling-video/v3/pro/image-to-video', 'fal-ai/nano-banana-pro', 'fal-ai/nano-banana-pro/edit',
     'fal-ai/elevenlabs/tts/turbo-v2.5', 'fal-ai/minimax/speech-2.6-hd', 'fal-ai/mmaudio-v2/text-to-audio', 'fal-ai/bria/background/remove',
     'fal-ai/topaz/upscale/image', 'fal-ai/bria/expand', 'fal-ai/latentsync', 'fal-ai/kling-video/ai-avatar/v2/standard',
+    'fal-ai/elevenlabs/text-to-dialogue/eleven-v3',
     'veo:veo3_lite', 'veo:veo3_fast', 'veo:veo3', 'market:google/nano-banana',
-    'bytedance/seedance-2.0-fast',
+    'market:wan/2-5-text-to-video', 'market:kling-2.6/text-to-video', 'market:nano-banana-pro',
+    'market:hailuo/02-text-to-video-standard', 'market:seedream/4.5-text-to-image', 'market:elevenlabs/text-to-speech-turbo-2-5',
+    'bytedance/seedance-2.0-fast', 'auto-short:v1', 'clip-edit:v1',
 ];
 
 // Endpoints the pre-registry snapshot does not cover: corrected on purpose
 // (Kling 3.0), or added after the old builder was deleted.
 const CORRECTED = new Set(['fal-ai/kling-video/v3/pro/image-to-video', 'fal-ai/nano-banana-pro', 'fal-ai/nano-banana-pro/edit',
     'fal-ai/elevenlabs/tts/turbo-v2.5', 'fal-ai/minimax/speech-2.6-hd', 'fal-ai/mmaudio-v2/text-to-audio', 'fal-ai/bria/background/remove',
-    'fal-ai/topaz/upscale/image', 'fal-ai/bria/expand', 'fal-ai/latentsync', 'fal-ai/kling-video/ai-avatar/v2/standard']);
+    'fal-ai/topaz/upscale/image', 'fal-ai/bria/expand', 'fal-ai/latentsync', 'fal-ai/kling-video/ai-avatar/v2/standard',
+    'fal-ai/elevenlabs/text-to-dialogue/eleven-v3']);
 
 /** Every valid combination of a record's inputs: all declared keys, each enum value, each length. */
 function fixtures(record) {
@@ -154,8 +160,8 @@ test('the tokens.js fallback offers the lengths the live catalog does', () => {
     // /api/catalog publishes lengthsFor(record); if the fallback drifts, the
     // create page offers a length the gateway refuses.
     const endpointById = {
-        'wan-2.5': 'fal-ai/wan-25-preview/text-to-video',
-        'kling-2.6-pro': 'fal-ai/kling-video/v2.6/pro/text-to-video',
+        'wan-2.5-kie': 'market:wan/2-5-text-to-video',
+        'kling-2.6-pro-kie': 'market:kling-2.6/text-to-video',
         'kling-3.0-i2v': 'fal-ai/kling-video/v3/pro/image-to-video',
         'minimax-hailuo-02': 'fal-ai/minimax/hailuo-02/standard/text-to-video',
         'veo-3.1-kie': 'veo:veo3', 'veo-3.1-fast-kie': 'veo:veo3_fast',
@@ -236,4 +242,18 @@ test('lip sync caps each source at the length its price covers, before the debit
     const inputs = declaredInputs(avatar, { prompt: 'talks', aspect_ratio: '16:9', image_url: 'https://r2/f.png', audio_url: 'https://r2/s.mp3' });
     assert.deepEqual(shapePayload(avatar, inputs), { prompt: 'talks', image_url: 'https://r2/f.png', audio_url: 'https://r2/s.mp3' });
     assert.deepEqual(publicCapabilities(latent).media, { video: { required: true, maxSeconds: 40 }, audio: { required: true, maxSeconds: 40 } });
+});
+
+test('a dialogue script becomes speaker blocks, and the prompt itself is never sent', () => {
+    const d = capabilityFor('fal-ai/elevenlabs/text-to-dialogue/eleven-v3');
+    const script = 'Ana: Did you hear that?\nBen: [whispers] Stay quiet.\nstill whispering\nana: Too late.';
+    assert.deepEqual(checkInputs(d, { prompt: script }), { ok: true });
+    assert.deepEqual(shapePayload(d, { prompt: script }), { inputs: [
+        { voice: 'Aria', text: 'Did you hear that?' },
+        { voice: 'Roger', text: '[whispers] Stay quiet. still whispering' },
+        { voice: 'Aria', text: 'Too late.' },
+    ] });
+    assert.deepEqual(checkInputs(d, { prompt: 'A: 1\nB: 2\nC: 3\nD: 4\nE: 5' }), { ok: false, error: 'dialogue_invalid' }, 'five speakers');
+    assert.equal(checkInputs(d, { prompt: '   ' }).ok, false);
+    assert.equal(checkInputs(d, { prompt: 'x'.repeat(1001) }).ok, false, 'the 1000-character cap the price covers');
 });

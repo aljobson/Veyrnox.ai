@@ -27,6 +27,11 @@ import { capabilityFor, declaredInputs, checkInputs, checkSource, shapePayload }
 import { refundRejectedSubmit } from '../../../../lib/submitRejection.js';
 import { resolveUploadedSource } from '../../../../lib/resolveSource.js';
 import { envConfig as r2EnvConfig, isConfigured as r2IsConfigured } from '../../../../packages/adapters/r2.js';
+import { start as startAutoShort, parentRef } from '../../../../lib/autoShort.js';
+import { TOPIC_RE } from '../../../../lib/autoShortSteps.js';
+import { runtimeDeps, runtimeKeys } from '../../../../lib/autoShortRuntime.js';
+import { start as startClipEdit, parentRef as clipEditRef, editUnits } from '../../../../lib/clipEdit.js';
+import { resolveEdit, defaultDeps as editDeps } from '../../../../lib/clipEditSources.js';
 
 // Constrain idempotency keys to a safe printable range.
 const IDEMPOTENCY_RE = /^[A-Za-z0-9._-]{8,128}$/;
@@ -50,6 +55,11 @@ const MAX_SOURCES = 2;
 const ALLOWED_INPUTS = {
     prompt: { kind: 'string', max: 2000 },
     negative_prompt: { kind: 'string', max: 2000 },
+    // Auto Short (ADR-0029); TOPIC_RE is checked again by its provider entry.
+    topic: { kind: 'string', max: 200 },
+    // Clip Editor: structured, so checked by lib/clipEditSources.js (within MAX_INPUTS_BYTES).
+    clips: { kind: 'edit' },
+    audio: { kind: 'edit' },
     aspect_ratio: { kind: 'enum', values: ['16:9', '9:16', '1:1', '4:3', '3:4', '4:5', '21:9'] },
     duration_seconds: { kind: 'enum', values: [5, 10] },
     seed: { kind: 'int', min: 0, max: 2147483647 },
@@ -92,6 +102,8 @@ function validateInputs(inputs) {
                 break;
             case 'bool':
                 if (typeof value !== 'boolean') return { ok: false, error: `inputs_invalid:${key}` };
+                break;
+            case 'edit':
                 break;
             case 'url': {
                 let u;
@@ -139,6 +151,25 @@ const PROVIDERS = {
         },
         submit: (job, _record, apiKey, publicHost) => openrouter.submitVideo(job,
             { apiKey, callbackUrl: new URL('/api/webhook/openrouter', publicHost).toString() }),
+    },
+    // Auto Short: no single provider call. The orchestrator writes the script,
+    // then submits the voice and scenes; their webhooks drive the rest.
+    veyrnox: {
+        key: () => (runtimeKeys() && r2IsConfigured(r2EnvConfig()) ? 'configured' : null),
+        check: (record, _modelRow, inputs) => {
+            const own = checkInputs(record, inputs);
+            if (!own.ok || record.edit) return own;
+            return TOPIC_RE.test(inputs.topic) ? { ok: true } : { ok: false, error: 'inputs_invalid:topic' };
+        },
+        submit: async (job, record, _key, publicHost) => {
+            const deps = runtimeDeps({ cfg: envConfig(), r2cfg: r2EnvConfig(), publicHost, ...runtimeKeys() });
+            if (record.edit) {
+                const r = await startClipEdit({ jobId: job.job_id, edit: job.inputs.edit }, deps);
+                return r.ok ? { ok: true, providerJobId: clipEditRef(job.job_id) } : { ok: false, error: r.error, errorCode: r.error };
+            }
+            const r = await startAutoShort({ jobId: job.job_id, topic: job.inputs.topic }, deps);
+            return r.ok ? { ok: true, providerJobId: parentRef(job.job_id) } : { ok: false, error: r.error, errorCode: r.error };
+        },
     },
 };
 
@@ -231,6 +262,10 @@ export async function POST(req) {
     // The key is what persists in jobs.inputs; the signed URL does not.
     // Lip sync takes two uploads (a face and the speech), so `source_keys`
     // holds up to MAX_SOURCES; `source_key` is the one-upload form.
+    // An upload can carry someone's face or voice. The caller must state they
+    // own it or have consent (AUP, /legal/aup); the statement is recorded on
+    // the job by job_consent_attested (0096) once the debit has created it.
+    const consent = body && body.consent === true;
     const rawKeys = body && body.source_keys !== undefined ? body.source_keys
         : body && body.source_key !== undefined ? [body.source_key] : [];
     if (!Array.isArray(rawKeys) || rawKeys.length > MAX_SOURCES
@@ -239,15 +274,21 @@ export async function POST(req) {
     }
     const sources = {};   // input field -> resolved source
     const sourceKeys = {}; // input field -> upload key
+    // A client-sent image_url/video_url is dropped here, ALWAYS — not only on
+    // the upload path. Inside `if (rawKeys.length)` these two deletes left a
+    // hole: a request with a media URL and no source key kept the client's
+    // host, and then checkSource saw no resolved source and enforced neither
+    // the model's maxPixels/maxSeconds cap (which its price is built on) nor
+    // the consent statement. The only source a model may read is one this
+    // server signed, so the key is the only way to name one.
+    delete inputs.image_url;
+    delete inputs.video_url;
     if (rawKeys.length) {
+        if (!consent) return NextResponse.json({ error: 'consent_required' }, { status: 400 });
         const r2cfg = r2EnvConfig();
         if (!r2IsConfigured(r2cfg)) {
             return NextResponse.json({ error: 'gateway_not_configured' }, { status: 503 });
         }
-        // A client-sent image_url/video_url is replaced, never merged: the
-        // only source a Transform job may read is one this server signed.
-        delete inputs.image_url;
-        delete inputs.video_url;
         for (const key of rawKeys) {
             const source = await resolveUploadedSource(authId, key, r2cfg);
             if (!source.ok) {
@@ -301,9 +342,27 @@ export async function POST(req) {
     if (!sourceCheck.ok) return NextResponse.json({ error: sourceCheck.error }, { status: 400 });
     // The job row records which uploads were used, not the 15-minute URLs.
     const usedKeys = Object.fromEntries(Object.entries(sourceKeys).filter(([f]) => modelInputs[f] !== undefined));
-    const storedInputs = Object.keys(usedKeys).length
+    let storedInputs = Object.keys(usedKeys).length
         ? { ...Object.fromEntries(Object.entries(modelInputs).filter(([k]) => !(k in usedKeys))), source_keys: usedKeys }
         : modelInputs;
+    // A Clip Editor job stores the resolved edit (owned R2 keys, real lengths)
+    // and is priced on its output length, never on what the client sent.
+    let pricedInputs = modelInputs;
+    if (record.edit) {
+        let resolved;
+        try {
+            resolved = await resolveEdit(authId, modelInputs, editDeps(cfg, r2EnvConfig()));
+        } catch (err) {
+            console.error('[generations] edit lookup failed:', err && err.message);
+            return NextResponse.json({ error: 'edit_lookup_failed' }, { status: 502 });
+        }
+        if (!resolved.ok) return NextResponse.json({ error: resolved.error }, { status: resolved.status });
+        storedInputs = { edit: resolved.edit };
+        // Billed units, not raw seconds: a many-clip edit costs us per step
+        // (lib/clipEdit.js editUnits), and priceFor multiplies the catalog's
+        // credits_5s by the unit count either way.
+        pricedInputs = { duration_seconds: editUnits(resolved.edit) * UNIT_SECONDS };
+    }
 
     // 2. Resolve users.id from auth_id.
     let userId;
@@ -322,7 +381,7 @@ export async function POST(req) {
 
     // 3. Debit atomically. Creates jobs row too. Price = catalog unit price
     //    times the validated unit count; never a client-supplied number.
-    const credits = priceFor(modelRow, modelInputs);
+    const credits = priceFor(modelRow, pricedInputs);
     let debit;
     try {
         debit = await rpc('ledger_debit', {
@@ -360,6 +419,16 @@ export async function POST(req) {
 
     const jobId = debit.job_id;
     const idempotent = debit.idempotent;
+    if (rawKeys.length && jobId) {
+        // Recorded before the provider call: a job that spends money on
+        // someone's likeness must carry the statement that allowed it.
+        try {
+            const noted = await rpc('job_consent_attested', { p_job_id: jobId }, cfg);
+            if (!noted || noted.ok !== true) console.error('[generations] consent not recorded:', noted && noted.code);
+        } catch (err) {
+            console.error('[generations] consent record failed:', err);
+        }
+    }
     const balanceAfter = debit.balance_after;
 
     // Idempotent replay — job already exists. Don't resubmit to fal; return
@@ -371,7 +440,7 @@ export async function POST(req) {
 
     // 4. Submit to the provider.
     const submitResult = await provider.submit(
-        { job_id: jobId, provider_endpoint: modelRow.provider_endpoint, inputs: modelInputs },
+        { job_id: jobId, provider_endpoint: modelRow.provider_endpoint, inputs: record.edit ? storedInputs : modelInputs },
         record, providerKey, publicHost, sources,
     );
 
@@ -380,6 +449,8 @@ export async function POST(req) {
         // job so we owe the credits back.
         await refundRejectedSubmit({ jobId, userId, credits, errorCode: submitResult.errorCode }, cfg);
         console.error('[generations] provider submit failed:', modelRow.provider, submitResult.error);
+        // A topic the script writer refused is the user's to change, not an outage.
+        if (submitResult.errorCode === 'script_refused') return NextResponse.json({ error: 'topic_refused' }, { status: 422 });
         // Don't leak upstream vendor payloads to the client — log only.
         return NextResponse.json({ error: 'provider_submit_failed' }, { status: 502 });
     }

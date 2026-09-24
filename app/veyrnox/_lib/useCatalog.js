@@ -23,6 +23,10 @@ function fromApi(models) {
     media: (m.capabilities && m.capabilities.media) || {},
     // Aspect ratios this model accepts, or null when it takes none.
     aspects: m.capabilities?.inputs?.aspect_ratio?.values || null,
+    // Auto Short (ADR-0029): takes a topic instead of a prompt.
+    takesTopic: !!m.capabilities?.inputs?.topic,
+    // Clip Editor: edits Library files, so it is started from the Library, never Create.
+    isEdit: !!m.capabilities?.inputs?.clips,
   }));
 }
 

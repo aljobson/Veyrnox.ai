@@ -32,6 +32,7 @@ jobs:
     timeout-minutes: 5
     outputs:
       state: ${{ steps.gate.outputs.state }}
+      report: ${{ steps.gate.outputs.report }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
@@ -47,6 +48,11 @@ jobs:
           set -e
           cat gate.txt
           { echo '### Signup gate'; echo '```'; cat gate.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo 'report<<GATE_EOF'
+            cat gate.txt
+            echo GATE_EOF
+          } >> "$GITHUB_OUTPUT"
           case "$code" in
             0) echo "state=closed" >> "$GITHUB_OUTPUT" ;;
             1) echo "state=open"   >> "$GITHUB_OUTPUT" ;;
@@ -54,3 +60,43 @@ jobs:
             *) echo "state=unknown" >> "$GITHUB_OUTPUT" ;;
           esac
           exit "$code"
+
+  # A red run on its own is not an alert: the two sibling monitors
+  # (reconcile-watch, migration-ledger) each file one labelled issue per
+  # episode, and this one — which guards a 50-credit faucet, about $0.75 of
+  # provider spend per address that can POST — only exited non-zero (audit
+  # 2026-09-23).
+  report-open:
+    needs: check
+    if: always() && needs.check.outputs.state != 'closed' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - name: Open one issue per episode
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          STATE: ${{ needs.check.outputs.state }}
+          REPORT: ${{ needs.check.outputs.report }}
+        run: |
+          # One open issue is enough; the hourly job summary shows current state.
+          existing=$(gh issue list --label signup-gate --state open --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            echo "Already tracked in #$existing"
+            exit 0
+          fi
+          gh label create signup-gate --color B60205 \
+            --description 'the signup grant is reachable without email confirmation' 2>/dev/null || true
+          if [ "$STATE" = "open" ]; then
+            title="Signup faucet is OPEN — $(date -u +%Y-%m-%d)"
+            lead='Anyone who can POST an email address can mint 50 credits, about $0.75 of provider spend each.'
+            fix='Turn Confirm email back on in Supabase Auth (the load-bearing switch), check Attack Protection/CAPTCHA, and confirm 0071 is applied. Both switches live outside this repo, which is how it drifted before.'
+          else
+            title="Signup gate could not be checked — $(date -u +%Y-%m-%d)"
+            lead='The hourly check could not read the gate, which is not a pass: the faucet may be open right now.'
+            fix='Run scripts/check-signup-gate.mjs by hand. If the publishable key or applied_migration_names() changed, fix the check itself — a monitor that cannot answer is the same risk as a monitor that is red.'
+          fi
+          printf '%s\n\n%s\n\n```\n%s\n```\n' "$lead" "$fix" "$REPORT" > body.md
+          gh issue create --title "$title" --label signup-gate --body-file body.md

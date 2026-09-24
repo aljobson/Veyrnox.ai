@@ -1,16 +1,18 @@
-import { Archivo, JetBrains_Mono } from 'next/font/google';
+import localFont from 'next/font/local';
 import './veyrnox.css';
+import { JobWatcher } from './_components/JobWatcher';
 
-const archivo = Archivo({
-  subsets: ['latin'],
-  weight: ['500', '600', '700', '800', '900'],
+// Self-hosted variable fonts (OFL, app/fonts); see app/layout.js.
+const archivo = localFont({
+  src: '../fonts/archivo-latin-wght-normal.woff2',
+  weight: '100 900',
   variable: '--font-archivo',
   display: 'swap',
 });
 
-const jetbrains = JetBrains_Mono({
-  subsets: ['latin'],
-  weight: ['500', '600', '700'],
+const jetbrains = localFont({
+  src: '../fonts/jetbrains-mono-latin-wght-normal.woff2',
+  weight: '100 800',
   variable: '--font-jetbrains',
   display: 'swap',
 });
@@ -23,6 +25,7 @@ export default function VeyrnoxLayout({ children }) {
   return (
     <div className={`${archivo.variable} ${jetbrains.variable} vx-root font-vx bg-vx-base text-vx-fg min-h-dvh`}>
       {children}
+      <JobWatcher />
     </div>
   );
 }

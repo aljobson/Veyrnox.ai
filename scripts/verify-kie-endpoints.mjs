@@ -35,13 +35,13 @@
 import { writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { submitTask, fetchTask, buildRequest, parseEndpoint } from '../packages/adapters/kie.js';
 
-// The catalog rows as migration 0074 leaves them. Costs are what kie.ai/pricing
+// The catalog rows as migrations 0104 and 0105 leave them. Costs are what kie.ai/pricing
 // listed on 2026-09-18 and what the row carries; the run confirms or refutes.
 const ROWS = [
     {
         id: 'nano-banana-kie',
         endpoint: 'market:google/nano-banana',
-        credits: 3,
+        credits: 2,
         cost: 0.02,
         unit: 'one image',
         inputs: { prompt: 'A lighthouse on a cliff at dawn, long exposure sea', aspect_ratio: '1:1' },
@@ -49,7 +49,7 @@ const ROWS = [
     {
         id: 'veo-3.1-lite-kie',
         endpoint: 'veo:veo3_lite',
-        credits: 23,
+        credits: 10,
         cost: 0.15,
         unit: '8s 720p clip with audio',
         inputs: { prompt: 'Waves rolling onto a pebble beach at dusk, gentle wind', aspect_ratio: '16:9' },
@@ -57,15 +57,64 @@ const ROWS = [
     {
         id: 'veo-3.1-fast-kie',
         endpoint: 'veo:veo3_fast',
-        credits: 46,
+        credits: 19,
         cost: 0.3,
         unit: '8s 720p clip with audio',
         inputs: { prompt: 'Rain on a tin roof, water running off the edge, close up', aspect_ratio: '16:9' },
     },
     {
+        id: 'wan-2.5-kie',
+        endpoint: 'market:wan/2-5-text-to-video',
+        credits: 19,
+        cost: 0.3,
+        unit: '5s 720p clip',
+        inputs: { prompt: 'A paper boat drifting down a rain gutter, macro', aspect_ratio: '16:9', duration_seconds: 5 },
+    },
+    {
+        id: 'kling-2.6-pro-kie',
+        endpoint: 'market:kling-2.6/text-to-video',
+        credits: 17,
+        cost: 0.275,
+        unit: '5s clip, audio off',
+        inputs: { prompt: 'A red kite catching wind over a grass hill, wide shot', aspect_ratio: '16:9', duration_seconds: 5 },
+    },
+    {
+        id: 'nano-banana-pro-kie',
+        endpoint: 'market:nano-banana-pro',
+        credits: 6,
+        cost: 0.09,
+        unit: 'one 2K image',
+        inputs: { prompt: 'A ceramic teapot on a linen cloth, soft window light', aspect_ratio: '1:1' },
+    },
+    {
+        id: 'hailuo-02-kie',
+        endpoint: 'market:hailuo/02-text-to-video-standard',
+        credits: 10,
+        cost: 0.15,
+        unit: '6s 768p clip',
+        inputs: { prompt: 'A lantern floating up a misty river at night, slow drift', duration_seconds: 5 },
+    },
+    {
+        id: 'seedream-4.5-kie',
+        endpoint: 'market:seedream/4.5-text-to-image',
+        credits: 2,
+        cost: 0.0325,
+        unit: 'one 2K image',
+        inputs: { prompt: 'A ceramic teapot on a linen cloth, soft window light', aspect_ratio: '1:1' },
+    },
+    {
+        id: 'elevenlabs-tts-turbo-kie',
+        endpoint: 'market:elevenlabs/text-to-speech-turbo-2-5',
+        credits: 2,
+        cost: 0.03,
+        unit: '1000 characters of speech',
+        // 964 characters, so the run bills the full priced unit.
+        inputs: { prompt: 'The lighthouse keeper climbed the spiral stairs each evening at dusk, one hand on the cold iron rail, counting the steps out of habit. Below him the sea folded itself against the rocks in long grey sheets. He lit the lamp, checked the glass for salt, and watched the beam sweep out over the water until it caught the white shoulder of a distant wave. Somewhere out there a ship was listening for that light. He wrote the hour in the log, made tea on the little stove, and settled by the window to wait for the weather to change. Morning would bring gulls, and the supply boat, and news from the mainland. Tonight there was only the lamp, the tide, and the patient work of keeping a small bright promise to strangers he would never meet. He turned the page and began again, as he always did, with the wind. The gulls would come at first light, and with them the smell of rain on distant hills, and the slow ordinary business of another day at the edge of the world.' },
+    },
+    {
         id: 'veo-3.1-kie',
         endpoint: 'veo:veo3',
-        credits: 122,
+        credits: 76,
         cost: 1.25,
         unit: '8s 720p clip with audio',
         inputs: { prompt: 'A kestrel hovering over a summer meadow, slow motion', aspect_ratio: '16:9' },
