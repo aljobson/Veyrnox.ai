@@ -12,29 +12,36 @@ const num = new Intl.NumberFormat('en-US');
 export function TopUpHistory() {
   const [topUps, setTopUps] = useState(null);
   const [failed, setFailed] = useState(false);
+  const [next, setNext] = useState(null);
+  const [busy, setBusy] = useState(false);
   // Loads can overlap (mount, focus, balance change); only the latest applies.
   const latest = useRef(0);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (cursor = null) => {
     const seq = ++latest.current;
+    setBusy(true);
     try {
-      const b = await gatewayFetch('/top-ups');
+      const b = await gatewayFetch(`/top-ups${cursor ? `?${new URLSearchParams(cursor)}` : ''}`);
       if (seq !== latest.current) return;
-      setTopUps(Array.isArray(b?.top_ups) ? b.top_ups : []);
+      const rows = Array.isArray(b?.top_ups) ? b.top_ups : [];
+      setTopUps(previous => cursor ? [...(previous || []), ...rows.filter(row => !previous?.some(p => p.id === row.id))] : rows);
+      setNext(b.next || null);
       setFailed(false);
     } catch {
       if (seq === latest.current) setFailed(true);
-    }
+    } finally { if (seq === latest.current) setBusy(false); }
   }, []);
 
   useEffect(() => {
     load();
     // focus: coming back from an abandoned checkout tab shows its pending row.
-    window.addEventListener('focus', load);
-    window.addEventListener('veyrnox:balance-changed', load);
+    const refresh = () => load();
+    window.addEventListener('focus', refresh);
+    window.addEventListener('veyrnox:balance-changed', refresh);
     return () => {
-      window.removeEventListener('focus', load);
-      window.removeEventListener('veyrnox:balance-changed', load);
+      latest.current++;
+      window.removeEventListener('focus', refresh);
+      window.removeEventListener('veyrnox:balance-changed', refresh);
     };
   }, [load]);
 
@@ -82,6 +89,7 @@ export function TopUpHistory() {
           })}
         </ul>
       )}
+      {next && <button type="button" disabled={busy} onClick={() => load(next)} className="mt-4 rounded-full border border-vx-border px-5 py-2 text-sm font-bold disabled:opacity-50">{busy ? 'Loading…' : 'Load older Top-ups'}</button>}
     </section>
   );
 }

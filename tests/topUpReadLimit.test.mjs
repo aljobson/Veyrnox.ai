@@ -22,8 +22,8 @@ function stub({ rate = { ok: true }, fail, missing = false } = {}) {
         if (name === 'users') { assert.equal(u.searchParams.get('auth_id'), `eq.${auth}`); return Response.json(missing ? [] : [{ id: user }]); }
         if (name === 'top_ups') {
             assert.equal(u.searchParams.get('user_id'), `eq.${user}`);
-            assert.equal(u.searchParams.get('limit'), '20');
-            assert.equal(u.searchParams.get('order'), 'created_at.desc');
+            assert.equal(u.searchParams.get('limit'), '21');
+            assert.equal(u.searchParams.get('order'), 'created_at.desc,id.desc');
             return Response.json([top]);
         }
         assert.equal(name, 'read_top_up');
