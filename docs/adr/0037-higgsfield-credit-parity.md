@@ -72,10 +72,26 @@ the documented fee assumptions. This is a distinct budget option, not a claim
 that its image quality is equivalent to FLUX. Endpoint documentation:
 https://fal.ai/models/fal-ai/sana/v1.5/4.8b/api .
 
-No FAL_KEY is available in this checkout or process environment, so a paid
-live generation and charged-cost verification could not be run. 0119 stays
-inactive pending a deployed submit -> signed webhook -> R2 -> STORED test,
-charge confirmation, output inspection and failure/refund verification.
-Activation requires a separate guarded migration; do not enable by editing
-an applied staging migration. The user's request authorises adding Sana;
-no further product choice is needed.
+## Sana live provider verification — 2026-09-24
+
+The owner supplied FAL_KEY locally. One paid request used the exact capability
+payload (1024x768, one PNG, 18 steps, guidance 5, safety enabled, seed 42).
+Request `01a0d3c2-1bcd-75f3-b53b-b7d2ca2d886b` completed successfully;
+fal reported 3.863 seconds of inference. The output was downloaded without a
+redirect from v3b.fal.media: PNG, 710119 bytes, decoded header 1024x768.
+Safety result was false for NSFW. Visual inspection shows a coherent blue mug
+on a wood surface; the finish looks glossy despite a matte prompt. This is a
+single output inspection, not a comparative quality benchmark.
+
+This direct provider test did not debit a Veyrnox account, send a production
+webhook, or write R2. Existing automated gateway/capability/webhook/refund tests
+remain separate evidence. No duplicate generation was purchased.
+
+The billing-events API returned HTTP 403 with this key. The dashboard opened
+at login, so the actual charge remains unverified. $0.01 is still the published
+one-MP estimate, not a confirmed billed amount; the 68.5% margin remains
+conditional on that cost and the assumed payment fees.
+
+0119 stays inactive pending deployed submit -> signed webhook -> R2 -> STORED
+validation, charge confirmation and failure/refund verification. Activation
+requires a separate guarded migration. The key was not printed or committed.

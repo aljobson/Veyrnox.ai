@@ -2,7 +2,9 @@
 -- fal's live OpenAPI schema verified 2026-09-24; public rate $0.01/MP.
 -- Registry pins one 1024x768 PNG, 18 steps, safety on, async output.
 -- Stage inactive until a real submit -> webhook -> R2 -> STORED generation,
--- billed charge and failure/refund are verified. No local FAL_KEY available.
+-- billed charge and failure/refund are verified. Direct provider test passed
+-- 2026-09-24 (request 01a0d3c2-1bcd-75f3-b53b-b7d2ca2d886b); billing API
+-- access returned 403, so the exact charge remains unverified.
 -- At $129/3000 and assumed 8% + $0.30 payment fees, 1 credit leaves 68.5%
 -- contribution before other operating costs. No quality-equivalence claim.
 INSERT INTO public.model_catalog
