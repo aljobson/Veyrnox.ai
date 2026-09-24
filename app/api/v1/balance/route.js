@@ -13,11 +13,14 @@
  */
 
 import { NextResponse } from 'next/server';
+import { accountReadLimit } from '../../../../lib/accountReadLimit.js';
 import { rpc, envConfig, SupabaseError } from '../../../../packages/db/supabase-client.js';
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function GET(req) {
     const authId = req.headers.get('x-veyrnox-auth-id');
-    if (!authId) {
+    if (!authId || !UUID_RE.test(authId)) {
         return NextResponse.json({ error: 'not_authenticated' }, { status: 401 });
     }
 
@@ -25,6 +28,9 @@ export async function GET(req) {
     if (!cfg.supabaseUrl || !cfg.serviceRoleKey) {
         return NextResponse.json({ error: 'supabase_not_configured' }, { status: 503 });
     }
+
+    const limited = await accountReadLimit(authId, cfg, { balance: 0, free_credits: 0, free_expires_at: null });
+    if (limited) return limited;
 
     let credits;
     try {
