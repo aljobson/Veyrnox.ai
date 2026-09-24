@@ -45,6 +45,26 @@ const post = (body) => generations.POST(new Request('https://veyrnox.test/api/v1
     body: JSON.stringify({ idempotency_key: 'src-guard-0001', ...body }),
 }));
 
+test('attempt quota denial stops uploads and Clip Editor requests before any source I/O or debit', async () => {
+    for (const body of [
+        { model_id: 'topaz-upscale', inputs: {}, source_key: 'uploads/source.png', consent: true },
+        { model_id: 'clip-edit', inputs: { clips: [{ asset_id: '11111111-1111-4111-8111-111111111111', in_s: 0, out_s: 5 }] } },
+    ]) {
+        const calls = [];
+        globalThis.fetch = async (url, init) => {
+            calls.push(String(url));
+            assert.match(String(url), /\/rpc\/check_generation_rate_limit$/);
+            assert.equal(JSON.parse(init.body).p_auth_id, 'auth-user-1');
+            return Response.json({ ok: false, code: 'RATE_LIMITED', count: 21, limit: 20, retry_after_seconds: 37 });
+        };
+        const response = await post(body);
+        assert.equal(response.status, 429);
+        assert.equal(response.headers.get('retry-after'), '37');
+        assert.deepEqual(await response.json(), { error: 'rate_limited', count: 21, limit: 20, retry_after_seconds: 37 });
+        assert.equal(calls.length, 1, 'no asset lookup, catalog lookup, R2 read, debit or provider call');
+    }
+});
+
 test('a client-sent image_url never becomes a model source, and never reaches the provider', async () => {
     const calls = stub();
     const res = await post({ model_id: 'topaz-upscale', inputs: { image_url: 'https://attacker.example/100-megapixels.png' } });

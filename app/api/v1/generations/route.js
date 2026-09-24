@@ -211,14 +211,11 @@ export async function POST(req) {
     const inputsCheck = validateInputs(inputs);
     if (!inputsCheck.ok) return NextResponse.json({ error: inputsCheck.error }, { status: 400 });
 
-    // 0. Per-user rate-limit check. Postgres-backed sliding window against
-    //    jobs.created_at — no dedicated table, no external cache. One RPC
-    //    call adds ~10-30ms to the hot path; acceptable, we already do
-    //    several Postgres calls per submission.
-    //
-    //    Baseline: 10 generations per 60 seconds per user. Applies to
-    //    every plan for now; tier-specific limits arrive with Phase 4
-    //    premium gating.
+    // 0. Shared per-user entry check. After migration 0113 this atomically
+    // counts attempts (20 per fixed 60-second window), including requests
+    // rejected later without a job. The existing 10-job sliding-window check
+    // remains, with the authoritative job limit enforced inside ledger_debit.
+    // This RPC must precede source signing, R2 reads and media inspection.
     try {
         const rl = await rpc('check_generation_rate_limit', {
             p_auth_id: authId,
