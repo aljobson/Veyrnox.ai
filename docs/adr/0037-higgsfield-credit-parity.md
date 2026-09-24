@@ -1,6 +1,6 @@
 # ADR-0037 — Match credit-pack value subject to a 50% contribution margin
 
-Status: Prepared for review, updated 2026-09-24. Not deployed.
+Status: Credit-pack parity deployed 2026-09-24. Sana activation prepared for owner review.
 
 The owner requested matching both Higgsfield prices and generation credits,
 then clarified that every area must have a 50% margin. The margin requirement
@@ -16,7 +16,7 @@ annual discounts, unlimited benefits or free-generation pools are introduced.
 Keep Nano Banana and FLUX.2 Pro at 2 credits each. Reduce nominal 6s/768p
 Hailuo 02 from 10 to 9 credits. The original draft's 1/1/6 charges are
 superseded because they do not leave 50% after estimated payment fees.
-All other model charges and providers stay unchanged. No staged route is activated.
+Other catalog changes are tracked separately; GrsAI Nano Banana Pro activated via 0124. Sana activation is described below.
 
 See [50% margin analysis](../pricing/50-percent-margin.md) for candidate Sana
 models, remaining cost-verification work and the full formula. With an assumed
@@ -44,8 +44,8 @@ ledger or balance. Pending Stripe checkouts retain their original prices.
 UI Hailuo fallback/preset charges follow the migration; signup copy no longer
 hardcodes a generation count. Apply via the owner-reviewed production workflow
 (ADR-0023), coordinate fallback deployment, then verify the public pack/model
-APIs and signed-in debit/refund behavior. Keep draft pending that rollout and
-actual fee/cost validation. No production changes have been made.
+APIs and signed-in debit/refund behavior. 0121 and the inactive 0122 were applied through the production workflow on
+2026-09-24; public pack and model prices were verified after cache expiry.
 
 Rollback is a new guarded migration restoring Hailuo to 10, retiring the new
 packs and reactivating the old ones. Do not delete historical packs or rewrite
@@ -87,11 +87,52 @@ This direct provider test did not debit a Veyrnox account, send a production
 webhook, or write R2. Existing automated gateway/capability/webhook/refund tests
 remain separate evidence. No duplicate generation was purchased.
 
-The billing-events API returned HTTP 403 with this key. The dashboard opened
-at login, so the actual charge remains unverified. $0.01 is still the published
-one-MP estimate, not a confirmed billed amount; the 68.5% margin remains
-conditional on that cost and the assumed payment fees.
+The billing-events API returned HTTP 403 with this key. The owner subsequently
+signed into the fal dashboard. Its Sana-filtered usage row showed one billed
+megapixel at $0.01/MP, total $0.01, for the single earlier generation. This is
+aggregate endpoint billing evidence, not a request-level invoice. The 68.5%
+contribution estimate still assumes the payment fees above.
 
-0122 stays inactive pending deployed submit -> signed webhook -> R2 -> STORED
-validation, charge confirmation and failure/refund verification. Activation
-requires a separate guarded migration. The key was not printed or committed.
+## Sana activation evidence — 2026-09-24
+
+An isolated deployed Worker, staging Supabase and test-only R2 bucket ran the
+production generation and fal webhook handlers. Its wrapper allowed only the
+dedicated signed-in test account and one Sana idempotency key. The fal account
+ID was independently retrieved with the existing API key using the official
+`GET https://rest.alpha.fal.ai/users/current` endpoint. Missing JWT and unsigned
+webhook requests were rejected with 401 before the paid test.
+
+Job `181f83a3-08dd-4218-b092-b62df4e59195`, fal request
+`01a0d474-94f7-79c1-9b2d-c2db0d6755e9`, reached STORED through the real signed
+callback at 17:26:51 UTC. The authenticated asset endpoint returned a signed
+URL for the isolated R2 bucket. Download verification: PNG, 1024x768,
+918415 bytes, SHA-256
+`0f97d6ea1e9962ba05cd79bd20ec8fa360f00bc18b90baa7601accefe98be393`.
+Visual inspection found a coherent blue mug; the matte instruction was not
+fully followed. This is not a comparative quality benchmark.
+
+There was exactly one -1 generation ledger entry; balance 46 -> 45. Replaying
+the same request returned the same job without a second provider submission or
+debit. All four reconciliation counters were zero. Other staging users' ledger
+and balance fingerprints were unchanged.
+
+A separate synthetic submit rejection exercised production
+`refundRejectedSubmit` against staging Postgres: job
+`710df345-af97-425e-ac29-7a15ecb47467`, balance 46 -> 45 -> 46, exactly one debit
+and refund, state REFUNDED, repeated refund no-op. This was a simulated failure
+with no provider request, not a live fal failure. The 39 targeted automated
+checks additionally covered signature/tenant rejection, callback binding,
+completion/replay and submit/refund behavior. The temporary Worker was closed
+and staging Sana returned to inactive after validation.
+
+0126 activates only the verified Sana row at 1 credit and $0.01 recorded cost,
+asserting its identity, unit, endpoint, gating and price before updating.
+Local Postgres verified successful activation, idempotent replay and rejection
+of cost drift. FLUX remains at 2 credits. The pricing/picker fallback gains Sana;
+Nano Banana copy no longer claims it is the cheapest image option.
+
+Production remains inactive until the owner-approved migration workflow applies
+0126. After merging, approve that run, verify the public catalog and pricing page,
+and check production reconciliation. Rollback requires a new guarded migration
+setting only Sana inactive and removing it from the fallback list. Do not rewrite
+0122 or 0126 or modify balances. No credentials are committed.

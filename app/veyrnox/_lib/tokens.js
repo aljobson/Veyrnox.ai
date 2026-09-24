@@ -22,6 +22,7 @@ export const MODELS = [
   { id: 'nano-banana-pro-grsai', name: 'Nano Banana Pro',    credits: 2,   tag: 'NEW',                            kind: 'image', durations: [5] },
   { id: 'nano-banana-pro-edit', name: 'Nano Banana Pro Edit', credits: 10,                                      kind: 'image', durations: [5] },
   { id: 'nano-banana-kie',    name: 'Nano Banana',         credits: 2,                                         kind: 'image', durations: [5] },
+  { id: 'sana-1.5-4.8b',     name: 'Sana v1.5 4.8B',      credits: 1,   tag: 'NEW',                            kind: 'image', durations: [5] },
   { id: 'flux-2-pro',         name: 'Flux.2 [pro]',        credits: 2,                                          kind: 'image', durations: [5] },
   { id: 'seedream-4',         name: 'Seedream 4',          credits: 2,                                          kind: 'image', durations: [5] },
   { id: 'topaz-upscale',      name: 'Topaz Upscale 2x',    credits: 5,                                          kind: 'image', durations: [5] },
@@ -135,7 +136,7 @@ export const FEATURE_CARDS = [
   { key: 'nano-banana-kie',
     kicker: 'NANO BANANA',
     title: 'Photoreal stills, two credits a frame.',
-    body: 'The cheapest photoreal image on the catalog. Perfect for product shots and stills.',
+    body: 'Photoreal images for product shots and stills, at two credits each.',
     cta: 'Open Nano Banana',
     href: '/app/create?model=nano-banana-kie',
     bg: 'linear-gradient(160deg,#2b1a0a 0%,#7a4a1e 60%,#f0b060 100%)' },
@@ -233,7 +234,7 @@ export const METRIC_STRIP = [
 // updates in a follow-up.
 export const PRODUCT_TILES = [
   { key: 'wan-2.5-kie',       name: 'Wan 2.5',            kind: 'Video',  credits: 19,  hint: 'The default. Fast, cinematic.',                    badge: 'TOP',       icon: '⚡' },
-  { key: 'nano-banana-kie',   name: 'Nano Banana',        kind: 'Image',  credits: 2,   hint: 'Cheapest photoreal frame on the shelf.',                                 icon: '◐' },
+  { key: 'nano-banana-kie',   name: 'Nano Banana',        kind: 'Image',  credits: 2,   hint: 'Photoreal stills, two credits a frame.',                                 icon: '◐' },
   { key: 'nano-banana-pro-grsai', name: 'Nano Banana Pro',  kind: 'Image',  credits: 2,   hint: '2K stills from your prompt.',         badge: 'NEW',       icon: '◑' },
   { key: 'kling-3.0-i2v',     name: 'Kling 3.0 · I2V',    kind: 'Video',  credits: 34,  hint: 'Your photo to 1080p video, audio off.',                                   icon: '▶' },
   { key: 'kling-avatar-v2',   name: 'Kling AI Avatar',    kind: 'Video',  credits: 35,  hint: 'A photo plus speech becomes a talking video.',      badge: 'NEW',       icon: '◉' },

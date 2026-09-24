@@ -5,7 +5,7 @@ proposal to match generation credits even where contribution was only positive.
 The target here is revenue less provider and payment fees, divided by revenue.
 It is not a guarantee of 50% net profit after all operating costs.
 
-Assumptions: proposed $129/3000 pack, all credits used, payment fees 8% of
+Assumptions: live $129/3000 pack, all credits used, payment fees 8% of
 pre-tax price + $0.30 per purchase. Actual account fees, FX, tax fee base,
 storage, support, refunds, retries and fixed overhead remain unverified.
 
@@ -19,8 +19,8 @@ selling price, provider cost must be at most $0.01796 per charged credit:
 | Nano Banana (live kie) | $0.0200 | 2 credits | 68.5% |
 | FLUX.2 Pro (live fal) | $0.0300 | 2 credits | 56.9% |
 | Hailuo 02, 6s (live kie) | $0.1500 | 9 credits | 53.0% |
-| Nano Banana Pro (live kie) | $0.0900 | 6 credits | 56.9% |
-| Nano Banana Pro (staged GrsAI) | $0.0271 | 2 credits, conditional | 60.3% |
+| Nano Banana Pro (live GrsAI) | $0.0271 | 2 credits | 60.3% |
+| Sana v1.5 4.8B (activation pending) | $0.0100 | 1 credit | 68.5% |
 
 The revised migration keeps Nano Banana and FLUX at their existing 2 credits,
 reduces Hailuo from 10 to 9 rather than 6, and retains all other model charges.
@@ -45,8 +45,11 @@ pin resolution and inspect actual charges before activation.
 Sana v1.5 4.8B is now integrated and staged inactive as an additional option
 in migration 0122. The others remain candidates. None is claimed to be a
 quality-equivalent FLUX replacement. Compare product shots, faces, text, hands and prompt adherence
-before selection. Existing staged GrsAI Nano Banana Pro requires production
-completion/refund validation and suitability assessment before activation.
+before selection. GrsAI Nano Banana Pro is live after migration 0124 and a successful production
+generation. Sana passed isolated signed-callback/storage/debit validation and a
+synthetic submit-refund check; 0126 proposes activation. The fal dashboard confirmed
+$0.01 aggregate billing for the earlier single Sana image. See ADR-0037 for the
+evidence and remaining payment-fee assumptions.
 
 Monthly pack value can match Higgsfield while this margin is maintained under
 the assumptions. Exact generation-credit parity cannot also be promised for
