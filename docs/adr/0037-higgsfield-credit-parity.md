@@ -8,7 +8,7 @@ now takes priority wherever exact generation-credit parity conflicts with it.
 
 ## Decision
 
-0118 prepares one-off $19/270, $59/1200 and $129/3000 credit packs, matching
+0121 prepares one-off $19/270, $59/1200 and $129/3000 credit packs, matching
 Higgsfield's monthly credit value. Keep the $10/100 entry pack and retire the
 $25/300 and $75/1000 packs. Paid credits never expire; no subscriptions,
 annual discounts, unlimited benefits or free-generation pools are introduced.
@@ -38,7 +38,7 @@ transcription and must not certify this change.
 
 ## Rollout
 
-Migration 0118 is atomic, replayable and aborts on provider/cost/unit drift,
+Migration 0121 is atomic, replayable and aborts on provider/cost/unit drift,
 missing rows or conflicting pack IDs. It changes no top-up snapshot, job,
 ledger or balance. Pending Stripe checkouts retain their original prices.
 UI Hailuo fallback/preset charges follow the migration; signup copy no longer
@@ -55,7 +55,7 @@ cheaper rows exist, even if those rows are inactive.
 
 ## Sana added alongside FLUX (owner request, 2026-09-24)
 
-0119 stages `sana-1.5-4.8b` as a separate fal image model at 1 credit and
+0122 stages `sana-1.5-4.8b` as a separate fal image model at 1 credit and
 $0.01 recorded cost. FLUX.2 Pro retains its identity, endpoint and 2-credit
 charge. The live model picker uses the catalog, so no replacement or alias
 is required. The new option is not added to the offline fallback while inactive.
@@ -92,6 +92,6 @@ at login, so the actual charge remains unverified. $0.01 is still the published
 one-MP estimate, not a confirmed billed amount; the 68.5% margin remains
 conditional on that cost and the assumed payment fees.
 
-0119 stays inactive pending deployed submit -> signed webhook -> R2 -> STORED
+0122 stays inactive pending deployed submit -> signed webhook -> R2 -> STORED
 validation, charge confirmation and failure/refund verification. Activation
 requires a separate guarded migration. The key was not printed or committed.

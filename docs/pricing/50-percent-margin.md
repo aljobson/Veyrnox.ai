@@ -43,7 +43,7 @@ pin resolution and inspect actual charges before activation.
 | Sana Sprint | $0.0025 | 86.0% | https://fal.ai/models/fal-ai/sana/sprint |
 
 Sana v1.5 4.8B is now integrated and staged inactive as an additional option
-in migration 0119. The others remain candidates. None is claimed to be a
+in migration 0122. The others remain candidates. None is claimed to be a
 quality-equivalent FLUX replacement. Compare product shots, faces, text, hands and prompt adherence
 before selection. Existing staged GrsAI Nano Banana Pro requires production
 completion/refund validation and suitability assessment before activation.

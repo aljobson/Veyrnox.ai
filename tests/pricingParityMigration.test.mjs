@@ -19,7 +19,7 @@ test('parity migration is atomic, replayable and guards price/cost drift', {
             return result.trim();
         } catch (err) { if (!fail) throw err; assert.equal(err.status, 3); }
     };
-    const migration = readFileSync(new URL('../packages/db/schema/supabase/0118_monthly_credit_parity.sql', import.meta.url), 'utf8');
+    const migration = readFileSync(new URL('../packages/db/schema/supabase/0121_monthly_credit_parity.sql', import.meta.url), 'utf8');
     const original = readFileSync(new URL('../packages/db/schema/supabase/0041_credit_packs_and_top_ups.sql', import.meta.url), 'utf8');
     const creditTable = original.slice(original.indexOf('CREATE TABLE'), original.indexOf('CREATE TABLE IF NOT EXISTS public.top_ups'));
     const models = JSON.parse(readFileSync(new URL('../docs/pricing/live-catalog-2026-09-24.json', import.meta.url), 'utf8')).models;
@@ -66,7 +66,7 @@ test('parity migration is atomic, replayable and guards price/cost drift', {
         assert.equal(sql("SELECT string_agg(id || ':' || credits_5s, ',' ORDER BY id) FROM model_catalog"),
             'flux-2-pro:2,hailuo-02-kie:9,nano-banana-kie:2');
         assert.equal(sql('SELECT credits || \':\' || price_usd_cents FROM top_ups'), '300:2500');
-        const sana = readFileSync(new URL('../packages/db/schema/supabase/0119_sana_image_option.sql', import.meta.url), 'utf8');
+        const sana = readFileSync(new URL('../packages/db/schema/supabase/0122_sana_image_option.sql', import.meta.url), 'utf8');
         sql(sana);
         sql(sana);
         assert.equal(sql("SELECT credits_5s || ':' || active FROM model_catalog WHERE id='sana-1.5-4.8b'"), '1:false');
