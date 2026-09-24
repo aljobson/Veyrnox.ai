@@ -10,6 +10,7 @@ const ACCOUNT_LINKS = [
   { href: '/app', label: 'Open Studio' },
   { href: '/app/library', label: 'Library' },
   { href: '/app/credits', label: 'Credits' },
+  { href: '/app/account', label: 'Account & security' },
 ];
 
 // `account` is optional: pass one (AppNav does, so the email can come from

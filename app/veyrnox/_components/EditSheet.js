@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import { useAssetUrl } from '../_lib/useAssetUrl';
+import { Modal } from './Modal';
 import { AssetLoadStatus } from './AssetLoadStatus';
 import { gatewayFetch, GatewayError, makeIdempotencyKey } from '../_lib/gateway';
 
@@ -34,11 +35,7 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape' && !busy) onClose(); };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [busy, onClose]);
+
 
   const update = (i, patch) => setItems((xs) => xs.map((x, k) => (k === i ? { ...x, ...patch } : x)));
   const move = (i, d) => setItems((xs) => {
@@ -84,11 +81,8 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 flex items-end sm:items-center justify-center p-0 sm:p-6" onClick={() => !busy && onClose()}>
+    <Modal aria-labelledby="edit-sheet-title" onCancel={() => !busy && onClose()} className="items-end sm:items-center justify-center p-0 sm:p-6">
       <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="edit-sheet-title"
         onClick={(e) => e.stopPropagation()}
         className="w-full sm:max-w-[760px] max-h-[92dvh] overflow-y-auto rounded-t-2xl sm:rounded-2xl border border-vx-border bg-vx-base p-4 sm:p-6"
       >
@@ -138,7 +132,7 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted }) {
           </button>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }
 

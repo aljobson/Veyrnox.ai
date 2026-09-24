@@ -9,7 +9,7 @@ export const metadata = {
 
 export default function Refund() {
     return (
-        <LegalPage title="Refund Policy">
+        <LegalPage title="Refund Policy" updated="24 September 2026">
             <p>Veyrnox.ai is pay-per-generation. This page sets out exactly when credits come back to you.</p>
 
             <h2>Failed generations — automatic</h2>

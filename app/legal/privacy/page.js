@@ -9,7 +9,7 @@ export const metadata = {
 
 export default function Privacy() {
     return (
-        <LegalPage title="Privacy Policy">
+        <LegalPage title="Privacy Policy" updated="24 September 2026">
             <p>{ENTITY.name} (&ldquo;we&rdquo;) is the data controller for personal data processed through Veyrnox.ai. Registered office: {ENTITY.office}. Contact: <a href={`mailto:${ENTITY.privacyEmail}`}>{ENTITY.privacyEmail}</a>.</p>
 
             <h2>What we collect</h2>

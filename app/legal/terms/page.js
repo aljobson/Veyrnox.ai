@@ -9,7 +9,7 @@ export const metadata = {
 
 export default function Terms() {
     return (
-        <LegalPage title="Terms of Service">
+        <LegalPage title="Terms of Service" updated="24 September 2026">
             <p>These terms govern your use of Veyrnox.ai, operated by {ENTITY.name}, a company registered in {ENTITY.jurisdiction} (company no. {ENTITY.companyNo}), registered office {ENTITY.office}. By creating an account or generating content you agree to them.</p>
 
             <h2>1. The service</h2>

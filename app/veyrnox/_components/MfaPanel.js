@@ -31,9 +31,11 @@ export function MfaPanel() {
   const refresh = useCallback(async () => {
     try {
       setFactors(await listFactors());
+      setError(null);
       setAal(getAal());
     } catch {
-      setFactors([]); // signed out, or GoTrue unreachable — show nothing, not a lie
+      setFactors(null);
+      setError('Could not read your authenticator settings. Try again.');
     }
   }, []);
 
@@ -52,16 +54,16 @@ export function MfaPanel() {
       <h2 className="text-[15px] font-bold">Two-factor authentication</h2>
       <p className="mt-1 text-[13px] text-vx-fg-body">
         {verified.length > 0
-          ? `Enabled. This session is ${aal || 'aal1'}.`
-          : 'Not enabled. An admin password on its own opens the ledger.'}
+          ? 'Your authenticator is enabled.'
+          : factors === null ? 'Authenticator status is unavailable.' : 'Add an authenticator to help protect your account.'}
       </p>
 
-      {error && <p className="mt-3 text-[13px] text-vx-danger">{error}</p>}
+      {error && <p role="alert" className="mt-3 text-[13px] text-vx-danger">{error} <button type="button" onClick={refresh} className="underline">Retry</button></p>}
 
-      {verified.length === 0 && !pending && (
+      {factors !== null && verified.length === 0 && !pending && (
         <button
           type="button" disabled={busy}
-          onClick={() => run(async () => setPending(await enrollTotp('Veyrnox admin')))}
+          onClick={() => run(async () => setPending(await enrollTotp('Veyrnox.ai')))}
           className="mt-4 rounded-full bg-vx-accent text-vx-accent-ink font-bold px-4 py-2 text-[13px] disabled:opacity-60"
         >
           {busy ? 'Working…' : 'Set up an authenticator app'}

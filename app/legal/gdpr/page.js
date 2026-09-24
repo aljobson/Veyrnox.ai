@@ -9,7 +9,7 @@ export const metadata = {
 
 export default function Gdpr() {
     return (
-        <LegalPage title="GDPR & Data Rights">
+        <LegalPage title="GDPR & Data Rights" updated="24 September 2026">
             <p>{ENTITY.name} processes personal data under the UK GDPR and, for EU residents, the EU GDPR. This page explains how to exercise your rights.</p>
 
             <h2>Your rights</h2>
