@@ -202,3 +202,39 @@ browser-flag gate does not apply. This check does not claim 24 hours of clean
 reconciliation. The separate asset-expiry notice remains behind its browser
 rollout gate. Rollback is a deployment setting this server flag back to `false`;
 the additive migration does not need reverting.
+
+## 2026-09-24 — shared quota for job metadata reads
+
+Migration 0115 bounds the Library list, individual job status, and provenance
+reads at 600 per account per fixed 60-second window. A twelve-card Library page
+polling every three seconds uses at most 240 status requests per minute; this
+leaves headroom for initial hydration, pagination and another tab. Two bursts
+can straddle a fixed-window boundary; this is not a rolling quota.
+
+Both owner-scoped read RPCs resolve the account first, then atomically consume
+one shared counter before reading job data. Changing job IDs, cursors, or
+switching between the three routes does not create a new bucket. Missing or
+foreign jobs consume the caller's quota without revealing their existence.
+Unknown identities preserve the existing empty-list/NOT_FOUND behavior and
+allocate no counters. List fields, expiry dates, pagination, and job ownership
+predicates remain unchanged. Signed asset URLs retain their separate 120/minute
+quota; generation attempts retain their separate 20/minute quota.
+
+The counter table has one row per account, forced RLS, and no direct privileges
+for browser roles or service_role. A service-role-only helper accepts the UUID
+already resolved by the trusted RPCs; clients never supply it to an app route.
+The functions use empty search paths. Denied counts saturate at 601 without
+extending the window. No ledger entry, balance, job or asset is changed.
+
+The three gateway routes translate the new RATE_LIMITED verdict into 429 with
+bounded Retry-After and no-store, before any provenance catalog/asset lookup.
+They remain compatible with the old RPC response while deploying. Existing
+clients receive the gateway's typed 429 error; this change does not redesign
+their retry UI or protect the remaining API routes or unauthenticated traffic.
+
+**Rollout order matters:** merge and wait for successful production deployment
+of the 429-aware handlers, then obtain owner approval and apply 0115 through
+apply-migrations. Applying 0115 activates enforcement immediately. No additional
+flag or browser opt-in exists for this control on existing authenticated reads.
+Rollback requires an approved forward migration restoring the prior read RPCs;
+leave the applied migration ledger intact.

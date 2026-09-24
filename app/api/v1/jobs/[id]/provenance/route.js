@@ -19,6 +19,7 @@
  */
 
 import { NextResponse } from 'next/server';
+import { jobReadLimitResponse } from '../../../../../../lib/jobReadLimit.js';
 import { rpc, select, envConfig } from '../../../../../../packages/db/supabase-client.js';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -56,6 +57,8 @@ export async function GET(req, { params }) {
         console.error('[jobs/provenance] rpc failed:', err);
         return NextResponse.json({ error: 'internal' }, { status: 502 });
     }
+    const limited = jobReadLimitResponse(row);
+    if (limited) return limited;
     if (!row || row.ok !== true) {
         return NextResponse.json({ error: 'not_found' }, { status: 404 });
     }
