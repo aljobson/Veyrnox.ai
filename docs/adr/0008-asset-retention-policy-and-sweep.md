@@ -153,3 +153,36 @@ normal migration and rollout gate. Production application of 0109 still needs
 the owner's approval through `apply-migrations` on main. The UI and API tolerate
 the old RPC response during deployment. This does not implement pinning or
 change retention.
+
+## 2026-09-24 — bound signed asset-link requests
+
+The authenticated asset endpoint gains a per-account limit of 120 requests per
+fixed 60-second window. This leaves room for the Library's 12-card initial load,
+pagination, retries, and multiple tabs. It is a fixed window, not a sliding
+window: a boundary can admit two bursts. Missing/foreign asset requests consume
+the same account quota, preventing job-id rotation from bypassing the control.
+The ownership check and 15-minute signing lifetime remain unchanged.
+
+Migration 0110 uses an atomic upsert keyed by user ID, shared across all Workers.
+It stores one reusable row per account and caps denied attempts at 121; denied
+requests do not extend the window. These counters intentionally count every
+HTTP attempt, including retries, rather than using money-RPC idempotency keys.
+They are operational metadata, never ledger entries. The table forces RLS,
+revokes direct access (including service_role), and exposes one service-role-only
+SECURITY DEFINER function with an empty search path. Account deletion removes
+its counter. No cron or unbounded per-request log is needed.
+
+When enabled, quota denial returns 429 with bounded Retry-After and no-store;
+missing users get 404, and a failed/malformed limiter returns 503 before asset
+lookup or signing. Preview recovery explains 429 and requires manual retry;
+it does not automatically hammer the endpoint. Clip Editor's internal ownership
+lookups are unchanged. This protects URL minting, not subsequent R2 downloads,
+unauthenticated traffic, or the remaining API endpoints; edge controls remain
+separate audit work.
+
+Rollout: `ASSET_LINK_RATE_LIMIT_ENABLED` is explicitly false in wrangler.jsonc.
+Merge, obtain owner approval for 0110 through apply-migrations, verify the
+migration and normal rollout checks, then enable the server switch in a follow-up
+PR. No client setting can bypass an enabled limiter. Disabling the server switch
+is the application rollback; counter rows can remain. While false, protection
+is staged and the audit item is not yet closed in production.

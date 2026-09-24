@@ -27,7 +27,8 @@ export function createAssetRefresher({ jobId, fetchAsset, onChange, now = Date.n
       if (disposed) return;
       const message = error?.status === 404 ? 'This file is no longer available.'
         : error?.status === 401 ? 'Sign in again to load this file.'
-          : 'Could not load this file. Try again.';
+          : error?.status === 429 ? 'Too many file requests. Wait a minute, then retry.'
+            : 'Could not load this file. Try again.';
       lastError = message;
       onChange({ loading: false, error: message });
     }).finally(() => { pending = null; });
