@@ -1,77 +1,53 @@
-# ADR-0037 — Match monthly credit value and selected generation charges
+# ADR-0037 — Match credit-pack value subject to a 50% contribution margin
 
-Status: Prepared for review, 2026-09-24. Not deployed.
+Status: Prepared for review, updated 2026-09-24. Not deployed.
 
-The owner requested matching both Higgsfield's customer price and generation
-credits. The read-only production catalog audit is in
-`docs/pricing/parity-audit-2026-09-24.md`; its reproducible calculator is
-`scripts/audit-pricing-parity.mjs`. Provider costs are recorded values, not a
-fresh invoice verification. Competitor rates were read from
-https://higgsfield.ai/pricing on 2026-09-24.
+The owner requested matching both Higgsfield prices and generation credits,
+then clarified that every area must have a 50% margin. The margin requirement
+now takes priority wherever exact generation-credit parity conflicts with it.
 
-## First batch
+## Decision
 
-0118 offers one-off packs of $19/270, $59/1200 and $129/3000 credits, matching
-the credit value of Higgsfield's monthly Starter, Plus and Ultra plans. They
-are not recurring subscriptions. The existing $10/100 entry pack remains;
-the $25/300 and $75/1000 packs retire. Purchased credits still never expire.
-No annual billing, unlimited generation or free-generation promotions are
-promised. Annual Higgsfield pricing is a separate, cheaper benchmark.
+0118 prepares one-off $19/270, $59/1200 and $129/3000 credit packs, matching
+Higgsfield's monthly credit value. Keep the $10/100 entry pack and retire the
+$25/300 and $75/1000 packs. Paid credits never expire; no subscriptions,
+annual discounts, unlimited benefits or free-generation pools are introduced.
 
-Nano Banana becomes 1 credit (from 2), FLUX.2 Pro 1 (from 2), and nominal
-6s/768p Hailuo 02 becomes 6 (from 10). No provider or output setting changes.
-FLUX and Nano match published base charges; exact output quality equivalence
-is not established. Other catalog prices stay unchanged, including Veo's
-already lower credit charges.
+Keep Nano Banana and FLUX.2 Pro at 2 credits each. Reduce nominal 6s/768p
+Hailuo 02 from 10 to 9 credits. The original draft's 1/1/6 charges are
+superseded because they do not leave 50% after estimated payment fees.
+All other model charges and providers stay unchanged. No staged route is activated.
 
-At the lowest pack rate, $0.043 per credit, these yield provider-only margins
-of 53.5%, 30.2% and 41.9%. After an ILLUSTRATIVE 8% + $0.30 fee per pack,
-their contributions are $0.01946, $0.00946 and $0.08676 respectively. These
-are not net profits: tax-base differences, FX, storage, retries, refunds,
-support and other overhead are excluded. Stripe Managed Payments publishes
-3.5% on top of processing (https://stripe.com/managed-payments); the actual
-account's all-in fee has not been verified.
+See [50% margin analysis](../pricing/50-percent-margin.md) for candidate Sana
+models, remaining cost-verification work and the full formula. With an assumed
+8% + $0.30 payment fee per purchase, the $129 pack leaves $0.01796 per credit
+for provider cost while retaining 50% of revenue. Nano Banana, FLUX and Hailuo
+at 2/2/9 credits have estimated contribution margins of 68.5%, 56.9% and 53.0%.
 
-This intentionally supersedes ADR-0014's 50% provider-margin requirement for
-these three rows and ADR-0018's $0.075 sticker floor with a $0.043 floor.
-The old net-floor CHECK stays as an additional constraint, not a claim that
-its LemonSqueezy formula represents current Stripe fees. It passes these packs.
-`packages/catalog/index.ts` is a stale historical spreadsheet transcription,
-not the active database catalog; do not use it to certify this rollout.
+These are contribution margins, not net profits. The actual Stripe fee schedule,
+FX, tax-related fee base, overhead and retry/refund costs need verification.
+The older ADR-0014 provider-only margin floor at a historical $0.033 reference
+is superseded for this proposal by the explicit provider-plus-payment calculation.
+ADR-0018's sticker floor becomes $0.043. Its legacy net-floor CHECK remains an
+additional constraint; its LemonSqueezy formula is not a verified Stripe fee.
 
-## Remaining blockers to full parity
+The dated competitor benchmark and production catalog snapshot remain audit
+inputs. `parity-audit-2026-09-24.md` describes exact matching as a counterfactual,
+not the revised rollout. `packages/catalog/index.ts` is a stale spreadsheet
+transcription and must not certify this change.
 
-- Nano Banana Pro on live kie costs $0.09 versus $0.086 target revenue. The
-  staged GrsAI route costs $0.0271 but is inactive; complete deployed gateway,
-  polling, R2 and refund validation and establish suitability before switching.
-- Wan 2.5 at 7 credits has only $0.001 above provider cost before any fees.
-- Kling 2.6 without audio at 5 credits loses $0.06 before fees. Kling 3.0's
-  8-credit comparison also loses money; confirm mode/resolution equivalence.
-- Seedance Fast at 12 credits has little room for overhead after fees; its
-  competitor headline and comparison-table estimates differ. Confirm actual
-  generator charge before promising parity.
-- Seedream's competitor version is unspecified; do not call v4/v4.5 equivalent.
-- Other audio/editing models lack a verified comparable tier in this audit.
+## Rollout
 
-The user has been asked whether loss-making parity should be subsidised.
-There is no approved subsidy amount, so 0118 contains no loss-making matches.
+Migration 0118 is atomic, replayable and aborts on provider/cost/unit drift,
+missing rows or conflicting pack IDs. It changes no top-up snapshot, job,
+ledger or balance. Pending Stripe checkouts retain their original prices.
+UI Hailuo fallback/preset charges follow the migration; signup copy no longer
+hardcodes a generation count. Apply via the owner-reviewed production workflow
+(ADR-0023), coordinate fallback deployment, then verify the public pack/model
+APIs and signed-in debit/refund behavior. Keep draft pending that rollout and
+actual fee/cost validation. No production changes have been made.
 
-## Rollout and rollback
-
-Guarded migration 0118 is atomic, repeatable and aborts on provider/cost/unit
-drift, missing rows or conflicting new pack IDs. It does not touch top-ups,
-jobs, grants or ledger balances. Stripe Checkout already snapshots price and
-credits; purchases started before the change retain their original terms.
-
-Apply through the owner-reviewed production migration workflow (ADR-0023),
-then verify the public pack/model APIs and signed-in generation price.
-This change synchronises UI fallback and preset numbers and removes hardcoded
-signup generation estimates. Apply the migration before deploying these fallback
-changes; the live catalog remains authoritative. Keep this PR draft until that
-rollout sequence and the payment-fee budget have been reviewed.
-
-Rollback uses a new guarded migration restoring model charges 2/2/10,
-retiring the new packs and reactivating the old ones. Restore the $0.075
-sticker constraint only after handling the cheaper inactive rows, because
-the CHECK applies to inactive rows too. Never delete historical pack rows
-or rewrite any purchased balance or existing top-up.
+Rollback is a new guarded migration restoring Hailuo to 10, retiring the new
+packs and reactivating the old ones. Do not delete historical packs or rewrite
+purchased balances. The old $0.075 sticker CHECK cannot be restored while
+cheaper rows exist, even if those rows are inactive.

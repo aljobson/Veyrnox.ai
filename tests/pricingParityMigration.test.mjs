@@ -13,7 +13,7 @@ test('parity migration is atomic, replayable and guards price/cost drift', {
     const docker = (...args) => execFileSync('docker', args, {encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe']});
     const sql = (input, fail = false) => {
         try {
-            const result = execFileSync('docker', ['exec', '-i', name, 'psql', '-U', 'postgres', '-v', 'ON_ERROR_STOP=1', '-At'],
+            const result = execFileSync('docker', ['exec', '-i', name, 'psql', '-h', '127.0.0.1', '-U', 'postgres', '-v', 'ON_ERROR_STOP=1', '-At'],
                 {input, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe']});
             if (fail) assert.fail('Expected migration to reject drift');
             return result.trim();
@@ -41,7 +41,7 @@ test('parity migration is atomic, replayable and guards price/cost drift', {
         docker('run', '-d', '--rm', '--name', name, '-e', 'POSTGRES_HOST_AUTH_METHOD=trust', 'postgres:16-alpine');
         let ready = false;
         for (let i = 0; i < 40; i++) {
-            try { docker('exec', name, 'pg_isready', '-U', 'postgres'); ready = true; break; }
+            try { docker('exec', name, 'pg_isready', '-h', '127.0.0.1', '-U', 'postgres'); ready = true; break; }
             catch { await new Promise(r => setTimeout(r, 250)); }
         }
         assert.ok(ready, 'Postgres starts');
@@ -53,12 +53,18 @@ test('parity migration is atomic, replayable and guards price/cost drift', {
         assert.equal(sql("SELECT active FROM credit_packs WHERE id='web-300'"), 't');
         assert.equal(sql("SELECT credits_5s FROM model_catalog WHERE id='nano-banana-kie'"), '2');
         sql("UPDATE model_catalog SET provider_cost_per_unit=0.15 WHERE id='hailuo-02-kie';");
+        // The pack discount applies to all models, so a non-repriced model
+        // below 50% must block rollout too.
+        sql("INSERT INTO model_catalog (id,credits_5s,provider_cost_per_unit,active) VALUES ('other-model',1,0.02,true)");
+        sql(migration, true);
+        assert.equal(sql("SELECT count(*) FROM credit_packs WHERE id='web-3000'"), '0');
+        sql("DELETE FROM model_catalog WHERE id='other-model'");
         sql(migration);
         sql(migration);
         assert.equal(sql("SELECT string_agg(id || ':' || credits || ':' || price_usd_cents, ',' ORDER BY credits) FROM credit_packs WHERE active"),
             'web-100:100:1000,web-270:270:1900,web-1200:1200:5900,web-3000:3000:12900');
         assert.equal(sql("SELECT string_agg(id || ':' || credits_5s, ',' ORDER BY id) FROM model_catalog"),
-            'flux-2-pro:1,hailuo-02-kie:6,nano-banana-kie:1');
+            'flux-2-pro:2,hailuo-02-kie:9,nano-banana-kie:2');
         assert.equal(sql('SELECT credits || \':\' || price_usd_cents FROM top_ups'), '300:2500');
         sql("UPDATE credit_packs SET price_usd_cents=12899 WHERE id='web-3000'", true);
         // Conflicting target packs abort instead of silently claiming parity.

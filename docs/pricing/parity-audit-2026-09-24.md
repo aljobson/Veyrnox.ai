@@ -1,6 +1,6 @@
 # Veyrnox / Higgsfield parity audit — 24 September 2026
 
-Read-only proposal; no production prices changed. Costs are recorded catalog costs, not a fresh provider invoice audit.
+Exact-parity counterfactual, superseded for rollout by the 50% margin requirement in 50-percent-margin.md. No production prices changed. Costs are recorded catalog costs, not a fresh provider invoice audit.
 
 [Higgsfield source](https://higgsfield.ai/pricing). Full tier assumptions are in higgsfield-2026-09-24.json.
 

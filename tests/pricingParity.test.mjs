@@ -32,3 +32,15 @@ test('invalid scenarios fail rather than reporting misleading margins', () => {
     assert.throws(() => evaluateMatch({provider_cost_per_unit: 0.02}, match, {...ultra, credits: 0}));
     assert.throws(() => evaluateMatch({provider_cost_per_unit: 0.02}, match, ultra, {percent: 100, fixedUsd: 0}));
 });
+
+test('revised rollout clears 50% on every proposed pack; original 1/1/6 prices fail Ultra', () => {
+    const fees = {percent: 8, fixedUsd: 0.30};
+    for (const plan of [{price_usd: 19, credits: 270}, {price_usd: 59, credits: 1200}, ultra]) {
+        for (const [cost, credits] of [[0.02, 2], [0.03, 2], [0.15, 9]]) {
+            assert.ok(evaluateMatch({provider_cost_per_unit: cost}, {...match, credits}, plan, fees).margin >= 0.5);
+        }
+    }
+    for (const [cost, credits] of [[0.02, 1], [0.03, 1], [0.15, 6]]) {
+        assert.ok(evaluateMatch({provider_cost_per_unit: cost}, {...match, credits}, ultra, fees).margin < 0.5);
+    }
+});

@@ -15,14 +15,14 @@ export const MODELS = [
   { id: 'seedance-2.0-fast',  name: 'Seedance 2.0 Fast',   credits: 28,                                         kind: 'video', durations: [5, 10] },
   { id: 'kling-avatar-v2',    name: 'Kling AI Avatar',     credits: 35,  tag: 'NEW',                            kind: 'video', durations: [5] },
   { id: 'latentsync',         name: 'LatentSync',          credits: 13,  tag: 'NEW',                            kind: 'video', durations: [5] },
-  { id: 'hailuo-02-kie',      name: 'MiniMax Hailuo 02',   credits: 6,                                         kind: 'video', durations: [5] },
+  { id: 'hailuo-02-kie',      name: 'MiniMax Hailuo 02',   credits: 9,                                         kind: 'video', durations: [5] },
   { id: 'veo-3.1-kie',        name: 'Veo 3.1',             credits: 76,  tag: 'PREMIUM',    premium: true, gated: true, kind: 'video', durations: [5] },
   { id: 'veo-3.1-fast-kie',   name: 'Veo 3.1 Fast',        credits: 19,                                         kind: 'video', durations: [5] },
   { id: 'veo-3.1-lite-kie',   name: 'Veo 3.1 Lite',        credits: 10,                                         kind: 'video', durations: [5] },
   { id: 'nano-banana-pro-kie', name: 'Nano Banana Pro',    credits: 6,   tag: 'NEW',                            kind: 'image', durations: [5] },
   { id: 'nano-banana-pro-edit', name: 'Nano Banana Pro Edit', credits: 10,                                      kind: 'image', durations: [5] },
-  { id: 'nano-banana-kie',    name: 'Nano Banana',         credits: 1,                                         kind: 'image', durations: [5] },
-  { id: 'flux-2-pro',         name: 'Flux.2 [pro]',        credits: 1,                                          kind: 'image', durations: [5] },
+  { id: 'nano-banana-kie',    name: 'Nano Banana',         credits: 2,                                         kind: 'image', durations: [5] },
+  { id: 'flux-2-pro',         name: 'Flux.2 [pro]',        credits: 2,                                          kind: 'image', durations: [5] },
   { id: 'seedream-4',         name: 'Seedream 4',          credits: 2,                                          kind: 'image', durations: [5] },
   { id: 'topaz-upscale',      name: 'Topaz Upscale 2x',    credits: 5,                                          kind: 'image', durations: [5] },
   { id: 'bria-bg-remove',     name: 'Background Removal',  credits: 3,                                          kind: 'image', durations: [5] },
@@ -67,9 +67,9 @@ export const PRESET_CATEGORIES = ['ALL', 'CINEMATIC', 'UGC', 'VFX', 'ADS'];
 
 export const PRESETS = [
   { id: 'cctv-night', name: 'CCTV NIGHT',   model: 'Wan 2.5',           credits: 19, category: 'CINEMATIC',  bg: 'linear-gradient(180deg,#08120b 0%,#0e3a1e 60%,#2ea258 100%)',  cached: true, badge: 'CACHED' },
-  { id: 'sunset-drift',name: 'SUNSET DRIFT', model: 'MiniMax Hailuo 02', credits: 6, category: 'CINEMATIC',  bg: 'linear-gradient(135deg,#2b1a0a 0%,#7a4a1e 60%,#f0b060 100%)',  cached: false },
+  { id: 'sunset-drift',name: 'SUNSET DRIFT', model: 'MiniMax Hailuo 02', credits: 9, category: 'CINEMATIC',  bg: 'linear-gradient(135deg,#2b1a0a 0%,#7a4a1e 60%,#f0b060 100%)',  cached: false },
   { id: 'neon-alley', name: 'NEON ALLEY',   model: 'Kling 2.6 Pro',     credits: 17, category: 'VFX',        bg: 'linear-gradient(135deg,#1b0632 0%,#5a0e6a 55%,#e4318f 100%)',  cached: true, badge: 'CACHED' },
-  { id: 'warm-portrait',name: 'WARM PORTRAIT',model: 'Nano Banana',      credits: 1,  category: 'UGC',        bg: 'linear-gradient(160deg,#2c1a12 0%,#7a3520 60%,#c9713f 100%)' },
+  { id: 'warm-portrait',name: 'WARM PORTRAIT',model: 'Nano Banana',      credits: 2,  category: 'UGC',        bg: 'linear-gradient(160deg,#2c1a12 0%,#7a3520 60%,#c9713f 100%)' },
   { id: 'film-portrait',name: 'FILM PORTRAIT',model: 'Nano Banana Pro',  credits: 6,  category: 'CINEMATIC',  bg: 'linear-gradient(160deg,#120d08 0%,#4a3420 60%,#d8a868 100%)' },
   { id: 'talking-head', name: 'TALKING HEAD', model: 'Kling AI Avatar',  credits: 35, category: 'UGC',        bg: 'linear-gradient(135deg,#0a1a2c 0%,#1e4a7a 55%,#60a0f0 100%)' },
   { id: 'clean-cutout', name: 'CLEAN CUTOUT', model: 'Background Removal', credits: 3, category: 'ADS',       bg: 'linear-gradient(135deg,#1a1a0a 0%,#4a4a1e 55%,#c0c060 100%)' },
@@ -233,7 +233,7 @@ export const METRIC_STRIP = [
 // updates in a follow-up.
 export const PRODUCT_TILES = [
   { key: 'wan-2.5-kie',       name: 'Wan 2.5',            kind: 'Video',  credits: 19,  hint: 'The default. Fast, cinematic.',                    badge: 'TOP',       icon: '⚡' },
-  { key: 'nano-banana-kie',   name: 'Nano Banana',        kind: 'Image',  credits: 1,   hint: 'Cheapest photoreal frame on the shelf.',                                 icon: '◐' },
+  { key: 'nano-banana-kie',   name: 'Nano Banana',        kind: 'Image',  credits: 2,   hint: 'Cheapest photoreal frame on the shelf.',                                 icon: '◐' },
   { key: 'nano-banana-pro-kie', name: 'Nano Banana Pro',  kind: 'Image',  credits: 6,   hint: '2K stills, and edits from your own photo.',         badge: 'NEW',       icon: '◑' },
   { key: 'kling-3.0-i2v',     name: 'Kling 3.0 · I2V',    kind: 'Video',  credits: 34,  hint: 'Your photo to 1080p video, audio off.',                                   icon: '▶' },
   { key: 'kling-avatar-v2',   name: 'Kling AI Avatar',    kind: 'Video',  credits: 35,  hint: 'A photo plus speech becomes a talking video.',      badge: 'NEW',       icon: '◉' },

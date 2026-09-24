@@ -28,7 +28,7 @@ export function report(snapshot, benchmark, fees) {
     const plans = benchmark.plans.filter(p => p.id.startsWith('ultra-'));
     const lines = [
         '# Veyrnox / Higgsfield parity audit — 24 September 2026', '',
-        'Read-only proposal; no production prices changed. Costs are recorded catalog costs, not a fresh provider invoice audit.', '',
+        'Exact-parity counterfactual, superseded for rollout by the 50% margin requirement in 50-percent-margin.md. No production prices changed. Costs are recorded catalog costs, not a fresh provider invoice audit.', '',
         `[Higgsfield source](${benchmark.source}). Full tier assumptions are in higgsfield-2026-09-24.json.`, '',
         `Fee scenario: ${fees.percent}% of pre-tax pack price + $${fees.fixedUsd} per purchase. This is an assumption, not the verified Stripe account fee. Tax-base differences, FX, storage, retries, support and refunds are excluded.`, '',
         'Annual scenarios assume a full annual purchase and all monthly credits used. One-off packs at these rates would be a different commercial offer.', '',
