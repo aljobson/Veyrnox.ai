@@ -2,15 +2,12 @@
 // entries and each hydration costs two authenticated gateway calls, so both the
 // initial fetch and the poller are scoped to a visible window.
 
-/**
- * Splice freshly hydrated rows over the head of the existing list, keeping the
- * un-hydrated tail (which still renders from localStorage) untouched.
- * @param {object[]} prev
- * @param {object[]} results  hydrated rows, newest first, aligned with prev[0..]
- * @returns {object[]}
- */
+/** Merge by identity: the account list can differ from this browser's history. */
 export function mergeHydrated(prev, results) {
-  return [...results, ...prev.slice(results.length)];
+  const updates = new Map(results.map((r) => [r.job_id, r]));
+  const existing = new Set(prev.map((r) => r.job_id));
+  return [...results.filter((r) => !existing.has(r.job_id)),
+    ...prev.map((r) => updates.has(r.job_id) ? { ...r, ...updates.get(r.job_id) } : r)];
 }
 
 /**

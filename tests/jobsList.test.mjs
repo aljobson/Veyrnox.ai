@@ -63,3 +63,36 @@ test('the Library reads the account list and keeps localStorage as a cache', () 
     assert.match(page, /setListLive\(false\)/, 'an unreachable list is admitted, not silently shown as empty');
     assert.match(page, /before: nextCursor\.before, before_id: nextCursor\.before_id/);
 });
+
+test('exposes authoritative expiry and tolerates a pre-migration RPC', async () => {
+    stub([{ ...row(1), asset_expires_at: '2026-12-23T10:00:00Z' }, row(2)]);
+    const response = await get();
+    assert.equal(response.headers.get('cache-control'), 'no-store');
+    const body = await response.json();
+    assert.equal(body.jobs[0].asset_expires_at, '2026-12-23T10:00:00Z');
+    assert.equal(body.jobs[1].asset_expires_at, null);
+});
+
+test('signed links carry retention separately from the 15-minute signing lifetime', async () => {
+    Object.assign(process.env, {
+        R2_ACCOUNT_ID: 'test-account', R2_ACCESS_KEY_ID: 'test-access',
+        R2_SECRET_ACCESS_KEY: 'test-secret', R2_BUCKET: 'test-bucket',
+    });
+    const assetRoute = await import('../app/api/v1/jobs/[id]/asset/route.js');
+    for (const deadline of ['2026-12-23T10:00:00Z', undefined]) {
+        globalThis.fetch = async (_url, init) => {
+            assert.deepEqual(JSON.parse(init.body), { p_auth_id: 'auth-user-1', p_job_id: JOB(1) });
+            return Response.json({ ok: true, r2_key: 'private/output.png', mime_type: 'image/png',
+                size_bytes: 42, asset_expires_at: deadline });
+        };
+        const response = await assetRoute.GET(new Request(`https://veyrnox.test/api/v1/jobs/${JOB(1)}/asset`, {
+            headers: { 'x-veyrnox-auth-id': 'auth-user-1' },
+        }), { params: Promise.resolve({ id: JOB(1) }) });
+        assert.equal(response.status, 200);
+        assert.equal(response.headers.get('cache-control'), 'no-store');
+        const body = await response.json();
+        assert.equal(body.asset_expires_at, deadline ?? null);
+        assert.equal(body.expires_in, 900);
+        assert.equal(new URL(body.url).searchParams.get('X-Amz-Expires'), '900');
+    }
+});
