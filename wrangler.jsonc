@@ -41,7 +41,16 @@
     // the panel confirmed "Enabled. This session is aal2." Turning it on
     // before an admin holds a factor locks every admin out of their own
     // dashboard, so that order is not optional.
-    "ADMIN_REQUIRE_AAL2": "true"
+    "ADMIN_REQUIRE_AAL2": "true",
+    // Cloudflare Access covers veyrnox.ai/app/admin*, /api/v1/admin/* and
+    // /api/admin/* (one application, "Veyrnox.ai admin"). These two let the
+    // Worker verify the assertion itself (lib/accessJwt.js) instead of
+    // trusting the edge: a policy loosened in the dashboard does not silently
+    // open the machine endpoints. Public values — the team domain is in every
+    // Access redirect and the AUD identifies the application, neither
+    // authenticates anything.
+    "ACCESS_TEAM_DOMAIN": "fancy-lake-7c60.cloudflareaccess.com",
+    "ACCESS_AUD": "4bea77db854633f7b4546a485bcb14c1e0c4389318ebd565e9a326edf17d0163"
   },
   // ------------------------------------------------------------------
   // Secrets (never here — `wrangler secret put <NAME>`), per ADR-0004
