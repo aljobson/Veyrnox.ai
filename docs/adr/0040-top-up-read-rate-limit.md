@@ -1,6 +1,6 @@
 # ADR-0040 — Bound Top-up history and status reads
 
-- Status: Proposed; enforcement disabled pending migration 0123 and activation.
+- Status: Accepted; migration 0123 applied, activation prepared for deployment.
 - Date: 2026-09-24
 - Related: audit API request limits, ADR-0033 recovery, ADR-0038 checkout attempts
 
@@ -48,3 +48,16 @@ admitting exactly 120, independent users, saturation/reset, replay without quota
 reset, unknown users and role/RLS restrictions. Provision-only fixtures are
 cleaned without touching the append-only ledger. A fresh database successfully
 replays all 116 migrations.
+
+## Activation — 2026-09-24
+
+PR #303 deployed successfully. The protected
+[apply-migrations run 36021524021](https://github.com/aljobson/Veyrnox.ai/actions/runs/36021524021)
+applied only 0123 at 15:38:37 UTC after owner approval. Its migration-ledger
+check passed. Fresh pre-activation checks account for all 97 currently applied
+migrations and report zero for all four reconciliation drift counts.
+
+Set TOP_UP_READ_RATE_LIMIT_ENABLED=true in the next deployment. Both history
+and status will enforce the shared 120-read quota; Stripe return recording,
+checkout, webhooks and recovery remain independent. No additional migration is
+required. Disable this server flag to roll enforcement back.
