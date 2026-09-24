@@ -108,7 +108,10 @@ export function buildRequest(target, inputs) {
         const seconds = clipSeconds(inputs);
         if (seconds === null) return { ok: false, error: 'duration_not_supported' };
         const input = { prompt, duration: String(seconds), aspect_ratio: aspect || '16:9' };
-        if (target.model === 'wan/2-5-text-to-video') input.resolution = '720p';
+        // kie's content filter is OFF unless asked for (nsfw_checker defaults to
+        // false, kie docs). fal's safety checker is on by default, and this
+        // gateway does no moderation of its own, so turn the provider's on.
+        if (target.model === 'wan/2-5-text-to-video') { input.resolution = '720p'; input.nsfw_checker = true; }
         else input.sound = false;
         return { ok: true, body: { model: target.model, input } };
     }
