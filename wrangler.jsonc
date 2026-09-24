@@ -8,6 +8,12 @@
   // Keep Worker logs (console.error on provider rejects, webhook signature
   // failures) in the dashboard instead of needing a live `wrangler tail`.
   "observability": { "enabled": true },
+  // ADR-0039: approximate per-IP/per-location screening before admin routes.
+  "ratelimits": [{
+    "name": "ADMIN_EDGE_RATE_LIMITER",
+    "namespace_id": "2026092401",
+    "simple": { "limit": 60, "period": 60 }
+  }],
   // Top-up backfill (#94): GitHub Actions schedules proved unreliable, so the
   // Worker runs POST /api/admin/top-up-backfill itself (worker.js).
   "triggers": { "crons": ["*/5 * * * *"] },
