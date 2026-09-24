@@ -31,7 +31,29 @@ test('veo requests are pinned to the priced 8s 720p unit and refuse unsupported 
 });
 
 test('unmapped market models fail closed', () => {
-    assert.equal(buildRequest(parseEndpoint('market:kling-2.6/text-to-video'), { prompt: 'x' }).error, 'provider_model_unmapped');
+    assert.equal(buildRequest(parseEndpoint('market:kling-3.0/video'), { prompt: 'x' }).error, 'provider_model_unmapped');
+});
+
+test('Wan 2.5 and Kling 2.6 are pinned to the tier they are costed at, and a 10s clip is refused unless asked for', () => {
+    const wan = buildRequest(parseEndpoint('market:wan/2-5-text-to-video'), { prompt: 'a cat' });
+    assert.deepEqual(wan.body, { model: 'wan/2-5-text-to-video', input: { prompt: 'a cat', duration: '5', aspect_ratio: '16:9', resolution: '720p' } });
+    const kling = buildRequest(parseEndpoint('market:kling-2.6/text-to-video'), { prompt: 'a cat', duration_seconds: 10, aspect_ratio: '9:16' });
+    assert.deepEqual(kling.body, { model: 'kling-2.6/text-to-video', input: { prompt: 'a cat', duration: '10', aspect_ratio: '9:16', sound: false } });
+    for (const ep of ['market:wan/2-5-text-to-video', 'market:kling-2.6/text-to-video']) {
+        const t = parseEndpoint(ep);
+        assert.equal(buildRequest(t, { prompt: 'x', duration_seconds: 7 }).error, 'duration_not_supported', ep);
+        assert.equal(buildRequest(t, { prompt: 'x', aspect_ratio: '4:3' }).error, 'inputs_invalid:aspect_ratio', ep);
+        assert.equal(buildRequest(t, { prompt: 'x', image_url: 'https://r2.example/a.png' }).error, 'inputs_key_not_allowed:image_url', ep);
+        assert.equal(buildRequest(t, { prompt: ' ' }).error, 'inputs_invalid:prompt', ep);
+    }
+});
+
+test('Nano Banana Pro pins 2K so a request cannot reach the 4K rate', () => {
+    const t = parseEndpoint('market:nano-banana-pro');
+    assert.deepEqual(buildRequest(t, { prompt: 'p', aspect_ratio: 'auto' }).body,
+        { model: 'nano-banana-pro', input: { prompt: 'p', aspect_ratio: 'auto', resolution: '2K', output_format: 'png' } });
+    assert.equal(buildRequest(t, { prompt: 'p', resolution: '4K' }).body.input.resolution, '2K');
+    assert.equal(buildRequest(t, { prompt: 'p', image_url: 'https://r2.example/a.png' }).error, 'inputs_key_not_allowed:image_url');
 });
 
 test('record interpretation', () => {

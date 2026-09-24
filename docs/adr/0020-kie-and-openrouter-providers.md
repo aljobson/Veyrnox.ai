@@ -84,3 +84,47 @@ error text. fal and kie rejections record `provider_submit_failed`.
    content endpoint returns the bytes directly. A redirect is refused by
    `copyUrlToR2`, which would refund every job.
 4. Flip `active` in a migration.
+
+## Update (2026-09-24): kie is live, and its savings are passed on (0104)
+
+The **no-go** in the Status line above is stale. The owner's data-residency
+objection was waived, and kie has served production traffic since the rows were
+verified live and activated: `nano-banana-kie` (0075), the two Veo rows (0079)
+and `veo-3.1-lite-kie` (0080).
+
+0074 priced the kie rows at their fal twin's credits so the supplier swap was
+invisible and the saving stayed ours. The owner has decided to spend it.
+Migration 0104 reprices the four live kie rows to the ADR-0014 floor,
+`ceil(provider_cost_per_unit / 0.0165)`:
+
+| row | credits (was -> now) | kie cost |
+|---|---|---|
+| veo-3.1-fast-kie | 46 -> 19 | $0.30 |
+| veo-3.1-kie (gated) | 122 -> 76 | $1.25 |
+| veo-3.1-lite-kie | 23 -> 10 | $0.15 |
+| nano-banana-kie | 3 -> 2 | $0.02 |
+
+`seedance-2.0-fast` on OpenRouter is already at its floor (28 credits for
+$0.4536) and is unchanged. The floor is 50% margin at the $0.033 reference
+rate, so at Credit Pack rates ($0.075-0.10 per credit, ADR-0018) the margin on
+these rows is far higher; the per-credit rate is a separate decision.
+
+### Staged twins (0105)
+
+kie's public rate card (`api.kie.ai/client/v1/model-pricing/page`, the JSON
+behind kie.ai/pricing) lists most fal-hosted models below fal. Migration 0105
+stages three kie twins **inactive**, with adapter branches in
+`packages/adapters/kie.js` and capability records in `lib/modelCapabilities.js`:
+
+| row | fal (credits, cost) | kie cost | credits |
+|---|---|---|---|
+| wan-2.5-kie | 31, $0.50 | $0.30 (720p, 5s) | 19 |
+| kling-2.6-pro-kie | 22, $0.35 | $0.275 (audio off, 5s) | 17 |
+| nano-banana-pro-kie | 10, $0.15 | $0.09 (2K) | 6 |
+
+They go live only after `scripts/verify-kie-endpoints.mjs --submit --only=<id>`
+passes with `KIE_API_KEY` set and kie's dashboard confirms the charge matches
+the cost above; activation is a separate migration that swaps the fal twin off.
+Nano Banana Pro Edit, Kling 3.0 I2V, Hailuo 02 and the audio rows are not
+staged (see 0105's header for why). Negative prompt and seed are not offered on
+the kie twins.

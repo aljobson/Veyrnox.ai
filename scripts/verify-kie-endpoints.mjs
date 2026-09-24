@@ -35,13 +35,13 @@
 import { writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { submitTask, fetchTask, buildRequest, parseEndpoint } from '../packages/adapters/kie.js';
 
-// The catalog rows as migration 0074 leaves them. Costs are what kie.ai/pricing
+// The catalog rows as migrations 0104 and 0105 leave them. Costs are what kie.ai/pricing
 // listed on 2026-09-18 and what the row carries; the run confirms or refutes.
 const ROWS = [
     {
         id: 'nano-banana-kie',
         endpoint: 'market:google/nano-banana',
-        credits: 3,
+        credits: 2,
         cost: 0.02,
         unit: 'one image',
         inputs: { prompt: 'A lighthouse on a cliff at dawn, long exposure sea', aspect_ratio: '1:1' },
@@ -49,7 +49,7 @@ const ROWS = [
     {
         id: 'veo-3.1-lite-kie',
         endpoint: 'veo:veo3_lite',
-        credits: 23,
+        credits: 10,
         cost: 0.15,
         unit: '8s 720p clip with audio',
         inputs: { prompt: 'Waves rolling onto a pebble beach at dusk, gentle wind', aspect_ratio: '16:9' },
@@ -57,15 +57,39 @@ const ROWS = [
     {
         id: 'veo-3.1-fast-kie',
         endpoint: 'veo:veo3_fast',
-        credits: 46,
+        credits: 19,
         cost: 0.3,
         unit: '8s 720p clip with audio',
         inputs: { prompt: 'Rain on a tin roof, water running off the edge, close up', aspect_ratio: '16:9' },
     },
     {
+        id: 'wan-2.5-kie',
+        endpoint: 'market:wan/2-5-text-to-video',
+        credits: 19,
+        cost: 0.3,
+        unit: '5s 720p clip',
+        inputs: { prompt: 'A paper boat drifting down a rain gutter, macro', aspect_ratio: '16:9', duration_seconds: 5 },
+    },
+    {
+        id: 'kling-2.6-pro-kie',
+        endpoint: 'market:kling-2.6/text-to-video',
+        credits: 17,
+        cost: 0.275,
+        unit: '5s clip, audio off',
+        inputs: { prompt: 'A red kite catching wind over a grass hill, wide shot', aspect_ratio: '16:9', duration_seconds: 5 },
+    },
+    {
+        id: 'nano-banana-pro-kie',
+        endpoint: 'market:nano-banana-pro',
+        credits: 6,
+        cost: 0.09,
+        unit: 'one 2K image',
+        inputs: { prompt: 'A ceramic teapot on a linen cloth, soft window light', aspect_ratio: '1:1' },
+    },
+    {
         id: 'veo-3.1-kie',
         endpoint: 'veo:veo3',
-        credits: 122,
+        credits: 76,
         cost: 1.25,
         unit: '8s 720p clip with audio',
         inputs: { prompt: 'A kestrel hovering over a summer meadow, slow motion', aspect_ratio: '16:9' },
