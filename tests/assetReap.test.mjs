@@ -67,6 +67,6 @@ test('a queue read failure is reported, not swallowed', async () => {
 
 test('the five-minute cron drains the queue', () => {
     const worker = readFileSync(new URL('../worker.js', import.meta.url), 'utf8');
-    assert.match(worker, /runAssetReap\(env\),/);
+    assert.match(worker, /runAssetReap\(env\), env\)/);
     assert.match(worker, /const out = await reapAssets\(cfg, r2cfg\);/);
 });

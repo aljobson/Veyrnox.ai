@@ -1,0 +1,53 @@
+name: recovery-health
+on:
+  schedule:
+    - cron: '8,38 * * * *'
+  workflow_dispatch:
+permissions: {}
+jobs:
+  check:
+    if: vars.RECOVERY_HEALTH_WATCH_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      exit: ${{ steps.check.outputs.exit }}
+      report: ${{ steps.check.outputs.report }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - id: check
+        run: |
+          set +e
+          node scripts/check-recovery-health.mjs > report.txt 2>&1
+          code=$?
+          cat report.txt
+          echo "exit=$code" >> "$GITHUB_OUTPUT"
+          {
+            echo 'report<<RECOVERY_REPORT_EOF'
+            cat report.txt
+            echo 'RECOVERY_REPORT_EOF'
+          } >> "$GITHUB_OUTPUT"
+          exit "$code"
+  alert:
+    needs: check
+    if: always() && (needs.check.outputs.exit == '1' || needs.check.outputs.exit == '2') && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - name: Open one actionable incident, including stale or unreadable monitoring
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          REPORT: ${{ needs.check.outputs.report }}
+        run: |
+          gh label create recovery-health --color B60205 --description 'Recovery task or queue needs operator attention' 2>/dev/null || true
+          existing=$(gh issue list --label recovery-health --state open --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then exit 0; fi
+          printf '%s\n\n%s\n' 'Recovery health failed. Follow docs/operations/recovery-health.md. Owner: repository owner/on-call operator.' "$REPORT" > body.md
+          gh issue create --title 'Recovery health needs attention' --label recovery-health --body-file body.md
