@@ -62,7 +62,7 @@ async function runAssetReap(env) {
     const out = await reapAssets(cfg, r2cfg);
     if (!out.ok) console.error('[reap-assets] failed:', out.error);
     else if (out.processed) console.error('[reap-assets]', JSON.stringify(out));
-    return reservationFailure ? { ...out, ok: false } : out;
+    return out;
 }
 
 /** Auto Short steps stuck past their provider's normal time (lib/autoShortSweep.js). */
@@ -76,7 +76,7 @@ async function runAutoShortSweep(env) {
     const deps = runtimeDeps({ cfg, r2cfg, publicHost: env.PUBLIC_HOST, ...keys });
     const out = await sweepSteps({ cfg, deps, falKey: keys.falKey, kieKey: keys.kieKey });
     if (out.checked) console.error('[auto-short-sweep]', JSON.stringify(out));
-    return reservationFailure ? { ...out, ok: false } : out;
+    return out;
 }
 
 function r2EnvFrom(env) {
