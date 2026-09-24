@@ -134,7 +134,7 @@ If a build starts failing after a dependency change, bisect these three first.
   `signup-gate.yml` checks it hourly. Neither switch is visible from this
   repo, which is how it drifted.
 
-  With autoconfirm on, 50 credits is ~$0.75 of provider spend for anyone who
+  With autoconfirm on, 10 credits is ~$0.15 of provider spend for anyone who
   can POST an email address. Sign-up should also carry Attack Protection
   (CAPTCHA). Check all of this before any launch that widens sign-up.
 

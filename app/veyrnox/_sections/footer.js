@@ -146,11 +146,11 @@ export function ClosingCTA({ modelCount }) {
           <span className="text-vx-accent">See the price before you spend.</span>
         </h2>
         <p className="mt-4 text-vx-fg-body max-w-[560px] mx-auto">
-          50 credits on the house when you join. One balance across every model. Failed jobs refund automatically.
+          10 credits on the house when you join. One balance across every model. Failed jobs refund automatically.
         </p>
         <div className="mt-6 flex gap-3 justify-center flex-wrap">
           <Link href="/app?auth=sign_up" className="rounded-full bg-vx-accent text-vx-accent-ink px-8 py-4 text-base font-extrabold hover:bg-vx-accent-hover">
-            Claim 50 credits
+            Claim 10 credits
           </Link>
           <Link href="/pricing" className="rounded-full border border-vx-border text-vx-fg px-8 py-4 text-base font-bold hover:border-vx-accent">
             See pricing

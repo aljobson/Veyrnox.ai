@@ -180,7 +180,7 @@ export function SignupIncentive() {
             <Chip tone="money" className="mb-4">SIGN-UP BONUS</Chip>
             {/* Fixed dark surface again - see FeaturedHeroCards. */}
             <h2 className="text-[28px] sm:text-[36px] lg:text-[44px] font-black leading-[1.05] lg:leading-[1.02] tracking-[-0.03em] text-balance text-white">
-              50 free credits.<br/>
+              10 free credits.<br/>
               <span className="text-vx-accent">Every button shows its price.</span>
             </h2>
             <ul className="mt-5 space-y-2 text-[14px] text-white/85">
@@ -193,7 +193,7 @@ export function SignupIncentive() {
                 href="/app?auth=sign_up"
                 className="whitespace-nowrap rounded-full bg-vx-accent text-vx-accent-ink px-6 py-3 text-sm font-extrabold hover:bg-vx-accent-hover"
               >
-                Claim 50 credits
+                Claim 10 credits
               </Link>
               <Link
                 href="/presets"

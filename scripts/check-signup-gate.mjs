@@ -2,12 +2,12 @@
 /**
  * Is the signup grant a faucet right now?
  *
- * `grant:signup` hands 50 credits to every confirmed email. Two independent
+ * `grant:signup` hands 10 credits to every confirmed email. Two independent
  * things decide whether "confirmed" means anything:
  *
  *   1. Supabase Auth's "Confirm email" setting. With autoconfirm ON,
  *      email_confirmed_at is set the instant the row is inserted, so anyone
- *      who can POST an email address gets a usable account with 50 credits.
+ *      who can POST an email address gets a usable account with 10 credits.
  *      THIS IS THE LOAD-BEARING ONE — it is what stops provider spend.
  *   2. Migration 0071. It moves the grant from "on INSERT, unconditionally"
  *      (0010, which production still runs) onto the confirmation transition.
@@ -119,7 +119,7 @@ const problems = [];
 if (autoconfirm && signupOpen) {
     problems.push(
         'mailer_autoconfirm is ON and signup is open: any address that can be POSTed becomes a\n' +
-        '    usable account holding 50 credits. Turn "Confirm email" ON in Supabase Auth.\n' +
+        '    usable account holding 10 credits. Turn "Confirm email" ON in Supabase Auth.\n' +
         '    This is the change that actually stops provider spend.'
     );
 }
