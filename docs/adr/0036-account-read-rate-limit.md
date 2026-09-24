@@ -55,3 +55,11 @@ RLS/privileges. Clean provision-only fixtures. Route tests prove both endpoints
 use the same RPC with verified identity, denial stops all further queries,
 normal data/ownership and count degradation survive, unknown-user responses
 stay compatible, and the disabled handler works before migration application.
+
+## Activation checklist
+
+The activation change sets ACCOUNT_READ_RATE_LIMIT_ENABLED=true. Do not merge
+or deploy that change until migration 0117 has been owner-approved and applied
+successfully, the prerequisite application deployment has succeeded, and fresh
+migration-ledger and reconciliation checks pass. Record those results here
+before marking the activation PR ready. No additional migration is required.
