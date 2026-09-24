@@ -14,7 +14,8 @@ globalThis.localStorage = {
     setItem: (k, v) => store.set(k, String(v)),
     removeItem: (k) => store.delete(k),
 };
-globalThis.window = { dispatchEvent() {} };
+globalThis.window = { dispatchEvent() {}, location: { origin: 'https://veyrnox.test' } };
+globalThis.sessionStorage = globalThis.localStorage;
 globalThis.CustomEvent = class { constructor(t, i) { this.type = t; this.detail = i?.detail; } };
 
 const { signUp, signInWithPassword, sendMagicLink } = await import('../app/lib/authClient.js');
@@ -31,7 +32,7 @@ function capture() {
 const CASES = [
     ['/auth/v1/signup', (t) => signUp('a@b.co', 'password1', t)],
     ['/auth/v1/token?grant_type=password', (t) => signInWithPassword('a@b.co', 'password1', t)],
-    ['/auth/v1/otp', (t) => sendMagicLink('a@b.co', t)],
+    ['/auth/v1/otp?redirect_to=https%3A%2F%2Fveyrnox.test%2Fauth%2Fcallback', (t) => sendMagicLink('a@b.co', t)],
 ];
 
 for (const [path, call] of CASES) {

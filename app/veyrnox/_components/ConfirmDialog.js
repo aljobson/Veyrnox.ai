@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useRef } from 'react';
+import { Modal } from './Modal';
 
 // Small confirmation modal for actions that throw work away — signing out
 // of a session, so far. Escape and the backdrop both cancel; the cancel
@@ -16,12 +17,7 @@ export function ConfirmDialog({
 }) {
   const cancelRef = useRef(null);
 
-  useEffect(() => {
-    cancelRef.current?.focus();
-    const onKey = (e) => { if (e.key === 'Escape') onCancel(); };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onCancel]);
+
 
   const confirmCls =
     tone === 'danger'
@@ -29,13 +25,12 @@ export function ConfirmDialog({
       : 'bg-vx-accent text-vx-accent-ink hover:bg-vx-accent-hover';
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
+    <Modal
+      onCancel={onCancel}
+      initialFocusRef={cancelRef}
       aria-label={title}
       data-print="hide"
-      className="fixed inset-0 z-[80] flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm"
-      onMouseDown={(e) => { if (e.target === e.currentTarget) onCancel(); }}
+      className="items-center justify-center px-4 backdrop-blur-sm"
     >
       <div className="w-full max-w-sm rounded-2xl border border-vx-border bg-vx-panel p-6 shadow-2xl">
         <h2 className="text-lg font-black tracking-[-0.01em] text-vx-fg">{title}</h2>
@@ -58,6 +53,6 @@ export function ConfirmDialog({
           </button>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

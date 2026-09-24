@@ -9,7 +9,7 @@ export const metadata = {
 
 export default function Aup() {
     return (
-        <LegalPage title="Acceptable Use Policy">
+        <LegalPage title="Acceptable Use Policy" updated="24 September 2026">
             <p>Veyrnox.ai turns text prompts, and files you upload, into images, video, speech and music using third-party AI models. This page sets out what the service may not be used for. It applies to every prompt, every upload and every output, and it is part of the <a href="/legal/terms">Terms</a>.</p>
 
             <h2>You must have the rights to what you upload</h2>

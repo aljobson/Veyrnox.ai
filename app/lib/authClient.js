@@ -261,7 +261,12 @@ export async function signUp(email, password, captchaToken) {
  * @param {string} [captchaToken]  Turnstile token (ADR-0026)
  */
 export async function sendMagicLink(email, captchaToken) {
-    await post("/auth/v1/otp", withCaptcha({ email, create_user: true }, captchaToken));
+    const verifier = randomVerifier();
+    sessionStorage.setItem(PKCE_KEY, verifier);
+    const redirect = `${window.location.origin}/auth/callback`;
+    await post(`/auth/v1/otp?redirect_to=${encodeURIComponent(redirect)}`, withCaptcha({
+        email, create_user: true, code_challenge: await s256(verifier), code_challenge_method: 's256',
+    }, captchaToken));
 }
 
 // GoTrue reads the CAPTCHA token from here when Attack Protection is on and
