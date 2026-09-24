@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { FAQ, PRESETS, MODELS as MODELS_FALLBACK, SITE_PAGES } from '../_lib/tokens';
+import { FAQ, PRESETS, MODELS as MODELS_FALLBACK, SITE_PAGES, isShelfModel } from '../_lib/tokens';
 import { searchIndex, MIN_QUERY } from '../_lib/searchIndex';
 
 // Site-wide search. Everything this site contains is either a route, a
@@ -34,8 +34,9 @@ function staticIndex() {
 }
 
 function modelsToIndex(models) {
-  // The Clip Editor lives in the Library, not Create; it is not a searchable model.
-  return models.filter((m) => !m.capabilities?.inputs?.clips).map((m) => ({
+  // Search offers what Create sells: the Clip Editor lives in the Library, and
+  // Auto Short stays out until its flag comes off (isShelfModel).
+  return models.filter((m) => isShelfModel(m.capabilities)).map((m) => ({
     group: 'Models',
     title: m.name,
     detail: `${m.modality || m.kind} · ${m.credits} cr${m.gated ? ' · premium' : ''}`,

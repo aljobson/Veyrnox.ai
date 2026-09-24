@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { isShelfModel } from '../app/veyrnox/_lib/tokens.js';
+import { capabilityFor } from '../lib/modelCapabilities.js';
 
 // JSX sources, so these read the text, like createAutoShort.test.mjs.
 const library = readFileSync(new URL('../app/veyrnox/app/library/page.js', import.meta.url), 'utf8');
@@ -28,8 +30,11 @@ test('the sheet refuses what the gateway would, before spending a request', () =
 });
 
 test('the landing shelf and site search never list the Clip Editor as a model', () => {
+    // Both surfaces filter through isShelfModel, which also holds back the
+    // still-gated Auto Short row (tests/shelfModels.test.mjs pins the rest).
+    assert.equal(isShelfModel(capabilityFor('clip-edit:v1')), false);
     const landing = readFileSync(new URL('../app/veyrnox/page.js', import.meta.url), 'utf8');
     const search = readFileSync(new URL('../app/veyrnox/_components/SiteSearch.js', import.meta.url), 'utf8');
-    assert.match(landing, /rows\.filter\(\(m\) => !capabilityFor\(m\.provider_endpoint\)\?\.edit\)/);
-    assert.match(search, /models\.filter\(\(m\) => !m\.capabilities\?\.inputs\?\.clips\)/);
+    assert.match(landing, /filter\(\(m\) => isShelfModel\(/);
+    assert.match(search, /filter\(\(m\) => isShelfModel\(/);
 });

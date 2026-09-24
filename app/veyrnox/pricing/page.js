@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { MarketingNav } from '../_components/NavBar';
 import { Chip } from '../_components/Chip';
 import { CopyButton } from '../_components/CopyButton';
-import { MODELS as MODELS_FALLBACK, SITE_UPDATED } from '../_lib/tokens';
+import { MODELS as MODELS_FALLBACK, SITE_UPDATED, isShelfModel } from '../_lib/tokens';
 
 // Live catalog fetch — public, unauthenticated. Falls back to tokens.js
 // MODELS if the endpoint is unreachable so the page never renders blank.
@@ -17,8 +17,11 @@ function useLiveCatalog() {
         const res = await fetch('/api/catalog', { cache: 'no-store' });
         if (!res.ok) throw new Error(String(res.status));
         const data = await res.json();
-        if (!cancelled && Array.isArray(data?.models) && data.models.length) {
-          setCatalog(data.models);
+        // Price only what a visitor can actually buy from the picker: the Clip
+        // Editor is a Library tool and Auto Short is still flag-gated.
+        const sellable = Array.isArray(data?.models) ? data.models.filter((m) => isShelfModel(m.capabilities)) : [];
+        if (!cancelled && sellable.length) {
+          setCatalog(sellable);
         } else if (!cancelled) {
           throw new Error('empty');
         }
