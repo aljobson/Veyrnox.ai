@@ -131,3 +131,25 @@ it stops and offers Retry. Failed signing requests need an explicit retry;
 404 means unavailable, not a claim that retention caused deletion. Switching
 jobs or unmounting ignores late responses. No timers poll settled previews,
 and refreshed URLs stay in component memory rather than localStorage.
+
+## 2026-09-24 — show retention deadlines in the Library
+
+Migration 0109 adds `asset_expires_at` to the existing owner-scoped list and
+asset lookup RPCs. The deadline comes from `assets.expires_at`, never from job
+submission time. For a job with multiple assets, the list shows the earliest
+non-null deadline; the individual asset response carries its own deadline.
+The existing job-id index serves these bounded lookups. No rows, sweep policy,
+signing lifetime, or permissions change.
+
+Library notices show the local date and time, highlight the final seven days,
+and identify elapsed retention without claiming that a sweep already ran.
+Missing assets say unavailable, since absence does not prove expiry. An older
+RPC or null deadline shows the existing 90-day policy without inventing a date.
+Hydration merges by job id to preserve server metadata across cache races and
+hydrates server-listed jobs on devices with no local history.
+
+The notice is opt-in via `localStorage.veyrnox_asset_expiry = '1'`, pending the
+normal migration and rollout gate. Production application of 0109 still needs
+the owner's approval through `apply-migrations` on main. The UI and API tolerate
+the old RPC response during deployment. This does not implement pinning or
+change retention.

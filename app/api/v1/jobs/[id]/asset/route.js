@@ -7,7 +7,7 @@
  * whether the job id exists at all.
  *
  * Response:
- *   { url, mime_type, size_bytes, expires_in }
+ *   { url, mime_type, size_bytes, expires_in, asset_expires_at }
  * Client GETs `url` directly (no proxy hop). 302 redirect would work
  * too but streaming apps prefer the URL in JSON for retries.
  */
@@ -61,5 +61,6 @@ export async function GET(req, { params }) {
         mime_type: asset.mime_type,
         size_bytes: asset.size_bytes,
         expires_in: signed.expires,
+        asset_expires_at: asset.asset_expires_at ?? null,
     }, { headers: { 'Cache-Control': 'no-store' } });
 }

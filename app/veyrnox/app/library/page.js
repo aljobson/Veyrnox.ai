@@ -5,12 +5,13 @@ import { Chip } from '../../_components/Chip';
 import { gatewayFetch, GatewayError, notifyBalanceChanged } from '../../_lib/gateway';
 import { readJobHistory, pushJobHistory } from '../../_lib/jobHistory';
 import { useAssetUrl } from '../../_lib/useAssetUrl';
+import { AssetRetention } from '../../_components/AssetRetention';
 import { AssetLoadStatus } from '../../_components/AssetLoadStatus';
 import { EditSheet } from '../../_components/EditSheet';
 import { useCatalog } from '../../_lib/useCatalog';
 import { mergeHydrated, shouldPoll } from '../../_lib/jobWindow';
 
-// Client-side ring buffer supplies the ids; server has no /jobs list yet.
+// Account list is authoritative; local history supplies cached display names.
 const STATE_UI = {
   queued:    { chip: 'accent', glyph: '●', label: 'QUEUED' },
   running:   { chip: 'accent', glyph: '●', label: 'RUNNING' },
@@ -54,6 +55,12 @@ export default function Library() {
   const [nextCursor, setNextCursor] = useState(null);
   const [listLive, setListLive] = useState(null);
   const [editorOn, setEditorOn] = useState(false);
+  const [expiryOn, setExpiryOn] = useState(false);
+  const rowsRef = useRef(rows);
+  rowsRef.current = rows;
+  useEffect(() => {
+    try { setExpiryOn(window.localStorage.getItem('veyrnox_asset_expiry') === '1'); } catch { /* opt-in only */ }
+  }, []);
   const [selected, setSelected] = useState([]);
   const [editing, setEditing] = useState(false);
   useEffect(() => {
@@ -99,7 +106,7 @@ export default function Library() {
             return { ...hydrateFromHistory({ ...h, job_id: j.job_id, model_id: j.model_id, credits: j.credits }),
               name: h.name || j.label, prompt: h.prompt || j.label,
               submitted_at: h.submitted_at || Date.parse(j.created_at) || undefined,
-              state: j.state, refunded: j.refunded, error_code: j.error_code, has_asset: j.has_asset };
+              state: j.state, refunded: j.refunded, error_code: j.error_code, has_asset: j.has_asset, asset_expires_at: j.asset_expires_at };
           });
           // A job submitted seconds ago may not be in this page yet; keep it.
           const seen = new Set(server.map((r) => r.job_id));
@@ -122,16 +129,15 @@ export default function Library() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const history = readJobHistory();
-      const window_ = history.slice(0, visible);
+      const window_ = rowsRef.current.slice(0, visible);
       const results = await Promise.all(window_.map(async (h) => {
         try {
           const j = await gatewayFetch(`/jobs/${h.job_id}`);
-          const merged = { ...hydrateFromHistory(h), ...j };
+          const merged = { ...h, ...j };
           if (j.state === 'succeeded') {
             try {
               const a = await gatewayFetch(`/jobs/${h.job_id}/asset`);
-              return { ...merged, asset_url: a.url, mime_type: a.mime_type };
+              return { ...merged, asset_url: a.url, mime_type: a.mime_type, has_asset: true, asset_expires_at: a.asset_expires_at };
             } catch { return merged; }
           }
           return merged;
@@ -152,7 +158,7 @@ export default function Library() {
       }
     })();
     return () => { cancelled = true; };
-  }, [visible]);
+  }, [visible, listLive]);
 
   // poll any in-flight rows
   useEffect(() => {
@@ -174,7 +180,7 @@ export default function Library() {
             try {
               const a = await gatewayFetch(`/jobs/${r.job_id}/asset`);
               notifyBalanceChanged();
-              return { ...r, ...j, asset_url: a.url, mime_type: a.mime_type };
+              return { ...r, ...j, asset_url: a.url, mime_type: a.mime_type, has_asset: true, asset_expires_at: a.asset_expires_at };
             } catch { notifyBalanceChanged(); return { ...r, ...j }; }
           }
           if (j.state === 'failed') { notifyBalanceChanged(); return { ...r, ...j }; }
@@ -215,7 +221,7 @@ export default function Library() {
         const older = page.jobs.filter((j) => !seen.has(j.job_id)).map((j) => ({
           ...hydrateFromHistory({ job_id: j.job_id, model_id: j.model_id, credits: j.credits }),
           name: j.label, prompt: j.label, submitted_at: Date.parse(j.created_at) || undefined,
-          state: j.state, refunded: j.refunded, error_code: j.error_code, has_asset: j.has_asset,
+          state: j.state, refunded: j.refunded, error_code: j.error_code, has_asset: j.has_asset, asset_expires_at: j.asset_expires_at,
         }));
         return [...prev, ...older];
       });
@@ -304,7 +310,7 @@ export default function Library() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {list.map((r) => (
-              <JobCard key={r.job_id} row={r} models={models}
+              <JobCard key={r.job_id} row={r} models={models} expiryOn={expiryOn}
                 selectable={canSelect(r)} selected={selected.includes(r.job_id)} onToggle={() => toggle(r.job_id)} />
             ))}
           </div>
@@ -347,7 +353,7 @@ export default function Library() {
   );
 }
 
-function JobCard({ row, models, selectable, selected, onToggle }) {
+function JobCard({ row, models, expiryOn, selectable, selected, onToggle }) {
   const asset = useAssetUrl(row.job_id, row.asset_url);
   const refundPending = row.state === 'failed' && row.refunded === false;
   const s = STATE_UI[refundPending ? 'failed_pending' : row.state] || STATE_UI.queued;
@@ -404,6 +410,7 @@ function JobCard({ row, models, selectable, selected, onToggle }) {
           {delta} cr
         </div>
       </div>
+      {expiryOn && <AssetRetention row={row} />}
     </div>
   );
 }

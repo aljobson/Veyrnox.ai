@@ -12,7 +12,7 @@
  * Query: ?limit=1..50 (default 24), and ?before=<ISO>&before_id=<uuid> from
  * the previous page's `next`. Response:
  *   { jobs: [{ job_id, state, refunded, credits, model_id, error_code,
- *              created_at, label, has_asset }], next: {before, before_id}|null }
+ *              created_at, label, has_asset, asset_expires_at }], next: {before, before_id}|null }
  */
 
 import { NextResponse } from 'next/server';
@@ -102,6 +102,7 @@ export async function GET(req) {
         created_at: j.created_at,
         label: j.label || undefined,
         has_asset: !!j.has_asset,
+        asset_expires_at: j.asset_expires_at ?? null,
     }));
     // A full page means there may be more; the cursor is the last row's key.
     const last = jobs.length === limit ? row.jobs[row.jobs.length - 1] : null;
