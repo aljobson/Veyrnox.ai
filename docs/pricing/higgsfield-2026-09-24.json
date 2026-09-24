@@ -1,0 +1,26 @@
+{
+  "checked_at": "2026-09-24",
+  "source": "https://higgsfield.ai/pricing",
+  "scope": "Published individual plan rates, excluding tax and temporary promotions. Model prices are approximate where the source marks them approximate. Matching names does not establish identical output quality.",
+  "plans": [
+    {"id": "starter-monthly", "price_usd": 19, "credits": 270},
+    {"id": "plus-monthly", "price_usd": 59, "credits": 1200},
+    {"id": "ultra-monthly", "price_usd": 129, "credits": 3000},
+    {"id": "plus-annual", "price_usd": 564, "credits": 14400},
+    {"id": "ultra-annual", "price_usd": 1188, "credits": 36000}
+  ],
+  "matches": [
+    {"id": "nano-banana-kie", "credits": 1, "unit": "one Nano Banana image", "confidence": "base-model", "note": "Match base image rate; provider output equivalence is not independently established."},
+    {"id": "nano-banana-pro-kie", "credits": 2, "unit": "one Nano Banana Pro 2K image", "confidence": "specified-tier", "note": "Current active route costs $0.09. Do not silently substitute staged GrsAI cost."},
+    {"id": "nano-banana-pro-grsai", "credits": 2, "unit": "one Nano Banana Pro 2K image", "confidence": "staged", "note": "Inactive route; $0.0271 based on purchased provider pack. Production end-to-end validation and model provenance unresolved."},
+    {"id": "flux-2-pro", "credits": 1, "unit": "one FLUX.2 Pro image", "confidence": "base-model", "note": "Veyrnox default is 1024x768, under one megapixel; Higgsfield base image dimensions need confirmation."},
+    {"id": "seedream-4", "credits": 1, "unit": "one Seedream image", "confidence": "unconfirmed-version", "note": "Higgsfield lists Seedream without a version; Veyrnox is v4 2K. No exact-parity claim until version is confirmed."},
+    {"id": "wan-2.5-kie", "credits": 7, "unit": "5s Wan 2.5 720p", "confidence": "specified-tier", "note": "Approximate Higgsfield rate. Veyrnox request pins 720p."},
+    {"id": "kling-2.6-pro-kie", "credits": 5, "unit": "5s Kling 2.6 without audio", "confidence": "specified-tier", "note": "Approximate Higgsfield rate; Veyrnox verified output is 1080p, Higgsfield row does not state resolution."},
+    {"id": "kling-3.0-i2v", "credits": 8, "unit": "5s Kling 3.0 1080p", "confidence": "unconfirmed-mode", "note": "Higgsfield tier is generic Kling 3.0; image-to-video mode and audio parity need confirmation."},
+    {"id": "hailuo-02-kie", "credits": 6, "unit": "6s Hailuo 02 768p", "confidence": "specified-tier", "note": "Nominal 6s provider clip; do not compare to a 5s clip."},
+    {"id": "seedance-2.0-fast", "credits": 12, "unit": "5s Seedance 2.0 Fast 720p", "confidence": "specified-tier", "note": "Approximate Higgsfield comparison table rate; its headline generation estimate differs. Confirm in generator before rollout."},
+    {"id": "veo-3.1-fast-kie", "credits": 32, "unit": "8s Veo 3.1 Fast 720p", "confidence": "extrapolated-duration", "note": "Extrapolated from Higgsfield 16 credits/4s. Current Veyrnox price is already lower at 19 credits; retain the lower charge."},
+    {"id": "veo-3.1-kie", "credits": 80, "unit": "8s Veo 3.1 720p", "confidence": "extrapolated-duration", "note": "Extrapolated from Higgsfield 40 credits/4s. Retain Veyrnox's lower 76 credits and existing access gate."}
+  ]
+}
