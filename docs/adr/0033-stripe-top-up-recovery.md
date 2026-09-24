@@ -179,6 +179,46 @@ identifier equality, which is NULL and so never true, meaning a completed check
 could never close its own return and the row would be retried until the 7-day
 window shut. Widening any regex would have left both in place.
 
+### 2026-09-24 — Stripe application recovery and rollout
+
+Stages 2 and 3 replace the live LemonSqueezy handoff, verifier and scheduled
+route. Checkout carries the literal `{CHECKOUT_SESSION_ID}` template; the
+browser records `{session_id}` through `record_top_up_return_session` and
+removes the token from its URL. The route uses Stripe credentials only, and
+its former LemonSqueezy order sweep is retired (`sweep: null` in the response).
+A Stripe search sweep remains deferred under decision 6.
+
+**Price correction to decision 3:** `amount_subtotal`, not `amount_total`,
+is compared with the stored pack price. Managed Payments adds tax on top;
+using the total would refuse every taxed purchase. This follows the existing
+Stripe webhook and 0097's `credit_top_up` contract. The re-fetched Session must
+be paid, have the expected live/test mode, carry both matching Top-up references
+and a valid HMAC, and name a valid PaymentIntent. `credit_top_up` compares the
+pre-tax amount and USD currency atomically under the row lock. Mismatches are
+persisted as operator-refund flags and grant no credits. The Session id is
+never used as the credited order id.
+
+Successful and idempotent attempts explicitly close the return by Session id
+and a NULL identifier: the queue otherwise sees `cs_… != pi_…` and keeps
+reprocessing it. Transport, authentication, signature/configuration failures,
+unpaid Sessions, and unusable RPC results stay open for retry and the alarm.
+The grace period implemented by 0108 is **24 hours**, superseding decision 4's
+one-hour draft. No buyer notification is introduced.
+
+**Rollout:** keep the browser opt-in `localStorage.veyrnox_stripe_top_up_recovery`
+unset until 0108 is applied by the owner-approved `apply-migrations` workflow
+and reconciliation has stayed clean for 24 hours (CLAUDE.md, Delivery). Then
+set it to the string `"true"` for a controlled checkout/recovery test. Wider
+release removes the opt-in in a follow-up after that gate is satisfied.
+The browser still scrubs the Session token while disabled, and normal webhook
+crediting and status polling continue. Deploy the app only alongside this
+migration plan; do not apply a migration from an agent session.
+
+The fallback still needs the buyer to return; it does not discover purchases
+whose tabs were closed. It also does not recover lost refund/dispute events:
+those retain their Stripe webhook delivery paths (ADR-0031). No claim of
+complete payment-event reconciliation is made by this recovery.
+
 ## Open questions
 
 - Whether anything should watch the rows decision 4 deliberately excludes — a

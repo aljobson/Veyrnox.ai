@@ -13,9 +13,10 @@
  */
 import { after, before, describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { randomInt, randomUUID } from "node:crypto";
+import { createHmac, randomInt, randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import pg from "pg";
+import { runBackfill } from "../../lib/topUpBackfill.js";
 
 const DATABASE_URL = process.env.DATABASE_URL;
 const MIGRATIONS = [
@@ -282,6 +283,84 @@ describe("Stripe Top-up recovery (0108)", { skip: !DATABASE_URL && "DATABASE_URL
             [paid.topUpId, `pi_${randomUUID().replace(/-/g, "")}`, paid.price, paid.variant])).r;
         assert.equal(credited.ok, true, JSON.stringify(credited));
         assert.equal(await drift(paid.topUpId), 0, "crediting is what actually resolves it");
+    });
+
+    it("the Stripe runner races the webhook, grants once, and removes the Session from the queue", async () => {
+        const t = await pendingTopUp();
+        const cs = sessionId();
+        const pi = `pi_${randomUUID().replace(/-/g, "")}`;
+        await recordSession(t.authId, t.topUpId, cs);
+        await age(t.topUpId, 25);
+        const rows = (await pool.query(`SELECT * FROM public.next_top_up_backfill_batch(100)`)).rows;
+        const row = rows.find((r) => r.top_up_id === t.topUpId);
+        assert.ok(row);
+        const secret = "test-only-backfill-secret";
+        const creditArgs = [t.topUpId, pi, t.price, "USD", null];
+        const credit = async (args: any) => (await one(
+            `SELECT public.credit_top_up($1, $2, $3, $4, $5) AS r`,
+            [args.p_top_up_id, args.p_order_id, args.p_paid_usd_cents, args.p_currency, args.p_variant_id])).r;
+        const session = {
+            id: cs, object: "checkout.session", livemode: false, client_reference_id: t.topUpId,
+            metadata: { top_up_id: t.topUpId,
+                top_up_sig: createHmac("sha256", secret).update(`top_up:${t.topUpId}`).digest("hex") },
+            payment_status: "paid", payment_intent: pi, amount_subtotal: t.price,
+            amount_total: t.price + 500, currency: "usd",
+        };
+        const deps = {
+            fetchSession: async () => ({ ok: true, session }), credit,
+            close: async (r: any) => (await one(`SELECT public.close_top_up_return($1, $2, NULL) AS r`,
+                [r.top_up_id, r.order_id])).r,
+            signingSecret: secret, expectLiveMode: false, budgetMs: 20000, spacingMs: 0,
+        };
+        const [backfill, webhook] = await Promise.all([
+            runBackfill([row], deps),
+            one(`SELECT public.credit_top_up($1, $2, $3, $4, $5) AS r`, creditArgs),
+        ]);
+        assert.equal(webhook.r.ok, true);
+        assert.equal(backfill.credited + backfill.idempotent, 1);
+        const replay = await runBackfill([row], deps);
+        assert.equal(replay.idempotent, 1);
+        const stored = await one(`SELECT status, order_id, return_closed_at, user_id
+                                 FROM public.top_ups WHERE id = $1`, [t.topUpId]);
+        assert.equal(stored.status, "credited");
+        assert.equal(stored.order_id, pi);
+        assert.ok(stored.return_closed_at);
+        assert.equal(Number((await one(`SELECT count(*) AS n FROM public.ledger_entries
+                                      WHERE user_id = $1 AND reason = 'grant:topup'`, [stored.user_id])).n), 1);
+        assert.equal(await drift(t.topUpId), 0);
+        await pool.query(`UPDATE public.top_ups SET backfill_checked_at = now() - interval '1 day' WHERE id = $1`, [t.topUpId]);
+        assert.equal((await pool.query(`SELECT * FROM public.next_top_up_backfill_batch(100)`)).rows
+            .some((r) => r.top_up_id === t.topUpId), false);
+    });
+
+    it("the Stripe runner durably flags wrong price/currency without granting credits", async () => {
+        for (const currency of ["usd", "eur"]) {
+            const t = await pendingTopUp();
+            const cs = sessionId();
+            const pi = `pi_${randomUUID().replace(/-/g, "")}`;
+            const secret = "test-only-backfill-secret";
+            await recordSession(t.authId, t.topUpId, cs);
+            const result = await runBackfill([{ top_up_id: t.topUpId, order_id: cs, order_identifier: null }], {
+                fetchSession: async () => ({ ok: true, session: {
+                    id: cs, object: "checkout.session", livemode: false, client_reference_id: t.topUpId,
+                    metadata: { top_up_id: t.topUpId,
+                        top_up_sig: createHmac("sha256", secret).update(`top_up:${t.topUpId}`).digest("hex") },
+                    payment_status: "paid", payment_intent: pi,
+                    amount_subtotal: currency === "usd" ? t.price - 1 : t.price,
+                    amount_total: t.price + 500, currency,
+                } }),
+                credit: async (args: any) => (await one(`SELECT public.credit_top_up($1, $2, $3, $4, $5) AS r`,
+                    [args.p_top_up_id, args.p_order_id, args.p_paid_usd_cents, args.p_currency, args.p_variant_id])).r,
+                close: async (r: any) => (await one(`SELECT public.close_top_up_return($1, $2, NULL) AS r`,
+                    [r.top_up_id, r.order_id])).r,
+                signingSecret: secret, expectLiveMode: false, budgetMs: 20000, spacingMs: 0, log: () => {},
+            });
+            assert.equal(result.flagged, 1);
+            const stored = await one(`SELECT status, grant_entry_id FROM public.top_ups WHERE id = $1`, [t.topUpId]);
+            assert.equal(stored.status, "pending"); assert.equal(stored.grant_entry_id, null);
+            const flag = await one(`SELECT reason FROM public.top_up_flagged_orders WHERE order_id = $1`, [pi]);
+            assert.equal(flag.reason, currency === "usd" ? "amount_mismatch" : "currency_mismatch");
+        }
     });
 
     // ── 6. grants ─────────────────────────────────────────────────────────

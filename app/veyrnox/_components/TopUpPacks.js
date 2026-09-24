@@ -25,8 +25,8 @@ const POLL_MS = 2000;
 const POLL_GIVE_UP_MS = 3 * 60 * 1000;
 
 // Shown after the payment provider redirects back with ?top_up=<id>. Polls the
-// Top-up until the webhook credits it, then refreshes every balance on the
-// page. Credits come only from the webhook; this never grants anything.
+// Top-up until the server credits it, then refreshes every balance on the
+// page. This component never grants anything.
 export function TopUpReturn() {
   const [topUpId, setTopUpId] = useState(null);
   const [phase, setPhase] = useState('processing');
@@ -37,23 +37,24 @@ export function TopUpReturn() {
     const id = q.get('top_up');
     if (!id || !TOP_UP_ID_RE.test(id)) return;
     setTopUpId(id);
-    // LemonSqueezy's link variables name the paid order. Recording it lets the
-    // backfill credit this Top-up if the webhook is lost (#94). Best effort:
-    // polling below doesn't depend on it.
-    const orderId = q.get('order_id');
-    const orderIdentifier = q.get('order_identifier');
-    if (orderId && /^[0-9]{1,20}$/.test(orderId) && orderIdentifier && TOP_UP_ID_RE.test(orderIdentifier.toLowerCase())) {
+    const sessionId = q.get('session_id');
+    // Opt in only after 0108 is applied and reconciliation has stayed clean
+    // for 24h (CLAUDE.md, Delivery). Storage may be unavailable in private mode.
+    let recoveryEnabled = false;
+    try { recoveryEnabled = window.localStorage.getItem('veyrnox_stripe_top_up_recovery') === 'true'; } catch {}
+    const stripSession = () => {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('session_id');
+      window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash);
+    };
+    if (recoveryEnabled && sessionId && /^cs_[A-Za-z0-9_]{1,251}$/.test(sessionId)) {
+      // Best effort: polling below does not depend on recording the return.
       gatewayFetch(`/top-ups/${id}/return`, {
         method: 'POST',
-        body: JSON.stringify({ order_id: orderId, order_identifier: orderIdentifier }),
-      }).catch(() => {}).finally(() => {
-        // LemonSqueezy only fills these into the query string. Once posted,
-        // take them out of the address bar, history and later screenshots (#147).
-        const url = new URL(window.location.href);
-        url.searchParams.delete('order_id');
-        url.searchParams.delete('order_identifier');
-        window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash);
-      });
+        body: JSON.stringify({ session_id: sessionId }),
+      }).catch(() => {}).finally(stripSession);
+    } else if (sessionId !== null) {
+      stripSession();
     }
   }, []);
 
