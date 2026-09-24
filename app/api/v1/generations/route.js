@@ -21,6 +21,7 @@
 import { NextResponse } from 'next/server';
 import { rpc, select, envConfig, SupabaseError } from '../../../../packages/db/supabase-client.js';
 import { submitJob } from '../../../../packages/adapters/fal.js';
+import * as grsai from '../../../../packages/adapters/grsai.js';
 import * as kie from '../../../../packages/adapters/kie.js';
 import * as openrouter from '../../../../packages/adapters/openrouter.js';
 import { capabilityFor, declaredInputs, checkInputs, checkSource, shapePayload } from '../../../../lib/modelCapabilities.js';
@@ -142,6 +143,11 @@ const PROVIDERS = {
         },
         submit: (job, _record, apiKey, publicHost) => kie.submitTask(job,
             { apiKey, callbackUrl: new URL('/api/webhook/kie', publicHost).toString() }),
+    },
+    grsai: {
+        key: () => process.env.GRSAI_API_KEY,
+        check: (_record, modelRow, inputs) => grsai.buildRequest(modelRow.provider_endpoint, inputs),
+        submit: (job, _record, apiKey) => grsai.submitTask(job, { apiKey }),
     },
     openrouter: {
         key: () => process.env.OPENROUTER_API_KEY,
