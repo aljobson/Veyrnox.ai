@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { SUPPORT_EMAIL } from '../_lib/tokens';
-import { captureAttribution } from '../_lib/utm';
+import { clearAttribution } from '../_lib/utm';
 import { applyStoredTheme } from './ThemeToggle';
 
 // Everything that floats over every page: the read-progress bar, the
@@ -18,10 +18,9 @@ const TOP_AT = 700; // px scrolled before the back-to-top button earns its place
 export default function SiteChrome() {
   const [noticeOpen, setNoticeOpen] = useState(false);
 
-  // A campaign link can land on any route, not just the home page, so the
-  // first-touch capture rides along with the rest of the global chrome.
+  // Retire unused campaign storage, including records left by older clients.
   useEffect(() => {
-    captureAttribution();
+    clearAttribution();
   }, []);
 
   // Mounted from app/layout.js, so the remembered theme reaches /app/* and
@@ -169,7 +168,7 @@ function StorageNotice({ onDismiss }) {
     >
       <div className="mx-auto flex max-w-[1100px] flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-[13px] leading-[1.55] text-vx-fg-body">
-          Veyrnox keeps your sign-in session and your theme choice in this browser&rsquo;s local
+          Veyrnox keeps your sign-in session, recent job display history and your theme choice in this browser&rsquo;s local
           storage. No advertising cookies, no third-party trackers.{' '}
           <Link href="/legal/privacy" className="text-vx-accent underline underline-offset-4">
             Privacy Policy

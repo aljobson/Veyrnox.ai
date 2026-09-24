@@ -44,14 +44,28 @@ test('does not abort a slow-but-answering request, and clears its timer', async 
     // suite finishing is the assertion.
 });
 
-test('a caller-supplied signal is replaced, not silently honoured alongside', async () => {
-    // Documented behaviour: fetchWithTimeout owns the signal. A caller that
-    // needs its own cancellation must not assume theirs survives.
-    let seen;
-    globalThis.fetch = async (_url, init) => { seen = init.signal; return new Response('ok'); };
+test('caller cancellation stops body consumption after headers', async () => {
+    let cancelled = false;
+    globalThis.fetch = async () => new Response(new ReadableStream({ cancel() { cancelled = true; } }));
     const mine = new AbortController();
     try {
-        await fetchWithTimeout('https://example.invalid', { signal: mine.signal }, 1000);
-        assert.notEqual(seen, mine.signal);
+        const pending = fetchWithTimeout('https://example.invalid', { signal: mine.signal }, 1000);
+        setTimeout(() => mine.abort(), 10);
+        await assert.rejects(pending, { name: 'AbortError' });
+        assert.equal(cancelled, true);
+    } finally { restore(); }
+});
+
+test('a stalled body is subject to the original request deadline', async () => {
+    globalThis.fetch = async () => new Response(new ReadableStream({}));
+    try {
+        await assert.rejects(fetchWithTimeout('https://example.invalid', {}, 20), { name: 'AbortError' });
+    } finally { restore(); }
+});
+
+test('response ceiling counts bytes despite a false content-length header', async () => {
+    globalThis.fetch = async () => new Response('oversized', { headers: { 'content-length': '1' } });
+    try {
+        await assert.rejects(fetchWithTimeout('https://example.invalid', {}, 1000, 4), { status: 413 });
     } finally { restore(); }
 });

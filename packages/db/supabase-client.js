@@ -1,3 +1,5 @@
+import { fetchWithTimeout } from '../../lib/fetchWithTimeout.js';
+
 /**
  * Minimal Supabase / PostgREST client for the Cloudflare Worker runtime.
  *
@@ -44,13 +46,10 @@ export async function rpc(name, args, options) {
         throw new SupabaseError('supabase client not configured', { status: 0, body: null });
     }
 
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
     let res;
     try {
-        res = await fetch(new URL(`/rest/v1/rpc/${encodeURIComponent(name)}`, supabaseUrl), {
+        res = await fetchWithTimeout(new URL(`/rest/v1/rpc/${encodeURIComponent(name)}`, supabaseUrl), {
             method: 'POST',
-            signal: controller.signal,
             headers: {
                 apikey: serviceRoleKey,
                 Authorization: `Bearer ${serviceRoleKey}`,
@@ -58,15 +57,13 @@ export async function rpc(name, args, options) {
                 Accept: 'application/json',
             },
             body: JSON.stringify(args ?? {}),
-        });
+        }, timeoutMs);
     } catch (err) {
-        clearTimeout(timer);
         if (err && err.name === 'AbortError') {
             throw new SupabaseError(`rpc(${name}) timed out after ${timeoutMs}ms`, { status: 0, body: null });
         }
         throw new SupabaseError(`rpc(${name}) transport error: ${err && err.message}`, { status: 0, body: null });
     }
-    clearTimeout(timer);
 
     // Read once — either JSON or text.
     let payload;
@@ -96,23 +93,18 @@ export async function select(table, { columns = '*', filter = '', limit } = {}, 
     }
     if (limit) url.searchParams.set('limit', String(limit));
 
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
     let res;
     try {
-        res = await fetch(url, {
-            signal: controller.signal,
+        res = await fetchWithTimeout(url, {
             headers: {
                 apikey: serviceRoleKey,
                 Authorization: `Bearer ${serviceRoleKey}`,
                 Accept: 'application/json',
             },
-        });
+        }, timeoutMs);
     } catch (err) {
-        clearTimeout(timer);
         throw new SupabaseError(`select(${table}) transport error: ${err && err.message}`, { status: 0, body: null });
     }
-    clearTimeout(timer);
     if (!res.ok) {
         throw new SupabaseError(`select(${table}) failed: ${res.status}`, {
             status: res.status,
@@ -140,24 +132,19 @@ export async function count(table, { query = '' } = {}, options) {
     for (const [k, v] of new URLSearchParams(query)) url.searchParams.set(k, v);
     url.searchParams.set('limit', '1');
 
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
     let res;
     try {
-        res = await fetch(url, {
-            signal: controller.signal,
+        res = await fetchWithTimeout(url, {
             headers: {
                 apikey: serviceRoleKey,
                 Authorization: `Bearer ${serviceRoleKey}`,
                 Accept: 'application/json',
                 Prefer: 'count=exact',
             },
-        });
+        }, timeoutMs);
     } catch (err) {
-        clearTimeout(timer);
         throw new SupabaseError(`count(${table}) transport error: ${err && err.message}`, { status: 0, body: null });
     }
-    clearTimeout(timer);
     if (!res.ok) {
         throw new SupabaseError(`count(${table}) failed: ${res.status}`, {
             status: res.status,

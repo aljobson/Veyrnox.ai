@@ -4,7 +4,7 @@
  * Unauthenticated, like /api/catalog: the pricing page is read by signed-out
  * visitors. Lives outside /api/v1 so the auth middleware doesn't gate it.
  * Credits and prices come straight from public.credit_packs (active web packs
- * only); nothing is priced here, and the LemonSqueezy variant id is not
+ * only); nothing is priced here, and payment-provider identifiers are not
  * returned. Buying still goes through the authenticated /api/v1 routes.
  *
  * Response: { packs: [{ id, credits, price_usd_cents }] }

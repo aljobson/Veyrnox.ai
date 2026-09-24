@@ -39,6 +39,7 @@ test('no surface claims a refund the ledger has not made', () => {
     // Every "Credits refunded" is now behind the flag.
     assert.match(watcher, /next\.refunded \? `\$\{label\} failed\. Credits refunded\.`/);
     assert.match(create, /job\.refunded\s*\n?\s*\? 'Something went wrong\. Credits refunded\.'/);
+    assert.match(credits, /refunded: j\.refunded === true/);
     assert.match(credits, /const isRefund = l\.state === 'failed' && l\.refunded === true;/);
     assert.match(library, /const refundPending = row\.state === 'failed' && row\.refunded === false;/);
     // And a pending refund shows no credit delta at all.

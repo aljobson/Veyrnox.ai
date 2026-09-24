@@ -70,3 +70,30 @@ test('the five-minute cron drains the queue', () => {
     assert.match(worker, /runAssetReap\(env\), env\)/);
     assert.match(worker, /const out = await reapAssets\(cfg, r2cfg\);/);
 });
+
+test('a rejected queue delete does not claim completion or patch an attempt', async () => {
+    const w = world([{ id: '1', r2_key: 'jobs/a.mp4', attempts: 0 }]);
+    const fetchWorld = globalThis.fetch;
+    globalThis.fetch = (url, init) => String(url).includes('db.test') && init?.method === 'DELETE'
+        ? Promise.resolve(new Response(null, { status: 503 })) : fetchWorld(url, init);
+    try {
+        const out = await reapAssets(cfg, r2cfg);
+        assert.equal(out.ok, false);
+        assert.equal(out.deleted, 0);
+        assert.equal(w.calls.patched.length, 0);
+    } finally { w.restore(); }
+});
+
+test('a failed attempt update is reported once and never silently retried', async () => {
+    const w = world([{ id: '1', r2_key: 'jobs/a.mp4', attempts: 0 }], { bad: ['jobs/a.mp4'] });
+    const fetchWorld = globalThis.fetch;
+    let patches = 0;
+    globalThis.fetch = (url, init) => {
+        if (init?.method === 'PATCH') { patches++; return Promise.resolve(new Response(null, { status: 503 })); }
+        return fetchWorld(url, init);
+    };
+    try {
+        assert.equal((await reapAssets(cfg, r2cfg)).ok, false);
+        assert.equal(patches, 1);
+    } finally { w.restore(); }
+});
