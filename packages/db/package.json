@@ -4,19 +4,16 @@
   "description": "Veyrnox datastore: append-only ledger contract + acceptance tests (the Worker calls PostgREST RPCs via supabase-client.js)",
   "private": true,
   "type": "module",
-  "main": "./index.ts",
-  "types": "./index.ts",
+  "main": "./supabase-client.js",
   "exports": {
-    ".": "./index.ts",
+    ".": "./supabase-client.js",
     "./ledger": "./ledger.ts",
     "./supabase-client": "./supabase-client.js"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"
   },
-  "dependencies": {
-    "@neondatabase/serverless": "^0.9.5"
-  },
+  "dependencies": {},
   "devDependencies": {
     "typescript": "^5.4.5"
   }

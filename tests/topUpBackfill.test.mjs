@@ -1,455 +1,131 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { backfillVerdict, runBackfill, sweepCandidates, runOrderSweep } from '../lib/topUpBackfill.js';
+import { createHmac } from 'node:crypto';
+import { backfillVerdict, runBackfill } from '../lib/topUpBackfill.js';
 
-const TOP_UP_ID = '0b6f3c1e-8d2a-4f5b-9c7e-1a2b3c4d5e6f';
-const IDENTIFIER = '104e18a2-d755-4d4b-80c4-a6c1dcbe1c10';
-const opts = { expectTestMode: true, expectStoreId: '473468' };
-
-const row = (over = {}) => ({ top_up_id: TOP_UP_ID, order_id: '1234', order_identifier: IDENTIFIER, ...over });
-
-function order(over = {}, itemOver = {}) {
-    return {
-        type: 'orders',
-        id: '1234',
-        attributes: {
-            store_id: 473468,
-            identifier: IDENTIFIER,
-            user_email: 'buyer@example.com',
-            created_at: '2026-09-13T10:30:00.000000Z',
-            currency: 'USD',
-            subtotal: 2500,
-            discount_total: 0,
-            tax: 500,
-            total: 3000,
-            status: 'paid',
-            refunded_amount: 0,
-            test_mode: true,
-            first_order_item: { variant_id: 2120823, test_mode: true, ...itemOver },
-            ...over,
-        },
-    };
+const TOP_UP = '0b6f3c1e-8d2a-4f5b-9c7e-1a2b3c4d5e6f';
+const SESSION = 'cs_test_' + 'a'.repeat(64);
+const SECRET = 'whsec_test_only';
+const row = { top_up_id: TOP_UP, order_id: SESSION, order_identifier: null };
+const opts = { expectLiveMode: false, signingSecret: SECRET };
+function session(over = {}) {
+    return { id: SESSION, object: 'checkout.session', client_reference_id: TOP_UP,
+        metadata: { top_up_id: TOP_UP, top_up_sig: createHmac('sha256', SECRET).update(`top_up:${TOP_UP}`).digest('hex') },
+        livemode: false, payment_status: 'paid', payment_intent: 'pi_test_1', amount_subtotal: 2500,
+        amount_total: 3000, currency: 'usd', ...over };
+}
+function harness(over = {}) {
+    const credits = [], closed = [], fetched = [];
+    const deps = { ...opts, budgetMs: 20000, spacingMs: 0, log: () => {},
+        fetchSession: async (id) => { fetched.push(id); return { ok: true, session: session() }; },
+        credit: async (args) => { credits.push(args); return { ok: true }; },
+        close: async (r) => { closed.push(r); return { ok: true }; }, ...over };
+    return { deps, credits, closed, fetched };
 }
 
-test('a paid order matching the returned identifier is credited to our Top-up row', () => {
-    const v = backfillVerdict(row(), order(), opts);
-    assert.deepEqual(v, {
-        credit: {
-            p_top_up_id: TOP_UP_ID,
-            p_order_id: '1234',
-            p_order_email: 'buyer@example.com',
-            p_paid_usd_cents: 2500,
-            p_currency: 'USD',
-            p_variant_id: '2120823',
-            p_refunded_cents: 0,
-            p_total_cents: 3000,
-        },
-    });
-});
-
-test('the identifier comparison ignores case but nothing else', () => {
-    assert.ok(backfillVerdict(row(), order({ identifier: IDENTIFIER.toUpperCase() }), opts).credit);
-    const v = backfillVerdict(row(), order({ identifier: '204e18a2-d755-4d4b-80c4-a6c1dcbe1c10' }), opts);
-    assert.equal(v.credit, undefined);
-    assert.equal(v.skip, 'identifier mismatch');
-    assert.equal(v.anomaly, true);
-});
-
-test('an order without an identifier is never credited', () => {
-    for (const identifier of [undefined, null, '', 42]) {
-        const v = backfillVerdict(row(), order({ identifier }), opts);
-        assert.equal(v.skip, 'identifier mismatch');
-    }
-});
-
-// #147: the order's checkout email travels to backfill_credit_top_up, which
-// refuses it unless it is the Top-up owner's. Without one, nothing is credited.
-test('the order email is passed on for the owner check; an order without one is never credited', () => {
-    assert.equal(backfillVerdict(row(), order({ user_email: 'Buyer@Example.com' }), opts).credit.p_order_email, 'Buyer@Example.com');
-    for (const user_email of [undefined, null, '', '   ', 42]) {
-        const v = backfillVerdict(row(), order({ user_email }), opts);
-        assert.equal(v.credit, undefined, String(user_email));
-        assert.equal(v.skip, 'order email missing');
-        assert.equal(v.anomaly, true);
-    }
-});
-
-test('a returned order id that differs from the fetched order is refused', () => {
-    const v = backfillVerdict(row({ order_id: '9999' }), order(), opts);
-    assert.equal(v.skip, 'order id mismatch');
-    assert.equal(v.anomaly, true);
-});
-
-test('store and test-mode checks match the webhook', () => {
-    assert.equal(backfillVerdict(row(), order({ store_id: 1 }), opts).skip, 'store mismatch');
-    assert.equal(backfillVerdict(row(), order({ test_mode: false }, { test_mode: false }), opts).skip, 'test_mode mismatch');
-    // Either flag set makes it a test order: never credited in live mode.
-    const live = { ...opts, expectTestMode: false };
-    assert.equal(backfillVerdict(row(), order({ test_mode: false }, { test_mode: true }), live).skip, 'test_mode mismatch');
-    assert.ok(backfillVerdict(row(), order({ test_mode: false }, { test_mode: false }), live).credit);
-});
-
-test('variant, amount and currency travel from the order to credit_top_up, which checks them', () => {
-    const v = backfillVerdict(row(), order({ subtotal: 3000, discount_total: 500, currency: 'EUR' }, { variant_id: 7 }), opts);
-    assert.equal(v.credit.p_paid_usd_cents, 2500, 'pre-tax, net of discount, as the webhook computes it');
-    assert.equal(v.credit.p_currency, 'EUR');
-    assert.equal(v.credit.p_variant_id, '7');
-});
-
-test('a still-pending order is retried next run; a failed or fraudulent one is an anomaly', () => {
-    assert.deepEqual(backfillVerdict(row(), order({ status: 'pending' }), opts), { skip: 'order pending', anomaly: false, retry: true });
-    for (const status of ['failed', 'fraudulent']) {
-        const v = backfillVerdict(row(), order({ status }), opts);
-        assert.equal(v.skip, 'order not paid');
-        assert.equal(v.anomaly, true);
-    }
-});
-
-// #142: the webhook credits a refunded or partly refunded order, then claws
-// back the refunded share. The backfill must do the same, or a lost
-// order_created leaves the buyer without the credits they kept.
-test('refunded and partly refunded orders are credited with the refunded amount for the clawback', () => {
-    for (const [status, refunded] of [['partial_refund', 1500], ['refunded', 3000]]) {
-        const v = backfillVerdict(row(), order({ status, refunded_amount: refunded }), opts);
-        assert.ok(v.credit, status);
-        assert.equal(v.credit.p_refunded_cents, refunded);
-        assert.equal(v.credit.p_total_cents, 3000, 'refunds are measured against the tax-inclusive total');
-    }
-});
-
-test('the backfill credits exactly the statuses the webhook credits', async () => {
-    const { CREDITABLE_ORDER_STATUSES } = await import('../packages/adapters/lemonsqueezy.js');
-    assert.deepEqual([...CREDITABLE_ORDER_STATUSES].sort(), ['paid', 'partial_refund', 'refunded']);
-    for (const status of ['paid', 'partial_refund', 'refunded']) {
-        assert.ok(backfillVerdict(row(), order({ status }), opts).credit, status);
-    }
-});
-
-test('a malformed order is refused', () => {
-    assert.equal(backfillVerdict(row(), { id: '1234', attributes: {} }, opts).skip, 'malformed order');
-    assert.equal(backfillVerdict(row(), null, opts).skip, 'malformed order');
-});
-
-// --- runBackfill -----------------------------------------------------------
-
-function harness({ orders = {}, credit = async () => ({ ok: true, idempotent: false }), budgetMs = 60000 } = {}) {
-    const fetched = [];
-    const credited = [];
-    const sleeps = [];
-    const errors = [];
-    const closed = [];
-    let clock = 0;
-    const deps = {
-        ...opts,
-        budgetMs,
-        spacingMs: 250,
-        now: () => clock,
-        sleep: async (ms) => { sleeps.push(ms); clock += ms; },
-        fetchOrder: async (id) => {
-            fetched.push(id);
-            clock += 100;
-            const o = orders[id];
-            return typeof o === 'function' ? o() : o;
-        },
-        credit: async (args) => { credited.push(args); return credit(args); },
-        close: async (r) => { closed.push(r.order_id); return { ok: true }; },
-        // runBackfill passes the whole row: close_top_up_return matches id and identifier.
-        log: (...a) => errors.push(a.join(' ')),
-    };
-    return { deps, fetched, credited, sleeps, errors, closed, advance: (ms) => { clock += ms; } };
-}
-
-const ok = (o) => ({ ok: true, order: o });
-
-test('credits each due row once, spacing LemonSqueezy calls', async () => {
-    const rows = [row(), row({ top_up_id: '1b6f3c1e-8d2a-4f5b-9c7e-1a2b3c4d5e6f', order_id: '5678' })];
-    const h = harness({ orders: { 1234: ok(order()), 5678: ok({ ...order(), id: '5678' }) } });
-    const res = await runBackfill(rows, h.deps);
-    assert.deepEqual(h.fetched, ['1234', '5678']);
-    assert.equal(h.credited.length, 2);
-    assert.deepEqual(h.sleeps, [250], 'a pause between calls, none before the first');
-    assert.equal(res.checked, 2);
-    assert.equal(res.credited, 2);
-    assert.equal(res.stopped, null);
-});
-
-test('the webhook winning the race is counted as idempotent, not credited', async () => {
-    const h = harness({ orders: { 1234: ok(order()) }, credit: async () => ({ ok: true, idempotent: true }) });
-    const res = await runBackfill([row()], h.deps);
-    assert.equal(res.credited, 0);
-    assert.equal(res.idempotent, 1);
-    assert.equal(h.errors.length, 0);
-});
-
-test('flagged and refused verdicts are logged as anomalies', async () => {
-    const codes = [{ ok: false, code: 'ALREADY_CREDITED', flagged: true }, { ok: false, code: 'ORDER_ALREADY_USED' }];
-    const h = harness({ orders: { 1234: ok(order()) }, credit: async () => codes.shift() });
-    const res = await runBackfill([row(), row()], h.deps);
-    assert.equal(res.flagged, 1);
-    assert.equal(res.refused, 1);
-    assert.equal(h.errors.length, 2);
-    assert.match(h.errors[0], /ALREADY_CREDITED/);
-});
-
-test('an unexpected credit_top_up verdict or a database error is retried next run and logged', async () => {
-    const verdicts = [async () => ({ ok: false, code: 'SOMETHING_NEW' }), async () => { throw Object.assign(new Error('rpc'), { status: 503 }); }];
-    const h = harness({ orders: { 1234: ok(order()) }, credit: () => verdicts.shift()() });
-    const res = await runBackfill([row(), row()], h.deps);
-    assert.equal(res.retry, 2);
-    assert.equal(h.errors.length, 2);
-});
-
-test('a transient fetch failure is retried next run without an anomaly log', async () => {
-    const h = harness({ orders: { 1234: { ok: false, error: 'lemonsqueezy 503', transient: true } } });
-    const res = await runBackfill([row()], h.deps);
-    assert.equal(res.retry, 1);
-    assert.equal(h.credited.length, 0);
-    assert.equal(h.errors.length, 0);
-});
-
-test('a 404 for the returned order id is an anomaly, nothing credited', async () => {
-    const h = harness({ orders: { 1234: { ok: false, error: 'lemonsqueezy 404', transient: false } } });
-    const res = await runBackfill([row()], h.deps);
-    assert.equal(res.skipped, 1);
-    assert.equal(h.credited.length, 0);
-    assert.equal(h.errors.length, 1);
-});
-
-test('LemonSqueezy rate limiting stops the run', async () => {
-    const h = harness({ orders: { 1234: { ok: false, error: 'lemonsqueezy 429', transient: true }, 5678: ok(order()) } });
-    const res = await runBackfill([row(), row({ order_id: '5678' })], h.deps);
-    assert.deepEqual(h.fetched, ['1234']);
-    assert.equal(res.stopped, 'rate_limited');
-    assert.equal(res.retry, 1);
-});
-
-test('the time budget stops the run before the next call', async () => {
-    const rows = Array.from({ length: 10 }, () => row());
-    const h = harness({ orders: { 1234: ok(order()) }, budgetMs: 1000 });
-    const res = await runBackfill(rows, h.deps);
-    assert.equal(res.stopped, 'time_budget');
-    assert.ok(h.fetched.length < rows.length);
-    assert.equal(res.checked, h.fetched.length);
-});
-
-test('a clawback shortfall or an inferred Freeze from the refund is logged', async () => {
-    const h = harness({
-        orders: { 1234: ok(order({ status: 'partial_refund', refunded_amount: 1500 })) },
-        credit: async () => ({ ok: true, idempotent: false, refund: { ok: true, taken: 100, shortfall: 50, frozen: true } }),
-    });
-    const res = await runBackfill([row()], h.deps);
-    assert.equal(res.credited, 1);
-    assert.equal(h.credited[0].p_refunded_cents, 1500);
-    assert.ok(h.errors.some((e) => /shortfall/.test(e)));
-    assert.ok(h.errors.some((e) => /Frozen/.test(e)));
-});
-
-test('a skipped verdict never reaches credit_top_up', async () => {
-    const h = harness({ orders: { 1234: ok(order({ identifier: '204e18a2-d755-4d4b-80c4-a6c1dcbe1c10' })) } });
-    const res = await runBackfill([row()], h.deps);
-    assert.equal(h.credited.length, 0);
-    assert.equal(res.skipped, 1);
-    assert.equal(h.errors.length, 1);
-});
-
-// #143: a row whose check reached a final answer is closed, so the backfill
-// stops re-fetching it; anything that might still change is left open.
-test('final outcomes close the row: flagged, refused, not creditable, not found', async () => {
-    const verdicts = [{ ok: false, code: 'ALREADY_CREDITED', flagged: true }, { ok: false, code: 'ORDER_ALREADY_USED' }];
-    const h = harness({
-        orders: {
-            1: ok({ ...order(), id: '1' }),
-            2: ok({ ...order(), id: '2' }),
-            3: ok({ ...order({ identifier: '204e18a2-d755-4d4b-80c4-a6c1dcbe1c10' }), id: '3' }),
-            4: ok({ ...order({ status: 'failed' }), id: '4' }),
-            5: { ok: false, error: 'lemonsqueezy 404', transient: false },
-        },
-        credit: async () => verdicts.shift(),
-    });
-    await runBackfill(['1', '2', '3', '4', '5'].map((id) => row({ order_id: id })), h.deps);
-    assert.deepEqual(h.closed, ['1', '2', '3', '4', '5']);
-});
-
-test('the close is given the order id and identifier that were checked', async () => {
-    const h = harness({ orders: { 1234: ok(order({ status: 'failed' })) } });
-    const seen = [];
-    h.deps.close = async (r) => { seen.push(r); return { ok: true }; };
-    await runBackfill([row()], h.deps);
-    assert.deepEqual(seen, [row()]);
-});
-
-test('outcomes that may still change leave the row open, including a 401 or 403 (our key or config)', async () => {
-    const verdicts = [
-        async () => ({ ok: true, idempotent: false }),
-        async () => { throw new Error('db down'); },
-        async () => ({ ok: false, code: 'SOMETHING_NEW' }),
-    ];
-    const h = harness({
-        orders: {
-            1: ok({ ...order(), id: '1' }),
-            2: ok({ ...order(), id: '2' }),
-            3: ok({ ...order(), id: '3' }),
-            4: ok({ ...order({ status: 'pending' }), id: '4' }),
-            5: { ok: false, error: 'lemonsqueezy 503', transient: true },
-            7: { ok: false, error: 'lemonsqueezy 401', transient: false },
-            8: { ok: false, error: 'lemonsqueezy 403', transient: false },
-            6: { ok: false, error: 'lemonsqueezy 429', transient: true },
-        },
-        credit: () => verdicts.shift()(),
-    });
-    await runBackfill(['1', '2', '3', '4', '5', '7', '8', '6'].map((id) => row({ order_id: id })), h.deps);
-    assert.deepEqual(h.closed, [], 'credited rows leave the batch on their own; the rest are retried');
-});
-
-test('a failed close is logged and the run carries on', async () => {
-    const h = harness({ orders: { 1234: ok(order({ status: 'failed' })) } });
-    h.deps.close = async () => { throw new Error('rpc down'); };
-    const res = await runBackfill([row(), row()], h.deps);
-    assert.equal(res.checked, 2);
-    assert.ok(h.errors.some((e) => /close_top_up_return failed/.test(e)));
-});
-
-test('an email mismatch is refused, logged, and never credited', async () => {
-    const h = harness({ orders: { 1234: ok(order()) }, credit: async () => ({ ok: false, code: 'EMAIL_MISMATCH' }) });
-    const res = await runBackfill([row()], h.deps);
-    assert.equal(res.refused, 1);
-    assert.equal(res.credited, 0);
-    assert.equal(h.errors.length, 1);
-    assert.match(h.errors[0], /EMAIL_MISMATCH/);
-});
-
-test('an order already credited to another Top-up is logged as a recorded collision', async () => {
-    const h = harness({ orders: { 1234: ok(order()) }, credit: async () => ({ ok: false, code: 'ORDER_ALREADY_USED', collision: true }) });
-    const res = await runBackfill([row()], h.deps);
-    assert.equal(res.refused, 1);
-    assert.match(h.errors[0], /ORDER_ALREADY_USED/);
-});
-
-// --- order sweep (#143) ------------------------------------------------------
-
-const CREDITED = '9001';
-const sweepRow = (over = {}) => ({
-    top_up_id: TOP_UP_ID, order_id: CREDITED, variant_id: '2120823',
-    created_at: '2026-09-13T10:00:00+00:00', user_email: 'buyer@example.com', ...over,
-});
-const listed = (id, over = {}, itemOver = {}) => ({ ...order(over, itemOver), id });
-
-test('sweep candidates: other paid orders of this pack by the owner since the Top-up started', () => {
-    const orders = [
-        listed(CREDITED),                                               // the credited order itself
-        listed('9002'),                                                 // a second payment
-        listed('9003', { user_email: ' BUYER@example.com' }),           // same buyer, other case
-        listed('9004', {}, { variant_id: 7 }),                          // another pack
-        listed('9005', { status: 'failed' }),                           // never paid
-        listed('9006', { status: 'refunded', refunded_amount: 3000 }),  // paid, since refunded
-        listed('9007', { created_at: '2026-09-13T09:00:00.000000Z' }),  // before the Top-up
-        listed('9008', { created_at: '2026-09-13T09:56:00.000000Z' }),  // 4 minutes of clock skew
-        listed('9009', { store_id: 1 }),                                // another store
-        listed('9010', { user_email: 'someone@else.test' }),            // not the owner
-        listed('9011', { test_mode: false }, { test_mode: false }),     // other mode
-        listed('9012', { created_at: 'not a date' }),
-        null,
-    ];
-    const got = sweepCandidates(sweepRow(), orders, opts);
-    assert.deepEqual(got.map((c) => c.p_order_id), ['9002', '9003', '9006', '9008']);
-    assert.deepEqual(got[0], {
-        p_top_up_id: TOP_UP_ID,
-        p_order_id: '9002',
-        p_order_email: 'buyer@example.com',
-        p_order_created_at: '2026-09-13T10:30:00.000Z',
-        p_paid_usd_cents: 2500,
-        p_currency: 'USD',
-        p_variant_id: '2120823',
-    });
-});
-
-function sweepHarness({ lists = {}, flag = async () => ({ ok: true, flagged: true, idempotent: false }), budgetMs = 60000 } = {}) {
-    const listedEmails = [];
-    const flagged = [];
-    const errors = [];
-    let clock = 0;
-    const deps = {
-        ...opts,
-        budgetMs,
-        spacingMs: 250,
-        now: () => clock,
-        sleep: async (ms) => { clock += ms; },
-        listOrders: async (email) => { listedEmails.push(email); clock += 100; return lists[email]; },
-        flag: async (args) => { flagged.push(args); return flag(args); },
-        log: (...a) => errors.push(a.join(' ')),
-    };
-    return { deps, listedEmails, flagged, errors };
-}
-
-test('the sweep flags a found second payment, only through flag_swept_top_up_order', async () => {
-    const h = sweepHarness({ lists: { 'buyer@example.com': { ok: true, orders: [listed(CREDITED), listed('9002')], more: false } } });
-    const res = await runOrderSweep([sweepRow()], h.deps);
-    assert.deepEqual(h.listedEmails, ['buyer@example.com']);
-    assert.deepEqual(h.flagged.map((f) => f.p_order_id), ['9002']);
-    assert.equal(res.flagged, 1);
-    assert.equal(res.checked, 1);
-    assert.equal(h.errors.length, 1);
-    assert.match(h.errors[0], /flagged for Operator refund/);
-});
-
-test('known and already flagged orders are quiet; ambiguous and refused ones are logged', async () => {
-    const verdicts = [
-        { ok: false, code: 'KNOWN_ORDER' },
-        { ok: true, flagged: true, idempotent: true },
-        { ok: false, code: 'AMBIGUOUS' },
-        { ok: false, code: 'EMAIL_MISMATCH' },
-    ];
-    const orders = ['9002', '9003', '9004', '9005'].map((id) => listed(id));
-    const h = sweepHarness({ lists: { 'buyer@example.com': { ok: true, orders, more: false } }, flag: async () => verdicts.shift() });
-    const res = await runOrderSweep([sweepRow()], h.deps);
-    assert.equal(res.flagged, 0);
-    assert.equal(res.ambiguous, 1);
-    assert.equal(res.refused, 1);
-    assert.equal(h.errors.length, 2);
-    assert.match(h.errors[0], /AMBIGUOUS/);
-});
-
-test('the sweep stops on a LemonSqueezy 429 and skips a transient or failed listing', async () => {
-    const rows = [sweepRow({ user_email: 'a@x.test' }), sweepRow({ user_email: 'b@x.test' }), sweepRow({ user_email: 'c@x.test' })];
-    const h = sweepHarness({ lists: {
-        'a@x.test': { ok: false, error: 'lemonsqueezy 503', transient: true },
-        'b@x.test': { ok: false, error: 'lemonsqueezy 429', transient: true },
-        'c@x.test': { ok: true, orders: [], more: false },
+test('a signed paid session credits its PaymentIntent with pre-tax amount and USD', async () => {
+    assert.deepEqual(await backfillVerdict(row, session(), opts), { credit: {
+        p_top_up_id: TOP_UP, p_order_id: 'pi_test_1', p_paid_usd_cents: 2500, p_currency: 'USD', p_variant_id: null,
     } });
-    const res = await runOrderSweep(rows, h.deps);
-    assert.deepEqual(h.listedEmails, ['a@x.test', 'b@x.test']);
-    assert.equal(res.stopped, 'rate_limited');
-    assert.equal(res.retry, 2);
-    assert.equal(h.flagged.length, 0);
 });
 
-test('a flag RPC error is logged and the rest of the orders are still checked', async () => {
-    const verdicts = [async () => { throw Object.assign(new Error('rpc'), { status: 503 }); }, async () => ({ ok: true, flagged: true, idempotent: false })];
-    const h = sweepHarness({
-        lists: { 'buyer@example.com': { ok: true, orders: [listed('9002'), listed('9003')], more: false } },
-        flag: () => verdicts.shift()(),
-    });
-    const res = await runOrderSweep([sweepRow()], h.deps);
-    assert.equal(res.retry, 1);
-    assert.equal(res.flagged, 1);
-    assert.ok(h.errors.some((e) => /flag_swept_top_up_order failed/.test(e)));
+test('missing, forged, cross-Top-up, cross-mode and malformed provider facts never reach credit', async () => {
+    for (const patch of [
+        { id: 'cs_different' }, { object: 'wrong' }, { client_reference_id: 'other' }, { client_reference_id: undefined },
+        { metadata: { top_up_id: 'other', top_up_sig: 'a'.repeat(64) } }, { metadata: {} },
+        { metadata: { ...session().metadata, top_up_sig: 'a'.repeat(64) } },
+        { livemode: true }, { livemode: undefined }, { payment_status: 'unpaid' }, { payment_status: 'no_payment_required' },
+        { payment_intent: null }, { payment_intent: { id: 'pi_1' } }, { payment_intent: SESSION },
+        { payment_intent: 'pi_' + 'a'.repeat(62) }, { amount_subtotal: null }, { amount_subtotal: 0 },
+        { amount_subtotal: 1.5 }, { amount_total: 2400 }, { amount_total: null }, { currency: null }, { currency: 'US' },
+    ]) {
+        const h = harness({ fetchSession: async () => ({ ok: true, session: session(patch) }) });
+        await runBackfill([row], h.deps);
+        assert.equal(h.credits.length, 0, JSON.stringify(patch));
+    }
 });
 
-test('a truncated listing that may hide older orders in the window is logged', async () => {
-    const h = sweepHarness({ lists: { 'buyer@example.com': { ok: true, orders: [listed('9002')], more: true } } });
-    await runOrderSweep([sweepRow()], h.deps);
-    assert.ok(h.errors.some((e) => /truncated/.test(e)));
-
-    const older = sweepHarness({ lists: { 'buyer@example.com': { ok: true, orders: [listed('9002', { created_at: '2026-09-12T10:00:00Z' })], more: true } } });
-    await runOrderSweep([sweepRow()], older.deps);
-    assert.ok(!older.errors.some((e) => /truncated/.test(e)), 'the page already reaches back before the Top-up');
+test('valid but mismatched money goes to the atomic RPC for durable flagging, not a grant in JS', async () => {
+    const v = await backfillVerdict(row, session({ amount_subtotal: 2000, currency: 'eur' }), opts);
+    assert.equal(v.credit.p_paid_usd_cents, 2000);
+    assert.equal(v.credit.p_currency, 'EUR');
 });
 
-test('the sweep respects its time budget', async () => {
-    const rows = Array.from({ length: 10 }, () => sweepRow());
-    const h = sweepHarness({ lists: { 'buyer@example.com': { ok: true, orders: [], more: false } }, budgetMs: 1000 });
-    const res = await runOrderSweep(rows, h.deps);
-    assert.equal(res.stopped, 'time_budget');
-    assert.equal(res.checked, h.listedEmails.length);
-    assert.ok(res.checked < rows.length);
+test('success and idempotent webhook races both close by Session id with NULL identifier', async () => {
+    for (const idempotent of [false, true]) {
+        const h = harness({ credit: async () => ({ ok: true, idempotent }) });
+        const out = await runBackfill([row], h.deps);
+        assert.equal(out[idempotent ? 'idempotent' : 'credited'], 1);
+        assert.deepEqual(h.closed, [row]);
+        assert.deepEqual(h.fetched, [SESSION]);
+    }
+});
+
+test('all durable flags and final refusals close the return', async () => {
+    for (const code of ['ALREADY_CREDITED', 'VARIANT_MISMATCH', 'AMOUNT_MISMATCH', 'CURRENCY_MISMATCH', 'TOP_UP_NOT_FOUND', 'ORDER_ALREADY_USED', 'INVALID_ORDER_ID']) {
+        const flagged = ['ALREADY_CREDITED', 'VARIANT_MISMATCH', 'AMOUNT_MISMATCH', 'CURRENCY_MISMATCH'].includes(code);
+        const h = harness({ credit: async () => ({ ok: false, code, flagged }) });
+        const out = await runBackfill([row], h.deps);
+        assert.equal(out[flagged ? 'flagged' : 'refused'], 1, code);
+        assert.equal(h.closed.length, 1, code);
+    }
+});
+
+test('unknown or non-durable database verdicts stay open', async () => {
+    for (const result of [null, {}, { ok: false, code: 'UNKNOWN' }, { ok: false, code: 'AMOUNT_MISMATCH' }]) {
+        const h = harness({ credit: async () => result });
+        const out = await runBackfill([row], h.deps);
+        assert.equal(out.retry, 1);
+        assert.equal(h.closed.length, 0);
+    }
+    const h = harness({ credit: async () => { throw new Error('db unavailable'); } });
+    assert.equal((await runBackfill([row], h.deps)).retry, 1);
+    assert.equal(h.closed.length, 0);
+});
+
+test('fetch failures retry; rate limiting stops the batch; only a 404 closes', async () => {
+    for (const error of ['stripe 401', 'stripe 403', 'stripe 500', 'stripe 200', 'transport: timeout']) {
+        const h = harness({ fetchSession: async () => ({ ok: false, error }) });
+        assert.equal((await runBackfill([row], h.deps)).retry, 1, error);
+        assert.equal(h.closed.length, 0);
+    }
+    const limited = harness({ fetchSession: async () => ({ ok: false, error: 'stripe 429' }) });
+    const out = await runBackfill([row, row], limited.deps);
+    assert.equal(out.stopped, 'rate_limited'); assert.equal(out.checked, 1);
+    const missing = harness({ fetchSession: async () => ({ ok: false, error: 'stripe 404' }) });
+    assert.equal((await runBackfill([row], missing.deps)).skipped, 1);
+    assert.equal(missing.closed.length, 1);
+    const thrown = harness({ fetchSession: async () => { throw new Error('offline'); } });
+    assert.equal((await runBackfill([row], thrown.deps)).retry, 1);
+});
+
+test('bad signatures and unpaid sessions stay open for repair and reconciliation', async () => {
+    for (const patch of [{ payment_status: 'unpaid' }, { metadata: { ...session().metadata, top_up_sig: 'a'.repeat(64) } }]) {
+        const h = harness({ fetchSession: async () => ({ ok: true, session: session(patch) }) });
+        assert.equal((await runBackfill([row], h.deps)).retry, 1);
+        assert.equal(h.closed.length, 0);
+    }
+});
+
+test('close failure is retryable after credit; a later attempt can close idempotently', async () => {
+    for (const close of [async () => { throw new Error('offline'); }, async () => ({ ok: false, code: 'NOT_CURRENT' })]) {
+        const h = harness({ close });
+        const out = await runBackfill([row], h.deps);
+        assert.equal(out.credited, 1); assert.equal(out.retry, 1);
+    }
+});
+
+test('legacy and invalid returns never trigger Stripe or credit calls', async () => {
+    const h = harness();
+    const out = await runBackfill([{ ...row, order_id: '123' }, { ...row, order_identifier: TOP_UP }], h.deps);
+    assert.equal(out.skipped, 2);
+    assert.equal(h.fetched.length, 0); assert.equal(h.credits.length, 0);
+});
+
+test('time budget is checked after spacing, before fetching another session', async () => {
+    let clock = 0;
+    const h = harness({ now: () => clock, spacingMs: 250, budgetMs: 100,
+        sleep: async (ms) => { clock += ms; } });
+    const out = await runBackfill([row, row], h.deps);
+    assert.equal(out.checked, 1); assert.equal(out.stopped, 'time_budget');
 });

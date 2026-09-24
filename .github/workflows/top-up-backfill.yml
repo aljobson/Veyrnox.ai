@@ -19,6 +19,9 @@ jobs:
     # Only main: a workflow_dispatch on another branch must not get this
     # job's secret.
     if: github.ref == 'refs/heads/main'
+    # TOP_UP_BACKFILL_TOKEN lives in this environment, which only main may
+    # use; the `if` above is only as strong as the branch's copy of this file.
+    environment: production
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
@@ -26,11 +29,21 @@ jobs:
         env:
           PUBLIC_HOST: ${{ secrets.PUBLIC_HOST }}
           TOP_UP_BACKFILL_TOKEN: ${{ secrets.TOP_UP_BACKFILL_TOKEN }}
+          # Cloudflare Access service token. /api/admin/* is behind Access
+          # (2026-09-24), so this run has to present a machine identity at the
+          # front door as well as the endpoint's own bearer token. The Worker's
+          # five-minute cron needs neither — it never crosses the edge.
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
         run: |
           set -euo pipefail
           case "$PUBLIC_HOST" in https://*) ;; *) echo "PUBLIC_HOST secret must be an https origin" >&2; exit 1 ;; esac
           if [ -z "$TOP_UP_BACKFILL_TOKEN" ]; then echo "TOP_UP_BACKFILL_TOKEN secret is not set" >&2; exit 1; fi
-          # Header from stdin so the token never appears in the process list.
-          printf 'Authorization: Bearer %s\n' "$TOP_UP_BACKFILL_TOKEN" | \
+          if [ -z "${CF_ACCESS_CLIENT_ID:-}" ] || [ -z "${CF_ACCESS_CLIENT_SECRET:-}" ]; then
+            echo "CF_ACCESS_CLIENT_ID/SECRET secrets are not set; Access will refuse this call" >&2; exit 1
+          fi
+          # Every header from stdin, so no credential appears in the process list.
+          printf 'Authorization: Bearer %s\nCF-Access-Client-Id: %s\nCF-Access-Client-Secret: %s\n' \
+            "$TOP_UP_BACKFILL_TOKEN" "$CF_ACCESS_CLIENT_ID" "$CF_ACCESS_CLIENT_SECRET" | \
             curl -sS --fail-with-body --max-time 60 -X POST -H @- "${PUBLIC_HOST%/}/api/admin/top-up-backfill"
           echo

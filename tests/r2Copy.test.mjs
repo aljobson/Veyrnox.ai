@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { copyUrlToR2 } from '../packages/adapters/r2.js';
+import { copyUrlToR2 } from '../packages/adapters/r2Copy.js';
 
 const cfg = { accountId: 'acc', accessKeyId: 'k', secretAccessKey: 's', bucket: 'b' };
 
@@ -47,4 +47,84 @@ test('each provider may only copy from its own CDN', async () => {
     assert.equal((await copyUrlToR2('https://v3.fal.media/x.png', 'k', cfg, { provider: 'kie' })).error, 'source host not allowed');
     assert.equal((await copyUrlToR2('https://v3.fal.media/x.png', 'k', cfg, { provider: 'nope' })).error, 'source host not allowed');
     assert.equal((await copyUrlToR2('https://aiquickdraw.com.evil.com/x', 'k', cfg, { provider: 'kie' })).error, 'source host not allowed');
+});
+
+// ADR-0025 option E: the digest is what lets a holder of a file check it
+// against our record, so it has to be the hash of the exact bytes stored.
+test('returns the SHA-256 of the copied bytes', async () => {
+    const realFetch = globalThis.fetch;
+    // Known vector: SHA-256 of "abc".
+    const expected = 'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad';
+    globalThis.fetch = async (url) => {
+        if (String(url).includes('fal.media')) return new Response('abc', { status: 200, headers: { 'content-type': 'image/png' } });
+        return new Response(null, { status: 200 });
+    };
+    try {
+        const res = await copyUrlToR2('https://v3.fal.media/out.png', 'k', cfg);
+        assert.equal(res.ok, true);
+        assert.equal(res.sha256, expected);
+    } finally {
+        globalThis.fetch = realFetch;
+    }
+});
+
+test('a failed copy carries no digest', async () => {
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = async () => new Response('nope', { status: 404 });
+    try {
+        const res = await copyUrlToR2('https://v3.fal.media/out.png', 'k', cfg);
+        assert.equal(res.ok, false);
+        assert.equal(res.sha256, undefined);
+    } finally {
+        globalThis.fetch = realFetch;
+    }
+});
+
+// The provider's Content-Type is attacker-influenceable — it is whatever the
+// model host chooses to serve — and it used to be stored verbatim on the
+// asset, so an output served as text/html became an HTML document behind a
+// presigned URL of ours (audit 2026-09-23).
+const PNG = Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13]);
+const HTML = new TextEncoder().encode('<html><script>alert(1)</script></html>');
+
+async function storedType(body, header) {
+    const realFetch = globalThis.fetch;
+    let put = null;
+    globalThis.fetch = async (url, init = {}) => {
+        if (String(url).includes('fal.media')) return new Response(body, { status: 200, headers: { 'content-type': header } });
+        put = (init.headers && (init.headers['content-type'] || init.headers['Content-Type'])) || null;
+        return new Response(null, { status: 200 });
+    };
+    try {
+        const res = await copyUrlToR2('https://v3.fal.media/out.bin', 'k', cfg);
+        return { ok: res.ok, mimeType: res.mimeType, put };
+    } finally {
+        globalThis.fetch = realFetch;
+    }
+}
+
+test('the stored media type comes from the bytes, never from the provider header', async () => {
+    // Real PNG mislabelled as HTML: stored as the image it is.
+    const png = await storedType(PNG, 'text/html');
+    assert.equal(png.ok, true);
+    assert.equal(png.mimeType, 'image/png');
+
+    // HTML dressed as a PNG: stored as an inert download, never text/html.
+    const html = await storedType(HTML, 'image/png');
+    assert.equal(html.ok, true);
+    assert.equal(html.mimeType, 'application/octet-stream');
+    assert.notEqual(html.mimeType, 'text/html');
+});
+
+test('an MP4-only copy still refuses anything that is not an MP4', async () => {
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = async (url) => (String(url).includes('fal.media')
+        ? new Response(HTML, { status: 200, headers: { 'content-type': 'video/mp4' } })
+        : new Response(null, { status: 200 }));
+    try {
+        const res = await copyUrlToR2('https://v3.fal.media/out.mp4', 'k', cfg, { expectMp4: true });
+        assert.deepEqual(res, { ok: false, error: 'source not mp4' });
+    } finally {
+        globalThis.fetch = realFetch;
+    }
 });

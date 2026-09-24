@@ -52,3 +52,20 @@ export function clearJobHistory() {
   if (typeof localStorage === 'undefined') return;
   try { localStorage.removeItem(KEY); } catch {}
 }
+
+// A job older than this with no recorded outcome is left alone rather than
+// announced: entries from before background notices existed, or a job the
+// sweep already settled while this browser was away.
+export const WATCH_MAX_AGE_MS = 60 * 60 * 1000;
+
+/** Entries still worth polling: no outcome recorded yet, and recent. */
+export function jobsToWatch(history, now = Date.now()) {
+  return (history || []).filter((r) => r && r.job_id && !r.settled && now - (r.submitted_at || 0) < WATCH_MAX_AGE_MS);
+}
+
+/** Record a job's outcome so no page announces it twice. */
+export function markJobSettled(job_id, state) {
+  if (typeof localStorage === 'undefined') return;
+  const list = readJobHistory().map((r) => (r.job_id === job_id ? { ...r, settled: state } : r));
+  try { localStorage.setItem(KEY, JSON.stringify(list)); } catch {}
+}

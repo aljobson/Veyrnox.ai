@@ -28,6 +28,8 @@
  * @property {any|null} user         Supabase user record (may be null)
  */
 
+import { clearJobHistory } from "../veyrnox/_lib/jobHistory.js";
+
 const STORAGE_KEY = "veyrnox_supabase_session";
 // Refresh when this close to expiry (seconds). Matches the 5s server skew
 // with room for a slow round trip.
@@ -123,12 +125,28 @@ export async function getFreshAccessToken() {
     }
     return refreshInFlight;
 }
+// False once a write has failed, so the UI can explain why a sign-in will not
+// survive a reload instead of silently forgetting the user.
+let storagePersisted = true;
+export function sessionIsPersisted() { return storagePersisted; }
+
 function setSession(s) {
     if (typeof localStorage === "undefined") return;
-    if (s) localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
-    else localStorage.removeItem(STORAGE_KEY);
+    // Safari private browsing and blocked site data throw on setItem, not on
+    // access. The read path was already guarded; this was not, so the throw
+    // propagated out of signInWithPassword and surfaced a raw DOMException.
+    // A session we cannot persist is still a usable session for this tab, so
+    // notify listeners either way and let the caller decide what to say.
+    try {
+        if (s) localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+        else localStorage.removeItem(STORAGE_KEY);
+    } catch (err) {
+        console.error("[auth] could not persist the session to localStorage:", err && err.name);
+        storagePersisted = false;
+    }
     for (const cb of listeners) cb(s);
 }
+
 /**
  * Subscribe to session changes (sign-in, sign-out, expiry). Fires with the
  * new session (or null) whenever setSession is called from any code path.
@@ -138,6 +156,33 @@ function setSession(s) {
 export function onSessionChange(cb) {
     listeners.add(cb);
     return () => listeners.delete(cb);
+}
+
+/**
+ * Authenticated call against GoTrue with the current access token. Used by
+ * the MFA factor endpoints, which act on the signed-in user.
+ */
+async function authed(path, { method = "POST", body } = {}) {
+    const { url, anonKey } = ensureCfg();
+    const token = await getFreshAccessToken();
+    if (!token) throw Object.assign(new Error("not signed in"), { status: 401 });
+    const res = await fetch(new URL(path, url), {
+        method,
+        headers: {
+            apikey: anonKey,
+            Authorization: `Bearer ${token}`,
+            ...(body ? { "Content-Type": "application/json" } : {}),
+        },
+        ...(body ? { body: JSON.stringify(body) } : {}),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+        const e = new Error(data?.error_description || data?.msg || `HTTP ${res.status}`);
+        e.status = res.status;
+        e.code = data?.error || data?.code;
+        throw e;
+    }
+    return data;
 }
 
 async function post(path, body) {
@@ -171,10 +216,11 @@ function normalise(data) {
  * Email + password sign-in. Persists the session on success.
  * @param {string} email
  * @param {string} password
+ * @param {string} [captchaToken]  Turnstile token (ADR-0026)
  * @returns {Promise<VeyrnoxSession>}
  */
-export async function signInWithPassword(email, password) {
-    const data = await post("/auth/v1/token?grant_type=password", { email, password });
+export async function signInWithPassword(email, password, captchaToken) {
+    const data = await post("/auth/v1/token?grant_type=password", withCaptcha({ email, password }, captchaToken));
     const s = normalise(data);
     setSession(s);
     return s;
@@ -184,10 +230,11 @@ export async function signInWithPassword(email, password) {
  * session is null and needsConfirmation is true; otherwise session is set.
  * @param {string} email
  * @param {string} password
+ * @param {string} [captchaToken]  Turnstile token (ADR-0026)
  * @returns {Promise<{session: VeyrnoxSession|null, needsConfirmation: boolean}>}
  */
-export async function signUp(email, password) {
-    const data = await post("/auth/v1/signup", { email, password });
+export async function signUp(email, password, captchaToken) {
+    const data = await post("/auth/v1/signup", withCaptcha({ email, password }, captchaToken));
     if (data?.access_token) {
         const s = normalise(data);
         setSession(s);
@@ -199,9 +246,16 @@ export async function signUp(email, password) {
  * Send an email OTP / magic-link. `create_user: true` so a new address
  * signs the user up on their first click.
  * @param {string} email
+ * @param {string} [captchaToken]  Turnstile token (ADR-0026)
  */
-export async function sendMagicLink(email) {
-    await post("/auth/v1/otp", { email, create_user: true });
+export async function sendMagicLink(email, captchaToken) {
+    await post("/auth/v1/otp", withCaptcha({ email, create_user: true }, captchaToken));
+}
+
+// GoTrue reads the CAPTCHA token from here when Attack Protection is on and
+// ignores it when off, so it is sent whenever the widget produced one.
+function withCaptcha(body, captchaToken) {
+    return captchaToken ? { ...body, gotrue_meta_security: { captcha_token: captchaToken } } : body;
 }
 /**
  * Redirect to Supabase's OAuth authorize endpoint. Provider must be one
@@ -296,4 +350,98 @@ export async function signOut() {
         }).catch(() => {});
     }
     setSession(null);
+    // The session key was the only thing cleared here, so up to 50 rows of the
+    // previous user's job history — each carrying 60 characters of their
+    // prompt — stayed on the device, and Library renders that before any auth
+    // check. On a shared machine the next person read it. NavAuthButtons
+    // promises this ends your session on this device; make that true.
+    try { clearJobHistory(); } catch { /* storage blocked; nothing to clear */ }
+}
+
+// ─── MFA (TOTP) ─────────────────────────────────────────────────────────────
+//
+// Supabase issues an aal1 token for password/OAuth and an aal2 token only
+// after a factor is satisfied. middleware.js forwards the `aal` claim as
+// x-veyrnox-auth-aal, and /api/v1/admin/metrics refuses anything but aal2
+// once ADMIN_REQUIRE_AAL2 is on. Enrolment has to exist before that flag can
+// be turned on, which is why it lives here rather than in a later phase.
+//
+// No QR image: Supabase returns its QR as an SVG string, and injecting raw
+// markup is banned outright by the CI grep gate. The otpauth:// URI and the
+// secret are shown as text instead, and every authenticator app takes either.
+
+/** The current session's assurance level: "aal1", "aal2", or null. */
+export function getAal() {
+    const token = getAccessToken();
+    if (!token) return null;
+    try {
+        const [, payload] = token.split(".");
+        const json = JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/")));
+        return typeof json.aal === "string" ? json.aal : null;
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * The signed-in user's MFA factors.
+ * @returns {Promise<Array<{id: string, status: string, friendly_name?: string}>>}
+ */
+export async function listFactors() {
+    const user = await authed("/auth/v1/user", { method: "GET" });
+    return (user?.factors || []).filter((f) => f.factor_type === "totp");
+}
+
+/**
+ * Begin TOTP enrolment. The factor is created `unverified` and does nothing
+ * until verifyFactor succeeds with a code from the app.
+ * @returns {Promise<{factorId: string, secret: string, uri: string}>}
+ */
+export async function enrollTotp(friendlyName = "Authenticator") {
+    const data = await authed("/auth/v1/factors", {
+        body: { factor_type: "totp", friendly_name: friendlyName },
+    });
+    return { factorId: data.id, secret: data?.totp?.secret || "", uri: data?.totp?.uri || "" };
+}
+
+/**
+ * Satisfy a factor with a 6-digit code — both to finish enrolment and to step
+ * an existing aal1 session up to aal2. Supabase returns a fresh token pair on
+ * success, so the stored session becomes the aal2 one.
+ * @param {string} factorId
+ * @param {string} code
+ */
+export async function verifyFactor(factorId, code) {
+    const challenge = await authed(`/auth/v1/factors/${encodeURIComponent(factorId)}/challenge`);
+    const data = await authed(`/auth/v1/factors/${encodeURIComponent(factorId)}/verify`, {
+        body: { challenge_id: challenge.id, code },
+    });
+    if (data?.access_token) setSession(normalise(data));
+    return getAal();
+}
+
+/** Remove a factor. Requires an aal2 session, which Supabase enforces. */
+export async function unenrollFactor(factorId) {
+    await authed(`/auth/v1/factors/${encodeURIComponent(factorId)}`, { method: "DELETE" });
+}
+
+// ─── Shared with app/lib/passkeys.js ────────────────────────────────────────
+//
+// The passkey ceremony lives in its own file (this one is already at the
+// 500-line ceiling), but it talks to the same GoTrue with the same error
+// mapping and writes to the same session. Exporting the three pieces it needs
+// keeps one implementation of each rather than a second copy that drifts.
+
+export { post as gotruePost, authed as gotrueAuthed, b64url, withCaptcha };
+
+/**
+ * Take a GoTrue token response and make it the live session — same path
+ * sign-in uses, so listeners fire and the gate closes.
+ * @param {any} data
+ * @returns {VeyrnoxSession}
+ */
+export function adoptSession(data) {
+    const s = normalise(data);
+    setSession(s);
+    return s;
 }

@@ -13,7 +13,7 @@ export const ENTITY = {
 
 export function LegalPage({ title, children }) {
     return (
-        <main className="min-h-dvh bg-vx-base text-vx-fg">
+        <div className="min-h-dvh bg-vx-base text-vx-fg">
             <div className="max-w-[760px] mx-auto px-6 py-16">
                 <Link href="/" className="text-[12px] text-vx-fg-muted hover:text-vx-fg">← Veyrnox.ai</Link>
                 <h1 className="font-vx font-extrabold text-[36px] leading-tight mt-6 mb-2">{title}</h1>
@@ -27,9 +27,10 @@ export function LegalPage({ title, children }) {
                     <Link href="/legal/terms">Terms</Link>
                     <Link href="/legal/privacy">Privacy</Link>
                     <Link href="/legal/refund">Refunds</Link>
+                    <Link href="/legal/aup">Acceptable Use</Link>
                     <Link href="/legal/gdpr">GDPR &amp; Data Rights</Link>
                 </nav>
             </div>
-        </main>
+        </div>
     );
 }

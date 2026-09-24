@@ -23,7 +23,15 @@ export const config = {
 };
 
 // Identity headers set by this middleware and trusted by /api/v1 handlers.
-const IDENTITY_HEADERS = ['x-veyrnox-auth-id', 'x-veyrnox-auth-email', 'x-veyrnox-auth-role'];
+const IDENTITY_HEADERS = [
+    'x-veyrnox-auth-id',
+    'x-veyrnox-auth-email',
+    'x-veyrnox-auth-role',
+    // Supabase's authenticator assurance level: 'aal1' password/OAuth only,
+    // 'aal2' a second factor was satisfied this session. Forwarded so a
+    // handler can demand aal2 without re-parsing the token.
+    'x-veyrnox-auth-aal',
+];
 
 // Retired legacy Muapi passthrough routes — let their handlers reply with
 // the honest 410 + Sunset header instead of an intermediate 401.
@@ -52,7 +60,7 @@ export async function middleware(req) {
     }
 
     const token = readToken(req);
-    if (!token) return jsonError(401, { error: 'unauthorized', reason: 'missing' });
+    if (!token) return reject(req, 'missing');
 
     let claims;
     try {
@@ -61,24 +69,51 @@ export async function middleware(req) {
         const reason = (err && err.reason) || 'signature';
         // A JWKS outage is our problem, not the caller's credentials:
         // 503 so clients do not bounce users to sign-in during an incident.
-        if (reason === 'jwks') return jsonError(503, { error: 'auth_unavailable' });
-        return jsonError(401, { error: 'unauthorized', reason });
+        if (reason === 'jwks') {
+            console.error('[auth] JWKS unavailable; answering 503');
+            return jsonError(503, { error: 'auth_unavailable' });
+        }
+        return reject(req, reason);
     }
 
     const claimError = validateClaims(claims, supabaseUrl);
-    if (claimError) return jsonError(401, { error: 'unauthorized', reason: claimError });
+    if (claimError) return reject(req, claimError);
 
     // Forward verified identity (inbound copies were deleted above).
     headers.set('x-veyrnox-auth-id', claims.sub);
     if (claims.email) headers.set('x-veyrnox-auth-email', String(claims.email));
     if (claims.role) headers.set('x-veyrnox-auth-role', String(claims.role));
+    if (claims.aal) headers.set('x-veyrnox-auth-aal', String(claims.aal));
 
     return NextResponse.next({ request: { headers } });
 }
 
+// Responses the middleware returns itself never pass through next.config.mjs
+// `headers()`, so they would ship without CSP or HSTS. These are tiny JSON
+// bodies with no scripts, styles or frames, so the strictest policy applies.
+const ERROR_HEADERS = {
+    'content-type': 'application/json',
+    'cache-control': 'no-store',
+    'content-security-policy': "default-src 'none'; frame-ancestors 'none'; base-uri 'none'",
+    'strict-transport-security': 'max-age=63072000; includeSubDomains; preload',
+    'x-content-type-options': 'nosniff',
+    'x-frame-options': 'DENY',
+    'referrer-policy': 'strict-origin-when-cross-origin',
+};
+
 function jsonError(status, body) {
-    return new NextResponse(JSON.stringify(body), {
-        status,
-        headers: { 'content-type': 'application/json' },
-    });
+    return new NextResponse(JSON.stringify(body), { status, headers: ERROR_HEADERS });
+}
+
+/**
+ * Refuse a request, and say so in the log.
+ *
+ * Every rejection was silent, so a forged-token or credential-stuffing burst
+ * against /api/v1/* left no trace anywhere — the one thing CLAUDE.md's OWASP
+ * #9 line says this file does (audit 2026-09-23). The reason is one of our
+ * own short codes; no token, header or claim value is ever logged.
+ */
+function reject(req, reason) {
+    console.error('[auth] rejected', new URL(req.url).pathname, 'reason:', reason);
+    return jsonError(401, { error: 'unauthorized', reason });
 }

@@ -14,6 +14,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { AppNav } from '../../_components/NavBar';
 import { Chip } from '../../_components/Chip';
 import { gatewayFetch, GatewayError } from '../../_lib/gateway';
+import { MfaPanel } from '../../_components/MfaPanel';
 
 const nf = new Intl.NumberFormat('en-US');
 
@@ -45,7 +46,7 @@ export default function Admin() {
     <div className="min-h-dvh">
       <AppNav active="explore" />
 
-      <section className="max-w-[1400px] mx-auto px-8 pt-10 pb-6">
+      <section className="max-w-[1400px] mx-auto px-4 sm:px-8 pt-10 pb-6">
         <Chip tone="danger" className="mb-3">ADMIN · OPS</Chip>
         <h1 className="text-[36px] font-black tracking-[-0.02em]">Last 24 hours</h1>
 
@@ -57,6 +58,13 @@ export default function Admin() {
             {state === 'error' && 'Metrics are unavailable right now.'}
           </p>
         )}
+
+        {/* Always shown, including to a non-admin: enrolling a factor is
+            something any signed-in account should be able to do, and the
+            panel reveals nothing about whether this one is an admin. */}
+        <div className="mt-6 max-w-[540px]">
+          <MfaPanel />
+        </div>
 
         {state === 'ready' && metrics && (
           <>

@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { MODELS, kindOf } from './tokens';
 
 // Normalised shape shared by every consumer:
-// { id, name, kind ('video'|'image'|'audio'), credits, gated, durations }
+// { id, name, kind ('video'|'image'|'audio'), credits, gated, durations, media? }
 const FALLBACK_DURATIONS = [5];
 
 function fromFallback() {
@@ -19,6 +19,14 @@ function fromApi(models) {
     // An older Worker that predates `durations` omits it; 5s only is the
     // safe read, and it is what the gateway accepts everywhere.
     durations: Array.isArray(m.durations) && m.durations.length ? m.durations : FALLBACK_DURATIONS,
+    // Reference slots from the capability registry, e.g. { image: { required } }.
+    media: (m.capabilities && m.capabilities.media) || {},
+    // Aspect ratios this model accepts, or null when it takes none.
+    aspects: m.capabilities?.inputs?.aspect_ratio?.values || null,
+    // Auto Short (ADR-0029): takes a topic instead of a prompt.
+    takesTopic: !!m.capabilities?.inputs?.topic,
+    // Clip Editor: edits Library files, so it is started from the Library, never Create.
+    isEdit: !!m.capabilities?.inputs?.clips,
   }));
 }
 
@@ -30,7 +38,10 @@ export function useCatalog() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch('/api/catalog', { cache: 'no-store' });
+        // Default caching on purpose: /api/catalog serves
+        // `public, max-age=60, s-maxage=300`. `no-store` threw that away and
+        // made every page mount a fresh Worker round trip.
+        const res = await fetch('/api/catalog');
         if (!res.ok) throw new Error(String(res.status));
         const data = await res.json();
         if (!Array.isArray(data?.models) || !data.models.length) throw new Error('empty');

@@ -8,24 +8,23 @@
  *   3. create_pending_top_up RPC: idempotent on (user, idempotency_key), rate
  *      limit under a row lock, copies the pack's credits/price/variant,
  *      records Supply Consent. No credits move.
- *   4. LemonSqueezy createCheckout with the Top-up id in custom data
+ *   4. Stripe createCheckout with the Top-up id, its signature and the pack's
+ *      own price in the Checkout Session (ADR-0031)
  *   5. Return { top_up_id, checkout_url }; the browser navigates top-level,
  *      so no CSP connect-src change is needed.
  *
  * A pending Top-up whose checkout is never created or never paid stays
  * pending (spec #90). Credits are granted only by the verified webhook
- * (/api/webhook/lemonsqueezy, #93).
+ * (/api/webhook/stripe, #93).
  *
- * A replayed key returns the same Top-up and gets a fresh checkout for it.
- * ponytail: the earlier checkout link stays payable until it expires, so two
- * paid orders can name one Top-up; credit_top_up (0054) credits the first and
- * flags the rest for an Operator refund. Store the checkout URL on the
- * Top-up and return it on replay if that proves common.
+ * A replayed key returns the same Top-up, and the Stripe Idempotency-Key
+ * carries its id, so within one expiry bucket Stripe replays the SAME
+ * Checkout Session instead of opening a second payable link.
  */
 
 import { NextResponse } from 'next/server';
 import { rpc, select, envConfig } from '../../../../packages/db/supabase-client.js';
-import { createCheckout } from '../../../../packages/adapters/lemonsqueezy.js';
+import { createCheckout } from '../../../../packages/adapters/stripe.js';
 
 const PACK_ID_RE = /^[a-z0-9-]{1,32}$/;
 // Same shape as POST /api/v1/generations and the top_ups CHECK.
@@ -51,10 +50,11 @@ export async function POST(req) {
     if (!authId) return NextResponse.json({ error: 'not_authenticated' }, { status: 401 });
 
     const cfg = envConfig();
-    const apiKey = process.env.LEMONSQUEEZY_API_KEY;
-    const storeId = process.env.LEMONSQUEEZY_STORE_ID;
+    const apiKey = process.env.STRIPE_SECRET_KEY;
     const publicHost = process.env.PUBLIC_HOST;
-    if (!cfg.supabaseUrl || !cfg.serviceRoleKey || !apiKey || !storeId || !publicHost) {
+    // Signs the Top-up id into the session metadata the webhook checks back.
+    const signingSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    if (!cfg.supabaseUrl || !cfg.serviceRoleKey || !apiKey || !publicHost || !signingSecret) {
         return NextResponse.json({ error: 'top_ups_not_configured' }, { status: 503 });
     }
 
@@ -109,14 +109,33 @@ export async function POST(req) {
         return NextResponse.json({ error: String(created.code).toLowerCase() }, { status });
     }
 
+    // Stripe refuses an Idempotency-Key reused with different parameters, so
+    // the key and the expiry move together: one Checkout Session per Top-up
+    // per bucket, expiring one to two hours out (Stripe allows 30 min to 24 h).
+    const bucket = Math.floor(Date.now() / CHECKOUT_TTL_MS);
     const checkout = await createCheckout(
         {
-            variantId: created.variant_id,
             topUpId: created.top_up_id,
-            expiresAt: new Date(Date.now() + CHECKOUT_TTL_MS).toISOString(),
+            credits: created.credits,
+            priceUsdCents: created.price_usd_cents,
+            email: req.headers.get('x-veyrnox-auth-email') || undefined,
+            expiresAt: (bucket + 2) * (CHECKOUT_TTL_MS / 1000),
         },
         // Bound: Workers throw "Illegal invocation" for an unbound cfg.fetch().
-        { fetch: fetch.bind(globalThis), apiKey, storeId, publicHost },
+        {
+            fetch: fetch.bind(globalThis),
+            apiKey,
+            publicHost,
+            signingSecret,
+            // Stripe Managed Payments is enabled on both accounts, so Stripe
+            // is the Merchant of Record and handles the tax — and refuses a
+            // session with automatic tax off (ADR-0031, amendment 2026-09-23).
+            // On unless the var is exactly "false"; an unset var must not
+            // silently produce tax-off, which is what returned 502 on
+            // 2026-09-23.
+            automaticTax: process.env.STRIPE_AUTOMATIC_TAX !== 'false',
+            idempotencyKey: `top_up:${created.top_up_id}:${bucket}`,
+        },
     );
     if (!checkout.ok) {
         console.error('[api/v1/top-ups] checkout failed:', checkout.error, created.top_up_id);
@@ -156,7 +175,7 @@ export async function GET(req) {
         const users = await select('users', { columns: 'id', filter: `auth_id=eq.${encodeURIComponent(authId)}` }, cfg);
         const userId = Array.isArray(users) && users[0] && users[0].id;
         // A signed-in user whose row hasn't been provisioned has no Top-ups yet.
-        if (!userId || !UUID_RE.test(userId)) return NextResponse.json({ top_ups: [] });
+        if (!userId || !UUID_RE.test(userId)) return NextResponse.json({ top_ups: [] }, { headers: { 'Cache-Control': 'no-store' } });
         rows = await select(
             'top_ups',
             {
@@ -179,5 +198,5 @@ export async function GET(req) {
         status: r.status,
         created_at: r.created_at,
     }));
-    return NextResponse.json({ top_ups: topUps });
+    return NextResponse.json({ top_ups: topUps }, { headers: { 'Cache-Control': 'no-store' } });
 }

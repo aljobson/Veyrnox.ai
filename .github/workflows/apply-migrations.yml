@@ -101,8 +101,12 @@ jobs:
         id: tip
         run: |
           git fetch --quiet origin main
-          if [ "$(git rev-parse origin/main)" != "$GITHUB_SHA" ]; then
-            echo "::notice::$GITHUB_SHA is no longer main's tip; the newer run applies."
+          # Stale only if main's migrations changed since this commit: that
+          # push started its own run, which applies. A newer commit that left
+          # the directory alone starts no run (path filter), so skipping here
+          # stranded 0086 on 2026-09-22.
+          if ! git diff --quiet "$GITHUB_SHA" origin/main -- packages/db/schema/supabase/; then
+            echo "::notice::main's migrations changed after $GITHUB_SHA; the newer run applies."
             echo "stale=true" >> "$GITHUB_OUTPUT"
           fi
 

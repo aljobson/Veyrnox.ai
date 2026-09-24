@@ -1,0 +1,102 @@
+name: reconcile-watch
+
+# The ledger's own alarm.
+#
+# veyrnox-reconcile-balances (pg_cron, migration 0030) raises when
+# reconcile_balances / reconcile_free_credits / reconcile_top_ups return a
+# row. Until now that failure lived only in cron.job_run_details, which
+# nothing reads — the money invariant CLAUDE.md leans on could break and stay
+# broken until someone thought to look.
+#
+# Reads the counts-only reconcile_status() RPC (0072) with the publishable
+# key from wrangler.jsonc. No secret, no service-role key in Actions (PR #61).
+# Same shape as migration-ledger.yml, including the "an outage is not a pass"
+# exit-2 handling and one-issue-per-episode filing.
+
+on:
+  schedule:
+    - cron: '23 * * * *'   # hourly; drift is money, it should not wait a day
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "scripts/check-reconcile.mjs"
+      - ".github/workflows/reconcile-watch.yml"
+
+# Nothing by default. Each job asks for exactly what it uses.
+permissions: {}
+
+jobs:
+  reconcile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      exit: ${{ steps.check.outputs.exit }}
+      report: ${{ steps.check.outputs.report }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+
+      # Node builtins and global fetch only, so no npm install.
+      # Exit 0 = reconciles, 1 = drift, 2 = could not read.
+      - name: Read the reconcile counts
+        id: check
+        run: |
+          set +e
+          node scripts/check-reconcile.mjs > report.txt 2>&1
+          code=$?
+          cat report.txt
+          echo "exit=$code" >> "$GITHUB_OUTPUT"
+          {
+            echo 'report<<RECONCILE_REPORT_EOF'
+            cat report.txt
+            echo 'RECONCILE_REPORT_EOF'
+          } >> "$GITHUB_OUTPUT"
+          {
+            echo '### Ledger reconciliation'
+            case "$code" in
+              0) echo 'The ledger reconciles.' ;;
+              1) echo '**Drift:** balances do not tie out to the ledger.' ;;
+              *) echo '**Could not check:** reconcile_status was unreadable. This is not a pass.' ;;
+            esac
+            echo '```'
+            cat report.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit "$code"
+
+  # Only real drift files an issue. An outage (exit 2) already fails the run
+  # above; it must not file drift that is not there. Scoped to its own job so
+  # issues: write exists only here, only on main.
+  report-drift:
+    needs: reconcile
+    if: always() && needs.reconcile.outputs.exit == '1' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - name: Open one issue per episode of drift
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          REPORT: ${{ needs.reconcile.outputs.report }}
+        run: |
+          # One open issue is enough; the hourly job summary shows current state.
+          existing=$(gh issue list --label ledger-drift --state open --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            echo "Drift already tracked in #$existing"
+            exit 0
+          fi
+          gh label create ledger-drift --color B60205 \
+            --description 'credit_balances does not tie out to ledger_entries' 2>/dev/null || true
+          printf '%s\n\n%s\n\n```\n%s\n```\n' \
+            'The ledger does not reconcile. Every row below is money that does not add up.' \
+            'Do not correct a balance by hand: ledger_entries is append-only and a compensating row is the only fix (CLAUDE.md, Database). Find the RPC that produced the mismatch first. This issue stays open until someone closes it; the hourly workflow summary shows the current state.' \
+            "$REPORT" > body.md
+          gh issue create --title "Ledger reconciliation drift — $(date -u +%Y-%m-%d)" \
+            --label ledger-drift --body-file body.md

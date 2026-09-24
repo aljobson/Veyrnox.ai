@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { completeJob } from '../lib/providerCompletion.js';
-import { copyUrlToR2 } from '../packages/adapters/r2.js';
+import { copyUrlToR2 } from '../packages/adapters/r2Copy.js';
 
 Object.assign(process.env, { R2_ACCOUNT_ID: 'acc', R2_ACCESS_KEY_ID: 'k', R2_SECRET_ACCESS_KEY: 's', R2_BUCKET: 'b' });
 const cfg = { supabaseUrl: 'https://db.test', serviceRoleKey: 'svc' };
@@ -84,5 +84,16 @@ test('OpenRouter download carries the key only to openrouter.ai', async () => {
     try {
         await copyUrlToR2('https://openrouter.ai/api/v1/videos/v1/content?index=0', 'k', r2, { provider: 'openrouter', authorization: 'Bearer key' });
         assert.equal(net.calls.find((c) => c.name === 'source').auth, 'Bearer key');
+    } finally { net.restore(); }
+});
+
+// The digest reaches the database, not just the adapter's return value.
+test('job_stored receives the content hash', async () => {
+    const net = fakeNet({});
+    try {
+        await completeJob({ source: 'kie', job, providerJobId: 't1', outcome: { state: 'success', outputUrl: 'https://tempfile.aiquickdraw.com/a.mp4' }, ext: '.mp4', cfg });
+        const stored = net.calls.find((c) => c.name === 'job_stored');
+        // SHA-256 of the fake source body, "vid".
+        assert.match(stored.args.p_sha256, /^[0-9a-f]{64}$/);
     } finally { net.restore(); }
 });

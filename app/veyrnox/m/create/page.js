@@ -29,6 +29,8 @@ export default function MobileCreate() {
         <textarea
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
+          aria-label="Prompt"
+          placeholder="Describe the shot…"
           rows={3}
           className="w-full bg-vx-panel border border-vx-border rounded-[10px] px-3 py-2.5 text-[13px] text-vx-fg leading-[1.5] resize-none mb-3 focus:outline-none focus:border-vx-accent"
         />
@@ -48,7 +50,7 @@ export default function MobileCreate() {
         <div className="flex-1" />
 
         <Link
-          href="/veyrnox/m/job"
+          href="/m/job"
           className="flex justify-between items-center bg-vx-accent text-vx-accent-ink rounded-full px-5 py-3.5 text-[15px] font-extrabold min-h-[50px] mt-2"
         >
           <span>Generate</span>

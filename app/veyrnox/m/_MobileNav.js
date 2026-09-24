@@ -3,19 +3,19 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const TABS = [
-  { key: 'create',  href: '/veyrnox/m/create',  label: 'Create',  icon: '✧' },
-  { key: 'explore', href: '/veyrnox/m/explore', label: 'Explore', icon: '⌘' },
-  { key: 'library', href: '/veyrnox/m/library', label: 'Library', icon: '▤' },
-  { key: 'credits', href: '/veyrnox/m/credits', label: 'Credits', icon: '$' },
+  { key: 'create',  href: '/m/create',  label: 'Create',  icon: '✧' },
+  { key: 'explore', href: '/m/explore', label: 'Explore', icon: '⌘' },
+  { key: 'library', href: '/m/library', label: 'Library', icon: '▤' },
+  { key: 'credits', href: '/m/credits', label: 'Credits', icon: '$' },
 ];
 
 export function MobileTabs() {
-  const path = usePathname();
+  const path = usePathname().replace(/^\/veyrnox/, '');
   return (
     <div className="flex-shrink-0 border-t border-vx-border bg-vx-base pb-2 pt-2 px-3">
       <div className="flex justify-around">
         {TABS.map((t) => {
-          const active = path.startsWith(t.href);
+          const active = path.startsWith(t.href.replace(/^\/veyrnox/, ''));
           return (
             <Link
               key={t.key}
@@ -35,18 +35,18 @@ export function MobileTabs() {
 }
 
 export function MobileJumps() {
-  const path = usePathname();
+  const path = usePathname().replace(/^\/veyrnox/, '');
   const jumps = [
-    { href: '/veyrnox/m/create',  label: 'CREATE' },
-    { href: '/veyrnox/m/job',     label: 'JOB' },
-    { href: '/veyrnox/m/explore', label: 'EXPLORE' },
-    { href: '/veyrnox/m/library', label: 'LIBRARY' },
-    { href: '/veyrnox/m/credits', label: 'CREDITS' },
+    { href: '/m/create',  label: 'CREATE' },
+    { href: '/m/job',     label: 'JOB' },
+    { href: '/m/explore', label: 'EXPLORE' },
+    { href: '/m/library', label: 'LIBRARY' },
+    { href: '/m/credits', label: 'CREDITS' },
   ];
   return (
     <div className="flex gap-1.5 flex-wrap justify-center py-4 px-3">
       {jumps.map((j) => {
-        const active = path === j.href;
+        const active = path === j.href.replace(/^\/veyrnox/, '');
         return (
           <Link
             key={j.href}

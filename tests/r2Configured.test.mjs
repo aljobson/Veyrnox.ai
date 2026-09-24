@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-const { isConfigured, copyUrlToR2 } = await import('../packages/adapters/r2.js');
+const { isConfigured } = await import('../packages/adapters/r2.js');
+const { copyUrlToR2 } = await import('../packages/adapters/r2Copy.js');
 
 const FULL = { accountId: 'acc', accessKeyId: 'k', secretAccessKey: 's', bucket: 'b' };
 

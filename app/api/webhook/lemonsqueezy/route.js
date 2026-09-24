@@ -12,7 +12,10 @@
  *   4. Re-fetch the order from the LemonSqueezy API: its status, amounts,
  *      currency, variant and test mode are the source of truth.
  *      Only the Top-up id comes from the signed body (meta.custom_data),
- *      because the API's order object has no custom data.
+ *      because the API's order object has no custom data. A buyer can set
+ *      custom data on any buy link, so order_created credits only a Top-up
+ *      id carrying the top_up_sig our checkout signed; anything else is
+ *      logged and left for the email-bound backfill or an Operator.
  *   5. order_created: credit_top_up locks the pending Top-up and grants to
  *      ITS user, once. A second paid order for a credited Top-up, or a
  *      mismatched one, is flagged for an Operator refund and never granted.
@@ -30,7 +33,7 @@
  */
 
 import { NextResponse } from 'next/server';
-import { verifyWebhookSignature, fetchOrder, normaliseOrder, checkOrderOrigin, disputeOrderId, CREDITABLE_ORDER_STATUSES } from '../../../../packages/adapters/lemonsqueezy.js';
+import { verifyWebhookSignature, verifyTopUpCustomData, fetchOrder, normaliseOrder, checkOrderOrigin, disputeOrderId, CREDITABLE_ORDER_STATUSES } from '../../../../packages/adapters/lemonsqueezy.js';
 import { rpc, envConfig } from '../../../../packages/db/supabase-client.js';
 import { dedup, markProcessed } from '../../../../lib/providerCompletion.js';
 
@@ -98,6 +101,12 @@ export async function POST(req) {
         const externalId = `order_created:${orderId}`;
         const seen = await dedup(cfg, SOURCE, externalId, { event_name: eventName, order_id: orderId });
         if (seen === 'duplicate') return NextResponse.json({ ok: true, duplicate: true });
+
+        if (!(await verifyTopUpCustomData(event.meta.custom_data, secret))) {
+            console.error(LOG, 'order without our Top-up signature, not credited:', orderId);
+            await markProcessed(cfg, SOURCE, externalId);
+            return NextResponse.json({ ok: true, warn: 'order_not_creditable' });
+        }
 
         const fetched = await fetchOrder(orderId, { fetch: fetch.bind(globalThis), apiKey });
         if (!fetched.ok) {

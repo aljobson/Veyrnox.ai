@@ -30,6 +30,7 @@ const RETURN_PATH = '/app/credits';
  * @param {string} cfg.apiKey
  * @param {string} cfg.storeId
  * @param {string} cfg.publicHost
+ * @param {string} cfg.signingSecret  LEMONSQUEEZY_WEBHOOK_SECRET; signs the Top-up id in custom data
  * @param {number} [cfg.timeoutMs=10000]
  * @returns {Promise<{ok: true, url: string} | {ok: false, error: string}>}
  */
@@ -38,6 +39,8 @@ export async function createCheckout(input, cfg) {
     if (!UUID_RE.test(String(input.topUpId))) return { ok: false, error: 'invalid topUpId' };
     if (!NUMERIC_ID_RE.test(String(cfg.storeId))) return { ok: false, error: 'invalid storeId' };
     if (!cfg.apiKey) return { ok: false, error: 'missing apiKey' };
+    if (!cfg.signingSecret) return { ok: false, error: 'missing signingSecret' };
+    const topUpSig = await signTopUpId(input.topUpId, cfg.signingSecret);
 
     let redirect;
     try { redirect = new URL(RETURN_PATH, cfg.publicHost); } catch { return { ok: false, error: 'invalid publicHost' }; }
@@ -56,7 +59,7 @@ export async function createCheckout(input, cfg) {
                     receipt_link_url: returnUrl,
                     enabled_variants: [Number(input.variantId)],
                 },
-                checkout_data: { custom: { top_up_id: input.topUpId } },
+                checkout_data: { custom: { top_up_id: input.topUpId, top_up_sig: topUpSig } },
                 ...(input.expiresAt ? { expires_at: input.expiresAt } : {}),
             },
             relationships: {
@@ -122,6 +125,33 @@ export async function verifyWebhookSignature(rawBody, signatureHeader, secret) {
         'raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['verify'],
     );
     return crypto.subtle.verify('HMAC', key, sig, rawBody);
+}
+
+// Custom data is signed by LemonSqueezy's webhook HMAC, but a buyer can set it
+// on any buy link (checkout[custom][top_up_id]=...). Only a checkout we created
+// carries top_up_sig, so a paid order can't name someone else's Top-up.
+// The prefix keeps this message from ever equalling a webhook body.
+const topUpMessage = (topUpId) => new TextEncoder().encode(`top_up:${topUpId}`);
+
+async function signTopUpId(topUpId, secret) {
+    const key = await crypto.subtle.importKey(
+        'raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'],
+    );
+    const mac = new Uint8Array(await crypto.subtle.sign('HMAC', key, topUpMessage(topUpId)));
+    return Array.from(mac, (b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+/**
+ * Whether verified webhook custom data carries our signature for its Top-up id.
+ *
+ * @param {any} customData  verified webhook meta.custom_data
+ * @param {string|undefined} secret
+ * @returns {Promise<boolean>}
+ */
+export async function verifyTopUpCustomData(customData, secret) {
+    const topUpId = customData && customData.top_up_id;
+    if (typeof topUpId !== 'string' || !UUID_RE.test(topUpId)) return false;
+    return verifyWebhookSignature(topUpMessage(topUpId), customData.top_up_sig, secret);
 }
 
 const isCents = (n) => Number.isSafeInteger(n) && n >= 0;

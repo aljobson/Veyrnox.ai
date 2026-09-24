@@ -1,0 +1,57 @@
+// Audit 2026-09-16, finding 5: outbound calls with no deadline. The JWKS fetch
+// sat on the auth path of every /api/v1 request with no AbortController, so a
+// Supabase edge that accepted the connection and stalled would stall every
+// signed-in user behind it.
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { fetchWithTimeout } from '../lib/fetchWithTimeout.js';
+
+const realFetch = globalThis.fetch;
+const restore = () => { globalThis.fetch = realFetch; };
+
+test('aborts a request that never answers', async () => {
+    globalThis.fetch = (_url, init) => new Promise((_resolve, reject) => {
+        init.signal.addEventListener('abort', () => reject(Object.assign(new Error('aborted'), { name: 'AbortError' })));
+    });
+    try {
+        await assert.rejects(fetchWithTimeout('https://example.invalid', {}, 20), { name: 'AbortError' });
+    } finally { restore(); }
+});
+
+test('passes the response straight through and keeps the caller init', async () => {
+    let seen;
+    globalThis.fetch = async (url, init) => { seen = { url, init }; return Response.json({ ok: true }); };
+    try {
+        const res = await fetchWithTimeout('https://example.invalid/x', { method: 'POST', headers: { a: 'b' } }, 1000);
+        assert.deepEqual(await res.json(), { ok: true });
+        assert.equal(seen.init.method, 'POST');
+        assert.deepEqual(seen.init.headers, { a: 'b' });
+        assert.ok(seen.init.signal, 'no abort signal was attached');
+    } finally { restore(); }
+});
+
+test('does not abort a slow-but-answering request, and clears its timer', async () => {
+    globalThis.fetch = async (_url, init) => {
+        await new Promise((r) => setTimeout(r, 30));
+        assert.equal(init.signal.aborted, false);
+        return Response.json({ late: true });
+    };
+    try {
+        const res = await fetchWithTimeout('https://example.invalid', {}, 500);
+        assert.deepEqual(await res.json(), { late: true });
+    } finally { restore(); }
+    // A timer left running would hold the event loop open past this test; the
+    // suite finishing is the assertion.
+});
+
+test('a caller-supplied signal is replaced, not silently honoured alongside', async () => {
+    // Documented behaviour: fetchWithTimeout owns the signal. A caller that
+    // needs its own cancellation must not assume theirs survives.
+    let seen;
+    globalThis.fetch = async (_url, init) => { seen = init.signal; return new Response('ok'); };
+    const mine = new AbortController();
+    try {
+        await fetchWithTimeout('https://example.invalid', { signal: mine.signal }, 1000);
+        assert.notEqual(seen, mine.signal);
+    } finally { restore(); }
+});

@@ -2,13 +2,65 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+/* Inter is served self-hosted by next/font in app/layout.js. The Google
+   Fonts @import that used to live here was blocked by `style-src 'self'`
+   on every page load and downloaded nothing. */
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* ─── Theme tokens ────────────────────────────────────────────────────
+   Space-separated RGB channels so tailwind.config.js can wrap them in
+   `rgb(var(--x) / <alpha-value>)` and every existing `/opacity` modifier
+   keeps working.
+
+   Dark is the default and the brand. Light is opt-in through the toggle
+   in the nav, which writes `data-theme` on <html> and remembers the
+   choice in localStorage. System preference is NOT auto-applied: the
+   pages are statically prerendered and the CI grep gate forbids the
+   inline <script> a flash-free auto-switch would need, so honouring
+   prefers-color-scheme would repaint after hydration on every visit. */
+:root {
+  color-scheme: dark;
+  --vx-base: 10 10 11;
+  --vx-panel: 20 20 22;
+  --vx-border: 38 38 42;
+  --vx-border-boost: 62 62 68;
+  --vx-fg: 242 242 243;
+  --vx-fg-body: 201 201 207;
+  --vx-fg-muted: 154 154 163;
+  --vx-fg-faint: 130 130 137;
+  --vx-accent: 62 230 196;
+  --vx-accent-hover: 111 242 216;
+  --vx-accent-ink: 6 35 31;
+  --vx-money: 228 169 60;
+  --vx-money-ink: 35 23 3;
+  --vx-danger: 255 92 71;
+}
+
+/* Light theme. Every foreground is checked against its own surface:
+   fg-body 10.4:1, fg-muted 7.4:1, fg-faint 5.3:1, accent 4.9:1,
+   money 5.7:1, danger 5.6:1 on vx-panel — all WCAG AA or better. */
+:root[data-theme='light'] {
+  color-scheme: light;
+  --vx-base: 255 255 255;
+  --vx-panel: 246 246 247;
+  --vx-border: 220 220 224;
+  --vx-border-boost: 168 168 176;
+  --vx-fg: 10 10 11;
+  --vx-fg-body: 63 63 70;
+  --vx-fg-muted: 82 82 91;
+  --vx-fg-faint: 107 107 115;
+  --vx-accent: 11 122 102;
+  --vx-accent-hover: 9 95 80;
+  --vx-accent-ink: 255 255 255;
+  --vx-money: 138 90 0;
+  --vx-money-ink: 255 255 255;
+  --vx-danger: 196 36 26;
+}
+
 body {
-  background: #050505;
-  color: white;
+  background: rgb(var(--vx-base));
+  color: rgb(var(--vx-fg));
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
 }
@@ -58,3 +110,82 @@ body {
   to   { opacity: 1; transform: translateY(0); }
 }
 .animate-fade-in-up { animation: fade-in-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+/* ParticleButton: each dot flies to (--dx, --dy) and fades. */
+@keyframes vx-particle {
+  0%   { transform: translate(0, 0) scale(0); }
+  50%  { transform: translate(calc(var(--dx) / 2), calc(var(--dy) / 2)) scale(1); }
+  100% { transform: translate(var(--dx), var(--dy)) scale(0); }
+}
+.vx-particle { animation: vx-particle 0.6s ease-out both; }
+@media (prefers-reduced-motion: reduce) {
+  .vx-particle { display: none; }
+}
+
+/* ─── Skip link ───────────────────────────────────────────────────────
+   Off-screen until focused, then pinned top-left above the sticky nav. */
+.vx-skip {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 100;
+}
+.vx-skip:focus {
+  left: 0.75rem;
+  top: 0.75rem;
+}
+
+/* ─── Print ───────────────────────────────────────────────────────────
+   Paper is white and one column. Drop the chrome that means nothing on
+   a page (nav, floating buttons, banners), un-dark the surfaces, and
+   spell out where a link actually points. */
+@media print {
+  :root {
+    color-scheme: light;
+    --vx-base: 255 255 255;
+    --vx-panel: 255 255 255;
+    --vx-border: 190 190 195;
+    --vx-fg: 0 0 0;
+    --vx-fg-body: 40 40 45;
+    --vx-fg-muted: 70 70 78;
+    --vx-fg-faint: 90 90 98;
+    --vx-accent: 0 90 75;
+    --vx-accent-ink: 255 255 255;
+    --vx-money: 110 70 0;
+    --vx-money-ink: 255 255 255;
+  }
+  [data-print='hide'],
+  .vx-skip {
+    display: none !important;
+  }
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+  a[href^='http']::after,
+  a[href^='mailto:']::after {
+    content: ' (' attr(href) ')';
+    font-size: 0.85em;
+    word-break: break-all;
+  }
+  details {
+    /* An expandable FAQ prints every answer, not just the open one. */
+    display: block;
+  }
+  details > summary {
+    list-style: none;
+  }
+  details:not([open]) > *:not(summary) {
+    display: revert !important;
+  }
+  section,
+  footer,
+  details {
+    break-inside: avoid;
+  }
+  * {
+    animation: none !important;
+    transition: none !important;
+    box-shadow: none !important;
+  }
+}

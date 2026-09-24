@@ -1,0 +1,321 @@
+{
+  "fal-ai/ace-step": [
+    {
+      "inputs": {
+        "prompt": "prompt text",
+        "seed": 42
+      },
+      "payload": {
+        "tags": "prompt text",
+        "seed": 42,
+        "duration": 60
+      }
+    },
+    {
+      "inputs": {
+        "prompt": "prompt only"
+      },
+      "payload": {
+        "tags": "prompt only",
+        "duration": 60
+      }
+    }
+  ],
+  "fal-ai/ace-step-1.5": [
+    {
+      "inputs": {
+        "prompt": "prompt text",
+        "seed": 42
+      },
+      "payload": {
+        "prompt": "prompt text",
+        "seed": 42,
+        "duration": 60,
+        "thinking": true,
+        "num_outputs": 1
+      }
+    },
+    {
+      "inputs": {
+        "prompt": "prompt only"
+      },
+      "payload": {
+        "prompt": "prompt only",
+        "duration": 60,
+        "thinking": true,
+        "num_outputs": 1
+      }
+    }
+  ],
+  "fal-ai/elevenlabs/sound-effects/v2": [
+    {
+      "inputs": {
+        "prompt": "prompt text"
+      },
+      "payload": {
+        "text": "prompt text",
+        "duration_seconds": 10
+      }
+    },
+    {
+      "inputs": {
+        "prompt": "prompt only"
+      },
+      "payload": {
+        "text": "prompt only",
+        "duration_seconds": 10
+      }
+    }
+  ],
+  "fal-ai/inworld-tts": [
+    {
+      "inputs": {
+        "prompt": "prompt text"
+      },
+      "payload": {
+        "text": "prompt text"
+      }
+    },
+    {
+      "inputs": {
+        "prompt": "prompt only"
+      },
+      "payload": {
+        "text": "prompt only"
+      }
+    }
+  ],
+  "fal-ai/flux-2-pro": [
+    {
+      "inputs": {
+        "prompt": "prompt text",
+        "seed": 42
+      },
+      "payload": {
+        "prompt": "prompt text",
+        "seed": 42
+      }
+    },
+    {
+      "inputs": {
+        "prompt": "prompt only"
+      },
+      "payload": {
+        "prompt": "prompt only"
+      }
+    }
+  ],
+  "fal-ai/bytedance/seedream/v4/text-to-image": [
+    {
+      "inputs": {
+        "prompt": "prompt text",
+        "seed": 42
+      },
+      "payload": {
+        "prompt": "prompt text",
+        "seed": 42
+      }
+    },
+    {
+      "inputs": {
+        "prompt": "prompt only"
+      },
+      "payload": {
+        "prompt": "prompt only"
+      }
+    }
+  ],
+  "fal-ai/nano-banana": [
+    {
+      "inputs": {
+        "prompt": "prompt text",
+        "seed": 42,
+        "aspect_ratio": "21:9"
+      },
+      "payload": {
+        "prompt": "prompt text",
+        "seed": 42,
+        "aspect_ratio": "21:9"
+      }
+    },
+    {
+      "inputs": {
+        "prompt": "prompt only"
+      },
+      "payload": {
+        "prompt": "prompt only"
+      }
+    }
+  ],
+  "fal-ai/kling-video/v2.6/pro/text-to-video": [
+    {
+      "inputs": {
+        "prompt": "prompt text",
+        "negative_prompt": "negative_prompt text",
+        "aspect_ratio": "16:9",
+        "duration_seconds": 5
+      },
+      "payload": {
+        "prompt": "prompt text",
+        "negative_prompt": "negative_prompt text",
+        "aspect_ratio": "16:9",
+        "duration": "5",
+        "generate_audio": false
+      }
+    },
+    {
+      "inputs": {
+        "prompt": "prompt text",
+        "negative_prompt": "negative_prompt text",
+        "aspect_ratio": "16:9",
+        "duration_seconds": 10
+      },
+      "payload": {
+        "prompt": "prompt text",
+        "negative_prompt": "negative_prompt text",
+        "aspect_ratio": "16:9",
+        "duration": "10",
+        "generate_audio": false
+      }
+    },
+    {
+      "inputs": {
+        "prompt": "prompt only"
+      },
+      "payload": {
+        "prompt": "prompt only",
+        "duration": "5",
+        "generate_audio": false
+      }
+    }
+  ],
+  "fal-ai/minimax/hailuo-02/standard/text-to-video": [
+    {
+      "inputs": {
+        "prompt": "prompt text",
+        "duration_seconds": 5
+      },
+      "payload": {
+        "prompt": "prompt text",
+        "duration": "6"
+      }
+    },
+    {
+      "inputs": {
+        "prompt": "prompt only"
+      },
+      "payload": {
+        "prompt": "prompt only",
+        "duration": "6"
+      }
+    }
+  ],
+  "fal-ai/wan-25-preview/text-to-video": [
+    {
+      "inputs": {
+        "prompt": "prompt text",
+        "negative_prompt": "negative_prompt text",
+        "seed": 42,
+        "aspect_ratio": "16:9",
+        "duration_seconds": 5
+      },
+      "payload": {
+        "prompt": "prompt text",
+        "negative_prompt": "negative_prompt text",
+        "seed": 42,
+        "aspect_ratio": "16:9",
+        "duration": "5",
+        "resolution": "720p"
+      }
+    },
+    {
+      "inputs": {
+        "prompt": "prompt text",
+        "negative_prompt": "negative_prompt text",
+        "seed": 42,
+        "aspect_ratio": "16:9",
+        "duration_seconds": 10
+      },
+      "payload": {
+        "prompt": "prompt text",
+        "negative_prompt": "negative_prompt text",
+        "seed": 42,
+        "aspect_ratio": "16:9",
+        "duration": "10",
+        "resolution": "720p"
+      }
+    },
+    {
+      "inputs": {
+        "prompt": "prompt only"
+      },
+      "payload": {
+        "prompt": "prompt only",
+        "duration": "5",
+        "resolution": "720p"
+      }
+    }
+  ],
+  "fal-ai/veo3.1/fast": [
+    {
+      "inputs": {
+        "prompt": "prompt text",
+        "negative_prompt": "negative_prompt text",
+        "seed": 42,
+        "aspect_ratio": "16:9",
+        "duration_seconds": 5
+      },
+      "payload": {
+        "prompt": "prompt text",
+        "negative_prompt": "negative_prompt text",
+        "seed": 42,
+        "aspect_ratio": "16:9",
+        "duration": "4s",
+        "resolution": "720p",
+        "generate_audio": true
+      }
+    },
+    {
+      "inputs": {
+        "prompt": "prompt only"
+      },
+      "payload": {
+        "prompt": "prompt only",
+        "duration": "4s",
+        "resolution": "720p",
+        "generate_audio": true
+      }
+    }
+  ],
+  "fal-ai/veo3.1": [
+    {
+      "inputs": {
+        "prompt": "prompt text",
+        "negative_prompt": "negative_prompt text",
+        "seed": 42,
+        "aspect_ratio": "16:9",
+        "duration_seconds": 5
+      },
+      "payload": {
+        "prompt": "prompt text",
+        "negative_prompt": "negative_prompt text",
+        "seed": 42,
+        "aspect_ratio": "16:9",
+        "duration": "4s",
+        "resolution": "720p",
+        "generate_audio": true
+      }
+    },
+    {
+      "inputs": {
+        "prompt": "prompt only"
+      },
+      "payload": {
+        "prompt": "prompt only",
+        "duration": "4s",
+        "resolution": "720p",
+        "generate_audio": true
+      }
+    }
+  ]
+}

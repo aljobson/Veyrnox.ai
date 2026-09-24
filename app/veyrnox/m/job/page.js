@@ -8,7 +8,7 @@ export default function MobileJob() {
       <div className="flex-1 flex flex-col p-[14px_18px_12px] overflow-y-auto">
         <div className="flex justify-between items-center mb-3">
           <span className="text-[22px] font-extrabold tracking-[-0.02em]">Job running</span>
-          <BalancePill balance={808} tick="−16" tickTone="money" />
+          <BalancePill balance={807} tick="−16" tickTone="money" />
         </div>
 
         <div
@@ -43,7 +43,7 @@ export default function MobileJob() {
         <div className="flex-1" />
 
         <Link
-          href="/veyrnox/m/library"
+          href="/m/library"
           className="mt-4 flex justify-center items-center bg-transparent border border-vx-border text-vx-fg rounded-full py-3.5 text-[14px] font-bold"
         >
           Go to Library

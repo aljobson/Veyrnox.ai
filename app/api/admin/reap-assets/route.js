@@ -1,69 +1,50 @@
 /**
  * POST /api/admin/reap-assets — Worker consumer for the asset_reap_queue.
  *
- * Reads a batch from `public.asset_reap_queue`, deletes each r2_key from R2,
- * removes the queue row on success, otherwise bumps attempts + logs the error.
+ * The queue drain itself is lib/assetReap.js, which the five-minute Worker
+ * cron also calls (worker.js). This route is the manual replay.
  *
- * Auth: shared secret `ADMIN_REAP_TOKEN` in header `x-veyrnox-admin-token`.
- * Not exposed to end users. Meant for a cron worker or manual replay.
+ * Auth: shared secret `ADMIN_REAP_TOKEN` in header `x-veyrnox-admin-token`,
+ * compared in constant time and throttled after repeated failures
+ * (lib/adminThrottle.js). Not exposed to end users. Meant for a cron worker or
+ * manual replay.
  *
  * Response: { processed, deleted, failed, remaining? }.
  */
 
 import { NextResponse } from 'next/server';
-import { rpc, envConfig } from '../../../../packages/db/supabase-client.js';
+import { envConfig } from '../../../../packages/db/supabase-client.js';
 import { tokenMatches } from '../../../../lib/tokenMatches.js';
-import { deleteObject, isConfigured as r2IsConfigured, envConfig as r2EnvConfig } from '../../../../packages/adapters/r2.js';
+import { requireAccess } from '../../../../lib/accessJwt.js';
+import { retryAfterSeconds, recordFailure } from '../../../../lib/adminThrottle.js';
+import { isConfigured as r2IsConfigured, envConfig as r2EnvConfig } from '../../../../packages/adapters/r2.js';
+import { reapAssets } from '../../../../lib/assetReap.js';
 
-const BATCH = 100;
-
-async function selectQueue(cfg, limit) {
-    const url = new URL('/rest/v1/asset_reap_queue', cfg.supabaseUrl);
-    url.searchParams.set('select', 'id,r2_key,attempts');
-    url.searchParams.set('order', 'queued_at.asc');
-    url.searchParams.set('limit', String(limit));
-    const res = await fetch(url, {
-        headers: {
-            apikey: cfg.serviceRoleKey,
-            Authorization: `Bearer ${cfg.serviceRoleKey}`,
-        },
-    });
-    if (!res.ok) return { ok: false, error: `queue read ${res.status}` };
-    return { ok: true, rows: await res.json() };
-}
-
-async function markSuccess(cfg, id) {
-    const url = new URL('/rest/v1/asset_reap_queue', cfg.supabaseUrl);
-    url.searchParams.set('id', `eq.${id}`);
-    return fetch(url, {
-        method: 'DELETE',
-        headers: {
-            apikey: cfg.serviceRoleKey,
-            Authorization: `Bearer ${cfg.serviceRoleKey}`,
-            Prefer: 'return=minimal',
-        },
-    });
-}
-
-async function markFail(cfg, id, attempts, err) {
-    const url = new URL('/rest/v1/asset_reap_queue', cfg.supabaseUrl);
-    url.searchParams.set('id', `eq.${id}`);
-    return fetch(url, {
-        method: 'PATCH',
-        headers: {
-            apikey: cfg.serviceRoleKey,
-            Authorization: `Bearer ${cfg.serviceRoleKey}`,
-            'Content-Type': 'application/json',
-            Prefer: 'return=minimal',
-        },
-        body: JSON.stringify({ attempts: attempts + 1, last_error: String(err).slice(0, 500) }),
-    });
-}
+const THROTTLE_BUCKET = 'reap-assets';
 
 export async function POST(req) {
+    // Cloudflare Access is the front door for anything that arrives from the
+    // internet; the Worker cron's own invocation never crosses the edge and
+    // is recognised by the absence of cf-ray (lib/accessJwt.js).
+    const gate = await requireAccess(req);
+    if (!gate.ok) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+
     const token = process.env.ADMIN_REAP_TOKEN;
     if (!token) return NextResponse.json({ error: 'not_configured' }, { status: 503 });
+    // The secret is compared before the throttle is consulted, so a caller
+    // presenting the right token is never locked out. Throttling first would
+    // let anyone stall the reaper by spending ten wrong guesses.
     if (!(await tokenMatches(req.headers.get('x-veyrnox-admin-token'), token))) {
+        // Logged so Worker observability shows probing, not just silence.
+        const seen = recordFailure(THROTTLE_BUCKET);
+        const wait = retryAfterSeconds(THROTTLE_BUCKET);
+        console.error('[reap-assets] unauthorized call, failures in window:', seen);
+        if (wait) {
+            return NextResponse.json({ error: 'too_many_requests' }, {
+                status: 429,
+                headers: { 'retry-after': String(wait) },
+            });
+        }
         return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
     }
 
@@ -73,29 +54,11 @@ export async function POST(req) {
         return NextResponse.json({ error: 'not_configured' }, { status: 503 });
     }
 
-    const q = await selectQueue(cfg, BATCH);
-    if (!q.ok) {
-        console.error('[reap-assets] queue read failed:', q.error);
+    const out = await reapAssets(cfg, r2cfg);
+    if (!out.ok) {
+        console.error('[reap-assets] queue read failed:', out.error);
         return NextResponse.json({ error: 'internal' }, { status: 502 });
     }
 
-    let deleted = 0;
-    let failed = 0;
-    for (const row of q.rows) {
-        try {
-            const del = await deleteObject(row.r2_key, r2cfg);
-            if (del.ok) {
-                await markSuccess(cfg, row.id);
-                deleted++;
-            } else {
-                await markFail(cfg, row.id, row.attempts, del.error);
-                failed++;
-            }
-        } catch (err) {
-            await markFail(cfg, row.id, row.attempts, err && err.message);
-            failed++;
-        }
-    }
-
-    return NextResponse.json({ processed: q.rows.length, deleted, failed });
+    return NextResponse.json({ processed: out.processed, deleted: out.deleted, failed: out.failed });
 }

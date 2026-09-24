@@ -32,7 +32,13 @@ jobs:
         run: |
           set +e
           node scripts/check-fal-catalog.mjs > report.txt 2>&1
-          echo "exit=$?" >> "$GITHUB_OUTPUT"
+          catalog=$?
+          # Request contracts: fields we send, pins and price-relevant
+          # defaults against fal's live schema (lib/modelCapabilities.js).
+          echo "" >> report.txt
+          node scripts/check-capabilities.mjs >> report.txt 2>&1
+          capabilities=$?
+          echo "exit=$(( catalog || capabilities ))" >> "$GITHUB_OUTPUT"
           cat report.txt
 
       - name: Open issue on drift
@@ -42,7 +48,13 @@ jobs:
         run: |
           title="fal catalog drift — $(date -u +%Y-%m-%d)"
           existing=$(gh issue list --label fal-drift --state open --json number --jq '.[0].number // empty')
-          body=$'The weekly fal catalog watcher found dead endpoints or margin breaches.\n\nFloor pricing (ADR-0014) leaves no headroom, so any fal price rise breaches immediately. A dead endpoint means every generation on that model debits, fails and refunds.\n\n```\n'"$(cat report.txt)"$'\n```\n'
+          # printf with double-quoted parts, not $'...': the apostrophe in
+          # "fal's" closed that quoting and the step died with a syntax
+          # error, so drift has never opened an issue (audit 2026-09-23).
+          body=$(printf '%s\n\n%s\n\n```\n%s\n```\n' \
+            "The weekly fal catalog watcher found dead endpoints, margin breaches, or request contracts out of step with fal's live schema." \
+            "Floor pricing (ADR-0014) leaves no headroom, so any fal price rise breaches immediately. A dead endpoint means every generation on that model debits, fails and refunds." \
+            "$(cat report.txt)")
           if [ -n "$existing" ]; then
             gh issue comment "$existing" --body "$body"
           else

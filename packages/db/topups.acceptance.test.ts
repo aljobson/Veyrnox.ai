@@ -64,19 +64,20 @@ describe("Credit Pack Top-ups", { skip: !DATABASE_URL && "DATABASE_URL not set" 
         return r.rows[0].res;
     }
 
-    it("seeds the three web packs at ADR-0018 prices, inactive until a variant is configured", async () => {
+    // The seed ships the packs inactive. It used to be a CHECK
+    // (credit_packs_active_needs_variant) that kept them that way until a
+    // LemonSqueezy variant was configured; 0097 dropped it, because Stripe
+    // prices Checkout inline from the catalog and has no variant ids at all.
+    it("seeds the three web packs at ADR-0018 prices, inactive", async () => {
         const r = await pool.query(
-            `SELECT id, credits, price_usd_cents, sales_channel FROM public.credit_packs
+            `SELECT id, credits, price_usd_cents, sales_channel, active FROM public.credit_packs
              WHERE id IN ('web-100', 'web-300', 'web-1000') ORDER BY credits`
         );
         assert.deepEqual(
             r.rows.map((p) => [p.id, p.credits, p.price_usd_cents, p.sales_channel]),
             [["web-100", 100, 1000, "web"], ["web-300", 300, 2500, "web"], ["web-1000", 1000, 7500, "web"]]
         );
-        await assert.rejects(
-            pool.query(`UPDATE public.credit_packs SET active = true, variant_id = NULL WHERE id = 'web-100'`),
-            /credit_packs_active_needs_variant/
-        );
+        assert.deepEqual(r.rows.map((p) => p.active), [false, false, false], "a pack is switched on deliberately");
     });
 
     it("rejects a pack below the $0.075/credit sticker floor", async () => {

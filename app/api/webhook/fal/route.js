@@ -18,7 +18,11 @@
 import { NextResponse } from 'next/server';
 import { verifyWebhookSignature } from '../../../../packages/adapters/fal.js';
 import { rpc, envConfig } from '../../../../packages/db/supabase-client.js';
-import { copyUrlToR2, isConfigured as r2IsConfigured, envConfig as r2EnvConfig } from '../../../../packages/adapters/r2.js';
+import { isConfigured as r2IsConfigured, envConfig as r2EnvConfig } from '../../../../packages/adapters/r2.js';
+import { copyUrlToR2 } from '../../../../packages/adapters/r2Copy.js';
+import { fetchWithTimeout } from '../../../../lib/fetchWithTimeout.js';
+import { findStep, runtimeDeps, runtimeKeys } from '../../../../lib/autoShortRuntime.js';
+import { falOutcome, handleStepCallback } from '../../../../lib/autoShortWebhook.js';
 
 const SOURCE = 'fal';
 
@@ -26,18 +30,22 @@ function serviceHeaders(cfg) {
     return { apikey: cfg.serviceRoleKey, Authorization: `Bearer ${cfg.serviceRoleKey}` };
 }
 
-// Our job for this fal request id, if it is in one of `states`. Used on
-// redelivery: the state RPCs are one-shot (SUBMITTED→SUCCEEDED/FAILED), so
-// a retried webhook needs the job facts from the row itself.
-async function findOurJob(cfg, requestId, states) {
+// Our job for this fal request id, if it is in one of `states` (any state
+// when omitted). Used on redelivery: the state RPCs are one-shot
+// (SUBMITTED→SUCCEEDED/FAILED), so a retried webhook needs the job facts from
+// the row itself. `strict` throws on a read failure instead of returning null.
+async function findOurJob(cfg, requestId, states, { strict = false } = {}) {
     const url = new URL('/rest/v1/jobs', cfg.supabaseUrl);
     url.searchParams.set('select', 'id,user_id,credits,state');
     url.searchParams.set('provider', `eq.${SOURCE}`);
     url.searchParams.set('provider_job_id', `eq.${requestId}`);
-    url.searchParams.set('state', `in.(${states.join(',')})`);
+    if (states) url.searchParams.set('state', `in.(${states.join(',')})`);
     url.searchParams.set('limit', '1');
-    const res = await fetch(url, { headers: serviceHeaders(cfg) });
-    if (!res.ok) return null;
+    const res = await fetchWithTimeout(url, { headers: serviceHeaders(cfg) });
+    if (!res.ok) {
+        if (strict) throw new Error(`jobs read ${res.status}`);
+        return null;
+    }
     const rows = await res.json().catch(() => []);
     return Array.isArray(rows) && rows[0] ? rows[0] : null;
 }
@@ -51,7 +59,7 @@ async function alreadyProcessed(cfg, requestId) {
     url.searchParams.set('source', `eq.${SOURCE}`);
     url.searchParams.set('external_id', `eq.${requestId}`);
     url.searchParams.set('limit', '1');
-    const res = await fetch(url, { headers: serviceHeaders(cfg) });
+    const res = await fetchWithTimeout(url, { headers: serviceHeaders(cfg) });
     // Can't tell: throw so the route answers 500 and fal retries. Every
     // step after dedup is idempotent, so a replay is safe; a swallowed
     // retry is a lost delivery.
@@ -61,7 +69,7 @@ async function alreadyProcessed(cfg, requestId) {
 }
 
 async function markProcessed(cfg, requestId) {
-    await fetch(new URL(
+    await fetchWithTimeout(new URL(
         `/rest/v1/webhook_events?source=eq.${encodeURIComponent(SOURCE)}&external_id=eq.${encodeURIComponent(requestId)}`,
         cfg.supabaseUrl,
     ), {
@@ -138,11 +146,39 @@ export async function POST(req) {
     }
     const status = event && event.status;
 
+    // Signed for our tenant, so this is our request. No job carries its id
+    // yet when the callback beat job_submitted: answer non-2xx before the
+    // dedup row so fal delivers again, as the kie and OpenRouter hooks do.
+    let known;
+    try {
+        known = await findOurJob(cfg, requestId, null, { strict: true });
+    } catch (err) {
+        console.error('[fal-webhook] job lookup failed:', err && err.message);
+        return NextResponse.json({ error: 'internal' }, { status: 500 });
+    }
+    if (!known) {
+        // Not a job: it may be one step of an Auto Short (ADR-0029).
+        try {
+            const step = await findStep(cfg, SOURCE, requestId);
+            if (step) {
+                const keys = runtimeKeys();
+                if (!keys || !process.env.PUBLIC_HOST) return NextResponse.json({ error: 'not_configured' }, { status: 503 });
+                const deps = runtimeDeps({ cfg, r2cfg: r2EnvConfig(), publicHost: process.env.PUBLIC_HOST, ...keys });
+                const r = await handleStepCallback({ source: SOURCE, providerJobId: requestId, step, outcome: falOutcome(step, event), deps, cfg });
+                return NextResponse.json(r.body, { status: r.status });
+            }
+        } catch (err) {
+            console.error('[fal-webhook] auto-short step failed:', err && err.message);
+            return NextResponse.json({ error: 'internal' }, { status: 500 });
+        }
+        return NextResponse.json({ error: 'job_not_found' }, { status: 409 });
+    }
+
     // Dedup — insert-only on webhook_events; duplicate = silent success.
     // `on_conflict` must name the (source, external_id) unique constraint:
     // PostgREST's ignore-duplicates resolves on the primary key otherwise,
     // and the PK is an auto UUID, so a redelivery would 409 → 500 forever.
-    const dedupRes = await fetch(new URL('/rest/v1/webhook_events?on_conflict=source,external_id', cfg.supabaseUrl), {
+    const dedupRes = await fetchWithTimeout(new URL('/rest/v1/webhook_events?on_conflict=source,external_id', cfg.supabaseUrl), {
         method: 'POST',
         headers: {
             apikey: cfg.serviceRoleKey,
@@ -231,6 +267,7 @@ export async function POST(req) {
                 p_r2_key: copy.r2Key,
                 p_mime_type: copy.mimeType,
                 p_size_bytes: copy.size,
+                p_sha256: copy.sha256,
             }, cfg);
             if (!storedRes || storedRes.ok !== true) {
                 // The object is in R2 under a deterministic key; a retry
@@ -288,6 +325,7 @@ export async function POST(req) {
  *   { output: { url } }              simple video/audio
  *   { output: { video: { url } } }
  *   { output: { images: [{ url }] } } image generators
+ *   { payload: { image: { url } } }  single-image tools (Bria)
  *   { images: [{ url }] }             sometimes at top level
  *   { video: { url } }                sometimes at top level
  * Returns null if none found — caller logs + no-ops.
@@ -302,12 +340,14 @@ function extractOutputUrl(event) {
         }
         if (p.video && typeof p.video.url === 'string') return p.video.url;
         if (p.audio && typeof p.audio.url === 'string') return p.audio.url;
+        if (p.image && typeof p.image.url === 'string') return p.image.url;
         if (typeof p.url === 'string') return p.url;
     }
     const out = (event && event.output) || event || {};
     if (out && typeof out.url === 'string') return out.url;
     if (out.video && typeof out.video.url === 'string') return out.video.url;
     if (out.audio && typeof out.audio.url === 'string') return out.audio.url;
+    if (out.image && typeof out.image.url === 'string') return out.image.url;
     if (Array.isArray(out.images) && out.images[0] && typeof out.images[0].url === 'string') {
         return out.images[0].url;
     }

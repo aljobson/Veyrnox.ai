@@ -20,8 +20,10 @@ Tripwires from PRs #25, #27, #38, #40:
 - **`tsx`** in root `devDependencies` -> build fails. Install ad-hoc in CI.
 - **`jose`** anywhere on the SSR import graph -> build fails. Use Web Crypto
   (`crypto.subtle.importKey`, `crypto.subtle.verify`) directly.
-- **`@supabase/supabase-js`** anywhere the transpiled `packages/studio` bundle
-  drags in -> build fails. Auth UI + auth client live under `app/` and
+- **`@supabase/supabase-js`** anywhere on the SSR import graph -> build
+  fails. (The original trap was the transpiled `packages/studio` bundle;
+  that package went with ADR-0015, but the constraint still binds `app/`
+  and `components/`.) Auth UI + auth client live under `app/` and
   `components/` and use plain `fetch` against `/auth/v1/*` and `/rest/v1/*`.
 
 If a build starts failing after a dependency change, bisect these three first.
@@ -52,6 +54,12 @@ If a build starts failing after a dependency change, bisect these three first.
   `webhook_events` UNIQUE on `(source, external_id)`). Replay must be a no-op.
 - **SECURITY DEFINER** functions must `SET search_path = ''` (schema-qualify
   every reference) so a user can't hijack them by shadowing an unqualified name.
+- **Every new function and table revokes explicitly.** `0070` points the
+  schema's default privileges away from `anon` and `authenticated`, but a
+  changed argument list makes a *new* function that inherits nothing from the
+  old one's ACL — `REVOKE ALL ... FROM PUBLIC, anon, authenticated` then
+  `GRANT EXECUTE ... TO service_role`, naming the full signature. RLS does not
+  cover `TRUNCATE`, so a table grant to a browser role is never harmless.
 - Migrations live in `packages/db/schema/supabase/` with a `NNNN_<snake_case>`
   name — never `execute_sql` for DDL. Every migration must be idempotent
   (`IF NOT EXISTS`, `OR REPLACE`).
@@ -101,9 +109,29 @@ If a build starts failing after a dependency change, bisect these three first.
   `localStorage`. Both, always.
 - OAuth `redirect_to` MUST be an origin we control. Never accept a return URL
   from user input; construct it from `window.location.origin`.
-- The `auth.users -> public.users + credit_balances + grant:signup` trigger
-  (migration `0010`) is the only path that provisions a user. Do not create
+- The `auth.users -> public.users + credit_balances` triggers (migrations
+  `0010`, `0071`) are the only path that provisions a user. Do not create
   `public.users` rows any other way.
+- **The signup grant follows confirmation, not creation** (`0071`) — *once
+  0071 is actually applied*. An unconfirmed sign-up gets a shadow row and a
+  zero balance; `grant:signup` lands when `auth.users.email_confirmed_at` is
+  first set.
+
+  **Two independent switches, and only one stops money leaving:**
+
+  | | Effect |
+  |---|---|
+  | Confirm email ON (Supabase Auth) | **The load-bearing one.** Blocks the account, so no provider spend. |
+  | 0071 applied | Stops junk grants being minted. **Alone it does nothing** while autoconfirm is on — its INSERT branch sees a non-null `email_confirmed_at` and grants anyway. |
+
+  Production still runs the `0010` trigger, which grants on INSERT
+  unconditionally. Run `npm run check:signup-gate` to see the live state;
+  `signup-gate.yml` checks it hourly. Neither switch is visible from this
+  repo, which is how it drifted.
+
+  With autoconfirm on, 50 credits is ~$0.75 of provider spend for anyone who
+  can POST an email address. Sign-up should also carry Attack Protection
+  (CAPTCHA). Check all of this before any launch that widens sign-up.
 
 ## Web security
 
@@ -121,11 +149,14 @@ If a build starts failing after a dependency change, bisect these three first.
 - CSRF: same-site cookies aren't in play (we're Bearer-only), but any state-
   changing GET is forbidden. Mutations are POST/PUT/PATCH/DELETE only.
 
-## Provider webhooks (fal.ai, Stripe/Lemon, etc.)
+## Provider webhooks (fal.ai, LemonSqueezy, etc.)
 
 - Every webhook verifies a cryptographic signature. Fal is Ed25519 via JWKS
-  (see `packages/adapters/fal.js#verifyWebhookSignature`). Stripe is HMAC with
-  replay window <=5 min. Missing/invalid signature -> 401, never 200.
+  (see `packages/adapters/fal.js#verifyWebhookSignature`). LemonSqueezy is
+  HMAC-SHA256 over the raw body (`packages/adapters/lemonsqueezy.js`); it sends
+  no timestamp, so there is no replay window (ADR-0018). Replays are harmless
+  instead: the order is re-fetched from the API and `webhook_events` dedupes.
+  Missing/invalid signature -> 401, never 200.
 - Every webhook is idempotent via `webhook_events(source, external_id)`.
   Duplicate -> early return, no side effects.
 - Webhook handlers must not trust the payload's `user_id`. Look the job up
@@ -181,7 +212,11 @@ If a build starts failing after a dependency change, bisect these three first.
 6. **Vulnerable & Outdated Components** — Round-N dependency audits run on
    every green main. Any critical/high CVE is a same-day PR.
 7. **Identification & Authentication Failures** — Supabase Auth handles rate
-   limits, breach checks, and lockout. Middleware rejects malformed tokens.
+   limits and lockout. Middleware rejects malformed tokens. Breach checking
+   (HaveIBeenPwned) is a project setting that must stay ON — it was found off
+   in the 2026-09-16 audit, so verify it after any Auth config change.
+   Second factors are TOTP through Supabase; `/api/v1/admin/metrics` demands
+   `aal2` once `ADMIN_REQUIRE_AAL2` is "true".
 8. **Software & Data Integrity Failures** — migrations in git, RPC-only writes,
    R2 objects immutable after upload.
 9. **Security Logging & Monitoring Failures** — `console.error` for every
@@ -245,3 +280,26 @@ Default five-role vocabulary (`needs-triage`, `needs-info`, `ready-for-agent`, `
 ### Domain docs
 
 Single-context: root `CONTEXT.md` + `docs/adr/`. See `docs/agents/domain.md`.
+
+## gstack (recommended)
+
+This project uses [gstack](https://github.com/garrytan/gstack) for AI-assisted workflows.
+Install it for the best experience:
+
+```bash
+git clone --depth 1 https://github.com/garrytan/gstack.git ~/.claude/skills/gstack
+cd ~/.claude/skills/gstack && ./setup --team
+```
+
+Use the /browse skill from gstack for all web browsing. Never use
+`mcp__claude-in-chrome__*` tools. Use `~/.claude/skills/gstack/...` for gstack
+file paths.
+
+Available skills: /office-hours, /plan-ceo-review, /plan-eng-review,
+/plan-design-review, /design-consultation, /design-shotgun, /design-html,
+/review, /ship, /land-and-deploy, /canary, /benchmark, /browse,
+/connect-chrome, /qa, /qa-only, /design-review, /scrape,
+/setup-browser-cookies, /setup-deploy, /setup-gbrain, /retro, /investigate,
+/document-release, /document-generate, /codex, /cso, /autoplan,
+/plan-devex-review, /devex-review, /careful, /freeze, /guard, /unfreeze,
+/gstack-upgrade, /learn.
