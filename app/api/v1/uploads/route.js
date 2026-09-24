@@ -116,9 +116,25 @@ export async function POST(req) {
         return NextResponse.json({ error: derived.error }, { status: 400 });
     }
 
+    const strict = process.env.UPLOAD_INTEGRITY_ENABLED === 'true';
+    if (strict) {
+        let reserved;
+        try {
+            reserved = await rpc('reserve_upload', {
+                p_auth_id: authId, p_key: derived.key, p_size: body.size_bytes,
+                p_stored: held.objects.map(({ key, size }) => ({ key, size })),
+            }, cfg);
+        } catch { /* fail closed */ }
+        if (reserved?.ok !== true) {
+            const budget = reserved?.code === 'UPLOAD_BUDGET_EXCEEDED';
+            return NextResponse.json({ error: budget ? 'upload_budget_exceeded' : 'upload_reservation_unavailable' },
+                { status: budget ? 429 : 503, headers: { 'Cache-Control': 'no-store', 'Retry-After': '60' } });
+        }
+    }
+
     let signed;
     try {
-        signed = await presignPutUrl(derived.key, declared.contentType, UPLOAD_URL_TTL_SECONDS, r2cfg);
+        signed = await presignPutUrl(derived.key, declared.contentType, UPLOAD_URL_TTL_SECONDS, r2cfg, strict ? body.size_bytes : undefined);
     } catch (err) {
         console.error('[uploads] presign failed:', err);
         return NextResponse.json({ error: 'internal' }, { status: 502 });
@@ -132,6 +148,7 @@ export async function POST(req) {
         // The client must send exactly this, or R2 rejects the PUT: the
         // Content-Type is inside the signature.
         content_type: signed.contentType,
+        ...(signed.headers ? { headers: signed.headers } : {}),
         max_bytes: declared.maxBytes,
         expires_in: signed.expires,
     }, { headers: { 'Cache-Control': 'no-store' } });

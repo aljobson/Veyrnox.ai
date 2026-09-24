@@ -153,6 +153,7 @@ test('a finished job has its uploads deleted; foreign keys and junk are left alo
     assert.deepEqual(removed.sort(), [A, B]);
     assert.deepEqual(out, { ok: true, jobs: 3, deleted: 2, failed: 0 });
     assert.equal(query.table, 'jobs');
+    assert.match(query.filter, /created_at=lte\.2026-09-22T15%3A44%3A00\.000Z/);
     assert.match(query.filter, /state=in\.\(STORED,REFUNDED,FAILED\)/);
     assert.match(query.filter, /updated_at=gte\.2026-09-22T15%3A30%3A00\.000Z/);
 });

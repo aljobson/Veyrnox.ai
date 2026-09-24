@@ -145,7 +145,7 @@ export default function CreateStudio() {
     });
     let put;
     try {
-      put = await fetch(up.upload_url, { method: 'PUT', headers: { 'Content-Type': up.content_type }, body: file });
+      put = await fetch(up.upload_url, { method: 'PUT', headers: up.headers || { 'Content-Type': up.content_type }, body: file });
     } catch {
       throw new GatewayError('upload_failed', { status: 0, code: 'upload_failed' });
     }

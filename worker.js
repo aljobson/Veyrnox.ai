@@ -16,6 +16,7 @@
 import handler from './.open-next/worker.js';
 import { adminEdgeRateLimit } from './lib/adminEdgeRateLimit.js';
 import { runScheduledBackfill } from './lib/scheduledBackfill.js';
+import { removeReservedUpload, sweepUploadReservations } from './lib/uploadReservations.js';
 import { sweepUploads, sweepConsumedUploads } from './lib/uploadSweep.js';
 import { isConfigured as r2IsConfigured } from './packages/adapters/r2.js';
 import { sweepSteps } from './lib/autoShortSweep.js';
@@ -99,16 +100,28 @@ async function runUploadSweep(env) {
         console.error('[upload-sweep] R2 not configured; skipping');
         return { ok: false };
     }
-    const out = await sweepUploads(cfg);
+    const dbcfg = { supabaseUrl: env.SUPABASE_URL, serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY };
+    const strict = env.UPLOAD_INTEGRITY_ENABLED === 'true';
+    if (strict && (!dbcfg.supabaseUrl || !dbcfg.serviceRoleKey)) return { ok: false, error: 'upload reservations not configured' };
+    const opts = strict ? { remove: (key) => removeReservedUpload(key, cfg, dbcfg) } : {};
+    let reservationFailure = false;
+    if (strict) {
+        const reservations = await sweepUploadReservations(cfg, dbcfg);
+        if (!reservations.ok) {
+            reservationFailure = true;
+            console.error('[upload-reservations] cleanup failed');
+        }
+    }
+    const out = await sweepUploads(cfg, opts);
     if (!out.ok) console.error('[upload-sweep] failed:', out.error);
     else if (out.deleted || out.failed) console.error('[upload-sweep]', JSON.stringify(out));
 
     if (env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY) {
-        const used = await sweepConsumedUploads(cfg, { supabaseUrl: env.SUPABASE_URL, serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY });
+        const used = await sweepConsumedUploads(cfg, dbcfg, opts);
         if (!used.ok) console.error('[upload-sweep] consumed pass failed:', used.error);
         else if (used.deleted || used.failed) console.error('[upload-sweep] consumed', JSON.stringify(used));
     } else {
         console.error('[upload-sweep] Supabase not configured; consumed uploads wait for the age sweep');
     }
-    return out;
+    return reservationFailure ? { ...out, ok: false } : out;
 }
