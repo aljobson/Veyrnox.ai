@@ -47,7 +47,7 @@ const DB_CODE_STATUS = {
 
 export async function POST(req) {
     const authId = req.headers.get('x-veyrnox-auth-id');
-    if (!authId) return NextResponse.json({ error: 'not_authenticated' }, { status: 401 });
+    if (!authId || !UUID_RE.test(authId)) return NextResponse.json({ error: 'not_authenticated' }, { status: 401 });
 
     const cfg = envConfig();
     const apiKey = process.env.STRIPE_SECRET_KEY;
@@ -73,6 +73,31 @@ export async function POST(req) {
     if (body.consent !== true) return NextResponse.json({ error: 'consent_required' }, { status: 400 });
     if (body.consent_version !== SUPPLY_CONSENT_VERSION) {
         return NextResponse.json({ error: 'consent_version_required' }, { status: 400 });
+    }
+
+    // Count every valid attempt, including replayed keys, before the DB writer
+    // and Stripe. Enable only after migration 0120 is applied.
+    if (process.env.TOP_UP_CHECKOUT_RATE_LIMIT_ENABLED === 'true') {
+        let rate;
+        try {
+            rate = await rpc('consume_top_up_checkout_request', { p_auth_id: authId }, cfg);
+        } catch {
+            console.error('[top-ups] checkout rate limit unavailable');
+        }
+        const headers = { 'Cache-Control': 'no-store' };
+        if (rate?.ok === false && rate.code === 'RATE_LIMITED') {
+            const retry = Number.isInteger(rate.retry_after_seconds)
+                ? Math.max(1, Math.min(60, rate.retry_after_seconds)) : 60;
+            return NextResponse.json({ error: 'rate_limited', retry_after_seconds: retry },
+                { status: 429, headers: { ...headers, 'Retry-After': String(retry) } });
+        }
+        if (rate?.ok === false && rate.code === 'NOT_FOUND') {
+            return NextResponse.json({ error: 'user_not_found' }, { status: 409, headers });
+        }
+        if (rate?.ok !== true) {
+            return NextResponse.json({ error: 'rate_limit_unavailable' },
+                { status: 503, headers: { ...headers, 'Retry-After': '30' } });
+        }
     }
 
     let created;
