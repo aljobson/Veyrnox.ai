@@ -24,6 +24,7 @@
 
 import { NextResponse } from 'next/server';
 import { rpc, select, envConfig } from '../../../../packages/db/supabase-client.js';
+import { topUpReadLimit } from '../../../../lib/topUpReadLimit.js';
 import { createCheckout } from '../../../../packages/adapters/stripe.js';
 
 const PACK_ID_RE = /^[a-z0-9-]{1,32}$/;
@@ -188,12 +189,15 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
  */
 export async function GET(req) {
     const authId = req.headers.get('x-veyrnox-auth-id');
-    if (!authId) return NextResponse.json({ error: 'not_authenticated' }, { status: 401 });
+    if (!authId || !UUID_RE.test(authId)) return NextResponse.json({ error: 'not_authenticated' }, { status: 401 });
 
     const cfg = envConfig();
     if (!cfg.supabaseUrl || !cfg.serviceRoleKey) {
         return NextResponse.json({ error: 'supabase_not_configured' }, { status: 503 });
     }
+
+    const limited = await topUpReadLimit(authId, cfg, true);
+    if (limited) return limited;
 
     let rows;
     try {
