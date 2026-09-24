@@ -30,7 +30,7 @@ const POLL_GIVE_UP_AFTER = 30;
 
 
 
-const DEFAULT_MODEL = 'wan-2.5';
+const DEFAULT_MODEL = 'wan-2.5-kie';
 
 // Models measured well over a minute end to end in live tests (2026-09-13).
 // ponytail: hand-kept list; move to the catalog if more slow models land.

@@ -128,3 +128,17 @@ the cost above; activation is a separate migration that swaps the fal twin off.
 Nano Banana Pro Edit, Kling 3.0 I2V, Hailuo 02 and the audio rows are not
 staged (see 0105's header for why). Negative prompt and seed are not offered on
 the kie twins.
+
+### Activated (0106, 2026-09-24)
+
+`wan-2.5-kie`, `kling-2.6-pro-kie` and `nano-banana-pro-kie` are live under
+their plain names (Wan 2.5 19 credits, Kling 2.6 Pro 17, Nano Banana Pro 6);
+their fal rows are inactive. `nano-banana-pro-edit` stays on fal.
+
+Evidence is in 0106's header: one live job per row through
+`scripts/verify-kie-endpoints.mjs`, each output served from
+`tempfile.aiquickdraw.com` over HTTP 200 without a redirect, and kie's
+dashboard charge equal to the row's `provider_cost_per_unit` (Wan 60 credits
+$0.30, Kling 55 credits $0.275, Nano Banana Pro 18 credits $0.09, twice). Wan
+came out 1280x720 and Kling 1920x1080, both 5.04s; Kling has no audio track.
+A 10s clip was not run live; kie's rate card prices it at exactly 2x.
