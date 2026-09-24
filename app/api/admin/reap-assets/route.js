@@ -15,6 +15,7 @@
 import { NextResponse } from 'next/server';
 import { envConfig } from '../../../../packages/db/supabase-client.js';
 import { tokenMatches } from '../../../../lib/tokenMatches.js';
+import { requireAccess } from '../../../../lib/accessJwt.js';
 import { retryAfterSeconds, recordFailure } from '../../../../lib/adminThrottle.js';
 import { isConfigured as r2IsConfigured, envConfig as r2EnvConfig } from '../../../../packages/adapters/r2.js';
 import { reapAssets } from '../../../../lib/assetReap.js';
@@ -22,6 +23,12 @@ import { reapAssets } from '../../../../lib/assetReap.js';
 const THROTTLE_BUCKET = 'reap-assets';
 
 export async function POST(req) {
+    // Cloudflare Access is the front door for anything that arrives from the
+    // internet; the Worker cron's own invocation never crosses the edge and
+    // is recognised by the absence of cf-ray (lib/accessJwt.js).
+    const gate = await requireAccess(req);
+    if (!gate.ok) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+
     const token = process.env.ADMIN_REAP_TOKEN;
     if (!token) return NextResponse.json({ error: 'not_configured' }, { status: 503 });
     // The secret is compared before the throttle is consulted, so a caller

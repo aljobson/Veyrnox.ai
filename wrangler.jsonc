@@ -37,9 +37,11 @@
     // "STRIPE_AUTOMATIC_TAX": "false",
     // "true" makes /api/v1/admin/metrics refuse any session that has not
     // satisfied a second factor (Supabase `aal` claim must be "aal2").
-    // Leave "false" until an admin has enrolled a factor on /app/admin —
-    // turning it on first locks every admin out of their own dashboard.
-    "ADMIN_REQUIRE_AAL2": "false"
+    // Switched on 2026-09-24: the owner enrolled TOTP at /app/admin first and
+    // the panel confirmed "Enabled. This session is aal2." Turning it on
+    // before an admin holds a factor locks every admin out of their own
+    // dashboard, so that order is not optional.
+    "ADMIN_REQUIRE_AAL2": "true"
   },
   // ------------------------------------------------------------------
   // Secrets (never here — `wrangler secret put <NAME>`), per ADR-0004
