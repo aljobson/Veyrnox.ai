@@ -78,10 +78,10 @@ test('fetchSession accepts the same upper bound as the return route', async () =
 const source = readFileSync(new URL('../app/veyrnox/_components/TopUpPacks.js', import.meta.url), 'utf8');
 const effect = source.match(/useEffect\(\(\) => \{([\s\S]*?)\n  \}, \[\]\);/)[1];
 const runEffect = new Function('window', 'gatewayFetch', 'setTopUpId', 'TOP_UP_ID_RE', effect);
-async function browser({ session = SESSION, enabled = true, fail = false, topUp = ID } = {}) {
+async function browser({ session = SESSION, fail = false, topUp = ID } = {}) {
     let current = new URL(`https://veyrnox.test/app/credits?top_up=${topUp}&session_id=${encodeURIComponent(session)}&checkout=done#packs`);
     const calls = [];
-    const window = { location: current, localStorage: { getItem: () => enabled ? 'true' : null }, history: {
+    const window = { location: current, get localStorage() { throw new Error('storage unavailable'); }, history: {
         state: { keep: true }, replaceState(state, _title, path) { assert.deepEqual(state, { keep: true }); current = new URL(path, current); },
     } };
     runEffect(window, (path, options) => { calls.push({ path, ...options }); return fail ? Promise.reject(new Error('offline')) : Promise.resolve({ ok: true }); }, () => {}, /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
@@ -89,7 +89,7 @@ async function browser({ session = SESSION, enabled = true, fail = false, topUp 
     return { calls, current };
 }
 
-test('browser posts valid cs_ tokens and strips them on success and failure', async () => {
+test('browser posts valid cs_ tokens without localStorage and strips them on success and failure', async () => {
     for (const fail of [false, true]) {
         const { calls, current } = await browser({ fail });
         assert.deepEqual(calls, [{ path: `/top-ups/${ID}/return`, method: 'POST', body: JSON.stringify({ session_id: SESSION }) }]);
@@ -100,8 +100,8 @@ test('browser posts valid cs_ tokens and strips them on success and failure', as
     }
 });
 
-test('browser refuses malformed tokens and stays inert until rollout is enabled', async () => {
-    for (const args of [{ session: 'pi_1' }, { session: 'cs_a/b' }, { session: 'cs_' + 'a'.repeat(252) }, { enabled: false }]) {
+test('browser refuses malformed tokens and invalid Top-up ids', async () => {
+    for (const args of [{ session: 'pi_1' }, { session: 'cs_a/b' }, { session: 'cs_' + 'a'.repeat(252) }]) {
         const { calls, current } = await browser(args);
         assert.equal(calls.length, 0);
         assert.equal(current.searchParams.has('session_id'), false);

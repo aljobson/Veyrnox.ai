@@ -219,6 +219,31 @@ whose tabs were closed. It also does not recover lost refund/dispute events:
 those retain their Stripe webhook delivery paths (ADR-0031). No claim of
 complete payment-event reconciliation is made by this recovery.
 
+### Public activation — prepared 2026-09-24, pending the reconciliation gate
+
+The activation change removes only the browser opt-in. Every valid returned
+Session is then recorded, including when localStorage is unavailable. Existing
+validation, URL scrubbing, server verification, polling and idempotency remain.
+
+**Do not merge the activation change before 2026-09-25 09:04:07 UTC
+(10:04:07 BST), and only after reviewing the intervening reconciliation runs.**
+0108 applied at 2026-09-24 09:04:07 UTC in
+[the owner-approved migration run](https://github.com/aljobson/Veyrnox.ai/actions/runs/35978430332).
+A post-deployment check on September 24 around 09:16 UTC reported all four
+reconciliation counts at zero, all 83 migrations accounted for, and the public
+catalog serving its three packs. This is a baseline, not proof of 24 hours.
+
+Before merge, inspect `reconcile-watch` runs since application, re-run
+`node scripts/check-reconcile.mjs` and `node scripts/check-migration-ledger.mjs`,
+and confirm production deployment is healthy. An unreadable check does not
+count as clean. A failure must be investigated before activation. The separate
+controlled checkout/recovery test remains to be performed; no real production
+purchase/refund or lost-webhook drill has been performed by this task.
+
+Rollback is to restore the browser opt-in in `TopUpPacks.js`; leave 0108 and
+already-recorded returns in place. This stops new automatic handoffs while
+verified pending recovery and the reconciliation alarm remain available.
+
 ## Open questions
 
 - Whether anything should watch the rows decision 4 deliberately excludes — a
