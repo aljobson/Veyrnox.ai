@@ -145,7 +145,7 @@ const PROVIDERS = {
             { apiKey, callbackUrl: new URL('/api/webhook/kie', publicHost).toString() }),
     },
     grsai: {
-        key: () => process.env.GRSAI_API_KEY,
+        key: () => r2IsConfigured(r2EnvConfig()) ? process.env.GRSAI_API_KEY : null,
         check: (_record, modelRow, inputs) => grsai.buildRequest(modelRow.provider_endpoint, inputs),
         submit: (job, _record, apiKey) => grsai.submitTask(job, { apiKey }),
     },
