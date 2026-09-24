@@ -115,3 +115,21 @@ test('missing or changed catalog row is not polled', async () => {
         assert.equal(urls.length, 1);
     }, []);
 });
+
+test('R2 copies are serial and capped even when provider reads run concurrently', async () => {
+    let copying = 0, peak = 0;
+    await withRows(Array.from({ length: 10 }, (_, i) => job(String(i))), async () => {
+        const out = await sweepGrsai({ ...args,
+            read: async () => ({ ok: true, state: 'success', outputUrl: 'https://file6.aitohumanize.com/a.png' }),
+            complete: async (c) => {
+                copying += 1; peak = Math.max(peak, copying);
+                assert.equal(c.copyOptions.maxBytes, 20 * 1024 * 1024);
+                await new Promise((r) => setTimeout(r, 1));
+                copying -= 1;
+                return { status: 200 };
+            },
+        });
+        assert.equal(peak, 1);
+        assert.equal(out.applied, 10);
+    });
+});

@@ -202,7 +202,8 @@ credit/pack pricing decision; this change does not implement it.
   are checked before debiting. No image edit, paid upscale or model fallback.
 - No unsigned webhook is exposed. The existing five-minute Worker cron
   polls with our key and verifies that each response names the requested task.
-  Up to 50 oldest unfinished jobs are processed, five concurrently. This
+  Up to 50 oldest unfinished jobs are read, five concurrently; storage is
+  serial with a 20 MB image cap and a three-minute work budget. This
   introduces up to a polling interval of completion latency under normal load;
   sustained backlogs need a queue before broad rollout.
 - Only terminal API outcomes reach `completeJob`: the existing event dedup,
