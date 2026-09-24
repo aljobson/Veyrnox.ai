@@ -9,8 +9,8 @@
 // lib/modelCapabilities.js — the fallback renders the same picker the live
 // catalog does (tests/modelCapabilities.test.mjs checks it).
 export const MODELS = [
-  { id: 'wan-2.5',            name: 'Wan 2.5',             credits: 31,  tag: 'RECOMMENDED', preselected: true, kind: 'video', durations: [5, 10] },
-  { id: 'kling-2.6-pro',      name: 'Kling 2.6 Pro',       credits: 22,                                         kind: 'video', durations: [5, 10] },
+  { id: 'wan-2.5-kie',        name: 'Wan 2.5',             credits: 19,  tag: 'RECOMMENDED', preselected: true, kind: 'video', durations: [5, 10] },
+  { id: 'kling-2.6-pro-kie',  name: 'Kling 2.6 Pro',       credits: 17,                                         kind: 'video', durations: [5, 10] },
   { id: 'kling-3.0-i2v',      name: 'Kling 3.0 · I2V',     credits: 34,                                         kind: 'video', durations: [5, 10] },
   { id: 'seedance-2.0-fast',  name: 'Seedance 2.0 Fast',   credits: 28,                                         kind: 'video', durations: [5, 10] },
   { id: 'kling-avatar-v2',    name: 'Kling AI Avatar',     credits: 35,  tag: 'NEW',                            kind: 'video', durations: [5] },
@@ -19,7 +19,7 @@ export const MODELS = [
   { id: 'veo-3.1-kie',        name: 'Veo 3.1',             credits: 76,  tag: 'PREMIUM',    premium: true, gated: true, kind: 'video', durations: [5] },
   { id: 'veo-3.1-fast-kie',   name: 'Veo 3.1 Fast',        credits: 19,                                         kind: 'video', durations: [5] },
   { id: 'veo-3.1-lite-kie',   name: 'Veo 3.1 Lite',        credits: 10,                                         kind: 'video', durations: [5] },
-  { id: 'nano-banana-pro',    name: 'Nano Banana Pro',     credits: 10,  tag: 'NEW',                            kind: 'image', durations: [5] },
+  { id: 'nano-banana-pro-kie', name: 'Nano Banana Pro',    credits: 6,   tag: 'NEW',                            kind: 'image', durations: [5] },
   { id: 'nano-banana-pro-edit', name: 'Nano Banana Pro Edit', credits: 10,                                      kind: 'image', durations: [5] },
   { id: 'nano-banana-kie',    name: 'Nano Banana',         credits: 2,                                         kind: 'image', durations: [5] },
   { id: 'flux-2-pro',         name: 'Flux.2 [pro]',        credits: 2,                                          kind: 'image', durations: [5] },
@@ -66,11 +66,11 @@ export function kindOf(modality) {
 export const PRESET_CATEGORIES = ['ALL', 'CINEMATIC', 'UGC', 'VFX', 'ADS'];
 
 export const PRESETS = [
-  { id: 'cctv-night', name: 'CCTV NIGHT',   model: 'Wan 2.5',           credits: 31, category: 'CINEMATIC',  bg: 'linear-gradient(180deg,#08120b 0%,#0e3a1e 60%,#2ea258 100%)',  cached: true, badge: 'CACHED' },
+  { id: 'cctv-night', name: 'CCTV NIGHT',   model: 'Wan 2.5',           credits: 19, category: 'CINEMATIC',  bg: 'linear-gradient(180deg,#08120b 0%,#0e3a1e 60%,#2ea258 100%)',  cached: true, badge: 'CACHED' },
   { id: 'sunset-drift',name: 'SUNSET DRIFT', model: 'MiniMax Hailuo 02', credits: 17, category: 'CINEMATIC',  bg: 'linear-gradient(135deg,#2b1a0a 0%,#7a4a1e 60%,#f0b060 100%)',  cached: false },
-  { id: 'neon-alley', name: 'NEON ALLEY',   model: 'Kling 2.6 Pro',     credits: 22, category: 'VFX',        bg: 'linear-gradient(135deg,#1b0632 0%,#5a0e6a 55%,#e4318f 100%)',  cached: true, badge: 'CACHED' },
+  { id: 'neon-alley', name: 'NEON ALLEY',   model: 'Kling 2.6 Pro',     credits: 17, category: 'VFX',        bg: 'linear-gradient(135deg,#1b0632 0%,#5a0e6a 55%,#e4318f 100%)',  cached: true, badge: 'CACHED' },
   { id: 'warm-portrait',name: 'WARM PORTRAIT',model: 'Nano Banana',      credits: 2,  category: 'UGC',        bg: 'linear-gradient(160deg,#2c1a12 0%,#7a3520 60%,#c9713f 100%)' },
-  { id: 'film-portrait',name: 'FILM PORTRAIT',model: 'Nano Banana Pro',  credits: 10, category: 'CINEMATIC',  bg: 'linear-gradient(160deg,#120d08 0%,#4a3420 60%,#d8a868 100%)' },
+  { id: 'film-portrait',name: 'FILM PORTRAIT',model: 'Nano Banana Pro',  credits: 6,  category: 'CINEMATIC',  bg: 'linear-gradient(160deg,#120d08 0%,#4a3420 60%,#d8a868 100%)' },
   { id: 'talking-head', name: 'TALKING HEAD', model: 'Kling AI Avatar',  credits: 35, category: 'UGC',        bg: 'linear-gradient(135deg,#0a1a2c 0%,#1e4a7a 55%,#60a0f0 100%)' },
   { id: 'clean-cutout', name: 'CLEAN CUTOUT', model: 'Background Removal', credits: 3, category: 'ADS',       bg: 'linear-gradient(135deg,#1a1a0a 0%,#4a4a1e 55%,#c0c060 100%)' },
 ];
@@ -125,12 +125,12 @@ export const SITE_PAGES = [
 // Real active-catalog rows only. No Cinema Studio, no MCP·CLI (those live in
 // a separate product, not here).
 export const FEATURE_CARDS = [
-  { key: 'wan-2.5',
+  { key: 'wan-2.5-kie',
     kicker: 'WAN 2.5',
     title: 'The default. Fast, cinematic.',
-    body: '5 seconds of 720p motion for 31 credits. The workhorse — priced on the button before you press it.',
+    body: '5 seconds of 720p motion for 19 credits. The workhorse — priced on the button before you press it.',
     cta: 'Open Wan 2.5',
-    href: '/app/create?model=wan-2.5',
+    href: '/app/create?model=wan-2.5-kie',
     bg: 'linear-gradient(135deg,#0a1a2c 0%,#144a7a 55%,#3ec1e8 100%)' },
   { key: 'nano-banana-kie',
     kicker: 'NANO BANANA',
@@ -142,9 +142,9 @@ export const FEATURE_CARDS = [
   { key: 'kling-26',
     kicker: 'KLING 2.6 PRO',
     title: 'Cinematic video, cost visible.',
-    body: 'The go-to for narrative video work. 22 credits per 5-second shot, priced on the button.',
+    body: 'The go-to for narrative video work. 17 credits per 5-second shot, priced on the button.',
     cta: 'Open Kling',
-    href: '/app/create?model=kling-2.6-pro',
+    href: '/app/create?model=kling-2.6-pro-kie',
     bg: 'linear-gradient(135deg,#1b0632 0%,#5a0e6a 55%,#e4318f 100%)' },
   { key: 'presets',
     kicker: 'PRESETS',
@@ -196,7 +196,7 @@ export const FAQ = [
   { q: 'How do credits work?',
     a: 'Every generation names its cost on the button before you press it. Credits debit at submit. If the job fails at any point the credits return to your balance automatically.' },
   { q: 'Do I get free credits when I sign up?',
-    a: 'Yes — 50 credits granted on sign-up. Enough for around 25 Nano Banana stills or 3 Wan 2.5 clips. No card required.' },
+    a: 'Yes — 50 credits granted on sign-up. Enough for around 25 Nano Banana stills or 2 Wan 2.5 clips. No card required.' },
   { q: 'What happens if a generation fails?',
     a: 'Automatic refund, ledger-backed. Provider safety rejects, provider timeouts and model errors all refund. Failed rows still show in your Library so you can retry.' },
   { q: 'Can I use the output commercially?',
@@ -232,9 +232,9 @@ export const METRIC_STRIP = [
 // on the tiles is honest at build time. Wire to /api/catalog for live
 // updates in a follow-up.
 export const PRODUCT_TILES = [
-  { key: 'wan-2.5',           name: 'Wan 2.5',            kind: 'Video',  credits: 31,  hint: 'The default. Fast, cinematic.',                    badge: 'TOP',       icon: '⚡' },
+  { key: 'wan-2.5-kie',       name: 'Wan 2.5',            kind: 'Video',  credits: 19,  hint: 'The default. Fast, cinematic.',                    badge: 'TOP',       icon: '⚡' },
   { key: 'nano-banana-kie',   name: 'Nano Banana',        kind: 'Image',  credits: 2,   hint: 'Cheapest photoreal frame on the shelf.',                                 icon: '◐' },
-  { key: 'nano-banana-pro',   name: 'Nano Banana Pro',    kind: 'Image',  credits: 10,  hint: '2K stills, and edits from your own photo.',         badge: 'NEW',       icon: '◑' },
+  { key: 'nano-banana-pro-kie', name: 'Nano Banana Pro',  kind: 'Image',  credits: 6,   hint: '2K stills, and edits from your own photo.',         badge: 'NEW',       icon: '◑' },
   { key: 'kling-3.0-i2v',     name: 'Kling 3.0 · I2V',    kind: 'Video',  credits: 34,  hint: 'Your photo to 1080p video, audio off.',                                   icon: '▶' },
   { key: 'kling-avatar-v2',   name: 'Kling AI Avatar',    kind: 'Video',  credits: 35,  hint: 'A photo plus speech becomes a talking video.',      badge: 'NEW',       icon: '◉' },
   { key: 'veo-3.1-kie',       name: 'Veo 3.1',            kind: 'Video',  credits: 76,  hint: 'Premium video (◆). Sign-up required, gated.',      badge: 'PREMIUM',   icon: '◆' },
@@ -271,7 +271,7 @@ export const MORE_FEATURES = [
   { group: 'Models',    items: [] }, // filled from the live catalog in page.js
   { group: 'Tools',     items: [
     { label: 'Image Generator', href: '/app/create?model=nano-banana-kie' },
-    { label: 'Video Generator', href: '/app/create?model=wan-2.5' },
+    { label: 'Video Generator', href: '/app/create?model=wan-2.5-kie' },
     { label: 'Image-to-Video',  href: '/app/create?model=kling-3.0-i2v' },
     { label: 'Audio',           href: '/app/create?model=ace-step' },
     { label: 'Lip Sync',        href: '/app/create?model=latentsync' },

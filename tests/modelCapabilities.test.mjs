@@ -159,8 +159,8 @@ test('the tokens.js fallback offers the lengths the live catalog does', () => {
     // /api/catalog publishes lengthsFor(record); if the fallback drifts, the
     // create page offers a length the gateway refuses.
     const endpointById = {
-        'wan-2.5': 'fal-ai/wan-25-preview/text-to-video',
-        'kling-2.6-pro': 'fal-ai/kling-video/v2.6/pro/text-to-video',
+        'wan-2.5-kie': 'market:wan/2-5-text-to-video',
+        'kling-2.6-pro-kie': 'market:kling-2.6/text-to-video',
         'kling-3.0-i2v': 'fal-ai/kling-video/v3/pro/image-to-video',
         'minimax-hailuo-02': 'fal-ai/minimax/hailuo-02/standard/text-to-video',
         'veo-3.1-kie': 'veo:veo3', 'veo-3.1-fast-kie': 'veo:veo3_fast',
