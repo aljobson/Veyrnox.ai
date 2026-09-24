@@ -190,7 +190,7 @@ test('a Frozen account gets 403 account_frozen from top-ups, and no checkout is 
     const calls = stubFetch([['/rpc/create_pending_top_up', { ok: false, code: 'ACCOUNT_FROZEN' }]]);
     const res = await topUps.POST(new Request('https://veyrnox.test/api/v1/top-ups', {
         method: 'POST',
-        headers: { 'x-veyrnox-auth-id': 'auth-user-1', 'content-type': 'application/json' },
+        headers: { 'x-veyrnox-auth-id': '11111111-1111-4111-8111-111111111111', 'content-type': 'application/json' },
         body: JSON.stringify({ pack_id: 'web-300', idempotency_key: 'topup-key-0001', consent: true, consent_version: 'supply-consent-v1' }),
     }));
     assert.equal(res.status, 403);
@@ -203,7 +203,7 @@ test('top-ups accepts only the approved Supply Consent version, before any DB ca
         const calls = stubFetch([]);
         const res = await topUps.POST(new Request('https://veyrnox.test/api/v1/top-ups', {
             method: 'POST',
-            headers: { 'x-veyrnox-auth-id': 'auth-user-1', 'content-type': 'application/json' },
+            headers: { 'x-veyrnox-auth-id': '11111111-1111-4111-8111-111111111111', 'content-type': 'application/json' },
             body: JSON.stringify({ pack_id: 'web-300', idempotency_key: 'topup-key-0001', consent: true, consent_version }),
         }));
         assert.equal(res.status, 400, String(consent_version));
