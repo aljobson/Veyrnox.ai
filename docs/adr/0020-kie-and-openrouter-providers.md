@@ -142,3 +142,26 @@ dashboard charge equal to the row's `provider_cost_per_unit` (Wan 60 credits
 $0.30, Kling 55 credits $0.275, Nano Banana Pro 18 credits $0.09, twice). Wan
 came out 1280x720 and Kling 1920x1080, both 5.04s; Kling has no audio track.
 A 10s clip was not run live; kie's rate card prices it at exactly 2x.
+
+### Staged twins, second batch (0107)
+
+Three more kie twins staged **inactive**, with adapter branches, capability
+records and tests. Credits are the ADR-0014 floor.
+
+| row | fal row (credits, cost) | kie cost | credits |
+|---|---|---|---|
+| hailuo-02-kie | 17, $0.27 (6s) | $0.15 | 10 |
+| elevenlabs-tts-turbo-kie | 4, $0.05 | $0.03 per 1000 characters | 2 |
+| seedream-4.5-kie | 3, $0.04 | $0.0325 (2K) | 2 |
+
+Seedream is a 4 -> 4.5 upgrade and its saving holds only against the recorded
+$0.04; fal's live Seedream 4 price may be nearer $0.03. The speech twin pins the
+voice to Rachel, fal's default, so the swap is not audible; confirm by ear on
+the live run. They activate only after `scripts/verify-kie-endpoints.mjs` passes
+and kie's dashboard charge matches, in a separate migration.
+
+**Content filter.** kie's `nsfw_checker` defaults to false, which disables its
+filtering (docs.kie.ai). This gateway does no moderation of its own, so every
+kie row that exposes the parameter sends `nsfw_checker: true` (#277 fixed Wan
+2.5, which 0106 had switched on without it). Kling 2.6, Nano Banana Pro and
+the speech row expose none.
