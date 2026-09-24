@@ -58,24 +58,11 @@ describe("security hardening (audit 2026-09-16)", { skip: !DATABASE_URL && "DATA
                 END IF;
             END LOOP; END $$`);
         // 0018 schedules the reconcile and sweep jobs unguarded, and neither
-        // this fixture nor CI's postgres:16-alpine ships pg_cron. Stub the
-        // three things it touches so the migration applies; scheduling is not
-        // what these tests are about. Same spirit as creating the Supabase
-        // roles above — make the environment look enough like production.
-        await pool.query(`DO $$ BEGIN
-            IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_cron') THEN RETURN; END IF;
-            CREATE SCHEMA IF NOT EXISTS cron;
-            CREATE TABLE IF NOT EXISTS cron.job (jobid BIGSERIAL PRIMARY KEY, jobname TEXT, schedule TEXT, command TEXT);
-            CREATE OR REPLACE FUNCTION cron.schedule(p_name TEXT, p_schedule TEXT, p_command TEXT)
-            RETURNS BIGINT LANGUAGE sql AS $fn$
-                INSERT INTO cron.job (jobname, schedule, command)
-                VALUES (p_name, p_schedule, p_command) RETURNING jobid;
-            $fn$;
-            CREATE OR REPLACE FUNCTION cron.unschedule(p_name TEXT)
-            RETURNS BOOLEAN LANGUAGE sql AS $fn$
-                DELETE FROM cron.job WHERE jobname = p_name; SELECT true;
-            $fn$;
-        END $$;`);
+        // Everything a plain Postgres is missing (pg_cron, the auth schema and
+        // its helpers, supabase_migrations): one fixture, shared with
+        // scripts/replay-migrations.mjs. Two hand-rolled copies of this used to
+        // disagree about a parameter name and break each other.
+        await pool.query(await readFile(new URL("./schema/prereqs.sql", import.meta.url), "utf8"));
 
         for (const round of [1, 2]) { // migrations must be idempotent
             for (const m of MIGRATIONS) await pool.query(await readFile(m, "utf8"));
