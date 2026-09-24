@@ -18,7 +18,7 @@
   // Public config — safe to commit. SUPABASE_URL used by middleware.js;
   // NEXT_PUBLIC_* by client bundle.
   "vars": {
-    // Requires migration 0117 before deployment; see ADR-0036.
+    // Migration 0117 applied 2026-09-24; ADR-0036 records activation checks.
     "ACCOUNT_READ_RATE_LIMIT_ENABLED": "true",
     // Migration 0116 applied 2026-09-24; ADR-0035 records activation checks.
     "UPLOAD_REQUEST_RATE_LIMIT_ENABLED": "true",

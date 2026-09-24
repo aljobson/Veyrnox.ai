@@ -1,6 +1,6 @@
 # ADR-0036 — Share a request quota across account and balance reads
 
-- Status: Proposed; staged with enforcement disabled pending migration 0117.
+- Status: Accepted; migration 0117 applied, activation prepared for deployment.
 - Date: 2026-09-24
 - Related: audit API rate-limit finding, ADR-0008 job reads
 
@@ -56,10 +56,12 @@ use the same RPC with verified identity, denial stops all further queries,
 normal data/ownership and count degradation survive, unknown-user responses
 stay compatible, and the disabled handler works before migration application.
 
-## Activation checklist
+## Activation — 2026-09-24
 
-The activation change sets ACCOUNT_READ_RATE_LIMIT_ENABLED=true. Do not merge
-or deploy that change until migration 0117 has been owner-approved and applied
-successfully, the prerequisite application deployment has succeeded, and fresh
-migration-ledger and reconciliation checks pass. Record those results here
-before marking the activation PR ready. No additional migration is required.
+The prerequisite application deployment from PR #296 succeeded. The owner-approved
+[apply-migrations run 36008249537](https://github.com/aljobson/Veyrnox.ai/actions/runs/36008249537)
+applied 0117 at 13:57:17 UTC. Fresh checks account for all 92 applied migrations
+and report zero for all four reconciliation drift counts. The activation change
+sets ACCOUNT_READ_RATE_LIMIT_ENABLED=true for the next production deployment.
+No additional migration is required. Roll back enforcement by setting the flag
+to false, retaining the applied migration and its ledger entry.
