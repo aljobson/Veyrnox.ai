@@ -1,6 +1,6 @@
 # ADR-0041 — Bound Stripe return-session recording
 
-- Status: Proposed; enforcement disabled pending migration 0125 and activation.
+- Status: Accepted; migration 0125 applied, activation prepared for deployment.
 - Date: 2026-09-24
 - Related: ADR-0033 Stripe recovery, ADR-0038 checkout attempts, ADR-0040 reads
 
@@ -51,3 +51,17 @@ browser retry/cancellation/effect restart behavior. Real Postgres tests exercise
 concurrent admissions, separate users, saturation, reset, migration replay and
 role/RLS restrictions. Provision-only test users are cleaned without modifying
 the append-only ledger. Existing Stripe recovery/idempotency tests remain gates.
+
+## Activation — 2026-09-24
+
+PR #306 deployed successfully. The protected
+[apply-migrations run 36030029877](https://github.com/aljobson/Veyrnox.ai/actions/runs/36030029877)
+applied only 0125 at 16:50:41 UTC after owner approval. Fresh pre-activation
+checks account for all 98 applied migrations and report zero for all four
+reconciliation drift counts.
+
+Set TOP_UP_RETURN_RATE_LIMIT_ENABLED=true in the next deployment to enforce
+30 return-recording attempts per account per minute. The deployed browser retries
+temporary 429/503 responses with bounded backoff. Checkout, history/status,
+webhooks and scheduled recovery retain independent paths. No additional migration
+is required. Disable the server flag to roll enforcement back.

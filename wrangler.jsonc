@@ -24,8 +24,8 @@
   // Public config — safe to commit. SUPABASE_URL used by middleware.js;
   // NEXT_PUBLIC_* by client bundle.
   "vars": {
-    // ADR-0041: enable only after migration 0125 is applied and verified.
-    "TOP_UP_RETURN_RATE_LIMIT_ENABLED": "false",
+    // Migration 0125 applied 2026-09-24; ADR-0041 records activation checks.
+    "TOP_UP_RETURN_RATE_LIMIT_ENABLED": "true",
     // Migration 0123 applied 2026-09-24; ADR-0040 records activation checks.
     "TOP_UP_READ_RATE_LIMIT_ENABLED": "true",
     // Migration 0120 applied 2026-09-24; ADR-0038 records activation checks.
