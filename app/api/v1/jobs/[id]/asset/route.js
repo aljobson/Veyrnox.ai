@@ -35,6 +35,31 @@ export async function GET(req, { params }) {
         return NextResponse.json({ error: 'not_configured' }, { status: 503 });
     }
 
+    // Server-only rollout switch: enable after migration 0110 is applied.
+    // Once enabled, a missing/broken limiter cannot fall through to signing.
+    if (process.env.ASSET_LINK_RATE_LIMIT_ENABLED === 'true') {
+        let rate;
+        try {
+            rate = await rpc('consume_asset_link_request', { p_auth_id: authId }, cfg);
+        } catch {
+            console.error('[jobs/asset] rate limit unavailable');
+        }
+        const headers = { 'Cache-Control': 'no-store' };
+        if (rate?.ok === false && rate.code === 'RATE_LIMITED') {
+            const retry = Number.isInteger(rate.retry_after_seconds)
+                ? Math.max(1, Math.min(60, rate.retry_after_seconds)) : 60;
+            return NextResponse.json({ error: 'rate_limited', retry_after_seconds: retry },
+                { status: 429, headers: { ...headers, 'Retry-After': String(retry) } });
+        }
+        if (rate?.ok === false && rate.code === 'NOT_FOUND') {
+            return NextResponse.json({ error: 'not_found' }, { status: 404, headers });
+        }
+        if (rate?.ok !== true) {
+            return NextResponse.json({ error: 'rate_limit_unavailable' },
+                { status: 503, headers: { ...headers, 'Retry-After': '30' } });
+        }
+    }
+
     let asset;
     try {
         asset = await rpc('get_user_asset', { p_auth_id: authId, p_job_id: id }, cfg);

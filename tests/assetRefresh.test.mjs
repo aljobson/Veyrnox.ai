@@ -15,6 +15,20 @@ function harness(overrides = {}) {
     return { ...refresher, calls, updates, advance: (ms) => { time += ms; } };
 }
 
+test('rate limiting is explained and never causes an automatic retry loop', async () => {
+    let calls = 0;
+    const h = harness({ fetchAsset: async () => { calls++; throw { status: 429, retryAfter: 60 }; } });
+    await h.refresh();
+    assert.match(h.updates.at(-1).error, /Wait a minute/);
+    await h.refresh();
+    assert.equal(calls, 1);
+    h.advance(60_000);
+    await h.refresh();
+    assert.equal(calls, 1, 'elapsed time alone never retries a failed signing request');
+    await h.refresh(true);
+    assert.equal(calls, 2, 'the user can retry explicitly');
+});
+
 test('a media error fetches a fresh URL for the same job and clears loading', async () => {
     const h = harness();
     await h.refresh();
