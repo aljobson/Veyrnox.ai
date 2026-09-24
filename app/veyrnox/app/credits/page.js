@@ -8,12 +8,6 @@ import { gatewayFetch, GatewayError } from '../../_lib/gateway';
 import { readJobHistory } from '../../_lib/jobHistory';
 import { MODELS } from '../../_lib/tokens';
 
-// Pack prices come from the catalog (GET /api/credit-packs, public), never
-// from here. The three hardcoded "indicative" packs this replaced quoted 300
-// cr for $9 against a real 100 cr for $10 — roughly three times off, and an
-// app-layer price, which CLAUDE.md forbids (audit 2026-09-23).
-const usd = (cents) => `$${(cents / 100).toFixed(cents % 100 ? 2 : 0)}`;
-
 const STATE_UI = {
   succeeded: { chip: 'accent', glyph: '✓' },
   failed:    { chip: 'danger', glyph: '✕' },
@@ -26,25 +20,6 @@ export default function Credits() {
   const [free, setFree] = useState(null);
   const [error, setError] = useState(null);
   const [ledger, setLedger] = useState([]);
-  // Live Credit Packs stay hidden until launch (#101): opt in per browser with
-  // localStorage.setItem('veyrnox_topups', '1').
-  const [topupsEnabled, setTopupsEnabled] = useState(false);
-  // The real packs, shown disabled until top-ups open. Unauthenticated
-  // endpoint, so a signed-out visitor sees the same prices.
-  const [packs, setPacks] = useState(null);
-  useEffect(() => {
-    let cancelled = false;
-    fetch('/api/credit-packs')
-      .then((r) => (r.ok ? r.json() : null))
-      .then((b) => { if (!cancelled) setPacks(Array.isArray(b?.packs) ? b.packs : []); })
-      .catch(() => { if (!cancelled) setPacks([]); });
-    return () => { cancelled = true; };
-  }, []);
-
-  useEffect(() => {
-    try { setTopupsEnabled(localStorage.getItem('veyrnox_topups') === '1'); } catch {}
-  }, []);
-
   const load = useCallback(async () => {
     try {
       // Clear first: a transient failure used to leave the previous error up
@@ -133,31 +108,8 @@ export default function Credits() {
 
             <TopUpReturn />
 
-            {topupsEnabled ? (
-              // Wait for the balance call to settle so packs never load for a signed-out visitor.
-              (error === 'sign_in_required' || balance != null) && <TopUpPacks signedIn={error !== 'sign_in_required'} />
-            ) : (<>
-            {packs && packs.length > 0 && (
-              <div className="mt-6 flex flex-wrap gap-2">
-                {packs.map((p) => (
-                  <button
-                    key={p.id}
-                    type="button"
-                    disabled
-                    title="Top-ups are not available yet"
-                    className="flex flex-col items-start rounded-xl border border-vx-border bg-vx-base/60 px-4 py-3 opacity-50 cursor-not-allowed"
-                  >
-                    <span className="font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted">TOP-UP</span>
-                    <span className="font-vx-mono text-[18px] font-bold text-vx-money mt-1 vx-num">+{p.credits} cr</span>
-                    <span className="font-vx-mono text-[12px] text-vx-fg-body mt-1">{usd(p.price_usd_cents)}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-            <div className="mt-3 font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-faint">
-              TOP-UPS NOT AVAILABLE YET
-            </div>
-            </>)}
+            {/* Wait for balance to settle before loading the purchase controls. */}
+            {(error === 'sign_in_required' || balance != null) && <TopUpPacks signedIn={error !== 'sign_in_required'} />}
           </div>
 
           <div className="rounded-2xl border border-vx-border bg-vx-panel p-5 sm:p-6 flex flex-col">
@@ -173,7 +125,7 @@ export default function Credits() {
         </div>
       </section>
 
-      {topupsEnabled && balance != null && <TopUpHistory />}
+      {balance != null && <TopUpHistory />}
 
       {/* ============ RECENT GENERATIONS (client-side ledger) ============ */}
       <section className="max-w-[1200px] mx-auto px-4 sm:px-8 pb-16">

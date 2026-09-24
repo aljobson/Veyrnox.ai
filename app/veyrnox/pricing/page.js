@@ -41,16 +41,11 @@ function useLiveCatalog() {
   };
 }
 
-// Credit Packs stay hidden until launch (#101): opt in per browser with
-// localStorage.setItem('veyrnox_topups', '1'), as on the credits page.
 // Prices and credits come from public.credit_packs via /api/credit-packs;
-// nothing is priced here. Null while hidden, loading or unavailable.
+// nothing is priced here. Null while loading or unavailable.
 function useCreditPacks() {
   const [packs, setPacks] = useState(null);
   useEffect(() => {
-    let enabled = false;
-    try { enabled = localStorage.getItem('veyrnox_topups') === '1'; } catch {}
-    if (!enabled) return;
     let cancelled = false;
     (async () => {
       try {
@@ -59,7 +54,7 @@ function useCreditPacks() {
         const data = await res.json();
         if (!cancelled && Array.isArray(data?.packs) && data.packs.length) setPacks(data.packs);
       } catch {
-        // Leave the "not available yet" copy in place.
+        // No pack section if the catalog is unavailable.
       }
     })();
     return () => { cancelled = true; };
@@ -96,7 +91,7 @@ export default function Pricing() {
           </div>
           <p className="text-[13px] text-vx-fg-muted max-w-[460px]">
             That is roughly 25 Nano Banana stills or 2 Wan 2.5 clips, on us.
-            {packs ? ' Need more? Buy a credit pack below.' : ' Paid top-ups are not available yet — when they are, the prices will be here.'}
+            {packs && ' Need more? Buy a credit pack below.'}
           </p>
           <Link
             href="/app?auth=sign_up"
@@ -107,7 +102,7 @@ export default function Pricing() {
         </div>
       </section>
 
-      {/* ============ CREDIT PACKS (flagged until launch, #101) ============ */}
+      {/* ============ CREDIT PACKS ============ */}
       {packs && (
         <section className="max-w-[1200px] mx-auto px-4 sm:px-8 pb-14" aria-labelledby="credit-packs-heading">
           <div className="font-vx-mono text-[11px] tracking-[0.14em] text-vx-money mb-2">CREDIT PACKS · ONE-OFF · NEVER EXPIRE</div>

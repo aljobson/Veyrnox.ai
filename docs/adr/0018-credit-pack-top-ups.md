@@ -183,3 +183,13 @@ Consequences:
 - Rotating `LEMONSQUEEZY_WEBHOOK_SECRET` invalidates the signature on checkouts
   still open, with the same backfill fallback.
 - No migration: `credit_top_up` is unchanged.
+
+### 2026-09-24 — public Stripe purchase controls
+
+The owner requested merging all remaining PRs, including the launch draft
+#169. The `veyrnox_topups` browser gate and pre-launch copy are removed;
+purchase controls and history are public. Stripe Managed Payments and the
+current catalog remain authoritative (ADR-0031). The separate ADR-0033
+recovery opt-in remains gated until its 24-hour reconciliation requirement.
+This merge does not assert that a live purchase/refund smoke test was run
+or change payment credentials, catalog activation, or the recovery gate.
