@@ -6,6 +6,7 @@
  */
 
 import { putObject, sha256Hex } from './r2.js';
+import { sniffType } from '../../lib/uploadSource.js';
 
 // Hosts each provider serves generated assets from. Anything else is refused
 // by copyUrlToR2 — the URL arrives in a provider payload, never trusted
@@ -105,7 +106,13 @@ export async function copyUrlToR2(sourceUrl, r2Key, cfg, { timeoutMs = 30000, ma
         if (Number.isFinite(declared) && declared > maxBytes) {
             return { ok: false, error: 'source too large' };
         }
-        let contentType = src.headers.get('content-type') || 'application/octet-stream';
+        // The provider's own content-type is attacker-influenceable (its value
+        // comes from whatever the model host serves) and was stored verbatim
+        // on the asset, so an output served as text/html became an HTML
+        // document under a presigned URL of ours (audit 2026-09-23). The type
+        // is decided from the bytes below instead; this is only the fallback
+        // for a format the sniffer does not know.
+        let contentType = 'application/octet-stream';
         // Body read is kept inside the timeout window so a hung stream still aborts.
         let bytes;
         try {
@@ -119,6 +126,11 @@ export async function copyUrlToR2(sourceUrl, r2Key, cfg, { timeoutMs = 30000, ma
         if (expectMp4) {
             if (!isMp4(bytes)) return { ok: false, error: 'source not mp4' };
             contentType = 'video/mp4';
+        } else {
+            // One of the media types we actually serve, or nothing: an unknown
+            // format is stored as a download rather than as something a
+            // browser will render.
+            contentType = sniffType(bytes) || 'application/octet-stream';
         }
         // Hash the provider's bytes before they are stored, so the digest
         // describes what the user receives (ADR-0025 option E). The delivery
