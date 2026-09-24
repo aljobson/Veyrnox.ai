@@ -233,3 +233,35 @@ Provider data handling and production suitability remain unverified by this
 technical smoke test. Activation/swap is a separate migration through the
 owner-approved `apply-migrations` workflow on main (ADR-0023); never direct SQL.
 No production activation or pack-price change is part of this staging change.
+
+## Update (2026-09-24): Hailuo output verified; activation prepared (0112)
+
+The remaining resolution check for `hailuo-02-kie` is complete. On kie's
+Logs page, task `408da84ad1071e48a5ec5bc42d1c7de8` shows success and a
+30-credit charge ($0.15). The Result preview's loaded HTML video metadata is
+**1366x768, 5.875 seconds**, matching the nominal 6s 768p tier. The output is
+served from `tempfile.aiquickdraw.com`; the earlier adapter run recorded
+HTTP 200 without redirect. This inspection reused the existing paid result.
+
+0112 activates this row as "MiniMax Hailuo 02" and deactivates the fal row
+`minimax-hailuo-02` in one guarded DO block. A missing row or a changed kie
+endpoint, cost or billed unit aborts the whole swap. Replaying it is harmless.
+The fallback model and SUNSET DRIFT preset move together to 10 credits.
+
+| One nominal 6s Hailuo clip | Before (fal) | After (kie) |
+|---|---:|---:|
+| Supplier cost | $0.27 | $0.15 |
+| Veyrnox credits | 17 | 10 |
+| Retail at current pack rates | $1.275-$1.70 | $0.75-$1.00 |
+
+That is a 41% reduction in credits and a 44% reduction in supplier cost.
+The gateway still sells one unit, pins duration `6` with `nsfw_checker: true`,
+and exposes no 10s option. The established signed kie callback, result re-fetch,
+R2 copy and refund paths are unchanged. A Hailuo-specific generation through
+the signed-in app remains unverified; this is provider-output verification,
+not a claim that that app test ran.
+
+This migration follows the owner-approved production workflow. Seedream's
+4 -> 4.5 decision, the failing kie speech row and GrsAI activation are separate.
+Rollback is a new guarded migration making the fal Hailuo row active and kie
+inactive, with the matching fallback/preset reversal.

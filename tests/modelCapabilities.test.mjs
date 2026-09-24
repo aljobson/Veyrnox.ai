@@ -163,7 +163,7 @@ test('the tokens.js fallback offers the lengths the live catalog does', () => {
         'wan-2.5-kie': 'market:wan/2-5-text-to-video',
         'kling-2.6-pro-kie': 'market:kling-2.6/text-to-video',
         'kling-3.0-i2v': 'fal-ai/kling-video/v3/pro/image-to-video',
-        'minimax-hailuo-02': 'fal-ai/minimax/hailuo-02/standard/text-to-video',
+        'hailuo-02-kie': 'market:hailuo/02-text-to-video-standard',
         'veo-3.1-kie': 'veo:veo3', 'veo-3.1-fast-kie': 'veo:veo3_fast',
         'nano-banana-kie': 'market:google/nano-banana', 'flux-2-pro': 'fal-ai/flux-2-pro',
         'seedream-4': 'fal-ai/bytedance/seedream/v4/text-to-image', 'ace-step': 'fal-ai/ace-step',
