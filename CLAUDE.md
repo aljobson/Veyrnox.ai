@@ -63,6 +63,11 @@ If a build starts failing after a dependency change, bisect these three first.
 - Migrations live in `packages/db/schema/supabase/` with a `NNNN_<snake_case>`
   name — never `execute_sql` for DDL. Every migration must be idempotent
   (`IF NOT EXISTS`, `OR REPLACE`).
+- New catalog UPDATE migrations (0111 onward) must immediately assert an exact,
+  positive ROW_COUNT for every UPDATE. Use the DO-block pattern in
+  `packages/db/schema/supabase/README.md`; CI checks it. Keep predicates replay-safe
+  and leave applied migrations unchanged. Do not hide catalog updates in dynamic
+  SQL or swallow their row-count exceptions.
 - Production migrations are applied only by the `apply-migrations` workflow on
   `main`, after the owner approves the run (ADR-0023). Sessions do not call
   `apply_migration` on production unless the owner says in chat that the
