@@ -319,3 +319,26 @@ export const PROMO_STRIP = {
 export function shelfName(name) {
   return String(name || '').replace(/\s*\([^()]*\)\s*$/, '');
 }
+
+// Which catalog rows the public surfaces may advertise.
+//
+// The landing shelf and site search list the live catalog, but the picker in
+// app/create does not sell every active row, and a shelf that offers what the
+// picker hides sends a visitor looking for a product that is not there (audit
+// 2026-09-23, finding 12: "Auto Short" was priced at 110 credits on the
+// landing page while the picker kept it behind a flag).
+//
+// Two kinds of row are held back:
+//   - edit tools (Clip Editor) — they act on Library files, not on a prompt,
+//     so they belong in the Library, not on a shelf of models.
+//   - topic rows (Auto Short) — gated behind localStorage.veyrnox_auto_short
+//     in app/create until launch (CLAUDE.md "Delivery").
+//
+// Takes a capability record: `capabilityFor(row.provider_endpoint)` on the
+// server, or the `capabilities` GET /api/catalog attaches to each row.
+// When Auto Short launches, its gate in app/veyrnox/app/create/page.js and the
+// `topic` clause below come out in the same commit.
+export function isShelfModel(capabilities) {
+  const inputs = (capabilities && capabilities.inputs) || {};
+  return !(capabilities && capabilities.edit) && !inputs.clips && !inputs.topic;
+}

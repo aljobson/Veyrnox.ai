@@ -1,4 +1,4 @@
-import { FAQ, MODELS as MODELS_FALLBACK, kindOf } from './_lib/tokens';
+import { FAQ, MODELS as MODELS_FALLBACK, kindOf, isShelfModel } from './_lib/tokens';
 import { select, envConfig } from '../../packages/db/supabase-client.js';
 import { capabilityFor } from '../../lib/modelCapabilities.js';
 import { SITE_URL, JsonLd } from '../seo';
@@ -40,9 +40,10 @@ async function loadCatalog() {
       cfg,
     );
     if (!Array.isArray(rows) || rows.length === 0) throw new Error('empty');
-    // The Clip Editor edits Library files; it is a tool, not a model on the shelf.
+    // Only what the picker in app/create will sell to everyone reaches the
+    // shelf: the Clip Editor is a Library tool, and Auto Short is still gated.
     // Normalise to the shape our page expects: { id, name, credits, kind, tag?, premium?, gated? }
-    return rows.filter((m) => !capabilityFor(m.provider_endpoint)?.edit).map((m) => ({
+    return rows.filter((m) => isShelfModel(capabilityFor(m.provider_endpoint))).map((m) => ({
       id: m.id,
       name: m.name,
       credits: m.credits_5s,
