@@ -90,6 +90,7 @@ jobs:
             })();
           "
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/replay-migrations.mjs
+          DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-reconciliation-snapshot.mjs
 
       - name: Run catalog margin-floor tests
         run: npx tsx --test packages/catalog/margin-validator.test.ts

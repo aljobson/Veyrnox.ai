@@ -7,7 +7,7 @@
  * raising — but a pg_cron failure only lands in cron.job_run_details, which
  * nothing watches. Drift could sit there for weeks.
  *
- * This reads the counts-only reconcile_status() RPC (migration 0072) so
+ * This reads the counts-only reconcile_status() snapshot (migration 0128) so
  * .github/workflows/reconcile-watch.yml can open an issue the hour it breaks,
  * the same shape as check-migration-ledger.mjs. Anon-callable and
  * counts-only, so no service-role key lives in Actions (PR #61).
@@ -38,7 +38,7 @@ export async function fetchStatus({ url, key }) {
         signal: AbortSignal.timeout(20000),
     });
     if (!res.ok) {
-        throw new Error(`reconcile_status answered ${res.status} — is migration 0072 applied?`);
+        throw new Error(`reconcile_status answered ${res.status} — check snapshot freshness and migration 0128`);
     }
     const body = await res.json();
     // PostgREST returns a SETOF as an array; one row is expected.
