@@ -51,3 +51,31 @@ Rollback is a new guarded migration restoring Hailuo to 10, retiring the new
 packs and reactivating the old ones. Do not delete historical packs or rewrite
 purchased balances. The old $0.075 sticker CHECK cannot be restored while
 cheaper rows exist, even if those rows are inactive.
+
+
+## Sana added alongside FLUX (owner request, 2026-09-24)
+
+0119 stages `sana-1.5-4.8b` as a separate fal image model at 1 credit and
+$0.01 recorded cost. FLUX.2 Pro retains its identity, endpoint and 2-credit
+charge. The live model picker uses the catalog, so no replacement or alias
+is required. The new option is not added to the offline fallback while inactive.
+
+The live fal OpenAPI schema was fetched and verified. Its default image size
+is 3840x2160, which would exceed the margin budget. The capability record pins
+one 1024x768 PNG, 18 steps, guidance 5, default style, safety enabled and
+async output. Prompt, negative prompt and seed are the only user inputs.
+Client size/count/step/safety overrides and reference images are refused.
+It uses the existing fal queue, signed webhook, storage and refund paths.
+
+The expected contribution margin is 68.5% at the largest proposed pack under
+the documented fee assumptions. This is a distinct budget option, not a claim
+that its image quality is equivalent to FLUX. Endpoint documentation:
+https://fal.ai/models/fal-ai/sana/v1.5/4.8b/api .
+
+No FAL_KEY is available in this checkout or process environment, so a paid
+live generation and charged-cost verification could not be run. 0119 stays
+inactive pending a deployed submit -> signed webhook -> R2 -> STORED test,
+charge confirmation, output inspection and failure/refund verification.
+Activation requires a separate guarded migration; do not enable by editing
+an applied staging migration. The user's request authorises adding Sana;
+no further product choice is needed.

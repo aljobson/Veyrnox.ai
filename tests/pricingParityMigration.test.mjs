@@ -31,7 +31,7 @@ test('parity migration is atomic, replayable and guards price/cost drift', {
       ALTER TABLE public.credit_packs DROP CONSTRAINT credit_packs_active_needs_variant;
       UPDATE public.credit_packs SET active=true;
       CREATE TABLE public.model_catalog (
-        id text primary key, provider text, provider_endpoint text, credits_5s integer,
+        id text primary key, name text, modality text, gated_flag boolean, provider text, provider_endpoint text, credits_5s integer,
         provider_cost_per_unit numeric, cost_unit text, billing_seconds numeric,
         active boolean, updated_at timestamptz default now());
       INSERT INTO public.model_catalog (id,provider,provider_endpoint,credits_5s,provider_cost_per_unit,cost_unit,billing_seconds,active) VALUES ${seed};
@@ -66,6 +66,14 @@ test('parity migration is atomic, replayable and guards price/cost drift', {
         assert.equal(sql("SELECT string_agg(id || ':' || credits_5s, ',' ORDER BY id) FROM model_catalog"),
             'flux-2-pro:2,hailuo-02-kie:9,nano-banana-kie:2');
         assert.equal(sql('SELECT credits || \':\' || price_usd_cents FROM top_ups'), '300:2500');
+        const sana = readFileSync(new URL('../packages/db/schema/supabase/0119_sana_image_option.sql', import.meta.url), 'utf8');
+        sql(sana);
+        sql(sana);
+        assert.equal(sql("SELECT credits_5s || ':' || active FROM model_catalog WHERE id='sana-1.5-4.8b'"), '1:false');
+        assert.equal(sql("SELECT credits_5s || ':' || active FROM model_catalog WHERE id='flux-2-pro'"), '2:true');
+        sql("UPDATE model_catalog SET provider_cost_per_unit=0.02 WHERE id='sana-1.5-4.8b'");
+        sql(sana, true);
+
         sql("UPDATE credit_packs SET price_usd_cents=12899 WHERE id='web-3000'", true);
         // Conflicting target packs abort instead of silently claiming parity.
         sql("UPDATE credit_packs SET price_usd_cents=13000 WHERE id='web-3000'");
