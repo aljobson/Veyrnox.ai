@@ -384,7 +384,7 @@ export async function presignGetUrl(key, expiresSeconds, cfg) {
  * R2 keys are random UUIDs under a `user_id` prefix (CLAUDE.md).
  * Returns { url, expires, contentType } or throws for config errors.
  */
-export async function presignPutUrl(key, contentType, expiresSeconds, cfg) {
+export async function presignPutUrl(key, contentType, expiresSeconds, cfg, sizeBytes) {
     if (!isConfigured(cfg)) {
         throw new Error('R2 not configured');
     }
@@ -394,6 +394,10 @@ export async function presignPutUrl(key, contentType, expiresSeconds, cfg) {
     const ct = String(contentType || '').trim().toLowerCase();
     if (!ct) throw new Error('contentType required');
 
+    const strict = sizeBytes !== undefined;
+    if (strict && (!Number.isSafeInteger(sizeBytes) || sizeBytes < 1 || sizeBytes > 100 * 1024 * 1024)) throw new Error('invalid upload size');
+    const signedHeaders = strict ? 'content-length;content-type;host;if-none-match' : 'content-type;host';
+    const canonicalHeaders = (strict ? `content-length:${sizeBytes}\n` : '') + `content-type:${ct}\nhost:${endpointHost(cfg)}\n` + (strict ? 'if-none-match:*\n' : '');
     const expires = Math.max(60, Math.min(900, expiresSeconds | 0));
     const amzDate = iso8601BasicNow();
     const dateStamp = amzDate.slice(0, 8);
@@ -406,7 +410,7 @@ export async function presignPutUrl(key, contentType, expiresSeconds, cfg) {
         'X-Amz-Credential': `${cfg.accessKeyId}/${credentialScope}`,
         'X-Amz-Date': amzDate,
         'X-Amz-Expires': String(expires),
-        'X-Amz-SignedHeaders': 'content-type;host',
+        'X-Amz-SignedHeaders': signedHeaders,
     });
     // Params sorted lexicographically per SigV4.
     const sorted = new URLSearchParams();
@@ -415,12 +419,12 @@ export async function presignPutUrl(key, contentType, expiresSeconds, cfg) {
 
     // Canonical headers are sorted by lowercased name: content-type, host.
     const canonicalRequest =
-        `PUT\n${canonicalUri}\n${canonicalQuery}\ncontent-type:${ct}\nhost:${host}\n\ncontent-type;host\nUNSIGNED-PAYLOAD`;
+        `PUT\n${canonicalUri}\n${canonicalQuery}\n${canonicalHeaders}\n${signedHeaders}\nUNSIGNED-PAYLOAD`;
     const stringToSign =
         `AWS4-HMAC-SHA256\n${amzDate}\n${credentialScope}\n${await sha256Hex(new TextEncoder().encode(canonicalRequest))}`;
     const kSigning = await signingKey(cfg.secretAccessKey, dateStamp);
     const signature = bytesToHex(await hmacSha256(kSigning, stringToSign));
     sorted.append('X-Amz-Signature', signature);
 
-    return { url: `https://${host}${canonicalUri}?${sorted.toString()}`, expires, contentType: ct };
+    return { url: `https://${host}${canonicalUri}?${sorted.toString()}`, expires, contentType: ct, ...(strict ? { headers: { 'Content-Type': ct, 'If-None-Match': '*' } } : {}) };
 }

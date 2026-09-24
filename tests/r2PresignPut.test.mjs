@@ -11,7 +11,7 @@ const KEY = 'uploads/11111111-2222-3333-4444-555555555555/abcdef.png';
 // rather than Web Crypto. If the adapter's canonical request drifts — a missing
 // newline, an unsorted header, the wrong method — these signatures diverge.
 // A test that reused the adapter's own helpers would agree with any bug.
-function expectedSignature(url, contentType, cfg) {
+function expectedSignature(url, contentType, cfg, size) {
     const u = new URL(url);
     const amzDate = u.searchParams.get('X-Amz-Date');
     const dateStamp = amzDate.slice(0, 8);
@@ -24,10 +24,12 @@ function expectedSignature(url, contentType, cfg) {
         'PUT',
         u.pathname,
         canonicalQuery,
+        ...(size === undefined ? [] : [`content-length:${size}`]),
         `content-type:${contentType}`,
         `host:${u.host}`,
+        ...(size === undefined ? [] : ['if-none-match:*']),
         '',
-        'content-type;host',
+        size === undefined ? 'content-type;host' : 'content-length;content-type;host;if-none-match',
         'UNSIGNED-PAYLOAD',
     ].join('\n');
 
@@ -109,4 +111,16 @@ test('an unconfigured bucket throws rather than returning an unsigned URL', asyn
 test('an empty content type is refused rather than signed as blank', async () => {
     await assert.rejects(() => presignPutUrl(KEY, '', 900, CFG), /contentType required/);
     await assert.rejects(() => presignPutUrl(KEY, '   ', 900, CFG), /contentType required/);
+});
+
+test('strict signatures bind actual length and require object absence', async () => {
+    const signed = await presignPutUrl(KEY, 'image/png', 900, CFG, 1024);
+    const u = new URL(signed.url);
+    assert.equal(u.searchParams.get('X-Amz-SignedHeaders'), 'content-length;content-type;host;if-none-match');
+    assert.equal(u.searchParams.get('X-Amz-Signature'), expectedSignature(signed.url, 'image/png', CFG, 1024));
+    assert.deepEqual(signed.headers, { 'Content-Type': 'image/png', 'If-None-Match': '*' });
+    assert.notEqual(u.searchParams.get('X-Amz-Signature'), new URL((await presignPutUrl(KEY, 'image/png', 900, CFG, 1025)).url).searchParams.get('X-Amz-Signature'));
+    for (const size of [0, -1, NaN, 100 * 1024 * 1024 + 1]) {
+        await assert.rejects(presignPutUrl(KEY, 'image/png', 900, CFG, size), /invalid upload size/);
+    }
 });
