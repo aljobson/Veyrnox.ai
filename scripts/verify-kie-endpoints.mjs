@@ -87,6 +87,31 @@ const ROWS = [
         inputs: { prompt: 'A ceramic teapot on a linen cloth, soft window light', aspect_ratio: '1:1' },
     },
     {
+        id: 'hailuo-02-kie',
+        endpoint: 'market:hailuo/02-text-to-video-standard',
+        credits: 10,
+        cost: 0.15,
+        unit: '6s 768p clip',
+        inputs: { prompt: 'A lantern floating up a misty river at night, slow drift', duration_seconds: 5 },
+    },
+    {
+        id: 'seedream-4.5-kie',
+        endpoint: 'market:seedream/4.5-text-to-image',
+        credits: 2,
+        cost: 0.0325,
+        unit: 'one 2K image',
+        inputs: { prompt: 'A ceramic teapot on a linen cloth, soft window light', aspect_ratio: '1:1' },
+    },
+    {
+        id: 'elevenlabs-tts-turbo-kie',
+        endpoint: 'market:elevenlabs/text-to-speech-turbo-2-5',
+        credits: 2,
+        cost: 0.03,
+        unit: '1000 characters of speech',
+        // 964 characters, so the run bills the full priced unit.
+        inputs: { prompt: 'The lighthouse keeper climbed the spiral stairs each evening at dusk, one hand on the cold iron rail, counting the steps out of habit. Below him the sea folded itself against the rocks in long grey sheets. He lit the lamp, checked the glass for salt, and watched the beam sweep out over the water until it caught the white shoulder of a distant wave. Somewhere out there a ship was listening for that light. He wrote the hour in the log, made tea on the little stove, and settled by the window to wait for the weather to change. Morning would bring gulls, and the supply boat, and news from the mainland. Tonight there was only the lamp, the tide, and the patient work of keeping a small bright promise to strangers he would never meet. He turned the page and began again, as he always did, with the wind. The gulls would come at first light, and with them the smell of rain on distant hills, and the slow ordinary business of another day at the edge of the world.' },
+    },
+    {
         id: 'veo-3.1-kie',
         endpoint: 'veo:veo3',
         credits: 76,

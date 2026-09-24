@@ -51,6 +51,12 @@ const VEO_ASPECTS = new Set(['16:9', '9:16']);
 const NANO_ASPECTS = new Set(['1:1', '9:16', '16:9', '3:4', '4:3', '3:2', '2:3', '5:4', '4:5', '21:9']);
 const NANO_PRO_ASPECTS = new Set([...NANO_ASPECTS, 'auto']);
 const CLIP_ASPECTS = new Set(['16:9', '9:16', '1:1']);
+const SEEDREAM_ASPECTS = new Set(['1:1', '4:3', '3:4', '16:9', '9:16', '2:3', '3:2', '21:9']);
+// One priced ElevenLabs unit is 1000 characters ($0.03); the record caps text there.
+const SPEECH_MAX_CHARS = 1000;
+// kie's default voice is a different one from fal's. Pin fal's default so the
+// swap does not change what users hear.
+const SPEECH_VOICE = 'Rachel';
 // Clip lengths our 5s unit can buy on the video market models: 5s, or 10s at
 // exactly twice the price (kie bills both per video, 10s = 2x 5s).
 const CLIP_SECONDS = new Set([5, 10]);
@@ -122,6 +128,30 @@ export function buildRequest(target, inputs) {
         if (aspect && !NANO_PRO_ASPECTS.has(aspect)) return { ok: false, error: 'inputs_invalid:aspect_ratio' };
         if (inputs.image_url) return { ok: false, error: 'inputs_key_not_allowed:image_url' };
         return { ok: true, body: { model: target.model, input: { prompt, aspect_ratio: aspect || '1:1', resolution: '2K', output_format: 'png' } } };
+    }
+
+    // Hailuo 02 Standard text-to-video: kie sells a 6s 768p clip at $0.15 and
+    // our 5s unit buys that 6s clip. No aspect ratio or source image exists.
+    if (target.model === 'hailuo/02-text-to-video-standard') {
+        if (aspect) return { ok: false, error: 'inputs_key_not_allowed:aspect_ratio' };
+        if (inputs.image_url) return { ok: false, error: 'inputs_key_not_allowed:image_url' };
+        if (inputs.duration_seconds !== undefined && inputs.duration_seconds !== 5) return { ok: false, error: 'duration_not_supported' };
+        return { ok: true, body: { model: target.model, input: { prompt, duration: '6', nsfw_checker: true } } };
+    }
+
+    // Seedream 4.5: 'basic' is the 2K tier ($0.0325); 'high' is 4K and is never sent.
+    if (target.model === 'seedream/4.5-text-to-image') {
+        if (aspect && !SEEDREAM_ASPECTS.has(aspect)) return { ok: false, error: 'inputs_invalid:aspect_ratio' };
+        if (inputs.image_url) return { ok: false, error: 'inputs_key_not_allowed:image_url' };
+        return { ok: true, body: { model: target.model, input: { prompt, aspect_ratio: aspect || '1:1', quality: 'basic', nsfw_checker: true } } };
+    }
+
+    // ElevenLabs Turbo 2.5 speech: our `prompt` is the text to speak.
+    if (target.model === 'elevenlabs/text-to-speech-turbo-2-5') {
+        if (aspect) return { ok: false, error: 'inputs_key_not_allowed:aspect_ratio' };
+        if (inputs.image_url) return { ok: false, error: 'inputs_key_not_allowed:image_url' };
+        if (prompt.length > SPEECH_MAX_CHARS) return { ok: false, error: 'inputs_invalid:prompt' };
+        return { ok: true, body: { model: target.model, input: { text: prompt, voice: SPEECH_VOICE, timestamps: false } } };
     }
 
     // A market model with no mapping here is not sellable: fail closed rather

@@ -48,6 +48,34 @@ test('Wan 2.5 and Kling 2.6 are pinned to the tier they are costed at, and a 10s
     }
 });
 
+test('Hailuo 02 buys the 6s clip for our 5s unit, with kie\'s content filter on', () => {
+    const t = parseEndpoint('market:hailuo/02-text-to-video-standard');
+    assert.deepEqual(buildRequest(t, { prompt: 'a cat' }).body, { model: 'hailuo/02-text-to-video-standard', input: { prompt: 'a cat', duration: '6', nsfw_checker: true } });
+    assert.equal(buildRequest(t, { prompt: 'x', duration_seconds: 5 }).ok, true);
+    assert.equal(buildRequest(t, { prompt: 'x', duration_seconds: 10 }).error, 'duration_not_supported');
+    assert.equal(buildRequest(t, { prompt: 'x', aspect_ratio: '16:9' }).error, 'inputs_key_not_allowed:aspect_ratio');
+    assert.equal(buildRequest(t, { prompt: 'x', image_url: 'https://r2.example/a.png' }).error, 'inputs_key_not_allowed:image_url');
+});
+
+test('Seedream 4.5 pins the basic tier and never sends the 4K one', () => {
+    const t = parseEndpoint('market:seedream/4.5-text-to-image');
+    assert.deepEqual(buildRequest(t, { prompt: 'p', aspect_ratio: '21:9' }).body,
+        { model: 'seedream/4.5-text-to-image', input: { prompt: 'p', aspect_ratio: '21:9', quality: 'basic', nsfw_checker: true } });
+    assert.equal(buildRequest(t, { prompt: 'p', quality: 'high' }).body.input.quality, 'basic');
+    assert.equal(buildRequest(t, { prompt: 'p', aspect_ratio: '4:5' }).error, 'inputs_invalid:aspect_ratio');
+    assert.equal(buildRequest(t, { prompt: 'p', image_url: 'https://r2.example/a.png' }).error, 'inputs_key_not_allowed:image_url');
+});
+
+test('ElevenLabs Turbo speaks the prompt with fal\'s default voice, capped at the 1000 characters priced', () => {
+    const t = parseEndpoint('market:elevenlabs/text-to-speech-turbo-2-5');
+    assert.deepEqual(buildRequest(t, { prompt: 'hello there' }).body,
+        { model: 'elevenlabs/text-to-speech-turbo-2-5', input: { text: 'hello there', voice: 'Rachel', timestamps: false } });
+    assert.equal(buildRequest(t, { prompt: 'x'.repeat(1000) }).ok, true);
+    assert.equal(buildRequest(t, { prompt: 'x'.repeat(1001) }).error, 'inputs_invalid:prompt');
+    assert.equal(buildRequest(t, { prompt: 'x', voice: 'Adam' }).body.input.voice, 'Rachel');
+    assert.equal(buildRequest(t, { prompt: 'x', aspect_ratio: '1:1' }).error, 'inputs_key_not_allowed:aspect_ratio');
+});
+
 test('Nano Banana Pro pins 2K so a request cannot reach the 4K rate', () => {
     const t = parseEndpoint('market:nano-banana-pro');
     assert.deepEqual(buildRequest(t, { prompt: 'p', aspect_ratio: 'auto' }).body,
