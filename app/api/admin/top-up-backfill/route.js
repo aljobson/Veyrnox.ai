@@ -36,6 +36,7 @@ import { fetchOrder, listOrders } from '../../../../packages/adapters/lemonsquee
 import { runBackfill, runOrderSweep } from '../../../../lib/topUpBackfill.js';
 import { tokenMatches, bearerToken } from '../../../../lib/tokenMatches.js';
 import { retryAfterSeconds, recordFailure } from '../../../../lib/adminThrottle.js';
+import { requireAccess } from '../../../../lib/accessJwt.js';
 
 const LOG = '[top-up-backfill]';
 const THROTTLE_BUCKET = 'top-up-backfill';
@@ -49,6 +50,12 @@ const SWEEP_BATCH = 10;
 const SWEEP_BUDGET_MS = 15000;
 
 export async function POST(req) {
+    // Cloudflare Access is the front door for anything that arrives from the
+    // internet; the Worker cron's own invocation never crosses the edge and
+    // is recognised by the absence of cf-ray (lib/accessJwt.js).
+    const gate = await requireAccess(req);
+    if (!gate.ok) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+
     const token = process.env.TOP_UP_BACKFILL_TOKEN;
     if (!token) return NextResponse.json({ error: 'not_configured' }, { status: 503 });
     // Compared before the throttle is consulted: the Cron Trigger and the
