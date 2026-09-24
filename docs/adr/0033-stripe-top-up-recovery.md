@@ -1,6 +1,6 @@
 # ADR-0033 — Recovering a paid Top-up when the Stripe webhook never lands
 
-**Status:** Proposed 2026-09-24
+**Status:** Proposed 2026-09-24 — amended 2026-09-24 (see Amendments)
 **Related:** [ADR-0031](0031-stripe-replaces-lemonsqueezy.md) (Stripe replaces
 LemonSqueezy — §Consequences names this gap and the intended direction),
 [ADR-0018](0018-credit-pack-top-ups.md) (Credit Pack Top-ups — credit/refund
@@ -31,7 +31,7 @@ widening" — on Stripe, no part of the recovery runs. Re-checked against
 | `POST /api/v1/top-ups/:id/return` | requires `^[0-9]{1,20}$` and a UUID |
 | `record_top_up_return` (0064) | same numeric guard |
 | `lib/topUpBackfill.js:56` | verifies by re-fetching a **LemonSqueezy JSON:API order** and comparing `order.attributes.identifier`, a field only that provider has |
-| `top_ups_return_order_id_format` CHECK (0060) | `return_order_id ~ '^[0-9]{1,20}$'` — a **table constraint**, so a `cs_…` is rejected even if both RPC guards are widened. The audit named the two functions and missed this one. |
+| `top_ups_return_order_id_format` CHECK | a **table constraint**, so it blocks a `cs_…` even if both RPC guards are widened. The audit named the two functions and missed this one — and this ADR then described its contents wrongly; see the amendment. |
 
 Widening the two regexes would achieve nothing, because no data reaches them.
 
@@ -136,6 +136,48 @@ and the adapter can already fetch a session by id (`:197`).
   branch does not exist, which is the state we are in today.
 - `order_identifier` columns keep existing rows' data for the LemonSqueezy era;
   they are not dropped in this migration, so the historical audit trail survives.
+
+## Amendments
+
+### 2026-09-24 — the return CHECK is a length cap, not a digits cap
+
+The Context table above, and the Consequences entry saying
+`top_ups_return_order_id_format` "must be replaced, not just the guards",
+described the constraint as requiring digits. **That was wrong.** It survived
+from the audit into this ADR because nobody read the current definition, only
+0060's original one.
+
+`0097_stripe_money_path_ids.sql` had already replaced it:
+
+```sql
+CHECK (return_order_id IS NULL OR return_order_id ~ '^[A-Za-z0-9_]{1,64}$')
+```
+
+The character class is right. **The 64-character bound is the blocker**: a
+Stripe Checkout Session id runs to roughly 66-72 characters, so it is refused
+on length while looking as though it ought to pass — a failure that reads as a
+mystery rather than as a validation rule, which is presumably how it escaped
+both the audit and this ADR.
+
+**What 0108 does instead of "replacing" it.** It keeps 0097's character class
+and raises the bound to 255, making the new constraint a strict *superset* of
+what production enforces today. `ADD CONSTRAINT` therefore cannot fail when it
+validates the table — the property that matters when a migration runs against
+live money data. The `cs_` prefix is asserted in
+`record_top_up_return_session`, where a wrong value is a caller error returning
+`INVALID_SESSION_ID` rather than a migration that cannot be applied.
+
+So decision 5's "retired, not widened" holds only for the app-layer validators.
+A table constraint must keep every existing row legal, so the coarse bound is
+widened deliberately and strictness lives in the writer.
+
+**Also found while implementing, and worse than either:** two of the five
+places were not validators but predicates that silently never match a Stripe
+row. `next_top_up_backfill_batch` requires `return_order_identifier IS NOT
+NULL`, so the row is never handed out; `close_top_up_return` matches on
+identifier equality, which is NULL and so never true, meaning a completed check
+could never close its own return and the row would be retried until the 7-day
+window shut. Widening any regex would have left both in place.
 
 ## Open questions
 
