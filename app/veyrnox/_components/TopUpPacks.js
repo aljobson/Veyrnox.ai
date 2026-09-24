@@ -1,7 +1,8 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from './Button';
 import { gatewayFetch, GatewayError, makeIdempotencyKey, notifyBalanceChanged, ACCOUNT_PAUSED_COPY } from '../_lib/gateway';
+import { retryTopUpReturn } from '../_lib/topUpReturnRetry';
 import { useCatalog } from '../_lib/useCatalog';
 
 // Supply Consent (CONTEXT.md), approved as v1 in #99: keep the text verbatim.
@@ -31,24 +32,32 @@ export function TopUpReturn() {
   const [topUpId, setTopUpId] = useState(null);
   const [phase, setPhase] = useState('processing');
   const [credits, setCredits] = useState(null);
+  const returnSession = useRef(null);
 
   useEffect(() => {
     const q = new URLSearchParams(window.location.search);
     const id = q.get('top_up');
     if (!id || !TOP_UP_ID_RE.test(id)) return;
     setTopUpId(id);
-    const sessionId = q.get('session_id');
+    const sessionId = q.get('session_id') || (returnSession.current?.id === id ? returnSession.current.sessionId : null);
     const stripSession = () => {
       const url = new URL(window.location.href);
       url.searchParams.delete('session_id');
       window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash);
     };
     if (sessionId && /^cs_[A-Za-z0-9_]{1,251}$/.test(sessionId)) {
-      // Best effort: polling below does not depend on recording the return.
-      gatewayFetch(`/top-ups/${id}/return`, {
+      // Capture only in memory, remove from the URL before bounded retries.
+      returnSession.current = { id, sessionId };
+      const controller = new AbortController();
+      stripSession();
+      retryTopUpReturn(() => gatewayFetch(`/top-ups/${id}/return`, {
         method: 'POST',
         body: JSON.stringify({ session_id: sessionId }),
-      }).catch(() => {}).finally(stripSession);
+        signal: controller.signal,
+      }), { signal: controller.signal }).catch(() => {}).finally(() => {
+        if (!controller.signal.aborted) returnSession.current = null;
+      });
+      return () => controller.abort();
     } else if (sessionId !== null) {
       stripSession();
     }
