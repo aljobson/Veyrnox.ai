@@ -285,3 +285,19 @@ The integration uses local Postgres/PostgREST and a TLS S3 emulator, with
 direct route and sweep invocation. It does not verify production JWT
 middleware, Cloudflare cron scheduling or actual R2 deployment. GrsAI stays
 inactive pending those deployment checks. This fix requires no migration.
+
+
+## Update 2026-09-24 — third verified GrsAI output host
+
+The isolated deployed Worker submitted task `1-24ff97d4-c850-412a-b147-662e489c13d5`
+through the authenticated generation route against AI staging. An authenticated
+GrsAI result read returned `file5.aitohumanize.com`, which the existing exact-host
+allowlist correctly refused. An independent no-redirect HTTPS fetch returned 200,
+1,540,984 bytes, and a 2048x2048 PNG with SHA-256
+`f88fac0c46c5a683ad3b8b079f4848eec1159ff1e7f967131ec7133f489e808a`.
+
+Add this exact host beside file1 and file6. Keep lookalikes, unknown sibling
+hosts, redirects and provider-key forwarding to the CDN refused. This change
+neither activates the production catalog row nor changes prices. Deployed cron
+and refund results are tracked separately; CDN verification alone is not
+production rollout approval.
