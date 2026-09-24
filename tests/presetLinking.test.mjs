@@ -14,6 +14,7 @@ test('every preset names a model that still exists in the catalog list', () => {
 test('model names resolve to ids, and a drifted name resolves to null', () => {
     assert.equal(modelIdForName('Wan 2.5'), 'wan-2.5-kie');
     assert.equal(modelIdForName('  wan 2.5  '), 'wan-2.5-kie', 'case and padding insensitive');
+    assert.equal(modelIdForName('MiniMax Hailuo 02'), 'hailuo-02-kie');
     assert.equal(modelIdForName('Wan 9.9'), null);
     assert.equal(modelIdForName(''), null);
     assert.equal(modelIdForName(undefined), null);

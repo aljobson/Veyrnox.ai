@@ -15,7 +15,7 @@ export const MODELS = [
   { id: 'seedance-2.0-fast',  name: 'Seedance 2.0 Fast',   credits: 28,                                         kind: 'video', durations: [5, 10] },
   { id: 'kling-avatar-v2',    name: 'Kling AI Avatar',     credits: 35,  tag: 'NEW',                            kind: 'video', durations: [5] },
   { id: 'latentsync',         name: 'LatentSync',          credits: 13,  tag: 'NEW',                            kind: 'video', durations: [5] },
-  { id: 'minimax-hailuo-02',  name: 'MiniMax Hailuo 02',   credits: 17,                                         kind: 'video', durations: [5] },
+  { id: 'hailuo-02-kie',      name: 'MiniMax Hailuo 02',   credits: 10,                                         kind: 'video', durations: [5] },
   { id: 'veo-3.1-kie',        name: 'Veo 3.1',             credits: 76,  tag: 'PREMIUM',    premium: true, gated: true, kind: 'video', durations: [5] },
   { id: 'veo-3.1-fast-kie',   name: 'Veo 3.1 Fast',        credits: 19,                                         kind: 'video', durations: [5] },
   { id: 'veo-3.1-lite-kie',   name: 'Veo 3.1 Lite',        credits: 10,                                         kind: 'video', durations: [5] },
@@ -67,7 +67,7 @@ export const PRESET_CATEGORIES = ['ALL', 'CINEMATIC', 'UGC', 'VFX', 'ADS'];
 
 export const PRESETS = [
   { id: 'cctv-night', name: 'CCTV NIGHT',   model: 'Wan 2.5',           credits: 19, category: 'CINEMATIC',  bg: 'linear-gradient(180deg,#08120b 0%,#0e3a1e 60%,#2ea258 100%)',  cached: true, badge: 'CACHED' },
-  { id: 'sunset-drift',name: 'SUNSET DRIFT', model: 'MiniMax Hailuo 02', credits: 17, category: 'CINEMATIC',  bg: 'linear-gradient(135deg,#2b1a0a 0%,#7a4a1e 60%,#f0b060 100%)',  cached: false },
+  { id: 'sunset-drift',name: 'SUNSET DRIFT', model: 'MiniMax Hailuo 02', credits: 10, category: 'CINEMATIC',  bg: 'linear-gradient(135deg,#2b1a0a 0%,#7a4a1e 60%,#f0b060 100%)',  cached: false },
   { id: 'neon-alley', name: 'NEON ALLEY',   model: 'Kling 2.6 Pro',     credits: 17, category: 'VFX',        bg: 'linear-gradient(135deg,#1b0632 0%,#5a0e6a 55%,#e4318f 100%)',  cached: true, badge: 'CACHED' },
   { id: 'warm-portrait',name: 'WARM PORTRAIT',model: 'Nano Banana',      credits: 2,  category: 'UGC',        bg: 'linear-gradient(160deg,#2c1a12 0%,#7a3520 60%,#c9713f 100%)' },
   { id: 'film-portrait',name: 'FILM PORTRAIT',model: 'Nano Banana Pro',  credits: 6,  category: 'CINEMATIC',  bg: 'linear-gradient(160deg,#120d08 0%,#4a3420 60%,#d8a868 100%)' },
