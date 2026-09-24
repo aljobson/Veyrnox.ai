@@ -3,7 +3,7 @@
  * source file straight to R2 for a Transform generation.
  *
  * Not the retired /api/v1/get_upload_url (ADR-0007), which proxied to
- * api.muapi.ai and was removed at its 2026-09-26 sunset.
+ * api.muapi.ai and was removed on 2026-09-24 (owner-approved early sunset).
  *
  * Path:
  *   1. middleware.js verified the JWT and set x-veyrnox-auth-id

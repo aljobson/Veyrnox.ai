@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 // Any /api/v1 path with no route of its own. The retired MuAPI passthrough
-// that lived here answered 410 until its sunset (ADR-0007, 2026-09-26); an
+// that lived here was removed early by owner request (ADR-0007, 2026-09-24); an
 // unknown path now gets a typed 404 rather than Next's HTML page.
 
 function notFound() {
