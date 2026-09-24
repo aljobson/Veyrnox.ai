@@ -12,6 +12,9 @@ See [`CONTEXT.md`](CONTEXT.md) for the domain language and [`docs/adr/`](docs/ad
 
 See [`docs/PHASE-1.md`](docs/PHASE-1.md) for the delivery plan.
 
+See the proposed [Social Cinema specification pack](docs/social-cinema/README.md) and
+[repository implementation handoff](docs/product/social-cinema-handoff.md) for the episodic video MVP.
+
 ## Development
 
 ```bash
