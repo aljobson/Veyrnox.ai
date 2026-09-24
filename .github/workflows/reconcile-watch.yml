@@ -8,7 +8,7 @@ name: reconcile-watch
 # nothing reads — the money invariant CLAUDE.md leans on could break and stay
 # broken until someone thought to look.
 #
-# Reads the counts-only reconcile_status() RPC (0072) with the publishable
+# Reads the fresh cached reconcile_status() counts (0128; 45-minute freshness limit) with the publishable
 # key from wrangler.jsonc. No secret, no service-role key in Actions (PR #61).
 # Same shape as migration-ledger.yml, including the "an outage is not a pass"
 # exit-2 handling and one-issue-per-episode filing.
