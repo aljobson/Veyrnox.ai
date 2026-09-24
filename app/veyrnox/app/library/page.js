@@ -55,12 +55,8 @@ export default function Library() {
   const [nextCursor, setNextCursor] = useState(null);
   const [listLive, setListLive] = useState(null);
   const [editorOn, setEditorOn] = useState(false);
-  const [expiryOn, setExpiryOn] = useState(false);
   const rowsRef = useRef(rows);
   rowsRef.current = rows;
-  useEffect(() => {
-    try { setExpiryOn(window.localStorage.getItem('veyrnox_asset_expiry') === '1'); } catch { /* opt-in only */ }
-  }, []);
   const [selected, setSelected] = useState([]);
   const [editing, setEditing] = useState(false);
   useEffect(() => {
@@ -310,7 +306,7 @@ export default function Library() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {list.map((r) => (
-              <JobCard key={r.job_id} row={r} models={models} expiryOn={expiryOn}
+              <JobCard key={r.job_id} row={r} models={models}
                 selectable={canSelect(r)} selected={selected.includes(r.job_id)} onToggle={() => toggle(r.job_id)} />
             ))}
           </div>
@@ -353,7 +349,7 @@ export default function Library() {
   );
 }
 
-function JobCard({ row, models, expiryOn, selectable, selected, onToggle }) {
+function JobCard({ row, models, selectable, selected, onToggle }) {
   const asset = useAssetUrl(row.job_id, row.asset_url);
   const refundPending = row.state === 'failed' && row.refunded === false;
   const s = STATE_UI[refundPending ? 'failed_pending' : row.state] || STATE_UI.queued;
@@ -410,7 +406,7 @@ function JobCard({ row, models, expiryOn, selectable, selected, onToggle }) {
           {delta} cr
         </div>
       </div>
-      {expiryOn && <AssetRetention row={row} />}
+      <AssetRetention row={row} />
     </div>
   );
 }
