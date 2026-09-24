@@ -1,6 +1,7 @@
 /**
  * Worker entry (OpenNext custom worker): the generated app handler, plus the
  * Cron Triggers that run every 5 minutes (wrangler.jsonc `triggers.crons`):
+ *   - GrsAI generation polling (lib/grsaiSweep.js)
  *   - the Top-up backfill (lib/scheduledBackfill.js)
  *   - the Auto Short step sweep (lib/autoShortSweep.js), which re-reads
  *     pipeline steps a provider callback never finished
@@ -17,6 +18,7 @@ import { runScheduledBackfill } from './lib/scheduledBackfill.js';
 import { sweepUploads, sweepConsumedUploads } from './lib/uploadSweep.js';
 import { isConfigured as r2IsConfigured } from './packages/adapters/r2.js';
 import { sweepSteps } from './lib/autoShortSweep.js';
+import { sweepGrsai } from './lib/grsaiSweep.js';
 import { reapAssets } from './lib/assetReap.js';
 import { runtimeDeps, runtimeKeys } from './lib/autoShortRuntime.js';
 
@@ -29,6 +31,10 @@ export default {
             runUploadSweep(env),
             runAutoShortSweep(env),
             runAssetReap(env),
+            sweepGrsai({
+                cfg: { supabaseUrl: env.SUPABASE_URL, serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY },
+                r2cfg: r2EnvFrom(env), apiKey: env.GRSAI_API_KEY,
+            }).then((out) => { if (out.checked) console.error('[grsai-sweep]', JSON.stringify(out)); }),
         ]);
         for (const r of results) {
             if (r.status === 'rejected') console.error('[cron] task threw:', r.reason && r.reason.message);

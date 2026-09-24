@@ -26,7 +26,7 @@ const CATALOG = [
     'veo:veo3_lite', 'veo:veo3_fast', 'veo:veo3', 'market:google/nano-banana',
     'market:wan/2-5-text-to-video', 'market:kling-2.6/text-to-video', 'market:nano-banana-pro',
     'market:hailuo/02-text-to-video-standard', 'market:seedream/4.5-text-to-image', 'market:elevenlabs/text-to-speech-turbo-2-5',
-    'bytedance/seedance-2.0-fast', 'auto-short:v1', 'clip-edit:v1',
+    'grsai:nano-banana-pro', 'bytedance/seedance-2.0-fast', 'auto-short:v1', 'clip-edit:v1',
 ];
 
 // Endpoints the pre-registry snapshot does not cover: corrected on purpose
@@ -93,7 +93,7 @@ test('each fal video row buys the lengths it sold before the registry', () => {
 
 test('kie and OpenRouter records accept exactly what their adapters build', () => {
     for (const [ep, record] of Object.entries(REGISTRY)) {
-        if (record.provider === 'fal') continue;
+        if (!['kie', 'openrouter'].includes(record.provider)) continue;
         const build = (inputs) => (record.provider === 'kie'
             ? kie.buildRequest(kie.parseEndpoint(ep), inputs)
             : openrouter.buildRequest(ep, inputs));

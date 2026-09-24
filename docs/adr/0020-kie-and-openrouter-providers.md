@@ -165,3 +165,71 @@ filtering (docs.kie.ai). This gateway does no moderation of its own, so every
 kie row that exposes the parameter sends `nsfw_checker: true` (#277 fixed Wan
 2.5, which 0106 had switched on without it). Kling 2.6, Nano Banana Pro and
 the speech row expose none.
+
+## Update (2026-09-24): staged GrsAI Nano Banana Pro route (0111)
+
+Add GrsAI behind the same generation gateway and money spine. ApiPass is not
+integrated: its documented Kling 2.6 create endpoint returned HTTP 404
+(`Model type not found or not configured`) in the authorised smoke test.
+
+### Verified scope and cost
+
+The owner authorised up to $2 total for initial GrsAI/ApiPass tests and manually
+funded GrsAI. One direct GrsAI task, `15-e87e0b94-981a-4f63-8c1d-ce511920333d`,
+succeeded in 41 seconds with a visually inspected 2048x2048 PNG. GrsAI's
+consumption log charged 1800 credits (333000 -> 331200). On the purchased
+$5 / 333000-credit pack, that is $0.027027... per image, about 70% below kie's
+$0.09. This is a single provider smoke test, not evidence of model provenance,
+long-term reliability or deployed Veyrnox end-to-end completion. The new
+adapter also re-read that successful task with the saved key without another
+paid submission.
+
+0111 stages `nano-banana-pro-grsai` **inactive** at 2 Veyrnox credits. The
+four-decimal cost column rounds conservatively up to $0.0271. This uses the
+existing ADR-0014 floor and leaves the live kie row and Credit Packs unchanged.
+At current pack rates, two credits cost $0.15-$0.20, with 82%-86.5% generation
+margin before payment fees, storage, support and other costs. A proposed $0.09
+retail price would have about 70% generation margin, but needs a separate
+credit/pack pricing decision; this change does not implement it.
+
+### Completion and security
+
+- `packages/adapters/grsai.js` calls the fixed global API `grsaiapi.com` with
+  `GRSAI_API_KEY`: POST `/v1/draw/nano-banana` for submission and POST
+  `/v1/draw/result` for reads. No caller can supply an API host or model.
+- Requests pin `nano-banana-pro`, `imageSize: 2K`, `webHook: -1` and
+  `shutProgress: true`. One output; text-to-image only. Prompt/aspect bounds
+  are checked before debiting. No image edit, paid upscale or model fallback.
+- No unsigned webhook is exposed. The existing five-minute Worker cron
+  polls with our key and verifies that each response names the requested task.
+  Up to 50 oldest unfinished jobs are read, five concurrently; storage is
+  serial with a 20 MB image cap and a three-minute work budget. This
+  introduces up to a polling interval of completion latency under normal load;
+  sustained backlogs need a queue before broad rollout.
+- Only terminal API outcomes reach `completeJob`: the existing event dedup,
+  job transition, R2 storage and idempotent ledger refund. A provider failure
+  is refunded using our job's user and credits. A still-running task after
+  30 minutes fails with `provider_timeout`; transient read errors retry at
+  the next tick. The database's stuck-job sweep remains the backstop.
+- The scheduled handler passes R2 credentials explicitly from `env`; it
+  cannot depend on a request's `process.env`. Existing webhook callers keep
+  their default configuration.
+- Output URLs reportedly expire after two hours. Only the exact observed
+  host `file6.aitohumanize.com` is added to the provider-specific R2 allowlist.
+  No wildcard, no redirects and no provider key on CDN downloads. A new host
+  fails closed until separately verified. Existing size limits and content
+  sniffing remain in force.
+- A rejected submit follows the gateway's existing refund path. Paid submits
+  are never retried automatically, including ambiguous timeouts. Transient
+  result/storage failures retry completion without buying another image.
+
+### Rollout
+
+Deploy the code with the catalog row inactive. Provision `GRSAI_API_KEY` via
+`wrangler secret put` without printing it. Validate the deployed
+submit -> authenticated poll -> R2 -> STORED path and failure/refund path in
+an isolated test environment, and verify the current output host and charge.
+Provider data handling and production suitability remain unverified by this
+technical smoke test. Activation/swap is a separate migration through the
+owner-approved `apply-migrations` workflow on main (ADR-0023); never direct SQL.
+No production activation or pack-price change is part of this staging change.
