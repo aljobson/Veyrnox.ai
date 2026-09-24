@@ -2,8 +2,8 @@
  * POST /api/v1/uploads — mint a presigned PUT so the browser can send a
  * source file straight to R2 for a Transform generation.
  *
- * This is NOT the retired /api/v1/get_upload_url (ADR-0007), which proxied
- * to api.muapi.ai and still answers 410. Nothing here talks to that brand.
+ * Not the retired /api/v1/get_upload_url (ADR-0007), which proxied to
+ * api.muapi.ai and was removed on 2026-09-24 (owner-approved early sunset).
  *
  * Path:
  *   1. middleware.js verified the JWT and set x-veyrnox-auth-id

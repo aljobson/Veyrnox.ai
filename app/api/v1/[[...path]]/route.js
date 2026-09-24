@@ -1,25 +1,15 @@
 import { NextResponse } from "next/server";
 
-// Retired per ADR-0007. This route was a passthrough to api.muapi.ai from a
-// previous product; the two brands are now separate. 410 Gone with a Sunset
-// header signals the removal to any lingering client.
+// Any /api/v1 path with no route of its own. The retired MuAPI passthrough
+// that lived here was removed early by owner request (ADR-0007, 2026-09-24); an
+// unknown path now gets a typed 404 rather than Next's HTML page.
 
-const HEADERS = {
-    "Sunset": "Fri, 26 Sep 2026 00:00:00 GMT",
-    "Deprecation": "true",
-    "Link": "<https://veyrnox.ai/changelog>; rel=\"sunset\"",
-};
-
-function gone() {
-    return NextResponse.json(
-        { error: "endpoint_deprecated", detail: "This route is retired; see the Sunset header for the effective date." },
-        { status: 410, headers: HEADERS }
-    );
+function notFound() {
+    return NextResponse.json({ error: "not_found" }, { status: 404 });
 }
 
-export const GET = gone;
-export const POST = gone;
-export const PUT = gone;
-export const PATCH = gone;
-export const DELETE = gone;
-
+export const GET = notFound;
+export const POST = notFound;
+export const PUT = notFound;
+export const PATCH = notFound;
+export const DELETE = notFound;
