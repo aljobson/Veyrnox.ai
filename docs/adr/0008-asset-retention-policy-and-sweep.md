@@ -205,7 +205,7 @@ the additive migration does not need reverting.
 
 ## 2026-09-24 — shared quota for job metadata reads
 
-Migration 0114 bounds the Library list, individual job status, and provenance
+Migration 0115 bounds the Library list, individual job status, and provenance
 reads at 600 per account per fixed 60-second window. A twelve-card Library page
 polling every three seconds uses at most 240 status requests per minute; this
 leaves headroom for initial hydration, pagination and another tab. Two bursts
@@ -233,8 +233,8 @@ clients receive the gateway's typed 429 error; this change does not redesign
 their retry UI or protect the remaining API routes or unauthenticated traffic.
 
 **Rollout order matters:** merge and wait for successful production deployment
-of the 429-aware handlers, then obtain owner approval and apply 0114 through
-apply-migrations. Applying 0114 activates enforcement immediately. No additional
+of the 429-aware handlers, then obtain owner approval and apply 0115 through
+apply-migrations. Applying 0115 activates enforcement immediately. No additional
 flag or browser opt-in exists for this control on existing authenticated reads.
 Rollback requires an approved forward migration restoring the prior read RPCs;
 leave the applied migration ledger intact.

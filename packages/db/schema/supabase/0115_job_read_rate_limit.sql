@@ -1,5 +1,5 @@
 -- Shared per-account quota for job list, status and provenance reads.
--- Deploy the 429-aware gateway before owner-approved application of 0114.
+-- Deploy the 429-aware gateway before owner-approved application of 0115.
 -- One row per user bounds storage. Counters are operational metadata, not money.
 CREATE TABLE IF NOT EXISTS public.job_read_rate_limits (
     user_id UUID PRIMARY KEY REFERENCES public.users(id) ON DELETE CASCADE,
