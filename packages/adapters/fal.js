@@ -1,3 +1,5 @@
+import { fetchWithTimeout } from '../../lib/fetchWithTimeout.js';
+
 /**
  * fal.ai provider adapter — Worker-runtime version.
  *
@@ -124,14 +126,7 @@ export async function submitJob(job, cfg) {
 async function loadFalPublicKeys() {
     const now = Date.now();
     if (jwksCache && now - jwksCache.fetchedAt < JWKS_TTL_MS) return jwksCache.keys;
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 5000);
-    let res;
-    try {
-        res = await fetch(FAL_JWKS_URL, { signal: controller.signal });
-    } finally {
-        clearTimeout(timer);
-    }
+    const res = await fetchWithTimeout(FAL_JWKS_URL, {}, 5000, 128 * 1024);
     if (!res.ok) throw new Error(`fal JWKS fetch failed: ${res.status}`);
     const jwks = await res.json();
     const keys = [];
