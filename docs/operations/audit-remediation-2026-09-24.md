@@ -14,7 +14,7 @@ this task. Stripe is the current checkout provider.
 | A03 mutable presigned uploads | #312 signs length and conditional creation | Verify bucket CORS, File upload, wrong-length refusal and repeated PUT refusal; enable flag; let old URLs expire |
 | A04 public reconciliation scans | #311 migration 0128 serves a bounded fresh snapshot | Approved migration and successful trusted cron refresh |
 | A05 request body limits | #310 bounds body size and read time before app dispatch | Deployment and normal webhook delivery smoke test |
-| A06 response body deadlines | #310 common HTTP/DB/range readers bound full bodies | Provider adapters with separate private timeout code need further review; not a universal adapter fix |
+| A06 response body deadlines | #310 common HTTP/DB/range readers, R2 responses and Fal signing-key reads keep deadlines through full bodies | Deployment; bounded R2 response regression passes |
 | A07 refund state | #310 copies refunded status into Credits enrichment | Deployment |
 | A08 misleading autosave | #310 labels unsaved drafts honestly | Deployment |
 | A09 incomplete billing history | #313 authoritative paginated credit statement and Top-ups | Deployment alongside account isolation; real-account owner-scoping smoke test |
@@ -50,7 +50,7 @@ Do not turn on either flag just because the schema migration succeeded.
 
 ## Validation performed
 
-Combined changes: 599 application tests passed, one existing opt-in test skipped;
+Combined changes: 600 application tests passed, one existing opt-in test skipped;
 238 database acceptance tests passed in an isolated local UTC database; all 124
 schema migrations replayed successfully into a fresh database. Both snapshot
 transactional suites passed, including repeat application, privilege checks and
