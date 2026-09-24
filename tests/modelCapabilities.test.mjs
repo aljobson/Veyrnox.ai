@@ -15,6 +15,7 @@ import * as openrouter from '../packages/adapters/openrouter.js';
 // kie twins staged inactive by migration 0105 (a row with no record can never
 // be listed or bought, so the record ships before the row is switched on).
 const CATALOG = [
+    'fal-ai/sana/v1.5/4.8b',
     'fal-ai/ace-step', 'fal-ai/ace-step-1.5', 'fal-ai/elevenlabs/sound-effects/v2', 'fal-ai/inworld-tts',
     'fal-ai/flux-2-pro', 'fal-ai/bytedance/seedream/v4/text-to-image', 'fal-ai/nano-banana',
     'fal-ai/kling-video/v2.6/pro/text-to-video', 'fal-ai/minimax/hailuo-02/standard/text-to-video',
@@ -31,7 +32,7 @@ const CATALOG = [
 
 // Endpoints the pre-registry snapshot does not cover: corrected on purpose
 // (Kling 3.0), or added after the old builder was deleted.
-const CORRECTED = new Set(['fal-ai/kling-video/v3/pro/image-to-video', 'fal-ai/nano-banana-pro', 'fal-ai/nano-banana-pro/edit',
+const CORRECTED = new Set(['fal-ai/sana/v1.5/4.8b', 'fal-ai/kling-video/v3/pro/image-to-video', 'fal-ai/nano-banana-pro', 'fal-ai/nano-banana-pro/edit',
     'fal-ai/elevenlabs/tts/turbo-v2.5', 'fal-ai/minimax/speech-2.6-hd', 'fal-ai/mmaudio-v2/text-to-audio', 'fal-ai/bria/background/remove',
     'fal-ai/topaz/upscale/image', 'fal-ai/bria/expand', 'fal-ai/latentsync', 'fal-ai/kling-video/ai-avatar/v2/standard',
     'fal-ai/elevenlabs/text-to-dialogue/eleven-v3']);

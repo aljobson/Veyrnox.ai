@@ -34,6 +34,8 @@ Phase-0 decision-support documents for the target architecture at `/Users/aljobs
 | [ADR-0036 — Account read rate limit](0036-account-read-rate-limit.md) | Accepted 2026-09-24 | Shared 120/minute quota for account and balance reads. Migration 0117 applied; activation prepared for deployment. | Audit API rate limits |
 | [ADR-0038 — Stripe checkout attempt limit](0038-top-up-checkout-attempt-limit.md) | Accepted 2026-09-24 | Bound checkout requests, including replayed keys, at 20/account/minute before Top-up creation and Stripe. Migration 0120 applied; activation prepared. | Audit API rate limits |
 
+| [ADR-0037 — Higgsfield credit parity](0037-higgsfield-credit-parity.md) | Prepared 2026-09-24 | Monthly-price equivalent one-off packs with a 50% contribution-margin target; exact generation-credit parity is secondary. | Full parity and production rollout |
+
 ## Decision graph
 
 ```
