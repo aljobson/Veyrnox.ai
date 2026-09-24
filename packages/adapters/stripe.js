@@ -107,7 +107,8 @@ export async function createCheckout(input, cfg) {
         'payment_intent_data[metadata][top_up_sig]': sig,
         customer_email: input.email,
         expires_at: input.expiresAt,
-        success_url: `${ret.toString()}?top_up=${input.topUpId}&checkout=done`,
+        // Keep the template literal: encoding its braces prevents Stripe substitution.
+        success_url: `${ret.toString()}?top_up=${input.topUpId}&checkout=done&session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${ret.toString()}?top_up=${input.topUpId}&checkout=cancelled`,
     });
 
@@ -191,7 +192,7 @@ export async function verifyTopUpMetadata(metadata, secret) {
 
 /** Re-read a Checkout Session from Stripe: the webhook body is a pointer, not the truth. */
 export async function fetchSession(sessionId, cfg) {
-    if (!/^cs_[A-Za-z0-9_]{1,250}$/.test(String(sessionId || ''))) return { ok: false, error: 'invalid sessionId' };
+    if (typeof sessionId !== 'string' || !/^cs_[A-Za-z0-9_]{1,251}$/.test(sessionId)) return { ok: false, error: 'invalid sessionId' };
     let res;
     try {
         res = await cfg.fetch(`${STRIPE_API_BASE}/checkout/sessions/${sessionId}`, {
