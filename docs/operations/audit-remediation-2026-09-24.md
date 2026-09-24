@@ -1,9 +1,25 @@
 # Audit remediation — 24 September 2026
 
-These are prepared changes, not a claim that production has been remediated.
-The original observations are preserved in audit-reports/2026-09-24.md. PRs
-310–317 have not been merged and migrations 0128–0131 have not been applied by
-this task. Stripe is the current checkout provider.
+## Current rollout status — 24 September 2026, 20:34 UTC
+
+Owner approved migrations 0128–0131 in chat. PRs #311, #312, #315 and #316
+were squash-merged. Approved apply-migrations runs
+[36055286908](https://github.com/aljobson/Veyrnox.ai/actions/runs/36055286908)
+and [36055715035](https://github.com/aljobson/Veyrnox.ai/actions/runs/36055715035)
+succeeded; the production ledger contains all four migration names.
+
+Read-only verification found zero drift in all four reconciliation checks,
+all five FK indexes present, upload reservations with forced RLS, and both
+snapshot cron jobs active. Browser roles cannot call the recovery heartbeat,
+review or refresh mutators. Recovery queue/incident counts are zero. Missing
+heartbeats are expected while RECOVERY_HEALTH_ENABLED remains false.
+UPLOAD_INTEGRITY_ENABLED also remains false pending its activation proof.
+
+PRs #310, #313, #314 and #318 remain open. #317 remains draft and subject to
+the clean reconciliation/time gate. Stripe remains the checkout provider.
+The original observations are preserved in audit-reports/2026-09-24.md.
+The finding table below records the original closure criteria; the migration
+and merge steps explicitly verified above are now complete.
 
 ## Finding coverage
 
@@ -32,7 +48,7 @@ this task. Stripe is the current checkout provider.
 ## Merge and rollout order
 
 Squash-merge only, recheck current heads and CI immediately before each merge.
-Suggested order: #310, #311, #312, #313, #314, #315, #316. #317 stays draft until
+Remaining code PRs: #310, #313 and #314. #317 stays draft until
 its time and reconciliation gate is met. No auto-merge was armed by this task.
 
 The branches were prepared independently on main a059c3. A local integration
@@ -40,8 +56,8 @@ branch (`codex/audit-integration`) combines all eight. #316 overlaps earlier
 changes: retain both snapshot test commands in ledger-tests.yml, both disabled
 flags in wrangler.jsonc, and both request-limit and recovery-health imports in
 worker.js. The consumed-upload call must keep `(cfg, dbcfg, opts)` from #312
-AND propagate failures from #316. Rebase/resolve #316 after the earlier PRs,
-then rerun its CI; do not choose one whole side of those conflicts.
+AND propagate failures from #316. This resolution was applied to #316, its CI and Cloudflare build passed, and
+it was squash-merged. Preserve both behaviors in subsequent merges.
 
 Migrations 0128–0131 must run on main through the owner-approved
 apply-migrations workflow. Never apply production DDL from a local SQL client.
