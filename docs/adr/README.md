@@ -31,6 +31,7 @@ Phase-0 decision-support documents for the target architecture at `/Users/aljobs
 
 | [ADR-0034 — Generation attempt rate limit](0034-generation-attempt-rate-limit.md) | Proposed 2026-09-24 | Bound pre-debit source work at 20 attempts per account per fixed minute; preserve the ten-job limit and money idempotency. Activates when approved migration 0113 is applied. | Audit finding 06 |
 | [ADR-0035 — Upload request rate limit](0035-upload-request-rate-limit.md) | Accepted 2026-09-24 | Bound upload URL issuance to 60 requests per account per minute before R2 work. Migration 0116 applied; activation prepared for deployment. | Audit API rate limits |
+| [ADR-0036 — Account read rate limit](0036-account-read-rate-limit.md) | Proposed 2026-09-24 | Shared 120/minute quota for account and balance reads. Staged pending migration 0117 and flag activation. | Audit API rate limits |
 
 ## Decision graph
 

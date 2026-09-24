@@ -19,6 +19,7 @@
  */
 
 import { NextResponse } from 'next/server';
+import { accountReadLimit } from '../../../../lib/accountReadLimit.js';
 import { rpc, select, count, envConfig, SupabaseError } from '../../../../packages/db/supabase-client.js';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -35,6 +36,9 @@ export async function GET(req) {
     if (!cfg.supabaseUrl || !cfg.serviceRoleKey) {
         return NextResponse.json({ error: 'supabase_not_configured' }, { status: 503 });
     }
+
+    const limited = await accountReadLimit(authId, cfg, { email: authEmail || null, credits: 0, assets: null });
+    if (limited) return limited;
 
     let credits;
     let rows;
