@@ -15,7 +15,7 @@ import { sniffType } from '../../lib/uploadSource.js';
 // .aiquickdraw.com); confirm against a live output before activating a kie row.
 const SOURCE_HOSTS = {
     // Exact hosts observed on verified 2K GrsAI outputs (ADR-0020).
-    grsai: { hosts: ['file1.aitohumanize.com', 'file6.aitohumanize.com'], suffixes: [] },
+    grsai: { hosts: ['file1.aitohumanize.com', 'file5.aitohumanize.com', 'file6.aitohumanize.com'], suffixes: [] },
     fal: { hosts: ['fal.media', 'fal.run', 'fal.ai'], suffixes: ['.fal.media', '.fal.run', '.fal.ai'] },
     kie: { hosts: [], suffixes: ['.aiquickdraw.com'] },
     // Content endpoint needs our API key, so the exact API host only.

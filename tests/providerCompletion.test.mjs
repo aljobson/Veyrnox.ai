@@ -98,7 +98,7 @@ test('job_stored receives the content hash', async () => {
     } finally { net.restore(); }
 });
 
-for (const host of ['file1.aitohumanize.com', 'file6.aitohumanize.com']) test(`GrsAI scheduled completion from ${host} uses explicit R2 config and keeps the key off the CDN`, async () => {
+for (const host of ['file1.aitohumanize.com', 'file5.aitohumanize.com', 'file6.aitohumanize.com']) test(`GrsAI scheduled completion from ${host} uses explicit R2 config and keeps the key off the CDN`, async () => {
     const saved = process.env.R2_ACCOUNT_ID;
     delete process.env.R2_ACCOUNT_ID;
     const net = fakeNet({ source: () => new Response(new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 0, 0, 0, 0, 0])) });
@@ -118,14 +118,14 @@ test('GrsAI accepts only its verified exact CDN hosts and refuses redirects', as
     const r2cfg = { accountId: 'a', accessKeyId: 'k', secretAccessKey: 's', bucket: 'b' };
     const net = fakeNet({ source: () => new Response(null, { status: 302, headers: { location: 'https://evil.test/a' } }) });
     try {
-        for (const host of ['file1.aitohumanize.com.evil.test', 'file6.aitohumanize.com.evil.test', 'file7.aitohumanize.com', 'aitohumanize.com', 'tempfile.aiquickdraw.com', 'localhost']) {
+        for (const host of ['file1.aitohumanize.com.evil.test', 'file5.aitohumanize.com.evil.test', 'file6.aitohumanize.com.evil.test', 'file7.aitohumanize.com', 'aitohumanize.com', 'tempfile.aiquickdraw.com', 'localhost']) {
             assert.equal((await copyUrlToR2(`https://${host}/a.png`, 'key', r2cfg, { provider: 'grsai' })).error, 'source host not allowed');
         }
         assert.equal(net.calls.length, 0);
-        for (const host of ['file1.aitohumanize.com', 'file6.aitohumanize.com']) {
+        for (const host of ['file1.aitohumanize.com', 'file5.aitohumanize.com', 'file6.aitohumanize.com']) {
             assert.equal((await copyUrlToR2(`https://${host}/a.png`, 'key', r2cfg, { provider: 'grsai' })).error, 'source 302');
         }
-        assert.equal(net.calls.filter((c) => c.name === 'source').length, 2);
+        assert.equal(net.calls.filter((c) => c.name === 'source').length, 3);
         assert.equal(net.calls.some((c) => c.name === 'r2_put'), false);
     } finally { net.restore(); }
 });
