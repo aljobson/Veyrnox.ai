@@ -4,6 +4,8 @@ import { AppNav } from '../../_components/NavBar';
 import { Chip } from '../../_components/Chip';
 import { gatewayFetch, GatewayError, notifyBalanceChanged } from '../../_lib/gateway';
 import { readJobHistory, pushJobHistory } from '../../_lib/jobHistory';
+import { useAssetUrl } from '../../_lib/useAssetUrl';
+import { AssetLoadStatus } from '../../_components/AssetLoadStatus';
 import { EditSheet } from '../../_components/EditSheet';
 import { useCatalog } from '../../_lib/useCatalog';
 import { mergeHydrated, shouldPoll } from '../../_lib/jobWindow';
@@ -346,6 +348,7 @@ export default function Library() {
 }
 
 function JobCard({ row, models, selectable, selected, onToggle }) {
+  const asset = useAssetUrl(row.job_id, row.asset_url);
   const refundPending = row.state === 'failed' && row.refunded === false;
   const s = STATE_UI[refundPending ? 'failed_pending' : row.state] || STATE_UI.queued;
   // No delta for `unknown`: a +N would claim a refund landed and a −N would
@@ -363,16 +366,17 @@ function JobCard({ row, models, selectable, selected, onToggle }) {
         style={{ background: row.asset_url ? 'black' : row.bg }}
       >
         {row.asset_url && row.mime_type?.startsWith('video/') && (
-          <video src={row.asset_url} className="absolute inset-0 w-full h-full object-cover" muted playsInline autoPlay loop />
+          <video src={asset.url} onError={asset.onError} onLoadedData={asset.onLoad} className="absolute inset-0 w-full h-full object-cover" muted playsInline autoPlay loop />
         )}
         {row.asset_url && row.mime_type?.startsWith('audio/') && (
           <div className="absolute inset-0 flex items-end px-4 pb-4">
-            <audio src={row.asset_url} controls className="w-full" />
+            <audio src={asset.url} onError={asset.onError} onLoadedData={asset.onLoad} controls className="w-full" />
           </div>
         )}
         {row.asset_url && row.mime_type?.startsWith('image/') && (
-          <img src={row.asset_url} alt={row.name || 'generation'} className="absolute inset-0 w-full h-full object-cover" />
+          <img src={asset.url} onError={asset.onError} onLoad={asset.onLoad} alt={row.name || 'generation'} className="absolute inset-0 w-full h-full object-cover" />
         )}
+        <AssetLoadStatus asset={asset} />
         <div className="absolute top-3 left-3">
           <Chip tone={s.chip} noGlyph>
             <span aria-hidden="true" className="text-[10px] mr-1">{s.glyph}</span>

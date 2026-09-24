@@ -6,6 +6,7 @@ import { ASPECT_RATIOS } from '../../_lib/tokens';
 import { gatewayFetch, makeIdempotencyKey, notifyBalanceChanged, GatewayError } from '../../_lib/gateway';
 import { ERROR_COPY } from '../../_lib/createErrors';
 import { pushJobHistory, markJobSettled } from '../../_lib/jobHistory';
+import { JobAssetPreview } from '../../_components/JobAssetPreview';
 import { useCatalog } from '../../_lib/useCatalog';
 import { DEFAULT_CINEMA, buildCinemaPrompt } from '../../_lib/cinema';
 import { CameraPanel } from '../../_components/CameraPanel';
@@ -14,7 +15,6 @@ import { buildCharacterPrompt } from '../../_lib/character';
 import { DrawOnImage } from '../../_components/DrawOnImage';
 import { SourcePickers } from '../../_components/SourcePickers';
 import { ParticleButton } from '@/components/ParticleButton';
-
 // State glyphs — colour-blind safety net matches the design system §08.
 const STATE_UI = {
   queued:    { glyph: '●', tone: 'accent',  label: 'QUEUED' },
@@ -22,16 +22,11 @@ const STATE_UI = {
   succeeded: { glyph: '✓', tone: 'accent',  label: 'DONE' },
   failed:    { glyph: '✕', tone: 'danger',  label: 'FAILED · REFUNDED' },
 };
-
 // How many consecutive poll failures before we stop and tell the user. At
 // 2s an interval that is ~1 minute of silence, which is long enough to ride
 // out a blip and short enough that nobody watches a dead shimmer.
 const POLL_GIVE_UP_AFTER = 30;
-
-
-
 const DEFAULT_MODEL = 'wan-2.5-kie';
-
 // Models measured well over a minute end to end in live tests (2026-09-13).
 // ponytail: hand-kept list; move to the catalog if more slow models land.
 const SLOW_MODEL_WAIT = {
@@ -40,7 +35,6 @@ const SLOW_MODEL_WAIT = {
   'seedance-2.0-fast': 'Video takes about 2 minutes.',
   'auto-short-32s': 'About 2–10 minutes: script, voiceover, four scenes, then the stitch.',
 };
-
 // Auto Short stays hidden until launch unless this browser opts in
 // (CLAUDE.md "Delivery": new user paths behind localStorage.veyrnox_*).
 const AUTO_SHORT_FLAG = 'veyrnox_auto_short';
@@ -319,26 +313,7 @@ export default function CreateStudio() {
             style={{ aspectRatio: (isShort ? '9:16' : aspect).replace(':', '/') }}
           >
             {job?.asset_url ? (
-              job?.mime_type?.startsWith('video/') ? (
-                <video
-                  src={job.asset_url}
-                  controls
-                  autoPlay
-                  loop
-                  playsInline
-                  className="absolute inset-0 w-full h-full object-contain bg-black"
-                />
-              ) : job?.mime_type?.startsWith('audio/') ? (
-                <div className="absolute inset-0 flex items-center justify-center bg-black px-8">
-                  <audio src={job.asset_url} controls autoPlay className="w-full max-w-xl" />
-                </div>
-              ) : (
-                <img
-                  src={job.asset_url}
-                  alt="Generated result"
-                  className="absolute inset-0 w-full h-full object-contain bg-black"
-                />
-              )
+              <JobAssetPreview job={job} />
             ) : (
               <div className="absolute inset-0 flex items-center justify-center">
                 {generating ? (

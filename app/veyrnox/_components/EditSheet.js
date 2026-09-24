@@ -1,5 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
+import { useAssetUrl } from '../_lib/useAssetUrl';
+import { AssetLoadStatus } from './AssetLoadStatus';
 import { gatewayFetch, GatewayError, makeIdempotencyKey } from '../_lib/gateway';
 
 // Clip Editor sheet (docs/editor/PRD.md §4). The server re-checks every
@@ -141,17 +143,22 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted }) {
 }
 
 function ClipRow({ item, index, count, onChange, onMove, onRemove }) {
+  const asset = useAssetUrl(item.job_id, item.asset_url);
   const ref = useRef(null);
   const d = item.duration;
   const setPoint = (key, v) => onChange({ [key]: Math.max(0, Math.min(d ?? 0, Number(v) || 0)) });
   return (
     <li className="rounded-xl border border-vx-border bg-vx-panel p-3 flex flex-col sm:flex-row gap-3">
-      <video ref={ref} src={item.asset_url} controls muted playsInline preload="metadata"
-        className="w-full sm:w-44 aspect-video sm:aspect-auto sm:h-28 bg-black rounded-lg object-contain"
-        onLoadedMetadata={(e) => {
-          const v = e.currentTarget;
-          onChange({ duration: v.duration, out_s: item.out_s ?? v.duration, ratio: v.videoHeight ? (v.videoWidth / v.videoHeight).toFixed(2) : null });
-        }} />
+      <div className="relative w-full sm:w-44 shrink-0">
+        <video ref={ref} src={asset.url} onError={asset.onError} controls muted playsInline preload="metadata"
+          className="w-full aspect-video sm:aspect-auto sm:h-28 bg-black rounded-lg object-contain"
+          onLoadedMetadata={(e) => {
+            asset.onLoad();
+            const v = e.currentTarget;
+            onChange({ duration: v.duration, out_s: item.out_s ?? v.duration, ratio: v.videoHeight ? (v.videoWidth / v.videoHeight).toFixed(2) : null });
+          }} />
+        <AssetLoadStatus asset={asset} />
+      </div>
       <div className="flex-1 min-w-0 flex flex-col gap-2">
         <div className="flex items-center justify-between gap-2">
           <span className="text-sm font-bold truncate">{index + 1}. {item.name || item.job_id.slice(0, 8)}</span>
