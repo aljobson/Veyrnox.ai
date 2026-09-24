@@ -301,3 +301,52 @@ hosts, redirects and provider-key forwarding to the CDN refused. This change
 neither activates the production catalog row nor changes prices. Deployed cron
 and refund results are tracked separately; CDN verification alone is not
 production rollout approval.
+
+
+## Update 2026-09-24 — verified scheduled recovery; GrsAI activation (0124)
+
+The isolated deployed staging Worker now verifies the complete authenticated
+submit -> scheduled polling -> R2 -> signed download path. Job
+`88e9c6f7-c398-4816-988a-8b7d96d8e048` submitted GrsAI task
+`9-c8f42511-a08a-4a81-8014-b491d84b510a` at 15:36:06 UTC. The genuine
+Cloudflare cron at 15:38:08 applied its completion with zero errors. The job
+reached STORED and its authenticated signed download returned a 2048x2048 PNG,
+1,883,330 bytes, SHA-256
+`5af0a8f262f7bc1b0cceb257cf5a6b95c0a369b8b0107aab5622af03b0d3c844`.
+No manual polling endpoint was invoked for this test.
+
+A controlled FAILED job, `a8058418-bca1-4f65-b3be-cffbc4822ba6`, was refunded
+by the 15:36:08 cron with exactly one +2 ledger entry (`refund:provider_failed`).
+It incurred no provider request. The test account ends with 46 of its original
+50 credits after two deployed images; all failed fixtures net to zero. All
+four reconciliation counters are zero. Earlier deployed tests also verified
+submission replay without a duplicate debit and idempotent completion/refund.
+
+The first observation window had no staging scheduled events. After rearming,
+the first genuine event arrived at 15:34:08; its cause is not conclusively
+identified. The existing production five-minute cron has independently
+verified successful scheduled events, including after the file5 fix deployed.
+The staging test used a one-minute interval; production retains five minutes.
+
+GrsAI's logged-in consumption log confirms another 1800-credit charge. Four
+paid tests total 7200 provider credits, $0.108108 at the purchased 333000/$5
+rate. This supports the conservative catalog cost $0.0271. It does not prove
+long-term provider reliability or model provenance. Provider data-handling
+limitations in the original rollout section still apply.
+
+Migration 0124 atomically activates the verified GrsAI text-to-image row under
+the plain Nano Banana Pro name at 2 credits and deactivates the 6-credit kie
+twin. Endpoint, modality, unit and cost predicates plus exact row-count guards
+refuse changed prerequisites; replay uses absolute assignments. The fal edit
+route and Credit Packs are unchanged. The fallback model, portrait preset and
+landing tile follow the new route and price; the text-to-image tile no longer
+claims image editing. Production secret names include GRSAI_API_KEY and all
+R2 dependencies. Production activation still requires the owner-approved
+apply-migrations workflow on main. Apply after the reserved 0123 migration;
+do not apply 0124 out of order.
+
+Rollback is a new guarded migration: deactivate nano-banana-pro-grsai and
+reactivate nano-banana-pro-kie at 6 credits, keeping the GrsAI poller enabled
+so already-submitted jobs can finish. Restore the corresponding fallback and
+preset IDs/prices in the same rollback release. Never rewrite 0124 or remove
+the GrsAI credential while unfinished jobs remain.
