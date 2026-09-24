@@ -1,6 +1,7 @@
 import localFont from 'next/font/local';
 import './veyrnox.css';
 import { JobWatcher } from './_components/JobWatcher';
+import { AccountBoundary } from './_components/AccountBoundary';
 
 // Self-hosted variable fonts (OFL, app/fonts); see app/layout.js.
 const archivo = localFont({
@@ -24,8 +25,10 @@ const jetbrains = localFont({
 export default function VeyrnoxLayout({ children }) {
   return (
     <div className={`${archivo.variable} ${jetbrains.variable} vx-root font-vx bg-vx-base text-vx-fg min-h-dvh`}>
-      {children}
-      <JobWatcher />
+      <AccountBoundary>
+        {children}
+        <JobWatcher />
+      </AccountBoundary>
     </div>
   );
 }

@@ -59,7 +59,7 @@ export default function Credits() {
       const enriched = await Promise.all(history.map(async (h) => {
         try {
           const j = await gatewayFetch(`/jobs/${h.job_id}`);
-          return { ...h, state: j.state, error_code: j.error_code };
+          return { ...h, state: j.state, error_code: j.error_code, refunded: j.refunded === true };
         } catch { return { ...h, state: 'queued' }; }
       }));
       if (!cancelled) setLedger(enriched);

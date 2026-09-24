@@ -4,7 +4,7 @@
 // veyrnox:auth-required on 401, propagates 429 retry-after, throws a
 // typed GatewayError otherwise so callers can branch on .code.
 
-import { getFreshAccessToken, clearSession } from '../../lib/authClient';
+import { getFreshAccessToken, getSession, clearSession } from '../../lib/authClient';
 
 // A Frozen account (Chargeback, #97): generating and buying are refused.
 export const ACCOUNT_PAUSED_COPY =
@@ -39,6 +39,15 @@ export async function gatewayFetch(path, init = {}) {
     dispatchAuthRequired();
     throw new GatewayError('not authenticated', { status: 401, code: 'no_token' });
   }
+  if (getSession()?.access_token !== token) {
+    throw new GatewayError('session changed', { status: 409, code: 'account_changed' });
+  }
+  const account = getSession()?.user?.id;
+  const assertCurrentAccount = () => {
+    if (!getSession() || getSession()?.user?.id !== account) {
+      throw new GatewayError('account changed', { status: 409, code: 'account_changed' });
+    }
+  };
   const headers = {
     ...(init.headers || {}),
     Authorization: `Bearer ${token}`,
@@ -48,10 +57,13 @@ export async function gatewayFetch(path, init = {}) {
   }
   const res = await fetch(`/api/v1${path}`, { ...init, headers });
 
+  assertCurrentAccount();
   if (res.status === 401) {
     // The gateway rejected our token: drop it so a revoked session cannot linger.
-    clearSession();
-    dispatchAuthRequired();
+    if (getSession()?.access_token === token) {
+      clearSession();
+      dispatchAuthRequired();
+    }
     throw new GatewayError('unauthenticated', { status: 401, code: 'unauthenticated' });
   }
   if (res.status === 429) {
@@ -61,6 +73,7 @@ export async function gatewayFetch(path, init = {}) {
 
   let body = null;
   try { body = await res.json(); } catch { /* no body */ }
+  assertCurrentAccount();
   if (!res.ok) {
     throw new GatewayError(body?.error || `HTTP ${res.status}`, {
       status: res.status,

@@ -305,7 +305,7 @@ export default function CreateStudio() {
               <div className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">STUDIO · UNTITLED</div>
               <h1 className="text-2xl sm:text-3xl font-black tracking-[-0.02em] mt-1">Create</h1>
             </div>
-            <Chip tone="accent">AUTO-SAVING</Chip>
+            <Chip tone="accent">UNSAVED DRAFT</Chip>
           </div>
 
           <div

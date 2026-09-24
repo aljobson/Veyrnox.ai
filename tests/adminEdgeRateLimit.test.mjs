@@ -44,14 +44,15 @@ test('every admin namespace and normalized variant is screened before app work',
     }
     assert.equal(called, paths.length * 3);
 });
-test('allowed request reaches the same app handler with original request/env/context', async () => {
+test('allowed request reaches the same app handler with unchanged bytes/env/context', async () => {
     const req = request('/api/v1/admin/metrics', { authorization: 'Bearer test-only' });
     const env = binding(async () => ({ success: true })), ctx = {};
     const expected = new Response('app authentication still required', { status: 401 });
-    globalThis.__adminTestApp = (r, e, c) => {
-        assert.equal(r, req); assert.equal(e, env); assert.equal(c, ctx);
+    globalThis.__adminTestApp = async (r, e, c) => {
+        assert.equal(r.url, req.url); assert.equal(r.method, req.method); assert.equal(e, env); assert.equal(c, ctx);
         assert.equal(r.headers.get('authorization'), 'Bearer test-only');
-        assert.equal(r.bodyUsed, false); return expected;
+        assert.equal(r.bodyUsed, false);
+        assert.equal(await r.text(), 'do not read this body'); return expected;
     };
     assert.equal(await worker.fetch(req, env, ctx), expected);
 });

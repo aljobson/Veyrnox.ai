@@ -95,7 +95,11 @@ export async function getFreshAccessToken() {
     if (!s) return null;
     const now = Math.floor(Date.now() / 1000);
     if (s.expires_at - now > REFRESH_AHEAD_SEC) return s.access_token;
-    if (!s.refresh_token) return getAccessToken();
+    if (!s.refresh_token) {
+        const token = getAccessToken();
+        if (!token) setSession(null);
+        return token;
+    }
     if (!refreshInFlight) {
         const startedWith = s.refresh_token;
         refreshInFlight = post("/auth/v1/token?grant_type=refresh_token", { refresh_token: startedWith })
@@ -116,7 +120,7 @@ export async function getFreshAccessToken() {
                 const status = err && err.status;
                 const code = err && err.code;
                 if ((status === 400 || status === 401) && (code === "invalid_grant" || code === "refresh_token_not_found")) {
-                    setSession(null);
+                    if (readStored()?.refresh_token === startedWith) setSession(null);
                     return null;
                 }
                 return getAccessToken();
@@ -132,6 +136,7 @@ export function sessionIsPersisted() { return storagePersisted; }
 
 function setSession(s) {
     if (typeof localStorage === "undefined") return;
+    if (!s || readStored()?.user?.id !== s.user?.id) clearJobHistory();
     // Safari private browsing and blocked site data throw on setItem, not on
     // access. The read path was already guarded; this was not, so the throw
     // propagated out of signInWithPassword and surfaced a raw DOMException.
@@ -155,7 +160,14 @@ function setSession(s) {
  */
 export function onSessionChange(cb) {
     listeners.add(cb);
-    return () => listeners.delete(cb);
+    const onStorage = (event) => {
+        if (event.key === STORAGE_KEY || event.key === null) cb(getSession());
+    };
+    if (typeof window !== "undefined") window.addEventListener('storage', onStorage);
+    return () => {
+        listeners.delete(cb);
+        if (typeof window !== "undefined") window.removeEventListener('storage', onStorage);
+    };
 }
 
 /**
@@ -341,7 +353,8 @@ export function clearSession() {
 }
 
 export async function signOut() {
-    const s = getSession();
+    const s = readStored();
+    setSession(null);
     if (s?.access_token) {
         const { url, anonKey } = ensureCfg();
         await fetch(new URL("/auth/v1/logout", url), {
@@ -349,13 +362,6 @@ export async function signOut() {
             headers: { apikey: anonKey, Authorization: `Bearer ${s.access_token}` },
         }).catch(() => {});
     }
-    setSession(null);
-    // The session key was the only thing cleared here, so up to 50 rows of the
-    // previous user's job history — each carrying 60 characters of their
-    // prompt — stayed on the device, and Library renders that before any auth
-    // check. On a shared machine the next person read it. NavAuthButtons
-    // promises this ends your session on this device; make that true.
-    try { clearJobHistory(); } catch { /* storage blocked; nothing to clear */ }
 }
 
 // ─── MFA (TOTP) ─────────────────────────────────────────────────────────────

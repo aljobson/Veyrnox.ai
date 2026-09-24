@@ -1,12 +1,14 @@
 'use client';
 
-// Client-side ring buffer of submitted job IDs.
-// The gateway has no jobs-list endpoint yet, so Library reads from here
-// to know which /jobs/:id to poll. Max 50 rows, oldest evicted first.
-// Scoped to the current browser only — history follows the device, not
-// the account, until Phase 4 adds server-side listing.
+// Account-scoped display cache. Server job listings remain authoritative.
+import { getSession } from '../../lib/authClient.js';
 
-const KEY = 'veyrnox_job_history_v1';
+const LEGACY_KEY = 'veyrnox_job_history_v1';
+const PREFIX = 'veyrnox_job_history_v2:';
+function historyKey() {
+  const id = getSession()?.user?.id;
+  return typeof id === 'string' && id ? PREFIX + id : null;
+}
 const MAX = 50;
 
 /** @typedef {object} JobHistoryEntry
@@ -22,7 +24,10 @@ const MAX = 50;
 export function readJobHistory() {
   if (typeof localStorage === 'undefined') return [];
   try {
-    const raw = localStorage.getItem(KEY);
+    localStorage.removeItem(LEGACY_KEY);
+    const key = historyKey();
+    if (!key) return [];
+    const raw = localStorage.getItem(key);
     if (!raw) return [];
     const arr = JSON.parse(raw);
     return Array.isArray(arr) ? arr : [];
@@ -34,23 +39,35 @@ export function readJobHistory() {
 /** Push a new entry to the front. Trims to MAX. */
 export function pushJobHistory(entry) {
   if (typeof localStorage === 'undefined') return;
+  const key = historyKey();
+  if (!key) return;
   const list = readJobHistory().filter((r) => r.job_id !== entry.job_id);
   list.unshift({ ...entry, submitted_at: entry.submitted_at || Date.now() });
   if (list.length > MAX) list.length = MAX;
-  try { localStorage.setItem(KEY, JSON.stringify(list)); } catch {}
+  try { localStorage.setItem(key, JSON.stringify(list)); } catch {}
 }
 
 /** Remove a specific job from history. */
 export function removeFromJobHistory(job_id) {
   if (typeof localStorage === 'undefined') return;
+  const key = historyKey();
+  if (!key) return;
   const list = readJobHistory().filter((r) => r.job_id !== job_id);
-  try { localStorage.setItem(KEY, JSON.stringify(list)); } catch {}
+  try { localStorage.setItem(key, JSON.stringify(list)); } catch {}
 }
 
-/** Wipe all history — used from a settings screen if we add one. */
+/** Remove every account cache and the retired unscoped cache on identity changes. */
 export function clearJobHistory() {
   if (typeof localStorage === 'undefined') return;
-  try { localStorage.removeItem(KEY); } catch {}
+  try {
+    const current = historyKey();
+    if (current) localStorage.removeItem(current);
+    localStorage.removeItem(LEGACY_KEY);
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const key = localStorage.key(i);
+      if (key?.startsWith(PREFIX)) localStorage.removeItem(key);
+    }
+  } catch { /* storage may be unavailable */ }
 }
 
 // A job older than this with no recorded outcome is left alone rather than
@@ -66,6 +83,8 @@ export function jobsToWatch(history, now = Date.now()) {
 /** Record a job's outcome so no page announces it twice. */
 export function markJobSettled(job_id, state) {
   if (typeof localStorage === 'undefined') return;
+  const key = historyKey();
+  if (!key) return;
   const list = readJobHistory().map((r) => (r.job_id === job_id ? { ...r, settled: state } : r));
-  try { localStorage.setItem(KEY, JSON.stringify(list)); } catch {}
+  try { localStorage.setItem(key, JSON.stringify(list)); } catch {}
 }

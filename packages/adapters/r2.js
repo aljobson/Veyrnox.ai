@@ -1,3 +1,5 @@
+import { fetchWithTimeout as fetchDeadline } from '../../lib/fetchWithTimeout.js';
+
 /**
  * Cloudflare R2 client via S3 API — Worker-runtime.
  *
@@ -42,13 +44,6 @@ const SERVICE = 's3';
 // out, and its retry starts the copy again — a stall becomes a retry storm.
 // Generous because a PUT carries up to 100 MB (COPY_MAX_BYTES in r2Copy.js).
 const S3_TIMEOUT_MS = 30000;
-
-/** fetch with a deadline. Kept local: this module intentionally has no imports. */
-function fetchDeadline(input, init, timeoutMs) {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
-    return fetch(input, { ...init, signal: controller.signal }).finally(() => clearTimeout(timer));
-}
 
 /** RFC 3986 percent-encoding: encodeURIComponent leaves !'()* unencoded, SigV4 does not. */
 function rfc3986(s) {
