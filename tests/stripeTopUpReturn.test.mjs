@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { register } from 'node:module';
+import { retryTopUpReturn } from '../app/veyrnox/_lib/topUpReturnRetry.js';
 import { createCheckout, fetchSession } from '../packages/adapters/stripe.js';
 
 register('data:text/javascript,' + encodeURIComponent(
@@ -11,7 +12,7 @@ const { POST } = await import('../app/api/v1/top-ups/[id]/return/route.js');
 const ID = '0b6f3c1e-8d2a-4f5b-9c7e-1a2b3c4d5e6f';
 const SESSION = 'cs_test_' + 'A'.repeat(64);
 Object.assign(process.env, { SUPABASE_URL: 'https://db.test', SUPABASE_SERVICE_ROLE_KEY: 'test-only' });
-function request(body, auth = 'buyer') {
+function request(body, auth = ID) {
     return new Request('https://veyrnox.test/api/v1/top-ups/' + ID + '/return', {
         method: 'POST', headers: auth ? { 'x-veyrnox-auth-id': auth } : {}, body: JSON.stringify(body),
     });
@@ -49,7 +50,7 @@ test('return calls the session RPC with authenticated owner, normalized Top-up a
         const res = await POST(request({ session_id }), params);
         assert.equal(res.status, 200);
         assert.equal(seen.url, 'https://db.test/rest/v1/rpc/record_top_up_return_session');
-        assert.deepEqual(seen.body, { p_auth_id: 'buyer', p_top_up_id: ID, p_session_id: session_id });
+        assert.deepEqual(seen.body, { p_auth_id: ID, p_top_up_id: ID, p_session_id: session_id });
     }
 });
 
@@ -77,14 +78,14 @@ test('fetchSession accepts the same upper bound as the return route', async () =
 // This verifies the POST guard and URL cleanup, including rejected requests.
 const source = readFileSync(new URL('../app/veyrnox/_components/TopUpPacks.js', import.meta.url), 'utf8');
 const effect = source.match(/useEffect\(\(\) => \{([\s\S]*?)\n  \}, \[\]\);/)[1];
-const runEffect = new Function('window', 'gatewayFetch', 'setTopUpId', 'TOP_UP_ID_RE', effect);
+const runEffect = new Function('window', 'gatewayFetch', 'setTopUpId', 'TOP_UP_ID_RE', 'retryTopUpReturn', 'returnSession', effect);
 async function browser({ session = SESSION, fail = false, topUp = ID } = {}) {
     let current = new URL(`https://veyrnox.test/app/credits?top_up=${topUp}&session_id=${encodeURIComponent(session)}&checkout=done#packs`);
     const calls = [];
     const window = { location: current, get localStorage() { throw new Error('storage unavailable'); }, history: {
         state: { keep: true }, replaceState(state, _title, path) { assert.deepEqual(state, { keep: true }); current = new URL(path, current); },
     } };
-    runEffect(window, (path, options) => { calls.push({ path, ...options }); return fail ? Promise.reject(new Error('offline')) : Promise.resolve({ ok: true }); }, () => {}, /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
+    runEffect(window, (path, options) => { const { signal, ...rest } = options; assert.ok(signal instanceof AbortSignal); calls.push({ path, ...rest }); return fail ? Promise.reject(new Error('offline')) : Promise.resolve({ ok: true }); }, () => {}, /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/, retryTopUpReturn, { current: null });
     await new Promise((resolve) => setImmediate(resolve));
     return { calls, current };
 }
@@ -107,4 +108,24 @@ test('browser refuses malformed tokens and invalid Top-up ids', async () => {
         assert.equal(current.searchParams.has('session_id'), false);
     }
     assert.equal((await browser({ topUp: 'invalid' })).calls.length, 0);
+});
+
+test('effect restart retains the in-memory session while cleaning the URL and cancelling old work', async () => {
+    let current = new URL(`https://veyrnox.test/app/credits?top_up=${ID}&session_id=${SESSION}`);
+    const ref = { current: null }, calls = [];
+    const window = { get location() { return current; }, history: { state: null,
+        replaceState(_state, _title, path) { current = new URL(path, current); } } };
+    const send = (path, init) => { calls.push({path,init}); return new Promise((resolve) => { init.signal.addEventListener('abort', () => resolve({ok:true}), {once:true}); }); };
+    const args = [window, send, () => {}, /^[0-9a-f-]{36}$/, retryTopUpReturn, ref];
+    const firstCleanup = runEffect(...args);
+    assert.equal(current.searchParams.has('session_id'), false);
+    firstCleanup();
+    const secondCleanup = runEffect(...args);
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(calls.length, 2);
+    assert.equal(calls[0].init.signal.aborted, true);
+    assert.equal(calls[1].init.signal.aborted, false);
+    assert.equal(calls[0].init.body, calls[1].init.body);
+    assert.deepEqual(ref.current, {id:ID,sessionId:SESSION});
+    secondCleanup();
 });
