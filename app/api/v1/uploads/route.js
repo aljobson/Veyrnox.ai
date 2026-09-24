@@ -22,19 +22,20 @@ import { rpc, envConfig } from '../../../../packages/db/supabase-client.js';
 import { presignPutUrl, listObjects, isConfigured as r2IsConfigured, envConfig as r2EnvConfig } from '../../../../packages/adapters/r2.js';
 import { checkDeclared, uploadKeyFor, UPLOAD_URL_TTL_SECONDS, UPLOAD_PREFIX } from '../../../../lib/uploadSource.js';
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 // How many un-swept sources one account may be holding. Sources are consumed
 // within seconds of upload and swept after 24h, so a caller with more than a
 // handful pending is not using the product.
 //
-// This is a standing cap, not a rate limit, and it is deliberately the former:
-// the risk here is stored bytes, not request volume, and a cap bounds total
-// exposure per account at MAX_PENDING x the per-type size ceiling. It also
-// needs no counter table, so it holds today rather than after a migration.
+// This is a snapshot of stored objects, not a reservation for outstanding PUT
+// URLs. Concurrent issuance and later uploads can exceed it. The request quota
+// separately bounds signing and listing work; neither enforces a byte budget.
 const MAX_PENDING_UPLOADS = 10;
 
 export async function POST(req) {
     const authId = req.headers.get('x-veyrnox-auth-id');
-    if (!authId) return NextResponse.json({ error: 'not_authenticated' }, { status: 401 });
+    if (!authId || !UUID_RE.test(authId)) return NextResponse.json({ error: 'not_authenticated' }, { status: 401 });
 
     const cfg = envConfig();
     const r2cfg = r2EnvConfig();
@@ -51,6 +52,31 @@ export async function POST(req) {
     // Gate 1: judge what the client claims, before signing anything.
     const declared = checkDeclared(body.content_type, body.size_bytes);
     if (!declared.ok) return NextResponse.json({ error: declared.error }, { status: 400 });
+
+    // Enable only after migration 0116. Every valid request consumes a slot,
+    // including requests later denied for balance or storage state.
+    if (process.env.UPLOAD_REQUEST_RATE_LIMIT_ENABLED === 'true') {
+        let rate;
+        try {
+            rate = await rpc('consume_upload_request', { p_auth_id: authId }, cfg);
+        } catch {
+            console.error('[uploads] rate limit unavailable');
+        }
+        const headers = { 'Cache-Control': 'no-store' };
+        if (rate?.ok === false && rate.code === 'RATE_LIMITED') {
+            const retry = Number.isInteger(rate.retry_after_seconds)
+                ? Math.max(1, Math.min(60, rate.retry_after_seconds)) : 60;
+            return NextResponse.json({ error: 'rate_limited', retry_after_seconds: retry },
+                { status: 429, headers: { ...headers, 'Retry-After': String(retry) } });
+        }
+        if (rate?.ok === false && rate.code === 'NOT_FOUND') {
+            return NextResponse.json({ error: 'user_not_provisioned' }, { status: 409, headers });
+        }
+        if (rate?.ok !== true) {
+            return NextResponse.json({ error: 'rate_limit_unavailable' },
+                { status: 503, headers: { ...headers, 'Retry-After': '30' } });
+        }
+    }
 
     // Storing a source for someone who cannot spend it is pure cost. This
     // also confirms the user row exists — an unprovisioned caller has no
@@ -71,15 +97,14 @@ export async function POST(req) {
         return NextResponse.json({ error: 'insufficient_credits' }, { status: 402 });
     }
 
-    // Bound what this account can be holding. Without this the only gate was
-    // `balance > 0`, so one credit bought unlimited presigned PUTs.
+    // Refuse issuance when the stored-object snapshot is already at the cap.
     const held = await listObjects(`${UPLOAD_PREFIX}/${authId.toLowerCase()}/`, r2cfg, { maxKeys: MAX_PENDING_UPLOADS + 1 });
     if (!held.ok) {
         // Fail closed: an unreadable bucket must not become an open endpoint.
         console.error('[uploads] could not count pending uploads:', held.error);
         return NextResponse.json({ error: 'upload_check_unavailable' }, { status: 503 });
     }
-    if (held.objects.length > MAX_PENDING_UPLOADS) {
+    if (held.objects.length >= MAX_PENDING_UPLOADS) {
         return NextResponse.json({ error: 'too_many_pending_uploads' }, { status: 429 });
     }
 
