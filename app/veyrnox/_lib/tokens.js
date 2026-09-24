@@ -23,7 +23,7 @@ export const MODELS = [
   { id: 'nano-banana-pro-edit', name: 'Nano Banana Pro Edit', credits: 10,                                      kind: 'image', durations: [5] },
   { id: 'nano-banana-kie',    name: 'Nano Banana',         credits: 2,                                         kind: 'image', durations: [5] },
   { id: 'flux-2-pro',         name: 'Flux.2 [pro]',        credits: 2,                                          kind: 'image', durations: [5] },
-  { id: 'seedream-4',         name: 'Seedream 4',          credits: 3,                                          kind: 'image', durations: [5] },
+  { id: 'seedream-4',         name: 'Seedream 4',          credits: 2,                                          kind: 'image', durations: [5] },
   { id: 'topaz-upscale',      name: 'Topaz Upscale 2x',    credits: 5,                                          kind: 'image', durations: [5] },
   { id: 'bria-bg-remove',     name: 'Background Removal',  credits: 3,                                          kind: 'image', durations: [5] },
   { id: 'bria-expand',        name: 'Bria Expand',         credits: 3,                                          kind: 'image', durations: [5] },
