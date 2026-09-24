@@ -38,16 +38,12 @@ export function TopUpReturn() {
     if (!id || !TOP_UP_ID_RE.test(id)) return;
     setTopUpId(id);
     const sessionId = q.get('session_id');
-    // Opt in only after 0108 is applied and reconciliation has stayed clean
-    // for 24h (CLAUDE.md, Delivery). Storage may be unavailable in private mode.
-    let recoveryEnabled = false;
-    try { recoveryEnabled = window.localStorage.getItem('veyrnox_stripe_top_up_recovery') === 'true'; } catch {}
     const stripSession = () => {
       const url = new URL(window.location.href);
       url.searchParams.delete('session_id');
       window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash);
     };
-    if (recoveryEnabled && sessionId && /^cs_[A-Za-z0-9_]{1,251}$/.test(sessionId)) {
+    if (sessionId && /^cs_[A-Za-z0-9_]{1,251}$/.test(sessionId)) {
       // Best effort: polling below does not depend on recording the return.
       gatewayFetch(`/top-ups/${id}/return`, {
         method: 'POST',
