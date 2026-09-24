@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { AppNav } from '../../_components/NavBar';
 import { Chip } from '../../_components/Chip';
 import { TopUpPacks, TopUpReturn } from '../../_components/TopUpPacks';
+import { CreditStatement } from '../../_components/CreditStatement';
 import { TopUpHistory } from '../../_components/TopUpHistory';
 import { gatewayFetch, GatewayError } from '../../_lib/gateway';
 import { readJobHistory } from '../../_lib/jobHistory';
@@ -125,6 +126,7 @@ export default function Credits() {
         </div>
       </section>
 
+      {balance != null && <CreditStatement />}
       {balance != null && <TopUpHistory />}
 
       {/* ============ RECENT GENERATIONS (client-side ledger) ============ */}

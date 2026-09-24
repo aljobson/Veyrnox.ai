@@ -24,6 +24,7 @@
 
 import { NextResponse } from 'next/server';
 import { rpc, select, envConfig } from '../../../../packages/db/supabase-client.js';
+import { historyCursor, historyPage } from '../../../../lib/historyCursor.js';
 import { topUpReadLimit } from '../../../../lib/topUpReadLimit.js';
 import { createCheckout } from '../../../../packages/adapters/stripe.js';
 
@@ -191,6 +192,10 @@ export async function GET(req) {
     const authId = req.headers.get('x-veyrnox-auth-id');
     if (!authId || !UUID_RE.test(authId)) return NextResponse.json({ error: 'not_authenticated' }, { status: 401 });
 
+    let cursor;
+    try { cursor = historyCursor(req.url); } catch {
+        return NextResponse.json({ error: 'invalid_cursor' }, { status: 400 });
+    }
     const cfg = envConfig();
     if (!cfg.supabaseUrl || !cfg.serviceRoleKey) {
         return NextResponse.json({ error: 'supabase_not_configured' }, { status: 503 });
@@ -209,8 +214,8 @@ export async function GET(req) {
             'top_ups',
             {
                 columns: 'id,pack_id,credits,price_usd_cents,status,created_at',
-                filter: `user_id=eq.${encodeURIComponent(userId)}&order=created_at.desc`,
-                limit: HISTORY_LIMIT,
+                filter: `user_id=eq.${encodeURIComponent(userId)}${cursor}&order=created_at.desc,id.desc`,
+                limit: HISTORY_LIMIT + 1,
             },
             cfg,
         );
@@ -219,7 +224,8 @@ export async function GET(req) {
         return NextResponse.json({ error: 'internal' }, { status: 502 });
     }
 
-    const topUps = (Array.isArray(rows) ? rows : []).map((r) => ({
+    const { items, next } = historyPage(Array.isArray(rows) ? rows : [], HISTORY_LIMIT);
+    const topUps = items.map((r) => ({
         id: r.id,
         pack_id: r.pack_id,
         credits: r.credits,
@@ -227,5 +233,5 @@ export async function GET(req) {
         status: r.status,
         created_at: r.created_at,
     }));
-    return NextResponse.json({ top_ups: topUps }, { headers: { 'Cache-Control': 'no-store' } });
+    return NextResponse.json({ top_ups: topUps, next }, { headers: { 'Cache-Control': 'no-store' } });
 }
