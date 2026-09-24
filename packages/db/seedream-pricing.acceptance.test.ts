@@ -14,10 +14,14 @@ test('Seedream repricing preserves catalog state and rejects unexpected pricing'
         try {
             await db.query('BEGIN');
             await db.query(await read('0029_cost_unit_and_deactivate_seedance.sql'));
-            await db.query(`UPDATE public.model_catalog SET provider = 'fal',
-                provider_endpoint = 'fal-ai/bytedance/seedream/v4/text-to-image',
-                provider_cost_per_unit = 0.04, credits_5s = 3, active = false
-                WHERE id = 'seedream-4'`);
+            await db.query(`INSERT INTO public.model_catalog
+                (id,name,provider,provider_endpoint,modality,credits_5s,provider_cost_per_unit,cost_unit,billing_seconds,active)
+                VALUES ('seedream-4','Seedream v4','fal','fal-ai/bytedance/seedream/v4/text-to-image',
+                'text-to-image',3,0.04,'per_generation',NULL,false)
+                ON CONFLICT (id) DO UPDATE SET provider = EXCLUDED.provider,
+                provider_endpoint = EXCLUDED.provider_endpoint, credits_5s = 3,
+                provider_cost_per_unit = 0.04, cost_unit = 'per_generation',
+                billing_seconds = NULL, active = false`);
             const others = "SELECT * FROM public.model_catalog WHERE id <> 'seedream-4' ORDER BY id";
             const before = (await db.query(others)).rows;
             const sql = await read('0114_seedream_fal_floor_price.sql');
