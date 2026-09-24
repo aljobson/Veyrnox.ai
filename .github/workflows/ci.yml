@@ -47,9 +47,12 @@ jobs:
           if git grep -nE 'innerHTML|outerHTML|insertAdjacentHTML|document\.write|srcdoc|\beval\(|new Function\(|javascript:' -- $FIRST_PARTY; then
             echo 'HTML/code-from-string sink found in first-party code — see next.config.mjs on why the CSP cannot catch it'; exit 1
           fi
-          # No console.log of a credential-shaped variable.
-          if git grep -nE 'console\.log\([^)]*(SECRET|_KEY|TOKEN|PASSWORD|serviceRoleKey|falKey)' -- 'app' 'components' 'lib' 'middleware.js' 'packages'; then
-            echo 'console.log of a secret-shaped value found'; exit 1
+          # No logging of a credential-shaped variable. console.error, not
+          # console.log, is this codebase's idiom — the money spine logs with
+          # it exclusively — so a gate on console.log alone could not fire
+          # (audit 2026-09-23).
+          if git grep -nE 'console\.(log|error|warn|info|debug)\([^)]*(SECRET|_KEY|TOKEN|PASSWORD|serviceRoleKey|falKey|kieKey|openrouterKey|secretAccessKey)' -- 'app' 'components' 'lib' 'middleware.js' 'packages' 'worker.js'; then
+            echo 'a secret-shaped value is logged'; exit 1
           fi
 
       - name: Migration numbering
