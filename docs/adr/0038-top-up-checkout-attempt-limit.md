@@ -1,6 +1,6 @@
 # ADR-0038 — Bound Stripe checkout attempts, including replays
 
-- Status: Proposed; enforcement staged off pending migration 0120.
+- Status: Accepted; migration 0120 applied, activation prepared for deployment.
 - Date: 2026-09-24
 - Related: audit API rate limits, ADR-0031 Stripe, ADR-0033 payment recovery
 
@@ -42,9 +42,9 @@ limit or a change to other endpoints.
 
 ## Rollout
 
-Migrations 0118 and 0119 are reserved by pricing PR #297. Apply them in order
-before 0120 if they remain in that PR; their pricing changes require their own
-owner approval. Do not approve a combined pending batch implicitly.
+With owner approval, draft pricing PR #297 renamed its unapplied migrations
+from 0118–0119 to 0121–0122 without changing their SQL. This lets 0120 roll out
+independently. Pricing remains draft, unapplied and separately approval-gated.
 
 Merge with TOP_UP_CHECKOUT_RATE_LIMIT_ENABLED=false. Apply 0120 through the
 owner-approved main workflow, verify ledger and reconciliation, then enable the
@@ -60,3 +60,13 @@ fixtures are cleaned up. Route tests prove replays consume attempts and denials
 stop before both the Top-up writer and Stripe. Verify original creation limits,
 freeze/pack errors, consent checks, checkout amount, metadata, return template,
 expiry/idempotency coupling, failures and disabled compatibility remain intact.
+
+## Activation — 2026-09-24
+
+PR #299 deployed successfully. The protected
+[apply-migrations run 36012613208](https://github.com/aljobson/Veyrnox.ai/actions/runs/36012613208)
+applied only 0120 at 14:32:15 UTC. Fresh checks account for all 93 applied
+migrations and report zero for all four reconciliation drift counts. Set
+TOP_UP_CHECKOUT_RATE_LIMIT_ENABLED=true in the next deployment to enforce the
+20-attempt quota before Top-up creation and Stripe calls. No further migration
+is needed. Disable the server flag to roll enforcement back.
