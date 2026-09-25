@@ -63,6 +63,7 @@ jobs:
     # A repository secret would reach any workflow a pushed branch adds.
     environment: production
     env:
+      APP_ENV: production
       CLOUDFLARE_ACCOUNT_ID: fb18d9f7052afbea5a5e0eae69948af2
       HAS_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}
     steps:

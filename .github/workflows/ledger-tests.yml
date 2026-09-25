@@ -8,6 +8,7 @@ on:
       - "scripts/migrate.mjs"
       - "scripts/test-social-cinema-foundation.mjs"
       - "scripts/test-cinema-creators.mjs"
+      - "scripts/test-tenant-foundation.mjs"
       - "scripts/test-cinema-content.mjs"
       # A change to a route that alters RPC arguments could not run these.
       - "app/api/v1/**"
@@ -28,6 +29,7 @@ on:
       - "scripts/migrate.mjs"
       - "scripts/test-social-cinema-foundation.mjs"
       - "scripts/test-cinema-creators.mjs"
+      - "scripts/test-tenant-foundation.mjs"
       - "scripts/test-cinema-content.mjs"
       # A change to a route that alters RPC arguments could not run these.
       - "app/api/v1/**"
@@ -100,6 +102,7 @@ jobs:
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-recovery-health.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-social-cinema-foundation.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-creators.mjs
+          DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-tenant-foundation.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-content.mjs
 
       - name: Run catalog margin-floor tests
