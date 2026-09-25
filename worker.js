@@ -25,6 +25,7 @@ import { sweepSteps } from './lib/autoShortSweep.js';
 import { sweepGrsai } from './lib/grsaiSweep.js';
 import { reapAssets } from './lib/assetReap.js';
 import { runtimeDeps, runtimeKeys } from './lib/autoShortRuntime.js';
+import { recoverCinemaUploads } from './lib/cinema/uploadRecovery.js';
 
 export default {
     async fetch(request, env, ctx) {
@@ -36,6 +37,7 @@ export default {
 
     async scheduled(event, env, ctx) {
         const results = await Promise.allSettled([
+            recoverCinemaUploads(env),
             observeRecovery('top_up_backfill', () => runScheduledBackfill(handler.fetch, env, ctx), env),
             observeRecovery('upload_sweep', () => runUploadSweep(env), env),
             observeRecovery('auto_short', () => runAutoShortSweep(env), env),

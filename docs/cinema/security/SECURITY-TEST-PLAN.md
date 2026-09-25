@@ -52,3 +52,14 @@ Run `tests/cinemaContentApi.test.mjs` and isolated `scripts/test-cinema-content.
 ## Stream upload increment (ADR-0052)
 
 G01/G02/G04/G06/G09 gain scoped upload controls: current owner/role/Auth checks, atomic capacity reservation, strict metadata and URL allowlists, private provider grants, raw-body HMAC, authoritative provider status, terminal replay protection and redacted events. API1/API4/API6/API7/API10 threats are addressed in the upload boundary. Tests cover negative authorization, concurrent provisioning, provider ambiguity, quotas, tus offsets and webhook tampering. ASVS coverage remains PARTIAL. G06 live provider/isolated-environment proof and G10 provider-first deletion/retention remain OPEN; no upload activation is authorized by this increment. Preview caps include all reservations and do not automatically release; support reconciliation must precede replacement. Scheduled reconciliation, cleanup and safety/rights review remain unimplemented.
+
+## Scheduled upload recovery (ADR-0053)
+
+Run `tests/cinemaUploadRecovery.test.mjs` and isolated
+`scripts/test-cinema-upload-recovery.mjs`. Verify missed-callback convergence,
+concurrent disjoint claims, batch/concurrency bounds, claim replay and expiry,
+old completion denial, fairness, provider failures, malformed UID/state,
+private-only terminal changes, browser-role denial and aggregate-only health.
+Live preview must also simulate a missed callback and a failed provider read,
+verify that pausing creator flags preserves recovery, and exercise the existing
+incident workflow before enabling recovery with real creator traffic.
