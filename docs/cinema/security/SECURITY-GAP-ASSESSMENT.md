@@ -53,3 +53,12 @@ claim replay, late-result protection, redacted counters and aggregate alert
 signals. G06 remains open for live Stream/isolated-environment evidence and
 playback. G10 still requires provider-first cleanup, cancellation/replacement
 and retention. No activation or live integration proof is implied.
+
+## Creator-requested removal (ADR-0054)
+
+G06/G10 gain provider-first cleanup for known media, exact-upload authorization,
+replay tombstones, restricted deletion claims and replacement only after confirmed
+provider removal. Daily creation caps bound churn after capacity release. G10 is
+still OPEN for account erasure, approved retention/purge and unknown provisioning
+reconciliation. Copied tus capability invalidation requires live testing before
+activation. No automatic expiration purge or real provider deletion was performed.
