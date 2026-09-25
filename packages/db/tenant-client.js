@@ -10,7 +10,9 @@ export async function tenantRequest(request, context, path, { method = 'GET', bo
     let response;
     try {
         response = await fetch(new URL(`/rest/v1/${path}`, cfg.supabaseUrl), {
-            method, redirect: 'error', signal: AbortSignal.timeout(8000),
+            // Workers rejects redirect: 'error'. Return redirects unfollowed;
+            // the non-ok branch below rejects them without forwarding the JWT.
+            method, redirect: 'manual', signal: AbortSignal.timeout(8000),
             headers: { apikey: cfg.publishableKey, authorization, 'content-type': 'application/json', 'x-request-id': context.requestId },
             ...(body === undefined ? {} : { body: JSON.stringify(body) }),
         });
