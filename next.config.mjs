@@ -108,6 +108,7 @@ const nextConfig = {
   async redirects() {
     return [
       { source: '/veyrnox', destination: '/', permanent: true },
+      { source: '/cinema', destination: '/social-cinema', permanent: false },
       { source: '/veyrnox/social-cinema', destination: '/social-cinema', permanent: true },
       { source: '/veyrnox/pricing', destination: '/pricing', permanent: true },
       { source: '/veyrnox/presets', destination: '/presets', permanent: true },

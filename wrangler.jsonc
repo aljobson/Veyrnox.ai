@@ -24,6 +24,18 @@
   // Public config — safe to commit. SUPABASE_URL used by middleware.js;
   // NEXT_PUBLIC_* by client bundle.
   "vars": {
+    // Cinema v1.0: server controls are default-off; local preview cannot bypass them.
+    // Activate only after the documented migration/reconciliation and preview gates.
+    "CINEMA_ENABLED": "false",
+    "SOCIAL_CINEMA_PROFILES_ENABLED": "false",
+    "CREATOR_UPLOADS_ENABLED": "false",
+    "CREATOR_MONETISATION_ENABLED": "false",
+    "CINEMA_SUBSCRIPTIONS_ENABLED": "false",
+    "VOTING_ENABLED": "false",
+    "COMMENTS_ENABLED": "false",
+    "PPV_ENABLED": "false",
+    "PREMIERES_ENABLED": "false",
+    "AI_RECOMMENDATIONS_ENABLED": "false",
     // Enable only after migration 0129, bucket CORS and real browser/R2 checks (ADR-0044).
     "UPLOAD_INTEGRITY_ENABLED": "false",
     // 0131 applied; verify fresh task/snapshot evidence after deploy, then arm the watcher.

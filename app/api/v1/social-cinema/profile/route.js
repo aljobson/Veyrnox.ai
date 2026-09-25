@@ -1,4 +1,5 @@
 import { rpc, envConfig } from '../../../../../packages/db/supabase-client.js';
+import { cinemaFeatures } from '../../../../../lib/cinema/features.js';
 import { limitRequestBody } from '../../../../../lib/requestBodyLimit.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -11,7 +12,7 @@ const codes = { invalid_profile: 400, user_not_provisioned: 409, username_unavai
 async function handle(req, create) {
   const authId = req.headers.get('x-veyrnox-auth-id');
   if (!UUID.test(authId || '')) return reply({ error: 'not_authenticated' }, 401);
-  if (process.env.SOCIAL_CINEMA_PROFILES_ENABLED !== 'true') {
+  if (!cinemaFeatures(process.env).profiles) {
     return reply({ error: 'profiles_not_open' }, 503);
   }
   const cfg = envConfig();

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { GET, POST } from '../app/api/v1/social-cinema/profile/route.js';
-Object.assign(process.env, { SUPABASE_URL: 'https://db.test', SUPABASE_SERVICE_ROLE_KEY: 'test-only', SOCIAL_CINEMA_PROFILES_ENABLED: 'true' });
+Object.assign(process.env, { SUPABASE_URL: 'https://db.test', SUPABASE_SERVICE_ROLE_KEY: 'test-only', CINEMA_ENABLED: 'true', SOCIAL_CINEMA_PROFILES_ENABLED: 'true' });
 const auth = '11111111-1111-4111-8111-111111111111';
 const key = '22222222-2222-4222-8222-222222222222';
 const id = '33333333-3333-4333-8333-333333333333';
@@ -24,6 +24,9 @@ function stub(results = {}) {
 }
 test('missing/invalid identity and disabled rollout never access the database', async () => {
   stub();
+  process.env.CINEMA_ENABLED = 'false';
+  for (const handler of [GET, POST]) assert.equal((await handler(request())).status, 503);
+  process.env.CINEMA_ENABLED = 'true';
   for (const handler of [GET, POST]) {
     for (const identity of ['', 'bad']) assert.equal((await handler(request(undefined, { 'x-veyrnox-auth-id': identity }))).status, 401);
     process.env.SOCIAL_CINEMA_PROFILES_ENABLED = 'false';
