@@ -39,6 +39,8 @@ Phase-0 decision-support documents for the target architecture at `/Users/aljobs
 
 | [ADR-0037 — Higgsfield credit parity](0037-higgsfield-credit-parity.md) | Prepared 2026-09-24 | Monthly-price equivalent one-off packs with a 50% contribution-margin target; exact generation-credit parity is secondary. | Full parity and production rollout |
 
+| [ADR-0048 — Social Cinema foundation](0048-social-cinema-foundation.md) | Proposed 2026-09-25 | Additive private membership and public profile projections; preserve existing identity and billing. | #320 |
+
 ## Decision graph
 
 ```
