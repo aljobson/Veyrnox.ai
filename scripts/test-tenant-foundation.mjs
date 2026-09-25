@@ -140,6 +140,17 @@ try {
         const replay = await scalar('SELECT public.create_project($1,$2,$3)', [ownWorkspace, 'Project 0', 'rate-project-0']);
         assert.equal(replay.idempotent, true);
     });
+    await check('Auth deletion revokes retained-token access without rewriting project/audit history', async () => {
+        await admin();
+        const before = await rows('SELECT id,actor_id,action FROM public.audit_events WHERE actor_id=$1 ORDER BY id', [stranger]);
+        await db.query('DELETE FROM auth.users WHERE id=$1', [stranger]);
+        assert.deepEqual(await rows('SELECT id,actor_id,action FROM public.audit_events WHERE actor_id=$1 ORDER BY id', [stranger]), before);
+        assert.equal(Number(await scalar('SELECT count(*) FROM public.projects WHERE owner_id=$1', [stranger])), 30);
+        assert.equal(Number(await scalar('SELECT count(*) FROM public.organisation_members WHERE user_id=$1', [stranger])), 0);
+        await actor(stranger);
+        assert.equal((await rows('SELECT * FROM public.projects')).length, 0);
+        assert.equal((await rows('SELECT * FROM public.workspaces')).length, 0);
+    });
 } finally {
     await db.query('ROLLBACK');
     await db.end();

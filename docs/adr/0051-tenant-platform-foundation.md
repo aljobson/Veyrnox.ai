@@ -20,8 +20,12 @@ Build identity is selected by explicit APP_ENV. Default builds target local deve
 
 ## Rollout and rollback
 
-TENANT_PROJECTS_ENABLED defaults false in both remote environments. Apply 0135 to the existing AI staging project through the reviewed migration process, run advisor/grant and real JWT API smoke checks, then enable the staging flag. Roll production forward only through the existing protected migration/deploy workflow. No remote migrations, flags, deployment or new databases were created during local implementation.
+TENANT_PROJECTS_ENABLED defaults false in both remote environments. Apply 0135 to the existing AI staging project through the reviewed migration process, run advisor/grant and real JWT API smoke checks, then enable the staging flag. Roll production forward only through the existing protected migration/deploy workflow. The initial implementation was local only. The authorized follow-up applied 0135 and 0136 to AI staging; see the staging rollout report. Production remains unchanged.
 
 The feature flag gates Next APIs; RLS and mutation authorization remain mandatory and effective if authenticated users call Supabase directly. Do not treat a UI/API flag as a database security boundary.
 
 Rollback application code/disable the flag first; retain new project/audit records. Do not drop tables after real data exists. Existing media/job/credit behavior is independent. Tenant-aware job/asset attribution, canonical project documents, quarantine/moderation services and durable Worker decomposition remain backlog items; this change does not certify the full product as production-ready.
+
+## Auth deletion compatibility (0136)
+
+Main's Cinema draft integration includes deleting an Auth identity while retaining financial records. Migration 0135 initially blocked that deletion through tenant foreign keys. Migration 0136 retains historical subject UUIDs on organisation/project ownership and immutable audits without a live Auth foreign key; membership and creation replay rows cascade on Auth deletion. Live membership is still required for every tenant lookup, so a retained token cannot access tenant data after identity deletion. This preserves projects and audits without rewriting history or changing the existing financial record lifecycle. A regression check covers retained-token isolation, retained project/audit rows and deletion; Cinema draft deletion checks also pass.
