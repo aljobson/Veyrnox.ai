@@ -19,7 +19,7 @@ export default function Aup() {
             <ul>
                 <li><strong>Sexual content.</strong> Pornography, nudity and sexually explicit material, generated or uploaded.</li>
                 <li><strong>Anything involving minors.</strong> No depiction of a child in any sexual or exploitative context, real or generated. We report child sexual abuse material to the authorities and close the account.</li>
-                <li><strong>Impersonation and deepfakes.</strong> Using a real person's face, body or voice to make them appear to say or do something they did not, including public figures. We do not offer face-swap or voice-cloning tools, and you may not use the tools we do offer to achieve that result.</li>
+                <li><strong>Impersonation and deepfakes.</strong> Using a real person&apos;s face, body or voice to make them appear to say or do something they did not, including public figures. We do not offer face-swap or voice-cloning tools, and you may not use the tools we do offer to achieve that result.</li>
                 <li><strong>Non-consensual intimate imagery</strong> of anyone, and any sexualised depiction of a real, identifiable person.</li>
                 <li><strong>Deception.</strong> Passing AI output off as an authentic photograph or recording of a real event, fake news, fake evidence, fake identity documents, or election disinformation.</li>
                 <li><strong>Harassment and hate.</strong> Content that threatens, bullies or degrades a person or group, or promotes violence or a hateful ideology.</li>

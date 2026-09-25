@@ -61,6 +61,12 @@ jobs:
       - name: Catalog UPDATE guards
         run: node scripts/check-catalog-update-guards.mjs
 
+      - name: Lint and foundation type check
+        run: npm run lint && npm run typecheck
+
+      - name: Client credential boundaries
+        run: npm run test:security
+
       - name: Unit tests
         run: npm test
 

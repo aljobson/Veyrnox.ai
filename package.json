@@ -9,7 +9,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint app components lib middleware.js packages/security packages/provider-sdk packages/db/tenant-client.js",
     "setup": "npm install",
     "build:worker": "npm run build && opennextjs-cloudflare build",
     "preview": "opennextjs-cloudflare preview",
@@ -18,7 +18,10 @@
     "check:signup-gate": "node scripts/check-signup-gate.mjs",
     "check:capabilities": "node scripts/check-capabilities.mjs",
     "test": "node --test \"tests/**/*.test.{js,mjs}\"",
-    "test:ledger": "tsx --test --test-concurrency=1 packages/db/*.test.ts"
+    "test:ledger": "tsx --test --test-concurrency=1 packages/db/*.test.ts",
+    "typecheck": "tsc -p packages/security/tsconfig.json",
+    "test:integration": "node scripts/test-tenant-foundation.mjs",
+    "test:security": "node scripts/check-security.mjs"
   },
   "dependencies": {
     "next": "^15.5.25",
@@ -29,12 +32,14 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@opennextjs/cloudflare": "^1.20.2",
+    "@types/node": "22.20.4",
     "autoprefixer": "^10.4.24",
     "eslint": "^9",
     "eslint-config-next": "^15.0.0",
     "postcss": "^8.5.26",
     "sharp": "^0.35.4",
     "tailwindcss": "^3.4.0",
+    "typescript": "5.9.3",
     "wrangler": "^4.120.0"
   },
   "overrides": {
