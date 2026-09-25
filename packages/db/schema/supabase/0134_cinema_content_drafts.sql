@@ -45,7 +45,7 @@ DECLARE
   v_old public.cinema_content_mutations%ROWTYPE;
   v_payload JSONB; v_result JSONB; v_parent_id UUID; v_position INTEGER; v_ai TEXT[];
 BEGIN
-  SELECT id INTO v_user FROM public.users WHERE auth_id=p_auth_id;
+  SELECT u.id INTO v_user FROM public.users u JOIN auth.users a ON a.id::TEXT=u.auth_id WHERE u.auth_id=p_auth_id;
   SELECT * INTO v_member FROM public.cinema_memberships WHERE user_id=v_user FOR UPDATE;
   IF NOT FOUND OR v_member.role<>'creator' THEN RETURN jsonb_build_object('error','creator_required'); END IF;
   IF v_member.account_status<>'active' THEN RETURN jsonb_build_object('error','account_not_active'); END IF;
@@ -113,7 +113,7 @@ CREATE OR REPLACE FUNCTION public.list_own_cinema_content(p_auth_id TEXT,p_paren
 RETURNS JSONB LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path='' AS $$
 DECLARE v_user UUID; v_member public.cinema_memberships%ROWTYPE;
 BEGIN
-  SELECT id INTO v_user FROM public.users WHERE auth_id=p_auth_id;
+  SELECT u.id INTO v_user FROM public.users u JOIN auth.users a ON a.id::TEXT=u.auth_id WHERE u.auth_id=p_auth_id;
   SELECT * INTO v_member FROM public.cinema_memberships WHERE user_id=v_user;
   IF NOT FOUND OR v_member.role<>'creator' THEN RETURN jsonb_build_object('error','creator_required'); END IF;
   IF v_member.account_status<>'active' THEN RETURN jsonb_build_object('error','account_not_active'); END IF;

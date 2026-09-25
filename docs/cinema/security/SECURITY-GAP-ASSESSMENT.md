@@ -38,3 +38,5 @@ The disabled creator implementation addresses the backend portion of G01 and the
 ## Private content increment (ADR-0050)
 
 ADR-0050 adds draft-scoped G01/G02/G04/G11 controls: active creator-only ownership, bounded private hierarchy, exact field validation, replay/revision concurrency checks and fixed PRIVATE/DRAFT state. These do not close the publication/rights/media gaps or the outstanding launch gates. No production activation is included.
+
+Content testing confirmed that Auth identity deletion does not cascade to the public user/profile (financial history is retained). Draft APIs explicitly deny deleted Auth identities; Cinema profile deletion cascades content and replay data. G10 still requires a complete operational deletion runbook, including profile removal.

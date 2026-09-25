@@ -63,7 +63,12 @@ try {
   // Service callers can only use the narrow RPC, with ownership still checked.
   await q('BEGIN');await q('SET LOCAL ROLE service_role');assert.equal((await list(actors[1],a.id)).error,'content_not_found');await q('ROLLBACK');
   assert.deepEqual(await balances(),before);
+  // Auth deletion revokes access immediately, but the support deletion workflow
+  // removes the Cinema profile separately (public users retain financial records).
   await q('DELETE FROM auth.users WHERE id=$1',[actors[0]]);
+  assert.equal((await list(actors[0])).error,'creator_required');
+  assert.equal((await save(actors[0],key)).error,'creator_required');
+  await q('DELETE FROM public.cinema_profiles WHERE user_id=(SELECT id FROM public.users WHERE auth_id=$1)',[actors[0]]);
   assert.equal(await value('SELECT count(*)::int AS value FROM public.cinema_content WHERE id=ANY($1::uuid[])',[[a.id,b.id,e.id]]),0);
   console.log('Cinema draft checks passed: hierarchy, isolation, roles/status, replay, concurrent edits/creates, quotas, RLS/grants, deletion and unchanged credits.');
 } finally { await c.end(); }
