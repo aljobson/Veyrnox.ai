@@ -6,7 +6,7 @@ This implements the brief's assessment → backlog → P0 sequence. Each item re
 | --- | --- | --- | --- | --- |
 | F01 P0 | Config and environment isolation: `next.config.mjs`, `wrangler.jsonc`, `packages/security/config.js`, `environments.js` | None | Missing/invalid settings deny; prod cannot be selected implicitly | No hard-coded prod client default; separate named deployments |
 | F02 P0 | JWT/context/error hardening: `lib/supabaseJwt.js`, `middleware.js`, `packages/security/*` | F01 | Forged headers, bad claims, key isolation/rotation, origins, body caps | Verified context; safe errors and no-store headers |
-| F03 P0 | Tenant schema/RLS: `packages/db/schema/supabase/0134*`, tenant client | F02 | Two tenants, revoked membership, viewer/editor/admin permissions, no escalation | Personal org/workspace provisioning; RLS-enforced projects |
+| F03 P0 | Tenant schema/RLS: `packages/db/schema/supabase/0135*`, tenant client | F02 | Two tenants, revoked membership, viewer/editor/admin permissions, no escalation | Personal org/workspace provisioning; RLS-enforced projects |
 | F04 P0 | Audit and idempotency: foundation SQL, `packages/security/*` | F03 | Append-only audit, transaction rollback, replay/conflicting payload tests | Project changes atomic with audit; fingerprint conflicts rejected |
 | F05 P0 | Provider contract: `packages/provider-sdk/*`, generations route | F02 | Invalid provider/handle, no client imports, no raw exception logging | All five existing providers retained through extracted registry; unknown providers fail before debit |
 | F06 P0 | Private media boundary: asset routes, security docs | F02 | Existing ownership and TTL tests; no-store responses | Preserve private access, document quarantine migration; no upload bypass |

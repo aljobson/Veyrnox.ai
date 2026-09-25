@@ -29,4 +29,4 @@ Next.js 15 / React 19 / JavaScript / Tailwind runs through OpenNext. `worker.js`
 | Browser/API security | `next.config.mjs`, `worker.js` | EXISTS: scoped CSP, HSTS, nosniff, framing/permissions controls, request caps. Inline scripts retained for static RSC hydration; preserve narrower R2 sources. |
 | Operations | Workflows, migration replay, recovery health | EXISTS: build, unit/ledger tests, audits, sink/credential grep gates, migration ledger and protected serialized deploy. PARTIAL: lint command unusable, no common business audit beyond specific domains. |
 
-This is repository evidence, not certification of live bucket configuration. Migration 0134 is a new additive tenant foundation; existing generation and media remain user-owned until a reviewed transactional project migration is delivered.
+This is repository evidence, not certification of live bucket configuration. Migration 0135 is a new additive tenant foundation; existing generation and media remain user-owned until a reviewed transactional project migration is delivered.

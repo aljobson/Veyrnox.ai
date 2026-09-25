@@ -15,9 +15,9 @@ Implemented the brief’s assessment, prioritized backlog and initial P0 foundat
 
 Only read-only project discovery and inspection were performed remotely. No remote SQL mutations, migrations, credentials, flags or deployments were changed. The two databases belonging to the other project were not queried or modified beyond listing project metadata to distinguish them.
 
-The only new migration is `packages/db/schema/supabase/0134_tenant_foundation.sql`. It was replayed and reapplied solely in disposable local PostgreSQL. It provisions tenants from the existing user path without changing credits or the legacy ledger. API flags default off; database authorization also protects direct Supabase access independently of these flags.
+The only new migration is `packages/db/schema/supabase/0135_tenant_foundation.sql`. It was replayed and reapplied solely in disposable local PostgreSQL. It provisions tenants from the existing user path without changing credits or the legacy ledger. API flags default off; database authorization also protects direct Supabase access independently of these flags.
 
-Approved targets: AI staging `yrqzwqywxfesmbvhzjgj`; AI production `xdxdzmsztyzbnzeforxx`. Follow [environment setup](environments.md) and [ADR 0050](../adr/0050-tenant-platform-foundation.md) for staged migration and rollout. The actual staging Worker origin, isolated storage/provider credentials and secondary Workers Builds environment still require operational verification.
+Approved targets: AI staging `yrqzwqywxfesmbvhzjgj`; AI production `xdxdzmsztyzbnzeforxx`. Follow [environment setup](environments.md) and [ADR 0051](../adr/0051-tenant-platform-foundation.md) for staged migration and rollout. The actual staging Worker origin, isolated storage/provider credentials and secondary Workers Builds environment still require operational verification.
 
 ## Verification
 
@@ -45,7 +45,7 @@ The local PostgreSQL database was set to UTC to match CI after an existing credi
 
 The new project API currently stores metadata only. Canonical documents/history and UI, tenant-aware generations/assets, quarantine and moderation, durable generation orchestration, internal Worker extraction, complete session revocation and operational observability remain explicit backlog work. Existing media access controls are preserved; this change does not certify all future media/moderation requirements.
 
-Next: review migration 0134, apply it through the protected process to **AI staging only**, run real-JWT RLS/API and existing generation/refund smoke checks, and enable the staging project API flag. Production rollout follows staging validation. Application rollback disables the flag/reverts code; retain project and audit data.
+Next: review migration 0135, apply it through the protected process to **AI staging only**, run real-JWT RLS/API and existing generation/refund smoke checks, and enable the staging project API flag. Production rollout follows staging validation. Application rollback disables the flag/reverts code; retain project and audit data.
 
 ## Changed files
 
@@ -60,7 +60,7 @@ Next: review migration 0134, apply it through the protected process to **AI stag
 - `app/veyrnox/app/create/page.js`
 - `app/veyrnox/app/credits/page.js`
 - `app/veyrnox/m/job/page.js`
-- `docs/adr/0050-tenant-platform-foundation.md`
+- `docs/adr/0051-tenant-platform-foundation.md`
 - `docs/ai/provider-model.md`
 - `docs/architecture/current-state.md`
 - `docs/architecture/environments.md`
@@ -75,7 +75,7 @@ Next: review migration 0134, apply it through the protected process to **AI stag
 - `next.config.mjs`
 - `package-lock.json`
 - `package.json`
-- `packages/db/schema/supabase/0134_tenant_foundation.sql`
+- `packages/db/schema/supabase/0135_tenant_foundation.sql`
 - `packages/db/tenant-client.js`
 - `packages/provider-sdk/registry.js`
 - `packages/security/config.js`

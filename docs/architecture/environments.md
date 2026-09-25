@@ -15,6 +15,6 @@ Production: the existing protected workflow builds with APP_ENV=production and d
 
 Staging: build with APP_ENV=staging and PUBLIC_HOST set to the actual staging HTTPS origin, then use the named staging target for the same build. The repository does not invent a deployed staging URL. Supply staging-only provider, R2, callback and backend secrets. Cron is disabled in the staging config. Do not reuse production payment keys, provider keys, R2 credentials or bucket. Verify the bucket identity and public-access settings before enabling uploads.
 
-New project APIs remain disabled until TENANT_PROJECTS_ENABLED=true after migration 0134 and checks. The local integration runner accepts only localhost/loopback and a disposable database named `rebuild_check` or ending in `_test`; it cannot address any Supabase project.
+New project APIs remain disabled until TENANT_PROJECTS_ENABLED=true after migration 0135 and checks. The local integration runner accepts only localhost/loopback and a disposable database named `rebuild_check` or ending in `_test`; it cannot address any Supabase project.
 
 Environment selection covers identity and deployment configuration. It cannot prove that an operator pasted the right R2/provider/payment secret. Deployment verification must validate those resources and prevent reuse; no claim is made that this source change provisioned or audited them.

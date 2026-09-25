@@ -1,4 +1,4 @@
-# ADR 0050: Add tenant foundations without replacing the running application
+# ADR 0051: Add tenant foundations without replacing the running application
 
 Status: proposed for staged rollout. Date: 2026-09-25.
 
@@ -6,7 +6,7 @@ The architecture brief requires tenant-aware projects, recoverable changes, audi
 
 ## Decision
 
-Add organisations, membership, default workspaces, project metadata and append-only project audits in migration 0134. Existing `public.users` is the profile/shadow identity; no parallel profile or credit-provisioning path. Backfill only existing identified auth users. A trigger on the existing shadow-user insert provisions personal tenancy for future confirmed signups. It does not create auth users or grant credits.
+Add organisations, membership, default workspaces, project metadata and append-only project audits in migration 0135. Existing `public.users` is the profile/shadow identity; no parallel profile or credit-provisioning path. Backfill only existing identified auth users. A trigger on the existing shadow-user insert provisions personal tenancy for future confirmed signups. It does not create auth users or grant credits.
 
 Tenant reads use user JWTs and RLS through a public-key PostgREST client. Project creation/update/delete use public SECURITY INVOKER wrappers over private SECURITY DEFINER functions with empty search paths, live membership checks, restricted EXECUTE grants, rate limits and atomic audits. No browser role can mutate ownership, memberships, versions or audit rows directly. This intentionally differs from the legacy service-role-only ledger, which remains untouched.
 
@@ -20,7 +20,7 @@ Build identity is selected by explicit APP_ENV. Default builds target local deve
 
 ## Rollout and rollback
 
-TENANT_PROJECTS_ENABLED defaults false in both remote environments. Apply 0134 to the existing AI staging project through the reviewed migration process, run advisor/grant and real JWT API smoke checks, then enable the staging flag. Roll production forward only through the existing protected migration/deploy workflow. No remote migrations, flags, deployment or new databases were created during local implementation.
+TENANT_PROJECTS_ENABLED defaults false in both remote environments. Apply 0135 to the existing AI staging project through the reviewed migration process, run advisor/grant and real JWT API smoke checks, then enable the staging flag. Roll production forward only through the existing protected migration/deploy workflow. No remote migrations, flags, deployment or new databases were created during local implementation.
 
 The feature flag gates Next APIs; RLS and mutation authorization remain mandatory and effective if authenticated users call Supabase directly. Do not treat a UI/API flag as a database security boundary.
 
