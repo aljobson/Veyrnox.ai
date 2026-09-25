@@ -67,7 +67,8 @@ const CSP = [
   // Generation traffic goes through /api/v1/*. The one other host is our own
   // R2 S3 endpoint: the create page PUTs a start image there on a 15-minute
   // URL /api/v1/uploads signed for one key and one Content-Type (ADR-0028).
-  `connect-src 'self' ${identityConfig.supabaseUrl} ${R2_ENDPOINTS}`,
+  // ADR-0052: exact Stream tus upload origins, no wildcard or playback hosts.
+  `connect-src 'self' ${identityConfig.supabaseUrl} ${R2_ENDPOINTS} https://upload.videodelivery.net https://upload.cloudflarestream.com`,
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",

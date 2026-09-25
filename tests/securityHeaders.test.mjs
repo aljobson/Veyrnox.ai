@@ -64,13 +64,14 @@ test('frame-src admits Turnstile and nothing else', async () => {
     assert.deepEqual(directives(csp).get('frame-src'), [TURNSTILE_HOST]);
 });
 
-test('connect-src reaches our own origin, the Supabase project and our own R2 endpoint only', async () => {
+test('connect-src permits only our backends and the exact Stream upload hosts (ADR-0052)', async () => {
     // Widening this is how an exfiltration path or a new vendor arrives.
     // CLAUDE.md: "Adding a host means an ADR." R2 is ADR-0028 (start-image upload).
     const csp = (await headerMap()).get('content-security-policy');
     assert.deepEqual(directives(csp).get('connect-src'), ["'self'", SUPABASE_HOST,
         'https://fb18d9f7052afbea5a5e0eae69948af2.r2.cloudflarestorage.com',
-        'https://fb18d9f7052afbea5a5e0eae69948af2.eu.r2.cloudflarestorage.com']);
+        'https://fb18d9f7052afbea5a5e0eae69948af2.eu.r2.cloudflarestorage.com',
+        'https://upload.videodelivery.net', 'https://upload.cloudflarestream.com']);
 });
 
 test('HSTS is preload-eligible and never lowered', async () => {

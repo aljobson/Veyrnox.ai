@@ -52,3 +52,7 @@ ADR-0049 and migration 0133 add private creator applications, a scoped approval 
 ## Private content increment
 
 ADR-0050 and migration 0134 add `/social-cinema/creator`: private film/short/trailer drafts and series → seasons → episodes, with metadata and structured AI disclosures. Current active creator membership is mandatory. Updates require the current revision; retries are idempotent. `CREATOR_CONTENT_ENABLED` stays false. Upload, rights clearance, review and publication remain later steps; no content is exposed publicly.
+
+## Stream upload increment
+
+ADR-0052 and migration 0137 add bounded creator upload reservations, direct resumable transfers, private processing status and verified Stream callbacks. Creator workspace video controls use existing draft ownership. All flags remain off. Live Stream credentials/testing, provider cleanup/replacement, rights and moderation remain launch gates; encoding success never publishes a draft.
