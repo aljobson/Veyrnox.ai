@@ -27,9 +27,12 @@ CREATE TABLE IF NOT EXISTS auth.users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     email TEXT,
     email_confirmed_at TIMESTAMPTZ,
+    is_anonymous BOOLEAN NOT NULL DEFAULT false,
     raw_user_meta_data JSONB DEFAULT '{}'::jsonb,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+-- Existing local fixtures may predate the anonymous-signup guard.
+ALTER TABLE auth.users ADD COLUMN IF NOT EXISTS is_anonymous BOOLEAN NOT NULL DEFAULT false;
 -- Supabase's request-scoped helpers, which RLS policies read.
 CREATE OR REPLACE FUNCTION auth.role() RETURNS TEXT LANGUAGE sql STABLE
 AS $$ SELECT COALESCE(current_setting('request.jwt.claim.role', true), current_user::text) $$;
