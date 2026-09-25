@@ -24,6 +24,8 @@
   // Public config — safe to commit. SUPABASE_URL used by middleware.js;
   // NEXT_PUBLIC_* by client bundle.
   "vars": {
+    "APP_ENV": "production",
+    "TENANT_PROJECTS_ENABLED": "false",
     // Cinema v1.0: server controls are default-off; local preview cannot bypass them.
     // Activate only after the documented migration/reconciliation and preview gates.
     "CINEMA_ENABLED": "false",
@@ -87,6 +89,20 @@
     // authenticates anything.
     "ACCESS_TEAM_DOMAIN": "fancy-lake-7c60.cloudflareaccess.com",
     "ACCESS_AUD": "4bea77db854633f7b4546a485bcb14c1e0c4389318ebd565e9a326edf17d0163"
+  },
+  "env": {
+    "staging": {
+      "name": "veyrnox-ai-staging",
+      "triggers": { "crons": [] },
+      "vars": {
+        "APP_ENV": "staging",
+        "PUBLIC_HOST": "https://veyrnox-ai-staging.al-jobson.workers.dev",
+        "SUPABASE_URL": "https://yrqzwqywxfesmbvhzjgj.supabase.co",
+        "NEXT_PUBLIC_SUPABASE_URL": "https://yrqzwqywxfesmbvhzjgj.supabase.co",
+        "NEXT_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_bAxQiodzBhI6bV7lmo9gMQ_Hlg9_Ish",
+        "TENANT_PROJECTS_ENABLED": "false"
+      }
+    }
   },
   // ------------------------------------------------------------------
   // Secrets (never here — `wrangler secret put <NAME>`), per ADR-0004

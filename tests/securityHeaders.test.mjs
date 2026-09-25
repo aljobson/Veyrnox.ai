@@ -10,7 +10,8 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import nextConfig from '../next.config.mjs';
+process.env.APP_ENV = 'production';
+const { default: nextConfig } = await import('../next.config.mjs');
 
 const SUPABASE_HOST = 'https://xdxdzmsztyzbnzeforxx.supabase.co';
 const TURNSTILE_HOST = 'https://challenges.cloudflare.com';

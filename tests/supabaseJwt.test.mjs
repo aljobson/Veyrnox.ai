@@ -156,3 +156,36 @@ test('readToken: Bearer header only', () => {
     assert.equal(readToken(req({ cookie: 'sb-abcdefgh-auth-token=raw.tok.en' })), null, 'cookies are not a credential');
     assert.equal(readToken(req({})), null);
 });
+
+test('JWKS cache is scoped to the configured issuer even when key IDs collide', async () => {
+    stubJwks([key]);
+    await verifyES256(await sign(key, claims()), SUPABASE_URL);
+    const other = await makeKey('k1');
+    stubJwks([other]);
+    await assert.rejects(verifyES256(await sign(key, claims()), 'https://different-project.supabase.co'), {reason:'signature'});
+});
+test('null JWT headers, oversized tokens and non-finite/not-yet-valid claims fail closed', async () => {
+    await assert.rejects(verifyES256(await sign(key, claims(), null),SUPABASE_URL),{reason:'malformed'});
+    await assert.rejects(verifyES256('a'.repeat(20000)+'.b.c',SUPABASE_URL),{reason:'malformed'});
+    assert.equal(validateClaims(claims({exp:Infinity}),SUPABASE_URL),'expired');
+    assert.equal(validateClaims(claims({nbf:Date.now()/1000+3600}),SUPABASE_URL),'malformed');
+});
+
+test('an overlapping issuer outage cannot fall back to another issuer’s cache', async () => {
+    const token = await sign(key, claims());
+    let release;
+    let started;
+    const pending = new Promise(resolve => { started = resolve; });
+    globalThis.fetch = async url => {
+        if (String(url).startsWith(SUPABASE_URL)) {
+            started();
+            return new Promise(resolve => { release = resolve; });
+        }
+        return new Response(JSON.stringify({ keys: [key.jwk] }));
+    };
+    const verification = verifyES256(token, SUPABASE_URL);
+    await pending;
+    await verifyES256(token, 'https://different-project.supabase.co');
+    release(new Response('unavailable', { status: 503 }));
+    await assert.rejects(verification, { reason: 'jwks' });
+});

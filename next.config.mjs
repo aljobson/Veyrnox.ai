@@ -1,3 +1,6 @@
+import { buildConfig } from './packages/security/config.js';
+const identityConfig = buildConfig(process.env);
+
 /** @type {import('next').NextConfig} */
 
 // Enforced CSP. `unsafe-inline` on script-src is retained for Next 15 RSC
@@ -35,7 +38,7 @@ const isDev = process.env.NODE_ENV === 'development';
 // this build cannot read, and ADR-0021 moves media to the EU bucket.
 // The account id is already public in .github/workflows/deploy-production.yml
 // — it is an identifier, not a credential; R2_SECRET_ACCESS_KEY is the secret.
-// Hardcoded, like SUPABASE_URL below: reading it from env at build time would
+// Explicit account allowlist: reading this Worker secret at build time would
 // silently drop the host (it is a wrangler secret) and break every thumbnail.
 const R2_ACCOUNT = 'fb18d9f7052afbea5a5e0eae69948af2';
 const R2_ENDPOINTS = [
@@ -65,7 +68,7 @@ const CSP = [
   // R2 S3 endpoint: the create page PUTs a start image there on a 15-minute
   // URL /api/v1/uploads signed for one key and one Content-Type (ADR-0028).
   // ADR-0052: exact Stream tus upload origins, no wildcard or playback hosts.
-  `connect-src 'self' https://xdxdzmsztyzbnzeforxx.supabase.co ${R2_ENDPOINTS} https://upload.videodelivery.net https://upload.cloudflarestream.com`,
+  `connect-src 'self' ${identityConfig.supabaseUrl} ${R2_ENDPOINTS} https://upload.videodelivery.net https://upload.cloudflarestream.com`,
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",
@@ -83,14 +86,16 @@ const securityHeaders = [
 
 const nextConfig = {
   env: {
-    NEXT_PUBLIC_SUPABASE_URL: 'https://xdxdzmsztyzbnzeforxx.supabase.co',
-    NEXT_PUBLIC_SUPABASE_ANON_KEY: 'sb_publishable_HwEQqi6FXJOmWpy5eqR9-A_Zvy8_ii1',
+    NEXT_PUBLIC_SUPABASE_URL: identityConfig.supabaseUrl,
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: identityConfig.publishableKey,
     // Public, like the anon key. Empty = no widget and no token sent, which is
     // the pre-CAPTCHA behaviour. Never empty this while Supabase CAPTCHA is on:
     // every email/password sign-in would fail (ADR-0026).
     NEXT_PUBLIC_TURNSTILE_SITE_KEY: '0x4AAAAAAE-nahDRUDwD5HEx',
     // Edge middleware bakes env at build time.
-    SUPABASE_URL: 'https://xdxdzmsztyzbnzeforxx.supabase.co',
+    SUPABASE_URL: identityConfig.supabaseUrl,
+    APP_ENV: identityConfig.appEnv,
+    PUBLIC_HOST: identityConfig.publicOrigin,
   },
   async headers() {
     return [
