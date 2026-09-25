@@ -1,5 +1,13 @@
 # Audit remediation — 24 September 2026
 
+## Follow-up — 25 September 2026
+
+PRs #310, #313, #314 and #318 are now merged. The last inspected production
+deploy succeeded. The status sections below preserve the September 24 record;
+remaining real-journey and activation gates still apply. Current billing and
+launch evidence is maintained in
+[Credit Pack launch acceptance](credit-pack-launch-acceptance.md).
+
 ## Current rollout status — 24 September 2026, 20:34 UTC
 
 Owner approved migrations 0128–0131 in chat. PRs #311, #312, #315 and #316

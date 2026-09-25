@@ -43,7 +43,7 @@ Where a Top-up is bought. Today the `sales_channel` CHECK constraint (`supabase/
 _Avoid_: Platform, store (when meaning the channel)
 
 **Merchant of Record**:
-The company that legally sells to the user in a Sales Channel and collects and remits sales tax. LemonSqueezy on web.
+The company that legally sells to the user in a Sales Channel and collects and remits sales tax. Stripe Managed Payments on web (ADR-0031, amended 2026-09-23).
 _Avoid_: Payment processor, billing provider (when meaning the legal seller)
 
 ### Reversals
