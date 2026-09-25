@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import Link from '../../../components/NavigationLink';
+import Link from 'next/link';
 import { MarketingNav } from '../_components/NavBar';
 import { Chip } from '../_components/Chip';
 import { CopyButton } from '../_components/CopyButton';

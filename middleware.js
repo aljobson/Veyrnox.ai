@@ -20,7 +20,7 @@ import { contentSecurityPolicy } from './lib/contentSecurityPolicy.mjs';
 import { readToken, validateClaims, verifyES256 } from './lib/supabaseJwt.js';
 
 export const config = {
-    matcher: ['/api/v1/:path*', '/app/:path*', '/auth/:path*'],
+    matcher: ['/api/v1/:path*', '/((?!api(?:/|$)|_next(?:/|$)).*)'],
 };
 
 // Identity headers set by this middleware and trusted by /api/v1 handlers.
@@ -43,8 +43,7 @@ export async function middleware(req) {
     // Page navigation authenticates through the existing client flow. Never
     // demand an API Bearer token for HTML. The renderer consumes this request
     // policy to nonce framework/flight scripts; the response must match it.
-    if (req.nextUrl.pathname === '/app' || req.nextUrl.pathname.startsWith('/app/')
-        || req.nextUrl.pathname === '/auth' || req.nextUrl.pathname.startsWith('/auth/')) {
+    if (req.nextUrl.pathname !== '/api/v1' && !req.nextUrl.pathname.startsWith('/api/v1/')) {
         const nonce = btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(16))));
         const policy = contentSecurityPolicy(nonce, process.env.NODE_ENV === 'development');
         headers.set('x-nonce', nonce);

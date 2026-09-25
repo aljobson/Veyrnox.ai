@@ -1,4 +1,4 @@
-import Link from '../../../components/NavigationLink';
+import Link from 'next/link';
 import { Chip } from './Chip';
 import { modelIdForName } from '../_lib/tokens.js';
 

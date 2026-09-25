@@ -1,4 +1,4 @@
-import Link from '../../../components/NavigationLink';
+import Link from 'next/link';
 import { IOSFrame } from '../_components/IOSFrame';
 import { MobileJumps } from './_MobileNav';
 

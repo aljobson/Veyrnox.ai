@@ -1,4 +1,4 @@
-import Link from '../../../components/NavigationLink';
+import Link from 'next/link';
 import { Logo } from '../_components/Logo';
 import { Chip } from '../_components/Chip';
 import { NavAuthButtons } from '../_components/NavAuthButtons';

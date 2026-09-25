@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { needsNonceDocument } from '../../../lib/nonceNavigation.mjs';
 import { FAQ, PRESETS, MODELS as MODELS_FALLBACK, SITE_PAGES, isShelfModel } from '../_lib/tokens';
 import { searchIndex, MIN_QUERY } from '../_lib/searchIndex';
 
@@ -120,8 +119,7 @@ function SearchOverlay({ onClose }) {
     (item) => {
       if (!item) return;
       onClose();
-      if (needsNonceDocument(item.href)) window.location.assign(item.href);
-      else router.push(item.href);
+      router.push(item.href);
     },
     [onClose, router],
   );

@@ -1,144 +1,89 @@
-# ADR-0049 — Rendering prerequisite for nonce CSP
+# ADR-0049 — Whole-site dynamic rendering for nonce CSP
 
-Status: Proposed; isolated app/auth implementation proof in draft PR #322.
-Production rendering scope not yet accepted. Tracks #4.
+Status: Whole-site implementation selected by the owner on 25 September 2026;
+preview validation in PR #322. Production rollout pending authenticated journey
+proof. Related issue: #4.
 
-## Verified baseline — 25 September 2026
+## Decision
 
-At main ccb21be, next.config.mjs supplies a static CSP with script-src
-'unsafe-inline'. middleware.js already exists and gates only /api/v1/*;
-it must be extended, not recreated. Canonical /app routes rewrite to
-/veyrnox/app; those aliases redirect. A read-only HEAD to production /app
-returned HTTP 200, script-src 'unsafe-inline' and
-Cache-Control: s-maxage=31536000. This is a header baseline, not a browser
-hydration test or proof of nonce compatibility.
+Render all HTML dynamically and give each response a cryptographically random
+128-bit nonce. Middleware overwrites inbound nonce/CSP headers, passes the policy
+to Next's renderer, and emits the same response policy with private/no-store
+caching. The root layout forces dynamic rendering, including public, legal,
+mobile-prototype and app/auth pages. API JWT verification remains unchanged.
+Next's static headers supply a restrictive policy to API responses only, avoiding
+a duplicate policy on HTML. The framework asset namespace bypasses page middleware. Other metadata
+responses may carry the policy but contain no executable HTML scripts. Script unsafe-inline is removed;
+existing host allowlists and style-src remain unchanged.
 
-Next's [nonce guide](https://nextjs.org/docs/app/guides/content-security-policy)
-requires dynamic rendering to attach a fresh request nonce to framework and
-inline scripts. This repository uses Next 15.5.25 and OpenNext Cloudflare;
-compatibility must be demonstrated on that installed stack, not inferred from
-current Next documentation or the old issue's upstream blocker alone.
+Public pages share the origin and session storage with the app. App-only nonce
+coverage therefore cannot protect the entire session. A scoped preview also
+proved that client navigation from a static public page retained its permissive
+document policy. Whole-site coverage removes that difference and preserves
+normal Next client routing; the temporary full-document app-link workaround is
+removed.
 
-## Options and proposed sequence
+## Cost and alternatives
 
-| Option | Benefit | Cost / limit |
-| --- | --- | --- |
-| Whole-site dynamic rendering and nonce CSP | One policy; includes shared-origin public pages | Removes static HTML caching benefits; measure Worker/latency cost and hydration before acceptance |
-| App/auth route proof first | Bounds the first experiment; marketing can remain static during investigation | Does not close #4; public pages share the origin and token storage, so residual injection risk remains |
-| Keep static pages while investigating a supported hash strategy | Preserves caching | Not assumed supported; requires separate proof for inline RSC scripts and the installed OpenNext build |
+HTML loses static prerendering and shared cache reuse, increasing Worker rendering
+and origin-data work. JS, CSS, fonts and other static assets keep their caching.
+Measure production render latency, Worker CPU/request usage and origin request
+volume during rollout; local preview timings do not establish production cost.
+No claim of free performance parity is made.
 
-Recommend an isolated app/auth proof first, followed by an explicit whole-site
-or alternative strategy decision. Do not claim partial nonce coverage protects
-all sessions: public pages can contain login UI and share localStorage with the
-app. The mobile /m tree is a sample-data prototype, not automatically an
-authenticated application; classify it intentionally in the final policy.
+Keeping public HTML static would require a separately proven hash strategy or
+an origin/session architecture change. That work is outside this PR. Partial
+app/auth coverage was useful for compatibility testing but does not meet #4's
+whole-site objective.
 
-## Implementation PR contract
+## Implementation and proof
 
-1. Preserve the existing API JWT verification and inbound identity stripping.
-   Add page handling without forcing HTML navigation to supply a Bearer token.
-2. Generate a cryptographically random nonce for each HTML request. Overwrite
-   inbound nonce/CSP headers. Forward the generated CSP in request headers so
-   Next can nonce its framework/flight scripts; use the same policy on response.
-3. Make the chosen route layouts dynamic and disable shared HTML caching.
-   Test canonical routes, internal redirects, rewrites, errors and RSC navigation.
-   A middleware nonce on statically generated HTML is not a valid solution.
-4. Remove production script-src 'unsafe-inline' only where rendering and all
-   script consumers are compatible. Keep development-only HMR allowances
-   separate; do not widen production hosts or weaken other security directives.
-5. Thread the nonce into explicit Script/inline consumers, including Turnstile.
-   Verify the final response has no conflicting static CSP header.
-6. Retain rollout/rollback controls and measure latency/cache/Worker impact.
-   A configured CSP-report endpoint, if added, must be bounded and must not
-   persist session URLs or credentials.
+The installed stack is Next 15.5.25 / OpenNext Cloudflare 1.20.2. Next's
+[nonce guide](https://nextjs.org/docs/15/app/guides/content-security-policy)
+requires dynamic rendering for request nonces. Existing API middleware must be
+extended without weakening JWT checks or trusting client identity headers.
 
-## Required proof before closing #4
+Use Node 22/npm 10 with the committed lockfile and `npm run build:worker`.
+Start `wrangler dev --local --port 8795`, then run
+`node scripts/check-nonce-runtime.mjs`. It checks public/legal/mobile and
+app/auth pages plus 404s twice each, requiring fresh nonces, matching executable
+inline framework scripts, no script unsafe-inline and private/no-store caching.
 
-- Production-mode OpenNext/Workers preview build; no dev-server-only proof.
-- Two independent responses have different nonces, matching their inline scripts.
-- An injected script without an approved nonce is blocked.
-- No nonce reuse through HTML caches or stale RSC/prefetch responses.
-- Real-browser initial hydration, client navigation, login, OAuth return,
-  Turnstile, generation controls and Stripe-return handling remain functional.
-- Security headers and JWT/session regression tests pass; console/CSP errors
-  are investigated; public-page scope and residual risk are recorded.
-- Whole issue scope is satisfied, or the owner explicitly revises it and tracks
-  remaining routes separately. A partial experiment must not auto-close #4.
+The installed local workerd was too old for compatibility date 2026-09-01.
+The isolated preview uses workerd 1.20260925.1 via MINIFLARE_WORKERD_PATH; the
+production compatibility date and dependency lockfile are unchanged.
 
-## Rollout
+Before rollout, require successful Worker build, security/JWT/session regression
+tests, real-browser hydration and bidirectional public/app navigation, and a
+blocked harmless unapproved inline-script probe. Also verify OAuth return,
+Turnstile, authenticated generation controls and Stripe return handling on an
+approved host. Local Turnstile returns error 300030, so localhost cannot prove a
+successful CAPTCHA or authenticated journey. Do not substitute a local test for
+live payment evidence required by #101.
 
-PR #322 includes a preview implementation: dynamic app/auth layouts, fresh
-128-bit nonces supplied to Next through request CSP, matching response CSP and
-private/no-store responses. Static public pages retain their current policy.
-The static CSP header rule excludes app/auth; the first Workers probe caught
-OpenNext appending the fallback policy when it covered every path.
+## Rollout and rollback
 
-Keep the PR draft until the proof and final scope decision are complete. Do not
-merge this experiment as whole-site protection. Public-to-app client navigation
-can retain the original document policy; app-to-public navigation and error
-rendering also need explicit coverage. The original static-rendering cost
-prerequisite remains applicable.
+Keep PR #322 draft until the remaining journey evidence is recorded. After merge,
+verify production headers/nonces/cache behavior and monitor hydration/CSP errors,
+render latency, Worker usage and origin load. This requires no database migration.
+Rollback is a reviewed revert of the nonce/rendering change, restoring the prior
+static policy and cache behavior; record that it also restores the previous
+script unsafe-inline risk. Do not auto-close #4 from an incomplete preview.
 
-## Reproducing the preview
+## Whole-site preview results — 25 September 2026
 
-Use Node 22/npm 10 with the committed lockfile, then `npm run build:worker`.
-Start `wrangler dev --local --port 8795` and run
-`node scripts/check-nonce-runtime.mjs`. The probe requires fresh nonces, matching
-inline framework scripts, no script unsafe-inline, no shared caching, and a
-working scoped 404. It deliberately fails on missing coverage.
-
-The installed local workerd was too old for the configured 2026-09-01
-compatibility date. The isolated test used workerd 1.20260925.1 via
-MINIFLARE_WORKERD_PATH; no production date or dependency lockfile was changed.
-Local timing is diagnostic only and does not establish production cost.
-Browser login dialog opened successfully; Turnstile reported error 300030 on
-localhost. Successful CAPTCHA, OAuth, authenticated generation and payment
-return journeys therefore remain unproven.
-
-## Preview results — 25 September 2026
-
-- Node 22 build:worker completed on Next 15.5.25 / OpenNext Cloudflare 1.20.2.
-- Application tests: 603 passed, one pre-existing skip; hard-wall passed.
-- HTTP probe passed twice on /app, /app/credits, /app/account, /app/create,
-  /app/library, /auth/callback and /app/not-a-page (404). All 14 nonces were
-  distinct; each response's 5–8 executable inline scripts matched its nonce,
-  and each had no-store and no script unsafe-inline. Public / kept its fallback.
-- Local request times were 731ms for the first /app response and 25–71ms for
-  the remaining requests. These are single-machine samples, not a benchmark.
-- Real browser: initial app hydration, app-to-create navigation, sign-in modal
-  and app-to-legal navigation worked. A dynamically appended inline script
-  without a nonce was blocked on a freshly loaded app document.
-- **Confirmed scope blocker:** navigating from public / to /app with the
-  existing client link retained the permissive public document policy. The
-  same harmless inline execution probe then ran. Reloading /app restores its
-  nonce policy. A scoped rollout must enforce full-document boundary navigation,
-  or the final strategy must cover every shared-origin document. Merely adding
-  CSP to app RSC responses cannot change the current document's policy.
-- Local Turnstile error 300030 prevents successful CAPTCHA proof. Authenticated
-  OAuth/payment/generation journeys and production cost remain outstanding.
-
-The browser probes changed only temporary local test-page state and were
-removed/reloaded. No credentials, payments or production content were changed.
-
-## Scoped navigation boundary follow-up
-
-The scoped implementation now renders app/auth destinations as ordinary anchors
-through NavigationLink, including marketing, menus, presets, pricing, error-page
-suggestions and mobile-prototype entry points. Search uses location.assign for
-the same destinations. This obtains a new HTML document and CSP instead of
-relying on a policy returned with an RSC request. Query strings and fragments
-are preserved; normal browser new-tab and modified-click behavior remains.
-
-The tradeoff is intentional: links into app/auth, including links within the
-app, perform full document loads. Public-to-public links retain Next routing.
-Public pages still share session storage and retain unsafe-inline; this boundary
-fix alone does not satisfy the whole-site issue scope. The final rendering scope
-and authenticated journey proofs remain rollout requirements.
-
-Follow-up validation on 25 September: 605 application tests passed (one existing
-skip); hard-wall and production Worker build passed. The HTTP nonce/cache probe
-passed again. In the real browser, homepage “Open the app” now loaded a document
-with nonced scripts and blocked the harmless unapproved inline probe. Keyboard
-search for Wan opened /app/create?model=wan-2.5-kie, preserved the model query,
-and also blocked that probe. This resolves the reproduced entry/navigation gap;
-it does not establish CAPTCHA or authenticated payment/generation success.
+- Production Worker build, hard-wall and all 603 application tests passed;
+  one existing opt-in test was skipped. The temporary navigation helper and its
+  two tests were removed with the full-document workaround.
+- The HTTP probe passed 26 responses across 13 public/legal/mobile/app/auth/error
+  paths. All nonces were distinct and matched executable inline scripts;
+  script unsafe-inline was absent and every response was private/no-store.
+- The first local homepage response took 1369ms and the second 138ms; the other
+  samples ranged from 25–96ms. These are diagnostic samples, not production
+  capacity or latency claims.
+- Browser app → legal → homepage and fresh homepage → app client navigation
+  rendered successfully. The harmless unapproved inline-script probe was
+  blocked on the fresh homepage and after entering the app. The sign-in modal
+  rendered; no console errors were observed during the navigation checks.
+- No successful account login, CAPTCHA, OAuth return, authenticated generation
+  or Stripe return was performed. Those proof requirements remain outstanding.

@@ -1,9 +1,8 @@
 /** @type {import('next').NextConfig} */
 import { contentSecurityPolicy } from './lib/contentSecurityPolicy.mjs';
 
-// Static public pages retain their existing policy during the scoped nonce
-// experiment (ADR-0049). Middleware supplies it for dynamic /app and /auth
-// responses. Removing the static fallback requires a separate site-wide decision.
+// All HTML uses middleware's fresh nonce policy (ADR-0049). API responses
+// keep a static restrictive policy without allowing inline scripts.
 const isDev = process.env.NODE_ENV === 'development';
 const CSP = contentSecurityPolicy(undefined, isDev);
 
@@ -34,7 +33,7 @@ const nextConfig = {
       },
       {
         // Do not append a second CSP to middleware's nonce policy.
-        source: '/:path((?!app(?:/|$)|auth(?:/|$)).*)',
+        source: '/api/:path*',
         headers: [{ key: 'Content-Security-Policy', value: CSP }],
       },
     ];

@@ -8,7 +8,7 @@ const { middleware } = await import('../middleware.js');
 
 test('HTML receives fresh matching CSP/renderer nonces and cannot trust inbound policy', async () => {
     const seen = [];
-    for (const path of ['/app','/app/credits','/auth/callback']) {
+    for (const path of ['/','/pricing','/legal/terms','/m/create','/not-a-page','/app','/app/credits','/auth/callback']) {
         const response = await middleware(new NextRequest(`https://example.test${path}`, { headers: {
             'x-nonce': 'forged', 'Content-Security-Policy': "script-src 'unsafe-inline'", 'x-veyrnox-auth-id': 'victim',
         }}));
@@ -23,7 +23,7 @@ test('HTML receives fresh matching CSP/renderer nonces and cannot trust inbound 
         assert.match(response.headers.get('cache-control'), /no-store/);
         seen.push(nonce);
     }
-    assert.equal(new Set(seen).size, 3);
+    assert.equal(new Set(seen).size, 8);
 });
 
 test('API requests still require a verified token, even with forged identity/nonce', async () => {
