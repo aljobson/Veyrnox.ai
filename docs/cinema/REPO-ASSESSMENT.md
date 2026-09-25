@@ -40,6 +40,10 @@ New trust boundaries: creator-owned content; moderation and publication authorit
 
 Stripe Connect, subscription products, creator contracts, entitlement expiry, refunds and cash ledger reconciliation are not implemented. Prices/revenue shares in the source are indicative, not production launch decisions. Use integer minor units and explicit currency, immutable accounting and compensating reversals. Existing top-up handling must continue unchanged. No Apple/Google mobile application or purchase integration exists in this repo; those adapters belong with an actual mobile client and provider setup.
 
+## Mandatory security overlay
+
+Before further feature implementation, complete [security architecture](security/SECURITY-ARCHITECTURE.md), [threat model](security/THREAT-MODEL.md), [ASVS mapping](security/ASVS-MAPPING.md) and [gap assessment](security/SECURITY-GAP-ASSESSMENT.md). Security controls and evidence belong in every feature PR. The assessment itself changes no production behaviour.
+
 ## Proposed PR sequence
 
 1. **Foundations**: this assessment, Cinema routes, default-off server feature flags, domain contracts and tests. Reuse migration and API frameworks.
@@ -53,7 +57,7 @@ Stripe Connect, subscription products, creator contracts, entitlement expiry, re
 9. **Connect**: onboarding, MFA-protected payout changes, durable settlement, payout status and provider reconciliation.
 10. **Moderation**: build publication checks alongside content; then cases, appeals, console and specialist safety integration.
 11. **Analytics**: idempotent event ingestion/queues, creator metrics, rankings, trending and rising creators.
-12. **Hardening and launch**: cross-feature abuse tests, Turnstile, review WAF, accessibility, performance, complete creator-to-payout journey.
+12. **Final independent verification and launch** (security is required throughout steps 1–11): cross-feature abuse tests, Turnstile, review WAF, accessibility, performance, complete creator-to-payout journey.
 
 Each feature PR includes implementation, relevant tests, documentation, schema/security/deployment implications. Foundations do not mean the later epics are complete.
 

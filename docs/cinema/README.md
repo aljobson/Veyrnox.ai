@@ -38,3 +38,7 @@ All production flags remain false. Profile preview additionally requires `localS
 Creator application and approval; content/series/seasons/episodes and rights; Stream uploads and playback; service-backed catalogue; watch history/watchlist; social/competitions; subscriptions and entitlements; creator cash ledger and Connect; moderation; queue-based analytics; complete security and end-to-end launch verification. No real films, subscription prices, revenue or payouts are fabricated by the foundation.
 
 Provider credentials, separate preview resources, rights/age/territory policy and approved commercial settings are needed before the corresponding live features can be activated. See the assessment's explicit risks and decisions.
+
+## Mandatory security overlay
+
+The [security engineering brief](https://chatgpt.com/s/t_6ab644e42ac88191aaa6ea4cf6403e27) applies to every feature PR. The assessment pack in `docs/cinema/security/` (PR #327) must land before further feature implementation. Close applicable release gaps with implementation and evidence; the final launch review does not replace security work throughout delivery. No ASVS compliance is claimed.
