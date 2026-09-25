@@ -34,3 +34,7 @@ The first implementation work after these assessments is closing G01–G05 for t
 ## Creator increment update (ADR-0049)
 
 The disabled creator implementation addresses the backend portion of G01 and the scoped creator-review portions of G02/G03/G04/G09: active account enforcement, Cinema-only administrator permission, five-minute verified TOTP freshness, Access, strict APIs, quotas, correlation and immutable review history. It does not close those gaps for all future Cinema features. Authenticated preview/operational evidence, approver provisioning, G05 scanning and the G08/G09/G10 launch gates remain open. Production flags remain false; no schema apply or privilege assignment is performed by the PR.
+
+## Private content increment (ADR-0050)
+
+ADR-0050 adds draft-scoped G01/G02/G04/G11 controls: active creator-only ownership, bounded private hierarchy, exact field validation, replay/revision concurrency checks and fixed PRIVATE/DRAFT state. These do not close the publication/rights/media gaps or the outstanding launch gates. No production activation is included.

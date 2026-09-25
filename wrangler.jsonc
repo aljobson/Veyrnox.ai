@@ -28,6 +28,7 @@
     // Activate only after the documented migration/reconciliation and preview gates.
     "CINEMA_ENABLED": "false",
     "CREATOR_APPLICATIONS_ENABLED": "false",
+    "CREATOR_CONTENT_ENABLED": "false",
     "SOCIAL_CINEMA_PROFILES_ENABLED": "false",
     "CREATOR_UPLOADS_ENABLED": "false",
     "CREATOR_MONETISATION_ENABLED": "false",
