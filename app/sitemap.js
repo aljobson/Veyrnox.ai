@@ -20,6 +20,7 @@ export default function sitemap() {
     page('', 'weekly', 1.0),
     page('/pricing', 'monthly', 0.9),
     page('/presets', 'weekly', 0.7),
+    page('/social-cinema', 'weekly', 0.7),
     page('/legal/terms', 'yearly', 0.3),
     page('/legal/privacy', 'yearly', 0.3),
     page('/legal/gdpr', 'yearly', 0.3),

@@ -18,6 +18,7 @@ export function MarketingNav() {
   const items = [
     { href: '/',         label: 'Home' },
     { href: '/presets', label: 'Gallery' },
+    { href: '/social-cinema', label: 'Social Cinema' },
     { href: '/pricing', label: 'Pricing' },
   ];
   return (
@@ -25,7 +26,7 @@ export function MarketingNav() {
       <Link href="/" aria-label="Veyrnox.ai — home" className="flex items-center gap-2.5 shrink-0">
         <Logo wordmark />
       </Link>
-      <nav aria-label="Primary" className="hidden sm:flex gap-1.5 text-sm font-semibold">
+      <nav aria-label="Primary" className="hidden lg:flex gap-1.5 text-sm font-semibold">
         {items.map((it) => {
           const target = it.href.replace(/^\/veyrnox/, '') || '/';
           const active = target === '/' ? path === '/' : path.startsWith(target);
@@ -49,7 +50,7 @@ export function MarketingNav() {
         <NavAuthButtons />
         {/* Below sm the links above are hidden — without this the only way
             off this page was the browser back button. */}
-        <MobileMenu items={items} className="sm:hidden" />
+        <MobileMenu items={items} className="lg:hidden" />
       </div>
     </div>
   );

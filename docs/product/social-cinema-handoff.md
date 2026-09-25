@@ -64,3 +64,30 @@ Begin with slice 1 and a focused PR. Test database behavior against an isolated
 local database, not production. Retain the full roadmap's launch security,
 performance, observability, and operational gates; the sequence above does not
 remove them. Defer later slices until their foundations and decisions are ready.
+
+## Web entry and profile rollout
+
+The next web slice adds `/social-cinema`, linked from homepage navigation,
+marketing navigation, site search and the signed-in account menu. The four
+sections explicitly describe upcoming functionality; they show no invented
+series, votes or winners. Existing Studio generation remains available.
+
+Profile enrollment reuses migration 0132 through authenticated
+`GET/POST /api/v1/social-cinema/profile`. Both methods consume the existing
+shared account request quota before any profile operation, independently of
+other account routes' rate-limit feature switch. Request identity comes only
+from the JWT middleware. POST accepts only username, display name and bio;
+its UUID Idempotency-Key is preserved on retry. No new migration is needed.
+
+Enrollment is closed by default: the server requires
+`SOCIAL_CINEMA_PROFILES_ENABLED=true`, and the browser preview requires
+`localStorage.veyrnox_social_cinema = 'true'`. The public entry page itself
+remains discoverable. Enable profile previews only after migration 0132 and
+its prerequisites are verified and the repository's 24-hour clean
+reconciliation gate has passed. This PR does not change production flags.
+Remove the browser preview gate in a separately reviewed general rollout.
+
+Before rollout, verify in a preview environment: signed-out prompt, profile
+creation and reload, duplicate username, failed request and retry, and account
+switch/sign-out isolation. Automated route tests cover authorization, payload
+validation, quota failure, error redaction, body bounds and idempotency forwarding.
