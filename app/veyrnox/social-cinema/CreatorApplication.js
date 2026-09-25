@@ -40,7 +40,7 @@ export function CreatorApplication() {
     </div> : <form onSubmit={submit} className="mt-4 max-w-lg space-y-4">
       <p className="text-sm text-vx-fg-body">Tell us about the films or series you want to make. Your application is private and reviewed by the Cinema team. Do not include payment or identity documents.</p>
       <label className="block font-semibold" htmlFor="creator-statement">Your creative plans<textarea id="creator-statement" name="statement" required minLength={20} maxLength={1000} rows={5} className="mt-2 w-full rounded-xl border border-vx-border bg-vx-panel p-3 focus-visible:outline-vx-accent" /></label>
-      <p className="text-xs text-vx-fg-muted">20–1,000 characters. Approval does not enable monetisation or payouts.</p>
+      <p className="text-xs text-vx-fg-muted">20–1,000 characters. Creator earning features are not open yet.</p>
       {error && <p role="alert">{error}</p>}
       <Button type="submit" disabled={state === 'saving'}>{state === 'saving' ? 'Submitting…' : 'Apply to become a creator'}</Button>
     </form>}
