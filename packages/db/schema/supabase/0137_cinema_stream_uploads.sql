@@ -41,7 +41,7 @@ RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
 DECLARE v_user UUID; v_row public.cinema_uploads%ROWTYPE;
 BEGIN
   -- One small, fixed global lock makes the preview account/storage cap exact.
-  PERFORM pg_advisory_xact_lock(135,1);
+  PERFORM pg_advisory_xact_lock(137,1);
   v_user:=public.cinema_upload_owner(p_auth_id,p_content_id);
   IF v_user IS NULL THEN RETURN jsonb_build_object('error','upload_not_allowed'); END IF;
   PERFORM 1 FROM public.cinema_memberships WHERE user_id=v_user FOR UPDATE;

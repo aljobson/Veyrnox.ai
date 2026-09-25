@@ -63,7 +63,7 @@ test('frame-src admits Turnstile and nothing else', async () => {
     assert.deepEqual(directives(csp).get('frame-src'), [TURNSTILE_HOST]);
 });
 
-test('connect-src permits only our backends and the exact Stream upload hosts (ADR-0051)', async () => {
+test('connect-src permits only our backends and the exact Stream upload hosts (ADR-0052)', async () => {
     // Widening this is how an exfiltration path or a new vendor arrives.
     // CLAUDE.md: "Adding a host means an ADR." R2 is ADR-0028 (start-image upload).
     const csp = (await headerMap()).get('content-security-policy');

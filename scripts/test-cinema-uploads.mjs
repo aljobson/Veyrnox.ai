@@ -15,7 +15,7 @@ const attach=(id,uid='b'.repeat(32))=>val('SELECT public.attach_cinema_upload($1
 const observe=(state,time=new Date().toISOString(),uid='b'.repeat(32),duration=42)=>val('SELECT public.observe_cinema_upload($1,$2,$3,$4,$5,$6) AS value',[uid,state,time,duration,1080,1920]);
 async function draft(actor,type='SHORT'){return val('SELECT public.save_cinema_draft($1,$2,null,0,$3) AS value',[actor,randomUUID(),{content_type:type,parent_id:null,position:null,title:'Upload test',synopsis:'',language:'en',ai_disclosures:[]}]);}
 try {
- const migration=await readFile(new URL('../packages/db/schema/supabase/0135_cinema_stream_uploads.sql',import.meta.url),'utf8');await c.query(migration);await c.query(migration);
+ const migration=await readFile(new URL('../packages/db/schema/supabase/0137_cinema_stream_uploads.sql',import.meta.url),'utf8');await c.query(migration);await c.query(migration);
  for(const actor of actors){await q('INSERT INTO auth.users(id,email,email_confirmed_at) VALUES($1,$2,now())',[actor,`${actor}@example.invalid`]);await val('SELECT public.create_cinema_profile($1,$2,$3) AS value',[actor,randomUUID(),{username:`u_${actor.replaceAll('-','').slice(0,20)}`,display_name:'Upload test'}]);await q("UPDATE public.cinema_memberships SET role='creator' WHERE user_id=(SELECT id FROM public.users WHERE auth_id=$1)",[actor]);}
  const balances=await q('SELECT * FROM public.credit_balances ORDER BY user_id');
  const d=await draft(actors[0]),series=await draft(actors[0],'SERIES'),key=randomUUID();

@@ -1,4 +1,4 @@
-# ADR-0051 — Gated resumable Cinema uploads
+# ADR-0052 — Gated resumable Cinema uploads
 
 Status: Proposed, 25 September 2026. Extends ADR-0050; mandatory security overlay applies.
 
@@ -12,7 +12,7 @@ The browser uses 5 MiB chunks, HEAD offset recovery and PATCH acknowledgment val
 
 ## Storage, concurrency and provider ambiguity
 
-Migration 0135 creates forced-RLS, RPC-only `cinema_uploads`. Current Auth existence, creator role, active membership and content ownership are checked before reservation and before returning the grant. A fixed short database advisory lock serializes capacity checks and concurrent creation. Only the request that durably claims a new reservation may call Stream. Other requests reuse the existing reservation for the same content/hash/length; changed idempotency payload conflicts. A lost provider response remains in provisioning, counted against capacity, rather than making another billable video.
+Migration 0137 creates forced-RLS, RPC-only `cinema_uploads`. Current Auth existence, creator role, active membership and content ownership are checked before reservation and before returning the grant. A fixed short database advisory lock serializes capacity checks and concurrent creation. Only the request that durably claims a new reservation may call Stream. Other requests reuse the existing reservation for the same content/hash/length; changed idempotency payload conflicts. A lost provider response remains in provisioning, counted against capacity, rather than making another billable video.
 
 Preview caps are deliberately conservative: ten total reservations per creator and 100 globally, including failed, expired, ready and ambiguous reservations. This bounds storage reservation exposure to 1,000 minutes. These are preview capacity limits, not a subscription entitlement or a price. No automatic capacity release, replacement, delete/reset API or background orphan cleanup is implemented in this increment. Pausing does not delete or release a reservation. Failed/expired/ambiguous sessions require operational reconciliation before replacement; do not enable broad uploads with those workflows unfinished.
 
