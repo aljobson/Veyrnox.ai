@@ -115,6 +115,7 @@ const nextConfig = {
       { source: '/veyrnox', destination: '/', permanent: true },
       { source: '/cinema', destination: '/social-cinema', permanent: false },
       { source: '/veyrnox/social-cinema', destination: '/social-cinema', permanent: true },
+      { source: '/veyrnox/social-cinema/creator', destination: '/social-cinema/creator', permanent: true },
       { source: '/veyrnox/pricing', destination: '/pricing', permanent: true },
       { source: '/veyrnox/presets', destination: '/presets', permanent: true },
       { source: '/veyrnox/design-system', destination: '/design-system', permanent: true },
@@ -129,6 +130,7 @@ const nextConfig = {
       beforeFiles: [
         { source: '/', destination: '/veyrnox' },
         { source: '/social-cinema', destination: '/veyrnox/social-cinema' },
+        { source: '/social-cinema/creator', destination: '/veyrnox/social-cinema/creator' },
         { source: '/pricing', destination: '/veyrnox/pricing' },
         { source: '/presets', destination: '/veyrnox/presets' },
         { source: '/design-system', destination: '/veyrnox/design-system' },
