@@ -6,7 +6,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const reply = (body, status = 200, headers = {}) => Response.json(body, {
   status, headers: { 'Cache-Control': 'no-store', ...headers },
 });
-const codes = { invalid_profile: 400, user_not_provisioned: 409, username_unavailable: 409,
+const codes = { account_not_active: 403, invalid_profile: 400, user_not_provisioned: 409, username_unavailable: 409,
   profile_exists: 409, idempotency_conflict: 409 };
 
 async function handle(req, create) {
@@ -29,6 +29,7 @@ async function handle(req, create) {
     if (rate?.ok !== true) return reply({ error: 'temporarily_unavailable' }, 503);
     if (!create) {
       const profile = await rpc('read_own_cinema_profile', { p_auth_id: authId }, cfg);
+      if (profile?.error === 'account_not_active') return reply({ error: 'account_not_active' }, 403);
       return reply({ profile });
     }
     const key = req.headers.get('idempotency-key');

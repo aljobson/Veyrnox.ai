@@ -15,6 +15,7 @@
  * deployment must not accept traffic.
  */
 
+import { recentMfaTimestamp } from './lib/cinema/strongAuth.js';
 import { NextResponse } from 'next/server';
 import { readToken, validateClaims, verifyES256 } from './lib/supabaseJwt.js';
 
@@ -31,6 +32,7 @@ const IDENTITY_HEADERS = [
     // 'aal2' a second factor was satisfied this session. Forwarded so a
     // handler can demand aal2 without re-parsing the token.
     'x-veyrnox-auth-aal',
+    'x-veyrnox-auth-mfa-at',
 ];
 
 export async function middleware(req) {
@@ -70,6 +72,8 @@ export async function middleware(req) {
     if (claims.role) headers.set('x-veyrnox-auth-role', String(claims.role));
     if (claims.aal) headers.set('x-veyrnox-auth-aal', String(claims.aal));
 
+    const mfaAt = recentMfaTimestamp(claims);
+    if (mfaAt !== null) headers.set('x-veyrnox-auth-mfa-at', String(mfaAt));
     return NextResponse.next({ request: { headers } });
 }
 
