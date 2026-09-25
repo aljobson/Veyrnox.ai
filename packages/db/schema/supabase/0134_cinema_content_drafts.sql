@@ -81,7 +81,7 @@ BEGIN
   IF v_parent_id IS NOT NULL THEN
     SELECT * INTO v_parent FROM public.cinema_content WHERE id=v_parent_id AND creator_id=v_user FOR UPDATE;
     IF NOT FOUND THEN RETURN jsonb_build_object('error','content_not_found'); END IF;
-    IF v_parent.lifecycle_status<>'DRAFT' OR v_parent.content_type<>CASE WHEN p_draft->>'content_type'='SEASON' THEN 'SERIES' ELSE 'SEASON' END THEN
+    IF v_parent.lifecycle_status<>'DRAFT' OR v_parent.content_type<>(CASE WHEN p_draft->>'content_type'='SEASON' THEN 'SERIES' ELSE 'SEASON' END) THEN
       RETURN jsonb_build_object('error','invalid_parent'); END IF;
   END IF;
   IF p_content_id IS NULL THEN
