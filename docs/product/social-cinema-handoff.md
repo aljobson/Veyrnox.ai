@@ -80,7 +80,7 @@ from the JWT middleware. POST accepts only username, display name and bio;
 its UUID Idempotency-Key is preserved on retry. No new migration is needed.
 
 Enrollment is closed by default: the server requires
-`SOCIAL_CINEMA_PROFILES_ENABLED=true`, and the browser preview requires
+`CINEMA_ENABLED=true` and `SOCIAL_CINEMA_PROFILES_ENABLED=true`, and the browser preview requires
 `localStorage.veyrnox_social_cinema = 'true'`. The public entry page itself
 remains discoverable. Enable profile previews only after migration 0132 and
 its prerequisites are verified and the repository's 24-hour clean
@@ -91,3 +91,10 @@ Before rollout, verify in a preview environment: signed-out prompt, profile
 creation and reload, duplicate username, failed request and retry, and account
 switch/sign-out isolation. Automated route tests cover authorization, payload
 validation, quota failure, error redaction, body bounds and idempotency forwarding.
+
+## Expanded Cinema specification
+
+The September 2026 Cinema specification expands this roadmap. See
+[repository assessment](../cinema/REPO-ASSESSMENT.md) and
+[implementation status](../cinema/README.md). Preserve the original 01–09
+files as the source snapshot; use the assessment to resolve architecture conflicts.
