@@ -1,6 +1,7 @@
 # ADR-0049 — Rendering prerequisite for nonce CSP
 
-Status: Proposed; rendering scope not yet accepted. Tracks #4.
+Status: Proposed; isolated app/auth implementation proof in draft PR #322.
+Production rendering scope not yet accepted. Tracks #4.
 
 ## Verified baseline — 25 September 2026
 
@@ -66,7 +67,55 @@ authenticated application; classify it intentionally in the final policy.
 
 ## Rollout
 
-This ADR changes no headers or rendering. Approval of a rendering strategy
-and the production-mode proof precede the implementation rollout. The pending
-choice comes from next.config.mjs's documented architecture/cost prerequisite,
-not from a requirement to obtain permission for routine code edits.
+PR #322 includes a preview implementation: dynamic app/auth layouts, fresh
+128-bit nonces supplied to Next through request CSP, matching response CSP and
+private/no-store responses. Static public pages retain their current policy.
+The static CSP header rule excludes app/auth; the first Workers probe caught
+OpenNext appending the fallback policy when it covered every path.
+
+Keep the PR draft until the proof and final scope decision are complete. Do not
+merge this experiment as whole-site protection. Public-to-app client navigation
+can retain the original document policy; app-to-public navigation and error
+rendering also need explicit coverage. The original static-rendering cost
+prerequisite remains applicable.
+
+## Reproducing the preview
+
+Use Node 22/npm 10 with the committed lockfile, then `npm run build:worker`.
+Start `wrangler dev --local --port 8795` and run
+`node scripts/check-nonce-runtime.mjs`. The probe requires fresh nonces, matching
+inline framework scripts, no script unsafe-inline, no shared caching, and a
+working scoped 404. It deliberately fails on missing coverage.
+
+The installed local workerd was too old for the configured 2026-09-01
+compatibility date. The isolated test used workerd 1.20260925.1 via
+MINIFLARE_WORKERD_PATH; no production date or dependency lockfile was changed.
+Local timing is diagnostic only and does not establish production cost.
+Browser login dialog opened successfully; Turnstile reported error 300030 on
+localhost. Successful CAPTCHA, OAuth, authenticated generation and payment
+return journeys therefore remain unproven.
+
+## Preview results — 25 September 2026
+
+- Node 22 build:worker completed on Next 15.5.25 / OpenNext Cloudflare 1.20.2.
+- Application tests: 603 passed, one pre-existing skip; hard-wall passed.
+- HTTP probe passed twice on /app, /app/credits, /app/account, /app/create,
+  /app/library, /auth/callback and /app/not-a-page (404). All 14 nonces were
+  distinct; each response's 5–8 executable inline scripts matched its nonce,
+  and each had no-store and no script unsafe-inline. Public / kept its fallback.
+- Local request times were 731ms for the first /app response and 25–71ms for
+  the remaining requests. These are single-machine samples, not a benchmark.
+- Real browser: initial app hydration, app-to-create navigation, sign-in modal
+  and app-to-legal navigation worked. A dynamically appended inline script
+  without a nonce was blocked on a freshly loaded app document.
+- **Confirmed scope blocker:** navigating from public / to /app with the
+  existing client link retained the permissive public document policy. The
+  same harmless inline execution probe then ran. Reloading /app restores its
+  nonce policy. A scoped rollout must enforce full-document boundary navigation,
+  or the final strategy must cover every shared-origin document. Merely adding
+  CSP to app RSC responses cannot change the current document's policy.
+- Local Turnstile error 300030 prevents successful CAPTCHA proof. Authenticated
+  OAuth/payment/generation journeys and production cost remain outstanding.
+
+The browser probes changed only temporary local test-page state and were
+removed/reloaded. No credentials, payments or production content were changed.

@@ -16,10 +16,11 @@
  */
 
 import { NextResponse } from 'next/server';
+import { contentSecurityPolicy } from './lib/contentSecurityPolicy.mjs';
 import { readToken, validateClaims, verifyES256 } from './lib/supabaseJwt.js';
 
 export const config = {
-    matcher: ['/api/v1/:path*'],
+    matcher: ['/api/v1/:path*', '/app/:path*', '/auth/:path*'],
 };
 
 // Identity headers set by this middleware and trusted by /api/v1 handlers.
@@ -38,6 +39,21 @@ export async function middleware(req) {
     // branch, so no handler can ever read a client-supplied value.
     const headers = new Headers(req.headers);
     for (const h of IDENTITY_HEADERS) headers.delete(h);
+
+    // Page navigation authenticates through the existing client flow. Never
+    // demand an API Bearer token for HTML. The renderer consumes this request
+    // policy to nonce framework/flight scripts; the response must match it.
+    if (req.nextUrl.pathname === '/app' || req.nextUrl.pathname.startsWith('/app/')
+        || req.nextUrl.pathname === '/auth' || req.nextUrl.pathname.startsWith('/auth/')) {
+        const nonce = btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(16))));
+        const policy = contentSecurityPolicy(nonce, process.env.NODE_ENV === 'development');
+        headers.set('x-nonce', nonce);
+        headers.set('Content-Security-Policy', policy);
+        const response = NextResponse.next({ request: { headers } });
+        response.headers.set('Content-Security-Policy', policy);
+        response.headers.set('Cache-Control', 'private, no-store, max-age=0');
+        return response;
+    }
 
     const supabaseUrl = process.env.SUPABASE_URL;
     if (!supabaseUrl) {

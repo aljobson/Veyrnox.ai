@@ -18,9 +18,10 @@ const MIN_HSTS_AGE = 63072000;
 
 async function headerMap() {
     const groups = await nextConfig.headers();
-    assert.equal(groups.length, 1, 'expected one header group covering every path');
+    assert.equal(groups.length, 2, 'global hardening and static-page CSP are separate');
+    assert.equal(groups[1].source, '/:path((?!app(?:/|$)|auth(?:/|$)).*)');
     assert.equal(groups[0].source, '/:path*');
-    return new Map(groups[0].headers.map((h) => [h.key.toLowerCase(), h.value]));
+    return new Map(groups.flatMap(group => group.headers).map((h) => [h.key.toLowerCase(), h.value]));
 }
 
 function directives(csp) {
