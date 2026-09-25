@@ -63,3 +63,14 @@ private-only terminal changes, browser-role denial and aggregate-only health.
 Live preview must also simulate a missed callback and a failed provider read,
 verify that pausing creator flags preserves recovery, and exercise the existing
 incident workflow before enabling recovery with real creator traffic.
+
+## Creator-requested removal (ADR-0054)
+
+Run `tests/cinemaUploadRemoval.test.mjs` and isolated
+`scripts/test-cinema-upload-removal.mjs`. Exercise exact-ID ownership and stale
+screens, old start/delete keys after replacement, revocation, unknown UID,
+webhook/deletion races, concurrent claims and late completion, provider failures,
+404 ambiguity, private draft preservation and active versus daily capacity.
+In isolated live preview verify copied tus URL invalidation during transfer,
+confirmed removal, failed-response retry and replacement. Verify the confirmation
+with keyboard and mobile layout. G10 retention/account erasure stays separate.

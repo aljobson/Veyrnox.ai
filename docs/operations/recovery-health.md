@@ -81,3 +81,22 @@ The existing snapshot/incident workflow reports counts only. It refreshes on
 its existing cadence and has no paging SLA. Confirm a fresh clean snapshot
 after resolving the underlying condition. This is status recovery, not a
 provider deletion or account-erasure workflow.
+
+## Creator-requested video removal (0139 / ADR-0054)
+
+`CINEMA_UPLOAD_REMOVAL_ENABLED` independently controls both removal requests and
+the background deletion pass. Enable only after the migration, scoped credentials
+and isolated live deletion/capability-revocation checks. Keep it enabled while
+pausing new uploads so already-requested removals can drain. The worker deletes
+only exact recorded UIDs explicitly queued by an authorized creator.
+
+`cinema_cleanup_required` also counts requested removals waiting over thirty
+minutes. Inspect `cinema.upload_removal` counters, provider scope/availability and
+database completion. A lost successful provider response may leave a 404 on retry;
+this is deliberately unresolved, not automatic proof of deletion. Reconcile through
+the approved operational process; do not remove rows or release capacity solely
+because a request failed. No new override API is provided.
+
+Confirmed removal preserves a private replay tombstone and the content draft,
+permits replacement, and frees active storage capacity. It does not reset the
+rolling daily creation limit, erase an account or approve a retention policy.
