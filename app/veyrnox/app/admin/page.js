@@ -10,6 +10,7 @@
  *   update public.users set is_admin = true where email = '<person>';
  */
 
+import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { AppNav } from '../../_components/NavBar';
 import { Chip } from '../../_components/Chip';
@@ -65,6 +66,8 @@ export default function Admin() {
         <div className="mt-6 max-w-[540px]">
           <MfaPanel />
         </div>
+
+        {state === 'ready' && <Link href="/app/admin/cinema" className="mt-5 inline-block text-sm underline">Review Cinema creator applications</Link>}
 
         {state === 'ready' && metrics && (
           <>

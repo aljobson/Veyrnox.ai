@@ -56,6 +56,11 @@ try {
   const d=await apply(actors[5],randomUUID());
   await c.query("UPDATE public.cinema_memberships SET role='administrator' WHERE user_id=(SELECT id FROM public.users WHERE auth_id=$1)",[actors[5]]);
   assert.equal((await review(actors[5],d.id,randomUUID())).error,'self_review_forbidden');
+  assert.equal((await review(actors[4],d.id,randomUUID(),'rejected')).status,'rejected');
+  assert.equal((await invoke('read_own_cinema_application',[actors[5]],['text'])).application.status,'rejected');
+  assert.equal(await value('SELECT m.role AS value FROM public.cinema_memberships m JOIN public.users u ON u.id=m.user_id WHERE u.auth_id=$1',[actors[5]]),'administrator');
+  const secured = await q("SELECT relrowsecurity,relforcerowsecurity FROM pg_class WHERE relname IN ('cinema_creator_applications','cinema_creator_reviews')");
+  assert.equal(secured.length,2);assert.ok(secured.every(x=>x.relrowsecurity && x.relforcerowsecurity));
   // All non-active statuses deny owner profile reads, replay and applications.
   for(const status of ['restricted','suspended','banned']) {
     await c.query('UPDATE public.cinema_memberships SET account_status=$2 WHERE user_id=(SELECT id FROM public.users WHERE auth_id=$1)',[actors[0],status]);
