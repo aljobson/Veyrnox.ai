@@ -8,6 +8,19 @@ Top-ups — §provider superseded, credit/refund rules kept),
 [ADR-0013](0013-credit-expiry-policy.md) (Free Credits), CLAUDE.md
 ("Provider webhooks", "Money & billing")
 
+## Current implementation and launch evidence
+
+Read the **Managed Payments amendment below** before the original decisions:
+Stripe is the Merchant of Record and automatic tax is mandatory for that mode.
+The original standard-account/tax-off text is retained as decision history.
+
+The Stripe identifier migration and returned-Session recovery described below
+as future work have since merged (#251 and #280–#282). Their current contract,
+production evidence and remaining launch obligations are tracked in
+[Credit Pack launch acceptance](../operations/credit-pack-launch-acceptance.md).
+That record supersedes the old LemonSqueezy issue #90 as the implementation map;
+it does not mark the outstanding operational checks complete.
+
 ## Context
 
 On 2026-09-22 LemonSqueezy refused the account: AI media generation is on their
