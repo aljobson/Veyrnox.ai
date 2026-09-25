@@ -26,8 +26,8 @@
   "vars": {
     // Enable only after migration 0129, bucket CORS and real browser/R2 checks (ADR-0044).
     "UPLOAD_INTEGRITY_ENABLED": "false",
-    // Enable after approved migration 0131, then arm recovery-health.yml.
-    "RECOVERY_HEALTH_ENABLED": "false",
+    // 0131 applied; verify fresh task/snapshot evidence after deploy, then arm the watcher.
+    "RECOVERY_HEALTH_ENABLED": "true",
     // Migration 0125 applied 2026-09-24; ADR-0041 records activation checks.
     "TOP_UP_RETURN_RATE_LIMIT_ENABLED": "true",
     // Migration 0123 applied 2026-09-24; ADR-0040 records activation checks.
