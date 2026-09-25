@@ -108,6 +108,7 @@ const nextConfig = {
   async redirects() {
     return [
       { source: '/veyrnox', destination: '/', permanent: true },
+      { source: '/veyrnox/social-cinema', destination: '/social-cinema', permanent: true },
       { source: '/veyrnox/pricing', destination: '/pricing', permanent: true },
       { source: '/veyrnox/presets', destination: '/presets', permanent: true },
       { source: '/veyrnox/design-system', destination: '/design-system', permanent: true },
@@ -121,6 +122,7 @@ const nextConfig = {
     return {
       beforeFiles: [
         { source: '/', destination: '/veyrnox' },
+        { source: '/social-cinema', destination: '/veyrnox/social-cinema' },
         { source: '/pricing', destination: '/veyrnox/pricing' },
         { source: '/presets', destination: '/veyrnox/presets' },
         { source: '/design-system', destination: '/veyrnox/design-system' },

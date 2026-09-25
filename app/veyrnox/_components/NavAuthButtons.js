@@ -7,6 +7,7 @@ import { ConfirmDialog } from './ConfirmDialog';
 import { accountLabel } from '../_lib/account.js';
 
 const ACCOUNT_LINKS = [
+  { href: '/social-cinema', label: 'Social Cinema' },
   { href: '/app', label: 'Open Studio' },
   { href: '/app/library', label: 'Library' },
   { href: '/app/credits', label: 'Credits' },
