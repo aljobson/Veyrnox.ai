@@ -9,6 +9,7 @@ on:
       - "scripts/test-social-cinema-foundation.mjs"
       - "scripts/test-cinema-creators.mjs"
       - "scripts/test-cinema-content.mjs"
+      - "scripts/test-cinema-uploads.mjs"
       # A change to a route that alters RPC arguments could not run these.
       - "app/api/v1/**"
       # Nor could a webhook or an orchestrator, which call credit_top_up,
@@ -29,6 +30,7 @@ on:
       - "scripts/test-social-cinema-foundation.mjs"
       - "scripts/test-cinema-creators.mjs"
       - "scripts/test-cinema-content.mjs"
+      - "scripts/test-cinema-uploads.mjs"
       # A change to a route that alters RPC arguments could not run these.
       - "app/api/v1/**"
       # Nor could a webhook or an orchestrator, which call credit_top_up,
@@ -101,6 +103,7 @@ jobs:
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-social-cinema-foundation.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-creators.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-content.mjs
+          DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-uploads.mjs
 
       - name: Run catalog margin-floor tests
         run: npx tsx --test packages/catalog/margin-validator.test.ts

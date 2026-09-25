@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { getSession, onSessionChange } from '../../../lib/authClient';
 import { gatewayFetch } from '../../_lib/gateway';
+import { VideoUpload } from './VideoUpload';
 import { Button } from '../../_components/Button';
 import { AI_DISCLOSURES } from '../../../../lib/cinema/domain';
 const identity = () => getSession()?.user?.id || '';
@@ -21,6 +22,7 @@ function Drafts() {
   const [path, setPath] = useState([]), [items, setItems] = useState([]);
   const [state, setState] = useState('loading'), [error, setError] = useState('');
   const [version, setVersion] = useState(0), [editor, setEditor] = useState(null), [notice, setNotice] = useState('');
+  const [video, setVideo] = useState(null);
   const parent = path.at(-1), parentId = parent?.id;
   useEffect(() => {
     let active = true;
@@ -30,7 +32,7 @@ function Drafts() {
     }).catch(e => { if (active) { setError(message(e.code)); setState('error'); } });
     return () => { active = false; };
   }, [parentId, version]);
-  function navigate(next) { setEditor(null); setNotice(''); setPath(next); }
+  function navigate(next) { setVideo(null); setEditor(null); setNotice(''); setPath(next); }
   const types = parent ? [parent.content_type === 'SERIES' ? 'SEASON' : 'EPISODE'] : ['SERIES','FILM','SHORT','TRAILER'];
   return <section className="mt-10 border-t border-vx-border pt-6" aria-labelledby="drafts-title">
     <nav aria-label="Draft location" className="flex flex-wrap gap-2 text-sm">
@@ -39,14 +41,14 @@ function Drafts() {
     </nav>
     <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
       <h2 id="drafts-title" className="text-2xl font-bold">{parent ? `${labels[types[0]]} drafts` : 'Your projects'}</h2>
-      {state === 'ready' && !editor && <Button onClick={() => { setNotice(''); setEditor({ content_type: types[0], parent_id: parentId || null, position: parent ? Math.max(0, ...items.map(i => i.position)) + 1 : null, title: '', synopsis: '', language: parent?.language || 'en', ai_disclosures: [] }); }}>New {parent ? labels[types[0]].toLowerCase() : 'project'}</Button>}
+      {state === 'ready' && !editor && !video && <Button onClick={() => { setNotice(''); setEditor({ content_type: types[0], parent_id: parentId || null, position: parent ? Math.max(0, ...items.map(i => i.position)) + 1 : null, title: '', synopsis: '', language: parent?.language || 'en', ai_disclosures: [] }); }}>New {parent ? labels[types[0]].toLowerCase() : 'project'}</Button>}
     </div>
     {notice && <p role="status" className="mt-4 text-vx-accent">{notice}</p>}
     {state === 'loading' ? <p role="status" className="mt-6">Loading your drafts…</p> : state === 'error' ? <div className="mt-6"><p role="alert">{error}</p><Button variant="ghost" className="mt-4" onClick={() => setVersion(n => n + 1)}>Try again</Button></div> : <>
-      {editor ? <DraftEditor key={`${editor.id || 'new'}:${editor.revision || 0}`} draft={editor} types={types} onCancel={() => setEditor(null)} onSaved={() => { setEditor(null); setNotice('Draft saved privately.'); setVersion(n => n + 1); }} onReload={() => { setEditor(null); setVersion(n => n + 1); }} /> : items.length ? <ul className="mt-6 divide-y divide-vx-border border-y border-vx-border">
+      {video ? <VideoUpload key={video.id} content={video} onClose={() => setVideo(null)} /> : editor ? <DraftEditor key={`${editor.id || 'new'}:${editor.revision || 0}`} draft={editor} types={types} onCancel={() => setEditor(null)} onSaved={() => { setEditor(null); setNotice('Draft saved privately.'); setVersion(n => n + 1); }} onReload={() => { setEditor(null); setVersion(n => n + 1); }} /> : items.length ? <ul className="mt-6 divide-y divide-vx-border border-y border-vx-border">
         {items.map(item => <li key={item.id} className="flex flex-wrap items-center justify-between gap-4 py-5">
           <div className="min-w-0 flex-1"><p className="text-xs font-vx-mono text-vx-fg-muted">{labels[item.content_type]}{item.position ? ` ${item.position}` : ''} · Private draft</p><h3 className="mt-2 break-words font-bold">{item.title}</h3><p className="mt-2 line-clamp-2 break-words text-sm text-vx-fg-body">{item.synopsis || 'No synopsis yet.'}</p></div>
-          <div className="flex flex-wrap gap-2"><Button variant="ghost" size="sm" onClick={() => { setNotice(''); setEditor(item); }} aria-label={`Edit ${item.title}`}>Edit</Button>{['SERIES','SEASON'].includes(item.content_type) && <Button variant="ghost" size="sm" onClick={() => navigate([...path, item])}>Open {item.content_type === 'SERIES' ? 'seasons' : 'episodes'}</Button>}</div>
+          <div className="flex flex-wrap gap-2"><Button variant="ghost" size="sm" onClick={() => { setNotice(''); setEditor(item); }} aria-label={`Edit ${item.title}`}>Edit</Button>{['FILM','SHORT','TRAILER','EPISODE'].includes(item.content_type) && <Button variant="ghost" size="sm" onClick={() => { setNotice(''); setVideo(item); }}>Video upload</Button>}{['SERIES','SEASON'].includes(item.content_type) && <Button variant="ghost" size="sm" onClick={() => navigate([...path, item])}>Open {item.content_type === 'SERIES' ? 'seasons' : 'episodes'}</Button>}</div>
         </li>)}
       </ul> : <div className="py-10"><h3 className="font-bold">{parent ? `Add your first ${labels[types[0]].toLowerCase()}.` : 'Start with a story.'}</h3><p className="mt-3 text-vx-fg-muted">{parent ? 'Give it a title and synopsis. You can keep shaping it before uploads open.' : 'Create a series with seasons and episodes, or develop a standalone film, short or trailer.'}</p></div>}
     </>}

@@ -32,3 +32,7 @@ ADR-0049 implements controls for T02/T03/T09: private applicant statements; serv
 ## Private content increment (ADR-0050)
 
 ADR-0050 adds private creator content (T01/T02/T03): prevent guessed parent/content IDs from crossing ownership, reject role/state/provider/money fields, serialize revisions and idempotency, limit sibling/total drafts and recheck membership before replay. SQL fixes PRIVATE/DRAFT and grants no publication or upload capability. Rights and media review remain prerequisites for a later lifecycle expansion.
+
+## Stream upload increment (ADR-0051)
+
+G01/G02/G04/G06/G09 gain scoped upload controls: current owner/role/Auth checks, atomic capacity reservation, strict metadata and URL allowlists, private provider grants, raw-body HMAC, authoritative provider status, terminal replay protection and redacted events. API1/API4/API6/API7/API10 threats are addressed in the upload boundary. Tests cover negative authorization, concurrent provisioning, provider ambiguity, quotas, tus offsets and webhook tampering. ASVS coverage remains PARTIAL. G06 live provider/isolated-environment proof and G10 provider-first deletion/retention remain OPEN; no upload activation is authorized by this increment. Preview caps include all reservations and do not automatically release; support reconciliation must precede replacement. Scheduled reconciliation, cleanup and safety/rights review remain unimplemented.
