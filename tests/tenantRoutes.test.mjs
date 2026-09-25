@@ -52,6 +52,18 @@ test('not-found response is identical when RLS hides a cross-tenant object',asyn
     assert.equal(response.status,404);
     assert.equal((await response.json()).error.code,'NOT_FOUND');
 });
+test('upstream redirects are refused without forwarding tenant credentials',async()=>{
+    let calls=0;
+    globalThis.fetch=async(url,init)=>{
+        calls++;
+        assert.equal(init.redirect,'manual');
+        return new Response(null,{status:302,headers:{location:'https://untrusted.example/collect'}});
+    };
+    const response=await GET(request(`?workspace_id=${workspaceId}`));
+    assert.equal(response.status,503);
+    assert.equal((await response.json()).error.code,'DATA_UNAVAILABLE');
+    assert.equal(calls,1);
+});
 test('project inputs reject ownership injection before any database call',async()=>{
     globalThis.fetch=async()=>{throw new Error('database must not be called');};
     const response=await POST(request('',{workspace_id:workspaceId,name:'Hello',owner_id:userId},{'idempotency-key':'project-key-123'}));
