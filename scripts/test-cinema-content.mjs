@@ -24,6 +24,8 @@ try {
   const before=await balances();
   for(const r of ['viewer','administrator','moderator']) { await role(actors[0],r);assert.equal((await save(actors[0],randomUUID())).error,'creator_required');assert.equal((await list(actors[0])).error,'creator_required'); }
   await role(actors[0],'creator');await role(actors[1],'creator');
+  assert.equal((await list('invalid')).error,'creator_required');
+  assert.equal((await save('invalid',randomUUID())).error,'creator_required');
   const key=randomUUID();const a=await save(actors[0],key);assert.equal(a.revision,1);assert.equal((await save(actors[0],key)).id,a.id);
   assert.equal((await save(actors[0],key,draft({title:'Changed'}))).error,'idempotency_conflict');
   assert.equal((await list(actors[1])).content.length,0);assert.equal((await list(actors[1],a.id)).error,'content_not_found');
