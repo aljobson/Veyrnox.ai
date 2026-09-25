@@ -77,13 +77,15 @@ try {
     assert.equal(Number(await value('SELECT count(*) FROM public.project_document_versions WHERE project_id=$1',[project])),0);
     await rejects(rpc,[project,2,null,'restore-save',1],'PT404');
   });
-  await query('RESET ROLE');await query('COMMIT');
+  await query('RESET ROLE');
+  await query("INSERT INTO public.organisation_members VALUES($1,$2,'EDITOR')",[org,editor]);
+  await query('COMMIT');
   await check('two concurrent saves of the same revision cannot overwrite each other',async()=>{
     const clients=[new pg.Client({connectionString}),new pg.Client({connectionString})];
     try {
       await Promise.all(clients.map(c=>c.connect()));
       const results=await Promise.all(clients.map(async(c,i)=>{
-        await c.query('BEGIN');await actor(owner,c);
+        await c.query('BEGIN');await actor(i===0?owner:editor,c);
         try {const r=await c.query(rpc,[project,3,{...doc,brief:`Concurrent ${i}`},`concurrent-${i}`,null]);await c.query('COMMIT');return r.rows[0].save_project_document.revision;}
         catch(e){await c.query('ROLLBACK');return e.code;}
       }));
