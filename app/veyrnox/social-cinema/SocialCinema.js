@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { CreatorApplication } from './CreatorApplication';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { Button } from '../_components/Button';
 import { getSession, onSessionChange } from '../../lib/authClient';
@@ -83,7 +84,7 @@ function Profile() {
   }
   if (state === 'loading') return <p role="status" className="mt-4 text-vx-fg-muted">Loading your profile…</p>;
   if (state === 'closed' || state === 'error') return <div className="mt-4"><p role="status">{error}</p>{state === 'error' && <Button className="mt-4" onClick={() => setAttempt(n => n + 1)}>Try again</Button>}</div>;
-  if (profile) return <div className="mt-5 rounded-2xl border border-vx-border p-6"><h3 className="text-xl font-bold">{profile.display_name}</h3><p className="mt-1 text-vx-accent">@{profile.username}</p><p className="mt-4 whitespace-pre-wrap break-words text-vx-fg-body">{profile.bio}</p><p className="mt-5 text-sm text-vx-fg-muted">Your profile is saved. Publishing and voting will open in a later release.</p></div>;
+  if (profile) return <><div className="mt-5 rounded-2xl border border-vx-border p-6"><h3 className="text-xl font-bold">{profile.display_name}</h3><p className="mt-1 text-vx-accent">@{profile.username}</p><p className="mt-4 whitespace-pre-wrap break-words text-vx-fg-body">{profile.bio}</p><p className="mt-5 text-sm text-vx-fg-muted">Your profile is saved. Publishing and voting will open in a later release.</p></div><CreatorApplication /></>;
   const input = 'mt-2 w-full rounded-xl border border-vx-border bg-vx-panel px-4 py-3 text-vx-fg focus:outline focus:outline-2 focus:outline-vx-accent';
   return <form onSubmit={submit} className="mt-4 max-w-lg space-y-5">
     <p className="text-sm text-vx-fg-body">Your username, display name and bio are intended for your public profile. Your email stays private. Choose carefully: profile editing is not available yet.</p>
@@ -96,7 +97,7 @@ function Profile() {
   </form>;
 }
 function message(code) {
-  return ({ profiles_not_open: 'Profile registration is not open yet. Please check back soon.', username_unavailable: 'That username is taken. Try another.',
+  return ({ account_not_active: 'Your Cinema account is restricted. Contact support for help.', profiles_not_open: 'Profile registration is not open yet. Please check back soon.', username_unavailable: 'That username is taken. Try another.',
     invalid_profile: 'Check your username and display name, then try again.', rate_limited: 'Too many requests. Wait a minute, then try again.',
     idempotency_conflict: 'This attempt changed. Reload to check your saved profile before trying again.' })[code]
     || 'We could not load or save your profile. Please try again.';

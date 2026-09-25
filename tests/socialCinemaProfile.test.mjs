@@ -82,3 +82,11 @@ test('expected conflicts are safe and unknown database responses fail closed', a
     assert.equal(res.status, 503); assert.equal(await res.text(), '{"error":"temporarily_unavailable"}');
   }
 });
+
+test('restricted profile reads and creation are refused', async () => {
+  stub({ read_own_cinema_profile: { error: 'account_not_active' }, create_cinema_profile: { error: 'account_not_active' } });
+  for (const [handler, requestBody] of [[GET, undefined], [POST, profile]]) {
+    const res = await handler(request(requestBody)); assert.equal(res.status, 403);
+    assert.equal((await res.json()).error, 'account_not_active');
+  }
+});

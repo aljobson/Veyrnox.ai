@@ -30,3 +30,7 @@ Every Cinema PR answers: new trust boundary? exposed data? authorization? money?
 This PR adds documents only. It does not enable flags, run database migrations, grant roles, configure providers, weaken existing controls or charge/pay anyone. Keep profile enrollment disabled. Existing production remediation and future feature implementation need focused reviewed changes; do not silently attach them to this assessment.
 
 The first implementation work after these assessments is closing G01–G05 for the applicable foundation/creator scope, with security controls developed alongside functionality. Later epics carry their gates throughout delivery. Keep existing immutable credits and forced RLS; do not migrate to D1 merely to resemble an example architecture.
+
+## Creator increment update (ADR-0049)
+
+The disabled creator implementation addresses the backend portion of G01 and the scoped creator-review portions of G02/G03/G04/G09: active account enforcement, Cinema-only administrator permission, five-minute verified TOTP freshness, Access, strict APIs, quotas, correlation and immutable review history. It does not close those gaps for all future Cinema features. Authenticated preview/operational evidence, approver provisioning, G05 scanning and the G08/G09/G10 launch gates remain open. Production flags remain false; no schema apply or privilege assignment is performed by the PR.

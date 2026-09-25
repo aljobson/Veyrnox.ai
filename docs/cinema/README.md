@@ -42,3 +42,7 @@ Provider credentials, separate preview resources, rights/age/territory policy an
 ## Mandatory security overlay
 
 The [security engineering brief](https://chatgpt.com/s/t_6ab644e42ac88191aaa6ea4cf6403e27) applies to every feature PR. The assessment pack in `docs/cinema/security/` (PR #327) must land before further feature implementation. Close applicable release gaps with implementation and evidence; the final launch review does not replace security work throughout delivery. No ASVS compliance is claimed.
+
+## Creator application increment
+
+ADR-0049 and migration 0133 add private creator applications, a scoped approval queue at `/app/admin/cinema`, fresh TOTP/Access enforcement and immutable review decisions. `CREATOR_APPLICATIONS_ENABLED` is a new default-off child of the master/profile switches. Approval grants creator only; upload/publishing and monetisation remain unavailable. Backend profile status enforcement also rejects non-active Cinema accounts. Refer to the ADR for migration, approver provisioning, preview verification and unresolved launch gates.
