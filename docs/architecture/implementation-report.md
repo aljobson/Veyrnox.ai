@@ -1,4 +1,6 @@
-# Implementation report — 2026-09-25
+# Initial implementation report — 2026-09-25
+
+This records the initial local phase. For subsequent authorized staging changes and current rollout status, see [staging rollout](staging-rollout.md). Migration 0135 was renumbered from 0134 before any remote application.
 
 Implemented the brief’s assessment, prioritized backlog and initial P0 foundation on `codex/platform-foundation`, based on main `ca9a75a`. This is the tenant/security/provider foundation, not completion of the entire editor, rendering, moderation and social roadmap. See [backlog](implementation-backlog.md) and [target state](target-state.md).
 

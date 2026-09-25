@@ -96,6 +96,7 @@
       "triggers": { "crons": [] },
       "vars": {
         "APP_ENV": "staging",
+        "PUBLIC_HOST": "https://veyrnox-ai-staging.al-jobson.workers.dev",
         "SUPABASE_URL": "https://yrqzwqywxfesmbvhzjgj.supabase.co",
         "NEXT_PUBLIC_SUPABASE_URL": "https://yrqzwqywxfesmbvhzjgj.supabase.co",
         "NEXT_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_bAxQiodzBhI6bV7lmo9gMQ_Hlg9_Ish",
