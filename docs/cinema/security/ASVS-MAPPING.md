@@ -41,3 +41,7 @@ SSDF process evidence remains partial: CI/review workflows support PO.4, PS.1 an
 ## Creator increment evidence (ADR-0049)
 
 For v5.0.0-2.2.1, 8.2.1, 8.2.2, 8.2.3 and 8.3.1, migration 0133 and `lib/cinema/creatorApi.js` add strict fields, active scoped roles, self-review denial and trusted ownership enforcement. The creator API/database tests cover forbidden actors, replay and concurrent decisions. For 8.3.2, current membership is rechecked under lock for approvals; no role/status claim is trusted from clients. For 16.2.1/16.3.2, creator request IDs/redacted allow/deny events and immutable decision records add evidence. These entries remain PARTIAL: broader Cinema coverage, authenticated deployment verification, log retention/alerts and full ASVS assessment are outstanding. Fresh MFA is implemented using verified TOTP event time (ADR-0049); it is not inferred from JWT refresh time.
+
+## Private content increment (ADR-0050)
+
+For v5.0.0-2.2.1, 8.2.1–8.2.3 and 8.3.1–8.3.2, migration 0134 and the content API add exact metadata fields, active creator permission, owner-scoped parent relationships, immutable structure, current-revision checks and replay protection. The content API and isolated Postgres tests cover cross-owner reads/writes, role/status denial, concurrent saves/number claims, forced RLS and revoked grants. Request IDs and redacted results extend 16.2.1/16.3.2 evidence. These controls are draft-scoped and PARTIAL; publication and authenticated operational verification remain open.

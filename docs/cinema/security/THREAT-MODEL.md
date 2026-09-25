@@ -28,3 +28,7 @@ Before paid launch, execute the complete creator→upload→moderate→publish�
 ## Creator onboarding increment
 
 ADR-0049 implements controls for T02/T03/T09: private applicant statements; server-managed scoped review; fresh TOTP plus Access; active account and no self-review checks; serialized replay-safe decisions; append-only audit. The new review UI treats applicant text as plain React text. Role/status changes are checked from database state, not browser metadata. Residual risks: approver bootstrap and retention policy need an owner-approved operational decision; recent token theft within the five-minute window remains possible; signed-in deployment/Access verification and monitoring are still required before activation. No privileged role, payout permission or public film is created by signup or application submission.
+
+## Private content increment (ADR-0050)
+
+ADR-0050 adds private creator content (T01/T02/T03): prevent guessed parent/content IDs from crossing ownership, reject role/state/provider/money fields, serialize revisions and idempotency, limit sibling/total drafts and recheck membership before replay. SQL fixes PRIVATE/DRAFT and grants no publication or upload capability. Rights and media review remain prerequisites for a later lifecycle expansion.
