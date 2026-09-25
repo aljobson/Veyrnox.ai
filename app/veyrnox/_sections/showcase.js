@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import Link from '../../../components/NavigationLink';
 import {
   NAV_CATEGORIES,
   FEATURE_CARDS,

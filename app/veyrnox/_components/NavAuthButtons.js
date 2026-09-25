@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import Link from 'next/link';
+import Link from '../../../components/NavigationLink';
 import { getSession, onSessionChange, signOut } from '../../lib/authClient';
 import { ConfirmDialog } from './ConfirmDialog';
 import { accountLabel } from '../_lib/account.js';

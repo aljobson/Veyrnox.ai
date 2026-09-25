@@ -1,5 +1,5 @@
 'use client';
-import Link from 'next/link';
+import Link from '../../../components/NavigationLink';
 import { usePathname } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { Logo } from './Logo';

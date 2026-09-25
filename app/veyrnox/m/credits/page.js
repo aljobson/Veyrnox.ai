@@ -1,5 +1,5 @@
 'use client';
-import Link from 'next/link';
+import Link from '../../../../components/NavigationLink';
 import { MobileTabs } from '../_MobileNav';
 import { Chip } from '../../_components/Chip';
 

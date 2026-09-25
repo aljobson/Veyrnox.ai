@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import Link from '../components/NavigationLink';
 import VeyrnoxLayout from './veyrnox/layout';
 import { Logo } from './veyrnox/_components/Logo';
 import { SITE_PAGES } from './veyrnox/_lib/tokens';

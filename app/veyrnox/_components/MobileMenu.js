@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
+import Link from '../../../components/NavigationLink';
 import { ThemeToggle } from './ThemeToggle';
 
 // Hamburger + slide-down panel for the marketing navs. Below `sm` the nav

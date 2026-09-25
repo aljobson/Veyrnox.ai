@@ -119,3 +119,26 @@ return journeys therefore remain unproven.
 
 The browser probes changed only temporary local test-page state and were
 removed/reloaded. No credentials, payments or production content were changed.
+
+## Scoped navigation boundary follow-up
+
+The scoped implementation now renders app/auth destinations as ordinary anchors
+through NavigationLink, including marketing, menus, presets, pricing, error-page
+suggestions and mobile-prototype entry points. Search uses location.assign for
+the same destinations. This obtains a new HTML document and CSP instead of
+relying on a policy returned with an RSC request. Query strings and fragments
+are preserved; normal browser new-tab and modified-click behavior remains.
+
+The tradeoff is intentional: links into app/auth, including links within the
+app, perform full document loads. Public-to-public links retain Next routing.
+Public pages still share session storage and retain unsafe-inline; this boundary
+fix alone does not satisfy the whole-site issue scope. The final rendering scope
+and authenticated journey proofs remain rollout requirements.
+
+Follow-up validation on 25 September: 605 application tests passed (one existing
+skip); hard-wall and production Worker build passed. The HTTP nonce/cache probe
+passed again. In the real browser, homepage “Open the app” now loaded a document
+with nonced scripts and blocked the harmless unapproved inline probe. Keyboard
+search for Wan opened /app/create?model=wan-2.5-kie, preserved the model query,
+and also blocked that probe. This resolves the reproduced entry/navigation gap;
+it does not establish CAPTCHA or authenticated payment/generation success.
