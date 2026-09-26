@@ -77,3 +77,13 @@ ADR-0057 and migration 0144 add Pass Plays: `POST /api/v1/cinema/play/heartbeat`
 Migration 0147 adds submissions, reviews and moderation actions. A creator submits a title from the workspace with the Rights Declaration (`rights-2026-09-26`) once every episode's video is ready; `/app/admin/cinema/submissions` is the queue, behind the same fresh-MFA and Cloudflare Access gate as creator applications, with approve, reject-with-note and suspend. Withdrawal and suspension of a published title reverse its Unlocks in the same transaction. `/api/cinema/titles` and `/api/cinema/titles/{id}` are the anonymous, cached public reads; `/api/v1/cinema/titles/{id}` is the signed-in variant with per-episode access. `/social-cinema` shows the catalogue, `/social-cinema/title/{id}` the seasons and episodes with Free, Unlock and Pass, and `/social-cinema/watch/{id}` the Stream player with token renewal and heartbeats. Switches: `CINEMA_PUBLISHING_ENABLED`, `CINEMA_VIEWING_ENABLED`, both off. `frame-src` now admits `https://*.cloudflarestream.com`.
 
 Categories (0149, ADR-0059 addendum): `cinema_categories` holds the fixed genre list; a title carries one or two, required before submission; `GET /api/cinema/titles?category=<slug>` filters the catalogue and every list response carries `categories` for the tabs on `/social-cinema`.
+
+## Financial Operator routes
+
+ADR-0057 and migration 0150 add authenticated POST routes for manual Unlock
+Reversals and full refunds of flagged duplicate Cinema Passes. Financial Operator
+role, fresh MFA and Cloudflare Access are required. Requests and successful refund
+receipts are append-only; retries recover the original result without moving
+credits twice or issuing another refund. Existing feature switches remain off.
+See [Operator actions and recovery](operator-actions.md) for request shapes and
+handling pending, failed or interrupted refunds.
