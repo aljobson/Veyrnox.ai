@@ -1,4 +1,4 @@
--- 0148_cinema_categories.sql — ADR-0059 addendum: title Categories.
+-- 0149_cinema_categories.sql — ADR-0059 addendum: title Categories.
 --
 -- A title carries one or two Categories from a fixed list, chosen by the
 -- creator on the draft and required before submission. The catalogue can be

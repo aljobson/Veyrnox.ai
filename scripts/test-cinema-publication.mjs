@@ -48,7 +48,7 @@ try {
   const eps = [];
   for (let i = 1; i <= 7; i++) eps.push(await save(creator, draft({ content_type: 'EPISODE', parent_id: season, position: i })));
   const film = await save(creator, draft({ content_type: 'FILM', title: 'Feature', categories: ['action', 'sci-fi'] }));
-  // Categories (0148): bounded, known, root-only, and required before review.
+  // Categories (0149): bounded, known, root-only, and required before review.
   assert.equal((await value('SELECT public.save_cinema_draft($1,$2,$3,$4,$5) AS value', [creator, randomUUID(), null, 0, draft({ categories: ['romance', 'nope'] })])).error, 'invalid_category');
   assert.equal((await value('SELECT public.save_cinema_draft($1,$2,$3,$4,$5) AS value', [creator, randomUUID(), null, 0, draft({ categories: ['romance', 'drama', 'comedy'] })])).error, 'invalid_draft');
   assert.equal((await value('SELECT public.save_cinema_draft($1,$2,$3,$4,$5) AS value', [creator, randomUUID(), null, 0, draft({ content_type: 'EPISODE', parent_id: season, position: 99, categories: ['romance'] })])).error, 'invalid_draft');
