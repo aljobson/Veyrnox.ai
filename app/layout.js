@@ -1,3 +1,6 @@
+// ADR-0060: every HTML document must receive fresh nonced framework scripts.
+export const dynamic = 'force-dynamic';
+
 import './globals.css';
 import localFont from "next/font/local";
 import ToasterMount from '../components/ToasterMount';

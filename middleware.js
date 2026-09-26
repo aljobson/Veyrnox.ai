@@ -19,10 +19,11 @@ import { stripContext } from './packages/security/context.js';
 import { responseHeaders } from './packages/security/errors.js';
 import { recentMfaTimestamp } from './lib/cinema/strongAuth.js';
 import { NextResponse } from 'next/server';
+import { contentSecurityPolicy } from './lib/contentSecurityPolicy.mjs';
 import { readToken, validateClaims, verifyES256 } from './lib/supabaseJwt.js';
 
 export const config = {
-    matcher: ['/api/v1/:path*'],
+    matcher: ['/api/v1/:path*', '/((?!api(?:/|$)|_next(?:/|$)).*)'],
 };
 
 // Identity headers set by this middleware and trusted by /api/v1 handlers.
@@ -44,6 +45,22 @@ export async function middleware(req) {
     const requestId = crypto.randomUUID();
     headers.set('x-request-id', requestId);
     for (const h of IDENTITY_HEADERS) headers.delete(h);
+
+    // Page navigation authenticates through the existing client flow. Never
+    // demand an API Bearer token for HTML. The renderer consumes this request
+    // policy to nonce framework/flight scripts; the response must match it.
+    // NextRequest carries nextUrl; a plain Request (tests) only has url.
+    const pathname = req.nextUrl?.pathname ?? new URL(req.url).pathname;
+    if (pathname !== '/api/v1' && !pathname.startsWith('/api/v1/')) {
+        const nonce = btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(16))));
+        const policy = contentSecurityPolicy(nonce, process.env.NODE_ENV === 'development');
+        headers.set('x-nonce', nonce);
+        headers.set('Content-Security-Policy', policy);
+        const response = NextResponse.next({ request: { headers } });
+        response.headers.set('Content-Security-Policy', policy);
+        response.headers.set('Cache-Control', 'private, no-store, max-age=0');
+        return response;
+    }
 
     const supabaseUrl = process.env.SUPABASE_URL;
     if (!supabaseUrl) {

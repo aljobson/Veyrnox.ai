@@ -1,13 +1,4 @@
-/**
- * Pins the response security policy so it cannot be weakened by accident.
- *
- * The CSP is the one control that is a deliberate, documented compromise
- * (script-src keeps 'unsafe-inline' for Next's un-nonced inline RSC scripts on
- * statically prerendered pages — see next.config.mjs). Everything around it is
- * therefore load-bearing, and CLAUDE.md requires an ADR to widen connect-src or
- * lower HSTS. This test is what makes that reviewable instead of aspirational:
- * if you are here because it failed, the change needs an ADR, not a new value.
- */
+/** Pins the shared CSP allowlists and global response hardening. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 process.env.APP_ENV = 'production';
@@ -19,9 +10,10 @@ const MIN_HSTS_AGE = 63072000;
 
 async function headerMap() {
     const groups = await nextConfig.headers();
-    assert.equal(groups.length, 1, 'expected one header group covering every path');
+    assert.equal(groups.length, 2, 'global hardening and API CSP are separate');
+    assert.equal(groups[1].source, '/api/:path*');
     assert.equal(groups[0].source, '/:path*');
-    return new Map(groups[0].headers.map((h) => [h.key.toLowerCase(), h.value]));
+    return new Map(groups.flatMap(group => group.headers).map((h) => [h.key.toLowerCase(), h.value]));
 }
 
 function directives(csp) {
@@ -49,6 +41,7 @@ test("no 'unsafe-eval' outside next dev, and no wildcard script source", async (
     const csp = (await headerMap()).get('content-security-policy');
     const scriptSrc = directives(csp).get('script-src');
     assert.ok(scriptSrc, 'script-src is missing');
+    assert.ok(!scriptSrc.includes("'unsafe-inline'"), 'static API policy must not allow inline scripts');
     assert.ok(!scriptSrc.includes("'unsafe-eval'"), "production script-src must not allow 'unsafe-eval'");
     // Turnstile is the one remote script origin, admitted by ADR-0026. Any
     // other remote origin needs its own ADR before this list changes.
