@@ -21,7 +21,7 @@ test('the anonymous catalogue is validated, cached for a minute, and never carri
   process.env.CINEMA_VIEWING_ENABLED = 'false';
   assert.equal((await s.handle(get('/api/cinema/titles'))).status, 503);
   process.env.CINEMA_VIEWING_ENABLED = 'true';
-  for (const q of ['?limit=0', '?limit=51', '?limit=abc', '?before=not-a-date', '?x=1']) assert.equal((await s.handle(get(`/api/cinema/titles${q}`))).status, 400, q);
+  for (const q of ['?limit=0', '?limit=51', '?limit=abc', '?before=not-a-date', '?before=2026', '?before=2026-02-30T12:00:00Z', '?x=1']) assert.equal((await s.handle(get(`/api/cinema/titles${q}`))).status, 400, q);
   const res = await s.handle(get('/api/cinema/titles?limit=1&before=2026-09-26T12:00:00Z'));
   assert.equal(res.status, 200);
   assert.equal(res.headers.get('cache-control'), 'public, max-age=60');
