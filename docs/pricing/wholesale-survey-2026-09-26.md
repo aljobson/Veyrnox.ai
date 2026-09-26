@@ -67,10 +67,10 @@ credits = ceil(cost / 0.01796), the 50% contribution rule from `50-percent-margi
 | Seedance 1.0 Pro 720p / 1080p | 0.27 / 0.62 | n/a | BytePlus 0.26 / 0.61 | WaveSpeed 0.30 / 0.60, Together 0.57 | BytePlus 0.26 | 15 | none |
 | Seedance 1.5 Pro 720p na / a | 0.13 / 0.26 | 0.0875 / 0.175 | BytePlus 0.13 / 0.26 | WaveSpeed 0.26, MuAPI 0.34 | kie 0.0875 | 5 | none |
 | Seedance 1.5 Pro 1080p na / a | 0.29 / 0.58 | 0.1875 / 0.375 | BytePlus 0.29 / 0.58 | | kie 0.1875 | 11 | none |
-| Seedance 2.0 Mini 720p | 0.77 | 0.205 | BytePlus 0.38 list, 0.15 promo | PiAPI 0.42, Atlas 0.12 (below list) | kie 0.205 | 12 | none |
-| Seedance 2.0 Fast 720p | 1.21 | 0.62 | BytePlus 0.60 list, 0.45 promo | OpenRouter 0.454, PiAPI 0.48, Atlas 0.29 (below list), Evolink 0.75 | OpenRouter 0.454 (equals promo) | 26 | OpenRouter 0.454, 28 cr |
+| Seedance 2.0 Mini 720p | 0.77 | 0.205 | BytePlus 0.38 list, 0.15 promo, 0.23 with resource pack | PiAPI 0.42, Atlas 0.12 (below list) | kie 0.205 steady; BytePlus pack 0.23 | 12 / 13 | none |
+| Seedance 2.0 Fast 720p | 1.21 | 0.62 | BytePlus 0.60 list, 0.45 promo, 0.35 with resource pack | OpenRouter 0.454, PiAPI 0.48, Atlas 0.29 (below list), Evolink 0.75 | BytePlus pack 0.35 | 20 | OpenRouter 0.454, 28 cr |
 | Seedance 2.0 Fast 480p | n/a | 0.295 | BytePlus 0.28 | PiAPI 0.24 | PiAPI 0.24, BytePlus 0.28 | 14 / 16 | none |
-| Seedance 2.0 720p / 1080p | 1.52 / 3.41 | 1.025 / 2.55 | BytePlus 0.76 / 1.87 | Segmind 0.76 / 1.70, PiAPI 1.00 / 2.50, Evolink 1.00 / 2.49 | BytePlus 0.76, Segmind 1.70 | 43 / 95 | none |
+| Seedance 2.0 720p / 1080p | 1.52 / 3.41 | 1.025 / 2.55 | BytePlus 0.76 / 1.87; 0.47 / 1.04 with resource pack | Segmind 0.76 / 1.70, PiAPI 1.00 / 2.50, Evolink 1.00 / 2.49 | BytePlus pack 0.47 / 1.04 | 27 / 58 | none |
 | Seedance 2.5 720p / 1080p | 2.37 / 5.82 | 1.575 / 3.95 | BytePlus 1.16 / 2.84; token package 0.69 / 1.55 | Segmind 1.19 / 2.94, WaveSpeed 1.80 / 4.50, Atlas 1.50 | BytePlus package 0.69 | 39 | none |
 | Hailuo 02 Standard 768p, 6s | 0.27 | 0.15 | MiniMax 0.28 | WaveSpeed 0.28, Evolink 0.177 | kie 0.15 | 9 | kie 0.15, 9 cr |
 | Hailuo 02 Pro 1080p, 6s | 0.48 | 0.285 | MiniMax 0.49 | WaveSpeed 0.49 | kie 0.285 | 16 | none |
@@ -124,6 +124,14 @@ ElevenLabs TTS is 40% cheaper on kie than direct or fal. Suno is grey everywhere
 is no official API; kie's $0.06 for two tracks is the lowest grey price.
 
 ## BytePlus: savings plans, token packages and monthly packages
+
+Superseded in detail by `byteplus-cost-levers-2026-09-26.md` (full-site crawl the same day). Two
+corrections from that crawl: Seedance 2.0, 2.0 Fast and 2.0 Mini also have prepaid resource
+packs at about 40% under list ($4.30, $3.30 and $2.10 per 1M tokens, $30 to $42 minimum,
+three months), which makes BytePlus the cheapest verified source for every Seedance 2.x model
+(2.0 Fast 720p $0.35, Mini $0.23, 2.0 $0.47, 2.5 $0.69 per 5s). And BytePlus's video terms
+restrict "AI content creation tools" to end users generating for their own use, with four
+mandatory controls; see the resale section there before building the adapter.
 
 Read from docs.byteplus.com/en/docs/byteplus-platform/AI_Savings_Plans,
 ai.byteplus.com/en/activity/seedance2-5 and byteplus.com/en/activity/ai-savingsplans.
@@ -179,7 +187,7 @@ Current rows where a cheaper verified source exists:
 | wan-2.5-kie | 0.30 | 0.30, already cheapest | 0% | 19 to 17 at the floor |
 | veo-3.1-fast-kie | 0.30 | 0.30, already cheapest | 0% | 19 to 17 |
 | veo-3.1-kie | 1.25 | 1.25, already cheapest | 0% | 76 to 70 |
-| seedance-2.0-fast (OpenRouter) | 0.454 | 0.454 equals BytePlus promo; list 0.60 after 2026-10-07 | 0% | 28 to 26 |
+| seedance-2.0-fast (OpenRouter) | 0.454 | BytePlus resource pack 0.35 | 23% | 28 to 20 |
 
 kie is already our cheapest verified source on Veo, Wan, Hailuo and Kling 2.6. The remaining
 savings on existing rows are one Kling 3.0 route change, the avatar and lip-sync rows, and the
@@ -204,7 +212,9 @@ New rows that clear the 50% floor at a low credit count, in order of price:
 | Wan 2.6 Flash i2v 720p | fal or Alibaba | 0.25 | 14 | $0.602 |
 | Luma Ray 3.2 720p | Luma API | 0.30 | 17 | $0.731 |
 | Kling 3.0 720p, no audio | kie | 0.35 | 20 | $0.860 |
-| Seedance 2.5 720p | BytePlus token package | 0.69 | 39 | $1.677 |
+| Seedance 2.0 Fast 720p | BytePlus resource pack | 0.35 | 20 | $0.860 |
+| Seedance 2.0 720p | BytePlus resource pack | 0.47 | 27 | $1.161 |
+| Seedance 2.5 720p | BytePlus resource pack | 0.69 | 39 | $1.677 |
 
 Against syntx's VIP rate ($0.027 per token, from the competitor analysis) the first four rows
 land at 1.1 to 1.9 times their price, with our full 50% margin intact. That is the closest we
@@ -214,9 +224,10 @@ can get to them without either grey sourcing or giving up the margin policy.
 
 - **kie** is already integrated and is the cheapest verified source for 17 of the video rows
   and the ElevenLabs TTS rows. Most of the new candidates above need no new adapter.
-- **BytePlus ModelArk** is worth an adapter for Seedance 1.0 Pro Fast (kie does not list it) and
-  for Seedance 2.5 with token packages (40% under everyone). Postpaid, no minimum. The
-  savings plans are irrelevant below $7,000 per month.
+- **BytePlus ModelArk** is worth an adapter: with resource packs it is the cheapest verified source
+  for every Seedance 2.x model and for Seedance 1.0 Pro Fast. Packs start at $30. The savings
+  plans are irrelevant below $7,000 per month. Its video terms impose four end-user controls on
+  apps like ours; see `byteplus-cost-levers-2026-09-26.md` before building.
 - **Kling direct** stays a no. Same list price as fal, prepaid, expiring, and kie is under it.
 - **Direct ElevenLabs** is only worth it for Music ($0.15 versus fal's $0.60 per minute).
 - **Luma, Pika, Vidu** are cheapest direct and absent from kie and fal at those prices. Each is
