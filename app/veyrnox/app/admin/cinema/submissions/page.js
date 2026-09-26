@@ -94,7 +94,7 @@ function Suspend({ onDone }) {
   }
   return <section className="mt-12 rounded-2xl border border-vx-danger/40 p-5" aria-labelledby="suspend-title">
     <h2 id="suspend-title" className="text-xl font-bold">Suspend a published title</h2>
-    <p className="mt-2 text-sm text-vx-fg-body">A takedown. The title id is on its public page URL.</p>
+    <p className="mt-2 text-sm text-vx-fg-body">A Suspension: the title leaves Social Cinema for good. The title id is on its public page URL.</p>
     <form onSubmit={submit} className="mt-4 space-y-4">
       <label className="block">Title id<input name="content_id" required pattern="[0-9a-fA-F-]{36}" className="mt-2 w-full rounded-lg border border-vx-border bg-vx-panel p-3 font-vx-mono" /></label>
       <label className="block">Reason<textarea name="reason" required minLength={3} maxLength={500} rows={2} className="mt-2 w-full rounded-lg border border-vx-border bg-vx-panel p-3" /></label>

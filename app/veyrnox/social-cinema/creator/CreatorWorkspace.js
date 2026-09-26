@@ -11,7 +11,7 @@ const labels = { FILM: 'Film', SHORT: 'Short', TRAILER: 'Trailer', SERIES: 'Seri
 const stateLabels = { DRAFT: 'Private draft', UNDER_REVIEW: 'Under review', PUBLISHED: 'Published', SUSPENDED: 'Suspended' };
 // The Rights Declaration wording RIGHTS_VERSION stands for; a change needs a new version on both sides.
 const RIGHTS_VERSION = 'rights-2026-09-26';
-const RIGHTS_TEXT = 'I own or hold the rights to everything in this title, including any real people, voices, music and footage, and I have declared its AI use truthfully. I understand it will be reviewed before it is published, that viewers may pay to watch it, and that a takedown refunds their credits.';
+const RIGHTS_TEXT = 'I own or hold the rights to everything in this title, including any real people, voices, music and footage, and I have declared its AI use truthfully. I understand it will be reviewed before it is published, that viewers may pay to watch it, and that a withdrawal or suspension refunds their credits.';
 const disclosureLabels = { generated_video: 'Generated video', generated_voice: 'Generated voice', generated_music: 'Generated music', synthetic_people: 'Synthetic people', face_replacement: 'Face replacement', cloned_voice: 'Cloned voice', generated_script: 'Generated script', manipulated_real_world_footage: 'Manipulated real-world footage' };
 const input = 'mt-2 w-full rounded-xl border border-vx-border bg-vx-panel px-4 py-3 text-vx-fg focus:outline focus:outline-2 focus:outline-vx-accent';
 export function CreatorWorkspace() {

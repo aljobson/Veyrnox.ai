@@ -6,7 +6,7 @@ Companion to [ADR-0057](../adr/0057-cinema-viewer-paywall.md). Nothing here is b
 
 | # | Item | Owner | Why it blocks |
 |---|---|---|---|
-| P1 | Publication slice: **done, ADR-0059, migration 0146** (review queue, public reads, catalogue, title and player pages). | Eng | Nothing is viewable, so nothing is sellable. |
+| P1 | Publication slice: **done, ADR-0059, migration 0147** (review queue, public reads, catalogue, title and player pages). | Eng | Nothing is viewable, so nothing is sellable. |
 | P2 | Written Stripe acceptance of recurring viewer plans over user-uploaded video under Managed Payments, and confirmation that Managed Payments supports Checkout `mode=subscription` and the Customer Portal. | Owner | ADR-0031: category refusals are not appealable. |
 | P3 | Cooling-off and Supply Consent wording for Unlocks and Passes; creator terms stating no revenue share yet. | Legal | Distance-selling rules in UK/EU. |
 | P4 | Stream credentials and webhook live (ADR-0052 gates), delivery rate verified against the invoice. | Owner | Pass margin depends on it. |

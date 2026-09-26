@@ -1,4 +1,4 @@
--- 0146_cinema_publication.sql — ADR-0059: the publication slice.
+-- 0147_cinema_publication.sql — ADR-0059: the publication slice.
 --
 -- A creator submits a finished title (a film, short, trailer, or a series
 -- with every episode uploaded) with a versioned Rights Declaration. It waits

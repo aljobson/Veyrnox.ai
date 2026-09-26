@@ -1,5 +1,5 @@
 // Disposable local Postgres only. No production credentials or fixtures.
-// Exercises migration 0146 (ADR-0059): submission readiness, the review
+// Exercises migration 0147 (ADR-0059): submission readiness, the review
 // queue and decisions, publication cascading to seasons and episodes, public
 // reads with per-viewer access, withdrawal and suspension reversing Unlocks,
 // idempotency, self-review, grants and append-only audits.
@@ -37,7 +37,7 @@ async function person(role = null) {
   return actor;
 }
 try {
-  const migration = await readFile(new URL('../packages/db/schema/supabase/0146_cinema_publication.sql', import.meta.url), 'utf8');
+  const migration = await readFile(new URL('../packages/db/schema/supabase/0147_cinema_publication.sql', import.meta.url), 'utf8');
   await c.query(migration); await c.query(migration);
 
   const creator = await person('creator'), admin = await person('administrator'), viewer = await person(), stranger = await person('creator');

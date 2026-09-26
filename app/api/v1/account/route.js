@@ -37,7 +37,9 @@ export async function GET(req) {
         return NextResponse.json({ error: 'supabase_not_configured' }, { status: 503 });
     }
 
-    const limited = await accountReadLimit(authId, cfg, { email: authEmail || null, credits: 0, assets: null });
+    const limited = await accountReadLimit(authId, cfg, {
+        email: authEmail || null, credits: 0, assets: null, rights_attested_at: null, rights_attestation_version: null,
+    });
     if (limited) return limited;
 
     let credits;
@@ -45,7 +47,7 @@ export async function GET(req) {
     try {
         [credits, rows] = await Promise.all([
             rpc('read_user_credits', { p_auth_id: authId }, cfg),
-            select('users', { columns: 'id,email', filter: `auth_id=eq.${authId}`, limit: 1 }, cfg),
+            select('users', { columns: 'id,email,rights_attested_at,rights_attestation_version', filter: `auth_id=eq.${authId}`, limit: 1 }, cfg),
         ]);
     } catch (err) {
         const status = err instanceof SupabaseError ? err.status : 0;
@@ -75,5 +77,9 @@ export async function GET(req) {
         email: authEmail || (user && user.email) || null,
         credits: Number(credits && credits.balance) || 0,
         assets,
+        // When, and under which AUP version, this user first attested to the
+        // rights in an upload (ADR-0058 decision 7). Null until the first one.
+        rights_attested_at: (user && user.rights_attested_at) || null,
+        rights_attestation_version: (user && user.rights_attestation_version) || null,
     }, { headers: { 'Cache-Control': 'no-store' } });
 }
