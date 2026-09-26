@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Chip } from './Chip';
-import { modelIdForName } from '../_lib/tokens.js';
+import { presetHref } from '../_lib/tokens.js';
 
 // Preset card: thumbnail carries color, monochrome chrome around it.
 //
@@ -19,10 +19,7 @@ export function PresetCard({ preset, size = 'md', onClick }) {
   // Carry both: Create reads ?model= on mount, and ?preset= records which
   // card sent the user. If the preset's model name has drifted out of the
   // catalog, link without one rather than preselecting something wrong.
-  const modelId = modelIdForName(preset.model);
-  const href = modelId
-    ? `/app/create?model=${encodeURIComponent(modelId)}&preset=${encodeURIComponent(preset.id)}`
-    : `/app/create?preset=${encodeURIComponent(preset.id)}`;
+  const href = presetHref(preset);
   return (
     <Link
       href={href}

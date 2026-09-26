@@ -89,6 +89,18 @@ export function modelIdForName(name) {
   return hit ? hit.id : null;
 }
 
+/**
+ * Studio link for a preset: the model it is wired to (when that model is still
+ * in the catalog) plus the preset id, so Create records which card sent the
+ * user. Shared by the /presets gallery cards and the landing wall.
+ */
+export function presetHref(preset) {
+  const modelId = modelIdForName(preset.model);
+  return modelId
+    ? `/app/create?model=${encodeURIComponent(modelId)}&preset=${encodeURIComponent(preset.id)}`
+    : `/app/create?preset=${encodeURIComponent(preset.id)}`;
+}
+
 export const ASPECT_RATIOS = ['16:9', '9:16', '1:1', '4:5', '21:9'];
 export const RESOLUTIONS = ['1K', '2K', '4K'];
 
@@ -239,23 +251,6 @@ export const PRODUCT_TILES = [
   { key: 'ace-step',          name: 'ACE Step',           kind: 'Audio',  credits: 1,   hint: 'Music and voice generation on the same balance.',                        icon: '♪' },
 ];
 
-export const EFFECT_PRESETS = [
-  { name: 'INCLINE',          bg: 'linear-gradient(135deg,#0e2b3c 0%,#0a5a70 55%,#2ec8b3 100%)' },
-  { name: 'STUDIO SLIDE',     bg: 'linear-gradient(135deg,#1b0632 0%,#5a0e6a 55%,#e4318f 100%)' },
-  { name: 'ACT NATURAL',      bg: 'linear-gradient(135deg,#2b1a0a 0%,#7a4a1e 55%,#f0b060 100%)' },
-  { name: 'WORLD MORPH',      bg: 'linear-gradient(135deg,#08120b 0%,#0e3a1e 55%,#2ea258 100%)' },
-  { name: 'LACEWALKER',       bg: 'linear-gradient(160deg,#2c1a12 0%,#7a3520 60%,#c9713f 100%)' },
-  { name: 'WILD RIDE',        bg: 'linear-gradient(135deg,#0a1a2c 0%,#144a7a 55%,#3ec1e8 100%)' },
-  { name: 'LIDAR CUT',        bg: 'linear-gradient(135deg,#0e0620 0%,#3a0e6a 55%,#8b46e4 100%)' },
-  { name: 'SELF-VIEW',        bg: 'linear-gradient(135deg,#2b0a0a 0%,#7a1e1e 55%,#f06060 100%)' },
-  { name: 'SMASH GRAB',       bg: 'linear-gradient(135deg,#1a0e2b 0%,#4a1e7a 55%,#c060f0 100%)' },
-  { name: 'CLONES',           bg: 'linear-gradient(135deg,#0a2b1a 0%,#1e7a4a 55%,#60f0b0 100%)' },
-  { name: 'FLOATING FALL',    bg: 'linear-gradient(135deg,#2b0a1a 0%,#7a1e4a 55%,#f060b0 100%)' },
-  { name: 'EYES IN',          bg: 'linear-gradient(135deg,#0a1a1a 0%,#1e4a4a 55%,#60c0c0 100%)' },
-  { name: 'VANISH',           bg: 'linear-gradient(135deg,#2b1a2b 0%,#5a2e5a 55%,#c060c0 100%)' },
-  { name: 'INFINITE CLONES',  bg: 'linear-gradient(135deg,#0a1a2b 0%,#1e4a7a 55%,#60a0f0 100%)' },
-  { name: 'CUTOUT',           bg: 'linear-gradient(135deg,#1a1a0a 0%,#4a4a1e 55%,#c0c060 100%)' },
-];
 
 // Four-column footer forest (plus tools). Every listed model row is a real
 // catalog entry so a follow-up wiring can link them by id.

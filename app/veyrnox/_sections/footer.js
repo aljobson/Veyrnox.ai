@@ -5,7 +5,6 @@ import {
   NAV_CATEGORIES,
   FEATURE_CARDS,
   PRODUCT_TILES,
-  EFFECT_PRESETS,
   MORE_FEATURES,
   METRIC_STRIP,
   PILLARS,
@@ -52,7 +51,7 @@ export function FeatureStripsSection() {
         bg="linear-gradient(135deg,#0a1a2c 0%,#144a7a 55%,#3ec1e8 100%)"
       />
       <FeatureStrip
-        title="Big-budget effects, one tap."
+        title="Curated presets, one tap."
         body="Curated presets wired to model and prompt combos. Browse free, generate on tap. Cost shown up front."
         cta={{ label: 'Browse presets', href: '/presets' }}
         bg="linear-gradient(135deg,#1b0632 0%,#5a0e6a 55%,#e4318f 100%)"

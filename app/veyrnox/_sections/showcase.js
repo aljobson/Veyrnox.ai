@@ -1,11 +1,13 @@
 import Link from 'next/link';
 import { MediaTile } from '../_components/MediaTile';
 import { SHOWCASE_CLIPS } from '../_lib/showcase';
+import { wallShapes, tileClasses, presetCredits } from '../_lib/presetWall';
 import {
   NAV_CATEGORIES,
   FEATURE_CARDS,
   PRODUCT_TILES,
-  EFFECT_PRESETS,
+  PRESETS,
+  presetHref,
   MORE_FEATURES,
   METRIC_STRIP,
   PILLARS,
@@ -99,34 +101,49 @@ export function HeroStatement() {
   );
 }
 
-/* ─── Effects preset wall ─── */
+/* ─── Preset wall: the real presets, as a bento ─── */
 
-export function EffectsWall() {
+export function PresetWall({ catalog }) {
+  const shapes = wallShapes(PRESETS.length);
   return (
     <section className="px-4 sm:px-6 pt-20 pb-8 max-w-[1400px] mx-auto">
       <div className="flex items-baseline justify-between mb-6 flex-wrap gap-2">
-        <h2 className="text-2xl sm:text-3xl font-black tracking-[-0.02em]">Big-budget effects. Priced on tap.</h2>
+        <h2 className="text-2xl sm:text-3xl font-black tracking-[-0.02em]">One-tap presets. Priced on tap.</h2>
         <Link href="/presets" className="text-sm font-semibold text-vx-fg-muted hover:text-vx-fg">
           Browse all →
         </Link>
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-        {EFFECT_PRESETS.map((e) => (
-          <MediaTile
-            key={e.name}
-            href="/presets"
-            clip={SHOWCASE_CLIPS[e.name]}
-            className="block rounded-2xl overflow-hidden border border-vx-border"
-            mediaClassName="aspect-square"
-            mediaStyle={{ background: e.bg }}
-          >
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-90 group-hover:opacity-100" />
-            <div className="absolute inset-x-0 bottom-0 p-3 text-left">
-              <div className="font-black text-white text-sm tracking-tight">{e.name}</div>
-              <div className="mt-1 font-vx-mono text-[9.5px] tracking-[0.1em] text-vx-accent">RECREATE →</div>
-            </div>
-          </MediaTile>
-        ))}
+      <div className="grid grid-cols-2 lg:grid-cols-4 lg:auto-rows-[220px] gap-3">
+        {PRESETS.map((preset, i) => {
+          const shape = shapes[i];
+          const classes = tileClasses(shape);
+          const isHero = shape.kind === 'hero';
+          return (
+            <MediaTile
+              key={preset.id}
+              href={presetHref(preset)}
+              clip={SHOWCASE_CLIPS[preset.id]}
+              className={`block rounded-2xl overflow-hidden border border-vx-border ${classes.link}`}
+              mediaClassName={classes.media}
+              mediaStyle={{ background: preset.bg }}
+            >
+              <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
+              {/* Fixed light ink: this sits on a hardcoded gradient under a
+                  black scrim, so theme tokens would read near-black in light
+                  theme. Same reasoning as the feature cards. */}
+              <div className={`absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 text-left ${isHero ? 'p-5 sm:p-6' : 'p-3'}`}>
+                <div className="min-w-0">
+                  <div className={`font-black text-white tracking-tight ${isHero ? 'text-2xl sm:text-3xl' : 'text-sm'}`}>{preset.name}</div>
+                  <div className={`mt-0.5 text-white/85 truncate ${isHero ? 'text-sm' : 'text-xs'}`}>{preset.model}</div>
+                  {/* Hidden on phones: the tile is the link, and the label does not fit
+                      beside the price in a two-column tile. */}
+                  <div className="hidden sm:block mt-1 font-vx-mono text-[9.5px] tracking-[0.1em] text-white/85">OPEN IN STUDIO →</div>
+                </div>
+                <div className={`shrink-0 font-vx-mono font-bold text-white vx-num ${isHero ? 'text-lg' : 'text-[13px]'}`}>{presetCredits(preset, catalog)} cr</div>
+              </div>
+            </MediaTile>
+          );
+        })}
       </div>
     </section>
   );

@@ -11,7 +11,6 @@ import {
   NAV_CATEGORIES,
   FEATURE_CARDS,
   PRODUCT_TILES,
-  EFFECT_PRESETS,
   MORE_FEATURES,
   METRIC_STRIP,
   PILLARS,
@@ -96,7 +95,7 @@ export function FeaturedHeroCards() {
               {/* Fixed light ink, not theme tokens: this sits on a hardcoded
                   dark gradient under a from-black scrim, so --vx-fg would
                   resolve to near-black in light theme and the card would
-                  read at 1.06:1. Same reasoning as EffectsWall below. */}
+                  read at 1.06:1. See PresetWall in showcase.js. */}
               <div className="font-vx-mono text-[10px] tracking-[0.14em] text-white/85">
                 {f.kicker}
               </div>

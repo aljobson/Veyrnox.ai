@@ -21,21 +21,21 @@ Only tiles that are backed by something real.
 | Feature card `presets` | Yes, from a real preset | See below |
 | Feature card `nano-banana-kie` | No | An image model. `MediaTile` needs a video, so it keeps its gradient |
 | Feature card `ace-step` | No | Audio has no picture |
-| The 15-tile "Big-budget effects" wall (`EFFECT_PRESETS`) | **No, not yet** | See the caveat below |
+| Preset wall tile (one per real preset, keyed by preset `id`) | Yes, from that preset | The wall is built from `PRESETS`, so each tile is a real preset. Use its own output. |
 
-### Caveat: the effects wall is not backed by real presets
+### The preset wall
 
-`EFFECT_PRESETS` (INCLINE, STUDIO SLIDE, LACEWALKER, ...) lists 15 effects, and
-none of them exists in `PRESETS`, which has 7: CCTV NIGHT, SUNSET DRIFT, NEON
-ALLEY, WARM PORTRAIT, FILM PORTRAIT, TALKING HEAD, CLEAN CUTOUT. The wall's
-tiles say "RECREATE" and link to `/presets`, where those effects are not
-offered. Eight of the names also match effect names on a competitor's homepage
-exactly (INCLINE, STUDIO SLIDE, ACT NATURAL, LACEWALKER, WILD RIDE, FLOATING
-FALL, EYES IN, CUTOUT).
+The wall under the hero is built from the real `PRESETS` (7 today), so every
+tile is something the studio can run. A tile's clip must be that preset's own
+output, generated with the model it names, so "OPEN IN STUDIO" delivers what
+the tile shows. The manifest key is the preset `id` (for example `cctv-night`).
+Only CCTV NIGHT and NEON ALLEY have cached demos, which is the cheapest place
+to start.
 
-Do not register clips for the wall until it is rebuilt from `PRESETS`: it would
-add video to effects the product cannot deliver. The rebuild is a content
-decision, tracked separately from this PR.
+The wall's bento layout is shaped for exactly seven presets
+(`app/veyrnox/_lib/presetWall.js`). Adding or removing a preset fails
+`tests/presetWall.test.mjs` until the layout is reshaped, so the grid never
+ends up with a hole.
 
 ## Spec
 
@@ -45,6 +45,7 @@ decision, tracked separately from this PR.
 | Size | 720p max, 2 MB max (`MAX_CLIP_BYTES`, aim for 1 MB), no audio track |
 | Length | 3 to 5 s. Touch devices stop playback at 5 s, so nothing past that is seen |
 | Feature cards | 4:5 crop. Poster: first frame, JPG or WebP, under 80 KB |
+| Preset wall | Generate 16:9 and keep the subject centred: tiles crop to fit (about 3:2 on desktop, 3:1 for the two wide tiles, 4:3 on phones and 16:9 for the hero) |
 | Path | `public/showcase/<slug>.mp4` and `<slug>.jpg`, slug `[a-z0-9-]` |
 
 Generate in **portrait (9:16)** where the studio offers it, at 720p. Only a
