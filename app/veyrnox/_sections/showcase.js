@@ -1,16 +1,16 @@
 import Link from 'next/link';
+import { MediaTile } from '../_components/MediaTile';
+import { SHOWCASE_CLIPS } from '../_lib/showcase';
 import {
   NAV_CATEGORIES,
   FEATURE_CARDS,
   PRODUCT_TILES,
   EFFECT_PRESETS,
   MORE_FEATURES,
-  HERO_STATS,
   METRIC_STRIP,
   PILLARS,
   FAQ,
   PROMO_STRIP,
-  HERO_CHIP,
   FOOTER_TAGLINE,
   footerStamp,
   SITE_UPDATED,
@@ -33,10 +33,7 @@ export function ProductTilesRow({ modelCount, catalog }) {
   return (
     <section id="models" className="px-4 sm:px-6 pt-16 max-w-[1400px] mx-auto">
       <div className="flex items-baseline justify-between mb-6 flex-wrap gap-2">
-        <div>
-          <div className="font-vx-mono text-[11px] tracking-[0.14em] text-vx-accent mb-2">EVERY MODEL. ONE BALANCE.</div>
-          <h2 className="text-2xl sm:text-3xl font-black tracking-[-0.02em]">{modelCount} models on the shelf.</h2>
-        </div>
+        <h2 className="text-2xl sm:text-3xl font-black tracking-[-0.02em]">{modelCount} models on the shelf.</h2>
         <Link href="/pricing" className="text-sm font-semibold text-vx-fg-muted hover:text-vx-fg">
           Full catalog →
         </Link>
@@ -82,7 +79,6 @@ export function HeroStatement() {
   return (
     <section id="honesty" className="px-4 sm:px-6 pt-20 pb-6 max-w-[1400px] mx-auto">
       <div className="max-w-[900px]">
-        <div className="font-vx-mono text-[11px] tracking-[0.14em] text-vx-accent mb-4">THE HONESTY SIGNATURE</div>
         <h2 className="text-[40px] sm:text-[54px] md:text-[72px] font-black leading-[0.98] tracking-[-0.035em] text-balance">
           EVERY GENERATION<br/>
           SHOWS ITS PRICE<br/>
@@ -90,19 +86,14 @@ export function HeroStatement() {
         </h2>
         <p className="mt-6 text-[16px] text-vx-fg-body leading-[1.6] max-w-[540px]">
           The button is the price tag. Failed jobs refund automatically.
-          One balance across every model — visible math.
+          One balance across every model, with the math visible.
         </p>
-        <div className="mt-6 flex flex-wrap items-center gap-4">
-          <Link
-            href="#shelf"
-            className="font-vx-mono text-[11px] tracking-[0.12em] text-vx-accent hover:text-vx-fg"
-          >
-            SEE EVERY MODEL AND ITS PRICE →
-          </Link>
-          <span className="font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted">
-            REFUND ON FAILURE · ALWAYS
-          </span>
-        </div>
+        <Link
+          href="#shelf"
+          className="mt-6 inline-block font-vx-mono text-[11px] tracking-[0.12em] text-vx-accent hover:text-vx-fg"
+        >
+          SEE EVERY MODEL AND ITS PRICE →
+        </Link>
       </div>
     </section>
   );
@@ -114,28 +105,27 @@ export function EffectsWall() {
   return (
     <section className="px-4 sm:px-6 pt-20 pb-8 max-w-[1400px] mx-auto">
       <div className="flex items-baseline justify-between mb-6 flex-wrap gap-2">
-        <div>
-          <div className="font-vx-mono text-[11px] tracking-[0.14em] text-vx-accent mb-2">PRESETS · ONE-TAP LOOKS</div>
-          <h2 className="text-2xl sm:text-3xl font-black tracking-[-0.02em]">Big-budget effects. Priced on tap.</h2>
-        </div>
+        <h2 className="text-2xl sm:text-3xl font-black tracking-[-0.02em]">Big-budget effects. Priced on tap.</h2>
         <Link href="/presets" className="text-sm font-semibold text-vx-fg-muted hover:text-vx-fg">
           Browse all →
         </Link>
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
         {EFFECT_PRESETS.map((e) => (
-          <Link
+          <MediaTile
             key={e.name}
             href="/presets"
-            className="group block relative rounded-2xl overflow-hidden border border-vx-border transition-transform duration-200 hover:scale-[1.02]"
-            style={{ background: e.bg, aspectRatio: '1/1' }}
+            clip={SHOWCASE_CLIPS[e.name]}
+            className="block rounded-2xl overflow-hidden border border-vx-border"
+            mediaClassName="aspect-square"
+            mediaStyle={{ background: e.bg }}
           >
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-90 group-hover:opacity-100" />
             <div className="absolute inset-x-0 bottom-0 p-3 text-left">
               <div className="font-black text-white text-sm tracking-tight">{e.name}</div>
               <div className="mt-1 font-vx-mono text-[9.5px] tracking-[0.1em] text-vx-accent">RECREATE →</div>
             </div>
-          </Link>
+          </MediaTile>
         ))}
       </div>
     </section>
@@ -163,7 +153,7 @@ export function ModelShelf({ catalog }) {
       <div className="flex items-baseline justify-between mb-6 flex-wrap gap-2">
         <div>
           <div className="font-vx-mono text-[11px] tracking-[0.14em] text-vx-accent mb-2">
-            THE SHELF · {total} LIVE MODELS
+            {total} LIVE MODELS
           </div>
           <h2 className="text-2xl sm:text-3xl font-black tracking-[-0.02em]">Every model. Every price. No tiers to decode.</h2>
         </div>
@@ -210,8 +200,8 @@ export function ModelShelf({ catalog }) {
         ))}
       </div>
 
-      <p className="mt-6 font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted">
-        PRICES READ FROM THE LIVE CATALOG · REFUND ON FAILURE · ALWAYS
+      <p className="mt-6 text-[13px] text-vx-fg-muted">
+        Prices are read from the live catalog. Failed generations refund.
       </p>
     </section>
   );

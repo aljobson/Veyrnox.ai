@@ -5,13 +5,14 @@ import { NavAuthButtons } from '../_components/NavAuthButtons';
 import { MobileMenu } from '../_components/MobileMenu';
 import { SiteSearch } from '../_components/SiteSearch';
 import { ThemeToggle } from '../_components/ThemeToggle';
+import { MediaTile } from '../_components/MediaTile';
+import { SHOWCASE_CLIPS } from '../_lib/showcase';
 import {
   NAV_CATEGORIES,
   FEATURE_CARDS,
   PRODUCT_TILES,
   EFFECT_PRESETS,
   MORE_FEATURES,
-  HERO_STATS,
   METRIC_STRIP,
   PILLARS,
   FAQ,
@@ -28,7 +29,6 @@ import {
 export function PromoStrip() {
   return (
     <div data-print="hide" className="bg-vx-money text-vx-money-ink text-[12px] sm:text-[13px] font-bold px-4 sm:px-6 py-2 flex items-center justify-center gap-2 sm:gap-3 flex-wrap text-center">
-      <span aria-hidden="true" className="font-vx-mono text-[11px] tracking-[0.14em]">◆</span>
       <span>{PROMO_STRIP.message}</span>
       <Link
         href={PROMO_STRIP.href}
@@ -46,7 +46,7 @@ export function WideNav() {
   return (
     <div data-print="hide" className="sticky top-0 z-40 h-16 border-b border-vx-border bg-vx-base/90 backdrop-blur">
       <div className="h-full px-4 sm:px-6 flex items-center gap-3 lg:gap-6 max-w-[1300px] mx-auto">
-        <Link href="/" className="flex items-center shrink-0" aria-label="Veyrnox.ai — home">
+        <Link href="/" className="flex items-center shrink-0" aria-label="Veyrnox.ai home">
           <Logo size={30} wordmark />
         </Link>
         {/* The links used to live in a horizontal scroller that, on a phone,
@@ -76,35 +76,37 @@ export function WideNav() {
 
 /* ─── Featured hero cards (5 wide, kicker + title + Open) ─── */
 
-export function FeaturedHeroCards({ modelCount }) {
+export function FeaturedHeroCards() {
   return (
     <section id="explore" className="px-4 sm:px-6 pt-8 max-w-[1400px] mx-auto">
-      <Hero modelCount={modelCount} />
+      <Hero />
       <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-        {FEATURE_CARDS.map((f) => (
-          <Link
+        {FEATURE_CARDS.map((f, i) => (
+          <MediaTile
             key={f.key}
             href={f.href}
-            className="group text-left rounded-2xl border border-vx-border bg-vx-panel overflow-hidden transition-transform duration-200 ease-out hover:scale-[1.015]"
+            clip={SHOWCASE_CLIPS[f.key]}
+            className="vx-rise block text-left rounded-2xl border border-vx-border bg-vx-panel overflow-hidden"
+            style={{ '--vx-i': i }}
+            mediaClassName="aspect-[4/5]"
+            mediaStyle={{ background: f.bg }}
           >
-            <div className="aspect-[4/5] relative" style={{ background: f.bg }}>
-              <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
-              <div className="absolute inset-x-0 bottom-0 p-4 flex flex-col gap-2">
-                {/* Fixed light ink, not theme tokens: this sits on a hardcoded
-                    dark gradient under a from-black scrim, so --vx-fg would
-                    resolve to near-black in light theme and the card would
-                    read at 1.06:1. Same reasoning as EffectsWall below. */}
-                <div className="font-vx-mono text-[10px] tracking-[0.14em] text-white/85">
-                  {f.kicker}
-                </div>
-                <div className="font-black text-[16px] leading-tight text-balance text-white">{f.title}</div>
-                <div className="text-[12px] text-white/85 leading-snug">{f.body}</div>
-                <span className="mt-1 inline-flex items-center gap-1 font-vx-mono text-[10px] tracking-[0.12em] text-vx-accent">
-                  {f.cta} →
-                </span>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
+            <div className="absolute inset-x-0 bottom-0 p-4 flex flex-col gap-2">
+              {/* Fixed light ink, not theme tokens: this sits on a hardcoded
+                  dark gradient under a from-black scrim, so --vx-fg would
+                  resolve to near-black in light theme and the card would
+                  read at 1.06:1. Same reasoning as EffectsWall below. */}
+              <div className="font-vx-mono text-[10px] tracking-[0.14em] text-white/85">
+                {f.kicker}
               </div>
+              <div className="font-black text-[16px] leading-tight text-balance text-white">{f.title}</div>
+              <div className="text-[12px] text-white/85 leading-snug">{f.body}</div>
+              <span className="mt-1 inline-flex items-center gap-1 font-vx-mono text-[10px] tracking-[0.12em] text-vx-accent">
+                {f.cta} →
+              </span>
             </div>
-          </Link>
+          </MediaTile>
         ))}
       </div>
     </section>
@@ -113,7 +115,7 @@ export function FeaturedHeroCards({ modelCount }) {
 
 /* ─── Hero (headline + sub + CTAs + trust row) ─── */
 
-export function Hero({ modelCount }) {
+export function Hero() {
   return (
     <div className="relative overflow-hidden">
       <div
@@ -125,18 +127,15 @@ export function Hero({ modelCount }) {
             'radial-gradient(45% 40% at 15% 80%, rgba(228,169,60,0.12), transparent 65%)',
         }}
       />
-      <div className="relative max-w-[1000px] mx-auto pt-10 sm:pt-16 pb-8 flex flex-col items-center text-center gap-5 sm:gap-6">
-        <Chip tone="accent" noGlyph>
-          <span aria-hidden="true" className="mr-1 text-vx-accent">●</span>
-          {HERO_CHIP}
-        </Chip>
-        <h1 className="text-[34px] sm:text-[48px] md:text-[72px] font-black leading-[1.02] md:leading-[0.98] tracking-[-0.03em] md:tracking-[-0.035em] text-balance max-w-[900px]">
+      <div className="relative max-w-[1200px] mx-auto pt-10 sm:pt-16 pb-8 flex flex-col items-center text-center gap-5 sm:gap-6">
+        <Chip tone="accent" noGlyph>{HERO_CHIP}</Chip>
+        <h1 className="text-[28px] sm:text-[40px] md:text-[44px] lg:text-[52px] font-black leading-[1.05] md:leading-[1.02] tracking-[-0.03em] md:tracking-[-0.035em] text-balance max-w-[1200px]">
           One prompt in. Endless creations out.<br />
           <span className="text-vx-accent">Priced on the button.</span>
         </h1>
         <p className="text-base sm:text-lg text-vx-fg-body max-w-[640px] leading-[1.6]">
-          Credit-metered AI image, video and audio. See the exact cost before you press generate —
-          refund on failure, always.
+          Credit-metered AI image, video and audio. See the exact cost before you press generate.
+          Failed jobs refund, always.
         </p>
         <div className="flex gap-3 mt-2 flex-wrap justify-center">
           <Link
@@ -149,16 +148,8 @@ export function Hero({ modelCount }) {
             href="/pricing"
             className="rounded-full border border-vx-border text-vx-fg px-8 py-4 text-base font-bold hover:border-vx-accent"
           >
-            See how it works
+            See pricing
           </Link>
-        </div>
-        <div className="mt-8 grid grid-cols-3 gap-3 sm:gap-8 max-w-[720px] w-full">
-          {HERO_STATS.map((s) => (
-            <div key={s.label} className="text-center">
-              <div className="font-vx-mono text-[20px] sm:text-[24px] font-bold text-vx-accent vx-num">{s.value ?? modelCount}</div>
-              <div className="mt-1 text-[11px] sm:text-xs text-vx-fg-muted leading-snug">{s.label}</div>
-            </div>
-          ))}
         </div>
       </div>
     </div>
