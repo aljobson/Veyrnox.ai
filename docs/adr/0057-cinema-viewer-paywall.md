@@ -54,3 +54,36 @@ The glossary's **Subscription** already means a recurring credit allotment (plan
 - **Stream cost is the only marginal cost.** At Stream's published delivery rate a Pass viewer who hits the 3,000-minute ceiling costs about $3 a month against $49.99; the yearly plan at $16.67 a month still clears 50% contribution at the ceiling. Verify the rate and the fee schedule before pricing is final.
 - **Vocabulary.** `CONTEXT.md` gains Free Episodes, Episode Unlock, Cinema Pass, Pass Play and Unlock Reversal. "VIP", "coins" and "membership" are avoided.
 - **Migrations** 0142 (prices, unlocks, entitlement RPC), 0143 (passes, pass events), 0144 (pass plays) take the next free numbers on main; no open PR carries a migration today. Applied only through the `apply-migrations` workflow (ADR-0023).
+
+## Operator HTTP actions (0150, 2026-09-26)
+
+`POST /api/v1/admin/cinema/unlocks/reverse` wraps the existing 30-day Unlock
+Reversal RPC for one content row after it leaves publication. It does not change
+publication state. Normal withdrawal/suspension continues to reverse a whole
+title through ADR-0059. The wrapper records a verified actor, reason, request ID,
+UUID idempotency key and the original result atomically; retries return that result.
+
+`POST /api/v1/admin/cinema/pass/refund` refunds a flagged duplicate Pass's initial
+invoice in full, including tax. It persists an immutable operation before any
+Stripe mutation, cancels and re-reads the subscription, and verifies the
+subscription/customer/invoice/PaymentIntent/charge chain and test/live mode.
+Amounts and provider IDs never come from the request. A renewal invoice, split
+payment, disputed charge, prior manual refund or ambiguous provider response
+requires separate Operator review. This route does not handle cooling-off refunds.
+
+Both routes require middleware-verified identity, TOTP within five minutes,
+Cloudflare Access and a fresh database check of `users.is_admin`, a present Auth
+user, an unfrozen account and any Cinema membership being active. Cinema reviewer
+membership alone does not grant financial Operator privileges. Existing unlock
+and subscription switches respectively gate the routes; no switch changes here.
+
+The refund operation is unique per Pass, with an idempotency key scoped to the
+initiating Operator. Retries use the same Operator, key and body. Stripe uses a
+stable key derived from the persisted operation plus operation metadata. Every
+retry lists that charge's refunds: an existing matching refund is recovered even
+if Stripe has expired its idempotency key. Pending refunds return 202, failed ones
+require review, and only a verified successful refund writes an append-only
+receipt and ends the flagged Pass. A webhook arriving first cannot lose the
+receipt or affect the buyer's other, live Pass. No Pass operation writes credits.
+
+Implementation and recovery contract: [Operator actions](../cinema/operator-actions.md).
