@@ -394,6 +394,23 @@ export function getAal() {
     }
 }
 
+/** Display-only freshness. Server signature/MFA checks remain authoritative. */
+export function getMfaFreshUntil(now = Date.now()) {
+    const token = getAccessToken();
+    if (!token) return null;
+    try {
+        const payload = token.split('.')[1];
+        const claims = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
+        if (claims.aal !== 'aal2' || !Array.isArray(claims.amr) || !Number.isFinite(claims.exp)) return null;
+        const times = claims.amr.filter((entry) => entry?.method === 'totp'
+            && Number.isFinite(entry.timestamp) && entry.timestamp <= now / 1000 + 5)
+            .map((entry) => entry.timestamp);
+        if (!times.length) return null;
+        const until = Math.min(Math.max(...times) + 300, claims.exp) * 1000;
+        return until > now ? until : null;
+    } catch { return null; }
+}
+
 /**
  * The signed-in user's MFA factors.
  * @returns {Promise<Array<{id: string, status: string, friendly_name?: string}>>}

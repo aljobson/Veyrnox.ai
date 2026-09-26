@@ -15,7 +15,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import {
-  getAal, listFactors, enrollTotp, verifyFactor, unenrollFactor,
+  getAal, getMfaFreshUntil, onSessionChange, listFactors, enrollTotp, verifyFactor, unenrollFactor,
 } from '../../lib/authClient.js';
 
 const CODE_RE = /^[0-9]{6}$/;
@@ -27,6 +27,8 @@ export function MfaPanel({ requireFresh = false, onVerified } = {}) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const [aal, setAal] = useState(null);
+  const [freshUntil, setFreshUntil] = useState(null);
+  const [wasVerified, setWasVerified] = useState(false);
 
   const refresh = useCallback(async () => {
     try {
@@ -40,6 +42,18 @@ export function MfaPanel({ requireFresh = false, onVerified } = {}) {
   }, []);
 
   useEffect(() => { refresh(); }, [refresh]);
+  useEffect(() => {
+    const update = () => {
+      const until = getMfaFreshUntil();
+      setFreshUntil(until);
+      setAal(getAal());
+      if (until) setWasVerified(true);
+    };
+    update();
+    const unsubscribe = onSessionChange(update);
+    const timer = setInterval(update, 1000);
+    return () => { unsubscribe(); clearInterval(timer); };
+  }, []);
 
   async function run(fn) {
     setBusy(true); setError(null);
@@ -57,6 +71,16 @@ export function MfaPanel({ requireFresh = false, onVerified } = {}) {
           ? 'Your authenticator is enabled.'
           : factors === null ? 'Authenticator status is unavailable.' : 'Add an authenticator to help protect your account.'}
       </p>
+
+      {requireFresh && verified.length > 0 && (
+        <p role="status" className="mt-3 text-[13px] text-vx-fg-body">
+          {freshUntil
+            ? `Verified — recent access is valid until ${new Date(freshUntil).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}.`
+            : wasVerified
+              ? 'Verification expired. Enter a new authenticator code to continue.'
+              : 'Recent access is not verified. Enter an authenticator code to continue.'}
+        </p>
+      )}
 
       {error && <p role="alert" className="mt-3 text-[13px] text-vx-danger">{error} <button type="button" onClick={refresh} className="underline">Retry</button></p>}
 
@@ -102,7 +126,7 @@ export function MfaPanel({ requireFresh = false, onVerified } = {}) {
         </div>
       )}
 
-      {verified.length > 0 && (requireFresh || aal !== 'aal2') && (
+      {verified.length > 0 && (requireFresh ? !freshUntil : aal !== 'aal2') && (
         <div className="mt-4 flex gap-2">
           <input
             value={code} onChange={(e) => setCode(e.target.value.trim())}
