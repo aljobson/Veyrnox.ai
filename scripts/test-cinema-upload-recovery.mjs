@@ -13,7 +13,9 @@ const claim=(key,client=c)=>client.query('SELECT public.claim_cinema_upload_chec
 const finish=(id,key,ok)=>val('SELECT public.finish_cinema_upload_check($1,$2,$3) AS value',[id,key,ok]);
 const snapshot=async()=>{await q('SELECT public.refresh_recovery_health()');return val('SELECT public.recovery_status() AS value');};
 try {
- const migration=await readFile(new URL('../packages/db/schema/supabase/0138_cinema_upload_recovery.sql',import.meta.url),'utf8');await c.query(migration);await c.query(migration);
+ // Applying 0138 twice proves it is idempotent. Roll it back: a later migration (0139) redefines
+ // refresh_recovery_health, and the assertions must exercise what a full replay leaves behind.
+ const migration=await readFile(new URL('../packages/db/schema/supabase/0138_cinema_upload_recovery.sql',import.meta.url),'utf8');await q('BEGIN');await c.query(migration);await c.query(migration);await q('ROLLBACK');
  const balances=await q('SELECT * FROM public.credit_balances ORDER BY user_id');
  await q('INSERT INTO auth.users(id,email,email_confirmed_at) VALUES($1,$2,now())',[actor,`${actor}@example.invalid`]);
  await val('SELECT public.create_cinema_profile($1,$2,$3) AS value',[actor,randomUUID(),{username:`u_${actor.replaceAll('-','').slice(0,20)}`,display_name:'Recovery test'}]);
