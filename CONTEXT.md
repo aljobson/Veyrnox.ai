@@ -67,3 +67,25 @@ _Avoid_: Admin (when meaning the person), support
 **Frozen**:
 An account state, entered on a Chargeback and left only when an operator unfreezes it, that blocks generating and buying. Sign-in, the library, downloads, and account deletion still work.
 _Avoid_: Suspended, banned, locked
+
+### Social Cinema viewing
+
+**Free Episodes**:
+The opening episodes of a series that anyone can watch without paying. Shorts and trailers are always free.
+_Avoid_: Preview, trial episodes, teaser
+
+**Episode Unlock**:
+A viewer spending credits once to watch a locked episode or film on that account for good.
+_Avoid_: Purchase, rental, coin unlock
+
+**Cinema Pass**:
+A recurring plan that lets a viewer watch all published Cinema content while it is active. It grants no credits and is not a Subscription.
+_Avoid_: VIP, membership, tier, unlimited plan
+
+**Pass Play**:
+A record of a Cinema Pass holder watching some of a title. It counts toward that Pass's monthly viewing ceiling.
+_Avoid_: View, stream, session
+
+**Unlock Reversal**:
+Returning the credits of an Episode Unlock because the content was taken down. No money moves.
+_Avoid_: Refund (on its own), chargeback

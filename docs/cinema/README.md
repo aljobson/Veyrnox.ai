@@ -24,6 +24,7 @@ Read [REPO-ASSESSMENT.md](REPO-ASSESSMENT.md) first for the repository-specific 
 | CREATOR_CONTENT_ENABLED | Master + profiles |
 | CREATOR_UPLOADS_ENABLED | Master + profiles |
 | CINEMA_SUBSCRIPTIONS_ENABLED | Master |
+| CINEMA_UNLOCKS_ENABLED | Master + profiles |
 | CREATOR_MONETISATION_ENABLED | Master + profiles + subscriptions |
 | VOTING_ENABLED | Master + profiles |
 | COMMENTS_ENABLED | Master + profiles |
@@ -56,3 +57,15 @@ ADR-0050 and migration 0134 add `/social-cinema/creator`: private film/short/tra
 ## Stream upload increment
 
 ADR-0052 and migration 0137 add bounded creator upload reservations, direct resumable transfers, private processing status and verified Stream callbacks. Creator workspace video controls use existing draft ownership. All flags remain off. Live Stream credentials/testing, provider cleanup/replacement, rights and moderation remain launch gates; encoding success never publishes a draft.
+
+## Viewer paywall increment (Phase 1)
+
+ADR-0057 and migration 0142 add Free Episodes and Episode Unlock, modelled on ReelShort. Shorts and trailers are free, the first five episodes of a series are free, and every other episode or film costs 6 credits, taken from the existing balance by `ledger_unlock` (Free Credits first, Frozen accounts denied, replay-safe). `cinema_prices` is the only source of the numbers. `GET /api/v1/cinema/entitlement`, `POST /api/v1/cinema/unlocks` and `POST /api/v1/cinema/play` sit behind the new default-off `CINEMA_UNLOCKS_ENABLED` child switch. Playback tokens are RS256 Stream JWTs bound to one video and valid for 15 minutes, signed with `CINEMA_STREAM_SIGNING_KEY_ID` + `CINEMA_STREAM_SIGNING_JWK` (secret) for `CINEMA_STREAM_CUSTOMER_CODE`; the player host is not yet in CSP. `reverse_cinema_unlocks` is the Operator takedown reversal. `cinema_content` now admits `PUBLISHED`/`PUBLIC` but nothing writes them: the publication slice (own ADR) is still the gate before any viewer sees or pays for anything. Cinema Pass (Phase 2) is not built.
+
+## Cinema Pass increment (Phase 2)
+
+ADR-0057 and migration 0143 add the Cinema Pass: recurring Stripe subscriptions at $14.99 weekly ($11.99 first week, once per account, decided by `start_cinema_pass`), $49.99 monthly and $199.99 yearly, priced from `cinema_pass_plans` and sold through Checkout in subscription mode with inline recurring `price_data` and a deterministic once-only Coupon for the intro. A Pass grants viewing only: `cinema_entitlement` now answers `pass` for a live Pass whose period end is in the future, and no Pass path writes a ledger row. `/api/v1/cinema/pass` (read/start), `/pass/plans`, `/pass/return` (records the session and applies the subscription Stripe already shows, so a lost webhook cannot lose a paid Pass), `/pass/cancel` (within 14 days: cancel now and refund the unused share pro rata; after: stop renewing at the period end) and `/pass/portal` sit behind `CINEMA_SUBSCRIPTIONS_ENABLED`. The Stripe webhook handles `customer.subscription.*`, `invoice.paid` and `invoice.payment_failed` by re-reading the subscription; a `charge.refunded` on a subscription invoice ends the Pass, and a `charge.dispute.created` whose charge is on an invoice ends it and Freezes the account. `/social-cinema/pass` is the page, visible only with the `veyrnox_social_cinema` preview flag. Phase 3 (Pass plays and the 3,000-minute ceiling) is not built.
+
+## Pass Plays increment (Phase 3)
+
+ADR-0057 and migration 0144 add Pass Plays: `POST /api/v1/cinema/play/heartbeat` records up to 60 seconds per call for a viewer whose access to the title is `pass` (free, unlocked and locked viewing record nothing), a Pass can never log more seconds than wall-clock time, and `cinema_prices.pass_ceiling_minutes` (3,000) is now enforced: at the ceiling `cinema_entitlement` answers `locked` with reason `pass_ceiling` and the unlock price, so the viewer can still pay per episode. `GET /api/v1/admin/cinema/earnings?month=YYYY-MM` is the Operator read of Unlock credits and Pass seconds per title, behind the same identity, fresh-MFA and Cloudflare Access gates as the creator review queue, with `is_admin` re-checked in the database. Nothing is paid out; a creator revenue share is its own ADR.

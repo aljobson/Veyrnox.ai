@@ -31,7 +31,7 @@
  */
 
 import { NextResponse } from 'next/server';
-import { verifyWebhookSignature, verifyTopUpMetadata, fetchSession, interpretSession } from '../../../../packages/adapters/stripe.js';
+import { verifyWebhookSignature, verifyTopUpMetadata, fetchSession, interpretSession, verifyPassMetadata, fetchSubscription, fetchInvoice, fetchCharge, interpretSubscription, invoiceSubscriptionId, cancelSubscriptionNow } from '../../../../packages/adapters/stripe.js';
 import { rpc, envConfig } from '../../../../packages/db/supabase-client.js';
 import { dedup, markProcessed } from '../../../../lib/providerCompletion.js';
 
@@ -39,7 +39,14 @@ const SOURCE = 'billing:stripe';
 const LOG = '[stripe-webhook]';
 const EVENT_ID_RE = /^evt_[A-Za-z0-9_]{1,250}$/;
 const PAYMENT_INTENT_RE = /^pi_[A-Za-z0-9_]{1,250}$/;
-const HANDLED = new Set(['checkout.session.completed', 'charge.refunded', 'charge.dispute.created', 'charge.dispute.closed']);
+// Cinema Pass (ADR-0057 Phase 2): subscription lifecycle, plus charges on a
+// subscription invoice, which belong to a Pass and never to a Top-up.
+const PASS_TYPES = new Set(['customer.subscription.created', 'customer.subscription.updated', 'customer.subscription.deleted', 'invoice.paid', 'invoice.payment_failed']);
+const PASS_REFUSED = new Set(['PASS_NOT_FOUND', 'PASS_MISMATCH', 'INVALID_EVENT', 'INVALID_SUBSCRIPTION']);
+const SUBSCRIPTION_RE = /^sub_[A-Za-z0-9_]{1,250}$/;
+const INVOICE_RE = /^in_[A-Za-z0-9_]{1,250}$/;
+const CHARGE_RE = /^ch_[A-Za-z0-9_]{1,250}$/;
+const HANDLED = new Set(['checkout.session.completed', 'charge.refunded', 'charge.dispute.created', 'charge.dispute.closed', ...PASS_TYPES]);
 // Paid orders we took money for but must not grant: an Operator refunds them.
 const FLAGGED = new Set(['ALREADY_CREDITED', 'VARIANT_MISMATCH', 'AMOUNT_MISMATCH', 'CURRENCY_MISMATCH']);
 // Final refusals a redelivery cannot change.
@@ -101,11 +108,20 @@ export async function POST(req) {
         const seen = await dedup(cfg, SOURCE, eventId, { type });
         if (seen === 'duplicate') return NextResponse.json({ ok: true, duplicate: true });
 
+        if (PASS_TYPES.has(type)) {
+            return await handlePassEvent(cfg, { object, eventId, type, secret, apiKey, expectLiveMode, eventCreated: event.created });
+        }
+        // A refunded charge on a subscription invoice is a Pass charge. A Dispute
+        // names only its charge; handleDispute re-reads it only when no Top-up
+        // claims the PaymentIntent, so Top-up disputes never wait on Stripe.
+        if (type === 'charge.refunded' && INVOICE_RE.test(String(object.invoice ?? ''))) {
+            return await handlePassCharge(cfg, { invoiceId: object.invoice, object, eventId, type, apiKey, eventCreated: event.created });
+        }
         if (type === 'checkout.session.completed') {
             return await handleCheckout(cfg, { object, eventId, secret, apiKey, expectLiveMode });
         }
         if (type === 'charge.refunded') return await handleRefund(cfg, { object, eventId, secret });
-        return await handleDispute(cfg, { object, eventId, type, eventCreated: event.created });
+        return await handleDispute(cfg, { object, eventId, type, apiKey, eventCreated: event.created });
     } catch (err) {
         console.error(LOG, 'processing failed:', err && (err.status ?? err.message));
         return NextResponse.json({ error: 'internal' }, { status: 500 });
@@ -204,7 +220,7 @@ function refundVerdict(orderId, res) {
 // charge.dispute.created Freezes the order's owner; charge.dispute.closed only
 // logs (ADR-0019 dispute_resolved). Only the PaymentIntent is taken from the
 // payload; the user is the credited Top-up's owner.
-async function handleDispute(cfg, { object, eventId, type, eventCreated }) {
+async function handleDispute(cfg, { object, eventId, type, apiKey, eventCreated }) {
     const orderId = String(object.payment_intent ?? '');
     const reference = String(object.id ?? '').slice(0, 64);
     if (!PAYMENT_INTENT_RE.test(orderId)) {
@@ -227,6 +243,13 @@ async function handleDispute(cfg, { object, eventId, type, eventCreated }) {
         console.error(LOG, 'apply_dispute_event gave no usable verdict:', orderId, res && res.code);
         return NextResponse.json({ error: 'internal' }, { status: 500 });
     }
+    if (res.ok === false && res.code === 'TOP_UP_NOT_FOUND') {
+        // No credited Top-up claims this charge. On a subscription invoice it
+        // is a Cinema Pass dispute (ADR-0057); a failed re-read throws so
+        // Stripe retries.
+        const invoiceId = await disputeInvoice(object, apiKey);
+        if (invoiceId) return await handlePassCharge(cfg, { invoiceId, object, eventId, type, apiKey, eventCreated });
+    }
     if (res.ok === false && res.code === 'TOP_UP_NOT_FOUND' && isYoung(eventCreated)) {
         console.error(LOG, 'dispute ahead of its credit, retrying:', 'order', orderId, 'dispute', reference);
         return NextResponse.json({ error: 'not_credited_yet' }, { status: 503 });
@@ -246,4 +269,126 @@ async function handleDispute(cfg, { object, eventId, type, eventCreated }) {
 function isYoung(eventCreated, nowSeconds = Math.floor(Date.now() / 1000)) {
     if (!Number.isSafeInteger(eventCreated)) return true;
     return nowSeconds - eventCreated < DISPUTE_RETRY_SECONDS;
+}
+
+// ── Cinema Pass (ADR-0057 Phase 2) ──────────────────────────────────────────
+
+// customer.subscription.* and invoice.*: re-read the subscription (the body is
+// a pointer), then apply its state to the Pass it names. Only a subscription
+// our checkout signed may bind a pending Pass; an unsigned one can still
+// update a Pass already bound to it, and an unknown unsigned one is not ours.
+async function handlePassEvent(cfg, { object, eventId, type, secret, apiKey, expectLiveMode, eventCreated }) {
+    const subscriptionId = type.startsWith('invoice.') ? invoiceSubscriptionId(object)
+        : (SUBSCRIPTION_RE.test(String(object.id)) && object.object === 'subscription' ? object.id : null);
+    if (!subscriptionId) {
+        console.error(LOG, `${type} without a subscription, ignored:`, eventId);
+        await markProcessed(cfg, SOURCE, eventId);
+        return NextResponse.json({ ok: true, warn: 'no_subscription' });
+    }
+    const fetched = await fetchSubscription(subscriptionId, { fetch: fetch.bind(globalThis), apiKey });
+    if (!fetched.ok) {
+        console.error(LOG, 'subscription re-fetch failed:', subscriptionId, fetched.error);
+        return NextResponse.json({ error: 'subscription_fetch_failed' }, { status: 503 });
+    }
+    const interp = interpretSubscription(fetched.subscription, { expectLiveMode });
+    if (!interp.ok) {
+        console.error(LOG, 'subscription not applicable:', subscriptionId, interp.error);
+        await markProcessed(cfg, SOURCE, eventId);
+        return NextResponse.json({ ok: true, warn: 'subscription_not_applicable' });
+    }
+    const s = interp.subscription;
+    const passId = (await verifyPassMetadata(s.metadata, secret)) ? s.metadata.cinema_pass_id : null;
+    const res = await rpc('apply_cinema_pass_event', {
+        p_event_id: eventId,
+        p_type: type,
+        p_pass_id: passId,
+        p_subscription_id: s.id,
+        p_customer_id: s.customerId,
+        p_status: s.status,
+        p_period_end: s.periodEnd,
+        p_cancel_at_period_end: s.cancelAtPeriodEnd,
+        p_occurred_at: occurredAt(eventCreated),
+    }, cfg);
+    if (!res || typeof res.ok !== 'boolean' || (res.ok === false && !PASS_REFUSED.has(res.code))) {
+        console.error(LOG, 'apply_cinema_pass_event gave no usable verdict:', subscriptionId, res && res.code);
+        return NextResponse.json({ error: 'internal' }, { status: 500 });
+    }
+    if (res.ok === false && res.code === 'PASS_NOT_FOUND' && passId && isYoung(eventCreated)) {
+        // The pending Pass row is written before checkout, so this is a race
+        // with a binding in flight, not a missing row. Retry while young.
+        console.error(LOG, 'pass event ahead of its binding, retrying:', subscriptionId, passId);
+        return NextResponse.json({ error: 'pass_not_bound_yet' }, { status: 503 });
+    }
+    if (res.ok === false) {
+        console.error(LOG, `${type} not applied:`, res.code, 'subscription', subscriptionId);
+    } else if (res.flagged) {
+        // A second Pass paid while one was live never entitles, so its
+        // subscription must stop billing now; the charge itself is an Operator
+        // refund. A failed cancel is retried with the event.
+        const stop = await cancelSubscriptionNow(s.id, { fetch: fetch.bind(globalThis), apiKey });
+        if (!stop.ok) {
+            console.error(LOG, 'flagged Pass subscription cancel failed, retrying:', subscriptionId, stop.error);
+            return NextResponse.json({ error: 'flagged_cancel_failed' }, { status: 503 });
+        }
+        console.error(LOG, 'second Pass paid while one was live, subscription cancelled, flagged for Operator refund:', 'subscription', subscriptionId, 'pass', res.pass_id);
+    }
+    await markProcessed(cfg, SOURCE, eventId);
+    return NextResponse.json({ ok: true });
+}
+
+// The invoice a Dispute's charge was for, or null when the charge is not on
+// an invoice (a Top-up). A re-read that fails throws, so Stripe retries.
+async function disputeInvoice(object, apiKey) {
+    if (!CHARGE_RE.test(String(object.charge ?? ''))) return null;
+    const fetched = await fetchCharge(object.charge, { fetch: fetch.bind(globalThis), apiKey });
+    if (!fetched.ok) throw new Error(`charge re-fetch failed: ${fetched.error}`);
+    const invoiceId = typeof fetched.charge.invoice === 'string' ? fetched.charge.invoice : fetched.charge.invoice && fetched.charge.invoice.id;
+    return INVOICE_RE.test(String(invoiceId)) ? invoiceId : null;
+}
+
+// charge.refunded on a Pass invoice ends the Pass; charge.dispute.created
+// ends it and Freezes the account (ADR-0019); charge.dispute.closed only logs.
+async function handlePassCharge(cfg, { invoiceId, object, eventId, type, apiKey, eventCreated }) {
+    const reference = String(object.id ?? '').slice(0, 64);
+    if (type === 'charge.dispute.closed') {
+        console.error(LOG, 'pass dispute closed:', 'invoice', invoiceId, 'dispute', reference, 'status', String(object.status ?? '').slice(0, 32));
+        await markProcessed(cfg, SOURCE, eventId);
+        return NextResponse.json({ ok: true });
+    }
+    const inv = await fetchInvoice(invoiceId, { fetch: fetch.bind(globalThis), apiKey });
+    if (!inv.ok) {
+        console.error(LOG, 'invoice re-fetch failed:', invoiceId, inv.error);
+        return NextResponse.json({ error: 'invoice_fetch_failed' }, { status: 503 });
+    }
+    const subscriptionId = invoiceSubscriptionId(inv.invoice);
+    if (!subscriptionId) {
+        console.error(LOG, `${type} on an invoice without a subscription, ignored:`, invoiceId);
+        await markProcessed(cfg, SOURCE, eventId);
+        return NextResponse.json({ ok: true, warn: 'no_subscription' });
+    }
+    const res = await rpc('end_cinema_pass', {
+        p_subscription_id: subscriptionId,
+        p_event_id: eventId,
+        p_reason: type === 'charge.refunded' ? 'refunded' : 'disputed',
+        p_reference: reference,
+        p_occurred_at: occurredAt(eventCreated),
+    }, cfg);
+    if (!res || typeof res.ok !== 'boolean' || (res.ok === false && !PASS_REFUSED.has(res.code))) {
+        console.error(LOG, 'end_cinema_pass gave no usable verdict:', subscriptionId, res && res.code);
+        return NextResponse.json({ error: 'internal' }, { status: 500 });
+    }
+    if (res.ok === false && res.code === 'PASS_NOT_FOUND' && isYoung(eventCreated)) {
+        return NextResponse.json({ error: 'pass_not_bound_yet' }, { status: 503 });
+    }
+    if (res.ok === false) {
+        console.error(LOG, `${type} not applied to a Pass:`, res.code, 'subscription', subscriptionId);
+    } else if (res.frozen) {
+        console.error(LOG, 'account Frozen on Pass dispute:', 'subscription', subscriptionId, 'user', res.user_id);
+    }
+    await markProcessed(cfg, SOURCE, eventId);
+    return NextResponse.json({ ok: true });
+}
+
+function occurredAt(eventCreated) {
+    return new Date(Number.isSafeInteger(eventCreated) && eventCreated > 0 ? eventCreated * 1000 : Date.now()).toISOString();
 }

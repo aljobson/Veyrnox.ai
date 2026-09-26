@@ -156,7 +156,7 @@ test('charge.refunded claws back the cumulative amount refunded', async () => {
 test('a live-mode event never reaches a test-key account, and unknown types are ignored', async () => {
     for (const event of [
         { ...sessionEvent('evt_live', checkoutMetadata), livemode: true },
-        { id: 'evt_other', type: 'invoice.paid', livemode: false, data: { object: {} } },
+        { id: 'evt_other', type: 'payment_intent.succeeded', livemode: false, data: { object: {} } },
     ]) {
         const calls = stubFetch(routes());
         const res = await stripeWebhook.POST(signed(event));

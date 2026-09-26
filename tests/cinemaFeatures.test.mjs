@@ -16,7 +16,7 @@ test('child switches cannot bypass profile, subscription or upload prerequisites
   env.CINEMA_ENABLED = 'true';
   assert.ok(Object.values(cinemaFeatures(env)).every(v => v === true));
   env.SOCIAL_CINEMA_PROFILES_ENABLED = 'false';
-  for (const key of ['profiles','creators','content','uploads','monetisation','voting','comments','ppv','premieres']) assert.equal(cinemaFeatures(env)[key], false);
+  for (const key of ['profiles','creators','content','uploads','unlocks','monetisation','voting','comments','ppv','premieres']) assert.equal(cinemaFeatures(env)[key], false);
   env.SOCIAL_CINEMA_PROFILES_ENABLED = 'true';
   env.CINEMA_SUBSCRIPTIONS_ENABLED = 'false';
   assert.equal(cinemaFeatures(env).monetisation, false);
