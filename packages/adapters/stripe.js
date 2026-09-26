@@ -232,3 +232,283 @@ export function interpretSession(session, opts) {
         order: { orderId, topUpId, paidCents, currency: String(session.currency || 'usd').toLowerCase(), paid: true },
     };
 }
+
+// ── Cinema Pass (ADR-0057 Phase 2) ──────────────────────────────────────────
+// Recurring Checkout Sessions for the viewing Pass. Same rules as the pack
+// checkout above: the price comes from our plan row, inline `price_data`
+// with a `recurring` interval so no Stripe Price object exists to drift, and
+// the pass id is signed into the session AND the subscription metadata so a
+// webhook can bind a subscription to the pending Pass it was opened for.
+
+const PASS_RETURN_PATH = '/social-cinema/pass';
+const SUBSCRIPTION_RE = /^sub_[A-Za-z0-9_]{1,250}$/;
+const CUSTOMER_RE = /^cus_[A-Za-z0-9_]{1,250}$/;
+const INVOICE_RE = /^in_[A-Za-z0-9_]{1,250}$/;
+const COUPON_RE = /^[A-Za-z0-9_-]{1,64}$/;
+const passMessage = (passId) => enc(`cinema_pass:${passId}`);
+
+/** Whether verified metadata carries our signature for its Pass id. */
+export async function verifyPassMetadata(metadata, secret) {
+    const passId = metadata && metadata.cinema_pass_id;
+    const sig = metadata && metadata.cinema_pass_sig;
+    if (!secret || typeof passId !== 'string' || !UUID_RE.test(passId) || typeof sig !== 'string' || !/^[0-9a-f]{64}$/.test(sig)) {
+        return false;
+    }
+    return (await hmacHex(passMessage(passId), secret)) === sig ? true : false;
+}
+
+async function stripePost(path, fields, cfg, idempotencyKey) {
+    let res;
+    try {
+        res = await cfg.fetch(`${STRIPE_API_BASE}${path}`, {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${cfg.apiKey}`,
+                'Content-Type': 'application/x-www-form-urlencoded',
+                ...(idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {}),
+            },
+            body: form(fields).toString(),
+        });
+    } catch (err) {
+        return { ok: false, error: `transport: ${err && err.message}` };
+    }
+    const data = await res.json().catch(() => null);
+    return { ok: res.ok, status: res.status, data };
+}
+
+async function stripeGet(path, cfg, expectObject) {
+    let res;
+    try {
+        res = await cfg.fetch(`${STRIPE_API_BASE}${path}`, { headers: { Authorization: `Bearer ${cfg.apiKey}` } });
+    } catch (err) {
+        return { ok: false, error: `transport: ${err && err.message}` };
+    }
+    const data = await res.json().catch(() => null);
+    if (!res.ok || !data || data.object !== expectObject) return { ok: false, error: `stripe ${res.status}` };
+    return { ok: true, data };
+}
+
+/**
+ * The once-only intro discount as a Stripe Coupon with a deterministic id, so
+ * a plan's intro price maps to exactly one coupon and a price change makes a
+ * new one. Creating an id that already exists is success.
+ */
+export async function ensureIntroCoupon({ couponId, amountOffCents, name }, cfg) {
+    if (!COUPON_RE.test(String(couponId))) return { ok: false, error: 'invalid couponId' };
+    if (!Number.isSafeInteger(amountOffCents) || amountOffCents <= 0 || amountOffCents > MAX_CENTS) return { ok: false, error: 'invalid amount' };
+    const r = await stripePost('/coupons', {
+        id: couponId, amount_off: amountOffCents, currency: 'usd', duration: 'once', name,
+    }, cfg, `coupon:${couponId}`);
+    if (r.ok === false && r.error) return r;
+    if (r.ok) return { ok: true, couponId };
+    if (r.status === 400 && r.data && r.data.error && r.data.error.code === 'resource_already_exists') return { ok: true, couponId };
+    console.error('[stripe] coupon create failed:', r.status, r.data && r.data.error && r.data.error.code);
+    return { ok: false, error: `stripe ${r.status}` };
+}
+
+/**
+ * Hosted recurring checkout for one pending Pass. Amount, interval and intro
+ * come from our row, never from the client.
+ *
+ * @param {object} input
+ * @param {string} input.passId
+ * @param {string} input.planId
+ * @param {'week'|'month'|'year'} input.interval
+ * @param {number} input.priceUsdCents
+ * @param {string} [input.introCouponId]  applies the once-only intro discount
+ * @param {string} [input.email]
+ * @param {number} [input.expiresAt]
+ * @param {object} cfg  as createCheckout
+ */
+export async function createPassCheckout(input, cfg) {
+    if (!UUID_RE.test(String(input.passId))) return { ok: false, error: 'invalid passId' };
+    if (!/^[a-z0-9-]{1,32}$/.test(String(input.planId))) return { ok: false, error: 'invalid planId' };
+    if (!['week', 'month', 'year'].includes(input.interval)) return { ok: false, error: 'invalid interval' };
+    if (!Number.isSafeInteger(input.priceUsdCents) || input.priceUsdCents <= 0 || input.priceUsdCents > MAX_CENTS) {
+        return { ok: false, error: 'invalid price' };
+    }
+    if (input.introCouponId !== undefined && !COUPON_RE.test(String(input.introCouponId))) return { ok: false, error: 'invalid coupon' };
+    let base;
+    try { base = new URL(cfg.publicHost); } catch { return { ok: false, error: 'invalid publicHost' }; }
+    if (base.protocol !== 'https:') return { ok: false, error: 'publicHost must be https' };
+
+    const sig = await hmacHex(passMessage(input.passId), cfg.signingSecret);
+    const ret = new URL(PASS_RETURN_PATH, base);
+    const label = { week: 'weekly', month: 'monthly', year: 'yearly' }[input.interval];
+    const r = await stripePost('/checkout/sessions', {
+        mode: 'subscription',
+        'line_items[0][quantity]': 1,
+        'line_items[0][price_data][currency]': 'usd',
+        'line_items[0][price_data][unit_amount]': input.priceUsdCents,
+        'line_items[0][price_data][recurring][interval]': input.interval,
+        'line_items[0][price_data][recurring][interval_count]': 1,
+        'line_items[0][price_data][product_data][name]': `Veyrnox Cinema Pass (${label})`,
+        'line_items[0][price_data][product_data][tax_code]': TAX_CODE,
+        'automatic_tax[enabled]': cfg.automaticTax === false ? 'false' : 'true',
+        client_reference_id: input.passId,
+        'metadata[cinema_pass_id]': input.passId,
+        'metadata[cinema_pass_sig]': sig,
+        // The subscription outlives the session; every later event names it.
+        'subscription_data[metadata][cinema_pass_id]': input.passId,
+        'subscription_data[metadata][cinema_pass_sig]': sig,
+        'subscription_data[description]': `Veyrnox Cinema Pass (${label})`,
+        ...(input.introCouponId ? { 'discounts[0][coupon]': input.introCouponId } : {}),
+        customer_email: input.email,
+        expires_at: input.expiresAt,
+        success_url: `${ret.toString()}?pass=${input.passId}&checkout=done&session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${ret.toString()}?pass=${input.passId}&checkout=cancelled`,
+    }, cfg, cfg.idempotencyKey);
+    if (r.ok === false && r.error) return r;
+    const data = r.data;
+    if (!r.ok || !data || typeof data.url !== 'string' || typeof data.id !== 'string') {
+        console.error('[stripe] pass checkout create failed:', r.status, data && data.error && data.error.code);
+        return { ok: false, error: `stripe ${r.status}` };
+    }
+    let checkoutUrl;
+    try { checkoutUrl = new URL(data.url); } catch { checkoutUrl = null; }
+    if (!checkoutUrl || checkoutUrl.protocol !== 'https:'
+        || !(checkoutUrl.hostname === 'stripe.com' || checkoutUrl.hostname.endsWith('.stripe.com'))) {
+        console.error('[stripe] pass checkout url not on stripe.com');
+        return { ok: false, error: 'checkout url not on stripe.com' };
+    }
+    return { ok: true, url: data.url, sessionId: data.id };
+}
+
+/** Re-read a Subscription: the webhook body is a pointer, not the truth. */
+export async function fetchSubscription(subscriptionId, cfg) {
+    if (!SUBSCRIPTION_RE.test(String(subscriptionId))) return { ok: false, error: 'invalid subscriptionId' };
+    const r = await stripeGet(`/subscriptions/${subscriptionId}`, cfg, 'subscription');
+    return r.ok ? { ok: true, subscription: r.data } : r;
+}
+
+/** Re-read an Invoice, to find the subscription a charge belongs to. */
+export async function fetchInvoice(invoiceId, cfg) {
+    if (!INVOICE_RE.test(String(invoiceId))) return { ok: false, error: 'invalid invoiceId' };
+    const r = await stripeGet(`/invoices/${invoiceId}`, cfg, 'invoice');
+    return r.ok ? { ok: true, invoice: r.data } : r;
+}
+
+const unix = (v) => (Number.isSafeInteger(v) && v > 0 ? new Date(v * 1000).toISOString() : null);
+
+/**
+ * Our shape for a Subscription. Statuses collapse to the four the database
+ * knows. Period bounds moved from the subscription to its items in Stripe's
+ * 2025-03 API version; both places are read.
+ *
+ * @returns {{ok:true, subscription:{id, customerId, status, periodStart, periodEnd, cancelAtPeriodEnd, latestInvoiceId, metadata}}|{ok:false, error:string}}
+ */
+export function interpretSubscription(sub, opts) {
+    if (!sub || sub.object !== 'subscription' || !SUBSCRIPTION_RE.test(String(sub.id))) return { ok: false, error: 'not a subscription' };
+    if (Boolean(sub.livemode) !== Boolean(opts.expectLiveMode)) return { ok: false, error: 'mode mismatch' };
+    const raw = String(sub.status || '');
+    const status = raw === 'active' || raw === 'trialing' ? 'active'
+        : raw === 'past_due' ? 'past_due'
+            : raw === 'incomplete' ? 'incomplete'
+                : ['canceled', 'unpaid', 'incomplete_expired', 'paused'].includes(raw) ? 'ended' : null;
+    if (!status) return { ok: false, error: `status ${raw}` };
+    const item = sub.items && sub.items.data && sub.items.data[0];
+    const customerId = typeof sub.customer === 'string' ? sub.customer : sub.customer && sub.customer.id;
+    const latestInvoiceId = typeof sub.latest_invoice === 'string' ? sub.latest_invoice : sub.latest_invoice && sub.latest_invoice.id;
+    return {
+        ok: true,
+        subscription: {
+            id: sub.id,
+            customerId: CUSTOMER_RE.test(String(customerId)) ? customerId : null,
+            status,
+            periodStart: unix(sub.current_period_start ?? (item && item.current_period_start)),
+            periodEnd: unix(sub.current_period_end ?? (item && item.current_period_end)),
+            cancelAtPeriodEnd: sub.cancel_at_period_end === true,
+            latestInvoiceId: INVOICE_RE.test(String(latestInvoiceId)) ? latestInvoiceId : null,
+            metadata: sub.metadata && typeof sub.metadata === 'object' ? sub.metadata : {},
+        },
+    };
+}
+
+/** The subscription an Invoice bills, from either API shape. */
+export function invoiceSubscriptionId(invoice) {
+    if (!invoice || invoice.object !== 'invoice') return null;
+    const direct = typeof invoice.subscription === 'string' ? invoice.subscription : invoice.subscription && invoice.subscription.id;
+    const nested = invoice.parent && invoice.parent.subscription_details && invoice.parent.subscription_details.subscription;
+    const id = direct || (typeof nested === 'string' ? nested : nested && nested.id);
+    return SUBSCRIPTION_RE.test(String(id)) ? id : null;
+}
+
+/** What an Invoice was paid with, for a cooling-off refund. */
+export function invoicePayment(invoice) {
+    if (!invoice || invoice.object !== 'invoice') return null;
+    const direct = typeof invoice.payment_intent === 'string' ? invoice.payment_intent : invoice.payment_intent && invoice.payment_intent.id;
+    const entry = invoice.payments && invoice.payments.data && invoice.payments.data[0];
+    const nested = entry && entry.payment && (typeof entry.payment.payment_intent === 'string'
+        ? entry.payment.payment_intent : entry.payment.payment_intent && entry.payment.payment_intent.id);
+    const paymentIntentId = direct || nested;
+    const paidCents = Number.isSafeInteger(invoice.amount_paid) ? invoice.amount_paid : null;
+    if (!/^pi_[A-Za-z0-9_]{1,250}$/.test(String(paymentIntentId)) || paidCents === null || paidCents < 0) return null;
+    return { paymentIntentId, paidCents };
+}
+
+/** Stop renewing at the period end; viewing continues until then. */
+export async function cancelSubscriptionAtPeriodEnd(subscriptionId, cfg) {
+    if (!SUBSCRIPTION_RE.test(String(subscriptionId))) return { ok: false, error: 'invalid subscriptionId' };
+    const r = await stripePost(`/subscriptions/${subscriptionId}`, { cancel_at_period_end: 'true' }, cfg);
+    if (r.ok === false && r.error) return r;
+    if (!r.ok || !r.data || r.data.object !== 'subscription') return { ok: false, error: `stripe ${r.status}` };
+    return { ok: true };
+}
+
+/** Cancel now (cooling-off). No proration invoice: the refund is made separately. */
+export async function cancelSubscriptionNow(subscriptionId, cfg) {
+    if (!SUBSCRIPTION_RE.test(String(subscriptionId))) return { ok: false, error: 'invalid subscriptionId' };
+    let res;
+    try {
+        res = await cfg.fetch(`${STRIPE_API_BASE}/subscriptions/${subscriptionId}`, {
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${cfg.apiKey}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: form({ prorate: 'false' }).toString(),
+        });
+    } catch (err) {
+        return { ok: false, error: `transport: ${err && err.message}` };
+    }
+    const data = await res.json().catch(() => null);
+    // A subscription already canceled is a 400 resource_missing-style refusal we treat as done.
+    if (!res.ok && !(res.status === 400 && data && data.error && /already been canceled/i.test(String(data.error.message || '')))) {
+        return { ok: false, error: `stripe ${res.status}` };
+    }
+    return { ok: true };
+}
+
+/** Refund part of a PaymentIntent; idempotent on the key the caller derives from the Pass. */
+export async function createRefund({ paymentIntentId, amountCents }, cfg, idempotencyKey) {
+    if (!/^pi_[A-Za-z0-9_]{1,250}$/.test(String(paymentIntentId))) return { ok: false, error: 'invalid paymentIntentId' };
+    if (!Number.isSafeInteger(amountCents) || amountCents <= 0 || amountCents > MAX_CENTS) return { ok: false, error: 'invalid amount' };
+    const r = await stripePost('/refunds', { payment_intent: paymentIntentId, amount: amountCents }, cfg, idempotencyKey);
+    if (r.ok === false && r.error) return r;
+    if (!r.ok || !r.data || r.data.object !== 'refund') {
+        console.error('[stripe] refund failed:', r.status, r.data && r.data.error && r.data.error.code);
+        return { ok: false, error: `stripe ${r.status}` };
+    }
+    return { ok: true, refundId: r.data.id };
+}
+
+/** A Customer Portal session for the Pass owner's own Stripe customer. */
+export async function createPortalSession({ customerId, returnPath = PASS_RETURN_PATH }, cfg) {
+    if (!CUSTOMER_RE.test(String(customerId))) return { ok: false, error: 'invalid customerId' };
+    let base;
+    try { base = new URL(cfg.publicHost); } catch { return { ok: false, error: 'invalid publicHost' }; }
+    if (base.protocol !== 'https:') return { ok: false, error: 'publicHost must be https' };
+    const r = await stripePost('/billing_portal/sessions', { customer: customerId, return_url: new URL(returnPath, base).toString() }, cfg);
+    if (r.ok === false && r.error) return r;
+    if (!r.ok || !r.data || typeof r.data.url !== 'string') return { ok: false, error: `stripe ${r.status}` };
+    let url;
+    try { url = new URL(r.data.url); } catch { url = null; }
+    if (!url || url.protocol !== 'https:' || !(url.hostname === 'stripe.com' || url.hostname.endsWith('.stripe.com'))) {
+        return { ok: false, error: 'portal url not on stripe.com' };
+    }
+    return { ok: true, url: r.data.url };
+}
+
+/** Re-read a Charge: a Dispute names its charge, and only the charge knows its invoice. */
+export async function fetchCharge(chargeId, cfg) {
+    if (!/^ch_[A-Za-z0-9_]{1,250}$/.test(String(chargeId))) return { ok: false, error: 'invalid chargeId' };
+    const r = await stripeGet(`/charges/${chargeId}`, cfg, 'charge');
+    return r.ok ? { ok: true, charge: r.data } : r;
+}

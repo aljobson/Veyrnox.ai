@@ -36,6 +36,8 @@ Tests: isolated Postgres replay of 0142; replay-returns-same-Unlock; concurrent 
 
 ## Phase 2 — Cinema Pass (migration 0143, switch `CINEMA_SUBSCRIPTIONS_ENABLED`)
 
+Status 2026-09-26: built on branch `claude/reelshort-app-subscription-66afe0` (PR #344) as described in ADR-0057 "Phase 2 as built". Differences from the sketch below: no `stripe_price_id` or `stripe_intro_coupon_id` columns (inline recurring `price_data` and a deterministic coupon id instead); statuses are `pending|active|past_due|ended|flagged`; `cinema_pass_events` dedupes on the Stripe event id or the checkout session id; the cooling-off refund is issued by the cancel route, not a webhook. Verified by `scripts/test-cinema-passes.mjs` (wired into `ledger-tests.yml`), `tests/cinemaPassApi.test.mjs`, `tests/stripePass.test.mjs` and `tests/stripePassWebhook.test.mjs`.
+
 Schema:
 
 - `cinema_pass_plans(id, interval CHECK weekly|monthly|yearly, price_usd_cents, intro_price_usd_cents NULL, stripe_price_id, stripe_intro_coupon_id NULL, active)` seeded `weekly 1499 / intro 1199`, `monthly 4999`, `yearly 19999`. Sticker CHECK: `price_usd_cents >= 999`.
