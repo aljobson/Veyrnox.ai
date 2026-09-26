@@ -151,6 +151,15 @@ with no change to the ledger, the job state machine or the refund rules.
    gateway routes requests whose `cf-ipcountry` is `US` away from BytePlus rows (they see
    the fal or kie twin, or a 451 if none).
 
+Decision 9 is enforced by the generation gateway: an active BytePlus row requested
+with Cloudflare's `cf-ipcountry: US` returns HTTP 451 (`model_region_unavailable`)
+before user lookup, ledger debit, job creation or provider submission. The caller
+chooses another model; the gateway does not silently change providers or prices.
+Other countries and absent/unknown country headers retain the existing behavior.
+Inactive rows still return 404. `tests/byteplusRegionGuard.test.mjs` exercises the
+route with mocked network calls, including successful non-US and other-provider
+submissions. This guard does not satisfy the remaining activation requirements.
+
 ### What is not decided here
 
 - Retiring the OpenRouter Seedance 2.0 Fast row. It stays as the fallback until the
