@@ -41,7 +41,7 @@ credential rotation rule and the 72-hour ICO clock. Incident notes live under
 | Record | `account_actions`, append-only (trigger `account_actions_no_update`), actions `warning`, `takedown`, `freeze`, `unfreeze`, `dispute_resolved`; `job_id` column links a strike to the exact generation; `actor` is the admin's email; `reason` is required. Migration 0146. |
 | Write path | `record_content_violation(p_auth_id, p_user_id, p_job_id, p_tier, p_reason)` RPC. Checks `users.is_admin` itself. A takedown deletes the job's `assets` rows and queues their R2 keys for the reaper, so the content stops being served in the same transaction. The third takedown calls `freeze_account` with reason `content:third_takedown`. |
 | Read path | `list_content_violations(p_auth_id, p_user_id, p_limit)` RPC, newest first, with the user's email and the job's model. |
-| Operator surface | `POST` and `GET /api/v1/admin/violations` (`app/api/v1/admin/violations/route.js`), behind middleware identity, the `ADMIN_REQUIRE_AAL2` second-factor flag and the RPC's admin check. |
+| Operator surface | `/app/admin/violations` (`app/veyrnox/app/admin/violations/page.js`): look a user up by email, user id or job id, see standing and the last 25 generations, record a warning or a per-job takedown with a required reason and a freeze notice on the third strike, and read the record. It drives `GET /api/v1/admin/users/lookup` (`admin_lookup_user`, migration 0148) and `POST` and `GET /api/v1/admin/violations` (`app/api/v1/admin/violations/route.js`), all behind middleware identity, the `ADMIN_REQUIRE_AAL2` second-factor flag and each RPC's own admin check. |
 | Traceability | Every job row keeps `inputs`, `provider`, `provider_job_id`, `model_id` and timestamps; every asset keeps its R2 key and SHA-256 (`job_stored`); every provider callback is in `webhook_events`. A strike therefore points at the prompt, the provider task and the bytes. |
 | Way back | `unfreeze_account(p_user_id, p_operator, p_reason)`, also logged. |
 
@@ -68,6 +68,5 @@ Article 50 direction).
 
 - An email to the user on a warning or takedown. The record exists; the notice is not
   automated yet.
-- An admin UI for violations. The API and the runbook's curl are the operator surface today.
 - BytePlus's written answers on the US exclusion and on our platform status
   (ADR-0058 "Before activating any row", items 2 and 3).
