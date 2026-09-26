@@ -16,7 +16,9 @@ const request=(actor,content,id,key=randomUUID())=>val('SELECT public.request_ci
 const claim=(key,client=c)=>client.query('SELECT public.claim_cinema_upload_removals($1) AS value',[key]).then(r=>r.rows[0].value.items);
 const finish=(id,key)=>val('SELECT public.finish_cinema_upload_removal($1,$2) AS value',[id,key]);
 try {
- const migration=await readFile(new URL('../packages/db/schema/supabase/0139_cinema_upload_removal.sql',import.meta.url),'utf8');await c.query(migration);await c.query(migration);
+ // Applying 0139 twice proves it is idempotent. Roll it back so the assertions exercise what a
+ // full replay leaves behind, even once a later migration redefines these functions.
+ const migration=await readFile(new URL('../packages/db/schema/supabase/0139_cinema_upload_removal.sql',import.meta.url),'utf8');await q('BEGIN');await c.query(migration);await c.query(migration);await q('ROLLBACK');
  for(const actor of actors){await q('INSERT INTO auth.users(id,email,email_confirmed_at) VALUES($1,$2,now())',[actor,`${actor}@example.invalid`]);await val('SELECT public.create_cinema_profile($1,$2,$3) AS value',[actor,randomUUID(),{username:`r_${actor.replaceAll('-','').slice(0,20)}`,display_name:'Removal test'}]);users.push(await val('SELECT id AS value FROM public.users WHERE auth_id=$1',[actor]));await q("UPDATE public.cinema_memberships SET role='creator' WHERE user_id=$1",[users.at(-1)]);}
  const balances=await q('SELECT * FROM public.credit_balances ORDER BY user_id');
  const content=await draft(actors[0]),startKey=randomUUID(),row=await reserve(actors[0],content.id,startKey),uid=randomUUID().replaceAll('-','');
