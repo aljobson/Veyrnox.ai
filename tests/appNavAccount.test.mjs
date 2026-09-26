@@ -133,8 +133,10 @@ test('the whole nav still fits a phone', () => {
     assert.match(signedIn, /flex flex-col gap-px/, 'the two figures stack');
     assert.match(appNav, /\$\{account \? 'hidden sm:flex' : 'flex'\}/,
         'the mark yields to the account block below sm, and only then');
-    assert.match(appNav, /className="flex gap-0\.5 sm:gap-1 text-\[12px\] sm:text-sm font-semibold"/,
+    assert.match(appNav, /className="flex [^"]*gap-0\.5 sm:gap-1 text-\[12px\] sm:text-sm font-semibold"/,
         'the tabs stay compact below sm');
+    assert.match(appNav, /<nav[^>]*min-w-0 overflow-x-auto/,
+        'preview tabs can scroll without pushing account controls off a phone');
 });
 
 // One asset is not "1 assets". Run the component's own two lines rather

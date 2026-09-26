@@ -1,0 +1,113 @@
+{
+  "version": 1,
+  "project": {
+    "name": "Veyrnox.ai",
+    "productType": "Credit-metered AI creation studio",
+    "stack": [
+      "nextjs",
+      "react",
+      "tailwind-v3"
+    ]
+  },
+  "sources": {
+    "tokens": [
+      "app/globals.css"
+    ],
+    "components": [
+      "app/veyrnox/_components"
+    ],
+    "assets": [],
+    "instructions": [
+      "CLAUDE.md"
+    ]
+  },
+  "design": {
+    "colorMode": "dark",
+    "colors": {
+      "--vx-base": {
+        "value": "10 10 11",
+        "source": "app/globals.css (:root; light overrides supported)"
+      },
+      "--vx-panel": {
+        "value": "20 20 22",
+        "source": "app/globals.css (:root; light overrides supported)"
+      },
+      "--vx-border": {
+        "value": "38 38 42",
+        "source": "app/globals.css (:root; light overrides supported)"
+      },
+      "--vx-fg": {
+        "value": "242 242 243",
+        "source": "app/globals.css (:root; light overrides supported)"
+      },
+      "--vx-fg-muted": {
+        "value": "154 154 163",
+        "source": "app/globals.css (:root; light overrides supported)"
+      },
+      "--vx-accent": {
+        "value": "62 230 196",
+        "source": "app/globals.css (:root; light overrides supported)"
+      },
+      "--vx-money": {
+        "value": "228 169 60",
+        "source": "app/globals.css (:root; light overrides supported)"
+      }
+    },
+    "typography": {},
+    "spacing": {},
+    "radius": {},
+    "shadows": {},
+    "motion": {},
+    "density": "compact"
+  },
+  "components": {
+    "installed": [
+      "Button",
+      "Modal",
+      "AppNav",
+      "Chip"
+    ],
+    "preferredPrimitives": [
+      "Button",
+      "Modal",
+      "AppNav"
+    ],
+    "patterns": []
+  },
+  "constraints": {
+    "must": [
+      "Reuse vx colour tokens with dark and light themes",
+      "Keep new project screens behind the browser preview flag",
+      "Use the authenticated gateway for tenant operations"
+    ],
+    "avoid": [
+      "New UI dependencies for existing primitives",
+      "Decorative gradients",
+      "Amber accents unrelated to money"
+    ]
+  },
+  "decisions": [],
+  "evidence": [
+    {
+      "fact": "design.tokens",
+      "source": "app/globals.css"
+    },
+    {
+      "fact": "project.instructions",
+      "source": "CLAUDE.md"
+    },
+    {
+      "fact": "project.stack:nextjs",
+      "source": "package.json"
+    },
+    {
+      "fact": "project.stack:react",
+      "source": "package.json"
+    },
+    {
+      "fact": "project.stack:tailwind-v3",
+      "source": "package.json"
+    }
+  ],
+  "generatedAt": "2026-09-25T13:50:43.769Z"
+}
