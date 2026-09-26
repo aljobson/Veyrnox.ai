@@ -89,3 +89,15 @@ _Avoid_: View, stream, session
 **Unlock Reversal**:
 Returning the credits of an Episode Unlock because the content was taken down. No money moves.
 _Avoid_: Refund (on its own), chargeback
+
+**Content Warning**:
+An admin's recorded notice to a user that a generation breached the Acceptable Use Policy, with nothing removed. The first tier of violation handling.
+_Avoid_: Strike (on its own), flag, report
+
+**Takedown**:
+An admin removing a generation's assets for an Acceptable Use breach, recorded against the job. The third Takedown on an account Freezes it.
+_Avoid_: Delete, moderation action, ban
+
+**Rights Attestation**:
+A user's recorded statement, made when sending an upload, that they own it or have the consent of everyone identifiable in it. Kept per job and once per account with the wording version.
+_Avoid_: Consent form, waiver, terms acceptance

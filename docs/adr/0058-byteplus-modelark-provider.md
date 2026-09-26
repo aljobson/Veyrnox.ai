@@ -220,6 +220,31 @@ Two corrections to the decision text above, found while building:
   (migration 0096). The control exists per job; what remains is the user-level attestation
   text and its link from the upload UI.
 
+## Compliance controls built (2026-09-26)
+
+Decision 7's four controls now have homes, mapped in
+`docs/compliance/platform-customer-controls.md`:
+
+1. *Identity verification*: stated as our standard (confirmed email, Turnstile, Google or
+   Apple, Stripe Checkout with dispute Freeze, rate limits). No code change; the
+   standard is what BytePlus is asked to accept in activation item 3.
+2. *Incident response*: `docs/agents/incident-response.md`.
+3. *Tiered violation handling*: migration 0146 adds `warning` and `takedown` to the
+   append-only `account_actions` log with a `job_id` trace; `record_content_violation`
+   (admin-checked) removes a taken-down job's assets in the same transaction and Freezes
+   on the third takedown through `freeze_account`; `list_content_violations` is the
+   auditor's read; `/api/v1/admin/violations` is the operator surface behind the same
+   three gates as the metrics route.
+4. *Rights in uploads*: the gateway now also records the consent statement once at
+   account level with its wording version (`attest_upload_rights`,
+   `users.rights_attested_at`, `RIGHTS_ATTESTATION_VERSION`), `/api/v1/account` exposes
+   it, and the create page wording names real-person likeness and voice and third-party
+   rights explicitly.
+
+Decision 8's label: every library asset card shows "AI generated". Glossary terms
+Content Warning, Takedown and Rights Attestation are in `CONTEXT.md`. Still open: the
+user-facing email on a warning or takedown, and an admin UI over the violations API.
+
 ## Before activating any row
 
 1. Enterprise account verified, corporate tax ID on file, `BYTEPLUS_API_KEY` set.
