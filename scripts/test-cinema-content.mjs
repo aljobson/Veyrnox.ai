@@ -15,7 +15,7 @@ const list=(actor,parent=null)=>value('SELECT public.list_own_cinema_content($1,
 const role=(actor,r)=>q('UPDATE public.cinema_memberships SET role=$2 WHERE user_id=(SELECT id FROM public.users WHERE auth_id=$1)',[actor,r]);
 async function race(tasks) { return Promise.all(tasks.map(async task=>{ const peer=new pg.Client({connectionString:url});await peer.connect();try{return await task(peer);}finally{await peer.end();} })); }
 try {
-  const migration=await readFile(new URL('../packages/db/schema/supabase/0134_cinema_content_drafts.sql',import.meta.url),'utf8');await c.query(migration);await c.query(migration);
+  const migration=await readFile(new URL('../packages/db/schema/supabase/0134_cinema_content_drafts.sql',import.meta.url),'utf8');await c.query('BEGIN');await c.query(migration);await c.query(migration);await c.query('ROLLBACK'); // idempotency proof, rolled back so later migrations' function bodies stay in force
   for(const actor of actors) {
     await q('INSERT INTO auth.users(id,email,email_confirmed_at) VALUES($1,$2,now())',[actor,`${actor}@example.invalid`]);
     await value('SELECT public.create_cinema_profile($1,$2,$3) AS value',[actor,randomUUID(),{username:`d_${actor.replaceAll('-','').slice(0,20)}`,display_name:'Draft author'}]);
