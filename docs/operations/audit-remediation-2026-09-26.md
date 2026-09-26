@@ -90,3 +90,23 @@ returns 401/no-store; all three admin route families redirect to the Access
 team domain. No production deployment, flags or cron activation, R2 provisioning,
 paid upload or authenticated operator acceptance is claimed. Cleanup remains
 inactive until staging R2 credentials and a cron are configured.
+
+## Cinema activation — 2026-09-26
+
+After owner approval, local integration branch `codex/staging-cinema-validation`
+combined PR #357 with PR #352 (resolved only the staging rate-limiter/cron
+configuration overlap). Source `41744d6` deploys as staging Worker version
+`cdd6fd77-febf-4b21-afc1-6fb63c93fbdf`. The seven flags from #352 and
+`*/5 * * * *` cron are active on staging; production is untouched. The
+Next/OpenNext bundle is unchanged from the verified audit deployment.
+
+The existing support account completed Google OAuth successfully, and Cloudflare
+Access authenticated the operator through its configured Cloudflare identity.
+The admin Cinema page displays the signed-in account and correctly requires
+a fresh authenticator check. No authenticator is enrolled, so the owner must
+complete credential setup directly before administrator acceptance and creator
+approval. No role was granted and no upload or billable test was started.
+
+The creator UI additionally requires the browser-local
+`veyrnox_social_cinema` preview preference. Public viewing, publishing, purchases
+and monetisation remain off. R2 project-asset cleanup remains unconfigured.
