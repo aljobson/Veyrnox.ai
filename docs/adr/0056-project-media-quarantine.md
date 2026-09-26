@@ -115,3 +115,27 @@ record, no persisted inspection verdict, and no duration or dimension ceiling an
   differ from the masters' rather than sharing them.
 - Duration and dimension ceilings have no precedent in the codebase to inherit. They are a product
   limit, not a security one, and the first values will be a guess until there is usage to read.
+
+## Audit remediation — 2026-09-26
+
+Migration 0151 bounds each organisation to 1 GiB of reserved bytes, 200 stored
+objects and 20 pending uploads. The database serializes reservations across the
+organisation; direct RPC callers receive the same limits. Pending and rejected
+objects continue consuming quota until confirmed storage deletion.
+
+Inspection permits ten requests per actor per minute, after checking the live
+project role and asset. Storage reads have an eight-second per-range deadline,
+a twenty-second inspection deadline, an enforced byte ceiling and exact 206
+Content-Range validation. Missing image dimensions fail inspection. Inspection
+validates media headers and limits; it is not a full decode or a malware verdict.
+
+Upload signatures cannot be renewed beyond the original fifteen-minute window.
+When project APIs and storage are configured, the Worker cron claims at most twenty
+quarantined/rejected assets older than 24 hours. Abandoned quarantine becomes a
+recorded rejection before deletion. A five-minute claim lease allows retries;
+only the current claimant can mark confirmed deletion and release quota. Inspected
+masters remain retained. Audit records and asset identities are preserved.
+
+Apply 0151 before deploying the new inspection API. Production migration remains
+subject to ADR-0023; this change does not activate production projects or provision
+storage. Staging still needs its own R2 credentials before project-media tests.

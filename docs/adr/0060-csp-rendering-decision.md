@@ -87,3 +87,10 @@ script unsafe-inline risk. Do not auto-close #4 from an incomplete preview.
   rendered; no console errors were observed during the navigation checks.
 - No successful account login, CAPTCHA, OAuth return, authenticated generation
   or Stripe return was performed. Those proof requirements remain outstanding.
+
+### Staging identity isolation — 2026-09-26
+
+The shared CSP chooses the Supabase origin from the application's environment.
+Staging must permit only its staging identity origin, not the production origin;
+otherwise the browser blocks login, MFA and refresh. The nonce policy and API
+policy share this selection. No wildcard Supabase origin is permitted.

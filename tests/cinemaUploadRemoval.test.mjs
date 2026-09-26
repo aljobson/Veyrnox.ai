@@ -10,7 +10,7 @@ const req=(body={content_id:id,upload_id:id},headers={})=>new Request('https://t
 test('DELETE is fixed-origin, bounded, redirect-denying and requires affirmative success',async()=>{
  let request;
  assert.deepEqual(await deleteStreamVideo(uid,cfg,async(url,init)=>{request={url,init};return new Response(null,{status:204});}),{ok:true});
- assert.equal(request.url,`https://api.cloudflare.com/client/v4/accounts/${cfg.account}/stream/${uid}`);assert.equal(request.init.method,'DELETE');assert.equal(request.init.redirect,'error');assert.ok(request.init.signal);
+ assert.equal(request.url,`https://api.cloudflare.com/client/v4/accounts/${cfg.account}/stream/${uid}`);assert.equal(request.init.method,'DELETE');assert.equal(request.init.redirect,'manual');assert.ok(request.init.signal);
  assert.deepEqual(await deleteStreamVideo(uid,cfg,async()=>Response.json({success:true,errors:[]})),{ok:true});
  assert.deepEqual(await deleteStreamVideo(uid,cfg,async()=>new Response(null,{status:200})),{ok:true});
  for(const response of [new Response(null,{status:404}),new Response(null,{status:401}),Response.json({success:false,errors:[]}),Response.json({success:true,errors:[{code:1}]}),new Response('x'.repeat(66000)),new Response(null,{status:202})])await assert.rejects(deleteStreamVideo(uid,cfg,async()=>response));

@@ -20,12 +20,12 @@ function Catalogue() {
   const load = async (before, slug = category) => {
     try {
       const params = new URLSearchParams();
-      if (before) params.set('before', before);
+      if (before) { params.set('before', before.at); params.set('before_id', before.id); }
       if (slug) params.set('category', slug);
       const r = await fetch(`/api/cinema/titles${params.size ? `?${params}` : ''}`);
       if (!r.ok) { setState(r.status === 503 ? 'closed' : 'error'); return; }
       const data = await r.json();
-      setTitles((prev) => (before && prev ? [...prev, ...data.titles] : data.titles)); setNext(data.next); setCategories(data.categories || []); setState('ready');
+      setTitles((prev) => (before && prev ? [...prev, ...data.titles] : data.titles)); setNext(data.next && data.next_id ? { at: data.next, id: data.next_id } : null); setCategories(data.categories || []); setState('ready');
     } catch { setState('error'); }
   };
   useEffect(() => { load(null); }, []); // eslint-disable-line react-hooks/exhaustive-deps

@@ -7,7 +7,7 @@ import { contentSecurityPolicy } from './lib/contentSecurityPolicy.mjs';
 // All HTML uses middleware's fresh nonce policy (ADR-0060). API responses
 // keep a static restrictive policy without allowing inline scripts.
 const isDev = process.env.NODE_ENV === 'development';
-const CSP = contentSecurityPolicy(undefined, isDev);
+const CSP = contentSecurityPolicy(undefined, isDev, identityConfig.appEnv);
 
 const securityHeaders = [
   { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
