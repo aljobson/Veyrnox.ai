@@ -110,3 +110,19 @@ approval. No role was granted and no upload or billable test was started.
 The creator UI additionally requires the browser-local
 `veyrnox_social_cinema` preview preference. Public viewing, publishing, purchases
 and monetisation remain off. R2 project-asset cleanup remains unconfigured.
+
+## Staging approver provisioning — 2026-09-26
+
+The owner completed authenticator enrolment and authorized proceeding after the
+missing Cinema administrator role was identified. Applied the scoped operational
+data migration `staging-cinema-approver-2026-09-26.sql` only to staging project
+`yrqzwqywxfesmbvhzjgj`, after a successful transaction rolled back for validation.
+The script checks the exact staging user/auth IDs and a verified TOTP factor,
+locks the user, rejects incompatible or inactive memberships, and asserts one
+affected membership. It is deliberately outside the shared schema runner.
+
+Readback confirms `support@veyrnox.com` has an active Cinema administrator
+membership. No public profile or creator role was created. MFA and Access remain
+required. The browser now requests a fresh authenticator code because the
+five-minute verification window has expired; successful queue access and creator
+upload tests remain pending. Production and unrelated projects were untouched.
