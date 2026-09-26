@@ -3,7 +3,7 @@ import { select, envConfig } from '../../packages/db/supabase-client.js';
 import { capabilityFor } from '../../lib/modelCapabilities.js';
 import { SITE_URL, JsonLd } from '../seo';
 import { PromoStrip, WideNav, FeaturedHeroCards, SignupIncentive } from './_sections/hero';
-import { ProductTilesRow, HeroStatement, EffectsWall, ModelShelf } from './_sections/showcase';
+import { ProductTilesRow, HeroStatement, PresetWall, ModelShelf } from './_sections/showcase';
 import { WhyVeyrnox, FeatureStripsSection, FAQBlock, ClosingCTA, FooterForest } from './_sections/footer';
 
 // FAQPage built from the same FAQ constant the page renders, so the markup
@@ -71,7 +71,7 @@ export default async function VeyrnoxLanding() {
       <SignupIncentive />
       <ProductTilesRow modelCount={catalog.length} catalog={catalog} />
       <HeroStatement />
-      <EffectsWall />
+      <PresetWall catalog={catalog} />
       <ModelShelf catalog={catalog} />
       <WhyVeyrnox />
       <FeatureStripsSection />

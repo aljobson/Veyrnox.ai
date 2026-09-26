@@ -1,5 +1,4 @@
-// Landing-page showcase clips, keyed by FEATURE_CARDS `key` or EFFECT_PRESETS
-// `name`. The manifest is the only place a clip is named, so a tile with no
+// Landing-page showcase clips, keyed by FEATURE_CARDS `key` or PRESETS `id`. The manifest is the only place a clip is named, so a tile with no
 // entry keeps its gradient and makes no media request at all.
 //
 // Clips are generated on Veyrnox itself. Shot list and encode settings:

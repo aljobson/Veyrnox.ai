@@ -3,9 +3,11 @@ import { useState } from 'react';
 import { MobileTabs } from '../_MobileNav';
 import { PresetCard } from '../../_components/PresetCard';
 import { PRESETS, PRESET_CATEGORIES } from '../../_lib/tokens';
+import { useCatalog } from '../../_lib/useCatalog';
 
 export default function MobileExplore() {
   const [cat, setCat] = useState('ALL');
+  const { models } = useCatalog();
   const list = cat === 'ALL' ? PRESETS : PRESETS.filter((p) => p.category === cat);
 
   return (
@@ -34,7 +36,7 @@ export default function MobileExplore() {
         </div>
 
         <div className="grid grid-cols-2 gap-2.5">
-          {list.map((p) => <PresetCard key={p.id} preset={p} size="sm" />)}
+          {list.map((p) => <PresetCard key={p.id} preset={p} catalog={models} size="sm" />)}
         </div>
       </div>
       <MobileTabs />

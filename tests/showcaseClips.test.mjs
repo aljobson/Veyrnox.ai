@@ -10,10 +10,10 @@ import { existsSync, mkdirSync, mkdtempSync, rmSync, statSync, writeFileSync } f
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { SHOWCASE_CLIPS, MAX_CLIP_BYTES } from '../app/veyrnox/_lib/showcase.js';
-import { FEATURE_CARDS, EFFECT_PRESETS } from '../app/veyrnox/_lib/tokens.js';
+import { FEATURE_CARDS, PRESETS } from '../app/veyrnox/_lib/tokens.js';
 
 const PUBLIC = new URL('../public', import.meta.url).pathname;
-const TILE_KEYS = new Set([...FEATURE_CARDS.map((f) => f.key), ...EFFECT_PRESETS.map((e) => e.name)]);
+const TILE_KEYS = new Set([...FEATURE_CARDS.map((f) => f.key), ...PRESETS.map((p) => p.id)]);
 const PATH_RE = {
     video: /^\/showcase\/[a-z0-9-]+\.(mp4|webm)$/,
     poster: /^\/showcase\/[a-z0-9-]+\.(jpg|webp)$/,
@@ -23,7 +23,7 @@ const PATH_RE = {
 function problems(manifest, { tileKeys, publicDir, maxBytes }) {
     const found = [];
     for (const [key, clip] of Object.entries(manifest)) {
-        if (!tileKeys.has(key)) found.push(`"${key}" matches no FEATURE_CARDS key or EFFECT_PRESETS name`);
+        if (!tileKeys.has(key)) found.push(`"${key}" matches no FEATURE_CARDS key or PRESETS id`);
         for (const field of ['video', 'poster']) {
             const src = clip[field];
             if (field === 'poster' && src === undefined) continue;
@@ -49,17 +49,17 @@ test('the validator rejects an unknown tile, an off-path clip and a missing file
         {
             'no-such-tile': { video: '/showcase/x.mp4' },
             'wan-2.5-kie': { video: 'https://cdn.example.com/x.mp4' },
-            INCLINE: { video: '/showcase/does-not-exist.mp4', poster: '/showcase/does-not-exist.jpg' },
+            'cctv-night': { video: '/showcase/does-not-exist.mp4', poster: '/showcase/does-not-exist.jpg' },
         },
         opts,
     );
     assert.ok(bad.some((p) => p.includes('no-such-tile')), 'unknown tile not caught');
     assert.ok(bad.some((p) => p.includes('wan-2.5-kie.video must be')), 'off-origin path not caught');
-    const swapped = problems({ INCLINE: { video: '/showcase/a.jpg', poster: '/showcase/a.mp4' } }, opts);
-    assert.ok(swapped.some((p) => p.includes('INCLINE.video must be')), 'image used as video not caught');
-    assert.ok(swapped.some((p) => p.includes('INCLINE.poster must be')), 'video used as poster not caught');
-    assert.ok(bad.some((p) => p.includes('INCLINE.video points at')), 'missing file not caught');
-    assert.ok(bad.some((p) => p.includes('INCLINE.poster points at')), 'missing poster not caught');
+    const swapped = problems({ 'cctv-night': { video: '/showcase/a.jpg', poster: '/showcase/a.mp4' } }, opts);
+    assert.ok(swapped.some((p) => p.includes('cctv-night.video must be')), 'image used as video not caught');
+    assert.ok(swapped.some((p) => p.includes('cctv-night.poster must be')), 'video used as poster not caught');
+    assert.ok(bad.some((p) => p.includes('cctv-night.video points at')), 'missing file not caught');
+    assert.ok(bad.some((p) => p.includes('cctv-night.poster points at')), 'missing poster not caught');
 });
 
 test('the validator rejects a clip over the size cap and accepts one under it', () => {
@@ -67,7 +67,7 @@ test('the validator rejects a clip over the size cap and accepts one under it', 
     try {
         mkdirSync(join(dir, 'showcase'));
         writeFileSync(join(dir, 'showcase', 'big.mp4'), Buffer.alloc(2048));
-        const manifest = { INCLINE: { video: '/showcase/big.mp4' } };
+        const manifest = { 'cctv-night': { video: '/showcase/big.mp4' } };
         const over = problems(manifest, { ...opts, publicDir: dir, maxBytes: 1024 });
         assert.ok(over.some((p) => p.includes('exceeds 1024 bytes')), `oversize not caught: ${over}`);
         assert.deepEqual(problems(manifest, { ...opts, publicDir: dir, maxBytes: 4096 }), []);

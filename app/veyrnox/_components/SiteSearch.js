@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { FAQ, PRESETS, MODELS as MODELS_FALLBACK, SITE_PAGES, isShelfModel } from '../_lib/tokens';
+import { FAQ, PRESETS, MODELS as MODELS_FALLBACK, SITE_PAGES, isShelfModel, presetCredits } from '../_lib/tokens';
 import { searchIndex, MIN_QUERY } from '../_lib/searchIndex';
 
 // Site-wide search. Everything this site contains is either a route, a
@@ -10,7 +10,7 @@ import { searchIndex, MIN_QUERY } from '../_lib/searchIndex';
 // this is a client-side index, not a search service. Models come from the
 // live catalog on first open and fall back to tokens.js.
 
-function staticIndex() {
+function staticIndex(models) {
   return [
     ...SITE_PAGES.map((p) => ({
       group: 'Pages',
@@ -21,7 +21,7 @@ function staticIndex() {
     ...PRESETS.map((p) => ({
       group: 'Presets',
       title: p.name,
-      detail: `${p.category} · ${p.model} · ${p.credits} cr`,
+      detail: `${p.category} · ${p.model} · ${presetCredits(p, models)} cr`,
       href: '/presets',
     })),
     ...FAQ.map((f) => ({
@@ -108,7 +108,7 @@ function SearchOverlay({ onClose }) {
   }, []);
 
   const index = useMemo(
-    () => [...staticIndex(), ...modelsToIndex(models || MODELS_FALLBACK)],
+    () => [...staticIndex(models || MODELS_FALLBACK), ...modelsToIndex(models || MODELS_FALLBACK)],
     [models],
   );
   const results = useMemo(() => searchIndex(index, query), [index, query]);

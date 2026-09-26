@@ -4,9 +4,11 @@ import { AppNav } from '../_components/NavBar';
 import { Chip } from '../_components/Chip';
 import { PresetCard } from '../_components/PresetCard';
 import { PRESETS, PRESET_CATEGORIES } from '../_lib/tokens';
+import { useCatalog } from '../_lib/useCatalog';
 
 export default function Explore() {
   const [cat, setCat] = useState('ALL');
+  const { models } = useCatalog();
   const list = cat === 'ALL' ? PRESETS : PRESETS.filter((p) => p.category === cat);
 
   return (
@@ -53,7 +55,7 @@ export default function Explore() {
 
       <section className="max-w-[1400px] mx-auto px-4 sm:px-8 pb-16">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          {list.map((p) => <PresetCard key={p.id} preset={p} size="md" />)}
+          {list.map((p) => <PresetCard key={p.id} preset={p} catalog={models} size="md" />)}
         </div>
       </section>
     </div>

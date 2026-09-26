@@ -4,10 +4,12 @@ import { MarketingNav } from '../_components/NavBar';
 import { Chip } from '../_components/Chip';
 import { PresetCard } from '../_components/PresetCard';
 import { PRESETS, PRESET_CATEGORIES } from '../_lib/tokens';
+import { useCatalog } from '../_lib/useCatalog';
 
 // Public preset gallery — cached demos, no card, no cost.
 export default function Gallery() {
   const [cat, setCat] = useState('ALL');
+  const { models } = useCatalog();
   const list = cat === 'ALL' ? PRESETS : PRESETS.filter((p) => p.category === cat);
 
   return (
@@ -52,7 +54,7 @@ export default function Gallery() {
       <section className="max-w-[1200px] mx-auto px-4 sm:px-10 pb-24">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {list.map((p) => (
-            <PresetCard key={p.id} preset={p} size="lg" />
+            <PresetCard key={p.id} preset={p} catalog={models} size="lg" />
           ))}
         </div>
       </section>

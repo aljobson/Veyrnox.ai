@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { MODELS, PRESETS, modelIdForName } from '../app/veyrnox/_lib/tokens.js';
+import { MODELS, PRESETS, modelIdForName, presetHref } from '../app/veyrnox/_lib/tokens.js';
 
 test('every preset names a model that still exists in the catalog list', () => {
     // A drifted name makes the card link without a model — not broken, but it
@@ -36,7 +36,12 @@ test('the preset card navigates rather than being an inert button', () => {
     // replaced, and matching that would fail on the explanation, not the code.
     const src = raw.split('\n').filter((l) => !l.trim().startsWith('//')).join('\n');
     assert.match(src, /<Link/, 'must render a Link');
-    assert.match(src, /\/app\/create\?model=/, 'must carry the model Create reads on mount');
+    // The link is built by presetHref (shared with the landing wall), which is
+    // what carries the model Create reads on mount; the assertion after it
+    // checks the link it produces, so this stays a guarantee, not a grep.
+    assert.match(src, /presetHref\(preset\)/, 'must build its link through presetHref');
+    const withModel = PRESETS.find((p) => modelIdForName(p.model));
+    assert.match(presetHref(withModel), /^\/app\/create\?model=/, 'the link must carry the model Create reads on mount');
     assert.ok(!/<button[\s>]/.test(src), 'must not go back to a button every caller forgets to wire');
 });
 

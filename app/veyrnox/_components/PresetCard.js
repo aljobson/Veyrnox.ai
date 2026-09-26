@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Chip } from './Chip';
-import { modelIdForName } from '../_lib/tokens.js';
+import { presetHref, presetCredits } from '../_lib/tokens.js';
 
 // Preset card: thumbnail carries color, monochrome chrome around it.
 //
@@ -9,7 +9,7 @@ import { modelIdForName } from '../_lib/tokens.js';
 // Explore tab was focusable, cursor-pointer, hover-scaling — and completely
 // inert, while the landing page sent people here with "Browse presets free".
 // An onClick is still honoured for callers that want to intercept.
-export function PresetCard({ preset, size = 'md', onClick }) {
+export function PresetCard({ preset, size = 'md', onClick, catalog }) {
   const sizes = {
     sm: { h: 'h-40', title: 'text-sm', tag: 'text-[10px]' },
     md: { h: 'h-52', title: 'text-base', tag: 'text-[10px]' },
@@ -19,10 +19,7 @@ export function PresetCard({ preset, size = 'md', onClick }) {
   // Carry both: Create reads ?model= on mount, and ?preset= records which
   // card sent the user. If the preset's model name has drifted out of the
   // catalog, link without one rather than preselecting something wrong.
-  const modelId = modelIdForName(preset.model);
-  const href = modelId
-    ? `/app/create?model=${encodeURIComponent(modelId)}&preset=${encodeURIComponent(preset.id)}`
-    : `/app/create?preset=${encodeURIComponent(preset.id)}`;
+  const href = presetHref(preset);
   return (
     <Link
       href={href}
@@ -45,7 +42,7 @@ export function PresetCard({ preset, size = 'md', onClick }) {
           <div className={`font-extrabold tracking-tight truncate ${s.title}`}>{preset.name}</div>
           <div className="mt-0.5 text-vx-fg-muted text-xs truncate">{preset.model}</div>
         </div>
-        <div className="shrink-0 font-vx-mono text-[13px] font-bold text-vx-money vx-num pt-1">{preset.credits} cr</div>
+        <div className="shrink-0 font-vx-mono text-[13px] font-bold text-vx-money vx-num pt-1">{presetCredits(preset, catalog)} cr</div>
       </div>
     </Link>
   );
