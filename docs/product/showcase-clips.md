@@ -14,8 +14,8 @@ from competitor sites.
 | | |
 | --- | --- |
 | Container | H.264 MP4 (`.webm` also allowed) |
-| Size | 720p max, 3 MB max (`MAX_CLIP_BYTES`), no audio track |
-| Length | 3 to 5 s, seamless loop preferred |
+| Size | 720p max, 2 MB max (`MAX_CLIP_BYTES`, aim for 1 MB), no audio track |
+| Length | 3 to 5 s, seamless loop preferred. Touch devices stop playback at 5 s, so nothing past that is seen |
 | Feature cards | 4:5 crop. Poster: first frame, JPG or WebP, under 80 KB |
 | Preset tiles | 1:1 crop. Poster as above |
 | Path | `public/showcase/<slug>.mp4` and `<slug>.jpg`, slug `[a-z0-9-]` |

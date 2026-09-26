@@ -13,5 +13,7 @@
 
 export const SHOWCASE_CLIPS = {};
 
-// A hover preview, not a film: 3 MB keeps 15 preset tiles cheap on mobile data.
-export const MAX_CLIP_BYTES = 3 * 1024 * 1024;
+// A hover preview, not a film. Phones fetch a clip per tile as it scrolls into
+// view, so 15 preset tiles at the cap is the worst case: 2 MB keeps that near
+// 30 MB, and a 4 s 720p loop encodes well under it (aim for 1 MB).
+export const MAX_CLIP_BYTES = 2 * 1024 * 1024;

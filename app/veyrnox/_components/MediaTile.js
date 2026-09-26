@@ -4,18 +4,25 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 
 // A landing tile whose backdrop is a gradient until a showcase clip exists.
-// With a clip, it plays a muted loop:
-//   - fine pointer (mouse): on hover or keyboard focus, and only while on screen
-//   - touch: while the tile is on screen (there is no hover to wait for)
-//   - prefers-reduced-motion, or the data-saver flag: never; the poster (or
-//     gradient) stays put. Reduced motion is watched, so switching it on
-//     mid-visit pauses playback instead of waiting for a reload.
+// With a clip, it plays a muted loop, as decided by _lib/playbackPolicy:
+//   - mouse: on hover or keyboard focus, and only while on screen
+//   - touch: while on screen, one clip at a time, for at most 5 s (the
+//     WCAG 2.2.2 line, so no pause control is needed)
+//   - reduced motion, data-saver, or a slow connection on touch: never; the
+//     poster (or gradient) stays put. Reduced motion is watched, so switching
+//     it on mid-visit pauses playback instead of waiting for a reload.
 // preload="none" means no bytes move until the first play, so 15 tiles cost
 // nothing on load. A clip that fails to load drops out and the gradient stays.
 // The tile is the link, so the whole card is one target and the video is
 // decoration only (aria-hidden, no controls, not focusable).
 
+import { playbackMode, TOUCH_MAX_PLAY_MS } from '../_lib/playbackPolicy';
+
 const VIEW_THRESHOLD = 0.4;
+
+// The one touch tile allowed to be playing. Starting another stops it, so
+// scrolling a phone through the preset grid never decodes several at once.
+let activeTouchStop = null;
 
 export function MediaTile({ href, clip, mediaClassName = '', mediaStyle, className = '', style, children }) {
   const rootRef = useRef(null);
@@ -27,22 +34,42 @@ export function MediaTile({ href, clip, mediaClassName = '', mediaStyle, classNa
     const root = rootRef.current;
     const video = videoRef.current;
     if (!root || !video) return undefined;
-    if (navigator.connection?.saveData) return undefined;
-    const reducedQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-    if (reducedQuery.matches) return undefined;
 
-    const canHover = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+    const connection = navigator.connection;
+    const reducedQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const mode = playbackMode({
+      reducedMotion: reducedQuery.matches,
+      saveData: Boolean(connection?.saveData),
+      effectiveType: connection?.effectiveType,
+      canHover: window.matchMedia('(hover: hover) and (pointer: fine)').matches,
+    });
+    if (mode === 'off') return undefined;
+
     let onScreen = false;
     let engaged = false;
     let reduced = false;
+    let timer;
+
+    const stop = () => {
+      window.clearTimeout(timer);
+      video.pause();
+      if (activeTouchStop === stop) activeTouchStop = null;
+    };
+
+    const start = () => {
+      if (!video.paused) return;
+      if (mode === 'inview') {
+        if (activeTouchStop && activeTouchStop !== stop) activeTouchStop();
+        activeTouchStop = stop;
+        timer = window.setTimeout(stop, TOUCH_MAX_PLAY_MS);
+      }
+      video.play().catch(() => {});
+    };
 
     const sync = () => {
-      const shouldPlay = !reduced && onScreen && (canHover ? engaged : true);
-      if (shouldPlay) {
-        video.play().catch(() => {});
-      } else {
-        video.pause();
-      }
+      const shouldPlay = !reduced && onScreen && (mode === 'hover' ? engaged : true);
+      if (shouldPlay) start();
+      else stop();
     };
 
     const observer = new IntersectionObserver(
@@ -70,7 +97,7 @@ export function MediaTile({ href, clip, mediaClassName = '', mediaStyle, classNa
       root.removeEventListener('pointerleave', release);
       root.removeEventListener('focusin', engage);
       root.removeEventListener('focusout', release);
-      video.pause();
+      stop();
     };
   }, []);
 
