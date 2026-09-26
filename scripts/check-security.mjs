@@ -23,7 +23,7 @@ async function inspect(file) {
     if(/^packages\/(adapters|provider-sdk|db)\//.test(relative)) throw new Error(`Server package reachable from client: ${relative}`);
     const source=await readFile(file,'utf8');
     const executable=source.replace(/\/\*[\s\S]*?\*\//g,'').replace(/^\s*\/\/.*$/gm,'');
-    if(/process\.env\.(?:FAL_KEY|KIE_API_KEY|OPENROUTER_API_KEY|GRSAI_API_KEY|SUPABASE_SERVICE_ROLE_KEY|R2_SECRET_ACCESS_KEY|CINEMA_STREAM_API_TOKEN|CINEMA_STREAM_WEBHOOK_SECRET)/.test(executable)) throw new Error(`Server credential reachable from client: ${relative}`);
+    if(/process\.env\.(?:FAL_KEY|KIE_API_KEY|OPENROUTER_API_KEY|GRSAI_API_KEY|BYTEPLUS_API_KEY|SUPABASE_SERVICE_ROLE_KEY|R2_SECRET_ACCESS_KEY|CINEMA_STREAM_API_TOKEN|CINEMA_STREAM_WEBHOOK_SECRET)/.test(executable)) throw new Error(`Server credential reachable from client: ${relative}`);
     if(/NEXT_PUBLIC_[A-Z_]*(?:SECRET|SERVICE_ROLE|PRIVATE_KEY)/.test(executable)) throw new Error(`Secret-shaped public setting: ${relative}`);
     for(const match of source.matchAll(/(?:from\s*|import\s*\()\s*['"]([^'"]+)['"]/g)) {
         const target=await resolve(file,match[1]); if(target)await inspect(target);

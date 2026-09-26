@@ -1,6 +1,7 @@
 // Server-only adapter boundary. Preserve existing provider and orchestrator behavior.
 import { submitJob } from '../adapters/fal.js';
 import * as grsai from '../adapters/grsai.js';
+import * as byteplus from '../adapters/byteplus.js';
 import * as kie from '../adapters/kie.js';
 import * as openrouter from '../adapters/openrouter.js';
 import { checkInputs, shapePayload } from '../../lib/modelCapabilities.js';
@@ -35,6 +36,13 @@ const PROVIDERS = {
         key: () => r2IsConfigured(r2EnvConfig()) ? process.env.GRSAI_API_KEY : null,
         check: (_record, modelRow, inputs) => grsai.buildRequest(modelRow.provider_endpoint, inputs),
         submit: (job, _record, apiKey) => grsai.submitTask(job, { apiKey }),
+    },
+    // BytePlus ModelArk (ADR-0058): polling only, so a job is only accepted
+    // when R2 is configured for the sweep to copy the 24-hour output into.
+    byteplus: {
+        key: () => r2IsConfigured(r2EnvConfig()) ? process.env.BYTEPLUS_API_KEY : null,
+        check: (_record, modelRow, inputs) => byteplus.buildRequest(modelRow.provider_endpoint, inputs),
+        submit: (job, _record, apiKey) => byteplus.submitTask(job, { apiKey }),
     },
     openrouter: {
         key: () => process.env.OPENROUTER_API_KEY,

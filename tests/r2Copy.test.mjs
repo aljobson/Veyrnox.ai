@@ -47,6 +47,8 @@ test('each provider may only copy from its own CDN', async () => {
     assert.equal((await copyUrlToR2('https://v3.fal.media/x.png', 'k', cfg, { provider: 'kie' })).error, 'source host not allowed');
     assert.equal((await copyUrlToR2('https://v3.fal.media/x.png', 'k', cfg, { provider: 'nope' })).error, 'source host not allowed');
     assert.equal((await copyUrlToR2('https://aiquickdraw.com.evil.com/x', 'k', cfg, { provider: 'kie' })).error, 'source host not allowed');
+    // The byteplus allowlist is empty until a live output host is recorded (ADR-0058).
+    assert.equal((await copyUrlToR2('https://ark.ap-southeast.bytepluses.com/x.mp4', 'k', cfg, { provider: 'byteplus' })).error, 'source host not allowed');
 });
 
 // ADR-0025 option E: the digest is what lets a holder of a file check it
