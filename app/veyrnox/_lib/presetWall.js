@@ -10,8 +10,6 @@
 // test fails for a count that leaves a hole, so adding or removing a preset
 // means reshaping this on purpose.
 
-import { modelIdForName } from './tokens.js';
-
 export const LG_COLUMNS = 4;
 export const SM_COLUMNS = 2;
 
@@ -40,17 +38,4 @@ const TILE_CLASSES = {
 
 export function tileClasses(shape) {
   return TILE_CLASSES[shape.kind];
-}
-
-/**
- * The credits a preset tile prints. The live catalog is normative for prices
- * (CLAUDE.md), and the landing page already resolves its other tiles through
- * it, so a re-priced row must not be quoted at the old constant here. Falls
- * back to the preset's own figure when the catalog is missing, the model has
- * drifted out of it, or the row carries no numeric price.
- */
-export function presetCredits(preset, catalog) {
-  const id = modelIdForName(preset.model);
-  const row = id && Array.isArray(catalog) ? catalog.find((m) => m.id === id) : null;
-  return row && typeof row.credits === 'number' ? row.credits : preset.credits;
 }

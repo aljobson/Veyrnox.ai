@@ -1,13 +1,14 @@
 import Link from 'next/link';
 import { MediaTile } from '../_components/MediaTile';
 import { SHOWCASE_CLIPS } from '../_lib/showcase';
-import { wallShapes, tileClasses, presetCredits } from '../_lib/presetWall';
+import { wallShapes, tileClasses } from '../_lib/presetWall';
 import {
   NAV_CATEGORIES,
   FEATURE_CARDS,
   PRODUCT_TILES,
   PRESETS,
   presetHref,
+  presetCredits,
   MORE_FEATURES,
   METRIC_STRIP,
   PILLARS,

@@ -101,6 +101,19 @@ export function presetHref(preset) {
     : `/app/create?preset=${encodeURIComponent(preset.id)}`;
 }
 
+/**
+ * The credits a preset is quoted at, anywhere it is shown. The live catalog is normative for prices
+ * (CLAUDE.md), and the landing page already resolves its other tiles through
+ * it, so a re-priced row must not be quoted at the old constant here. Falls
+ * back to the preset's own figure when the catalog is missing, the model has
+ * drifted out of it, or the row carries no numeric price.
+ */
+export function presetCredits(preset, catalog) {
+  const id = modelIdForName(preset.model);
+  const row = id && Array.isArray(catalog) ? catalog.find((m) => m.id === id) : null;
+  return row && typeof row.credits === 'number' ? row.credits : preset.credits;
+}
+
 export const ASPECT_RATIOS = ['16:9', '9:16', '1:1', '4:5', '21:9'];
 export const RESOLUTIONS = ['1K', '2K', '4K'];
 
