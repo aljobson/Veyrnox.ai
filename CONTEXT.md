@@ -89,3 +89,29 @@ _Avoid_: View, stream, session
 **Unlock Reversal**:
 Returning the credits of an Episode Unlock because the content was taken down. No money moves.
 _Avoid_: Refund (on its own), chargeback
+
+### Social Cinema publishing
+
+**Title**:
+A film, short, trailer or series as one publishable whole. Seasons and episodes belong to their title and follow its state.
+_Avoid_: Project, content item, root
+
+**Rights Declaration**:
+A creator's recorded, versioned statement that they hold the rights to everything in a title and have declared its AI use truthfully, given when submitting it.
+_Avoid_: Terms acceptance, licence, waiver
+
+**Submission**:
+A creator asking for a title to be reviewed for publication. It waits until a Cinema administrator decides.
+_Avoid_: Publish request, application (that is for creators)
+
+**Publication**:
+A title becoming visible in Social Cinema after an administrator approves its Submission.
+_Avoid_: Release, go-live, launch
+
+**Withdrawal**:
+A creator taking a title back, out of review or out of Social Cinema. A published title's Episode Unlocks are reversed.
+_Avoid_: Unpublish, delete, retract
+
+**Suspension**:
+An administrator taking a published title down. It stays down, its creator cannot edit or resubmit it, and its Episode Unlocks are reversed.
+_Avoid_: Ban, removal, strike

@@ -25,6 +25,8 @@ Read [REPO-ASSESSMENT.md](REPO-ASSESSMENT.md) first for the repository-specific 
 | CREATOR_UPLOADS_ENABLED | Master + profiles |
 | CINEMA_SUBSCRIPTIONS_ENABLED | Master |
 | CINEMA_UNLOCKS_ENABLED | Master + profiles |
+| CINEMA_PUBLISHING_ENABLED | Master + profiles + content |
+| CINEMA_VIEWING_ENABLED | Master |
 | CREATOR_MONETISATION_ENABLED | Master + profiles + subscriptions |
 | VOTING_ENABLED | Master + profiles |
 | COMMENTS_ENABLED | Master + profiles |
@@ -69,3 +71,7 @@ ADR-0057 and migration 0143 add the Cinema Pass: recurring Stripe subscriptions 
 ## Pass Plays increment (Phase 3)
 
 ADR-0057 and migration 0144 add Pass Plays: `POST /api/v1/cinema/play/heartbeat` records up to 60 seconds per call for a viewer whose access to the title is `pass` (free, unlocked and locked viewing record nothing), a Pass can never log more seconds than wall-clock time, and `cinema_prices.pass_ceiling_minutes` (3,000) is now enforced: at the ceiling `cinema_entitlement` answers `locked` with reason `pass_ceiling` and the unlock price, so the viewer can still pay per episode. `GET /api/v1/admin/cinema/earnings?month=YYYY-MM` is the Operator read of Unlock credits and Pass seconds per title, behind the same identity, fresh-MFA and Cloudflare Access gates as the creator review queue, with `is_admin` re-checked in the database. Nothing is paid out; a creator revenue share is its own ADR.
+
+## Publication increment (ADR-0059)
+
+Migration 0146 adds submissions, reviews and moderation actions. A creator submits a title from the workspace with the Rights Declaration (`rights-2026-09-26`) once every episode's video is ready; `/app/admin/cinema/submissions` is the queue, behind the same fresh-MFA and Cloudflare Access gate as creator applications, with approve, reject-with-note and suspend. Withdrawal and suspension of a published title reverse its Unlocks in the same transaction. `/api/cinema/titles` and `/api/cinema/titles/{id}` are the anonymous, cached public reads; `/api/v1/cinema/titles/{id}` is the signed-in variant with per-episode access. `/social-cinema` shows the catalogue, `/social-cinema/title/{id}` the seasons and episodes with Free, Unlock and Pass, and `/social-cinema/watch/{id}` the Stream player with token renewal and heartbeats. Switches: `CINEMA_PUBLISHING_ENABLED`, `CINEMA_VIEWING_ENABLED`, both off. `frame-src` now admits `https://*.cloudflarestream.com`.

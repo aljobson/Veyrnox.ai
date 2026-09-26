@@ -9,6 +9,37 @@ import { gatewayFetch } from '../_lib/gateway';
 
 const identity = () => getSession()?.user?.id || '';
 const noIdentity = () => '';
+
+// Published titles, once viewing is open; the marketing sections stay until then.
+function Catalogue() {
+  const [titles, setTitles] = useState(null);
+  const [state, setState] = useState('loading');
+  const [next, setNext] = useState(null);
+  const load = async (before) => {
+    try {
+      const r = await fetch(`/api/cinema/titles${before ? `?before=${encodeURIComponent(before)}` : ''}`);
+      if (!r.ok) { setState(r.status === 503 ? 'closed' : 'error'); return; }
+      const data = await r.json();
+      setTitles((prev) => (before && prev ? [...prev, ...data.titles] : data.titles)); setNext(data.next); setState('ready');
+    } catch { setState('error'); }
+  };
+  useEffect(() => { load(null); }, []);
+  if (state !== 'ready') return null;
+  return <section className="mt-12" aria-labelledby="catalogue-title">
+    <h2 id="catalogue-title" className="text-2xl font-extrabold">Now showing</h2>
+    {titles.length === 0 ? <p className="mt-4 text-vx-fg-muted">Nothing is published yet. The first stories are on their way.</p> : <ul className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      {titles.map((t) => <li key={t.id} className="flex flex-col rounded-2xl border border-vx-border bg-vx-base/60 p-5">
+        <p className="font-vx-mono text-xs tracking-widest text-vx-accent uppercase">{t.content_type}{t.content_type === 'SERIES' ? ` · ${t.episode_count} episodes` : t.duration_seconds ? ` · ${Math.max(1, Math.round(t.duration_seconds / 60))} min` : ''}</p>
+        <h3 className="mt-2 text-xl font-bold break-words"><Link href={`/social-cinema/title/${t.id}`} className="hover:underline">{t.title}</Link></h3>
+        <p className="mt-1 text-sm text-vx-fg-muted">{t.display_name}</p>
+        <p className="mt-3 line-clamp-3 text-sm text-vx-fg-body break-words">{t.synopsis}</p>
+        <Link href={`/social-cinema/title/${t.id}`} className="mt-4 inline-flex self-start rounded-full bg-vx-accent px-4 py-2 text-sm font-bold text-vx-accent-ink">Watch</Link>
+      </li>)}
+    </ul>}
+    {next && <Button variant="secondary" className="mt-6" onClick={() => load(next)}>Show more</Button>}
+  </section>;
+}
+
 const sections = [
   ['For You', 'The first stories are still ahead.', 'The vertical episode feed is being built. Published stories will appear here when viewing opens.'],
   ['Series', 'Every episode starts with a story.', 'Creator series and episode publishing are in development. You can already make video in the Studio.'],
@@ -45,6 +76,7 @@ export function SocialCinema() {
         <div className="text-center"><span className="text-5xl text-vx-accent">▷</span><p className="mt-6 font-vx-mono text-xs leading-loose text-vx-fg-muted">WATCH<br />VOTE<br />RETURN</p></div>
       </div>
     </section>
+    <Catalogue />
     {preview && <section className="border-t border-vx-border pt-8" aria-labelledby="profile-title">
       <h2 id="profile-title" className="text-xl font-extrabold">Your Social Cinema profile</h2>
       {account ? <Profile key={account} /> : <div className="mt-4"><p className="mb-4 text-vx-fg-body">Use your Veyrnox.ai account to get started.</p><Button onClick={() => window.dispatchEvent(new CustomEvent('veyrnox:auth-required'))}>Sign in</Button></div>}

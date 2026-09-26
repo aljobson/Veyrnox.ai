@@ -53,7 +53,7 @@ const TURNSTILE = 'https://challenges.cloudflare.com';
 const CSP = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''} ${TURNSTILE}`,
-  `frame-src ${TURNSTILE}`,
+  `frame-src ${TURNSTILE} https://*.cloudflarestream.com`,
   "style-src 'self' 'unsafe-inline'",
   // Not `https:`. The session — refresh token included — lives in
   // localStorage, and `script-src 'unsafe-inline'` is still here for RSC
@@ -117,6 +117,7 @@ const nextConfig = {
       { source: '/cinema', destination: '/social-cinema', permanent: false },
       { source: '/veyrnox/social-cinema', destination: '/social-cinema', permanent: true },
       { source: '/veyrnox/social-cinema/creator', destination: '/social-cinema/creator', permanent: true },
+      { source: '/veyrnox/social-cinema/:path*', destination: '/social-cinema/:path*', permanent: true },
       { source: '/veyrnox/pricing', destination: '/pricing', permanent: true },
       { source: '/veyrnox/presets', destination: '/presets', permanent: true },
       { source: '/veyrnox/design-system', destination: '/design-system', permanent: true },
@@ -132,6 +133,10 @@ const nextConfig = {
         { source: '/', destination: '/veyrnox' },
         { source: '/social-cinema', destination: '/veyrnox/social-cinema' },
         { source: '/social-cinema/creator', destination: '/veyrnox/social-cinema/creator' },
+        // Cinema Pass (ADR-0057) and the viewer pages (ADR-0059).
+        { source: '/social-cinema/pass', destination: '/veyrnox/social-cinema/pass' },
+        { source: '/social-cinema/title/:id', destination: '/veyrnox/social-cinema/title/:id' },
+        { source: '/social-cinema/watch/:id', destination: '/veyrnox/social-cinema/watch/:id' },
         { source: '/pricing', destination: '/veyrnox/pricing' },
         { source: '/presets', destination: '/veyrnox/presets' },
         { source: '/design-system', destination: '/veyrnox/design-system' },
