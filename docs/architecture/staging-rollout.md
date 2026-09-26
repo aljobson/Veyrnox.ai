@@ -72,3 +72,15 @@ These need the Cloudflare dashboard (Apple sign-in) and an authenticated `wrangl
 4. **Secrets on the staging Worker only** (`--env staging`): `CINEMA_STREAM_API_TOKEN`, `CINEMA_STREAM_ACCOUNT_ID` (`fb18d9f7052afbea5a5e0eae69948af2`), `CINEMA_STREAM_WEBHOOK_SECRET`, and `SUPABASE_SERVICE_ROLE_KEY` from the **staging** project's API settings. `packages/db/supabase-client.js` sends the key as both `apikey` and `Authorization: Bearer`; the legacy `service_role` JWT is the proven format. A modern `sb_secret_…` key must be confirmed with one authenticated `/rest/v1/rpc/reconcile_status` call against staging before relying on it.
 5. **Then** (a separate change, after 1–4 are verified): set `CINEMA_ENABLED`, `SOCIAL_CINEMA_PROFILES_ENABLED`, `CREATOR_APPLICATIONS_ENABLED`, `CREATOR_CONTENT_ENABLED`, `CREATOR_UPLOADS_ENABLED`, `CINEMA_UPLOAD_RECOVERY_ENABLED`, `CINEMA_UPLOAD_REMOVAL_ENABLED` to `"true"` in `env.staging.vars` and give staging the `*/5 * * * *` cron so recovery and removal run. Staging vars do not inherit production's, so today these are unset on staging and every Cinema route answers 503. Production keeps all of them `false`.
 6. Bootstrap one test viewer → creator (application + aal2 administrator review), then run the ADR-0052/0053/0054 live checks: upload, pause/resume, processing, signed webhook, missed-callback recovery, removal, replacement, and that removal invalidates an already-copied tus URL.
+
+### Stream staging setup completed — 2026-09-26
+
+Steps 1–5 above are done. Secret values were never written to chat, logs or this repo.
+
+- Stream API token `veyrnox-ai-staging-stream` (Account → Stream → Edit, this account only) was created after the earlier token leaked into a transcript, and stored as `CINEMA_STREAM_API_TOKEN` only after `stream?limit=1` returned `success: true`.
+- `GET …/stream/webhook` returned `404 / 10003` first, so no subscription existed to overwrite. `PUT` then set the notification URL to the staging Worker (HTTP 200) and its signing secret went straight into `CINEMA_STREAM_WEBHOOK_SECRET`.
+- Staging Worker secrets, by name: `CINEMA_STREAM_API_TOKEN`, `CINEMA_STREAM_ACCOUNT_ID`, `CINEMA_STREAM_WEBHOOK_SECRET`, `SUPABASE_SERVICE_ROLE_KEY`. The service-role key is the legacy JWT for project `yrqzwqywxfesmbvhzjgj`, accepted by an authenticated `reconcile_status` call before it was stored.
+- `env.staging` now sets the seven Cinema flags of step 5 to `"true"` and runs the `*/5 * * * *` cron. Production's vars and cron are unchanged and its flags stay `false`. Other cron tasks skip on staging because their secrets are unset.
+- The Stream subscription is account-wide, so production receives no Stream callbacks while staging owns it. That holds only while production's Cinema flags stay `false`.
+
+Step 6, the live checks, is still to do.
