@@ -114,7 +114,7 @@ export const SITE_PAGES = [
   { href: '/',                  label: 'Home',               description: 'Credit-metered AI image, video and audio generation.' },
   { href: '/pricing',           label: 'Pricing',            description: 'Every model, every credit price, one balance.' },
   { href: '/presets',           label: 'Presets',            description: 'Curated one-tap looks, priced up front.' },
-  { href: '/app/create',        label: 'Create',             description: 'The studio — pick a model, see the cost, generate.' },
+  { href: '/app/create',        label: 'Create',             description: 'The studio: pick a model, see the cost, generate.' },
   { href: '/app/library',       label: 'Library',            description: 'Every generation you have run, successes and refunds.' },
   { href: '/app/credits',       label: 'Credits & billing',  description: 'Your balance, free-credit expiry and recent ledger rows.' },
   { href: '/legal/terms',       label: 'Terms of Service',   description: 'The contract between you and Veyrnox Ltd.' },
@@ -131,7 +131,7 @@ export const FEATURE_CARDS = [
   { key: 'wan-2.5-kie',
     kicker: 'WAN 2.5',
     title: 'The default. Fast, cinematic.',
-    body: '5 seconds of 720p motion for 19 credits. The workhorse — priced on the button before you press it.',
+    body: '5 seconds of 720p motion for 19 credits. The workhorse, priced on the button before you press it.',
     cta: 'Open Wan 2.5',
     href: '/app/create?model=wan-2.5-kie',
     bg: 'linear-gradient(135deg,#0a1a2c 0%,#144a7a 55%,#3ec1e8 100%)' },
@@ -159,7 +159,7 @@ export const FEATURE_CARDS = [
   { key: 'ace-step',
     kicker: 'ACE STEP',
     title: 'Music and voice, priced up front.',
-    body: 'Audio generation on the same credit balance. 1 credit per clip — see it before you spend.',
+    body: 'Audio generation on the same credit balance. 1 credit per clip. See it before you spend.',
     cta: 'Open ACE Step',
     href: '/app/create?model=ace-step',
     bg: 'linear-gradient(135deg,#08120b 0%,#0e3a1e 55%,#2ea258 100%)' },
@@ -176,7 +176,7 @@ export const PILLARS = [
     kicker: 'REFUND ON FAILURE',
     stat:   '100%',
     title:  'Failed jobs refund automatically.',
-    body:   'Provider safety reject, provider timeout, model error — credits return to your balance the moment we know. Ledger-backed and auditable.' },
+    body:   'Provider safety reject, provider timeout, model error: credits return to your balance the moment we know. Ledger-backed and auditable.' },
   { key: 'balance',
     kicker: 'ONE BALANCE',
     stat:   'ALL MODELS',
@@ -186,7 +186,7 @@ export const PILLARS = [
     kicker: 'APPEND-ONLY LEDGER',
     stat:   'EVERY CREDIT',
     title:  'Every debit and refund on the record.',
-    body:   'Credits move through an append-only ledger — nothing is edited after the fact, corrections are new rows. Read your own history any time.' },
+    body:   'Credits move through an append-only ledger. Nothing is edited after the fact, corrections are new rows. Read your own history any time.' },
 ];
 
 // FAQ — 10 Qs. Hedged where legal/policy is still in flight.
@@ -199,7 +199,7 @@ export const FAQ = [
   { q: 'How do credits work?',
     a: 'Every generation names its cost on the button before you press it. Credits debit at submit. If the job fails at any point the credits return to your balance automatically.' },
   { q: 'Do I get free credits when I sign up?',
-    a: 'Yes — 10 credits granted on sign-up. Each generation shows its credit price before you spend. No card required.' },
+    a: 'Yes, 10 credits granted on sign-up. Each generation shows its credit price before you spend. No card required.' },
   { q: 'What happens if a generation fails?',
     a: 'Automatic refund, ledger-backed. Provider safety rejects, provider timeouts and model errors all refund. Failed rows still show in your Library so you can retry.' },
   { q: 'Can I use the output commercially?',
@@ -218,11 +218,6 @@ export const FAQ = [
 ];
 
 
-export const HERO_STATS = [
-  { value: '10',    label: 'free credits on sign-up' },
-  { value: null,    label: 'models on one balance' }, // null = live catalog count, filled in page.js
-  { value: '1 cr',  label: 'cheapest generation' },
-];
 
 export const METRIC_STRIP = [
   { value: '10',    label: 'FREE CREDITS ON SIGN-UP' },
@@ -293,7 +288,7 @@ export const MORE_FEATURES = [
   ] },
 ];
 
-export const FOOTER_TAGLINE = 'Credit-metered AI generation for creators. Priced on the button — refund on failure, always.';
+export const FOOTER_TAGLINE = 'Credit-metered AI generation for creators. Priced on the button, refund on failure, always.';
 
 // A function, not a constant. `new Date()` at module scope is evaluated once
 // per Worker isolate — the footer showed whatever year the bundle happened to
@@ -308,11 +303,11 @@ export function footerStamp() {
 // marketing copy or the pricing story changes.
 export const SITE_UPDATED = '2026-09-22';
 
-export const HERO_CHIP = 'LIVE · CREDIT-METERED';
+export const HERO_CHIP = 'CREDIT-METERED AI GENERATION';
 
 // Amber promo strip above the nav.
 export const PROMO_STRIP = {
-  message: '10 free credits on sign-up · no charge for failed generations',
+  message: '10 free credits on sign-up. No charge for failed generations.',
   cta: 'Sign up free',
   href: '/app',
 };

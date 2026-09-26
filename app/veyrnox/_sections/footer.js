@@ -7,12 +7,10 @@ import {
   PRODUCT_TILES,
   EFFECT_PRESETS,
   MORE_FEATURES,
-  HERO_STATS,
   METRIC_STRIP,
   PILLARS,
   FAQ,
   PROMO_STRIP,
-  HERO_CHIP,
   FOOTER_TAGLINE,
   footerStamp,
   SITE_UPDATED,
@@ -26,7 +24,6 @@ export function WhyVeyrnox() {
   return (
     <section className="px-4 sm:px-6 pt-20 pb-6 max-w-[1400px] mx-auto">
       <div className="text-center mb-8">
-        <div className="font-vx-mono text-[11px] tracking-[0.14em] text-vx-accent mb-2">WHY VEYRNOX</div>
         <h2 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-[-0.02em] text-balance">Honest math. One balance. Every credit on the record.</h2>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -49,36 +46,54 @@ export function FeatureStripsSection() {
   return (
     <section className="px-4 sm:px-6 pt-16 pb-6 max-w-[1400px] mx-auto flex flex-col gap-4">
       <FeatureStrip
-        kicker="CATALOG"
         title="One balance across every model."
         body="Nano Banana, Flux.2, Seedream, Wan, Kling, MiniMax, Veo, ACE-Step. Debit on submit, refund on fail, one balance across the whole catalog."
         cta={{ label: 'Open the app', href: '/app' }}
         bg="linear-gradient(135deg,#0a1a2c 0%,#144a7a 55%,#3ec1e8 100%)"
       />
       <FeatureStrip
-        kicker="PRESETS"
         title="Big-budget effects, one tap."
-        body="Curated presets wired to model + prompt combos. Browse free, generate on-tap — cost shown up front."
+        body="Curated presets wired to model and prompt combos. Browse free, generate on tap. Cost shown up front."
         cta={{ label: 'Browse presets', href: '/presets' }}
         bg="linear-gradient(135deg,#1b0632 0%,#5a0e6a 55%,#e4318f 100%)"
         reverse
       />
       <FeatureStrip
-        kicker="LEDGER"
         title="Every credit accounted for."
         body="Debits and refunds are append-only ledger rows, never edits. Your balance is the sum of them, and you can read the history back."
         cta={{ label: 'See your balance', href: '/app/credits' }}
         bg="linear-gradient(135deg,#08120b 0%,#0e3a1e 55%,#2ea258 100%)"
+        wide
       />
     </section>
   );
 }
 
-export function FeatureStrip({ kicker, title, body, cta, bg, reverse = false }) {
+export function FeatureStrip({ title, body, cta, bg, reverse = false, wide = false }) {
+  // The third strip runs full width so the section is not three image/text
+  // splits in a row.
+  if (wide) {
+    return (
+      <div className="relative rounded-3xl border border-vx-border overflow-hidden" style={{ background: bg }}>
+        <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-transparent" />
+        {/* Fixed light ink: this sits on a hardcoded dark gradient, so the
+            theme tokens would resolve to near-black in light theme. */}
+        <div className="relative p-6 sm:p-10 lg:p-14 max-w-[640px]">
+          <h3 className="text-[24px] sm:text-[30px] md:text-[34px] font-black leading-[1.05] tracking-[-0.02em] text-balance text-white">{title}</h3>
+          <p className="mt-4 text-white/85 leading-[1.6]">{body}</p>
+          <Link
+            href={cta.href}
+            className="inline-block mt-6 rounded-full bg-vx-accent text-vx-accent-ink px-6 py-3 text-sm font-extrabold hover:bg-vx-accent-hover"
+          >
+            {cta.label}
+          </Link>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className={`rounded-3xl border border-vx-border bg-vx-panel overflow-hidden grid grid-cols-1 lg:grid-cols-2 ${reverse ? 'lg:grid-flow-dense lg:[&>*:first-child]:col-start-2' : ''}`}>
       <div className="p-6 sm:p-10 lg:p-14">
-        <div className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-accent mb-3">{kicker}</div>
         <h3 className="text-[24px] sm:text-[30px] md:text-[34px] font-black leading-[1.05] tracking-[-0.02em] text-balance">{title}</h3>
         <p className="mt-4 text-vx-fg-body max-w-[500px] leading-[1.6]">{body}</p>
         <Link
@@ -99,7 +114,6 @@ export function FAQBlock() {
   return (
     <section id="faq" className="px-4 sm:px-6 pt-16 pb-6 max-w-[900px] mx-auto">
       <div className="text-center mb-8">
-        <div className="font-vx-mono text-[11px] tracking-[0.14em] text-vx-accent mb-2">FAQ</div>
         <h2 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-[-0.02em]">Everything you&rsquo;d ask.</h2>
       </div>
       <div className="rounded-2xl border border-vx-border bg-vx-panel divide-y divide-vx-border/60">
@@ -138,9 +152,6 @@ export function ClosingCTA({ modelCount }) {
   return (
     <section className="px-4 sm:px-6 pt-16 pb-16 max-w-[1400px] mx-auto">
       <div className="rounded-3xl border border-vx-border bg-vx-panel p-6 sm:p-10 lg:p-14 text-center">
-        <div className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-accent mb-3">
-          <span aria-hidden="true" className="mr-1">●</span>{HERO_CHIP}
-        </div>
         <h2 className="text-[28px] sm:text-[40px] md:text-[52px] font-black tracking-[-0.03em] leading-[1.05] text-balance max-w-[820px] mx-auto">
           Ship your first asset today.<br />
           <span className="text-vx-accent">See the price before you spend.</span>
@@ -198,7 +209,7 @@ export function FooterForest({ catalog }) {
           <div className="col-span-2 sm:col-span-3 lg:col-span-1">
             {/* The wordmark is the conventional way back to the top of a
                 site; it used to be inert down here. */}
-            <Link href="/" aria-label="Veyrnox.ai — home" className="inline-flex">
+            <Link href="/" aria-label="Veyrnox.ai home" className="inline-flex">
               <Logo size={28} wordmark />
             </Link>
             <p className="mt-4 text-sm text-vx-fg-body max-w-[320px] leading-[1.6]">{FOOTER_TAGLINE}</p>

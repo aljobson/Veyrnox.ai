@@ -67,7 +67,7 @@ export default async function VeyrnoxLanding() {
     <div className="min-h-dvh">
       <PromoStrip />
       <WideNav />
-      <FeaturedHeroCards modelCount={catalog.length} />
+      <FeaturedHeroCards />
       <SignupIncentive />
       <ProductTilesRow modelCount={catalog.length} catalog={catalog} />
       <HeroStatement />
