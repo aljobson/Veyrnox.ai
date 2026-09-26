@@ -19,6 +19,29 @@
 @keyframes vxDrift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
 @keyframes vxTickUp { 0% { opacity: 0; transform: translateY(6px); } 40% { opacity: 1; } 100% { opacity: 0; transform: translateY(-12px); } }
 
+/* Tile motion. One strong ease-out for every UI response; the built-in
+   easings are too weak to feel intentional. */
+.vx-root { --vx-ease-out: cubic-bezier(0.23, 1, 0.32, 1); }
+
+.vx-tile { transition: transform 200ms var(--vx-ease-out); }
+/* Press feedback: the card confirms the click landed. */
+.vx-tile:active { transform: scale(0.98); }
+.vx-tile-video { transition: opacity 300ms var(--vx-ease-out); }
+/* The global :focus-visible rule squares corners to 4px; on a clipped tile
+   that squares the video and gradient too. Keep the card's own radius. */
+.vx-root .vx-tile:focus-visible { border-radius: 1.5rem; }
+/* Hover lift only where hover exists; on touch it fires on tap and sticks. */
+@media (hover: hover) and (pointer: fine) {
+  .vx-tile:hover { transform: scale(1.015); }
+}
+
+/* Short first-paint stagger for the hero cards. Decorative, and it never
+   waits on interaction: 5 cards x 50ms lands inside 250ms. */
+@keyframes vxRise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+/* `backwards`, not `both`: a held end-state would pin transform:none over the
+   tile's hover and press states. */
+.vx-rise { animation: vxRise 300ms var(--vx-ease-out) backwards; animation-delay: calc(var(--vx-i, 0) * 50ms); }
+
 .vx-shimmer { position: relative; overflow: hidden; }
 .vx-shimmer::after {
   content: ''; position: absolute; inset: 0;
