@@ -95,7 +95,7 @@ test('allowed reads preserve balances, expiry, identity and owner-scoped asset c
     const summary = await invoke(account);
     assert.equal(summary.status, 200);
     assert.equal(summary.headers.get('cache-control'), 'no-store');
-    assert.deepEqual(await summary.json(), { email: 'verified@test.invalid', credits: 125, assets: 42 });
+    assert.deepEqual(await summary.json(), { email: 'verified@test.invalid', credits: 125, assets: 42, rights_attested_at: null, rights_attestation_version: null });
     assert.deepEqual(calls, ['consume_account_read_request', 'read_user_credits', 'users', 'assets']);
     stub();
     const res = await invoke(balance);
@@ -106,7 +106,7 @@ test('allowed reads preserve balances, expiry, identity and owner-scoped asset c
     assert.equal((await (await invoke(account, auth, null)).json()).email, 'row@test.invalid');
 });
 test('unknown accounts retain zero responses with no downstream queries', async () => {
-    for (const [route, expected] of [[account, { email: 'verified@test.invalid', credits: 0, assets: null }],
+    for (const [route, expected] of [[account, { email: 'verified@test.invalid', credits: 0, assets: null, rights_attested_at: null, rights_attestation_version: null }],
         [balance, { balance: 0, free_credits: 0, free_expires_at: null }]]) {
         stub({ rate: { ok: false, code: 'NOT_FOUND' } });
         const res = await invoke(route);
@@ -120,7 +120,7 @@ test('asset count failure still preserves credits and credit failures stay typed
     stub({ fail: 'assets' });
     const res = await invoke(account);
     assert.equal(res.status, 200);
-    assert.deepEqual(await res.json(), { email: 'verified@test.invalid', credits: 125, assets: null });
+    assert.deepEqual(await res.json(), { email: 'verified@test.invalid', credits: 125, assets: null, rights_attested_at: null, rights_attestation_version: null });
     for (const route of routes) {
         stub({ fail: 'read_user_credits' });
         const failed = await invoke(route);

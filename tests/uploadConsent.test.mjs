@@ -45,3 +45,21 @@ test('the Acceptable Use Policy is published and linked', () => {
     assert.match(footer, /href="\/legal\/aup"/);
     assert.match(sitemap, /'\/legal\/aup'/);
 });
+
+// ADR-0058 decision 7: the same statement is kept once at account level, with
+// the wording version it was made under, through a service-role-only RPC.
+test('an upload request also records the account-level rights attestation, service role only', () => {
+    const route = readFileSync(new URL('../app/api/v1/generations/route.js', import.meta.url), 'utf8');
+    assert.match(route, /export const RIGHTS_ATTESTATION_VERSION = '[a-z0-9-]{3,40}'/);
+    assert.match(route, /rpc\('attest_upload_rights', \{ p_user_id: userId, p_version: RIGHTS_ATTESTATION_VERSION \}, cfg\)/);
+    const migration = readFileSync(new URL('../packages/db/schema/supabase/0146_content_violations_and_rights_attestation.sql', import.meta.url), 'utf8');
+    assert.match(migration, /ADD COLUMN IF NOT EXISTS rights_attested_at TIMESTAMPTZ NULL/);
+    assert.match(migration, /REVOKE ALL ON FUNCTION public\.attest_upload_rights\(UUID, TEXT\) FROM PUBLIC, anon, authenticated;/);
+    assert.match(migration, /GRANT EXECUTE ON FUNCTION public\.attest_upload_rights\(UUID, TEXT\) TO service_role;/);
+    for (const fn of ['record_content_violation(TEXT, UUID, UUID, TEXT, TEXT)', 'list_content_violations(TEXT, UUID, INTEGER)']) {
+        assert.ok(migration.includes(`REVOKE ALL ON FUNCTION public.${fn} FROM PUBLIC, anon, authenticated;`), fn);
+        assert.ok(migration.includes(`GRANT EXECUTE ON FUNCTION public.${fn} TO service_role;`), fn);
+    }
+    // Both admin RPCs check users.is_admin themselves, like ops_metrics_24h.
+    assert.equal((migration.match(/RAISE EXCEPTION 'not_admin' USING ERRCODE = '42501'/g) || []).length, 2);
+});

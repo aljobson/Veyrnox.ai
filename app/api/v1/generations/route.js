@@ -28,6 +28,11 @@ import { envConfig as r2EnvConfig, isConfigured as r2IsConfigured } from '../../
 import { editUnits } from '../../../../lib/clipEdit.js';
 import { resolveEdit, defaultDeps as editDeps } from '../../../../lib/clipEditSources.js';
 
+// The AUP statement version a consent tick attests to. Bump when the wording
+// at /legal/aup or on the create page changes; users re-attest under the new
+// name on their next upload (attest_upload_rights, migration 0146).
+export const RIGHTS_ATTESTATION_VERSION = 'aup-2026-09-26';
+
 // Constrain idempotency keys to a safe printable range.
 const IDEMPOTENCY_RE = /^[A-Za-z0-9._-]{8,128}$/;
 // Catalog ids are lowercase slugs ('wan-2.5', 'veo-3.1-fast-kie'). Bounded
@@ -370,6 +375,15 @@ export async function POST(req) {
             if (!noted || noted.ok !== true) console.error('[generations] consent not recorded:', noted && noted.code);
         } catch (err) {
             console.error('[generations] consent record failed:', err);
+        }
+        // The same statement, kept once at account level with the AUP version
+        // it was made under (ADR-0058 decision 7): the record a provider's
+        // "verify and retain rights in user-uploaded content" clause asks for.
+        try {
+            const attested = await rpc('attest_upload_rights', { p_user_id: userId, p_version: RIGHTS_ATTESTATION_VERSION }, cfg);
+            if (!attested || attested.ok !== true) console.error('[generations] rights attestation not recorded:', attested && attested.code);
+        } catch (err) {
+            console.error('[generations] rights attestation failed:', err);
         }
     }
     const balanceAfter = debit.balance_after;
