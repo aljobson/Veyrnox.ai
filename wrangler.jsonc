@@ -38,6 +38,8 @@
     "CREATOR_MONETISATION_ENABLED": "false",
     "CINEMA_SUBSCRIPTIONS_ENABLED": "false",
     "CINEMA_UNLOCKS_ENABLED": "false",
+    "CINEMA_PUBLISHING_ENABLED": "false",
+    "CINEMA_VIEWING_ENABLED": "false",
     "VOTING_ENABLED": "false",
     "COMMENTS_ENABLED": "false",
     "PPV_ENABLED": "false",

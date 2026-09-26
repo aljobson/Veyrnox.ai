@@ -57,11 +57,12 @@ test("no 'unsafe-eval' outside next dev, and no wildcard script source", async (
         `script-src may name only Turnstile as a remote origin: ${scriptSrc.join(' ')}`);
 });
 
-test('frame-src admits Turnstile and nothing else', async () => {
+test('frame-src admits Turnstile and the Stream player, nothing else', async () => {
     // Without frame-src, frames fall back to default-src 'self' and the
-    // widget's challenge iframe is blocked. With it, it must stay this narrow.
+    // widget's challenge iframe is blocked. The Stream player host is the
+    // one addition ADR-0059 allows, for /social-cinema/watch; it must stay this narrow.
     const csp = (await headerMap()).get('content-security-policy');
-    assert.deepEqual(directives(csp).get('frame-src'), [TURNSTILE_HOST]);
+    assert.deepEqual(directives(csp).get('frame-src'), [TURNSTILE_HOST, 'https://*.cloudflarestream.com']);
 });
 
 test('connect-src permits only our backends and the exact Stream upload hosts (ADR-0052)', async () => {

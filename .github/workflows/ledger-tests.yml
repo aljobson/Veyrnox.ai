@@ -122,6 +122,7 @@ jobs:
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-unlocks.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-passes.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-pass-plays.mjs
+          DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-publication.mjs
 
       - name: Run catalog margin-floor tests
         run: npx tsx --test packages/catalog/margin-validator.test.ts
