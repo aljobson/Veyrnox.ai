@@ -9,6 +9,7 @@ export const ERROR_COPY = {
   internal:              'Something on our side broke. Credits refunded.',
   rate_limited:          'Too many generations in a short window. Wait a moment.',
   model_gated:           'This model is not open for generation yet. Nothing was charged.',
+  model_region_unavailable: 'This model is unavailable in your region. Choose another model. Nothing was charged.',
   duration_not_supported:'This model only makes 5s clips. Nothing was charged.',
   duration_invalid:      'Pick a 5s or 10s clip. Nothing was charged.',
   insufficient_balance:  'Not enough credits for this generation. Nothing was charged — top up to continue.',

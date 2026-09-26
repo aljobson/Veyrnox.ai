@@ -265,6 +265,11 @@ export async function POST(req) {
         return NextResponse.json({ error: 'catalog_lookup_failed' }, { status: 502 });
     }
     if (!modelRow || !modelRow.active) return NextResponse.json({ error: 'model_not_found' }, { status: 404 });
+    // ADR-0058 decision 9: Cloudflare supplies the visitor country. Keep US
+    // requests off BytePlus until its written end-user ruling is recorded.
+    if (modelRow.provider === 'byteplus' && req.headers.get('cf-ipcountry')?.trim().toUpperCase() === 'US') {
+        return NextResponse.json({ error: 'model_region_unavailable' }, { status: 451 });
+    }
     const provider = providerFor(modelRow.provider);
     if (!provider) return NextResponse.json({ error: 'provider_unsupported' }, { status: 501 });
     // No capability record = no known contract for this endpoint: refuse rather
