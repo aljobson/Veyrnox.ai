@@ -68,5 +68,7 @@ Short on purpose: an incident is not the time to read.
 | Takedown | Content that breaches the AUP or a provider policy | The job's assets are deleted and queued for R2 deletion at once. | `account_actions.action = 'takedown'` with `job_id` |
 | Freeze | Third takedown, or a chargeback, or immediate danger | Generating and buying stop. Sign-in, library and account deletion still work. `unfreeze_account` is the only way back. | `account_actions.action = 'freeze'`, reason `content:third_takedown` |
 
-Read the record with `GET /api/v1/admin/violations?user_id=<uuid>`. Every row names the
-admin who acted, the reason, the job and the time, and cannot be edited.
+Operate it at `/app/admin/violations` (find the user by email, user id or job id, then
+record a warning or a per-job takedown), or read the record with
+`GET /api/v1/admin/violations?user_id=<uuid>`. Every row names the admin who acted, the
+reason, the job and the time, and cannot be edited.
