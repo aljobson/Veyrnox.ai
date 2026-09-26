@@ -33,3 +33,11 @@ Every earlier Cinema slice stopped at "nothing is published": drafts were privat
 ## Addendum 2026-09-26 — Categories (0149)
 
 A title carries one or two Categories from a fixed list held in `cinema_categories` (romance, drama, thriller, comedy, horror, sci-fi, fantasy, action, mystery, documentary, animation, kids). The creator picks them on the draft; submission refuses a title without one (`category_required`); seasons and episodes carry none. The public catalogue read takes an optional Category and returns the list alongside the titles, so the Social Cinema page shows category tabs. The list grows by migration, never from the app layer, and the JavaScript mirror in `lib/cinema/domain.js` only labels the picker. Considered and rejected: free-form tags (no browsable structure, moderation burden) and per-episode categories (a series is one shelf).
+
+### Stable catalogue pagination — 2026-09-26
+
+Migration 0151 adds a service-role-only catalogue RPC with a `(published_at, id)`
+cursor. The API returns `next` and `next_id`; the UI sends both on the next page.
+Timestamp strings retain PostgreSQL's microseconds instead of rounding through a
+JavaScript Date. Legacy timestamp-only cursors use an inclusive boundary, avoiding
+omissions while older clients update. The original RPC remains for rolling deploys.

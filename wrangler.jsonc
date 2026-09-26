@@ -98,6 +98,11 @@
   "env": {
     "staging": {
       "name": "veyrnox-ai-staging",
+      "ratelimits": [{
+        "name": "ADMIN_EDGE_RATE_LIMITER",
+        "namespace_id": "2026092601",
+        "simple": { "limit": 60, "period": 60 }
+      }],
       "triggers": { "crons": [] },
       "vars": {
         "APP_ENV": "staging",
