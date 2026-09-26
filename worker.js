@@ -23,6 +23,7 @@ import { sweepUploads, sweepConsumedUploads } from './lib/uploadSweep.js';
 import { isConfigured as r2IsConfigured } from './packages/adapters/r2.js';
 import { sweepSteps } from './lib/autoShortSweep.js';
 import { sweepGrsai } from './lib/grsaiSweep.js';
+import { sweepByteplus } from './lib/byteplusSweep.js';
 import { reapAssets } from './lib/assetReap.js';
 import { runtimeDeps, runtimeKeys } from './lib/autoShortRuntime.js';
 import { recoverCinemaUploads } from './lib/cinema/uploadRecovery.js';
@@ -48,6 +49,10 @@ export default {
                 cfg: { supabaseUrl: env.SUPABASE_URL, serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY },
                 r2cfg: r2EnvFrom(env), apiKey: env.GRSAI_API_KEY,
             }).then((out) => { if (out.checked) console.error('[grsai-sweep]', JSON.stringify(out)); return out; }), env),
+            observeRecovery('byteplus', () => sweepByteplus({
+                cfg: { supabaseUrl: env.SUPABASE_URL, serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY },
+                r2cfg: r2EnvFrom(env), apiKey: env.BYTEPLUS_API_KEY,
+            }).then((out) => { if (out.checked) console.error('[byteplus-sweep]', JSON.stringify(out)); return out; }), env),
         ]);
         for (const r of results) {
             if (r.status === 'rejected') console.error('[cron] task threw:', r.reason && r.reason.message);

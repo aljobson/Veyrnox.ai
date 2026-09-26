@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { supabaseConfig } from './check-migration-ledger.mjs';
 const COUNTS = ['reap_exhausted', 'reap_overdue', 'stale_jobs', 'stale_top_up_returns', 'unreviewed_flagged_orders', 'unreviewed_order_collisions'];
-const TASKS = new Set(['top_up_backfill', 'upload_sweep', 'asset_reap', 'auto_short', 'grsai']);
+const TASKS = new Set(['top_up_backfill', 'upload_sweep', 'asset_reap', 'auto_short', 'grsai', 'byteplus']);
 const CINEMA_COUNTS = ['cinema_poll_overdue', 'cinema_poll_failed', 'cinema_provisioning_stuck', 'cinema_processing_stuck', 'cinema_cleanup_required'];
 export function assessRecovery(value) {
     if (!value || !Array.isArray(value.unhealthy_tasks) || value.unhealthy_tasks.some(task => !TASKS.has(task))) throw Error('invalid task health');

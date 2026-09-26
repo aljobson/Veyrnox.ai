@@ -1,4 +1,4 @@
-# ADR-0057 — BytePlus ModelArk as the provider for Seedance video
+# ADR-0058 — BytePlus ModelArk as the provider for Seedance video
 
 - **Status**: Proposed 2026-09-26. Rows stage inactive; nothing goes live until the
   "Before activating any row" list is complete and the owner accepts.
@@ -185,6 +185,40 @@ with no change to the ledger, the job state machine or the refund rules.
 7. The four compliance controls are product work, not adapter work, and they gate this
    provider whether or not the adapter is ready. They also raise our standing with every
    other provider whose terms say the same thing less explicitly.
+
+## Implementation (2026-09-26)
+
+Shipped, all rows inactive:
+
+- `packages/adapters/byteplus.js`: `buildRequest` (record-pinned, prompt and optional
+  https first frame into `content`), `submitTask`, `fetchTask`, `interpretTask`. Fixed host,
+  bearer key, `redirect: 'manual'`, 64 KB response cap, no callback registered, typed error
+  codes only; vendor payloads never leave the adapter.
+- `lib/additionalModelCapabilities.js`: five `byteplus:*` records, 5s at 720p, aspect
+  ratios 16:9, 9:16, 1:1, 4:3, 3:4, optional first-frame image capped at 4096 by 4096.
+- `packages/provider-sdk/registry.js`: `byteplus` entry, key present only when R2 is
+  configured (polling needs somewhere to copy the 24-hour output).
+- `lib/byteplusSweep.js` plus the `byteplus` task in `worker.js`: same shape as the GrsAI
+  sweep, 45-minute timeout, `.mp4` with `expectMp4`, 60 MB cap.
+- `packages/adapters/r2Copy.js`: `byteplus` allowlist entry, deliberately empty.
+- Migration `0145_byteplus_seedance_staged.sql`: the five rows inactive at 20, 13, 27, 39 and
+  6 credits; `worker_task_health` CHECK widened; `refresh_recovery_health` expects the
+  byteplus heartbeat only while a byteplus row is active.
+- `scripts/verify-byteplus-endpoints.mjs`: plan and paid submit modes, reports output host,
+  redirect behaviour and billed tokens times the pack rate against the recorded cost.
+- Tests: `tests/byteplusAdapter.test.mjs`, `tests/byteplusSweep.test.mjs`, catalog list in
+  `tests/modelCapabilities.test.mjs`, a refusal case in `tests/r2Copy.test.mjs`.
+- `scripts/check-security.mjs` and `scripts/check-recovery-health.mjs` know the new secret
+  and task name.
+
+Two corrections to the decision text above, found while building:
+
+- Decision 5: `job_steps.provider` is not widened. That table belongs to Auto Short, which
+  does not use BytePlus in v1. Widen it in the migration that first routes a step there.
+- Decision 7, rights in uploaded content: the gateway already requires `consent: true` on
+  any request naming an upload and records it on the job through `job_consent_attested`
+  (migration 0096). The control exists per job; what remains is the user-level attestation
+  text and its link from the upload UI.
 
 ## Before activating any row
 

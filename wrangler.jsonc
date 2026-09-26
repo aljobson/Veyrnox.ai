@@ -118,6 +118,7 @@
   //                               SigV4 R2 client (packages/adapters/r2.js)
   //   R2_JURISDICTION             'eu' once media is cut over to the EU-jurisdiction bucket (ADR-0021)
   //   GRSAI_API_KEY               GrsAI submit + authenticated scheduled polling (ADR-0020)
+  //   BYTEPLUS_API_KEY            BytePlus ModelArk submit + authenticated scheduled polling (ADR-0058)
   //   KIE_API_KEY, KIE_WEBHOOK_HMAC_KEY
   //                               kie.ai submit + callback HMAC (ADR-0020)
   //   OPENROUTER_API_KEY, OPENROUTER_WEBHOOK_SECRET
