@@ -238,3 +238,16 @@ apply-migrations. Applying 0115 activates enforcement immediately. No additional
 flag or browser opt-in exists for this control on existing authenticated reads.
 Rollback requires an approved forward migration restoring the prior read RPCs;
 leave the applied migration ledger intact.
+
+
+## Prepared expiry-notice activation — 2026-09-24
+
+The activation PR removes the browser-only opt-in so every Library job card
+shows the existing retention notice. Dates still come from server asset
+metadata; this does not change retention or delete files.
+
+Keep this PR in draft until migration 0109 has had at least 24 hours of clean
+reconciliation. Its successful apply-migrations run 35984941220 completed at
+2026-09-24 10:04:10 UTC. The earliest eligible time is therefore
+2026-09-25 10:04:10 UTC, subject to verifying a clean intervening window and
+current reconciliation. Time elapsed alone is not sufficient evidence.
