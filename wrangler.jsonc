@@ -108,6 +108,8 @@
       "triggers": { "crons": ["*/5 * * * *"] },
       "vars": {
         "APP_ENV": "staging",
+        "ACCESS_TEAM_DOMAIN": "fancy-lake-7c60.cloudflareaccess.com",
+        "ACCESS_AUD": "90e88032af5e17f3e560fd12f33a182a9ff353ddf813514fcfe072f169efe1fd",
         "PUBLIC_HOST": "https://veyrnox-ai-staging.al-jobson.workers.dev",
         "SUPABASE_URL": "https://yrqzwqywxfesmbvhzjgj.supabase.co",
         "NEXT_PUBLIC_SUPABASE_URL": "https://yrqzwqywxfesmbvhzjgj.supabase.co",
