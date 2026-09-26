@@ -29,7 +29,8 @@ async function person() {
 try {
   const migration = await readFile(new URL('../packages/db/schema/supabase/0142_cinema_unlocks.sql', import.meta.url), 'utf8');
   await c.query(migration); await c.query(migration);
-  assert.deepEqual(await q('SELECT key, value FROM public.cinema_prices ORDER BY key'), [{ key: 'episode_unlock', value: 6 }, { key: 'film_unlock', value: 6 }, { key: 'free_episodes', value: 5 }]);
+  // Later migrations add keys (0144: pass_ceiling_minutes); the Phase 1 three are fixed.
+  assert.deepEqual(await q("SELECT key, value FROM public.cinema_prices WHERE key IN ('episode_unlock','film_unlock','free_episodes') ORDER BY key"), [{ key: 'episode_unlock', value: 6 }, { key: 'film_unlock', value: 6 }, { key: 'free_episodes', value: 5 }]);
 
   // A creator with a published series (season 1: 7 episodes, season 2: 22), a film and a short.
   const creator = await person(), alice = await person(), bob = await person(), carol = await person();

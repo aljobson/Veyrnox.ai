@@ -139,3 +139,26 @@ test('upstream failures are redacted', async () => {
   assert.equal(res.status, 503);
   assert.ok(!(await res.text()).includes('private'));
 });
+
+test('a heartbeat records seconds only for a Pass holder and reports the ceiling', async () => {
+  const s = setup('heartbeat', { record_cinema_pass_play: { ok: true, recorded: true, access: 'pass', seconds: 30, minutes_used: 12, ceiling_minutes: 3000 } });
+  for (const value of [{ content_id: id }, { content_id: id, seconds: 0 }, { content_id: id, seconds: 61 }, { content_id: id, seconds: '30' }, { content_id: id, seconds: 30, extra: 1 }]) {
+    assert.equal((await s.handle(post('play/heartbeat', value))).status, 400, JSON.stringify(value));
+  }
+  assert.equal(s.calls.length, 0);
+  const res = await s.handle(post('play/heartbeat', { content_id: id, seconds: 30 }));
+  assert.equal(res.status, 200);
+  const data = await res.json();
+  assert.deepEqual([data.recorded, data.access, data.seconds, data.minutes_used, data.ceiling_minutes, data.reason], [true, 'pass', 30, 12, 3000, undefined]);
+  assert.deepEqual(s.calls[1].args, { p_auth_id: id, p_content_id: id, p_seconds: 30 });
+  const ceiling = setup('heartbeat', { record_cinema_pass_play: { ok: true, recorded: false, access: 'locked', reason: 'pass_ceiling', minutes_used: 3000, ceiling_minutes: 3000 } });
+  const c = await (await ceiling.handle(post('play/heartbeat', { content_id: id, seconds: 30 }))).json();
+  assert.deepEqual([c.recorded, c.access, c.reason, c.seconds], [false, 'locked', 'pass_ceiling', 0]);
+  const missing = setup('heartbeat', { record_cinema_pass_play: { error: 'content_not_found' } });
+  assert.equal((await missing.handle(post('play/heartbeat', { content_id: id, seconds: 30 }))).status, 404);
+  const odd = setup('heartbeat', { record_cinema_pass_play: { ok: true } });
+  assert.equal((await odd.handle(post('play/heartbeat', { content_id: id, seconds: 30 }))).status, 503);
+  // Entitlement passes a ceiling reason through.
+  const ent = setup('entitlement', { cinema_entitlement: { access: 'locked', credits: 6, reason: 'pass_ceiling' } });
+  assert.equal((await (await ent.handle(get(`?content_id=${id}`))).json()).reason, 'pass_ceiling');
+});

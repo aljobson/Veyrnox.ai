@@ -55,6 +55,8 @@ Tests: webhook signature, replay no-op, out-of-order events, dispute Freeze, int
 
 ## Phase 3 — Pass plays and creator ledger (migration 0144)
 
+Status 2026-09-26: built on PR #344 as described in ADR-0057 "Phase 3 as built". The heartbeat endpoint is `POST /api/v1/cinema/play/heartbeat`; the Operator read is `GET /api/v1/admin/cinema/earnings?month=YYYY-MM`. Verified by `scripts/test-cinema-pass-plays.mjs` (wired into `ledger-tests.yml`), `tests/cinemaUnlockApi.test.mjs` and `tests/cinemaEarningsApi.test.mjs`.
+
 - `cinema_pass_plays(pass_id, content_id, seconds INT CHECK 1..600, played_at)` append-only, written from the play endpoint's heartbeat with a per-request cap; feeds the monthly ceiling and the future creator share.
 - Operator read `operator_cinema_earnings(content_id, month)` summing Unlock credits and Pass seconds. No payout. Creator revenue share is its own ADR.
 
