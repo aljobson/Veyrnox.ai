@@ -40,6 +40,7 @@ Phase-0 decision-support documents for the target architecture at `/Users/aljobs
 | [ADR-0037 — Higgsfield credit parity](0037-higgsfield-credit-parity.md) | Prepared 2026-09-24 | Monthly-price equivalent one-off packs with a 50% contribution-margin target; exact generation-credit parity is secondary. | Full parity and production rollout |
 
 | [ADR-0048 — Social Cinema foundation](0048-social-cinema-foundation.md) | Proposed 2026-09-25 | Additive private membership and public profile projections; preserve existing identity and billing. | #320 |
+| [ADR-0057 — BytePlus ModelArk as the provider for Seedance video](0057-byteplus-modelark-provider.md) | Proposed 2026-09-26 | Cheapest verified Seedance source once resource packs are used (2.0 Fast $0.35 vs $0.454 on OpenRouter; 2.0 Mini, 2.0, 2.5 and 1.0 Pro Fast newly sellable at the 50% floor). Poll-first adapter, unsigned callback ignored, R2 host verified before activation, pack-exhaustion reconcile check. Gated on BytePlus's four Platform Customer controls, a written answer on the US exclusion, and enterprise verification. | Wholesale survey, byteplus-cost-levers |
 
 ## Decision graph
 
