@@ -9,6 +9,8 @@ on:
       - "scripts/test-social-cinema-foundation.mjs"
       - "scripts/test-cinema-creators.mjs"
       - "scripts/test-tenant-foundation.mjs"
+      - "scripts/test-project-documents.mjs"
+      - "scripts/test-project-assets.mjs"
       - "scripts/test-cinema-content.mjs"
       - "scripts/test-cinema-uploads.mjs"
       - "scripts/test-cinema-upload-recovery.mjs"
@@ -33,6 +35,8 @@ on:
       - "scripts/test-social-cinema-foundation.mjs"
       - "scripts/test-cinema-creators.mjs"
       - "scripts/test-tenant-foundation.mjs"
+      - "scripts/test-project-documents.mjs"
+      - "scripts/test-project-assets.mjs"
       - "scripts/test-cinema-content.mjs"
       - "scripts/test-cinema-uploads.mjs"
       - "scripts/test-cinema-upload-recovery.mjs"
@@ -110,6 +114,7 @@ jobs:
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-creators.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-tenant-foundation.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-project-documents.mjs
+          DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-project-assets.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-content.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-uploads.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-upload-recovery.mjs
