@@ -1,0 +1,54 @@
+# ADR-0057 — Social Cinema viewer paywall, modelled on ReelShort
+
+- **Status**: Proposed 2026-09-26. Owner asked for "the same as ReelShort"; this records what that means here and where it cannot be literal.
+- **Deciders**: Product owner (approver); Finance/Legal for cooling-off wording; Stripe acceptance in writing before build.
+- **Related**: [ADR-0013](0013-credit-expiry-policy.md) (Free vs Pack Credits), [ADR-0018](0018-credit-pack-top-ups.md) / [ADR-0031](0031-stripe-replaces-lemonsqueezy.md) (Stripe Managed Payments, refunds, Freeze), [ADR-0019](0019-dispute-webhooks-freeze.md), [ADR-0037](0037-higgsfield-credit-parity.md) (packs unchanged), [ADR-0048](0048-social-cinema-foundation.md) to [ADR-0054](0054-cinema-upload-removal.md) (Cinema), `CONTEXT.md` (Social Cinema viewing). Plan: [docs/cinema/paywall-plan.md](../cinema/paywall-plan.md).
+
+## Context
+
+ReelShort (Crazy Maple Studio) monetises vertical short drama three ways, checked 2026-09-26 against its App Store storefronts and web store:
+
+| | ReelShort | Notes |
+|---|---|---|
+| Free opening | first episodes of every series free | count varies by title |
+| Per-episode unlock | ~60 coins ≈ $0.30–0.57 | coins 0.50–0.95¢ each, packs $4.99–$99.99, unlocks permanent |
+| VIP | web $14.99/wk ($11.99 first week), $49.99/mo, $199.99/yr; iOS weekly $19.99 | unlimited viewing, no coins |
+| Rewarded ad | one episode per ad view | |
+
+Social Cinema (ADR-0048 to 0054) has profiles, creator onboarding, private SERIES → SEASON → EPISODE drafts with FILM/SHORT/TRAILER roots, and Stream uploads that require signed URLs. Nothing is published, viewable or priced yet; `cinema_content` allows only `DRAFT`/`PRIVATE`.
+
+Two literal readings of "the same" are ruled out:
+
+- **ReelShort's coin prices cannot become credit prices.** A credit is the generation unit; `credit_packs_sticker_floor` (0121) rejects anything under $0.043 per credit and every generation carries provider cost. Coins are 5 to 20 times cheaper because an episode costs its seller nothing to serve again. Unlocks are therefore priced *in credits at the existing pack rates*, which lands in ReelShort's per-episode dollar band anyway.
+- **Unlimited generation cannot be sold.** ReelShort's VIP is unlimited *viewing*. Viewing uploaded Cinema content costs only Stream delivery, so unlimited viewing is affordable; unlimited generation is not.
+
+The glossary's **Subscription** already means a recurring credit allotment (planned, not offered). The viewing plan is a different thing and gets its own name so the two never merge.
+
+## Decision
+
+1. **Free Episodes.** SHORT and TRAILER content is always free. The first five episodes of a series, counted from season 1 position 1 in order, are free. Everything after, and every FILM, is locked.
+2. **Episode Unlock: 6 credits, permanent.** A locked episode or film costs 6 credits, which is $0.26 to $0.60 at current pack rates against ReelShort's $0.30 to $0.57. An Unlock is a ledger row with reason `unlock:cinema:<content_id>`, written by a new `ledger_unlock` RPC that sits beside `ledger_debit` (which cannot be reused: it creates a `jobs` row, and an Unlock is not a job). It is idempotent on user and content, so a replay returns the same Unlock and never debits twice. Free Credits spend first (ADR-0013), which is fine: an Unlock has no provider cost. Frozen accounts cannot unlock. The price lives in a `cinema_prices` table with CHECK bounds; the app layer never computes it.
+3. **Cinema Pass: $14.99 weekly, $49.99 monthly, $199.99 yearly, USD, web.** Unlimited viewing of published Cinema content while active. The weekly plan's first week is $11.99 once per account, enforced server-side from Pass history, never from the client. Sold through Stripe Checkout in subscription mode under Managed Payments; cancellation through the Stripe Customer Portal; the Pass runs to the end of the paid period. A fair-use ceiling of 3,000 delivered minutes per calendar month bounds Stream cost per Pass.
+4. **A Cinema Pass never touches the ledger.** It grants no credits and moves no balance, so `reconcile_balances()` and `reconcile_free_credits()` are unaffected. Entitlement is derived on the server from `cinema_passes` state and period end, and from `cinema_unlocks`, through one RPC. Stream playback tokens are minted only for an entitled viewer, bound to the video, with a TTL of at most 15 minutes.
+5. **Reversals.** An Unlock is final: digital content supplied at once, like a Top-up after generating. Content taken down by its creator or by moderation reverses every Unlock of it from the last 30 days as `ledger_refund` compensating rows, run by an Operator. A Stripe refund of a Pass invoice ends the Pass at once. A dispute on a Pass invoice ends the Pass and Freezes the account (ADR-0019), because it is the same Chargeback signal.
+6. **Viewer spend is recorded per content for creators, but nothing is paid out.** Every Unlock keeps its content id and credits; every Pass play writes an append-only row of seconds watched. A creator revenue share is a separate ADR with its own tax and identity work. Creator terms must say so before any content is published.
+7. **Not now.** Rewarded-ad unlocks (no ad network, and CSP is `default-src 'self'`), regional or local-currency prices, iOS and Play channels, and a coin-style bonus ladder for credit packs (packs stay as 0121).
+
+## Considered options
+
+- **Sell unlocks in a new Cinema-only coin.** Matches ReelShort exactly and lets coins be priced at 1¢. Rejected: a second currency means a second ledger, a second reconciliation and a second Free grant faucet, for a product with no customers yet. Credits already exist, already reconcile and already Freeze.
+- **Cinema Pass as a credit Subscription.** The glossary's planned Subscription could carry a viewing entitlement. Rejected: it would tie a $14.99 weekly viewing plan to credit allotments and per-period expiry buckets that do not exist yet, and would leak generation cost into an unlimited promise.
+- **Pass-only, no unlocks.** Simplest billing. Rejected: ReelShort's revenue is mostly coins, and a per-episode price is the on-ramp that a weekly plan is not.
+- **Free episode count per title, set by the creator.** ReelShort varies it. Deferred: a platform constant is enough to launch and can become a bounded creator setting later.
+
+## Consequences
+
+- **Blocked on publication.** `cinema_content.lifecycle_status` and `visibility` CHECK to `DRAFT`/`PRIVATE`. A publication slice with moderation and a public feed is a prerequisite and needs its own ADR; this ADR prices what that one makes viewable.
+- **Blocked on written Stripe acceptance** for recurring viewer plans over user-uploaded video under Managed Payments. LemonSqueezy's refusal (ADR-0031) is the reason to ask first; Managed Payments' support for subscription mode is a verification item, not an assumption.
+- **Consumer law.** An Unlock needs a Supply Consent equivalent (content supplied immediately, right to cancel ends on play). A Pass is a distance contract with a 14-day cooling-off in the UK and EU; the plan calls for pro-rata refund on cancellation within 14 days rather than a waiver.
+- **New webhook events on the existing Stripe route**: `customer.subscription.created`, `updated`, `deleted`, `invoice.paid`, `invoice.payment_failed`, deduped by `webhook_events(source, external_id)` like every other event. The payload's customer is never trusted for identity; the Pass row is looked up by Stripe subscription id and its own `user_id` used.
+- **Feature switches.** `CINEMA_SUBSCRIPTIONS_ENABLED` already exists as a master flag in `lib/cinema/features.js` and becomes the Pass switch. `CINEMA_UNLOCKS_ENABLED` is new, a child of the master and profile switches; the reserved `PPV_ENABLED` stays reserved. Both ship off.
+- **Phase 1 as built (0142, 2026-09-26).** `cinema_content` now admits `PUBLISHED` and `PUBLIC` in its CHECKs so the publication slice has somewhere to write, but no function writes them and `save_cinema_draft` refuses to edit published rows; drafts stay private. "First five episodes" is implemented as season 1, positions 1 to 5. Playback tokens are RS256 Stream JWTs signed with a key that lives only in Worker secrets (`CINEMA_STREAM_SIGNING_KEY_ID`, `CINEMA_STREAM_SIGNING_JWK`) for `CINEMA_STREAM_CUSTOMER_CODE`, and the player host is not yet in CSP. A viewer page waits for the publication slice: there is no public content read to hang it on. Deliberate: a playback token names the video, not the viewer, because Stream verifies only its own claims; the 15-minute TTL is the whole mitigation for a captured token, the same trade as a presigned R2 URL. `reverse_cinema_unlocks` has no HTTP route yet and is reachable only by an Operator tool that must take the operator's name from a verified identity.
+- **Stream cost is the only marginal cost.** At Stream's published delivery rate a Pass viewer who hits the 3,000-minute ceiling costs about $3 a month against $49.99; the yearly plan at $16.67 a month still clears 50% contribution at the ceiling. Verify the rate and the fee schedule before pricing is final.
+- **Vocabulary.** `CONTEXT.md` gains Free Episodes, Episode Unlock, Cinema Pass, Pass Play and Unlock Reversal. "VIP", "coins" and "membership" are avoided.
+- **Migrations** 0142 (prices, unlocks, entitlement RPC), 0143 (passes, pass events), 0144 (pass plays) take the next free numbers on main; no open PR carries a migration today. Applied only through the `apply-migrations` workflow (ADR-0023).

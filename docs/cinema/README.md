@@ -24,6 +24,7 @@ Read [REPO-ASSESSMENT.md](REPO-ASSESSMENT.md) first for the repository-specific 
 | CREATOR_CONTENT_ENABLED | Master + profiles |
 | CREATOR_UPLOADS_ENABLED | Master + profiles |
 | CINEMA_SUBSCRIPTIONS_ENABLED | Master |
+| CINEMA_UNLOCKS_ENABLED | Master + profiles |
 | CREATOR_MONETISATION_ENABLED | Master + profiles + subscriptions |
 | VOTING_ENABLED | Master + profiles |
 | COMMENTS_ENABLED | Master + profiles |
@@ -56,3 +57,7 @@ ADR-0050 and migration 0134 add `/social-cinema/creator`: private film/short/tra
 ## Stream upload increment
 
 ADR-0052 and migration 0137 add bounded creator upload reservations, direct resumable transfers, private processing status and verified Stream callbacks. Creator workspace video controls use existing draft ownership. All flags remain off. Live Stream credentials/testing, provider cleanup/replacement, rights and moderation remain launch gates; encoding success never publishes a draft.
+
+## Viewer paywall increment (Phase 1)
+
+ADR-0057 and migration 0142 add Free Episodes and Episode Unlock, modelled on ReelShort. Shorts and trailers are free, the first five episodes of a series are free, and every other episode or film costs 6 credits, taken from the existing balance by `ledger_unlock` (Free Credits first, Frozen accounts denied, replay-safe). `cinema_prices` is the only source of the numbers. `GET /api/v1/cinema/entitlement`, `POST /api/v1/cinema/unlocks` and `POST /api/v1/cinema/play` sit behind the new default-off `CINEMA_UNLOCKS_ENABLED` child switch. Playback tokens are RS256 Stream JWTs bound to one video and valid for 15 minutes, signed with `CINEMA_STREAM_SIGNING_KEY_ID` + `CINEMA_STREAM_SIGNING_JWK` (secret) for `CINEMA_STREAM_CUSTOMER_CODE`; the player host is not yet in CSP. `reverse_cinema_unlocks` is the Operator takedown reversal. `cinema_content` now admits `PUBLISHED`/`PUBLIC` but nothing writes them: the publication slice (own ADR) is still the gate before any viewer sees or pays for anything. Cinema Pass (Phase 2) is not built.
