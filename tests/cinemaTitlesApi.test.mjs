@@ -27,11 +27,11 @@ test('the anonymous catalogue is validated, cached for a minute, and never carri
   assert.equal(res.headers.get('cache-control'), 'public, max-age=60');
   const data = await res.json();
   assert.deepEqual([data.titles.length, data.next], [1, '2026-09-26T10:00:00.000Z']);
-  assert.deepEqual(s.calls[0].args, { p_limit: 1, p_before: '2026-09-26T12:00:00.000Z' });
+  assert.deepEqual(s.calls[0].args, { p_limit: 1, p_before: '2026-09-26T12:00:00.000Z', p_category: null });
   assert.ok(!s.calls.some((c) => c.name === 'consume_account_read_request'));
   const again = await s.handle(get('/api/cinema/titles?limit=1&before=2026-09-26T12:00:00Z'));
   assert.equal(again.status, 200);
-  assert.equal(s.calls.length, 1, 'served from the cache');
+  assert.equal(s.calls.length, 2, 'served from the cache: titles and categories were read once');
   const full = setup('list', Array.from({ length: 24 }, (_, i) => ({ id, published_at: `2026-09-${String(i + 1).padStart(2, '0')}T00:00:00.000Z` })));
   assert.equal((await (await full.handle(get('/api/cinema/titles'))).json()).next, '2026-09-24T00:00:00.000Z');
   const short = setup('list', list);
@@ -74,4 +74,18 @@ test('the routes outside the auth middleware never opt into identity', async () 
     assert.doesNotMatch(src, /authed/, file);
   }
   assert.match(readFileSync(new URL('../app/api/v1/cinema/titles/[id]/route.js', import.meta.url), 'utf8'), /authed: true/);
+});
+
+test('the catalogue filters by one category slug and returns the category list', async () => {
+  const calls = [];
+  const handle = titlesHandler({ action: 'list', cache: { get: async () => undefined, put: async () => {} }, rpcCall: async (name, args) => { calls.push({ name, args }); return name === 'list_cinema_categories' ? [{ slug: 'romance', label: 'Romance' }] : list; } });
+  for (const q of ['?category=Romance', '?category=bad%20slug', '?category=']) assert.equal((await handle(get(`/api/cinema/titles${q}`))).status, 400, q);
+  const res = await handle(get('/api/cinema/titles?category=romance'));
+  assert.equal(res.status, 200);
+  const data = await res.json();
+  assert.deepEqual([data.category, data.categories[0].slug, data.titles.length], ['romance', 'romance', 1]);
+  assert.equal(calls.find((c) => c.name === 'list_public_cinema_titles').args.p_category, 'romance');
+  const all = await (await handle(get('/api/cinema/titles'))).json();
+  assert.equal(all.category, null);
+  assert.equal(calls.at(-2).args.p_category, null);
 });

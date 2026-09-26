@@ -34,7 +34,9 @@ async function activePass(actor, plan = 'pass-monthly') {
 }
 try {
   const migration = await readFile(new URL('../packages/db/schema/supabase/0144_cinema_pass_plays.sql', import.meta.url), 'utf8');
-  await c.query(migration); await c.query(migration);
+  // Idempotency proof inside a rolled-back transaction, so the re-apply cannot
+  // reinstate this file's function bodies over later migrations for the rest of the run.
+  await c.query('BEGIN'); await c.query(migration); await c.query(migration); await c.query('ROLLBACK');
   assert.equal(await value("SELECT value FROM public.cinema_prices WHERE key='pass_ceiling_minutes'"), 3000);
   await assert.rejects(q("UPDATE public.cinema_prices SET value=51 WHERE key='episode_unlock'"), /check/i);
   await assert.rejects(q("INSERT INTO public.cinema_prices(key,value) VALUES('rent_price',1)"), /check/i);

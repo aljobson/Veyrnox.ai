@@ -58,7 +58,7 @@ function Submission({ item, onDone }) {
     catch (e) { setError(message(e.code)); setBusy(false); }
   }
   return <article className="mt-6 rounded-2xl border border-vx-border p-5">
-    <p className="font-vx-mono text-xs text-vx-fg-muted">{labels[item.content_type]} · {item.language} · {item.content_type === 'SERIES' ? `${item.episode_count} episodes · ` : ''}{minutes(item.duration_seconds)} · rights {item.rights_version}{item.prior_actions > 0 ? ` · ${item.prior_actions} prior action(s)` : ''}</p>
+    <p className="font-vx-mono text-xs text-vx-fg-muted">{labels[item.content_type]} · {item.language} · {item.content_type === 'SERIES' ? `${item.episode_count} episodes · ` : ''}{minutes(item.duration_seconds)} · {(item.categories || []).join(', ') || 'no category'} · rights {item.rights_version}{item.prior_actions > 0 ? ` · ${item.prior_actions} prior action(s)` : ''}</p>
     <h2 className="mt-2 text-xl font-bold break-words">{item.title}</h2>
     <p className="text-vx-fg-muted">{item.display_name} <span>@{item.username}</span></p>
     <p className="mt-4 whitespace-pre-wrap break-words text-vx-fg-body">{item.synopsis || 'No synopsis.'}</p>

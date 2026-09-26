@@ -29,3 +29,7 @@ Every earlier Cinema slice stopped at "nothing is published": drafts were privat
 - The middleware does not gate `/api/cinema/*`. Those two routes are read-only, flag-gated, cached, and take no identity; adding anything else under that prefix needs the same care.
 - Suspension is terminal for the creator by design; reinstatement is an Operator SQL action until a route exists.
 - `cinema_content` rows now carry `rights_version`, `rights_at`, `submitted_at`, `published_at`, `closed_at` and `review_note`; the creator's own listing reports them and whether each item's video is ready.
+
+## Addendum 2026-09-26 — Categories (0148)
+
+A title carries one or two Categories from a fixed list held in `cinema_categories` (romance, drama, thriller, comedy, horror, sci-fi, fantasy, action, mystery, documentary, animation, kids). The creator picks them on the draft; submission refuses a title without one (`category_required`); seasons and episodes carry none. The public catalogue read takes an optional Category and returns the list alongside the titles, so the Social Cinema page shows category tabs. The list grows by migration, never from the app layer, and the JavaScript mirror in `lib/cinema/domain.js` only labels the picker. Considered and rejected: free-form tags (no browsable structure, moderation burden) and per-episode categories (a series is one shelf).

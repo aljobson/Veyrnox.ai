@@ -127,3 +127,7 @@ _Avoid_: Unpublish, delete, retract
 **Suspension**:
 An administrator taking a published title out of Social Cinema. It stays out, its creator cannot edit or resubmit it, and its Episode Unlocks are reversed.
 _Avoid_: Ban, removal, strike, takedown (that is for a generation)
+
+**Category**:
+One of a fixed list of genres (romance, drama, thriller, comedy, horror, sci-fi, fantasy, action, mystery, documentary, animation, kids) a creator attaches to a title, one or two per title. Viewers browse the catalogue by Category; a title needs at least one before review.
+_Avoid_: Genre (in code), tag, track (that is a contest)
