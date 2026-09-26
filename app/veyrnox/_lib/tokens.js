@@ -100,6 +100,7 @@ export const RESOLUTIONS = ['1K', '2K', '4K'];
 export const SUPPORT_EMAIL = 'legal@veyrnox.com';
 
 export const NAV_CATEGORIES = [
+  { href: '/social-cinema', label: 'Social Cinema' },
   { href: '/#explore',   label: 'Explore' },
   { href: '/#models',    label: 'Models' },
   { href: '/presets',   label: 'Presets' },
@@ -109,6 +110,7 @@ export const NAV_CATEGORIES = [
 
 // Every public route, with the blurb search and the 404 page reuse.
 export const SITE_PAGES = [
+  { href: '/social-cinema', label: 'Social Cinema', description: 'Episodic stories, community voting and upcoming series.' },
   { href: '/',                  label: 'Home',               description: 'Credit-metered AI image, video and audio generation.' },
   { href: '/pricing',           label: 'Pricing',            description: 'Every model, every credit price, one balance.' },
   { href: '/presets',           label: 'Presets',            description: 'Curated one-tap looks, priced up front.' },

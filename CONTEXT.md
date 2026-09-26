@@ -67,3 +67,63 @@ _Avoid_: Admin (when meaning the person), support
 **Frozen**:
 An account state, entered on a Chargeback and left only when an operator unfreezes it, that blocks generating and buying. Sign-in, the library, downloads, and account deletion still work.
 _Avoid_: Suspended, banned, locked
+
+### Social Cinema viewing
+
+**Free Episodes**:
+The opening episodes of a series that anyone can watch without paying. Shorts and trailers are always free.
+_Avoid_: Preview, trial episodes, teaser
+
+**Episode Unlock**:
+A viewer spending credits once to watch a locked episode or film on that account for good.
+_Avoid_: Purchase, rental, coin unlock
+
+**Cinema Pass**:
+A recurring plan that lets a viewer watch all published Cinema content while it is active. It grants no credits and is not a Subscription.
+_Avoid_: VIP, membership, tier, unlimited plan
+
+**Pass Play**:
+A record of a Cinema Pass holder watching some of a title. It counts toward that Pass's monthly viewing ceiling.
+_Avoid_: View, stream, session
+
+**Unlock Reversal**:
+Returning the credits of an Episode Unlock because the content was taken down. No money moves.
+_Avoid_: Refund (on its own), chargeback
+
+**Content Warning**:
+An admin's recorded notice to a user that a generation breached the Acceptable Use Policy, with nothing removed. The first tier of violation handling.
+_Avoid_: Strike (on its own), flag, report
+
+**Takedown**:
+An admin removing a generation's assets for an Acceptable Use breach, recorded against the job. The third Takedown on an account Freezes it.
+_Avoid_: Delete, moderation action, ban
+
+**Rights Attestation**:
+A user's recorded statement, made when sending an upload, that they own it or have the consent of everyone identifiable in it. Kept per job and once per account with the wording version.
+_Avoid_: Consent form, waiver, terms acceptance
+
+### Social Cinema publishing
+
+**Title**:
+A film, short, trailer or series as one publishable whole. Seasons and episodes belong to their title and follow its state.
+_Avoid_: Project, content item, root
+
+**Rights Declaration**:
+A creator's recorded, versioned statement, given when submitting a title for review, that they hold the rights to everything in it and have declared its AI use truthfully. Per title; distinct from the account-level Rights Attestation given on a generation upload.
+_Avoid_: Terms acceptance, licence, waiver, attestation (that is the upload one)
+
+**Submission**:
+A creator asking for a title to be reviewed for publication. It waits until a Cinema administrator decides.
+_Avoid_: Publish request, application (that is for creators)
+
+**Publication**:
+A title becoming visible in Social Cinema after an administrator approves its Submission.
+_Avoid_: Release, go-live, launch
+
+**Withdrawal**:
+A creator taking a title back, out of review or out of Social Cinema. A published title's Episode Unlocks are reversed.
+_Avoid_: Unpublish, delete, retract
+
+**Suspension**:
+An administrator taking a published title out of Social Cinema. It stays out, its creator cannot edit or resubmit it, and its Episode Unlocks are reversed.
+_Avoid_: Ban, removal, strike, takedown (that is for a generation)

@@ -20,6 +20,11 @@ const SOURCE_HOSTS = {
     kie: { hosts: [], suffixes: ['.aiquickdraw.com'] },
     // Content endpoint needs our API key, so the exact API host only.
     openrouter: { hosts: ['openrouter.ai'], suffixes: [] },
+    // Deliberately empty until one live output has been fetched by
+    // scripts/verify-byteplus-endpoints.mjs and its host recorded in the
+    // activating migration's header (ADR-0058). An empty list refuses every
+    // copy, and the rows are inactive, so nothing can be debited against it.
+    byteplus: { hosts: [], suffixes: [] },
 };
 // Providers whose output download carries our API key. The key may only go to
 // a host in that provider's list above, which for these is its own API host.

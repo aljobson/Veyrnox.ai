@@ -35,7 +35,7 @@ export default function MobileJob() {
             <span>Encode —</span>
           </div>
           <div className="mt-4 text-[11.5px] text-vx-fg-body leading-[1.5]">
-            You can leave this screen. We'll push a notification when it's ready.
+            You can leave this screen. We&apos;ll push a notification when it&apos;s ready.
             <b className="text-vx-accent"> Fails auto-refund.</b>
           </div>
         </div>

@@ -134,7 +134,7 @@ export default function Credits() {
         <div className="flex flex-wrap items-baseline justify-between gap-2 mb-4">
           <h2 className="text-xl font-black tracking-[-0.02em]">Recent generations</h2>
           <div className="font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted">
-            FROM THIS BROWSER'S HISTORY
+            FROM THIS BROWSER&apos;S HISTORY
           </div>
         </div>
         {ledger.length === 0 ? (

@@ -1,4 +1,4 @@
-// ADR-0049: framework scripts must use this request's nonce, never cached HTML.
+// ADR-0060: framework scripts must use this request's nonce, never cached HTML.
 export const dynamic = 'force-dynamic';
 
 // Metadata for /app (Explore). Child routes — create, library, credits,

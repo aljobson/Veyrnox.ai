@@ -1,7 +1,10 @@
+import { buildConfig } from './packages/security/config.js';
+const identityConfig = buildConfig(process.env);
+
 /** @type {import('next').NextConfig} */
 import { contentSecurityPolicy } from './lib/contentSecurityPolicy.mjs';
 
-// All HTML uses middleware's fresh nonce policy (ADR-0049). API responses
+// All HTML uses middleware's fresh nonce policy (ADR-0060). API responses
 // keep a static restrictive policy without allowing inline scripts.
 const isDev = process.env.NODE_ENV === 'development';
 const CSP = contentSecurityPolicy(undefined, isDev);
@@ -16,14 +19,16 @@ const securityHeaders = [
 
 const nextConfig = {
   env: {
-    NEXT_PUBLIC_SUPABASE_URL: 'https://xdxdzmsztyzbnzeforxx.supabase.co',
-    NEXT_PUBLIC_SUPABASE_ANON_KEY: 'sb_publishable_HwEQqi6FXJOmWpy5eqR9-A_Zvy8_ii1',
+    NEXT_PUBLIC_SUPABASE_URL: identityConfig.supabaseUrl,
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: identityConfig.publishableKey,
     // Public, like the anon key. Empty = no widget and no token sent, which is
     // the pre-CAPTCHA behaviour. Never empty this while Supabase CAPTCHA is on:
     // every email/password sign-in would fail (ADR-0026).
     NEXT_PUBLIC_TURNSTILE_SITE_KEY: '0x4AAAAAAE-nahDRUDwD5HEx',
     // Edge middleware bakes env at build time.
-    SUPABASE_URL: 'https://xdxdzmsztyzbnzeforxx.supabase.co',
+    SUPABASE_URL: identityConfig.supabaseUrl,
+    APP_ENV: identityConfig.appEnv,
+    PUBLIC_HOST: identityConfig.publicOrigin,
   },
   async headers() {
     return [
@@ -47,6 +52,10 @@ const nextConfig = {
   async redirects() {
     return [
       { source: '/veyrnox', destination: '/', permanent: true },
+      { source: '/cinema', destination: '/social-cinema', permanent: false },
+      { source: '/veyrnox/social-cinema', destination: '/social-cinema', permanent: true },
+      { source: '/veyrnox/social-cinema/creator', destination: '/social-cinema/creator', permanent: true },
+      { source: '/veyrnox/social-cinema/:path*', destination: '/social-cinema/:path*', permanent: true },
       { source: '/veyrnox/pricing', destination: '/pricing', permanent: true },
       { source: '/veyrnox/presets', destination: '/presets', permanent: true },
       { source: '/veyrnox/design-system', destination: '/design-system', permanent: true },
@@ -60,6 +69,12 @@ const nextConfig = {
     return {
       beforeFiles: [
         { source: '/', destination: '/veyrnox' },
+        { source: '/social-cinema', destination: '/veyrnox/social-cinema' },
+        { source: '/social-cinema/creator', destination: '/veyrnox/social-cinema/creator' },
+        // Cinema Pass (ADR-0057) and the viewer pages (ADR-0059).
+        { source: '/social-cinema/pass', destination: '/veyrnox/social-cinema/pass' },
+        { source: '/social-cinema/title/:id', destination: '/veyrnox/social-cinema/title/:id' },
+        { source: '/social-cinema/watch/:id', destination: '/veyrnox/social-cinema/watch/:id' },
         { source: '/pricing', destination: '/veyrnox/pricing' },
         { source: '/presets', destination: '/veyrnox/presets' },
         { source: '/design-system', destination: '/veyrnox/design-system' },

@@ -15,6 +15,9 @@
  * deployment must not accept traffic.
  */
 
+import { stripContext } from './packages/security/context.js';
+import { responseHeaders } from './packages/security/errors.js';
+import { recentMfaTimestamp } from './lib/cinema/strongAuth.js';
 import { NextResponse } from 'next/server';
 import { contentSecurityPolicy } from './lib/contentSecurityPolicy.mjs';
 import { readToken, validateClaims, verifyES256 } from './lib/supabaseJwt.js';
@@ -32,18 +35,23 @@ const IDENTITY_HEADERS = [
     // 'aal2' a second factor was satisfied this session. Forwarded so a
     // handler can demand aal2 without re-parsing the token.
     'x-veyrnox-auth-aal',
+    'x-veyrnox-auth-mfa-at',
 ];
 
 export async function middleware(req) {
     // Identity headers are ours to set. Strip any inbound copy on every
     // branch, so no handler can ever read a client-supplied value.
-    const headers = new Headers(req.headers);
+    const headers = stripContext(req.headers);
+    const requestId = crypto.randomUUID();
+    headers.set('x-request-id', requestId);
     for (const h of IDENTITY_HEADERS) headers.delete(h);
 
     // Page navigation authenticates through the existing client flow. Never
     // demand an API Bearer token for HTML. The renderer consumes this request
     // policy to nonce framework/flight scripts; the response must match it.
-    if (req.nextUrl.pathname !== '/api/v1' && !req.nextUrl.pathname.startsWith('/api/v1/')) {
+    // NextRequest carries nextUrl; a plain Request (tests) only has url.
+    const pathname = req.nextUrl?.pathname ?? new URL(req.url).pathname;
+    if (pathname !== '/api/v1' && !pathname.startsWith('/api/v1/')) {
         const nonce = btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(16))));
         const policy = contentSecurityPolicy(nonce, process.env.NODE_ENV === 'development');
         headers.set('x-nonce', nonce);
@@ -56,11 +64,11 @@ export async function middleware(req) {
 
     const supabaseUrl = process.env.SUPABASE_URL;
     if (!supabaseUrl) {
-        return jsonError(503, { error: 'auth not configured' });
+        return jsonError(503, { error: 'auth not configured', requestId });
     }
 
     const token = readToken(req);
-    if (!token) return reject(req, 'missing');
+    if (!token) return reject(req, 'missing', requestId);
 
     let claims;
     try {
@@ -71,13 +79,13 @@ export async function middleware(req) {
         // 503 so clients do not bounce users to sign-in during an incident.
         if (reason === 'jwks') {
             console.error('[auth] JWKS unavailable; answering 503');
-            return jsonError(503, { error: 'auth_unavailable' });
+            return jsonError(503, { error: 'auth_unavailable', requestId });
         }
-        return reject(req, reason);
+        return reject(req, reason, requestId);
     }
 
     const claimError = validateClaims(claims, supabaseUrl);
-    if (claimError) return reject(req, claimError);
+    if (claimError) return reject(req, claimError, requestId);
 
     // Forward verified identity (inbound copies were deleted above).
     headers.set('x-veyrnox-auth-id', claims.sub);
@@ -85,7 +93,11 @@ export async function middleware(req) {
     if (claims.role) headers.set('x-veyrnox-auth-role', String(claims.role));
     if (claims.aal) headers.set('x-veyrnox-auth-aal', String(claims.aal));
 
-    return NextResponse.next({ request: { headers } });
+    const mfaAt = recentMfaTimestamp(claims);
+    if (mfaAt !== null) headers.set('x-veyrnox-auth-mfa-at', String(mfaAt));
+    const response = NextResponse.next({ request: { headers } });
+    for (const [name, value] of Object.entries(responseHeaders(requestId))) response.headers.set(name, value);
+    return response;
 }
 
 // Responses the middleware returns itself never pass through next.config.mjs
@@ -102,7 +114,7 @@ const ERROR_HEADERS = {
 };
 
 function jsonError(status, body) {
-    return new NextResponse(JSON.stringify(body), { status, headers: ERROR_HEADERS });
+    return new NextResponse(JSON.stringify(body), { status, headers: { ...ERROR_HEADERS, 'x-request-id': body.requestId || crypto.randomUUID() } });
 }
 
 /**
@@ -113,7 +125,7 @@ function jsonError(status, body) {
  * #9 line says this file does (audit 2026-09-23). The reason is one of our
  * own short codes; no token, header or claim value is ever logged.
  */
-function reject(req, reason) {
+function reject(req, reason, requestId) {
     console.error('[auth] rejected', new URL(req.url).pathname, 'reason:', reason);
-    return jsonError(401, { error: 'unauthorized', reason });
+    return jsonError(401, { error: 'unauthorized', reason, requestId });
 }

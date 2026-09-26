@@ -1,4 +1,4 @@
-// ADR-0049: every HTML document must receive fresh nonced framework scripts.
+// ADR-0060: every HTML document must receive fresh nonced framework scripts.
 export const dynamic = 'force-dynamic';
 
 import './globals.css';

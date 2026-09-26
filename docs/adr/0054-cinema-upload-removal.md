@@ -1,0 +1,29 @@
+# ADR-0054 — Creator-requested Stream removal and replacement
+
+Status: Proposed, 25 September 2026. Extends ADR-0052/0053. Default off.
+
+Creators need to abandon a failed/expired video or replace the video on a private draft. Add an explicit two-step removal control beside upload status. The confirmation states that video removal is permanent and preserves the draft/title/description. Pause an active transfer before removing it. The UI sends both content ID and the exact upload ID shown, plus a stable UUID request key. A stale tab can therefore never remove a newer replacement implicitly.
+
+POST `/api/v1/cinema/uploads/remove` uses verified identity, strict JSON/UUID validation, bounded bodies, the existing durable account quota, no-store responses and redacted request IDs. Migration 0139 checks current Auth existence, active creator membership, draft ownership and matching upload/content. Unknown provisioning outcomes remain blocked for operator reconciliation; no absence is inferred from a missing UID. The independent `CINEMA_UPLOAD_REMOVAL_ENABLED` switch allows an enabled removal route and worker to continue when new uploads are paused. The existing creator workspace itself still requires its preview/read gates.
+
+## Provider-first state and concurrency
+
+Removal changes the row to `deleting` and withdraws the stored upload grant immediately. It does not release capacity. The five-minute worker claims at most ten requested removals, makes at most two provider requests concurrently, and calls the completion RPC only after an affirmative successful DELETE response (204, or 200 with success=true and an empty errors array). Requests use the existing fixed Cloudflare origin, scoped server token, ten-second deadline, 64 KiB response bound and redirect denial. No browser-supplied UID/account can reach deletion. No provider account inventory is scanned or deleted.
+
+Transient claims last five minutes and use oldest-claim ordering with SKIP LOCKED. Failed requests keep their records and retry on later passes. A repeated completion is harmless; a late completion with a superseded claim cannot change the row. Completion clears provider UID/grant/media dimensions and marks `deleted`. Only then does the active reservation stop counting and a new upload for that draft become possible. A partial unique index retains one non-deleted upload per draft; immutable creation keys and deletion keys remain on private tombstones so old requests cannot reprovision or delete a replacement. Callbacks/refreshes cannot revive deleting/deleted rows. Lock ordering follows reservation -> membership -> upload; no provider I/O holds a database lock.
+
+Storage caps remain ten active reservations per creator and 100 globally. Add rolling 24-hour creation caps of ten per creator and 100 globally, including removed uploads, so replacement cannot turn deletion into unlimited provider churn. Removal frees storage capacity, not the daily creation allowance. Tombstones retain minimal replay inputs and owner/content linkage; full account-erasure and an approved retention/purge policy remain G10 work, and profile/draft deletion still RESTRICTs on these records.
+
+Generic 404s, auth failures, redirects, timeouts, invalid responses and uncertain provider outcomes never count as confirmed removal. If Stream deletes a video but the success response or database completion is lost, a subsequent 404 remains unresolved: operators must reconcile it rather than automatically free capacity. No manual override endpoint is added. Deletions pending over thirty minutes join the existing aggregate `cinema_cleanup_required` count. Structured worker logs expose counts only.
+
+## Rollout and security evidence
+
+Migration 0139 requires owner approval through the protected production workflow. All Cinema flags, including removal, remain false. No real videos are deleted and no credentials changed by implementation/tests. Before enabling: scoped credentials, isolated live remove-during-transfer and retry tests, migration/24h reconciliation gates, and the existing G05/G06/G08/G09/G10 policy controls. In particular, verify that Stream deletion invalidates an already-copied tus grant; withdrawing it from our API alone does not revoke a bearer capability. Do not enable wider uploads without that evidence.
+
+This increment implements creator-requested cleanup of known private media. It does not automatically erase accounts, automatically delete expired/error media without a creator request, reconcile unknown provisioning UIDs, approve retention, moderate content or provide playback. G06/G10 remain partially open.
+
+Tests: adapter confirmation/SSRF/body bounds; HTTP identity/quota/ownership/input and independent gate; bounded concurrent worker failures; isolated SQL replay/claims/leases, exact-ID idempotency, old keys, stale tabs, callback races, replacement, active/daily caps, grants, Auth/status denial, private draft preservation and unchanged credits. UI reuses the existing Button (including danger variant), tokens and inline confirmation pattern after 21st search. Mocked provider/browser evidence cannot prove live provider deletion.
+
+Reference checked 25 September 2026: [Cloudflare Stream delete video API](https://developers.cloudflare.com/api/resources/stream/methods/delete/). The documented operation deletes the video and its copies; acceptance of real response variants and in-flight tus invalidation remains an explicit integration gate.
+
+Local browser fixtures verified exact upload-ID submission, initial focus on Keep video, focus return on cancel, pending-removal messaging, and replacement controls only after a null upload response. Narrow-screen controls remained accessible. No real provider calls or media deletion occurred; temporary session/interception/viewport fixtures were removed. The deterministic 21st review reported zero findings.

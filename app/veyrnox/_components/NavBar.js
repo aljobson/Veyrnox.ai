@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Logo } from './Logo';
 import { NavAuthButtons } from './NavAuthButtons';
 import { MobileMenu } from './MobileMenu';
@@ -10,6 +10,7 @@ import { ThemeToggle } from './ThemeToggle';
 import { gatewayFetch, GatewayError } from '../_lib/gateway';
 import { getSession, onSessionChange } from '../../lib/authClient';
 import { accountLabel } from '../_lib/account';
+import { useProjectsPreview } from '../_lib/useProjectsPreview';
 
 // Marketing site nav (Home / Gallery / Pricing).
 export function MarketingNav() {
@@ -18,6 +19,7 @@ export function MarketingNav() {
   const items = [
     { href: '/',         label: 'Home' },
     { href: '/presets', label: 'Gallery' },
+    { href: '/social-cinema', label: 'Social Cinema' },
     { href: '/pricing', label: 'Pricing' },
   ];
   return (
@@ -25,7 +27,7 @@ export function MarketingNav() {
       <Link href="/" aria-label="Veyrnox.ai — home" className="flex items-center gap-2.5 shrink-0">
         <Logo wordmark />
       </Link>
-      <nav aria-label="Primary" className="hidden sm:flex gap-1.5 text-sm font-semibold">
+      <nav aria-label="Primary" className="hidden lg:flex gap-1.5 text-sm font-semibold">
         {items.map((it) => {
           const target = it.href.replace(/^\/veyrnox/, '') || '/';
           const active = target === '/' ? path === '/' : path.startsWith(target);
@@ -49,7 +51,7 @@ export function MarketingNav() {
         <NavAuthButtons />
         {/* Below sm the links above are hidden — without this the only way
             off this page was the browser back button. */}
-        <MobileMenu items={items} className="sm:hidden" />
+        <MobileMenu items={items} className="lg:hidden" />
       </div>
     </div>
   );
@@ -61,10 +63,16 @@ export function MarketingNav() {
 // If `balance` prop is provided the parent owns it; otherwise the pill
 // self-fetches and subscribes to veyrnox:balance-changed.
 export function AppNav({ balance, active = 'explore' }) {
+  const projectsEnabled = useProjectsPreview();
+  const tabs = useRef(null);
+  useEffect(() => {
+    tabs.current?.querySelector('[aria-current="page"]')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }, [active, projectsEnabled]);
   const items = [
     { key: 'explore', href: '/app',         label: 'Explore' },
     { key: 'create',  href: '/app/create',  label: 'Create' },
     { key: 'library', href: '/app/library', label: 'Library' },
+    ...(projectsEnabled ? [{ key: 'projects', href: '/app/projects', label: 'Projects' }] : []),
   ];
   // One server read for all three figures: who you are, the balance and
   // the true asset count for the account (not this browser's history).
@@ -121,13 +129,13 @@ export function AppNav({ balance, active = 'explore' }) {
         <Logo className="sm:hidden" />
         <Logo wordmark className="hidden sm:inline-flex" />
       </Link>
-      <nav aria-label="Studio" className="flex gap-0.5 sm:gap-1 text-[12px] sm:text-sm font-semibold">
+      <nav ref={tabs} aria-label="Studio" className="flex min-w-0 overflow-x-auto gap-0.5 sm:gap-1 text-[12px] sm:text-sm font-semibold">
         {items.map((it) => (
           <Link
             key={it.key}
             href={it.href}
             aria-current={active === it.key ? 'page' : undefined}
-            className={`px-2 sm:px-4 py-2 rounded-full transition-colors ${
+            className={`shrink-0 px-2 sm:px-4 py-2 rounded-full transition-colors ${
               active === it.key ? 'bg-vx-panel text-vx-fg' : 'text-vx-fg-muted hover:text-vx-fg'
             }`}
           >

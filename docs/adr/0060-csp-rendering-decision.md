@@ -1,4 +1,4 @@
-# ADR-0049 — Whole-site dynamic rendering for nonce CSP
+# ADR-0060 — Whole-site dynamic rendering for nonce CSP
 
 Status: Whole-site implementation selected by the owner on 25 September 2026;
 preview validation in PR #322. Production rollout pending authenticated journey

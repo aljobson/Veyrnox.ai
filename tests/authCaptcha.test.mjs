@@ -62,6 +62,7 @@ test('the site key is a public Turnstile site key', async () => {
     // Public by design; empty is the off switch. Turnstile secret keys also
     // start with 0x, so this cannot tell the two apart. It only catches a
     // wrong kind of value; keeping the secret out is a review job.
+    process.env.APP_ENV = 'production';
     const { default: cfg } = await import('../next.config.mjs');
     const key = cfg.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
     assert.equal(typeof key, 'string');

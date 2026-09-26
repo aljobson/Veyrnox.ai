@@ -1,7 +1,8 @@
 /** Pins the shared CSP allowlists and global response hardening. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import nextConfig from '../next.config.mjs';
+process.env.APP_ENV = 'production';
+const { default: nextConfig } = await import('../next.config.mjs');
 
 const SUPABASE_HOST = 'https://xdxdzmsztyzbnzeforxx.supabase.co';
 const TURNSTILE_HOST = 'https://challenges.cloudflare.com';
@@ -49,20 +50,22 @@ test("no 'unsafe-eval' outside next dev, and no wildcard script source", async (
         `script-src may name only Turnstile as a remote origin: ${scriptSrc.join(' ')}`);
 });
 
-test('frame-src admits Turnstile and nothing else', async () => {
+test('frame-src admits Turnstile and the Stream player, nothing else', async () => {
     // Without frame-src, frames fall back to default-src 'self' and the
-    // widget's challenge iframe is blocked. With it, it must stay this narrow.
+    // widget's challenge iframe is blocked. The Stream player host is the
+    // one addition ADR-0059 allows, for /social-cinema/watch; it must stay this narrow.
     const csp = (await headerMap()).get('content-security-policy');
-    assert.deepEqual(directives(csp).get('frame-src'), [TURNSTILE_HOST]);
+    assert.deepEqual(directives(csp).get('frame-src'), [TURNSTILE_HOST, 'https://*.cloudflarestream.com']);
 });
 
-test('connect-src reaches our own origin, the Supabase project and our own R2 endpoint only', async () => {
+test('connect-src permits only our backends and the exact Stream upload hosts (ADR-0052)', async () => {
     // Widening this is how an exfiltration path or a new vendor arrives.
     // CLAUDE.md: "Adding a host means an ADR." R2 is ADR-0028 (start-image upload).
     const csp = (await headerMap()).get('content-security-policy');
     assert.deepEqual(directives(csp).get('connect-src'), ["'self'", SUPABASE_HOST,
         'https://fb18d9f7052afbea5a5e0eae69948af2.r2.cloudflarestorage.com',
-        'https://fb18d9f7052afbea5a5e0eae69948af2.eu.r2.cloudflarestorage.com']);
+        'https://fb18d9f7052afbea5a5e0eae69948af2.eu.r2.cloudflarestorage.com',
+        'https://upload.videodelivery.net', 'https://upload.cloudflarestream.com']);
 });
 
 test('HSTS is preload-eligible and never lowered', async () => {

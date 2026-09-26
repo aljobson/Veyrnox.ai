@@ -20,7 +20,7 @@ import {
 
 const CODE_RE = /^[0-9]{6}$/;
 
-export function MfaPanel() {
+export function MfaPanel({ requireFresh = false, onVerified } = {}) {
   const [factors, setFactors] = useState(null);
   const [pending, setPending] = useState(null); // { factorId, secret, uri }
   const [code, setCode] = useState('');
@@ -91,6 +91,7 @@ export function MfaPanel() {
               onClick={() => run(async () => {
                 setAal(await verifyFactor(pending.factorId, code));
                 setPending(null); setCode('');
+                onVerified?.();
                 await refresh();
               })}
               className="rounded-full bg-vx-accent text-vx-accent-ink font-bold px-4 py-2 text-[13px] disabled:opacity-60"
@@ -101,7 +102,7 @@ export function MfaPanel() {
         </div>
       )}
 
-      {verified.length > 0 && aal !== 'aal2' && (
+      {verified.length > 0 && (requireFresh || aal !== 'aal2') && (
         <div className="mt-4 flex gap-2">
           <input
             value={code} onChange={(e) => setCode(e.target.value.trim())}
@@ -114,15 +115,16 @@ export function MfaPanel() {
             onClick={() => run(async () => {
               setAal(await verifyFactor(verified[0].id, code));
               setCode('');
+              onVerified?.();
             })}
             className="rounded-full bg-vx-accent text-vx-accent-ink font-bold px-4 py-2 text-[13px] disabled:opacity-60"
           >
-            {busy ? 'Checking…' : 'Unlock this session'}
+            {busy ? 'Checking…' : requireFresh ? 'Verify recent access' : 'Unlock this session'}
           </button>
         </div>
       )}
 
-      {verified.length > 0 && aal === 'aal2' && (
+      {verified.length > 0 && !requireFresh && aal === 'aal2' && (
         <button
           type="button" disabled={busy}
           onClick={() => run(async () => { await unenrollFactor(verified[0].id); await refresh(); })}

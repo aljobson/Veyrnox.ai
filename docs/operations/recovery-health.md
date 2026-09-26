@@ -51,3 +51,52 @@ Refresh recovery health through the trusted RPC, confirm the watcher is green,
 and only then close the tracking issue. No automatic closure hides unresolved
 work. Actual backup/restore readiness, provider account settings, edge rules,
 and key-rotation ownership remain separate operational checks.
+
+## Cinema uploads (0138 / ADR-0053)
+
+After migration 0138 and isolated Stream checks, enable
+`CINEMA_UPLOAD_RECOVERY_ENABLED` separately from creator-facing flags. Keep it
+on when disabling new uploads. Configure Stream account/token/webhook secret
+and the existing database bindings; no credentials belong in Actions.
+
+- `cinema_poll_overdue`: known uploading/processing media has gone forty
+  minutes without a completed check. Inspect the recovery switch, cron,
+  credentials and `cinema.upload_recovery` counters. The claim timestamp alone
+  does not renew health. A disabled/missing worker therefore cannot hide work.
+- `cinema_poll_failed`: the most recent completed attempt failed. Check scoped
+  token permissions, Stream availability and database failures. A 404 is an
+  unresolved provider error, not proof that it is safe to release capacity.
+- `cinema_provisioning_stuck`: a reservation is over five minutes old without a
+  recorded provider UID. Inspect provider records using the opaque reservation
+  name and approved operator access. Do not automatically retry provisioning.
+- `cinema_processing_stuck`: unresolved encoding older than three hours since
+  reservation. Inspect provider status; repeated pending checks do not clear
+  this count. Long processing is not an automatic deletion decision.
+- `cinema_cleanup_required`: an error or an upload whose grant expired over
+  fifteen minutes ago. Keep its reservation counted. Provider-first deletion
+  and replacement are still pending implementation; do not erase metadata or
+  claim privacy erasure is complete without confirming provider cleanup.
+
+The existing snapshot/incident workflow reports counts only. It refreshes on
+its existing cadence and has no paging SLA. Confirm a fresh clean snapshot
+after resolving the underlying condition. This is status recovery, not a
+provider deletion or account-erasure workflow.
+
+## Creator-requested video removal (0139 / ADR-0054)
+
+`CINEMA_UPLOAD_REMOVAL_ENABLED` independently controls both removal requests and
+the background deletion pass. Enable only after the migration, scoped credentials
+and isolated live deletion/capability-revocation checks. Keep it enabled while
+pausing new uploads so already-requested removals can drain. The worker deletes
+only exact recorded UIDs explicitly queued by an authorized creator.
+
+`cinema_cleanup_required` also counts requested removals waiting over thirty
+minutes. Inspect `cinema.upload_removal` counters, provider scope/availability and
+database completion. A lost successful provider response may leave a 404 on retry;
+this is deliberately unresolved, not automatic proof of deletion. Reconcile through
+the approved operational process; do not remove rows or release capacity solely
+because a request failed. No new override API is provided.
+
+Confirmed removal preserves a private replay tombstone and the content draft,
+permits replacement, and frees active storage capacity. It does not reset the
+rolling daily creation limit, erase an account or approve a retention policy.

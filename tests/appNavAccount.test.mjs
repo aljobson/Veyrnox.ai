@@ -133,8 +133,10 @@ test('the whole nav still fits a phone', () => {
     assert.match(signedIn, /flex flex-col gap-px/, 'the two figures stack');
     assert.match(appNav, /\$\{account \? 'hidden sm:flex' : 'flex'\}/,
         'the mark yields to the account block below sm, and only then');
-    assert.match(appNav, /className="flex gap-0\.5 sm:gap-1 text-\[12px\] sm:text-sm font-semibold"/,
+    assert.match(appNav, /className="flex [^"]*gap-0\.5 sm:gap-1 text-\[12px\] sm:text-sm font-semibold"/,
         'the tabs stay compact below sm');
+    assert.match(appNav, /<nav[^>]*min-w-0 overflow-x-auto/,
+        'preview tabs can scroll without pushing account controls off a phone');
 });
 
 // One asset is not "1 assets". Run the component's own two lines rather
@@ -225,6 +227,8 @@ test('the summary is email, credits and a server-side asset count', async () => 
         email: 'owner@veyrnox.test',
         credits: 1199,
         assets: 48,
+        rights_attested_at: null,
+        rights_attestation_version: null,
     });
     assert.equal(res.headers.get('cache-control'), 'no-store');
 });
@@ -268,7 +272,7 @@ test('a user with no row yet reads zero, not an error', async () => {
     ]);
     const res = await accountRoute.GET(accountRequest({ 'x-veyrnox-auth-id': AUTH_ID }));
     assert.equal(res.status, 200);
-    assert.deepEqual(await res.json(), { email: null, credits: 0, assets: null });
+    assert.deepEqual(await res.json(), { email: null, credits: 0, assets: null, rights_attested_at: null, rights_attestation_version: null });
 });
 
 test('a database failure is a typed 502, not a leaked message', async () => {

@@ -1,0 +1,64 @@
+# Cinema security gap assessment
+
+25 September 2026. Assessment only: no production change. Evidence is source/config at main `2f60cec`, plus existing test names; a test file is not by itself a fresh result. PR #326's default-off foundation controls remain a separate implementation change. The local creator-application draft is paused and excluded from this assessment PR.
+
+Severity expresses potential impact if the corresponding capability were released without the control, not a claim that an unimplemented endpoint is currently exploitable. Security targets are ASVS 5.0.0 Level 2, selected stronger controls for sensitive surfaces, SSDF 1.1 and the API Top 10. Nothing here certifies compliance.
+
+| ID | Gap / reusable evidence | Required work and evidence | Severity / release gate |
+| --- | --- | --- | --- |
+| G01 | Profile RPC/HTTP paths exist, but current owner reads/creation do not uniformly enforce Cinema moderation status | Define restricted/suspended/banned self-service policy; enforce and test it in API and RPC. Attach signed-in create/reload/account-switch browser evidence. | HIGH: block public profile activation until resolved. |
+| G02 | Private single-role membership and existing operational admin exist; scoped Cinema role administration does not | Design role/capability separation, authoritative revocation, ownership checks, audited grants, non-self approval and negative role matrix tests. Do not reuse global admin as all-powerful Cinema permission. | HIGH: block creator/privileged activation. |
+| G03 | AAL2 metrics gate exists; recent strong-auth proof for sensitive Cinema actions is absent | Specify freshness bound and verified auth-event evidence, not just JWT refresh/iat; enforce reauthentication/step-up and failure cases. Test stolen/stale sessions. | HIGH: block role changes, moderation overrides, payouts and ownership transfer. |
+| G04 | Route body bounds, strict profile fields and durable account bucket exist; comprehensive API inventory/endpoint quotas do not | Add route contracts, payload/path/query/header schemas, account/IP risk limits, denial logs and generated request IDs; document intentional public exceptions. | HIGH for exposed mutations; complete per feature before activation. |
+| G05 | CI has sink/secret-variable log grep and npm audit, not general secret scanning or SAST | Add blocking secret scan and SAST, validate scanner detection with safe synthetic fixtures; inventory exceptions. Establish unattended lint and adequate type-check coverage. | HIGH: block Cinema launch until gates work. Existing grep is not equivalent. |
+| G06 | Stream resources/upload/playback are unimplemented | Scoped secrets, isolated environments, signed webhooks, quota reservations, grant expiry, media verification, entitlement checks, narrow CSP/SSRF policy and integration tests. | HIGH: block uploads/playback. |
+| G07 | Stripe one-off credit top-ups have verified/idempotent handling; subscriptions, creator cash and Connect do not | Add separate event/entitlement/cash models, integer currency math, atomic replay handling, holds/reversals and reconciliation; prove refund/expiry/payout cases. | CRITICAL: block charging Cinema subscriptions or creator payouts. |
+| G08 | Auth/recovery tests and Turnstile integration exist; live provider settings and high-risk creator recovery are unverified | Verify Apple/Google/email, confirmation, anti-automation, rotation/logout/recovery, notification and enumeration resistance in preview; threat-model creator takeover. | HIGH: block expanded creator launch without evidence. |
+| G09 | Observability and selected auth/webhook error logs exist; consistent security correlation, retention and alert routing are not established | Redacted event schema, immutable privileged audit, denial coverage, incident routing/detection drills and documented owner/retention. | HIGH for privileged/financial flows; block those releases. |
+| G10 | R2 ownership/signing and account deletion exist; Cinema evidence/contracts/audit retention policies do not | Approve purpose/access/retention for each field, private evidence storage, deletion/anonymisation while preserving required accounting; test boundaries. | HIGH for sensitive data; block collection before policy/control. |
+| G11 | User content/publication/social moderation not implemented | Gate state transitions; enforce rights and safety checks, no AI-driven privileged actions, qualified votes, human review, abuse/race tests. | HIGH: block publication, competitions and monetisation. |
+| G12 | Deploy and database workflows constrain mutation; effective branch protection/token scopes/environment isolation are not verified by source | Record read-only operational evidence for reviewer protection, scoped credentials, isolated resources, deployment integrity and restoration. | HIGH for critical missing enforcement; verify before launch. |
+| G13 | JWT tests cover signature, issuer, audience and expiry; complete ASVS token/session assessment remains open | Review not-before/time policy, explicit token purpose, JWKS trust/rotation and revocation/freshness boundaries; do not label family fully satisfied. | HIGH where invalid tokens would authorize; resolve before relevant release. |
+| G14 | Manual security coverage for the Cinema journey does not exist | Scoped DAST, API/IDOR, business-flow, payment, session and mobile testing (when a mobile client exists); findings fixed and retested. | HIGH/CRITICAL findings block launch absent explicit recorded acceptance. |
+
+## Required PR security record
+
+Every Cinema PR answers: new trust boundary? exposed data? authorization? money? untrusted input? external service? dependency? rate limit? audit? threat-model change? For each yes, include the control, evidence/test and residual risk. Update the versioned ASVS mapping and applicable G/T IDs in the same PR. Tests must include negative and failure/replay cases. A feature is not complete because its UI renders.
+
+## Assessment findings versus production action
+
+This PR adds documents only. It does not enable flags, run database migrations, grant roles, configure providers, weaken existing controls or charge/pay anyone. Keep profile enrollment disabled. Existing production remediation and future feature implementation need focused reviewed changes; do not silently attach them to this assessment.
+
+The first implementation work after these assessments is closing G01–G05 for the applicable foundation/creator scope, with security controls developed alongside functionality. Later epics carry their gates throughout delivery. Keep existing immutable credits and forced RLS; do not migrate to D1 merely to resemble an example architecture.
+
+## Creator increment update (ADR-0049)
+
+The disabled creator implementation addresses the backend portion of G01 and the scoped creator-review portions of G02/G03/G04/G09: active account enforcement, Cinema-only administrator permission, five-minute verified TOTP freshness, Access, strict APIs, quotas, correlation and immutable review history. It does not close those gaps for all future Cinema features. Authenticated preview/operational evidence, approver provisioning, G05 scanning and the G08/G09/G10 launch gates remain open. Production flags remain false; no schema apply or privilege assignment is performed by the PR.
+
+## Private content increment (ADR-0050)
+
+ADR-0050 adds draft-scoped G01/G02/G04/G11 controls: active creator-only ownership, bounded private hierarchy, exact field validation, replay/revision concurrency checks and fixed PRIVATE/DRAFT state. These do not close the publication/rights/media gaps or the outstanding launch gates. No production activation is included.
+
+Content testing confirmed that Auth identity deletion does not cascade to the public user/profile (financial history is retained). Draft APIs explicitly deny deleted Auth identities; Cinema profile deletion cascades content and replay data. G10 still requires a complete operational deletion runbook, including profile removal.
+
+## Stream upload increment (ADR-0052)
+
+G01/G02/G04/G06/G09 gain scoped upload controls: current owner/role/Auth checks, atomic capacity reservation, strict metadata and URL allowlists, private provider grants, raw-body HMAC, authoritative provider status, terminal replay protection and redacted events. API1/API4/API6/API7/API10 threats are addressed in the upload boundary. Tests cover negative authorization, concurrent provisioning, provider ambiguity, quotas, tus offsets and webhook tampering. ASVS coverage remains PARTIAL. G06 live provider/isolated-environment proof and G10 provider-first deletion/retention remain OPEN; no upload activation is authorized by this increment. Preview caps include all reservations and do not automatically release; support reconciliation must precede replacement. Scheduled reconciliation, cleanup and safety/rights review remain unimplemented.
+
+## Scheduled upload recovery (ADR-0053)
+
+G06/G09 now have a bounded, independently gated status-recovery implementation:
+service-only claims, four concurrent reads, twenty records per pass, transient
+claim replay, late-result protection, redacted counters and aggregate alert
+signals. G06 remains open for live Stream/isolated-environment evidence and
+playback. G10 still requires provider-first cleanup, cancellation/replacement
+and retention. No activation or live integration proof is implied.
+
+## Creator-requested removal (ADR-0054)
+
+G06/G10 gain provider-first cleanup for known media, exact-upload authorization,
+replay tombstones, restricted deletion claims and replacement only after confirmed
+provider removal. Daily creation caps bound churn after capacity release. G10 is
+still OPEN for account erasure, approved retention/purge and unknown provisioning
+reconciliation. Copied tus capability invalidation requires live testing before
+activation. No automatic expiration purge or real provider deletion was performed.

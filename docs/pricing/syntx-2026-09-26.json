@@ -1,0 +1,1103 @@
+{
+ "checked_at": "2026-09-26",
+ "source": [
+  "https://syntx.ai/#plans",
+  "https://api.syntx.ai/api/v1/plans/tariffs?lang=en&period=annual",
+  "https://api.syntx.ai/api/v1/plans/tariffs?lang=en&period=monthly",
+  "https://api.syntx.ai/api/v1/plans/card_plans?lang=en&json=1",
+  "https://syntx.ai/public-offer"
+ ],
+ "scope": "Published EUR plan prices as shown to a Spanish IP, excluding tax and temporary promotions. Token costs are the base charge; a trailing '+' in the source means the shortest clip / lowest resolution and longer or HD variants cost more. Matching names does not establish identical output quality or provider.",
+ "entity": "SYNTX INTELLIGENCE - FZCO, Dubai Silicon Oasis, UAE (reg. 70517, 2025-10-21)",
+ "plans": {
+  "basic": {
+   "monthly_eur": 8.9,
+   "monthly_tokens": 260,
+   "annual_eur_per_month": 7.56,
+   "annual_tokens": 3120
+  },
+  "pro": {
+   "monthly_eur": 16.9,
+   "monthly_tokens": 680,
+   "annual_eur_per_month": 14.36,
+   "annual_tokens": 8160
+  },
+  "vip": {
+   "monthly_eur": 39.9,
+   "monthly_tokens": 1700,
+   "annual_eur_per_month": 33.9,
+   "annual_tokens": 20400
+  },
+  "elite": {
+   "monthly_eur": 59.9,
+   "monthly_tokens": 2600,
+   "annual_eur_per_month": 50.91,
+   "annual_tokens": 31200
+  },
+  "ultraelite": {
+   "monthly_eur": 119.0,
+   "monthly_tokens": 3000,
+   "annual_eur_per_month": 101.15,
+   "annual_tokens": 36000
+  }
+ },
+ "token_rules": [
+  "tokens never expire",
+  "tokens spend only while a subscription is active",
+  "top-ups only with an active subscription",
+  "LLM chat is request-limited, not token-metered",
+  "'unlimited' rows are fair-use request-limited (x3/x6/x10/x15 of Basic)"
+ ],
+ "generation_costs": [
+  {
+   "group": "audio",
+   "label": "Audio to text (transcriber)",
+   "tokens": "0.3 +",
+   "min_plan": "basic",
+   "ai_name": "audio2text"
+  },
+  {
+   "group": "audio",
+   "label": "ElevenLabs Music ",
+   "tokens": "8 +",
+   "min_plan": "basic",
+   "ai_name": "elevenlabs"
+  },
+  {
+   "group": "audio",
+   "label": "Elevenlabs Voice",
+   "tokens": "0.063 +",
+   "min_plan": "basic",
+   "ai_name": "elevenlabs"
+  },
+  {
+   "group": "audio",
+   "label": "Sound Generator",
+   "tokens": "0.5 +",
+   "min_plan": "basic",
+   "ai_name": "sound-generator"
+  },
+  {
+   "group": "audio",
+   "label": "Suno v6",
+   "tokens": "10",
+   "min_plan": "basic",
+   "ai_name": "suno"
+  },
+  {
+   "group": "audio",
+   "label": "Video to audio (sounds in video)",
+   "tokens": "0.1 +",
+   "min_plan": "basic",
+   "ai_name": "video2audio"
+  },
+  {
+   "group": "audio",
+   "label": "Voice cloning (cloning)",
+   "tokens": "150",
+   "min_plan": "basic",
+   "ai_name": "voice-clone"
+  },
+  {
+   "group": "audio",
+   "label": "Voice cloning (speech synthesis)",
+   "tokens": "0.125 +",
+   "min_plan": "basic",
+   "ai_name": "voice-clone"
+  },
+  {
+   "group": "design",
+   "label": "Clarity Upscale (x1.5-x6)",
+   "tokens": "1",
+   "min_plan": "basic",
+   "ai_name": "clarity"
+  },
+  {
+   "group": "design",
+   "label": "Face Swap",
+   "tokens": "0.15",
+   "min_plan": "basic",
+   "ai_name": null
+  },
+  {
+   "group": "design",
+   "label": "Flux Kontext MAX",
+   "tokens": "3",
+   "min_plan": "basic",
+   "ai_name": "flux"
+  },
+  {
+   "group": "design",
+   "label": "Flux Kontext MULTI",
+   "tokens": "3",
+   "min_plan": "basic",
+   "ai_name": "flux"
+  },
+  {
+   "group": "design",
+   "label": "Flux Kontext PRO",
+   "tokens": "1.5",
+   "min_plan": "basic",
+   "ai_name": "flux"
+  },
+  {
+   "group": "design",
+   "label": "Flux LoRa Training (new version)",
+   "tokens": "20 +",
+   "min_plan": "basic",
+   "ai_name": "flux"
+  },
+  {
+   "group": "design",
+   "label": "Flux LoRa Training (old version)",
+   "tokens": "130 +",
+   "min_plan": "basic",
+   "ai_name": "flux"
+  },
+  {
+   "group": "design",
+   "label": "Flux.1 + OPT (LoRa)",
+   "tokens": "0.3",
+   "min_plan": "basic",
+   "ai_name": "flux"
+  },
+  {
+   "group": "design",
+   "label": "Flux.1 Editor",
+   "tokens": "0.4",
+   "min_plan": "pro",
+   "ai_name": "flux"
+  },
+  {
+   "group": "design",
+   "label": "Flux.1.1 PRO",
+   "tokens": "1.5",
+   "min_plan": "basic",
+   "ai_name": "flux"
+  },
+  {
+   "group": "design",
+   "label": "Flux.1.1 PRO ULTRA",
+   "tokens": "2.5",
+   "min_plan": "basic",
+   "ai_name": "flux"
+  },
+  {
+   "group": "design",
+   "label": "GPT Image v.1",
+   "tokens": "0.8",
+   "min_plan": "basic",
+   "ai_name": "chatgpt"
+  },
+  {
+   "group": "design",
+   "label": "GPT Image v.1.5",
+   "tokens": "2",
+   "min_plan": "basic",
+   "ai_name": "chatgpt"
+  },
+  {
+   "group": "design",
+   "label": "Grok Imagine",
+   "tokens": "1",
+   "min_plan": "basic",
+   "ai_name": "grok"
+  },
+  {
+   "group": "design",
+   "label": "Grok Imagine 2.0 / Quality",
+   "tokens": "3 +",
+   "min_plan": "basic",
+   "ai_name": "grok_image"
+  },
+  {
+   "group": "design",
+   "label": "Grok Imagine PRO",
+   "tokens": "2",
+   "min_plan": "basic",
+   "ai_name": "grok"
+  },
+  {
+   "group": "design",
+   "label": "Higgsfield Soul",
+   "tokens": "4 +",
+   "min_plan": "basic",
+   "ai_name": "higgsfield-soul"
+  },
+  {
+   "group": "design",
+   "label": "Higgsfield Soul Character",
+   "tokens": "129",
+   "min_plan": "basic",
+   "ai_name": "higgsfield-soul"
+  },
+  {
+   "group": "design",
+   "label": "Ideogram v1 + Turbo / v2 + Turbo",
+   "tokens": "0.9 +",
+   "min_plan": "basic",
+   "ai_name": "ideogram"
+  },
+  {
+   "group": "design",
+   "label": "Ideogram v3 + Remix + Background replacement",
+   "tokens": "1 +",
+   "min_plan": "basic",
+   "ai_name": "ideogram"
+  },
+  {
+   "group": "design",
+   "label": "Ideogram v3 Character",
+   "tokens": "4.5 +",
+   "min_plan": "basic",
+   "ai_name": "ideogram"
+  },
+  {
+   "group": "design",
+   "label": "Image Editor",
+   "tokens": "0.10",
+   "min_plan": "basic",
+   "ai_name": null
+  },
+  {
+   "group": "design",
+   "label": "InPaint&OutPaint (Flux Editor)",
+   "tokens": "0.4",
+   "min_plan": "basic",
+   "ai_name": "flux"
+  },
+  {
+   "group": "design",
+   "label": "Kling Kolors",
+   "tokens": "1.1",
+   "min_plan": "basic",
+   "ai_name": "kling-kolors"
+  },
+  {
+   "group": "design",
+   "label": "Kling Try-On",
+   "tokens": "inf",
+   "min_plan": "basic",
+   "ai_name": "kling"
+  },
+  {
+   "group": "design",
+   "label": "Luma Uni 1.1",
+   "tokens": "5 +",
+   "min_plan": "basic",
+   "ai_name": "luma_image"
+  },
+  {
+   "group": "design",
+   "label": "Luma Uni 1.1 Remove Background",
+   "tokens": "0.5 +",
+   "min_plan": "basic",
+   "ai_name": "luma_image"
+  },
+  {
+   "group": "design",
+   "label": "Magnific",
+   "tokens": "6 +",
+   "min_plan": "pro",
+   "ai_name": "magnific"
+  },
+  {
+   "group": "design",
+   "label": "Nano Banana (Gemini Flash v2.5)",
+   "tokens": "1.5",
+   "min_plan": "basic",
+   "ai_name": "banana"
+  },
+  {
+   "group": "design",
+   "label": "Nano Banana 2",
+   "tokens": "1.5 +",
+   "min_plan": "basic",
+   "ai_name": "banana"
+  },
+  {
+   "group": "design",
+   "label": "Nano Banana 2 Lite",
+   "tokens": "1.3 +",
+   "min_plan": "basic",
+   "ai_name": "banana"
+  },
+  {
+   "group": "design",
+   "label": "Nano Banana Editor",
+   "tokens": "1.5 +",
+   "min_plan": "basic",
+   "ai_name": "banana"
+  },
+  {
+   "group": "design",
+   "label": "Nano Banana PRO (1K)",
+   "tokens": "2",
+   "min_plan": "basic",
+   "ai_name": "banana"
+  },
+  {
+   "group": "design",
+   "label": "Nano Banana PRO (2K)",
+   "tokens": "2",
+   "min_plan": "basic",
+   "ai_name": "banana"
+  },
+  {
+   "group": "design",
+   "label": "Nano Banana PRO (4K)",
+   "tokens": "7.5",
+   "min_plan": "basic",
+   "ai_name": "banana"
+  },
+  {
+   "group": "design",
+   "label": "Photo Master",
+   "tokens": "0.4",
+   "min_plan": "basic",
+   "ai_name": null
+  },
+  {
+   "group": "design",
+   "label": "Recraft v3",
+   "tokens": "2",
+   "min_plan": "basic",
+   "ai_name": "recraft"
+  },
+  {
+   "group": "design",
+   "label": "Recraft v3 Vector",
+   "tokens": "4",
+   "min_plan": "basic",
+   "ai_name": "recraft"
+  },
+  {
+   "group": "design",
+   "label": "Runway Frames",
+   "tokens": "1",
+   "min_plan": "basic",
+   "ai_name": "runway-frames"
+  },
+  {
+   "group": "design",
+   "label": "Seedream v4",
+   "tokens": "1.2",
+   "min_plan": "basic",
+   "ai_name": "seedream"
+  },
+  {
+   "group": "design",
+   "label": "Seedream v4.5",
+   "tokens": "2",
+   "min_plan": "basic",
+   "ai_name": "seedream"
+  },
+  {
+   "group": "design",
+   "label": "Seedream v5 Lite",
+   "tokens": "2",
+   "min_plan": "basic",
+   "ai_name": "seedream"
+  },
+  {
+   "group": "design",
+   "label": "Seedream v5.0 Pro",
+   "tokens": "3",
+   "min_plan": "basic",
+   "ai_name": "seedream"
+  },
+  {
+   "group": "design",
+   "label": "Seedream v5.0 Pro Editor",
+   "tokens": "3 +",
+   "min_plan": "basic",
+   "ai_name": "seedream"
+  },
+  {
+   "group": "design",
+   "label": "Stable Diffusion",
+   "tokens": "inf",
+   "min_plan": "basic",
+   "ai_name": "stable-diffusion"
+  },
+  {
+   "group": "design",
+   "label": "Wan Image 2.5 / 2.6 / 2.7",
+   "tokens": "2 +",
+   "min_plan": "basic",
+   "ai_name": "wan_image"
+  },
+  {
+   "group": "design",
+   "label": "Wan Image Pro 2.7",
+   "tokens": "4 +",
+   "min_plan": "basic",
+   "ai_name": "wan_image"
+  },
+  {
+   "group": "text",
+   "label": "ChatGPT 5 Mini",
+   "tokens": "Base limit",
+   "min_plan": "basic",
+   "ai_name": "chatgpt"
+  },
+  {
+   "group": "text",
+   "label": "ChatGPT 5 Nano",
+   "tokens": "inf",
+   "min_plan": "basic",
+   "ai_name": "chatgpt"
+  },
+  {
+   "group": "text",
+   "label": "ChatGPT 5.4",
+   "tokens": "Base limit",
+   "min_plan": "basic",
+   "ai_name": "chatgpt"
+  },
+  {
+   "group": "text",
+   "label": "ChatGPT 5.5",
+   "tokens": "Base limit ×3",
+   "min_plan": "pro",
+   "ai_name": "chatgpt"
+  },
+  {
+   "group": "text",
+   "label": "ChatGPT 5.6 Luna",
+   "tokens": "Base limit",
+   "min_plan": "basic",
+   "ai_name": "chatgpt"
+  },
+  {
+   "group": "text",
+   "label": "ChatGPT 5.6 Sol",
+   "tokens": "Base limit ×3",
+   "min_plan": "pro",
+   "ai_name": "chatgpt"
+  },
+  {
+   "group": "text",
+   "label": "ChatGPT 5.6 Terra",
+   "tokens": "Base limit",
+   "min_plan": "basic",
+   "ai_name": "chatgpt"
+  },
+  {
+   "group": "text",
+   "label": "ChatGPT 6 Astra",
+   "tokens": "Base limit ×3",
+   "min_plan": "pro",
+   "ai_name": "chatgpt"
+  },
+  {
+   "group": "text",
+   "label": "Claude 4.5 Haiku",
+   "tokens": "Base limit",
+   "min_plan": "basic",
+   "ai_name": "claude"
+  },
+  {
+   "group": "text",
+   "label": "Claude 4.6 Sonnet",
+   "tokens": "Base limit",
+   "min_plan": "basic",
+   "ai_name": "claude"
+  },
+  {
+   "group": "text",
+   "label": "Claude 4.6/4.7/4.8/5 Opus",
+   "tokens": "Base limit",
+   "min_plan": "basic",
+   "ai_name": "claude"
+  },
+  {
+   "group": "text",
+   "label": "Claude Fable 5",
+   "tokens": "Base limit ×3",
+   "min_plan": "pro",
+   "ai_name": "claude"
+  },
+  {
+   "group": "text",
+   "label": "Claude Fable 5.1",
+   "tokens": "Base limit ×3",
+   "min_plan": "pro",
+   "ai_name": "claude"
+  },
+  {
+   "group": "text",
+   "label": "Claude Sonnet 5.0",
+   "tokens": "Base limit",
+   "min_plan": "basic",
+   "ai_name": "claude"
+  },
+  {
+   "group": "text",
+   "label": "DeepSeek R1",
+   "tokens": "Base limit",
+   "min_plan": "basic",
+   "ai_name": "deepseek"
+  },
+  {
+   "group": "text",
+   "label": "DeepSeek V3",
+   "tokens": "inf",
+   "min_plan": "basic",
+   "ai_name": "deepseek"
+  },
+  {
+   "group": "text",
+   "label": "GLM-5.2",
+   "tokens": "Base limit",
+   "min_plan": "basic",
+   "ai_name": "zai"
+  },
+  {
+   "group": "text",
+   "label": "Gemini 3.1 Pro",
+   "tokens": "Base limit",
+   "min_plan": "basic",
+   "ai_name": "gemini"
+  },
+  {
+   "group": "text",
+   "label": "Gemini 3.5 Flash",
+   "tokens": "Base limit",
+   "min_plan": "basic",
+   "ai_name": "gemini"
+  },
+  {
+   "group": "text",
+   "label": "Gemini 3.5 Flash Lite",
+   "tokens": "Base limit",
+   "min_plan": "basic",
+   "ai_name": "gemini"
+  },
+  {
+   "group": "text",
+   "label": "Gemini 3.6 Flash",
+   "tokens": "Base limit",
+   "min_plan": "basic",
+   "ai_name": "gemini"
+  },
+  {
+   "group": "text",
+   "label": "Grok 4",
+   "tokens": "Base limit",
+   "min_plan": "basic",
+   "ai_name": "grok"
+  },
+  {
+   "group": "text",
+   "label": "Grok 4.3",
+   "tokens": "Base limit",
+   "min_plan": "basic",
+   "ai_name": "grok"
+  },
+  {
+   "group": "text",
+   "label": "Grok 4.5",
+   "tokens": "Base limit",
+   "min_plan": "basic",
+   "ai_name": "grok"
+  },
+  {
+   "group": "text",
+   "label": "Perplexity Sonar",
+   "tokens": "Base limit",
+   "min_plan": "basic",
+   "ai_name": "perplexity"
+  },
+  {
+   "group": "text",
+   "label": "Perplexity Sonar PRO",
+   "tokens": "Base limit",
+   "min_plan": "basic",
+   "ai_name": "perplexity"
+  },
+  {
+   "group": "text",
+   "label": "Qwen 3 Max",
+   "tokens": "Base limit",
+   "min_plan": "basic",
+   "ai_name": "qwen"
+  },
+  {
+   "group": "text",
+   "label": "Qwen 3.7 Max",
+   "tokens": "Base limit",
+   "min_plan": "basic",
+   "ai_name": "qwen"
+  },
+  {
+   "group": "text",
+   "label": "Qwen 3.7 Plus",
+   "tokens": "Base limit",
+   "min_plan": "basic",
+   "ai_name": "qwen"
+  },
+  {
+   "group": "video",
+   "label": "Beeble SwitchX",
+   "tokens": "6 +",
+   "min_plan": "pro",
+   "ai_name": "beeble"
+  },
+  {
+   "group": "video",
+   "label": "Creating avatars",
+   "tokens": "13",
+   "min_plan": "basic",
+   "ai_name": null
+  },
+  {
+   "group": "video",
+   "label": "Google Veo Omni Flash",
+   "tokens": "28 +",
+   "min_plan": "basic",
+   "ai_name": "veo3"
+  },
+  {
+   "group": "video",
+   "label": "Google Veo Omni Flash 4K",
+   "tokens": "108",
+   "min_plan": "basic",
+   "ai_name": "veo3"
+  },
+  {
+   "group": "video",
+   "label": "Google Veo v3.1",
+   "tokens": "119 +",
+   "min_plan": "basic",
+   "ai_name": "veo3"
+  },
+  {
+   "group": "video",
+   "label": "Google Veo v3.1 Fast",
+   "tokens": "19 +",
+   "min_plan": "basic",
+   "ai_name": "veo3"
+  },
+  {
+   "group": "video",
+   "label": "Grok Imagine 1.0",
+   "tokens": "12 +",
+   "min_plan": "basic",
+   "ai_name": "grok"
+  },
+  {
+   "group": "video",
+   "label": "Grok Imagine 1.5",
+   "tokens": "3.5 +",
+   "min_plan": "basic",
+   "ai_name": "grok"
+  },
+  {
+   "group": "video",
+   "label": "Hailuo MiniMax",
+   "tokens": "8.5",
+   "min_plan": "basic",
+   "ai_name": "hailuo-minimax"
+  },
+  {
+   "group": "video",
+   "label": "Hailuo MiniMax 3.0",
+   "tokens": "24 +",
+   "min_plan": "basic",
+   "ai_name": "hailuo-minimax"
+  },
+  {
+   "group": "video",
+   "label": "Hailuo MiniMax v2",
+   "tokens": "10 +",
+   "min_plan": "basic",
+   "ai_name": "hailuo-minimax"
+  },
+  {
+   "group": "video",
+   "label": "Hailuo MiniMax v2.3",
+   "tokens": "14 +",
+   "min_plan": "basic",
+   "ai_name": "hailuo-minimax"
+  },
+  {
+   "group": "video",
+   "label": "Hailuo MiniMax v2.3 Fast",
+   "tokens": "9 +",
+   "min_plan": "basic",
+   "ai_name": "hailuo-minimax"
+  },
+  {
+   "group": "video",
+   "label": "HappyHorse 1.0",
+   "tokens": "15 +",
+   "min_plan": "basic",
+   "ai_name": "happy_horse"
+  },
+  {
+   "group": "video",
+   "label": "Hedra",
+   "tokens": "2.7 +",
+   "min_plan": "basic",
+   "ai_name": "hedra"
+  },
+  {
+   "group": "video",
+   "label": "HeyGen v4.1",
+   "tokens": "1.2 +",
+   "min_plan": "basic",
+   "ai_name": "heygen"
+  },
+  {
+   "group": "video",
+   "label": "Higgsfield Lite",
+   "tokens": "12 +",
+   "min_plan": "basic",
+   "ai_name": "higgsfield"
+  },
+  {
+   "group": "video",
+   "label": "Higgsfield Turbo",
+   "tokens": "33 +",
+   "min_plan": "basic",
+   "ai_name": "higgsfield"
+  },
+  {
+   "group": "video",
+   "label": "Kling Elements v3.0",
+   "tokens": "10.5 +",
+   "min_plan": "basic",
+   "ai_name": "kling"
+  },
+  {
+   "group": "video",
+   "label": "Kling Motion Control v2.6",
+   "tokens": "12 +",
+   "min_plan": "basic",
+   "ai_name": "kling"
+  },
+  {
+   "group": "video",
+   "label": "Kling Motion Control v3.0",
+   "tokens": "15 +",
+   "min_plan": "basic",
+   "ai_name": "kling"
+  },
+  {
+   "group": "video",
+   "label": "Kling o1 (image to video)",
+   "tokens": "19.2 +",
+   "min_plan": "basic",
+   "ai_name": "kling"
+  },
+  {
+   "group": "video",
+   "label": "Kling o1 (text to video)",
+   "tokens": "32 +",
+   "min_plan": "basic",
+   "ai_name": "kling"
+  },
+  {
+   "group": "video",
+   "label": "Kling o1 (video to video)",
+   "tokens": "28.8 +",
+   "min_plan": "basic",
+   "ai_name": "kling"
+  },
+  {
+   "group": "video",
+   "label": "Kling v1.5 - 1.6 (+Elements)",
+   "tokens": "6 +",
+   "min_plan": "basic",
+   "ai_name": "kling"
+  },
+  {
+   "group": "video",
+   "label": "Kling v1.5 / v1.6 / v2.1 / v2.6 Keyframes",
+   "tokens": "21 +",
+   "min_plan": "basic",
+   "ai_name": "kling"
+  },
+  {
+   "group": "video",
+   "label": "Kling v2.1",
+   "tokens": "6 +",
+   "min_plan": "basic",
+   "ai_name": "kling"
+  },
+  {
+   "group": "video",
+   "label": "Kling v2.1 Master",
+   "tokens": "59 +",
+   "min_plan": "basic",
+   "ai_name": "kling"
+  },
+  {
+   "group": "video",
+   "label": "Kling v2.5 Turbo Keyframes",
+   "tokens": "17 +",
+   "min_plan": "basic",
+   "ai_name": "kling"
+  },
+  {
+   "group": "video",
+   "label": "Kling v2.5 turbo",
+   "tokens": "6 +",
+   "min_plan": "basic",
+   "ai_name": "kling"
+  },
+  {
+   "group": "video",
+   "label": "Kling v2.6",
+   "tokens": "14 +",
+   "min_plan": "basic",
+   "ai_name": "kling"
+  },
+  {
+   "group": "video",
+   "label": "Kling v2.6 + audio",
+   "tokens": "42 +",
+   "min_plan": "basic",
+   "ai_name": "kling"
+  },
+  {
+   "group": "video",
+   "label": "Kling v3.0",
+   "tokens": "9 +",
+   "min_plan": "basic",
+   "ai_name": "kling"
+  },
+  {
+   "group": "video",
+   "label": "Kling v3.0 Keyframes",
+   "tokens": "25 +",
+   "min_plan": "basic",
+   "ai_name": "kling"
+  },
+  {
+   "group": "video",
+   "label": "Kling v3.0 Turbo",
+   "tokens": "15 +",
+   "min_plan": "basic",
+   "ai_name": "kling"
+  },
+  {
+   "group": "video",
+   "label": "Lipsync Kling",
+   "tokens": "1.2 +",
+   "min_plan": "pro",
+   "ai_name": "kling"
+  },
+  {
+   "group": "video",
+   "label": "Luma Ray 3.14",
+   "tokens": "1 +",
+   "min_plan": "pro",
+   "ai_name": "luma"
+  },
+  {
+   "group": "video",
+   "label": "Luma Ray 3.14 1080р",
+   "tokens": "40 +",
+   "min_plan": "pro",
+   "ai_name": "luma"
+  },
+  {
+   "group": "video",
+   "label": "Pika v2.0",
+   "tokens": "12 +",
+   "min_plan": "basic",
+   "ai_name": "pika"
+  },
+  {
+   "group": "video",
+   "label": "RunWay: Act-Two",
+   "tokens": "14 +",
+   "min_plan": "pro",
+   "ai_name": "runway"
+  },
+  {
+   "group": "video",
+   "label": "RunWay: Video Stylizer",
+   "tokens": "14 +",
+   "min_plan": "pro",
+   "ai_name": "runway"
+  },
+  {
+   "group": "video",
+   "label": "Runway (Gen 3 Turbo, Gen 4 / Turbo)",
+   "tokens": "14 +",
+   "min_plan": "pro",
+   "ai_name": "runway"
+  },
+  {
+   "group": "video",
+   "label": "Runway Gen 4.5 Text to video / Image to video",
+   "tokens": "14 +",
+   "min_plan": "pro",
+   "ai_name": "runway"
+  },
+  {
+   "group": "video",
+   "label": "SORA 2 (12 sec - 720p)",
+   "tokens": "22 +",
+   "min_plan": "pro",
+   "ai_name": "sora"
+  },
+  {
+   "group": "video",
+   "label": "SORA 2 (4 sec -  720p)",
+   "tokens": "9 +",
+   "min_plan": "pro",
+   "ai_name": "sora"
+  },
+  {
+   "group": "video",
+   "label": "SORA 2 (8 sec -  720p)",
+   "tokens": "15 +",
+   "min_plan": "pro",
+   "ai_name": "sora"
+  },
+  {
+   "group": "video",
+   "label": "Seedance 2.0 Fast",
+   "tokens": "9.8 +",
+   "min_plan": "pro",
+   "ai_name": "seedance"
+  },
+  {
+   "group": "video",
+   "label": "Seedance 2.0 Mini",
+   "tokens": "6.7 +",
+   "min_plan": "pro",
+   "ai_name": "seedance"
+  },
+  {
+   "group": "video",
+   "label": "Seedance 2.0 Pro",
+   "tokens": "20.4 +",
+   "min_plan": "pro",
+   "ai_name": "seedance"
+  },
+  {
+   "group": "video",
+   "label": "Seedance 2.5",
+   "tokens": "30.8 +",
+   "min_plan": "pro",
+   "ai_name": "seedance"
+  },
+  {
+   "group": "video",
+   "label": "Seedance v1 Pro",
+   "tokens": "7.5 +",
+   "min_plan": "basic",
+   "ai_name": "seedance"
+  },
+  {
+   "group": "video",
+   "label": "Seedance v1 Pro Fast",
+   "tokens": "6 +",
+   "min_plan": "basic",
+   "ai_name": "seedance"
+  },
+  {
+   "group": "video",
+   "label": "Seedance v1.5 Pro",
+   "tokens": "7.5 +",
+   "min_plan": "basic",
+   "ai_name": "seedance"
+  },
+  {
+   "group": "video",
+   "label": "Seedance v1.5 Pro + audio",
+   "tokens": "15 +",
+   "min_plan": "basic",
+   "ai_name": "seedance"
+  },
+  {
+   "group": "video",
+   "label": "Seedance v2.5 Editor",
+   "tokens": "29.5 +",
+   "min_plan": "pro",
+   "ai_name": "seedance"
+  },
+  {
+   "group": "video",
+   "label": "Topaz AI",
+   "tokens": "0.5 +",
+   "min_plan": "pro",
+   "ai_name": "topaz_ai"
+  },
+  {
+   "group": "video",
+   "label": "Topaz Astra Creative",
+   "tokens": "2.9 +",
+   "min_plan": "pro",
+   "ai_name": "topaz_ai"
+  },
+  {
+   "group": "video",
+   "label": "Topaz Astra Fast",
+   "tokens": "4.8 +",
+   "min_plan": "pro",
+   "ai_name": "topaz_ai"
+  },
+  {
+   "group": "video",
+   "label": "Topaz Astra Precise",
+   "tokens": "7.2 +",
+   "min_plan": "pro",
+   "ai_name": "topaz_ai"
+  },
+  {
+   "group": "video",
+   "label": "Topaz Astra Precise v2.5",
+   "tokens": "7.2 +",
+   "min_plan": "pro",
+   "ai_name": "topaz_ai"
+  },
+  {
+   "group": "video",
+   "label": "VEO Editor",
+   "tokens": "10",
+   "min_plan": "basic",
+   "ai_name": "veo3"
+  },
+  {
+   "group": "video",
+   "label": "Veo 3.1 Lite",
+   "tokens": "13.4 +",
+   "min_plan": "basic",
+   "ai_name": "veo3"
+  },
+  {
+   "group": "video",
+   "label": "Veo 3.1 Lite 4K",
+   "tokens": "29",
+   "min_plan": "basic",
+   "ai_name": "veo3"
+  },
+  {
+   "group": "video",
+   "label": "Wan Video 2.5",
+   "tokens": "20 +",
+   "min_plan": "basic",
+   "ai_name": "wan_video"
+  },
+  {
+   "group": "video",
+   "label": "Wan Video 2.6",
+   "tokens": "6 +",
+   "min_plan": "basic",
+   "ai_name": "wan_video"
+  },
+  {
+   "group": "video",
+   "label": "Wan Video 2.7",
+   "tokens": "12 +",
+   "min_plan": "basic",
+   "ai_name": "wan_video"
+  }
+ ]
+}

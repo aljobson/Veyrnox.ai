@@ -24,6 +24,27 @@
   // Public config — safe to commit. SUPABASE_URL used by middleware.js;
   // NEXT_PUBLIC_* by client bundle.
   "vars": {
+    "APP_ENV": "production",
+    "TENANT_PROJECTS_ENABLED": "false",
+    // Cinema v1.0: server controls are default-off; local preview cannot bypass them.
+    // Activate only after the documented migration/reconciliation and preview gates.
+    "CINEMA_ENABLED": "false",
+    "CREATOR_APPLICATIONS_ENABLED": "false",
+    "CREATOR_CONTENT_ENABLED": "false",
+    "SOCIAL_CINEMA_PROFILES_ENABLED": "false",
+    "CREATOR_UPLOADS_ENABLED": "false",
+    "CINEMA_UPLOAD_RECOVERY_ENABLED": "false",
+    "CINEMA_UPLOAD_REMOVAL_ENABLED": "false",
+    "CREATOR_MONETISATION_ENABLED": "false",
+    "CINEMA_SUBSCRIPTIONS_ENABLED": "false",
+    "CINEMA_UNLOCKS_ENABLED": "false",
+    "CINEMA_PUBLISHING_ENABLED": "false",
+    "CINEMA_VIEWING_ENABLED": "false",
+    "VOTING_ENABLED": "false",
+    "COMMENTS_ENABLED": "false",
+    "PPV_ENABLED": "false",
+    "PREMIERES_ENABLED": "false",
+    "AI_RECOMMENDATIONS_ENABLED": "false",
     // Enable only after migration 0129, bucket CORS and real browser/R2 checks (ADR-0044).
     "UPLOAD_INTEGRITY_ENABLED": "false",
     // 0131 applied; verify fresh task/snapshot evidence after deploy, then arm the watcher.
@@ -74,6 +95,20 @@
     "ACCESS_TEAM_DOMAIN": "fancy-lake-7c60.cloudflareaccess.com",
     "ACCESS_AUD": "4bea77db854633f7b4546a485bcb14c1e0c4389318ebd565e9a326edf17d0163"
   },
+  "env": {
+    "staging": {
+      "name": "veyrnox-ai-staging",
+      "triggers": { "crons": [] },
+      "vars": {
+        "APP_ENV": "staging",
+        "PUBLIC_HOST": "https://veyrnox-ai-staging.al-jobson.workers.dev",
+        "SUPABASE_URL": "https://yrqzwqywxfesmbvhzjgj.supabase.co",
+        "NEXT_PUBLIC_SUPABASE_URL": "https://yrqzwqywxfesmbvhzjgj.supabase.co",
+        "NEXT_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_bAxQiodzBhI6bV7lmo9gMQ_Hlg9_Ish",
+        "TENANT_PROJECTS_ENABLED": "true"
+      }
+    }
+  },
   // ------------------------------------------------------------------
   // Secrets (never here — `wrangler secret put <NAME>`), per ADR-0004
   // (Supabase auth + Postgres) and the shipped Phase 1 slices:
@@ -85,6 +120,7 @@
   //                               SigV4 R2 client (packages/adapters/r2.js)
   //   R2_JURISDICTION             'eu' once media is cut over to the EU-jurisdiction bucket (ADR-0021)
   //   GRSAI_API_KEY               GrsAI submit + authenticated scheduled polling (ADR-0020)
+  //   BYTEPLUS_API_KEY            BytePlus ModelArk submit + authenticated scheduled polling (ADR-0058)
   //   KIE_API_KEY, KIE_WEBHOOK_HMAC_KEY
   //                               kie.ai submit + callback HMAC (ADR-0020)
   //   OPENROUTER_API_KEY, OPENROUTER_WEBHOOK_SECRET

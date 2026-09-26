@@ -389,6 +389,13 @@ function JobCard({ row, models, expiryOn, selectable, selected, onToggle }) {
             {s.label}
           </Chip>
         </div>
+        {row.asset_url && (
+          // Disclosure on every generated asset (ADR-0058 decision 8; provider
+          // GenAI policies and EU AI Act Article 50 both ask for it).
+          <div className={`absolute top-3 ${selectable ? 'right-14' : 'right-3'}`}>
+            <Chip tone="neutral" noGlyph className="bg-black/50">AI generated</Chip>
+          </div>
+        )}
         {selectable && (
           <button onClick={onToggle} aria-pressed={selected} aria-label={selected ? 'Remove from edit' : 'Add to edit'}
             className={`absolute top-3 right-3 w-8 h-8 rounded-full border-2 flex items-center justify-center font-bold ${

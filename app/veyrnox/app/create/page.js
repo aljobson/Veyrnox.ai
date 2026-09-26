@@ -325,7 +325,7 @@ export default function CreateStudio() {
                     {SLOW_MODEL_WAIT[model.id] && (
                       <div className="text-xs text-vx-fg-body mt-2">{SLOW_MODEL_WAIT[model.id]}</div>
                     )}
-                    <div className="text-xs text-vx-fg-muted mt-2">Keeps running if you leave or start another — we'll tell you when it's ready. Refund on failure, always.</div>
+                    <div className="text-xs text-vx-fg-muted mt-2">Keeps running if you leave or start another — we&apos;ll tell you when it&apos;s ready. Refund on failure, always.</div>
                   </div>
                 ) : job?.state === 'failed' ? (
                   <div className="text-center max-w-md px-6">
@@ -375,8 +375,10 @@ export default function CreateStudio() {
                 className="mt-0.5 accent-vx-accent"
               />
               <span>
-                I own this file, or I have the permission of everyone identifiable in it. No real person is shown or
-                voiced without their consent (<a href="/legal/aup" target="_blank" rel="noreferrer" className="text-vx-accent underline">Acceptable Use</a>).
+                I own this file, or I have the permission of everyone identifiable in it. No real person&apos;s face, body or
+                voice is used without their consent, and I hold the rights to any brand, artwork or recording in it
+                (<a href="/legal/aup" target="_blank" rel="noreferrer" className="text-vx-accent underline">Acceptable Use</a>).
+                This statement is recorded against the generation and your account.
               </span>
             </label>
           )}
