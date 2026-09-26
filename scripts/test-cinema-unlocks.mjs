@@ -28,7 +28,9 @@ async function person() {
 }
 try {
   const migration = await readFile(new URL('../packages/db/schema/supabase/0142_cinema_unlocks.sql', import.meta.url), 'utf8');
-  await c.query(migration); await c.query(migration);
+  // Idempotency proof inside a rolled-back transaction, so the re-apply cannot
+  // reinstate this file's function bodies over later migrations for the rest of the run.
+  await c.query('BEGIN'); await c.query(migration); await c.query(migration); await c.query('ROLLBACK');
   // Later migrations add keys (0144: pass_ceiling_minutes); the Phase 1 three are fixed.
   assert.deepEqual(await q("SELECT key, value FROM public.cinema_prices WHERE key IN ('episode_unlock','film_unlock','free_episodes') ORDER BY key"), [{ key: 'episode_unlock', value: 6 }, { key: 'film_unlock', value: 6 }, { key: 'free_episodes', value: 5 }]);
 

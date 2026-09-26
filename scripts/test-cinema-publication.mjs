@@ -24,7 +24,7 @@ const queue = (actor, mfa = now()) => value('SELECT public.list_cinema_submissio
 const review = (actor, sub, decision, key = randomUUID(), note = null, mfa = now()) => value('SELECT public.review_cinema_submission($1,$2,$3,$4,$5,$6,$7,$8,$9) AS value', [actor, 'aal2', mfa, key, sub, decision, 'Reviewed', note, randomUUID()]);
 const suspend = (actor, content, key = randomUUID()) => value('SELECT public.suspend_cinema_title($1,$2,$3,$4,$5,$6,$7) AS value', [actor, 'aal2', now(), key, content, 'Rights complaint upheld', randomUUID()]);
 const status = (content) => value('SELECT lifecycle_status || \'/\' || visibility AS value FROM public.cinema_content WHERE id=$1', [content]);
-const catalogue = (limit = 24, before = null) => value('SELECT public.list_public_cinema_titles($1,$2) AS value', [limit, before]);
+const catalogue = (limit = 24, before = null, category = null) => value('SELECT public.list_public_cinema_titles($1,$2,$3) AS value', [limit, before, category]);
 const readTitle = (actor, content) => value('SELECT public.read_public_cinema_title($1,$2) AS value', [actor, content]);
 const own = (actor, parent = null) => value('SELECT public.list_own_cinema_content($1,$2) AS value', [actor, parent]);
 async function person(role = null) {
@@ -38,18 +38,27 @@ async function person(role = null) {
 }
 try {
   const migration = await readFile(new URL('../packages/db/schema/supabase/0147_cinema_publication.sql', import.meta.url), 'utf8');
-  await c.query(migration); await c.query(migration);
+  // Idempotency proof inside a rolled-back transaction, so the re-apply cannot
+  // reinstate this file's function bodies over later migrations for the rest of the run.
+  await c.query('BEGIN'); await c.query(migration); await c.query(migration); await c.query('ROLLBACK');
 
   const creator = await person('creator'), admin = await person('administrator'), viewer = await person(), stranger = await person('creator');
   const series = await save(creator, draft());
   const season = await save(creator, draft({ content_type: 'SEASON', parent_id: series, position: 1 }));
   const eps = [];
   for (let i = 1; i <= 7; i++) eps.push(await save(creator, draft({ content_type: 'EPISODE', parent_id: season, position: i })));
-  const film = await save(creator, draft({ content_type: 'FILM', title: 'Feature' }));
+  const film = await save(creator, draft({ content_type: 'FILM', title: 'Feature', categories: ['action', 'sci-fi'] }));
+  // Categories (0149): bounded, known, root-only, and required before review.
+  assert.equal((await value('SELECT public.save_cinema_draft($1,$2,$3,$4,$5) AS value', [creator, randomUUID(), null, 0, draft({ categories: ['romance', 'nope'] })])).error, 'invalid_category');
+  assert.equal((await value('SELECT public.save_cinema_draft($1,$2,$3,$4,$5) AS value', [creator, randomUUID(), null, 0, draft({ categories: ['romance', 'drama', 'comedy'] })])).error, 'invalid_draft');
+  assert.equal((await value('SELECT public.save_cinema_draft($1,$2,$3,$4,$5) AS value', [creator, randomUUID(), null, 0, draft({ content_type: 'EPISODE', parent_id: season, position: 99, categories: ['romance'] })])).error, 'invalid_draft');
+  assert.deepEqual(await value('SELECT public.list_cinema_categories() AS value').then((r) => r.slice(0, 2).map((c) => c.slug)), ['romance', 'drama']);
 
-  // Readiness: every episode needs a finished upload; a film needs its own.
+  // A title needs a category before review; then readiness: every episode needs a finished upload.
+  assert.equal((await submit(creator, series)).error, 'category_required');
+  assert.equal((await value('SELECT public.save_cinema_draft($1,$2,$3,$4,$5) AS value', [creator, randomUUID(), series, 1, draft({ categories: ['thriller', 'drama'] })])).revision, 2);
   assert.equal((await submit(creator, series)).error, 'video_not_ready');
-  const empty = await save(creator, draft({ title: 'Empty' }));
+  const empty = await save(creator, draft({ title: 'Empty', categories: ['comedy'] }));
   assert.equal((await submit(creator, empty)).error, 'no_episodes');
   for (const e of eps.slice(0, 6)) await upload(creator, e);
   await upload(creator, eps[6], false);
@@ -80,7 +89,7 @@ try {
   const row = pending.find((s) => s.id === sub.id);
   assert.deepEqual([row.content_type, row.episode_count, row.duration_seconds, row.rights_version, row.prior_actions], ['SERIES', 7, 630, RIGHTS, 0]);
   const adminCreator = await person('creator');
-  const ownTitle = await save(adminCreator, draft({ content_type: 'SHORT', title: 'Mine' }));
+  const ownTitle = await save(adminCreator, draft({ content_type: 'SHORT', title: 'Mine', categories: ['comedy'] }));
   await upload(adminCreator, ownTitle);
   const ownSub = await submit(adminCreator, ownTitle);
   await q("UPDATE public.cinema_memberships SET role='administrator' WHERE user_id=(SELECT id FROM public.users WHERE auth_id=$1)", [adminCreator]);
@@ -111,6 +120,10 @@ try {
   const entry = list.find((t) => t.id === series);
   assert.deepEqual([entry.title, entry.episode_count, entry.username.startsWith('p_'), entry.duration_seconds], ['Published story', 7, true, null]);
   assert.equal(list.some((t) => t.id === film), false, 'the film is still a draft');
+  assert.deepEqual(entry.categories, ['drama', 'thriller']);
+  assert.equal((await catalogue(50, null, 'thriller')).some((t) => t.id === series), true);
+  assert.equal((await catalogue(50, null, 'comedy')).some((t) => t.id === series), false);
+  assert.deepEqual((await readTitle(null, series)).categories, ['drama', 'thriller']);
   const anon = await readTitle(null, series);
   assert.equal(anon.seasons[0].episodes.length, 7);
   assert.deepEqual([anon.seasons[0].episodes[0].access, anon.seasons[0].episodes[5].access, anon.seasons[0].episodes[5].credits, anon.seasons[0].episodes[0].duration_seconds], ['free', 'locked', 6, 90]);
@@ -182,7 +195,7 @@ try {
     const allowed = role === 'service_role';
     for (const fn of ['public.submit_cinema_title(text,uuid,uuid,text)', 'public.withdraw_cinema_title(text,uuid,uuid,text)', 'public.list_cinema_submissions(text,text,bigint)',
       'public.review_cinema_submission(text,text,bigint,uuid,uuid,text,text,text,uuid)', 'public.suspend_cinema_title(text,text,bigint,uuid,uuid,text,uuid)',
-      'public.list_public_cinema_titles(integer,timestamptz)', 'public.read_public_cinema_title(text,uuid)']) {
+      'public.list_public_cinema_titles(integer,timestamptz,text)', 'public.read_public_cinema_title(text,uuid)']) {
       assert.equal(await value("SELECT has_function_privilege($1, $2, 'EXECUTE') AS value", [role, fn]), allowed, `${role} ${fn}`);
     }
   }

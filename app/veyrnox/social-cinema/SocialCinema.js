@@ -15,23 +15,33 @@ function Catalogue() {
   const [titles, setTitles] = useState(null);
   const [state, setState] = useState('loading');
   const [next, setNext] = useState(null);
-  const load = async (before) => {
+  const [categories, setCategories] = useState([]);
+  const [category, setCategory] = useState('');
+  const load = async (before, slug = category) => {
     try {
-      const r = await fetch(`/api/cinema/titles${before ? `?before=${encodeURIComponent(before)}` : ''}`);
+      const params = new URLSearchParams();
+      if (before) params.set('before', before);
+      if (slug) params.set('category', slug);
+      const r = await fetch(`/api/cinema/titles${params.size ? `?${params}` : ''}`);
       if (!r.ok) { setState(r.status === 503 ? 'closed' : 'error'); return; }
       const data = await r.json();
-      setTitles((prev) => (before && prev ? [...prev, ...data.titles] : data.titles)); setNext(data.next); setState('ready');
+      setTitles((prev) => (before && prev ? [...prev, ...data.titles] : data.titles)); setNext(data.next); setCategories(data.categories || []); setState('ready');
     } catch { setState('error'); }
   };
-  useEffect(() => { load(null); }, []);
+  useEffect(() => { load(null); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   if (state !== 'ready') return null;
   return <section className="mt-12" aria-labelledby="catalogue-title">
     <h2 id="catalogue-title" className="text-2xl font-extrabold">Now showing</h2>
-    {titles.length === 0 ? <p className="mt-4 text-vx-fg-muted">Nothing is published yet. The first stories are on their way.</p> : <ul className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+    {categories.length > 0 && <nav aria-label="Categories" className="mt-4 flex gap-2 overflow-x-auto pb-2">
+      {[['', 'All'], ...categories.map((c) => [c.slug, c.label])].map(([slug, label]) => <button key={slug || 'all'} type="button" aria-pressed={category === slug}
+        onClick={() => { setCategory(slug); load(null, slug); }}
+        className={`shrink-0 rounded-full px-4 py-2 text-sm font-bold focus-visible:outline focus-visible:outline-2 focus-visible:outline-vx-accent ${category === slug ? 'bg-vx-accent text-vx-accent-ink' : 'border border-vx-border text-vx-fg-muted hover:bg-vx-panel'}`}>{label}</button>)}
+    </nav>}
+    {titles.length === 0 ? <p className="mt-4 text-vx-fg-muted">{category ? 'Nothing in this category yet.' : 'Nothing is published yet. The first stories are on their way.'}</p> : <ul className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
       {titles.map((t) => <li key={t.id} className="flex flex-col rounded-2xl border border-vx-border bg-vx-base/60 p-5">
         <p className="font-vx-mono text-xs tracking-widest text-vx-accent uppercase">{t.content_type}{t.content_type === 'SERIES' ? ` · ${t.episode_count} episodes` : t.duration_seconds ? ` · ${Math.max(1, Math.round(t.duration_seconds / 60))} min` : ''}</p>
         <h3 className="mt-2 text-xl font-bold break-words"><Link href={`/social-cinema/title/${t.id}`} className="hover:underline">{t.title}</Link></h3>
-        <p className="mt-1 text-sm text-vx-fg-muted">{t.display_name}</p>
+        <p className="mt-1 text-sm text-vx-fg-muted">{t.display_name}{t.categories?.length ? ` · ${t.categories.join(', ')}` : ''}</p>
         <p className="mt-3 line-clamp-3 text-sm text-vx-fg-body break-words">{t.synopsis}</p>
         <Link href={`/social-cinema/title/${t.id}`} className="mt-4 inline-flex self-start rounded-full bg-vx-accent px-4 py-2 text-sm font-bold text-vx-accent-ink">Watch</Link>
       </li>)}

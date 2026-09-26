@@ -4,7 +4,7 @@ import { getSession, onSessionChange } from '../../../lib/authClient';
 import { gatewayFetch } from '../../_lib/gateway';
 import { VideoUpload } from './VideoUpload';
 import { Button } from '../../_components/Button';
-import { AI_DISCLOSURES } from '../../../../lib/cinema/domain';
+import { AI_DISCLOSURES, CINEMA_CATEGORIES, MAX_CATEGORIES } from '../../../../lib/cinema/domain';
 const identity = () => getSession()?.user?.id || '';
 const noIdentity = () => '';
 const labels = { FILM: 'Film', SHORT: 'Short', TRAILER: 'Trailer', SERIES: 'Series', SEASON: 'Season', EPISODE: 'Episode' };
@@ -75,7 +75,8 @@ function DraftEditor({ draft, types, onCancel, onSaved, onReload }) {
     const body = JSON.stringify({ ...(draft.id ? { id: draft.id, revision: draft.revision } : {}),
       content_type: draft.id ? draft.content_type : form.get('content_type'), parent_id: draft.parent_id,
       position: draft.parent_id ? (draft.id ? draft.position : Number(form.get('position'))) : null,
-      title: form.get('title').trim(), synopsis: form.get('synopsis'), language: form.get('language').trim(), ai_disclosures: form.getAll('ai_disclosures') });
+      title: form.get('title').trim(), synopsis: form.get('synopsis'), language: form.get('language').trim(), ai_disclosures: form.getAll('ai_disclosures'),
+      ...(draft.parent_id ? {} : { categories: form.getAll('categories').slice(0, MAX_CATEGORIES) }) });
     if (attempt.current?.body !== body) attempt.current = { body, key: crypto.randomUUID() };
     setBusy(true); setError('');
     try { await gatewayFetch('/cinema/content', { method: draft.id ? 'PATCH' : 'POST', body, headers: { 'idempotency-key': attempt.current.key } }); onSaved(); }
@@ -90,6 +91,7 @@ function DraftEditor({ draft, types, onCancel, onSaved, onReload }) {
       <label className="block text-sm font-semibold" htmlFor="draft-synopsis">Synopsis<textarea id="draft-synopsis" name="synopsis" rows={5} maxLength={2000} defaultValue={draft.synopsis} className={input} /></label>
       <label className="block text-sm font-semibold" htmlFor="draft-language">Language code<input id="draft-language" name="language" required pattern="[a-z]{2,3}(-[A-Z]{2})?" maxLength={6} defaultValue={draft.language} className={input} aria-describedby="language-help" /></label>
       <p id="language-help" className="text-xs text-vx-fg-muted">For example: en (English), fr (French), or pt-BR (Brazilian Portuguese).</p>
+      {!draft.parent_id && <fieldset><legend className="font-semibold">Categories</legend><p className="mt-2 text-sm text-vx-fg-muted">Pick one or two. Viewers browse the catalogue by category, and a title needs at least one before review.</p><div className="mt-3 grid gap-3 sm:grid-cols-3">{CINEMA_CATEGORIES.map(([slug, label]) => <label key={slug} className="flex items-start gap-3 text-sm"><input type="checkbox" name="categories" value={slug} defaultChecked={(draft.categories || []).includes(slug)} className="mt-1 accent-vx-accent" />{label}</label>)}</div></fieldset>}
       <fieldset><legend className="font-semibold">AI disclosures</legend><p className="mt-2 text-sm text-vx-fg-muted">Select what you plan to use. These draft declarations do not clear rights or approve publication.</p><div className="mt-3 grid gap-3 sm:grid-cols-2">{AI_DISCLOSURES.map(value => <label key={value} className="flex items-start gap-3 text-sm"><input type="checkbox" name="ai_disclosures" value={value} defaultChecked={draft.ai_disclosures.includes(value)} className="mt-1 accent-vx-accent" />{disclosureLabels[value]}</label>)}</div></fieldset>
     </fieldset>
     {error && <div role="alert"><p>{message(error)}</p>{error === 'revision_conflict' && <Button variant="ghost" className="mt-3" type="button" onClick={onReload}>Discard these edits and reload</Button>}</div>}
@@ -97,7 +99,7 @@ function DraftEditor({ draft, types, onCancel, onSaved, onReload }) {
   </form>;
 }
 function message(code) {
-  return ({ publishing_not_open: 'Publishing is not open yet.', not_withdrawable: 'This title cannot be withdrawn in its current state.', already_submitted: 'This title is already under review.', already_published: 'This title is already published.', suspended: 'This title was suspended by an administrator and cannot be resubmitted.', content_not_open: 'Draft creation is not open yet. Please check back soon.', creator_required: 'An approved Cinema creator account is required. Apply from your Social Cinema profile.', account_not_active: 'Your Cinema account cannot manage drafts right now. Contact support.', revision_conflict: 'This draft changed in another session. Copy any edits you want to keep, then reload the latest version.', position_taken: 'That number is already in use. Choose another.', draft_limit_reached: 'You have reached the preview draft limit. Contact support.', invalid_draft: 'Check the title, language and other fields, then try again.', rate_limited: 'Too many requests. Wait a minute and try again.', content_not_found: 'That draft is no longer available to your account.', idempotency_conflict: 'This save attempt changed. Reload your drafts before trying again.' })[code] || 'We could not load or save your drafts. Please try again.';
+  return ({ publishing_not_open: 'Publishing is not open yet.', category_required: 'Pick at least one category for this title before submitting it.', invalid_category: 'Choose up to two categories from the list.', not_withdrawable: 'This title cannot be withdrawn in its current state.', already_submitted: 'This title is already under review.', already_published: 'This title is already published.', suspended: 'This title was suspended by an administrator and cannot be resubmitted.', content_not_open: 'Draft creation is not open yet. Please check back soon.', creator_required: 'An approved Cinema creator account is required. Apply from your Social Cinema profile.', account_not_active: 'Your Cinema account cannot manage drafts right now. Contact support.', revision_conflict: 'This draft changed in another session. Copy any edits you want to keep, then reload the latest version.', position_taken: 'That number is already in use. Choose another.', draft_limit_reached: 'You have reached the preview draft limit. Contact support.', invalid_draft: 'Check the title, language and other fields, then try again.', rate_limited: 'Too many requests. Wait a minute and try again.', content_not_found: 'That draft is no longer available to your account.', idempotency_conflict: 'This save attempt changed. Reload your drafts before trying again.' })[code] || 'We could not load or save your drafts. Please try again.';
 }
 function SubmitForReview({ item, onClose, onDone }) {
   const [busy, setBusy] = useState(false), [error, setError] = useState(''), [agreed, setAgreed] = useState(false);

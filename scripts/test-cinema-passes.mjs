@@ -31,7 +31,9 @@ async function person() {
 }
 try {
   const migration = await readFile(new URL('../packages/db/schema/supabase/0143_cinema_passes.sql', import.meta.url), 'utf8');
-  await c.query(migration); await c.query(migration);
+  // Idempotency proof inside a rolled-back transaction, so the re-apply cannot
+  // reinstate this file's function bodies over later migrations for the rest of the run.
+  await c.query('BEGIN'); await c.query(migration); await c.query(migration); await c.query('ROLLBACK');
   const plans = await value('SELECT public.list_cinema_pass_plans() AS value');
   assert.deepEqual(plans.map((p) => [p.id, p.billing_interval, p.price_usd_cents, p.intro_price_usd_cents]),
     [['pass-weekly', 'week', 1499, 1199], ['pass-monthly', 'month', 4999, null], ['pass-yearly', 'year', 19999, null]]);

@@ -43,3 +43,10 @@ test('policy and concurrency errors are typed; backend details stay private',asy
   }
   const {handle}=setup('create',{id,revision:1,idempotent:true});assert.equal((await handle(request(draft))).status,200);
 });
+test('categories are optional on a root, bounded to two known-shaped slugs, and never on a season or episode',()=>{
+  assert.ok(validDraft({...draft,categories:['romance','thriller']}));
+  assert.ok(validDraft({...draft,categories:[]}));
+  for(const categories of [['romance','thriller','comedy'],['romance','romance'],['Romance'],['bad slug'],[1],'romance']) assert.equal(validDraft({...draft,categories}),false,JSON.stringify(categories));
+  assert.equal(validDraft({...draft,content_type:'EPISODE',parent_id:id,position:1,categories:['romance']}),false);
+  assert.ok(validDraft({...draft,content_type:'EPISODE',parent_id:id,position:1,categories:[]}));
+});
