@@ -98,14 +98,27 @@
   "env": {
     "staging": {
       "name": "veyrnox-ai-staging",
-      "triggers": { "crons": [] },
+      // Recovery and removal of Cinema uploads run from the cron; the other
+      // scheduled tasks skip on staging because their secrets are not set.
+      "triggers": { "crons": ["*/5 * * * *"] },
       "vars": {
         "APP_ENV": "staging",
         "PUBLIC_HOST": "https://veyrnox-ai-staging.al-jobson.workers.dev",
         "SUPABASE_URL": "https://yrqzwqywxfesmbvhzjgj.supabase.co",
         "NEXT_PUBLIC_SUPABASE_URL": "https://yrqzwqywxfesmbvhzjgj.supabase.co",
         "NEXT_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_bAxQiodzBhI6bV7lmo9gMQ_Hlg9_Ish",
-        "TENANT_PROJECTS_ENABLED": "true"
+        "TENANT_PROJECTS_ENABLED": "true",
+        // Cinema Stream upload preview (ADR-0052/0053/0054). Staging only:
+        // vars are not inherited by environments and production keeps every
+        // one of these "false". Stream secrets are set on this Worker; see
+        // docs/architecture/staging-rollout.md.
+        "CINEMA_ENABLED": "true",
+        "SOCIAL_CINEMA_PROFILES_ENABLED": "true",
+        "CREATOR_APPLICATIONS_ENABLED": "true",
+        "CREATOR_CONTENT_ENABLED": "true",
+        "CREATOR_UPLOADS_ENABLED": "true",
+        "CINEMA_UPLOAD_RECOVERY_ENABLED": "true",
+        "CINEMA_UPLOAD_REMOVAL_ENABLED": "true"
       }
     }
   },
