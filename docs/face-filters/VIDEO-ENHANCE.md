@@ -448,3 +448,7 @@ and [machine-readable results](video-enhance-performance-2026-09-28.json).
 Local and deployed static-asset checks pass, with the editor still disabled.
 See the [delivery validation report](VIDEO-ENHANCE-DELIVERY.md) for the pinned
 preview version, reproducible commands, results and remaining acceptance gates.
+
+The [stronger occlusion evaluation](VIDEO-ENHANCE-OCCLUSION.md) adds a licensed
+cover/reveal/cover clip and a smoothing-off control; partial-occlusion quality
+remains unqualified.

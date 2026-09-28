@@ -221,3 +221,15 @@ remains disabled. No new deployment or activation was performed.
 
 The [delivery report](VIDEO-ENHANCE-DELIVERY.md) records version identity,
 commands, results, the limit on commit attribution and remaining release gates.
+
+## Stronger occlusion follow-up, 2026-09-28
+
+A licensed Ron Lach clip now exercises hands covering both eyes and mouth,
+reveal, and renewed coverage. Sampled preview states showed no-face → one-face →
+no-face recovery, and both 30%/0% smoothing exports preserved 375 frames and
+timing within 1 ms. Partial coverage still tracked a face, which does not
+exclude hands from the smoothing mask. The UI now recommends smoothing off
+for covered faces. This guidance does not close the quality gate.
+
+See the [occlusion evaluation](VIDEO-ENHANCE-OCCLUSION.md) for provenance,
+control comparison, sample limits and remaining qualification.
