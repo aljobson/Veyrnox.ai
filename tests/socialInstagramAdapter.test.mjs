@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-    instagramConfig, buildAuthorizeUrl, exchangeCodeForToken, fetchConnectedAccount,
+    instagramConfig, buildAuthorizeUrl, exchangeCodeForToken, fetchConnectedAccount, publishPost,
 } from '../packages/adapters/social/instagram.js';
 
 const cfg = { appId: '123456789012345', appSecret: 'a'.repeat(32) };
@@ -84,6 +84,56 @@ test('fetchConnectedAccount resolves the Page with a linked Instagram Business A
 test('fetchConnectedAccount reports NO_LINKED_INSTAGRAM_ACCOUNT as an expected user error, not a crash', async () => {
     const fetcher = async () => jsonRes({ data: [{ id: 'page-1', name: 'No IG Page' }] });
     await assert.rejects(fetchConnectedAccount('user-token', fetcher), (err) => err.code === 'NO_LINKED_INSTAGRAM_ACCOUNT');
+});
+
+test('publishPost refuses anything but an image, without calling the Graph API', async () => {
+    const fetcher = async () => { throw new Error('must not be called'); };
+    await assert.rejects(
+        publishPost('page-token', { externalAccountId: 'ig-42', mediaType: 'video', mediaUrl: 'https://example.com/v.mp4' }, fetcher),
+        (err) => err.code === 'UNSUPPORTED_MEDIA_TYPE',
+    );
+});
+
+test('publishPost creates a media container, publishes it, and resolves the real permalink', async () => {
+    const calls = [];
+    const fetcher = async (url) => {
+        calls.push(new URL(url));
+        if (calls.length === 1) return jsonRes({ id: 'container-1' });
+        if (calls.length === 2) return jsonRes({ id: '17895695668004550' });
+        return jsonRes({ id: '17895695668004550', permalink: 'https://www.instagram.com/p/Cxyz123/' });
+    };
+    const result = await publishPost('page-token', {
+        externalAccountId: 'ig-42', caption: 'hello world', mediaType: 'image', mediaUrl: 'https://example.com/a.jpg',
+    }, fetcher);
+    assert.deepEqual(result, { platformPostId: '17895695668004550', platformPostUrl: 'https://www.instagram.com/p/Cxyz123/' });
+    assert.equal(calls[0].pathname, '/v21.0/ig-42/media');
+    assert.equal(calls[0].searchParams.get('image_url'), 'https://example.com/a.jpg');
+    assert.equal(calls[0].searchParams.get('caption'), 'hello world');
+    assert.equal(calls[1].pathname, '/v21.0/ig-42/media_publish');
+    assert.equal(calls[1].searchParams.get('creation_id'), 'container-1');
+    assert.equal(calls[2].pathname, '/v21.0/17895695668004550');
+});
+
+test('publishPost still reports success when the permalink lookup itself fails', async () => {
+    const calls = [];
+    const fetcher = async (url) => {
+        calls.push(new URL(url));
+        if (calls.length === 1) return jsonRes({ id: 'container-1' });
+        if (calls.length === 2) return jsonRes({ id: 'media-1' });
+        return jsonRes({ error: { message: 'transient' } }, 500);
+    };
+    const result = await publishPost('page-token', {
+        externalAccountId: 'ig-42', mediaType: 'image', mediaUrl: 'https://example.com/a.jpg',
+    }, fetcher);
+    assert.deepEqual(result, { platformPostId: 'media-1', platformPostUrl: null });
+});
+
+test('publishPost surfaces a failed container or publish step rather than swallowing it', async () => {
+    const containerFails = async () => jsonRes({ error: { message: 'Invalid image URL' } }, 400);
+    await assert.rejects(
+        publishPost('page-token', { externalAccountId: 'ig-42', mediaType: 'image', mediaUrl: 'https://example.com/a.jpg' }, containerFails),
+        /Invalid image URL/,
+    );
 });
 
 function jsonRes(body, status = 200) {

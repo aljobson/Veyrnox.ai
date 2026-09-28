@@ -105,6 +105,57 @@ export async function fetchConnectedAccount(accessToken, fetcher = fetch) {
     };
 }
 
+/** Publishes a single-image post to the connected Instagram Business
+ * Account (Content Publishing API: create a media container, then publish
+ * it). Image posts only — Instagram requires polling a container's
+ * status_code to FINISHED before a video/Reel container can be published,
+ * which needs to survive across sweep runs (not a single cron tick); that
+ * two-step flow is a follow-up, not built here. Throws
+ * UNSUPPORTED_MEDIA_TYPE for anything else so the caller fails the target
+ * cleanly instead of silently dropping it. */
+export async function publishPost(accessToken, { externalAccountId, caption, mediaType, mediaUrl }, fetcher = fetch) {
+    if (mediaType !== 'image') {
+        const err = new Error(`unsupported media type: ${mediaType}`);
+        err.code = 'UNSUPPORTED_MEDIA_TYPE';
+        throw err;
+    }
+    const containerUrl = new URL(`${GRAPH_BASE}/${externalAccountId}/media`);
+    containerUrl.searchParams.set('image_url', mediaUrl);
+    if (caption) containerUrl.searchParams.set('caption', caption);
+    containerUrl.searchParams.set('access_token', accessToken);
+    const container = await postJson(containerUrl, fetcher);
+    if (!container || typeof container.id !== 'string') throw new Error('media_container_failed');
+
+    const publishUrl = new URL(`${GRAPH_BASE}/${externalAccountId}/media_publish`);
+    publishUrl.searchParams.set('creation_id', container.id);
+    publishUrl.searchParams.set('access_token', accessToken);
+    const published = await postJson(publishUrl, fetcher);
+    if (!published || typeof published.id !== 'string') throw new Error('media_publish_failed');
+
+    // The publish response carries only the media id, not its public
+    // shortcode URL — a permalink lookup is the only correct source for
+    // that. A failure here still means the post itself went out.
+    const permalinkUrl = new URL(`${GRAPH_BASE}/${published.id}`);
+    permalinkUrl.searchParams.set('fields', 'permalink');
+    permalinkUrl.searchParams.set('access_token', accessToken);
+    const permalink = await getJson(permalinkUrl, fetcher).catch(() => null);
+
+    return {
+        platformPostId: published.id,
+        platformPostUrl: (permalink && permalink.permalink) || null,
+    };
+}
+
+async function postJson(url, fetcher) {
+    const res = await fetcher(url.toString(), { method: 'POST', signal: AbortSignal.timeout(20000) });
+    const body = await res.json().catch(() => null);
+    if (!res.ok) {
+        const message = (body && body.error && body.error.message) || `graph_api_error_${res.status}`;
+        throw new Error(message);
+    }
+    return body;
+}
+
 async function getJson(url, fetcher) {
     const res = await fetcher(url.toString(), { signal: AbortSignal.timeout(10000) });
     const body = await res.json().catch(() => null);
