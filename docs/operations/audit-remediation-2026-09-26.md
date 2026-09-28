@@ -188,3 +188,20 @@ The browser changed accounts while waiting and subsequently displayed
 UI reset was not verified. The previous replacement test already demonstrated
 that confirmed deletion unlocks the upload form. Signed webhook delivery,
 missed-callback recovery and stale tus URL invalidation remain separate checks.
+
+### Scheduled upload recovery — 2026-09-28, 09:05 UTC
+
+Switched from the administrator back to the approved test creator. Confirmed
+the post-deletion UI presented an empty upload form. Uploaded the same synthetic
+six-second clip through the UI; new upload
+`fcabe0a4-7c1f-4baf-9b70-1134da6bad2e` initially remained `processing`.
+No manual Refresh status action was used while awaiting completion (the upload
+component performs its normal initial refresh at the end of the transfer).
+
+The scheduled recovery claimed this upload at 09:05:38.071431 UTC, observed
+`ready` at 09:05:38.107 UTC and completed its check at 09:05:38.395067 UTC with
+`recovery_failed=false`. Dimensions 360×640, duration six seconds. This verifies
+automatic recovery independently of manual refresh. A bounded 180-second
+Wrangler observation emitted no `cinema.stream_webhook` events; absence of a
+captured event does not establish why no callback completed. Signed-webhook
+delivery remains unverified. The clip is retained as a private test draft.
