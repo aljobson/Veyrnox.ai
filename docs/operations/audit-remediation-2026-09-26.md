@@ -205,3 +205,26 @@ automatic recovery independently of manual refresh. A bounded 180-second
 Wrangler observation emitted no `cinema.stream_webhook` events; absence of a
 captured event does not establish why no callback completed. Signed-webhook
 delivery remains unverified. The clip is retained as a private test draft.
+
+### Stream webhook destination correction and live callback — 28 September
+
+The account webhook GET revealed the production destination
+`https://veyrnox.ai/api/webhook/cinema-stream`. With explicit owner approval,
+changed the account-wide subscription to
+`https://veyrnox-ai-staging.al-jobson.workers.dev/api/webhook/cinema-stream`.
+Read-back confirmed the destination (modified 2026-09-28 09:23:13 UTC).
+A signed probe confirmed the existing staging signing secret matched; no
+Worker secret update, deployment, or production database change was required.
+
+A fresh private draft, **Cinema webhook test — 28 September**, received the
+six-second synthetic colour clip. Content ID:
+`61034c7c-3e39-437e-bc57-04e70af4b04d`; upload ID:
+`804d6343-0405-48b0-82c7-b694ebe11cf4`.
+Live Worker logging was first verified with an unsigned diagnostic request.
+The real provider callback then logged `cinema.stream_webhook`, HTTP 200,
+code `ok`, request `b24b7666-2f5d-4007-ab38-cd3c97c6714c`.
+Read-only staging SQL confirmed `ready`, observed at
+2026-09-28 09:26:31 UTC, with both recovery timestamps NULL. No manual
+status refresh or synthetic signed callback was used for this new upload.
+This verifies automatic provider callback delivery independently of scheduled
+recovery. The test draft and video remain private and retained.
