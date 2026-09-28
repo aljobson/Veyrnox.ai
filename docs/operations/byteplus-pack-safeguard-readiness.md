@@ -1,5 +1,13 @@
 # BytePlus pack safeguard readiness — 2026-09-28
 
+> **2026-09-28 correction — pack savings withdrawn.** The original calculations
+> below assumed one pack token per consumed token. Current BytePlus rules apply
+> input/resolution deduction multipliers; the four staged Seedance 2.x costs and
+> derived credit floors are not valid activation evidence. Keep those rows inactive
+> until pricing is revised and verified. See the
+> [current wholesale review](../pricing/wholesale-review-2026-09-28.md).
+
+
 Status: specification and source investigation only. No quota collector,
 production enforcement, migration or 24-hour health verification is complete.
 BytePlus must remain inactive until these are implemented and verified.
@@ -28,12 +36,11 @@ that it identifies paid Seedance pack balances, expiries and applicability.
 The same reference distinguishes delayed usage statistics from next-day
 settlement. No live response or credential scope has been verified here.
 
-The local project credential directory has KIE and staging R2 files, but no
-BytePlus credential file. arkcli is not installed on this machine. The
-existing Chrome BytePlus tab initially timed out. A fresh Chrome tab opened
-the official console successfully but redirected to sign-in; authenticated
-quota data is therefore unavailable in the accessible session. No credential, pack purchase, console setting or account access
-was created or changed.
+The authenticated BytePlus console was subsequently reached on 2026-09-28.
+Billing Center > Resource package showed no purchased packs. Free model quotas
+were visible, but they do not establish paid-pack coverage or API semantics.
+No paid quota API response has been verified. The pack pricing assumption is now
+withdrawn: the pricing review above must precede further pack-only enforcement.
 
 ## Data required before implementation
 
