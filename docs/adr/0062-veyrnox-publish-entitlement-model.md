@@ -1,11 +1,15 @@
 # ADR-0062 — Veyrnox Publish entitlement: an independent plan, not the credit ledger
 
-- **Status**: Proposed 2026-09-28. Deferred by
+- **Status**: **Accepted 2026-09-28.** Product owner approved the entitlement
+  mechanism (Option A — independent "Publish Plan," never touching the credit
+  ledger), the free-tier direction (one account/one network free, more on paid
+  tiers), and the sales channel (web/Stripe only for v1, no App Store), all as
+  proposed, no changes. Deferred by
   [ADR-0061](0061-veyrnox-publish-social-scheduling.md)'s open question 1 and the
-  spec pack's `docs/social-publisher/01-product-spec.md` §1.8. Nothing here is
-  Accepted until the product owner signs off — this is money-spine, per `CLAUDE.md`.
+  spec pack's `docs/social-publisher/01-product-spec.md` §1.8 before this ADR
+  resolved it.
 - **Date**: 2026-09-28
-- **Deciders**: Product owner (sole)
+- **Deciders**: Product owner (sole) — accepted
 - **Related**: [ADR-0061 — Veyrnox Publish](0061-veyrnox-publish-social-scheduling.md)
   (the feature this ADR bills for), [ADR-0057 — Social Cinema viewer paywall,
   modelled on ReelShort](0057-cinema-viewer-paywall.md) (the direct precedent this
@@ -132,8 +136,9 @@ billed monthly/annually), which is the functional reference ADR-0061 is built fr
 
 ## Recommendation
 
-**Option A — an independent "Publish Plan," modelled directly on Cinema Pass's
-already-Accepted pattern.** Concretely:
+**Accepted 2026-09-28: Option A — an independent "Publish Plan," modelled directly on
+Cinema Pass's already-Accepted pattern.** The product owner approved this, and the
+free-tier direction and sales channel below, with no changes. Concretely:
 
 - New tables mirroring `cinema_pass_plans`/`cinema_passes`: `social_publish_plans`
   (plan definitions: name, price, connected-account cap, brand cap) and
@@ -181,24 +186,29 @@ already-Accepted pattern.** Concretely:
 
 ## Open questions
 
+**Resolved at acceptance (2026-09-28):**
+- **Sales channel** — confirmed web/Stripe-only for v1, no App Store in-app-purchase
+  scope, matching Cinema Pass.
+- **Free-tier direction** — confirmed: one connected account, one network, free; more
+  accounts/networks/brands on paid tiers. The exact free-tier *limit* is still a
+  smaller, separate pricing decision (see below) — the direction, not the number, was
+  what needed sign-off here.
+
+**Still open, none blocking implementation start but all needed before GA:**
+
 1. **Confirm Stripe's stance on recurring billing for Publish specifically**, rather
    than assuming Cinema Pass's "written Stripe acceptance" blocker doesn't apply here.
    The category risk is plausibly much lower — Publish is a scheduling utility, not
    video-hosting or streaming of user-generated content — but this should be a quick
    confirmation, not an assumption, especially given ADR-0031's LemonSqueezy-rejection
    history for the broader "AI media generation" category this account already sits in.
-2. **Exact plan tiers, prices, and connected-account/brand caps per tier** — a pricing
-   decision for the product owner, deliberately not made in this ADR (see
-   ADR-0061's own refusal to reproduce Metricool's specific pricing numbers without a
-   confirmed source).
-3. **Exact free-tier limit** (proposed direction: one account, one network) — needs a
-   product-owner number, weighed against the adoption-vs-monetization trade-off in
-   Decision driver 4 above.
-4. **Sales channel.** Cinema Pass is scoped to web/Stripe only, with iOS/Android App
-   Store billing "planned" separately per `CONTEXT.md`'s Sales Channel entry. Confirm
-   Publish Plans are web/Stripe-only for v1 too — no App Store in-app-purchase
-   complexity in scope here.
-5. **Does a Publish Plan cancellation need the same "second subscription while one is
+   This is external verification, not a product-owner decision, so accepting the
+   mechanism above doesn't resolve it.
+2. **Exact plan tiers, prices, connected-account/brand caps per tier, and the exact
+   free-tier limit** — pricing decisions for the product owner, deliberately not made
+   in this ADR (see ADR-0061's own refusal to reproduce Metricool's specific pricing
+   numbers without a confirmed source).
+3. **Does a Publish Plan cancellation need the same "second subscription while one is
    live gets flagged and auto-cancelled" guard ADR-0057 built for Cinema Pass** (to
    prevent a brand accidentally double-subscribing)? Likely yes, by the same reasoning,
    but should be confirmed during implementation rather than assumed here.
