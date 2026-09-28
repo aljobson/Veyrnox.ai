@@ -249,3 +249,25 @@ Screenshots: `/tmp/veyrnox-upload-paused.png` and
 The remaining distinct live lifecycle check is invalidation of a previously
 copied tus upload URL after confirmed removal. Permanent removal needs fresh
 owner confirmation at the action.
+
+### Captured tus URL after removal — 28 September (gate unresolved)
+
+Created **Cinema stale upload URL test — 28 September**, content
+`c11a95e5-eb5f-45ef-9fb2-da5485c7f58b`, upload
+`8878ea62-6bb3-41d2-b788-eba8121927ab`. Captured its original tus URL in
+memory; the transfer completed before Pause could be pressed. Before removal,
+HEAD returned HTTP 200 with upload offset and length both 40,878,277 bytes.
+After explicit owner confirmation, permanent removal was requested through UI.
+The scheduler claimed deletion at 10:30:37.956345 UTC and completed it at
+10:30:38.331363 UTC. Read-only SQL confirmed deleted state and cleared provider
+and upload references. The UI unlocked the replacement upload form.
+
+However, HEAD on the same previously captured URL still returned HTTP 200
+with the same offset/length after confirmed deletion. A zero-byte PATCH at the
+completed offset returned HTTP 400. That rejection is inconclusive: a completed
+upload/empty PATCH can itself be rejected, independently of deletion. Do not
+claim bearer-grant revocation passed, or infer that video data can be restored.
+The remaining gate needs a paused, incomplete tus grant with a known-valid
+remaining chunk, tested after deletion. No wider upload enablement or production
+promotion follows from this result. URL values were not printed or saved to a
+regular file; temporary FIFO pipes were removed after each diagnostic request.
