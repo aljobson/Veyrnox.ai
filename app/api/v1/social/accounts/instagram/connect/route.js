@@ -2,10 +2,12 @@
  * POST /api/v1/social/accounts/instagram/connect — start the OAuth flow.
  * Technical spec §2.3/§2.7, ADR-0061.
  *
- * Body: { codeChallenge } — the client generates its own PKCE verifier
- * and S256 challenge (app/lib/authClient.js's randomVerifier/s256
- * pattern, sessionStorage-held), exactly like the existing Apple/Google
- * flow. The verifier itself never reaches this route.
+ * Body: { codeChallenge } — validated for contract parity with every
+ * other network's connect route (app/lib/socialConnectClient.js's
+ * connect/callback pair is fully generic), even though Instagram's own
+ * authorize endpoint (Instagram Login, not the earlier Facebook Login
+ * chain) has no documented PKCE support and never sees this value
+ * (matches how linkedin/connect and tiktok/connect handle the same case).
  *
  * Response (200): { authorizeUrl } — the client navigates the browser
  * here directly (window.location.assign), same as signInWithOAuth.
@@ -65,7 +67,7 @@ export async function POST(req) {
     const state = await createOAuthState({ authId, network: 'instagram' }, stateSecret);
     let authorizeUrl;
     try {
-        authorizeUrl = buildAuthorizeUrl(igCfg, { redirectUri, state, codeChallenge });
+        authorizeUrl = buildAuthorizeUrl(igCfg, { redirectUri, state });
     } catch (err) {
         console.error('[api/v1/social/accounts/instagram/connect] authorize URL build failed:', err && err.message);
         return NextResponse.json({ error: 'internal' }, { status: 502 });

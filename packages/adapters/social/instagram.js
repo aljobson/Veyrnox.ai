@@ -1,21 +1,41 @@
-// Instagram Graph API adapter (via Facebook Login) — ADR-0061 §2.1
-// "adapters, not SDKs": plain fetch, no Meta SDK on the SSR graph.
+// Instagram adapter — Instagram API with Instagram Login ("Business Login
+// for Instagram") — ADR-0061 §2.1 "adapters, not SDKs": plain fetch, no
+// Meta SDK on the SSR graph. Verified against Meta's own docs
+// (developers.facebook.com/documentation/instagram-platform/instagram-api-
+// with-instagram-login/business-login) 2026-09-28, cross-checked against
+// @opencoredev/social-sdk's independent implementation of the same flow.
 //
-// v1 scopes (OAuth review runbook §6.2): instagram_basic,
-// instagram_content_publish, pages_show_list, pages_read_engagement.
-// Publishing requires the connected Instagram account to be a
-// Business/Creator account linked to a Facebook Page — this adapter
-// resolves that chain (Pages → linked IG Business Account) rather than
-// assuming a direct Instagram login.
+// This replaces the earlier Facebook Login + Pages-resolution chain
+// (client_id/client_secret are unchanged — the same Meta App works for
+// both login surfaces). Instagram Login authorizes directly against a
+// Business or Creator Instagram account with no linked Facebook Page
+// required at all, which removes the whole Pages → linked-IG-account
+// resolution step and its NO_LINKED_INSTAGRAM_ACCOUNT failure mode: a
+// personal (non-Business/Creator) account simply cannot complete this
+// flow, so that case now surfaces as an ordinary connect failure instead
+// of a distinct, expected conflict.
+//
+// v1 scopes: instagram_business_basic, instagram_business_content_publish
+// — the newer scope names Meta introduced for this login surface (the
+// old instagram_basic/instagram_content_publish/pages_* scopes belonged
+// to the Facebook Login chain this replaces). No PKCE: Meta's own
+// documented parameters for this authorize endpoint are client_id,
+// redirect_uri, response_type, scope, state — codeChallenge is still
+// accepted and validated at the route layer purely so
+// app/lib/socialConnectClient.js's connect/callback contract stays
+// identical across every network (same reasoning as the LinkedIn adapter).
 
-const GRAPH_API_VERSION = 'v21.0';
-const GRAPH_BASE = `https://graph.facebook.com/${GRAPH_API_VERSION}`;
-const AUTHORIZE_URL = `https://www.facebook.com/${GRAPH_API_VERSION}/dialog/oauth`;
-export const INSTAGRAM_SCOPES = ['instagram_basic', 'instagram_content_publish', 'pages_show_list', 'pages_read_engagement'];
+const GRAPH_API_VERSION = 'v25.0';
+const GRAPH_BASE = `https://graph.instagram.com/${GRAPH_API_VERSION}`;
+const AUTHORIZE_URL = 'https://www.instagram.com/oauth/authorize';
+const SHORT_LIVED_TOKEN_URL = 'https://api.instagram.com/oauth/access_token';
+const LONG_LIVED_TOKEN_URL = 'https://graph.instagram.com/access_token';
+export const INSTAGRAM_SCOPES = ['instagram_business_basic', 'instagram_business_content_publish'];
 
 /** Loads and validates Meta app config from Worker secrets. Returns null
  * on any misconfiguration — callers degrade to a clean 503, never a
- * throw. */
+ * throw. Same Meta App (and so the same META_APP_ID/META_APP_SECRET) as
+ * the Facebook Login surface this adapter no longer uses. */
 export function instagramConfig(env = process.env) {
     const appId = env.META_APP_ID || '';
     const appSecret = env.META_APP_SECRET || '';
@@ -23,43 +43,42 @@ export function instagramConfig(env = process.env) {
     return { appId, appSecret };
 }
 
-/** Builds the Facebook OAuth authorize URL. redirectUri must already be
+/** Builds Instagram's OAuth authorize URL. redirectUri must already be
  * built from PUBLIC_HOST by the caller — this function never constructs
- * it from request input. codeChallenge is the client-generated PKCE
- * S256 challenge (technical spec §2.7); the verifier never reaches this
- * adapter or leaves the browser. */
-export function buildAuthorizeUrl(cfg, { redirectUri, state, codeChallenge }) {
+ * it from request input. */
+export function buildAuthorizeUrl(cfg, { redirectUri, state }) {
     if (!redirectUri || !redirectUri.startsWith('https://')) throw new Error('invalid_redirect_uri');
-    if (!/^[A-Za-z0-9_-]{43,128}$/.test(codeChallenge || '')) throw new Error('invalid_code_challenge');
     const url = new URL(AUTHORIZE_URL);
     url.searchParams.set('client_id', cfg.appId);
     url.searchParams.set('redirect_uri', redirectUri);
-    url.searchParams.set('state', state);
-    url.searchParams.set('scope', INSTAGRAM_SCOPES.join(','));
-    url.searchParams.set('code_challenge', codeChallenge);
-    url.searchParams.set('code_challenge_method', 'S256');
     url.searchParams.set('response_type', 'code');
+    url.searchParams.set('scope', INSTAGRAM_SCOPES.join(','));
+    url.searchParams.set('state', state);
     return url.toString();
 }
 
-/** Exchanges an authorization code (+ PKCE verifier) for a short-lived
- * user access token, then immediately swaps it for a long-lived one
- * (Meta requires this second step for durable server-side tokens). */
-export async function exchangeCodeForToken(cfg, { code, codeVerifier, redirectUri }, fetcher = fetch) {
-    const tokenUrl = new URL(`${GRAPH_BASE}/oauth/access_token`);
-    tokenUrl.searchParams.set('client_id', cfg.appId);
-    tokenUrl.searchParams.set('client_secret', cfg.appSecret);
-    tokenUrl.searchParams.set('redirect_uri', redirectUri);
-    tokenUrl.searchParams.set('code', code);
-    tokenUrl.searchParams.set('code_verifier', codeVerifier);
-    const shortLived = await getJson(tokenUrl, fetcher);
-    if (!shortLived || typeof shortLived.access_token !== 'string') throw new Error('token_exchange_failed');
+/** Exchanges an authorization code for a short-lived user access token,
+ * then immediately swaps it for a long-lived one (~60 days) — Instagram
+ * Login's own two-step requirement for durable server-side tokens, same
+ * shape as before, different endpoints. The short-lived response is
+ * `{ data: [{ access_token, user_id, permissions }] }` — Meta's own
+ * array-wrapped shape for this specific endpoint, not the plain object
+ * every other token endpoint here returns. */
+export async function exchangeCodeForToken(cfg, { code, redirectUri }, fetcher = fetch) {
+    const shortLived = await postForm(SHORT_LIVED_TOKEN_URL, {
+        client_id: cfg.appId,
+        client_secret: cfg.appSecret,
+        grant_type: 'authorization_code',
+        redirect_uri: redirectUri,
+        code,
+    }, fetcher);
+    const first = shortLived && Array.isArray(shortLived.data) ? shortLived.data[0] : null;
+    if (!first || typeof first.access_token !== 'string') throw new Error('token_exchange_failed');
 
-    const longLivedUrl = new URL(`${GRAPH_BASE}/oauth/access_token`);
-    longLivedUrl.searchParams.set('grant_type', 'fb_exchange_token');
-    longLivedUrl.searchParams.set('client_id', cfg.appId);
+    const longLivedUrl = new URL(LONG_LIVED_TOKEN_URL);
+    longLivedUrl.searchParams.set('grant_type', 'ig_exchange_token');
     longLivedUrl.searchParams.set('client_secret', cfg.appSecret);
-    longLivedUrl.searchParams.set('fb_exchange_token', shortLived.access_token);
+    longLivedUrl.searchParams.set('access_token', first.access_token);
     const longLived = await getJson(longLivedUrl, fetcher);
     if (!longLived || typeof longLived.access_token !== 'string') throw new Error('token_exchange_failed');
 
@@ -70,44 +89,29 @@ export async function exchangeCodeForToken(cfg, { code, codeVerifier, redirectUr
     };
 }
 
-/** Resolves the connected user's Facebook Pages and returns the first
- * one with a linked Instagram Business Account (v1: single-account
- * selection; a picker across multiple linked accounts is a later UX
- * slice, not a foundation concern). Throws NO_LINKED_INSTAGRAM_ACCOUNT
- * if none of the user's Pages have one — this is a real, expected user
- * error (personal IG accounts can't be connected), not a system fault. */
+/** Resolves the connected Instagram Business/Creator account directly —
+ * no Facebook Page or business-discovery chain to walk, unlike the
+ * Facebook Login surface this adapter replaces. A personal (non-
+ * Business/Creator) account cannot complete authorization on this login
+ * surface at all (Meta's own documented constraint), so that case never
+ * reaches this function as a distinct error to handle here. */
 export async function fetchConnectedAccount(accessToken, fetcher = fetch) {
-    const pagesUrl = new URL(`${GRAPH_BASE}/me/accounts`);
-    pagesUrl.searchParams.set('fields', 'id,name,access_token,instagram_business_account');
-    pagesUrl.searchParams.set('access_token', accessToken);
-    const pages = await getJson(pagesUrl, fetcher);
-    const withInstagram = (pages && pages.data || []).find((p) => p.instagram_business_account && p.instagram_business_account.id);
-    if (!withInstagram) {
-        const err = new Error('no_linked_instagram_account');
-        err.code = 'NO_LINKED_INSTAGRAM_ACCOUNT';
-        throw err;
-    }
-
-    const igId = withInstagram.instagram_business_account.id;
-    const profileUrl = new URL(`${GRAPH_BASE}/${igId}`);
-    profileUrl.searchParams.set('fields', 'username,profile_picture_url');
-    profileUrl.searchParams.set('access_token', withInstagram.access_token);
-    const profile = await getJson(profileUrl, fetcher);
+    const url = new URL(`${GRAPH_BASE}/me`);
+    url.searchParams.set('fields', 'id,username,profile_picture_url');
+    url.searchParams.set('access_token', accessToken);
+    const profile = await getJson(url, fetcher);
+    if (!profile || typeof profile.id !== 'string') throw new Error('profile_fetch_failed');
 
     return {
-        externalAccountId: igId,
-        displayName: profile && profile.username ? `@${profile.username}` : withInstagram.name,
-        avatarUrl: (profile && profile.profile_picture_url) || null,
-        // The Page's own access token is what Instagram content-publish
-        // calls actually use, not the user token exchanged above — Meta's
-        // own API shape, not a choice made here.
-        pageAccessToken: withInstagram.access_token,
+        externalAccountId: profile.id,
+        displayName: profile.username ? `@${profile.username}` : null,
+        avatarUrl: profile.profile_picture_url || null,
     };
 }
 
-/** Publishes a single-image post to the connected Instagram Business
- * Account (Content Publishing API: create a media container, then publish
- * it). Image posts only — Instagram requires polling a container's
+/** Publishes a single-image post to the connected Instagram account
+ * (Content Publishing API: create a media container, then publish it).
+ * Image posts only — Instagram requires polling a container's
  * status_code to FINISHED before a video/Reel container can be published,
  * which needs to survive across sweep runs (not a single cron tick); that
  * two-step flow is a follow-up, not built here. Throws
@@ -144,6 +148,21 @@ export async function publishPost(accessToken, { externalAccountId, caption, med
         platformPostId: published.id,
         platformPostUrl: (permalink && permalink.permalink) || null,
     };
+}
+
+async function postForm(url, params, fetcher) {
+    const res = await fetcher(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams(params).toString(),
+        signal: AbortSignal.timeout(10000),
+    });
+    const body = await res.json().catch(() => null);
+    if (!res.ok) {
+        const message = (body && body.error_message) || (body && body.error && body.error.message) || `graph_api_error_${res.status}`;
+        throw new Error(message);
+    }
+    return body;
 }
 
 async function postJson(url, fetcher) {

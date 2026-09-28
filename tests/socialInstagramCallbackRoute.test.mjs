@@ -26,25 +26,19 @@ const request = (body, headers = {}) => new Request('https://veyrnox.test/api/v1
 });
 
 let calls;
-function stub({ noLinkedAccount = false, rpcOverrides = {} } = {}) {
+function stub({ rpcOverrides = {} } = {}) {
     calls = [];
     globalThis.fetch = async (url, init) => {
         const u = new URL(url);
         calls.push(u.hostname + u.pathname);
-        if (u.hostname === 'graph.facebook.com') {
-            if (u.pathname.endsWith('/oauth/access_token')) {
-                return u.searchParams.get('grant_type') === 'fb_exchange_token'
-                    ? Response.json({ access_token: 'long-lived-token', expires_in: 5184000 })
-                    : Response.json({ access_token: 'short-lived-token' });
-            }
-            if (u.pathname.endsWith('/me/accounts')) {
-                return Response.json({
-                    data: noLinkedAccount ? [{ id: 'page-1' }] : [
-                        { id: 'page-1', name: 'Creator Page', access_token: 'page-token', instagram_business_account: { id: 'ig-42' } },
-                    ],
-                });
-            }
-            return Response.json({ username: 'creator', profile_picture_url: 'https://example.com/a.jpg' });
+        if (u.hostname === 'api.instagram.com' && u.pathname === '/oauth/access_token') {
+            return Response.json({ data: [{ access_token: 'short-lived-token', user_id: '17841400000000000', permissions: 'instagram_business_basic' }] });
+        }
+        if (u.hostname === 'graph.instagram.com' && u.pathname === '/access_token') {
+            return Response.json({ access_token: 'long-lived-token', token_type: 'bearer', expires_in: 5184000 });
+        }
+        if (u.hostname === 'graph.instagram.com' && u.pathname.endsWith('/me')) {
+            return Response.json({ id: '17841400000000000', username: 'creator', profile_picture_url: 'https://example.com/a.jpg' });
         }
         // db.test — Supabase PostgREST RPC calls
         const name = u.pathname.split('/').pop();
@@ -81,7 +75,7 @@ test('a state issued to a different user is rejected', async () => {
     assert.equal(res.status, 400);
 });
 
-test('completes the full connect flow: token exchange, page resolution, encryption, and RPC recording', async () => {
+test('completes the full connect flow: token exchange, direct account resolution, encryption, and RPC recording', async () => {
     setConfigured(); stub();
     const res = await POST(request({ code: 'auth-code', state: await validState(), codeVerifier: verifier }));
     assert.equal(res.status, 200);
@@ -90,15 +84,8 @@ test('completes the full connect flow: token exchange, page resolution, encrypti
     assert.equal(body.account.id, accountId);
     assert.equal(body.account.network, 'instagram');
     assert.equal(body.account.display_name, '@creator');
-    assert.equal(calls.filter((c) => c.includes('graph.facebook.com')).length, 4, 'two token-exchange calls + pages + profile');
+    assert.equal(calls.filter((c) => c.includes('instagram.com')).length, 3, 'short-lived exchange + long-lived exchange + /me — no Pages lookup');
     assert.equal(calls.filter((c) => c.includes('db.test')).length, 2, 'brand lookup + record connection');
-});
-
-test('no linked Instagram Business Account is reported as an expected conflict, not a crash', async () => {
-    setConfigured(); stub({ noLinkedAccount: true });
-    const res = await POST(request({ code: 'c', state: await validState(), codeVerifier: verifier }));
-    assert.equal(res.status, 409);
-    assert.deepEqual(await res.json(), { ok: false, code: 'NO_LINKED_INSTAGRAM_ACCOUNT' });
 });
 
 test('an RPC failure never leaks upstream detail, and the token is never in the response', async () => {
