@@ -314,3 +314,13 @@ This does not revoke grants already copied, repair previously finalized
 records, or satisfy the live revocation gate. A permanent design and its live
 acceptance test remain required. No migration or wrangler flag change is part
 of the containment patch. The ADR records the criteria for lifting the hold.
+
+Containment validation: 82 Cinema tests passed, followed by an additional passing
+owner-scoped read/redaction regression. Targeted adapter/workerd checks passed;
+lint had zero errors and nine existing warnings; security typecheck and client
+boundary checks (80 modules) passed. Final Next/OpenNext build passed.
+Deployed only `veyrnox-ai-staging`, source `1265871`, Worker version
+`6f283a88-cfaa-4704-9f75-e7191486a497`. Production and databases were unchanged.
+Live creator UI verified after signing back into the approved creator account:
+the paused-upload notice is visible, with zero Upload video or Resume upload
+buttons. Evidence: `/tmp/veyrnox-staging-upload-safety-hold.png`.
