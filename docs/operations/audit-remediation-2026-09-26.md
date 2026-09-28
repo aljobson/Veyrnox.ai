@@ -126,3 +126,19 @@ membership. No public profile or creator role was created. MFA and Access remain
 required. The browser now requests a fresh authenticator code because the
 five-minute verification window has expired; successful queue access and creator
 upload tests remain pending. Production and unrelated projects were untouched.
+
+## Creator onboarding validation — 2026-09-28
+
+The owner selected `al.jobson1@gmail.com` as the separate staging creator.
+Google sign-in passed. The first profile POST returned `400 invalid_body`:
+the shared body limiter could not reconstruct the framework request in the
+Workers runtime. Commit `ed1e425` copies Fetch request fields explicitly instead
+of relying on Request branding. Five body-limit regression tests, a local
+workerd smoke check, lint and the staging Next/OpenNext build passed.
+Deployed staging version `2501de45-919d-42c6-92f1-6358487c5dd0`.
+
+The same browser submission then succeeded: profile `al_jobson_staging`, display
+name `Al Jobson — Staging Test`. The creator application was submitted through
+the UI and confirmed as waiting for review. No creator role was granted yet;
+administrator review and upload lifecycle checks remain pending. Production and
+unrelated databases remain untouched.
