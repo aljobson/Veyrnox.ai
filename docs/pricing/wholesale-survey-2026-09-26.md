@@ -119,7 +119,10 @@ since 2026-09-24, so it is treated as our verified cost.
 | Speech to text, per minute | fal 0.048, ElevenLabs 0.03 | n/a | OpenAI 0.006, ElevenLabs Scribe 0.0037 | Together Whisper 0.0015 | Together 0.0015 | 1 per 10 min | none |
 | Voice clone, per voice | n/a | n/a | MiniMax 1.50 | Novita 1.50 | MiniMax 1.50 | n/a | none |
 
-ElevenLabs Music is four times cheaper direct ($0.15 per minute) than on fal ($0.60 per minute).
+ElevenLabs Music lists $0.15/minute direct versus the retained $0.60/minute fal quote.
+The [September 28 readiness review](elevenlabs-music-readiness-2026-09-28.md)
+found no existing Veyrnox Music row and a platform-rights qualification gate;
+this is a potential new offering, not a verified fourfold saving on our routes.
 ElevenLabs TTS is 40% cheaper on kie than direct or fal. Suno is grey everywhere because there
 is no official API; kie's $0.06 for two tracks is the lowest grey price.
 
