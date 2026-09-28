@@ -173,3 +173,18 @@ Browser refresh confirmed replacement processing complete, still private.
 Automatic deletion completion after the patch, signed-webhook delivery,
 missed-callback recovery and invalidation of a previously copied tus URL still
 need distinct live evidence; this result does not claim those checks passed.
+
+### Automatic removal retest — 2026-09-28, 08:55 UTC
+
+With fresh owner confirmation, removed replacement upload
+`348f3e56-fb2f-48fa-9e84-e07243587b80` through the creator UI. The scheduler
+claimed it at 08:55:37.73265 UTC and completed deletion at 08:55:38.041196 UTC.
+Read-only verification confirmed `state=deleted`, null Stream/upload references,
+and the original content still present as `DRAFT`. No manual reconciliation or
+database mutation was performed for this retest: automatic completion passed.
+
+The browser changed accounts while waiting and subsequently displayed
+`An approved Cinema creator account is required`; therefore this retest's final
+UI reset was not verified. The previous replacement test already demonstrated
+that confirmed deletion unlocks the upload form. Signed webhook delivery,
+missed-callback recovery and stale tus URL invalidation remain separate checks.
