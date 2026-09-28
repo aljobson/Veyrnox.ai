@@ -27,7 +27,8 @@ test('staging proxy switch provisions media without disclosing the provider gran
  try {
   const s=setup(),res=await s.handle(req());assert.equal(res.status,200);assert.equal(s.providers(),1);
   assert.ok(s.calls.some(call=>call.name==='reserve_cinema_proxy_upload'));
-  const data=await res.json();assert.equal(data.upload.upload_url,null);assert.equal(data.upload.transfer_path,`/cinema/uploads/${id}/transfer?content_id=${id}`);
+ const data=await res.json();assert.equal(data.upload.upload_url,null);assert.equal(data.upload.transfer_path,`/cinema/uploads/${id}/transfer?content_id=${id}`);
+  assert.equal(data.proxy_uploads_enabled,true);
  } finally { delete process.env.CINEMA_PROXY_UPLOADS_ENABLED; }
 });
 test('grants expire and are never returned for terminal media',()=>{
@@ -39,6 +40,7 @@ test('owner-scoped reads stay available during the hold without exposing a grant
  const res=await handle(new Request(`https://test.invalid/api/v1/cinema/uploads?content_id=${id}`,{headers:{'x-veyrnox-auth-id':id}}));
  assert.equal(res.status,200);
  const data=await res.json();assert.equal(data.upload.id,id);assert.equal(data.upload.state,'uploading');assert.equal(data.upload.upload_url,null);
+ assert.equal(data.proxy_uploads_enabled,false);
  assert.equal(data.upload.transfer_path,`/cinema/uploads/${id}/transfer?content_id=${id}`);
  assert.equal(data.upload.stream_uid,undefined);assert.equal(data.upload.creator_id,undefined);
 });
