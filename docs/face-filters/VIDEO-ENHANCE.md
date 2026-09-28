@@ -331,10 +331,33 @@ loss/reacquisition only; it does not qualify head turns or partial occlusion.
 The latest code CI run at `562f435` passed 827 tests with one skipped, plus build,
 lint and security checks. ffmpeg was installed and the media regressions ran.
 
+### Licensed moving-face sample, 2026-09-28
+
+Source: [A Close Up of a Man's Face by Mikhail Nilov](https://www.pexels.com/video/a-close-up-of-a-man-s-face-8731403/),
+available under the [Pexels License](https://www.pexels.com/license/).
+The source page supplied the [1080p MP4](https://videos.pexels.com/video-files/8731403/8731403-hd_1920_1080_25fps.mp4).
+Downloaded for local technical testing; no endorsement is implied and media is
+not included in Git. Local copies are in `.scratch/video-enhance/moving-face/`.
+
+The untrimmed clip is 10.2 seconds, 1920×1080, 25 fps, 255 frames, without audio.
+It contains real head movement, downward gaze and blinking. The local preview
+reported one tracked face at sampled positions around 0.2, 4.3 and 9.2 seconds.
+Natural look / 30% smoothing exported successfully. The checker confirmed all
+255 frames, timestamps and duration within 1 ms, and no added audio. Sampled
+source/output contact sheets showed no obvious gross facial distortion; this
+is a spot check, not a temporal-artifact or per-frame tracking qualification.
+
+Source SHA-256: `b1a8d221255de5737295e8a7053b0456dfa99bb329bcd2ba5ff26e9405885407`.
+Export SHA-256: `e833babc1f8f250edbb2b70af686919d949310c26c91860615d629d183ce3ebb`.
+
+This closes the missing real-motion-sample gap for initial testing. Severe
+profile turns, partial hand/hair occlusion, diverse subjects and device/player
+coverage remain unqualified.
+
 ### Remaining gates
 
-Representative owned/consented moving footage is still needed for the full
-quality matrix. A commercial SDK licence is needed only if that alternative is
+Additional representative licensed/consented footage is still needed for the full
+quality matrix beyond the single moving-face sample above. A commercial SDK licence is needed only if that alternative is
 chosen. No licence purchase, vendor outreach or provider media upload has been
 performed. Browser/device qualification, occlusion handling, export fidelity,
 production CSP, Library persistence and any commercial pricing remain pending.
