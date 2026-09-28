@@ -205,9 +205,8 @@ free-tier direction and sales channel below, with no changes. Concretely:
    This is external verification, not a product-owner decision, so accepting the
    mechanism above doesn't resolve it.
 2. **Exact plan tiers, prices, connected-account/brand caps per tier, and the exact
-   free-tier limit** — pricing decisions for the product owner, deliberately not made
-   in this ADR (see ADR-0061's own refusal to reproduce Metricool's specific pricing
-   numbers without a confirmed source).
+   free-tier limit** — drafted as [ADR-0063](0063-veyrnox-publish-plan-pricing.md)
+   (Proposed, awaiting sign-off), grounded in live-read Metricool and Buffer pricing.
 3. **Does a Publish Plan cancellation need the same "second subscription while one is
    live gets flagged and auto-cancelled" guard ADR-0057 built for Cinema Pass** (to
    prevent a brand accidentally double-subscribing)? Likely yes, by the same reasoning,
