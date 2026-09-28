@@ -30,8 +30,9 @@ settlement. No live response or credential scope has been verified here.
 
 The local project credential directory has KIE and staging R2 files, but no
 BytePlus credential file. arkcli is not installed on this machine. The
-existing Chrome BytePlus tab could not be inspected because browser control
-timed out. No credential, pack purchase, console setting or account access
+existing Chrome BytePlus tab initially timed out. A fresh Chrome tab opened
+the official console successfully but redirected to sign-in; authenticated
+quota data is therefore unavailable in the accessible session. No credential, pack purchase, console setting or account access
 was created or changed.
 
 ## Data required before implementation
