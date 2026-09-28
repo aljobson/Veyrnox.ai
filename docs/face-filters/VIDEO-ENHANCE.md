@@ -354,6 +354,30 @@ This closes the missing real-motion-sample gap for initial testing. Severe
 profile turns, partial hand/hair occlusion, diverse subjects and device/player
 coverage remain unqualified.
 
+### Mild hand/cheek occlusion sample, 2026-09-28
+
+Source: [Woman Touching her Face by ROMAN ODINTSOV](https://www.pexels.com/video/woman-touching-her-face-6664525/),
+under the [Pexels License](https://www.pexels.com/license/).
+The source page links to [this MP4](https://videos.pexels.com/video-files/6664525/6664525-uhd_2732_1318_30fps.mp4).
+Prepared a silent local fixture from its first 12 seconds, scaled to 1280×618,
+using H.264 CRF 18. Container duration is 12.012 seconds / 360 frames.
+Media stays in ignored `.scratch/video-enhance/moving-face/`, not Git.
+
+At Natural / 30% smoothing, the preview reported one face while the hand touched
+the cheek near 0.2 seconds and after it moved away near 6.5 seconds. Export
+completed and preserved 360 frames, timestamps and duration within 1 ms, with no
+audio track added. Source/output contact-sheet spot checks showed no obvious
+gross distortion at the hand/cheek boundary. These small sampled images cannot
+establish protection of hand texture or absence of temporal artifacts. No loss
+of tracking was observed at the sampled positions, so this clip does not test
+reacquisition after a hand covers the central face.
+
+Fixture SHA-256: `405b5a2a79271208c4f83895f22dd71e4bda1c56f0915d74d89b475f87acc6a6`.
+Export SHA-256: `d1d31cdb4f7ae7b08d6e394c4672b2c2d0ea7a8321c773c01dfb2f9afb1b5b35`.
+
+Heavy eye/mouth occlusion, hair crossing the face and severe profile angles
+remain unqualified; the renderer still has no semantic hand/hair segmentation.
+
 ### Remaining gates
 
 Additional representative licensed/consented footage is still needed for the full
