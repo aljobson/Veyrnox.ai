@@ -350,3 +350,18 @@ reactivate nano-banana-pro-kie at 6 credits, keeping the GrsAI poller enabled
 so already-submitted jobs can finish. Restore the corresponding fallback and
 preset IDs/prices in the same rollback release. Never rewrite 0124 or remove
 the GrsAI credential while unfinished jobs remain.
+
+## Update (2026-09-28): speech savings remain unqualified
+
+The existing inactive Turbo twin failed verification twice, including once
+after the owner confirmed funding. Both authenticated task records returned
+code 500 and reported zero consumed credits. Keep fal active; no new
+activation or retry is justified without resolving the provider failure.
+
+The dialogue quote also needs a compatibility check before staging a swap:
+kie's voice description and expanded enum disagree, the existing four voice
+identities are not established, and no seed parameter is documented. Do not
+silently replace voices or discard the existing seed control. See the
+[readiness evidence](../pricing/kie-speech-readiness-2026-09-28.md) for task
+IDs, contract differences, verification limits and next steps. No catalog,
+pricing or runtime behavior changes accompany this update.
