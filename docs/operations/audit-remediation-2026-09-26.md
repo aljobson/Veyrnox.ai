@@ -324,3 +324,28 @@ Deployed only `veyrnox-ai-staging`, source `1265871`, Worker version
 Live creator UI verified after signing back into the approved creator account:
 the paused-upload notice is visible, with zero Upload video or Resume upload
 buttons. Evidence: `/tmp/veyrnox-staging-upload-safety-hold.png`.
+
+### Server-mediated upload implementation — 28 September
+
+Implemented a replacement transfer boundary while retaining the safety hold.
+Migration 0158 distinguishes new server-mediated reservations from legacy
+direct grants and adds a durable exclusive transfer claim. The removal worker
+cannot claim or finalize a row while a transfer is active. Ambiguous provider
+writes retain the claim for operator reconciliation; they are never retried or
+unlocked on a timer. The application API returns only its own transfer path and
+forwards bounded 5 MiB chunks using a database-sourced, fixed-origin provider
+grant. Browser authorization and cookies are not forwarded.
+
+After rebasing onto current main, fresh local migration replay applied all 151
+migrations. The isolated SQL test
+passed idempotent migration, owner and legacy denial, exclusive claims, removal
+serialization and function ACL checks. Unit tests cover grant redaction,
+origin enforcement, resumable offsets, bounded chunks, ambiguous writes and
+the active public safety hold. Applied only migration 0158 to Supabase project
+`yrqzwqywxfesmbvhzjgj` (`veyrnox.ai staging`). Read-only verification found the
+three new columns, service-role-only execution on all three new RPCs, eight
+legacy rows left `server_mediated=false`, and zero active transfer claims. The
+post-DDL advisors reported no finding against the new RPCs or columns; existing
+project-wide informational/warning findings remain separate work. The hold is
+not lifted by this change; no live upload or deletion is authorized by this
+implementation alone.

@@ -5,8 +5,8 @@ const id='11111111-1111-4111-8111-111111111111',uid='a'.repeat(32);
 Object.assign(process.env,{CINEMA_ENABLED:'true',SOCIAL_CINEMA_PROFILES_ENABLED:'true',CREATOR_CONTENT_ENABLED:'true',CREATOR_UPLOADS_ENABLED:'true',CINEMA_STREAM_ACCOUNT_ID:'b'.repeat(32),CINEMA_STREAM_API_TOKEN:'synthetic',CINEMA_STREAM_WEBHOOK_SECRET:'synthetic'});
 const body={content_id:id,file_size:123,fingerprint:'c'.repeat(64)};
 const req=(value=body,headers={})=>new Request('https://test.invalid/api/v1/cinema/uploads',{method:'POST',headers:{'x-veyrnox-auth-id':id,'content-type':'application/json','idempotency-key':id,...headers},body:JSON.stringify(value)});
-const row={id,content_id:id,creator_id:'private-owner',create_key:'private-key',state:'uploading',file_size:123,fingerprint:body.fingerprint,stream_uid:uid,upload_url:`https://upload.cloudflarestream.com/${uid}`,expires_at:new Date(Date.now()+3600000).toISOString()};
-function setup({claimed=true,deny=false,failCreate=false}={}){let providers=0;const calls=[];return {calls,providers:()=>providers,handle:uploadHandler({action:'start',createVideo:async()=>{providers++;if(failCreate)throw Error('private provider error');return {uid,url:row.upload_url};},rpcCall:async(name,args)=>{calls.push({name,args});if(name==='consume_account_read_request')return {ok:true};if(deny)return {error:'upload_not_allowed'};if(name==='reserve_cinema_upload')return {...row,state:'provisioning',claimed};if(name==='attach_cinema_upload')return {ok:true};return {upload:row};}})};}
+const row={id,content_id:id,creator_id:'private-owner',create_key:'private-key',state:'uploading',server_mediated:true,file_size:123,fingerprint:body.fingerprint,stream_uid:uid,upload_url:`https://upload.cloudflarestream.com/${uid}`,expires_at:new Date(Date.now()+3600000).toISOString()};
+function setup({claimed=true,deny=false,failCreate=false}={}){let providers=0;const calls=[];return {calls,providers:()=>providers,handle:uploadHandler({action:'start',createVideo:async()=>{providers++;if(failCreate)throw Error('private provider error');return {uid,url:row.upload_url};},rpcCall:async(name,args)=>{calls.push({name,args});if(name==='consume_account_read_request')return {ok:true};if(deny)return {error:'upload_not_allowed'};if(name==='reserve_cinema_proxy_upload')return {...row,state:'provisioning',claimed};if(name==='attach_cinema_upload')return {ok:true};return {upload:row};}})};}
 test('strict input, identity and upload gates prevent provider spend',async()=>{
  const s=setup();assert.equal((await s.handle(req(body,{'x-veyrnox-auth-id':''}))).status,401);
  for(const flag of ['CINEMA_ENABLED','CREATOR_CONTENT_ENABLED','CREATOR_UPLOADS_ENABLED']){process.env[flag]='false';assert.equal((await s.handle(req())).status,503);process.env[flag]='true';}
@@ -31,5 +31,6 @@ test('owner-scoped reads stay available during the hold without exposing a grant
  const res=await handle(new Request(`https://test.invalid/api/v1/cinema/uploads?content_id=${id}`,{headers:{'x-veyrnox-auth-id':id}}));
  assert.equal(res.status,200);
  const data=await res.json();assert.equal(data.upload.id,id);assert.equal(data.upload.state,'uploading');assert.equal(data.upload.upload_url,null);
+ assert.equal(data.upload.transfer_path,`/cinema/uploads/${id}/transfer?content_id=${id}`);
  assert.equal(data.upload.stream_uid,undefined);assert.equal(data.upload.creator_id,undefined);
 });

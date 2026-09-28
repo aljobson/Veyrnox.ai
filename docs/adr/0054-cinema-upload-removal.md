@@ -55,3 +55,31 @@ simply waiting for a timestamp is not sufficient evidence.
 
 References: [Direct creator uploads](https://developers.cloudflare.com/stream/uploading-videos/direct-creator-uploads/)
 and [tus uploads](https://developers.cloudflare.com/stream/uploading-videos/resumable-uploads/).
+
+## Server-mediated transfer replacement — 28 September 2026
+
+Migration 0158 and the corresponding Worker path implement the replacement
+behind the existing safety hold. New reservations are marked
+`server_mediated`; legacy direct reservations remain quarantined and return
+`upload_needs_reconciliation`. The browser receives only an application
+transfer path. It never receives, stores, or sends requests to the provider
+grant. The Worker obtains the grant from an owner-scoped database claim,
+restricts its origin, reads the provider offset, and forwards one bounded 5 MiB
+tus chunk. Authentication and cookie headers are never forwarded.
+
+Each GET or PATCH takes an exclusive durable transfer claim. A creator removal
+may move the row to `deleting` while a PATCH is in flight, but the removal
+worker cannot claim or complete that deletion until the confirmed PATCH has
+released its transfer claim. Any ambiguous provider PATCH response retains the
+claim without a timeout and requires operator reconciliation; automatic retry
+could otherwise duplicate a write or race deletion. Validation and HEAD
+failures before a write safely release it. The upload-specific durable quota
+limits transfer requests to 60 per minute per account. Structured logs contain
+request IDs, actor IDs, method, status and stable error code, never grants.
+
+The safety hold remains active while this implementation is deployed for
+inactive-path verification. Lifting it requires the staging migration, a live
+server-mediated pause/resume test, removal during an incomplete transfer,
+confirmed provider deletion, and proof that a browser captured no provider
+grant. Existing grants copied before migration 0158 remain outside this new
+boundary and must not be treated as revoked.
