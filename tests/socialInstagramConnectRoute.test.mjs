@@ -52,15 +52,17 @@ test('a missing or malformed code challenge is rejected', async () => {
     }
 });
 
-test('returns a Meta authorize URL bound to our https callback and a fresh signed state', async () => {
+test('returns an Instagram Login authorize URL bound to our https per-network callback and a fresh signed state', async () => {
     setConfigured();
     const res = await POST(request({ codeChallenge: challenge }));
     assert.equal(res.status, 200);
     assert.equal(res.headers.get('cache-control'), 'no-store');
     const { authorizeUrl } = await res.json();
     const url = new URL(authorizeUrl);
-    assert.equal(url.hostname, 'www.facebook.com');
+    assert.equal(url.hostname, 'www.instagram.com');
+    assert.equal(url.pathname, '/oauth/authorize');
     assert.equal(url.searchParams.get('redirect_uri'), 'https://veyrnox.ai/social/connect/callback/instagram');
-    assert.equal(url.searchParams.get('code_challenge'), challenge);
+    assert.equal(url.searchParams.get('scope'), 'instagram_business_basic,instagram_business_content_publish');
     assert.ok(url.searchParams.get('state').includes('.'), 'state is a signed token, not a raw value');
+    assert.equal(url.searchParams.get('code_challenge'), null, 'never forwarded to Instagram Login, which has no documented PKCE support');
 });

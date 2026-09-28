@@ -6,8 +6,9 @@
  * on a browser page, which then calls here with its own Bearer identity,
  * matching this app's cookie-free posture). Body: { code, state,
  * codeVerifier } — code and state come from Meta's redirect query
- * string, codeVerifier from the sessionStorage value the connect step
- * stashed there.
+ * string. codeVerifier is validated for contract parity with every other
+ * network (see the connect route's own note) but never forwarded to
+ * Instagram Login, which has no documented PKCE support.
  *
  * The state token is verified against the CALLING identity (x-veyrnox-
  * auth-id), not just its own signature — a forged or replayed state for
@@ -15,14 +16,16 @@
  * else's session, closing the loop without cookies.
  *
  * Response (200): { ok: true, account: { id, network, display_name,
- * avatar_url, status } } or { ok: false, code } for expected failures
- * (e.g. no linked Instagram Business Account) — never a raw upstream
- * error.
+ * avatar_url, status } } or { error } for a failure — never a raw
+ * upstream error. Instagram Login authorizes a Business/Creator account
+ * directly, with no linked-Facebook-Page chain to walk, so there is no
+ * longer a distinct "no linked account" conflict to special-case here — a
+ * personal account simply cannot complete this flow at all.
  */
 
 import { NextResponse } from 'next/server';
 import { rpc, envConfig, SupabaseError } from '../../../../../../../packages/db/supabase-client.js';
-import { instagramConfig, exchangeCodeForToken, fetchConnectedAccount } from '../../../../../../../packages/adapters/social/instagram.js';
+import { instagramConfig, exchangeCodeForToken, fetchConnectedAccount, INSTAGRAM_SCOPES } from '../../../../../../../packages/adapters/social/instagram.js';
 import { verifyOAuthState } from '../../../../../../../lib/social/oauthState.js';
 import { tokenCryptoConfig, encryptToken } from '../../../../../../../lib/social/tokenCrypto.js';
 
@@ -73,13 +76,10 @@ export async function POST(req) {
 
     let account;
     try {
-        const { accessToken, expiresAt } = await exchangeCodeForToken(igCfg, { code, codeVerifier, redirectUri });
+        const { accessToken, expiresAt } = await exchangeCodeForToken(igCfg, { code, redirectUri });
         const connected = await fetchConnectedAccount(accessToken);
-        account = { ...connected, accessToken: connected.pageAccessToken, expiresAt };
+        account = { ...connected, accessToken, expiresAt };
     } catch (err) {
-        if (err && err.code === 'NO_LINKED_INSTAGRAM_ACCOUNT') {
-            return NextResponse.json({ ok: false, code: 'NO_LINKED_INSTAGRAM_ACCOUNT' }, { status: 409 });
-        }
         console.error('[api/v1/social/accounts/instagram/callback] token exchange failed:', err && err.message);
         return NextResponse.json({ error: 'connect_failed' }, { status: 502 });
     }
@@ -113,7 +113,7 @@ export async function POST(req) {
             p_external_account_id: account.externalAccountId,
             p_display_name: account.displayName,
             p_avatar_url: account.avatarUrl,
-            p_scopes: ['instagram_basic', 'instagram_content_publish', 'pages_show_list', 'pages_read_engagement'],
+            p_scopes: INSTAGRAM_SCOPES,
             p_access_token_enc: accessTokenEnc,
             p_refresh_token_enc: null, // Meta long-lived tokens have no refresh token; re-auth before expiry instead
             p_token_expires_at: account.expiresAt,

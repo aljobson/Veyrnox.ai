@@ -57,7 +57,7 @@ test('an unimplemented network fails its target with a named reason, never hangs
 });
 
 test('publishes an Instagram image target and reports the platform ids back', async () => {
-    const accessTokenEnc = await encryptToken('page-access-token', cryptoCfg);
+    const accessTokenEnc = await encryptToken('ig-access-token', cryptoCfg);
     let publishCalls = 0;
     await withFetch({
         claim_due_social_post_targets: async () => [target({ access_token_enc: accessTokenEnc })],
@@ -71,7 +71,7 @@ test('publishes an Instagram image target and reports the platform ids back', as
         const real = globalThis.fetch;
         globalThis.fetch = async (url, init) => {
             const u = new URL(url);
-            if (u.hostname === 'graph.facebook.com') {
+            if (u.hostname === 'graph.instagram.com') {
                 publishCalls += 1;
                 if (u.pathname.endsWith('/media')) return Response.json({ id: 'container-1' });
                 if (u.pathname.endsWith('/media_publish')) return Response.json({ id: 'media-1' });
