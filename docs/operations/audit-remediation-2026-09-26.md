@@ -363,10 +363,49 @@ changed.
 ### Server-mediated live-test switch — 28 September
 
 Replaced the compile-time containment constant with
-`CINEMA_PROXY_UPLOADS_ENABLED`, explicitly false in production and true only in
-the staging environment. Server API creation, transfer routing, scheduled
+`CINEMA_PROXY_UPLOADS_ENABLED`, explicitly false in production and available
+only for controlled staging tests; it is false again after acceptance. Server API creation, transfer routing, scheduled
 removal and creator controls all fail closed when the switch is absent or not
-exactly `true`. The creator page passes the server-evaluated value into the
-client; the client does not infer rollout state from browser storage. Provider
-grants remain redacted in both states. Unit coverage verifies the held and
-enabled paths before the controlled staging lifecycle test.
+exactly `true`. The authenticated upload-status API exposes only the boolean
+capability so the client reads the runtime Worker binding instead of a value
+baked into the Next build. Provider grants remain redacted in both states. Unit
+coverage verifies the held and enabled paths before the controlled staging
+lifecycle test.
+
+### Server-mediated live acceptance — 28 September (PASSED)
+
+Controlled staging acceptance used a temporary exact-creator build of PR #379
+at `65bc3b10ef36d13aa710a52ee529b89ad15671cb`. The temporary restrictions are
+not part of this branch. A 40,878,277-byte, 20-second synthetic video paused at
+38%; one in-flight chunk completed, and resume continued from the confirmed
+20,971,520-byte offset to completion. The database reached `ready`, recorded a
+20-second duration and retained no transfer claim.
+
+A separate upload paused at 25% before permanent removal was requested. The
+application immediately blocked replacement and rejected a later transfer
+claim with `upload_removed`. Scheduled cleanup reported
+`ok:true, checked:1, removed:1, failed:0`; the database reached `deleted` at
+2026-09-28T13:06:02.271589Z, cleared the Stream reference and retained no
+transfer claim. The draft remained and the creator UI returned to its initial
+attach-video state.
+
+Both reservation responses redacted `upload_url` and returned only same-origin
+transfer paths. Observed browser video bytes used the application's GET/PATCH
+proxy; no provider tus URL crossed the browser boundary. This passes ordinary
+pause/resume, incomplete-upload removal and grant non-disclosure acceptance.
+Arbitrary race/fault cases and legacy direct grants remain outside this proof;
+legacy rows stay quarantined. Independent administrator publication and browser
+viewer playback are the remaining Cinema acceptance gates.
+
+Evidence is retained outside the repository at
+`/Users/aljobson/.codex/visualizations/2026/09/26/01a0df4b-49c3-7392-bf3b-92b3ac0dde85/`
+(`cinema-proxy-live-acceptance-2026-09-28.md`, offset JSON and three screenshots).
+After acceptance, the staging proxy switch was returned to `false` so unrelated
+staging tests retain the Cinema safety hold. Production remained unchanged.
+
+The following clean staging deployment also exposed Cloudflare error 1003 on a
+cold Supabase JWKS discovery request. Staging now pins the project's public JWKS
+in the `SUPABASE_JWKS` Worker secret and middleware consumes it without logging
+the value; production keeps normal discovery because the variable is absent.
+The optional static path has unit coverage. Rotate the staging value whenever
+Supabase rotates the project's signing key set.
