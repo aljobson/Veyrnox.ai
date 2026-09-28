@@ -228,3 +228,24 @@ Read-only staging SQL confirmed `ready`, observed at
 status refresh or synthetic signed callback was used for this new upload.
 This verifies automatic provider callback delivery independently of scheduled
 recovery. The test draft and video remain private and retained.
+
+### Live pause/resume validation — 28 September
+
+The six-second clip completed before pause could be exercised; it is not
+counted as a pause/resume pass. Temporary browser network emulation was reset
+to normal. A larger synthetic test-pattern MP4 (20 seconds, 40,878,277 bytes)
+was uploaded to private draft **Cinema resumable transfer — 28 September**,
+content `3fc13f06-8910-4603-8c48-68ffb399f855`.
+The creator UI displayed 89% progress when Pause was pressed and confirmed
+`Upload paused. Select the same file and resume.` Read-only SQL confirmed
+upload `9e8b096c-541b-497e-b774-9a407b1b5029` remained `uploading`.
+Resume upload with the same selected file completed successfully; the page
+confirmed processing complete. Read-only SQL returned exactly one upload for
+this content, the same ID now `ready`, observed at 10:07:17 UTC, with recovery
+timestamps NULL. No duplicate reservation, manual SQL mutation or publication.
+Screenshots: `/tmp/veyrnox-upload-paused.png` and
+`/tmp/veyrnox-resume-complete.png`. The test clips remain private and retained.
+
+The remaining distinct live lifecycle check is invalidation of a previously
+copied tus upload URL after confirmed removal. Permanent removal needs fresh
+owner confirmation at the action.
