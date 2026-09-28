@@ -109,8 +109,8 @@ narrow stated contract, not arbitrary container track preservation.
 ## Recommended next implementation
 
 ADR-0065 is proposed, and versioned asset packaging is implemented. Decode/encode capability and MP4/AAC format preflight are implemented. Next,
-complete device/quality measurements. Delivery headers and production-preview acceptance
-remain pending. Keep PR #361 as a draft until the release gates are settled.
+complete device/quality measurements. Local delivery-header checks pass with the compatibility-date limitation below;
+exact-date/deployed production-preview acceptance remains pending. Keep PR #361 as a draft until the release gates are settled.
 
 ## Repeated local performance qualification, 2026-09-28
 
@@ -181,3 +181,17 @@ high-frame-rate motion, severe occlusion and the target-device matrix remain ope
 [Raw samples and run metadata](video-enhance-memory-2026-09-28.ndjson) include
 source/output hashes. Diagnostic media are retained locally under ignored
 `.scratch/video-enhance/memory-cancellation/`; no application code changed.
+
+## Asset delivery follow-up, 2026-09-28
+
+The pinned asset directory now has immutable browser caching; the model has an
+explicit binary MIME type. The built Worker passed HTTP checks for all asset
+hashes/MIME/cache headers, manifest, missing-file 404, private editor HTML, nonce
+CSP without evaluation exceptions and the disabled editor. The reusable checker
+is `scripts/check-video-enhance-delivery.mjs`.
+
+The installed local workerd rejects the configured 2026-09-01 compatibility date
+because its supported maximum is 2026-08-08. These checks used only a local CLI
+date override. The repository date, CSP and activation guards remain unchanged.
+A matching runtime and deployed-preview verification are still required; this
+local result does not close production acceptance.

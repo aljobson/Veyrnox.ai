@@ -3,3 +3,10 @@
   X-Content-Type-Options: nosniff
   Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
   Referrer-Policy: strict-origin-when-cross-origin
+
+# Pinned model/runtime inventory: bump this path when any shipped byte changes.
+/video-enhance/mediapipe-1.0.1-face-landmarker-1/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/video-enhance/mediapipe-1.0.1-face-landmarker-1/face_landmarker.task
+  Content-Type: application/octet-stream
