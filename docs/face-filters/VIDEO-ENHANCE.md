@@ -443,49 +443,8 @@ Repeated 5/10/15-second exports and a synthetic 60 fps processing check are reco
 in [the readiness review](VIDEO-ENHANCE-READINESS.md#repeated-local-performance-qualification-2026-09-28)
 and [machine-readable results](video-enhance-performance-2026-09-28.json).
 
-## Production-mode asset delivery check
+## Production-mode asset delivery
 
-`public/_headers` sets immutable one-year browser caching only for the pinned
-`/video-enhance/mediapipe-1.0.1-face-landmarker-1/` inventory. Keep this rule in
-sync when bumping the asset version. HTML and the production CSP are unchanged.
-Cloudflare applies these rules to static-asset responses; see its
-[static headers documentation](https://developers.cloudflare.com/workers/static-assets/headers/).
-
-After `npm run build:worker`, run a local Worker preview on port 3187, then:
-
-```sh
-node scripts/check-video-enhance-delivery.mjs http://127.0.0.1:3187
-```
-
-The check requests the actual asset bytes and verifies hashes, MIME types,
-immutable cache headers, ETags and nosniff for the complete inventory. It also
-checks the manifest, a missing asset, private editor HTML, nonce CSP without
-evaluation exceptions, and the disabled production editor. No credentials or
-media are sent. This does not exercise the enabled production editor.
-
-Local verification on 2026-09-28 passed all ten files and manifest checks,
-missing-file handling, private HTML, nonce CSP and disabled editor. The first
-run found the model MIME type absent; the exact model path now explicitly serves
-`application/octet-stream`. Full Worker build, final asset repackaging and the
-test suite (836 passed, one skipped) passed.
-
-Initial qualification limit: bundled workerd supports dates only through 2026-08-08,
-while the project requests 2026-09-01. The exact-date preview failed to start.
-The successful **local-only** check used `wrangler dev --local
---compatibility-date 2026-08-08 --ip 127.0.0.1 --port 3187`; no project date was
-changed and nothing was deployed. Repeat using a runtime supporting the project's
-actual date, then the deployed preview, before closing the delivery release gate.
-
-Exact-date follow-up (2026-09-28, artifact from `1aa1c1a`): Wrangler **4.142.0**
-from an isolated npm execution cache successfully ran the unchanged project
-configuration at **2026-09-01**, with no compatibility-date override. All HTTP
-delivery checks passed again. Reproduce with:
-
-```sh
-WRANGLER_SEND_METRICS=false npm exec --yes --package=wrangler@4.142.0 -- wrangler dev --local --ip 127.0.0.1 --port 3187
-node scripts/check-video-enhance-delivery.mjs http://127.0.0.1:3187
-```
-
-The earlier local date limitation is resolved by this tool version; the project
-lockfile remains unchanged. Deployed-preview and enabled-editor acceptance remain
-open. No CSP, activation or production deployment changed.
+Local and deployed static-asset checks pass, with the editor still disabled.
+See the [delivery validation report](VIDEO-ENHANCE-DELIVERY.md) for the pinned
+preview version, reproducible commands, results and remaining acceptance gates.

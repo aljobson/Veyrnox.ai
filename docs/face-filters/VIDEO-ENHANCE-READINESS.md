@@ -9,7 +9,7 @@ Includes local Chromium measurements; this is not a deployment approval or a mul
 | Priority | Finding and evidence | Required exit condition |
 | --- | --- | --- |
 | P1 | Production is intentionally disabled in both `useVideoEnhancePreview.js` and `videoEnhanceEngine.js`. `lib/contentSecurityPolicy.mjs` enables evaluation only in development and has no production WASM compilation exception. | Choose the production engine and document the CSP decision in an ADR. Test the actual production build and headers before changing activation gates. Do not copy the development evaluation policy into production. |
-| P1 | Versioned assets are prepared during builds and verified in `.open-next/assets`; runtime and model provenance notices are retained. | Verify deployed asset loading, MIME/cache headers and model terms. Passing a build with the editor disabled does not verify the production engine. |
+| P1 | Versioned assets are prepared during builds and verified in `.open-next/assets`; runtime and model provenance notices are retained. | Deployed static asset bytes and MIME/cache checks now pass (see delivery report). Complete model-terms review and enabled-editor runtime checks; disabled-editor delivery does not verify inference/export. |
 | P1 | The renderer uses a face-oval mask with eye/brow/lip exclusions, not semantic skin, hand or hair segmentation. One detected face can still contain an occluding hand inside that mask. | Qualify severe profiles, hand-over-eye/mouth, hair, facial hair and varied subjects at normal speed and full resolution. Choose segmentation, a conservative smoothing fallback, or a narrower supported scope based on measured failures. Mild cheek-touch spot checks do not establish protection of hand texture. |
 | P1 | Only local Chromium has measured exports. Preflight now checks detected MP4/AAC scope, source decoder support and H.264 encoding at clip dimensions. | Establish an explicit supported browser/device matrix and test decode, preview, export, cancellation and playback of the downloaded file on each. Disable unsupported export paths with an actionable message. |
 | P2 | CPU landmark detection runs synchronously on the UI thread. Export buffers the entire output before making a Blob, with several full-resolution canvases/textures. File-size and duration limits do not establish a decoded-memory or responsiveness budget. | Measure 5/10/15-second 720p/1080p clips, including high-frame-rate inputs, on target devices. Record elapsed time, responsiveness, cancellation latency and memory where measurable. Set supported limits from evidence; consider worker processing or streaming only where measurements justify it. |
@@ -110,7 +110,8 @@ narrow stated contract, not arbitrary container track preservation.
 
 ADR-0065 is proposed, and versioned asset packaging is implemented. Decode/encode capability and MP4/AAC format preflight are implemented. Next,
 complete device/quality measurements. Local delivery-header checks now pass at the configured compatibility date using
-Wrangler 4.142.0; deployed production-preview acceptance remains pending. Keep PR #361 as a draft until the release gates are settled.
+Wrangler 4.142.0, and the existing deployed version passes the same checks.
+Enabled-editor production acceptance remains pending. Keep PR #361 as a draft until the release gates are settled.
 
 ## Repeated local performance qualification, 2026-09-28
 
@@ -206,6 +207,17 @@ CSP without evaluation exceptions and disabled production editor.
 
 This supersedes the local-date limitation above. The repository dependencies and
 lockfile remain unchanged; the reproducible pinned CLI command is in the
-[validation record](VIDEO-ENHANCE.md#production-mode-asset-delivery-check).
+[delivery report](VIDEO-ENHANCE-DELIVERY.md).
 The temporary local Worker was stopped after testing. Deployed-preview checks,
 CSP decision acceptance, enabled-editor tests and device/quality gates remain open.
+
+## Deployed delivery follow-up, 2026-09-28
+
+Existing version `76e1a586-3fe2-462f-aad5-5dfcbd437af6`, tagged with the
+`codex-video-enhance-validation` alias, passed the complete HTTP delivery checker
+at its immutable version URL. Runtime metadata confirms `2026-09-01`.
+This closes the outstanding deployed static-delivery check, while the editor
+remains disabled. No new deployment or activation was performed.
+
+The [delivery report](VIDEO-ENHANCE-DELIVERY.md) records version identity,
+commands, results, the limit on commit attribution and remaining release gates.
