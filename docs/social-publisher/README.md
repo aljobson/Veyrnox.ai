@@ -1,0 +1,82 @@
+# Veyrnox Publish — Specification Pack
+
+**Feature:** Native multi-platform social scheduling and publishing ("Veyrnox Publish")
+**Version:** 0.1 (draft)
+**Status:** Pre-ADR research pack — not yet approved for implementation
+**Audience:** Product, engineering, design
+
+## Purpose
+
+Veyrnox.ai generates images, video and voice. Today, once a user generates an asset they leave
+the product to post it anywhere. This pack specifies a native feature that lets a creator connect
+their social accounts once and then draft, schedule, approve and publish directly from Veyrnox —
+to every platform they have an account on — without a separate tool.
+
+**One-line pitch:** *Generate it here. Schedule it everywhere. Never open a second tab.*
+
+This is a feature-parity study of **Metricool** (the category leader for multi-network scheduling,
+analytics and link-in-bio) combined with the **visual/brand language of syntx.ai** (the site the
+user asked us to copy stylistically). Metricool defines *what* we build; syntx.ai defines *how it
+should look*.
+
+## Research method and sources
+
+- **Metricool feature map** — crawled `metricool.com` marketing/product pages (public, unauthenticated)
+  for the full product nav: Metricool Studio, Planner, Approval System, SmartLinks, AI Assistant,
+  Inbox, Flows, Analytics, Competitors, Ads, Reports, Looker Studio connector, Hashtag Tracker.
+- **Metricool data model** — the account's own **Metricool MCP connector** (an authorized, live
+  integration already available in this session) was used to read the *actual* API contracts:
+  `getBrandSettings`, `getScheduledPosts`, `createScheduledPost` / `updateScheduledPost` (full
+  per-network payload validation rules), `getAnalyticsAvailableMetrics` (the full metric taxonomy,
+  340+ fields across Instagram alone), `getBestTimeToPostByNetwork` (heatmap shape), and the
+  SmartLinks and cross-network "Brand Summary" schemas. This is more reliable than screen-scraping
+  the web app, which requires a live login session we could not carry into the automated browser.
+- **Metricool app UI** — the login/marketing chrome only; the authenticated dashboard, planner and
+  composer screens were not reachable by the automated browser (session cookies did not transfer;
+  see Open Questions). Screenshots of `metricool.com` marketing pages were captured for palette and
+  layout-pattern reference only.
+- **syntx.ai** — crawled the public marketing site (home, pricing, trends, tools) for visual design
+  tokens: color palette, typography, spacing, component shapes. The in-app generation screens are
+  gated behind login and were not accessed.
+
+## Documents
+
+1. [Product Specification](01-product-spec.md) — vision, personas, full feature list mapped from
+   Metricool, MVP scope vs. later phases, plan/entitlement model.
+2. [Technical Specification](02-technical-spec.md) — architecture, data model, API surface,
+   per-platform adapter contracts, scheduling engine, analytics ingestion, security mapping to
+   this repo's existing rules (RLS, ledger-style audit logs, CSP, bundler traps).
+3. [Design Style Guide](03-design-style-guide.md) — the syntx.ai-derived visual system (color,
+   type, components) applied to the Publish surface, plus the Metricool UI *patterns* (calendar,
+   composer, network badges) it needs to express.
+4. [User Flows](04-user-flows.md) — step-by-step flows for connecting accounts, composing and
+   scheduling, approvals, rescheduling, failure recovery, analytics review and link-in-bio setup.
+5. [Security Baseline](05-security-baseline.md) — maps the design to OWASP (Top 10 + API Security
+   Top 10), NIST CSF 2.0, ISO/IEC 27001 Annex A and NCSC guidance (Cloud Security Principles, OAuth
+   guidance), with explicit gaps named rather than implied coverage.
+
+## Non-goals for this pack
+
+- No pricing/credit-cost decision is made here. Whether "Publish" is a flat subscription
+  entitlement (Metricool's own model: gated by number of connected profiles) or draws from the
+  existing generation-credit ledger is flagged as an open decision in the product spec — mixing it
+  into the ledger without an ADR would violate this repo's money-spine rules.
+- No ADR is written yet. Per `CLAUDE.md`, any PR touching money, new external OAuth credentials, or
+  CSP changes needs an ADR before code lands. This pack is the research input to that ADR.
+- Exact Metricool pricing tiers are **not** reproduced with invented numbers — the authenticated
+  pricing page wasn't reachable, and copying a competitor's price points without a confirmed source
+  isn't something to guess at.
+
+## Open questions
+
+1. **Which platforms ship in v1?** Metricool supports eleven networks (Instagram, Facebook, X/Twitter,
+   LinkedIn, TikTok, YouTube, Pinterest, Threads, Bluesky, Twitch, Google Business Profile). Section
+   1.6 of the product spec proposes a phased rollout — confirm the v1 cut with the business.
+2. **OAuth app approval lead time.** Meta (Instagram/Facebook), TikTok and YouTube each require app
+   review before production posting scopes are granted — this can take weeks and should start in
+   parallel with engineering, not after.
+3. **Credit model** — see Non-goals above.
+4. **Does Veyrnox already have a Metricool account for its own brand?** Yes — `getBrandSettings`
+   shows a connected brand (`Veyrnox`, blogId `6457974`) with Instagram/X/LinkedIn/TikTok/YouTube
+   linked. That account belongs to the sibling Veyrnox wallet product's socials, not Veyrnox.ai's;
+   it was used here only as a live, authorized source of Metricool's API shapes, not as product data.
