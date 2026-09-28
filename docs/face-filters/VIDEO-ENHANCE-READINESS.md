@@ -38,10 +38,19 @@ loss/recovery. Licensed real-motion and mild cheek-touch clips exported 255 and
 useful initial examples, not a representative device or visual-quality matrix.
 Full provenance and historical results are in [the validation record](VIDEO-ENHANCE.md).
 
+## Setup reliability follow-up, 2026-09-28
+
+The setup deadline finding above is addressed in the local prototype: a single
+30-second deadline now covers media loading through tracker creation. Timeout
+aborts the attempt and invites selection of the same or another clip. Replaced
+attempts suppress stale callbacks; a tracker resolving after cancellation closes
+before renderer attachment. Tests cover stalled creation, late cleanup, source
+replacement, pre-cancelled setup and initialization failure. Normal loading of
+the licensed moving-face clip reached ready in the browser. This bounds async
+waiting; it cannot preempt synchronous work that blocks the browser event loop.
+
 ## Recommended next implementation
 
-First fix the bounded-initialization/recovery gap while keeping the local-only
-gate. It is independently testable and improves the prototype without committing
-to a production engine or weakening CSP. Then measure performance and device
+With bounded initialization implemented, measure performance and device
 capabilities before writing the engine/asset/CSP deployment ADR. Keep PR #361
 as a draft until the intended release scope and its applicable gates are settled.

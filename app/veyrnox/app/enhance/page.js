@@ -5,6 +5,7 @@ import { AppNav } from '../../_components/NavBar';
 import { Button } from '../../_components/Button';
 import { useVideoEnhancePreview } from '../../_lib/useVideoEnhancePreview';
 import { VIDEO_LOOKS, validateVideo, downloadName } from '../../_lib/videoEnhance.mjs';
+import { createSetupDeadline } from '../../_lib/videoEnhanceSetup.mjs';
 
 const initialSettings = { smoothing: 30, look: 'natural', intensity: 100 };
 const rangeStyle = 'mt-3 w-full accent-vx-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-vx-accent';
@@ -22,37 +23,41 @@ function Editor() {
     useEffect(() => () => { if (result) URL.revokeObjectURL(result.url); }, [result]);
     useEffect(() => {
         if (!source) return;
-        let cancelled = false, instance;
+        let instance;
         const element = video.current;
-        const loadTimeout = setTimeout(() => {
-            cancelled = true; element.removeEventListener('loadeddata', setup);
-            setError('The clip could not be opened. Try a shorter MP4 video.'); setState('error');
-        }, 15000);
+        const target = canvas.current;
+        const deadline = createSetupDeadline(() => {
+            element.removeEventListener('loadeddata', setup);
+            element.pause();
+            setError('Video setup timed out. Choose the video again to retry, or try another clip.'); setState('error');
+        });
+        const { signal } = deadline;
         async function setup() {
-            clearTimeout(loadTimeout);
+            if (signal.aborted) return;
             const invalid = validateVideo(source.file, { duration: element.duration, width: element.videoWidth, height: element.videoHeight });
-            if (invalid) { setError(invalid); setState('error'); return; }
+            if (invalid) { deadline.finish(); setError(invalid); setState('error'); return; }
             setDuration(element.duration);
             setAspect(element.videoWidth / element.videoHeight);
             try {
                 const { inspectVideoExport } = await import('../../_lib/videoEnhanceExport.mjs');
+                if (signal.aborted) return;
                 const warning = await inspectVideoExport(source.file);
-                if (cancelled) return;
+                if (signal.aborted) return;
                 setExportWarning(warning || '');
                 const { createVideoEnhanceEngine } = await import('../../_lib/videoEnhanceEngine');
-                if (cancelled) return;
-                instance = await createVideoEnhanceEngine(element, canvas.current,
-                    next => { if (!cancelled) setFrame(next); },
-                    message => { if (!cancelled) { failed.current = true; setError(message); setState('error'); } });
-                if (cancelled) { instance.close(); return; }
+                if (signal.aborted) return;
+                instance = await createVideoEnhanceEngine(element, target,
+                    next => { if (!signal.aborted) setFrame(next); },
+                    message => { if (!signal.aborted) { failed.current = true; setError(message); setState('error'); } }, signal);
+                if (signal.aborted) { instance.close(); instance = undefined; return; }
                 engine.current = instance; setState(failed.current ? 'error' : 'ready');
-            } catch { if (!cancelled) { setError('The face tracker could not load. Prepare the local preview assets and reload, or try desktop Chrome.'); setState('error'); } }
+            } catch { if (!signal.aborted) { setError('The face tracker could not load. Prepare the local preview assets and reload, or try desktop Chrome.'); setState('error'); } }
+            finally { deadline.finish(); }
         }
         element.addEventListener('loadeddata', setup, { once: true });
         element.load();
         return () => {
-            cancelled = true; element.removeEventListener('loadeddata', setup);
-            clearTimeout(loadTimeout);
+            deadline.cancel(); element.removeEventListener('loadeddata', setup);
             instance?.close(); if (engine.current === instance) engine.current = null;
         };
     }, [source]);

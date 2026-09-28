@@ -1,17 +1,19 @@
 import { FaceLandmarker, FilesetResolver } from '@mediapipe/tasks-vision';
 import { createRenderer } from './videoEnhanceRenderer';
 import { exportEnhancedVideo } from './videoEnhanceExport.mjs';
+import { acquireSetupTracker } from './videoEnhanceSetup.mjs';
 
-export async function createVideoEnhanceEngine(video, canvas, onFrame, onError) {
+export async function createVideoEnhanceEngine(video, canvas, onFrame, onError, signal) {
     // Production CSP intentionally does not allow WASM compilation. This spike
     // uses next dev's existing policy; a production engine needs a separate ADR.
     if (process.env.NODE_ENV !== 'development') throw new Error('Video Enhance is a local preview only.');
+    signal?.throwIfAborted();
     const files = await FilesetResolver.forVisionTasks('/video-enhance/wasm');
-    const tracker = await FaceLandmarker.createFromOptions(files, {
+    const tracker = await acquireSetupTracker(() => FaceLandmarker.createFromOptions(files, {
         baseOptions: { modelAssetPath: '/video-enhance/face_landmarker.task', delegate: 'CPU' },
         runningMode: 'VIDEO', numFaces: 2,
         minFaceDetectionConfidence: 0.6, minFacePresenceConfidence: 0.6, minTrackingConfidence: 0.6,
-    });
+    }), signal);
     let renderer;
     try { renderer = createRenderer(canvas); } catch (error) { tracker.close(); throw error; }
     const input = document.createElement('canvas');
