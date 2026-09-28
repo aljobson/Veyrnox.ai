@@ -1,11 +1,12 @@
 # ADR-0061 — Veyrnox Publish: native multi-platform social scheduling
 
-- **Status**: Proposed 2026-09-28. Research/spec-only — no code, migration, or OAuth
-  app registration exists yet. Nothing here is Accepted until the product owner signs
-  off on the build-vs-buy call in "Decision" and the platform-scope call in "Scope and
-  rollout".
+- **Status**: **Accepted 2026-09-28.** Product owner approved Option A (build native
+  adapters) in "Decision" and the v1 platform scope (Instagram, X, TikTok, LinkedIn,
+  YouTube) in "Scope and rollout", both as proposed, no changes. Research/spec-only —
+  no code, migration, or OAuth app registration exists yet; implementation can now
+  proceed under this ADR's design.
 - **Date**: 2026-09-28
-- **Deciders**: Product owner (sole), engineering review requested
+- **Deciders**: Product owner (sole) — accepted
 - **Related**: [ADR-0031 — Stripe replaces LemonSqueezy](0031-stripe-replaces-lemonsqueezy.md)
   (vendor-category-rejection precedent), [ADR-0032 — Passkeys, hand-rolled against the
   GoTrue REST API](0032-passkeys.md) (precedent for "adapter over SDK" on the SSR graph),
@@ -106,7 +107,8 @@ surface — and no closing of the one gap this product uniquely could close.
 
 ## Decision
 
-**Recommend Option A — build native adapters — phased, starting with five platforms.**
+**Accepted: Option A — build native adapters — phased, starting with five platforms.**
+The product owner approved this on 2026-09-28, as recommended below, with no changes.
 The differentiation this feature exists to deliver (Generate → Schedule, §4.3 of the
 spec pack) is the whole reason to build it at all; routing the actual publish call
 through a third-party aggregator undercuts that story and adds a second vendor with its
@@ -222,8 +224,8 @@ The headline decisions it documents, all already folded into §2.7–§2.11 of t
   for CSP changes in this repo.
 - Ten new tables land in `packages/db/schema/supabase/`, all `FORCE ROW LEVEL SECURITY`,
   next free migration numbers taken at implementation time (check open PRs first, per
-  `CLAUDE.md` — this pack does not reserve numbers, since implementation is not yet
-  approved).
+  `CLAUDE.md` — this ADR does not reserve numbers; take the next free one when the first
+  implementation PR opens).
 - A new class of user data (third-party social account tokens) enters the system,
   encrypted at rest via Web Crypto under a dedicated Worker secret never reused from any
   other subsystem, with its own rotation runbook to write before launch.
@@ -233,23 +235,25 @@ The headline decisions it documents, all already folded into §2.7–§2.11 of t
 
 ## Open questions
 
-1. Does the product owner accept Option A's slower time-to-market over Option B's
-   vendor/category risk? (Decision section above recommends A; this is still the
-   product owner's call, per this repo's "business decision, not engineering" rule.)
-2. Credit vs. subscription entitlement model for Publish — deferred to its own ADR
+**Resolved at acceptance (2026-09-28):** Option A (build native) and the v1 platform
+scope (Instagram, X, TikTok, LinkedIn, YouTube) were both approved as proposed by the
+product owner — see Status above. Remaining open items, none of which block starting
+implementation but all of which should close before GA:
+
+1. Credit vs. subscription entitlement model for Publish — deferred to its own ADR
    (spec pack §1.8).
-3. Confirm current X API v2 posting-tier pricing and TikTok Content Posting API audit
-   requirements before committing those two platforms to the v1 list — both are flagged
-   above as unverified.
-4. Who owns the OAuth app-review submissions (Meta, TikTok, YouTube) and when do they
+2. Confirm current X API v2 posting-tier pricing and TikTok Content Posting API audit
+   requirements before the X and TikTok adapters ship — both are flagged above as
+   unverified against live documentation.
+3. Who owns the OAuth app-review submissions (Meta, TikTok, YouTube) and when do they
    start — these can run in parallel with engineering but are on an external clock this
-   team doesn't control.
-5. Confirm no conflict with the Veyrnox/Veyrnox-wallet hard wall (`CLAUDE.md` §HARD
+   team doesn't control. Start these immediately given the ADR is now accepted.
+4. Confirm no conflict with the Veyrnox/Veyrnox-wallet hard wall (`CLAUDE.md` §HARD
    WALL): Publish is a Veyrnox.ai feature for Veyrnox.ai users' own social accounts; it
    must never surface wallet-brand copy or be positioned as a wallet-adjacent feature.
-6. Does the org have an existing vulnerability disclosure process / `security.txt`? If not,
+5. Does the org have an existing vulnerability disclosure process / `security.txt`? If not,
    this feature — about to hold live posting credentials for external platforms — is a
    reasonable forcing function to add one before launch (security baseline §5.6).
-7. Extend the existing incident-response runbook to name a compromised social-platform
+6. Extend the existing incident-response runbook to name a compromised social-platform
    token as its own scenario, distinct from the generation/billing scenarios it already
    covers (security baseline §5.3 "Gap, stated plainly").

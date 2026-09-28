@@ -2,7 +2,10 @@
 
 **Feature:** Native multi-platform social scheduling and publishing ("Veyrnox Publish")
 **Version:** 0.1 (draft)
-**Status:** Pre-ADR research pack — not yet approved for implementation
+**Status:** Accepted via [ADR-0061](../adr/0061-veyrnox-publish-social-scheduling.md)
+(2026-09-28) — build-vs-buy (native adapters) and v1 platform scope both approved by the
+product owner. Implementation may now proceed under that ADR's design; open items are
+tracked in the ADR's "Open questions".
 **Audience:** Product, engineering, design
 
 ## Purpose
@@ -61,8 +64,10 @@ should look*.
   entitlement (Metricool's own model: gated by number of connected profiles) or draws from the
   existing generation-credit ledger is flagged as an open decision in the product spec — mixing it
   into the ledger without an ADR would violate this repo's money-spine rules.
-- No ADR is written yet. Per `CLAUDE.md`, any PR touching money, new external OAuth credentials, or
-  CSP changes needs an ADR before code lands. This pack is the research input to that ADR.
+- The build-vs-buy and platform-scope ADR ([ADR-0061](../adr/0061-veyrnox-publish-social-scheduling.md))
+  is now Accepted. A **separate** ADR is still required before any billing code lands, per
+  `CLAUDE.md`'s money-spine rules — the credit-vs-subscription entitlement model above is
+  explicitly not decided by ADR-0061.
 - Exact Metricool pricing tiers are **not** reproduced with invented numbers — the authenticated
   pricing page wasn't reachable, and copying a competitor's price points without a confirmed source
   isn't something to guess at.
