@@ -54,3 +54,6 @@ scripts/.slice0-*.json
 # Local provider verification output (paid runs; evidence is copied into migrations)
 scripts/.kie-verify-results.json
 scripts/.auto-short-verify.json
+
+# Reproducible local-only Video Enhance model/runtime assets
+public/video-enhance/

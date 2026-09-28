@@ -6,6 +6,7 @@
   "version": "2.0.0",
   "license": "MIT",
   "scripts": {
+    "prepare:video-enhance": "node scripts/prepare-video-enhance.mjs",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
@@ -24,6 +25,8 @@
     "test:security": "node scripts/check-security.mjs"
   },
   "dependencies": {
+    "@mediapipe/tasks-vision": "1.0.1",
+    "mediabunny": "1.60.0",
     "next": "^15.5.25",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
