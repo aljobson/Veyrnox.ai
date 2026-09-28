@@ -109,7 +109,6 @@ narrow stated contract, not arbitrary container track preservation.
 
 ## Recommended next implementation
 
-ADR-0065 is proposed, and versioned asset packaging is implemented. Next, add
-explicit decode/encode capability and supported-format preflight, then complete
-device/quality measurements. Delivery headers and production-preview acceptance
+ADR-0065 is proposed, and versioned asset packaging is implemented. Decode/encode capability and MP4/AAC format preflight are implemented. Next,
+complete device/quality measurements. Delivery headers and production-preview acceptance
 remain pending. Keep PR #361 as a draft until the release gates are settled.

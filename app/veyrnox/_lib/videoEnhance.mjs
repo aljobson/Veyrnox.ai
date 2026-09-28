@@ -30,5 +30,7 @@ export function validateExportAudio(codec) {
     // Keep this explicit until a real-file audio regression passes for that path.
     return codec === 'opus'
         ? 'Opus audio export is not supported in this preview yet. Use an MP4 clip with AAC audio, or a silent clip.'
-        : null;
+        : codec !== null && codec !== 'aac'
+            ? 'Export supports AAC audio or no audio. Convert this clip to MP4 with AAC audio, or remove its audio.'
+            : null;
 }

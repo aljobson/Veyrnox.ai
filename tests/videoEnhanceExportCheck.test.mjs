@@ -25,8 +25,23 @@ test('export checker accepts preserved media and rejects fidelity regressions', 
             assert.equal(result.status, 0, result.stderr);
             assert.match(result.stdout, /PASS: 5 frames/);
         });
-        await t.test('single video and audio pass preflight', async () => {
-            assert.equal(await inspectVideoExport(new Blob([readFileSync(source)])), null);
+        await t.test('unqualified PCM audio is preview-only', async () => {
+            assert.match(await inspectVideoExport(new Blob([readFileSync(source)])), /supports AAC/);
+        });
+        await t.test('AAC MOV is rejected by detected container, regardless of MIME label', async () => {
+            const path = join(directory, 'aac.mov');
+            ffmpeg(['-i', source, '-c:v', 'copy', '-c:a', 'aac', path]);
+            assert.match(await inspectVideoExport(new Blob([readFileSync(path)], { type: 'video/mp4' })), /MP4 input only/);
+        });
+        await t.test('a real MP4 cannot pass preflight without a supported decoder', async () => {
+            const path = join(directory, 'unsupported.mp4');
+            ffmpeg(['-i', source, '-c:v', 'copy', '-an', path]);
+            const file = new Blob([readFileSync(path)], { type: 'video/mp4' });
+            assert.match(await inspectVideoExport(file), /cannot decode/);
+            await assert.rejects(exportEnhancedVideo(file, {
+                signal: new AbortController().signal,
+                process() { assert.fail('Unsupported decoder processed a frame'); },
+            }), /cannot decode/);
         });
         for (const [name, maps] of [
             ['extra audio', ['0:v:0', '0:a:0', '0:a:0']],

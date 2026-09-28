@@ -415,3 +415,26 @@ Validation: cold model preparation, all five asset-verifier regression tests,
 833 passing unit tests (one skipped), scoped ESLint and the full
 `npm run build:worker` passed. All ten runtime/notice files were verified in
 `.open-next/assets` against the committed inventory.
+
+## Capability and format preflight, 2026-09-28
+
+Export now requires a detected MP4 container with one video track and at most one
+AAC audio track. MOV/WebM remain available for preview, with export guidance.
+Unknown audio codecs fail closed; Opus retains its specific fidelity warning.
+This supersedes the earlier prototype's WebM output fallback.
+
+Preflight checks the source video's decoder support and H.264 encoding at its
+display dimensions with the same high-quality setting used by export. AAC is
+packet-copied, so audio decoder/encoder support is not required. The conversion
+is validated again at export and rejects any discarded track. This capability
+check does not guarantee sufficient memory, sustained speed or device quality.
+The existing setup timeout and source-replacement abort prevent stale UI updates.
+
+Tests cover unqualified audio, a MOV mislabeled as MP4 and an unsupported video
+codec rejected before frame processing, alongside the prior multi-track guards.
+
+Chromium browser validation: AAC MOV showed preview-only guidance while playback
+and adjustments remained enabled. Selecting the AAC MP4 restored export. The
+5-second synthetic clip exported all 150 frames within 1 ms timing tolerance;
+decoded AAC samples were identical. Full local suite: 836 passed, one skipped;
+scoped ESLint passed.

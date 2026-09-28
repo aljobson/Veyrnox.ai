@@ -1,4 +1,4 @@
-import { Input, BlobSource, ALL_FORMATS, Output, BufferTarget, Mp4OutputFormat, WebMOutputFormat, Conversion } from 'mediabunny';
+import { Input, BlobSource, ALL_FORMATS, Output, BufferTarget, Mp4OutputFormat, MP4, Conversion, canEncodeVideo, Quality } from 'mediabunny';
 import { validateExportAudio } from './videoEnhance.mjs';
 
 async function inspectInput(input) {
@@ -7,15 +7,43 @@ async function inspectInput(input) {
     if (videos.length !== 1 || audios.length > 1) {
         return 'Export supports exactly one video track and at most one audio track. Choose a single-track version of this clip.';
     }
-    return validateExportAudio(audios.length ? await audios[0].getCodec() : null);
+    const audioError = validateExportAudio(audios.length ? (await audios[0].getCodec() ?? undefined) : null);
+    if (audioError) return audioError;
+    if (await input.getFormat() !== MP4) return 'Export supports MP4 input only. Convert this clip to MP4 with AAC audio, or no audio.';
+    return null;
 }
 
-export async function inspectVideoExport(file) {
+const capabilityError = conversion => {
+    if (conversion.discardedTracks.some(track => ['unknown_source_codec', 'undecodable_source_codec'].includes(track.reason))) {
+        return 'This browser cannot decode this clip for export. Try an H.264 MP4 in a browser with WebCodecs support.';
+    }
+    return 'This browser cannot encode this clip as H.264 MP4 with all its tracks. Try another desktop browser or a smaller MP4 clip.';
+};
+
+const exportQuality = new Quality('high');
+function prepareConversion(input, output, process) {
+    return Conversion.init({
+        input, output, tracks: 'primary', tags: {}, showWarnings: false,
+        video: { codec: 'avc', quality: exportQuality, process },
+    });
+}
+
+export async function inspectVideoExport(file, signal) {
     const input = new Input({ source: new BlobSource(file), formats: ALL_FORMATS });
     try {
-        return await inspectInput(input);
+        signal?.throwIfAborted();
+        const error = await inspectInput(input);
+        if (error) return error;
+        const [video] = await input.getVideoTracks();
+        signal?.throwIfAborted();
+        if (!await video.canDecode()) return capabilityError({ discardedTracks: [{ reason: 'undecodable_source_codec' }] });
+        const supported = await canEncodeVideo('avc', {
+            width: await video.getDisplayWidth(), height: await video.getDisplayHeight(), quality: exportQuality,
+        });
+        signal?.throwIfAborted();
+        return supported ? null : capabilityError({ discardedTracks: [] });
     } catch {
-        return 'Export compatibility could not be checked. Try an MP4 clip with AAC audio.';
+        return 'Export compatibility could not be checked. Try an H.264 MP4 clip with AAC audio in a desktop browser with WebCodecs support.';
     } finally {
         input.dispose();
     }
@@ -33,25 +61,15 @@ export async function exportEnhancedVideo(file, { signal, process }) {
         const audioError = await inspectInput(input);
         cancelled();
         if (audioError) throw new Error(audioError);
-        for (const format of [new Mp4OutputFormat(), new WebMOutputFormat()]) {
-            output = new Output({ format, target: new BufferTarget() });
-            conversion = await Conversion.init({
-                input, output, tracks: 'primary', tags: {},
-                video: {
-                    process: async sample => {
-                        // Yield to the UI so cancellation works even on short, fast exports.
-                        await new Promise(resolve => setTimeout(resolve, 0));
-                        cancelled();
-                        return process(sample);
-                    },
-                },
-            });
+        output = new Output({ format: new Mp4OutputFormat(), target: new BufferTarget() });
+        conversion = await prepareConversion(input, output, async sample => {
+            // Yield to the UI so cancellation works even on short, fast exports.
+            await new Promise(resolve => setTimeout(resolve, 0));
             cancelled();
-            // A successful video-only conversion must not hide unsupported source audio.
-            if (conversion.isValid && conversion.discardedTracks.length === 0) break;
-            await conversion.cancel(); conversion = undefined;
-        }
-        if (!conversion) throw new Error('This browser cannot export all tracks in this clip. Try desktop Chrome or a different video.');
+            return process(sample);
+        });
+        cancelled();
+        if (!conversion.isValid || conversion.discardedTracks.length) throw new Error(capabilityError(conversion));
         await conversion.execute();
         cancelled();
         if (!output.target.buffer?.byteLength) throw new Error('The export was empty.');

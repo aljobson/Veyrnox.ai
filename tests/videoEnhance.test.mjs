@@ -53,3 +53,10 @@ test('unreadable media cannot receive a successful export compatibility check', 
     const { inspectVideoExport } = await import('../app/veyrnox/_lib/videoEnhanceExport.mjs');
     assert.match(await inspectVideoExport(new Blob(['invalid media'])), /could not be checked/);
 });
+
+
+test('unqualified and unknown audio codecs fail closed', () => {
+    for (const codec of ['pcm-s16', 'mp3', 'flac', undefined, '']) {
+        assert.match(validateExportAudio(codec), /supports AAC/);
+    }
+});
