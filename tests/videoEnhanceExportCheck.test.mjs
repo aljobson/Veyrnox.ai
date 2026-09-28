@@ -7,6 +7,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const available = ['ffmpeg', 'ffprobe'].every(tool => spawnSync(tool, ['-version']).status === 0);
+if (process.env.CI && !available) throw new Error('CI requires ffmpeg and ffprobe for media regression tests');
 const checker = fileURLToPath(new URL('../scripts/check-video-enhance-export.mjs', import.meta.url));
 
 // Real synthetic media exercises ffprobe parsing and decoded-audio comparison.

@@ -308,7 +308,9 @@ PCM bytes, so matching samples with different playback settings cannot pass.
 passed all 17 tests locally. Synthetic media checks accept unchanged media and
 reject missing audio, changed sample rate, changed channels, changed samples and
 a dropped video frame. Fixtures are created in a temporary directory and removed
-afterward. The media regression test explicitly skips if ffmpeg/ffprobe are absent.
+afterward. The media regression test explicitly skips locally if ffmpeg/ffprobe are absent.
+CI installs ffmpeg and requires both tools; missing tools fail the suite instead
+of silently skipping the media checks.
 These tests validate the checker, not moving-face quality or browser compatibility.
 
 ### Remaining gates
