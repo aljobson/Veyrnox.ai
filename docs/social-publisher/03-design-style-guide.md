@@ -266,6 +266,11 @@ worth carrying into Veyrnox's own generation surfaces even outside Publish.
   | Elite | $65.46 | 2,600 |
   | Ultra Elite | $125.40 | 3,000 |
 
+  This cross-validates `docs/pricing/syntx-competitor-analysis-2026-09-26.md`'s EUR figures pulled
+  from syntx's own tariffs API two days earlier (Basic €8.90≈$9.41 at the doc's own 1.15 FX
+  assumption, VIP €39.90≈$43.61, Ultra Elite €119.00≈$125.40 — consistent to the cent). That doc is
+  the source of truth for pricing/margin analysis; this section is the product-surface/UX reference.
+
 - **Generation feed** (`/user/feed`, i.e. their Library): filter chips by media type
   (Text/Image/Video/Audio), a list/grid view toggle (two icon buttons, top-right), and an empty
   state (sparkle icon, "There's nothing here yet," a `+ Create` CTA) — directly comparable to
@@ -287,3 +292,94 @@ in-app tool pages, profile, pricing modal). This may be a deliberate "immersive 
 specific to the trends/template browsing surface rather than a general dark-mode toggle; no
 dark-mode switch was found in settings during this pass. Worth confirming with a longer session
 before assuming it's the exception rather than evidence of a broader dark variant not yet found.
+
+## 3.9 Full model/tool catalog (2026-09-28, exhaustive)
+
+Every provider under every one of the five generation/edit categories was visited (41 total: not a
+sample). Captured via script — click each provider option, wait for render, read the page — rather
+than manual screenshots, since the composer shell is identical per category and the marginal value
+is in each model's own description/capabilities/controls, not its chrome. `Agents` (§3.8) is
+plan-gated at 0 on Free and could not be explored further without a paid upgrade, which this session
+did not make. Trend category tabs (New/Featuring You/Popular/Anime/Cartoons) are filters on the one
+`/trends` page already documented, not separate pages.
+
+### Image (10 providers)
+
+| Provider | URL | Description | Distinguishing composer control |
+|---|---|---|---|
+| Nano Banana | `/image/banana` | Fast generation, low resource use, everyday editing | 10 aspect-ratio presets (Original, 21:9 Ultra wide → 1:1 Square) |
+| GPT Image | `/image/sora-images` | OpenAI's Sora Images/GPT Images; upload up to 5 images for Remix mode | "Remix mode" — multi-image conditioning |
+| Seedream | `/image/seedream` | ByteDance's unified text-to-image/image-to-image/style-transfer/edit model | Single-reference style transfer, edit-region preservation |
+| Flux | `/image/flux` | "SOTA" claim; FLUX.1 model set | — |
+| Runway Frames | `/image/runway-frames` | Various unique styles; up to 3 reference images | — |
+| Grok Imagine | `/image/grok_image` | Conversational, iterative scene refinement via dialogue | 5000-char prompt box (longest of any Image tool) |
+| Luma | `/image/luma_image` | Uni 1.1; up to 9 reference images | Most reference images of any Image provider (9) |
+| Higgsfield Soul | `/image/higgsfield-soul` | Hyper-realistic photo, 50+ style presets, "fashion shoot without a camera" | Character training from the user's own photos |
+| Ideogram | `/image/ideogram` | Background swap keeping subject intact, remix, character reference mode | — |
+| Wan | `/image/wan_image` | Wan 2.6, balances performance/stability across creative tasks | 720P resolution option |
+
+### Video (13 providers)
+
+| Provider | URL | Description | Distinguishing composer control |
+|---|---|---|---|
+| Kling | `/video/kling` | Text-to-video; up to 4 images for Keyframes/Elements modes | Resolution up to 4K; real-time inline mode validation |
+| Google Veo | `/video/veo3` | Up to 720p, 8s, automatic sound/speech generation | Native audio generation |
+| Seedance | `/video/seedance` | TikTok's model; up to 6 images + 3 videos + 2 audio files per generation | Richest multimodal input of any Video provider |
+| Grok Imagine | `/video/grok_video` | Image-to-video, 1–15s flexible duration | Widest duration range |
+| Beeble (SwitchX) | `/video/beeble` | Background/lighting replacement via mask on existing video | Video-to-video editing, not generation from scratch |
+| Runway | `/video/runway` | GEN-4; Turbo mode (single image only) or multi-frame (up to 3 images) | — |
+| HappyHorse | `/video/happy_horse` | Bold, stylized, artistic — not realism-focused | — |
+| HeyGen | `/video/heygen` | Avatar generation from an image + audio/voice file | Only talking-avatar tool in the catalog |
+| Luma | `/video/luma` | Dream Machine, Ray 3.14 | — |
+| Hailuo MiniMax | `/video/hailuo-minimax` | Cinematic, poster/keyframe-style visuals, dramatic lighting | — |
+| Higgsfield | `/video/higgsfield` | Precise camera-movement control for directors/clip-makers | Camera-direction controls |
+| Wan Video | `/video/wan_video` | Wan 2.7 text-to-video | 1080P |
+| FLUX 3 Video | `/video/flux3_video` | Up to 20s with generated audio, follows camera directions | Longest single clip (20s) with native audio |
+
+### Audio (3 providers)
+
+| Provider | URL | Description | Distinguishing composer control |
+|---|---|---|---|
+| Elevenlabs | `/audio/elevenlabs` | High-fidelity voice; consistency, prosody, emotion/pacing control | Speech/voice, not music |
+| Suno | `/audio/suno` | 6 Wild; instrumental / lyrics / auto-lyrics-via-LLM modes | 500-char prompt cap |
+| Video to audio | `/audio/video2audio` | Upload a video (≤20s), generates matching sound per frame | The only audio *input* tool — inverse of the other two |
+
+### LLM Studio (8 providers)
+
+| Provider | URL | Description |
+|---|---|---|
+| ChatGPT | `/text/chatgpt` | GPT 6 Luna; has a "Deep research" toggle |
+| Claude | `/text/claude` | Sonnet 5; software development, debugging, multi-file changes, verification |
+| Gemini | `/text/gemini` | 3.1 Pro; multimodal (text/docs/images/charts/code) in one workflow |
+| Grok | `/text/grok` | Grok 4.7 |
+| Deepseek | `/text/deepseek` | R1; mathematical/algorithmic tasks, verifiable solutions |
+| Perplexity | `/text/perplexity` | Sonar + Internet; up-to-date web search with citations |
+| Qwen | `/text/qwen` | 3 Max; multilingual, precise instruction-following |
+| Zhipu AI | `/text/zai` | GLM 5.2; large codebases, long coding sessions |
+
+Every LLM Studio tool shares three tabs (`Prompt` / `About model` / `Deep research`) not seen on
+any Image/Video/Audio tool — the only category with a dedicated research-mode toggle.
+
+### Toolkit (7 tools — edit/enhance existing media, not generate from scratch)
+
+| Tool | URL | Purpose | Notable parameters |
+|---|---|---|---|
+| Topaz Astra | `/tool/video-upscaler/topaz_astra` | Video upscale | Upscale target, frame rate, slow motion, creativity level |
+| Seedance 2.5 Editor | `/tool/video-inpaint/seedance-editor` | Video inpaint/edit | 35,000-char prompt box (largest text field in the whole app) |
+| Seedream 5 Pro Editor | `/tool/image-inpaint/seedream-editor` | Image inpaint/edit | — |
+| Nano Banana Pro Editor | `/tool/image-inpaint/banana_inpaint` | Image inpaint/edit | — |
+| Clarity | `/tool/image-upscaler/clarity` | Image upscale | Scale (x1.5/x2), strength, creativity, noise reduction |
+| Magnific | `/tool/image-upscaler/magnific` | Image upscale | — |
+| Topaz AI | `/tool/video-upscaler/topaz_ai` | Video upscale | Frame rate, add noise, Focus Fix, Grain, Fix Compression, Improve Detail, Sharpen, Reduce Noise, Dehalo, Anti-alias/Deblur — richest parameter panel of any single tool |
+
+Every Toolkit tool shares the upload zone + "Select from uploaded" / "Select from the generated"
+pattern already highlighted in §3.8 — confirmed across all 7, not just the one sampled earlier.
+
+### What this catalog says about breadth vs. depth
+
+syntx.ai's "100+ AI tools" claim resolves, in the authenticated app, to **41 distinct provider
+integrations** across 5 categories plus a locked Agents feature — each one a thin, consistent
+composer shell around a different upstream model, not 100+ genuinely different UIs. The real
+product-design lesson for Veyrnox is that **breadth is achieved by templating the composer shell
+once and swapping provider metadata**, not by hand-building 41 different screens — directly
+relevant if Veyrnox's own generation catalog grows toward a similar model count.
