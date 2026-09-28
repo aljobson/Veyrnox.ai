@@ -24,7 +24,7 @@ const CATALOG = [
     'fal-ai/elevenlabs/tts/turbo-v2.5', 'fal-ai/minimax/speech-2.6-hd', 'fal-ai/mmaudio-v2/text-to-audio', 'fal-ai/bria/background/remove',
     'fal-ai/topaz/upscale/image', 'fal-ai/bria/expand', 'fal-ai/latentsync', 'fal-ai/kling-video/ai-avatar/v2/standard',
     'fal-ai/elevenlabs/text-to-dialogue/eleven-v3',
-    'veo:veo3_lite', 'veo:veo3_fast', 'veo:veo3', 'market:google/nano-banana',
+    'market:kling-3.0/video', 'veo:veo3_lite', 'veo:veo3_fast', 'veo:veo3', 'market:google/nano-banana',
     'market:wan/2-5-text-to-video', 'market:kling-2.6/text-to-video', 'market:nano-banana-pro',
     'market:hailuo/02-text-to-video-standard', 'market:seedream/4.5-text-to-image', 'market:elevenlabs/text-to-speech-turbo-2-5',
     'grsai:nano-banana-pro', 'bytedance/seedance-2.0-fast', 'auto-short:v1', 'clip-edit:v1',
@@ -260,4 +260,17 @@ test('a dialogue script becomes speaker blocks, and the prompt itself is never s
     assert.deepEqual(checkInputs(d, { prompt: 'A: 1\nB: 2\nC: 3\nD: 4\nE: 5' }), { ok: false, error: 'dialogue_invalid' }, 'five speakers');
     assert.equal(checkInputs(d, { prompt: '   ' }).ok, false);
     assert.equal(checkInputs(d, { prompt: 'x'.repeat(1001) }).ok, false, 'the 1000-character cap the price covers');
+});
+
+
+test('staged Kling i2v advertises only supported controls and checks before debit', () => {
+    const record = capabilityFor('market:kling-3.0/video');
+    const inputs = { prompt: 'p', image_url: 'https://r2.example/start.png', endImage_url: 'https://r2.example/end.png' };
+    assert.deepEqual(lengthsFor(record), [5, 10]);
+    assert.equal(checkInputs(record, inputs).ok, true);
+    for (const extra of [{ negative_prompt: 'blur' }, { seed: 1 }, { duration_seconds: 15 }, { sound: true }]) {
+        assert.equal(checkInputs(record, { ...inputs, ...extra }).ok, false);
+    }
+    assert.equal(checkInputs(record, { prompt: 'p' }).error, 'inputs_invalid:image_url');
+    assert.equal(checkInputs(record, { ...inputs, prompt: 'x'.repeat(2001) }).ok, false);
 });
