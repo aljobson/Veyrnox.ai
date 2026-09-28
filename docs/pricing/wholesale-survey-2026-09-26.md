@@ -1,5 +1,13 @@
 # Wholesale price survey: every video and audio model, cheapest source — 26 September 2026
 
+> **2026-09-28 correction — pack savings withdrawn.** The original calculations
+> below assumed one pack token per consumed token. Current BytePlus rules apply
+> input/resolution deduction multipliers; the four staged Seedance 2.x costs and
+> derived credit floors are not valid activation evidence. Keep those rows inactive
+> until pricing is revised and verified. See the
+> [current wholesale review](../pricing/wholesale-review-2026-09-28.md).
+
+
 Question: what is the cheapest wholesale price we can buy each video and audio model at?
 
 Companion files: `wholesale-survey-2026-09-26.json` (every row from every source, plus kie's
