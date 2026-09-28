@@ -7,7 +7,9 @@
   proceed under this ADR's design.
 - **Date**: 2026-09-28
 - **Deciders**: Product owner (sole) — accepted
-- **Related**: [ADR-0031 — Stripe replaces LemonSqueezy](0031-stripe-replaces-lemonsqueezy.md)
+- **Related**: [ADR-0062 — Veyrnox Publish entitlement model](0062-veyrnox-publish-entitlement-model.md)
+  (the deferred credit-vs-subscription billing decision, drafted separately),
+  [ADR-0031 — Stripe replaces LemonSqueezy](0031-stripe-replaces-lemonsqueezy.md)
   (vendor-category-rejection precedent), [ADR-0032 — Passkeys, hand-rolled against the
   GoTrue REST API](0032-passkeys.md) (precedent for "adapter over SDK" on the SSR graph),
   [ADR-0026 — Turnstile CAPTCHA](0026-turnstile-captcha-on-auth.md) and
@@ -240,8 +242,10 @@ scope (Instagram, X, TikTok, LinkedIn, YouTube) were both approved as proposed b
 product owner — see Status above. Remaining open items, none of which block starting
 implementation but all of which should close before GA:
 
-1. Credit vs. subscription entitlement model for Publish — deferred to its own ADR
-   (spec pack §1.8).
+1. Credit vs. subscription entitlement model for Publish — drafted as
+   [ADR-0062](0062-veyrnox-publish-entitlement-model.md) (Proposed, awaiting sign-off),
+   recommending an independent "Publish Plan" modelled on Cinema Pass (ADR-0057),
+   never touching the credit ledger.
 2. Confirm current X API v2 posting-tier pricing and TikTok Content Posting API audit
    requirements before the X and TikTok adapters ship — both are flagged above as
    unverified against live documentation.

@@ -60,14 +60,11 @@ should look*.
 
 ## Non-goals for this pack
 
-- No pricing/credit-cost decision is made here. Whether "Publish" is a flat subscription
-  entitlement (Metricool's own model: gated by number of connected profiles) or draws from the
-  existing generation-credit ledger is flagged as an open decision in the product spec — mixing it
-  into the ledger without an ADR would violate this repo's money-spine rules.
 - The build-vs-buy and platform-scope ADR ([ADR-0061](../adr/0061-veyrnox-publish-social-scheduling.md))
-  is now Accepted. A **separate** ADR is still required before any billing code lands, per
-  `CLAUDE.md`'s money-spine rules — the credit-vs-subscription entitlement model above is
-  explicitly not decided by ADR-0061.
+  is now Accepted. The billing-mechanism decision is drafted separately as
+  [ADR-0062](../adr/0062-veyrnox-publish-entitlement-model.md) (Proposed, awaiting sign-off):
+  an independent recurring "Publish Plan," modelled on Cinema Pass (ADR-0057), never touching
+  the generation-credit ledger.
 - Exact Metricool pricing tiers are **not** reproduced with invented numbers — the authenticated
   pricing page wasn't reachable, and copying a competitor's price points without a confirmed source
   isn't something to guess at.

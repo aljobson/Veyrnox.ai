@@ -152,18 +152,24 @@ The user's ask was to copy every Metricool feature. In practice:
 Bluesky, Twitch, Google Business Profile as additional networks once the adapter pattern (§2.3 of
 the technical spec) is proven on the first five.
 
-## 1.8 Entitlement / plan model (shape only — no invented competitor numbers)
+## 1.8 Entitlement / plan model
+
+**Now drafted as [ADR-0062](../adr/0062-veyrnox-publish-entitlement-model.md)** (Proposed,
+awaiting product-owner sign-off): an independent "Publish Plan," modelled on the already-Accepted
+Cinema Pass pattern (ADR-0057) — a recurring entitlement sold via Stripe Checkout subscription
+mode, never touching the generation-credit ledger, with entitlement derived server-side by RPC.
+This section keeps the original reasoning for context; ADR-0062 is now the source of truth on the
+billing *mechanism* (exact prices and tier caps remain a separate, smaller pricing decision).
 
 Metricool's own gating axis is the number of connected profiles ("blogs") and network breadth, not
-post volume. Recommended shape for Veyrnox, to be finalized with the business and captured in an
-ADR before billing code is written:
+post volume — the shape ADR-0062 follows:
 
-- Publish is a feature **entitlement** attached to the existing subscription model referenced in
-  `CONTEXT.md` (Subscription: "a recurring plan that grants a monthly allotment of credits" — not
-  yet offered) or a new, separate entitlement if Subscriptions haven't shipped yet. It should **not**
-  draw from the generation-credit ledger: posting to a social network doesn't consume a provider
-  API cost proportional to a video/image generation, so metering it as credits conflates two
-  unrelated cost models.
+- Publish is an **independent recurring plan**, not a benefit of the glossary's planned
+  `Subscription` (a monthly credit allotment, not yet offered — waiting for it would block Publish's
+  launch on an unrelated, unbuilt system) and **not** a draw on the generation-credit ledger: posting
+  to a social network doesn't consume a provider API cost proportional to a video/image generation,
+  so metering it as credits would conflate two unrelated cost models — exactly the reasoning
+  ADR-0057 already established for Cinema Pass, and reapplied here.
 - Gate by: number of connected accounts, number of scheduled posts in flight, and access to
   Phase 2+ features (approval workflow, competitor tracking, SmartLinks) — mirroring Metricool's
   own axis of "more profiles / more networks / more power features" per tier, without asserting
