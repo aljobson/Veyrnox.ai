@@ -9,7 +9,7 @@ export const metadata = {
 
 export default function Privacy() {
     return (
-        <LegalPage title="Privacy Policy" updated="24 September 2026">
+        <LegalPage title="Privacy Policy" updated="28 September 2026">
             <p>{ENTITY.name} (&ldquo;we&rdquo;) is the data controller for personal data processed through Veyrnox.ai. Registered office: {ENTITY.office}. Contact: <a href={`mailto:${ENTITY.privacyEmail}`}>{ENTITY.privacyEmail}</a>.</p>
 
             <h2>What we collect</h2>
@@ -31,6 +31,10 @@ export default function Privacy() {
             <h2>Where your data lives</h2>
             <p>We run on Supabase for the database and authentication, and on Cloudflare for edge hosting and object storage. Account data, credit ledger and generation metadata sit in our Supabase database, which is hosted in the European Union (Frankfurt, Germany). Generated media is stored in the European Union, in Cloudflare R2 with an EU jurisdictional restriction. Your prompts and reference files are transmitted to the third-party model provider that runs the model you selected, for the sole purpose of producing your output.</p>
             <p>Some of the companies that process your personal data are outside the United Kingdom and the EEA: our edge hosting, the model providers, and Stripe, Inc. (United States), which is the Merchant of Record for credit pack purchases. Where your personal data is processed outside the United Kingdom or the EEA, we rely on the UK International Data Transfer Agreement or the EU Standard Contractual Clauses with the company concerned. If we move the database to another region we will update this page before the move takes effect.</p>
+
+            <h2>Planned model processor: BytePlus</h2>
+            <p>BytePlus Pte. Ltd. (Singapore) is a planned processor for selected Seedance video models. These models are not currently available on Veyrnox.ai. When enabled, choosing one of these models will send your prompt and any reference images to BytePlus ModelArk in Singapore to generate your video. This processing takes place outside the United Kingdom and the EEA; storing the finished video in our EU storage does not keep the generation processing within those regions.</p>
+            <p>We will enable these models only after the applicable data-processing and international-transfer arrangements are in place. We will update this notice when the models become available.</p>
 
             <h2>Retention</h2>
             <ul>
