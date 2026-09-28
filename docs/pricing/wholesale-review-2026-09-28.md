@@ -115,3 +115,25 @@ credits ($0.025). Dialogue failed with code 500 and reports zero consumed
 credits. The provider cost check is not proof of normal gateway/R2 completion.
 Neither option is activated by this change. See ADR-0020 for exact task IDs
 and activation gates.
+
+## Flux staging R2 check — 28 September
+
+Using the production `copyUrlToR2` and `presignGetUrl` implementations against
+the configured staging bucket, Flux task `ac56057b04ea5885c0dfece037d2687f`
+completed a provider download, R2 upload and 60-second signed download. The
+result was HTTP 200, 358375 bytes, JPEG, 1344×1008 pixels. SHA-256:
+`374b9def35c195a83956b82d2cd690f26963856936e72ebdd085527fbe529f4e`.
+The temporary verification object was deleted after the check. No new provider
+generation was purchased for this test. KIE's 1K tier therefore must not be
+described as exactly 1024×1024; the observed 4:3 output is 1344×1008.
+
+This proves the storage adapter round trip, not a deployed gateway job or a
+credit debit/refund. The staging catalogue did not yet contain migration 0159's
+rows. The shared staging Worker was actively being used for Cinema proxy-upload
+and scheduled-cleanup testing in another chat, so it was not redeployed.
+The signed-in gateway → scheduled completion → library download check remains
+pending, followed by a separate guarded production activation migration.
+
+PR #382 merged as `189b81395eefd659b4bf1af5ec48e5ec94e65386`. Its production
+migration run was queued behind an earlier run awaiting approval; no queued
+production migration was approved as part of this storage check.
