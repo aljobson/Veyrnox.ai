@@ -6,9 +6,9 @@ This change enables the master, profile, creator application/content/upload, rec
 
 ## Before merging
 
-- Provision and verify the owner-designated production Cinema administrator with existing Cloudflare Access and fresh TOTP enforcement. Production currently has no Cinema administrator; support@veyrnox.com has verified TOTP, pending owner designation.
+- Verify production browser access with existing Cloudflare Access and fresh TOTP enforcement. The owner designated support@veyrnox.com; PR #371 / migration 0153 provisioned this exact identity through successful apply-migrations run 36403474637. A subsequent production query confirmed role administrator and account_status active. Verified TOTP was a migration prerequisite.
 - Complete submission, independent administrator review, and viewer playback acceptance. Staging creator upload, replacement, automatic removal and scheduled recovery have evidence in the staging operational record; these do not prove publication or the production entitlement path.
-- Confirm production request-body fix PR #368 is deployed and migrations/reconciliation are current.
+- Production request-body fix PR #368 is deployed (run 36402044533 succeeded). Migrations through 0153 are applied; reconciliation reported zero across all four drift counts on 28 September. Recheck freshness at activation.
 
 ## Verification and rollback
 
