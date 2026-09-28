@@ -1,3 +1,4 @@
+import { VIDEO_ENHANCE_ASSET_PATH } from './videoEnhanceAssets.mjs';
 import { FaceLandmarker, FilesetResolver } from '@mediapipe/tasks-vision';
 import { createRenderer } from './videoEnhanceRenderer';
 import { exportEnhancedVideo } from './videoEnhanceExport.mjs';
@@ -8,9 +9,9 @@ export async function createVideoEnhanceEngine(video, canvas, onFrame, onError, 
     // uses next dev's existing policy; a production engine needs a separate ADR.
     if (process.env.NODE_ENV !== 'development') throw new Error('Video Enhance is a local preview only.');
     signal?.throwIfAborted();
-    const files = await FilesetResolver.forVisionTasks('/video-enhance/wasm');
+    const files = await FilesetResolver.forVisionTasks(`${VIDEO_ENHANCE_ASSET_PATH}/wasm`);
     const tracker = await acquireSetupTracker(() => FaceLandmarker.createFromOptions(files, {
-        baseOptions: { modelAssetPath: '/video-enhance/face_landmarker.task', delegate: 'CPU' },
+        baseOptions: { modelAssetPath: `${VIDEO_ENHANCE_ASSET_PATH}/face_landmarker.task`, delegate: 'CPU' },
         runningMode: 'VIDEO', numFaces: 2,
         minFaceDetectionConfidence: 0.6, minFacePresenceConfidence: 0.6, minTrackingConfidence: 0.6,
     }), signal);

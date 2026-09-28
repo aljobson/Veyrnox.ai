@@ -109,6 +109,7 @@ narrow stated contract, not arbitrary container track preservation.
 
 ## Recommended next implementation
 
-With bounded initialization implemented, measure performance and device
-capabilities before writing the engine/asset/CSP deployment ADR. Keep PR #361
-as a draft until the intended release scope and its applicable gates are settled.
+ADR-0065 is proposed, and versioned asset packaging is implemented. Next, add
+explicit decode/encode capability and supported-format preflight, then complete
+device/quality measurements. Delivery headers and production-preview acceptance
+remain pending. Keep PR #361 as a draft until the release gates are settled.

@@ -38,7 +38,8 @@ checking SHA-256 before use. Assets are served from the same local origin and
 ignored by Git. npm records the SDK as Apache-2.0; see the
 [Face Landmarker guide](https://developers.google.com/edge/mediapipe/solutions/vision/face_landmarker/web_js)
 and [model card](https://storage.googleapis.com/mediapipe-assets/Model%20Card%20MediaPipe%20Face%20Mesh%20V2.pdf).
-Keep licensing notices with assets if distributing a future release.
+The build retains SDK license texts and model provenance alongside the assets;
+model terms still require release review.
 
 The browser processes the selected clip without sending it to a provider.
 The initial setup downloads software/model assets only. Export uses pinned
@@ -386,3 +387,31 @@ chosen. No licence purchase, vendor outreach or provider media upload has been
 performed. Browser/device qualification, occlusion handling, export fidelity,
 production CSP, Library persistence and any commercial pricing remain pending.
 The production customer-facing feature is not enabled.
+
+
+## Reproducible asset packaging, 2026-09-28
+
+`npm run build` now runs asset preparation through `prebuild`. The client uses
+`/video-enhance/mediapipe-1.0.1-face-landmarker-1/`. The committed inventory in
+`scripts/video-enhance-assets.json` pins sizes and SHA-256 hashes for the model,
+six runtime files and three license/provenance notices. Installed SDK versions
+must match. A missing model is downloaded from its fixed version URL; a corrupt
+cached model fails closed (remove that generated file explicitly before retrying).
+Runtime bytes are verified before copying. No test footage is packaged.
+
+The generated manifest must exactly match the committed inventory. Both missing
+and unexpected files fail verification. `npm run build:worker` additionally
+verifies the actual `.open-next/assets` output; standalone verification is
+`npm run verify:video-enhance -- .open-next/assets`. The legacy generated model
+and WASM paths are removed after successful preparation to avoid duplicate copies.
+For an asset or notice change, review new hashes and bump the version directory
+and client constant together. Do not rewrite a released version's contents.
+
+This implements ADR-0065's packaging step only. Development guards and CSP remain
+unchanged. Immutable delivery headers, production network checks, model terms,
+device qualification and ADR acceptance remain release gates.
+
+Validation: cold model preparation, all five asset-verifier regression tests,
+833 passing unit tests (one skipped), scoped ESLint and the full
+`npm run build:worker` passed. All ten runtime/notice files were verified in
+`.open-next/assets` against the committed inventory.

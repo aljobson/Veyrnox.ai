@@ -1,20 +1,34 @@
-import { createHash } from 'node:crypto';
-import { mkdir, readFile, writeFile, cp } from 'node:fs/promises';
+import { mkdir, readFile, writeFile, rm } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
+import { dirname } from 'node:path';
+import { root, inventory, verifyBytes, verifyAssets, manifestText } from './video-enhance-assets.mjs';
 
-const root = new URL('../', import.meta.url);
-const target = new URL('public/video-enhance/', root);
-const model = new URL('face_landmarker.task', target);
-const source = 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task';
-const digest = '64184e229b263107bc2b804c6625db1341ff2bb731874b0bcc2fe6544e0bc9ff';
-const hash = bytes => createHash('sha256').update(bytes).digest('hex');
-await mkdir(target, { recursive: true });
-let bytes = await readFile(model).catch(() => null);
-if (!bytes || hash(bytes) !== digest) {
-    const response = await fetch(source, { signal: AbortSignal.timeout(60000) });
-    if (!response.ok) throw new Error(`Model download failed (${response.status})`);
-    bytes = Buffer.from(await response.arrayBuffer());
-    if (hash(bytes) !== digest) throw new Error('Model checksum mismatch');
-    await writeFile(model, bytes);
+for (const [name, version] of Object.entries(inventory.packages)) {
+    const installed = JSON.parse(await readFile(new URL(`node_modules/${name}/package.json`, root), 'utf8'));
+    if (installed.version !== version) throw new Error(`Video Enhance package version mismatch: ${name}`);
 }
-await cp(new URL('node_modules/@mediapipe/tasks-vision/wasm/', root), new URL('wasm/', target), { recursive: true });
-console.log('Local Video Enhance assets ready. Model SHA-256 verified. No media uploaded.');
+const target = new URL(`public/video-enhance/${inventory.version}/`, root);
+for (const file of inventory.files) {
+    const destination = new URL(file.path, target);
+    let bytes;
+    if (file.source.startsWith('https://')) {
+        bytes = await readFile(destination).catch(error => {
+            if (error.code !== 'ENOENT') throw error;
+            return null;
+        });
+        if (!bytes) {
+            const response = await fetch(file.source, { signal: AbortSignal.timeout(60000) });
+            if (!response.ok) throw new Error(`Model download failed (${response.status})`);
+            bytes = Buffer.from(await response.arrayBuffer());
+        }
+    } else bytes = await readFile(new URL(file.source, root));
+    verifyBytes(bytes, file);
+    await mkdir(dirname(fileURLToPath(destination)), { recursive: true });
+    await writeFile(destination, bytes);
+}
+await writeFile(new URL('manifest.json', target), manifestText());
+await verifyAssets(fileURLToPath(new URL('public/', root)));
+// Remove only the generated legacy paths so local caches are not shipped twice.
+await rm(new URL('public/video-enhance/face_landmarker.task', root), { force: true });
+await rm(new URL('public/video-enhance/wasm/', root), { recursive: true, force: true });
+console.log('Video Enhance versioned model, runtime and notices verified.');

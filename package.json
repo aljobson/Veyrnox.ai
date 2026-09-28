@@ -12,7 +12,7 @@
     "start": "next start",
     "lint": "eslint app components lib middleware.js packages/security packages/provider-sdk packages/db/tenant-client.js",
     "setup": "npm install",
-    "build:worker": "npm run build && opennextjs-cloudflare build",
+    "build:worker": "npm run build && opennextjs-cloudflare build && npm run verify:video-enhance -- .open-next/assets",
     "preview": "opennextjs-cloudflare preview",
     "deploy": "opennextjs-cloudflare deploy",
     "migrate": "node scripts/migrate.mjs",
@@ -22,7 +22,9 @@
     "test:ledger": "tsx --test --test-concurrency=1 packages/db/*.test.ts",
     "typecheck": "tsc -p packages/security/tsconfig.json",
     "test:integration": "node scripts/test-tenant-foundation.mjs",
-    "test:security": "node scripts/check-security.mjs"
+    "test:security": "node scripts/check-security.mjs",
+    "prebuild": "npm run prepare:video-enhance",
+    "verify:video-enhance": "node scripts/verify-video-enhance.mjs"
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "1.0.1",
