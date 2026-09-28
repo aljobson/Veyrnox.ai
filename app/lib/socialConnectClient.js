@@ -22,7 +22,11 @@ export const NETWORKS = [
     { key: 'instagram', label: 'Instagram', live: true },
     { key: 'linkedin', label: 'LinkedIn', live: true },
     { key: 'twitter', label: 'X', live: true },
-    { key: 'tiktok', label: 'TikTok', live: false },
+    // `live` only gates the Connect button — it genuinely works for
+    // TikTok (packages/adapters/social/tiktok.js). Publishing does not
+    // yet (that adapter's own header explains why), which only matters
+    // once a composer/scheduling UI exists to promise it.
+    { key: 'tiktok', label: 'TikTok', live: true },
     { key: 'youtube', label: 'YouTube', live: false },
 ];
 
