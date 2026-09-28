@@ -243,8 +243,8 @@ product owner — see Status above. Remaining open items, none of which block st
 implementation but all of which should close before GA:
 
 1. Credit vs. subscription entitlement model for Publish — drafted as
-   [ADR-0062](0062-veyrnox-publish-entitlement-model.md) (Proposed, awaiting sign-off),
-   recommending an independent "Publish Plan" modelled on Cinema Pass (ADR-0057),
+   drafted and now **Accepted** as [ADR-0062](0062-veyrnox-publish-entitlement-model.md):
+   an independent "Publish Plan" modelled on Cinema Pass (ADR-0057),
    never touching the credit ledger.
 2. Confirm current X API v2 posting-tier pricing and TikTok Content Posting API audit
    requirements before the X and TikTok adapters ship — both are flagged above as

@@ -3,9 +3,11 @@
 **Feature:** Native multi-platform social scheduling and publishing ("Veyrnox Publish")
 **Version:** 0.1 (draft)
 **Status:** Accepted via [ADR-0061](../adr/0061-veyrnox-publish-social-scheduling.md)
-(2026-09-28) — build-vs-buy (native adapters) and v1 platform scope both approved by the
-product owner. Implementation may now proceed under that ADR's design; open items are
-tracked in the ADR's "Open questions".
+(2026-09-28) — build-vs-buy (native adapters) and v1 platform scope — and via
+[ADR-0062](../adr/0062-veyrnox-publish-entitlement-model.md) (2026-09-28) — the billing
+mechanism (independent "Publish Plan," never the credit ledger). Both approved by the
+product owner. Implementation may now proceed under these ADRs' designs; open items are
+tracked in each ADR's "Open questions".
 **Audience:** Product, engineering, design
 
 ## Purpose
@@ -66,9 +68,8 @@ should look*.
 ## Non-goals for this pack
 
 - The build-vs-buy and platform-scope ADR ([ADR-0061](../adr/0061-veyrnox-publish-social-scheduling.md))
-  is now Accepted. The billing-mechanism decision is drafted separately as
-  [ADR-0062](../adr/0062-veyrnox-publish-entitlement-model.md) (Proposed, awaiting sign-off):
-  an independent recurring "Publish Plan," modelled on Cinema Pass (ADR-0057), never touching
+  and the billing-mechanism ADR ([ADR-0062](../adr/0062-veyrnox-publish-entitlement-model.md)) are
+  both now Accepted: an independent recurring "Publish Plan," modelled on Cinema Pass (ADR-0057), never touching
   the generation-credit ledger.
 - Exact Metricool pricing tiers are **not** reproduced with invented numbers — the authenticated
   pricing page wasn't reachable, and copying a competitor's price points without a confirmed source

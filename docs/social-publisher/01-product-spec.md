@@ -154,8 +154,7 @@ the technical spec) is proven on the first five.
 
 ## 1.8 Entitlement / plan model
 
-**Now drafted as [ADR-0062](../adr/0062-veyrnox-publish-entitlement-model.md)** (Proposed,
-awaiting product-owner sign-off): an independent "Publish Plan," modelled on the already-Accepted
+**Accepted as [ADR-0062](../adr/0062-veyrnox-publish-entitlement-model.md)**: an independent "Publish Plan," modelled on the already-Accepted
 Cinema Pass pattern (ADR-0057) — a recurring entitlement sold via Stripe Checkout subscription
 mode, never touching the generation-credit ledger, with entitlement derived server-side by RPC.
 This section keeps the original reasoning for context; ADR-0062 is now the source of truth on the
