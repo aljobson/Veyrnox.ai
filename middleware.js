@@ -72,7 +72,7 @@ export async function middleware(req) {
 
     let claims;
     try {
-        claims = await verifyES256(token, supabaseUrl);
+        claims = await verifyES256(token, supabaseUrl, { staticJwks: process.env.SUPABASE_JWKS });
     } catch (err) {
         const reason = (err && err.reason) || 'signature';
         // A JWKS outage is our problem, not the caller's credentials:

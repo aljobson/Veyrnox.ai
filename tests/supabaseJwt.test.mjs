@@ -41,6 +41,14 @@ test('verifyES256: valid token returns payload', async () => {
     assert.equal(payload.sub, 'user-1');
 });
 
+test('verifyES256: a configured static JWKS avoids outbound discovery', async () => {
+    globalThis.fetch = async () => { throw new Error('must not fetch'); };
+    const payload = await verifyES256(await sign(key, claims()), SUPABASE_URL, {
+        staticJwks: JSON.stringify({ keys: [key.jwk] }),
+    });
+    assert.equal(payload.sub, 'user-1');
+});
+
 test('verifyES256: signed by a different key → signature', async () => {
     stubJwks([key]);
     const other = await makeKey('k1');
