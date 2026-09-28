@@ -159,6 +159,10 @@
   //                               X (Twitter) OAuth connect/callback + v2 media upload/tweet
   //                               calls (packages/adapters/social/twitter.js, ADR-0061). Not
   //                               yet provisioned.
+  //   TIKTOK_CLIENT_KEY, TIKTOK_CLIENT_SECRET
+  //                               TikTok OAuth connect/callback (packages/adapters/social/
+  //                               tiktok.js, ADR-0061). Connect only — no publish path yet
+  //                               (see that file's own header). Not yet provisioned.
   //   SOCIAL_OAUTH_STATE_SECRET   signs the OAuth `state` token (lib/social/oauthState.js, ADR-0061
   //                               §2.7) — this app is cookie-free, so state carries its own HMAC
   //                               binding instead of server-side session storage
