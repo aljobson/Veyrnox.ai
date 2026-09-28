@@ -300,6 +300,17 @@ unreadable media. Ten scoped tests, scoped ESLint, production build and whitespa
 checks passed.
 No Opus fidelity limitation was relaxed.
 
+### Export checker regression coverage
+
+The checker also compares audio sample rate and channel count before comparing
+PCM bytes, so matching samples with different playback settings cannot pass.
+`node --test tests/videoEnhanceExportCheck.test.mjs tests/videoEnhance.test.mjs`
+passed all 17 tests locally. Synthetic media checks accept unchanged media and
+reject missing audio, changed sample rate, changed channels, changed samples and
+a dropped video frame. Fixtures are created in a temporary directory and removed
+afterward. The media regression test explicitly skips if ffmpeg/ffprobe are absent.
+These tests validate the checker, not moving-face quality or browser compatibility.
+
 ### Remaining gates
 
 Representative owned/consented moving footage is still needed for the full

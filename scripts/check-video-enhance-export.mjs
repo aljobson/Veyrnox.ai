@@ -7,7 +7,7 @@ const [source, result] = process.argv.slice(2);
 if (!source || !result) throw new Error('Usage: node scripts/check-video-enhance-export.mjs <source> <export>');
 const probe = file => JSON.parse(execFileSync('ffprobe', [
     '-v', 'error', '-show_streams', '-show_frames',
-    '-show_entries', 'stream=codec_type,start_time,duration:frame=media_type,best_effort_timestamp_time,duration_time',
+    '-show_entries', 'stream=codec_type,start_time,duration,sample_rate,channels:frame=media_type,best_effort_timestamp_time,duration_time',
     '-of', 'json', file,
 ], { maxBuffer: 32 * 1024 * 1024 }));
 const before = probe(source), after = probe(result);
@@ -21,6 +21,10 @@ assert.equal(after.streams.length, before.streams.length, 'No source track may d
 for (const original of before.streams) {
     const exported = after.streams.find(stream => stream.codec_type === original.codec_type);
     assert.ok(exported, `Missing ${original.codec_type} track`);
+    if (original.codec_type === 'audio') {
+        assert.equal(exported.sample_rate, original.sample_rate, 'Audio sample rate changed');
+        assert.equal(exported.channels, original.channels, 'Audio channel count changed');
+    }
     if (original.codec_type === 'video') {
         const duration = (data, stream) => {
             if (Number.isFinite(Number(stream.duration))) return Number(stream.duration);
