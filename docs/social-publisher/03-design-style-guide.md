@@ -179,3 +179,111 @@ directly modeled on Metricool's own heatmap-derived suggestion, restyled into th
   a dedicated "Reschedule" menu action provides a non-drag path to the same result as drag-and-drop.
 - Composer's live preview pane is `aria-live="polite"` only for validation errors, not for every
   keystroke, to avoid screen-reader noise while typing a caption.
+
+## 3.8 Authenticated app — verified live (2026-09-28 update)
+
+The rest of this document was originally written from syntx.ai's **logged-out marketing site**
+only, with an explicit caveat that the in-app screens weren't reachable (cookie import into the
+automated browser didn't carry the session — likely a token-in-localStorage SPA auth, not a
+readable cookie; logged as a durable learning). The user then logged into syntx.ai themselves in
+the built-in browser pane and this session drove that already-authenticated tab directly — this
+section is real, not inferred, and supersedes any earlier guess at the in-app nav.
+
+### Real primary navigation
+
+Triggered by a four-dot grid icon in the top-right header (distinct from the hamburger icon, which
+opens a secondary utility menu — Home/Academy/Contest/FAQ/Status Page/Support/Language). Seven
+items, each with its own icon, current section highlighted in the accent orange:
+
+| Item | Icon | Route | Purpose |
+|---|---|---|---|
+| Trends | flame, "New" badge | `/trends` | Template gallery (see below) |
+| Agents | robot | `/agent` | Persistent custom agents with memory/browsing/tool access |
+| LLM Studio | sparkle | `/text` | Chat interface across providers |
+| Image | image+sparkle | `/image` | Image generation |
+| Video | clapperboard+sparkle | `/video` | Video generation |
+| Audio | note+sparkle | `/audio` | Music/audio generation |
+| Toolkit | pencil | `/tool` | Enhance/upscale/edit tools (not generation from scratch) |
+
+This is a materially richer taxonomy than the marketing site's `Trends · Pricing · Tools · FAQ`
+header — "Tools" on the marketing site collapses what the app actually splits into five distinct
+top-level areas (Agents, LLM Studio, Image, Video, Audio) plus a sixth for post-processing
+(Toolkit). Veyrnox Publish's own nav doesn't need this many top-level items, but the **split between
+"create from scratch" and "edit/enhance existing"** (Image/Video/Audio vs. Toolkit) is a pattern
+worth carrying into Veyrnox's own generation surfaces even outside Publish.
+
+### Verified component patterns (transferable to Veyrnox's composer, not just Publish)
+
+- **Two-tier model picker.** Every generation tool (`/text`, `/image`, `/video`, `/audio`) opens a
+  provider dropdown (e.g. "ChatGPT") plus a model sub-dropdown (e.g. "GPT 6 Luna"), with a
+  first-use inline tooltip ("Here you can choose the AI and its model. ✕"). A **"Model filter"**
+  row above it lets the user filter the whole list by cost tier — `Free ∞ / Low ●○○ / Medium ●●○ /
+  High ●●●` pill buttons with a dot-strength indicator, plus a `Reset` link. This is directly
+  analogous to a "select network + select post type" step in Veyrnox Publish's composer, and the
+  cost-tier filter is a pattern worth reusing for Veyrnox's own model picker generally.
+- **Per-tool composer bottom bar**, consistent shape across Image/Video/Audio/Toolkit but with
+  tool-specific option pills inline before the send button: attach (clip icon), aspect ratio pill
+  (`9:16`), resolution pill (`1K` / `720`), duration pill (`5.0s`), settings gear, an "enhance
+  prompt" sparkle icon, mic (voice input), and a **cost badge** (`25 ⚡`) directly on the send
+  button showing the token cost of the current configuration before generating — cost is always
+  visible, never a surprise at submit time.
+- **Inline real-time validation** inside the picker itself, not just at submit: switching Kling to
+  "Image to Video" mode immediately shows red text ("There should be 1 image in this mode") right
+  under the mode dropdown. Veyrnox Publish's per-network validation (technical spec §2.4) should
+  surface the same way — inline, at the point of the mismatched selection, not deferred to a
+  submit-time toast.
+- **"Select from uploaded / Select from the generated."** The Toolkit's image-editing tool
+  (`/tool/image-inpaint/banana_inpaint`) offers a drag-and-drop upload zone plus two buttons:
+  "Select from uploaded" and "Select from the generated" — i.e., pick from your own past output.
+  This is the exact pattern Veyrnox Publish's composer already specifies for sourcing media
+  (technical spec §2.2 `social_post_media.source_job_id`, user-flows §4.3's Generate→Schedule
+  handoff) — seeing it live, shipped, in a directly comparable product is good validation that the
+  pattern is right, not just theoretically sound.
+- **Trend template modal.** Clicking a Trends grid card opens a full-bleed preview (image/video)
+  with `Close ✕` top-left, a download icon and a primary **"✦ Use this template"** button bottom
+  bar. "Use this template" presumably opens the composer pre-filled with that trend's prompt —
+  structurally the same as Publish's own best-time-to-post chip pattern (§3.4 above): a
+  recommendation surface that, on click, pre-fills the next step rather than just informing.
+- **Account/profile page** (`/user/profile`): avatar + name + email, a `Subscription` card showing
+  the current plan name and a `Buy subscription` CTA, a token balance with a lightning-bolt icon,
+  a `Plan usage limits` card with **two progress bars** (Current session / Weekly) each showing
+  "Not started" / "X% used" and a relative-time "Last updated" stamp with a manual refresh icon,
+  a plan-benefits list, and a `Referrals` card (Partner Tokens balance, Available Funds balance,
+  a copyable referral link). The session-vs-weekly dual rate-limit display is a pattern worth
+  considering for Veyrnox's own rate-limited surfaces.
+- **Pricing modal** (opened from `Buy subscription`, not a separate marketing page): a swipeable
+  card carousel with dot pagination, an `Annual (-15%) / Monthly` toggle above the cards, and one
+  card per tier showing plan name (display font), price, a token-count bar, a feature bullet list,
+  and a `Buy subscription` CTA. Real, live (authenticated) monthly pricing observed 2026-09-28,
+  **noted here for competitive awareness only — not to be copied into Veyrnox's own pricing**, and
+  materially different from the logged-out marketing page's numbers seen earlier in this pack:
+
+  | Plan | Price/mo | Tokens/mo |
+  |---|---|---|
+  | Basic | $9.41 | 260 |
+  | Pro | $17.96 | 680 |
+  | VIP | $43.61 | 1,700 |
+  | Elite | $65.46 | 2,600 |
+  | Ultra Elite | $125.40 | 3,000 |
+
+- **Generation feed** (`/user/feed`, i.e. their Library): filter chips by media type
+  (Text/Image/Video/Audio), a list/grid view toggle (two icon buttons, top-right), and an empty
+  state (sparkle icon, "There's nothing here yet," a `+ Create` CTA) — directly comparable to
+  Veyrnox's own existing Library and worth a straight comparison pass if Veyrnox's Library doesn't
+  already have type filters and a view-density toggle.
+- **Notifications panel**: a dropdown (not a full page) with `Mark all as read`, one card per
+  update (thumbnail or icon, bold title, one-line description, date, trailing arrow), unread items
+  marked with a small red dot rather than bold text or a background tint.
+- **404 page**: on-brand rather than generic — big gradient background, oversized ghost-logo mark,
+  "Error 404 / Page not found" in the display font, a row of quick-link pills to popular models, and
+  a single `Home` button. Worth matching this level of polish on Veyrnox's own 404 rather than a
+  bare error page.
+
+### Theme note
+
+The authenticated `/trends` page renders in a **dark theme** (near-black `#0D0908`-range background,
+cream text) — a contrast with the light-cream theme everywhere else observed (marketing site, other
+in-app tool pages, profile, pricing modal). This may be a deliberate "immersive gallery" treatment
+specific to the trends/template browsing surface rather than a general dark-mode toggle; no
+dark-mode switch was found in settings during this pass. Worth confirming with a longer session
+before assuming it's the exception rather than evidence of a broader dark variant not yet found.

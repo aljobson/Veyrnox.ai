@@ -39,8 +39,13 @@ should look*.
   see Open Questions). Screenshots of `metricool.com` marketing pages were captured for palette and
   layout-pattern reference only.
 - **syntx.ai** — crawled the public marketing site (home, pricing, trends, tools) for visual design
-  tokens: color palette, typography, spacing, component shapes. The in-app generation screens are
-  gated behind login and were not accessed.
+  tokens: color palette, typography, spacing, component shapes. The in-app generation screens were
+  initially not reachable (cookie import into the automated browser didn't carry the session — same
+  token-in-localStorage pattern as Metricool). The user then logged into syntx.ai themselves in the
+  Claude Code desktop app's built-in browser pane, and this session drove that already-authenticated
+  tab directly — see [03-design-style-guide.md §3.8](03-design-style-guide.md#38-authenticated-app--verified-live-2026-09-28-update)
+  for the full in-app nav, component patterns, and real (live, authenticated) pricing, all captured
+  2026-09-28.
 
 ## Documents
 
