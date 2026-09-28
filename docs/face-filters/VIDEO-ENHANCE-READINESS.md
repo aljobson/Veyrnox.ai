@@ -77,6 +77,21 @@ repeated-run variance, high-frame-rate sources or mobile/Safari/Firefox behaviou
 Duration and resolution vary together here, so the measurements cannot isolate
 resolution scaling. A complete performance gate remains open.
 
+## Cancellation and retry observation, 2026-09-28
+
+Using the same loaded 15-second 1080p fixture at Natural / 30% smoothing,
+started export and cancelled it while running. The cancellation message appeared
+and Export re-enabled in 0.306 seconds measured from the automation click;
+no Download MP4 link remained. A fresh export on the same engine then completed
+in 10.580 seconds. Its downloaded output passed the checker: 375 frames,
+timestamps/duration within 1 ms and no audio added.
+
+This is one successful cancellation/retry observation, not a worst-case latency
+bound. The retry was substantially faster than the prior 17.220-second run,
+underscoring warm-up/system-load variability and the need for repeated controlled
+measurements before setting a performance target. Peak memory and cancellation
+during a long synchronous inference step remain unmeasured.
+
 ## Recommended next implementation
 
 With bounded initialization implemented, measure performance and device
