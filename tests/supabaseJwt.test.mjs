@@ -44,11 +44,12 @@ test('verifyES256: valid token returns payload', async () => {
 test('verifyES256: sends a configured publishable API key on JWKS fetches', async () => {
     let seen;
     globalThis.fetch = async (_url, init) => {
-        seen = new Headers(init?.headers).get('apikey');
+        const headers = new Headers(init?.headers);
+        seen = { apiKey: headers.get('apikey'), authorization: headers.get('authorization'), userAgent: headers.get('user-agent') };
         return new Response(JSON.stringify({ keys: [key.jwk] }));
     };
     await verifyES256(await sign(key, claims()), SUPABASE_URL, { apiKey: 'public-test-key' });
-    assert.equal(seen, 'public-test-key');
+    assert.deepEqual(seen, { apiKey: 'public-test-key', authorization: 'Bearer public-test-key', userAgent: 'Veyrnox-Auth/1.0' });
 });
 
 test('verifyES256: signed by a different key → signature', async () => {
