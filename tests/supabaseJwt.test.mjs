@@ -41,6 +41,16 @@ test('verifyES256: valid token returns payload', async () => {
     assert.equal(payload.sub, 'user-1');
 });
 
+test('verifyES256: sends a configured publishable API key on JWKS fetches', async () => {
+    let seen;
+    globalThis.fetch = async (_url, init) => {
+        seen = new Headers(init?.headers).get('apikey');
+        return new Response(JSON.stringify({ keys: [key.jwk] }));
+    };
+    await verifyES256(await sign(key, claims()), SUPABASE_URL, { apiKey: 'public-test-key' });
+    assert.equal(seen, 'public-test-key');
+});
+
 test('verifyES256: signed by a different key → signature', async () => {
     stubJwks([key]);
     const other = await makeKey('k1');
