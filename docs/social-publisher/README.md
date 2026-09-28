@@ -64,6 +64,11 @@ should look*.
 5. [Security Baseline](05-security-baseline.md) — maps the design to OWASP (Top 10 + API Security
    Top 10), NIST CSF 2.0, ISO/IEC 27001 Annex A and NCSC guidance (Cloud Security Principles, OAuth
    guidance), with explicit gaps named rather than implied coverage.
+6. [OAuth App Review Runbook](06-oauth-review-runbook.md) — prep steps, scopes, and submission
+   requirements for Meta, TikTok and YouTube's developer/app-review processes (plus an X/LinkedIn
+   appendix), sequenced against what needs a working composer first vs. what can start today. Stops
+   short of actual account creation and submission — those need a human with real business
+   credentials, not an agent.
 
 ## Non-goals for this pack
 
