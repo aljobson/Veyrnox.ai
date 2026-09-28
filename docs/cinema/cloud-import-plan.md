@@ -98,7 +98,8 @@ A separate web OAuth client, **Veyrnox Cinema Drive — Staging**, was created:
 - Browser origin: `https://veyrnox-ai-staging.al-jobson.workers.dev`
 - Reserved callback: `https://veyrnox-ai-staging.al-jobson.workers.dev/api/v1/social-cinema/cloud/google_drive/callback`
 - Google Drive API: enabled and verified in the console.
-- Google Picker API: awaiting acceptance of the displayed Google APIs terms.
+- Google Picker API: enabled and verified in the console; owner approved the
+  displayed Google APIs terms on 28 September 2026.
 - Restricted Picker browser API key: not yet created.
 
 The client secret is held outside the repository in an owner-readable local
