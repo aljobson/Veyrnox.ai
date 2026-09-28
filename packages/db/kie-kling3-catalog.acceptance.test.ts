@@ -52,7 +52,7 @@ test('Kling activation is replay-safe, preserves other models and refuses missin
             const read = (name: string) => readFile(new URL(`./schema/supabase/${name}`, import.meta.url), 'utf8');
             await db.query(await read('0029_cost_unit_and_deactivate_seedance.sql'));
             await db.query("DELETE FROM public.model_catalog WHERE id = 'kling-3.0-i2v-kie'");
-            const activation = await read('0154_kie_kling3_i2v_activation.sql');
+            const activation = await read('0155_kie_kling3_i2v_activation.sql');
             await db.query('SAVEPOINT missing_candidate');
             await assert.rejects(db.query(activation), /Expected one verified kie Kling 3.0 row/);
             await db.query('ROLLBACK TO SAVEPOINT missing_candidate');

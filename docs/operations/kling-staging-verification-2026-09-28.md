@@ -95,9 +95,9 @@ Supplier purchase cost was verified below; the protected production activation
 workflow remains a separate launch step.
 Production database and model activation were not changed.
 
-## Production activation proposal (0154)
+## Production activation proposal (0155)
 
-Migration `0154_kie_kling3_i2v_activation.sql` enables only this candidate after
+Migration `0155_kie_kling3_i2v_activation.sql` enables only this candidate after
 checking its provider, endpoint, modality, price, cost, billing unit and gating
 flag. It changes neither the fal option nor presets, fallbacks or Credit Packs.
 Replay is safe; a missing or repriced candidate raises an exception.
