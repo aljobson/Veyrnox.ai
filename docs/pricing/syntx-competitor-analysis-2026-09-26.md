@@ -216,3 +216,29 @@ passes roughly $700 per six months, and expect at most 10%.
 - Their tariffs endpoint is public and changes weekly. It is a cheap live
   benchmark to add alongside the catalog watcher. Endpoints are listed in
   `syntx-2026-09-26.json`.
+
+## Addendum 2026-09-28 — live authenticated cross-validation and full model catalog
+
+A later session logged into syntx.ai (the user's own account) and read the live, authenticated
+pricing modal directly (USD, monthly), rather than the tariffs API used above (EUR). Same five
+tiers, same token counts, confirming the tariffs-API numbers above are still live and not stale:
+
+| Plan | EUR (tariffs API) | ×1.15 (this doc's FX assumption) | USD (live, authenticated) | Delta |
+|---|---:|---:|---:|---:|
+| Basic | €8.90 | $10.23 | $9.41 | +8.8% |
+| Pro | €16.90 | $19.43 | $17.96 | +8.2% |
+| VIP | €39.90 | $45.88 | $43.61 | +5.2% |
+| Elite | €59.90 | $68.88 | $65.46 | +5.2% |
+| Ultra Elite | €119.00 | $136.85 | $125.40 | +9.1% |
+
+This doc's 1.15 EUR:USD assumption consistently **overstates** the live USD price by 5–9% — the
+actual displayed-price ratio is closer to ~1.05–1.09, not 1.15. Worth using the lower ratio in any
+future USD conversion from this doc's EUR figures; the underlying token/feature numbers themselves
+are unaffected and remain accurate.
+
+That same session also enumerated syntx.ai's full authenticated model catalog — 41 distinct
+provider integrations across Image (10), Video (13), Audio (3), LLM Studio (8) and Toolkit (7),
+plus a plan-gated Agents feature (0 allowed on Free) — with per-model descriptions and composer
+controls. This is a product-surface inventory, not a pricing one, so it lives in
+`docs/social-publisher/03-design-style-guide.md` §3.9 rather than here; cross-referenced for anyone
+using this doc who also wants the full model list.
