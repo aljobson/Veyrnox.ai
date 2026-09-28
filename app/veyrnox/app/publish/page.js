@@ -1,0 +1,145 @@
+'use client';
+import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
+import { AppNav } from '../../_components/NavBar';
+import { ConfirmDialog } from '../../_components/ConfirmDialog';
+import { getSession, onSessionChange } from '../../../lib/authClient';
+import {
+  NETWORKS, listSocialAccounts, connectInstagram, disconnectSocialAccount,
+} from '../../../lib/socialConnectClient';
+
+const currentAccount = () => getSession()?.user?.id || '';
+const noAccount = () => '';
+const button = 'rounded-full border border-vx-border px-4 py-2 text-sm font-bold disabled:opacity-50';
+
+export default function Publish() {
+  const account = useSyncExternalStore(onSessionChange, currentAccount, noAccount);
+  return <><AppNav /><main className="max-w-[900px] mx-auto px-4 sm:px-8 py-10">
+    <h1 className="text-3xl font-black mb-2">Veyrnox Publish</h1>
+    <p className="text-sm text-vx-fg-muted mb-6">Connect your social accounts to schedule posts from Veyrnox.</p>
+    {account ? <PublishControls key={account} /> : <div className="text-vx-fg-body">
+      <p className="mb-4">Sign in to connect a social account.</p>
+      <button type="button" className={button} onClick={() => window.dispatchEvent(new CustomEvent('veyrnox:auth-required'))}>Sign in</button>
+    </div>}
+  </main></>;
+}
+
+function PublishControls() {
+  const [accounts, setAccounts] = useState(null);
+  const [loadError, setLoadError] = useState('');
+  const [connecting, setConnecting] = useState(false);
+  const [connectError, setConnectError] = useState('');
+  const [disconnecting, setDisconnecting] = useState(null);
+  const [confirmDisconnect, setConfirmDisconnect] = useState(null);
+
+  const load = useCallback(async () => {
+    setLoadError('');
+    try {
+      const res = await listSocialAccounts();
+      setAccounts(res.accounts || []);
+    } catch {
+      setLoadError('Could not load your connected accounts. Check your connection and try again.');
+    }
+  }, []);
+  useEffect(() => { load(); }, [load]);
+
+  async function onConnectInstagram() {
+    setConnecting(true); setConnectError('');
+    try {
+      await connectInstagram(); // navigates away on success; only returns on failure
+    } catch {
+      setConnectError('Could not start connecting Instagram. Check your connection and try again.');
+      setConnecting(false);
+    }
+  }
+
+  async function onDisconnect(accountId) {
+    setConfirmDisconnect(null);
+    setDisconnecting(accountId);
+    try {
+      await disconnectSocialAccount(accountId);
+      await load();
+    } catch {
+      setLoadError('Could not disconnect that account. Try again.');
+    } finally {
+      setDisconnecting(null);
+    }
+  }
+
+  const byNetwork = new Map((accounts || []).map((a) => [a.network, a]));
+
+  return <div className="space-y-6">
+    <section className="rounded-2xl border border-vx-border p-5">
+      <h2 className="font-bold mb-4">Connected accounts</h2>
+      {accounts === null && !loadError && <p className="text-sm text-vx-fg-muted">Loading…</p>}
+      {loadError && <p role="alert" className="text-sm text-vx-danger mb-3">{loadError}</p>}
+      {accounts !== null && accounts.length === 0 && !loadError && (
+        <p className="text-sm text-vx-fg-muted">No accounts connected yet.</p>
+      )}
+      <ul className="space-y-3">
+        {(accounts || []).map((a) => (
+          <li key={a.id} className="flex items-center justify-between gap-3 rounded-xl border border-vx-border p-3">
+            <div className="flex items-center gap-3 min-w-0">
+              {a.avatar_url
+                ? <img src={a.avatar_url} alt="" className="h-9 w-9 rounded-full shrink-0" />
+                : <span aria-hidden="true" className="flex h-9 w-9 items-center justify-center rounded-full bg-vx-panel text-vx-fg-muted text-xs font-bold shrink-0">
+                    {networkLabel(a.network)[0]}
+                  </span>}
+              <div className="min-w-0">
+                <div className="text-sm font-bold text-vx-fg truncate">{a.display_name || a.external_account_id}</div>
+                <div className="text-xs text-vx-fg-muted">{networkLabel(a.network)} · {a.status}</div>
+              </div>
+            </div>
+            <button
+              type="button"
+              disabled={disconnecting === a.id}
+              className={button}
+              onClick={() => setConfirmDisconnect(a)}
+            >
+              {disconnecting === a.id ? 'Disconnecting…' : 'Disconnect'}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </section>
+
+    <section className="rounded-2xl border border-vx-border p-5">
+      <h2 className="font-bold mb-1">Connect an account</h2>
+      <p className="text-sm text-vx-fg-muted mb-4">Instagram publishing is live. The rest are on the way.</p>
+      {connectError && <p role="alert" className="text-sm text-vx-danger mb-3">{connectError}</p>}
+      <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {NETWORKS.map((n) => {
+          const connected = byNetwork.get(n.key);
+          return (
+            <li key={n.key} className="flex items-center justify-between gap-3 rounded-xl border border-vx-border p-3">
+              <span className="text-sm font-bold text-vx-fg">{n.label}</span>
+              {n.key === 'instagram' ? (
+                connected
+                  ? <span className="text-xs font-bold text-vx-accent">Connected</span>
+                  : <button type="button" disabled={connecting} className={button} onClick={onConnectInstagram}>
+                      {connecting ? 'Connecting…' : 'Connect'}
+                    </button>
+              ) : (
+                <span className="text-xs font-semibold text-vx-fg-muted rounded-full border border-vx-border px-3 py-1">Coming soon</span>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+
+    {confirmDisconnect && (
+      <ConfirmDialog
+        title={`Disconnect ${confirmDisconnect.display_name || networkLabel(confirmDisconnect.network)}?`}
+        body="Scheduled posts to this account will stop going out. You can reconnect it any time."
+        confirmLabel="Disconnect"
+        tone="danger"
+        onCancel={() => setConfirmDisconnect(null)}
+        onConfirm={() => onDisconnect(confirmDisconnect.id)}
+      />
+    )}
+  </div>;
+}
+
+function networkLabel(key) {
+  return NETWORKS.find((n) => n.key === key)?.label || key;
+}
