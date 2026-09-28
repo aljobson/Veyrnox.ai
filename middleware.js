@@ -72,7 +72,7 @@ export async function middleware(req) {
 
     let claims;
     try {
-        claims = await verifyES256(token, supabaseUrl, { apiKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY });
+        claims = await verifyES256(token, supabaseUrl);
     } catch (err) {
         const reason = (err && err.reason) || 'signature';
         // A JWKS outage is our problem, not the caller's credentials:

@@ -99,6 +99,7 @@
   "env": {
     "staging": {
       "name": "veyrnox-ai-staging",
+      "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
       // Recovery and removal of Cinema uploads run from the cron; the other
       // scheduled tasks skip on staging because their secrets are not set.
       "ratelimits": [{
