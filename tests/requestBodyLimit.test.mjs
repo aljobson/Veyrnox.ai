@@ -25,3 +25,19 @@ test('a client that stalls after opening its body receives 408', async () => {
     const result = await limitRequestBody(request(new ReadableStream({})), 20);
     assert.equal(result.response.status, 408);
 });
+
+test('framework request wrappers retain body and authentication headers', async () => {
+    const original = request('{"username":"staging_test"}', '/api/v1/social-cinema/profile', {
+        authorization: 'Bearer synthetic', 'content-type': 'application/json', 'idempotency-key': 'synthetic',
+    });
+    // A framework wrapper exposes Fetch fields without the native Request brand.
+    const wrapper = Object.fromEntries(['url', 'method', 'headers', 'body', 'redirect', 'signal']
+        .map(key => [key, original[key]]));
+    const result = await limitRequestBody(wrapper);
+    assert.equal(result.response, undefined);
+    assert.equal(result.request.url, original.url);
+    assert.equal(result.request.method, 'POST');
+    assert.equal(result.request.headers.get('authorization'), 'Bearer synthetic');
+    assert.equal(result.request.headers.get('idempotency-key'), 'synthetic');
+    assert.deepEqual(await result.request.json(), { username: 'staging_test' });
+});
