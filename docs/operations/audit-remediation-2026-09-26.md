@@ -359,3 +359,14 @@ the deployed creator bundle; its local preview opt-in was absent in that browser
 session, so no authenticated upload action was attempted. Production Worker,
 production Supabase, the two unrelated databases, flags and secrets were not
 changed.
+
+### Server-mediated live-test switch — 28 September
+
+Replaced the compile-time containment constant with
+`CINEMA_PROXY_UPLOADS_ENABLED`, explicitly false in production and true only in
+the staging environment. Server API creation, transfer routing, scheduled
+removal and creator controls all fail closed when the switch is absent or not
+exactly `true`. The creator page passes the server-evaluated value into the
+client; the client does not infer rollout state from browser storage. Provider
+grants remain redacted in both states. Unit coverage verifies the held and
+enabled paths before the controlled staging lifecycle test.

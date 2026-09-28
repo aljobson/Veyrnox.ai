@@ -21,6 +21,11 @@ test('safety hold never deletes, finalizes or releases removal capacity',async()
  assert.equal((await removeCinemaUploads({},deps)).skipped,'disabled');
  assert.deepEqual(await removeCinemaUploads(env,deps),{ok:false,checked:0,removed:0,failed:0,blocked:'upload_revocation_unverified'});
 });
+test('staging proxy switch deletes only a claimed server-mediated upload and then finalizes it',async()=>{
+ const calls=[],enabled={...env,CINEMA_PROXY_UPLOADS_ENABLED:'true'};
+ const result=await removeCinemaUploads(enabled,{rpcCall:async(name,args)=>{calls.push({name,args});return name==='claim_cinema_upload_removals'?{items:[{id,stream_uid:uid}]}:{ok:true};},removeVideo:async(value,config)=>{assert.equal(value,uid);assert.equal(config.account,cfg.account);return {ok:true};}});
+ assert.deepEqual(result,{ok:true,checked:1,removed:1,failed:0});assert.deepEqual(calls.map(call=>call.name),['claim_cinema_upload_removals','finish_cinema_upload_removal']);
+});
 test('removal requires identity, exact upload ID, quota and current database ownership',async()=>{
  const calls=[];let denied=false;
  const handler=uploadHandler({action:'remove',rpcCall:async(name,args)=>{calls.push({name,args});if(name==='consume_account_read_request')return {ok:true};if(name==='request_cinema_upload_removal')return denied?{error:'upload_not_allowed'}:{ok:true};return {upload:{id,content_id:id,state:'deleting'}};}});

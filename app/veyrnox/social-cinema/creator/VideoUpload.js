@@ -4,8 +4,8 @@ import { gatewayFetch } from '../../_lib/gateway';
 import { Button } from '../../_components/Button';
 import { uploadProxyChunks } from './proxyUpload';
 import { fileFingerprint } from './tusUpload';
-import { MAX_UPLOAD_BYTES, DIRECT_UPLOAD_SAFETY_HOLD } from '../../../../lib/cinema/uploadPolicy';
-export function VideoUpload({content,onClose}) {
+import { MAX_UPLOAD_BYTES } from '../../../../lib/cinema/uploadPolicy';
+export function VideoUpload({content,proxyUploadsEnabled=false,onClose}) {
   const [upload,setUpload]=useState(null),[state,setState]=useState('loading'),[error,setError]=useState(''),[progress,setProgress]=useState(0);
   const [confirmRemoval,setConfirmRemoval]=useState(false);
   const file=useRef(null),controller=useRef(null),active=useRef(true),attempt=useRef(null);
@@ -50,13 +50,13 @@ export function VideoUpload({content,onClose}) {
     } catch(e){if(active.current&&controller.current===operation){setState('ready');setError(e.name==='AbortError'?'Upload paused. Select the same file and resume.':e.message==='different_file'?'Select the original file to resume. Remove the current video before uploading a replacement.':copy(e.code));}}
   }
   const busy=state==='uploading'||state==='removing';
-  const status=upload?({provisioning:'The upload reservation is being prepared. If it stays here, contact support; creating another reservation will not help.',uploading:DIRECT_UPLOAD_SAFETY_HOLD?'This upload is paused while we resolve an upload security issue.':'Ready to upload or resume the original file.',processing:'Video received. Stream is processing it.',ready:'Video processing is complete. It remains private and has not been reviewed or published.',error:'The video could not be accepted. Remove it before uploading a replacement.',expired:'The upload window has expired. Remove this video before starting again.',deleting:'Removal requested. Your draft is safe. Removal is awaiting verification; replacement remains unavailable.'})[upload.state]: 'Attach a video to this private draft.';
+  const status=upload?({provisioning:'The upload reservation is being prepared. If it stays here, contact support; creating another reservation will not help.',uploading:proxyUploadsEnabled?'Ready to upload or resume the original file.':'This upload is paused while we resolve an upload security issue.',processing:'Video received. Stream is processing it.',ready:'Video processing is complete. It remains private and has not been reviewed or published.',error:'The video could not be accepted. Remove it before uploading a replacement.',expired:'The upload window has expired. Remove this video before starting again.',deleting:'Removal requested. Your draft is safe. Removal is awaiting verification; replacement remains unavailable.'})[upload.state]: 'Attach a video to this private draft.';
   return <section className="mt-6 max-w-2xl space-y-5" aria-labelledby="video-upload-title">
     <h3 id="video-upload-title" className="break-words text-xl font-bold">Video for {content.title}</h3>
     <p className="text-sm text-vx-fg-body">Up to 2 GiB and 10 minutes. Uploads remain private. You can pause and resume with the same file within one hour.</p>
     {state==='loading'?<p role="status">Loading upload status…</p>:<p role="status">{status}</p>}
-    {DIRECT_UPLOAD_SAFETY_HOLD&&<p role="status">Video uploads and replacements are temporarily paused while we resolve an upload security issue. Your private drafts are safe.</p>}
-    {!DIRECT_UPLOAD_SAFETY_HOLD&&state!=='loading'&&state!=='blocked'&&!confirmRemoval&&(!upload||upload.state==='uploading')&&<form onSubmit={send} className="space-y-4">
+    {!proxyUploadsEnabled&&<p role="status">Video uploads and replacements are temporarily paused while we resolve an upload security issue. Your private drafts are safe.</p>}
+    {proxyUploadsEnabled&&state!=='loading'&&state!=='blocked'&&!confirmRemoval&&(!upload||upload.state==='uploading')&&<form onSubmit={send} className="space-y-4">
       <label className="block font-semibold" htmlFor="cinema-video-file">Video file<input id="cinema-video-file" ref={file} type="file" accept="video/mp4,video/webm,video/quicktime" required disabled={busy} className="mt-2 block w-full min-w-0 rounded-xl border border-vx-border p-3 text-sm" /></label>
       <progress aria-label="Video upload progress" value={progress} max={100} className="w-full accent-vx-accent" /><p className="text-sm" aria-live="polite">{progress}% uploaded</p>
       <div className="flex flex-wrap gap-3"><Button type="submit" disabled={busy}>{busy?'Uploading…':upload?'Resume upload':'Upload video'}</Button>{busy&&<Button type="button" variant="ghost" onClick={()=>{controller.current?.abort();setState('ready');setError('Upload paused. Select the same file and resume.');}}>Pause</Button>}</div>
@@ -64,7 +64,7 @@ export function VideoUpload({content,onClose}) {
     {confirmRemoval&&<div role="group" aria-labelledby="remove-video-title" className="space-y-3 rounded-xl border border-vx-border p-4">
       <h4 id="remove-video-title" className="font-semibold">Remove this video?</h4>
       <p className="text-sm text-vx-fg-body">This requests permanent removal of the attached video. Your draft, title and description stay. Removal cannot be undone; keep your original file if you want to upload it again.</p>
-      {DIRECT_UPLOAD_SAFETY_HOLD&&<p>Removal will remain pending until verification is complete.</p>}
+      {!proxyUploadsEnabled&&<p>Removal will remain pending until verification is complete.</p>}
       <div className="flex flex-wrap gap-3"><Button ref={keepButton} variant="ghost" disabled={busy} onClick={()=>{setConfirmRemoval(false);removeButton.current?.focus();}}>Keep video</Button><Button variant="danger" disabled={busy} onClick={remove}>{state==='removing'?'Requesting removal…':'Remove video permanently'}</Button></div>
     </div>}
     {error&&<p role="alert">{error}</p>}

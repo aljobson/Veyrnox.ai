@@ -22,6 +22,14 @@ test('safety hold prevents reservations, provider creation, retries and grant di
  }
  assert.equal(uploadProjection(row).upload_url,null);
 });
+test('staging proxy switch provisions media without disclosing the provider grant',async()=>{
+ process.env.CINEMA_PROXY_UPLOADS_ENABLED='true';
+ try {
+  const s=setup(),res=await s.handle(req());assert.equal(res.status,200);assert.equal(s.providers(),1);
+  assert.ok(s.calls.some(call=>call.name==='reserve_cinema_proxy_upload'));
+  const data=await res.json();assert.equal(data.upload.upload_url,null);assert.equal(data.upload.transfer_path,`/cinema/uploads/${id}/transfer?content_id=${id}`);
+ } finally { delete process.env.CINEMA_PROXY_UPLOADS_ENABLED; }
+});
 test('grants expire and are never returned for terminal media',()=>{
  assert.equal(uploadProjection({...row,expires_at:'2000-01-01T00:00:00Z'}).upload_url,null);
  for(const state of ['ready','error','processing','provisioning'])assert.equal(uploadProjection({...row,state}).upload_url,null);

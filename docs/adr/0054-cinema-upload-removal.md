@@ -35,10 +35,11 @@ URL: after confirmed deletion the next valid 5 MiB PATCH succeeded (204) and
 advanced the offset. DELETE on the tus URL itself returned 405. The rollout
 gate above has failed; metadata deletion must not be treated as revocation.
 
-`DIRECT_UPLOAD_SAFETY_HOLD` is a code-enforced hold, not an environment opt-in:
-start/resume API calls return `upload_safety_hold` before reservation/provider
-work, all upload projections suppress bearer URLs, and the removal scheduler
-returns `upload_revocation_unverified` without deleting or finalizing claims.
+`CINEMA_PROXY_UPLOADS_ENABLED` defaults false and is explicitly false in the
+production Worker. While false, start/resume API calls return
+`upload_safety_hold` before reservation/provider work, all upload projections
+suppress bearer URLs, and the removal scheduler returns
+`upload_revocation_unverified` without deleting or finalizing claims.
 Owner-scoped reads, refresh, and removal requests remain available; removals
 stay pending and retain their counted reservations and provider identifiers.
 UI copy explains the pause and does not promise completion within minutes.
@@ -77,8 +78,8 @@ failures before a write safely release it. The upload-specific durable quota
 limits transfer requests to 60 per minute per account. Structured logs contain
 request IDs, actor IDs, method, status and stable error code, never grants.
 
-The safety hold remains active while this implementation is deployed for
-inactive-path verification. Lifting it requires the staging migration, a live
+The safety hold remains active everywhere except the isolated staging Worker
+while this implementation is validated. Enabling it requires migration 0158, a live
 server-mediated pause/resume test, removal during an incomplete transfer,
 confirmed provider deletion, and proof that a browser captured no provider
 grant. Existing grants copied before migration 0158 remain outside this new

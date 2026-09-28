@@ -45,3 +45,12 @@ test('public route fails closed during the safety hold even if feature flags are
  const held=await handle(req,id);assert.equal(held.status,503);assert.match(held.headers.get('x-request-id'),/^[a-f0-9-]{36}$/);
  assert.equal((await handle(new Request(req.url),id)).status,401);
 });
+test('staging proxy switch opens only the authenticated owner-scoped route',async()=>{
+ process.env.CINEMA_PROXY_UPLOADS_ENABLED='true';
+ try {
+  const s=setup({headOffset:'2'}),handle=transferHandler(s.deps);
+  const req=new Request(`https://test.invalid/api/v1/cinema/uploads/${id}/transfer?content_id=${id}`,{headers:{'x-veyrnox-auth-id':id}});
+  const res=await handle(req,id);assert.equal(res.status,200);assert.deepEqual(await res.json(),{offset:2,length:5});
+  assert.deepEqual(s.rpcCalls.map(call=>call.name),['consume_upload_request','claim_cinema_transfer','finish_cinema_transfer']);
+ } finally { delete process.env.CINEMA_PROXY_UPLOADS_ENABLED; }
+});
