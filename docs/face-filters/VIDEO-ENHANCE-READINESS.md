@@ -49,6 +49,34 @@ replacement, pre-cancelled setup and initialization failure. Normal loading of
 the licensed moving-face clip reached ready in the browser. This bounds async
 waiting; it cannot preempt synchronous work that blocks the browser event loop.
 
+## Local performance baseline, 2026-09-28
+
+Measured on macOS 27.0 / arm64 in the Codex in-app Chromium browser, against
+local Next development mode after the setup lifecycle fix (`cffe11a`). Natural
+look, 30% smoothing, one face, silent H.264 input, 25 fps. Model initialization
+finished before timing; each measurement runs from the automation's Export
+click through observation of the Download MP4 link. These are single-run
+wall-clock observations with automation/wait overhead, not precise encoder-only
+measurements. Run order was the order below; warm-up effects were not isolated.
+
+| Input | Observed export time | Output verification |
+| --- | --- | --- |
+| 5 seconds, 1280×720 | 8.719 seconds | 125 frames, timing/duration within 1 ms, no audio added |
+| 10 seconds, 1920×1080 | 12.428 seconds | 250 frames, timing/duration within 1 ms, no audio added |
+| 15 seconds, 1920×1080 | 17.220 seconds | 375 frames, timing/duration within 1 ms, no audio added |
+
+Fixtures derive from the licensed Mikhail Nilov / Pexels 8731403 sample in the
+validation record, using ffmpeg `-stream_loop -1`, `-t 5/10/15`, scaling to the
+listed widths, H.264 CRF 18 and no audio. The 15-second fixture repeats the source
+past its 10.2-second end. Local input/output copies and measurements are retained
+in ignored `.scratch/video-enhance/performance/`.
+
+All runs completed; export controls re-enabled afterward. This does not measure
+peak memory, UI responsiveness during synchronous inference, cancellation latency,
+repeated-run variance, high-frame-rate sources or mobile/Safari/Firefox behaviour.
+Duration and resolution vary together here, so the measurements cannot isolate
+resolution scaling. A complete performance gate remains open.
+
 ## Recommended next implementation
 
 With bounded initialization implemented, measure performance and device
