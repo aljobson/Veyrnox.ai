@@ -92,6 +92,21 @@ underscoring warm-up/system-load variability and the need for repeated controlle
 measurements before setting a performance target. Peak memory and cancellation
 during a long synchronous inference step remain unmeasured.
 
+## Track-contract follow-up, 2026-09-28
+
+Preflight and export now require exactly one detected video track and at most
+one detected audio track. Additional audio/video tracks result in a preview-only
+warning instead of being silently omitted. The editor explicitly states that
+subtitles and descriptive metadata are not included; this is not a subtitle
+preservation or detection guarantee. Opus remains separately blocked.
+
+Real-container tests cover extra audio, extra video, audio-only input and valid
+single video/audio input. Browser verification confirmed multi-audio preview
+remains usable while export is disabled, and selecting a supported clip removes
+the warning and restores export. Local suite: 828 passed, one skipped; scoped
+lint passed. This addresses the primary audio/video selection finding for the
+narrow stated contract, not arbitrary container track preservation.
+
 ## Recommended next implementation
 
 With bounded initialization implemented, measure performance and device

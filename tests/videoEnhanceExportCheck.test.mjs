@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, rmSync, readFileSync } from 'node:fs';
+import { inspectVideoExport, exportEnhancedVideo } from '../app/veyrnox/_lib/videoEnhanceExport.mjs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -24,6 +25,25 @@ test('export checker accepts preserved media and rejects fidelity regressions', 
             assert.equal(result.status, 0, result.stderr);
             assert.match(result.stdout, /PASS: 5 frames/);
         });
+        await t.test('single video and audio pass preflight', async () => {
+            assert.equal(await inspectVideoExport(new Blob([readFileSync(source)])), null);
+        });
+        for (const [name, maps] of [
+            ['extra audio', ['0:v:0', '0:a:0', '0:a:0']],
+            ['extra video', ['0:v:0', '0:v:0', '0:a:0']],
+            ['audio only', ['0:a:0']],
+        ]) {
+            await t.test(`${name} cannot silently lose tracks during export`, async () => {
+                const path = join(directory, `${name}.mov`);
+                ffmpeg(['-i', source, ...maps.flatMap(track => ['-map', track]), '-c', 'copy', path]);
+                const file = new Blob([readFileSync(path)]);
+                assert.match(await inspectVideoExport(file), /exactly one video track/);
+                await assert.rejects(exportEnhancedVideo(file, {
+                    signal: new AbortController().signal,
+                    process() { assert.fail('Unsupported multi-track input processed a frame'); },
+                }), /exactly one video track/);
+            });
+        }
         for (const [name, args, message] of [
             ['missing audio', ['-c:v', 'copy', '-an'], /No source track may disappear/],
             ['changed sample rate', ['-c:v', 'copy', '-c:a', 'pcm_s16le', '-ar', '24000'], /Audio sample rate changed/],

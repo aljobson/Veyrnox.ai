@@ -123,7 +123,7 @@ function Editor() {
                     {exportWarning && <p id="export-warning" role="status" className="rounded-xl border border-vx-border bg-vx-panel p-3 text-xs leading-relaxed text-vx-fg-body"><strong className="block mb-1">Preview only</strong>{exportWarning} You can still preview and adjust this clip.</p>}
                     <Button className="w-full justify-center" aria-describedby={exportWarning ? 'export-warning' : undefined} disabled={state !== 'ready' || Boolean(exportWarning)} onClick={exportVideo}>{exporting ? 'Exporting…' : exportWarning ? 'Export unavailable' : 'Export video'}</Button>
                     {exporting && <><progress aria-label="Export progress" className="w-full accent-vx-accent" value={frame.time} max={duration} /><Button variant="ghost" size="sm" onClick={() => engine.current?.cancel()}>Cancel export</Button></>}
-                    <p className="text-xs leading-relaxed text-vx-fg-muted">Keep this tab visible during export. Audio comes from your clip. Output is MP4 or WebM depending on your browser.</p>
+                    <p className="text-xs leading-relaxed text-vx-fg-muted">Keep this tab visible during export. Supports one video track and up to one audio track. Subtitles and descriptive metadata are not included. Output is MP4 or WebM depending on your browser.</p>
                     {result && <div role="status"><a className="inline-block break-words text-sm font-bold text-vx-accent underline" href={result.url} download={result.name}>Download {result.type.startsWith('video/mp4') ? 'MP4' : 'WebM'}</a><p className="mt-2 text-xs text-vx-fg-muted">Saved locally when downloaded. Not added to Library.</p></div>}
                 </div>
             </aside>

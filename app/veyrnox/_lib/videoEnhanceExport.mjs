@@ -1,11 +1,19 @@
 import { Input, BlobSource, ALL_FORMATS, Output, BufferTarget, Mp4OutputFormat, WebMOutputFormat, Conversion } from 'mediabunny';
 import { validateExportAudio } from './videoEnhance.mjs';
 
+async function inspectInput(input) {
+    const videos = await input.getVideoTracks();
+    const audios = await input.getAudioTracks();
+    if (videos.length !== 1 || audios.length > 1) {
+        return 'Export supports exactly one video track and at most one audio track. Choose a single-track version of this clip.';
+    }
+    return validateExportAudio(audios.length ? await audios[0].getCodec() : null);
+}
+
 export async function inspectVideoExport(file) {
     const input = new Input({ source: new BlobSource(file), formats: ALL_FORMATS });
     try {
-        const audio = await input.getPrimaryAudioTrack();
-        return validateExportAudio(audio ? await audio.getCodec() : null);
+        return await inspectInput(input);
     } catch {
         return 'Export compatibility could not be checked. Try an MP4 clip with AAC audio.';
     } finally {
@@ -22,8 +30,7 @@ export async function exportEnhancedVideo(file, { signal, process }) {
     signal.addEventListener('abort', abort, { once: true });
     try {
         cancelled();
-        const audio = await input.getPrimaryAudioTrack();
-        const audioError = validateExportAudio(audio ? await audio.getCodec() : null);
+        const audioError = await inspectInput(input);
         cancelled();
         if (audioError) throw new Error(audioError);
         for (const format of [new Mp4OutputFormat(), new WebMOutputFormat()]) {
