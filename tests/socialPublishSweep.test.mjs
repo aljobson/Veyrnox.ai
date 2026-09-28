@@ -85,6 +85,48 @@ test('publishes an Instagram image target and reports the platform ids back', as
     });
 });
 
+test('publishes a LinkedIn image target and reports the platform ids back', async () => {
+    const accessTokenEnc = await encryptToken('member-access-token', cryptoCfg);
+    let publishCalls = 0;
+    await withFetch({
+        claim_due_social_post_targets: async () => [target({
+            network: 'linkedin', target_id: 't-li', external_account_id: 'member-42', access_token_enc: accessTokenEnc,
+        })],
+        complete_social_post_target: async (body) => {
+            assert.equal(body.p_ok, true);
+            assert.equal(body.p_platform_post_id, 'urn:li:share:123');
+            assert.equal(body.p_platform_post_url, 'https://www.linkedin.com/feed/update/urn:li:share:123/');
+            return { ok: true };
+        },
+    }, async () => {
+        const real = globalThis.fetch;
+        const headerGet = (values) => ({ get: (k) => values[k.toLowerCase()] ?? null });
+        globalThis.fetch = async (url, init) => {
+            const u = new URL(url);
+            if (u.hostname === 'api.linkedin.com' && u.pathname === '/rest/images') {
+                publishCalls += 1;
+                return { ok: true, status: 200, headers: headerGet({}), json: async () => ({ value: { uploadUrl: 'https://www.linkedin.com/dms-uploads/x/0', image: 'urn:li:image:x' } }) };
+            }
+            if (u.hostname === 'example.com') {
+                publishCalls += 1;
+                return { ok: true, status: 200, headers: headerGet({ 'content-type': 'image/jpeg' }), arrayBuffer: async () => new Uint8Array([1]).buffer };
+            }
+            if (u.hostname === 'www.linkedin.com' && u.pathname === '/dms-uploads/x/0') {
+                publishCalls += 1;
+                return { ok: true, status: 201, headers: headerGet({}) };
+            }
+            if (u.hostname === 'api.linkedin.com' && u.pathname === '/rest/posts') {
+                publishCalls += 1;
+                return { ok: true, status: 201, headers: headerGet({ 'x-restli-id': 'urn:li:share:123' }), json: async () => ({}) };
+            }
+            return real(url, init);
+        };
+        const out = await runPublishSweep({ cfg, cryptoCfg });
+        assert.deepEqual(out, { ok: true, claimed: 1, published: 1, failed: 0, errors: 0 });
+        assert.equal(publishCalls, 4);
+    });
+});
+
 test('missing media on a claimed target fails cleanly instead of dispatching', async () => {
     await withFetch({
         claim_due_social_post_targets: async () => [target({ media_type: null, source_url: null })],

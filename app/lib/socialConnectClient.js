@@ -1,31 +1,34 @@
 'use client';
 
 /**
- * Client-side driver for Veyrnox Publish's connect flow (ADR-0061).
- * Instagram is the only network with a working server-side adapter today;
- * the rest are listed for the product surface but their connect action is
- * intentionally not wired up (NETWORKS below marks which are live).
+ * Client-side driver for Veyrnox Publish's connect flow (ADR-0061). Every
+ * live network shares the same shape: POST /social/accounts/:network/connect
+ * for an authorize URL, redirect, then POST /social/accounts/:network/
+ * callback from app/social/connect/callback/[network]/page.js to finish it.
  *
  * PKCE mirrors app/lib/authClient.js's signInWithOAuth exactly (its own
  * randomVerifier/s256/PKCE_KEY are module-private, so this keeps its own
  * small copy under a different sessionStorage key rather than reaching
  * into that module's internals): this browser generates a verifier, sends
  * only its S256 challenge to /connect, then proves it holds the verifier
- * by sending it to /callback after the redirect.
+ * by sending it to /callback after the redirect. The verifier is stored
+ * per network (not one shared key) so starting a second network's flow
+ * before finishing the first can never clobber the first's verifier.
  */
 
 import { gatewayFetch } from '../veyrnox/_lib/gateway.js';
 
 export const NETWORKS = [
     { key: 'instagram', label: 'Instagram', live: true },
+    { key: 'linkedin', label: 'LinkedIn', live: true },
     { key: 'twitter', label: 'X', live: false },
     { key: 'tiktok', label: 'TikTok', live: false },
-    { key: 'linkedin', label: 'LinkedIn', live: false },
     { key: 'youtube', label: 'YouTube', live: false },
 ];
 
-const PKCE_KEY = 'veyrnox_social_pkce_verifier';
-
+function pkceKey(network) {
+    return `veyrnox_social_pkce_verifier_${network}`;
+}
 function randomVerifier() {
     const bytes = new Uint8Array(32);
     crypto.getRandomValues(bytes);
@@ -46,13 +49,14 @@ export async function listSocialAccounts() {
     return gatewayFetch('/social/accounts');
 }
 
-/** Starts Instagram's OAuth flow: stores a PKCE verifier, then navigates
- * the browser to Meta's authorize page. Does not return on success —
- * the page unloads. */
-export async function connectInstagram() {
+/** Starts a network's OAuth flow: stores a PKCE verifier, then navigates
+ * the browser to the provider's authorize page. Does not return on
+ * success — the page unloads.
+ * @param {string} network  one of NETWORKS' live keys, e.g. 'instagram' */
+export async function connectNetwork(network) {
     const verifier = randomVerifier();
-    sessionStorage.setItem(PKCE_KEY, verifier);
-    const { authorizeUrl } = await gatewayFetch('/social/accounts/instagram/connect', {
+    sessionStorage.setItem(pkceKey(network), verifier);
+    const { authorizeUrl } = await gatewayFetch(`/social/accounts/${network}/connect`, {
         method: 'POST',
         body: JSON.stringify({ codeChallenge: await s256(verifier) }),
     });
@@ -60,32 +64,34 @@ export async function connectInstagram() {
 }
 
 /**
- * Finishes the Instagram flow from /social/connect/callback: reads
+ * Finishes a network's flow from /social/connect/callback/:network: reads
  * `?code=&state=` off the current URL and the verifier this browser
- * stashed in connectInstagram(). Returns null (not an error) when this
- * page was opened without a code — a direct visit, not a real callback —
- * so the caller can show a neutral state instead of a failure.
+ * stashed in connectNetwork(). Returns null (not an error) when this page
+ * was opened without a code — a direct visit, not a real callback — so
+ * the caller can show a neutral state instead of a failure.
+ * @param {string} network
  * @returns {Promise<{ok:boolean, account?:object, code?:string}|null>}
  */
-export async function completeInstagramConnect() {
+export async function completeNetworkConnect(network) {
     const url = new URL(window.location.href);
     const code = url.searchParams.get('code');
     const state = url.searchParams.get('state');
     if (!code || !state) return null;
-    const codeVerifier = sessionStorage.getItem(PKCE_KEY);
-    sessionStorage.removeItem(PKCE_KEY);
+    const codeVerifier = sessionStorage.getItem(pkceKey(network));
+    sessionStorage.removeItem(pkceKey(network));
     if (!codeVerifier) return { ok: false, code: 'VERIFIER_MISSING' };
 
     try {
-        return await gatewayFetch('/social/accounts/instagram/callback', {
+        return await gatewayFetch(`/social/accounts/${network}/callback`, {
             method: 'POST',
             body: JSON.stringify({ code, state, codeVerifier }),
         });
     } catch (err) {
-        // The route answers expected conflicts (e.g. no linked Instagram
-        // account) as { ok: false, code } rather than gatewayFetch's usual
-        // { error } shape — read the raw body first so that code survives,
-        // instead of gatewayFetch's generic 'gateway_error' fallback.
+        // A callback route answers an expected conflict (e.g. Instagram's
+        // "no linked Business account") as { ok: false, code } rather than
+        // gatewayFetch's usual { error } shape — read the raw body first so
+        // that code survives, instead of gatewayFetch's generic
+        // 'gateway_error' fallback.
         return { ok: false, code: (err && err.body && err.body.code) || (err && err.code) || 'connect_failed' };
     }
 }

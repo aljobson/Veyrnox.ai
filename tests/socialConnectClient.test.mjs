@@ -24,7 +24,7 @@ let assigned = null;
 let replaced = null;
 globalThis.window = {
     location: {
-        href: 'https://veyrnox.ai/social/connect/callback',
+        href: 'https://veyrnox.ai/social/connect/callback/instagram',
         assign: (url) => { assigned = url; },
         replace: (url) => { replaced = url; },
     },
@@ -35,10 +35,10 @@ globalThis.window = {
 globalThis.CustomEvent = class CustomEvent { constructor(type, opts) { this.type = type; Object.assign(this, opts); } };
 
 const {
-    NETWORKS, connectInstagram, completeInstagramConnect, listSocialAccounts, disconnectSocialAccount,
+    NETWORKS, connectNetwork, completeNetworkConnect, listSocialAccounts, disconnectSocialAccount,
 } = await import('../app/lib/socialConnectClient.js');
 
-const PKCE_KEY = 'veyrnox_social_pkce_verifier';
+const pkceKey = (network) => `veyrnox_social_pkce_verifier_${network}`;
 
 function stubFetch(handler) {
     const calls = [];
@@ -50,9 +50,9 @@ function stubFetch(handler) {
 }
 const okJson = (obj) => new Response(JSON.stringify(obj), { status: 200, headers: { 'content-type': 'application/json' } });
 
-test('NETWORKS lists all five v1 networks with only Instagram live', () => {
-    assert.deepEqual(NETWORKS.map((n) => n.key), ['instagram', 'twitter', 'tiktok', 'linkedin', 'youtube']);
-    assert.deepEqual(NETWORKS.filter((n) => n.live).map((n) => n.key), ['instagram']);
+test('NETWORKS lists all five v1 networks with Instagram and LinkedIn live', () => {
+    assert.deepEqual(NETWORKS.map((n) => n.key), ['instagram', 'linkedin', 'twitter', 'tiktok', 'youtube']);
+    assert.deepEqual(NETWORKS.filter((n) => n.live).map((n) => n.key), ['instagram', 'linkedin']);
 });
 
 test('listSocialAccounts calls the gateway with a bearer token', async () => {
@@ -63,54 +63,70 @@ test('listSocialAccounts calls the gateway with a bearer token', async () => {
     assert.equal(calls[0].init.headers.Authorization, 'Bearer live-token');
 });
 
-test('connectInstagram stores a PKCE verifier and navigates to the authorize URL', async () => {
+test('connectNetwork stores a per-network PKCE verifier and navigates to the authorize URL', async () => {
     sessionStore.clear(); assigned = null;
     let sentChallenge = null;
+    let sentPath = null;
     stubFetch((_, url, init) => {
+        sentPath = String(url);
         sentChallenge = JSON.parse(init.body).codeChallenge;
-        return okJson({ authorizeUrl: 'https://www.facebook.com/v21.0/dialog/oauth?client_id=1' });
+        return okJson({ authorizeUrl: 'https://www.linkedin.com/oauth/v2/authorization?client_id=1' });
     });
-    await connectInstagram();
-    assert.equal(assigned, 'https://www.facebook.com/v21.0/dialog/oauth?client_id=1');
-    const verifier = sessionStore.get(PKCE_KEY);
+    await connectNetwork('linkedin');
+    assert.equal(sentPath, '/api/v1/social/accounts/linkedin/connect');
+    assert.equal(assigned, 'https://www.linkedin.com/oauth/v2/authorization?client_id=1');
+    const verifier = sessionStore.get(pkceKey('linkedin'));
     assert.ok(verifier && verifier.length >= 43, 'a verifier was stashed for the callback to prove it holds');
     assert.ok(sentChallenge && sentChallenge !== verifier, 'only the S256 challenge is sent, never the verifier itself');
 });
 
-test('completeInstagramConnect returns null when opened without a code (not a real callback)', async () => {
-    window.location.href = 'https://veyrnox.ai/social/connect/callback';
-    assert.equal(await completeInstagramConnect(), null);
+test('connectNetwork for one network never clobbers another network\'s in-flight verifier', async () => {
+    sessionStore.clear();
+    stubFetch(() => okJson({ authorizeUrl: 'https://example.com/authorize' }));
+    await connectNetwork('instagram');
+    const instagramVerifier = sessionStore.get(pkceKey('instagram'));
+    await connectNetwork('linkedin');
+    assert.equal(sessionStore.get(pkceKey('instagram')), instagramVerifier, 'starting linkedin did not touch instagram\'s verifier');
+    assert.notEqual(sessionStore.get(pkceKey('linkedin')), instagramVerifier);
 });
 
-test('completeInstagramConnect fails cleanly when this browser never started the flow', async () => {
+test('completeNetworkConnect returns null when opened without a code (not a real callback)', async () => {
+    window.location.href = 'https://veyrnox.ai/social/connect/callback/instagram';
+    assert.equal(await completeNetworkConnect('instagram'), null);
+});
+
+test('completeNetworkConnect fails cleanly when this browser never started the flow', async () => {
     sessionStore.clear();
-    window.location.href = 'https://veyrnox.ai/social/connect/callback?code=abc&state=xyz';
-    const result = await completeInstagramConnect();
+    window.location.href = 'https://veyrnox.ai/social/connect/callback/instagram?code=abc&state=xyz';
+    const result = await completeNetworkConnect('instagram');
     assert.deepEqual(result, { ok: false, code: 'VERIFIER_MISSING' });
 });
 
-test('completeInstagramConnect sends the code, state and stashed verifier, then clears it', async () => {
-    sessionStore.set(PKCE_KEY, 'stashed-verifier-value-that-is-long-enough');
-    window.location.href = 'https://veyrnox.ai/social/connect/callback?code=auth-code&state=signed-state';
+test('completeNetworkConnect sends the code, state and stashed verifier, then clears it', async () => {
+    sessionStore.set(pkceKey('instagram'), 'stashed-verifier-value-that-is-long-enough');
+    window.location.href = 'https://veyrnox.ai/social/connect/callback/instagram?code=auth-code&state=signed-state';
     let sentBody = null;
+    let sentPath = null;
     stubFetch((_, url, init) => {
+        sentPath = String(url);
         sentBody = JSON.parse(init.body);
         return okJson({ ok: true, account: { id: 'acc-1', network: 'instagram', display_name: '@creator' } });
     });
-    const result = await completeInstagramConnect();
+    const result = await completeNetworkConnect('instagram');
+    assert.equal(sentPath, '/api/v1/social/accounts/instagram/callback');
     assert.equal(result.ok, true);
     assert.equal(result.account.id, 'acc-1');
     assert.deepEqual(sentBody, { code: 'auth-code', state: 'signed-state', codeVerifier: 'stashed-verifier-value-that-is-long-enough' });
-    assert.equal(sessionStore.has(PKCE_KEY), false, 'the one-time verifier is not left behind');
+    assert.equal(sessionStore.has(pkceKey('instagram')), false, 'the one-time verifier is not left behind');
 });
 
-test('completeInstagramConnect surfaces an expected conflict (no linked account) rather than throwing', async () => {
-    sessionStore.set(PKCE_KEY, 'stashed-verifier-value-that-is-long-enough');
-    window.location.href = 'https://veyrnox.ai/social/connect/callback?code=auth-code&state=signed-state';
+test('completeNetworkConnect surfaces an expected conflict (no linked account) rather than throwing', async () => {
+    sessionStore.set(pkceKey('instagram'), 'stashed-verifier-value-that-is-long-enough');
+    window.location.href = 'https://veyrnox.ai/social/connect/callback/instagram?code=auth-code&state=signed-state';
     stubFetch(() => new Response(JSON.stringify({ ok: false, code: 'NO_LINKED_INSTAGRAM_ACCOUNT' }), {
         status: 409, headers: { 'content-type': 'application/json' },
     }));
-    const result = await completeInstagramConnect();
+    const result = await completeNetworkConnect('instagram');
     assert.deepEqual(result, { ok: false, code: 'NO_LINKED_INSTAGRAM_ACCOUNT' });
 });
 

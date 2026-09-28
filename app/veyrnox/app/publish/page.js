@@ -4,7 +4,7 @@ import { AppNav } from '../../_components/NavBar';
 import { ConfirmDialog } from '../../_components/ConfirmDialog';
 import { getSession, onSessionChange } from '../../../lib/authClient';
 import {
-  NETWORKS, listSocialAccounts, connectInstagram, disconnectSocialAccount,
+  NETWORKS, listSocialAccounts, connectNetwork, disconnectSocialAccount,
 } from '../../../lib/socialConnectClient';
 
 const currentAccount = () => getSession()?.user?.id || '';
@@ -26,7 +26,7 @@ export default function Publish() {
 function PublishControls() {
   const [accounts, setAccounts] = useState(null);
   const [loadError, setLoadError] = useState('');
-  const [connecting, setConnecting] = useState(false);
+  const [connecting, setConnecting] = useState(null);
   const [connectError, setConnectError] = useState('');
   const [disconnecting, setDisconnecting] = useState(null);
   const [confirmDisconnect, setConfirmDisconnect] = useState(null);
@@ -42,13 +42,13 @@ function PublishControls() {
   }, []);
   useEffect(() => { load(); }, [load]);
 
-  async function onConnectInstagram() {
-    setConnecting(true); setConnectError('');
+  async function onConnect(network) {
+    setConnecting(network); setConnectError('');
     try {
-      await connectInstagram(); // navigates away on success; only returns on failure
+      await connectNetwork(network); // navigates away on success; only returns on failure
     } catch {
-      setConnectError('Could not start connecting Instagram. Check your connection and try again.');
-      setConnecting(false);
+      setConnectError(`Could not start connecting ${networkLabel(network)}. Check your connection and try again.`);
+      setConnecting(null);
     }
   }
 
@@ -104,7 +104,7 @@ function PublishControls() {
 
     <section className="rounded-2xl border border-vx-border p-5">
       <h2 className="font-bold mb-1">Connect an account</h2>
-      <p className="text-sm text-vx-fg-muted mb-4">Instagram publishing is live. The rest are on the way.</p>
+      <p className="text-sm text-vx-fg-muted mb-4">Instagram and LinkedIn publishing are live. The rest are on the way.</p>
       {connectError && <p role="alert" className="text-sm text-vx-danger mb-3">{connectError}</p>}
       <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {NETWORKS.map((n) => {
@@ -112,11 +112,11 @@ function PublishControls() {
           return (
             <li key={n.key} className="flex items-center justify-between gap-3 rounded-xl border border-vx-border p-3">
               <span className="text-sm font-bold text-vx-fg">{n.label}</span>
-              {n.key === 'instagram' ? (
+              {n.live ? (
                 connected
                   ? <span className="text-xs font-bold text-vx-accent">Connected</span>
-                  : <button type="button" disabled={connecting} className={button} onClick={onConnectInstagram}>
-                      {connecting ? 'Connecting…' : 'Connect'}
+                  : <button type="button" disabled={connecting != null} className={button} onClick={() => onConnect(n.key)}>
+                      {connecting === n.key ? 'Connecting…' : 'Connect'}
                     </button>
               ) : (
                 <span className="text-xs font-semibold text-vx-fg-muted rounded-full border border-vx-border px-3 py-1">Coming soon</span>
