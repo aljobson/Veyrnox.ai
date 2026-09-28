@@ -1,5 +1,5 @@
 -- Separate candidate, not a swap: kie does not document negative_prompt.
--- First/last-frame i2v, mode=pro (1080p), sound=false, multi_shots=false.
+-- First-frame i2v, mode=pro (1080p), sound=false, multi_shots=false.
 -- Retained kie quote: $0.09/second, $0.45/5s and $0.90/10s.
 -- 28 credits gives headroom above the 26-credit floor at $0.01796 provider
 -- allowance per credit (largest $129/3000 pack, 8% + $0.30 fee, 50% target).

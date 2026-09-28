@@ -102,7 +102,7 @@ export function buildRequest(target, inputs) {
     // Separate inactive i2v candidate: pro is 1080p, single shot, no audio.
     // Do not silently discard controls from the existing fal route.
     if (target.model === 'kling-3.0/video') {
-        const allowed = new Set(['prompt', 'image_url', 'endImage_url', 'duration_seconds']);
+        const allowed = new Set(['prompt', 'image_url', 'duration_seconds']);
         for (const key of Object.keys(inputs)) {
             if (!allowed.has(key)) return { ok: false, error: `inputs_key_not_allowed:${key.slice(0, 32)}` };
         }
@@ -111,7 +111,6 @@ export function buildRequest(target, inputs) {
         const seconds = clipSeconds(inputs);
         if (seconds === null) return { ok: false, error: 'duration_not_supported' };
         const image_urls = [inputs.image_url];
-        if (inputs.endImage_url) image_urls.push(inputs.endImage_url);
         return { ok: true, body: { model: target.model, input: {
             prompt, image_urls, duration: String(seconds), mode: 'pro',
             sound: false, multi_shots: false, multi_prompt: [],

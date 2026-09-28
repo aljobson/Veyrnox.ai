@@ -265,10 +265,10 @@ test('a dialogue script becomes speaker blocks, and the prompt itself is never s
 
 test('staged Kling i2v advertises only supported controls and checks before debit', () => {
     const record = capabilityFor('market:kling-3.0/video');
-    const inputs = { prompt: 'p', image_url: 'https://r2.example/start.png', endImage_url: 'https://r2.example/end.png' };
+    const inputs = { prompt: 'p', image_url: 'https://r2.example/start.png' };
     assert.deepEqual(lengthsFor(record), [5, 10]);
     assert.equal(checkInputs(record, inputs).ok, true);
-    for (const extra of [{ negative_prompt: 'blur' }, { seed: 1 }, { duration_seconds: 15 }, { sound: true }]) {
+    for (const extra of [{ endImage_url: 'https://r2.example/end.png' }, { negative_prompt: 'blur' }, { seed: 1 }, { duration_seconds: 15 }, { sound: true }]) {
         assert.equal(checkInputs(record, { ...inputs, ...extra }).ok, false);
     }
     assert.equal(checkInputs(record, { prompt: 'p' }).error, 'inputs_invalid:image_url');
