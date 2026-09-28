@@ -164,6 +164,12 @@
   //                               TikTok OAuth connect/callback (packages/adapters/social/
   //                               tiktok.js, ADR-0061). Connect only — no publish path yet
   //                               (see that file's own header). Not yet provisioned.
+  //   YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET
+  //                               YouTube (Google) OAuth connect/callback (packages/adapters/
+  //                               social/youtube.js, ADR-0061). Connect only — no publish path
+  //                               yet (see that file's own header). A separate OAuth client
+  //                               from Supabase's own Google Sign-In provider. Not yet
+  //                               provisioned.
   //   SOCIAL_OAUTH_STATE_SECRET   signs the OAuth `state` token (lib/social/oauthState.js, ADR-0061
   //                               §2.7) — this app is cookie-free, so state carries its own HMAC
   //                               binding instead of server-side session storage

@@ -13,6 +13,7 @@ import { NETWORKS, completeNetworkConnect } from '../../../../lib/socialConnectC
 
 const TRY_AGAIN = 'Nothing was connected. Go back and try again.';
 const ERROR_COPY = {
+    NO_YOUTUBE_CHANNEL: 'That Google account has no YouTube channel. Create a channel on that account, then try again.',
     VERIFIER_MISSING: `This was opened in a different browser or tab than where you started connecting. ${TRY_AGAIN}`,
     invalid_state: `This connection link was already used or has expired. ${TRY_AGAIN}`,
     not_authenticated: `You were signed out before this finished. Sign in, then ${TRY_AGAIN.toLowerCase()}`,
