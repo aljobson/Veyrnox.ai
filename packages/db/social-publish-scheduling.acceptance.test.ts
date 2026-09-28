@@ -7,7 +7,11 @@ import pg from 'pg';
 // Exercises 0156_social_publish_scheduling.sql (ADR-0061 Phase 3): posts,
 // media, per-network targets, and the create/claim/complete RPC trio. Applies
 // both 0154 (its tables) and 0156 twice each, the same idempotency discipline
-// as the other acceptance tests in this package.
+// as the other acceptance tests in this package. 0157 (the worker_task_health
+// widening) is deliberately not applied here: its CREATE OR REPLACE FUNCTION
+// spans nearly the whole schema (cinema_uploads, jobs, top_ups, ...), so it
+// is verified by the full migration replay instead, the same as 0145 before
+// it (see 0157's own header comment).
 describe('social publish scheduling (0156)', { skip: !process.env.DATABASE_URL }, () => {
     let pool: pg.Pool;
     const users: string[] = [];
@@ -253,10 +257,4 @@ describe('social publish scheduling (0156)', { skip: !process.env.DATABASE_URL }
         }
     });
 
-    it('widens worker_task_health to accept publish_sweep', async () => {
-        await pool.query(`SELECT public.record_worker_task_health('publish_sweep', true)`);
-        const row = await one(`SELECT last_ok FROM public.worker_task_health WHERE task = 'publish_sweep'`);
-        assert.equal(row.last_ok, true);
-        await assert.rejects(pool.query(`SELECT public.record_worker_task_health('not_a_real_task', true)`), /worker_task_health_task_check/);
-    });
 });
