@@ -1,11 +1,16 @@
 # ADR-0064 — Veyrnox.ai core Subscriptions: build now, mirroring Higgsfield's tiers
 
-- **Status**: Proposed 2026-09-28. Picks up ADR-0018's explicitly deferred slice
-  ("Subscriptions are the next slice... Deferred, not rejected"). Nothing here is
-  Accepted until the product owner signs off — this is money-spine, per `CLAUDE.md`.
+- **Status**: **Accepted 2026-09-28.** Product owner approved building now (not
+  continuing to defer), the recommended tiers (Starter $19/270cr, Plus $59/1200cr,
+  Ultra $129/3000cr, mirroring Higgsfield), and the ledger spend order
+  (Subscription Credits spent before Free Credits, soonest-expiring-first), all
+  as proposed, no changes. Picks up ADR-0018's explicitly deferred slice
+  ("Subscriptions are the next slice... Deferred, not rejected"). Implementation
+  may now proceed under this ADR's design; Finance/Legal still owes tax/consent
+  wording per ADR-0018's own precedent before launch.
 - **Date**: 2026-09-28
-- **Deciders**: Product owner (sole); Finance/Legal for tax/consent wording, per
-  ADR-0018's own precedent
+- **Deciders**: Product owner (sole) — accepted; Finance/Legal for tax/consent
+  wording, per ADR-0018's own precedent
 - **Related**: [ADR-0018 — Credit Pack Top-ups before Subscriptions](0018-credit-pack-top-ups.md)
   (established the floors and Higgsfield reference this ADR builds on), [ADR-0013 —
   Credit expiry policy](0013-credit-expiry-policy.md) (Free Credits; the bucket-tracking
@@ -121,7 +126,8 @@ research pass argues for reversing it.
 
 ## Recommendation
 
-**Option A — build now, deliberately mirroring Higgsfield's published tiers:**
+**Accepted 2026-09-28: Option A — build now, deliberately mirroring Higgsfield's published
+tiers.** The product owner approved this, and the spend-order question below, with no changes.
 
 | Plan | Monthly | Credits | Per-credit | vs. ADR-0018's $0.075 Pack floor |
 |---|---:|---:|---:|---|
@@ -165,23 +171,21 @@ research pass argues for reversing it.
 
 ## Open questions
 
-1. **Build-now vs. continue-deferring is still the product owner's call.** This ADR resolves the
-   *technical readiness* question (blocker gone, pattern proven) and the *pricing* question
-   (mirror Higgsfield) but not *timing against the rest of the roadmap*, which this research pass
-   has no visibility into.
-2. **Ledger spend order for three bucket types.** Free Credits currently expire in ≤90 days and
-   are "spent before Pack Credits" (`CONTEXT.md`). Subscription credits would typically expire
-   sooner (≤30 days, non-rollover) — spending them *before* Free Credits (soonest-expiring-first)
-   avoids forfeiting Subscription credits while Free Credits still have weeks of runway, but this
-   changes existing documented ledger behavior and needs explicit confirmation, not silent
-   inference.
-3. **Dunning grace period and mid-cycle-cancellation credit handling** — not specified here,
+**Resolved at acceptance (2026-09-28):**
+- **Build-now vs. continue-deferring** — the product owner chose to build now.
+- **Ledger spend order for three bucket types** — Subscription Credits spend before Free Credits
+  (soonest-expiring-first: Subscription → Free → Pack). `CONTEXT.md`'s Free Credits and
+  Subscription entries are updated to state this explicitly.
+
+**Still open, none blocking implementation start:**
+
+1. **Dunning grace period and mid-cycle-cancellation credit handling** — not specified here,
    needs a short design note before implementation, following Cinema Pass's precedent where one
    applies.
-4. **Annual price points below the Ultra tier** (Starter/Plus annual) — the recommendation above
+2. **Annual price points below the Ultra tier** (Starter/Plus annual) — the recommendation above
    computes Ultra's floor explicitly; Starter and Plus annual rates need the same per-tier net-floor
    check before publishing, not a flat percentage-off assumption.
-5. **Does Stripe's written acceptance for Cinema Pass's recurring-plan review (ADR-0057's own open
+3. **Does Stripe's written acceptance for Cinema Pass's recurring-plan review (ADR-0057's own open
    "written Stripe acceptance" precondition) cover core Subscriptions too, or is this a separate
    category requiring its own confirmation?** Core generation-credit subscriptions are a more
    central part of the "AI media generation" category ADR-0031 already confirmed Stripe accepts
