@@ -313,6 +313,24 @@ CI installs ffmpeg and requires both tools; missing tools fail the suite instead
 of silently skipping the media checks.
 These tests validate the checker, not moving-face quality or browser compatibility.
 
+### Preview and tracking recovery recheck, 2026-09-28
+
+In the local in-app browser, the five-second synthetic pattern played through
+with Warm selected and exported successfully. The static NASA portrait fixture
+reported one tracked face; switching smoothing to zero reported smoothing off,
+and Reset restored 30% before export.
+
+A derived portrait fixture used a full-frame black interval from 1.5 to 3 seconds.
+During playback, the status changed to no face / smoothing paused at 1.5 seconds
+and returned to one tracked face after the portrait returned. Its export also
+completed. All three downloaded exports passed the real-media checker: 150
+frames, source-relative timing and duration within 1 ms, matching audio sample
+rate/channels and identical decoded audio. The blackout establishes total face
+loss/reacquisition only; it does not qualify head turns or partial occlusion.
+
+The latest code CI run at `562f435` passed 827 tests with one skipped, plus build,
+lint and security checks. ffmpeg was installed and the media regressions ran.
+
 ### Remaining gates
 
 Representative owned/consented moving footage is still needed for the full
