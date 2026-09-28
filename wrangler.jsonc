@@ -147,6 +147,16 @@
   //   TOP_UP_BACKFILL_TOKEN       bearer for /api/admin/top-up-backfill (#94); same value in the TOP_UP_BACKFILL_TOKEN Actions secret
   //   ADMIN_REAP_TOKEN            /api/admin/reap-assets shared secret (ADR-0008)
   //   UPLOAD_PROXY_ALLOWED_HOSTS  legacy upload proxy allowlist (docs/UPLOAD_PROXY_CONFIG.md)
+  //   META_APP_ID, META_APP_SECRET
+  //                               Instagram OAuth connect/callback + Graph API calls
+  //                               (packages/adapters/social/instagram.js, ADR-0061). Not yet
+  //                               provisioned — see docs/social-publisher/06-oauth-review-runbook.md.
+  //   SOCIAL_OAUTH_STATE_SECRET   signs the OAuth `state` token (lib/social/oauthState.js, ADR-0061
+  //                               §2.7) — this app is cookie-free, so state carries its own HMAC
+  //                               binding instead of server-side session storage
+  //   SOCIAL_TOKEN_ENCRYPTION_KEY AES-GCM key for OAuth tokens at rest (lib/social/tokenCrypto.js,
+  //                               ADR-0061 §2.7) — base64 of exactly 32 bytes, never reused from
+  //                               any other subsystem
   //
   // No R2 binding: r2.js signs plain fetch against the S3 endpoint so the
   // Worker never needs `env.MEDIA` / getCloudflareContext() in middleware.
