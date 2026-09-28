@@ -62,11 +62,35 @@ lockfile fixed the build; no dependency versions or application code changed.
 - `reconcile_balances()` and `reconcile_free_credits()` both returned zero
   mismatches. The candidate was verified inactive after the test.
 
+## Live submission failure and refund
+
+The owner authorized the next acceptance check. An original 8x8 PNG fixture
+was uploaded through the signed-in staging browser and submitted at the normal
+five-second price. The candidate was temporarily enabled with an exact-row-count
+assertion and disabled again immediately after the attempt.
+
+- Issued 28 staging test credits with idempotency key
+  `codex-kling-refund-20260928-01`, bringing the pre-test balance to 38.
+- Job `69032683-9097-43b4-bd37-af46f65e2af9`, created at 09:23:52 UTC,
+  reached REFUNDED with error code `provider_submit_failed` and no provider
+  task ID. The exact upstream rejection message was not captured; the fixture
+  was intended to trigger a size rejection, but that cause is not asserted.
+- Ledger has one -28 `debit:generation` and one +28 `refund:submit_failed`.
+  Both have free_delta zero. Balance returned to 38; no asset was created.
+- Repeated `ledger_refund` with the same job, owner, amount and reason. It
+  returned the existing refund entry with `idempotent: true`; there remains
+  exactly one refund, with no additional balance change.
+- Balance and Free Credit reconciliation both returned zero mismatches.
+  Candidate active=false was verified after the test.
+- This proves the live submit-failure refund path and refund RPC idempotency.
+  It does not exercise a later provider failure callback, since this attempt
+  did not create a provider task. No additional paid generation was retried.
+
 ## Remaining limits
 
 This is one successful five-second end-to-end run, not a reliability or visual
-quality benchmark. Failure/refund cases have route-level test coverage, but no
-deliberately failing paid generation was submitted in this live run. A real
-provider failure/refund acceptance case, effective supplier purchase cost, and
-the reviewed production activation migration remain separate launch checks.
+quality benchmark. Submission failure/refund was verified live as above;
+asynchronous provider-failure callbacks retain route-level test coverage only.
+Effective supplier purchase cost and the reviewed production activation
+migration remain separate launch checks.
 Production database and model activation were not changed.
