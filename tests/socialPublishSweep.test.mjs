@@ -127,6 +127,53 @@ test('publishes a LinkedIn image target and reports the platform ids back', asyn
     });
 });
 
+test('publishes an X image target and reports the platform ids back', async () => {
+    const accessTokenEnc = await encryptToken('x-access-token', cryptoCfg);
+    let publishCalls = 0;
+    await withFetch({
+        claim_due_social_post_targets: async () => [target({
+            network: 'twitter', target_id: 't-x', external_account_id: '987654321', access_token_enc: accessTokenEnc,
+        })],
+        complete_social_post_target: async (body) => {
+            assert.equal(body.p_ok, true);
+            assert.equal(body.p_platform_post_id, 'tweet-1');
+            // No username reaches the claim row, so this falls back to X's own handle-agnostic permalink.
+            assert.equal(body.p_platform_post_url, 'https://x.com/i/web/status/tweet-1');
+            return { ok: true };
+        },
+    }, async () => {
+        const real = globalThis.fetch;
+        const headerGet = (values) => ({ get: (k) => values[k.toLowerCase()] ?? null });
+        globalThis.fetch = async (url, init) => {
+            const u = new URL(url);
+            if (u.hostname === 'example.com') {
+                publishCalls += 1;
+                return { ok: true, status: 200, headers: headerGet({ 'content-type': 'image/jpeg' }), arrayBuffer: async () => new Uint8Array([1]).buffer };
+            }
+            if (u.hostname === 'api.x.com' && u.pathname === '/2/media/upload/initialize') {
+                publishCalls += 1;
+                return { ok: true, status: 200, headers: headerGet({}), json: async () => ({ data: { id: 'media-1' } }) };
+            }
+            if (u.hostname === 'api.x.com' && u.pathname === '/2/media/upload/media-1/append') {
+                publishCalls += 1;
+                return { ok: true, status: 204, headers: headerGet({}) };
+            }
+            if (u.hostname === 'api.x.com' && u.pathname === '/2/media/upload/media-1/finalize') {
+                publishCalls += 1;
+                return { ok: true, status: 200, headers: headerGet({}), json: async () => ({ data: { id: 'media-1' } }) };
+            }
+            if (u.hostname === 'api.x.com' && u.pathname === '/2/tweets') {
+                publishCalls += 1;
+                return { ok: true, status: 201, headers: headerGet({}), json: async () => ({ data: { id: 'tweet-1' } }) };
+            }
+            return real(url, init);
+        };
+        const out = await runPublishSweep({ cfg, cryptoCfg });
+        assert.deepEqual(out, { ok: true, claimed: 1, published: 1, failed: 0, errors: 0 });
+        assert.equal(publishCalls, 5);
+    });
+});
+
 test('missing media on a claimed target fails cleanly instead of dispatching', async () => {
     await withFetch({
         claim_due_social_post_targets: async () => [target({ media_type: null, source_url: null })],

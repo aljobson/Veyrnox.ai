@@ -104,7 +104,7 @@ function PublishControls() {
 
     <section className="rounded-2xl border border-vx-border p-5">
       <h2 className="font-bold mb-1">Connect an account</h2>
-      <p className="text-sm text-vx-fg-muted mb-4">Instagram and LinkedIn publishing are live. The rest are on the way.</p>
+      <p className="text-sm text-vx-fg-muted mb-4">Instagram, LinkedIn and X publishing are live. The rest are on the way.</p>
       {connectError && <p role="alert" className="text-sm text-vx-danger mb-3">{connectError}</p>}
       <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {NETWORKS.map((n) => {
