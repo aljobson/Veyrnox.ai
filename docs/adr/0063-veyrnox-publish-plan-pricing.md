@@ -1,11 +1,13 @@
 # ADR-0063 — Veyrnox Publish Plan: tiers, prices, and connected-account caps
 
-- **Status**: Proposed 2026-09-28. Fills in the pricing ADR-0062 deliberately left open
+- **Status**: **Accepted 2026-09-28.** Product owner approved the recommended numbers
+  (Free: 1 account, unlimited posts fair-use bounded; Publish Plan: $19/mo, 5 accounts,
+  $4/account add-on) and confirmed monthly-only billing for v1, annual as a fast-follow,
+  both as proposed, no changes. Fills in the pricing ADR-0062 deliberately left open
   ("Exact plan tiers, prices, connected-account/brand caps per tier — a pricing decision
-  for the product owner"). Nothing here is Accepted until the product owner signs off —
-  this is money-spine, per `CLAUDE.md`.
+  for the product owner").
 - **Date**: 2026-09-28
-- **Deciders**: Product owner (sole)
+- **Deciders**: Product owner (sole) — accepted
 - **Related**: [ADR-0062 — Veyrnox Publish entitlement model](0062-veyrnox-publish-entitlement-model.md)
   (fixed the *mechanism* — independent recurring Publish Plan, never the ledger — this ADR
   fixes the *numbers*), [ADR-0061 — Veyrnox Publish](0061-veyrnox-publish-social-scheduling.md)
@@ -113,7 +115,7 @@ standing (ADR-0061 §2.11 risk).
 
 ## Recommendation
 
-**Option A.** Concretely, for v1:
+**Accepted 2026-09-28: Option A**, with no changes from the product owner. Concretely, for v1:
 
 - **Free — "Starter" (no paid plan required).** One connected account, any single one of the
   five v1 networks (Instagram, X, TikTok, LinkedIn, YouTube). **Unlimited scheduled posts,
@@ -163,18 +165,19 @@ standing (ADR-0061 §2.11 risk).
 
 ## Open questions
 
-1. **Product owner sign-off on the actual numbers** ($19/mo monthly, $15/mo annual target,
-   5-account cap, $4/account add-on) — everything above is a recommendation grounded in real
-   competitor data, not a decided price.
-2. **Annual billing timing** — confirmed here as a fast-follow, not a v1 blocker, but the
-   product owner may want it in v1 from the start if competitive pressure warrants it.
-3. **VAT/tax handling** — Metricool's pricing explicitly excludes VAT ("calculated before
+**Resolved at acceptance (2026-09-28):** the actual numbers ($19/mo, 5-account cap, $4/account
+add-on, $15/mo annual target) and monthly-only billing for v1 (annual as a fast-follow) were both
+approved as proposed by the product owner.
+
+**Still open, none blocking implementation start:**
+
+1. **VAT/tax handling** — Metricool's pricing explicitly excludes VAT ("calculated before
    signing"); confirm Publish Plan pricing follows the same Stripe Managed Payments automatic-tax
    pattern already established for Top-ups (ADR-0031) rather than needing separate tax logic.
-4. **Nonprofit/education discount** — Buffer offers 50% off for nonprofits; not recommended for
+2. **Nonprofit/education discount** — Buffer offers 50% off for nonprofits; not recommended for
    v1 (adds verification/eligibility-checking scope Veyrnox doesn't have infrastructure for yet),
    but worth a deliberate "not yet" rather than silence.
-5. **Does the $4/account add-on need its own fair-use ceiling** (e.g., a max total accounts per
+3. **Does the $4/account add-on need its own fair-use ceiling** (e.g., a max total accounts per
    brand) to bound the same anti-abuse risk the base cap addresses, or is linear per-account
    billing itself a sufficient economic deterrent? Recommend deferring to implementation with a
    conservative default (e.g., 50 accounts total) rather than leaving it fully unbounded.

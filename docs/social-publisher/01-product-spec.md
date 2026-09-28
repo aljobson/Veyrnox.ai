@@ -158,7 +158,7 @@ the technical spec) is proven on the first five.
 Cinema Pass pattern (ADR-0057) — a recurring entitlement sold via Stripe Checkout subscription
 mode, never touching the generation-credit ledger, with entitlement derived server-side by RPC.
 This section keeps the original reasoning for context; ADR-0062 is the source of truth on the
-billing *mechanism*, and [ADR-0063](../adr/0063-veyrnox-publish-plan-pricing.md) (Proposed) now
+billing *mechanism*, and [ADR-0063](../adr/0063-veyrnox-publish-plan-pricing.md) (**Accepted**)
 has the actual numbers: Free (1 account, unlimited posts fair-use bounded) and Publish Plan
 ($19/mo, 5 accounts, $4/account add-on beyond that), grounded in live Metricool and Buffer pricing.
 
