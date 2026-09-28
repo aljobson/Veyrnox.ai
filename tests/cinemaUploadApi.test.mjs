@@ -13,16 +13,23 @@ test('strict input, identity and upload gates prevent provider spend',async()=>{
  for(const patch of [{file_size:2147483649},{fingerprint:'bad'},{owner:id},{stream_uid:uid},{maxDurationSeconds:3600}])assert.equal((await s.handle(req({...body,...patch}))).status,400);
  assert.equal(s.providers(),0);
 });
-test('only the durable claim creates provider media; matching retries do not',async()=>{
- const s=setup();const res=await s.handle(req());assert.equal(res.status,200);assert.equal(s.providers(),1);assert.equal(s.calls[1].name,'reserve_cinema_upload');assert.equal(s.calls[2].name,'attach_cinema_upload');
- const data=await res.json();assert.equal(data.upload.stream_uid,undefined);assert.equal(data.upload.creator_id,undefined);assert.equal(data.upload.create_key,undefined);assert.equal(res.headers.get('cache-control'),'no-store');
- const replay=setup({claimed:false});assert.equal((await replay.handle(req())).status,200);assert.equal(replay.providers(),0);
- const denied=setup({deny:true});assert.equal((await denied.handle(req())).status,403);assert.equal(denied.providers(),0);
-});
-test('ambiguous provision failure leaves reservation intact and redacts upstream detail',async()=>{
- const s=setup({failCreate:true});const res=await s.handle(req());assert.equal(res.status,503);assert.ok(!(await res.text()).includes('private'));assert.equal(s.calls.length,2);
+test('safety hold prevents reservations, provider creation, retries and grant disclosure',async()=>{
+ for(const options of [{},{claimed:false},{deny:true},{failCreate:true}]) {
+  const s=setup(options),res=await s.handle(req());
+  assert.equal(res.status,503);assert.equal((await res.json()).error,'upload_safety_hold');
+  assert.equal(s.providers(),0);assert.equal(s.calls.length,0);
+  assert.equal(res.headers.get('cache-control'),'no-store');
+ }
+ assert.equal(uploadProjection(row).upload_url,null);
 });
 test('grants expire and are never returned for terminal media',()=>{
  assert.equal(uploadProjection({...row,expires_at:'2000-01-01T00:00:00Z'}).upload_url,null);
  for(const state of ['ready','error','processing','provisioning'])assert.equal(uploadProjection({...row,state}).upload_url,null);
+});
+test('owner-scoped reads stay available during the hold without exposing a grant',async()=>{
+ const handle=uploadHandler({action:'read',rpcCall:async name=>name==='consume_account_read_request'?{ok:true}:{upload:row}});
+ const res=await handle(new Request(`https://test.invalid/api/v1/cinema/uploads?content_id=${id}`,{headers:{'x-veyrnox-auth-id':id}}));
+ assert.equal(res.status,200);
+ const data=await res.json();assert.equal(data.upload.id,id);assert.equal(data.upload.state,'uploading');assert.equal(data.upload.upload_url,null);
+ assert.equal(data.upload.stream_uid,undefined);assert.equal(data.upload.creator_id,undefined);
 });

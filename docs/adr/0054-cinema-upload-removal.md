@@ -27,3 +27,31 @@ Tests: adapter confirmation/SSRF/body bounds; HTTP identity/quota/ownership/inpu
 Reference checked 25 September 2026: [Cloudflare Stream delete video API](https://developers.cloudflare.com/api/resources/stream/methods/delete/). The documented operation deletes the video and its copies; acceptance of real response variants and in-flight tus invalidation remains an explicit integration gate.
 
 Local browser fixtures verified exact upload-ID submission, initial focus on Keep video, focus return on cancel, pending-removal messaging, and replacement controls only after a null upload response. Narrow-screen controls remained accessible. No real provider calls or media deletion occurred; temporary session/interception/viewport fixtures were removed. The deterministic 21st review reported zero findings.
+
+## Safety hold — 28 September 2026
+
+Live staging proved that Stream video DELETE does not revoke an incomplete tus
+URL: after confirmed deletion the next valid 5 MiB PATCH succeeded (204) and
+advanced the offset. DELETE on the tus URL itself returned 405. The rollout
+gate above has failed; metadata deletion must not be treated as revocation.
+
+`DIRECT_UPLOAD_SAFETY_HOLD` is a code-enforced hold, not an environment opt-in:
+start/resume API calls return `upload_safety_hold` before reservation/provider
+work, all upload projections suppress bearer URLs, and the removal scheduler
+returns `upload_revocation_unverified` without deleting or finalizing claims.
+Owner-scoped reads, refresh, and removal requests remain available; removals
+stay pending and retain their counted reservations and provider identifiers.
+UI copy explains the pause and does not promise completion within minutes.
+Existing externally copied grants are not revoked by this containment; already
+finalized test tombstones are not retroactively reconciled by it.
+
+Remove the hold only after a reviewed design can enforce the required upload
+revocation boundary and live tests prove it. A server-mediated transfer design
+must keep provider URLs server-side, check current ownership/removal state on
+every chunk, bound transfers, and serialize in-flight writes against deletion.
+An expiry-based approach needs live proof that expiry stops existing sessions,
+retained capacity until that boundary, and post-boundary provider cleanup;
+simply waiting for a timestamp is not sufficient evidence.
+
+References: [Direct creator uploads](https://developers.cloudflare.com/stream/uploading-videos/direct-creator-uploads/)
+and [tus uploads](https://developers.cloudflare.com/stream/uploading-videos/resumable-uploads/).

@@ -298,3 +298,19 @@ proof of grant revocation. Follow-up requires an independently verified grant
 revocation/expiry strategy and accounting that does not assume DELETE alone
 revokes tus write access. This turn changed no flags, deployment, production
 resource, or database directly.
+
+### Direct-upload safety hold — 28 September
+
+A follow-up OPTIONS probe advertised no tus termination extension. DELETE on
+the already-removed test grant returned 405; HEAD still exposed its 10 MiB
+offset. Added a code-enforced containment hold pending a verified replacement:
+new/resumed reservation requests fail before DB/provider work; response
+projections never return a direct grant; removal scheduling stops before claim,
+provider DELETE or completion, retaining pending capacity and identifiers.
+Creator status/removal requests stay available with honest pending-removal copy.
+The UI suppresses upload/resume controls and explains the temporary pause.
+
+This does not revoke grants already copied, repair previously finalized
+records, or satisfy the live revocation gate. A permanent design and its live
+acceptance test remain required. No migration or wrangler flag change is part
+of the containment patch. The ADR records the criteria for lifting the hold.
