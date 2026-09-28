@@ -271,3 +271,30 @@ The remaining gate needs a paused, incomplete tus grant with a known-valid
 remaining chunk, tested after deletion. No wider upload enablement or production
 promotion follows from this result. URL values were not printed or saved to a
 regular file; temporary FIFO pipes were removed after each diagnostic request.
+
+### Incomplete tus grant revocation — 28 September (FAILED; rollout blocker)
+
+Reused private content `c11a95e5-eb5f-45ef-9fb2-da5485c7f58b` for upload
+`7c126ad4-8c7f-4d83-b411-817cc07a0200`. Paused immediately after reservation,
+retaining its tus URL only in memory. Before deletion, a valid 5,242,880-byte
+chunk at offset zero returned HTTP 204; HEAD confirmed offset 5,242,880 of
+40,878,277 bytes. The transfer remained incomplete.
+
+After fresh explicit owner approval, requested permanent removal through the
+creator UI. Scheduler claimed deletion at 10:55:37.946549 UTC and completed it
+at 10:55:38.2215 UTC; read-only staging SQL confirmed `deleted` and the provider
+reference cleared. Only after that confirmation, sent the next valid 5 MiB
+chunk from the same synthetic file at offset 5,242,880 to the retained URL,
+without application credentials. Cloudflare returned HTTP 204. Subsequent HEAD
+returned HTTP 200 and offset 10,485,760 of 40,878,277 bytes.
+
+**This is direct evidence that the retained incomplete tus grant remains
+writable after the current removal flow confirms deletion. ADR-0054's live
+revocation gate has failed. Do not enable wider uploads or promote this flow.**
+No further chunks were sent; the test did not complete or publish the video.
+Provider metadata/video resurrection was not tested and must not be inferred.
+The current database completion and released capacity cannot be treated as
+proof of grant revocation. Follow-up requires an independently verified grant
+revocation/expiry strategy and accounting that does not assume DELETE alone
+revokes tus write access. This turn changed no flags, deployment, production
+resource, or database directly.
