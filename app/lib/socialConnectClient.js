@@ -21,7 +21,7 @@ import { gatewayFetch } from '../veyrnox/_lib/gateway.js';
 export const NETWORKS = [
     { key: 'instagram', label: 'Instagram', live: true },
     { key: 'linkedin', label: 'LinkedIn', live: true },
-    { key: 'twitter', label: 'X', live: false },
+    { key: 'twitter', label: 'X', live: true },
     { key: 'tiktok', label: 'TikTok', live: false },
     { key: 'youtube', label: 'YouTube', live: false },
 ];

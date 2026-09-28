@@ -50,9 +50,9 @@ function stubFetch(handler) {
 }
 const okJson = (obj) => new Response(JSON.stringify(obj), { status: 200, headers: { 'content-type': 'application/json' } });
 
-test('NETWORKS lists all five v1 networks with Instagram and LinkedIn live', () => {
+test('NETWORKS lists all five v1 networks with Instagram, LinkedIn and X live', () => {
     assert.deepEqual(NETWORKS.map((n) => n.key), ['instagram', 'linkedin', 'twitter', 'tiktok', 'youtube']);
-    assert.deepEqual(NETWORKS.filter((n) => n.live).map((n) => n.key), ['instagram', 'linkedin']);
+    assert.deepEqual(NETWORKS.filter((n) => n.live).map((n) => n.key), ['instagram', 'linkedin', 'twitter']);
 });
 
 test('listSocialAccounts calls the gateway with a bearer token', async () => {
