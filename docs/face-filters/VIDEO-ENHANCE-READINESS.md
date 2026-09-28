@@ -144,3 +144,40 @@ hashes are retained in [the measurement record](video-enhance-performance-2026-0
 Local media copies remain in ignored `.scratch/video-enhance/repeated-performance/`.
 The measurements support continued local evaluation, not customer activation or
 a promise that every clip within the current limits will perform similarly.
+
+## Sampled JavaScript heap and cancellation, 2026-09-28
+
+At `5864450` (runtime `1a76094`), tested the same 15-second, 1920×1080,
+25 fps silent fixture on local macOS 27.0 arm64 / in-app Chromium. Natural
+look, 30% smoothing. Three cancelled exports followed by a complete retry on
+the same loaded engine; no reload or forced garbage collection between runs.
+
+CDP `Performance.getMetrics` sampled JS heap approximately every 500 ms plus
+metric/UI request overhead. Timing includes automation transport and UI checks.
+This is **not total peak memory**: native decoder, GPU, WASM memory and process
+resident memory are not accounted for by the JS heap metric. Sampling can miss
+short peaks. These measurements cannot set a device memory budget or prove
+the absence of leaks.
+
+| Run | Before JS heap, MiB | Sampled max, MiB | After, MiB | Cancel to controls ready, ms |
+| --- | --- | --- | --- | --- |
+| Cancel after 3.08s output | 27.44 | 31.30 | 31.55 | 285 |
+| Cancel after 7.20s output | 28.75 | 32.40 | 30.34 | 285 |
+| Cancel after 11.20s output | 30.42 | 34.71 | 31.80 | 286 |
+| Complete retry | 31.89 | 35.51 | 28.54 | — |
+
+All three cancellations showed “Export cancelled”, restored Export, and left
+no Download link. The complete retry took 10.368 seconds including sampling
+and polling overhead. Its download preserved all 375 frames, timing/durations
+within 1 ms and no added audio. Selecting the 5-second fixture afterward
+restored one-face preview and cleared the old download; JS heap at that point
+was 28.46 MiB. Instrumentation was disabled afterward.
+
+This adds three successful mid-export cancellation observations, not a maximum
+latency guarantee: a cancellation requested during a long synchronous inference
+can still wait for the main thread. Total memory, long-task profiling, genuine
+high-frame-rate motion, severe occlusion and the target-device matrix remain open.
+
+[Raw samples and run metadata](video-enhance-memory-2026-09-28.ndjson) include
+source/output hashes. Diagnostic media are retained locally under ignored
+`.scratch/video-enhance/memory-cancellation/`; no application code changed.
