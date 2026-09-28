@@ -91,8 +91,8 @@ assertion and disabled again immediately after the attempt.
 This is one successful five-second end-to-end run, not a reliability or visual
 quality benchmark. Submission failure/refund was verified live as above;
 asynchronous provider-failure callbacks retain route-level test coverage only.
-Effective supplier purchase cost and the reviewed production activation
-migration remain separate launch checks.
+Supplier purchase cost was verified below; the protected production activation
+workflow remains a separate launch step.
 Production database and model activation were not changed.
 
 ## Production activation proposal (0154)
@@ -102,10 +102,13 @@ checking its provider, endpoint, modality, price, cost, billing unit and gating
 flag. It changes neither the fal option nor presets, fallbacks or Credit Packs.
 Replay is safe; a missing or repriced candidate raises an exception.
 
-Keep the activation PR draft until the owner confirms the effective purchased
-KIE credit rate supports the recorded $0.45/5s cost and accepts comparative
-output quality. The synthetic landscape smoke test does not establish parity
-with fal. The later-failure callback has automated coverage, not a live failure
+On 2026-09-28, the owner accepted the tested output quality for launch alongside
+fal. The signed-in KIE billing transaction history was checked directly: its
+2026-09-13 purchase shows $5 for 1,000 credits, confirming $0.005 per supplier
+credit and $0.45 for the measured 90-credit five-second output. The displayed
+balance was 612 supplier credits. This establishes the listed purchase rate;
+card currency conversion or separately charged taxes were not shown. The
+synthetic landscape smoke test does not establish comparative parity with fal. The later-failure callback has automated coverage, not a live failure
 sample; the live failure above covers submission rejection only.
 
 Before approval, verify production has the merged adapter/capability code,
