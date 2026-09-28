@@ -109,8 +109,8 @@ narrow stated contract, not arbitrary container track preservation.
 ## Recommended next implementation
 
 ADR-0065 is proposed, and versioned asset packaging is implemented. Decode/encode capability and MP4/AAC format preflight are implemented. Next,
-complete device/quality measurements. Local delivery-header checks pass with the compatibility-date limitation below;
-exact-date/deployed production-preview acceptance remains pending. Keep PR #361 as a draft until the release gates are settled.
+complete device/quality measurements. Local delivery-header checks now pass at the configured compatibility date using
+Wrangler 4.142.0; deployed production-preview acceptance remains pending. Keep PR #361 as a draft until the release gates are settled.
 
 ## Repeated local performance qualification, 2026-09-28
 
@@ -195,3 +195,17 @@ because its supported maximum is 2026-08-08. These checks used only a local CLI
 date override. The repository date, CSP and activation guards remain unchanged.
 A matching runtime and deployed-preview verification are still required; this
 local result does not close production acceptance.
+
+## Exact-date runtime follow-up, 2026-09-28
+
+Wrangler 4.142.0, run from an isolated npm execution cache, starts the same built
+Worker with the unchanged configured compatibility date **2026-09-01**. No date
+override was supplied. The complete delivery checker passes: model/runtime and
+notice bytes, MIME/cache headers, manifest, missing-file 404, private HTML, nonce
+CSP without evaluation exceptions and disabled production editor.
+
+This supersedes the local-date limitation above. The repository dependencies and
+lockfile remain unchanged; the reproducible pinned CLI command is in the
+[validation record](VIDEO-ENHANCE.md#production-mode-asset-delivery-check).
+The temporary local Worker was stopped after testing. Deployed-preview checks,
+CSP decision acceptance, enabled-editor tests and device/quality gates remain open.

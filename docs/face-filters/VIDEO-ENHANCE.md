@@ -469,9 +469,23 @@ run found the model MIME type absent; the exact model path now explicitly serves
 `application/octet-stream`. Full Worker build, final asset repackaging and the
 test suite (836 passed, one skipped) passed.
 
-Qualification limit: bundled workerd supports dates only through 2026-08-08,
+Initial qualification limit: bundled workerd supports dates only through 2026-08-08,
 while the project requests 2026-09-01. The exact-date preview failed to start.
 The successful **local-only** check used `wrangler dev --local
 --compatibility-date 2026-08-08 --ip 127.0.0.1 --port 3187`; no project date was
 changed and nothing was deployed. Repeat using a runtime supporting the project's
 actual date, then the deployed preview, before closing the delivery release gate.
+
+Exact-date follow-up (2026-09-28, artifact from `1aa1c1a`): Wrangler **4.142.0**
+from an isolated npm execution cache successfully ran the unchanged project
+configuration at **2026-09-01**, with no compatibility-date override. All HTTP
+delivery checks passed again. Reproduce with:
+
+```sh
+WRANGLER_SEND_METRICS=false npm exec --yes --package=wrangler@4.142.0 -- wrangler dev --local --ip 127.0.0.1 --port 3187
+node scripts/check-video-enhance-delivery.mjs http://127.0.0.1:3187
+```
+
+The earlier local date limitation is resolved by this tool version; the project
+lockfile remains unchanged. Deployed-preview and enabled-editor acceptance remain
+open. No CSP, activation or production deployment changed.
