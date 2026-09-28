@@ -349,3 +349,13 @@ post-DDL advisors reported no finding against the new RPCs or columns; existing
 project-wide informational/warning findings remain separate work. The hold is
 not lifted by this change; no live upload or deletion is authorized by this
 implementation alone.
+
+Deployed commit `f683f9c` only to Worker `veyrnox-ai-staging`. Cloudflare
+deployment `ecb1b392-a602-4212-a794-d98799b08d8e` serves version
+`15349338-ba35-4bda-976d-64dce400b36c` at 100%, with the existing five-minute
+schedule. An unauthenticated request to the new transfer route was rejected at
+the gateway with HTTP 401, no-store and request correlation. The browser loaded
+the deployed creator bundle; its local preview opt-in was absent in that browser
+session, so no authenticated upload action was attempted. Production Worker,
+production Supabase, the two unrelated databases, flags and secrets were not
+changed.
