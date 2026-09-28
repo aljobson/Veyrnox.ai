@@ -88,3 +88,32 @@ to the authenticated creator and reserve quota for a durable import.
 The Dropbox adapter uses an OAuth grant and file ID, not a Chooser link. The
 connection implementation must disclose the actual read permissions; a selected
 file in our UI does not narrow an OAuth grant at the provider.
+
+## Staging registration record — 28 September 2026
+
+Google Cloud project: `first-geode-507123-e8` (organization `veyrnox.com`).
+A separate web OAuth client, **Veyrnox Cinema Drive — Staging**, was created:
+
+- Client ID: `578196703331-h7kv4gnd5eekv0uij0sl4enltnjp6b8b.apps.googleusercontent.com`
+- Browser origin: `https://veyrnox-ai-staging.al-jobson.workers.dev`
+- Reserved callback: `https://veyrnox-ai-staging.al-jobson.workers.dev/api/v1/social-cinema/cloud/google_drive/callback`
+- Google Drive API: enabled and verified in the console.
+- Google Picker API: awaiting acceptance of the displayed Google APIs terms.
+- Restricted Picker browser API key: not yet created.
+
+The client secret is held outside the repository in an owner-readable local
+credential file; it has not been installed into Workers. Do not paste its value
+into documentation, command arguments, logs or PR descriptions. Install it via
+standard input to the staging secret store when the server integration is ready.
+
+The callback above is reserved for implementation, not a working endpoint.
+The gateway currently requires bearer authentication on `/api/v1/*`; provider
+redirects cannot supply that header. Implement a narrowly scoped callback relay
+that performs no credential exchange on GET, clears the authorization code from
+the address bar, and completes via an authenticated POST. Bind and consume the
+single-use state server-side before exchanging the code. Do not exempt the
+entire cloud API namespace from authentication.
+
+Dropbox and Microsoft registrations are waiting for the owner to sign in to
+their developer consoles. Existing credentials for other Veyrnox services and
+other businesses must remain untouched. Production cloud imports remain disabled.
