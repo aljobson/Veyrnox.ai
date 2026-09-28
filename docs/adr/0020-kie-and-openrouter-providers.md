@@ -412,3 +412,27 @@ silently replace voices or discard the existing seed control. See the
 [readiness evidence](../pricing/kie-speech-readiness-2026-09-28.md) for task
 IDs, contract differences, verification limits and next steps. No catalog,
 pricing or runtime behavior changes accompany this update.
+
+## Update (2026-09-28): separate Dialogue and Flux wholesale options
+
+Migration 0159 stages two inactive options. They do not replace the existing
+fal routes: `elevenlabs-dialogue-kie` uses James, Arabella, Bradford and Xavier
+stock voices in first-speaker order, and `flux-2-pro-1k-kie` pins one 1K image.
+Neither advertises seed support. Dialogue is capped at 1000 script characters
+and four voices ($0.07 maximum quoted unit, 5 customer credits); Flux caps
+prompts at 2000 characters and forces the provider content filter on ($0.025,
+2 credits). Provider request checks reject user attempts to override these
+constraints before submission. Customer prices remain catalogue-controlled.
+
+Flux's live task `ac56057b04ea5885c0dfece037d2687f` succeeded in 62 seconds;
+`tempfile.aiquickdraw.com` served 358375 bytes with HTTP 200 and no redirect.
+The authenticated task record reports 5 credits consumed, matching $0.025 at
+$0.005 per credit. Dialogue task `e21f3336cdcb321ebdbb9d5922ddfd57` failed with
+code 500 after 42 seconds and reports zero credits consumed. No additional
+Turbo tests were run in this change.
+
+Activation is a separate guarded migration after main deploy, owner-approved
+production application of the staging migration, normal gateway/R2 storage and completion/refund
+verification, and image quality/resolution confirmation. Dialogue remains
+blocked by its provider failure. No fallback, default model, existing route,
+customer price or production secret is changed by staging these options.

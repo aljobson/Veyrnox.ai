@@ -105,3 +105,13 @@ refunds and the rights to operate an end-user generation platform. Ask KIE
 for Turbo failure diagnosis and matching Dialogue voices/seed support; ask
 Higgsfield, fal, Runware and WaveSpeed for equivalent configurations rather
 than starting-price comparisons. Do not send account keys or customer media.
+
+## Follow-through: separately staged options
+
+Migration 0159 and ADR-0020 now define inactive Dialogue (KIE stock voices,
+no seed, 5 credits) and Flux Pro 1K (no seed, 2 credits) options. Flux passed a
+live provider/output check; the authenticated task record reports 5 KIE
+credits ($0.025). Dialogue failed with code 500 and reports zero consumed
+credits. The provider cost check is not proof of normal gateway/R2 completion.
+Neither option is activated by this change. See ADR-0020 for exact task IDs
+and activation gates.
