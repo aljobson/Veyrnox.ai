@@ -100,7 +100,10 @@ A separate web OAuth client, **Veyrnox Cinema Drive — Staging**, was created:
 - Google Drive API: enabled and verified in the console.
 - Google Picker API: enabled and verified in the console; owner approved the
   displayed Google APIs terms on 28 September 2026.
-- Restricted Picker browser API key: not yet created.
+- Restricted Picker browser API key: **Veyrnox Cinema Picker — Staging**,
+  created and saved by the owner. Verified restrictions: Google Picker API only
+  and HTTP referrer `https://veyrnox-ai-staging.al-jobson.workers.dev/*`.
+  Key resource ID: `60bab259-03e3-40e6-8bf4-9961b6542ea1` (not the key value).
 
 The client secret is held outside the repository in an owner-readable local
 credential file; it has not been installed into Workers. Do not paste its value
