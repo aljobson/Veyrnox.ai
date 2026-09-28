@@ -99,6 +99,24 @@ export function buildRequest(target, inputs) {
         return { ok: true, body };
     }
 
+    // Separate inactive i2v candidate: pro is 1080p, single shot, no audio.
+    // Do not silently discard controls from the existing fal route.
+    if (target.model === 'kling-3.0/video') {
+        const allowed = new Set(['prompt', 'image_url', 'duration_seconds']);
+        for (const key of Object.keys(inputs)) {
+            if (!allowed.has(key)) return { ok: false, error: `inputs_key_not_allowed:${key.slice(0, 32)}` };
+        }
+        if (prompt.length > 2000) return { ok: false, error: 'inputs_invalid:prompt' };
+        if (!inputs.image_url) return { ok: false, error: 'inputs_invalid:image_url' };
+        const seconds = clipSeconds(inputs);
+        if (seconds === null) return { ok: false, error: 'duration_not_supported' };
+        const image_urls = [inputs.image_url];
+        return { ok: true, body: { model: target.model, input: {
+            prompt, image_urls, duration: String(seconds), mode: 'pro',
+            sound: false, multi_shots: false, multi_prompt: [],
+        } } };
+    }
+
     if (target.model === 'google/nano-banana') {
         if (aspect && !NANO_ASPECTS.has(aspect)) return { ok: false, error: 'inputs_invalid:aspect_ratio' };
         if (inputs.image_url) return { ok: false, error: 'inputs_key_not_allowed:image_url' };

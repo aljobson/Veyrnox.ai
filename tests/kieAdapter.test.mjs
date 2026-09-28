@@ -31,7 +31,7 @@ test('veo requests are pinned to the priced 8s 720p unit and refuse unsupported 
 });
 
 test('unmapped market models fail closed', () => {
-    assert.equal(buildRequest(parseEndpoint('market:kling-3.0/video'), { prompt: 'x' }).error, 'provider_model_unmapped');
+    assert.equal(buildRequest(parseEndpoint('market:unknown/video'), { prompt: 'x' }).error, 'provider_model_unmapped');
 });
 
 test('Wan 2.5 and Kling 2.6 are pinned to the tier they are costed at, and a 10s clip is refused unless asked for', () => {
@@ -111,4 +111,25 @@ test('finds the task id wherever kie puts it', () => {
     assert.equal(callbackTaskId({ data: { task_id: 'b' } }), 'b');
     assert.equal(callbackTaskId({ taskId: 'c' }), 'c');
     assert.equal(callbackTaskId({}), null);
+});
+
+
+test('Kling 3.0 i2v pins pro/no-audio and requires a first frame', () => {
+    const target = parseEndpoint('market:kling-3.0/video');
+    const inputs = { prompt: 'A slow camera move', image_url: 'https://r2.example/first.png' };
+    assert.deepEqual(buildRequest(target, inputs).body.input, {
+        prompt: inputs.prompt, image_urls: [inputs.image_url], duration: '5',
+        mode: 'pro', sound: false, multi_shots: false, multi_prompt: [],
+    });
+    const longer = buildRequest(target, { ...inputs, duration_seconds: 10 });
+    assert.deepEqual(longer.body.input.image_urls, [inputs.image_url]);
+    assert.equal(longer.body.input.duration, '10');
+    assert.equal(buildRequest(target, { prompt: 'p' }).error, 'inputs_invalid:image_url');
+    assert.equal(buildRequest(target, { ...inputs, prompt: 'x'.repeat(2001) }).error, 'inputs_invalid:prompt');
+    for (const duration_seconds of [0, 3, 6, 15, '5', null]) {
+        assert.equal(buildRequest(target, { ...inputs, duration_seconds }).error, 'duration_not_supported');
+    }
+    for (const [key, value] of Object.entries({ endImage_url: 'https://r2.example/last.png', negative_prompt: 'blur', aspect_ratio: '16:9', seed: 1, sound: true, mode: '4K', multi_shots: true, kling_elements: [] })) {
+        assert.equal(buildRequest(target, { ...inputs, [key]: value }).error, `inputs_key_not_allowed:${key}`);
+    }
 });

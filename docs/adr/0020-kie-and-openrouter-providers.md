@@ -143,6 +143,53 @@ $0.30, Kling 55 credits $0.275, Nano Banana Pro 18 credits $0.09, twice). Wan
 came out 1280x720 and Kling 1920x1080, both 5.04s; Kling has no audio track.
 A 10s clip was not run live; kie's rate card prices it at exactly 2x.
 
+### Update 2026-09-28: separate Kling 3.0 i2v candidate (0152)
+
+Stage `kling-3.0-i2v-kie` inactive at 28 credits per 5s, with recorded supplier
+cost $0.45. The adapter pins pro/1080p, no audio and single-shot mode, accepts
+5s or 10s, and accepts a single first-frame image. The existing fal row stays
+active: its optional negative prompt is not documented by kie, so this is a
+separate candidate rather than a silent capability-reducing swap. The new
+candidate requires a prompt and a first-frame image; it refuses undeclared
+controls if called directly, and its capability record exposes only supported
+controls through the gateway. As elsewhere, the gateway resolves owned media
+URLs before submission.
+
+One authorized 5s first-frame test succeeded through the adapter, task
+`0198ae585e462220e89a3909797bf558`. Authenticated recordInfo reports 90 consumed
+kie credits ($0.45 at the surveyed $0.005/credit rate). ffprobe found a
+1920x1080 H.264 stream, 5.041667s duration, and no audio stream. The output
+was HTTP 200 without redirect from `tempfile.aiquickdraw.com`, already allowed
+by the kie storage path. Completion was observed after 183s. A first-frame
+preview was inspected; this is not a comparative motion/quality benchmark.
+
+This is a provider smoke test, not a signed-in gateway -> R2 -> STORED test.
+The gateway maps image uploads to one image slot, so a second uploaded image
+is rejected. The candidate therefore does not advertise or accept a last frame.
+A second authorized first-frame task, `aac1f4f5a3fd9155793f0c9e8d261e16`,
+verified 10s: 1920x1080 H.264, 10.041667s, no audio, 180 consumed kie credits
+($0.90 at the surveyed rate), HTTP 200 without redirect from the same host.
+Completion was observed after 267s. This used the same adapter and sample
+input with duration changed to 10. Before activation, verify live signed-in
+gateway delivery/refunds, effective purchase cost and comparative quality.
+Migration 0152 is insert-only with ON CONFLICT DO NOTHING; replay preserves
+later activation/repricing. No fallback, preset, customer price or active fal
+row changes accompany it. Activation requires a separate migration through
+the owner-approved production workflow. At the tested nominal unit cost the
+supplier saving versus fal's recorded $0.56 is 19.6%; it is not a guarantee of
+identical quality or operational cost.
+
+Follow-up route tests execute the real generation and signed webhook handlers
+with mocked database, provider and R2 network responses. They verify the
+56-credit debit for 10s, server-owned image signing, authenticated task
+re-fetch (ignoring a forged callback result), storage completion, duplicate
+handling, full submit/provider-failure refunds, retryable copy failures and
+pre-debit rejection of inactive/invalid-source requests. These are regression
+tests, not a live signed-in staging run or live ledger/R2 reconciliation.
+
+Sources: [kie request contract](https://docs.kie.ai/market/kling/kling-3-0),
+[kie pricing](https://kie.ai/pricing), and the authenticated task above.
+
 ### Staged twins, second batch (0107)
 
 Three more kie twins staged **inactive**, with adapter branches, capability
