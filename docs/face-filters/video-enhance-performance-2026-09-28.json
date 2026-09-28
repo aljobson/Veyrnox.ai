@@ -1,0 +1,86 @@
+{
+  "date": "2026-09-28",
+  "revision": "1a76094",
+  "environment": "macOS 27.0 arm64; Codex in-app Chromium; Next development mode",
+  "settings": {
+    "look": "natural",
+    "smoothingPercent": 30,
+    "audio": "silent",
+    "output": "H.264 MP4"
+  },
+  "method": "Sequential runs; setup excluded. Automation wall-clock from Export click through Download MP4 visibility, including polling overhead. Each repeat reloaded its input and initialized a new tracker. No isolated warmup.",
+  "source": "Mikhail Nilov / Pexels 8731403; provenance in VIDEO-ENHANCE.md",
+  "highFrameRateCaveat": "60 fps fixture duplicates frames from the 25 fps source; processing-load evidence only.",
+  "runs": [
+    {
+      "label": "5s-1280-r1",
+      "elapsedMs": 6810,
+      "verification": "PASS: 125 frames, timestamps/durations within 1ms, no audio track added.",
+      "sourceSha256": "12bd5cb24b9f493775843c8c7d7372d45fa3f4d210a13846afa4bb7981b226d9",
+      "outputSha256": "0bce711ff7d74286cff81463a938a238f5a54748d6a46a3c700e9436263a829b"
+    },
+    {
+      "label": "5s-1280-r2",
+      "elapsedMs": 6141,
+      "verification": "PASS: 125 frames, timestamps/durations within 1ms, no audio track added.",
+      "sourceSha256": "12bd5cb24b9f493775843c8c7d7372d45fa3f4d210a13846afa4bb7981b226d9",
+      "outputSha256": "d068efa8fb9a44eef970a07e1689ad6d976d0a7c386f3adc4a5cc31344f50b9d"
+    },
+    {
+      "label": "5s-1280-r3",
+      "elapsedMs": 5656,
+      "verification": "PASS: 125 frames, timestamps/durations within 1ms, no audio track added.",
+      "sourceSha256": "12bd5cb24b9f493775843c8c7d7372d45fa3f4d210a13846afa4bb7981b226d9",
+      "outputSha256": "6166314e552c611e6b6461b08647121816ced3231949d7a9222cca1877505dcc"
+    },
+    {
+      "label": "10s-1920-r1",
+      "elapsedMs": 10764,
+      "verification": "PASS: 250 frames, timestamps/durations within 1ms, no audio track added.",
+      "sourceSha256": "93da0ebb45351f054d19f44a97f3747840db6b24c10a37ae22ef1ff89f88bb80",
+      "outputSha256": "5f7d309577ac2064ac2293ff63392ea5e4022e5ef5caad4fd82ac139797b57b6"
+    },
+    {
+      "label": "10s-1920-r2",
+      "elapsedMs": 10150,
+      "verification": "PASS: 250 frames, timestamps/durations within 1ms, no audio track added.",
+      "sourceSha256": "93da0ebb45351f054d19f44a97f3747840db6b24c10a37ae22ef1ff89f88bb80",
+      "outputSha256": "cb41703083fa6099afd79be6494916ee77e6b3567024b56a389539c1b76770fb"
+    },
+    {
+      "label": "10s-1920-r3",
+      "elapsedMs": 9833,
+      "verification": "PASS: 250 frames, timestamps/durations within 1ms, no audio track added.",
+      "sourceSha256": "93da0ebb45351f054d19f44a97f3747840db6b24c10a37ae22ef1ff89f88bb80",
+      "outputSha256": "699319cfa31614f1ba044b2fbce8d0ff67d116ffc1a81e261b3bb7afbb479053"
+    },
+    {
+      "label": "15s-1920-r1",
+      "elapsedMs": 13647,
+      "verification": "PASS: 375 frames, timestamps/durations within 1ms, no audio track added.",
+      "sourceSha256": "7881791de0d31bf575c65ea24074487570613ce03f9c272924ee3d139ac93bcd",
+      "outputSha256": "22a5dc4a482936b612810b7ab413666da037e264b6221f7101c3b03235843c12"
+    },
+    {
+      "label": "15s-1920-r2",
+      "elapsedMs": 12517,
+      "verification": "PASS: 375 frames, timestamps/durations within 1ms, no audio track added.",
+      "sourceSha256": "7881791de0d31bf575c65ea24074487570613ce03f9c272924ee3d139ac93bcd",
+      "outputSha256": "c57fdc3b9accc447b00445c0a7243cea93621b2fc717637c08375817aad6bca6"
+    },
+    {
+      "label": "15s-1920-r3",
+      "elapsedMs": 14221,
+      "verification": "PASS: 375 frames, timestamps/durations within 1ms, no audio track added.",
+      "sourceSha256": "7881791de0d31bf575c65ea24074487570613ce03f9c272924ee3d139ac93bcd",
+      "outputSha256": "2629f897364c32b7689c78fd6688ce9a84f5403d96129ad4482bf177f0df287e"
+    },
+    {
+      "label": "5s-1280-60fps",
+      "elapsedMs": 10796,
+      "verification": "PASS: 300 frames, timestamps/durations within 1ms, no audio track added.",
+      "sourceSha256": "7554a443f6f059c0944a9d7f398e75d45c5aa9f40fdf95b4dbbcbae8dae317d9",
+      "outputSha256": "c3462551b5da41f4c48bc929bdf85fee46ce92b7cf65c32d5cd355b4f36bf441"
+    }
+  ]
+}

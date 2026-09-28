@@ -438,3 +438,7 @@ and adjustments remained enabled. Selecting the AAC MP4 restored export. The
 5-second synthetic clip exported all 150 frames within 1 ms timing tolerance;
 decoded AAC samples were identical. Full local suite: 836 passed, one skipped;
 scoped ESLint passed.
+
+Repeated 5/10/15-second exports and a synthetic 60 fps processing check are recorded
+in [the readiness review](VIDEO-ENHANCE-READINESS.md#repeated-local-performance-qualification-2026-09-28)
+and [machine-readable results](video-enhance-performance-2026-09-28.json).

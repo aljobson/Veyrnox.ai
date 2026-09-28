@@ -1,20 +1,18 @@
 # Video Enhance production-readiness review
 
-Reviewed 2026-09-28 at `dd23e380bce7228fe8c12f651f45843da2119686`.
+Updated 2026-09-28 with local runtime measurements at `1a76094`.
 Decision: suitable for continued local evaluation; not ready for customer activation.
-This is a code/evidence review, not new device testing or a deployment approval.
+Includes local Chromium measurements; this is not a deployment approval or a multi-device qualification.
 
 ## Prioritized release gates
 
 | Priority | Finding and evidence | Required exit condition |
 | --- | --- | --- |
 | P1 | Production is intentionally disabled in both `useVideoEnhancePreview.js` and `videoEnhanceEngine.js`. `lib/contentSecurityPolicy.mjs` enables evaluation only in development and has no production WASM compilation exception. | Choose the production engine and document the CSP decision in an ADR. Test the actual production build and headers before changing activation gates. Do not copy the development evaluation policy into production. |
-| P1 | Model/WASM assets are ignored by Git. `prepare-video-enhance.mjs` prepares them locally, while the deployment workflow runs `npm ci` and `build:worker` without that preparation. | Package pinned assets reproducibly, verify the model checksum, retain required notices, and test asset loading from the deployed build. Passing a build with the editor disabled does not verify the engine. |
+| P1 | Versioned assets are prepared during builds and verified in `.open-next/assets`; runtime and model provenance notices are retained. | Verify deployed asset loading, MIME/cache headers and model terms. Passing a build with the editor disabled does not verify the production engine. |
 | P1 | The renderer uses a face-oval mask with eye/brow/lip exclusions, not semantic skin, hand or hair segmentation. One detected face can still contain an occluding hand inside that mask. | Qualify severe profiles, hand-over-eye/mouth, hair, facial hair and varied subjects at normal speed and full resolution. Choose segmentation, a conservative smoothing fallback, or a narrower supported scope based on measured failures. Mild cheek-touch spot checks do not establish protection of hand texture. |
-| P1 | Only the local Chromium environment has measured real exports. Audio preflight checks the primary audio codec; it does not establish decoder/encoder availability for a given device. | Establish an explicit supported browser/device matrix and test decode, preview, export, cancellation and playback of the downloaded file on each. Disable unsupported export paths with an actionable message. |
-| P2 | `page.js` clears the 15-second load timeout as soon as `loadeddata` fires, before imports, compatibility inspection and tracker initialization finish. The async tracker creation has no deadline or cancellation mechanism. | Bound the entire setup lifecycle, make timeout recovery possible, ignore stale completions and close any instance that finishes after cancellation. Verify with delayed/failed model loading and rapid source replacement. |
+| P1 | Only local Chromium has measured exports. Preflight now checks detected MP4/AAC scope, source decoder support and H.264 encoding at clip dimensions. | Establish an explicit supported browser/device matrix and test decode, preview, export, cancellation and playback of the downloaded file on each. Disable unsupported export paths with an actionable message. |
 | P2 | CPU landmark detection runs synchronously on the UI thread. Export buffers the entire output before making a Blob, with several full-resolution canvases/textures. File-size and duration limits do not establish a decoded-memory or responsiveness budget. | Measure 5/10/15-second 720p/1080p clips, including high-frame-rate inputs, on target devices. Record elapsed time, responsiveness, cancellation latency and memory where measurable. Set supported limits from evidence; consider worker processing or streaming only where measurements justify it. |
-| P2 | Export explicitly selects `tracks: 'primary'`. Successful primary-track conversion does not establish preservation of additional audio, subtitle or data tracks. | Define a primary-video/primary-audio contract and reject or clearly disclose additional-track loss before export; test a multi-track fixture. Avoid claiming preservation of every source track. |
 
 ## Scope decisions that need not block a limited release
 
@@ -73,7 +71,8 @@ in ignored `.scratch/video-enhance/performance/`.
 
 All runs completed; export controls re-enabled afterward. This does not measure
 peak memory, UI responsiveness during synchronous inference, cancellation latency,
-repeated-run variance, high-frame-rate sources or mobile/Safari/Firefox behaviour.
+repeated-run variance, high-frame-rate sources or mobile/Safari/Firefox behaviour
+in this initial baseline. Repeated measurements below add limited evidence.
 Duration and resolution vary together here, so the measurements cannot isolate
 resolution scaling. A complete performance gate remains open.
 
@@ -112,3 +111,36 @@ narrow stated contract, not arbitrary container track preservation.
 ADR-0065 is proposed, and versioned asset packaging is implemented. Decode/encode capability and MP4/AAC format preflight are implemented. Next,
 complete device/quality measurements. Delivery headers and production-preview acceptance
 remain pending. Keep PR #361 as a draft until the release gates are settled.
+
+## Repeated local performance qualification, 2026-09-28
+
+Measured at `1a76094` on the same macOS 27.0 arm64 / in-app Chromium environment,
+with Natural look, 30% smoothing, silent H.264 input and H.264 MP4 output.
+Three sequential exports per fixture; each repeat selects a new copy of the input
+and initializes a new tracker. Setup is excluded from timing. Measurements span
+automation Export click to observation of Download MP4, including polling overhead.
+No isolated warm-up, hardware-load control or encoder-only timing is claimed.
+
+| Input (duration–width) | Runs, seconds | Median, seconds |
+| --- | --- | --- |
+| 5s-1280 | 6.810, 6.141, 5.656 | 6.141 |
+| 10s-1920 | 10.764, 10.150, 9.833 | 10.150 |
+| 15s-1920 | 13.647, 12.517, 14.221 | 13.647 |
+
+All nine exports retained their expected 125/250/375 frames, source-relative
+timestamps and durations within 1 ms, and did not add audio. A separate 5-second
+1280×720 60 fps case took 10.796 seconds and retained all 300 frames with the same
+timing checks. This 60 fps fixture was made by duplicating frames from the 25 fps
+source (`ffmpeg -vf fps=60`), so it tests processing load, not real 60 fps motion.
+
+Fixtures reuse the licensed source and preparation described above. A side-by-side
+still at 4 seconds in the 60 fps source/output shows no obvious gross face-mask
+misalignment; this resized single-frame check is not temporal or occlusion
+qualification. Severe occlusion, varied subjects, full-resolution temporal review,
+peak memory, worst-case cancellation and other browsers/devices remain open.
+
+Machine-readable run order, timings, fidelity results and source/output SHA-256
+hashes are retained in [the measurement record](video-enhance-performance-2026-09-28.json).
+Local media copies remain in ignored `.scratch/video-enhance/repeated-performance/`.
+The measurements support continued local evaluation, not customer activation or
+a promise that every clip within the current limits will perform similarly.
