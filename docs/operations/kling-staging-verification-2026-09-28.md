@@ -94,3 +94,29 @@ asynchronous provider-failure callbacks retain route-level test coverage only.
 Effective supplier purchase cost and the reviewed production activation
 migration remain separate launch checks.
 Production database and model activation were not changed.
+
+## Production activation proposal (0154)
+
+Migration `0154_kie_kling3_i2v_activation.sql` enables only this candidate after
+checking its provider, endpoint, modality, price, cost, billing unit and gating
+flag. It changes neither the fal option nor presets, fallbacks or Credit Packs.
+Replay is safe; a missing or repriced candidate raises an exception.
+
+Keep the activation PR draft until the owner confirms the effective purchased
+KIE credit rate supports the recorded $0.45/5s cost and accepts comparative
+output quality. The synthetic landscape smoke test does not establish parity
+with fal. The later-failure callback has automated coverage, not a live failure
+sample; the live failure above covers submission rejection only.
+
+Before approval, verify production has the merged adapter/capability code,
+KIE API/HMAC credentials, working production R2 storage, and migration 0152's
+inactive row. Staging credentials and its test bucket are not production setup.
+Recheck migration numbering against origin/main and open PRs before merging.
+
+After the checks, squash-merge and review the protected `apply-migrations`
+workflow's complete pending plan before approving its production-database job.
+After application, verify the active row, 28/56-credit quotes, first-frame-only
+controls, a stored output and reconciliation. Do not apply production SQL from
+an agent session. If rollback is needed, prepare a new forward migration that
+sets only this candidate inactive with an exact one-row assertion; apply it
+through the same owner-approved workflow. Existing submitted jobs can finish.
