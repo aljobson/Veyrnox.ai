@@ -6,6 +6,7 @@ Phase-0 decision-support documents for the target architecture at `/Users/aljobs
 
 | ADR | Status | Summary | Blocks |
 |-----|--------|---------|--------|
+| [ADR-0065 — Video Enhance production runtime and asset delivery](0065-video-enhance-production-runtime.md) | **Proposed 2026-09-28** | Browser-local desktop release; versioned model/WASM assets; document-scoped WASM permission and default-off server flag. | Production Video Enhance activation |
 | [ADR-0000 — Product strategy: Replacer vs Reseller](0000-product-strategy.md) | **Accepted 2026-09-10 — Option A (Replacer)** | The meta-decision. Product owner picked full-stack rebuild over MuAPI reseller. Timeline 20-24 wk to first paying customer. | — |
 | [ADR-0001 — Authentication provider](0001-auth-provider.md) | Superseded by 0004 | Original single-vendor auth ADR. Circular with 0002. | — |
 | [ADR-0002 — Postgres host & serverless driver](0002-postgres-host.md) | Superseded by 0004 | Original single-vendor DB ADR. Circular with 0001. | — |
