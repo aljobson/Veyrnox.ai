@@ -1,13 +1,15 @@
 /**
- * POST /api/v1/social/accounts/instagram/callback — complete the OAuth
+ * POST /api/v1/social/accounts/linkedin/callback — complete the OAuth
  * flow. Technical spec §2.3/§2.7, ADR-0061.
  *
- * Called by a client page (not directly by Meta's redirect — that lands
- * on a browser page, which then calls here with its own Bearer identity,
- * matching this app's cookie-free posture). Body: { code, state,
- * codeVerifier } — code and state come from Meta's redirect query
+ * Called by a client page (not directly by LinkedIn's redirect — that
+ * lands on a browser page, which then calls here with its own Bearer
+ * identity, matching this app's cookie-free posture). Body: { code, state,
+ * codeVerifier } — code and state come from LinkedIn's redirect query
  * string, codeVerifier from the sessionStorage value the connect step
- * stashed there.
+ * stashed there. codeVerifier is validated for contract parity with every
+ * other network (see the connect route's own note) but never forwarded to
+ * LinkedIn, which has no documented PKCE support.
  *
  * The state token is verified against the CALLING identity (x-veyrnox-
  * auth-id), not just its own signature — a forged or replayed state for
@@ -15,21 +17,20 @@
  * else's session, closing the loop without cookies.
  *
  * Response (200): { ok: true, account: { id, network, display_name,
- * avatar_url, status } } or { ok: false, code } for expected failures
- * (e.g. no linked Instagram Business Account) — never a raw upstream
- * error.
+ * avatar_url, status } } or { error } for a failure — never a raw
+ * upstream error.
  */
 
 import { NextResponse } from 'next/server';
 import { rpc, envConfig, SupabaseError } from '../../../../../../../packages/db/supabase-client.js';
-import { instagramConfig, exchangeCodeForToken, fetchConnectedAccount } from '../../../../../../../packages/adapters/social/instagram.js';
+import { linkedinConfig, exchangeCodeForToken, fetchConnectedAccount, LINKEDIN_SCOPES } from '../../../../../../../packages/adapters/social/linkedin.js';
 import { verifyOAuthState } from '../../../../../../../lib/social/oauthState.js';
 import { tokenCryptoConfig, encryptToken } from '../../../../../../../lib/social/tokenCrypto.js';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 // Must match the connect route's CALLBACK_PATH exactly — this is the
 // redirect_uri the token exchange authenticates against.
-const CALLBACK_PATH = '/social/connect/callback/instagram';
+const CALLBACK_PATH = '/social/connect/callback/linkedin';
 
 export async function POST(req) {
     const authId = req.headers.get('x-veyrnox-auth-id');
@@ -38,12 +39,12 @@ export async function POST(req) {
     }
 
     const cfg = envConfig();
-    const igCfg = instagramConfig();
+    const liCfg = linkedinConfig();
     const stateSecret = process.env.SOCIAL_OAUTH_STATE_SECRET;
     const cryptoCfg = tokenCryptoConfig();
     const publicHost = process.env.PUBLIC_HOST;
-    if (!cfg.supabaseUrl || !cfg.serviceRoleKey || !igCfg || !stateSecret || !cryptoCfg || !publicHost) {
-        return NextResponse.json({ error: 'instagram_not_configured' }, { status: 503 });
+    if (!cfg.supabaseUrl || !cfg.serviceRoleKey || !liCfg || !stateSecret || !cryptoCfg || !publicHost) {
+        return NextResponse.json({ error: 'linkedin_not_configured' }, { status: 503 });
     }
 
     let body;
@@ -57,7 +58,7 @@ export async function POST(req) {
         || typeof codeVerifier !== 'string' || !/^[A-Za-z0-9_-]{43,128}$/.test(codeVerifier)) {
         return NextResponse.json({ error: 'invalid_body' }, { status: 400 });
     }
-    const stateOk = await verifyOAuthState(state, { authId, network: 'instagram' }, stateSecret);
+    const stateOk = await verifyOAuthState(state, { authId, network: 'linkedin' }, stateSecret);
     if (!stateOk) {
         return NextResponse.json({ error: 'invalid_state' }, { status: 400 });
     }
@@ -67,20 +68,17 @@ export async function POST(req) {
         base = new URL(publicHost);
         if (base.protocol !== 'https:') throw new Error('not_https');
     } catch {
-        return NextResponse.json({ error: 'instagram_not_configured' }, { status: 503 });
+        return NextResponse.json({ error: 'linkedin_not_configured' }, { status: 503 });
     }
     const redirectUri = new URL(CALLBACK_PATH, base).toString();
 
     let account;
     try {
-        const { accessToken, expiresAt } = await exchangeCodeForToken(igCfg, { code, codeVerifier, redirectUri });
+        const { accessToken, refreshToken, expiresAt } = await exchangeCodeForToken(liCfg, { code, redirectUri });
         const connected = await fetchConnectedAccount(accessToken);
-        account = { ...connected, accessToken: connected.pageAccessToken, expiresAt };
+        account = { ...connected, accessToken, refreshToken, expiresAt };
     } catch (err) {
-        if (err && err.code === 'NO_LINKED_INSTAGRAM_ACCOUNT') {
-            return NextResponse.json({ ok: false, code: 'NO_LINKED_INSTAGRAM_ACCOUNT' }, { status: 409 });
-        }
-        console.error('[api/v1/social/accounts/instagram/callback] token exchange failed:', err && err.message);
+        console.error('[api/v1/social/accounts/linkedin/callback] token exchange failed:', err && err.message);
         return NextResponse.json({ error: 'connect_failed' }, { status: 502 });
     }
 
@@ -89,7 +87,7 @@ export async function POST(req) {
         brand = await rpc('get_or_create_default_social_brand', { p_auth_id: authId }, cfg);
     } catch (err) {
         const status = err instanceof SupabaseError ? err.status : 0;
-        console.error('[api/v1/social/accounts/instagram/callback] brand lookup failed:', status, err && err.body);
+        console.error('[api/v1/social/accounts/linkedin/callback] brand lookup failed:', status, err && err.body);
         return NextResponse.json({ error: 'internal' }, { status: 502 });
     }
     if (!brand || brand.ok !== true) {
@@ -97,10 +95,12 @@ export async function POST(req) {
     }
 
     let accessTokenEnc;
+    let refreshTokenEnc = null;
     try {
         accessTokenEnc = await encryptToken(account.accessToken, cryptoCfg);
+        if (account.refreshToken) refreshTokenEnc = await encryptToken(account.refreshToken, cryptoCfg);
     } catch (err) {
-        console.error('[api/v1/social/accounts/instagram/callback] token encryption failed:', err && err.message);
+        console.error('[api/v1/social/accounts/linkedin/callback] token encryption failed:', err && err.message);
         return NextResponse.json({ error: 'internal' }, { status: 502 });
     }
 
@@ -109,18 +109,18 @@ export async function POST(req) {
         recorded = await rpc('record_social_account_connection', {
             p_auth_id: authId,
             p_brand_id: brand.brand_id,
-            p_network: 'instagram',
+            p_network: 'linkedin',
             p_external_account_id: account.externalAccountId,
             p_display_name: account.displayName,
             p_avatar_url: account.avatarUrl,
-            p_scopes: ['instagram_basic', 'instagram_content_publish', 'pages_show_list', 'pages_read_engagement'],
+            p_scopes: LINKEDIN_SCOPES,
             p_access_token_enc: accessTokenEnc,
-            p_refresh_token_enc: null, // Meta long-lived tokens have no refresh token; re-auth before expiry instead
+            p_refresh_token_enc: refreshTokenEnc,
             p_token_expires_at: account.expiresAt,
         }, cfg);
     } catch (err) {
         const status = err instanceof SupabaseError ? err.status : 0;
-        console.error('[api/v1/social/accounts/instagram/callback] account record failed:', status, err && err.body);
+        console.error('[api/v1/social/accounts/linkedin/callback] account record failed:', status, err && err.body);
         return NextResponse.json({ error: 'internal' }, { status: 502 });
     }
     if (!recorded || recorded.ok !== true) {
@@ -130,7 +130,7 @@ export async function POST(req) {
     return NextResponse.json({
         ok: true,
         account: {
-            id: recorded.account_id, network: 'instagram',
+            id: recorded.account_id, network: 'linkedin',
             display_name: account.displayName, avatar_url: account.avatarUrl, status: 'active',
         },
     }, { headers: { 'Cache-Control': 'no-store' } });

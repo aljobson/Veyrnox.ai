@@ -1,13 +1,15 @@
 'use client';
 
-// Instagram's OAuth redirect target — the exact path app/api/v1/social/
-// accounts/instagram/{connect,callback}/route.js both hard-code as
-// CALLBACK_PATH. Mirrors app/auth/callback/page.js's shape: a bare landing
-// page, no nav, that exchanges the one-time code and sends the browser
-// back into the app.
+// Every live network's OAuth redirect target — app/api/v1/social/accounts/
+// :network/{connect,callback}/route.js each hard-code their own
+// CALLBACK_PATH as `/social/connect/callback/${network}`; this page reads
+// that same network back out of its own URL. Mirrors app/auth/callback/
+// page.js's shape: a bare landing page, no nav, that exchanges the
+// one-time code and sends the browser back into the app.
 
 import { useEffect, useState } from 'react';
-import { completeInstagramConnect } from '../../../lib/socialConnectClient.js';
+import { useParams } from 'next/navigation';
+import { NETWORKS, completeNetworkConnect } from '../../../../lib/socialConnectClient.js';
 
 const TRY_AGAIN = 'Nothing was connected. Go back and try again.';
 const ERROR_COPY = {
@@ -17,32 +19,42 @@ const ERROR_COPY = {
     not_authenticated: `You were signed out before this finished. Sign in, then ${TRY_AGAIN.toLowerCase()}`,
 };
 
+function networkLabel(key) {
+    return NETWORKS.find((n) => n.key === key)?.label || key;
+}
+
 export default function SocialConnectCallback() {
+    const { network } = useParams();
     const [status, setStatus] = useState('Connecting your account…');
     const [failed, setFailed] = useState(false);
 
     useEffect(() => {
+        if (!network || !NETWORKS.some((n) => n.key === network)) {
+            setStatus(`Unrecognized network. ${TRY_AGAIN}`);
+            setFailed(true);
+            return;
+        }
         const fail = (message) => { setStatus(message); setFailed(true); };
         if (!new URL(window.location.href).searchParams.get('code')) {
             fail(`This page was opened without a connection response. ${TRY_AGAIN}`);
             return;
         }
-        completeInstagramConnect()
+        completeNetworkConnect(network)
             .then((result) => {
                 if (result && result.ok) {
-                    setStatus(`Connected @${result.account?.display_name?.replace(/^@/, '') || ''}. Redirecting…`);
+                    setStatus(`Connected ${networkLabel(network)}. Redirecting…`);
                     window.location.replace('/app/publish');
                 } else {
                     const code = result && result.code;
-                    console.error('[social-connect-callback] connect failed', code);
-                    fail(ERROR_COPY[code] || `Instagram could not be connected. ${TRY_AGAIN}`);
+                    console.error('[social-connect-callback] connect failed', network, code);
+                    fail(ERROR_COPY[code] || `${networkLabel(network)} could not be connected. ${TRY_AGAIN}`);
                 }
             })
             .catch((err) => {
-                console.error('[social-connect-callback] unexpected failure', err);
-                fail(`Instagram could not be connected. ${TRY_AGAIN}`);
+                console.error('[social-connect-callback] unexpected failure', network, err);
+                fail(`${networkLabel(network)} could not be connected. ${TRY_AGAIN}`);
             });
-    }, []);
+    }, [network]);
 
     return (
         <div className="min-h-screen bg-black text-white flex items-center justify-center px-6">

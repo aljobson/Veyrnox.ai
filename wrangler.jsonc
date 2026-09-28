@@ -151,6 +151,10 @@
   //                               Instagram OAuth connect/callback + Graph API calls
   //                               (packages/adapters/social/instagram.js, ADR-0061). Not yet
   //                               provisioned — see docs/social-publisher/06-oauth-review-runbook.md.
+  //   LINKEDIN_CLIENT_ID, LINKEDIN_CLIENT_SECRET
+  //                               LinkedIn OAuth connect/callback + Posts/Images API calls
+  //                               (packages/adapters/social/linkedin.js, ADR-0061). Not yet
+  //                               provisioned.
   //   SOCIAL_OAUTH_STATE_SECRET   signs the OAuth `state` token (lib/social/oauthState.js, ADR-0061
   //                               §2.7) — this app is cookie-free, so state carries its own HMAC
   //                               binding instead of server-side session storage

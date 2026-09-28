@@ -1,11 +1,12 @@
 /**
- * POST /api/v1/social/accounts/instagram/connect — start the OAuth flow.
+ * POST /api/v1/social/accounts/linkedin/connect — start the OAuth flow.
  * Technical spec §2.3/§2.7, ADR-0061.
  *
- * Body: { codeChallenge } — the client generates its own PKCE verifier
- * and S256 challenge (app/lib/authClient.js's randomVerifier/s256
- * pattern, sessionStorage-held), exactly like the existing Apple/Google
- * flow. The verifier itself never reaches this route.
+ * Body: { codeChallenge } — validated for contract parity with every other
+ * network's connect route (app/lib/socialConnectClient.js's connect/
+ * callback pair is fully generic), even though LinkedIn's own authorize
+ * endpoint has no documented PKCE support and never sees this value
+ * (packages/adapters/social/linkedin.js).
  *
  * Response (200): { authorizeUrl } — the client navigates the browser
  * here directly (window.location.assign), same as signInWithOAuth.
@@ -18,7 +19,7 @@
 
 import { NextResponse } from 'next/server';
 import { envConfig } from '../../../../../../../packages/db/supabase-client.js';
-import { instagramConfig, buildAuthorizeUrl } from '../../../../../../../packages/adapters/social/instagram.js';
+import { linkedinConfig, buildAuthorizeUrl } from '../../../../../../../packages/adapters/social/linkedin.js';
 import { createOAuthState } from '../../../../../../../lib/social/oauthState.js';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -26,7 +27,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 // shared one: multiple providers redirecting to the same URL would leave
 // the landing page with no reliable way to know which network's /callback
 // route to call — a provider's redirect carries no such hint itself.
-const CALLBACK_PATH = '/social/connect/callback/instagram';
+const CALLBACK_PATH = '/social/connect/callback/linkedin';
 
 export async function POST(req) {
     const authId = req.headers.get('x-veyrnox-auth-id');
@@ -35,11 +36,11 @@ export async function POST(req) {
     }
 
     const cfg = envConfig();
-    const igCfg = instagramConfig();
+    const liCfg = linkedinConfig();
     const stateSecret = process.env.SOCIAL_OAUTH_STATE_SECRET;
     const publicHost = process.env.PUBLIC_HOST;
-    if (!cfg.supabaseUrl || !cfg.serviceRoleKey || !igCfg || !stateSecret || !publicHost) {
-        return NextResponse.json({ error: 'instagram_not_configured' }, { status: 503 });
+    if (!cfg.supabaseUrl || !cfg.serviceRoleKey || !liCfg || !stateSecret || !publicHost) {
+        return NextResponse.json({ error: 'linkedin_not_configured' }, { status: 503 });
     }
 
     let body;
@@ -58,16 +59,16 @@ export async function POST(req) {
         base = new URL(publicHost);
         if (base.protocol !== 'https:') throw new Error('not_https');
     } catch {
-        return NextResponse.json({ error: 'instagram_not_configured' }, { status: 503 });
+        return NextResponse.json({ error: 'linkedin_not_configured' }, { status: 503 });
     }
     const redirectUri = new URL(CALLBACK_PATH, base).toString();
 
-    const state = await createOAuthState({ authId, network: 'instagram' }, stateSecret);
+    const state = await createOAuthState({ authId, network: 'linkedin' }, stateSecret);
     let authorizeUrl;
     try {
-        authorizeUrl = buildAuthorizeUrl(igCfg, { redirectUri, state, codeChallenge });
+        authorizeUrl = buildAuthorizeUrl(liCfg, { redirectUri, state });
     } catch (err) {
-        console.error('[api/v1/social/accounts/instagram/connect] authorize URL build failed:', err && err.message);
+        console.error('[api/v1/social/accounts/linkedin/connect] authorize URL build failed:', err && err.message);
         return NextResponse.json({ error: 'internal' }, { status: 502 });
     }
 
