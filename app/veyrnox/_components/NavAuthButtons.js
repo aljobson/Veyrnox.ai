@@ -10,6 +10,7 @@ const ACCOUNT_LINKS = [
   { href: '/social-cinema', label: 'Social Cinema' },
   { href: '/app', label: 'Open Studio' },
   { href: '/app/library', label: 'Library' },
+  { href: '/app/publish', label: 'Veyrnox Publish' },
   { href: '/app/credits', label: 'Credits' },
   { href: '/app/account', label: 'Account & security' },
 ];
