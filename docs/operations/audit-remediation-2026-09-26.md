@@ -142,3 +142,34 @@ name `Al Jobson — Staging Test`. The creator application was submitted through
 the UI and confirmed as waiting for review. No creator role was granted yet;
 administrator review and upload lifecycle checks remain pending. Production and
 unrelated databases remain untouched.
+
+## Removal and replacement validation — 2026-09-28
+
+The owner approved permanent removal of the six-second synthetic clip attached
+to `Cinema upload test — 28 September` (content
+`ab9ebab8-da24-4780-8e65-92b50ee24906`). The creator UI accepted removal and
+blocked replacement while the original upload was `deleting`. The scheduled
+worker claimed it at 07:55:37 UTC. Cloudflare's authenticated account video
+inventory then showed zero videos, but the database did not complete removal.
+
+The Stream adapter rejected empty HTTP 200 responses although the provider's
+delete API returns void. Commit `ac360b2` accepts empty 200 success and retains
+denial of ambiguous 404, auth errors, redirects and unsuccessful JSON responses.
+This is a compatibility fix; the original provider response was not captured,
+so its precise status/body remains unverified. Twelve targeted tests (including
+workerd), lint and the staging build passed. Staging version:
+`b6fe0d3f-4eb0-4c64-bac4-aad22863a944`.
+
+After independent provider inventory confirmation, tested the existing
+`finish_cinema_upload_removal` RPC in a rolled-back transaction, then reconciled
+only upload `7ffba183-a3d1-4add-bb7c-2e605854b717` using its current claim and exact
+content/provider IDs. This was manual operator reconciliation, not a successful
+automatic deletion-completion test. Old upload readback is `deleted` and retains
+its tombstone. The browser unlocked replacement upload. The same synthetic file
+(`/tmp/cinema-staging-colour-test-0928.mp4`, 605471 bytes, six seconds, 360×640)
+was submitted through the creator UI as a new upload
+`348f3e56-fb2f-48fa-9e84-e07243587b80`. No publication was requested.
+Browser refresh confirmed replacement processing complete, still private.
+Automatic deletion completion after the patch, signed-webhook delivery,
+missed-callback recovery and invalidation of a previously copied tus URL still
+need distinct live evidence; this result does not claim those checks passed.
