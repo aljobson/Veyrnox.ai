@@ -27,7 +27,11 @@ export const NETWORKS = [
     // yet (that adapter's own header explains why), which only matters
     // once a composer/scheduling UI exists to promise it.
     { key: 'tiktok', label: 'TikTok', live: true },
-    { key: 'youtube', label: 'YouTube', live: false },
+    // Same story as TikTok: connect works (packages/adapters/social/
+    // youtube.js), publishing does not yet — YouTube has no image-post
+    // API at all, only a resumable video upload with its own design work
+    // still to do.
+    { key: 'youtube', label: 'YouTube', live: true },
 ];
 
 function pkceKey(network) {

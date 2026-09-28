@@ -14,6 +14,7 @@ import { NETWORKS, completeNetworkConnect } from '../../../../lib/socialConnectC
 const TRY_AGAIN = 'Nothing was connected. Go back and try again.';
 const ERROR_COPY = {
     NO_LINKED_INSTAGRAM_ACCOUNT: 'That Facebook account has no linked Instagram Business or Creator account. Convert your Instagram account to a Business or Creator account, link it to a Facebook Page, then try again.',
+    NO_YOUTUBE_CHANNEL: 'That Google account has no YouTube channel. Create a channel on that account, then try again.',
     VERIFIER_MISSING: `This was opened in a different browser or tab than where you started connecting. ${TRY_AGAIN}`,
     invalid_state: `This connection link was already used or has expired. ${TRY_AGAIN}`,
     not_authenticated: `You were signed out before this finished. Sign in, then ${TRY_AGAIN.toLowerCase()}`,
