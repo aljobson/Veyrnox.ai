@@ -34,78 +34,86 @@ const RIGHT_BROW = [336,296,334,293,300,276,283,282,295,285];
 export function createRenderer(canvas) {
     const gl = canvas.getContext('webgl', { alpha: false, preserveDrawingBuffer: true });
     if (!gl) throw new Error('This browser does not support the video preview. Try desktop Chrome.');
-    const shaders = [];
-    const compile = (type, code) => {
-        const shader = gl.createShader(type); shaders.push(shader);
-        gl.shaderSource(shader, code); gl.compileShader(shader);
-        if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) throw new Error('The video filter could not initialize.');
-        return shader;
-    };
-    const program = gl.createProgram();
-    gl.attachShader(program, compile(gl.VERTEX_SHADER, VERTEX));
-    gl.attachShader(program, compile(gl.FRAGMENT_SHADER, FRAGMENT));
-    gl.linkProgram(program);
-    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) throw new Error('The video filter could not initialize.');
-    gl.useProgram(program);
-    const buffer = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,1,-1,-1,1,1,1]), gl.STATIC_DRAW);
-    const position = gl.getAttribLocation(program, 'position');
-    gl.enableVertexAttribArray(position); gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0);
-    const locations = Object.fromEntries(['source','mask','pixel','smoothing','look'].map(key => [key, gl.getUniformLocation(program, key)]));
-    const textures = [0,1].map(unit => {
-        const texture = gl.createTexture(); gl.activeTexture(gl.TEXTURE0 + unit); gl.bindTexture(gl.TEXTURE_2D, texture);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-        return texture;
-    });
-    const mask = document.createElement('canvas');
-    const ctx = mask.getContext('2d');
-    function polygon(points, indices, expansion = 1) {
-        const center = indices.reduce((a, i) => ({ x: a.x + points[i].x / indices.length, y: a.y + points[i].y / indices.length }), {x:0,y:0});
-        ctx.beginPath();
-        indices.forEach((index, i) => {
-            const x = (center.x + (points[index].x - center.x) * expansion) * mask.width;
-            const y = (center.y + (points[index].y - center.y) * expansion) * mask.height;
-            if (i) ctx.lineTo(x,y); else ctx.moveTo(x,y);
-        });
-        ctx.closePath(); ctx.fill();
+    const shaders = [], textures = [];
+    let program, buffer, closed = false;
+    function close() {
+        if (closed) return;
+        closed = true;
+        textures.forEach(texture => gl.deleteTexture(texture));
+        shaders.forEach(shader => gl.deleteShader(shader));
+        if (buffer) gl.deleteBuffer(buffer);
+        if (program) gl.deleteProgram(program);
+        gl.getExtension('WEBGL_lose_context')?.loseContext();
     }
-    return {
-        draw(video, faces, settings) {
-            if (gl.isContextLost()) throw new Error('The video preview lost graphics access. Reload to try again.');
-            const width = video.videoWidth ?? video.width, height = video.videoHeight ?? video.height;
-            if (canvas.width !== width || canvas.height !== height) {
-                canvas.width = mask.width = width;
-                canvas.height = mask.height = height;
-            }
-            ctx.filter = 'none'; ctx.fillStyle = 'black'; ctx.fillRect(0,0,mask.width,mask.height);
-            // Clear on every frame: no face or multiple faces never reuses an old mask.
-            if (faces.length === 1) {
-                ctx.filter = `blur(${Math.max(2, mask.width / 200)}px)`;
-                ctx.fillStyle = 'white'; polygon(faces[0], OVAL, 0.92);
-                ctx.fillStyle = 'black';
-                for (const region of [LEFT_EYE,RIGHT_EYE,LIPS,LEFT_BROW,RIGHT_BROW]) polygon(faces[0], region, 1.5);
-            }
-            gl.viewport(0,0,canvas.width,canvas.height);
-            gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-            [video,mask].forEach((input, unit) => {
-                gl.activeTexture(gl.TEXTURE0 + unit); gl.bindTexture(gl.TEXTURE_2D,textures[unit]);
-                gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,input);
+    try {
+        const compile = (type, code) => {
+            const shader = gl.createShader(type); shaders.push(shader);
+            gl.shaderSource(shader, code); gl.compileShader(shader);
+            if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) throw new Error('The video filter could not initialize.');
+            return shader;
+        };
+        program = gl.createProgram();
+        gl.attachShader(program, compile(gl.VERTEX_SHADER, VERTEX));
+        gl.attachShader(program, compile(gl.FRAGMENT_SHADER, FRAGMENT));
+        gl.linkProgram(program);
+        if (!gl.getProgramParameter(program, gl.LINK_STATUS)) throw new Error('The video filter could not initialize.');
+        gl.useProgram(program);
+        buffer = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,1,-1,-1,1,1,1]), gl.STATIC_DRAW);
+        const position = gl.getAttribLocation(program, 'position');
+        gl.enableVertexAttribArray(position); gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0);
+        const locations = Object.fromEntries(['source','mask','pixel','smoothing','look'].map(key => [key, gl.getUniformLocation(program, key)]));
+        [0,1].forEach(unit => {
+            const texture = gl.createTexture(); textures.push(texture); gl.activeTexture(gl.TEXTURE0 + unit); gl.bindTexture(gl.TEXTURE_2D, texture);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        });
+        const mask = document.createElement('canvas');
+        const ctx = mask.getContext('2d');
+        if (!ctx) throw new Error('The video filter could not initialize.');
+        function polygon(points, indices, expansion = 1) {
+            const center = indices.reduce((a, i) => ({ x: a.x + points[i].x / indices.length, y: a.y + points[i].y / indices.length }), {x:0,y:0});
+            ctx.beginPath();
+            indices.forEach((index, i) => {
+                const x = (center.x + (points[index].x - center.x) * expansion) * mask.width;
+                const y = (center.y + (points[index].y - center.y) * expansion) * mask.height;
+                if (i) ctx.lineTo(x,y); else ctx.moveTo(x,y);
             });
-            gl.uniform1i(locations.source,0); gl.uniform1i(locations.mask,1);
-            gl.uniform2f(locations.pixel,1/canvas.width,1/canvas.height);
-            gl.uniform1f(locations.smoothing,Math.max(0,Math.min(100,settings.smoothing))/100);
-            const look = lookSettings(settings.look, settings.intensity);
-            gl.uniform3f(locations.look,look.saturation,look.contrast,look.warmth);
-            gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
-        },
-        close() {
-            textures.forEach(texture => gl.deleteTexture(texture));
-            shaders.forEach(shader => gl.deleteShader(shader));
-            gl.deleteBuffer(buffer); gl.deleteProgram(program);
-            gl.getExtension('WEBGL_lose_context')?.loseContext();
-        },
-    };
+            ctx.closePath(); ctx.fill();
+        }
+        return {
+            draw(video, faces, settings) {
+                if (closed || gl.isContextLost()) throw new Error('The video preview lost graphics access. Choose the video again to retry.');
+                const width = video.videoWidth ?? video.width, height = video.videoHeight ?? video.height;
+                if (canvas.width !== width || canvas.height !== height) {
+                    canvas.width = mask.width = width;
+                    canvas.height = mask.height = height;
+                }
+                ctx.filter = 'none'; ctx.fillStyle = 'black'; ctx.fillRect(0,0,mask.width,mask.height);
+                // Clear on every frame: no face or multiple faces never reuses an old mask.
+                if (faces.length === 1) {
+                    ctx.filter = `blur(${Math.max(2, mask.width / 200)}px)`;
+                    ctx.fillStyle = 'white'; polygon(faces[0], OVAL, 0.92);
+                    ctx.fillStyle = 'black';
+                    for (const region of [LEFT_EYE,RIGHT_EYE,LIPS,LEFT_BROW,RIGHT_BROW]) polygon(faces[0], region, 1.5);
+                }
+                gl.viewport(0,0,canvas.width,canvas.height);
+                gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+                [video,mask].forEach((input, unit) => {
+                    gl.activeTexture(gl.TEXTURE0 + unit); gl.bindTexture(gl.TEXTURE_2D,textures[unit]);
+                    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,input);
+                });
+                gl.uniform1i(locations.source,0); gl.uniform1i(locations.mask,1);
+                gl.uniform2f(locations.pixel,1/canvas.width,1/canvas.height);
+                gl.uniform1f(locations.smoothing,Math.max(0,Math.min(100,settings.smoothing))/100);
+                const look = lookSettings(settings.look, settings.intensity);
+                gl.uniform3f(locations.look,look.saturation,look.contrast,look.warmth);
+                gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+                if (gl.isContextLost()) throw new Error('The video preview lost graphics access. Choose the video again to retry.');
+            },
+            close,
+        };
+    } catch (error) { close(); throw error; }
 }

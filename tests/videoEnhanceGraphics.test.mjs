@@ -1,0 +1,94 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+
+const root = new URL('../app/veyrnox/_lib/', import.meta.url);
+const rendererSource = (await readFile(new URL('videoEnhanceRenderer.js', root), 'utf8'))
+    .replace("'./videoEnhance.mjs'", JSON.stringify(new URL('videoEnhance.mjs', root).href));
+const { createRenderer } = await import(`data:text/javascript,${encodeURIComponent(rendererSource)}`);
+
+function graphics({ compile = true, link = true } = {}) {
+    const allocated = [], deleted = [];
+    let lost = false, releases = 0;
+    const gl = new Proxy({
+        getShaderParameter: () => compile, getProgramParameter: () => link,
+        isContextLost: () => lost,
+        getExtension: () => ({ loseContext() { lost = true; releases++; } }),
+    }, { get(target, key) {
+        if (key in target) return target[key];
+        if (key.startsWith('create')) return () => { const handle = {}; allocated.push(handle); return handle; };
+        if (key.startsWith('delete')) return handle => deleted.push(handle);
+        return () => {};
+    } });
+    return { canvas: { getContext: () => gl }, allocated, deleted,
+        lose: () => { lost = true; }, releases: () => releases };
+}
+
+for (const stage of ['compile', 'link']) {
+    test(`renderer releases partial GPU resources when ${stage} fails`, () => {
+        const fixture = graphics({ [stage]: false });
+        assert.throws(() => createRenderer(fixture.canvas), /could not initialize/);
+        assert.deepEqual(new Set(fixture.deleted), new Set(fixture.allocated));
+        assert.equal(fixture.releases(), 1);
+    });
+}
+
+test('renderer refuses lost graphics and closes resources only once', () => {
+    const previous = globalThis.document;
+    globalThis.document = { createElement: () => ({ getContext: () => ({}) }) };
+    try {
+        const fixture = graphics();
+        const renderer = createRenderer(fixture.canvas);
+        fixture.lose();
+        assert.throws(() => renderer.draw({}, [], {}), /lost graphics access/);
+        renderer.close(); renderer.close();
+        assert.deepEqual(new Set(fixture.deleted), new Set(fixture.allocated));
+        assert.equal(fixture.deleted.length, fixture.allocated.length);
+        assert.equal(fixture.releases(), 1);
+    } finally { globalThis.document = previous; }
+});
+
+const engineSource = (await readFile(new URL('videoEnhanceEngine.js', root), 'utf8'))
+    .replace(/^import .*;$/gm, '')
+    .replace('export async function', `const { VIDEO_ENHANCE_ASSET_PATH, FaceLandmarker, FilesetResolver,
+        createRenderer, exportEnhancedVideo, acquireSetupTracker } = globalThis.graphicsHarness;
+        export async function`);
+
+test('paused graphics loss aborts export, reports once, and disposes listeners', async () => {
+    const previousDocument = globalThis.document, previousEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'development';
+    const canvas = new EventTarget(), video = new EventTarget();
+    let cancelled = 0, closed = 0, rejectExport, exportSignal;
+    const errors = [];
+    Object.assign(video, { readyState: 2, currentTime: 0, videoWidth: 640, videoHeight: 360,
+        pause() {}, requestVideoFrameCallback: () => 1, cancelVideoFrameCallback() { cancelled++; } });
+    globalThis.document = Object.assign(new EventTarget(), { createElement: () => ({ getContext: () => ({ drawImage() {} }) }) });
+    globalThis.graphicsHarness = {
+        VIDEO_ENHANCE_ASSET_PATH: '', FilesetResolver: { forVisionTasks: async () => ({}) },
+        FaceLandmarker: { createFromOptions: async () => ({ detectForVideo: () => ({ faceLandmarks: [] }), close() { closed++; } }) },
+        acquireSetupTracker: factory => factory(), createRenderer: () => ({ draw() {}, close() { closed++; } }),
+        exportEnhancedVideo: (_file, { signal }) => { exportSignal = signal; return new Promise((_resolve, reject) => { rejectExport = reject; }); },
+    };
+    try {
+        const { createVideoEnhanceEngine } = await import(`data:text/javascript,${encodeURIComponent(engineSource)}`);
+        const engine = await createVideoEnhanceEngine(video, canvas, () => {}, message => errors.push(message));
+        const pending = engine.export({});
+        canvas.dispatchEvent(new Event('webglcontextlost'));
+        canvas.dispatchEvent(new Event('webglcontextlost'));
+        assert.equal(exportSignal.aborted, true);
+        assert.equal(errors.length, 1);
+        assert.match(errors[0], /Choose the video again/);
+        assert.equal(cancelled, 1);
+        rejectExport(new Error('Export cancelled.'));
+        await assert.rejects(pending, /lost graphics access/);
+        await assert.rejects(engine.export({}), /lost graphics access/);
+        engine.close(); engine.close();
+        assert.equal(closed, 2);
+        canvas.dispatchEvent(new Event('webglcontextlost'));
+        assert.equal(errors.length, 1);
+    } finally {
+        globalThis.document = previousDocument;
+        if (previousEnv === undefined) delete process.env.NODE_ENV; else process.env.NODE_ENV = previousEnv;
+        delete globalThis.graphicsHarness;
+    }
+});

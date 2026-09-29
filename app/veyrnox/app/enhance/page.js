@@ -11,7 +11,7 @@ const initialSettings = { smoothing: 30, look: 'natural', intensity: 100 };
 const rangeStyle = 'mt-3 w-full accent-vx-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-vx-accent';
 
 function Editor() {
-    const video = useRef(null), canvas = useRef(null), engine = useRef(null), alive = useRef(true), failed = useRef(false);
+    const video = useRef(null), canvas = useRef(null), engine = useRef(null), alive = useRef(true), failed = useRef(false), sourceEpoch = useRef(0);
     const [source, setSource] = useState(null), [duration, setDuration] = useState(0);
     const [aspect, setAspect] = useState(16 / 9);
     const [exportWarning, setExportWarning] = useState('');
@@ -68,6 +68,7 @@ function Editor() {
         if (!file) return;
         const invalid = validateVideo(file);
         if (invalid) { setError(invalid); return; }
+        sourceEpoch.current++;
         engine.current?.pause(); failed.current = false; setError(''); setResult(null); setDuration(0); setState('loading');
         setExportWarning('');
         setFrame({ time: 0, faces: 0, playing: false }); setSettings(initialSettings);
@@ -82,12 +83,15 @@ function Editor() {
     }
     async function exportVideo() {
         if (exportWarning || state !== 'ready') return;
+        const exportingEngine = engine.current;
+        const epoch = sourceEpoch.current;
+        const isCurrent = () => alive.current && sourceEpoch.current === epoch && engine.current === exportingEngine;
         setError(''); setResult(null); setState('exporting');
         try {
-            const blob = await engine.current.export(source.file);
-            if (alive.current) setResult({ url: URL.createObjectURL(blob), name: downloadName(source.file.name, blob.type), type: blob.type });
-        } catch (e) { if (alive.current) setError(e.message); }
-        finally { if (alive.current) { setState(failed.current ? 'error' : 'ready'); setFrame(previous => ({ ...previous, playing: false })); } }
+            const blob = await exportingEngine.export(source.file);
+            if (isCurrent() && !failed.current) setResult({ url: URL.createObjectURL(blob), name: downloadName(source.file.name, blob.type), type: blob.type });
+        } catch (e) { if (isCurrent()) setError(e.message); }
+        finally { if (isCurrent()) { setState(failed.current ? 'error' : 'ready'); setFrame(previous => ({ ...previous, playing: false })); } }
     }
     return <>
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
@@ -110,7 +114,7 @@ function Editor() {
                         <input className={rangeStyle} type="range" min="0" max={duration || 1} step="0.01" value={Math.min(frame.time,duration)} disabled={state !== 'ready'} onChange={event => { engine.current?.pause(); engine.current?.seek(Number(event.target.value)).catch(e => setError(e.message)); setFrame(previous => ({ ...previous, playing: false })); }} />
                     </label>
                     <Button size="sm" variant="ghost" disabled={state !== 'ready'} onClick={play}>{frame.playing ? 'Pause' : 'Play comparison'}</Button>
-                    <p role="status" className="text-xs leading-relaxed text-vx-fg-muted">{state === 'loading' ? 'Preparing face tracking…' : settings.smoothing === 0 ? 'Skin smoothing is off.' : frame.faces === 1 ? 'One face tracked. Smoothing is applied to the face region.' : frame.faces > 1 ? 'Multiple faces detected. Smoothing is paused; colour settings still apply.' : 'No face tracked. Smoothing is paused; colour settings still apply.'}</p>
+                    <p role="status" className="text-xs leading-relaxed text-vx-fg-muted">{state === 'error' ? 'Preview stopped. Choose the video again to retry.' : state === 'loading' ? 'Preparing face tracking…' : settings.smoothing === 0 ? 'Skin smoothing is off.' : frame.faces === 1 ? 'One face tracked. Smoothing is applied to the face region.' : frame.faces > 1 ? 'Multiple faces detected. Smoothing is paused; colour settings still apply.' : 'No face tracked. Smoothing is paused; colour settings still apply.'}</p>
                 </div>}
             </section>
             <aside aria-label="Adjustments" className="space-y-6 rounded-2xl border border-vx-border p-5">

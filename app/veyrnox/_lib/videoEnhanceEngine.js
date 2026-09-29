@@ -20,9 +20,18 @@ export async function createVideoEnhanceEngine(video, canvas, onFrame, onError, 
     const input = document.createElement('canvas');
     const context = input.getContext('2d');
     let settings = { smoothing: 30, look: 'natural', intensity: 100 };
-    let callback, disposed = false, timestamp = 0, faces = [], lastTime = -1, exportController;
+    let callback, disposed = false, timestamp = 0, faces = [], lastTime = -1, exportController, failure;
+    function fail(error) {
+        if (disposed || failure) return;
+        failure = error;
+        video.pause(); exportController?.abort();
+        if (video.cancelVideoFrameCallback) video.cancelVideoFrameCallback(callback); else cancelAnimationFrame(callback);
+        onError(error.message);
+    }
+    const graphicsLost = () => fail(new Error('The video preview lost graphics access. Choose the video again to retry.'));
+    canvas.addEventListener('webglcontextlost', graphicsLost);
     function draw(force = false) {
-        if (disposed || exportController || video.readyState < 2 || video.seeking) return;
+        if (disposed || failure || exportController || video.readyState < 2 || video.seeking) return;
         try {
             if (force || video.currentTime !== lastTime) {
                 const scale = Math.min(1, 384 / Math.max(video.videoWidth, video.videoHeight));
@@ -34,11 +43,11 @@ export async function createVideoEnhanceEngine(video, canvas, onFrame, onError, 
             }
             renderer.draw(video, faces, settings);
             onFrame({ time: video.currentTime, faces: faces.length, playing: !video.paused });
-        } catch (error) { video.pause(); exportController?.abort(); onError(error.message); }
+        } catch (error) { fail(error); }
     }
     function tick() {
         draw();
-        if (!disposed) callback = video.requestVideoFrameCallback ? video.requestVideoFrameCallback(tick) : requestAnimationFrame(tick);
+        if (!disposed && !failure) callback = video.requestVideoFrameCallback ? video.requestVideoFrameCallback(tick) : requestAnimationFrame(tick);
     }
     const redraw = () => draw(true);
     video.addEventListener('seeked', redraw); video.addEventListener('loadeddata', redraw);
@@ -57,6 +66,8 @@ export async function createVideoEnhanceEngine(video, canvas, onFrame, onError, 
         seek,
         cancel() { exportController?.abort(); },
         async export(file) {
+            if (failure) throw failure;
+            if (disposed) throw new Error('The video editor is closed.');
             if (exportController) throw new Error('An export is already running.');
             const controller = new AbortController(); exportController = controller;
             const hidden = () => { if (document.hidden) controller.abort(); };
@@ -65,7 +76,7 @@ export async function createVideoEnhanceEngine(video, canvas, onFrame, onError, 
             const decoded = document.createElement('canvas');
             const decodedContext = decoded.getContext('2d');
             try {
-                return await exportEnhancedVideo(file, {
+                const result = await exportEnhancedVideo(file, {
                     signal: controller.signal,
                     process(sample) {
                         decoded.width = sample.displayWidth; decoded.height = sample.displayHeight;
@@ -75,11 +86,15 @@ export async function createVideoEnhanceEngine(video, canvas, onFrame, onError, 
                         context.drawImage(decoded, 0, 0, input.width, input.height);
                         timestamp = Math.max(timestamp + 1, performance.now());
                         faces = settings.smoothing > 0 ? tracker.detectForVideo(input, timestamp).faceLandmarks : [];
-                        renderer.draw(decoded, faces, settings);
+                        try { renderer.draw(decoded, faces, settings); } catch (error) { fail(error); throw error; }
                         onFrame({ time: sample.timestamp, faces: faces.length, playing: false });
                         return canvas;
                     },
                 });
+                if (failure) throw failure;
+                return result;
+            } catch (error) {
+                throw failure || error;
             } finally {
                 document.removeEventListener('visibilitychange', hidden);
                 exportController = undefined;
@@ -87,6 +102,8 @@ export async function createVideoEnhanceEngine(video, canvas, onFrame, onError, 
             }
         },
         close() {
+            if (disposed) return;
+            canvas.removeEventListener('webglcontextlost', graphicsLost);
             disposed = true; exportController?.abort(); video.pause();
             if (video.cancelVideoFrameCallback) video.cancelVideoFrameCallback(callback); else cancelAnimationFrame(callback);
             video.removeEventListener('seeked', redraw); video.removeEventListener('loadeddata', redraw);

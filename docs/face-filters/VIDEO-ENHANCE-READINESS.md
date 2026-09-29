@@ -233,3 +233,30 @@ for covered faces. This guidance does not close the quality gate.
 
 See the [occlusion evaluation](VIDEO-ENHANCE-OCCLUSION.md) for provenance,
 control comparison, sample limits and remaining qualification.
+
+## Graphics failure recovery, 2026-09-29
+
+The engine now handles `webglcontextlost` even while paused, stops scheduling
+preview frames, aborts an active export, and reports one actionable error.
+Renderer initialization failures release partially allocated GPU resources;
+close is idempotent and intentional disposal removes the loss listener first.
+The renderer checks loss before and after drawing. Export completion is scoped
+to the selected source, so an old export cannot replace a newer editor state.
+
+Local Chromium validation used `WEBGL_lose_context` on the enhanced canvas:
+
+- Paused loss immediately displayed the graphics-access error and disabled
+  preview/export controls.
+- Loss during a 15-second export stopped at the displayed 3.2-second position,
+  showed the graphics error rather than generic cancellation, and offered no
+  download.
+- Choosing the same source again recovered without a page reload. A full retry
+  produced a downloadable MP4; the export checker confirmed 375 frames,
+  timestamps/durations within 1 ms, and no added audio.
+
+Four regression tests cover shader compile/link cleanup, idempotent renderer
+closure, lost-context draw rejection, and engine export abort/error disposal.
+Full suite: 840 passed, 1 skipped. Next production build and scoped lint passed;
+final source-selection guard and stopped-status copy also compiled in next dev.
+This is synthetic local graphics loss, not a physical GPU reset qualification.
+Production activation and all other release gates remain unchanged.
