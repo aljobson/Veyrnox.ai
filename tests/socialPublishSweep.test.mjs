@@ -6,6 +6,13 @@ import { tokenCryptoConfig, encryptToken } from '../lib/social/tokenCrypto.js';
 const cfg = { supabaseUrl: 'https://db.test', serviceRoleKey: 'test-service' };
 const cryptoCfg = tokenCryptoConfig({ SOCIAL_TOKEN_ENCRYPTION_KEY: Buffer.alloc(32, 7).toString('base64') });
 const r2cfg = { accountId: 'acct', accessKeyId: 'key', secretAccessKey: 'secret', bucket: 'bucket' };
+const publicHost = 'https://veyrnox.ai';
+const mediaProxySecret = 'media-proxy-secret';
+const asyncDeps = { cfg, cryptoCfg, r2cfg, publicHost, mediaProxySecret };
+Object.assign(process.env, {
+    YOUTUBE_CLIENT_ID: '123456789012-abcdefghijklmnop.apps.googleusercontent.com',
+    YOUTUBE_CLIENT_SECRET: 'a'.repeat(24),
+});
 
 function target(overrides = {}) {
     return {
@@ -45,7 +52,7 @@ test('nothing claimed is a clean no-op, not an error', async () => {
 
 test('an unimplemented network fails its target with a named reason, never hangs as pending', async () => {
     await withFetch({
-        claim_due_social_post_targets: async () => [target({ network: 'tiktok', target_id: 't-2' })],
+        claim_due_social_post_targets: async () => [target({ network: 'pinterest', target_id: 't-2' })],
         complete_social_post_target: async (body) => {
             assert.equal(body.p_target_id, 't-2');
             assert.equal(body.p_ok, false);
@@ -193,7 +200,7 @@ test('one target throwing during dispatch does not sink the rest of the batch', 
     await withFetch({
         claim_due_social_post_targets: async () => [
             target({ target_id: 't-bad', access_token_enc: '\\xnotvalidhex!' }),
-            target({ target_id: 't-skip', network: 'tiktok' }),
+            target({ target_id: 't-skip', network: 'pinterest' }),
         ],
         complete_social_post_target: async (body) => ({ ok: true, seen: body.p_target_id }),
     }, async () => {
@@ -213,5 +220,313 @@ test(`claims at most ${BATCH} targets per sweep`, async () => {
         },
     }, async () => {
         await runPublishSweep({ cfg, cryptoCfg, r2cfg });
+    });
+});
+
+// ── TikTok: MEDIA_UPLOAD mode, submit-then-poll ─────────────────────────
+
+test('TikTok: first dispatch proxies the media through our own domain and reports the publish_id back as in-progress', async () => {
+    const accessTokenEnc = await encryptToken('tt-access-token', cryptoCfg);
+    let seenPhotoUrl;
+    await withFetch({
+        claim_due_social_post_targets: async () => [target({
+            network: 'tiktok', target_id: 't-tt', external_account_id: 'tt-open-id', access_token_enc: accessTokenEnc,
+        })],
+        report_social_post_progress: async (body) => {
+            assert.equal(body.p_target_id, 't-tt');
+            assert.equal(body.p_provider_state.publish_id, 'publish-1');
+            assert.ok(body.p_provider_state.started_at);
+            assert.ok(body.p_next_check_at);
+            return { ok: true };
+        },
+    }, async (calls) => {
+        const real = globalThis.fetch;
+        globalThis.fetch = async (url, init) => {
+            const u = new URL(url);
+            if (u.hostname === 'open.tiktokapis.com' && u.pathname === '/v2/post/publish/content/init/') {
+                const body = JSON.parse(init.body);
+                seenPhotoUrl = body.source_info.photo_images[0];
+                assert.equal(body.post_mode, 'MEDIA_UPLOAD');
+                assert.equal(body.is_aigc, true);
+                return Response.json({ data: { publish_id: 'publish-1' } });
+            }
+            return real(url, init);
+        };
+        const out = await runPublishSweep(asyncDeps);
+        assert.deepEqual(out, { ok: true, claimed: 1, published: 0, failed: 0, errors: 0 });
+        assert.deepEqual(calls, ['claim_due_social_post_targets', 'report_social_post_progress']);
+        assert.ok(seenPhotoUrl.startsWith('https://veyrnox.ai/media/social/'));
+    });
+});
+
+test('TikTok: a still-processing status keeps polling instead of completing', async () => {
+    const accessTokenEnc = await encryptToken('tt-access-token', cryptoCfg);
+    await withFetch({
+        claim_due_social_post_targets: async () => [target({
+            network: 'tiktok', target_id: 't-tt', access_token_enc: accessTokenEnc,
+            provider_state: { publish_id: 'publish-1', started_at: new Date().toISOString() },
+        })],
+        report_social_post_progress: async (body) => {
+            assert.equal(body.p_provider_state.publish_id, 'publish-1');
+            return { ok: true };
+        },
+    }, async (calls) => {
+        const real = globalThis.fetch;
+        globalThis.fetch = async (url, init) => {
+            const u = new URL(url);
+            if (u.hostname === 'open.tiktokapis.com' && u.pathname === '/v2/post/publish/status/fetch/') {
+                return Response.json({ data: { status: 'PROCESSING_DOWNLOAD' } });
+            }
+            return real(url, init);
+        };
+        const out = await runPublishSweep(asyncDeps);
+        assert.deepEqual(out, { ok: true, claimed: 1, published: 0, failed: 0, errors: 0 });
+        assert.deepEqual(calls, ['claim_due_social_post_targets', 'report_social_post_progress']);
+    });
+});
+
+test('TikTok: SEND_TO_USER_INBOX completes as delivered, not published — it is a draft, not a live post', async () => {
+    const accessTokenEnc = await encryptToken('tt-access-token', cryptoCfg);
+    await withFetch({
+        claim_due_social_post_targets: async () => [target({
+            network: 'tiktok', target_id: 't-tt', access_token_enc: accessTokenEnc,
+            provider_state: { publish_id: 'publish-1', started_at: new Date().toISOString() },
+        })],
+        complete_social_post_target: async (body) => {
+            assert.equal(body.p_ok, true);
+            assert.equal(body.p_delivered, true);
+            assert.equal(body.p_platform_post_id, 'publish-1');
+            assert.equal(body.p_platform_post_url, null);
+            return { ok: true };
+        },
+    }, async () => {
+        const real = globalThis.fetch;
+        globalThis.fetch = async (url, init) => {
+            const u = new URL(url);
+            if (u.hostname === 'open.tiktokapis.com' && u.pathname === '/v2/post/publish/status/fetch/') {
+                return Response.json({ data: { status: 'SEND_TO_USER_INBOX' } });
+            }
+            return real(url, init);
+        };
+        const out = await runPublishSweep(asyncDeps);
+        assert.deepEqual(out, { ok: true, claimed: 1, published: 1, failed: 0, errors: 0 });
+    });
+});
+
+test('TikTok: a FAILED status fails the target with the provider\'s own reason', async () => {
+    const accessTokenEnc = await encryptToken('tt-access-token', cryptoCfg);
+    await withFetch({
+        claim_due_social_post_targets: async () => [target({
+            network: 'tiktok', target_id: 't-tt', access_token_enc: accessTokenEnc,
+            provider_state: { publish_id: 'publish-1', started_at: new Date().toISOString() },
+        })],
+        complete_social_post_target: async (body) => {
+            assert.equal(body.p_ok, false);
+            assert.equal(body.p_error, 'photo_pull_failed');
+            return { ok: true };
+        },
+    }, async () => {
+        const real = globalThis.fetch;
+        globalThis.fetch = async (url, init) => {
+            const u = new URL(url);
+            if (u.hostname === 'open.tiktokapis.com' && u.pathname === '/v2/post/publish/status/fetch/') {
+                return Response.json({ data: { status: 'FAILED', fail_reason: 'photo_pull_failed' } });
+            }
+            return real(url, init);
+        };
+        const out = await runPublishSweep(asyncDeps);
+        assert.deepEqual(out, { ok: true, claimed: 1, published: 0, failed: 1, errors: 0 });
+    });
+});
+
+test('TikTok: a poll stuck past the outer time bound fails cleanly without calling TikTok again', async () => {
+    const accessTokenEnc = await encryptToken('tt-access-token', cryptoCfg);
+    let tiktokCalls = 0;
+    await withFetch({
+        claim_due_social_post_targets: async () => [target({
+            network: 'tiktok', target_id: 't-tt', access_token_enc: accessTokenEnc,
+            provider_state: { publish_id: 'publish-1', started_at: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString() },
+        })],
+        complete_social_post_target: async (body) => {
+            assert.equal(body.p_ok, false);
+            assert.equal(body.p_error, 'poll_timeout');
+            return { ok: true };
+        },
+    }, async () => {
+        const real = globalThis.fetch;
+        globalThis.fetch = async (url, init) => {
+            if (new URL(url).hostname === 'open.tiktokapis.com') tiktokCalls += 1;
+            return real(url, init);
+        };
+        const out = await runPublishSweep(asyncDeps);
+        assert.deepEqual(out, { ok: true, claimed: 1, published: 0, failed: 1, errors: 0 });
+        assert.equal(tiktokCalls, 0);
+    });
+});
+
+// ── YouTube: resumable upload across ticks, then processing poll ───────
+
+const youtubeTarget = (overrides = {}) => target({
+    network: 'youtube', target_id: 't-yt', external_account_id: 'channel-1',
+    media_type: 'video', mime_type: 'video/mp4', size_bytes: 1000,
+    ...overrides,
+});
+
+test('YouTube: first dispatch spends one quota unit and starts a resumable session', async () => {
+    const accessTokenEnc = await encryptToken('yt-access-token', cryptoCfg);
+    let quotaCalls = 0;
+    await withFetch({
+        claim_due_social_post_targets: async () => [youtubeTarget({ access_token_enc: accessTokenEnc })],
+        consume_youtube_upload_quota: async () => { quotaCalls += 1; return { ok: true, used: 1, limit: 80 }; },
+        report_social_post_progress: async (body) => {
+            assert.equal(body.p_provider_state.phase, 'uploading');
+            assert.equal(body.p_provider_state.session_uri, 'https://upload.example/session-1');
+            assert.equal(body.p_provider_state.total_bytes, 1000);
+            return { ok: true };
+        },
+    }, async (calls) => {
+        const real = globalThis.fetch;
+        const headerGet = (values) => ({ get: (k) => values[k.toLowerCase()] ?? null });
+        globalThis.fetch = async (url, init) => {
+            const u = new URL(url);
+            if (u.hostname === 'www.googleapis.com' && u.pathname === '/upload/youtube/v3/videos') {
+                assert.equal(init.headers['X-Upload-Content-Length'], '1000');
+                return { ok: true, status: 200, headers: headerGet({ location: 'https://upload.example/session-1' }) };
+            }
+            return real(url, init);
+        };
+        const out = await runPublishSweep(asyncDeps);
+        assert.deepEqual(out, { ok: true, claimed: 1, published: 0, failed: 0, errors: 0 });
+        assert.equal(quotaCalls, 1);
+        assert.deepEqual(calls, ['claim_due_social_post_targets', 'consume_youtube_upload_quota', 'report_social_post_progress']);
+    });
+});
+
+test('YouTube: quota exhaustion fails the target without ever starting an upload session', async () => {
+    const accessTokenEnc = await encryptToken('yt-access-token', cryptoCfg);
+    let uploadInitCalls = 0;
+    await withFetch({
+        claim_due_social_post_targets: async () => [youtubeTarget({ access_token_enc: accessTokenEnc })],
+        consume_youtube_upload_quota: async () => ({ ok: false, code: 'QUOTA_EXHAUSTED' }),
+        complete_social_post_target: async (body) => {
+            assert.equal(body.p_ok, false);
+            assert.equal(body.p_error, 'youtube_quota_exhausted');
+            return { ok: true };
+        },
+    }, async () => {
+        const real = globalThis.fetch;
+        globalThis.fetch = async (url, init) => {
+            if (new URL(url).hostname === 'www.googleapis.com') uploadInitCalls += 1;
+            return real(url, init);
+        };
+        const out = await runPublishSweep(asyncDeps);
+        assert.deepEqual(out, { ok: true, claimed: 1, published: 0, failed: 1, errors: 0 });
+        assert.equal(uploadInitCalls, 0);
+    });
+});
+
+test('YouTube: an in-progress session uploads the whole small file in one chunk and moves to processing', async () => {
+    const accessTokenEnc = await encryptToken('yt-access-token', cryptoCfg);
+    await withFetch({
+        claim_due_social_post_targets: async () => [youtubeTarget({
+            access_token_enc: accessTokenEnc,
+            provider_state: {
+                phase: 'uploading', session_uri: 'https://upload.example/session-1', total_bytes: 1000,
+                mime_type: 'video/mp4', bytes_confirmed: 0, started_at: new Date().toISOString(),
+            },
+        })],
+        report_social_post_progress: async (body) => {
+            assert.equal(body.p_provider_state.phase, 'processing');
+            assert.equal(body.p_provider_state.video_id, 'video-1');
+            return { ok: true };
+        },
+    }, async (calls) => {
+        const real = globalThis.fetch;
+        const headerGet = (values) => ({ get: (k) => values[k.toLowerCase()] ?? null });
+        let putCount = 0;
+        globalThis.fetch = async (url, init) => {
+            const u = new URL(url);
+            if (u.hostname === 'acct.r2.cloudflarestorage.com') {
+                assert.equal(init.headers.Range, 'bytes=0-999');
+                return { ok: true, status: 206, headers: headerGet({}), arrayBuffer: async () => new Uint8Array(1000).buffer };
+            }
+            if (u.href === 'https://upload.example/session-1') {
+                putCount += 1;
+                if (init.headers['Content-Range'] === 'bytes */1000') {
+                    // The probe — a brand-new session has received nothing yet.
+                    return { ok: false, status: 308, headers: headerGet({}) };
+                }
+                assert.equal(init.headers['Content-Range'], 'bytes 0-999/1000');
+                return { ok: true, status: 200, headers: headerGet({}), json: async () => ({ id: 'video-1' }) };
+            }
+            return real(url, init);
+        };
+        const out = await runPublishSweep(asyncDeps);
+        assert.deepEqual(out, { ok: true, claimed: 1, published: 0, failed: 0, errors: 0 });
+        assert.equal(putCount, 2); // probe, then the chunk itself
+        assert.deepEqual(calls, ['claim_due_social_post_targets', 'report_social_post_progress']);
+    });
+});
+
+test('YouTube: processing succeeded completes the target with a watch URL', async () => {
+    const accessTokenEnc = await encryptToken('yt-access-token', cryptoCfg);
+    await withFetch({
+        claim_due_social_post_targets: async () => [youtubeTarget({
+            access_token_enc: accessTokenEnc,
+            provider_state: { phase: 'processing', video_id: 'video-1', started_at: new Date().toISOString() },
+        })],
+        complete_social_post_target: async (body) => {
+            assert.equal(body.p_ok, true);
+            assert.equal(body.p_platform_post_id, 'video-1');
+            assert.equal(body.p_platform_post_url, 'https://www.youtube.com/watch?v=video-1');
+            return { ok: true };
+        },
+    }, async () => {
+        const real = globalThis.fetch;
+        globalThis.fetch = async (url, init) => {
+            const u = new URL(url);
+            if (u.hostname === 'www.googleapis.com' && u.pathname === '/youtube/v3/videos') {
+                return Response.json({ items: [{ status: { uploadStatus: 'processed' }, processingDetails: { processingStatus: 'succeeded' } }] });
+            }
+            return real(url, init);
+        };
+        const out = await runPublishSweep(asyncDeps);
+        assert.deepEqual(out, { ok: true, claimed: 1, published: 1, failed: 0, errors: 0 });
+    });
+});
+
+test('YouTube: an access token near expiry is refreshed before dispatch, and the refreshed token is persisted', async () => {
+    const accessTokenEnc = await encryptToken('yt-stale-token', cryptoCfg);
+    const refreshTokenEnc = await encryptToken('yt-refresh-token', cryptoCfg);
+    let sawBearer;
+    await withFetch({
+        claim_due_social_post_targets: async () => [youtubeTarget({
+            access_token_enc: accessTokenEnc, refresh_token_enc: refreshTokenEnc,
+            token_expires_at: new Date(Date.now() - 1000).toISOString(),
+        })],
+        consume_youtube_upload_quota: async () => ({ ok: true, used: 1, limit: 80 }),
+        update_social_account_token: async (body) => {
+            assert.equal(body.p_account_id, 'a-1');
+            return { ok: true };
+        },
+        report_social_post_progress: async () => ({ ok: true }),
+    }, async (calls) => {
+        const real = globalThis.fetch;
+        const headerGet = (values) => ({ get: (k) => values[k.toLowerCase()] ?? null });
+        globalThis.fetch = async (url, init) => {
+            const u = new URL(url);
+            if (u.hostname === 'oauth2.googleapis.com' && u.pathname === '/token') {
+                return Response.json({ access_token: 'yt-fresh-token', expires_in: 3600 });
+            }
+            if (u.hostname === 'www.googleapis.com' && u.pathname === '/upload/youtube/v3/videos') {
+                sawBearer = init.headers.Authorization;
+                return { ok: true, status: 200, headers: headerGet({ location: 'https://upload.example/session-2' }) };
+            }
+            return real(url, init);
+        };
+        const out = await runPublishSweep(asyncDeps);
+        assert.deepEqual(out, { ok: true, claimed: 1, published: 0, failed: 0, errors: 0 });
+        assert.equal(sawBearer, 'Bearer yt-fresh-token');
+        assert.ok(calls.includes('update_social_account_token'));
     });
 });

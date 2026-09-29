@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
     tiktokConfig, buildAuthorizeUrl, exchangeCodeForToken, fetchConnectedAccount, TIKTOK_SCOPES,
+    submitMediaUploadPost, checkPublishStatus,
 } from '../packages/adapters/social/tiktok.js';
 
 const cfg = { clientKey: 'testclientkey123', clientSecret: 'a'.repeat(20) };
@@ -23,9 +24,9 @@ test('buildAuthorizeUrl uses client_key and a comma-separated scope (TikTok\'s o
     assert.equal(url.searchParams.get('response_type'), 'code');
     assert.equal(url.searchParams.get('redirect_uri'), 'https://veyrnox.ai/social/connect/callback/tiktok');
     assert.equal(url.searchParams.get('state'), 'signed-state-token');
-    assert.equal(url.searchParams.get('scope'), 'user.info.basic');
+    assert.equal(url.searchParams.get('scope'), 'user.info.basic,video.upload');
     assert.equal(url.searchParams.get('code_challenge'), null);
-    assert.deepEqual(TIKTOK_SCOPES, ['user.info.basic'], 'minimal scope for a connect-only slice, not video.publish for a capability that does not exist yet');
+    assert.deepEqual(TIKTOK_SCOPES, ['user.info.basic', 'video.upload']);
 });
 
 test('buildAuthorizeUrl refuses a non-https redirect', () => {
@@ -81,6 +82,49 @@ test('fetchConnectedAccount surfaces a TikTok-envelope error even on HTTP 200', 
 test('fetchConnectedAccount surfaces a transport-level failure rather than crashing', async () => {
     const fetcher = async () => jsonRes({ error: { code: 'internal_error', message: 'server error' } }, 500);
     await assert.rejects(fetchConnectedAccount('token', fetcher), /server error/);
+});
+
+test('submitMediaUploadPost sends MEDIA_UPLOAD mode with is_aigc true and PULL_FROM_URL from the given photoUrl', async () => {
+    let sentBody, sentHeaders;
+    const fetcher = async (url, init) => {
+        sentBody = JSON.parse(init.body); sentHeaders = init.headers;
+        return jsonRes({ data: { publish_id: 'publish-1' }, error: { code: 'ok', message: '', log_id: 'x' } });
+    };
+    const result = await submitMediaUploadPost('access-1', { photoUrl: 'https://veyrnox.ai/media/social/tok', caption: 'hello' }, fetcher);
+    assert.deepEqual(result, { publishId: 'publish-1' });
+    assert.equal(sentHeaders.Authorization, 'Bearer access-1');
+    assert.equal(sentBody.media_type, 'PHOTO');
+    assert.equal(sentBody.post_mode, 'MEDIA_UPLOAD');
+    assert.equal(sentBody.is_aigc, true, 'every image this platform publishes is AI-generated — TikTok requires this disclosed');
+    assert.equal(sentBody.source_info.source, 'PULL_FROM_URL');
+    assert.deepEqual(sentBody.source_info.photo_images, ['https://veyrnox.ai/media/social/tok']);
+    assert.equal(sentBody.post_info.title, 'hello');
+    assert.equal(sentBody.post_info.brand_content_toggle, false);
+    assert.equal(sentBody.post_info.brand_organic_toggle, false);
+});
+
+test('submitMediaUploadPost surfaces a TikTok-envelope error even on HTTP 200', async () => {
+    const fetcher = async () => jsonRes({ data: {}, error: { code: 'invalid_param', message: 'photo_images url not verified', log_id: 'x' } });
+    await assert.rejects(
+        submitMediaUploadPost('access-1', { photoUrl: 'https://veyrnox.ai/media/social/tok' }, fetcher),
+        /photo_images url not verified/,
+    );
+});
+
+test('checkPublishStatus reads status, fail_reason and TikTok\'s own (misspelled) publicaly_available_post_id field', async () => {
+    const fetcher = async (url, init) => {
+        assert.deepEqual(JSON.parse(init.body), { publish_id: 'publish-1' });
+        return jsonRes({ data: { status: 'PUBLISH_COMPLETE', fail_reason: '', publicaly_available_post_id: [123], uploaded_bytes: 100, downloaded_bytes: 100 }, error: { code: 'ok', message: '', log_id: 'x' } });
+    };
+    const result = await checkPublishStatus('access-1', 'publish-1', fetcher);
+    assert.deepEqual(result, { status: 'PUBLISH_COMPLETE', failReason: null, publicPostIds: [123] });
+});
+
+test('checkPublishStatus surfaces a failure reason on FAILED', async () => {
+    const fetcher = async () => jsonRes({ data: { status: 'FAILED', fail_reason: 'photo_pull_failed' }, error: { code: 'ok', message: '', log_id: 'x' } });
+    const result = await checkPublishStatus('access-1', 'publish-1', fetcher);
+    assert.equal(result.status, 'FAILED');
+    assert.equal(result.failReason, 'photo_pull_failed');
 });
 
 function jsonRes(body, status = 200) {
