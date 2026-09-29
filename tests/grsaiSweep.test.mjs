@@ -8,7 +8,7 @@ const now = new Date('2026-09-24T12:00:00Z');
 const job = (id, state = 'SUBMITTED', age = 1) => ({ id, user_id: 'owner', credits: 2, state,
     provider_job_id: `task-${id}`, created_at: new Date(+now - age * 60000).toISOString() });
 const args = { cfg, r2cfg, apiKey: 'test-key', now };
-async function withRows(rows, run, models = [{ id: 'nano-banana-pro-grsai' }]) {
+async function withRows(rows, run, models = [{ id: 'nano-banana-pro-grsai', provider_endpoint: 'grsai:nano-banana-pro' }]) {
     const real = globalThis.fetch;
     const urls = [];
     globalThis.fetch = async (url) => { urls.push(new URL(url)); return Response.json(new URL(url).pathname.endsWith('/model_catalog') ? models : rows); };
@@ -29,11 +29,12 @@ test('queries only unfinished GrsAI jobs whose catalog endpoint matches', async 
         await sweepGrsai(args);
         const catalog = urls[0].searchParams;
         assert.equal(catalog.get('provider'), 'eq.grsai');
-        assert.equal(catalog.get('provider_endpoint'), 'eq.grsai:nano-banana-pro');
+        assert.equal(catalog.get('id'), 'in.(nano-banana-pro-grsai,nano-banana-pro-edit-grsai)');
+        assert.equal(catalog.get('active'), null);
         const q = urls[1].searchParams;
         assert.equal(q.get('provider'), 'eq.grsai');
         assert.equal(q.get('provider_job_id'), 'not.is.null');
-        assert.equal(q.get('model_id'), 'eq.nano-banana-pro-grsai');
+        assert.equal(q.get('model_id'), 'in.(nano-banana-pro-grsai)');
         assert.equal(q.get('state'), 'in.(SUBMITTED,SUCCEEDED,FAILED)');
         assert.equal(q.get('limit'), String(BATCH));
         assert.equal(q.get('order'), 'created_at.asc');
@@ -132,4 +133,16 @@ test('R2 copies are serial and capped even when provider reads run concurrently'
         assert.equal(peak, 1);
         assert.equal(out.applied, 10);
     });
+});
+
+
+test('edit recovery accepts only exact endpoint pairs, including inactive routes', async () => {
+    await withRows([job('edit')], async (urls) => {
+        const out = await sweepGrsai({ ...args, read: async () => ({ ok: true, state: 'pending' }) });
+        assert.equal(out.pending, 1);
+        assert.equal(urls[1].searchParams.get('model_id'), 'in.(nano-banana-pro-edit-grsai)');
+    }, [
+        { id: 'nano-banana-pro-grsai', provider_endpoint: 'grsai:unknown' },
+        { id: 'nano-banana-pro-edit-grsai', provider_endpoint: 'grsai:nano-banana-pro-edit', active: false },
+    ]);
 });
