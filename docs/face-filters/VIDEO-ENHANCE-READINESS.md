@@ -463,3 +463,15 @@ Validation: 845 tests passed, 1 skipped; focused tests rerun after copy cleanup,
 scoped lint and Next production build passed. In-app Chromium exported the
 5-second AAC fixture with Natural look: 150 frames, timestamps/durations within
 1 ms, source audio preserved (`veyrnox-capability-aac-enhanced (3).mp4`).
+
+## Side-profile fixture, 2026-09-29
+
+A new cottonbro studio Pexels fixture includes turns to both side profiles.
+At commit `6144748`, in-app Chromium exported the 15-second, 1920×1012,
+25 fps segment with Natural look and 30% smoothing. The media checker passed
+all 375 frames, timestamps/durations within 1 ms, and no audio track added.
+The source/output pair at 2 seconds showed no obvious gross facial displacement.
+This is sampled inspection, not continuous temporal-quality acceptance or a
+0% control comparison. Provenance, hashes and limits are in
+[the profile record](video-enhance-profile-2026-09-29.json).
+Production remains disabled; PR #361 remains a draft.

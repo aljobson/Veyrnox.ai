@@ -1,0 +1,42 @@
+{
+  "date": "2026-09-29",
+  "tested_commit": "6144748",
+  "source": {
+    "url": "https://www.pexels.com/video/a-man-turning-his-head-sideways-5474326/",
+    "author": "cottonbro studio",
+    "license": "https://www.pexels.com/license/",
+    "download": "https://videos.pexels.com/video-files/5474326/5474326-uhd_4096_2160_25fps.mp4"
+  },
+  "preparation": "Source seconds 3\u201318; scale=1920:-2, libx264 CRF18 preset fast, no audio, faststart. 1920x1012, 25fps, 15s.",
+  "files": [
+    {
+      "name": "veyrnox-profile-original.mp4",
+      "bytes": 33114419,
+      "sha256": "be887617d6db8f82a0fe05784d0fd0b361afddffde1f9c2cd2d00c260da9dc4a"
+    },
+    {
+      "name": "veyrnox-profile-test.mp4",
+      "bytes": 5698696,
+      "sha256": "c9391b22edac7119bcd044d104e6b21290650c255f73b102efa61504b9355721"
+    },
+    {
+      "name": "veyrnox-profile-test-enhanced.mp4",
+      "bytes": 3764470,
+      "sha256": "f7e872a5be079d931d1eeab4601d282165812f43eb94574458bab152ef451884"
+    }
+  ],
+  "export": {
+    "browser": "Codex in-app Chromium",
+    "look": "Natural",
+    "smoothing_percent": 30,
+    "result": "PASS: 375 frames, timestamps/durations within 1ms, no audio track added."
+  },
+  "visual_review": {
+    "paired_source_output_seconds": [
+      2
+    ],
+    "finding": "Clear side profile; no obvious gross facial displacement in inspected pair. Texture differences also include re-encoding.",
+    "limits": "Not continuous temporal review, not a 0% control comparison, no all-frame tracking claim."
+  },
+  "environment_note": "Initial tracker startup failed while local dev server was unavailable. Restarted server and used fresh tab; export then completed."
+}
