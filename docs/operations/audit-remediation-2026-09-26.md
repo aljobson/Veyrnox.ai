@@ -429,10 +429,23 @@ publication route's independent recent-AAL2 and Cloudflare Access checks.
 An interrupted TOTP enrolment exposed a retry defect: Supabase retained the
 unverified factor and rejected another attempt with the same friendly name.
 New attempts now use a fresh internal label, allowing setup to resume without
-deleting or weakening any verified factor. The staging account has reached the
-fresh enrollment screen. That screen now renders a QR code from Supabase's
+deleting or weakening any verified factor. The enrollment screen now renders a
+QR code from Supabase's
 `otpauth://` URI with React-owned SVG elements rather than injecting the raw SVG
 returned by Supabase; the URI and manual secret remain available as fallbacks.
-The QR was verified in the deployed staging enrollment flow. Administrator
-publication and viewer playback remain pending until the owner completes the
-authenticator challenge.
+The owner rotated the stale factor for the designated staging administrator,
+`support@veyrnox.com`, enrolled the replacement from that QR, and completed a
+fresh AAL2 challenge. The creator account remained separate, preserving the
+self-review prohibition.
+
+The administrator approved submission
+`ab9ebab8-da24-4780-8e65-92b50ee24906` ("Cinema upload test — 28 September").
+The queue became empty and the title appeared in the public staging catalogue.
+An authenticated support-account viewer opened Watch, requested playback and
+played the six-second Cloudflare Stream video to its end; the player returned
+to its Play state. This passes the independent administrator publication and
+authenticated browser playback gates. It does not claim anonymous playback or
+production readiness. Evidence screenshots are retained at
+`/Users/aljobson/.codex/visualizations/2026/09/26/01a0df4b-49c3-7392-bf3b-92b3ac0dde85/`
+(`cinema-publication-result.png` and `cinema-viewer-playback.png`). Production
+and the unrelated Supabase projects were unchanged.
