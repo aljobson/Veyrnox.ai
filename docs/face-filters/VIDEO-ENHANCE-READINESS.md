@@ -15,8 +15,8 @@ current development-only scope, not enabled production inference/export.
 
 Setup deadlines, export cancellation/retry, graphics-loss recovery, abandoned
 seeks, source replacement, and editor unmount now have targeted regression or
-browser evidence below. No further lifecycle changes are required by the
-findings recorded in this review.
+browser evidence below. The later Safari follow-up below found an unresolved export-retry stall;
+Chromium lifecycle success does not qualify that browser.
 
 The next qualification step is the supported device/browser matrix and
 full-resolution moving-video review, including severe profiles and hand/hair
@@ -31,7 +31,7 @@ preview still needs privacy, CSP-boundary and export acceptance checks.
 | P1 | Production is intentionally disabled in both `useVideoEnhancePreview.js` and `videoEnhanceEngine.js`. `lib/contentSecurityPolicy.mjs` enables evaluation only in development and has no production WASM compilation exception. | Choose the production engine and document the CSP decision in an ADR. Test the actual production build and headers before changing activation gates. Do not copy the development evaluation policy into production. |
 | P1 | Versioned assets are prepared during builds and verified in `.open-next/assets`; runtime and model provenance notices are retained. | Deployed static asset bytes and MIME/cache checks now pass (see delivery report). Complete model-terms review and enabled-editor runtime checks; disabled-editor delivery does not verify inference/export. |
 | P1 | The renderer uses a face-oval mask with eye/brow/lip exclusions, not semantic skin, hand or hair segmentation. One detected face can still contain an occluding hand inside that mask. | Qualify severe profiles, hand-over-eye/mouth, hair, facial hair and varied subjects at normal speed and full resolution. Choose segmentation, a conservative smoothing fallback, or a narrower supported scope based on measured failures. Mild cheek-touch spot checks do not establish protection of hand texture. |
-| P1 | Only local Chromium has measured exports. Preflight now checks detected MP4/AAC scope, source decoder support and H.264 encoding at clip dimensions. | Establish an explicit supported browser/device matrix and test decode, preview, export, cancellation and playback of the downloaded file on each. Disable unsupported export paths with an actionable message. |
+| P1 | Local Chromium has completed measured exports; Safari 27 initialization and cancellation work, but its export retry stalled (see follow-up below). Preflight now checks detected MP4/AAC scope, source decoder support and H.264 encoding at clip dimensions. | Establish an explicit supported browser/device matrix and test decode, preview, export, cancellation and playback of the downloaded file on each. Disable unsupported export paths with an actionable message. |
 | P2 | CPU landmark detection runs synchronously on the UI thread. Export buffers the entire output before making a Blob, with several full-resolution canvases/textures. File-size and duration limits do not establish a decoded-memory or responsiveness budget. | Measure 5/10/15-second 720p/1080p clips, including high-frame-rate inputs, on target devices. Record elapsed time, responsiveness, cancellation latency and memory where measurable. Set supported limits from evidence; consider worker processing or streaming only where measurements justify it. |
 
 ## Scope decisions that need not block a limited release
@@ -377,3 +377,32 @@ within 1 ms, and no added audio. Earlier two outputs were not downloaded in
 this run. Temporary instrumentation was removed. The
 [measurement record](video-enhance-responsiveness-2026-09-29.json) retains method,
 fixture/output hashes, results and limits. No code or production gate changed.
+
+
+## Safari qualification failure, 2026-09-29
+
+At `fe9d766`, Safari 27.0 on the same macOS 27.0 arm64 machine loaded the local
+development editor, initialized the tracker and reported one face for the
+15-second 1920×1080 portrait fixture. Comparison playback began. Settings were
+Natural / 30% smoothing. The local preview flag was explicitly enabled in Safari.
+
+Reproduction: choose `veyrnox-memory-15s-1920.mp4`, start comparison playback,
+start export, cancel, then retry export on the same engine. The first cancellation
+restored controls and showed `Export cancelled.` with no download. The retry
+reported progress 0.28 seconds and remained there across checks separated by
+at least 50 seconds. The Exporting state persisted with no Download MP4 link.
+Cancelling the stalled retry restored controls again. No output was produced or
+qualified. This is an observed stall, not proof of a particular decoder, encoder,
+tracker or cancellation root cause. Fresh-engine export still needs isolation.
+
+After the first cancellation, the UI briefly reported multiple faces at preview
+position 5.74 seconds despite this being a single-person fixture. Retry returned
+to one face. Treat this as a tracking-quality observation pending investigation,
+not a confirmed explanation for the stall. The original/enhanced images differed
+during export, when comparison playback controls were disabled; this alone does
+not establish incorrect exported frames.
+
+Safari remains unqualified. Resolve or reliably reject the failing path before
+including Safari in a supported release matrix. Production remains disabled;
+ADR-0065 is still Proposed. No security, download or browser settings were changed
+beyond the application's local preview flag. The test window is left recovered.
