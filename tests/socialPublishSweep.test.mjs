@@ -5,13 +5,14 @@ import { tokenCryptoConfig, encryptToken } from '../lib/social/tokenCrypto.js';
 
 const cfg = { supabaseUrl: 'https://db.test', serviceRoleKey: 'test-service' };
 const cryptoCfg = tokenCryptoConfig({ SOCIAL_TOKEN_ENCRYPTION_KEY: Buffer.alloc(32, 7).toString('base64') });
+const r2cfg = { accountId: 'acct', accessKeyId: 'key', secretAccessKey: 'secret', bucket: 'bucket' };
 
 function target(overrides = {}) {
     return {
         target_id: 't-1', post_id: 'p-1', account_id: 'a-1', network: 'instagram',
         text_override: null, global_text: 'caption', brand_id: 'b-1', attempts: 1,
         access_token_enc: null, external_account_id: 'ig-42',
-        media_type: 'image', source_url: 'https://example.com/a.jpg',
+        media_type: 'image', r2_key: 'assets/a.jpg',
         ...overrides,
     };
 }
@@ -29,14 +30,15 @@ async function withFetch(rpcHandlers, run) {
     try { await run(calls); } finally { globalThis.fetch = real; }
 }
 
-test('refuses to run without a supabase config or a valid encryption key', async () => {
-    assert.deepEqual(await runPublishSweep({ cfg: {}, cryptoCfg }), { ok: false, skipped: 'not_configured' });
-    assert.deepEqual(await runPublishSweep({ cfg, cryptoCfg: null }), { ok: false, skipped: 'not_configured' });
+test('refuses to run without a supabase config, a valid encryption key, or R2 configured', async () => {
+    assert.deepEqual(await runPublishSweep({ cfg: {}, cryptoCfg, r2cfg }), { ok: false, skipped: 'not_configured' });
+    assert.deepEqual(await runPublishSweep({ cfg, cryptoCfg: null, r2cfg }), { ok: false, skipped: 'not_configured' });
+    assert.deepEqual(await runPublishSweep({ cfg, cryptoCfg, r2cfg: {} }), { ok: false, skipped: 'not_configured' });
 });
 
 test('nothing claimed is a clean no-op, not an error', async () => {
     await withFetch({ claim_due_social_post_targets: async () => [] }, async (calls) => {
-        assert.deepEqual(await runPublishSweep({ cfg, cryptoCfg }), { ok: true, claimed: 0, published: 0, failed: 0, errors: 0 });
+        assert.deepEqual(await runPublishSweep({ cfg, cryptoCfg, r2cfg }), { ok: true, claimed: 0, published: 0, failed: 0, errors: 0 });
         assert.deepEqual(calls, ['claim_due_social_post_targets']);
     });
 });
@@ -51,7 +53,7 @@ test('an unimplemented network fails its target with a named reason, never hangs
             return { ok: true };
         },
     }, async () => {
-        const out = await runPublishSweep({ cfg, cryptoCfg });
+        const out = await runPublishSweep({ cfg, cryptoCfg, r2cfg });
         assert.deepEqual(out, { ok: true, claimed: 1, published: 0, failed: 1, errors: 0 });
     });
 });
@@ -79,7 +81,7 @@ test('publishes an Instagram image target and reports the platform ids back', as
             }
             return real(url, init);
         };
-        const out = await runPublishSweep({ cfg, cryptoCfg });
+        const out = await runPublishSweep({ cfg, cryptoCfg, r2cfg });
         assert.deepEqual(out, { ok: true, claimed: 1, published: 1, failed: 0, errors: 0 });
         assert.equal(publishCalls, 3);
     });
@@ -107,7 +109,7 @@ test('publishes a LinkedIn image target and reports the platform ids back', asyn
                 publishCalls += 1;
                 return { ok: true, status: 200, headers: headerGet({}), json: async () => ({ value: { uploadUrl: 'https://www.linkedin.com/dms-uploads/x/0', image: 'urn:li:image:x' } }) };
             }
-            if (u.hostname === 'example.com') {
+            if (u.hostname === 'acct.r2.cloudflarestorage.com') {
                 publishCalls += 1;
                 return { ok: true, status: 200, headers: headerGet({ 'content-type': 'image/jpeg' }), arrayBuffer: async () => new Uint8Array([1]).buffer };
             }
@@ -121,7 +123,7 @@ test('publishes a LinkedIn image target and reports the platform ids back', asyn
             }
             return real(url, init);
         };
-        const out = await runPublishSweep({ cfg, cryptoCfg });
+        const out = await runPublishSweep({ cfg, cryptoCfg, r2cfg });
         assert.deepEqual(out, { ok: true, claimed: 1, published: 1, failed: 0, errors: 0 });
         assert.equal(publishCalls, 4);
     });
@@ -146,7 +148,7 @@ test('publishes an X image target and reports the platform ids back', async () =
         const headerGet = (values) => ({ get: (k) => values[k.toLowerCase()] ?? null });
         globalThis.fetch = async (url, init) => {
             const u = new URL(url);
-            if (u.hostname === 'example.com') {
+            if (u.hostname === 'acct.r2.cloudflarestorage.com') {
                 publishCalls += 1;
                 return { ok: true, status: 200, headers: headerGet({ 'content-type': 'image/jpeg' }), arrayBuffer: async () => new Uint8Array([1]).buffer };
             }
@@ -168,7 +170,7 @@ test('publishes an X image target and reports the platform ids back', async () =
             }
             return real(url, init);
         };
-        const out = await runPublishSweep({ cfg, cryptoCfg });
+        const out = await runPublishSweep({ cfg, cryptoCfg, r2cfg });
         assert.deepEqual(out, { ok: true, claimed: 1, published: 1, failed: 0, errors: 0 });
         assert.equal(publishCalls, 5);
     });
@@ -176,13 +178,13 @@ test('publishes an X image target and reports the platform ids back', async () =
 
 test('missing media on a claimed target fails cleanly instead of dispatching', async () => {
     await withFetch({
-        claim_due_social_post_targets: async () => [target({ media_type: null, source_url: null })],
+        claim_due_social_post_targets: async () => [target({ media_type: null, r2_key: null })],
         complete_social_post_target: async (body) => {
             assert.equal(body.p_error, 'missing_media');
             return { ok: true };
         },
     }, async () => {
-        const out = await runPublishSweep({ cfg, cryptoCfg });
+        const out = await runPublishSweep({ cfg, cryptoCfg, r2cfg });
         assert.deepEqual(out, { ok: true, claimed: 1, published: 0, failed: 1, errors: 0 });
     });
 });
@@ -195,7 +197,7 @@ test('one target throwing during dispatch does not sink the rest of the batch', 
         ],
         complete_social_post_target: async (body) => ({ ok: true, seen: body.p_target_id }),
     }, async () => {
-        const out = await runPublishSweep({ cfg, cryptoCfg });
+        const out = await runPublishSweep({ cfg, cryptoCfg, r2cfg });
         assert.equal(out.claimed, 2);
         assert.equal(out.published, 0);
         assert.equal(out.failed, 2);
@@ -210,6 +212,6 @@ test(`claims at most ${BATCH} targets per sweep`, async () => {
             return [];
         },
     }, async () => {
-        await runPublishSweep({ cfg, cryptoCfg });
+        await runPublishSweep({ cfg, cryptoCfg, r2cfg });
     });
 });

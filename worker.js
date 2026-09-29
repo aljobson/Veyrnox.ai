@@ -61,6 +61,7 @@ export default {
             observeRecovery('publish_sweep', () => runPublishSweep({
                 cfg: { supabaseUrl: env.SUPABASE_URL, serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY },
                 cryptoCfg: tokenCryptoConfig(env),
+                r2cfg: r2EnvFrom(env),
             }).then((out) => { if (out.claimed) console.error('[publish-sweep]', JSON.stringify(out)); return out; }), env),
         ]);
         for (const r of results) {
