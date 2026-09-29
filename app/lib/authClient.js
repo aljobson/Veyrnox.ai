@@ -377,9 +377,9 @@ export async function signOut() {
 // once ADMIN_REQUIRE_AAL2 is on. Enrolment has to exist before that flag can
 // be turned on, which is why it lives here rather than in a later phase.
 //
-// No QR image: Supabase returns its QR as an SVG string, and injecting raw
-// markup is banned outright by the CI grep gate. The otpauth:// URI and the
-// secret are shown as text instead, and every authenticator app takes either.
+// Supabase returns a raw SVG string, which must never be injected into the
+// page. MfaPanel instead renders a QR code from this otpauth:// URI through
+// React-owned SVG elements and retains the URI and secret as text fallbacks.
 
 /** The current session's assurance level: "aal1", "aal2", or null. */
 export function getAal() {

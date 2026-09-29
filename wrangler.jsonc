@@ -127,7 +127,13 @@
         "CREATOR_UPLOADS_ENABLED": "true",
         "CINEMA_UPLOAD_RECOVERY_ENABLED": "true",
         "CINEMA_UPLOAD_REMOVAL_ENABLED": "true",
-        "CINEMA_PROXY_UPLOADS_ENABLED": "false"
+        "CINEMA_PROXY_UPLOADS_ENABLED": "false",
+        // Publication acceptance: administrators can publish the prepared
+        // staging title and viewers can load and play entitled Stream media.
+        // Production keeps all three switches false.
+        "CINEMA_UNLOCKS_ENABLED": "true",
+        "CINEMA_PUBLISHING_ENABLED": "true",
+        "CINEMA_VIEWING_ENABLED": "true"
       }
     }
   },

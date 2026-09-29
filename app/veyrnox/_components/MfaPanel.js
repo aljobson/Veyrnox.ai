@@ -8,12 +8,13 @@
  * satisfy is not a gate. Admin is the highest-value credential here — it
  * reads the ledger — so the panel lives on the admin page.
  *
- * No QR image: Supabase returns its QR as an SVG string, and injecting raw
- * markup is banned outright by the CI grep gate. The otpauth:// URI and the
- * raw secret are shown as text; every authenticator app takes either.
+ * Supabase's returned QR is raw SVG, so it is never injected. The panel
+ * encodes the otpauth:// URI into React-owned SVG elements and keeps the URI
+ * and raw secret as text fallbacks.
  */
 
 import { useCallback, useEffect, useState } from 'react';
+import { QRCodeSVG } from 'qrcode.react';
 import {
   getAal, getMfaFreshUntil, onSessionChange, listFactors, enrollTotp, verifyFactor, unenrollFactor,
 } from '../../lib/authClient.js';
@@ -87,7 +88,15 @@ export function MfaPanel({ requireFresh = false, onVerified } = {}) {
       {factors !== null && verified.length === 0 && !pending && (
         <button
           type="button" disabled={busy}
-          onClick={() => run(async () => setPending(await enrollTotp('Veyrnox.ai')))}
+          onClick={() => run(async () => {
+            // GoTrue keeps an interrupted enrolment as an unverified factor
+            // and requires friendly names to be unique. Give each attempt a
+            // fresh internal label so a lost secret never wedges setup. We do
+            // not delete the old factor here: only a verified AAL2 session is
+            // allowed to remove factors.
+            const attempt = crypto.randomUUID().slice(0, 8);
+            setPending(await enrollTotp(`Veyrnox.ai ${attempt}`));
+          })}
           className="mt-4 rounded-full bg-vx-accent text-vx-accent-ink font-bold px-4 py-2 text-[13px] disabled:opacity-60"
         >
           {busy ? 'Working…' : 'Set up an authenticator app'}
@@ -99,6 +108,19 @@ export function MfaPanel({ requireFresh = false, onVerified } = {}) {
           <p className="text-[13px] text-vx-fg-body">
             Add this to your authenticator app, then enter the 6-digit code it shows.
           </p>
+          {pending.uri && (
+            <div className="w-fit rounded-xl bg-white p-3">
+              <QRCodeSVG
+                value={pending.uri}
+                size={192}
+                level="M"
+                bgColor="#ffffff"
+                fgColor="#000000"
+                title="Scan to add Veyrnox.ai to your authenticator app"
+              />
+            </div>
+          )}
+          <p className="text-[12px] text-vx-fg-muted">Scan the QR code, or use the setup details below.</p>
           <code className="block break-all rounded-lg bg-vx-panel p-3 text-[11px]">{pending.uri}</code>
           <p className="text-[12px] text-vx-fg-body">
             Or type the secret by hand: <code className="break-all">{pending.secret}</code>

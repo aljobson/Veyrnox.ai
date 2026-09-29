@@ -409,3 +409,30 @@ in the `SUPABASE_JWKS` Worker secret and middleware consumes it without logging
 the value; production keeps normal discovery because the variable is absent.
 The optional static path has unit coverage. Rotate the staging value whenever
 Supabase rotates the project's signing key set.
+
+### Publication and playback staging gate — 29 September
+
+The first administrator browser check found that the deployed client bundle
+had been built with the fail-closed local identity even though the Worker
+runtime bindings selected staging. The bundle therefore queried
+`127.0.0.1:54321` for Auth settings and hid Google sign-in. Rebuilding with
+`APP_ENV=staging` and the exact staging `PUBLIC_HOST` restored the staging
+Supabase identity; the deployed bundle contains the staging project URL and no
+local Supabase URL, and Google OAuth completed for the staging account.
+
+Staging now enables only the additional switches required for this acceptance
+gate: `CINEMA_PUBLISHING_ENABLED`, `CINEMA_VIEWING_ENABLED` and
+`CINEMA_UNLOCKS_ENABLED`. `CINEMA_PROXY_UPLOADS_ENABLED` remains `false`, and
+production remains unchanged. The administrator must still satisfy the
+publication route's independent recent-AAL2 and Cloudflare Access checks.
+
+An interrupted TOTP enrolment exposed a retry defect: Supabase retained the
+unverified factor and rejected another attempt with the same friendly name.
+New attempts now use a fresh internal label, allowing setup to resume without
+deleting or weakening any verified factor. The staging account has reached the
+fresh enrollment screen. That screen now renders a QR code from Supabase's
+`otpauth://` URI with React-owned SVG elements rather than injecting the raw SVG
+returned by Supabase; the URI and manual secret remain available as fallbacks.
+The QR was verified in the deployed staging enrollment flow. Administrator
+publication and viewer playback remain pending until the owner completes the
+authenticator challenge.
