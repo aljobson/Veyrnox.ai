@@ -147,3 +147,58 @@ test('superseded and abandoned seeks settle promptly without timers or listeners
         delete globalThis.graphicsHarness;
     }
 });
+
+for (const action of ['close', 'cancel']) {
+    test(`${action} rejects late export frames and completion`, async () => {
+        const previousDocument = globalThis.document, previousEnv = process.env.NODE_ENV;
+        process.env.NODE_ENV = 'development';
+        const video = Object.assign(new EventTarget(), { readyState: 2, currentTime: 0,
+            videoWidth: 640, videoHeight: 360, pause() {},
+            requestVideoFrameCallback: () => 1, cancelVideoFrameCallback() {} });
+        let finish, processFrame, signal, frames = 0, closed = 0, calls = 0;
+        globalThis.document = Object.assign(new EventTarget(), {
+            createElement: () => ({ getContext: () => ({ drawImage() {} }) }),
+        });
+        globalThis.graphicsHarness = {
+            VIDEO_ENHANCE_ASSET_PATH: '', FilesetResolver: { forVisionTasks: async () => ({}) },
+            FaceLandmarker: { createFromOptions: async () => ({ detectForVideo: () => ({ faceLandmarks: [] }), close() { closed++; } }) },
+            acquireSetupTracker: factory => factory(), createRenderer: () => ({ draw() {}, close() { closed++; } }),
+            exportEnhancedVideo: (_file, options) => {
+                calls++; processFrame = options.process; signal = options.signal;
+                return new Promise(resolve => { finish = resolve; });
+            },
+        };
+        try {
+            const { getEventListeners } = await import('node:events');
+            const { createVideoEnhanceEngine } = await import(`data:text/javascript,${encodeURIComponent(engineSource)}#late-${action}`);
+            const engine = await createVideoEnhanceEngine(video, new EventTarget(), () => { frames++; }, assert.fail);
+            const pending = engine.export({});
+            const rejected = assert.rejects(pending, /Export cancelled/);
+            await assert.rejects(engine.export({}), /already running/);
+            assert.equal(calls, 1);
+            engine[action]();
+            assert.equal(signal.aborted, true);
+            const before = frames;
+            assert.throws(() => processFrame({ draw() { assert.fail('Cancelled frame was decoded'); } }), /Export cancelled/);
+            assert.equal(frames, before);
+            finish(new Blob(['late result']));
+            await rejected;
+            assert.equal(getEventListeners(document, 'visibilitychange').length, 0);
+            if (action === 'close') {
+                assert.equal(closed, 2);
+                await assert.rejects(engine.export({}), /closed/);
+            } else {
+                const retry = engine.export({});
+                assert.equal(signal.aborted, false);
+                finish(new Blob(['new result']));
+                assert.equal(await (await retry).text(), 'new result');
+            }
+            engine.close();
+            assert.equal(closed, 2);
+        } finally {
+            globalThis.document = previousDocument;
+            if (previousEnv === undefined) delete process.env.NODE_ENV; else process.env.NODE_ENV = previousEnv;
+            delete globalThis.graphicsHarness;
+        }
+    });
+}

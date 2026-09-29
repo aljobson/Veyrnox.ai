@@ -81,6 +81,10 @@ export async function createVideoEnhanceEngine(video, canvas, onFrame, onError, 
             if (disposed) throw new Error('The video editor is closed.');
             if (exportController) throw new Error('An export is already running.');
             const controller = new AbortController(); exportController = controller;
+            const assertActive = () => {
+                if (failure) throw failure;
+                if (disposed || controller.signal.aborted) throw new Error('Export cancelled.');
+            };
             const hidden = () => { if (document.hidden) controller.abort(); };
             document.addEventListener('visibilitychange', hidden);
             video.pause();
@@ -90,6 +94,7 @@ export async function createVideoEnhanceEngine(video, canvas, onFrame, onError, 
                 const result = await exportEnhancedVideo(file, {
                     signal: controller.signal,
                     process(sample) {
+                        assertActive();
                         decoded.width = sample.displayWidth; decoded.height = sample.displayHeight;
                         sample.draw(decodedContext, 0, 0);
                         const scale = Math.min(1, 384 / Math.max(decoded.width, decoded.height));
@@ -102,7 +107,7 @@ export async function createVideoEnhanceEngine(video, canvas, onFrame, onError, 
                         return canvas;
                     },
                 });
-                if (failure) throw failure;
+                assertActive();
                 return result;
             } catch (error) {
                 throw failure || error;

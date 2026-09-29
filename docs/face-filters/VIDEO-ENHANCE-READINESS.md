@@ -278,3 +278,23 @@ fault injection remains on the replacement.
 
 Validation: 841 tests passed, 1 skipped; expanded lifecycle test rerun passed;
 scoped lint and Next production build passed. Production remains disabled.
+
+## Export unmount boundary, 2026-09-29
+
+The engine now checks cancellation/disposal before processing each export frame
+and before returning the completed blob. The conversion helper already checks
+cancellation; these additional engine checks avoid relying solely on that helper
+when a late callback or result reaches a cancelled/closed engine.
+
+Two regression cases deliberately deliver frames and completion after cancel
+or close. Both reject before decoding the late frame and do not return the late
+blob. They also verify duplicate-export rejection, visibility-listener cleanup,
+resource disposal, and successful retry after ordinary cancellation.
+
+Local Chromium: after warming the Explore route, navigation completed while a
+15-second export was active. Returning to Enhance showed an empty editor with
+no stale download or error. This verifies visible navigation behavior; it is
+not a measurement of total native/GPU memory reclamation.
+
+Validation: 843 tests passed, 1 skipped; scoped lint and Next production build
+passed. Production remains disabled.
