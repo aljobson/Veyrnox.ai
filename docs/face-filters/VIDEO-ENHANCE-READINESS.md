@@ -355,3 +355,25 @@ quality review or an audio listening/A/V synchronization assessment. Earlier
 file comparisons establish frame/timestamp and decoded-audio preservation.
 The [Chrome record](video-enhance-chrome-2026-09-29.json) includes this follow-up.
 Production remains disabled and the PR remains a draft.
+
+
+## Export long-task observation, 2026-09-29
+
+At `8e7cc24`, three sequential exports of the 15-second 1920×1080, 25 fps
+moving-face fixture completed in 11.975, 9.949 and 9.753 seconds (median 9.949).
+This uses the same initialized engine, Natural / 30% smoothing, in-app Chromium
+154 and macOS 27.0 arm64. Setup is excluded. Timing runs inside the page from
+Export click capture to the Download MP4 anchor appearing.
+
+A temporary PerformanceObserver reported no long tasks over the API's 50 ms
+threshold during these export intervals. A separate post-export calibration
+successfully reported a deliberately scheduled 80 ms task. This verifies that
+the observer was functional; it does not establish zero jank, input latency,
+frame-budget compliance, or worst-case responsiveness. Visibility was sampled
+at each start, not logged continuously. No CPU or native/GPU memory claim is made.
+
+The third download passed the media checker: 375 frames, timestamps/durations
+within 1 ms, and no added audio. Earlier two outputs were not downloaded in
+this run. Temporary instrumentation was removed. The
+[measurement record](video-enhance-responsiveness-2026-09-29.json) retains method,
+fixture/output hashes, results and limits. No code or production gate changed.
