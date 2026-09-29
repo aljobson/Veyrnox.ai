@@ -455,3 +455,38 @@ Local Postgres acceptance checks activation replay, unchanged other catalogue
 rows, and rejection of missing rows or endpoint/price drift. Apply in production
 only through the protected owner-approved workflow. Rollback is a new guarded
 migration setting this KIE row inactive; keep the original fal row unchanged.
+
+## Update (2026-09-29): separate GrsAI reference-image edit
+
+Supplier playground task `16-f339662c-4b1f-498b-8aae-a7c0bf2eb186` succeeded
+in 41 seconds with one synthetic teapot source, `imageSize: 2K`, and `auto`
+aspect ratio. The output was a visually inspected 2744×1568 PNG showing the
+requested blue teapot. The task log charged 1,800 credits; the account's
+$5 / 333,000-credit purchase makes this $0.027027 per edit. This verifies one
+supplier edit, not Veyrnox end-to-end readiness or sustained reliability.
+
+Migration 0165 stages `nano-banana-pro-edit-grsai` inactive at two Veyrnox
+credits with a conservatively rounded $0.0271 cost. It is a separate no-seed
+option; the fal edit and existing GrsAI text route remain unchanged.
+
+The new `grsai:nano-banana-pro-edit` capability requires one reference image,
+shaped as `urls: [image_url]`, and pins the same model, 2K tier and polling
+settings as the text route. Default aspect is `auto` to preserve the source
+ratio. The common gateway verifies upload ownership, bytes and consent before
+debit, drops client media URLs, signs the owned source for at most 15 minutes,
+and persists its source key rather than a signed URL. Undeclared seed and
+other generic controls are dropped; direct adapter overrides are rejected.
+
+The existing authenticated sweep now validates both fixed catalogue ID/endpoint
+pairs and shares its 50-job limit and work budget across them. It still polls
+inactive rows so disabling a route cannot strand already-submitted work. Both
+use the existing deduplication, bounded serial R2 copy, and refund paths; no
+new webhook, output-host permission or automatic paid retry is introduced.
+
+Validation uses the real gateway, adapter, sweep and completion code against
+simulated network boundaries: owned-source submit, replay without resubmit,
+inactive and invalid-source refusal, provider rejection/failure refunds, and
+storage retry without another paid edit. These checks do not constitute a
+live deployed edit. Activation requires a separate migration after a deployed
+owned-upload → debit → submit → authenticated poll → R2 → STORED/download
+check, actual billing/output-host confirmation and clean balance reconciliation.
