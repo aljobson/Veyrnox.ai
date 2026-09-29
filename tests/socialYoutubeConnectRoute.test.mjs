@@ -62,7 +62,7 @@ test('returns a Google authorize URL bound to our https per-network callback and
     assert.equal(url.hostname, 'accounts.google.com');
     assert.equal(url.pathname, '/o/oauth2/v2/auth');
     assert.equal(url.searchParams.get('redirect_uri'), 'https://veyrnox.ai/social/connect/callback/youtube');
-    assert.equal(url.searchParams.get('scope'), 'https://www.googleapis.com/auth/youtube.readonly');
+    assert.equal(url.searchParams.get('scope'), 'https://www.googleapis.com/auth/youtube.readonly https://www.googleapis.com/auth/youtube.upload');
     assert.equal(url.searchParams.get('access_type'), 'offline');
     assert.equal(url.searchParams.get('prompt'), 'consent');
     assert.ok(url.searchParams.get('state').includes('.'), 'state is a signed token, not a raw value');

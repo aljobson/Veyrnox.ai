@@ -235,6 +235,64 @@ export async function deleteObject(key, cfg) {
 }
 
 /**
+ * GET an object's bytes with the account's own R2 credentials (never a
+ * client-facing presigned URL) — for server-mediated transfers like
+ * app/media/social/[token]/route.js, which must give TikTok's PULL_FROM_URL
+ * fetch a stable, our-own-domain URL rather than a raw R2 host it can
+ * never DNS-verify. Returns the raw fetch Response on success so the
+ * caller can stream response.body straight through without buffering the
+ * whole object into Worker memory (this exists for video, not just
+ * images). Returns { ok:false, error } on any failure or non-2xx status.
+ * @returns {Promise<{ok:true, response:Response}|{ok:false, error:string}>}
+ */
+export async function getObject(key, cfg) {
+    if (!isConfigured(cfg)) {
+        return { ok: false, error: 'R2 not configured' };
+    }
+    const amzDate = iso8601BasicNow();
+    const dateStamp = amzDate.slice(0, 8);
+    const host = endpointHost(cfg);
+    const canonicalUri = `/${cfg.bucket}/${key.split('/').map(rfc3986).join('/')}`;
+
+    const payloadHash = await sha256Hex(new Uint8Array(0));
+    const canonicalHeaders =
+        `host:${host}\n` +
+        `x-amz-content-sha256:${payloadHash}\n` +
+        `x-amz-date:${amzDate}\n`;
+    const signedHeaders = 'host;x-amz-content-sha256;x-amz-date';
+    const canonicalRequest =
+        `GET\n${canonicalUri}\n\n${canonicalHeaders}\n${signedHeaders}\n${payloadHash}`;
+
+    const credentialScope = `${dateStamp}/${REGION}/${SERVICE}/aws4_request`;
+    const stringToSign =
+        `AWS4-HMAC-SHA256\n${amzDate}\n${credentialScope}\n${await sha256Hex(new TextEncoder().encode(canonicalRequest))}`;
+    const kSigning = await signingKey(cfg.secretAccessKey, dateStamp);
+    const signature = bytesToHex(await hmacSha256(kSigning, stringToSign));
+    const authorization =
+        `AWS4-HMAC-SHA256 Credential=${cfg.accessKeyId}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
+
+    let res;
+    try {
+        res = await fetch(`https://${host}${canonicalUri}`, {
+            method: 'GET',
+            headers: {
+                host,
+                'x-amz-content-sha256': payloadHash,
+                'x-amz-date': amzDate,
+                authorization,
+            },
+        });
+    } catch (err) {
+        console.error('R2 GET failed:', err && err.name);
+        return { ok: false, error: `R2 GET transport: ${err && err.name}` };
+    }
+    if (!res.ok) {
+        return { ok: false, error: `R2 GET ${res.status}` };
+    }
+    return { ok: true, response: res };
+}
+
+/**
  * List objects under a prefix (S3 ListObjectsV2). Used by the upload sweep,
  * which is the only caller that needs to see objects it has no row for:
  * generated assets are tracked in `assets`, but a user's uploaded source is

@@ -208,12 +208,18 @@ export function Composer({ accounts, onScheduled }) {
     );
 }
 
+// 'delivered' (TikTok's MEDIA_UPLOAD outcome, ADR-0061 Phase 5) means the
+// content reached the creator's TikTok inbox as a draft — not itself a
+// live post, so it gets its own honest label rather than reading as
+// "published".
+const STATUS_LABEL = { delivered: 'delivered — finish in TikTok app', submitted: 'in progress' };
+
 function TargetBadge({ target }) {
-    const tone = target.publish_status === 'published' ? 'text-vx-accent'
+    const tone = target.publish_status === 'published' || target.publish_status === 'delivered' ? 'text-vx-accent'
         : target.publish_status === 'failed' ? 'text-vx-danger' : 'text-vx-fg-muted';
     return (
         <span className={`text-xs font-bold ${tone}`} title={target.last_error || ''}>
-            {networkLabel(target.network)}: {target.publish_status}
+            {networkLabel(target.network)}: {STATUS_LABEL[target.publish_status] || target.publish_status}
             {target.platform_post_url && target.publish_status === 'published' && (
                 <> · <a href={target.platform_post_url} target="_blank" rel="noreferrer" className="underline">view</a></>
             )}

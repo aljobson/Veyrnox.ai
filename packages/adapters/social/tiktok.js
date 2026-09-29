@@ -2,27 +2,35 @@
 // TikTok SDK on the SSR graph. Verified against developers.tiktok.com
 // (Web OAuth, User Access Token Management, Get User Info) 2026-09-28.
 //
-// Connect flow only in this slice — no publishPost. TikTok's Content
-// Posting API is confirmed asynchronous even for photo posts: the init
-// call only returns a publish_id, and the actual outcome (PUBLISH_COMPLETE
-// or FAILED) only appears from a separate status-poll endpoint with no
-// fixed timeline (video posts alone commonly take 30s-2min). That doesn't
-// fit this app's current single-tick claim/dispatch/complete sweep — a
-// bounded in-call poll risks marking a slow-but-real success as failed,
-// which the retry path would then resubmit, posting the same content
-// twice to the user's real TikTok. Publishing needs its own slice adding
-// a real two-phase dispatch state to social_post_targets, not built here.
+// Publishing (ADR-0061 Phase 5) uses TikTok's Content Posting API's own
+// async shape directly, via the sweep's claim→submit→poll→complete
+// engine: the init call only returns a publish_id, and the actual outcome
+// only appears later from a separate status-poll endpoint with no fixed
+// timeline.
 //
-// Scope is deliberately minimal for what this slice actually does
-// (user.info.basic only) rather than pre-requesting video.publish for a
-// capability that doesn't exist yet — TikTok, like LinkedIn, requires
-// re-authentication on any scope change, so connecting again will be
-// needed once a later slice adds video.publish for real publishing.
+// Publish mode is MEDIA_UPLOAD, not DIRECT_POST, by deliberate choice
+// (confirmed with the user, live docs verified 2026-09-29): this app's
+// TikTok developer app hasn't passed TikTok's Content Posting API audit
+// yet, and an unaudited app's DIRECT_POST is silently forced to
+// SELF_ONLY (private) regardless of what privacy_level is requested.
+// MEDIA_UPLOAD instead hands the content to the creator's own TikTok
+// inbox as a draft they finish manually — the honest behavior for a
+// "Publish" button pre-audit, since it never silently makes something
+// private that looked like it published successfully. This needs
+// video.upload scope, not video.publish (that's DIRECT_POST's scope,
+// for a later upgrade once the app is audited).
+//
+// PULL_FROM_URL media requires TikTok to DNS-verify the domain a photo
+// URL points at — our R2 presigned URLs live on a Cloudflare-owned host
+// we can't verify, so publishPost is handed an already-proxied URL (see
+// app/media/social/[token]/route.js) by the sweep, not a raw R2 link.
+//
+// Scope also keeps user.info.basic for identity resolution.
 
 const AUTHORIZE_URL = 'https://www.tiktok.com/v2/auth/authorize/';
 const TOKEN_URL = 'https://open.tiktokapis.com/v2/oauth/token/';
 const API_BASE = 'https://open.tiktokapis.com';
-export const TIKTOK_SCOPES = ['user.info.basic'];
+export const TIKTOK_SCOPES = ['user.info.basic', 'video.upload'];
 
 /** Loads and validates TikTok app config from Worker secrets. Returns
  * null on any misconfiguration — callers degrade to a clean 503, never a
@@ -100,5 +108,69 @@ export async function fetchConnectedAccount(accessToken, fetcher = fetch) {
         externalAccountId: user.open_id,
         displayName: user.display_name || null,
         avatarUrl: user.avatar_url || null,
+    };
+}
+
+/** Submits a photo post via MEDIA_UPLOAD (POST /v2/post/publish/content/init/)
+ * — draft-to-inbox mode, not an automated publish (see this file's own
+ * header for why). `photoUrl` must already be served from our own
+ * DNS-verified domain (never a raw R2 URL) — see
+ * app/media/social/[token]/route.js. Returns { publishId } immediately;
+ * the actual outcome is only known from checkPublishStatus later.
+ * `isAigc: true` is deliberate, not a placeholder default — every image
+ * this platform publishes is AI-generated, and TikTok's content policy
+ * requires that disclosure. */
+export async function submitMediaUploadPost(accessToken, { photoUrl, caption }, fetcher = fetch) {
+    const res = await fetcher(`${API_BASE}/v2/post/publish/content/init/`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            media_type: 'PHOTO',
+            post_mode: 'MEDIA_UPLOAD',
+            post_info: {
+                title: (caption || '').slice(0, 90),
+                description: (caption || '').slice(0, 4000),
+                disable_comment: false,
+                auto_add_music: false,
+                brand_content_toggle: false,
+                brand_organic_toggle: false,
+            },
+            source_info: {
+                source: 'PULL_FROM_URL',
+                photo_images: [photoUrl],
+                photo_cover_index: 0,
+            },
+            is_aigc: true,
+        }),
+        signal: AbortSignal.timeout(15000),
+    });
+    const body = await res.json().catch(() => null);
+    const publishId = body && body.data && body.data.publish_id;
+    if (!res.ok || (body && body.error && body.error.code && body.error.code !== 'ok') || typeof publishId !== 'string') {
+        throw new Error((body && body.error && body.error.message) || `publish_init_failed_${res.status}`);
+    }
+    return { publishId };
+}
+
+/** Polls a publish attempt's outcome (POST /v2/post/publish/status/fetch/).
+ * Rate-limited by TikTok to 30 requests/minute per access token — well
+ * within what one sweep tick needs. */
+export async function checkPublishStatus(accessToken, publishId, fetcher = fetch) {
+    const res = await fetcher(`${API_BASE}/v2/post/publish/status/fetch/`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ publish_id: publishId }),
+        signal: AbortSignal.timeout(10000),
+    });
+    const body = await res.json().catch(() => null);
+    const data = body && body.data;
+    if (!res.ok || (body && body.error && body.error.code && body.error.code !== 'ok') || !data || typeof data.status !== 'string') {
+        throw new Error((body && body.error && body.error.message) || `status_fetch_failed_${res.status}`);
+    }
+    return {
+        status: data.status,
+        failReason: data.fail_reason || null,
+        // TikTok's own field name — verbatim, not a typo we introduced.
+        publicPostIds: Array.isArray(data.publicaly_available_post_id) ? data.publicaly_available_post_id : [],
     };
 }

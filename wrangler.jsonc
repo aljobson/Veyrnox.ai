@@ -161,14 +161,19 @@
   //                               calls (packages/adapters/social/twitter.js, ADR-0061). Not
   //                               yet provisioned.
   //   TIKTOK_CLIENT_KEY, TIKTOK_CLIENT_SECRET
-  //                               TikTok OAuth connect/callback (packages/adapters/social/
-  //                               tiktok.js, ADR-0061). Connect only — no publish path yet
-  //                               (see that file's own header). Not yet provisioned.
+  //                               TikTok OAuth connect/callback + Content Posting API publish
+  //                               (packages/adapters/social/tiktok.js, ADR-0061 Phase 5).
+  //                               MEDIA_UPLOAD mode (draft to the creator's own TikTok inbox,
+  //                               not an automated publish — see that file's own header for
+  //                               why) until this app clears TikTok's Content Posting API
+  //                               audit. Scope bump (added video.upload) needs re-consent from
+  //                               every already-connected account. Not yet provisioned.
   //   YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET
-  //                               YouTube (Google) OAuth connect/callback (packages/adapters/
-  //                               social/youtube.js, ADR-0061). Connect only — no publish path
-  //                               yet (see that file's own header). A separate OAuth client
-  //                               from Supabase's own Google Sign-In provider. Not yet
+  //                               YouTube (Google) OAuth connect/callback + resumable video
+  //                               upload (packages/adapters/social/youtube.js, ADR-0061 Phase
+  //                               5). A separate OAuth client from Supabase's own Google
+  //                               Sign-In provider. Scope bump (added youtube.upload) needs
+  //                               re-consent from every already-connected account. Not yet
   //                               provisioned.
   //   SOCIAL_OAUTH_STATE_SECRET   signs the OAuth `state` token (lib/social/oauthState.js, ADR-0061
   //                               §2.7) — this app is cookie-free, so state carries its own HMAC
@@ -176,6 +181,12 @@
   //   SOCIAL_TOKEN_ENCRYPTION_KEY AES-GCM key for OAuth tokens at rest (lib/social/tokenCrypto.js,
   //                               ADR-0061 §2.7) — base64 of exactly 32 bytes, never reused from
   //                               any other subsystem
+  //   SOCIAL_MEDIA_PROXY_SECRET   signs app/media/social/[token]/route.js's short-lived tokens
+  //                               (lib/social/mediaProxyToken.js, ADR-0061 Phase 5) — the public,
+  //                               unauthenticated route TikTok's PULL_FROM_URL fetch hits, since
+  //                               TikTok must DNS-verify the domain it pulls from and an R2
+  //                               presigned URL's host is Cloudflare's, not ours. A dedicated
+  //                               secret, never reused from the two above. Not yet provisioned.
   //
   // No R2 binding: r2.js signs plain fetch against the S3 endpoint so the
   // Worker never needs `env.MEDIA` / getCloudflareContext() in middleware.

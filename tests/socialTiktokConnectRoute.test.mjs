@@ -62,7 +62,7 @@ test('returns a TikTok authorize URL bound to our https per-network callback and
     assert.equal(url.hostname, 'www.tiktok.com');
     assert.equal(url.pathname, '/v2/auth/authorize/');
     assert.equal(url.searchParams.get('redirect_uri'), 'https://veyrnox.ai/social/connect/callback/tiktok');
-    assert.equal(url.searchParams.get('scope'), 'user.info.basic');
+    assert.equal(url.searchParams.get('scope'), 'user.info.basic,video.upload');
     assert.ok(url.searchParams.get('state').includes('.'), 'state is a signed token, not a raw value');
     assert.equal(url.searchParams.get('code_challenge'), null, 'never forwarded to TikTok, which has no documented PKCE support for a web client');
 });

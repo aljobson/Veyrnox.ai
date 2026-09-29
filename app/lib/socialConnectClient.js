@@ -22,15 +22,16 @@ export const NETWORKS = [
     { key: 'instagram', label: 'Instagram', live: true },
     { key: 'linkedin', label: 'LinkedIn', live: true },
     { key: 'twitter', label: 'X', live: true },
-    // `live` only gates the Connect button — it genuinely works for
-    // TikTok (packages/adapters/social/tiktok.js). Publishing does not
-    // yet (that adapter's own header explains why), which only matters
-    // once a composer/scheduling UI exists to promise it.
+    // Publishing (ADR-0061 Phase 5, packages/adapters/social/tiktok.js)
+    // uses MEDIA_UPLOAD, not DIRECT_POST: content lands as a draft in the
+    // creator's own TikTok inbox for them to finish, not a live post —
+    // this app's TikTok developer app hasn't passed Content Posting API
+    // audit yet, and DIRECT_POST is silently forced private until it
+    // does. The composer/scheduled-posts UI surfaces this via the
+    // 'delivered' status, distinct from 'published'.
     { key: 'tiktok', label: 'TikTok', live: true },
-    // Same story as TikTok: connect works (packages/adapters/social/
-    // youtube.js), publishing does not yet — YouTube has no image-post
-    // API at all, only a resumable video upload with its own design work
-    // still to do.
+    // Publishing (ADR-0061 Phase 5, packages/adapters/social/youtube.js)
+    // uses Google's resumable upload protocol, one chunk per sweep tick.
     { key: 'youtube', label: 'YouTube', live: true },
 ];
 
