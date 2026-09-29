@@ -6,6 +6,7 @@ import { getSession, onSessionChange } from '../../../lib/authClient';
 import {
   NETWORKS, listSocialAccounts, connectNetwork, disconnectSocialAccount,
 } from '../../../lib/socialConnectClient';
+import { Composer, ScheduledPosts } from './Composer';
 
 const currentAccount = () => getSession()?.user?.id || '';
 const noAccount = () => '';
@@ -30,6 +31,7 @@ function PublishControls() {
   const [connectError, setConnectError] = useState('');
   const [disconnecting, setDisconnecting] = useState(null);
   const [confirmDisconnect, setConfirmDisconnect] = useState(null);
+  const [postsRefreshToken, setPostsRefreshToken] = useState(0);
 
   const load = useCallback(async () => {
     setLoadError('');
@@ -137,6 +139,16 @@ function PublishControls() {
         onConfirm={() => onDisconnect(confirmDisconnect.id)}
       />
     )}
+
+    <section className="rounded-2xl border border-vx-border p-5">
+      <h2 className="font-bold mb-4">Schedule a post</h2>
+      <Composer accounts={accounts} onScheduled={() => setPostsRefreshToken((n) => n + 1)} />
+    </section>
+
+    <section className="rounded-2xl border border-vx-border p-5">
+      <h2 className="font-bold mb-4">Scheduled &amp; published</h2>
+      <ScheduledPosts refreshToken={postsRefreshToken} />
+    </section>
   </div>;
 }
 
