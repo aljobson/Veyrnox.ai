@@ -7,7 +7,8 @@ change is implemented by this ADR. Related: PR #361, ADR-0060.
 
 The local Video Enhance prototype processes short clips with MediaPipe Face
 Landmarker, a WebGL filter and Mediabunny export. Production currently rejects
-the engine, omits its locally prepared assets and disallows WASM compilation.
+the engine and disallows WASM compilation. Versioned model/runtime assets are now
+packaged and verified in the Worker artifact; this does not enable the editor.
 Green deployment checks therefore do not demonstrate a working production editor.
 
 Propose a limited, free, browser-local release using the pinned prototype engine,
@@ -105,6 +106,16 @@ Already-open local editors cannot be instantly revoked by a server flag without 
 explicit refresh/revalidation mechanism. A security rollback must include a reviewed
 deployment revert and document reload strategy. No database rollback is required
 for the proposed local-only scope.
+
+## Implementation status, 2026-09-29
+
+Asset packaging, immutable static delivery and decode/encode format preflight
+are implemented. Disabled-editor delivery passed locally and on the deployed
+version identified in the [delivery report](../face-filters/VIDEO-ENHANCE-DELIVERY.md).
+Current code CI is green at `80fe649`. Local lifecycle regression and browser
+checks are recorded in the readiness review. These implementation results do
+not accept this ADR or complete the device/quality, model-terms or enabled
+production-preview gates.
 
 ## Implementation sequence
 

@@ -1,8 +1,28 @@
 # Video Enhance production-readiness review
 
-Updated 2026-09-28 with local runtime measurements at `1a76094`.
+Updated 2026-09-29; implementation and CI reviewed at `80fe649`.
+Historical measurements retain their original commit and device attribution.
 Decision: suitable for continued local evaluation; not ready for customer activation.
 Includes local Chromium measurements; this is not a deployment approval or a multi-device qualification.
+
+## Current review status
+
+At `80fe649`, build-test, hard-wall guard, ledger acceptance, migration ledger,
+verify, and Workers Builds all succeeded. The migration drift report was skipped.
+Local validation: 843 tests passed, 1 skipped; scoped lint and Next production
+build passed. The working tree was clean at review. These results cover the
+current development-only scope, not enabled production inference/export.
+
+Setup deadlines, export cancellation/retry, graphics-loss recovery, abandoned
+seeks, source replacement, and editor unmount now have targeted regression or
+browser evidence below. No further lifecycle changes are required by the
+findings recorded in this review.
+
+The next qualification step is the supported device/browser matrix and
+full-resolution moving-video review, including severe profiles and hand/hair
+coverage. Keep this separate from the production-policy decision: ADR-0065
+remains Proposed, model-terms review remains open, and an enabled production
+preview still needs privacy, CSP-boundary and export acceptance checks.
 
 ## Prioritized release gates
 
