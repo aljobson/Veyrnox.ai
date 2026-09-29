@@ -36,7 +36,7 @@ A title carries one or two Categories from a fixed list held in `cinema_categori
 
 ### Stable catalogue pagination — 2026-09-26
 
-Migration 0151 adds a service-role-only catalogue RPC with a `(published_at, id)`
+Migration 0163 adds a service-role-only catalogue RPC with a `(published_at, id)`
 cursor. The API returns `next` and `next_id`; the UI sends both on the next page.
 Timestamp strings retain PostgreSQL's microseconds instead of rounding through a
 JavaScript Date. Legacy timestamp-only cursors use an inclusive boundary, avoiding

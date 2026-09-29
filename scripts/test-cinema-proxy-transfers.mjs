@@ -15,7 +15,7 @@ const reserve=(content,proxy=true)=>val(`SELECT public.${proxy?'reserve_cinema_p
 const attach=(id,uid)=>val('SELECT public.attach_cinema_upload($1,$2,$3) AS value',[id,uid,`https://upload.cloudflarestream.com/${uid}`]);
 const claim=(content,id,key=randomUUID())=>val('SELECT public.claim_cinema_transfer($1,$2,$3,$4) AS value',[actor,content,id,key]);
 try {
-  const migration=await readFile(new URL('../packages/db/schema/supabase/0158_cinema_proxy_transfers.sql',import.meta.url),'utf8');
+  const migration=await readFile(new URL('../packages/db/schema/supabase/0164_cinema_proxy_transfers.sql',import.meta.url),'utf8');
   await q('BEGIN');await c.query(migration);await c.query(migration);await q('ROLLBACK');
   await q('INSERT INTO auth.users(id,email,email_confirmed_at) VALUES($1,$2,now())',[actor,`${actor}@example.invalid`]);
   await val('SELECT public.create_cinema_profile($1,$2,$3) AS value',[actor,randomUUID(),{username:`p_${actor.replaceAll('-','').slice(0,20)}`,display_name:'Proxy test'}]);

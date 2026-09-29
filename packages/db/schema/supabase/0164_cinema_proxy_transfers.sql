@@ -1,3 +1,5 @@
+-- Applied name: 0158_cinema_proxy_transfers
+-- Renumbered after production advanced to 0162; staging already records 0158.
 -- Legacy grants may already be public: never relabel them as server-only.
 ALTER TABLE public.cinema_uploads ADD COLUMN IF NOT EXISTS server_mediated BOOLEAN NOT NULL DEFAULT false;
 ALTER TABLE public.cinema_uploads ADD COLUMN IF NOT EXISTS transfer_claim UUID;

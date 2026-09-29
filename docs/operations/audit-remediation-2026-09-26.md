@@ -12,13 +12,17 @@ open for review. Staging Access is configured; production remains unchanged.
 | Staging admin Access configuration missing | Separate staging Access application created; own audience in staging vars | Configured and deployed to staging |
 | Signature-only images pass inspection | Require readable image dimensions | Implemented; bounded metadata checks, not full decoding |
 | R2 inspection reads unbounded | Range size, response length, 206/Content-Range and deadline checks | Implemented |
-| No cumulative project storage quota | Database-enforced organisation byte, object and pending-upload caps | Migration 0151 |
-| Rejected/abandoned assets persist | Leased cleanup with confirmed deletion before quota release | Migration 0151 and Worker cron handler |
-| Inspection requests unthrottled | Authorize and consume ten-per-minute actor quota before storage reads | Migration 0151 and inspection API |
-| Timestamp-only Cinema pagination skips ties | Timestamp plus title ID cursor, retaining timestamp precision | Migration 0151, API and UI |
+| No cumulative project storage quota | Database-enforced organisation byte, object and pending-upload caps | Migration 0163 |
+| Rejected/abandoned assets persist | Leased cleanup with confirmed deletion before quota release | Migration 0163 and Worker cron handler |
+| Inspection requests unthrottled | Authorize and consume ten-per-minute actor quota before storage reads | Migration 0163 and inspection API |
+| Timestamp-only Cinema pagination skips ties | Timestamp plus title ID cursor, retaining timestamp precision | Migration 0163, API and UI |
 
 ## Rollout requirements
 
+- Production advanced to migration 0162 before this PR merged, so the source
+  files are numbered 0163 and 0164. Their `Applied name` headers retain the
+  original 0151 and 0158 names already recorded by staging, allowing both
+  environments to use the same committed SQL without replaying staging DDL.
 - Staging migrations 0141–0151 are applied. Production migrations remain
   subject to ADR-0023's protected workflow and owner approval.
 - No flags, cron schedules or production configuration were changed. Only
@@ -328,7 +332,7 @@ buttons. Evidence: `/tmp/veyrnox-staging-upload-safety-hold.png`.
 ### Server-mediated upload implementation — 28 September
 
 Implemented a replacement transfer boundary while retaining the safety hold.
-Migration 0158 distinguishes new server-mediated reservations from legacy
+Migration 0164 distinguishes new server-mediated reservations from legacy
 direct grants and adds a durable exclusive transfer claim. The removal worker
 cannot claim or finalize a row while a transfer is active. Ambiguous provider
 writes retain the claim for operator reconciliation; they are never retried or
@@ -341,7 +345,8 @@ migrations. The isolated SQL test
 passed idempotent migration, owner and legacy denial, exclusive claims, removal
 serialization and function ACL checks. Unit tests cover grant redaction,
 origin enforcement, resumable offsets, bounded chunks, ambiguous writes and
-the active public safety hold. Applied only migration 0158 to Supabase project
+the active public safety hold. Applied its unchanged SQL under the original
+`0158_cinema_proxy_transfers` staging ledger name to Supabase project
 `yrqzwqywxfesmbvhzjgj` (`veyrnox.ai staging`). Read-only verification found the
 three new columns, service-role-only execution on all three new RPCs, eight
 legacy rows left `server_mediated=false`, and zero active transfer claims. The

@@ -1,4 +1,6 @@
 -- Bounded project storage and inspection, retryable cleanup, and stable Cinema cursors.
+-- Applied name: 0151_audit_media_controls
+-- Renumbered after production advanced to 0162; staging already records 0151.
 BEGIN;
 CREATE TABLE IF NOT EXISTS private.project_asset_storage (
  asset_id uuid PRIMARY KEY REFERENCES public.project_assets(id),

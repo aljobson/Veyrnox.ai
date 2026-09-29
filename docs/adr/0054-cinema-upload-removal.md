@@ -59,7 +59,7 @@ and [tus uploads](https://developers.cloudflare.com/stream/uploading-videos/resu
 
 ## Server-mediated transfer replacement — 28 September 2026
 
-Migration 0158 and the corresponding Worker path implement the replacement
+Migration 0164 and the corresponding Worker path implement the replacement
 behind the existing safety hold. New reservations are marked
 `server_mediated`; legacy direct reservations remain quarantined and return
 `upload_needs_reconciliation`. The browser receives only an application
@@ -79,8 +79,8 @@ limits transfer requests to 60 per minute per account. Structured logs contain
 request IDs, actor IDs, method, status and stable error code, never grants.
 
 The safety hold remains active everywhere except the isolated staging Worker
-while this implementation is validated. Enabling it requires migration 0158, a live
+while this implementation is validated. Enabling it requires migration 0164, a live
 server-mediated pause/resume test, removal during an incomplete transfer,
 confirmed provider deletion, and proof that a browser captured no provider
-grant. Existing grants copied before migration 0158 remain outside this new
+grant. Existing grants copied before migration 0164 remain outside this new
 boundary and must not be treated as revoked.

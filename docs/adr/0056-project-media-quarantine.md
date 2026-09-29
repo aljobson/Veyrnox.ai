@@ -118,7 +118,7 @@ record, no persisted inspection verdict, and no duration or dimension ceiling an
 
 ## Audit remediation — 2026-09-26
 
-Migration 0151 bounds each organisation to 1 GiB of reserved bytes, 200 stored
+Migration 0163 bounds each organisation to 1 GiB of reserved bytes, 200 stored
 objects and 20 pending uploads. The database serializes reservations across the
 organisation; direct RPC callers receive the same limits. Pending and rejected
 objects continue consuming quota until confirmed storage deletion.
@@ -136,6 +136,6 @@ recorded rejection before deletion. A five-minute claim lease allows retries;
 only the current claimant can mark confirmed deletion and release quota. Inspected
 masters remain retained. Audit records and asset identities are preserved.
 
-Apply 0151 before deploying the new inspection API. Production migration remains
+Apply 0163 before deploying the new inspection API. Production migration remains
 subject to ADR-0023; this change does not activate production projects or provision
 storage. Staging still needs its own R2 credentials before project-media tests.
