@@ -44,5 +44,20 @@
     "Not production-mode acceptance",
     "No downloaded-player playback, temporal quality or peak memory qualification in this run",
     "Safari, Firefox, Windows and mobile remain untested"
-  ]
+  ],
+  "playback_followup": {
+    "date": "2026-09-29",
+    "recorded_after_commit": "f9c61f7",
+    "player": "QuickTime Player 10.5",
+    "os": "macOS 27.0 arm64",
+    "results": {
+      "veyrnox-capability-aac-enhanced (2).mp4": "Opened and played to the final burned-in frame 149 at 00:00:04.967.",
+      "veyrnox-memory-15s-1920-enhanced (2).mp4": "Opened at 00:00, observed playing at 00:14, then stopped at 00:15 with timeline value 15."
+    },
+    "limits": [
+      "Native-player smoke test only; not continuous frame-by-frame temporal-quality review.",
+      "No audio listening or perceptual A/V synchronization assessment. Earlier decoded-audio comparison remains the audio-fidelity evidence.",
+      "Same physical Mac; no additional browser, operating-system or device qualification."
+    ]
+  }
 }

@@ -337,6 +337,21 @@ fixture reuses the licensed Mikhail Nilov sample and preparation described above
 Inputs/outputs and hashes are listed in the [Chrome record](video-enhance-chrome-2026-09-29.json).
 
 This broadens browser-shell coverage, not physical-device or rendering-engine
-coverage: both tested browsers are Chromium on one Mac. Downloaded-player
-playback, full temporal quality, peak memory, other operating systems and
-Safari/Firefox/mobile remain unqualified. No code or activation gates changed.
+coverage: both tested browsers are Chromium on one Mac. At this stage, downloaded-player
+playback was unchecked; the follow-up below adds a native-player smoke test. Full
+temporal quality, peak memory, other operating systems and Safari/Firefox/mobile
+remain unqualified. No code or activation gates changed.
+
+
+## Native-player follow-up, 2026-09-29
+
+QuickTime Player 10.5 on the same macOS 27.0 arm64 machine opened and played
+both Chrome downloads recorded above. The AAC retry reached the final burned-in
+frame, 149 at 00:00:04.967. The 15-second moving-face export opened at 00:00,
+was observed playing at 00:14, and stopped at 00:15 with timeline value 15.
+
+This is a downloaded-file playback smoke test, not continuous frame-by-frame
+quality review or an audio listening/A/V synchronization assessment. Earlier
+file comparisons establish frame/timestamp and decoded-audio preservation.
+The [Chrome record](video-enhance-chrome-2026-09-29.json) includes this follow-up.
+Production remains disabled and the PR remains a draft.
