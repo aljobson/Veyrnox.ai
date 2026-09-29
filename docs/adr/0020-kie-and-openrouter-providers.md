@@ -436,3 +436,22 @@ production application of the staging migration, normal gateway/R2 storage and c
 verification, and image quality/resolution confirmation. Dialogue remains
 blocked by its provider failure. No fallback, default model, existing route,
 customer price or production secret is changed by staging these options.
+
+### Flux KIE 1K activation — 29 September 2026
+
+Migration 0162 enables only `flux-2-pro-1k-kie` at 2 credits, with an exact
+endpoint, price and row-count guard. Keep the fal route for its seed support;
+Dialogue remains inactive. The live staging gateway generated and stored a JPEG,
+its library download matched the stored hash, KIE charged five credits ($0.025),
+and the customer ledger recorded one two-credit debit. Both balance
+reconciliations returned zero mismatches. See the
+[staging evidence](../operations/flux-staging-verification-2026-09-29.md).
+
+`tests/fluxKieGateway.test.mjs` exercises real handlers with an isolated fake
+network: rejected submission and authenticated provider failure refund two
+credits, duplicate callbacks do not duplicate storage/refunds, and copy failure
+remains retryable. These are deterministic failure tests, not new paid failures.
+Local Postgres acceptance checks activation replay, unchanged other catalogue
+rows, and rejection of missing rows or endpoint/price drift. Apply in production
+only through the protected owner-approved workflow. Rollback is a new guarded
+migration setting this KIE row inactive; keep the original fal row unchanged.

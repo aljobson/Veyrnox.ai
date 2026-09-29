@@ -40,3 +40,37 @@ test('wholesale staging is inactive, replay-safe and preserves existing routes',
             await db.end();
         }
     });
+
+test('Flux activation replays safely, preserves other rows and rejects catalogue drift',
+    { skip: !url && 'DATABASE_URL not set' }, async () => {
+        assert.doesNotMatch(url!, /supabase\.(co|com)/, 'isolated database only');
+        const db = new pg.Client({ connectionString: url });
+        await db.connect();
+        try {
+            await db.query('BEGIN');
+            const read = (name: string) => readFile(new URL(`./schema/supabase/${name}`, import.meta.url), 'utf8');
+            await db.query(await read('0029_cost_unit_and_deactivate_seedance.sql'));
+            await db.query(await read('0159_kie_dialogue_flux_staged.sql'));
+            const before = (await db.query("SELECT * FROM public.model_catalog WHERE id <> 'flux-2-pro-1k-kie' ORDER BY id")).rows;
+            const activation = await read('0162_kie_flux_1k_activation.sql');
+            await db.query(activation);
+            await db.query(activation);
+            const flux = (await db.query("SELECT active, credits_5s FROM public.model_catalog WHERE id='flux-2-pro-1k-kie'")).rows[0];
+            assert.deepEqual(flux, { active: true, credits_5s: 2 });
+            assert.deepEqual((await db.query("SELECT * FROM public.model_catalog WHERE id <> 'flux-2-pro-1k-kie' ORDER BY id")).rows, before);
+            for (const mutation of [
+                "DELETE FROM public.model_catalog WHERE id='flux-2-pro-1k-kie'",
+                "UPDATE public.model_catalog SET credits_5s=1 WHERE id='flux-2-pro-1k-kie'",
+                "UPDATE public.model_catalog SET provider_endpoint='unexpected' WHERE id='flux-2-pro-1k-kie'",
+                "UPDATE public.model_catalog SET provider_cost_per_unit=0.035 WHERE id='flux-2-pro-1k-kie'",
+            ]) {
+                await db.query('SAVEPOINT drift');
+                await db.query(mutation);
+                await assert.rejects(db.query(activation), /Expected one verified kie Flux/);
+                await db.query('ROLLBACK TO SAVEPOINT drift');
+            }
+        } finally {
+            await db.query('ROLLBACK');
+            await db.end();
+        }
+    });
