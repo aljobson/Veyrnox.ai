@@ -406,3 +406,34 @@ Safari remains unqualified. Resolve or reliably reject the failing path before
 including Safari in a supported release matrix. Production remains disabled;
 ADR-0065 is still Proposed. No security, download or browser settings were changed
 beyond the application's local preview flag. The test window is left recovered.
+
+
+## Safari encoder isolation, 2026-09-29
+
+At `6a85e1e`, reloading Safari and selecting the same portrait fixture reproduced
+the 0.28-second stall without prior playback or cancellation. This rules out
+cancellation as a necessary trigger in this case.
+
+Temporary console instrumentation counted native codec callbacks. During a
+stalled run, the active decoder delivered 46 outputs, with queue size 0; the
+active H.264 encoder delivered 0 outputs, with queue size 4. Both were configured
+and reported no codec error. The separate probe decoder/encoder each produced
+one output and closed. Mediabunny 1.60.0's `media-source.ts` waits for a dequeue
+event when encodeQueueSize reaches 4. Together these observations localize the
+wait to encoder backpressure; they do not prove the underlying WebKit cause.
+
+Forcing `hardwareAcceleration: prefer-software` at encoder configuration still
+stalled at 0.28 seconds. A second isolated experiment restored the normal
+hardware preference and forced `latencyMode: realtime`; export completed. Its
+download preserved all 375 frames, timestamps/durations within 1 ms, and silence.
+The [diagnostic record](video-enhance-safari-isolation-2026-09-29.json) identifies
+the output and its hash. This is an experimental configuration result, not an
+application fix or a general Safari qualification. AAC, VFR, cancellation/retry,
+quality and repeated-run acceptance remain required for a proposed fix.
+
+Both codec constructors and the original configure method were restored, and
+Web Inspector was closed. No runtime override or source-code change is retained.
+Safari's localhost download permission was allowed to save the diagnostic file.
+Next: implement a scoped encoder configuration through a supported library API
+(or reject the unqualified path), then repeat the export contract checks. Do not
+ship the temporary global codec override used for diagnosis.
