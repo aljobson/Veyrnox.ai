@@ -20,10 +20,11 @@ export async function createVideoEnhanceEngine(video, canvas, onFrame, onError, 
     const input = document.createElement('canvas');
     const context = input.getContext('2d');
     let settings = { smoothing: 30, look: 'natural', intensity: 100 };
-    let callback, disposed = false, timestamp = 0, faces = [], lastTime = -1, exportController, failure;
+    let callback, disposed = false, timestamp = 0, faces = [], lastTime = -1, exportController, failure, cancelSeek;
     function fail(error) {
         if (disposed || failure) return;
         failure = error;
+        cancelSeek?.(error);
         video.pause(); exportController?.abort();
         if (video.cancelVideoFrameCallback) video.cancelVideoFrameCallback(callback); else cancelAnimationFrame(callback);
         onError(error.message);
@@ -53,11 +54,21 @@ export async function createVideoEnhanceEngine(video, canvas, onFrame, onError, 
     video.addEventListener('seeked', redraw); video.addEventListener('loadeddata', redraw);
     tick();
     const seek = seconds => new Promise((resolve, reject) => {
-        if (Math.abs(video.currentTime - seconds) < 0.001 && video.readyState >= 2) { draw(true); resolve(); return; }
-        const timeout = setTimeout(() => { cleanup(); reject(new Error('The video could not seek. Try a different clip.')); }, 5000);
-        const cleanup = () => { clearTimeout(timeout); video.removeEventListener('seeked', done); };
+        if (disposed) { reject(new DOMException('The video editor is closed.', 'AbortError')); return; }
+        if (failure) { reject(failure); return; }
+        cancelSeek?.(new DOMException('A newer seek replaced this one.', 'AbortError'));
+        if (Math.abs(video.currentTime - seconds) < 0.001 && video.readyState >= 2 && !video.seeking) { draw(true); resolve(); return; }
+        let timeout;
+        const cleanup = () => {
+            clearTimeout(timeout); video.removeEventListener('seeked', done);
+            if (cancelSeek === cancel) cancelSeek = undefined;
+        };
+        const cancel = error => { cleanup(); reject(error); };
         const done = () => { cleanup(); resolve(); };
-        video.addEventListener('seeked', done, { once: true }); video.currentTime = seconds;
+        cancelSeek = cancel;
+        timeout = setTimeout(() => cancel(new Error('The video could not seek. Try a different clip.')), 5000);
+        video.addEventListener('seeked', done, { once: true });
+        try { video.currentTime = seconds; } catch (error) { cancel(error); }
     });
     return {
         setSettings(value) { settings = value; draw(true); },
@@ -104,7 +115,9 @@ export async function createVideoEnhanceEngine(video, canvas, onFrame, onError, 
         close() {
             if (disposed) return;
             canvas.removeEventListener('webglcontextlost', graphicsLost);
-            disposed = true; exportController?.abort(); video.pause();
+            disposed = true;
+            cancelSeek?.(new DOMException('The video editor is closed.', 'AbortError'));
+            exportController?.abort(); video.pause();
             if (video.cancelVideoFrameCallback) video.cancelVideoFrameCallback(callback); else cancelAnimationFrame(callback);
             video.removeEventListener('seeked', redraw); video.removeEventListener('loadeddata', redraw);
             tracker.close(); renderer.close();

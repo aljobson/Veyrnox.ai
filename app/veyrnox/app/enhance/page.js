@@ -76,10 +76,20 @@ function Editor() {
     }
     function update(next) { setResult(null); setSettings(previous => ({ ...previous, ...next })); }
     async function play() {
+        const activeEngine = engine.current, element = video.current, epoch = sourceEpoch.current;
+        const isCurrent = () => alive.current && sourceEpoch.current === epoch && !failed.current;
         try {
-            if (video.current.paused) await engine.current.play(); else engine.current.pause();
-            setFrame(previous => ({ ...previous, playing: !video.current.paused }));
-        } catch { setError('Playback could not start. Try a different clip.'); }
+            if (element.paused) await activeEngine.play(); else activeEngine.pause();
+            if (isCurrent()) setFrame(previous => ({ ...previous, playing: !element.paused }));
+        } catch { if (isCurrent()) setError('Playback could not start. Try a different clip.'); }
+    }
+    function seek(seconds) {
+        const epoch = sourceEpoch.current;
+        engine.current?.pause();
+        engine.current?.seek(seconds).catch(error => {
+            if (alive.current && sourceEpoch.current === epoch && !failed.current && error.name !== 'AbortError') setError(error.message);
+        });
+        setFrame(previous => ({ ...previous, playing: false }));
     }
     async function exportVideo() {
         if (exportWarning || state !== 'ready') return;
@@ -111,7 +121,7 @@ function Editor() {
                     </div>}
                 {source && <div className="space-y-3 border-t border-vx-border p-4">
                     <label className="block text-xs text-vx-fg-muted">Playback position <span className="float-right">{frame.time.toFixed(1)} / {duration.toFixed(1)}s</span>
-                        <input className={rangeStyle} type="range" min="0" max={duration || 1} step="0.01" value={Math.min(frame.time,duration)} disabled={state !== 'ready'} onChange={event => { engine.current?.pause(); engine.current?.seek(Number(event.target.value)).catch(e => setError(e.message)); setFrame(previous => ({ ...previous, playing: false })); }} />
+                        <input className={rangeStyle} type="range" min="0" max={duration || 1} step="0.01" value={Math.min(frame.time,duration)} disabled={state !== 'ready'} onChange={event => seek(Number(event.target.value))} />
                     </label>
                     <Button size="sm" variant="ghost" disabled={state !== 'ready'} onClick={play}>{frame.playing ? 'Pause' : 'Play comparison'}</Button>
                     <p role="status" className="text-xs leading-relaxed text-vx-fg-muted">{state === 'error' ? 'Preview stopped. Choose the video again to retry.' : state === 'loading' ? 'Preparing face tracking…' : settings.smoothing === 0 ? 'Skin smoothing is off.' : frame.faces === 1 ? 'One face tracked. Smoothing is applied to the face region.' : frame.faces > 1 ? 'Multiple faces detected. Smoothing is paused; colour settings still apply.' : 'No face tracked. Smoothing is paused; colour settings still apply.'}</p>

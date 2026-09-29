@@ -260,3 +260,21 @@ Full suite: 840 passed, 1 skipped. Next production build and scoped lint passed;
 final source-selection guard and stopped-status copy also compiled in next dev.
 This is synthetic local graphics loss, not a physical GPU reset qualification.
 Production activation and all other release gates remain unchanged.
+
+## Abandoned seek cleanup, 2026-09-29
+
+Pending seeks now release their timer and completion listener when superseded,
+when the engine closes, or when graphics fail. A synchronous seek assignment
+failure also cleans up. The editor ignores cancellation and stale seek/playback
+results after a source replacement or unmount, preserving the new edit's state.
+
+Regression coverage exercises successive seeks, successful completion,
+assignment failure, timeout/retry, graphics failure, and close while pending.
+In local Chromium, a test listener withheld one `seeked` event before replacing
+the 15-second portrait clip with the occlusion clip. The replacement remained
+ready beyond the old five-second deadline, with no stale error; seeking in the
+replacement still worked. The discarded video held the test listener, so no
+fault injection remains on the replacement.
+
+Validation: 841 tests passed, 1 skipped; expanded lifecycle test rerun passed;
+scoped lint and Next production build passed. Production remains disabled.

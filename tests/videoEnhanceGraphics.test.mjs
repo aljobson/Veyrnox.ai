@@ -72,9 +72,11 @@ test('paused graphics loss aborts export, reports once, and disposes listeners',
     try {
         const { createVideoEnhanceEngine } = await import(`data:text/javascript,${encodeURIComponent(engineSource)}`);
         const engine = await createVideoEnhanceEngine(video, canvas, () => {}, message => errors.push(message));
+        const pendingSeek = assert.rejects(engine.seek(1), /lost graphics access/);
         const pending = engine.export({});
         canvas.dispatchEvent(new Event('webglcontextlost'));
         canvas.dispatchEvent(new Event('webglcontextlost'));
+        await pendingSeek;
         assert.equal(exportSignal.aborted, true);
         assert.equal(errors.length, 1);
         assert.match(errors[0], /Choose the video again/);
@@ -86,6 +88,59 @@ test('paused graphics loss aborts export, reports once, and disposes listeners',
         assert.equal(closed, 2);
         canvas.dispatchEvent(new Event('webglcontextlost'));
         assert.equal(errors.length, 1);
+    } finally {
+        globalThis.document = previousDocument;
+        if (previousEnv === undefined) delete process.env.NODE_ENV; else process.env.NODE_ENV = previousEnv;
+        delete globalThis.graphicsHarness;
+    }
+});
+
+test('superseded and abandoned seeks settle promptly without timers or listeners', async t => {
+    t.mock.timers.enable({ apis: ['setTimeout'] });
+    const previousDocument = globalThis.document, previousEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'development';
+    const video = new EventTarget(), canvas = new EventTarget();
+    let time = 0, throwOnSeek = false, completed = 0;
+    Object.assign(video, { readyState: 2, videoWidth: 640, videoHeight: 360,
+        pause() {}, requestVideoFrameCallback: () => 1, cancelVideoFrameCallback() {} });
+    Object.defineProperty(video, 'currentTime', { get: () => time, set(value) {
+        if (throwOnSeek) throw new Error('Seek assignment failed');
+        time = value;
+    } });
+    const { getEventListeners } = await import('node:events');
+    globalThis.document = { createElement: () => ({ getContext: () => ({ drawImage() {} }) }) };
+    globalThis.graphicsHarness = {
+        VIDEO_ENHANCE_ASSET_PATH: '', FilesetResolver: { forVisionTasks: async () => ({}) },
+        FaceLandmarker: { createFromOptions: async () => ({ detectForVideo: () => ({ faceLandmarks: [] }), close() {} }) },
+        acquireSetupTracker: factory => factory(), createRenderer: () => ({ draw() {}, close() {} }),
+    };
+    try {
+        const { createVideoEnhanceEngine } = await import(`data:text/javascript,${encodeURIComponent(engineSource)}#seeks`);
+        const engine = await createVideoEnhanceEngine(video, canvas, () => {}, assert.fail);
+        const first = engine.seek(1);
+        const firstRejected = assert.rejects(first, { name: 'AbortError' });
+        const second = engine.seek(2).then(() => { completed++; });
+        await firstRejected;
+        assert.equal(getEventListeners(video, 'seeked').length, 2); // redraw + current seek
+        video.dispatchEvent(new Event('seeked'));
+        await second;
+        assert.equal(completed, 1);
+        assert.equal(getEventListeners(video, 'seeked').length, 1);
+        throwOnSeek = true;
+        await assert.rejects(engine.seek(3), /Seek assignment failed/);
+        assert.equal(getEventListeners(video, 'seeked').length, 1);
+        throwOnSeek = false;
+        const timedOut = assert.rejects(engine.seek(3), /could not seek/);
+        t.mock.timers.tick(5000);
+        await timedOut;
+        assert.equal(getEventListeners(video, 'seeked').length, 1);
+        const pending = engine.seek(4);
+        const closed = assert.rejects(pending, { name: 'AbortError' });
+        engine.close();
+        await closed;
+        assert.equal(getEventListeners(video, 'seeked').length, 0);
+        t.mock.timers.tick(5001);
+        await assert.rejects(engine.seek(5), { name: 'AbortError' });
     } finally {
         globalThis.document = previousDocument;
         if (previousEnv === undefined) delete process.env.NODE_ENV; else process.env.NODE_ENV = previousEnv;
