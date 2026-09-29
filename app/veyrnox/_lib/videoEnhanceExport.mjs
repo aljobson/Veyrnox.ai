@@ -1,5 +1,5 @@
 import { Input, BlobSource, ALL_FORMATS, Output, BufferTarget, Mp4OutputFormat, MP4, Conversion, canEncodeVideo, Quality } from 'mediabunny';
-import { validateExportAudio } from './videoEnhance.mjs';
+import { validateExportAudio, validateExportBrowser } from './videoEnhance.mjs';
 
 async function inspectInput(input) {
     const videos = await input.getVideoTracks();
@@ -29,6 +29,8 @@ function prepareConversion(input, output, process) {
 }
 
 export async function inspectVideoExport(file, signal) {
+    const browserError = validateExportBrowser();
+    if (browserError) return browserError;
     const input = new Input({ source: new BlobSource(file), formats: ALL_FORMATS });
     try {
         signal?.throwIfAborted();
@@ -51,6 +53,9 @@ export async function inspectVideoExport(file, signal) {
 
 // Decoding and encoding use source timestamps, never the playback wall clock.
 export async function exportEnhancedVideo(file, { signal, process }) {
+    if (signal.aborted) throw new Error('Export cancelled.');
+    const browserError = validateExportBrowser();
+    if (browserError) throw new Error(browserError);
     const input = new Input({ source: new BlobSource(file), formats: ALL_FORMATS });
     let conversion, output;
     const cancelled = () => { if (signal.aborted) throw new Error('Export cancelled.'); };

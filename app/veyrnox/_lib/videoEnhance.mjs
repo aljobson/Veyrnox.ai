@@ -34,3 +34,13 @@ export function validateExportAudio(codec) {
             ? 'Export supports AAC audio or no audio. Convert this clip to MP4 with AAC audio, or remove its audio.'
             : null;
 }
+
+
+export function validateExportBrowser(userAgent = globalThis.navigator?.userAgent || '') {
+    // Safari 27 stalls in the pinned converter after four queued encoder requests.
+    // Keep WebKit preview-only until a scoped fix passes the export contract.
+    const webkit = /AppleWebKit\//.test(userAgent) && !/(?:Chrome|Chromium|Edg|OPR)\//.test(userAgent);
+    return webkit
+        ? 'MP4 export is unavailable in this browser because it can stall. Use desktop Google Chrome to export.'
+        : null;
+}

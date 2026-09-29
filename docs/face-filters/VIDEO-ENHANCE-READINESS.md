@@ -437,3 +437,29 @@ Safari's localhost download permission was allowed to save the diagnostic file.
 Next: implement a scoped encoder configuration through a supported library API
 (or reject the unqualified path), then repeat the export contract checks. Do not
 ship the temporary global codec override used for diagnosis.
+
+
+## WebKit export containment, 2026-09-29
+
+WebKit-identifying browsers now remain preview-only. Both compatibility preflight
+and direct export return an actionable desktop Google Chrome recommendation
+before opening the media input. Safari 27 was verified with the portrait fixture:
+one face tracked, comparison playback advanced, and Export unavailable prevented
+the known stalled path. Preview and adjustment controls remain available.
+
+This is containment, not a realtime-encoder implementation. The pinned
+Conversion API does not expose its lower-level source encoder-configuration hook;
+no global codec override or dependency patch is shipped. The UA check excludes
+desktop Chromium tokens and also covers WebKit-identifying iOS browser tokens.
+It is a compatibility restriction, not a security boundary or a mobile-browser
+qualification. Other browsers still run existing codec/container capability checks.
+
+Regression tests cover Safari/iOS identifiers, desktop Chromium exceptions,
+early preflight/direct-export rejection and cancellation precedence. Removing
+this restriction requires a scoped fix and media-contract/quality acceptance.
+Production remains disabled and PR #361 stays a draft.
+
+Validation: 845 tests passed, 1 skipped; focused tests rerun after copy cleanup,
+scoped lint and Next production build passed. In-app Chromium exported the
+5-second AAC fixture with Natural look: 150 frames, timestamps/durations within
+1 ms, source audio preserved (`veyrnox-capability-aac-enhanced (3).mp4`).

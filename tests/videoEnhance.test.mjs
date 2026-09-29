@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { validateVideo, VIDEO_LIMITS, VIDEO_LOOKS, lookSettings, downloadName, validateExportAudio } from '../app/veyrnox/_lib/videoEnhance.mjs';
+import { validateVideo, VIDEO_LIMITS, VIDEO_LOOKS, lookSettings, downloadName, validateExportAudio, validateExportBrowser } from '../app/veyrnox/_lib/videoEnhance.mjs';
 
 const file = { type: 'video/mp4', size: 1000 };
 const metadata = { duration: 10, width: 1080, height: 1920 };
@@ -58,5 +58,34 @@ test('unreadable media cannot receive a successful export compatibility check', 
 test('unqualified and unknown audio codecs fail closed', () => {
     for (const codec of ['pcm-s16', 'mp3', 'flac', undefined, '']) {
         assert.match(validateExportAudio(codec), /supports AAC/);
+    }
+});
+
+
+test('WebKit is preview-only while desktop Chromium retains capability checks', () => {
+    const base = 'Mozilla/5.0 AppleWebKit/605.1.15 ';
+    for (const browser of ['Version/27.0 Safari/605.1.15', 'CriOS/154.0 Mobile/15E148 Safari/604.1', 'FxiOS/143.0 Mobile/15E148 Safari/605.1.15']) {
+        assert.match(validateExportBrowser(base + browser), /can stall.*desktop Google Chrome/);
+    }
+    for (const browser of ['Chrome/154.0 Safari/537.36', 'Chromium/154.0 Safari/537.36', 'Chrome/154.0 Edg/154.0', 'Chrome/154.0 OPR/125.0']) {
+        assert.equal(validateExportBrowser(base + browser), null);
+    }
+    assert.equal(validateExportBrowser('Mozilla/5.0 Gecko/20100101 Firefox/143.0'), null);
+});
+
+test('WebKit preflight and direct export fail before opening media', async () => {
+    const { inspectVideoExport, exportEnhancedVideo } = await import('../app/veyrnox/_lib/videoEnhanceExport.mjs');
+    const original = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
+    Object.defineProperty(globalThis, 'navigator', { configurable: true, value: { userAgent: 'AppleWebKit/605.1.15 Version/27.0 Safari/605.1.15' } });
+    try {
+        // Deliberately invalid input: a missing early guard would enter the media parser.
+        assert.match(await inspectVideoExport(null), /desktop Google Chrome/);
+        const controller = new AbortController();
+        await assert.rejects(exportEnhancedVideo(null, { signal: controller.signal, process() { assert.fail('Processed unsupported export'); } }), /desktop Google Chrome/);
+        controller.abort();
+        await assert.rejects(exportEnhancedVideo(null, { signal: controller.signal }), /Export cancelled/);
+    } finally {
+        if (original) Object.defineProperty(globalThis, 'navigator', original);
+        else delete globalThis.navigator;
     }
 });
