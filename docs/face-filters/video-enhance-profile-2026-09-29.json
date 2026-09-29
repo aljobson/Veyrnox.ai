@@ -38,5 +38,44 @@
     "finding": "Clear side profile; no obvious gross facial displacement in inspected pair. Texture differences also include re-encoding.",
     "limits": "Not continuous temporal review, not a 0% control comparison, no all-frame tracking claim."
   },
-  "environment_note": "Initial tracker startup failed while local dev server was unavailable. Restarted server and used fresh tab; export then completed."
+  "environment_note": "Initial tracker startup failed while local dev server was unavailable. Restarted server and used fresh tab; export then completed.",
+  "control_followup": {
+    "tested_commit": "b9f1d99",
+    "look": "Natural",
+    "smoothing_percent": 0,
+    "result": "PASS: 375 frames, timestamps/durations within 1ms, no audio track added.",
+    "files": [
+      {
+        "name": "profile-control-0.mp4",
+        "bytes": 3799053,
+        "sha256": "5bcc7169d9b0104157624bed390cedcfee771f00f84b3aa1e2fbdae1ffd308d2"
+      },
+      {
+        "name": "profile-comparison.mp4",
+        "bytes": 9542040,
+        "sha256": "96e4cf9d17132a5879e1820e680ef8e88a7a6a8bc48cbfd18e96156818005863"
+      }
+    ],
+    "paired_crops_reviewed_seconds": [
+      2,
+      7,
+      12
+    ],
+    "crop": "800x800 at x600,y100; PNG extracted directly from both exports.",
+    "additional_composite_still_seconds": [
+      14
+    ],
+    "finding": "Subtle forehead/cheek softening in 30% output; no obvious gross eye, glasses, nose or mouth displacement in these sampled poses. Both side-profile directions covered by samples.",
+    "comparison_video": {
+      "left": "0% control",
+      "right": "30% smoothing",
+      "additional_encoding": "H.264 CRF16; full-size hstack, synchronized PTS",
+      "purpose": "Playback review aid; not evidence that continuous temporal review has been completed."
+    },
+    "limits": [
+      "One subject with glasses and beard.",
+      "Sampled still inspection cannot establish absence of flicker or transient tracking errors.",
+      "Control helps distinguish smoothing from source-to-export compression; independent lossy encodes can still differ."
+    ]
+  }
 }
