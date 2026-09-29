@@ -1,0 +1,48 @@
+{
+  "date": "2026-09-29",
+  "commit": "f740e82",
+  "browser": "Google Chrome",
+  "installed_version": "154.0.8037.58",
+  "os": "macOS 27.0",
+  "architecture": "arm64",
+  "runtime": "Next development at 127.0.0.1:3186",
+  "files": [
+    {
+      "name": "veyrnox-capability-aac.mp4",
+      "bytes": 546798,
+      "sha256": "9829d76ac7b5024d660b596a64de5a2edef3c1ac3dadb7f3a475860590c97d0d"
+    },
+    {
+      "name": "veyrnox-capability-aac-enhanced (1).mp4",
+      "bytes": 867388,
+      "sha256": "be0c9511112e40951854dcff70b87376469661cc6f8504b2290427f0453dedd3"
+    },
+    {
+      "name": "veyrnox-capability-aac-enhanced (2).mp4",
+      "bytes": 867388,
+      "sha256": "9e8690aaa878a936b9ce366d393febee8f54693796ff75341e35e2551a52b1fd"
+    },
+    {
+      "name": "veyrnox-memory-15s-1920.mp4",
+      "bytes": 12182122,
+      "sha256": "7881791de0d31bf575c65ea24074487570613ce03f9c272924ee3d139ac93bcd"
+    },
+    {
+      "name": "veyrnox-memory-15s-1920-enhanced (2).mp4",
+      "bytes": 7016277,
+      "sha256": "5d719cb3f982deabf854bb01824ffdae161fde3905bef2e8baade9b1a19cb9b0"
+    }
+  ],
+  "results": {
+    "aac_initial": "150 frames; timestamps/durations within 1ms; source audio preserved",
+    "aac_cancel": "Export cancelled; controls enabled; no Download link",
+    "aac_retry": "150 frames; timestamps/durations within 1ms; source audio preserved",
+    "portrait": "One face tracked; 375 exported frames; timestamps/durations within 1ms; no audio added"
+  },
+  "limits": [
+    "Same physical Mac as earlier in-app Chromium checks",
+    "Not production-mode acceptance",
+    "No downloaded-player playback, temporal quality or peak memory qualification in this run",
+    "Safari, Firefox, Windows and mobile remain untested"
+  ]
+}

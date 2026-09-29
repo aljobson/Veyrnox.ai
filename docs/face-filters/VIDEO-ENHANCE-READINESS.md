@@ -318,3 +318,25 @@ not a measurement of total native/GPU memory reclamation.
 
 Validation: 843 tests passed, 1 skipped; scoped lint and Next production build
 passed. Production remains disabled.
+
+
+## Desktop Chrome follow-up, 2026-09-29
+
+At `f740e82`, installed Google Chrome 154.0.8037.58 on the same macOS 27.0
+arm64 machine passed two local Next-development cases:
+
+| Case | Result |
+| --- | --- |
+| 5-second AAC pattern, Warm / 100% | Export preserved 150 frames within 1 ms and source audio. |
+| Cancel that export, then retry | Cancellation cleared download and restored controls; retry preserved the same 150-frame/audio contract. |
+| 15-second 1920×1080 silent moving face, Natural / 30% smoothing | Preview reported one face; export preserved 375 frames within 1 ms and added no audio. |
+
+The extension's file-URL permission prevented automated file assignment. Native
+file selection succeeded without changing extension permissions. The moving-face
+fixture reuses the licensed Mikhail Nilov sample and preparation described above.
+Inputs/outputs and hashes are listed in the [Chrome record](video-enhance-chrome-2026-09-29.json).
+
+This broadens browser-shell coverage, not physical-device or rendering-engine
+coverage: both tested browsers are Chromium on one Mac. Downloaded-player
+playback, full temporal quality, peak memory, other operating systems and
+Safari/Firefox/mobile remain unqualified. No code or activation gates changed.
