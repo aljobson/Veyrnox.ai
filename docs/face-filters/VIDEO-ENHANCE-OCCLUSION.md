@@ -59,3 +59,41 @@ infer semantic hand protection from a single-face landmark result.
 source/output identity and sampled status observations. Licensed diagnostic media
 remain local in ignored `.scratch/video-enhance/severe-occlusion/`, not in Git
 or the deployed runtime inventory.
+
+
+## Matched-frame review and comparison videos, 2026-09-29
+
+Reviewed historical exports, not newly generated outputs of the latest branch.
+The portrait output is the third in-app Chromium export from the responsiveness
+run; the covered-face outputs are the original 2026-09-28 0%/30% pair above.
+
+Paired portrait stills at 2, 6 and 8 seconds show head tilt/downward motion and
+facial hair. Skin texture is softer in the export, particularly on the forehead
+at 6 seconds. Eye, mouth and beard boundaries show no obvious gross displacement
+in these samples. The portrait has no matching 0% export in this comparison, so
+re-encoding differences cannot be isolated from smoothing. These poses do not
+qualify severe side-profile behavior.
+
+Paired covered-face stills at 1.8 seconds (revealed face) and 11.2 seconds (hand
+covering the eyes) show no obvious gross geometry displacement. Soft hand detail
+is visible in both the 0% and 30% outputs. A 30% output still at 10.4 seconds also
+shows the approaching hand. These observations do not establish hand preservation,
+hair exclusion, or smooth transitions between tracking states.
+
+Two synchronized side-by-side review MP4s were prepared locally, preserving both
+panels' dimensions. Each contains 375 frames at 25 fps over 15 seconds:
+
+- `portrait-comparison.mp4`: input left, 30% export right, 3840×1080.
+- `occlusion-comparison.mp4`: 0% control left, 30% export right, 2024×1920.
+
+They live with lossless extracted stills under ignored
+`.scratch/video-enhance/quality-review-2026-09-29/`. Frames are joined on their
+source timeline with `setpts=PTS-STARTPTS` and `hstack`, then encoded using
+libx264 CRF16. That extra encode makes the videos review aids, not lossless
+texture evidence. The original files and PNGs remain available for that purpose.
+
+The [review manifest](video-enhance-quality-review-2026-09-29.json) records file
+hashes, exact inspected timestamps and artifact dimensions. Sampled inspection
+and prepared continuous comparisons do not close the temporal-quality gate.
+Severe profiles, hair across the face and a broader subject set are still needed.
+No application code, production activation or release decision changed.
