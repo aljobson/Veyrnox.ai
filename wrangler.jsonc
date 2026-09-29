@@ -35,6 +35,7 @@
     "CREATOR_UPLOADS_ENABLED": "false",
     "CINEMA_UPLOAD_RECOVERY_ENABLED": "false",
     "CINEMA_UPLOAD_REMOVAL_ENABLED": "false",
+    "CINEMA_PROXY_UPLOADS_ENABLED": "false",
     "CREATOR_MONETISATION_ENABLED": "false",
     "CINEMA_SUBSCRIPTIONS_ENABLED": "false",
     "CINEMA_UNLOCKS_ENABLED": "false",
@@ -100,9 +101,16 @@
       "name": "veyrnox-ai-staging",
       // Recovery and removal of Cinema uploads run from the cron; the other
       // scheduled tasks skip on staging because their secrets are not set.
+      "ratelimits": [{
+        "name": "ADMIN_EDGE_RATE_LIMITER",
+        "namespace_id": "2026092601",
+        "simple": { "limit": 60, "period": 60 }
+      }],
       "triggers": { "crons": ["*/5 * * * *"] },
       "vars": {
         "APP_ENV": "staging",
+        "ACCESS_TEAM_DOMAIN": "fancy-lake-7c60.cloudflareaccess.com",
+        "ACCESS_AUD": "90e88032af5e17f3e560fd12f33a182a9ff353ddf813514fcfe072f169efe1fd",
         "PUBLIC_HOST": "https://veyrnox-ai-staging.al-jobson.workers.dev",
         "SUPABASE_URL": "https://yrqzwqywxfesmbvhzjgj.supabase.co",
         "NEXT_PUBLIC_SUPABASE_URL": "https://yrqzwqywxfesmbvhzjgj.supabase.co",
@@ -118,7 +126,14 @@
         "CREATOR_CONTENT_ENABLED": "true",
         "CREATOR_UPLOADS_ENABLED": "true",
         "CINEMA_UPLOAD_RECOVERY_ENABLED": "true",
-        "CINEMA_UPLOAD_REMOVAL_ENABLED": "true"
+        "CINEMA_UPLOAD_REMOVAL_ENABLED": "true",
+        "CINEMA_PROXY_UPLOADS_ENABLED": "false",
+        // Publication acceptance: administrators can publish the prepared
+        // staging title and viewers can load and play entitled Stream media.
+        // Production keeps all three switches false.
+        "CINEMA_UNLOCKS_ENABLED": "true",
+        "CINEMA_PUBLISHING_ENABLED": "true",
+        "CINEMA_VIEWING_ENABLED": "true"
       }
     }
   },

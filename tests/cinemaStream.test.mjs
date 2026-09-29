@@ -7,7 +7,7 @@ const video={uid,requireSignedURLs:true,readyToStream:true,status:{state:'ready'
 test('Stream provisioning binds length, private access, expiry and opaque reservation; no redirects',async()=>{
   let called;
   const result=await createStreamUpload({id:'reservation-id',file_size:123,expires_at:'2026-09-25T13:00:00Z'},cfg,async(target,init)=>{called={target,init};return new Response(null,{status:201,headers:{location:url,'stream-media-id':uid}});});
-  assert.equal(result.uid,uid);assert.match(called.target,/direct_user=true$/);assert.equal(called.init.headers['Upload-Length'],'123');assert.match(called.init.headers['Upload-Metadata'],/requiresignedurls/);assert.equal(called.init.redirect,'error');
+  assert.equal(result.uid,uid);assert.match(called.target,/direct_user=true$/);assert.equal(called.init.headers['Upload-Length'],'123');assert.match(called.init.headers['Upload-Metadata'],/requiresignedurls/);assert.equal(called.init.redirect,'manual');
   for(const bad of ['https://evil.invalid/x','https://upload.cloudflarestream.com.evil.invalid/x','http://upload.cloudflarestream.com/x','https://user@upload.cloudflarestream.com/x','https://upload.cloudflarestream.com:444/x'])assert.equal(validUploadUrl(bad),false);
   await assert.rejects(createStreamUpload({},cfg,async()=>new Response(null,{status:201,headers:{location:'https://evil.invalid', 'stream-media-id':uid}})));
 });

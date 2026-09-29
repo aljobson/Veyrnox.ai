@@ -17,6 +17,7 @@
  * more range, not a download.
  */
 
+import { readProjectAssetRange } from '../../../../../../../../lib/projectAssetRange.js';
 import { tenantRequest } from '../../../../../../../../packages/db/tenant-client.js';
 import { protectedRoute } from '../../../../../../../../packages/security/route.js';
 import { ApiError } from '../../../../../../../../packages/security/errors.js';
@@ -33,6 +34,7 @@ export async function POST(request, { params }) {
     const projectId = uuid(p.id).toLowerCase();
     const assetId = uuid(p.assetId).toLowerCase();
 
+    await tenantRequest(request, context, 'rpc/consume_project_asset_inspection', { method: 'POST', body: { p_project_id: projectId, p_asset_id: assetId } });
     const rows = await tenantRequest(request, context,
       `project_assets?id=eq.${assetId}&project_id=eq.${projectId}&select=id,r2_key,state,declared_type&limit=1`);
     const asset = rows[0];
@@ -61,11 +63,8 @@ export async function POST(request, { params }) {
     try { signed = await presignGetUrl(asset.r2_key, ASSET_URL_TTL_SECONDS, r2); }
     catch { throw new ApiError(502, 'STORAGE_UNAVAILABLE', 'Storage is temporarily unavailable.'); }
 
-    const readRange = async (start, end) => {
-      const res = await fetch(signed.url, { headers: { Range: `bytes=${start}-${end}` } });
-      if (!res.ok) throw new Error(`range ${res.status}`);
-      return new Uint8Array(await res.arrayBuffer());
-    };
+    const signal = AbortSignal.timeout(20000);
+    const readRange = (start, end) => readProjectAssetRange(signed.url, start, end, object.size, signal);
 
     let verdict;
     try {
