@@ -490,3 +490,9 @@ storage retry without another paid edit. These checks do not constitute a
 live deployed edit. Activation requires a separate migration after a deployed
 owned-upload → debit → submit → authenticated poll → R2 → STORED/download
 check, actual billing/output-host confirmation and clean balance reconciliation.
+
+Activation 0166 is prepared after the successful deployed staging test recorded
+in `docs/operations/grsai-edit-staging-verification-2026-09-29.md`: normal cron,
+matching stored/downloaded hash and clean reconciliation. It checks the exact
+endpoint, modality, price and ungated tier before enabling only the GrsAI edit.
+Production still requires the owner-approved migration workflow.
