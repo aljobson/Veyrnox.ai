@@ -41,3 +41,12 @@ test('framework request wrappers retain body and authentication headers', async 
     assert.equal(result.request.headers.get('idempotency-key'), 'synthetic');
     assert.deepEqual(await result.request.json(), { username: 'staging_test' });
 });
+
+test('only exact PATCH transfer routes permit bounded 5 MiB chunks',async()=>{
+ const path='/api/v1/cinema/uploads/11111111-1111-4111-8111-111111111111/transfer';
+ const make=(size,method='PATCH',suffix='')=>new Request(`https://test.invalid${path}${suffix}`,{method,body:new Uint8Array(size)});
+ assert.ok((await limitRequestBody(make(5*1024*1024))).request);
+ assert.equal((await limitRequestBody(make(5*1024*1024+1))).response.status,413);
+ assert.equal((await limitRequestBody(make(JSON_BODY_LIMIT+1,'POST'))).response.status,413);
+ assert.equal((await limitRequestBody(make(JSON_BODY_LIMIT+1,'PATCH','/extra'))).response.status,413);
+});

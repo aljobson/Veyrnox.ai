@@ -178,6 +178,44 @@ try {
     await rejects('SELECT request_key FROM public.project_assets WHERE project_id=$1',[project],'42501');
   });
 
+  await check('inspection throttles repeated reads and denies strangers before consuming quota',async()=>{
+    await actor(owner); const a=await value(reserve,[project,'image/png',1234,'inspect-rate-test']);
+    await actor(stranger); await rejects('SELECT public.consume_project_asset_inspection($1,$2)',[project,a.asset_id],'PT404');
+    await actor(owner);
+    for(let i=0;i<10;i++) assert.equal(await value('SELECT public.consume_project_asset_inspection($1,$2)',[project,a.asset_id]),true);
+    await rejects('SELECT public.consume_project_asset_inspection($1,$2)',[project,a.asset_id],'PT429');
+    await rejects('SELECT public.claim_project_asset_cleanup($1)',[randomUUID()],'42501');
+  });
+  await check('cleanup expires abandoned uploads, leases retries, and releases quota only on completion',async()=>{
+    await asSuper(); await query('SAVEPOINT cleanup_test');
+    const id=randomUUID(), key=`org/${org}/project/${project}/asset/${id}/v1.png`;
+    await query("INSERT INTO public.project_assets(id,project_id,r2_key,declared_type,declared_bytes,actor_id,request_key,created_at) VALUES($1,$2,$3,'image/png',1234,$4,'old-cleanup-test',now()-interval '25 hours')",[id,project,key,owner]);
+    await asService(); const claim=randomUUID();
+    assert.equal((await value('SELECT public.claim_project_asset_cleanup($1)',[claim])).items.some(i=>i.id===id),true);
+    assert.equal((await value('SELECT public.claim_project_asset_cleanup($1)',[randomUUID()])).items.some(i=>i.id===id),false);
+    assert.equal(await value('SELECT public.finish_project_asset_cleanup($1,$2)',[id,randomUUID()]),false);
+    await asSuper(); assert.equal(await value('SELECT purged_at IS NULL FROM private.project_asset_storage WHERE asset_id=$1',[id]),true);
+    assert.equal(await value('SELECT state FROM public.project_assets WHERE id=$1',[id]),'rejected');
+    await query("UPDATE private.project_asset_storage SET claimed_at=now()-interval '6 minutes' WHERE asset_id=$1",[id]);
+    await asService(); const retry=randomUUID();
+    assert.equal((await value('SELECT public.claim_project_asset_cleanup($1)',[retry])).items.some(i=>i.id===id),true);
+    assert.equal(await value('SELECT public.finish_project_asset_cleanup($1,$2)',[id,claim]),false);
+    assert.equal(await value('SELECT public.finish_project_asset_cleanup($1,$2)',[id,retry]),true);
+    assert.equal((await value('SELECT public.claim_project_asset_cleanup($1)',[randomUUID()])).items.some(i=>i.id===id),false);
+    await asSuper();await query('ROLLBACK TO SAVEPOINT cleanup_test');
+  });
+  await check('pending uploads and byte quota are bounded across an organisation',async()=>{
+    await asSuper();await query('SAVEPOINT quotas');
+    const insert=async(size)=>{const id=randomUUID();return query("INSERT INTO public.project_assets(id,project_id,r2_key,declared_type,declared_bytes,actor_id,request_key) VALUES($1,$2,$3,'video/mp4',$4,$5,$6)",[id,project,`org/${org}/project/${project}/asset/${id}/v1.mp4`,size,owner,id]);};
+    const pending=Number(await value("SELECT count(*) FROM public.project_assets WHERE project_id=$1 AND state='quarantined'",[project]));
+    for(let i=pending;i<20;i++) await insert(1);
+    await query('SAVEPOINT denied'); await assert.rejects(insert(1),e=>e.code==='PT429'); await query('ROLLBACK TO SAVEPOINT denied');
+    await query('ROLLBACK TO SAVEPOINT quotas');
+    for(let i=0;i<10;i++) await insert(104857600);
+    await query('SAVEPOINT denied'); await assert.rejects(insert(104857600),e=>e.code==='PT429'); await query('ROLLBACK TO SAVEPOINT denied');
+    await query('ROLLBACK TO SAVEPOINT quotas');
+  });
+
   console.log(`# ${count} checks passed`);
 } finally {
   await query('RESET ROLE');

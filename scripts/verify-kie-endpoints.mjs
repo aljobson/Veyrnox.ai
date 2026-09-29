@@ -39,6 +39,17 @@ import { submitTask, fetchTask, buildRequest, parseEndpoint } from '../packages/
 // listed on 2026-09-18 and what the row carries; the run confirms or refutes.
 const ROWS = [
     {
+        id: 'elevenlabs-dialogue-kie', endpoint: 'market:elevenlabs/text-to-dialogue-v3',
+        credits: 5, cost: 0.07, unit: 'up to 1000 characters, four KIE stock voices, no seed',
+        inputs: { prompt: 'Ana: Welcome to the lighthouse.\nBen: The sea looks calm today.\nCara: I can see a boat on the horizon.\nDan: Let us light the lamp before sunset.' },
+    },
+    {
+        id: 'flux-2-pro-1k-kie', endpoint: 'market:flux-2/pro-text-to-image',
+        credits: 2, cost: 0.025, unit: 'one 1K image, no seed',
+        inputs: { prompt: 'A ceramic teapot on a linen cloth, soft window light', aspect_ratio: '4:3' },
+    },
+
+    {
         id: 'kling-3.0-i2v-kie',
         endpoint: 'market:kling-3.0/video',
         credits: 28,

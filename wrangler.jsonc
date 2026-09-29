@@ -26,8 +26,8 @@
   "vars": {
     "APP_ENV": "production",
     "TENANT_PROJECTS_ENABLED": "false",
-    // Cinema v1.0: server controls are default-off; local preview cannot bypass them.
-    // Activate only after the documented migration/reconciliation and preview gates.
+    // Cinema first activation. Paid access and monetisation remain closed.
+    // Merge only after the documented production cutover gates pass.
     "CINEMA_ENABLED": "true",
     "CREATOR_APPLICATIONS_ENABLED": "true",
     "CREATOR_CONTENT_ENABLED": "true",
@@ -35,6 +35,7 @@
     "CREATOR_UPLOADS_ENABLED": "true",
     "CINEMA_UPLOAD_RECOVERY_ENABLED": "true",
     "CINEMA_UPLOAD_REMOVAL_ENABLED": "true",
+    "CINEMA_PROXY_UPLOADS_ENABLED": "true",
     "CREATOR_MONETISATION_ENABLED": "false",
     "CINEMA_SUBSCRIPTIONS_ENABLED": "false",
     "CINEMA_UNLOCKS_ENABLED": "false",
@@ -100,17 +101,24 @@
       "name": "veyrnox-ai-staging",
       // Recovery and removal of Cinema uploads run from the cron; the other
       // scheduled tasks skip on staging because their secrets are not set.
+      "ratelimits": [{
+        "name": "ADMIN_EDGE_RATE_LIMITER",
+        "namespace_id": "2026092601",
+        "simple": { "limit": 60, "period": 60 }
+      }],
       "triggers": { "crons": ["*/5 * * * *"] },
       "vars": {
         "APP_ENV": "staging",
+        "ACCESS_TEAM_DOMAIN": "fancy-lake-7c60.cloudflareaccess.com",
+        "ACCESS_AUD": "90e88032af5e17f3e560fd12f33a182a9ff353ddf813514fcfe072f169efe1fd",
         "PUBLIC_HOST": "https://veyrnox-ai-staging.al-jobson.workers.dev",
         "SUPABASE_URL": "https://yrqzwqywxfesmbvhzjgj.supabase.co",
         "NEXT_PUBLIC_SUPABASE_URL": "https://yrqzwqywxfesmbvhzjgj.supabase.co",
         "NEXT_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_bAxQiodzBhI6bV7lmo9gMQ_Hlg9_Ish",
         "TENANT_PROJECTS_ENABLED": "true",
         // Cinema Stream upload preview (ADR-0052/0053/0054). Staging only:
-        // vars are not inherited by environments and production keeps every
-        // one of these "false". Stream secrets are set on this Worker; see
+        // vars are not inherited by environments. Stream secrets are set on
+        // this Worker; see
         // docs/architecture/staging-rollout.md.
         "CINEMA_ENABLED": "true",
         "SOCIAL_CINEMA_PROFILES_ENABLED": "true",
@@ -118,7 +126,14 @@
         "CREATOR_CONTENT_ENABLED": "true",
         "CREATOR_UPLOADS_ENABLED": "true",
         "CINEMA_UPLOAD_RECOVERY_ENABLED": "true",
-        "CINEMA_UPLOAD_REMOVAL_ENABLED": "true"
+        "CINEMA_UPLOAD_REMOVAL_ENABLED": "true",
+        "CINEMA_PROXY_UPLOADS_ENABLED": "false",
+        // Publication acceptance: administrators can publish the prepared
+        // staging title and viewers can load and play entitled Stream media.
+        // Production activation is tracked separately.
+        "CINEMA_UNLOCKS_ENABLED": "true",
+        "CINEMA_PUBLISHING_ENABLED": "true",
+        "CINEMA_VIEWING_ENABLED": "true"
       }
     }
   },
@@ -147,6 +162,46 @@
   //   TOP_UP_BACKFILL_TOKEN       bearer for /api/admin/top-up-backfill (#94); same value in the TOP_UP_BACKFILL_TOKEN Actions secret
   //   ADMIN_REAP_TOKEN            /api/admin/reap-assets shared secret (ADR-0008)
   //   UPLOAD_PROXY_ALLOWED_HOSTS  legacy upload proxy allowlist (docs/UPLOAD_PROXY_CONFIG.md)
+  //   META_APP_ID, META_APP_SECRET
+  //                               Instagram OAuth connect/callback + Graph API calls, via
+  //                               Instagram API with Instagram Login (packages/adapters/social/
+  //                               instagram.js, ADR-0061). Not yet provisioned — see
+  //                               docs/social-publisher/06-oauth-review-runbook.md.
+  //   LINKEDIN_CLIENT_ID, LINKEDIN_CLIENT_SECRET
+  //                               LinkedIn OAuth connect/callback + Posts/Images API calls
+  //                               (packages/adapters/social/linkedin.js, ADR-0061). Not yet
+  //                               provisioned.
+  //   X_CLIENT_ID, X_CLIENT_SECRET
+  //                               X (Twitter) OAuth connect/callback + v2 media upload/tweet
+  //                               calls (packages/adapters/social/twitter.js, ADR-0061). Not
+  //                               yet provisioned.
+  //   TIKTOK_CLIENT_KEY, TIKTOK_CLIENT_SECRET
+  //                               TikTok OAuth connect/callback + Content Posting API publish
+  //                               (packages/adapters/social/tiktok.js, ADR-0061 Phase 5).
+  //                               MEDIA_UPLOAD mode (draft to the creator's own TikTok inbox,
+  //                               not an automated publish — see that file's own header for
+  //                               why) until this app clears TikTok's Content Posting API
+  //                               audit. Scope bump (added video.upload) needs re-consent from
+  //                               every already-connected account. Not yet provisioned.
+  //   YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET
+  //                               YouTube (Google) OAuth connect/callback + resumable video
+  //                               upload (packages/adapters/social/youtube.js, ADR-0061 Phase
+  //                               5). A separate OAuth client from Supabase's own Google
+  //                               Sign-In provider. Scope bump (added youtube.upload) needs
+  //                               re-consent from every already-connected account. Not yet
+  //                               provisioned.
+  //   SOCIAL_OAUTH_STATE_SECRET   signs the OAuth `state` token (lib/social/oauthState.js, ADR-0061
+  //                               §2.7) — this app is cookie-free, so state carries its own HMAC
+  //                               binding instead of server-side session storage
+  //   SOCIAL_TOKEN_ENCRYPTION_KEY AES-GCM key for OAuth tokens at rest (lib/social/tokenCrypto.js,
+  //                               ADR-0061 §2.7) — base64 of exactly 32 bytes, never reused from
+  //                               any other subsystem
+  //   SOCIAL_MEDIA_PROXY_SECRET   signs app/media/social/[token]/route.js's short-lived tokens
+  //                               (lib/social/mediaProxyToken.js, ADR-0061 Phase 5) — the public,
+  //                               unauthenticated route TikTok's PULL_FROM_URL fetch hits, since
+  //                               TikTok must DNS-verify the domain it pulls from and an R2
+  //                               presigned URL's host is Cloudflare's, not ours. A dedicated
+  //                               secret, never reused from the two above. Not yet provisioned.
   //
   // No R2 binding: r2.js signs plain fetch against the S3 endpoint so the
   // Worker never needs `env.MEDIA` / getCloudflareContext() in middleware.

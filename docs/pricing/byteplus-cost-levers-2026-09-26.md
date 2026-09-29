@@ -1,5 +1,13 @@
 # BytePlus ModelArk: every cost lever, account constraint and resale term — 26 September 2026
 
+> **2026-09-28 correction — pack savings withdrawn.** The original calculations
+> below assumed one pack token per consumed token. Current BytePlus rules apply
+> input/resolution deduction multipliers; the four staged Seedance 2.x costs and
+> derived credit floors are not valid activation evidence. Keep those rows inactive
+> until pricing is revised and verified. See the
+> [current wholesale review](../pricing/wholesale-review-2026-09-28.md).
+
+
 Full-site crawl of byteplus.com and docs.byteplus.com for anything that changes what we would
 pay for Seedance, Seedream, OmniHuman and speech models, and for anything that constrains a
 metered creator app using them. Extends the BytePlus section of

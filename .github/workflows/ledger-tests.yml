@@ -15,6 +15,7 @@ on:
       - "scripts/test-cinema-uploads.mjs"
       - "scripts/test-cinema-upload-recovery.mjs"
       - "scripts/test-cinema-upload-removal.mjs"
+      - "scripts/test-cinema-proxy-transfers.mjs"
       - "scripts/test-cinema-operator-actions.mjs"
       # A change to a route that alters RPC arguments could not run these.
       - "app/api/v1/**"
@@ -42,6 +43,7 @@ on:
       - "scripts/test-cinema-uploads.mjs"
       - "scripts/test-cinema-upload-recovery.mjs"
       - "scripts/test-cinema-upload-removal.mjs"
+      - "scripts/test-cinema-proxy-transfers.mjs"
       - "scripts/test-cinema-operator-actions.mjs"
       # A change to a route that alters RPC arguments could not run these.
       - "app/api/v1/**"
@@ -121,11 +123,13 @@ jobs:
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-uploads.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-upload-recovery.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-upload-removal.mjs
+          DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-proxy-transfers.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-unlocks.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-passes.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-pass-plays.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-publication.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-operator-actions.mjs
+          DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-administrator-provisioning.mjs
 
       - name: Run catalog margin-floor tests
         run: npx tsx --test packages/catalog/margin-validator.test.ts

@@ -70,3 +70,12 @@ Article 50 direction).
   automated yet.
 - BytePlus's written answers on the US exclusion and on our platform status
   (ADR-0058 "Before activating any row", items 2 and 3).
+
+## BytePlus privacy disclosure
+
+The privacy page names BytePlus Pte. Ltd. as a planned processor and explains
+that selected Seedance prompts and reference images would be processed in
+Singapore, outside the UK and EEA. It explicitly states the models are not
+yet available. This disclosure does not establish completed contractual or
+international-transfer arrangements. Before activation, verify those
+arrangements and update the notice to reflect availability (ADR-0058).

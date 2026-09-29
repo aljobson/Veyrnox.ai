@@ -5,16 +5,20 @@
 import { capabilityFor, checkInputs, shapePayload } from '../../lib/modelCapabilities.js';
 
 export const ENDPOINT = 'grsai:nano-banana-pro';
+export const EDIT_ENDPOINT = 'grsai:nano-banana-pro-edit';
 const BASE = 'https://grsaiapi.com';
 const ID_RE = /^[A-Za-z0-9._-]{1,128}$/;
 const MAX_RESPONSE_BYTES = 64 * 1024;
 
 export function buildRequest(endpoint, inputs) {
-    if (endpoint !== ENDPOINT) return { ok: false, error: 'provider_unsupported' };
+    if (endpoint !== ENDPOINT && endpoint !== EDIT_ENDPOINT) return { ok: false, error: 'provider_unsupported' };
+    if (endpoint === EDIT_ENDPOINT && typeof inputs?.image_url !== 'string') {
+        return { ok: false, error: 'inputs_invalid:image_url' };
+    }
     const record = capabilityFor(endpoint);
     const checked = checkInputs(record, inputs);
     if (!checked.ok) return checked;
-    return { ok: true, body: shapePayload(record, { aspect_ratio: '1:1', ...inputs }) };
+    return { ok: true, body: shapePayload(record, { aspect_ratio: endpoint === EDIT_ENDPOINT ? 'auto' : '1:1', ...inputs }) };
 }
 
 async function readJson(response) {

@@ -25,6 +25,8 @@
  *   KIE_WEBHOOK_HMAC_KEY the webhookHmacKey enabled in kie.ai settings
  */
 
+import { buildKieDialogue } from '../../lib/kieDialogue.js';
+
 export const KIE_API_BASE = 'https://api.kie.ai';
 const SIGNATURE_WINDOW_SECONDS = 300;
 
@@ -170,6 +172,28 @@ export function buildRequest(target, inputs) {
         if (inputs.image_url) return { ok: false, error: 'inputs_key_not_allowed:image_url' };
         if (prompt.length > SPEECH_MAX_CHARS) return { ok: false, error: 'inputs_invalid:prompt' };
         return { ok: true, body: { model: target.model, input: { text: prompt, voice: SPEECH_VOICE, timestamps: false } } };
+    }
+
+    if (target.model === 'elevenlabs/text-to-dialogue-v3' || target.model === 'flux-2/pro-text-to-image') {
+        // Refuse unsupported controls even when called outside the gateway.
+        const allowed = target.model === 'flux-2/pro-text-to-image'
+            ? new Set(['prompt', 'aspect_ratio', 'duration_seconds']) : new Set(['prompt', 'duration_seconds']);
+        if (inputs.duration_seconds !== undefined && inputs.duration_seconds !== 5) return { ok: false, error: 'duration_not_supported' };
+        for (const key of Object.keys(inputs)) {
+            if (!allowed.has(key)) return { ok: false, error: `inputs_key_not_allowed:${key}` };
+        }
+        if (target.model === 'elevenlabs/text-to-dialogue-v3') {
+            const mapped = buildKieDialogue(prompt);
+            if (!mapped.ok) return { ok: false, error: 'dialogue_invalid' };
+            return { ok: true, body: { model: target.model, input: { dialogue: mapped.dialogue, stability: 0.5 } } };
+        }
+        if (prompt.trim().length < 3 || prompt.length > 2000) return { ok: false, error: 'inputs_invalid:prompt' };
+        if (aspect && !new Set(['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3']).has(aspect)) {
+            return { ok: false, error: 'inputs_invalid:aspect_ratio' };
+        }
+        return { ok: true, body: { model: target.model, input: {
+            prompt, aspect_ratio: aspect || '4:3', resolution: '1K', nsfw_checker: true,
+        } } };
     }
 
     // A market model with no mapping here is not sellable: fail closed rather

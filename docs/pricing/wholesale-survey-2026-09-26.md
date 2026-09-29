@@ -1,5 +1,13 @@
 # Wholesale price survey: every video and audio model, cheapest source — 26 September 2026
 
+> **2026-09-28 correction — pack savings withdrawn.** The original calculations
+> below assumed one pack token per consumed token. Current BytePlus rules apply
+> input/resolution deduction multipliers; the four staged Seedance 2.x costs and
+> derived credit floors are not valid activation evidence. Keep those rows inactive
+> until pricing is revised and verified. See the
+> [current wholesale review](../pricing/wholesale-review-2026-09-28.md).
+
+
 Question: what is the cheapest wholesale price we can buy each video and audio model at?
 
 Companion files: `wholesale-survey-2026-09-26.json` (every row from every source, plus kie's
@@ -119,7 +127,10 @@ since 2026-09-24, so it is treated as our verified cost.
 | Speech to text, per minute | fal 0.048, ElevenLabs 0.03 | n/a | OpenAI 0.006, ElevenLabs Scribe 0.0037 | Together Whisper 0.0015 | Together 0.0015 | 1 per 10 min | none |
 | Voice clone, per voice | n/a | n/a | MiniMax 1.50 | Novita 1.50 | MiniMax 1.50 | n/a | none |
 
-ElevenLabs Music is four times cheaper direct ($0.15 per minute) than on fal ($0.60 per minute).
+ElevenLabs Music lists $0.15/minute direct versus the retained $0.60/minute fal quote.
+The [September 28 readiness review](elevenlabs-music-readiness-2026-09-28.md)
+found no existing Veyrnox Music row and a platform-rights qualification gate;
+this is a potential new offering, not a verified fourfold saving on our routes.
 ElevenLabs TTS is 40% cheaper on kie than direct or fal. Suno is grey everywhere because there
 is no official API; kie's $0.06 for two tracks is the lowest grey price.
 

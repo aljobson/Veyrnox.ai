@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildRequest, submitTask, fetchTask, ENDPOINT } from '../packages/adapters/grsai.js';
+import { buildRequest, submitTask, fetchTask, ENDPOINT, EDIT_ENDPOINT } from '../packages/adapters/grsai.js';
 import { capabilityFor, declaredInputs } from '../lib/modelCapabilities.js';
 
 const cfg = { apiKey: 'test-key' };
@@ -80,4 +80,20 @@ test('timeout, missing key and invalid task IDs fail safely', async () => {
         assert.equal((await submitTask(job, {})).error, 'provider_not_configured');
         assert.equal((await fetchTask('id&evil', cfg)).error, 'task_id_invalid');
     });
+});
+
+
+test('edit requires one reference, pins 2K and defaults to source aspect without broadening text generation', () => {
+    const inputs = { prompt: 'Make the teapot blue', image_url: 'https://r2.example/source.png' };
+    const result = buildRequest(EDIT_ENDPOINT, inputs);
+    assert.deepEqual(result.body, {
+        prompt: inputs.prompt, urls: [inputs.image_url], aspectRatio: 'auto',
+        model: 'nano-banana-pro', imageSize: '2K', webHook: '-1', shutProgress: true,
+    });
+    assert.equal(buildRequest(EDIT_ENDPOINT, { prompt: 'p' }).error, 'inputs_invalid:image_url');
+    assert.equal(buildRequest(ENDPOINT, inputs).error, 'inputs_key_not_allowed:image_url');
+    for (const patch of [{ seed: 1 }, { imageSize: '4K' }, { urls: [inputs.image_url, inputs.image_url] },
+        { webHook: 'https://evil.example' }, { video_url: inputs.image_url }, { image_url: [inputs.image_url] }]) {
+        assert.equal(buildRequest(EDIT_ENDPOINT, { ...inputs, ...patch }).ok, false);
+    }
 });

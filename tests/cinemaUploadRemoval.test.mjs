@@ -10,34 +10,21 @@ const req=(body={content_id:id,upload_id:id},headers={})=>new Request('https://t
 test('DELETE is fixed-origin, bounded, redirect-denying and requires affirmative success',async()=>{
  let request;
  assert.deepEqual(await deleteStreamVideo(uid,cfg,async(url,init)=>{request={url,init};return new Response(null,{status:204});}),{ok:true});
- assert.equal(request.url,`https://api.cloudflare.com/client/v4/accounts/${cfg.account}/stream/${uid}`);assert.equal(request.init.method,'DELETE');assert.equal(request.init.redirect,'error');assert.ok(request.init.signal);
+ assert.equal(request.url,`https://api.cloudflare.com/client/v4/accounts/${cfg.account}/stream/${uid}`);assert.equal(request.init.method,'DELETE');assert.equal(request.init.redirect,'manual');assert.ok(request.init.signal);
  assert.deepEqual(await deleteStreamVideo(uid,cfg,async()=>Response.json({success:true,errors:[]})),{ok:true});
  assert.deepEqual(await deleteStreamVideo(uid,cfg,async()=>new Response(null,{status:200})),{ok:true});
  for(const response of [new Response(null,{status:404}),new Response(null,{status:401}),Response.json({success:false,errors:[]}),Response.json({success:true,errors:[{code:1}]}),new Response('x'.repeat(66000)),new Response(null,{status:202})])await assert.rejects(deleteStreamVideo(uid,cfg,async()=>response));
  await assert.rejects(deleteStreamVideo('https://evil.invalid',cfg,()=>assert.fail('unexpected network')));
 });
-function setup({removeVideo=async()=>({ok:true}),items=[{id,stream_uid:uid}],finish={ok:true}}={}){
- const calls=[];return {calls,deps:{removeVideo,rpcCall:async(name,args)=>{calls.push({name,args});return name==='claim_cinema_upload_removals'?{items}:finish;}}};
-}
-test('only confirmed provider removal finishes the matching durable claim',async()=>{
- const s=setup();assert.deepEqual(await removeCinemaUploads(env,s.deps),{ok:true,checked:1,removed:1,failed:0});
- assert.equal(s.calls[1].name,'finish_cinema_upload_removal');assert.equal(s.calls[1].args.p_key,s.calls[0].args.p_key);assert.equal(s.calls[1].args.p_id,id);
- for(const removeVideo of [async()=>{throw Error('private-provider-body');},async()=>({ok:false})]){
-  const failed=setup({removeVideo});assert.equal((await removeCinemaUploads(env,failed.deps)).failed,1);assert.equal(failed.calls.length,1);
- }
- assert.equal((await removeCinemaUploads(env,setup({finish:{error:'unavailable'}}).deps)).ok,false);
+test('safety hold never deletes, finalizes or releases removal capacity',async()=>{
+ const deps={rpcCall:()=>assert.fail('must not claim or finish removal'),removeVideo:()=>assert.fail('must not delete provider media')};
+ assert.equal((await removeCinemaUploads({},deps)).skipped,'disabled');
+ assert.deepEqual(await removeCinemaUploads(env,deps),{ok:false,checked:0,removed:0,failed:0,blocked:'upload_revocation_unverified'});
 });
-test('disabled removal and malformed claims cannot delete media',async()=>{
- assert.equal((await removeCinemaUploads({}, {rpcCall:()=>assert.fail('unexpected RPC')})).skipped,'disabled');
- for(const items of [null,[{id,stream_uid:'bad'}],Array(11).fill({id,stream_uid:uid}),[{id,stream_uid:uid},{id,stream_uid:uid}]])assert.equal((await removeCinemaUploads(env,setup({items,removeVideo:()=>assert.fail('unexpected delete')}).deps)).ok,false);
-});
-test('at most two deletes run concurrently and one failure does not stop other entries',async()=>{
- let active=0,max=0;const releases=[];
- const items=Array.from({length:10},(_,n)=>({id:`00000000-0000-4000-8000-${String(n).padStart(12,'0')}`,stream_uid:String(n).padStart(32,'a')}));
- const s=setup({items,removeVideo:async value=>{active++;max=Math.max(max,active);await new Promise(resolve=>releases.push(resolve));active--;if(value===items[0].stream_uid)throw Error('secret');return {ok:true};}});
- const done=removeCinemaUploads(env,s.deps);
- for(let n=0;n<5;n++){while(releases.length<2)await new Promise(resolve=>setImmediate(resolve));releases.splice(0).forEach(resolve=>resolve());}
- assert.deepEqual(await done,{ok:false,checked:10,removed:9,failed:1});assert.equal(max,2);
+test('staging proxy switch deletes only a claimed server-mediated upload and then finalizes it',async()=>{
+ const calls=[],enabled={...env,CINEMA_PROXY_UPLOADS_ENABLED:'true'};
+ const result=await removeCinemaUploads(enabled,{rpcCall:async(name,args)=>{calls.push({name,args});return name==='claim_cinema_upload_removals'?{items:[{id,stream_uid:uid}]}:{ok:true};},removeVideo:async(value,config)=>{assert.equal(value,uid);assert.equal(config.account,cfg.account);return {ok:true};}});
+ assert.deepEqual(result,{ok:true,checked:1,removed:1,failed:0});assert.deepEqual(calls.map(call=>call.name),['claim_cinema_upload_removals','finish_cinema_upload_removal']);
 });
 test('removal requires identity, exact upload ID, quota and current database ownership',async()=>{
  const calls=[];let denied=false;

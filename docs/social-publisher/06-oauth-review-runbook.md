@@ -36,29 +36,30 @@ publish path to work once, end to end, for the demo.
   account). Requires business name, address, phone verification.
 - A published **Privacy Policy URL** and **Terms of Service URL** — Meta checks these are live and
   specific to data use, not a generic placeholder.
-- At least one Instagram account converted to **Business or Creator** and linked to a Facebook Page
-  — Instagram's content-publishing API only works on Business/Creator accounts, never personal ones.
-  This should be called out in Publish's own onboarding UX (a user with a personal IG account needs
-  to convert it before connecting).
+- At least one Instagram account converted to **Business or Creator** — Instagram's
+  content-publishing API only works on Business/Creator accounts, never personal ones. This should
+  be called out in Publish's own onboarding UX (a user with a personal IG account needs to convert
+  it before connecting). No linked Facebook Page is required (see App setup below).
 
 ### App setup
 1. Create an app in Meta for Developers, type "Business."
-2. Add products: **Facebook Login** and **Instagram Graph API** (or "Instagram API with Instagram
-   Login," Meta's newer direct-login path that doesn't require a linked Facebook Page for some flows
-   — worth comparing both against Publish's actual account-linking UX before picking one).
+2. Add product: **Instagram API with Instagram Login** ("Business Login for Instagram") —
+   `packages/adapters/social/instagram.js` implements this directly against
+   `www.instagram.com/oauth/authorize`, not the older Facebook Login + Pages-resolution chain. It
+   authorizes a Business/Creator Instagram account with no linked Facebook Page at all, so the
+   **Facebook Login** product and its Pages permissions are not needed for v1.
 3. Fill in Privacy Policy URL, ToS URL, App Icon, Category, and complete the **Data Use Checkup**.
 4. Complete **Business Verification** (Meta's own KYB process — legal business documents, domain
    ownership proof). This gates access to advanced permissions and is a separate step from the app
    review below; start it early, it has its own multi-day turnaround.
 
 ### Scopes needed for v1 (Instagram only — Facebook is Phase 2)
-- `instagram_basic` — read the connected account's profile/media.
-- `instagram_content_publish` — the actual publish permission; this is an **Advanced Access**
-  permission requiring App Review.
-- `pages_show_list`, `pages_read_engagement` — needed if the app path requires the linked Facebook
-  Page (confirm against whichever of the two Instagram API products is chosen above).
-- `business_management` — may be required depending on the account-linking flow; verify against
-  live docs, don't assume.
+Matches `INSTAGRAM_SCOPES` in `packages/adapters/social/instagram.js` — Meta's newer scope names
+for Instagram API with Instagram Login, not the older Facebook Login scopes:
+- `instagram_business_basic` — read the connected account's identity (id, username, profile
+  picture).
+- `instagram_business_content_publish` — the actual publish permission; this is an **Advanced
+  Access** permission requiring App Review.
 
 ### App Review submission
 - For each Advanced Access permission: written justification of *why* Publish needs it, mapped to

@@ -39,9 +39,11 @@ export async function POST(request, { params }) {
       },
     });
 
+    const remaining = Math.floor((Date.parse(reserved.created_at) + ASSET_URL_TTL_SECONDS * 1000 - Date.now()) / 1000);
+    if (reserved.state !== 'quarantined' || remaining < 60) throw new ApiError(409, 'UPLOAD_CLOSED', 'Create a new reservation for this upload.');
     let signed;
     try {
-      signed = await presignPutUrl(reserved.r2_key, declared.contentType, ASSET_URL_TTL_SECONDS, r2, body.size_bytes);
+      signed = await presignPutUrl(reserved.r2_key, declared.contentType, remaining, r2, body.size_bytes);
     } catch {
       throw new ApiError(502, 'STORAGE_UNAVAILABLE', 'Storage is temporarily unavailable.');
     }
