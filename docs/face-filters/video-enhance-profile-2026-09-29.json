@@ -77,5 +77,55 @@
       "Sampled still inspection cannot establish absence of flicker or transient tracking errors.",
       "Control helps distinguish smoothing from source-to-export compression; independent lossy encodes can still differ."
     ]
+  },
+  "temporal_diagnostic_2026_09_30": {
+    "scope": "All-frame numerical scan of existing exports; no new runtime change or perceptual playback acceptance.",
+    "method": "FFmpeg decoded YUV frame hashes; blend=all_mode=difference + signalstats; then tblend=all_mode=difference on difference frames to rank temporal changes. YAVG uses native 8-bit luma code values averaged over the full frame.",
+    "frames_compared": 375,
+    "identical_decoded_yuv_frames": 126,
+    "zero_luma_difference_intervals_seconds_inclusive": [
+      [
+        2,
+        6
+      ],
+      [
+        14,
+        14.96
+      ]
+    ],
+    "maximum_mean_luma_difference": {
+      "seconds": 13.88,
+      "mean_luma_difference": 0.265256
+    },
+    "largest_temporal_difference_changes": [
+      {
+        "seconds": 14.0,
+        "mean_luma_difference": 0.259259
+      },
+      {
+        "seconds": 2.0,
+        "mean_luma_difference": 0.25214
+      },
+      {
+        "seconds": 13.48,
+        "mean_luma_difference": 0.212655
+      }
+    ],
+    "visually_inspected_output_frame_indices": [
+      49,
+      50,
+      150,
+      151,
+      349,
+      350
+    ],
+    "visual_method": "800x800 face crops at x600 y100 scaled to400px, in paired transition contact sheet.",
+    "finding": "No obvious gross geometry jump in these boundary pairs. Identical output intervals mean earlier still checks at2s and14s do not demonstrate active smoothing at those poses. Cause is unproven without per-frame tracker instrumentation.",
+    "next_step": "Record face count per exported frame around the identified boundaries before changing tracker thresholds or renderer behavior.",
+    "limits": [
+      "Whole-frame averages dilute local face differences.",
+      "Independent lossy encoding contributes differences and may retain effects across frames.",
+      "Numerical scan and contact sheet do not replace continuous perceptual playback review."
+    ]
   }
 }
