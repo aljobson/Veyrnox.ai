@@ -127,5 +127,111 @@
       "Independent lossy encoding contributes differences and may retain effects across frames.",
       "Numerical scan and contact sheet do not replace continuous perceptual playback review."
     ]
+  },
+  "face_trace_2026_09_30": {
+    "base_commit": "2dfacf5",
+    "method": "Temporary console.info after renderer.draw in export process(sample), recording sample.timestamp and faces.length only. Fresh page and 30% Natural export. Removed logging, verified engine diff empty, reloaded page afterwards.",
+    "frames": 375,
+    "continuous_timestamps_verified": true,
+    "frames_without_face": 173,
+    "runs_inclusive_seconds": [
+      {
+        "start": 0.0,
+        "end": 1.2,
+        "faces": 1,
+        "frames": 31
+      },
+      {
+        "start": 1.24,
+        "end": 1.24,
+        "faces": 0,
+        "frames": 1
+      },
+      {
+        "start": 1.28,
+        "end": 1.4,
+        "faces": 1,
+        "frames": 4
+      },
+      {
+        "start": 1.44,
+        "end": 1.64,
+        "faces": 0,
+        "frames": 6
+      },
+      {
+        "start": 1.68,
+        "end": 1.68,
+        "faces": 1,
+        "frames": 1
+      },
+      {
+        "start": 1.72,
+        "end": 1.88,
+        "faces": 0,
+        "frames": 5
+      },
+      {
+        "start": 1.92,
+        "end": 1.92,
+        "faces": 1,
+        "frames": 1
+      },
+      {
+        "start": 1.96,
+        "end": 6.0,
+        "faces": 0,
+        "frames": 102
+      },
+      {
+        "start": 6.04,
+        "end": 6.12,
+        "faces": 1,
+        "frames": 3
+      },
+      {
+        "start": 6.16,
+        "end": 6.56,
+        "faces": 0,
+        "frames": 11
+      },
+      {
+        "start": 6.6,
+        "end": 6.6,
+        "faces": 1,
+        "frames": 1
+      },
+      {
+        "start": 6.64,
+        "end": 6.76,
+        "faces": 0,
+        "frames": 4
+      },
+      {
+        "start": 6.8,
+        "end": 13.2,
+        "faces": 1,
+        "frames": 161
+      },
+      {
+        "start": 13.24,
+        "end": 14.96,
+        "faces": 0,
+        "frames": 44
+      }
+    ],
+    "output": {
+      "name": "veyrnox-profile-test-enhanced (2).mp4",
+      "sha256": "63d2efcc39110f81456dd20ac83eeb4717f3baff3fcab345bdd4089163df39bd",
+      "bytes": 3764470,
+      "media_check": "PASS:375 frames; timestamps/durations within1ms; no audio added."
+    },
+    "finding": "Tracker returns zero faces during both side profiles and intermittently during transitions. Renderer clears mask every frame and applies smoothing only when exactly one face is detected, so these zero-face samples receive no smoothing.",
+    "limits": [
+      "Trace is from a fresh instrumented run, not the historical export; logging changes processing timing.",
+      "Decoded output equality need not align exactly with tracker transitions because lossy inter-frame encoding has state.",
+      "This establishes smoothing dropout, not whether the transitions are perceptually distracting."
+    ],
+    "recommendation": "Keep side-profile temporal quality unqualified. Preserve no-face mask clearing; do not retain stale masks or lower thresholds solely to improve detection counts."
   }
 }
