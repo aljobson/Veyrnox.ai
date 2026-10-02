@@ -8,6 +8,7 @@ import { ERROR_COPY } from '../../_lib/createErrors';
 import { pushJobHistory, markJobSettled } from '../../_lib/jobHistory';
 import { JobAssetPreview } from '../../_components/JobAssetPreview';
 import { useCatalog } from '../../_lib/useCatalog';
+import { takeLandingDraft } from '../../_lib/landingDraft';
 import { DEFAULT_CINEMA, buildCinemaPrompt } from '../../_lib/cinema';
 import { CameraPanel } from '../../_components/CameraPanel';
 import { CharacterPanel } from '../../_components/CharacterPanel';
@@ -72,10 +73,16 @@ export default function CreateStudio() {
 
   // ?model=<id> from landing tiles / hero cards. Read once on mount —
   // avoids the Suspense boundary useSearchParams demands on client pages.
+  // ?duration=10s and the prompt come from the landing price slip; the
+  // duration effect below drops a length the model does not sell.
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const wanted = new URLSearchParams(window.location.search).get('model');
+    const params = new URLSearchParams(window.location.search);
+    const wanted = params.get('model');
     if (wanted) setModelId(wanted);
+    if (params.get('duration') === '10s') setDuration('10s');
+    const draft = takeLandingDraft(window.sessionStorage, wanted);
+    if (draft) setPrompt(draft);
   }, []);
 
   // If the selected id isn't in the (live or fallback) catalog, fall back to
@@ -119,7 +126,7 @@ export default function CreateStudio() {
   useEffect(() => {
     if (!durations.includes(duration)) setDuration(durations[0]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [durationKey]);
+  }, [durationKey, duration]);
 
   function pickSource(slot, file) {
     setSources((prev) => {

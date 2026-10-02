@@ -46,9 +46,10 @@ test('the preset card navigates rather than being an inert button', () => {
 });
 
 test('the landing tiles take their price from the catalog, not the constant', () => {
-    // ProductTilesRow lives in the showcase section since the landing page was
-    // split to stay under the 500-line limit.
-    const src = readFileSync(new URL('../app/veyrnox/_sections/showcase.js', import.meta.url), 'utf8');
-    assert.match(src, /priceOf\(p\.key, p\.credits\)/, 'tile price must resolve through the live catalog');
-    assert.ok(!/\{p\.credits\}\s*cr/.test(src), 'must not print the hardcoded tile credits directly');
+    // The feature tiles under the hero replaced ProductTilesRow; they quote
+    // the catalog row their link opens.
+    const src = readFileSync(new URL('../app/veyrnox/_sections/hero.js', import.meta.url), 'utf8');
+    assert.match(src, /const row = rowOf\(modelOf\(f\.href\)\);/, 'tile price must resolve through the live catalog');
+    assert.match(src, /`\$\{row\.credits\} cr`/);
+    assert.ok(!/\{f\.credits\}/.test(src), 'must not print a hardcoded tile price');
 });

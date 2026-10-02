@@ -17,35 +17,43 @@ export default function NotFound() {
   );
   return (
     <VeyrnoxLayout>
-      <div className="min-h-dvh flex flex-col items-center justify-center gap-5 px-4 sm:px-6 py-16 text-center">
-        <Link href="/" aria-label="Veyrnox.ai — home">
-          <Logo size={36} wordmark />
+      <div className="min-h-dvh max-w-[1300px] mx-auto px-4 sm:px-6 pt-8 pb-24">
+        <Link href="/" aria-label="Veyrnox.ai home" className="inline-flex">
+          <Logo size={26} wordmark />
         </Link>
-        <div className="mt-4 font-vx-mono text-[11px] tracking-[0.14em] text-vx-accent">404 · PAGE NOT FOUND</div>
-        <h1 className="text-[32px] sm:text-4xl font-black tracking-[-0.02em] text-balance">This page isn&rsquo;t here.</h1>
-        <p className="text-vx-fg-body max-w-[420px] leading-[1.6]">The link may be out of date, or the page has moved.</p>
-        <Link
-          href="/"
-          className="mt-2 rounded-full bg-vx-accent text-vx-accent-ink px-6 py-3 text-sm font-extrabold hover:bg-vx-accent-hover"
-        >
-          Back to Veyrnox.ai
-        </Link>
-
-        <div className="mt-8 w-full max-w-[560px] text-left">
-          <div className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted mb-3">TRY ONE OF THESE</div>
-          <ul className="rounded-2xl border border-vx-border bg-vx-panel divide-y divide-vx-border/60">
-            {suggestions.map((p) => (
-              <li key={p.href}>
-                <Link
-                  href={p.href}
-                  className="block px-5 py-3 transition-colors hover:bg-vx-accent/[0.06]"
-                >
-                  <span className="block text-[14px] font-bold text-vx-fg">{p.label}</span>
-                  <span className="mt-0.5 block text-[12px] text-vx-fg-muted">{p.description}</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
+        <div className="mt-20 sm:mt-28 grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-14 lg:gap-20 items-start">
+          <div>
+            <h1 className="vx-display text-[52px] sm:text-[84px] max-w-[11ch]">This page isn&rsquo;t here.</h1>
+            <p className="mt-6 text-lg text-vx-fg-body max-w-[40ch] leading-[1.5]">The link may be out of date, or the page has moved. Nothing was charged.</p>
+            <Link
+              href="/"
+              className="vx-press inline-block mt-9 rounded-full bg-vx-fg text-vx-base px-7 py-3.5 text-[15px] font-extrabold hover:bg-vx-fg/85"
+            >
+              Back to Veyrnox.ai
+            </Link>
+          </div>
+          {/* The 404 as a voided slip: the one printed object on the page. */}
+          <div className="vx-paper-shadow max-w-[420px] w-full">
+            <div className="vx-paper px-6 sm:px-8 pt-9 pb-10">
+              <div className="flex items-baseline justify-between font-vx-mono text-[13.5px] font-bold vx-num">
+                <span>Page not found</span>
+                <span>404</span>
+              </div>
+              <div className="vx-perf mt-4" aria-hidden />
+              <h2 className="mt-5 text-[13px] font-bold">Try one of these</h2>
+              <ul className="mt-2">
+                {suggestions.map((p) => (
+                  <li key={p.href}>
+                    <Link href={p.href} className="group flex items-baseline gap-2 py-2 font-vx-mono text-[13.5px]">
+                      <span className="group-hover:underline underline-offset-4">{p.label}</span>
+                      <span aria-hidden className="vx-leader flex-1" />
+                      <span className="text-vx-fg-muted">{p.href}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
         </div>
       </div>
     </VeyrnoxLayout>

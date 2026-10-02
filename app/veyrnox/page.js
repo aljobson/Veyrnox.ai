@@ -1,10 +1,10 @@
 import { FAQ, MODELS as MODELS_FALLBACK, kindOf, isShelfModel } from './_lib/tokens';
 import { select, envConfig } from '../../packages/db/supabase-client.js';
-import { capabilityFor } from '../../lib/modelCapabilities.js';
+import { capabilityFor, lengthsFor } from '../../lib/modelCapabilities.js';
 import { SITE_URL, JsonLd } from '../seo';
-import { PromoStrip, WideNav, FeaturedHeroCards, SignupIncentive } from './_sections/hero';
-import { ProductTilesRow, HeroStatement, PresetWall, ModelShelf } from './_sections/showcase';
-import { WhyVeyrnox, FeatureStripsSection, FAQBlock, ClosingCTA, FooterForest } from './_sections/footer';
+import { WideNav, Hero, FeaturedHeroCards } from './_sections/hero';
+import { PresetWall, ModelShelf } from './_sections/showcase';
+import { LedgerExample, FAQBlock, ClosingCTA, FooterForest } from './_sections/footer';
 
 // FAQPage built from the same FAQ constant the page renders, so the markup
 // and the structured data cannot drift apart.
@@ -44,6 +44,9 @@ async function loadCatalog() {
     // shelf: the Clip Editor is a Library tool, and Auto Short is still gated.
     // Normalise to the shape our page expects: { id, name, credits, kind, tag?, premium?, gated? }
     return rows.filter((m) => isShelfModel(capabilityFor(m.provider_endpoint))).map((m) => ({
+      // Lengths the gateway sells, as GET /api/catalog derives them, so the
+      // hero slip never offers a 10 s price the studio would refuse.
+      durations: lengthsFor(capabilityFor(m.provider_endpoint)),
       id: m.id,
       name: m.name,
       credits: m.credits_5s,
@@ -65,18 +68,14 @@ export default async function VeyrnoxLanding() {
   const catalog = await loadCatalog();
   return (
     <div className="min-h-dvh">
-      <PromoStrip />
       <WideNav />
-      <FeaturedHeroCards />
-      <SignupIncentive />
-      <ProductTilesRow modelCount={catalog.length} catalog={catalog} />
-      <HeroStatement />
+      <Hero models={catalog} />
+      <FeaturedHeroCards catalog={catalog} />
       <PresetWall catalog={catalog} />
       <ModelShelf catalog={catalog} />
-      <WhyVeyrnox />
-      <FeatureStripsSection />
+      <LedgerExample catalog={catalog} />
       <FAQBlock />
-      <ClosingCTA modelCount={catalog.length} />
+      <ClosingCTA />
       <FooterForest catalog={catalog} />
       <JsonLd data={FAQ_LD} />
     </div>
