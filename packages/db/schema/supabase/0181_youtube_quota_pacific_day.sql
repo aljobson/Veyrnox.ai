@@ -1,4 +1,4 @@
--- 0179: count YouTube uploads per YouTube quota day (docs/product/ISSUES.md S16).
+-- 0181: count YouTube uploads per YouTube quota day (docs/product/ISSUES.md S16).
 --
 -- YouTube Data API quotas reset at midnight Pacific Time. 0161 keyed the
 -- daily counter on current_date, the database's day (UTC on Supabase), so
