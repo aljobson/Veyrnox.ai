@@ -1,6 +1,11 @@
 # Phase 1 — Money Spine
 
-**Status:** In progress · Kicked off 2026-09-10
+> **Superseded 2026-10-02** by
+> [docs/product/IMPLEMENTATION-PLAN.md](product/IMPLEMENTATION-PLAN.md).
+> Kept for history: Clerk, Neon, Inngest, LemonSqueezy and `jose` below were
+> all replaced (Supabase, Stripe, Web Crypto, trigger-based signup grant).
+
+**Status:** Superseded · Kicked off 2026-09-10
 **Target:** an authenticated user can debit credits, submit an image job through Inngest to fal.ai, receive the result stored in R2, and get refunded on failure — provably atomic under concurrent test.
 **Timeline:** 4–6 weeks solo + AI assist
 **Predecessor:** ADR-0000 (Replacer accepted), ADR-0003 (LemonSqueezy), ADR-0004 (Clerk + Neon).

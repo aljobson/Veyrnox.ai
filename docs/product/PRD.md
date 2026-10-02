@@ -1,103 +1,193 @@
 # PRD — Veyrnox.ai
 
-**Status:** Current · 2026-09-21
-**Scope:** the whole product as shipped. Feature-level specs live beside it
-(e.g. [docs/face-filters/](../face-filters/README.md)).
-**Language:** every term here is defined in [CONTEXT.md](../../CONTEXT.md).
+**Status:** Current · 2026-10-02 (audited against `main` at `2da81dc`)
+**Scope:** the whole product. Feature-level specs live beside it
+([face-filters](../face-filters/README.md), [editor](../editor/PRD.md),
+[auto-short](../auto-short/SPEC.md), [cinema](../cinema/README.md),
+[social-publisher](../social-publisher/)).
+**Language:** every term is defined in [CONTEXT.md](../../CONTEXT.md).
 **Precedence:** [CLAUDE.md](../../CLAUDE.md) and [docs/adr/](../adr/README.md)
-win over this document wherever they disagree.
+win wherever they disagree.
+
+> **What "shipped" means here.** The repo shows intent; it cannot prove what
+> is applied in production. Catalog activations 0121/0127/0155/0162/0166 go
+> through the owner-approved `apply-migrations` workflow. Before quoting a
+> number externally, check `/api/catalog` and `/api/credit-packs` on
+> production.
 
 ## 1. What it is
 
 A credit-metered AI generation platform. A user holds one balance of
-**Credits** and spends it on image, video, music, sound-effect and speech
-models from several providers, behind one interface. Every generation is
-priced up front from the catalog, debited before it runs, and refunded
-automatically if it fails.
+**Credits** and spends it on image, edit, video, lip-sync, music, sound and
+speech models from several providers, behind one interface. Every generation
+is priced up front from the catalog, debited before it runs, and refunded
+exactly if it fails.
+
+Around that core sit two products that share the account:
+
+- **Veyrnox Publish** — schedule generated media to Instagram, LinkedIn, X,
+  TikTok and YouTube.
+- **Social Cinema** — creators publish short series; viewers unlock episodes
+  with Credits or watch with a Cinema Pass. Built, **off in production**.
 
 The business is the margin between what a Credit sells for and what the
-provider charges, held above the ADR-0014 floor on every row.
+provider charges, held at or above the ADR-0014 floor on every catalog row.
 
 ## 2. Who it is for
 
-Creators who want several frontier models without an account, a plan and a
-dashboard at each vendor. They buy Credits once and switch models freely.
-They are cost-sensitive — every price is visible before submit — and they
-expect a failed generation to cost nothing.
+| user | wants | we give |
+|---|---|---|
+| Creator (primary) | several frontier models without an account at each vendor | one balance, exact price before submit, failed runs cost nothing |
+| Social poster | generated clips on their channels on a schedule | Publish: connect accounts, compose, schedule |
+| Cinema creator *(not launched)* | an audience and revenue for short series | upload, review, catalogue, paywall |
+| Viewer *(not launched)* | binge short episodes | free episodes, 6-credit unlocks, Cinema Pass |
 
-## 3. What is shipped
+All are cost-sensitive. The price is the product's promise: "The price is on
+the button."
 
-### Accounts
-- Email + password, magic link, and Google sign-in (Supabase Auth).
-- **Confirm email is on** — an account is usable only after its inbox
-  confirms; the 50 Free Credits land at that moment, not at sign-up (0071).
-- **Turnstile CAPTCHA is enforced** on password sign-in, sign-up and magic
-  link (ADR-0026). Google sign-in is not challenged.
-- **Leaked passwords are refused** (HaveIBeenPwned); the sign-up form warns
-  about this before the first attempt.
-- Admin second factor via TOTP; the `aal2` gate ships off until enrolled.
+## 3. Shipped (production)
 
-### Models — 14 active in the catalog
+### 3.1 Accounts
+- Sign-in: email + password, magic link, **Google**, **Apple** (ADR-0030).
+  Google/Apple buttons appear only when enabled in Supabase settings.
+- Passkey sign-in button appears when Supabase reports passkeys enabled;
+  there is **no enrolment UI** yet (ADR-0032, Proposed).
+- **Confirm email is on.** The account is usable only after confirmation;
+  **10 Free Credits** land at that moment (0071, 0127), expire after 90 days
+  (ADR-0013), and are spent first.
+- **Turnstile** on password, sign-up, magic link and passkey attempts
+  (ADR-0026). OAuth is not challenged.
+- Leaked passwords refused (HaveIBeenPwned); the form warns before the first
+  attempt.
+- `/app/account`: TOTP 2FA for every user, password change by emailed code,
+  sign out other devices / everywhere, data export and deletion by email
+  request.
+- Admin: Cloudflare Access + `aal2`; Cinema admin additionally needs MFA
+  within 5 minutes.
+
+### 3.2 Generating
+- **Studio** (`/app/create`): pick a model, prompt, optional uploads, see the
+  cost in Credits, submit, poll to completion, result plays inline. 10 s video
+  costs twice the 5 s unit. Default model `wan-2.5-kie`.
+- **Explore** (`/app`) and **Presets** (`/presets`): curated starting points
+  that open the Studio pre-filled.
+- **Landing slip**: the hero `PriceSlip` prices a prompt live and hands it to
+  the Studio.
+- **Uploads**: presigned R2 PUT, 20 MB (100 MB video), require an Acceptable
+  Use attestation (0146, `/legal/aup`).
+- **Library** (`/app/library`): every past generation, 90-day asset retention
+  notice.
+- **Provenance**: `/api/v1/jobs/:id/provenance` returns how an asset was made
+  and a SHA-256 of the stored bytes (ADR-0025 option E). No C2PA claim.
+
+### 3.3 Catalog — 32 active rows (repo intent)
+
 | kind | models |
 |---|---|
-| image | Nano Banana, Flux.2 [pro], Seedream v4 |
-| video | Veo 3.1, Veo 3.1 Fast, Kling 2.6 Pro, Kling 3.0 (image-to-video), MiniMax Hailuo 02, Seedance 2.0 Fast, Wan 2.5/2.6 |
-| audio | ACE-Step, ACE-Step 1.5, ElevenLabs Sound Effects v2 |
-| speech | Inworld TTS |
+| text-to-image | Nano Banana, Nano Banana Pro, Flux.2 [pro], Flux.2 Pro 1K, Seedream v4, Sana v1.5 |
+| image edit | Nano Banana Pro Edit (×2 lanes), Bria Background Removal, Bria Expand, Topaz Upscale 2× |
+| text-to-video | Veo 3.1 Fast, Veo 3.1 Lite, Wan 2.5, Kling 2.6 Pro, MiniMax Hailuo 02, Seedance 2.0 Fast; Veo 3.1 listed but **gated** (402) |
+| image-to-video | Kling 3.0 (×2 lanes), Kling AI Avatar v2 |
+| video-to-video | LatentSync lip sync |
+| audio | ACE-Step, ACE-Step 1.5, MMAudio v2, ElevenLabs Sound Effects v2 |
+| speech | Inworld TTS, ElevenLabs TTS Turbo 2.5, MiniMax Speech 2.6 HD, ElevenLabs Dialogue v3 |
+| composite (flag-gated preview) | Auto Short 32 s (110 cr), Clip Editor (1 cr/s) |
 
-Served through three providers — fal.ai (breadth), kie.ai (price lane:
-Nano Banana today, Veo pending #201), OpenRouter (Seedance). The provider is
-an internal routing detail and is never shown to the user.
+Prices live in `model_catalog.credits_5s`; the app never computes a price.
+Providers: fal.ai, kie.ai, OpenRouter, GrsAI (active), BytePlus (staged), plus
+the internal `veyrnox` composite. **The provider is never shown to the user.**
 
-### Generating
-- **Studio** (`/app/create`): pick a model, write a prompt, see the cost in
-  Credits, submit. Poll to completion; the result plays or displays inline.
-- **Library** (`/app/library`): every past generation and its asset.
-- **Presets**: curated starting points that open the Studio pre-filled.
-- **Provenance**: `/api/v1/jobs/:id/provenance` returns the exact record of
-  how an asset was made, and since 0077 a SHA-256 of the stored bytes that a
-  holder of the file can check themselves (ADR-0025 option E).
+### 3.4 Paying
+- **Credit Packs** via **Stripe Checkout**, Stripe Managed Payments as
+  Merchant of Record, automatic tax (ADR-0031): **100 for $10, 270 for $19,
+  1,200 for $59, 3,000 for $129**, plus tax (0121, ADR-0037). Purchased
+  Credits never expire. Supply-consent checkbox before purchase.
+- Lost-webhook recovery: return URL + 5-minute backfill (ADR-0033).
+- **Refunds**: any failed generation refunds its exact debit to the source it
+  came from. A refunded or disputed purchase claws back and may **Freeze**
+  the account (ADR-0018/0019); only an operator unfreezes.
+- **Credit statement** on `/app/credits` (ADR-0045).
 
-### Paying
-- **Credit Packs**: 100 for $10, 300 for $25, 1,000 for $75, plus tax, via
-  LemonSqueezy. Credits never expire. No subscription.
-- **Free Credits**: 50 on confirmed sign-up, spent first, expiring per
-  ADR-0013.
-- **Refunds**: any failed generation refunds its exact debit. A refunded or
-  disputed purchase claws back and may Freeze the account (ADR-0018/0019).
+### 3.5 Veyrnox Publish (`/app/publish`)
+- Connect Instagram, LinkedIn, X, TikTok, YouTube (OAuth, tokens encrypted).
+- Compose one Library asset + text + accounts + time; cron publishes.
+  TikTok lands as a draft in the creator's inbox.
+- **No plan gating and no feature flag today** — see ISSUES.md. App reviews
+  (Meta, TikTok, YouTube) are not done, so real use is limited to test users.
 
-## 4. Deliberately not built
+### 3.6 Admin
+Metrics (`/app/admin`), user lookup and content violations (3rd takedown
+Freezes), Cinema creator and submission review.
+
+## 4. Built, not live
+
+| feature | where it stands | gate |
+|---|---|---|
+| Social Cinema: profiles, creator applications, drafts, Stream uploads, review, catalogue, player | staging-verified 2026-09-28/29 | `CINEMA_*` flags off in prod; PR #369 is the activation |
+| Cinema paywall: 5 free episodes, 6-credit unlocks, Cinema Pass weekly $14.99 (intro $11.99) / monthly $49.99 / yearly $199.99, 3,000-minute ceiling, 14-day cooling-off | built (0142–0144) | `CINEMA_SUBSCRIPTIONS_ENABLED` unset even on staging |
+| Projects: workspaces, versioned project document, autosave, history, media quarantine | staging | `TENANT_PROJECTS_ENABLED` + `localStorage.veyrnox_projects` |
+| Auto Short | catalog row active | `localStorage.veyrnox_auto_short` |
+| Clip Editor | catalog row active | `localStorage.veyrnox_editor` |
+| BytePlus Seedance (5 rows) | staged inactive, US blocked before debit | ADR-0058 Proposed |
+| Jev provider-error classifier | built | `JEV_SUBMIT_ERRORS_MODE=off` |
+
+## 5. Decided, not built
+
+| feature | decision | blocker |
+|---|---|---|
+| **Core subscriptions** Starter $19/270, Plus $59/1,200, Ultra $129/3,000 monthly | ADR-0064 Accepted | ledger spend-order buckets, non-rollover expiry job, tax/consent wording |
+| **Publish Plan** Free 1 account; $19/mo for 5 + $4/extra | ADR-0062/0063 Accepted | plan table, caps, Stripe product |
+| Face Filters Transform (Slices 5–9) | upload spine shipped | fal cost data + CSAM hash matching |
+| Passkey enrolment | code exists, no UI | ADR-0032 acceptance |
+
+## 6. Deliberately not built
 
 | not built | why |
 |---|---|
-| Subscriptions / tiers | removed (#79); one balance, pay as you go |
+| Auto-refill | not on the roadmap |
 | C2PA signing claims | withdrawn until real (ADR-0017) |
-| Media authenticity verdicts | no defensible product without a named customer (ADR-0025) |
-| Any wallet, crypto or on-chain feature | separate company, enforced hard wall (CLAUDE.md) |
-| Real-time / live filters | every model is queued and webhook-completed |
+| Media authenticity verdicts | no named customer (ADR-0025) |
+| Voice cloning | off by policy |
+| Real-time / live filters | every model is queued and completed asynchronously |
+| Any wallet, crypto or on-chain feature | separate company; enforced hard wall |
+| LemonSqueezy | refused us (2026-09-22); replaced by Stripe |
 
-## 5. In flight
+## 7. Launch blockers
 
-| work | state |
-|---|---|
-| Face Filters (Track A) | upload spine shipped; Slice 0 blocked on fal costs; see [face-filters](../face-filters/README.md) |
-| Upload safety | CSAM hash-matching required before any public upload UI (ADR-0025 §8.1) |
-| Veo on kie | #201, held until a kie job reaches STORED in production |
-| Veo 3.1 Lite | #199, catalogued inactive |
-| Credit Packs live mode | #172 / #169, merge at launch with live LemonSqueezy ids |
+Public text-to-media launch (#204, #101):
+1. Stripe live evidence: real purchase + refund, dispute/freeze drills,
+   lost-webhook drill, 24 h clean reconciliation.
+2. Cloudflare email quota raised (2,000/day requested 2026-09-21) or a
+   bounded launch plan.
+3. HaveIBeenPwned protection verified on production.
+4. Production admin AAL2 journey and recovery-health alert delivery verified.
+5. DMCA designated agent filed (ADR-0005).
 
-## 6. How we know it works
+Any public **upload** surface (Face Filters, Cinema creators, project media):
+CSAM hash matching chosen and live (ADR-0025 §8.1).
+
+Cinema: rights/age/territory policy, creator agreement, cooling-off wording,
+Stripe acceptance for recurring video subscriptions, Stream webhook repointed
+from staging to production.
+
+Publish: platform app reviews, TikTok DNS verification, PR #399 (YouTube
+upload fix), token-key rotation runbook.
+
+## 8. How we know it works
 
 - `reconcile_balances()`, `reconcile_free_credits()`, `reconcile_top_ups()`
-  return zero rows — nightly, and after every money-spine change.
-- Every active catalog row has returned real output from its live endpoint
-  before activation (ADR-0011).
-- Every debit path has a tested refund path.
-- The signup gate check (`npm run check:signup-gate`) reports "Gate closed".
+  return zero rows — every 15 min snapshot, hourly watch, and after every
+  money-spine change.
+- Every active catalog row returned real output from its live endpoint
+  before activation (ADR-0011); catalog UPDATE migrations assert row counts.
+- Every debit path has a tested refund path; every state-changing RPC has an
+  idempotency test.
+- `npm run check:signup-gate` reports the gate closed (hourly workflow).
 
-## 7. Open questions
+## 9. Open questions
 
-1. Veo 3.1 Lite price — 23 Credits proposed in #199; owner's call.
-2. Does Track B have a named customer (ADR-0025 §9.1)?
-3. The Cloudflare Email Sending quota starts at 200/day — raise before any
-   launch that widens sign-up.
+1. Does Publish ship to the public before its plan exists, or behind a flag?
+2. Subscription Credits spend order and expiry (ADR-0064) — confirm before
+   ledger work starts.
+3. Which CSAM hash-matching service?
+4. Does Track B (media authenticity) have a named customer (ADR-0025 §9.1)?

@@ -1,0 +1,283 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Veyrnox.ai data model by domain",
+    "output": "schema-map.html",
+    "quality_profile": "showcase"
+  },
+  "components": [
+    {
+      "id": "authusers",
+      "type": "security",
+      "label": "auth.users",
+      "sublabel": "Supabase Auth",
+      "tag": "triggers 0071",
+      "pos": [
+        40,
+        60
+      ],
+      "size": [
+        200,
+        64
+      ]
+    },
+    {
+      "id": "balances",
+      "type": "database",
+      "label": "credit_balances",
+      "sublabel": "balance, free_balance",
+      "pos": [
+        40,
+        260
+      ],
+      "size": [
+        200,
+        64
+      ]
+    },
+    {
+      "id": "tenants",
+      "type": "database",
+      "label": "organisations",
+      "sublabel": "workspaces, projects",
+      "tag": "RLS for browser",
+      "pos": [
+        40,
+        460
+      ],
+      "size": [
+        200,
+        64
+      ]
+    },
+    {
+      "id": "users",
+      "type": "database",
+      "label": "public.users",
+      "sublabel": "auth_id, frozen_at",
+      "tag": "hub",
+      "pos": [
+        320,
+        260
+      ],
+      "size": [
+        200,
+        64
+      ]
+    },
+    {
+      "id": "ledger",
+      "type": "database",
+      "label": "ledger_entries",
+      "sublabel": "append-only, delta + free_delta",
+      "pos": [
+        640,
+        40
+      ],
+      "size": [
+        220,
+        64
+      ]
+    },
+    {
+      "id": "jobs",
+      "type": "database",
+      "label": "jobs",
+      "sublabel": "state, idempotency_key",
+      "pos": [
+        640,
+        190
+      ],
+      "size": [
+        220,
+        64
+      ]
+    },
+    {
+      "id": "cinema",
+      "type": "database",
+      "label": "cinema_*",
+      "sublabel": "content, uploads, unlocks, passes",
+      "pos": [
+        640,
+        340
+      ],
+      "size": [
+        220,
+        64
+      ]
+    },
+    {
+      "id": "social",
+      "type": "database",
+      "label": "social_*",
+      "sublabel": "brands, accounts, posts, targets",
+      "pos": [
+        640,
+        490
+      ],
+      "size": [
+        220,
+        64
+      ]
+    },
+    {
+      "id": "topups",
+      "type": "database",
+      "label": "top_ups",
+      "sublabel": "credit_packs, Stripe orders",
+      "pos": [
+        960,
+        40
+      ],
+      "size": [
+        210,
+        64
+      ]
+    },
+    {
+      "id": "assets",
+      "type": "database",
+      "label": "assets",
+      "sublabel": "r2_key, sha256, expires_at",
+      "pos": [
+        960,
+        190
+      ],
+      "size": [
+        210,
+        64
+      ]
+    },
+    {
+      "id": "catalog",
+      "type": "database",
+      "label": "model_catalog",
+      "sublabel": "credits_5s, active",
+      "tag": "no FK",
+      "pos": [
+        960,
+        340
+      ],
+      "size": [
+        210,
+        64
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "provision",
+      "from": "authusers",
+      "to": "users",
+      "label": "provision",
+      "variant": "security",
+      "fromSide": "right",
+      "toSide": "top"
+    },
+    {
+      "id": "balance",
+      "from": "users",
+      "to": "balances",
+      "label": "1:1"
+    },
+    {
+      "id": "tenant",
+      "from": "users",
+      "to": "tenants",
+      "label": "personal org"
+    },
+    {
+      "id": "users-ledger",
+      "from": "users",
+      "to": "ledger",
+      "label": "1:N",
+      "variant": "emphasis",
+      "labelAt": [
+        600,
+        72
+      ]
+    },
+    {
+      "id": "users-jobs",
+      "from": "users",
+      "to": "jobs",
+      "label": "1:N",
+      "variant": "emphasis",
+      "labelAt": [
+        600,
+        222
+      ]
+    },
+    {
+      "id": "users-cinema",
+      "from": "users",
+      "to": "cinema",
+      "label": "1:N",
+      "labelAt": [
+        600,
+        372
+      ]
+    },
+    {
+      "id": "users-social",
+      "from": "users",
+      "to": "social",
+      "label": "1:N",
+      "labelAt": [
+        600,
+        522
+      ]
+    },
+    {
+      "id": "grant",
+      "from": "topups",
+      "to": "ledger",
+      "label": "grant_entry_id",
+      "variant": "emphasis"
+    },
+    {
+      "id": "job-assets",
+      "from": "jobs",
+      "to": "assets",
+      "label": "1:N"
+    },
+    {
+      "id": "job-model",
+      "from": "jobs",
+      "to": "catalog",
+      "label": "model_id",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "amber",
+      "title": "Money spine",
+      "items": [
+        "balance = SUM(ledger_entries.delta) per user",
+        "Writes only through SECURITY DEFINER RPCs",
+        "Ledger, account_actions and audit logs are append-only"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Access",
+      "items": [
+        "All 68 tables: RLS enabled and forced",
+        "Worker uses service role; browser reads only its own rows",
+        "Tenant tables are the one browser-facing PostgREST surface"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "Not drawn",
+      "items": [
+        "10 rate-limit tables (user_id 1:1)",
+        "top_ups.user_id, account_actions, webhook_events",
+        "social_post_media.source_job_id \u2192 jobs"
+      ]
+    }
+  ]
+}
