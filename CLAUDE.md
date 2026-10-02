@@ -32,6 +32,17 @@ If a build starts failing after a dependency change, bisect these three first.
 
 - **RLS on every user-facing table**, and `FORCE` it. Service-role bypasses RLS
   by design; the Worker uses service-role, the browser never talks to Postgres.
+- **One deliberate exception: tenant projects (ADR-0051).** Project routes call
+  PostgREST with the *user's* JWT (`packages/db/tenant-client.js`), so RLS is
+  the enforcing line, not the second one. The publishable key is public, so a
+  signed-in user can reach the same objects on `/rest/v1` directly. That surface
+  is exactly: SELECT on the organisation/workspace/project/document/asset
+  tables, the `public.*` invoker wrappers (`create_project`, `mutate_project`,
+  `save_project_document`, `reserve_project_asset`,
+  `consume_project_asset_inspection`) and the `private.*_role` helpers. The
+  `private` schema must stay out of the API's exposed schemas — the wrappers
+  exist so it never has to be exposed. Anything added to this surface goes on
+  the allowlist in `scripts/test-default-privileges.mjs` on purpose.
 - **Ledger is append-only** — enforced by trigger `ledger_entries_append_only`.
   Never `UPDATE` or `DELETE` a ledger row. Corrections are compensating rows
   (positive delta = refund/grant, negative = debit).
