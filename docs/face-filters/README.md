@@ -1,5 +1,10 @@
 # Face Filters & Media Authenticity — spec set
 
+For uploaded-video skin smoothing, see [Video Enhance validation](VIDEO-ENHANCE.md)
+(2026-09-26), including the runnable local MediaPipe/WebGL prototype. The photo
+retouchers below do not establish video support; production qualification remains
+pending.
+
 Six documents covering one feature, not the whole app. Read in this order:
 
 | # | Document | Answers |
