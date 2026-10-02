@@ -37,7 +37,7 @@ the authority.
 | `/app/library` | past generations, 90-day retention | signed in | Clip Editor: `veyrnox_editor=1` |
 | `/app/credits` | balance, packs, statement, top-up history | buy needs sign-in | — |
 | `/app/account` | 2FA, password, sessions, data requests | signed in | — |
-| `/app/publish` | Veyrnox Publish | signed in | none (see ISSUES.md) |
+| `/app/publish` | Veyrnox Publish | signed in | `PUBLISH_ENABLED` (off in prod); Free = 1 account |
 | `/app/projects`, `/app/projects/[id]` | workspaces, project document editor | signed in | `veyrnox_projects=1` + `TENANT_PROJECTS_ENABLED` |
 | `/app/admin`, `/app/admin/violations` | ops metrics, content violations | admin + aal2 | Cloudflare Access |
 | `/app/admin/cinema`, `…/submissions` | creator and publication review | Cinema admin + fresh MFA | Access + Cinema flags |

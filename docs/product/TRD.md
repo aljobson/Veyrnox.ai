@@ -91,7 +91,7 @@ social OAuth client ids/secrets, `SOCIAL_OAUTH_STATE_SECRET`,
 
 Feature flags are **server-side `wrangler.jsonc` vars** (e.g.
 `CINEMA_ENABLED`, `TENANT_PROJECTS_ENABLED`, `*_RATE_LIMIT_ENABLED`,
-`ADMIN_REQUIRE_AAL2`, `JEV_SUBMIT_ERRORS_MODE`). Client-only previews use
+`ADMIN_REQUIRE_AAL2`, `JEV_SUBMIT_ERRORS_MODE`, `PUBLISH_ENABLED`). Client-only previews use
 `localStorage.veyrnox_*` (`veyrnox_editor`, `veyrnox_auto_short`).
 
 ## 5. Data access

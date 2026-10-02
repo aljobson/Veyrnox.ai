@@ -50,7 +50,7 @@ extending a layer depends on everything above it.
 |---|---|---|---|
 | **A1** | Fix pack purchase (ISSUES S1): migration dropping the `variant_id` requirement, acceptance test buying `web-270` | — | test passes; live `/api/v1/top-ups` for each active pack returns a checkout URL |
 | A2 | Remove LemonSqueezy (ISSUES I1): route, adapter, vars, config, tests, secrets | A1 | `grep -ri lemonsqueezy app lib packages wrangler.jsonc` empty |
-| A3 | Gate Publish (ISSUES P1) behind a server flag, or enforce Free = 1 account | — | signed-in user without the flag cannot reach `/api/v1/social/*` |
+| A3 | ~~Gate Publish (ISSUES P1)~~ — done: `PUBLISH_ENABLED` + Free cap (0169) | — | signed-in user without the flag cannot reach `/api/v1/social/*` |
 | A4 | Stripe live evidence (#101): real purchase + refund, dispute/freeze drills, lost-webhook drill | A1 | `docs/operations/credit-pack-launch-acceptance.md` filled in |
 | A5 | Ops checklist (#204): email quota or bounded plan, HIBP on, prod admin AAL2 journey, recovery-health alert delivery, DMCA agent | — | every #204 box ticked |
 | A6 | Playwright smoke: sign up → confirm → generate → buy (ISSUES I5) | A1 | green in CI against a preview build |

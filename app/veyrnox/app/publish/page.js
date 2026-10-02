@@ -11,6 +11,9 @@ import { Composer, ScheduledPosts } from './Composer';
 const currentAccount = () => getSession()?.user?.id || '';
 const noAccount = () => '';
 const button = 'rounded-full border border-vx-border px-4 py-2 text-sm font-bold disabled:opacity-50';
+// Free tier: one connected account (ADR-0063). The database enforces it (0169);
+// this only saves a wasted OAuth round trip.
+const FREE_ACCOUNT_LIMIT = 1;
 
 export default function Publish() {
   const account = useSyncExternalStore(onSessionChange, currentAccount, noAccount);
@@ -67,18 +70,20 @@ function PublishControls() {
     }
   }
 
-  const byNetwork = new Map((accounts || []).map((a) => [a.network, a]));
+  const active = (accounts || []).filter((a) => a.status === 'active');
+  const byNetwork = new Map(active.map((a) => [a.network, a]));
+  const atLimit = active.length >= FREE_ACCOUNT_LIMIT;
 
   return <div className="space-y-6">
     <section className="rounded-2xl border border-vx-border p-5">
       <h2 className="font-bold mb-4">Connected accounts</h2>
       {accounts === null && !loadError && <p className="text-sm text-vx-fg-muted">Loading…</p>}
       {loadError && <p role="alert" className="text-sm text-vx-danger mb-3">{loadError}</p>}
-      {accounts !== null && accounts.length === 0 && !loadError && (
+      {accounts !== null && active.length === 0 && !loadError && (
         <p className="text-sm text-vx-fg-muted">No accounts connected yet.</p>
       )}
       <ul className="space-y-3">
-        {(accounts || []).map((a) => (
+        {active.map((a) => (
           <li key={a.id} className="flex items-center justify-between gap-3 rounded-xl border border-vx-border p-3">
             <div className="flex items-center gap-3 min-w-0">
               {a.avatar_url
@@ -108,6 +113,7 @@ function PublishControls() {
       <h2 className="font-bold mb-1">Connect an account</h2>
       <p className="text-sm text-vx-fg-muted mb-4">Instagram, LinkedIn, X and YouTube publish directly. TikTok posts land as a draft in your TikTok inbox to finish there, until our app clears TikTok&apos;s review.</p>
       {connectError && <p role="alert" className="text-sm text-vx-danger mb-3">{connectError}</p>}
+      {atLimit && <p className="text-sm text-vx-fg-muted mb-3">Your plan connects one account. Disconnect it to connect a different one.</p>}
       <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {NETWORKS.map((n) => {
           const connected = byNetwork.get(n.key);
@@ -117,7 +123,7 @@ function PublishControls() {
               {n.live ? (
                 connected
                   ? <span className="text-xs font-bold text-vx-accent">Connected</span>
-                  : <button type="button" disabled={connecting != null} className={button} onClick={() => onConnect(n.key)}>
+                  : <button type="button" disabled={connecting != null || atLimit} className={button} onClick={() => onConnect(n.key)}>
                       {connecting === n.key ? 'Connecting…' : 'Connect'}
                     </button>
               ) : (

@@ -7,8 +7,9 @@ import pg from 'pg';
 // Exercises 0154_social_publish_foundation.sql (ADR-0061 Phase 1): brands,
 // accounts, the append-only audit log, and the four narrow RPCs. Applies the
 // migration twice to prove idempotency, the same discipline as the other
-// acceptance tests in this package.
-describe('social publish foundation (0154)', { skip: !process.env.DATABASE_URL }, () => {
+// acceptance tests in this package. 0169 adds the Free tier's one-account
+// cap to record_social_account_connection.
+describe('social publish foundation (0154, 0169)', { skip: !process.env.DATABASE_URL }, () => {
     let pool: pg.Pool;
     const users: string[] = [];
     const authIds: string[] = [];
@@ -21,8 +22,10 @@ describe('social publish foundation (0154)', { skip: !process.env.DATABASE_URL }
                     EXECUTE format('CREATE ROLE %I NOLOGIN', r);
                 END IF;
             END LOOP; END $$`);
-        for (const round of [1, 2]) {
-            await pool.query(await readFile(new URL('./schema/supabase/0154_social_publish_foundation.sql', import.meta.url), 'utf8'));
+        for (const name of ['0154_social_publish_foundation.sql', '0169_social_publish_free_account_cap.sql']) {
+            for (const round of [1, 2]) {
+                await pool.query(await readFile(new URL(`./schema/supabase/${name}`, import.meta.url), 'utf8'));
+            }
         }
     });
     after(async () => {
@@ -158,6 +161,49 @@ describe('social publish foundation (0154)', { skip: !process.env.DATABASE_URL }
             pool.query('DELETE FROM public.social_account_actions WHERE id = $1', [row.id]),
             /append-only/,
         );
+    });
+
+    // ── 0169: Free tier, one connected account ───────────────────────────
+    const activeCount = async (userId: string) => Number((await one(
+        `SELECT count(*) FROM public.social_accounts a JOIN public.social_brands b ON b.id = a.brand_id
+         WHERE b.owner_user_id = $1 AND a.status = 'active'`, [userId])).count);
+
+    it('refuses a second account on the Free tier, on any network', async () => {
+        const u = await user();
+        const brand = await getOrCreateBrand(u.auth);
+        assert.equal((await connect(u.auth, brand.brand_id)).ok, true);
+        for (const second of [{ externalId: 'ig-other' }, { network: 'linkedin', externalId: 'li-1' }]) {
+            assert.deepEqual(await connect(u.auth, brand.brand_id, second), { ok: false, code: 'ACCOUNT_LIMIT', limit: 1 });
+        }
+        assert.equal(await activeCount(u.id), 1, 'nothing was stored');
+    });
+
+    it('reconnecting the same account still works at the limit', async () => {
+        const u = await user();
+        const brand = await getOrCreateBrand(u.auth);
+        const first = await connect(u.auth, brand.brand_id);
+        const again = await connect(u.auth, brand.brand_id, { accessEnc: Buffer.from('cipher-new') });
+        assert.deepEqual([again.ok, again.idempotent, again.account_id], [true, true, first.account_id]);
+    });
+
+    it('a disconnected account frees the slot', async () => {
+        const u = await user();
+        const brand = await getOrCreateBrand(u.auth);
+        const first = await connect(u.auth, brand.brand_id);
+        assert.equal((await disconnect(u.auth, first.account_id)).ok, true);
+        const next = await connect(u.auth, brand.brand_id, { network: 'twitter', externalId: 'x-1' });
+        assert.equal(next.ok, true);
+        assert.equal(await activeCount(u.id), 1);
+    });
+
+    it('two concurrent connections cannot both pass the cap', async () => {
+        const u = await user();
+        const brand = await getOrCreateBrand(u.auth);
+        const results = await Promise.all(['a', 'b', 'c'].map((k) =>
+            connect(u.auth, brand.brand_id, { externalId: `ig-race-${k}` })));
+        assert.equal(results.filter((r) => r.ok).length, 1);
+        assert.equal(results.filter((r) => r.code === 'ACCOUNT_LIMIT').length, 2);
+        assert.equal(await activeCount(u.id), 1);
     });
 
     it('forces RLS and permits service-role RPC execution only, on every table', async () => {

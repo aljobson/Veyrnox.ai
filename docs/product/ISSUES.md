@@ -37,7 +37,7 @@ behaviour a user can hit · **medium** = latent defect or guard missing ·
 
 | # | sev | issue | evidence | fix |
 |---|---|---|---|---|
-| P1 | **high** | **Veyrnox Publish is live in production with no flag and no plan.** It is in the account menu, unlimited and free, though ADR-0062/0063 set Free = 1 account and app reviews are not done. | `app/veyrnox/app/publish/page.js`, `NavAuthButtons.js`, no `publish_plan` code | Gate behind a server flag until the plan ships, or enforce the Free 1-account cap now. |
+| P1 | **high** — fixed: `PUBLISH_ENABLED` off in prod + Free cap (0169) | **Veyrnox Publish is live in production with no flag and no plan.** It is in the account menu, unlimited and free, though ADR-0062/0063 set Free = 1 account and app reviews are not done. | `app/veyrnox/app/publish/page.js`, `NavAuthButtons.js`, no `publish_plan` code | Gate behind a server flag until the plan ships, or enforce the Free 1-account cap now. |
 | P2 | **high** | YouTube resumable upload cannot complete (no `Authorization` on continuation PUTs). Fix is in open PR #399, failing CI. | PR #399 | Rebase on #401, merge. |
 | P3 | medium | `/app/credits` says "No subscription." while ADR-0064 is accepted and Cinema Pass is a subscription. | `app/veyrnox/app/credits/page.js:136` | Update copy when subscriptions ship; today say "Credit Packs are one-off". |
 | P4 | medium | Passkey sign-in button can appear but there is no enrolment UI, so no user can have a passkey. | `app/lib/passkeys.js` (`registerPasskey` unused), ADR-0032 | Ship enrolment on `/app/account` or hide the button. |
