@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { presetHref, presetCredits, presetTitle } from '../_lib/tokens.js';
+import { templateHref, presetCredits, presetTitle } from '../_lib/tokens.js';
 
 // Preset card: thumbnail carries color, monochrome chrome around it.
 //
@@ -15,18 +15,19 @@ export function PresetCard({ preset, size = 'md', onClick, catalog }) {
     lg: { h: 'h-72', title: 'text-lg', tag: 'text-[10px]' },
   };
   const s = sizes[size];
-  // Carry both: Create reads ?model= on mount, and ?preset= records which
-  // card sent the user. If the preset's model name has drifted out of the
-  // catalog, link without one rather than preselecting something wrong.
-  const href = presetHref(preset);
+  // The template's own page shows its prompt and inputs before anyone is
+  // sent to the studio with them.
+  const href = templateHref(preset);
   return (
     <Link
       href={href}
       onClick={onClick}
-      aria-label={`Open the ${preset.name} preset in the studio`}
+      aria-label={`Open the ${presetTitle(preset.name)} template`}
       className="vx-tile group block text-left w-full"
     >
-      <div className={`${s.h} rounded-2xl`} style={{ background: preset.bg }} />
+      <div className={`${s.h} rounded-2xl relative`} style={{ background: preset.bg }}>
+        {preset.isNew && <span className="absolute left-3 top-3 rounded-full bg-vx-base/80 px-2 py-0.5 font-vx-mono text-[10px] font-bold tracking-[0.12em]">NEW</span>}
+      </div>
       <div className="pt-3 flex items-baseline gap-2">
         <div className="min-w-0">
           <div className={`font-extrabold tracking-tight truncate ${s.title}`}>{presetTitle(preset.name)}</div>

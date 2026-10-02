@@ -18,7 +18,7 @@ export function MarketingNav() {
   const path = usePathname().replace(/^\/veyrnox/, '') || '/';
   const items = [
     { href: '/',         label: 'Home' },
-    { href: '/presets', label: 'Gallery' },
+    { href: '/presets', label: 'Templates' },
     { href: '/social-cinema', label: 'Social Cinema' },
     { href: '/pricing', label: 'Pricing' },
   ];

@@ -36,3 +36,13 @@ test('survives missing, empty and malformed storage', () => {
     const throwing = { getItem: () => { throw new Error('denied'); }, removeItem() {} };
     assert.equal(takeLandingDraft(throwing, 'wan-2.5-kie', NOW), null);
 });
+
+test('a template draft carries its aspect ratio through to the studio', async () => {
+    const { takeStudioDraft, writeStudioDraft } = await import('../app/veyrnox/_lib/landingDraft.js');
+    const map = new Map();
+    const s = { getItem: (k) => map.get(k) ?? null, setItem: (k, v) => map.set(k, v), removeItem: (k) => map.delete(k) };
+    assert.equal(writeStudioDraft(s, { prompt: 'a portal', model: 'kling-2.6-pro-kie', aspect: '9:16' }, NOW), true);
+    assert.deepEqual(takeStudioDraft(s, 'kling-2.6-pro-kie', NOW), { prompt: 'a portal', aspect: '9:16' });
+    assert.equal(map.has(LANDING_DRAFT_KEY), false);
+    assert.equal(writeStudioDraft({ setItem() { throw new Error('denied'); } }, { prompt: 'x', model: 'y' }), false);
+});

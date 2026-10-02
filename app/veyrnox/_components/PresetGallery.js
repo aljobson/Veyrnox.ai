@@ -1,20 +1,20 @@
 'use client';
 import { useState } from 'react';
 import { PresetCard } from './PresetCard';
-import { PRESETS, PRESET_CATEGORIES } from '../_lib/tokens';
+import { PRESET_CATEGORIES, templatesIn } from '../_lib/tokens';
 import { useCatalog } from '../_lib/useCatalog';
 
-const CATEGORY_LABEL = { ALL: 'All', CINEMATIC: 'Cinematic', UGC: 'UGC', VFX: 'VFX', ADS: 'Ads' };
+const CATEGORY_LABEL = { ALL: 'All', NEW: 'New', 'YOUR PHOTO': 'Your photo', CINEMATIC: 'Cinematic', ANIME: 'Anime', FASHION: 'Fashion', PRODUCTS: 'Products', VFX: 'VFX', UGC: 'UGC', ADS: 'Ads' };
 
 // The preset filter and grid, shared by the public /presets page and the
 // studio's Explore tab so the two never drift apart.
 export function PresetGallery({ size = 'lg', columns = 'lg:grid-cols-3' }) {
   const [cat, setCat] = useState('ALL');
   const { models } = useCatalog();
-  const list = cat === 'ALL' ? PRESETS : PRESETS.filter((p) => p.category === cat);
+  const list = templatesIn(cat);
   return (
     <>
-      <div className="flex flex-wrap gap-2" role="group" aria-label="Filter presets">
+      <div className="flex flex-wrap gap-2" role="group" aria-label="Filter templates">
         {PRESET_CATEGORIES.map((c) => (
           <button
             key={c}
@@ -28,7 +28,7 @@ export function PresetGallery({ size = 'lg', columns = 'lg:grid-cols-3' }) {
         ))}
       </div>
       <p className="mt-8 mb-6 text-[14px] text-vx-fg-muted" aria-live="polite">
-        {list.length} {list.length === 1 ? 'preset' : 'presets'} on {new Set(list.map((p) => p.model)).size} models
+        {list.length} {list.length === 1 ? 'template' : 'templates'} on {new Set(list.map((p) => p.model)).size} models
       </p>
       <div className={`grid grid-cols-1 sm:grid-cols-2 ${columns} gap-x-6 gap-y-10`}>
         {list.map((p) => (
