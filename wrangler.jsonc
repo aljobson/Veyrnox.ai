@@ -166,7 +166,6 @@
   //   STRIPE_WEBHOOK_SECRET       whsec_… signs /api/webhook/stripe AND the Top-up id in session metadata (#93)
   //   TOP_UP_BACKFILL_TOKEN       bearer for /api/admin/top-up-backfill (#94); same value in the TOP_UP_BACKFILL_TOKEN Actions secret
   //   ADMIN_REAP_TOKEN            /api/admin/reap-assets shared secret (ADR-0008)
-  //   UPLOAD_PROXY_ALLOWED_HOSTS  legacy upload proxy allowlist (docs/UPLOAD_PROXY_CONFIG.md)
   //   META_APP_ID, META_APP_SECRET
   //                               Instagram OAuth connect/callback + Graph API calls, via
   //                               Instagram API with Instagram Login (packages/adapters/social/
