@@ -46,9 +46,13 @@ const landing = readFileSync(new URL('../app/veyrnox/page.js', import.meta.url),
 const search = readFileSync(new URL('../app/veyrnox/_components/SiteSearch.js', import.meta.url), 'utf8');
 const create = readFileSync(new URL('../app/veyrnox/app/create/page.js', import.meta.url), 'utf8');
 const pricing = readFileSync(new URL('../app/veyrnox/pricing/page.js', import.meta.url), 'utf8');
+const modelPages = readFileSync(new URL('../app/veyrnox/_lib/modelPages.js', import.meta.url), 'utf8');
 
 test('every public surface uses the one predicate', () => {
-    assert.match(landing, /rows\.filter\(\(m\) => isShelfModel\(capabilityFor\(m\.provider_endpoint\)\)\)/);
+    // The landing page reads lib/publicCatalog.js, whose rows carry the
+    // publicCapabilities() shape; the test above shows it is enough.
+    assert.match(landing, /rows\.filter\(\(m\) => isShelfModel\(m\.capabilities\)\)/);
+    assert.match(modelPages, /\.filter\(\(m\) => isShelfModel\(m\.capabilities\)\)/);
     assert.match(search, /models\.filter\(\(m\) => isShelfModel\(m\.capabilities\)\)/);
     // The pricing page filtered nothing at all and quoted both held-back rows.
     assert.match(pricing, /data\.models\.filter\(\(m\) => isShelfModel\(m\.capabilities\)\)/);
