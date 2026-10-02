@@ -147,11 +147,18 @@
 
 /* The one authored entrance: the slip feeds out of the printer once, on
    first paint. clip-path keeps the drop shadow from popping in early. */
+/* The leading edge leans toward the viewer as it leaves the slot and settles
+   flat once fully out, the way real thermal paper curls off the roll. The
+   lean is pivoted on the slot (top edge) so the slip never detaches from it. */
 @keyframes vxPrint {
-  from { clip-path: inset(0 0 100% 0); transform: translateY(-14px); }
-  to   { clip-path: inset(0 0 -40px 0); transform: none; }
+  from { clip-path: inset(0 0 100% 0); transform: perspective(900px) translateY(-14px) rotateX(7deg); }
+  70%  { transform: perspective(900px) rotateX(2deg); }
+  to   { clip-path: inset(0 0 -40px 0); transform: perspective(900px) rotateX(0deg); }
 }
-.vx-print { animation: vxPrint 900ms cubic-bezier(0.32, 0.72, 0, 1) 150ms backwards; }
+.vx-print {
+  transform-origin: 50% 0;
+  animation: vxPrint 900ms cubic-bezier(0.32, 0.72, 0, 1) 150ms backwards;
+}
 
 /* A changed figure rolls in from below, so the eye catches the new price. */
 @keyframes vxTick {
