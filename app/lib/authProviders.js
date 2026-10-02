@@ -20,3 +20,33 @@ export function withLiveSettings(configured, settings) {
     const ext = settings.external && typeof settings.external === 'object' ? settings.external : {};
     return Object.fromEntries(OAUTH_PROVIDERS.map((p) => [p, !!configured[p] && ext[p] === true]));
 }
+
+/**
+ * Supabase's public auth settings, or null when they cannot be read (blocked,
+ * offline, slow). Never throws: a null read must not hide anything.
+ */
+export async function readAuthSettings(url, anonKey, timeoutMs = 5000, fetcher = fetch) {
+    if (!url || !anonKey) return null;
+    try {
+        const res = await fetcher(`${url}/auth/v1/settings`, {
+            headers: { apikey: anonKey },
+            signal: AbortSignal.timeout(timeoutMs),
+        });
+        if (!res.ok) return null;
+        const data = await res.json();
+        return data && typeof data === 'object' ? data : null;
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Whether to start an OAuth redirect for `provider`. Only a successful read
+ * saying it is off stops it (that redirect would land on Supabase's raw 400);
+ * an unreadable setting lets the user try, which is the point of the build list.
+ */
+export function providerAvailable(settings, provider) {
+    if (!settings || typeof settings !== 'object') return true;
+    const ext = settings.external && typeof settings.external === 'object' ? settings.external : {};
+    return ext[provider] === true;
+}
