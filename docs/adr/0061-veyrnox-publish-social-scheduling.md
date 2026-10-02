@@ -145,7 +145,8 @@ Per the spec pack's phasing (§1.7 of the product spec):
   (month/week/list) with drag-to-reschedule, auto-publish scheduling engine, best-time-
   to-post (static heuristic until enough per-account history exists), basic per-network
   analytics (evolution + per-post).
-- **Deferred:** approval workflow, competitor tracking, SmartLinks (link-in-bio),
+- **Deferred:** approval workflow (a draft-and-approve step was later added for
+  automated brand posts; see the 2026-10-02 amendment below), competitor tracking, SmartLinks (link-in-bio),
   unified inbox, automation rules ("Flows"), ads dashboard, exportable reports — all
   specified in the pack's §1.5 Phase 2/3 lists, none scoped for this ADR's v1.
 - **No credit-ledger change in v1.** Whether Publish draws from the existing
@@ -234,6 +235,30 @@ The headline decisions it documents, all already folded into §2.7–§2.11 of t
 - Ongoing engineering cost: each connected platform's API can change under us; this is
   the accepted cost of Option A and should be weighed against Option B's recurring
   vendor fee when the product owner reviews this ADR.
+
+## Amendment 2026-10-02: draft posts and batch approval
+
+The owner asked for Veyrnox's own brand accounts to be fed automatically, on the
+condition that nothing generated is published without their review. Migration
+`0182_social_post_drafts.sql` adds the minimum the schema needs for that:
+
+- `social_posts.status` gains `draft`, and a draft always carries a
+  `draft_batch_id`. Every function that moves a post towards a network filters
+  `status = 'scheduled'` (claim, settle, sweep health, due index), so a draft is inert.
+- `create_social_post_draft` runs `create_social_post` unchanged (same ownership,
+  account, media and idempotency checks), then parks the new row as a draft in the
+  same transaction.
+- `approve_social_post_batch` schedules a batch's drafts, never earlier than the
+  approval time. It settles each one, so a draft whose accounts were disconnected
+  meanwhile becomes `failed`, not `scheduled` with nothing left to send.
+  `discard_social_post_drafts` cancels one draft or the rest of a batch. Both are
+  limited to the brand owner and logged in `social_account_actions`.
+- All four new functions are service-role only. There is no ledger or entitlement
+  change, and publishing still needs `PUBLISH_ENABLED` and live platform approvals.
+
+Out of scope: editing or rescheduling a draft (discard and regenerate instead),
+multi-person approval, and the generator and review UI, which follow in their own
+changes on top of these functions.
 
 ## Open questions
 
