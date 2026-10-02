@@ -257,8 +257,12 @@ If a build starts failing after a dependency change, bisect these three first.
 - `main` is deployable at all times. `.github/workflows/deploy-production.yml`
   deploys each push to main, one run at a time (newest main wins). Cloudflare
   Workers Builds only uploads preview versions, for every branch including
-  main. Break-glass rollback: `wrangler rollback <version-id>`, or rerun the
-  workflow on an older commit.
+  main. After each deploy `scripts/check-site-health.mjs` runs; on failure the
+  workflow restores the previously live deployment and opens a
+  `deploy-failure` issue. `site-health.yml` runs the same check every 15 min.
+  A rollback restores the Worker only — migrations stay applied, so each
+  migration must keep the previous release working. Break-glass rollback:
+  `wrangler rollback <version-id>`, or rerun the workflow on an older commit.
 - Feature flag new user paths behind `localStorage.veyrnox_*` until the DB
   migration has landed and the reconciliation job has run for 24h clean.
 - Every PR touching the money spine (ledger, jobs, webhooks) needs an ADR
