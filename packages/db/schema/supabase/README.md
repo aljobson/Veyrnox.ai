@@ -182,10 +182,15 @@ abandoned branch is never reused.
 
 | Gap | Why |
 |-----|-----|
-| 0033–0034 | see 0035's header |
 | 0039–0040 | recorded in `0041_credit_packs_and_top_ups.sql:3` — unmerged branches already held 0035–0040 |
-| 0061 | burned by an abandoned branch. Verified 2026-09-20 against the production ledger: never applied. |
-| 0069 | burned by an abandoned branch. Verified 2026-09-20 against the production ledger: never applied. |
+| 0061 | burned by an abandoned branch |
+| 0069 | burned by an abandoned branch |
+| 0076 | held by the unmerged `feat/101-live-variant-ids` branch (its renumbered 0069) |
+| 0118–0119 | renumbered to 0121–0122 before merge (commit `ba1a78a`) |
+| 0151, 0158 | renumbered to 0163, 0164 after production advanced to 0162; staging's ledger keeps the original names (see each file's `Applied name:` header) |
+
+All verified 2026-10-02 against the production ledger: none of these numbers
+was ever applied there. (0033–0034, listed here before, are real migrations.)
 
 `check-migration-numbers.sh` only detects duplicates, so it cannot see a gap.
 An unexplained one is the shape of "applied to production, never committed" —
