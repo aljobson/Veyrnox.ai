@@ -3,22 +3,29 @@
 The app-wide set. Feature sets extend these (e.g.
 [docs/face-filters/](../face-filters/README.md)).
 
-| document | answers |
-|---|---|
-| [PRD.md](PRD.md) | what is shipped, what is deliberately not, what is in flight |
-| [APP-FLOW.md](APP-FLOW.md) | routes, sign-in, generating, buying Credits, every failure path |
-| [UI-UX.md](UI-UX.md) | colour tokens, type, layout, components, copy, accessibility |
+| # | document | answers |
+|---|---|---|
+| 1 | [PRD.md](PRD.md) | what the product is, what is shipped, built-but-off, decided, and deliberately not built |
+| 2 | [TRD.md](TRD.md) | stack, hosting, providers, API conventions, security, CI, tests |
+| 3 | [APP-FLOW.md](APP-FLOW.md) | phases, routes, navigation, every journey click by click, every failure path |
+| 4 | [UI-UX.md](UI-UX.md) | look and feel, colour tokens, type, layout, components, motion, screens, copy, accessibility |
+| 5 | [SCHEMA.md](SCHEMA.md) | auth flow, every table and relationship, key RPCs, cron, migration rules |
+| 6 | [IMPLEMENTATION-PLAN.md](IMPLEMENTATION-PLAN.md) | the build order from here, by track, with exit checks |
+| — | [ISSUES.md](ISSUES.md) | defects and drift found in the 2026-10-02 audit |
 
-The other roles of the six-document framework are already covered:
+Diagrams (Archify — open the `.html`; edit the `.json` and re-run
+`archify deliver`):
 
-| role | where |
+| diagram | type |
 |---|---|
-| Technical decisions | [CLAUDE.md](../../CLAUDE.md) + [docs/adr/](../adr/README.md) |
-| Backend schema | `packages/db/schema/supabase/` — the SQL is authoritative |
-| Build plan | [docs/PHASE-1.md](../PHASE-1.md) for the money spine; each feature set carries its own |
+| [system-architecture](diagrams/system-architecture.html) | architecture |
+| [auth-flow](diagrams/auth-flow.html) | sequence |
+| [job-lifecycle](diagrams/job-lifecycle.html) | lifecycle |
+| [schema-map](diagrams/schema-map.html) | architecture (tables by domain) |
 
 **Precedence when documents disagree:** `CLAUDE.md` → `docs/adr/` →
-`CONTEXT.md` (vocabulary) → these documents → feature sets.
+`CONTEXT.md` (vocabulary) → the SQL migrations (for schema) → these
+documents → feature sets.
 
-These describe the product as of 2026-09-21. When a PR changes what they say
+These describe the product as of 2026-10-02. When a PR changes what they say
 is true, it updates them in the same change.
