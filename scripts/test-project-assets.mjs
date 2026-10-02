@@ -142,6 +142,16 @@ try {
     await rejects("UPDATE public.project_assets SET state='rejected',reject_reason='changed_mind' WHERE id=$1",[r.asset_id],'42501');
   });
 
+  await check('service_role writes only through the RPCs, never directly (0173)',async()=>{
+    await asSuper();
+    for(const [p,want] of [['SELECT',true],['INSERT',false],['UPDATE',false],['DELETE',false],['TRUNCATE',false]])
+      assert.equal(await value("SELECT has_table_privilege('service_role','public.project_assets',$1)",[p]),want,`service_role ${p}`);
+    await asService();
+    await rejects(`INSERT INTO public.project_assets(project_id,r2_key,declared_type,declared_bytes,actor_id,request_key)
+      VALUES($1,$2,'video/mp4',10,$3,'service-direct')`,[project,`org/${org}/project/${project}/asset/${randomUUID()}/v1.mp4`,owner],'42501');
+    await rejects("UPDATE public.project_assets SET state='rejected',reject_reason='x' WHERE project_id=$1",[project],'42501');
+  });
+
   await check('an incomplete verdict cannot be inserted at all',async()=>{
     await asSuper();
     // inspected with no sniffed type, and quarantined carrying a reason, both
