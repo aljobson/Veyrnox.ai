@@ -27,6 +27,9 @@ function fromApi(models) {
     takesTopic: !!m.capabilities?.inputs?.topic,
     // Clip Editor: edits Library files, so it is started from the Library, never Create.
     isEdit: !!m.capabilities?.inputs?.clips,
+    // Optional settings the gateway accepts for this model.
+    takesSeed: !!m.capabilities?.inputs?.seed,
+    takesNegative: !!m.capabilities?.inputs?.negative_prompt,
   }));
 }
 

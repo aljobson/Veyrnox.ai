@@ -15,6 +15,9 @@ import { CharacterPanel } from '../../_components/CharacterPanel';
 import { buildCharacterPrompt } from '../../_lib/character';
 import { DrawOnImage } from '../../_components/DrawOnImage';
 import { SourcePickers } from '../../_components/SourcePickers';
+import { GenerationSettings } from '../../_components/GenerationSettings';
+import { ControlRow } from '../../_components/ControlRow';
+import { settingsInputs } from '../../_lib/generationSettings';
 import { ParticleButton } from '@/components/ParticleButton';
 // State glyphs — colour-blind safety net matches the design system §08.
 const STATE_UI = {
@@ -62,6 +65,8 @@ export default function CreateStudio() {
   const [consent, setConsent] = useState(false);
   const [cinemaOn, setCinemaOn] = useState(false);
   const [cinema, setCinema] = useState(DEFAULT_CINEMA);
+  const [seed, setSeed] = useState('');
+  const [negative, setNegative] = useState('');
   const [characterOn, setCharacterOn] = useState(false);
   const [character, setCharacter] = useState({});
 
@@ -249,6 +254,7 @@ export default function CreateStudio() {
       prompt: finalPrompt(),
       aspect_ratio: aspect,
       duration_seconds: model.kind === 'video' ? Number(duration.replace('s', '')) : undefined,
+      ...settingsInputs(model, { seed, negative }),
     };
     // strip undefined so server sees a clean object
     Object.keys(inputs).forEach((k) => inputs[k] === undefined && delete inputs[k]);
@@ -455,6 +461,10 @@ export default function CreateStudio() {
             <CharacterPanel enabled={characterOn} onToggle={setCharacterOn} picks={character} onChange={setCharacter} />
           )}
 
+          {!isShort && (
+            <GenerationSettings model={model} seed={seed} onSeed={setSeed} negative={negative} onNegative={setNegative} />
+          )}
+
           {takesCamera && (
             <CameraPanel enabled={cinemaOn} onToggle={setCinemaOn} settings={cinema} onChange={setCinema} />
           )}
@@ -480,29 +490,6 @@ export default function CreateStudio() {
             </div>
           </div>
         </aside>
-      </div>
-    </div>
-  );
-}
-
-function ControlRow({ label, options, value, onChange }) {
-  return (
-    <div className="rounded-2xl border border-vx-border bg-vx-panel p-5">
-      <div className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted mb-3">{label}</div>
-      <div className="flex flex-wrap gap-1.5">
-        {options.map((o) => (
-          <button
-            key={o}
-            onClick={() => onChange(o)}
-            className={`font-vx-mono text-[11px] font-bold rounded-full px-3.5 py-1.5 border ${
-              value === o
-                ? 'border-vx-accent text-vx-accent bg-vx-accent/[0.07]'
-                : 'border-vx-border text-vx-fg-muted hover:text-vx-fg'
-            }`}
-          >
-            {o}
-          </button>
-        ))}
       </div>
     </div>
   );
