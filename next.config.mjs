@@ -1,4 +1,5 @@
 import { buildConfig } from './packages/security/config.js';
+import { oauthProvidersFor } from './packages/security/environments.js';
 const identityConfig = buildConfig(process.env);
 
 /** @type {import('next').NextConfig} */
@@ -21,6 +22,8 @@ const nextConfig = {
   env: {
     NEXT_PUBLIC_SUPABASE_URL: identityConfig.supabaseUrl,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: identityConfig.publishableKey,
+    // Which "Continue with ..." buttons sign-in shows (environments.js).
+    NEXT_PUBLIC_AUTH_PROVIDERS: oauthProvidersFor(identityConfig.appEnv).join(','),
     // Public, like the anon key. Empty = no widget and no token sent, which is
     // the pre-CAPTCHA behaviour. Never empty this while Supabase CAPTCHA is on:
     // every email/password sign-in would fail (ADR-0026).

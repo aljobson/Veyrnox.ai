@@ -38,9 +38,10 @@ reachable.
 
 3. **The button needs the project setting AND a capable browser.** It renders
    only when `/auth/v1/settings` reports `passkeys_enabled` *and*
-   `window.PublicKeyCredential` exists in a secure context. Same shape as the
-   OAuth buttons reading `external.apple`: no deploy needed to turn it on, and
-   it is never offered where clicking it could only throw.
+   `window.PublicKeyCredential` exists in a secure context. No deploy is
+   needed to turn it on, and it is never offered where clicking it could only
+   throw. (The OAuth buttons worked the same way until 2026-10-02; they now
+   start from the build's provider list, ADR-0030 decision 3.)
 
 4. **Relying Party ID is `veyrnox.ai`.** Origins `https://veyrnox.ai`. This is
    effectively **permanent**: passkeys are cryptographically bound to the RP
