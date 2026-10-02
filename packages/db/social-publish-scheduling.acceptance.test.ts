@@ -32,7 +32,7 @@ describe('social publish scheduling (0156, 0160, 0161, 0168)', { skip: !process.
         for (const name of [
             '0154_social_publish_foundation.sql', '0156_social_publish_scheduling.sql',
             '0160_social_publish_composer.sql', '0161_social_publish_async_engine.sql',
-            '0168_social_publish_claim_guards.sql',
+            '0168_social_publish_claim_guards.sql', '0181_youtube_quota_pacific_day.sql',
         ]) {
             for (const round of [1, 2]) {
                 await pool.query(await readFile(new URL(`./schema/supabase/${name}`, import.meta.url), 'utf8'));
@@ -478,6 +478,14 @@ describe('social publish scheduling (0156, 0160, 0161, 0168)', { skip: !process.
         assert.equal(again, account, 'same row re-activated');
         const acct = await one('SELECT status, access_token_enc IS NOT NULL AS has_token FROM public.social_accounts WHERE id = $1', [account]);
         assert.deepEqual([acct.status, acct.has_token], ['active', true]);
+    });
+
+    it('counts YouTube uploads on the Pacific quota day YouTube resets on (0181)', async () => {
+        const day = (await one(`SELECT (now() AT TIME ZONE 'America/Los_Angeles')::date::text AS d`)).d;
+        const before = Number((await one('SELECT COALESCE((SELECT upload_count FROM public.youtube_upload_daily_quota WHERE quota_date = $1::date), 0) AS n', [day])).n);
+        const r = (await one('SELECT public.consume_youtube_upload_quota() AS r')).r;
+        assert.equal(r.ok, true);
+        assert.equal(Number((await one('SELECT upload_count FROM public.youtube_upload_daily_quota WHERE quota_date = $1::date', [day])).upload_count), before + 1);
     });
 
     it('forces RLS and permits service-role RPC execution only, on every new table', async () => {

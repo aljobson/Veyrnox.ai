@@ -188,6 +188,7 @@ abandoned branch is never reused.
 | 0076 | held by the unmerged `feat/101-live-variant-ids` branch (its renumbered 0069) |
 | 0118–0119 | renumbered to 0121–0122 before merge (commit `ba1a78a`) |
 | 0151, 0158 | renumbered to 0163, 0164 after production advanced to 0162; staging's ledger keeps the original names (see each file's `Applied name:` header) |
+| 0179 | renumbered to 0181 before merge: 0180 reached production first; never applied anywhere |
 
 All verified 2026-10-02 against the production ledger: none of these numbers
 was ever applied there. (0033–0034, listed here before, are real migrations.)
