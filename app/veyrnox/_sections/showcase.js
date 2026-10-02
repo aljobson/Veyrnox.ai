@@ -51,7 +51,7 @@ export function PresetWall({ catalog }) {
 
 /* ─── The price list: every live catalog row, itemised ─── */
 
-const LIST_GROUPS = [
+export const LIST_GROUPS = [
   { kind: 'video', label: 'Video', unit: 'per 5 s clip.' },
   { kind: 'image', label: 'Image', unit: 'per image.' },
   { kind: 'audio', label: 'Audio', unit: 'per clip.' },
@@ -97,6 +97,7 @@ export function ModelShelf({ catalog }) {
       </div>
       <p className="mt-10 text-[14px] text-vx-fg-muted">
         Failed generations refund in full. <Link href="/pricing" className="font-bold text-vx-fg-body underline underline-offset-4 hover:text-vx-fg">Credit packs</Link>
+        {' · '}<Link href="/models" className="font-bold text-vx-fg-body underline underline-offset-4 hover:text-vx-fg">Every model</Link>
       </p>
     </section>
   );

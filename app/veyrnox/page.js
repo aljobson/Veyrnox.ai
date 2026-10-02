@@ -1,6 +1,5 @@
 import { FAQ, MODELS as MODELS_FALLBACK, kindOf, isShelfModel } from './_lib/tokens';
-import { select, envConfig } from '../../packages/db/supabase-client.js';
-import { capabilityFor, lengthsFor } from '../../lib/modelCapabilities.js';
+import { readPublicCatalog } from '../../lib/publicCatalog.js';
 import { SITE_URL, JsonLd } from '../seo';
 import { WideNav, Hero, FeaturedHeroCards } from './_sections/hero';
 import { PresetWall, ModelShelf } from './_sections/showcase';
@@ -26,38 +25,32 @@ export const revalidate = 300;
 
 /**
  * Server-side read of the live catalog with a hard fallback to tokens.js.
- * Queries Postgres directly (same columns as /api/catalog) — a self-fetch
+ * Reads through lib/publicCatalog.js, as /api/catalog does — a self-fetch
  * of our own origin does not work inside the Worker and silently served
  * the hardcoded fallback prices.
  */
 async function loadCatalog() {
   try {
-    const cfg = envConfig();
-    if (!cfg.supabaseUrl || !cfg.serviceRoleKey) throw new Error('not_configured');
-    const rows = await select(
-      'model_catalog',
-      { columns: 'id,name,modality,credits_5s,gated_flag,provider_endpoint', filter: 'active=eq.true&order=modality.asc,name.asc' },
-      cfg,
-    );
-    if (!Array.isArray(rows) || rows.length === 0) throw new Error('empty');
+    const rows = await readPublicCatalog();
+    if (rows.length === 0) throw new Error('empty');
     // Only what the picker in app/create will sell to everyone reaches the
     // shelf: the Clip Editor is a Library tool, and Auto Short is still gated.
     // Normalise to the shape our page expects: { id, name, credits, kind, tag?, premium?, gated? }
-    return rows.filter((m) => isShelfModel(capabilityFor(m.provider_endpoint))).map((m) => ({
+    return rows.filter((m) => isShelfModel(m.capabilities)).map((m) => ({
       // Lengths the gateway sells, as GET /api/catalog derives them, so the
       // hero slip never offers a 10 s price the studio would refuse.
-      durations: lengthsFor(capabilityFor(m.provider_endpoint)),
+      durations: m.durations,
       id: m.id,
       name: m.name,
-      credits: m.credits_5s,
+      credits: m.credits,
       // model_catalog.modality is fine-grained (text-to-video, image-to-video,
       // text-to-audio); the page groups on the coarse bucket and keeps the
       // fine-grained value below for display.
       kind: kindOf(m.modality),
       modality: m.modality,
-      premium: !!m.gated_flag,
-      gated: !!m.gated_flag,
-      tag: m.gated_flag ? 'PREMIUM' : undefined,
+      premium: m.gated,
+      gated: m.gated,
+      tag: m.gated ? 'PREMIUM' : undefined,
     }));
   } catch {
     return MODELS_FALLBACK;

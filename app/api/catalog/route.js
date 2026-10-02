@@ -7,26 +7,13 @@
  * that's our margin, not the customer's business.
  *
  * Response: { models: [{ id, name, modality, credits, gated, durations, capabilities }] }
- * Cached at the edge for 5 minutes; catalog changes are migrations, not
- * per-request state.
+ * Cached for 5 minutes (lib/publicCatalog.js); catalog changes are
+ * migrations, not per-request state.
  */
 
 import { NextResponse } from 'next/server';
-import { select, envConfig } from '../../../packages/db/supabase-client.js';
-import { capabilityFor, lengthsFor, publicCapabilities } from '../../../lib/modelCapabilities.js';
-
-// Workers do not honour s-maxage for Worker-generated responses, so an
-// unauthenticated flood would be one service-role PostgREST call each.
-// Cache the finished response in the Workers Cache API for 5 minutes.
-const CACHE_KEY = 'https://veyrnox.ai/api/catalog';
-const CACHE_TTL_SECONDS = 300;
-
-async function cacheGet() {
-    try { return await caches.default.match(CACHE_KEY); } catch { return undefined; }
-}
-async function cachePut(res) {
-    try { await caches.default.put(CACHE_KEY, res.clone()); } catch { /* not on Workers */ }
-}
+import { envConfig } from '../../../packages/db/supabase-client.js';
+import { readPublicCatalog, CATALOG_TTL_SECONDS } from '../../../lib/publicCatalog.js';
 
 export async function GET() {
     const cfg = envConfig();
@@ -34,51 +21,16 @@ export async function GET() {
         return NextResponse.json({ error: 'not_configured' }, { status: 503 });
     }
 
-    const cached = await cacheGet();
-    if (cached) return cached;
-
-    let rows;
+    let models;
     try {
-        rows = await select(
-            'model_catalog',
-            // provider_endpoint is read to derive `durations` and is never returned:
-            // it is our routing detail, and the margin lock keeps it off the anon key.
-            { columns: 'id,name,modality,credits_5s,gated_flag,provider_endpoint', filter: 'active=eq.true&order=modality.asc,name.asc' },
-            cfg,
-        );
+        models = await readPublicCatalog({ cfg });
     } catch (err) {
         console.error('[api/catalog] select failed:', err);
         return NextResponse.json({ error: 'internal' }, { status: 502 });
     }
 
-    const models = [];
-    for (const r of Array.isArray(rows) ? rows : []) {
-        // The gateway refuses a model with no capability record, so listing
-        // one would sell something that cannot be bought.
-        const record = capabilityFor(r.provider_endpoint);
-        if (!record) {
-            console.error('[api/catalog] active row has no capability record:', r.id);
-            continue;
-        }
-        models.push({
-            id: r.id,
-            name: r.name,
-            modality: r.modality,
-            credits: r.credits_5s,
-            gated: !!r.gated_flag,
-            // Clip lengths this model may be bought at. The create page renders
-            // exactly these, so it can never offer a length the gateway rejects.
-            durations: lengthsFor(record),
-            // Which controls apply: inputs, enum values, reference slots. No
-            // provider field names, pins or costs (ADR-0027).
-            capabilities: publicCapabilities(record),
-        });
-    }
-
-    const res = NextResponse.json(
+    return NextResponse.json(
         { models },
-        { headers: { 'Cache-Control': `public, max-age=60, s-maxage=${CACHE_TTL_SECONDS}, stale-while-revalidate=60` } },
+        { headers: { 'Cache-Control': `public, max-age=60, s-maxage=${CATALOG_TTL_SECONDS}, stale-while-revalidate=60` } },
     );
-    await cachePut(res);
-    return res;
 }
