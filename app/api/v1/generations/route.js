@@ -23,6 +23,7 @@ import { NextResponse } from 'next/server';
 import { rpc, select, envConfig, SupabaseError } from '../../../../packages/db/supabase-client.js';
 import { capabilityFor, declaredInputs, checkSource } from '../../../../lib/modelCapabilities.js';
 import { refundRejectedSubmit } from '../../../../lib/submitRejection.js';
+import { classifySubmitFailure } from '../../../../lib/submitFailureClass.js';
 import { resolveUploadedSource } from '../../../../lib/resolveSource.js';
 import { envConfig as r2EnvConfig, isConfigured as r2IsConfigured } from '../../../../packages/adapters/r2.js';
 import { editUnits } from '../../../../lib/clipEdit.js';
@@ -408,11 +409,18 @@ export async function POST(req) {
 
     if (!submitResult.ok) {
         // Record why on the job, then refund — the provider wouldn't take the
-        // job so we owe the credits back.
-        await refundRejectedSubmit({ jobId, userId, credits, errorCode: submitResult.errorCode }, cfg);
+        // job so we owe the credits back. An untyped refusal (fal and kie
+        // return log strings) may be classified by Jev (ADR-0066); null keeps
+        // the generic code, and the refund is the same either way.
+        const errorCode = submitResult.errorCode || await classifySubmitFailure(submitResult.error, process.env);
+        await refundRejectedSubmit({ jobId, userId, credits, errorCode }, cfg);
         console.error('[generations] provider submit failed:', modelRow.provider, submitResult.error);
         // A topic the script writer refused is the user's to change, not an outage.
         if (submitResult.errorCode === 'script_refused') return NextResponse.json({ error: 'topic_refused' }, { status: 422 });
+        // So is a prompt the provider refused, or an input it would not take.
+        if (errorCode === 'provider_moderation' || errorCode === 'provider_input_rejected') {
+            return NextResponse.json({ error: errorCode }, { status: 422 });
+        }
         // Don't leak upstream vendor payloads to the client — log only.
         return NextResponse.json({ error: 'provider_submit_failed' }, { status: 502 });
     }
