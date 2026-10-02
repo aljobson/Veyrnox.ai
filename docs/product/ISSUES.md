@@ -31,7 +31,7 @@ behaviour a user can hit · **medium** = latent defect or guard missing ·
 | S14 | fixed — 0178 (duplicate index, `users.plan`) and 0180 (LemonSqueezy writers; `credit_packs_net_floor` kept and re-described, it is stricter than Stripe's fee) | Dead/legacy: `users.plan` unused; `users_auth_id_idx` duplicates the UNIQUE index; LemonSqueezy-only `credit_packs_net_floor`, `top_up_order_collisions.order_id` numeric CHECK, `record_top_up_return`, order-sweep functions. | `0001:24,28`, `0068:58,209` | Retire in one cleanup migration. |
 | S15 | low — fixed at the API: cursor is `before`+`before_id` or neither | `list_public_cinema_titles_page` uses `<=` when only `p_before` is given, so a row can repeat across pages. | `supabase/0163` | Use `<` or require the id tiebreak. |
 | S16 | low | ~~`report_social_post_progress` accepts a NULL `next_check_at`, stranding a `submitted` row~~ (fixed by 0168); `consume_youtube_upload_quota` uses server-timezone `current_date`. | `supabase/0161` | Guard NULL; use `(now() AT TIME ZONE 'America/Los_Angeles')::date` (YouTube's quota day). |
-| S17 | low | `supabase/README.md` gap table is stale (lists 0033–0034, omits 0076, 0118, 0119, 0151, 0158). | `packages/db/schema/supabase/README.md` | Update. |
+| S17 | low — fixed | `supabase/README.md` gap table is stale (lists 0033–0034, omits 0076, 0118, 0119, 0151, 0158). | `packages/db/schema/supabase/README.md` | Update. |
 
 ## 2. Product and behaviour
 
