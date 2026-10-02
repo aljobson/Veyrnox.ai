@@ -22,7 +22,7 @@ describe('social publish foundation (0154, 0169)', { skip: !process.env.DATABASE
                     EXECUTE format('CREATE ROLE %I NOLOGIN', r);
                 END IF;
             END LOOP; END $$`);
-        for (const name of ['0154_social_publish_foundation.sql', '0169_social_publish_free_account_cap.sql']) {
+        for (const name of ['0154_social_publish_foundation.sql', '0169_social_publish_free_account_cap.sql', '0175_social_actions_actor_restrict.sql']) {
             for (const round of [1, 2]) {
                 await pool.query(await readFile(new URL(`./schema/supabase/${name}`, import.meta.url), 'utf8'));
             }
@@ -41,7 +41,8 @@ describe('social publish foundation (0154, 0169)', { skip: !process.env.DATABASE
             await pool.query(`DELETE FROM public.social_brands b WHERE b.owner_user_id = ANY($1::uuid[])
                 AND NOT EXISTS (SELECT 1 FROM public.social_account_actions a WHERE a.brand_id = b.id)`, [users]);
             const deletableUsers = (await pool.query(`SELECT id FROM public.users u WHERE u.id = ANY($1::uuid[])
-                AND NOT EXISTS (SELECT 1 FROM public.social_brands b WHERE b.owner_user_id = u.id)`, [users])).rows.map((r) => r.id);
+                AND NOT EXISTS (SELECT 1 FROM public.social_brands b WHERE b.owner_user_id = u.id)
+                AND NOT EXISTS (SELECT 1 FROM public.social_account_actions a WHERE a.actor_id = u.id)`, [users])).rows.map((r) => r.id);
             await pool.query('DELETE FROM public.users WHERE id = ANY($1::uuid[])', [deletableUsers]);
             await pool.query('DELETE FROM auth.users WHERE id = ANY($1::uuid[])', [authIds]);
         } finally { await pool.end(); }
@@ -204,6 +205,21 @@ describe('social publish foundation (0154, 0169)', { skip: !process.env.DATABASE
         assert.equal(results.filter((r) => r.ok).length, 1);
         assert.equal(results.filter((r) => r.code === 'ACCOUNT_LIMIT').length, 2);
         assert.equal(await activeCount(u.id), 1);
+    });
+
+    it('a user with Publish history cannot be deleted out from under the audit log (0175)', async () => {
+        const owner = await user();
+        const brand = await getOrCreateBrand(owner.auth);
+        // A second user referenced only as an action's actor, so actor_id is the one FK in play.
+        const actor = await user();
+        await pool.query(`INSERT INTO public.social_account_actions (actor_id, brand_id, action) VALUES ($1, $2, 'connect')`,
+            [actor.id, brand.brand_id]);
+        const fk = await one(`SELECT confdeltype FROM pg_constraint WHERE conname = 'social_account_actions_actor_id_fkey'`);
+        assert.equal(fk.confdeltype, 'r', 'ON DELETE RESTRICT');
+        // Before 0175, SET NULL fired the append-only trigger (P0001). Now the FK refuses:
+        // PG16 reports RESTRICT as 23503, PG18 as 23001.
+        await assert.rejects(pool.query('DELETE FROM public.users WHERE id = $1', [actor.id]),
+            (e: { code?: string }) => e.code === '23503' || e.code === '23001');
     });
 
     it('forces RLS and permits service-role RPC execution only, on every table', async () => {
