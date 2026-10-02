@@ -207,6 +207,16 @@
   //                               TikTok must DNS-verify the domain it pulls from and an R2
   //                               presigned URL's host is Cloudflare's, not ours. A dedicated
   //                               secret, never reused from the two above. Not yet provisioned.
+  //   CINEMA_STREAM_ACCOUNT_ID, CINEMA_STREAM_API_TOKEN
+  //                               Cloudflare Stream direct uploads, status and removal
+  //                               (lib/cinema/stream.js, ADR-0052/0053/0054)
+  //   CINEMA_STREAM_WEBHOOK_SECRET
+  //                               verifies /api/webhook/cinema-stream (lib/cinema/streamWebhook.js);
+  //                               the subscription is account-wide and points at staging until
+  //                               Cinema activation repoints it (docs/architecture/staging-rollout.md)
+  //   CINEMA_STREAM_SIGNING_KEY_ID, CINEMA_STREAM_SIGNING_JWK, CINEMA_STREAM_CUSTOMER_CODE
+  //                               RS256 signed playback tokens, at most 15 minutes, for entitled
+  //                               viewers (lib/cinema/stream.js, ADR-0057); the JWK is base64 JSON
   //
   // No R2 binding: r2.js signs plain fetch against the S3 endpoint so the
   // Worker never needs `env.MEDIA` / getCloudflareContext() in middleware.
