@@ -1,4 +1,5 @@
 'use client';
+import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppNav } from '../../_components/NavBar';
 import { Chip } from '../../_components/Chip';
@@ -270,10 +271,9 @@ export default function Library() {
       )}
 
       <section className="max-w-[1400px] mx-auto px-4 sm:px-8 pt-10 pb-4">
-        <Chip tone="accent" className="mb-3">LIBRARY · YOUR GENERATIONS</Chip>
-        <h1 className="text-[28px] sm:text-[34px] md:text-[40px] font-black tracking-[-0.02em]">Everything you&rsquo;ve made</h1>
-        <p className="text-vx-fg-body mt-2">
-          Failed jobs refund automatically — they still show here so you can retry.
+        <h1 className="vx-display text-[40px] sm:text-[56px]">Everything you&rsquo;ve made</h1>
+        <p className="text-vx-fg-body mt-3">
+          Failed jobs refund automatically. They still show here so you can retry.
         </p>
 
         <div className="mt-6 flex flex-wrap gap-2">
@@ -282,13 +282,10 @@ export default function Library() {
               key={t}
               onClick={() => setTab(t)}
               aria-pressed={tab === t}
-              className={`font-vx-mono text-[11px] tracking-[0.12em] font-bold rounded-full px-4 py-2 border ${
-                tab === t
-                  ? 'bg-vx-panel text-vx-fg border-vx-border'
-                  : 'border-transparent text-vx-fg-muted hover:text-vx-fg'
-              }`}
+              type="button"
+              className="vx-press rounded-full border px-4 py-2 text-[14px] font-semibold capitalize border-vx-border text-vx-fg-body hover:border-vx-fg-muted aria-pressed:border-vx-fg aria-pressed:bg-vx-fg aria-pressed:text-vx-base"
             >
-              {t.toUpperCase()}
+              {t}
             </button>
           ))}
         </div>
@@ -296,12 +293,14 @@ export default function Library() {
 
       <section className="max-w-[1400px] mx-auto px-4 sm:px-8 pb-16">
         {!historyLoaded ? null : list.length === 0 ? (
-          <div className="rounded-2xl border border-vx-border bg-vx-panel p-12 text-center">
-            <div className="font-vx-mono text-[11px] tracking-[0.12em] text-vx-fg-muted">EMPTY</div>
-            <div className="text-lg font-black mt-2">Nothing here yet.</div>
-            <div className="text-sm text-vx-fg-muted mt-1">
-              Head to Create and press Generate — jobs will appear here as they run.
+          <div className="rounded-2xl border border-dashed border-vx-border p-12 text-center">
+            <div className="text-lg font-black">Nothing here yet.</div>
+            <div className="text-[15px] text-vx-fg-body mt-1">
+              Jobs appear here as they run, failed ones included.
             </div>
+            <Link href="/app/create" className="vx-press inline-block mt-5 rounded-full bg-vx-accent text-vx-accent-ink px-5 py-2.5 text-sm font-extrabold hover:bg-vx-accent-hover">
+              Open the studio
+            </Link>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -315,9 +314,10 @@ export default function Library() {
           <div className="mt-6 flex justify-center">
             <button
               onClick={() => (hasMore ? setVisible((v) => v + PAGE) : loadOlder())}
-              className="font-vx-mono text-[11px] tracking-[0.12em] font-bold rounded-full px-5 py-2.5 border border-vx-border bg-vx-panel text-vx-fg hover:text-vx-fg"
+              type="button"
+              className="vx-press rounded-full px-5 py-2.5 border border-vx-border text-[14px] font-bold text-vx-fg hover:border-vx-fg-muted"
             >
-              {hasMore ? `LOAD MORE · ${rows.length - visible} OLDER` : 'LOAD OLDER'}
+              {hasMore ? `Show ${rows.length - visible} older` : 'Load older'}
             </button>
           </div>
         )}

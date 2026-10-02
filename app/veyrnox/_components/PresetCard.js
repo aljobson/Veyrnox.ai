@@ -1,6 +1,5 @@
 import Link from 'next/link';
-import { Chip } from './Chip';
-import { presetHref, presetCredits } from '../_lib/tokens.js';
+import { presetHref, presetCredits, presetTitle } from '../_lib/tokens.js';
 
 // Preset card: thumbnail carries color, monochrome chrome around it.
 //
@@ -25,25 +24,18 @@ export function PresetCard({ preset, size = 'md', onClick, catalog }) {
       href={href}
       onClick={onClick}
       aria-label={`Open the ${preset.name} preset in the studio`}
-      className="group block text-left w-full rounded-2xl border border-vx-border bg-vx-panel overflow-hidden transition-transform duration-200 ease-out hover:scale-[1.015]"
+      className="vx-tile group block text-left w-full"
     >
-      <div
-        className={`${s.h} relative`}
-        style={{ background: preset.bg }}
-      >
-        {preset.badge && (
-          <span className="absolute top-3 left-3">
-            <Chip tone="neutral" className="bg-black/45 backdrop-blur">{preset.badge}</Chip>
-          </span>
-        )}
-      </div>
-      <div className="px-4 py-3 flex items-start justify-between gap-3">
+      <div className={`${s.h} rounded-2xl`} style={{ background: preset.bg }} />
+      <div className="pt-3 flex items-baseline gap-2">
         <div className="min-w-0">
-          <div className={`font-extrabold tracking-tight truncate ${s.title}`}>{preset.name}</div>
+          <div className={`font-extrabold tracking-tight truncate ${s.title}`}>{presetTitle(preset.name)}</div>
           <div className="mt-0.5 text-vx-fg-muted text-xs truncate">{preset.model}</div>
         </div>
-        <div className="shrink-0 font-vx-mono text-[13px] font-bold text-vx-money vx-num pt-1">{presetCredits(preset, catalog)} cr</div>
+        <span aria-hidden className="vx-leader flex-1 self-start mt-3 text-vx-fg-muted" />
+        <div className="shrink-0 self-start font-vx-mono text-[14px] font-bold text-vx-money vx-num pt-0.5">{presetCredits(preset, catalog)} cr</div>
       </div>
     </Link>
   );
 }
+

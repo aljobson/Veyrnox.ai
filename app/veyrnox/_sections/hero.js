@@ -1,43 +1,13 @@
 import Link from 'next/link';
 import { Logo } from '../_components/Logo';
-import { Chip } from '../_components/Chip';
 import { NavAuthButtons } from '../_components/NavAuthButtons';
 import { MobileMenu } from '../_components/MobileMenu';
 import { SiteSearch } from '../_components/SiteSearch';
 import { ThemeToggle } from '../_components/ThemeToggle';
 import { MediaTile } from '../_components/MediaTile';
 import { SHOWCASE_CLIPS } from '../_lib/showcase';
-import {
-  NAV_CATEGORIES,
-  FEATURE_CARDS,
-  PRODUCT_TILES,
-  MORE_FEATURES,
-  METRIC_STRIP,
-  PILLARS,
-  FAQ,
-  PROMO_STRIP,
-  HERO_CHIP,
-  FOOTER_TAGLINE,
-  footerStamp,
-  SITE_UPDATED,
-  SUPPORT_EMAIL,
-  MODELS as MODELS_FALLBACK,
-  kindOf,
-} from '../_lib/tokens';
-
-export function PromoStrip() {
-  return (
-    <div data-print="hide" className="bg-vx-money text-vx-money-ink text-[12px] sm:text-[13px] font-bold px-4 sm:px-6 py-2 flex items-center justify-center gap-2 sm:gap-3 flex-wrap text-center">
-      <span>{PROMO_STRIP.message}</span>
-      <Link
-        href={PROMO_STRIP.href}
-        className="bg-vx-base text-vx-fg rounded-full px-3 py-1 text-[11px] font-bold hover:opacity-80"
-      >
-        {PROMO_STRIP.cta}
-      </Link>
-    </div>
-  );
-}
+import { NAV_CATEGORIES, FEATURE_CARDS, PRESETS, shelfName } from '../_lib/tokens';
+import { PriceSlip } from '../_components/PriceSlip';
 
 /* ─── Wide sticky nav ─── */
 
@@ -73,130 +43,73 @@ export function WideNav() {
   );
 }
 
-/* ─── Featured hero cards (5 wide, kicker + title + Open) ─── */
+/* ─── Hero: the promise on the left, the working price slip on the right ─── */
 
-export function FeaturedHeroCards() {
+export function Hero({ models }) {
   return (
-    <section id="explore" className="px-4 sm:px-6 pt-8 max-w-[1400px] mx-auto">
-      <Hero />
-      <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-        {FEATURE_CARDS.map((f, i) => (
-          <MediaTile
-            key={f.key}
-            href={f.href}
-            clip={SHOWCASE_CLIPS[f.key]}
-            className="vx-rise block text-left rounded-2xl border border-vx-border bg-vx-panel overflow-hidden"
-            style={{ '--vx-i': i }}
-            mediaClassName="aspect-[4/5]"
-            mediaStyle={{ background: f.bg }}
-          >
-            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
-            <div className="absolute inset-x-0 bottom-0 p-4 flex flex-col gap-2">
-              {/* Fixed light ink, not theme tokens: this sits on a hardcoded
-                  dark gradient under a from-black scrim, so --vx-fg would
-                  resolve to near-black in light theme and the card would
-                  read at 1.06:1. See PresetWall in showcase.js. */}
-              <div className="font-vx-mono text-[10px] tracking-[0.14em] text-white/85">
-                {f.kicker}
-              </div>
-              <div className="font-black text-[16px] leading-tight text-balance text-white">{f.title}</div>
-              <div className="text-[12px] text-white/85 leading-snug">{f.body}</div>
-              <span className="mt-1 inline-flex items-center gap-1 font-vx-mono text-[10px] tracking-[0.12em] text-vx-accent">
-                {f.cta} →
-              </span>
-            </div>
-          </MediaTile>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-/* ─── Hero (headline + sub + CTAs + trust row) ─── */
-
-export function Hero() {
-  return (
-    <div className="relative overflow-hidden">
-      <div
-        aria-hidden
-        className="absolute inset-0 opacity-40 pointer-events-none"
-        style={{
-          background:
-            'radial-gradient(60% 55% at 50% 20%, rgba(62,230,196,0.14), transparent 65%),' +
-            'radial-gradient(45% 40% at 15% 80%, rgba(228,169,60,0.12), transparent 65%)',
-        }}
-      />
-      <div className="relative max-w-[1200px] mx-auto pt-10 sm:pt-16 pb-8 flex flex-col items-center text-center gap-5 sm:gap-6">
-        <Chip tone="accent" noGlyph>{HERO_CHIP}</Chip>
-        <h1 className="text-[28px] sm:text-[40px] md:text-[44px] lg:text-[52px] font-black leading-[1.05] md:leading-[1.02] tracking-[-0.03em] md:tracking-[-0.035em] text-balance max-w-[1200px]">
-          One prompt in. Endless creations out.<br />
-          <span className="text-vx-accent">Priced on the button.</span>
-        </h1>
-        <p className="text-base sm:text-lg text-vx-fg-body max-w-[640px] leading-[1.6]">
-          Credit-metered AI image, video and audio. See the exact cost before you press generate.
-          Failed jobs refund, always.
-        </p>
-        <div className="flex gap-3 mt-2 flex-wrap justify-center">
-          <Link
-            href="/app/create"
-            className="rounded-full bg-vx-accent text-vx-accent-ink px-8 py-4 text-base font-extrabold hover:bg-vx-accent-hover"
-          >
-            Start creating
-          </Link>
-          <Link
-            href="/pricing"
-            className="rounded-full border border-vx-border text-vx-fg px-8 py-4 text-base font-bold hover:border-vx-accent"
-          >
-            See pricing
-          </Link>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ─── Sign-up incentive over hero gradient ─── */
-
-export function SignupIncentive() {
-  return (
-    <section className="px-4 sm:px-6 pt-8 max-w-[1400px] mx-auto">
-      <div
-        className="relative rounded-3xl overflow-hidden border border-vx-border"
-        style={{ background: 'linear-gradient(135deg,#0a1a2c 0%,#0e3a4a 45%,#2ec8a3 100%)' }}
-      >
-        <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-transparent" />
-        <div className="relative p-6 sm:p-10 lg:p-14">
-          <div className="max-w-[560px]">
-            <Chip tone="money" className="mb-4">SIGN-UP BONUS</Chip>
-            {/* Fixed dark surface again - see FeaturedHeroCards. */}
-            <h2 className="text-[28px] sm:text-[36px] lg:text-[44px] font-black leading-[1.05] lg:leading-[1.02] tracking-[-0.03em] text-balance text-white">
-              10 free credits.<br/>
-              <span className="text-vx-accent">Every button shows its price.</span>
-            </h2>
-            <ul className="mt-5 space-y-2 text-[14px] text-white/85">
-              <li className="flex gap-2"><span className="text-vx-accent">✓</span> Every model on one balance</li>
-              <li className="flex gap-2"><span className="text-vx-accent">✓</span> Failed jobs refund automatically</li>
-              <li className="flex gap-2"><span className="text-vx-accent">✓</span> No card required to browse</li>
-            </ul>
-            <div className="mt-6 flex flex-wrap gap-3">
-              <Link
-                href="/app?auth=sign_up"
-                className="whitespace-nowrap rounded-full bg-vx-accent text-vx-accent-ink px-6 py-3 text-sm font-extrabold hover:bg-vx-accent-hover"
-              >
-                Claim 10 credits
-              </Link>
-              <Link
-                href="/presets"
-                className="whitespace-nowrap rounded-full border border-white/30 text-white px-6 py-3 text-sm font-bold hover:border-white"
-              >
-                Browse presets free
-              </Link>
-            </div>
+    <section className="relative px-4 sm:px-6 max-w-[1300px] mx-auto pt-12 sm:pt-16 lg:pt-20 pb-16 lg:pb-24">
+      <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-12 lg:gap-16 items-start">
+        <div className="lg:pt-10">
+          <h1 className="vx-display text-[52px] sm:text-[76px] lg:text-[92px] text-balance">
+            The price is on the button.
+          </h1>
+          <p className="mt-6 text-lg sm:text-xl text-vx-fg-body max-w-[40ch] leading-[1.5] text-pretty">
+            Image, video and audio models on one credit balance. Failed jobs refund on their own.
+          </p>
+          <div className="mt-9 flex flex-wrap items-center gap-x-6 gap-y-4">
+            <Link
+              href="/app?auth=sign_up"
+              className="vx-press rounded-full bg-vx-fg text-vx-base px-7 py-3.5 text-[15px] font-extrabold hover:bg-vx-fg/85"
+            >
+              Claim 10 credits
+            </Link>
+            <Link href="/pricing" className="text-[15px] font-bold text-vx-fg-body underline decoration-vx-border decoration-2 underline-offset-[6px] hover:text-vx-fg hover:decoration-vx-accent">
+              See every price
+            </Link>
           </div>
         </div>
+        <PriceSlip models={models} />
       </div>
     </section>
   );
 }
 
-/* ─── Product tiles ─── */
+/* ─── What it makes: five tiles, each opens a model or the presets ─── */
+
+const modelOf = (href) => new URL(href, 'https://x').searchParams.get('model');
+
+export function FeaturedHeroCards({ catalog }) {
+  const rowOf = (id) => catalog.find((m) => m.id === id);
+  return (
+    <section id="explore" className="px-4 sm:px-6 max-w-[1300px] mx-auto">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+        {FEATURE_CARDS.map((f, i) => {
+          const row = rowOf(modelOf(f.href));
+          return (
+            <MediaTile
+              key={f.key}
+              href={f.href}
+              clip={SHOWCASE_CLIPS[f.key]}
+              className="vx-rise block text-left rounded-2xl overflow-hidden"
+              style={{ '--vx-i': i }}
+              mediaClassName="aspect-[4/5]"
+              mediaStyle={{ background: f.bg }}
+            >
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/15 to-transparent" />
+              {/* Fixed light ink: these sit on a hardcoded dark gradient under
+                  a black scrim in both themes. */}
+              <div className="absolute inset-x-0 bottom-0 p-4 flex flex-col gap-3">
+                <div className="font-black text-[17px] leading-[1.15] text-balance text-white">{f.title}</div>
+                <div className="flex items-baseline gap-2 font-vx-mono text-[12px] text-white/90 vx-num">
+                  <span className="truncate">{row ? shelfName(row.name) : 'Presets'}</span>
+                  <span aria-hidden className="vx-leader flex-1" />
+                  <span className="shrink-0 font-bold">{row ? `${row.credits} cr` : `${PRESETS.length} looks`}</span>
+                </div>
+              </div>
+            </MediaTile>
+          );
+        })}
+      </div>
+    </section>
+  );
+}

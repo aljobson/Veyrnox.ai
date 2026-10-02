@@ -23,7 +23,9 @@ export function MarketingNav() {
     { href: '/pricing', label: 'Pricing' },
   ];
   return (
-    <div data-print="hide" className="sticky top-0 z-40 flex items-center justify-between gap-3 px-4 sm:px-8 h-16 border-b border-vx-border bg-vx-base/[0.88] backdrop-blur">
+    <div data-print="hide" className="sticky top-0 z-40 h-16 border-b border-vx-border bg-vx-base/[0.88] backdrop-blur">
+      {/* Same 1300px column as the page body, so the logo sits on its edge. */}
+      <div className="h-full max-w-[1300px] mx-auto px-4 sm:px-6 flex items-center justify-between gap-3">
       <Link href="/" aria-label="Veyrnox.ai — home" className="flex items-center gap-2.5 shrink-0">
         <Logo wordmark />
       </Link>
@@ -52,6 +54,7 @@ export function MarketingNav() {
         {/* Below sm the links above are hidden — without this the only way
             off this page was the browser back button. */}
         <MobileMenu items={items} className="lg:hidden" />
+      </div>
       </div>
     </div>
   );

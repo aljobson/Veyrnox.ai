@@ -76,6 +76,16 @@ export const PRESETS = [
   { id: 'clean-cutout', name: 'CLEAN CUTOUT', model: 'Background Removal', credits: 3, category: 'ADS',       bg: 'linear-gradient(135deg,#1a1a0a 0%,#4a4a1e 55%,#c0c060 100%)' },
 ];
 
+// Preset names are stored upper-case for the studio's chips. Shown as a title
+// they read better in title case, except for the acronyms they contain.
+const PRESET_ACRONYMS = new Set(['CCTV', 'UGC', 'VFX', 'AI']);
+export function presetTitle(name) {
+  return String(name || '')
+    .split(/(\s+)/)
+    .map((w) => (PRESET_ACRONYMS.has(w) ? w : w.charAt(0) + w.slice(1).toLowerCase()))
+    .join('');
+}
+
 /**
  * PRESETS carry a model display name ("Wan 2.5"), the catalog carries ids
  * ("wan-2.5"). A preset card needs the id to preselect anything, so map it
