@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
     IMAGE_COUNTS, takesImageCount, imageCount, totalCost, seedForIndex, inputsForIndex, batchNote, sendInOrder,
+    submitErrorCode,
 } from '../app/veyrnox/_lib/imageBatch.js';
 import { SEED_MAX } from '../app/veyrnox/_lib/generationSettings.js';
 
@@ -53,11 +54,30 @@ test('a set seed shifts only in a batch; no seed stays absent', () => {
 });
 
 test('the failure note says how many of the batch started', () => {
-    assert.equal(batchNote(0, 1), '');
-    assert.equal(batchNote(1, 1), '');
-    assert.equal(batchNote(0, 4), '0 of 4 started.');
-    assert.match(batchNote(2, 4), /^2 of 4 started\./);
-    assert.match(batchNote(2, 4), /Only those were charged\./);
+    assert.equal(batchNote(0, 1, 'rate_limited'), '');
+    assert.equal(batchNote(1, 1, 'outcome_unknown'), '');
+    assert.equal(batchNote(0, 4, 'rate_limited'), '0 of 4 started; image 1 did not.');
+    assert.equal(batchNote(2, 4, 'insufficient_balance'), '2 of 4 started; image 3 did not.');
+});
+
+test('the note never claims what was charged; an unknown outcome points to Library', () => {
+    for (const code of ['rate_limited', 'insufficient_balance', 'provider_submit_failed', 'outcome_unknown']) {
+        assert.doesNotMatch(batchNote(2, 4, code), /charged/i, code);
+    }
+    assert.equal(batchNote(2, 4, 'outcome_unknown'), '2 of 4 started; image 3 may have too — check Library.');
+});
+
+test('a submit whose reply was lost is reported as an unknown outcome', () => {
+    // Dropped connection / client throw, non-JSON 5xx, ledger_debit RPC error,
+    // session swap after the reply: the gateway may have debited request k.
+    for (const code of ['internal', 'gateway_error', 'debit_failed', 'account_changed']) {
+        assert.equal(submitErrorCode(code), 'outcome_unknown', code);
+    }
+    // Refusals the gateway answered before (or refunded after) the debit keep their own copy.
+    for (const code of ['rate_limited', 'insufficient_balance', 'account_frozen', 'debit_rejected',
+        'model_gated', 'consent_required', 'provider_submit_failed', 'provider_moderation', 'unauthenticated']) {
+        assert.equal(submitErrorCode(code), code, code);
+    }
 });
 
 test('sendInOrder sends one at a time, in order', async () => {

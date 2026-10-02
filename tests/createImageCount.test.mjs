@@ -7,6 +7,7 @@ const read = (p) => readFileSync(new URL(p, import.meta.url), 'utf8');
 const page = read('../app/veyrnox/app/create/page.js');
 const hook = read('../app/veyrnox/_lib/useStudioJobs.js');
 const grid = read('../app/veyrnox/_components/StudioJobGrid.js');
+const errors = read('../app/veyrnox/_lib/createErrors.js');
 
 const submit = page.slice(page.indexOf('async function onSubmit()'), page.indexOf('function cancel()'));
 const sendOne = submit.slice(submit.indexOf('await sendInOrder('));
@@ -46,10 +47,10 @@ test('N idempotency keys are minted up front, one per request', () => {
 test('requests go one at a time and the first failure stops the rest', () => {
     assert.match(submit, /const \{ started, error: failure \} = await sendInOrder\(n, async \(i\) => \{/);
     assert.equal(/Promise\.(all|allSettled|race|any)\(/.test(page), false, 'never sent in parallel');
-    assert.match(submit, /if \(failure\) setError\(\{ \.\.\.errorFor\(failure\), note: batchNote\(started, n\) \}\);/);
+    assert.match(submit, /const code = submitErrorCode\(err\.code\);\s*setError\(\{ \.\.\.err, code, note: batchNote\(started, n, code\) \}\);/);
     assert.match(page, /\{error\.note && ` \$\{error\.note\}`\}/);
     // Every accepted job is tracked, recorded, and priced per unit.
-    assert.match(sendOne, /addJob\(\{ job_id: submitted\.job_id, state: 'queued', credits: unitCost, model_id: modelId \}\);/);
+    assert.match(sendOne, /\(i === 0 \? startJobs : addJob\)\(\{ job_id: submitted\.job_id, state: 'queued', credits: unitCost, model_id: modelId \}\);/);
     assert.match(sendOne, /pushJobHistory\(\{/);
     assert.match(sendOne, /setBalance\(submitted\.balance_after\);/);
 });
@@ -70,6 +71,26 @@ test('one job keeps the single canvas; more get the grid', () => {
     assert.match(grid, /grid grid-cols-2/);
     assert.match(grid, /STATE_UI\[job\.state\]/);
     assert.match(grid, /<JobAssetPreview job=\{job\} \/>/);
+    assert.match(grid, /\{failedJobCopy\(job\)\}/);
     // New generation clears every job and claims no cancelled charge.
     assert.match(page, /function cancel\(\) \{\s*clearJobs\(\);\s*setError\(null\);\s*\}/);
+});
+
+test('a new click replaces the last click\'s jobs instead of piling onto them', () => {
+    // The hook appends; only startJobs resets the list, and it is the hook's only other setter.
+    assert.match(hook, /const startJobs = useCallback\(\(job\) => setJobs\(\[job\]\), \[\]\);/);
+    assert.match(hook, /return \{ jobs, generating, startJobs, addJob, clearJobs \};/);
+    // onSubmit only runs once every earlier job has settled, and its first
+    // accepted job resets the list, so one image keeps the single canvas.
+    assert.match(page, /onClick=\{generating \? cancel : onSubmit\}/);
+    assert.equal((page.match(/\baddJob\(/g) || []).length, 0, 'addJob is never called unconditionally');
+    assert.equal((page.match(/startJobs/g) || []).length, 2, 'destructured once, used once');
+    assert.ok(sendOne.indexOf('(i === 0 ? startJobs : addJob)(') !== -1);
+});
+
+test('a lost reply says it may have been charged, never that it was refunded', () => {
+    const line = errors.split('\n').find((l) => /^\s*outcome_unknown:/.test(l)) || '';
+    assert.match(line, /may have started and been charged/);
+    assert.match(line, /Library/);
+    assert.doesNotMatch(line, /refunded|Nothing was charged/i);
 });

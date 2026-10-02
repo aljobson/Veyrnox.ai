@@ -1,7 +1,7 @@
 'use client';
 import { JobAssetPreview } from './JobAssetPreview';
 import { STATE_UI } from '../_lib/studioStates';
-import { ERROR_COPY } from '../_lib/createErrors';
+import { failedJobCopy } from '../_lib/createErrors';
 
 // The studio canvas when one click made 2–4 images: one tile per job.
 export function StudioJobGrid({ jobs, aspect }) {
@@ -26,8 +26,7 @@ export function StudioJobGrid({ jobs, aspect }) {
                   </div>
                   {job.state === 'failed' && (
                     <div className="mt-2 text-xs text-vx-fg-body">
-                      {ERROR_COPY[job.error_code]
-                        || (job.refunded ? 'Something went wrong. Credits refunded.' : 'Something went wrong. Your credits are on their way back.')}
+                      {failedJobCopy(job)}
                     </div>
                   )}
                 </div>

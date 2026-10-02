@@ -4,12 +4,12 @@ import { AppNav } from '../../_components/NavBar';
 import { Chip } from '../../_components/Chip';
 import { ASPECT_RATIOS } from '../../_lib/tokens';
 import { gatewayFetch, makeIdempotencyKey, notifyBalanceChanged, GatewayError } from '../../_lib/gateway';
-import { ERROR_COPY } from '../../_lib/createErrors';
+import { ERROR_COPY, failedJobCopy } from '../../_lib/createErrors';
 import { pushJobHistory } from '../../_lib/jobHistory';
 import { JobAssetPreview } from '../../_components/JobAssetPreview';
 import { StudioJobGrid } from '../../_components/StudioJobGrid';
 import { useStudioJobs } from '../../_lib/useStudioJobs';
-import { IMAGE_COUNTS, takesImageCount, imageCount, totalCost, inputsForIndex, batchNote, sendInOrder } from '../../_lib/imageBatch';
+import { IMAGE_COUNTS, takesImageCount, imageCount, totalCost, inputsForIndex, batchNote, sendInOrder, submitErrorCode } from '../../_lib/imageBatch';
 import { useCatalog } from '../../_lib/useCatalog';
 import { takeStudioDraft } from '../../_lib/landingDraft';
 import { DEFAULT_CINEMA, buildCinemaPrompt } from '../../_lib/cinema';
@@ -66,7 +66,7 @@ export default function CreateStudio() {
   const [balance, setBalance] = useState(null);
   const [error, setError] = useState(null);
   const onUnreachable = useCallback(() => setError({ code: 'poll_unreachable' }), []);
-  const { jobs, generating, addJob, clearJobs } = useStudioJobs({ onUnreachable });
+  const { jobs, generating, startJobs, addJob, clearJobs } = useStudioJobs({ onUnreachable });
   const job = jobs.length === 1 ? jobs[0] : null;
   // True while a batch is still being sent, so New generation cannot clear it halfway.
   const [sending, setSending] = useState(false);
@@ -244,7 +244,8 @@ export default function CreateStudio() {
             consent: anySource ? true : undefined,
           }),
         });
-        addJob({ job_id: submitted.job_id, state: 'queued', credits: unitCost, model_id: modelId });
+        // The first accepted job replaces the previous click's jobs.
+        (i === 0 ? startJobs : addJob)({ job_id: submitted.job_id, state: 'queued', credits: unitCost, model_id: modelId });
         pushJobHistory({
           job_id: submitted.job_id,
           model_id: modelId,
@@ -255,7 +256,11 @@ export default function CreateStudio() {
         setBalance(submitted.balance_after);
       });
       if (started > 0) notifyBalanceChanged();
-      if (failure) setError({ ...errorFor(failure), note: batchNote(started, n) });
+      if (failure) {
+        const err = errorFor(failure);
+        const code = submitErrorCode(err.code);
+        setError({ ...err, code, note: batchNote(started, n, code) });
+      }
     } catch (e) {
       setError(errorFor(e));
     } finally {
@@ -312,10 +317,7 @@ export default function CreateStudio() {
                         <span aria-hidden="true">✕</span> FAILED · REFUNDED
                       </div>
                       <div className="mt-2 text-sm text-vx-fg-body">
-                        {ERROR_COPY[job.error_code]
-                          || (job.refunded
-                            ? 'Something went wrong. Credits refunded.'
-                            : 'Something went wrong. Your credits are on their way back.')}
+                        {failedJobCopy(job)}
                       </div>
                     </div>
                   ) : (

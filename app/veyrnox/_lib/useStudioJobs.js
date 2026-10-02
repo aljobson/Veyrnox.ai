@@ -24,6 +24,9 @@ export function useStudioJobs({ onUnreachable }) {
   const generating = jobs.some((j) => isPending(j.state));
   const pendingKey = jobs.filter((j) => isPending(j.state)).map((j) => j.job_id).join(',');
 
+  // A new click's first accepted job replaces the last click's (settled) jobs;
+  // the rest of its batch is appended. Until then the old result stays shown.
+  const startJobs = useCallback((job) => setJobs([job]), []);
   const addJob = useCallback((job) => setJobs((prev) => [...prev, job]), []);
   const clearJobs = useCallback(() => setJobs([]), []);
 
@@ -73,5 +76,5 @@ export function useStudioJobs({ onUnreachable }) {
     return () => { stopped = true; clearInterval(timer); };
   }, [pendingKey]);
 
-  return { jobs, generating, addJob, clearJobs };
+  return { jobs, generating, startJobs, addJob, clearJobs };
 }

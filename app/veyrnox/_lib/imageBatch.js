@@ -32,11 +32,27 @@ export function inputsForIndex(inputs, i, count) {
   return { ...inputs, seed: seedForIndex(inputs.seed, i) };
 }
 
-/** How many of a batch started, for the failure banner. Empty for a single image. */
-export function batchNote(started, count) {
+// Codes where the gateway may have debited (and submitted) the request before
+// the reply was lost: a dropped connection or client-side throw ('internal'),
+// a non-JSON 5xx, a ledger_debit RPC error, or a session swap after the reply.
+const OUTCOME_UNKNOWN = new Set(['internal', 'gateway_error', 'debit_failed', 'account_changed']);
+
+/** The banner code for a failed submit: an unread reply may hide a charge. */
+export function submitErrorCode(code) {
+  return OUTCOME_UNKNOWN.has(code) ? 'outcome_unknown' : code;
+}
+
+/**
+ * How many of a batch started, for the failure banner. Empty for a single
+ * image. It makes no charge claim: ERROR_COPY words that for the failing
+ * request, and an unknown outcome may have been charged.
+ */
+export function batchNote(started, count, code) {
   if (count <= 1) return '';
-  if (started === 0) return `0 of ${count} started.`;
-  return `${started} of ${count} started. Only those were charged.`;
+  const next = started + 1;
+  return code === 'outcome_unknown'
+    ? `${started} of ${count} started; image ${next} may have too — check Library.`
+    : `${started} of ${count} started; image ${next} did not.`;
 }
 
 /**
