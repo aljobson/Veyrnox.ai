@@ -1,5 +1,6 @@
 /**
- * Credit Packs with no provider variant can be bought (0167, ADR-0031/0037).
+ * Credit Packs with no provider variant can be bought (0167, ADR-0031/0037),
+ * and a flagged order is an append-only record (0174).
  *
  * 0121 added web-270, web-1200 and web-3000 with variant_id NULL. Before 0167,
  * create_pending_top_up returned PACK_NOT_FOUND for them. These tests buy a
@@ -27,6 +28,7 @@ const MIGRATIONS = [
     "0066_freeze_since_purchase.sql",
     "0097_stripe_money_path_ids.sql",
     "0167_stripe_packs_without_variant.sql",
+    "0174_flagged_orders_append_only.sql",
 ].map((f) => new URL(`./schema/supabase/${f}`, import.meta.url));
 
 describe("Credit Packs without a variant (0167)", { skip: !DATABASE_URL && "DATABASE_URL not set" }, () => {
@@ -119,6 +121,19 @@ describe("Credit Packs without a variant (0167)", { skip: !DATABASE_URL && "DATA
         const res = await credit(top_up_id, 1);
         assert.deepEqual([res.ok, res.code, res.flagged], [false, "AMOUNT_MISMATCH", true]);
         assert.equal(await balance(userId), before);
+    });
+
+    it("keeps a flagged order as an append-only record (0174)", async () => {
+        const { authId } = await newUser();
+        const { top_up_id } = await start(authId, await pack());
+        assert.equal((await credit(top_up_id, 1)).code, "AMOUNT_MISMATCH");
+        const row = await one(`SELECT order_id FROM public.top_up_flagged_orders WHERE top_up_id = $1`, [top_up_id]);
+        assert.ok(row, "the mismatch was flagged");
+        await assert.rejects(pool.query(`UPDATE public.top_up_flagged_orders SET reason = 'amount_mismatch' WHERE order_id = $1`, [row.order_id]),
+            /append-only \(attempted UPDATE\)/);
+        await assert.rejects(pool.query(`DELETE FROM public.top_up_flagged_orders WHERE order_id = $1`, [row.order_id]),
+            /append-only \(attempted DELETE\)/);
+        assert.ok(await one(`SELECT 1 AS ok FROM public.top_up_flagged_orders WHERE order_id = $1`, [row.order_id]));
     });
 
     it("still refuses an inactive pack", async () => {
