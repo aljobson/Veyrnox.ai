@@ -196,6 +196,41 @@ test('missing media on a claimed target fails cleanly instead of dispatching', a
     });
 });
 
+test('passes the claim key back with the report (0168)', async () => {
+    await withFetch({
+        claim_due_social_post_targets: async () => [target({ network: 'pinterest', claim_key: 'k-1' })],
+        complete_social_post_target: async (body) => {
+            assert.equal(body.p_claim_key, 'k-1');
+            return { ok: true };
+        },
+    }, async () => {
+        const out = await runPublishSweep({ cfg, cryptoCfg, r2cfg });
+        assert.deepEqual(out, { ok: true, claimed: 1, published: 0, failed: 1, errors: 0 });
+    });
+});
+
+test('omits the claim key when the claim returned none (pre-0168 functions)', async () => {
+    await withFetch({
+        claim_due_social_post_targets: async () => [target({ network: 'pinterest' })],
+        complete_social_post_target: async (body) => {
+            assert.equal('p_claim_key' in body, false);
+            return { ok: true };
+        },
+    }, async () => {
+        await runPublishSweep({ cfg, cryptoCfg, r2cfg });
+    });
+});
+
+test('a lost claim is counted on its own, not as published or failed', async () => {
+    await withFetch({
+        claim_due_social_post_targets: async () => [target({ network: 'pinterest', claim_key: 'stale' })],
+        complete_social_post_target: async () => ({ ok: false, code: 'CLAIM_LOST' }),
+    }, async () => {
+        const out = await runPublishSweep({ cfg, cryptoCfg, r2cfg });
+        assert.deepEqual(out, { ok: true, claimed: 1, published: 0, failed: 0, errors: 0, claimLost: 1 });
+    });
+});
+
 test('one target throwing during dispatch does not sink the rest of the batch', async () => {
     await withFetch({
         claim_due_social_post_targets: async () => [

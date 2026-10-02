@@ -156,11 +156,11 @@ browser JWT may call.
 | table | columns | keys and rules |
 |---|---|---|
 | `social_brands` | id, owner_user_id, label, timezone | → users (RESTRICT); one default brand per user |
-| `social_accounts` | id, brand_id, network, external_account_id, display_name, scopes_granted, access_token_enc / refresh_token_enc (AES-GCM bytea), token_expires_at, status (active/expired/revoked/error) | → brands (CASCADE); U (brand, network, external id) |
+| `social_accounts` | id, brand_id, network, external_account_id, display_name, scopes_granted, access_token_enc / refresh_token_enc (AES-GCM bytea; cleared on disconnect, 0168), token_expires_at, status (active/expired/revoked/error) | → brands (CASCADE); U (brand, network, external id); a token is required unless revoked |
 | `social_account_actions` | actor_id, brand_id, action, target_id, detail | append-only |
 | `social_posts` | id, brand_id, created_by_user_id, status, scheduled_at, global_text, idempotency_key | U (brand_id, idempotency_key) |
 | `social_post_media` | post_id, position, media_type, source_job_id → jobs | the caller's own generated asset |
-| `social_post_targets` | post_id, account_id, network, text_override, publish_status (pending/publishing/submitted/delivered/published/failed), attempts, claimed_at, next_attempt_at, last_error, platform_post_id/url, provider_state | U (post_id, account_id); claimed by the cron sweep |
+| `social_post_targets` | post_id, account_id, network, text_override, publish_status (pending/publishing/submitted/delivered/published/failed), attempts, claimed_at, claim_key, next_attempt_at, last_error, platform_post_id/url, provider_state | U (post_id, account_id); claimed by the cron sweep; only the current `claim_key` may report (0168) |
 
 ## 4. Key RPCs
 
@@ -173,7 +173,7 @@ browser JWT may call.
 | rate limits | `check_generation_rate_limit`, `consume_*_request` (×9), `consume_youtube_upload_quota`, `reserve_upload`, `release_upload` |
 | admin | `ops_metrics_24h`, `admin_lookup_user`, `record_content_violation`, `list_content_violations` (all check `users.is_admin`) |
 | Cinema | profile/creator/draft/upload/unlock/pass/publication/operator families (~45 functions) |
-| Publish | `get_or_create_default_social_brand`, `list_social_accounts`, `record_social_account_connection`, `disconnect_social_account`, `create_social_post`, `list_social_posts`, `claim_due_social_post_targets`, `report_social_post_progress`, `complete_social_post_target`, `update_social_account_token` |
+| Publish | `get_or_create_default_social_brand`, `list_social_accounts`, `record_social_account_connection`, `disconnect_social_account`, `create_social_post`, `list_social_posts`, `claim_due_social_post_targets`, `report_social_post_progress`, `complete_social_post_target`, `update_social_account_token`; internal `settle_social_post`, `social_fail_inactive_targets` (0168) |
 
 Anon-callable by design (read-only status): `catalog_watch`,
 `applied_migration_names`, `reconcile_status`, `recovery_status`.
