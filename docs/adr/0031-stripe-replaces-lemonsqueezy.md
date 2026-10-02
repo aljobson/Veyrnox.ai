@@ -149,6 +149,18 @@ per-credit floors in ADR-0018; and what Stripe's MoR status means for the UK/EU
 consumer cancellation wording in the Refund Policy, which still describes a
 refund from us.
 
+### 2026-10-02 — packs no longer need a variant (0167)
+
+The Consequences bullet that `credit_packs.variant_id` "stays populated and
+`NOT NULL`-checked by `create_pending_top_up`" stopped holding when 0121
+(ADR-0037) added `web-270`, `web-1200` and `web-3000` with no variant: every
+purchase of them returned `PACK_NOT_FOUND`. Migration 0167 removes the check
+from `create_pending_top_up` and makes `top_ups.variant_id` nullable. Being
+`active` is now what makes a pack sellable. `credit_top_up` already skipped the
+variant comparison for Stripe's null, so the amount check against
+`price_usd_cents` remains the guard. `credit_packs.variant_id` is still dead
+data under Stripe and can be dropped later.
+
 ## Open questions
 
 - Which VAT registrations Veyrnox Ltd needs, and by what revenue threshold, to
