@@ -202,6 +202,25 @@ describe('social post drafts (0182)', { skip: !process.env.DATABASE_URL }, () =>
         assert.equal((await claimedPostIds()).includes(a.post_id), false);
     });
 
+    it('the owner sees every open draft with its batch, media and networks; nobody else does', async () => {
+        const o = await owner();
+        const youtube = await connect(o.auth, o.brandId, 'youtube');
+        const batch = randomUUID();
+        const a = await draft(o, batch, { accounts: [o.accountId, youtube] });
+        const b = await draft(o, batch);
+        await discard(o, o.brandId, batch, b.post_id);
+        const listed = (await one('SELECT public.list_social_post_drafts($1, $2) AS r', [o.auth, o.brandId])).r;
+        assert.equal(listed.ok, true);
+        assert.deepEqual(listed.drafts.map((d: { id: string }) => d.id), [a.post_id], 'discarded drafts drop out');
+        const [d] = listed.drafts;
+        assert.equal(d.draft_batch_id, batch);
+        assert.deepEqual(d.networks, ['instagram', 'youtube']);
+        assert.equal(d.media.length, 1);
+        assert.equal(d.media[0].media_type, 'image');
+        const stranger = await owner();
+        assert.equal((await one('SELECT public.list_social_post_drafts($1, $2) AS r', [stranger.auth, o.brandId])).r.code, 'BRAND_NOT_FOUND');
+    });
+
     it('a draft cannot exist without a batch', async () => {
         const o = await owner();
         const d = await draft(o, randomUUID());
@@ -217,6 +236,7 @@ describe('social post drafts (0182)', { skip: !process.env.DATABASE_URL }, () =>
             'public.social_brand_owner(text, uuid)',
             'public.approve_social_post_batch(text, uuid, uuid)',
             'public.discard_social_post_drafts(text, uuid, uuid, uuid)',
+            'public.list_social_post_drafts(text, uuid)',
         ]) {
             for (const role of ['anon', 'authenticated', 'public']) {
                 const r = await one(`SELECT has_function_privilege($1, $2, 'EXECUTE') AS ok`, [role, fn]);

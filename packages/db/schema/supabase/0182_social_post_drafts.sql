@@ -14,7 +14,8 @@
 -- draft may have failed every target; such a post becomes 'failed' instead
 -- of sitting 'scheduled' and tripping the sweep-health check.
 --
--- discard_social_post_drafts cancels one draft or a whole batch.
+-- discard_social_post_drafts cancels one draft or a whole batch, and
+-- list_social_post_drafts returns every open draft for review.
 -- Approve and discard are written to social_account_actions.
 
 -- ── Schema ────────────────────────────────────────────────────────────────
@@ -180,12 +181,56 @@ BEGIN
     RETURN jsonb_build_object('ok', true, 'discarded', v_discarded);
 END $$;
 
+-- ── list_social_post_drafts ───────────────────────────────────────────────
+-- Every open draft of the brand, oldest batch first, for the review screen.
+-- list_social_posts stays the paginated history; drafts need the batch id
+-- and media to be reviewed, and all of them at once.
+CREATE OR REPLACE FUNCTION public.list_social_post_drafts(p_auth_id TEXT, p_brand_id UUID)
+RETURNS JSONB
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+    v_rows JSONB;
+BEGIN
+    IF public.social_brand_owner(p_auth_id, p_brand_id) IS NULL THEN
+        RETURN jsonb_build_object('ok', false, 'code', 'BRAND_NOT_FOUND');
+    END IF;
+    SELECT COALESCE(jsonb_agg(jsonb_build_object(
+        'id', p.id,
+        'draft_batch_id', p.draft_batch_id,
+        'scheduled_at', p.scheduled_at,
+        'global_text', p.global_text,
+        'created_at', p.created_at,
+        'media', COALESCE((
+            SELECT jsonb_agg(jsonb_build_object('media_type', m.media_type, 'job_id', m.source_job_id) ORDER BY m."position")
+            FROM public.social_post_media m WHERE m.post_id = p.id
+        ), '[]'::jsonb),
+        'networks', COALESCE((
+            SELECT jsonb_agg(t.network ORDER BY t.network)
+            FROM public.social_post_targets t WHERE t.post_id = p.id
+        ), '[]'::jsonb)
+    ) ORDER BY p.created_at, p.scheduled_at, p.id), '[]'::jsonb)
+    INTO v_rows
+    FROM (
+        SELECT * FROM public.social_posts
+        WHERE brand_id = p_brand_id AND status = 'draft'
+        ORDER BY created_at, scheduled_at, id
+        LIMIT 200
+    ) p;
+    RETURN jsonb_build_object('ok', true, 'drafts', v_rows);
+END $$;
+
 -- ── Privileges: service role only, full signatures ───────────────────────
 REVOKE ALL ON FUNCTION public.create_social_post_draft(TEXT, UUID, UUID, TIMESTAMPTZ, TEXT, TEXT, UUID[], JSONB) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.social_brand_owner(TEXT, UUID) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.approve_social_post_batch(TEXT, UUID, UUID) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.discard_social_post_drafts(TEXT, UUID, UUID, UUID) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.list_social_post_drafts(TEXT, UUID) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.create_social_post_draft(TEXT, UUID, UUID, TIMESTAMPTZ, TEXT, TEXT, UUID[], JSONB) TO service_role;
 GRANT EXECUTE ON FUNCTION public.social_brand_owner(TEXT, UUID) TO service_role;
 GRANT EXECUTE ON FUNCTION public.approve_social_post_batch(TEXT, UUID, UUID) TO service_role;
 GRANT EXECUTE ON FUNCTION public.discard_social_post_drafts(TEXT, UUID, UUID, UUID) TO service_role;
+GRANT EXECUTE ON FUNCTION public.list_social_post_drafts(TEXT, UUID) TO service_role;
