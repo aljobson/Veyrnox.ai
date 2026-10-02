@@ -21,6 +21,7 @@ import { recentMfaTimestamp } from './lib/cinema/strongAuth.js';
 import { NextResponse } from 'next/server';
 import { contentSecurityPolicy } from './lib/contentSecurityPolicy.mjs';
 import { readToken, validateClaims, verifyES256 } from './lib/supabaseJwt.js';
+import { isPublishApiPath, publishEnabled } from './lib/social/publishFeature.js';
 
 export const config = {
     matcher: ['/api/v1/:path*', '/((?!api(?:/|$)|_next(?:/|$)).*)'],
@@ -60,6 +61,11 @@ export async function middleware(req) {
         response.headers.set('Content-Security-Policy', policy);
         response.headers.set('Cache-Control', 'private, no-store, max-age=0');
         return response;
+    }
+
+    // Veyrnox Publish ships dark until PUBLISH_ENABLED is "true" (ISSUES P1).
+    if (isPublishApiPath(pathname) && !publishEnabled()) {
+        return jsonError(503, { error: 'publish_not_open', requestId });
     }
 
     const supabaseUrl = process.env.SUPABASE_URL;

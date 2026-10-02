@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { getSession, onSessionChange, signOut } from '../../lib/authClient';
 import { ConfirmDialog } from './ConfirmDialog';
 import { accountLabel } from '../_lib/account.js';
+import { usePublishEnabled } from './PublishFlag';
 
 const ACCOUNT_LINKS = [
   { href: '/social-cinema', label: 'Social Cinema' },
@@ -24,6 +25,8 @@ export function NavAuthButtons({ account: given }) {
   const [confirming, setConfirming] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const wrapRef = useRef(null);
+  const publishOpen = usePublishEnabled();
+  const links = publishOpen ? ACCOUNT_LINKS : ACCOUNT_LINKS.filter((l) => l.href !== '/app/publish');
 
   useEffect(() => {
     setSessionAccount(accountLabel(getSession()));
@@ -89,7 +92,7 @@ export function NavAuthButtons({ account: given }) {
                 <div className="text-xs text-vx-fg-muted truncate">{account.email}</div>
               )}
             </div>
-            {ACCOUNT_LINKS.map((l) => (
+            {links.map((l) => (
               <Link
                 key={l.href}
                 href={l.href}

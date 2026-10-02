@@ -108,12 +108,15 @@ the internal `veyrnox` composite. **The provider is never shown to the user.**
   the account (ADR-0018/0019); only an operator unfreezes.
 - **Credit statement** on `/app/credits` (ADR-0045).
 
-### 3.5 Veyrnox Publish (`/app/publish`)
+### 3.5 Veyrnox Publish (`/app/publish`) — built, off in production
 - Connect Instagram, LinkedIn, X, TikTok, YouTube (OAuth, tokens encrypted).
 - Compose one Library asset + text + accounts + time; cron publishes.
   TikTok lands as a draft in the creator's inbox.
-- **No plan gating and no feature flag today** — see ISSUES.md. App reviews
-  (Meta, TikTok, YouTube) are not done, so real use is limited to test users.
+- **Off in production.** `PUBLISH_ENABLED` hides the page, the menu link and
+  `/api/v1/social/*` until the app reviews (Meta, TikTok, YouTube) and the
+  Publish Plan land; it is on in staging. The cron sweep is not gated.
+- **Free tier enforced:** one connected account per user (ADR-0063, 0169).
+  Reconnecting that account is allowed; disconnecting frees the slot.
 
 ### 3.6 Admin
 Metrics (`/app/admin`), user lookup and content violations (3rd takedown

@@ -123,6 +123,10 @@ export async function POST(req) {
         console.error('[api/v1/social/accounts/instagram/callback] account record failed:', status, err && err.body);
         return NextResponse.json({ error: 'internal' }, { status: 502 });
     }
+    if (recorded && recorded.code === 'ACCOUNT_LIMIT') {
+        // Free tier: one connected account per user (ADR-0063, 0169).
+        return NextResponse.json({ ok: false, code: 'ACCOUNT_LIMIT' }, { status: 409 });
+    }
     if (!recorded || recorded.ok !== true) {
         return NextResponse.json({ error: 'internal' }, { status: 502 });
     }

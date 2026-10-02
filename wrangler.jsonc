@@ -90,6 +90,11 @@
     // provider_moderation / provider_input_rejected. off | shadow | enforce.
     // Needs the TYPESAFE_API_KEY secret; shadow only logs the label.
     "JEV_SUBMIT_ERRORS_MODE": "off",
+    // Veyrnox Publish (ADR-0061) stays dark until the platform app reviews
+    // and the Publish Plan (ADR-0062/0063) land: hides /app/publish, the
+    // menu link and /api/v1/social/*. Only "true" opens it. The publish
+    // sweep is not gated, so anything already queued still finishes.
+    "PUBLISH_ENABLED": "false",
     // Cloudflare Access covers veyrnox.ai/app/admin*, /api/v1/admin/* and
     // /api/admin/* (one application, "Veyrnox.ai admin"). These two let the
     // Worker verify the assertion itself (lib/accessJwt.js) instead of
@@ -122,6 +127,8 @@
         "TENANT_PROJECTS_ENABLED": "true",
         // ADR-0066; vars are not inherited, so staging names it too.
         "JEV_SUBMIT_ERRORS_MODE": "off",
+        // Veyrnox Publish is open on staging for testing (see production).
+        "PUBLISH_ENABLED": "true",
         // Cinema Stream upload preview (ADR-0052/0053/0054). Staging only:
         // vars are not inherited by environments and production keeps every
         // one of these "false". Stream secrets are set on this Worker; see
