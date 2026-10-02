@@ -36,3 +36,20 @@ export async function createSocialPost({ scheduledAt, globalText, idempotencyKey
 export function newIdempotencyKey() {
     return crypto.randomUUID().replace(/-/g, '');
 }
+
+/** Open draft posts awaiting review (GET /api/v1/social/drafts). */
+export async function listSocialDrafts() {
+    return gatewayFetch('/social/drafts');
+}
+
+/** Schedules every draft in a batch. Returns { approved, failed }. */
+export async function approveDraftBatch(batchId) {
+    return gatewayFetch('/social/drafts', { method: 'POST', body: JSON.stringify({ action: 'approve', batchId }) });
+}
+
+/** Cancels one draft, or every draft left in the batch when postId is omitted. */
+export async function discardDrafts(batchId, postId) {
+    return gatewayFetch('/social/drafts', {
+        method: 'POST', body: JSON.stringify({ action: 'discard', batchId, ...(postId ? { postId } : {}) }),
+    });
+}
