@@ -1,8 +1,8 @@
 /**
  * Stripe adapter — Credit Pack checkout after LemonSqueezy refused AI media
- * generation (2026-09-22). Same shape as packages/adapters/lemonsqueezy.js:
- * plain fetch against a constant API host, no SDK (the Workers bundle rule in
- * CLAUDE.md), and the network function injected so tests never touch it.
+ * generation (2026-09-22). Plain fetch against a constant API host, no SDK
+ * (the Workers bundle rule in CLAUDE.md), and the network function injected
+ * so tests never touch it.
  *
  * A Checkout Session is built from our own catalog price with inline
  * `price_data`, so there are no Stripe Product or Price objects to keep in
@@ -132,8 +132,7 @@ export async function createCheckout(input, cfg) {
         console.error('[stripe] checkout create failed:', res.status, data && data.error && data.error.code);
         return { ok: false, error: `stripe ${res.status}` };
     }
-    // The browser navigates top-level to this URL, so it must be Stripe's —
-    // same guard the LemonSqueezy adapter carried.
+    // The browser navigates top-level to this URL, so it must be Stripe's.
     let checkoutUrl;
     try { checkoutUrl = new URL(data.url); } catch { checkoutUrl = null; }
     if (!checkoutUrl || checkoutUrl.protocol !== 'https:'
@@ -148,7 +147,7 @@ export async function createCheckout(input, cfg) {
  * Verify a `Stripe-Signature` header over the exact raw bytes.
  * Header shape: `t=<unix>,v1=<hex>[,v1=<hex>…]`; the signed payload is
  * `<t>.<body>`. Stale timestamps are refused, so a captured delivery cannot
- * be replayed days later (LemonSqueezy sends none — ADR-0018 §replay).
+ * be replayed days later.
  *
  * @param {Uint8Array} rawBody
  * @param {string} header

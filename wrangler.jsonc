@@ -65,13 +65,6 @@
     "SUPABASE_URL": "https://xdxdzmsztyzbnzeforxx.supabase.co",
     "NEXT_PUBLIC_SUPABASE_URL": "https://xdxdzmsztyzbnzeforxx.supabase.co",
     "NEXT_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_HwEQqi6FXJOmWpy5eqR9-A_Zvy8_ii1",
-    // LemonSqueezy store (#91). Test and live mode share the store id; the
-    // API key decides the mode. Variant ids live in public.credit_packs.
-    "LEMONSQUEEZY_STORE_ID": "473468",
-    // Which orders the webhook credits (#93). "true" while the store and API
-    // key are test mode; flip to "false" with the live key at launch (#101).
-    // Anything else and /api/webhook/lemonsqueezy answers 503.
-    "LEMONSQUEEZY_TEST_MODE": "true",
     // Stripe Tax (ADR-0031, amendment 2026-09-23). Managed Payments is enabled
     // on both accounts, so Stripe is the Merchant of Record and charges and
     // remits the tax. Automatic tax is ON; unset means ON. Setting this to
@@ -171,8 +164,6 @@
   //                               sk_test_… until the live account clears review (ADR-0031). Its prefix
   //                               is what decides which livemode the webhook will credit.
   //   STRIPE_WEBHOOK_SECRET       whsec_… signs /api/webhook/stripe AND the Top-up id in session metadata (#93)
-  //   LEMONSQUEEZY_API_KEY        retired by ADR-0031; the routes stay in the tree, unused
-  //   LEMONSQUEEZY_WEBHOOK_SECRET retired by ADR-0031; see above
   //   TOP_UP_BACKFILL_TOKEN       bearer for /api/admin/top-up-backfill (#94); same value in the TOP_UP_BACKFILL_TOKEN Actions secret
   //   ADMIN_REAP_TOKEN            /api/admin/reap-assets shared secret (ADR-0008)
   //   UPLOAD_PROXY_ALLOWED_HOSTS  legacy upload proxy allowlist (docs/UPLOAD_PROXY_CONFIG.md)

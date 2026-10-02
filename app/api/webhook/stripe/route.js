@@ -1,15 +1,14 @@
 /**
  * POST /api/webhook/stripe — paid Credit Pack orders (#93, ADR-0031).
  *
- * Same shape as /api/webhook/lemonsqueezy, which this replaces:
+ * Replaced the LemonSqueezy webhook (removed, ADR-0031):
  *
  *   1. Verify `Stripe-Signature` over the exact raw bytes. Invalid -> 401
  *      plus console.error. Nothing in the body is read before this.
  *   2. Only checkout.session.completed, charge.refunded, charge.dispute.created
  *      and charge.dispute.closed are handled; every other type -> 200 ignored.
  *   3. Dedupe in webhook_events(source 'billing:stripe') on the Stripe event
- *      id, which is already unique per delivery (LemonSqueezy needed a
- *      composed key). Already processed -> 200.
+ *      id, which is already unique per delivery. Already processed -> 200.
  *   4. checkout.session.completed: a buyer cannot set metadata on a session we
  *      created, but a second integration could, so only a session carrying the
  *      top_up_sig our checkout signed is credited. The session is then re-read
