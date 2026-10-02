@@ -1,0 +1,86 @@
+name: site-health
+
+# Anonymous smoke test of https://veyrnox.ai every 15 minutes
+# (scripts/check-site-health.mjs). A failure opens one site-health issue per
+# episode; the first green run after it closes the issue with a comment.
+# deploy-production runs the same script after each deploy and rolls back.
+
+on:
+  schedule:
+    - cron: '4,19,34,49 * * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: site-health
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      exit: ${{ steps.check.outputs.exit }}
+      report: ${{ steps.check.outputs.report }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+      - id: check
+        run: |
+          set +e
+          node scripts/check-site-health.mjs > report.txt 2>&1
+          code=$?
+          cat report.txt
+          echo "exit=$code" >> "$GITHUB_OUTPUT"
+          {
+            echo 'report<<SITE_HEALTH_REPORT_EOF'
+            cat report.txt
+            echo 'SITE_HEALTH_REPORT_EOF'
+          } >> "$GITHUB_OUTPUT"
+          exit "$code"
+
+  alert:
+    needs: check
+    if: always() && (needs.check.outputs.exit == '1' || needs.check.outputs.exit == '2') && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - name: Open one issue per episode
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          REPORT: ${{ needs.check.outputs.report }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh label create site-health --color B60205 --description 'Public site failed its smoke test' 2>/dev/null || true
+          existing=$(gh issue list --label site-health --state open --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then exit 0; fi
+          printf '%s\n\n```\n%s\n```\n\nRun: %s\n' \
+            'The public site failed its smoke test. Check the latest deploy-production run first; a bad deploy is rolled back with `wrangler rollback <version-id>`. This issue closes itself on the next green run.' \
+            "$REPORT" "$RUN_URL" > body.md
+          gh issue create --title "Site health failing — $(date -u +%Y-%m-%dT%H:%MZ)" --label site-health --body-file body.md
+
+  resolve:
+    needs: check
+    if: needs.check.outputs.exit == '0' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - name: Close the open episode, if any
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          for n in $(gh issue list --label site-health --state open --json number --jq '.[].number'); do
+            gh issue close "$n" --comment "Healthy again: $RUN_URL"
+          done
