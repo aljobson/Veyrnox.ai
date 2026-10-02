@@ -20,27 +20,13 @@ import { NextResponse } from 'next/server';
 import { accountReadLimit } from '../../../../../lib/accountReadLimit.js';
 import { socialPostWriteLimit } from '../../../../../lib/socialPostWriteLimit.js';
 import { rpc, envConfig, SupabaseError } from '../../../../../packages/db/supabase-client.js';
+import { resolveBrand } from '../../../../../lib/social/resolveBrand.js';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const MEDIA_TYPES = new Set(['image', 'video']);
 
 function isUuid(v) {
     return typeof v === 'string' && UUID_RE.test(v);
-}
-
-async function resolveBrand(authId, cfg, routeTag) {
-    try {
-        const brand = await rpc('get_or_create_default_social_brand', { p_auth_id: authId }, cfg);
-        if (!brand || brand.ok !== true) {
-            const code = brand && brand.code === 'USER_NOT_FOUND' ? 'not_authenticated' : 'internal';
-            return { error: NextResponse.json({ error: code }, { status: code === 'not_authenticated' ? 401 : 502 }) };
-        }
-        return { brandId: brand.brand_id };
-    } catch (err) {
-        const status = err instanceof SupabaseError ? err.status : 0;
-        console.error(`[${routeTag}] brand lookup failed:`, status, err && err.body);
-        return { error: NextResponse.json({ error: 'internal' }, { status: 502 }) };
-    }
 }
 
 export async function GET(req) {

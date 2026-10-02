@@ -7,6 +7,7 @@ import {
   NETWORKS, listSocialAccounts, connectNetwork, disconnectSocialAccount,
 } from '../../../lib/socialConnectClient';
 import { Composer, ScheduledPosts } from './Composer';
+import { DraftReview } from './DraftReview';
 
 const currentAccount = () => getSession()?.user?.id || '';
 const noAccount = () => '';
@@ -145,6 +146,12 @@ function PublishControls() {
         onConfirm={() => onDisconnect(confirmDisconnect.id)}
       />
     )}
+
+    <section className="rounded-2xl border border-vx-border p-5">
+      <h2 className="font-bold mb-1">Drafts to review</h2>
+      <p className="text-sm text-vx-fg-muted mb-4">Nothing here is posted until you approve its batch.</p>
+      <DraftReview onApproved={() => setPostsRefreshToken((n) => n + 1)} />
+    </section>
 
     <section className="rounded-2xl border border-vx-border p-5">
       <h2 className="font-bold mb-4">Schedule a post</h2>

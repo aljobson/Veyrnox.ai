@@ -34,6 +34,9 @@ import { recoverCinemaUploads } from './lib/cinema/uploadRecovery.js';
 import { removeCinemaUploads } from './lib/cinema/uploadRemoval.js';
 import { runPublishSweep } from './lib/socialPublishSweep.js';
 import { tokenCryptoConfig } from './lib/social/tokenCrypto.js';
+import { runBrandDrafts } from './lib/social/brandDrafts.js';
+import { publishEnabled } from './lib/social/publishFeature.js';
+import { listModels } from './app/veyrnox/_lib/modelPages.js';
 
 export default {
     async fetch(request, env, ctx) {
@@ -67,6 +70,14 @@ export default {
                 publicHost: env.PUBLIC_HOST,
                 mediaProxySecret: env.SOCIAL_MEDIA_PROXY_SECRET,
             }).then((out) => { if (out.claimed) console.error('[publish-sweep]', JSON.stringify(out)); return out; }), env),
+            // Weekly brand drafts (ADR-0061 amendment): nothing publishes
+            // until the owner approves the batch on /app/publish.
+            runBrandDrafts({
+                cfg: { supabaseUrl: env.SUPABASE_URL, serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY },
+                ownerAuthId: env.BRAND_DRAFTS_AUTH_ID,
+                publishOn: publishEnabled(env),
+                loadModels: () => listModels({ cfg: { supabaseUrl: env.SUPABASE_URL, serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY } }),
+            }).then((out) => { if (out.created || out.ok === false) console.error('[brand-drafts]', JSON.stringify(out)); return out; }),
         ]);
         for (const r of results) {
             if (r.status === 'rejected') console.error('[cron] task threw:', r.reason && r.reason.message);

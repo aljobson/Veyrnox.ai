@@ -14,8 +14,10 @@ export function shelfModels(rows) {
     .map((m) => ({ ...m, kind: kindOf(m.modality), title: shelfName(m.name) }));
 }
 
-export async function listModels() {
-  return shelfModels(await readPublicCatalog());
+// `options` reaches readPublicCatalog; the cron passes its own cfg, since
+// process.env is not the Worker env outside a request.
+export async function listModels(options) {
+  return shelfModels(await readPublicCatalog(options));
 }
 
 export async function findModel(id) {
