@@ -43,6 +43,14 @@ module.exports = {
                     'money-ink': 'rgb(var(--vx-money-ink) / <alpha-value>)',
                     danger: 'rgb(var(--vx-danger) / <alpha-value>)',
                 },
+                // Chart surfaces for components/charts. The values are
+                // oklch() in app/globals.css, so no `/opacity` modifier.
+                chart: {
+                    label: 'var(--chart-label)',
+                    'tooltip-background': 'var(--chart-tooltip-background)',
+                    'tooltip-foreground': 'var(--chart-tooltip-foreground)',
+                    'tooltip-muted': 'var(--chart-tooltip-muted)',
+                },
             },
             fontFamily: {
                 sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
