@@ -31,7 +31,9 @@ test('the statement is recorded on the job through the RPC, not a direct write',
 test('the create page blocks Generate until the box is ticked, and sends it', () => {
     assert.match(page, /const missingConsent = hasUpload && !consent;/);
     assert.match(page, /missingSource \|\| missingConsent\)\}/);
-    assert.match(page, /consent: source_keys\.length \? true : undefined,/);
+    // Sent whenever any source is attached: an upload or a Library image.
+    assert.match(page, /const anySource = source_keys\.length \+ source_assets\.length > 0;/);
+    assert.match(page, /consent: anySource \? true : undefined,/);
     assert.match(page, /I own this file, or I have the permission of everyone identifiable in it/);
     assert.match(page, /href="\/legal\/aup"/);
 });

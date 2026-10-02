@@ -24,7 +24,7 @@ import { rpc, select, envConfig, SupabaseError } from '../../../../packages/db/s
 import { capabilityFor, declaredInputs, checkSource } from '../../../../lib/modelCapabilities.js';
 import { refundRejectedSubmit } from '../../../../lib/submitRejection.js';
 import { classifySubmitFailure } from '../../../../lib/submitFailureClass.js';
-import { resolveUploadedSource } from '../../../../lib/resolveSource.js';
+import { resolveUploadedSource, resolveAssetSource } from '../../../../lib/resolveSource.js';
 import { envConfig as r2EnvConfig, isConfigured as r2IsConfigured } from '../../../../packages/adapters/r2.js';
 import { editUnits } from '../../../../lib/clipEdit.js';
 import { resolveEdit, defaultDeps as editDeps } from '../../../../lib/clipEditSources.js';
@@ -221,8 +221,16 @@ export async function POST(req) {
         || rawKeys.some((k) => typeof k !== 'string' || k.length > 200)) {
         return NextResponse.json({ error: 'source_key_invalid' }, { status: 400 });
     }
+    // A Library asset as a source, by the id of the job that made it. It shares
+    // the upload limit and the consent statement: it can carry a face as well.
+    const rawAssets = body && body.source_assets !== undefined ? body.source_assets : [];
+    if (!Array.isArray(rawAssets) || rawKeys.length + rawAssets.length > MAX_SOURCES
+        || rawAssets.some((k) => typeof k !== 'string' || k.length > 64)) {
+        return NextResponse.json({ error: 'source_asset_invalid' }, { status: 400 });
+    }
     const sources = {};   // input field -> resolved source
     const sourceKeys = {}; // input field -> upload key
+    const sourceAssets = {}; // input field -> job id of a Library asset
     // A client-sent image_url/video_url is dropped here, ALWAYS — not only on
     // the upload path. Inside `if (rawKeys.length)` these two deletes left a
     // hole: a request with a media URL and no source key kept the client's
@@ -232,7 +240,7 @@ export async function POST(req) {
     // server signed, so the key is the only way to name one.
     delete inputs.image_url;
     delete inputs.video_url;
-    if (rawKeys.length) {
+    if (rawKeys.length || rawAssets.length) {
         if (!consent) return NextResponse.json({ error: 'consent_required' }, { status: 400 });
         const r2cfg = r2EnvConfig();
         if (!r2IsConfigured(r2cfg)) {
@@ -248,6 +256,17 @@ export async function POST(req) {
             if (sources[source.field]) return NextResponse.json({ error: 'source_key_invalid' }, { status: 400 });
             sources[source.field] = source;
             sourceKeys[source.field] = key;
+            inputs[source.field] = source.url;
+        }
+        for (const jobId of rawAssets) {
+            const source = await resolveAssetSource(authId, jobId, r2cfg, cfg);
+            if (!source.ok) {
+                const status = source.error === 'source_not_found' ? 404 : source.error === 'internal' ? 502 : 400;
+                return NextResponse.json({ error: source.error }, { status });
+            }
+            if (sources[source.field]) return NextResponse.json({ error: 'source_key_invalid' }, { status: 400 });
+            sources[source.field] = source;
+            sourceAssets[source.field] = jobId;
             inputs[source.field] = source.url;
         }
     }
@@ -295,9 +314,16 @@ export async function POST(req) {
     const sourceCheck = checkSource(record, sources);
     if (!sourceCheck.ok) return NextResponse.json({ error: sourceCheck.error }, { status: 400 });
     // The job row records which uploads were used, not the 15-minute URLs.
+    // Library sources are recorded by job id under their own name, so the
+    // upload sweep (lib/uploadSweep.js), which deletes source_keys, never sees them.
     const usedKeys = Object.fromEntries(Object.entries(sourceKeys).filter(([f]) => modelInputs[f] !== undefined));
-    let storedInputs = Object.keys(usedKeys).length
-        ? { ...Object.fromEntries(Object.entries(modelInputs).filter(([k]) => !(k in usedKeys))), source_keys: usedKeys }
+    const usedAssets = Object.fromEntries(Object.entries(sourceAssets).filter(([f]) => modelInputs[f] !== undefined));
+    let storedInputs = Object.keys(usedKeys).length || Object.keys(usedAssets).length
+        ? {
+            ...Object.fromEntries(Object.entries(modelInputs).filter(([k]) => !(k in usedKeys) && !(k in usedAssets))),
+            ...(Object.keys(usedKeys).length ? { source_keys: usedKeys } : {}),
+            ...(Object.keys(usedAssets).length ? { source_assets: usedAssets } : {}),
+        }
         : modelInputs;
     // A Clip Editor job stores the resolved edit (owned R2 keys, real lengths)
     // and is priced on its output length, never on what the client sent.

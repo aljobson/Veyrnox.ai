@@ -15,30 +15,14 @@ import { CharacterPanel } from '../../_components/CharacterPanel';
 import { buildCharacterPrompt } from '../../_lib/character';
 import { DrawOnImage } from '../../_components/DrawOnImage';
 import { SourcePickers } from '../../_components/SourcePickers';
+import { LibraryPicker } from '../../_components/LibraryPicker';
 import { GenerationSettings } from '../../_components/GenerationSettings';
 import { ControlRow } from '../../_components/ControlRow';
 import { settingsInputs } from '../../_lib/generationSettings';
 import { ParticleButton } from '@/components/ParticleButton';
-// State glyphs — colour-blind safety net matches the design system §08.
-const STATE_UI = {
-  queued:    { glyph: '●', tone: 'accent',  label: 'QUEUED' },
-  running:   { glyph: '●', tone: 'accent',  label: 'RUNNING' },
-  succeeded: { glyph: '✓', tone: 'accent',  label: 'DONE' },
-  failed:    { glyph: '✕', tone: 'danger',  label: 'FAILED · REFUNDED' },
-};
-// How many consecutive poll failures before we stop and tell the user. At
-// 2s an interval that is ~1 minute of silence, which is long enough to ride
-// out a blip and short enough that nobody watches a dead shimmer.
+import { STATE_UI, SLOW_MODEL_WAIT } from '../../_lib/studioStates';
 const POLL_GIVE_UP_AFTER = 30;
 const DEFAULT_MODEL = 'wan-2.5-kie';
-// Models measured well over a minute end to end in live tests (2026-09-13).
-// ponytail: hand-kept list; move to the catalog if more slow models land.
-const SLOW_MODEL_WAIT = {
-  'ace-step-1.5': 'Music takes about 3–4 minutes.',
-  'mmaudio-v2': 'Sound effects take about 3 minutes.',
-  'seedance-2.0-fast': 'Video takes about 2 minutes.',
-  'auto-short-32s': 'About 2–10 minutes: script, voiceover, four scenes, then the stitch.',
-};
 // Auto Short stays hidden until launch unless this browser opts in
 // (CLAUDE.md "Delivery": new user paths behind localStorage.veyrnox_*).
 const AUTO_SHORT_FLAG = 'veyrnox_auto_short';
@@ -57,8 +41,10 @@ export default function CreateStudio() {
   const [aspect, setAspect] = useState('16:9');
   const [prompt, setPrompt] = useState('A neon-lit Tokyo alley at 3am, low anamorphic tracking shot');
   // Start image for models whose catalog capabilities declare an image slot.
-  // Uploads for the model's media slots: { image|video|audio: { file, previewUrl } }.
+  // Sources for the model's media slots: { image|video|audio: { file, previewUrl } },
+  // or { assetId, previewUrl, label } for an image picked from the Library.
   const [sources, setSources] = useState({});
+  const [libraryFor, setLibraryFor] = useState(null);
   const [drawing, setDrawing] = useState(false);
   // Uploads can carry a real face or voice: the AUP consent statement is
   // required before one is sent, and the gateway records it on the job (0096).
@@ -134,11 +120,12 @@ export default function CreateStudio() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [durationKey, duration]);
 
-  function pickSource(slot, file) {
+  function pickSource(slot, file, asset = null) {
     setSources((prev) => {
-      if (prev[slot]) URL.revokeObjectURL(prev[slot].previewUrl);
+      if (prev[slot]?.file) URL.revokeObjectURL(prev[slot].previewUrl);
       const next = { ...prev };
       if (file) next[slot] = { file, previewUrl: URL.createObjectURL(file) };
+      else if (asset) next[slot] = { assetId: asset.id, previewUrl: asset.url, label: asset.label };
       else delete next[slot];
       return next;
     });
@@ -262,15 +249,19 @@ export default function CreateStudio() {
     try {
       // Only the slots this model takes; a leftover upload from another model stays local.
       const source_keys = [];
+      const source_assets = [];
       for (const slot of Object.keys(media)) {
-        if (sources[slot]) source_keys.push(await uploadSource(sources[slot].file));
+        if (sources[slot]?.assetId) source_assets.push(sources[slot].assetId);
+        else if (sources[slot]) source_keys.push(await uploadSource(sources[slot].file));
       }
+      const anySource = source_keys.length + source_assets.length > 0;
       const submitted = await gatewayFetch('/generations', {
         method: 'POST',
         body: JSON.stringify({
           model_id: modelId, idempotency_key, inputs,
           source_keys: source_keys.length ? source_keys : undefined,
-          consent: source_keys.length ? true : undefined,
+          source_assets: source_assets.length ? source_assets : undefined,
+          consent: anySource ? true : undefined,
         }),
       });
       setJob({
@@ -378,7 +369,11 @@ export default function CreateStudio() {
           />
 
           <SourcePickers media={media} sources={sources} onPick={pickSource}
-            onDraw={model?.kind === 'image' ? () => setDrawing(true) : null} />
+            onDraw={model?.kind === 'image' ? () => setDrawing(true) : null} onLibrary={setLibraryFor} />
+          {libraryFor && (
+            <LibraryPicker onClose={() => setLibraryFor(null)}
+              onPick={(item) => { pickSource(libraryFor, null, item); setLibraryFor(null); }} />
+          )}
 
           {hasUpload && (
             <label className="mt-3 flex items-start gap-2.5 rounded-lg border border-vx-border bg-vx-panel px-4 py-3 text-sm text-vx-fg-body cursor-pointer">
@@ -397,7 +392,7 @@ export default function CreateStudio() {
             </label>
           )}
 
-          {drawing && sources.image && (
+          {drawing && sources.image?.file && (
             <DrawOnImage file={sources.image.file} onDone={applyDrawing} onCancel={() => setDrawing(false)} />
           )}
 
