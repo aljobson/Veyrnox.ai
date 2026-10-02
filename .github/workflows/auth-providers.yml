@@ -1,0 +1,87 @@
+name: auth-providers
+
+# Does production's sign-in dialog still offer Apple and Google?
+#
+# The dialog shows the providers listed in packages/security/environments.js
+# and hides one when Supabase's live /auth/v1/settings says it is off. Those
+# switches (and Apple's expiring keys) live outside this repo, so a provider
+# can vanish for every user with no change here. Reads public config only.
+#
+# Not a required check: it reports on production, not on a PR. Hourly, plus
+# on demand.
+
+on:
+  schedule:
+    - cron: "23 * * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: auth-providers
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      state: ${{ steps.check.outputs.state }}
+      report: ${{ steps.check.outputs.report }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "22"
+      - name: Compare live providers with the app's list
+        id: check
+        run: |
+          set +e
+          node scripts/check-auth-providers.mjs > report.txt 2>&1
+          code=$?
+          set -e
+          cat report.txt
+          { echo '### Sign-in providers'; echo '```'; cat report.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo 'report<<REPORT_EOF'
+            cat report.txt
+            echo REPORT_EOF
+          } >> "$GITHUB_OUTPUT"
+          case "$code" in
+            0) echo "state=ok" >> "$GITHUB_OUTPUT" ;;
+            1) echo "state=drift" >> "$GITHUB_OUTPUT" ;;
+            *) echo "state=unknown" >> "$GITHUB_OUTPUT" ;;
+          esac
+          exit "$code"
+
+  report:
+    needs: check
+    if: always() && needs.check.outputs.state != 'ok' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - name: Open one issue per episode
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          STATE: ${{ needs.check.outputs.state }}
+          REPORT: ${{ needs.check.outputs.report }}
+        run: |
+          existing=$(gh issue list --label auth-providers --state open --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            echo "Already tracked in #$existing"
+            exit 0
+          fi
+          gh label create auth-providers --color B60205 \
+            --description 'production sign-in providers drifted from the app' 2>/dev/null || true
+          if [ "$STATE" = "drift" ]; then
+            title="Sign-in providers drifted — $(date -u +%Y-%m-%d)"
+          else
+            title="Sign-in providers could not be checked — $(date -u +%Y-%m-%d)"
+          fi
+          printf 'scripts/check-auth-providers.mjs, hourly.\n\n```\n%s\n```\n' "$REPORT" > body.md
+          gh issue create --title "$title" --label auth-providers --body-file body.md

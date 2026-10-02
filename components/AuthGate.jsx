@@ -21,6 +21,7 @@ import {
     signInWithOAuth,
 } from "../app/lib/authClient.js";
 import { signInWithPasskey, passkeysSupported } from "../app/lib/passkeys.js";
+import { configuredProviders, withLiveSettings } from "../app/lib/authProviders.js";
 import { Turnstile, TURNSTILE_SITE_KEY } from "./Turnstile.jsx";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -108,10 +109,11 @@ export default function AuthGate() {
     // captchaReset and the widget issues a fresh one.
     const [captcha, setCaptcha] = useState(null);
     const [captchaReset, setCaptchaReset] = useState(0);
-    // Which OAuth providers are actually enabled on the Supabase side.
-    // Fetching once on first mount avoids showing broken buttons that
-    // redirect to a Supabase 400 "provider is not enabled" page.
-    const [oauth, setOauth] = useState({ apple: false, google: false });
+    // The environment's providers show at once, on every page; the live
+    // settings read below can only hide one Supabase has switched off (which
+    // would redirect to a 400 "provider is not enabled" page). A failed read
+    // used to hide every button and leave email only.
+    const [oauth, setOauth] = useState(() => configuredProviders(process.env.NEXT_PUBLIC_AUTH_PROVIDERS));
     // Passkeys need BOTH the project setting and a browser that can do
     // WebAuthn in a secure context, so the button is never offered where
     // clicking it would only throw.
@@ -126,8 +128,7 @@ export default function AuthGate() {
             .then((r) => (r.ok ? r.json() : null))
             .then((data) => {
                 if (cancelled || !data) return;
-                const ext = data.external || {};
-                setOauth({ apple: !!ext.apple, google: !!ext.google });
+                setOauth((configured) => withLiveSettings(configured, data));
                 setPasskeys(!!data.passkeys_enabled && passkeysSupported());
             })
             .catch(() => {});
