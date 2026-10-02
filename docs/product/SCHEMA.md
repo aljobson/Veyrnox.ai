@@ -19,7 +19,7 @@ API call) · [diagrams/job-lifecycle.html](diagrams/job-lifecycle.html)
   service_role`. "Internal" functions revoke service_role too and are only
   called by other definers.
 - **Append-only logs** carry a `BEFORE UPDATE OR DELETE` trigger:
-  `ledger_entries`, `account_actions`, `top_up_order_collisions`,
+  `ledger_entries`, `account_actions`, `top_up_order_collisions`, `top_up_flagged_orders` (0174),
   `audit_events`, `project_document_versions`, `cinema_creator_reviews`,
   `cinema_unlock_reversals`, `cinema_pass_events`, `cinema_pass_plays`,
   `cinema_submission_reviews`, `cinema_moderation_actions`,
@@ -103,7 +103,7 @@ and refuses SUCCEEDED/STORED. `sweep_stuck_jobs` refunds anything stuck.
 |---|---|---|
 | `credit_packs` *(0041, 0097, 0121)* | id, sales_channel ('web'), credits, price_usd_cents, variant_id (nullable), active | sticker floor `price × 10 ≥ credits × 43`; legacy net floor. Active: web-100, web-270, web-1200, web-3000 |
 | `top_ups` *(0041 … 0108, 0167)* | id, user_id, pack_id, idempotency_key, credits, price_usd_cents, variant_id (null under Stripe, 0167), status (pending \| credited), consent_at/version, order_id, credited_at, grant_entry_id, refunded_cents, clawed_back_credits, return_* and backfill_* recovery columns, order_sweeps | → users, credit_packs, ledger_entries (all RESTRICT); U (user_id, idempotency_key), U order_id, U grant_entry_id |
-| `top_up_flagged_orders` *(0054)* | order_id, top_up_id, user_id, reason, paid_usd_cents, currency, variant_id | incident records |
+| `top_up_flagged_orders` *(0054, 0174)* | order_id, top_up_id, user_id, reason, paid_usd_cents, currency, variant_id | incident records; append-only |
 | `top_up_order_collisions` *(0068)* | id, order_id (numeric-only CHECK), top_up_id, credited_top_up_id | append-only |
 | `account_actions` *(0059, 0062, 0146)* | id, user_id, action (freeze/unfreeze/dispute_resolved/warning/takedown), actor, reason, top_up_id, job_id, credits_taken, credits_shortfall | append-only; the only path to/from Frozen |
 
