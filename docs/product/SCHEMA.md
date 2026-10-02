@@ -68,7 +68,7 @@ Notation: **PK**, → FK target (ON DELETE), **U** unique, *(migration)*.
 
 | table | columns | keys and rules |
 |---|---|---|
-| `users` *(0001, 0032, 0059, 0146)* | id uuid, auth_id text, email, plan *(unused)*, is_admin, frozen_at, rights_attested_at, rights_attestation_version, created_at, updated_at | PK id; U auth_id; owner can SELECT own row |
+| `users` *(0001, 0032, 0059, 0146, 0178)* | id uuid, auth_id text, email, is_admin, frozen_at, rights_attested_at, rights_attestation_version, created_at, updated_at | PK id; U auth_id; owner can SELECT own row |
 | `credit_balances` *(0001, 0037)* | user_id, balance int ≥ 0, free_balance int, updated_at | PK/→ users (CASCADE); CHECK 0 ≤ free_balance ≤ balance |
 | `ledger_entries` *(0001, 0037, 0073, 0171)* | id, user_id, delta int, free_delta int, reason text, job_id uuid, created_at | → users (RESTRICT); job_id logical only; **append-only**; U one `expire:free` per user; U keyed grants `grant:%#%`; U one refund per job; U one `grant:signup` per user |
 
