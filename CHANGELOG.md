@@ -17,6 +17,7 @@ Changes that touch the money spine, the ledger or the catalog are marked **[mone
 - Docs: Inworld wholesale comparison units corrected (#397); GrsAI edit cost and staging verification recorded (#393, #395); next Nano Banana Pro edit supplier savings assessed (#392)
 
 ### In review
+- Jev classifier for provider submit refusals, ships off, ADR-0066 (PR pending)
 - YouTube resumable-upload auth, session restart and quota backoff (#399)
 - Supplier volume quote pack (#398)
 

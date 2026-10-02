@@ -86,6 +86,10 @@
     // before an admin holds a factor locks every admin out of their own
     // dashboard, so that order is not optional.
     "ADMIN_REQUIRE_AAL2": "true",
+    // ADR-0066: Jev sorts untyped provider submit refusals into
+    // provider_moderation / provider_input_rejected. off | shadow | enforce.
+    // Needs the TYPESAFE_API_KEY secret; shadow only logs the label.
+    "JEV_SUBMIT_ERRORS_MODE": "off",
     // Cloudflare Access covers veyrnox.ai/app/admin*, /api/v1/admin/* and
     // /api/admin/* (one application, "Veyrnox.ai admin"). These two let the
     // Worker verify the assertion itself (lib/accessJwt.js) instead of
@@ -116,6 +120,8 @@
         "NEXT_PUBLIC_SUPABASE_URL": "https://yrqzwqywxfesmbvhzjgj.supabase.co",
         "NEXT_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_bAxQiodzBhI6bV7lmo9gMQ_Hlg9_Ish",
         "TENANT_PROJECTS_ENABLED": "true",
+        // ADR-0066; vars are not inherited, so staging names it too.
+        "JEV_SUBMIT_ERRORS_MODE": "off",
         // Cinema Stream upload preview (ADR-0052/0053/0054). Staging only:
         // vars are not inherited by environments and production keeps every
         // one of these "false". Stream secrets are set on this Worker; see
@@ -153,6 +159,7 @@
   //                               kie.ai submit + callback HMAC (ADR-0020)
   //   OPENROUTER_API_KEY, OPENROUTER_WEBHOOK_SECRET
   //                               OpenRouter video submit + webhook signature (ADR-0020)
+  //   TYPESAFE_API_KEY            Jev classifier for provider submit refusals (lib/jev.js, ADR-0066)
   //   STRIPE_SECRET_KEY           Checkout Session create + session re-fetch (packages/adapters/stripe.js);
   //                               sk_test_… until the live account clears review (ADR-0031). Its prefix
   //                               is what decides which livemode the webhook will credit.

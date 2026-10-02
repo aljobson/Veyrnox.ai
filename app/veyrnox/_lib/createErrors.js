@@ -4,6 +4,10 @@ import { ACCOUNT_PAUSED_COPY } from './gateway';
 export const ERROR_COPY = {
   poll_unreachable:      'Lost contact with the server, so we stopped checking. Your generation may still have run — open Library to see.',
   moderation:            'The provider declined this prompt on safety grounds. Credits refunded.',
+  // The code grsai and byteplus emit on a failed job, and Jev on a refused submit (ADR-0066).
+  provider_moderation:   'The provider declined this prompt on safety grounds. Credits refunded.',
+  provider_input_rejected:'The model would not accept one of these settings or inputs. Credits refunded — change it and try again.',
+  provider_submit_failed:'The model would not take this job. Credits refunded — try again.',
   provider_timeout:      'The model took too long. Credits refunded — try again.',
   provider_error:        'The model returned an error. Credits refunded.',
   internal:              'Something on our side broke. Credits refunded.',
