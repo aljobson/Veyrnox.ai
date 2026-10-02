@@ -128,7 +128,7 @@ Ops: `reconciliation_snapshot` (singleton), `worker_task_health`
 | `workspaces`, `workspace_members` | id, organisation_id, name, is_default, deleted_at; membership + role | U one default per org |
 | `projects`, `project_members` | id, workspace_id, owner_id, name, version, deleted_at; membership + role | soft delete; audit trigger |
 | `project_document_versions` | project_id, revision, document jsonb ≤ 32 KB, actor_id, restored_from, expected_revision, request_key | PK (project_id, revision); immutable |
-| `project_assets` | id, project_id, r2_key, state (quarantined/inspected/rejected), declared/sniffed type and size, dimensions, reject_reason | quota + guard triggers |
+| `project_assets` | id, project_id, r2_key, state (quarantined/inspected/rejected), declared/sniffed type and size, dimensions, reject_reason | quota + guard triggers; written only via definer RPCs (0173) |
 | `audit_events` | id, request_id, actor_id, organisation_id, action, resource_id, result | append-only; OWNER/ADMIN read |
 | `private.api_requests`, `private.project_asset_storage`, `private.project_asset_inspections` | idempotency, storage claims, inspection throttle | not exposed |
 
