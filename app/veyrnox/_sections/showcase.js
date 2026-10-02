@@ -2,22 +2,22 @@ import Link from 'next/link';
 import { MediaTile } from '../_components/MediaTile';
 import { SHOWCASE_CLIPS } from '../_lib/showcase';
 import { wallShapes, tileClasses } from '../_lib/presetWall';
-import { PRESETS, presetHref, presetCredits, presetTitle, shelfName } from '../_lib/tokens';
+import { WALL_PRESETS, presetHref, presetCredits, presetTitle, shelfName } from '../_lib/tokens';
 
 /* ─── Preset wall: the real presets, as a bento ─── */
 
 export function PresetWall({ catalog }) {
-  const shapes = wallShapes(PRESETS.length);
+  const shapes = wallShapes(WALL_PRESETS.length);
   return (
     <section className="px-4 sm:px-6 pt-28 sm:pt-36 max-w-[1300px] mx-auto">
       <div className="flex items-end justify-between mb-8 flex-wrap gap-4">
-        <h2 className="vx-display text-[40px] sm:text-[56px] max-w-[14ch]">Presets, priced before you tap.</h2>
+        <h2 className="vx-display text-[40px] sm:text-[56px] max-w-[14ch]">Templates, priced before you tap.</h2>
         <Link href="/presets" className="text-[15px] font-bold text-vx-fg-body underline decoration-vx-border decoration-2 underline-offset-[6px] hover:text-vx-fg hover:decoration-vx-accent">
-          All presets
+          All templates
         </Link>
       </div>
       <div className="grid grid-cols-2 lg:grid-cols-4 lg:auto-rows-[220px] gap-3">
-        {PRESETS.map((preset, i) => {
+        {WALL_PRESETS.map((preset, i) => {
           const shape = shapes[i];
           const classes = tileClasses(shape);
           const isHero = shape.kind === 'hero';

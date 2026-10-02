@@ -2,13 +2,13 @@
 import { useState } from 'react';
 import { MobileTabs } from '../_MobileNav';
 import { PresetCard } from '../../_components/PresetCard';
-import { PRESETS, PRESET_CATEGORIES } from '../../_lib/tokens';
+import { PRESET_CATEGORIES, templatesIn } from '../../_lib/tokens';
 import { useCatalog } from '../../_lib/useCatalog';
 
 export default function MobileExplore() {
   const [cat, setCat] = useState('ALL');
   const { models } = useCatalog();
-  const list = cat === 'ALL' ? PRESETS : PRESETS.filter((p) => p.category === cat);
+  const list = templatesIn(cat);
 
   return (
     <div className="flex-1 flex flex-col min-h-0">

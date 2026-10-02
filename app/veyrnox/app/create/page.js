@@ -8,7 +8,7 @@ import { ERROR_COPY } from '../../_lib/createErrors';
 import { pushJobHistory, markJobSettled } from '../../_lib/jobHistory';
 import { JobAssetPreview } from '../../_components/JobAssetPreview';
 import { useCatalog } from '../../_lib/useCatalog';
-import { takeLandingDraft } from '../../_lib/landingDraft';
+import { takeStudioDraft } from '../../_lib/landingDraft';
 import { DEFAULT_CINEMA, buildCinemaPrompt } from '../../_lib/cinema';
 import { CameraPanel } from '../../_components/CameraPanel';
 import { CharacterPanel } from '../../_components/CharacterPanel';
@@ -81,8 +81,9 @@ export default function CreateStudio() {
     const wanted = params.get('model');
     if (wanted) setModelId(wanted);
     if (params.get('duration') === '10s') setDuration('10s');
-    const draft = takeLandingDraft(window.sessionStorage, wanted);
-    if (draft) setPrompt(draft);
+    const draft = takeStudioDraft(window.sessionStorage, wanted);
+    if (draft) setPrompt(draft.prompt);
+    if (draft?.aspect) setAspect(draft.aspect);
   }, []);
 
   // If the selected id isn't in the (live or fallback) catalog, fall back to

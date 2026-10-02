@@ -1,5 +1,6 @@
 import { SITE_URL } from './seo';
 import { listModels } from './veyrnox/_lib/modelPages';
+import { PRESETS } from './veyrnox/_lib/templates';
 
 // Rendered per request so /models/<id> entries follow the live catalog.
 export const dynamic = 'force-dynamic';
@@ -24,6 +25,7 @@ export default async function sitemap() {
     page('', 'weekly', 1.0),
     page('/pricing', 'monthly', 0.9),
     page('/presets', 'weekly', 0.7),
+    ...PRESETS.map((t) => page(`/presets/${t.id}`, 'monthly', 0.5)),
     page('/models', 'weekly', 0.8),
     page('/social-cinema', 'weekly', 0.7),
     page('/legal/terms', 'yearly', 0.3),

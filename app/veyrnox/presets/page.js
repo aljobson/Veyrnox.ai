@@ -11,7 +11,7 @@ export default function Gallery() {
           One-tap looks. Exact prices.
         </h1>
         <p className="mt-6 mb-10 text-lg sm:text-xl text-vx-fg-body max-w-[46ch] leading-[1.5] text-pretty">
-          Each preset is pinned to the model it suits and shows its credit cost. Nothing is charged until you generate.
+          Ready-made looks, each pinned to the model it suits, with its prompt and credit cost shown up front. Some take a photo of yours. Nothing is charged until you generate.
         </p>
         <PresetGallery />
       </section>
