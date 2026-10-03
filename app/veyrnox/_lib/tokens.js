@@ -133,6 +133,7 @@ export const NAV_CATEGORIES = [
   { href: '/#explore',   label: 'Explore' },
   { href: '/#models',    label: 'Models' },
   { href: '/presets',   label: 'Templates' },
+  { href: '/tools',     label: 'Tools' },
   { href: '/pricing',   label: 'Pricing' },
   { href: '/#faq',       label: 'FAQ' },
 ];

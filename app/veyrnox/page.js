@@ -4,6 +4,7 @@ import { SITE_URL, JsonLd } from '../seo';
 import { WideNav, Hero, FeaturedHeroCards } from './_sections/hero';
 import { PresetWall, ModelShelf } from './_sections/showcase';
 import { LedgerExample, FAQBlock, ClosingCTA, FooterForest } from './_sections/footer';
+import { AnnouncementBar } from './_components/AnnouncementBar';
 
 // FAQPage built from the same FAQ constant the page renders, so the markup
 // and the structured data cannot drift apart.
@@ -61,6 +62,7 @@ export default async function VeyrnoxLanding() {
   const catalog = await loadCatalog();
   return (
     <div className="min-h-dvh">
+      <AnnouncementBar />
       <WideNav />
       <Hero models={catalog} />
       <FeaturedHeroCards catalog={catalog} />
