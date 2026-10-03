@@ -67,6 +67,26 @@ test('an allowed advisory fails once a fix needs no breaking upgrade', () => {
     assert.match(problems[0], new RegExp(WAIVED.id));
 });
 
+test('an allowed advisory fails once a production dependency installs the package', () => {
+    // `npm audit --omit=dev` is clean while only build and lint tooling pulls it in.
+    assert.deepEqual(assessAudit(waivedTree(), [WAIVED], report({})).problems, []);
+    const { problems, waived } = assessAudit(waivedTree(), [WAIVED], waivedTree());
+    assert.equal(problems.length, 1);
+    assert.match(problems[0], new RegExp(`${WAIVED.id} \\(braces\\) is now installed by a production dependency`));
+    assert.deepEqual(waived, []);
+});
+
+test('a production report that cannot be read is refused, not read as clean', () => {
+    for (const bad of [null, {}, { error: { code: 'ENOTFOUND' } }]) {
+        assert.throws(() => assessAudit(waivedTree(), [WAIVED], bad), /audit report/, JSON.stringify(bad));
+    }
+});
+
+test('the gate itself checks the production tree', () => {
+    const script = readFileSync(new URL('../scripts/check-audit.mjs', import.meta.url), 'utf8');
+    assert.match(script, /assessAudit\(readReport\(\), ALLOWED, readReport\(\['--omit=dev'\]\)\)/);
+});
+
 test('an allowed advisory that is no longer reported fails until its entry is removed', () => {
     const { problems } = assessAudit(report({}), [WAIVED]);
     assert.equal(problems.length, 1);

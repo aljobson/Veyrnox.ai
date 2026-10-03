@@ -8,7 +8,9 @@
  * nothing to upgrade to. ALLOWED is for that case only, one advisory at a
  * time, and an entry cannot outlive its cause: the gate fails again as soon
  * as the advisory can be fixed without a breaking upgrade, or stops being
- * reported.
+ * reported. An entry also covers build and lint tooling only: it stops
+ * applying the moment `npm audit --omit=dev` reports the advisory, which
+ * means a production dependency now installs the package.
  *
  * Exit 0 = clean. Exit 1 = a finding, or an ALLOWED entry that has to go.
  * Exit 2 = could not tell (npm audit did not return a report).
@@ -33,14 +35,29 @@ export const ALLOWED = [
 
 const advisoryId = (via) => /\/(GHSA(?:-[0-9a-z]{4}){3})$/i.exec(via.url || '')?.[1] ?? null;
 
+function vulnerabilitiesOf(report) {
+  if (report?.auditReportVersion !== 2 || typeof report.vulnerabilities !== 'object' || !report.vulnerabilities) {
+    throw new Error('not an npm audit report (version 2)');
+  }
+  return report.vulnerabilities;
+}
+
 /**
  * @param {object} report  `npm audit --json`, report version 2
  * @param {{id: string, reason: string}[]} [allowed]
+ * @param {object} [prodReport]  `npm audit --json --omit=dev`; when given, an
+ *   allowed advisory it reports is a problem. The CLI always passes it.
  * @returns {{problems: string[], waived: {id: string, package: string, severity: string}[]}}
  */
-export function assessAudit(report, allowed = ALLOWED) {
-  if (report?.auditReportVersion !== 2 || typeof report.vulnerabilities !== 'object' || !report.vulnerabilities) {
-    throw new Error('not an npm audit report (version 2)');
+export function assessAudit(report, allowed = ALLOWED, prodReport = undefined) {
+  const vulnerabilities = vulnerabilitiesOf(report);
+  const inProduction = new Set();
+  if (prodReport !== undefined) {
+    for (const vuln of Object.values(vulnerabilitiesOf(prodReport))) {
+      for (const via of vuln.via || []) {
+        if (typeof via === 'object' && BLOCKING.has(via.severity) && advisoryId(via)) inProduction.add(advisoryId(via));
+      }
+    }
   }
   const allowedIds = new Set(allowed.map((e) => e.id));
   const seen = new Set();
@@ -48,13 +65,15 @@ export function assessAudit(report, allowed = ALLOWED) {
   const waived = [];
   // The package that owns an advisory carries it as an object in `via`;
   // packages that only inherit it carry the owner's name, and need no entry.
-  for (const [name, vuln] of Object.entries(report.vulnerabilities)) {
+  for (const [name, vuln] of Object.entries(vulnerabilities)) {
     for (const via of vuln.via || []) {
       if (typeof via !== 'object' || !BLOCKING.has(via.severity)) continue;
       const id = advisoryId(via);
       if (id) seen.add(id);
       if (!id || !allowedIds.has(id)) {
         problems.push(`${via.severity}: ${name} — ${via.title || 'untitled advisory'} (${id || via.url || 'no advisory id'})`);
+      } else if (inProduction.has(id)) {
+        problems.push(`${id} (${name}) is now installed by a production dependency: ALLOWED covers build and lint tooling only`);
       } else if (vuln.fixAvailable === true) {
         problems.push(`${id} (${name}) can now be fixed without a breaking upgrade: run \`npm audit fix\` and remove it from ALLOWED`);
       } else {
@@ -68,8 +87,8 @@ export function assessAudit(report, allowed = ALLOWED) {
   return { problems, waived };
 }
 
-function readReport() {
-  const run = spawnSync('npm', ['audit', '--json'], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+function readReport(extraArgs = []) {
+  const run = spawnSync('npm', ['audit', '--json', ...extraArgs], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
   if (run.error) throw run.error;
   // npm exits non-zero whenever it finds anything; the report is on stdout either way.
   return JSON.parse(run.stdout);
@@ -78,7 +97,7 @@ function readReport() {
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   let result;
   try {
-    result = assessAudit(readReport());
+    result = assessAudit(readReport(), ALLOWED, readReport(['--omit=dev']));
   } catch (e) {
     console.error(`[check-audit] could not read the audit report: ${e.message}`);
     process.exit(2);
