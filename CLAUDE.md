@@ -68,8 +68,9 @@ If a build starts failing after a dependency change, bisect these three first.
   subscription webhook is built. Debits spend Subscription, then Free, then
   Pack. Past `subscription_expires_at` they cannot be spent and the hourly
   sweep removes them; a renewal expires the previous cycle's remainder (no
-  rollover). A refund returns to the bucket it came from, even after the
-  cycle ended, so it never becomes permanent credit. A Pack clawback caps at
+  rollover). A refund returns to the bucket it came from; the part an ended
+  or replaced cycle paid for is expired again in the same call, so it never
+  becomes permanent credit and never rolls over. A Pack clawback caps at
   `balance - free_balance - subscription_balance`.
   `reconcile_subscription_credits()` must return zero rows.
 - **Idempotency**: every state-changing RPC takes an idempotency key

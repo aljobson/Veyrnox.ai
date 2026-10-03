@@ -9,16 +9,24 @@
 --   read_user_credits, read_user_balance    report what can be spent.
 --
 -- A cycle does not roll over: subscription_grant expires whatever is left of
--- the previous cycle before it grants the next. Nothing calls
--- subscription_grant yet; the Stripe subscription webhook (C4) will.
+-- the previous cycle before it grants the next, and a refund or reversal of
+-- something an earlier cycle paid for is returned and expired in one call.
+-- Nothing calls subscription_grant yet; the Stripe subscription webhook (C4)
+-- will.
 --
 -- Idempotent: CREATE OR REPLACE, IF NOT EXISTS, cron entries unscheduled by
 -- name before they are scheduled. The pg_cron block is skipped where the
 -- extension is absent (the local acceptance-test database).
 
+SET LOCAL lock_timeout = '5s';
+
 -- One grant per key, whoever it is for: a Stripe invoice id is global.
 CREATE UNIQUE INDEX IF NOT EXISTS ledger_entries_one_subscription_grant_per_key
     ON public.ledger_entries (reason) WHERE reason LIKE 'grant:subscription:%';
+
+-- The sweep's scan.
+CREATE INDEX IF NOT EXISTS credit_balances_subscription_expiry
+    ON public.credit_balances (subscription_expires_at) WHERE subscription_balance > 0;
 
 -- ── ledger_unlock: Subscription, then Free, then Pack (0142 body otherwise) ─
 
@@ -38,6 +46,7 @@ DECLARE
     v_free_part INTEGER;
     v_sub         INTEGER;
     v_sub_expires TIMESTAMPTZ;
+    v_sub_cycle   INTEGER;
     v_sub_live    INTEGER;
     v_sub_part    INTEGER;
     v_spendable   INTEGER;
@@ -49,8 +58,8 @@ BEGIN
         RETURN jsonb_build_object('ok', false, 'code', 'INVALID_CREDITS');
     END IF;
 
-    SELECT balance, free_balance, subscription_balance, subscription_expires_at
-    INTO v_balance, v_free, v_sub, v_sub_expires
+    SELECT balance, free_balance, subscription_balance, subscription_expires_at, subscription_cycle
+    INTO v_balance, v_free, v_sub, v_sub_expires, v_sub_cycle
     FROM public.credit_balances
     WHERE user_id = p_user_id
     FOR UPDATE;
@@ -79,8 +88,9 @@ BEGIN
     v_sub_part := LEAST(v_sub_live, p_credits);
     v_free_part := LEAST(v_free, p_credits - v_sub_part);
 
-    INSERT INTO public.ledger_entries (user_id, delta, free_delta, subscription_delta, reason, job_id)
-    VALUES (p_user_id, -p_credits, -v_free_part, -v_sub_part, 'unlock:cinema:' || p_content_id::text, NULL)
+    INSERT INTO public.ledger_entries (user_id, delta, free_delta, subscription_delta, subscription_cycle, reason, job_id)
+    VALUES (p_user_id, -p_credits, -v_free_part, -v_sub_part, CASE WHEN v_sub_part > 0 THEN v_sub_cycle END,
+            'unlock:cinema:' || p_content_id::text, NULL)
     RETURNING id INTO v_entry_id;
 
     UPDATE public.credit_balances
@@ -111,6 +121,10 @@ DECLARE
     v_unlock    public.cinema_unlocks%ROWTYPE;
     v_free_part INTEGER;
     v_sub_part  INTEGER;
+    v_sub_stale INTEGER;
+    v_was_cycle INTEGER;
+    v_sub_cycle INTEGER;
+    v_sub_expires TIMESTAMPTZ;
     v_entry_id  UUID;
     v_count     INTEGER := 0;
     v_credits   INTEGER := 0;
@@ -130,26 +144,36 @@ BEGIN
         ORDER BY x.user_id
         FOR UPDATE
     LOOP
-        PERFORM 1 FROM public.credit_balances b WHERE b.user_id = v_unlock.user_id FOR UPDATE;
+        SELECT b.subscription_cycle, b.subscription_expires_at INTO v_sub_cycle, v_sub_expires
+        FROM public.credit_balances b WHERE b.user_id = v_unlock.user_id FOR UPDATE;
 
-        SELECT COALESCE(-l.free_delta, 0), -l.subscription_delta INTO v_free_part, v_sub_part
+        SELECT COALESCE(-l.free_delta, 0), -l.subscription_delta, l.subscription_cycle
+        INTO v_free_part, v_sub_part, v_was_cycle
         FROM public.ledger_entries l
         WHERE l.id = v_unlock.ledger_entry_id;
         v_sub_part := COALESCE(v_sub_part, 0);
+        -- From a cycle that has ended or been replaced: returned, then expired.
+        v_sub_stale := CASE WHEN v_sub_expires > now() AND v_was_cycle = v_sub_cycle THEN 0 ELSE v_sub_part END;
         IF EXISTS (SELECT 1 FROM public.ledger_entries l
                    WHERE l.user_id = v_unlock.user_id AND l.reason = 'expire:free') THEN
             v_free_part := 0;
         END IF;
 
         -- Subscription Credits return to their own bucket, as in ledger_refund.
-        INSERT INTO public.ledger_entries (user_id, delta, free_delta, subscription_delta, reason, job_id)
+        INSERT INTO public.ledger_entries (user_id, delta, free_delta, subscription_delta, subscription_cycle, reason, job_id)
         VALUES (v_unlock.user_id, v_unlock.credits, v_free_part, v_sub_part,
+                CASE WHEN v_sub_part > 0 THEN v_sub_cycle END,
                 'reverse:cinema_unlock:' || p_content_id::text, NULL)
         RETURNING id INTO v_entry_id;
 
+        IF v_sub_stale > 0 THEN
+            INSERT INTO public.ledger_entries (user_id, delta, free_delta, subscription_delta, subscription_cycle, reason, job_id)
+            VALUES (v_unlock.user_id, -v_sub_stale, 0, -v_sub_stale, v_sub_cycle, 'expire:subscription', NULL);
+        END IF;
+
         UPDATE public.credit_balances
-        SET balance = balance + v_unlock.credits, free_balance = free_balance + v_free_part,
-            subscription_balance = subscription_balance + v_sub_part, updated_at = now()
+        SET balance = balance + v_unlock.credits - v_sub_stale, free_balance = free_balance + v_free_part,
+            subscription_balance = subscription_balance + v_sub_part - v_sub_stale, updated_at = now()
         WHERE user_id = v_unlock.user_id;
 
         UPDATE public.cinema_unlocks
@@ -167,8 +191,11 @@ BEGIN
 END $$;
 
 -- ── subscription_grant: one billing cycle's credits ──────────────────────
--- p_grant_key is the provider's id for the paid invoice. A replay is a no-op;
--- the same key for a different user is refused.
+-- p_grant_key is the provider's id for the paid invoice. A replay is a no-op,
+-- however late it arrives; the same key for a different user is refused, and
+-- so is an invoice whose period does not end after the current one (an older
+-- invoice delivered out of order must not replace a newer cycle). A Frozen
+-- account is still granted what it paid for: it cannot spend while Frozen.
 
 CREATE OR REPLACE FUNCTION public.subscription_grant(
     p_user_id UUID,
@@ -185,6 +212,8 @@ DECLARE
     v_existing public.ledger_entries%ROWTYPE;
     v_balance INTEGER;
     v_leftover INTEGER;
+    v_expires TIMESTAMPTZ;
+    v_cycle INTEGER;
     v_entry_id UUID;
 BEGIN
     IF p_credits IS NULL OR p_credits <= 0 OR p_credits > 100000 THEN
@@ -192,10 +221,6 @@ BEGIN
     END IF;
     IF p_grant_key IS NULL OR p_grant_key !~ '^[A-Za-z0-9_]{1,100}$' THEN
         RETURN jsonb_build_object('ok', false, 'code', 'INVALID_GRANT_KEY');
-    END IF;
-    -- A cycle ends in the future and is at most a year long (annual plans).
-    IF p_period_end IS NULL OR p_period_end <= now() OR p_period_end > now() + interval '400 days' THEN
-        RETURN jsonb_build_object('ok', false, 'code', 'INVALID_PERIOD_END');
     END IF;
     IF NOT EXISTS (SELECT 1 FROM public.users u WHERE u.id = p_user_id) THEN
         RETURN jsonb_build_object('ok', false, 'code', 'USER_NOT_FOUND');
@@ -207,10 +232,14 @@ BEGIN
     ON CONFLICT (user_id) DO NOTHING;
 
     -- Same lock as every other money function.
-    SELECT balance, subscription_balance INTO v_balance, v_leftover
+    SELECT balance, subscription_balance, subscription_expires_at, subscription_cycle
+    INTO v_balance, v_leftover, v_expires, v_cycle
     FROM public.credit_balances WHERE user_id = p_user_id FOR UPDATE;
 
-    SELECT * INTO v_existing FROM public.ledger_entries WHERE reason = v_reason;
+    -- The second condition restates the partial index's predicate so the
+    -- planner can use it.
+    SELECT * INTO v_existing FROM public.ledger_entries
+    WHERE reason = v_reason AND reason LIKE 'grant:subscription:%';
     IF FOUND THEN
         IF v_existing.user_id <> p_user_id THEN
             RETURN jsonb_build_object('ok', false, 'code', 'GRANT_KEY_REUSED');
@@ -219,16 +248,25 @@ BEGIN
                                   'expired', 0, 'balance_after', v_balance);
     END IF;
 
+    -- Checked after the replay probe, so a late retry of a granted invoice is
+    -- still a no-op. A cycle ends in the future and is at most a year long.
+    IF p_period_end IS NULL OR p_period_end <= now() OR p_period_end > now() + interval '400 days' THEN
+        RETURN jsonb_build_object('ok', false, 'code', 'INVALID_PERIOD_END');
+    END IF;
+    IF v_expires IS NOT NULL AND p_period_end <= v_expires THEN
+        RETURN jsonb_build_object('ok', false, 'code', 'PERIOD_NOT_NEWER');
+    END IF;
+
     -- No rollover: the previous cycle's remainder goes before the new grant.
     -- One block, so a key another user already holds undoes the expiry too.
     BEGIN
         IF v_leftover > 0 THEN
-            INSERT INTO public.ledger_entries (user_id, delta, free_delta, subscription_delta, reason, job_id)
-            VALUES (p_user_id, -v_leftover, 0, -v_leftover, 'expire:subscription', NULL);
+            INSERT INTO public.ledger_entries (user_id, delta, free_delta, subscription_delta, subscription_cycle, reason, job_id)
+            VALUES (p_user_id, -v_leftover, 0, -v_leftover, v_cycle, 'expire:subscription', NULL);
         END IF;
 
-        INSERT INTO public.ledger_entries (user_id, delta, free_delta, subscription_delta, reason, job_id)
-        VALUES (p_user_id, p_credits, 0, p_credits, v_reason, NULL)
+        INSERT INTO public.ledger_entries (user_id, delta, free_delta, subscription_delta, subscription_cycle, reason, job_id)
+        VALUES (p_user_id, p_credits, 0, p_credits, v_cycle + 1, v_reason, NULL)
         RETURNING id INTO v_entry_id;
     EXCEPTION WHEN unique_violation THEN
         RETURN jsonb_build_object('ok', false, 'code', 'GRANT_KEY_REUSED');
@@ -238,6 +276,7 @@ BEGIN
     SET balance = balance - v_leftover + p_credits,
         subscription_balance = p_credits,
         subscription_expires_at = p_period_end,
+        subscription_cycle = v_cycle + 1,
         updated_at = now()
     WHERE user_id = p_user_id
     RETURNING balance INTO v_balance;
@@ -248,9 +287,9 @@ END $$;
 
 -- ── expire_subscription_credits: the sweep ───────────────────────────────
 -- Removes Subscription Credits whose cycle has ended. Unlike Free Credits it
--- does not wait for unsettled jobs: a late Credit Refund returns to this
--- bucket, already unspendable, and the next run removes it too. p_as_of
--- exists so tests can run the sweep "after the cycle" without waiting.
+-- does not wait for unsettled jobs: a late Credit Refund expires its own
+-- Subscription part (ledger_refund, 0183). p_as_of exists so tests can run
+-- the sweep "after the cycle" without waiting.
 
 CREATE OR REPLACE FUNCTION public.expire_subscription_credits(
     p_as_of TIMESTAMPTZ DEFAULT now(),
@@ -263,6 +302,7 @@ AS $$
 DECLARE
     v_user_id UUID;
     v_sub INTEGER;
+    v_cycle INTEGER;
     v_users INTEGER := 0;
     v_credits INTEGER := 0;
 BEGIN
@@ -272,14 +312,14 @@ BEGIN
         ORDER BY b.subscription_expires_at
         LIMIT GREATEST(1, LEAST(COALESCE(p_limit, 500), 5000))
     LOOP
-        SELECT subscription_balance INTO v_sub FROM public.credit_balances
+        SELECT subscription_balance, subscription_cycle INTO v_sub, v_cycle FROM public.credit_balances
         WHERE user_id = v_user_id AND subscription_expires_at <= p_as_of
         FOR UPDATE SKIP LOCKED;
         -- Re-check under the lock: a renewal may have replaced the cycle.
         CONTINUE WHEN v_sub IS NULL OR v_sub <= 0;
 
-        INSERT INTO public.ledger_entries (user_id, delta, free_delta, subscription_delta, reason, job_id)
-        VALUES (v_user_id, -v_sub, 0, -v_sub, 'expire:subscription', NULL);
+        INSERT INTO public.ledger_entries (user_id, delta, free_delta, subscription_delta, subscription_cycle, reason, job_id)
+        VALUES (v_user_id, -v_sub, 0, -v_sub, v_cycle, 'expire:subscription', NULL);
 
         UPDATE public.credit_balances
         SET balance = balance - v_sub, subscription_balance = 0, updated_at = now()

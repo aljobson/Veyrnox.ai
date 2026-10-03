@@ -183,18 +183,24 @@ tiers.** The product owner approved this, and the spend-order question below, wi
 
 - **Bucket.** `ledger_entries.subscription_delta`, `credit_balances.subscription_balance`
   and `credit_balances.subscription_expires_at`, beside the Free Credit columns.
-  `free_balance + subscription_balance <= balance`, enforced by a CHECK.
+  `free_balance + subscription_balance <= balance`, enforced by a CHECK. A `subscription_cycle`
+  counter on both tables says which cycle a row's Subscription part belongs to.
 - **Spend order** as accepted above: Subscription, then Free, then Pack, in `ledger_debit` and
   in the Cinema `ledger_unlock`.
 - **Grant.** `subscription_grant(user, credits, period_end, key)`. The key is the provider's id
-  for the paid invoice; a replay is a no-op and the same key can never credit a second account.
+  for the paid invoice; a replay is a no-op, however late, and the same key can never credit a
+  second account. An invoice whose period does not end after the current one is refused
+  (`PERIOD_NOT_NEWER`), so an older invoice delivered out of order cannot replace a newer cycle.
+  **This also refuses a mid-cycle upgrade invoice; upgrades need their own rule in C4.**
 - **No rollover.** A grant first expires whatever the previous cycle left.
 - **Cycle end.** Past `subscription_expires_at` the credits cannot be spent, and an hourly sweep
   (`expire_subscription_credits`) removes them. Balance readers leave them out in the meantime.
-- **Refunds.** Each part returns to the bucket it came from. A refund that lands after its cycle
-  ended still returns to the Subscription bucket, where it is unspendable and the next sweep
-  removes it. The alternative, returning it as Pack Credits, would let a job that fails across a
-  cycle boundary turn expiring credits into permanent ones.
+- **Refunds.** Each part returns to the bucket it came from. The Subscription part that came
+  from a cycle which has since ended or been replaced is returned and expired again in the same
+  call: the ledger shows the refund and an `expire:subscription` row, and the bucket is
+  unchanged. Returning it as Pack Credits would turn expiring credits into permanent ones;
+  leaving it in the bucket after a renewal would be a rollover. Both were rejected. The same
+  rule applies to a reversed Cinema unlock.
 - **Clawback.** A Pack refund or dispute takes Pack Credits only.
 - **Audit.** `reconcile_subscription_credits()` joins the nightly reconcile. It is not yet in the
   hourly `reconcile_status` snapshot; add it with the webhook (C4), before anything grants.

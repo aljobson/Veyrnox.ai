@@ -134,7 +134,7 @@ try {
     assert.deepEqual(await buckets(buyer), [780, 10, 500]);
     await debit(buyer, 600); // 500 subscription, 10 free, 90 pack: 180 pack left
     assert.deepEqual(await buckets(buyer), [180, 0, 0]);
-    await grant(buyer, 500, inDays(30));
+    await grant(buyer, 500, inDays(60));
     assert.deepEqual(await buckets(buyer), [680, 0, 500]);
     const claw = await rpc('public.apply_top_up_refund($1, $2, $3, $4)', [order, start.price_usd_cents, start.price_usd_cents, start.top_up_id]);
     assert.deepEqual([claw.ok, claw.taken, claw.shortfall], [true, 180, 90]);
@@ -164,15 +164,17 @@ try {
     assert.deepEqual(await parts(`user_id = $1 AND reason = 'expire:subscription'`, [b.id]), [-30, 0, -30]);
     await reconciles(b);
 
-    // A refund that lands after the cycle returns to the bucket, unspendable,
-    // and the next sweep removes it: it never becomes permanent credit.
+    // A refund that lands after the cycle is returned and expired in the same
+    // call: it never becomes spendable, and never becomes permanent credit.
     const late = await refund(b, spent.job_id, 20);
     assert.deepEqual(await parts('id = $1', [late.entry_id]), [20, 0, 20]);
-    assert.deepEqual(await buckets(b), [23, 0, 20]);
+    assert.equal(late.balance_after, 3);
+    assert.deepEqual(await buckets(b), [3, 0, 0]);
+    // Every row in a transaction shares one created_at, so pick it by amount.
+    assert.deepEqual(await parts(`user_id = $1 AND reason = 'expire:subscription' AND delta = -20`, [b.id]), [-20, 0, -20]);
     assert.equal(await rpc('public.read_user_balance($1)', [b.auth]), 3);
     assert.equal((await debit(b, 4)).code, 'INSUFFICIENT_BALANCE');
-    await rpc('public.expire_subscription_credits()');
-    assert.deepEqual(await buckets(b), [3, 0, 0]);
+    await reconciles(b);
     const idle = await one(`SELECT count(*)::int AS n FROM public.ledger_entries WHERE user_id = $1 AND reason = 'expire:subscription'`, [b.id]);
     await rpc('public.expire_subscription_credits()');
     assert.equal((await one(`SELECT count(*)::int AS n FROM public.ledger_entries WHERE user_id = $1 AND reason = 'expire:subscription'`, [b.id])).n, idle.n);
@@ -196,6 +198,77 @@ try {
     assert.equal(new Date((await rpc('public.read_user_credits($1)', [s.auth])).subscription_expires_at).getTime() > Date.now() + 50 * 86400000, true);
     await reconciles(s);
 
+    // A job the old cycle paid for, refunded after the renewal: its
+    // Subscription part does not roll into the new cycle.
+    const carry = await user();
+    await pack(carry, 10);
+    await grant(carry, 100, inDays(30));
+    const oldJob = await debit(carry, 105); // 100 subscription, 5 free
+    const mixedJob = await debit(carry, 3); // 3 free
+    await grant(carry, 100, inDays(60));
+    assert.deepEqual(await buckets(carry), [112, 2, 100]);
+    const afterRenewal = await refund(carry, oldJob.job_id, 105);
+    assert.deepEqual(await parts('id = $1', [afterRenewal.entry_id]), [105, 5, 100]);
+    assert.deepEqual(await buckets(carry), [117, 7, 100]); // the Free part is back, the old cycle's 100 is not
+    assert.equal(afterRenewal.balance_after, 117);
+    await refund(carry, mixedJob.job_id, 3);
+    assert.deepEqual(await buckets(carry), [120, 10, 100]);
+    // A job this cycle paid for is refunded in full.
+    const newJob = await debit(carry, 40);
+    await refund(carry, newJob.job_id, 40);
+    assert.deepEqual(await buckets(carry), [120, 10, 100]);
+    await reconciles(carry);
+
+    // A late retry of a granted invoice is still a no-op, even past its end;
+    // an older invoice delivered out of order never replaces a newer cycle.
+    const o = await user();
+    const kOld = key();
+    await grant(o, 100, inDays(30), kOld);
+    await grant(o, 100, inDays(60));
+    await endCycle(o);
+    const lateReplay = await grant(o, 100, inDays(-5), kOld);
+    assert.deepEqual([lateReplay.ok, lateReplay.idempotent], [true, true]);
+    const p = await user();
+    await grant(p, 100, inDays(60));
+    const older = await grant(p, 100, inDays(30));
+    assert.deepEqual([older.ok, older.code], [false, 'PERIOD_NOT_NEWER']);
+    const same = await grant(p, 100, (await one('SELECT subscription_expires_at AS e FROM public.credit_balances WHERE user_id = $1', [p.id])).e);
+    assert.equal(same.code, 'PERIOD_NOT_NEWER');
+    assert.deepEqual(await buckets(p), [110, 10, 100]);
+
+    // The largest grant, spent, expired and renewed: no integer overflow.
+    const big = await user();
+    await pack(big, 100000);
+    const bigGrant = await grant(big, 100000, inDays(30));
+    assert.equal(bigGrant.ok, true, JSON.stringify(bigGrant));
+    const bigDebit = await debit(big, 150000);
+    assert.equal(bigDebit.ok, true, JSON.stringify(bigDebit));
+    assert.deepEqual(await parts('job_id = $1', [bigDebit.job_id]), [-150000, -10, -100000]);
+    await refund(big, bigDebit.job_id, 150000);
+    assert.deepEqual(await buckets(big), [200010, 10, 100000]);
+    assert.equal((await grant(big, 100000, inDays(60))).expired, 100000);
+    await endCycle(big);
+    await rpc('public.expire_subscription_credits()');
+    assert.deepEqual(await buckets(big), [100010, 10, 0]);
+    await reconciles(big);
+
+    // Free Credit expiry leaves Subscription Credits alone.
+    const f = await user();
+    await grant(f, 30, inDays(200));
+    await rpc('public.expire_free_credits($1, 5000)', [inDays(91)]);
+    assert.deepEqual(await buckets(f), [30, 0, 30]);
+    await reconciles(f);
+
+    // A Frozen account is granted what it paid for, and still cannot spend.
+    const z = await user();
+    await q('UPDATE public.users SET frozen_at = now() WHERE id = $1', [z.id]);
+    assert.equal((await grant(z, 20, inDays(30))).ok, true);
+    assert.equal((await debit(z, 1)).code, 'ACCOUNT_FROZEN');
+
+    // An account that never subscribed reads as zero.
+    const never = await rpc('public.read_user_credits($1)', [thief.auth === a.auth ? a.auth : (await user()).auth]);
+    assert.deepEqual([never.balance, never.subscription_credits, never.subscription_expires_at], [10, 0, null]);
+
     // ── Cinema unlocks spend and return the same way. ──
     const title = await one(`SELECT id FROM public.cinema_content ORDER BY created_at LIMIT 1`);
     assert.ok(title, 'the Cinema scripts left a title to unlock');
@@ -205,10 +278,18 @@ try {
     assert.equal(unlocked.ok, true, JSON.stringify(unlocked));
     assert.deepEqual(await parts('id = $1', [unlocked.entry_id]), [-6, -2, -4]);
     assert.deepEqual(await buckets(viewer), [8, 8, 0]);
+    // A second viewer's unlock is paid by a cycle that is then replaced.
+    const viewer2 = await user();
+    await grant(viewer2, 4, inDays(30));
+    assert.equal((await rpc(`public.ledger_unlock($1, $2, 6, 'test-consent')`, [viewer2.id, title.id])).ok, true);
+    await grant(viewer2, 4, inDays(60));
+    assert.deepEqual(await buckets(viewer2), [12, 8, 4]);
     const reversed = await rpc(`public.reverse_cinema_unlocks($1, 'test operator', 'subscription bucket test')`, [title.id]);
     assert.equal(reversed.ok, true, JSON.stringify(reversed));
     assert.deepEqual(await buckets(viewer), [14, 10, 4]);
+    assert.deepEqual(await buckets(viewer2), [14, 10, 4]); // Free back; the old cycle's 4 returned and expired
     await reconciles(viewer);
+    await reconciles(viewer2);
 
     // ── ledger_grant cannot mint or expire Subscription Credits. ──
     await refused(`SELECT public.ledger_grant($1, 5, 'grant:subscription:in_forged')`, [a.id], '23514');
