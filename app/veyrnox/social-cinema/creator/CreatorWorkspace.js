@@ -5,7 +5,7 @@ import { gatewayFetch } from '../../_lib/gateway';
 import { VideoUpload } from './VideoUpload';
 import { Button } from '../../_components/Button';
 import { AI_DISCLOSURES, CINEMA_CATEGORIES, MAX_CATEGORIES } from '../../../../lib/cinema/domain';
-import { cinemaPreviewEnabled } from '../preview';
+import { useCinemaPreview } from '../preview';
 const identity = () => getSession()?.user?.id || '';
 const noIdentity = () => '';
 const labels = { FILM: 'Film', SHORT: 'Short', TRAILER: 'Trailer', SERIES: 'Series', SEASON: 'Season', EPISODE: 'Episode' };
@@ -17,8 +17,7 @@ const disclosureLabels = { generated_video: 'Generated video', generated_voice: 
 const input = 'mt-2 w-full rounded-xl border border-vx-border bg-vx-panel px-4 py-3 text-vx-fg focus:outline focus:outline-2 focus:outline-vx-accent';
 export function CreatorWorkspace({proxyUploadsEnabled=false}) {
   const account = useSyncExternalStore(onSessionChange, identity, noIdentity);
-  const [preview, setPreview] = useState(false);
-  useEffect(() => { setPreview(cinemaPreviewEnabled()); }, []);
+  const preview = useCinemaPreview();
   if (!preview) return <p role="status" className="mt-8">The creator workspace is in preview and is not open yet.</p>;
   if (!account) return <div className="mt-8"><p className="mb-4">Sign in with your approved Cinema creator account.</p><Button onClick={() => window.dispatchEvent(new CustomEvent('veyrnox:auth-required'))}>Sign in</Button></div>;
   return <Drafts key={account} proxyUploadsEnabled={proxyUploadsEnabled} />;

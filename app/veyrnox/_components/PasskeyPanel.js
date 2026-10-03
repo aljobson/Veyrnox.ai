@@ -9,17 +9,20 @@
  * adding: a passkey on a lost device can only be revoked from here.
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import { ConfirmDialog } from './ConfirmDialog';
 import { readAuthSettings } from '../../lib/authProviders.js';
 import { passkeysSupported, registerPasskey, listPasskeys, deletePasskey } from '../../lib/passkeys.js';
 import { PASSKEY_NAME_MAX, cleanPasskeyName, passkeyLabel, passkeyDates, usablePasskeys, passkeyErrorCopy } from '../_lib/passkeyList.js';
 
+const never = () => () => {};
+const cannot = () => false;
+
 const button = 'rounded-full border border-vx-border px-4 py-2 text-sm font-bold disabled:opacity-50';
 
 export function PasskeyPanel() {
   const [enabled, setEnabled] = useState(null); // null until the setting is read
-  const [canCreate, setCanCreate] = useState(false);
+  const canCreate = useSyncExternalStore(never, passkeysSupported, cannot);
   const [passkeys, setPasskeys] = useState(null); // null: not loaded
   const [name, setName] = useState('');
   const [busy, setBusy] = useState(false);
@@ -38,7 +41,6 @@ export function PasskeyPanel() {
 
   useEffect(() => {
     let cancelled = false;
-    setCanCreate(passkeysSupported());
     readAuthSettings(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY).then((data) => {
       if (cancelled) return;
       const on = !!data?.passkeys_enabled;
