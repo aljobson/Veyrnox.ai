@@ -179,6 +179,32 @@ tiers.** The product owner approved this, and the spend-order question below, wi
   (soonest-expiring-first: Subscription → Free → Pack). `CONTEXT.md`'s Free Credits and
   Subscription entries are updated to state this explicitly.
 
+**Ledger design, built 2026-10-03 (migrations 0183, 0184; IMPLEMENTATION-PLAN C2/C3):**
+
+- **Bucket.** `ledger_entries.subscription_delta`, `credit_balances.subscription_balance`
+  and `credit_balances.subscription_expires_at`, beside the Free Credit columns.
+  `free_balance + subscription_balance <= balance`, enforced by a CHECK.
+- **Spend order** as accepted above: Subscription, then Free, then Pack, in `ledger_debit` and
+  in the Cinema `ledger_unlock`.
+- **Grant.** `subscription_grant(user, credits, period_end, key)`. The key is the provider's id
+  for the paid invoice; a replay is a no-op and the same key can never credit a second account.
+- **No rollover.** A grant first expires whatever the previous cycle left.
+- **Cycle end.** Past `subscription_expires_at` the credits cannot be spent, and an hourly sweep
+  (`expire_subscription_credits`) removes them. Balance readers leave them out in the meantime.
+- **Refunds.** Each part returns to the bucket it came from. A refund that lands after its cycle
+  ended still returns to the Subscription bucket, where it is unspendable and the next sweep
+  removes it. The alternative, returning it as Pack Credits, would let a job that fails across a
+  cycle boundary turn expiring credits into permanent ones.
+- **Clawback.** A Pack refund or dispute takes Pack Credits only.
+- **Audit.** `reconcile_subscription_credits()` joins the nightly reconcile. It is not yet in the
+  hourly `reconcile_status` snapshot; add it with the webhook (C4), before anything grants.
+- **Not live.** Nothing calls `subscription_grant`, so every balance has zero Subscription
+  Credits and the changed functions behave as before.
+
+**Defaults this design implies for question 1 below, for the owner to confirm before C4:**
+a cancelled subscription keeps its credits until the period it paid for ends; a failed renewal
+grants nothing, so the old cycle simply expires at its end with no grace period.
+
 **Still open, none blocking implementation start:**
 
 1. **Dunning grace period and mid-cycle-cancellation credit handling** — not specified here,
