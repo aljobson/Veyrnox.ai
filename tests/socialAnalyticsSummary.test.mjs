@@ -34,11 +34,18 @@ test('summarize reports the latest followers, the change across the period and e
 test('summarize does not invent a change, an average or a rate it cannot compute', () => {
     assert.deepEqual(summarize({ evolution: [], posts: [] }), {
         followers: null, followersChange: null, posts: 0, interactions: 0,
-        interactionsPerPost: null, engagementPer1000: null, hasInsights: false, series: [],
+        interactionsPerPost: null, engagementPer1000: null, hasInsights: false, hasViews: false, series: [],
     });
     assert.equal(summarize({ posts: [{ metrics: { likes: 1 } }, { metrics: { likes: 2, reach: 40 } }] }).hasInsights, true);
     const oneDay = summarize({ evolution: [{ date: '2026-10-03', metrics: { followers: 0 } }], posts: [{ metrics: { likes: 3 } }] });
     assert.equal(oneDay.followersChange, null);
     assert.equal(oneDay.engagementPer1000, null, 'no followers, no per-follower rate');
     assert.equal(oneDay.interactionsPerPost, 3);
+});
+
+test('YouTube video views are visible without Instagram reach or insights', () => {
+    const out = summarize({ posts: [{ metrics: { views: 100, likes: 3, comments: 1 } }] });
+    assert.equal(out.hasViews, true);
+    assert.equal(out.hasInsights, false);
+    assert.equal(out.interactions, 4, 'views do not count as interactions');
 });

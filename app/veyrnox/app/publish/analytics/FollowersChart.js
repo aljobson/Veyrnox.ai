@@ -6,11 +6,11 @@ const PAD = { top: 12, right: 12, bottom: 24, left: 12 };
 const whole = new Intl.NumberFormat();
 
 /** Followers over time, one point per stored day. */
-export function FollowersChart({ series }) {
-  if (series.length === 0) return <p className="text-sm text-vx-fg-muted">No follower numbers in this period.</p>;
+export function FollowersChart({ series, label = 'Followers' }) {
+  if (series.length === 0) return <p className="text-sm text-vx-fg-muted">No {label.toLowerCase()} numbers in this period.</p>;
   if (series.length === 1) {
     return <p className="text-sm text-vx-fg-muted">
-      {whole.format(series[0].followers)} followers on {formatDay(series[0].date)}. The trend appears once there are two days of numbers.
+      {whole.format(series[0].followers)} {label.toLowerCase()} on {formatDay(series[0].date)}. The trend appears once there are two days of numbers.
     </p>;
   }
 
@@ -34,7 +34,7 @@ export function FollowersChart({ series }) {
     <svg
       viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
       role="img"
-      aria-label={`Followers from ${whole.format(first.followers)} on ${formatDay(first.date)} to ${whole.format(last.followers)} on ${formatDay(last.date)}`}
+      aria-label={`${label} from ${whole.format(first.followers)} on ${formatDay(first.date)} to ${whole.format(last.followers)} on ${formatDay(last.date)}`}
       className="w-full h-auto text-vx-accent"
     >
       <polygon points={area} fill="currentColor" opacity="0.12" />
