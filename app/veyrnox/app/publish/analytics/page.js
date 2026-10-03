@@ -12,7 +12,7 @@ const currentAccount = () => getSession()?.user?.id || '';
 const noAccount = () => '';
 const button = 'rounded-full border border-vx-border px-4 py-2 text-sm font-bold disabled:opacity-50';
 // Networks the analytics sweep has a fetcher for (lib/socialAnalyticsSweep.js).
-const ANALYTICS_NETWORKS = new Set(['instagram', 'youtube']);
+const ANALYTICS_NETWORKS = new Set(['instagram', 'youtube', 'tiktok']);
 const RANGES = [{ days: 7, label: '7 days' }, { days: 30, label: '30 days' }, { days: 90, label: '90 days' }];
 const whole = new Intl.NumberFormat();
 const oneDecimal = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
@@ -86,7 +86,7 @@ function Dashboard() {
     {ANALYTICS_NETWORKS.has(selected.network)
       ? <AccountAnalytics key={`${selected.id}:${days}`} accountId={selected.id} network={selected.network} days={days} />
       : <p className="rounded-2xl border border-vx-border p-5 text-sm text-vx-fg-body">
-          Analytics for {networkLabel(selected.network)} are not available yet. Instagram and YouTube are supported today.
+          Analytics for {networkLabel(selected.network)} are not available yet. Instagram, YouTube and TikTok are supported today.
         </p>}
   </div>;
 }
@@ -112,6 +112,8 @@ function AccountAnalytics({ accountId, network, days }) {
 
   const summary = summarize(data);
   const youtube = network === 'youtube';
+  const tiktok = network === 'tiktok';
+  const videoNetwork = youtube || tiktok;
   const audienceLabel = youtube ? 'Subscribers' : 'Followers';
   const channelMetrics = data.evolution.at(-1)?.metrics || {};
   const neverSynced = !data.sync?.last_ok_at;
@@ -127,16 +129,17 @@ function AccountAnalytics({ accountId, network, days }) {
     {data.sync?.failing && <p role="status" className="text-sm text-vx-fg-muted">
       The latest update for this account failed, so these numbers may be out of date. Reconnecting it in Veyrnox Publish usually fixes this.
     </p>}
-    <dl className={`grid grid-cols-2 ${youtube ? 'sm:grid-cols-3' : 'sm:grid-cols-4'} gap-3`}>
+    <dl className={`grid grid-cols-2 ${videoNetwork ? 'sm:grid-cols-3' : 'sm:grid-cols-4'} gap-3`}>
       <Stat label={audienceLabel} value={summary.followers === null ? '—' : whole.format(summary.followers)}
         note={summary.followersChange === null ? null : `${summary.followersChange >= 0 ? '+' : ''}${whole.format(summary.followersChange)} in this period`} />
-      <Stat label={youtube ? 'Videos' : 'Posts'} value={whole.format(summary.posts)} />
+      <Stat label={videoNetwork ? 'Videos' : 'Posts'} value={whole.format(summary.posts)} />
       <Stat label="Interactions" value={whole.format(summary.interactions)}
-        note={summary.hasInsights ? 'Likes, comments, saves and shares' : 'Likes and comments'} />
+        note={tiktok ? 'Likes, comments and shares' : summary.hasInsights ? 'Likes, comments, saves and shares' : 'Likes and comments'} />
       <Stat label="Engagement" value={summary.engagementPer1000 === null ? '—' : oneDecimal.format(summary.engagementPer1000)}
-        note={youtube ? 'Interactions per video, per 1,000 subscribers' : 'Interactions per post, per 1,000 followers'} />
+        note={youtube ? 'Interactions per video, per 1,000 subscribers' : tiktok ? 'Interactions per video, per 1,000 followers' : 'Interactions per post, per 1,000 followers'} />
       {youtube && <Stat label="Channel views" value={metric(channelMetrics.views)} note="Lifetime total" />}
-      {youtube && <Stat label="Public videos" value={metric(channelMetrics.posts_count)} note="Channel total" />}
+      {tiktok && <Stat label="Account likes" value={metric(channelMetrics.likes)} note="Lifetime total" />}
+      {videoNetwork && <Stat label="Public videos" value={metric(channelMetrics.posts_count)} note={youtube ? 'Channel total' : 'Account total'} />}
     </dl>
 
     <section className="rounded-2xl border border-vx-border p-5">
@@ -145,11 +148,12 @@ function AccountAnalytics({ accountId, network, days }) {
     </section>
 
     <section className="rounded-2xl border border-vx-border p-5">
-      <h2 className="font-bold mb-4">{youtube ? 'Videos' : 'Posts'} in this period</h2>
-      <PostsTable posts={data.posts} withInsights={summary.hasInsights} withViews={summary.hasViews} />
+      <h2 className="font-bold mb-4">{videoNetwork ? 'Videos' : 'Posts'} in this period</h2>
+      <PostsTable posts={data.posts} withInsights={summary.hasInsights} withViews={summary.hasViews} withShares={tiktok} />
     </section>
 
     {youtube && <p className="text-xs text-vx-fg-muted">YouTube subscriber counts are rounded. Video metrics are lifetime totals for videos published in this period. The latest 50 uploads refresh each round.</p>}
+    {tiktok && <p className="text-xs text-vx-fg-muted">TikTok video metrics cover public videos only. Video metrics are lifetime totals for videos published in this period. The latest 50 public videos refresh each round. Missing numbers may need additional permissions: reconnect in Veyrnox Publish after analytics access is enabled.</p>}
     {data.sync?.last_ok_at && <p className="text-xs text-vx-fg-muted">
       Updated {new Date(data.sync.last_ok_at).toLocaleString()}. Numbers refresh every few hours.
     </p>}
@@ -164,7 +168,7 @@ function Stat({ label, value, note }) {
   </div>;
 }
 
-function PostsTable({ posts, withInsights, withViews }) {
+function PostsTable({ posts, withInsights, withViews, withShares }) {
   if (posts.length === 0) return <p className="text-sm text-vx-fg-muted">No posts in this period.</p>;
   return <div className="overflow-x-auto">
     <table className="w-full text-sm">
@@ -176,6 +180,7 @@ function PostsTable({ posts, withInsights, withViews }) {
           {withViews && <th scope="col" className="pb-2 pr-3 font-bold text-right">Views</th>}
           <th scope="col" className="pb-2 pr-3 font-bold text-right">Likes</th>
           <th scope="col" className="pb-2 pr-3 font-bold text-right">Comments</th>
+          {withShares && <th scope="col" className="pb-2 pr-3 font-bold text-right">Shares</th>}
           <th scope="col" className="pb-2 font-bold text-right">Interactions</th>
         </tr>
       </thead>
@@ -197,6 +202,7 @@ function PostsTable({ posts, withInsights, withViews }) {
             {withViews && <td className="py-2 pr-3 text-right tabular-nums">{metric(p.metrics?.views)}</td>}
             <td className="py-2 pr-3 text-right tabular-nums">{metric(p.metrics?.likes)}</td>
             <td className="py-2 pr-3 text-right tabular-nums">{metric(p.metrics?.comments)}</td>
+            {withShares && <td className="py-2 pr-3 text-right tabular-nums">{metric(p.metrics?.shares)}</td>}
             <td className="py-2 text-right tabular-nums font-bold">{whole.format(postInteractions(p))}</td>
           </tr>
         ))}

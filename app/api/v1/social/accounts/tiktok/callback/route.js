@@ -24,7 +24,7 @@
 
 import { NextResponse } from 'next/server';
 import { rpc, envConfig, SupabaseError } from '../../../../../../../packages/db/supabase-client.js';
-import { tiktokConfig, exchangeCodeForToken, fetchConnectedAccount, TIKTOK_SCOPES } from '../../../../../../../packages/adapters/social/tiktok.js';
+import { tiktokConfig, exchangeCodeForToken, fetchConnectedAccount } from '../../../../../../../packages/adapters/social/tiktok.js';
 import { verifyOAuthState } from '../../../../../../../lib/social/oauthState.js';
 import { tokenCryptoConfig, encryptToken } from '../../../../../../../lib/social/tokenCrypto.js';
 
@@ -75,9 +75,9 @@ export async function POST(req) {
 
     let account;
     try {
-        const { accessToken, refreshToken, expiresAt } = await exchangeCodeForToken(ttCfg, { code, redirectUri });
+        const { accessToken, refreshToken, expiresAt, scopes } = await exchangeCodeForToken(ttCfg, { code, redirectUri });
         const connected = await fetchConnectedAccount(accessToken);
-        account = { ...connected, accessToken, refreshToken, expiresAt };
+        account = { ...connected, accessToken, refreshToken, expiresAt, scopes };
     } catch (err) {
         console.error('[api/v1/social/accounts/tiktok/callback] token exchange failed:', err && err.message);
         return NextResponse.json({ error: 'connect_failed' }, { status: 502 });
@@ -114,7 +114,7 @@ export async function POST(req) {
             p_external_account_id: account.externalAccountId,
             p_display_name: account.displayName,
             p_avatar_url: account.avatarUrl,
-            p_scopes: TIKTOK_SCOPES,
+            p_scopes: account.scopes,
             p_access_token_enc: accessTokenEnc,
             p_refresh_token_enc: refreshTokenEnc,
             p_token_expires_at: account.expiresAt,

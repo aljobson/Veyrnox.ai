@@ -100,6 +100,9 @@
     // screen (reach, views, saves, shares). Only "true" asks for it; turn it
     // on after Meta approves the permission in app review.
     "INSTAGRAM_INSIGHTS_SCOPE_ENABLED": "false",
+    // TikTok analytics consent (user.info.stats + video.list). Enable after
+    // Display API approval; existing connections need to reconnect.
+    "TIKTOK_ANALYTICS_SCOPE_ENABLED": "false",
     // Sender for violation notices (lib/violationEmail.js, issue #479). The
     // domain is verified in Resend; nothing sends until RESEND_API_KEY is set.
     "VIOLATION_EMAIL_FROM": "Veyrnox.ai <support@veyrnox.ai>",

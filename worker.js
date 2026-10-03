@@ -33,6 +33,7 @@ import { runtimeDeps, runtimeKeys } from './lib/autoShortRuntime.js';
 import { recoverCinemaUploads } from './lib/cinema/uploadRecovery.js';
 import { removeCinemaUploads } from './lib/cinema/uploadRemoval.js';
 import { runPublishSweep } from './lib/socialPublishSweep.js';
+import { tiktokConfig } from './packages/adapters/social/tiktok.js';
 import { youtubeConfig } from './packages/adapters/social/youtube.js';
 import { runAnalyticsSweep } from './lib/socialAnalyticsSweep.js';
 import { tokenCryptoConfig } from './lib/social/tokenCrypto.js';
@@ -77,6 +78,7 @@ export default {
             // recovery task: worker_task_health (0157) has no name for it.
             ...(env.PUBLISH_ANALYTICS_ENABLED === 'true' ? [runAnalyticsSweep({
                 youtubeCfg: youtubeConfig(env),
+                tiktokCfg: tiktokConfig(env),
                 cfg: { supabaseUrl: env.SUPABASE_URL, serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY },
                 cryptoCfg: tokenCryptoConfig(env),
             }).then((out) => { if (out.claimed || out.ok === false) console.error('[analytics-sweep]', JSON.stringify(out)); return out; })] : []),
