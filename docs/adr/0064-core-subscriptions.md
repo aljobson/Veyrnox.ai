@@ -210,15 +210,19 @@ tiers.** The product owner approved this, and the spend-order question below, wi
 - **Not live.** Nothing calls `subscription_grant`, so every balance has zero Subscription
   Credits and the changed functions behave as before.
 
-**Defaults this design implies for question 1 below, for the owner to confirm before C4:**
-a cancelled subscription keeps its credits until the period it paid for ends; a failed renewal
-grants nothing, so the old cycle simply expires at its end with no grace period.
+**Cancellation and failed renewals, confirmed by the product owner 2026-10-03** (the defaults
+the ledger design implies, now decisions for C4):
+
+- **A cancelled subscription keeps its credits until the period it paid for ends.** Nothing is
+  taken back at cancellation; the cycle expires at `subscription_expires_at` as any other does.
+- **A failed renewal gets no grace period.** No paid invoice means no grant, so the old cycle
+  expires at its end and the account has no Subscription Credits until a renewal is paid.
 
 **Still open, none blocking implementation start:**
 
-1. **Dunning grace period and mid-cycle-cancellation credit handling** — not specified here,
-   needs a short design note before implementation, following Cinema Pass's precedent where one
-   applies.
+1. ~~Dunning grace period and mid-cycle-cancellation credit handling~~ — decided 2026-10-03,
+   above. What a mid-cycle upgrade, an annual-to-monthly switch and an early resubscription
+   mean (the three `PERIOD_NOT_NEWER` cases) is still open, and that one does block C4.
 2. **Annual price points below the Ultra tier** (Starter/Plus annual) — the recommendation above
    computes Ultra's floor explicitly; Starter and Plus annual rates need the same per-tier net-floor
    check before publishing, not a flat percentage-off assumption.
