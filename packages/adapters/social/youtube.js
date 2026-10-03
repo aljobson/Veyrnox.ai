@@ -203,11 +203,14 @@ async function interpretUploadResponse(res, totalBytes) {
 /** Asks the session what it actually has, without sending any bytes —
  * always call this before deciding what to upload next: a previous
  * tick's PUT may have succeeded even if the Worker died before recording
- * it, and this is the documented way to reconcile that safely. */
-export async function probeUploadOffset(sessionUri, totalBytes, fetcher = fetch) {
+ * it, and this is the documented way to reconcile that safely. The
+ * session URI is not itself a bearer token — every PUT against it still
+ * needs the caller's own Authorization header, same as the initiating
+ * POST. */
+export async function probeUploadOffset(sessionUri, totalBytes, accessToken, fetcher = fetch) {
     const res = await fetcher(sessionUri, {
         method: 'PUT',
-        headers: { 'Content-Range': `bytes */${totalBytes}` },
+        headers: { Authorization: `Bearer ${accessToken}`, 'Content-Range': `bytes */${totalBytes}` },
         signal: AbortSignal.timeout(10000),
     });
     return interpretUploadResponse(res, totalBytes);
@@ -216,7 +219,7 @@ export async function probeUploadOffset(sessionUri, totalBytes, fetcher = fetch)
 /** Uploads one chunk — the source bytes come from `mediaUrl` (a fresh R2
  * presign the caller mints each tick) via an HTTP Range request, never
  * held in Worker memory ahead of time. `endByte` is inclusive. */
-export async function uploadChunk(sessionUri, { mediaUrl, startByte, endByte, totalBytes, mimeType }, fetcher = fetch) {
+export async function uploadChunk(sessionUri, { mediaUrl, startByte, endByte, totalBytes, mimeType, accessToken }, fetcher = fetch) {
     const rangeRes = await fetcher(mediaUrl, {
         headers: { Range: `bytes=${startByte}-${endByte}` },
         signal: AbortSignal.timeout(20000),
@@ -227,6 +230,7 @@ export async function uploadChunk(sessionUri, { mediaUrl, startByte, endByte, to
     const res = await fetcher(sessionUri, {
         method: 'PUT',
         headers: {
+            Authorization: `Bearer ${accessToken}`,
             'Content-Length': String(chunkBytes.length),
             'Content-Range': `bytes ${startByte}-${endByte}/${totalBytes}`,
             'Content-Type': mimeType || 'application/octet-stream',

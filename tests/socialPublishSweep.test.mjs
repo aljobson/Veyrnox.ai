@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { runPublishSweep, BATCH } from '../lib/socialPublishSweep.js';
+import { runPublishSweep, BATCH, nextYoutubeQuotaReset } from '../lib/socialPublishSweep.js';
 import { tokenCryptoConfig, encryptToken } from '../lib/social/tokenCrypto.js';
 
 const cfg = { supabaseUrl: 'https://db.test', serviceRoleKey: 'test-service' };
@@ -437,15 +437,30 @@ test('YouTube: first dispatch spends one quota unit and starts a resumable sessi
     });
 });
 
-test('YouTube: quota exhaustion fails the target without ever starting an upload session', async () => {
+test('YouTube: the quota reset is the next Pacific midnight, the day 0181 counts on', () => {
+    // 12:00 UTC is 05:00 PDT: the reset is 07:00 UTC the next day, not 00:00 UTC.
+    assert.equal(nextYoutubeQuotaReset(new Date('2026-10-03T12:00:00Z')), '2026-10-04T07:05:00.000Z');
+    // 03:00 UTC is still the previous Pacific day (20:00 PDT): four hours to go, not twenty-one.
+    assert.equal(nextYoutubeQuotaReset(new Date('2026-10-03T03:00:00Z')), '2026-10-03T07:05:00.000Z');
+    // Winter: PST is UTC-8.
+    assert.equal(nextYoutubeQuotaReset(new Date('2026-01-15T12:00:00Z')), '2026-01-16T08:05:00.000Z');
+    // Just after the reset it points at the next one.
+    assert.equal(nextYoutubeQuotaReset(new Date('2026-10-03T07:00:01Z')), '2026-10-04T07:05:00.000Z');
+});
+
+test('YouTube: quota exhaustion defers to the next Pacific day rather than burning the 3-attempt retry budget', async () => {
+    // Quota resets at midnight Pacific and has nothing to do with whether THIS
+    // post is postable — treating it as an ordinary failure would exhaust
+    // every queued post's retry budget (~15 minutes) long before the quota
+    // actually resets, permanently failing posts that did nothing wrong.
     const accessTokenEnc = await encryptToken('yt-access-token', cryptoCfg);
     let uploadInitCalls = 0;
     await withFetch({
         claim_due_social_post_targets: async () => [youtubeTarget({ access_token_enc: accessTokenEnc })],
         consume_youtube_upload_quota: async () => ({ ok: false, code: 'QUOTA_EXHAUSTED' }),
-        complete_social_post_target: async (body) => {
-            assert.equal(body.p_ok, false);
-            assert.equal(body.p_error, 'youtube_quota_exhausted');
+        report_social_post_progress: async (body) => {
+            assert.deepEqual(body.p_provider_state, {});
+            assert.ok(new Date(body.p_next_check_at).getTime() > Date.now() + 60_000);
             return { ok: true };
         },
     }, async () => {
@@ -455,7 +470,7 @@ test('YouTube: quota exhaustion fails the target without ever starting an upload
             return real(url, init);
         };
         const out = await runPublishSweep(asyncDeps);
-        assert.deepEqual(out, { ok: true, claimed: 1, published: 0, failed: 1, errors: 0 });
+        assert.deepEqual(out, { ok: true, claimed: 1, published: 0, failed: 0, errors: 0 });
         assert.equal(uploadInitCalls, 0);
     });
 });
@@ -487,6 +502,7 @@ test('YouTube: an in-progress session uploads the whole small file in one chunk 
             }
             if (u.href === 'https://upload.example/session-1') {
                 putCount += 1;
+                assert.equal(init.headers.Authorization, 'Bearer yt-access-token', 'every PUT to the session URI must still be authenticated');
                 if (init.headers['Content-Range'] === 'bytes */1000') {
                     // The probe — a brand-new session has received nothing yet.
                     return { ok: false, status: 308, headers: headerGet({}) };
@@ -527,6 +543,84 @@ test('YouTube: processing succeeded completes the target with a watch URL', asyn
         };
         const out = await runPublishSweep(asyncDeps);
         assert.deepEqual(out, { ok: true, claimed: 1, published: 1, failed: 0, errors: 0 });
+    });
+});
+
+test('YouTube: an expired upload session clears provider_state instead of retrying the same dead URI', async () => {
+    // A 404/410 on the session URI never recovers (Google's own docs) — the
+    // old behavior burned the 3-attempt retry budget re-probing a session
+    // that could never succeed, permanently failing a video a fresh
+    // session could have completed.
+    const accessTokenEnc = await encryptToken('yt-access-token', cryptoCfg);
+    let uploadInitCalls = 0;
+    await withFetch({
+        claim_due_social_post_targets: async () => [youtubeTarget({
+            access_token_enc: accessTokenEnc,
+            provider_state: {
+                phase: 'uploading', session_uri: 'https://upload.example/session-dead', total_bytes: 1000,
+                mime_type: 'video/mp4', bytes_confirmed: 0, started_at: new Date().toISOString(),
+            },
+        })],
+        report_social_post_progress: async (body) => {
+            // Only a restart count survives; the dead session URI is gone.
+            assert.deepEqual(body.p_provider_state, { restarts: 1 });
+            return { ok: true };
+        },
+    }, async () => {
+        const real = globalThis.fetch;
+        globalThis.fetch = async (url, init) => {
+            const u = new URL(url);
+            if (u.href === 'https://upload.example/session-dead') return { ok: false, status: 404, headers: { get: () => null } };
+            if (u.hostname === 'www.googleapis.com') uploadInitCalls += 1;
+            return real(url, init);
+        };
+        const out = await runPublishSweep(asyncDeps);
+        assert.deepEqual(out, { ok: true, claimed: 1, published: 0, failed: 0, errors: 0 });
+        // Clearing provider_state is enough — a fresh session opens on the
+        // *next* tick (this one doesn't fall through and re-dispatch itself).
+        assert.equal(uploadInitCalls, 0);
+    });
+});
+
+test('YouTube: a session that keeps expiring fails the post instead of restarting for ever', async () => {
+    // Every fresh session spends a unit of the daily quota.
+    const accessTokenEnc = await encryptToken('yt-access-token', cryptoCfg);
+    let completed;
+    await withFetch({
+        claim_due_social_post_targets: async () => [youtubeTarget({
+            access_token_enc: accessTokenEnc,
+            provider_state: {
+                phase: 'uploading', session_uri: 'https://upload.example/session-dead', total_bytes: 1000,
+                mime_type: 'video/mp4', bytes_confirmed: 0, started_at: new Date().toISOString(), restarts: 2,
+            },
+        })],
+        report_social_post_progress: async () => assert.fail('must not restart a third time'),
+        complete_social_post_target: async (body) => { completed = body; return { ok: true }; },
+    }, async () => {
+        const real = globalThis.fetch;
+        globalThis.fetch = async (url, init) => {
+            if (new URL(url).href === 'https://upload.example/session-dead') return { ok: false, status: 404, headers: { get: () => null } };
+            return real(url, init);
+        };
+        const out = await runPublishSweep(asyncDeps);
+        assert.equal(out.failed, 1);
+        assert.equal(completed.p_ok, false);
+        assert.equal(completed.p_error, 'youtube_upload_session_expired');
+    });
+});
+
+test('YouTube: a quota answer that is not "exhausted" fails normally instead of deferring a day', async () => {
+    const accessTokenEnc = await encryptToken('yt-access-token', cryptoCfg);
+    let completed;
+    await withFetch({
+        claim_due_social_post_targets: async () => [youtubeTarget({ access_token_enc: accessTokenEnc })],
+        consume_youtube_upload_quota: async () => ({ ok: false, code: 'SOMETHING_ELSE' }),
+        report_social_post_progress: async () => assert.fail('must not defer'),
+        complete_social_post_target: async (body) => { completed = body; return { ok: true }; },
+    }, async () => {
+        const out = await runPublishSweep(asyncDeps);
+        assert.equal(out.failed, 1);
+        assert.equal(completed.p_error, 'youtube_quota_unavailable');
     });
 });
 
