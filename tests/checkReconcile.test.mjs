@@ -11,15 +11,13 @@ async function withRow(row, fn) {
   try { return await fn(); } finally { globalThis.fetch = real; }
 }
 
-test('the watcher reads all five counts once 0185 is applied', async () => {
+test('the watcher reads all five counts', async () => {
   const status = await withRow({ ...FOUR, subscription_credit_drift: 2 }, () => fetchStatus(cfg));
   assert.deepEqual(status, { ...FOUR, subscription_credit_drift: 2 });
 });
 
-test('before 0185 the missing fifth count is reported as absent, never as zero', async () => {
-  const status = await withRow(FOUR, () => fetchStatus(cfg));
-  assert.equal(status.subscription_credit_drift, null);
-  assert.equal(Object.values(status).filter((n) => n > 0).length, 0);
+test('0185 is applied, so a reply without the fifth count is an error', async () => {
+  await assert.rejects(withRow(FOUR, () => fetchStatus(cfg)), /subscription_credit_drift was not a count/);
 });
 
 test('a missing long-standing count still fails, and so does a malformed fifth', async () => {
