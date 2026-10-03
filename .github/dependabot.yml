@@ -13,6 +13,23 @@ updates:
     groups:
       npm-minor-and-patch:
         update-types: [minor, patch]
+    # Majors that cannot land by themselves (triaged 2026-10-03). Remove an
+    # entry in the PR that does the upgrade it is waiting for.
+    ignore:
+      # typescript-eslint and Next 15 both reject TypeScript 7; 6.x is fine.
+      - dependency-name: "typescript"
+        versions: [">=7.0.0"]
+      # v4 needs a site-wide migration (PostCSS plugin, config, CSS layers).
+      # v3 gets no more releases, so that migration is owed.
+      - dependency-name: "tailwindcss"
+        update-types: ["version-update:semver-major"]
+      # Types follow the runtime: CI, the deploy and the README use Node 22.
+      # Raise by hand in the PR that raises node-version.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
+      # eslint-config-next 15 caps eslint at 9; goes with the Next 16 upgrade.
+      - dependency-name: "eslint"
+        update-types: ["version-update:semver-major"]
     commit-message:
       prefix: "chore(deps)"
 
