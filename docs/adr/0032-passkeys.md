@@ -93,6 +93,15 @@ time with a comment explaining why; the comment is in the script.
   revocation is only possible through the Supabase admin API. This is a real
   gap, named rather than hidden.
 
+  > **Update, 2026-10-03.** The Account page now has a Passkeys panel
+  > (`app/veyrnox/_components/PasskeyPanel.js`): it lists the account's
+  > passkeys, adds one and removes one. It shows only when
+  > `/auth/v1/settings` reports `passkeys_enabled`, like the sign-in button.
+  > It was driven end to end in Chrome with a virtual authenticator against a
+  > local stand-in for GoTrue, which proves the browser ceremony and the
+  > request bodies we send. It does **not** prove GoTrue accepts them: rollout
+  > steps 3 and 4 below (a real passkey on a real account) are still to do.
+
 - **Passkey sign-in DOES pass Turnstile**, unlike OAuth. GoTrue treats the
   authentication challenge as a sign-in, so Attack Protection applies:
   `/auth/v1/passkeys/authentication/options` refuses a tokenless request with
