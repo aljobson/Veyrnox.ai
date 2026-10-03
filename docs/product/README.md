@@ -29,3 +29,5 @@ documents → feature sets.
 
 These describe the product as of 2026-10-02. When a PR changes what they say
 is true, it updates them in the same change.
+
+- [HANDOVER-2026-10-03.md](HANDOVER-2026-10-03.md): project recap and handover to the next agent, as of 2026-10-03.
