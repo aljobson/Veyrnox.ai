@@ -240,6 +240,34 @@ cycle on an upgrade, schedule every other change for the period end, and refuse 
 checkout while a subscription is active or running out. If Stripe sends an invoice the rule
 refuses anyway, the webhook must log it for an Operator and not acknowledge it as granted.
 
+**Subscription state, built 2026-10-03 (migrations 0186, 0187; IMPLEMENTATION-PLAN C4, database only):**
+
+- **Plans** live in `credit_subscription_plans`: Starter, Plus and Ultra, monthly only, with a
+  `tier` that orders them and a CHECK holding every plan at or above ADR-0014's 3.3 cents a credit.
+- **A Subscription row** mirrors the Cinema Pass: pending until our signed checkout binds a Stripe
+  subscription to it, then active or past due, then ended. One live row per account; a second one
+  that gets paid is flagged, never grants, and is refunded by an Operator.
+- **A paid invoice** is the only thing that grants (`grant_credit_subscription_invoice`, the sole
+  caller of `subscription_grant`). The plan on the invoice is what is granted and the row follows
+  it, so an upgrade and a renewal on a lower plan both work without special cases. Keyed by the
+  invoice id; every attempt and its outcome is logged, with the amount paid.
+- **Checks before a grant**, each a refusal an Operator sees in the log: the first invoice is for
+  the plan the checkout started on; the plan is on sale and on the same billing interval; the
+  money covers the plan price, or for an upgrade at least the difference from the old price; the
+  period ends within one interval of now.
+- **Audit.** `reconcile_credit_subscriptions()` ties every Subscription grant in the ledger to a
+  logged invoice and back. It is in the nightly reconcile; not yet in the hourly snapshot.
+- **Not live.** Nothing calls these until the routes and webhook ship behind a flag.
+
+**Defaults this build assumes, for the owner to confirm before the webhook ships:**
+
+- *Any refund or dispute on a Subscription invoice ends the Subscription*, as it does a Cinema
+  Pass. That includes a partial goodwill refund, unless the webhook is told to ignore those.
+- *Money back takes back only the cycle that invoice bought*, and only what is left of it. If
+  that cycle has already been replaced or has expired, nothing is taken. Credits already spent
+  are not chased; a dispute Freezes the account (ADR-0019), a plain refund does not.
+- *No coupons, trials or account credit*: an invoice paying less than the plan price is refused.
+
 **Still open, none blocking implementation start:**
 
 1. ~~Dunning grace period, mid-cycle-cancellation credit handling and the three

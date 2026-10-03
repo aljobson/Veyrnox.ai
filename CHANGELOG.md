@@ -7,6 +7,7 @@ Changes that touch the money spine, the ledger or the catalog are marked **[mone
 ## Unreleased (2026-09-29 to 2026-10-01)
 
 ### Added
+- Credit Subscription plans, state and invoice grants in the database; nothing calls them yet (ADR-0064, 0186, 0187) **[money]**
 - Subscription Credit bucket in the ledger: spend order, cycle expiry, keyed grant; nothing grants yet (ADR-0064, 0183, 0184) **[money]**
 - TikTok and YouTube async publish engine, ADR-0061 Phase 5 (#390)
 - Veyrnox Publish composer and scheduling UI, Phase 4 (#389)

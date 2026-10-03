@@ -64,8 +64,10 @@ If a build starts failing after a dependency change, bisect these three first.
 - **Subscription Credits** (ADR-0064, 0183/0184): a third bucket,
   `subscription_delta` / `subscription_balance`, with
   `free_balance + subscription_balance <= balance`. Only `subscription_grant`
-  mints them, keyed by the paid invoice; nothing calls it until the Stripe
-  subscription webhook is built. Debits spend Subscription, then Free, then
+  mints them, keyed by the paid invoice, and only
+  `grant_credit_subscription_invoice` (0187) calls it: never call it
+  directly. Nothing calls either until the Stripe subscription webhook is
+  built. Debits spend Subscription, then Free, then
   Pack. Past `subscription_expires_at` they cannot be spent and the hourly
   sweep removes them; a renewal expires the previous cycle's remainder (no
   rollover). A refund returns to the bucket it came from; the part an ended

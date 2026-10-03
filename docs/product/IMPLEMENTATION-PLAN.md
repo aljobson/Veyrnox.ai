@@ -73,7 +73,7 @@ extending a layer depends on everything above it.
 | C1 | **Done** (ADR-0064, accepted 2026-09-28). Owner confirms spend order (Subscription Credits first, soonest-expiring first) and non-rollover expiry | — | ADR-0064 amended |
 | C2 | **Built 2026-10-03** (0183, 0184; `scripts/test-subscription-credits.mjs`); applied to production 2026-10-03. Ledger buckets: a credit source column/table so a debit can spend Free → Subscription → Purchased; extend `ledger_debit`, `ledger_refund`, reconcilers | C1 | `reconcile_*` zero rows; refund returns to source; acceptance tests per bucket |
 | C3 | **Built 2026-10-03** (0183, 0184; `scripts/test-subscription-credits.mjs`); applied to production 2026-10-03. Monthly grant + expiry job (keyed `ledger_grant`, `expire_*`) | C2 | replay is a no-op; expiry never touches purchased Credits |
-| C4 | Stripe subscription checkout + webhook (`invoice.paid` grants, cancellation, dispute → Freeze) | C3 | test-mode cycle: subscribe, renew, cancel, refund |
+| C4 | **Database built 2026-10-03** (0186, 0187; `scripts/test-credit-subscriptions.mjs`), not yet applied; routes and webhook still to do. Stripe subscription checkout + webhook (`invoice.paid` grants, cancellation, dispute → Freeze) | C3 | test-mode cycle: subscribe, renew, cancel, refund |
 | C5 | UI: plans on `/pricing` and `/app/credits`; replace "No subscription" copy (ISSUES P3) | C4 | Finance/Legal wording approved |
 
 ## Track D — Uploads and Cinema
