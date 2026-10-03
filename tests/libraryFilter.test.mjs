@@ -38,7 +38,7 @@ test('the saved layout is read safely', () => {
 
 test('the Library page filters through the helper and offers both controls', () => {
     const page = readFileSync(new URL('../app/veyrnox/app/library/page.js', import.meta.url), 'utf8');
-    assert.match(page, /filterRows\(shown, \{ state: tab, kind \}, models\)/);
+    assert.match(page, /filterRows\(shown, \{ state: tab, kind, favourites: favOnly \? favourites : null \}, models\)/);
     assert.match(page, /aria-label="Filter by type"/);
     assert.match(page, /aria-label="Layout"/);
 });
