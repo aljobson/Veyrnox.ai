@@ -33,6 +33,7 @@ import { runtimeDeps, runtimeKeys } from './lib/autoShortRuntime.js';
 import { recoverCinemaUploads } from './lib/cinema/uploadRecovery.js';
 import { removeCinemaUploads } from './lib/cinema/uploadRemoval.js';
 import { runPublishSweep } from './lib/socialPublishSweep.js';
+import { runAnalyticsSweep } from './lib/socialAnalyticsSweep.js';
 import { tokenCryptoConfig } from './lib/social/tokenCrypto.js';
 import { runBrandDrafts } from './lib/social/brandDrafts.js';
 import { publishEnabled } from './lib/social/publishFeature.js';
@@ -70,6 +71,13 @@ export default {
                 publicHost: env.PUBLIC_HOST,
                 mediaProxySecret: env.SOCIAL_MEDIA_PROXY_SECRET,
             }).then((out) => { if (out.claimed) console.error('[publish-sweep]', JSON.stringify(out)); return out; }), env),
+            // Off until 0188 is applied; unlike the publish sweep there is
+            // nothing queued to finish, so the switch gates it outright. Not a
+            // recovery task: worker_task_health (0157) has no name for it.
+            ...(env.PUBLISH_ANALYTICS_ENABLED === 'true' ? [runAnalyticsSweep({
+                cfg: { supabaseUrl: env.SUPABASE_URL, serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY },
+                cryptoCfg: tokenCryptoConfig(env),
+            }).then((out) => { if (out.claimed || out.ok === false) console.error('[analytics-sweep]', JSON.stringify(out)); return out; })] : []),
             // Weekly brand drafts (ADR-0061 amendment): nothing publishes
             // until the owner approves the batch on /app/publish.
             runBrandDrafts({

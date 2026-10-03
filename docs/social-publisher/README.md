@@ -70,6 +70,9 @@ should look*.
    short of actual account creation and submission — those need a human with real business
    credentials, not an agent.
 
+7. [Analytics handover, 2026-10-03](HANDOVER-analytics-2026-10-03.md) — what the analytics work
+   built, what is switched off, what was and was not verified, and the next work in order.
+
 ## Non-goals for this pack
 
 - The build-vs-buy and platform-scope ADR ([ADR-0061](../adr/0061-veyrnox-publish-social-scheduling.md))

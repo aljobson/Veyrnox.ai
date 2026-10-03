@@ -260,6 +260,38 @@ Out of scope: editing or rescheduling a draft (discard and regenerate instead),
 multi-person approval, and the generator and review UI, which follow in their own
 changes on top of these functions.
 
+## Amendment 2026-10-03: analytics storage and the first dashboard
+
+The v1 scope above includes "basic per-network analytics (evolution + per-post)".
+Migration `0188_social_analytics.sql` and the analytics sweep are the first part of it:
+
+- Three tables, closed to browser roles like the rest of Publish: one evolution
+  snapshot per account per day, one row per post the network reports, and a sync row
+  saying when each account is next due. `get_social_analytics` is the only read and
+  returns an account's numbers to its owner alone.
+- `lib/socialAnalyticsSweep.js` runs on the existing five-minute cron behind
+  `PUBLISH_ANALYTICS_ENABLED` (off). Each account is fetched every six hours. A failed
+  fetch is kept on that account's sync row; it is **not** appended to
+  `social_account_actions` as §2.5 of the technical spec first proposed, because a
+  broken account would then add a permanent audit row every few hours.
+- Instagram is the only network fetched so far. With the scopes the connect flow has
+  always requested it reads followers, following, post count, and likes and comments
+  per post.
+- Reach, views, saves and shares need `instagram_business_manage_insights`. The owner
+  approved adding it (2026-10-03). The connect flow requests it only when
+  `INSTAGRAM_INSIGHTS_SCOPE_ENABLED` is "true"; it ships "false" because Meta must
+  approve the permission in app review first. An account connected before the switch
+  keeps its old grant until it reconnects, and the sweep asks for insights only for
+  accounts whose stored grant includes the permission. Insights are refreshed for the
+  ten newest posts each round; stored metrics are merged, so older posts keep theirs.
+- `/app/publish/analytics` shows followers over time, posts, interactions and
+  engagement (interactions per post, per 1,000 followers) for 7, 30 or 90 days.
+
+No ledger or entitlement change. Analytics are not gated by plan yet; ADR-0063 decides
+whether they should be.
+
+Not built yet: the other four networks, best time to post, and the calendar.
+
 ## Open questions
 
 **Resolved at acceptance (2026-09-28):** Option A (build native) and the v1 platform

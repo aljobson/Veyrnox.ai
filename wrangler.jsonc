@@ -88,6 +88,14 @@
     // menu link and /api/v1/social/*. Only "true" opens it. The publish
     // sweep is not gated, so anything already queued still finishes.
     "PUBLISH_ENABLED": "false",
+    // The Publish analytics sweep (lib/socialAnalyticsSweep.js). Only "true"
+    // runs it; turn it on after migration 0188 is applied. The analytics
+    // page and its API route follow PUBLISH_ENABLED like the rest of Publish.
+    "PUBLISH_ANALYTICS_ENABLED": "false",
+    // Adds instagram_business_manage_insights to the Instagram consent
+    // screen (reach, views, saves, shares). Only "true" asks for it; turn it
+    // on after Meta approves the permission in app review.
+    "INSTAGRAM_INSIGHTS_SCOPE_ENABLED": "false",
     // Sender for violation notices (lib/violationEmail.js, issue #479). The
     // domain is verified in Resend; nothing sends until RESEND_API_KEY is set.
     "VIOLATION_EMAIL_FROM": "Veyrnox.ai <support@veyrnox.ai>",
