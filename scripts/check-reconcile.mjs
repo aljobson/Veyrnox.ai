@@ -31,10 +31,11 @@ const LABELS = {
     subscription_credit_drift: 'subscription_balance off its ledger sum, or past its cycle end and unswept',
 };
 
-// Counts a migration adds. Until that migration is applied the snapshot does
-// not carry them; that is reported, not failed, so merging before the owner
-// approves the apply does not page anyone. Remove a key once it is applied.
-const PENDING = { subscription_credit_drift: '0185' };
+// Counts a migration adds and production does not carry yet. Such a count is
+// reported as absent, not failed, so merging before the owner approves the
+// apply does not page anyone. Remove a key once its migration is applied.
+// Empty since 0185 was applied on 2026-10-03.
+const PENDING = {};
 
 export async function fetchStatus({ url, key }) {
     const res = await fetch(new URL('/rest/v1/rpc/reconcile_status', url), {
@@ -44,7 +45,7 @@ export async function fetchStatus({ url, key }) {
         signal: AbortSignal.timeout(20000),
     });
     if (!res.ok) {
-        throw new Error(`reconcile_status answered ${res.status} — check snapshot freshness and migration 0128`);
+        throw new Error(`reconcile_status answered ${res.status} — check snapshot freshness and migrations 0128 and 0185`);
     }
     const body = await res.json();
     // PostgREST returns a SETOF as an array; one row is expected.
