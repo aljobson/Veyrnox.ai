@@ -318,13 +318,6 @@ export const SITE_UPDATED = '2026-09-22';
 
 export const HERO_CHIP = 'CREDIT-METERED AI GENERATION';
 
-// Amber promo strip above the nav.
-export const PROMO_STRIP = {
-  message: '10 free credits on sign-up. No charge for failed generations.',
-  cta: 'Sign up free',
-  href: '/app',
-};
-
 // Shelf cards print the modality underneath the name, so the parenthetical in
 // a catalog name ("Kling 3.0 (image-to-video)") is redundant for display.
 export function shelfName(name) {
