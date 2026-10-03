@@ -97,7 +97,9 @@ If a build starts failing after a dependency change, bisect these three first.
   requests with 401. It verifies the Supabase JWT with **ES256 + JWKS via Web
   Crypto**. Never re-introduce HS256 shared-secret verification.
 - After verification, forward identity in server-side headers only:
-  `x-veyrnox-auth-id`, `x-veyrnox-auth-email`, `x-veyrnox-auth-role`.
+  `x-veyrnox-auth-id`, `x-veyrnox-auth-email`, `x-veyrnox-auth-role`,
+  `x-veyrnox-auth-aal` and `x-veyrnox-auth-mfa-at` (the last two carry the
+  second-factor level and when it was last proved).
   Overwrite any inbound header of the same name — a client must never spoof it.
 - Standard-claim checks (issuer, audience `authenticated`, exp with 5s skew, sub
   present) run on every request. Missing/malformed -> 401, never 500.
@@ -107,8 +109,7 @@ If a build starts failing after a dependency change, bisect these three first.
   `IDEMPOTENCY_RE` in `app/api/v1/generations/route.js` as the pattern.
 - Return typed errors: `{error: "kebab_case_code", ...}`. Don't leak stack
   traces, DB messages, or upstream vendor payloads.
-- No CORS wildcards on `/api/v1/*` — same-origin only. Studio proxies through
-  the same host.
+- No CORS wildcards on `/api/v1/*` — same-origin only.
 - **Routes outside the gate, on purpose.** `/api/v1/*` is the only surface
   that carries a user. The middleware does not run on other `/api/*` paths, so
   an inbound `x-veyrnox-auth-*` header is NOT stripped there: a route outside
@@ -126,7 +127,8 @@ If a build starts failing after a dependency change, bisect these three first.
 ## Identity & sessions
 
 - Supabase Auth is the only identity source. Providers: email/password, Apple,
-  Google (see `AuthGate.jsx`).
+  Google, and passkey sign-in (ADR-0032; see `AuthGate.jsx`). There is no
+  passkey enrolment screen yet, so no account has one (ISSUES.md P4).
 - Anon key + Supabase URL live in `wrangler.jsonc` `vars` (public). Service-role
   key is a `wrangler secret` — never `NEXT_PUBLIC_*`, never in the client bundle.
 - Client session in `localStorage['veyrnox_supabase_session']`. Never send
@@ -153,21 +155,28 @@ If a build starts failing after a dependency change, bisect these three first.
   | Confirm email ON (Supabase Auth) | **The load-bearing one.** Blocks the account, so no provider spend. |
   | 0071 applied | Stops junk grants being minted. **Alone it does nothing** while autoconfirm is on — its INSERT branch sees a non-null `email_confirmed_at` and grants anyway. |
 
-  Production still runs the `0010` trigger, which grants on INSERT
-  unconditionally. Run `npm run check:signup-gate` to see the live state;
-  `signup-gate.yml` checks it hourly. Neither switch is visible from this
-  repo, which is how it drifted.
+  Production has both switches on: autoconfirm is off and `0071` is applied
+  (since 2026-09-21, rechecked 2026-10-03), and Turnstile CAPTCHA is enforced
+  on sign-up and sign-in (ADR-0026). Run `npm run check:signup-gate` to see
+  the live state; `signup-gate.yml` checks it hourly. Neither switch is
+  visible from this repo, which is how it drifted once.
 
   With autoconfirm on, 10 credits is ~$0.15 of provider spend for anyone who
-  can POST an email address. Sign-up should also carry Attack Protection
-  (CAPTCHA). Check all of this before any launch that widens sign-up.
+  can POST an email address. Check all of this before any launch that widens
+  sign-up.
 
 ## Web security
 
-- **CSP** in `next.config.mjs` is `default-src 'self'`. `connect-src` allows
-  only `'self'` + the Supabase project host. Adding a host means an ADR.
-  `frame-ancestors 'none'`, `object-src 'none'`, `base-uri 'self'`,
-  `form-action 'self'`.
+- **CSP** is built in `lib/contentSecurityPolicy.mjs` and set per request by
+  `middleware.js` with a fresh nonce (ADR-0060); pages are `no-store`. It is
+  `default-src 'self'`, and `script-src` is `'self'`, the nonce and Turnstile,
+  with no `'unsafe-inline'`. `connect-src` allows `'self'`, the Supabase
+  project host, our own R2 S3 endpoints (browser uploads, ADR-0028) and the
+  two Cloudflare Stream upload origins (ADR-0052). `img-src` and `media-src`
+  add only those R2 endpoints; `frame-src` is Turnstile and the Stream
+  player. Adding a host means an ADR. `frame-ancestors 'none'`,
+  `object-src 'none'`, `base-uri 'self'`, `form-action 'self'`. The other
+  headers below are set in `next.config.mjs`.
 - **HSTS** `max-age=63072000; includeSubDomains; preload`. Never lower.
 - `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`,
   `Referrer-Policy: strict-origin-when-cross-origin`,
@@ -186,6 +195,10 @@ If a build starts failing after a dependency change, bisect these three first.
   (`packages/adapters/stripe.js`); the session is re-fetched from the API and
   `webhook_events` dedupes. Missing/invalid signature -> 401, never 200.
   Stripe is the only billing provider; LemonSqueezy was removed (ADR-0031).
+  kie, OpenRouter and Cloudflare Stream webhooks verify a signature in the
+  same way (`packages/adapters/kie.js`, `openrouter.js`,
+  `lib/cinema/streamWebhook.js`). BytePlus and GrsAI have no signed callback,
+  so none is registered: their jobs are polled by a sweep.
 - Every webhook is idempotent via `webhook_events(source, external_id)`.
   Duplicate -> early return, no side effects.
 - Webhook handlers must not trust the payload's `user_id`. Look the job up
@@ -277,8 +290,12 @@ If a build starts failing after a dependency change, bisect these three first.
   A rollback restores the Worker only — migrations stay applied, so each
   migration must keep the previous release working. Break-glass rollback:
   `wrangler rollback <version-id>`, or rerun the workflow on an older commit.
-- Feature flag new user paths behind `localStorage.veyrnox_*` until the DB
-  migration has landed and the reconciliation job has run for 24h clean.
+- Feature flag new user paths until the DB migration has landed and the
+  reconciliation job has run for 24h clean. Flags are server vars in
+  `wrangler.jsonc` (`*_ENABLED`, `"false"` in production, e.g. `CINEMA_*`,
+  `TENANT_PROJECTS_ENABLED`, `PUBLISH_ENABLED`). Two surfaces also need a
+  per-browser preview switch on top: `localStorage.veyrnox_social_cinema` and
+  `localStorage.veyrnox_projects`.
 - Every PR touching the money spine (ledger, jobs, webhooks) needs an ADR
   update if behavior visible to the user or auditor changes.
 
