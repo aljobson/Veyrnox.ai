@@ -339,7 +339,8 @@ BEGIN
     -- A replay or an older amount changes nothing, so it can never re-Freeze
     -- an account an Operator has unfrozen.
     IF p_refunded_cents <= v_top_up.refunded_cents THEN
-        SELECT b.balance INTO v_balance FROM public.credit_balances b WHERE b.user_id = v_top_up.user_id;
+        SELECT b.balance - CASE WHEN b.subscription_expires_at > now() THEN 0 ELSE b.subscription_balance END
+        INTO v_balance FROM public.credit_balances b WHERE b.user_id = v_top_up.user_id;
         RETURN jsonb_build_object('ok', true, 'idempotent', true, 'top_up_id', v_top_up.id,
                                   'user_id', v_top_up.user_id, 'taken', 0, 'shortfall', 0,
                                   'balance_after', v_balance, 'frozen', false);

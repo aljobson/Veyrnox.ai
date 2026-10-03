@@ -212,6 +212,7 @@ DECLARE
     v_existing public.ledger_entries%ROWTYPE;
     v_balance INTEGER;
     v_leftover INTEGER;
+    v_spendable INTEGER;
     v_expires TIMESTAMPTZ;
     v_cycle INTEGER;
     v_entry_id UUID;
@@ -235,6 +236,8 @@ BEGIN
     SELECT balance, subscription_balance, subscription_expires_at, subscription_cycle
     INTO v_balance, v_leftover, v_expires, v_cycle
     FROM public.credit_balances WHERE user_id = p_user_id FOR UPDATE;
+    -- What can be spent: credits past their cycle end are left out.
+    v_spendable := v_balance - CASE WHEN v_expires > now() THEN 0 ELSE v_leftover END;
 
     -- The second condition restates the partial index's predicate so the
     -- planner can use it.
@@ -245,7 +248,7 @@ BEGIN
             RETURN jsonb_build_object('ok', false, 'code', 'GRANT_KEY_REUSED');
         END IF;
         RETURN jsonb_build_object('ok', true, 'entry_id', v_existing.id, 'idempotent', true,
-                                  'expired', 0, 'balance_after', v_balance);
+                                  'expired', 0, 'balance_after', v_spendable);
     END IF;
 
     -- Checked after the replay probe, so a late retry of a granted invoice is

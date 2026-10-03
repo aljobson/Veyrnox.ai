@@ -191,7 +191,10 @@ tiers.** The product owner approved this, and the spend-order question below, wi
   for the paid invoice; a replay is a no-op, however late, and the same key can never credit a
   second account. An invoice whose period does not end after the current one is refused
   (`PERIOD_NOT_NEWER`), so an older invoice delivered out of order cannot replace a newer cycle.
-  **This also refuses a mid-cycle upgrade invoice; upgrades need their own rule in C4.**
+  **This also refuses three invoices a customer has paid: a mid-cycle upgrade, a switch from
+  annual to monthly before the annual end, and a resubscription to a shorter plan before the old
+  end date. Each returns `PERIOD_NOT_NEWER` and grants nothing. C4 must decide what those mean
+  before the webhook calls this function; the rule may need to allow them.**
 - **No rollover.** A grant first expires whatever the previous cycle left.
 - **Cycle end.** Past `subscription_expires_at` the credits cannot be spent, and an hourly sweep
   (`expire_subscription_credits`) removes them. Balance readers leave them out in the meantime.

@@ -227,7 +227,8 @@ try {
     await grant(o, 100, inDays(60));
     await endCycle(o);
     const lateReplay = await grant(o, 100, inDays(-5), kOld);
-    assert.deepEqual([lateReplay.ok, lateReplay.idempotent], [true, true]);
+    // The cycle has ended and is unswept: the reply reports what can be spent.
+    assert.deepEqual([lateReplay.ok, lateReplay.idempotent, lateReplay.balance_after], [true, true, 10]);
     const p = await user();
     await grant(p, 100, inDays(60));
     const older = await grant(p, 100, inDays(30));
