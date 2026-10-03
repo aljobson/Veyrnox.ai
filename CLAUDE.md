@@ -49,8 +49,8 @@ If a build starts failing after a dependency change, bisect these three first.
 - **Balance invariant**: `credit_balances.balance = SUM(ledger_entries.delta)`
   per `user_id`. Every mutation goes through `ledger_debit` / `ledger_refund` /
   `ledger_grant` / `signup_grant` / `expire_free_credits` / `credit_top_up` /
-  `apply_top_up_refund` / `subscription_grant` / `expire_subscription_credits`
-  RPC — never a raw `INSERT INTO ledger_entries` or a raw
+  `apply_top_up_refund` / `subscription_grant` / `expire_subscription_credits` /
+  `reverse_subscription_grant` RPC — never a raw `INSERT INTO ledger_entries` or a raw
   `UPDATE credit_balances`.
 - **Frozen accounts** (#97): `apply_top_up_refund` and `apply_dispute_event`
   Freeze, `unfreeze_account` is the only way out, and all three write the
@@ -72,7 +72,10 @@ If a build starts failing after a dependency change, bisect these three first.
   or replaced cycle paid for is expired again in the same call, so it never
   becomes permanent credit and never rolls over. A Pack clawback caps at
   `balance - free_balance - subscription_balance`.
-  `reconcile_subscription_credits()` must return zero rows.
+  `reconcile_subscription_credits()` must return zero rows. The subscription
+  itself is `credit_subscriptions` (0186): activating one grants nothing; a
+  paid invoice does, through `grant_credit_subscription_invoice`, and a full
+  refund or a dispute takes back only what is left of that cycle (0187).
 - **Idempotency**: every state-changing RPC takes an idempotency key
   (`jobs.idempotency_key` UNIQUE on `(user_id, idempotency_key)`,
   `webhook_events` UNIQUE on `(source, external_id)`). Replay must be a no-op.

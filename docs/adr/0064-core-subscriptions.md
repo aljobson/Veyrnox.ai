@@ -240,6 +240,36 @@ cycle on an upgrade, schedule every other change for the period end, and refuse 
 checkout while a subscription is active or running out. If Stripe sends an invoice the rule
 refuses anyway, the webhook must log it for an Operator and not acknowledge it as granted.
 
+**First version, refunds and cooling-off, confirmed by the product owner 2026-10-03:**
+
+- **Monthly only at launch.** Annual plans follow once their prices are set (question 2 below).
+- **A refunded subscription payment** removes what is left of that cycle's Subscription
+  Credits and nothing else. Free and Pack Credits are untouched, and credits already spent are
+  not charged back. **A dispute** does the same, ends the subscription and Freezes the account,
+  as a Pack dispute does (ADR-0019).
+- **Cooling-off:** a full refund within 14 days of the subscription starting, only while none
+  of that cycle's credits have been spent. The credits are removed before the money is
+  returned. Finance/Legal still owes the consent wording that goes with this.
+
+**Subscription state, built 2026-10-03 (migrations 0186, 0187; IMPLEMENTATION-PLAN C4, database
+slice):**
+
+- **Tables.** `credit_subscription_plans` (the three tiers), `credit_subscriptions` (one live
+  per user; price and credits copied from the plan when the checkout opens) and the append-only
+  `credit_subscription_events`. Modelled on the Cinema Pass (0143).
+- **Activation grants nothing.** `apply_credit_subscription_event` only tracks Stripe's state.
+  Credits come from `grant_credit_subscription_invoice`, called for a paid invoice and keyed by
+  the invoice id, so two events for one invoice grant once.
+- **A refused invoice** (`PERIOD_NOT_NEWER`, a flagged or ended subscription, a zero payment) is
+  written to the event log as `refused` for an Operator and stays refused on retry. An invoice
+  that arrives before its subscription is bound is not recorded, so Stripe's retry succeeds.
+- **Reversal.** `reverse_subscription_grant` is the one ledger writer: it removes the cycle's
+  remaining credits (`reverse:subscription_refund`) and ends the cycle, so a job refunded
+  afterwards is returned and expired in one call instead of putting the credits back.
+- **Not live.** No route or webhook calls these yet. Still to build under C4: the Stripe
+  adapter and webhook, the routes behind `SUBSCRIPTIONS_ENABLED`, the plan-change (upgrade)
+  path, and the staging run.
+
 **Still open, none blocking implementation start:**
 
 1. ~~Dunning grace period, mid-cycle-cancellation credit handling and the three
