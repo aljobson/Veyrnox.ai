@@ -28,6 +28,8 @@ function Queue() {
     } catch (e) { if (version === generation.current) setError(message(e.code)); }
     finally { if (version === generation.current) setBusy(false); }
   }, []);
+  // A request counter, not a DOM node: the cleanup must bump the live value.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); return () => { generation.current++; }; }, [load]);
   return <div className="mx-auto max-w-3xl px-4 py-10 pb-32 sm:px-8">
     <Link href="/app/admin" className="text-sm underline">Back to operations</Link>

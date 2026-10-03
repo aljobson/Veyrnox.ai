@@ -33,6 +33,8 @@ export function CreditStatement() {
     load();
     const refresh = () => load();
     window.addEventListener('veyrnox:balance-changed', refresh);
+    // A request counter, not a DOM node: the cleanup must bump the live value.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     return () => { sequence.current++; window.removeEventListener('veyrnox:balance-changed', refresh); };
   }, [load]);
   return (

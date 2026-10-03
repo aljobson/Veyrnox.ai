@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { LANDING_DRAFT_KEY } from '../_lib/landingDraft';
+import { writeStudioDraft } from '../_lib/landingDraft';
 
 // The landing hero's working form: pick a model and a length, and the slip
 // prints what the button will charge. Pressing Generate opens the studio on
@@ -52,7 +52,7 @@ export function PriceSlip({ models }) {
   function onSubmit(e) {
     e.preventDefault();
     try {
-      window.sessionStorage.setItem(LANDING_DRAFT_KEY, JSON.stringify({ prompt: prompt.trim(), model: model.id, at: Date.now() }));
+      writeStudioDraft(window.sessionStorage, { prompt: prompt.trim(), model: model.id });
     } catch {
       // Private mode or storage off: the studio opens with its own sample prompt.
     }

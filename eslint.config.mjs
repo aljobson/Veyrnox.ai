@@ -16,4 +16,11 @@ export default [
             'react-hooks/purity': 'warn',
         },
     },
+    {
+        // Every <img> here shows a presigned R2 object (15-minute URL), a blob:
+        // preview of a file the user just picked, or a social network's avatar.
+        // next/image would route them through /_next/image, which this Worker
+        // does not serve, and would cache a URL that is meant to expire.
+        rules: { '@next/next/no-img-element': 'off' },
+    },
 ];
