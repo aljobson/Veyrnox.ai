@@ -20,7 +20,7 @@ const STATE_UI = {
   // FAILED is not REFUNDED: the refund is a second call, and /jobs/:id says
   // whether it has landed. Claiming it either way was the old bug.
   failed:    { chip: 'danger', glyph: '✕', label: 'FAILED · REFUNDED' },
-  failed_pending: { chip: 'danger', glyph: '✕', label: 'FAILED · REFUND DUE' },
+  failed_pending: { chip: 'danger', glyph: '✕', label: 'FAILED · REFUND PENDING' },
   // We could not read this job's state: it 404s (not ours, or aged out of the
   // window) or the server was unreachable. Deliberately neutral — claiming
   // either DONE or FAILED · REFUNDED would assert something about the ledger
@@ -351,7 +351,7 @@ export default function Library() {
 
 function JobCard({ row, models, selectable, selected, onToggle }) {
   const asset = useAssetUrl(row.job_id, row.asset_url);
-  const refundPending = row.state === 'failed' && row.refunded === false;
+  const refundPending = row.state === 'failed' && row.refunded !== true;
   const s = STATE_UI[refundPending ? 'failed_pending' : row.state] || STATE_UI.queued;
   // No delta for `unknown`: a +N would claim a refund landed and a −N would
   // claim the debit stands, and we do not know which.
