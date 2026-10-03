@@ -12,13 +12,12 @@ How to read it: **Now** is in flight or blocking launch. **Next** is decided (us
 |---|---|---|
 | Public sign-up and Credit Pack launch checklist | Open, owner-run | [#204](https://github.com/aljobson/Veyrnox.ai/issues/204), [#101](https://github.com/aljobson/Veyrnox.ai/issues/101), `docs/operations/credit-pack-launch-acceptance.md` |
 | Sign-up gate stays closed (Confirm email, migration 0071, Turnstile) | Verified; recheck before widening sign-up | `npm run check:signup-gate`, ADR-0026 |
-| Veyrnox Publish: finish YouTube and TikTok publish and get platform app review | PR [#399](https://github.com/aljobson/Veyrnox.ai/pull/399) open (resumable upload, session restart, quota backoff). TikTok domain verification DNS record not yet published | ADR-0061, `docs/social-publisher/06-oauth-review-runbook.md` |
-| Fix the failing `npm audit` gate in CI | Newly failing on high-severity `undici` advisories with no upstream fix; owner is deciding whether to relax the gate | PR #399 CI |
+| Veyrnox Publish: finish YouTube and TikTok publish and get platform app review | YouTube resumable upload fixed in [#399](https://github.com/aljobson/Veyrnox.ai/pull/399) (merged 2026-10-03). Platform app review still to do. TikTok domain verification DNS record not yet published | ADR-0061, `docs/social-publisher/06-oauth-review-runbook.md` |
 
 ## Next: decided, not finished
 
 - **Subscriptions** (Starter $19 / Plus $59 / Ultra $129). Accepted in ADR-0064, not built. Needs the ledger spend order (Subscription Credits first, soonest-expiring first), a non-rollover expiry job, and tax and consent wording from Finance/Legal before launch.
-- **Veyrnox Publish plans and entitlements.** Entitlement model accepted (ADR-0062); plan pricing is a draft (ADR-0063). Composer, scheduling and connect flows for five networks are built; remaining work is review approval, metering and billing.
+- **Veyrnox Publish plans and entitlements.** Entitlement model accepted (ADR-0062); plan pricing accepted too (ADR-0063). Composer, scheduling and connect flows for five networks are built; remaining work is review approval, metering and billing.
 - **Social Cinema activation.** Foundations, creator onboarding, review, publication and the viewer paywall are built behind flags. Still to do: production activation steps (PR [#369](https://github.com/aljobson/Veyrnox.ai/pull/369)), personal cloud imports ([#364](https://github.com/aljobson/Veyrnox.ai/pull/364)) and staging-to-production rollout.
 - **Cheaper wholesale supply.** BytePlus ModelArk adapter for Seedance is staged inactive (ADR-0058); activation is blocked on pack-safeguard prerequisites and supplier terms. Supplier volume quote pack in review ([#398](https://github.com/aljobson/Veyrnox.ai/pull/398)). Continue verify-then-activate for kie and GrsAI swaps, each repriced to the 50 percent margin target (ADR-0037).
 - **Migration ledger hygiene.** Keep one apply path (ADR-0023) and keep `migration-ledger` green.
