@@ -1,6 +1,6 @@
 # ADR-0049 — Gated Cinema creator applications
 
-Status: Proposed, 25 September 2026. Extends ADR-0048 and the mandatory Cinema security overlay.
+Status: Proposed, 25 September 2026. Extends ADR-0048 and the mandatory Cinema security overlay. Built and merged; migrations applied in production; **off in production** (`CINEMA_ENABLED` and the other `CINEMA_*` flags are `false`), on in staging (status corrected 2026-10-03).
 
 ## Decision
 

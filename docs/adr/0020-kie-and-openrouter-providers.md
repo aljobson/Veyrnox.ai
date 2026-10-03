@@ -1,6 +1,6 @@
 # ADR-0020 — kie.ai and OpenRouter as generation providers
 
-- **Status**: Accepted (2026-09-12). OpenRouter live 2026-09-13 (seedance-2.0-fast). **kie.ai: no-go** (owner decision 2026-09-13: no DPA, data sent to the US); kie rows stay inactive and Veo stays on fal at 4s clips (migration 0066).
+- **Status**: Accepted (2026-09-12). OpenRouter live 2026-09-13 (seedance-2.0-fast). kie.ai was no-go on 2026-09-13 (no DPA, data sent to the US); **that was reversed and kie is live** — see "Update (2026-09-24)" below (status corrected 2026-10-03: this line still read no-go).
 - **Date**: 2026-09-12
 - **Deciders**: Product owner (sole)
 - **Related**: [ADR-0016 — Data-residency claim correction](0016-data-residency-claim-correction.md)

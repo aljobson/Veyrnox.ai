@@ -1,6 +1,6 @@
 # ADR-0039 — Screen external admin traffic before the app handler
 
-- Status: Proposed; activates with the Worker deployment, no SQL migration.
+- Status: Implemented and live (status corrected 2026-10-03; it read "Proposed; activates with the Worker deployment, no SQL migration"). `worker.js` screens admin paths with the `ADMIN_EDGE_RATE_LIMITER` binding in `wrangler.jsonc`. No separate sign-off line was recorded here.
 - Date: 2026-09-24
 - Related: audit admin rate limits, Cloudflare Access and admin MFA
 
