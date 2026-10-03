@@ -24,7 +24,7 @@ test('the Cinema preview flag is off when storage throws', () => {
 test('every Cinema surface reads the flag through the one helper', () => {
   for (const p of ['SocialCinema.js', 'creator/CreatorWorkspace.js', 'pass/PassPanel.js']) {
     const src = readFileSync(new URL(`../app/veyrnox/social-cinema/${p}`, import.meta.url), 'utf8');
-    assert.match(src, /setPreview\(cinemaPreviewEnabled\(\)\)/, p);
+    assert.match(src, /const preview = useCinemaPreview\(\);/, p);
     assert.doesNotMatch(src, /getItem\('veyrnox_social_cinema'\)/, p);
   }
 });

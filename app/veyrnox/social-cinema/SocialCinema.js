@@ -6,7 +6,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { Button } from '../_components/Button';
 import { getSession, onSessionChange } from '../../lib/authClient';
 import { gatewayFetch } from '../_lib/gateway';
-import { cinemaPreviewEnabled } from './preview';
+import { useCinemaPreview } from './preview';
 
 const identity = () => getSession()?.user?.id || '';
 const noIdentity = () => '';
@@ -61,10 +61,7 @@ const sections = [
 export function SocialCinema() {
   const [section, setSection] = useState(0);
   const account = useSyncExternalStore(onSessionChange, identity, noIdentity);
-  const [preview, setPreview] = useState(false);
-  useEffect(() => {
-    setPreview(cinemaPreviewEnabled());
-  }, []);
+  const preview = useCinemaPreview();
   return <div className="mx-auto max-w-[1100px] px-4 py-10 pb-40 sm:px-8 sm:py-16 sm:pb-32">
     <header className="max-w-2xl">
       <p className="mb-4 font-vx-mono text-xs tracking-widest text-vx-accent">SOCIAL CINEMA · IN DEVELOPMENT</p>
