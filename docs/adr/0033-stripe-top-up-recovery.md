@@ -1,6 +1,6 @@
 # ADR-0033 — Recovering a paid Top-up when the Stripe webhook never lands
 
-**Status:** Proposed 2026-09-24 — amended 2026-09-24 (see Amendments)
+**Status:** Implemented and live in production (status corrected 2026-10-03; it read "Proposed 2026-09-24 — amended 2026-09-24", see Amendments). Its migrations were applied through the ADR-0023 workflow, which the owner approves; `record_top_up_return_session`, `close_top_up_return` and `next_top_up_backfill_batch` were confirmed in production on 2026-10-02. No separate sign-off line was recorded here.
 **Related:** [ADR-0031](0031-stripe-replaces-lemonsqueezy.md) (Stripe replaces
 LemonSqueezy — §Consequences names this gap and the intended direction),
 [ADR-0018](0018-credit-pack-top-ups.md) (Credit Pack Top-ups — credit/refund

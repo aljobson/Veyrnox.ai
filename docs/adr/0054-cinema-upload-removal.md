@@ -1,6 +1,6 @@
 # ADR-0054 — Creator-requested Stream removal and replacement
 
-Status: Proposed, 25 September 2026. Extends ADR-0052/0053. Default off.
+Status: Proposed, 25 September 2026. Extends ADR-0052/0053. Default off. Built and merged; migrations applied in production; **off in production** (`CINEMA_ENABLED` and the other `CINEMA_*` flags are `false`), on in staging (status corrected 2026-10-03).
 
 Creators need to abandon a failed/expired video or replace the video on a private draft. Add an explicit two-step removal control beside upload status. The confirmation states that video removal is permanent and preserves the draft/title/description. Pause an active transfer before removing it. The UI sends both content ID and the exact upload ID shown, plus a stable UUID request key. A stale tab can therefore never remove a newer replacement implicitly.
 
