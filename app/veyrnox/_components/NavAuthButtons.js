@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { getSession, onSessionChange, signOut } from '../../lib/authClient';
 import { ConfirmDialog } from './ConfirmDialog';
@@ -16,22 +16,22 @@ const ACCOUNT_LINKS = [
   { href: '/app/account', label: 'Account & security' },
 ];
 
+// A string, so the snapshot is equal between reads of the same session.
+const storedAccount = () => JSON.stringify(accountLabel(getSession()));
+const noAccount = () => 'null';
+
 // `account` is optional: pass one (AppNav does, so the email can come from
 // /api/v1/account when the stored session carries none). The marketing nav
 // passes nothing and reads the session on its own.
 export function NavAuthButtons({ account: given }) {
-  const [sessionAccount, setSessionAccount] = useState(null);
+  const stored = useSyncExternalStore(onSessionChange, storedAccount, noAccount);
+  const sessionAccount = useMemo(() => JSON.parse(stored), [stored]);
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const wrapRef = useRef(null);
   const publishOpen = usePublishEnabled();
   const links = publishOpen ? ACCOUNT_LINKS : ACCOUNT_LINKS.filter((l) => l.href !== '/app/publish');
-
-  useEffect(() => {
-    setSessionAccount(accountLabel(getSession()));
-    return onSessionChange((s) => setSessionAccount(accountLabel(s)));
-  }, []);
 
   const account = given || sessionAccount;
 
