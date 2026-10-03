@@ -145,6 +145,7 @@ export const SITE_PAGES = [
   { href: '/pricing',           label: 'Pricing',            description: 'Every model, every credit price, one balance.' },
   { href: '/presets',           label: 'Templates',          description: 'Ready-made looks with their prompt and price up front.' },
   { href: '/tools',             label: 'Tools',              description: 'Upscale, cut out, expand, edit and animate your own files.' },
+  { href: '/guides',            label: 'Guides',             description: 'Step-by-step answers to the things people do first.' },
   { href: '/app/create',        label: 'Create',             description: 'The studio: pick a model, see the cost, generate.' },
   { href: '/app/library',       label: 'Library',            description: 'Every generation you have run, successes and refunds.' },
   { href: '/app/credits',       label: 'Credits & billing',  description: 'Your balance, free-credit expiry and recent ledger rows.' },
@@ -279,6 +280,8 @@ export const MORE_FEATURES = [
     { label: 'Models',  href: '/#shelf' },
     { label: 'Pricing', href: '/pricing' },
     { label: 'Templates', href: '/presets' },
+    { label: 'Tools', href: '/tools' },
+    { label: 'Guides', href: '/guides' },
   ] },
   { group: 'Models',    items: [] }, // filled from the live catalog in page.js
   { group: 'Tools',     items: [
