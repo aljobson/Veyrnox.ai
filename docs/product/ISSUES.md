@@ -38,13 +38,13 @@ behaviour a user can hit · **medium** = latent defect or guard missing ·
 | # | sev | issue | evidence | fix |
 |---|---|---|---|---|
 | P1 | **high** — fixed: `PUBLISH_ENABLED` off in prod + Free cap (0169) | **Veyrnox Publish is live in production with no flag and no plan.** It is in the account menu, unlimited and free, though ADR-0062/0063 set Free = 1 account and app reviews are not done. | `app/veyrnox/app/publish/page.js`, `NavAuthButtons.js`, no `publish_plan` code | Gate behind a server flag until the plan ships, or enforce the Free 1-account cap now. |
-| P2 | **high** | YouTube resumable upload cannot complete (no `Authorization` on continuation PUTs). Fix is in open PR #399, failing CI. | PR #399 | Rebase on #401, merge. |
-| P3 | medium | `/app/credits` says "No subscription." while ADR-0064 is accepted and Cinema Pass is a subscription. | `app/veyrnox/app/credits/page.js:136` | Update copy when subscriptions ship; today say "Credit Packs are one-off". |
+| P2 | **fixed** | YouTube resumable upload could not complete (no `Authorization` on continuation PUTs). | #399, merged 2026-10-03 | Done: continuation PUTs carry the token, the quota day is Pacific, session restarts are capped. |
+| P3 | **fixed for today** | `/app/credits` said "No subscription." while ADR-0064 is accepted and Cinema Pass is a subscription. | `app/veyrnox/app/credits/page.js` | Now "Credit Packs are one-off purchases. Nothing renews." Revisit when subscriptions ship (IMPLEMENTATION-PLAN C5). |
 | P4 | medium | Passkey sign-in button can appear but there is no enrolment UI, so no user can have a passkey. | `app/lib/passkeys.js` (`registerPasskey` unused), ADR-0032 | Ship enrolment on `/app/account` or hide the button. |
 | P5 | medium | Cinema Pass cannot be tested end to end: `CINEMA_SUBSCRIPTIONS_ENABLED` is unset even on staging. | `wrangler.jsonc` `env.staging` | Turn on in staging with Stripe test keys. |
 | P6 | medium | Staging has no provider, payment or R2 credentials, so generation, refunds and project-media cleanup cannot be exercised there. | `docs/architecture/staging-rollout.md` | Provision test-mode secrets on staging. |
-| P7 | low | `veyrnox_social_cinema` flag expects the string `'true'`; every other preview flag uses `'1'`. | `SocialCinema.js:65` | Accept `'1'`. |
-| P8 | low | YouTube connect route header still says no publish path exists. | `app/api/v1/social/accounts/youtube/connect/route.js` | Fix comment. |
+| P7 | **fixed** | `veyrnox_social_cinema` expected the string `'true'`; every other preview flag uses `'1'`. | `app/veyrnox/social-cinema/preview.js` | Accepts `'1'` and `'true'`. |
+| P8 | **fixed** | YouTube connect route header said no publish path exists. | `app/api/v1/social/accounts/youtube/connect/route.js` | Comment describes the resumable upload. |
 | P9 | low | Projects asset APIs exist with no UI. | `app/api/v1/projects/[id]/assets/*` | Expected (M02); note only. |
 
 ## 3. Security, infrastructure and config
