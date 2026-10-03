@@ -318,8 +318,13 @@ BEGIN
             RETURN jsonb_build_object('ok', false, 'code', 'SUBSCRIPTION_NOT_FOUND');
         END IF;
         IF v_sub.stripe_subscription_id IS NULL AND v_sub.status = 'pending' THEN
-            UPDATE public.credit_subscriptions SET stripe_subscription_id = p_stripe_subscription_id, updated_at = now()
-            WHERE id = v_sub.id;
+            BEGIN
+                UPDATE public.credit_subscriptions SET stripe_subscription_id = p_stripe_subscription_id, updated_at = now()
+                WHERE id = v_sub.id;
+            EXCEPTION WHEN unique_violation THEN
+                -- Another row was bound to this Stripe subscription meanwhile.
+                RETURN jsonb_build_object('ok', false, 'code', 'SUBSCRIPTION_MISMATCH');
+            END;
             v_sub.stripe_subscription_id := p_stripe_subscription_id;
         ELSIF v_sub.stripe_subscription_id IS DISTINCT FROM p_stripe_subscription_id THEN
             RETURN jsonb_build_object('ok', false, 'code', 'SUBSCRIPTION_MISMATCH');

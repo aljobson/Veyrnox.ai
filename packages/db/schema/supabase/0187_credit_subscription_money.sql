@@ -17,9 +17,12 @@
 -- What is checked before a grant, each refusal with its own code:
 --   - the first invoice is for the plan the checkout was started on;
 --   - the plan is on sale (or is the row's own), on the row's billing interval;
---   - the money covers it: the plan price, or for an upgrade at least the
---     difference from the old price (Stripe credits the unused time, which is
---     never more than the old price). Tax only adds to what was paid;
+--   - the money covers it: the price this row was sold at for its own plan
+--     (a later price change does not refuse an existing subscriber), the
+--     catalogue price for another plan, or for an upgrade of a paid-up row at
+--     least the difference from the old price (Stripe credits the unused time,
+--     which is never more than the old price). A past-due row has no paid
+--     time to credit, so its upgrade costs the full price. Tax only adds;
 --   - the period ends no later than one interval, with slack, from now.
 --
 -- Keyed by the invoice id, here and in the ledger: a granted invoice replays
@@ -49,6 +52,7 @@ DECLARE
     v_old     public.credit_subscription_plans%ROWTYPE;
     v_first   BOOLEAN;
     v_minimum INTEGER;
+    v_credits INTEGER;
     v_grant   JSONB;
     v_code    TEXT;
 BEGIN
@@ -91,14 +95,19 @@ BEGIN
           OR v_plan.billing_interval <> v_old.billing_interval THEN
         v_code := 'PLAN_NOT_ALLOWED';
     ELSE
-        v_minimum := CASE WHEN v_plan.tier > v_old.tier THEN v_plan.price_usd_cents - v_old.price_usd_cents
+        v_minimum := CASE WHEN v_plan.id = v_sub.plan_id THEN v_sub.price_usd_cents
+                          WHEN v_plan.tier > v_old.tier AND v_sub.status = 'active'
+                              THEN GREATEST(1, v_plan.price_usd_cents - v_sub.price_usd_cents)
                           ELSE v_plan.price_usd_cents END;
+        -- The row's own plan grants what the row was sold; another plan, what
+        -- the catalogue says today.
+        v_credits := CASE WHEN v_plan.id = v_sub.plan_id THEN v_sub.credits_per_cycle ELSE v_plan.credits_per_cycle END;
         IF p_amount_paid_cents < v_minimum THEN
             v_code := 'AMOUNT_BELOW_PLAN';
         ELSIF p_period_end > now() + (CASE v_plan.billing_interval WHEN 'year' THEN interval '370 days' ELSE interval '35 days' END) THEN
             v_code := 'INVALID_PERIOD_END';
         ELSE
-            v_grant := public.subscription_grant(v_sub.user_id, v_plan.credits_per_cycle, p_period_end, p_invoice_id);
+            v_grant := public.subscription_grant(v_sub.user_id, v_credits, p_period_end, p_invoice_id);
             IF NOT COALESCE((v_grant->>'ok')::BOOLEAN, false) THEN
                 v_code := COALESCE(v_grant->>'code', 'GRANT_REFUSED');
             ELSIF v_plan.id <> v_sub.plan_id THEN
@@ -113,7 +122,7 @@ BEGIN
     INSERT INTO public.credit_subscription_events
         (subscription_id, type, status, period_end, invoice_id, credits, amount_paid_cents, outcome, occurred_at)
     VALUES (v_sub.id, 'invoice.grant', v_sub.status, p_period_end, p_invoice_id,
-            CASE WHEN v_code IS NULL THEN v_plan.credits_per_cycle ELSE 0 END, p_amount_paid_cents,
+            CASE WHEN v_code IS NULL THEN v_credits ELSE 0 END, p_amount_paid_cents,
             COALESCE(v_code, 'GRANTED'), p_occurred_at)
     ON CONFLICT (invoice_id, outcome) WHERE type = 'invoice.grant' DO NOTHING;
 
@@ -122,7 +131,7 @@ BEGIN
                                   'subscription_id', v_sub.id, 'user_id', v_sub.user_id);
     END IF;
     RETURN jsonb_build_object('ok', true, 'granted', true, 'idempotent', COALESCE((v_grant->>'idempotent')::BOOLEAN, false),
-                              'credits', v_plan.credits_per_cycle, 'plan_id', v_plan.id,
+                              'credits', v_credits, 'plan_id', v_plan.id,
                               'expired', COALESCE((v_grant->>'expired')::INTEGER, 0),
                               'balance_after', (v_grant->>'balance_after')::INTEGER,
                               'subscription_id', v_sub.id, 'user_id', v_sub.user_id);

@@ -259,6 +259,18 @@ refuses anyway, the webhook must log it for an Operator and not acknowledge it a
   logged invoice and back. It is in the nightly reconcile; not yet in the hourly snapshot.
 - **Not live.** Nothing calls these until the routes and webhook ship behind a flag.
 
+**What the webhook (next step) must do for these functions to be safe**, found by review:
+
+- Pass the plan the *invoice* was for, not the subscription's current metadata. A first invoice
+  retried after an upgrade would otherwise be refused for good (`PLAN_NOT_ALLOWED`).
+- Retry `invoice.paid` when the answer is `SUBSCRIPTION_NOT_FOUND` or `SUBSCRIPTION_NOT_LIVE` and
+  the event is young: the event that binds or activates the row may not have committed yet.
+- Refuse an upgrade while the Subscription is past due, and a new checkout while a cancelled
+  cycle is still running (its first invoice can end before the running cycle and be refused).
+- Cancel the subscription at Stripe after `end_credit_subscription`, and alert an Operator on
+  every refused paid invoice: the customer paid and has no credits until someone acts.
+- A price change is a new plan id. Existing rows renew on the price and credits they were sold.
+
 **Defaults this build assumes, for the owner to confirm before the webhook ships:**
 
 - *Any refund or dispute on a Subscription invoice ends the Subscription*, as it does a Cinema

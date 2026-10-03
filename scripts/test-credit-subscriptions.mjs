@@ -185,6 +185,23 @@ try {
     assert.equal((await status(s1.subscription_id)).plan_id, 'starter-monthly');
     await clean(a);
 
+    // A past-due row has no paid time to credit: its upgrade costs the full price.
+    const pd = await subscribed();
+    await event(null, pd.sub, 'past_due');
+    assert.equal((await paid(pd.sub, { end: inDays(31), plan: 'plus-monthly', cents: 4000 })).code, 'AMOUNT_BELOW_PLAN');
+    assert.equal((await paid(pd.sub, { end: inDays(31), plan: 'plus-monthly', cents: 5900 })).credits, 1200);
+
+    // A price or credit change in the catalogue does not touch an existing
+    // subscriber: the renewal is checked and granted on what the row was sold.
+    const gf = await subscribed();
+    await q(`UPDATE public.credit_subscription_plans SET price_usd_cents = 2400, credits_per_cycle = 300 WHERE id = 'starter-monthly'`);
+    const kept = await paid(gf.sub, { end: inDays(31), cents: 1900 });
+    assert.deepEqual([kept.ok, kept.credits], [true, 270]);
+    const fresh = await user();
+    assert.deepEqual([(await start(fresh, 'starter-monthly')).price_usd_cents, (await start(fresh, 'starter-monthly')).credits_per_cycle].slice(0, 1), [2400]);
+    await q(`UPDATE public.credit_subscription_plans SET price_usd_cents = 1900, credits_per_cycle = 270 WHERE id = 'starter-monthly'`);
+    await clean(gf.u);
+
     // ── Cancelling keeps the credits to the period end; resuming undoes it. ──
     const cancelled = await rpc(`public.mark_credit_subscription_renewal($1, $2, 'cancel')`, [a.auth, s1.subscription_id]);
     assert.deepEqual([cancelled.ok, cancelled.cancel_at_period_end], [true, true]);
