@@ -4,7 +4,7 @@ Normative pricing + model catalog for the Veyrnox gateway.
 
 ## Sources
 
-- **Plans** (Assumptions sheet of `platform_model.xlsx`) — Starter/Plus/Ultra credit allocations and monthly prices
+- **Plans** — the Starter/Plus/Ultra tiers accepted in ADR-0064 ($19/270, $59/1,200, $129/3,000). Not sold yet.
 - **Model Catalog** (same xlsx, "Model Catalog" sheet) — provider cost, retail price, and LAUNCH / GATE / SKIP recommendation per model
 
 The xlsx is external (kept in `docs/pricing/` or the founder's local storage — not checked in). Values here are hand-transcribed; the `margin_floor` CI job catches drift.
@@ -17,7 +17,7 @@ The xlsx is external (kept in `docs/pricing/` or the founder's local storage —
 
 ## Pricing math
 
-- Reference rate: **Ultra plan** at $99 / 3000 credits = **$0.033 / credit**
+- Reference rate: **$0.033 / credit**, the net floor the credit-pack constraints keep (0041, 0121). It is below every plan's rate (Ultra is $0.043).
 - Credit price per model: `ceil(retail_usd / 0.033)`
 - Margin floor: `credits × 0.033 ≥ provider_cost × (1 + 0.5)` — 50% gross margin over provider cost
 

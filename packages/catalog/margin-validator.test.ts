@@ -10,7 +10,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { CATALOG, MARGIN_FLOOR, REFERENCE_DOLLARS_PER_CREDIT } from "./index.ts";
+import { CATALOG, MARGIN_FLOOR, PLANS, REFERENCE_DOLLARS_PER_CREDIT } from "./index.ts";
 import { findMarginBreaches, marginSummary } from "./margin-validator.ts";
 
 test("margin_floor gate — no catalog row is below floor at reference rate", () => {
@@ -56,5 +56,17 @@ test("catalog invariants — ids unique, credits positive", () => {
         assert.ok(row.provider_cost_usd >= 0, `${row.id}: provider_cost_usd must be non-negative`);
         assert.ok(row.retail_usd >= 0, `${row.id}: retail_usd must be non-negative`);
         assert.ok(row.providers.length > 0, `${row.id}: at least one provider`);
+    }
+});
+
+test("plans match ADR-0064 and the reference rate sits below all of them", () => {
+    assert.deepEqual(
+        PLANS.map((p) => [p.id, p.price_usd_per_month, p.credits_per_month]),
+        [["starter", 19, 270], ["plus", 59, 1200], ["ultra", 129, 3000]],
+    );
+    for (const p of PLANS) {
+        // Each stated rate is the plan's own price per credit, to 3 decimals.
+        assert.equal(p.dollars_per_credit, Number((p.price_usd_per_month / p.credits_per_month).toFixed(3)), p.id);
+        assert.ok(REFERENCE_DOLLARS_PER_CREDIT < p.dollars_per_credit, `${p.id} is priced below the margin reference`);
     }
 });
