@@ -143,6 +143,7 @@ export const SITE_PAGES = [
   { href: '/',                  label: 'Home',               description: 'Credit-metered AI image, video and audio generation.' },
   { href: '/pricing',           label: 'Pricing',            description: 'Every model, every credit price, one balance.' },
   { href: '/presets',           label: 'Templates',          description: 'Ready-made looks with their prompt and price up front.' },
+  { href: '/tools',             label: 'Tools',              description: 'Upscale, cut out, expand, edit and animate your own files.' },
   { href: '/app/create',        label: 'Create',             description: 'The studio: pick a model, see the cost, generate.' },
   { href: '/app/library',       label: 'Library',            description: 'Every generation you have run, successes and refunds.' },
   { href: '/app/credits',       label: 'Credits & billing',  description: 'Your balance, free-credit expiry and recent ledger rows.' },

@@ -19,6 +19,7 @@ export function MarketingNav() {
   const items = [
     { href: '/',         label: 'Home' },
     { href: '/presets', label: 'Templates' },
+    { href: '/tools', label: 'Tools' },
     { href: '/social-cinema', label: 'Social Cinema' },
     { href: '/pricing', label: 'Pricing' },
   ];
