@@ -49,7 +49,8 @@ If a build starts failing after a dependency change, bisect these three first.
 - **Balance invariant**: `credit_balances.balance = SUM(ledger_entries.delta)`
   per `user_id`. Every mutation goes through `ledger_debit` / `ledger_refund` /
   `ledger_grant` / `signup_grant` / `expire_free_credits` / `credit_top_up` /
-  `apply_top_up_refund` RPC — never a raw `INSERT INTO ledger_entries` or a raw
+  `apply_top_up_refund` / `subscription_grant` / `expire_subscription_credits`
+  RPC — never a raw `INSERT INTO ledger_entries` or a raw
   `UPDATE credit_balances`.
 - **Frozen accounts** (#97): `apply_top_up_refund` and `apply_dispute_event`
   Freeze, `unfreeze_account` is the only way out, and all three write the
@@ -60,6 +61,18 @@ If a build starts failing after a dependency change, bisect these three first.
   `0 <= free_balance <= balance`. Debits spend free first; a Credit Refund
   returns to the source it came from; a clawback caps at
   `balance - free_balance`. `reconcile_free_credits()` must return zero rows.
+- **Subscription Credits** (ADR-0064, 0183/0184): a third bucket,
+  `subscription_delta` / `subscription_balance`, with
+  `free_balance + subscription_balance <= balance`. Only `subscription_grant`
+  mints them, keyed by the paid invoice; nothing calls it until the Stripe
+  subscription webhook is built. Debits spend Subscription, then Free, then
+  Pack. Past `subscription_expires_at` they cannot be spent and the hourly
+  sweep removes them; a renewal expires the previous cycle's remainder (no
+  rollover). A refund returns to the bucket it came from; the part an ended
+  or replaced cycle paid for is expired again in the same call, so it never
+  becomes permanent credit and never rolls over. A Pack clawback caps at
+  `balance - free_balance - subscription_balance`.
+  `reconcile_subscription_credits()` must return zero rows.
 - **Idempotency**: every state-changing RPC takes an idempotency key
   (`jobs.idempotency_key` UNIQUE on `(user_id, idempotency_key)`,
   `webhook_events` UNIQUE on `(source, external_id)`). Replay must be a no-op.
