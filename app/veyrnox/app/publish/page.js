@@ -12,24 +12,31 @@ import { DraftReview } from './DraftReview';
 
 const currentAccount = () => getSession()?.user?.id || '';
 const noAccount = () => '';
+const noJob = () => null;
+const currentJob = () => new URLSearchParams(window.location.search).get('job');
+const subscribeLocation = (listener) => {
+  window.addEventListener('popstate', listener);
+  return () => window.removeEventListener('popstate', listener);
+};
 const button = 'rounded-full border border-vx-border px-4 py-2 text-sm font-bold disabled:opacity-50';
 // Free tier: one connected account (ADR-0063). The database enforces it (0169);
 // this only saves a wasted OAuth round trip.
 const FREE_ACCOUNT_LIMIT = 1;
 
 export default function Publish() {
+  const initialJobId = useSyncExternalStore(subscribeLocation, currentJob, noJob);
   const account = useSyncExternalStore(onSessionChange, currentAccount, noAccount);
   return <><AppNav /><div className="max-w-[900px] mx-auto px-4 sm:px-8 py-10">
     <h1 className="text-3xl font-black mb-2">Veyrnox Publish</h1>
     <p className="text-sm text-vx-fg-muted mb-6">Connect your social accounts to schedule posts from Veyrnox. <Link href="/app/publish/analytics" className="text-vx-accent underline">See your analytics</Link></p>
-    {account ? <PublishControls key={account} /> : <div className="text-vx-fg-body">
+    {account ? <PublishControls key={account} initialJobId={initialJobId} /> : <div className="text-vx-fg-body">
       <p className="mb-4">Sign in to connect a social account.</p>
       <button type="button" className={button} onClick={() => window.dispatchEvent(new CustomEvent('veyrnox:auth-required'))}>Sign in</button>
     </div>}
   </div></>;
 }
 
-function PublishControls() {
+function PublishControls({ initialJobId }) {
   const [accounts, setAccounts] = useState(null);
   const [loadError, setLoadError] = useState('');
   const [connecting, setConnecting] = useState(null);
@@ -155,8 +162,8 @@ function PublishControls() {
     </section>
 
     <section className="rounded-2xl border border-vx-border p-5">
-      <h2 className="font-bold mb-4">Schedule a post</h2>
-      <Composer accounts={accounts} onScheduled={() => setPostsRefreshToken((n) => n + 1)} />
+      <h2 id="schedule" className="font-bold mb-4 scroll-mt-6">Schedule a post</h2>
+      <Composer key={initialJobId || 'library'} initialJobId={initialJobId} accounts={accounts} onScheduled={() => setPostsRefreshToken((n) => n + 1)} />
     </section>
 
     <section className="rounded-2xl border border-vx-border p-5">
