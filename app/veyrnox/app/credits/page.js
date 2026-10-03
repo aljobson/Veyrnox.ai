@@ -133,7 +133,7 @@ export default function Credits() {
               <li>One balance covers every model. Free credits are spent first.</li>
               <li>Each generation is charged at the price on its button, when you press it.</li>
               <li>Failed jobs refund automatically, as their own line in your statement.</li>
-              <li>No subscription. Every account works the same way.</li>
+              <li>Credit Packs are one-off purchases. Nothing renews.</li>
             </ul>
           </div>
         </div>

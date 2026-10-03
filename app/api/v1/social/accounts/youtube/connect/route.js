@@ -2,12 +2,10 @@
  * POST /api/v1/social/accounts/youtube/connect — start the OAuth flow.
  * Technical spec §2.3/§2.7, ADR-0061.
  *
- * Connect only — no publish path exists for YouTube yet (packages/
- * adapters/social/youtube.js's own header explains why: it has no API
- * for a static image post, only a resumable video upload, which needs
- * its own scheduling-engine design). A post scheduled to a connected
- * YouTube account will fail cleanly with 'network_not_implemented'
- * (lib/socialPublishSweep.js) until that lands.
+ * This route only connects the account. Publishing is a resumable video
+ * upload that lib/socialPublishSweep.js advances one chunk per tick
+ * (packages/adapters/social/youtube.js); YouTube has no static image
+ * post.
  *
  * Body: { codeChallenge } — validated for contract parity with every
  * other network's connect route, even though Google's own authorize

@@ -6,6 +6,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { Button } from '../_components/Button';
 import { getSession, onSessionChange } from '../../lib/authClient';
 import { gatewayFetch } from '../_lib/gateway';
+import { cinemaPreviewEnabled } from './preview';
 
 const identity = () => getSession()?.user?.id || '';
 const noIdentity = () => '';
@@ -62,7 +63,7 @@ export function SocialCinema() {
   const account = useSyncExternalStore(onSessionChange, identity, noIdentity);
   const [preview, setPreview] = useState(false);
   useEffect(() => {
-    try { setPreview(localStorage.getItem('veyrnox_social_cinema') === 'true'); } catch {}
+    setPreview(cinemaPreviewEnabled());
   }, []);
   return <div className="mx-auto max-w-[1100px] px-4 py-10 pb-40 sm:px-8 sm:py-16 sm:pb-32">
     <header className="max-w-2xl">
