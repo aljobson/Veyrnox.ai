@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { LANDING_DRAFT_KEY } from '../_lib/landingDraft';
 
@@ -34,15 +34,14 @@ export function PriceSlip({ models }) {
     [open],
   );
   const [modelId, setModelId] = useState((chips[0] || open[0] || models[0])?.id);
-  const [seconds, setSeconds] = useState(5);
+  const [wanted, setSeconds] = useState(5);
   const [prompt, setPrompt] = useState('');
 
   const model = models.find((m) => m.id === modelId) || null;
   const lengths = model && model.kind === 'video' && model.durations?.length ? model.durations : [5];
   // A 10 s pick must not outlive a switch to a model that only sells 5 s.
-  useEffect(() => {
-    if (!lengths.includes(seconds)) setSeconds(lengths[0]);
-  }, [lengths.join(','), seconds]); // eslint-disable-line react-hooks/exhaustive-deps
+  const seconds = lengths.includes(wanted) ? wanted : lengths[0];
+  const pickModel = (id) => { setModelId(id); setSeconds(seconds); };
 
   if (!model) return null;
   const isVideo = model.kind === 'video';
@@ -90,7 +89,7 @@ export function PriceSlip({ models }) {
                 key={m.id}
                 type="button"
                 aria-pressed={m.id === model.id}
-                onClick={() => setModelId(m.id)}
+                onClick={() => pickModel(m.id)}
                 className="vx-press rounded-full border px-3 py-1.5 text-[13px] font-semibold transition-colors border-vx-border text-vx-fg-body hover:border-vx-fg-muted aria-pressed:border-vx-fg aria-pressed:bg-vx-fg aria-pressed:text-vx-base"
               >
                 {shortName(m.name)}
@@ -99,7 +98,7 @@ export function PriceSlip({ models }) {
             <select
               aria-label="Every other model"
               value={inChips ? '' : model.id}
-              onChange={(e) => e.target.value && setModelId(e.target.value)}
+              onChange={(e) => e.target.value && pickModel(e.target.value)}
               className={`rounded-full border bg-transparent px-3 py-1.5 text-[13px] font-semibold ${inChips ? 'border-vx-border text-vx-fg-muted' : 'border-vx-fg text-vx-fg'}`}
             >
               <option value="">{models.length - chips.length} more…</option>

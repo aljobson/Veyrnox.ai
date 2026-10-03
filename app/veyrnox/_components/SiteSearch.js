@@ -113,8 +113,6 @@ function SearchOverlay({ onClose }) {
   );
   const results = useMemo(() => searchIndex(index, query), [index, query]);
 
-  useEffect(() => setCursor(0), [query]);
-
   const go = useCallback(
     (item) => {
       if (!item) return;
@@ -154,7 +152,7 @@ function SearchOverlay({ onClose }) {
             aria-activedescendant={results.length ? `vx-search-opt-${cursor}` : undefined}
             aria-autocomplete="list"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => { setQuery(e.target.value); setCursor(0); }}
             onKeyDown={onKeyDown}
             placeholder="Search models, presets, pages, FAQ…"
             aria-label="Search query"
