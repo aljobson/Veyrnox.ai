@@ -61,7 +61,7 @@
 body {
   background: rgb(var(--vx-base));
   color: rgb(var(--vx-fg));
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 

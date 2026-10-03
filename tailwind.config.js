@@ -49,7 +49,7 @@ module.exports = {
                 },
             },
             fontFamily: {
-                sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+                sans: ['var(--font-inter)', 'system-ui', '-apple-system', 'sans-serif'],
                 vx: ['var(--font-archivo)', 'system-ui', 'sans-serif'],
                 'vx-mono': ['var(--font-jetbrains)', 'ui-monospace', 'monospace'],
             },
