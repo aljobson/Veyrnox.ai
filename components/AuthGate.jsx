@@ -21,6 +21,7 @@ import {
     signInWithOAuth,
 } from "../app/lib/authClient.js";
 import { signInWithPasskey, passkeysSupported } from "../app/lib/passkeys.js";
+import { configuredProviders, withLiveSettings, readAuthSettings, providerAvailable } from "../app/lib/authProviders.js";
 import { Turnstile, TURNSTILE_SITE_KEY } from "./Turnstile.jsx";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -108,29 +109,27 @@ export default function AuthGate() {
     // captchaReset and the widget issues a fresh one.
     const [captcha, setCaptcha] = useState(null);
     const [captchaReset, setCaptchaReset] = useState(0);
-    // Which OAuth providers are actually enabled on the Supabase side.
-    // Fetching once on first mount avoids showing broken buttons that
-    // redirect to a Supabase 400 "provider is not enabled" page.
-    const [oauth, setOauth] = useState({ apple: false, google: false });
+    // The environment's providers show at once, on every page; the live
+    // settings read below can only hide one Supabase has switched off. A
+    // failed read used to hide every button and leave email only. Until a read
+    // has succeeded, startOAuth checks again before redirecting, so a switched-
+    // off provider gets a message here instead of Supabase's raw 400 page.
+    const [oauth, setOauth] = useState(() => configuredProviders(process.env.NEXT_PUBLIC_AUTH_PROVIDERS));
+    const settingsRead = useRef(false);
     // Passkeys need BOTH the project setting and a browser that can do
     // WebAuthn in a secure context, so the button is never offered where
     // clicking it would only throw.
     const [passkeys, setPasskeys] = useState(false);
 
     useEffect(() => {
-        const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-        const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-        if (!url || !anon) return;
         let cancelled = false;
-        fetch(`${url}/auth/v1/settings`, { headers: { apikey: anon } })
-            .then((r) => (r.ok ? r.json() : null))
+        readAuthSettings(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
             .then((data) => {
                 if (cancelled || !data) return;
-                const ext = data.external || {};
-                setOauth({ apple: !!ext.apple, google: !!ext.google });
+                settingsRead.current = true;
+                setOauth((configured) => withLiveSettings(configured, data));
                 setPasskeys(!!data.passkeys_enabled && passkeysSupported());
-            })
-            .catch(() => {});
+            });
         return () => { cancelled = true; };
     }, []);
 
@@ -205,6 +204,18 @@ export default function AuthGate() {
     async function startOAuth(provider) {
         setNotice(null);
         setBusy(true);
+        if (!settingsRead.current) {
+            const data = await readAuthSettings(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY, 3000);
+            if (data) {
+                settingsRead.current = true;
+                setOauth((configured) => withLiveSettings(configured, data));
+            }
+            if (!providerAvailable(data, provider)) {
+                setBusy(false);
+                setNotice({ kind: "error", text: "That sign-in option isn't available right now. Use another one." });
+                return;
+            }
+        }
         try {
             await signInWithOAuth(provider);
         } catch (err) {
