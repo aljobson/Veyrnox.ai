@@ -1,5 +1,5 @@
 'use client';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { AppNav } from '../../_components/NavBar';
 import { Chip } from '../../_components/Chip';
 import { ASPECT_RATIOS } from '../../_lib/tokens';
@@ -37,10 +37,14 @@ function errorFor(e) {
   return e instanceof GatewayError ? { code: e.code, retryAfter: e.retryAfter } : { code: 'internal' };
 }
 
+// Off on the server and first paint, then whatever this browser has stored.
+const never = () => () => {};
+const autoShortFlag = () => readFlag(AUTO_SHORT_FLAG);
+const off = () => false;
+
 export default function CreateStudio() {
   const { models: catalogModels, live: catalogLive, loading: catalogLoading } = useCatalog();
-  const [autoShortOn, setAutoShortOn] = useState(false);
-  useEffect(() => { setAutoShortOn(readFlag(AUTO_SHORT_FLAG)); }, []);
+  const autoShortOn = useSyncExternalStore(never, autoShortFlag, off);
   const models = catalogModels.filter((m) => !m.isEdit && (autoShortOn || !m.takesTopic));
   const [modelId, setModelId] = useState(DEFAULT_MODEL);
   const [duration, setDuration] = useState('5s');
