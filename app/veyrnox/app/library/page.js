@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { AppNav } from '../../_components/NavBar';
 import { Chip } from '../../_components/Chip';
 import { gatewayFetch, GatewayError, notifyBalanceChanged } from '../../_lib/gateway';
@@ -42,6 +42,12 @@ const PAGE = 12;
 // Clip Editor stays hidden until launch unless this browser opts in
 // (CLAUDE.md "Delivery": new user paths behind localStorage.veyrnox_*).
 const EDITOR_FLAG = 'veyrnox_editor';
+// Browser-only values read once: off / 'grid' on the server and first paint.
+const never = () => () => {};
+const editorFlag = () => { try { return window.localStorage.getItem(EDITOR_FLAG) === '1'; } catch { return false; } };
+const savedView = () => readView(window.localStorage);
+const off = () => false;
+const gridView = () => 'grid';
 const isVideo = (r) => !!r.asset_url && !!r.mime_type?.startsWith('video/');
 const isAudio = (r) => !!r.asset_url && !!r.mime_type?.startsWith('audio/');
 
@@ -55,9 +61,10 @@ export default function Library() {
   useEffect(() => { setFavourites(readFavourites(window.localStorage, getSession()?.user?.id)); }, []);
   const star = (id) => setFavourites(toggleFavourite(window.localStorage, getSession()?.user?.id, id));
   // Grid on the server and first paint; the saved layout is applied after mount.
-  const [view, setView] = useState('grid');
-  useEffect(() => { setView(readView(window.localStorage)); }, []);
-  const chooseView = (v) => { setView(v); try { window.localStorage.setItem(VIEW_KEY, v); } catch { /* not remembered */ } };
+  const stored = useSyncExternalStore(never, savedView, gridView);
+  const [chosen, setChosen] = useState(null);
+  const view = chosen ?? stored;
+  const chooseView = (v) => { setChosen(v); try { window.localStorage.setItem(VIEW_KEY, v); } catch { /* not remembered */ } };
   const [balance, setBalance] = useState(null);
   // History lives in localStorage, which the server cannot read. Start empty
   // on both sides so hydration matches, then load it after mount.
@@ -68,14 +75,11 @@ export default function Library() {
   const [unreachable, setUnreachable] = useState(false);
   const [nextCursor, setNextCursor] = useState(null);
   const [listLive, setListLive] = useState(null);
-  const [editorOn, setEditorOn] = useState(false);
+  const editorOn = useSyncExternalStore(never, editorFlag, off);
   const rowsRef = useRef(rows);
   rowsRef.current = rows;
   const [selected, setSelected] = useState([]);
   const [editing, setEditing] = useState(false);
-  useEffect(() => {
-    try { setEditorOn(window.localStorage.getItem(EDITOR_FLAG) === '1'); } catch { /* storage blocked: editor stays off */ }
-  }, []);
 
   // load balance
   const loadBalance = useCallback(async () => {
