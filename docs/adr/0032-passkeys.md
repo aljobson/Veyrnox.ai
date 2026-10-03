@@ -128,3 +128,16 @@ time with a comment explaining why; the comment is in the script.
    needs a real browser with a Turnstile token and a session.
 3. Register a passkey on a real account, sign out, sign in with it.
 4. Then, and only then, treat the verify bodies in decision 1 as confirmed.
+
+> **Registration confirmed on production, 2026-10-03.** From the Passkeys
+> panel on `/app/account`, signed in on a real account:
+> `GET /auth/v1/passkeys` → 200 (an empty list rendered as "no passkeys"),
+> `POST …/registration/options` → 200, the browser created the credential,
+> `POST …/registration/verify` → 200, and the next list showed the passkey
+> (named "Chromium Browser" by Supabase). So `decodeOptions`, the
+> `{challenge_id, credential}` registration verify body and the list shape are
+> confirmed. A second attempt on the same device was refused by the browser
+> and reported as a duplicate, as designed.
+>
+> **Still unconfirmed:** the *sign-in* half of step 3 (sign out, then sign in
+> with the passkey), which also exercises the authentication verify body.
