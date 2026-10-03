@@ -28,7 +28,13 @@ const LABELS = {
     free_credit_drift: 'free_balance outside 0 <= free_balance <= balance',
     top_up_drift: 'credited Top-ups that do not tie out to their ledger entry',
     failed_refund_drift: 'FAILED jobs still holding the credits they should have refunded',
+    subscription_credit_drift: 'subscription_balance off its ledger sum, or past its cycle end and unswept',
 };
+
+// Counts a migration adds. Until that migration is applied the snapshot does
+// not carry them; that is reported, not failed, so merging before the owner
+// approves the apply does not page anyone. Remove a key once it is applied.
+const PENDING = { subscription_credit_drift: '0185' };
 
 export async function fetchStatus({ url, key }) {
     const res = await fetch(new URL('/rest/v1/rpc/reconcile_status', url), {
@@ -46,8 +52,10 @@ export async function fetchStatus({ url, key }) {
     if (!row || typeof row !== 'object') throw new Error('reconcile_status returned no row');
     const out = {};
     for (const k of Object.keys(LABELS)) {
-        const n = Number(row[k]);
-        // A missing or non-numeric count is not a zero.
+        if (PENDING[k] && !(k in row)) { out[k] = null; continue; }
+        // A missing or non-numeric count is not a zero. Number(null) is 0, so
+        // the type is checked first.
+        const n = typeof row[k] === 'number' ? row[k] : NaN;
         if (!Number.isInteger(n) || n < 0) throw new Error(`reconcile_status.${k} was not a count: ${row[k]}`);
         out[k] = n;
     }
@@ -66,6 +74,7 @@ if (isMain) {
     }
     const bad = Object.entries(status).filter(([, n]) => n > 0);
     for (const [k, n] of Object.entries(status)) {
+        if (n === null) { console.log(`n/a          ${k}: not reported until migration ${PENDING[k]} is applied`); continue; }
         console.log(`${n === 0 ? 'ok  ' : 'DRIFT'} ${String(n).padStart(6)}  ${k} — ${LABELS[k]}`);
     }
     if (bad.length === 0) {

@@ -205,8 +205,8 @@ tiers.** The product owner approved this, and the spend-order question below, wi
   leaving it in the bucket after a renewal would be a rollover. Both were rejected. The same
   rule applies to a reversed Cinema unlock.
 - **Clawback.** A Pack refund or dispute takes Pack Credits only.
-- **Audit.** `reconcile_subscription_credits()` joins the nightly reconcile. It is not yet in the
-  hourly `reconcile_status` snapshot; add it with the webhook (C4), before anything grants.
+- **Audit.** `reconcile_subscription_credits()` joins the nightly reconcile, and the hourly
+  `reconcile_status` snapshot carries its count (0185).
 - **Not live.** Nothing calls `subscription_grant`, so every balance has zero Subscription
   Credits and the changed functions behave as before.
 
