@@ -32,6 +32,8 @@ be confused with each other.
 **What ADR-0018 already decided, two weeks ago, and why this ADR doesn't re-litigate it:**
 
 - Credit Packs ship first, which they now have (100cr/$10, 300cr/$25, 1000cr/$75, live).
+  > Note, 2026-10-03: the packs on sale today are 100/$10, 270/$19, 1,200/$59
+  > and 3,000/$129. The 300 and 1,000 packs were retired.
 - Subscriptions are "the target end state... the next slice... deferred, not rejected."
 - Two pricing floors already fixed: every Sales Channel must net ≥ $0.033/credit after fees
   (ADR-0014's margin), and **a Credit Pack must cost more per credit than every Subscription,
