@@ -81,7 +81,8 @@ test('a takedown is recorded through the RPC with the admin auth id and reported
     await withEnv(CONFIGURED, async ({ POST }) => {
         const res = await POST(request('POST', ADMIN, { user_id: USER, job_id: JOB, tier: 'takedown', reason: '  Real person without consent  ' }));
         assert.equal(res.status, 201);
-        assert.deepEqual(await res.json(), { action_id: '33333333-3333-4333-8333-333333333333', tier: 'takedown', assets_removed: 1, takedowns: 3, frozen: true });
+        // Sending is not configured in this test, so the notice is skipped.
+        assert.deepEqual(await res.json(), { action_id: '33333333-3333-4333-8333-333333333333', tier: 'takedown', assets_removed: 1, takedowns: 3, frozen: true, email: 'skipped' });
         assert.equal(res.headers.get('cache-control'), 'no-store');
     });
     assert.equal(calls.length, 1);

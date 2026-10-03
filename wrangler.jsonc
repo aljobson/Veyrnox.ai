@@ -88,6 +88,9 @@
     // menu link and /api/v1/social/*. Only "true" opens it. The publish
     // sweep is not gated, so anything already queued still finishes.
     "PUBLISH_ENABLED": "false",
+    // Sender for violation notices (lib/violationEmail.js, issue #479). The
+    // domain is verified in Resend; nothing sends until RESEND_API_KEY is set.
+    "VIOLATION_EMAIL_FROM": "Veyrnox.ai <support@veyrnox.ai>",
     // Cloudflare Access covers veyrnox.ai/app/admin*, /api/v1/admin/* and
     // /api/admin/* (one application, "Veyrnox.ai admin"). These two let the
     // Worker verify the assertion itself (lib/accessJwt.js) instead of
