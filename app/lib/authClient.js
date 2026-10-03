@@ -377,9 +377,9 @@ export async function signOut() {
 // once ADMIN_REQUIRE_AAL2 is on. Enrolment has to exist before that flag can
 // be turned on, which is why it lives here rather than in a later phase.
 //
-// No QR image: Supabase returns its QR as an SVG string, and injecting raw
-// markup is banned outright by the CI grep gate. The otpauth:// URI and the
-// secret are shown as text instead, and every authenticator app takes either.
+// Supabase returns a raw SVG string, which must never be injected into the
+// page. MfaPanel instead renders a QR code from this otpauth:// URI through
+// React-owned SVG elements and retains the URI and secret as text fallbacks.
 
 /** The current session's assurance level: "aal1", "aal2", or null. */
 export function getAal() {
@@ -392,6 +392,23 @@ export function getAal() {
     } catch {
         return null;
     }
+}
+
+/** Display-only freshness. Server signature/MFA checks remain authoritative. */
+export function getMfaFreshUntil(now = Date.now()) {
+    const token = getAccessToken();
+    if (!token) return null;
+    try {
+        const payload = token.split('.')[1];
+        const claims = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
+        if (claims.aal !== 'aal2' || !Array.isArray(claims.amr) || !Number.isFinite(claims.exp)) return null;
+        const times = claims.amr.filter((entry) => entry?.method === 'totp'
+            && Number.isFinite(entry.timestamp) && entry.timestamp <= now / 1000 + 5)
+            .map((entry) => entry.timestamp);
+        if (!times.length) return null;
+        const until = Math.min(Math.max(...times) + 300, claims.exp) * 1000;
+        return until > now ? until : null;
+    } catch { return null; }
 }
 
 /**

@@ -12,7 +12,7 @@ globalThis.localStorage = {
     removeItem: (k) => store.delete(k),
 };
 
-const { getFreshAccessToken, getSession } = await import('../app/lib/authClient.js');
+const { getFreshAccessToken, getSession, getMfaFreshUntil } = await import('../app/lib/authClient.js');
 const KEY = 'veyrnox_supabase_session';
 const now = () => Math.floor(Date.now() / 1000);
 
@@ -28,6 +28,23 @@ function stubRefresh(handler) {
     return calls;
 }
 const okJson = (obj) => new Response(JSON.stringify(obj), { status: 200, headers: { 'content-type': 'application/json' } });
+
+test('MFA display survives refresh but expires from the TOTP event, not token issuance', () => {
+    const stamp = now();
+    const claims = { aal: 'aal2', exp: stamp + 3600, iat: stamp + 250,
+        amr: [{ method: 'totp', timestamp: stamp }, { method: 'token_refresh', timestamp: stamp + 250 }] };
+    const token = (data) => `header.${Buffer.from(JSON.stringify(data)).toString('base64url')}.signature`;
+    seed({ access_token: token(claims) });
+    assert.equal(getMfaFreshUntil((stamp + 250) * 1000), (stamp + 300) * 1000);
+    assert.equal(getMfaFreshUntil((stamp + 300) * 1000), null);
+    for (const invalid of [{ ...claims, aal: 'aal1' }, { ...claims, amr: [] },
+        { ...claims, amr: [{ method: 'totp', timestamp: stamp + 10 }] }]) {
+        seed({ access_token: token(invalid) });
+        assert.equal(getMfaFreshUntil(stamp * 1000), null);
+    }
+    seed({ access_token: token({ ...claims, exp: stamp + 60 }) });
+    assert.equal(getMfaFreshUntil(stamp * 1000), (stamp + 60) * 1000);
+});
 
 test('fresh token returned without a network call', async () => {
     seed();

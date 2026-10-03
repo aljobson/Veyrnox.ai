@@ -4,10 +4,9 @@
  * Every catalog row must satisfy:
  *   credits × REFERENCE_DOLLARS_PER_CREDIT ≥ provider_cost_usd × (1 + MARGIN_FLOOR)
  *
- * i.e. our retail credit price (converted to USD at the Ultra plan's rate)
- * covers the provider's cost plus a minimum gross margin. Anything below
- * the floor means we lose money on that model at Ultra-tier subscription
- * usage, and it must be repriced or gated.
+ * i.e. our retail credit price (converted to USD at the reference rate, which
+ * is below every plan's rate) covers the provider's cost plus a minimum gross
+ * margin. Anything below the floor must be repriced or gated.
  *
  * Called from CI (via a test) and can be called at runtime when the catalog
  * is edited.

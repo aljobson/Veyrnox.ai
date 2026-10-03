@@ -2,120 +2,22 @@ import Link from 'next/link';
 import { MediaTile } from '../_components/MediaTile';
 import { SHOWCASE_CLIPS } from '../_lib/showcase';
 import { wallShapes, tileClasses } from '../_lib/presetWall';
-import {
-  NAV_CATEGORIES,
-  FEATURE_CARDS,
-  PRODUCT_TILES,
-  PRESETS,
-  presetHref,
-  presetCredits,
-  MORE_FEATURES,
-  METRIC_STRIP,
-  PILLARS,
-  FAQ,
-  PROMO_STRIP,
-  FOOTER_TAGLINE,
-  footerStamp,
-  SITE_UPDATED,
-  SUPPORT_EMAIL,
-  MODELS as MODELS_FALLBACK,
-  kindOf,
-  shelfName,
-} from '../_lib/tokens';
-
-export function ProductTilesRow({ modelCount, catalog }) {
-  // PRODUCT_TILES supplies presentation only — icon, hint, badge, label. The
-  // price comes from the live catalog, because CLAUDE.md makes the catalog
-  // normative and this section previously printed hand-typed credits directly
-  // under a headline counting live rows, so a re-priced model would be quoted
-  // wrong here while ModelShelf two sections down showed the truth.
-  const priceOf = (key, fallback) => {
-    const row = catalog && catalog.find((m) => m.id === key);
-    return row && typeof row.credits === 'number' ? row.credits : fallback;
-  };
-  return (
-    <section id="models" className="px-4 sm:px-6 pt-16 max-w-[1400px] mx-auto">
-      <div className="flex items-baseline justify-between mb-6 flex-wrap gap-2">
-        <h2 className="text-2xl sm:text-3xl font-black tracking-[-0.02em]">{modelCount} models on the shelf.</h2>
-        <Link href="/pricing" className="text-sm font-semibold text-vx-fg-muted hover:text-vx-fg">
-          Full catalog →
-        </Link>
-      </div>
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        {PRODUCT_TILES.map((p) => (
-          <Link
-            key={p.key}
-            href={`/app/create?model=${p.key}`}
-            className="relative rounded-2xl border border-vx-border bg-vx-panel p-4 hover:border-vx-accent transition-colors block"
-          >
-            <div className="flex items-start justify-between">
-              <div className="text-2xl leading-none">{p.icon}</div>
-              {p.badge && (
-                <span className={`font-vx-mono text-[8.5px] tracking-[0.1em] font-bold px-1.5 py-0.5 rounded ${
-                  p.badge === 'TOP' || p.badge === 'PREMIUM'
-                    ? 'bg-vx-money text-vx-money-ink'
-                    : 'bg-vx-accent text-vx-accent-ink'
-                }`}>
-                  {p.badge}
-                </span>
-              )}
-            </div>
-            <div className="mt-3 text-sm font-extrabold">{p.name}</div>
-            <div className="mt-0.5 font-vx-mono text-[9.5px] tracking-[0.1em] text-vx-fg-muted">{p.kind.toUpperCase()}</div>
-            <div className="mt-2 text-[11.5px] text-vx-fg-body leading-snug">{p.hint}</div>
-            <div className="mt-3 font-vx-mono text-[12px] font-bold text-vx-money vx-num">
-              {priceOf(p.key, p.credits)} cr
-            </div>
-          </Link>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-/* ─── Hero statement ─── */
-// The priced model list lives in one place now: ModelShelf, below the
-// presets wall. This section carries the promise, not a second copy of
-// the catalog.
-
-export function HeroStatement() {
-  return (
-    <section id="honesty" className="px-4 sm:px-6 pt-20 pb-6 max-w-[1400px] mx-auto">
-      <div className="max-w-[900px]">
-        <h2 className="text-[40px] sm:text-[54px] md:text-[72px] font-black leading-[0.98] tracking-[-0.035em] text-balance">
-          EVERY GENERATION<br/>
-          SHOWS ITS PRICE<br/>
-          <span className="text-vx-money">BEFORE YOU SPEND.</span>
-        </h2>
-        <p className="mt-6 text-[16px] text-vx-fg-body leading-[1.6] max-w-[540px]">
-          The button is the price tag. Failed jobs refund automatically.
-          One balance across every model, with the math visible.
-        </p>
-        <Link
-          href="#shelf"
-          className="mt-6 inline-block font-vx-mono text-[11px] tracking-[0.12em] text-vx-accent hover:text-vx-fg"
-        >
-          SEE EVERY MODEL AND ITS PRICE →
-        </Link>
-      </div>
-    </section>
-  );
-}
+import { WALL_PRESETS, presetHref, presetCredits, presetTitle, shelfName } from '../_lib/tokens';
 
 /* ─── Preset wall: the real presets, as a bento ─── */
 
 export function PresetWall({ catalog }) {
-  const shapes = wallShapes(PRESETS.length);
+  const shapes = wallShapes(WALL_PRESETS.length);
   return (
-    <section className="px-4 sm:px-6 pt-20 pb-8 max-w-[1400px] mx-auto">
-      <div className="flex items-baseline justify-between mb-6 flex-wrap gap-2">
-        <h2 className="text-2xl sm:text-3xl font-black tracking-[-0.02em]">One-tap presets. Priced on tap.</h2>
-        <Link href="/presets" className="text-sm font-semibold text-vx-fg-muted hover:text-vx-fg">
-          Browse all →
+    <section className="px-4 sm:px-6 pt-28 sm:pt-36 max-w-[1300px] mx-auto">
+      <div className="flex items-end justify-between mb-8 flex-wrap gap-4">
+        <h2 className="vx-display text-[40px] sm:text-[56px] max-w-[14ch]">Templates, priced before you tap.</h2>
+        <Link href="/presets" className="text-[15px] font-bold text-vx-fg-body underline decoration-vx-border decoration-2 underline-offset-[6px] hover:text-vx-fg hover:decoration-vx-accent">
+          All templates
         </Link>
       </div>
       <div className="grid grid-cols-2 lg:grid-cols-4 lg:auto-rows-[220px] gap-3">
-        {PRESETS.map((preset, i) => {
+        {WALL_PRESETS.map((preset, i) => {
           const shape = shapes[i];
           const classes = tileClasses(shape);
           const isHero = shape.kind === 'hero';
@@ -124,7 +26,7 @@ export function PresetWall({ catalog }) {
               key={preset.id}
               href={presetHref(preset)}
               clip={SHOWCASE_CLIPS[preset.id]}
-              className={`block rounded-2xl overflow-hidden border border-vx-border ${classes.link}`}
+              className={`block rounded-2xl overflow-hidden ${classes.link}`}
               mediaClassName={classes.media}
               mediaStyle={{ background: preset.bg }}
             >
@@ -134,11 +36,8 @@ export function PresetWall({ catalog }) {
                   theme. Same reasoning as the feature cards. */}
               <div className={`absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 text-left ${isHero ? 'p-5 sm:p-6' : 'p-3'}`}>
                 <div className="min-w-0">
-                  <div className={`font-black text-white tracking-tight ${isHero ? 'text-2xl sm:text-3xl' : 'text-sm'}`}>{preset.name}</div>
+                  <div className={`font-black text-white tracking-tight ${isHero ? 'text-3xl sm:text-4xl' : 'text-[15px]'}`}>{presetTitle(preset.name)}</div>
                   <div className={`mt-0.5 text-white/85 truncate ${isHero ? 'text-sm' : 'text-xs'}`}>{preset.model}</div>
-                  {/* Hidden on phones: the tile is the link, and the label does not fit
-                      beside the price in a two-column tile. */}
-                  <div className="hidden sm:block mt-1 font-vx-mono text-[9.5px] tracking-[0.1em] text-white/85">OPEN IN STUDIO →</div>
                 </div>
                 <div className={`shrink-0 font-vx-mono font-bold text-white vx-num ${isHero ? 'text-lg' : 'text-[13px]'}`}>{presetCredits(preset, catalog)} cr</div>
               </div>
@@ -150,79 +49,57 @@ export function PresetWall({ catalog }) {
   );
 }
 
-/* ─── Model shelf — live rows from the catalog (same source as /api/catalog) ─── */
-const SHELF_GROUPS = [
-  { kind: 'video', label: 'VIDEO', blurb: 'Text-to-video and image-to-video.' },
-  { kind: 'image', label: 'IMAGE', blurb: 'Stills, edits and photoreal frames.' },
-  { kind: 'audio', label: 'AUDIO', blurb: 'Music and voice, same balance.' },
+/* ─── The price list: every live catalog row, itemised ─── */
+
+export const LIST_GROUPS = [
+  { kind: 'video', label: 'Video', unit: 'per 5 s clip.' },
+  { kind: 'image', label: 'Image', unit: 'per image.' },
+  { kind: 'audio', label: 'Audio', unit: 'per clip.' },
 ];
 
-// Catalog names carry a trailing parenthetical that restates the modality
-
 export function ModelShelf({ catalog }) {
-  const groups = SHELF_GROUPS
+  const groups = LIST_GROUPS
     .map((g) => ({ ...g, rows: catalog.filter((m) => m.kind === g.kind) }))
     .filter((g) => g.rows.length > 0);
   if (groups.length === 0) return null;
   const total = groups.reduce((n, g) => n + g.rows.length, 0);
 
   return (
-    <section id="shelf" className="px-4 sm:px-6 pt-20 pb-8 max-w-[1400px] mx-auto">
-      <div className="flex items-baseline justify-between mb-6 flex-wrap gap-2">
-        <div>
-          <div className="font-vx-mono text-[11px] tracking-[0.14em] text-vx-accent mb-2">
-            {total} LIVE MODELS
-          </div>
-          <h2 className="text-2xl sm:text-3xl font-black tracking-[-0.02em]">Every model. Every price. No tiers to decode.</h2>
-        </div>
-        <Link href="/pricing" className="text-sm font-semibold text-vx-fg-muted hover:text-vx-fg">
-          Full pricing →
-        </Link>
-      </div>
-
-      <div className="space-y-8">
+    <section id="models" className="px-4 sm:px-6 pt-28 sm:pt-36 max-w-[1300px] mx-auto">
+      <h2 className="vx-display text-[40px] sm:text-[56px]">The price list.</h2>
+      <p className="mt-4 text-lg text-vx-fg-body max-w-[48ch] leading-[1.5]">
+        All {total} models, at the credits the button will show. Read live from the catalog.
+      </p>
+      <div id="shelf" className="mt-12 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-12 gap-y-12">
         {groups.map((g) => (
           <div key={g.kind}>
-            <div className="flex items-baseline gap-3 mb-3">
-              <span className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">{g.label}</span>
-              <span className="text-[13px] text-vx-fg-faint">{g.blurb}</span>
+            <div className="flex items-baseline justify-between gap-3 border-b-2 border-vx-fg pb-2">
+              <h3 className="text-xl font-black">{g.label}</h3>
+              <span className="text-[13px] text-vx-fg-muted">{g.unit}</span>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+            <ul className="mt-2 font-vx-mono text-[14px] vx-num">
               {g.rows.map((m) => (
-                <Link
-                  key={m.id}
-                  href={`/app/create?model=${m.id}`}
-                  className="group rounded-2xl border border-vx-border bg-vx-panel p-4 flex flex-col gap-3 transition-colors hover:border-vx-accent/60"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <span className="font-bold text-[15px] leading-tight">{shelfName(m.name)}</span>
-                    {m.gated && (
-                      <span className="font-vx-mono text-[8.5px] tracking-[0.12em] text-vx-money shrink-0 mt-0.5">
-                        ◆ PREMIUM
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-end justify-between gap-2 mt-auto">
-                    <span className="font-vx-mono text-[9px] tracking-[0.1em] text-vx-fg-faint uppercase">{m.modality || m.kind}</span>
-                    <span className="font-vx-mono text-lg font-bold text-vx-money vx-num leading-none">
-                      {m.credits} <span className="text-[10px] font-semibold">cr</span>
-                    </span>
-                  </div>
-                  <div className="font-vx-mono text-[9.5px] tracking-[0.1em] text-vx-accent opacity-0 group-hover:opacity-100 transition-opacity">
-                    GENERATE →
-                  </div>
-                </Link>
+                <li key={m.id}>
+                  <Link
+                    href={`/app/create?model=${encodeURIComponent(m.id)}`}
+                    className="group flex items-baseline gap-2 py-2 text-vx-fg-body hover:text-vx-fg"
+                  >
+                    <span className="min-w-0 truncate group-hover:underline underline-offset-4">{shelfName(m.name)}</span>
+                    {m.gated && <span className="shrink-0 text-[11px] text-vx-money">premium</span>}
+                    <span aria-hidden className="vx-leader flex-1" />
+                    <span className="shrink-0 font-bold text-vx-money">{m.credits} cr</span>
+                  </Link>
+                </li>
               ))}
-            </div>
+            </ul>
           </div>
         ))}
       </div>
-
-      <p className="mt-6 text-[13px] text-vx-fg-muted">
-        Prices are read from the live catalog. Failed generations refund.
+      <p className="mt-10 text-[14px] text-vx-fg-muted">
+        Failed generations refund in full. <Link href="/pricing" className="font-bold text-vx-fg-body underline underline-offset-4 hover:text-vx-fg">Credit packs</Link>
+        {' · '}<Link href="/models" className="font-bold text-vx-fg-body underline underline-offset-4 hover:text-vx-fg">Every model</Link>
       </p>
     </section>
   );
 }
 
-/* ─── Why Veyrnox — 4 pillars ─── */

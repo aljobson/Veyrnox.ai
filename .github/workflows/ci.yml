@@ -17,11 +17,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: recursive
 
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: "22"
           cache: npm
@@ -73,12 +73,10 @@ jobs:
       # tsx strips types without checking them, so packages/catalog and
       # packages/db were never type-checked anywhere. That is how a Modality
       # union that its own rows violated sat in the file CLAUDE.md calls
-      # normative for pricing. Installed ad-hoc, like tsx in ledger-tests.yml,
-      # because a root devDependency is the exact shape of the three libraries
-      # that break Workers Builds.
+      # normative for pricing. Uses the repo's pinned typescript (a root
+      # devDependency since #330), so this checks the version that ships.
       - name: Type check
         run: |
-          npm i --no-save --no-audit --no-fund typescript@5
           # Source only. The acceptance tests import `pg`, which
           # ledger-tests.yml installs ad-hoc; type-checking them belongs there.
           npx tsc --noEmit --skipLibCheck --allowImportingTsExtensions \
@@ -89,5 +87,7 @@ jobs:
       - name: Build
         run: npm run build
 
+      # High and critical advisories fail; the exceptions, each with its
+      # reason, are the ALLOWED list in the script.
       - name: Audit (high and above)
-        run: npm audit --audit-level=high
+        run: node scripts/check-audit.mjs

@@ -10,7 +10,7 @@ const q=async(sql,args=[]) =>(await c.query(sql,args)).rows;
 const val=async(sql,args=[]) =>(await q(sql,args))[0]?.value;
 const actors=[randomUUID(),randomUUID()],users=[];
 const draft=actor=>val('SELECT public.save_cinema_draft($1,$2,null,0,$3) AS value',[actor,randomUUID(),{content_type:'SHORT',parent_id:null,position:null,title:'Removal test',synopsis:'Keep this description',language:'en',ai_disclosures:[]}]);
-const reserve=(actor,content,key=randomUUID())=>val('SELECT public.reserve_cinema_upload($1,$2,$3,100,$4) AS value',[actor,content,key,'a'.repeat(64)]);
+const reserve=(actor,content,key=randomUUID())=>val('SELECT public.reserve_cinema_proxy_upload($1,$2,$3,100,$4) AS value',[actor,content,key,'a'.repeat(64)]);
 const read=(actor,id)=>val('SELECT public.read_cinema_upload($1,$2) AS value',[actor,id]);
 const request=(actor,content,id,key=randomUUID())=>val('SELECT public.request_cinema_upload_removal($1,$2,$3,$4) AS value',[actor,content,id,key]);
 const claim=(key,client=c)=>client.query('SELECT public.claim_cinema_upload_removals($1) AS value',[key]).then(r=>r.rows[0].value.items);
@@ -51,7 +51,7 @@ try {
  for(let n=0;n<12;n++){
   const contentId=randomUUID(),uploadId=randomUUID();fixtures.push(uploadId);
   await q("INSERT INTO public.cinema_content(id,creator_id,content_type,title,language) VALUES($1,$2,'SHORT','Delete queue fixture','en')",[contentId,users[1]]);
-  await q("INSERT INTO public.cinema_uploads(id,content_id,creator_id,create_key,file_size,fingerprint,state,stream_uid,delete_requested_at) VALUES($1,$2,$3,$4,100,$5,'deleting',$6,now()-interval '31 minutes')",[uploadId,contentId,users[1],randomUUID(),'a'.repeat(64),randomUUID().replaceAll('-','')]);
+  await q("INSERT INTO public.cinema_uploads(id,content_id,creator_id,create_key,file_size,fingerprint,state,stream_uid,delete_requested_at,server_mediated) VALUES($1,$2,$3,$4,100,$5,'deleting',$6,now()-interval '31 minutes',true)",[uploadId,contentId,users[1],randomUUID(),'a'.repeat(64),randomUUID().replaceAll('-','')]);
  }
  const keys=[randomUUID(),randomUUID()];
  const batches=await Promise.all(keys.map(async claimKey=>{const peer=new pg.Client({connectionString:url});await peer.connect();try{return await claim(claimKey,peer);}finally{await peer.end();}}));

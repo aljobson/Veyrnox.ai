@@ -134,6 +134,23 @@ try {
   await q("INSERT INTO public.cinema_uploads(content_id,creator_id,create_key,file_size,fingerprint,state,stream_uid) VALUES($1,(SELECT id FROM public.users WHERE auth_id=$2),$3,100,$4,'ready',$5)", [s1[0], creator, randomUUID(), 'e'.repeat(64), 'Y'.repeat(32)]);
   assert.equal((await playback(bob, s1[0])).access, 'free');
 
+  // A creator who is not active sells and plays nothing, as the catalogue
+  // already hides them (0170). Checked before any debit; restored on reactivation.
+  const creatorId = await userId(creator);
+  const daveBefore = await balance(dave);
+  for (const status of ['restricted', 'suspended', 'banned']) {
+    await q('UPDATE public.cinema_memberships SET account_status=$2 WHERE user_id=$1', [creatorId, status]);
+    assert.equal((await unlock(dave, s2[21])).error, 'content_not_found', `${status}: no unlock`);
+    assert.equal((await entitlement(dave, s2[21])).error, 'content_not_found', `${status}: paid episode`);
+    assert.equal((await entitlement(bob, s1[0])).error, 'content_not_found', `${status}: free episode`);
+    assert.equal((await playback(alice, s1[5])).error, 'content_not_found', `${status}: existing unlock paused`);
+  }
+  assert.deepEqual(await balance(dave), daveBefore, 'nothing was charged');
+  assert.equal(await ledgerRows(dave, 'unlock:%'), 21);
+  await q("UPDATE public.cinema_memberships SET account_status='active' WHERE user_id=$1", [creatorId]);
+  assert.deepEqual(await playback(alice, s1[5]), { access: 'unlocked', stream_uid: uid });
+  assert.deepEqual(await entitlement(dave, s2[21]), { access: 'locked', credits: 6 });
+
   // Takedown reversal returns credits to the source they came from, once, and is audited.
   const reversed = await value("SELECT public.reverse_cinema_unlocks($1, 'Operator Test', 'takedown: rights claim') AS value", [s1[5]]);
   assert.deepEqual(reversed, { ok: true, unlocks_reversed: 1, credits_returned: 6 });

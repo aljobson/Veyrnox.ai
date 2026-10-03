@@ -87,3 +87,14 @@ receipt and ends the flagged Pass. A webhook arriving first cannot lose the
 receipt or affect the buyer's other, live Pass. No Pass operation writes credits.
 
 Implementation and recovery contract: [Operator actions](../cinema/operator-actions.md).
+
+## Inactive creators sell nothing (0170, 2026-10-02)
+
+The catalogue already hid a title whose creator's Cinema membership is not
+`active`, but the price check behind unlocks, entitlement and Pass plays did
+not, so a restricted, suspended or banned creator's title could still be
+unlocked by id for Credits. `cinema_unlock_price` now returns no price for such
+a title: unlock, entitlement, playback and Pass plays all answer
+`content_not_found` before any debit. Viewers who unlocked it earlier regain
+access when the creator is reinstated; an Operator can refund them meanwhile
+with `reverse_cinema_unlocks`.

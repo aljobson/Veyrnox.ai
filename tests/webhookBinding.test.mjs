@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createHash, createHmac } from 'node:crypto';
+import { createHash } from 'node:crypto';
 import { register } from 'node:module';
 
 // Next resolves the extensionless `next/server` through its bundler; plain
@@ -9,15 +9,10 @@ register('data:text/javascript,' + encodeURIComponent(
     `export async function resolve(s, c, next) { return next(s === 'next/server' ? 'next/server.js' : s, c); }`,
 ));
 
-const LS_SECRET = '0123456789abcdef0123456789abcdef01234567';
 const FAL_TENANT = 'tenant-ours';
 Object.assign(process.env, {
     SUPABASE_URL: 'https://db.test',
     SUPABASE_SERVICE_ROLE_KEY: 'service-role-test',
-    LEMONSQUEEZY_API_KEY: 'ls-test',
-    LEMONSQUEEZY_STORE_ID: '473468',
-    LEMONSQUEEZY_TEST_MODE: 'true',
-    LEMONSQUEEZY_WEBHOOK_SECRET: LS_SECRET,
     FAL_WEBHOOK_USER_ID: FAL_TENANT,
     R2_ACCOUNT_ID: 'acct',
     R2_ACCESS_KEY_ID: 'key',
@@ -25,8 +20,6 @@ Object.assign(process.env, {
     R2_BUCKET: 'bucket',
 });
 
-const { createCheckout } = await import('../packages/adapters/lemonsqueezy.js');
-const lsWebhook = await import('../app/api/webhook/lemonsqueezy/route.js');
 const falWebhook = await import('../app/api/webhook/fal/route.js');
 
 function stubFetch(routes) {
@@ -41,54 +34,6 @@ function stubFetch(routes) {
     };
     return calls;
 }
-
-// ── LemonSqueezy: a buy link can't name someone else's Top-up ──────────────
-
-const TOP_UP_ID = '0b6f3c1e-8d2a-4f5b-9c7e-1a2b3c4d5e6f';
-const paidOrder = { data: { type: 'orders', id: '5550123', attributes: {
-    store_id: 473468, currency: 'USD', subtotal: 2500, discount_total: 0, total: 3000, status: 'paid',
-    refunded_amount: 0, test_mode: true, first_order_item: { variant_id: 2120828, test_mode: true },
-} } };
-
-function lsSigned(customData) {
-    const body = JSON.stringify({ meta: { event_name: 'order_created', custom_data: customData }, data: { type: 'orders', id: '5550123' } });
-    return new Request('https://veyrnox.test/api/webhook/lemonsqueezy', {
-        method: 'POST',
-        headers: { 'x-signature': createHmac('sha256', LS_SECRET).update(body).digest('hex'), 'content-type': 'application/json' },
-        body,
-    });
-}
-
-const lsRoutes = () => [
-    ['/rest/v1/webhook_events?on_conflict', () => new Response('[{"id":"e1"}]', { status: 201 })],
-    ['/rest/v1/webhook_events', []],
-    ['api.lemonsqueezy.com/v1/orders/5550123', paidOrder],
-    ['/rpc/credit_top_up', { ok: true, top_up_id: TOP_UP_ID }],
-];
-
-test('order_created naming a Top-up without our signature credits nothing', async () => {
-    for (const customData of [{ top_up_id: TOP_UP_ID }, { top_up_id: TOP_UP_ID, top_up_sig: 'ab'.repeat(32) }]) {
-        const calls = stubFetch(lsRoutes());
-        const res = await lsWebhook.POST(lsSigned(customData));
-        assert.equal(res.status, 200);
-        assert.deepEqual(await res.json(), { ok: true, warn: 'order_not_creditable' });
-        assert.ok(!calls.some((c) => c.url.includes('/rpc/')), 'no RPC');
-        assert.ok(calls.some((c) => c.method === 'PATCH' && c.url.includes('webhook_events')), 'marked processed');
-    }
-});
-
-test('order_created from our own checkout credits its Top-up', async () => {
-    const checkoutCalls = stubFetch([['api.lemonsqueezy.com/v1/checkouts', { data: { attributes: { url: 'https://veyrnox.lemonsqueezy.com/checkout/x' } } }]]);
-    await createCheckout({ variantId: '2120828', topUpId: TOP_UP_ID },
-        { fetch: globalThis.fetch, apiKey: 'ls-test', storeId: '473468', publicHost: 'https://veyrnox.test', signingSecret: LS_SECRET });
-    const custom = checkoutCalls[0].body.data.attributes.checkout_data.custom;
-
-    const calls = stubFetch(lsRoutes());
-    const res = await lsWebhook.POST(lsSigned(custom));
-    assert.equal(res.status, 200);
-    assert.deepEqual(await res.json(), { ok: true });
-    assert.equal(calls.find((c) => c.url.includes('/rpc/credit_top_up')).body.p_top_up_id, TOP_UP_ID);
-});
 
 // ── fal: a callback that beat job_submitted is redelivered, not dropped ─────
 

@@ -41,16 +41,17 @@ export function CreditStatement() {
       <p className="text-sm text-vx-fg-muted mb-4">All credit movements on your account, across devices. Charges and refunds appear separately.</p>
       {error && <p role="alert" className="text-sm text-vx-danger mb-3">Your statement is unavailable. <button type="button" onClick={() => load()} className="underline">Try again</button></p>}
       {!entries.length && !error && <p className="rounded-2xl border border-vx-border bg-vx-panel p-6 text-sm text-vx-fg-muted" role="status">{busy ? 'Loading statement…' : 'No credit movements yet.'}</p>}
-      {!!entries.length && <ul className="rounded-2xl border border-vx-border bg-vx-panel overflow-hidden">
-        {entries.map(entry => <li key={entry.id} className="flex items-center justify-between gap-4 px-5 py-4 border-b border-vx-border/60 last:border-b-0">
+      {!!entries.length && <ul className="border-t-2 border-vx-fg max-w-[760px]">
+        {entries.map(entry => <li key={entry.id} className="flex items-baseline gap-3 py-3 border-b border-vx-border">
           <div className="min-w-0">
-            <div className="text-sm font-bold">{LABELS[entry.kind] || LABELS.adjustment}</div>
+            <div className="text-[15px] font-bold truncate">{LABELS[entry.kind] || LABELS.adjustment}</div>
             <time dateTime={entry.created_at} className="text-xs text-vx-fg-muted">{new Date(entry.created_at).toLocaleString('en-GB')}</time>
           </div>
-          <span className={`shrink-0 font-vx-mono font-bold ${entry.delta > 0 ? 'text-vx-accent' : 'text-vx-money'}`}>{num.format(entry.delta)} cr</span>
+          <span aria-hidden className="vx-leader flex-1 self-start mt-3 text-vx-fg-muted" />
+          <span className={`shrink-0 self-start font-vx-mono text-[15px] font-bold vx-num ${entry.delta > 0 ? 'text-vx-accent' : 'text-vx-fg'}`}>{num.format(entry.delta)} cr</span>
         </li>)}
       </ul>}
-      {next && <button type="button" disabled={busy} onClick={() => load(next)} className="mt-4 rounded-full border border-vx-border px-5 py-2 text-sm font-bold disabled:opacity-50">{busy ? 'Loading…' : 'Load older movements'}</button>}
+      {next && <button type="button" disabled={busy} onClick={() => load(next)} className="vx-press mt-4 rounded-full border border-vx-border px-5 py-2 text-sm font-bold hover:border-vx-fg-muted disabled:opacity-50">{busy ? 'Loading…' : 'Load older movements'}</button>}
     </section>
   );
 }

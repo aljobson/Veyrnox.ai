@@ -1,0 +1,117 @@
+name: auth-providers
+
+# Does production's sign-in dialog still offer Apple and Google?
+#
+# The dialog shows the providers listed in packages/security/environments.js
+# and hides one when Supabase's live /auth/v1/settings says it is switched
+# off. Those switches live outside this repo, so a provider can vanish for
+# every user with no change here. The same run warns 30 days before the
+# recorded Sign in with Apple secret expiry, which nothing live can see
+# (ADR-0030). Reads public config only.
+#
+# Not a required check: it reports on production, not on a PR. Hourly, plus
+# on demand. One issue per episode; it closes itself on the next OK run.
+
+on:
+  schedule:
+    - cron: "23 * * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: auth-providers
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      state: ${{ steps.check.outputs.state }}
+      report: ${{ steps.check.outputs.report }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22"
+      - name: Compare live providers with the app's list
+        id: check
+        run: |
+          set +e
+          node scripts/check-auth-providers.mjs > report.txt 2>&1
+          code=$?
+          set -e
+          cat report.txt
+          { echo '### Sign-in providers'; echo '```'; cat report.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo 'report<<AUTH_PROVIDERS_REPORT_EOF'
+            cat report.txt
+            echo 'AUTH_PROVIDERS_REPORT_EOF'
+          } >> "$GITHUB_OUTPUT"
+          # Fail closed: OK needs exit 0 AND the script's own OK line, so a
+          # script that never ran its check cannot read as a pass.
+          if [ "$code" = "0" ] && grep -q '^OK:' report.txt; then
+            echo "state=ok" >> "$GITHUB_OUTPUT"
+          elif [ "$code" = "1" ]; then
+            echo "state=attention" >> "$GITHUB_OUTPUT"
+          else
+            echo "state=unknown" >> "$GITHUB_OUTPUT"
+            [ "$code" = "0" ] && code=2
+          fi
+          exit "$code"
+
+  report:
+    needs: check
+    if: ${{ !cancelled() && needs.check.outputs.state != 'ok' && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - name: Open one issue per episode, or note a change on it
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          STATE: ${{ needs.check.outputs.state }}
+          REPORT: ${{ needs.check.outputs.report }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh label create auth-providers --color B60205 \
+            --description 'production sign-in providers need attention' 2>/dev/null || true
+          printf 'State: %s\n\n```\n%s\n```\n\nRun: %s\n' "$STATE" "$REPORT" "$RUN_URL" > body.md
+          existing=$(gh issue list --label auth-providers --state open --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            # Same episode: only speak up when what the check sees has changed.
+            last=$(gh issue view "$existing" --json body,comments --jq '([.body] + [.comments[].body]) | last')
+            if [ "$(printf '%s' "$last" | sed '/^Run: /d')" != "$(sed '/^Run: /d' body.md)" ]; then
+              gh issue comment "$existing" --body-file body.md
+            fi
+            exit 0
+          fi
+          if [ "$STATE" = "attention" ]; then
+            title="Sign-in providers need attention — $(date -u +%Y-%m-%d)"
+          else
+            title="Sign-in providers could not be checked — $(date -u +%Y-%m-%d)"
+          fi
+          gh issue create --title "$title" --label auth-providers --body-file body.md
+
+  resolve:
+    needs: check
+    if: ${{ needs.check.outputs.state == 'ok' && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - name: Close the open episode, if any
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          for n in $(gh issue list --label auth-providers --state open --json number --jq '.[].number'); do
+            gh issue close "$n" --comment "OK again: $RUN_URL"
+          done

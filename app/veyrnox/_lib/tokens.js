@@ -64,17 +64,21 @@ export function kindOf(modality) {
 // Prices are Veyrnox's own — the shape is what's borrowed.
 
 
-export const PRESET_CATEGORIES = ['ALL', 'CINEMATIC', 'UGC', 'VFX', 'ADS'];
+// Templates live in templates.js; re-exported so existing imports keep working.
+export { PRESETS, PRESET_CATEGORIES, WALL_PRESETS, templatesIn, templateById, templateHref } from './templates.js';
 
-export const PRESETS = [
-  { id: 'cctv-night', name: 'CCTV NIGHT',   model: 'Wan 2.5',           credits: 19, category: 'CINEMATIC',  bg: 'linear-gradient(180deg,#08120b 0%,#0e3a1e 60%,#2ea258 100%)',  cached: true, badge: 'CACHED' },
-  { id: 'sunset-drift',name: 'SUNSET DRIFT', model: 'MiniMax Hailuo 02', credits: 9, category: 'CINEMATIC',  bg: 'linear-gradient(135deg,#2b1a0a 0%,#7a4a1e 60%,#f0b060 100%)',  cached: false },
-  { id: 'neon-alley', name: 'NEON ALLEY',   model: 'Kling 2.6 Pro',     credits: 17, category: 'VFX',        bg: 'linear-gradient(135deg,#1b0632 0%,#5a0e6a 55%,#e4318f 100%)',  cached: true, badge: 'CACHED' },
-  { id: 'warm-portrait',name: 'WARM PORTRAIT',model: 'Nano Banana',      credits: 2,  category: 'UGC',        bg: 'linear-gradient(160deg,#2c1a12 0%,#7a3520 60%,#c9713f 100%)' },
-  { id: 'film-portrait',name: 'FILM PORTRAIT',model: 'Nano Banana Pro',  credits: 2,  category: 'CINEMATIC',  bg: 'linear-gradient(160deg,#120d08 0%,#4a3420 60%,#d8a868 100%)' },
-  { id: 'talking-head', name: 'TALKING HEAD', model: 'Kling AI Avatar',  credits: 35, category: 'UGC',        bg: 'linear-gradient(135deg,#0a1a2c 0%,#1e4a7a 55%,#60a0f0 100%)' },
-  { id: 'clean-cutout', name: 'CLEAN CUTOUT', model: 'Background Removal', credits: 3, category: 'ADS',       bg: 'linear-gradient(135deg,#1a1a0a 0%,#4a4a1e 55%,#c0c060 100%)' },
-];
+// Preset names are stored upper-case for the studio's chips. Shown as a title
+// they read better in title case, except for the acronyms they contain.
+const PRESET_ACRONYMS = new Set(['CCTV', 'UGC', 'VFX', 'AI']);
+const PRESET_SMALL_WORDS = new Set(['A', 'AN', 'AND', 'OF', 'THE', 'TO']);
+export function presetTitle(name) {
+  return String(name || '')
+    .split(/(\s+)/)
+    .map((w, i) => (PRESET_ACRONYMS.has(w) ? w
+      : i > 0 && PRESET_SMALL_WORDS.has(w) ? w.toLowerCase()
+      : w.charAt(0) + w.slice(1).toLowerCase()))
+    .join('');
+}
 
 /**
  * PRESETS carry a model display name ("Wan 2.5"), the catalog carries ids
@@ -128,7 +132,8 @@ export const NAV_CATEGORIES = [
   { href: '/social-cinema', label: 'Social Cinema' },
   { href: '/#explore',   label: 'Explore' },
   { href: '/#models',    label: 'Models' },
-  { href: '/presets',   label: 'Presets' },
+  { href: '/presets',   label: 'Templates' },
+  { href: '/tools',     label: 'Tools' },
   { href: '/pricing',   label: 'Pricing' },
   { href: '/#faq',       label: 'FAQ' },
 ];
@@ -138,7 +143,9 @@ export const SITE_PAGES = [
   { href: '/social-cinema', label: 'Social Cinema', description: 'Episodic stories, community voting and upcoming series.' },
   { href: '/',                  label: 'Home',               description: 'Credit-metered AI image, video and audio generation.' },
   { href: '/pricing',           label: 'Pricing',            description: 'Every model, every credit price, one balance.' },
-  { href: '/presets',           label: 'Presets',            description: 'Curated one-tap looks, priced up front.' },
+  { href: '/presets',           label: 'Templates',          description: 'Ready-made looks with their prompt and price up front.' },
+  { href: '/tools',             label: 'Tools',              description: 'Upscale, cut out, expand, edit and animate your own files.' },
+  { href: '/guides',            label: 'Guides',             description: 'Step-by-step answers to the things people do first.' },
   { href: '/app/create',        label: 'Create',             description: 'The studio: pick a model, see the cost, generate.' },
   { href: '/app/library',       label: 'Library',            description: 'Every generation you have run, successes and refunds.' },
   { href: '/app/credits',       label: 'Credits & billing',  description: 'Your balance, free-credit expiry and recent ledger rows.' },
@@ -272,7 +279,9 @@ export const MORE_FEATURES = [
     { label: 'Explore', href: '/#explore' },
     { label: 'Models',  href: '/#shelf' },
     { label: 'Pricing', href: '/pricing' },
-    { label: 'Presets', href: '/presets' },
+    { label: 'Templates', href: '/presets' },
+    { label: 'Tools', href: '/tools' },
+    { label: 'Guides', href: '/guides' },
   ] },
   { group: 'Models',    items: [] }, // filled from the live catalog in page.js
   { group: 'Tools',     items: [
@@ -312,13 +321,6 @@ export function footerStamp() {
 export const SITE_UPDATED = '2026-09-22';
 
 export const HERO_CHIP = 'CREDIT-METERED AI GENERATION';
-
-// Amber promo strip above the nav.
-export const PROMO_STRIP = {
-  message: '10 free credits on sign-up. No charge for failed generations.',
-  cta: 'Sign up free',
-  href: '/app',
-};
 
 // Shelf cards print the modality underneath the name, so the parenthetical in
 // a catalog name ("Kling 3.0 (image-to-video)") is redundant for display.

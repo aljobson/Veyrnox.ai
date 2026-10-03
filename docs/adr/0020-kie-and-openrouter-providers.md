@@ -412,3 +412,87 @@ silently replace voices or discard the existing seed control. See the
 [readiness evidence](../pricing/kie-speech-readiness-2026-09-28.md) for task
 IDs, contract differences, verification limits and next steps. No catalog,
 pricing or runtime behavior changes accompany this update.
+
+## Update (2026-09-28): separate Dialogue and Flux wholesale options
+
+Migration 0159 stages two inactive options. They do not replace the existing
+fal routes: `elevenlabs-dialogue-kie` uses James, Arabella, Bradford and Xavier
+stock voices in first-speaker order, and `flux-2-pro-1k-kie` pins one 1K image.
+Neither advertises seed support. Dialogue is capped at 1000 script characters
+and four voices ($0.07 maximum quoted unit, 5 customer credits); Flux caps
+prompts at 2000 characters and forces the provider content filter on ($0.025,
+2 credits). Provider request checks reject user attempts to override these
+constraints before submission. Customer prices remain catalogue-controlled.
+
+Flux's live task `ac56057b04ea5885c0dfece037d2687f` succeeded in 62 seconds;
+`tempfile.aiquickdraw.com` served 358375 bytes with HTTP 200 and no redirect.
+The authenticated task record reports 5 credits consumed, matching $0.025 at
+$0.005 per credit. Dialogue task `e21f3336cdcb321ebdbb9d5922ddfd57` failed with
+code 500 after 42 seconds and reports zero credits consumed. No additional
+Turbo tests were run in this change.
+
+Activation is a separate guarded migration after main deploy, owner-approved
+production application of the staging migration, normal gateway/R2 storage and completion/refund
+verification, and image quality/resolution confirmation. Dialogue remains
+blocked by its provider failure. No fallback, default model, existing route,
+customer price or production secret is changed by staging these options.
+
+### Flux KIE 1K activation — 29 September 2026
+
+Migration 0162 enables only `flux-2-pro-1k-kie` at 2 credits, with an exact
+endpoint, price and row-count guard. Keep the fal route for its seed support;
+Dialogue remains inactive. The live staging gateway generated and stored a JPEG,
+its library download matched the stored hash, KIE charged five credits ($0.025),
+and the customer ledger recorded one two-credit debit. Both balance
+reconciliations returned zero mismatches. See the
+[staging evidence](../operations/flux-staging-verification-2026-09-29.md).
+
+`tests/fluxKieGateway.test.mjs` exercises real handlers with an isolated fake
+network: rejected submission and authenticated provider failure refund two
+credits, duplicate callbacks do not duplicate storage/refunds, and copy failure
+remains retryable. These are deterministic failure tests, not new paid failures.
+Local Postgres acceptance checks activation replay, unchanged other catalogue
+rows, and rejection of missing rows or endpoint/price drift. Apply in production
+only through the protected owner-approved workflow. Rollback is a new guarded
+migration setting this KIE row inactive; keep the original fal row unchanged.
+
+## Update (2026-09-29): separate GrsAI reference-image edit
+
+Supplier playground task `16-f339662c-4b1f-498b-8aae-a7c0bf2eb186` succeeded
+in 41 seconds with one synthetic teapot source, `imageSize: 2K`, and `auto`
+aspect ratio. The output was a visually inspected 2744×1568 PNG showing the
+requested blue teapot. The task log charged 1,800 credits; the account's
+$5 / 333,000-credit purchase makes this $0.027027 per edit. This verifies one
+supplier edit, not Veyrnox end-to-end readiness or sustained reliability.
+
+Migration 0165 stages `nano-banana-pro-edit-grsai` inactive at two Veyrnox
+credits with a conservatively rounded $0.0271 cost. It is a separate no-seed
+option; the fal edit and existing GrsAI text route remain unchanged.
+
+The new `grsai:nano-banana-pro-edit` capability requires one reference image,
+shaped as `urls: [image_url]`, and pins the same model, 2K tier and polling
+settings as the text route. Default aspect is `auto` to preserve the source
+ratio. The common gateway verifies upload ownership, bytes and consent before
+debit, drops client media URLs, signs the owned source for at most 15 minutes,
+and persists its source key rather than a signed URL. Undeclared seed and
+other generic controls are dropped; direct adapter overrides are rejected.
+
+The existing authenticated sweep now validates both fixed catalogue ID/endpoint
+pairs and shares its 50-job limit and work budget across them. It still polls
+inactive rows so disabling a route cannot strand already-submitted work. Both
+use the existing deduplication, bounded serial R2 copy, and refund paths; no
+new webhook, output-host permission or automatic paid retry is introduced.
+
+Validation uses the real gateway, adapter, sweep and completion code against
+simulated network boundaries: owned-source submit, replay without resubmit,
+inactive and invalid-source refusal, provider rejection/failure refunds, and
+storage retry without another paid edit. These checks do not constitute a
+live deployed edit. Activation requires a separate migration after a deployed
+owned-upload → debit → submit → authenticated poll → R2 → STORED/download
+check, actual billing/output-host confirmation and clean balance reconciliation.
+
+Activation 0166 is prepared after the successful deployed staging test recorded
+in `docs/operations/grsai-edit-staging-verification-2026-09-29.md`: normal cron,
+matching stored/downloaded hash and clean reconciliation. It checks the exact
+endpoint, modality, price and ungated tier before enabling only the GrsAI edit.
+Production still requires the owner-approved migration workflow.

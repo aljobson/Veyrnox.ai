@@ -48,6 +48,16 @@ diff that accompanies it is small.
    false. A half-finished console leaves users a working Google button rather
    than an Apple button that dead-ends on a Supabase 400.
 
+   *Amended 2026-10-02:* the buttons now start from the environment's list in
+   `packages/security/environments.js` (production: Apple, Google), so a
+   failed or blocked settings read no longer hides them. The list is an upper
+   bound: `external.apple: false` still hides the button, and until a read has
+   succeeded `startOAuth` checks again before redirecting, so a switched-off
+   provider gets an in-dialog message rather than the 400. Turning a new
+   provider on now takes a list change and a deploy.
+   `scripts/check-auth-providers.mjs` compares production's live switches with
+   the list every hour.
+
 4. **Apple's button follows Apple's rules.** Its mark, one of its approved
    strings ("Continue with Apple"), and `currentColor` so the dark theme gets
    the white variant and the light theme the black one — both permitted,
@@ -66,7 +76,11 @@ diff that accompanies it is small.
   reports `apple: true`. There is no cheap probe equivalent to
   `check-signup-gate`; the control is a calendar reminder and the stored
   `.p8`. Accepted knowingly rather than papered over with a check that
-  cannot fail when it should.
+  cannot fail when it should. *Amended 2026-10-02:* the reminder is now
+  automated as a date, not a probe: `appleSecretExpiresOn` in
+  `packages/security/environments.js`, which the hourly
+  `auth-providers` check turns into an issue 30 days ahead. Update it on
+  every rotation.
 
 - **OAuth sign-up does not pass Turnstile.** ADR-0026's CAPTCHA covers
   `/signup`, `/token?grant_type=password` and `/otp` — not `/authorize`.
@@ -135,7 +149,8 @@ Checked after the provider was saved:
   to sign in to 'Veyrnox AI Web Sign In'." That is Apple validating the
   Services ID, the primary grouping and the return URL.
 - `veyrnox.ai` renders the Apple button with no deploy — `AuthGate` reads
-  `external.apple` at mount.
+  `external.apple` at mount. (Since 2026-10-02 the button comes from the
+  build's provider list; see decision 3.)
 - The minted client secret verifies against its own key's public half, with
   `alg ES256`, `kid LP7U6TPVNV`, `iss R54268MWFV`, `sub ai.veyrnox.web`,
   `aud https://appleid.apple.com`, and a 183-day life (Apple's cap).

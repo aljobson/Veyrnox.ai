@@ -3,9 +3,9 @@
 --
 -- Grants (subscription top-up, one-off credit purchase, free-tier signup)
 -- are +delta ledger entries with reason like 'grant:signup',
--- 'grant:subscription:lemonsqueezy', 'grant:topup'. Idempotency is
--- enforced by the caller against webhook_events(source, external_id)
--- to prevent replayed Stripe/LMS webhooks from double-granting.
+-- 'grant:topup'. Idempotency is enforced by the caller against
+-- webhook_events(source, external_id) to prevent replayed Stripe
+-- webhooks from double-granting.
 --
 -- Parameters:
 --   p_user_id: UUID of the user

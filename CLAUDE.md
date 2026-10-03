@@ -32,6 +32,17 @@ If a build starts failing after a dependency change, bisect these three first.
 
 - **RLS on every user-facing table**, and `FORCE` it. Service-role bypasses RLS
   by design; the Worker uses service-role, the browser never talks to Postgres.
+- **One deliberate exception: tenant projects (ADR-0051).** Project routes call
+  PostgREST with the *user's* JWT (`packages/db/tenant-client.js`), so RLS is
+  the enforcing line, not the second one. The publishable key is public, so a
+  signed-in user can reach the same objects on `/rest/v1` directly. That surface
+  is exactly: SELECT on the organisation/workspace/project/document/asset
+  tables, the `public.*` invoker wrappers (`create_project`, `mutate_project`,
+  `save_project_document`, `reserve_project_asset`,
+  `consume_project_asset_inspection`) and the `private.*_role` helpers. The
+  `private` schema must stay out of the API's exposed schemas — the wrappers
+  exist so it never has to be exposed. Anything added to this surface goes on
+  the allowlist in `scripts/test-default-privileges.mjs` on purpose.
 - **Ledger is append-only** — enforced by trigger `ledger_entries_append_only`.
   Never `UPDATE` or `DELETE` a ledger row. Corrections are compensating rows
   (positive delta = refund/grant, negative = debit).
@@ -98,6 +109,19 @@ If a build starts failing after a dependency change, bisect these three first.
   traces, DB messages, or upstream vendor payloads.
 - No CORS wildcards on `/api/v1/*` — same-origin only. Studio proxies through
   the same host.
+- **Routes outside the gate, on purpose.** `/api/v1/*` is the only surface
+  that carries a user. The middleware does not run on other `/api/*` paths, so
+  an inbound `x-veyrnox-auth-*` header is NOT stripped there: a route outside
+  `/api/v1` must never read one. Each has its own protection:
+  - `/api/catalog`, `/api/credit-packs`, `/api/cinema/titles[/:id]` —
+    anonymous, read-only, cached public data (prices, packs, published
+    titles). Nothing per-user.
+  - `/api/webhook/*` — the provider's signature (see Provider webhooks).
+  - `/api/admin/*` — Cloudflare Access plus a shared token; cron callers only.
+  - `/media/social/:token` — a short-lived HMAC token naming one R2 object.
+
+  A new route outside `/api/v1` needs one of these and an entry in
+  `tests/routesOutsideGate.test.mjs`.
 
 ## Identity & sessions
 
@@ -154,14 +178,14 @@ If a build starts failing after a dependency change, bisect these three first.
 - CSRF: same-site cookies aren't in play (we're Bearer-only), but any state-
   changing GET is forbidden. Mutations are POST/PUT/PATCH/DELETE only.
 
-## Provider webhooks (fal.ai, LemonSqueezy, etc.)
+## Provider webhooks (fal.ai, Stripe, etc.)
 
 - Every webhook verifies a cryptographic signature. Fal is Ed25519 via JWKS
-  (see `packages/adapters/fal.js#verifyWebhookSignature`). LemonSqueezy is
-  HMAC-SHA256 over the raw body (`packages/adapters/lemonsqueezy.js`); it sends
-  no timestamp, so there is no replay window (ADR-0018). Replays are harmless
-  instead: the order is re-fetched from the API and `webhook_events` dedupes.
-  Missing/invalid signature -> 401, never 200.
+  (see `packages/adapters/fal.js#verifyWebhookSignature`). Stripe is
+  HMAC-SHA256 over `<t>.<raw body>` with a 300s timestamp tolerance
+  (`packages/adapters/stripe.js`); the session is re-fetched from the API and
+  `webhook_events` dedupes. Missing/invalid signature -> 401, never 200.
+  Stripe is the only billing provider; LemonSqueezy was removed (ADR-0031).
 - Every webhook is idempotent via `webhook_events(source, external_id)`.
   Duplicate -> early return, no side effects.
 - Webhook handlers must not trust the payload's `user_id`. Look the job up
@@ -246,8 +270,13 @@ If a build starts failing after a dependency change, bisect these three first.
 - `main` is deployable at all times. `.github/workflows/deploy-production.yml`
   deploys each push to main, one run at a time (newest main wins). Cloudflare
   Workers Builds only uploads preview versions, for every branch including
-  main. Break-glass rollback: `wrangler rollback <version-id>`, or rerun the
-  workflow on an older commit.
+  main. After each deploy `scripts/check-site-health.mjs` runs; on failure the
+  workflow restores the previously live deployment and opens a
+  `deploy-failure` issue. A deploy refused because ci is red on the commit
+  opens one too. `site-health.yml` runs the same check every 15 min.
+  A rollback restores the Worker only — migrations stay applied, so each
+  migration must keep the previous release working. Break-glass rollback:
+  `wrangler rollback <version-id>`, or rerun the workflow on an older commit.
 - Feature flag new user paths behind `localStorage.veyrnox_*` until the DB
   migration has landed and the reconciliation job has run for 24h clean.
 - Every PR touching the money spine (ledger, jobs, webhooks) needs an ADR

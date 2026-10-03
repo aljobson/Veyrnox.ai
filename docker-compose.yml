@@ -1,6 +1,7 @@
 # Docker Compose for local Veyrnox development.
 #
-# `app` — the container build for the Next.js production image (upstream default).
+# The site itself runs on Cloudflare Workers (wrangler.jsonc); there is no
+# container image of it.
 # `postgres` — local Postgres for Phase 1 ledger / catalog / jobs development
 #   and acceptance tests. Port 54329 (not default 5432) to avoid clashing with
 #   a Postgres a developer already has running.
@@ -12,15 +13,6 @@
 #   npm run test:ledger                      # run acceptance tests
 
 services:
-  app:
-    build: .
-    container_name: open-generative-ai
-    ports:
-      - "3001:3000"
-    environment:
-      - NODE_ENV=production
-    restart: unless-stopped
-
   postgres:
     image: postgres:16-alpine
     container_name: veyrnox-pg
