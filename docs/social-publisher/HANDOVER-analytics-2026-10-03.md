@@ -102,12 +102,12 @@ Not verified:
 
 ## Next work, in the order the owner was given
 
-1. **"Schedule this" on a generation result.** The composer already takes media by job id;
-   there is no shortcut from a finished generation into it. This is the most direct form
-   of what the owner described. No migration needed.
-2. **YouTube analytics.** The connect flow already has `youtube.readonly`, which covers
-   channel statistics and per-video statistics. Add a fetcher and reuse the token refresh
-   in `lib/socialPublishSweep.js`.
+1. **"Schedule this" on a generation result — completed in PR #512.** Studio results,
+   batch tiles and Library cards open Publish with the image/video selected by job id.
+   Behind `PUBLISH_ENABLED`; no migration. Caption suggestions remain future work.
+2. **YouTube analytics — implemented on `codex/youtube-analytics`.** Uses the existing
+   `youtube.readonly` grant and refresh adapter. No new consent or migration; collection
+   remains behind `PUBLISH_ANALYTICS_ENABLED`. See the follow-up below.
 3. **X, TikTok, LinkedIn analytics.** Each needs scopes the connect flows do not request
    today (`user.info.stats` and `video.list` on TikTok; LinkedIn member post statistics
    need a different API product). X reads are billed by X. Each scope change is an owner
@@ -133,3 +133,36 @@ Not verified:
 - The Metricool connector available to Claude sessions is the owner's own account, and the
   brand in it belongs to the separate wallet business. Use it for metric definitions only,
   never as product data (see the hard wall in `CLAUDE.md`).
+
+## Codex follow-up: YouTube analytics (2026-10-03)
+
+- `fetchAnalytics` in `packages/adapters/social/youtube.js` reads the connected channel,
+  its uploads playlist (latest 50), and one batched video-statistics response. It checks
+  the returned channel against the stored connection and ignores foreign/missing videos.
+- Channel snapshots store subscribers (`followers` for the shared chart), views and
+  public video count. Posts store lifetime views, likes and comments, plus video titles
+  and publication dates. Missing counters are omitted; subscriber counts are rounded.
+- The analytics sweep refreshes expired/expiring YouTube tokens with the existing
+  refresh adapter and encrypts/persists the replacement via `update_social_account_token`.
+  A refused token update (including disconnect during refresh) stops that account's fetch.
+  The Worker passes its YouTube client configuration directly from bindings.
+- Both `FETCHERS` and `ANALYTICS_NETWORKS` include YouTube. The dashboard calls its
+  audience Subscribers and its posts Videos, displays channel totals, and shows video
+  Views independently of Instagram Reach. Date ranges filter video publication dates;
+  they do not turn lifetime counters into views/interactions earned during that range.
+- No live YouTube API call or OAuth refresh has been verified. Test with a real staging
+  channel after 0188 is applied and the analytics switch is enabled there. Watch time,
+  revenue, subscriber gains/losses and period-specific views need the separate YouTube
+  Analytics API and are outside this slice.
+
+Sources checked: [channel statistics](https://developers.google.com/youtube/v3/docs/channels),
+[upload playlists](https://developers.google.com/youtube/v3/docs/playlistItems/list), and
+[video statistics](https://developers.google.com/youtube/v3/docs/videos).
+
+Local verification for the YouTube slice: 1,235 unit tests pass, one skipped, none fail;
+Next.js production build, OpenNext Worker packaging, lint (zero errors, 67 existing warnings), foundation type check,
+client credential boundaries, hard-wall, migration numbering and catalog guards pass.
+The dashboard was driven in the gstack browser with local fixture API responses:
+YouTube cards/chart/video views, Instagram reach/views, unsupported-network messaging,
+and the 375px mobile layout. No database/RPC definition changed; no database replay was
+repeated for this slice. Real YouTube data and OAuth refresh remain unverified.

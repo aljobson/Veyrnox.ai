@@ -12,7 +12,7 @@ const currentAccount = () => getSession()?.user?.id || '';
 const noAccount = () => '';
 const button = 'rounded-full border border-vx-border px-4 py-2 text-sm font-bold disabled:opacity-50';
 // Networks the analytics sweep has a fetcher for (lib/socialAnalyticsSweep.js).
-const ANALYTICS_NETWORKS = new Set(['instagram']);
+const ANALYTICS_NETWORKS = new Set(['instagram', 'youtube']);
 const RANGES = [{ days: 7, label: '7 days' }, { days: 30, label: '30 days' }, { days: 90, label: '90 days' }];
 const whole = new Intl.NumberFormat();
 const oneDecimal = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
@@ -84,14 +84,14 @@ function Dashboard() {
       </div>
     </div>
     {ANALYTICS_NETWORKS.has(selected.network)
-      ? <AccountAnalytics key={`${selected.id}:${days}`} accountId={selected.id} days={days} />
+      ? <AccountAnalytics key={`${selected.id}:${days}`} accountId={selected.id} network={selected.network} days={days} />
       : <p className="rounded-2xl border border-vx-border p-5 text-sm text-vx-fg-body">
-          Analytics for {networkLabel(selected.network)} are not available yet. Instagram is supported today.
+          Analytics for {networkLabel(selected.network)} are not available yet. Instagram and YouTube are supported today.
         </p>}
   </div>;
 }
 
-function AccountAnalytics({ accountId, days }) {
+function AccountAnalytics({ accountId, network, days }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
   const [attempt, setAttempt] = useState(0);
@@ -111,6 +111,9 @@ function AccountAnalytics({ accountId, days }) {
   if (data === null) return <p className="text-sm text-vx-fg-muted">Loading…</p>;
 
   const summary = summarize(data);
+  const youtube = network === 'youtube';
+  const audienceLabel = youtube ? 'Subscribers' : 'Followers';
+  const channelMetrics = data.evolution.at(-1)?.metrics || {};
   const neverSynced = !data.sync?.last_ok_at;
   if (neverSynced && data.evolution.length === 0) {
     return <p className="rounded-2xl border border-vx-border p-5 text-sm text-vx-fg-body">
@@ -124,26 +127,29 @@ function AccountAnalytics({ accountId, days }) {
     {data.sync?.failing && <p role="status" className="text-sm text-vx-fg-muted">
       The latest update for this account failed, so these numbers may be out of date. Reconnecting it in Veyrnox Publish usually fixes this.
     </p>}
-    <dl className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-      <Stat label="Followers" value={summary.followers === null ? '—' : whole.format(summary.followers)}
+    <dl className={`grid grid-cols-2 ${youtube ? 'sm:grid-cols-3' : 'sm:grid-cols-4'} gap-3`}>
+      <Stat label={audienceLabel} value={summary.followers === null ? '—' : whole.format(summary.followers)}
         note={summary.followersChange === null ? null : `${summary.followersChange >= 0 ? '+' : ''}${whole.format(summary.followersChange)} in this period`} />
-      <Stat label="Posts" value={whole.format(summary.posts)} />
+      <Stat label={youtube ? 'Videos' : 'Posts'} value={whole.format(summary.posts)} />
       <Stat label="Interactions" value={whole.format(summary.interactions)}
         note={summary.hasInsights ? 'Likes, comments, saves and shares' : 'Likes and comments'} />
       <Stat label="Engagement" value={summary.engagementPer1000 === null ? '—' : oneDecimal.format(summary.engagementPer1000)}
-        note="Interactions per post, per 1,000 followers" />
+        note={youtube ? 'Interactions per video, per 1,000 subscribers' : 'Interactions per post, per 1,000 followers'} />
+      {youtube && <Stat label="Channel views" value={metric(channelMetrics.views)} note="Lifetime total" />}
+      {youtube && <Stat label="Public videos" value={metric(channelMetrics.posts_count)} note="Channel total" />}
     </dl>
 
     <section className="rounded-2xl border border-vx-border p-5">
-      <h2 className="font-bold mb-4">Followers</h2>
-      <FollowersChart series={summary.series} />
+      <h2 className="font-bold mb-4">{audienceLabel}</h2>
+      <FollowersChart series={summary.series} label={audienceLabel} />
     </section>
 
     <section className="rounded-2xl border border-vx-border p-5">
-      <h2 className="font-bold mb-4">Posts in this period</h2>
-      <PostsTable posts={data.posts} withInsights={summary.hasInsights} />
+      <h2 className="font-bold mb-4">{youtube ? 'Videos' : 'Posts'} in this period</h2>
+      <PostsTable posts={data.posts} withInsights={summary.hasInsights} withViews={summary.hasViews} />
     </section>
 
+    {youtube && <p className="text-xs text-vx-fg-muted">YouTube subscriber counts are rounded. Video metrics are lifetime totals for videos published in this period. The latest 50 uploads refresh each round.</p>}
     {data.sync?.last_ok_at && <p className="text-xs text-vx-fg-muted">
       Updated {new Date(data.sync.last_ok_at).toLocaleString()}. Numbers refresh every few hours.
     </p>}
@@ -158,7 +164,7 @@ function Stat({ label, value, note }) {
   </div>;
 }
 
-function PostsTable({ posts, withInsights }) {
+function PostsTable({ posts, withInsights, withViews }) {
   if (posts.length === 0) return <p className="text-sm text-vx-fg-muted">No posts in this period.</p>;
   return <div className="overflow-x-auto">
     <table className="w-full text-sm">
@@ -167,7 +173,7 @@ function PostsTable({ posts, withInsights }) {
           <th scope="col" className="pb-2 pr-3 font-bold">Published</th>
           <th scope="col" className="pb-2 pr-3 font-bold">Post</th>
           {withInsights && <th scope="col" className="pb-2 pr-3 font-bold text-right">Reach</th>}
-          {withInsights && <th scope="col" className="pb-2 pr-3 font-bold text-right">Views</th>}
+          {withViews && <th scope="col" className="pb-2 pr-3 font-bold text-right">Views</th>}
           <th scope="col" className="pb-2 pr-3 font-bold text-right">Likes</th>
           <th scope="col" className="pb-2 pr-3 font-bold text-right">Comments</th>
           <th scope="col" className="pb-2 font-bold text-right">Interactions</th>
@@ -188,7 +194,7 @@ function PostsTable({ posts, withInsights }) {
               </span>
             </td>
             {withInsights && <td className="py-2 pr-3 text-right tabular-nums">{metric(p.metrics?.reach)}</td>}
-            {withInsights && <td className="py-2 pr-3 text-right tabular-nums">{metric(p.metrics?.views)}</td>}
+            {withViews && <td className="py-2 pr-3 text-right tabular-nums">{metric(p.metrics?.views)}</td>}
             <td className="py-2 pr-3 text-right tabular-nums">{metric(p.metrics?.likes)}</td>
             <td className="py-2 pr-3 text-right tabular-nums">{metric(p.metrics?.comments)}</td>
             <td className="py-2 text-right tabular-nums font-bold">{whole.format(postInteractions(p))}</td>

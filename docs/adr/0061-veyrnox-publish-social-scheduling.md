@@ -290,7 +290,16 @@ Migration `0188_social_analytics.sql` and the analytics sweep are the first part
 No ledger or entitlement change. Analytics are not gated by plan yet; ADR-0063 decides
 whether they should be.
 
-Not built yet: the other four networks, best time to post, and the calendar.
+YouTube follow-up (2026-10-03): basic channel and video statistics use the existing
+`youtube.readonly` grant, with the same analytics storage and switch. Each round reads
+the connected channel, its latest 50 uploads and one batched video-statistics response.
+Expired/expiring tokens are refreshed with the existing Google adapter and encrypted
+before the existing account-token RPC stores them. The dashboard labels subscribers
+and videos separately and shows views without requiring Instagram reach. Subscribers
+are rounded; channel/video views, likes and comments are lifetime counters, with the
+post date range selecting publication dates. No YouTube Analytics API scope is added.
+
+Not built yet: X, TikTok and LinkedIn analytics, best time to post, and the calendar.
 
 ## Open questions
 

@@ -124,3 +124,65 @@ test('an account disconnected mid-fetch counts as failed; a report that throws c
         assert.deepEqual(out, { ok: true, claimed: 2, synced: 0, failed: 1, errors: 1 });
     });
 });
+
+test('the default claim includes YouTube alongside Instagram', async () => {
+    await withRpc({ claim_social_analytics_accounts: async () => [] }, async (calls) => {
+        await runAnalyticsSweep({ cfg, cryptoCfg, now });
+        assert.deepEqual(new Set(calls[0].args.p_networks), new Set(['instagram', 'youtube']));
+    });
+});
+
+test('YouTube refresh encrypts and persists the access token before analytics, preserving the refresh token', async () => {
+    const { decryptToken } = await import('../lib/social/tokenCrypto.js');
+    const row = await account({ network: 'youtube', token_expires_at: '2026-10-03T23:00:00Z', refresh_token_enc: await encryptToken('refresh-token', cryptoCfg) });
+    const events = [];
+    await withRpc({
+        claim_social_analytics_accounts: async () => [row],
+        update_social_account_token: async (args) => {
+            events.push('persist');
+            assert.equal(await decryptToken(args.p_access_token_enc, cryptoCfg), 'new-access');
+            assert.equal(args.p_token_expires_at, '2026-10-04T00:30:00Z');
+            assert.equal('p_refresh_token_enc' in args, false);
+            return { ok: true };
+        },
+        record_social_analytics: async () => ({ ok: true }),
+    }, async () => {
+        const out = await runAnalyticsSweep({ cfg, cryptoCfg, now, youtubeCfg: { clientId: 'fixture', clientSecret: 'fixture' },
+            refreshYoutube: async (config, token) => { assert.equal(token, 'refresh-token'); events.push('refresh'); return { accessToken: 'new-access', expiresAt: '2026-10-04T00:30:00Z' }; },
+            fetchers: { youtube: async (token) => { assert.equal(token, 'new-access'); events.push('fetch'); return { metrics: { views: 20 }, posts: [] }; } },
+        });
+        assert.equal(out.synced, 1);
+        assert.deepEqual(events, ['refresh', 'persist', 'fetch']);
+    });
+});
+
+test('a still-valid YouTube token needs no refresh configuration or update', async () => {
+    const row = await account({ network: 'youtube', token_expires_at: '2026-10-04T00:30:00Z' });
+    await withRpc({ claim_social_analytics_accounts: async () => [row], record_social_analytics: async () => ({ ok: true }) }, async () => {
+        const out = await runAnalyticsSweep({ cfg, cryptoCfg, now, youtubeCfg: null, fetchers: { youtube: async (token) => { assert.equal(token, 'plain-token'); return {}; } } });
+        assert.equal(out.synced, 1);
+    });
+});
+
+for (const failure of ['missing-refresh', 'missing-config', 'refresh-rejected', 'disconnected', 'persist-error']) {
+    test(`YouTube ${failure} is recorded and does not stop the next account`, async () => {
+        const row = await account({ network: 'youtube', token_expires_at: '2026-10-03T23:00:00Z', refresh_token_enc: failure === 'missing-refresh' ? null : await encryptToken('refresh', cryptoCfg) });
+        const good = await account({ account_id: 'good', network: 'youtube', token_expires_at: '2026-10-04T00:30:00Z' });
+        let fetched = 0;
+        await withRpc({
+            claim_social_analytics_accounts: async () => [row, good],
+            update_social_account_token: async () => { if (failure === 'persist-error') throw new Error('db down'); return null; },
+            record_social_analytics_failure: async (args) => { assert.equal(args.p_account_id, row.account_id); assert.ok(!args.p_error.includes('upstream private')); return { ok: true }; },
+            record_social_analytics: async () => ({ ok: true }),
+        }, async () => {
+            const out = await runAnalyticsSweep({ cfg, cryptoCfg, now,
+                youtubeCfg: failure === 'missing-config' ? null : {},
+                refreshYoutube: async () => { if (failure === 'refresh-rejected') throw new Error('upstream private'); return { accessToken: 'new-access', expiresAt: '2026-10-04T00:30:00Z' }; },
+                fetchers: { youtube: async () => { fetched++; return {}; } },
+            });
+            assert.equal(out.failed, 1);
+            assert.equal(out.synced, 1);
+            assert.equal(fetched, 1);
+        });
+    });
+}
