@@ -259,8 +259,10 @@ Decision 7's four controls now have homes, mapped in
    rights explicitly.
 
 Decision 8's label: every library asset card shows "AI generated". Glossary terms
-Content Warning, Takedown and Rights Attestation are in `CONTEXT.md`. Still open: the
-user-facing email on a warning or takedown, and an admin UI over the violations API.
+Content Warning, Takedown and Rights Attestation are in `CONTEXT.md`. The user-facing
+email on a warning or takedown is built (`lib/violationEmail.js`, sent through Resend) and
+stays off until `RESEND_API_KEY` and `VIOLATION_EMAIL_FROM` are set. The admin UI over the
+violations API is at `/app/admin/violations`.
 
 ## Before activating any row
 

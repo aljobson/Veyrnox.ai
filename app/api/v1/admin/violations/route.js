@@ -12,10 +12,14 @@
  * ADMIN_REQUIRE_AAL2 second-factor flag, and the RPC's own users.is_admin
  * check (42501 'not_admin'). Every write lands in the append-only
  * account_actions table with the admin's email as actor and the job as trace.
+ *
+ * After a write, the user is emailed (lib/violationEmail.js). `email` in the
+ * response is 'sent', 'failed', or 'skipped' when sending is not configured.
  */
 
 import { NextResponse } from 'next/server';
 import { rpc, envConfig, SupabaseError } from '../../../../../packages/db/supabase-client.js';
+import { notifyViolation } from '../../../../../lib/violationEmail.js';
 
 const NOT_ADMIN = '42501';
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -101,8 +105,11 @@ export async function POST(req) {
         return NextResponse.json({ error: code }, { status });
     }
     console.error('[api/v1/admin/violations] recorded', tier, 'for', userId, 'job', jobId, 'takedowns', result.takedowns, 'frozen', result.frozen);
+    const email = await notifyViolation({
+        cfg: g.cfg, userId, actionId: result.action_id, tier, takedowns: result.takedowns, frozen: result.frozen,
+    });
     return NextResponse.json({
         action_id: result.action_id, tier: result.tier, assets_removed: result.assets_removed,
-        takedowns: result.takedowns, frozen: result.frozen,
+        takedowns: result.takedowns, frozen: result.frozen, email,
     }, { status: 201, headers: { 'Cache-Control': 'no-store' } });
 }
