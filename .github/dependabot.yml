@@ -27,7 +27,9 @@ updates:
       # Raise by hand in the PR that raises node-version.
       - dependency-name: "@types/node"
         update-types: ["version-update:semver-major"]
-      # eslint-config-next 15 caps eslint at 9; goes with the Next 16 upgrade.
+      # Tried on Next 16 (2026-10-03): ESLint 10.12 installs but lint crashes
+      # with "scopeManager.addGlobals is not a function" in the parser that
+      # eslint-config-next 16.3.7 bundles. Retry when that config supports 10.
       - dependency-name: "eslint"
         update-types: ["version-update:semver-major"]
     commit-message:
