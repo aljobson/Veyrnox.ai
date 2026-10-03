@@ -34,7 +34,7 @@ const LABELS = {
 // Counts a migration adds. Until that migration is applied the snapshot does
 // not carry them; that is reported, not failed, so merging before the owner
 // approves the apply does not page anyone. Remove a key once it is applied.
-const PENDING = { subscription_credit_drift: '0185' };
+const PENDING = {};
 
 export async function fetchStatus({ url, key }) {
     const res = await fetch(new URL('/rest/v1/rpc/reconcile_status', url), {
