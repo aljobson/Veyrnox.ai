@@ -84,7 +84,7 @@ function Violations() {
   }
 
   return (
-    <main id="main" className="mx-auto max-w-4xl px-4 py-10 pb-32 sm:px-8">
+    <div className="mx-auto max-w-4xl px-4 py-10 pb-32 sm:px-8">
       <Link href="/app/admin" className="text-sm underline">Back to operations</Link>
       <Chip tone="danger" className="mt-5 mb-3">ADMIN · CONTENT</Chip>
       <h1 className="text-3xl font-black tracking-[-0.02em]">Content violations</h1>
@@ -110,7 +110,7 @@ function Violations() {
       {lookup && <Jobs jobs={lookup.jobs} user={lookup.user} onDone={refresh} />}
 
       <Record rows={record} loaded={recordLoaded} scoped={!!lookup} />
-    </main>
+    </div>
   );
 }
 

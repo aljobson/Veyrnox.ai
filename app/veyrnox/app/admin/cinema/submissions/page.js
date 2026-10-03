@@ -29,7 +29,7 @@ function Queue() {
     finally { if (version === generation.current) setBusy(false); }
   }, []);
   useEffect(() => { load(); return () => { generation.current++; }; }, [load]);
-  return <main id="main" className="mx-auto max-w-3xl px-4 py-10 pb-32 sm:px-8">
+  return <div className="mx-auto max-w-3xl px-4 py-10 pb-32 sm:px-8">
     <Link href="/app/admin" className="text-sm underline">Back to operations</Link>
     <h1 className="mt-5 text-3xl font-black">Cinema publication queue</h1>
     <p className="my-5 text-vx-fg-body">Review requires a Cinema administrator account and a fresh authenticator check. Approval publishes the whole title; rejection returns it to the creator as a draft with your note.</p>
@@ -40,7 +40,7 @@ function Queue() {
     {items.map((item) => <Submission key={item.id} item={item} onDone={load} />)}
     {items.length === 50 && <p className="mt-5 text-sm">Showing the oldest 50 submissions. Refresh after reviewing to load more.</p>}
     <Suspend onDone={load} />
-  </main>;
+  </div>;
 }
 
 function Submission({ item, onDone }) {

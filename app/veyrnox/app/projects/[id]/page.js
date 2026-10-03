@@ -21,7 +21,7 @@ function message(e) {
 export default function ProjectPage(){
   const enabled=useProjectsPreview();
   const {id}=useParams();
-  return <>{enabled ? <DocumentEditor key={id} id={id}/> : <><AppNav active="projects"/><main className="mx-auto max-w-6xl p-8"><h1 className="text-3xl font-black">Projects preview</h1><p className="mt-4">Projects are not available in this browser yet.</p><Link href="/app/projects" className="mt-5 inline-block text-vx-accent underline">Back to projects</Link></main></>}</>;
+  return <>{enabled ? <DocumentEditor key={id} id={id}/> : <><AppNav active="projects"/><div className="mx-auto max-w-6xl p-8"><h1 className="text-3xl font-black">Projects preview</h1><p className="mt-4">Projects are not available in this browser yet.</p><Link href="/app/projects" className="mt-5 inline-block text-vx-accent underline">Back to projects</Link></div></>}</>;
 }
 function DocumentEditor({id}){
   const [project,setProject]=useState(null), [draft,setDraft]=useState(null), [saved,setSaved]=useState(null);
@@ -106,7 +106,7 @@ function DocumentEditor({id}){
   }
   return <div onClickCapture={leave}>
     <AppNav active="projects"/>
-    <main id="main" className="mx-auto max-w-6xl px-4 py-8 sm:px-8 sm:py-12">
+    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-8 sm:py-12">
       <Link href="/app/projects" className="text-sm text-vx-accent hover:underline">← All projects</Link>
       {loading?<p role="status" className="py-16">Loading project…</p>:loadError?<p role="alert" className="py-12">{loadError}</p>:<>
         <header className="my-7 flex flex-wrap items-start justify-between gap-4"><div className="min-w-0"><p className="mb-2 font-vx-mono text-xs uppercase tracking-widest text-vx-fg-muted">Project brief</p><h1 className="break-words text-3xl font-black">{project.name}</h1></div>
@@ -132,6 +132,6 @@ function DocumentEditor({id}){
         </div>
         {preview&&<Modal aria-labelledby="version-title" onCancel={()=>!busy&&setPreview(null)} className="items-center justify-center p-4"><div className="max-h-[85dvh] w-full max-w-2xl overflow-auto rounded-2xl border border-vx-border bg-vx-base p-6"><h2 id="version-title" className="text-2xl font-black">Version {preview.revision}</h2><p className="mt-2 text-xs text-vx-fg-muted">{date(preview.created_at)} · {preview.document.canvas.aspect_ratio} · {preview.document.canvas.frame_rate} fps</p><p className="my-6 max-h-64 overflow-auto whitespace-pre-wrap break-words text-sm">{preview.document.brief||'No brief'}</p><p role="alert" className="mb-3 text-sm">{error}</p><p className="mb-5 text-sm text-vx-fg-muted">{dirty?'Save your current draft before restoring.':'Restoring creates a new version. Your existing history is preserved.'}</p><div className="flex flex-wrap justify-end gap-3"><Button variant="ghost" disabled={busy} onClick={()=>setPreview(null)}>Close</Button><Button disabled={busy||dirty||conflict||preview.revision===revision} onClick={()=>save({restore:preview.revision})}>{busy?'Restoring…':'Restore as new version'}</Button></div></div></Modal>}
       </>}
-    </main>
+    </div>
   </div>;
 }

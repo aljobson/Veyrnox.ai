@@ -66,13 +66,13 @@ behaviour a user can hit · **medium** = latent defect or guard missing ·
 
 | # | sev | issue | evidence | fix |
 |---|---|---|---|---|
-| U1 | medium | Cinema pages render a second `<main id="main">` inside the root `<main>` (duplicate id, nested landmark); Account and Publish also nest `<main>`. | `SocialCinema.js`, `TitlePage.js`, `Player.js`, account, publish pages | Use `<div>` / `<section>`. |
-| U2 | medium | `ToasterMount` hard-codes `#1a1a1a` / `#f5f5f5` — ignores tokens and the light theme. | `components/ToasterMount.jsx` | Use `rgb(var(--vx-panel))` etc. |
+| U1 | fixed — inner `<main>` elements are `<div>`; the root layout keeps the one `<main id="main">` | Cinema pages render a second `<main id="main">` inside the root `<main>` (duplicate id, nested landmark); Account and Publish also nest `<main>`. | `SocialCinema.js`, `TitlePage.js`, `Player.js`, account, publish pages | Use `<div>` / `<section>`. |
+| U2 | fixed — toasts use the theme tokens | `ToasterMount` hard-codes `#1a1a1a` / `#f5f5f5` — ignores tokens and the light theme. | `components/ToasterMount.jsx` | Use `rgb(var(--vx-panel))` etc. |
 | U3 | medium | Amber rule drift. Prices shown non-amber: hero/preset tile `N cr` (white), statement debits (fg), Generate cost (accent-ink). Amber that isn't Credits: Chip `warn` tone, sign-in notice on Credits, `/m` banner, `loading.js` bar, Cinema Pass USD panel. | UI audit | Apply UI-UX.md §2 rule; add a `warn` token if a warning hue is needed. |
-| U4 | medium | Studio duration and aspect toggles lack `aria-pressed`. | `app/veyrnox/app/create/page.js` `ControlRow` | Add it. |
+| U4 | fixed — `aria-pressed`, `type="button"` and a labelled group | Studio duration and aspect toggles lack `aria-pressed`. | `app/veyrnox/app/create/page.js` `ControlRow` | Add it. |
 | U5 | low | Inter is loaded but effectively unused: `font-sans` names the literal family `'Inter'`, which next/font/local registers under a generated name, so chrome outside `.vx-root` (AuthGate, toasts, SiteChrome) likely renders in the system fallback. | `app/layout.js`, `tailwind.config.js`, `app/globals.css` | Point `font-sans` at `var(--font-archivo)` or drop Inter. Confirm in a browser. |
-| U6 | low | Reduced-motion kill switch is scoped to `.vx-root`; root-mounted chrome is not covered. | `app/veyrnox/veyrnox.css:53` | Move the rule to `:root`. |
-| U7 | low | `.vx-paper` doesn't re-point `--vx-danger`, so dark-theme red shows on paper. | `veyrnox.css:100-150` | Add the light value. |
+| U6 | fixed — the rule moved to `app/globals.css` and applies site-wide | Reduced-motion kill switch is scoped to `.vx-root`; root-mounted chrome is not covered. | `app/veyrnox/veyrnox.css:53` | Move the rule to `:root`. |
+| U7 | fixed — `.vx-paper` sets the light-theme red | `.vx-paper` doesn't re-point `--vx-danger`, so dark-theme red shows on paper. | `veyrnox.css:100-150` | Add the light value. |
 | U8 | low | Stale UI: `loading.js` skeleton still draws the removed promo strip; `/design-system` lacks the receipt world and calls refunds red; `ThemeToggle` comment says 14 variables (15). | `app/veyrnox/loading.js`, `design-system/page.js`, `ThemeToggle.js` | Refresh. |
 | U9 | low | Dead code: `tokens.js` (`PROMO_STRIP` removed), `PILLARS`, `METRIC_STRIP`, `PRODUCT_TILES`, `HERO_CHIP`; keyframes `vxPulse`, `vxSlideUp`, `vxFade`, `vxDrift`, `fade-in-up`; legacy `--color-primary`, `.glass-*`, Tailwind `primary`, `glow*` shadows. | UI audit | Delete. |
 

@@ -18,10 +18,12 @@ export default function ToasterMount() {
       reverseOrder={false}
       toastOptions={{
         duration: 4500,
+        // Theme tokens (app/globals.css, on :root), so toasts follow the
+        // light and dark themes like the rest of the chrome.
         style: {
-          background: "#1a1a1a",
-          color: "#f5f5f5",
-          border: "1px solid rgba(255,255,255,0.08)",
+          background: "rgb(var(--vx-panel))",
+          color: "rgb(var(--vx-fg))",
+          border: "1px solid rgb(var(--vx-border))",
           fontSize: "13px",
         },
         error: { duration: 6000 },

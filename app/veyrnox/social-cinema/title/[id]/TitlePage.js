@@ -49,8 +49,8 @@ export function TitlePage({ id }) {
     } finally { setBusy(''); }
   };
 
-  if (state === 'loading') return <main id="main" className="mx-auto max-w-[1000px] px-4 py-16 sm:px-8"><p role="status" className="text-vx-fg-muted">Loading…</p></main>;
-  if (state !== 'ready') return <main id="main" className="mx-auto max-w-[1000px] px-4 py-16 sm:px-8"><p role="status">{state === 'missing' ? 'This title is not available.' : state === 'closed' ? 'Social Cinema viewing is not open yet.' : 'Could not load this title. Try again in a moment.'}</p><Link href="/social-cinema" className="mt-6 inline-block underline">Back to Social Cinema</Link></main>;
+  if (state === 'loading') return <div className="mx-auto max-w-[1000px] px-4 py-16 sm:px-8"><p role="status" className="text-vx-fg-muted">Loading…</p></div>;
+  if (state !== 'ready') return <div className="mx-auto max-w-[1000px] px-4 py-16 sm:px-8"><p role="status">{state === 'missing' ? 'This title is not available.' : state === 'closed' ? 'Social Cinema viewing is not open yet.' : 'Could not load this title. Try again in a moment.'}</p><Link href="/social-cinema" className="mt-6 inline-block underline">Back to Social Cinema</Link></div>;
 
   const playable = (item) => ['free', 'unlocked', 'pass'].includes(item.access);
   const Item = ({ item, label }) => <li className="flex flex-wrap items-center justify-between gap-3 py-4">
@@ -64,7 +64,7 @@ export function TitlePage({ id }) {
   </li>;
   const locked = title.content_type === 'SERIES' ? title.seasons.some((s) => s.episodes.some((e) => e.access === 'locked')) : title.access === 'locked';
 
-  return <main id="main" className="mx-auto max-w-[1000px] px-4 py-10 pb-40 sm:px-8 sm:py-16 sm:pb-32">
+  return <div className="mx-auto max-w-[1000px] px-4 py-10 pb-40 sm:px-8 sm:py-16 sm:pb-32">
     <p className="mb-4 font-vx-mono text-xs tracking-widest text-vx-accent">SOCIAL CINEMA · {labels[title.content_type]?.toUpperCase()}</p>
     <h1 className="text-4xl font-black leading-tight break-words sm:text-5xl">{title.title}</h1>
     <p className="mt-3 text-vx-fg-muted">by <Link href={`/social-cinema`} className="underline">{title.creator?.display_name}</Link> · {title.language}{title.categories?.length ? ` · ${title.categories.join(', ')}` : ''}{title.ai_disclosures?.length ? ` · AI: ${title.ai_disclosures.join(', ').replaceAll('_', ' ')}` : ''}</p>
@@ -79,5 +79,5 @@ export function TitlePage({ id }) {
       <ul className="mt-2 divide-y divide-vx-border border-y border-vx-border">{s.episodes.map((e) => <Item key={e.id} item={e} label={`${e.position}. `} />)}</ul>
     </section>) : <ul className="mt-10 border-y border-vx-border"><Item item={{ ...title }} label="" /></ul>}
     <p className="mt-10 text-sm"><Link href="/social-cinema" className="underline">Back to Social Cinema</Link></p>
-  </main>;
+  </div>;
 }
