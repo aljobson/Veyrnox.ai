@@ -142,6 +142,38 @@ try {
     const stale = await apply(null, o.sub, 'active', { at: ago(60) });
     assert.deepEqual([stale.stale, stale.status], [true, 'past_due']);
 
+    // 'incomplete' never takes a live row back to pending, even with the same
+    // or a later timestamp: a new subscription's created and updated events
+    // can share a second, and a pending row would allow a second checkout.
+    const regress = await apply(null, o.sub, 'incomplete');
+    assert.deepEqual([regress.stale, regress.status], [true, 'past_due']);
+    assert.equal((await start(o.u)).code, 'SUBSCRIPTION_ALREADY_ACTIVE');
+    // An event dated in the future is refused: it would make every later one stale.
+    assert.equal((await apply(null, o.sub, 'active', { at: inDays(1) })).code, 'INVALID_EVENT');
+
+    // The second of two first events finds the row the first one bound.
+    const twin = await user();
+    const ts = await start(twin);
+    const twinSub = `sub_${hex()}`;
+    assert.equal((await apply(ts.subscription_id, twinSub, 'incomplete', { type: 'customer.subscription.created' })).status, 'pending');
+    assert.equal((await apply(ts.subscription_id, twinSub, 'active')).status, 'active');
+    assert.equal((await apply(ts.subscription_id, `sub_${hex()}`, 'active')).code, 'SUBSCRIPTION_MISMATCH');
+
+    // One Stripe event id is one log row. Passing an id that a state change
+    // already used to the grant is an error, never a silent "already granted".
+    const shared = `evt_${hex()}`;
+    await rpc('public.apply_credit_subscription_event($1, $2, $3, $4, $5, $6, $7, $8, now())',
+        [shared, 'invoice.paid', null, twinSub, `cus_${hex()}`, 'active', inDays(30), false]);
+    const clash = await paid(twinSub, `in_${hex()}`, { event: shared });
+    assert.deepEqual([clash.ok, clash.code], [false, 'EVENT_ID_ALREADY_USED']);
+    assert.equal((await paid(twinSub, `in_${hex()}`)).granted, 270);
+
+    // No plan below ADR-0014's 3.3 cents a credit.
+    await c.query('SAVEPOINT floor');
+    await assert.rejects(q(`INSERT INTO public.credit_subscription_plans (id, billing_interval, price_usd_cents, credits)
+        VALUES ('too-cheap', 'month', 3299, 1000)`), /price_floor/);
+    await c.query('ROLLBACK TO SAVEPOINT floor');
+
     // ── A second subscription paid while one is live is flagged and never grants. ──
     const second = await one(
         `INSERT INTO public.credit_subscriptions (user_id, plan_id, idempotency_key, price_usd_cents, credits, consent_version)
