@@ -89,5 +89,7 @@ jobs:
       - name: Build
         run: npm run build
 
+      # High and critical advisories fail; the exceptions, each with its
+      # reason, are the ALLOWED list in the script.
       - name: Audit (high and above)
-        run: npm audit --audit-level=high
+        run: node scripts/check-audit.mjs
