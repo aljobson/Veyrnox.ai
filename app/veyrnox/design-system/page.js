@@ -9,6 +9,7 @@ const COLORS = [
   { name: 'Aqua',      hex: '#3EE6C4', token: 'accent',     use: 'Actions, selection, live states. Hover #6FF2D8. Ink text #06231F on fills.' },
   { name: 'Amber',     hex: '#E4A93C', token: 'money',      use: 'Credit amounts & money — everywhere, only money.' },
   { name: 'Red',       hex: '#FF5C47', token: 'danger',     use: 'Failure and errors. A refund is credits coming back, so it is not red.' },
+  { name: 'Blue',      hex: '#8BA7FF', token: 'warn',       use: 'Warnings and notices, with the △ glyph. Never amber.' },
 ];
 
 export default function DesignSystem() {
@@ -132,7 +133,7 @@ export default function DesignSystem() {
             <div className="font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted">NEVER COLOUR ALONE</div>
             <p className="mt-2 text-[13px] text-vx-fg-body leading-[1.6]">
               Every semantic state carries an unambiguous glyph. Aqua ✓ (action / success),
-              amber ◆ (money / premium), red ✕ (failure), amber △ (warning), amber ★ (featured).
+              amber ◆ (money / premium), red ✕ (failure), blue △ (warning), amber ★ (featured).
               A monochrome print, deutan / protan / tritan vision, or Windows High Contrast
               still separates them.
             </p>
@@ -161,7 +162,7 @@ export default function DesignSystem() {
               <span className="inline-flex items-center gap-1.5 font-vx-mono text-[10px] font-bold uppercase tracking-[0.12em] rounded-full border px-3 py-1.5 border-vx-money/40 text-vx-money bg-vx-money/[0.07]">
                 <span aria-hidden="true">◆</span>PREMIUM
               </span>
-              <span className="inline-flex items-center gap-1.5 font-vx-mono text-[10px] font-bold uppercase tracking-[0.12em] rounded-full border px-3 py-1.5 border-vx-money/40 text-vx-money bg-vx-money/[0.07]">
+              <span className="inline-flex items-center gap-1.5 font-vx-mono text-[10px] font-bold uppercase tracking-[0.12em] rounded-full border px-3 py-1.5 border-vx-warn/40 text-vx-warn bg-vx-warn/[0.07]">
                 <span aria-hidden="true">△</span>ATTENTION
               </span>
               <span className="inline-flex items-center gap-1.5 font-vx-mono text-[10px] font-bold uppercase tracking-[0.12em] rounded-full px-3 py-1.5 bg-vx-money text-vx-money-ink">
@@ -197,6 +198,41 @@ export default function DesignSystem() {
               <li>Bottom sheets · slide-up 280ms ease-out</li>
               <li>Overlays · fade 200ms</li>
               <li><b>Always respect</b> prefers-reduced-motion</li>
+            </ul>
+          </div>
+        </div>
+      </Section>
+
+      {/* 09 RECEIPT SLIP */}
+      <Section num="09" title="RECEIPT SLIP — THE ONE MATERIAL">
+        <div className="border border-vx-border rounded-2xl p-7 grid grid-cols-1 lg:grid-cols-[1fr_1.1fr] gap-8 items-start">
+          <div className="vx-paper-shadow max-w-[420px]">
+            <div className="vx-paper px-6 pt-9 pb-10">
+              <div className="text-[13px] font-bold">Current balance</div>
+              <div className="mt-2 font-vx-mono text-[48px] font-bold text-vx-money leading-none vx-num">
+                96<span className="text-xl align-middle ml-2 text-vx-fg-muted">cr</span>
+              </div>
+              <div className="vx-perf mt-6" aria-hidden />
+              <div className="mt-4 flex items-baseline gap-2 font-vx-mono text-[13px] vx-num">
+                <span>Text to video, 5s</span>
+                <span aria-hidden className="vx-leader flex-1" />
+                <span className="font-bold text-vx-money">−22 cr</span>
+              </div>
+              <div className="mt-1.5 flex items-baseline gap-2 font-vx-mono text-[13px] vx-num">
+                <span className="font-bold text-vx-accent">Refund</span>
+                <span aria-hidden className="vx-leader flex-1" />
+                <span className="font-bold text-vx-accent">+22 cr</span>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div className="font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted">HOW IT IS BUILT</div>
+            <ul className="mt-2 text-[13px] text-vx-fg-body space-y-1.5 leading-[1.6]">
+              <li><code>.vx-paper</code> re-points the colour tokens at a paper palette and tears the top and bottom edge. Any component works inside it unchanged, in both themes.</li>
+              <li><code>.vx-paper-shadow</code> goes on a wrapper: the torn-edge mask would clip a shadow on the slip itself.</li>
+              <li><code>.vx-leader</code> is the dotted line between an item and its price. <code>.vx-perf</code> is the perforation rule.</li>
+              <li>Prices set in mono, in the paper amber (#8A5A00). A refund is aqua. Everything else stays in Archivo.</li>
+              <li>Used for the balance on Credits, Credit Packs on Pricing, the price slip on the home page and the footer statement.</li>
             </ul>
           </div>
         </div>

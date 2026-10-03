@@ -30,3 +30,12 @@ test('U3: debits and tile prices are amber', () => {
   assert.match(read('app/veyrnox/_sections/showcase.js'), /text-\[#E4A93C\] vx-num/);
   assert.match(read('app/veyrnox/_sections/hero.js'), /row \? 'text-\[#E4A93C\]' : ''/);
 });
+
+test('U8: the design-system page shows the receipt slip and the warn colour', () => {
+  const page = read('app/veyrnox/design-system/page.js');
+  assert.match(page, /num="09" title="RECEIPT SLIP/);
+  for (const cls of ['vx-paper-shadow', 'vx-paper ', 'vx-leader', 'vx-perf']) assert.ok(page.includes(cls), cls);
+  assert.match(page, /token: 'warn'/);
+  assert.doesNotMatch(page, /amber △/);
+  assert.match(page, /text-vx-warn bg-vx-warn\/\[0\.07\]">\s*<span aria-hidden="true">△<\/span>ATTENTION/);
+});
