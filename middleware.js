@@ -22,6 +22,7 @@ import { NextResponse } from 'next/server';
 import { contentSecurityPolicy } from './lib/contentSecurityPolicy.mjs';
 import { readToken, validateClaims, verifyES256 } from './lib/supabaseJwt.js';
 import { isPublishApiPath, publishEnabled } from './lib/social/publishFeature.js';
+import { isUnknownStaticPage } from './lib/unknownStaticPage.js';
 
 export const config = {
     matcher: ['/api/v1/:path*', '/((?!api(?:/|$)|_next(?:/|$)).*)'],
@@ -57,7 +58,11 @@ export async function middleware(req) {
         const policy = contentSecurityPolicy(nonce, process.env.NODE_ENV === 'development');
         headers.set('x-nonce', nonce);
         headers.set('Content-Security-Policy', policy);
-        const response = NextResponse.next({ request: { headers } });
+        // An unknown guide or template is sent to a path with no route, so the
+        // site's not-found page answers with a real 404 (lib/unknownStaticPage.js).
+        const response = isUnknownStaticPage(pathname)
+            ? NextResponse.rewrite(new URL('/_unknown-page', req.url), { request: { headers } })
+            : NextResponse.next({ request: { headers } });
         response.headers.set('Content-Security-Policy', policy);
         response.headers.set('Cache-Control', 'private, no-store, max-age=0');
         return response;
