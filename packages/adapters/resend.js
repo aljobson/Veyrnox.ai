@@ -15,7 +15,7 @@ const KEY_RE = /^[A-Za-z0-9_-]{8,128}$/;
 
 /** @param {Record<string, string | undefined>} [env] */
 export function resendConfig(env = process.env) {
-    return { apiKey: env.RESEND_API_KEY, from: env.VIOLATION_EMAIL_FROM };
+    return { apiKey: env.RESEND_API_KEY, from: env.VIOLATION_EMAIL_FROM, replyTo: env.VIOLATION_EMAIL_REPLY_TO };
 }
 
 export function isConfigured(cfg) {
@@ -27,13 +27,16 @@ export function isConfigured(cfg) {
  * send a no-op at Resend. Never throws: returns { ok: true, id } or
  * { ok: false, error } with a short code, not the provider's payload.
  *
- * @param {{ apiKey?: string, from?: string }} cfg
+ * A `replyTo` that is not a plain address is left out, so replies go to `from`.
+ *
+ * @param {{ apiKey?: string, from?: string, replyTo?: string }} cfg
  * @param {{ to: string, subject: string, text: string, idempotencyKey: string }} message
  */
 export async function sendEmail(cfg, { to, subject, text, idempotencyKey }, fetcher = fetchWithTimeout) {
     if (!isConfigured(cfg)) return { ok: false, error: 'not_configured' };
     if (typeof to !== 'string' || !TO_RE.test(to)) return { ok: false, error: 'invalid_recipient' };
     if (typeof idempotencyKey !== 'string' || !KEY_RE.test(idempotencyKey)) return { ok: false, error: 'invalid_idempotency_key' };
+    const replyTo = typeof cfg.replyTo === 'string' && TO_RE.test(cfg.replyTo) ? { reply_to: cfg.replyTo } : {};
     let res;
     try {
         res = await fetcher(RESEND_EMAILS_URL, {
@@ -43,7 +46,7 @@ export async function sendEmail(cfg, { to, subject, text, idempotencyKey }, fetc
                 'Content-Type': 'application/json',
                 'Idempotency-Key': idempotencyKey,
             },
-            body: JSON.stringify({ from: cfg.from, to: [to], subject, text }),
+            body: JSON.stringify({ from: cfg.from, to: [to], subject, text, ...replyTo }),
         }, TIMEOUT_MS);
     } catch {
         return { ok: false, error: 'unreachable' };

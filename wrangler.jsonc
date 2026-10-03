@@ -91,6 +91,8 @@
     // Sender for violation notices (lib/violationEmail.js, issue #479). The
     // domain is verified in Resend; nothing sends until RESEND_API_KEY is set.
     "VIOLATION_EMAIL_FROM": "Veyrnox.ai <support@veyrnox.ai>",
+    // veyrnox.ai has no MX records, so replies go to the .com mailbox.
+    "VIOLATION_EMAIL_REPLY_TO": "support@veyrnox.com",
     // Cloudflare Access covers veyrnox.ai/app/admin*, /api/v1/admin/* and
     // /api/admin/* (one application, "Veyrnox.ai admin"). These two let the
     // Worker verify the assertion itself (lib/accessJwt.js) instead of
