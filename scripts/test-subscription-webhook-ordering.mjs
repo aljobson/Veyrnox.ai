@@ -1,4 +1,4 @@
-// ADR-0064 / 0188: real concurrent refund/grant interleavings.
+// ADR-0064 / 0189: real concurrent refund/grant interleavings.
 // Committed fixtures live only in a throwaway local database; drop it after the run.
 import pg from 'pg';
 import assert from 'node:assert/strict';
