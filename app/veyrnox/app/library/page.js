@@ -12,6 +12,8 @@ import { EditSheet } from '../../_components/EditSheet';
 import { useCatalog } from '../../_lib/useCatalog';
 import { mergeHydrated, shouldPoll } from '../../_lib/jobWindow';
 import { STATE_TABS, KIND_TABS, KIND_LABEL, VIEWS, VIEW_KEY, filterRows, readView } from '../../_lib/libraryFilter';
+import { readFavourites, toggleFavourite } from '../../_lib/favourites';
+import { getSession } from '../../../lib/authClient.js';
 
 // Account list is authoritative; local history supplies cached display names.
 const STATE_UI = {
@@ -47,6 +49,11 @@ export default function Library() {
   const { models } = useCatalog();
   const [tab, setTab] = useState('all');
   const [kind, setKind] = useState('all');
+  // Starred job ids, per account in this browser (_lib/favourites.js).
+  const [favourites, setFavourites] = useState([]);
+  const [favOnly, setFavOnly] = useState(false);
+  useEffect(() => { setFavourites(readFavourites(window.localStorage, getSession()?.user?.id)); }, []);
+  const star = (id) => setFavourites(toggleFavourite(window.localStorage, getSession()?.user?.id, id));
   // Grid on the server and first paint; the saved layout is applied after mount.
   const [view, setView] = useState('grid');
   useEffect(() => { setView(readView(window.localStorage)); }, []);
@@ -234,7 +241,7 @@ export default function Library() {
   }, [nextCursor]);
 
   const shown = rows.slice(0, visible);
-  const list = filterRows(shown, { state: tab, kind }, models);
+  const list = filterRows(shown, { state: tab, kind, favourites: favOnly ? favourites : null }, models);
   const hasMore = rows.length > visible;
   const canSelect = (r) => editorOn && r.state === 'succeeded' && (isVideo(r) || isAudio(r));
   const toggle = (id) => setSelected((xs) => (xs.includes(id) ? xs.filter((x) => x !== id) : [...xs, id]));
@@ -303,6 +310,10 @@ export default function Library() {
                 {KIND_LABEL[k]}
               </button>
             ))}
+            <button onClick={() => setFavOnly((v) => !v)} aria-pressed={favOnly} type="button"
+              className="vx-press rounded-full border px-4 py-2 text-[14px] font-semibold border-vx-border text-vx-fg-body hover:border-vx-fg-muted aria-pressed:border-vx-fg aria-pressed:bg-vx-fg aria-pressed:text-vx-base">
+              ★ Favourites
+            </button>
           </div>
           <div className="flex gap-2" role="group" aria-label="Layout">
             {VIEWS.map((v) => (
@@ -329,7 +340,7 @@ export default function Library() {
         ) : (
           <div className={view === 'list' ? 'grid grid-cols-1 gap-3 max-w-[760px]' : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3'}>
             {list.map((r) => (
-              <JobCard key={r.job_id} row={r} models={models}
+              <JobCard key={r.job_id} row={r} models={models} starred={favourites.includes(r.job_id)} onStar={() => star(r.job_id)}
                 selectable={canSelect(r)} selected={selected.includes(r.job_id)} onToggle={() => toggle(r.job_id)} />
             ))}
           </div>
@@ -373,7 +384,7 @@ export default function Library() {
   );
 }
 
-function JobCard({ row, models, selectable, selected, onToggle }) {
+function JobCard({ row, models, selectable, selected, onToggle, starred, onStar }) {
   const asset = useAssetUrl(row.job_id, row.asset_url);
   const refundPending = row.state === 'failed' && row.refunded !== true;
   const s = STATE_UI[refundPending ? 'failed_pending' : row.state] || STATE_UI.queued;
@@ -433,8 +444,12 @@ function JobCard({ row, models, selectable, selected, onToggle }) {
             {row.submitted_at ? ` · ${formatWhen(row.submitted_at)}` : ''}
           </div>
         </div>
-        <div className={`shrink-0 font-vx-mono text-[13px] font-bold vx-num pt-1 ${deltaCls}`}>
-          {delta} cr
+        <div className="shrink-0 flex items-center gap-3">
+          <span className={`font-vx-mono text-[13px] font-bold vx-num ${deltaCls}`}>{delta} cr</span>
+          <button onClick={onStar} aria-pressed={starred} aria-label={starred ? 'Remove from favourites' : 'Add to favourites'} type="button"
+            className={`text-[18px] leading-none ${starred ? 'text-vx-money' : 'text-vx-fg-faint hover:text-vx-fg'}`}>
+            {starred ? '★' : '☆'}
+          </button>
         </div>
       </div>
       <AssetRetention row={row} />

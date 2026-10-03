@@ -18,9 +18,14 @@ export function kindOfRow(row, models) {
   return model?.kind || null;
 }
 
-/** Rows matching both filters; 'all' matches everything, unknown kinds only match 'all'. */
-export function filterRows(rows, { state = 'all', kind = 'all' }, models) {
-  return rows.filter((r) => (state === 'all' || r.state === state) && (kind === 'all' || kindOfRow(r, models) === kind));
+/**
+ * Rows matching every filter; 'all' matches everything, unknown kinds only
+ * match 'all'. `favourites` (job ids), when given, keeps only starred rows.
+ */
+export function filterRows(rows, { state = 'all', kind = 'all', favourites = null }, models) {
+  return rows.filter((r) => (state === 'all' || r.state === state)
+    && (kind === 'all' || kindOfRow(r, models) === kind)
+    && (!favourites || favourites.includes(r.job_id)));
 }
 
 /** The saved layout, or 'grid' when storage is blocked or holds anything else. */
