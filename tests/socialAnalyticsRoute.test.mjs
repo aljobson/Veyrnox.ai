@@ -102,3 +102,15 @@ test('a rate-limited caller is refused before the analytics read', async () => {
     assert.equal(res.status, 429);
     assert.deepEqual(calls.map((c) => c.name), ['consume_account_read_request']);
 });
+
+
+test('advertises posting insights only when its own switch is exactly true', async () => {
+    try {
+        for (const value of ['false', 'TRUE', 'true']) {
+            process.env.PUBLISH_POSTING_INSIGHTS_ENABLED = value;
+            stub();
+            const body = await (await GET(request(valid))).json();
+            assert.equal(body.postingInsightsEnabled, value === 'true' ? true : undefined);
+        }
+    } finally { delete process.env.PUBLISH_POSTING_INSIGHTS_ENABLED; }
+});

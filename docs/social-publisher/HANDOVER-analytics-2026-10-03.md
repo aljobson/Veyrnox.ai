@@ -207,3 +207,43 @@ TikTok totals/chart/Views/Shares/interactions at desktop and 375px, Instagram Re
 and unsupported-network messaging. The table scrolls inside its container on mobile;
 the page does not overflow. The local fixture emitted auth/CAPTCHA console errors;
 this was UI verification with fixture responses, not a clean live-account smoke test.
+
+
+## Posting insights implementation (2026-10-03)
+
+Migration **0191_social_posting_insights.sql** adds weekly cached timing and posting-frequency
+aggregates. `PUBLISH_POSTING_INSIGHTS_ENABLED` defaults to `"false"`; apply 0191 through the
+protected main migration workflow before enabling it. Publish and analytics collection must
+also be enabled. No additional platform permission or external API is required.
+
+The implementation uses publication timestamps and counters in `social_analytics_posts`,
+not daily account snapshots. One JSON aggregate per account updates timing, frequency and
+empty-history metadata atomically. It covers twelve complete weeks in the brand timezone,
+independent of the dashboard's date filter. Invalid timezones fall back to UTC.
+
+Measured posts need numeric likes and comments and must be at least 48 hours old. Timing
+recommendations need ten measured posts spanning fourteen days and three posts in a slot.
+Unknown scores stay null; sparse histories receive no generic recommendation. Frequency
+counts every stored post and weights averages by measured posts. Lifetime counters favour
+older posts; these observations do not establish causation or audience availability, and
+collection may omit older/private/deleted posts. These choices amend the original heatmap
+schema and generic cold-start proposal in technical spec §2.5.
+
+Owner-only reads, service-only functions, RLS/FORCE RLS and denied direct table grants match
+analytics security. Cache failure does not block successful ingestion or other dashboard
+analytics. Next engineering slice: the calendar view. X/LinkedIn analytics and live account
+verification remain dependent on owner API-access and permission decisions. Staging Publish
+schema provisioning remains outstanding; this change does not enable any remote switches.
+
+Posting-insights validation: 1,288 unit tests pass (one existing skip), 296 database
+acceptance tests pass, and all 181 migrations replay on a fresh PostgreSQL 16 database.
+The 25 database integration/guard scripts pass. Lint has zero errors and 67 existing
+warnings; typecheck, security boundary, migration numbering, catalog guards and hard-wall
+checks pass. Fixture browser checks cover desktop/mobile, light/dark themes, 168 heatmap
+cells, weighted frequency, sparse history, isolated errors/retry, keyboard scrolling and
+an independent fixed date window. The 21st review's heatmap minimum-width warnings are
+intentional: its labelled, focusable panel scrolls within a 375px-wide page. The account
+selector warning predates this change. Existing local auth/Turnstile errors and a repaired
+fixture-proxy socket reset mean browser console checks were not clean. No real platform
+account or remote posting-insights RPC was exercised.
+The Next.js production build and full OpenNext Worker packaging also pass.

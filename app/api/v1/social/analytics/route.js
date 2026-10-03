@@ -11,6 +11,7 @@
  */
 
 import { NextResponse } from 'next/server';
+import { postingInsightsEnabled } from '../../../../../lib/social/publishFeature.js';
 import { accountReadLimit } from '../../../../../lib/accountReadLimit.js';
 import { rpc, envConfig, SupabaseError } from '../../../../../packages/db/supabase-client.js';
 
@@ -74,5 +75,6 @@ export async function GET(req) {
     return NextResponse.json({
         account: result.account, sync: result.sync,
         evolution: result.evolution || [], posts: result.posts || [],
+        ...(postingInsightsEnabled() ? { postingInsightsEnabled: true } : {}),
     }, { headers: { 'Cache-Control': 'no-store' } });
 }

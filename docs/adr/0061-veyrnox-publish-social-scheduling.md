@@ -343,3 +343,30 @@ implementation but all of which should close before GA:
 6. Extend the existing incident-response runbook to name a compromised social-platform
    token as its own scenario, distinct from the generation/billing scenarios it already
    covers (security baseline §5.3 "Gap, stated plainly").
+
+
+## Posting insights implementation (2026-10-03)
+
+Migration **0191_social_posting_insights.sql** adds weekly cached timing and posting-frequency
+aggregates. `PUBLISH_POSTING_INSIGHTS_ENABLED` defaults to `"false"`; apply 0191 through the
+protected main migration workflow before enabling it. Publish and analytics collection must
+also be enabled. No additional platform permission or external API is required.
+
+The implementation uses publication timestamps and counters in `social_analytics_posts`,
+not daily account snapshots. One JSON aggregate per account updates timing, frequency and
+empty-history metadata atomically. It covers twelve complete weeks in the brand timezone,
+independent of the dashboard's date filter. Invalid timezones fall back to UTC.
+
+Measured posts need numeric likes and comments and must be at least 48 hours old. Timing
+recommendations need ten measured posts spanning fourteen days and three posts in a slot.
+Unknown scores stay null; sparse histories receive no generic recommendation. Frequency
+counts every stored post and weights averages by measured posts. Lifetime counters favour
+older posts; these observations do not establish causation or audience availability, and
+collection may omit older/private/deleted posts. These choices amend the original heatmap
+schema and generic cold-start proposal in technical spec §2.5.
+
+Owner-only reads, service-only functions, RLS/FORCE RLS and denied direct table grants match
+analytics security. Cache failure does not block successful ingestion or other dashboard
+analytics. Next engineering slice: the calendar view. X/LinkedIn analytics and live account
+verification remain dependent on owner API-access and permission decisions. Staging Publish
+schema provisioning remains outstanding; this change does not enable any remote switches.

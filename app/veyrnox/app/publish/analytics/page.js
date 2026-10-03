@@ -7,6 +7,7 @@ import { NETWORKS, listSocialAccounts } from '../../../../lib/socialConnectClien
 import { getSocialAnalytics } from '../../../../lib/socialAnalyticsClient';
 import { postInteractions, rangeForDays, summarize } from '../../../../../lib/social/analyticsSummary.js';
 import { FollowersChart } from './FollowersChart';
+import { PostingInsights } from './PostingInsights';
 
 const currentAccount = () => getSession()?.user?.id || '';
 const noAccount = () => '';
@@ -152,6 +153,7 @@ function AccountAnalytics({ accountId, network, days }) {
       <PostsTable posts={data.posts} withInsights={summary.hasInsights} withViews={summary.hasViews} withShares={tiktok} />
     </section>
 
+    {data.postingInsightsEnabled && <PostingInsights accountId={accountId} />}
     {youtube && <p className="text-xs text-vx-fg-muted">YouTube subscriber counts are rounded. Video metrics are lifetime totals for videos published in this period. The latest 50 uploads refresh each round.</p>}
     {tiktok && <p className="text-xs text-vx-fg-muted">TikTok video metrics cover public videos only. Video metrics are lifetime totals for videos published in this period. The latest 50 public videos refresh each round. Missing numbers may need additional permissions: reconnect in Veyrnox Publish after analytics access is enabled.</p>}
     {data.sync?.last_ok_at && <p className="text-xs text-vx-fg-muted">
