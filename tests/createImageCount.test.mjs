@@ -69,7 +69,7 @@ test('one job keeps the single canvas; more get the grid', () => {
     assert.match(page, /const job = jobs\.length === 1 \? jobs\[0\] : null;/);
     assert.match(page, /\{jobs\.length > 1 \? <StudioJobGrid jobs=\{jobs\} aspect=\{aspect\} \/> : \(/);
     assert.match(grid, /grid grid-cols-2/);
-    assert.match(grid, /STATE_UI\[job\.state\]/);
+    assert.match(grid, /const ui = jobStateUi\(job\);/);
     assert.match(grid, /<JobAssetPreview job=\{job\} \/>/);
     assert.match(grid, /\{failedJobCopy\(job\)\}/);
     // New generation clears every job and claims no cancelled charge.

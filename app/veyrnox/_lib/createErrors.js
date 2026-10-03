@@ -44,9 +44,9 @@ export const ERROR_COPY = {
 
 // What a FAILED job says. "Credits refunded" only once /jobs/:id reports the
 // refund (refunded: true); a failed job's refund can still be on its way.
+// That covers the per-code copy above too, which is worded for a refund that
+// has landed.
 export function failedJobCopy(job) {
-  return ERROR_COPY[job.error_code]
-    || (job.refunded
-      ? 'Something went wrong. Credits refunded.'
-      : 'Something went wrong. Your credits are on their way back.');
+  const copy = ERROR_COPY[job.error_code] || 'Something went wrong. Credits refunded.';
+  return job.refunded === true ? copy : copy.replace('Credits refunded', 'Your credits are on their way back');
 }

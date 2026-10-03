@@ -1,6 +1,6 @@
 'use client';
 import { JobAssetPreview } from './JobAssetPreview';
-import { STATE_UI } from '../_lib/studioStates';
+import { jobStateUi } from '../_lib/studioStates';
 import { failedJobCopy } from '../_lib/createErrors';
 
 // The studio canvas when one click made 2–4 images: one tile per job.
@@ -8,7 +8,7 @@ export function StudioJobGrid({ jobs, aspect }) {
   return (
     <div className="grid grid-cols-2 gap-3">
       {jobs.map((job, i) => {
-        const ui = STATE_UI[job.state] || STATE_UI.running;
+        const ui = jobStateUi(job);
         const pending = job.state === 'queued' || job.state === 'running';
         return (
           <div

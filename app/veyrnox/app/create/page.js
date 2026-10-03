@@ -23,7 +23,7 @@ import { GenerationSettings } from '../../_components/GenerationSettings';
 import { ControlRow } from '../../_components/ControlRow';
 import { settingsInputs } from '../../_lib/generationSettings';
 import { ParticleButton } from '@/components/ParticleButton';
-import { STATE_UI, SLOW_MODEL_WAIT } from '../../_lib/studioStates';
+import { jobStateUi, SLOW_MODEL_WAIT } from '../../_lib/studioStates';
 const DEFAULT_MODEL = 'wan-2.5-kie';
 // Auto Short stays hidden until launch unless this browser opts in
 // (CLAUDE.md "Delivery": new user paths behind localStorage.veyrnox_*).
@@ -303,7 +303,7 @@ export default function CreateStudio() {
                   {generating ? (
                     <div className="text-center">
                       <div className="font-vx-mono text-[11px] tracking-[0.14em] text-vx-accent">
-                        <span aria-hidden="true">●</span> {STATE_UI[job.state].label} · {model.name.toUpperCase()}
+                        <span aria-hidden="true">●</span> {jobStateUi(job).label} · {model.name.toUpperCase()}
                       </div>
                       <div className="mt-2 font-vx-mono text-[42px] font-bold vx-num">…</div>
                       {SLOW_MODEL_WAIT[model.id] && (
@@ -314,7 +314,7 @@ export default function CreateStudio() {
                   ) : job?.state === 'failed' ? (
                     <div className="text-center max-w-md px-6">
                       <div className="font-vx-mono text-[11px] tracking-[0.14em] text-vx-danger">
-                        <span aria-hidden="true">✕</span> FAILED · REFUNDED
+                        <span aria-hidden="true">✕</span> {jobStateUi(job).label}
                       </div>
                       <div className="mt-2 text-sm text-vx-fg-body">
                         {failedJobCopy(job)}
