@@ -27,6 +27,7 @@ export default async function sitemap() {
     page('/presets', 'weekly', 0.7),
     ...PRESETS.map((t) => page(`/presets/${t.id}`, 'monthly', 0.5)),
     page('/models', 'weekly', 0.8),
+    page('/tools', 'weekly', 0.7),
     page('/social-cinema', 'weekly', 0.7),
     page('/legal/terms', 'yearly', 0.3),
     page('/legal/privacy', 'yearly', 0.3),
