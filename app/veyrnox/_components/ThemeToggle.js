@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 // Dark is the default and the brand; light is opt-in and remembered per
-// browser. The palette itself is 14 CSS variables in app/globals.css, so
+// browser. The palette itself is 15 CSS variables in app/globals.css, so
 // this only has to flip one attribute on <html>.
 //
 // There is deliberately no inline bootstrap <script>: the CI grep gate in

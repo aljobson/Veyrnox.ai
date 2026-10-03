@@ -49,15 +49,22 @@ it. There is no automatic `prefers-color-scheme` switch.
 | `--vx-money-ink` | `35 23 3` | `255 255 255` | `255 255 255` | text on money fills |
 | `--vx-danger` | `255 92 71` | `196 36 26` | *not overridden* | errors, destructive |
 
-`.vx-paper` adds **no new token names**: it re-points the 15 tokens inside the
+`.vx-paper` adds **no new token names**: it re-points the colour tokens inside the
 slip and sets `color-scheme: light`, so any component works on paper
 unchanged. `@media print` re-points them again for paper output.
 
 Rules:
 - **Amber means Credits.** A number in amber is a quantity of Credits. The
   only non-number use allowed is the "premium" tag on a premium-priced model,
-  because it is a price signal. Nothing else is amber — see ISSUES.md §UI for
-  the current violations.
+  because it is a price signal. Nothing else is amber. A price printed over
+  media uses the fixed dark-theme amber (`#E4A93C`), since the theme token
+  turns brown in the light theme. A price inside a filled button (Generate)
+  takes the button's ink. Small muted figures (a balance caption, a Library
+  row's cost) may stay muted.
+- **Warnings and notices are `warn`, never amber.** `--vx-warn` /
+  `text-vx-warn` is a blue, chosen to be unmistakable next to amber, red and
+  teal; the `△` glyph carries the meaning without colour. It is a status hue
+  like `danger`, not a second accent.
 - **One accent hue.** Teal is the only chromatic accent. The ink pill
   (`bg-vx-fg text-vx-base`) is the marketing primary CTA and inverted
   selected state; it is a neutral, not a second accent.
