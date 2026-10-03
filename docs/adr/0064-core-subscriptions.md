@@ -252,7 +252,7 @@ refuses anyway, the webhook must log it for an Operator and not acknowledge it a
   returned. Finance/Legal still owes the consent wording that goes with this.
 
 **Subscription state, built 2026-10-03 (migrations 0186, 0187; IMPLEMENTATION-PLAN C4, database
-slice):**
+  slice):**
 
 - **Tables.** `credit_subscription_plans` (the three tiers), `credit_subscriptions` (one live
   per user; price and credits copied from the plan when the checkout opens) and the append-only
@@ -263,12 +263,21 @@ slice):**
 - **A refused invoice** (`PERIOD_NOT_NEWER`, a flagged or ended subscription, a zero payment) is
   written to the event log as `refused` for an Operator and stays refused on retry. An invoice
   that arrives before its subscription is bound is not recorded, so Stripe's retry succeeds.
+- **Full-refund ordering (0188).** A full refund ends the subscription row in
+  the same transaction as the invoice reversal, before Stripe cancellation.
+  A refund ahead of `invoice.paid` therefore prevents its late grant. An old
+  invoice's refund still reclaims only that invoice's cycle; it cannot take
+  a replacement subscription's credits. Partial refunds remain audit-only
+  and require an Operator review until their policy is confirmed.
 - **Reversal.** `reverse_subscription_grant` is the one ledger writer: it removes the cycle's
   remaining credits (`reverse:subscription_refund`) and ends the cycle, so a job refunded
   afterwards is returned and expired in one call instead of putting the credits back.
-- **Not live.** No route or webhook calls these yet. Still to build under C4: the Stripe
-  adapter and webhook, the routes behind `SUBSCRIPTIONS_ENABLED`, the plan-change (upgrade)
-  path, and the staging run.
+- **Not live.** The initial monthly adapter, webhook and account routes are
+  built behind `SUBSCRIPTIONS_ENABLED`, off in production and staging. The
+  flag gates checkout/account access; existing payment settlement continues
+  even when checkout is disabled. Every refused paid invoice requires a
+  delivered Operator alert. Plan changes and staging acceptance remain; see
+  `docs/operations/credit-subscription-acceptance.md`.
 
 **Still open, none blocking implementation start:**
 

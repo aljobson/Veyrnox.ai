@@ -26,6 +26,10 @@
   "vars": {
     "APP_ENV": "production",
     "TENANT_PROJECTS_ENABLED": "false",
+    // ADR-0064: checkout and account routes stay closed until staging acceptance.
+    "SUBSCRIPTIONS_ENABLED": "false",
+    // Before activation: SUBSCRIPTION_ALERT_EMAIL must name the Operator;
+    // SUBSCRIPTION_ALERT_FROM defaults to the existing VIOLATION_EMAIL_FROM.
     // Cinema v1.0: server controls are default-off; local preview cannot bypass them.
     // Activate only after the documented migration/reconciliation and preview gates.
     "CINEMA_ENABLED": "false",
@@ -131,6 +135,7 @@
         "NEXT_PUBLIC_SUPABASE_URL": "https://yrqzwqywxfesmbvhzjgj.supabase.co",
         "NEXT_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_bAxQiodzBhI6bV7lmo9gMQ_Hlg9_Ish",
         "TENANT_PROJECTS_ENABLED": "true",
+        "SUBSCRIPTIONS_ENABLED": "false",
         // ADR-0066; vars are not inherited, so staging names it too.
         "JEV_SUBMIT_ERRORS_MODE": "off",
         // Veyrnox Publish is open on staging for testing (see production).

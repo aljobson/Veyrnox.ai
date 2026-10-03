@@ -57,7 +57,7 @@ async function subscribed(plan = 'starter-monthly') {
 
 try {
     // Both migrations are safe to apply twice.
-    for (const f of ['0186_credit_subscriptions.sql', '0187_credit_subscription_money.sql']) {
+    for (const f of ['0186_credit_subscriptions.sql', '0187_credit_subscription_money.sql', '0188_credit_subscription_webhooks.sql']) {
         const sql = await readFile(new URL(`../packages/db/schema/supabase/${f}`, import.meta.url), 'utf8');
         await c.query('BEGIN'); await c.query(sql); await c.query(sql); await c.query('ROLLBACK');
     }
@@ -105,6 +105,22 @@ try {
     assert.deepEqual([g1other.ok, g1other.idempotent, g1other.granted], [true, true, 0]);
     assert.deepEqual(await buckets(a), [280, 10, 270]);
     assert.equal((await start(a)).code, 'SUBSCRIPTION_ALREADY_ACTIVE');
+
+    // Webhooks read the durable binding without gaining raw table access.
+    const binding = await rpc('public.read_credit_subscription_binding($1)', [subA]);
+    assert.deepEqual([binding.id, binding.plan_id, binding.price_usd_cents, binding.credits, binding.status],
+        [s1.subscription_id, 'starter-monthly', 1900, 270, 'active']);
+    assert.equal(binding.stripe_subscription_id, subA);
+    assert.equal((await rpc('public.read_own_credit_subscription_by_id($1,$2)', [a.auth, s1.subscription_id])).subscription.id, s1.subscription_id);
+    assert.equal(await rpc('public.read_own_credit_subscription_by_id($1,$2)', [randomUUID(), s1.subscription_id]), null);
+    assert.equal(await rpc('public.read_own_credit_subscription_by_id($1,$2)', [a.auth, randomUUID()]), null);
+    assert.equal(await rpc('public.read_credit_subscription_binding($1)', ['sub_unknown']), null);
+    assert.equal(await rpc('public.read_credit_subscription_binding($1)', [null]), null);
+    assert.equal((await one("SELECT has_function_privilege('service_role', 'public.read_credit_subscription_binding(text)', 'EXECUTE') AS p")).p, true);
+    assert.equal((await one("SELECT has_table_privilege('service_role', 'public.credit_subscriptions', 'SELECT') AS p")).p, false);
+    await c.query('SET LOCAL ROLE service_role');
+    assert.equal((await rpc('public.read_credit_subscription_binding($1)', [subA])).id, s1.subscription_id);
+    await c.query('RESET ROLE');
 
     // ── Renewal: the leftover expires, the new cycle is granted (no rollover). ──
     assert.equal((await debit(a, 100)).ok, true);
@@ -197,19 +213,34 @@ try {
     assert.deepEqual(await buckets(f.u), [60, 10, 0]);
     assert.equal((await reverse(f.sub, f.invoice, 'refunded', refundEvent)).idempotent, true);
     assert.equal((await reverse(f.sub, f.invoice, 'refunded')).taken, 0, 'a second refund event takes nothing more');
-    // The subscription itself is left to Stripe's events.
-    assert.equal((await rpc('public.read_own_credit_subscription($1)', [f.u.auth])).subscription.status, 'active');
+    // The refund ends the row atomically, before Stripe cancellation arrives.
+    assert.equal((await rpc('public.read_own_credit_subscription($1)', [f.u.auth])).subscription.status, 'ended');
+    assert.equal((await paid(f.sub, `in_${hex()}`, { end: inDays(60) })).code, 'SUBSCRIPTION_NOT_LIVE');
     // A job that cycle paid for fails afterwards: returned and expired at once.
     assert.equal((await refund(f.u, job.job_id, 70)).ok, true);
     assert.deepEqual(await buckets(f.u), [60, 10, 0]);
     await reconciles(f.u);
-    // The next paid invoice starts a clean cycle.
-    assert.equal((await paid(f.sub, `in_${hex()}`, { end: inDays(60) })).granted, 270);
+    // A new subscription's paid invoice starts a clean cycle.
+    const replacement = await start(f.u);
+    const replacementSub = `sub_${hex()}`;
+    assert.equal((await apply(replacement.subscription_id, replacementSub, 'active')).status, 'active');
+    assert.equal((await paid(replacementSub, `in_${hex()}`, { end: inDays(60) })).granted, 270);
     assert.deepEqual(await buckets(f.u), [330, 10, 270]);
     // A refund of the OLD invoice now touches nothing: its cycle was replaced.
     assert.equal((await reverse(f.sub, f.invoice, 'refunded')).taken, 0);
     assert.deepEqual(await buckets(f.u), [330, 10, 270]);
     await reconciles(f.u);
+
+    // A refund can beat invoice.paid. It still ends the row, so the late
+    // invoice never grants credits for a payment already returned.
+    const earlyRefundUser = await user();
+    const earlyRefundStart = await start(earlyRefundUser);
+    const earlyRefundSub = `sub_${hex()}`, earlyRefundInvoice = `in_${hex()}`;
+    await apply(earlyRefundStart.subscription_id, earlyRefundSub, 'active');
+    assert.equal((await reverse(earlyRefundSub, earlyRefundInvoice, 'refunded')).ok, true);
+    assert.equal((await paid(earlyRefundSub, earlyRefundInvoice)).code, 'SUBSCRIPTION_NOT_LIVE');
+    assert.deepEqual(await buckets(earlyRefundUser), [10, 10, 0]);
+    await reconciles(earlyRefundUser);
 
     // ── Dispute: credits go, the subscription ends, the account is Frozen. ──
     const d = await subscribed('plus-monthly');
@@ -253,7 +284,8 @@ try {
     for (const role of ['anon', 'authenticated']) {
         for (const fn of ['subscription_grant(uuid,integer,timestamptz,text)', 'reverse_subscription_grant(uuid,text)',
             'grant_credit_subscription_invoice(text,text,text,integer,timestamptz,timestamptz)',
-            'start_credit_subscription(text,text,text,text,integer,integer)']) {
+            'start_credit_subscription(text,text,text,text,integer,integer)', 'read_credit_subscription_binding(text)',
+            'read_own_credit_subscription_by_id(text,uuid)']) {
             assert.equal((await one(`SELECT has_function_privilege($1, $2, 'EXECUTE') AS p`, [role, `public.${fn}`])).p, false, `${role} ${fn}`);
         }
         for (const t of ['credit_subscriptions', 'credit_subscription_plans', 'credit_subscription_events']) {

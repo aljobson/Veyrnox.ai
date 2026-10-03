@@ -50,6 +50,7 @@ const subscription = (metadata = passMetadata, over = {}) => ({
   cancel_at_period_end: false, items: { data: [{ current_period_start: NOW - 86400, current_period_end: NOW + 6 * 86400 }] }, metadata, ...over,
 });
 const routes = ({ sub = subscription(), apply = { ok: true, status: 'active', pass_id: PASS_ID }, end = { ok: true, pass_id: PASS_ID, user_id: 'u1', frozen: false }, duplicate = false } = {}) => [
+  ['/rpc/read_credit_subscription_binding', null],
   ['/rest/v1/webhook_events?on_conflict', () => (duplicate ? Response.json([]) : new Response('[{"id":"e1"}]', { status: 201 }))],
   ['/rest/v1/webhook_events', (u, init) => (init.method === 'PATCH' ? new Response(null, { status: 204 }) : Response.json([{ processed_at: '2026-09-26T00:00:00Z' }]))],
   ['api.stripe.com/v1/subscriptions/sub_1', sub],
@@ -72,6 +73,17 @@ test('a subscription event is re-read from Stripe and applied with the signed pa
   assert.equal(applied.p_period_end, new Date((NOW + 6 * 86400) * 1000).toISOString(), 'period from the re-read, not the body');
   assert.equal(applied.p_occurred_at, new Date(NOW * 1000).toISOString());
   assert.ok(calls.some((c) => c.method === 'PATCH' && c.url.includes('webhook_events')), 'marked processed');
+});
+
+test('the default-off rollout preserves Cinema before the new binding migration is applied', async () => {
+  process.env.SUBSCRIPTIONS_ENABLED = 'false';
+  const routesWithoutBinding = routes().filter(([n]) => !n.includes('read_credit_subscription_binding'));
+  const calls = stubFetch([['/rpc/read_credit_subscription_binding', () => Response.json({ code: 'PGRST202' }, { status: 404 })], ...routesWithoutBinding]);
+  assert.equal((await stripeWebhook.POST(signed(event('evt_before_migration', 'customer.subscription.updated', { id: 'sub_1', object: 'subscription' })))).status, 200);
+  assert.ok(calls.some(c => c.url.includes('/rpc/apply_cinema_pass_event')));
+  const down = stubFetch([['/rpc/read_credit_subscription_binding', () => Response.json({ code: 'unavailable' }, { status: 503 })], ...routesWithoutBinding]);
+  assert.equal((await stripeWebhook.POST(signed(event('evt_binding_down', 'customer.subscription.updated', { id: 'sub_1', object: 'subscription' })))).status, 500);
+  assert.ok(!down.some(c => c.method === 'PATCH' && c.url.includes('webhook_events')));
 });
 
 test('an invoice event finds its subscription; an unsigned unknown subscription is not ours', async () => {
