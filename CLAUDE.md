@@ -226,7 +226,10 @@ If a build starts failing after a dependency change, bisect these three first.
 5. **Security Misconfiguration** — `wrangler.jsonc` reviewed on every PR, CSP
    / HSTS / CORS locked, no debug endpoints in prod, no default credentials.
 6. **Vulnerable & Outdated Components** — Round-N dependency audits run on
-   every green main. Any critical/high CVE is a same-day PR.
+   every green main. Any critical/high CVE is a same-day PR. An advisory with
+   no fix may get a dated entry in `scripts/audit-exceptions.json` (ADR-0067),
+   but only while it reaches no production dependency; `npm run check:audit`
+   is the gate.
 7. **Identification & Authentication Failures** — Supabase Auth handles rate
    limits and lockout. Middleware rejects malformed tokens. Breach checking
    (HaveIBeenPwned) is a project setting that must stay ON — it was found off
