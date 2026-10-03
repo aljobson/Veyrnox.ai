@@ -123,19 +123,29 @@ BEGIN
         RETURN jsonb_build_object('ok', false, 'code', 'INVALID_INVOICE');
     END IF;
 
-    SELECT * INTO v_event FROM public.credit_subscription_events e WHERE e.stripe_event_id = p_event_id;
-    IF FOUND THEN
-        IF v_event.status = 'refused' THEN
-            RETURN jsonb_build_object('ok', false, 'code', COALESCE(v_event.detail, 'REFUSED'),
-                                      'refused', true, 'idempotent', true);
-        END IF;
-        RETURN jsonb_build_object('ok', true, 'idempotent', true, 'granted', 0);
-    END IF;
-
     SELECT * INTO v_sub FROM public.credit_subscriptions x
     WHERE x.stripe_subscription_id = p_stripe_subscription_id FOR UPDATE;
     IF NOT FOUND THEN
         RETURN jsonb_build_object('ok', false, 'code', 'SUBSCRIPTION_NOT_FOUND');
+    END IF;
+
+    -- Replay, checked under the row lock so a concurrent duplicate is a no-op
+    -- and not a unique violation.
+    SELECT * INTO v_event FROM public.credit_subscription_events e WHERE e.stripe_event_id = p_event_id;
+    IF FOUND THEN
+        IF v_event.type = 'invoice.paid' AND v_event.status = 'refused' THEN
+            RETURN jsonb_build_object('ok', false, 'code', COALESCE(v_event.detail, 'REFUSED'),
+                                      'refused', true, 'idempotent', true);
+        END IF;
+        IF v_event.type = 'invoice.paid' AND v_event.status = 'granted' THEN
+            RETURN jsonb_build_object('ok', true, 'idempotent', true, 'granted', 0);
+        END IF;
+        -- The id belongs to a row another function wrote (the event log has
+        -- one row per Stripe event). Answering "already granted" here would
+        -- lose a paid cycle without a trace, so it is an error: the webhook
+        -- must not pass one event's id to apply_credit_subscription_event
+        -- and then to this function.
+        RETURN jsonb_build_object('ok', false, 'code', 'EVENT_ID_ALREADY_USED');
     END IF;
     IF v_sub.status = 'pending' THEN
         RETURN jsonb_build_object('ok', false, 'code', 'SUBSCRIPTION_NOT_READY');
@@ -207,13 +217,14 @@ BEGIN
     IF p_invoice_id IS NULL OR p_invoice_id !~ '^in_[A-Za-z0-9_]{1,97}$' THEN
         RETURN jsonb_build_object('ok', false, 'code', 'INVALID_INVOICE');
     END IF;
-    IF EXISTS (SELECT 1 FROM public.credit_subscription_events e WHERE e.stripe_event_id = p_event_id) THEN
-        RETURN jsonb_build_object('ok', true, 'idempotent', true);
-    END IF;
     SELECT * INTO v_sub FROM public.credit_subscriptions x
     WHERE x.stripe_subscription_id = p_stripe_subscription_id FOR UPDATE;
     IF NOT FOUND THEN
         RETURN jsonb_build_object('ok', false, 'code', 'SUBSCRIPTION_NOT_FOUND');
+    END IF;
+    -- Replay, checked under the row lock so a concurrent duplicate is a no-op.
+    IF EXISTS (SELECT 1 FROM public.credit_subscription_events e WHERE e.stripe_event_id = p_event_id) THEN
+        RETURN jsonb_build_object('ok', true, 'idempotent', true);
     END IF;
 
     IF p_reason IN ('refunded', 'disputed') THEN

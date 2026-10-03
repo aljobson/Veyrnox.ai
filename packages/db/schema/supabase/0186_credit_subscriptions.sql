@@ -26,6 +26,14 @@ CREATE TABLE IF NOT EXISTS public.credit_subscription_plans (
 ALTER TABLE public.credit_subscription_plans ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.credit_subscription_plans FORCE ROW LEVEL SECURITY;
 REVOKE ALL ON public.credit_subscription_plans FROM PUBLIC, anon, authenticated, service_role;
+-- ADR-0014: no plan below $0.033 (3.3 cents) a credit before fees.
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'credit_subscription_plans_price_floor') THEN
+        ALTER TABLE public.credit_subscription_plans ADD CONSTRAINT credit_subscription_plans_price_floor
+            CHECK (price_usd_cents::BIGINT * 10 >= credits::BIGINT * 33);
+    END IF;
+END $$;
 INSERT INTO public.credit_subscription_plans (id, billing_interval, price_usd_cents, credits)
 VALUES ('starter-monthly', 'month', 1900, 270), ('plus-monthly', 'month', 5900, 1200), ('ultra-monthly', 'month', 12900, 3000)
 ON CONFLICT (id) DO NOTHING;
@@ -271,7 +279,8 @@ BEGIN
     IF p_event_id IS NULL OR p_event_id !~ '^(evt|cs)_[A-Za-z0-9_]{1,250}$'
        OR p_type IS NULL OR p_type !~ '^[a-z_.]{1,64}$'
        OR p_status IS NULL OR p_status NOT IN ('active', 'past_due', 'ended', 'incomplete')
-       OR p_occurred_at IS NULL THEN
+       OR p_occurred_at IS NULL OR p_occurred_at > now() + interval '5 minutes' THEN
+        -- An event dated in the future would make every later one stale.
         RETURN jsonb_build_object('ok', false, 'code', 'INVALID_EVENT');
     END IF;
     IF p_stripe_subscription_id IS NULL OR p_stripe_subscription_id !~ '^sub_[A-Za-z0-9_]{1,250}$'
@@ -279,15 +288,8 @@ BEGIN
         RETURN jsonb_build_object('ok', false, 'code', 'INVALID_SUBSCRIPTION');
     END IF;
 
-    SELECT * INTO v_event FROM public.credit_subscription_events e WHERE e.stripe_event_id = p_event_id;
-    IF FOUND THEN
-        -- A replay still reports the state so the caller can repeat a side
-        -- effect it owns (cancelling a flagged subscription at Stripe).
-        SELECT x.status INTO v_new FROM public.credit_subscriptions x WHERE x.id = v_event.subscription_id;
-        RETURN jsonb_build_object('ok', true, 'idempotent', true, 'subscription_id', v_event.subscription_id,
-                                  'status', v_new, 'flagged', v_new = 'flagged');
-    END IF;
-
+    -- Find and lock the row first; everything after runs one event at a time
+    -- for this subscription. By Stripe id, or by the id our checkout signed.
     SELECT * INTO v_sub FROM public.credit_subscriptions x
     WHERE x.stripe_subscription_id = p_stripe_subscription_id FOR UPDATE;
     IF FOUND THEN
@@ -298,21 +300,51 @@ BEGIN
         IF p_id IS NULL THEN
             RETURN jsonb_build_object('ok', false, 'code', 'SUBSCRIPTION_NOT_FOUND');
         END IF;
-        SELECT * INTO v_sub FROM public.credit_subscriptions x
-        WHERE x.id = p_id AND x.status = 'pending' AND x.stripe_subscription_id IS NULL
-        FOR UPDATE;
+        -- Locked by id with no other condition, then re-read: of two first
+        -- events arriving together, the second must find the row the first
+        -- one bound, not be told the subscription is unknown.
+        SELECT * INTO v_sub FROM public.credit_subscriptions x WHERE x.id = p_id FOR UPDATE;
         IF NOT FOUND THEN
             RETURN jsonb_build_object('ok', false, 'code', 'SUBSCRIPTION_NOT_FOUND');
         END IF;
-        UPDATE public.credit_subscriptions SET stripe_subscription_id = p_stripe_subscription_id, updated_at = now()
-        WHERE id = v_sub.id;
-        v_sub.stripe_subscription_id := p_stripe_subscription_id;
+        IF v_sub.stripe_subscription_id IS NULL AND v_sub.status = 'pending' THEN
+            BEGIN
+                UPDATE public.credit_subscriptions SET stripe_subscription_id = p_stripe_subscription_id, updated_at = now()
+                WHERE id = v_sub.id;
+            EXCEPTION WHEN unique_violation THEN
+                -- Another row was bound to this Stripe subscription meanwhile.
+                RETURN jsonb_build_object('ok', false, 'code', 'SUBSCRIPTION_MISMATCH');
+            END;
+            v_sub.stripe_subscription_id := p_stripe_subscription_id;
+        ELSIF v_sub.stripe_subscription_id IS DISTINCT FROM p_stripe_subscription_id THEN
+            RETURN jsonb_build_object('ok', false, 'code', 'SUBSCRIPTION_MISMATCH');
+        END IF;
     END IF;
 
+    -- Replay, checked under the lock so a concurrent duplicate is a no-op and
+    -- not a unique violation. It still reports the state, so the caller can
+    -- repeat a side effect it owns (cancelling a flagged one at Stripe).
+    SELECT * INTO v_event FROM public.credit_subscription_events e WHERE e.stripe_event_id = p_event_id;
+    IF FOUND THEN
+        IF v_event.subscription_id IS DISTINCT FROM v_sub.id THEN
+            RETURN jsonb_build_object('ok', false, 'code', 'INVALID_EVENT');
+        END IF;
+        RETURN jsonb_build_object('ok', true, 'idempotent', true, 'subscription_id', v_sub.id,
+                                  'user_id', v_sub.user_id, 'status', v_sub.status, 'flagged', v_sub.status = 'flagged');
+    END IF;
+
+    -- One subscription of a user changes state at a time (the balance lock,
+    -- taken after the row's as everywhere in 0187), so two rows activated
+    -- together cannot both pass the "is another one live" test below.
+    PERFORM 1 FROM public.credit_balances b WHERE b.user_id = v_sub.user_id FOR UPDATE;
+
     -- Order is Stripe's `created`; a redelivered or out-of-order older event
-    -- cannot regress the row. Terminal states are never resurrected.
+    -- cannot regress the row, terminal states are never resurrected, and
+    -- 'incomplete' never takes a live row back to pending (the created and
+    -- updated events of a new subscription can share a second).
     IF (v_sub.last_event_at IS NOT NULL AND p_occurred_at < v_sub.last_event_at)
-       OR v_sub.status IN ('ended', 'flagged') THEN
+       OR v_sub.status IN ('ended', 'flagged')
+       OR (p_status = 'incomplete' AND v_sub.status IN ('active', 'past_due')) THEN
         INSERT INTO public.credit_subscription_events (subscription_id, stripe_event_id, type, status, period_end, occurred_at)
         VALUES (v_sub.id, p_event_id, p_type, p_status, p_period_end, p_occurred_at);
         RETURN jsonb_build_object('ok', true, 'idempotent', false, 'stale', true, 'subscription_id', v_sub.id,
