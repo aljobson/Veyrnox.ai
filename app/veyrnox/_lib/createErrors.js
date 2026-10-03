@@ -2,6 +2,8 @@ import { ACCOUNT_PAUSED_COPY } from './gateway';
 
 // What the create page says for each gateway error code.
 export const ERROR_COPY = {
+  // A submit whose reply never arrived (imageBatch.submitErrorCode): it may have been charged.
+  outcome_unknown:       'We lost the reply to this request, so it may have started and been charged. Open Library to check before trying again.',
   poll_unreachable:      'Lost contact with the server, so we stopped checking. Your generation may still have run — open Library to see.',
   moderation:            'The provider declined this prompt on safety grounds. Credits refunded.',
   // The code grsai and byteplus emit on a failed job, and Jev on a refused submit (ADR-0066).
@@ -39,3 +41,12 @@ export const ERROR_COPY = {
   dialogue_invalid:      'Write one line per speaker, like "Ana: Hello!", with up to four speakers. Nothing was charged.',
   'inputs_invalid:prompt':'The prompt is empty or too long for this model (speech takes up to 1000 characters). Nothing was charged.',
 };
+
+// What a FAILED job says. "Credits refunded" only once /jobs/:id reports the
+// refund (refunded: true); a failed job's refund can still be on its way.
+export function failedJobCopy(job) {
+  return ERROR_COPY[job.error_code]
+    || (job.refunded
+      ? 'Something went wrong. Credits refunded.'
+      : 'Something went wrong. Your credits are on their way back.');
+}

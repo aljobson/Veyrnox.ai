@@ -4,9 +4,12 @@ import { AppNav } from '../../_components/NavBar';
 import { Chip } from '../../_components/Chip';
 import { ASPECT_RATIOS } from '../../_lib/tokens';
 import { gatewayFetch, makeIdempotencyKey, notifyBalanceChanged, GatewayError } from '../../_lib/gateway';
-import { ERROR_COPY } from '../../_lib/createErrors';
-import { pushJobHistory, markJobSettled } from '../../_lib/jobHistory';
+import { ERROR_COPY, failedJobCopy } from '../../_lib/createErrors';
+import { pushJobHistory } from '../../_lib/jobHistory';
 import { JobAssetPreview } from '../../_components/JobAssetPreview';
+import { StudioJobGrid } from '../../_components/StudioJobGrid';
+import { useStudioJobs } from '../../_lib/useStudioJobs';
+import { IMAGE_COUNTS, takesImageCount, imageCount, totalCost, inputsForIndex, batchNote, sendInOrder, submitErrorCode } from '../../_lib/imageBatch';
 import { useCatalog } from '../../_lib/useCatalog';
 import { takeStudioDraft } from '../../_lib/landingDraft';
 import { DEFAULT_CINEMA, buildCinemaPrompt } from '../../_lib/cinema';
@@ -21,7 +24,6 @@ import { ControlRow } from '../../_components/ControlRow';
 import { settingsInputs } from '../../_lib/generationSettings';
 import { ParticleButton } from '@/components/ParticleButton';
 import { STATE_UI, SLOW_MODEL_WAIT } from '../../_lib/studioStates';
-const POLL_GIVE_UP_AFTER = 30;
 const DEFAULT_MODEL = 'wan-2.5-kie';
 // Auto Short stays hidden until launch unless this browser opts in
 // (CLAUDE.md "Delivery": new user paths behind localStorage.veyrnox_*).
@@ -29,6 +31,10 @@ const AUTO_SHORT_FLAG = 'veyrnox_auto_short';
 
 function readFlag(name) {
   try { return window.localStorage.getItem(name) === '1'; } catch { return false; }
+}
+
+function errorFor(e) {
+  return e instanceof GatewayError ? { code: e.code, retryAfter: e.retryAfter } : { code: 'internal' };
 }
 
 export default function CreateStudio() {
@@ -55,12 +61,15 @@ export default function CreateStudio() {
   const [negative, setNegative] = useState('');
   const [characterOn, setCharacterOn] = useState(false);
   const [character, setCharacter] = useState({});
+  const [count, setCount] = useState(1);
 
   const [balance, setBalance] = useState(null);
-  const [job, setJob] = useState(null);          // { job_id, state, credits, model_id, error_code?, asset_url? }
   const [error, setError] = useState(null);
-
-  const pollRef = useRef(null);
+  const onUnreachable = useCallback(() => setError({ code: 'poll_unreachable' }), []);
+  const { jobs, generating, startJobs, addJob, clearJobs } = useStudioJobs({ onUnreachable });
+  const job = jobs.length === 1 ? jobs[0] : null;
+  // True while a batch is still being sent, so New generation cannot clear it halfway.
+  const [sending, setSending] = useState(false);
 
   // ?model=<id> from landing tiles / hero cards. Read once on mount —
   // avoids the Suspense boundary useSearchParams demands on client pages.
@@ -103,10 +112,12 @@ export default function CreateStudio() {
   const aspectOptions = isShort ? []
     : model?.aspects ? ASPECT_RATIOS.filter((a) => model.aspects.includes(a))
     : model?.kind === 'video' ? ASPECT_RATIOS : [];
-  const cost = model ? model.credits * (duration === '10s' && model.kind === 'video' ? 2 : 1) : 0;
+  const unitCost = model ? model.credits * (duration === '10s' && model.kind === 'video' ? 2 : 1) : 0;
+  // Other models always send one; the count control is image-only.
+  const n = imageCount(model, count);
+  const cost = totalCost(unitCost, n);
   const durationKey = durations.join(',');
-  const generating = job && (job.state === 'queued' || job.state === 'running');
-  // `generating` is derived from `job`, which is only set AFTER the await in
+  // `generating` is derived from `jobs`, which is only set AFTER the await in
   // onSubmit. Between the click and that setState the button stayed enabled,
   // so a second click minted a second idempotency key — a legitimately new
   // job to ledger_debit, and a second debit. The server is idempotent per
@@ -181,43 +192,6 @@ export default function CreateStudio() {
     };
   }, [loadBalance]);
 
-  // ── poll job state ────────────────────────────────────────────────
-  useEffect(() => {
-    if (!job || job.state === 'succeeded' || job.state === 'failed') {
-      if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
-      return;
-    }
-    // Consecutive failures used to be swallowed forever: offline or against a
-    // 500 the shimmer span at 2s intervals with no error and no end, and each
-    // failed call re-dispatched veyrnox:auth-required, so a dismissed sign-in
-    // modal reappeared every 2 seconds indefinitely. Give up like TopUpPacks
-    // already does.
-    let failures = 0;
-    pollRef.current = setInterval(async () => {
-      try {
-        const next = await gatewayFetch(`/jobs/${job.job_id}`);
-        failures = 0;
-        setJob((prev) => prev ? { ...prev, ...next } : prev);
-        if (next.state === 'succeeded' || next.state === 'failed') markJobSettled(job.job_id, next.state);
-        if (next.state === 'succeeded') {
-          const asset = await gatewayFetch(`/jobs/${job.job_id}/asset`);
-          setJob((prev) => prev ? { ...prev, asset_url: asset.url, mime_type: asset.mime_type } : prev);
-          notifyBalanceChanged();
-        } else if (next.state === 'failed') {
-          notifyBalanceChanged();
-        }
-      } catch (e) {
-        failures += 1;
-        console.error('[create/poll] failed', e);
-        if (failures >= POLL_GIVE_UP_AFTER) {
-          if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
-          setError({ code: 'poll_unreachable' });
-        }
-      }
-    }, 2000);
-    return () => { if (pollRef.current) clearInterval(pollRef.current); };
-  }, [job?.job_id, job?.state]);
-
   // Character traits go first, the camera description last; each keeps the
   // result under the gateway's 2000-character limit by cutting the user text.
   function finalPrompt() {
@@ -228,14 +202,18 @@ export default function CreateStudio() {
   }
 
   // ── submit ────────────────────────────────────────────────────────
+  // N images are N separate generations: each its own key, debit, refund path
+  // and job. Sent one at a time; the first failure stops the rest, and none is
+  // ever retried under a new key.
   async function onSubmit() {
-    if (inFlight.current || generating || !model || balance == null || cost > balance) return;
+    if (inFlight.current || sending || generating || !model || balance == null || cost > balance) return;
     inFlight.current = true;
     if (model.gated) { inFlight.current = false; setError({ code: 'model_gated' }); return; }
     if (missingSource) { inFlight.current = false; setError({ code: 'source_required' }); return; }
     if (missingConsent) { inFlight.current = false; setError({ code: 'consent_required' }); return; }
     setError(null);
-    const idempotency_key = makeIdempotencyKey();
+    setSending(true);
+    const keys = Array.from({ length: n }, () => makeIdempotencyKey());
     // An Auto Short takes only its topic; the pipeline picks the format.
     const inputs = isShort ? { topic: prompt.trim() } : {
       prompt: finalPrompt(),
@@ -248,6 +226,7 @@ export default function CreateStudio() {
 
     try {
       // Only the slots this model takes; a leftover upload from another model stays local.
+      // Each file is uploaded once and its key reused by every request.
       const source_keys = [];
       const source_assets = [];
       for (const slot of Object.keys(media)) {
@@ -255,47 +234,46 @@ export default function CreateStudio() {
         else if (sources[slot]) source_keys.push(await uploadSource(sources[slot].file));
       }
       const anySource = source_keys.length + source_assets.length > 0;
-      const submitted = await gatewayFetch('/generations', {
-        method: 'POST',
-        body: JSON.stringify({
-          model_id: modelId, idempotency_key, inputs,
-          source_keys: source_keys.length ? source_keys : undefined,
-          source_assets: source_assets.length ? source_assets : undefined,
-          consent: anySource ? true : undefined,
-        }),
+      const { started, error: failure } = await sendInOrder(n, async (i) => {
+        const submitted = await gatewayFetch('/generations', {
+          method: 'POST',
+          body: JSON.stringify({
+            model_id: modelId, idempotency_key: keys[i], inputs: inputsForIndex(inputs, i, n),
+            source_keys: source_keys.length ? source_keys : undefined,
+            source_assets: source_assets.length ? source_assets : undefined,
+            consent: anySource ? true : undefined,
+          }),
+        });
+        // The first accepted job replaces the previous click's jobs.
+        (i === 0 ? startJobs : addJob)({ job_id: submitted.job_id, state: 'queued', credits: unitCost, model_id: modelId });
+        pushJobHistory({
+          job_id: submitted.job_id,
+          model_id: modelId,
+          credits: unitCost,
+          prompt: prompt.slice(0, 60),
+          name: prompt.slice(0, 40),
+        });
+        setBalance(submitted.balance_after);
       });
-      setJob({
-        job_id: submitted.job_id,
-        state: submitted.state === 'DEBITED' || submitted.state === 'SUBMITTED' ? 'queued' : 'queued',
-        credits: cost,
-        model_id: modelId,
-      });
-      pushJobHistory({
-        job_id: submitted.job_id,
-        model_id: modelId,
-        credits: cost,
-        prompt: prompt.slice(0, 60),
-        name: prompt.slice(0, 40),
-      });
-      setBalance(submitted.balance_after);
-      notifyBalanceChanged();
-    } catch (e) {
-      if (e instanceof GatewayError) {
-        setError({ code: e.code, retryAfter: e.retryAfter });
-      } else {
-        setError({ code: 'internal' });
+      if (started > 0) notifyBalanceChanged();
+      if (failure) {
+        const err = errorFor(failure);
+        const code = submitErrorCode(err.code);
+        setError({ ...err, code, note: batchNote(started, n, code) });
       }
+    } catch (e) {
+      setError(errorFor(e));
     } finally {
       inFlight.current = false;
+      setSending(false);
     }
   }
 
-  // Leaves the running job to finish in the background (JobWatcher announces
-  // it); the charge stands, so this never claimed to cancel anything.
+  // Leaves the running jobs to finish in the background (JobWatcher announces
+  // them); the charge stands, so this never claimed to cancel anything.
   function cancel() {
-    setJob(null);
+    clearJobs();
     setError(null);
-    if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
   }
 
   return (
@@ -313,48 +291,47 @@ export default function CreateStudio() {
             <Chip tone="accent">UNSAVED DRAFT</Chip>
           </div>
 
-          <div
-            className={`relative rounded-2xl border border-vx-border bg-vx-panel overflow-hidden ${generating ? 'vx-shimmer' : ''}`}
-            style={{ aspectRatio: (isShort ? '9:16' : aspect).replace(':', '/') }}
-          >
-            {job?.asset_url ? (
-              <JobAssetPreview job={job} />
-            ) : (
-              <div className="absolute inset-0 flex items-center justify-center">
-                {generating ? (
-                  <div className="text-center">
-                    <div className="font-vx-mono text-[11px] tracking-[0.14em] text-vx-accent">
-                      <span aria-hidden="true">●</span> {STATE_UI[job.state].label} · {model.name.toUpperCase()}
+          {jobs.length > 1 ? <StudioJobGrid jobs={jobs} aspect={aspect} /> : (
+            <div
+              className={`relative rounded-2xl border border-vx-border bg-vx-panel overflow-hidden ${generating ? 'vx-shimmer' : ''}`}
+              style={{ aspectRatio: (isShort ? '9:16' : aspect).replace(':', '/') }}
+            >
+              {job?.asset_url ? (
+                <JobAssetPreview job={job} />
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  {generating ? (
+                    <div className="text-center">
+                      <div className="font-vx-mono text-[11px] tracking-[0.14em] text-vx-accent">
+                        <span aria-hidden="true">●</span> {STATE_UI[job.state].label} · {model.name.toUpperCase()}
+                      </div>
+                      <div className="mt-2 font-vx-mono text-[42px] font-bold vx-num">…</div>
+                      {SLOW_MODEL_WAIT[model.id] && (
+                        <div className="text-xs text-vx-fg-body mt-2">{SLOW_MODEL_WAIT[model.id]}</div>
+                      )}
+                      <div className="text-xs text-vx-fg-muted mt-2">Keeps running if you leave or start another — we&apos;ll tell you when it&apos;s ready. Refund on failure, always.</div>
                     </div>
-                    <div className="mt-2 font-vx-mono text-[42px] font-bold vx-num">…</div>
-                    {SLOW_MODEL_WAIT[model.id] && (
-                      <div className="text-xs text-vx-fg-body mt-2">{SLOW_MODEL_WAIT[model.id]}</div>
-                    )}
-                    <div className="text-xs text-vx-fg-muted mt-2">Keeps running if you leave or start another — we&apos;ll tell you when it&apos;s ready. Refund on failure, always.</div>
-                  </div>
-                ) : job?.state === 'failed' ? (
-                  <div className="text-center max-w-md px-6">
-                    <div className="font-vx-mono text-[11px] tracking-[0.14em] text-vx-danger">
-                      <span aria-hidden="true">✕</span> FAILED · REFUNDED
+                  ) : job?.state === 'failed' ? (
+                    <div className="text-center max-w-md px-6">
+                      <div className="font-vx-mono text-[11px] tracking-[0.14em] text-vx-danger">
+                        <span aria-hidden="true">✕</span> FAILED · REFUNDED
+                      </div>
+                      <div className="mt-2 text-sm text-vx-fg-body">
+                        {failedJobCopy(job)}
+                      </div>
                     </div>
-                    <div className="mt-2 text-sm text-vx-fg-body">
-                      {ERROR_COPY[job.error_code]
-                        || (job.refunded
-                          ? 'Something went wrong. Credits refunded.'
-                          : 'Something went wrong. Your credits are on their way back.')}
+                  ) : (
+                    <div className="text-center">
+                      <div className="w-16 h-16 rounded-full border border-vx-border/60 flex items-center justify-center mx-auto opacity-70">
+                        <div className="w-0 h-0 border-l-[16px] border-l-vx-fg-muted border-y-[10px] border-y-transparent ml-1" />
+                      </div>
+                      <div className="mt-3 text-sm text-vx-fg-muted">Type a prompt or pick a preset</div>
                     </div>
-                  </div>
-                ) : (
-                  <div className="text-center">
-                    <div className="w-16 h-16 rounded-full border border-vx-border/60 flex items-center justify-center mx-auto opacity-70">
-                      <div className="w-0 h-0 border-l-[16px] border-l-vx-fg-muted border-y-[10px] border-y-transparent ml-1" />
-                    </div>
-                    <div className="mt-3 text-sm text-vx-fg-muted">Type a prompt or pick a preset</div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           <textarea
             value={prompt}
@@ -402,6 +379,7 @@ export default function CreateStudio() {
               <span>
                 {ERROR_COPY[error.code] || 'Something went wrong. Nothing was charged unless the panel above says otherwise.'}
                 {error.retryAfter && ` Retry in ${error.retryAfter}s.`}
+                {error.note && ` ${error.note}`}
               </span>
             </div>
           )}
@@ -451,6 +429,9 @@ export default function CreateStudio() {
           {aspectOptions.length > 0 && (
             <ControlRow label="ASPECT" options={aspectOptions} value={aspect} onChange={setAspect} />
           )}
+          {takesImageCount(model) && (
+            <ControlRow label="IMAGES" options={IMAGE_COUNTS} value={count} onChange={setCount} />
+          )}
 
           {model?.kind === 'image' && (
             <CharacterPanel enabled={characterOn} onToggle={setCharacterOn} picks={character} onChange={setCharacter} />
@@ -475,9 +456,10 @@ export default function CreateStudio() {
             <ParticleButton
               onClick={generating ? cancel : onSubmit}
               className="mt-4 w-full flex items-center justify-between bg-vx-accent text-vx-accent-ink rounded-full px-6 py-3.5 font-extrabold hover:bg-vx-accent-hover disabled:opacity-40 disabled:cursor-not-allowed"
-              disabled={!generating && (!model || model.gated || balance == null || cost > balance || missingSource || missingConsent)}
+              disabled={sending || (!generating && (!model || model.gated || balance == null || cost > balance || missingSource || missingConsent))}
+              aria-label={sending || generating || model?.gated ? undefined : `Generate ${n > 1 ? `${n} images ` : ''}for ${cost} credits`}
             >
-              <span>{generating ? 'New generation' : model?.gated ? 'Premium — gated' : 'Generate'}</span>
+              <span>{sending ? 'Sending…' : generating ? 'New generation' : model?.gated ? 'Premium — gated' : n > 1 ? `Generate ${n}` : 'Generate'}</span>
               <span className="font-vx-mono text-sm">−{cost} cr</span>
             </ParticleButton>
             <div className="mt-2 font-vx-mono text-[9.5px] tracking-[0.1em] text-vx-fg-faint text-center">

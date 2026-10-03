@@ -35,10 +35,18 @@ test('no surface claims a refund the ledger has not made', () => {
     const create = readFileSync(new URL('../app/veyrnox/app/create/page.js', import.meta.url), 'utf8');
     const credits = readFileSync(new URL('../app/veyrnox/app/credits/page.js', import.meta.url), 'utf8');
     const library = readFileSync(new URL('../app/veyrnox/app/library/page.js', import.meta.url), 'utf8');
+    const errors = readFileSync(new URL('../app/veyrnox/_lib/createErrors.js', import.meta.url), 'utf8');
+    const grid = readFileSync(new URL('../app/veyrnox/_components/StudioJobGrid.js', import.meta.url), 'utf8');
 
     // Every "Credits refunded" is now behind the flag.
     assert.match(watcher, /next\.refunded \? `\$\{label\} failed\. Credits refunded\.`/);
-    assert.match(create, /job\.refunded\s*\n?\s*\? 'Something went wrong\. Credits refunded\.'/);
+    // The studio's failed-job copy lives in one helper that both the single
+    // canvas and the multi-image grid render; neither keeps its own wording.
+    assert.match(errors, /export function failedJobCopy\(job\) \{\s*return ERROR_COPY\[job\.error_code\]\s*\|\| \(job\.refunded\s*\? 'Something went wrong\. Credits refunded\.'\s*: 'Something went wrong\. Your credits are on their way back\.'\);/);
+    for (const [name, src] of [['create', create], ['grid', grid]]) {
+        assert.match(src, /\{failedJobCopy\(job\)\}/, name);
+        assert.doesNotMatch(src, /Credits refunded\./, `${name} has its own refund wording`);
+    }
     assert.match(credits, /refunded: j\.refunded === true/);
     assert.match(credits, /const isRefund = l\.state === 'failed' && l\.refunded === true;/);
     assert.match(library, /const refundPending = row\.state === 'failed' && row\.refunded === false;/);
