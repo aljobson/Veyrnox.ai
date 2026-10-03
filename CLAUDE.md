@@ -109,6 +109,19 @@ If a build starts failing after a dependency change, bisect these three first.
   traces, DB messages, or upstream vendor payloads.
 - No CORS wildcards on `/api/v1/*` — same-origin only. Studio proxies through
   the same host.
+- **Routes outside the gate, on purpose.** `/api/v1/*` is the only surface
+  that carries a user. The middleware does not run on other `/api/*` paths, so
+  an inbound `x-veyrnox-auth-*` header is NOT stripped there: a route outside
+  `/api/v1` must never read one. Each has its own protection:
+  - `/api/catalog`, `/api/credit-packs`, `/api/cinema/titles[/:id]` —
+    anonymous, read-only, cached public data (prices, packs, published
+    titles). Nothing per-user.
+  - `/api/webhook/*` — the provider's signature (see Provider webhooks).
+  - `/api/admin/*` — Cloudflare Access plus a shared token; cron callers only.
+  - `/media/social/:token` — a short-lived HMAC token naming one R2 object.
+
+  A new route outside `/api/v1` needs one of these and an entry in
+  `tests/routesOutsideGate.test.mjs`.
 
 ## Identity & sessions
 
