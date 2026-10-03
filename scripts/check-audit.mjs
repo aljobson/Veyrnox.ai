@@ -88,10 +88,18 @@ export function assessAudit(report, allowed = ALLOWED, prodReport = undefined) {
 }
 
 function readReport(extraArgs = []) {
-  const run = spawnSync('npm', ['audit', '--json', ...extraArgs], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+  const args = ['audit', '--json', ...extraArgs];
+  const run = spawnSync('npm', args, { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
   if (run.error) throw run.error;
   // npm exits non-zero whenever it finds anything; the report is on stdout either way.
-  return JSON.parse(run.stdout);
+  let report;
+  try { report = JSON.parse(run.stdout); } catch { report = null; }
+  if (report?.auditReportVersion !== 2) {
+    // Say which call failed and what npm printed; "not a report" alone cannot be acted on.
+    const said = (run.stdout || run.stderr || '').replace(/\s+/g, ' ').slice(0, 300);
+    throw new Error(`\`npm ${args.join(' ')}\` (exit ${run.status}) did not return a report: ${said || 'no output'}`);
+  }
+  return report;
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
