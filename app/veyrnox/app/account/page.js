@@ -2,6 +2,7 @@
 import { useState, useSyncExternalStore } from 'react';
 import { AppNav } from '../../_components/NavBar';
 import { MfaPanel } from '../../_components/MfaPanel';
+import { PasskeyPanel } from '../../_components/PasskeyPanel';
 import { ConfirmDialog } from '../../_components/ConfirmDialog';
 import { getSession, onSessionChange } from '../../../lib/authClient';
 import { requestPasswordCode, changePassword, revokeSessions } from '../../../lib/accountSecurity';
@@ -35,6 +36,7 @@ function AccountControls() {
   }
   return <div className="space-y-6">
     <MfaPanel />
+    <PasskeyPanel />
     <section className="rounded-2xl border border-vx-border p-5">
       <h2 className="font-bold mb-2">Set a new password</h2>
       <p className="text-sm text-vx-fg-muted mb-4">First request a verification code, then enter it with your new password.</p>

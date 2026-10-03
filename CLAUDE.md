@@ -127,8 +127,8 @@ If a build starts failing after a dependency change, bisect these three first.
 ## Identity & sessions
 
 - Supabase Auth is the only identity source. Providers: email/password, Apple,
-  Google, and passkey sign-in (ADR-0032; see `AuthGate.jsx`). There is no
-  passkey enrolment screen yet, so no account has one (ISSUES.md P4).
+  Google, and passkey sign-in (ADR-0032; see `AuthGate.jsx`). A passkey is
+  added and removed on `/app/account`.
 - Anon key + Supabase URL live in `wrangler.jsonc` `vars` (public). Service-role
   key is a `wrangler secret` — never `NEXT_PUBLIC_*`, never in the client bundle.
 - Client session in `localStorage['veyrnox_supabase_session']`. Never send
