@@ -94,3 +94,13 @@ test('the admin page shows each email outcome the route can return', () => {
     const page = readFileSync(new URL('../app/veyrnox/app/admin/violations/page.js', import.meta.url), 'utf8');
     for (const outcome of ['sent', 'failed', 'skipped']) assert.match(page, new RegExp(`result\\.email === '${outcome}'`));
 });
+
+test('a valid reply-to address is sent; anything else is left out', async () => {
+    const bodies = [];
+    const fetcher = async (_url, init) => { bodies.push(JSON.parse(init.body)); return { ok: true, json: async () => ({ id: 'e1' }) }; };
+    await sendEmail({ ...mail, replyTo: 'support@veyrnox.com' }, message, fetcher);
+    await sendEmail({ ...mail, replyTo: 'Support <support@veyrnox.com>' }, message, fetcher);
+    assert.equal(bodies[0].reply_to, 'support@veyrnox.com');
+    assert.equal('reply_to' in bodies[1], false);
+    assert.equal(resendConfig({ VIOLATION_EMAIL_REPLY_TO: 'a@b.co' }).replyTo, 'a@b.co');
+});
