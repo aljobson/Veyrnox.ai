@@ -64,7 +64,7 @@ export function SocialCinema() {
   useEffect(() => {
     try { setPreview(localStorage.getItem('veyrnox_social_cinema') === 'true'); } catch {}
   }, []);
-  return <main id="main" className="mx-auto max-w-[1100px] px-4 py-10 pb-40 sm:px-8 sm:py-16 sm:pb-32">
+  return <div className="mx-auto max-w-[1100px] px-4 py-10 pb-40 sm:px-8 sm:py-16 sm:pb-32">
     <header className="max-w-2xl">
       <p className="mb-4 font-vx-mono text-xs tracking-widest text-vx-accent">SOCIAL CINEMA · IN DEVELOPMENT</p>
       <h1 className="text-4xl font-black leading-tight sm:text-6xl">Stories worth<br />coming back for.</h1>
@@ -91,7 +91,7 @@ export function SocialCinema() {
       <h2 id="profile-title" className="text-xl font-extrabold">Your Social Cinema profile</h2>
       {account ? <Profile key={account} /> : <div className="mt-4"><p className="mb-4 text-vx-fg-body">Use your Veyrnox.ai account to get started.</p><Button onClick={() => window.dispatchEvent(new CustomEvent('veyrnox:auth-required'))}>Sign in</Button></div>}
     </section>}
-  </main>;
+  </div>;
 }
 
 function Profile() {

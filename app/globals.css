@@ -120,6 +120,12 @@ body {
 .vx-particle { animation: vx-particle 0.6s ease-out both; }
 @media (prefers-reduced-motion: reduce) {
   .vx-particle { display: none; }
+  /* Everything, including the sign-in dialog and toasts mounted from
+     app/layout.js, which sit outside .vx-root. */
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+  }
 }
 
 /* ─── Skip link ───────────────────────────────────────────────────────

@@ -63,7 +63,7 @@ export default function Projects() {
   const shown = projects.filter(p => p.name.toLocaleLowerCase().includes(query.toLocaleLowerCase()));
   return <>
     <AppNav active="projects" />
-    <main id="main" className="mx-auto max-w-6xl px-4 py-8 sm:px-8 sm:py-12">
+    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-8 sm:py-12">
       <div className="mb-8 flex flex-wrap items-end justify-between gap-5">
         <div><p className="mb-2 font-vx-mono text-xs uppercase tracking-widest text-vx-accent">Your workspace</p>
           <h1 className="text-3xl font-black sm:text-4xl">Projects</h1>
@@ -96,7 +96,7 @@ export default function Projects() {
         <p className="mt-6 text-xs text-vx-fg-muted">Looking for generated images, video or audio? <Link href="/app/library" className="text-vx-accent underline">Open your library</Link></p>
       </>}
       {dialog && <ProjectDialog {...dialog} workspace={workspace} onClose={() => setDialog(null)} onSaved={saved} />}
-    </main>
+    </div>
   </>;
 }
 

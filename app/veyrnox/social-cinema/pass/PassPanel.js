@@ -20,7 +20,7 @@ export function PassPanel() {
   useEffect(() => {
     try { setPreview(localStorage.getItem('veyrnox_social_cinema') === 'true'); } catch {}
   }, []);
-  return <main id="main" className="mx-auto max-w-[900px] px-4 py-10 pb-40 sm:px-8 sm:py-16 sm:pb-32">
+  return <div className="mx-auto max-w-[900px] px-4 py-10 pb-40 sm:px-8 sm:py-16 sm:pb-32">
     <header className="max-w-2xl">
       <p className="mb-4 font-vx-mono text-xs tracking-widest text-vx-accent">SOCIAL CINEMA · CINEMA PASS</p>
       <h1 className="text-4xl font-black leading-tight sm:text-5xl">Every story, one Pass.</h1>
@@ -30,7 +30,7 @@ export function PassPanel() {
     {!preview ? <p className="mt-10 text-vx-fg-muted">Cinema Pass is not open yet.</p>
       : !account ? <div className="mt-10"><p className="mb-4 text-vx-fg-body">Use your Veyrnox.ai account to continue.</p><Button onClick={() => window.dispatchEvent(new CustomEvent('veyrnox:auth-required'))}>Sign in</Button></div>
         : <Pass key={account} />}
-  </main>;
+  </div>;
 }
 
 function Pass() {
