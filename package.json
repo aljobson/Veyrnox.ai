@@ -1,8 +1,11 @@
 {
-  "name": "open-generative-ai",
-  "description": "Open-source alternative to HF AI \u2014 AI image, video, cinema and lip sync studio",
-  "homepage": "https://github.com/Anil-matcha/Open-Generative-AI",
+  "name": "veyrnox-ai",
+  "description": "Veyrnox.ai: credit-metered AI image, video and audio generation",
+  "homepage": "https://veyrnox.ai",
   "private": true,
+  "engines": {
+    "node": ">=22"
+  },
   "version": "2.0.0",
   "license": "MIT",
   "scripts": {
