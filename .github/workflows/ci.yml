@@ -89,5 +89,8 @@ jobs:
       - name: Build
         run: npm run build
 
+      # Fails on every high or critical advisory except the ones the script
+      # lists by id, each with a reason and a review date, and never excepts
+      # one that reaches production dependencies (ADR-0067).
       - name: Audit (high and above)
-        run: npm audit --audit-level=high
+        run: node scripts/check-audit.mjs
