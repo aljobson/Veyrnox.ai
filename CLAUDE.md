@@ -259,7 +259,8 @@ If a build starts failing after a dependency change, bisect these three first.
   Workers Builds only uploads preview versions, for every branch including
   main. After each deploy `scripts/check-site-health.mjs` runs; on failure the
   workflow restores the previously live deployment and opens a
-  `deploy-failure` issue. `site-health.yml` runs the same check every 15 min.
+  `deploy-failure` issue. A deploy refused because ci is red on the commit
+  opens one too. `site-health.yml` runs the same check every 15 min.
   A rollback restores the Worker only — migrations stay applied, so each
   migration must keep the previous release working. Break-glass rollback:
   `wrangler rollback <version-id>`, or rerun the workflow on an older commit.
