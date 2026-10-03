@@ -31,6 +31,16 @@ const AUTHORIZE_URL = 'https://www.tiktok.com/v2/auth/authorize/';
 const TOKEN_URL = 'https://open.tiktokapis.com/v2/oauth/token/';
 const API_BASE = 'https://open.tiktokapis.com';
 export const TIKTOK_SCOPES = ['user.info.basic', 'video.upload'];
+export const TIKTOK_ANALYTICS_SCOPES = ['user.info.stats', 'video.list'];
+
+export function tiktokScopes(cfg) {
+    return cfg?.analyticsScopeEnabled ? [...TIKTOK_SCOPES, ...TIKTOK_ANALYTICS_SCOPES] : [...TIKTOK_SCOPES];
+}
+
+function grantedScopes(scope) {
+    return typeof scope === 'string' ? [...new Set(scope.split(',').map((s) => s.trim()))]
+        .filter((s) => [...TIKTOK_SCOPES, ...TIKTOK_ANALYTICS_SCOPES].includes(s)) : [];
+}
 
 /** Loads and validates TikTok app config from Worker secrets. Returns
  * null on any misconfiguration — callers degrade to a clean 503, never a
@@ -39,7 +49,7 @@ export function tiktokConfig(env = process.env) {
     const clientKey = env.TIKTOK_CLIENT_KEY || '';
     const clientSecret = env.TIKTOK_CLIENT_SECRET || '';
     if (!/^[A-Za-z0-9]{6,40}$/.test(clientKey) || clientSecret.length < 8) return null;
-    return { clientKey, clientSecret };
+    return { clientKey, clientSecret, ...(env.TIKTOK_ANALYTICS_SCOPE_ENABLED === 'true' ? { analyticsScopeEnabled: true } : {}) };
 }
 
 /** Builds TikTok's OAuth authorize URL. redirectUri must already be built
@@ -57,7 +67,7 @@ export function buildAuthorizeUrl(cfg, { redirectUri, state }) {
     url.searchParams.set('response_type', 'code');
     url.searchParams.set('redirect_uri', redirectUri);
     url.searchParams.set('state', state);
-    url.searchParams.set('scope', TIKTOK_SCOPES.join(','));
+    url.searchParams.set('scope', tiktokScopes(cfg).join(','));
     return url.toString();
 }
 
@@ -85,6 +95,7 @@ export async function exchangeCodeForToken(cfg, { code, redirectUri }, fetcher =
     return {
         accessToken: data.access_token,
         refreshToken: typeof data.refresh_token === 'string' ? data.refresh_token : null,
+        scopes: grantedScopes(data.scope),
         expiresAt: new Date(Date.now() + expiresInSec * 1000).toISOString(),
     };
 }
@@ -173,4 +184,100 @@ export async function checkPublishStatus(accessToken, publishId, fetcher = fetch
         // TikTok's own field name — verbatim, not a typo we introduced.
         publicPostIds: Array.isArray(data.publicaly_available_post_id) ? data.publicaly_available_post_id : [],
     };
+}
+
+
+/** TikTok may rotate refresh tokens. Persist both tokens before using the
+ * replacement access token. Verified 2026-10-03 against TikTok's User
+ * Access Token Management reference. Errors never include vendor payloads. */
+export async function refreshAccessToken(cfg, refreshToken, fetcher = fetch) {
+    const res = await fetcher(TOKEN_URL, {
+        method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ client_key: cfg.clientKey, client_secret: cfg.clientSecret,
+            grant_type: 'refresh_token', refresh_token: refreshToken }).toString(),
+        signal: AbortSignal.timeout(10000),
+    });
+    const data = await res.json().catch(() => null);
+    if (!res.ok) throw new Error(`tiktok_token_refresh_failed_${res.status}`);
+    if (data?.error || typeof data?.access_token !== 'string' || !data.access_token ||
+        typeof data.refresh_token !== 'string' || !data.refresh_token ||
+        typeof data.open_id !== 'string' || !data.open_id || typeof data.scope !== 'string' ||
+        !Number.isSafeInteger(data.expires_in) || data.expires_in <= 0 || data.expires_in > 86400) {
+        throw new Error('tiktok_token_refresh_invalid_response');
+    }
+    return { accessToken: data.access_token, refreshToken: data.refresh_token,
+        expiresAt: new Date(Date.now() + data.expires_in * 1000).toISOString(),
+        externalAccountId: data.open_id, scopes: grantedScopes(data.scope) };
+}
+
+// Display API public video statistics. One identity/statistics read, then
+// up to three pages (20 + 20 + 10) for the latest 50 public videos.
+// References: TikTok Get User Info, List Videos, Video Object, 2026-10-03.
+export async function fetchAnalytics(accessToken, { externalAccountId, scopes = [] } = {}, fetcher = fetch) {
+    const stats = scopes.includes('user.info.stats');
+    const videos = scopes.includes('video.list');
+    if (!stats && !videos) throw new Error('tiktok_analytics_permission_required');
+    const profileUrl = new URL(`${API_BASE}/v2/user/info/`);
+    profileUrl.searchParams.set('fields', stats ? 'open_id,follower_count,following_count,likes_count,video_count' : 'open_id');
+    const profile = await analyticsRequest(profileUrl, accessToken, {}, fetcher);
+    const user = profile?.user;
+    if (!externalAccountId || user?.open_id !== externalAccountId) throw new Error('tiktok_account_mismatch');
+    const metrics = stats ? analyticsNumbers({ followers: user.follower_count, following: user.following_count,
+        likes: user.likes_count, posts_count: user.video_count }) : {};
+    const posts = [];
+    if (!videos) return { metrics, posts };
+    const videoUrl = new URL(`${API_BASE}/v2/video/list/`);
+    videoUrl.searchParams.set('fields', 'id,create_time,title,video_description,share_url,view_count,like_count,comment_count,share_count');
+    let cursor;
+    const cursors = new Set();
+    const seen = new Set();
+    for (let page = 0; page < 3; page++) {
+        const data = await analyticsRequest(videoUrl, accessToken, { method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ max_count: page === 2 ? 10 : 20, ...(cursor === undefined ? {} : { cursor }) }),
+        }, fetcher);
+        if (!Array.isArray(data?.videos)) throw new Error('tiktok_analytics_invalid_response');
+        for (const video of data.videos.slice(0, page === 2 ? 10 : 20)) {
+            if (typeof video?.id !== 'string' || !/^\d{1,30}$/.test(video.id) || seen.has(video.id) ||
+                !Number.isSafeInteger(video.create_time) || video.create_time <= 0 || video.create_time > 253402300799) continue;
+            seen.add(video.id);
+            posts.push({ id: video.id, published_at: new Date(video.create_time * 1000).toISOString(), type: 'video',
+                caption: typeof video.video_description === 'string' ? video.video_description.slice(0, 500)
+                    : typeof video.title === 'string' ? video.title.slice(0, 500) : null,
+                permalink: analyticsLink(video.share_url),
+                metrics: analyticsNumbers({ views: video.view_count, likes: video.like_count,
+                    comments: video.comment_count, shares: video.share_count }),
+            });
+        }
+        if (data.has_more !== true || page === 2) break;
+        if (!Number.isSafeInteger(data.cursor) || data.cursor < 0 || cursors.has(data.cursor)) {
+            throw new Error('tiktok_analytics_invalid_cursor');
+        }
+        cursor = data.cursor;
+        cursors.add(cursor);
+    }
+    return { metrics, posts };
+}
+
+async function analyticsRequest(url, accessToken, init, fetcher) {
+    const res = await fetcher(url.toString(), { ...init,
+        headers: { ...init.headers, Authorization: `Bearer ${accessToken}` }, signal: AbortSignal.timeout(10000),
+    });
+    const body = await res.json().catch(() => null);
+    if (!res.ok) throw new Error(`tiktok_analytics_failed_${res.status}`);
+    if (body?.error?.code !== 'ok' || !body?.data) throw new Error('tiktok_analytics_invalid_response');
+    return body.data;
+}
+
+function analyticsNumbers(fields) {
+    return Object.fromEntries(Object.entries(fields).filter(([, value]) => Number.isSafeInteger(value) && value >= 0));
+}
+
+function analyticsLink(value) {
+    if (typeof value !== 'string' || value.length > 500) return null;
+    try {
+        const url = new URL(value);
+        return url.protocol === 'https:' && (url.hostname === 'www.tiktok.com' || url.hostname === 'tiktok.com')
+            && !url.username && !url.password ? url.toString() : null;
+    } catch { return null; }
 }

@@ -2,13 +2,6 @@
  * POST /api/v1/social/accounts/tiktok/connect — start the OAuth flow.
  * Technical spec §2.3/§2.7, ADR-0061.
  *
- * Connect only — no publish path exists for TikTok yet (packages/adapters/
- * social/tiktok.js's own header explains why: its Content Posting API is
- * asynchronous even for photo posts, which doesn't fit this app's
- * single-tick sweep). A post scheduled to a connected TikTok account will
- * fail cleanly with 'network_not_implemented' (lib/socialPublishSweep.js)
- * until that lands.
- *
  * Body: { codeChallenge } — validated for contract parity with every
  * other network's connect route, even though TikTok's own authorize
  * endpoint has no documented PKCE support for a web client and never

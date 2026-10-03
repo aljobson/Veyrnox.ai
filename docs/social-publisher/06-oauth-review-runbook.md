@@ -106,12 +106,30 @@ for Instagram API with Instagram Login, not the older Facebook Login scopes:
    sometimes with a forced watermark, exactly as flagged in ADR-0061.
 
 ### Scopes needed for v1
-- `user.info.basic` — read the connected account.
-- `video.publish` — the Content Posting API's publish scope. **Confirm live** whether photo-post
-  publishing (TikTok's photo mode, referenced in the technical spec's per-network rules) needs the
-  same scope or a separate one — this repo's own technical spec (§2.4) already notes TikTok's
-  `isAigc` AI-disclosure flag applies to video only, so photo and video may have diverging API
-  surfaces worth checking before the audit submission, not after.
+- `user.info.basic` — identify the connected account.
+- `video.upload` — the current MEDIA_UPLOAD flow sends a draft to the creator's TikTok
+  inbox for them to finish. `video.publish` belongs to a future audited Direct Post flow.
+- `user.info.stats` — followers, following, total likes and public video count.
+- `video.list` — list the creator's public videos with views, likes, comments and shares.
+
+The two analytics scopes are requested only when `TIKTOK_ANALYTICS_SCOPE_ENABLED` is
+"true" (ships "false"). Add **Display API** to the app and obtain approval for these
+scopes before enabling that switch. Existing accounts must reconnect. Users may grant
+only some scopes; the callback stores TikTok's actual `scope` response and the sweep
+requests only the fields/endpoints covered by that grant. No grant means no analytics
+network request. Apply `0190_tiktok_token_rotation.sql` before collecting TikTok analytics;
+it persists both rotated tokens atomically without overwriting a newer connection.
+
+Suggested review justification: "Veyrnox Publish lets creators view analytics for their
+own connected TikTok account and public videos alongside their publishing schedule.
+user.info.stats provides audience and account totals; video.list provides public video
+views, likes, comments and shares. These figures appear only in the creator's signed-in
+analytics dashboard."
+
+References checked 2026-10-03: [Get User Info](https://developers.tiktok.com/doc/tiktok-api-v2-get-user-info),
+[List Videos](https://developers.tiktok.com/doc/tiktok-api-v2-video-list),
+[Video Object](https://developers.tiktok.com/doc/tiktok-api-v2-video-object), and
+[User Access Token Management](https://developers.tiktok.com/doc/oauth-user-access-token-management).
 
 ### Audit submission ("Direct Post" / production access)
 - Requires demonstrating the actual posting UX — TikTok has specific UX requirements around what the

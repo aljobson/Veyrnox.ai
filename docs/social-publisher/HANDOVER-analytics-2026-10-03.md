@@ -68,6 +68,7 @@ Instagram numbers:
 |---|---|
 | `PUBLISH_ENABLED` | Opens Publish: the pages, the menu link and `/api/v1/social/*`, including analytics |
 | `PUBLISH_ANALYTICS_ENABLED` | Runs the analytics sweep. Needs 0188 applied first |
+| `TIKTOK_ANALYTICS_SCOPE_ENABLED` | Adds `user.info.stats` and `video.list` to TikTok consent. Needs Display API/scopes approval and reconnect first |
 | `INSTAGRAM_INSIGHTS_SCOPE_ENABLED` | Adds the insights permission to the Instagram consent screen. Needs Meta's approval first |
 
 Accounts connected before the insights switch keep their old grant until they reconnect;
@@ -105,13 +106,13 @@ Not verified:
 1. **"Schedule this" on a generation result — completed in PR #512.** Studio results,
    batch tiles and Library cards open Publish with the image/video selected by job id.
    Behind `PUBLISH_ENABLED`; no migration. Caption suggestions remain future work.
-2. **YouTube analytics — implemented on `codex/youtube-analytics`.** Uses the existing
+2. **YouTube analytics — completed in PR #513.** Uses the existing
    `youtube.readonly` grant and refresh adapter. No new consent or migration; collection
    remains behind `PUBLISH_ANALYTICS_ENABLED`. See the follow-up below.
-3. **X, TikTok, LinkedIn analytics.** Each needs scopes the connect flows do not request
-   today (`user.info.stats` and `video.list` on TikTok; LinkedIn member post statistics
-   need a different API product). X reads are billed by X. Each scope change is an owner
-   decision and a re-consent for connected accounts.
+3. **TikTok analytics — implemented on `codex/tiktok-analytics`.** The owner approved
+   proceeding after TikTok was recommended. Its new consent scopes ship off. See below.
+   **X and LinkedIn remain.** LinkedIn member post statistics need a different API
+   product; X reads are billed by X. Each is still an owner decision.
 4. **Best time to post** and **posting frequency against engagement** (the Zernio screen),
    computed from `social_analytics_posts`. Technical spec §2.5 describes the cache table.
 5. **Calendar** (month, week, list; drag to reschedule). There is no reschedule RPC yet.
@@ -166,3 +167,43 @@ The dashboard was driven in the gstack browser with local fixture API responses:
 YouTube cards/chart/video views, Instagram reach/views, unsupported-network messaging,
 and the 375px mobile layout. No database/RPC definition changed; no database replay was
 repeated for this slice. Real YouTube data and OAuth refresh remain unverified.
+
+
+## Codex follow-up: TikTok analytics (2026-10-03)
+
+- `fetchAnalytics` in `packages/adapters/social/tiktok.js` checks the token's `open_id`
+  against the stored connection before reading videos. `user.info.stats` enables
+  followers, following, account likes and public video count; `video.list` enables
+  views, likes, comments and shares for the latest 50 public videos (20 + 20 + 10).
+  Partial grants are honored. Invalid/missing counters are omitted, not reported as zero.
+- The consent switch is `TIKTOK_ANALYTICS_SCOPE_ENABLED`, default "false". Add Display
+  API and submit `user.info.stats` and `video.list` for approval using the justification
+  in `06-oauth-review-runbook.md`; enable only after approval, then reconnect accounts.
+  The callback stores the token response's actual grants, never the requested scope list.
+- TikTok token refresh is new. Migration `0190_tiktok_token_rotation.sql` stores both
+  encrypted tokens, expiry and grants atomically, checking the old token pair and active
+  TikTok status. Reconnect/disconnect/concurrent refresh refuses stale writes. Apply
+  this migration through the main workflow before collecting TikTok analytics.
+- The dashboard shows account likes/public video totals and a Shares column. Date
+  ranges select video publication dates; video counters are lifetime, public-only.
+- No real TikTok API request, live OAuth consent or refresh has been verified. Staging
+  needs an approved app/test account, 0188/0190 applied, Publish/analytics enabled and
+  a new consent grant. Production switches remain off. Best-time/calendar and X/LinkedIn
+  are still future work; no pricing/entitlement decision was made here.
+
+Sources checked: [Get User Info](https://developers.tiktok.com/doc/tiktok-api-v2-get-user-info),
+[List Videos](https://developers.tiktok.com/doc/tiktok-api-v2-video-list),
+[Video Object](https://developers.tiktok.com/doc/tiktok-api-v2-video-object), and
+[User Access Token Management](https://developers.tiktok.com/doc/oauth-user-access-token-management).
+
+Local verification for the TikTok slice: 1,277 unit tests pass, one skipped, none fail;
+290 database acceptance tests pass on fresh local Postgres 16, all 180 migrations replay,
+and all 25 database script checks from `ledger-tests.yml` pass. Token-rotation tests
+cover atomic updates, competing refreshes, stale tokens, disconnect/reconnect, input
+validation, role privileges and replay. Next.js production build/OpenNext packaging,
+lint (zero errors, 67 existing warnings), type check, client credential boundaries,
+hard-wall, migration numbering and catalog guards pass. Browser fixture checks cover
+TikTok totals/chart/Views/Shares/interactions at desktop and 375px, Instagram Reach/Views,
+and unsupported-network messaging. The table scrolls inside its container on mobile;
+the page does not overflow. The local fixture emitted auth/CAPTCHA console errors;
+this was UI verification with fixture responses, not a clean live-account smoke test.

@@ -274,7 +274,7 @@ Migration `0188_social_analytics.sql` and the analytics sweep are the first part
   fetch is kept on that account's sync row; it is **not** appended to
   `social_account_actions` as §2.5 of the technical spec first proposed, because a
   broken account would then add a permanent audit row every few hours.
-- Instagram is the only network fetched so far. With the scopes the connect flow has
+- Instagram was the first network fetched. With the scopes the connect flow has
   always requested it reads followers, following, post count, and likes and comments
   per post.
 - Reach, views, saves and shares need `instagram_business_manage_insights`. The owner
@@ -299,7 +299,23 @@ and videos separately and shows views without requiring Instagram reach. Subscri
 are rounded; channel/video views, likes and comments are lifetime counters, with the
 post date range selecting publication dates. No YouTube Analytics API scope is added.
 
-Not built yet: X, TikTok and LinkedIn analytics, best time to post, and the calendar.
+TikTok follow-up (2026-10-03): the owner approved proceeding with TikTok analytics.
+`TIKTOK_ANALYTICS_SCOPE_ENABLED` adds `user.info.stats` and `video.list` only when "true";
+it ships "false" until Display API/scopes approval. The callback stores actual granted
+scopes, including partial consent. The sweep reads connected-account statistics and
+up to 50 recent public videos (three pages maximum), only under the relevant grants.
+Videos store lifetime views, likes, comments and shares; account snapshots store
+followers, following, total likes and public video count. Publication-date filtering
+is explicit in the dashboard. No reach or private-video statistics are implied.
+
+TikTok access tokens expire daily and refresh tokens may rotate. Additive migration
+`0190_tiktok_token_rotation.sql` atomically persists both encrypted tokens, expiry and
+actual scopes only on an active TikTok connection whose old token pair still matches.
+A disconnect, reconnect or competing update makes stale work stop before fetching.
+YouTube's existing access-only RPC and scope behavior stay as implemented above.
+Apply 0190 before TikTok collection; production switches remain off.
+
+Not built yet: X and LinkedIn analytics, best time to post, and the calendar.
 
 ## Open questions
 
