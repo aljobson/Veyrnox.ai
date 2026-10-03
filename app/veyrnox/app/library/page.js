@@ -447,7 +447,7 @@ function JobCard({ row, models, selectable, selected, onToggle, starred, onStar 
         <div className="shrink-0 flex items-center gap-3">
           <span className={`font-vx-mono text-[13px] font-bold vx-num ${deltaCls}`}>{delta} cr</span>
           <button onClick={onStar} aria-pressed={starred} aria-label={starred ? 'Remove from favourites' : 'Add to favourites'} type="button"
-            className={`text-[18px] leading-none ${starred ? 'text-vx-money' : 'text-vx-fg-faint hover:text-vx-fg'}`}>
+            className={`text-[18px] leading-none ${starred ? 'text-vx-accent' : 'text-vx-fg-faint hover:text-vx-fg'}`}>
             {starred ? '★' : '☆'}
           </button>
         </div>

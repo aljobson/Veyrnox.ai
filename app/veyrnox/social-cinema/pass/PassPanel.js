@@ -96,7 +96,7 @@ function Pass() {
   const live = pass && ['active', 'past_due'].includes(pass.status);
   return <div className="mt-10 space-y-10">
     {notice && <p role="status" aria-live="polite" className="rounded-lg border border-vx-border bg-vx-base/60 px-4 py-3 text-sm text-vx-fg-body">{notice}</p>}
-    {live && <section aria-labelledby="own-pass" className="rounded-2xl border border-vx-money/40 bg-vx-money/[0.07] p-6">
+    {live && <section aria-labelledby="own-pass" className="rounded-2xl border border-vx-accent/40 bg-vx-accent/[0.07] p-6">
       <h2 id="own-pass" className="text-xl font-extrabold">Your Cinema Pass</h2>
       <p className="mt-2 text-vx-fg-body">{pass.status === 'past_due' ? 'Payment is overdue; update your card to keep watching.' : pass.cancel_at_period_end ? `Ends ${when(pass.current_period_end)}.` : `Renews ${when(pass.current_period_end)} at ${usd.format(pass.price_usd_cents / 100)} plus tax.`}</p>
       {pass.within_cooling_off && !pass.cancel_at_period_end && <p className="mt-2 text-sm text-vx-fg-muted">Cancel before {when(pass.cooling_off_until)} for a pro-rata refund.</p>}
@@ -116,7 +116,7 @@ function Pass() {
         {plans.map((p) => <li key={p.id} className="flex flex-col rounded-2xl border border-vx-border bg-vx-base/60 p-5">
           <p className="font-vx-mono text-xs tracking-widest text-vx-accent uppercase">{INTERVAL[p.billing_interval]}ly</p>
           <p className="mt-3 text-3xl font-black">{usd.format(p.price_usd_cents / 100)}<span className="text-base font-normal text-vx-fg-muted"> / {INTERVAL[p.billing_interval]}</span></p>
-          {p.intro_price_usd_cents != null && <p className="mt-1 text-sm text-vx-money">First {INTERVAL[p.billing_interval]} {usd.format(p.intro_price_usd_cents / 100)} for new Pass holders.</p>}
+          {p.intro_price_usd_cents != null && <p className="mt-1 text-sm font-bold text-vx-fg-body">First {INTERVAL[p.billing_interval]} {usd.format(p.intro_price_usd_cents / 100)} for new Pass holders.</p>}
           <Button className="mt-5" disabled={busy || !agreed} onClick={() => start(p.id)}>Start {INTERVAL[p.billing_interval]}ly Pass</Button>
         </li>)}
       </ul>

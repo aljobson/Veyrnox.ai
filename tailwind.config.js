@@ -38,6 +38,8 @@ module.exports = {
                     money: 'rgb(var(--vx-money) / <alpha-value>)',
                     'money-ink': 'rgb(var(--vx-money-ink) / <alpha-value>)',
                     danger: 'rgb(var(--vx-danger) / <alpha-value>)',
+                    // Notices and warnings. Amber (money) is Credits only.
+                    warn: 'rgb(var(--vx-warn) / <alpha-value>)',
                 },
                 // Chart surfaces for components/charts. The values are
                 // oklch() in app/globals.css, so no `/opacity` modifier.

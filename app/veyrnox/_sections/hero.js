@@ -103,7 +103,7 @@ export function FeaturedHeroCards({ catalog }) {
                 <div className="flex items-baseline gap-2 font-vx-mono text-[12px] text-white/90 vx-num">
                   <span className="truncate">{row ? shelfName(row.name) : 'Presets'}</span>
                   <span aria-hidden className="vx-leader flex-1" />
-                  <span className="shrink-0 font-bold">{row ? `${row.credits} cr` : `${PRESETS.length} looks`}</span>
+                  <span className={`shrink-0 font-bold ${row ? 'text-[#E4A93C]' : ''}`}>{row ? `${row.credits} cr` : `${PRESETS.length} looks`}</span>
                 </div>
               </div>
             </MediaTile>

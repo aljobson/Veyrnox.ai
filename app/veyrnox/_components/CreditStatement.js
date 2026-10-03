@@ -48,7 +48,7 @@ export function CreditStatement() {
             <time dateTime={entry.created_at} className="text-xs text-vx-fg-muted">{new Date(entry.created_at).toLocaleString('en-GB')}</time>
           </div>
           <span aria-hidden className="vx-leader flex-1 self-start mt-3 text-vx-fg-muted" />
-          <span className={`shrink-0 self-start font-vx-mono text-[15px] font-bold vx-num ${entry.delta > 0 ? 'text-vx-accent' : 'text-vx-fg'}`}>{num.format(entry.delta)} cr</span>
+          <span className={`shrink-0 self-start font-vx-mono text-[15px] font-bold vx-num ${entry.delta > 0 ? 'text-vx-accent' : 'text-vx-money'}`}>{num.format(entry.delta)} cr</span>
         </li>)}
       </ul>}
       {next && <button type="button" disabled={busy} onClick={() => load(next)} className="vx-press mt-4 rounded-full border border-vx-border px-5 py-2 text-sm font-bold hover:border-vx-fg-muted disabled:opacity-50">{busy ? 'Loading…' : 'Load older movements'}</button>}

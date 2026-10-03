@@ -105,6 +105,7 @@
   --vx-money-ink: 255 255 255;
   /* The light-theme red: the dark-theme one is too pale on paper. */
   --vx-danger: 196 36 26;
+  --vx-warn: 43 78 190;
   color-scheme: light;
   color: rgb(var(--vx-fg));
   background: rgb(var(--vx-panel));

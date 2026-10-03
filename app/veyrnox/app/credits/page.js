@@ -94,7 +94,7 @@ export default function Credits() {
                     <div className="mt-4 flex items-baseline gap-2 font-vx-mono text-[13px] vx-num">
                       <span>Free credits</span>
                       <span aria-hidden className="vx-leader flex-1" />
-                      <span className="font-bold">{new Intl.NumberFormat('en-US').format(free.credits)} cr</span>
+                      <span className="font-bold text-vx-money">{new Intl.NumberFormat('en-US').format(free.credits)} cr</span>
                     </div>
                     <div className="mt-1.5 flex items-baseline gap-2 font-vx-mono text-[13px] text-vx-fg-muted vx-num">
                       <span>Expire</span>
@@ -115,7 +115,7 @@ export default function Credits() {
             )}
 
             {error === 'sign_in_required' && (
-              <div className="mt-6 rounded-lg border border-vx-money/40 bg-vx-money/[0.07] px-4 py-3 text-sm text-vx-money flex items-start gap-2">
+              <div className="mt-6 rounded-lg border border-vx-warn/40 bg-vx-warn/[0.07] px-4 py-3 text-sm text-vx-warn flex items-start gap-2">
                 <span aria-hidden="true">△</span>
                 <span>Sign in to see your balance.</span>
               </div>

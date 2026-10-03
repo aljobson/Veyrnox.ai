@@ -34,7 +34,7 @@ export default async function GuidePage({ params }) {
         <ol className="mt-10 space-y-6">
           {g.steps.map((s, i) => (
             <li key={s.title} className="flex gap-4">
-              <span aria-hidden className="shrink-0 font-vx-mono text-[14px] font-bold text-vx-money pt-1 w-6">{i + 1}</span>
+              <span aria-hidden className="shrink-0 font-vx-mono text-[14px] font-bold text-vx-accent pt-1 w-6">{i + 1}</span>
               <div>
                 <h2 className="text-lg font-black">{s.title}</h2>
                 <p className="mt-1 text-vx-fg-body leading-[1.55]">{s.body}</p>

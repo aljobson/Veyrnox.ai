@@ -35,6 +35,7 @@
   --vx-money: 228 169 60;
   --vx-money-ink: 35 23 3;
   --vx-danger: 255 92 71;
+  --vx-warn: 139 167 255;
 }
 
 /* Light theme. Every foreground is checked against its own surface:
@@ -56,6 +57,7 @@
   --vx-money: 138 90 0;
   --vx-money-ink: 255 255 255;
   --vx-danger: 196 36 26;
+  --vx-warn: 43 78 190;
 }
 
 body {
@@ -136,6 +138,7 @@ body {
     --vx-accent-ink: 255 255 255;
     --vx-money: 110 70 0;
     --vx-money-ink: 255 255 255;
+    --vx-warn: 30 55 150;
   }
   [data-print='hide'],
   .vx-skip {

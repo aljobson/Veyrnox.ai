@@ -59,14 +59,14 @@ export function LedgerExample({ catalog }) {
                   <div key={i} className="flex items-baseline gap-2">
                     <dt className={`min-w-0 truncate ${l.refund ? 'text-vx-accent font-bold' : ''}`}>{l.label}</dt>
                     <span aria-hidden className="vx-leader flex-1" />
-                    <dd className={`shrink-0 font-bold ${l.delta > 0 ? 'text-vx-accent' : 'text-vx-fg'}`}>{fmt(l.delta)}</dd>
+                    <dd className={`shrink-0 font-bold ${l.delta > 0 ? 'text-vx-accent' : 'text-vx-money'}`}>{fmt(l.delta)}</dd>
                   </div>
                 ))}
               </dl>
               <div className="vx-perf mt-5" aria-hidden />
               <div className="mt-4 flex items-baseline justify-between font-vx-mono text-[15px] font-bold vx-num">
                 <span>Balance</span>
-                <span>{balance} cr</span>
+                <span className="text-vx-money">{balance} cr</span>
               </div>
             </div>
           </div>
