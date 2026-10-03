@@ -76,6 +76,19 @@ in the technical spec.
 3. From here the flow is identical to §4.2 — the only difference is media and an optional caption
    arrive pre-filled.
 
+### Implemented slice (2026-10-03)
+
+When `PUBLISH_ENABLED` is true, completed image/video results in Studio (including each
+batch tile) and Library show "Schedule this". The link opens
+`/app/publish?job=<job UUID>#schedule`. The composer validates the UUID and retrieves the
+asset through the existing ownership-checked job asset API, then selects its image/video
+type. The user still chooses accounts, writes the caption and confirms the posting time.
+No post is created by opening the link. Caption suggestions remain future work.
+
+Audio, failed jobs and unavailable assets do not show the shortcut. Invalid, inaccessible
+or unsupported linked assets show an error and let the user choose from the library.
+Production keeps this path hidden while Publish is off. No migration is required.
+
 ## 4.4 Calendar drag-to-reschedule
 
 **Trigger:** User drags a scheduled post card to a different day/time slot on the Planner calendar.

@@ -6,6 +6,7 @@ import { Chip } from '../../_components/Chip';
 import { gatewayFetch, GatewayError, notifyBalanceChanged } from '../../_lib/gateway';
 import { readJobHistory, pushJobHistory } from '../../_lib/jobHistory';
 import { useAssetUrl } from '../../_lib/useAssetUrl';
+import { ScheduleGeneration } from '../../_components/ScheduleGeneration';
 import { AssetRetention } from '../../_components/AssetRetention';
 import { AssetLoadStatus } from '../../_components/AssetLoadStatus';
 import { EditSheet } from '../../_components/EditSheet';
@@ -456,6 +457,7 @@ function JobCard({ row, models, selectable, selected, onToggle, starred, onStar 
           </button>
         </div>
       </div>
+      <ScheduleGeneration job={row} className="mx-4 mb-3" />
       <AssetRetention row={row} />
     </div>
   );

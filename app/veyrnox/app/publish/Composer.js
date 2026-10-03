@@ -76,18 +76,41 @@ function MediaPicker({ selected, onSelect }) {
     );
 }
 
-export function Composer({ accounts, onScheduled }) {
+export function Composer({ accounts, onScheduled, initialJobId = null }) {
     const activeAccounts = (accounts || []).filter((a) => a.status === 'active');
     const [selectedAccountIds, setSelectedAccountIds] = useState(() => new Set());
     const [caption, setCaption] = useState('');
     const [scheduledAt, setScheduledAt] = useState(defaultScheduleValue);
     const [mediaType, setMediaType] = useState('image');
     const [selectedMedia, setSelectedMedia] = useState(null);
+    const [loadingMedia, setLoadingMedia] = useState(!!initialJobId);
+    const [mediaError, setMediaError] = useState('');
     const [pickerOpen, setPickerOpen] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const idempotencyKey = useRef(newIdempotencyKey());
+
+    useEffect(() => {
+        if (!initialJobId) return;
+        let cancelled = false;
+        (async () => {
+            try {
+                if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(initialJobId)) throw new Error('invalid job');
+                const asset = await gatewayFetch(`/jobs/${encodeURIComponent(initialJobId)}/asset`);
+                const type = asset.mime_type?.split('/')[0];
+                if (!asset.url || !['image', 'video'].includes(type)) throw new Error('unsupported media');
+                if (cancelled) return;
+                setMediaType(type);
+                setSelectedMedia({ jobId: initialJobId, thumbUrl: asset.url });
+            } catch {
+                if (!cancelled) setMediaError('This generation is unavailable or cannot be posted. Choose an image or video from your library.');
+            } finally {
+                if (!cancelled) setLoadingMedia(false);
+            }
+        })();
+        return () => { cancelled = true; };
+    }, [initialJobId]);
 
     function toggleAccount(id) {
         setSelectedAccountIds((prev) => {
@@ -167,22 +190,25 @@ export function Composer({ accounts, onScheduled }) {
 
             <div>
                 <div className="text-sm font-bold mb-2">Media</div>
-                <div className="flex items-center gap-3 mb-2">
+                <div className="flex flex-wrap items-center gap-3 mb-2">
                     <select value={mediaType} onChange={(e) => setMediaType(e.target.value)} className="rounded-lg border border-vx-border bg-transparent px-2 py-1 text-sm">
                         <option value="image">Image</option>
                         <option value="video">Video</option>
                     </select>
-                    <button type="button" className={button} onClick={() => setPickerOpen((v) => !v)}>
+                    <button type="button" disabled={loadingMedia} className={button} onClick={() => setPickerOpen((v) => !v)}>
                         {selectedMedia ? 'Change' : 'Choose from library'}
                     </button>
-                    {selectedMedia?.thumbUrl && (
-                        <img src={selectedMedia.thumbUrl} alt="" className="h-10 w-10 rounded object-cover" />
-                    )}
+                    {selectedMedia?.thumbUrl && (mediaType === 'video'
+                        ? <video src={selectedMedia.thumbUrl} aria-label="Selected video" controls playsInline className="h-24 w-40 rounded object-contain" />
+                        : <img src={selectedMedia.thumbUrl} alt="Selected image" className="h-10 w-10 rounded object-cover" />)}
                 </div>
+                {loadingMedia && <p role="status" className="text-sm text-vx-fg-muted">Loading your generation…</p>}
+                {mediaError && <p role="alert" className="text-sm text-vx-danger">{mediaError}</p>}
+                {selectedMedia && <p className="text-sm text-vx-fg-muted">Media selected. Choose accounts, add a caption and confirm when to post.</p>}
                 {pickerOpen && (
                     <MediaPicker
                         selected={selectedMedia}
-                        onSelect={(m) => { setSelectedMedia(m); setPickerOpen(false); }}
+                        onSelect={(m) => { setSelectedMedia(m); setMediaError(''); setPickerOpen(false); }}
                     />
                 )}
             </div>
@@ -201,7 +227,7 @@ export function Composer({ accounts, onScheduled }) {
             {error && <p role="alert" className="text-sm text-vx-danger">{error}</p>}
             {success && <p className="text-sm text-vx-accent">{success}</p>}
 
-            <button type="submit" disabled={submitting} className={primaryButton}>
+            <button type="submit" disabled={submitting || loadingMedia} className={primaryButton}>
                 {submitting ? 'Scheduling…' : 'Schedule post'}
             </button>
         </form>
