@@ -197,29 +197,6 @@ export const FEATURE_CARDS = [
     bg: 'linear-gradient(135deg,#08120b 0%,#0e3a1e 55%,#2ea258 100%)' },
 ];
 
-// Four "Why Veyrnox" pillars: kicker + stat + body.
-export const PILLARS = [
-  { key: 'honest',
-    kicker: 'HONEST PRICING',
-    stat:   'ON THE BUTTON',
-    title:  'See the cost before you press generate.',
-    body:   'Every model shows its exact credit price on the button. No hidden multipliers. No surprise bills. One balance across the whole catalog.' },
-  { key: 'refund',
-    kicker: 'REFUND ON FAILURE',
-    stat:   '100%',
-    title:  'Failed jobs refund automatically.',
-    body:   'Provider safety reject, provider timeout, model error: credits return to your balance the moment we know. Ledger-backed and auditable.' },
-  { key: 'balance',
-    kicker: 'ONE BALANCE',
-    stat:   'ALL MODELS',
-    title:  'One credit balance across the catalog.',
-    body:   'Image, video and audio models draw from a single balance. No add-ons, no per-model top-ups, no surprise bills.' },
-  { key: 'ledger',
-    kicker: 'APPEND-ONLY LEDGER',
-    stat:   'EVERY CREDIT',
-    title:  'Every debit and refund on the record.',
-    body:   'Credits move through an append-only ledger. Nothing is edited after the fact, corrections are new rows. Read your own history any time.' },
-];
 
 // FAQ — 10 Qs. Hedged where legal/policy is still in flight.
 export const FAQ = [
@@ -251,25 +228,7 @@ export const FAQ = [
 
 
 
-export const METRIC_STRIP = [
-  { value: '10',    label: 'FREE CREDITS ON SIGN-UP' },
-  { value: '100%',  label: 'REFUND ON FAILURE' },
-  { value: null,    label: 'MODELS ROUTED' }, // null = live catalog count, filled in page.js
-  { value: 'APPEND-ONLY', label: 'CREDIT LEDGER' },
-];
 
-// Real active catalog rows — matches fal-side gateway rows so the pricing
-// on the tiles is honest at build time. Wire to /api/catalog for live
-// updates in a follow-up.
-export const PRODUCT_TILES = [
-  { key: 'wan-2.5-kie',       name: 'Wan 2.5',            kind: 'Video',  credits: 19,  hint: 'The default. Fast, cinematic.',                    badge: 'TOP',       icon: '⚡' },
-  { key: 'nano-banana-kie',   name: 'Nano Banana',        kind: 'Image',  credits: 2,   hint: 'Photoreal stills, two credits a frame.',                                 icon: '◐' },
-  { key: 'nano-banana-pro-grsai', name: 'Nano Banana Pro',  kind: 'Image',  credits: 2,   hint: '2K stills from your prompt.',         badge: 'NEW',       icon: '◑' },
-  { key: 'kling-3.0-i2v',     name: 'Kling 3.0 · I2V',    kind: 'Video',  credits: 34,  hint: 'Your photo to 1080p video, audio off.',                                   icon: '▶' },
-  { key: 'kling-avatar-v2',   name: 'Kling AI Avatar',    kind: 'Video',  credits: 35,  hint: 'A photo plus speech becomes a talking video.',      badge: 'NEW',       icon: '◉' },
-  { key: 'veo-3.1-kie',       name: 'Veo 3.1',            kind: 'Video',  credits: 76,  hint: 'Premium video (◆). Sign-up required, gated.',      badge: 'PREMIUM',   icon: '◆' },
-  { key: 'ace-step',          name: 'ACE Step',           kind: 'Audio',  credits: 1,   hint: 'Music and voice generation on the same balance.',                        icon: '♪' },
-];
 
 
 // Four-column footer forest (plus tools). Every listed model row is a real
@@ -320,7 +279,6 @@ export function footerStamp() {
 // marketing copy or the pricing story changes.
 export const SITE_UPDATED = '2026-09-22';
 
-export const HERO_CHIP = 'CREDIT-METERED AI GENERATION';
 
 // Shelf cards print the modality underneath the name, so the parenthetical in
 // a catalog name ("Kling 3.0 (image-to-video)") is redundant for display.

@@ -8,7 +8,7 @@ const COLORS = [
   { name: 'Muted',     hex: '#9A9AA3', token: 'fg-muted',   use: 'Secondary text, micro-labels.' },
   { name: 'Aqua',      hex: '#3EE6C4', token: 'accent',     use: 'Actions, selection, live states. Hover #6FF2D8. Ink text #06231F on fills.' },
   { name: 'Amber',     hex: '#E4A93C', token: 'money',      use: 'Credit amounts & money — everywhere, only money.' },
-  { name: 'Red',       hex: '#FF5C47', token: 'danger',     use: 'Failure, refunds, open breakers.' },
+  { name: 'Red',       hex: '#FF5C47', token: 'danger',     use: 'Failure and errors. A refund is credits coming back, so it is not red.' },
 ];
 
 export default function DesignSystem() {
