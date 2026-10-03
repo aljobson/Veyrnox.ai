@@ -57,7 +57,7 @@ async function subscribed(plan = 'starter-monthly') {
 
 try {
     // Both migrations are safe to apply twice.
-    for (const f of ['0186_credit_subscriptions.sql', '0187_credit_subscription_money.sql', '0188_credit_subscription_webhooks.sql']) {
+    for (const f of ['0186_credit_subscriptions.sql', '0187_credit_subscription_money.sql', '0189_credit_subscription_webhooks.sql']) {
         const sql = await readFile(new URL(`../packages/db/schema/supabase/${f}`, import.meta.url), 'utf8');
         await c.query('BEGIN'); await c.query(sql); await c.query(sql); await c.query('ROLLBACK');
     }

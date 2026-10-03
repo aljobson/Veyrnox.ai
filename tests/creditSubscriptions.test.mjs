@@ -141,3 +141,35 @@ test('cancellation addresses the explicit owned row, including an ended row whos
   assert.equal((await handler(request({ subscription_id: ID, mode: 'cooling_off' }))).status, 200);
   assert.equal(lookedUp, ID);
 });
+
+test('return recovery stops an owned unbound duplicate after session or subscription mismatch, while preserving durable bindings', async () => {
+  env();
+  const metadata = { kind: 'credit_subscription', credit_subscription_id: ID,
+    credit_subscription_sig: (await import('node:crypto')).createHmac('sha256', SECRET).update(`credit_subscription:${ID}`).digest('hex') };
+  const previousFetch = globalThis.fetch;
+  globalThis.fetch = async () => Response.json({ id: 'alert' });
+  Object.assign(process.env, { RESEND_API_KEY: 'test', SUBSCRIPTION_ALERT_EMAIL: 'ops@example.invalid', VIOLATION_EMAIL_FROM: 'alerts@example.invalid' });
+  try {
+    for (const failure of ['SESSION_MISMATCH', 'SUBSCRIPTION_MISMATCH']) {
+      for (const bound of [false, true]) {
+        for (const cancelOk of [false, true]) {
+          const cancelled = [];
+          const handler = subscriptionHandler({ action: 'return', rpcCall: async fn => {
+            if (fn === 'read_credit_subscription_binding') return bound ? binding : null;
+            if (fn === 'record_credit_subscription_session' && failure === 'SESSION_MISMATCH') return { ok: false, code: failure };
+            if (fn === 'apply_credit_subscription_event') return { ok: false, code: failure };
+            return { ok: true };
+          }, stripe: {
+            fetchSession: async () => ({ ok: true, session: { id: 'cs_1', mode: 'subscription', livemode: false, subscription: 'sub_2', metadata } }),
+            fetchSubscription: async () => ({ ok: true, subscription: {} }),
+            interpretSubscription: () => ({ ok: true, subscription: { id: 'sub_2', customerId: 'cus_1', status: 'active' } }),
+            cancelSubscriptionNow: async id => { cancelled.push(id); return { ok: cancelOk }; },
+          } });
+          const response = await handler(request({ subscription_id: ID, session_id: 'cs_1' }));
+          assert.equal(response.status, bound ? (failure === 'SESSION_MISMATCH' ? 409 : 503) : cancelOk ? 409 : 503);
+          assert.deepEqual(cancelled, bound ? [] : ['sub_2']);
+        }
+      }
+    }
+  } finally { globalThis.fetch = previousFetch; }
+});

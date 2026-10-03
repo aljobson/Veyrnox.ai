@@ -22,7 +22,7 @@ function event(type, object, created = NOW, id = 'evt_credit_test') {
     headers: { 'stripe-signature': `t=${NOW},v1=${createHmac('sha256', SECRET).update(`${NOW}.${body}`).digest('hex')}` } });
 }
 function stub({ bound = binding, subscription = sub(), invoice = inv(), grant = { ok: true, granted: 270 },
-  reverse = { ok: true, taken: 270 }, cancelFails = false, alertFails = false, duplicate = false, missingBinding = false, refunded = 0, modernCharge = false } = {}) {
+  apply = { ok: true, status: 'active', subscription_id: ID }, reverse = { ok: true, taken: 270 }, cancelFails = false, alertFails = false, duplicate = false, missingBinding = false, refunded = 0, modernCharge = false } = {}) {
   Object.assign(process.env, { SUBSCRIPTIONS_ENABLED: 'true', SUPABASE_URL: 'https://db.test', SUPABASE_SERVICE_ROLE_KEY: 'test',
     STRIPE_SECRET_KEY: 'sk_test_x', STRIPE_WEBHOOK_SECRET: SECRET, RESEND_API_KEY: 'resend_test',
     SUBSCRIPTION_ALERT_EMAIL: 'ops@example.invalid', VIOLATION_EMAIL_FROM: 'alerts@example.invalid' });
@@ -34,7 +34,7 @@ function stub({ bound = binding, subscription = sub(), invoice = inv(), grant = 
     if (u.includes('webhook_events?on_conflict')) return Response.json(duplicate ? [] : [{ id: 'e1' }], { status: 201 });
     if (u.includes('webhook_events')) return Response.json(method === 'GET' ? [{ processed_at: 'done' }] : []);
     if (u.includes('read_credit_subscription_binding')) return missingBinding ? Response.json({ code: 'PGRST202' }, { status: 404 }) : Response.json(bound);
-    if (u.includes('apply_credit_subscription_event')) return Response.json({ ok: true, status: 'active', subscription_id: ID });
+    if (u.includes('apply_credit_subscription_event')) return Response.json(apply);
     if (u.includes('grant_credit_subscription_invoice')) return Response.json(grant);
     if (u.includes('reverse_credit_subscription_invoice')) return Response.json(reverse);
     if (u.includes('apply_top_up_refund')) return Response.json({ ok: false, code: 'ORDER_NOT_FOUND' });
@@ -150,4 +150,17 @@ test('modern charges find their subscription invoice through Invoice Payments fo
   const dispute = stub({ modernCharge: true });
   assert.equal((await POST(event('charge.dispute.created', { id: 'du_1', charge: 'ch_1', payment_intent: 'pi_1' }))).status, 200);
   assert.equal(dispute.find(c => c.url.includes('reverse_credit_subscription_invoice')).body.p_reason, 'disputed');
+});
+
+
+test('signed duplicate checkout cancels its unbound subscription before acknowledging, and retries failed cancellation', async () => {
+  for (const cancelFails of [true, false]) {
+    const calls = stub({ bound: null, apply: { ok: false, code: 'SUBSCRIPTION_MISMATCH' }, cancelFails });
+    assert.equal((await POST(event('checkout.session.completed', { id: 'cs_1', object: 'checkout.session', metadata }))).status, cancelFails ? 503 : 200);
+    assert.ok(calls.some(c => c.method === 'DELETE' && c.url.includes('subscriptions/sub_1')));
+    assert.equal(processed(calls), !cancelFails);
+  }
+  const bound = stub({ apply: { ok: false, code: 'SUBSCRIPTION_MISMATCH' } });
+  await POST(event('customer.subscription.updated', sub()));
+  assert.ok(!bound.some(c => c.method === 'DELETE'));
 });

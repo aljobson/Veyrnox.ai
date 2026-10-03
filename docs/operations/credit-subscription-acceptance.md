@@ -9,7 +9,7 @@ annual billing and the Customer Portal are not offered by these endpoints.
 ## Prerequisites before enabling staging
 
 - Apply corrected 0186/0187 through the owner-approved migration workflow;
-  merge and apply 0188 only after its independent reviews and CI pass.
+  merge and apply 0189 only after its independent reviews and CI pass.
 - Reconcile all five counts and check the migration ledger.
 - Set staging `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `PUBLIC_HOST`
   and the Resend secret. Never paste values into a PR or chat.
@@ -69,7 +69,7 @@ Operator review. A pending refund is reported as pending, never as refunded.
   billing. Disputes also Freeze through the existing RPC. Partial refunds
   remain audit-only and alert the Operator while their policy is pending.
 - Disabling checkout does not disable settlement of existing subscriptions.
-  Before 0188 is applied, only a missing-function response may fall back to
+  Before 0189 is applied, only a missing-function response may fall back to
   the existing Cinema handler while the flag is off. Other database errors
   retry. Apply all migrations before activating checkout.
 

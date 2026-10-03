@@ -263,7 +263,7 @@ refuses anyway, the webhook must log it for an Operator and not acknowledge it a
 - **A refused invoice** (`PERIOD_NOT_NEWER`, a flagged or ended subscription, a zero payment) is
   written to the event log as `refused` for an Operator and stays refused on retry. An invoice
   that arrives before its subscription is bound is not recorded, so Stripe's retry succeeds.
-- **Full-refund ordering (0188).** A full refund ends the subscription row in
+- **Full-refund ordering (0189).** A full refund ends the subscription row in
   the same transaction as the invoice reversal, before Stripe cancellation.
   A refund ahead of `invoice.paid` therefore prevents its late grant. An old
   invoice's refund still reclaims only that invoice's cycle; it cannot take
