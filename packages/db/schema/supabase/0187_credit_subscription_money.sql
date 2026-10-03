@@ -1,25 +1,35 @@
 -- 0187_credit_subscription_money.sql — ADR-0064, IMPLEMENTATION-PLAN C4 (database).
 --
 -- The functions that move credits for a Subscription (0186): a paid invoice
--- grants one cycle, and money coming back takes the rest of it away.
+-- grants one cycle, and money coming back takes the rest of that cycle away.
 -- grant_credit_subscription_invoice is the only caller of subscription_grant
 -- (0184). Nothing calls these until the webhook ships (behind
 -- CREDIT_SUBSCRIPTIONS_ENABLED, off). Additive and idempotent.
 
 -- ── grant_credit_subscription_invoice: a paid invoice becomes one cycle ───
 -- The only caller of subscription_grant. p_plan_id is the plan the invoice
--- was for, read from the subscription metadata our Worker signed; a higher
--- tier than the row's plan is an upgrade and moves the row to it. A lower or
--- equal tier is never applied here: those changes start at the period end,
--- when Stripe's own renewal invoice carries the new plan.
+-- was for, read from the subscription metadata our Worker signed (NULL: the
+-- row's plan). The plan on the invoice is what is granted, and the row
+-- follows it: an upgrade arrives mid-cycle with a new period, a downgrade
+-- arrives as the renewal after the paid period ended (ADR-0064, Plan
+-- changes). The ledger refuses any invoice whose period does not end later.
+--
+-- What is checked before a grant, each refusal with its own code:
+--   - the first invoice is for the plan the checkout was started on;
+--   - the plan is on sale (or is the row's own), on the row's billing interval;
+--   - the money covers it: the plan price, or for an upgrade at least the
+--     difference from the old price (Stripe credits the unused time, which is
+--     never more than the old price). Tax only adds to what was paid;
+--   - the period ends no later than one interval, with slack, from now.
 --
 -- Keyed by the invoice id, here and in the ledger: a granted invoice replays
 -- as a no-op, and a refused one may be retried (its Subscription may not have
--- been live yet). Each distinct outcome is recorded once. {ok:true, granted,
--- credits, expired, idempotent, user_id} or {ok:false, code}: INVALID_INVOICE,
--- SUBSCRIPTION_NOT_FOUND, SUBSCRIPTION_NOT_LIVE, PLAN_NOT_FOUND, or the
--- ledger's refusal (PERIOD_NOT_NEWER, GRANT_KEY_REUSED, INVALID_PERIOD_END),
--- which the webhook logs for an Operator and does not treat as granted.
+-- been live yet). Each distinct outcome is recorded once, with the amount.
+-- {ok:true, granted, credits, expired, idempotent, user_id} or {ok:false,
+-- code}: INVALID_INVOICE, SUBSCRIPTION_NOT_FOUND, SUBSCRIPTION_NOT_LIVE,
+-- PLAN_NOT_FOUND, PLAN_NOT_ALLOWED, AMOUNT_BELOW_PLAN, INVALID_PERIOD_END, or
+-- the ledger's refusal (PERIOD_NOT_NEWER, GRANT_KEY_REUSED). The webhook logs
+-- a refusal for an Operator and does not treat it as granted.
 CREATE OR REPLACE FUNCTION public.grant_credit_subscription_invoice(
     p_stripe_subscription_id TEXT,
     p_invoice_id TEXT,
@@ -33,22 +43,22 @@ SECURITY DEFINER
 SET search_path = ''
 AS $$
 DECLARE
-    v_sub    public.credit_subscriptions%ROWTYPE;
-    v_event  public.credit_subscription_events%ROWTYPE;
-    v_plan   public.credit_subscription_plans%ROWTYPE;
-    v_tier   INTEGER;
-    v_grant  JSONB;
-    v_code   TEXT;
+    v_sub     public.credit_subscriptions%ROWTYPE;
+    v_event   public.credit_subscription_events%ROWTYPE;
+    v_plan    public.credit_subscription_plans%ROWTYPE;
+    v_old     public.credit_subscription_plans%ROWTYPE;
+    v_first   BOOLEAN;
+    v_minimum INTEGER;
+    v_grant   JSONB;
+    v_code    TEXT;
 BEGIN
-    IF p_occurred_at IS NULL THEN
-        RETURN jsonb_build_object('ok', false, 'code', 'INVALID_INVOICE');
-    END IF;
     IF p_stripe_subscription_id IS NULL OR p_stripe_subscription_id !~ '^sub_[A-Za-z0-9_]{1,250}$' THEN
         RETURN jsonb_build_object('ok', false, 'code', 'SUBSCRIPTION_NOT_FOUND');
     END IF;
     -- A paid invoice has an id, money on it and a period that ends.
     IF p_invoice_id IS NULL OR p_invoice_id !~ '^in_[A-Za-z0-9_]{1,97}$'
-       OR p_amount_paid_cents IS NULL OR p_amount_paid_cents <= 0 OR p_period_end IS NULL THEN
+       OR p_amount_paid_cents IS NULL OR p_amount_paid_cents <= 0
+       OR p_period_end IS NULL OR p_occurred_at IS NULL THEN
         RETURN jsonb_build_object('ok', false, 'code', 'INVALID_INVOICE');
     END IF;
 
@@ -68,33 +78,42 @@ BEGIN
                                   'expired', 0, 'subscription_id', v_sub.id, 'user_id', v_sub.user_id);
     END IF;
 
+    SELECT * INTO v_old FROM public.credit_subscription_plans p WHERE p.id = v_sub.plan_id;
+    SELECT * INTO v_plan FROM public.credit_subscription_plans p WHERE p.id = COALESCE(p_plan_id, v_sub.plan_id);
+    v_first := NOT EXISTS (SELECT 1 FROM public.credit_subscription_events e
+                           WHERE e.subscription_id = v_sub.id AND e.type = 'invoice.grant' AND e.outcome = 'GRANTED');
+
     IF v_sub.status NOT IN ('active', 'past_due') THEN
         v_code := 'SUBSCRIPTION_NOT_LIVE';
+    ELSIF v_plan.id IS NULL THEN
+        v_code := 'PLAN_NOT_FOUND';
+    ELSIF (v_plan.id <> v_sub.plan_id AND (v_first OR NOT v_plan.active))
+          OR v_plan.billing_interval <> v_old.billing_interval THEN
+        v_code := 'PLAN_NOT_ALLOWED';
     ELSE
-        SELECT * INTO v_plan FROM public.credit_subscription_plans p WHERE p.id = COALESCE(p_plan_id, v_sub.plan_id);
-        IF NOT FOUND THEN
-            v_code := 'PLAN_NOT_FOUND';
+        v_minimum := CASE WHEN v_plan.tier > v_old.tier THEN v_plan.price_usd_cents - v_old.price_usd_cents
+                          ELSE v_plan.price_usd_cents END;
+        IF p_amount_paid_cents < v_minimum THEN
+            v_code := 'AMOUNT_BELOW_PLAN';
+        ELSIF p_period_end > now() + (CASE v_plan.billing_interval WHEN 'year' THEN interval '370 days' ELSE interval '35 days' END) THEN
+            v_code := 'INVALID_PERIOD_END';
         ELSE
-            SELECT p.tier INTO v_tier FROM public.credit_subscription_plans p WHERE p.id = v_sub.plan_id;
-            -- Only an upgrade changes the plan mid-flight; anything else keeps
-            -- the credits this row was sold with.
-            IF v_plan.id <> v_sub.plan_id AND v_plan.tier > v_tier THEN
+            v_grant := public.subscription_grant(v_sub.user_id, v_plan.credits_per_cycle, p_period_end, p_invoice_id);
+            IF NOT COALESCE((v_grant->>'ok')::BOOLEAN, false) THEN
+                v_code := COALESCE(v_grant->>'code', 'GRANT_REFUSED');
+            ELSIF v_plan.id <> v_sub.plan_id THEN
+                -- Only after the credits are in: a refused grant leaves the row alone.
                 UPDATE public.credit_subscriptions SET plan_id = v_plan.id, price_usd_cents = v_plan.price_usd_cents,
                     credits_per_cycle = v_plan.credits_per_cycle, updated_at = now()
                 WHERE id = v_sub.id;
-                v_sub.credits_per_cycle := v_plan.credits_per_cycle;
-            END IF;
-            v_grant := public.subscription_grant(v_sub.user_id, v_sub.credits_per_cycle, p_period_end, p_invoice_id);
-            IF NOT COALESCE((v_grant->>'ok')::BOOLEAN, false) THEN
-                v_code := COALESCE(v_grant->>'code', 'GRANT_REFUSED');
             END IF;
         END IF;
     END IF;
 
     INSERT INTO public.credit_subscription_events
-        (subscription_id, type, status, period_end, invoice_id, credits, outcome, occurred_at)
+        (subscription_id, type, status, period_end, invoice_id, credits, amount_paid_cents, outcome, occurred_at)
     VALUES (v_sub.id, 'invoice.grant', v_sub.status, p_period_end, p_invoice_id,
-            CASE WHEN v_code IS NULL THEN v_sub.credits_per_cycle ELSE 0 END,
+            CASE WHEN v_code IS NULL THEN v_plan.credits_per_cycle ELSE 0 END, p_amount_paid_cents,
             COALESCE(v_code, 'GRANTED'), p_occurred_at)
     ON CONFLICT (invoice_id, outcome) WHERE type = 'invoice.grant' DO NOTHING;
 
@@ -103,16 +122,20 @@ BEGIN
                                   'subscription_id', v_sub.id, 'user_id', v_sub.user_id);
     END IF;
     RETURN jsonb_build_object('ok', true, 'granted', true, 'idempotent', COALESCE((v_grant->>'idempotent')::BOOLEAN, false),
-                              'credits', v_sub.credits_per_cycle, 'expired', COALESCE((v_grant->>'expired')::INTEGER, 0),
+                              'credits', v_plan.credits_per_cycle, 'plan_id', v_plan.id,
+                              'expired', COALESCE((v_grant->>'expired')::INTEGER, 0),
                               'balance_after', (v_grant->>'balance_after')::INTEGER,
                               'subscription_id', v_sub.id, 'user_id', v_sub.user_id);
 END $$;
 
--- ── revoke_subscription_credits: money came back, so the cycle goes ───────
--- Internal, called by end_credit_subscription under the balance lock. Removes
--- whatever is left in the Subscription bucket; what was already spent is not
--- chased (a dispute Freezes instead).
-CREATE OR REPLACE FUNCTION public.revoke_subscription_credits(p_user_id UUID)
+-- ── revoke_subscription_cycle: money came back, so its cycle goes ─────────
+-- Internal, called by end_credit_subscription under the balance lock, and
+-- only when the bucket holds the cycle the returned money paid for. Removes
+-- what is left of it; what was already spent is not chased (a dispute
+-- Freezes instead). The cycle's end moves to now even when nothing is left,
+-- so a later Credit Refund of a job it paid for is expired again by
+-- ledger_refund and cannot bring the credits back.
+CREATE OR REPLACE FUNCTION public.revoke_subscription_cycle(p_user_id UUID)
 RETURNS INTEGER
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -124,13 +147,13 @@ DECLARE
 BEGIN
     SELECT subscription_balance, subscription_cycle INTO v_sub, v_cycle
     FROM public.credit_balances WHERE user_id = p_user_id FOR UPDATE;
-    IF v_sub IS NULL OR v_sub <= 0 THEN
+    IF v_sub IS NULL THEN
         RETURN 0;
     END IF;
-    INSERT INTO public.ledger_entries (user_id, delta, free_delta, subscription_delta, subscription_cycle, reason, job_id)
-    VALUES (p_user_id, -v_sub, 0, -v_sub, v_cycle, 'expire:subscription', NULL);
-    -- The end date moves to now, so a refund of an earlier job cannot return
-    -- credits to a cycle that was taken back.
+    IF v_sub > 0 THEN
+        INSERT INTO public.ledger_entries (user_id, delta, free_delta, subscription_delta, subscription_cycle, reason, job_id)
+        VALUES (p_user_id, -v_sub, 0, -v_sub, v_cycle, 'expire:subscription', NULL);
+    END IF;
     UPDATE public.credit_balances
     SET balance = balance - v_sub, subscription_balance = 0,
         subscription_expires_at = LEAST(subscription_expires_at, now()), updated_at = now()
@@ -138,15 +161,19 @@ BEGIN
     RETURN v_sub;
 END $$;
 
--- ── end_credit_subscription: money came back ──────────────────────────────
--- 'refunded' ends the Subscription and removes its remaining credits.
--- 'disputed' does the same and Freezes the account (ADR-0019). Idempotent on
--- the event id; a row already ended keeps its first reason.
+-- ── end_credit_subscription: money came back on one of its invoices ───────
+-- 'refunded' ends the Subscription; 'disputed' also Freezes the account
+-- (ADR-0019). p_invoice_id is the invoice the money was for. Its cycle is
+-- taken back only if that cycle is the one in the bucket now: an older
+-- invoice's cycle was already replaced or has expired, and a cycle another
+-- payment bought is never touched. Idempotent on the event id; a row already
+-- ended keeps its first reason. The caller cancels the subscription at Stripe.
 CREATE OR REPLACE FUNCTION public.end_credit_subscription(
     p_stripe_subscription_id TEXT,
     p_event_id TEXT,
     p_reason TEXT,
     p_reference TEXT,
+    p_invoice_id TEXT,
     p_occurred_at TIMESTAMPTZ
 ) RETURNS JSONB
 LANGUAGE plpgsql
@@ -157,21 +184,24 @@ DECLARE
     v_sub     public.credit_subscriptions%ROWTYPE;
     v_frozen  BOOLEAN := false;
     v_revoked INTEGER := 0;
+    v_cycle   INTEGER;
 BEGIN
     IF p_event_id IS NULL OR p_event_id !~ '^(evt|cs)_[A-Za-z0-9_]{1,250}$'
-       OR p_reason IS NULL OR p_reason NOT IN ('refunded', 'disputed') OR p_occurred_at IS NULL THEN
+       OR p_reason IS NULL OR p_reason NOT IN ('refunded', 'disputed') OR p_occurred_at IS NULL
+       OR p_invoice_id IS NULL OR p_invoice_id !~ '^in_[A-Za-z0-9_]{1,97}$' THEN
         RETURN jsonb_build_object('ok', false, 'code', 'INVALID_EVENT');
     END IF;
     IF p_stripe_subscription_id IS NULL OR p_stripe_subscription_id !~ '^sub_[A-Za-z0-9_]{1,250}$' THEN
         RETURN jsonb_build_object('ok', false, 'code', 'INVALID_SUBSCRIPTION');
     END IF;
-    IF EXISTS (SELECT 1 FROM public.credit_subscription_events e WHERE e.stripe_event_id = p_event_id) THEN
-        RETURN jsonb_build_object('ok', true, 'idempotent', true);
-    END IF;
     SELECT * INTO v_sub FROM public.credit_subscriptions x
     WHERE x.stripe_subscription_id = p_stripe_subscription_id FOR UPDATE;
     IF NOT FOUND THEN
         RETURN jsonb_build_object('ok', false, 'code', 'SUBSCRIPTION_NOT_FOUND');
+    END IF;
+    -- Replay, checked under the row lock so a concurrent duplicate is a no-op.
+    IF EXISTS (SELECT 1 FROM public.credit_subscription_events e WHERE e.stripe_event_id = p_event_id) THEN
+        RETURN jsonb_build_object('ok', true, 'idempotent', true, 'subscription_id', v_sub.id, 'user_id', v_sub.user_id);
     END IF;
 
     -- Same lock order as ledger_debit and apply_dispute_event.
@@ -183,16 +213,22 @@ BEGIN
             last_event_at = GREATEST(COALESCE(last_event_at, p_occurred_at), p_occurred_at), updated_at = now()
         WHERE id = v_sub.id;
     END IF;
-    -- Take back what is left of the cycle, unless the credits in the bucket
-    -- belong to someone else's payment: a flagged row never granted, and a
-    -- refund on an old Subscription must not empty the one now live.
-    IF v_sub.status <> 'flagged' AND NOT EXISTS (
-        SELECT 1 FROM public.credit_subscriptions o
-        WHERE o.user_id = v_sub.user_id AND o.id <> v_sub.id AND o.status IN ('active', 'past_due')) THEN
-        v_revoked := public.revoke_subscription_credits(v_sub.user_id);
+
+    -- The cycle this invoice bought, if this Subscription's invoice bought one.
+    SELECT l.subscription_cycle INTO v_cycle
+    FROM public.ledger_entries l
+    WHERE l.reason = 'grant:subscription:' || p_invoice_id AND l.reason LIKE 'grant:subscription:%'
+      AND l.user_id = v_sub.user_id
+      AND EXISTS (SELECT 1 FROM public.credit_subscription_events e
+                  WHERE e.invoice_id = p_invoice_id AND e.type = 'invoice.grant' AND e.outcome = 'GRANTED'
+                    AND e.subscription_id = v_sub.id);
+    IF v_cycle IS NOT NULL AND v_cycle = (SELECT b.subscription_cycle FROM public.credit_balances b WHERE b.user_id = v_sub.user_id) THEN
+        v_revoked := public.revoke_subscription_cycle(v_sub.user_id);
     END IF;
-    INSERT INTO public.credit_subscription_events (subscription_id, stripe_event_id, type, status, credits, outcome, occurred_at)
-    VALUES (v_sub.id, p_event_id, 'subscription.' || p_reason, 'ended', v_revoked, 'REVOKED', p_occurred_at);
+
+    INSERT INTO public.credit_subscription_events (subscription_id, stripe_event_id, type, status, invoice_id, credits, outcome, occurred_at)
+    VALUES (v_sub.id, p_event_id, 'subscription.' || p_reason, 'ended', p_invoice_id, v_revoked,
+            CASE WHEN v_cycle IS NULL THEN 'NO_GRANT' WHEN v_revoked > 0 THEN 'REVOKED' ELSE 'NOTHING_LEFT' END, p_occurred_at);
 
     IF p_reason = 'disputed' THEN
         PERFORM public.freeze_account(v_sub.user_id,
@@ -222,13 +258,13 @@ AS $$
       AND NOT EXISTS (
         SELECT 1 FROM public.credit_subscription_events e
         JOIN public.credit_subscriptions s ON s.id = e.subscription_id
-        WHERE e.invoice_id = substr(l.reason, 20) AND e.outcome = 'GRANTED'
+        WHERE e.invoice_id = substr(l.reason, 20) AND e.type = 'invoice.grant' AND e.outcome = 'GRANTED'
           AND s.user_id = l.user_id AND e.credits = l.delta)
     UNION ALL
     SELECT 'logged grant missing from the ledger'::TEXT, e.invoice_id, s.user_id, e.credits
     FROM public.credit_subscription_events e
     JOIN public.credit_subscriptions s ON s.id = e.subscription_id
-    WHERE e.outcome = 'GRANTED'
+    WHERE e.type = 'invoice.grant' AND e.outcome = 'GRANTED'
       AND NOT EXISTS (
         SELECT 1 FROM public.ledger_entries l
         WHERE l.reason = 'grant:subscription:' || e.invoice_id AND l.reason LIKE 'grant:subscription:%'
@@ -241,14 +277,14 @@ DECLARE fn TEXT;
 BEGIN
     FOREACH fn IN ARRAY ARRAY[
         'public.grant_credit_subscription_invoice(TEXT, TEXT, INTEGER, TIMESTAMPTZ, TEXT, TIMESTAMPTZ)',
-        'public.end_credit_subscription(TEXT, TEXT, TEXT, TEXT, TIMESTAMPTZ)',
+        'public.end_credit_subscription(TEXT, TEXT, TEXT, TEXT, TEXT, TIMESTAMPTZ)',
         'public.reconcile_credit_subscriptions()'
     ] LOOP
         EXECUTE format('REVOKE ALL ON FUNCTION %s FROM PUBLIC, anon, authenticated', fn);
         EXECUTE format('GRANT EXECUTE ON FUNCTION %s TO service_role', fn);
     END LOOP;
     -- Internal: only end_credit_subscription calls it.
-    REVOKE ALL ON FUNCTION public.revoke_subscription_credits(UUID) FROM PUBLIC, anon, authenticated, service_role;
+    REVOKE ALL ON FUNCTION public.revoke_subscription_cycle(UUID) FROM PUBLIC, anon, authenticated, service_role;
 END $$;
 
 -- ── cron: the nightly reconcile gains a sixth check ─────────────────────
