@@ -35,7 +35,7 @@ Automatically buying a Credit Pack when a user's balance falls below a threshold
 _Avoid_: Auto top-up, recurring top-up
 
 **Subscription**:
-A recurring plan that grants a monthly allotment of credits. Accepted (ADR-0064: Starter $19/270cr, Plus $59/1200cr, Ultra $129/3000cr), not yet built. Non-rollover: unspent Subscription Credits expire at cycle end and are spent before Free Credits (soonest-expiring-first). A Credit Pack always costs more per credit than the best-value Subscription.
+A recurring plan that grants a monthly allotment of credits. Accepted (ADR-0064: Starter $19/270cr, Plus $59/1200cr, Ultra $129/3000cr). The ledger side is built (0183–0185); nothing is on sale until the Stripe step ships. Non-rollover: unspent Subscription Credits expire at cycle end and are spent before Free Credits (soonest-expiring-first). A Credit Pack always costs more per credit than the best-value Subscription.
 _Avoid_: Tier, membership
 
 **Sales Channel**:

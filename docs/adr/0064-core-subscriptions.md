@@ -194,7 +194,9 @@ tiers.** The product owner approved this, and the spend-order question below, wi
   **This also refuses three invoices a customer has paid: a mid-cycle upgrade, a switch from
   annual to monthly before the annual end, and a resubscription to a shorter plan before the old
   end date. Each returns `PERIOD_NOT_NEWER` and grants nothing. C4 must decide what those mean
-  before the webhook calls this function; the rule may need to allow them.**
+  before the webhook calls this function; the rule may need to allow them.** Decided 2026-10-03,
+  below ("Plan changes"): the rule stays as built, and C4 arranges billing so none of the three
+  produces such an invoice.
 - **No rollover.** A grant first expires whatever the previous cycle left.
 - **Cycle end.** Past `subscription_expires_at` the credits cannot be spent, and an hourly sweep
   (`expire_subscription_credits`) removes them. Balance readers leave them out in the meantime.
@@ -218,11 +220,30 @@ the ledger design implies, now decisions for C4):
 - **A failed renewal gets no grace period.** No paid invoice means no grant, so the old cycle
   expires at its end and the account has no Subscription Credits until a renewal is paid.
 
+**Plan changes, confirmed by the product owner 2026-10-03.** Upgrades happen now with a new
+period; everything else waits for the paid period to end.
+
+- **Upgrade mid-cycle** (to a higher tier): takes effect immediately and
+  starts a fresh billing period. Stripe credits the unused time on the old plan against the new
+  charge. The new plan's full credits are granted and the old cycle's remainder expires, as at
+  any renewal (no rollover). The owner accepted that an upgrading customer loses what was left.
+- **Downgrade, or annual to monthly:** takes effect when the current paid period ends. Nothing
+  is invoiced or granted before then.
+- **Resubscribing while a cancelled plan is still running:** the customer can resume the same
+  plan; a different plan starts when the current period ends.
+- Not decided: monthly to annual on the same tier. Until it is, C4 treats it like the other
+  non-upgrade changes and starts it at the period end.
+
+Every invoice this produces ends after the current cycle, so `subscription_grant` and its
+`PERIOD_NOT_NEWER` rule need no change. C4 must configure Stripe to match: reset the billing
+cycle on an upgrade, schedule every other change for the period end, and refuse a second
+checkout while a subscription is active or running out. If Stripe sends an invoice the rule
+refuses anyway, the webhook must log it for an Operator and not acknowledge it as granted.
+
 **Still open, none blocking implementation start:**
 
-1. ~~Dunning grace period and mid-cycle-cancellation credit handling~~ — decided 2026-10-03,
-   above. What a mid-cycle upgrade, an annual-to-monthly switch and an early resubscription
-   mean (the three `PERIOD_NOT_NEWER` cases) is still open, and that one does block C4.
+1. ~~Dunning grace period, mid-cycle-cancellation credit handling and the three
+   `PERIOD_NOT_NEWER` cases~~ — decided 2026-10-03, above.
 2. **Annual price points below the Ultra tier** (Starter/Plus annual) — the recommendation above
    computes Ultra's floor explicitly; Starter and Plus annual rates need the same per-tier net-floor
    check before publishing, not a flat percentage-off assumption.
