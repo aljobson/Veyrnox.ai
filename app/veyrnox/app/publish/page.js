@@ -1,5 +1,6 @@
 'use client';
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
+import Link from 'next/link';
 import { AppNav } from '../../_components/NavBar';
 import { ConfirmDialog } from '../../_components/ConfirmDialog';
 import { getSession, onSessionChange } from '../../../lib/authClient';
@@ -20,7 +21,7 @@ export default function Publish() {
   const account = useSyncExternalStore(onSessionChange, currentAccount, noAccount);
   return <><AppNav /><div className="max-w-[900px] mx-auto px-4 sm:px-8 py-10">
     <h1 className="text-3xl font-black mb-2">Veyrnox Publish</h1>
-    <p className="text-sm text-vx-fg-muted mb-6">Connect your social accounts to schedule posts from Veyrnox.</p>
+    <p className="text-sm text-vx-fg-muted mb-6">Connect your social accounts to schedule posts from Veyrnox. <Link href="/app/publish/analytics" className="text-vx-accent underline">See your analytics</Link></p>
     {account ? <PublishControls key={account} /> : <div className="text-vx-fg-body">
       <p className="mb-4">Sign in to connect a social account.</p>
       <button type="button" className={button} onClick={() => window.dispatchEvent(new CustomEvent('veyrnox:auth-required'))}>Sign in</button>

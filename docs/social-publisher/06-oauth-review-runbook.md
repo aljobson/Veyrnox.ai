@@ -60,6 +60,11 @@ for Instagram API with Instagram Login, not the older Facebook Login scopes:
   picture).
 - `instagram_business_content_publish` — the actual publish permission; this is an **Advanced
   Access** permission requiring App Review.
+- `instagram_business_manage_insights` — reach, views, saves and shares for the analytics page
+  (`INSTAGRAM_INSIGHTS_SCOPE` in the adapter). Also needs App Review. The connect flow requests
+  it only when `INSTAGRAM_INSIGHTS_SCOPE_ENABLED` is "true": add it to the submission, and turn
+  the switch on once Meta approves it. Justification for the reviewer: the user opens
+  Publish → Analytics and sees reach and views for their own account and posts.
 
 ### App Review submission
 - For each Advanced Access permission: written justification of *why* Publish needs it, mapped to

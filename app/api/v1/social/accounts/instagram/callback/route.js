@@ -25,7 +25,7 @@
 
 import { NextResponse } from 'next/server';
 import { rpc, envConfig, SupabaseError } from '../../../../../../../packages/db/supabase-client.js';
-import { instagramConfig, exchangeCodeForToken, fetchConnectedAccount, INSTAGRAM_SCOPES } from '../../../../../../../packages/adapters/social/instagram.js';
+import { instagramConfig, exchangeCodeForToken, fetchConnectedAccount, instagramScopes } from '../../../../../../../packages/adapters/social/instagram.js';
 import { verifyOAuthState } from '../../../../../../../lib/social/oauthState.js';
 import { tokenCryptoConfig, encryptToken } from '../../../../../../../lib/social/tokenCrypto.js';
 
@@ -113,7 +113,7 @@ export async function POST(req) {
             p_external_account_id: account.externalAccountId,
             p_display_name: account.displayName,
             p_avatar_url: account.avatarUrl,
-            p_scopes: INSTAGRAM_SCOPES,
+            p_scopes: instagramScopes(igCfg),
             p_access_token_enc: accessTokenEnc,
             p_refresh_token_enc: null, // Meta long-lived tokens have no refresh token; re-auth before expiry instead
             p_token_expires_at: account.expiresAt,
