@@ -121,7 +121,7 @@ describe('social analytics (0188)', { skip: !process.env.DATABASE_URL }, () => {
         const res = await record(a.accountId, today,
             { followers: 7, 'Bad Key': 1, nested: { a: 1 }, text: 'x', flag: true },
             [
-                post({ id: 'ok', permalink: 'javascript:alert(1)', type: 'Not A Type', caption: 'c'.repeat(900),
+                post({ id: 'ok', permalink: 'data:text/html,not-a-link', type: 'Not A Type', caption: 'c'.repeat(900),
                     metrics: { likes: 2, script: '<b>' } }),
                 post({ id: 'bad-date', published_at: 'yesterday' }),
                 post({ id: '' }),
