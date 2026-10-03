@@ -48,6 +48,8 @@ function Violations() {
     }
   }, []);
 
+  // A request counter, not a DOM node: the cleanup must bump the live value.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { loadRecord(null); return () => { generation.current++; }; }, [loadRecord]);
 
   async function find(event) {

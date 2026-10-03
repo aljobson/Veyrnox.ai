@@ -53,7 +53,6 @@ export function LibraryPicker({ onPick, onClose }) {
             {items.map((it) => (
               <button key={it.id} type="button" onClick={() => onPick(it)} title={it.label}
                 className="aspect-square overflow-hidden rounded-lg border border-vx-border hover:border-vx-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-vx-accent">
-                {/* eslint-disable-next-line @next/next/no-img-element -- presigned R2 URL, not optimisable */}
                 <img src={it.url} alt={it.label} className="h-full w-full object-cover" />
               </button>
             ))}
