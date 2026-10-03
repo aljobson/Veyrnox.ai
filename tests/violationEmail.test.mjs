@@ -89,3 +89,8 @@ test('the admin reason and the job never reach the email', () => {
     const route = readFileSync(new URL('../app/api/v1/admin/violations/route.js', import.meta.url), 'utf8');
     assert.match(route, /notifyViolation\(\{\s*cfg: g\.cfg, userId, actionId: result\.action_id, tier, takedowns: result\.takedowns, frozen: result\.frozen,\s*\}\)/);
 });
+
+test('the admin page shows each email outcome the route can return', () => {
+    const page = readFileSync(new URL('../app/veyrnox/app/admin/violations/page.js', import.meta.url), 'utf8');
+    for (const outcome of ['sent', 'failed', 'skipped']) assert.match(page, new RegExp(`result\\.email === '${outcome}'`));
+});
