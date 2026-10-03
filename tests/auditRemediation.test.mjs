@@ -63,6 +63,10 @@ test('actual Stream adapter options work in the Workers runtime',async()=>{
   await readStreamVideo(uid,cfg,transport);await deleteStreamVideo(uid,cfg,transport);
   return new Response('ok');
  }}`,resolveDir:process.cwd()},bundle:true,format:'esm',write:false});
- const mf=new Miniflare({modules:true,compatibilityDate:'2026-08-08',script:bundled.outputFiles[0].text});
+ // The Miniflare that ships with wrangler 4.143 nests a worker's options under
+ // `config` and takes its modules as a manifest; the top-level `script` /
+ // `modules: true` form is rejected with ERR_VALIDATION.
+ const mf=new Miniflare({workers:[{config:{name:'stream-adapter',compatibilityDate:'2026-08-08',
+  manifest:{mainModule:'index.mjs',modules:{'index.mjs':{type:'esm',contents:bundled.outputFiles[0].text}}}}}]});
  try{assert.equal(await (await mf.dispatchFetch('http://localhost')).text(),'ok');}finally{await mf.dispose();}
 });
