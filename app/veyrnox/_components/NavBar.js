@@ -11,6 +11,7 @@ import { gatewayFetch, GatewayError } from '../_lib/gateway';
 import { getSession, onSessionChange } from '../../lib/authClient';
 import { accountLabel } from '../_lib/account';
 import { useProjectsPreview } from '../_lib/useProjectsPreview';
+import { AnnouncementBar } from './AnnouncementBar';
 
 // Marketing site nav (Home / Gallery / Pricing).
 export function MarketingNav() {
@@ -24,6 +25,8 @@ export function MarketingNav() {
     { href: '/pricing', label: 'Pricing' },
   ];
   return (
+    <>
+    <AnnouncementBar />
     <div data-print="hide" className="sticky top-0 z-40 h-16 border-b border-vx-border bg-vx-base/[0.88] backdrop-blur">
       {/* Same 1300px column as the page body, so the logo sits on its edge. */}
       <div className="h-full max-w-[1300px] mx-auto px-4 sm:px-6 flex items-center justify-between gap-3">
@@ -58,6 +61,7 @@ export function MarketingNav() {
       </div>
       </div>
     </div>
+    </>
   );
 }
 

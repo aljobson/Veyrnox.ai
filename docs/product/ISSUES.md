@@ -74,7 +74,7 @@ behaviour a user can hit · **medium** = latent defect or guard missing ·
 | U6 | low | Reduced-motion kill switch is scoped to `.vx-root`; root-mounted chrome is not covered. | `app/veyrnox/veyrnox.css:53` | Move the rule to `:root`. |
 | U7 | low | `.vx-paper` doesn't re-point `--vx-danger`, so dark-theme red shows on paper. | `veyrnox.css:100-150` | Add the light value. |
 | U8 | low | Stale UI: `loading.js` skeleton still draws the removed promo strip; `/design-system` lacks the receipt world and calls refunds red; `ThemeToggle` comment says 14 variables (15). | `app/veyrnox/loading.js`, `design-system/page.js`, `ThemeToggle.js` | Refresh. |
-| U9 | low | Dead code: `tokens.js` `PROMO_STRIP`, `PILLARS`, `METRIC_STRIP`, `PRODUCT_TILES`, `HERO_CHIP`; keyframes `vxPulse`, `vxSlideUp`, `vxFade`, `vxDrift`, `fade-in-up`; legacy `--color-primary`, `.glass-*`, Tailwind `primary`, `glow*` shadows. | UI audit | Delete. |
+| U9 | low | Dead code: `tokens.js` (`PROMO_STRIP` removed), `PILLARS`, `METRIC_STRIP`, `PRODUCT_TILES`, `HERO_CHIP`; keyframes `vxPulse`, `vxSlideUp`, `vxFade`, `vxDrift`, `fade-in-up`; legacy `--color-primary`, `.glass-*`, Tailwind `primary`, `glow*` shadows. | UI audit | Delete. |
 
 ## 5. Documentation drift
 
