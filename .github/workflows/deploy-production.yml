@@ -139,9 +139,11 @@ jobs:
 
   # One open issue per episode; a later green deploy does not close it,
   # because a rollback means main still holds the broken commit.
+  # A deploy refused because ci is red counts too: the commit is merged but
+  # not live, and nothing else would say so (2026-10-03, #448).
   report-failure:
-    needs: deploy
-    if: failure() && needs.deploy.result == 'failure'
+    needs: [ci-green, deploy]
+    if: failure() && (needs.ci-green.result == 'failure' || needs.deploy.result == 'failure')
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -152,13 +154,20 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          CI_GREEN: ${{ needs.ci-green.result }}
         run: |
+          if [ "$CI_GREEN" = "failure" ]; then
+            title="Production deploy refused — ci is not green at ${GITHUB_SHA:0:7}"
+            detail='ci did not pass on this commit, so it was not deployed. Production still runs the previous version. Fix ci on main; the next green commit deploys.'
+          else
+            title="Production deploy failed — ${GITHUB_SHA:0:7}"
+            detail='If the smoke test failed, production was rolled back automatically to the previously live version; main still holds the failing commit, so fix forward or revert it.'
+          fi
           gh label create deploy-failure --color B60205 --description 'Production deploy failed or was rolled back' 2>/dev/null || true
           existing=$(gh issue list --label deploy-failure --state open --json number --jq '.[0].number // empty')
           if [ -n "$existing" ]; then
-            gh issue comment "$existing" --body "Failed again at $GITHUB_SHA: $RUN_URL"
+            gh issue comment "$existing" --body "$title: $RUN_URL"
             exit 0
           fi
-          printf 'deploy-production failed for %s.\n\nIf the smoke test failed, production was rolled back automatically to the previously live version; main still holds the failing commit, so fix forward or revert it.\n\nRun: %s\n' \
-            "$GITHUB_SHA" "$RUN_URL" > body.md
-          gh issue create --title "Production deploy failed — ${GITHUB_SHA:0:7}" --label deploy-failure --body-file body.md
+          printf 'deploy-production did not deploy %s.\n\n%s\n\nRun: %s\n' "$GITHUB_SHA" "$detail" "$RUN_URL" > body.md
+          gh issue create --title "$title" --label deploy-failure --body-file body.md
