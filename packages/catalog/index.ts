@@ -9,13 +9,15 @@
  * Credits are the user-facing unit. Every plan grants credits per month;
  * every generation debits credits. The price of a model in credits is
  * fixed across plans — plans differ in how many credits per dollar the
- * user gets. Ultra ($99 / 3000 credits = $0.033/credit) sets the reference
- * conversion rate used for margin math below.
+ * user gets. Margin math below uses a reference rate lower than any plan's.
  */
 
-// ─── Plans (Assumptions sheet) ────────────────────────────────────────────
+// ─── Plans (ADR-0064) ─────────────────────────────────────────────────────
+// The accepted subscription tiers. Nothing sells them yet; this is the one
+// copy in code, so it must say what ADR-0064 says. The 10 free credits are a
+// one-time sign-up grant (ADR-0013), not a monthly plan.
 
-export type PlanId = "free" | "starter" | "plus" | "ultra";
+export type PlanId = "starter" | "plus" | "ultra";
 
 export interface Plan {
     id: PlanId;
@@ -26,15 +28,16 @@ export interface Plan {
 }
 
 export const PLANS: readonly Plan[] = Object.freeze([
-    { id: "free",    price_usd_per_month:  0, credits_per_month:   10, dollars_per_credit: 0     },
-    { id: "starter", price_usd_per_month: 15, credits_per_month:  200, dollars_per_credit: 0.075 },
-    { id: "plus",    price_usd_per_month: 39, credits_per_month: 1000, dollars_per_credit: 0.039 },
-    { id: "ultra",   price_usd_per_month: 99, credits_per_month: 3000, dollars_per_credit: 0.033 },
+    { id: "starter", price_usd_per_month:  19, credits_per_month:  270, dollars_per_credit: 0.070 },
+    { id: "plus",    price_usd_per_month:  59, credits_per_month: 1200, dollars_per_credit: 0.049 },
+    { id: "ultra",   price_usd_per_month: 129, credits_per_month: 3000, dollars_per_credit: 0.043 },
 ]);
 
 /**
- * Reference conversion rate: Ultra's dollars-per-credit, which is the lowest
- * (cheapest for the buyer, tightest margin for us). Every catalog row's
+ * Reference conversion rate for margin math: $0.033 per credit, the net floor
+ * the credit-pack constraints also keep (migrations 0041, 0121). It is below
+ * every plan's rate above (Ultra is $0.043), so a row that clears the floor
+ * here clears it on any plan. Every catalog row's
  * credit_price × REFERENCE_DOLLARS_PER_CREDIT must clear its provider cost
  * plus MARGIN_FLOOR.
  */
