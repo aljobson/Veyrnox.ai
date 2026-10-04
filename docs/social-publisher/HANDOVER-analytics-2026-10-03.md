@@ -452,3 +452,19 @@ this session” control before enrolling. No passkey was created by this attempt
 The passkey error copy now explains that step instead of suggesting a connection
 problem; 18 focused passkey tests pass. Successful enrollment and sign-in remain
 unverified until the owner completes the device authentication prompt.
+
+## Staging sign-in deployment refresh — 2026-10-04
+
+Staging had continued serving the pre-#520 sign-in bundle, which omitted Apple.
+Rebuilt merged `main` at `2480355` with AI staging identity and deployed version
+`cba3f7a3-e863-4d9c-8dc5-8ce33d9ca300`. The homepage's live sign-in dialog now
+shows Apple, passkeys and Google together; #524's MFA error copy is included.
+The Next/OpenNext build, Wrangler dry run and 17 focused provider/panel tests passed.
+
+The existing subscription acceptance wrapper was retained around the rebuilt
+app. Its page returned 200; unmarked subscription API requests still returned
+503 `subscriptions_not_open`. All previous binding names and plain variable
+values read back unchanged, including the staging Supabase identity and Publish
+flags; secrets were retained without exporting their values. The five-minute
+cron remains configured. Production and enrolled MFA factors were not changed.
+Owner-completed Apple login and passkey enrollment/sign-in remain outstanding.
