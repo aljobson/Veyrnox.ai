@@ -247,3 +247,49 @@ selector warning predates this change. Existing local auth/Turnstile errors and 
 fixture-proxy socket reset mean browser console checks were not clean. No real platform
 account or remote posting-insights RPC was exercised.
 The Next.js production build and full OpenNext Worker packaging also pass.
+
+## Calendar implementation (2026-10-04)
+
+The month/week/list calendar lives at `/app/publish/calendar`. Its link appears in the
+existing Scheduled & published section only when `PUBLISH_CALENDAR_ENABLED` is exactly
+`"true"`. This switch defaults to `"false"`; apply **0192_social_publish_calendar.sql**
+through the protected main workflow before enabling it. Publish must also be enabled.
+No platform permission or analytics collection is required for the calendar.
+
+Dates use the viewer's browser timezone, matching the existing composer. Month and list
+cover the same six-week Monday-first grid, including adjacent-month dates; week covers
+seven days. Status and network filters execute in the database. The indexed date-range
+reader excludes drafts, uses an exclusive end and returns 100 posts per page with an
+explicit Load more control. It reads scheduled timestamps, not platform publication times.
+
+Drag an unstarted post to a day to open a confirmation form, preserving its local time.
+The same form is available through the Reschedule button for keyboard and touch users.
+Daylight-saving gaps and times less than a minute ahead are rejected. All targets move
+together, and started/retried/submitted/partially published or terminal posts cannot move.
+
+The reschedule RPC checks owner identity, locks targets before the parent without waiting,
+compares the original timestamp, and also updates every target's next-attempt time. Moving
+that target field makes the existing worker recheck an updated target even if its parent
+snapshot predates the move. Concurrent edits return a conflict; busy locks return POST_BUSY.
+A replay of the same requested time is a no-op, and a successful change appends exactly one
+post_rescheduled audit event. Both new RPCs revoke browser/PUBLIC execution and grant only
+service_role. No direct table grants or credit/ledger changes are introduced.
+
+Next owner work remains migration approval and staging Publish schema provisioning; live
+account checks and X/LinkedIn API-access decisions are still outstanding. Plan gating is
+not implemented because the product decision remains open. Calendar work completes this
+handover's currently specified engineering sequence.
+
+Calendar validation: 1,297 unit tests pass (one existing skip); the full database suite
+passes 304 tests, including the locked-post conflict test. All 182 migrations replay on a fresh local
+PostgreSQL 16 database and all 25 integration/guard scripts pass. Lint has zero errors and
+67 existing warnings; typecheck, security boundaries, migration numbering, catalog guards
+and hard-wall checks pass. Browser fixtures verify month/week/list, mobile containment,
+filters, confirmation, saving, conflict messages, empty/error/refresh states, Escape/focus
+restoration and synthetic drag events (no write until confirmation). The native modal and
+existing design tokens are reused without adding dependencies. 21st review warnings are
+intentional contained calendar width and the responsive page maximum width. Existing local
+Supabase auth/Turnstile failures and intentional fixture 409/502 responses mean the console
+is not clean. No live platform account or remote calendar RPC was exercised. Repeated
+fall-back hours use the browser's chosen offset; the form displays the proposed UTC instant.
+The final Next.js production build and complete OpenNext Worker packaging pass.

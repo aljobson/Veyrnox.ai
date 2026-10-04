@@ -370,3 +370,18 @@ analytics security. Cache failure does not block successful ingestion or other d
 analytics. Next engineering slice: the calendar view. X/LinkedIn analytics and live account
 verification remain dependent on owner API-access and permission decisions. Staging Publish
 schema provisioning remains outstanding; this change does not enable any remote switches.
+
+## Calendar and rescheduling (2026-10-04)
+
+Migration 0192 implements owner-only range reads and compare-and-set rescheduling, behind
+`PUBLISH_CALENDAR_ENABLED` (default false). The calendar uses the viewer's local timezone,
+matching the composer, with month/week/list modes, status/network filters and explicit
+100-post pagination. Drafts stay in batch review until approved. Dragging opens the same
+confirmation form as the keyboard-accessible Reschedule button; it does not persist a move.
+
+Only scheduled posts with exclusively pristine pending targets may move. Lock targets
+before the parent, with NOWAIT to avoid waits against a worker or multi-target disconnect.
+Set both the parent schedule and every target's next-attempt time. Updating the target's
+own due predicate prevents a claim using an older parent snapshot from dispatching early.
+A timestamp precondition rejects stale edits; a repeated desired timestamp is a no-op.
+Append one post_rescheduled audit entry on a real change. No credit ledger is involved.

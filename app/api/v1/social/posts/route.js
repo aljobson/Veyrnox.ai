@@ -16,6 +16,7 @@
  * POST response (201): { post_id, idempotent, target_count }.
  */
 
+import { calendarEnabled } from '../../../../../lib/social/publishFeature.js';
 import { NextResponse } from 'next/server';
 import { accountReadLimit } from '../../../../../lib/accountReadLimit.js';
 import { socialPostWriteLimit } from '../../../../../lib/socialPostWriteLimit.js';
@@ -71,7 +72,7 @@ export async function GET(req) {
         return NextResponse.json({ error: 'internal' }, { status: 502 });
     }
 
-    return NextResponse.json({ brand_id: brandId, posts: posts.posts || [] },
+    return NextResponse.json({ brand_id: brandId, posts: posts.posts || [], ...(calendarEnabled() ? { calendarEnabled: true } : {}) },
         { headers: { 'Cache-Control': 'no-store' } });
 }
 

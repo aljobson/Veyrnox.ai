@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import { gatewayFetch } from '../../_lib/gateway.js';
 import { NETWORKS } from '../../../lib/socialConnectClient.js';
 import { createSocialPost, listSocialPosts, newIdempotencyKey } from '../../../lib/socialPostsClient.js';
@@ -255,6 +256,7 @@ function TargetBadge({ target }) {
 
 export function ScheduledPosts({ refreshToken }) {
     const [posts, setPosts] = useState(null);
+    const [calendarOpen, setCalendarOpen] = useState(false);
     const [loadError, setLoadError] = useState('');
 
     const load = useCallback(async () => {
@@ -262,6 +264,7 @@ export function ScheduledPosts({ refreshToken }) {
         try {
             const res = await listSocialPosts();
             setPosts(res.posts || []);
+            setCalendarOpen(res.calendarEnabled === true);
         } catch {
             setLoadError('Could not load your scheduled posts.');
         }
@@ -270,9 +273,11 @@ export function ScheduledPosts({ refreshToken }) {
 
     if (loadError) return <p role="alert" className="text-sm text-vx-danger">{loadError}</p>;
     if (posts === null) return <p className="text-sm text-vx-fg-muted">Loading…</p>;
-    if (posts.length === 0) return <p className="text-sm text-vx-fg-muted">Nothing scheduled yet.</p>;
 
     return (
+        <div>
+        {calendarOpen && <Link href="/app/publish/calendar" className="inline-block text-sm text-vx-accent underline mb-4">Open calendar</Link>}
+        {posts.length === 0 && <p className="text-sm text-vx-fg-muted">Nothing scheduled yet.</p>}
         <ul className="space-y-3">
             {posts.map((p) => (
                 <li key={p.id} className="rounded-xl border border-vx-border p-3">
@@ -288,5 +293,6 @@ export function ScheduledPosts({ refreshToken }) {
                 </li>
             ))}
         </ul>
+        </div>
     );
 }

@@ -53,3 +53,14 @@ export async function discardDrafts(batchId, postId) {
         method: 'POST', body: JSON.stringify({ action: 'discard', batchId, ...(postId ? { postId } : {}) }),
     });
 }
+
+export async function listSocialCalendar({ from, to, status, network, afterAt, afterId }) {
+    const params = new URLSearchParams({ from, to });
+    for (const [key,value] of Object.entries({status,network,after_at:afterAt,after_id:afterId})) if(value)params.set(key,value);
+    return gatewayFetch(`/social/calendar?${params}`);
+}
+export async function rescheduleSocialPost(postId, expectedAt, scheduledAt) {
+    return gatewayFetch(`/social/posts/${encodeURIComponent(postId)}/schedule`, {
+        method:'PATCH',body:JSON.stringify({expectedAt,scheduledAt}),
+    });
+}

@@ -267,7 +267,8 @@ against a schema at the boundary.
 | `POST /api/v1/social/accounts/:network/connect` | Start OAuth: returns the provider's authorize URL with a signed `state` param. |
 | `GET /api/v1/social/accounts/:network/callback` | OAuth callback: exchanges code for tokens, encrypts and stores them, redirects to `PUBLIC_HOST`-derived success page. |
 | `DELETE /api/v1/social/accounts/:id` | Disconnect (revokes token where the platform supports it, soft-deletes the row, logs `disconnect`). |
-| `GET /api/v1/social/posts?from=&to=&status=` | List posts for the calendar view. |
+| `GET /api/v1/social/calendar?from=&to=&status=&network=&after_at=&after_id=` | Owner-only scheduled-date range, 100-post cursor pages (0192). |
+| `PATCH /api/v1/social/posts/:id/schedule` | Reschedule unstarted posts with `{ expectedAt, scheduledAt }` (0192). |
 | `POST /api/v1/social/posts` | Create a draft or scheduled post. Requires idempotency key. Validates per-network payload per §2.4 before accepting a `scheduled` status. |
 | `PATCH /api/v1/social/posts/:id` | Update a post. Rejects edits to a post already `publishing`/`published`. |
 | `DELETE /api/v1/social/posts/:id` | Cancel a draft/scheduled post (not a published one). |
@@ -494,3 +495,20 @@ section.
    mandatory security-reviewer trigger for auth/API/external-call code) plus a focused pass on the
    OAuth flow and the media/SSRF boundary specifically, given how much of this feature's attack
    surface is new external integrations rather than internal logic.
+
+
+### Calendar implementation (0192)
+
+`PUBLISH_CALENDAR_ENABLED` defaults to false until migration 0192 is applied. Calendar
+month/week/list reads use the viewer's local timezone and an exclusive range end, capped
+at 43 elapsed days to allow a 42-day grid across DST. Month/list include the six-week grid's
+adjacent-month dates. The index `(brand_id, scheduled_at, id)` supports ordered pagination.
+Filters execute before pagination; draft posts are omitted. All per-network statuses remain
+visible, including TikTok delivery to inbox, which is not labelled as a live publication.
+
+Rescheduling applies to all targets together only while none has started. A move requires
+a timestamp precondition and a desired time more than one minute ahead. Lock targets and
+then parent, without waiting, and move each target's `next_attempt_at` alongside the parent.
+This retains the existing claim engine while protecting its due predicate against older
+parent snapshots. Real changes append an audit event; exact replays do not. Native modal,
+Reschedule button and confirmation provide a keyboard/touch alternative to desktop drag.
