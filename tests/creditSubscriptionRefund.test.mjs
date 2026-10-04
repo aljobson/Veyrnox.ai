@@ -20,6 +20,9 @@ function setup(f = fixture(), options = {}) {
   const cfg = { apiKey: 'sk_test_fake', fetch: async (url, init = {}) => {
     const path = new URL(url).pathname, method = init.method || 'GET'; calls.push({ path, method, init });
     if (options.fail === path) return Response.json({}, { status: 500 });
+    if (options.rejectCancelledDelete && method === 'DELETE' && path === '/v1/subscriptions/sub_1') {
+      return Response.json({ error: { code: 'resource_missing', message: 'No such subscription' } }, { status: 404 });
+    }
     let data;
     if (path === '/v1/subscriptions/sub_1') data = f.sub;
     else if (path === '/v1/invoices/in_1') data = f.invoice;
@@ -45,6 +48,12 @@ test('lost receipts and expired Stripe keys recover the existing tagged refund w
     if (status === 'pending' || status === 'requires_action') assert.equal(r.pending, true);
     assert.ok(!s.calls.some(c => c.method === 'POST'));
   }
+});
+test('a real Stripe refusal of repeated cancellation recovers the existing refund without paying twice', async () => {
+  const f = fixture(); f.refunds.data = [f.refund]; f.pi.latest_charge.amount_refunded = 2090;
+  const s = setup(f, { rejectCancelledDelete: true });
+  assert.deepEqual(await s.run(), { ok: true, refundId: 're_1', amountCents: 2090 });
+  assert.ok(!s.calls.some(c => c.method === 'POST'));
 });
 test('mismatched ownership, disputed charges, multiple payments, manual refunds and uncancelled subscriptions never refund', async () => {
   const changes = [f => f.invoice.subscription = 'sub_other', f => f.invoice.customer = 'cus_other',

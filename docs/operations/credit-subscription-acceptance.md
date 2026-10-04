@@ -92,3 +92,34 @@ Operator review. A pending refund is reported as pending, never as refunded.
 Public plan UI, plan-change database support, browser acceptance and production
 activation follow in separate reviewed slices. None of those checks is implied
 by unit tests or a local database replay.
+
+## Sandbox evidence — 4 October 2026
+
+These are partial staging results, not production launch approval. The test
+used Veyrnox sandbox `acct_1UF6M50HgCFIUbCh`, the authenticated staging APIs,
+and a temporary acceptance page. Ordinary subscription requests remain
+closed; no credentials were copied from the signed-in browser.
+
+- Starter checkout charged $19 plus $3.80 UK tax in sandbox. Subscription
+  `b946c83e-d2d7-4e7c-93c2-5b27e0e5818b` became active. Paid invoice
+  `in_1UMoJj0HgCFIUbChZMqUZXRL` produced exactly one 270-credit ledger grant.
+  The account's prior 38-credit balance became 308.
+- `invoice.paid` arrived before binding, returned 503, and succeeded on
+  Stripe's automatic retry. Lifecycle and invoice events used separate IDs.
+  An explicit invoice replay left one grant and the same balance.
+- Cooling-off removed the unspent 270-credit cycle and restored the prior
+  38 credits. Stripe subscription `sub_1UMoJn0HgCFIUbChAQsvUzME` is cancelled;
+  refund `re_3UMoJl0HgCFIUbCh1LDi8wJV` succeeded for the full $22.80.
+- The first cancellation retry exposed Stripe's refusal of a repeated
+  DELETE. The adapter now verifies the requested subscription is cancelled
+  in the expected mode before treating that refusal as success. Regression
+  tests cover mismatched IDs, active subscriptions, mode mismatches and
+  recovering the existing tagged refund without another refund POST.
+  Repeating the same authenticated cancellation on the corrected staging
+  build returned success, left exactly one succeeded $22.80 refund, and
+  kept the balance at 38 with zero Subscription Credits.
+- All five reconciliation counts were zero after payment and cancellation.
+
+Plus/Ultra payments, renewal, spent/late cooling-off refusal, replacement
+purchase retry, return recovery, disputes and the remaining checklist above
+still require acceptance evidence.

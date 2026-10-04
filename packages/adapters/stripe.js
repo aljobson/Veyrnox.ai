@@ -467,10 +467,15 @@ export async function cancelSubscriptionNow(subscriptionId, cfg) {
     } catch (err) {
         return { ok: false, error: `transport: ${err && err.message}` };
     }
-    const data = await res.json().catch(() => null);
-    // A subscription already canceled is a 400 resource_missing-style refusal we treat as done.
-    if (!res.ok && !(res.status === 400 && data && data.error && /already been canceled/i.test(String(data.error.message || '')))) {
-        return { ok: false, error: `stripe ${res.status}` };
+    if (!res.ok) {
+        // Stripe can refuse a repeated DELETE with resource_missing. Its
+        // error wording is not a cancellation receipt: verify current state.
+        const current = await fetchSubscription(subscriptionId, cfg);
+        const sub = current.subscription;
+        if (!current.ok || sub?.id !== subscriptionId || sub.status !== 'canceled'
+            || sub.livemode !== cfg.apiKey.startsWith('sk_live_')) {
+            return { ok: false, error: `stripe ${res.status}` };
+        }
     }
     return { ok: true };
 }
