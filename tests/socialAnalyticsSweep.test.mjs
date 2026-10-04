@@ -233,3 +233,17 @@ for (const failure of ['missing-grant', 'missing-refresh', 'missing-config', 're
         });
     });
 }
+
+test('posting cache is refreshed only when enabled and metrics recorded, and cache failure preserves ingestion', async () => {
+    const row = await account();
+    for (const enabled of [false, true]) {
+        await withRpc({ claim_social_analytics_accounts: async () => [row], record_social_analytics: async () => ({ ok: true }),
+            refresh_social_posting_insights: async () => { throw new Error('cache down'); },
+        }, async (calls) => {
+            const out = await runAnalyticsSweep({ cfg, cryptoCfg, now, postingInsightsOn: enabled,
+                fetchers: { instagram: async () => ({ metrics: {}, posts: [] }) } });
+            assert.equal(out.synced, 1); assert.equal(out.failed, 0); assert.equal(out.errors, enabled ? 1 : 0);
+            assert.equal(calls.some((c) => c.name === 'refresh_social_posting_insights'), enabled);
+        });
+    }
+});

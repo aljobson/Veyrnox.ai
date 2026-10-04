@@ -169,14 +169,18 @@ social_analytics_snapshots (
   unique (account_id, connector, metric_date)
 )
 
--- Cached best-time-to-post heatmap per account/network (recomputed weekly from social_analytics_snapshots).
+-- Implemented in 0191: one atomic aggregate per account, computed from social_analytics_posts.
 social_best_time_cache (
-  account_id     uuid not null references social_accounts(id) on delete cascade,
-  day_of_week    int not null check (day_of_week between 1 and 7),
-  hour_of_day    int not null check (hour_of_day between 0 and 23),
-  score          numeric not null,
-  computed_at    timestamptz not null default now(),
-  primary key (account_id, day_of_week, hour_of_day)
+  account_id uuid primary key references social_accounts(id) on delete cascade,
+  timezone text not null,
+  period_start date not null,
+  period_end date not null, -- exclusive; twelve complete local calendar weeks
+  heatmap jsonb not null, -- 168 {day, hour, posts, score} cells; unknown score is null
+  frequency jsonb not null, -- twelve {week, posts, measured_posts, avg_interactions} rows
+  recorded_posts integer not null,
+  measured_posts integer not null,
+  history_days integer not null,
+  computed_at timestamptz not null
 )
 
 -- Phase 2: competitor benchmarking.
@@ -269,7 +273,7 @@ against a schema at the boundary.
 | `DELETE /api/v1/social/posts/:id` | Cancel a draft/scheduled post (not a published one). |
 | `POST /api/v1/social/posts/:id/send-for-review` | Creates a `social_approval_requests` row, emails reviewers. |
 | `POST /api/v1/social/approvals/:id/decide` | Reviewer decision endpoint; external reviewers authenticate via a single-use signed link, not a full login. |
-| `GET /api/v1/social/best-time?accountId=&network=` | Returns the cached heatmap from `social_best_time_cache`. |
+| `GET /api/v1/social/best-time?accountId=` | Returns the cached heatmap from `social_best_time_cache`. |
 | `GET /api/v1/social/analytics?accountId=&connector=&from=&to=` | Reads `social_analytics_snapshots`. |
 | `POST /api/v1/social/smart-links` / `PATCH .../:id` | SmartLink CRUD (Phase 2). |
 | `GET /s/:slug` | Public SmartLink landing page (no auth) — logs a row to `smart_link_clicks` on each block click via a redirect endpoint, never client-side only, so ad blockers can't erase the record. |
@@ -333,11 +337,22 @@ platform's rate limit must never block another account's ingestion (never let on
 cascade, matching the "provider callbacks are hints only" principle already used elsewhere in this
 codebase).
 
-**Best time to post (`social_best_time_cache`)**: recomputed weekly per account/network from the
-account's own `social_analytics_snapshots` history — a `(day_of_week 1–7) × (hour_of_day 0–23)`
-grid of engagement scores, matching the exact shape Metricool's own API returns. Cold-start accounts
-(under ~2 weeks of history) fall back to published general best-practice windows per network rather
-than an empty or noisy heatmap.
+**Best time to post and frequency (`social_best_time_cache`, migration 0191)**: recomputed
+at most weekly after successful ingestion, behind `PUBLISH_POSTING_INSIGHTS_ENABLED` (default
+false). Use stored posts, because daily account snapshots do not contain publication hours.
+Store one aggregate per account so empty histories, timing cells and frequency rows update
+atomically. The brand timezone determines weekday/hour and twelve complete calendar weeks;
+invalid timezones fall back to UTC. This window is independent of the dashboard date filter.
+
+Scores average lifetime likes + comments + optional shares/saves. Require numeric likes AND
+comments and posts at least 48 hours old. Unknown measurements stay null; frequency counts
+all stored posts. Rank up to three positive-scoring slots only with at least ten measured
+posts spanning fourteen days and three measured posts in each ranked slot. Sparse or zero
+histories show an insufficient-evidence message; do not supply unsourced generic windows.
+Frequency compares equal-volume weeks using post-weighted averages. These are descriptive
+associations, not causal effects, audience-online estimates or predictions. Older posts have
+had longer to earn interactions; collection can omit older, private or deleted posts.
+Zero-post weeks mean no stored posts. Owner-only service RPCs expose aggregates, never tokens.
 
 ## 2.6 Scheduling engine
 

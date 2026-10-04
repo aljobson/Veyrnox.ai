@@ -38,7 +38,7 @@ import { youtubeConfig } from './packages/adapters/social/youtube.js';
 import { runAnalyticsSweep } from './lib/socialAnalyticsSweep.js';
 import { tokenCryptoConfig } from './lib/social/tokenCrypto.js';
 import { runBrandDrafts } from './lib/social/brandDrafts.js';
-import { publishEnabled } from './lib/social/publishFeature.js';
+import { publishEnabled, postingInsightsEnabled } from './lib/social/publishFeature.js';
 import { listModels } from './app/veyrnox/_lib/modelPages.js';
 
 export default {
@@ -79,6 +79,7 @@ export default {
             ...(env.PUBLISH_ANALYTICS_ENABLED === 'true' ? [runAnalyticsSweep({
                 youtubeCfg: youtubeConfig(env),
                 tiktokCfg: tiktokConfig(env),
+                postingInsightsOn: postingInsightsEnabled(env),
                 cfg: { supabaseUrl: env.SUPABASE_URL, serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY },
                 cryptoCfg: tokenCryptoConfig(env),
             }).then((out) => { if (out.claimed || out.ok === false) console.error('[analytics-sweep]', JSON.stringify(out)); return out; })] : []),

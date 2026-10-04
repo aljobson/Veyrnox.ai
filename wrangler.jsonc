@@ -96,6 +96,8 @@
     // runs it; turn it on after migration 0188 is applied. The analytics
     // page and its API route follow PUBLISH_ENABLED like the rest of Publish.
     "PUBLISH_ANALYTICS_ENABLED": "false",
+    // Weekly historical timing/frequency insights; requires 0191.
+    "PUBLISH_POSTING_INSIGHTS_ENABLED": "false",
     // Adds instagram_business_manage_insights to the Instagram consent
     // screen (reach, views, saves, shares). Only "true" asks for it; turn it
     // on after Meta approves the permission in app review.

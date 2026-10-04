@@ -12,3 +12,8 @@ export async function getSocialAnalytics({ accountId, from, to }) {
     const params = new URLSearchParams({ accountId, from, to });
     return gatewayFetch(`/social/analytics?${params.toString()}`);
 }
+
+/** Fixed twelve-week timing/frequency aggregates for an owned account. */
+export async function getSocialPostingInsights(accountId) {
+    return gatewayFetch(`/social/best-time?${new URLSearchParams({ accountId }).toString()}`);
+}
