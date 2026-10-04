@@ -399,8 +399,7 @@ hostname, so credentials are enrolled separately.
 
 1. Verify complete Apple and passkey sign-ins on staging using owner-controlled
    accounts and devices.
-2. Test the calendar and reschedule flow with a staging draft/test fixture,
-   avoiding an unintended real-channel publication. Real YouTube upload and
+2. Complete the remaining calendar cases listed below. Real YouTube upload and
    publication are still unverified and require an explicit owner-approved post.
 3. Complete provider review and real account acceptance for Instagram insights
    and TikTok analytics before enabling their new consent scopes.
@@ -409,3 +408,39 @@ hostname, so credentials are enrolled separately.
 
 YouTube read analytics and token renewal no longer block the next acceptance
 slice. They do not by themselves approve production Publish activation.
+
+## Live staging calendar acceptance — 2026-10-04
+
+The deployed calendar was tested in the owner's signed-in session on AI staging
+(`yrqzwqywxfesmbvhzjgj`) with one deliberately non-publishable fixture:
+`416c53ec-6d0e-4b0c-89fe-ae301600d83f`, captioned
+“Calendar acceptance test (no media; never publish)”. It had one pending
+YouTube target and zero media rows. It was seeded directly for this test;
+this does not verify draft approval, media selection or the compose flow.
+The initial schedule was 5 October at 13:00 BST (12:00 UTC), safely in the future.
+
+- Month, week and list views rendered the fixture. Week navigation moved from
+  28 September–4 October to 5–11 October and showed the expected post.
+- The scheduled-status filter retained it. The Instagram filter excluded it
+  and showed the empty state; the YouTube filter restored it.
+- The reschedule form rejected 1 October at 13:00 BST as a past time.
+  Saving 6 October at 13:00 BST succeeded and the list showed the new date.
+  Database verification confirmed both the parent schedule and the target's
+  `next_attempt_at` moved to `2026-10-06T12:00:00Z`, with exactly one
+  `post_rescheduled` audit event recording the original and new timestamps.
+  A same-time save was idempotent and did not add an audit event.
+- A service-only RPC attempt using the original schedule as its expected
+  value returned `SCHEDULE_CHANGED`. This verifies stale-write rejection in
+  the deployed database; the browser's conflict-message path was not exercised.
+- Cleanup canceled the parent, marked its pending target failed with
+  `acceptance_fixture_canceled`, and appended a cancellation audit event.
+  The canceled-status filter showed the retained fixture with “Schedule locked”
+  and no reschedule control. Its target remained at zero attempts, unclaimed,
+  with no platform post ID or URL and zero media rows. Nothing was published.
+
+No code change, migration or Worker deployment was needed for this acceptance.
+Production was not changed. Drag-and-drop, daylight-saving boundaries, pagination,
+multiple-target rescheduling and active-worker lock contention remain unverified
+in the live browser; existing automated coverage is not a substitute for those
+live cases. Complete owner-controlled Apple/passkey sign-ins next, then agree
+an explicit test post before testing real YouTube publication.
