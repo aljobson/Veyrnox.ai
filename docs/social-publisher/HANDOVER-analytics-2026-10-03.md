@@ -334,3 +334,18 @@ tables; no Publish definer function is browser-executable. Other reported warnin
 existing public status/catalog RPCs, project inspection and leaked-password protection, outside
 this rollout. The three internal Publish secrets are generated independently for staging;
 provider OAuth client credentials still require private configuration.
+
+
+Staging deployment completed: initial version `23aeec60-0f39-4462-b34d-546aff3e3aed`,
+final secret-bearing version `b64839da-d5c3-40fd-9097-501c11f14967` at 100% traffic.
+Both versions have the same script etag. All four Publish switches read back as true;
+the three internal secrets exist, and the Supabase binding targets staging. The protected
+temporary secret file was removed after deployment. Production was not deployed or mutated.
+
+Verification: 20 focused feature/calendar/insights unit tests pass; a staging-identity
+Next.js/OpenNext build and Wrangler dry run pass; all five remote site-health probes pass.
+The in-app browser loads Publishing calendar and its sign-in state, replacing the previous
+404. Anonymous calendar API access returns typed 401 unauthorized. No authenticated calendar
+read/write, real OAuth consent, provider API call or token refresh was performed: staging
+still has no connected accounts and no provider OAuth client credentials. PR #519 preserves
+this configuration and handover for subsequent merges/deployments.
