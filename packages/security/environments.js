@@ -1,16 +1,12 @@
 /** Approved AI project identities. The separate wallet projects are never valid here. */
 export const AI_ENVIRONMENTS = Object.freeze({
-    // oauthProviders: the "Continue with ..." buttons the sign-in dialog shows
-    // in this environment (components/AuthGate.jsx), an upper bound: the live
-    // Supabase setting can hide one that is switched off, and turning a new
-    // one on takes a change here and a deploy. A failed read of the setting no
-    // longer hides them all. scripts/check-auth-providers.mjs checks
-    // production's live setting against this list every hour.
+    // Expected OAuth providers. Live settings gate redirects rather than
+    // hiding required sign-in methods. The production monitor checks drift.
     staging: Object.freeze({
         supabaseUrl: 'https://yrqzwqywxfesmbvhzjgj.supabase.co',
         publishableKey: 'sb_publishable_bAxQiodzBhI6bV7lmo9gMQ_Hlg9_Ish',
-        // Apple is not configured on the staging project (2026-10-02).
-        oauthProviders: Object.freeze(['google']),
+        // Apple is required here; external provider setup is still pending.
+        oauthProviders: Object.freeze(['apple', 'google']),
     }),
     production: Object.freeze({
         supabaseUrl: 'https://xdxdzmsztyzbnzeforxx.supabase.co',
