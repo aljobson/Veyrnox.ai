@@ -293,3 +293,44 @@ Supabase auth/Turnstile failures and intentional fixture 409/502 responses mean 
 is not clean. No live platform account or remote calendar RPC was exercised. Repeated
 fall-back hours use the browser's chosen offset; the form displays the proposed UTC instant.
 The final Next.js production build and complete OpenNext Worker packaging pass.
+
+
+## Rollout follow-up (2026-10-04)
+
+This section supersedes the earlier outstanding migration and switch status.
+Production migrations through 0192 applied successfully in protected workflow run
+37182909856. PR #518 enabled `PUBLISH_CALENDAR_ENABLED`; production deployment
+37183276498 passed all five site health checks. `PUBLISH_ENABLED`, analytics collection,
+posting insights and provider consent switches remain off in production.
+
+Staging project `yrqzwqywxfesmbvhzjgj` was missing the Publish schema. The existing main
+migrations 0154, 0156, 0157, 0160, 0161, 0168, 0169, 0175, 0176, 0182, 0188, 0190,
+0191 and 0192 were applied byte for byte, individually under their repository names.
+Staging already had 0177 before the social audit table existed. Its idempotent SQL was
+applied separately as `staging_publish_append_only_no_truncate` to install the missing
+audit truncate guard without duplicating the existing migration name. This is staging
+history only; it is not a new production migration.
+
+Staging verification found all twelve Publish/quota tables with RLS and FORCE RLS,
+no browser SELECT grants, no browser execution of social SECURITY DEFINER RPCs,
+and the social audit truncate guard present. Calendar, reschedule, analytics and
+posting-insights RPCs reject invalid identities with USER_NOT_FOUND. These checks
+exercise the remote database but do not constitute an authenticated provider test.
+
+The staging configuration change explicitly enables Publish, analytics collection, posting insights
+and calendar; environment variables are not inherited from production. Instagram insights
+and TikTok analytics consent remain off pending provider approval.
+
+At provisioning, staging had zero brands, accounts and posts and no social OAuth client
+or token/state/media-signing secrets. The next live test needs a privately configured
+provider OAuth app and an owner-controlled test account. YouTube is recommended first
+because its analytics uses the existing youtube.readonly consent. After connecting,
+verify actual API fetch/refresh, stored metrics and timing cache, then calendar reads and
+rescheduling of an unstarted test post. Do not claim a live provider test from empty
+pages, anonymous health checks or fixture data. Production Publish remains closed.
+
+Security advisors report informational no-policy notices for the deliberately closed RPC-only
+tables; no Publish definer function is browser-executable. Other reported warnings concern
+existing public status/catalog RPCs, project inspection and leaked-password protection, outside
+this rollout. The three internal Publish secrets are generated independently for staging;
+provider OAuth client credentials still require private configuration.

@@ -148,6 +148,13 @@
         "JEV_SUBMIT_ERRORS_MODE": "off",
         // Veyrnox Publish is open on staging for testing (see production).
         "PUBLISH_ENABLED": "true",
+        // Publish schema through 0192 provisioned on staging 2026-10-04.
+        "PUBLISH_ANALYTICS_ENABLED": "true",
+        "PUBLISH_POSTING_INSIGHTS_ENABLED": "true",
+        "PUBLISH_CALENDAR_ENABLED": "true",
+        // Provider review approvals are still outstanding.
+        "INSTAGRAM_INSIGHTS_SCOPE_ENABLED": "false",
+        "TIKTOK_ANALYTICS_SCOPE_ENABLED": "false",
         // Cinema Stream upload preview (ADR-0052/0053/0054). Staging only:
         // vars are not inherited by environments and production keeps every
         // one of these "false". Stream secrets are set on this Worker; see
