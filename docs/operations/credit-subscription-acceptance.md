@@ -137,6 +137,14 @@ closed; no credentials were copied from the signed-in browser.
   refund did not restore credits; this does not prove refund-before-first-
   invoice ordering.
 - All five reconciliation counts remained zero after these sandbox checks.
+- Returning to the refunded Ultra checkout through the authenticated return
+  API initially returned `503 invoice_review_required` because its invoice
+  remains paid at Stripe. The return handler now stops recovery after the
+  verified, owned binding reports an ended subscription. The live staging
+  retry returned `200`, `status: ended`, `credited: false`, with balance 38,
+  zero Subscription Credits and all five reconciliation counts at zero.
+  This covers an ended checkout return, not lost-invoice recovery for an
+  active subscription.
 
 ## Local renewal acceptance
 

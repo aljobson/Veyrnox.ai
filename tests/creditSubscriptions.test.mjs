@@ -131,6 +131,37 @@ test('checkout return checks ownership and recovers a lost invoice with a differ
   assert.ok(!calls.some(c => c.fn === 'apply_credit_subscription_event'));
 });
 
+test('returning to an ended checkout succeeds without reading or granting its refunded invoice', async () => {
+  env();
+  const metadata = { kind: 'credit_subscription', credit_subscription_id: ID,
+    credit_subscription_sig: (await import('node:crypto')).createHmac('sha256', SECRET).update(`credit_subscription:${ID}`).digest('hex') };
+  for (const stripeStatus of ['ended', 'active']) {
+    const calls = [];
+    let denyOwnership = false;
+    const handler = subscriptionHandler({ action: 'return', rpcCall: async (fn) => {
+      calls.push(fn);
+      if (fn === 'record_credit_subscription_session' && denyOwnership) return { ok: false, code: 'SUBSCRIPTION_NOT_FOUND' };
+      if (fn === 'apply_credit_subscription_event') return { ok: true, status: 'ended', stale: true };
+      return { ok: true, status: 'ended' };
+    }, stripe: {
+      fetchSession: async () => ({ ok: true, session: { id: 'cs_1', mode: 'subscription', livemode: false, subscription: 'sub_1', metadata } }),
+      fetchSubscription: async () => ({ ok: true, subscription: {} }),
+      interpretSubscription: () => ({ ok: true, subscription: { id: 'sub_1', customerId: 'cus_1', status: stripeStatus, latestInvoiceId: 'in_1' } }),
+    }, fetcher: async () => { assert.fail('ended return must not fetch an invoice, payment or alert'); } });
+    const r = await handler(request({ subscription_id: ID, session_id: 'cs_1' }));
+    assert.equal(r.status, 200);
+    const result = await r.json();
+    assert.deepEqual([result.ok, result.recovered, result.status, result.credited], [true, true, 'ended', false]);
+    assert.deepEqual(calls, ['consume_account_read_request', 'record_credit_subscription_session', 'apply_credit_subscription_event']);
+    assert.equal((await handler(request({ subscription_id: AUTH, session_id: 'cs_1' }))).status, 409,
+      'terminal shortcut still requires the signed session to match the requested row');
+    calls.length = 0;
+    denyOwnership = true;
+    assert.equal((await handler(request({ subscription_id: ID, session_id: 'cs_1' }))).status, 404);
+    assert.ok(!calls.includes('apply_credit_subscription_event'), 'ownership refusal precedes the terminal shortcut');
+  }
+});
+
 test('cancellation addresses the explicit owned row, including an ended row whose refund is being retried', async () => {
   env(); let lookedUp;
   const handler = subscriptionHandler({ action: 'cancel', rpcCall: async (fn, args) => {
