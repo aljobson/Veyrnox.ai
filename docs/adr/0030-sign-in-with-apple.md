@@ -176,3 +176,23 @@ Steps 1-2 are done; step 3 is the outstanding live check above.
 3. Verify a real first-time sign-up end to end: a new `public.users` row, a
    single `grant:signup` ledger row, and `reconcile_free_credits()` clean.
 4. Record the secret's expiry date and set the rotation reminder.
+
+## Amendment — 2026-10-04: every sign-in entry point
+
+The owner requires Apple and passkeys in every sign-in dialog, including staging.
+The root-mounted `AuthGate` now keeps both options visible in sign-in, sign-up
+and magic-link modes. Live settings gate starting an action, rather than hiding
+its button. Missing project configuration is explained in the dialog, and an
+unsupported browser gets a passkey-specific message. Failed settings reads
+permit an attempt; OAuth error handling and passkey CAPTCHA protection remain.
+This supersedes the earlier button-visibility rule.
+
+At inspection, production reported Apple and passkeys enabled; staging reported
+both disabled. Staging Apple requires the AI Services ID to accept
+`https://yrqzwqywxfesmbvhzjgj.supabase.co/auth/v1/callback`, plus its valid client
+secret in the staging Supabase provider. Staging passkeys require a separate RP
+ID `veyrnox-ai-staging.al-jobson.workers.dev` and matching HTTPS origin. Production
+RP ID stays `veyrnox.ai`; production passkeys cannot be used on the staging host.
+Staging passkeys were subsequently enabled in Supabase and the public settings
+read back `passkeys_enabled: true`. Apple staging configuration remains pending.
+Showing a button does not establish a successful real sign-in.
