@@ -120,6 +120,42 @@ closed; no credentials were copied from the signed-in browser.
   kept the balance at 38 with zero Subscription Credits.
 - All five reconciliation counts were zero after payment and cancellation.
 
-Plus/Ultra payments, renewal, spent/late cooling-off refusal, replacement
-purchase retry, return recovery, disputes and the remaining checklist above
-still require acceptance evidence.
+- Plus charged $59 plus $11.80 UK tax. Invoice
+  `in_1UMokU0HgCFIUbChHh0AURl1` granted 1,200 credits once, giving a total
+  balance of 1,238. Explicit invoice replay left the same balance. Period-end
+  cancellation retained all 1,200 Subscription Credits and stopped renewal.
+  Cooling-off then refunded the full $70.80 through the authenticated API;
+  refund `re_3UMokW0HgCFIUbCh0FwRqqS6` succeeded and restored the original 38.
+  Replaying the older Starter refund notification while Plus was active did
+  not remove Plus's credits.
+- Ultra charged $129 plus $25.80 UK tax. Invoice
+  `in_1UMpIQ0HgCFIUbChxi7ceu67` granted 3,000 credits once, giving a total
+  balance of 3,038. Invoice replay added nothing. Cooling-off refunded the
+  full $154.80; refund `re_3UMpIR0HgCFIUbCh1XbKSuxO` succeeded, leaving the
+  original 38 and zero Subscription Credits. Repeating cancellation retained
+  exactly one refund. Replaying the previously processed paid event after
+  refund did not restore credits; this does not prove refund-before-first-
+  invoice ordering.
+- All five reconciliation counts remained zero after these sandbox checks.
+
+## Local renewal acceptance
+
+`scripts/test-subscription-renewal.mjs` runs only against a named local test
+database and rolls back every fixture. CI runs it on the rebuilt database.
+The test uses the existing expiry RPC's `p_as_of` parameter, without changing
+production time checks or database functions. For each of the three tiers it
+checks that a renewal expires the old unspent remainder, replay grants once,
+failed renewal grants nothing, expiry leaves no grace credits, and a later
+paid event recovers the cycle. All five reconcilers return zero rows. The
+webhook regression separately checks that `invoice.payment_failed` records
+current `past_due` state, never grants, and retries a failed state write.
+
+These checks passed locally on 4 October 2026. They are not evidence of live
+Stripe renewal delivery, and CI results must be read from the pull request.
+Stripe test clocks alone do not advance the Worker or PostgreSQL clock;
+simulated future events/invoice periods fail the production time checks.
+Live renewal acceptance needs a separate setup that aligns those clocks.
+
+Live renewal, spent/late cooling-off refusal, replacement purchase API retry,
+return recovery, refund-before-first-invoice ordering, disputes and the
+remaining checklist above still require acceptance evidence.

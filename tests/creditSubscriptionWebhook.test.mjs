@@ -55,6 +55,20 @@ function stub({ bound = binding, subscription = sub(), invoice = inv(), grant = 
 }
 const processed = (calls) => calls.some((c) => c.method === 'PATCH' && c.url.includes('webhook_events'));
 
+test('failed renewal reads current Stripe state, records past_due, and never calls the grant RPC', async () => {
+  const current = { ...sub(), status: 'past_due' };
+  const calls = stub({ subscription: current, apply: { ok: true, status: 'past_due', subscription_id: ID } });
+  assert.equal((await POST(event('invoice.payment_failed', { id: 'in_1', object: 'invoice', subscription: 'sub_1' }))).status, 200);
+  const applied = calls.find((c) => c.url.includes('apply_credit_subscription_event')).body;
+  assert.equal(applied.p_type, 'invoice.payment_failed');
+  assert.equal(applied.p_status, 'past_due');
+  assert.ok(!calls.some((c) => c.url.includes('grant_credit_subscription_invoice')));
+  assert.ok(processed(calls));
+  const failed = stub({ subscription: current, apply: { ok: false, code: 'DATABASE_UNAVAILABLE' } });
+  assert.equal((await POST(event('invoice.payment_failed', { id: 'in_1', object: 'invoice', subscription: 'sub_1' }))).status, 503);
+  assert.ok(!processed(failed), 'state failure must remain retryable');
+});
+
 test('invoice.paid grants once through its own event id and never feeds the state RPC', async () => {
   const calls = stub();
   assert.equal((await POST(event('invoice.paid', { id: 'in_1', object: 'invoice', subscription: 'sub_1' }))).status, 200);
