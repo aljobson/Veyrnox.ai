@@ -349,3 +349,63 @@ The in-app browser loads Publishing calendar and its sign-in state, replacing th
 read/write, real OAuth consent, provider API call or token refresh was performed: staging
 still has no connected accounts and no provider OAuth client credentials. PR #519 preserves
 this configuration and handover for subsequent merges/deployments.
+
+
+## Live staging acceptance — 2026-10-04
+
+This section supersedes the earlier statements that real YouTube data and OAuth
+refresh had not been verified. The owner connected **The Adventures of Pip,
+Hazel & Ollie** to the AI staging project (`yrqzwqywxfesmbvhzjgj`) using the
+separate Google Cloud project `veyrnox-ai-publish`. The connection is active,
+granted `youtube.readonly` and `youtube.upload`, and has a stored refresh token.
+No credential values belong in this handover.
+
+- **Initial real analytics fetch passed at 13:30:30 BST.** The scheduled Worker
+  stored 2,260 subscribers (YouTube's rounded count), 79,715 lifetime channel
+  views, 15 public videos and 15 video analytics records. The signed-in staging
+  dashboard rendered the same channel totals. Its 30-day period showed zero
+  videos because publication dates fall outside that period; channel totals
+  are lifetime totals.
+- **Real OAuth refresh passed at 13:45:29 BST.** For this staging-only acceptance
+  test, the account's stored token expiry was marked past via the existing
+  service-only `update_social_account_token` RPC, and its analytics sync was
+  made due. The test guarded the account identity, active status, unchanged
+  encrypted token, original expiry and sync time, and absence of post targets.
+  The next existing cron run replaced the encrypted access-token value,
+  persisted expiry **14:45:27 BST**, completed another successful analytics
+  fetch with 15 stored videos and left both sync error fields null. This tests
+  the refresh branch by making expiry metadata due; it does not claim the
+  original Google access token naturally expired during the test.
+- The sync resumed its normal six-hour schedule, next due **19:45:28 BST**.
+  The connected account remains active. No posts were scheduled or published,
+  and production configuration was not changed by this acceptance test.
+- Google OAuth was configured in **Testing** for this acceptance. This verifies the owner's test account,
+  not a public rollout or long-term refresh-token longevity.
+
+### Sign-in prerequisites completed
+
+PR #520 keeps Apple and passkeys visible in every shared authentication dialog
+and is merged. Production deployment passed. Staging Supabase now reports
+Apple, Google and passkeys enabled. The existing AI Apple Services ID
+`ai.veyrnox.web` has both production and staging Supabase domains and callbacks;
+its existing signed client secret was entered into staging by the owner. Apple
+staging authorize returns a 302 to Apple with the expected Services ID, staging
+callback and `form_post` response mode. A complete Apple token exchange and a
+real staging passkey sign-in have not been observed in this acceptance test.
+Production passkey RP ID remains `veyrnox.ai`; staging uses its separate Worker
+hostname, so credentials are enrolled separately.
+
+### Remaining work
+
+1. Verify complete Apple and passkey sign-ins on staging using owner-controlled
+   accounts and devices.
+2. Test the calendar and reschedule flow with a staging draft/test fixture,
+   avoiding an unintended real-channel publication. Real YouTube upload and
+   publication are still unverified and require an explicit owner-approved post.
+3. Complete provider review and real account acceptance for Instagram insights
+   and TikTok analytics before enabling their new consent scopes.
+4. Decide X/LinkedIn analytics scope and cost before implementation. Analytics
+   plan gating and caption suggestions remain product decisions.
+
+YouTube read analytics and token renewal no longer block the next acceptance
+slice. They do not by themselves approve production Publish activation.
