@@ -98,8 +98,9 @@
     "PUBLISH_ANALYTICS_ENABLED": "false",
     // Weekly historical timing/frequency insights; requires 0191.
     "PUBLISH_POSTING_INSIGHTS_ENABLED": "false",
-    // Month/week/list calendar and rescheduling; requires 0192.
-    "PUBLISH_CALENDAR_ENABLED": "false",
+    // Month/week/list calendar and rescheduling; 0192 approved 2026-10-04.
+    // The overall Publish launch still follows PUBLISH_ENABLED.
+    "PUBLISH_CALENDAR_ENABLED": "true",
     // Adds instagram_business_manage_insights to the Instagram consent
     // screen (reach, views, saves, shares). Only "true" asks for it; turn it
     // on after Meta approves the permission in app review.
