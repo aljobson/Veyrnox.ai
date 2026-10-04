@@ -98,6 +98,8 @@
     "PUBLISH_ANALYTICS_ENABLED": "false",
     // Weekly historical timing/frequency insights; requires 0191.
     "PUBLISH_POSTING_INSIGHTS_ENABLED": "false",
+    // Month/week/list calendar and rescheduling; requires 0192.
+    "PUBLISH_CALENDAR_ENABLED": "false",
     // Adds instagram_business_manage_insights to the Instagram consent
     // screen (reach, views, saves, shares). Only "true" asks for it; turn it
     // on after Meta approves the permission in app review.

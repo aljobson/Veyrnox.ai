@@ -166,3 +166,12 @@ test('POST: an RPC failure never leaks upstream detail', async () => {
     assert.equal(res.status, 502);
     assert.deepEqual(await res.json(), { error: 'internal' });
 });
+
+test('GET advertises the calendar only while its exact feature switch is true', async () => {
+    try {
+        for (const value of ['false','TRUE','true']) {
+            process.env.PUBLISH_CALENDAR_ENABLED=value;stub();
+            assert.equal((await (await GET(getRequest())).json()).calendarEnabled,value==='true'?true:undefined);
+        }
+    } finally { delete process.env.PUBLISH_CALENDAR_ENABLED; }
+});
