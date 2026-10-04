@@ -38,6 +38,7 @@ export function usablePasskeys(list) {
 export function passkeyErrorCopy(err) {
   const status = err?.status;
   const text = `${err?.code ?? ''} ${err?.message ?? ''}`;
+  if (/insufficient_aal|AAL2 session is required/i.test(text)) return 'Unlock this session with your authenticator code under Two-factor authentication, then try again.';
   if (status === 401 || /not signed in/i.test(text)) return 'Your sign-in has expired. Sign in again, then add the passkey.';
   if (/passkey_disabled/i.test(text)) return 'Passkeys are switched off at the moment.';
   if (status === 429 || /rate limit/i.test(text)) return 'Too many attempts. Wait a minute, then try again.';

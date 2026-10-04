@@ -444,3 +444,11 @@ multiple-target rescheduling and active-worker lock contention remain unverified
 in the live browser; existing automated coverage is not a substitute for those
 live cases. Complete owner-controlled Apple/passkey sign-ins next, then agree
 an explicit test post before testing real YouTube publication.
+
+Passkey enrollment attempt at 14:22:05 BST reached staging Supabase but returned
+403 `insufficient_aal`: the owner's MFA-enabled account requires an AAL2 session
+to manage passkeys. The owner must use the existing authenticator-code “Unlock
+this session” control before enrolling. No passkey was created by this attempt.
+The passkey error copy now explains that step instead of suggesting a connection
+problem; 18 focused passkey tests pass. Successful enrollment and sign-in remain
+unverified until the owner completes the device authentication prompt.

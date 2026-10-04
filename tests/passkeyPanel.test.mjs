@@ -54,6 +54,13 @@ test('errors become user wording and never echo the server message', () => {
   assert.match(passkeyErrorCopy({ status: 500, message: secret }), /did not complete/);
 });
 
+test('MFA-protected passkey management explains how to unlock the session', () => {
+  const expected = 'Unlock this session with your authenticator code under Two-factor authentication, then try again.';
+  assert.equal(passkeyErrorCopy({ status: 403, code: 'insufficient_aal' }), expected);
+  assert.equal(passkeyErrorCopy({ status: 403, message: 'AAL2 session is required to manage passkeys when MFA is enabled' }), expected);
+  assert.match(passkeyErrorCopy({ status: 403, message: 'Other forbidden operation' }), /did not complete/);
+});
+
 test('the panel is on the Account page and follows the project setting', () => {
   const page = read('app/veyrnox/app/account/page.js');
   assert.match(page, /<MfaPanel \/>\n\s*<PasskeyPanel \/>/);
