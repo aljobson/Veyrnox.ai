@@ -2,11 +2,12 @@
 import { useId, useState } from 'react';
 import { CostFilter, Dots, ModelPicker } from './ModelPicker';
 import { tierLabel, tierOf } from '../../_lib/chatModels';
+import { PersonaPicker } from './PersonaPicker';
 
 const credits = (n) => `${n} Credit${n === 1 ? '' : 's'}`;
 // About three words for every four tokens, rounded to ten, from the model's own reply cap.
 const words = (tokens) => Math.round(((tokens || 1024) * 0.75) / 10) * 10;
-const SECTIONS = ['filter', 'model', 'caps', 'tools', 'prompt', 'about'];
+const SECTIONS = ['persona', 'filter', 'model', 'caps', 'tools', 'prompt', 'about'];
 const NOT_YET = ['Code interpreter', 'Shell', 'Files', 'Charts', 'Deep research'];
 
 function Section({ id, title, open, onToggle, children }) {
@@ -38,14 +39,21 @@ function Toggle({ label, extra, checked, disabled, onChange, hint }) {
 
 // Everything that shapes the next reply, in one place: which model, what it may do, and its instructions. Nothing here is
 // sent until the person sends a message, and the price of the choices always shows under the message box.
-export function SettingsPanel({ models, model, busy, onSelectModel, tiers, onTiers, offer, opts, onOpts, researchOn = false, canSaveInstr, instr, onInstr, instrSaved, onSaveInstr, saved, maxPrompt, hasThread }) {
-  const [open, setOpen] = useState({ filter: false, model: true, caps: true, tools: false, prompt: false, about: false });
+export function SettingsPanel({ models, model, busy, onSelectModel, tiers, onTiers, offer, opts, onOpts, researchOn = false, canSaveInstr, instr, onInstr, instrSaved, onSaveInstr, saved, maxPrompt, hasThread, personasOn = false, personas = [], personaId = '', onPersona, onManagePersonas }) {
+  const [open, setOpen] = useState({ persona: true, filter: false, model: true, caps: true, tools: false, prompt: false, about: false });
   const toggle = (id) => setOpen((o) => ({ ...o, [id]: !o[id] }));
   const allOpen = SECTIONS.every((id) => open[id]);
   const tier = tierOf(model.credits_per_reply);
 
   return (
     <div className="flex h-full flex-col gap-3 overflow-y-auto p-3" aria-label="Chat settings" role="region">
+      {personasOn && (
+        <Section id="persona" title="Persona" open={open.persona} onToggle={toggle}>
+          <p className="text-vx-fg-muted">{hasThread ? 'A persona starts a new chat. This chat keeps the instructions it was given.' : 'Start this chat from saved instructions, with a model and options. You can change any of them.'}</p>
+          <PersonaPicker personas={personas} value={personaId} disabled={busy || hasThread} onSelect={onPersona} onManage={onManagePersonas} />
+        </Section>
+      )}
+
       <Section id="filter" title="Model filter" open={open.filter} onToggle={toggle}>
         <p className="text-vx-fg-muted">Show only models at these prices per reply. Pick none to see them all.</p>
         <CostFilter tiers={tiers} onTiers={onTiers} />
