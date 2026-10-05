@@ -10,6 +10,7 @@
  */
 
 export const CHAT_COMPLETIONS_URL = 'https://openrouter.ai/api/v1/chat/completions';
+const EFFORTS = new Set(['none', 'minimal', 'low', 'medium', 'high']);
 const SLUG_RE = /^[a-z0-9][a-z0-9._:/-]{0,100}$/i;
 
 export class ChatProviderError extends Error {
@@ -34,10 +35,10 @@ function codeFor(status) {
  * Stream a reply. Yields `{ delta: string }` for each piece of text.
  * Throws ChatProviderError if the provider refuses, drops, or reports an error mid-stream.
  *
- * @param {{apiKey:string, model:string, messages:{role:string,content:string}[], maxTokens:number,
+ * @param {{apiKey:string, model:string, messages:{role:string,content:string}[], maxTokens:number, reasoningEffort?:string|null,
  *          signal?:AbortSignal, fetchImpl?:typeof fetch}} args
  */
-export async function* streamChat({ apiKey, model, messages, maxTokens, signal, fetchImpl = fetch }) {
+export async function* streamChat({ apiKey, model, messages, maxTokens, reasoningEffort = null, signal, fetchImpl = fetch }) {
     if (typeof apiKey !== 'string' || !apiKey) throw new ChatProviderError('provider_not_configured');
     if (typeof model !== 'string' || !SLUG_RE.test(model)) throw new ChatProviderError('provider_model_unmapped');
     let res;
@@ -46,7 +47,11 @@ export async function* streamChat({ apiKey, model, messages, maxTokens, signal, 
             method: 'POST',
             signal,
             headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ model, messages, max_tokens: maxTokens, stream: true }),
+            // Reasoning comes back in separate delta fields and is never read here: only `content` is yielded.
+            body: JSON.stringify({
+                model, messages, max_tokens: maxTokens, stream: true,
+                ...(typeof reasoningEffort === 'string' && EFFORTS.has(reasoningEffort) ? { reasoning: { effort: reasoningEffort } } : {}),
+            }),
         });
     } catch (err) {
         if (signal && signal.aborted) throw err;

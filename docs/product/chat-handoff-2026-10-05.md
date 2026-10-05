@@ -55,6 +55,8 @@ Prices from OpenRouter's public model list, read 2026-10-05; re-check before act
 | `chat-ministral-14b` | `mistralai/ministral-14b-2512` | 262k | $0.0021 | 1 | 1 |
 | `chat-mistral-small` | `mistralai/mistral-small-2603` | 262k | $0.0020 | 1 | 1 |
 
+**Reasoning models: handled by migration 0196 (staged inactive, PR stacked on #529).** The text below explains why they were held back first.
+
 **Held back: reasoning models.** The adapter sends no `reasoning` parameter and `max_tokens` (1,024) covers hidden reasoning too, so
 a model that reasons by default can spend the whole cap thinking and return an empty reply (refunded, but a poor result). Before adding
 any of these, the adapter needs to send a low-effort setting (OpenRouter's `reasoning` object; supported efforts differ per model) and
@@ -88,3 +90,18 @@ the same database fails ("cannot change return type of existing function"): drop
 - **The prototype's Supabase project** ($10/month) is no longer needed once this ships. Pausing or deleting it is the owner's call.
 - **Naming the model's maker** in the picker versus "the provider is never named to the user" (UI-UX.md section 8): the ADR says
   model name and price only.
+
+## Staging builds (lesson, 2026-10-05)
+
+`wrangler deploy` ships whatever `.open-next` already holds. A staging deploy needs a staging build first, with the
+public staging values, or the browser code is built for local development and sign-in points at the wrong place:
+
+```bash
+APP_ENV=staging SUPABASE_URL=https://yrqzwqywxfesmbvhzjgj.supabase.co \
+NEXT_PUBLIC_SUPABASE_URL=https://yrqzwqywxfesmbvhzjgj.supabase.co \
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<staging publishable key from wrangler.jsonc> \
+PUBLIC_HOST=https://veyrnox-ai-staging.al-jobson.workers.dev npm run build:worker
+npx wrangler deploy --env staging
+```
+
+Check a build before deploying: its client chunks should name the staging project host and contain `"apple,google"`.

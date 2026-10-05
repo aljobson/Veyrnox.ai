@@ -72,9 +72,29 @@ spine instead.
 - The standalone prototype's per-token meter, cookie auth and separate Supabase project are not carried over.
   Its UI behaviour (streaming, search, pin, rename, delete, markdown) is ported onto the Veyrnox design system.
 
+## Amendment 2026-10-05: a row may set its own reply cap and reasoning effort
+
+Status: **Accepted 2026-10-05**, owner approved in chat, including the seven staged rows' prices. Ships with migration 0196; every staged row stays inactive until its own activation migration.
+
+A live check against OpenRouter showed that every model accepts a `reasoning: {effort}` setting, that
+reasoning arrives in separate stream fields (`reasoning`, `reasoning_details`) and never in `content`, and
+that reasoning tokens are billed and count toward `max_tokens`. With the fixed 1,024-token cap a model that
+thinks can spend the whole cap and return nothing. So:
+
+- `model_catalog` gains `chat_max_reply_tokens` (256 to 8,192) and `chat_reasoning_effort` (`none`,
+  `minimal`, `low`, `medium`, `high`), both NULL by default. NULL keeps today's behaviour: a 1,024-token cap
+  and no reasoning setting. Both are only allowed on `text` rows (a CHECK constraint).
+- The price stays flat per reply. `provider_cost_per_unit` is the worst case of one reply: 9,000 input tokens
+  plus the row's full cap. Real replies cost far less, so margin on a typical reply is higher than the floor.
+- The adapter sends `reasoning` only when the row sets a valid effort; the turn runner and the models route
+  read the cap through one function, `replyBudget`, which falls back to the defaults on anything out of range.
+  Reasoning text is never shown or stored.
+- Seven premium rows are staged inactive. Their prices are the owner's decision.
+
 ## Not decided here
 
-- Which models, and their prices. Needs live endpoint checks and the margin validator.
+- Which models, and their prices. Needs live endpoint checks and the margin validator. (Three were chosen
+  and priced on 2026-10-05; seven premium rows are staged inactive by 0196 awaiting owner prices.)
 - Attachments, voice input, assistants, sharing links. Each needs its own cost story.
 - Whether Free Credits (10) should be spendable on chat. They are, because they are Credits; the owner may
   prefer to reserve them for media.

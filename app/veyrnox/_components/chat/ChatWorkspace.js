@@ -9,7 +9,8 @@ import { ThreadList } from './ThreadList';
 const credits = (n) => `${n} Credit${n === 1 ? '' : 's'}`;
 const MAX_TEXT = 8000;
 const MAX_PROMPT = 4000;
-const WORDS = Math.round((1024 * 0.75) / 10) * 10;
+// About three words for every four tokens, rounded to ten, from the chosen model's own reply cap.
+const wordsFor = (tokens) => Math.round(((tokens || 1024) * 0.75) / 10) * 10;
 
 function Footer({ m }) {
   const [copied, setCopied] = useState(false);
@@ -209,7 +210,7 @@ export function ChatWorkspace() {
                 : <button type="button" onClick={send} disabled={!text.trim()} className="rounded-full bg-vx-accent px-4 py-2 text-sm font-semibold text-vx-accent-ink disabled:opacity-50">Send for {credits(model.credits_per_reply)}</button>}
             </div>
             <p className="mt-1.5 px-1 text-xs text-vx-fg-muted">
-              <span className="font-vx-mono text-vx-money vx-num">{credits(model.credits_per_reply)}</span> per reply, up to about {WORDS} words. Stop after text appears and you keep it and the price. If nothing arrives, the Credits come back.
+              <span className="font-vx-mono text-vx-money vx-num">{credits(model.credits_per_reply)}</span> per reply, up to about {wordsFor(model.max_reply_tokens)} words. Stop after text appears and you keep it and the price. If nothing arrives, the Credits come back.
             </p>
           </div>
         </div>
