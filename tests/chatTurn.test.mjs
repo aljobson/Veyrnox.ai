@@ -386,3 +386,68 @@ test('the key: production needs the dedicated chat key; with it the stream uses 
     await (await run(f, { env: { OPENROUTER_CHAT_API_KEY: 'sk-chat', OPENROUTER_API_KEY: 'sk-video', APP_ENV: 'production' } })).text();
     assert.equal(f.streamCalls[0].apiKey, 'sk-chat');
 });
+
+// ── ADR-0069: a plain reply can use a free allowance ──────────────────────────────────────────────────────────
+const FREE_MODEL = { ...MODEL, free_allowance_per_day: 3 };
+const flagOn = { ...env, FREE_ALLOWANCE_ENABLED: 'true' };
+
+test('free allowance off: the column is never requested and the paid debit runs', async () => {
+    const f = fakes({ model: FREE_MODEL });
+    const res = await run(f);
+    assert.equal(res.status, 200);
+    assert.equal(called(f, 'submit_free_job').length, 0);
+    assert.equal(called(f, 'ledger_debit').length, 1);
+});
+
+test('free allowance on, plain reply: a 0-credit job, no ledger_debit, charged nothing, balance reported', async () => {
+    const f = fakes({ model: FREE_MODEL, replies: { submit_free_job: { ok: true, taken: true, job_id: JOB, idempotent: false } } });
+    const res = await run(f, { env: flagOn });
+    assert.equal(res.status, 200);
+    const evs = await events(res);
+    assert.equal(called(f, 'ledger_debit').length, 0);
+    const [, args] = called(f, 'submit_free_job')[0];
+    assert.deepEqual([args.p_model_id, args.p_idempotency_key], ['chat-fast', 'key-0123456789']);
+    assert.deepEqual(args.p_inputs, { kind: 'chat', thread_id: THREAD, options: { thinking: false, web: false } });
+    const start = evs.find((e) => e.event === 'start').data;
+    assert.deepEqual([start.job_id, start.credits, start.balance_after], [JOB, 0, 8]);
+    assert.equal(called(f, 'ledger_refund').length, 0);
+});
+
+test('free allowance on, the reply uses a paid option: priced normally, the allowance is not touched', async () => {
+    const model = { ...FREE_MODEL, chat_web_extra_credits: 2 };
+    const f = fakes({ model });
+    const res = await run(f, { env: flagOn, body: body({ options: { web: true } }) });
+    assert.equal(res.status, 200);
+    assert.equal(called(f, 'submit_free_job').length, 0);
+    assert.equal(called(f, 'ledger_debit')[0][1].p_credits, 4);
+});
+
+test('free allowance on, none left: falls through to the paid debit at the catalog price', async () => {
+    const f = fakes({ model: FREE_MODEL, replies: { submit_free_job: { ok: true, taken: false, code: 'ALLOWANCE_USED' } } });
+    const res = await run(f, { env: flagOn });
+    assert.equal(res.status, 200);
+    assert.equal(called(f, 'ledger_debit')[0][1].p_credits, 2);
+});
+
+test('free allowance on, a rate-limit refusal from the free path is answered like the paid one', async () => {
+    const f = fakes({ model: FREE_MODEL, replies: { submit_free_job: { ok: false, code: 'RATE_LIMITED', count: 10, limit: 10, retry_after_seconds: 5 } } });
+    const res = await run(f, { env: flagOn });
+    assert.equal(res.status, 429);
+    assert.equal(res.headers.get('retry-after'), '5');
+    assert.equal(called(f, 'ledger_debit').length, 0);
+});
+
+test('a free reply that fails refunds 0, which returns the allowance', async () => {
+    const f = fakes({ model: FREE_MODEL, replies: { submit_free_job: { ok: true, taken: true, job_id: JOB, idempotent: false },
+        job_submitted: { ok: false, code: 'NOPE' } } });
+    const res = await run(f, { env: flagOn });
+    assert.equal(res.status, 502);
+    assert.deepEqual(called(f, 'ledger_refund')[0][1], { p_job_id: JOB, p_user_id: 'user-1', p_credits: 0, p_reason: 'refund:submit_failed' });
+});
+
+test('a replay of a free reply returns it without calling the provider', async () => {
+    const f = fakes({ model: FREE_MODEL, replies: { submit_free_job: { ok: true, taken: true, job_id: JOB, idempotent: true } } });
+    const res = await run(f, { env: flagOn });
+    assert.deepEqual(await res.json(), { replay: true, job_id: JOB, balance_after: 8 });
+    assert.equal(f.streamCalls.length, 0);
+});
