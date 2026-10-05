@@ -262,7 +262,7 @@ export default function CreateStudio() {
           prompt: prompt.slice(0, 60),
           name: prompt.slice(0, 40),
         });
-        setBalance(submitted.balance_after);
+        if (submitted.balance_after != null) setBalance(submitted.balance_after);
       });
       if (started > 0) notifyBalanceChanged();
       if (failure) {
