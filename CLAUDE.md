@@ -50,7 +50,8 @@ If a build starts failing after a dependency change, bisect these three first.
   per `user_id`. Every mutation goes through `ledger_debit` / `ledger_refund` /
   `ledger_grant` / `signup_grant` / `expire_free_credits` / `credit_top_up` /
   `apply_top_up_refund` / `subscription_grant` / `expire_subscription_credits` /
-  `reverse_subscription_grant` RPC — never a raw `INSERT INTO ledger_entries` or a raw
+  `reverse_subscription_grant` / `referral_sweep` (ADR-0071: grants through `ledger_grant`,
+  clawbacks as `reverse:referral`) RPC — never a raw `INSERT INTO ledger_entries` or a raw
   `UPDATE credit_balances`.
 - **Frozen accounts** (#97): `apply_top_up_refund` and `apply_dispute_event`
   Freeze, `unfreeze_account` is the only way out, and all three write the
