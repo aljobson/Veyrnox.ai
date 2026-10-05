@@ -1,10 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parseQueries, runOne, worstCase, runProbe, fetchRates, isMain, LIMITS, SEARCH_REASONING } from '../scripts/measure-chat-research.mjs';
+import { parseQueries, runOne, worstCase, runProbe, fetchRates, isMain, LIMITS, SEARCH_REASONING, RETRY } from '../scripts/measure-chat-research.mjs';
 import { mkdtempSync, writeFileSync, symlinkSync, realpathSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
+
+RETRY.baseMs = 1; // waits between retries are real in the script; here they are instant
 
 /** A fake OpenRouter: the plan lists `planLines`, every call reports `usage`. */
 function fakeFetch({ planLines = ['a', 'b', 'c'], cost = { plan: 0.001, search: 0.03, write: 0.2 }, fail = null } = {}) {
@@ -53,15 +55,14 @@ test('worstCase takes the dearest of each step and prices four searches', () => 
     assert.ok(Math.abs(w.total - (0.002 + 4 * 0.05 + 0.3)) < 1e-9);
 });
 
-test('a provider failure is a status code only, never the vendor text', async () => {
-    const { fetchImpl } = fakeFetch({ fail: 2 });
+test('a persistent provider failure is a status code, and a non-JSON vendor body is never shown', async () => {
+    const fetchImpl = async () => new Response('secret vendor text with the prompt', { status: 500 });
     await assert.rejects(runOne({ fetchImpl, apiKey: 'k', model: 'm/x', question: 'q' }), (e) => {
         assert.equal(e.message, 'OpenRouter answered 500');
         assert.ok(!/secret/.test(e.message));
         return true;
     });
 });
-
 test('the budget stops the probe once measured spend passes it', async () => {
     const { fetchImpl } = fakeFetch({ cost: { plan: 0.5, search: 0.5, write: 0.5 } });
     const lines = [];
@@ -170,11 +171,34 @@ test('every reasoning setting rejected is a clear error with OpenRouter\'s messa
     await assert.rejects(runOne({ fetchImpl, apiKey: 'k', model: 'm/x', question: 'q' }), /web plugin not allowed here/);
 });
 
-test('a 401 or 429 is not retried as a reasoning problem', async () => {
-    let n = 0;
-    const fetchImpl = async (url, init) => { if (JSON.parse(init.body).plugins) { n += 1; return new Response('{}', { status: 429 }); } return Response.json({ choices: [{ message: { content: 'a\nb' } }], usage: { cost: 0 } }); };
-    await assert.rejects(runOne({ fetchImpl, apiKey: 'k', model: 'm/x', question: 'q' }), /429/);
-    assert.equal(n, 1);
+test('a refused request or a bad key is not retried, and is never mistaken for a reasoning problem', async () => {
+    for (const status of [400, 401, 402]) {
+        let n = 0;
+        const fetchImpl = async (url, init) => { if (JSON.parse(init.body).plugins) { n += 1; return new Response('{}', { status }); } return Response.json({ choices: [{ message: { content: 'a\nb' } }], usage: { cost: 0 } }); };
+        await assert.rejects(runOne({ fetchImpl, apiKey: 'k', model: 'm/x', question: 'q' }), new RegExp(String(status)));
+        if (status !== 400) assert.equal(n, 1, `${status} is not retried`);
+    }
+});
+
+test('a briefly rate-limited upstream provider is retried and the run carries on', async () => {
+    let planCalls = 0;
+    const fetchImpl = async (url, init) => {
+        const body = JSON.parse(init.body);
+        if (!body.plugins && !body.reasoning) { planCalls += 1; if (planCalls < 3) return Response.json({ error: { message: 'Provider returned error' } }, { status: 429 }); }
+        return Response.json({ choices: [{ message: { content: body.plugins || body.reasoning ? 'x' : 'a\nb' } }], usage: { cost: 0.01 } });
+    };
+    const run = await runOne({ fetchImpl, apiKey: 'k', model: 'm/x', question: 'q', reasoningHint: null });
+    assert.equal(planCalls, 3, 'two 429s, then success');
+    assert.equal(run.steps[0].step, 'plan');
+});
+
+test('a provider that keeps answering 429 or 503 fails after the attempts, with its message', async () => {
+    for (const status of [429, 503]) {
+        let n = 0;
+        const fetchImpl = async () => { n += 1; return Response.json({ error: { message: 'Provider returned error' } }, { status }); };
+        await assert.rejects(runOne({ fetchImpl, apiKey: 'k', model: 'm/x', question: 'q' }), new RegExp(`${status}: Provider returned error`));
+        assert.equal(n, RETRY.attempts);
+    }
 });
 
 test('with a known-good reasoning setting every search starts together, with no discovery call first', async () => {

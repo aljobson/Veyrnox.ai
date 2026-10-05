@@ -51,7 +51,25 @@ export class ProviderRejected extends Error {
     constructor(status, detail) { super(`OpenRouter answered ${status}${detail ? `: ${detail}` : ''}`); this.status = status; }
 }
 
-async function call({ fetchImpl, apiKey, body }) {
+const RETRY_STATUSES = new Set([429, 500, 502, 503, 504]);
+export const RETRY = { attempts: 4, baseMs: 2000 };
+
+/** One request, retried with a growing wait when the upstream provider is briefly rate-limited or unavailable. A refused
+ *  request (400), a bad key (401) or no credit (402) is not retried. A retried call that never answered is not billed. */
+async function call(args, sleep = (ms) => new Promise((r) => setTimeout(r, ms))) {
+    let last;
+    for (let attempt = 1; attempt <= RETRY.attempts; attempt += 1) {
+        try { return await callOnce(args); }
+        catch (err) {
+            last = err;
+            if (!(err instanceof ProviderRejected) || !RETRY_STATUSES.has(err.status) || attempt === RETRY.attempts) throw err;
+            await sleep(RETRY.baseMs * 2 ** (attempt - 1));
+        }
+    }
+    throw last;
+}
+
+async function callOnce({ fetchImpl, apiKey, body }) {
     const t0 = Date.now();
     const res = await fetchImpl(URL_COMPLETIONS, {
         method: 'POST',
