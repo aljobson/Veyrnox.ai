@@ -6,6 +6,8 @@ import pg from 'pg';
 
 const url = process.env.DATABASE_URL;
 const FLOOR = 0.01796;
+// Compare other rows on columns that exist before any migration under test (CI starts from the base schema).
+const STABLE = 'id, name, provider, provider_endpoint, modality, credits_5s, provider_cost_per_unit, cost_unit, billing_seconds, gated_flag, active';
 const IMAGES = 4;
 // [input $/M, measured input tokens for one image at 2,048 px], read live 2026-10-05.
 const MEASURED: Record<string, [number, number]> = {
@@ -20,7 +22,8 @@ const setup = async (db: pg.Client) => {
     await db.query(await read('0029_cost_unit_and_deactivate_seedance.sql'));
     // Start from no chat rows, whatever earlier migrations on this database have already done (all in one rolled-back transaction).
     await db.query("DELETE FROM public.model_catalog WHERE id LIKE 'chat-%' AND provider = 'openrouter-chat'");
-    for (const f of ['0194_chat_models_staged.sql', '0196_chat_models_reasoning.sql', '0197_chat_models_options.sql']) await db.query(await read(f));
+    // 0193 first: 0198 recreates chat_get_thread, whose row type needs the chat tables (absent on CI's base-schema database).
+    for (const f of ['0193_chat.sql', '0194_chat_models_staged.sql', '0196_chat_models_reasoning.sql', '0197_chat_models_options.sql']) await db.query(await read(f));
     return read('0198_chat_models_images.sql');
 };
 
@@ -32,7 +35,7 @@ test('every row prices Images; the recorded cost covers four measured images; th
         try {
             await db.query('BEGIN');
             const migration = await setup(db);
-            const before = (await db.query('SELECT * FROM public.model_catalog WHERE id <> ALL($1) ORDER BY id', [IDS])).rows;
+            const before = (await db.query(`SELECT ${STABLE} FROM public.model_catalog WHERE id <> ALL($1) ORDER BY id`, [IDS])).rows;
             await db.query(migration);
             await db.query(migration);
             const { rows } = await db.query('SELECT * FROM public.model_catalog WHERE id = ANY($1) ORDER BY id', [IDS]);
@@ -43,7 +46,7 @@ test('every row prices Images; the recorded cost covers four measured images; th
                 assert.ok(Number(r.chat_images_extra_cost) >= worst - 1e-9, `${r.id} records ${r.chat_images_extra_cost}, four measured images cost ${worst}`);
                 assert.ok(r.chat_images_extra_credits >= Math.ceil(Number(r.chat_images_extra_cost) / FLOOR), `${r.id} below the floor`);
             }
-            assert.deepEqual((await db.query('SELECT * FROM public.model_catalog WHERE id <> ALL($1) ORDER BY id', [IDS])).rows, before);
+            assert.deepEqual((await db.query(`SELECT ${STABLE} FROM public.model_catalog WHERE id <> ALL($1) ORDER BY id`, [IDS])).rows, before);
         } finally {
             await db.query('ROLLBACK');
             await db.end();

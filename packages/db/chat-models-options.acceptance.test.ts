@@ -6,6 +6,9 @@ import pg from 'pg';
 
 const url = process.env.DATABASE_URL;
 const FLOOR = 0.01796;
+// Compare other rows on columns that exist before any migration under test: a migration that adds columns must not make
+// an unchanged row look changed (CI starts from the base schema, a developer database may already have the columns).
+const STABLE = 'id, name, provider, provider_endpoint, modality, credits_5s, provider_cost_per_unit, cost_unit, billing_seconds, gated_flag, active';
 // $ per million tokens (input, output), OpenRouter's public list read 2026-10-05.
 const RATES: Record<string, [number, number]> = {
     'chat-llama-4-maverick': [0.19, 0.65], 'chat-ministral-14b': [0.2, 0.2], 'chat-mistral-small': [0.15, 0.6],
@@ -64,7 +67,7 @@ test('every row prices web search; the premium rows price thinking; recorded cos
         try {
             await db.query('BEGIN');
             const migration = await setup(db);
-            const before = (await db.query('SELECT * FROM public.model_catalog WHERE id <> ALL($1) ORDER BY id', [Object.keys(RATES)])).rows;
+            const before = (await db.query(`SELECT ${STABLE} FROM public.model_catalog WHERE id <> ALL($1) ORDER BY id`, [Object.keys(RATES)])).rows;
             await db.query(migration);
             await db.query(migration); // replay: absolute values, same result
             const { rows } = await db.query('SELECT * FROM public.model_catalog WHERE id = ANY($1) ORDER BY id', [Object.keys(RATES)]);
@@ -86,7 +89,7 @@ test('every row prices web search; the premium rows price thinking; recorded cos
                 }
             }
             assert.equal(STAGED.length, 7);
-            assert.deepEqual((await db.query('SELECT * FROM public.model_catalog WHERE id <> ALL($1) ORDER BY id', [Object.keys(RATES)])).rows, before);
+            assert.deepEqual((await db.query(`SELECT ${STABLE} FROM public.model_catalog WHERE id <> ALL($1) ORDER BY id`, [Object.keys(RATES)])).rows, before);
             // Repricing by hand survives a replay only if the migration does not overwrite it: it does (absolute
             // values), so a later change belongs in a new migration, which is the repository's rule for catalog edits.
             await db.query("UPDATE public.model_catalog SET active = true WHERE id = 'chat-grok-4.7'");
