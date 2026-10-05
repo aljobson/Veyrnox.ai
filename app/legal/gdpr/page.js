@@ -9,7 +9,7 @@ export const metadata = {
 
 export default function Gdpr() {
     return (
-        <LegalPage title="GDPR & Data Rights" updated="24 September 2026">
+        <LegalPage title="GDPR & Data Rights" updated="5 October 2026">
             <p>{ENTITY.name} processes personal data under the UK GDPR and, for EU residents, the EU GDPR. This page explains how to exercise your rights.</p>
 
             <h2>Your rights</h2>
@@ -17,7 +17,7 @@ export default function Gdpr() {
                 <li><strong>Access</strong> — a copy of the personal data we hold about you.</li>
                 <li><strong>Rectification</strong> — correction of inaccurate data.</li>
                 <li><strong>Erasure</strong> — deletion of your account and personal data, subject to records we must keep by law (for example ledger entries needed for tax).</li>
-                <li><strong>Portability</strong> — your account and generation metadata in a machine-readable format.</li>
+                <li><strong>Portability</strong> — your account data, generation metadata and chat conversations in a machine-readable format.</li>
                 <li><strong>Restriction and objection</strong> — for processing based on legitimate interests.</li>
                 <li><strong>Withdraw consent</strong> — where processing is based on consent.</li>
             </ul>
@@ -26,7 +26,7 @@ export default function Gdpr() {
             <p>Email <a href={`mailto:${ENTITY.privacyEmail}`}>{ENTITY.privacyEmail}</a> from the address on your account. We respond within one month; complex requests may take up to two further months and we will tell you if so. Requests are free unless manifestly unfounded or excessive.</p>
 
             <h2>Where data is processed</h2>
-            <p>Our database, which holds account data, the credit ledger and generation metadata, is hosted in the European Union (Frankfurt, Germany). Generated media is stored in the European Union, in Cloudflare R2 with an EU jurisdictional restriction. Model providers may process your prompt and reference files outside the UK or EEA for the duration of the generation. For every transfer outside the UK or EEA we rely on the UK International Data Transfer Agreement or the EU Standard Contractual Clauses with the processor concerned.</p>
+            <p>Our database, which holds account data, the credit ledger, generation metadata and chat conversations, is hosted in the European Union (Frankfurt, Germany). Generated media is stored in the European Union, in Cloudflare R2 with an EU jurisdictional restriction. Model providers may process your prompt and reference files outside the UK or EEA for the duration of the generation. For every transfer outside the UK or EEA we rely on the UK International Data Transfer Agreement or the EU Standard Contractual Clauses with the processor concerned.</p>
 
             <h2>Automated decisions</h2>
             <p>We do not make decisions with legal or similarly significant effects about you solely by automated means. Content-safety filtering may block a generation; you can ask us to review a block.</p>
