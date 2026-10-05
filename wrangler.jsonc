@@ -29,6 +29,9 @@
     // ADR-0067: Chat is open here, but the screen is still behind the per-browser preview switch
     // (localStorage.veyrnox_chat). Needs OPENROUTER_CHAT_API_KEY on the Worker: production will not use the shared key.
     "CHAT_ENABLED": "true",
+    // ADR-0069: a per-model free allowance, taken as a price waiver. "false" until the owner flips it after
+    // staging acceptance; migrations 0205 and 0206 must be applied first.
+    "FREE_ALLOWANCE_ENABLED": "false",
     // ADR-0064: checkout and account routes stay closed until staging acceptance.
     "SUBSCRIPTIONS_ENABLED": "false",
     // Before activation: SUBSCRIPTION_ALERT_EMAIL must name the Operator;
@@ -150,6 +153,8 @@
         // ADR-0067: Chat is open on staging for testing only. No text model is
         // active until the owner activates one; production stays "false".
         "CHAT_ENABLED": "true",
+        // ADR-0069 (vars are not inherited). Flip to "true" on staging only after 0205 and 0206 are applied there.
+        "FREE_ALLOWANCE_ENABLED": "false",
         // ADR-0066; vars are not inherited, so staging names it too.
         "JEV_SUBMIT_ERRORS_MODE": "off",
         // Veyrnox Publish is open on staging for testing (see production).
