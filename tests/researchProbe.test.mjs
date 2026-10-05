@@ -189,6 +189,8 @@ test('with a known-good reasoning setting every search starts together, with no 
     assert.equal(seen.length, 3);
     assert.ok(seen.every((r) => JSON.stringify(r) === JSON.stringify({ enabled: false })));
     assert.deepEqual(run.searchReasoning, { enabled: false });
+});
+
 test('isMain sees through a symlinked path, so a script run from a link still runs', () => {
     const dir = mkdtempSync(join(tmpdir(), 'probe-'));
     const real = join(dir, 'real.mjs'); writeFileSync(real, '');
