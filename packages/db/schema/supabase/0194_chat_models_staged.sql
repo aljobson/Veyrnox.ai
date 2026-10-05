@@ -16,15 +16,18 @@
 --   ministral-14b     9,000 x $0.20/M + 1,024 x $0.20/M = $0.002005 -> $0.0021
 --   mistral-small     9,000 x $0.15/M + 1,024 x $0.60/M = $0.001964 -> $0.0020
 --
+-- provider is 'openrouter-chat', not 'openrouter': chat has its own provider name so
+-- /api/v1/generations and the video sweepers never touch a chat row (ADR-0067). The route,
+-- the turn runner and chat_* functions all key on it.
 -- Inactive until the endpoint answers a live streamed request on staging.
 INSERT INTO public.model_catalog
     (id, name, provider, provider_endpoint, modality, credits_5s,
      provider_cost_per_unit, cost_unit, billing_seconds, gated_flag, active)
 VALUES
-    ('chat-llama-4-maverick', 'Llama 4 Maverick', 'openrouter',
+    ('chat-llama-4-maverick', 'Llama 4 Maverick', 'openrouter-chat',
      'meta-llama/llama-4-maverick', 'text', 1, 0.0024, 'per_generation', NULL, false, false),
-    ('chat-ministral-14b', 'Ministral 14B', 'openrouter',
+    ('chat-ministral-14b', 'Ministral 14B', 'openrouter-chat',
      'mistralai/ministral-14b-2512', 'text', 1, 0.0021, 'per_generation', NULL, false, false),
-    ('chat-mistral-small', 'Mistral Small', 'openrouter',
+    ('chat-mistral-small', 'Mistral Small', 'openrouter-chat',
      'mistralai/mistral-small-2603', 'text', 1, 0.0020, 'per_generation', NULL, false, false)
 ON CONFLICT (id) DO NOTHING;

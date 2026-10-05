@@ -20,3 +20,24 @@ test('wrangler ships CHAT_ENABLED as the string "false" in production vars', () 
     assert.match(production, /"CHAT_ENABLED":\s*"false"/);
     assert.doesNotMatch(production, /"CHAT_ENABLED":\s*"true"/);
 });
+
+// The route, the turn runner and the catalog rows must agree on the provider name. They once did not:
+// rows staged as 'openrouter' made /api/v1/chat/models return an empty list on staging, and the unit
+// tests could not see it because they mock the database.
+test('chat route, turn runner and chat-model migrations all use one provider name', async () => {
+    const { readdirSync } = await import('node:fs');
+    const root = new URL('..', import.meta.url);
+    const turn = readFileSync(new URL('lib/chatTurn.js', root), 'utf8');
+    const provider = (turn.match(/const PROVIDER = '([^']+)'/) || [])[1];
+    assert.equal(provider, 'openrouter-chat');
+    const route = readFileSync(new URL('app/api/v1/chat/models/route.js', root), 'utf8');
+    assert.ok(route.includes(`provider=eq.${provider}`), 'the models route filters on the chat provider');
+    const dir = new URL('packages/db/schema/supabase/', root);
+    const files = readdirSync(dir).filter((f) => /^\d{4}_chat_models.*\.sql$/.test(f));
+    assert.ok(files.length >= 1);
+    for (const f of files) {
+        const sql = readFileSync(new URL(f, dir), 'utf8').replace(/--.*$/gm, '');
+        assert.ok(sql.includes(`'${provider}'`), `${f} names provider ${provider}`);
+        assert.doesNotMatch(sql, /'openrouter'(?!-)/, `${f} must not use the video provider name`);
+    }
+});
