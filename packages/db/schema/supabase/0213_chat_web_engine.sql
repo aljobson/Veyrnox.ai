@@ -1,6 +1,6 @@
 -- How a chat row's Web search runs (ADR-0067 amendment 8).
 --   'plugin'  OpenRouter's web plugin: what runs today. The page text it injects cannot be capped, which is why its recorded
---             worst case is only a planning bound (0210).
+--             worst case is only a planning bound (0211).
 --   'capped'  our own search call, with each result cut to a fixed length before the model sees it, so the worst case is real
 --             and the Credits for it can be low.
 -- The price and the engine must change together, so a cheap price can never be charged for the uncapped plugin. This migration

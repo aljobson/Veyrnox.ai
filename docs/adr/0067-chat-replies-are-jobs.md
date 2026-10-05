@@ -144,7 +144,7 @@ nothing else (no shared instructions, no files). Up to 50 per person, names uniq
 folder keeps its chats and unfiles them. Moving a chat does not change its place in the recency order. They are called folders, not
 projects, because Veyrnox.ai already has Projects (tenant workspaces for assets, ADR-0051) and the two are unrelated.
 
-Storage follows the chat tables: `chat_folders` (0209) has forced RLS and no table grants, is reached only through five
+Storage follows the chat tables: `chat_folders` (0210) has forced RLS and no table grants, is reached only through five
 `service_role`-only definer functions keyed by the verified auth id, and goes with the account (`ON DELETE CASCADE`).
 `chat_threads.folder_id` is `ON DELETE SET NULL`, and `chat_list_threads` now returns it. Moving is `PATCH /threads/:id` with
 `{folder_id}` alone (null unfiles); folders are `/api/v1/chat/folders`. No money path is touched: a folder name is never sent to
@@ -155,7 +155,7 @@ deploy before the migration without affecting chat. The data-export query includ
 
 Status: **Proposed**. The owner accepts it by merging the change.
 
-**Models.** Migration 0210 turns on the five rows staged since 0196: DeepSeek V4.1 Flash (1 Credit), Gemini 3.8 Flash (2), Grok 4.7 (3),
+**Models.** Migration 0211 turns on the five rows staged since 0196: DeepSeek V4.1 Flash (1 Credit), Gemini 3.8 Flash (2), Grok 4.7 (3),
 GPT-6.1 Sol (4) and Claude Opus 5.5 (7). Each was checked live on 2026-10-05 through the repository's adapter on its own row settings,
 plain and with Thinking: every reply non-empty, and the Thinking answer to a sums puzzle correct on all five. The migration pins slug,
 price, recorded cost, reply cap and reasoning effort, and fails unless exactly five rows change. Gemini 3.8 Flash took about 14 s to
@@ -185,7 +185,7 @@ plugin's own fee was not fixed either: $0.01 to $0.05 per search, in steps of $0
 $0.161 against a recorded $0.0520, and Luna $0.022 to $0.033 against $0.0216. No reply lost money in that range, because the base
 price also pays, but the extra alone fell below the 50% margin floor on heavy pages.
 
-Migration 0211 records a new worst case for all ten rows: a **$0.06 fee** (the observed maximum plus 20%) plus **64,000 input
+Migration 0212 records a new worst case for all ten rows: a **$0.06 fee** (the observed maximum plus 20%) plus **64,000 input
 tokens** (the observed maximum plus about 28%) at each model's input rate, with Credits at the margin floor. It is a planning bound
 from measurement, not a guarantee: the search text cannot be capped through the plugin, so a search that reads more than that is the
 one case the flat price does not cover. Capping the text ourselves (our own search call, with each result cut to a fixed length)
@@ -212,13 +212,13 @@ rate, so the Web search extra falls back to 1 to 2 Credits on most models.
 **The search runs before the debit.** If the search fails or the key is missing, the answer is a typed error with nothing charged;
 a reply is never charged for a search it did not get. The sources listed under the reply are the results the model was given.
 
-**Price and engine change together.** `chat_web_engine` defaults to `plugin` everywhere (0212, additive: the release before it keeps
+**Price and engine change together.** `chat_web_engine` defaults to `plugin` everywhere (0213, additive: the release before it keeps
 working). A later migration flips a row to `capped` and re-prices it in one statement, only after the capped search is live and its
 cost measured with a key. A `capped` row with no search key configured does not offer Web search at all and refuses it before any
-Credits move, so a low price can never be charged for the uncapped plugin. The code that reads the column ships only after 0212 is
+Credits move, so a low price can never be charged for the uncapped plugin. The code that reads the column ships only after 0213 is
 applied in that environment.
 
-**Order.** (1) 0212, (2) the code, (3) set `EXA_API_KEY`, measure, then the flip migration. Deep research (ADR-0070) builds on the
+**Order.** (1) 0213, (2) the code, (3) set `EXA_API_KEY`, measure, then the flip migration. Deep research (ADR-0070) builds on the
 capped search and is not priced until step 3 has real numbers.
 
 **Privacy.** The user's message text goes to Exa as the search query, as it already goes to the plugin's search engine through
