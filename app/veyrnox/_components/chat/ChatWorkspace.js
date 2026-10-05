@@ -8,6 +8,7 @@ import { NEW_CHAT, readDraft, writeDraft, readStars, toggleStar } from '../../_l
 import { AttachButton, AttachChips, useAttachments } from './AttachBar';
 import { ChatText } from './ChatText';
 import { ThreadList } from './ThreadList';
+import { ALL_CHATS } from '../../_lib/chatFolders';
 
 const credits = (n) => `${n} Credit${n === 1 ? '' : 's'}`;
 const MAX_TEXT = 8000;
@@ -32,6 +33,8 @@ function Footer({ m, starred, onStar }) {
 export function ChatWorkspace() {
   const [models, setModels] = useState([]);
   const [threads, setThreads] = useState([]);
+  const [folders, setFolders] = useState(null); // null: folders are not available here, so their controls stay hidden
+  const [folder, setFolder] = useState(ALL_CHATS);
   const [active, setActive] = useState(null);
   const [messages, setMessages] = useState([]);
   const [draftModel, setDraftModel] = useState('');
@@ -62,7 +65,9 @@ export function ChatWorkspace() {
   useEffect(() => {
     (async () => {
       try {
-        const [m, t] = await Promise.all([chatApi.models(), chatApi.threads()]);
+        // Folders are optional: if they fail to load, chat works without them.
+        const [m, t, f] = await Promise.all([chatApi.models(), chatApi.threads(), chatApi.folders().catch(() => null)]);
+        if (f) setFolders(f.folders);
         setModels(m.models); setLimits({ maxAttachments: m.max_attachments || 4, maxEdge: m.max_image_edge || 2048 }); setThreads(t.threads); setDraftModel(m.models[0]?.id || '');
       } catch (e) { fail(e); } finally { setReady(true); }
     })();
@@ -100,6 +105,24 @@ export function ChatWorkspace() {
   const remove = async (id) => {
     try { await chatApi.remove(id); setThreads((ts) => ts.filter((t) => t.id !== id)); if (active?.id === id) blank(); } catch (e) { fail(e); }
   };
+  const byName = (a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase());
+  const newFolder = async (name) => {
+    try { const { folder: f } = await chatApi.createFolder(name); setFolders((fs) => [...fs, f].sort(byName)); setFolder(f.id); return true; } catch (e) { fail(e); return false; }
+  };
+  const renameFolder = async (id, name) => {
+    try { const { folder: f } = await chatApi.renameFolder(id, name); setFolders((fs) => fs.map((x) => (x.id === id ? { ...x, name: f.name } : x)).sort(byName)); return true; } catch (e) { fail(e); return false; }
+  };
+  const deleteFolder = async (id) => {
+    try {
+      await chatApi.removeFolder(id);
+      setFolders((fs) => fs.filter((x) => x.id !== id));
+      setThreads((ts) => ts.map((t) => (t.folder_id === id ? { ...t, folder_id: null } : t)));
+      setFolder((cur) => (cur === id ? ALL_CHATS : cur));
+    } catch (e) { fail(e); }
+  };
+  const move = async (id, folderId) => {
+    try { await chatApi.move(id, folderId); setThreads((ts) => ts.map((t) => (t.id === id ? { ...t, folder_id: folderId } : t))); } catch (e) { fail(e); }
+  };
 
   async function send() {
     const content = text.trim();
@@ -112,6 +135,10 @@ export function ChatWorkspace() {
       for (const it of att.items) keys.push(await uploadChatImage(await prepareImage(it.file, limits.maxEdge)));
       if (!thread) {
         thread = (await chatApi.create(draftModel || model.id)).thread; created = true;
+        // A chat started while a folder is open goes into it. If filing fails, the chat still starts, unfiled.
+        if (folders && folders.some((f) => f.id === folder)) {
+          try { await chatApi.move(thread.id, folder); thread = { ...thread, folder_id: folder }; } catch { /* stays unfiled */ }
+        }
         setActive(thread); setThreads((ts) => [thread, ...ts]);
       }
       setMessages((m) => [...m, { id: `u-${pending}`, role: 'user', content, status: 'complete', credits: 0, attachments: att.items.map(() => ({ type: 'image' })) }, { id: pending, role: 'assistant', content: '', status: 'streaming', credits: 0 }]);
@@ -160,7 +187,11 @@ export function ChatWorkspace() {
     );
   }
 
-  const list = <ThreadList threads={threads} activeId={active?.id} onOpen={open} onNew={blank} onPatch={patch} onDelete={remove} />;
+  const counted = folders && folders.map((f) => ({ ...f, count: threads.filter((t) => t.folder_id === f.id).length }));
+  const list = (
+    <ThreadList threads={threads} folders={counted} folder={folder} onFolder={setFolder} onNewFolder={newFolder} onRenameFolder={renameFolder}
+      onDeleteFolder={deleteFolder} onMove={move} activeId={active?.id} onOpen={open} onNew={blank} onPatch={patch} onDelete={remove} />
+  );
   return (
     <div className="mx-auto flex h-[calc(100dvh-64px)] max-w-[1500px]">
       <aside className="hidden w-[280px] shrink-0 border-r border-vx-border bg-vx-panel md:block">{list}</aside>
