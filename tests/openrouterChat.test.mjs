@@ -94,3 +94,23 @@ test('reasoning text in the stream is never yielded as reply text', async () => 
     const fetchImpl = async () => sse([f({ reasoning: 'thinking about it' }), f({ reasoning_details: [{ text: 'x' }] }), f({ content: 'Answer.' }), 'data: [DONE]\n\n']);
     assert.deepEqual(await collect(streamChat({ ...base, reasoningEffort: 'low', fetchImpl })), ['Answer.']);
 });
+
+test('web search adds OpenRouter\'s web plugin with a fixed result count, and only when asked', async () => {
+    const bodies = [];
+    const fetchImpl = async (_u, init) => { bodies.push(JSON.parse(init.body)); return sse(['data: [DONE]\n\n']); };
+    await collect(streamChat({ ...base, webSearch: true, fetchImpl }));
+    await collect(streamChat({ ...base, fetchImpl }));
+    await collect(streamChat({ ...base, webSearch: 'yes', fetchImpl }));
+    assert.deepEqual(bodies[0].plugins, [{ id: 'web', max_results: 3 }]);
+    assert.equal('plugins' in bodies[1], false);
+    assert.equal('plugins' in bodies[2], false, 'only the boolean true turns it on');
+});
+
+test('url citations arrive as sources, separate from reply text', async () => {
+    const f = (d) => `data: ${JSON.stringify({ choices: [{ delta: d }] })}\n\n`;
+    const cite = (url, title) => ({ annotations: [{ type: 'url_citation', url_citation: { url, title, start_index: 0, end_index: 5 } }] });
+    const fetchImpl = async () => sse([f({ content: 'Answer.' }), f(cite('https://nodejs.org/x', 'Node')), f(cite('https://nodejs.org/x', 'Node again')),
+        f({ annotations: [{ type: 'file', file: {} }] }), 'data: [DONE]\n\n']);
+    const out = []; for await (const x of streamChat({ ...base, webSearch: true, fetchImpl })) out.push(x);
+    assert.deepEqual(out, [{ delta: 'Answer.' }, { source: { url: 'https://nodejs.org/x', title: 'Node' } }]);
+});

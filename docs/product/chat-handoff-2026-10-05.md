@@ -105,3 +105,14 @@ npx wrangler deploy --env staging
 ```
 
 Check a build before deploying: its client chunks should name the staging project host and contain `"apple,google"`.
+
+## Options: Thinking and Web search (migration 0197, ADR-0067 amendment 2)
+
+Extras per model (Credits on top of the base): web search is 2 on the three live models; the seven staged premium
+models are Claude Sonnet 5.5 (thinking 3, web 3), Claude Opus 5.5 (5, 5), GPT-6.1 Sol (3, 3), Gemini 3.8 Flash (1, 2),
+Grok 4.7 (2, 3), GPT-6 Luna (1, 2), DeepSeek V4.1 Flash (1, 2). Worst cases and rates are in the migration comments
+and re-checked by `packages/db/chat-models-options.acceptance.test.ts`. A real web-searched reply on GPT-6 Luna
+returned a sourced answer live on 2026-10-05; thinking was checked the same way.
+
+Apply order on staging: 0196 then 0197 (0194 and 0195 are already there). Applying 0197 prices web search on the live
+rows immediately, so the toggle appears on staging as soon as the Worker with this code is deployed.

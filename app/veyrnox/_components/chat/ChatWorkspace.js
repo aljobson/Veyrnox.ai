@@ -31,6 +31,7 @@ export function ChatWorkspace() {
   const [messages, setMessages] = useState([]);
   const [draftModel, setDraftModel] = useState('');
   const [text, setText] = useState('');
+  const [opts, setOpts] = useState({ thinking: false, web: false });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const [closed, setClosed] = useState(false);
@@ -60,6 +61,10 @@ export function ChatWorkspace() {
   useEffect(() => { endRef.current?.scrollIntoView({ block: 'end' }); }, [messages]);
 
   const model = models.find((x) => x.id === (active?.model_id ?? draftModel)) || models[0];
+  // An option counts only if the chosen model offers it; the price is the model's base plus each extra chosen.
+  const offer = model?.options || { thinking: null, web: null };
+  const chosen = { thinking: opts.thinking && !!offer.thinking, web: opts.web && !!offer.web };
+  const price = (model?.credits_per_reply ?? 0) + (chosen.thinking ? offer.thinking.extra_credits : 0) + (chosen.web ? offer.web.extra_credits : 0);
   const open = async (id) => {
     try {
       const r = await chatApi.get(id);
@@ -93,7 +98,7 @@ export function ChatWorkspace() {
       const ac = new AbortController(); abortRef.current = ac;
       let outcome = null; let streamError = null;
       const r = await sendTurn({
-        threadId: thread.id, text: content, key: makeIdempotencyKey(), signal: ac.signal,
+        threadId: thread.id, text: content, key: makeIdempotencyKey(), options: chosen, signal: ac.signal,
         onEvent: (ev, d) => {
           if (ev === 'delta') setMessages((m) => m.map((x) => (x.id === pending ? { ...x, content: x.content + d.text } : x)));
           if (ev === 'error') streamError = d.error;
@@ -115,7 +120,7 @@ export function ChatWorkspace() {
       if (e?.name === 'AbortError') { if (thread) await open(thread.id); await refreshThreads(); }
       else {
         setMessages((m) => m.filter((x) => x.id !== pending && x.id !== `u-${pending}`)); setText(content);
-        if (e instanceof GatewayError && e.code === 'insufficient_balance') setError(chatErrorCopy(e.code, { credits: model?.credits_per_reply }));
+        if (e instanceof GatewayError && e.code === 'insufficient_balance') setError(chatErrorCopy(e.code, { credits: price }));
         else fail(e);
         if (created && thread) { chatApi.remove(thread.id).catch(() => {}); setThreads((ts) => ts.filter((t) => t.id !== thread.id)); setActive(null); }
       }
@@ -200,6 +205,22 @@ export function ChatWorkspace() {
                 {error} {error.includes('Top up') && <Link className="underline" href="/app/credits">Top up</Link>}
               </div>
             )}
+            {(offer.thinking || offer.web) && (
+              <div className="mb-2 flex flex-wrap gap-2" role="group" aria-label="Options for the next reply">
+                {offer.thinking && (
+                  <label className="flex cursor-pointer items-center gap-2 rounded-full border border-vx-border px-3 py-1.5 text-sm has-[:checked]:border-vx-accent has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-vx-accent">
+                    <input type="checkbox" className="accent-[var(--vx-accent)]" checked={opts.thinking} disabled={busy} onChange={(e) => setOpts((o) => ({ ...o, thinking: e.target.checked }))} />
+                    Thinking <span className="font-vx-mono text-xs text-vx-money vx-num">+{credits(offer.thinking.extra_credits)}</span>
+                  </label>
+                )}
+                {offer.web && (
+                  <label className="flex cursor-pointer items-center gap-2 rounded-full border border-vx-border px-3 py-1.5 text-sm has-[:checked]:border-vx-accent has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-vx-accent">
+                    <input type="checkbox" className="accent-[var(--vx-accent)]" checked={opts.web} disabled={busy} onChange={(e) => setOpts((o) => ({ ...o, web: e.target.checked }))} />
+                    Web search <span className="font-vx-mono text-xs text-vx-money vx-num">+{credits(offer.web.extra_credits)}</span>
+                  </label>
+                )}
+              </div>
+            )}
             <div className="flex items-end gap-2 rounded-2xl border border-vx-border bg-vx-panel p-2 focus-within:border-vx-accent">
               <label className="sr-only" htmlFor="chat-msg">Message</label>
               <textarea id="chat-msg" rows={1} value={text} maxLength={MAX_TEXT} placeholder="Message" onChange={(e) => setText(e.target.value)}
@@ -207,10 +228,10 @@ export function ChatWorkspace() {
                 className="max-h-48 min-h-10 flex-1 resize-none bg-transparent px-2 py-2 text-[15px] text-vx-fg outline-none placeholder:text-vx-fg-faint" />
               {busy
                 ? <button type="button" onClick={() => abortRef.current?.abort()} className="rounded-full border border-vx-border px-4 py-2 text-sm font-semibold">Stop</button>
-                : <button type="button" onClick={send} disabled={!text.trim()} className="rounded-full bg-vx-accent px-4 py-2 text-sm font-semibold text-vx-accent-ink disabled:opacity-50">Send for {credits(model.credits_per_reply)}</button>}
+                : <button type="button" onClick={send} disabled={!text.trim()} className="rounded-full bg-vx-accent px-4 py-2 text-sm font-semibold text-vx-accent-ink disabled:opacity-50">Send for {credits(price)}</button>}
             </div>
             <p className="mt-1.5 px-1 text-xs text-vx-fg-muted">
-              <span className="font-vx-mono text-vx-money vx-num">{credits(model.credits_per_reply)}</span> per reply, up to about {wordsFor(model.max_reply_tokens)} words. Stop after text appears and you keep it and the price. If nothing arrives, the Credits come back.
+              <span className="font-vx-mono text-vx-money vx-num">{credits(price)}</span> per reply, up to about {wordsFor(model.max_reply_tokens)} words. Stop after text appears and you keep it and the price. If nothing arrives, the Credits come back.
             </p>
           </div>
         </div>
