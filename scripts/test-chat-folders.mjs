@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// 0209: chat folders. A folder groups chats; deleting one keeps its chats. Runs against the full migration
+// 0210: chat folders. A folder groups chats; deleting one keeps its chats. Runs against the full migration
 // replay (ledger-tests.yml). Every fixture is rolled back.
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
@@ -41,7 +41,7 @@ const listed = async (u) => (await rpc('public.chat_list_threads($1)', [u.auth])
 
 try {
     // The migration is safe to apply twice.
-    const sql = await readFile(new URL('../packages/db/schema/supabase/0209_chat_folders.sql', import.meta.url), 'utf8');
+    const sql = await readFile(new URL('../packages/db/schema/supabase/0210_chat_folders.sql', import.meta.url), 'utf8');
     await c.query('BEGIN'); await c.query(sql); await c.query(sql); await c.query('ROLLBACK');
 
     await c.query('BEGIN');
