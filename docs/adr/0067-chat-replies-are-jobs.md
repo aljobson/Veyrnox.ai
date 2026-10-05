@@ -93,7 +93,7 @@ thinks can spend the whole cap and return nothing. So:
 
 ## Amendment 2 2026-10-05: Thinking and Web search are priced options
 
-Status: proposed with migration 0197; the owner accepts it by merging that change.
+Status: **Accepted 2026-10-05**, owner approved in chat, including the extra prices on the three live and seven staged rows. Ships with migration 0197.
 
 The price stays flat per reply and still comes only from `model_catalog`. A row now carries an extra price for
 each option it offers, and a reply costs the row's base Credits plus the extra for each option the user turns on.
