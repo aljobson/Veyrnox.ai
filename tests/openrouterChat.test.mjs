@@ -70,3 +70,27 @@ test('malformed JSON frames are skipped, empty deltas are not yielded', async ()
     const fetchImpl = async () => sse(['data: {not json}\n\n', frame(''), 'data: {"choices":[{"delta":{}}]}\n\n', frame('kept')]);
     assert.deepEqual(await collect(streamChat({ ...base, fetchImpl })), ['kept']);
 });
+
+test('sends a reasoning effort when one is set, and no reasoning key when it is not', async () => {
+    const bodies = [];
+    const fetchImpl = async (_u, init) => { bodies.push(JSON.parse(init.body)); return sse(['data: [DONE]\n\n']); };
+    await collect(streamChat({ ...base, reasoningEffort: 'low', fetchImpl }));
+    await collect(streamChat({ ...base, fetchImpl }));
+    await collect(streamChat({ ...base, reasoningEffort: null, fetchImpl }));
+    assert.deepEqual(bodies[0].reasoning, { effort: 'low' });
+    assert.equal('reasoning' in bodies[1], false);
+    assert.equal('reasoning' in bodies[2], false);
+});
+
+test('an unknown reasoning effort is never sent', async () => {
+    let body;
+    const fetchImpl = async (_u, init) => { body = JSON.parse(init.body); return sse(['data: [DONE]\n\n']); };
+    await collect(streamChat({ ...base, reasoningEffort: 'extreme', fetchImpl }));
+    assert.equal('reasoning' in body, false);
+});
+
+test('reasoning text in the stream is never yielded as reply text', async () => {
+    const f = (d) => `data: ${JSON.stringify({ choices: [{ delta: d }] })}\n\n`;
+    const fetchImpl = async () => sse([f({ reasoning: 'thinking about it' }), f({ reasoning_details: [{ text: 'x' }] }), f({ content: 'Answer.' }), 'data: [DONE]\n\n']);
+    assert.deepEqual(await collect(streamChat({ ...base, reasoningEffort: 'low', fetchImpl })), ['Answer.']);
+});

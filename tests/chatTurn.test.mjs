@@ -219,3 +219,17 @@ test('a failed refund is logged and does not hide the result from the user', asy
     const evs = await events(await run(f));
     assert.equal(evs.at(-1).data.status, 'failed');
 });
+
+test('the turn uses the catalog row\'s reply cap and reasoning effort', async () => {
+    const f = fakes({ model: { ...MODEL, chat_max_reply_tokens: 4096, chat_reasoning_effort: 'low' } });
+    await (await runChatTurn({ authId: AUTH, threadId: THREAD, body: body(), env, deps: f.deps })).text();
+    assert.equal(f.streamCalls[0].maxTokens, 4096);
+    assert.equal(f.streamCalls[0].reasoningEffort, 'low');
+});
+
+test('a row without a budget keeps the default cap and sends no reasoning effort', async () => {
+    const f = fakes();
+    await (await runChatTurn({ authId: AUTH, threadId: THREAD, body: body(), env, deps: f.deps })).text();
+    assert.equal(f.streamCalls[0].maxTokens, 1024);
+    assert.equal(f.streamCalls[0].reasoningEffort, null);
+});
