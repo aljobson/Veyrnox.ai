@@ -158,6 +158,22 @@ try {
             VALUES ($1, 'zero-1', 'seedance-2.0-fast', 0, '{}'::jsonb, 'DEBITED')`, [u]), { code: '23514' });
     });
 
+    await check('the nightly reconcile command includes the allowance check and fails on drift', async () => {
+        // The replay database has a pg_cron stub, so the migration's schedule block is a no-op here. Run the command
+        // text it schedules, which is what cron executes, straight from the file.
+        const cron = await readFile(new URL('../packages/db/schema/supabase/0207_reconcile_includes_free_allowance.sql', import.meta.url), 'utf8');
+        await pool.query(cron); // applies cleanly, and again: idempotent
+        const command = cron.slice(cron.indexOf('$cmd$') + 5, cron.lastIndexOf('$cmd$'));
+        assert.match(command, /reconcile_free_allowance\(\)/);
+        assert.match(command, /reconcile_subscription_credits\(\)/, 'the earlier checks are still there');
+        // Two taken, then the cap lowered to one: over its cap, so the nightly command must raise on this check.
+        await setAllowance(3, 100);
+        const u = await user();
+        await submit(u, 'cr-1'); await submit(u, 'cr-2');
+        await setAllowance(1, 100);
+        await assert.rejects(pool.query(command), /[1-9][0-9]* free-allowance problems/);
+    });
+
     await check('submit_free_job is service-role only', async () => {
         const sig = 'public.submit_free_job(uuid,text,text,jsonb,integer,integer)';
         assert.deepEqual(await one(`SELECT has_function_privilege('anon', '${sig}', 'EXECUTE') AS anon,
@@ -166,6 +182,8 @@ try {
     });
 } finally {
     await setAllowance(0, 0).catch(() => {});
+    // Leave no drift behind for the scripts that run after this one.
+    await pool.query('DELETE FROM public.model_free_allowance_claims WHERE model_id = $1', [MODEL]).catch(() => {});
     await pool.query('UPDATE public.model_catalog SET active = false WHERE id = $1', [MODEL]).catch(() => {});
     await pool.end();
 }

@@ -51,7 +51,9 @@ test('requests go one at a time and the first failure stops the rest', () => {
     assert.match(submit, /const code = submitErrorCode\(err\.code\);\s*setError\(\{ \.\.\.err, code, note: batchNote\(started, n, code\) \}\);/);
     assert.match(page, /\{error\.note && ` \$\{error\.note\}`\}/);
     // Every accepted job is tracked, recorded, and priced per unit.
-    assert.match(sendOne, /\(i === 0 \? startJobs : addJob\)\(\{ job_id: submitted\.job_id, state: 'queued', credits: unitCost, model_id: modelId \}\);/);
+    // Priced per unit, or 0 when the server marked the job as having used a free allowance (ADR-0069).
+    assert.match(sendOne, /const jobCredits = submitted\.free_allowance === true \? 0 : unitCost;/);
+    assert.match(sendOne, /\(i === 0 \? startJobs : addJob\)\(\{ job_id: submitted\.job_id, state: 'queued', credits: jobCredits, model_id: modelId \}\);/);
     assert.match(sendOne, /pushJobHistory\(\{/);
     assert.match(sendOne, /setBalance\(submitted\.balance_after\);/);
 });
