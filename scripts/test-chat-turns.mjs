@@ -66,6 +66,19 @@ try {
     // 0198 reads thread messages joined to their jobs and prices Images on the catalog rows; it replays too.
     const images = await readFile(new URL('../packages/db/schema/supabase/0198_chat_models_images.sql', import.meta.url), 'utf8');
     await c.query('BEGIN'); await c.query(images); await c.query(images); await c.query('ROLLBACK');
+    // 0202 makes delete a real delete and clears chats that were only hidden before it; it replays too.
+    const hardDelete = await readFile(new URL('../packages/db/schema/supabase/0202_chat_delete_is_delete.sql', import.meta.url), 'utf8');
+    await c.query('BEGIN');
+    {
+        const u = await user(); const m = await model(`chat-purge-${randomUUID().slice(0, 8)}`);
+        const t = (await thread(u, m)).thread.id;
+        await q('UPDATE public.chat_threads SET deleted_at = now() WHERE id = $1', [t]);
+        await q("INSERT INTO public.chat_messages (thread_id, role, content, status) VALUES ($1, 'user', 'hidden but still stored', 'complete')", [t]);
+        await c.query(hardDelete); await c.query(hardDelete);
+        assert.equal((await q('SELECT count(*)::int AS n FROM public.chat_threads WHERE id = $1', [t]))[0].n, 0, 'a chat hidden before 0202 is removed by it');
+        assert.equal((await q('SELECT count(*)::int AS n FROM public.chat_messages WHERE thread_id = $1', [t]))[0].n, 0);
+    }
+    await c.query('ROLLBACK');
 
     await c.query('BEGIN');
     const suffix = randomUUID().slice(0, 8);
@@ -200,6 +213,19 @@ try {
     assert.equal((await getThread(a, t2.id)).code, 'THREAD_NOT_FOUND');
     assert.equal((await rpc('public.chat_delete_thread($1, $2)', [a.auth, t2.id])).code, 'THREAD_NOT_FOUND', 'deleting twice');
     assert.ok(!(await rpc('public.chat_list_threads($1)', [a.auth])).threads.some((t) => t.id === t2.id));
+
+    // ── Deleting a chat deletes it: the thread and its messages are gone, the money record stays (0202). ──
+    {
+        const u = await user(); const t = (await thread(u, fast)).thread.id;
+        const job = await startTurn(u, t, fast);
+        assert.equal((await complete(job, t, 'a private question', 'a private answer')).ok, true);
+        assert.equal((await rpc('public.chat_delete_thread($1, $2)', [u.auth, t])).ok, true);
+        assert.equal((await q('SELECT count(*)::int AS n FROM public.chat_threads WHERE id = $1', [t]))[0].n, 0, 'the thread row is gone, not hidden');
+        assert.equal((await q('SELECT count(*)::int AS n FROM public.chat_messages WHERE thread_id = $1', [t]))[0].n, 0, 'its messages went with it');
+        const [j] = await q('SELECT state, credits FROM public.jobs WHERE id = $1', [job]);
+        assert.deepEqual([j.state, j.credits], ['STORED', 2], 'the job and its charge stay: that is the ledger, and it never held the text');
+        assert.ok(!JSON.stringify(await q('SELECT inputs FROM public.jobs WHERE id = $1', [job])).includes('private'));
+    }
 
     // ── The per-user thread cap. ──
     const c3 = await user();
