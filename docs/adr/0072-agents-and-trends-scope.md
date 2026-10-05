@@ -80,6 +80,15 @@ Build order when this is picked up: Trends first (categories, the count-only cou
 already in `inputs`), then Personas (one table, definer functions, the chat UI, behind `PERSONAS_ENABLED`). Take the next free migration
 number after the highest **open PR**, not just after main.
 
+### Refinement while building Popular (2026-10-05)
+
+"20 starts in 30 days" is built stricter: a template ranks once **20 distinct accounts have completed a job from it** in the last 30 days (a
+job counts only if it reached `STORED`), so a handful of accounts repeating a template cannot push it up and an unfinished or refunded job
+ranks nothing. The template id is recorded on the job as `preset_id` only if it names a real template **and that template's own model is the
+model in use**; anything else is ignored, never an error, and the id never reaches a provider. The ranking returns ids only (no counts,
+accounts or prompts) through a public, cached route (`/api/popular-templates`), and the gallery shows a Popular filter only once something
+has ranked. Migration `0215_popular_templates`.
+
 ### Personas as built (2026-10-05)
 
 Migration `0216_chat_personas`; behind `PERSONAS_ENABLED` (`"false"` in production and staging). A persona is `name`, `instructions` (up to 4,000

@@ -77,3 +77,17 @@ Build order when this is picked up: the migration (table, definer functions, the
 job), acceptance tests for release, clawback, the monthly caps and idempotency, a script in the replayed-database chain, then the sign-up
 attribution and the account page panel. `REFERRALS_ENABLED` ships `"false"` in production. Take the next free migration number after the
 highest **open PR** (see CLAUDE.md), not just after main.
+
+## Build progress
+
+**Part 1, attribution (migration `0217`, 2026-10-05).** Codes and the referrer link only; no Credits move and no reward exists yet.
+
+- One opaque code per account, 10 characters from a 31-letter alphabet with no I, L, O, 0 or 1, made on first use and never derived from an id or email.
+- `referrals.referee_user_id` is the primary key, so an account is attributed once and never changed. The same code again is a successful retry; a different one is refused.
+- Attribution is accepted only for a new account: created in the last 48 hours, with no job and no top-up, and never to itself.
+- The routes (`GET /api/v1/referrals`, `POST /api/v1/referrals/attach`) answer counts only and never say who the referrer is. An unknown code and a malformed one answer alike.
+- Behind `REFERRALS_ENABLED`, `"false"` in production and staging.
+
+**Open for the owner before part 2 can ship the sign-up capture.** A referral link carries the code in `?ref=`, and the sign-up flow leaves the page (email confirmation, OAuth), so the code has to survive in this browser until the first signed-in load. That is a new item for the storage notice and the privacy policy, which today list only the sign-in session, recent job display history and the theme. Two options: keep the code in `sessionStorage` for the tab and disclose it, or do not carry it and attribute only when the friend signs up in the same page load. The first is what makes the feature work; it needs the notice and policy updated in the same change.
+
+Remaining parts: rewards and the release sweep with caps and the reconcile check (part 2), clawback and the account panel (part 3).

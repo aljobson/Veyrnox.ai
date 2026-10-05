@@ -34,6 +34,10 @@ export function chatErrorCopy(code, { credits } = {}) {
     case 'rate_limited': return 'You are sending messages quickly. Wait a few seconds and try again.';
     case 'chat_not_open': return 'Chat is not open yet.';
     case 'thread_not_found': return 'That chat no longer exists.';
+    case 'search_unavailable': return 'Web search is not working right now. Turn it off or try again. No Credits were used.';
+    case 'search_timeout': return 'Web search took too long. Try again, or turn it off. No Credits were used.';
+    case 'search_rate_limited': return 'Web search is busy. Try again in a moment. No Credits were used.';
+    case 'search_no_results': return 'No pages came back for that. Try again without Web search. No Credits were used.';
     case 'folder_not_found': return 'That folder no longer exists.';
     case 'folder_exists': return 'You already have a folder with that name.';
     case 'folder_limit': return 'You can have up to 50 folders. Delete one to make another.';
