@@ -67,3 +67,30 @@ Build Deep research **ourselves, out of bounded steps we already price**, instea
 4. **A 120 s wall-clock ceiling**, ending the run and refunding if no answer was written. Background runs with notifications are a later decision.
 
 Build order when this is picked up: measure the plan, search and write costs on staging for the two models, then the migration (`chat_research_*` columns, constraints, exact-row-count updates), then the orchestration in `lib/chatTurn.js` with a refund test at each step, then the UI. `CHAT_RESEARCH_ENABLED` ships `"false"` in production.
+
+## Addendum 2026-10-05: what the live measurements changed
+
+`scripts/measure-chat-research.mjs` ran the plan, search and write shape for real through OpenRouter (4 paid runs, 3 questions
+each, about $2.30 in total). It overturned two things this ADR assumed.
+
+**1. The plan and searches must not run on the reasoning model.** On Claude Sonnet 5.5 the searches returned **no text on 6 of 12**
+(it accepts only `effort: minimal` and still spends the token cap thinking) at $0.045 to $0.077 each, and each empty one cost the
+same. On GPT-6 Luna the web plugin handed the model up to 109,000 tokens of page text: searches cost up to $0.151 and took up to
+105 s, and a whole run reached 116 s of the 120 s ceiling. A cheap non-reasoning model (Mistral Small 2603) for the plan and the
+searches returned text on **23 of 23**, at a near-flat $0.0079 to $0.0082 each (2,000 to 4,000 tokens read), with Claude Sonnet 5.5
+writing the answer: runs took 24 to 44 s and cost $0.05 to $0.07. So:
+
+- Each row that offers research names the model that plans and searches (`chat_research_search_model`, migration 0209), set per row
+  like the price. The write stays on the row's own model.
+- **v1 offers research on Claude Sonnet 5.5 only.** GPT-6 Luna does not, because of its search time and cost.
+
+**2. The price is the option's own extra cost, not the whole run.** A plain Sonnet reply is already priced at 4 Credits for a
+4,096-token reply from 9,000 tokens of input. The research write is capped at the same 4,096 tokens and read at most about 6,500
+tokens of notes, so it sits inside that. The extra is the plan and four searches: $0.0001 + 4 x $0.0082 = $0.0329, **recorded at
+$0.0400 for headroom, which is 3 Credits** at the margin floor, **7 Credits per research reply**. The whole run at its worst
+(about $0.087) also clears the floor on 7 Credits. This replaces "the write at the row's Thinking setting" with "the write at the
+same cap as a plain reply", which is what the measured answers (about 2,000 to 2,400 tokens) call for.
+
+Also settled: the order the owner's questions are answered in is unchanged (bounded 4-search run, Sonnet 5.5, chat reply only,
+120 s ceiling). Measured wall time is 24 to 44 s, so a full-length write still leaves more than a minute of headroom. A search that
+fails or returns nothing is dropped, and the run fails (and refunds) only if none is usable.

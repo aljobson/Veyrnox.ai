@@ -3,15 +3,17 @@ import assert from 'node:assert/strict';
 import { replyPrice, rowOptions, validateTurn, researchEnabled, researchSettings } from '../lib/chat.js';
 
 const base = { credits_5s: 2 };
-const offered = { ...base, chat_research_extra_credits: 15, chat_research_write_max_tokens: 4096,
+const offered = { ...base, chat_research_extra_credits: 15, chat_research_write_max_tokens: 4096, chat_research_search_model: 'mistralai/mistral-small-2603',
     chat_web_extra_credits: 2, chat_thinking_effort: 'high', chat_thinking_max_reply_tokens: 8192, chat_thinking_extra_credits: 3, chat_images_extra_credits: 1 };
 const turn = (options) => validateTurn({ text: 'hello', idempotency_key: 'key-0123456789', options });
 
-test('a row offers research only when its credits and write cap are both valid', () => {
-    assert.deepEqual(researchSettings(offered), { extraCredits: 15, writeMaxTokens: 4096 });
-    for (const bad of [{}, { chat_research_extra_credits: 15 }, { chat_research_write_max_tokens: 4096 },
+test('a row offers research only when its credits, write cap and search model are all valid', () => {
+    assert.deepEqual(researchSettings(offered), { extraCredits: 15, writeMaxTokens: 4096, searchModel: 'mistralai/mistral-small-2603' });
+    for (const bad of [{}, { chat_research_extra_credits: 15 }, { chat_research_write_max_tokens: 4096 }, { chat_research_search_model: 'm/x' },
         { chat_research_extra_credits: 0, chat_research_write_max_tokens: 4096 }, { chat_research_extra_credits: 15, chat_research_write_max_tokens: 100 },
-        { chat_research_extra_credits: 15, chat_research_write_max_tokens: 9000 }, { chat_research_extra_credits: '15', chat_research_write_max_tokens: 4096 }]) {
+        { chat_research_extra_credits: 15, chat_research_write_max_tokens: 9000 }, { chat_research_extra_credits: '15', chat_research_write_max_tokens: 4096 },
+        { ...offered, chat_research_search_model: null }, { ...offered, chat_research_search_model: '' }, { ...offered, chat_research_search_model: 'bad model!' },
+        { ...offered, chat_research_search_model: '../etc' }, { ...offered, chat_research_search_model: 42 }]) {
         assert.equal(researchSettings({ ...base, ...bad }), null, JSON.stringify(bad));
     }
 });
