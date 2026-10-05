@@ -1,23 +1,24 @@
 /**
  * GET /api/v1/chat/models — the text models a signed-in user may chat with, and what a reply costs.
  * Price is model_catalog.credits_5s ("Credits per reply", ADR-0067). Never provider_cost_per_unit,
- * never the provider endpoint, and never the provider's name.
+ * never the provider endpoint (only the model family derived from it), and never the provider's name.
  */
 import { select } from '../../../../../packages/db/supabase-client.js';
 import { enter, reply } from '../../../../../lib/chatRoute.js';
-import { MAX_REPLY_TOKENS, MAX_ATTACHMENTS, MAX_IMAGE_EDGE, replyBudget, rowOptions } from '../../../../../lib/chat.js';
+import { MAX_REPLY_TOKENS, MAX_ATTACHMENTS, MAX_IMAGE_EDGE, makerOf, replyBudget, rowOptions } from '../../../../../lib/chat.js';
 
 export async function GET(req) {
     const gate = await enter(req);
     if (gate instanceof Response) return gate;
     try {
         const rows = await select('model_catalog', {
-            columns: 'id,name,credits_5s,gated_flag,chat_max_reply_tokens,chat_reasoning_effort,'
+            columns: 'id,name,provider_endpoint,credits_5s,gated_flag,chat_max_reply_tokens,chat_reasoning_effort,'
                 + 'chat_thinking_effort,chat_thinking_max_reply_tokens,chat_thinking_extra_credits,chat_web_extra_credits,chat_images_extra_credits',
             filter: 'active=eq.true&modality=eq.text&provider=eq.openrouter-chat&order=name.asc',
         }, gate.cfg);
         const models = (Array.isArray(rows) ? rows : []).map((r) => ({
-            id: r.id, name: r.name, credits_per_reply: r.credits_5s, gated: !!r.gated_flag,
+            id: r.id, name: r.name, maker: makerOf(r.provider_endpoint).maker, maker_label: makerOf(r.provider_endpoint).label,
+            credits_per_reply: r.credits_5s, gated: !!r.gated_flag,
             max_reply_tokens: replyBudget(r).maxTokens,
             options: rowOptions(r),
         }));

@@ -1,7 +1,7 @@
 // ADR-0067: validation and prompt assembly.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { MAX_HISTORY_CHARS, MAX_REPLY_TOKENS, PLATFORM_INSTRUCTION, buildMessages, chatEnabled, sseFrame, validateFolderName, validateThreadPatch, validateTurn } from '../lib/chat.js';
+import { MAX_HISTORY_CHARS, MAX_REPLY_TOKENS, PLATFORM_INSTRUCTION, buildMessages, chatEnabled, sseFrame, makerOf, validateFolderName, validateThreadPatch, validateTurn } from '../lib/chat.js';
 
 test('the caps the flat price depends on', () => {
     assert.equal(MAX_REPLY_TOKENS, 1024); assert.equal(MAX_HISTORY_CHARS, 24000);
@@ -89,4 +89,17 @@ test('a thread patch may move a chat into a folder, or out with null, and only o
         assert.deepEqual(validateThreadPatch({ folder_id: v }), { ok: false, error: 'invalid_folder_id' }, JSON.stringify(v));
     }
     assert.deepEqual(validateThreadPatch({ folder_id: F, title: 'x' }), { ok: false, error: 'folder_id_must_be_alone' });
+});
+
+test('makerOf names the model family from the endpoint prefix and never returns the endpoint', () => {
+    assert.deepEqual(makerOf('anthropic/claude-sonnet-5.5'), { maker: 'claude', label: 'Claude' });
+    assert.deepEqual(makerOf('openai/gpt-6-luna'), { maker: 'chatgpt', label: 'ChatGPT' });
+    assert.deepEqual(makerOf('google/gemini-3.8-flash'), { maker: 'gemini', label: 'Gemini' });
+    assert.deepEqual(makerOf('x-ai/grok-4.7'), { maker: 'grok', label: 'Grok' });
+    assert.deepEqual(makerOf('deepseek/deepseek-v4.1-flash'), { maker: 'deepseek', label: 'DeepSeek' });
+    assert.deepEqual(makerOf('meta-llama/llama-4-maverick'), { maker: 'llama', label: 'Llama' });
+    assert.deepEqual(makerOf('mistralai/mistral-small-2603'), { maker: 'mistral', label: 'Mistral' });
+    for (const odd of [undefined, null, '', 'noslash', 5, '/x', 'unknown-lab/model']) {
+        assert.deepEqual(makerOf(odd), { maker: 'other', label: 'Other' }, String(odd));
+    }
 });

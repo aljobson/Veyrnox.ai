@@ -89,16 +89,18 @@ test('models: only what a user needs, never cost, endpoint or provider', async (
     catalogRows = [{ id: 'chat-fast', name: 'Fast', credits_5s: 2, gated_flag: false, provider_cost_per_unit: 0.0004, provider_endpoint: 'vendor/fast', provider: 'openrouter-chat' }];
     const res = await getModels(req());
     const j = await res.json();
-    assert.deepEqual(j, { models: [{ id: 'chat-fast', name: 'Fast', credits_per_reply: 2, gated: false, max_reply_tokens: 1024, options: { thinking: null, web: null, images: null } }], max_reply_tokens: 1024, max_attachments: 4, max_image_edge: 2048 });
+    assert.deepEqual(j, { models: [{ id: 'chat-fast', name: 'Fast', maker: 'other', maker_label: 'Other', credits_per_reply: 2, gated: false, max_reply_tokens: 1024, options: { thinking: null, web: null, images: null } }], max_reply_tokens: 1024, max_attachments: 4, max_image_edge: 2048 });
     const q = new URL(calls.find((c) => c.url.includes('model_catalog')).url).searchParams;
     assert.equal(q.get('modality'), 'eq.text'); assert.equal(q.get('provider'), 'eq.openrouter-chat'); assert.equal(q.get('active'), 'eq.true');
-    assert.ok(!q.get('select').includes('provider_cost') && !q.get('select').includes('endpoint'));
+    // The endpoint is read only to name the model family; it never reaches the response, and neither does the cost.
+    assert.ok(!q.get('select').includes('provider_cost'));
+    assert.ok(!JSON.stringify(j).includes('vendor/fast') && !JSON.stringify(j).includes('0.0004'));
 });
 
 test('models: a row with its own reply cap reports it; reasoning effort is never exposed', async () => {
     catalogRows = [{ id: 'chat-deep', name: 'Deep', credits_5s: 4, gated_flag: false, provider: 'openrouter-chat', chat_max_reply_tokens: 4096, chat_reasoning_effort: 'low' }];
     const j = await (await getModels(req())).json();
-    assert.deepEqual(j.models, [{ id: 'chat-deep', name: 'Deep', credits_per_reply: 4, gated: false, max_reply_tokens: 4096, options: { thinking: null, web: null, images: null } }]);
+    assert.deepEqual(j.models, [{ id: 'chat-deep', name: 'Deep', maker: 'other', maker_label: 'Other', credits_per_reply: 4, gated: false, max_reply_tokens: 4096, options: { thinking: null, web: null, images: null } }]);
     assert.ok(!JSON.stringify(j).includes('reasoning'));
     const q = new URL(calls.find((c) => c.url.includes('model_catalog')).url).searchParams;
     assert.match(q.get('select'), /chat_max_reply_tokens/);
@@ -276,4 +278,18 @@ test('moving a chat: PATCH folder_id calls chat_move_thread, and nothing else is
     assert.equal((await patchThread(req('PATCH', { folder_id: FOLDER }), params())).status, 404);
     assert.equal((await patchThread(req('PATCH', { folder_id: 'nope' }), params())).status, 400);
     assert.equal((await patchThread(req('PATCH', { folder_id: FOLDER, title: 'x' }), params())).status, 400);
+});
+
+test('models: each row names its maker from the endpoint, and the endpoint itself never leaves the server', async () => {
+    catalogRows = [
+        { id: 'chat-a', name: 'Claude Sonnet 5.5', provider_endpoint: 'anthropic/claude-sonnet-5.5', credits_5s: 4, gated_flag: false },
+        { id: 'chat-b', name: 'DeepSeek V4.1 Flash', provider_endpoint: 'deepseek/deepseek-v4.1-flash', credits_5s: 1, gated_flag: false },
+        { id: 'chat-c', name: 'Mystery', provider_endpoint: 'newlab/model-1', credits_5s: 1, gated_flag: false },
+    ];
+    const res = await getModels(req());
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.deepEqual(body.models.map((m) => [m.id, m.maker, m.maker_label]), [['chat-a', 'claude', 'Claude'], ['chat-b', 'deepseek', 'DeepSeek'], ['chat-c', 'other', 'Other']]);
+    const text = JSON.stringify(body);
+    for (const leak of ['anthropic/', 'deepseek/', 'newlab/', 'provider_endpoint', 'openrouter']) assert.ok(!text.includes(leak), leak);
 });

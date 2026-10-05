@@ -151,6 +151,29 @@ Storage follows the chat tables: `chat_folders` (0208) has forced RLS and no tab
 a model and never read by a turn. The screen hides every folder control when the folders endpoint is unavailable, so the code can
 deploy before the migration without affecting chat. The data-export query includes each chat's folder name.
 
+## Amendment 6 2026-10-05: the five premium models, a two-level picker and a settings panel
+
+Status: **Proposed**. The owner accepts it by merging the change.
+
+**Models.** Migration 0209 turns on the five rows staged since 0196: DeepSeek V4.1 Flash (1 Credit), Gemini 3.8 Flash (2), Grok 4.7 (3),
+GPT-6.1 Sol (4) and Claude Opus 5.5 (7). Each was checked live on 2026-10-05 through the repository's adapter on its own row settings,
+plain and with Thinking: every reply non-empty, and the Thinking answer to a sums puzzle correct on all five. The migration pins slug,
+price, recorded cost, reply cap and reasoning effort, and fails unless exactly five rows change. Gemini 3.8 Flash took about 14 s to
+start a Thinking reply, which is why Thinking stays optional. A new chat now opens on the cheapest model, ties settled by family
+order, instead of the first by name (which would have been Opus).
+
+**Picker.** Two levels, family then model, with a cost filter. The family is derived server side from the endpoint's prefix and only
+the family comes back (`maker`, `maker_label`); the endpoint, cost and provider name never do. A cost tier is the base price per
+reply: 1 Credit Low, 2 to 3 Medium, 4 and over High. The model in use always stays listed, whatever the filter.
+
+**Settings panel.** The model controls, Thinking and Web search, and the instructions move out of the header and composer into a
+right-hand panel of collapsible sections (a drawer below 1280 px) with Reset all and Open all, and an About panel that states the
+price, reply length and the extra Credits for each option. Instructions can be written before the first message and are saved onto
+the chat when it is created. The panel lists Code interpreter, Shell, Files, Charts and Deep research as "Not available yet": they
+need a sandbox and agent runs and are not built.
+
+No money path changes: prices, options and the ledger are untouched.
+
 ## Not decided here
 
 - Which models, and their prices. Needs live endpoint checks and the margin validator. (Three were chosen
