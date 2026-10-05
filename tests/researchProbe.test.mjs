@@ -112,3 +112,31 @@ test('fetchRates reads per-token prices for the models asked about, and an outag
     assert.deepEqual(await fetchRates(['a/x'], async () => new Response('no', { status: 503 })), {});
     assert.deepEqual(await fetchRates(['a/x'], async () => { throw new Error('down'); }), {});
 });
+
+test('searches run together, and the run reports wall-clock rather than the sum of the steps', async () => {
+    let inFlight = 0, peak = 0;
+    const fetchImpl = async (url, init) => {
+        const body = JSON.parse(init.body);
+        const kind = body.plugins ? 'search' : body.reasoning ? 'write' : 'plan';
+        if (kind === 'search') { inFlight += 1; peak = Math.max(peak, inFlight); await new Promise((r) => setTimeout(r, 40)); inFlight -= 1; }
+        return Response.json({ choices: [{ message: { content: kind === 'plan' ? 'a\nb\nc\nd' : `${kind} text` } }], usage: { prompt_tokens: 1, completion_tokens: 1, cost: 0.01 } });
+    };
+    const run = await runOne({ fetchImpl, apiKey: 'k', model: 'm/x', question: 'q' });
+    assert.equal(peak, 4, 'all four searches were in flight together');
+    assert.deepEqual(run.steps.map((s) => s.step), ['plan', 'search', 'search', 'search', 'search', 'write'], 'steps stay in order');
+    assert.ok(run.ms < run.steps.reduce((a, s) => a + s.ms, 0), 'wall-clock is less than the sum of the step times');
+});
+
+test('empty searches are counted and the search effort is off', async () => {
+    assert.equal(LIMITS.searchEffort, 'none');
+    let n = 0;
+    const fetchImpl = async (url, init) => {
+        const body = JSON.parse(init.body);
+        const kind = body.plugins ? 'search' : body.reasoning ? 'write' : 'plan';
+        if (kind === 'search') n += 1;
+        const text = kind === 'plan' ? 'a\nb' : kind === 'search' && n === 1 ? '' : `${kind} text`;
+        return Response.json({ choices: [{ message: { content: text } }], usage: { prompt_tokens: 1, completion_tokens: 1, cost: 0.01 } });
+    };
+    const run = await runOne({ fetchImpl, apiKey: 'k', model: 'm/x', question: 'q' });
+    assert.equal(run.emptySearches, 1);
+});

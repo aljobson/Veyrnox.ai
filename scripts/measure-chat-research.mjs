@@ -28,9 +28,10 @@ export const QUESTIONS = [
     'Compare the current pricing and free tiers of the three biggest managed Postgres providers for a small SaaS.',
     'What are the main arguments for and against a four-day work week, according to recent studies?',
 ];
-// Search steps run at low reasoning effort: a reasoning model left at its default can spend the whole token cap thinking and
-// return no text, which hands the write step empty notes and makes the run look far cheaper than it is (seen 2026-10-05).
-export const LIMITS = { searches: 4, results: 3, planTokens: 300, searchTokens: 1000, searchEffort: 'low', writeTokens: 8192, writeEffort: 'high' };
+// Search steps run with reasoning off: a reasoning model left at its default can spend the whole token cap thinking and
+// return no text, which hands the write step empty notes and makes the run look far cheaper than it is (seen 2026-10-05,
+// and Claude Sonnet 5.5 still did it on 2 of 4 searches at 'low').
+export const LIMITS = { searches: 4, results: 3, planTokens: 300, searchTokens: 1000, searchEffort: 'none', writeTokens: 8192, writeEffort: 'high' };
 export const MODELS_URL = 'https://openrouter.ai/api/v1/models';
 
 const PLAN_SYSTEM = `Write up to ${LIMITS.searches} distinct web search queries that would help research the user's question. Reply with one query per line, no numbering and no commentary.`;
@@ -63,16 +64,19 @@ async function call({ fetchImpl, apiKey, body }) {
  * @param {{fetchImpl?:typeof fetch, apiKey:string, model:string, question:string}} a
  */
 export async function runOne({ fetchImpl = fetch, apiKey, model, question }) {
+    const started = Date.now();
     const steps = [];
     const plan = await call({ fetchImpl, apiKey, body: { model, max_tokens: LIMITS.planTokens, messages: [{ role: 'system', content: PLAN_SYSTEM }, { role: 'user', content: question }] } });
     steps.push({ step: 'plan', ...plan });
     const queries = parseQueries(plan.text);
     const notes = [];
-    for (const q of queries) {
-        const s = await call({ fetchImpl, apiKey, body: {
-            model, max_tokens: LIMITS.searchTokens, plugins: [{ id: 'web', max_results: LIMITS.results }], reasoning: { effort: LIMITS.searchEffort },
-            messages: [{ role: 'user', content: `Search the web and summarise what you find, with source links, for: ${q}` }],
-        } });
+    // The searches do not depend on each other, so they run together: the run's wall-clock is the plan, the slowest search,
+    // then the write. The cost is the same as running them one after another.
+    const searched = await Promise.all(queries.map(async (q) => ({ q, s: await call({ fetchImpl, apiKey, body: {
+        model, max_tokens: LIMITS.searchTokens, plugins: [{ id: 'web', max_results: LIMITS.results }], reasoning: { effort: LIMITS.searchEffort },
+        messages: [{ role: 'user', content: `Search the web and summarise what you find, with source links, for: ${q}` }],
+    } }) })));
+    for (const { q, s } of searched) {
         steps.push({ step: 'search', query: q, ...s, chars: s.text.length });
         notes.push(`## ${q}\n${s.text}`);
     }
@@ -87,7 +91,8 @@ export async function runOne({ fetchImpl = fetch, apiKey, model, question }) {
     steps.push({ step: 'write', ...write });
     const costs = steps.map((s) => s.cost);
     return { model, question, steps, searches: queries.length, cost: costs.every((c) => c !== null) ? costs.reduce((a, b) => a + b, 0) : null,
-        ms: steps.reduce((a, s) => a + s.ms, 0) };
+        ms: Date.now() - started, // wall-clock for the whole run, which is what the 120 s ceiling is measured against
+        emptySearches: steps.filter((s) => s.step === 'search' && !s.text.trim()).length };
 }
 
 /** Per-token prices for the models, from OpenRouter's public list (no key). Empty if it cannot be read. */
@@ -134,7 +139,7 @@ export async function runProbe({ fetchImpl = fetch, apiKey, models = MODELS, que
             const run = await runOne({ fetchImpl, apiKey, model, question });
             byModel[model].push(run);
             spent += run.cost ?? 0;
-            log(`  ${model}  ${run.searches} searches  ${usd(run.cost)}  ${(run.ms / 1000).toFixed(0)}s  ${question.slice(0, 48)}...`);
+            log(`  ${model}  ${run.searches} searches (${run.emptySearches} empty)  ${usd(run.cost)}  ${(run.ms / 1000).toFixed(0)}s wall  ${question.slice(0, 48)}...`);
             for (const s of run.steps) log(`      ${s.step.padEnd(6)} in ${s.promptTokens ?? '?'} out ${s.completionTokens ?? '?'}  ${usd(s.cost)}  ${(s.ms / 1000).toFixed(1)}s${s.finish === 'length' ? '  HIT TOKEN CAP' : ''}${s.step === 'search' && !s.chars ? '  EMPTY' : ''}`);
         }
     }
@@ -163,7 +168,9 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
             const w = worstCase(runs, rates[model]);
             console.log(`${model}: dearest plan ${usd(w.plan)}, search ${usd(w.search)}, write ${usd(w.write)} (${w.writeBasis}; measured ${usd(w.measuredWrite)})`);
             console.log(`  recorded worst case (plan + ${LIMITS.searches} x search + write): ${usd(w.total)}  -> candidate chat_research_extra_cost`);
-            console.log(`  slowest run: ${(Math.max(...runs.map((r) => r.ms)) / 1000).toFixed(0)}s (ADR ceiling 120s)`);
+            console.log(`  slowest run: ${(Math.max(...runs.map((r) => r.ms)) / 1000).toFixed(0)}s wall (ADR ceiling 120s); empty searches: ${runs.reduce((a, r) => a + r.emptySearches, 0)}`);
+            const slowestWrite = Math.max(...runs.flatMap((r) => r.steps.filter((x) => x.step === 'write').map((x) => x.ms)));
+            console.log(`  slowest write: ${(slowestWrite / 1000).toFixed(0)}s for what it produced; a full ${LIMITS.writeTokens}-token reply is longer, so the ceiling needs headroom`);
         }
     }
 }
