@@ -80,7 +80,7 @@ same. On GPT-6 Luna the web plugin handed the model up to 109,000 tokens of page
 searches returned text on **23 of 23**, at a near-flat $0.0079 to $0.0082 each (2,000 to 4,000 tokens read), with Claude Sonnet 5.5
 writing the answer: runs took 24 to 44 s and cost $0.05 to $0.07. So:
 
-- Each row that offers research names the model that plans and searches (`chat_research_search_model`, migration 0209), set per row
+- Each row that offers research names the model that plans and searches (`chat_research_search_model`, migration 0214), set per row
   like the price. The write stays on the row's own model.
 - **v1 offers research on Claude Sonnet 5.5 only.** GPT-6 Luna does not, because of its search time and cost.
 
