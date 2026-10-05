@@ -8,14 +8,14 @@ Changes that touch the money spine, the ledger or the catalog are marked **[mone
 
 ### Added
 - Capped web search (ADR-0067 amendment 8): our own search call (Exa) with each result cut to 2,000 characters and at most 3 results, run before any Credits move, used when a row's `chat_web_engine` is `capped` and `EXA_API_KEY` is set. A failed or empty search is a typed refusal with nothing charged. No row is flipped yet, so nothing a user sees changes. `scripts/measure-capped-search.mjs` measures the real fee
-- `model_catalog.chat_web_engine` (0211, ADR-0067 amendment 8): how a row's Web search runs, `plugin` (today) or `capped` (our own search with a fixed text length). Additive; every row reads `plugin`. Nothing a user sees changes
+- `model_catalog.chat_web_engine` (0212, ADR-0067 amendment 8): how a row's Web search runs, `plugin` (today) or `capped` (our own search with a fixed text length). Additive; every row reads `plugin`. Nothing a user sees changes
 - Chat settings panel and a two-level model picker (ADR-0067 amendment 6): family then model, a Low/Medium/High cost filter, collapsible Capabilities, Tools, System prompt and About sections, Reset all and Open all; instructions can be written before the first message. `/api/v1/chat/models` now returns each model's family
-- Five more chat models turned on (0209): DeepSeek V4.1 Flash, Gemini 3.8 Flash, Grok 4.7, GPT-6.1 Sol, Claude Opus 5.5. New chats open on the cheapest model
-- Chat folders (0208, ADR-0067 amendment 5): group chats, move them in and out, rename or delete a folder (its chats stay). Up to 50 per person; `/api/v1/chat/folders`; a thread patch with `folder_id` moves a chat
+- Five more chat models turned on (0210): DeepSeek V4.1 Flash, Gemini 3.8 Flash, Grok 4.7, GPT-6.1 Sol, Claude Opus 5.5. New chats open on the cheapest model
+- Chat folders (0209, ADR-0067 amendment 5): group chats, move them in and out, rename or delete a folder (its chats stay). Up to 50 per person; `/api/v1/chat/folders`; a thread patch with `folder_id` moves a chat
 - Chat, behind `CHAT_ENABLED` (off) and the browser preview switch `veyrnox_chat`: threads and messages (0193), `/api/v1/chat/*`, a streaming reply that is one job priced per reply from `model_catalog`, finished by `chat_complete_turn` or refunded, and a `/app/chat` screen. No text model is active until an operator verifies one (ADR-0067, Accepted) **[money]**
 
 ### Changed
-- **[money]** Web search is re-priced on all ten chat models (0210, ADR-0067 amendment 7) from measured worst cases: the plugin's search text is uncapped (12k to 50k input tokens) and its fee is $0.01 to $0.05. A Luna reply with Web search goes from 3 to 5 Credits, a Sonnet one from 7 to 15. Held as a draft for the owner's decision
+- **[money]** Web search is re-priced on all ten chat models (0211, ADR-0067 amendment 7) from measured worst cases: the plugin's search text is uncapped (12k to 50k input tokens) and its fee is $0.01 to $0.05. A Luna reply with Web search goes from 3 to 5 Credits, a Sonnet one from 7 to 15. Held as a draft for the owner's decision
 - `list_user_jobs` leaves chat jobs out of the Library (0193); the public catalog read excludes text models
 
 ## Unreleased (2026-09-29 to 2026-10-01)

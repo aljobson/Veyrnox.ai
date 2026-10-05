@@ -110,3 +110,49 @@ export async function* streamChat({ apiKey, model, messages, maxTokens, reasonin
         try { await reader.cancel(); } catch { /* already closed */ }
     }
 }
+
+/**
+ * One reply, not streamed (Deep research's plan and search steps, ADR-0070). Same target, same privacy setting and the same
+ * typed errors as streamChat. Returns the reply text and the pages a web search cited, each page once.
+ *
+ * @param {{apiKey:string, model:string, messages:{role:string,content:string}[], maxTokens:number, reasoningEffort?:string|null,
+ *          webSearch?:boolean, signal?:AbortSignal, fetchImpl?:typeof fetch}} args
+ * @returns {Promise<{text:string, sources:{url:string,title:string}[]}>}
+ */
+export async function completeChat({ apiKey, model, messages, maxTokens, reasoningEffort = null, webSearch = false, signal, fetchImpl = fetch }) {
+    if (typeof apiKey !== 'string' || !apiKey) throw new ChatProviderError('provider_not_configured');
+    if (typeof model !== 'string' || !SLUG_RE.test(model)) throw new ChatProviderError('provider_model_unmapped');
+    let res;
+    try {
+        res = await fetchImpl(CHAT_COMPLETIONS_URL, {
+            method: 'POST',
+            signal,
+            headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                model, messages, max_tokens: maxTokens, stream: false,
+                provider: { data_collection: 'deny' },
+                ...(typeof reasoningEffort === 'string' && EFFORTS.has(reasoningEffort) ? { reasoning: { effort: reasoningEffort } } : {}),
+                ...(webSearch === true ? { plugins: [{ id: 'web', max_results: WEB_MAX_RESULTS }] } : {}),
+            }),
+        });
+    } catch (err) {
+        if (signal && signal.aborted) throw err;
+        throw new ChatProviderError('provider_unavailable');
+    }
+    if (!res.ok) throw new ChatProviderError(codeFor(res.status));
+    let json;
+    try { json = await res.json(); } catch { throw new ChatProviderError('provider_dropped'); }
+    if (json && json.error) throw new ChatProviderError('provider_error');
+    const message = json && json.choices && json.choices[0] && json.choices[0].message;
+    const text = message && typeof message.content === 'string' ? message.content : '';
+    const sources = [];
+    const seen = new Set();
+    for (const a of (message && Array.isArray(message.annotations) ? message.annotations : [])) {
+        const c = a && a.type === 'url_citation' && a.url_citation;
+        if (c && typeof c.url === 'string' && !seen.has(c.url)) {
+            seen.add(c.url);
+            sources.push({ url: c.url, title: typeof c.title === 'string' ? c.title : '' });
+        }
+    }
+    return { text, sources };
+}
