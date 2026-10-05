@@ -386,3 +386,154 @@ test('the key: production needs the dedicated chat key; with it the stream uses 
     await (await run(f, { env: { OPENROUTER_CHAT_API_KEY: 'sk-chat', OPENROUTER_API_KEY: 'sk-video', APP_ENV: 'production' } })).text();
     assert.equal(f.streamCalls[0].apiKey, 'sk-chat');
 });
+
+// ── ADR-0069: a plain reply can use a free allowance ──────────────────────────────────────────────────────────
+const FREE_MODEL = { ...MODEL, free_allowance_per_day: 3 };
+const flagOn = { ...env, FREE_ALLOWANCE_ENABLED: 'true' };
+
+test('free allowance off: the column is never requested and the paid debit runs', async () => {
+    const f = fakes({ model: FREE_MODEL });
+    const res = await run(f);
+    assert.equal(res.status, 200);
+    assert.equal(called(f, 'submit_free_job').length, 0);
+    assert.equal(called(f, 'ledger_debit').length, 1);
+});
+
+test('free allowance on, plain reply: a 0-credit job, no ledger_debit, charged nothing, balance reported', async () => {
+    const f = fakes({ model: FREE_MODEL, replies: { submit_free_job: { ok: true, taken: true, job_id: JOB, idempotent: false } } });
+    const res = await run(f, { env: flagOn });
+    assert.equal(res.status, 200);
+    const evs = await events(res);
+    assert.equal(called(f, 'ledger_debit').length, 0);
+    const [, args] = called(f, 'submit_free_job')[0];
+    assert.deepEqual([args.p_model_id, args.p_idempotency_key], ['chat-fast', 'key-0123456789']);
+    assert.deepEqual(args.p_inputs, { kind: 'chat', thread_id: THREAD, options: { thinking: false, web: false } });
+    const start = evs.find((e) => e.event === 'start').data;
+    assert.deepEqual([start.job_id, start.credits, start.balance_after], [JOB, 0, 8]);
+    assert.equal(called(f, 'ledger_refund').length, 0);
+});
+
+test('free allowance on, the reply uses a paid option: priced normally, the allowance is not touched', async () => {
+    const model = { ...FREE_MODEL, chat_web_extra_credits: 2 };
+    const f = fakes({ model });
+    const res = await run(f, { env: flagOn, body: body({ options: { web: true } }) });
+    assert.equal(res.status, 200);
+    assert.equal(called(f, 'submit_free_job').length, 0);
+    assert.equal(called(f, 'ledger_debit')[0][1].p_credits, 4);
+});
+
+test('free allowance on, none left: falls through to the paid debit at the catalog price', async () => {
+    const f = fakes({ model: FREE_MODEL, replies: { submit_free_job: { ok: true, taken: false, code: 'ALLOWANCE_USED' } } });
+    const res = await run(f, { env: flagOn });
+    assert.equal(res.status, 200);
+    assert.equal(called(f, 'ledger_debit')[0][1].p_credits, 2);
+});
+
+test('free allowance on, a rate-limit refusal from the free path is answered like the paid one', async () => {
+    const f = fakes({ model: FREE_MODEL, replies: { submit_free_job: { ok: false, code: 'RATE_LIMITED', count: 10, limit: 10, retry_after_seconds: 5 } } });
+    const res = await run(f, { env: flagOn });
+    assert.equal(res.status, 429);
+    assert.equal(res.headers.get('retry-after'), '5');
+    assert.equal(called(f, 'ledger_debit').length, 0);
+});
+
+test('a free reply that fails refunds 0, which returns the allowance', async () => {
+    const f = fakes({ model: FREE_MODEL, replies: { submit_free_job: { ok: true, taken: true, job_id: JOB, idempotent: false },
+        job_submitted: { ok: false, code: 'NOPE' } } });
+    const res = await run(f, { env: flagOn });
+    assert.equal(res.status, 502);
+    assert.deepEqual(called(f, 'ledger_refund')[0][1], { p_job_id: JOB, p_user_id: 'user-1', p_credits: 0, p_reason: 'refund:submit_failed' });
+});
+
+test('a replay of a free reply returns it without calling the provider', async () => {
+    const f = fakes({ model: FREE_MODEL, replies: { submit_free_job: { ok: true, taken: true, job_id: JOB, idempotent: true } } });
+    const res = await run(f, { env: flagOn });
+    assert.deepEqual(await res.json(), { replay: true, job_id: JOB, balance_after: 8 });
+    assert.equal(f.streamCalls.length, 0);
+});
+
+// ── ADR-0070: Deep research is refused until it is switched on and the row offers it ─────────────────────────
+const RESEARCH_MODEL = { ...MODEL, chat_research_extra_credits: 15, chat_research_write_max_tokens: 4096 };
+
+test('research off: the research columns are never requested and a research turn is refused before any money moves', async () => {
+    const f = fakes({ model: RESEARCH_MODEL });
+    const res = await run(f, { body: body({ options: { research: true } }) });
+    assert.equal(res.status, 409);
+    assert.deepEqual(await res.json(), { error: 'option_unavailable' });
+    assert.equal(called(f, 'ledger_debit').length, 0);
+});
+
+test('research on but the row does not offer it: refused as option_unavailable, no debit', async () => {
+    const f = fakes({ model: MODEL });
+    const res = await run(f, { env: { ...env, CHAT_RESEARCH_ENABLED: 'true' }, body: body({ options: { research: true } }) });
+    assert.equal(res.status, 409);
+    assert.equal(called(f, 'ledger_debit').length, 0);
+});
+
+// ── ADR-0070: a research turn through the real turn code, with a fake provider ─────────────────────────────────
+const researchEnv = { ...env, CHAT_RESEARCH_ENABLED: 'true' };
+const researchOpts = body({ options: { research: true } });
+const completes = (calls) => async (a) => {
+    calls.push(a);
+    return a.webSearch ? { text: `notes ${calls.length}`, sources: [{ url: `https://r.test/${calls.length}`, title: 't' }] } : { text: 'q one\nq two', sources: [] };
+};
+
+test('research: debits base plus the research extra, streams progress then the answer with its sources, charged once', async () => {
+    const f = fakes({ model: RESEARCH_MODEL });
+    const calls = [];
+    f.deps.complete = completes(calls);
+    const res = await run(f, { env: researchEnv, body: researchOpts });
+    assert.equal(res.status, 200);
+    const evs = await events(res);
+    assert.equal(called(f, 'ledger_debit')[0][1].p_credits, 17, 'the row base 2 plus the research extra 15');
+    assert.deepEqual(called(f, 'ledger_debit')[0][1].p_inputs.options, { thinking: false, web: false, research: true });
+    assert.deepEqual(names(evs).filter((n) => n === 'progress').length > 0, true);
+    assert.deepEqual(evs.filter((e) => e.event === 'progress').map((e) => e.data.step).filter((s, i, a) => a.indexOf(s) === i), ['plan', 'search', 'write']);
+    assert.ok(f.streamCalls.length > 0, 'the writer ran'); // the fake records each call twice in its default mode
+    assert.deepEqual([f.streamCalls[0].maxTokens, f.streamCalls[0].reasoningEffort], [4096, 'high']);
+    assert.match(evs.filter((e) => e.event === 'delta').map((e) => e.data.text).join(''), /Sources/);
+    assert.equal(called(f, 'chat_complete_turn')[0][1].p_status, 'complete');
+    assert.equal(called(f, 'ledger_refund').length, 0);
+    assert.equal(evs.at(-1).data.credits_charged, 17);
+});
+
+test('research: nothing usable from the searches means the whole price is refunded and nothing is stored', async () => {
+    const f = fakes({ model: RESEARCH_MODEL });
+    f.deps.complete = async (a) => (a.webSearch ? { text: '', sources: [] } : { text: 'q one', sources: [] });
+    const res = await run(f, { env: researchEnv, body: researchOpts });
+    const evs = await events(res);
+    assert.equal(called(f, 'ledger_debit').length, 1);
+    assert.equal(called(f, 'job_failed').length, 1);
+    assert.deepEqual(called(f, 'ledger_refund')[0][1], { p_job_id: JOB, p_user_id: 'user-1', p_credits: 17, p_reason: 'refund:provider_failed' });
+    assert.equal(called(f, 'chat_complete_turn').length, 0);
+    assert.equal(f.streamCalls.length, 0, 'the writer is never called');
+    assert.equal(evs.at(-1).data.credits_charged, 0);
+});
+
+test('research: a failed plan is refunded too, with the typed provider error', async () => {
+    const f = fakes({ model: RESEARCH_MODEL });
+    f.deps.complete = async () => { throw new ChatProviderError('provider_rate_limited'); };
+    const res = await run(f, { env: researchEnv, body: researchOpts });
+    const evs = await events(res);
+    assert.equal(evs.find((e) => e.event === 'error').data.error, 'provider_rate_limited');
+    assert.equal(called(f, 'ledger_refund').length, 1);
+});
+
+test('research: a write cut off after partial text keeps the text and refunds, like any reply', async () => {
+    const f = fakes({ model: RESEARCH_MODEL, stream: async function* () { yield { delta: 'Partial answer' }; throw new ChatProviderError('provider_dropped'); } });
+    f.deps.complete = completes([]);
+    const res = await run(f, { env: researchEnv, body: researchOpts });
+    await events(res);
+    assert.equal(called(f, 'chat_complete_turn')[0][1].p_status, 'error');
+});
+
+test('research cannot be combined with another option, and never takes a free allowance', async () => {
+    const f = fakes({ model: { ...RESEARCH_MODEL, free_allowance_per_day: 3, chat_web_extra_credits: 2 } });
+    const mixed = await run(f, { env: { ...researchEnv, FREE_ALLOWANCE_ENABLED: 'true' }, body: body({ options: { research: true, web: true } }) });
+    assert.equal(mixed.status, 409);
+    const g = fakes({ model: { ...RESEARCH_MODEL, free_allowance_per_day: 3 } });
+    g.deps.complete = completes([]);
+    await events(await run(g, { env: { ...researchEnv, FREE_ALLOWANCE_ENABLED: 'true' }, body: researchOpts }));
+    assert.equal(called(g, 'submit_free_job').length, 0, 'research is not the base price, so it is never free');
+    assert.equal(called(g, 'ledger_debit').length, 1);
+});
