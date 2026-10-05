@@ -1,7 +1,8 @@
 # ADR-0067 — Chat: a reply is a job, priced per reply from the catalog
 
-- **Status**: **Proposed 2026-10-05** (ships `off`: `CHAT_ENABLED` is `"false"`, and no text model is
-  active until its endpoint is verified live). Needs the product owner's yes before the flag turns on.
+- **Status**: **Accepted 2026-10-05.** Product owner approved as proposed, no changes. Ships `off`: `CHAT_ENABLED`
+  is `"false"`, and no text model is active until its endpoint is verified live. The flag still needs its own
+  yes per environment.
 - **Date**: 2026-10-05
 - **Deciders**: Product owner (sole)
 - **Related**: [ADR-0014 — Floor pricing](0014-floor-pricing.md) (the margin a reply price must clear),

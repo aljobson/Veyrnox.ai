@@ -1,7 +1,7 @@
 # Chat handoff (2026-10-05)
 
 Branch `claude/replica-skill-install-6d58ee`. Nothing is pushed, nothing is applied to production, and the flag is off.
-Design is ADR-0067 (Proposed). Read it first; this note is only state and next steps.
+Design is ADR-0067 (Accepted 2026-10-05, as proposed). Read it first; this note is only state and next steps.
 
 ## Where it came from
 
@@ -39,7 +39,7 @@ provider call has been made (no text model is active).
 3. **Operator work, owner only**: choose text models, insert catalog rows with `active = false`, verify each OpenRouter slug live,
    price `credits_5s` so `provider_cost_per_unit` (worst case at 1,024 reply tokens and 24,000 history characters) clears the ADR-0014
    margin floor (`packages/catalog/margin-validator`), then activate and set `CHAT_ENABLED` to `"true"` on staging first.
-4. **ADR-0067 acceptance** by the owner.
+4. ~~ADR-0067 acceptance~~ done 2026-10-05.
 
 ## Re-running the database checks locally (no Docker)
 
