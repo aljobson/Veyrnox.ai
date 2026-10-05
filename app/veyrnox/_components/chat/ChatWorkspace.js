@@ -5,6 +5,8 @@ import { GatewayError } from '../../_lib/gateway';
 import { chatApi, chatErrorCopy, makeIdempotencyKey, sendTurn, uploadChatImage } from '../../_lib/chatApi';
 import { attachmentLabel, prepareImage } from '../../_lib/chatImages';
 import { NEW_CHAT, readDraft, writeDraft, readStars, toggleStar } from '../../_lib/chatLocal';
+import { useFreeAllowance } from '../../_lib/useFreeAllowance';
+import { freeLeftFor } from '../../_lib/freeAllowance';
 import { AttachButton, AttachChips, useAttachments } from './AttachBar';
 import { ChatText } from './ChatText';
 import { ThreadList } from './ThreadList';
@@ -19,7 +21,8 @@ const wordsFor = (tokens) => Math.round(((tokens || 1024) * 0.75) / 10) * 10;
 
 function Footer({ m, starred, onStar }) {
   const [copied, setCopied] = useState(false);
-  const label = m.status === 'error' ? 'Cut off. No Credits used' : m.status === 'canceled' ? `Stopped. ${credits(m.credits)}` : credits(m.credits);
+  const price = m.credits === 0 ? 'Free' : credits(m.credits); // a reply that used a free allowance (ADR-0069)
+  const label = m.status === 'error' ? 'Cut off. No Credits used' : m.status === 'canceled' ? `Stopped. ${price}` : price;
   const copy = async () => { try { await navigator.clipboard.writeText(m.content); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch { /* blocked */ } };
   return (
     <p className="mt-2 flex items-center gap-3 font-vx-mono text-xs text-vx-fg-muted vx-num">
@@ -44,6 +47,7 @@ export function ChatWorkspace() {
   const [opts, setOpts] = useState({ thinking: false, web: false });
   const [limits, setLimits] = useState({ maxAttachments: 4, maxEdge: 2048 });
   const att = useAttachments(limits.maxAttachments);
+  const freeMap = useFreeAllowance(); // free replies left today per model; empty while the feature is off
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const [closed, setClosed] = useState(false);
@@ -84,6 +88,9 @@ export function ChatWorkspace() {
   const imagesBlocked = hasImages && !offer.images; // images are chosen but this model cannot read them
   const price = (model?.credits_per_reply ?? 0) + (chosen.thinking ? offer.thinking.extra_credits : 0) + (chosen.web ? offer.web.extra_credits : 0)
     + (hasImages && offer.images ? offer.images.extra_credits : 0);
+  // A plain reply (no paid option) can use a free allowance; the server decides, this only labels the button.
+  const freeLeft = freeLeftFor(freeMap, model?.id);
+  const isFree = freeLeft > 0 && !chosen.thinking && !chosen.web && !hasImages;
   const open = async (id) => {
     try {
       const r = await chatApi.get(id);
@@ -303,10 +310,10 @@ export function ChatWorkspace() {
                 className="max-h-48 min-h-10 flex-1 resize-none bg-transparent px-2 py-2 text-[15px] text-vx-fg outline-none placeholder:text-vx-fg-faint" />
               {busy
                 ? <button type="button" onClick={() => abortRef.current?.abort()} className="rounded-full border border-vx-border px-4 py-2 text-sm font-semibold">Stop</button>
-                : <button type="button" onClick={send} disabled={!text.trim() || imagesBlocked} className="rounded-full bg-vx-accent px-4 py-2 text-sm font-semibold text-vx-accent-ink disabled:opacity-50">Send for {credits(price)}</button>}
+                : <button type="button" onClick={send} disabled={!text.trim() || imagesBlocked} className="rounded-full bg-vx-accent px-4 py-2 text-sm font-semibold text-vx-accent-ink disabled:opacity-50">{isFree ? `Send free (${freeLeft} left today)` : `Send for ${credits(price)}`}</button>}
             </div>
             <p className="mt-1.5 px-1 text-xs text-vx-fg-muted">
-              <span className="font-vx-mono text-vx-money vx-num">{credits(price)}</span> per reply, up to about {wordsFor(model.max_reply_tokens)} words. Stop after text appears and you keep it and the price. If nothing arrives, the Credits come back.
+              <span className="font-vx-mono text-vx-money vx-num">{isFree ? 'Free' : credits(price)}</span> per reply, up to about {wordsFor(model.max_reply_tokens)} words. Stop after text appears and you keep it and the price. If nothing arrives, the Credits come back.
             </p>
           </div>
         </div>
