@@ -1,6 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parseQueries, runOne, worstCase, runProbe, fetchRates, LIMITS } from '../scripts/measure-chat-research.mjs';
+import { parseQueries, runOne, worstCase, runProbe, fetchRates, isMain, LIMITS, SEARCH_REASONING, RETRY } from '../scripts/measure-chat-research.mjs';
+import { mkdtempSync, writeFileSync, symlinkSync, realpathSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
+
+RETRY.baseMs = 1; // waits between retries are real in the script; here they are instant
 
 /** A fake OpenRouter: the plan lists `planLines`, every call reports `usage`. */
 function fakeFetch({ planLines = ['a', 'b', 'c'], cost = { plan: 0.001, search: 0.03, write: 0.2 }, fail = null } = {}) {
@@ -49,15 +55,14 @@ test('worstCase takes the dearest of each step and prices four searches', () => 
     assert.ok(Math.abs(w.total - (0.002 + 4 * 0.05 + 0.3)) < 1e-9);
 });
 
-test('a provider failure is a status code only, never the vendor text', async () => {
-    const { fetchImpl } = fakeFetch({ fail: 2 });
+test('a persistent provider failure is a status code, and a non-JSON vendor body is never shown', async () => {
+    const fetchImpl = async () => new Response('secret vendor text with the prompt', { status: 500 });
     await assert.rejects(runOne({ fetchImpl, apiKey: 'k', model: 'm/x', question: 'q' }), (e) => {
         assert.equal(e.message, 'OpenRouter answered 500');
         assert.ok(!/secret/.test(e.message));
         return true;
     });
 });
-
 test('the budget stops the probe once measured spend passes it', async () => {
     const { fetchImpl } = fakeFetch({ cost: { plan: 0.5, search: 0.5, write: 0.5 } });
     const lines = [];
@@ -121,7 +126,7 @@ test('searches run together, and the run reports wall-clock rather than the sum 
         if (kind === 'search') { inFlight += 1; peak = Math.max(peak, inFlight); await new Promise((r) => setTimeout(r, 40)); inFlight -= 1; }
         return Response.json({ choices: [{ message: { content: kind === 'plan' ? 'a\nb\nc\nd' : `${kind} text` } }], usage: { prompt_tokens: 1, completion_tokens: 1, cost: 0.01 } });
     };
-    const run = await runOne({ fetchImpl, apiKey: 'k', model: 'm/x', question: 'q' });
+    const run = await runOne({ fetchImpl, apiKey: 'k', model: 'm/x', question: 'q', reasoningHint: SEARCH_REASONING[0] });
     assert.equal(peak, 4, 'all four searches were in flight together');
     assert.deepEqual(run.steps.map((s) => s.step), ['plan', 'search', 'search', 'search', 'search', 'write'], 'steps stay in order');
     assert.ok(run.ms < run.steps.reduce((a, s) => a + s.ms, 0), 'wall-clock is less than the sum of the step times');
@@ -139,4 +144,104 @@ test('empty searches are counted and the search effort is off', async () => {
     };
     const run = await runOne({ fetchImpl, apiKey: 'k', model: 'm/x', question: 'q' });
     assert.equal(run.emptySearches, 1);
+});
+
+test('a model that rejects one reasoning setting is retried with the next, and the accepted one is reported', async () => {
+    const seen = [];
+    const fetchImpl = async (url, init) => {
+        const body = JSON.parse(init.body);
+        const kind = body.plugins ? 'search' : body.reasoning ? 'write' : 'plan';
+        if (kind === 'search') {
+            seen.push(body.reasoning);
+            if (body.reasoning && body.reasoning.effort === 'none') return Response.json({ error: { message: 'reasoning.effort none is not supported' } }, { status: 400 });
+        }
+        return Response.json({ choices: [{ message: { content: kind === 'plan' ? 'a\nb\nc' : `${kind} text` } }], usage: { prompt_tokens: 1, completion_tokens: 1, cost: 0.01 } });
+    };
+    const run = await runOne({ fetchImpl, apiKey: 'k', model: 'm/x', question: 'q' });
+    assert.deepEqual(seen[0], { effort: 'none' }, 'tried first');
+    assert.deepEqual(run.searchReasoning, SEARCH_REASONING[1], 'then the next one');
+    assert.ok(seen.slice(1).every((r) => JSON.stringify(r) === JSON.stringify(SEARCH_REASONING[1])), 'every other search uses the accepted setting');
+    assert.equal(run.searches, 3);
+});
+
+test('every reasoning setting rejected is a clear error with OpenRouter\'s message, not a bare 400', async () => {
+    const fetchImpl = async (url, init) => JSON.parse(init.body).plugins
+        ? Response.json({ error: { message: 'web plugin not allowed here' } }, { status: 400 })
+        : Response.json({ choices: [{ message: { content: 'a\nb' } }], usage: { cost: 0 } });
+    await assert.rejects(runOne({ fetchImpl, apiKey: 'k', model: 'm/x', question: 'q' }), /web plugin not allowed here/);
+});
+
+test('a refused request or a bad key is not retried, and is never mistaken for a reasoning problem', async () => {
+    for (const status of [400, 401, 402]) {
+        let n = 0;
+        const fetchImpl = async (url, init) => { if (JSON.parse(init.body).plugins) { n += 1; return new Response('{}', { status }); } return Response.json({ choices: [{ message: { content: 'a\nb' } }], usage: { cost: 0 } }); };
+        await assert.rejects(runOne({ fetchImpl, apiKey: 'k', model: 'm/x', question: 'q' }), new RegExp(String(status)));
+        if (status !== 400) assert.equal(n, 1, `${status} is not retried`);
+    }
+});
+
+test('a briefly rate-limited upstream provider is retried and the run carries on', async () => {
+    let planCalls = 0;
+    const fetchImpl = async (url, init) => {
+        const body = JSON.parse(init.body);
+        if (!body.plugins && !body.reasoning) { planCalls += 1; if (planCalls < 3) return Response.json({ error: { message: 'Provider returned error' } }, { status: 429 }); }
+        return Response.json({ choices: [{ message: { content: body.plugins || body.reasoning ? 'x' : 'a\nb' } }], usage: { cost: 0.01 } });
+    };
+    const run = await runOne({ fetchImpl, apiKey: 'k', model: 'm/x', question: 'q', reasoningHint: null });
+    assert.equal(planCalls, 3, 'two 429s, then success');
+    assert.equal(run.steps[0].step, 'plan');
+});
+
+test('a provider that keeps answering 429 or 503 fails after the attempts, with its message', async () => {
+    for (const status of [429, 503]) {
+        let n = 0;
+        const fetchImpl = async () => { n += 1; return Response.json({ error: { message: 'Provider returned error' } }, { status }); };
+        await assert.rejects(runOne({ fetchImpl, apiKey: 'k', model: 'm/x', question: 'q' }), new RegExp(`${status}: Provider returned error`));
+        assert.equal(n, RETRY.attempts);
+    }
+});
+
+test('with a known-good reasoning setting every search starts together, with no discovery call first', async () => {
+    const seen = [];
+    const fetchImpl = async (url, init) => {
+        const body = JSON.parse(init.body);
+        const kind = body.plugins ? 'search' : body.reasoning ? 'write' : 'plan';
+        if (kind === 'search') seen.push(body.reasoning);
+        return Response.json({ choices: [{ message: { content: kind === 'plan' ? 'a\nb\nc' : 'x' } }], usage: { cost: 0 } });
+    };
+    const run = await runOne({ fetchImpl, apiKey: 'k', model: 'm/x', question: 'q', reasoningHint: { enabled: false } });
+    assert.equal(seen.length, 3);
+    assert.ok(seen.every((r) => JSON.stringify(r) === JSON.stringify({ enabled: false })));
+    assert.deepEqual(run.searchReasoning, { enabled: false });
+});
+
+test('isMain sees through a symlinked path, so a script run from a link still runs', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'probe-'));
+    const real = join(dir, 'real.mjs'); writeFileSync(real, '');
+    const link = join(dir, 'link.mjs'); symlinkSync(real, link);
+    assert.equal(isMain(link, pathToFileURL(realpathSync(real)).href), true, 'launched through a link');
+    assert.equal(isMain(real, pathToFileURL(real).href), true);
+    assert.equal(isMain(join(dir, 'other.mjs'), pathToFileURL(real).href), false, 'a different file is not main');
+    assert.equal(isMain(undefined, pathToFileURL(real).href), false);
+});
+
+test('the plan and the searches can run on a cheaper model while the write stays on the main one', async () => {
+    const models = [];
+    const fetchImpl = async (url, init) => {
+        const body = JSON.parse(init.body);
+        const kind = body.plugins ? 'search' : body.reasoning ? 'write' : 'plan';
+        models.push([kind, body.model]);
+        return Response.json({ choices: [{ message: { content: kind === 'plan' ? 'a\nb' : 'x' } }], usage: { cost: 0.01 } });
+    };
+    const run = await runOne({ fetchImpl, apiKey: 'k', model: 'big/write', searchModel: 'small/search', question: 'q', reasoningHint: null });
+    assert.deepEqual(models.filter(([k]) => k !== 'write').map(([, m]) => m), ['small/search', 'small/search', 'small/search']);
+    assert.deepEqual(models.find(([k]) => k === 'write'), ['write', 'big/write']);
+    assert.equal(run.searchModel, 'small/search');
+});
+
+test('without a search model everything runs on the one model, as before', async () => {
+    const used = new Set();
+    const fetchImpl = async (url, init) => { const b = JSON.parse(init.body); used.add(b.model); return Response.json({ choices: [{ message: { content: b.plugins || b.reasoning ? 'x' : 'a\nb' } }], usage: { cost: 0 } }); };
+    await runOne({ fetchImpl, apiKey: 'k', model: 'only/one', question: 'q', reasoningHint: null });
+    assert.deepEqual([...used], ['only/one']);
 });

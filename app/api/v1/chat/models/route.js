@@ -15,7 +15,7 @@ export async function GET(req) {
             columns: 'id,name,credits_5s,gated_flag,chat_max_reply_tokens,chat_reasoning_effort,'
                 + 'chat_thinking_effort,chat_thinking_max_reply_tokens,chat_thinking_extra_credits,chat_web_extra_credits,chat_images_extra_credits'
                 // Asked for only when research is on, so a Worker running before migration 0208 never queries the columns.
-                + (researchEnabled(process.env) ? ',chat_research_extra_credits,chat_research_write_max_tokens' : ''),
+                + (researchEnabled(process.env) ? ',chat_research_extra_credits,chat_research_write_max_tokens,chat_research_search_model' : ''),
             filter: 'active=eq.true&modality=eq.text&provider=eq.openrouter-chat&order=name.asc',
         }, gate.cfg);
         const models = (Array.isArray(rows) ? rows : []).map((r) => ({
