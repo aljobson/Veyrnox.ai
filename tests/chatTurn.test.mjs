@@ -92,7 +92,7 @@ test('the debit: price from the catalog, never the client; no message text on th
     assert.equal(d.p_reason, 'debit:chat');
     assert.equal(d.p_user_id, 'user-1');
     assert.equal(d.p_idempotency_key, 'key-0123456789');
-    assert.deepEqual(d.p_inputs, { kind: 'chat', thread_id: THREAD });
+    assert.deepEqual(d.p_inputs, { kind: 'chat', thread_id: THREAD, options: { thinking: false, web: false } });
     assert.ok(!JSON.stringify(d).includes('Hello there'), 'the message text is not stored on the job');
     assert.equal(d.p_limit_per_window, 10); assert.equal(d.p_window_seconds, 60);
 });
@@ -232,4 +232,59 @@ test('a row without a budget keeps the default cap and sends no reasoning effort
     await (await runChatTurn({ authId: AUTH, threadId: THREAD, body: body(), env, deps: f.deps })).text();
     assert.equal(f.streamCalls[0].maxTokens, 1024);
     assert.equal(f.streamCalls[0].reasoningEffort, null);
+});
+
+const OPT_MODEL = { ...MODEL, credits_5s: 4, chat_max_reply_tokens: 4096, chat_reasoning_effort: 'low',
+    chat_thinking_effort: 'high', chat_thinking_max_reply_tokens: 8192, chat_thinking_extra_credits: 3, chat_web_extra_credits: 3 };
+
+test('options: the debit is the catalog base plus the chosen extras, and the job records the choice', async () => {
+    const f = fakes({ model: OPT_MODEL });
+    const res = await run(f, { body: body({ options: { thinking: true, web: true } }) });
+    await res.text();
+    const [, debit] = called(f, 'ledger_debit')[0];
+    assert.equal(debit.p_credits, 10);
+    assert.deepEqual(debit.p_inputs, { kind: 'chat', thread_id: THREAD, options: { thinking: true, web: true } });
+    assert.equal(f.streamCalls[0].maxTokens, 8192);
+    assert.equal(f.streamCalls[0].reasoningEffort, 'high');
+    assert.equal(f.streamCalls[0].webSearch, true);
+});
+
+test('options: none chosen keeps the base price and sends no web search', async () => {
+    const f = fakes({ model: OPT_MODEL });
+    await (await run(f)).text();
+    assert.equal(called(f, 'ledger_debit')[0][1].p_credits, 4);
+    assert.equal(f.streamCalls[0].webSearch, false);
+    assert.equal(f.streamCalls[0].maxTokens, 4096);
+});
+
+test('options: an option the model does not offer is refused before any money moves', async () => {
+    const f = fakes({ model: MODEL });
+    const res = await run(f, { body: body({ options: { web: true } }) });
+    assert.equal(res.status, 409);
+    assert.deepEqual(await res.json(), { error: 'option_unavailable' });
+    assert.equal(called(f, 'ledger_debit').length, 0);
+});
+
+test('options: a failed reply refunds the full price including the extras', async () => {
+    const f = fakes({ model: OPT_MODEL, stream: async function* () { throw new ChatProviderError('provider_unavailable'); } });
+    await (await run(f, { body: body({ options: { thinking: true, web: true } }) })).text();
+    assert.equal(called(f, 'ledger_refund')[0][1].p_credits, 10);
+});
+
+test('web search: sources are appended to the stored reply and streamed once', async () => {
+    const f = fakes({ model: OPT_MODEL, stream: async function* () {
+        yield { delta: 'Node 26.10.0.' };
+        yield { source: { url: 'https://nodejs.org/x', title: 'Node.js' } };
+    } });
+    const res = await run(f, { body: body({ options: { web: true } }) });
+    const evs = await events(res);
+    const text = evs.filter((e) => e.event === 'delta').map((e) => e.data.text).join('');
+    assert.equal(text, 'Node 26.10.0.\n\nSources\n- [Node.js](https://nodejs.org/x)');
+    assert.equal(called(f, 'chat_complete_turn')[0][1].p_reply, text);
+});
+
+test('web search: no sources means the reply is stored exactly as the model wrote it', async () => {
+    const f = fakes({ model: OPT_MODEL, stream: async function* () { yield { delta: 'No sources used.' }; } });
+    await (await run(f, { body: body({ options: { web: true } }) })).text();
+    assert.equal(called(f, 'chat_complete_turn')[0][1].p_reply, 'No sources used.');
 });

@@ -14,7 +14,7 @@ test('only the exact string "true" turns chat on', () => {
 });
 
 test('validateTurn', () => {
-    assert.deepEqual(validateTurn({ text: '  hi  ', idempotency_key: 'abcdefgh1234' }), { ok: true, text: 'hi', key: 'abcdefgh1234' });
+    assert.deepEqual(validateTurn({ text: '  hi  ', idempotency_key: 'abcdefgh1234' }), { ok: true, text: 'hi', key: 'abcdefgh1234', options: { thinking: false, web: false } });
     for (const [b, error] of [
         [null, 'invalid_body'], [[], 'invalid_body'], ['x', 'invalid_body'],
         [{ idempotency_key: 'abcdefgh1234' }, 'invalid_text'], [{ text: '   ', idempotency_key: 'abcdefgh1234' }, 'invalid_text'],

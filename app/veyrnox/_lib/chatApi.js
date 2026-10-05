@@ -26,6 +26,7 @@ export function chatErrorCopy(code, { credits } = {}) {
     case 'chat_not_open': return 'Chat is not open yet.';
     case 'thread_not_found': return 'That chat no longer exists.';
     case 'model_unavailable': case 'model_gated': case 'model_not_found': return 'That model is not available right now. Pick another. No Credits were used.';
+    case 'option_unavailable': case 'invalid_options': return 'That option is not available for this model. Turn it off or pick another model. No Credits were used.';
     case 'invalid_text': return 'Messages can be up to 8,000 characters.';
     case 'turn_not_saved': return 'We could not save that reply, so you will not be charged.';
     case 'provider_cut_off': case 'provider_dropped': return 'The reply was cut off. No Credits were used.';
@@ -42,7 +43,7 @@ export { makeIdempotencyKey };
  * Resolves { replay: true } when the same send already ran. Throws GatewayError for a refusal before the stream.
  * Aborting `signal` is the Stop button.
  */
-export async function sendTurn({ threadId, text, key, signal, onEvent }) {
+export async function sendTurn({ threadId, text, key, options, signal, onEvent }) {
   const token = await getFreshAccessToken();
   if (!token) {
     if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('veyrnox:auth-required'));
@@ -51,7 +52,7 @@ export async function sendTurn({ threadId, text, key, signal, onEvent }) {
   const res = await fetch(`/api/v1/chat/threads/${encodeURIComponent(threadId)}/messages`, {
     method: 'POST', signal,
     headers: { Authorization: `Bearer ${token}`, 'content-type': 'application/json' },
-    body: json({ text, idempotency_key: key }),
+    body: json({ text, idempotency_key: key, options: { thinking: options?.thinking === true, web: options?.web === true } }),
   });
   if (res.status === 401) {
     if (getSession()?.access_token === token) clearSession();

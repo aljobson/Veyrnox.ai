@@ -91,6 +91,27 @@ thinks can spend the whole cap and return nothing. So:
   Reasoning text is never shown or stored.
 - Seven premium rows are staged inactive. Their prices are the owner's decision.
 
+## Amendment 2 2026-10-05: Thinking and Web search are priced options
+
+Status: **Accepted 2026-10-05**, owner approved in chat, including the extra prices on the three live and seven staged rows. Ships with migration 0197.
+
+The price stays flat per reply and still comes only from `model_catalog`. A row now carries an extra price for
+each option it offers, and a reply costs the row's base Credits plus the extra for each option the user turns on.
+The app looks these numbers up and adds them; it never derives a price from cost or tokens.
+
+- **Thinking**: effort `high` and a larger reply cap (up to 8,192 tokens). The extra covers the added output.
+- **Web search**: OpenRouter's web plugin, 3 results. A live check showed a $0.0200 search fee and about 12,700
+  extra input tokens. The extra covers the fee plus 16,000 input tokens at the model's rate.
+- A row offers an option only when all of its columns are set; asking for one it does not offer is refused
+  (`option_unavailable`, 409) before any money moves. Both options can be on together; the extras add.
+- Each extra has its own recorded worst-case cost, and a CHECK refuses an extra priced under the margin floor
+  (`credits >= ceil(cost / 0.01796)`). Recorded costs round up.
+- The job records the options chosen (`inputs.options`), never message text. A failed reply refunds the full
+  price including the extras, as before.
+- Pages a web search used are appended to the stored reply as a short list of http(s) links (at most eight),
+  skipped on a stopped reply or if they would exceed the stored-reply limit. Reasoning text is never shown or stored.
+- Not decided here: Free Credits on options (they are Credits, so they apply), per-user daily caps on web search.
+
 ## Not decided here
 
 - Which models, and their prices. Needs live endpoint checks and the margin validator. (Three were chosen

@@ -10,6 +10,7 @@
  */
 
 export const CHAT_COMPLETIONS_URL = 'https://openrouter.ai/api/v1/chat/completions';
+const WEB_MAX_RESULTS = 3;
 const EFFORTS = new Set(['none', 'minimal', 'low', 'medium', 'high']);
 const SLUG_RE = /^[a-z0-9][a-z0-9._:/-]{0,100}$/i;
 
@@ -35,10 +36,10 @@ function codeFor(status) {
  * Stream a reply. Yields `{ delta: string }` for each piece of text.
  * Throws ChatProviderError if the provider refuses, drops, or reports an error mid-stream.
  *
- * @param {{apiKey:string, model:string, messages:{role:string,content:string}[], maxTokens:number, reasoningEffort?:string|null,
+ * @param {{apiKey:string, model:string, messages:{role:string,content:string}[], maxTokens:number, reasoningEffort?:string|null, webSearch?:boolean,
  *          signal?:AbortSignal, fetchImpl?:typeof fetch}} args
  */
-export async function* streamChat({ apiKey, model, messages, maxTokens, reasoningEffort = null, signal, fetchImpl = fetch }) {
+export async function* streamChat({ apiKey, model, messages, maxTokens, reasoningEffort = null, webSearch = false, signal, fetchImpl = fetch }) {
     if (typeof apiKey !== 'string' || !apiKey) throw new ChatProviderError('provider_not_configured');
     if (typeof model !== 'string' || !SLUG_RE.test(model)) throw new ChatProviderError('provider_model_unmapped');
     let res;
@@ -51,6 +52,8 @@ export async function* streamChat({ apiKey, model, messages, maxTokens, reasonin
             body: JSON.stringify({
                 model, messages, max_tokens: maxTokens, stream: true,
                 ...(typeof reasoningEffort === 'string' && EFFORTS.has(reasoningEffort) ? { reasoning: { effort: reasoningEffort } } : {}),
+                // Web search is OpenRouter's web plugin with a fixed result count; the price of it is the row's.
+                ...(webSearch === true ? { plugins: [{ id: 'web', max_results: WEB_MAX_RESULTS }] } : {}),
             }),
         });
     } catch (err) {
@@ -59,6 +62,7 @@ export async function* streamChat({ apiKey, model, messages, maxTokens, reasonin
     }
     if (!res.ok || !res.body) throw new ChatProviderError(codeFor(res.status));
 
+    const cited = new Set();
     const reader = res.body.getReader();
     const dec = new TextDecoder();
     let buf = '';
@@ -83,8 +87,19 @@ export async function* streamChat({ apiKey, model, messages, maxTokens, reasonin
                 let json;
                 try { json = JSON.parse(data); } catch { continue; } // a partial frame
                 if (json && json.error) throw new ChatProviderError('provider_error');
-                const text = json && json.choices && json.choices[0] && json.choices[0].delta && json.choices[0].delta.content;
+                const delta = json && json.choices && json.choices[0] && json.choices[0].delta;
+                const text = delta && delta.content;
                 if (typeof text === 'string' && text) yield { delta: text };
+                // Citations from web search arrive as annotations; each page is reported once.
+                if (delta && Array.isArray(delta.annotations)) {
+                    for (const a of delta.annotations) {
+                        const c = a && a.type === 'url_citation' && a.url_citation;
+                        if (c && typeof c.url === 'string' && !cited.has(c.url)) {
+                            cited.add(c.url);
+                            yield { source: { url: c.url, title: typeof c.title === 'string' ? c.title : '' } };
+                        }
+                    }
+                }
             }
         }
     } finally {
