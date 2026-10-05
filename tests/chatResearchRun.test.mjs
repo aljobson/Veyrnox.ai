@@ -32,6 +32,17 @@ test('a run is plan, then searches together, then one streamed write, with progr
     assert.deepEqual(p.calls.map((c) => c.kind), ['plan', 'search', 'search', 'search', 'write']);
 });
 
+test('the plan and the searches run on the search model and the write on the main model', async () => {
+    const p = provider();
+    await collect(runResearch(args(p, { searchModel: 'cheap/search' })));
+    for (const c of p.calls.filter((x) => x.kind !== 'write')) assert.equal(c.a.model, 'cheap/search', c.kind);
+    assert.equal(p.calls.find((x) => x.kind === 'write').a.model, 'm/x');
+    // Without a search model everything stays on the one model, as before.
+    const q = provider();
+    await collect(runResearch(args(q)));
+    assert.ok(q.calls.every((c) => c.a.model === 'm/x'));
+});
+
 test('the step counts and caps are constants: never more than four searches, and the settings are the measured ones', async () => {
     const p = provider({ plan: 'a\nb\nc\nd\ne\nf\ng' });
     await collect(runResearch(args(p)));

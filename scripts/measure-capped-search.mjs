@@ -32,7 +32,7 @@ export const QUERIES = [
 export const TOKENS_BOUND = SEARCH_CONTEXT_MAX_CHARS;
 // The margin floor (docs/pricing/50-percent-margin.md): credits >= ceil(cost / FLOOR).
 const FLOOR = 0.01796;
-// Input rate in USD per token for each chat row, from OpenRouter's public model list on 2026-10-05. The same figures 0210 used.
+// Input rate in USD per token for each chat row, from OpenRouter's public model list on 2026-10-05. The same figures 0212 used.
 export const INPUT_RATES = {
     'chat-claude-opus-5.5': 4e-6, 'chat-claude-sonnet-5.5': 2e-6, 'chat-gpt-6.1-sol': 2e-6, 'chat-grok-4.7': 2e-6,
     'chat-gemini-3.8-flash': 7.5e-7, 'chat-deepseek-v4.1-flash': 3e-7, 'chat-gpt-6-luna': 1e-7,
