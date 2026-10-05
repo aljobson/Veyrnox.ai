@@ -26,8 +26,12 @@
   "vars": {
     "APP_ENV": "production",
     "TENANT_PROJECTS_ENABLED": "false",
-    // ADR-0067: Chat stays closed until a text model is verified live and active, and the owner opens it.
-    "CHAT_ENABLED": "false",
+    // ADR-0067: Chat is open here, but the screen is still behind the per-browser preview switch
+    // (localStorage.veyrnox_chat). Needs OPENROUTER_CHAT_API_KEY on the Worker: production will not use the shared key.
+    "CHAT_ENABLED": "true",
+    // ADR-0069: a per-model free allowance, taken as a price waiver. "false" until the owner flips it after
+    // staging acceptance; migrations 0205 and 0206 must be applied first.
+    "FREE_ALLOWANCE_ENABLED": "false",
     // ADR-0064: checkout and account routes stay closed until staging acceptance.
     "SUBSCRIPTIONS_ENABLED": "false",
     // Before activation: SUBSCRIPTION_ALERT_EMAIL must name the Operator;
@@ -149,6 +153,8 @@
         // ADR-0067: Chat is open on staging for testing only. No text model is
         // active until the owner activates one; production stays "false".
         "CHAT_ENABLED": "true",
+        // ADR-0069 (vars are not inherited). Flip to "true" on staging only after 0205 and 0206 are applied there.
+        "FREE_ALLOWANCE_ENABLED": "false",
         // ADR-0066; vars are not inherited, so staging names it too.
         "JEV_SUBMIT_ERRORS_MODE": "off",
         // Veyrnox Publish is open on staging for testing (see production).
@@ -197,6 +203,8 @@
   //                               kie.ai submit + callback HMAC (ADR-0020)
   //   OPENROUTER_API_KEY, OPENROUTER_WEBHOOK_SECRET
   //                               OpenRouter video submit + webhook signature (ADR-0020)
+  //   OPENROUTER_CHAT_API_KEY      OpenRouter key for Chat only, with its own spend cap (ADR-0067). Required in
+  //                               production; staging falls back to OPENROUTER_API_KEY
   //   TYPESAFE_API_KEY            Jev classifier for provider submit refusals (lib/jev.js, ADR-0066)
   //   STRIPE_SECRET_KEY           Checkout Session create + session re-fetch (packages/adapters/stripe.js);
   //                               sk_test_… until the live account clears review (ADR-0031). Its prefix

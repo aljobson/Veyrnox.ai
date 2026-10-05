@@ -31,7 +31,7 @@ test('sends a constant URL, the key, and the caps; the body decides nothing abou
     assert.equal(CHAT_COMPLETIONS_URL, 'https://openrouter.ai/api/v1/chat/completions');
     assert.equal(seen.init.method, 'POST');
     assert.equal(seen.init.headers.Authorization, 'Bearer sk-test');
-    assert.deepEqual(JSON.parse(seen.init.body), { model: 'vendor/model:free', messages: base.messages, max_tokens: 1024, stream: true });
+    assert.deepEqual(JSON.parse(seen.init.body), { model: 'vendor/model:free', messages: base.messages, max_tokens: 1024, stream: true, provider: { data_collection: 'deny' } });
 });
 
 test('refuses a missing key and a model slug that could carry anything else', async () => {
@@ -113,4 +113,12 @@ test('url citations arrive as sources, separate from reply text', async () => {
         f({ annotations: [{ type: 'file', file: {} }] }), 'data: [DONE]\n\n']);
     const out = []; for await (const x of streamChat({ ...base, webSearch: true, fetchImpl })) out.push(x);
     assert.deepEqual(out, [{ delta: 'Answer.' }, { source: { url: 'https://nodejs.org/x', title: 'Node' } }]);
+});
+
+test('every request asks OpenRouter to use only providers that do not store or train on prompts', async () => {
+    const bodies = [];
+    const fetchImpl = async (_u, init) => { bodies.push(JSON.parse(init.body)); return sse(['data: [DONE]\n\n']); };
+    await collect(streamChat({ ...base, fetchImpl }));
+    await collect(streamChat({ ...base, reasoningEffort: 'low', webSearch: true, fetchImpl }));
+    for (const b of bodies) assert.deepEqual(b.provider, { data_collection: 'deny' });
 });

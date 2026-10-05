@@ -4,7 +4,8 @@
  * `provider_endpoint` of a text catalog row is the OpenRouter model slug, e.g. "vendor/model".
  * The target URL is a constant: nothing a user sends decides where the request goes.
  *
- * Configuration (read at the route layer): OPENROUTER_API_KEY, the same backend secret as video.
+ * Configuration (read at the route layer, lib/chat.js chatApiKey): OPENROUTER_CHAT_API_KEY, a key of its own so chat
+ * can have a spend cap. Staging and local development fall back to OPENROUTER_API_KEY, the video key; production does not.
  *
  * Errors are typed codes, never the vendor's message: it can echo prompts or account details.
  */
@@ -51,6 +52,9 @@ export async function* streamChat({ apiKey, model, messages, maxTokens, reasonin
             // Reasoning comes back in separate delta fields and is never read here: only `content` is yielded.
             body: JSON.stringify({
                 model, messages, max_tokens: maxTokens, stream: true,
+                // Route only to providers that do not store or train on the prompt. All ten catalog models answer under
+                // this setting (checked live 2026-10-05); a model with no such provider would fail and be refunded.
+                provider: { data_collection: 'deny' },
                 ...(typeof reasoningEffort === 'string' && EFFORTS.has(reasoningEffort) ? { reasoning: { effort: reasoningEffort } } : {}),
                 // Web search is OpenRouter's web plugin with a fixed result count; the price of it is the row's.
                 ...(webSearch === true ? { plugins: [{ id: 'web', max_results: WEB_MAX_RESULTS }] } : {}),

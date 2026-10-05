@@ -72,3 +72,12 @@ Build order when this is picked up: the migration and function with their accept
 ## Not decided here
 
 Subscription Credits (ADR-0064) and Packs are unaffected. Video models are out of scope until their per-job cost is known.
+
+## Addendum 2026-10-05: how the allowance meets chat
+
+Chat replies are jobs through their own turn code (`lib/chatTurn.js`), not `/api/v1/generations`, so the allowance is wired
+into both through one helper (`lib/freeJob.js`). Decision taken while building it: **only a plain reply can be free.** A reply
+that chooses Thinking, Web search or images is priced normally, because those extras are real extra provider cost that the
+allowance's per-job cost bound ($0.05) was not set against. A plain reply is the row's base price, which is what the allowance
+waives. The check is `price == the row's base credits`, so a new option cannot slip into a free reply. Everything else in this
+ADR is unchanged: the flag, the caps, the refund returning the allowance, and eligibility.

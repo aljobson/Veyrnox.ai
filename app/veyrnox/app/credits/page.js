@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Chip } from '../../_components/Chip';
 import { TopUpPacks, TopUpReturn } from '../../_components/TopUpPacks';
 import { CreditStatement } from '../../_components/CreditStatement';
+import { UsageMeters } from '../../_components/UsageMeters';
 import { TopUpHistory } from '../../_components/TopUpHistory';
 import { gatewayFetch, GatewayError } from '../../_lib/gateway';
 import { readJobHistory } from '../../_lib/jobHistory';
@@ -139,6 +140,7 @@ export default function Credits() {
         </div>
       </section>
 
+      {balance != null && <UsageMeters />}
       {balance != null && <CreditStatement />}
       {balance != null && <TopUpHistory />}
 

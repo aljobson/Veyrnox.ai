@@ -48,6 +48,17 @@ const MODEL_ID_RE = /^[a-z0-9][a-z0-9.-]{0,63}$/;
 const MAX_INPUTS_BYTES = 8 * 1024;
 const UNIT_SECONDS = 5;
 const RATE_LIMIT_PER_WINDOW = 10;
+
+// The spendable balance for a job that cost nothing: the client shows it, so it must never come back empty.
+async function balanceAfterFree(authId, cfg) {
+    try {
+        const credits = await rpc('read_user_credits', { p_auth_id: authId }, cfg);
+        const n = Number(credits && credits.balance);
+        return Number.isFinite(n) ? n : undefined;
+    } catch {
+        return undefined;
+    }
+}
 const RATE_WINDOW_SECONDS = 60;
 const MAX_SOURCES = 2;
 // `resolution` is deliberately absent: fal bills per tier and the catalog
@@ -271,12 +282,14 @@ export async function POST(req) {
         }
     }
 
-    // 1. Look up the model in the catalog.
+    // 1. Look up the model in the catalog. The allowance column is asked for only when the flag is on, so a
+    //    Worker running before migration 0205 is applied never queries a column that does not exist yet.
+    const freeAllowanceOn = process.env.FREE_ALLOWANCE_ENABLED === 'true';
     let modelRow;
     try {
         const rows = await select(
             'model_catalog',
-            { columns: 'id,provider,provider_endpoint,modality,credits_5s,gated_flag,active', filter: `id=eq.${encodeURIComponent(modelId)}` },
+            { columns: `id,provider,provider_endpoint,modality,credits_5s,gated_flag,active${freeAllowanceOn ? ',free_allowance_per_day' : ''}`, filter: `id=eq.${encodeURIComponent(modelId)}` },
             cfg,
         );
         modelRow = Array.isArray(rows) && rows[0];
@@ -361,10 +374,34 @@ export async function POST(req) {
 
     // 3. Debit atomically. Creates jobs row too. Price = catalog unit price
     //    times the validated unit count; never a client-supplied number.
-    const credits = priceFor(modelRow, pricedInputs);
-    let debit;
+    let credits = priceFor(modelRow, pricedInputs);
+    let debit = null;
+    // ADR-0069: a model with a free allowance waives the price of a job while the account has some left today.
+    // submit_free_job takes the allowance and creates the job at 0 Credits with no ledger row; with none left it
+    // writes nothing (taken:false) and the normal debit below runs at the catalog price. A refusal it reports
+    // (rate limit, Frozen account) is answered exactly like the same refusal from ledger_debit. If the call itself
+    // fails we fall through to the paid debit, which finds the job by idempotency key if the free one did land.
+    if (freeAllowanceOn && Number(modelRow.free_allowance_per_day) > 0) {
+        try {
+            const free = await rpc('submit_free_job', {
+                p_user_id: userId,
+                p_idempotency_key: idempotencyKey,
+                p_model_id: modelId,
+                p_inputs: storedInputs,
+                p_limit_per_window: RATE_LIMIT_PER_WINDOW,
+                p_window_seconds: RATE_WINDOW_SECONDS,
+            }, cfg);
+            if (free && free.ok === false) debit = free;
+            else if (free && free.ok === true && free.taken === true) {
+                credits = 0;
+                debit = { ok: true, job_id: free.job_id, idempotent: free.idempotent === true, free: true, balance_after: await balanceAfterFree(authId, cfg) };
+            }
+        } catch (err) {
+            console.error('[generations] submit_free_job failed:', err);
+        }
+    }
     try {
-        debit = await rpc('ledger_debit', {
+        if (!debit) debit = await rpc('ledger_debit', {
             p_user_id: userId,
             p_idempotency_key: idempotencyKey,
             p_credits: credits,
@@ -469,5 +506,6 @@ export async function POST(req) {
         job_id: jobId,
         state: 'SUBMITTED',
         balance_after: balanceAfter,
+        ...(debit.free ? { free_allowance: true } : {}),
     });
 }

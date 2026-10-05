@@ -375,3 +375,14 @@ test('images: a failed reply refunds the price including the images extra', asyn
     await (await run(f, withImages(f, () => imageOk()).over({ body: attach(K1) }))).text();
     assert.equal(called(f, 'ledger_refund')[0][1].p_credits, 7);
 });
+
+test('the key: production needs the dedicated chat key; with it the stream uses that key and not the shared one', async () => {
+    let f = fakes();
+    let res = await run(f, { env: { OPENROUTER_API_KEY: 'sk-video', APP_ENV: 'production' } });
+    assert.equal(res.status, 503);
+    assert.deepEqual(await res.json(), { error: 'gateway_not_configured' });
+    assert.equal(called(f, 'ledger_debit').length, 0, 'nothing is charged when chat is not configured');
+    f = fakes();
+    await (await run(f, { env: { OPENROUTER_CHAT_API_KEY: 'sk-chat', OPENROUTER_API_KEY: 'sk-video', APP_ENV: 'production' } })).text();
+    assert.equal(f.streamCalls[0].apiKey, 'sk-chat');
+});
