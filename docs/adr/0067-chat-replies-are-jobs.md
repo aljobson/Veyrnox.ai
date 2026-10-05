@@ -74,7 +74,7 @@ spine instead.
 
 ## Amendment 2026-10-05: a row may set its own reply cap and reasoning effort
 
-Status: proposed with migration 0196; the owner accepts it by merging that change.
+Status: **Accepted 2026-10-05**, owner approved in chat, including the seven staged rows' prices. Ships with migration 0196; every staged row stays inactive until its own activation migration.
 
 A live check against OpenRouter showed that every model accepts a `reasoning: {effort}` setting, that
 reasoning arrives in separate stream fields (`reasoning`, `reasoning_details`) and never in `content`, and
