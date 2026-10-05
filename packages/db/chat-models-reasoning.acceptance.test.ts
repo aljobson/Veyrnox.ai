@@ -23,6 +23,7 @@ test('the budget columns reject bad values and non-text rows',
             await db.query('BEGIN');
             const read = (n: string) => readFile(new URL(`./schema/supabase/${n}`, import.meta.url), 'utf8');
             await db.query(await read('0029_cost_unit_and_deactivate_seedance.sql'));
+            await db.query("DELETE FROM public.model_catalog WHERE id LIKE 'chat-%' AND provider = 'openrouter-chat'"); // start from no chat rows
             await db.query(await read('0196_chat_models_reasoning.sql'));
             await db.query(await read('0196_chat_models_reasoning.sql')); // replay
             const bad = async (set: string, re: RegExp) => {
@@ -52,6 +53,7 @@ test('seven premium chat models stage inactive; cost covers the worst case; pric
             await db.query('BEGIN');
             const read = (n: string) => readFile(new URL(`./schema/supabase/${n}`, import.meta.url), 'utf8');
             await db.query(await read('0029_cost_unit_and_deactivate_seedance.sql'));
+            await db.query("DELETE FROM public.model_catalog WHERE id LIKE 'chat-%' AND provider = 'openrouter-chat'"); // start from no chat rows
             const migration = await read('0196_chat_models_reasoning.sql');
             await db.query(migration);
             const before = (await db.query('SELECT * FROM public.model_catalog WHERE id <> ALL($1) ORDER BY id', [IDS])).rows;
