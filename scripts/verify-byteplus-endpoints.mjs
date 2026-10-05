@@ -12,7 +12,7 @@
  *                            resolves, then report: the output host (to put
  *                            in packages/adapters/r2Copy.js), whether the URL
  *                            serves bytes with no redirect, and the billed
- *                            tokens times the row's pack rate against the
+ *                            tokens times the effective billing rate against the
  *                            cost the row carries.
  *
  * The output check is the one that matters most. `copyUrlToR2` refuses a
@@ -28,27 +28,27 @@
  */
 
 import { writeFileSync } from 'node:fs';
+import { assessBytePlusCost } from './lib/byteplus-verification-cost.mjs';
 import { submitTask, fetchTask, buildRequest } from '../packages/adapters/byteplus.js';
 
-// Rows as migration 0145 stages them. `usdPerMToken` is the rate the cost
-// was derived from (resource pack for 2.x, PAYG for 1.0 Pro Fast); the run
-// multiplies it by the tokens ModelArk reports as billed.
+// Historical staged costs are deliberately retained as the comparison baseline.
+// The assessor uses effective 720p non-video-input rates, including pack deduction
+// multipliers. A successful output cannot validate the obsolete catalog price.
 const ROWS = [
-    { id: 'seedance-2.0-fast-byteplus', endpoint: 'byteplus:seedance-2.0-fast', credits: 20, cost: 0.35, usdPerMToken: 3.30,
+    { id: 'seedance-2.0-fast-byteplus', endpoint: 'byteplus:seedance-2.0-fast', credits: 20, cost: 0.35,
         inputs: { prompt: 'A paper boat drifting down a rain gutter, macro, soft light', aspect_ratio: '16:9', duration_seconds: 5 } },
-    { id: 'seedance-2.0-mini-byteplus', endpoint: 'byteplus:seedance-2.0-mini', credits: 13, cost: 0.23, usdPerMToken: 2.10,
+    { id: 'seedance-2.0-mini-byteplus', endpoint: 'byteplus:seedance-2.0-mini', credits: 13, cost: 0.23,
         inputs: { prompt: 'A red kite catching wind over a grass hill, wide shot', aspect_ratio: '16:9', duration_seconds: 5 } },
-    { id: 'seedance-2.0-byteplus', endpoint: 'byteplus:seedance-2.0', credits: 27, cost: 0.47, usdPerMToken: 4.30,
+    { id: 'seedance-2.0-byteplus', endpoint: 'byteplus:seedance-2.0', credits: 27, cost: 0.47,
         inputs: { prompt: 'Waves rolling onto a pebble beach at dusk, gentle wind', aspect_ratio: '16:9', duration_seconds: 5 } },
-    { id: 'seedance-2.5-byteplus', endpoint: 'byteplus:seedance-2.5', credits: 39, cost: 0.69, usdPerMToken: 6.40,
+    { id: 'seedance-2.5-byteplus', endpoint: 'byteplus:seedance-2.5', credits: 39, cost: 0.69,
         inputs: { prompt: 'A lantern floating up a misty river at night, slow drift', aspect_ratio: '16:9', duration_seconds: 5 } },
-    { id: 'seedance-1.0-pro-fast-byteplus', endpoint: 'byteplus:seedance-1.0-pro-fast', credits: 6, cost: 0.10, usdPerMToken: 1.00,
+    { id: 'seedance-1.0-pro-fast-byteplus', endpoint: 'byteplus:seedance-1.0-pro-fast', credits: 6, cost: 0.10,
         inputs: { prompt: 'Rain on a tin roof, water running off the edge, close up', aspect_ratio: '16:9', duration_seconds: 5 } },
 ];
 
 const POLL_INTERVAL_MS = 10_000;
 const POLL_TIMEOUT_MS = 15 * 60 * 1000;
-const COST_TOLERANCE = 0.05;
 
 const args = process.argv.slice(2);
 const doSubmit = args.includes('--submit');
@@ -144,13 +144,10 @@ for (const row of submittable) {
     const result = { id: row.id, endpoint: row.endpoint, taskId: sent.providerJobId, credits: row.credits, recordedCost: row.cost, ...done };
     if (done.state === 'success') {
         result.output = await checkOutputUrl(done.outputUrl);
-        if (Number.isFinite(done.completionTokens)) {
-            result.billedCost = Number(((done.completionTokens / 1_000_000) * row.usdPerMToken).toFixed(4));
-            result.costWithinTolerance = Math.abs(result.billedCost - row.cost) <= row.cost * COST_TOLERANCE;
-        }
+        Object.assign(result, assessBytePlusCost(row.endpoint, done.completionTokens, row.cost));
         console.error(`  ${result.output.ok ? 'OK       ' : 'PROBLEM  '} ${row.id}  ${done.seconds}s  host=${result.output.host}`
             + `  status=${result.output.status}${result.output.redirected ? ' REDIRECT' : ''}`
-            + `  tokens=${done.completionTokens ?? '?'}  billed=$${result.billedCost ?? '?'} vs $${row.cost}`
+            + `  tokens=${done.completionTokens ?? '?'}  estimated=$${result.billedCost ?? '?'} vs $${row.cost}`
             + `${result.costWithinTolerance === false ? '  COST DRIFT' : ''}`);
     } else {
         console.error(`  ${done.state.toUpperCase()}  ${row.id}  ${done.seconds}s  ${done.note || ''}`);
@@ -161,5 +158,5 @@ for (const row of submittable) {
 const outPath = `byteplus-verify-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
 writeFileSync(outPath, JSON.stringify({ ranAt: new Date().toISOString(), results }, null, 2));
 console.error(`\nEvidence written to ${outPath}. Record the output host in the activating migration and in r2Copy.js.`);
-const allGood = results.length && results.every((r) => r.state === 'success' && r.output?.ok && r.costWithinTolerance !== false);
+const allGood = results.length && results.every((r) => r.state === 'success' && r.output?.ok && r.costWithinTolerance === true);
 process.exit(allGood ? 0 : 1);

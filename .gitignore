@@ -57,3 +57,7 @@ scripts/.auto-short-verify.json
 
 # Reproducible local-only Video Enhance model/runtime assets
 public/video-enhance/
+
+# Playwright (e2e/)
+test-results/
+playwright-report/

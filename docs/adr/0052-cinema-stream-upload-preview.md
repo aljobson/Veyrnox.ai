@@ -1,6 +1,6 @@
 # ADR-0052 — Gated resumable Cinema uploads
 
-Status: Proposed, 25 September 2026. Extends ADR-0050; mandatory security overlay applies.
+Status: Proposed, 25 September 2026. Extends ADR-0050; mandatory security overlay applies. Built and merged; migrations applied in production; **off in production** (`CINEMA_ENABLED` and the other `CINEMA_*` flags are `false`), on in staging (status corrected 2026-10-03).
 
 ## Behavior and boundaries
 

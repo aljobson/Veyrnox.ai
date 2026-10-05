@@ -1,6 +1,6 @@
 # ADR-0003 — Billing / merchant-of-record
 
-- **Status**: Accepted (2026-09-10) — LemonSqueezy at launch, migrate to Stripe Direct at ~$20k MRR sustained 3 months
+- **Status**: Superseded by [ADR-0031](0031-stripe-replaces-lemonsqueezy.md) (2026-09-23): LemonSqueezy refused the account, Stripe is the only billing provider, and the LemonSqueezy code was removed in #424. Was: Accepted (2026-09-10) — LemonSqueezy at launch, migrate to Stripe Direct at ~$20k MRR sustained 3 months
 - **Date**: 2026-09-10
 - **Deciders**: Product owner (approver), Architect, Finance/Legal
 - **Blocks**: Phase 2 (billing + free tier)

@@ -32,13 +32,25 @@ If a build starts failing after a dependency change, bisect these three first.
 
 - **RLS on every user-facing table**, and `FORCE` it. Service-role bypasses RLS
   by design; the Worker uses service-role, the browser never talks to Postgres.
+- **One deliberate exception: tenant projects (ADR-0051).** Project routes call
+  PostgREST with the *user's* JWT (`packages/db/tenant-client.js`), so RLS is
+  the enforcing line, not the second one. The publishable key is public, so a
+  signed-in user can reach the same objects on `/rest/v1` directly. That surface
+  is exactly: SELECT on the organisation/workspace/project/document/asset
+  tables, the `public.*` invoker wrappers (`create_project`, `mutate_project`,
+  `save_project_document`, `reserve_project_asset`,
+  `consume_project_asset_inspection`) and the `private.*_role` helpers. The
+  `private` schema must stay out of the API's exposed schemas — the wrappers
+  exist so it never has to be exposed. Anything added to this surface goes on
+  the allowlist in `scripts/test-default-privileges.mjs` on purpose.
 - **Ledger is append-only** — enforced by trigger `ledger_entries_append_only`.
   Never `UPDATE` or `DELETE` a ledger row. Corrections are compensating rows
   (positive delta = refund/grant, negative = debit).
 - **Balance invariant**: `credit_balances.balance = SUM(ledger_entries.delta)`
   per `user_id`. Every mutation goes through `ledger_debit` / `ledger_refund` /
   `ledger_grant` / `signup_grant` / `expire_free_credits` / `credit_top_up` /
-  `apply_top_up_refund` RPC — never a raw `INSERT INTO ledger_entries` or a raw
+  `apply_top_up_refund` / `subscription_grant` / `expire_subscription_credits` /
+  `reverse_subscription_grant` RPC — never a raw `INSERT INTO ledger_entries` or a raw
   `UPDATE credit_balances`.
 - **Frozen accounts** (#97): `apply_top_up_refund` and `apply_dispute_event`
   Freeze, `unfreeze_account` is the only way out, and all three write the
@@ -49,6 +61,21 @@ If a build starts failing after a dependency change, bisect these three first.
   `0 <= free_balance <= balance`. Debits spend free first; a Credit Refund
   returns to the source it came from; a clawback caps at
   `balance - free_balance`. `reconcile_free_credits()` must return zero rows.
+- **Subscription Credits** (ADR-0064, 0183/0184): a third bucket,
+  `subscription_delta` / `subscription_balance`, with
+  `free_balance + subscription_balance <= balance`. Only `subscription_grant`
+  mints them, keyed by the paid invoice; nothing calls it until the Stripe
+  subscription webhook is built. Debits spend Subscription, then Free, then
+  Pack. Past `subscription_expires_at` they cannot be spent and the hourly
+  sweep removes them; a renewal expires the previous cycle's remainder (no
+  rollover). A refund returns to the bucket it came from; the part an ended
+  or replaced cycle paid for is expired again in the same call, so it never
+  becomes permanent credit and never rolls over. A Pack clawback caps at
+  `balance - free_balance - subscription_balance`.
+  `reconcile_subscription_credits()` must return zero rows. The subscription
+  itself is `credit_subscriptions` (0186): activating one grants nothing; a
+  paid invoice does, through `grant_credit_subscription_invoice`, and a full
+  refund or a dispute takes back only what is left of that cycle (0187).
 - **Idempotency**: every state-changing RPC takes an idempotency key
   (`jobs.idempotency_key` UNIQUE on `(user_id, idempotency_key)`,
   `webhook_events` UNIQUE on `(source, external_id)`). Replay must be a no-op.
@@ -86,7 +113,9 @@ If a build starts failing after a dependency change, bisect these three first.
   requests with 401. It verifies the Supabase JWT with **ES256 + JWKS via Web
   Crypto**. Never re-introduce HS256 shared-secret verification.
 - After verification, forward identity in server-side headers only:
-  `x-veyrnox-auth-id`, `x-veyrnox-auth-email`, `x-veyrnox-auth-role`.
+  `x-veyrnox-auth-id`, `x-veyrnox-auth-email`, `x-veyrnox-auth-role`,
+  `x-veyrnox-auth-aal` and `x-veyrnox-auth-mfa-at` (the last two carry the
+  second-factor level and when it was last proved).
   Overwrite any inbound header of the same name — a client must never spoof it.
 - Standard-claim checks (issuer, audience `authenticated`, exp with 5s skew, sub
   present) run on every request. Missing/malformed -> 401, never 500.
@@ -96,13 +125,26 @@ If a build starts failing after a dependency change, bisect these three first.
   `IDEMPOTENCY_RE` in `app/api/v1/generations/route.js` as the pattern.
 - Return typed errors: `{error: "kebab_case_code", ...}`. Don't leak stack
   traces, DB messages, or upstream vendor payloads.
-- No CORS wildcards on `/api/v1/*` — same-origin only. Studio proxies through
-  the same host.
+- No CORS wildcards on `/api/v1/*` — same-origin only.
+- **Routes outside the gate, on purpose.** `/api/v1/*` is the only surface
+  that carries a user. The middleware does not run on other `/api/*` paths, so
+  an inbound `x-veyrnox-auth-*` header is NOT stripped there: a route outside
+  `/api/v1` must never read one. Each has its own protection:
+  - `/api/catalog`, `/api/credit-packs`, `/api/cinema/titles[/:id]` —
+    anonymous, read-only, cached public data (prices, packs, published
+    titles). Nothing per-user.
+  - `/api/webhook/*` — the provider's signature (see Provider webhooks).
+  - `/api/admin/*` — Cloudflare Access plus a shared token; cron callers only.
+  - `/media/social/:token` — a short-lived HMAC token naming one R2 object.
+
+  A new route outside `/api/v1` needs one of these and an entry in
+  `tests/routesOutsideGate.test.mjs`.
 
 ## Identity & sessions
 
 - Supabase Auth is the only identity source. Providers: email/password, Apple,
-  Google (see `AuthGate.jsx`).
+  Google, and passkey sign-in (ADR-0032; see `AuthGate.jsx`). A passkey is
+  added and removed on `/app/account`.
 - Anon key + Supabase URL live in `wrangler.jsonc` `vars` (public). Service-role
   key is a `wrangler secret` — never `NEXT_PUBLIC_*`, never in the client bundle.
 - Client session in `localStorage['veyrnox_supabase_session']`. Never send
@@ -129,21 +171,28 @@ If a build starts failing after a dependency change, bisect these three first.
   | Confirm email ON (Supabase Auth) | **The load-bearing one.** Blocks the account, so no provider spend. |
   | 0071 applied | Stops junk grants being minted. **Alone it does nothing** while autoconfirm is on — its INSERT branch sees a non-null `email_confirmed_at` and grants anyway. |
 
-  Production still runs the `0010` trigger, which grants on INSERT
-  unconditionally. Run `npm run check:signup-gate` to see the live state;
-  `signup-gate.yml` checks it hourly. Neither switch is visible from this
-  repo, which is how it drifted.
+  Production has both switches on: autoconfirm is off and `0071` is applied
+  (since 2026-09-21, rechecked 2026-10-03), and Turnstile CAPTCHA is enforced
+  on sign-up and sign-in (ADR-0026). Run `npm run check:signup-gate` to see
+  the live state; `signup-gate.yml` checks it hourly. Neither switch is
+  visible from this repo, which is how it drifted once.
 
   With autoconfirm on, 10 credits is ~$0.15 of provider spend for anyone who
-  can POST an email address. Sign-up should also carry Attack Protection
-  (CAPTCHA). Check all of this before any launch that widens sign-up.
+  can POST an email address. Check all of this before any launch that widens
+  sign-up.
 
 ## Web security
 
-- **CSP** in `next.config.mjs` is `default-src 'self'`. `connect-src` allows
-  only `'self'` + the Supabase project host. Adding a host means an ADR.
-  `frame-ancestors 'none'`, `object-src 'none'`, `base-uri 'self'`,
-  `form-action 'self'`.
+- **CSP** is built in `lib/contentSecurityPolicy.mjs` and set per request by
+  `middleware.js` with a fresh nonce (ADR-0060); pages are `no-store`. It is
+  `default-src 'self'`, and `script-src` is `'self'`, the nonce and Turnstile,
+  with no `'unsafe-inline'`. `connect-src` allows `'self'`, the Supabase
+  project host, our own R2 S3 endpoints (browser uploads, ADR-0028) and the
+  two Cloudflare Stream upload origins (ADR-0052). `img-src` and `media-src`
+  add only those R2 endpoints; `frame-src` is Turnstile and the Stream
+  player. Adding a host means an ADR. `frame-ancestors 'none'`,
+  `object-src 'none'`, `base-uri 'self'`, `form-action 'self'`. The other
+  headers below are set in `next.config.mjs`.
 - **HSTS** `max-age=63072000; includeSubDomains; preload`. Never lower.
 - `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`,
   `Referrer-Policy: strict-origin-when-cross-origin`,
@@ -154,14 +203,18 @@ If a build starts failing after a dependency change, bisect these three first.
 - CSRF: same-site cookies aren't in play (we're Bearer-only), but any state-
   changing GET is forbidden. Mutations are POST/PUT/PATCH/DELETE only.
 
-## Provider webhooks (fal.ai, LemonSqueezy, etc.)
+## Provider webhooks (fal.ai, Stripe, etc.)
 
 - Every webhook verifies a cryptographic signature. Fal is Ed25519 via JWKS
-  (see `packages/adapters/fal.js#verifyWebhookSignature`). LemonSqueezy is
-  HMAC-SHA256 over the raw body (`packages/adapters/lemonsqueezy.js`); it sends
-  no timestamp, so there is no replay window (ADR-0018). Replays are harmless
-  instead: the order is re-fetched from the API and `webhook_events` dedupes.
-  Missing/invalid signature -> 401, never 200.
+  (see `packages/adapters/fal.js#verifyWebhookSignature`). Stripe is
+  HMAC-SHA256 over `<t>.<raw body>` with a 300s timestamp tolerance
+  (`packages/adapters/stripe.js`); the session is re-fetched from the API and
+  `webhook_events` dedupes. Missing/invalid signature -> 401, never 200.
+  Stripe is the only billing provider; LemonSqueezy was removed (ADR-0031).
+  kie, OpenRouter and Cloudflare Stream webhooks verify a signature in the
+  same way (`packages/adapters/kie.js`, `openrouter.js`,
+  `lib/cinema/streamWebhook.js`). BytePlus and GrsAI have no signed callback,
+  so none is registered: their jobs are polled by a sweep.
 - Every webhook is idempotent via `webhook_events(source, external_id)`.
   Duplicate -> early return, no side effects.
 - Webhook handlers must not trust the payload's `user_id`. Look the job up
@@ -246,10 +299,19 @@ If a build starts failing after a dependency change, bisect these three first.
 - `main` is deployable at all times. `.github/workflows/deploy-production.yml`
   deploys each push to main, one run at a time (newest main wins). Cloudflare
   Workers Builds only uploads preview versions, for every branch including
-  main. Break-glass rollback: `wrangler rollback <version-id>`, or rerun the
-  workflow on an older commit.
-- Feature flag new user paths behind `localStorage.veyrnox_*` until the DB
-  migration has landed and the reconciliation job has run for 24h clean.
+  main. After each deploy `scripts/check-site-health.mjs` runs; on failure the
+  workflow restores the previously live deployment and opens a
+  `deploy-failure` issue. A deploy refused because ci is red on the commit
+  opens one too. `site-health.yml` runs the same check every 15 min.
+  A rollback restores the Worker only — migrations stay applied, so each
+  migration must keep the previous release working. Break-glass rollback:
+  `wrangler rollback <version-id>`, or rerun the workflow on an older commit.
+- Feature flag new user paths until the DB migration has landed and the
+  reconciliation job has run for 24h clean. Flags are server vars in
+  `wrangler.jsonc` (`*_ENABLED`, `"false"` in production, e.g. `CINEMA_*`,
+  `TENANT_PROJECTS_ENABLED`, `PUBLISH_ENABLED`). Two surfaces also need a
+  per-browser preview switch on top: `localStorage.veyrnox_social_cinema` and
+  `localStorage.veyrnox_projects`.
 - Every PR touching the money spine (ledger, jobs, webhooks) needs an ADR
   update if behavior visible to the user or auditor changes.
 

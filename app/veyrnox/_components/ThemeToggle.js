@@ -1,9 +1,9 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useSyncExternalStore } from 'react';
 
 // Dark is the default and the brand; light is opt-in and remembered per
-// browser. The palette itself is 14 CSS variables in app/globals.css, so
+// browser. The palette itself is 15 CSS variables in app/globals.css, so
 // this only has to flip one attribute on <html>.
 //
 // There is deliberately no inline bootstrap <script>: the CI grep gate in
@@ -24,8 +24,19 @@ export function readStoredTheme() {
   }
 }
 
+const listeners = new Set();
+const subscribe = (listener) => {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+};
+// The attribute is the theme on screen; before anything has set it, the
+// remembered choice is what is about to be applied.
+const currentTheme = () => document.documentElement.getAttribute('data-theme') || readStoredTheme() || 'dark';
+const serverTheme = () => 'dark';
+
 export function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
+  listeners.forEach((listener) => listener());
 }
 
 /** Apply the remembered theme. Called once from the root-mounted chrome so
@@ -37,23 +48,20 @@ export function applyStoredTheme() {
 }
 
 export function ThemeToggle({ className = '' }) {
-  const [theme, setTheme] = useState('dark');
+  const theme = useSyncExternalStore(subscribe, currentTheme, serverTheme);
 
   useEffect(() => {
-    setTheme(applyStoredTheme());
+    applyStoredTheme();
   }, []);
 
   const toggle = useCallback(() => {
-    setTheme((current) => {
-      const next = current === 'dark' ? 'light' : 'dark';
-      applyTheme(next);
-      try {
-        localStorage.setItem(KEY, next);
-      } catch {
-        // Private mode / storage blocked: the theme still applies for this page.
-      }
-      return next;
-    });
+    const next = currentTheme() === 'dark' ? 'light' : 'dark';
+    applyTheme(next);
+    try {
+      localStorage.setItem(KEY, next);
+    } catch {
+      // Private mode / storage blocked: the theme still applies for this page.
+    }
   }, []);
 
   const goingLight = theme === 'dark';

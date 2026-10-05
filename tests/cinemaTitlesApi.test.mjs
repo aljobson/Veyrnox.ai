@@ -21,15 +21,15 @@ test('the anonymous catalogue is validated, cached for a minute, and never carri
   process.env.CINEMA_VIEWING_ENABLED = 'false';
   assert.equal((await s.handle(get('/api/cinema/titles'))).status, 503);
   process.env.CINEMA_VIEWING_ENABLED = 'true';
-  for (const q of ['?limit=0', '?limit=51', '?limit=abc', '?before=not-a-date', '?x=1']) assert.equal((await s.handle(get(`/api/cinema/titles${q}`))).status, 400, q);
-  const res = await s.handle(get('/api/cinema/titles?limit=1&before=2026-09-26T12:00:00Z'));
+  for (const q of ['?limit=0', '?limit=51', '?limit=abc', '?before=not-a-date', '?before=2026', '?before=2026-02-30T12:00:00Z', '?x=1']) assert.equal((await s.handle(get(`/api/cinema/titles${q}`))).status, 400, q);
+  const res = await s.handle(get(`/api/cinema/titles?limit=1&before=2026-09-26T12:00:00Z&before_id=${id}`));
   assert.equal(res.status, 200);
   assert.equal(res.headers.get('cache-control'), 'public, max-age=60');
   const data = await res.json();
   assert.deepEqual([data.titles.length, data.next], [1, '2026-09-26T10:00:00.000Z']);
-  assert.deepEqual(s.calls[0].args, { p_limit: 1, p_before: '2026-09-26T12:00:00.000Z', p_category: null });
+  assert.deepEqual(s.calls[0].args, { p_limit: 1, p_before: '2026-09-26T12:00:00Z', p_category: null, p_before_id: id });
   assert.ok(!s.calls.some((c) => c.name === 'consume_account_read_request'));
-  const again = await s.handle(get('/api/cinema/titles?limit=1&before=2026-09-26T12:00:00Z'));
+  const again = await s.handle(get(`/api/cinema/titles?limit=1&before=2026-09-26T12:00:00Z&before_id=${id}`));
   assert.equal(again.status, 200);
   assert.equal(s.calls.length, 2, 'served from the cache: titles and categories were read once');
   const full = setup('list', Array.from({ length: 24 }, (_, i) => ({ id, published_at: `2026-09-${String(i + 1).padStart(2, '0')}T00:00:00.000Z` })));
@@ -84,8 +84,19 @@ test('the catalogue filters by one category slug and returns the category list',
   assert.equal(res.status, 200);
   const data = await res.json();
   assert.deepEqual([data.category, data.categories[0].slug, data.titles.length], ['romance', 'romance', 1]);
-  assert.equal(calls.find((c) => c.name === 'list_public_cinema_titles').args.p_category, 'romance');
+  assert.equal(calls.find((c) => c.name === 'list_public_cinema_titles_page').args.p_category, 'romance');
   const all = await (await handle(get('/api/cinema/titles'))).json();
   assert.equal(all.category, null);
   assert.equal(calls.at(-2).args.p_category, null);
+});
+
+test('compound cursor preserves database microseconds and rejects incomplete IDs',async()=>{
+ const s=setup('list',list);
+ const at='2026-09-26T10:00:00.123456+00:00';
+ const r=await s.handle(get(`/api/cinema/titles?${new URLSearchParams({before:at,before_id:id,limit:'1'})}`));
+ assert.equal(r.status,200);const data=await r.json();assert.equal(data.next_id,id);
+ assert.equal(s.calls[0].args.p_before,at);assert.equal(s.calls[0].args.p_before_id,id);
+ assert.equal((await s.handle(get(`/api/cinema/titles?before_id=${id}`))).status,400);
+ // A time alone would page with <= and repeat the boundary title; the cursor is both or neither.
+ assert.equal((await s.handle(get(`/api/cinema/titles?before=${encodeURIComponent(at)}`))).status,400);
 });

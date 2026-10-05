@@ -21,6 +21,7 @@ import {
     signInWithOAuth,
 } from "../app/lib/authClient.js";
 import { signInWithPasskey, passkeysSupported } from "../app/lib/passkeys.js";
+import { configuredProviders, readAuthSettings, providerAvailable, passkeyUnavailableReason } from "../app/lib/authProviders.js";
 import { Turnstile, TURNSTILE_SITE_KEY } from "./Turnstile.jsx";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -108,31 +109,33 @@ export default function AuthGate() {
     // captchaReset and the widget issues a fresh one.
     const [captcha, setCaptcha] = useState(null);
     const [captchaReset, setCaptchaReset] = useState(0);
-    // Which OAuth providers are actually enabled on the Supabase side.
-    // Fetching once on first mount avoids showing broken buttons that
-    // redirect to a Supabase 400 "provider is not enabled" page.
-    const [oauth, setOauth] = useState({ apple: false, google: false });
-    // Passkeys need BOTH the project setting and a browser that can do
-    // WebAuthn in a secure context, so the button is never offered where
-    // clicking it would only throw.
-    const [passkeys, setPasskeys] = useState(false);
+    // Every entry point uses this dialog. Availability controls whether an
+    // action can start, never whether Apple or passkeys disappear from it.
+    const oauth = configuredProviders(process.env.NEXT_PUBLIC_AUTH_PROVIDERS);
+    const authSettings = useRef(null);
+    const [settings, setSettings] = useState(null);
+
+    function rememberSettings(data) {
+        if (!data) return;
+        authSettings.current = data;
+        setSettings(data);
+    }
 
     useEffect(() => {
-        const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-        const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-        if (!url || !anon) return;
         let cancelled = false;
-        fetch(`${url}/auth/v1/settings`, { headers: { apikey: anon } })
-            .then((r) => (r.ok ? r.json() : null))
+        readAuthSettings(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
             .then((data) => {
-                if (cancelled || !data) return;
-                const ext = data.external || {};
-                setOauth({ apple: !!ext.apple, google: !!ext.google });
-                setPasskeys(!!data.passkeys_enabled && passkeysSupported());
-            })
-            .catch(() => {});
+                if (!cancelled) rememberSettings(data);
+            });
         return () => { cancelled = true; };
     }, []);
+
+    async function settingsBeforeSignIn() {
+        if (authSettings.current) return authSettings.current;
+        const data = await readAuthSettings(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY, 3000);
+        rememberSettings(data);
+        return data;
+    }
 
     // This dialog appears unannounced on a 401, so it has to take focus and
     // accept Escape — ConfirmDialog already does both. Without it a keyboard
@@ -205,6 +208,12 @@ export default function AuthGate() {
     async function startOAuth(provider) {
         setNotice(null);
         setBusy(true);
+        const data = await settingsBeforeSignIn();
+        if (!providerAvailable(data, provider)) {
+            setBusy(false);
+            setNotice({ kind: "error", text: `${provider === "apple" ? "Apple" : "Google"} sign-in isn't configured for this environment yet. Use another method.` });
+            return;
+        }
         try {
             await signInWithOAuth(provider);
         } catch (err) {
@@ -217,6 +226,11 @@ export default function AuthGate() {
     // a failure and should leave the dialog exactly as it was.
     async function startPasskey() {
         setNotice(null);
+        const unsupported = passkeyUnavailableReason(null, passkeysSupported());
+        if (unsupported) {
+            setNotice({ kind: "error", text: unsupported });
+            return;
+        }
         // GoTrue treats the passkey challenge as a sign-in, so Attack
         // Protection applies to it exactly as it does to password sign-in.
         // Without this the request is refused with captcha_failed before any
@@ -227,6 +241,11 @@ export default function AuthGate() {
         }
         setBusy(true);
         try {
+            const unavailable = passkeyUnavailableReason(await settingsBeforeSignIn(), true);
+            if (unavailable) {
+                setNotice({ kind: "error", text: unavailable });
+                return;
+            }
             const session = await signInWithPasskey(captcha);
             if (session) setOpen(false);
         } catch (err) {
@@ -307,33 +326,33 @@ export default function AuthGate() {
                     New users get 10 free credits.
                 </p>
 
-                {(oauth.apple || oauth.google || passkeys) && (
-                    <>
-                        <div className="space-y-2 mb-3">
-                            {passkeys && (
-                                <button type="button" onClick={startPasskey} disabled={busy} className="flex w-full items-center justify-center gap-2 rounded-lg bg-vx-base border border-vx-border text-vx-fg font-semibold py-2 text-sm hover:border-vx-accent disabled:opacity-60">
-                                    <PasskeyMark />
-                                    Sign in with a passkey
-                                </button>
-                            )}
-                            {oauth.apple && (
-                                <button type="button" onClick={() => startOAuth("apple")} disabled={busy} className="flex w-full items-center justify-center gap-2 rounded-lg bg-vx-fg text-vx-base font-semibold py-2 text-sm hover:opacity-90 disabled:opacity-60">
-                                    <AppleMark />
-                                    Continue with Apple
-                                </button>
-                            )}
-                            {oauth.google && (
-                                <button type="button" onClick={() => startOAuth("google")} disabled={busy} className="flex w-full items-center justify-center gap-2 rounded-lg bg-vx-base border border-vx-border text-vx-fg font-semibold py-2 text-sm hover:border-vx-accent disabled:opacity-60">
-                                    <GoogleMark />
-                                    Continue with Google
-                                </button>
-                            )}
-                        </div>
-                        <div className="flex items-center gap-3 mb-3 text-[10px] text-vx-fg-faint uppercase tracking-wider">
-                            <div className="h-px bg-vx-border flex-1" /> or email <div className="h-px bg-vx-border flex-1" />
-                        </div>
-                    </>
-                )}
+                <>
+                    <div className="space-y-2 mb-3">
+                        <button type="button" onClick={startPasskey} disabled={busy} className="flex w-full items-center justify-center gap-2 rounded-lg bg-vx-base border border-vx-border text-vx-fg font-semibold py-2 text-sm hover:border-vx-accent disabled:opacity-60">
+                            <PasskeyMark />
+                            Sign in with a passkey
+                        </button>
+                        <button type="button" onClick={() => startOAuth("apple")} disabled={busy} className="flex w-full items-center justify-center gap-2 rounded-lg bg-vx-fg text-vx-base font-semibold py-2 text-sm hover:opacity-90 disabled:opacity-60">
+                            <AppleMark />
+                            Continue with Apple
+                        </button>
+                        {oauth.google && (
+                            <button type="button" onClick={() => startOAuth("google")} disabled={busy} className="flex w-full items-center justify-center gap-2 rounded-lg bg-vx-base border border-vx-border text-vx-fg font-semibold py-2 text-sm hover:border-vx-accent disabled:opacity-60">
+                                <GoogleMark />
+                                Continue with Google
+                            </button>
+                        )}
+                    </div>
+                    {settings && (!providerAvailable(settings, "apple") || settings.passkeys_enabled !== true) && (
+                        <p className="text-xs text-vx-fg-muted mb-3">
+                            {!providerAvailable(settings, "apple") && "Apple sign-in needs setup in this environment. "}
+                            {settings.passkeys_enabled !== true && "Passkeys need enabling in this environment."}
+                        </p>
+                    )}
+                    <div className="flex items-center gap-3 mb-3 text-[10px] text-vx-fg-faint uppercase tracking-wider">
+                        <div className="h-px bg-vx-border flex-1" /> or email <div className="h-px bg-vx-border flex-1" />
+                    </div>
+                </>
                 <form onSubmit={handleSubmit} className="space-y-3">
                     <label className="block">
                         <span className="text-xs text-vx-fg-muted">Email</span>

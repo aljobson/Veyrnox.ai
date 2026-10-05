@@ -6,6 +6,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { Button } from '../_components/Button';
 import { getSession, onSessionChange } from '../../lib/authClient';
 import { gatewayFetch } from '../_lib/gateway';
+import { useCinemaPreview } from './preview';
 
 const identity = () => getSession()?.user?.id || '';
 const noIdentity = () => '';
@@ -20,12 +21,12 @@ function Catalogue() {
   const load = async (before, slug = category) => {
     try {
       const params = new URLSearchParams();
-      if (before) params.set('before', before);
+      if (before) { params.set('before', before.at); params.set('before_id', before.id); }
       if (slug) params.set('category', slug);
       const r = await fetch(`/api/cinema/titles${params.size ? `?${params}` : ''}`);
       if (!r.ok) { setState(r.status === 503 ? 'closed' : 'error'); return; }
       const data = await r.json();
-      setTitles((prev) => (before && prev ? [...prev, ...data.titles] : data.titles)); setNext(data.next); setCategories(data.categories || []); setState('ready');
+      setTitles((prev) => (before && prev ? [...prev, ...data.titles] : data.titles)); setNext(data.next && data.next_id ? { at: data.next, id: data.next_id } : null); setCategories(data.categories || []); setState('ready');
     } catch { setState('error'); }
   };
   useEffect(() => { load(null); }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -60,11 +61,8 @@ const sections = [
 export function SocialCinema() {
   const [section, setSection] = useState(0);
   const account = useSyncExternalStore(onSessionChange, identity, noIdentity);
-  const [preview, setPreview] = useState(false);
-  useEffect(() => {
-    try { setPreview(localStorage.getItem('veyrnox_social_cinema') === 'true'); } catch {}
-  }, []);
-  return <main id="main" className="mx-auto max-w-[1100px] px-4 py-10 pb-40 sm:px-8 sm:py-16 sm:pb-32">
+  const preview = useCinemaPreview();
+  return <div className="mx-auto max-w-[1100px] px-4 py-10 pb-40 sm:px-8 sm:py-16 sm:pb-32">
     <header className="max-w-2xl">
       <p className="mb-4 font-vx-mono text-xs tracking-widest text-vx-accent">SOCIAL CINEMA · IN DEVELOPMENT</p>
       <h1 className="text-4xl font-black leading-tight sm:text-6xl">Stories worth<br />coming back for.</h1>
@@ -91,7 +89,7 @@ export function SocialCinema() {
       <h2 id="profile-title" className="text-xl font-extrabold">Your Social Cinema profile</h2>
       {account ? <Profile key={account} /> : <div className="mt-4"><p className="mb-4 text-vx-fg-body">Use your Veyrnox.ai account to get started.</p><Button onClick={() => window.dispatchEvent(new CustomEvent('veyrnox:auth-required'))}>Sign in</Button></div>}
     </section>}
-  </main>;
+  </div>;
 }
 
 function Profile() {

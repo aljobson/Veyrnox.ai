@@ -29,8 +29,15 @@ test('the secret-logging gate covers console.error, which is what this codebase 
 });
 
 test('the ledger acceptance tests run when the code that calls the RPCs changes', () => {
+    // push keeps a paths filter; pull_request has none (acceptance is a
+    // required check), and the changes job applies the same list instead.
     for (const path of ['app/api/webhook/**', 'lib/**', 'worker.js']) {
-        // Once for the pull_request trigger, once for push.
-        assert.equal((ledgerTests.match(new RegExp(`- "${path.replace(/[*.]/g, '\\$&')}"`, 'g')) || []).length, 2, path);
+        assert.equal((ledgerTests.match(new RegExp(`- "${path.replace(/[*.]/g, '\\$&')}"`, 'g')) || []).length, 1, path);
     }
+    const prFilter = new RegExp(ledgerTests.match(/grep -qE \\\s*'([^']+)'/)[1]);
+    for (const file of ['app/api/webhook/stripe/route.js', 'lib/socialPublishSweep.js', 'worker.js', 'packages/db/schema/supabase/0001.sql']) {
+        assert.ok(prFilter.test(file), file);
+    }
+    assert.equal(prFilter.test('docs/adr/0001.md'), false);
+    assert.match(ledgerTests, /acceptance:\n\s+needs: changes\n\s+if: needs\.changes\.outputs\.relevant == 'true'/);
 });

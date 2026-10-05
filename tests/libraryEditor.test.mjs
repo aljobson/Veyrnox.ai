@@ -10,7 +10,7 @@ const sheet = readFileSync(new URL('../app/veyrnox/_components/EditSheet.js', im
 
 test('the editor is off unless localStorage.veyrnox_editor is "1"', () => {
     assert.match(library, /const EDITOR_FLAG = 'veyrnox_editor';/);
-    assert.match(library, /setEditorOn\(window\.localStorage\.getItem\(EDITOR_FLAG\) === '1'\)/);
+    assert.match(library, /const editorFlag = \(\) => \{ try \{ return window\.localStorage\.getItem\(EDITOR_FLAG\) === '1'; \} catch \{ return false; \} \};/);
     assert.match(library, /const canSelect = \(r\) => editorOn && r\.state === 'succeeded' && /);
 });
 

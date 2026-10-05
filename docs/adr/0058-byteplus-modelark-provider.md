@@ -1,5 +1,13 @@
 # ADR-0058 — BytePlus ModelArk as the provider for Seedance video
 
+> **2026-09-28 correction — pack savings withdrawn.** The original calculations
+> below assumed one pack token per consumed token. Current BytePlus rules apply
+> input/resolution deduction multipliers; the four staged Seedance 2.x costs and
+> derived credit floors are not valid activation evidence. Keep those rows inactive
+> until pricing is revised and verified. See the
+> [current wholesale review](../pricing/wholesale-review-2026-09-28.md).
+
+
 - **Status**: Proposed 2026-09-26. Rows stage inactive; nothing goes live until the
   "Before activating any row" list is complete and the owner accepts.
 - **Date**: 2026-09-26
@@ -251,8 +259,10 @@ Decision 7's four controls now have homes, mapped in
    rights explicitly.
 
 Decision 8's label: every library asset card shows "AI generated". Glossary terms
-Content Warning, Takedown and Rights Attestation are in `CONTEXT.md`. Still open: the
-user-facing email on a warning or takedown, and an admin UI over the violations API.
+Content Warning, Takedown and Rights Attestation are in `CONTEXT.md`. The user-facing
+email on a warning or takedown is built (`lib/violationEmail.js`, sent through Resend) and
+stays off until `RESEND_API_KEY` and `VIOLATION_EMAIL_FROM` are set. The admin UI over the
+violations API is at `/app/admin/violations`.
 
 ## Before activating any row
 

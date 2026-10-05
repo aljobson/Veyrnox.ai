@@ -86,7 +86,10 @@ try {
   const heavyPass = await activePass(heavy);
   const heavyUser = await value('SELECT id AS value FROM public.users WHERE auth_id=$1', [heavy]);
   const monthStart = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), 1, 0, 0, 0)).toISOString();
-  await q('INSERT INTO public.cinema_pass_plays(pass_id,user_id,content_id,seconds,played_at) SELECT $1,$2,$3,60,$4::timestamptz + (g * interval \'1 minute\') FROM generate_series(0, 2998) g', [heavyPass, heavyUser, ep8, monthStart]);
+  // One past instant inside this month. Spacing the rows a minute apart from
+  // the 1st dated the last ones in the future for the month's first ~50 hours,
+  // and the 60-second cap counts future rows, so the closing play read too_fast.
+  await q('INSERT INTO public.cinema_pass_plays(pass_id,user_id,content_id,seconds,played_at) SELECT $1,$2,$3,60,GREATEST($4::timestamptz, now() - interval \'2 minutes\') FROM generate_series(0, 2998) g', [heavyPass, heavyUser, ep8, monthStart]);
   assert.deepEqual(await entitlement(heavy, ep8), { access: 'pass', credits: 0 });
   const last = await play(heavy, ep8, 60);
   assert.deepEqual([last.recorded, last.seconds, last.minutes_used], [true, 60, 3000]);

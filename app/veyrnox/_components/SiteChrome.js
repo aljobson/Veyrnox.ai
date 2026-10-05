@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { SUPPORT_EMAIL } from '../_lib/tokens';
 import { clearAttribution } from '../_lib/utm';
@@ -15,8 +15,21 @@ import { applyStoredTheme } from './ThemeToggle';
 const NOTICE_KEY = 'veyrnox_storage_notice';
 const TOP_AT = 700; // px scrolled before the back-to-top button earns its place
 
+const never = () => () => {};
+const noticeUnread = () => {
+  try {
+    return localStorage.getItem(NOTICE_KEY) !== 'ack';
+  } catch {
+    // Storage blocked — nothing is being stored, so nothing to disclose.
+    return false;
+  }
+};
+const noticeOnServer = () => false;
+
 export default function SiteChrome() {
-  const [noticeOpen, setNoticeOpen] = useState(false);
+  const unread = useSyncExternalStore(never, noticeUnread, noticeOnServer);
+  const [acked, setAcked] = useState(false);
+  const noticeOpen = unread && !acked;
 
   // Retire unused campaign storage, including records left by older clients.
   useEffect(() => {
@@ -29,16 +42,8 @@ export default function SiteChrome() {
     applyStoredTheme();
   }, []);
 
-  useEffect(() => {
-    try {
-      if (localStorage.getItem(NOTICE_KEY) !== 'ack') setNoticeOpen(true);
-    } catch {
-      // Storage blocked — nothing is being stored, so nothing to disclose.
-    }
-  }, []);
-
   const ackNotice = useCallback(() => {
-    setNoticeOpen(false);
+    setAcked(true);
     try {
       localStorage.setItem(NOTICE_KEY, 'ack');
     } catch {}

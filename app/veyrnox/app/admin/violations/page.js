@@ -48,6 +48,8 @@ function Violations() {
     }
   }, []);
 
+  // A request counter, not a DOM node: the cleanup must bump the live value.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { loadRecord(null); return () => { generation.current++; }; }, [loadRecord]);
 
   async function find(event) {
@@ -84,7 +86,7 @@ function Violations() {
   }
 
   return (
-    <main id="main" className="mx-auto max-w-4xl px-4 py-10 pb-32 sm:px-8">
+    <div className="mx-auto max-w-4xl px-4 py-10 pb-32 sm:px-8">
       <Link href="/app/admin" className="text-sm underline">Back to operations</Link>
       <Chip tone="danger" className="mt-5 mb-3">ADMIN · CONTENT</Chip>
       <h1 className="text-3xl font-black tracking-[-0.02em]">Content violations</h1>
@@ -110,7 +112,7 @@ function Violations() {
       {lookup && <Jobs jobs={lookup.jobs} user={lookup.user} onDone={refresh} />}
 
       <Record rows={record} loaded={recordLoaded} scoped={!!lookup} />
-    </main>
+    </div>
   );
 }
 
@@ -207,6 +209,9 @@ function ActionForm({ tier, userId, jobId = null, strikes = 0, onCancel, onDone 
       <div role="status" className="mt-3 rounded-lg border border-vx-border p-4 text-sm">
         Recorded {result.tier}{result.assets_removed ? `, ${result.assets_removed} asset${result.assets_removed === 1 ? '' : 's'} removed` : ''}.
         {' '}{result.takedowns} takedown{result.takedowns === 1 ? '' : 's'} on this account{result.frozen ? '; the account is now frozen.' : '.'}
+        {result.email === 'sent' && <p className="mt-2 text-vx-fg-muted">The user has been emailed.</p>}
+        {result.email === 'failed' && <p role="alert" className="mt-2 text-vx-danger">The email to the user failed. The {result.tier} stands; tell them yourself.</p>}
+        {result.email === 'skipped' && <p className="mt-2 text-vx-warn">No email was sent: email sending is not configured.</p>}
         <div className="mt-3"><Button size="sm" onClick={onDone}>Done</Button></div>
       </div>
     );

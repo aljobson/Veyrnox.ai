@@ -1,6 +1,6 @@
 # ADR-0020 — kie.ai and OpenRouter as generation providers
 
-- **Status**: Accepted (2026-09-12). OpenRouter live 2026-09-13 (seedance-2.0-fast). **kie.ai: no-go** (owner decision 2026-09-13: no DPA, data sent to the US); kie rows stay inactive and Veo stays on fal at 4s clips (migration 0066).
+- **Status**: Accepted (2026-09-12). OpenRouter live 2026-09-13 (seedance-2.0-fast). kie.ai was no-go on 2026-09-13 (no DPA, data sent to the US); **that was reversed and kie is live** — see "Update (2026-09-24)" below (status corrected 2026-10-03: this line still read no-go).
 - **Date**: 2026-09-12
 - **Deciders**: Product owner (sole)
 - **Related**: [ADR-0016 — Data-residency claim correction](0016-data-residency-claim-correction.md)
@@ -142,6 +142,53 @@ dashboard charge equal to the row's `provider_cost_per_unit` (Wan 60 credits
 $0.30, Kling 55 credits $0.275, Nano Banana Pro 18 credits $0.09, twice). Wan
 came out 1280x720 and Kling 1920x1080, both 5.04s; Kling has no audio track.
 A 10s clip was not run live; kie's rate card prices it at exactly 2x.
+
+### Update 2026-09-28: separate Kling 3.0 i2v candidate (0152)
+
+Stage `kling-3.0-i2v-kie` inactive at 28 credits per 5s, with recorded supplier
+cost $0.45. The adapter pins pro/1080p, no audio and single-shot mode, accepts
+5s or 10s, and accepts a single first-frame image. The existing fal row stays
+active: its optional negative prompt is not documented by kie, so this is a
+separate candidate rather than a silent capability-reducing swap. The new
+candidate requires a prompt and a first-frame image; it refuses undeclared
+controls if called directly, and its capability record exposes only supported
+controls through the gateway. As elsewhere, the gateway resolves owned media
+URLs before submission.
+
+One authorized 5s first-frame test succeeded through the adapter, task
+`0198ae585e462220e89a3909797bf558`. Authenticated recordInfo reports 90 consumed
+kie credits ($0.45 at the surveyed $0.005/credit rate). ffprobe found a
+1920x1080 H.264 stream, 5.041667s duration, and no audio stream. The output
+was HTTP 200 without redirect from `tempfile.aiquickdraw.com`, already allowed
+by the kie storage path. Completion was observed after 183s. A first-frame
+preview was inspected; this is not a comparative motion/quality benchmark.
+
+This is a provider smoke test, not a signed-in gateway -> R2 -> STORED test.
+The gateway maps image uploads to one image slot, so a second uploaded image
+is rejected. The candidate therefore does not advertise or accept a last frame.
+A second authorized first-frame task, `aac1f4f5a3fd9155793f0c9e8d261e16`,
+verified 10s: 1920x1080 H.264, 10.041667s, no audio, 180 consumed kie credits
+($0.90 at the surveyed rate), HTTP 200 without redirect from the same host.
+Completion was observed after 267s. This used the same adapter and sample
+input with duration changed to 10. Before activation, verify live signed-in
+gateway delivery/refunds, effective purchase cost and comparative quality.
+Migration 0152 is insert-only with ON CONFLICT DO NOTHING; replay preserves
+later activation/repricing. No fallback, preset, customer price or active fal
+row changes accompany it. Activation requires a separate migration through
+the owner-approved production workflow. At the tested nominal unit cost the
+supplier saving versus fal's recorded $0.56 is 19.6%; it is not a guarantee of
+identical quality or operational cost.
+
+Follow-up route tests execute the real generation and signed webhook handlers
+with mocked database, provider and R2 network responses. They verify the
+56-credit debit for 10s, server-owned image signing, authenticated task
+re-fetch (ignoring a forged callback result), storage completion, duplicate
+handling, full submit/provider-failure refunds, retryable copy failures and
+pre-debit rejection of inactive/invalid-source requests. These are regression
+tests, not a live signed-in staging run or live ledger/R2 reconciliation.
+
+Sources: [kie request contract](https://docs.kie.ai/market/kling/kling-3-0),
+[kie pricing](https://kie.ai/pricing), and the authenticated task above.
 
 ### Staged twins, second batch (0107)
 
@@ -350,3 +397,102 @@ reactivate nano-banana-pro-kie at 6 credits, keeping the GrsAI poller enabled
 so already-submitted jobs can finish. Restore the corresponding fallback and
 preset IDs/prices in the same rollback release. Never rewrite 0124 or remove
 the GrsAI credential while unfinished jobs remain.
+
+## Update (2026-09-28): speech savings remain unqualified
+
+The existing inactive Turbo twin failed verification twice, including once
+after the owner confirmed funding. Both authenticated task records returned
+code 500 and reported zero consumed credits. Keep fal active; no new
+activation or retry is justified without resolving the provider failure.
+
+The dialogue quote also needs a compatibility check before staging a swap:
+kie's voice description and expanded enum disagree, the existing four voice
+identities are not established, and no seed parameter is documented. Do not
+silently replace voices or discard the existing seed control. See the
+[readiness evidence](../pricing/kie-speech-readiness-2026-09-28.md) for task
+IDs, contract differences, verification limits and next steps. No catalog,
+pricing or runtime behavior changes accompany this update.
+
+## Update (2026-09-28): separate Dialogue and Flux wholesale options
+
+Migration 0159 stages two inactive options. They do not replace the existing
+fal routes: `elevenlabs-dialogue-kie` uses James, Arabella, Bradford and Xavier
+stock voices in first-speaker order, and `flux-2-pro-1k-kie` pins one 1K image.
+Neither advertises seed support. Dialogue is capped at 1000 script characters
+and four voices ($0.07 maximum quoted unit, 5 customer credits); Flux caps
+prompts at 2000 characters and forces the provider content filter on ($0.025,
+2 credits). Provider request checks reject user attempts to override these
+constraints before submission. Customer prices remain catalogue-controlled.
+
+Flux's live task `ac56057b04ea5885c0dfece037d2687f` succeeded in 62 seconds;
+`tempfile.aiquickdraw.com` served 358375 bytes with HTTP 200 and no redirect.
+The authenticated task record reports 5 credits consumed, matching $0.025 at
+$0.005 per credit. Dialogue task `e21f3336cdcb321ebdbb9d5922ddfd57` failed with
+code 500 after 42 seconds and reports zero credits consumed. No additional
+Turbo tests were run in this change.
+
+Activation is a separate guarded migration after main deploy, owner-approved
+production application of the staging migration, normal gateway/R2 storage and completion/refund
+verification, and image quality/resolution confirmation. Dialogue remains
+blocked by its provider failure. No fallback, default model, existing route,
+customer price or production secret is changed by staging these options.
+
+### Flux KIE 1K activation — 29 September 2026
+
+Migration 0162 enables only `flux-2-pro-1k-kie` at 2 credits, with an exact
+endpoint, price and row-count guard. Keep the fal route for its seed support;
+Dialogue remains inactive. The live staging gateway generated and stored a JPEG,
+its library download matched the stored hash, KIE charged five credits ($0.025),
+and the customer ledger recorded one two-credit debit. Both balance
+reconciliations returned zero mismatches. See the
+[staging evidence](../operations/flux-staging-verification-2026-09-29.md).
+
+`tests/fluxKieGateway.test.mjs` exercises real handlers with an isolated fake
+network: rejected submission and authenticated provider failure refund two
+credits, duplicate callbacks do not duplicate storage/refunds, and copy failure
+remains retryable. These are deterministic failure tests, not new paid failures.
+Local Postgres acceptance checks activation replay, unchanged other catalogue
+rows, and rejection of missing rows or endpoint/price drift. Apply in production
+only through the protected owner-approved workflow. Rollback is a new guarded
+migration setting this KIE row inactive; keep the original fal row unchanged.
+
+## Update (2026-09-29): separate GrsAI reference-image edit
+
+Supplier playground task `16-f339662c-4b1f-498b-8aae-a7c0bf2eb186` succeeded
+in 41 seconds with one synthetic teapot source, `imageSize: 2K`, and `auto`
+aspect ratio. The output was a visually inspected 2744×1568 PNG showing the
+requested blue teapot. The task log charged 1,800 credits; the account's
+$5 / 333,000-credit purchase makes this $0.027027 per edit. This verifies one
+supplier edit, not Veyrnox end-to-end readiness or sustained reliability.
+
+Migration 0165 stages `nano-banana-pro-edit-grsai` inactive at two Veyrnox
+credits with a conservatively rounded $0.0271 cost. It is a separate no-seed
+option; the fal edit and existing GrsAI text route remain unchanged.
+
+The new `grsai:nano-banana-pro-edit` capability requires one reference image,
+shaped as `urls: [image_url]`, and pins the same model, 2K tier and polling
+settings as the text route. Default aspect is `auto` to preserve the source
+ratio. The common gateway verifies upload ownership, bytes and consent before
+debit, drops client media URLs, signs the owned source for at most 15 minutes,
+and persists its source key rather than a signed URL. Undeclared seed and
+other generic controls are dropped; direct adapter overrides are rejected.
+
+The existing authenticated sweep now validates both fixed catalogue ID/endpoint
+pairs and shares its 50-job limit and work budget across them. It still polls
+inactive rows so disabling a route cannot strand already-submitted work. Both
+use the existing deduplication, bounded serial R2 copy, and refund paths; no
+new webhook, output-host permission or automatic paid retry is introduced.
+
+Validation uses the real gateway, adapter, sweep and completion code against
+simulated network boundaries: owned-source submit, replay without resubmit,
+inactive and invalid-source refusal, provider rejection/failure refunds, and
+storage retry without another paid edit. These checks do not constitute a
+live deployed edit. Activation requires a separate migration after a deployed
+owned-upload → debit → submit → authenticated poll → R2 → STORED/download
+check, actual billing/output-host confirmation and clean balance reconciliation.
+
+Activation 0166 is prepared after the successful deployed staging test recorded
+in `docs/operations/grsai-edit-staging-verification-2026-09-29.md`: normal cron,
+matching stored/downloaded hash and clean reconciliation. It checks the exact
+endpoint, modality, price and ungated tier before enabling only the GrsAI edit.
+Production still requires the owner-approved migration workflow.

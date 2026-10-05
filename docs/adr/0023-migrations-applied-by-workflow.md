@@ -1,7 +1,10 @@
 # ADR-0023 — Production migrations are applied by one workflow
 
-- **Status**: Proposed (2026-09-13). Takes effect when the owner configures the
-  `production-database` environment and its `SUPABASE_ACCESS_TOKEN` secret.
+- **Status**: Accepted and in effect (status corrected 2026-10-03; it read Proposed, "takes effect
+  when the owner configures the `production-database` environment and its
+  `SUPABASE_ACCESS_TOKEN` secret"). The owner configured both and approves each
+  run; production migrations go through this workflow (0178, 0180 and 0181 on
+  2026-10-02), and CLAUDE.md states it as the rule.
 - **Date**: 2026-09-13
 - **Deciders**: Product owner (Al Jobson)
 - **Related**: CLAUDE.md "Database", PR #61 (no service credentials in Actions),

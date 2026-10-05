@@ -26,6 +26,12 @@
   "vars": {
     "APP_ENV": "production",
     "TENANT_PROJECTS_ENABLED": "false",
+    // ADR-0067: Chat stays closed until a text model is verified live and active, and the owner opens it.
+    "CHAT_ENABLED": "false",
+    // ADR-0064: checkout and account routes stay closed until staging acceptance.
+    "SUBSCRIPTIONS_ENABLED": "false",
+    // Before activation: SUBSCRIPTION_ALERT_EMAIL must name the Operator;
+    // SUBSCRIPTION_ALERT_FROM defaults to the existing VIOLATION_EMAIL_FROM.
     // Cinema v1.0: server controls are default-off; local preview cannot bypass them.
     // Activate only after the documented migration/reconciliation and preview gates.
     "CINEMA_ENABLED": "false",
@@ -35,6 +41,7 @@
     "CREATOR_UPLOADS_ENABLED": "false",
     "CINEMA_UPLOAD_RECOVERY_ENABLED": "false",
     "CINEMA_UPLOAD_REMOVAL_ENABLED": "false",
+    "CINEMA_PROXY_UPLOADS_ENABLED": "false",
     "CREATOR_MONETISATION_ENABLED": "false",
     "CINEMA_SUBSCRIPTIONS_ENABLED": "false",
     "CINEMA_UNLOCKS_ENABLED": "false",
@@ -64,13 +71,6 @@
     "SUPABASE_URL": "https://xdxdzmsztyzbnzeforxx.supabase.co",
     "NEXT_PUBLIC_SUPABASE_URL": "https://xdxdzmsztyzbnzeforxx.supabase.co",
     "NEXT_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_HwEQqi6FXJOmWpy5eqR9-A_Zvy8_ii1",
-    // LemonSqueezy store (#91). Test and live mode share the store id; the
-    // API key decides the mode. Variant ids live in public.credit_packs.
-    "LEMONSQUEEZY_STORE_ID": "473468",
-    // Which orders the webhook credits (#93). "true" while the store and API
-    // key are test mode; flip to "false" with the live key at launch (#101).
-    // Anything else and /api/webhook/lemonsqueezy answers 503.
-    "LEMONSQUEEZY_TEST_MODE": "true",
     // Stripe Tax (ADR-0031, amendment 2026-09-23). Managed Payments is enabled
     // on both accounts, so Stripe is the Merchant of Record and charges and
     // remits the tax. Automatic tax is ON; unset means ON. Setting this to
@@ -85,6 +85,36 @@
     // before an admin holds a factor locks every admin out of their own
     // dashboard, so that order is not optional.
     "ADMIN_REQUIRE_AAL2": "true",
+    // ADR-0066: Jev sorts untyped provider submit refusals into
+    // provider_moderation / provider_input_rejected. off | shadow | enforce.
+    // Needs the TYPESAFE_API_KEY secret; shadow only logs the label.
+    "JEV_SUBMIT_ERRORS_MODE": "off",
+    // Veyrnox Publish (ADR-0061) stays dark until the platform app reviews
+    // and the Publish Plan (ADR-0062/0063) land: hides /app/publish, the
+    // menu link and /api/v1/social/*. Only "true" opens it. The publish
+    // sweep is not gated, so anything already queued still finishes.
+    "PUBLISH_ENABLED": "false",
+    // The Publish analytics sweep (lib/socialAnalyticsSweep.js). Only "true"
+    // runs it; turn it on after migration 0188 is applied. The analytics
+    // page and its API route follow PUBLISH_ENABLED like the rest of Publish.
+    "PUBLISH_ANALYTICS_ENABLED": "false",
+    // Weekly historical timing/frequency insights; requires 0191.
+    "PUBLISH_POSTING_INSIGHTS_ENABLED": "false",
+    // Month/week/list calendar and rescheduling; 0192 approved 2026-10-04.
+    // The overall Publish launch still follows PUBLISH_ENABLED.
+    "PUBLISH_CALENDAR_ENABLED": "true",
+    // Adds instagram_business_manage_insights to the Instagram consent
+    // screen (reach, views, saves, shares). Only "true" asks for it; turn it
+    // on after Meta approves the permission in app review.
+    "INSTAGRAM_INSIGHTS_SCOPE_ENABLED": "false",
+    // TikTok analytics consent (user.info.stats + video.list). Enable after
+    // Display API approval; existing connections need to reconnect.
+    "TIKTOK_ANALYTICS_SCOPE_ENABLED": "false",
+    // Sender for violation notices (lib/violationEmail.js, issue #479). The
+    // domain is verified in Resend; nothing sends until RESEND_API_KEY is set.
+    "VIOLATION_EMAIL_FROM": "Veyrnox.ai <support@veyrnox.ai>",
+    // veyrnox.ai has no MX records, so replies go to the .com mailbox.
+    "VIOLATION_EMAIL_REPLY_TO": "support@veyrnox.com",
     // Cloudflare Access covers veyrnox.ai/app/admin*, /api/v1/admin/* and
     // /api/admin/* (one application, "Veyrnox.ai admin"). These two let the
     // Worker verify the assertion itself (lib/accessJwt.js) instead of
@@ -100,14 +130,36 @@
       "name": "veyrnox-ai-staging",
       // Recovery and removal of Cinema uploads run from the cron; the other
       // scheduled tasks skip on staging because their secrets are not set.
+      "ratelimits": [{
+        "name": "ADMIN_EDGE_RATE_LIMITER",
+        "namespace_id": "2026092601",
+        "simple": { "limit": 60, "period": 60 }
+      }],
       "triggers": { "crons": ["*/5 * * * *"] },
       "vars": {
         "APP_ENV": "staging",
+        "ACCESS_TEAM_DOMAIN": "fancy-lake-7c60.cloudflareaccess.com",
+        "ACCESS_AUD": "90e88032af5e17f3e560fd12f33a182a9ff353ddf813514fcfe072f169efe1fd",
         "PUBLIC_HOST": "https://veyrnox-ai-staging.al-jobson.workers.dev",
         "SUPABASE_URL": "https://yrqzwqywxfesmbvhzjgj.supabase.co",
         "NEXT_PUBLIC_SUPABASE_URL": "https://yrqzwqywxfesmbvhzjgj.supabase.co",
         "NEXT_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_bAxQiodzBhI6bV7lmo9gMQ_Hlg9_Ish",
         "TENANT_PROJECTS_ENABLED": "true",
+        "SUBSCRIPTIONS_ENABLED": "false",
+        // ADR-0067: Chat is open on staging for testing only. No text model is
+        // active until the owner activates one; production stays "false".
+        "CHAT_ENABLED": "true",
+        // ADR-0066; vars are not inherited, so staging names it too.
+        "JEV_SUBMIT_ERRORS_MODE": "off",
+        // Veyrnox Publish is open on staging for testing (see production).
+        "PUBLISH_ENABLED": "true",
+        // Publish schema through 0192 provisioned on staging 2026-10-04.
+        "PUBLISH_ANALYTICS_ENABLED": "true",
+        "PUBLISH_POSTING_INSIGHTS_ENABLED": "true",
+        "PUBLISH_CALENDAR_ENABLED": "true",
+        // Provider review approvals are still outstanding.
+        "INSTAGRAM_INSIGHTS_SCOPE_ENABLED": "false",
+        "TIKTOK_ANALYTICS_SCOPE_ENABLED": "false",
         // Cinema Stream upload preview (ADR-0052/0053/0054). Staging only:
         // vars are not inherited by environments and production keeps every
         // one of these "false". Stream secrets are set on this Worker; see
@@ -118,7 +170,14 @@
         "CREATOR_CONTENT_ENABLED": "true",
         "CREATOR_UPLOADS_ENABLED": "true",
         "CINEMA_UPLOAD_RECOVERY_ENABLED": "true",
-        "CINEMA_UPLOAD_REMOVAL_ENABLED": "true"
+        "CINEMA_UPLOAD_REMOVAL_ENABLED": "true",
+        "CINEMA_PROXY_UPLOADS_ENABLED": "false",
+        // Publication acceptance: administrators can publish the prepared
+        // staging title and viewers can load and play entitled Stream media.
+        // Production keeps all three switches false.
+        "CINEMA_UNLOCKS_ENABLED": "true",
+        "CINEMA_PUBLISHING_ENABLED": "true",
+        "CINEMA_VIEWING_ENABLED": "true"
       }
     }
   },
@@ -138,15 +197,63 @@
   //                               kie.ai submit + callback HMAC (ADR-0020)
   //   OPENROUTER_API_KEY, OPENROUTER_WEBHOOK_SECRET
   //                               OpenRouter video submit + webhook signature (ADR-0020)
+  //   TYPESAFE_API_KEY            Jev classifier for provider submit refusals (lib/jev.js, ADR-0066)
   //   STRIPE_SECRET_KEY           Checkout Session create + session re-fetch (packages/adapters/stripe.js);
   //                               sk_test_… until the live account clears review (ADR-0031). Its prefix
   //                               is what decides which livemode the webhook will credit.
   //   STRIPE_WEBHOOK_SECRET       whsec_… signs /api/webhook/stripe AND the Top-up id in session metadata (#93)
-  //   LEMONSQUEEZY_API_KEY        retired by ADR-0031; the routes stay in the tree, unused
-  //   LEMONSQUEEZY_WEBHOOK_SECRET retired by ADR-0031; see above
   //   TOP_UP_BACKFILL_TOKEN       bearer for /api/admin/top-up-backfill (#94); same value in the TOP_UP_BACKFILL_TOKEN Actions secret
   //   ADMIN_REAP_TOKEN            /api/admin/reap-assets shared secret (ADR-0008)
-  //   UPLOAD_PROXY_ALLOWED_HOSTS  legacy upload proxy allowlist (docs/UPLOAD_PROXY_CONFIG.md)
+  //   META_APP_ID, META_APP_SECRET
+  //                               Instagram OAuth connect/callback + Graph API calls, via
+  //                               Instagram API with Instagram Login (packages/adapters/social/
+  //                               instagram.js, ADR-0061). Not yet provisioned — see
+  //                               docs/social-publisher/06-oauth-review-runbook.md.
+  //   LINKEDIN_CLIENT_ID, LINKEDIN_CLIENT_SECRET
+  //                               LinkedIn OAuth connect/callback + Posts/Images API calls
+  //                               (packages/adapters/social/linkedin.js, ADR-0061). Not yet
+  //                               provisioned.
+  //   X_CLIENT_ID, X_CLIENT_SECRET
+  //                               X (Twitter) OAuth connect/callback + v2 media upload/tweet
+  //                               calls (packages/adapters/social/twitter.js, ADR-0061). Not
+  //                               yet provisioned.
+  //   TIKTOK_CLIENT_KEY, TIKTOK_CLIENT_SECRET
+  //                               TikTok OAuth connect/callback + Content Posting API publish
+  //                               (packages/adapters/social/tiktok.js, ADR-0061 Phase 5).
+  //                               MEDIA_UPLOAD mode (draft to the creator's own TikTok inbox,
+  //                               not an automated publish — see that file's own header for
+  //                               why) until this app clears TikTok's Content Posting API
+  //                               audit. Scope bump (added video.upload) needs re-consent from
+  //                               every already-connected account. Not yet provisioned.
+  //   YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET
+  //                               YouTube (Google) OAuth connect/callback + resumable video
+  //                               upload (packages/adapters/social/youtube.js, ADR-0061 Phase
+  //                               5). A separate OAuth client from Supabase's own Google
+  //                               Sign-In provider. Scope bump (added youtube.upload) needs
+  //                               re-consent from every already-connected account. Not yet
+  //                               provisioned.
+  //   SOCIAL_OAUTH_STATE_SECRET   signs the OAuth `state` token (lib/social/oauthState.js, ADR-0061
+  //                               §2.7) — this app is cookie-free, so state carries its own HMAC
+  //                               binding instead of server-side session storage
+  //   SOCIAL_TOKEN_ENCRYPTION_KEY AES-GCM key for OAuth tokens at rest (lib/social/tokenCrypto.js,
+  //                               ADR-0061 §2.7) — base64 of exactly 32 bytes, never reused from
+  //                               any other subsystem
+  //   SOCIAL_MEDIA_PROXY_SECRET   signs app/media/social/[token]/route.js's short-lived tokens
+  //                               (lib/social/mediaProxyToken.js, ADR-0061 Phase 5) — the public,
+  //                               unauthenticated route TikTok's PULL_FROM_URL fetch hits, since
+  //                               TikTok must DNS-verify the domain it pulls from and an R2
+  //                               presigned URL's host is Cloudflare's, not ours. A dedicated
+  //                               secret, never reused from the two above. Not yet provisioned.
+  //   CINEMA_STREAM_ACCOUNT_ID, CINEMA_STREAM_API_TOKEN
+  //                               Cloudflare Stream direct uploads, status and removal
+  //                               (lib/cinema/stream.js, ADR-0052/0053/0054)
+  //   CINEMA_STREAM_WEBHOOK_SECRET
+  //                               verifies /api/webhook/cinema-stream (lib/cinema/streamWebhook.js);
+  //                               the subscription is account-wide and points at staging until
+  //                               Cinema activation repoints it (docs/architecture/staging-rollout.md)
+  //   CINEMA_STREAM_SIGNING_KEY_ID, CINEMA_STREAM_SIGNING_JWK, CINEMA_STREAM_CUSTOMER_CODE
+  //                               RS256 signed playback tokens, at most 15 minutes, for entitled
+  //                               viewers (lib/cinema/stream.js, ADR-0057); the JWK is base64 JSON
   //
   // No R2 binding: r2.js signs plain fetch against the S3 endpoint so the
   // Worker never needs `env.MEDIA` / getCloudflareContext() in middleware.

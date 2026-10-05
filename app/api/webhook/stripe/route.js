@@ -1,15 +1,14 @@
 /**
- * POST /api/webhook/stripe — paid Credit Pack orders (#93, ADR-0031).
+ * POST /api/webhook/stripe — Credit Packs, Cinema Pass and Credit Subscriptions.
  *
- * Same shape as /api/webhook/lemonsqueezy, which this replaces:
+ * Replaced the LemonSqueezy webhook (removed, ADR-0031):
  *
  *   1. Verify `Stripe-Signature` over the exact raw bytes. Invalid -> 401
  *      plus console.error. Nothing in the body is read before this.
- *   2. Only checkout.session.completed, charge.refunded, charge.dispute.created
- *      and charge.dispute.closed are handled; every other type -> 200 ignored.
+ *   2. Checkout, refund/dispute, subscription lifecycle and invoice events are
+ *      routed to their billing product; every other type -> 200 ignored.
  *   3. Dedupe in webhook_events(source 'billing:stripe') on the Stripe event
- *      id, which is already unique per delivery (LemonSqueezy needed a
- *      composed key). Already processed -> 200.
+ *      id, which is already unique per delivery. Already processed -> 200.
  *   4. checkout.session.completed: a buyer cannot set metadata on a session we
  *      created, but a second integration could, so only a session carrying the
  *      top_up_sig our checkout signed is credited. The session is then re-read
@@ -31,9 +30,11 @@
  */
 
 import { NextResponse } from 'next/server';
-import { verifyWebhookSignature, verifyTopUpMetadata, fetchSession, interpretSession, verifyPassMetadata, fetchSubscription, fetchInvoice, fetchCharge, interpretSubscription, invoiceSubscriptionId, cancelSubscriptionNow } from '../../../../packages/adapters/stripe.js';
+import { verifyWebhookSignature, verifyTopUpMetadata, fetchSession, interpretSession, verifyPassMetadata, fetchSubscription, fetchCharge, interpretSubscription, invoiceSubscriptionId, cancelSubscriptionNow } from '../../../../packages/adapters/stripe.js';
 import { rpc, envConfig } from '../../../../packages/db/supabase-client.js';
 import { dedup, markProcessed } from '../../../../lib/providerCompletion.js';
+import { handleCreditSubscriptionEvent, handleCreditSubscriptionCharge, handleCreditSubscriptionCheckout } from '../../../../lib/subscriptions/webhook.js';
+import { invoiceForCharge, fetchCreditInvoice } from '../../../../packages/adapters/stripeCreditSubscriptions.js';
 
 const SOURCE = 'billing:stripe';
 const LOG = '[stripe-webhook]';
@@ -114,14 +115,15 @@ export async function POST(req) {
         // A refunded charge on a subscription invoice is a Pass charge. A Dispute
         // names only its charge; handleDispute re-reads it only when no Top-up
         // claims the PaymentIntent, so Top-up disputes never wait on Stripe.
-        if (type === 'charge.refunded' && INVOICE_RE.test(String(object.invoice ?? ''))) {
-            return await handlePassCharge(cfg, { invoiceId: object.invoice, object, eventId, type, apiKey, eventCreated: event.created });
+        const refundInvoiceId = typeof object.invoice === 'string' ? object.invoice : object.invoice?.id;
+        if (type === 'charge.refunded' && INVOICE_RE.test(String(refundInvoiceId ?? ''))) {
+            return await handlePassCharge(cfg, { invoiceId: refundInvoiceId, object, eventId, type, apiKey, expectLiveMode, eventCreated: event.created });
         }
         if (type === 'checkout.session.completed') {
             return await handleCheckout(cfg, { object, eventId, secret, apiKey, expectLiveMode });
         }
-        if (type === 'charge.refunded') return await handleRefund(cfg, { object, eventId, secret });
-        return await handleDispute(cfg, { object, eventId, type, apiKey, eventCreated: event.created });
+        if (type === 'charge.refunded') return await handleRefund(cfg, { object, eventId, secret, apiKey, expectLiveMode, eventCreated: event.created });
+        return await handleDispute(cfg, { object, eventId, type, apiKey, expectLiveMode, eventCreated: event.created });
     } catch (err) {
         console.error(LOG, 'processing failed:', err && (err.status ?? err.message));
         return NextResponse.json({ error: 'internal' }, { status: 500 });
@@ -130,6 +132,9 @@ export async function POST(req) {
 
 // checkout.session.completed: credit the Top-up the session was signed for.
 async function handleCheckout(cfg, { object, eventId, secret, apiKey, expectLiveMode }) {
+    if (object.metadata?.kind === 'credit_subscription') {
+        return await handleCreditSubscriptionCheckout(cfg, { object, eventId, secret, apiKey, expectLiveMode, eventCreated: object.created });
+    }
     if (!(await verifyTopUpMetadata(object.metadata, secret))) {
         console.error(LOG, 'session without our Top-up signature, not credited:', object.id);
         await markProcessed(cfg, SOURCE, eventId);
@@ -175,7 +180,7 @@ async function handleCheckout(cfg, { object, eventId, secret, apiKey, expectLive
 // charge.refunded: claw back the Top-up's share of the CUMULATIVE amount
 // refunded so far. The Top-up is found by the charge's PaymentIntent, which is
 // what credit_top_up recorded; no user is taken from the payload.
-async function handleRefund(cfg, { object, eventId, secret }) {
+async function handleRefund(cfg, { object, eventId, secret, apiKey, expectLiveMode, eventCreated }) {
     const orderId = String(object.payment_intent ?? '');
     if (!PAYMENT_INTENT_RE.test(orderId)) {
         console.error(LOG, 'charge.refunded without a usable payment intent:', eventId);
@@ -194,6 +199,12 @@ async function handleRefund(cfg, { object, eventId, secret }) {
     if (res && res.code === 'NOT_CREDITED_YET') {
         // checkout.session.completed hasn't credited it yet; retry until it has.
         return NextResponse.json({ error: 'not_credited_yet' }, { status: 503 });
+    }
+    if (res?.code === 'ORDER_NOT_FOUND' && CHARGE_RE.test(String(object.id || ''))) {
+        const charge = await fetchCharge(object.id, { fetch: fetch.bind(globalThis), apiKey });
+        if (!charge.ok) return NextResponse.json({ error: 'charge_fetch_failed' }, { status: 503 });
+        const invoiceId = await invoiceForCharge(charge.charge, { fetch: fetch.bind(globalThis), apiKey });
+        if (invoiceId) return await handlePassCharge(cfg, { invoiceId, object, eventId, type: 'charge.refunded', apiKey, expectLiveMode, eventCreated });
     }
     if (!refundVerdict(orderId, res)) return NextResponse.json({ error: 'internal' }, { status: 500 });
     await markProcessed(cfg, SOURCE, eventId);
@@ -220,7 +231,7 @@ function refundVerdict(orderId, res) {
 // charge.dispute.created Freezes the order's owner; charge.dispute.closed only
 // logs (ADR-0019 dispute_resolved). Only the PaymentIntent is taken from the
 // payload; the user is the credited Top-up's owner.
-async function handleDispute(cfg, { object, eventId, type, apiKey, eventCreated }) {
+async function handleDispute(cfg, { object, eventId, type, apiKey, expectLiveMode, eventCreated }) {
     const orderId = String(object.payment_intent ?? '');
     const reference = String(object.id ?? '').slice(0, 64);
     if (!PAYMENT_INTENT_RE.test(orderId)) {
@@ -248,7 +259,7 @@ async function handleDispute(cfg, { object, eventId, type, apiKey, eventCreated 
         // is a Cinema Pass dispute (ADR-0057); a failed re-read throws so
         // Stripe retries.
         const invoiceId = await disputeInvoice(object, apiKey);
-        if (invoiceId) return await handlePassCharge(cfg, { invoiceId, object, eventId, type, apiKey, eventCreated });
+        if (invoiceId) return await handlePassCharge(cfg, { invoiceId, object, eventId, type, apiKey, expectLiveMode, eventCreated });
     }
     if (res.ok === false && res.code === 'TOP_UP_NOT_FOUND' && isYoung(eventCreated)) {
         console.error(LOG, 'dispute ahead of its credit, retrying:', 'order', orderId, 'dispute', reference);
@@ -297,7 +308,10 @@ async function handlePassEvent(cfg, { object, eventId, type, secret, apiKey, exp
         return NextResponse.json({ ok: true, warn: 'subscription_not_applicable' });
     }
     const s = interp.subscription;
-    const passId = (await verifyPassMetadata(s.metadata, secret)) ? s.metadata.cinema_pass_id : null;
+    const credit = await handleCreditSubscriptionEvent(cfg, { s, object, eventId, type, secret, apiKey, expectLiveMode, eventCreated });
+    if (credit) return credit;
+    const isPass = await verifyPassMetadata(s.metadata, secret);
+    const passId = isPass ? s.metadata.cinema_pass_id : null;
     const res = await rpc('apply_cinema_pass_event', {
         p_event_id: eventId,
         p_type: type,
@@ -342,30 +356,31 @@ async function disputeInvoice(object, apiKey) {
     if (!CHARGE_RE.test(String(object.charge ?? ''))) return null;
     const fetched = await fetchCharge(object.charge, { fetch: fetch.bind(globalThis), apiKey });
     if (!fetched.ok) throw new Error(`charge re-fetch failed: ${fetched.error}`);
-    const invoiceId = typeof fetched.charge.invoice === 'string' ? fetched.charge.invoice : fetched.charge.invoice && fetched.charge.invoice.id;
-    return INVOICE_RE.test(String(invoiceId)) ? invoiceId : null;
+    return invoiceForCharge(fetched.charge, { fetch: fetch.bind(globalThis), apiKey });
 }
 
 // charge.refunded on a Pass invoice ends the Pass; charge.dispute.created
 // ends it and Freezes the account (ADR-0019); charge.dispute.closed only logs.
-async function handlePassCharge(cfg, { invoiceId, object, eventId, type, apiKey, eventCreated }) {
+async function handlePassCharge(cfg, { invoiceId, object, eventId, type, apiKey, expectLiveMode, eventCreated }) {
     const reference = String(object.id ?? '').slice(0, 64);
     if (type === 'charge.dispute.closed') {
         console.error(LOG, 'pass dispute closed:', 'invoice', invoiceId, 'dispute', reference, 'status', String(object.status ?? '').slice(0, 32));
         await markProcessed(cfg, SOURCE, eventId);
         return NextResponse.json({ ok: true });
     }
-    const inv = await fetchInvoice(invoiceId, { fetch: fetch.bind(globalThis), apiKey });
-    if (!inv.ok) {
-        console.error(LOG, 'invoice re-fetch failed:', invoiceId, inv.error);
+    const invoice = await fetchCreditInvoice(invoiceId, { fetch: fetch.bind(globalThis), apiKey });
+    if (!invoice) {
+        console.error(LOG, 'invoice re-fetch failed:', invoiceId);
         return NextResponse.json({ error: 'invoice_fetch_failed' }, { status: 503 });
     }
-    const subscriptionId = invoiceSubscriptionId(inv.invoice);
+    const subscriptionId = invoiceSubscriptionId(invoice);
     if (!subscriptionId) {
         console.error(LOG, `${type} on an invoice without a subscription, ignored:`, invoiceId);
         await markProcessed(cfg, SOURCE, eventId);
         return NextResponse.json({ ok: true, warn: 'no_subscription' });
     }
+    const credit = await handleCreditSubscriptionCharge(cfg, { invoice, object, eventId, type, apiKey, expectLiveMode, eventCreated });
+    if (credit) return credit;
     const res = await rpc('end_cinema_pass', {
         p_subscription_id: subscriptionId,
         p_event_id: eventId,

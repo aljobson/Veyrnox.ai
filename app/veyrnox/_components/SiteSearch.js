@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { FAQ, PRESETS, MODELS as MODELS_FALLBACK, SITE_PAGES, isShelfModel, presetCredits } from '../_lib/tokens';
+import { FAQ, PRESETS, MODELS as MODELS_FALLBACK, SITE_PAGES, isShelfModel, presetCredits, presetTitle, templateHref } from '../_lib/tokens';
 import { searchIndex, MIN_QUERY } from '../_lib/searchIndex';
 
 // Site-wide search. Everything this site contains is either a route, a
@@ -19,10 +19,10 @@ function staticIndex(models) {
       href: p.href,
     })),
     ...PRESETS.map((p) => ({
-      group: 'Presets',
-      title: p.name,
+      group: 'Templates',
+      title: presetTitle(p.name),
       detail: `${p.category} · ${p.model} · ${presetCredits(p, models)} cr`,
-      href: '/presets',
+      href: templateHref(p),
     })),
     ...FAQ.map((f) => ({
       group: 'FAQ',
@@ -113,8 +113,6 @@ function SearchOverlay({ onClose }) {
   );
   const results = useMemo(() => searchIndex(index, query), [index, query]);
 
-  useEffect(() => setCursor(0), [query]);
-
   const go = useCallback(
     (item) => {
       if (!item) return;
@@ -154,7 +152,7 @@ function SearchOverlay({ onClose }) {
             aria-activedescendant={results.length ? `vx-search-opt-${cursor}` : undefined}
             aria-autocomplete="list"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => { setQuery(e.target.value); setCursor(0); }}
             onKeyDown={onKeyDown}
             placeholder="Search models, presets, pages, FAQ…"
             aria-label="Search query"

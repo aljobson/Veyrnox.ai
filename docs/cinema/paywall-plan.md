@@ -1,6 +1,6 @@
 # Social Cinema paywall — implementation plan
 
-Companion to [ADR-0057](../adr/0057-cinema-viewer-paywall.md). Nothing here is built. Each phase is one PR, lands behind a switch that ships off, and is applied to production only through the `apply-migrations` workflow (ADR-0023). Numbers below are the ADR's; change them there, not here.
+Companion to [ADR-0057](../adr/0057-cinema-viewer-paywall.md). Phases 1 to 3 are built (PR #344, per ADR-0057) and off in production: `CINEMA_SUBSCRIPTIONS_ENABLED` and `CINEMA_UNLOCKS_ENABLED` are `false`. (This line read "Nothing here is built" until 2026-10-03.) Each phase is one PR, lands behind a switch that ships off, and is applied to production only through the `apply-migrations` workflow (ADR-0023). Numbers below are the ADR's; change them there, not here.
 
 ## Preconditions (owner and legal, before Phase 1)
 

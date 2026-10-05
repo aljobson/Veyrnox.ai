@@ -1,8 +1,11 @@
 {
-  "name": "open-generative-ai",
-  "description": "Open-source alternative to HF AI \u2014 AI image, video, cinema and lip sync studio",
-  "homepage": "https://github.com/Anil-matcha/Open-Generative-AI",
+  "name": "veyrnox-ai",
+  "description": "Veyrnox.ai: credit-metered AI image, video and audio generation",
+  "homepage": "https://veyrnox.ai",
   "private": true,
+  "engines": {
+    "node": ">=22"
+  },
   "version": "2.0.0",
   "license": "MIT",
   "scripts": {
@@ -28,28 +31,44 @@
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "1.0.1",
+    "@number-flow/react": "^0.6.2",
+    "@visx/curve": "^4.0.1-alpha.0",
+    "@visx/event": "^4.0.1-alpha.0",
+    "@visx/gradient": "^4.0.1-alpha.0",
+    "@visx/grid": "^4.0.1-alpha.0",
+    "@visx/responsive": "^4.0.1-alpha.0",
+    "@visx/scale": "^4.0.1-alpha.0",
+    "@visx/shape": "^4.0.1-alpha.0",
+    "animejs": "^4.5.0",
+    "clsx": "^2.1.1",
+    "d3-array": "^3.2.4",
+    "d3-shape": "^3.2.0",
     "mediabunny": "1.60.0",
-    "next": "^15.5.25",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "react-hot-toast": "^2.4.1"
+    "motion": "^14.0.0",
+    "next": "^16.3.8",
+    "qrcode.react": "^4.2.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "react-hot-toast": "^2.6.1",
+    "tailwind-merge": "^3.7.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
-    "@opennextjs/cloudflare": "^1.20.2",
-    "@types/node": "22.20.4",
-    "autoprefixer": "^10.4.24",
+    "@opennextjs/cloudflare": "^1.20.7",
+    "@types/node": "22.20.5",
+    "autoprefixer": "^10.6.1",
     "eslint": "^9",
-    "eslint-config-next": "^15.0.0",
+    "eslint-config-next": "^16.3.8",
     "postcss": "^8.5.26",
     "sharp": "^0.35.4",
     "tailwindcss": "^3.4.0",
-    "typescript": "5.9.3",
-    "wrangler": "^4.120.0"
+    "typescript": "6.0.3",
+    "wrangler": "^4.146.0"
   },
   "overrides": {
     "postcss": "^8.5.26",
     "sharp": "^0.35.4",
-    "prismjs": "^1.30.0"
+    "prismjs": "^1.30.0",
+    "undici": "^7.29.1"
   }
 }

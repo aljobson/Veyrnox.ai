@@ -12,6 +12,8 @@ import { getSession, onSessionChange } from '../../lib/authClient';
 import { accountLabel } from '../_lib/account';
 import { useProjectsPreview } from '../_lib/useProjectsPreview';
 import { useVideoEnhancePreview } from '../_lib/useVideoEnhancePreview';
+import { useChatPreview } from '../_lib/useChatPreview';
+import { AnnouncementBar } from './AnnouncementBar';
 
 // Marketing site nav (Home / Gallery / Pricing).
 export function MarketingNav() {
@@ -19,12 +21,17 @@ export function MarketingNav() {
   const path = usePathname().replace(/^\/veyrnox/, '') || '/';
   const items = [
     { href: '/',         label: 'Home' },
-    { href: '/presets', label: 'Gallery' },
+    { href: '/presets', label: 'Templates' },
+    { href: '/tools', label: 'Tools' },
     { href: '/social-cinema', label: 'Social Cinema' },
     { href: '/pricing', label: 'Pricing' },
   ];
   return (
-    <div data-print="hide" className="sticky top-0 z-40 flex items-center justify-between gap-3 px-4 sm:px-8 h-16 border-b border-vx-border bg-vx-base/[0.88] backdrop-blur">
+    <>
+    <AnnouncementBar />
+    <div data-print="hide" className="sticky top-0 z-40 h-16 border-b border-vx-border bg-vx-base/[0.88] backdrop-blur">
+      {/* Same 1300px column as the page body, so the logo sits on its edge. */}
+      <div className="h-full max-w-[1300px] mx-auto px-4 sm:px-6 flex items-center justify-between gap-3">
       <Link href="/" aria-label="Veyrnox.ai — home" className="flex items-center gap-2.5 shrink-0">
         <Logo wordmark />
       </Link>
@@ -54,7 +61,9 @@ export function MarketingNav() {
             off this page was the browser back button. */}
         <MobileMenu items={items} className="lg:hidden" />
       </div>
+      </div>
     </div>
+    </>
   );
 }
 
@@ -66,16 +75,18 @@ export function MarketingNav() {
 export function AppNav({ balance, active = 'explore', readAccount = true }) {
   const projectsEnabled = useProjectsPreview();
   const enhanceEnabled = useVideoEnhancePreview();
+  const chatEnabled = useChatPreview();
   const tabs = useRef(null);
   useEffect(() => {
     tabs.current?.querySelector('[aria-current="page"]')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-  }, [active, projectsEnabled, enhanceEnabled]);
+  }, [active, projectsEnabled, enhanceEnabled, chatEnabled]);
   const items = [
     { key: 'explore', href: '/app',         label: 'Explore' },
     { key: 'create',  href: '/app/create',  label: 'Create' },
     { key: 'library', href: '/app/library', label: 'Library' },
     ...(projectsEnabled ? [{ key: 'projects', href: '/app/projects', label: 'Projects' }] : []),
     ...(enhanceEnabled ? [{ key: 'enhance', href: '/app/enhance', label: 'Enhance' }] : []),
+    ...(chatEnabled ? [{ key: 'chat', href: '/app/chat', label: 'Chat' }] : []),
   ];
   // One server read for all three figures: who you are, the balance and
   // the true asset count for the account (not this browser's history).

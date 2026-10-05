@@ -4,7 +4,7 @@
 // veyrnox:auth-required on 401, propagates 429 retry-after, throws a
 // typed GatewayError otherwise so callers can branch on .code.
 
-import { getFreshAccessToken, getSession, clearSession } from '../../lib/authClient';
+import { getFreshAccessToken, getSession, clearSession } from '../../lib/authClient.js';
 
 // A Frozen account (Chargeback, #97): generating and buying are refused.
 export const ACCOUNT_PAUSED_COPY =

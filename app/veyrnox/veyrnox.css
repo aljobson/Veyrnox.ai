@@ -13,10 +13,6 @@
 
 /* motion — mirrors handoff spec */
 @keyframes vxScan { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
-@keyframes vxPulse { 0%,100% { opacity: 1; } 50% { opacity: .25; } }
-@keyframes vxSlideUp { 0% { transform: translateY(100%); } 100% { transform: none; } }
-@keyframes vxFade { 0% { opacity: 0; } 100% { opacity: 1; } }
-@keyframes vxDrift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
 @keyframes vxTickUp { 0% { opacity: 0; transform: translateY(6px); } 40% { opacity: 1; } 100% { opacity: 0; transform: translateY(-12px); } }
 
 /* Tile motion. One strong ease-out for every UI response; the built-in
@@ -50,12 +46,8 @@
   animation: vxScan 1.6s linear infinite;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .vx-root *, .vx-root *::before, .vx-root *::after {
-    animation: none !important;
-    transition: none !important;
-  }
-}
+/* The reduced-motion kill switch is in app/globals.css, so it also covers
+   chrome mounted outside .vx-root (sign-in dialog, toasts). */
 
 /* Accessibility ─── colour-blind + high-contrast safety net */
 .vx-root :focus-visible {
@@ -89,6 +81,91 @@
   will-change: transform;
 }
 
+/* ─── Receipt world ─────────────────────────────────────────────────────
+   The site's one material: a printed slip. Prices are measurements, so they
+   set in mono with leaders; everything else stays in Archivo.
+
+   .vx-paper re-points the theme tokens at a cool thermal-paper palette, so
+   every bg-vx-* / text-vx-* utility inside the slip inks correctly without
+   new class names. Money and accent take their light-theme values: the
+   dark-theme amber is 2:1 on paper. */
+.vx-paper {
+  --vx-base: 255 255 255;
+  --vx-panel: 236 240 238;
+  --vx-border: 196 204 200;
+  --vx-border-boost: 150 160 155;
+  --vx-fg: 16 22 20;
+  --vx-fg-body: 52 61 57;
+  --vx-fg-muted: 78 88 84;
+  --vx-fg-faint: 104 114 110;
+  --vx-accent: 11 122 102;
+  --vx-accent-hover: 9 95 80;
+  --vx-accent-ink: 255 255 255;
+  --vx-money: 138 90 0;
+  --vx-money-ink: 255 255 255;
+  /* The light-theme red: the dark-theme one is too pale on paper. */
+  --vx-danger: 196 36 26;
+  --vx-warn: 43 78 190;
+  color-scheme: light;
+  color: rgb(var(--vx-fg));
+  background: rgb(var(--vx-panel));
+  /* Torn top and bottom edge: two rows of 14px teeth. */
+  --vx-tooth: 14px;
+  mask:
+    conic-gradient(from 135deg at top, #0000, #000 1deg 89deg, #0000 90deg) top / var(--vx-tooth) 51% repeat-x,
+    conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / var(--vx-tooth) 51% repeat-x;
+}
+/* The mask would clip a shadow on the slip itself, so it lives on a wrapper. */
+.vx-paper-shadow { filter: drop-shadow(0 18px 28px rgb(0 0 0 / 0.45)); }
+:root[data-theme='light'] .vx-paper-shadow { filter: drop-shadow(0 14px 24px rgb(16 22 20 / 0.16)); }
+.vx-paper ::selection { background: rgb(11 122 102 / 0.22); }
+.vx-paper textarea { caret-color: rgb(var(--vx-accent)); }
+
+/* The printer mouth above the hero slip. */
+.vx-slot {
+  background: rgb(var(--vx-panel));
+  box-shadow: inset 0 2px 3px rgb(0 0 0 / 0.7), 0 1px 0 rgb(var(--vx-border));
+}
+
+/* Dotted leader between a line item and its price. */
+.vx-leader {
+  min-width: 1.5rem;
+  border-bottom: 1.5px dotted currentColor;
+  opacity: 0.35;
+  transform: translateY(-0.28em);
+}
+/* Perforation rule across a slip. */
+.vx-perf {
+  height: 1px;
+  background: repeating-linear-gradient(90deg, rgb(var(--vx-fg) / 0.35) 0 6px, transparent 6px 11px);
+}
+
+/* The one authored entrance: the slip feeds out of the printer once, on
+   first paint. clip-path keeps the drop shadow from popping in early. */
+/* The leading edge leans toward the viewer as it leaves the slot and settles
+   flat once fully out, the way real thermal paper curls off the roll. The
+   lean is pivoted on the slot (top edge) so the slip never detaches from it. */
+@keyframes vxPrint {
+  from { clip-path: inset(0 0 100% 0); transform: perspective(900px) translateY(-14px) rotateX(7deg); }
+  70%  { transform: perspective(900px) rotateX(2deg); }
+  to   { clip-path: inset(0 0 -40px 0); transform: perspective(900px) rotateX(0deg); }
+}
+.vx-print {
+  transform-origin: 50% 0;
+  animation: vxPrint 900ms cubic-bezier(0.32, 0.72, 0, 1) 150ms backwards;
+}
+
+/* A changed figure rolls in from below, so the eye catches the new price. */
+@keyframes vxTick {
+  from { opacity: 0; transform: translateY(45%); filter: blur(2px); }
+  to   { opacity: 1; transform: none; filter: none; }
+}
+.vx-tick { display: inline-block; animation: vxTick 220ms var(--vx-ease-out) backwards; }
+
+/* Press feedback for anything that acts on click. */
+.vx-press { transition: transform 140ms var(--vx-ease-out), background-color 160ms ease, color 160ms ease, border-color 160ms ease; }
+.vx-press:active { transform: scale(0.97); }
+
 /* Anchors sit under the sticky 64px nav without a hand-placed spacer. */
 .vx-root [id] {
   scroll-margin-top: 5rem;
@@ -98,4 +175,13 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .vx-root { scroll-behavior: auto; }
+}
+
+/* Display voice: Archivo at full weight, set tight. One scale step per role,
+   sizes chosen per section in markup. */
+.vx-display {
+  font-weight: 900;
+  line-height: 0.94;
+  letter-spacing: -0.04em;
+  text-wrap: balance;
 }

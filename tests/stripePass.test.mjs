@@ -97,7 +97,7 @@ test('cancel, refund, portal and re-reads use the right verbs and guard every id
   assert.equal(calls.at(-1).body.get('cancel_at_period_end'), 'true');
   assert.deepEqual(await cancelSubscriptionNow('sub_1', cfg(fetcher(() => Response.json({ object: 'subscription', id: 'sub_1', status: 'canceled' })))), { ok: true });
   assert.equal(calls.at(-1).method, 'DELETE');
-  assert.deepEqual(await cancelSubscriptionNow('sub_1', cfg(fetcher(() => Response.json({ error: { message: 'No such subscription: it has already been canceled' } }, { status: 400 })))), { ok: true });
+  assert.equal((await cancelSubscriptionNow('sub_1', cfg(fetcher(() => Response.json({ error: { message: 'No such subscription: it has already been canceled' } }, { status: 400 }))))).ok, false);
   assert.equal((await cancelSubscriptionNow('sub_1', cfg(fetcher(() => Response.json({ error: { message: 'boom' } }, { status: 500 }))))).ok, false);
   assert.equal((await cancelSubscriptionNow('bad', cfg(fetcher(() => okSession())))).ok, false);
   const refund = await createRefund({ paymentIntentId: 'pi_1', amountCents: 857 }, cfg(fetcher(() => Response.json({ object: 'refund', id: 're_1' }))), 'pass_refund:x');
@@ -115,4 +115,20 @@ test('cancel, refund, portal and re-reads use the right verbs and guard every id
   assert.equal((await fetchCharge('ch_1', cfg(fetcher(() => Response.json({ object: 'charge', id: 'ch_1', invoice: 'in_1' }))))).charge.invoice, 'in_1');
   assert.equal((await fetchCharge('pi_1', cfg(fetcher(() => okSession())))).ok, false);
   assert.ok(calls.every((c) => c.url.startsWith('https://api.stripe.com/v1/')));
+});
+
+test('repeated cancellation requires a verified cancelled subscription, not Stripe error wording', async () => {
+  for (const change of [null, s => s.id = 'sub_other', s => s.status = 'active', s => s.livemode = true]) {
+    const sub = { object: 'subscription', id: 'sub_1', status: 'canceled', livemode: false };
+    change?.(sub);
+    const methods = [];
+    const result = await cancelSubscriptionNow('sub_1', cfg(async (_url, init) => {
+      methods.push(init.method || 'GET');
+      return init.method === 'DELETE'
+        ? Response.json({ error: { code: 'resource_missing', message: 'No such subscription' } }, { status: 404 })
+        : Response.json(sub);
+    }));
+    assert.equal(result.ok, change === null);
+    assert.deepEqual(methods, ['DELETE', 'GET']);
+  }
 });

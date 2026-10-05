@@ -1,109 +1,95 @@
 import Link from 'next/link';
+import { Logo } from '../_components/Logo';
 import {
-  Logo } from '../_components/Logo';
-import {
-  NAV_CATEGORIES,
-  FEATURE_CARDS,
-  PRODUCT_TILES,
-  MORE_FEATURES,
-  METRIC_STRIP,
-  PILLARS,
   FAQ,
-  PROMO_STRIP,
+  MORE_FEATURES,
   FOOTER_TAGLINE,
   footerStamp,
   SITE_UPDATED,
   SUPPORT_EMAIL,
-  MODELS as MODELS_FALLBACK,
-  kindOf,
   shelfName,
 } from '../_lib/tokens';
 
-export function WhyVeyrnox() {
+/* ─── Every credit leaves a line: an example statement ─── */
+
+// Built from live catalog rows, so the example never quotes a price the
+// shelf above contradicts. Labelled as an example on the slip itself.
+const SIGNUP_CREDITS = 10;
+
+function exampleLines(catalog) {
+  const images = catalog
+    .filter((m) => m.kind === 'image' && !m.gated)
+    .sort((a, b) => a.credits - b.credits);
+  const audio = catalog.find((m) => m.kind === 'audio' && !m.gated);
+  const lines = [{ label: 'Sign-up credit', delta: SIGNUP_CREDITS }];
+  let balance = SIGNUP_CREDITS;
+  // A line the running balance cannot cover is left out: the example never
+  // prints a charge the account could not have paid.
+  const charge = (row, extra = []) => {
+    if (!row || row.credits > balance) return;
+    lines.push({ label: shelfName(row.name), delta: -row.credits }, ...extra);
+    balance += -row.credits + extra.reduce((n, l) => n + l.delta, 0);
+  };
+  charge(images[0]);
+  if (images[1]) {
+    charge(images[1], [{ label: `${shelfName(images[1].name)} failed, refund`, delta: images[1].credits, refund: true }]);
+  }
+  charge(audio);
+  return lines;
+}
+
+const fmt = (n) => (n > 0 ? `+${n}` : `\u2212${Math.abs(n)}`);
+
+export function LedgerExample({ catalog }) {
+  const lines = exampleLines(catalog);
+  const balance = lines.reduce((n, l) => n + l.delta, 0);
   return (
-    <section className="px-4 sm:px-6 pt-20 pb-6 max-w-[1400px] mx-auto">
-      <div className="text-center mb-8">
-        <h2 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-[-0.02em] text-balance">Honest math. One balance. Every credit on the record.</h2>
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        {PILLARS.map((p) => (
-          <div key={p.key} className="rounded-2xl border border-vx-border bg-vx-panel p-6 flex flex-col">
-            <div className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-accent">{p.kicker}</div>
-            <div className="mt-3 font-vx-mono text-[26px] sm:text-[36px] font-bold text-vx-accent vx-num leading-none">{p.stat}</div>
-            <div className="mt-4 text-[15px] font-bold leading-snug text-balance">{p.title}</div>
-            <div className="mt-2 text-[12.5px] text-vx-fg-body leading-[1.55]">{p.body}</div>
+    <section className="px-4 sm:px-6 pt-28 sm:pt-36 max-w-[1300px] mx-auto">
+      <div className="grid grid-cols-1 lg:grid-cols-[0.8fr_1fr] gap-12 lg:gap-20 items-center">
+        <div className="order-2 lg:order-1 max-w-[460px] w-full mx-auto lg:mx-0">
+          <div className="vx-paper-shadow">
+            <div className="vx-paper px-6 sm:px-8 pt-9 pb-10">
+              <div className="flex items-baseline justify-between text-[13px] font-bold">
+                <span>Credit statement</span>
+                <span className="font-normal text-vx-fg-muted">Example</span>
+              </div>
+              <div className="vx-perf mt-4" aria-hidden />
+              <dl className="mt-4 space-y-2 font-vx-mono text-[13.5px] vx-num">
+                {lines.map((l, i) => (
+                  <div key={i} className="flex items-baseline gap-2">
+                    <dt className={`min-w-0 truncate ${l.refund ? 'text-vx-accent font-bold' : ''}`}>{l.label}</dt>
+                    <span aria-hidden className="vx-leader flex-1" />
+                    <dd className={`shrink-0 font-bold ${l.delta > 0 ? 'text-vx-accent' : 'text-vx-money'}`}>{fmt(l.delta)}</dd>
+                  </div>
+                ))}
+              </dl>
+              <div className="vx-perf mt-5" aria-hidden />
+              <div className="mt-4 flex items-baseline justify-between font-vx-mono text-[15px] font-bold vx-num">
+                <span>Balance</span>
+                <span className="text-vx-money">{balance} cr</span>
+              </div>
+            </div>
           </div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-/* ─── Alternating feature strips ─── */
-
-export function FeatureStripsSection() {
-  return (
-    <section className="px-4 sm:px-6 pt-16 pb-6 max-w-[1400px] mx-auto flex flex-col gap-4">
-      <FeatureStrip
-        title="One balance across every model."
-        body="Nano Banana, Flux.2, Seedream, Wan, Kling, MiniMax, Veo, ACE-Step. Debit on submit, refund on fail, one balance across the whole catalog."
-        cta={{ label: 'Open the app', href: '/app' }}
-        bg="linear-gradient(135deg,#0a1a2c 0%,#144a7a 55%,#3ec1e8 100%)"
-      />
-      <FeatureStrip
-        title="Curated presets, one tap."
-        body="Curated presets wired to model and prompt combos. Browse free, generate on tap. Cost shown up front."
-        cta={{ label: 'Browse presets', href: '/presets' }}
-        bg="linear-gradient(135deg,#1b0632 0%,#5a0e6a 55%,#e4318f 100%)"
-        reverse
-      />
-      <FeatureStrip
-        title="Every credit accounted for."
-        body="Debits and refunds are append-only ledger rows, never edits. Your balance is the sum of them, and you can read the history back."
-        cta={{ label: 'See your balance', href: '/app/credits' }}
-        bg="linear-gradient(135deg,#08120b 0%,#0e3a1e 55%,#2ea258 100%)"
-        wide
-      />
-    </section>
-  );
-}
-
-export function FeatureStrip({ title, body, cta, bg, reverse = false, wide = false }) {
-  // The third strip runs full width so the section is not three image/text
-  // splits in a row.
-  if (wide) {
-    return (
-      <div className="relative rounded-3xl border border-vx-border overflow-hidden" style={{ background: bg }}>
-        <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-transparent" />
-        {/* Fixed light ink: this sits on a hardcoded dark gradient, so the
-            theme tokens would resolve to near-black in light theme. */}
-        <div className="relative p-6 sm:p-10 lg:p-14 max-w-[640px]">
-          <h3 className="text-[24px] sm:text-[30px] md:text-[34px] font-black leading-[1.05] tracking-[-0.02em] text-balance text-white">{title}</h3>
-          <p className="mt-4 text-white/85 leading-[1.6]">{body}</p>
-          <Link
-            href={cta.href}
-            className="inline-block mt-6 rounded-full bg-vx-accent text-vx-accent-ink px-6 py-3 text-sm font-extrabold hover:bg-vx-accent-hover"
-          >
-            {cta.label}
-          </Link>
+        </div>
+        <div className="order-1 lg:order-2">
+          <h2 className="vx-display text-[40px] sm:text-[56px] max-w-[12ch]">Every credit leaves a line.</h2>
+          <ul className="mt-10 space-y-7 max-w-[46ch]">
+            <li>
+              <p className="text-lg font-bold">Charged when you press Generate.</p>
+              <p className="mt-1 text-vx-fg-body leading-[1.6]">At the price printed on the button, and never more after the fact.</p>
+            </li>
+            <li>
+              <p className="text-lg font-bold">A failed job pays itself back.</p>
+              <p className="mt-1 text-vx-fg-body leading-[1.6]">Safety rejects, timeouts and model errors each come back as their own line. You don&rsquo;t have to ask.</p>
+            </li>
+            <li>
+              <p className="text-lg font-bold">Lines are never edited.</p>
+              <p className="mt-1 text-vx-fg-body leading-[1.6]">Your balance is the sum of them, and the full history is in your account.</p>
+            </li>
+          </ul>
         </div>
       </div>
-    );
-  }
-  return (
-    <div className={`rounded-3xl border border-vx-border bg-vx-panel overflow-hidden grid grid-cols-1 lg:grid-cols-2 ${reverse ? 'lg:grid-flow-dense lg:[&>*:first-child]:col-start-2' : ''}`}>
-      <div className="p-6 sm:p-10 lg:p-14">
-        <h3 className="text-[24px] sm:text-[30px] md:text-[34px] font-black leading-[1.05] tracking-[-0.02em] text-balance">{title}</h3>
-        <p className="mt-4 text-vx-fg-body max-w-[500px] leading-[1.6]">{body}</p>
-        <Link
-          href={cta.href}
-          className="inline-block mt-6 rounded-full bg-vx-accent text-vx-accent-ink px-6 py-3 text-sm font-extrabold hover:bg-vx-accent-hover"
-        >
-          {cta.label}
-        </Link>
-      </div>
-      <div className="min-h-[260px]" style={{ background: bg }} />
-    </div>
+    </section>
   );
 }
 
@@ -111,35 +97,35 @@ export function FeatureStrip({ title, body, cta, bg, reverse = false, wide = fal
 
 export function FAQBlock() {
   return (
-    <section id="faq" className="px-4 sm:px-6 pt-16 pb-6 max-w-[900px] mx-auto">
-      <div className="text-center mb-8">
-        <h2 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-[-0.02em]">Everything you&rsquo;d ask.</h2>
-      </div>
-      <div className="rounded-2xl border border-vx-border bg-vx-panel divide-y divide-vx-border/60">
-        {FAQ.map((row) => (
-          <details key={row.q} className="group px-6 py-4">
-            <summary className="cursor-pointer list-none flex items-center justify-between gap-4">
-              <span className="font-bold text-[15px]">{row.q}</span>
-              <span
-                aria-hidden="true"
-                className="font-vx-mono text-vx-accent text-lg leading-none transition-transform group-open:rotate-45"
-              >
-                +
-              </span>
-            </summary>
-            <p className="mt-3 text-[14px] text-vx-fg-body leading-[1.65]">
-              {row.a}
-              {row.link && (
-                <>
-                  {' '}
-                  <Link href={row.link.href} className="text-vx-accent underline underline-offset-4 hover:text-vx-accent-hover">
-                    {row.link.label} →
-                  </Link>
-                </>
-              )}
-            </p>
-          </details>
-        ))}
+    <section id="faq" className="px-4 sm:px-6 pt-28 sm:pt-36 max-w-[1300px] mx-auto">
+      <div className="grid grid-cols-1 lg:grid-cols-[0.8fr_1fr] gap-8 lg:gap-20">
+        <h2 className="vx-display text-[40px] sm:text-[56px] lg:sticky lg:top-24 self-start">Questions.</h2>
+        <div className="border-t-2 border-vx-fg">
+          {FAQ.map((row) => (
+            <details key={row.q} className="group border-b border-vx-border">
+              <summary className="cursor-pointer list-none flex items-center justify-between gap-6 py-5">
+                <span className="text-[17px] font-bold">{row.q}</span>
+                <span
+                  aria-hidden="true"
+                  className="shrink-0 text-2xl leading-none text-vx-fg-muted transition-transform duration-200 group-open:rotate-45 group-hover:text-vx-fg"
+                >
+                  +
+                </span>
+              </summary>
+              <p className="pb-6 -mt-1 text-[15px] text-vx-fg-body leading-[1.65] max-w-[62ch]">
+                {row.a}
+                {row.link && (
+                  <>
+                    {' '}
+                    <Link href={row.link.href} className="font-bold text-vx-fg underline underline-offset-4 hover:text-vx-accent">
+                      {row.link.label}
+                    </Link>
+                  </>
+                )}
+              </p>
+            </details>
+          ))}
+        </div>
       </div>
     </section>
   );
@@ -147,41 +133,19 @@ export function FAQBlock() {
 
 /* ─── Closing CTA ─── */
 
-export function ClosingCTA({ modelCount }) {
+export function ClosingCTA() {
   return (
-    <section className="px-4 sm:px-6 pt-16 pb-16 max-w-[1400px] mx-auto">
-      <div className="rounded-3xl border border-vx-border bg-vx-panel p-6 sm:p-10 lg:p-14 text-center">
-        <h2 className="text-[28px] sm:text-[40px] md:text-[52px] font-black tracking-[-0.03em] leading-[1.05] text-balance max-w-[820px] mx-auto">
-          Ship your first asset today.<br />
-          <span className="text-vx-accent">See the price before you spend.</span>
-        </h2>
-        <p className="mt-4 text-vx-fg-body max-w-[560px] mx-auto">
-          10 credits on the house when you join. One balance across every model. Failed jobs refund automatically.
-        </p>
-        <div className="mt-6 flex gap-3 justify-center flex-wrap">
-          <Link href="/app?auth=sign_up" className="rounded-full bg-vx-accent text-vx-accent-ink px-8 py-4 text-base font-extrabold hover:bg-vx-accent-hover">
-            Claim 10 credits
-          </Link>
-          <Link href="/pricing" className="rounded-full border border-vx-border text-vx-fg px-8 py-4 text-base font-bold hover:border-vx-accent">
-            See pricing
-          </Link>
-        </div>
+    <section className="px-4 sm:px-6 pt-28 sm:pt-36 max-w-[1300px] mx-auto">
+      <h2 className="vx-display text-[52px] sm:text-[84px] lg:text-[112px] max-w-[11ch]">
+        Your first 10 credits are on us.
+      </h2>
+      <div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-4">
+        <Link href="/app?auth=sign_up" className="vx-press rounded-full bg-vx-accent text-vx-accent-ink px-8 py-4 text-base font-extrabold hover:bg-vx-accent-hover">
+          Claim 10 credits
+        </Link>
+        <p className="text-vx-fg-muted text-[15px]">No card needed. Spend them on any open model.</p>
       </div>
-      <MetricStripBlock modelCount={modelCount} />
     </section>
-  );
-}
-
-export function MetricStripBlock({ modelCount }) {
-  return (
-    <div className="mt-8 rounded-3xl border border-vx-border bg-vx-panel grid grid-cols-2 md:grid-cols-4 divide-x divide-y md:divide-y-0 divide-vx-border/60">
-      {METRIC_STRIP.map((m) => (
-        <div key={m.label} className="p-6 md:p-8 text-center">
-          <div className="font-vx-mono text-[24px] sm:text-[32px] md:text-[40px] font-bold text-vx-accent vx-num leading-none break-words">{m.value ?? modelCount}</div>
-          <div className="mt-3 font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">{m.label}</div>
-        </div>
-      ))}
-    </div>
   );
 }
 
@@ -202,8 +166,8 @@ export function FooterForest({ catalog }) {
       : col,
   );
   return (
-    <footer className="border-t border-vx-border">
-      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 py-10 sm:py-14">
+    <footer className="mt-28 sm:mt-36 border-t border-vx-border">
+      <div className="max-w-[1300px] mx-auto px-4 sm:px-6 py-10 sm:py-14">
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-[1.4fr_repeat(4,1fr)] gap-8 sm:gap-10">
           <div className="col-span-2 sm:col-span-3 lg:col-span-1">
             {/* The wordmark is the conventional way back to the top of a
@@ -221,9 +185,7 @@ export function FooterForest({ catalog }) {
           </div>
           {columns.map((col) => (
             <div key={col.group}>
-              <div className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted mb-3">
-                {col.group.toUpperCase()}
-              </div>
+              <h3 className="text-[13px] font-bold text-vx-fg mb-3">{col.group}</h3>
               <ul className="space-y-2">
                 {col.items.map((it) => (
                   <li key={it.label}>
@@ -236,7 +198,7 @@ export function FooterForest({ catalog }) {
         </div>
       </div>
       <div className="border-t border-vx-border">
-        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 py-6 text-xs text-vx-fg-muted flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+        <div className="max-w-[1300px] mx-auto px-4 sm:px-6 py-6 text-xs text-vx-fg-muted flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
             {/* Called at render, not at module load: a constant froze the
                 year to whenever the Worker bundle happened to boot. */}

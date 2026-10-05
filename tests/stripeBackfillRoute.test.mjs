@@ -11,7 +11,6 @@ const SESSION = 'cs_test_' + 'a'.repeat(64);
 const SECRET = 'whsec_test_only';
 Object.assign(process.env, { SUPABASE_URL: 'https://db.test', SUPABASE_SERVICE_ROLE_KEY: 'test-only',
     STRIPE_SECRET_KEY: 'sk_test_only', STRIPE_WEBHOOK_SECRET: SECRET, TOP_UP_BACKFILL_TOKEN: 'cron-test-only' });
-for (const name of ['LEMONSQUEEZY_API_KEY', 'LEMONSQUEEZY_STORE_ID', 'LEMONSQUEEZY_TEST_MODE']) delete process.env[name];
 const request = (token = 'cron-test-only') => new Request('https://veyrnox.test/api/admin/top-up-backfill', {
     method: 'POST', headers: { authorization: `Bearer ${token}` },
 });

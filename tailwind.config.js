@@ -11,10 +11,6 @@ module.exports = {
     theme: {
         extend: {
             colors: {
-                primary: {
-                    DEFAULT: '#22d3ee',
-                    hover: '#06b6d4',
-                },
                 'app-bg': '#050505',
                 'panel-bg': '#0a0a0a',
                 'card-bg': '#141414',
@@ -42,10 +38,20 @@ module.exports = {
                     money: 'rgb(var(--vx-money) / <alpha-value>)',
                     'money-ink': 'rgb(var(--vx-money-ink) / <alpha-value>)',
                     danger: 'rgb(var(--vx-danger) / <alpha-value>)',
+                    // Notices and warnings. Amber (money) is Credits only.
+                    warn: 'rgb(var(--vx-warn) / <alpha-value>)',
+                },
+                // Chart surfaces for components/charts. The values are
+                // oklch() in app/globals.css, so no `/opacity` modifier.
+                chart: {
+                    label: 'var(--chart-label)',
+                    'tooltip-background': 'var(--chart-tooltip-background)',
+                    'tooltip-foreground': 'var(--chart-tooltip-foreground)',
+                    'tooltip-muted': 'var(--chart-tooltip-muted)',
                 },
             },
             fontFamily: {
-                sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+                sans: ['var(--font-inter)', 'system-ui', '-apple-system', 'sans-serif'],
                 vx: ['var(--font-archivo)', 'system-ui', 'sans-serif'],
                 'vx-mono': ['var(--font-jetbrains)', 'ui-monospace', 'monospace'],
             },
@@ -55,8 +61,6 @@ module.exports = {
                 '3xl': '2rem',
             },
             boxShadow: {
-                'glow': '0 0 20px rgba(34, 211, 238, 0.4)',
-                'glow-accent': '0 0 20px rgba(168, 85, 247, 0.4)',
                 '3xl': '0 35px 60px -15px rgba(0, 0, 0, 0.8)',
             }
         },

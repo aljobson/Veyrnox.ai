@@ -81,7 +81,7 @@ its UUID Idempotency-Key is preserved on retry. No new migration is needed.
 
 Enrollment is closed by default: the server requires
 `CINEMA_ENABLED=true` and `SOCIAL_CINEMA_PROFILES_ENABLED=true`, and the browser preview requires
-`localStorage.veyrnox_social_cinema = 'true'`. The public entry page itself
+`localStorage.veyrnox_social_cinema = '1'` (`'true'` also works). The public entry page itself
 remains discoverable. Enable profile previews only after migration 0132 and
 its prerequisites are verified and the repository's 24-hour clean
 reconciliation gate has passed. This PR does not change production flags.

@@ -1,6 +1,6 @@
 # ADR-0012 — TTS provider selection
 
-Status: **proposed** — 2026-09-11
+Status: **proposed** — 2026-09-11. The decision is still open, but text-to-speech is live in production; see the drift notes at the end.
 
 ## Context
 
@@ -37,3 +37,8 @@ _To be completed by Al._
 > Deliberately not resolved here — picking a provider is the owner's call and
 > writing one in would misrepresent a decision that was never made. Either
 > record Inworld as the decision with its reasoning, or supersede this ADR.
+>
+> **Drift note, 2026-10-03.** Still open. The live catalogue now carries four
+> text-to-speech models: `inworld-tts`, `elevenlabs-tts-turbo`,
+> `elevenlabs-dialogue` and `minimax-speech-2.6-hd`. ElevenLabs and MiniMax are
+> options 1 and 2 above; no decision between them was recorded here.

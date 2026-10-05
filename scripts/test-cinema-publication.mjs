@@ -134,6 +134,17 @@ try {
   assert.equal((await submit(creator, series)).error, 'already_published');
   assert.ok(['draft_locked', 'invalid_parent'].includes((await value('SELECT public.save_cinema_draft($1,$2,$3,$4,$5) AS value', [creator, randomUUID(), eps[0], 1, draft({ content_type: 'EPISODE', parent_id: season, position: 1, title: 'Edit' })])).error), 'a published episode cannot be edited');
 
+  // A tie split over pages must retain every row, including sub-millisecond timestamps.
+  await q('BEGIN');
+  await q("UPDATE public.cinema_content SET published_at='2026-09-26T10:00:00.123456Z' WHERE lifecycle_status='PUBLISHED' AND parent_id IS NULL");
+  const all=await value('SELECT public.list_public_cinema_titles_page(50,NULL,NULL,NULL) AS value');
+  const pageIds=[];let cursorAt=null,cursorId=null;
+  for(let i=0;i<all.length;i++) {
+    const page=await value('SELECT public.list_public_cinema_titles_page(1,$1,NULL,$2) AS value',[cursorAt,cursorId]);
+    assert.equal(page.length,1);pageIds.push(page[0].id);cursorAt=page[0].published_at;cursorId=page[0].id;
+  }
+  assert.deepEqual(pageIds,all.map(t=>t.id));assert.equal(new Set(pageIds).size,pageIds.length);
+  await q('ROLLBACK');
   // Pagination: newest first, cursor by published_at.
   await upload(creator, film);
   const filmSub = await submit(creator, film);

@@ -1,8 +1,10 @@
 # ADR-0060 — Whole-site dynamic rendering for nonce CSP
 
-Status: Whole-site implementation selected by the owner on 25 September 2026;
-preview validation in PR #322. Production rollout pending authenticated journey
-proof. Related issue: #4.
+Status: Whole-site implementation selected by the owner on 25 September 2026.
+Rolled out to production: #322 merged on 26 September 2026, and on 3 October
+2026 production served a nonce `script-src` with no `unsafe-inline` and
+`no-store` pages (status corrected 2026-10-03; it read "production rollout pending").
+Issue #4 stays open for the authenticated-journey proof and latency numbers.
 
 ## Decision
 
@@ -87,3 +89,10 @@ script unsafe-inline risk. Do not auto-close #4 from an incomplete preview.
   rendered; no console errors were observed during the navigation checks.
 - No successful account login, CAPTCHA, OAuth return, authenticated generation
   or Stripe return was performed. Those proof requirements remain outstanding.
+
+### Staging identity isolation — 2026-09-26
+
+The shared CSP chooses the Supabase origin from the application's environment.
+Staging must permit only its staging identity origin, not the production origin;
+otherwise the browser blocks login, MFA and refresh. The nonce policy and API
+policy share this selection. No wildcard Supabase origin is permitted.

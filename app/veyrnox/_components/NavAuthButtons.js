@@ -1,33 +1,37 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { getSession, onSessionChange, signOut } from '../../lib/authClient';
 import { ConfirmDialog } from './ConfirmDialog';
 import { accountLabel } from '../_lib/account.js';
+import { usePublishEnabled } from './PublishFlag';
 
 const ACCOUNT_LINKS = [
   { href: '/social-cinema', label: 'Social Cinema' },
   { href: '/app', label: 'Open Studio' },
   { href: '/app/library', label: 'Library' },
+  { href: '/app/publish', label: 'Veyrnox Publish' },
   { href: '/app/credits', label: 'Credits' },
   { href: '/app/account', label: 'Account & security' },
 ];
+
+// A string, so the snapshot is equal between reads of the same session.
+const storedAccount = () => JSON.stringify(accountLabel(getSession()));
+const noAccount = () => 'null';
 
 // `account` is optional: pass one (AppNav does, so the email can come from
 // /api/v1/account when the stored session carries none). The marketing nav
 // passes nothing and reads the session on its own.
 export function NavAuthButtons({ account: given }) {
-  const [sessionAccount, setSessionAccount] = useState(null);
+  const stored = useSyncExternalStore(onSessionChange, storedAccount, noAccount);
+  const sessionAccount = useMemo(() => JSON.parse(stored), [stored]);
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const wrapRef = useRef(null);
-
-  useEffect(() => {
-    setSessionAccount(accountLabel(getSession()));
-    return onSessionChange((s) => setSessionAccount(accountLabel(s)));
-  }, []);
+  const publishOpen = usePublishEnabled();
+  const links = publishOpen ? ACCOUNT_LINKS : ACCOUNT_LINKS.filter((l) => l.href !== '/app/publish');
 
   const account = given || sessionAccount;
 
@@ -88,7 +92,7 @@ export function NavAuthButtons({ account: given }) {
                 <div className="text-xs text-vx-fg-muted truncate">{account.email}</div>
               )}
             </div>
-            {ACCOUNT_LINKS.map((l) => (
+            {links.map((l) => (
               <Link
                 key={l.href}
                 href={l.href}

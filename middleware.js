@@ -21,6 +21,8 @@ import { recentMfaTimestamp } from './lib/cinema/strongAuth.js';
 import { NextResponse } from 'next/server';
 import { contentSecurityPolicy } from './lib/contentSecurityPolicy.mjs';
 import { readToken, validateClaims, verifyES256 } from './lib/supabaseJwt.js';
+import { isPublishApiPath, publishEnabled } from './lib/social/publishFeature.js';
+import { isUnknownStaticPage } from './lib/unknownStaticPage.js';
 
 export const config = {
     matcher: ['/api/v1/:path*', '/((?!api(?:/|$)|_next(?:/|$)).*)'],
@@ -56,10 +58,19 @@ export async function middleware(req) {
         const policy = contentSecurityPolicy(nonce, process.env.NODE_ENV === 'development');
         headers.set('x-nonce', nonce);
         headers.set('Content-Security-Policy', policy);
-        const response = NextResponse.next({ request: { headers } });
+        // An unknown guide or template is sent to a path with no route, so the
+        // site's not-found page answers with a real 404 (lib/unknownStaticPage.js).
+        const response = isUnknownStaticPage(pathname)
+            ? NextResponse.rewrite(new URL('/_unknown-page', req.url), { request: { headers } })
+            : NextResponse.next({ request: { headers } });
         response.headers.set('Content-Security-Policy', policy);
         response.headers.set('Cache-Control', 'private, no-store, max-age=0');
         return response;
+    }
+
+    // Veyrnox Publish ships dark until PUBLISH_ENABLED is "true" (ISSUES P1).
+    if (isPublishApiPath(pathname) && !publishEnabled()) {
+        return jsonError(503, { error: 'publish_not_open', requestId });
     }
 
     const supabaseUrl = process.env.SUPABASE_URL;
@@ -72,7 +83,7 @@ export async function middleware(req) {
 
     let claims;
     try {
-        claims = await verifyES256(token, supabaseUrl);
+        claims = await verifyES256(token, supabaseUrl, { staticJwks: process.env.SUPABASE_JWKS });
     } catch (err) {
         const reason = (err && err.reason) || 'signature';
         // A JWKS outage is our problem, not the caller's credentials:
