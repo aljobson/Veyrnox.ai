@@ -451,3 +451,21 @@ test('a replay of a free reply returns it without calling the provider', async (
     assert.deepEqual(await res.json(), { replay: true, job_id: JOB, balance_after: 8 });
     assert.equal(f.streamCalls.length, 0);
 });
+
+// ── ADR-0070: Deep research is refused until it is switched on and the row offers it ─────────────────────────
+const RESEARCH_MODEL = { ...MODEL, chat_research_extra_credits: 15, chat_research_write_max_tokens: 4096 };
+
+test('research off: the research columns are never requested and a research turn is refused before any money moves', async () => {
+    const f = fakes({ model: RESEARCH_MODEL });
+    const res = await run(f, { body: body({ options: { research: true } }) });
+    assert.equal(res.status, 409);
+    assert.deepEqual(await res.json(), { error: 'option_unavailable' });
+    assert.equal(called(f, 'ledger_debit').length, 0);
+});
+
+test('research on but the row does not offer it: refused as option_unavailable, no debit', async () => {
+    const f = fakes({ model: MODEL });
+    const res = await run(f, { env: { ...env, CHAT_RESEARCH_ENABLED: 'true' }, body: body({ options: { research: true } }) });
+    assert.equal(res.status, 409);
+    assert.equal(called(f, 'ledger_debit').length, 0);
+});
