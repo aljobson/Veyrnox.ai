@@ -146,6 +146,9 @@
         "NEXT_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_bAxQiodzBhI6bV7lmo9gMQ_Hlg9_Ish",
         "TENANT_PROJECTS_ENABLED": "true",
         "SUBSCRIPTIONS_ENABLED": "false",
+        // ADR-0067: Chat is open on staging for testing only. No text model is
+        // active until the owner activates one; production stays "false".
+        "CHAT_ENABLED": "true",
         // ADR-0066; vars are not inherited, so staging names it too.
         "JEV_SUBMIT_ERRORS_MODE": "off",
         // Veyrnox Publish is open on staging for testing (see production).
