@@ -5,7 +5,7 @@
  */
 import { select } from '../../../../../packages/db/supabase-client.js';
 import { enter, reply } from '../../../../../lib/chatRoute.js';
-import { MAX_REPLY_TOKENS, replyBudget, rowOptions } from '../../../../../lib/chat.js';
+import { MAX_REPLY_TOKENS, MAX_ATTACHMENTS, MAX_IMAGE_EDGE, replyBudget, rowOptions } from '../../../../../lib/chat.js';
 
 export async function GET(req) {
     const gate = await enter(req);
@@ -13,7 +13,7 @@ export async function GET(req) {
     try {
         const rows = await select('model_catalog', {
             columns: 'id,name,credits_5s,gated_flag,chat_max_reply_tokens,chat_reasoning_effort,'
-                + 'chat_thinking_effort,chat_thinking_max_reply_tokens,chat_thinking_extra_credits,chat_web_extra_credits',
+                + 'chat_thinking_effort,chat_thinking_max_reply_tokens,chat_thinking_extra_credits,chat_web_extra_credits,chat_images_extra_credits',
             filter: 'active=eq.true&modality=eq.text&provider=eq.openrouter-chat&order=name.asc',
         }, gate.cfg);
         const models = (Array.isArray(rows) ? rows : []).map((r) => ({
@@ -21,7 +21,7 @@ export async function GET(req) {
             max_reply_tokens: replyBudget(r).maxTokens,
             options: rowOptions(r),
         }));
-        return reply({ models, max_reply_tokens: MAX_REPLY_TOKENS });
+        return reply({ models, max_reply_tokens: MAX_REPLY_TOKENS, max_attachments: MAX_ATTACHMENTS, max_image_edge: MAX_IMAGE_EDGE });
     } catch (err) {
         console.error('[chat] models failed:', err && err.message);
         return reply({ error: 'temporarily_unavailable' }, 503);

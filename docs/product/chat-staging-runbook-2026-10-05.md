@@ -1,7 +1,7 @@
 # Chat on staging: apply 0196 and 0197, deploy, walk it (2026-10-05)
 
 Target: Supabase project `veyrnox.ai staging` (`yrqzwqywxfesmbvhzjgj`) and Worker `veyrnox-ai-staging`.
-The staging bundle in `.open-next` was built from branch `claude/chat-model-options` (commit `2a42f7b`) with
+The staging bundle in `.open-next` is built from the attachments branch `claude/chat-attachments` (see the commit named in the hand-off message) with
 `APP_ENV=staging`; its client code names the staging project and carries `"apple,google"`. Production is untouched.
 
 **Order matters: database first, deploy second.** The new Worker reads the 0196 and 0197 columns. Deployed before
@@ -9,7 +9,7 @@ the SQL, `/api/v1/chat/models` would fail on the missing columns and chat would 
 
 Do not switch branches or run `npm run build:worker` before deploying: the deploy ships whatever `.open-next` holds.
 
-## 1. Apply the two migrations (SQL editor, in this order)
+## 1. Apply the three migrations (SQL editor, in this order: 0196, 0197, 0198)
 
 Open https://supabase.com/dashboard/project/yrqzwqywxfesmbvhzjgj/sql/new and check the project name at the top
 left reads `veyrnox.ai staging`.
@@ -26,6 +26,11 @@ pbcopy < packages/db/schema/supabase/0197_chat_models_options.sql
 ```
 
 0197 raises an error (and changes nothing) unless it updates exactly 3 live rows and 7 staged rows.
+Then the same for 0198, which prices Images on all 10 rows and updates the thread read; it errors unless it updates exactly 10:
+
+```bash
+pbcopy < packages/db/schema/supabase/0198_chat_models_images.sql
+```
 
 ## 2. Check it (read-only; Claude can run this too)
 
@@ -36,6 +41,7 @@ from public.model_catalog where modality = 'text' order by active desc, id;
 ```
 
 Expect 10 rows: the three live ones active with `chat_web_extra_credits = 2`, and seven inactive with both extras set.
+After 0198 every row also has `chat_images_extra_credits` (1 to 6).
 
 ## 3. Deploy
 
@@ -58,6 +64,8 @@ Hard-reload `/app/chat` (`localStorage.veyrnox_chat = '1'` must be set in that b
 - Ask something current (a latest-version question). The reply streams, a "Sources" list ends it, and the balance drops by 3.
 - With the toggle off: 1 Credit, no sources.
 - Reload: the thread and the stored reply, sources included, are still there.
+- Attach an image (paperclip): up to 4; a thumbnail appears with a remove control; the price line adds the Images extra and a note says images go to the model provider. Send: the message shows an "Image, W by H" chip, and the answer describes the picture. A picture over 2,048 px is scaled down in the browser first.
+- Attach an image, then pick a model: every model offers Images, so none should block it.
 - Try Stop mid-reply; try a send with the balance too low (expect the top-up message).
 
 After it, Claude can check read-only: the job rows (`inputs.options`), the ledger debit amounts, and the reconcile functions.

@@ -31,7 +31,31 @@ test('hostile text comes out as text, never as markup or a link', () => {
     const [p] = parseMarkdown(evil);
     assert.deepEqual(p.inline, [text(evil)], 'every character is returned unchanged as text for a text node');
     const all = JSON.stringify(parseMarkdown(`${evil}\n\n- ${evil}\n\n\`\`\`html\n${evil}\n\`\`\``));
-    assert.ok(!/"t":"(link|html|image)"/.test(all) && !all.includes('"type":"html"'), 'no link, html or image node type exists');
+    assert.ok(!/"t":"(html|image)"/.test(all) && !all.includes('"type":"html"'), 'no html or image node type exists');
+    assert.ok(!/"href":"(javascript|data|vbscript)/i.test(all) && !all.includes('"t":"link"'), 'none of that became a link');
+});
+
+test('an http or https link becomes a link node with a normalised address', () => {
+    assert.deepEqual(parseInline('see [Node](https://nodejs.org/x?a=1#b) now'),
+        [text('see '), { t: 'link', v: 'Node', href: 'https://nodejs.org/x?a=1#b' }, text(' now')]);
+    assert.deepEqual(parseInline('[a](http://example.com)'), [{ t: 'link', v: 'a', href: 'http://example.com/' }]);
+    const two = parseInline('[one](https://a.example/) and [two](https://b.example/p_%28x%29)').filter((n) => n.t === 'link');
+    assert.deepEqual(two.map((n) => [n.v, n.href]), [['one', 'https://a.example/'], ['two', 'https://b.example/p_%28x%29']]);
+});
+
+test('anything but a plain http(s) address stays text, including images and credentials', () => {
+    for (const bad of ['[x](javascript:alert(1))', '[x](data:text/html,hi)', '[x](vbscript:x)', '[x](ftp://example.com/f)', '[x](mailto:a@b.c)',
+        '[x](/relative)', '[x](https://)', '[x](https://user:pw@example.com/)', '![x](https://example.com/p.png)', '[x](https://a.example/ b)',
+        '[](https://example.com)', '[x](HTTPS:/\\example.com)']) {
+        const nodes = parseInline(bad);
+        assert.ok(!nodes.some((n) => n.t === 'link'), `${bad} must not become a link`);
+        assert.equal(nodes.map((n) => n.v).join(''), bad, `${bad} comes back unchanged`);
+    }
+});
+
+test('a link beside code and bold keeps each piece separate', () => {
+    const n = parseInline('**bold** `code` [l](https://x.example/) tail');
+    assert.deepEqual(n.map((x) => x.t), ['strong', 'text', 'code', 'text', 'link', 'text']);
 });
 
 test('empty and odd input', () => {

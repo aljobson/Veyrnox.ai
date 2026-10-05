@@ -2,7 +2,9 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { GatewayError } from '../../_lib/gateway';
-import { chatApi, chatErrorCopy, makeIdempotencyKey, sendTurn } from '../../_lib/chatApi';
+import { chatApi, chatErrorCopy, makeIdempotencyKey, sendTurn, uploadChatImage } from '../../_lib/chatApi';
+import { attachmentLabel, prepareImage } from '../../_lib/chatImages';
+import { AttachButton, AttachChips, useAttachments } from './AttachBar';
 import { ChatText } from './ChatText';
 import { ThreadList } from './ThreadList';
 
@@ -32,6 +34,8 @@ export function ChatWorkspace() {
   const [draftModel, setDraftModel] = useState('');
   const [text, setText] = useState('');
   const [opts, setOpts] = useState({ thinking: false, web: false });
+  const [limits, setLimits] = useState({ maxAttachments: 4, maxEdge: 2048 });
+  const att = useAttachments(limits.maxAttachments);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const [closed, setClosed] = useState(false);
@@ -54,7 +58,7 @@ export function ChatWorkspace() {
     (async () => {
       try {
         const [m, t] = await Promise.all([chatApi.models(), chatApi.threads()]);
-        setModels(m.models); setThreads(t.threads); setDraftModel(m.models[0]?.id || '');
+        setModels(m.models); setLimits({ maxAttachments: m.max_attachments || 4, maxEdge: m.max_image_edge || 2048 }); setThreads(t.threads); setDraftModel(m.models[0]?.id || '');
       } catch (e) { fail(e); } finally { setReady(true); }
     })();
   }, [fail]);
@@ -62,9 +66,12 @@ export function ChatWorkspace() {
 
   const model = models.find((x) => x.id === (active?.model_id ?? draftModel)) || models[0];
   // An option counts only if the chosen model offers it; the price is the model's base plus each extra chosen.
-  const offer = model?.options || { thinking: null, web: null };
+  const offer = model?.options || { thinking: null, web: null, images: null };
   const chosen = { thinking: opts.thinking && !!offer.thinking, web: opts.web && !!offer.web };
-  const price = (model?.credits_per_reply ?? 0) + (chosen.thinking ? offer.thinking.extra_credits : 0) + (chosen.web ? offer.web.extra_credits : 0);
+  const hasImages = att.items.length > 0;
+  const imagesBlocked = hasImages && !offer.images; // images are chosen but this model cannot read them
+  const price = (model?.credits_per_reply ?? 0) + (chosen.thinking ? offer.thinking.extra_credits : 0) + (chosen.web ? offer.web.extra_credits : 0)
+    + (hasImages && offer.images ? offer.images.extra_credits : 0);
   const open = async (id) => {
     try {
       const r = await chatApi.get(id);
@@ -86,19 +93,22 @@ export function ChatWorkspace() {
 
   async function send() {
     const content = text.trim();
-    if (!content || busy || sendingRef.current || !model) return;
+    if (!content || busy || sendingRef.current || !model || imagesBlocked) return;
     sendingRef.current = true; setBusy(true); setError(null); setText('');
     let thread = active; let created = false; const pending = `pending-${Date.now()}`;
     try {
+      // Images go to storage first, before anything is charged: a failed upload costs nothing.
+      const keys = [];
+      for (const it of att.items) keys.push(await uploadChatImage(await prepareImage(it.file, limits.maxEdge)));
       if (!thread) {
         thread = (await chatApi.create(draftModel || model.id)).thread; created = true;
         setActive(thread); setThreads((ts) => [thread, ...ts]);
       }
-      setMessages((m) => [...m, { id: `u-${pending}`, role: 'user', content, status: 'complete', credits: 0 }, { id: pending, role: 'assistant', content: '', status: 'streaming', credits: 0 }]);
+      setMessages((m) => [...m, { id: `u-${pending}`, role: 'user', content, status: 'complete', credits: 0, attachments: att.items.map(() => ({ type: 'image' })) }, { id: pending, role: 'assistant', content: '', status: 'streaming', credits: 0 }]);
       const ac = new AbortController(); abortRef.current = ac;
       let outcome = null; let streamError = null;
       const r = await sendTurn({
-        threadId: thread.id, text: content, key: makeIdempotencyKey(), options: chosen, signal: ac.signal,
+        threadId: thread.id, text: content, key: makeIdempotencyKey(), options: chosen, attachments: keys, signal: ac.signal,
         onEvent: (ev, d) => {
           if (ev === 'delta') setMessages((m) => m.map((x) => (x.id === pending ? { ...x, content: x.content + d.text } : x)));
           if (ev === 'error') streamError = d.error;
@@ -112,6 +122,7 @@ export function ChatWorkspace() {
         if (streamError) setError(chatErrorCopy(streamError));
         if (created) { chatApi.remove(thread.id).catch(() => {}); setThreads((ts) => ts.filter((t) => t.id !== thread.id)); setActive(null); }
       } else {
+        att.clear();                                 // sent: the images are spent, so the next reply starts clean
         if (streamError) setError(chatErrorCopy(streamError));
         await open(thread.id);                       // the saved messages, with their real status and price
       }
@@ -121,6 +132,7 @@ export function ChatWorkspace() {
       else {
         setMessages((m) => m.filter((x) => x.id !== pending && x.id !== `u-${pending}`)); setText(content);
         if (e instanceof GatewayError && e.code === 'insufficient_balance') setError(chatErrorCopy(e.code, { credits: price }));
+        else if (e instanceof Error && e.message === 'image_unreadable') setError(chatErrorCopy('image_unreadable'));
         else fail(e);
         if (created && thread) { chatApi.remove(thread.id).catch(() => {}); setThreads((ts) => ts.filter((t) => t.id !== thread.id)); setActive(null); }
       }
@@ -188,7 +200,16 @@ export function ChatWorkspace() {
             {messages.map((m) => (
               <article key={m.id} aria-label={m.role === 'user' ? 'You' : 'Assistant'} className={m.role === 'user' ? 'flex justify-end' : ''}>
                 <div className={m.role === 'user' ? 'max-w-[85%] rounded-2xl bg-vx-panel px-4 py-3' : 'w-full'}>
-                  {m.role === 'user' ? <p className="whitespace-pre-wrap break-words text-[15px]">{m.content}</p>
+                  {m.role === 'user' ? (
+                    <>
+                      <p className="whitespace-pre-wrap break-words text-[15px]">{m.content}</p>
+                      {m.attachments?.length > 0 && (
+                        <ul className="mt-2 flex flex-wrap gap-1.5" aria-label="Attached images">
+                          {m.attachments.map((a, i) => <li key={i} className="rounded-full border border-vx-border px-2 py-0.5 text-xs text-vx-fg-muted">{attachmentLabel(a)}</li>)}
+                        </ul>
+                      )}
+                    </>
+                  )
                     : <div aria-live={m.status === 'streaming' ? 'polite' : undefined}>{m.content ? <ChatText text={m.content} /> : <p className="text-vx-fg-muted">Thinking</p>}</div>}
                   {m.role === 'assistant' && m.status !== 'streaming' && <Footer m={m} />}
                 </div>
@@ -221,14 +242,24 @@ export function ChatWorkspace() {
                 )}
               </div>
             )}
+            <AttachChips items={att.items} onRemove={att.remove} disabled={busy} />
+            {hasImages && !imagesBlocked && (
+              <p className="mb-2 text-xs text-vx-fg-muted">Images are sent to the model provider to answer, and are deleted from our storage within a day.</p>
+            )}
+            {(att.notice || imagesBlocked) && (
+              <p role="status" className="mb-2 text-sm text-vx-fg-muted">
+                {imagesBlocked ? 'This model cannot read images. Remove them or pick another model.' : att.notice}
+              </p>
+            )}
             <div className="flex items-end gap-2 rounded-2xl border border-vx-border bg-vx-panel p-2 focus-within:border-vx-accent">
+              {offer.images && <AttachButton onPick={att.add} disabled={busy} full={att.items.length >= limits.maxAttachments} />}
               <label className="sr-only" htmlFor="chat-msg">Message</label>
               <textarea id="chat-msg" rows={1} value={text} maxLength={MAX_TEXT} placeholder="Message" onChange={(e) => setText(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
                 className="max-h-48 min-h-10 flex-1 resize-none bg-transparent px-2 py-2 text-[15px] text-vx-fg outline-none placeholder:text-vx-fg-faint" />
               {busy
                 ? <button type="button" onClick={() => abortRef.current?.abort()} className="rounded-full border border-vx-border px-4 py-2 text-sm font-semibold">Stop</button>
-                : <button type="button" onClick={send} disabled={!text.trim()} className="rounded-full bg-vx-accent px-4 py-2 text-sm font-semibold text-vx-accent-ink disabled:opacity-50">Send for {credits(price)}</button>}
+                : <button type="button" onClick={send} disabled={!text.trim() || imagesBlocked} className="rounded-full bg-vx-accent px-4 py-2 text-sm font-semibold text-vx-accent-ink disabled:opacity-50">Send for {credits(price)}</button>}
             </div>
             <p className="mt-1.5 px-1 text-xs text-vx-fg-muted">
               <span className="font-vx-mono text-vx-money vx-num">{credits(price)}</span> per reply, up to about {wordsFor(model.max_reply_tokens)} words. Stop after text appears and you keep it and the price. If nothing arrives, the Credits come back.
