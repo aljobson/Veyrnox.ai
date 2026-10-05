@@ -144,7 +144,7 @@ nothing else (no shared instructions, no files). Up to 50 per person, names uniq
 folder keeps its chats and unfiles them. Moving a chat does not change its place in the recency order. They are called folders, not
 projects, because Veyrnox.ai already has Projects (tenant workspaces for assets, ADR-0051) and the two are unrelated.
 
-Storage follows the chat tables: `chat_folders` (0208) has forced RLS and no table grants, is reached only through five
+Storage follows the chat tables: `chat_folders` (0209) has forced RLS and no table grants, is reached only through five
 `service_role`-only definer functions keyed by the verified auth id, and goes with the account (`ON DELETE CASCADE`).
 `chat_threads.folder_id` is `ON DELETE SET NULL`, and `chat_list_threads` now returns it. Moving is `PATCH /threads/:id` with
 `{folder_id}` alone (null unfiles); folders are `/api/v1/chat/folders`. No money path is touched: a folder name is never sent to
@@ -155,7 +155,7 @@ deploy before the migration without affecting chat. The data-export query includ
 
 Status: **Proposed**. The owner accepts it by merging the change.
 
-**Models.** Migration 0209 turns on the five rows staged since 0196: DeepSeek V4.1 Flash (1 Credit), Gemini 3.8 Flash (2), Grok 4.7 (3),
+**Models.** Migration 0210 turns on the five rows staged since 0196: DeepSeek V4.1 Flash (1 Credit), Gemini 3.8 Flash (2), Grok 4.7 (3),
 GPT-6.1 Sol (4) and Claude Opus 5.5 (7). Each was checked live on 2026-10-05 through the repository's adapter on its own row settings,
 plain and with Thinking: every reply non-empty, and the Thinking answer to a sums puzzle correct on all five. The migration pins slug,
 price, recorded cost, reply cap and reasoning effort, and fails unless exactly five rows change. Gemini 3.8 Flash took about 14 s to

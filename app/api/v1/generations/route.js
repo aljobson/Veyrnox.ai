@@ -23,6 +23,7 @@ import { NextResponse } from 'next/server';
 import { rpc, select, envConfig, SupabaseError } from '../../../../packages/db/supabase-client.js';
 import { capabilityFor, declaredInputs, checkSource } from '../../../../lib/modelCapabilities.js';
 import { refundRejectedSubmit } from '../../../../lib/submitRejection.js';
+import { freeAllowanceOn as isFreeAllowanceOn, takeFreeJob } from '../../../../lib/freeJob.js';
 import { classifySubmitFailure } from '../../../../lib/submitFailureClass.js';
 import { resolveUploadedSource, resolveAssetSource } from '../../../../lib/resolveSource.js';
 import { envConfig as r2EnvConfig, isConfigured as r2IsConfigured } from '../../../../packages/adapters/r2.js';
@@ -48,17 +49,6 @@ const MODEL_ID_RE = /^[a-z0-9][a-z0-9.-]{0,63}$/;
 const MAX_INPUTS_BYTES = 8 * 1024;
 const UNIT_SECONDS = 5;
 const RATE_LIMIT_PER_WINDOW = 10;
-
-// The spendable balance for a job that cost nothing: the client shows it, so it must never come back empty.
-async function balanceAfterFree(authId, cfg) {
-    try {
-        const credits = await rpc('read_user_credits', { p_auth_id: authId }, cfg);
-        const n = Number(credits && credits.balance);
-        return Number.isFinite(n) ? n : undefined;
-    } catch {
-        return undefined;
-    }
-}
 const RATE_WINDOW_SECONDS = 60;
 const MAX_SOURCES = 2;
 // `resolution` is deliberately absent: fal bills per tier and the catalog
@@ -284,7 +274,7 @@ export async function POST(req) {
 
     // 1. Look up the model in the catalog. The allowance column is asked for only when the flag is on, so a
     //    Worker running before migration 0205 is applied never queries a column that does not exist yet.
-    const freeAllowanceOn = process.env.FREE_ALLOWANCE_ENABLED === 'true';
+    const freeAllowanceOn = isFreeAllowanceOn(process.env);
     let modelRow;
     try {
         const rows = await select(
@@ -382,23 +372,11 @@ export async function POST(req) {
     // (rate limit, Frozen account) is answered exactly like the same refusal from ledger_debit. If the call itself
     // fails we fall through to the paid debit, which finds the job by idempotency key if the free one did land.
     if (freeAllowanceOn && Number(modelRow.free_allowance_per_day) > 0) {
-        try {
-            const free = await rpc('submit_free_job', {
-                p_user_id: userId,
-                p_idempotency_key: idempotencyKey,
-                p_model_id: modelId,
-                p_inputs: storedInputs,
-                p_limit_per_window: RATE_LIMIT_PER_WINDOW,
-                p_window_seconds: RATE_WINDOW_SECONDS,
-            }, cfg);
-            if (free && free.ok === false) debit = free;
-            else if (free && free.ok === true && free.taken === true) {
-                credits = 0;
-                debit = { ok: true, job_id: free.job_id, idempotent: free.idempotent === true, free: true, balance_after: await balanceAfterFree(authId, cfg) };
-            }
-        } catch (err) {
-            console.error('[generations] submit_free_job failed:', err);
-        }
+        debit = await takeFreeJob({
+            cfg, authId, userId, key: idempotencyKey, modelId, inputs: storedInputs,
+            limit: RATE_LIMIT_PER_WINDOW, windowSeconds: RATE_WINDOW_SECONDS,
+        });
+        if (debit && debit.free) credits = 0;
     }
     try {
         if (!debit) debit = await rpc('ledger_debit', {
