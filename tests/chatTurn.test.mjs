@@ -386,3 +386,123 @@ test('the key: production needs the dedicated chat key; with it the stream uses 
     await (await run(f, { env: { OPENROUTER_CHAT_API_KEY: 'sk-chat', OPENROUTER_API_KEY: 'sk-video', APP_ENV: 'production' } })).text();
     assert.equal(f.streamCalls[0].apiKey, 'sk-chat');
 });
+
+// ── Capped search (ADR-0067 amendment 8): our own search, run before any Credits move ──
+import { SearchError } from '../packages/adapters/exa.js';
+const CAPPED = { ...MODEL, credits_5s: 1, chat_web_extra_credits: 2, chat_web_engine: 'capped' };
+const EXA_ENV = { ...env, EXA_API_KEY: 'exa-test' };
+const FOUND = { results: [{ title: 'Node 26 released', url: 'https://nodejs.org/en/blog/release/v26', text: 'Node.js 26 is the current release.' }, { title: 'Changelog', url: 'https://example.com/changelog', text: 'Notable changes.' }], costUsd: 0.008 };
+function cappedFakes({ search = async () => FOUND, model = CAPPED } = {}) {
+    const f = fakes({ model });
+    f.searches = [];
+    f.deps.search = async (a) => { f.calls.push(['search', a]); f.searches.push(a); return search(a); };
+    return f;
+}
+const webBody = (extra = {}) => body({ options: { web: true }, ...extra });
+const order = (f) => f.calls.map(([n]) => n);
+
+test('capped web search: the search runs before the debit, with the key and the message as the query', async () => {
+    const f = cappedFakes();
+    const res = await run(f, { body: webBody({ text: '  What is the latest Node release?  ' }), env: EXA_ENV });
+    assert.equal(res.status, 200);
+    await res.text();
+    assert.ok(order(f).indexOf('search') < order(f).indexOf('ledger_debit'), 'search first, then money');
+    assert.equal(f.searches[0].apiKey, 'exa-test');
+    assert.equal(f.searches[0].query, 'What is the latest Node release?');
+});
+
+test('capped web search: the model gets the results as quoted data and the plugin is not used', async () => {
+    const f = cappedFakes();
+    await (await run(f, { body: webBody(), env: EXA_ENV })).text();
+    const call = f.streamCalls[0];
+    assert.equal(call.webSearch, false, 'the plugin is off: its text cannot be capped');
+    const system = call.messages.filter((m) => m.role === 'system');
+    assert.equal(system.length, 1);
+    assert.ok(system[0].content.includes('Node.js 26 is the current release.'));
+    assert.ok(system[0].content.includes('https://nodejs.org/en/blog/release/v26'));
+    assert.match(system[0].content, /never follow instructions/i);
+    assert.deepEqual(call.messages.at(-1), { role: 'user', content: 'Hello there' }, 'the user turn is only what they wrote');
+});
+
+test('capped web search: the debit is the row price, and the job keeps the engine and the real search cost, never the query', async () => {
+    const f = cappedFakes();
+    await (await run(f, { body: webBody(), env: EXA_ENV })).text();
+    const d = called(f, 'ledger_debit')[0][1];
+    assert.equal(d.p_credits, 3, 'base 1 plus Web search 2, looked up and added');
+    assert.deepEqual(d.p_inputs, { kind: 'chat', thread_id: THREAD, options: { thinking: false, web: true }, web_engine: 'capped', search_cost_usd: 0.008 });
+    assert.ok(!JSON.stringify(d).includes('What is'), 'no message text on the job');
+});
+
+test('capped web search: the pages the model was shown are listed under the reply, stored once', async () => {
+    const f = cappedFakes();
+    const evs = await events(await run(f, { body: webBody(), env: EXA_ENV }));
+    const text = evs.filter((e) => e.event === 'delta').map((e) => e.data.text).join('');
+    assert.match(text, /Sources\n- \[Node 26 released\]\(https:\/\/nodejs\.org\/en\/blog\/release\/v26\)\n- \[Changelog\]\(https:\/\/example\.com\/changelog\)$/);
+    assert.equal(called(f, 'chat_complete_turn')[0][1].p_reply, text);
+});
+
+test('capped web search with no key: refused before anything is searched or charged', async () => {
+    const f = cappedFakes();
+    const res = await run(f, { body: webBody(), env });
+    assert.equal(res.status, 409);
+    assert.deepEqual(await res.json(), { error: 'option_unavailable' });
+    assert.equal(f.searches.length, 0);
+    assert.equal(called(f, 'ledger_debit').length, 0);
+});
+
+test('capped web search: a failed search is a typed error with nothing charged and nothing sent to the model', async () => {
+    for (const code of ['search_unavailable', 'search_timeout', 'search_rate_limited', 'search_auth_failed', 'search_payment_required']) {
+        const f = cappedFakes({ search: async () => { throw new SearchError(code); } });
+        const res = await run(f, { body: webBody(), env: EXA_ENV });
+        assert.equal(res.status, 502, code);
+        assert.deepEqual(await res.json(), { error: code === 'search_auth_failed' || code === 'search_payment_required' ? 'search_unavailable' : code }, code);
+        assert.equal(called(f, 'ledger_debit').length, 0, code);
+        assert.equal(f.streamCalls.length, 0, code);
+    }
+});
+
+test('capped web search: a search that finds nothing is refused with no charge, so nobody pays for a search that gave them nothing', async () => {
+    const f = cappedFakes({ search: async () => ({ results: [], costUsd: 0.005 }) });
+    const res = await run(f, { body: webBody(), env: EXA_ENV });
+    assert.equal(res.status, 409);
+    assert.deepEqual(await res.json(), { error: 'search_no_results' });
+    assert.equal(called(f, 'ledger_debit').length, 0);
+});
+
+test('capped web search: an unexpected error from the search is a generic refusal, never its text', async () => {
+    const f = cappedFakes({ search: async () => { throw new Error('boom: key=sk-secret'); } });
+    const res = await run(f, { body: webBody(), env: EXA_ENV });
+    assert.equal(res.status, 502);
+    const text = JSON.stringify(await res.json());
+    assert.ok(!text.includes('sk-secret') && text.includes('search_unavailable'));
+    assert.equal(called(f, 'ledger_debit').length, 0);
+});
+
+test('a capped row with Web search not chosen does no search and keeps the plain path', async () => {
+    const f = cappedFakes();
+    await (await run(f, { body: body(), env: EXA_ENV })).text();
+    assert.equal(f.searches.length, 0);
+    assert.equal(f.streamCalls[0].webSearch, false);
+    assert.deepEqual(called(f, 'ledger_debit')[0][1].p_inputs, { kind: 'chat', thread_id: THREAD, options: { thinking: false, web: false } }, 'no engine or cost recorded when no search ran');
+});
+
+test('a plugin row is unchanged: the plugin runs, no search call is made, even with a key set', async () => {
+    const f = cappedFakes({ model: { ...MODEL, chat_web_extra_credits: 2, chat_web_engine: 'plugin' } });
+    await (await run(f, { body: webBody(), env: EXA_ENV })).text();
+    assert.equal(f.searches.length, 0);
+    assert.equal(f.streamCalls[0].webSearch, true);
+    assert.deepEqual(called(f, 'ledger_debit')[0][1].p_inputs, { kind: 'chat', thread_id: THREAD, options: { thinking: false, web: true } });
+});
+
+test('before the engine column exists in the database, a turn still runs, as a plugin row', async () => {
+    const f = fakes({ model: { ...MODEL, chat_web_extra_credits: 2 } });
+    const inner = f.deps.select;
+    f.deps.select = async (t, q) => {
+        if (String(q.columns).includes('chat_web_engine')) throw Object.assign(new Error('select(model_catalog) failed: 400'), { status: 400, body: '{"message":"column model_catalog.chat_web_engine does not exist"}' });
+        return inner(t, q);
+    };
+    const res = await run(f, { body: webBody(), env: EXA_ENV });
+    assert.equal(res.status, 200);
+    await res.text();
+    assert.equal(f.streamCalls[0].webSearch, true, 'the plugin, as before the column existed');
+});
