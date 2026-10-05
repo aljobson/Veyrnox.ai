@@ -24,6 +24,7 @@ import { rpc, select, envConfig, SupabaseError } from '../../../../packages/db/s
 import { capabilityFor, declaredInputs, checkSource } from '../../../../lib/modelCapabilities.js';
 import { refundRejectedSubmit } from '../../../../lib/submitRejection.js';
 import { freeAllowanceOn as isFreeAllowanceOn, takeFreeJob } from '../../../../lib/freeJob.js';
+import { templateStartId } from '../../../../lib/templateStart.js';
 import { classifySubmitFailure } from '../../../../lib/submitFailureClass.js';
 import { resolveUploadedSource, resolveAssetSource } from '../../../../lib/resolveSource.js';
 import { envConfig as r2EnvConfig, isConfigured as r2IsConfigured } from '../../../../packages/adapters/r2.js';
@@ -365,6 +366,11 @@ export async function POST(req) {
     // 3. Debit atomically. Creates jobs row too. Price = catalog unit price
     //    times the validated unit count; never a client-supplied number.
     let credits = priceFor(modelRow, pricedInputs);
+    // ADR-0072: the template this started from, recorded on the job for the Popular ranking only. It is believed only if it names a
+    // real template that belongs to this model, it never reaches a provider (the provider gets storedInputs / modelInputs below),
+    // and a bad or missing one is simply ignored.
+    const presetId = templateStartId(body && body.preset, modelId);
+    const jobInputs = presetId ? { ...storedInputs, preset_id: presetId } : storedInputs;
     let debit = null;
     // ADR-0069: a model with a free allowance waives the price of a job while the account has some left today.
     // submit_free_job takes the allowance and creates the job at 0 Credits with no ledger row; with none left it
@@ -373,7 +379,7 @@ export async function POST(req) {
     // fails we fall through to the paid debit, which finds the job by idempotency key if the free one did land.
     if (freeAllowanceOn && Number(modelRow.free_allowance_per_day) > 0) {
         debit = await takeFreeJob({
-            cfg, authId, userId, key: idempotencyKey, modelId, inputs: storedInputs,
+            cfg, authId, userId, key: idempotencyKey, modelId, inputs: jobInputs,
             limit: RATE_LIMIT_PER_WINDOW, windowSeconds: RATE_WINDOW_SECONDS,
         });
         if (debit && debit.free) credits = 0;
@@ -385,7 +391,7 @@ export async function POST(req) {
             p_credits: credits,
             p_reason: 'debit:generation',
             p_model_id: modelId,
-            p_inputs: storedInputs,
+            p_inputs: jobInputs,
             // Authoritative rate limit, counted under the same row lock as
             // the insert (0030). The RPC above is only the cheap early 429.
             p_limit_per_window: RATE_LIMIT_PER_WINDOW,

@@ -14,6 +14,7 @@ import { useCatalog } from '../../_lib/useCatalog';
 import { useFreeAllowance } from '../../_lib/useFreeAllowance';
 import { freeCost, freeLeftFor } from '../../_lib/freeAllowance';
 import { takeStudioDraft } from '../../_lib/landingDraft';
+import { templateStartId } from '../../../../lib/templateStart';
 import { DEFAULT_CINEMA, buildCinemaPrompt } from '../../_lib/cinema';
 import { CameraPanel } from '../../_components/CameraPanel';
 import { CharacterPanel } from '../../_components/CharacterPanel';
@@ -51,6 +52,7 @@ export default function CreateStudio() {
   const autoShortOn = useSyncExternalStore(never, autoShortFlag, off);
   const models = catalogModels.filter((m) => !m.isEdit && (autoShortOn || !m.takesTopic));
   const [modelId, setModelId] = useState(DEFAULT_MODEL);
+  const [presetParam, setPresetParam] = useState(null);
   const [tier, setTier] = useState(null);
   const [duration, setDuration] = useState('5s');
   const [aspect, setAspect] = useState('16:9');
@@ -89,6 +91,7 @@ export default function CreateStudio() {
     const params = new URLSearchParams(window.location.search);
     const wanted = params.get('model');
     if (wanted) setModelId(wanted);
+    setPresetParam(params.get('preset')); // a template's id, from its studio link; sent only while its own model is selected
     if (params.get('duration') === '10s') setDuration('10s');
     const draft = takeStudioDraft(window.sessionStorage, wanted);
     if (draft) setPrompt(draft.prompt);
@@ -253,6 +256,7 @@ export default function CreateStudio() {
           method: 'POST',
           body: JSON.stringify({
             model_id: modelId, idempotency_key: keys[i], inputs: inputsForIndex(inputs, i, n),
+            preset: templateStartId(presetParam, modelId) || undefined,
             source_keys: source_keys.length ? source_keys : undefined,
             source_assets: source_assets.length ? source_assets : undefined,
             consent: anySource ? true : undefined,
