@@ -33,7 +33,7 @@ const TIMEOUT_MS = 10 * 60 * 1000;
 const ROWS = [
     { id: 'mmaudio-v2-video', endpoint: 'fal-ai/mmaudio-v2', expect: '$0.008 (8s of audio at $0.001/s); catalog 1 Credit',
         inputs: { prompt: 'Soft ambient sound that fits the scene' } },
-    { id: 'topaz-upscale-video', endpoint: 'fal-ai/topaz/upscale/video', expect: 'tiered: $0.01/s to 720p, $0.02/s to 1080p, $0.08/s above, per second of the clip; catalog 49 Credits is the worst case for 10s',
+    { id: 'topaz-upscale-video', endpoint: 'fal-ai/topaz/upscale/video', expect: 'tiered: $0.01/s to 720p, $0.02/s to 1080p, $0.08/s above, per second of the clip; catalog 25 Credits is the worst case for a 5s source (0204; 0202 had 49 over 10s)',
         inputs: {} },
 ];
 
