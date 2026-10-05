@@ -58,6 +58,7 @@ spine instead.
 12. **Flag and preview.** `CHAT_ENABLED` (`wrangler.jsonc` vars, `"false"` in production) hides the route
     and the page. A per-browser preview switch, `localStorage.veyrnox_chat`, lets the owner see it on
     staging first, as with Social Cinema and Projects.
+    (Superseded by amendment 4: the preview switch is gone and `CHAT_ENABLED` is the only control.)
 
 ## Consequences
 
@@ -122,6 +123,17 @@ Do not use LaTeX or dollar-sign delimiters." It is joined, in a single system me
 when they have any (a single message because not every provider accepts several). The user's text comes after it, so their
 instructions still apply: a live check with "Answer in French" was obeyed. The line is about 20 tokens, inside the rounding
 already in the recorded worst-case costs, and a test caps its length. It is not shown to the user and not stored in the thread.
+
+## Amendment 4 2026-10-05: open to every signed-in user
+
+Status: **Proposed**, held until the owner opens chat. The owner accepts it by merging that change.
+
+The per-browser preview switch (`localStorage.veyrnox_chat`, `useChatPreview`) is removed. Chat is a normal tab, like Explore,
+Create and Library, for every signed-in user, and `CHAT_ENABLED` is the single control. With the flag off the API answers
+`chat_not_open` and the workspace says "Chat is not open yet", so turning chat off is one reviewed change to the production vars
+and a deploy (about three minutes), with no per-browser state to chase. Before this merges: the privacy notice covers chat and
+images (draft in `docs/product/chat-privacy-wording-draft.md`), the OpenRouter key is confirmed separate and capped, and the owner
+has used chat on production.
 
 ## Not decided here
 

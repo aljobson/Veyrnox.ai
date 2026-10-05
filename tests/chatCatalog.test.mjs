@@ -13,17 +13,22 @@ test('the public catalog read excludes text models', async () => {
     assert.match(seen.q.filter, /(^|&)active=eq\.true(&|$)/);
 });
 
-// Switched on in production on 2026-10-05 (ADR-0067), after: migrations 0193 to 0201 applied, a dedicated capped
-// OPENROUTER_CHAT_API_KEY set on the Worker (production refuses to fall back to the shared video key, see chatApiKey), and
-// the per-browser preview switch still in place, so only a browser that sets localStorage.veyrnox_chat can reach it.
-test('wrangler ships CHAT_ENABLED as the string "true" in production vars, and the preview switch still gates the screen', () => {
+// Open to every signed-in user (ADR-0067 amendment 4). CHAT_ENABLED is the one control: there is no per-browser switch any more,
+// so turning the flag off closes chat for everyone and the page then says so (chat_not_open) instead of a dead tab.
+test('chat is switched on in production and nothing else gates it per browser', () => {
     const text = readFileSync(new URL('../wrangler.jsonc', import.meta.url), 'utf8');
     const vars = text.slice(text.indexOf('"vars"'));
     const production = vars.slice(0, vars.indexOf('"env"') > 0 ? vars.indexOf('"env"') : undefined);
     assert.match(production, /"CHAT_ENABLED":\s*"true"/);
-    assert.doesNotMatch(production, /"CHAT_ENABLED":\s*"false"/);
-    const gate = readFileSync(new URL('../app/veyrnox/_lib/useChatPreview.js', import.meta.url), 'utf8');
-    assert.match(gate, /localStorage\.getItem\('veyrnox_chat'\) === '1'/, 'the screen is still behind the per-browser switch');
+    for (const f of ['app/veyrnox/app/chat/page.js', 'app/veyrnox/_components/NavBar.js']) {
+        const src = readFileSync(new URL(`../${f}`, import.meta.url), 'utf8');
+        assert.doesNotMatch(src, /useChatPreview|localStorage\.veyrnox_chat|veyrnox_chat['"]/, `${f} has no per-browser chat switch`);
+    }
+    assert.throws(() => readFileSync(new URL('../app/veyrnox/_lib/useChatPreview.js', import.meta.url)), /ENOENT/, 'the switch hook is gone');
+    const nav = readFileSync(new URL('../app/veyrnox/_components/NavBar.js', import.meta.url), 'utf8');
+    assert.match(nav, /key: 'chat', href: '\/app\/chat', label: 'Chat'/, 'Chat is a normal tab');
+    const api = readFileSync(new URL('../app/veyrnox/_lib/chatApi.js', import.meta.url), 'utf8');
+    assert.match(api, /chat_not_open/, 'a closed flag still reads as "not open yet", not an error');
 });
 
 // The route, the turn runner and the catalog rows must agree on the provider name. They once did not:
