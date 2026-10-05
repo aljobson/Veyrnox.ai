@@ -8,7 +8,8 @@
 // modelIdForName; `credits` must equal that model's 5s price
 // (tests/presetLinking.test.mjs). Prices shown come from the live catalog.
 
-export const PRESET_CATEGORIES = ['ALL', 'NEW', 'YOUR PHOTO', 'CINEMATIC', 'ANIME', 'FASHION', 'PRODUCTS', 'VFX', 'UGC', 'ADS'];
+// CARTOONS, MOVIES, FANTASY and REALISTIC are the Trends categories (ADR-0072); each has at least one template, or its filter would show an empty page.
+export const PRESET_CATEGORIES = ['ALL', 'NEW', 'YOUR PHOTO', 'CINEMATIC', 'ANIME', 'CARTOONS', 'MOVIES', 'FANTASY', 'REALISTIC', 'FASHION', 'PRODUCTS', 'VFX', 'UGC', 'ADS'];
 
 export const PRESETS = [
   { id: 'cctv-night', name: 'CCTV NIGHT', model: 'Wan 2.5', credits: 19, category: 'CINEMATIC', aspect: '16:9',
@@ -66,6 +67,18 @@ export const PRESETS = [
   { id: 'portal-burst', name: 'PORTAL BURST', model: 'Kling 2.6 Pro', credits: 17, category: 'VFX', aspect: '16:9', isNew: true,
     bg: 'linear-gradient(135deg,#050a1e 0%,#1a2a7a 55%,#60f0ff 100%)',
     prompt: 'A glowing circular portal tears open in the middle of a quiet forest path, leaves and light pulled into its swirl, camera slowly dollies back, volumetric god rays' },
+  { id: 'saturday-cartoon', name: 'SATURDAY CARTOON', model: 'Seedream 4', credits: 2, category: 'CARTOONS', aspect: '4:5', isNew: true,
+    bg: 'linear-gradient(160deg,#1a0a2a 0%,#6a2a9a 55%,#ffd23f 100%)',
+    prompt: 'Bold-outlined Saturday-morning cartoon of a clumsy robot chef in a chaotic kitchen, soup flying, flat bright colours, squash-and-stretch poses, thick ink lines, retro halftone shading' },
+  { id: 'noir-one-sheet', name: 'NOIR ONE-SHEET', model: 'Flux.2 [pro]', credits: 2, category: 'MOVIES', aspect: '4:5', isNew: true,
+    bg: 'linear-gradient(180deg,#05080c 0%,#12303a 55%,#e08a3c 100%)',
+    prompt: 'Theatrical one-sheet poster for a rain-soaked noir thriller: a lone detective under a streetlight, long shadows, teal and orange grade, clear space at the top for a title, film-poster composition' },
+  { id: 'floating-castle', name: 'FLOATING CASTLE', model: 'Seedream 4', credits: 2, category: 'FANTASY', aspect: '16:9', isNew: true,
+    bg: 'linear-gradient(135deg,#0a1230 0%,#3a2a7a 55%,#f0a0ff 100%)',
+    prompt: 'Epic fantasy matte painting of a castle floating above a glowing valley at dusk, waterfalls spilling into clouds, dragons circling the towers, volumetric light, rich painterly detail' },
+  { id: 'street-portrait', name: 'STREET PORTRAIT', model: 'Nano Banana', credits: 2, category: 'REALISTIC', aspect: '4:5', isNew: true,
+    bg: 'linear-gradient(160deg,#101418 0%,#3a4650 55%,#c8d0d8 100%)',
+    prompt: 'Photorealistic documentary street portrait of an elderly market vendor at golden hour, natural skin texture and lines, shallow depth of field, 85mm lens, candid expression, unposed' },
   { id: 'miniature-city', name: 'MINIATURE CITY', model: 'MiniMax Hailuo 02', credits: 9, category: 'VFX', aspect: '16:9',
     bg: 'linear-gradient(135deg,#0e1a0e 0%,#3a6a2a 55%,#c8f08a 100%)',
     prompt: 'Tilt-shift timelapse of a busy city crossroads that looks like a toy model, tiny cars and people streaming past, saturated colours, high vantage point' },
