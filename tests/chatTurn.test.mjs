@@ -453,7 +453,7 @@ test('a replay of a free reply returns it without calling the provider', async (
 });
 
 // ── ADR-0070: Deep research is refused until it is switched on and the row offers it ─────────────────────────
-const RESEARCH_MODEL = { ...MODEL, chat_research_extra_credits: 15, chat_research_write_max_tokens: 4096 };
+const RESEARCH_MODEL = { ...MODEL, chat_research_extra_credits: 15, chat_research_write_max_tokens: 4096, chat_research_search_model: 'cheap/search' };
 
 test('research off: the research columns are never requested and a research turn is refused before any money moves', async () => {
     const f = fakes({ model: RESEARCH_MODEL });
@@ -489,6 +489,8 @@ test('research: debits base plus the research extra, streams progress then the a
     assert.deepEqual(called(f, 'ledger_debit')[0][1].p_inputs.options, { thinking: false, web: false, research: true });
     assert.deepEqual(names(evs).filter((n) => n === 'progress').length > 0, true);
     assert.deepEqual(evs.filter((e) => e.event === 'progress').map((e) => e.data.step).filter((s, i, a) => a.indexOf(s) === i), ['plan', 'search', 'write']);
+    assert.ok(calls.length > 0 && calls.every((c) => c.model === 'cheap/search'), 'the plan and every search ran on the search model');
+    assert.equal(f.streamCalls[0].model, 'vendor/fast', 'the write ran on the row\'s own model');
     assert.ok(f.streamCalls.length > 0, 'the writer ran'); // the fake records each call twice in its default mode
     assert.deepEqual([f.streamCalls[0].maxTokens, f.streamCalls[0].reasoningEffort], [4096, 'high']);
     assert.match(evs.filter((e) => e.event === 'delta').map((e) => e.data.text).join(''), /Sources/);
