@@ -1,5 +1,5 @@
 /**
- * 0211 adds model_catalog.chat_web_engine: how a row's Web search runs. 'plugin' is OpenRouter's web plugin (what runs today);
+ * 0212 adds model_catalog.chat_web_engine: how a row's Web search runs. 'plugin' is OpenRouter's web plugin (what runs today);
  * 'capped' is our own search call with each result cut to a fixed length. It is additive, so the release before it keeps working,
  * and every existing row reads 'plugin'. A row cannot be 'capped' without a Web search price, and only a text row can offer it.
  */
@@ -18,7 +18,7 @@ const setup = async (db: pg.Client) => {
     for (const f of ['0193_chat.sql', '0194_chat_models_staged.sql', '0196_chat_models_reasoning.sql', '0197_chat_models_options.sql', '0198_chat_models_images.sql']) {
         await db.query(await read(f));
     }
-    return read('0211_chat_web_engine.sql');
+    return read('0212_chat_web_engine.sql');
 };
 const refused = async (db: pg.Client, sql: string, args: unknown[], pattern: RegExp, label: string) => {
     await db.query('SAVEPOINT s');

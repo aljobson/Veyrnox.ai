@@ -212,13 +212,13 @@ rate, so the Web search extra falls back to 1 to 2 Credits on most models.
 **The search runs before the debit.** If the search fails or the key is missing, the answer is a typed error with nothing charged;
 a reply is never charged for a search it did not get. The sources listed under the reply are the results the model was given.
 
-**Price and engine change together.** `chat_web_engine` defaults to `plugin` everywhere (0211, additive: the release before it keeps
+**Price and engine change together.** `chat_web_engine` defaults to `plugin` everywhere (0212, additive: the release before it keeps
 working). A later migration flips a row to `capped` and re-prices it in one statement, only after the capped search is live and its
 cost measured with a key. A `capped` row with no search key configured does not offer Web search at all and refuses it before any
-Credits move, so a low price can never be charged for the uncapped plugin. The code that reads the column ships only after 0211 is
+Credits move, so a low price can never be charged for the uncapped plugin. The code that reads the column ships only after 0212 is
 applied in that environment.
 
-**Order.** (1) 0211, (2) the code, (3) set `EXA_API_KEY`, measure, then the flip migration. Deep research (ADR-0070) builds on the
+**Order.** (1) 0212, (2) the code, (3) set `EXA_API_KEY`, measure, then the flip migration. Deep research (ADR-0070) builds on the
 capped search and is not priced until step 3 has real numbers.
 
 **Privacy.** The user's message text goes to Exa as the search query, as it already goes to the plugin's search engine through
