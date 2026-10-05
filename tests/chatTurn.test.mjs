@@ -3,6 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { runChatTurn } from '../lib/chatTurn.js';
 import { ChatProviderError } from '../packages/adapters/openrouterChat.js';
+import { PLATFORM_INSTRUCTION } from '../lib/chat.js';
 
 const THREAD = '3f2b8c1e-5d4a-4c9b-8e7f-1a2b3c4d5e6f';
 const AUTH = '11111111-1111-4111-8111-111111111111';
@@ -153,7 +154,7 @@ test('success: events in order, one save, charged, no refund; the provider gets 
     const [call] = f.streamCalls;
     assert.equal(call.apiKey, 'sk-test'); assert.equal(call.model, 'vendor/fast'); assert.equal(call.maxTokens, 1024);
     assert.deepEqual(call.messages.map((m) => [m.role, m.content]), [
-        ['system', 'Be brief.'], ['user', 'earlier'], ['assistant', 'earlier reply'], ['user', 'Hello there']]);
+        ['system', `${PLATFORM_INSTRUCTION}\n\nBe brief.`], ['user', 'earlier'], ['assistant', 'earlier reply'], ['user', 'Hello there']]);
     const sub = called(f, 'job_submitted')[0][1];
     assert.deepEqual(sub, { p_job_id: JOB, p_provider: 'openrouter-chat', p_provider_job_id: JOB });
 });

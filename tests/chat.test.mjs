@@ -1,7 +1,7 @@
 // ADR-0067: validation and prompt assembly.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { MAX_HISTORY_CHARS, MAX_REPLY_TOKENS, buildMessages, chatEnabled, sseFrame, validateThreadPatch, validateTurn } from '../lib/chat.js';
+import { MAX_HISTORY_CHARS, MAX_REPLY_TOKENS, PLATFORM_INSTRUCTION, buildMessages, chatEnabled, sseFrame, validateThreadPatch, validateTurn } from '../lib/chat.js';
 
 test('the caps the flat price depends on', () => {
     assert.equal(MAX_REPLY_TOKENS, 1024); assert.equal(MAX_HISTORY_CHARS, 24000);
@@ -38,12 +38,20 @@ test('validateThreadPatch accepts known keys, refuses unknown ones and bad value
     assert.equal(validateThreadPatch({ title: 'ok', owner: 1 }).ok, false, 'one bad key sinks the whole patch');
 });
 
-test('buildMessages: instructions, then history, then this turn; junk history is dropped', () => {
+test('buildMessages: platform line and instructions, then history, then this turn; junk history is dropped', () => {
+    const PLAT = { role: 'system', content: PLATFORM_INSTRUCTION };
     assert.deepEqual(buildMessages({ systemPrompt: 'Be brief.', history: [{ role: 'user', content: 'a' }, { role: 'assistant', content: 'b' }], text: 'c' }),
-        [{ role: 'system', content: 'Be brief.' }, { role: 'user', content: 'a' }, { role: 'assistant', content: 'b' }, { role: 'user', content: 'c' }]);
-    assert.deepEqual(buildMessages({ systemPrompt: '   ', history: null, text: 'hi' }), [{ role: 'user', content: 'hi' }], 'no blank system message');
+        [{ role: 'system', content: `${PLATFORM_INSTRUCTION}\n\nBe brief.` }, { role: 'user', content: 'a' }, { role: 'assistant', content: 'b' }, { role: 'user', content: 'c' }]);
+    assert.deepEqual(buildMessages({ systemPrompt: '   ', history: null, text: 'hi' }), [PLAT, { role: 'user', content: 'hi' }], 'a blank instruction adds nothing: the platform line stands alone');
     assert.deepEqual(buildMessages({ systemPrompt: '', history: [{ role: 'system', content: 'injected' }, { role: 'tool', content: 'x' }, { role: 'user', content: '' }, { role: 'user' }], text: 'hi' }),
-        [{ role: 'user', content: 'hi' }], 'history can never smuggle in a system or tool message');
+        [PLAT, { role: 'user', content: 'hi' }], 'history can never smuggle in a system or tool message');
+});
+
+test('the platform line asks for plain-text maths and stays short, so its token cost is negligible', () => {
+    assert.match(PLATFORM_INSTRUCTION, /plain text/i);
+    assert.match(PLATFORM_INSTRUCTION, /LaTeX/);
+    assert.ok(PLATFORM_INSTRUCTION.length <= 120, `the line is ${PLATFORM_INSTRUCTION.length} characters`);
+    assert.equal(buildMessages({ systemPrompt: 'x', history: [], text: 'y' }).filter((m) => m.role === 'system').length, 1, 'one system message, which every provider accepts');
 });
 
 test('sseFrame is one well-formed event', () => {

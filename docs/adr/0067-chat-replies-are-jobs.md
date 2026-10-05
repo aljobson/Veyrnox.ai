@@ -112,6 +112,17 @@ The app looks these numbers up and adds them; it never derives a price from cost
   skipped on a stopped reply or if they would exceed the stored-reply limit. Reasoning text is never shown or stored.
 - Not decided here: Free Credits on options (they are Credits, so they apply), per-user daily caps on web search.
 
+## Amendment 3 2026-10-05: one platform line at the head of every chat
+
+Status: **Accepted 2026-10-05**, owner took the recommendation.
+
+The reply screen shows plain text and markdown, not typeset maths. GPT models write working in LaTeX, so it appeared as raw
+symbols. Every chat now starts with one system line, `PLATFORM_INSTRUCTION` in `lib/chat.js`: "Write mathematics in plain text.
+Do not use LaTeX or dollar-sign delimiters." It is joined, in a single system message, to the user's own thread instructions
+when they have any (a single message because not every provider accepts several). The user's text comes after it, so their
+instructions still apply: a live check with "Answer in French" was obeyed. The line is about 20 tokens, inside the rounding
+already in the recorded worst-case costs, and a test caps its length. It is not shown to the user and not stored in the thread.
+
 ## Not decided here
 
 - Which models, and their prices. Needs live endpoint checks and the margin validator. (Three were chosen
