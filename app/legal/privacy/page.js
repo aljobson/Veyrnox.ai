@@ -47,7 +47,7 @@ export default function Privacy() {
             </ul>
 
             <h2>Sharing</h2>
-            <p>We share data only with the companies needed to run the service: authentication and database hosting, edge hosting and storage, AI model providers and the model gateway that routes requests to them, Resend for the emails we send about your account, and Stripe, Inc. for credit pack purchases. Each of our processors is bound by a data-processing agreement; Stripe, Inc. acts as its own controller for the purchase it makes as Merchant of Record. We do not sell personal data.</p>
+            <p>We share data only with the companies needed to run the service: authentication and database hosting, edge hosting and storage, AI model providers and the model gateway that routes requests to them, Resend for the emails we send about your account, and Stripe, Inc. for credit pack purchases. Stripe, Inc. acts as its own controller for the purchase it makes as Merchant of Record. We do not sell personal data.</p>
 
             <h2>Your rights</h2>
             <p>You can access, correct, export or delete your data, and object to or restrict certain processing. See <a href="/legal/gdpr">GDPR &amp; Data Rights</a> for how. You may also complain to the UK Information Commissioner&rsquo;s Office or your local supervisory authority.</p>
