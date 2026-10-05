@@ -22,6 +22,8 @@ const WEB_FEE = 0.02, WEB_EXTRA_INPUT = 16000, EXTRA_OUTPUT = 8192 - 4096;
 const setup = async (db: pg.Client) => {
     const read = (n: string) => readFile(new URL(`./schema/supabase/${n}`, import.meta.url), 'utf8');
     await db.query(await read('0029_cost_unit_and_deactivate_seedance.sql'));
+    // Start from no chat rows, whatever earlier migrations on this database have already done (all in one rolled-back transaction).
+    await db.query("DELETE FROM public.model_catalog WHERE id LIKE 'chat-%' AND provider = 'openrouter-chat'");
     await db.query(await read('0194_chat_models_staged.sql'));
     await db.query(await read('0196_chat_models_reasoning.sql'));
     return read('0197_chat_models_options.sql');
