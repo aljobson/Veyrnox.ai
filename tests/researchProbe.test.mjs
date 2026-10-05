@@ -1,6 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parseQueries, runOne, worstCase, runProbe, fetchRates, LIMITS } from '../scripts/measure-chat-research.mjs';
+import { parseQueries, runOne, worstCase, runProbe, fetchRates, isMain, LIMITS } from '../scripts/measure-chat-research.mjs';
+import { mkdtempSync, writeFileSync, symlinkSync, realpathSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 /** A fake OpenRouter: the plan lists `planLines`, every call reports `usage`. */
 function fakeFetch({ planLines = ['a', 'b', 'c'], cost = { plan: 0.001, search: 0.03, write: 0.2 }, fail = null } = {}) {
@@ -139,4 +143,14 @@ test('empty searches are counted and the search effort is off', async () => {
     };
     const run = await runOne({ fetchImpl, apiKey: 'k', model: 'm/x', question: 'q' });
     assert.equal(run.emptySearches, 1);
+});
+
+test('isMain sees through a symlinked path, so a script run from a link still runs', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'probe-'));
+    const real = join(dir, 'real.mjs'); writeFileSync(real, '');
+    const link = join(dir, 'link.mjs'); symlinkSync(real, link);
+    assert.equal(isMain(link, pathToFileURL(realpathSync(real)).href), true, 'launched through a link');
+    assert.equal(isMain(real, pathToFileURL(real).href), true);
+    assert.equal(isMain(join(dir, 'other.mjs'), pathToFileURL(real).href), false, 'a different file is not main');
+    assert.equal(isMain(undefined, pathToFileURL(real).href), false);
 });

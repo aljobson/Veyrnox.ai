@@ -20,6 +20,7 @@
  * printed, only the status code.
  */
 import { fileURLToPath } from 'node:url';
+import { realpathSync } from 'node:fs';
 
 export const URL_COMPLETIONS = 'https://openrouter.ai/api/v1/chat/completions';
 export const MODELS = ['anthropic/claude-sonnet-5.5', 'openai/gpt-6-luna'];
@@ -146,7 +147,9 @@ export async function runProbe({ fetchImpl = fetch, apiKey, models = MODELS, que
     return { byModel, spent, stopped: false };
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+// Compare real paths: on macOS /tmp is a link to /private/tmp, and a plain comparison silently skipped the whole run.
+export const isMain = (argv1, metaUrl) => { try { return realpathSync(argv1) === realpathSync(fileURLToPath(metaUrl)); } catch { return false; } };
+if (isMain(process.argv[1], import.meta.url)) {
     const args = process.argv.slice(2);
     const run = args.includes('--run');
     const only = args.find((a) => a.startsWith('--only='))?.slice(7);
