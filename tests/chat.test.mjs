@@ -57,3 +57,18 @@ test('the platform line asks for plain-text maths and stays short, so its token 
 test('sseFrame is one well-formed event', () => {
     assert.equal(sseFrame('delta', { text: 'hi\nthere' }), 'event: delta\ndata: {"text":"hi\\nthere"}\n\n');
 });
+
+import { chatApiKey } from '../lib/chat.js';
+
+test('chat uses its own OpenRouter key when set, and in production nothing else', () => {
+    assert.equal(chatApiKey({ OPENROUTER_CHAT_API_KEY: 'sk-chat', OPENROUTER_API_KEY: 'sk-video', APP_ENV: 'production' }), 'sk-chat');
+    assert.equal(chatApiKey({ OPENROUTER_CHAT_API_KEY: 'sk-chat', OPENROUTER_API_KEY: 'sk-video' }), 'sk-chat', 'the dedicated key wins everywhere');
+    // Production never quietly spends the shared video key on chat: with no dedicated key chat is simply not configured.
+    assert.equal(chatApiKey({ OPENROUTER_API_KEY: 'sk-video', APP_ENV: 'production' }), '');
+    assert.equal(chatApiKey({ OPENROUTER_CHAT_API_KEY: '', OPENROUTER_API_KEY: 'sk-video', APP_ENV: 'production' }), '');
+    // Staging and local development keep using the shared key, as before.
+    assert.equal(chatApiKey({ OPENROUTER_API_KEY: 'sk-video', APP_ENV: 'staging' }), 'sk-video');
+    assert.equal(chatApiKey({ OPENROUTER_API_KEY: 'sk-video' }), 'sk-video');
+    assert.equal(chatApiKey({}), '');
+    assert.equal(chatApiKey({ OPENROUTER_CHAT_API_KEY: 5 }), '', 'a non-string is not a key');
+});

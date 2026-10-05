@@ -128,5 +128,6 @@ already in the recorded worst-case costs, and a test caps its length. It is not 
 - Which models, and their prices. Needs live endpoint checks and the margin validator. (Three were chosen
   and priced on 2026-10-05; seven premium rows are staged inactive by 0196 awaiting owner prices.)
 - Attachments, voice input, assistants, sharing links. Each needs its own cost story.
-- Whether Free Credits (10) should be spendable on chat. They are, because they are Credits; the owner may
-  prefer to reserve them for media.
+- ~~Whether Free Credits (10) should be spendable on chat.~~ Decided 2026-10-05: they are, because they are Credits.
+- ~~A per-user daily cap on web search.~~ Decided 2026-10-05: none. The buyer pays the extra Credits, which are priced above the
+  recorded worst case, the 10-per-minute limit applies, and spend is bounded by the account's Credits.

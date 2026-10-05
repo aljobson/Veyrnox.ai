@@ -197,6 +197,8 @@
   //                               kie.ai submit + callback HMAC (ADR-0020)
   //   OPENROUTER_API_KEY, OPENROUTER_WEBHOOK_SECRET
   //                               OpenRouter video submit + webhook signature (ADR-0020)
+  //   OPENROUTER_CHAT_API_KEY      OpenRouter key for Chat only, with its own spend cap (ADR-0067). Required in
+  //                               production; staging falls back to OPENROUTER_API_KEY
   //   TYPESAFE_API_KEY            Jev classifier for provider submit refusals (lib/jev.js, ADR-0066)
   //   STRIPE_SECRET_KEY           Checkout Session create + session re-fetch (packages/adapters/stripe.js);
   //                               sk_test_… until the live account clears review (ADR-0031). Its prefix
