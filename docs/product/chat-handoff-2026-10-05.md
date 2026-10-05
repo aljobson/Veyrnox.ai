@@ -36,10 +36,42 @@ provider call has been made (no text model is active).
    dependency and no raw HTML (the CI grep gate forbids it). Behaviour to port from the prototype: streaming with Stop, pin/rename/delete/
    search, per-chat instructions, copy reply, cost shown in Credits before sending, "No Credits used" after a failed reply.
 2. **Docs**: `CONTEXT.md` glossary (Chat Thread, Chat Reply; avoid "token" for Credits), `CHANGELOG.md`, `docs/product/APP-FLOW.md`/`UI-UX.md` rows.
-3. **Operator work, owner only**: choose text models, insert catalog rows with `active = false`, verify each OpenRouter slug live,
-   price `credits_5s` so `provider_cost_per_unit` (worst case at 1,024 reply tokens and 24,000 history characters) clears the ADR-0014
-   margin floor (`packages/catalog/margin-validator`), then activate and set `CHAT_ENABLED` to `"true"` on staging first.
+3. **Operator work, owner only**: three rows are staged inactive by migration 0194 (see "Candidate models" below). Still to do: verify each
+   OpenRouter slug answers a live streamed request on staging, then activate (a row-count-asserted UPDATE migration, README pattern) and set
+   `CHAT_ENABLED` to `"true"` on staging first. Premium models need adapter work first (below).
 4. ~~ADR-0067 acceptance~~ done 2026-10-05.
+
+## Candidate models
+
+Prices from OpenRouter's public model list, read 2026-10-05; re-check before activating. Worst case per reply is 9,000 input tokens
+(24,000 history + 4,000 instruction + 8,000 text characters) plus 1,024 output tokens. Floor: `credits >= ceil(cost / 0.01796)`
+(`docs/pricing/50-percent-margin.md`). A typical reply is far cheaper, so real margin is higher than the floor.
+
+**Staged by 0194 (no reasoning to manage):**
+
+| Catalog id | OpenRouter slug | Context | Worst-case cost | Min Credits | Staged |
+|---|---|---:|---:|---:|---:|
+| `chat-llama-4-maverick` | `meta-llama/llama-4-maverick` | 1,048k | $0.0024 | 1 | 1 |
+| `chat-ministral-14b` | `mistralai/ministral-14b-2512` | 262k | $0.0021 | 1 | 1 |
+| `chat-mistral-small` | `mistralai/mistral-small-2603` | 262k | $0.0020 | 1 | 1 |
+
+**Held back: reasoning models.** The adapter sends no `reasoning` parameter and `max_tokens` (1,024) covers hidden reasoning too, so
+a model that reasons by default can spend the whole cap thinking and return an empty reply (refunded, but a poor result). Before adding
+any of these, the adapter needs to send a low-effort setting (OpenRouter's `reasoning` object; supported efforts differ per model) and
+the reply cap needs a decision. Floors below use the same worst case, which still holds because `max_tokens` bounds reasoning:
+
+| OpenRouter slug | Reasoning | Worst-case cost | Min Credits |
+|---|---|---:|---:|
+| `openai/gpt-6-luna` | optional, can be set to none | $0.0014 | 1 |
+| `google/gemini-3.8-flash` | mandatory | $0.0106 | 1 |
+| `deepseek/deepseek-v4.1-flash` | optional, on by default | $0.0039 | 1 |
+| `qwen/qwen3.8-flash` | optional, on by default | $0.0018 | 1 |
+| `anthropic/claude-sonnet-5.5` | mandatory | $0.0282 | 2 |
+| `openai/gpt-6.1-sol` | mandatory | $0.0282 | 2 |
+| `x-ai/grok-4.7` | mandatory | $0.0241 | 2 |
+| `anthropic/claude-opus-5.5` | mandatory | $0.0565 | 4 |
+
+Not priced: web search (the adapter has none) and image input.
 
 ## Re-running the database checks locally (no Docker)
 
