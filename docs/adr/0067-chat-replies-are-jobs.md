@@ -206,8 +206,10 @@ makes one call to Exa (`POST https://api.exa.ai/search`, a constant URL; the key
 message, asking for 3 results and at most 2,000 characters of text each (`contents.text.maxCharacters`), cuts the text again on our
 side, and puts it in the system message as untrusted quoted data with its source links. Nothing the page says can add a step or change
 the price: the model gets a bounded block of text and answers. The worst case is then real: one search fee (read from Exa's own
-`costDollars.total` on every call and kept on the job as `search_cost_usd`) plus at most about 2,000 injected tokens at the model's
-rate, so the Web search extra falls back to 1 to 2 Credits on most models.
+`costDollars.total` on every call and kept on the job as `search_cost_usd`) plus at most 7,000 injected tokens at the model's rate
+(7,000 characters at one token per character, the ceiling for any language), so the Web search extra falls back to 1 to 3 Credits.
+Measured 2026-10-05 with the real key: Exa charged a flat $0.007 per search (3 results, about 6,000 characters), so the fee bound is
+$0.011 (the dearest search x 1.5, rounded up).
 
 **The search runs before the debit.** If the search fails or the key is missing, the answer is a typed error with nothing charged;
 a reply is never charged for a search it did not get. The sources listed under the reply are the results the model was given.

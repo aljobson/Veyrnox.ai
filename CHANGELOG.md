@@ -7,6 +7,7 @@ Changes that touch the money spine, the ledger or the catalog are marked **[mone
 ## Unreleased (2026-10-05)
 
 ### Added
+- Capped web search (ADR-0067 amendment 8): our own search call (Exa) with each result cut to 2,000 characters and at most 3 results, run before any Credits move, used when a row's `chat_web_engine` is `capped` and `EXA_API_KEY` is set. A failed or empty search is a typed refusal with nothing charged. No row is flipped yet, so nothing a user sees changes. `scripts/measure-capped-search.mjs` measures the real fee
 - `model_catalog.chat_web_engine` (0213, ADR-0067 amendment 8): how a row's Web search runs, `plugin` (today) or `capped` (our own search with a fixed text length). Additive; every row reads `plugin`. Nothing a user sees changes
 - Chat settings panel and a two-level model picker (ADR-0067 amendment 6): family then model, a Low/Medium/High cost filter, collapsible Capabilities, Tools, System prompt and About sections, Reset all and Open all; instructions can be written before the first message. `/api/v1/chat/models` now returns each model's family
 - Five more chat models turned on (0211): DeepSeek V4.1 Flash, Gemini 3.8 Flash, Grok 4.7, GPT-6.1 Sol, Claude Opus 5.5. New chats open on the cheapest model
