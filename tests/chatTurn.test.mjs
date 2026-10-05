@@ -31,7 +31,13 @@ function fakes({ replies = {}, model = MODEL, stream } = {}) {
         if (r instanceof Error) throw r;
         return typeof r === 'function' ? r(args) : r;
     };
-    const select = async () => (model ? [model] : []);
+    // Return only the columns the real query asks for, as PostgREST does. A fake that returned the whole row
+    // hid a missing column once: the turn never fetched the images price, so staging refused every image.
+    const select = async (_table, q) => {
+        if (!model) return [];
+        const wanted = String((q && q.columns) || '').split(',').map((c) => c.trim()).filter(Boolean);
+        return [Object.fromEntries(wanted.filter((c) => c in model).map((c) => [c, model[c]]))];
+    };
     const streamCalls = [];
     const streamFn = stream || (async function* (a) { streamCalls.push(a); yield { delta: 'Hi ' }; yield { delta: 'there.' }; });
     return { calls, streamCalls, deps: { rpc, select, stream: async function* (a) { streamCalls.push(a); yield* streamFn(a); } } };

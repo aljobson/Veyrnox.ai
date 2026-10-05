@@ -2,11 +2,13 @@
 import { useState } from 'react';
 import { parseMarkdown } from '../../../../lib/chatMarkdown.js';
 
-// Turns parsed blocks into React elements. Every string is a text node: nothing here can inject markup.
+// Turns parsed blocks into React elements. Every string is a text node and every link address has been checked
+// as plain http(s) by the parser: nothing here can inject markup or a script address.
 function Inline({ parts }) {
   return parts.map((p, i) => (p.t === 'code'
     ? <code key={i} className="rounded bg-vx-border/60 px-1 font-vx-mono text-[0.9em]">{p.v}</code>
     : p.t === 'strong' ? <strong key={i} className="font-semibold text-vx-fg">{p.v}</strong>
+    : p.t === 'link' ? <a key={i} href={p.href} target="_blank" rel="noopener noreferrer nofollow" className="text-vx-accent underline underline-offset-2">{p.v}</a>
     : <span key={i}>{p.v}</span>));
 }
 
