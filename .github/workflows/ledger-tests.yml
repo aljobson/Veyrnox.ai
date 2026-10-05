@@ -33,6 +33,7 @@ on:
       - "scripts/test-chat-folders.mjs"
       - "scripts/test-free-allowance-jobs.mjs"
       - "scripts/test-chat-research-columns.mjs"
+      - "scripts/test-chat-personas.mjs"
       - "scripts/test-popular-templates.mjs"
       - "scripts/test-referral-attribution.mjs"
       - "scripts/test-referral-rewards.mjs"
@@ -162,6 +163,7 @@ jobs:
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-chat-folders.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-free-allowance-jobs.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-chat-research-columns.mjs
+          DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-chat-personas.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-popular-templates.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-referral-attribution.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-referral-rewards.mjs
