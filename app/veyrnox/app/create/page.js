@@ -258,12 +258,14 @@ export default function CreateStudio() {
             consent: anySource ? true : undefined,
           }),
         });
+        // A job that took a free allowance (ADR-0069) cost nothing; the server says so.
+        const jobCredits = submitted.free_allowance === true ? 0 : unitCost;
         // The first accepted job replaces the previous click's jobs.
-        (i === 0 ? startJobs : addJob)({ job_id: submitted.job_id, state: 'queued', credits: unitCost, model_id: modelId });
+        (i === 0 ? startJobs : addJob)({ job_id: submitted.job_id, state: 'queued', credits: jobCredits, model_id: modelId });
         pushJobHistory({
           job_id: submitted.job_id,
           model_id: modelId,
-          credits: unitCost,
+          credits: jobCredits,
           prompt: prompt.slice(0, 60),
           name: prompt.slice(0, 40),
         });

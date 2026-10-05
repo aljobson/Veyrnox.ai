@@ -396,9 +396,13 @@ function JobCard({ row, models, selectable, selected, onToggle, starred, onStar 
   // No delta for `unknown`: a +N would claim a refund landed and a −N would
   // claim the debit stands, and we do not know which.
   // No delta while a refund is owed but not yet made: +N would claim it landed.
+  // A job that used a free allowance (ADR-0069) has credits 0: say FREE, and show nothing if it failed
+  // (its allowance went back, there is no refund line to claim).
+  const free = row.credits === 0;
   const delta = row.state === 'unknown' || refundPending ? ''
+    : free ? (row.state === 'failed' ? '' : 'FREE')
     : row.state === 'failed' ? `+${row.credits}` : `−${row.credits}`;
-  const deltaCls = row.state === 'failed' ? 'text-vx-accent' : 'text-vx-fg-muted';
+  const deltaCls = free || row.state === 'failed' ? 'text-vx-accent' : 'text-vx-fg-muted';
   // Live catalog (tokens.js fallback) so newly added models show their name.
   const model = models.find((m) => m.id === row.model_id);
   return (
