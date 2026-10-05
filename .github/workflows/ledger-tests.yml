@@ -35,6 +35,7 @@ on:
       - "scripts/test-chat-research-columns.mjs"
       - "scripts/test-popular-templates.mjs"
       - "scripts/test-referral-attribution.mjs"
+      - "scripts/test-referral-rewards.mjs"
       # A change to a route that alters RPC arguments could not run these.
       - "app/api/v1/**"
       # Nor could a webhook or an orchestrator, which call credit_top_up,
@@ -163,6 +164,7 @@ jobs:
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-chat-research-columns.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-popular-templates.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-referral-attribution.mjs
+          DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-referral-rewards.mjs
 
       - name: Run catalog margin-floor tests
         run: npx tsx --test packages/catalog/margin-validator.test.ts

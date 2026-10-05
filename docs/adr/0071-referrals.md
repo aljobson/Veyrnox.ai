@@ -90,4 +90,13 @@ highest **open PR** (see CLAUDE.md), not just after main.
 
 **Open for the owner before part 2 can ship the sign-up capture.** A referral link carries the code in `?ref=`, and the sign-up flow leaves the page (email confirmation, OAuth), so the code has to survive in this browser until the first signed-in load. That is a new item for the storage notice and the privacy policy, which today list only the sign-in session, recent job display history and the theme. Two options: keep the code in `sessionStorage` for the tab and disclose it, or do not carry it and attribute only when the friend signs up in the same page load. The first is what makes the feature work; it needs the notice and policy updated in the same change.
 
-Remaining parts: rewards and the release sweep with caps and the reconcile check (part 2), clawback and the account panel (part 3).
+**Part 2, rewards (migration `0218`, 2026-10-05).** The first referral migration that moves Credits, and only through `ledger_grant`.
+
+- `referral_sweep()` runs hourly (`veyrnox-referral-sweep`, minute 23). It first qualifies: a friend's first credited Pack makes one pending reward of 10% of that Pack's Credits, rounded down, eligible 14 days after the Pack was credited. A Pack too small to earn a whole Credit earns nothing.
+- It then releases what is due. A refund of any amount cancels it (`refunded`); a Freeze tied to that Pack cancels it (`disputed`). A frozen friend or referrer, or a referrer who is not a signed-up account, waits. At most 20 rewards and 2,000 reward Credits per referrer per UTC month, counted under a per-referrer lock; a capped reward stays pending and releases when the month rolls over.
+- The grant is `ledger_grant(referrer, credits, 'grant:referral', 'referral-<referee id>')`, so the ledger reason is `grant:referral#referral-<id>` and a replay mints nothing. The Credits are Pack Credits, never Free Credits.
+- No request path mints a reward: only the sweep does. Referrals exist only once the flag-gated attach route has run, so with `REFERRALS_ENABLED` off the sweep finds nothing.
+- `reconcile_referrals()` returns zero rows when every released reward has its one ledger entry for the right Credits and account, no referral grant exists without a released reward, every reward is 10% of its friend's credited Pack, and no referrer is over either monthly cap. It is the seventh check in the nightly `veyrnox-reconcile-balances` job (the 0207 command, otherwise unchanged).
+- A friend's refund or dispute **after** release is not handled yet. That is part 3's clawback (`reverse:referral`, capped at the referrer's balance).
+
+Remaining: clawback after release and the account panel (part 3), and the sign-up capture (waiting on the storage-disclosure decision above).
