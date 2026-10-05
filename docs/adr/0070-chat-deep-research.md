@@ -1,6 +1,6 @@
 # ADR-0070 — Chat Deep research: a bounded, priced multi-step option
 
-- **Status**: **Proposed 2026-10-05**. Nothing is built. Needs the owner's answers at the end and a live cost check (below).
+- **Status**: **Accepted 2026-10-05** (owner: "go with recommendation"). Nothing is built. Prices still need the live cost check below before any row offers it.
 - **Related**: ADR-0067 (chat replies are jobs; a reply is one fixed price, safe because replies are capped), ADR-0067 amendment 2 (Thinking and Web search as priced options), ADR-0068 (image attachments), CLAUDE.md "Money & billing"
 
 ## Context
@@ -59,10 +59,11 @@ Build Deep research **ourselves, out of bounded steps we already price**, instea
 - Price is higher than Web search (several calls), and the UI shows it before Send like every option.
 - More moving parts than one call, but every part is a thing we already measure.
 
-## Open questions for the owner
+## Owner's decisions (2026-10-05, "go with recommendation")
 
-1. Is a bounded 4-search research good enough, or do you want the open-ended depth Syntx's provider models have (and accept a higher,
-   less predictable price)?
-2. Which models should offer it (suggest the strongest two, not the cheap ones)?
-3. Should the answer be saved as a normal chat reply only, or also exportable as a document?
-4. Wall-clock ceiling: 120 s, or longer with the run continuing in the background and a notification?
+1. **Bounded 4-search research**, not an open-ended provider call. A fixed, priced price beats open-ended depth.
+2. **The strongest two models only**: Claude Sonnet 5.5 and GPT-6 Luna, the two premium chat models already activated on staging.
+3. **A normal chat reply only.** No document export in v1.
+4. **A 120 s wall-clock ceiling**, ending the run and refunding if no answer was written. Background runs with notifications are a later decision.
+
+Build order when this is picked up: measure the plan, search and write costs on staging for the two models, then the migration (`chat_research_*` columns, constraints, exact-row-count updates), then the orchestration in `lib/chatTurn.js` with a refund test at each step, then the UI. `CHAT_RESEARCH_ENABLED` ships `"false"` in production.
