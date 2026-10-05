@@ -1,5 +1,5 @@
 /**
-" * 0220 switches all ten chat rows to the capped web search and re-prices Web search in the same statement, so the low price is
+ * 0220 switches all ten chat rows to the capped web search and re-prices Web search in the same statement, so the low price is
  * never charged for the uncapped plugin. Replay-safe, refuses a hand-edited or missing row, changes nothing else, and every price
  * is the documented bound: Exa's measured fee ($0.011 bound) plus 7,000 input tokens at the row's rate.
  */
