@@ -19,6 +19,10 @@ export const chatApi = {
   createFolder: (name) => gatewayFetch('/chat/folders', { method: 'POST', body: json({ name }) }),
   renameFolder: (id, name) => gatewayFetch(`/chat/folders/${encodeURIComponent(id)}`, { method: 'PATCH', body: json({ name }) }),
   removeFolder: (id) => gatewayFetch(`/chat/folders/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+  personas: () => gatewayFetch('/chat/personas'),
+  savePersona: (p) => gatewayFetch('/chat/personas', { method: 'POST', body: json(p) }),
+  updatePersona: (id, p) => gatewayFetch(`/chat/personas/${encodeURIComponent(id)}`, { method: 'PATCH', body: json(p) }),
+  removePersona: (id) => gatewayFetch(`/chat/personas/${encodeURIComponent(id)}`, { method: 'DELETE' }),
   move: (id, folderId) => gatewayFetch(`/chat/threads/${encodeURIComponent(id)}`, { method: 'PATCH', body: json({ folder_id: folderId }) }),
 };
 
@@ -34,6 +38,12 @@ export function chatErrorCopy(code, { credits } = {}) {
     case 'folder_exists': return 'You already have a folder with that name.';
     case 'folder_limit': return 'You can have up to 50 folders. Delete one to make another.';
     case 'invalid_name': return 'Folder names can be 1 to 60 characters.';
+    case 'persona_not_found': return 'That persona no longer exists.';
+    case 'persona_exists': return 'You already have a persona with that name.';
+    case 'persona_limit': return 'You can have up to 20 personas. Delete one to make another.';
+    case 'invalid_persona_name': return 'Persona names can be 1 to 60 characters.';
+    case 'invalid_instructions': return 'Instructions can be 1 to 4,000 characters.';
+    case 'personas_unavailable': return 'Personas are not available yet.';
     case 'model_unavailable': case 'model_gated': case 'model_not_found': return 'That model is not available right now. Pick another. No Credits were used.';
     case 'option_unavailable': case 'invalid_options': return 'That option is not available for this model. Turn it off or pick another model. No Credits were used.';
     case 'attachment_not_found': case 'attachment_invalid': return 'We could not read that image. Remove it and attach it again. No Credits were used.';

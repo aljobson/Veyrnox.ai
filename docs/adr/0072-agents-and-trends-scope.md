@@ -79,3 +79,12 @@ refundable, in line with how Web search, images and Deep research were each pric
 Build order when this is picked up: Trends first (categories, the count-only counter and the sort; a migration only if the preset id is not
 already in `inputs`), then Personas (one table, definer functions, the chat UI, behind `PERSONAS_ENABLED`). Take the next free migration
 number after the highest **open PR**, not just after main.
+
+### Personas as built (2026-10-05)
+
+Migration `0216_chat_personas`; behind `PERSONAS_ENABLED` (`"false"` in production and staging). A persona is `name`, `instructions` (up to 4,000
+characters, the same limit as a chat's own), an optional default model (kept if the model is retired, with no default), and Thinking and Web
+search defaults. Twenty per account, names unique ignoring case, reachable only through definer functions keyed by the verified account.
+**Starting a chat from a persona only fills the draft** (instructions, model if still offered, options) in the settings panel of a chat that has not
+started; the chat then gets its own copy of the instructions when it is created, so editing or deleting a persona never changes a chat that
+exists. A persona has no price: a reply costs what it costs today, and Thinking or Web search still show their extra before sending.
