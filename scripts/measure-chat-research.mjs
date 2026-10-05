@@ -33,6 +33,9 @@ export const QUESTIONS = [
 // and Claude Sonnet 5.5 still did it on 2 of 4 searches at 'low').
 export const LIMITS = { searches: 4, results: 3, planTokens: 300, searchTokens: 1000, searchEffort: 'none', writeTokens: 8192, writeEffort: 'high' };
 export const MODELS_URL = 'https://openrouter.ai/api/v1/models';
+// Ways to ask OpenRouter for no reasoning on a search step, tried in order until one is accepted. A model may refuse
+// `effort: none` (a 400 on 2026-10-05) yet accept another form; the one that works is reported so production uses it.
+export const SEARCH_REASONING = Object.freeze([{ effort: 'none' }, { enabled: false }, { effort: 'minimal' }, { effort: 'low' }, null]);
 
 const PLAN_SYSTEM = `Write up to ${LIMITS.searches} distinct web search queries that would help research the user's question. Reply with one query per line, no numbering and no commentary.`;
 const WRITE_SYSTEM = 'Answer the question using only the research notes provided. Cite sources as links. Be concise and say when notes disagree.';
@@ -42,6 +45,11 @@ export function parseQueries(text) {
     return String(text || '').split('\n').map((l) => l.replace(/^[\s\-*\d.)]+/, '').trim()).filter(Boolean).slice(0, LIMITS.searches);
 }
 
+/** A rejected request, with OpenRouter's own short validation message (the prompts here are fixed and public, so it is safe to show). */
+export class ProviderRejected extends Error {
+    constructor(status, detail) { super(`OpenRouter answered ${status}${detail ? `: ${detail}` : ''}`); this.status = status; }
+}
+
 async function call({ fetchImpl, apiKey, body }) {
     const t0 = Date.now();
     const res = await fetchImpl(URL_COMPLETIONS, {
@@ -49,7 +57,12 @@ async function call({ fetchImpl, apiKey, body }) {
         headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...body, stream: false, usage: { include: true }, provider: { data_collection: 'deny' } }),
     });
-    if (!res.ok) throw new Error(`OpenRouter answered ${res.status}`); // never the body: it can echo the prompt
+    if (!res.ok) {
+        // Only the error's message field, trimmed: never the request, and a 401/402/429 has nothing of ours in it.
+        let detail = '';
+        try { detail = String((await res.json())?.error?.message || '').replace(/\s+/g, ' ').slice(0, 240); } catch { /* no body */ }
+        throw new ProviderRejected(res.status, detail);
+    }
     const json = await res.json();
     const u = json.usage || {};
     return {
@@ -63,7 +76,7 @@ async function call({ fetchImpl, apiKey, body }) {
  * One research run. Returns the steps and the totals; `cost` is null if OpenRouter did not report one.
  * @param {{fetchImpl?:typeof fetch, apiKey:string, model:string, question:string}} a
  */
-export async function runOne({ fetchImpl = fetch, apiKey, model, question }) {
+export async function runOne({ fetchImpl = fetch, apiKey, model, question, reasoningHint }) {
     const started = Date.now();
     const steps = [];
     const plan = await call({ fetchImpl, apiKey, body: { model, max_tokens: LIMITS.planTokens, messages: [{ role: 'system', content: PLAN_SYSTEM }, { role: 'user', content: question }] } });
@@ -72,10 +85,28 @@ export async function runOne({ fetchImpl = fetch, apiKey, model, question }) {
     const notes = [];
     // The searches do not depend on each other, so they run together: the run's wall-clock is the plan, the slowest search,
     // then the write. The cost is the same as running them one after another.
-    const searched = await Promise.all(queries.map(async (q) => ({ q, s: await call({ fetchImpl, apiKey, body: {
-        model, max_tokens: LIMITS.searchTokens, plugins: [{ id: 'web', max_results: LIMITS.results }], reasoning: { effort: LIMITS.searchEffort },
+    const searchBody = (q, reasoning) => ({
+        model, max_tokens: LIMITS.searchTokens, plugins: [{ id: 'web', max_results: LIMITS.results }], ...(reasoning ? { reasoning } : {}),
         messages: [{ role: 'user', content: `Search the web and summarise what you find, with source links, for: ${q}` }],
-    } }) })));
+    });
+    // Find a reasoning setting the model accepts with the first search, then run every search with it.
+    // With a hint (the setting an earlier run of this model found) there is nothing to discover: all searches start together.
+    let working = reasoningHint === undefined ? null : reasoningHint; const tried = [];
+    const hinted = reasoningHint !== undefined;
+    let first = null;
+    if (!hinted) {
+        first = await (async () => {
+            for (const variant of SEARCH_REASONING) {
+                try { const r = await call({ fetchImpl, apiKey, body: searchBody(queries[0], variant) }); working = variant; return r; }
+                catch (err) { tried.push({ variant, error: err.message }); if (!(err instanceof ProviderRejected) || err.status !== 400) throw err; }
+            }
+            throw new Error(`no reasoning setting was accepted for searches: ${tried.map((t) => `${JSON.stringify(t.variant)} -> ${t.error}`).join('; ')}`);
+        })();
+    }
+    // Discovery used the first query; the rest (or all of them, with a hint) start together.
+    const todo = hinted ? queries : queries.slice(1);
+    const rest = await Promise.all(todo.map((q) => call({ fetchImpl, apiKey, body: searchBody(q, working) })));
+    const searched = (hinted ? rest : [first, ...rest]).map((s, i) => ({ q: queries[i], s }));
     for (const { q, s } of searched) {
         steps.push({ step: 'search', query: q, ...s, chars: s.text.length });
         notes.push(`## ${q}\n${s.text}`);
@@ -90,7 +121,7 @@ export async function runOne({ fetchImpl = fetch, apiKey, model, question }) {
     } });
     steps.push({ step: 'write', ...write });
     const costs = steps.map((s) => s.cost);
-    return { model, question, steps, searches: queries.length, cost: costs.every((c) => c !== null) ? costs.reduce((a, b) => a + b, 0) : null,
+    return { model, question, steps, searches: queries.length, searchReasoning: working, cost: costs.every((c) => c !== null) ? costs.reduce((a, b) => a + b, 0) : null,
         ms: Date.now() - started, // wall-clock for the whole run, which is what the 120 s ceiling is measured against
         emptySearches: steps.filter((s) => s.step === 'search' && !s.text.trim()).length };
 }
@@ -131,12 +162,13 @@ export function worstCase(runs, rate) {
 const usd = (n) => (n === null || n === undefined ? 'n/a' : `$${n.toFixed(4)}`);
 
 export async function runProbe({ fetchImpl = fetch, apiKey, models = MODELS, questions = QUESTIONS, budget = 2, log = console.log }) {
-    const byModel = {}; let spent = 0;
+    const byModel = {}; const hints = {}; let spent = 0;
     for (const model of models) {
         byModel[model] = [];
         for (const question of questions) {
             if (spent > budget) { log(`  budget $${budget} passed: stopping`); return { byModel, spent, stopped: true }; }
-            const run = await runOne({ fetchImpl, apiKey, model, question });
+            const run = await runOne({ fetchImpl, apiKey, model, question, reasoningHint: hints[model] });
+            if (run.searchReasoning !== undefined) hints[model] = run.searchReasoning; // later questions skip discovery
             byModel[model].push(run);
             spent += run.cost ?? 0;
             log(`  ${model}  ${run.searches} searches (${run.emptySearches} empty)  ${usd(run.cost)}  ${(run.ms / 1000).toFixed(0)}s wall  ${question.slice(0, 48)}...`);
@@ -169,6 +201,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
             console.log(`${model}: dearest plan ${usd(w.plan)}, search ${usd(w.search)}, write ${usd(w.write)} (${w.writeBasis}; measured ${usd(w.measuredWrite)})`);
             console.log(`  recorded worst case (plan + ${LIMITS.searches} x search + write): ${usd(w.total)}  -> candidate chat_research_extra_cost`);
             console.log(`  slowest run: ${(Math.max(...runs.map((r) => r.ms)) / 1000).toFixed(0)}s wall (ADR ceiling 120s); empty searches: ${runs.reduce((a, r) => a + r.emptySearches, 0)}`);
+            console.log(`  search reasoning setting accepted: ${JSON.stringify(runs[0].searchReasoning)}`);
             const slowestWrite = Math.max(...runs.flatMap((r) => r.steps.filter((x) => x.step === 'write').map((x) => x.ms)));
             console.log(`  slowest write: ${(slowestWrite / 1000).toFixed(0)}s for what it produced; a full ${LIMITS.writeTokens}-token reply is longer, so the ceiling needs headroom`);
         }

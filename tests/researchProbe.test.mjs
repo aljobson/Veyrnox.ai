@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parseQueries, runOne, worstCase, runProbe, fetchRates, LIMITS } from '../scripts/measure-chat-research.mjs';
+import { parseQueries, runOne, worstCase, runProbe, fetchRates, LIMITS, SEARCH_REASONING } from '../scripts/measure-chat-research.mjs';
 
 /** A fake OpenRouter: the plan lists `planLines`, every call reports `usage`. */
 function fakeFetch({ planLines = ['a', 'b', 'c'], cost = { plan: 0.001, search: 0.03, write: 0.2 }, fail = null } = {}) {
@@ -121,7 +121,7 @@ test('searches run together, and the run reports wall-clock rather than the sum 
         if (kind === 'search') { inFlight += 1; peak = Math.max(peak, inFlight); await new Promise((r) => setTimeout(r, 40)); inFlight -= 1; }
         return Response.json({ choices: [{ message: { content: kind === 'plan' ? 'a\nb\nc\nd' : `${kind} text` } }], usage: { prompt_tokens: 1, completion_tokens: 1, cost: 0.01 } });
     };
-    const run = await runOne({ fetchImpl, apiKey: 'k', model: 'm/x', question: 'q' });
+    const run = await runOne({ fetchImpl, apiKey: 'k', model: 'm/x', question: 'q', reasoningHint: SEARCH_REASONING[0] });
     assert.equal(peak, 4, 'all four searches were in flight together');
     assert.deepEqual(run.steps.map((s) => s.step), ['plan', 'search', 'search', 'search', 'search', 'write'], 'steps stay in order');
     assert.ok(run.ms < run.steps.reduce((a, s) => a + s.ms, 0), 'wall-clock is less than the sum of the step times');
@@ -139,4 +139,50 @@ test('empty searches are counted and the search effort is off', async () => {
     };
     const run = await runOne({ fetchImpl, apiKey: 'k', model: 'm/x', question: 'q' });
     assert.equal(run.emptySearches, 1);
+});
+
+test('a model that rejects one reasoning setting is retried with the next, and the accepted one is reported', async () => {
+    const seen = [];
+    const fetchImpl = async (url, init) => {
+        const body = JSON.parse(init.body);
+        const kind = body.plugins ? 'search' : body.reasoning ? 'write' : 'plan';
+        if (kind === 'search') {
+            seen.push(body.reasoning);
+            if (body.reasoning && body.reasoning.effort === 'none') return Response.json({ error: { message: 'reasoning.effort none is not supported' } }, { status: 400 });
+        }
+        return Response.json({ choices: [{ message: { content: kind === 'plan' ? 'a\nb\nc' : `${kind} text` } }], usage: { prompt_tokens: 1, completion_tokens: 1, cost: 0.01 } });
+    };
+    const run = await runOne({ fetchImpl, apiKey: 'k', model: 'm/x', question: 'q' });
+    assert.deepEqual(seen[0], { effort: 'none' }, 'tried first');
+    assert.deepEqual(run.searchReasoning, SEARCH_REASONING[1], 'then the next one');
+    assert.ok(seen.slice(1).every((r) => JSON.stringify(r) === JSON.stringify(SEARCH_REASONING[1])), 'every other search uses the accepted setting');
+    assert.equal(run.searches, 3);
+});
+
+test('every reasoning setting rejected is a clear error with OpenRouter\'s message, not a bare 400', async () => {
+    const fetchImpl = async (url, init) => JSON.parse(init.body).plugins
+        ? Response.json({ error: { message: 'web plugin not allowed here' } }, { status: 400 })
+        : Response.json({ choices: [{ message: { content: 'a\nb' } }], usage: { cost: 0 } });
+    await assert.rejects(runOne({ fetchImpl, apiKey: 'k', model: 'm/x', question: 'q' }), /web plugin not allowed here/);
+});
+
+test('a 401 or 429 is not retried as a reasoning problem', async () => {
+    let n = 0;
+    const fetchImpl = async (url, init) => { if (JSON.parse(init.body).plugins) { n += 1; return new Response('{}', { status: 429 }); } return Response.json({ choices: [{ message: { content: 'a\nb' } }], usage: { cost: 0 } }); };
+    await assert.rejects(runOne({ fetchImpl, apiKey: 'k', model: 'm/x', question: 'q' }), /429/);
+    assert.equal(n, 1);
+});
+
+test('with a known-good reasoning setting every search starts together, with no discovery call first', async () => {
+    const seen = [];
+    const fetchImpl = async (url, init) => {
+        const body = JSON.parse(init.body);
+        const kind = body.plugins ? 'search' : body.reasoning ? 'write' : 'plan';
+        if (kind === 'search') seen.push(body.reasoning);
+        return Response.json({ choices: [{ message: { content: kind === 'plan' ? 'a\nb\nc' : 'x' } }], usage: { cost: 0 } });
+    };
+    const run = await runOne({ fetchImpl, apiKey: 'k', model: 'm/x', question: 'q', reasoningHint: { enabled: false } });
+    assert.equal(seen.length, 3);
+    assert.ok(seen.every((r) => JSON.stringify(r) === JSON.stringify({ enabled: false })));
+    assert.deepEqual(run.searchReasoning, { enabled: false });
 });
