@@ -67,7 +67,11 @@ async function run(row) {
         if (st.status && st.status !== 'IN_QUEUE' && st.status !== 'IN_PROGRESS') return { ok: false, step: 'poll', status: st.status };
     }
     const res = await fetch(q.response_url, { headers: authHeader() });
-    if (!res.ok) return { ok: false, step: 'result', status: res.status };
+    if (!res.ok) {
+        // fal's validation detail (a bad or unreachable source URL, an over-long clip) is not a secret.
+        const detail = (await res.text().catch(() => '')).slice(0, 400);
+        return { ok: false, step: 'result', status: res.status, detail };
+    }
     const out = await res.json();
     const url = out?.video?.url;
     if (typeof url !== 'string') return { ok: false, step: 'shape', status: 'no video.url in the result' };
@@ -79,6 +83,7 @@ async function run(row) {
 console.log(submit ? 'SUBMIT: this spends fal credit.\n' : 'PLAN: nothing is sent or spent.\n');
 if (submit && !key) { console.error('FAL_KEY is not set.'); process.exit(2); }
 if (submit && !videoUrl?.startsWith('https://')) { console.error('--video-url=https://... is required with --submit.'); process.exit(2); }
+if (submit && /your-public-clip|example\.(com|test)/i.test(videoUrl)) { console.error('--video-url is still the placeholder: use a real, public https clip.'); process.exit(2); }
 
 let failed = false;
 for (const row of rows) {
