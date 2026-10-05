@@ -13,7 +13,7 @@ Changes that touch the money spine, the ledger or the catalog are marked **[mone
 - Chat, behind `CHAT_ENABLED` (off) and the browser preview switch `veyrnox_chat`: threads and messages (0193), `/api/v1/chat/*`, a streaming reply that is one job priced per reply from `model_catalog`, finished by `chat_complete_turn` or refunded, and a `/app/chat` screen. No text model is active until an operator verifies one (ADR-0067, Accepted) **[money]**
 
 ### Changed
-- **[money]** Web search is re-priced on all ten chat models (0210, ADR-0067 amendment 7) from measured worst cases: the plugin's search text is uncapped (12k to 50k input tokens) and its fee is $0.01 to $0.05. A Luna reply with Web search goes from 3 to 5 Credits, a Sonnet one from 7 to 15. Held as a draft for the owner's decision
+- **[money]** Web search is re-priced on all ten chat models (0211, ADR-0067 amendment 7) from measured worst cases: the plugin's search text is uncapped (12k to 50k input tokens) and its fee is $0.01 to $0.05. A Luna reply with Web search goes from 3 to 5 Credits, a Sonnet one from 7 to 15. Held as a draft for the owner's decision
 - `list_user_jobs` leaves chat jobs out of the Library (0193); the public catalog read excludes text models
 
 ## Unreleased (2026-09-29 to 2026-10-01)

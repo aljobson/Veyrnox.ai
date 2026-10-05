@@ -185,7 +185,7 @@ plugin's own fee was not fixed either: $0.01 to $0.05 per search, in steps of $0
 $0.161 against a recorded $0.0520, and Luna $0.022 to $0.033 against $0.0216. No reply lost money in that range, because the base
 price also pays, but the extra alone fell below the 50% margin floor on heavy pages.
 
-Migration 0210 records a new worst case for all ten rows: a **$0.06 fee** (the observed maximum plus 20%) plus **64,000 input
+Migration 0211 records a new worst case for all ten rows: a **$0.06 fee** (the observed maximum plus 20%) plus **64,000 input
 tokens** (the observed maximum plus about 28%) at each model's input rate, with Credits at the margin floor. It is a planning bound
 from measurement, not a guarantee: the search text cannot be capped through the plugin, so a search that reads more than that is the
 one case the flat price does not cover. Capping the text ourselves (our own search call, with each result cut to a fixed length)
