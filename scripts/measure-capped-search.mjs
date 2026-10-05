@@ -27,8 +27,9 @@ export const QUERIES = [
     'Best practices for append-only ledgers in payment systems.',
 ];
 
-// What the model is given from a search, in tokens: the context limit at 3.5 characters a token, rounded up to a hundred.
-export const TOKENS_BOUND = Math.ceil(SEARCH_CONTEXT_MAX_CHARS / 3.5 / 100) * 100;
+// What the model is given from a search, in tokens, at one token per character: the ceiling for any language. English runs
+// near 3.5 characters a token, but Chinese or Japanese can approach one token per character, and a price must hold for them too.
+export const TOKENS_BOUND = SEARCH_CONTEXT_MAX_CHARS;
 // The margin floor (docs/pricing/50-percent-margin.md): credits >= ceil(cost / FLOOR).
 const FLOOR = 0.01796;
 // Input rate in USD per token for each chat row, from OpenRouter's public model list on 2026-10-05. The same figures 0210 used.

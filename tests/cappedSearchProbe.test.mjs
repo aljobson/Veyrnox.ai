@@ -12,9 +12,9 @@ test('the fee bound is the dearest search seen plus 50%, rounded up to a tenth o
     assert.throws(() => feeBound([null, NaN]), /no measured/i);
 });
 
-test('injected tokens are bounded by the context limit at 3.5 characters a token, rounded up to a hundred', () => {
-    assert.equal(TOKENS_BOUND, 2000);
-    assert.ok(TOKENS_BOUND * 3.5 >= SEARCH_CONTEXT_MAX_CHARS, 'the bound covers every character the model can be given');
+test('injected tokens are bounded at one token per character of the context limit, which holds for any language', () => {
+    assert.equal(TOKENS_BOUND, SEARCH_CONTEXT_MAX_CHARS);
+    assert.equal(TOKENS_BOUND, 7000);
 });
 
 test('every catalog model has an input rate, and the extra is fee plus tokens at that rate, with Credits at the margin floor', () => {
@@ -22,9 +22,9 @@ test('every catalog model has an input rate, and the extra is fee plus tokens at
         'chat-claude-opus-5.5', 'chat-claude-sonnet-5.5', 'chat-deepseek-v4.1-flash', 'chat-gemini-3.8-flash', 'chat-gpt-6-luna', 'chat-gpt-6.1-sol',
         'chat-grok-4.7', 'chat-llama-4-maverick', 'chat-ministral-14b', 'chat-mistral-small']);
     const rows = Object.fromEntries(extraCosts(0.017).map((r) => [r.id, r]));
-    assert.equal(rows['chat-claude-opus-5.5'].cost, 0.025, '0.017 + 2000 x 4e-6, rounded up to a ten-thousandth');
-    assert.equal(rows['chat-claude-opus-5.5'].credits, 2, 'ceil(0.025 / 0.01796)');
-    assert.equal(rows['chat-gpt-6-luna'].cost, 0.0172);
+    assert.equal(rows['chat-claude-opus-5.5'].cost, 0.045, '0.017 + 7000 x 4e-6');
+    assert.equal(rows['chat-claude-opus-5.5'].credits, 3, 'ceil(0.045 / 0.01796)');
+    assert.equal(rows['chat-gpt-6-luna'].cost, 0.0177);
     assert.equal(rows['chat-gpt-6-luna'].credits, 1);
     for (const r of Object.values(rows)) assert.ok(r.credits >= Math.ceil(Math.round((r.cost / 0.01796) * 1e6) / 1e6) && r.credits >= 1, r.id);
 });
@@ -50,4 +50,13 @@ test('when some searches worked it measures from those, and says how many failed
     assert.equal(r.fee, 0.017);
     assert.equal(r.failed, 1);
     assert.equal(outcome([0.008], 1).failed, 0);
+});
+
+test('with the measured fee ($0.007 a search, so a bound of $0.011) most models are one Credit, Sonnet-class two, Opus three', () => {
+    assert.equal(feeBound([0.007, 0.007, 0.007, 0.007, 0.007]), 0.011);
+    const credits = Object.fromEntries(extraCosts(0.011).map((r) => [r.id, r.credits]));
+    assert.deepEqual(credits, {
+        'chat-claude-opus-5.5': 3, 'chat-claude-sonnet-5.5': 2, 'chat-deepseek-v4.1-flash': 1, 'chat-gemini-3.8-flash': 1, 'chat-gpt-6-luna': 1,
+        'chat-gpt-6.1-sol': 2, 'chat-grok-4.7': 2, 'chat-llama-4-maverick': 1, 'chat-ministral-14b': 1, 'chat-mistral-small': 1,
+    });
 });
