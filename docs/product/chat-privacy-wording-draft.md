@@ -31,7 +31,7 @@ say where, so the wording can be corrected if the behaviour changes.
 | Claim | Where it comes from |
 |---|---|
 | Chats are kept until deleted | `chat_threads` and `chat_messages` have no expiry; nothing purges them. Account deletion removes them (`ON DELETE CASCADE` from `users`). |
-| Deleting a chat removes it now | Migration 0202. **Before 0202 this was untrue**: delete only set `deleted_at` and the text stayed indefinitely. Do not publish the sentence until 0202 is applied to production. |
+| Deleting a chat removes it now | Migration 0203. **Before 0203 this was untrue**: delete only set `deleted_at` and the text stayed indefinitely. Do not publish the sentence until 0203 is applied to production. |
 | Backups | Not something the code can tell us. Supabase keeps backups for a period set by your plan; confirm it and adjust or drop the bracket. |
 | Images deleted within 24 hours | `UPLOAD_MAX_AGE_HOURS = 24` in `lib/uploadSource.js`, and the chat job records `inputs.source_keys` so the upload sweeper deletes them soon after the reply (ADR-0068). |
 | The ledger never holds message text | `jobs.inputs` for a chat holds `kind`, `thread_id`, `options` and, for images, type, size and the storage key; message text lives only in `chat_messages` (`lib/chatTurn.js`, tested). |
