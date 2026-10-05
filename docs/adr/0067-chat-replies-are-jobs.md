@@ -196,6 +196,34 @@ Mistral Small 4 (from 5, 3, 3, 3, 2, 2, 2, 2, 2, 2). A Luna reply with Web searc
 The price still shows before Send. The alternative the owner may prefer is fewer results per search (two, not three), which lowers the
 typical text but, being uncapped, not the bound.
 
+## Amendment 8 2026-10-05: a capped search of our own
+
+Status: **Proposed**. The owner accepts it by merging. Amendment 7 re-prices the OpenRouter web plugin from measured worst cases and
+says the real fix is to cap the search text ourselves; this is that fix, in three steps that must land in order.
+
+**Design.** Web search can run two ways, recorded per catalog row in `chat_web_engine`: `plugin` (today) and `capped`. The capped way
+makes one call to Exa (`POST https://api.exa.ai/search`, a constant URL; the key is the Worker secret `EXA_API_KEY`) for the user's
+message, asking for 3 results and at most 2,000 characters of text each (`contents.text.maxCharacters`), cuts the text again on our
+side, and puts it in the system message as untrusted quoted data with its source links. Nothing the page says can add a step or change
+the price: the model gets a bounded block of text and answers. The worst case is then real: one search fee (read from Exa's own
+`costDollars.total` on every call and kept on the job as `search_cost_usd`) plus at most about 2,000 injected tokens at the model's
+rate, so the Web search extra falls back to 1 to 2 Credits on most models.
+
+**The search runs before the debit.** If the search fails or the key is missing, the answer is a typed error with nothing charged;
+a reply is never charged for a search it did not get. The sources listed under the reply are the results the model was given.
+
+**Price and engine change together.** `chat_web_engine` defaults to `plugin` everywhere (0213, additive: the release before it keeps
+working). A later migration flips a row to `capped` and re-prices it in one statement, only after the capped search is live and its
+cost measured with a key. A `capped` row with no search key configured does not offer Web search at all and refuses it before any
+Credits move, so a low price can never be charged for the uncapped plugin. The code that reads the column ships only after 0213 is
+applied in that environment.
+
+**Order.** (1) 0213, (2) the code, (3) set `EXA_API_KEY`, measure, then the flip migration. Deep research (ADR-0070) builds on the
+capped search and is not priced until step 3 has real numbers.
+
+**Privacy.** The user's message text goes to Exa as the search query, as it already goes to the plugin's search engine through
+OpenRouter. The privacy notice says Web search sends the question to a search service; it should name Exa before the flip.
+
 ## Not decided here
 
 - Which models, and their prices. Needs live endpoint checks and the margin validator. (Three were chosen
