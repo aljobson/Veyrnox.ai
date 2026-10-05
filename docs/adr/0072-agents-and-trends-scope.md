@@ -1,6 +1,6 @@
 # ADR-0072 — Agents and Trends: what to build first, and what to leave alone
 
-- **Status**: **Proposed 2026-10-05**. Nothing is built. The owner's answers (recommendations marked) are at the end.
+- **Status**: **Accepted 2026-10-05** (owner: "go with recommendation"). Nothing is built. The answers are recorded at the end.
 - **Related**: ADR-0067 (chat replies are jobs), ADR-0069 (free allowance), ADR-0070 (Deep research), ADR-0068 (image
   attachments), CLAUDE.md "Money & billing", "Object storage", "Web security"
 
@@ -67,10 +67,15 @@ refundable, in line with how Web search, images and Deep research were each pric
 - Personas v1 is one table and a small UI on the chat screen; about the size of drafts and stars plus one migration.
 - The "Agents" name stays out of the product until it means more than saved instructions; call it Personas.
 
-## Open questions for the owner (recommendation first)
+## Owner's decisions (2026-10-05, "go with recommendation")
 
-1. Trends: **extend the gallery with the missing categories and a Popular sort now; no user-published trends in v1.**
-2. Popular needs how many starts to rank: **20 in 30 days.**
-3. Agents: **build Personas only; defer media tool calls to v2; do not plan files, code or your-data retrieval.**
-4. Name: **"Personas"**, not "Agents".
-5. Persona cap per account: **20.**
+1. **Trends**: extend the presets gallery with Cartoons, Movies, Fantasy and Realistic and a Popular sort; no user-published trends in v1.
+2. **Popular** ranks a preset only after 20 starts in the last 30 days.
+3. **Agents**: build Personas only; media tool calls are v2 (through priced jobs, with an explicit confirm); files, code execution and
+   your-data retrieval are not planned.
+4. **Name**: "Personas", not "Agents".
+5. **Persona cap**: 20 per account.
+
+Build order when this is picked up: Trends first (categories, the count-only counter and the sort; a migration only if the preset id is not
+already in `inputs`), then Personas (one table, definer functions, the chat UI, behind `PERSONAS_ENABLED`). Take the next free migration
+number after the highest **open PR**, not just after main.
