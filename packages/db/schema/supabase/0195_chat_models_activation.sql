@@ -9,7 +9,7 @@ DECLARE affected BIGINT;
 BEGIN
     UPDATE public.model_catalog
        SET active = true, updated_at = now()
-     WHERE provider = 'openrouter' AND modality = 'text' AND cost_unit = 'per_generation'
+     WHERE provider = 'openrouter-chat' AND modality = 'text' AND cost_unit = 'per_generation'
        AND gated_flag = false AND credits_5s = 1
        AND (id, provider_endpoint, provider_cost_per_unit) IN (
             ('chat-llama-4-maverick', 'meta-llama/llama-4-maverick', 0.0024),
