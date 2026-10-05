@@ -13,12 +13,17 @@ test('the public catalog read excludes text models', async () => {
     assert.match(seen.q.filter, /(^|&)active=eq\.true(&|$)/);
 });
 
-test('wrangler ships CHAT_ENABLED as the string "false" in production vars', () => {
+// Switched on in production on 2026-10-05 (ADR-0067), after: migrations 0193 to 0201 applied, a dedicated capped
+// OPENROUTER_CHAT_API_KEY set on the Worker (production refuses to fall back to the shared video key, see chatApiKey), and
+// the per-browser preview switch still in place, so only a browser that sets localStorage.veyrnox_chat can reach it.
+test('wrangler ships CHAT_ENABLED as the string "true" in production vars, and the preview switch still gates the screen', () => {
     const text = readFileSync(new URL('../wrangler.jsonc', import.meta.url), 'utf8');
     const vars = text.slice(text.indexOf('"vars"'));
     const production = vars.slice(0, vars.indexOf('"env"') > 0 ? vars.indexOf('"env"') : undefined);
-    assert.match(production, /"CHAT_ENABLED":\s*"false"/);
-    assert.doesNotMatch(production, /"CHAT_ENABLED":\s*"true"/);
+    assert.match(production, /"CHAT_ENABLED":\s*"true"/);
+    assert.doesNotMatch(production, /"CHAT_ENABLED":\s*"false"/);
+    const gate = readFileSync(new URL('../app/veyrnox/_lib/useChatPreview.js', import.meta.url), 'utf8');
+    assert.match(gate, /localStorage\.getItem\('veyrnox_chat'\) === '1'/, 'the screen is still behind the per-browser switch');
 });
 
 // The route, the turn runner and the catalog rows must agree on the provider name. They once did not:
