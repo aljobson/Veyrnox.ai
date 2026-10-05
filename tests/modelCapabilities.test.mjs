@@ -23,6 +23,7 @@ const CATALOG = [
     'fal-ai/kling-video/v3/pro/image-to-video', 'fal-ai/nano-banana-pro', 'fal-ai/nano-banana-pro/edit',
     'fal-ai/elevenlabs/tts/turbo-v2.5', 'fal-ai/minimax/speech-2.6-hd', 'fal-ai/mmaudio-v2/text-to-audio', 'fal-ai/bria/background/remove',
     'fal-ai/topaz/upscale/image', 'fal-ai/bria/expand', 'fal-ai/latentsync', 'fal-ai/kling-video/ai-avatar/v2/standard',
+    'fal-ai/mmaudio-v2', 'fal-ai/topaz/upscale/video',
     'fal-ai/elevenlabs/text-to-dialogue/eleven-v3',
     'market:elevenlabs/text-to-dialogue-v3', 'market:flux-2/pro-text-to-image',
     'market:kling-3.0/video', 'veo:veo3_lite', 'veo:veo3_fast', 'veo:veo3', 'market:google/nano-banana',
@@ -39,6 +40,7 @@ const CATALOG = [
 const CORRECTED = new Set(['fal-ai/sana/v1.5/4.8b', 'fal-ai/kling-video/v3/pro/image-to-video', 'fal-ai/nano-banana-pro', 'fal-ai/nano-banana-pro/edit',
     'fal-ai/elevenlabs/tts/turbo-v2.5', 'fal-ai/minimax/speech-2.6-hd', 'fal-ai/mmaudio-v2/text-to-audio', 'fal-ai/bria/background/remove',
     'fal-ai/topaz/upscale/image', 'fal-ai/bria/expand', 'fal-ai/latentsync', 'fal-ai/kling-video/ai-avatar/v2/standard',
+    'fal-ai/mmaudio-v2', 'fal-ai/topaz/upscale/video',
     'fal-ai/elevenlabs/text-to-dialogue/eleven-v3']);
 
 /** Every valid combination of a record's inputs: all declared keys, each enum value, each length. */
