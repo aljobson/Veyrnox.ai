@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// 0208 and 0209 (ADR-0070): the Deep research columns, their rules, and the one row priced for it. Runs against the full migration
+// 0208 and 0214 (ADR-0070): the Deep research columns, their rules, and the one row priced for it. Runs against the full migration
 // replay (ledger-tests.yml).
 // Every fixture is rolled back.
 import assert from 'node:assert/strict';
@@ -21,7 +21,7 @@ const refused = async (sql, args, code) => {
 
 try {
     const m208 = await readFile(new URL('../packages/db/schema/supabase/0208_chat_research_columns.sql', import.meta.url), 'utf8');
-    const m209 = await readFile(new URL('../packages/db/schema/supabase/0209_chat_research_pricing.sql', import.meta.url), 'utf8');
+    const m209 = await readFile(new URL('../packages/db/schema/supabase/0214_chat_research_pricing.sql', import.meta.url), 'utf8');
     await c.query('BEGIN'); for (const m of [m208, m209, m208, m209]) await c.query(m); await c.query('ROLLBACK'); // safe to apply, and to replay
 
     await c.query('BEGIN');
@@ -31,7 +31,7 @@ try {
             chat_research_extra_credits, chat_research_extra_cost, chat_research_write_max_tokens, chat_research_search_model)
          VALUES ($1, $1, 'openrouter-chat', 'test/model', $2, 1, 0.0020, 'per_generation', false, $3, $4, $5, $6)`, [id + modality + String(credits), modality, credits, cost, cap, search]);
 
-    // Exactly one row offers research after 0209, with the measured price, the write cap and the search model.
+    // Exactly one row offers research after 0214, with the measured price, the write cap and the search model.
     const offering = (await c.query(`SELECT id, chat_research_extra_credits AS credits, chat_research_extra_cost::float AS cost, chat_research_write_max_tokens AS cap,
         chat_research_search_model AS search FROM public.model_catalog WHERE chat_research_extra_credits IS NOT NULL OR chat_research_extra_cost IS NOT NULL
         OR chat_research_write_max_tokens IS NOT NULL OR chat_research_search_model IS NOT NULL`)).rows;
