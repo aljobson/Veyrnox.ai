@@ -144,7 +144,7 @@ nothing else (no shared instructions, no files). Up to 50 per person, names uniq
 folder keeps its chats and unfiles them. Moving a chat does not change its place in the recency order. They are called folders, not
 projects, because Veyrnox.ai already has Projects (tenant workspaces for assets, ADR-0051) and the two are unrelated.
 
-Storage follows the chat tables: `chat_folders` (0209) has forced RLS and no table grants, is reached only through five
+Storage follows the chat tables: `chat_folders` (0210) has forced RLS and no table grants, is reached only through five
 `service_role`-only definer functions keyed by the verified auth id, and goes with the account (`ON DELETE CASCADE`).
 `chat_threads.folder_id` is `ON DELETE SET NULL`, and `chat_list_threads` now returns it. Moving is `PATCH /threads/:id` with
 `{folder_id}` alone (null unfiles); folders are `/api/v1/chat/folders`. No money path is touched: a folder name is never sent to
