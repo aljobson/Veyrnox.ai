@@ -8,8 +8,8 @@ Changes that touch the money spine, the ledger or the catalog are marked **[mone
 
 ### Added
 - Chat settings panel and a two-level model picker (ADR-0067 amendment 6): family then model, a Low/Medium/High cost filter, collapsible Capabilities, Tools, System prompt and About sections, Reset all and Open all; instructions can be written before the first message. `/api/v1/chat/models` now returns each model's family
-- Five more chat models turned on (0210): DeepSeek V4.1 Flash, Gemini 3.8 Flash, Grok 4.7, GPT-6.1 Sol, Claude Opus 5.5. New chats open on the cheapest model
-- Chat folders (0209, ADR-0067 amendment 5): group chats, move them in and out, rename or delete a folder (its chats stay). Up to 50 per person; `/api/v1/chat/folders`; a thread patch with `folder_id` moves a chat
+- Five more chat models turned on (0211): DeepSeek V4.1 Flash, Gemini 3.8 Flash, Grok 4.7, GPT-6.1 Sol, Claude Opus 5.5. New chats open on the cheapest model
+- Chat folders (0210, ADR-0067 amendment 5): group chats, move them in and out, rename or delete a folder (its chats stay). Up to 50 per person; `/api/v1/chat/folders`; a thread patch with `folder_id` moves a chat
 - Chat, behind `CHAT_ENABLED` (off) and the browser preview switch `veyrnox_chat`: threads and messages (0193), `/api/v1/chat/*`, a streaming reply that is one job priced per reply from `model_catalog`, finished by `chat_complete_turn` or refunded, and a `/app/chat` screen. No text model is active until an operator verifies one (ADR-0067, Accepted) **[money]**
 
 ### Changed

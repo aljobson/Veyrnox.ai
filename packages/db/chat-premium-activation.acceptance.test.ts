@@ -15,7 +15,7 @@ const setup = async (db: pg.Client) => {
     for (const f of ['0193_chat.sql', '0194_chat_models_staged.sql', '0196_chat_models_reasoning.sql', '0197_chat_models_options.sql', '0198_chat_models_images.sql']) {
         await db.query(await read(f));
     }
-    return read('0210_chat_models_activate_premium.sql');
+    return read('0211_chat_models_activate_premium.sql');
 };
 
 test('the migration turns on exactly the five premium models and replays', { skip: !url && 'DATABASE_URL not set' }, async () => {
