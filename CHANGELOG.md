@@ -4,6 +4,14 @@ Notable changes to Veyrnox.ai, newest first, grouped by date merged to `main`. N
 
 Changes that touch the money spine, the ledger or the catalog are marked **[money]**.
 
+## Unreleased (2026-10-05)
+
+### Added
+- Chat, behind `CHAT_ENABLED` (off) and the browser preview switch `veyrnox_chat`: threads and messages (0193), `/api/v1/chat/*`, a streaming reply that is one job priced per reply from `model_catalog`, finished by `chat_complete_turn` or refunded, and a `/app/chat` screen. No text model is active until an operator verifies one (ADR-0067, Accepted) **[money]**
+
+### Changed
+- `list_user_jobs` leaves chat jobs out of the Library (0193); the public catalog read excludes text models
+
 ## Unreleased (2026-09-29 to 2026-10-01)
 
 ### Added

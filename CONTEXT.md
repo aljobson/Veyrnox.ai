@@ -68,6 +68,20 @@ _Avoid_: Admin (when meaning the person), support
 An account state, entered on a Chargeback and left only when an operator unfreezes it, that blocks generating and buying. Sign-in, the library, downloads, and account deletion still work.
 _Avoid_: Suspended, banned, locked
 
+### Chat
+
+**Chat Thread**:
+A conversation a user has with one text model, with its own optional instructions. It belongs to one user and is reachable only through that user's verified id. Deleting one hides it at once.
+_Avoid_: Session, conversation (in code), room
+
+**Chat Reply**:
+One answer to one user message. It is a job priced as a whole number of Credits from the model's catalog row ("Credits per reply"), debited before the model runs and refunded if it fails. Never priced per token or per word.
+_Avoid_: Generation (that word means media), completion, token cost
+
+**Reply Cap**:
+The limits that make a flat Chat Reply price safe: replies stop at 1,024 tokens and at most 24,000 characters of history are sent. A catalog row's `provider_cost_per_unit` is the worst case at these caps.
+_Avoid_: Max tokens (as a user-facing term)
+
 ### Social Cinema viewing
 
 **Free Episodes**:
