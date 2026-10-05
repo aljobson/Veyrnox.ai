@@ -6,6 +6,8 @@ import { GET as getModels } from '../app/api/v1/chat/models/route.js';
 import { GET as listThreads, POST as createThread } from '../app/api/v1/chat/threads/route.js';
 import { GET as getThread, PATCH as patchThread, DELETE as deleteThread } from '../app/api/v1/chat/threads/[id]/route.js';
 import { POST as sendMessage } from '../app/api/v1/chat/threads/[id]/messages/route.js';
+import { GET as listFolders, POST as createFolder } from '../app/api/v1/chat/folders/route.js';
+import { PATCH as patchFolder, DELETE as deleteFolder } from '../app/api/v1/chat/folders/[id]/route.js';
 
 const AUTH = '11111111-1111-4111-8111-111111111111';
 const THREAD = '3f2b8c1e-5d4a-4c9b-8e7f-1a2b3c4d5e6f';
@@ -44,7 +46,9 @@ const rpcCalls = (name) => calls.filter((c) => c.url.endsWith(`/rpc/${name}`));
 const ROUTES = [
     ['models', () => getModels(req())], ['list', () => listThreads(req())], ['create', () => createThread(req('POST', { model_id: 'chat-fast' }))],
     ['get', () => getThread(req(), params())], ['patch', () => patchThread(req('PATCH', { title: 'x' }), params())],
-    ['delete', () => deleteThread(req('DELETE'), params())], ['send', () => sendMessage(req('POST', { text: 'hi', idempotency_key: 'key-0123456789' }), params())],
+    ['delete', () => deleteThread(req('DELETE'), params())],
+    ['folders', () => listFolders(req())], ['new folder', () => createFolder(req('POST', { name: 'Work' }))],
+    ['rename folder', () => patchFolder(req('PATCH', { name: 'Work' }), params())], ['delete folder', () => deleteFolder(req('DELETE'), params())], ['send', () => sendMessage(req('POST', { text: 'hi', idempotency_key: 'key-0123456789' }), params())],
 ];
 
 test('Chat is dark by default: every route says not open and nothing else happens', async () => {
@@ -198,4 +202,78 @@ test('models: the options a row offers are reported with their extra Credits; ef
     assert.ok(!JSON.stringify(j).includes('effort') && !JSON.stringify(j).includes('8192'));
     const q = new URL(calls.find((c) => c.url.includes('model_catalog')).url).searchParams;
     assert.match(q.get('select'), /chat_thinking_extra_credits/); assert.match(q.get('select'), /chat_web_extra_credits/); assert.match(q.get('select'), /chat_images_extra_credits/);
+});
+
+test('folders: list, create, rename and delete go through the definer functions with the verified identity', async () => {
+    const FOLDER = '4a3b8c1e-5d4a-4c9b-8e7f-1a2b3c4d5e6f';
+    rpcReplies.chat_list_folders = { ok: true, folders: [{ id: FOLDER, name: 'Work', count: 2 }] };
+    let res = await listFolders(req());
+    assert.equal(res.status, 200);
+    assert.deepEqual(await res.json(), { folders: [{ id: FOLDER, name: 'Work', count: 2 }] });
+    assert.deepEqual(rpcCalls('chat_list_folders')[0].body, { p_auth_id: AUTH });
+
+    rpcReplies.chat_create_folder = { ok: true, folder: { id: FOLDER, name: 'Work', count: 0 } };
+    res = await createFolder(req('POST', { name: '  Work ' }));
+    assert.equal(res.status, 201);
+    assert.deepEqual(rpcCalls('chat_create_folder')[0].body, { p_auth_id: AUTH, p_name: 'Work' }, 'trimmed before it is sent');
+
+    rpcReplies.chat_rename_folder = { ok: true, folder: { id: FOLDER, name: 'Clients', count: 2 } };
+    res = await patchFolder(req('PATCH', { name: 'Clients' }), params(FOLDER));
+    assert.equal(res.status, 200);
+    assert.deepEqual(rpcCalls('chat_rename_folder')[0].body, { p_auth_id: AUTH, p_folder_id: FOLDER, p_name: 'Clients' });
+
+    res = await deleteFolder(req('DELETE'), params(FOLDER));
+    assert.equal(res.status, 200);
+    assert.deepEqual(rpcCalls('chat_delete_folder')[0].body, { p_auth_id: AUTH, p_folder_id: FOLDER });
+});
+
+test('folders: bad input never reaches the database', async () => {
+    const FOLDER = '4a3b8c1e-5d4a-4c9b-8e7f-1a2b3c4d5e6f';
+    for (const [body, error] of [
+        [{}, 'invalid_name'], [{ name: '' }, 'invalid_name'], [{ name: '   ' }, 'invalid_name'], [{ name: 'x'.repeat(61) }, 'invalid_name'], [{ name: 5 }, 'invalid_name'],
+        [{ name: 'ok', owner: 'x' }, 'invalid_body'], [null, 'invalid_body'], [[], 'invalid_body'], ['text', 'invalid_body'],
+    ]) {
+        const res = await createFolder(req('POST', body));
+        assert.equal(res.status, 400, JSON.stringify(body));
+        assert.deepEqual(await res.json(), { error }, JSON.stringify(body));
+    }
+    assert.equal((await patchFolder(req('PATCH', { name: '' }), params(FOLDER))).status, 400);
+    assert.equal((await patchFolder(req('PATCH', { name: 'ok' }), params('not-a-uuid'))).status, 404);
+    assert.equal((await deleteFolder(req('DELETE'), params('not-a-uuid'))).status, 404);
+    assert.equal(rpcCalls('chat_create_folder').length + rpcCalls('chat_rename_folder').length + rpcCalls('chat_delete_folder').length, 0);
+});
+
+test('folders: the database refusals read as clear errors and never leak detail', async () => {
+    const FOLDER = '4a3b8c1e-5d4a-4c9b-8e7f-1a2b3c4d5e6f';
+    for (const [code, status, error] of [['FOLDER_EXISTS', 409, 'folder_exists'], ['FOLDER_LIMIT', 409, 'folder_limit'], ['FOLDER_NOT_FOUND', 404, 'folder_not_found']]) {
+        rpcReplies.chat_create_folder = { ok: false, code, detail: 'secret internals' };
+        const res = await createFolder(req('POST', { name: 'Work' }));
+        assert.equal(res.status, status, code);
+        assert.deepEqual(await res.json(), { error }, code);
+    }
+    rpcReplies.chat_delete_folder = { ok: false, code: 'FOLDER_NOT_FOUND' };
+    assert.equal((await deleteFolder(req('DELETE'), params(FOLDER))).status, 404);
+    rpcReplies.chat_list_folders = new Error('db exploded: password=hunter2');
+    const res = await listFolders(req());
+    assert.equal(res.status, 503);
+    assert.ok(!JSON.stringify(await res.json()).includes('hunter2'));
+});
+
+test('moving a chat: PATCH folder_id calls chat_move_thread, and nothing else is changed', async () => {
+    const FOLDER = '4a3b8c1e-5d4a-4c9b-8e7f-1a2b3c4d5e6f';
+    rpcReplies.chat_move_thread = { ok: true };
+    let res = await patchThread(req('PATCH', { folder_id: FOLDER }), params());
+    assert.equal(res.status, 200);
+    assert.deepEqual(await res.json(), { ok: true, folder_id: FOLDER });
+    assert.deepEqual(rpcCalls('chat_move_thread')[0].body, { p_auth_id: AUTH, p_thread_id: THREAD, p_folder_id: FOLDER });
+    assert.equal(rpcCalls('chat_update_thread').length, 0, 'a move does not touch title, pin or instructions');
+
+    res = await patchThread(req('PATCH', { folder_id: null }), params());
+    assert.equal(res.status, 200);
+    assert.deepEqual(rpcCalls('chat_move_thread')[1].body, { p_auth_id: AUTH, p_thread_id: THREAD, p_folder_id: null });
+
+    rpcReplies.chat_move_thread = { ok: false, code: 'FOLDER_NOT_FOUND' };
+    assert.equal((await patchThread(req('PATCH', { folder_id: FOLDER }), params())).status, 404);
+    assert.equal((await patchThread(req('PATCH', { folder_id: 'nope' }), params())).status, 400);
+    assert.equal((await patchThread(req('PATCH', { folder_id: FOLDER, title: 'x' }), params())).status, 400);
 });

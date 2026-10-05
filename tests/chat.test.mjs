@@ -1,7 +1,7 @@
 // ADR-0067: validation and prompt assembly.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { MAX_HISTORY_CHARS, MAX_REPLY_TOKENS, PLATFORM_INSTRUCTION, buildMessages, chatEnabled, sseFrame, validateThreadPatch, validateTurn } from '../lib/chat.js';
+import { MAX_HISTORY_CHARS, MAX_REPLY_TOKENS, PLATFORM_INSTRUCTION, buildMessages, chatEnabled, sseFrame, validateFolderName, validateThreadPatch, validateTurn } from '../lib/chat.js';
 
 test('the caps the flat price depends on', () => {
     assert.equal(MAX_REPLY_TOKENS, 1024); assert.equal(MAX_HISTORY_CHARS, 24000);
@@ -71,4 +71,22 @@ test('chat uses its own OpenRouter key when set, and in production nothing else'
     assert.equal(chatApiKey({ OPENROUTER_API_KEY: 'sk-video' }), 'sk-video');
     assert.equal(chatApiKey({}), '');
     assert.equal(chatApiKey({ OPENROUTER_CHAT_API_KEY: 5 }), '', 'a non-string is not a key');
+});
+
+test('validateFolderName trims and allows 1 to 60 characters', () => {
+    assert.deepEqual(validateFolderName('  Work  '), { ok: true, name: 'Work' });
+    assert.deepEqual(validateFolderName('x'.repeat(60)), { ok: true, name: 'x'.repeat(60) });
+    for (const bad of ['', '   ', 'x'.repeat(61), 5, null, undefined, {}, ['a']]) {
+        assert.deepEqual(validateFolderName(bad), { ok: false, error: 'invalid_name' }, JSON.stringify(bad));
+    }
+});
+
+test('a thread patch may move a chat into a folder, or out with null, and only on its own', () => {
+    const F = '3f2b8c1e-5d4a-4c9b-8e7f-1a2b3c4d5e6f';
+    assert.deepEqual(validateThreadPatch({ folder_id: F }), { ok: true, patch: { folder_id: F } });
+    assert.deepEqual(validateThreadPatch({ folder_id: null }), { ok: true, patch: { folder_id: null } }, 'null takes it out of its folder');
+    for (const v of ['not-a-uuid', '', 5, true, {}, '../x', F.toUpperCase().slice(0, 35)]) {
+        assert.deepEqual(validateThreadPatch({ folder_id: v }), { ok: false, error: 'invalid_folder_id' }, JSON.stringify(v));
+    }
+    assert.deepEqual(validateThreadPatch({ folder_id: F, title: 'x' }), { ok: false, error: 'folder_id_must_be_alone' });
 });
