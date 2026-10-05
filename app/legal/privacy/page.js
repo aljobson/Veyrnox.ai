@@ -40,7 +40,7 @@ export default function Privacy() {
             <ul>
                 <li>Generated media is kept for 90 days, then deleted automatically.</li>
                 <li>Chat conversations are kept until you delete them. Deleting a chat removes it and its messages from our database straight away.</li>
-                {/* OWNER: add what applies to database backups once confirmed (how long they are kept); the code cannot say. */}
+                <li>Our database is backed up daily and each backup is kept for around seven days, so a chat you delete can remain in a backup for up to that long before it expires.</li>
                 <li>Images you attach to a chat are kept in our storage only long enough to answer, and are deleted within 24 hours.</li>
                 <li>Ledger records are kept for as long as your account exists plus the period required by tax law. A chat reply&rsquo;s entry in your credit history records which model, which options and the Credits charged; it never contains the text of your messages.</li>
                 <li>Request logs are kept for a short security window and then discarded.</li>
