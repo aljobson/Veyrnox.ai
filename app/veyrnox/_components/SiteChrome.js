@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { SUPPORT_EMAIL } from '../_lib/tokens';
 import { clearAttribution } from '../_lib/utm';
 import { applyStoredTheme } from './ThemeToggle';
+import ReferralBridge from './ReferralBridge';
 
 // Everything that floats over every page: the read-progress bar, the
 // back-to-top button, the contact button, and the one-time storage notice.
@@ -52,6 +53,7 @@ export default function SiteChrome() {
   return (
     <>
       <ScrollProgress />
+      <ReferralBridge />
       {/* The buttons ride above the notice while it is up, instead of
           sitting under it in the same bottom-right corner. */}
       <FloatingActions raised={noticeOpen} />
@@ -174,7 +176,7 @@ function StorageNotice({ onDismiss }) {
       <div className="mx-auto flex max-w-[1100px] flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-[13px] leading-[1.55] text-vx-fg-body">
           Veyrnox keeps your sign-in session, recent job display history and your theme choice in this browser&rsquo;s local
-          storage. No advertising cookies, no third-party trackers.{' '}
+          storage, plus a friend&rsquo;s referral code for up to three days if you arrived through their link. No advertising cookies, no third-party trackers.{' '}
           <Link href="/legal/privacy" className="text-vx-accent underline underline-offset-4">
             Privacy Policy
           </Link>
