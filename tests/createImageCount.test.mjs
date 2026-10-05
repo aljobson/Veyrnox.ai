@@ -19,7 +19,8 @@ test('the IMAGES control is shown for image models only', () => {
 });
 
 test('the total drives the price, the balance guard and the button', () => {
-    assert.match(page, /const cost = totalCost\(unitCost, n\);/);
+    // The batch total still drives the price; ADR-0069 waives the first `freeLeft` jobs of it when the server says so.
+    assert.match(page, /const cost = freeLeft > 0 \? freeCost\(unitCost, n, freeLeft\) : totalCost\(unitCost, n\);/);
     assert.match(submit, /cost > balance\) return;/);
     assert.match(page, /balance == null \|\| cost > balance \|\| missingSource/);
     assert.match(page, />−\{cost\} cr<\/div>/);
