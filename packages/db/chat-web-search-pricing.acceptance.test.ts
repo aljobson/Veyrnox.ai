@@ -1,5 +1,5 @@
 /**
- * 0210 re-prices Web search on all ten chat rows from measured worst cases. It is replay-safe, refuses a hand-edited or missing
+ * 0211 re-prices Web search on all ten chat rows from measured worst cases. It is replay-safe, refuses a hand-edited or missing
  * row, changes nothing else, and every stored cost matches the documented bound: fee $0.06 + 64,000 input tokens at the row's rate.
  */
 import test from 'node:test';
@@ -25,7 +25,7 @@ const setup = async (db: pg.Client) => {
     for (const f of ['0193_chat.sql', '0194_chat_models_staged.sql', '0196_chat_models_reasoning.sql', '0197_chat_models_options.sql', '0198_chat_models_images.sql']) {
         await db.query(await read(f));
     }
-    return read('0210_chat_web_search_worst_case.sql');
+    return read('0211_chat_web_search_worst_case.sql');
 };
 const web = async (db: pg.Client) => (await db.query('SELECT id, chat_web_extra_credits AS credits, chat_web_extra_cost::float8 AS cost FROM public.model_catalog WHERE id = ANY($1) ORDER BY id', [IDS])).rows;
 
