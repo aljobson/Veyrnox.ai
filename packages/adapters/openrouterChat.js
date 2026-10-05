@@ -51,6 +51,9 @@ export async function* streamChat({ apiKey, model, messages, maxTokens, reasonin
             // Reasoning comes back in separate delta fields and is never read here: only `content` is yielded.
             body: JSON.stringify({
                 model, messages, max_tokens: maxTokens, stream: true,
+                // Route only to providers that do not store or train on the prompt. All ten catalog models answer under
+                // this setting (checked live 2026-10-05); a model with no such provider would fail and be refunded.
+                provider: { data_collection: 'deny' },
                 ...(typeof reasoningEffort === 'string' && EFFORTS.has(reasoningEffort) ? { reasoning: { effort: reasoningEffort } } : {}),
                 // Web search is OpenRouter's web plugin with a fixed result count; the price of it is the row's.
                 ...(webSearch === true ? { plugins: [{ id: 'web', max_results: WEB_MAX_RESULTS }] } : {}),
