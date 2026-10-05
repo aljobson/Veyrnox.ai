@@ -7,9 +7,13 @@ import { attachmentLabel, prepareImage } from '../../_lib/chatImages';
 import { NEW_CHAT, readDraft, writeDraft, readStars, toggleStar } from '../../_lib/chatLocal';
 import { useFreeAllowance } from '../../_lib/useFreeAllowance';
 import { freeLeftFor } from '../../_lib/freeAllowance';
+import { researchProgressLabel } from '../../_lib/chatResearchUi';
 import { AttachButton, AttachChips, useAttachments } from './AttachBar';
 import { ChatText } from './ChatText';
+import { SettingsPanel } from './SettingsPanel';
 import { ThreadList } from './ThreadList';
+import { ALL_CHATS } from '../../_lib/chatFolders';
+import { defaultModel } from '../../_lib/chatModels';
 
 const credits = (n) => `${n} Credit${n === 1 ? '' : 's'}`;
 const MAX_TEXT = 8000;
@@ -35,13 +39,16 @@ function Footer({ m, starred, onStar }) {
 export function ChatWorkspace() {
   const [models, setModels] = useState([]);
   const [threads, setThreads] = useState([]);
+  const [folders, setFolders] = useState(null); // null: folders are not available here, so their controls stay hidden
+  const [folder, setFolder] = useState(ALL_CHATS);
   const [active, setActive] = useState(null);
   const [messages, setMessages] = useState([]);
   const [draftModel, setDraftModel] = useState('');
   const [text, setText] = useState(() => readDraft(store(), NEW_CHAT));
   const [stars, setStars] = useState([]);
   const [starredOnly, setStarredOnly] = useState(false);
-  const [opts, setOpts] = useState({ thinking: false, web: false });
+  const [opts, setOpts] = useState({ thinking: false, web: false, research: false });
+  const [progress, setProgress] = useState(null); // the step a Deep research reply is on: plan, search n of m, write
   const [limits, setLimits] = useState({ maxAttachments: 4, maxEdge: 2048 });
   const att = useAttachments(limits.maxAttachments);
   const freeMap = useFreeAllowance(); // free replies left today per model; empty while the feature is off
@@ -50,7 +57,8 @@ export function ChatWorkspace() {
   const [closed, setClosed] = useState(false);
   const [ready, setReady] = useState(false);
   const [drawer, setDrawer] = useState(false);
-  const [instrOpen, setInstrOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [tiers, setTiers] = useState(() => new Set());
   const [instr, setInstr] = useState('');
   const [saved, setSaved] = useState(false);
   const abortRef = useRef(null);
@@ -66,8 +74,10 @@ export function ChatWorkspace() {
   useEffect(() => {
     (async () => {
       try {
-        const [m, t] = await Promise.all([chatApi.models(), chatApi.threads()]);
-        setModels(m.models); setLimits({ maxAttachments: m.max_attachments || 4, maxEdge: m.max_image_edge || 2048 }); setThreads(t.threads); setDraftModel(m.models[0]?.id || '');
+        // Folders are optional: if they fail to load, chat works without them.
+        const [m, t, f] = await Promise.all([chatApi.models(), chatApi.threads(), chatApi.folders().catch(() => null)]);
+        if (f) setFolders(f.folders);
+        setModels(m.models); setLimits({ maxAttachments: m.max_attachments || 4, maxEdge: m.max_image_edge || 2048 }); setThreads(t.threads); setDraftModel(defaultModel(m.models)?.id || '');
       } catch (e) { fail(e); } finally { setReady(true); }
     })();
   }, [fail]);
@@ -75,17 +85,21 @@ export function ChatWorkspace() {
   // The unsent text follows the chat it was typed in; sending or clearing it forgets it.
   useEffect(() => { writeDraft(store(), active?.id ?? NEW_CHAT, text); }, [text, active?.id]);
 
-  const model = models.find((x) => x.id === (active?.model_id ?? draftModel)) || models[0];
+  const model = models.find((x) => x.id === (active?.model_id ?? draftModel)) || defaultModel(models) || models[0];
   // An option counts only if the chosen model offers it; the price is the model's base plus each extra chosen.
   const offer = model?.options || { thinking: null, web: null, images: null };
-  const chosen = { thinking: opts.thinking && !!offer.thinking, web: opts.web && !!offer.web };
+  // Deep research is priced alone (ADR-0070): choosing it stands in for Thinking and Web search, and it cannot read images.
+  const researchOn = opts.research && !!offer.research;
+  const chosen = researchOn ? { research: true } : { thinking: opts.thinking && !!offer.thinking, web: opts.web && !!offer.web };
   const hasImages = att.items.length > 0;
-  const imagesBlocked = hasImages && !offer.images; // images are chosen but this model cannot read them
-  const price = (model?.credits_per_reply ?? 0) + (chosen.thinking ? offer.thinking.extra_credits : 0) + (chosen.web ? offer.web.extra_credits : 0)
-    + (hasImages && offer.images ? offer.images.extra_credits : 0);
+  const imagesBlocked = hasImages && (!offer.images || researchOn); // images are chosen but this model or option cannot read them
+  const price = researchOn
+    ? (model?.credits_per_reply ?? 0) + offer.research.extra_credits
+    : (model?.credits_per_reply ?? 0) + (chosen.thinking ? offer.thinking.extra_credits : 0) + (chosen.web ? offer.web.extra_credits : 0)
+      + (hasImages && offer.images ? offer.images.extra_credits : 0);
   // A plain reply (no paid option) can use a free allowance; the server decides, this only labels the button.
   const freeLeft = freeLeftFor(freeMap, model?.id);
-  const isFree = freeLeft > 0 && !chosen.thinking && !chosen.web && !hasImages;
+  const isFree = freeLeft > 0 && !researchOn && !chosen.thinking && !chosen.web && !hasImages;
   const open = async (id) => {
     try {
       const r = await chatApi.get(id);
@@ -93,7 +107,7 @@ export function ChatWorkspace() {
       setText(readDraft(store(), r.thread.id)); setStars(readStars(store(), r.thread.id)); setStarredOnly(false);
     } catch (e) { fail(e); }
   };
-  const blank = () => { setActive(null); setMessages([]); setInstr(''); setInstrOpen(false); setError(null); setDrawer(false); setText(readDraft(store(), NEW_CHAT)); setStars([]); setStarredOnly(false); };
+  const blank = () => { setActive(null); setMessages([]); setInstr(''); setError(null); setDrawer(false); setText(readDraft(store(), NEW_CHAT)); setStars([]); setStarredOnly(false); };
   const star = (id) => { if (active) setStars(toggleStar(store(), active.id, id)); };
   const shown = starredOnly ? messages.filter((x) => x.role === 'assistant' && stars.includes(x.id)) : messages;
   const patch = async (id, body) => {
@@ -107,6 +121,26 @@ export function ChatWorkspace() {
   const remove = async (id) => {
     try { await chatApi.remove(id); setThreads((ts) => ts.filter((t) => t.id !== id)); if (active?.id === id) blank(); } catch (e) { fail(e); }
   };
+  const selectModel = (id) => (active ? patch(active.id, { model_id: id }) : setDraftModel(id));
+  const saveInstr = async () => { if (active && await patch(active.id, { system_prompt: instr })) { setSaved(true); setTimeout(() => setSaved(false), 1500); } };
+  const byName = (a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase());
+  const newFolder = async (name) => {
+    try { const { folder: f } = await chatApi.createFolder(name); setFolders((fs) => [...fs, f].sort(byName)); setFolder(f.id); return true; } catch (e) { fail(e); return false; }
+  };
+  const renameFolder = async (id, name) => {
+    try { const { folder: f } = await chatApi.renameFolder(id, name); setFolders((fs) => fs.map((x) => (x.id === id ? { ...x, name: f.name } : x)).sort(byName)); return true; } catch (e) { fail(e); return false; }
+  };
+  const deleteFolder = async (id) => {
+    try {
+      await chatApi.removeFolder(id);
+      setFolders((fs) => fs.filter((x) => x.id !== id));
+      setThreads((ts) => ts.map((t) => (t.folder_id === id ? { ...t, folder_id: null } : t)));
+      setFolder((cur) => (cur === id ? ALL_CHATS : cur));
+    } catch (e) { fail(e); }
+  };
+  const move = async (id, folderId) => {
+    try { await chatApi.move(id, folderId); setThreads((ts) => ts.map((t) => (t.id === id ? { ...t, folder_id: folderId } : t))); } catch (e) { fail(e); }
+  };
 
   async function send() {
     const content = text.trim();
@@ -119,6 +153,14 @@ export function ChatWorkspace() {
       for (const it of att.items) keys.push(await uploadChatImage(await prepareImage(it.file, limits.maxEdge)));
       if (!thread) {
         thread = (await chatApi.create(draftModel || model.id)).thread; created = true;
+        // A chat started while a folder is open goes into it. If filing fails, the chat still starts, unfiled.
+        if (folders && folders.some((f) => f.id === folder)) {
+          try { await chatApi.move(thread.id, folder); thread = { ...thread, folder_id: folder }; } catch { /* stays unfiled */ }
+        }
+        // Instructions typed before the first message belong to the new chat. If saving fails, the chat still starts without them.
+        if (instr.trim()) {
+          try { const r = await chatApi.patch(thread.id, { system_prompt: instr }); thread = { ...thread, ...r.thread }; } catch { /* starts without */ }
+        }
         setActive(thread); setThreads((ts) => [thread, ...ts]);
       }
       setMessages((m) => [...m, { id: `u-${pending}`, role: 'user', content, status: 'complete', credits: 0, attachments: att.items.map(() => ({ type: 'image' })) }, { id: pending, role: 'assistant', content: '', status: 'streaming', credits: 0 }]);
@@ -127,6 +169,8 @@ export function ChatWorkspace() {
       const r = await sendTurn({
         threadId: thread.id, text: content, key: makeIdempotencyKey(), options: chosen, attachments: keys, signal: ac.signal,
         onEvent: (ev, d) => {
+          if (ev === 'start') setProgress(null);
+          if (ev === 'progress') setProgress(d);
           if (ev === 'delta') setMessages((m) => m.map((x) => (x.id === pending ? { ...x, content: x.content + d.text } : x)));
           if (ev === 'error') streamError = d.error;
           if (ev === 'done') outcome = d;
@@ -153,7 +197,7 @@ export function ChatWorkspace() {
         else fail(e);
         if (created && thread) { chatApi.remove(thread.id).catch(() => {}); setThreads((ts) => ts.filter((t) => t.id !== thread.id)); setActive(null); }
       }
-    } finally { setBusy(false); sendingRef.current = false; abortRef.current = null; }
+    } finally { setBusy(false); setProgress(null); sendingRef.current = false; abortRef.current = null; }
   }
 
   if (!ready) return <div className="p-8 text-sm text-vx-fg-muted" role="status">Loading</div>;
@@ -167,7 +211,15 @@ export function ChatWorkspace() {
     );
   }
 
-  const list = <ThreadList threads={threads} activeId={active?.id} onOpen={open} onNew={blank} onPatch={patch} onDelete={remove} />;
+  const counted = folders && folders.map((f) => ({ ...f, count: threads.filter((t) => t.folder_id === f.id).length }));
+  const list = (
+    <ThreadList threads={threads} folders={counted} folder={folder} onFolder={setFolder} onNewFolder={newFolder} onRenameFolder={renameFolder}
+      onDeleteFolder={deleteFolder} onMove={move} activeId={active?.id} onOpen={open} onNew={blank} onPatch={patch} onDelete={remove} />
+  );
+  const settings = (
+    <SettingsPanel models={models} model={model} busy={busy} onSelectModel={selectModel} tiers={tiers} onTiers={setTiers} offer={offer} opts={opts} onOpts={setOpts} researchOn={researchOn}
+      instr={instr} onInstr={setInstr} hasThread={!!active} canSaveInstr={!!active && instr !== (active.system_prompt || '')} onSaveInstr={saveInstr} saved={saved} maxPrompt={MAX_PROMPT} />
+  );
   return (
     <div className="mx-auto flex h-[calc(100dvh-64px)] max-w-[1500px]">
       <aside className="hidden w-[280px] shrink-0 border-r border-vx-border bg-vx-panel md:block">{list}</aside>
@@ -180,33 +232,13 @@ export function ChatWorkspace() {
       <section className="flex min-w-0 flex-1 flex-col" aria-label="Conversation">
         <div className="flex items-center gap-2 border-b border-vx-border px-4 py-2">
           <button type="button" className="rounded-full border border-vx-border px-3 py-1.5 text-sm md:hidden" onClick={() => setDrawer(true)}>Chats</button>
-          <label className="sr-only" htmlFor="chat-model">Model</label>
-          <select id="chat-model" disabled={busy} value={model.id}
-            onChange={(e) => (active ? patch(active.id, { model_id: e.target.value }) : setDraftModel(e.target.value))}
-            className="min-w-0 flex-1 truncate rounded-lg border border-vx-border bg-vx-base px-3 py-1.5 text-sm text-vx-fg md:max-w-[420px] md:flex-none">
-            {models.map((x) => <option key={x.id} value={x.id}>{x.name}, {credits(x.credits_per_reply)} per reply</option>)}
-          </select>
-          <button type="button" disabled={!active} aria-expanded={instrOpen} onClick={() => setInstrOpen((v) => !v)}
-            className="rounded-full border border-vx-border px-3 py-1.5 text-sm disabled:opacity-50">Instructions</button>
+          <p className="min-w-0 flex-1 truncate text-sm" aria-live="polite">
+            <span className="font-semibold">{model.name}</span> <span className="font-vx-mono text-xs text-vx-money vx-num">{credits(model.credits_per_reply)} per reply</span>
+          </p>
+          <button type="button" aria-expanded={settingsOpen} onClick={() => setSettingsOpen(true)} className="rounded-full border border-vx-border px-3 py-1.5 text-sm xl:hidden">Settings</button>
           <button type="button" disabled={!active || stars.length === 0} aria-pressed={starredOnly} onClick={() => setStarredOnly((v) => !v)}
             className="rounded-full border border-vx-border px-3 py-1.5 text-sm aria-pressed:border-vx-accent disabled:opacity-50">★ Starred</button>
         </div>
-
-        {instrOpen && active && (
-          <div className="space-y-2 border-b border-vx-border bg-vx-panel px-4 py-3">
-            <label htmlFor="chat-instr" className="text-sm font-semibold">Instructions for this chat</label>
-            <textarea id="chat-instr" value={instr} maxLength={MAX_PROMPT} onChange={(e) => setInstr(e.target.value)}
-              placeholder="For example: answer in plain English and keep it short."
-              className="min-h-24 w-full rounded-lg border border-vx-border bg-vx-base px-3 py-2 text-sm text-vx-fg placeholder:text-vx-fg-faint" />
-            <div className="flex items-center gap-3 text-sm">
-              <button type="button" disabled={instr === (active.system_prompt || '')}
-                onClick={async () => { if (await patch(active.id, { system_prompt: instr })) { setSaved(true); setTimeout(() => setSaved(false), 1500); } }}
-                className="rounded-full bg-vx-accent px-4 py-1.5 font-semibold text-vx-accent-ink disabled:opacity-50">Save</button>
-              {saved && <span role="status" className="text-vx-accent">Saved</span>}
-              <span className="ml-auto font-vx-mono text-vx-fg-muted vx-num">{instr.length}/{MAX_PROMPT}</span>
-            </div>
-          </div>
-        )}
 
         <div className="flex-1 overflow-y-auto">
           <div className="mx-auto max-w-[760px] space-y-6 px-4 py-6">
@@ -230,7 +262,7 @@ export function ChatWorkspace() {
                       )}
                     </>
                   )
-                    : <div aria-live={m.status === 'streaming' ? 'polite' : undefined}>{m.content ? <ChatText text={m.content} /> : <p className="text-vx-fg-muted">Thinking</p>}</div>}
+                    : <div aria-live={m.status === 'streaming' ? 'polite' : undefined}>{m.content ? <ChatText text={m.content} /> : <p className="text-vx-fg-muted">{researchProgressLabel(progress) || 'Thinking'}</p>}</div>}
                   {m.role === 'assistant' && m.status !== 'streaming' && <Footer m={m} starred={stars.includes(m.id)} onStar={() => star(m.id)} />}
                 </div>
               </article>
@@ -246,21 +278,8 @@ export function ChatWorkspace() {
                 {error} {error.includes('Top up') && <Link className="underline" href="/app/credits">Top up</Link>}
               </div>
             )}
-            {(offer.thinking || offer.web) && (
-              <div className="mb-2 flex flex-wrap gap-2" role="group" aria-label="Options for the next reply">
-                {offer.thinking && (
-                  <label className="flex cursor-pointer items-center gap-2 rounded-full border border-vx-border px-3 py-1.5 text-sm has-[:checked]:border-vx-accent has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-vx-accent">
-                    <input type="checkbox" className="accent-[var(--vx-accent)]" checked={opts.thinking} disabled={busy} onChange={(e) => setOpts((o) => ({ ...o, thinking: e.target.checked }))} />
-                    Thinking <span className="font-vx-mono text-xs text-vx-money vx-num">+{credits(offer.thinking.extra_credits)}</span>
-                  </label>
-                )}
-                {offer.web && (
-                  <label className="flex cursor-pointer items-center gap-2 rounded-full border border-vx-border px-3 py-1.5 text-sm has-[:checked]:border-vx-accent has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-vx-accent">
-                    <input type="checkbox" className="accent-[var(--vx-accent)]" checked={opts.web} disabled={busy} onChange={(e) => setOpts((o) => ({ ...o, web: e.target.checked }))} />
-                    Web search <span className="font-vx-mono text-xs text-vx-money vx-num">+{credits(offer.web.extra_credits)}</span>
-                  </label>
-                )}
-              </div>
+            {researchOn && (
+              <p className="mb-2 text-xs text-vx-fg-muted">Plans a few searches, reads what the web returns, then writes a cited answer. It can take up to about a minute and works on text only. If it fails before the answer starts, the Credits come back.</p>
             )}
             <AttachChips items={att.items} onRemove={att.remove} disabled={busy} />
             {hasImages && !imagesBlocked && (
@@ -268,7 +287,7 @@ export function ChatWorkspace() {
             )}
             {(att.notice || imagesBlocked) && (
               <p role="status" className="mb-2 text-sm text-vx-fg-muted">
-                {imagesBlocked ? 'This model cannot read images. Remove them or pick another model.' : att.notice}
+                {imagesBlocked ? (researchOn ? 'Deep research reads text only. Remove the images or turn it off.' : 'This model cannot read images. Remove them or pick another model.') : att.notice}
               </p>
             )}
             <div className="flex items-end gap-2 rounded-2xl border border-vx-border bg-vx-panel p-2 focus-within:border-vx-accent">
@@ -282,11 +301,21 @@ export function ChatWorkspace() {
                 : <button type="button" onClick={send} disabled={!text.trim() || imagesBlocked} className="rounded-full bg-vx-accent px-4 py-2 text-sm font-semibold text-vx-accent-ink disabled:opacity-50">{isFree ? `Send free (${freeLeft} left today)` : `Send for ${credits(price)}`}</button>}
             </div>
             <p className="mt-1.5 px-1 text-xs text-vx-fg-muted">
-              <span className="font-vx-mono text-vx-money vx-num">{isFree ? 'Free' : credits(price)}</span> per reply, up to about {wordsFor(model.max_reply_tokens)} words. Stop after text appears and you keep it and the price. If nothing arrives, the Credits come back.
+              <span className="font-vx-mono text-vx-money vx-num">{isFree ? 'Free' : credits(price)}</span> per reply{chosen.thinking || chosen.web ? ` (with ${[chosen.thinking && 'Thinking', chosen.web && 'Web search'].filter(Boolean).join(' and ')})` : ''}, up to about {wordsFor(model.max_reply_tokens)} words. Stop after text appears and you keep it and the price. If nothing arrives, the Credits come back.
             </p>
           </div>
         </div>
       </section>
+      <aside className="hidden w-[320px] shrink-0 border-l border-vx-border bg-vx-base xl:block">{settings}</aside>
+      {settingsOpen && (
+        <div className="fixed inset-0 z-40 flex justify-end xl:hidden" role="dialog" aria-modal="true" aria-label="Chat settings">
+          <button type="button" aria-label="Close settings" className="flex-1 bg-black/50" onClick={() => setSettingsOpen(false)} />
+          <div className="relative w-[340px] max-w-[90vw] bg-vx-base">
+            <button type="button" aria-label="Close settings" className="absolute right-3 top-3 z-10 rounded-full border border-vx-border px-3 py-1 text-sm" onClick={() => setSettingsOpen(false)}>Close</button>
+            <div className="h-full pt-10">{settings}</div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

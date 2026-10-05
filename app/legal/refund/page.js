@@ -25,6 +25,7 @@ export default function Refund() {
             <ul>
                 <li>You can request a full refund of a credit pack within 14 days of purchase, as long as you have not generated anything since that purchase. Once you generate after buying, that purchase can no longer be refunded. Refunds go back to the original payment method, and the credits from that pack are removed from your balance.</li>
                 <li>If you are a UK or EU consumer, this does not limit your statutory cancellation rights.</li>
+                <li>If you joined through someone&rsquo;s referral link, refunding your first credit pack also reverses the referral reward that purchase earned for them. It does not change your refund.</li>
             </ul>
 
             <h2>Duplicate charges</h2>

@@ -6,7 +6,7 @@
 -- address on the account). The chat tables are closed to the API and to the browser roles on purpose, so this runs as
 -- the project owner in the editor, not through the app.
 --
--- What it holds: each chat's title, model, instructions and messages in order, with each message's role, text, status,
+-- What it holds: each chat's title, folder, model, instructions and messages in order, with each message's role, text, status,
 -- Credits charged and time. Attached images are not included: they are deleted from storage within 24 hours of the
 -- reply, and the thread only ever kept their type and size. The credit history is part of the account export.
 -- Returns no row if the e-mail has no account.
@@ -16,6 +16,7 @@ SELECT jsonb_pretty(jsonb_build_object(
     'chats', COALESCE((
         SELECT jsonb_agg(jsonb_build_object(
             'title', t.title,
+            'folder', (SELECT f.name FROM public.chat_folders f WHERE f.id = t.folder_id),
             'model', t.model_id,
             'instructions', t.system_prompt,
             'pinned', t.pinned,

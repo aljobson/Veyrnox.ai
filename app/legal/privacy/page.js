@@ -53,7 +53,10 @@ export default function Privacy() {
             <p>You can access, correct, export or delete your data, and object to or restrict certain processing. See <a href="/legal/gdpr">GDPR &amp; Data Rights</a> for how. You may also complain to the UK Information Commissioner&rsquo;s Office or your local supervisory authority.</p>
 
             <h2>Cookies</h2>
-            <p>We use only the cookies and local storage strictly necessary to keep you signed in and the service working. No third-party advertising trackers.</p>
+            <p>We use only the cookies and local storage strictly necessary to keep you signed in and the service working. No third-party advertising trackers. If you open a friend&rsquo;s referral link, we keep that link&rsquo;s code in your browser&rsquo;s local storage for up to three days so it can be linked to your account when you sign up, then remove it.</p>
+
+            <h2>Referrals</h2>
+            <p>If you join through someone&rsquo;s referral link, we record which account referred yours. That person can see how many friends joined through their link and is never told who you are. If you buy a Credit Pack, they may earn Credits as described in the Terms; the reward is reversed if that purchase is refunded or disputed.</p>
 
             <h2>Children</h2>
             <p>The service is not intended for anyone under 18.</p>

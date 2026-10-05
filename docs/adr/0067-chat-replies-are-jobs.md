@@ -135,6 +135,97 @@ and a deploy (about three minutes), with no per-browser state to chase. Before t
 images (draft in `docs/product/chat-privacy-wording-draft.md`), the OpenRouter key is confirmed separate and capped, and the owner
 has used chat on production.
 
+## Amendment 5 2026-10-05: folders
+
+Status: **Proposed**. The owner accepts it by merging the change.
+
+A person can group chats into folders, as Syntx's Projects tab does, without the heavier idea of a project: a folder has a name and
+nothing else (no shared instructions, no files). Up to 50 per person, names unique ignoring case, 1 to 60 characters. Deleting a
+folder keeps its chats and unfiles them. Moving a chat does not change its place in the recency order. They are called folders, not
+projects, because Veyrnox.ai already has Projects (tenant workspaces for assets, ADR-0051) and the two are unrelated.
+
+Storage follows the chat tables: `chat_folders` (0210) has forced RLS and no table grants, is reached only through five
+`service_role`-only definer functions keyed by the verified auth id, and goes with the account (`ON DELETE CASCADE`).
+`chat_threads.folder_id` is `ON DELETE SET NULL`, and `chat_list_threads` now returns it. Moving is `PATCH /threads/:id` with
+`{folder_id}` alone (null unfiles); folders are `/api/v1/chat/folders`. No money path is touched: a folder name is never sent to
+a model and never read by a turn. The screen hides every folder control when the folders endpoint is unavailable, so the code can
+deploy before the migration without affecting chat. The data-export query includes each chat's folder name.
+
+## Amendment 6 2026-10-05: the five premium models, a two-level picker and a settings panel
+
+Status: **Proposed**. The owner accepts it by merging the change.
+
+**Models.** Migration 0211 turns on the five rows staged since 0196: DeepSeek V4.1 Flash (1 Credit), Gemini 3.8 Flash (2), Grok 4.7 (3),
+GPT-6.1 Sol (4) and Claude Opus 5.5 (7). Each was checked live on 2026-10-05 through the repository's adapter on its own row settings,
+plain and with Thinking: every reply non-empty, and the Thinking answer to a sums puzzle correct on all five. The migration pins slug,
+price, recorded cost, reply cap and reasoning effort, and fails unless exactly five rows change. Gemini 3.8 Flash took about 14 s to
+start a Thinking reply, which is why Thinking stays optional. A new chat now opens on the cheapest model, ties settled by family
+order, instead of the first by name (which would have been Opus).
+
+**Picker.** Two levels, family then model, with a cost filter. The family is derived server side from the endpoint's prefix and only
+the family comes back (`maker`, `maker_label`); the endpoint, cost and provider name never do. A cost tier is the base price per
+reply: 1 Credit Low, 2 to 3 Medium, 4 and over High. The model in use always stays listed, whatever the filter.
+
+**Settings panel.** The model controls, Thinking and Web search, and the instructions move out of the header and composer into a
+right-hand panel of collapsible sections (a drawer below 1280 px) with Reset all and Open all, and an About panel that states the
+price, reply length and the extra Credits for each option. Instructions can be written before the first message and are saved onto
+the chat when it is created. The panel lists Code interpreter, Shell, Files, Charts and Deep research as "Not available yet": they
+need a sandbox and agent runs and are not built.
+
+No money path changes: prices, options and the ledger are untouched.
+
+## Amendment 7 2026-10-05: Web search worst cases, re-measured
+
+Status: **Proposed**, and a price change the owner decides. It is held as a draft.
+
+Amendment 2 recorded a Web search extra as a $0.02 search fee plus 16,000 input tokens at the row's rate. A live probe the same day
+(12 searches on Claude Sonnet 5.5 and GPT-6 Luna) broke both numbers. The web plugin injected 12,417 to 49,862 input tokens per
+search, and OpenRouter's documentation offers no setting that caps the injected text (it is billed as ordinary prompt tokens). The
+plugin's own fee was not fixed either: $0.01 to $0.05 per search, in steps of $0.01, on both models. Sonnet searches cost $0.043 to
+$0.161 against a recorded $0.0520, and Luna $0.022 to $0.033 against $0.0216. No reply lost money in that range, because the base
+price also pays, but the extra alone fell below the 50% margin floor on heavy pages.
+
+Migration 0212 records a new worst case for all ten rows: a **$0.06 fee** (the observed maximum plus 20%) plus **64,000 input
+tokens** (the observed maximum plus about 28%) at each model's input rate, with Credits at the margin floor. It is a planning bound
+from measurement, not a guarantee: the search text cannot be capped through the plugin, so a search that reads more than that is the
+one case the flat price does not cover. Capping the text ourselves (our own search call, with each result cut to a fixed length)
+would make the bound real and is the route for Deep research (ADR-0070), which cannot be priced honestly until then.
+
+The Web search extra becomes: Opus 18, Sonnet 11, GPT-6.1 Sol 11, Grok 11, Gemini 7, DeepSeek 5, Llama 5, Ministral 5, Luna 4,
+Mistral Small 4 (from 5, 3, 3, 3, 2, 2, 2, 2, 2, 2). A Luna reply with Web search goes from 3 to 5 Credits; a Sonnet one from 7 to 15.
+The price still shows before Send. The alternative the owner may prefer is fewer results per search (two, not three), which lowers the
+typical text but, being uncapped, not the bound.
+
+## Amendment 8 2026-10-05: a capped search of our own
+
+Status: **Proposed**. The owner accepts it by merging. Amendment 7 re-prices the OpenRouter web plugin from measured worst cases and
+says the real fix is to cap the search text ourselves; this is that fix, in three steps that must land in order.
+
+**Design.** Web search can run two ways, recorded per catalog row in `chat_web_engine`: `plugin` (today) and `capped`. The capped way
+makes one call to Exa (`POST https://api.exa.ai/search`, a constant URL; the key is the Worker secret `EXA_API_KEY`) for the user's
+message, asking for 3 results and at most 2,000 characters of text each (`contents.text.maxCharacters`), cuts the text again on our
+side, and puts it in the system message as untrusted quoted data with its source links. Nothing the page says can add a step or change
+the price: the model gets a bounded block of text and answers. The worst case is then real: one search fee (read from Exa's own
+`costDollars.total` on every call and kept on the job as `search_cost_usd`) plus at most 7,000 injected tokens at the model's rate
+(7,000 characters at one token per character, the ceiling for any language), so the Web search extra falls back to 1 to 3 Credits.
+Measured 2026-10-05 with the real key: Exa charged a flat $0.007 per search (3 results, about 6,000 characters), so the fee bound is
+$0.011 (the dearest search x 1.5, rounded up).
+
+**The search runs before the debit.** If the search fails or the key is missing, the answer is a typed error with nothing charged;
+a reply is never charged for a search it did not get. The sources listed under the reply are the results the model was given.
+
+**Price and engine change together.** `chat_web_engine` defaults to `plugin` everywhere (0213, additive: the release before it keeps
+working). A later migration flips a row to `capped` and re-prices it in one statement, only after the capped search is live and its
+cost measured with a key. A `capped` row with no search key configured does not offer Web search at all and refuses it before any
+Credits move, so a low price can never be charged for the uncapped plugin. The code that reads the column ships only after 0213 is
+applied in that environment.
+
+**Order.** (1) 0213, (2) the code, (3) set `EXA_API_KEY`, measure, then the flip migration. Deep research (ADR-0070) builds on the
+capped search and is not priced until step 3 has real numbers.
+
+**Privacy.** The user's message text goes to Exa as the search query, as it already goes to the plugin's search engine through
+OpenRouter. The privacy notice says Web search sends the question to a search service; it should name Exa before the flip.
+
 ## Not decided here
 
 - Which models, and their prices. Needs live endpoint checks and the margin validator. (Three were chosen
