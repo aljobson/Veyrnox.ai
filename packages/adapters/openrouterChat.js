@@ -4,7 +4,8 @@
  * `provider_endpoint` of a text catalog row is the OpenRouter model slug, e.g. "vendor/model".
  * The target URL is a constant: nothing a user sends decides where the request goes.
  *
- * Configuration (read at the route layer): OPENROUTER_API_KEY, the same backend secret as video.
+ * Configuration (read at the route layer, lib/chat.js chatApiKey): OPENROUTER_CHAT_API_KEY, a key of its own so chat
+ * can have a spend cap. Staging and local development fall back to OPENROUTER_API_KEY, the video key; production does not.
  *
  * Errors are typed codes, never the vendor's message: it can echo prompts or account details.
  */
