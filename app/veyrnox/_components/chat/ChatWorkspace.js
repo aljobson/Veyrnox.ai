@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { GatewayError } from '../../_lib/gateway';
 import { chatApi, chatErrorCopy, makeIdempotencyKey, sendTurn, uploadChatImage } from '../../_lib/chatApi';
 import { attachmentLabel, prepareImage } from '../../_lib/chatImages';
+import { NEW_CHAT, readDraft, writeDraft, readStars, toggleStar } from '../../_lib/chatLocal';
 import { AttachButton, AttachChips, useAttachments } from './AttachBar';
 import { ChatText } from './ChatText';
 import { ThreadList } from './ThreadList';
@@ -11,10 +12,11 @@ import { ThreadList } from './ThreadList';
 const credits = (n) => `${n} Credit${n === 1 ? '' : 's'}`;
 const MAX_TEXT = 8000;
 const MAX_PROMPT = 4000;
+const store = () => { try { return window.localStorage; } catch { return null; } };
 // About three words for every four tokens, rounded to ten, from the chosen model's own reply cap.
 const wordsFor = (tokens) => Math.round(((tokens || 1024) * 0.75) / 10) * 10;
 
-function Footer({ m }) {
+function Footer({ m, starred, onStar }) {
   const [copied, setCopied] = useState(false);
   const label = m.status === 'error' ? 'Cut off. No Credits used' : m.status === 'canceled' ? `Stopped. ${credits(m.credits)}` : credits(m.credits);
   const copy = async () => { try { await navigator.clipboard.writeText(m.content); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch { /* blocked */ } };
@@ -22,6 +24,7 @@ function Footer({ m }) {
     <p className="mt-2 flex items-center gap-3 font-vx-mono text-xs text-vx-fg-muted vx-num">
       <span>{label}</span>
       <button type="button" onClick={copy} className="rounded px-1.5 py-0.5 font-sans hover:text-vx-fg" aria-label="Copy reply">{copied ? 'Copied' : 'Copy'}</button>
+      <button type="button" onClick={onStar} aria-pressed={starred} className="rounded px-1.5 py-0.5 font-sans hover:text-vx-fg" aria-label={starred ? 'Remove star' : 'Star reply'}>{starred ? '★ Starred' : '☆ Star'}</button>
     </p>
   );
 }
@@ -32,7 +35,9 @@ export function ChatWorkspace() {
   const [active, setActive] = useState(null);
   const [messages, setMessages] = useState([]);
   const [draftModel, setDraftModel] = useState('');
-  const [text, setText] = useState('');
+  const [text, setText] = useState(() => readDraft(store(), NEW_CHAT));
+  const [stars, setStars] = useState([]);
+  const [starredOnly, setStarredOnly] = useState(false);
   const [opts, setOpts] = useState({ thinking: false, web: false });
   const [limits, setLimits] = useState({ maxAttachments: 4, maxEdge: 2048 });
   const att = useAttachments(limits.maxAttachments);
@@ -63,6 +68,8 @@ export function ChatWorkspace() {
     })();
   }, [fail]);
   useEffect(() => { endRef.current?.scrollIntoView({ block: 'end' }); }, [messages]);
+  // The unsent text follows the chat it was typed in; sending or clearing it forgets it.
+  useEffect(() => { writeDraft(store(), active?.id ?? NEW_CHAT, text); }, [text, active?.id]);
 
   const model = models.find((x) => x.id === (active?.model_id ?? draftModel)) || models[0];
   // An option counts only if the chosen model offers it; the price is the model's base plus each extra chosen.
@@ -76,9 +83,12 @@ export function ChatWorkspace() {
     try {
       const r = await chatApi.get(id);
       setActive(r.thread); setMessages(r.messages); setInstr(r.thread.system_prompt || ''); setError(null); setDrawer(false);
+      setText(readDraft(store(), r.thread.id)); setStars(readStars(store(), r.thread.id)); setStarredOnly(false);
     } catch (e) { fail(e); }
   };
-  const blank = () => { setActive(null); setMessages([]); setInstr(''); setInstrOpen(false); setError(null); setDrawer(false); };
+  const blank = () => { setActive(null); setMessages([]); setInstr(''); setInstrOpen(false); setError(null); setDrawer(false); setText(readDraft(store(), NEW_CHAT)); setStars([]); setStarredOnly(false); };
+  const star = (id) => { if (active) setStars(toggleStar(store(), active.id, id)); };
+  const shown = starredOnly ? messages.filter((x) => x.role === 'assistant' && stars.includes(x.id)) : messages;
   const patch = async (id, body) => {
     try {
       const { thread } = await chatApi.patch(id, body);
@@ -171,6 +181,8 @@ export function ChatWorkspace() {
           </select>
           <button type="button" disabled={!active} aria-expanded={instrOpen} onClick={() => setInstrOpen((v) => !v)}
             className="rounded-full border border-vx-border px-3 py-1.5 text-sm disabled:opacity-50">Instructions</button>
+          <button type="button" disabled={!active || stars.length === 0} aria-pressed={starredOnly} onClick={() => setStarredOnly((v) => !v)}
+            className="rounded-full border border-vx-border px-3 py-1.5 text-sm aria-pressed:border-vx-accent disabled:opacity-50">★ Starred</button>
         </div>
 
         {instrOpen && active && (
@@ -197,7 +209,8 @@ export function ChatWorkspace() {
                 <p className="mt-2 text-vx-fg-muted">Every reply shows its price before you send. If a reply fails, the Credits come back.</p>
               </div>
             )}
-            {messages.map((m) => (
+            {starredOnly && shown.length === 0 && <p className="py-8 text-center text-vx-fg-muted">No starred replies in this chat.</p>}
+            {shown.map((m) => (
               <article key={m.id} aria-label={m.role === 'user' ? 'You' : 'Assistant'} className={m.role === 'user' ? 'flex justify-end' : ''}>
                 <div className={m.role === 'user' ? 'max-w-[85%] rounded-2xl bg-vx-panel px-4 py-3' : 'w-full'}>
                   {m.role === 'user' ? (
@@ -211,7 +224,7 @@ export function ChatWorkspace() {
                     </>
                   )
                     : <div aria-live={m.status === 'streaming' ? 'polite' : undefined}>{m.content ? <ChatText text={m.content} /> : <p className="text-vx-fg-muted">Thinking</p>}</div>}
-                  {m.role === 'assistant' && m.status !== 'streaming' && <Footer m={m} />}
+                  {m.role === 'assistant' && m.status !== 'streaming' && <Footer m={m} starred={stars.includes(m.id)} onStar={() => star(m.id)} />}
                 </div>
               </article>
             ))}
