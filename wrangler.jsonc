@@ -26,6 +26,8 @@
   "vars": {
     "APP_ENV": "production",
     "TENANT_PROJECTS_ENABLED": "false",
+    // ADR-0067: Chat stays closed until a text model is verified live and active, and the owner opens it.
+    "CHAT_ENABLED": "false",
     // ADR-0064: checkout and account routes stay closed until staging acceptance.
     "SUBSCRIPTIONS_ENABLED": "false",
     // Before activation: SUBSCRIPTION_ALERT_EMAIL must name the Operator;
