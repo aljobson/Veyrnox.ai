@@ -1,7 +1,7 @@
 // The capped-search cost probe: how a measured search fee becomes a recorded worst case and a number of Credits.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { INPUT_RATES, TOKENS_BOUND, extraCosts, feeBound } from '../scripts/measure-capped-search.mjs';
+import { INPUT_RATES, TOKENS_BOUND, extraCosts, feeBound, outcome } from '../scripts/measure-capped-search.mjs';
 import { SEARCH_CONTEXT_MAX_CHARS } from '../lib/chat.js';
 
 test('the fee bound is the dearest search seen plus 50%, rounded up to a tenth of a cent, and never below a cent', () => {
@@ -32,4 +32,22 @@ test('every catalog model has an input rate, and the extra is fee plus tokens at
 test('a dearer fee never lowers a price', () => {
     const lo = extraCosts(0.01), hi = extraCosts(0.06);
     for (let i = 0; i < lo.length; i++) { assert.ok(hi[i].cost >= lo[i].cost); assert.ok(hi[i].credits >= lo[i].credits); }
+});
+
+test('when no search worked the probe says so plainly instead of throwing, and says what to check', () => {
+    for (const costs of [[], [null, NaN], [undefined]]) {
+        const r = outcome(costs, 5);
+        assert.equal(r.ok, false);
+        assert.match(r.message, /no search succeeded/i);
+        assert.match(r.message, /check the key/i);
+        assert.ok(!/\bstack\b|Error:|\bthrow/i.test(r.message), 'no trace or error text in the message');
+    }
+});
+
+test('when some searches worked it measures from those, and says how many failed', () => {
+    const r = outcome([0.008, null, 0.011], 3);
+    assert.equal(r.ok, true);
+    assert.equal(r.fee, 0.017);
+    assert.equal(r.failed, 1);
+    assert.equal(outcome([0.008], 1).failed, 0);
 });

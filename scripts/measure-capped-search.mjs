@@ -55,6 +55,15 @@ export function extraCosts(fee) {
     }).sort((a, b) => a.id.localeCompare(b.id));
 }
 
+/** What the run concluded: a fee bound from the searches that worked, or a plain message if none did. Never throws. */
+export function outcome(costs, attempted) {
+    const seen = costs.filter((c) => Number.isFinite(c));
+    if (!seen.length) {
+        return { ok: false, message: `No search succeeded (${attempted} tried), so nothing was measured and nothing was spent that counts. Check the key is the real Exa key, that it has credit, and read the codes above.` };
+    }
+    return { ok: true, fee: feeBound(seen), failed: Math.max(0, attempted - seen.length) };
+}
+
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
     const args = process.argv.slice(2);
     const run = args.includes('--run');
@@ -65,6 +74,8 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     if (run) {
         const apiKey = searchApiKey(process.env);
         if (!apiKey) { console.error('Set EXA_API_KEY.'); process.exit(2); }
+        // A placeholder pasted from instructions is not a key: say so, instead of letting the provider refuse it five times.
+        if (/paste|your[-_ ]?key|xxx|example|changeme/i.test(apiKey) || apiKey.length < 20) { console.error('EXA_API_KEY looks like a placeholder, not a real key. Nothing was sent.'); process.exit(2); }
         const costs = [];
         for (const q of QUERIES.slice(0, n)) {
             try {
@@ -76,7 +87,10 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
                 console.log(`  failed: ${e instanceof SearchError ? e.code : 'unexpected error'}  ${q.slice(0, 50)}`);
             }
         }
-        const fee = feeBound(costs);
+        const result = outcome(costs, n);
+        if (!result.ok) { console.error(`\n${result.message}`); process.exit(1); }
+        const fee = result.fee;
+        if (result.failed) console.log(`\n${result.failed} of ${n} searches failed; the bound uses the ${n - result.failed} that worked.`);
         console.log(`\nfee bound: $${fee.toFixed(4)} (dearest search x 1.5, rounded up)\n`);
         for (const r of extraCosts(fee)) console.log(`  ${r.id.padEnd(26)} cost $${r.cost.toFixed(4)}  -> ${r.credits} Credit${r.credits === 1 ? '' : 's'}`);
         console.log('\nThese are candidates for the flip migration. Nothing was written.');
