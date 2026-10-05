@@ -26,8 +26,9 @@
   "vars": {
     "APP_ENV": "production",
     "TENANT_PROJECTS_ENABLED": "false",
-    // ADR-0067: Chat stays closed until a text model is verified live and active, and the owner opens it.
-    "CHAT_ENABLED": "false",
+    // ADR-0067: Chat is open here, but the screen is still behind the per-browser preview switch
+    // (localStorage.veyrnox_chat). Needs OPENROUTER_CHAT_API_KEY on the Worker: production will not use the shared key.
+    "CHAT_ENABLED": "true",
     // ADR-0064: checkout and account routes stay closed until staging acceptance.
     "SUBSCRIPTIONS_ENABLED": "false",
     // Before activation: SUBSCRIPTION_ALERT_EMAIL must name the Operator;
