@@ -24,7 +24,7 @@ test('chat models stage inactive at a priced floor and replay without overriding
             const { rows } = await db.query('SELECT * FROM public.model_catalog WHERE id = ANY($1) ORDER BY id', [IDS]);
             assert.equal(rows.length, 3);
             for (const row of rows) {
-                assert.equal(row.provider, 'openrouter');
+                assert.equal(row.provider, 'openrouter-chat');
                 assert.equal(row.modality, 'text');
                 assert.equal(row.active, false);
                 assert.equal(row.gated_flag, false);
