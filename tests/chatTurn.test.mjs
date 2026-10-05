@@ -288,3 +288,83 @@ test('web search: no sources means the reply is stored exactly as the model wrot
     await (await run(f, { body: body({ options: { web: true } }) })).text();
     assert.equal(called(f, 'chat_complete_turn')[0][1].p_reply, 'No sources used.');
 });
+
+// ---- Image attachments (ADR-0068) ----
+const IMG_MODEL = { ...OPT_MODEL, chat_images_extra_credits: 3 };
+const K1 = 'uploads/11111111-1111-4111-8111-111111111111/22222221-2222-4222-8222-222222222222.png';
+const K2 = 'uploads/11111111-1111-4111-8111-111111111111/22222222-2222-4222-8222-222222222222.jpg';
+const imageOk = (over = {}) => ({ ok: true, field: 'image_url', url: 'https://r2.example/obj?sig=abc', contentType: 'image/png', dimensions: { width: 1600, height: 900 }, seconds: null, ...over });
+const withImages = (f, resolve) => { const seen = []; return { seen, over: (extra = {}) => ({ deps: { ...f.deps, resolveImage: async (a, k) => { seen.push([a, k]); return resolve(k); } }, ...extra }) }; };
+const attach = (...keys) => body({ attachments: keys.map((source_key) => ({ source_key })) });
+
+test('images: price includes the extra, the job records the keys and sizes, the model gets image parts', async () => {
+    const f = fakes({ model: IMG_MODEL });
+    const w = withImages(f, (k) => imageOk({ url: `https://r2.example/${k.slice(-12)}` }));
+    const res = await run(f, w.over({ body: attach(K1, K2) }));
+    await res.text();
+    assert.deepEqual(w.seen.map(([a]) => a), [AUTH, AUTH], 'resolved for the caller, never a client-supplied owner');
+    const [, debit] = called(f, 'ledger_debit')[0];
+    assert.equal(debit.p_credits, 4 + 3);
+    assert.deepEqual(debit.p_inputs, {
+        kind: 'chat', thread_id: THREAD, options: { thinking: false, web: false },
+        attachments: [{ type: 'image/png', width: 1600, height: 900 }, { type: 'image/png', width: 1600, height: 900 }],
+        source_keys: { image_1: K1, image_2: K2 },
+    });
+    const last = f.streamCalls[0].messages.at(-1);
+    assert.equal(last.content[0].text, 'Hello there');
+    assert.deepEqual(last.content.slice(1).map((p) => p.type), ['image_url', 'image_url']);
+});
+
+test('images: an unknown key, a wrong type, an oversized picture or a failed check all refuse before any debit', async () => {
+    const cases = [
+        [() => ({ ok: false, error: 'source_not_found' }), 400, 'attachment_not_found'],
+        [() => ({ ok: false, error: 'source_unreadable' }), 400, 'attachment_invalid'],
+        [() => imageOk({ contentType: 'audio/wav' }), 400, 'attachment_type_unsupported'],
+        [() => imageOk({ dimensions: { width: 4096, height: 3000 } }), 400, 'image_too_large'],
+        [() => imageOk({ dimensions: { width: 100, height: 2049 } }), 400, 'image_too_large'],
+        [() => imageOk({ dimensions: null }), 400, 'attachment_invalid'],
+    ];
+    for (const [resolve, status, error] of cases) {
+        const f = fakes({ model: IMG_MODEL });
+        const res = await run(f, withImages(f, resolve).over({ body: attach(K1) }));
+        assert.equal(res.status, status, error);
+        assert.deepEqual(await res.json(), { error });
+        assert.equal(called(f, 'ledger_debit').length, 0, `${error}: nothing was charged`);
+    }
+});
+
+test('images: exactly 2,048 px is allowed; a resolver that throws refuses without charging', async () => {
+    let f = fakes({ model: IMG_MODEL });
+    await (await run(f, withImages(f, () => imageOk({ dimensions: { width: 2048, height: 2048 } })).over({ body: attach(K1) }))).text();
+    assert.equal(called(f, 'ledger_debit').length, 1);
+    f = fakes({ model: IMG_MODEL });
+    const res = await run(f, withImages(f, () => { throw new Error('r2 down'); }).over({ body: attach(K1) }));
+    assert.equal(res.status, 502);
+    assert.deepEqual(await res.json(), { error: 'attachment_check_failed' });
+    assert.equal(called(f, 'ledger_debit').length, 0);
+});
+
+test('images: a model that does not offer them is refused before the files are even looked at', async () => {
+    const f = fakes({ model: OPT_MODEL });
+    const w = withImages(f, () => imageOk());
+    const res = await run(f, w.over({ body: attach(K1) }));
+    assert.equal(res.status, 409);
+    assert.deepEqual(await res.json(), { error: 'option_unavailable' });
+    assert.equal(w.seen.length, 0);
+    assert.equal(called(f, 'ledger_debit').length, 0);
+});
+
+test('images: no attachments means no resolver call and an unchanged job record', async () => {
+    const f = fakes({ model: IMG_MODEL });
+    const w = withImages(f, () => imageOk());
+    await (await run(f, w.over())).text();
+    assert.equal(w.seen.length, 0);
+    assert.deepEqual(called(f, 'ledger_debit')[0][1].p_inputs, { kind: 'chat', thread_id: THREAD, options: { thinking: false, web: false } });
+    assert.equal(typeof f.streamCalls[0].messages.at(-1).content, 'string');
+});
+
+test('images: a failed reply refunds the price including the images extra', async () => {
+    const f = fakes({ model: IMG_MODEL, stream: async function* () { throw new ChatProviderError('provider_unavailable'); } });
+    await (await run(f, withImages(f, () => imageOk()).over({ body: attach(K1) }))).text();
+    assert.equal(called(f, 'ledger_refund')[0][1].p_credits, 7);
+});

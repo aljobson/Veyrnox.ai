@@ -49,9 +49,9 @@ const model = async (id, { modality = 'text', active = true, credits = 2 } = {})
 const thread = (u, m) => rpc('public.chat_create_thread($1, $2)', [u.auth, m]);
 const getThread = (u, id) => rpc('public.chat_get_thread($1, $2)', [u.auth, id]);
 // The same sequence the route runs: debit, then mark submitted. Returns the job.
-async function startTurn(u, t, m, credits = 2) {
+async function startTurn(u, t, m, credits = 2, extraInputs = {}) {
     const d = await rpc(`public.ledger_debit($1, $2, $3, 'debit:chat', $4, $5::jsonb)`,
-        [u.id, randomUUID(), credits, m, JSON.stringify({ kind: 'chat', thread_id: t })]);
+        [u.id, randomUUID(), credits, m, JSON.stringify({ kind: 'chat', thread_id: t, ...extraInputs })]);
     assert.equal(d.ok, true, JSON.stringify(d));
     assert.equal((await rpc(`public.job_submitted($1, 'openrouter-chat', $2)`, [d.job_id, d.job_id])).ok, true);
     return d.job_id;
@@ -63,6 +63,9 @@ try {
     // The migration is safe to apply twice.
     const sql = await readFile(new URL('../packages/db/schema/supabase/0193_chat.sql', import.meta.url), 'utf8');
     await c.query('BEGIN'); await c.query(sql); await c.query(sql); await c.query('ROLLBACK');
+    // 0198 reads thread messages joined to their jobs and prices Images on the catalog rows; it replays too.
+    const images = await readFile(new URL('../packages/db/schema/supabase/0198_chat_models_images.sql', import.meta.url), 'utf8');
+    await c.query('BEGIN'); await c.query(images); await c.query(images); await c.query('ROLLBACK');
 
     await c.query('BEGIN');
     const suffix = randomUUID().slice(0, 8);
@@ -202,6 +205,28 @@ try {
     const c3 = await user();
     await q(`INSERT INTO public.chat_threads (user_id, model_id) SELECT $1, $2 FROM generate_series(1, 500)`, [c3.id, fast]);
     assert.equal((await thread(c3, fast)).code, 'THREAD_LIMIT');
+
+    // ── Attachments: the thread read returns type and pixel size on the user message only, never a key or name. ──
+    {
+        const u = await user(); const t = (await thread(u, fast)).thread.id;
+        await q('INSERT INTO public.credit_balances (user_id, balance) VALUES ($1, 10) ON CONFLICT (user_id) DO UPDATE SET balance = 10', [u.id]).catch(() => {});
+        const job = await startTurn(u, t, fast, 2, {
+            attachments: [{ type: 'image/png', width: 1600, height: 900 }],
+            source_keys: { image_1: `uploads/${u.auth}/${randomUUID()}.png` },
+        });
+        assert.equal((await complete(job, t, 'What is this?', 'A chart.')).ok, true);
+        const got = await getThread(u, t);
+        const [mine, theirs] = got.messages;
+        assert.equal(mine.role, 'user'); assert.equal(theirs.role, 'assistant');
+        assert.deepEqual(mine.attachments, [{ type: 'image/png', width: 1600, height: 900 }]);
+        assert.deepEqual(theirs.attachments, []);
+        assert.ok(!JSON.stringify(got).includes('uploads/') && !JSON.stringify(got).includes('source_keys'), 'no key reaches the browser');
+        // A turn with no attachments reads as an empty list on both messages.
+        const job2 = await startTurn(u, t, fast);
+        assert.equal((await complete(job2, t, 'And now?', 'Fine.')).ok, true);
+        const again = (await getThread(u, t)).messages;
+        assert.deepEqual(again.map((m) => m.attachments), [[{ type: 'image/png', width: 1600, height: 900 }], [], [], []]);
+    }
 
     // ── Browser roles reach nothing: no table, no function. ──
     for (const role of ['anon', 'authenticated']) {

@@ -57,3 +57,44 @@ test('sources become a short markdown list: https only, deduplicated, titles cle
     const many = Array.from({ length: 20 }, (_, i) => ({ url: `https://s${i}.example/`, title: `S${i}` }));
     assert.equal(sourcesMarkdown(many).split('\n- ').length - 1, 8);
 });
+
+// ---- Image attachments (ADR-0068) ----
+import { buildMessages, rowOptions, MAX_ATTACHMENTS, MAX_IMAGE_EDGE } from '../lib/chat.js';
+const KEY = (n) => `uploads/11111111-1111-4111-8111-111111111111/2222222${n}-2222-4222-8222-222222222222.png`;
+
+test('attachments default to none and accept up to four distinct owner keys', () => {
+    assert.deepEqual(validateTurn(turn()).attachments, []);
+    assert.deepEqual(validateTurn(turn({ attachments: [] })).attachments, []);
+    assert.deepEqual(validateTurn(turn({ attachments: [{ source_key: KEY(1) }, { source_key: KEY(2) }] })).attachments, [KEY(1), KEY(2)]);
+    assert.equal(MAX_ATTACHMENTS, 4);
+    assert.equal(MAX_IMAGE_EDGE, 2048);
+});
+
+test('malformed attachments are refused', () => {
+    const five = Array.from({ length: 5 }, (_, i) => ({ source_key: KEY(i) }));
+    for (const bad of [five, 'x', {}, [null], ['k'], [{}], [{ source_key: 5 }], [{ source_key: '' }], [{ source_key: KEY(1) }, { source_key: KEY(1) }],
+        [{ source_key: KEY(1), extra: true }], [{ source_key: 'x'.repeat(300) }]]) {
+        assert.deepEqual(validateTurn(turn({ attachments: bad })), { ok: false, error: 'invalid_attachments' }, JSON.stringify(bad).slice(0, 60));
+    }
+});
+
+test('the images option is priced from the catalog and refused where it is not offered', () => {
+    const withImages = { ...ROW, chat_images_extra_credits: 3 };
+    assert.deepEqual(replyPrice(withImages, { images: true }), { ok: true, credits: 7 });
+    assert.deepEqual(replyPrice(withImages, { thinking: true, web: true, images: true }), { ok: true, credits: 13 });
+    assert.deepEqual(replyPrice(ROW, { images: true }), { ok: false, error: 'option_unavailable' });
+    assert.deepEqual(replyPrice(withImages, { images: false }), { ok: true, credits: 4 });
+    assert.deepEqual(rowOptions(withImages).images, { extra_credits: 3 });
+    assert.equal(rowOptions(ROW).images, null);
+});
+
+test('images join the last user message as content parts, after the text', () => {
+    const m = buildMessages({ systemPrompt: 'Be brief.', history: [{ role: 'user', content: 'earlier' }], text: 'What is this?', images: ['https://r2.example/a?sig=1', 'https://r2.example/b?sig=2'] });
+    assert.deepEqual(m.at(-1), { role: 'user', content: [
+        { type: 'text', text: 'What is this?' },
+        { type: 'image_url', image_url: { url: 'https://r2.example/a?sig=1' } },
+        { type: 'image_url', image_url: { url: 'https://r2.example/b?sig=2' } },
+    ] });
+    assert.equal(m[1].content, 'earlier', 'history stays plain text');
+    assert.equal(buildMessages({ systemPrompt: '', history: [], text: 'hi' }).at(-1).content, 'hi', 'no images, no change');
+});

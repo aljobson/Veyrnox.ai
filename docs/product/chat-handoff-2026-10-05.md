@@ -116,3 +116,14 @@ returned a sourced answer live on 2026-10-05; thinking was checked the same way.
 
 Apply order on staging: 0196 then 0197 (0194 and 0195 are already there). Applying 0197 prices web search on the live
 rows immediately, so the toggle appears on staging as soon as the Worker with this code is deployed.
+
+## Image attachments (migration 0198, ADR-0068)
+
+Images are a third priced option (extras 1 to 6 Credits per reply with images, up to 4 images, long edge 2,048 px).
+The browser scales down and uploads through the existing signed-URL path; the server checks ownership, the real bytes and
+the pixel size with `resolveUploadedSource`, hands the model a 15-minute link, and records the keys under
+`inputs.source_keys` so the existing sweeper deletes the files soon after. Verified live through `buildMessages` and
+`streamChat` on three models. Not verified: the R2 link path end to end (needs R2 credentials), and the picker, thumbnails
+and the browser downscale in a real browser.
+
+Apply order on staging: 0196, 0197, 0198, then deploy.

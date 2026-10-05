@@ -27,6 +27,12 @@ export function chatErrorCopy(code, { credits } = {}) {
     case 'thread_not_found': return 'That chat no longer exists.';
     case 'model_unavailable': case 'model_gated': case 'model_not_found': return 'That model is not available right now. Pick another. No Credits were used.';
     case 'option_unavailable': case 'invalid_options': return 'That option is not available for this model. Turn it off or pick another model. No Credits were used.';
+    case 'attachment_not_found': case 'attachment_invalid': return 'We could not read that image. Remove it and attach it again. No Credits were used.';
+    case 'attachment_type_unsupported': return 'Only PNG, JPEG and WebP images can be attached. No Credits were used.';
+    case 'image_too_large': return 'That image is too large. Images can be up to 2048 pixels on the long side. No Credits were used.';
+    case 'attachment_check_failed': return 'We could not check your image just now. Try again. No Credits were used.';
+    case 'invalid_attachments': return 'You can attach up to 4 different images. No Credits were used.';
+    case 'upload_failed': case 'image_unreadable': return 'The image did not upload. Try again, or pick another. No Credits were used.';
     case 'invalid_text': return 'Messages can be up to 8,000 characters.';
     case 'turn_not_saved': return 'We could not save that reply, so you will not be charged.';
     case 'provider_cut_off': case 'provider_dropped': return 'The reply was cut off. No Credits were used.';
@@ -43,7 +49,7 @@ export { makeIdempotencyKey };
  * Resolves { replay: true } when the same send already ran. Throws GatewayError for a refusal before the stream.
  * Aborting `signal` is the Stop button.
  */
-export async function sendTurn({ threadId, text, key, options, signal, onEvent }) {
+export async function sendTurn({ threadId, text, key, options, attachments = [], signal, onEvent }) {
   const token = await getFreshAccessToken();
   if (!token) {
     if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('veyrnox:auth-required'));
@@ -52,7 +58,10 @@ export async function sendTurn({ threadId, text, key, options, signal, onEvent }
   const res = await fetch(`/api/v1/chat/threads/${encodeURIComponent(threadId)}/messages`, {
     method: 'POST', signal,
     headers: { Authorization: `Bearer ${token}`, 'content-type': 'application/json' },
-    body: json({ text, idempotency_key: key, options: { thinking: options?.thinking === true, web: options?.web === true } }),
+    body: json({
+      text, idempotency_key: key, options: { thinking: options?.thinking === true, web: options?.web === true },
+      ...(attachments.length ? { attachments: attachments.map((source_key) => ({ source_key })) } : {}),
+    }),
   });
   if (res.status === 401) {
     if (getSession()?.access_token === token) clearSession();
@@ -84,4 +93,20 @@ export async function sendTurn({ threadId, text, key, options, signal, onEvent }
   }
   notifyBalanceChanged();
   return { replay: false };
+}
+
+/**
+ * Put one image in R2 on the 15-minute URL the gateway signs (ADR-0028) and return its key. Nothing is charged
+ * here: the upload happens before the debit, so a failure costs nothing.
+ */
+export async function uploadChatImage(file) {
+  const up = await gatewayFetch('/uploads', { method: 'POST', body: JSON.stringify({ content_type: file.type, size_bytes: file.size }) });
+  let put;
+  try {
+    put = await fetch(up.upload_url, { method: 'PUT', headers: up.headers || { 'Content-Type': up.content_type }, body: file });
+  } catch {
+    throw new GatewayError('upload_failed', { status: 0, code: 'upload_failed' });
+  }
+  if (!put.ok) throw new GatewayError('upload_failed', { status: put.status, code: 'upload_failed' });
+  return up.key;
 }
