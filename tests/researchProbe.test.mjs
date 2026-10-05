@@ -200,3 +200,24 @@ test('isMain sees through a symlinked path, so a script run from a link still ru
     assert.equal(isMain(join(dir, 'other.mjs'), pathToFileURL(real).href), false, 'a different file is not main');
     assert.equal(isMain(undefined, pathToFileURL(real).href), false);
 });
+
+test('the plan and the searches can run on a cheaper model while the write stays on the main one', async () => {
+    const models = [];
+    const fetchImpl = async (url, init) => {
+        const body = JSON.parse(init.body);
+        const kind = body.plugins ? 'search' : body.reasoning ? 'write' : 'plan';
+        models.push([kind, body.model]);
+        return Response.json({ choices: [{ message: { content: kind === 'plan' ? 'a\nb' : 'x' } }], usage: { cost: 0.01 } });
+    };
+    const run = await runOne({ fetchImpl, apiKey: 'k', model: 'big/write', searchModel: 'small/search', question: 'q', reasoningHint: null });
+    assert.deepEqual(models.filter(([k]) => k !== 'write').map(([, m]) => m), ['small/search', 'small/search', 'small/search']);
+    assert.deepEqual(models.find(([k]) => k === 'write'), ['write', 'big/write']);
+    assert.equal(run.searchModel, 'small/search');
+});
+
+test('without a search model everything runs on the one model, as before', async () => {
+    const used = new Set();
+    const fetchImpl = async (url, init) => { const b = JSON.parse(init.body); used.add(b.model); return Response.json({ choices: [{ message: { content: b.plugins || b.reasoning ? 'x' : 'a\nb' } }], usage: { cost: 0 } }); };
+    await runOne({ fetchImpl, apiKey: 'k', model: 'only/one', question: 'q', reasoningHint: null });
+    assert.deepEqual([...used], ['only/one']);
+});

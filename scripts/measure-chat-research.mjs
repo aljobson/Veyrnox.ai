@@ -13,7 +13,7 @@
  *
  * Usage:
  *   node scripts/measure-chat-research.mjs
- *   OPENROUTER_API_KEY=... node scripts/measure-chat-research.mjs --run [--only=openai/gpt-6-luna] [--questions=1] [--budget=2]
+ *   OPENROUTER_API_KEY=... node scripts/measure-chat-research.mjs --run [--only=anthropic/claude-sonnet-5.5] [--search-model=mistralai/mistral-small-2603] [--questions=1] [--budget=2]
  *
  * --budget (USD, default 2) stops the run once measured spend passes it. Cost is read from OpenRouter's own
  * `usage.cost` on each response. Reads the key from the environment and never prints it; vendor error text is never
@@ -77,17 +77,19 @@ async function call({ fetchImpl, apiKey, body }) {
  * One research run. Returns the steps and the totals; `cost` is null if OpenRouter did not report one.
  * @param {{fetchImpl?:typeof fetch, apiKey:string, model:string, question:string}} a
  */
-export async function runOne({ fetchImpl = fetch, apiKey, model, question, reasoningHint }) {
+export async function runOne({ fetchImpl = fetch, apiKey, model, question, reasoningHint, searchModel = model }) {
     const started = Date.now();
     const steps = [];
-    const plan = await call({ fetchImpl, apiKey, body: { model, max_tokens: LIMITS.planTokens, messages: [{ role: 'system', content: PLAN_SYSTEM }, { role: 'user', content: question }] } });
+    const plan = await call({ fetchImpl, apiKey, body: { model: searchModel, max_tokens: LIMITS.planTokens, messages: [{ role: 'system', content: PLAN_SYSTEM }, { role: 'user', content: question }] } });
     steps.push({ step: 'plan', ...plan });
     const queries = parseQueries(plan.text);
     const notes = [];
     // The searches do not depend on each other, so they run together: the run's wall-clock is the plan, the slowest search,
     // then the write. The cost is the same as running them one after another.
+    // The plan and the searches can run on a cheaper, non-reasoning model than the write (--search-model): reasoning models
+    // spend the token cap thinking and return no text (seen on Claude Sonnet 5.5), and the page text is the same either way.
     const searchBody = (q, reasoning) => ({
-        model, max_tokens: LIMITS.searchTokens, plugins: [{ id: 'web', max_results: LIMITS.results }], ...(reasoning ? { reasoning } : {}),
+        model: searchModel, max_tokens: LIMITS.searchTokens, plugins: [{ id: 'web', max_results: LIMITS.results }], ...(reasoning ? { reasoning } : {}),
         messages: [{ role: 'user', content: `Search the web and summarise what you find, with source links, for: ${q}` }],
     });
     // Find a reasoning setting the model accepts with the first search, then run every search with it.
@@ -122,7 +124,7 @@ export async function runOne({ fetchImpl = fetch, apiKey, model, question, reaso
     } });
     steps.push({ step: 'write', ...write });
     const costs = steps.map((s) => s.cost);
-    return { model, question, steps, searches: queries.length, searchReasoning: working, cost: costs.every((c) => c !== null) ? costs.reduce((a, b) => a + b, 0) : null,
+    return { model, searchModel, question, steps, searches: queries.length, searchReasoning: working, cost: costs.every((c) => c !== null) ? costs.reduce((a, b) => a + b, 0) : null,
         ms: Date.now() - started, // wall-clock for the whole run, which is what the 120 s ceiling is measured against
         emptySearches: steps.filter((s) => s.step === 'search' && !s.text.trim()).length };
 }
@@ -162,17 +164,17 @@ export function worstCase(runs, rate) {
 
 const usd = (n) => (n === null || n === undefined ? 'n/a' : `$${n.toFixed(4)}`);
 
-export async function runProbe({ fetchImpl = fetch, apiKey, models = MODELS, questions = QUESTIONS, budget = 2, log = console.log }) {
+export async function runProbe({ fetchImpl = fetch, apiKey, models = MODELS, questions = QUESTIONS, budget = 2, searchModel, log = console.log }) {
     const byModel = {}; const hints = {}; let spent = 0;
     for (const model of models) {
         byModel[model] = [];
         for (const question of questions) {
             if (spent > budget) { log(`  budget $${budget} passed: stopping`); return { byModel, spent, stopped: true }; }
-            const run = await runOne({ fetchImpl, apiKey, model, question, reasoningHint: hints[model] });
+            const run = await runOne({ fetchImpl, apiKey, model, question, reasoningHint: hints[model], searchModel });
             if (run.searchReasoning !== undefined) hints[model] = run.searchReasoning; // later questions skip discovery
             byModel[model].push(run);
             spent += run.cost ?? 0;
-            log(`  ${model}  ${run.searches} searches (${run.emptySearches} empty)  ${usd(run.cost)}  ${(run.ms / 1000).toFixed(0)}s wall  ${question.slice(0, 48)}...`);
+            log(`  write ${model}${searchModel && searchModel !== model ? ` / plan+search ${searchModel}` : ''}  ${run.searches} searches (${run.emptySearches} empty)  ${usd(run.cost)}  ${(run.ms / 1000).toFixed(0)}s wall  ${question.slice(0, 48)}...`);
             for (const s of run.steps) log(`      ${s.step.padEnd(6)} in ${s.promptTokens ?? '?'} out ${s.completionTokens ?? '?'}  ${usd(s.cost)}  ${(s.ms / 1000).toFixed(1)}s${s.finish === 'length' ? '  HIT TOKEN CAP' : ''}${s.step === 'search' && !s.chars ? '  EMPTY' : ''}`);
         }
     }
@@ -187,15 +189,17 @@ if (isMain(process.argv[1], import.meta.url)) {
     const only = args.find((a) => a.startsWith('--only='))?.slice(7);
     const nQ = Number(args.find((a) => a.startsWith('--questions='))?.slice(12)) || QUESTIONS.length;
     const budget = Number(args.find((a) => a.startsWith('--budget='))?.slice(9)) || 2;
+    const searchModel = args.find((a) => a.startsWith('--search-model='))?.slice(15);
+    if (searchModel && !/^[a-z0-9][a-z0-9._:/-]{0,100}$/i.test(searchModel)) { console.error('bad --search-model'); process.exit(2); }
     const models = MODELS.filter((m) => !only || m === only);
     const questions = QUESTIONS.slice(0, Math.max(1, Math.min(nQ, QUESTIONS.length)));
     if (models.length === 0) { console.error(`no such model: ${only}`); process.exit(2); }
     console.log(run ? 'RUN: this spends OpenRouter credit.\n' : 'PLAN: nothing is sent or spent.\n');
-    console.log(`models: ${models.join(', ')}\nquestions: ${questions.length}\nper run: 1 plan (<= ${LIMITS.planTokens} tokens), <= ${LIMITS.searches} searches (web plugin, ${LIMITS.results} results, <= ${LIMITS.searchTokens} tokens), 1 write (<= ${LIMITS.writeTokens} tokens, effort ${LIMITS.writeEffort})\nbudget: $${budget}\n`);
+    console.log(`write model(s): ${models.join(', ')}${searchModel ? `\nplan and search model: ${searchModel}` : ''}\nquestions: ${questions.length}\nper run: 1 plan (<= ${LIMITS.planTokens} tokens), <= ${LIMITS.searches} searches (web plugin, ${LIMITS.results} results, <= ${LIMITS.searchTokens} tokens), 1 write (<= ${LIMITS.writeTokens} tokens, effort ${LIMITS.writeEffort})\nbudget: $${budget}\n`);
     if (run) {
         const apiKey = process.env.OPENROUTER_CHAT_API_KEY || process.env.OPENROUTER_API_KEY;
         if (!apiKey) { console.error('Set OPENROUTER_API_KEY (or OPENROUTER_CHAT_API_KEY).'); process.exit(2); }
-        const { byModel, spent } = await runProbe({ apiKey, models, questions, budget });
+        const { byModel, spent } = await runProbe({ apiKey, models, questions, budget, searchModel });
         const rates = await fetchRates(models);
         console.log(`\nmeasured spend: ${usd(spent)}\n`);
         for (const [model, runs] of Object.entries(byModel)) {
