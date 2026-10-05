@@ -21,6 +21,7 @@ import { SourcePickers } from '../../_components/SourcePickers';
 import { LibraryPicker } from '../../_components/LibraryPicker';
 import { GenerationSettings } from '../../_components/GenerationSettings';
 import { ControlRow } from '../../_components/ControlRow';
+import { TIERS, TIER_LABEL, filterByTier } from '../../_lib/modelTiers';
 import { settingsInputs } from '../../_lib/generationSettings';
 import { ParticleButton } from '@/components/ParticleButton';
 import { jobStateUi, SLOW_MODEL_WAIT } from '../../_lib/studioStates';
@@ -47,6 +48,7 @@ export default function CreateStudio() {
   const autoShortOn = useSyncExternalStore(never, autoShortFlag, off);
   const models = catalogModels.filter((m) => !m.isEdit && (autoShortOn || !m.takesTopic));
   const [modelId, setModelId] = useState(DEFAULT_MODEL);
+  const [tier, setTier] = useState(null);
   const [duration, setDuration] = useState('5s');
   const [aspect, setAspect] = useState('16:9');
   const [prompt, setPrompt] = useState('A neon-lit Tokyo alley at 3am, low anamorphic tracking shot');
@@ -102,6 +104,9 @@ export default function CreateStudio() {
   }, [models, modelId, catalogLoading]);
 
   const model = models.find((m) => m.id === modelId) || null;
+  // The picked model stays listed even when the tier filter would hide it.
+  const listed = filterByTier(models, tier);
+  const visibleModels = model && !listed.includes(model) ? [model, ...listed] : listed;
   // Lengths the gateway will actually sell for this model, from the catalog.
   // Rendering anything else offers a price the server then refuses.
   const durations = (model && model.durations && model.durations.length ? model.durations : [5]).map((s) => `${s}s`);
@@ -402,8 +407,22 @@ export default function CreateStudio() {
                 <span className="font-vx-mono text-[9px] tracking-[0.12em] text-vx-fg-faint">CACHED</span>
               )}
             </div>
+            <div className="flex gap-1.5 mb-3" role="group" aria-label="Price tier">
+              {TIERS.map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setTier(tier === t ? null : t)}
+                  aria-pressed={tier === t}
+                  className={`rounded-full px-3 py-1 border font-vx-mono text-[10px] tracking-[0.1em] uppercase ${
+                    tier === t ? 'border-vx-accent text-vx-accent' : 'border-vx-fg/15 text-vx-fg-muted hover:bg-vx-fg/[0.04]'
+                  }`}
+                >
+                  {TIER_LABEL[t]}
+                </button>
+              ))}
+            </div>
             <div className="flex flex-col gap-1.5">
-              {models.map((m) => (
+              {visibleModels.map((m) => (
                 <button
                   key={m.id}
                   onClick={() => setModelId(m.id)}
