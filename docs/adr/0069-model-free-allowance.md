@@ -1,6 +1,6 @@
 # ADR-0069 — A per-model free allowance, as a price waiver rather than free Credits
 
-- **Status**: **Proposed 2026-10-05**. Nothing is built. Needs the owner's answers to the questions at the end.
+- **Status**: **Accepted 2026-10-05** (owner: "go with recommendation"). Nothing is built. The answers recorded under "Owner's decisions" are the initial values and are revisited with real spend data.
 - **Related**: ADR-0013 (Free Credits), ADR-0067 (chat replies are jobs), ADR-0026 (Turnstile on sign-up), CLAUDE.md "Money & billing", "Database"
 
 ## Context
@@ -59,13 +59,15 @@ A free allowance is **a waiver of the price of one job, not a grant of Credits.*
   `credits > 0` (refund-on-failure, the sweeper, the Library, the statement) must be read again.
 - The Terms and pricing copy need one line: free generations are a trial, limited per day, and can be withdrawn.
 
-## Open questions for the owner
+## Owner's decisions (2026-10-05, "go with recommendation")
 
-1. Which models, and how many free a day each (suggest: text chat models and the cheapest image model, 3 a day)?
-2. Daily per account, or a one-off lifetime trial per model?
-3. Should the allowance require a paid top-up ever, or stay open to every confirmed account?
-4. The global ceiling per model per day, in jobs?
-5. Show the banner on every eligible model, or only after the first free use?
+1. **Which models and how many**: the live text chat models and the cheapest image model, 3 free jobs a day each. Video and audio models are out of scope.
+2. **Daily per account**, resetting at 00:00 UTC. Not a one-off lifetime trial.
+3. **Open to every confirmed, unfrozen account.** No top-up required first.
+4. **Global ceiling**: set per model so total free provider spend is at most **$5 a day** across all models; the migration records the job count that implies for each model. Raised only by a new decision after a week of real numbers.
+5. **Banner on every eligible model**, shown while `free_left_today` is above 0 and replaced by a plain "used today" line when it is not.
+
+Build order when this is picked up: the migration and function with their acceptance tests, then the zero-price path in `submit`, then the quote and banner, then reconciliation. `FREE_ALLOWANCE_ENABLED` ships `"false"` in production and is switched on only after staging acceptance.
 
 ## Not decided here
 
