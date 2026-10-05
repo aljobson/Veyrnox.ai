@@ -7,6 +7,7 @@ import { attachmentLabel, prepareImage } from '../../_lib/chatImages';
 import { NEW_CHAT, readDraft, writeDraft, readStars, toggleStar } from '../../_lib/chatLocal';
 import { useFreeAllowance } from '../../_lib/useFreeAllowance';
 import { freeLeftFor } from '../../_lib/freeAllowance';
+import { researchProgressLabel } from '../../_lib/chatResearchUi';
 import { AttachButton, AttachChips, useAttachments } from './AttachBar';
 import { ChatText } from './ChatText';
 import { SettingsPanel } from './SettingsPanel';
@@ -46,7 +47,8 @@ export function ChatWorkspace() {
   const [text, setText] = useState(() => readDraft(store(), NEW_CHAT));
   const [stars, setStars] = useState([]);
   const [starredOnly, setStarredOnly] = useState(false);
-  const [opts, setOpts] = useState({ thinking: false, web: false });
+  const [opts, setOpts] = useState({ thinking: false, web: false, research: false });
+  const [progress, setProgress] = useState(null); // the step a Deep research reply is on: plan, search n of m, write
   const [limits, setLimits] = useState({ maxAttachments: 4, maxEdge: 2048 });
   const att = useAttachments(limits.maxAttachments);
   const freeMap = useFreeAllowance(); // free replies left today per model; empty while the feature is off
@@ -86,14 +88,18 @@ export function ChatWorkspace() {
   const model = models.find((x) => x.id === (active?.model_id ?? draftModel)) || defaultModel(models) || models[0];
   // An option counts only if the chosen model offers it; the price is the model's base plus each extra chosen.
   const offer = model?.options || { thinking: null, web: null, images: null };
-  const chosen = { thinking: opts.thinking && !!offer.thinking, web: opts.web && !!offer.web };
+  // Deep research is priced alone (ADR-0070): choosing it stands in for Thinking and Web search, and it cannot read images.
+  const researchOn = opts.research && !!offer.research;
+  const chosen = researchOn ? { research: true } : { thinking: opts.thinking && !!offer.thinking, web: opts.web && !!offer.web };
   const hasImages = att.items.length > 0;
-  const imagesBlocked = hasImages && !offer.images; // images are chosen but this model cannot read them
-  const price = (model?.credits_per_reply ?? 0) + (chosen.thinking ? offer.thinking.extra_credits : 0) + (chosen.web ? offer.web.extra_credits : 0)
-    + (hasImages && offer.images ? offer.images.extra_credits : 0);
+  const imagesBlocked = hasImages && (!offer.images || researchOn); // images are chosen but this model or option cannot read them
+  const price = researchOn
+    ? (model?.credits_per_reply ?? 0) + offer.research.extra_credits
+    : (model?.credits_per_reply ?? 0) + (chosen.thinking ? offer.thinking.extra_credits : 0) + (chosen.web ? offer.web.extra_credits : 0)
+      + (hasImages && offer.images ? offer.images.extra_credits : 0);
   // A plain reply (no paid option) can use a free allowance; the server decides, this only labels the button.
   const freeLeft = freeLeftFor(freeMap, model?.id);
-  const isFree = freeLeft > 0 && !chosen.thinking && !chosen.web && !hasImages;
+  const isFree = freeLeft > 0 && !researchOn && !chosen.thinking && !chosen.web && !hasImages;
   const open = async (id) => {
     try {
       const r = await chatApi.get(id);
@@ -163,6 +169,8 @@ export function ChatWorkspace() {
       const r = await sendTurn({
         threadId: thread.id, text: content, key: makeIdempotencyKey(), options: chosen, attachments: keys, signal: ac.signal,
         onEvent: (ev, d) => {
+          if (ev === 'start') setProgress(null);
+          if (ev === 'progress') setProgress(d);
           if (ev === 'delta') setMessages((m) => m.map((x) => (x.id === pending ? { ...x, content: x.content + d.text } : x)));
           if (ev === 'error') streamError = d.error;
           if (ev === 'done') outcome = d;
@@ -189,7 +197,7 @@ export function ChatWorkspace() {
         else fail(e);
         if (created && thread) { chatApi.remove(thread.id).catch(() => {}); setThreads((ts) => ts.filter((t) => t.id !== thread.id)); setActive(null); }
       }
-    } finally { setBusy(false); sendingRef.current = false; abortRef.current = null; }
+    } finally { setBusy(false); setProgress(null); sendingRef.current = false; abortRef.current = null; }
   }
 
   if (!ready) return <div className="p-8 text-sm text-vx-fg-muted" role="status">Loading</div>;
@@ -209,7 +217,7 @@ export function ChatWorkspace() {
       onDeleteFolder={deleteFolder} onMove={move} activeId={active?.id} onOpen={open} onNew={blank} onPatch={patch} onDelete={remove} />
   );
   const settings = (
-    <SettingsPanel models={models} model={model} busy={busy} onSelectModel={selectModel} tiers={tiers} onTiers={setTiers} offer={offer} opts={opts} onOpts={setOpts}
+    <SettingsPanel models={models} model={model} busy={busy} onSelectModel={selectModel} tiers={tiers} onTiers={setTiers} offer={offer} opts={opts} onOpts={setOpts} researchOn={researchOn}
       instr={instr} onInstr={setInstr} hasThread={!!active} canSaveInstr={!!active && instr !== (active.system_prompt || '')} onSaveInstr={saveInstr} saved={saved} maxPrompt={MAX_PROMPT} />
   );
   return (
@@ -254,7 +262,7 @@ export function ChatWorkspace() {
                       )}
                     </>
                   )
-                    : <div aria-live={m.status === 'streaming' ? 'polite' : undefined}>{m.content ? <ChatText text={m.content} /> : <p className="text-vx-fg-muted">Thinking</p>}</div>}
+                    : <div aria-live={m.status === 'streaming' ? 'polite' : undefined}>{m.content ? <ChatText text={m.content} /> : <p className="text-vx-fg-muted">{researchProgressLabel(progress) || 'Thinking'}</p>}</div>}
                   {m.role === 'assistant' && m.status !== 'streaming' && <Footer m={m} starred={stars.includes(m.id)} onStar={() => star(m.id)} />}
                 </div>
               </article>
@@ -270,13 +278,16 @@ export function ChatWorkspace() {
                 {error} {error.includes('Top up') && <Link className="underline" href="/app/credits">Top up</Link>}
               </div>
             )}
+            {researchOn && (
+              <p className="mb-2 text-xs text-vx-fg-muted">Plans a few searches, reads what the web returns, then writes a cited answer. It can take up to about a minute and works on text only. If it fails before the answer starts, the Credits come back.</p>
+            )}
             <AttachChips items={att.items} onRemove={att.remove} disabled={busy} />
             {hasImages && !imagesBlocked && (
               <p className="mb-2 text-xs text-vx-fg-muted">Images are sent to the model provider to answer, and are deleted from our storage within a day.</p>
             )}
             {(att.notice || imagesBlocked) && (
               <p role="status" className="mb-2 text-sm text-vx-fg-muted">
-                {imagesBlocked ? 'This model cannot read images. Remove them or pick another model.' : att.notice}
+                {imagesBlocked ? (researchOn ? 'Deep research reads text only. Remove the images or turn it off.' : 'This model cannot read images. Remove them or pick another model.') : att.notice}
               </p>
             )}
             <div className="flex items-end gap-2 rounded-2xl border border-vx-border bg-vx-panel p-2 focus-within:border-vx-accent">

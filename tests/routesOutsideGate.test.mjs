@@ -14,6 +14,7 @@ const OUTSIDE = {
     'app/api/credit-packs/route.js': 'public read',
     'app/api/cinema/titles/route.js': 'public read',
     'app/api/cinema/titles/[id]/route.js': 'public read',
+    'app/api/popular-templates/route.js': 'public read',
     'app/api/webhook/fal/route.js': 'provider signature',
     'app/api/webhook/kie/route.js': 'provider signature',
     'app/api/webhook/openrouter/route.js': 'provider signature',

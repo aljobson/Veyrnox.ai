@@ -130,9 +130,9 @@ If a build starts failing after a dependency change, bisect these three first.
   that carries a user. The middleware does not run on other `/api/*` paths, so
   an inbound `x-veyrnox-auth-*` header is NOT stripped there: a route outside
   `/api/v1` must never read one. Each has its own protection:
-  - `/api/catalog`, `/api/credit-packs`, `/api/cinema/titles[/:id]` —
-    anonymous, read-only, cached public data (prices, packs, published
-    titles). Nothing per-user.
+  - `/api/catalog`, `/api/credit-packs`, `/api/cinema/titles[/:id]`,
+    `/api/popular-templates` — anonymous, read-only, cached public data
+    (prices, packs, published titles, ranked template ids). Nothing per-user.
   - `/api/webhook/*` — the provider's signature (see Provider webhooks).
   - `/api/admin/*` — Cloudflare Access plus a shared token; cron callers only.
   - `/media/social/:token` — a short-lived HMAC token naming one R2 object.
