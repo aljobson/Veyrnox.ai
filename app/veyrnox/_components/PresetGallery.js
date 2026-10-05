@@ -2,20 +2,26 @@
 import { useState } from 'react';
 import { PresetCard } from './PresetCard';
 import { PRESET_CATEGORIES, templatesIn } from '../_lib/tokens';
+import { templateById } from '../_lib/templates';
 import { useCatalog } from '../_lib/useCatalog';
+import { usePopularTemplates } from '../_lib/usePopularTemplates';
 
-const CATEGORY_LABEL = { ALL: 'All', NEW: 'New', 'YOUR PHOTO': 'Your photo', CINEMATIC: 'Cinematic', ANIME: 'Anime', FASHION: 'Fashion', PRODUCTS: 'Products', VFX: 'VFX', UGC: 'UGC', ADS: 'Ads' };
+const CATEGORY_LABEL = { ALL: 'All', NEW: 'New', POPULAR: 'Popular', 'YOUR PHOTO': 'Your photo', CINEMATIC: 'Cinematic', ANIME: 'Anime', CARTOONS: 'Cartoons', MOVIES: 'Movies', FANTASY: 'Fantasy', REALISTIC: 'Realistic', FASHION: 'Fashion', PRODUCTS: 'Products', VFX: 'VFX', UGC: 'UGC', ADS: 'Ads' };
 
 // The preset filter and grid, shared by the public /presets page and the
 // studio's Explore tab so the two never drift apart.
 export function PresetGallery({ size = 'lg', columns = 'lg:grid-cols-3' }) {
   const [cat, setCat] = useState('ALL');
   const { models } = useCatalog();
-  const list = templatesIn(cat);
+  const popularIds = usePopularTemplates();
+  // Popular (ADR-0072) is a ranking, not a home category: it appears only once some template has enough use to rank, in rank order.
+  const popular = popularIds.map(templateById).filter(Boolean);
+  const categories = popular.length ? ['ALL', 'NEW', 'POPULAR', ...PRESET_CATEGORIES.slice(2)] : PRESET_CATEGORIES;
+  const list = cat === 'POPULAR' ? popular : templatesIn(cat);
   return (
     <>
       <div className="flex flex-wrap gap-2" role="group" aria-label="Filter templates">
-        {PRESET_CATEGORIES.map((c) => (
+        {categories.map((c) => (
           <button
             key={c}
             type="button"
