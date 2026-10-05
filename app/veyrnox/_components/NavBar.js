@@ -11,6 +11,7 @@ import { gatewayFetch, GatewayError } from '../_lib/gateway';
 import { getSession, onSessionChange } from '../../lib/authClient';
 import { accountLabel } from '../_lib/account';
 import { useProjectsPreview } from '../_lib/useProjectsPreview';
+import { useChatPreview } from '../_lib/useChatPreview';
 import { AnnouncementBar } from './AnnouncementBar';
 
 // Marketing site nav (Home / Gallery / Pricing).
@@ -72,15 +73,17 @@ export function MarketingNav() {
 // self-fetches and subscribes to veyrnox:balance-changed.
 export function AppNav({ balance, active = 'explore' }) {
   const projectsEnabled = useProjectsPreview();
+  const chatEnabled = useChatPreview();
   const tabs = useRef(null);
   useEffect(() => {
     tabs.current?.querySelector('[aria-current="page"]')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-  }, [active, projectsEnabled]);
+  }, [active, projectsEnabled, chatEnabled]);
   const items = [
     { key: 'explore', href: '/app',         label: 'Explore' },
     { key: 'create',  href: '/app/create',  label: 'Create' },
     { key: 'library', href: '/app/library', label: 'Library' },
     ...(projectsEnabled ? [{ key: 'projects', href: '/app/projects', label: 'Projects' }] : []),
+    ...(chatEnabled ? [{ key: 'chat', href: '/app/chat', label: 'Chat' }] : []),
   ];
   // One server read for all three figures: who you are, the balance and
   // the true asset count for the account (not this browser's history).
