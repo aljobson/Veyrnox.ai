@@ -174,6 +174,28 @@ need a sandbox and agent runs and are not built.
 
 No money path changes: prices, options and the ledger are untouched.
 
+## Amendment 7 2026-10-05: Web search worst cases, re-measured
+
+Status: **Proposed**, and a price change the owner decides. It is held as a draft.
+
+Amendment 2 recorded a Web search extra as a $0.02 search fee plus 16,000 input tokens at the row's rate. A live probe the same day
+(12 searches on Claude Sonnet 5.5 and GPT-6 Luna) broke both numbers. The web plugin injected 12,417 to 49,862 input tokens per
+search, and OpenRouter's documentation offers no setting that caps the injected text (it is billed as ordinary prompt tokens). The
+plugin's own fee was not fixed either: $0.01 to $0.05 per search, in steps of $0.01, on both models. Sonnet searches cost $0.043 to
+$0.161 against a recorded $0.0520, and Luna $0.022 to $0.033 against $0.0216. No reply lost money in that range, because the base
+price also pays, but the extra alone fell below the 50% margin floor on heavy pages.
+
+Migration 0210 records a new worst case for all ten rows: a **$0.06 fee** (the observed maximum plus 20%) plus **64,000 input
+tokens** (the observed maximum plus about 28%) at each model's input rate, with Credits at the margin floor. It is a planning bound
+from measurement, not a guarantee: the search text cannot be capped through the plugin, so a search that reads more than that is the
+one case the flat price does not cover. Capping the text ourselves (our own search call, with each result cut to a fixed length)
+would make the bound real and is the route for Deep research (ADR-0070), which cannot be priced honestly until then.
+
+The Web search extra becomes: Opus 18, Sonnet 11, GPT-6.1 Sol 11, Grok 11, Gemini 7, DeepSeek 5, Llama 5, Ministral 5, Luna 4,
+Mistral Small 4 (from 5, 3, 3, 3, 2, 2, 2, 2, 2, 2). A Luna reply with Web search goes from 3 to 5 Credits; a Sonnet one from 7 to 15.
+The price still shows before Send. The alternative the owner may prefer is fewer results per search (two, not three), which lowers the
+typical text but, being uncapped, not the bound.
+
 ## Not decided here
 
 - Which models, and their prices. Needs live endpoint checks and the margin validator. (Three were chosen
