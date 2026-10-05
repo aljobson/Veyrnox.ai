@@ -1,6 +1,6 @@
 # ADR-0071 — Referrals: a Credit reward for a friend who buys, never cash, never on sign-up alone
 
-- **Status**: **Proposed 2026-10-05**. Nothing is built. The owner's answers (recommendations marked) are at the end.
+- **Status**: **Accepted 2026-10-05** (owner: "go with recommendation"). Nothing is built. The answers are recorded at the end.
 - **Related**: ADR-0013 (Free Credits), ADR-0069 (free allowance), ADR-0026 (Turnstile on sign-up), CLAUDE.md "Money & billing"
   (no grants outside the listed RPCs; a manual or new grant path needs an ADR), "Identity & sessions" (the signup grant follows
   confirmation), and the **hard wall**: nothing here borrows wallet, on-chain or payout language.
@@ -65,10 +65,15 @@ clawback (`apply_top_up_refund`, a Frozen account on dispute), and a price-waive
 - Terms and the refund policy need a line: referral rewards are Credits, are released after the friend's refund window, and are
   reversed if that purchase is refunded or disputed.
 
-## Open questions for the owner (recommendation first)
+## Owner's decisions (2026-10-05, "go with recommendation")
 
-1. Reward size: **10% of the friend's first Pack**, or a flat number of Credits?
-2. Release window: **14 days** after the friend's purchase with no refund or dispute (use the real refund-policy length if it differs).
-3. Monthly caps: **20 paid referrals and a Credit ceiling set so the worst month is bounded** (suggest 2,000 Credits) per referrer.
-4. Friend bonus: **none in v1**.
-5. Referral rewards and Subscription Credits: **Packs only in v1**; add subscriptions only when ADR-0064's webhook exists.
+1. **Reward size**: 10% of the Credits in the friend's first Credit Pack, rounded down.
+2. **Release window**: 14 days after the friend's purchase with no refund or dispute (if the real refund-policy length is longer, the longer one wins).
+3. **Caps**: at most 20 paid referrals and 2,000 reward Credits per referrer per calendar month.
+4. **Friend bonus**: none in v1.
+5. **Packs only** in v1; Subscription Credits only when ADR-0064's webhook exists.
+
+Build order when this is picked up: the migration (table, definer functions, the release sweep, `reconcile_referrals()` joined to the nightly
+job), acceptance tests for release, clawback, the monthly caps and idempotency, a script in the replayed-database chain, then the sign-up
+attribution and the account page panel. `REFERRALS_ENABLED` ships `"false"` in production. Take the next free migration number after the
+highest **open PR** (see CLAUDE.md), not just after main.

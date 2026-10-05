@@ -38,7 +38,7 @@ function Toggle({ label, extra, checked, disabled, onChange, hint }) {
 
 // Everything that shapes the next reply, in one place: which model, what it may do, and its instructions. Nothing here is
 // sent until the person sends a message, and the price of the choices always shows under the message box.
-export function SettingsPanel({ models, model, busy, onSelectModel, tiers, onTiers, offer, opts, onOpts, canSaveInstr, instr, onInstr, instrSaved, onSaveInstr, saved, maxPrompt, hasThread }) {
+export function SettingsPanel({ models, model, busy, onSelectModel, tiers, onTiers, offer, opts, onOpts, researchOn = false, canSaveInstr, instr, onInstr, instrSaved, onSaveInstr, saved, maxPrompt, hasThread }) {
   const [open, setOpen] = useState({ filter: false, model: true, caps: true, tools: false, prompt: false, about: false });
   const toggle = (id) => setOpen((o) => ({ ...o, [id]: !o[id] }));
   const allOpen = SECTIONS.every((id) => open[id]);
@@ -57,8 +57,8 @@ export function SettingsPanel({ models, model, busy, onSelectModel, tiers, onTie
 
       <Section id="caps" title="Capabilities" open={open.caps} onToggle={toggle}>
         {offer.thinking
-          ? <Toggle label="Thinking" extra={offer.thinking.extra_credits} checked={opts.thinking} disabled={busy} onChange={(v) => onOpts({ ...opts, thinking: v })}
-              hint="Let the model reason step by step before it answers. Slower, and better on hard questions." />
+          ? <Toggle label="Thinking" extra={offer.thinking.extra_credits} checked={opts.thinking && !researchOn} disabled={busy || researchOn} onChange={(v) => onOpts({ ...opts, thinking: v, research: false })}
+              hint={researchOn ? 'Deep research is on, and it is priced on its own.' : 'Let the model reason step by step before it answers. Slower, and better on hard questions.'} />
           : <p className="text-vx-fg-muted">This model does not offer Thinking.</p>}
         {offer.images
           ? <p><span className="font-semibold">Images</span> <span className="font-vx-mono text-xs text-vx-money vx-num">+{credits(offer.images.extra_credits)}</span>
@@ -68,12 +68,16 @@ export function SettingsPanel({ models, model, busy, onSelectModel, tiers, onTie
 
       <Section id="tools" title="Tools" open={open.tools} onToggle={toggle}>
         {offer.web
-          ? <Toggle label="Web search" extra={offer.web.extra_credits} checked={opts.web} disabled={busy} onChange={(v) => onOpts({ ...opts, web: v })}
-              hint="Search the web and answer with sources." />
+          ? <Toggle label="Web search" extra={offer.web.extra_credits} checked={opts.web && !researchOn} disabled={busy || researchOn} onChange={(v) => onOpts({ ...opts, web: v, research: false })}
+              hint={researchOn ? 'Deep research is on, and it searches for you.' : 'Search the web and answer with sources.'} />
           : <p className="text-vx-fg-muted">This model does not offer Web search.</p>}
+        {offer.research && (
+          <Toggle label="Deep research" extra={offer.research.extra_credits} checked={researchOn} disabled={busy} onChange={(v) => onOpts({ thinking: false, web: false, research: v })}
+            hint="Plans a few searches, reads what the web returns, then writes a cited answer. Text only, and it can take up to about a minute." />
+        )}
         <div>
           <p className="font-semibold">Not available yet</p>
-          <ul className="mt-1 list-disc pl-5 text-vx-fg-muted">{NOT_YET.map((t) => <li key={t}>{t}</li>)}</ul>
+          <ul className="mt-1 list-disc pl-5 text-vx-fg-muted">{NOT_YET.filter((t) => !(t === 'Deep research' && offer.research)).map((t) => <li key={t}>{t}</li>)}</ul>
         </div>
       </Section>
 
@@ -107,7 +111,7 @@ export function SettingsPanel({ models, model, busy, onSelectModel, tiers, onTie
       </Section>
 
       <div className="mt-auto flex gap-2 pt-1">
-        <button type="button" disabled={busy} onClick={() => { onTiers(new Set()); onOpts({ thinking: false, web: false }); }}
+        <button type="button" disabled={busy} onClick={() => { onTiers(new Set()); onOpts({ thinking: false, web: false, research: false }); }}
           className="flex-1 rounded-lg border border-vx-border px-3 py-2 text-sm hover:border-vx-accent disabled:opacity-50">Reset all</button>
         <button type="button" onClick={() => setOpen(Object.fromEntries(SECTIONS.map((id) => [id, !allOpen])))}
           className="flex-1 rounded-lg border border-vx-border px-3 py-2 text-sm hover:border-vx-accent">{allOpen ? 'Close all' : 'Open all'}</button>
