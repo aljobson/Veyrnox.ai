@@ -3,7 +3,7 @@
 Do these in order. Each step is safe on its own; skipping ahead is not.
 
 1. **Merge the stack in order**: #563 (folders), #565 (picker and panel), #569 (Web search re-priced), #570 (`chat_web_engine`), then the code PR for the capped search. Retarget each to `main` as the one below it merges.
-2. **Approve apply-migrations for 0211** and wait for it to finish. It adds the column with every row on `plugin`, so nothing a user sees changes. The code PR also tolerates the column being absent (it reads rows as `plugin`), so a merge before this step does not take chat down, but nothing can be flipped until it is applied.
+2. **Approve apply-migrations for 0212** and wait for it to finish. It adds the column with every row on `plugin`, so nothing a user sees changes. The code PR also tolerates the column being absent (it reads rows as `plugin`), so a merge before this step does not take chat down, but nothing can be flipped until it is applied.
 3. **Create an Exa account and an API key** in your own name. Give it a spend limit.
 4. **Set the key on staging first**, then production. Never paste the key into chat:
    ```bash
