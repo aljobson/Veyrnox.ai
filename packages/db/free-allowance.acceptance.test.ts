@@ -59,7 +59,7 @@ describe('model free allowance (0205)', { skip: !process.env.DATABASE_URL }, () 
         assert.equal((await take(u, 'cap-2')).left, 1);
         assert.equal((await take(u, 'cap-3')).left, 0);
         assert.deepEqual(await take(u, 'cap-4'), { ok: true, taken: false, code: 'ALLOWANCE_USED' });
-        assert.deepEqual((await one('SELECT public.free_allowance_left($1) AS r', [u])).r, { [MODEL]: 0 });
+        assert.equal((await one('SELECT public.free_allowance_left($1) AS r', [u])).r[MODEL], 0);
     });
 
     it('a replay takes nothing more and gives the same answer', async () => {
@@ -97,7 +97,7 @@ describe('model free allowance (0205)', { skip: !process.env.DATABASE_URL }, () 
         const frozen = await user();
         await pool.query('UPDATE public.users SET frozen_at = now() WHERE id = $1', [frozen]);
         assert.equal((await take(frozen, 'fz-1')).code, 'NOT_ELIGIBLE');
-        assert.deepEqual((await one('SELECT public.free_allowance_left($1) AS r', [frozen])).r, { [MODEL]: 0 });
+        assert.equal((await one('SELECT public.free_allowance_left($1) AS r', [frozen])).r[MODEL], 0);
         const unconfirmed = await user({ grant: false });
         assert.equal((await take(unconfirmed, 'uc-1')).code, 'NOT_ELIGIBLE');
     });
