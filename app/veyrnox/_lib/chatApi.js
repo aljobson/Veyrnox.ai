@@ -15,6 +15,11 @@ export const chatApi = {
   get: (id) => gatewayFetch(`/chat/threads/${encodeURIComponent(id)}`),
   patch: (id, patch) => gatewayFetch(`/chat/threads/${encodeURIComponent(id)}`, { method: 'PATCH', body: json(patch) }),
   remove: (id) => gatewayFetch(`/chat/threads/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+  folders: () => gatewayFetch('/chat/folders'),
+  createFolder: (name) => gatewayFetch('/chat/folders', { method: 'POST', body: json({ name }) }),
+  renameFolder: (id, name) => gatewayFetch(`/chat/folders/${encodeURIComponent(id)}`, { method: 'PATCH', body: json({ name }) }),
+  removeFolder: (id) => gatewayFetch(`/chat/folders/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+  move: (id, folderId) => gatewayFetch(`/chat/threads/${encodeURIComponent(id)}`, { method: 'PATCH', body: json({ folder_id: folderId }) }),
 };
 
 /** What the user is told. Plain, specific, and always whether Credits were used (UI-UX.md section 8). */
@@ -25,6 +30,14 @@ export function chatErrorCopy(code, { credits } = {}) {
     case 'rate_limited': return 'You are sending messages quickly. Wait a few seconds and try again.';
     case 'chat_not_open': return 'Chat is not open yet.';
     case 'thread_not_found': return 'That chat no longer exists.';
+    case 'search_unavailable': return 'Web search is not working right now. Turn it off or try again. No Credits were used.';
+    case 'search_timeout': return 'Web search took too long. Try again, or turn it off. No Credits were used.';
+    case 'search_rate_limited': return 'Web search is busy. Try again in a moment. No Credits were used.';
+    case 'search_no_results': return 'No pages came back for that. Try again without Web search. No Credits were used.';
+    case 'folder_not_found': return 'That folder no longer exists.';
+    case 'folder_exists': return 'You already have a folder with that name.';
+    case 'folder_limit': return 'You can have up to 50 folders. Delete one to make another.';
+    case 'invalid_name': return 'Folder names can be 1 to 60 characters.';
     case 'model_unavailable': case 'model_gated': case 'model_not_found': return 'That model is not available right now. Pick another. No Credits were used.';
     case 'option_unavailable': case 'invalid_options': return 'That option is not available for this model. Turn it off or pick another model. No Credits were used.';
     case 'attachment_not_found': case 'attachment_invalid': return 'We could not read that image. Remove it and attach it again. No Credits were used.';

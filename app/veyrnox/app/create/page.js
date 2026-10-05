@@ -11,7 +11,10 @@ import { StudioJobGrid } from '../../_components/StudioJobGrid';
 import { useStudioJobs } from '../../_lib/useStudioJobs';
 import { IMAGE_COUNTS, takesImageCount, imageCount, totalCost, inputsForIndex, batchNote, sendInOrder, submitErrorCode } from '../../_lib/imageBatch';
 import { useCatalog } from '../../_lib/useCatalog';
+import { useFreeAllowance } from '../../_lib/useFreeAllowance';
+import { freeCost, freeLeftFor } from '../../_lib/freeAllowance';
 import { takeStudioDraft } from '../../_lib/landingDraft';
+import { templateStartId } from '../../../../lib/templateStart';
 import { DEFAULT_CINEMA, buildCinemaPrompt } from '../../_lib/cinema';
 import { CameraPanel } from '../../_components/CameraPanel';
 import { CharacterPanel } from '../../_components/CharacterPanel';
@@ -45,9 +48,11 @@ const off = () => false;
 
 export default function CreateStudio() {
   const { models: catalogModels, live: catalogLive, loading: catalogLoading } = useCatalog();
+  const freeMap = useFreeAllowance(); // ADR-0069: free jobs left today per model; empty while the feature is off
   const autoShortOn = useSyncExternalStore(never, autoShortFlag, off);
   const models = catalogModels.filter((m) => !m.isEdit && (autoShortOn || !m.takesTopic));
   const [modelId, setModelId] = useState(DEFAULT_MODEL);
+  const [presetParam, setPresetParam] = useState(null);
   const [tier, setTier] = useState(null);
   const [duration, setDuration] = useState('5s');
   const [aspect, setAspect] = useState('16:9');
@@ -86,6 +91,7 @@ export default function CreateStudio() {
     const params = new URLSearchParams(window.location.search);
     const wanted = params.get('model');
     if (wanted) setModelId(wanted);
+    setPresetParam(params.get('preset')); // a template's id, from its studio link; sent only while its own model is selected
     if (params.get('duration') === '10s') setDuration('10s');
     const draft = takeStudioDraft(window.sessionStorage, wanted);
     if (draft) setPrompt(draft.prompt);
@@ -124,7 +130,9 @@ export default function CreateStudio() {
   const unitCost = model ? model.credits * (duration === '10s' && model.kind === 'video' ? 2 : 1) : 0;
   // Other models always send one; the count control is image-only.
   const n = imageCount(model, count);
-  const cost = totalCost(unitCost, n);
+  // The server decides what is free; the first `freeLeft` jobs of a batch are, the rest cost the catalog price.
+  const freeLeft = freeLeftFor(freeMap, modelId);
+  const cost = freeLeft > 0 ? freeCost(unitCost, n, freeLeft) : totalCost(unitCost, n);
   const durationKey = durations.join(',');
   // `generating` is derived from `jobs`, which is only set AFTER the await in
   // onSubmit. Between the click and that setState the button stayed enabled,
@@ -248,21 +256,24 @@ export default function CreateStudio() {
           method: 'POST',
           body: JSON.stringify({
             model_id: modelId, idempotency_key: keys[i], inputs: inputsForIndex(inputs, i, n),
+            preset: templateStartId(presetParam, modelId) || undefined,
             source_keys: source_keys.length ? source_keys : undefined,
             source_assets: source_assets.length ? source_assets : undefined,
             consent: anySource ? true : undefined,
           }),
         });
+        // A job that took a free allowance (ADR-0069) cost nothing; the server says so.
+        const jobCredits = submitted.free_allowance === true ? 0 : unitCost;
         // The first accepted job replaces the previous click's jobs.
-        (i === 0 ? startJobs : addJob)({ job_id: submitted.job_id, state: 'queued', credits: unitCost, model_id: modelId });
+        (i === 0 ? startJobs : addJob)({ job_id: submitted.job_id, state: 'queued', credits: jobCredits, model_id: modelId });
         pushJobHistory({
           job_id: submitted.job_id,
           model_id: modelId,
-          credits: unitCost,
+          credits: jobCredits,
           prompt: prompt.slice(0, 60),
           name: prompt.slice(0, 40),
         });
-        setBalance(submitted.balance_after);
+        if (submitted.balance_after != null) setBalance(submitted.balance_after);
       });
       if (started > 0) notifyBalanceChanged();
       if (failure) {
@@ -440,7 +451,9 @@ export default function CreateStudio() {
                     )}
                     <span className="font-vx-mono text-[10px] tracking-[0.1em] text-vx-fg-faint uppercase shrink-0">{m.kind}</span>
                   </span>
-                  <span className="font-vx-mono text-[12px] font-bold text-vx-money vx-num shrink-0">{m.credits} cr</span>
+                  {freeLeftFor(freeMap, m.id) > 0
+                    ? <span className="font-vx-mono text-[12px] font-bold text-vx-accent shrink-0">FREE · {freeLeftFor(freeMap, m.id)} left</span>
+                    : <span className="font-vx-mono text-[12px] font-bold text-vx-money vx-num shrink-0">{m.credits} cr</span>}
                 </button>
               ))}
             </div>
@@ -476,6 +489,11 @@ export default function CreateStudio() {
               </span>
             </div>
             <div className="mt-1 font-vx-mono text-[36px] font-bold text-vx-money vx-num">−{cost} cr</div>
+            {freeLeft > 0 && (
+              <div role="status" className="mt-1 font-vx-mono text-[11px] tracking-[0.08em] text-vx-accent">
+                {n > freeLeft ? `FREE · ${freeLeft} OF ${n} · ${freeLeft} LEFT TODAY` : `FREE · ${freeLeft} LEFT TODAY`}
+              </div>
+            )}
             <ParticleButton
               onClick={generating ? cancel : onSubmit}
               className="mt-4 w-full flex items-center justify-between bg-vx-accent text-vx-accent-ink rounded-full px-6 py-3.5 font-extrabold hover:bg-vx-accent-hover disabled:opacity-40 disabled:cursor-not-allowed"

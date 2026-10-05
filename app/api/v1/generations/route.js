@@ -23,6 +23,8 @@ import { NextResponse } from 'next/server';
 import { rpc, select, envConfig, SupabaseError } from '../../../../packages/db/supabase-client.js';
 import { capabilityFor, declaredInputs, checkSource } from '../../../../lib/modelCapabilities.js';
 import { refundRejectedSubmit } from '../../../../lib/submitRejection.js';
+import { freeAllowanceOn as isFreeAllowanceOn, takeFreeJob } from '../../../../lib/freeJob.js';
+import { templateStartId } from '../../../../lib/templateStart.js';
 import { classifySubmitFailure } from '../../../../lib/submitFailureClass.js';
 import { resolveUploadedSource, resolveAssetSource } from '../../../../lib/resolveSource.js';
 import { envConfig as r2EnvConfig, isConfigured as r2IsConfigured } from '../../../../packages/adapters/r2.js';
@@ -271,12 +273,14 @@ export async function POST(req) {
         }
     }
 
-    // 1. Look up the model in the catalog.
+    // 1. Look up the model in the catalog. The allowance column is asked for only when the flag is on, so a
+    //    Worker running before migration 0205 is applied never queries a column that does not exist yet.
+    const freeAllowanceOn = isFreeAllowanceOn(process.env);
     let modelRow;
     try {
         const rows = await select(
             'model_catalog',
-            { columns: 'id,provider,provider_endpoint,modality,credits_5s,gated_flag,active', filter: `id=eq.${encodeURIComponent(modelId)}` },
+            { columns: `id,provider,provider_endpoint,modality,credits_5s,gated_flag,active${freeAllowanceOn ? ',free_allowance_per_day' : ''}`, filter: `id=eq.${encodeURIComponent(modelId)}` },
             cfg,
         );
         modelRow = Array.isArray(rows) && rows[0];
@@ -361,16 +365,33 @@ export async function POST(req) {
 
     // 3. Debit atomically. Creates jobs row too. Price = catalog unit price
     //    times the validated unit count; never a client-supplied number.
-    const credits = priceFor(modelRow, pricedInputs);
-    let debit;
+    let credits = priceFor(modelRow, pricedInputs);
+    // ADR-0072: the template this started from, recorded on the job for the Popular ranking only. It is believed only if it names a
+    // real template that belongs to this model, it never reaches a provider (the provider gets storedInputs / modelInputs below),
+    // and a bad or missing one is simply ignored.
+    const presetId = templateStartId(body && body.preset, modelId);
+    const jobInputs = presetId ? { ...storedInputs, preset_id: presetId } : storedInputs;
+    let debit = null;
+    // ADR-0069: a model with a free allowance waives the price of a job while the account has some left today.
+    // submit_free_job takes the allowance and creates the job at 0 Credits with no ledger row; with none left it
+    // writes nothing (taken:false) and the normal debit below runs at the catalog price. A refusal it reports
+    // (rate limit, Frozen account) is answered exactly like the same refusal from ledger_debit. If the call itself
+    // fails we fall through to the paid debit, which finds the job by idempotency key if the free one did land.
+    if (freeAllowanceOn && Number(modelRow.free_allowance_per_day) > 0) {
+        debit = await takeFreeJob({
+            cfg, authId, userId, key: idempotencyKey, modelId, inputs: jobInputs,
+            limit: RATE_LIMIT_PER_WINDOW, windowSeconds: RATE_WINDOW_SECONDS,
+        });
+        if (debit && debit.free) credits = 0;
+    }
     try {
-        debit = await rpc('ledger_debit', {
+        if (!debit) debit = await rpc('ledger_debit', {
             p_user_id: userId,
             p_idempotency_key: idempotencyKey,
             p_credits: credits,
             p_reason: 'debit:generation',
             p_model_id: modelId,
-            p_inputs: storedInputs,
+            p_inputs: jobInputs,
             // Authoritative rate limit, counted under the same row lock as
             // the insert (0030). The RPC above is only the cheap early 429.
             p_limit_per_window: RATE_LIMIT_PER_WINDOW,
@@ -469,5 +490,6 @@ export async function POST(req) {
         job_id: jobId,
         state: 'SUBMITTED',
         balance_after: balanceAfter,
+        ...(debit.free ? { free_allowance: true } : {}),
     });
 }

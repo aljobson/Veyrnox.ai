@@ -227,6 +227,27 @@ try {
         assert.ok(!JSON.stringify(await q('SELECT inputs FROM public.jobs WHERE id = $1', [job])).includes('private'));
     }
 
+    // ── The data export (docs/product/chat-data-export.sql): one person's chats, in order, nobody else's. ──
+    {
+        const u = await user(); const v = await user();
+        const tu = (await thread(u, fast)).thread.id; const tv = (await thread(v, fast)).thread.id;
+        await rpc('public.chat_update_thread($1, $2, null, true, $3)', [u.auth, tu, 'Be brief.']);
+        const ju = await startTurn(u, tu, fast); assert.equal((await complete(ju, tu, 'mine first', 'reply one')).ok, true);
+        const ju2 = await startTurn(u, tu, fast); assert.equal((await complete(ju2, tu, 'mine second', 'reply two')).ok, true);
+        const jv = await startTurn(v, tv, fast); assert.equal((await complete(jv, tv, 'someone elses secret', 'their reply')).ok, true);
+        const sqlText = await readFile(new URL('../docs/product/chat-data-export.sql', import.meta.url), 'utf8');
+        const run = async (email) => (await c.query(sqlText.replace("lower('user@example.com')", `lower('${email}')`))).rows;
+        const [row] = await run(`${u.auth.toUpperCase()}@Example.invalid`); // case does not matter
+        const doc = JSON.parse(row.chat_export);
+        assert.equal(doc.account_email, `${u.auth}@example.invalid`);
+        assert.equal(doc.chats.length, 1);
+        assert.deepEqual([doc.chats[0].instructions, doc.chats[0].pinned], ['Be brief.', true]);
+        assert.deepEqual(doc.chats[0].messages.map((m) => [m.role, m.text]),
+            [['user', 'mine first'], ['assistant', 'reply one'], ['user', 'mine second'], ['assistant', 'reply two']], 'in order');
+        assert.ok(!row.chat_export.includes('someone elses secret') && !row.chat_export.includes('their reply'), "never another person's chat");
+        assert.equal((await run('nobody-at-all@example.invalid')).length, 0, 'no account, no row');
+    }
+
     // ── The per-user thread cap. ──
     const c3 = await user();
     await q(`INSERT INTO public.chat_threads (user_id, model_id) SELECT $1, $2 FROM generate_series(1, 500)`, [c3.id, fast]);
