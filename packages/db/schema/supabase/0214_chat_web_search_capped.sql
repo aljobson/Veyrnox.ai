@@ -6,16 +6,16 @@
 -- bound is the dearest search x 1.5 rounded up, $0.011.
 --
 -- Each row's recorded Web search cost is that fee bound plus 7,000 input tokens at the row's input rate, and the Credits are the
--- margin floor (credits >= ceil(cost / 0.01796); the table's own CHECK enforces it). Unlike 0211, this is a real ceiling: the
+-- margin floor (credits >= ceil(cost / 0.01796); the table's own CHECK enforces it). Unlike 0212, this is a real ceiling: the
 -- text is cut on our side before the model sees it.
 --
--- Credits (from the uncapped plugin's 0211 price): Opus 18 -> 3, Sonnet / GPT-6.1 Sol / Grok 11 -> 2, every other model 4 to 7 -> 1.
+-- Credits (from the uncapped plugin's 0212 price): Opus 18 -> 3, Sonnet / GPT-6.1 Sol / Grok 11 -> 2, every other model 4 to 7 -> 1.
 -- The engine and the price change together on purpose. A capped row offers Web search only while EXA_API_KEY is set and refuses it
 -- before any Credits move if the key is ever removed, so this low price can never be charged for the uncapped plugin.
 --
 -- Apply only through the owner-approved workflow, and only after the capped search code is deployed and EXA_API_KEY is set on that
--- environment. The predicate pins each row's old (0211) or new cost, so a hand-edited row fails loudly and the statement can be
--- applied twice. Rollback: set chat_web_engine back to 'plugin' AND restore the 0211 price in one statement; never one without the other.
+-- environment. The predicate pins each row's old (0212) or new cost, so a hand-edited row fails loudly and the statement can be
+-- applied twice. Rollback: set chat_web_engine back to 'plugin' AND restore the 0212 price in one statement; never one without the other.
 DO $$
 DECLARE affected BIGINT;
 BEGIN
