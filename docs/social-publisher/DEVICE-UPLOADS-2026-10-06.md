@@ -13,7 +13,7 @@ Completed uploads remain stored until removed; unfinished uploads expire after 2
 
 ## Activation
 
-1. Merge the change and apply migration 0209 through the normal migration workflow
+1. Merge the change and apply migration 0223 through the normal migration workflow
    (production requires the owner's run approval). Verify staging independently.
 2. Check the actual staging bucket permits the exact staging origin, PUT,
    Content-Type and If-None-Match. Preserve existing CORS rules and origin policy.
@@ -38,6 +38,8 @@ CORS change was needed. Real browser-to-R2 transfer was verified below.
 Migration `0209_social_device_uploads` was applied to staging project
 `yrqzwqywxfesmbvhzjgj`. `PUBLISH_UPLOADS_ENABLED=true` was deployed to staging
 Worker version `f4147d72-fc63-42f4-911a-97b97d9f60ea`; production remains off.
+
+Renumbered to `0223_social_device_uploads` on `main` (SQL unchanged): production had already applied 0221, and the apply tool refuses a pending file numbered below an applied one. Staging still records it as `0209_social_device_uploads`.
 The deployment preserved the live staging public settings, existing secrets and
 five-minute cron instead of replacing unrelated staging settings from the repository.
 

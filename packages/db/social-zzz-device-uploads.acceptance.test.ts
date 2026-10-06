@@ -4,11 +4,11 @@ import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import pg from 'pg';
 
-describe('Publish device uploads (0209)', { skip: !process.env.DATABASE_URL }, () => {
+describe('Publish device uploads (0223)', { skip: !process.env.DATABASE_URL }, () => {
     let pool: pg.Pool;
     const one = async (sql: string, args: unknown[] = []) => (await pool.query(sql, args)).rows[0];
     const call = async (sql: string, args: unknown[] = []) => (await one(`SELECT ${sql} AS r`, args)).r;
-    const migration = () => readFile(new URL('./schema/supabase/0209_social_device_uploads.sql', import.meta.url), 'utf8');
+    const migration = () => readFile(new URL('./schema/supabase/0223_social_device_uploads.sql', import.meta.url), 'utf8');
     before(async () => {
         pool = new pg.Pool({ connectionString: process.env.DATABASE_URL, max: 12 });
         await pool.query(await migration()); await pool.query(await migration());

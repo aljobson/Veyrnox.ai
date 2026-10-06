@@ -389,7 +389,7 @@ Append one post_rescheduled audit entry on a real change. No credit ledger is in
 ## Device uploads (2026-10-06)
 
 The owner requires posting media from their device even when their generation library
-is empty. Migration 0209 adds a separate, owner-scoped Publish upload library; no fake
+is empty. Migration 0223 adds a separate, owner-scoped Publish upload library; no fake
 generation job, ledger mutation or external provider call is made. The composer accepts
 one existing job or one completed upload ID. Both resolve storage at dispatch time.
 
@@ -407,7 +407,7 @@ Scheduling and removal share the user lock. The cleanup sweep claims abandoned u
 older than 24 hours, or removed files after the signed PUT's expiry safety window.
 Only confirmed R2 deletion releases the database reservation; failures retain the budget.
 
-`PUBLISH_UPLOADS_ENABLED` defaults false in both environments until 0209 is applied.
+`PUBLISH_UPLOADS_ENABLED` defaults false in both environments until 0223 is applied.
 Routes also require the overall Publish flag. Existing generated-media dispatch remains
 available while device uploads are disabled. Upload consent and retention copy appear
 before selecting a device file; uploading alone never creates a post. Activation requires
