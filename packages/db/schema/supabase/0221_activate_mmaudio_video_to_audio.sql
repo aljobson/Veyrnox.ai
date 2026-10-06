@@ -1,3 +1,4 @@
+-- (Renumbered from 0204: production applied 0205 to 0220 first, and the workflow refuses a pending file numbered below an applied one.)
 -- Activate video to audio (MMAudio v2) from 0202, with its recorded cost corrected to what fal actually billed.
 -- One real generation ran through scripts/verify-fal-video-tools.mjs on 2026-10-05 against a public 960x540, 5 s clip: it completed,
 -- and the result URL served the file directly (HTTP 200, no redirect, host v3b.fal.media, which r2Copy's fal allowlist covers).

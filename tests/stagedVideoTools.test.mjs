@@ -42,8 +42,8 @@ test('the Tools page has a group for each new row', () => {
   assert.ok(ids.includes('topaz-upscale-video'));
 });
 
-test('0204 activates MMAudio only, at the cost fal billed, and leaves Topaz staged exactly as 0202 applied it', () => {
-  const act = readFileSync(new URL('../packages/db/schema/supabase/0204_activate_video_audio_and_upscale.sql', import.meta.url), 'utf8');
+test('0221 activates MMAudio only, at the cost fal billed, and leaves Topaz staged exactly as 0202 applied it', () => {
+  const act = readFileSync(new URL('../packages/db/schema/supabase/0221_activate_mmaudio_video_to_audio.sql', import.meta.url), 'utf8');
   assert.ok(1 >= Math.ceil(0.01 / 0.0165), 'one Credit still clears the 50% floor at the billed $0.0100');
   assert.match(act, /SET active = true, provider_cost_per_unit = 0\.0100/);
   assert.match(act, /AND active = false AND credits_5s = 1 AND provider_cost_per_unit = 0\.0080;/, 'pins the 0202 values, so an edited row fails loudly');
