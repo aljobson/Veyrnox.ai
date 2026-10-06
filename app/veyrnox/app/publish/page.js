@@ -164,7 +164,7 @@ function PublishControls({ initialJobId }) {
     </section>
 
     <section className="rounded-2xl border border-vx-border p-5">
-      <h2 id="schedule" className="font-bold mb-4 scroll-mt-6">Schedule a post</h2>
+      <h2 id="schedule" className="font-bold mb-4 scroll-mt-6">Create a post</h2>
       <Composer key={initialJobId || 'library'} initialJobId={initialJobId} accounts={accounts} uploadsEnabled={uploadsEnabled} onScheduled={() => setPostsRefreshToken((n) => n + 1)} />
     </section>
 

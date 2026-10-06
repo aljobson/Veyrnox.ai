@@ -489,3 +489,25 @@ account and an owner-selected video. The Apple account currently has no library
 assets. The deployed publishing sweep explicitly selects public visibility;
 the composer offers no private/unlisted setting. Agree the concrete video,
 caption, channel and visibility before scheduling or uploading a real post.
+
+## Post now and Schedule post — 2026-10-06
+
+The owner requested both actions in the composer. Post now sends `publishNow: true`;
+the existing posts API assigns server time and queues it for the normal publishing
+sweep. Schedule post uses the selected future date/time. Immediate posts can still
+take several minutes to appear; the UI describes queuing instead of claiming that
+an accepted request has already published. Both actions retain the same ownership,
+media, rate-limit and idempotency checks. No migration or new switch is required.
+
+Staging Worker version `55bc43c8-d904-4166-998c-8c644f2c0259` includes both buttons.
+Validation: 1,624 unit tests passed, one skipped; 15 posts-route tests passed, including
+server-clock immediate posting and malformed-mode rejection; lint, foundation type
+check and the staging build passed. A browser test intercepted posting requests to
+verify the two request shapes, failure handling, retry key retention and the queued
+success message. Interception was removed and the page refreshed afterward. Those
+requests did not reach the publishing API; real YouTube publication remains unverified.
+
+The current staging connection is `jobsonal1`, rather than the previously connected
+Pip/Hazel/Ollie channel. The owner's uploaded `veyrnox-profile-test-enhanced (1).mp4`
+remains available. Confirm the intended channel, caption and public visibility before
+submitting either action for a real publishing test.

@@ -136,17 +136,21 @@ export function Composer({ accounts, onScheduled, initialJobId = null, uploadsEn
         setError(''); setSuccess('');
         if (selectedAccountIds.size === 0) { setError('Pick at least one connected account.'); return; }
         if (!selectedMedia) { setError('Choose an image or video from your library or device.'); return; }
-        const scheduledIso = new Date(scheduledAt).toISOString();
-        setSubmitting(true);
+        const publishNow = e.nativeEvent.submitter?.value === 'now';
+        const schedule = new Date(scheduledAt);
+        if (!publishNow && (!Number.isFinite(schedule.getTime()) || schedule.getTime() <= Date.now())) {
+            setError('Choose a future date and time to schedule your post.'); return;
+        }
+        setSubmitting(publishNow ? 'now' : 'schedule');
         try {
             await createSocialPost({
-                scheduledAt: scheduledIso,
+                ...(publishNow ? { publishNow: true } : { scheduledAt: schedule.toISOString() }),
                 globalText: caption,
                 idempotencyKey: idempotencyKey.current,
                 accountIds: [...selectedAccountIds],
                 media: [{ mediaType, ...(selectedMedia.uploadId ? { uploadId: selectedMedia.uploadId } : { jobId: selectedMedia.jobId }) }],
             });
-            setSuccess('Post scheduled.');
+            setSuccess(publishNow ? 'Post queued for publishing. It can take a few minutes to appear.' : 'Post scheduled.');
             setCaption(''); setSelectedAccountIds(new Set()); setSelectedMedia(null);
             setScheduledAt(defaultScheduleValue());
             idempotencyKey.current = newIdempotencyKey();
@@ -155,7 +159,7 @@ export function Composer({ accounts, onScheduled, initialJobId = null, uploadsEn
             const code = err && err.code;
             setError(code === 'rate_limited'
                 ? 'Too many posts scheduled at once. Wait a moment and try again.'
-                : 'Could not schedule that post. Check your connection and try again.');
+                : 'Could not submit that post. Check your connection and try again.');
         } finally {
             setSubmitting(false);
         }
@@ -173,6 +177,7 @@ export function Composer({ accounts, onScheduled, initialJobId = null, uploadsEn
                             <li key={a.id}>
                                 <button
                                     type="button"
+                                    aria-pressed={on}
                                     onClick={() => toggleAccount(a.id)}
                                     className={`rounded-full border px-3 py-1.5 text-sm font-bold ${on ? 'border-vx-accent text-vx-accent' : 'border-vx-border text-vx-fg'}`}
                                 >
@@ -223,7 +228,7 @@ export function Composer({ accounts, onScheduled, initialJobId = null, uploadsEn
             </div>
 
             <div>
-                <label htmlFor="publish-schedule" className="text-sm font-bold mb-2 block">When</label>
+                <label htmlFor="publish-schedule" className="text-sm font-bold mb-2 block">Schedule for</label>
                 <input
                     id="publish-schedule"
                     type="datetime-local"
@@ -236,9 +241,15 @@ export function Composer({ accounts, onScheduled, initialJobId = null, uploadsEn
             {error && <p role="alert" className="text-sm text-vx-danger">{error}</p>}
             {success && <p className="text-sm text-vx-accent">{success}</p>}
 
-            <button type="submit" disabled={submitting || loadingMedia || uploading || !activeAccounts.length} className={primaryButton}>
-                {submitting ? 'Scheduling…' : 'Schedule post'}
-            </button>
+            <div className="flex flex-wrap gap-3">
+                <button type="submit" value="now" formNoValidate disabled={submitting || loadingMedia || uploading || !activeAccounts.length} className={primaryButton}>
+                    {submitting === 'now' ? 'Submitting…' : 'Post now'}
+                </button>
+                <button type="submit" value="schedule" disabled={submitting || loadingMedia || uploading || !activeAccounts.length} className={button}>
+                    {submitting === 'schedule' ? 'Scheduling…' : 'Schedule post'}
+                </button>
+            </div>
+            <p className="text-xs text-vx-fg-muted">Post now starts publishing as soon as possible. Schedule post uses the date and time above. Publishing can take a few minutes.</p>
         </form>
     );
 }
