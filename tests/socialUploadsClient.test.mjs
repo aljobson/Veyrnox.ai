@@ -7,7 +7,7 @@ class FakeXHR {
     upload = {};
     status = 204;
     open(method,url) { assert.equal(method,'PUT'); assert.equal(url,'https://storage.test/signed'); headers = {}; }
-    setRequestHeader(key,value) { headers[key] = value; }
+    setRequestHeader(key,value) { headers[key] = headers[key] ? `${headers[key]}, ${value}` : value; }
     send(file) { sent = file; if (outcome === 'error') this.onerror(); else { this.upload.onprogress?.({ lengthComputable:true, loaded:file.size,total:file.size }); this.onload(); } }
     abort() { this.onabort?.(); }
 }
@@ -18,7 +18,7 @@ function requests() {
     const call = async (path,init) => {
         assert.equal(path,'/social/uploads');
         const body = JSON.parse(init.body); calls.push({ method:init.method,body });
-        if (body.action === 'reserve') return { id,upload_url:'https://storage.test/signed',content_type:file.type,headers:{ 'If-None-Match':'*','Content-Length':'16' } };
+        if (body.action === 'reserve') return { id,upload_url:'https://storage.test/signed',content_type:file.type,headers:{ 'Content-Type':file.type,'If-None-Match':'*','Content-Length':'16' } };
         if (body.action === 'complete') return { upload:{ id } };
         return { ok:true };
     };

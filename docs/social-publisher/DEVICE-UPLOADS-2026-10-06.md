@@ -31,4 +31,36 @@ The temporary preview page is excluded from the PR. See ADR-0061 for the storage
 
 Staging bucket CORS was read on 6 October: `veyrnox-ai-staging-media` permits the
 exact staging origin, GET/HEAD/PUT, and Content-Type/Range/If-None-Match. No remote
-CORS change was needed. Actual browser-to-R2 transfer remains an activation check.
+CORS change was needed. Real browser-to-R2 transfer was verified below.
+
+## Staging acceptance — 6 October 2026
+
+Migration `0209_social_device_uploads` was applied to staging project
+`yrqzwqywxfesmbvhzjgj`. `PUBLISH_UPLOADS_ENABLED=true` was deployed to staging
+Worker version `f4147d72-fc63-42f4-911a-97b97d9f60ea`; production remains off.
+The deployment preserved the live staging public settings, existing secrets and
+five-minute cron instead of replacing unrelated staging settings from the repository.
+
+The real browser revealed a duplicate Content-Type header: XHR appends repeated
+values, so `video/mp4, video/mp4` invalidated the R2 signature. The client now sends
+the type once. The regression fixture includes the real reservation's Content-Type
+header and models XHR's append behavior.
+
+Verified with synthetic PNG and one-second MP4 fixtures in the owner's signed-in
+staging browser: direct R2 transfers, completion, previews, automatic selection,
+reload and selecting the saved MP4 again. Credit balance stayed at ten; no social
+post was created. Reusing the image's signed PUT with the same bytes returned 412.
+Text bytes declared as PNG returned 400 and never became selectable; the client
+queued that reservation for removal.
+
+All five acceptance reservations were marked deleting and their disposable R2
+objects were deleted through the operator CLI. Metadata capacity remains held until
+the signed PUT windows expire (latest 06:03:53 UTC), after which the five-minute cron
+can release it. The live cron's final release has not yet been observed; the database
+and sweep tests cover this ordering. Do not describe manual fixture removal as proof
+of automatic cleanup.
+
+Validation: 1,622 unit tests passed, one skipped; all 23 targeted upload tests passed;
+the changed client passed lint; the staging Worker build and deploy passed. The
+unchanged migration previously passed all 344 database tests and fresh replay of
+all 209 migrations in PR #607.
