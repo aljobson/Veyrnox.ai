@@ -1,11 +1,15 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { IMAGE_TYPES, addableCount, isImageFile } from '../../_lib/chatImages';
+import { VIDEO_TYPES, isVideoFile, extractFrames } from '../../_lib/videoFrames';
+
+const FRAMES_PER_VIDEO = 4; // a clip is attached as up to four frames, each an ordinary image
 
 /**
  * The images chosen for the next reply: local files with a preview each, or the person's own Library images (by the id of
  * the job that made them). Nothing is uploaded until Send, so removing one costs nothing. A file's preview is an object URL,
  * released when it goes or the composer unmounts; a Library image's preview is its short-lived link and needs no release.
+ * A video is attached as a few frames taken in the browser (ADR-0068 amendment 3): each is a file like any other, marked `video`.
  */
 export function useAttachments(max) {
   const [items, setItems] = useState([]);
@@ -14,10 +18,29 @@ export function useAttachments(max) {
   useEffect(() => { live.current = items; }, [items]);
   useEffect(() => () => { for (const i of live.current) if (!i.asset) URL.revokeObjectURL(i.preview); }, []);
 
+  // Up to four frames from one clip, taken here: the video is never uploaded. It needs room for at least two images.
+  const addVideo = useCallback(async (file, more) => {
+    const room = addableCount(live.current.length, max);
+    if (room < 2) { setNotice(`A video needs room for at least 2 of the ${max} images. Remove one first.`); return; }
+    setNotice('Reading frames from your video…');
+    try {
+      const frames = await extractFrames(file, Math.min(FRAMES_PER_VIDEO, room));
+      setItems((cur) => {
+        const take = frames.slice(0, addableCount(cur.length, max));
+        return [...cur, ...take.map((f) => ({ id: `${Date.now()}-${Math.random().toString(36).slice(2)}`, file: f, preview: URL.createObjectURL(f), video: true }))];
+      });
+      setNotice(more ? 'Only the first video was used.' : null);
+    } catch {
+      setNotice('We could not read that video. Try an MP4, WebM or MOV, or attach a screenshot.');
+    }
+  }, [max]);
+
   const add = useCallback((fileList) => {
     const picked = Array.from(fileList || []);
     const images = picked.filter(isImageFile);
-    setNotice(images.length < picked.length ? 'Only PNG, JPEG and WebP images can be attached.' : null);
+    const videos = picked.filter(isVideoFile);
+    setNotice(images.length + videos.length < picked.length ? 'Only PNG, JPEG and WebP images, or an MP4, WebM or MOV video, can be attached.' : null);
+    if (videos.length) addVideo(videos[0], videos.length > 1);
     setItems((cur) => {
       const room = addableCount(cur.length, max);
       if (images.length > room) setNotice(`You can attach up to ${max} images.`);
@@ -50,10 +73,10 @@ export function AttachButton({ onPick, disabled, full }) {
   const input = useRef(null);
   return (
     <>
-      <input ref={input} type="file" accept={IMAGE_TYPES.join(',')} multiple hidden tabIndex={-1}
+      <input ref={input} type="file" accept={[...IMAGE_TYPES, ...VIDEO_TYPES].join(',')} multiple hidden tabIndex={-1}
         onChange={(e) => { onPick(e.target.files); e.target.value = ''; }} />
-      <button type="button" disabled={disabled || full} onClick={() => input.current?.click()} aria-label="Attach images"
-        title={full ? 'The most images for one reply' : 'Attach images'}
+      <button type="button" disabled={disabled || full} onClick={() => input.current?.click()} aria-label="Attach images or a video"
+        title={full ? 'The most images for one reply' : 'Attach images, or a video (a few frames are used)'}
         className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-vx-fg-muted hover:text-vx-fg disabled:opacity-40">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="M21 11.5 12.5 20a5.5 5.5 0 0 1-7.8-7.8l9-9a3.7 3.7 0 0 1 5.2 5.2l-9 9a1.8 1.8 0 0 1-2.6-2.6l8.3-8.3" />
