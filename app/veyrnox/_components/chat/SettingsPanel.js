@@ -40,7 +40,7 @@ function Toggle({ label, extra, checked, disabled, onChange, hint }) {
 // Everything that shapes the next reply, in one place: which model, what it may do, and its instructions. Nothing here is
 // sent until the person sends a message, and the price of the choices always shows under the message box.
 export function SettingsPanel({ models, model, busy, onSelectModel, tiers, onTiers, offer, opts, onOpts, researchOn = false, canSaveInstr, instr, onInstr, instrSaved, onSaveInstr, saved, maxPrompt, hasThread, personasOn = false, personas = [], personaId = '', onPersona, onManagePersonas }) {
-  const [open, setOpen] = useState({ persona: true, filter: false, model: true, caps: true, tools: false, prompt: false, about: false });
+  const [open, setOpen] = useState({ persona: true, filter: false, model: true, caps: true, tools: true, prompt: false, about: false });
   const toggle = (id) => setOpen((o) => ({ ...o, [id]: !o[id] }));
   const allOpen = SECTIONS.every((id) => open[id]);
   const tier = tierOf(model.credits_per_reply);
