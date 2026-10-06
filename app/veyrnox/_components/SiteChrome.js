@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { SUPPORT_EMAIL } from '../_lib/tokens';
 import { clearAttribution } from '../_lib/utm';
 import { applyStoredTheme } from './ThemeToggle';
@@ -31,6 +32,8 @@ export default function SiteChrome() {
   const unread = useSyncExternalStore(never, noticeUnread, noticeOnServer);
   const [acked, setAcked] = useState(false);
   const noticeOpen = unread && !acked;
+  // The chat composer sits at the bottom edge, so the buttons ride above it there.
+  const onChat = (usePathname() || '').startsWith('/app/chat');
 
   // Retire unused campaign storage, including records left by older clients.
   useEffect(() => {
@@ -56,7 +59,7 @@ export default function SiteChrome() {
       <ReferralBridge />
       {/* The buttons ride above the notice while it is up, instead of
           sitting under it in the same bottom-right corner. */}
-      <FloatingActions raised={noticeOpen} />
+      <FloatingActions raised={noticeOpen || onChat} />
       {noticeOpen && <StorageNotice onDismiss={ackNotice} />}
     </>
   );
