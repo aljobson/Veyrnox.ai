@@ -10,10 +10,14 @@
 -- MMAudio: the recorded cost is raised from 0.0080 to 0.0100. One Credit still clears the 50% floor, ceil(0.0100 / 0.0165) = 1, and the
 -- source stays capped at 8 s. The predicate pins the 0202 values (inactive, 1 Credit, 0.0080), so an edited row fails loudly.
 --
--- Topaz is NOT activated here and is left exactly as 0202 applied it (inactive, 49 Credits, $0.80, 10 s). One billed run at $0.24 is
--- the mildest case (the largest output that is still 1080p), and it already ran 2.4x the table, so the worst case for a larger source is
--- not bounded by anything measured. It needs a second measurement at a larger source (and an answer for how fal derives the quantity)
--- before it is activated or repriced; until then it stays staged.
+-- Topaz is NOT activated here and is left exactly as 0202 applied it (inactive, 49 Credits, $0.80, 10 s). Two billed runs (usage page, 2026-10-05):
+--   960x540 source, 5.0 s -> 1080p output:  24 "seconds" x $0.01 = $0.24   (about $0.048 per source-second)
+--   1920x1080 source, 5.7 s -> 4K output:   48 "seconds" x $0.01 = $0.48   (about $0.084 per source-second)
+-- Both ran above fal's published tier table, and the rate climbs with resolution. A 10 s 1080p source extrapolates to about $0.84, already
+-- over the $0.80 this row records and the $0.8085 that 49 Credits support at the 50% floor; a 4K or larger source is unmeasured and would cost
+-- more. A flat per-job price cannot be both fair for a small clip and safe for a large one unless the input resolution is controlled, which
+-- the server cannot verify from a URL. So Topaz stays staged; do not activate or reprice it without resolution control and a measurement at
+-- the largest source it will accept.
 --
 -- Apply only through the owner-approved workflow.
 DO $$
