@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { GatewayError } from '../../_lib/gateway';
+import { GatewayError, gatewayFetch } from '../../_lib/gateway';
 import { chatApi, chatErrorCopy, makeIdempotencyKey, sendTurn, uploadChatImage } from '../../_lib/chatApi';
 import { attachmentLabel, prepareImage } from '../../_lib/chatImages';
 import { NEW_CHAT, readDraft, writeDraft, readStars, toggleStar } from '../../_lib/chatLocal';
@@ -150,6 +150,26 @@ export function ChatWorkspace() {
     setTimeout(() => document.getElementById('chat-msg')?.focus(), 0);
   };
   const clearSkill = () => { setSkillId(''); setInstr(''); };
+  // ?asset=<job id>, from the Library's Ask about this: that image is attached to a chat that has not started, once. The same
+  // checks as From library apply (the server confirms it is the person's own, and the size cap is said up front).
+  const assetFromUrl = useRef(false);
+  useEffect(() => {
+    if (assetFromUrl.current || !models.length || active) return;
+    assetFromUrl.current = true;
+    const id = new URLSearchParams(window.location.search).get('asset');
+    if (!id || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) return;
+    (async () => {
+      try {
+        const a = await gatewayFetch(`/jobs/${encodeURIComponent(id)}/asset`);
+        if (!String(a.mime_type).startsWith('image/')) { att.setNotice('Chat reads images only. Pick an image from your Library.'); return; }
+        await pickFromLibrary({ id, url: a.url, label: 'Library image' });
+        document.getElementById('chat-msg')?.focus();
+      } catch {
+        att.setNotice('That image could not be opened. It may have expired.');
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [models.length, active]);
   const skillFromUrl = useRef(false);
   useEffect(() => {
     if (skillFromUrl.current || studioLoading || !models.length || active) return;
