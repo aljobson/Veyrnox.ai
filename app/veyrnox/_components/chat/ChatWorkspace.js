@@ -311,6 +311,14 @@ export function ChatWorkspace() {
             )}
             <div className="flex items-end gap-2 rounded-2xl border border-vx-border bg-vx-panel p-2 focus-within:border-vx-accent">
               {offer.images && <AttachButton onPick={att.add} disabled={busy} full={att.items.length >= limits.maxAttachments} />}
+              {offer.web && !researchOn && (
+                <button type="button" aria-pressed={opts.web} disabled={busy}
+                  aria-label={`Web search, plus ${credits(offer.web.extra_credits)}`}
+                  onClick={() => setOpts({ ...opts, web: !opts.web, research: false })}
+                  className={`shrink-0 self-center rounded-full border px-3 py-1.5 text-xs font-semibold disabled:opacity-50 ${opts.web ? 'border-vx-accent text-vx-fg' : 'border-vx-border text-vx-fg-muted hover:text-vx-fg'}`}>
+                  Web <span className="font-vx-mono vx-num">+{offer.web.extra_credits}</span>
+                </button>
+              )}
               <label className="sr-only" htmlFor="chat-msg">Message</label>
               <textarea id="chat-msg" rows={1} value={text} maxLength={MAX_TEXT} placeholder="Message" onChange={(e) => setText(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}

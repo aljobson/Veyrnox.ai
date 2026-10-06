@@ -134,6 +134,7 @@ export const NAV_CATEGORIES = [
   { href: '/#models',    label: 'Models' },
   { href: '/presets',   label: 'Templates' },
   { href: '/tools',     label: 'Tools' },
+  { href: '/app/chat',  label: 'LLM Chat' },
   { href: '/pricing',   label: 'Pricing' },
   { href: '/#faq',       label: 'FAQ' },
 ];
@@ -146,6 +147,7 @@ export const SITE_PAGES = [
   { href: '/presets',           label: 'Templates',          description: 'Ready-made looks with their prompt and price up front.' },
   { href: '/tools',             label: 'Tools',              description: 'Upscale, cut out, expand, edit and animate your own files.' },
   { href: '/guides',            label: 'Guides',             description: 'Step-by-step answers to the things people do first.' },
+  { href: '/app/chat',          label: 'LLM Chat',           description: 'Ask leading AI models, with Web search if you want it, priced before you send.' },
   { href: '/app/create',        label: 'Create',             description: 'The studio: pick a model, see the cost, generate.' },
   { href: '/app/library',       label: 'Library',            description: 'Every generation you have run, successes and refunds.' },
   { href: '/app/credits',       label: 'Credits & billing',  description: 'Your balance, free-credit expiry and recent ledger rows.' },
