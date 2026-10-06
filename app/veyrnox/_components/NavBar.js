@@ -81,7 +81,7 @@ export function AppNav({ balance, active = 'explore' }) {
     { key: 'create',  href: '/app/create',  label: 'Create' },
     { key: 'library', href: '/app/library', label: 'Library' },
     ...(projectsEnabled ? [{ key: 'projects', href: '/app/projects', label: 'Projects' }] : []),
-    { key: 'chat', href: '/app/chat', label: 'Chat' },
+    { key: 'chat', href: '/app/chat', label: 'LLM Chat' },
   ];
   // One server read for all three figures: who you are, the balance and
   // the true asset count for the account (not this browser's history).

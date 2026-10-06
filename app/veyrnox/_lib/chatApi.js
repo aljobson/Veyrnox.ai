@@ -32,7 +32,7 @@ export function chatErrorCopy(code, { credits } = {}) {
     case 'insufficient_balance': return `You need ${credits ?? 'more'} Credits for this reply. Top up to continue. Your message was not sent.`;
     case 'account_frozen': return ACCOUNT_PAUSED_COPY;
     case 'rate_limited': return 'You are sending messages quickly. Wait a few seconds and try again.';
-    case 'chat_not_open': return 'Chat is not open yet.';
+    case 'chat_not_open': return 'LLM Chat is not open yet.';
     case 'thread_not_found': return 'That chat no longer exists.';
     case 'search_unavailable': return 'Web search is not working right now. Turn it off or try again. No Credits were used.';
     case 'search_timeout': return 'Web search took too long. Try again, or turn it off. No Credits were used.';
