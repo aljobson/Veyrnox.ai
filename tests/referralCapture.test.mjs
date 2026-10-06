@@ -81,3 +81,11 @@ test('the panel promises Credits only, never money, and the account page mounts 
     assert.doesNotMatch(panel, /\bwallet\b|\bfunds\b|withdraw|payout|earnings/i);
     assert.match(read('../app/veyrnox/app/account/page.js'), /<ReferralPanel \/>/);
 });
+
+test('the storage notice is re-prompted once when it gains an item: the acknowledgement value is versioned, not the old "ack"', () => {
+  const chrome = read('../app/veyrnox/_components/SiteChrome.js');
+  assert.match(chrome, /const NOTICE_ACK = 'ack-2026-10-referral'/);
+  assert.match(chrome, /getItem\(NOTICE_KEY\) !== NOTICE_ACK/);
+  assert.match(chrome, /setItem\(NOTICE_KEY, NOTICE_ACK\)/);
+  assert.doesNotMatch(chrome, /!== 'ack'/, 'an old "ack" no longer counts as having seen the referral wording');
+});

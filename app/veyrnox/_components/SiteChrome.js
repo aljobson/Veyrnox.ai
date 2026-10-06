@@ -14,12 +14,14 @@ import ReferralBridge from './ReferralBridge';
 // Each piece is `data-print="hide"` — none of it means anything on paper.
 
 const NOTICE_KEY = 'veyrnox_storage_notice';
+// Bumped when the notice gains an item (2026-10: the referral code), so visitors who dismissed the old wording see the new one once.
+const NOTICE_ACK = 'ack-2026-10-referral';
 const TOP_AT = 700; // px scrolled before the back-to-top button earns its place
 
 const never = () => () => {};
 const noticeUnread = () => {
   try {
-    return localStorage.getItem(NOTICE_KEY) !== 'ack';
+    return localStorage.getItem(NOTICE_KEY) !== NOTICE_ACK;
   } catch {
     // Storage blocked — nothing is being stored, so nothing to disclose.
     return false;
@@ -46,7 +48,7 @@ export default function SiteChrome() {
   const ackNotice = useCallback(() => {
     setAcked(true);
     try {
-      localStorage.setItem(NOTICE_KEY, 'ack');
+      localStorage.setItem(NOTICE_KEY, NOTICE_ACK);
     } catch {}
   }, []);
 
