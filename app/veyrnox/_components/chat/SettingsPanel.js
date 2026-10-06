@@ -70,7 +70,7 @@ export function SettingsPanel({ models, model, busy, onSelectModel, tiers, onTie
           : <p className="text-vx-fg-muted">This model does not offer Thinking.</p>}
         {offer.images
           ? <p><span className="font-semibold">Images</span> <span className="font-vx-mono text-xs text-vx-money vx-num">+{credits(offer.images.extra_credits)}</span>
-              <span className="block text-vx-fg-muted">Attach pictures with the paperclip, or pick one you already made with From library. The extra applies only to replies that include images.</span></p>
+              <span className="block text-vx-fg-muted">Attach pictures with the paperclip (or a few frames from a video), or pick one you already made with From library. The extra applies only to replies that include images.</span></p>
           : <p className="text-vx-fg-muted">This model cannot read images.</p>}
       </Section>
 

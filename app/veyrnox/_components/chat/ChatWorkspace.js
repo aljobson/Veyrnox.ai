@@ -356,6 +356,7 @@ export function ChatWorkspace() {
                     ? 'Images are sent to the model provider to answer. Uploaded files are deleted from our storage within a day; images from your Library stay there.'
                     : 'Images are sent to the model provider to answer. They stay in your Library.')
                   : 'Images are sent to the model provider to answer, and are deleted from our storage within a day.'}
+                {att.items.some((i) => i.video) && ' Your video is not uploaded: only a few frames from it, taken on your device, are.'}
               </p>
             )}
             {(att.notice || imagesBlocked) && (

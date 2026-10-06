@@ -60,6 +60,19 @@ already made, so asking about or working from a Library image must not mean down
    the privacy notice say so: uploads are deleted within a day, Library images stay in the Library.
 6. **Out of scope.** Video and audio (chat reads images only); saving a chat reply to the Library; creating from a chat reply.
 
+## Amendment 3 (2026-10-06): a video as a few frames
+
+Chat still reads images only. A video the person chooses with the paperclip is attached as up to four still frames taken in their own browser
+(`videoFrames.js`: the middle of each of N equal parts of the clip, drawn no larger than 1,280 px on the long edge, as JPEG), and from there each
+frame is an ordinary upload: the same checks, the same 2,048 px cap, the same one Images extra however many, and the same deletion within a day.
+
+1. **The video is never uploaded.** Only frames leave the device. MP4, WebM and MOV by declared type; whether the browser can decode it decides the rest, and
+   an unreadable clip says so and costs nothing.
+2. **Frames use the same four slots.** A clip needs room for at least two images; it takes as many of the four as are free, up to four. One clip per pick.
+3. **It cannot judge motion, timing or sound**, and the composer says only that a few frames are used. Real video input is a separate decision that needs its own
+   measured price per model (a video is many times the input tokens of an image) and its own limits.
+4. **Disclosure.** The composer adds "Your video is not uploaded: only a few frames from it, taken on your device, are", and the privacy notice says the same.
+
 ## Consequences
 
 - No new bucket, no new signing code: the work is the turn body, one resolver, one adapter change (content parts),
