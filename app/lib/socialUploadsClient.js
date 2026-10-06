@@ -21,7 +21,8 @@ export async function uploadSocialFile(file, { onProgress, signal, call = gatewa
             xhr.setRequestHeader('Content-Type', reserved.content_type);
             for (const [key, value] of Object.entries(reserved.headers || {})) {
                 // The browser supplies Content-Length from the File body.
-                if (key.toLowerCase() !== 'content-length') xhr.setRequestHeader(key, value);
+                // XHR appends repeated values, which would invalidate the signed MIME type.
+                if (!['content-length', 'content-type'].includes(key.toLowerCase())) xhr.setRequestHeader(key, value);
             }
             xhr.upload.onprogress = (e) => { if (e.lengthComputable) onProgress?.(Math.round(100 * e.loaded / e.total)); };
             xhr.onload = () => finish(xhr.status >= 200 && xhr.status < 300 ? null : new Error('upload failed'));
