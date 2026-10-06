@@ -12,6 +12,9 @@ function kind(reason, delta) {
     if (reason.startsWith('refund:')) return 'generation_refund';
     if (reason.startsWith('debit:')) return 'generation';
     if (reason === 'grant:topup') return 'top_up';
+    // ADR-0071: a referral reward is a grant keyed by the friend (grant:referral#referral-<id>); its clawback is reverse:referral.
+    if (reason === 'grant:referral' || reason.startsWith('grant:referral#')) return 'referral_reward';
+    if (reason === 'reverse:referral') return 'referral_reward_reversed';
     if (reason.startsWith('reverse:')) return 'payment_adjustment';
     return 'adjustment';
 }
