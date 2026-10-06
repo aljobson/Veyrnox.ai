@@ -11,6 +11,10 @@ import { researchProgressLabel } from '../../_lib/chatResearchUi';
 import { PersonaManager } from './PersonaManager';
 import { AttachButton, AttachChips, useAttachments } from './AttachBar';
 import { LibraryPicker } from '../LibraryPicker';
+import { SkillsPanel } from './SkillsPanel';
+import { StudioDraftCards } from './StudioDraftCards';
+import { useCatalog } from '../../_lib/useCatalog';
+import { skillById, skillInstructions } from '../../_lib/studioSkills';
 import { ChatText } from './ChatText';
 import { SettingsPanel } from './SettingsPanel';
 import { ThreadList } from './ThreadList';
@@ -54,6 +58,8 @@ export function ChatWorkspace() {
   const [limits, setLimits] = useState({ maxAttachments: 4, maxEdge: 2048 });
   const att = useAttachments(limits.maxAttachments);
   const [pickingLibrary, setPickingLibrary] = useState(false);
+  const [skillId, setSkillId] = useState(''); // a Studio skill chosen for a chat that has not started (ADR-0073)
+  const { models: studioModels, loading: studioLoading } = useCatalog();
   const freeMap = useFreeAllowance(); // free replies left today per model; empty while the feature is off
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
@@ -112,11 +118,11 @@ export function ChatWorkspace() {
   const open = async (id) => {
     try {
       const r = await chatApi.get(id);
-      setPersonaId(''); setActive(r.thread); setMessages(r.messages); setInstr(r.thread.system_prompt || ''); setError(null); setDrawer(false);
+      setPersonaId(''); setActive(r.thread); setSkillId(''); setMessages(r.messages); setInstr(r.thread.system_prompt || ''); setError(null); setDrawer(false);
       setText(readDraft(store(), r.thread.id)); setStars(readStars(store(), r.thread.id)); setStarredOnly(false);
     } catch (e) { fail(e); }
   };
-  const blank = () => { setPersonaId(''); setActive(null); setMessages([]); setInstr(''); setError(null); setDrawer(false); setText(readDraft(store(), NEW_CHAT)); setStars([]); setStarredOnly(false); };
+  const blank = () => { setPersonaId(''); setActive(null); setSkillId(''); setMessages([]); setInstr(''); setError(null); setDrawer(false); setText(readDraft(store(), NEW_CHAT)); setStars([]); setStarredOnly(false); };
   const star = (id) => { if (active) setStars(toggleStar(store(), active.id, id)); };
   const shown = starredOnly ? messages.filter((x) => x.role === 'assistant' && stars.includes(x.id)) : messages;
   const patch = async (id, body) => {
@@ -133,7 +139,27 @@ export function ChatWorkspace() {
   const selectModel = (id) => (active ? patch(active.id, { model_id: id }) : setDraftModel(id));
   // Choosing a persona fills the draft of a chat that has not started: its instructions, its model if still offered, and its options.
   // It never touches an existing chat. Options the model does not offer are ignored at send time, as for any model.
+  // Choosing a skill does the same for a chat that has not started, with built-in instructions that include the live Studio model list.
+  const pickSkill = (id) => {
+    const s = skillById(id);
+    if (!s) return;
+    setSkillId(id); setPersonaId('');
+    setInstr(skillInstructions(s, studioModels));
+    if (models.some((m) => m.id === s.model)) setDraftModel(s.model);
+    setOpts({ thinking: false, web: false, research: false });
+    setTimeout(() => document.getElementById('chat-msg')?.focus(), 0);
+  };
+  const clearSkill = () => { setSkillId(''); setInstr(''); };
+  const skillFromUrl = useRef(false);
+  useEffect(() => {
+    if (skillFromUrl.current || studioLoading || !models.length || active) return;
+    skillFromUrl.current = true;
+    const wanted = new URLSearchParams(window.location.search).get('skill');
+    if (wanted && skillById(wanted)) pickSkill(wanted);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [studioLoading, models.length, active]);
   const pickPersona = (id) => {
+    setSkillId('');
     setPersonaId(id);
     const p = personas.find((x) => x.id === id);
     if (!p) return;
@@ -285,6 +311,7 @@ export function ChatWorkspace() {
               <div className="py-16 text-center">
                 <h1 className="vx-display text-[32px]">What do you want to work on?</h1>
                 <p className="mt-2 text-vx-fg-muted">Every reply shows its price before you send. If a reply fails, the Credits come back.</p>
+                {!active && <SkillsPanel selectedId={skillId} onPick={pickSkill} disabled={busy} />}
               </div>
             )}
             {starredOnly && shown.length === 0 && <p className="py-8 text-center text-vx-fg-muted">No starred replies in this chat.</p>}
@@ -302,6 +329,7 @@ export function ChatWorkspace() {
                     </>
                   )
                     : <div aria-live={m.status === 'streaming' ? 'polite' : undefined}>{m.content ? <ChatText text={m.content} /> : <p className="text-vx-fg-muted">{researchProgressLabel(progress) || 'Thinking'}</p>}</div>}
+                  {m.role === 'assistant' && m.status !== 'streaming' && <StudioDraftCards text={m.content} models={studioModels} />}
                   {m.role === 'assistant' && m.status !== 'streaming' && <Footer m={m} starred={stars.includes(m.id)} onStar={() => star(m.id)} />}
                 </div>
               </article>
@@ -335,8 +363,14 @@ export function ChatWorkspace() {
                 {imagesBlocked ? (researchOn ? 'Deep research reads text only. Remove the images or turn it off.' : 'This model cannot read images. Remove them or pick another model.') : att.notice}
               </p>
             )}
-            {((offer.web && !researchOn) || offer.images) && (
+            {((offer.web && !researchOn) || offer.images || skillId) && (
               <div className="mb-2 flex flex-wrap gap-2">
+                {skillId && !active && (
+                  <button type="button" onClick={clearSkill} disabled={busy} aria-label={`Skill: ${skillById(skillId)?.name}. Remove`}
+                    className="rounded-full border border-vx-accent px-3 py-1.5 text-xs font-semibold text-vx-fg disabled:opacity-50">
+                    Skill: {skillById(skillId)?.name} <span aria-hidden="true">×</span>
+                  </button>
+                )}
                 {offer.web && !researchOn && (
                   <button type="button" aria-pressed={opts.web} disabled={busy}
                     aria-label={`Web search, plus ${credits(offer.web.extra_credits)}`}
@@ -357,7 +391,7 @@ export function ChatWorkspace() {
             <div className="flex items-end gap-2 rounded-2xl border border-vx-border bg-vx-panel p-2 focus-within:border-vx-accent">
               {offer.images && <AttachButton onPick={att.add} disabled={busy} full={att.items.length >= limits.maxAttachments} />}
               <label className="sr-only" htmlFor="chat-msg">Message</label>
-              <textarea id="chat-msg" rows={1} value={text} maxLength={MAX_TEXT} placeholder="Message" onChange={(e) => setText(e.target.value)}
+              <textarea id="chat-msg" rows={1} value={text} maxLength={MAX_TEXT} placeholder={skillById(skillId)?.starter || 'Message'} onChange={(e) => setText(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
                 className="max-h-48 min-h-10 flex-1 resize-none bg-transparent px-2 py-2 text-[15px] text-vx-fg outline-none placeholder:text-vx-fg-faint" />
               {busy
