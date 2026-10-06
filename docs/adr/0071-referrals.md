@@ -97,6 +97,14 @@ highest **open PR** (see CLAUDE.md), not just after main.
 - The grant is `ledger_grant(referrer, credits, 'grant:referral', 'referral-<referee id>')`, so the ledger reason is `grant:referral#referral-<id>` and a replay mints nothing. The Credits are Pack Credits, never Free Credits.
 - No request path mints a reward: only the sweep does. Referrals exist only once the flag-gated attach route has run, so with `REFERRALS_ENABLED` off the sweep finds nothing.
 - `reconcile_referrals()` returns zero rows when every released reward has its one ledger entry for the right Credits and account, no referral grant exists without a released reward, every reward is 10% of its friend's credited Pack, and no referrer is over either monthly cap. It is the seventh check in the nightly `veyrnox-reconcile-balances` job (the 0207 command, otherwise unchanged).
-- A friend's refund or dispute **after** release is not handled yet. That is part 3's clawback (`reverse:referral`, capped at the referrer's balance).
 
-Remaining: clawback after release and the account panel (part 3), and the sign-up capture (waiting on the storage-disclosure decision above).
+**Part 3, clawback (migration `0219`, 2026-10-05).** A reward already released is taken back when the friend's Pack is later refunded or disputed, inside `referral_sweep()` and never on a request path.
+
+- A refund claws back the share of the reward matching the share refunded (`reward x refunded / price`, rounded down; a later, larger refund takes the difference). A dispute (a Freeze tied to the Pack) claws back the whole reward.
+- One compensating ledger row, reason `reverse:referral`, never an edit. It takes only Pack Credits the referrer still has (`balance - free - subscription`, never below zero), the same cap as a Top-up clawback. What cannot be taken is recorded as `clawback_shortfall` and is not chased; the reward counts as settled either way.
+- A clawed-back reward still counts toward the monthly release cap, so a refund cannot be used to recycle the cap.
+- `reconcile_referrals()` gains a check that the ledger's `reverse:referral` rows equal the rewards' recorded clawbacks per referrer. `CLAUDE.md` lists `referral_sweep` among the ledger-writing RPCs.
+
+**Part 4, capture and panel (2026-10-05, #590).** `?ref=<code>` is kept in `localStorage` for three days (not `sessionStorage`: the email-confirmation link usually opens in a new tab), the address is tidied, and the code is sent to the attach route once the visitor is signed in; an answer from the server about the code or account is final and clears it. The account page has a "Refer a friend" panel (link, copy button, count). The storage notice, Privacy Policy, Terms and Refund Policy describe it, and a test pins that they do. Returning visitors who already dismissed the storage notice do not see the new wording; re-prompting everyone means changing its stored key and is left to the owner.
+
+Remaining: staging acceptance with `REFERRALS_ENABLED` on (see `docs/product/referrals-staging-runbook-2026-10-05.md`), then production through `apply-migrations` (`0205`, then `0217` to `0219`).
