@@ -7,7 +7,7 @@ import { gatewayFetch, GatewayError, notifyBalanceChanged } from '../../_lib/gat
 import { readJobHistory, pushJobHistory } from '../../_lib/jobHistory';
 import { useAssetUrl } from '../../_lib/useAssetUrl';
 import { ScheduleGeneration } from '../../_components/ScheduleGeneration';
-import { AssetRetention } from '../../_components/AssetRetention';
+import { AssetFooter } from '../../_components/AssetFooter';
 import { AssetLoadStatus } from '../../_components/AssetLoadStatus';
 import { EditSheet } from '../../_components/EditSheet';
 import { useCatalog } from '../../_lib/useCatalog';
@@ -462,7 +462,7 @@ function JobCard({ row, models, selectable, selected, onToggle, starred, onStar 
         </div>
       </div>
       <ScheduleGeneration job={row} className="mx-4 mb-3" />
-      <AssetRetention row={row} />
+      <AssetFooter row={row} />
     </div>
   );
 }
