@@ -175,3 +175,20 @@ test('GET advertises the calendar only while its exact feature switch is true', 
         }
     } finally { delete process.env.PUBLISH_CALENDAR_ENABLED; }
 });
+
+test('POST: uploads require the switch and exactly one source', async () => {
+    const oldPublish = process.env.PUBLISH_ENABLED, oldUploads = process.env.PUBLISH_UPLOADS_ENABLED;
+    try {
+        process.env.PUBLISH_ENABLED = 'true'; process.env.PUBLISH_UPLOADS_ENABLED = 'false';
+        stub();
+        const body = { ...validBody(), media:[{ mediaType:'image',uploadId:jobId }] };
+        assert.equal((await POST(postRequest(body))).status,400); assert.equal(calls.length,0);
+        process.env.PUBLISH_UPLOADS_ENABLED = 'true';
+        assert.equal((await POST(postRequest({ ...body,media:[{ mediaType:'image',jobId,uploadId:jobId }] }))).status,400);
+        assert.equal((await POST(postRequest(body))).status,201);
+        assert.deepEqual(calls.find((c) => c.name === 'create_social_post').args.p_media,[{ media_type:'image',upload_id:jobId }]);
+    } finally {
+        if (oldPublish === undefined) delete process.env.PUBLISH_ENABLED; else process.env.PUBLISH_ENABLED = oldPublish;
+        if (oldUploads === undefined) delete process.env.PUBLISH_UPLOADS_ENABLED; else process.env.PUBLISH_UPLOADS_ENABLED = oldUploads;
+    }
+});

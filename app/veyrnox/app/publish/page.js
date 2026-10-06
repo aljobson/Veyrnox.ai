@@ -38,6 +38,7 @@ export default function Publish() {
 
 function PublishControls({ initialJobId }) {
   const [accounts, setAccounts] = useState(null);
+  const [uploadsEnabled, setUploadsEnabled] = useState(false);
   const [loadError, setLoadError] = useState('');
   const [connecting, setConnecting] = useState(null);
   const [connectError, setConnectError] = useState('');
@@ -50,6 +51,7 @@ function PublishControls({ initialJobId }) {
     try {
       const res = await listSocialAccounts();
       setAccounts(res.accounts || []);
+      setUploadsEnabled(res.uploadsEnabled === true);
     } catch {
       setLoadError('Could not load your connected accounts. Check your connection and try again.');
     }
@@ -163,7 +165,7 @@ function PublishControls({ initialJobId }) {
 
     <section className="rounded-2xl border border-vx-border p-5">
       <h2 id="schedule" className="font-bold mb-4 scroll-mt-6">Schedule a post</h2>
-      <Composer key={initialJobId || 'library'} initialJobId={initialJobId} accounts={accounts} onScheduled={() => setPostsRefreshToken((n) => n + 1)} />
+      <Composer key={initialJobId || 'library'} initialJobId={initialJobId} accounts={accounts} uploadsEnabled={uploadsEnabled} onScheduled={() => setPostsRefreshToken((n) => n + 1)} />
     </section>
 
     <section className="rounded-2xl border border-vx-border p-5">

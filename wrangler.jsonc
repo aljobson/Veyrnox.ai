@@ -111,6 +111,7 @@
     // Month/week/list calendar and rescheduling; 0192 approved 2026-10-04.
     // The overall Publish launch still follows PUBLISH_ENABLED.
     "PUBLISH_CALENDAR_ENABLED": "true",
+    "PUBLISH_UPLOADS_ENABLED": "false",
     // Adds instagram_business_manage_insights to the Instagram consent
     // screen (reach, views, saves, shares). Only "true" asks for it; turn it
     // on after Meta approves the permission in app review.
@@ -170,6 +171,8 @@
         "PUBLISH_ANALYTICS_ENABLED": "true",
         "PUBLISH_POSTING_INSIGHTS_ENABLED": "true",
         "PUBLISH_CALENDAR_ENABLED": "true",
+        // Enable only after 0209 and upload acceptance on staging.
+        "PUBLISH_UPLOADS_ENABLED": "false",
         // Provider review approvals are still outstanding.
         "INSTAGRAM_INSIGHTS_SCOPE_ENABLED": "false",
         "TIKTOK_ANALYTICS_SCOPE_ENABLED": "false",

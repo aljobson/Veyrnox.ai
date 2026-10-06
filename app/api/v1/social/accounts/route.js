@@ -14,6 +14,7 @@
  * client-supplied id can never reach this handler.
  */
 
+import { socialUploadsEnabled } from '../../../../../lib/social/uploadPolicy.js';
 import { NextResponse } from 'next/server';
 import { accountReadLimit } from '../../../../../lib/accountReadLimit.js';
 import { rpc, envConfig, SupabaseError } from '../../../../../packages/db/supabase-client.js';
@@ -63,5 +64,6 @@ export async function GET(req) {
     return NextResponse.json({
         brand_id: brand.brand_id,
         accounts: accounts.accounts || [],
+        uploadsEnabled: socialUploadsEnabled(),
     }, { headers: { 'Cache-Control': 'no-store' } });
 }

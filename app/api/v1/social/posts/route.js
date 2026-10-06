@@ -9,13 +9,14 @@
  *   ?before_created_at&before_id (list_social_posts, 0160).
  *
  * POST body: { scheduledAt, globalText, idempotencyKey, accountIds: [uuid],
- *   media: [{ mediaType: 'image'|'video', jobId: uuid }] } — jobId must be
- *   one of the caller's own jobs with a stored asset (create_social_post
+ *   media: [{ mediaType: 'image'|'video', jobId: uuid OR uploadId: uuid }] } — jobId must be
+ *   one of the caller's own jobs with a stored asset; uploadId names a verified owned upload (create_social_post
  *   resolves the R2 object through it at publish time; no raw URL is ever
  *   accepted here — see lib/socialPublishSweep.js's dispatch-time presign).
  * POST response (201): { post_id, idempotent, target_count }.
  */
 
+import { socialUploadsEnabled } from '../../../../../lib/social/uploadPolicy.js';
 import { calendarEnabled } from '../../../../../lib/social/publishFeature.js';
 import { NextResponse } from 'next/server';
 import { accountReadLimit } from '../../../../../lib/accountReadLimit.js';
@@ -120,10 +121,12 @@ export async function POST(req) {
     for (const item of media) {
         const mediaType = item && item.mediaType;
         const jobId = item && item.jobId;
-        if (!MEDIA_TYPES.has(mediaType) || !isUuid(jobId)) {
+        const uploadId = item && item.uploadId;
+        if (!MEDIA_TYPES.has(mediaType) || (Boolean(jobId) === Boolean(uploadId))
+            || (jobId ? !isUuid(jobId) : !isUuid(uploadId) || !socialUploadsEnabled())) {
             return NextResponse.json({ error: 'invalid_media' }, { status: 400 });
         }
-        mediaItems.push({ media_type: mediaType, job_id: jobId });
+        mediaItems.push({ media_type: mediaType, ...(jobId ? { job_id: jobId } : { upload_id: uploadId }) });
     }
 
     const limited = await socialPostWriteLimit(authId, cfg);
