@@ -222,7 +222,7 @@ export function ChatWorkspace() {
   if (closed || models.length === 0) {
     return (
       <div className="mx-auto max-w-[640px] px-4 py-16">
-        <h1 className="vx-display text-[32px]">Chat is not open yet</h1>
+        <h1 className="vx-display text-[32px]">LLM Chat is not open yet</h1>
         <p className="mt-3 text-vx-fg-body">{closed ? 'We will open it here when it is ready.' : 'There are no chat models available right now.'}</p>
         <Link href="/app/create" className="mt-6 inline-block rounded-full border border-vx-border px-5 py-2 text-sm font-semibold hover:border-vx-accent">Back to Create</Link>
       </div>
