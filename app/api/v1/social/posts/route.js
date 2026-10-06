@@ -8,7 +8,7 @@
  *   platform_post_url, last_error }] }] } — cursor-paginated via
  *   ?before_created_at&before_id (list_social_posts, 0160).
  *
- * POST body: { scheduledAt, globalText, idempotencyKey, accountIds: [uuid],
+ * POST body: { scheduledAt OR publishNow: true, globalText, idempotencyKey, accountIds: [uuid],
  *   media: [{ mediaType: 'image'|'video', jobId: uuid OR uploadId: uuid }] } — jobId must be
  *   one of the caller's own jobs with a stored asset; uploadId names a verified owned upload (create_social_post
  *   resolves the R2 object through it at publish time; no raw URL is ever
@@ -95,7 +95,11 @@ export async function POST(req) {
         return NextResponse.json({ error: 'invalid_body' }, { status: 400 });
     }
 
-    const scheduledAt = body && body.scheduledAt;
+    if (body?.publishNow !== undefined && typeof body.publishNow !== 'boolean') {
+        return NextResponse.json({ error: 'invalid_publish_now' }, { status: 400 });
+    }
+    // Use the server clock so Post now is independent of the device's time/date field.
+    const scheduledAt = body?.publishNow === true ? new Date().toISOString() : body && body.scheduledAt;
     if (typeof scheduledAt !== 'string' || Number.isNaN(Date.parse(scheduledAt))) {
         return NextResponse.json({ error: 'invalid_schedule' }, { status: 400 });
     }

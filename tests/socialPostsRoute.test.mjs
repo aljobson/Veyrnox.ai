@@ -95,6 +95,7 @@ test('POST: rejects malformed bodies before consuming any rate-limit budget or R
     stub();
     const bad = [
         { ...validBody(), scheduledAt: 'not-a-date' },
+        { ...validBody(), publishNow: 'true' },
         { ...validBody(), idempotencyKey: 'short' },
         { ...validBody(), accountIds: [] },
         { ...validBody(), accountIds: ['not-a-uuid'] },
@@ -141,6 +142,25 @@ test('POST: schedules a post and returns its id', async () => {
         p_idempotency_key: 'a'.repeat(16), p_account_ids: [accountId],
         p_media: [{ media_type: 'image', job_id: jobId }],
     });
+});
+
+test('POST: Post now uses server time and ignores a missing or invalid device schedule', async () => {
+    for (const scheduledAt of [undefined, 'not-a-date', '2099-01-01T00:00:00Z']) {
+        stub();
+        const start = Date.now();
+        const res = await POST(postRequest({ ...validBody(), publishNow: true, scheduledAt }));
+        assert.equal(res.status, 201);
+        const create = calls.find((c) => c.name === 'create_social_post');
+        const time = Date.parse(create.args.p_scheduled_at);
+        assert.ok(time >= start && time <= Date.now());
+        assert.equal(create.args.p_idempotency_key, 'a'.repeat(16));
+    }
+});
+
+test('POST: explicit scheduled mode still requires a valid schedule', async () => {
+    stub();
+    assert.equal((await POST(postRequest({ ...validBody(), publishNow: false, scheduledAt: undefined }))).status, 400);
+    assert.deepEqual(calls, []);
 });
 
 test('POST: maps RPC failure codes to the right HTTP status', async () => {
