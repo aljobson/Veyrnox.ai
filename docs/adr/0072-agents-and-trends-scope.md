@@ -88,3 +88,12 @@ ranks nothing. The template id is recorded on the job as `preset_id` only if it 
 model in use**; anything else is ignored, never an error, and the id never reaches a provider. The ranking returns ids only (no counts,
 accounts or prompts) through a public, cached route (`/api/popular-templates`), and the gallery shows a Popular filter only once something
 has ranked. Migration `0215_popular_templates`.
+
+### Personas as built (2026-10-05)
+
+Migration `0216_chat_personas`; behind `PERSONAS_ENABLED` (`"false"` in production and staging). A persona is `name`, `instructions` (up to 4,000
+characters, the same limit as a chat's own), an optional default model (kept if the model is retired, with no default), and Thinking and Web
+search defaults. Twenty per account, names unique ignoring case, reachable only through definer functions keyed by the verified account.
+**Starting a chat from a persona only fills the draft** (instructions, model if still offered, options) in the settings panel of a chat that has not
+started; the chat then gets its own copy of the instructions when it is created, so editing or deleting a persona never changes a chat that
+exists. A persona has no price: a reply costs what it costs today, and Thinking or Web search still show their extra before sending.

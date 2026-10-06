@@ -90,4 +90,21 @@ highest **open PR** (see CLAUDE.md), not just after main.
 
 **Open for the owner before part 2 can ship the sign-up capture.** A referral link carries the code in `?ref=`, and the sign-up flow leaves the page (email confirmation, OAuth), so the code has to survive in this browser until the first signed-in load. That is a new item for the storage notice and the privacy policy, which today list only the sign-in session, recent job display history and the theme. Two options: keep the code in `sessionStorage` for the tab and disclose it, or do not carry it and attribute only when the friend signs up in the same page load. The first is what makes the feature work; it needs the notice and policy updated in the same change.
 
-Remaining parts: rewards and the release sweep with caps and the reconcile check (part 2), clawback and the account panel (part 3).
+**Part 2, rewards (migration `0218`, 2026-10-05).** The first referral migration that moves Credits, and only through `ledger_grant`.
+
+- `referral_sweep()` runs hourly (`veyrnox-referral-sweep`, minute 23). It first qualifies: a friend's first credited Pack makes one pending reward of 10% of that Pack's Credits, rounded down, eligible 14 days after the Pack was credited. A Pack too small to earn a whole Credit earns nothing.
+- It then releases what is due. A refund of any amount cancels it (`refunded`); a Freeze tied to that Pack cancels it (`disputed`). A frozen friend or referrer, or a referrer who is not a signed-up account, waits. At most 20 rewards and 2,000 reward Credits per referrer per UTC month, counted under a per-referrer lock; a capped reward stays pending and releases when the month rolls over.
+- The grant is `ledger_grant(referrer, credits, 'grant:referral', 'referral-<referee id>')`, so the ledger reason is `grant:referral#referral-<id>` and a replay mints nothing. The Credits are Pack Credits, never Free Credits.
+- No request path mints a reward: only the sweep does. Referrals exist only once the flag-gated attach route has run, so with `REFERRALS_ENABLED` off the sweep finds nothing.
+- `reconcile_referrals()` returns zero rows when every released reward has its one ledger entry for the right Credits and account, no referral grant exists without a released reward, every reward is 10% of its friend's credited Pack, and no referrer is over either monthly cap. It is the seventh check in the nightly `veyrnox-reconcile-balances` job (the 0207 command, otherwise unchanged).
+
+**Part 3, clawback (migration `0219`, 2026-10-05).** A reward already released is taken back when the friend's Pack is later refunded or disputed, inside `referral_sweep()` and never on a request path.
+
+- A refund claws back the share of the reward matching the share refunded (`reward x refunded / price`, rounded down; a later, larger refund takes the difference). A dispute (a Freeze tied to the Pack) claws back the whole reward.
+- One compensating ledger row, reason `reverse:referral`, never an edit. It takes only Pack Credits the referrer still has (`balance - free - subscription`, never below zero), the same cap as a Top-up clawback. What cannot be taken is recorded as `clawback_shortfall` and is not chased; the reward counts as settled either way.
+- A clawed-back reward still counts toward the monthly release cap, so a refund cannot be used to recycle the cap.
+- `reconcile_referrals()` gains a check that the ledger's `reverse:referral` rows equal the rewards' recorded clawbacks per referrer. `CLAUDE.md` lists `referral_sweep` among the ledger-writing RPCs.
+
+**Part 4, capture and panel (2026-10-05, #590).** `?ref=<code>` is kept in `localStorage` for three days (not `sessionStorage`: the email-confirmation link usually opens in a new tab), the address is tidied, and the code is sent to the attach route once the visitor is signed in; an answer from the server about the code or account is final and clears it. The account page has a "Refer a friend" panel (link, copy button, count). The storage notice, Privacy Policy, Terms and Refund Policy describe it, and a test pins that they do. Returning visitors who already dismissed the storage notice do not see the new wording; re-prompting everyone means changing its stored key and is left to the owner.
+
+Remaining: staging acceptance with `REFERRALS_ENABLED` on (see `docs/product/referrals-staging-runbook-2026-10-05.md`), then production through `apply-migrations` (`0205`, then `0217` to `0219`).

@@ -29,7 +29,7 @@ export default function Privacy() {
             </ul>
 
             <h2>Where your data lives</h2>
-            <p>We run on Supabase for the database and authentication, and on Cloudflare for edge hosting and object storage. Account data, credit ledger, generation metadata and your chat conversations sit in our Supabase database, which is hosted in the European Union (Frankfurt, Germany). Generated media is stored in the European Union, in Cloudflare R2 with an EU jurisdictional restriction. Your prompts, chat messages and reference files or images are transmitted to the third-party model provider that runs the model you selected, through our model gateway, for the sole purpose of producing your output. For chat we ask the gateway to use only providers that do not store your content or use it to train models. If you switch on Web search, your question is also sent to a search service.</p>
+            <p>We run on Supabase for the database and authentication, and on Cloudflare for edge hosting and object storage. Account data, credit ledger, generation metadata and your chat conversations sit in our Supabase database, which is hosted in the European Union (Frankfurt, Germany). Generated media is stored in the European Union, in Cloudflare R2 with an EU jurisdictional restriction. Your prompts, chat messages and reference files or images are transmitted to the third-party model provider that runs the model you selected, through our model gateway, for the sole purpose of producing your output. For chat we ask the gateway to use only providers that do not store your content or use it to train models. If you switch on Web search, your question is also sent to a web search provider. When Web search runs through our own search, that provider is Exa (exa.ai): it receives your question as the search query, and the text of the pages it finds is sent, through our model gateway, to the model provider along with your question so the answer can cite sources.</p>
             <p>Some of the companies that process your personal data are outside the United Kingdom and the EEA: our edge hosting, the model providers, and Stripe, Inc. (United States), which is the Merchant of Record for credit pack purchases. Where your personal data is processed outside the United Kingdom or the EEA, we rely on the UK International Data Transfer Agreement or the EU Standard Contractual Clauses with the company concerned. If we move the database to another region we will update this page before the move takes effect.</p>
 
             <h2>Planned model processor: BytePlus</h2>
@@ -47,13 +47,16 @@ export default function Privacy() {
             </ul>
 
             <h2>Sharing</h2>
-            <p>We share data only with the companies needed to run the service: authentication and database hosting, edge hosting and storage, AI model providers and the model gateway that routes requests to them, Resend for the emails we send about your account, and Stripe, Inc. for credit pack purchases. Stripe, Inc. acts as its own controller for the purchase it makes as Merchant of Record. We do not sell personal data.</p>
+            <p>We share data only with the companies needed to run the service: authentication and database hosting, edge hosting and storage, AI model providers and the model gateway that routes requests to them, web search providers when you switch on Web search (Exa, when it runs through our own search), Resend for the emails we send about your account, and Stripe, Inc. for credit pack purchases. Stripe, Inc. acts as its own controller for the purchase it makes as Merchant of Record. We do not sell personal data.</p>
 
             <h2>Your rights</h2>
             <p>You can access, correct, export or delete your data, and object to or restrict certain processing. See <a href="/legal/gdpr">GDPR &amp; Data Rights</a> for how. You may also complain to the UK Information Commissioner&rsquo;s Office or your local supervisory authority.</p>
 
             <h2>Cookies</h2>
-            <p>We use only the cookies and local storage strictly necessary to keep you signed in and the service working. No third-party advertising trackers.</p>
+            <p>We use only the cookies and local storage strictly necessary to keep you signed in and the service working. No third-party advertising trackers. If you open a friend&rsquo;s referral link, we keep that link&rsquo;s code in your browser&rsquo;s local storage for up to three days so it can be linked to your account when you sign up, then remove it.</p>
+
+            <h2>Referrals</h2>
+            <p>If you join through someone&rsquo;s referral link, we record which account referred yours. That person can see how many friends joined through their link and is never told who you are. If you buy a Credit Pack, they may earn Credits as described in the Terms; the reward is reversed if that purchase is refunded or disputed.</p>
 
             <h2>Children</h2>
             <p>The service is not intended for anyone under 18.</p>

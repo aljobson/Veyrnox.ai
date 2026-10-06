@@ -8,6 +8,7 @@ import { NEW_CHAT, readDraft, writeDraft, readStars, toggleStar } from '../../_l
 import { useFreeAllowance } from '../../_lib/useFreeAllowance';
 import { freeLeftFor } from '../../_lib/freeAllowance';
 import { researchProgressLabel } from '../../_lib/chatResearchUi';
+import { PersonaManager } from './PersonaManager';
 import { AttachButton, AttachChips, useAttachments } from './AttachBar';
 import { ChatText } from './ChatText';
 import { SettingsPanel } from './SettingsPanel';
@@ -58,6 +59,10 @@ export function ChatWorkspace() {
   const [ready, setReady] = useState(false);
   const [drawer, setDrawer] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [personasOn, setPersonasOn] = useState(false); // Personas (ADR-0072): off, or failed to load, shows nothing
+  const [personas, setPersonas] = useState([]);
+  const [personaId, setPersonaId] = useState('');
+  const [managingPersonas, setManagingPersonas] = useState(false);
   const [tiers, setTiers] = useState(() => new Set());
   const [instr, setInstr] = useState('');
   const [saved, setSaved] = useState(false);
@@ -77,6 +82,8 @@ export function ChatWorkspace() {
         // Folders are optional: if they fail to load, chat works without them.
         const [m, t, f] = await Promise.all([chatApi.models(), chatApi.threads(), chatApi.folders().catch(() => null)]);
         if (f) setFolders(f.folders);
+        // Personas are optional too: any failure leaves the feature hidden and chat unchanged.
+        chatApi.personas().then((r) => { if (r && r.enabled) { setPersonasOn(true); setPersonas(r.personas || []); } }).catch(() => {});
         setModels(m.models); setLimits({ maxAttachments: m.max_attachments || 4, maxEdge: m.max_image_edge || 2048 }); setThreads(t.threads); setDraftModel(defaultModel(m.models)?.id || '');
       } catch (e) { fail(e); } finally { setReady(true); }
     })();
@@ -103,11 +110,11 @@ export function ChatWorkspace() {
   const open = async (id) => {
     try {
       const r = await chatApi.get(id);
-      setActive(r.thread); setMessages(r.messages); setInstr(r.thread.system_prompt || ''); setError(null); setDrawer(false);
+      setPersonaId(''); setActive(r.thread); setMessages(r.messages); setInstr(r.thread.system_prompt || ''); setError(null); setDrawer(false);
       setText(readDraft(store(), r.thread.id)); setStars(readStars(store(), r.thread.id)); setStarredOnly(false);
     } catch (e) { fail(e); }
   };
-  const blank = () => { setActive(null); setMessages([]); setInstr(''); setError(null); setDrawer(false); setText(readDraft(store(), NEW_CHAT)); setStars([]); setStarredOnly(false); };
+  const blank = () => { setPersonaId(''); setActive(null); setMessages([]); setInstr(''); setError(null); setDrawer(false); setText(readDraft(store(), NEW_CHAT)); setStars([]); setStarredOnly(false); };
   const star = (id) => { if (active) setStars(toggleStar(store(), active.id, id)); };
   const shown = starredOnly ? messages.filter((x) => x.role === 'assistant' && stars.includes(x.id)) : messages;
   const patch = async (id, body) => {
@@ -122,6 +129,17 @@ export function ChatWorkspace() {
     try { await chatApi.remove(id); setThreads((ts) => ts.filter((t) => t.id !== id)); if (active?.id === id) blank(); } catch (e) { fail(e); }
   };
   const selectModel = (id) => (active ? patch(active.id, { model_id: id }) : setDraftModel(id));
+  // Choosing a persona fills the draft of a chat that has not started: its instructions, its model if still offered, and its options.
+  // It never touches an existing chat. Options the model does not offer are ignored at send time, as for any model.
+  const pickPersona = (id) => {
+    setPersonaId(id);
+    const p = personas.find((x) => x.id === id);
+    if (!p) return;
+    setInstr(p.instructions);
+    if (p.model_id && models.some((m) => m.id === p.model_id)) setDraftModel(p.model_id);
+    setOpts({ thinking: p.thinking, web: p.web, research: false });
+  };
+  const changePersonas = (next) => { setPersonas(next); if (!next.some((x) => x.id === personaId)) setPersonaId(''); };
   const saveInstr = async () => { if (active && await patch(active.id, { system_prompt: instr })) { setSaved(true); setTimeout(() => setSaved(false), 1500); } };
   const byName = (a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase());
   const newFolder = async (name) => {
@@ -218,6 +236,7 @@ export function ChatWorkspace() {
   );
   const settings = (
     <SettingsPanel models={models} model={model} busy={busy} onSelectModel={selectModel} tiers={tiers} onTiers={setTiers} offer={offer} opts={opts} onOpts={setOpts} researchOn={researchOn}
+      personasOn={personasOn} personas={personas} personaId={personaId} onPersona={pickPersona} onManagePersonas={() => setManagingPersonas(true)}
       instr={instr} onInstr={setInstr} hasThread={!!active} canSaveInstr={!!active && instr !== (active.system_prompt || '')} onSaveInstr={saveInstr} saved={saved} maxPrompt={MAX_PROMPT} />
   );
   return (
@@ -316,6 +335,7 @@ export function ChatWorkspace() {
           </div>
         </div>
       )}
+      {managingPersonas && <PersonaManager personas={personas} models={models} onChange={changePersonas} onClose={() => setManagingPersonas(false)} />}
     </div>
   );
 }
