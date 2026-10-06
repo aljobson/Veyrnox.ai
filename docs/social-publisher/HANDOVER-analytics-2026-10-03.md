@@ -467,4 +467,25 @@ app. Its page returned 200; unmarked subscription API requests still returned
 values read back unchanged, including the staging Supabase identity and Publish
 flags; secrets were retained without exporting their values. The five-minute
 cron remains configured. Production and enrolled MFA factors were not changed.
-Owner-completed Apple login and passkey enrollment/sign-in remain outstanding.
+Owner-completed Apple login and passkey enrollment/sign-in were subsequently
+verified as recorded below.
+
+## Apple and passkey acceptance — 2026-10-06
+
+Apple sign-in succeeded on staging on 4 October at 18:47:35 BST, confirmed
+by the authenticated UI and Supabase Auth login event. This Apple identity is
+separate from the Google account that owns the connected YouTube channel.
+
+On 6 October the owner enrolled an “Apple Passwords” passkey on that Apple
+account at 06:00:10 BST. After signing out this device, the homepage's
+“Sign in with a passkey” flow succeeded; Supabase recorded first use at
+06:01:04 BST. The protected account page loaded and displayed the credential
+with “last used 6 Oct 2026”. No credential material was retrieved or logged.
+This verifies enrollment and fresh sign-in on this device; cross-device use
+and recovery remain unverified. Existing Google-account MFA was not reset.
+
+Next: prepare a controlled YouTube publication using the original Google
+account and an owner-selected video. The Apple account currently has no library
+assets. The deployed publishing sweep explicitly selects public visibility;
+the composer offers no private/unlisted setting. Agree the concrete video,
+caption, channel and visibility before scheduling or uploading a real post.
