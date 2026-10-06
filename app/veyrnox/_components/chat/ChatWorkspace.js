@@ -10,6 +10,7 @@ import { freeLeftFor } from '../../_lib/freeAllowance';
 import { researchProgressLabel } from '../../_lib/chatResearchUi';
 import { PersonaManager } from './PersonaManager';
 import { AttachButton, AttachChips, useAttachments } from './AttachBar';
+import { LibraryPicker } from '../LibraryPicker';
 import { ChatText } from './ChatText';
 import { SettingsPanel } from './SettingsPanel';
 import { ThreadList } from './ThreadList';
@@ -52,6 +53,7 @@ export function ChatWorkspace() {
   const [progress, setProgress] = useState(null); // the step a Deep research reply is on: plan, search n of m, write
   const [limits, setLimits] = useState({ maxAttachments: 4, maxEdge: 2048 });
   const att = useAttachments(limits.maxAttachments);
+  const [pickingLibrary, setPickingLibrary] = useState(false);
   const freeMap = useFreeAllowance(); // free replies left today per model; empty while the feature is off
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
@@ -160,6 +162,23 @@ export function ChatWorkspace() {
     try { await chatApi.move(id, folderId); setThreads((ts) => ts.map((t) => (t.id === id ? { ...t, folder_id: folderId } : t))); } catch (e) { fail(e); }
   };
 
+  // A Library image goes by id and is read from storage by the server, which cannot shrink it, so one over the size cap
+  // is said so here, before it is chosen, instead of failing at Send.
+  async function pickFromLibrary(it) {
+    setPickingLibrary(false);
+    const size = await new Promise((resolve) => {
+      const im = new Image();
+      im.onload = () => resolve({ w: im.naturalWidth, h: im.naturalHeight });
+      im.onerror = () => resolve(null);
+      im.src = it.url;
+    });
+    if (size && Math.max(size.w, size.h) > limits.maxEdge) {
+      att.setNotice(`That image is ${size.w} by ${size.h}. Chat reads images up to ${limits.maxEdge} pixels on the long side. Pick a smaller one, or download it, shrink it and attach the file.`);
+      return;
+    }
+    att.addAsset(it);
+  }
+
   async function send() {
     const content = text.trim();
     if (!content || busy || sendingRef.current || !model || imagesBlocked) return;
@@ -167,8 +186,9 @@ export function ChatWorkspace() {
     let thread = active; let created = false; const pending = `pending-${Date.now()}`;
     try {
       // Images go to storage first, before anything is charged: a failed upload costs nothing.
-      const keys = [];
-      for (const it of att.items) keys.push(await uploadChatImage(await prepareImage(it.file, limits.maxEdge)));
+      // A Library image is already in storage; the server checks it is the caller's own, so it is sent by id.
+      const refs = [];
+      for (const it of att.items) refs.push(it.asset ? { source_asset: it.asset } : await uploadChatImage(await prepareImage(it.file, limits.maxEdge)));
       if (!thread) {
         thread = (await chatApi.create(draftModel || model.id)).thread; created = true;
         // A chat started while a folder is open goes into it. If filing fails, the chat still starts, unfiled.
@@ -185,7 +205,7 @@ export function ChatWorkspace() {
       const ac = new AbortController(); abortRef.current = ac;
       let outcome = null; let streamError = null;
       const r = await sendTurn({
-        threadId: thread.id, text: content, key: makeIdempotencyKey(), options: chosen, attachments: keys, signal: ac.signal,
+        threadId: thread.id, text: content, key: makeIdempotencyKey(), options: chosen, attachments: refs, signal: ac.signal,
         onEvent: (ev, d) => {
           if (ev === 'start') setProgress(null);
           if (ev === 'progress') setProgress(d);
@@ -302,21 +322,36 @@ export function ChatWorkspace() {
             )}
             <AttachChips items={att.items} onRemove={att.remove} disabled={busy} />
             {hasImages && !imagesBlocked && (
-              <p className="mb-2 text-xs text-vx-fg-muted">Images are sent to the model provider to answer, and are deleted from our storage within a day.</p>
+              <p className="mb-2 text-xs text-vx-fg-muted">
+                {att.items.some((i) => i.asset)
+                  ? (att.items.some((i) => !i.asset)
+                    ? 'Images are sent to the model provider to answer. Uploaded files are deleted from our storage within a day; images from your Library stay there.'
+                    : 'Images are sent to the model provider to answer. They stay in your Library.')
+                  : 'Images are sent to the model provider to answer, and are deleted from our storage within a day.'}
+              </p>
             )}
             {(att.notice || imagesBlocked) && (
               <p role="status" className="mb-2 text-sm text-vx-fg-muted">
                 {imagesBlocked ? (researchOn ? 'Deep research reads text only. Remove the images or turn it off.' : 'This model cannot read images. Remove them or pick another model.') : att.notice}
               </p>
             )}
-            {offer.web && !researchOn && (
-              <div className="mb-2 flex">
-                <button type="button" aria-pressed={opts.web} disabled={busy}
-                  aria-label={`Web search, plus ${credits(offer.web.extra_credits)}`}
-                  onClick={() => setOpts({ ...opts, web: !opts.web, research: false })}
-                  className={`rounded-full border px-3 py-1.5 text-xs font-semibold disabled:opacity-50 ${opts.web ? 'border-vx-accent text-vx-fg' : 'border-vx-border text-vx-fg-muted hover:text-vx-fg'}`}>
-                  Web search <span className="font-vx-mono vx-num">+{offer.web.extra_credits}</span>
-                </button>
+            {((offer.web && !researchOn) || offer.images) && (
+              <div className="mb-2 flex flex-wrap gap-2">
+                {offer.web && !researchOn && (
+                  <button type="button" aria-pressed={opts.web} disabled={busy}
+                    aria-label={`Web search, plus ${credits(offer.web.extra_credits)}`}
+                    onClick={() => setOpts({ ...opts, web: !opts.web, research: false })}
+                    className={`rounded-full border px-3 py-1.5 text-xs font-semibold disabled:opacity-50 ${opts.web ? 'border-vx-accent text-vx-fg' : 'border-vx-border text-vx-fg-muted hover:text-vx-fg'}`}>
+                    Web search <span className="font-vx-mono vx-num">+{offer.web.extra_credits}</span>
+                  </button>
+                )}
+                {offer.images && (
+                  <button type="button" disabled={busy || att.items.length >= limits.maxAttachments} onClick={() => setPickingLibrary(true)}
+                    title={att.items.length >= limits.maxAttachments ? 'The most images for one reply' : 'Use an image you already made'}
+                    className="rounded-full border border-vx-border px-3 py-1.5 text-xs font-semibold text-vx-fg-muted hover:text-vx-fg disabled:opacity-50">
+                    From library
+                  </button>
+                )}
               </div>
             )}
             <div className="flex items-end gap-2 rounded-2xl border border-vx-border bg-vx-panel p-2 focus-within:border-vx-accent">
@@ -336,6 +371,7 @@ export function ChatWorkspace() {
         </div>
       </section>
       <aside className="hidden w-[320px] shrink-0 border-l border-vx-border bg-vx-base xl:block">{settings}</aside>
+      {pickingLibrary && <LibraryPicker onPick={pickFromLibrary} onClose={() => setPickingLibrary(false)} />}
       {settingsOpen && (
         <div className="fixed inset-0 z-40 flex justify-end xl:hidden" role="dialog" aria-modal="true" aria-label="Chat settings">
           <button type="button" aria-label="Close settings" className="flex-1 bg-black/50" onClick={() => setSettingsOpen(false)} />

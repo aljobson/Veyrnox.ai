@@ -3,15 +3,16 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { IMAGE_TYPES, addableCount, isImageFile } from '../../_lib/chatImages';
 
 /**
- * The images chosen for the next reply: local files with a preview each. Nothing is uploaded until Send, so
- * removing one costs nothing. Previews are object URLs, released when an image goes or the composer unmounts.
+ * The images chosen for the next reply: local files with a preview each, or the person's own Library images (by the id of
+ * the job that made them). Nothing is uploaded until Send, so removing one costs nothing. A file's preview is an object URL,
+ * released when it goes or the composer unmounts; a Library image's preview is its short-lived link and needs no release.
  */
 export function useAttachments(max) {
   const [items, setItems] = useState([]);
   const [notice, setNotice] = useState(null);
   const live = useRef([]);
   useEffect(() => { live.current = items; }, [items]);
-  useEffect(() => () => { for (const i of live.current) URL.revokeObjectURL(i.preview); }, []);
+  useEffect(() => () => { for (const i of live.current) if (!i.asset) URL.revokeObjectURL(i.preview); }, []);
 
   const add = useCallback((fileList) => {
     const picked = Array.from(fileList || []);
@@ -25,14 +26,23 @@ export function useAttachments(max) {
     });
   }, [max]);
   const remove = useCallback((id) => {
-    setItems((cur) => { const gone = cur.find((i) => i.id === id); if (gone) URL.revokeObjectURL(gone.preview); return cur.filter((i) => i.id !== id); });
+    setItems((cur) => { const gone = cur.find((i) => i.id === id); if (gone && !gone.asset) URL.revokeObjectURL(gone.preview); return cur.filter((i) => i.id !== id); });
     setNotice(null);
   }, []);
   const clear = useCallback(() => {
-    setItems((cur) => { for (const i of cur) URL.revokeObjectURL(i.preview); return []; });
+    setItems((cur) => { for (const i of cur) if (!i.asset) URL.revokeObjectURL(i.preview); return []; });
     setNotice(null);
   }, []);
-  return { items, notice, add, remove, clear };
+  /** One of the person's own Library images, picked in the Library picker: { id (job id), url, label }. */
+  const addAsset = useCallback(({ id, url, label }) => {
+    setNotice(null);
+    setItems((cur) => {
+      if (cur.some((i) => i.asset === id)) return cur;
+      if (addableCount(cur.length, max) < 1) { setNotice(`You can attach up to ${max} images.`); return cur; }
+      return [...cur, { id: `asset-${id}`, asset: id, preview: url, label }];
+    });
+  }, [max]);
+  return { items, notice, setNotice, add, addAsset, remove, clear };
 }
 
 /** The paperclip: opens the file picker. Shown only for a model that reads images. */

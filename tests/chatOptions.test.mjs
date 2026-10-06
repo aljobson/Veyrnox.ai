@@ -78,6 +78,29 @@ test('malformed attachments are refused', () => {
     }
 });
 
+const A1 = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+const A2 = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+
+test('a Library image is named by its job id; `assets` appears only when there are some (ADR-0068 amendment 2)', () => {
+    const only = validateTurn(turn({ attachments: [{ source_asset: A1 }] }));
+    assert.deepEqual(only.attachments, []);
+    assert.deepEqual(only.assets, [A1]);
+    const mixed = validateTurn(turn({ attachments: [{ source_key: KEY(1) }, { source_asset: A2 }, { source_key: KEY(2) }, { source_asset: A1 }] }));
+    assert.deepEqual(mixed.attachments, [KEY(1), KEY(2)]);
+    assert.deepEqual(mixed.assets, [A2, A1]);
+    assert.equal('assets' in validateTurn(turn({ attachments: [{ source_key: KEY(1) }] })), false, 'a turn without assets keeps its old shape');
+    assert.equal('assets' in validateTurn(turn()), false);
+    assert.deepEqual(validateTurn(turn({ attachments: [{ source_asset: A1.toUpperCase() }] })).assets, [A1], 'ids are compared in lower case');
+});
+
+test('malformed Library attachments are refused, and four is the most in all', () => {
+    const five = [{ source_key: KEY(1) }, { source_key: KEY(2) }, { source_asset: A1 }, { source_asset: A2 }, { source_asset: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc' }];
+    for (const bad of [five, [{ source_asset: 'not-a-uuid' }], [{ source_asset: 5 }], [{ source_asset: '' }], [{ source_asset: A1 }, { source_asset: A1 }],
+        [{ source_asset: A1 }, { source_asset: A1.toUpperCase() }], [{ source_asset: A1, source_key: KEY(1) }], [{ source_asset: A1, extra: true }], [{ asset: A1 }]]) {
+        assert.deepEqual(validateTurn(turn({ attachments: bad })), { ok: false, error: 'invalid_attachments' }, JSON.stringify(bad).slice(0, 70));
+    }
+});
+
 test('the images option is priced from the catalog and refused where it is not offered', () => {
     const withImages = { ...ROW, chat_images_extra_credits: 3 };
     assert.deepEqual(replyPrice(withImages, { images: true }), { ok: true, credits: 7 });

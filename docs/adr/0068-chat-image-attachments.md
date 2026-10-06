@@ -40,6 +40,26 @@ shape: one reply (one job) uses it, then it is swept.
    scan content, and does not strip EXIF.
 7. **No other types.** PDFs and documents need text extraction and their own cost model; audio and video are out of scope.
 
+## Amendment 2 (2026-10-06): the person's own Library images
+
+An attachment may now be one of the caller's own finished Library images, named by the id of the job that made it:
+`attachments: [{ source_asset: <job id> }]` beside `{ source_key }`, four images in all. Chat is built around what the person
+already made, so asking about or working from a Library image must not mean downloading and re-uploading it.
+
+1. **Same checks as an upload, and the same pattern as the studio's From library.** `resolveAssetSource` runs `get_user_asset`
+   (the caller's own, state `STORED`, not past `asset_expires_at`; another person's job reads exactly like one that does not exist),
+   then the bytes pass the same Gate 2 as an upload: really an image, within the 2,048 px edge. Images only. No new access path,
+   no new signing code, no migration.
+2. **Never recorded where the sweeper looks.** An upload key goes under `inputs.source_keys`, which the upload sweeper deletes. A
+   Library asset goes under `inputs.source_assets` and **never** under `source_keys`: the sweeper must not be able to delete a
+   file the person still owns. A test pins this.
+3. **Priced and refunded like any image.** One `Images` extra per reply with at least one image, however many, from either source.
+4. **The size cap is said up front.** The server cannot shrink a stored asset the way the browser shrinks a chosen file, so the
+   picker reads the image's size and, over the cap, says so and suggests a smaller image or a resized download.
+5. **Disclosure.** The image goes to the model provider to answer, as with an upload, but it stays in the Library. The composer and
+   the privacy notice say so: uploads are deleted within a day, Library images stay in the Library.
+6. **Out of scope.** Video and audio (chat reads images only); saving a chat reply to the Library; creating from a chat reply.
+
 ## Consequences
 
 - No new bucket, no new signing code: the work is the turn body, one resolver, one adapter change (content parts),

@@ -83,7 +83,7 @@ export async function sendTurn({ threadId, text, key, options, attachments = [],
     headers: { Authorization: `Bearer ${token}`, 'content-type': 'application/json' },
     body: json({
       text, idempotency_key: key, options: { thinking: options?.thinking === true, web: options?.web === true },
-      ...(attachments.length ? { attachments: attachments.map((source_key) => ({ source_key })) } : {}),
+      ...(attachments.length ? { attachments: attachments.map((a) => (typeof a === 'string' ? { source_key: a } : a)) } : {}),
     }),
   });
   if (res.status === 401) {
