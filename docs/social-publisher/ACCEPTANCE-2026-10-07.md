@@ -11,13 +11,32 @@ published at 20:40:50 UTC. The public video was opened and played successfully:
 Post ID: `8d0998cd-1e04-455b-bede-99d107a44432`. Do not resubmit it.
 This supersedes the earlier handover's unverified YouTube publication statements.
 
+## Real video analytics
+
+The previous snapshot predated publication. The connected staging account's
+next analytics refresh was brought forward, with an append-only request audit.
+The normal scheduled worker successfully fetched the video at 22:05:44 UTC:
+`GphiOYqr6fQ`, one view, zero likes and zero comments. These values were verified
+in both stored metrics and the signed-in dashboard's seven-day video table.
+The dashboard also showed one public video and two subscribers; the separately
+reported channel view total was still zero. Do not infer immediate agreement
+between channel and video totals. No new publication or reconnection was needed.
+The account returned to its normal six-hour refresh cadence with no sync error.
+
 ## Calendar
 
 Acceptance used 103 disposable posts, keyed `calaccept_20261007_%`, with zero
 media: one future scheduled fixture and 102 canceled rows sharing a timestamp.
 
 - Dragging proposed the correct new day without saving before confirmation.
-  Drag confirmation/save was not completed; explicit reschedule saves were.
+  A follow-up live drag/save test used one additional zero-media fixture,
+  `caldrag_20261007_confirmation`, on the narrow browser viewport. Dragging
+  Monday 12 October to Tuesday 13 October proposed 13:00 local / 12:00 UTC.
+  Before confirmation, parent and target remained at 12 October, with no
+  reschedule event. Confirming moved both timestamps to 13 October at 12:00 UTC,
+  displayed “Post rescheduled”, and produced exactly one reschedule event.
+  Attempts remained zero and the target unclaimed. The fixture and target were
+  removed afterward with ownership/dispatch guards and a cleanup audit event.
 - The browser rejected a save after a target changed to failed, showing the
   conflict message and leaving the schedule unchanged.
 - A rollback-only staging RPC test verified parent and both pending target
@@ -42,7 +61,15 @@ published video and connected YouTube account were preserved.
 Validation: 1,626 unit tests pass (one skipped), five calendar route tests pass,
 lint/typecheck/OpenNext staging build and Wrangler dry run pass. Deployment
 preserved all 33 live plain variables and 30 secret bindings.
-Active-worker lock contention remains unverified live; automated coverage exists.
+Live target-row contention was then verified using a separate transaction to
+hold a lock on one zero-media fixture, `callock_20261007_contention`. The normal
+browser save received HTTP 409 `POST_BUSY` and displayed the conflict message.
+Parent and target timestamps remained unchanged, attempts stayed zero, and no
+additional reschedule audit event was written. The lock was released and the
+fixture and target removed with a cleanup audit; no fixture remains. An initial
+two-SQL-request attempt ran sequentially and safely rescheduled this fixture;
+it did not count as contention evidence. This tests the live locking barrier
+with a controlled transaction, not an actual provider dispatch race.
 No media or new provider publication was submitted during calendar acceptance.
 
 ## Next
