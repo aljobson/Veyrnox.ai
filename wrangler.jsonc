@@ -32,9 +32,9 @@
     // ADR-0069: a per-model free allowance, taken as a price waiver. "false" until the owner flips it after
     // staging acceptance; migrations 0205 and 0206 must be applied first.
     "FREE_ALLOWANCE_ENABLED": "false",
-    // ADR-0072: chat Personas, saved instructions with a default model and options. "false" until the owner flips it after
-    // staging acceptance; migration 0216 must be applied first.
-    "PERSONAS_ENABLED": "false",
+    // ADR-0072: chat Personas, saved instructions with a default model and options. On in production since 2026-10-07: staging
+    // acceptance passed 2026-10-06 and migration 0216 is applied on production. Staging has its own value below.
+    "PERSONAS_ENABLED": "true",
     // ADR-0071: referrals. Migrations 0217 to 0219 are applied on production. On only after the reconcile jobs have run clean for
     // 24 hours (CLAUDE.md, Delivery); the storage notice is re-prompted in the same change so the referral wording is seen.
     "REFERRALS_ENABLED": "true",
