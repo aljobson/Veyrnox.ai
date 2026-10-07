@@ -56,9 +56,9 @@ Planning shares the generation attempt limit (0113).
 | 1 | Runner repo with a **fake gateway**: plan and run one pipeline to a local MP4 | MP4 produced, spend counter reads 0 |
 | 2 | Capability record + migration (step kind, inactive row) | Acceptance test: replayed webhook is a no-op, forward-only |
 | 3 | Orchestrator, webhook, sweep, refund paths | Forced failure at each stage refunds exactly once |
-| 4a | Egress meter in the runner repo (`runner/meter.py` + mitmproxy addon): price table, ceiling, fail-closed | Unit tests; a fake upstream is refused at the ceiling and for unknown paths; no spend |
-| 4b | Headless agent harness for OpenMontage with its own budget cap; runner `/run` becomes async with signed callbacks and the `upload_url` ask | A full fake-provider run end to end locally; no spend |
-| 4c | Fill the price table from verified prices; measure 10 real runs | Max and p95 cost recorded in the ADR (needs provider and LLM keys, supplied by the owner on the runner only) |
+| 4a (done) | Egress meter in the runner repo (`runner/meter.py` + mitmproxy addon): price table, ceiling, fail-closed | Unit tests; a fake upstream is refused at the ceiling and for unknown paths; no spend |
+| 4b (done, runner repo `aljobson/veyrnox-montage-runner`) | Headless agent harness for OpenMontage with its own budget cap; runner `/run` becomes async with signed callbacks and the `upload_url` ask | A full fake-provider run end to end locally; no spend |
+| 4c | Build and pin the image; enforce that the agent reaches the network only through the proxy (a deployment control, not yet designed); run `ClaudeAgent` for real (unverified until now); fill the price table from verified prices; measure 10 real runs | Max and p95 cost recorded in the ADR (needs provider and LLM keys, supplied by the owner on the runner only) |
 | 5 | UI behind `AGENT_VIDEO_ENABLED` and the preview key | Owner generates one video on staging |
 | 6 | Price migration from measured ceiling, flag on | `reconcile_balances()` clean 24 h |
 
