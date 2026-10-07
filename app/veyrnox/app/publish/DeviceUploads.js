@@ -7,8 +7,8 @@ const errorCopy = (code) => ({
     upload_type_not_allowed: 'Choose a JPG, PNG, WebP image or an MP4 video.',
     upload_size_required: 'This file is empty. Choose another file.',
     upload_too_large: 'Images can be up to 20 MB; MP4 videos up to 100 MB.',
-    UPLOAD_BUDGET_EXCEEDED: 'Your uploads are full (10 files or 200 MB). Remove unused files, then try again after 20 minutes.',
-    UPLOAD_IN_USE: 'This file is used by a draft, scheduled or in-progress post. Finish or cancel that post first.',
+    upload_budget_exceeded:'Your uploads are full (10 files or 200 MB). Remove unused files, then try again after 20 minutes.',
+    upload_in_use:'This file is used by a draft, scheduled or in-progress post. Finish or cancel that post first.',
     upload_type_mismatch: 'This file does not match its file type. Export it again and try uploading it.',
     upload_unreadable: 'This file could not be read. Export it again and try uploading it.',
 }[code] || 'That did not complete. Check your connection and try again.');

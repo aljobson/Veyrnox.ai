@@ -29,12 +29,12 @@
     // ADR-0067: Chat is open here, but the screen is still behind the per-browser preview switch
     // (localStorage.veyrnox_chat). Needs OPENROUTER_CHAT_API_KEY on the Worker: production will not use the shared key.
     "CHAT_ENABLED": "true",
-    // ADR-0069: a per-model free allowance, taken as a price waiver. "false" until the owner flips it after
-    // staging acceptance; migrations 0205 and 0206 must be applied first.
-    "FREE_ALLOWANCE_ENABLED": "false",
-    // ADR-0072: chat Personas, saved instructions with a default model and options. "false" until the owner flips it after
-    // staging acceptance; migration 0216 must be applied first.
-    "PERSONAS_ENABLED": "false",
+    // ADR-0069: a per-model free allowance, taken as a price waiver. On in production since 2026-10-07: staging acceptance passed
+    // 2026-10-06, and migrations 0205, 0206 and 0222 (the two models offered) are applied. At most $1.00 a day of provider spend.
+    "FREE_ALLOWANCE_ENABLED": "true",
+    // ADR-0072: chat Personas, saved instructions with a default model and options. On in production since 2026-10-07: staging
+    // acceptance passed 2026-10-06 and migration 0216 is applied on production. Staging has its own value below.
+    "PERSONAS_ENABLED": "true",
     // ADR-0074: the video agent (isolated OpenMontage runner). "false" until the runner, MONTAGE_* secrets and the measured price exist
     // (docs/montage/SPEC.md slices 4-6). A run already paid for still finishes or refunds with this off.
     "AGENT_VIDEO_ENABLED": "false",
