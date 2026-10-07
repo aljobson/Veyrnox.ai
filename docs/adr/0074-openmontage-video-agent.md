@@ -1,7 +1,7 @@
 # ADR-0074 — OpenMontage as an isolated video-agent service
 
-- **Status**: **Proposed 2026-10-07** (owner: "go with recommendation" on the isolated-service option). Nothing is built.
-  Three open questions are listed at the end; none of them blocks writing the spec, all block launch.
+- **Status**: **Accepted 2026-10-07** (owner: "go with recommendation" on the isolated-service option; "terms OK, AGPL OK").
+  Slices 1-3 and 5 are built behind `AGENT_VIDEO_ENABLED="false"`. Slice 4 (real gateway, measured ceilings) is next.
 - **Related**: ADR-0029 (Auto Short composite jobs), ADR-0072 (Agents scope), ADR-0070 (Deep research cost), ADR-0027
   (capability registry), CLAUDE.md "Money & billing", "Provider webhooks", "Object storage", "Bundler traps"
 
@@ -21,7 +21,7 @@ on 2026-10-07:
 None of this runs on a Cloudflare Worker, and a priced, credit-metered product cannot let an unattended LLM loop spend
 provider money freely (ADR-0070 found the same shape of problem in the OpenRouter web plugin).
 
-## Decision (proposed)
+## Decision
 
 ### 1. Isolated service, never vendored
 
@@ -98,9 +98,40 @@ This mirrors ADR-0072's rule for Agents: media spend only through a priced job, 
    (idle cost, shared scratch between jobs). Accepted 2026-10-07 (owner: "go with recommendation"). Region: EU, to match
    ADR-0005.
 
-## Still open (owner only, blocks launch)
+## Finding: how the spend ceiling can be enforced (slice 4 recon, 2026-10-07)
 
-Public-terms check, 2026-10-07 (search only, not legal advice; the full current texts were not read):
+Read from a shallow clone of OpenMontage `main` (public source, nothing run):
+
+- **Provider hosts are hardcoded.** Tools call `https://queue.fal.run/...` and similar directly with a key from the
+  environment, and `tools/fal_media.py` even rejects a response URL whose host is not `queue.fal.run`. There is no
+  base-URL setting, so a "gateway key" cannot be pointed at our own proxy by configuration.
+- **Its budget governance is advisory.** `tools/cost_tracker.py` (`BudgetExceededError`, `cap` mode) is not called by any
+  tool; it describes what the orchestrating agent is told to do in `AGENT_GUIDE.md`. A confused or looping agent is not
+  stopped by it.
+
+So the ceiling is enforced outside the process, which also keeps the "unmodified OpenMontage" basis of the AGPL answer:
+
+1. **Egress proxy in front of the container.** The runner container has no direct internet. It reaches providers only
+   through a TLS-intercepting proxy we own (runner-image CA), which meters every request to an allowlisted paid host from
+   a price table and refuses any request that would pass the per-run ceiling (`402`). Unknown paid hosts and unknown paths
+   are blocked (fail closed); the shipped price table is empty, so nothing paid works until slice 4c fills it from
+   verified prices.
+2. **The LLM that drives OpenMontage is capped separately** (the harness's own max-budget flag), and its key lives on the
+   runner only.
+3. OpenMontage's own `budget: cap` stays on as a second line, never the first.
+
+## Owner answers (2026-10-07)
+
+2. **Provider resale terms: confirmed OK by the owner** ("terms OK"), for the models already in `model_catalog`. The working
+   rule below still binds: no preview-class model, each model recorded as GA with a commercial-use licence.
+3. **AGPL position: confirmed OK by the owner** ("AGPL OK") on the stated basis: OpenMontage is used unmodified, as a
+   separate process reached only over HTTP, never imported into this repo. Any patch to its source needs a new ADR and
+   triggers publishing that patch.
+
+Both are the owner's statement in chat; neither is a written opinion from counsel or from a provider. If either provider
+or counsel later says otherwise, this ADR is reopened.
+
+Public-terms check that preceded the answers (search only, the full current texts were not read):
 
 - **fal**: its Terms of Service disclaim any ownership of Output Content and say outputs may not be unique across users. A
   separate general page (`fal.ai/terms`) bars "revenue-generating" use of the site and Content; unclear whether it covers
