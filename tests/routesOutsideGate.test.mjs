@@ -19,6 +19,7 @@ const OUTSIDE = {
     'app/api/webhook/kie/route.js': 'provider signature',
     'app/api/webhook/openrouter/route.js': 'provider signature',
     'app/api/webhook/stripe/route.js': 'provider signature',
+    'app/api/webhook/montage/route.js': 'provider signature',
     'app/api/webhook/cinema-stream/route.js': 'provider signature',
     'app/api/admin/reap-assets/route.js': 'access + token',
     'app/api/admin/top-up-backfill/route.js': 'access + token',
