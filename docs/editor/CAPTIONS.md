@@ -71,11 +71,18 @@ Following the existing probe-script pattern (silent `read -s` key prompt):
   refunded (PRD section 5 step 7). The edit sheet should warn before submit
   when it can't tell there is speech; the error text above is not shown to the
   user verbatim.
+- **Run 4, 15.17 s landscape clip (speech)** (request
+  `01a11872-c976-7332-bdf5-7e3ee5bd0036`): succeeded in 31 s, the same time
+  as the 5 s clip, so run time doesn't scale with length at these sizes.
+  Duration preserved (15.17 s), 1280x720, AAC audio kept. Output frame rate
+  came back as a clean 24/1 from an input of 2178/91 (about 23.93, an
+  artifact of looping the test clip), so the step re-encodes and normalises
+  the frame rate; it does not copy streams.
 - Probe `--video-file` upload to fal storage works (files land on
   `v3b.fal.media/files/...`).
 - Still unmeasured: **billed cost** (check the usage page for the three
   request ids; in particular whether the failed no-speech run was billed, which
-  decides whether a captions step can burn money on a refund), a 15 s clip, the
+  decides whether a captions step can burn money on a refund), the
   webhook signature. Four runs with placeholder links were rejected by fal
   and should not have been billed.
 
