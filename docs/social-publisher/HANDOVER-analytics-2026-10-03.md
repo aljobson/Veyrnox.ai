@@ -399,8 +399,8 @@ hostname, so credentials are enrolled separately.
 
 1. Verify complete Apple and passkey sign-ins on staging using owner-controlled
    accounts and devices.
-2. Complete the remaining calendar cases listed below. Real YouTube upload and
-   publication are still unverified and require an explicit owner-approved post.
+2. Complete the remaining calendar cases listed below. Owner-approved YouTube
+   publication succeeded on 7 October; see the latest acceptance record.
 3. Complete provider review and real account acceptance for Instagram insights
    and TikTok analytics before enabling their new consent scopes.
 4. Decide X/LinkedIn analytics scope and cost before implementation. Analytics
@@ -484,16 +484,14 @@ with “last used 6 Oct 2026”. No credential material was retrieved or logged.
 This verifies enrollment and fresh sign-in on this device; cross-device use
 and recovery remain unverified. Existing Google-account MFA was not reset.
 
-Next: prepare a controlled YouTube publication using the original Google
-account and an owner-selected video. The Apple account currently has no library
-assets. The deployed publishing sweep explicitly selects public visibility;
-the composer offers no private/unlisted setting. Agree the concrete video,
-caption, channel and visibility before scheduling or uploading a real post.
+Latest acceptance: [7 October publication and calendar checks](ACCEPTANCE-2026-10-07.md)
+supersedes the earlier publication and calendar gaps. Publishing still requires
+an owner-selected video, channel, caption and visibility for each real test.
 
 ## Post now and Schedule post — 2026-10-06
 
 The owner requested both actions. Post now sends `publishNow: true`; the posts API assigns server time and queues it for the existing publishing sweep. Schedule post uses the selected future date/time. Publishing can take several minutes; the UI reports queuing rather than completion. Both actions retain ownership, media, rate-limit and idempotency checks. No migration or new switch. Staging version: `55bc43c8-d904-4166-998c-8c644f2c0259`.
 
-Validation: 1,624 unit tests passed (one skipped), 15 posts-route tests passed, lint/typecheck/staging build passed. Intercepted browser requests verified both payloads, failure handling, retry-key retention and the queued success message. Interception was removed and the page refreshed; no request reached the publishing API. Real publication remains unverified.
+Validation: 1,624 unit tests passed (one skipped), 15 posts-route tests passed, lint/typecheck/staging build passed. Intercepted browser requests verified both payloads, failure handling, retry-key retention and the queued success message. Interception was removed and the page refreshed; no request reached the publishing API. Owner-approved real publication succeeded on 7 October; see the latest acceptance record.
 
-During acceptance the connected channel was `jobsonal1`, rather than Pip/Hazel/Ollie. The owner's uploaded `veyrnox-profile-test-enhanced (1).mp4` remains available. Confirm channel, caption and public visibility before a real submission.
+The connected channel remains `jobsonal1`. The owner-approved video was published successfully: [Veyrnox.ai publishing test](https://www.youtube.com/watch?v=GphiOYqr6fQ).
