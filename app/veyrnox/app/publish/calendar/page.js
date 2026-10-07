@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { AppNav } from '../../../_components/NavBar';
 import { Modal } from '../../../_components/Modal';
+import NetworkLogo from '../NetworkLogo';
 import { getSession, onSessionChange } from '../../../../lib/authClient';
 import { NETWORKS } from '../../../../lib/socialConnectClient';
 import { listSocialCalendar, rescheduleSocialPost } from '../../../../lib/socialPostsClient';
@@ -109,7 +110,7 @@ function PostCard({post,onEdit}) {
         onDragStart={e=>{if(!post.can_reschedule){e.preventDefault();return;}e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('application/x-veyrnox-post',post.id);}} data-calendar-post={post.id}>
         <p className="text-xs font-bold"><time dateTime={post.scheduled_at}>{timeLabel(post.scheduled_at)}</time> · {post.status}</p>
         <p className="text-sm line-clamp-3">{post.global_text||'Media post'}</p>
-        <ul className="text-xs text-vx-fg-muted space-y-1">{(post.targets||[]).map(t=><li key={t.id}>{networkLabel(t.network)}: {t.publish_status==='delivered'?'delivered, finish in TikTok':t.publish_status==='submitted'?'in progress':t.publish_status}
+        <ul className="text-xs text-vx-fg-muted space-y-1">{(post.targets||[]).map(t=><li key={t.id} className="flex flex-wrap items-center gap-1"><NetworkLogo network={t.network} className="h-3.5 w-3.5" />{networkLabel(t.network)}: {t.publish_status==='delivered'?'delivered, finish in TikTok':t.publish_status==='submitted'?'in progress':t.publish_status}
             {t.publish_status==='published'&&/^https:\/\//.test(t.platform_post_url||'')&&<> · <a href={t.platform_post_url} target="_blank" rel="noreferrer" className="underline">View post</a></>}
         </li>)}</ul>
         {post.can_reschedule?<button type="button" className="text-xs font-bold text-vx-accent underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-vx-accent" onClick={onEdit}>Reschedule<span className="sr-only"> {post.global_text||'media post'}</span></button>:<p className="text-xs text-vx-fg-muted">Schedule locked</p>}
