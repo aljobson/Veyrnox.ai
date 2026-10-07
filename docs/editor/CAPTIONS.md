@@ -80,11 +80,24 @@ Following the existing probe-script pattern (silent `read -s` key prompt):
   the frame rate; it does not copy streams.
 - Probe `--video-file` upload to fal storage works (files land on
   `v3b.fal.media/files/...`).
-- Still unmeasured: **billed cost** (check the usage page for the three
-  request ids; in particular whether the failed no-speech run was billed, which
-  decides whether a captions step can burn money on a refund), the
-  webhook signature. Four runs with placeholder links were rejected by fal
-  and should not have been billed.
+- **Webhook (run 5, `scripts/probe-fal-webhook.mjs`)** (request
+  `01a11880-df99-7a62-95b2-240e877c245f`): `veed/subtitles` delivers a normal
+  fal queue callback when submitted with `?fal_webhook=`. All four signature
+  headers were present and the delivery **verified with the Worker's own
+  `verifyWebhookSignature`** (Ed25519 via JWKS), so the existing
+  `/api/webhook/fal` path can take it with no new verifier. Body keys: `error`,
+  `gateway_request_id`, `payload`, `request_id`, `status` (`OK`); `request_id`
+  matched and `payload.video.url` was present. The probe took the expected
+  user id from the header itself, so it proved the signature, not the tenant;
+  the Worker's `FAL_WEBHOOK_USER_ID` check still applies as usual.
+- Not tested: what the callback looks like for a **failed** job (the
+  no-speech case). Expect `status: ERROR` with the 422 detail in the body, but
+  the handler must be checked against a real failure before it is trusted to
+  refund.
+- Still unmeasured: **billed cost** (usage page, for the five request ids; in
+  particular whether the failed no-speech run was billed, which decides whether
+  a captions step can burn money on a refund). Four runs with placeholder links
+  were rejected by fal and should not have been billed.
 
 ## Pricing (proposal, pending Slice 0)
 
