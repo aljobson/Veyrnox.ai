@@ -7,7 +7,7 @@ import { gatewayFetch, GatewayError, notifyBalanceChanged } from '../../_lib/gat
 import { readJobHistory, pushJobHistory } from '../../_lib/jobHistory';
 import { useAssetUrl } from '../../_lib/useAssetUrl';
 import { ScheduleGeneration } from '../../_components/ScheduleGeneration';
-import { AssetRetention } from '../../_components/AssetRetention';
+import { AssetFooter } from '../../_components/AssetFooter';
 import { AssetLoadStatus } from '../../_components/AssetLoadStatus';
 import { EditSheet } from '../../_components/EditSheet';
 import { useCatalog } from '../../_lib/useCatalog';
@@ -454,7 +454,7 @@ function JobCard({ row, models, selectable, selected, onToggle, starred, onStar 
           </div>
         </div>
         <div className="shrink-0 flex items-center gap-3">
-          <span className={`font-vx-mono text-[13px] font-bold vx-num ${deltaCls}`}>{delta} cr</span>
+          <span className={`font-vx-mono text-[13px] font-bold vx-num ${deltaCls}`}>{delta}{free ? '' : ' cr'}</span>
           <button onClick={onStar} aria-pressed={starred} aria-label={starred ? 'Remove from favourites' : 'Add to favourites'} type="button"
             className={`text-[18px] leading-none ${starred ? 'text-vx-accent' : 'text-vx-fg-faint hover:text-vx-fg'}`}>
             {starred ? '★' : '☆'}
@@ -462,7 +462,7 @@ function JobCard({ row, models, selectable, selected, onToggle, starred, onStar 
         </div>
       </div>
       <ScheduleGeneration job={row} className="mx-4 mb-3" />
-      <AssetRetention row={row} />
+      <AssetFooter row={row} />
     </div>
   );
 }

@@ -95,6 +95,7 @@ test('POST: rejects malformed bodies before consuming any rate-limit budget or R
     stub();
     const bad = [
         { ...validBody(), scheduledAt: 'not-a-date' },
+        { ...validBody(), publishNow: 'true' },
         { ...validBody(), idempotencyKey: 'short' },
         { ...validBody(), accountIds: [] },
         { ...validBody(), accountIds: ['not-a-uuid'] },
@@ -143,6 +144,25 @@ test('POST: schedules a post and returns its id', async () => {
     });
 });
 
+test('POST: Post now uses server time and ignores a missing or invalid device schedule', async () => {
+    for (const scheduledAt of [undefined, 'not-a-date', '2099-01-01T00:00:00Z']) {
+        stub();
+        const start = Date.now();
+        const res = await POST(postRequest({ ...validBody(), publishNow: true, scheduledAt }));
+        assert.equal(res.status, 201);
+        const create = calls.find((c) => c.name === 'create_social_post');
+        const time = Date.parse(create.args.p_scheduled_at);
+        assert.ok(time >= start && time <= Date.now());
+        assert.equal(create.args.p_idempotency_key, 'a'.repeat(16));
+    }
+});
+
+test('POST: explicit scheduled mode still requires a valid schedule', async () => {
+    stub();
+    assert.equal((await POST(postRequest({ ...validBody(), publishNow: false, scheduledAt: undefined }))).status, 400);
+    assert.deepEqual(calls, []);
+});
+
 test('POST: maps RPC failure codes to the right HTTP status', async () => {
     const cases = [
         ['USER_NOT_FOUND', 401],
@@ -174,4 +194,21 @@ test('GET advertises the calendar only while its exact feature switch is true', 
             assert.equal((await (await GET(getRequest())).json()).calendarEnabled,value==='true'?true:undefined);
         }
     } finally { delete process.env.PUBLISH_CALENDAR_ENABLED; }
+});
+
+test('POST: uploads require the switch and exactly one source', async () => {
+    const oldPublish = process.env.PUBLISH_ENABLED, oldUploads = process.env.PUBLISH_UPLOADS_ENABLED;
+    try {
+        process.env.PUBLISH_ENABLED = 'true'; process.env.PUBLISH_UPLOADS_ENABLED = 'false';
+        stub();
+        const body = { ...validBody(), media:[{ mediaType:'image',uploadId:jobId }] };
+        assert.equal((await POST(postRequest(body))).status,400); assert.equal(calls.length,0);
+        process.env.PUBLISH_UPLOADS_ENABLED = 'true';
+        assert.equal((await POST(postRequest({ ...body,media:[{ mediaType:'image',jobId,uploadId:jobId }] }))).status,400);
+        assert.equal((await POST(postRequest(body))).status,201);
+        assert.deepEqual(calls.find((c) => c.name === 'create_social_post').args.p_media,[{ media_type:'image',upload_id:jobId }]);
+    } finally {
+        if (oldPublish === undefined) delete process.env.PUBLISH_ENABLED; else process.env.PUBLISH_ENABLED = oldPublish;
+        if (oldUploads === undefined) delete process.env.PUBLISH_UPLOADS_ENABLED; else process.env.PUBLISH_UPLOADS_ENABLED = oldUploads;
+    }
 });

@@ -23,6 +23,7 @@ import { limitRequestBody } from './lib/requestBodyLimit.js';
 import { adminEdgeRateLimit } from './lib/adminEdgeRateLimit.js';
 import { runScheduledBackfill } from './lib/scheduledBackfill.js';
 import { removeReservedUpload, sweepUploadReservations } from './lib/uploadReservations.js';
+import { sweepSocialUploads } from './lib/social/uploadSweep.js';
 import { sweepUploads, sweepConsumedUploads } from './lib/uploadSweep.js';
 import { isConfigured as r2IsConfigured } from './packages/adapters/r2.js';
 import { sweepSteps } from './lib/autoShortSweep.js';
@@ -156,6 +157,10 @@ async function runUploadSweep(env) {
     if (strict && (!dbcfg.supabaseUrl || !dbcfg.serviceRoleKey)) return { ok: false, error: 'upload reservations not configured' };
     const opts = strict ? { remove: (key) => removeReservedUpload(key, cfg, dbcfg) } : {};
     let reservationFailure = false;
+    if (env.PUBLISH_UPLOADS_ENABLED === 'true') {
+        const social = await sweepSocialUploads(cfg, dbcfg);
+        if (!social.ok) { reservationFailure = true; console.error('[social-uploads] cleanup failed'); }
+    }
     if (strict) {
         const reservations = await sweepUploadReservations(cfg, dbcfg);
         if (!reservations.ok) {

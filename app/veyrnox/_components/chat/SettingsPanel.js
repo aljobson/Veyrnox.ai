@@ -40,7 +40,7 @@ function Toggle({ label, extra, checked, disabled, onChange, hint }) {
 // Everything that shapes the next reply, in one place: which model, what it may do, and its instructions. Nothing here is
 // sent until the person sends a message, and the price of the choices always shows under the message box.
 export function SettingsPanel({ models, model, busy, onSelectModel, tiers, onTiers, offer, opts, onOpts, researchOn = false, canSaveInstr, instr, onInstr, instrSaved, onSaveInstr, saved, maxPrompt, hasThread, personasOn = false, personas = [], personaId = '', onPersona, onManagePersonas }) {
-  const [open, setOpen] = useState({ persona: true, filter: false, model: true, caps: true, tools: false, prompt: false, about: false });
+  const [open, setOpen] = useState({ persona: true, filter: false, model: true, caps: true, tools: true, prompt: false, about: false });
   const toggle = (id) => setOpen((o) => ({ ...o, [id]: !o[id] }));
   const allOpen = SECTIONS.every((id) => open[id]);
   const tier = tierOf(model.credits_per_reply);
@@ -70,7 +70,7 @@ export function SettingsPanel({ models, model, busy, onSelectModel, tiers, onTie
           : <p className="text-vx-fg-muted">This model does not offer Thinking.</p>}
         {offer.images
           ? <p><span className="font-semibold">Images</span> <span className="font-vx-mono text-xs text-vx-money vx-num">+{credits(offer.images.extra_credits)}</span>
-              <span className="block text-vx-fg-muted">Attach pictures with the paperclip. The extra applies only to replies that include images.</span></p>
+              <span className="block text-vx-fg-muted">Attach pictures with the paperclip (or a few frames from a video), or pick one you already made with From library. The extra applies only to replies that include images.</span></p>
           : <p className="text-vx-fg-muted">This model cannot read images.</p>}
       </Section>
 

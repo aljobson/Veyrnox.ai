@@ -32,3 +32,8 @@ test('0207 keeps the five existing reconcile checks and adds the free-allowance 
     assert.match(after, /OR s > 0 OR a > 0 THEN/);
     assert.match(migration, /'17 3 \* \* \*'/, 'same schedule as 0184');
 });
+
+test('the Library never prints a unit after FREE: "FREE cr" was shipped once, and a free job that failed shows nothing, not a bare "cr"', () => {
+    assert.match(library, /\{delta\}\{free \? '' : ' cr'\}/);
+    assert.doesNotMatch(library, /\{delta\} cr<\/span>/);
+});

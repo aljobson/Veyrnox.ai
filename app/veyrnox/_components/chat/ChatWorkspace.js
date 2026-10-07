@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { GatewayError } from '../../_lib/gateway';
+import { GatewayError, gatewayFetch } from '../../_lib/gateway';
 import { chatApi, chatErrorCopy, makeIdempotencyKey, sendTurn, uploadChatImage } from '../../_lib/chatApi';
 import { attachmentLabel, prepareImage } from '../../_lib/chatImages';
 import { NEW_CHAT, readDraft, writeDraft, readStars, toggleStar } from '../../_lib/chatLocal';
@@ -10,6 +10,11 @@ import { freeLeftFor } from '../../_lib/freeAllowance';
 import { researchProgressLabel } from '../../_lib/chatResearchUi';
 import { PersonaManager } from './PersonaManager';
 import { AttachButton, AttachChips, useAttachments } from './AttachBar';
+import { LibraryPicker } from '../LibraryPicker';
+import { SkillsPanel } from './SkillsPanel';
+import { StudioDraftCards } from './StudioDraftCards';
+import { useCatalog } from '../../_lib/useCatalog';
+import { skillById, skillInstructions } from '../../_lib/studioSkills';
 import { ChatText } from './ChatText';
 import { SettingsPanel } from './SettingsPanel';
 import { ThreadList } from './ThreadList';
@@ -52,6 +57,9 @@ export function ChatWorkspace() {
   const [progress, setProgress] = useState(null); // the step a Deep research reply is on: plan, search n of m, write
   const [limits, setLimits] = useState({ maxAttachments: 4, maxEdge: 2048 });
   const att = useAttachments(limits.maxAttachments);
+  const [pickingLibrary, setPickingLibrary] = useState(false);
+  const [skillId, setSkillId] = useState(''); // a Studio skill chosen for a chat that has not started (ADR-0073)
+  const { models: studioModels, loading: studioLoading } = useCatalog();
   const freeMap = useFreeAllowance(); // free replies left today per model; empty while the feature is off
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
@@ -110,11 +118,11 @@ export function ChatWorkspace() {
   const open = async (id) => {
     try {
       const r = await chatApi.get(id);
-      setPersonaId(''); setActive(r.thread); setMessages(r.messages); setInstr(r.thread.system_prompt || ''); setError(null); setDrawer(false);
+      setPersonaId(''); setActive(r.thread); setSkillId(''); setMessages(r.messages); setInstr(r.thread.system_prompt || ''); setError(null); setDrawer(false);
       setText(readDraft(store(), r.thread.id)); setStars(readStars(store(), r.thread.id)); setStarredOnly(false);
     } catch (e) { fail(e); }
   };
-  const blank = () => { setPersonaId(''); setActive(null); setMessages([]); setInstr(''); setError(null); setDrawer(false); setText(readDraft(store(), NEW_CHAT)); setStars([]); setStarredOnly(false); };
+  const blank = () => { setPersonaId(''); setActive(null); setSkillId(''); setMessages([]); setInstr(''); setError(null); setDrawer(false); setText(readDraft(store(), NEW_CHAT)); setStars([]); setStarredOnly(false); };
   const star = (id) => { if (active) setStars(toggleStar(store(), active.id, id)); };
   const shown = starredOnly ? messages.filter((x) => x.role === 'assistant' && stars.includes(x.id)) : messages;
   const patch = async (id, body) => {
@@ -131,7 +139,47 @@ export function ChatWorkspace() {
   const selectModel = (id) => (active ? patch(active.id, { model_id: id }) : setDraftModel(id));
   // Choosing a persona fills the draft of a chat that has not started: its instructions, its model if still offered, and its options.
   // It never touches an existing chat. Options the model does not offer are ignored at send time, as for any model.
+  // Choosing a skill does the same for a chat that has not started, with built-in instructions that include the live Studio model list.
+  const pickSkill = (id) => {
+    const s = skillById(id);
+    if (!s) return;
+    setSkillId(id); setPersonaId('');
+    setInstr(skillInstructions(s, studioModels));
+    if (models.some((m) => m.id === s.model)) setDraftModel(s.model);
+    setOpts({ thinking: false, web: false, research: false });
+    setTimeout(() => document.getElementById('chat-msg')?.focus(), 0);
+  };
+  const clearSkill = () => { setSkillId(''); setInstr(''); };
+  // ?asset=<job id>, from the Library's Ask about this: that image is attached to a chat that has not started, once. The same
+  // checks as From library apply (the server confirms it is the person's own, and the size cap is said up front).
+  const assetFromUrl = useRef(false);
+  useEffect(() => {
+    if (assetFromUrl.current || !models.length || active) return;
+    assetFromUrl.current = true;
+    const id = new URLSearchParams(window.location.search).get('asset');
+    if (!id || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) return;
+    (async () => {
+      try {
+        const a = await gatewayFetch(`/jobs/${encodeURIComponent(id)}/asset`);
+        if (!String(a.mime_type).startsWith('image/')) { att.setNotice('Chat reads images only. Pick an image from your Library.'); return; }
+        await pickFromLibrary({ id, url: a.url, label: 'Library image' });
+        document.getElementById('chat-msg')?.focus();
+      } catch {
+        att.setNotice('That image could not be opened. It may have expired.');
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [models.length, active]);
+  const skillFromUrl = useRef(false);
+  useEffect(() => {
+    if (skillFromUrl.current || studioLoading || !models.length || active) return;
+    skillFromUrl.current = true;
+    const wanted = new URLSearchParams(window.location.search).get('skill');
+    if (wanted && skillById(wanted)) pickSkill(wanted);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [studioLoading, models.length, active]);
   const pickPersona = (id) => {
+    setSkillId('');
     setPersonaId(id);
     const p = personas.find((x) => x.id === id);
     if (!p) return;
@@ -160,6 +208,23 @@ export function ChatWorkspace() {
     try { await chatApi.move(id, folderId); setThreads((ts) => ts.map((t) => (t.id === id ? { ...t, folder_id: folderId } : t))); } catch (e) { fail(e); }
   };
 
+  // A Library image goes by id and is read from storage by the server, which cannot shrink it, so one over the size cap
+  // is said so here, before it is chosen, instead of failing at Send.
+  async function pickFromLibrary(it) {
+    setPickingLibrary(false);
+    const size = await new Promise((resolve) => {
+      const im = new Image();
+      im.onload = () => resolve({ w: im.naturalWidth, h: im.naturalHeight });
+      im.onerror = () => resolve(null);
+      im.src = it.url;
+    });
+    if (size && Math.max(size.w, size.h) > limits.maxEdge) {
+      att.setNotice(`That image is ${size.w} by ${size.h}. Chat reads images up to ${limits.maxEdge} pixels on the long side. Pick a smaller one, or download it, shrink it and attach the file.`);
+      return;
+    }
+    att.addAsset(it);
+  }
+
   async function send() {
     const content = text.trim();
     if (!content || busy || sendingRef.current || !model || imagesBlocked) return;
@@ -167,8 +232,9 @@ export function ChatWorkspace() {
     let thread = active; let created = false; const pending = `pending-${Date.now()}`;
     try {
       // Images go to storage first, before anything is charged: a failed upload costs nothing.
-      const keys = [];
-      for (const it of att.items) keys.push(await uploadChatImage(await prepareImage(it.file, limits.maxEdge)));
+      // A Library image is already in storage; the server checks it is the caller's own, so it is sent by id.
+      const refs = [];
+      for (const it of att.items) refs.push(it.asset ? { source_asset: it.asset } : await uploadChatImage(await prepareImage(it.file, limits.maxEdge)));
       if (!thread) {
         thread = (await chatApi.create(draftModel || model.id)).thread; created = true;
         // A chat started while a folder is open goes into it. If filing fails, the chat still starts, unfiled.
@@ -185,7 +251,7 @@ export function ChatWorkspace() {
       const ac = new AbortController(); abortRef.current = ac;
       let outcome = null; let streamError = null;
       const r = await sendTurn({
-        threadId: thread.id, text: content, key: makeIdempotencyKey(), options: chosen, attachments: keys, signal: ac.signal,
+        threadId: thread.id, text: content, key: makeIdempotencyKey(), options: chosen, attachments: refs, signal: ac.signal,
         onEvent: (ev, d) => {
           if (ev === 'start') setProgress(null);
           if (ev === 'progress') setProgress(d);
@@ -265,6 +331,7 @@ export function ChatWorkspace() {
               <div className="py-16 text-center">
                 <h1 className="vx-display text-[32px]">What do you want to work on?</h1>
                 <p className="mt-2 text-vx-fg-muted">Every reply shows its price before you send. If a reply fails, the Credits come back.</p>
+                {!active && <SkillsPanel selectedId={skillId} onPick={pickSkill} disabled={busy} />}
               </div>
             )}
             {starredOnly && shown.length === 0 && <p className="py-8 text-center text-vx-fg-muted">No starred replies in this chat.</p>}
@@ -282,6 +349,7 @@ export function ChatWorkspace() {
                     </>
                   )
                     : <div aria-live={m.status === 'streaming' ? 'polite' : undefined}>{m.content ? <ChatText text={m.content} /> : <p className="text-vx-fg-muted">{researchProgressLabel(progress) || 'Thinking'}</p>}</div>}
+                  {m.role === 'assistant' && m.status !== 'streaming' && <StudioDraftCards text={m.content} models={studioModels} />}
                   {m.role === 'assistant' && m.status !== 'streaming' && <Footer m={m} starred={stars.includes(m.id)} onStar={() => star(m.id)} />}
                 </div>
               </article>
@@ -302,17 +370,49 @@ export function ChatWorkspace() {
             )}
             <AttachChips items={att.items} onRemove={att.remove} disabled={busy} />
             {hasImages && !imagesBlocked && (
-              <p className="mb-2 text-xs text-vx-fg-muted">Images are sent to the model provider to answer, and are deleted from our storage within a day.</p>
+              <p className="mb-2 text-xs text-vx-fg-muted">
+                {att.items.some((i) => i.asset)
+                  ? (att.items.some((i) => !i.asset)
+                    ? 'Images are sent to the model provider to answer. Uploaded files are deleted from our storage within a day; images from your Library stay there.'
+                    : 'Images are sent to the model provider to answer. They stay in your Library.')
+                  : 'Images are sent to the model provider to answer, and are deleted from our storage within a day.'}
+                {att.items.some((i) => i.video) && ' Your video is not uploaded: only a few frames from it, taken on your device, are.'}
+              </p>
             )}
             {(att.notice || imagesBlocked) && (
               <p role="status" className="mb-2 text-sm text-vx-fg-muted">
                 {imagesBlocked ? (researchOn ? 'Deep research reads text only. Remove the images or turn it off.' : 'This model cannot read images. Remove them or pick another model.') : att.notice}
               </p>
             )}
+            {((offer.web && !researchOn) || offer.images || skillId) && (
+              <div className="mb-2 flex flex-wrap gap-2">
+                {skillId && !active && (
+                  <button type="button" onClick={clearSkill} disabled={busy} aria-label={`Skill: ${skillById(skillId)?.name}. Remove`}
+                    className="rounded-full border border-vx-accent px-3 py-1.5 text-xs font-semibold text-vx-fg disabled:opacity-50">
+                    Skill: {skillById(skillId)?.name} <span aria-hidden="true">×</span>
+                  </button>
+                )}
+                {offer.web && !researchOn && (
+                  <button type="button" aria-pressed={opts.web} disabled={busy}
+                    aria-label={`Web search, plus ${credits(offer.web.extra_credits)}`}
+                    onClick={() => setOpts({ ...opts, web: !opts.web, research: false })}
+                    className={`rounded-full border px-3 py-1.5 text-xs font-semibold disabled:opacity-50 ${opts.web ? 'border-vx-accent text-vx-fg' : 'border-vx-border text-vx-fg-muted hover:text-vx-fg'}`}>
+                    Web search <span className="font-vx-mono vx-num">+{offer.web.extra_credits}</span>
+                  </button>
+                )}
+                {offer.images && (
+                  <button type="button" disabled={busy || att.items.length >= limits.maxAttachments} onClick={() => setPickingLibrary(true)}
+                    title={att.items.length >= limits.maxAttachments ? 'The most images for one reply' : 'Use an image you already made'}
+                    className="rounded-full border border-vx-border px-3 py-1.5 text-xs font-semibold text-vx-fg-muted hover:text-vx-fg disabled:opacity-50">
+                    From library
+                  </button>
+                )}
+              </div>
+            )}
             <div className="flex items-end gap-2 rounded-2xl border border-vx-border bg-vx-panel p-2 focus-within:border-vx-accent">
               {offer.images && <AttachButton onPick={att.add} disabled={busy} full={att.items.length >= limits.maxAttachments} />}
               <label className="sr-only" htmlFor="chat-msg">Message</label>
-              <textarea id="chat-msg" rows={1} value={text} maxLength={MAX_TEXT} placeholder="Message" onChange={(e) => setText(e.target.value)}
+              <textarea id="chat-msg" rows={1} value={text} maxLength={MAX_TEXT} placeholder={skillById(skillId)?.starter || 'Message'} onChange={(e) => setText(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
                 className="max-h-48 min-h-10 flex-1 resize-none bg-transparent px-2 py-2 text-[15px] text-vx-fg outline-none placeholder:text-vx-fg-faint" />
               {busy
@@ -326,6 +426,7 @@ export function ChatWorkspace() {
         </div>
       </section>
       <aside className="hidden w-[320px] shrink-0 border-l border-vx-border bg-vx-base xl:block">{settings}</aside>
+      {pickingLibrary && <LibraryPicker onPick={pickFromLibrary} onClose={() => setPickingLibrary(false)} />}
       {settingsOpen && (
         <div className="fixed inset-0 z-40 flex justify-end xl:hidden" role="dialog" aria-modal="true" aria-label="Chat settings">
           <button type="button" aria-label="Close settings" className="flex-1 bg-black/50" onClick={() => setSettingsOpen(false)} />

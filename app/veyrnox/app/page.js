@@ -1,4 +1,5 @@
 'use client';
+import Link from 'next/link';
 import { AppNav } from '../_components/NavBar';
 import { PresetGallery } from '../_components/PresetGallery';
 
@@ -14,6 +15,13 @@ export default function Explore() {
         <p className="mt-3 mb-8 text-vx-fg-body max-w-[52ch] leading-[1.6]">
           Each one opens the studio on its model and prompt, priced before you press Generate.
         </p>
+        <Link href="/app/chat" className="mb-8 flex flex-col gap-1 rounded-2xl border border-vx-border bg-vx-panel p-5 transition-colors hover:border-vx-accent sm:flex-row sm:items-center sm:justify-between">
+          <span>
+            <span className="block text-lg font-semibold">LLM Chat</span>
+            <span className="block text-vx-fg-body">Ask leading AI models, with Web search if you want it. Every reply shows its price in Credits before you send.</span>
+          </span>
+          <span aria-hidden="true" className="font-semibold text-vx-accent">Open chat →</span>
+        </Link>
         <PresetGallery size="md" columns="lg:grid-cols-4" />
       </section>
     </div>

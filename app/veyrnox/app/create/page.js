@@ -1,5 +1,6 @@
 'use client';
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import Link from 'next/link';
 import { AppNav } from '../../_components/NavBar';
 import { Chip } from '../../_components/Chip';
 import { ASPECT_RATIOS } from '../../_lib/tokens';
@@ -364,6 +365,16 @@ export default function CreateStudio() {
               : model?.id === 'elevenlabs-dialogue' ? 'One line per speaker, e.g.' + '\n' + 'Ana: Did you hear that?' + '\n' + 'Ben: [whispers] Stay quiet.'
               : 'Describe the shot…'}
           />
+
+          {!isShort && (
+            <p className="mt-2 text-xs text-vx-fg-muted">
+              Need help? Ask a Studio skill (1 Credit a reply):{' '}
+              <Link href="/app/chat?skill=prompt-writer" className="text-vx-accent hover:underline">Prompt writer</Link>,{' '}
+              <Link href="/app/chat?skill=fix-my-prompt" className="text-vx-accent hover:underline">Fix my prompt</Link>,{' '}
+              <Link href="/app/chat?skill=model-picker" className="text-vx-accent hover:underline">Model picker</Link> or{' '}
+              <Link href="/app/chat" className="text-vx-accent hover:underline">all skills</Link>.
+            </p>
+          )}
 
           <SourcePickers media={media} sources={sources} onPick={pickSource}
             onDraw={model?.kind === 'image' ? () => setDrawing(true) : null} onLibrary={setLibraryFor} />
