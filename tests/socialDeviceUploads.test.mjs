@@ -47,7 +47,7 @@ test('reservation is length-bound and immutable; no credit balance is required',
 test('reservation refuses budget failure without returning a URL', async () => {
     stub({ reserve:{ ok:false,code:'UPLOAD_BUDGET_EXCEEDED' } });
     const res = await POST(req({ action:'reserve',rights_confirmed:true,filename:'test.png',content_type:'image/png',size_bytes:1024 }));
-    assert.equal(res.status,409); assert.equal((await res.json()).upload_url,undefined);
+    assert.equal(res.status,409); const refused = await res.json(); assert.equal(refused.upload_url,undefined); assert.equal(refused.error,'upload_budget_exceeded');
 });
 test('completion rejects missing ownership, size mismatch and disguised files', async () => {
     for (const opts of [{ rows:[] },{ range:'bytes 0-15/2048' },{ bytes:new Uint8Array(16) }]) {

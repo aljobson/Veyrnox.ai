@@ -55,7 +55,7 @@ export async function POST(req) {
                 p_auth_id: authId, p_id: crypto.randomUUID(), p_filename: body.filename,
                 p_mime_type: checked.contentType, p_size: body.size_bytes,
             }, cfg);
-            if (!result?.ok) return reply({ error: result?.code || 'upload_reservation_unavailable' }, result?.code === 'UPLOAD_BUDGET_EXCEEDED' ? 409 : 503);
+            if (!result?.ok) return reply({ error: result?.code?.toLowerCase() || 'upload_reservation_unavailable' }, result?.code === 'UPLOAD_BUDGET_EXCEEDED' ? 409 : 503);
             const signed = await presignPutUrl(result.r2_key, checked.contentType, 900, r2cfg, body.size_bytes);
             return reply({ id: result.id, upload_url: signed.url, content_type: signed.contentType, headers: signed.headers });
         }
@@ -87,7 +87,7 @@ export async function DELETE(req) {
     if (limited) return limited;
     try {
         const result = await rpc('remove_social_upload', { p_auth_id: ctx.authId, p_id: body.id }, ctx.cfg);
-        if (!result?.ok) return reply({ error: result?.code || 'upload_unavailable' }, result?.code === 'UPLOAD_IN_USE' ? 409 : 404);
+        if (!result?.ok) return reply({ error: result?.code?.toLowerCase() || 'upload_unavailable' }, result?.code === 'UPLOAD_IN_USE' ? 409 : 404);
         return reply({ ok: true });
     } catch { return reply({ error: 'upload_unavailable' }, 503); }
 }
