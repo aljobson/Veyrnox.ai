@@ -31,7 +31,17 @@ media: one future scheduled fixture and 102 canceled rows sharing a timestamp.
   remaining two rows. The API fix emits `Z`, preserving microsecond precision;
   the timestamp/UUID pair and strict request validation remain intact.
 
-Permanent pagination staging verification and fixture cleanup are pending.
+Unmodified deployed pagination then passed: first page 100 rows, second page
+HTTP 200 with two rows and no next cursor, 102 distinct fixture captions in
+the UI and no errors. Staging version: `dda51098-1320-47b7-adfb-a0df94348470`.
+All 103 fixtures and their one remaining pending target were removed after
+checks for ownership, zero media, zero attempts, no claims or provider IDs.
+The append-only audit was retained and a cleanup event appended. The real
+published video and connected YouTube account were preserved.
+
+Validation: 1,626 unit tests pass (one skipped), five calendar route tests pass,
+lint/typecheck/OpenNext staging build and Wrangler dry run pass. Deployment
+preserved all 33 live plain variables and 30 secret bindings.
 Active-worker lock contention remains unverified live; automated coverage exists.
 No media or new provider publication was submitted during calendar acceptance.
 
