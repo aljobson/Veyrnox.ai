@@ -28,19 +28,23 @@ export function attachmentLabel(a) {
 }
 
 /**
- * The file to upload: the same file when it already fits, otherwise a copy drawn smaller. Image cost follows
- * pixel size, so the server refuses a long edge over the cap; scaling here means a phone photo just works.
+ * The file to upload: always a copy drawn on a canvas, scaled down when the long edge is over the cap. Image cost follows
+ * pixel size, so the server refuses a long edge over the cap; scaling here means a phone photo just works. Redrawing even a
+ * picture that already fits is what drops its EXIF block (camera, time, GPS position), which the original file carries and
+ * which would otherwise go to storage and the model provider.
  * Throws Error('image_unreadable') when the browser cannot decode it.
  */
 export async function prepareImage(file, maxEdge) {
   let bitmap;
-  try { bitmap = await createImageBitmap(file); } catch { throw new Error('image_unreadable'); }
+  // 'from-image' applies the camera's rotation now, because the redraw below drops the tag that says it.
+  try { bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' }); } catch { throw new Error('image_unreadable'); }
   try {
     const target = scaledSize(bitmap.width, bitmap.height, maxEdge);
-    if (target.width === bitmap.width && target.height === bitmap.height) return file;
     const canvas = document.createElement('canvas');
     canvas.width = target.width; canvas.height = target.height;
-    canvas.getContext('2d').drawImage(bitmap, 0, 0, target.width, target.height);
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('image_unreadable');
+    ctx.drawImage(bitmap, 0, 0, target.width, target.height);
     // PNG and WebP keep their type (transparency); everything else is redrawn as JPEG.
     const type = file.type === 'image/png' || file.type === 'image/webp' ? file.type : 'image/jpeg';
     const blob = await new Promise((resolve) => canvas.toBlob(resolve, type, 0.9));
