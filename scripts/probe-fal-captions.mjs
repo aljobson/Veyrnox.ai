@@ -125,6 +125,9 @@ if (videoUrls.length === 0) die('Pass at least one --video-url=https://... (a pu
 if (videoUrls.length > MAX_RUNS) die(`At most ${MAX_RUNS} clips per run (cost cap).`);
 for (const u of videoUrls) {
     if (!u.startsWith('https://')) die(`Not an https URL: ${u}`);
+    let host = '';
+    try { host = new URL(u).hostname; } catch { die(`Not a valid URL: ${u}`); }
+    if (!/^[a-z0-9.-]+$/i.test(host) || !host.includes('.')) die(`Not a real host (placeholder?): ${u}`);
     if (/your-public-clip|real-link|example\.(com|test)/i.test(u)) die(`That is still a placeholder: ${u}`);
 }
 if (submit && !key) die('FAL_KEY is not set.');
