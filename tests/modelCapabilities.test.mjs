@@ -29,7 +29,7 @@ const CATALOG = [
     'market:kling-3.0/video', 'veo:veo3_lite', 'veo:veo3_fast', 'veo:veo3', 'market:google/nano-banana',
     'market:wan/2-5-text-to-video', 'market:kling-2.6/text-to-video', 'market:nano-banana-pro',
     'market:hailuo/02-text-to-video-standard', 'market:seedream/4.5-text-to-image', 'market:elevenlabs/text-to-speech-turbo-2-5',
-    'grsai:nano-banana-pro', 'grsai:nano-banana-pro-edit', 'bytedance/seedance-2.0-fast', 'auto-short:v1', 'clip-edit:v1',
+    'grsai:nano-banana-pro', 'grsai:nano-banana-pro-edit', 'bytedance/seedance-2.0-fast', 'auto-short:v1', 'clip-edit:v1', 'video-agent:v1',
     // BytePlus ModelArk rows staged inactive by migration 0145 (ADR-0058).
     'byteplus:seedance-2.0-fast', 'byteplus:seedance-2.0-mini', 'byteplus:seedance-2.0',
     'byteplus:seedance-2.5', 'byteplus:seedance-1.0-pro-fast',
