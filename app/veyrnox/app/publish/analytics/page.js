@@ -8,6 +8,7 @@ import { getSocialAnalytics } from '../../../../lib/socialAnalyticsClient';
 import { postInteractions, rangeForDays, summarize } from '../../../../../lib/social/analyticsSummary.js';
 import { FollowersChart } from './FollowersChart';
 import { PostingInsights } from './PostingInsights';
+import NetworkLogo from '../NetworkLogo';
 
 const currentAccount = () => getSession()?.user?.id || '';
 const noAccount = () => '';
@@ -60,7 +61,8 @@ function Dashboard() {
   const selected = accounts.find((a) => a.id === chosenId) || accounts[0];
   return <div className="space-y-6">
     <div className="flex flex-wrap items-center justify-between gap-3">
-      <label className="text-sm font-bold text-vx-fg">
+      <label className="inline-flex items-center gap-2 text-sm font-bold text-vx-fg">
+        <NetworkLogo network={selected.network} />
         <span className="sr-only">Account</span>
         <select
           value={selected.id}
