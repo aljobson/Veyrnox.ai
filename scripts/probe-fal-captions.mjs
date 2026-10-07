@@ -16,6 +16,7 @@
  * Usage:
  *   node scripts/probe-fal-captions.mjs --schema
  *   node scripts/probe-fal-captions.mjs --video-url=https://a.mp4 --video-url=https://b.mp4
+ *   FAL_KEY=... node scripts/probe-fal-captions.mjs --submit --video-file=./portrait.mp4   (uploads to fal storage first, free)
  *   FAL_KEY=... node scripts/probe-fal-captions.mjs --submit --video-url=https://a.mp4 [--preset=simple] [--extra='{"language":"en"}']
  *
  * Pick clips that answer the Slice 0 questions: a 5 s landscape, a 5 s
@@ -27,6 +28,8 @@
  * and compare each request id's billed cost with the number printed here.
  */
 import { execFileSync } from 'node:child_process';
+import { readFile } from 'node:fs/promises';
+import { basename } from 'node:path';
 
 const ENDPOINT = 'veed/subtitles';
 const FAL_QUEUE_BASE = 'https://queue.fal.run';
@@ -41,6 +44,7 @@ const submit = args.includes('--submit');
 const schemaOnly = args.includes('--schema');
 const videoUrls = args.filter((a) => a.startsWith('--video-url=')).map((a) => a.slice(12));
 const preset = args.find((a) => a.startsWith('--preset='))?.slice(9) ?? 'simple';
+const videoFiles = args.filter((a) => a.startsWith('--video-file=')).map((a) => a.slice(13));
 const extraRaw = args.find((a) => a.startsWith('--extra='))?.slice(8);
 
 const key = process.env.FAL_KEY;
@@ -77,6 +81,19 @@ async function printSchema() {
             console.log(`  ${prop}: ${def.type ?? def.$ref ?? 'object'}${detail}${dflt}`);
         }
     }
+}
+
+// Upload a local file to fal storage and return its URL, so a clip that is not
+// public anywhere can still be probed. Costs nothing; needs FAL_KEY.
+async function uploadToFal(path) {
+    const bytes = await readFile(path);
+    const init = await fetchRetry('https://rest.alpha.fal.ai/storage/upload/initiate?storage_type=fal-cdn-v3', {
+        method: 'POST', headers: authHeader(), body: JSON.stringify({ content_type: 'video/mp4', file_name: basename(path) }) });
+    if (!init.ok) die(`upload initiate failed for ${path}: ${init.status} ${(await init.text().catch(() => '')).slice(0, 200)}`);
+    const { upload_url: uploadUrl, file_url: fileUrl } = await init.json();
+    const put = await fetch(uploadUrl, { method: 'PUT', headers: { 'Content-Type': 'video/mp4' }, body: bytes });
+    if (!put.ok) die(`upload failed for ${path}: ${put.status}`);
+    return fileUrl;
 }
 
 function probe(url) {
@@ -121,8 +138,9 @@ async function run(url) {
 if (schemaOnly) { await printSchema(); process.exit(0); }
 
 console.log(submit ? 'SUBMIT: this spends fal credit.\n' : 'PLAN: nothing is sent or spent.\n');
-if (videoUrls.length === 0) die('Pass at least one --video-url=https://... (a public clip).');
-if (videoUrls.length > MAX_RUNS) die(`At most ${MAX_RUNS} clips per run (cost cap).`);
+if (videoUrls.length + videoFiles.length === 0) die('Pass at least one --video-url=https://... or --video-file=./clip.mp4.');
+if (videoFiles.length > 0 && !submit) console.log(`(plan: ${videoFiles.length} file(s) would be uploaded to fal storage first)\n`);
+if (videoUrls.length + videoFiles.length > MAX_RUNS) die(`At most ${MAX_RUNS} clips per run (cost cap).`);
 for (const u of videoUrls) {
     if (!u.startsWith('https://')) die(`Not an https URL: ${u}`);
     let host = '';
@@ -131,6 +149,7 @@ for (const u of videoUrls) {
     if (/your-public-clip|real-link|example\.(com|test)/i.test(u)) die(`That is still a placeholder: ${u}`);
 }
 if (submit && !key) die('FAL_KEY is not set.');
+if (submit) for (const f of videoFiles) videoUrls.push(await uploadToFal(f));
 
 let failed = false;
 for (const url of videoUrls) {
