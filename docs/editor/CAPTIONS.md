@@ -58,10 +58,26 @@ Following the existing probe-script pattern (silent `read -s` key prompt):
   preserved.
 - The result is a single `video` file. Nothing else came back (no transcript
   or SRT), so v1 can't offer caption text editing.
-- Still unmeasured: billed cost (check fal's usage page for the request id
-  above), portrait clip, 15 s clip, no-speech clip, webhook signature. Four
-  runs with placeholder links were rejected by fal and should not have been
-  billed.
+- **Run 2, 5.04 s portrait clip (720x1280, speech)** (request
+  `01a11865-5325-7363-b212-cec4f66d3da2`): succeeded in 26 s. Output
+  720x1280, 24 fps, 5.04 s, AAC audio: **no distortion**, unlike
+  `merge-videos`. Portrait is fine.
+- **Run 3, 5.04 s clip with a tone and no speech** (request
+  `01a11865-c74a-7c40-8ee4-677a57cade1a`): the job was accepted, then failed
+  at result time with a 422 `transcription_error`: "No speech detected in the
+  video, or the audio was unintelligible to the transcriber... or provide
+  srt_content directly." So a speechless clip is a hard failure, not an empty
+  captions pass-through. Decision: it is a failed step and the whole edit is
+  refunded (PRD section 5 step 7). The edit sheet should warn before submit
+  when it can't tell there is speech; the error text above is not shown to the
+  user verbatim.
+- Probe `--video-file` upload to fal storage works (files land on
+  `v3b.fal.media/files/...`).
+- Still unmeasured: **billed cost** (check the usage page for the three
+  request ids; in particular whether the failed no-speech run was billed, which
+  decides whether a captions step can burn money on a refund), a 15 s clip, the
+  webhook signature. Four runs with placeholder links were rejected by fal
+  and should not have been billed.
 
 ## Pricing (proposal, pending Slice 0)
 
@@ -83,5 +99,5 @@ cost.
 
 ## Open questions
 
-- Is speech-less video a refund case or a pass-through?
+- Can the app tell before submit that a clip has no speech? (a failed run may still be billed)
 - Caption language: auto-detect only, or a picker?
