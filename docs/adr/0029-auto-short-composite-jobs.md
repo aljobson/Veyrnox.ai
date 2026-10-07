@@ -150,3 +150,31 @@ this ADR. It reuses decisions 2 to 5 unchanged, with these additions:
 
 The editor ships behind `localStorage.veyrnox_editor` under decision 8's
 rule, with the `clip-edit` row inactive until then.
+
+## Addendum 2026-10-07: Clip Editor captions
+
+A fourth editor step, `captions` (fal `veed/subtitles`), runs last, after
+audio. It is the same job on the same table: still one `clip-edit` row, one
+debit, one all-or-nothing refund. What changes for the user and the auditor:
+
+1. **Price.** fal bills the call per started minute (about $0.10, a 1-minute
+   minimum), not per 5 s, so a 5 s clip costs what a 60 s one does. Captions
+   therefore count as `CAPTIONS_UNITS = 7` billed units of their own in
+   `editUnits` (`lib/clipEdit.js`), exactly as each other step counts as one.
+   The unit price is still the catalog's `credits_5s`; the app counts units,
+   it does not set a price. At $0.033 a credit, 7 credits is $0.231 against
+   about $0.10, over the ADR-0014 50% floor. The $0.10 is the published figure;
+   fal's invoice for the probe runs is still to be checked.
+2. **No retry.** A speechless clip fails with a 422 `transcription_error` that
+   fal may bill, and a second attempt would fail the same way. Captions are
+   submitted once; a failure refunds the whole edit (decision 1, unchanged).
+3. **Gated twice.** Worker flag `CLIP_EDIT_CAPTIONS_ENABLED` ("false" in
+   production and staging) refuses the `captions` input with
+   `captions_unavailable` before any debit; the edit sheet shows the control
+   only with `localStorage.veyrnox_editor_captions = "1"`.
+4. **Callbacks** reuse `/api/webhook/fal`. The probe (docs/editor/CAPTIONS.md)
+   showed the delivery verifies with `verifyWebhookSignature` unchanged.
+5. **Migration 0225** only widens `job_steps_step_check` by one kind. It adds
+   to the constraint's current list rather than restating it, because 0224
+   (the video agent) rewrites the same constraint.
+
