@@ -42,6 +42,27 @@ Following the existing probe-script pattern (silent `read -s` key prompt):
    5 s clip cost the same as a 60 s one.
 5. Clip with no speech: error, empty captions, or charge?
 
+## Slice 0 findings so far (2026-10-07)
+
+- `veed/subtitles` takes `video_url` + required `preset` (30 values) on the
+  queue API (`queue.fal.run/veed/subtitles`) and returns a request id.
+- Input is validated when the result is fetched, not at submit: a bad URL
+  submitted fine and failed with a 422 `url_parsing` on the result. The
+  orchestrator must treat a 422 at result time as a failed step, and must
+  validate URLs itself first.
+- **Run 1, 5.04 s landscape clip, `simple` preset** (request
+  `01a1185b-2e85-7311-b684-1f8a46b63940`): succeeded in 31 s. Output
+  `video/mp4`, 3.1 MB, served directly from `v3b.fal.media` with a 200 and no
+  redirect, so `copyUrlToR2` can take it. Input and output both 1280x720,
+  24 fps, 5.04 s, AAC audio: size, frame rate, duration and audio are
+  preserved.
+- The result is a single `video` file. Nothing else came back (no transcript
+  or SRT), so v1 can't offer caption text editing.
+- Still unmeasured: billed cost (check fal's usage page for the request id
+  above), portrait clip, 15 s clip, no-speech clip, webhook signature. Four
+  runs with placeholder links were rejected by fal and should not have been
+  billed.
+
 ## Pricing (proposal, pending Slice 0)
 
 Same rule as PRD section 6: one `clip-edit` row, one debit, app never sums
