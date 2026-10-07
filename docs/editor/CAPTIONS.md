@@ -1,6 +1,6 @@
 # PRD addendum — Clip Editor captions
 
-**Status:** Draft · 2026-10-07 · Slice 0 (live probe) not run
+**Status:** Built behind `CLIP_EDIT_CAPTIONS_ENABLED` (off) · 2026-10-07 · Slice 0 done except fal's billed cost; migration 0225 not applied
 **Extends:** [PRD.md](PRD.md). Where they disagree, CLAUDE.md and the ADRs win, then PRD.md.
 
 ## Decision log
@@ -116,6 +116,32 @@ cost.
    `captions: { style }` input, validated at the boundary.
 3. Edit sheet: "Add captions" toggle and style picker, price updated live.
 4. Behind a flag until the reconcile jobs run clean for 24 h.
+
+## Built (2026-10-07)
+
+- `lib/clipEdit.js`: `captions` step (`veed/subtitles`), `CAPTION_PRESETS`,
+  `CAPTIONS_UNITS = 7` in `editUnits`, no retry on a failed captions step.
+- `lib/clipEditSources.js`, `additionalModelCapabilities.js`, the gateway:
+  `captions: { preset }` input, checked at the boundary; refused with
+  `captions_unavailable` while `CLIP_EDIT_CAPTIONS_ENABLED` is not "true".
+- Migration `0225_clip_edit_captions_step.sql`: adds the step kind. Tested on a
+  real Postgres in four cases (from 0092's list, after 0224's list, rerun,
+  missing constraint).
+- Edit sheet: "Add captions" and a style pick, behind
+  `localStorage.veyrnox_editor_captions = "1"`.
+- ADR-0029 addendum records the pricing rule and the flags.
+
+### Before the flag goes on
+1. Check fal's invoice for the probe runs. If the 5 s run billed more than
+   about $0.12, or the failed no-speech run was billed, revisit
+   `CAPTIONS_UNITS` and the refund cost.
+2. Apply 0225 (owner approves the `apply-migrations` run). If PR #618's 0224
+   is still open, apply it first or renumber: both rewrite
+   `job_steps_step_check`, and 0224 restates a fixed list that would drop
+   `captions` if it applied after this one.
+3. Look at a real failed-callback payload (no speech) against the handler;
+   only the success callback has been seen.
+4. Reconcile jobs clean for 24 h, then flip on staging, then production.
 
 ## Open questions
 
