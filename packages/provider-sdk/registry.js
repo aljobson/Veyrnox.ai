@@ -11,6 +11,9 @@ import { start as startAutoShort, parentRef } from '../../lib/autoShort.js';
 import { TOPIC_RE } from '../../lib/autoShortSteps.js';
 import { runtimeDeps, runtimeKeys } from '../../lib/autoShortRuntime.js';
 import { start as startClipEdit, parentRef as clipEditRef } from '../../lib/clipEdit.js';
+import { start as startMontage, parentRef as montageRef } from '../../lib/montage.js';
+import { montageDeps, runtimeConfig as montageConfig } from '../../lib/montageRuntime.js';
+import { BRIEF_RE } from '../../lib/montagePlan.js';
 
 const PROVIDERS = {
     fal: {
@@ -56,13 +59,23 @@ const PROVIDERS = {
     // Auto Short: no single provider call. The orchestrator writes the script,
     // then submits the voice and scenes; their webhooks drive the rest.
     veyrnox: {
-        key: () => (runtimeKeys() && r2IsConfigured(r2EnvConfig()) ? 'configured' : null),
+        key: () => ((runtimeKeys() || (montageConfig() && process.env.MONTAGE_PLAN_SECRET)) && r2IsConfigured(r2EnvConfig()) ? 'configured' : null),
         check: (record, _modelRow, inputs) => {
             const own = checkInputs(record, inputs);
-            if (!own.ok || record.edit) return own;
+            if (!own.ok) return own;
+            if (record.agent) {
+                if (process.env.AGENT_VIDEO_ENABLED !== 'true') return { ok: false, error: 'video_agent_unavailable' };
+                return BRIEF_RE.test(inputs.brief) ? { ok: true } : { ok: false, error: 'inputs_invalid:brief' };
+            }
+            if (record.edit) return own;
             return TOPIC_RE.test(inputs.topic) ? { ok: true } : { ok: false, error: 'inputs_invalid:topic' };
         },
         submit: async (job, record, _key, publicHost) => {
+            if (record.agent) {
+                const deps = montageDeps({ cfg: envConfig(), r2cfg: r2EnvConfig(), ...montageConfig() });
+                const r = await startMontage({ jobId: job.job_id, brief: job.inputs.brief, planId: job.inputs.plan_id, aspect: job.inputs.aspect_ratio || '9:16' }, deps);
+                return r.ok ? { ok: true, providerJobId: montageRef(job.job_id) } : { ok: false, error: r.error, errorCode: r.error };
+            }
             const deps = runtimeDeps({ cfg: envConfig(), r2cfg: r2EnvConfig(), publicHost, ...runtimeKeys() });
             if (record.edit) {
                 const r = await startClipEdit({ jobId: job.job_id, edit: job.inputs.edit }, deps);

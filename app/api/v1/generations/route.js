@@ -30,6 +30,7 @@ import { resolveUploadedSource, resolveAssetSource } from '../../../../lib/resol
 import { envConfig as r2EnvConfig, isConfigured as r2IsConfigured } from '../../../../packages/adapters/r2.js';
 import { editUnits } from '../../../../lib/clipEdit.js';
 import { resolveEdit, defaultDeps as editDeps } from '../../../../lib/clipEditSources.js';
+import { verifyPlanToken, planIdempotencyKey } from '../../../../lib/montagePlan.js';
 
 // The AUP statement version a consent tick attests to. Bump when the wording
 // at /legal/aup or on the create page changes; users re-attest under the new
@@ -60,6 +61,9 @@ const ALLOWED_INPUTS = {
     negative_prompt: { kind: 'string', max: 2000 },
     // Auto Short (ADR-0029); TOPIC_RE is checked again by its provider entry.
     topic: { kind: 'string', max: 200 },
+    // Video agent (ADR-0074): the approved brief and its plan token; both are re-checked by verifyPlanToken before the debit.
+    brief: { kind: 'string', max: 500 },
+    plan_id: { kind: 'string', max: 600 },
     // Clip Editor: structured, so checked by lib/clipEditSources.js (within MAX_INPUTS_BYTES).
     clips: { kind: 'edit' },
     audio: { kind: 'edit' },
@@ -314,6 +318,17 @@ export async function POST(req) {
     // the priced unit (a longer clip, an aspect ratio the model lacks, ...).
     const providerCheck = provider.check(record, modelRow, modelInputs);
     if (!providerCheck.ok) return NextResponse.json({ error: providerCheck.error }, { status: 400 });
+    // Video agent (ADR-0074): a job is accepted only with the Approve ticket the
+    // plan route issued for this caller, this exact brief and this price, and
+    // with the idempotency key that ticket names, so one plan buys one run.
+    if (record.agent) {
+        const planned = await verifyPlanToken({
+            secret: process.env.MONTAGE_PLAN_SECRET, token: modelInputs.plan_id, authId,
+            brief: modelInputs.brief, aspect: modelInputs.aspect_ratio || '9:16', credits: priceFor(modelRow, {}),
+        });
+        if (!planned.ok) return NextResponse.json({ error: planned.error }, { status: planned.error === 'plan_expired' || planned.error === 'plan_price_changed' ? 409 : 400 });
+        if (idempotencyKey !== planIdempotencyKey(planned.nonce)) return NextResponse.json({ error: 'plan_key_mismatch' }, { status: 400 });
+    }
     // A model priced by output size or length caps its sources' pixels/seconds.
     const sourceCheck = checkSource(record, sources);
     if (!sourceCheck.ok) return NextResponse.json({ error: sourceCheck.error }, { status: 400 });

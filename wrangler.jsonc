@@ -35,6 +35,9 @@
     // ADR-0072: chat Personas, saved instructions with a default model and options. "false" until the owner flips it after
     // staging acceptance; migration 0216 must be applied first.
     "PERSONAS_ENABLED": "false",
+    // ADR-0074: the video agent (isolated OpenMontage runner). "false" until the runner, MONTAGE_* secrets and the measured price exist
+    // (docs/montage/SPEC.md slices 4-6). A run already paid for still finishes or refunds with this off.
+    "AGENT_VIDEO_ENABLED": "false",
     // ADR-0071: referrals. Migrations 0217 to 0219 are applied on production. On only after the reconcile jobs have run clean for
     // 24 hours (CLAUDE.md, Delivery); the storage notice is re-prompted in the same change so the referral wording is seen.
     "REFERRALS_ENABLED": "true",
@@ -164,6 +167,7 @@
         "FREE_ALLOWANCE_ENABLED": "false",
         // ADR-0072 (vars are not inherited). Flip to "true" on staging only after 0216 is applied there.
         "PERSONAS_ENABLED": "false",
+        "AGENT_VIDEO_ENABLED": "false",
         "REFERRALS_ENABLED": "false",
         // ADR-0066; vars are not inherited, so staging names it too.
         "JEV_SUBMIT_ERRORS_MODE": "off",

@@ -39,6 +39,15 @@ refunds in full.
 3. Runner reports progress and completion to the signed webhook; output is uploaded with a Worker-minted presigned PUT.
 4. Failure, timeout, cancel or ceiling hit: `ledger_refund` once (idempotent), runner machine stopped.
 
+## 4a. Approve ticket (built with slice 3)
+
+`/api/v1/montage/plan` returns `plan_id`, a stateless HMAC token (`lib/montagePlan.js`) bound to the caller, the exact
+brief, the aspect, the catalog price and a 30-minute expiry, plus the `idempotency_key` (`plan_<nonce>`) the approving
+job must carry. The generations route verifies the token before the debit, so a changed brief, another user's token, an
+expired plan or a moved price is refused with nothing charged, and `ledger_debit`'s unique key makes one plan buy one
+run. Needs `MONTAGE_PLAN_SECRET`, `MONTAGE_SIGNING_SECRET`, `MONTAGE_RUNNER_BASE` and `AGENT_VIDEO_ENABLED="true"`.
+Planning shares the generation attempt limit (0113).
+
 ## 5. Build plan (one PR each, each with an exit gate)
 
 | # | Slice | Exit gate |
