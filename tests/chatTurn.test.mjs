@@ -732,3 +732,44 @@ test('research cannot be combined with another option, and never takes a free al
     assert.equal(called(g, 'submit_free_job').length, 0, 'research is not the base price, so it is never free');
     assert.equal(called(g, 'ledger_debit').length, 1);
 });
+
+// ── Audit fixes: no paid search for a caller who cannot pay, and a quiet timeout is not a finished reply ──
+test('capped web search: a caller who cannot afford the reply is refused before the search runs', async () => {
+    const f = cappedFakes();
+    f.deps.rpc = ((rpc) => async (name, args) => (name === 'read_user_credits' ? { balance: 2 } : rpc(name, args)))(f.deps.rpc);
+    const res = await run(f, { body: webBody(), env: EXA_ENV });
+    assert.equal(res.status, 402);
+    assert.deepEqual(await res.json(), { error: 'insufficient_balance' });
+    assert.equal(f.searches.length, 0, 'no paid search');
+    assert.equal(called(f, 'ledger_debit').length, 0);
+});
+
+test('capped web search: a balance that cannot be read stops the search too (fails closed)', async () => {
+    const f = cappedFakes();
+    f.deps.rpc = ((rpc) => async (name, args) => { if (name === 'read_user_credits') throw new Error('db down'); return rpc(name, args); })(f.deps.rpc);
+    const res = await run(f, { body: webBody(), env: EXA_ENV });
+    assert.equal(res.status, 502);
+    assert.deepEqual(await res.json(), { error: 'balance_check_failed' });
+    assert.equal(f.searches.length, 0);
+});
+
+test('a stream that ends quietly when the time limit aborts it is refunded, not charged as complete', async (t) => {
+    t.mock.timers.enable({ apis: ['setTimeout'] });
+    const f = fakes({
+        replies: { chat_complete_turn: { ok: true, message_id: 'msg-1', refund: true } },
+        stream: async function* ({ signal }) {
+            yield { delta: 'Half an ans' };
+            await new Promise((resolve) => signal.addEventListener('abort', resolve, { once: true }));
+            // returns without throwing, as a reader can when its connection is cut
+        },
+    });
+    const res = await run(f);
+    const pending = events(res);
+    await new Promise((r) => setImmediate(r));
+    t.mock.timers.tick(90_001);
+    const evs = await pending;
+    assert.equal(called(f, 'chat_complete_turn')[0][1].p_status, 'error');
+    assert.equal(called(f, 'ledger_refund').length, 1);
+    assert.deepEqual(evs.find((e) => e.event === 'error').data, { error: 'provider_timeout' });
+    assert.equal(evs.at(-1).data.credits_charged, 0);
+});
