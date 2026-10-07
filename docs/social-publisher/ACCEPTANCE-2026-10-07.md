@@ -61,7 +61,15 @@ published video and connected YouTube account were preserved.
 Validation: 1,626 unit tests pass (one skipped), five calendar route tests pass,
 lint/typecheck/OpenNext staging build and Wrangler dry run pass. Deployment
 preserved all 33 live plain variables and 30 secret bindings.
-Active-worker lock contention remains unverified live; automated coverage exists.
+Live target-row contention was then verified using a separate transaction to
+hold a lock on one zero-media fixture, `callock_20261007_contention`. The normal
+browser save received HTTP 409 `POST_BUSY` and displayed the conflict message.
+Parent and target timestamps remained unchanged, attempts stayed zero, and no
+additional reschedule audit event was written. The lock was released and the
+fixture and target removed with a cleanup audit; no fixture remains. An initial
+two-SQL-request attempt ran sequentially and safely rescheduled this fixture;
+it did not count as contention evidence. This tests the live locking barrier
+with a controlled transaction, not an actual provider dispatch race.
 No media or new provider publication was submitted during calendar acceptance.
 
 ## Next
