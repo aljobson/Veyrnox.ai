@@ -100,6 +100,18 @@ This mirrors ADR-0072's rule for Agents: media spend only through a priced job, 
 
 ## Still open (owner only, blocks launch)
 
+Public-terms check, 2026-10-07 (search only, not legal advice; the full current texts were not read):
+
+- **fal**: its Terms of Service disclaim any ownership of Output Content and say outputs may not be unique across users. A
+  separate general page (`fal.ai/terms`) bars "revenue-generating" use of the site and Content; unclear whether it covers
+  API output. Each hosted model can also carry its own licence.
+- **Google (Gemini API / Veo)**: the Gemini API terms say Google claims no ownership of generated content and put
+  responsibility for onward use on us. The separate preview-products terms bar commercial use and disclosing output to third
+  parties for any product classed as preview. Whether the Veo model we would call is GA or preview is not settled.
+- **Working rule until closed**: v1 may call only models already live in `model_catalog` under the terms we accepted, each
+  recorded as GA with a commercial-use licence; no preview-class model.
+
+
 2. **Provider resale terms.** Do fal and Veo allow us to resell generated output inside a credit product? fal and Veo are
    already in the catalog, so check the existing terms first; any new provider goes through the verified-endpoint rule.
 3. **AGPL position.** Counsel to confirm that unmodified, separate-process use over HTTP does not extend the licence to this
