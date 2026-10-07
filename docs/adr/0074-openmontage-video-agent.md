@@ -90,11 +90,17 @@ This mirrors ADR-0072's rule for Agents: media spend only through a priced job, 
   run, never automatically.
 - Throughput is bounded by runner concurrency; a queue depth limit returns a typed `{error: "montage_busy"}`.
 
-## Open questions (owner)
+## Decisions on the open questions
 
-1. **Where does the runner live?** Cloudflare Containers (same vendor, still beta for this load), a small VM, or a
-   managed container host. Needs Remotion + ffmpeg and several minutes of CPU per run.
-2. **Which providers may the gateway call, and does their ToS allow reselling output?** fal and Veo are already in use;
-   anything new goes through the catalog's "verified endpoint" rule first.
-3. **Is the AGPL position acceptable to counsel?** The plan assumes unmodified, separate-process use. If a patch is
-   ever needed, we publish that patch.
+1. **Runner host: a managed container host with per-run machines (Fly.io Machines is the working choice).** One Docker image
+   (Python, ffmpeg, Node/Remotion), a machine started per job and stopped after, so idle cost is near zero and a stuck run
+   cannot hold the box. Cloudflare Containers is rejected for v1 (beta, long CPU-heavy renders); a standing VM is rejected
+   (idle cost, shared scratch between jobs). Accepted 2026-10-07 (owner: "go with recommendation"). Region: EU, to match
+   ADR-0005.
+
+## Still open (owner only, blocks launch)
+
+2. **Provider resale terms.** Do fal and Veo allow us to resell generated output inside a credit product? fal and Veo are
+   already in the catalog, so check the existing terms first; any new provider goes through the verified-endpoint rule.
+3. **AGPL position.** Counsel to confirm that unmodified, separate-process use over HTTP does not extend the licence to this
+   repo. If a patch is ever needed, we publish that patch.
