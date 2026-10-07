@@ -50,9 +50,18 @@ Following the existing probe-script pattern (silent `read -s` key prompt):
   submitted fine and failed with a 422 `url_parsing` on the result. The
   orchestrator must treat a 422 at result time as a failed step, and must
   validate URLs itself first.
-- Still unmeasured: cost, aspect ratio, audio, frame rate, no-speech clip,
-  webhook signature. Four runs with placeholder links were rejected by fal
-  and should not have been billed; confirm on the usage page.
+- **Run 1, 5.04 s landscape clip, `simple` preset** (request
+  `01a1185b-2e85-7311-b684-1f8a46b63940`): succeeded in 31 s. Output
+  `video/mp4`, 3.1 MB, served directly from `v3b.fal.media` with a 200 and no
+  redirect, so `copyUrlToR2` can take it. Input and output both 1280x720,
+  24 fps, 5.04 s, AAC audio: size, frame rate, duration and audio are
+  preserved.
+- The result is a single `video` file. Nothing else came back (no transcript
+  or SRT), so v1 can't offer caption text editing.
+- Still unmeasured: billed cost (check fal's usage page for the request id
+  above), portrait clip, 15 s clip, no-speech clip, webhook signature. Four
+  runs with placeholder links were rejected by fal and should not have been
+  billed.
 
 ## Pricing (proposal, pending Slice 0)
 
