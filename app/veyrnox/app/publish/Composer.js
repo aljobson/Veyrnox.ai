@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import DeviceUploads from './DeviceUploads.js';
+import NetworkLogo from './NetworkLogo.js';
 import { gatewayFetch } from '../../_lib/gateway.js';
 import { NETWORKS } from '../../../lib/socialConnectClient.js';
 import { createSocialPost, listSocialPosts, newIdempotencyKey } from '../../../lib/socialPostsClient.js';
@@ -179,8 +180,9 @@ export function Composer({ accounts, onScheduled, initialJobId = null, uploadsEn
                                     type="button"
                                     aria-pressed={on}
                                     onClick={() => toggleAccount(a.id)}
-                                    className={`rounded-full border px-3 py-1.5 text-sm font-bold ${on ? 'border-vx-accent text-vx-accent' : 'border-vx-border text-vx-fg'}`}
+                                    className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-bold ${on ? 'border-vx-accent text-vx-accent' : 'border-vx-border text-vx-fg'}`}
                                 >
+                                    <NetworkLogo network={a.network} className="h-4 w-4" />
                                     {networkLabel(a.network)}: {a.display_name || a.external_account_id}
                                 </button>
                             </li>
@@ -264,7 +266,8 @@ function TargetBadge({ target }) {
     const tone = target.publish_status === 'published' || target.publish_status === 'delivered' ? 'text-vx-accent'
         : target.publish_status === 'failed' ? 'text-vx-danger' : 'text-vx-fg-muted';
     return (
-        <span className={`text-xs font-bold ${tone}`} title={target.last_error || ''}>
+        <span className={`inline-flex items-center gap-1.5 text-xs font-bold ${tone}`} title={target.last_error || ''}>
+            <NetworkLogo network={target.network} className="h-3.5 w-3.5" />
             {networkLabel(target.network)}: {STATUS_LABEL[target.publish_status] || target.publish_status}
             {target.platform_post_url && target.publish_status === 'published' && (
                 <> · <a href={target.platform_post_url} target="_blank" rel="noreferrer" className="underline">view</a></>
