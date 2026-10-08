@@ -257,3 +257,7 @@ alone did not stop traffic to a running machine; it had to be stopped as well.
 
 Still unproven on staging: the automatic 45-minute timeout refund, a failure in the middle of a real run, and a reload during a live multi-minute run. Still unread:
 fal's real billing, so 165 credits and the $2.50 ceiling remain working numbers.
+
+**Correction (2026-10-08 18:40 UTC):** earlier sections of this file and of the staging runbook say migration `0227` is not applied on production. That stopped being
+true at 14:45 UTC, when the `apply-migrations` run for #618 applied it after the owner's approval: production has the `montage` kinds and the `video-agent` row at
+165 credits, **inactive**. Verified by a read-only query. The production rollout plan is [RUNBOOK-production.md](RUNBOOK-production.md).
