@@ -382,7 +382,7 @@ export async function POST(req) {
 
     // Video agent: is the runner free? Asked before the debit, so "busy" or "offline" charges nothing.
     if (record.agent) {
-        const full = await checkCapacity({ userId, idempotencyKey, cfg });
+        const full = await checkCapacity({ userId, idempotencyKey, modelId, cfg });
         if (full) {
             return NextResponse.json(full.body, { status: full.status, headers: full.retryAfter ? { 'retry-after': String(full.retryAfter) } : undefined });
         }

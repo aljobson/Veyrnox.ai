@@ -27,20 +27,45 @@ test('checkPlan refuses a changed brief, a moved price and the wrong idempotency
     assert.deepEqual(await checkPlan({ ...t, modelInputs: { ...t.modelInputs, plan_id: 'garbage' } }), { status: 400, body: { error: 'plan_invalid' } });
 });
 
-const capacity = (runner, jobs = []) => {
+// `jobs` answers the replay lookup (by idempotency key); `running` answers the per-account lookup (by model and state).
+const capacity = (runner, jobs = [], running = []) => {
     const calls = [];
     const deps = {
-        select: async (table, q) => { calls.push(['select', table, q.filter]); return jobs; },
+        select: async (table, q) => { calls.push(['select', table, q.filter]); return q.filter.includes('idempotency_key=') ? jobs : running; },
         callRunner: async (path) => { calls.push(['runner', path]); return runner; },
     };
-    return { calls, run: () => checkCapacity({ userId: 'u-1', idempotencyKey: 'plan_abc', cfg, env: ENV, deps }) };
+    return { calls, run: () => checkCapacity({ userId: 'u-1', idempotencyKey: 'plan_abc', modelId: 'video-agent', cfg, env: ENV, deps }) };
 };
+
+const FREE = { ok: true, data: { busy: false, active: 0, max: 3 } };
+
+test('an account with a video already in the making is refused before the debit, and the runner is never asked', async () => {
+    const c = capacity(FREE, [], [{ id: 'job-running' }]);
+    assert.deepEqual(await c.run(), { status: 409, body: { error: 'video_agent_in_progress' } });
+    assert.deepEqual(c.calls.map((x) => x[0]), ['select', 'select']);
+    const q = decodeURIComponent(c.calls[1][2]);
+    assert.match(q, /user_id=eq\.u-1/);
+    assert.match(q, /model_id=eq\.video-agent/);
+    assert.match(q, /state=in\.\(DEBITED,SUBMITTED\)/);
+});
+
+test('the per-account limit is per account: another user with nothing running goes through to the runner', async () => {
+    const c = capacity(FREE, [], []);
+    assert.equal(await c.run(), null);
+    assert.deepEqual(c.calls.map((x) => x[0]), ['select', 'select', 'runner']);
+});
+
+test('a replay wins over the per-account limit: the caller\'s own running job is answered idempotently, not as "in progress"', async () => {
+    const c = capacity(FREE, [{ id: 'job-running' }], [{ id: 'job-running' }]);
+    assert.equal(await c.run(), null);
+    assert.deepEqual(c.calls.map((x) => x[0]), ['select']);
+});
 
 test('a free runner lets the job through', async () => {
     const c = capacity({ ok: true, data: { busy: false, active: 0, max: 1 } });
     assert.equal(await c.run(), null);
-    assert.deepEqual(c.calls.map((x) => x[0]), ['select', 'runner']);
-    assert.equal(c.calls[1][1], '/status');
+    assert.deepEqual(c.calls.map((x) => x[0]), ['select', 'select', 'runner']);
+    assert.equal(c.calls[2][1], '/status');
 });
 
 test('a busy runner is refused before the debit, with a retry hint', async () => {
@@ -52,7 +77,7 @@ test('an unreachable runner, an odd answer or missing config is "offline", never
     for (const runner of [{ ok: false, error: 'runner_transport' }, { ok: true, data: {} }, { ok: true, data: { busy: 'no' } }, { ok: true }]) {
         assert.deepEqual(await capacity(runner).run(), { status: 503, body: { error: 'video_agent_offline' } }, JSON.stringify(runner));
     }
-    const noConfig = await checkCapacity({ userId: 'u-1', idempotencyKey: 'plan_abc', cfg, env: {}, deps: { select: async () => [], callRunner: async () => ({ ok: true, data: { busy: false } }) } });
+    const noConfig = await checkCapacity({ userId: 'u-1', idempotencyKey: 'plan_abc', modelId: 'video-agent', cfg, env: {}, deps: { select: async () => [], callRunner: async () => ({ ok: true, data: { busy: false } }) } });
     assert.deepEqual(noConfig, { status: 503, body: { error: 'video_agent_offline' } });
 });
 
@@ -64,7 +89,7 @@ test('a replay of a job the caller already started skips the busy check, so the 
 });
 
 test('a failed replay lookup refuses instead of guessing', async () => {
-    const r = await checkCapacity({ userId: 'u-1', idempotencyKey: 'k', cfg, env: ENV, deps: { select: async () => { throw new Error('db down'); }, callRunner: async () => ({ ok: true, data: { busy: false } }) } });
+    const r = await checkCapacity({ userId: 'u-1', idempotencyKey: 'k', modelId: 'video-agent', cfg, env: ENV, deps: { select: async () => { throw new Error('db down'); }, callRunner: async () => ({ ok: true, data: { busy: false } }) } });
     assert.deepEqual(r, { status: 502, body: { error: 'video_agent_offline' } });
 });
 

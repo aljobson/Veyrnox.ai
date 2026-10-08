@@ -36,7 +36,7 @@ test('every code the plan route, the gateway and the runner can raise has its ow
     for (const code of ['video_agent_unavailable', 'inputs_invalid:brief', 'plan_unavailable', 'plan_expired', 'plan_invalid',
         'plan_mismatch', 'plan_price_changed', 'plan_key_mismatch', 'video_agent_failed', 'montage_failed',
         'runner_submit_failed', 'step_not_recorded', 'step_timeout', 'output_missing', 'output_invalid',
-        'video_agent_busy', 'video_agent_offline', 'brief_refused']) {
+        'video_agent_busy', 'video_agent_offline', 'video_agent_in_progress', 'brief_refused']) {
         assert.ok(copyFor(code), code);
     }
     // Run failures promise a refund (failedJobCopy rewrites it until the refund lands); plan errors promise nothing was charged.
@@ -44,6 +44,7 @@ test('every code the plan route, the gateway and the runner can raise has its ow
     assert.match(copyFor('plan_expired'), /Nothing was charged/);
     assert.match(copyFor('video_agent_busy'), /Nothing was charged/);
     assert.match(copyFor('video_agent_offline'), /Nothing was charged/);
+    assert.match(copyFor('video_agent_in_progress'), /Nothing was charged/);
     assert.match(copyFor('brief_refused'), /Credits refunded/);
 });
 
