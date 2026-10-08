@@ -8,7 +8,7 @@ import { signRunnerBody, verifyRunnerBody } from '../lib/montageSigning.js';
 const JOB = '11111111-1111-4111-8111-111111111111';
 const SHA = 'a'.repeat(64);
 
-/** In-memory stand-in for the parent job, its one montage step (0224 rules), the runner and R2. */
+/** In-memory stand-in for the parent job, its one montage step (0227 rules), the runner and R2. */
 function world({ runnerOk = true, recordOk = true, claimRaced = false, head = { ok: true, size: 5000 } } = {}) {
     const job = { id: JOB, user_id: 'u-1', credits: 90, state: 'DEBITED', provider_job_id: null };
     const step = { job_id: JOB, step: 'montage', ordinal: 0, provider: 'montage', provider_endpoint: 'video-agent:v1', provider_job_id: null, state: 'SUBMITTED', attempts: 1 };

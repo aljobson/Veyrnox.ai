@@ -1,7 +1,7 @@
 /**
- * Video agent step kind acceptance tests (schema/supabase/0224).
+ * Video agent step kind acceptance tests (schema/supabase/0227).
  *
- * 0224 widens job_steps for `montage` without loosening the other kinds,
+ * 0227 widens job_steps for `montage` without loosening the other kinds,
  * and adds the video-agent catalog row inactive. Runs on top of
  * schema/0001_initial.sql like job-steps.acceptance.test.ts.
  *
@@ -15,10 +15,10 @@ import pg from "pg";
 
 const DATABASE_URL = process.env.DATABASE_URL;
 const MIGRATIONS = ["0037_free_credit_expiry.sql", "0038_free_credit_sweep_fixes.sql",
-    "0091_auto_short_job_steps.sql", "0092_clip_edit_steps.sql", "0224_video_agent_steps.sql"]
+    "0091_auto_short_job_steps.sql", "0092_clip_edit_steps.sql", "0227_video_agent_steps.sql"]
     .map((f) => new URL(`./schema/supabase/${f}`, import.meta.url));
 
-describe("job_steps for the video agent (0224)", { skip: !DATABASE_URL && "DATABASE_URL not set" }, () => {
+describe("job_steps for the video agent (0227)", { skip: !DATABASE_URL && "DATABASE_URL not set" }, () => {
     let pool: pg.Pool;
 
     before(async () => {
