@@ -82,3 +82,17 @@ finished: a 15 s, 1080x1920 video, 25 turns, **$0.77** of Anthropic tokens (Opus
 | LLM cost is the default (Opus) model | open: try `--model sonnet` and compare quality before measuring |
 
 Not yet proven: a run that actually uploads to R2 through the Worker's presigned URL, and any paid provider call.
+
+### Second dry run (2026-10-08, fal key present, empty price table)
+
+Completed end to end **including the upload callback flow** (a 15 s 1080x1920 teaser with a free Pixabay track, 45 turns,
+7 minutes, 149 MB uploaded; no paid provider call reached a provider). Findings:
+
+- **Refused tunnels were invisible.** The agent said fal, BFL, Google, Kling and MiniMax were blocked, but the log only
+  recorded requests, not refused CONNECTs. Now logged, and `observe_hosts` (fal) opens the tunnel while still refusing
+  and logging every request, so the next run lists the exact fal endpoints it tries.
+- **Remotion still could not render**: loopback went through the proxy and the firewall allowed only the proxy port. Fixed
+  (`NO_PROXY` for loopback; the agent may use its own loopback, never the runner's port); verified in the container.
+- **149 MB for 15 s** is far above what is sensible to store and serve. Cap the output bitrate (a final re-encode, or an
+  instruction in the prompt) before measuring; R2 and egress cost scale with it.
+- The agent skipped research, stage checkpoints and decision logs "to save budget": the planned pipeline is not what ran.
