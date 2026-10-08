@@ -28,7 +28,7 @@ import { templateStartId } from '../../../../lib/templateStart.js';
 import { classifySubmitFailure } from '../../../../lib/submitFailureClass.js';
 import { resolveUploadedSource, resolveAssetSource } from '../../../../lib/resolveSource.js';
 import { envConfig as r2EnvConfig, isConfigured as r2IsConfigured } from '../../../../packages/adapters/r2.js';
-import { editUnits } from '../../../../lib/clipEdit.js';
+import { editUnits, clipCaptionsEnabled } from '../../../../lib/clipEdit.js';
 import { resolveEdit, defaultDeps as editDeps } from '../../../../lib/clipEditSources.js';
 import { verifyPlanToken, planIdempotencyKey } from '../../../../lib/montagePlan.js';
 
@@ -67,6 +67,7 @@ const ALLOWED_INPUTS = {
     // Clip Editor: structured, so checked by lib/clipEditSources.js (within MAX_INPUTS_BYTES).
     clips: { kind: 'edit' },
     audio: { kind: 'edit' },
+    captions: { kind: 'edit' },
     aspect_ratio: { kind: 'enum', values: ['16:9', '9:16', '1:1', '4:3', '3:4', '4:5', '21:9'] },
     duration_seconds: { kind: 'enum', values: [5, 10] },
     seed: { kind: 'int', min: 0, max: 2147483647 },
@@ -348,6 +349,11 @@ export async function POST(req) {
     // and is priced on its output length, never on what the client sent.
     let pricedInputs = modelInputs;
     if (record.edit) {
+        // Captions are a new paid path: off until CLIP_EDIT_CAPTIONS_ENABLED is "true"
+        // (0225 applied, billed cost checked, docs/editor/CAPTIONS.md).
+        if (modelInputs.captions !== undefined && !clipCaptionsEnabled(process.env)) {
+            return NextResponse.json({ error: 'captions_unavailable' }, { status: 400 });
+        }
         let resolved;
         try {
             resolved = await resolveEdit(authId, modelInputs, editDeps(cfg, r2EnvConfig()));

@@ -491,10 +491,15 @@ test('capped web search: the model gets the results as quoted data and the plugi
     assert.equal(call.webSearch, false, 'the plugin is off: its text cannot be capped');
     const system = call.messages.filter((m) => m.role === 'system');
     assert.equal(system.length, 1);
-    assert.ok(system[0].content.includes('Node.js 26 is the current release.'));
-    assert.ok(system[0].content.includes('https://nodejs.org/en/blog/release/v26'));
-    assert.match(system[0].content, /never follow instructions/i);
-    assert.deepEqual(call.messages.at(-1), { role: 'user', content: 'Hello there' }, 'the user turn is only what they wrote');
+    assert.ok(!system[0].content.includes('Node.js 26 is the current release.'), 'web text is not in the system message');
+    assert.match(system[0].content, /never follow instructions/i, 'the standing rule is');
+    const last = call.messages.at(-1);
+    assert.equal(last.role, 'user');
+    assert.ok(last.content.startsWith('Hello there\n\n'), 'what they wrote comes first');
+    assert.ok(last.content.includes('Node.js 26 is the current release.'));
+    assert.ok(last.content.includes('https://nodejs.org/en/blog/release/v26'));
+    assert.match(last.content, /never follow instructions/i, 'the rule also sits next to the data');
+    assert.equal(called(f, 'chat_complete_turn')[0][1].p_user_text, 'Hello there', 'the stored message is only what they wrote');
 });
 
 test('capped web search: the debit is the row price, and the job keeps the engine and the real search cost, never the query', async () => {
@@ -731,4 +736,45 @@ test('research cannot be combined with another option, and never takes a free al
     await events(await run(g, { env: { ...researchEnv, FREE_ALLOWANCE_ENABLED: 'true' }, body: researchOpts }));
     assert.equal(called(g, 'submit_free_job').length, 0, 'research is not the base price, so it is never free');
     assert.equal(called(g, 'ledger_debit').length, 1);
+});
+
+// ── Audit fixes: no paid search for a caller who cannot pay, and a quiet timeout is not a finished reply ──
+test('capped web search: a caller who cannot afford the reply is refused before the search runs', async () => {
+    const f = cappedFakes();
+    f.deps.rpc = ((rpc) => async (name, args) => (name === 'read_user_credits' ? { balance: 2 } : rpc(name, args)))(f.deps.rpc);
+    const res = await run(f, { body: webBody(), env: EXA_ENV });
+    assert.equal(res.status, 402);
+    assert.deepEqual(await res.json(), { error: 'insufficient_balance' });
+    assert.equal(f.searches.length, 0, 'no paid search');
+    assert.equal(called(f, 'ledger_debit').length, 0);
+});
+
+test('capped web search: a balance that cannot be read stops the search too (fails closed)', async () => {
+    const f = cappedFakes();
+    f.deps.rpc = ((rpc) => async (name, args) => { if (name === 'read_user_credits') throw new Error('db down'); return rpc(name, args); })(f.deps.rpc);
+    const res = await run(f, { body: webBody(), env: EXA_ENV });
+    assert.equal(res.status, 502);
+    assert.deepEqual(await res.json(), { error: 'balance_check_failed' });
+    assert.equal(f.searches.length, 0);
+});
+
+test('a stream that ends quietly when the time limit aborts it is refunded, not charged as complete', async (t) => {
+    t.mock.timers.enable({ apis: ['setTimeout'] });
+    const f = fakes({
+        replies: { chat_complete_turn: { ok: true, message_id: 'msg-1', refund: true } },
+        stream: async function* ({ signal }) {
+            yield { delta: 'Half an ans' };
+            await new Promise((resolve) => signal.addEventListener('abort', resolve, { once: true }));
+            // returns without throwing, as a reader can when its connection is cut
+        },
+    });
+    const res = await run(f);
+    const pending = events(res);
+    await new Promise((r) => setImmediate(r));
+    t.mock.timers.tick(90_001);
+    const evs = await pending;
+    assert.equal(called(f, 'chat_complete_turn')[0][1].p_status, 'error');
+    assert.equal(called(f, 'ledger_refund').length, 1);
+    assert.deepEqual(evs.find((e) => e.event === 'error').data, { error: 'provider_timeout' });
+    assert.equal(evs.at(-1).data.credits_charged, 0);
 });

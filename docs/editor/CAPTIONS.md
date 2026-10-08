@@ -1,6 +1,6 @@
 # PRD addendum — Clip Editor captions
 
-**Status:** Draft · 2026-10-07 · Slice 0 (live probe) not run
+**Status:** Built behind `CLIP_EDIT_CAPTIONS_ENABLED` · 2026-10-08 · 0225 applied on production and staging; flag on in staging only; waiting on fal's billed cost and a real failure callback
 **Extends:** [PRD.md](PRD.md). Where they disagree, CLAUDE.md and the ADRs win, then PRD.md.
 
 ## Decision log
@@ -58,10 +58,46 @@ Following the existing probe-script pattern (silent `read -s` key prompt):
   preserved.
 - The result is a single `video` file. Nothing else came back (no transcript
   or SRT), so v1 can't offer caption text editing.
-- Still unmeasured: billed cost (check fal's usage page for the request id
-  above), portrait clip, 15 s clip, no-speech clip, webhook signature. Four
-  runs with placeholder links were rejected by fal and should not have been
-  billed.
+- **Run 2, 5.04 s portrait clip (720x1280, speech)** (request
+  `01a11865-5325-7363-b212-cec4f66d3da2`): succeeded in 26 s. Output
+  720x1280, 24 fps, 5.04 s, AAC audio: **no distortion**, unlike
+  `merge-videos`. Portrait is fine.
+- **Run 3, 5.04 s clip with a tone and no speech** (request
+  `01a11865-c74a-7c40-8ee4-677a57cade1a`): the job was accepted, then failed
+  at result time with a 422 `transcription_error`: "No speech detected in the
+  video, or the audio was unintelligible to the transcriber... or provide
+  srt_content directly." So a speechless clip is a hard failure, not an empty
+  captions pass-through. Decision: it is a failed step and the whole edit is
+  refunded (PRD section 5 step 7). The edit sheet should warn before submit
+  when it can't tell there is speech; the error text above is not shown to the
+  user verbatim.
+- **Run 4, 15.17 s landscape clip (speech)** (request
+  `01a11872-c976-7332-bdf5-7e3ee5bd0036`): succeeded in 31 s, the same time
+  as the 5 s clip, so run time doesn't scale with length at these sizes.
+  Duration preserved (15.17 s), 1280x720, AAC audio kept. Output frame rate
+  came back as a clean 24/1 from an input of 2178/91 (about 23.93, an
+  artifact of looping the test clip), so the step re-encodes and normalises
+  the frame rate; it does not copy streams.
+- Probe `--video-file` upload to fal storage works (files land on
+  `v3b.fal.media/files/...`).
+- **Webhook (run 5, `scripts/probe-fal-webhook.mjs`)** (request
+  `01a11880-df99-7a62-95b2-240e877c245f`): `veed/subtitles` delivers a normal
+  fal queue callback when submitted with `?fal_webhook=`. All four signature
+  headers were present and the delivery **verified with the Worker's own
+  `verifyWebhookSignature`** (Ed25519 via JWKS), so the existing
+  `/api/webhook/fal` path can take it with no new verifier. Body keys: `error`,
+  `gateway_request_id`, `payload`, `request_id`, `status` (`OK`); `request_id`
+  matched and `payload.video.url` was present. The probe took the expected
+  user id from the header itself, so it proved the signature, not the tenant;
+  the Worker's `FAL_WEBHOOK_USER_ID` check still applies as usual.
+- Not tested: what the callback looks like for a **failed** job (the
+  no-speech case). Expect `status: ERROR` with the 422 detail in the body, but
+  the handler must be checked against a real failure before it is trusted to
+  refund.
+- Still unmeasured: **billed cost** (usage page, for the five request ids; in
+  particular whether the failed no-speech run was billed, which decides whether
+  a captions step can burn money on a refund). Four runs with placeholder links
+  were rejected by fal and should not have been billed.
 
 ## Pricing (proposal, pending Slice 0)
 
@@ -81,7 +117,33 @@ cost.
 3. Edit sheet: "Add captions" toggle and style picker, price updated live.
 4. Behind a flag until the reconcile jobs run clean for 24 h.
 
+## Built (2026-10-07)
+
+- `lib/clipEdit.js`: `captions` step (`veed/subtitles`), `CAPTION_PRESETS`,
+  `CAPTIONS_UNITS = 7` in `editUnits`, no retry on a failed captions step.
+- `lib/clipEditSources.js`, `additionalModelCapabilities.js`, the gateway:
+  `captions: { preset }` input, checked at the boundary; refused with
+  `captions_unavailable` while `CLIP_EDIT_CAPTIONS_ENABLED` is not "true".
+- Migration `0225_clip_edit_captions_step.sql`: adds the step kind. Tested on a
+  real Postgres in four cases (from 0092's list, after 0224's list, rerun,
+  missing constraint).
+- Edit sheet: "Add captions" and a style pick, behind
+  `localStorage.veyrnox_editor_captions = "1"`.
+- ADR-0029 addendum records the pricing rule and the flags.
+
+### Before the flag goes on
+1. Check fal's invoice for the probe runs. If the 5 s run billed more than
+   about $0.12, or the failed no-speech run was billed, revisit
+   `CAPTIONS_UNITS` and the refund cost.
+2. Apply 0225 (owner approves the `apply-migrations` run). If PR #618's 0224
+   is still open, apply it first or renumber: both rewrite
+   `job_steps_step_check`, and 0224 restates a fixed list that would drop
+   `captions` if it applied after this one.
+3. Look at a real failed-callback payload (no speech) against the handler;
+   only the success callback has been seen.
+4. Reconcile jobs clean for 24 h, then flip on staging, then production.
+
 ## Open questions
 
-- Is speech-less video a refund case or a pass-through?
+- Can the app tell before submit that a clip has no speech? (a failed run may still be billed)
 - Caption language: auto-detect only, or a picker?
