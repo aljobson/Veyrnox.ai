@@ -208,3 +208,15 @@ A real run through the page (sign in, plan, approve) on staging. The Worker-to-r
 | The agent picked an **unpriced** model | meter log: 4 refused `kling-video/v2.1` calls | the agent prompt now names the priced endpoints, generated from the same price table the proxy reads |
 
 Also: my first staging build used no environment variables and baked the **development identity** into the client (no Google button, sign-in broken); the runbook now has the full recipe. The plan text says "about 30 seconds" whatever the brief asks (a fixed default in the runner).
+
+### Second staging run (2026-10-08, job 4e7d3820): a fourth bug, and the first run that reached fal
+
+With the three fixes deployed the agent used the **priced** endpoint (`kling-video/v3/standard/text-to-video`, the proxy reserved $2.31 of the $2.50 ceiling at the
+dearest tier) and was polling the clips when the run died: **Fly stopped the machine at about 346 seconds.** Fly's auto-stop only counts *inbound* traffic; `/run` answers
+202 at once and a run then talks outward, so the machine looked idle. The first failed run ended in seconds, which hid it.
+
+Fix: Fly auto-stop is off; the runner stops itself only after `RUNNER_IDLE_EXIT_SECONDS` (600) with **no run in flight and no request**, the restart policy is
+`on-failure` so a clean exit leaves it stopped, and `auto_start_machines` wakes it on the next signed request. Tests: the watchdog never exits while a run is active.
+The fal clips this run generated are probably billed with no video produced; the job stays SUBMITTED until the Worker's 45-minute timeout sweep refunds it (about 18:16 UTC).
+
+Open: fal's real billing for this run (clip count and audio tier) is still unread; it is the number that sets the price.
