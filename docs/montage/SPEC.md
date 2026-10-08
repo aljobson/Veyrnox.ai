@@ -96,3 +96,19 @@ Completed end to end **including the upload callback flow** (a 15 s 1080x1920 te
 - **149 MB for 15 s** is far above what is sensible to store and serve. Cap the output bitrate (a final re-encode, or an
   instruction in the prompt) before measuring; R2 and egress cost scale with it.
 - The agent skipped research, stage checkpoints and decision logs "to save budget": the planned pipeline is not what ran.
+
+### Third dry run (2026-10-08): the first paid call the agent tried
+
+Observation only (fal tunnel open, every request refused, $0 at fal; $0.31 of Anthropic tokens, 11 turns). The agent
+chose **one** paid endpoint, three times (three 5 s shots): `POST queue.fal.run/fal-ai/kling-video/v3/standard/text-to-video`.
+It also tried `registry.npmjs.org` (refused, harmless).
+
+- **The agent's own estimate was wrong**: it assumed about $0.10 per clip. fal's page (read 2026-10-08) says $0.084/s with
+  audio off, $0.126/s with audio, $0.154/s with audio and voice control: **$0.42 to $0.77 per 5 s clip**. OpenMontage's
+  estimates must not be trusted for pricing; only the meter's table counts.
+- **Price depends on the request body** (duration, audio), so the meter now prices from the body: `duration x $0.154/s`
+  (dearest tier), refusing a missing, unreadable or over-10 s body.
+- **Scope question for the owner**: this endpoint (Kling v3 standard text-to-video) is not one of the catalog models the
+  owner confirmed the resale terms for (the catalog has Kling v2.6 pro text-to-video and v3 pro image-to-video). It is the
+  same vendor and model family; confirm it is in scope before the real run.
+- fal's queue status and result reads are free, so `queue.fal.run` GET is allowed; a paid job could not be collected otherwise.
