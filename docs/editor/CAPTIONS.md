@@ -123,6 +123,20 @@ the staging Library with the edit sheet's Add captions switch.
 Still open before production: fal's invoice for the probe and staging runs, and
 the 24 h reconcile check.
 
+## Production runs (2026-10-08)
+
+Flag on in production; driven in the pane signed in as the owner, on the
+5.04 s octopus clip (speech):
+
+- Job `3b3bf427-19e6-4986-9c4c-b00bfa26fa89`: failed in 8 s, refunded once. fal's
+  reason, read with the production key from the request, was
+  `host_unreachable` ("Could not reach the host that serves your video URL").
+  The handler had kept only "fail", so the reason was invisible.
+- Job `b1cd758e-467e-4168-a30b-9f0418899a92`: same clip, same path, succeeded in
+  51 s; captioned, 1280x720, ledger -7. Reconcile checks clean afterwards.
+- So `host_unreachable` is transient. The webhook and the sweep now keep that
+  reason, and a captions step retries once on it (nothing else is retried).
+
 ## Pricing (proposal, pending Slice 0)
 
 Same rule as PRD section 6: one `clip-edit` row, one debit, app never sums
