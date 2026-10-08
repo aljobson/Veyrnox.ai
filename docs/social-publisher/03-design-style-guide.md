@@ -6,6 +6,31 @@ Nothing in this document reuses Metricool's own visual identity (its wordmark, i
 brand palette) — only its *layout patterns* (calendar, composer, network badges). Colors and type
 below were read live from syntx.ai's rendered CSS, not guessed.
 
+
+> **Built state (2026-10-08, repo `main` at `42150476`).** This guide is still the design reference, but
+> the shipped Publish screens differ from it in these ways; the rest of the guide is unbuilt design.
+> - **Tokens.** The `--publish-*` custom properties in §3.2 do not exist in code. The built pages
+>   (`app/veyrnox/app/publish/`) use the site's existing `vx-*` Tailwind tokens (`vx-accent`,
+>   `vx-border`, `vx-panel`, `vx-fg-muted`, `vx-danger`), so Publish follows the site's light and dark
+>   themes. Publish was never given its own palette.
+> - **Network badge.** Built as `NetworkLogo.js`: single-colour monochrome silhouettes (Simple Icons
+>   11.0.0, CC0) for Instagram, LinkedIn, X, TikTok and YouTube, inheriting the text colour with an
+>   accessible text label beside it. The brand-colour badges in §3.4 are not built.
+> - **Status pill.** Built as plain coloured text per target (accent for published or delivered,
+>   danger for failed, muted otherwise), not the `Chip` component: published, delivered ("finish in
+>   TikTok app"), in progress (`submitted`), pending, failed. There is no draft, pending-review or
+>   rejected pill on the calendar.
+> - **Calendar.** Month, week and list (§3.7 keyboard path). Dragging a card opens a native-modal
+>   confirmation form with the proposed time and nothing is saved until the user confirms; the
+>   Reschedule button is the keyboard and touch path. The lift and 2 degree rotation in §3.6 are not
+>   built.
+> - **Composer.** One caption, a media picker (generations or Upload from device) with a thumbnail of the selection, account selection with network logos, a
+>   date and time field defaulting to one hour ahead, and two actions, Post now and Schedule post.
+>   There are no per-network tabs, no per-network preview and no best-time chip (§3.4); posting-insights
+>   heatmap and frequency live on the analytics page.
+> - **Analytics.** Followers chart, interactions and engagement, a posts or videos table, plus the
+>   168-cell heatmap in a labelled, focusable panel that scrolls inside a 375 px page.
+
 ## 3.1 Source: syntx.ai visual tokens (captured live)
 
 | Token | Value | Where observed |
@@ -142,7 +167,7 @@ A horizontal strip of attached media thumbnails, each with a small "AI generated
 for the Cinema feature) — this keeps the AI-disclosure requirement consistent across the whole app
 rather than inventing a second convention for Publish.
 
-### Best-time-to-post chip
+### Best-time-to-post chip (not built)
 A small inline suggestion ("Best time: Tue 6:00 PM · high engagement") rendered as a tan
 (`--publish-pill`) chip with a subtle upward-trend icon, clickable to auto-fill the schedule time —
 directly modeled on Metricool's own heatmap-derived suggestion, restyled into the syntx palette.

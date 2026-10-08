@@ -2,7 +2,8 @@
   "schema_version": 1,
   "diagram_type": "lifecycle",
   "meta": {
-    "title": "Generation job lifecycle (jobs.state)",
+    "title": "Job lifecycle, jobs.state (as of 2026-10-08)",
+    "subtitle": "Checked against main 42150476",
     "output": "job-lifecycle.html",
     "viewBox": [
       1030,
@@ -14,10 +15,6 @@
     {
       "id": "main",
       "label": "Happy path"
-    },
-    {
-      "id": "retry",
-      "label": "Bounded retry"
     },
     {
       "id": "terminal",
@@ -43,7 +40,7 @@
       "lane": "main",
       "col": 2,
       "step": "02",
-      "tag": "webhook or poll"
+      "tag": "webhook, poll, stream"
     },
     {
       "id": "succeeded",
@@ -66,22 +63,13 @@
       "tag": "terminal"
     },
     {
-      "id": "failover",
-      "type": "failure",
-      "label": "FAILOVER",
-      "sublabel": "429 / transient",
-      "lane": "retry",
-      "col": 0,
-      "tag": "ADR-0009"
-    },
-    {
       "id": "failed",
       "type": "failure",
       "label": "FAILED",
-      "sublabel": "provider or store failed",
+      "sublabel": "provider, store or timeout",
       "lane": "terminal",
       "col": 1,
-      "tag": "sweep"
+      "tag": "sweep every 10 min"
     },
     {
       "id": "refunded",
@@ -95,32 +83,16 @@
   ],
   "transitions": [
     {
-      "id": "to-failover",
+      "id": "provider-failed",
       "from": "submitted",
-      "to": "failover",
-      "label": "429",
+      "to": "failed",
+      "label": "provider failed",
       "variant": "security",
       "fromSide": "bottom",
-      "toSide": "top",
-      "route": "straight",
-      "labelAt": [
-        360,
-        233
-      ]
+      "toSide": "left"
     },
     {
-      "id": "failover-back",
-      "from": "failover",
-      "to": "submitted",
-      "label": "resubmit",
-      "variant": "emphasis",
-      "labelAt": [
-        470,
-        233
-      ]
-    },
-    {
-      "id": "provider-failed",
+      "id": "store-failed",
       "from": "succeeded",
       "to": "failed",
       "label": "store failed",
@@ -130,7 +102,7 @@
       "route": "straight",
       "labelAt": [
         556,
-        320
+        222
       ]
     },
     {
@@ -143,20 +115,19 @@
   "cards": [
     {
       "dot": "emerald",
-      "title": "Happy path",
+      "title": "One machine, several drivers",
       "items": [
-        "Debit and jobs row commit in one transaction",
-        "fal, kie, OpenRouter complete by signed webhook",
-        "GrsAI and BytePlus complete by the 5-minute poll"
+        "Webhook: fal, kie, OpenRouter, runner. Poll: GrsAI, BytePlus",
+        "Chat streams to STORED; Auto Short, Clip Editor, agent add job_steps"
       ]
     },
     {
       "dot": "rose",
       "title": "Every failure refunds",
       "items": [
-        "Submit refusal, provider failure or store failure end in REFUNDED",
-        "The refund is the exact debit, Free Credits back to Free",
-        "Stuck jobs are swept by pg_cron"
+        "Refused submit, provider or store failure end in REFUNDED",
+        "pg_cron fails DEBITED after 15 min, SUBMITTED after 120",
+        "PRICED, FAILOVER: in the enum, never written (ADR-0009)"
       ]
     }
   ]

@@ -1,0 +1,286 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "Generation and webhook path (as of 2026-10-08)",
+    "subtitle": "Checked against main 42150476",
+    "output": "generation-webhook.html",
+    "viewBox": [
+      1080,
+      1130
+    ],
+    "column_fit": "spread",
+    "quality_profile": "showcase"
+  },
+  "participants": [
+    {
+      "id": "studio",
+      "type": "frontend",
+      "label": "Studio",
+      "sublabel": "create page, chat, editor"
+    },
+    {
+      "id": "mw",
+      "type": "security",
+      "label": "Middleware",
+      "sublabel": "JWT gate"
+    },
+    {
+      "id": "gw",
+      "type": "backend",
+      "label": "Gateway",
+      "sublabel": "/api/v1/generations"
+    },
+    {
+      "id": "pg",
+      "type": "database",
+      "label": "Postgres",
+      "sublabel": "ledger + jobs"
+    },
+    {
+      "id": "prov",
+      "type": "external",
+      "label": "Provider",
+      "sublabel": "fal, kie, OpenRouter"
+    },
+    {
+      "id": "hook",
+      "type": "backend",
+      "label": "Completion",
+      "sublabel": "webhook or cron poll"
+    },
+    {
+      "id": "r2",
+      "type": "cloud",
+      "label": "R2",
+      "sublabel": "EU jurisdiction"
+    }
+  ],
+  "segments": [
+    {
+      "from": 160,
+      "to": 332,
+      "label": "Authenticate and price"
+    },
+    {
+      "from": 340,
+      "to": 552,
+      "label": "Debit, then submit"
+    },
+    {
+      "from": 560,
+      "to": 902,
+      "label": "Provider completion"
+    },
+    {
+      "from": 910,
+      "to": 1052,
+      "label": "Deliver the asset"
+    }
+  ],
+  "messages": [
+    {
+      "from": "studio",
+      "to": "mw",
+      "y": 180,
+      "label": "POST /api/v1/generations",
+      "variant": "emphasis",
+      "note": "Bearer JWT from localStorage"
+    },
+    {
+      "from": "mw",
+      "to": "gw",
+      "y": 220,
+      "label": "ES256 verified, sets x-veyrnox-auth-id",
+      "variant": "security",
+      "note": "Inbound header of that name is overwritten, never trusted"
+    },
+    {
+      "from": "gw",
+      "to": "pg",
+      "y": 260,
+      "label": "check_generation_rate_limit",
+      "variant": "default",
+      "note": "10 per 60s; fails closed with 503"
+    },
+    {
+      "from": "gw",
+      "to": "pg",
+      "y": 300,
+      "label": "read model_catalog price and endpoint",
+      "variant": "default",
+      "note": "Unknown model or provider is 501 before any debit"
+    },
+    {
+      "from": "gw",
+      "to": "pg",
+      "y": 360,
+      "label": "submit_free_job, else ledger_debit",
+      "variant": "emphasis",
+      "note": "Allowance waiver, or one txn: jobs DEBITED, ledger entry, balance"
+    },
+    {
+      "from": "gw",
+      "to": "prov",
+      "y": 400,
+      "label": "POST provider queue with callback URL",
+      "variant": "emphasis",
+      "note": "Callback built from PUBLIC_HOST; GrsAI and BytePlus get none"
+    },
+    {
+      "from": "prov",
+      "to": "gw",
+      "y": 440,
+      "label": "request id",
+      "variant": "return"
+    },
+    {
+      "from": "gw",
+      "to": "pg",
+      "y": 470,
+      "label": "job_submitted, DEBITED to SUBMITTED",
+      "variant": "default"
+    },
+    {
+      "from": "gw",
+      "to": "studio",
+      "y": 500,
+      "label": "job_id and balance_after",
+      "variant": "return"
+    },
+    {
+      "from": "studio",
+      "to": "gw",
+      "y": 530,
+      "label": "GET /api/v1/jobs/:id every 2s",
+      "variant": "default"
+    },
+    {
+      "from": "prov",
+      "to": "hook",
+      "y": 580,
+      "label": "POST completion, signed",
+      "variant": "emphasis",
+      "note": "fal Ed25519, kie HMAC, OpenRouter and runner signed"
+    },
+    {
+      "from": "hook",
+      "to": "prov",
+      "y": 620,
+      "label": "verify raw bytes (fal: JWKS)",
+      "variant": "security",
+      "note": "Unverified body is never parsed; bad signature is 401"
+    },
+    {
+      "from": "hook",
+      "to": "pg",
+      "y": 660,
+      "label": "insert webhook_events",
+      "variant": "default",
+      "note": "Replay is a no-op"
+    },
+    {
+      "from": "hook",
+      "to": "pg",
+      "y": 700,
+      "label": "find job by provider_job_id",
+      "variant": "default",
+      "note": "The payload user_id is never trusted"
+    },
+    {
+      "from": "hook",
+      "to": "prov",
+      "y": 740,
+      "label": "cron poll: GrsAI, BytePlus",
+      "variant": "dashed",
+      "note": "No signed callback; every 5 minutes"
+    },
+    {
+      "from": "hook",
+      "to": "pg",
+      "y": 780,
+      "label": "job_succeeded",
+      "variant": "default"
+    },
+    {
+      "from": "hook",
+      "to": "prov",
+      "y": 810,
+      "label": "GET output from the CDN allowlist",
+      "variant": "default"
+    },
+    {
+      "from": "hook",
+      "to": "r2",
+      "y": 840,
+      "label": "PUT object, SigV4 over Web Crypto",
+      "variant": "default"
+    },
+    {
+      "from": "hook",
+      "to": "pg",
+      "y": 870,
+      "label": "job_stored, or job_failed and ledger_refund",
+      "variant": "emphasis",
+      "note": "Every debit path has a matching refund path"
+    },
+    {
+      "from": "studio",
+      "to": "gw",
+      "y": 930,
+      "label": "GET /api/v1/jobs/:id/asset",
+      "variant": "default"
+    },
+    {
+      "from": "gw",
+      "to": "pg",
+      "y": 960,
+      "label": "get_user_asset",
+      "variant": "security",
+      "note": "Enforces ownership"
+    },
+    {
+      "from": "gw",
+      "to": "r2",
+      "y": 1000,
+      "label": "presign GET, 15 minute ceiling",
+      "variant": "default"
+    },
+    {
+      "from": "gw",
+      "to": "studio",
+      "y": 1030,
+      "label": "signed asset URL",
+      "variant": "return"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "amber",
+      "title": "Credits move before the provider does",
+      "items": [
+        "ledger_debit creates the jobs row and the ledger entry in one transaction",
+        "A replayed idempotency key returns the first result instead of debiting twice",
+        "A free-allowance job is created at 0 Credits with no ledger row"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Nothing in the callback is trusted",
+      "items": [
+        "Raw bytes are read before Next can parse them",
+        "kie signs only taskId and timestamp, so the task is re-read from kie",
+        "The job is found by provider_job_id, never by a user_id in the payload"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Failure owes the user their credits",
+      "items": [
+        "A rejected submit refunds before the response returns",
+        "job_failed is always paired with ledger_refund",
+        "pg_cron refunds anything stuck: 15 min debited, 120 min submitted"
+      ]
+    }
+  ]
+}

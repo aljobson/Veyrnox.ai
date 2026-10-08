@@ -2,7 +2,8 @@
   "schema_version": 1,
   "diagram_type": "architecture",
   "meta": {
-    "title": "Veyrnox.ai data model by domain",
+    "title": "Veyrnox.ai data model by domain (as of 2026-10-08)",
+    "subtitle": "84 tables through migration 0227, checked against main 42150476",
     "output": "schema-map.html",
     "quality_profile": "showcase"
   },
@@ -26,7 +27,7 @@
       "id": "balances",
       "type": "database",
       "label": "credit_balances",
-      "sublabel": "balance, free_balance",
+      "sublabel": "balance, free, subscription",
       "pos": [
         40,
         260
@@ -67,10 +68,24 @@
       ]
     },
     {
+      "id": "growth",
+      "type": "database",
+      "label": "referral_*, plans",
+      "sublabel": "referral 3, credit_subscription 3",
+      "pos": [
+        300,
+        460
+      ],
+      "size": [
+        240,
+        64
+      ]
+    },
+    {
       "id": "ledger",
       "type": "database",
       "label": "ledger_entries",
-      "sublabel": "append-only, delta + free_delta",
+      "sublabel": "append-only, delta + bucket deltas",
       "pos": [
         640,
         40
@@ -83,11 +98,25 @@
     {
       "id": "jobs",
       "type": "database",
-      "label": "jobs",
-      "sublabel": "state, idempotency_key",
+      "label": "jobs + job_steps",
+      "sublabel": "state, idempotency_key, steps",
       "pos": [
         640,
-        190
+        150
+      ],
+      "size": [
+        220,
+        64
+      ]
+    },
+    {
+      "id": "chat",
+      "type": "database",
+      "label": "chat_*",
+      "sublabel": "threads, messages, folders, personas",
+      "pos": [
+        640,
+        260
       ],
       "size": [
         220,
@@ -98,10 +127,10 @@
       "id": "cinema",
       "type": "database",
       "label": "cinema_*",
-      "sublabel": "content, uploads, unlocks, passes",
+      "sublabel": "21 tables: content, uploads, passes",
       "pos": [
         640,
-        340
+        370
       ],
       "size": [
         220,
@@ -112,10 +141,10 @@
       "id": "social",
       "type": "database",
       "label": "social_*",
-      "sublabel": "brands, accounts, posts, targets",
+      "sublabel": "12 tables: accounts, posts, analytics",
       "pos": [
         640,
-        490
+        480
       ],
       "size": [
         220,
@@ -143,7 +172,7 @@
       "sublabel": "r2_key, sha256, expires_at",
       "pos": [
         960,
-        190
+        150
       ],
       "size": [
         210,
@@ -154,11 +183,11 @@
       "id": "catalog",
       "type": "database",
       "label": "model_catalog",
-      "sublabel": "credits_5s, active",
+      "sublabel": "credits_5s, active, allowance",
       "tag": "no FK",
       "pos": [
         960,
-        340
+        260
       ],
       "size": [
         210,
@@ -166,6 +195,7 @@
       ]
     }
   ],
+  "boundaries": [],
   "connections": [
     {
       "id": "provision",
@@ -189,6 +219,16 @@
       "label": "personal org"
     },
     {
+      "id": "users-growth",
+      "from": "users",
+      "to": "growth",
+      "label": "1:N",
+      "labelAt": [
+        420,
+        392
+      ]
+    },
+    {
       "id": "users-ledger",
       "from": "users",
       "to": "ledger",
@@ -207,7 +247,17 @@
       "variant": "emphasis",
       "labelAt": [
         600,
-        222
+        182
+      ]
+    },
+    {
+      "id": "users-chat",
+      "from": "users",
+      "to": "chat",
+      "label": "1:N",
+      "labelAt": [
+        600,
+        292
       ]
     },
     {
@@ -217,7 +267,7 @@
       "label": "1:N",
       "labelAt": [
         600,
-        372
+        402
       ]
     },
     {
@@ -227,7 +277,7 @@
       "label": "1:N",
       "labelAt": [
         600,
-        522
+        512
       ]
     },
     {
@@ -256,7 +306,7 @@
       "dot": "amber",
       "title": "Money spine",
       "items": [
-        "balance = SUM(ledger_entries.delta) per user",
+        "balance = SUM(ledger_entries.delta) per user; Free and Subscription buckets carry their own deltas",
         "Writes only through SECURITY DEFINER RPCs",
         "Ledger, account_actions and audit logs are append-only"
       ]
@@ -265,18 +315,18 @@
       "dot": "cyan",
       "title": "Access",
       "items": [
-        "All 68 tables: RLS enabled and forced",
+        "All 84 tables (81 public, 3 private): RLS enabled and forced",
         "Worker uses service role; browser reads only its own rows",
         "Tenant tables are the one browser-facing PostgREST surface"
       ]
     },
     {
       "dot": "slate",
-      "title": "Not drawn",
+      "title": "New since 0166 and not drawn",
       "items": [
+        "16 new: chat 4, referral 3, subscription 3, social 5, allowance 1",
         "10 rate-limit tables (user_id 1:1)",
-        "top_ups.user_id, account_actions, webhook_events",
-        "social_post_media.source_job_id \u2192 jobs"
+        "webhook_events, account_actions, audit_events"
       ]
     }
   ]

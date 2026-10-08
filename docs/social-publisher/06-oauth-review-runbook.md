@@ -1,5 +1,11 @@
 # 6. OAuth App Review Runbook — Meta, TikTok, YouTube
 
+> **As of 2026-10-08 (repo `main` at `42150476`).** §6.0 is new and records where each network stands,
+> taken only from `docs/social-publisher/ACCEPTANCE-2026-10-07.md`, the analytics handover, ADR-0061,
+> `docs/product/HANDOVER-2026-10-03.md` and `wrangler.jsonc`. **No provider approval is recorded
+> anywhere in the repo.** Where the records are silent this runbook says *unverified* instead of
+> guessing; the owner holds the developer-console state and should confirm each line below.
+
 **Purpose:** everything needed to actually click "submit" on each platform's developer app
 registration and API review, without an agent having to hold business credentials or make
 verification claims on Veyrnox's behalf. This is prep work, not the submission itself — see
@@ -12,9 +18,34 @@ turnaround times drift — **re-check each platform's own developer docs immedia
 submitting**, don't submit from memory of this document alone. Where a claim is genuinely uncertain
 this doc says so rather than asserting a number that hasn't been checked live.
 
+## 6.0 Review status by network (2026-10-08)
+
+"Live-tested" means a real provider call on a real connected account recorded in the acceptance
+documents; fixtures and stubbed tests do not count. "Approved" means the repo records a provider
+approval. Nothing was found that does.
+
+| Network | Live-tested | Provider approval | Submitted / in review | What is outstanding |
+|---|---|---|---|---|
+| **YouTube** | **Yes, on staging.** OAuth connect with `youtube.readonly` and `youtube.upload`; real channel analytics (2026-10-04); real token refresh (2026-10-04); a real owner-approved video **uploaded, processed and published publicly on 2026-10-07** (queued 20:30 UTC, public 20:40 UTC); real video analytics fetched 22:05 UTC | None. The Google OAuth consent screen is in **Testing** (the Google Cloud project is `veyrnox-ai-publish`), which only lets listed test users authorize. Sensitive-scope classification of `youtube.upload` still unchecked | Verification submission: not recorded (*unverified*) | Move from Testing to production verification (demo video, privacy policy, scope justification); confirm the scope classification; file a quota increase once real usage exists (default 10,000 units/day, an upload costs about 1,600); publishing is always public, so each real test needs an owner-selected video and visibility |
+| **Instagram** | **No.** No Instagram connection, publish or analytics call is recorded; fetchers and the publish path are unit-tested against stubs. The acceptance record's next step is to choose an owner-controlled Business or Creator account | None. `instagram_business_content_publish` and `instagram_business_manage_insights` both need Meta App Review. Meta approval of the insights permission is explicitly still required (acceptance 2026-10-07) | Submission: not recorded (*unverified*). The owner approved *requesting* the insights permission on 2026-10-03; the justification text is in §6.2 | Meta Business Verification, App Review for both permissions with a screencast (the connect to publish path now exists to record, but has not been proven on Instagram), live acceptance on an owner account, then turn on `INSTAGRAM_INSIGHTS_SCOPE_ENABLED`. `wrangler.jsonc` still says `META_APP_ID/SECRET` are "not yet provisioned" (*unverified* whether that is stale) |
+| **TikTok** | **No.** No real TikTok OAuth consent, publish or analytics request is recorded | None. The app is **unaudited**, so posts go through MEDIA_UPLOAD (draft in the creator's inbox) and the product says so. Analytics scopes `user.info.stats` and `video.list` need Display API plus approval (acceptance 2026-10-07: provider review still required) | Submission: not recorded (*unverified*). The TikTok DNS verification record was still listed as awaited on 2026-10-03 (`HANDOVER-2026-10-03.md`) and is not recorded as done | Domain verification, Content Posting API audit (needs the posting UX reviewed; Direct Post uses `video.publish`, not requested today), Display API approval for the analytics scopes then `TIKTOK_ANALYTICS_SCOPE_ENABLED` and a reconnect, apply and use migration 0190 rotation on a real account |
+| **X** | **No** | None recorded. No App-Review-style queue; posting sits behind a paid API tier | n/a | Confirm the posting tier and its cost (ADR-0061 open question 2, still open), provision `X_CLIENT_ID/SECRET`, live test. Analytics for X is not built and its scope and cost are an owner decision |
+| **LinkedIn** | **No** | None recorded | Application for the posting product: not recorded (*unverified*) | Provision `LINKEDIN_CLIENT_ID/SECRET`, request the posting product, live test. Member post statistics need a different API product and are not built |
+
+Configuration facts that bear on review: the provider scopes the code requests today are in technical
+spec §2.4; the two optional scope families (Instagram insights, TikTok analytics) are off on both
+staging and production; production keeps `PUBLISH_ENABLED` off until the reviews and the Publish Plan
+land (`wrangler.jsonc`). Whether the provider client secrets are set in **production** is *unverified*.
+
+The earlier handover record "Google OAuth was configured in Testing for this acceptance. This verifies
+the owner's test account, not a public rollout or long-term refresh-token longevity" still applies.
+
 ## 6.1 Sequencing — what can start now vs. what needs the composer built first
 
-Per ADR-0061, no code exists yet. That doesn't block everything here — split the work:
+As of 2026-10-08 the composer, connect flow and publishing engine all exist, and the connect to
+publish path has been proven end to end for YouTube on staging (§6.0). It has not been proven for the
+other four networks, so their screencasts need a real connected account first. The split below still
+holds:
 
 | Can start immediately | Needs a working composer first |
 |---|---|
@@ -24,10 +55,10 @@ Per ADR-0061, no code exists yet. That doesn't block everything here — split t
 | Draft and publish the required privacy policy / ToS pages | — |
 | Domain verification (TikTok, Google Search Console) | — |
 
-**Recommended order:** do the left column now, in parallel with engineering. Queue the right column
-to start the moment the composer's OAuth connect flow (technical spec §2.7) is functional enough to
-screen-record — don't wait for the full feature to be feature-complete, just for the connect →
-publish path to work once, end to end, for the demo.
+**Recommended order:** the left column should already be done wherever it is not recorded as done in
+§6.0 (it was meant to run in parallel with engineering). The right column is now unblocked for YouTube
+(record the Testing-mode flow and submit verification) and needs an owner-controlled account for
+Instagram and TikTok (record the connect → publish path once on a real account, then submit).
 
 ## 6.2 Meta (Instagram + Facebook — Graph API)
 
@@ -53,7 +84,7 @@ publish path to work once, end to end, for the demo.
    ownership proof). This gates access to advanced permissions and is a separate step from the app
    review below; start it early, it has its own multi-day turnaround.
 
-### Scopes needed for v1 (Instagram only — Facebook is Phase 2)
+### Scopes needed for v1 (Instagram only — Facebook has no adapter on `main`)
 Matches `INSTAGRAM_SCOPES` in `packages/adapters/social/instagram.js` — Meta's newer scope names
 for Instagram API with Instagram Login, not the older Facebook Login scopes:
 - `instagram_business_basic` — read the connected account's identity (id, username, profile
@@ -147,6 +178,8 @@ References checked 2026-10-03: [Get User Info](https://developers.tiktok.com/doc
 
 ## 6.4 YouTube (Data API v3, via Google Cloud)
 
+Status: connected and publishing on staging in **Testing** mode with the owner's test account; see §6.0.
+
 ### Prerequisites
 - A Google Cloud project for Veyrnox.ai.
 - Domain ownership verified in Google Search Console (needed for the OAuth consent screen's
@@ -164,10 +197,13 @@ References checked 2026-10-03: [Get User Info](https://developers.tiktok.com/doc
    connect → publish flow before any external review is needed. Start here immediately (§6.1).
 
 ### Scopes needed for v1
-- `youtube.upload` (or the narrower current equivalent — Google has changed scope granularity
-  before; check the live scope list) for publishing video/Shorts.
-- Confirm whether a separate scope is needed for setting `madeForKids` / `isAiGeneratedContent`
-  metadata (technical spec §2.4's required fields) or whether `youtube.upload` covers it.
+- `youtube.upload` — requested today (`YOUTUBE_SCOPES` in `packages/adapters/social/youtube.js`) for
+  resumable video upload. Google has changed scope granularity before; check the live scope list.
+- `youtube.readonly` — requested today for channel identity and the analytics fetch (channel, uploads
+  playlist, batched video statistics). No YouTube Analytics API scope is requested.
+- Confirm whether a separate scope or API field is needed for `madeForKids` / `isAiGeneratedContent`
+  metadata. The current upload sets the title, description and a fixed `public` privacy status only, so
+  these fields are not set (*unverified* against YouTube's current requirements).
 
 ### Verification submission (to go from "Testing" to public production)
 - YouTube's upload scope is a **sensitive** (not necessarily restricted) scope in Google's
@@ -212,6 +248,10 @@ pending.
 
 ## 6.6 Appendix — X and LinkedIn (lighter paths, also v1 per ADR-0061)
 
+Scopes requested today: X `tweet.read tweet.write users.read offline.access media.write` (OAuth 2.0 with
+PKCE; confidential client, HTTP Basic at the token endpoint); LinkedIn `openid profile w_member_social`
+(posting on the member's own profile, not a Page). Neither has been live-tested (§6.0).
+
 Not asked for by name, included for completeness since both are in Publish's v1 platform list:
 
 - **X (Twitter) API v2** — posting access sits behind a paid API tier; the specific tier and current
@@ -237,8 +277,9 @@ Not asked for by name, included for completeness since both are in Publish's v1 
       with internal test users added.
 - [ ] X developer account + billing tier confirmed and budgeted.
 - [ ] LinkedIn developer app created, Marketing/Community Management API product requested.
-- [ ] Composer's connect → publish flow works end to end (blocks Meta App Review and TikTok's audit
-      specifically — see §6.1).
+- [x] Composer's connect → publish flow works end to end for YouTube (staging, 2026-10-07). [ ] Still
+      to prove for Instagram and TikTok on an owner-controlled account (blocks Meta App Review and
+      TikTok's audit specifically — see §6.1).
 - [ ] Demo screencasts recorded for Meta, TikTok and YouTube, each framed around the specific
       justification for its scopes.
 - [ ] Google's scope classification (sensitive vs. restricted) confirmed for `youtube.upload` before

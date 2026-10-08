@@ -1,129 +1,146 @@
 # 4. User Flows — Veyrnox Publish
 
-Each flow lists the trigger, steps, system behavior, and edge cases. States referenced
-(`draft`/`scheduled`/etc.) map to `social_posts.status` and `social_post_targets.publish_status`
-in the technical spec.
+> **As of 2026-10-08 (repo `main` at `42150476`).** Each flow below says what is built. §4.6 (reviewer
+> approval), §4.9 (SmartLink) and §4.10 (multi-brand) are **design only (not built)** and are kept as the
+> plan. Items marked *unverified* could not be confirmed from the code or the acceptance records.
+> Publish is closed in production (`PUBLISH_ENABLED` is `"false"`); every flow here runs on staging.
+
+Each flow lists the trigger, steps, system behavior, and edge cases. States referenced map to
+`social_posts.status` (`draft`, `scheduled`, `published`, `failed`, `canceled`) and
+`social_post_targets.publish_status` (`pending`, `publishing`, `submitted`, `delivered`, `published`,
+`failed`) in the technical spec.
 
 ## 4.1 Connect a social account (first-run)
 
-**Trigger:** User opens Publish for the first time, or clicks "Connect" in the Accounts tab.
+**Trigger:** User opens `/app/publish`, signed in.
 
-1. Empty state on the Planner tab: "Connect your first account to start scheduling," with network
-   icons as quick-connect buttons (mirrors Metricool's own "trusted by 3.5M professionals" empty
-   state energy, restyled to syntx palette).
-2. User clicks a network icon → `POST /api/v1/social/accounts/:network/connect` → redirect to the
-   platform's OAuth consent screen in a popup window (not a full-page redirect, so the user doesn't
-   lose their place).
-3. User approves scopes on the platform's own screen (Veyrnox never sees their platform password —
-   this is a live third-party OAuth flow, not a credential form).
-4. Platform redirects to `/api/v1/social/accounts/:network/callback` → token exchange → encrypted
-   storage → `social_account_actions` logs `connect` → popup closes, posts a `postMessage` back to
-   the opener.
-5. Opener window shows a success toast ("Instagram connected — @handle") and the new account
-   appears as a card in the Accounts tab and as a selectable chip in the Compose tab.
+1. The page lists the five networks (Instagram, LinkedIn, X, TikTok, YouTube) with their logos and, under
+   "Connect an account", a Connect button for each. With no accounts the list reads "No accounts
+   connected yet."
+2. User clicks Connect. The client creates a PKCE verifier, keeps it in `sessionStorage`, calls
+   `POST /api/v1/social/accounts/:network/connect` with the S256 challenge, and **navigates the whole
+   page** to the provider's consent screen (not a popup).
+3. User approves scopes on the provider's own screen; Veyrnox never sees a platform password.
+4. The provider redirects to `/social/connect/callback/:network`. That page posts the code and state
+   (and, for X, the verifier) to `POST /api/v1/social/accounts/:network/callback`, which verifies the
+   signed state, exchanges the code, encrypts the tokens and stores them
+   (`record_social_account_connection`, which also appends a `connect` or `reconnect` audit row).
+5. The page shows "Connected {network}. Redirecting…" and returns to `/app/publish`, where the account
+   appears in the account list with its name, network and status and can be chosen in the composer.
 
 **Edge cases:**
-- User closes the popup before approving → opener detects the closed popup (polling `window.closed`)
-  and shows nothing (no false failure toast).
-- Platform returns an error (denied scope, app-review-restricted feature) → toast surfaces the
-  platform's own error text, never a generic "something went wrong."
+- Free users can connect **one** active account. The page disables the other Connect buttons and says
+  "Your plan connects one account. Disconnect it to connect a different one"; the database enforces the
+  same limit (`ACCOUNT_LIMIT`, 0169). Because the Publish Plan is not built, no user can raise it, so a
+  multi-network post is only possible for accounts connected before 0169.
+- Platform error or a failed exchange: the callback page shows a network-specific message and "Nothing
+  was connected. Go back and try again." The provider's own error text is not surfaced.
+- A personal Instagram account cannot complete Instagram Login for publishing (Business or Creator
+  accounts only); it surfaces as an ordinary connect failure.
 - Reconnecting an account that was previously disconnected re-activates the same `social_accounts`
-  row rather than creating a duplicate (matched by `(brand_id, network, external_account_id)`).
+  row (matched by `(brand_id, network, external_account_id)`).
+- Disconnect asks for confirmation ("Scheduled posts to this account will stop going out"), revokes the
+  account, clears both tokens and fails its open targets at once (0168).
 
-## 4.2 Compose and schedule a multi-network post
+## 4.2 Compose and schedule a post
 
-**Trigger:** "New post" button (Planner tab), or "Schedule this" from a Veyrnox generation result
-(the differentiator flow, §4.3).
+**Trigger:** the "Create a post" section of `/app/publish`, or "Schedule this" from a generation (§4.3).
 
-1. Composer opens with all connected, active accounts shown as chips; user toggles which networks
-   this post targets (default: all connected).
-2. User writes a global caption. Per-network character limits are shown live as a counter under the
-   caption box (e.g. Bluesky's 300-char cap flagged in red before submit, matching the exact
-   client-side check specified in §2.4 of the technical spec).
-3. User attaches media: either from the Veyrnox asset library (searchable grid of past generations)
-   or a direct upload. The composer validates media against each selected network's requirement
-   (e.g. selecting Instagram Reel without a video disables "Schedule" and highlights the missing
-   requirement inline).
-4. User optionally opens a network's tab to override: post type (Post/Reel/Story), first comment,
-   alt text, network-specific fields (Pinterest board, YouTube title/audience/privacy, TikTok
-   privacy/duet/stitch toggles, LinkedIn poll options).
-5. A best-time-to-post chip appears near the date/time picker once at least one network is selected
-   (§4.5 for personalization details); clicking it fills in the suggested time.
-6. User picks a date/time (or "Publish now") and clicks "Schedule." Client re-validates every
-   selected network's requirements one last time; on success, `POST /api/v1/social/posts` creates
-   the post (`status = scheduled`) and one `social_post_targets` row per selected network
-   (`publish_status = pending`).
-7. Composer closes; the new post appears on the Planner calendar at the scheduled time, with a
-   composite badge showing all target networks.
+1. The composer lists the connected accounts with network logos; the user selects which this post
+   targets.
+2. User writes one caption (up to 4,000 characters). The same text goes to every selected account;
+   there are no per-network overrides and no per-network character counter.
+3. User attaches **one** image or video, from their generations or, when uploads are on, **Upload from
+   device** (progress and cancel, reusable list, previews, automatic selection once complete; an
+   explicit rights confirmation is required; JPG/PNG/WebP up to 20 MiB, MP4 up to 100 MiB). Uploading
+   alone never creates a post, spends credits or needs a connected account.
+4. User picks a date and time (default one hour ahead, in the browser's timezone) and chooses one of two
+   actions: **Post now** (the API assigns server time and queues it for the next sweep) or **Schedule
+   post** (the chosen future time). The helper text says publishing can take a few minutes.
+5. `POST /api/v1/social/posts` creates the post (`scheduled`) and one target per selected account
+   (`pending`). The UI reports that the post was queued, not that it published. A retried submit reuses
+   the same idempotency key, so it never double-schedules.
+6. The post appears in the recent-posts list with a badge per target (network logo, status, and a "view"
+   link once published) and on the calendar (§4.4).
 
 **Edge cases:**
-- Scheduling with zero networks selected → "Schedule" stays disabled, not a submit-time error.
-- Scheduling in the past → rejected client-side with a clear message, matching the API's own "date
-  can't be in the past" rule for approval-flow scheduling.
-- A selected network's account token is `expired`/`error` → that network's chip shows a small
-  warning badge and is excluded from "Schedule" until reconnected, rather than silently failing
-  later at publish time.
+- No account selected, no media or an invalid time: the action fails with a message; a time more than
+  five minutes in the past is rejected by the API.
+- Writes are limited to 20 per user per minute (posts, drafts, uploads); a 429 carries a retry time.
+- The composer does not stop a user choosing a media type a selected network cannot take. Instagram,
+  X, LinkedIn and TikTok take images only; YouTube takes video only. The mismatched target fails at
+  publish time and shows the reason on hover (`last_error`); a video to TikTok has no handler and is
+  *unverified*.
+- There is no pre-check of token health. Instagram, X and LinkedIn tokens are never refreshed and no
+  account moves to `expired` or `error`, so a dead token shows up as a failed target (§4.7).
 
 ## 4.3 Generate → Schedule handoff (Veyrnox differentiator)
 
 **Trigger:** User finishes a generation (image/video) in Veyrnox's existing generation flow.
 
-1. On the generation result screen, a new "Schedule this" action sits alongside existing actions
-   (download, save to library).
-2. Clicking it opens the Compose flow (§4.2 step 1 onward) with the generated asset pre-attached
-   (`source_job_id` set) and, where the generation had a text prompt/scene description, a
-   AI-drafted caption suggestion grounded in that prompt (editable, never auto-submitted).
-3. From here the flow is identical to §4.2 — the only difference is media and an optional caption
-   arrive pre-filled.
+1. On a completed image or video result, a "Schedule this" action sits alongside the existing actions
+   (Studio results, each batch tile and Library cards). It is hidden while Publish is off and for audio,
+   failed jobs and unavailable assets.
+2. It opens `/app/publish?job=<job UUID>#schedule`. The composer validates the UUID, retrieves the asset
+   through the ownership-checked job asset API and selects it as the media (`source_job_id`).
+3. From here the flow is identical to §4.2: the user chooses accounts, writes the caption and confirms
+   the posting time. Nothing is created by opening the link. Invalid, inaccessible or unsupported linked
+   assets show an error and let the user choose from the library.
 
-### Implemented slice (2026-10-03)
+Caption suggestions grounded in the generation prompt are **not built**.
 
-When `PUBLISH_ENABLED` is true, completed image/video results in Studio (including each
-batch tile) and Library show "Schedule this". The link opens
-`/app/publish?job=<job UUID>#schedule`. The composer validates the UUID and retrieves the
-asset through the existing ownership-checked job asset API, then selects its image/video
-type. The user still chooses accounts, writes the caption and confirms the posting time.
-No post is created by opening the link. Caption suggestions remain future work.
+## 4.4 Calendar and confirmed reschedule
 
-Audio, failed jobs and unavailable assets do not show the shortcut. Invalid, inaccessible
-or unsupported linked assets show an error and let the user choose from the library.
-Production keeps this path hidden while Publish is off. No migration is required.
+**Trigger:** the "Scheduled & published" section links to `/app/publish/calendar` (only when
+`PUBLISH_CALENDAR_ENABLED` is `"true"` and Publish is open).
 
-## 4.4 Calendar drag-to-reschedule
-
-**Trigger:** User drags a scheduled post card to a different day/time slot on the Planner calendar.
-
-1. Card lifts (see motion spec §3.6) and follows the cursor; valid drop targets (future date/time
-   slots) highlight.
-2. On drop, an optimistic UI update moves the card immediately; `PATCH /api/v1/social/posts/:id`
-   fires in the background with the new `scheduled_at`.
-3. On success, nothing further happens (the optimistic state was correct). On failure (e.g. the post
-   was published by the cron sweep in the split second before the drag completed), the card snaps
-   back to its original slot and a toast explains why ("This post already went out — can't
-   reschedule a published post").
+1. Month, week and list views (month and list share the six-week Monday-first grid, week shows seven
+   days) in the browser timezone, with status and network filters applied in the database, 100 posts per
+   page and a Load more control. Drafts are excluded.
+2. Dragging an unstarted post to another day opens a confirmation form showing the proposed time
+   (preserving the local time of day and the UTC instant). **Nothing is saved until the user confirms.**
+   The Reschedule button opens the same form for keyboard and touch users.
+3. Confirming calls `PATCH /api/v1/social/posts/:id/schedule` with the original and the new time. All
+   targets move together; success shows "Post rescheduled" and appends one `post_rescheduled` audit
+   event.
 
 **Edge cases:**
-- Dragging a post that's already `pending_review` shows a tooltip explaining it must be
-  un-submitted from review before rescheduling, rather than allowing a silent conflicting edit.
+- Only a `scheduled` post whose targets are all untouched can move. Started, retried, submitted,
+  partially published and terminal posts show "Schedule locked".
+- A time less than a minute ahead or inside a daylight-saving gap is rejected; a repeated hour picks the
+  earlier occurrence. A stale original time returns a conflict message and leaves the schedule
+  unchanged; a busy row returns `POST_BUSY`.
+- A replay of the same requested time is a no-op with no audit event.
+- Dragging a draft or a published post is not offered; there is no `pending_review` state.
 
-## 4.5 Best time to post
+## 4.5 Best time to post and posting frequency
 
-**Trigger:** Automatic — surfaces in the composer (§4.2 step 5) and as a standalone "Best times"
-view under Analytics.
+**Trigger:** the analytics page (`/app/publish/analytics`), when `PUBLISH_POSTING_INSIGHTS_ENABLED` is
+`"true"`.
 
-1. **Cold start** (account connected under ~2 weeks, per §2.5 of the technical spec): shows a
-   general best-practice heatmap per network with a small "Based on general trends — personalizing
-   as you post more" note.
-2. **Warm state:** heatmap is computed from the account's own `social_analytics_snapshots` history,
-   refreshed weekly, rendered as a 7×24 grid (day × hour) with color intensity mapped to the score —
-   this is the same shape Metricool's own API returns, so the visualization can be a direct 1:1
-   translation of that data structure.
-3. Hovering a cell shows the exact score and a plain-language label ("High engagement window").
-4. Clicking a cell from the standalone Analytics view, not just the composer, pre-opens a new
-   composer with that time filled in — a shortcut for "I want to post something in this good slot."
+1. There is no cold-start heatmap of general trends. An account with fewer than ten measured posts over
+   fourteen days shows an insufficient-evidence message instead of a recommendation.
+2. With enough history, a 7 by 24 (168-cell) day-by-hour grid is computed weekly from the account's own
+   stored posts (twelve complete weeks in the brand timezone) with up to three ranked slots, and a
+   posting-frequency comparison by week. The panel is labelled and keyboard-scrollable.
+3. These are descriptive, not predictive: lifetime counters favour older posts, and collection can omit
+   older, private or deleted posts.
+4. Clicking a cell to open a composer at that time, and a best-time chip inside the composer, are **not
+   built**.
 
 ## 4.6 Approval workflow (Phase 2)
 
+> **Design only (not built).** Single-owner draft review exists (below); the multi-reviewer approval
+> workflow does not.
+
+**Built, single-owner draft review (0182).** Once a week the owner's own brand accounts get a batch of
+draft posts built from the previous seven days of their generations (captions are catalog data, never
+written copy). The "Drafts to review" section of `/app/publish` lists each batch; **Approve** schedules
+the whole batch (never earlier than the approval time; a draft whose account was disconnected meanwhile
+becomes `failed`) and **Discard** cancels one draft or the rest of a batch. Nothing in a draft batch is
+published before approval. Editing or rescheduling a draft is not supported (discard and regenerate).
+
+**Design only: reviewer approval.**
 **Trigger:** A creator without publish authority (or anyone who wants sign-off) clicks "Send for
 review" instead of "Schedule" in the composer.
 
@@ -155,37 +172,42 @@ review" instead of "Schedule" in the composer.
 
 ## 4.7 Publish failure and recovery
 
-**Trigger:** The publish sweep (§2.6) attempts a scheduled post and the platform rejects it, or the
-account's token has expired.
+**Trigger:** the publish sweep attempts a target and the platform rejects it, or the account's token has
+expired.
 
-1. Transient failure (rate limit, 5xx) → automatic retry with backoff, invisible to the user unless
-   all retries are exhausted.
-2. Permanent failure → `social_post_targets.publish_status = failed`, `last_error` set to a
-   human-readable reason, and the creator gets a notification ("Your Instagram post didn't go out:
-   [reason]"). The Planner card shows a `failed` (danger) pill for that network specifically — a
-   post targeting 3 networks where only 1 failed shows partial success, not a blanket failure.
-3. If the cause was an expired/revoked token, the notification's call-to-action routes straight to
-   the Accounts tab's reconnect flow (§4.1) for that specific network.
-4. From the failed card, "Retry" re-queues just the failed target (not the whole multi-network post)
-   for the next sweep, after the underlying issue (e.g. reconnect) is resolved.
+1. A failed attempt is retried automatically after 5, 10 then up to 60 minutes; the target is `failed`
+   after the third attempt. Every error counts as an attempt. TikTok and YouTube continuations are not
+   failures: a TikTok post stays `submitted` (shown "in progress") while its publish id is polled and a
+   YouTube video stays `submitted` while it uploads and processes. A YouTube day-quota exhaustion waits
+   for the next Pacific midnight without failing the post.
+2. On a permanent or exhausted failure the target shows `failed` with the reason on hover, per network:
+   a post to three networks where one failed shows the others as published. The post itself is
+   `published` if any target succeeded and `failed` if none did.
+3. There is **no failure notification** and **no Retry control**. To try again the user creates a new
+   post. If the cause was an expired or revoked token the user must reconnect the account from
+   `/app/publish`; nothing routes them there.
+4. TikTok is not a failure but a different outcome: `delivered` ("finish in TikTok app") means the
+   content reached the creator's TikTok inbox as a draft, not a public post.
+5. Disconnecting an account fails its open targets immediately with `account_disconnected`.
 
 ## 4.8 Analytics review
 
-**Trigger:** User opens the Analytics tab.
+**Trigger:** User opens `/app/publish/analytics` (or follows "See your analytics").
 
-1. Default view: brand-level summary across all connected networks for the last 30 days — follower
-   count, total reach, total engagement, posts published, each as a stat tile with a sparkline and
-   delta vs. the prior period (directly modeled on Metricool's "Brand Summary" cross-network feed,
-   §2.5 of the technical spec).
-2. User can filter to a single network for the deeper per-network view: evolution line chart, a
-   sortable table of recent posts with per-post reach/likes/comments/saves/shares, and (once
-   competitor tracking ships in Phase 2) a benchmark overlay line.
-3. Clicking a post row opens a detail panel with that post's full metric breakdown and a link to
-   view it live on the platform.
-4. "Export" produces a shareable report (Phase 2 — Reports feature) rather than a raw CSV dump, to
-   match Metricool's own emphasis on presentable client-facing reports for the agency persona.
+1. The user selects a connected account (Instagram, YouTube or TikTok; X and LinkedIn show a message
+   that analytics for that network are not available) and a range of 7, 30 or 90 days. There is no
+   cross-network brand summary.
+2. The page shows account cards (followers or subscribers, and the other totals the network provides),
+   a followers chart over time, and a table of the account's recent posts or videos. Columns depend on
+   the network: Instagram likes and comments, plus reach, views, saves and shares once the insights
+   grant exists; YouTube views, likes and comments; TikTok views, likes, comments and Shares.
+3. Counters are lifetime values. The range selects publication dates; it does not turn a lifetime
+   counter into numbers earned inside the range. YouTube subscribers are rounded by YouTube.
+4. Data refreshes about every six hours per account. A failed refresh is kept on the account's sync row
+   and the last good numbers stay visible; the posting-insights panel fails independently of the rest.
+5. There is no per-post detail panel, competitor overlay or export/report.
 
-## 4.9 SmartLink (link-in-bio) setup (Phase 2)
+## 4.9 SmartLink (link-in-bio) setup (Phase 2) — design only (not built)
 
 **Trigger:** User opens the SmartLinks section and creates their first link-in-bio page.
 
@@ -201,7 +223,10 @@ account's token has expired.
    natural place a creator drops their "link in bio" reference when the actual link can't go in an
    Instagram/TikTok caption).
 
-## 4.10 Multi-brand switching (agency persona)
+## 4.10 Multi-brand switching (agency persona) — design only (not built)
+
+There is one default brand per user (`get_or_create_default_social_brand`), no brand switcher and no
+collaborator model; every Publish action is owner-only.
 
 **Trigger:** User with more than one `social_brands` row clicks the brand switcher in the top bar.
 

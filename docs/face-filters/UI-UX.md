@@ -1,7 +1,9 @@
 # UI/UX Brief — Face Filters
 
-**Status:** Draft · 2026-09-18
+**Status:** Draft · 2026-09-18 · checked against `main` at `42150476` on 2026-10-08
 **Reads with:** [APP-FLOW.md](APP-FLOW.md)
+
+*Status 2026-10-08: the three new components below (`ModeToggle`, `UploadZone`, `BeforeAfter`) are not built; no such file exists under `app/`. The Studio's own upload field, `SourcePickers`, plays the `UploadZone` role in a simpler form. The colour table is still right except that a thirteenth token, `--vx-warn` (blue, for warnings and notices; amber stays Credits only), was added after the audit. Palette values below were not re-measured.*
 
 Veyrnox already has a design language. This brief records it so an agent extends
 it instead of inventing a second one, then specifies only the new surfaces.
@@ -69,6 +71,8 @@ Maximum content width 1500px, gutters 16px on mobile and 32px from `sm`.
 
 Already in `app/veyrnox/_components/`: `Button`, `Chip`, `BalancePill`,
 `ConfirmDialog`, `PresetCard`, `CopyButton`, `NavBar`, `ThemeToggle`.
+
+*2026-10-08: the folder has grown (`SourcePickers`, `LibraryPicker`, `PriceSlip`, `EditSheet`, `JobAssetPreview`, among others). Check it before building any of the three below.*
 
 New components, and only these:
 

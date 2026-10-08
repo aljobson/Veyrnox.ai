@@ -1,6 +1,6 @@
 # PRD — Face Filters & Media Authenticity
 
-**Status:** Draft · 2026-09-18
+**Status:** Draft · 2026-09-18 · status lines updated 2026-10-08 against `main` at `42150476`. The upload spine (§5) is built; no Track A filter is in the catalog; A7/A8 and Track B are blocked.
 **Owner:** product owner (Al Jobson)
 **Predecessors:** [ADR-0000](../adr/0000-product-strategy.md) (Replacer), [ADR-0005](../adr/0005-phase-0-business-preconditions.md) (Phase-0 preconditions), [ADR-0007](../adr/0007-legacy-muapi-proxy-deprecation.md) (upload proxy retired), [ADR-0008](../adr/0008-asset-retention-policy-and-sweep.md) (retention), [ADR-0017](../adr/0017-c2pa-claims-withdrawn.md) (C2PA claims withdrawn)
 **Language:** every term used here is defined in [CONTEXT.md](../../CONTEXT.md). This document adds none.
@@ -53,8 +53,12 @@ billing mechanics.
 ### Track A
 
 Each row is one `model_catalog` entry. Endpoints are fal endpoint IDs confirmed
-present in fal's public model index on 2026-09-18. **None has been called
-live, priced, or verified** — that happens per [ADR-0011](../adr/0011-model-catalog-gaps.md)'s rule before `active = true`.
+present in fal's public model index on 2026-09-18. **As of 2026-10-08 none is in
+`model_catalog`** (no migration through 0227 names one). Slice 0 submitted real
+jobs for A1-A5 (and the `fal-ai/retoucher` alternative); the two video relight
+endpoints were never run; no price has been measured. Verifying and pricing
+happens per [ADR-0011](../adr/0011-model-catalog-gaps.md)'s rule before
+`active = true`.
 
 | # | Feature | User value | Candidate endpoint | Identity risk |
 |---|---------|-----------|--------------------|---------------|
@@ -69,6 +73,8 @@ live, priced, or verified** — that happens per [ADR-0011](../adr/0011-model-ca
 
 A1–A6 are the launch set. **A7 and A8 do not ship until §6 is satisfied.**
 
+*Status 2026-10-08:* A1-A5 produced real output in Slice 0 (cost unread). A6 not run. A1-A8: no catalog row, nothing active, no Studio surface.
+
 ### Track B
 
 | # | Feature | User value | Provider | Status |
@@ -77,12 +83,23 @@ A1–A6 are the launch set. **A7 and A8 do not ship until §6 is satisfied.**
 | B2 | Video deepfake check | Is this face in this video swapped? | none selected | blocked on ADR |
 | B3 | Voice clone check | Is this audio a synthetic voice? | none selected | blocked on ADR |
 
+*Status 2026-10-08:* [ADR-0025](../adr/0025-media-authenticity-provider.md) is
+*Proposed*, revised after research. Its engineering recommendation is E (publish
+our own provenance) and D (read provenance), B only for a named customer, never
+C; it is not the owner's decision. Nothing is built. The product PRD lists
+"media authenticity verdicts" as deliberately not built (no named customer).
+
 fal has no authenticity, detection, or classifier endpoint — searched
 `deepfake`, `ai detector`, `classifier` on 2026-09-18, all empty. A new vendor
 (Reality Defender, Hive, Sensity or similar) means a new API key, a new webhook
 signature scheme, a new contract, and a new line item in the cost model.
 
-## 5. The blocking gap: there is no upload path
+## 5. The blocking gap: there is no upload path *(closed in #187, 2026-09-20)*
+
+*Written 2026-09-18. As of 2026-10-08 the path exists:* `POST /api/v1/uploads`
+mints a 15-minute presigned PUT under `uploads/{auth_id}/`, the gateway resolves
+a `source_key` (ownership and magic-number check) and mints the GET the provider
+fetches. The list below is the situation that was solved, kept for the record.
 
 Every Track A feature and every Track B feature needs the user to send Veyrnox a
 file. Veyrnox cannot currently receive one.
@@ -97,7 +114,7 @@ file. Veyrnox cannot currently receive one.
   an HTTPS URL under 2048 characters — but nothing in the product can produce
   one for a user's own file.
 
-Restoring uploads is the first deliverable, not a sub-task. See the TRD.
+Restoring uploads was the first deliverable, not a sub-task. See the TRD.
 
 ## 6. Identity, consent, and abuse — gate on A7/A8
 
@@ -118,6 +135,20 @@ A7 and A8 require all of the following before `active = true`:
    ADR-0008 asset default, and deletion on account closure.
 5. A published statement of what Veyrnox will not do with an uploaded face.
 
+*Status 2026-10-08 against the five conditions (no A7/A8 row exists, so none
+is yet required to pass):* (1) a per-upload attestation exists in general form:
+a job with a source must send `consent: true`, stored on the job
+(`jobs.consent_attested_at`, 0096) and on the account (0146), wording version
+`aup-2026-09-26`; whether it satisfies the "person depicted" wording for A7/A8
+is a legal call, unverified. (2) output moderation: not built. (3) takedown
+route: violation records and warnings/takedowns exist (0146, admin violations
+page); the wiring to the ADR-0005 §6 designated agent is unverified, and the
+DMCA agent filing is still a product launch blocker. (4) face-reference
+retention: uploads are swept at 24 hours or within minutes of a finished job;
+deletion on account closure is unverified. (5) published statement: not found.
+Separately, **CSAM hash matching (ADR-0025 §8.1) has no code and no chosen
+service**, and gates any public upload surface.
+
 A1–A6 carry none of this weight — they modify the user's own photo and produce a
 photo of the same person. That asymmetry is why the launch set stops at A6.
 
@@ -136,8 +167,14 @@ photo of the same person. That asymmetry is why the launch set stops at A6.
 ## 8. Open questions
 
 1. Retention for user uploads — inherit ADR-0008, or shorter? (Recommend shorter.)
+   *Answered in code:* shorter. 24 hours for an abandoned upload, minutes after
+   the job finishes (ADR-0028, `lib/uploadSweep.js`).
 2. Does an upload count against a quota, or is it free until a filter runs?
    (Recommend free but rate-limited and size-capped; storage is the only cost.)
+   *Answered in code, with a twist:* free of credits, rate limited (ADR-0035),
+   capped at 10 unconsumed uploads, 20 MB per image and 100 MB per video, and
+   refused to an account with a zero balance (`insufficient_credits`). The
+   reserved byte budget (ADR-0044) is Proposed and off in production.
 3. Track B: is Veyrnox willing to publish a probabilistic "this is fake" verdict
    about a named person's media? Detectors run 70–85% in the wild and worse on
    re-compressed social uploads. This is an ownership decision, not engineering.

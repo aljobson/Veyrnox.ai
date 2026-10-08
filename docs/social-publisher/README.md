@@ -1,13 +1,22 @@
 # Veyrnox Publish — Specification Pack
 
 **Feature:** Native multi-platform social scheduling and publishing ("Veyrnox Publish")
-**Version:** 0.1 (draft)
+**Version:** 0.2 (reconciled with the code)
+**As of:** 2026-10-08, repo `main` at commit `42150476`. Every doc in this pack was checked against the
+code, migrations through 0223, `wrangler.jsonc`, ADR-0061/0062/0063 and the 2026-10-03 to 2026-10-07
+handover and acceptance records. Where the pack still describes a design the code does not (yet) do, the
+doc says so under a "Built state" or "not built" note instead of silently keeping the old text.
 **Status:** Accepted via [ADR-0061](../adr/0061-veyrnox-publish-social-scheduling.md)
 (2026-09-28) — build-vs-buy (native adapters) and v1 platform scope — and via
 [ADR-0062](../adr/0062-veyrnox-publish-entitlement-model.md) (2026-09-28) — the billing
 mechanism (independent "Publish Plan," never the credit ledger). Both approved by the
 product owner. Implementation may now proceed under these ADRs' designs; open items are
 tracked in each ADR's "Open questions".
+**Built state (2026-10-08):** the schedule-and-publish engine, composer, device uploads, draft review,
+calendar with safe rescheduling, and analytics for Instagram, YouTube and TikTok are built. Production
+keeps `PUBLISH_ENABLED` off, so none of it is open to users there; staging has every Publish flag on
+except the two provider-consent switches. The Publish Plan (ADR-0062/0063) is not built. Five networks
+are live in code (Instagram, X, LinkedIn, TikTok, YouTube). See the "Built state" notes in 01 and 02.
 **Audience:** Product, engineering, design
 
 ## Purpose
@@ -71,7 +80,12 @@ should look*.
    credentials, not an agent.
 
 7. [Analytics handover, 2026-10-03](HANDOVER-analytics-2026-10-03.md) — what the analytics work
-   built, what is switched off, what was and was not verified, and the next work in order.
+   built, what is switched off, what was and was not verified, and the next work in order. Its later
+   sections record the calendar rollout and the 2026-10-04 live YouTube/calendar acceptance.
+8. [Publish device uploads, 2026-10-06](DEVICE-UPLOADS-2026-10-06.md) — the upload-from-device
+   library (migration 0223), limits, activation steps and the staging acceptance.
+9. [Staging acceptance, 2026-10-07](ACCEPTANCE-2026-10-07.md) — the real YouTube publication, real
+   video analytics and the live calendar checks. This is the latest verified state.
 
 ## Non-goals for this pack
 
@@ -87,12 +101,18 @@ should look*.
 
 1. **Which platforms ship in v1?** Metricool supports eleven networks (Instagram, Facebook, X/Twitter,
    LinkedIn, TikTok, YouTube, Pinterest, Threads, Bluesky, Twitch, Google Business Profile). Section
-   1.6 of the product spec proposes a phased rollout — confirm the v1 cut with the business.
+   1.6 of the product spec proposes a phased rollout. **Resolved:** ADR-0061 approved the v1 cut
+   (Instagram, X, LinkedIn, TikTok, YouTube); those five are the only networks the connect UI offers.
+   Facebook, Pinterest, Threads, Bluesky, Twitch and Google Business Profile exist in the database
+   CHECK lists but have no adapter on `main`.
 2. **OAuth app approval lead time.** Meta (Instagram/Facebook), TikTok and YouTube each require app
    review before production posting scopes are granted — this can take weeks and should start in
-   parallel with engineering, not after.
-3. **Credit model** — see Non-goals above.
+   parallel with engineering, not after. Per-network status as of 2026-10-08 is in
+   [06-oauth-review-runbook.md §6.0](06-oauth-review-runbook.md#60-review-status-by-network-2026-10-08).
+3. **Credit model** — decided (see Non-goals above), but **not built**: there is no Publish Plan code
+   or table (`social_publish_plans` appears only in ADR-0062/0063). Until it exists every user is on
+   Free, which the database caps at one active connected account (0169).
 4. **Does Veyrnox already have a Metricool account for its own brand?** Yes — `getBrandSettings`
    shows a connected brand (`Veyrnox`, blogId `6457974`) with Instagram/X/LinkedIn/TikTok/YouTube
-   linked. That account belongs to the sibling Veyrnox wallet product's socials, not Veyrnox.ai's;
+   linked. That account belongs to the separate sibling Veyrnox business's socials, not Veyrnox.ai's (hard wall in `CLAUDE.md`);
    it was used here only as a live, authorized source of Metricool's API shapes, not as product data.
