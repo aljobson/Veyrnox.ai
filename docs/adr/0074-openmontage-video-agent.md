@@ -56,6 +56,9 @@ This mirrors ADR-0072's rule for Agents: media spend only through a priced job, 
 
 - Runner to Worker: a signed callback (HMAC-SHA256 over timestamp + raw body, ±300 s, `webhook_events(source, external_id)`
   dedupe), same shape as Stripe. The callback names the job id only; `user_id` always comes from our `jobs` row.
+- The runner asks before it spends (2026-10-08): the Worker writes the run id on the step before it calls `/run`, and the
+  runner's first callback, `started`, is answered yes only while that step and the job are live. A `/run` that reaches
+  the runner after the Worker gave up and refunded gets a 409 and never starts, even when the Worker's `/cancel` was lost.
 - Worker to runner: the URL is a constant (`MONTAGE_RUNNER_BASE`), never derived from input. Runner endpoints accept only
   our signature. The runner has no Supabase key and no R2 write key; it uploads to a **presigned PUT** that the Worker
   minted for a random-UUID key scoped to the job (TTL ≤ 15 min, so the runner asks for a fresh URL at finish).
