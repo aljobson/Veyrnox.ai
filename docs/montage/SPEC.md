@@ -271,3 +271,30 @@ built yet. The trigger put to the owner was two or more runs started within one 
 Not covered by that yes, because it changed after the proposal was written: the runner now takes **three** runs at once on its one
 machine (runner `096aaae`; on staging; its own comment says "not load-tested"). The same 10% rule then gives 17 or more runs started
 within one hour, which is proposed in CAPACITY.md and waits for the owner. Three runs at once have not been tried on staging.
+
+## 11. The remaining staging checks, and the lost-run check (2026-10-08, evening)
+
+Three paths that section 9 left unproven were exercised on staging on main's code (Worker `bcd8c005`, job `f6001734`):
+
+- **Timeout refund.** The owner stopped the runner machine about two minutes into a real run. The job stayed SUBMITTED, the Auto
+  Short sweep left it alone (#639), and the montage sweep failed it as `step_timeout` and refunded it at 21:06:04 UTC: one debit, one
+  refund, `reconcile_balances()` 0 rows. The credits were held for **49 minutes 38 seconds** (the 45-minute timeout plus the wait for
+  the next five-minute pass).
+- **Second run refused.** A second Approve from the same account while that run was in flight answered `video_agent_in_progress`
+  with no job and no debit.
+- **Reload mid-run.** A full reload brought the RUNNING panel back with an empty brief box (#647).
+
+**Lost-run check (built, flag off).** Fifty minutes is too long to hold credits for a run that died in its second minute. With
+`MONTAGE_LIVENESS_ENABLED="true"` the sweep asks the runner's signed `POST /runs` which of the young runs it still has, and fails a
+run as `run_lost` when the runner answers `unknown` (the machine restarted: runs live in memory) or `ended` (its thread finished and
+no result reached us). Refund in about five minutes. Rules:
+
+- Only those two answers act. `running`, no answer, an unreachable runner or an answer that cannot be read all leave the run to the
+  45-minute timeout, which stays as the backstop.
+- A run is not asked about for its first 3 minutes, nor once it is past the timeout.
+- The failure goes through the same `webhook_events` dedup as a callback, so a result that lands at the same moment wins or loses
+  once, never both.
+- **One machine only.** A second machine would answer `unknown` for the first one's live runs and the sweep would refund work still
+  in progress. Turn the flag off before adding a machine (CAPACITY.md), or give `/runs` a machine-wide view first.
+
+Not yet tried against a real runner: the flag is "false" in both environments and the runner endpoint is not deployed.

@@ -59,6 +59,7 @@ export const ERROR_COPY = {
   runner_submit_failed:  'We couldn\'t start the video. Credits refunded — try again.',
   step_not_recorded:     'We couldn\'t start the video. Credits refunded — try again.',
   step_timeout:          'The video took too long and was stopped. Credits refunded.',
+  run_lost:              'The video agent stopped before it finished. Credits refunded — try again.',
   output_missing:        'The video finished but could not be saved. Credits refunded.',
   output_invalid:        'The video finished but could not be saved. Credits refunded.',
   'inputs_invalid:prompt':'The prompt is empty or too long for this model (speech takes up to 1000 characters). Nothing was charged.',

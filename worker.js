@@ -146,7 +146,7 @@ async function runMontageSweep(env) {
     const cfg = { supabaseUrl: env.SUPABASE_URL, serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY };
     const r2cfg = r2EnvFrom(env);
     if (!rt || !cfg.supabaseUrl || !cfg.serviceRoleKey || !r2IsConfigured(r2cfg)) return { ok: false, skipped: 'not_configured' };
-    const out = await sweepMontage({ cfg, deps: montageDeps({ cfg, r2cfg, ...rt }) });
+    const out = await sweepMontage({ cfg, deps: montageDeps({ cfg, r2cfg, ...rt }), liveness: env.MONTAGE_LIVENESS_ENABLED === 'true' });
     if (out.checked) console.error('[video-agent-sweep]', JSON.stringify(out));
     return out;
 }

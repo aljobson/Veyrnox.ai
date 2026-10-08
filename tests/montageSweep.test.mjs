@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { sweepMontage, ORPHAN_GRACE_MINUTES } from '../lib/montageSweep.js';
+import { sweepMontage, ORPHAN_GRACE_MINUTES, LIVENESS_GRACE_MINUTES } from '../lib/montageSweep.js';
 import { sweepSteps } from '../lib/autoShortSweep.js';
 
 const cfg = { supabaseUrl: 'https://db.test', serviceRoleKey: 'srk' };
@@ -99,4 +99,92 @@ test('a FAILED step inside the grace window is not touched (the handler may stil
     const out = await sweepMontage({ cfg, deps: w.deps, now: NOW });
     assert.deepEqual([out.healed, w.refunds.length], [0, 0]);
     assert.equal(w.job.state, 'SUBMITTED');
+});
+
+// --- liveness: ask the runner which young runs it still has -------------------------------------------------------
+
+/** world() with a runner that answers /runs. `answer` is the whole callRunner result, or a function that throws. */
+function live(answer) {
+    const w = world();
+    w.asked = [];
+    w.deps.runner.states = async (ids) => { w.asked.push(ids); return typeof answer === 'function' ? answer(ids) : answer; };
+    return w;
+}
+const RUN = `mr_${JOB}`;
+const says = (state) => ({ ok: true, data: { runs: { [RUN]: state } } });
+
+for (const state of ['unknown', 'ended']) {
+    test(`a young run the runner reports as ${state} is cancelled, failed as run_lost and refunded once`, async () => {
+        stubDb([row({ updated_at: ago(10) })]);
+        const w = live(says(state));
+        const failedWith = [];
+        const rpc = w.deps.rpc;
+        w.deps.rpc = async (name, a) => { if (name === 'job_step_failed') failedWith.push(a.p_error_code); return rpc(name, a); };
+        const out = await sweepMontage({ cfg, deps: w.deps, now: NOW, liveness: true });
+        assert.deepEqual([out.lost, out.timedOut, out.errors], [1, 0, 0]);
+        assert.deepEqual(w.asked, [[RUN]]);
+        assert.deepEqual(w.cancels, [RUN]);
+        assert.deepEqual(failedWith, ['run_lost']);
+        assert.equal(w.job.state, 'FAILED');
+        assert.deepEqual(w.refunds, [JOB]);
+    });
+}
+
+const LEFT_ALONE = {
+    'running': says('running'),
+    'a state we do not know': says('paused'),
+    'no entry for the run': { ok: true, data: { runs: {} } },
+    'an inherited key, not an own entry': { ok: true, data: { runs: Object.create({ [RUN]: 'unknown' }) } },
+    'runs that is not an object': { ok: true, data: { runs: 'unknown' } },
+    'no runs at all': { ok: true, data: {} },
+    'a runner that cannot be reached': { ok: false, error: 'runner_transport' },
+    'a runner call that throws': () => { throw new Error('down'); },
+};
+for (const [name, answer] of Object.entries(LEFT_ALONE)) {
+    test(`liveness leaves a young run alone on ${name}`, async () => {
+        stubDb([row({ updated_at: ago(10) })]);
+        const w = live(answer);
+        const out = await sweepMontage({ cfg, deps: w.deps, now: NOW, liveness: true });
+        assert.deepEqual([out.lost, out.timedOut, w.refunds.length, w.cancels.length], [0, 0, 0, 0]);
+        assert.equal(w.job.state, 'SUBMITTED');
+    });
+}
+
+test('with the flag off the runner is never asked, and a young run is left to the timeout', async () => {
+    stubDb([row({ updated_at: ago(10) })]);
+    const w = live(says('unknown'));
+    const out = await sweepMontage({ cfg, deps: w.deps, now: NOW });
+    assert.deepEqual([w.asked.length, out.lost, w.refunds.length], [0, 0, 0]);
+    assert.equal(w.job.state, 'SUBMITTED');
+});
+
+test('a run inside the liveness grace is not asked about (its result may be in flight)', async () => {
+    stubDb([row({ updated_at: ago(LIVENESS_GRACE_MINUTES - 1) })]);
+    const w = live(says('unknown'));
+    const out = await sweepMontage({ cfg, deps: w.deps, now: NOW, liveness: true });
+    assert.deepEqual([w.asked.length, out.lost, w.refunds.length], [0, 0, 0]);
+});
+
+test('a run past the timeout is failed as step_timeout whatever the runner would say, and is not asked about', async () => {
+    stubDb([row({ updated_at: ago(60) })]);
+    const w = live(says('running'));
+    const out = await sweepMontage({ cfg, deps: w.deps, now: NOW, liveness: true });
+    assert.deepEqual([w.asked.length, out.timedOut, out.lost], [0, 1, 0]);
+    assert.deepEqual(w.refunds, [JOB]);
+});
+
+test('a lost run seen on two passes is refunded once', async () => {
+    const w = live(says('unknown'));
+    for (let i = 0; i < 2; i += 1) {
+        stubDb([row({ updated_at: ago(10) })]);
+        await sweepMontage({ cfg, deps: w.deps, now: NOW, liveness: true });
+    }
+    assert.deepEqual(w.refunds, [JOB]);
+});
+
+test('a FAILED orphan is never sent to the runner for a liveness answer', async () => {
+    stubDb([row({ state: 'FAILED', updated_at: ago(30) })]);
+    const w = live(says('unknown'));
+    const out = await sweepMontage({ cfg, deps: w.deps, now: NOW, liveness: true });
+    assert.deepEqual([w.asked.length, out.healed, out.lost], [0, 1, 0]);
 });
