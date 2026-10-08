@@ -15,7 +15,7 @@ import pg from "pg";
 
 const DATABASE_URL = process.env.DATABASE_URL;
 const MIGRATIONS = ["0037_free_credit_expiry.sql", "0038_free_credit_sweep_fixes.sql",
-    "0091_auto_short_job_steps.sql", "0092_clip_edit_steps.sql", "0227_video_agent_steps.sql"]
+    "0091_auto_short_job_steps.sql", "0092_clip_edit_steps.sql", "0225_clip_edit_captions_step.sql", "0227_video_agent_steps.sql"]
     .map((f) => new URL(`./schema/supabase/${f}`, import.meta.url));
 
 describe("job_steps for the video agent (0227)", { skip: !DATABASE_URL && "DATABASE_URL not set" }, () => {
@@ -84,6 +84,20 @@ describe("job_steps for the video agent (0227)", { skip: !DATABASE_URL && "DATAB
         assert.equal(count.c, 1, JSON.stringify(again.r));
     });
 
+    it("keeps the Clip Editor's captions kind: 0227 adds to the constraint, it does not restate it", async () => {
+        const jobId = await debitedJob();
+        assert.equal((await submit(jobId, "captions", 0)).r.ok, true);
+        assert.equal((await submit(jobId, "montage", 0)).r.ok, true);
+        const def = (await one(`SELECT pg_get_constraintdef(oid) AS d FROM pg_constraint
+            WHERE conrelid = 'public.job_steps'::regclass AND conname = 'job_steps_step_check'`)).d as string;
+        for (const kind of ["script", "voice", "scene", "stitch", "trim", "merge", "audio", "captions", "montage"]) {
+            assert.ok(def.includes(`'${kind}'`), kind);
+        }
+        const prov = (await one(`SELECT pg_get_constraintdef(oid) AS d FROM pg_constraint
+            WHERE conrelid = 'public.job_steps'::regclass AND conname = 'job_steps_provider_check'`)).d as string;
+        for (const p of ["fal", "kie", "openrouter", "montage"]) assert.ok(prov.includes(`'${p}'`), p);
+    });
+
     it("keeps Auto Short and Clip Editor positions as they were", async () => {
         const jobId = await debitedJob();
         assert.equal((await submit(jobId, "scene", 3)).r.ok, true);
@@ -98,8 +112,8 @@ describe("job_steps for the video agent (0227)", { skip: !DATABASE_URL && "DATAB
             /check constraint|violates/);
     });
 
-    it("adds video-agent as one inactive veyrnox placeholder row", async () => {
+    it("adds video-agent as one inactive veyrnox row at the 165-credit floor price", async () => {
         const r = await one(`SELECT provider, provider_endpoint, credits_5s, active FROM public.model_catalog WHERE id = 'video-agent'`);
-        assert.deepEqual(r, { provider: "veyrnox", provider_endpoint: "video-agent:v1", credits_5s: 1, active: false });
+        assert.deepEqual(r, { provider: "veyrnox", provider_endpoint: "video-agent:v1", credits_5s: 165, active: false });
     });
 });
