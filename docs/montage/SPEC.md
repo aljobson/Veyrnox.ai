@@ -195,3 +195,16 @@ Known risks to settle on the way:
 - **Output size and resolution** are not yet fixed by the product (see run 5).
 - **The Worker-to-runner call** goes over the public internet: it is HMAC-signed with a 300 s window, and the runner
   accepts nothing unsigned, but a network allow-list on the runner host is a worthwhile second layer.
+
+## 9. First staging run (2026-10-08): what it found
+
+A real run through the page (sign in, plan, approve) on staging. The Worker-to-runner path, the debit, the step record and the agent all worked; the run failed safely
+(the agent picked an unpriced Kling v2.1, the proxy refused it at no media cost, $0.31 in tokens). Three bugs, none visible in any unit test:
+
+| Bug | Found how | Fix |
+|---|---|---|
+| Cloudflare answered the runner's default Python user-agent with **error 1010**, so every callback and upload was blocked and the "failed" never reached the Worker | zero `webhook_events`; reproduced with curl using that user-agent | own user-agent on callbacks and uploads; undelivered callbacks are logged; tests assert the user-agent (runner repo) |
+| The **Auto Short sweep** (`sweepSteps`) failed the live montage step after 12 minutes (it declares any provider it cannot read FAILED) and never touched the parent, so **165 credits stayed held**; the montage sweep only looked at SUBMITTED steps | step `FAILED:provider_failed` under a SUBMITTED job | `autoShortSweep` excludes `provider=neq.montage`; `montageSweep` also heals FAILED steps under a SUBMITTED parent through `failParent` (PR #639). **Verified on staging: refunded exactly once, balance 72 to 237, reconcile clean** |
+| The agent picked an **unpriced** model | meter log: 4 refused `kling-video/v2.1` calls | the agent prompt now names the priced endpoints, generated from the same price table the proxy reads |
+
+Also: my first staging build used no environment variables and baked the **development identity** into the client (no Google button, sign-in broken); the runbook now has the full recipe. The plan text says "about 30 seconds" whatever the brief asks (a fixed default in the runner).
