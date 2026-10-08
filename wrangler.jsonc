@@ -26,6 +26,11 @@
   "vars": {
     "APP_ENV": "production",
     "TENANT_PROJECTS_ENABLED": "false",
+    // ADR-0075: stage uncertain fal submission handling before activation.
+    "FAL_SUBMIT_OUTCOME_ENABLED": "false",
+    // ADR-0076: keep recovery on when rolling back durable admission.
+    "FAL_DISPATCH_SCHEMA_ENABLED": "false",
+    "FAL_DURABLE_DISPATCH_ENABLED": "false",
     // ADR-0067: Chat is open here, but the screen is still behind the per-browser preview switch
     // (localStorage.veyrnox_chat). Needs OPENROUTER_CHAT_API_KEY on the Worker: production will not use the shared key.
     "CHAT_ENABLED": "true",
@@ -164,6 +169,9 @@
         "NEXT_PUBLIC_SUPABASE_URL": "https://yrqzwqywxfesmbvhzjgj.supabase.co",
         "NEXT_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_bAxQiodzBhI6bV7lmo9gMQ_Hlg9_Ish",
         "TENANT_PROJECTS_ENABLED": "true",
+        "FAL_SUBMIT_OUTCOME_ENABLED": "false",
+        "FAL_DISPATCH_SCHEMA_ENABLED": "false",
+        "FAL_DURABLE_DISPATCH_ENABLED": "false",
         "SUBSCRIPTIONS_ENABLED": "false",
         // ADR-0067: Chat is open on staging for testing only. No text model is
         // active until the owner activates one; production stays "false".

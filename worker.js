@@ -1,3 +1,4 @@
+import { runFalDispatch } from './lib/falDispatch.js';
 /**
  * Worker entry (OpenNext custom worker): the generated app handler, plus the
  * Cron Triggers that run every 5 minutes (wrangler.jsonc `triggers.crons`):
@@ -54,6 +55,8 @@ export default {
 
     async scheduled(event, env, ctx) {
         const results = await Promise.allSettled([
+            ...(env.FAL_DISPATCH_SCHEMA_ENABLED === 'true'
+                ? [observeRecovery('fal_dispatch', () => runFalDispatch(env), env)] : []),
             cleanupProjectAssets(env),
             recoverCinemaUploads(env),
             removeCinemaUploads(env),

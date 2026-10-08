@@ -3,6 +3,8 @@ import { ACCOUNT_PAUSED_COPY } from './gateway';
 // What the create page says for each gateway error code.
 export const ERROR_COPY = {
   // A submit whose reply never arrived (imageBatch.submitErrorCode): it may have been charged.
+  dispatch_acceptance_unknown: 'We lost the reply to this request, so it may be queued and charged. Open Library to check before trying again.',
+  idempotency_conflict: 'This request key was already used with different settings. Open Library to check the original job.',
   outcome_unknown:       'We lost the reply to this request, so it may have started and been charged. Open Library to check before trying again.',
   poll_unreachable:      'Lost contact with the server, so we stopped checking. Your generation may still have run — open Library to see.',
   moderation:            'The provider declined this prompt on safety grounds. Credits refunded.',

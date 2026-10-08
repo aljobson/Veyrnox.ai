@@ -2,6 +2,8 @@
 
 How Veyrnox.ai fits together. This is the map; the reasons behind each choice are in [`docs/adr/`](docs/adr/), the rules that protect it are in [`CLAUDE.md`](CLAUDE.md), and the domain vocabulary is in [`CONTEXT.md`](CONTEXT.md). Environment-specific detail lives in [`docs/architecture/`](docs/architecture/) (`current-state.md`, `target-state.md`, `environments.md`).
 
+The [system design proposal](docs/architecture/system-design.md) develops this architecture with workload estimates, durable dispatch and recovery boundaries, service objectives, and a staged delivery plan. Proposed components are distinguished from the running application.
+
 ## The shape in one picture
 
 ```
