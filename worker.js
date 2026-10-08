@@ -60,7 +60,8 @@ export default {
             observeRecovery('top_up_backfill', () => runScheduledBackfill(handler.fetch, env, ctx), env),
             observeRecovery('upload_sweep', () => runUploadSweep(env), env),
             observeRecovery('auto_short', () => runAutoShortSweep(env), env),
-            runMontageSweep(env), // not an observeRecovery task yet: inert until the runner is configured
+            // Expected by the heartbeat only while the video-agent catalog row is active (0229).
+            observeRecovery('video_agent', () => runMontageSweep(env), env),
             observeRecovery('asset_reap', () => runAssetReap(env), env),
             observeRecovery('grsai', () => sweepGrsai({
                 cfg: { supabaseUrl: env.SUPABASE_URL, serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY },
