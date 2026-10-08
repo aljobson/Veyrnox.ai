@@ -13,7 +13,7 @@ function world({ runnerOk = true, runError = 'runner_503', cancel = null, refund
     const job = { id: JOB, user_id: 'u-1', credits: 90, state: 'DEBITED', provider_job_id: null };
     const step = { job_id: JOB, step: 'montage', ordinal: 0, provider: 'montage', provider_endpoint: 'video-agent:v1', provider_job_id: null, state: 'SUBMITTED', attempts: 1 };
     let claimed = false;
-    const calls = { runs: [], cancels: [], refunds: [], stored: null, stepFailed: [], order: [] };
+    const calls = { runs: [], cancels: [], refunds: [], stored: null, stepFailed: [], order: [], runIdAtRun: undefined };
     const rpc = async (name, a) => {
         switch (name) {
             case 'job_submitted':
@@ -51,7 +51,7 @@ function world({ runnerOk = true, runError = 'runner_503', cancel = null, refund
         rpc,
         job: async () => ({ ...job }),
         runner: {
-            run: async (req) => { calls.runs.push(req); return runnerOk ? { ok: true } : { ok: false, error: runError }; },
+            run: async (req) => { calls.runs.push(req); calls.runIdAtRun = step.provider_job_id; return runnerOk ? { ok: true } : { ok: false, error: runError }; },
             cancel: async (id) => { calls.order.push('cancel'); calls.cancels.push(id); return cancel ? cancel(calls) : { ok: true }; },
         },
         head: async () => head,
@@ -140,12 +140,50 @@ test('a failed start whose refund is rejected has still told the runner to stop'
     assert.deepEqual(w.calls.cancels, [runRef(JOB)]);
 });
 
-test('a run that cannot be recorded is cancelled at the runner, then refunded once', async () => {
+test('a run whose id cannot be recorded never reaches the runner and is refunded once', async () => {
     const w = world({ recordOk: false });
     const r = await start(BRIEF, w.deps);
     assert.equal(r.error, 'step_not_recorded');
-    assert.deepEqual(w.calls.cancels, [runRef(JOB)]);
+    assert.equal(w.calls.runs.length, 0);
+    assert.equal(w.calls.cancels.length, 0);
+    assert.equal(w.job.state, 'FAILED');
+    assert.deepEqual(w.calls.stepFailed, ['step_not_recorded']);
     assert.deepEqual(w.calls.refunds, [JOB]);
+    assert.equal(refundCalls(w), 1);
+});
+
+test('the run id is on the step before the runner is asked, so its start check always finds the step', async () => {
+    const w = world();
+    await start(BRIEF, w.deps);
+    assert.equal(w.calls.runIdAtRun, runRef(JOB));
+});
+
+test('a failed start leaves a step that carries its run id, so a late callback and the sweep can find it', async () => {
+    const w = world({ runnerOk: false, runError: 'runner_transport' });
+    await start(BRIEF, w.deps);
+    assert.equal(w.step.provider_job_id, runRef(JOB));
+    assert.equal(w.step.state, 'FAILED');
+});
+
+test('started is answered yes only while the step and the job are both live', async () => {
+    const ask = (w) => handleRunnerEvent({ event: { type: 'started' }, step: w.step, deps: w.deps, cfg: {} });
+
+    const live = world(); await start(BRIEF, live.deps);
+    assert.deepEqual(await ask(live), { status: 200, body: { ok: true } });
+
+    // The start the Worker gave up on: step failed, job refunded. A /run that reaches the runner late must be told no.
+    const gaveUp = world({ runnerOk: false, runError: 'runner_transport' }); await start(BRIEF, gaveUp.deps);
+    assert.equal((await ask(gaveUp)).status, 409);
+
+    // The job failed some other way while the step still reads SUBMITTED (the sweep, a manual fail).
+    const jobDead = world(); await start(BRIEF, jobDead.deps); await failParent(JOB, 'x', jobDead.deps);
+    assert.equal(jobDead.step.state, 'SUBMITTED');
+    assert.equal((await ask(jobDead)).status, 409);
+
+    // Asking changes nothing: no refund, no state moved, and the live run can still be asked again.
+    assert.deepEqual(await ask(live), { status: 200, body: { ok: true } });
+    assert.equal(live.job.state, 'SUBMITTED');
+    assert.equal(live.calls.refunds.length, 0);
 });
 
 test('a completed run with the object present stores the step and the parent with the right key', async () => {
@@ -212,12 +250,13 @@ test('upload_url hands out a PUT URL for our own key only while the run is live'
     assert.equal(dead.status, 409);
 });
 
-test('parseEvent accepts the four events and rejects the rest, sanitising error codes', () => {
+test('parseEvent accepts the five events and rejects the rest, sanitising error codes', () => {
     assert.deepEqual(parseEvent({ event: 'completed', bytes: 1, sha256: SHA }), { type: 'completed', bytes: 1, sha256: SHA });
     assert.deepEqual(parseEvent({ event: 'failed', error_code: 'spend_ceiling' }), { type: 'failed', errorCode: 'spend_ceiling' });
     assert.equal(parseEvent({ event: 'failed', error_code: '<script>' }).errorCode, 'runner_failed');
     assert.equal(parseEvent({ event: 'upload_url' }).type, 'upload_url');
     assert.equal(parseEvent({ event: 'progress' }).type, 'progress');
+    assert.deepEqual(parseEvent({ event: 'started' }), { type: 'started' });
     assert.equal(parseEvent({ event: 'delete_everything' }), null);
     assert.equal(parseEvent(null), null);
 });
