@@ -99,6 +99,30 @@ Following the existing probe-script pattern (silent `read -s` key prompt):
   a captions step can burn money on a refund). Four runs with placeholder links
   were rejected by fal and should not have been billed.
 
+## Staging results (2026-10-08)
+
+Flag on in staging (version `b5d0d1fd`), 0225 and 0226 applied there; driven in
+the staging Library with the edit sheet's Add captions switch.
+
+- **No audio track** (Hailuo 02 clip, 5.88 s; job `5011ee8d-972f-4957-aa47-6c29c97f83df`):
+  debited 7, the captions step submitted to `veed/subtitles`, fal failed it,
+  and the handler failed the step (`provider_failed`, 1 attempt, no retry),
+  failed the parent (`captions_failed`) and refunded once. Ledger: 2 rows, net
+  0; balance restored. The Library shows it as Failed, Refunded, +7 cr. This is
+  the first real failure callback through the handler, and it behaved as
+  designed. It settled in under a minute, so it came by webhook, not the sweep.
+  A clip with an audio track but no speech (run 3 on fal) is the other flavour
+  and was not run through the Worker.
+- **Speech** (Veo 3.1 Lite clip, 8 s; job `4b9d2fe0-c58d-4d15-a8dd-9a3332c6401b`):
+  debited 7, one captions step, STORED at `edits/<job>/captions-0.mp4` in 50 s,
+  1280x720, 8 s, with the speech burned in as captions ("Today we are making
+  fresh"). Ledger net -7.
+- The price shown in the sheet matched the debit in both runs (7 credits for a
+  single clip with captions only).
+
+Still open before production: fal's invoice for the probe and staging runs, and
+the 24 h reconcile check.
+
 ## Pricing (proposal, pending Slice 0)
 
 Same rule as PRD section 6: one `clip-edit` row, one debit, app never sums
@@ -139,8 +163,8 @@ cost.
    is still open, apply it first or renumber: both rewrite
    `job_steps_step_check`, and 0224 restates a fixed list that would drop
    `captions` if it applied after this one.
-3. Look at a real failed-callback payload (no speech) against the handler;
-   only the success callback has been seen.
+3. ~~Look at a real failed-callback payload against the handler~~ Done on
+   staging 2026-10-08 (see Staging results).
 4. Reconcile jobs clean for 24 h, then flip on staging, then production.
 
 ## Open questions
