@@ -5,7 +5,8 @@ import { Chip } from '../../_components/Chip';
 import { JobAssetPreview } from '../../_components/JobAssetPreview';
 import { gatewayFetch, notifyBalanceChanged, GatewayError } from '../../_lib/gateway';
 import { ERROR_COPY, failedJobCopy } from '../../_lib/createErrors';
-import { pushJobHistory } from '../../_lib/jobHistory';
+import { pushJobHistory, readJobHistory, jobsToWatch } from '../../_lib/jobHistory';
+import { pickResumable } from '../../_lib/videoAgentResume';
 import { useStudioJobs } from '../../_lib/useStudioJobs';
 import { jobStateUi } from '../../_lib/studioStates';
 
@@ -44,6 +45,15 @@ export default function VideoAgent() {
     window.addEventListener('veyrnox:balance-changed', refreshBalance);
     return () => window.removeEventListener('veyrnox:balance-changed', refreshBalance);
   }, [enabled, refreshBalance]);
+
+  // After a reload, pick the run in flight back up: the job history in this browser knows it was started.
+  const resumed = useRef(false);
+  useEffect(() => {
+    if (!enabled || resumed.current) return;
+    resumed.current = true;
+    const pending = pickResumable(jobsToWatch(readJobHistory()), MODEL_ID);
+    if (pending) startJobs(pending);
+  }, [enabled, startJobs]);
 
   const briefOk = brief.trim().length >= MIN_BRIEF && brief.trim().length <= MAX_BRIEF;
   const expired = plan && Date.now() / 1000 > plan.expires_at;
