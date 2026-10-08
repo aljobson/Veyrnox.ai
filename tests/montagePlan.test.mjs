@@ -37,7 +37,14 @@ test('a plan expires after 30 minutes', async () => {
 test('tampered, foreign-secret, malformed and oversized tokens are plan_invalid', async () => {
     const { token } = await mintPlanToken({ ...ask(), now: NOW });
     const [p, s] = token.split('.');
-    for (const bad of [`${p}x.${s}`, `${p}.${s.slice(0, -1)}A`, 'nodot', `${p}.${s}.extra`, '', 'a'.repeat(700), null, 42]) {
+    // Tamper with a character that is guaranteed to change. Swapping the LAST one for a fixed letter failed at random:
+    // about 1 time in 16 it already was that letter, the "tampered" token was the real one, and it verified (ci on 1122862).
+    const flip = (c) => (c === 'A' ? 'B' : 'A');
+    const badSig = flip(s[0]) + s.slice(1);
+    const badPayload = flip(p[0]) + p.slice(1);
+    assert.notEqual(badSig, s);
+    assert.notEqual(badPayload, p);
+    for (const bad of [`${p}x.${s}`, `${p}.${badSig}`, `${badPayload}.${s}`, 'nodot', `${p}.${s}.extra`, '', 'a'.repeat(700), null, 42]) {
         assert.equal((await verifyPlanToken({ ...ask(), token: bad })).error, 'plan_invalid', String(bad).slice(0, 20));
     }
     assert.equal((await verifyPlanToken({ ...ask({ secret: 'other' }), token })).error, 'plan_invalid');
