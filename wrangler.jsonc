@@ -167,8 +167,8 @@
         // ADR-0072 (vars are not inherited). Flip to "true" on staging only after 0216 is applied there.
         "PERSONAS_ENABLED": "false",
         "REFERRALS_ENABLED": "false",
-        // Vars are not inherited. Flip to "true" on staging only after 0225 is applied there.
-        "CLIP_EDIT_CAPTIONS_ENABLED": "false",
+        // Vars are not inherited. 0225 is applied on staging (2026-10-08); on for testing, production stays "false".
+        "CLIP_EDIT_CAPTIONS_ENABLED": "true",
         // ADR-0066; vars are not inherited, so staging names it too.
         "JEV_SUBMIT_ERRORS_MODE": "off",
         // Veyrnox Publish is open on staging for testing (see production).
