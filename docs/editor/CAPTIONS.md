@@ -1,6 +1,6 @@
 # PRD addendum — Clip Editor captions
 
-**Status:** Built behind `CLIP_EDIT_CAPTIONS_ENABLED` (off) · 2026-10-07 · Slice 0 done except fal's billed cost; migration 0225 not applied
+**Status:** Built behind `CLIP_EDIT_CAPTIONS_ENABLED` · 2026-10-08 · 0225 applied on production and staging; flag on in staging only; waiting on fal's billed cost and a real failure callback
 **Extends:** [PRD.md](PRD.md). Where they disagree, CLAUDE.md and the ADRs win, then PRD.md.
 
 ## Decision log
