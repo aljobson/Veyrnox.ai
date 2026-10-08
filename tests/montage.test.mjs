@@ -9,11 +9,11 @@ const JOB = '11111111-1111-4111-8111-111111111111';
 const SHA = 'a'.repeat(64);
 
 /** In-memory stand-in for the parent job, its one montage step (0227 rules), the runner and R2. */
-function world({ runnerOk = true, recordOk = true, claimRaced = false, head = { ok: true, size: 5000 } } = {}) {
+function world({ runnerOk = true, runError = 'runner_503', cancel = null, refundOk = true, recordOk = true, claimRaced = false, head = { ok: true, size: 5000 } } = {}) {
     const job = { id: JOB, user_id: 'u-1', credits: 90, state: 'DEBITED', provider_job_id: null };
     const step = { job_id: JOB, step: 'montage', ordinal: 0, provider: 'montage', provider_endpoint: 'video-agent:v1', provider_job_id: null, state: 'SUBMITTED', attempts: 1 };
     let claimed = false;
-    const calls = { runs: [], cancels: [], refunds: [], stored: null, stepFailed: [] };
+    const calls = { runs: [], cancels: [], refunds: [], stored: null, stepFailed: [], order: [] };
     const rpc = async (name, a) => {
         switch (name) {
             case 'job_submitted':
@@ -36,6 +36,8 @@ function world({ runnerOk = true, recordOk = true, claimRaced = false, head = { 
                 return { ok: true, user_id: job.user_id, credits: job.credits };
             case 'ledger_refund':
                 assert.equal(a.p_credits, 90);
+                calls.order.push('refund');
+                if (!refundOk) return { ok: false, code: 'REFUND_REJECTED' };
                 if (!calls.refunds.includes(a.p_job_id)) calls.refunds.push(a.p_job_id);
                 return { ok: true };
             case 'job_stored':
@@ -49,8 +51,8 @@ function world({ runnerOk = true, recordOk = true, claimRaced = false, head = { 
         rpc,
         job: async () => ({ ...job }),
         runner: {
-            run: async (req) => { calls.runs.push(req); return runnerOk ? { ok: true } : { ok: false, error: 'runner_503' }; },
-            cancel: async (id) => { calls.cancels.push(id); },
+            run: async (req) => { calls.runs.push(req); return runnerOk ? { ok: true } : { ok: false, error: runError }; },
+            cancel: async (id) => { calls.order.push('cancel'); calls.cancels.push(id); return cancel ? cancel(calls) : { ok: true }; },
         },
         head: async () => head,
         presignPut: async (key) => 'https://r2.example/' + key + '?sig=x',
@@ -70,6 +72,7 @@ test('start debits nothing itself: submits the parent, claims the step and calls
     assert.equal(w.calls.runs[0].run_id, runRef(JOB));
     assert.equal(w.step.provider_job_id, runRef(JOB));
     assert.equal(w.calls.refunds.length, 0);
+    assert.equal(w.calls.cancels.length, 0);
 });
 
 test('a lost claim race never calls the runner', async () => {
@@ -77,6 +80,7 @@ test('a lost claim race never calls the runner', async () => {
     const r = await start(BRIEF, w.deps);
     assert.equal(r.raced, true);
     assert.equal(w.calls.runs.length, 0);
+    assert.equal(w.calls.cancels.length, 0);
 });
 
 test('runner refusing the run refunds once and fails the step', async () => {
@@ -86,6 +90,54 @@ test('runner refusing the run refunds once and fails the step', async () => {
     assert.equal(w.job.state, 'FAILED');
     assert.deepEqual(w.calls.refunds, [JOB]);
     assert.deepEqual(w.calls.stepFailed, ['runner_submit_failed']);
+});
+
+const refundCalls = (w) => w.calls.order.filter((e) => e === 'refund').length;
+
+// 'runner_transport' is a timeout or a network error and 5xx may come from a proxy: either way the runner may
+// have accepted the run (its /run answers 202 and works in a thread). 4xx is the runner refusing before it starts.
+for (const runError of ['runner_transport', 'runner_503', 'runner_429', 'runner_400', 'runner_401']) {
+    test(`a start that failed with ${runError} is cancelled at the runner, then refunded once`, async () => {
+        const w = world({ runnerOk: false, runError });
+        const r = await start(BRIEF, w.deps);
+        assert.equal(r.error, 'runner_submit_failed');
+        assert.deepEqual(w.calls.cancels, [runRef(JOB)]);
+        assert.equal(w.job.state, 'FAILED');
+        assert.deepEqual(w.calls.stepFailed, ['runner_submit_failed']);
+        assert.deepEqual(w.calls.refunds, [JOB]);
+        assert.equal(refundCalls(w), 1);
+        assert.deepEqual(w.calls.order, ['cancel', 'refund']);
+    });
+}
+
+test('a cancel that throws does not skip the refund of a failed start', async () => {
+    const w = world({ runnerOk: false, runError: 'runner_transport', cancel: async () => { throw new Error('runner down'); } });
+    const r = await start(BRIEF, w.deps);
+    assert.equal(r.error, 'runner_submit_failed');
+    assert.deepEqual(w.calls.cancels, [runRef(JOB)]);
+    assert.equal(w.job.state, 'FAILED');
+    assert.equal(refundCalls(w), 1);
+});
+
+test('the refund of a failed start does not wait for a slow cancel', async () => {
+    // An unreachable runner holds the cancel for its full timeout. This one settles only once the refund has
+    // been asked for; if the refund waited on it, it would give up after 200 ms having seen none.
+    let sawRefund = null;
+    const cancel = async (calls) => {
+        const until = Date.now() + 200;
+        while (!calls.order.includes('refund') && Date.now() < until) await new Promise((r) => setTimeout(r, 2));
+        sawRefund = calls.order.includes('refund');
+    };
+    const w = world({ runnerOk: false, runError: 'runner_transport', cancel });
+    await start(BRIEF, w.deps);
+    assert.equal(sawRefund, true);
+    assert.equal(refundCalls(w), 1);
+});
+
+test('a failed start whose refund is rejected has still told the runner to stop', async () => {
+    const w = world({ runnerOk: false, runError: 'runner_transport', refundOk: false });
+    await assert.rejects(start(BRIEF, w.deps), /refund rejected/);
+    assert.deepEqual(w.calls.cancels, [runRef(JOB)]);
 });
 
 test('a run that cannot be recorded is cancelled at the runner, then refunded once', async () => {
