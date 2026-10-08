@@ -1,6 +1,6 @@
 # PRD addendum — Clip Editor captions
 
-**Status:** Built behind `CLIP_EDIT_CAPTIONS_ENABLED` · 2026-10-08 · 0225 applied on production and staging; flag on in staging only; waiting on fal's billed cost and a real failure callback
+**Status:** Live behind `CLIP_EDIT_CAPTIONS_ENABLED` (production flag on 2026-10-08 at the owner's request) · 0225 applied on production and staging · edit sheet still hidden behind `localStorage.veyrnox_editor_captions` · fal's invoice for the probe and staging runs not yet checked
 **Extends:** [PRD.md](PRD.md). Where they disagree, CLAUDE.md and the ADRs win, then PRD.md.
 
 ## Decision log
