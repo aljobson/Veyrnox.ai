@@ -18,6 +18,7 @@
 
 import { socialUploadsEnabled } from '../../../../../lib/social/uploadPolicy.js';
 import { calendarEnabled } from '../../../../../lib/social/publishFeature.js';
+import { postCapabilityError } from '../../../../../lib/social/postCapabilities.js';
 import { NextResponse } from 'next/server';
 import { accountReadLimit } from '../../../../../lib/accountReadLimit.js';
 import { socialPostWriteLimit } from '../../../../../lib/socialPostWriteLimit.js';
@@ -141,6 +142,12 @@ export async function POST(req) {
 
     let result;
     try {
+        const listed = await rpc('list_social_accounts', { p_auth_id: authId, p_brand_id: brandId }, cfg);
+        if (!listed?.ok || !Array.isArray(listed.accounts)) throw new Error('account_lookup_failed');
+        const destinations = listed.accounts.filter((a) => accountIds.includes(a.id) && a.status === 'active');
+        if (destinations.length !== new Set(accountIds).size) return NextResponse.json({ error: 'ACCOUNT_NOT_FOUND' }, { status: 404 });
+        const capabilityError = postCapabilityError(destinations, mediaItems, globalText);
+        if (capabilityError) return NextResponse.json({ error: capabilityError }, { status: 400 });
         result = await rpc('create_social_post', {
             p_auth_id: authId,
             p_brand_id: brandId,

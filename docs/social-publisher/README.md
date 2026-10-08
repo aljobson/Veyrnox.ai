@@ -87,6 +87,10 @@ should look*.
 9. [Staging acceptance, 2026-10-07](ACCEPTANCE-2026-10-07.md) — the real YouTube publication, real
    video analytics and the live calendar checks. This is the latest verified state.
 
+8. [All-network tester handover, 2026-10-08](INTEGRATIONS-TESTING-2026-10-08.md) — native
+   connections for eleven networks, supported publish actions, administrator credentials,
+   feature switch, migration 0228 and live tester acceptance steps.
+
 ## Non-goals for this pack
 
 - The build-vs-buy and platform-scope ADR ([ADR-0061](../adr/0061-veyrnox-publish-social-scheduling.md))
@@ -99,12 +103,12 @@ should look*.
 
 ## Open questions
 
-1. **Which platforms ship in v1?** Metricool supports eleven networks (Instagram, Facebook, X/Twitter,
-   LinkedIn, TikTok, YouTube, Pinterest, Threads, Bluesky, Twitch, Google Business Profile). Section
-   1.6 of the product spec proposes a phased rollout. **Resolved:** ADR-0061 approved the v1 cut
-   (Instagram, X, LinkedIn, TikTok, YouTube); those five are the only networks the connect UI offers.
-   Facebook, Pinterest, Threads, Bluesky, Twitch and Google Business Profile exist in the database
-   CHECK lists but have no adapter on `main`.
+1. **Platform rollout.** ADR-0061 approved a v1 cut of five networks (Instagram, X, LinkedIn, TikTok,
+   YouTube). The owner extended this to all eleven for tester implementation on 2026-10-08
+   (ADR-0061 amendment, #637): Facebook Pages, Threads, Pinterest boards, Bluesky, Twitch and
+   Google Business Profile have native adapters behind `PUBLISH_EXTENDED_NETWORKS_ENABLED`
+   (default false). Production activation still requires provider setup and live acceptance. See the
+   [tester handover](INTEGRATIONS-TESTING-2026-10-08.md) for format and analytics limits.
 2. **OAuth app approval lead time.** Meta (Instagram/Facebook), TikTok and YouTube each require app
    review before production posting scopes are granted — this can take weeks and should start in
    parallel with engineering, not after. Per-network status as of 2026-10-08 is in
