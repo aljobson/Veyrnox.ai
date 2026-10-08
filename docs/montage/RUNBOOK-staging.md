@@ -49,15 +49,22 @@ cd ~/Documents/GitHub/veyrnox-montage-runner && read -s "ANTHROPIC_API_KEY?Anthr
 cd ~/Documents/GitHub/veyrnox-montage-runner && read -s "FAL_KEY?fal montage-runner key: " && echo && fly secrets set -a veyrnox-montage-runner-staging FAL_KEY="$FAL_KEY"; unset FAL_KEY
 ```
 
-## 5. Worker side (staging) — the risky step
+## 5. Worker side (staging) — read this before running anything
 
-A secret edit deploys the newest uploaded version (memory: cloudflare-secret-edits-deploy-latest-upload). So:
-1. Make sure the newest upload IS the version you want live on staging (main, with #618), then edit secrets.
-2. Set, with `wrangler secret put <NAME> --env staging` from the repo root, typing or piping the value yourself:
-   `MONTAGE_SIGNING_SECRET` (the same `$SECRET`), `MONTAGE_PLAN_SECRET` (a different `openssl rand -hex 32`),
-   `MONTAGE_RUNNER_BASE` (`https://veyrnox-montage-runner-staging.fly.dev`).
-3. Turn the flag on for staging only: edit `env.staging.vars.AGENT_VIDEO_ENABLED` to `"true"` in a PR, merge, let it deploy.
-4. After: compare the live staging version's etag with the latest staging upload (`wrangler versions view <id> --json`). If they differ, redeploy.
+Facts checked 2026-10-08 (read-only): the live staging version `b5d0d1fd` (uploaded 11:44) is also the newest upload, so a secret edit will
+not roll staging back. It is **older than PR #618** (merged 14:45), so staging has no montage routes until it is redeployed from main.
+Staging is deployed by hand (`npx wrangler deploy --env staging`, as in the other staging runbooks), never by a workflow.
+
+Order, and why: secrets first (newest upload is live, so safe), then one deploy of current main that also carries the staging-only flag
+and the runner address as `--var`s (no config PR, nothing changes for production). Rollback is `npx wrangler rollback <version-id> --env staging`;
+copy the current version id first (`npx wrangler deployments list --env staging`).
+
+1. Generate the shared signing secret in your shell, set it on the runner and on the Worker (you never type or see it):
+   `SECRET=$(openssl rand -hex 32)`; `fly secrets set -a veyrnox-montage-runner-staging RUNNER_SIGNING_SECRET="$SECRET"`;
+   `printf %s "$SECRET" | npx wrangler secret put MONTAGE_SIGNING_SECRET --env staging`.
+2. A different value for the plan ticket secret, Worker only: `printf %s "$(openssl rand -hex 32)" | npx wrangler secret put MONTAGE_PLAN_SECRET --env staging`.
+3. Deploy current main to staging with the flag and the runner address as vars (`npm run build:worker`, then `npx wrangler deploy --env staging --var AGENT_VIDEO_ENABLED:true --var MONTAGE_RUNNER_BASE:https://veyrnox-montage-runner-staging.fly.dev`).
+4. Check: `npx wrangler deployments list --env staging` shows the new version at 100%.
 
 ## 6. Staging row and test credits
 
