@@ -220,3 +220,21 @@ Fix: Fly auto-stop is off; the runner stops itself only after `RUNNER_IDLE_EXIT_
 The fal clips this run generated are probably billed with no video produced; the job stays SUBMITTED until the Worker's 45-minute timeout sweep refunds it (about 18:16 UTC).
 
 Open: fal's real billing for this run (clip count and audio tier) is still unread; it is the number that sets the price.
+
+### Third staging run (2026-10-08, job 647470d0): the first full success
+
+Brief to Library, through the real page, Worker, runner on Fly and fal:
+
+| Measure | Value |
+|---|---|
+| Result | job **STORED**; `video-agent/<job id>/final.mp4`, video/mp4, **9.9 MB**, 15.0 s, 1080x1920; shown in the Library as DONE, AI GENERATED, -165 cr |
+| Time | 4 min 05 s from approve to stored (agent 237 s, 17 turns) |
+| Paid calls | 3 x Kling v3 standard 5 s clips; proxy reserved **$2.31** of the $2.50 ceiling (dearest tier); nothing refused |
+| Anthropic tokens | **$0.43** (Opus) |
+| Ledger | exactly one `debit:generation -165`, no refund; balance 237 -> 72; `reconcile_balances()` 0 rows |
+| Callbacks | 2 `webhook_events` (source montage); the upload went through the Worker-minted presigned PUT |
+| Machine | stayed up for the whole run (auto-stop off; idle exit after 10 min) |
+
+Not yet done: a forced mid-run failure with the fixed code (the runbook's last step), fal's real billing figure, the "about 30 seconds" plan text, and the page did
+not show the finished video inline (it showed the "ready" toast and the Library entry; the brief box had been cleared). The second run's job was cancelled by hand
+through `job_step_failed`, `job_failed` and `ledger_refund` at the owner's request rather than waiting for the 45-minute timeout, so **the timeout path is still unproven on staging**.
