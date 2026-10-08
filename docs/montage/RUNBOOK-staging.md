@@ -63,7 +63,13 @@ copy the current version id first (`npx wrangler deployments list --env staging`
    `SECRET=$(openssl rand -hex 32)`; `fly secrets set -a veyrnox-montage-runner-staging RUNNER_SIGNING_SECRET="$SECRET"`;
    `printf %s "$SECRET" | npx wrangler secret put MONTAGE_SIGNING_SECRET --env staging`.
 2. A different value for the plan ticket secret, Worker only: `printf %s "$(openssl rand -hex 32)" | npx wrangler secret put MONTAGE_PLAN_SECRET --env staging`.
-3. Deploy current main to staging with the flag and the runner address as vars (`npm run build:worker`, then `npx wrangler deploy --env staging --var AGENT_VIDEO_ENABLED:true --var MONTAGE_RUNNER_BASE:https://veyrnox-montage-runner-staging.fly.dev`).
+3. Build current main **with the staging identity** and deploy it with the flag and runner address as vars. A plain `npm run build:worker` bakes the
+   *development* identity into the client (local Supabase key, no Google button, sign-in cannot work: this happened on 2026-10-08, my mistake in the first
+   version of this runbook). The recipe is the one the other staging runbooks use:
+   `cd ~/Documents/GitHub/Veyrnox.ai && git checkout main && git pull`, then
+   `APP_ENV=staging SUPABASE_URL=https://yrqzwqywxfesmbvhzjgj.supabase.co NEXT_PUBLIC_SUPABASE_URL=https://yrqzwqywxfesmbvhzjgj.supabase.co NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_bAxQiodzBhI6bV7lmo9gMQ_Hlg9_Ish PUBLIC_HOST=https://veyrnox-ai-staging.al-jobson.workers.dev npm run build:worker`, then
+   `npx wrangler deploy --env staging --var AGENT_VIDEO_ENABLED:true --var MONTAGE_RUNNER_BASE:https://veyrnox-montage-runner-staging.fly.dev`.
+   Quick check afterwards: the sign-in modal shows **Continue with Google**, and the bundle contains no `sb_publishable_local`.
 4. Check: `npx wrangler deployments list --env staging` shows the new version at 100%.
 
 ## 6. Staging row and test credits
