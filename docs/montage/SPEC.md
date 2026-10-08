@@ -151,7 +151,7 @@ thinner product and did not look at it. Until the cost per video is known and qu
 default model. Open product decision: the output resolution is whatever the agent picks (720p vs 1080p); the spec must
 state it, since fal bills the same clips either way but storage and bandwidth do not.
 
-### Pricing worksheet (prepared 2026-10-08; waits on one number: fal's real billing for runs 4 and 5)
+### Pricing worksheet (prepared 2026-10-08)
 
 ADR-0014 floor: credits = ceil(cost / (0.5 x $0.033)) = ceil(cost / $0.0165). One run = three 5 s Kling v3 standard clips
 (15 s of video) + Anthropic tokens ($0.41 on Opus, run 4). fal's published rates (read 2026-10-08): $0.084 / $0.126 / $0.154 per
@@ -167,3 +167,7 @@ Not in these numbers, so the real price is higher: the runner's own compute and 
 (fal bills clips that finished even when a later step fails, and the user is refunded in full), retries, and any
 music or other paid call added later. Until fal's real figure is known, the safe choice is the worst-case row (165 credits),
 which is also what the per-run ceiling protects. Compare Auto Short: 110 credits for 32 s at a $0.70 ceiling.
+
+**Decision 2026-10-08 (owner: "use 165")**: the working price is **165 credits** per video (the worst-case row), the per-run
+ceiling at the runner is **$2.50**, and the `video-agent` catalog row carries `credits_5s = 165`, `provider_cost_per_unit = 2.72`,
+still inactive (migration 0227). fal's real billing is still unread; when it is, the price may only come down, never silently go up.
