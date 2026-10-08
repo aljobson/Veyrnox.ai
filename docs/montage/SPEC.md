@@ -112,3 +112,25 @@ It also tried `registry.npmjs.org` (refused, harmless).
   owner confirmed the resale terms for (the catalog has Kling v2.6 pro text-to-video and v3 pro image-to-video). It is the
   same vendor and model family; confirm it is in scope before the real run.
 - fal's queue status and result reads are free, so `queue.fal.run` GET is allowed; a paid job could not be collected otherwise.
+
+### Fourth run (2026-10-08): first real paid run, ceiling $2.50
+
+Completed end to end and uploaded (12.4 MB, 15 s, 12 turns, 187 s). The agent made **three Kling v3 standard 5 s clips**
+through fal, cut them in FFmpeg with crossfades and a title, and used the clips' own audio plus a free local drone.
+
+| Measure | Value |
+|---|---|
+| Meter reservation (dearest tier, 3 x 5 s x $0.154) | **$2.31** of the $2.50 ceiling |
+| Agent's own claim of paid spend | $0.30 (3 x $0.10), **wrong by the same 4-8x as its estimate** |
+| fal's real billing | **not yet read**: owner to read fal's usage page (the figure that sets the price) |
+| Anthropic tokens (Opus) | **$0.41** |
+| Output size | 12.4 MB (earlier procedural run: 149 MB) |
+
+New observations:
+- The agent also tried `POST queue.fal.run/fal-ai/elevenlabs/...` (music): unpriced, refused, and it carried on without
+  music. Left unpriced on purpose.
+- Polling is cheap in requests (about 12 status reads per clip) and free.
+- It chose Kling over Seedance (about $1.52 per clip by its own note) because of the cost instruction in the prompt.
+
+The meter's worst case is conservative by design; the measured price must come from fal's billing, not from the meter or
+from the agent. Ten runs at this size would reserve up to $23 at fal and about $4 in tokens.
