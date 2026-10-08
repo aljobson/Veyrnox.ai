@@ -4,6 +4,9 @@ Answers [RUNBOOK-production.md](RUNBOOK-production.md) gate G6: "queue, more mac
 [ADR-0074](../adr/0074-openmontage-video-agent.md), [SPEC](SPEC.md). Checked against main at `efe273e8`, the runner repo at `daf6867`
 and the staging runner's live settings (read 2026-10-08 20:30 UTC).
 
+**Updated 2026-10-08 21:30 UTC:** section 5 adds the machine's measured CPU use. It overrides the slot arithmetic in sections 1
+and 4 for the machine the runner is on today: the limit there is the CPU quota, about 4 runs an hour, not the number of slots.
+
 ## Decision (owner, 2026-10-08: "approve")
 
 What was put to the owner and approved:
@@ -20,7 +23,7 @@ The proposal described one slot, which was true when it was written. Since then:
 - **The runner takes three runs at once**, not one (runner `096aaae`, 19:04 UTC; `RUNNER_MAX_CONCURRENT = "3"` on staging). Its own
   comment says "a starting guess: not load-tested". This is the cheap step this design would take first anyway (more on one machine
   before more machines), and it needs no routing. It moves the trigger in point 4: with three slots the same rule gives a different
-  number. **That number is proposed in section 4 and is not yet approved.**
+  number. **That number was proposed here and is now withdrawn:** section 5 shows three at once does not hold on this machine.
 - #651 also limits each account to one video in the making at a time.
 - #652 and runner `daf6867` close the hole this design found: a start that was never confirmed is now cancelled before the refund, and
   a cancel that reaches the runner before its run is remembered, so the run is refused.
@@ -72,8 +75,8 @@ The proposal described one slot, which was true when it was written. Since then:
 - Approvals arrive independently of each other. A launch post makes bursts worse than that, so the figures below are floors.
 - The busiest hour carries 15% of a day's approvals.
 - A refused user does not retry at once. Retries raise the load further.
-- **A run takes 245 s whether it runs alone or beside two others.** Unmeasured, and the least safe of the four: the final cut is
-  CPU work and the three share four CPUs and 4 GB.
+- **A run takes 245 s whether it runs alone or beside two others.** Now known to be false on the current machine (section 5): the
+  final cut is CPU work, and the machine's CPU quota covers about one cut at a time.
 
 ### Usage
 
@@ -87,7 +90,8 @@ progress, wherever it runs. Share of approvals refused in the busiest hour (Erla
 | 10 | 67 | 40% | 12% | 2.7% |
 | 15 | 100 | 51% | 20% | 6.5% |
 
-Load that keeps refusals under 10% in the busiest hour:
+Load that keeps refusals under 10% in the busiest hour, **where the machine has the CPU for it** (on today's machine it does not;
+section 5):
 
 | Slots | If a run takes 245 s | If sharing the machine doubles it to 490 s |
 |---|---|---|
@@ -174,8 +178,8 @@ busiest hour refuses more than 10% of approvals on three days out of seven.** Un
 |---|---|---|---|---|
 | 0 | replaced by #651 | n/a | Refuse after the debit | A debit, a failed Library entry and a refund per busy approval |
 | 1 | **on main** (#651) | The first table in section 1 | Refuse before the debit | No fairness: whoever presses first wins. The user must come back. A fixed 120 s hint against 245 s runs |
-| 2a | **on staging, not load-tested** (runner `096aaae`) | With one slot: two or more runs started within one hour, on three days out of seven (the approved trigger) | Three runs on the one machine | Runs share 4 CPUs and 4 GB, so each may slow down. $13.50 in flight at once. Up to nine fal clips and three agent sessions in parallel. One machine death ends three runs |
-| 2b | not built | With three slots: **17 or more runs started within one hour, on three days out of seven** (proposed, not approved). Sooner if the load test shows three at once is too many for the machine | A bigger machine first, then machines addressed one by one, see below | A list of machine ids to keep current. More in flight at once. Needs G8 |
+| 2a | **on staging; section 5 predicts it fails when three cuts coincide** (runner `096aaae`) | With one slot: two or more runs started within one hour, on three days out of seven (the approved trigger) | Three runs on the one machine | Runs share 4 CPUs and 4 GB, so each may slow down. $13.50 in flight at once. Up to nine fal clips and three agent sessions in parallel. One machine death ends three runs |
+| 2b | not built | Withdrawn until the machine size is chosen (section 5): the earlier proposal of 17 or more runs started within one hour assumed CPU the machine does not have | A bigger machine first, then machines addressed one by one, see below | A list of machine ids to keep current. More in flight at once. Needs G8 |
 | 3 | not built | 2b is in place, refusals are still above 10% in short bursts, and the machines are idle most of the day. Or users must be able to leave the page | A bounded line, see below | Credits held for work not started, or a debit that can fail later. New states in the money path. ADR, acceptance tests, a 24-hour reconcile soak |
 
 ### Small improvements inside stage 1
@@ -225,15 +229,82 @@ the Worker. A fixed pool needs no new secret.
 - A bounded depth. Past it, refuse as in stage 1. An unbounded queue is the failure, not the fix.
 - Position and an estimate for the user, and a cancel-while-waiting with its refund.
 
+## 5. Measured after the decision: on this machine the CPU quota is the limit, not the slots
+
+Read on 2026-10-08 21:30 UTC from Fly's own metrics for the staging runner. Nothing was run and nothing was spent.
+
+### One real run, alone (job `647470d0`, the only full success so far)
+
+| Measure | Value |
+|---|---|
+| CPU the run used | about **220 CPU-seconds**, nearly all in the last 80 s (the cut), peaking at 2.65 of the 4 CPUs |
+| The first 150 s, waiting on fal | under 0.2 CPUs |
+| Memory | 318 MB idle, 1,371 MB at the peak: about 1,050 MB for one run |
+| CPU burst balance | 225 CPU-seconds before the cut, 42 after. Never throttled, with 42 to spare |
+
+### How this machine's CPU is rationed
+
+The runner is on a Fly `shared` size. From Fly's "CPU performance" page and the machine's own metrics:
+
+- Its sustained quota is **0.25 of one CPU** for the whole machine (`fly_instance_cpu_baseline` reads 0.25).
+- Above that it spends a burst balance. The balance earns 0.25 CPU-seconds per second the machine is up (measured: 149 in 600 idle
+  seconds), earns nothing while the machine is stopped, and starts at about 200 after a deploy (seen five times today). Highest seen: 853.
+- At zero, the machine is held to 0.25 CPUs until the balance recovers.
+
+### What follows
+
+Worked out from that one run with a one-second simulation. It reproduces the measured run (232 s against 245 s), and it is a little
+kind to the machine. **These are predictions, not tests.**
+
+| Case | Balance at the start | Last run finishes after |
+|---|---|---|
+| One run, spaced out | 225 | 3.9 minutes (measured: 4.1) |
+| One run right behind another | 50 | 11 minutes |
+| Two at once | 200 | 16 minutes |
+| **Three at once, after a deploy** | 200 | **30.5 minutes: past the runner's 30-minute limit, so three timeouts and three refunds, with about $7 already spent at fal** |
+| Three at once, machine up for a while | 500 | 10.5 minutes |
+| Three at once | 650 or more | 5 minutes |
+
+- **The sustained ceiling is 0.25 x 3600 / 220 = about 4 runs an hour, whatever the slot count.** Section 1's 14.7 runs an hour per
+  slot is wall-clock time and does not hold on this machine. Neither do its figures for three slots.
+- Spaced-out runs are fine. A run and its 10-minute idle tail keep the machine up about 14 minutes, which earns about 210
+  CPU-seconds, roughly what the run spends.
+- Memory: three cuts at the same moment need about 3.5 GB of the 4 GB.
+
+### So the three-at-once test was not run
+
+It is predicted to fail and to spend about $7 doing so. It also needs three signed-in accounts (one video per account at a time);
+staging has three accounts with 165 credits or more, and signing in is the owner's.
+
+### Options, cheapest first
+
+| Option | Effect | What it costs |
+|---|---|---|
+| A. Dedicated CPUs: a Fly `performance` size (full quota, no balance). `performance-2x` is 2 CPUs and 4 GB | About 32 runs an hour by CPU. One run in 4.2 minutes, three at once in 7.6 | A higher per-second price while the machine is up (a run plus its 10-minute tail); read Fly's price list. Three cuts at once still need about 3.5 GB, so consider 8 GB |
+| B. Keep the machine and set the slots back to 1 | Honest about what it can do: one at a time, about 4 an hour | A run right behind another is slow (11 minutes). Section 1's one-slot refusal figures apply |
+| C. Make a run need less CPU (720p output, a faster encode setting) | In proportion | Output quality: a product decision |
+
+A is the one that makes three slots true.
+
+**Decision 2026-10-08 (owner: "A"): dedicated CPUs.** Not applied yet: staging still runs the shared machine with three slots, so
+until it is applied a burst of three approvals there can still become three refunds and a fal bill. To apply it:
+
+1. Put the size in the runner's `fly.toml`. A `fly scale` on its own is undone by the next deploy from that file.
+2. Read Fly's current per-second price for the size and write the cost per run next to it. It has not been read.
+3. Deploy to staging when no run is in flight, then pass the lockdown checks on the new machine (`scripts/verify-on-fly.sh`).
+
+Proposed setting: `performance-2x` (2 CPUs) with 8 GB if three slots stay, or its standard 4 GB with two slots.
+
 ## Open questions and next measurements
 
-1. **Owner:** three slots moves the trigger. Accept "17 or more runs started within one hour, on three days out of seven" for stage 2b?
-2. **Staging, before step 7 of the runbook: three runs at once.** Record each run's time, the machine's peak memory and CPU, and any
-   refusal from fal or Anthropic. This decides whether three stays, and it replaces 245 s in section 1. It spends about $7 at fal and
-   $1.30 in tokens, so it needs the owner's go. It can be three of G3's ten runs.
+1. Decided: option A in section 5 (owner, 2026-10-08). Still open when it is applied: 8 GB with three slots, or 4 GB with two.
+   The stage 2b trigger is set after the first three-at-once run on the new machine.
+2. **Three runs at once on staging: only after option A.** It then costs about $7 at fal and $1.30 in tokens and needs three
+   signed-in accounts. Record each run's time, the machine's peak memory, and any refusal from fal or Anthropic. It can be three of
+   G3's ten runs.
 3. Staging: `/status` against a machine that has exited. If it takes longer than 20 s, a user who returns after 10 quiet minutes sees
    "can't be reached".
-4. G3's ten runs: record the spread of run times (median, p95, longest).
+4. G3's ten runs: record the spread of run times (median, p95, longest) and of CPU-seconds per run. Section 5 rests on one run.
 5. Staging: two approvals from two accounts at the same moment with one slot left. Confirm the loser is refunded exactly once.
 6. After step 9 of the runbook: runs started per hour, weekly. That is the trigger for stage 2b.
 
