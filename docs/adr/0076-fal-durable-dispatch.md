@@ -73,4 +73,26 @@ Rollback turns admission off while keeping schema recovery on for accepted work.
 
 ## Local validation
 
-Full fresh-schema replay and replaying 0230 succeeded. Real Postgres acceptance covers concurrent admission/claim, rollback on failed intent insertion, canonical replay/conflicts, crashed attempts, late evidence, projection outage, legacy ownership, free allowance, terminal refunds, monitoring, and privilege boundaries. Existing ledger backstops, default privileges, foreign-key indexes, subscription credits, and free-allowance tests passed. The full JavaScript suite passed 1,739 tests with one skipped; the final focused run passed 47 tests. All 360 ledger acceptance tests and twelve dispatch Postgres checks passed. Lint passed (74 existing warnings; the scoped lint also reports the existing Worker default-export warning), and the production Worker build completed. Local success does not satisfy staging or production activation gates.
+Full fresh-schema replay and replaying 0230 succeeded. Real Postgres acceptance covers concurrent admission/claim, rollback on failed intent insertion, canonical replay/conflicts, crashed attempts, late evidence, projection outage, legacy ownership, free allowance, terminal refunds, monitoring, and privilege boundaries. Existing ledger backstops, default privileges, foreign-key indexes, subscription credits, and free-allowance tests passed. After updating the branch to main’s latest video-agent fixes, the full JavaScript suite passed 1,759 tests with one skipped; the earlier focused run passed 47 tests, with one additional cron budget regression added for review. All 360 ledger acceptance tests and twelve dispatch Postgres checks passed. Lint passed (74 existing warnings; the scoped lint also reports the existing Worker default-export warning), and the production Worker build completed. Local success does not satisfy staging or production activation gates.
+
+## Staging acceptance record
+
+All staging cases below are pending. Record the deployed revision, applied migration name, test account, job/attempt IDs, HTTP responses, database state, ledger effects, and redacted logs for each. Use an isolated staging database and a controlled adapter for fault injection; never redirect production fal traffic or expose an unsigned callback shortcut. A live provider smoke test needs a bounded, agreed spend.
+
+| Case | Required observation |
+| --- | --- |
+| Schema recovery on, admission off | Cron runs with a valid heartbeat; new requests retain legacy admission. |
+| Normal acceptance | 202 after commit; one intent/debit; one fal POST; provider handle saved and output appears in Library. |
+| Equal replay / changed replay | Equal request returns the same job; changed canonical inputs or shaped payload returns 409; neither sends another POST. |
+| Intent insertion failure | No job, debit, or consumed free allowance survives the failed transaction. |
+| Lost admission acknowledgement | 503 uncertainty; exact replay finds the original job; no fallback debit or provider call. |
+| Lost claim acknowledgement / crash before submit | STARTED is never reclaimed; eventual UNKNOWN/refund; provider POST count stays zero. |
+| Provider accepted, reply lost | UNKNOWN without immediate refund; no resubmission; existing sweep refunds unresolved work once. |
+| Accepted evidence write acknowledgement lost | Identical evidence writes replay safely; one provider POST; handle projection succeeds. |
+| Accepted evidence durable, projection unavailable | Later cron attaches the saved handle; one poisoned job does not roll back other handles. |
+| Signed callback before handle projection | Retryable failure before inbox dedupe; valid redelivery completes after mapping; duplicate callback has one effect. |
+| Explicit refusal / free allowance | Existing idempotent refund or allowance return; repeated recovery does not mint extra credits. |
+| Sweep wins / late acceptance | Refunded job stays refunded; accepted handle remains available for provider-spend review. |
+| Admission rollback / cron outage | Admission off still drains existing work; missed/failed heartbeats and queue-age counters alert. |
+
+At the end, record zero differences from balance/free/subscription reconciliation, no unexplained provider spend, measured queued latency/drain, and twenty-four hours of clean recovery monitoring. Keep both production dispatch flags false until this evidence is reviewed. The draft PR and local tests do not constitute this record.

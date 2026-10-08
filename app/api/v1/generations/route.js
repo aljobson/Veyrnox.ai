@@ -1,7 +1,6 @@
 import { falDispatchEnabled, admitFalDispatch } from '../../../../lib/falDispatch.js';
 import { providerFor } from '../../../../packages/provider-sdk/registry.js';
 
-
 import { NextResponse } from 'next/server';
 import { rpc, select, envConfig, SupabaseError } from '../../../../packages/db/supabase-client.js';
 import { capabilityFor, declaredInputs, checkSource } from '../../../../lib/modelCapabilities.js';
@@ -385,11 +384,8 @@ export async function POST(req) {
             inputs: modelInputs, jobInputs, free: freeAllowanceOn, cfg });
     }
     let debit = null;
-    // ADR-0069: a model with a free allowance waives the price of a job while the account has some left today.
-    // submit_free_job takes the allowance and creates the job at 0 Credits with no ledger row; with none left it
-    // writes nothing (taken:false) and the normal debit below runs at the catalog price. A refusal it reports
-    // (rate limit, Frozen account) is answered exactly like the same refusal from ledger_debit. If the call itself
-    // fails we fall through to the paid debit, which finds the job by idempotency key if the free one did land.
+    // ADR-0069: allowance and zero-credit job are atomic. No allowance falls through to paid debit;
+    // after a lost acknowledgement ledger_debit finds the existing job by key.
     if (freeAllowanceOn && Number(modelRow.free_allowance_per_day) > 0) {
         debit = await takeFreeJob({
             cfg, authId, userId, key: idempotencyKey, modelId, inputs: jobInputs,

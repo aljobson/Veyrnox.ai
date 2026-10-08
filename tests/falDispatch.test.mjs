@@ -96,3 +96,10 @@ test('work budget expires before another claim', async () => {
     assert.equal((await runFalDispatch(env,d)).submitted,0);
     assert.equal(d.calls.filter(c=>c.name==='start_fal_dispatch').length,0);
 });
+
+test('the invocation reserves enough time for claim, submit, two evidence writes and recovery', async () => {
+    let calls=0;
+    const d=deps({count:20,now:()=>calls++===0?0:135_000});
+    assert.equal((await runFalDispatch(env,d)).submitted,0);
+    assert.equal(d.calls.filter(c=>c.name==='start_fal_dispatch').length,0);
+});
