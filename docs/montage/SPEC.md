@@ -238,3 +238,22 @@ Brief to Library, through the real page, Worker, runner on Fly and fal:
 Not yet done: a forced mid-run failure with the fixed code (the runbook's last step), fal's real billing figure, the "about 30 seconds" plan text, and the page did
 not show the finished video inline (it showed the "ready" toast and the Library entry; the brief box had been cleared). The second run's job was cancelled by hand
 through `job_step_failed`, `job_failed` and `ledger_refund` at the owner's request rather than waiting for the 45-minute timeout, so **the timeout path is still unproven on staging**.
+
+### Later the same day (2026-10-08): the remaining staging checks
+
+| Check | Result |
+|---|---|
+| Third real run (job 647470d0) | **Full success**: STORED, 9.9 MB 15 s 1080x1920 MP4 in the Library, 4 min 05 s, three Kling v3 standard clips ($2.31 reserved at the dearest tier), $0.43 of tokens, exactly one 165-credit debit, reconcile clean. The machine stayed up (auto-stop off). |
+| Second real run (job 4e7d3820) | Killed by Fly's auto-stop at about 346 s (fixed: auto-stop off, the runner exits itself after 10 idle minutes with no run in flight). Cancelled by hand at the owner's request through `job_step_failed`, `job_failed`, `ledger_refund`: REFUNDED, one debit and one refund. |
+| Test-pattern run (runner `RUNNER_AGENT=fake`, no fal or Anthropic spend) | STORED in 5 s; the page showed progress and then the video inline. The missing inline video on the 4-minute run was the tab having reloaded, not a page fault. |
+| Resume after reload (PR #647) | A freshly loaded page picked the job back up from this browser's job history and showed the video with no click. Checked by removing the last job's "settled" mark; a reload during a live multi-minute run is still untested. |
+| Plan text | No longer invents "about 30 seconds"; says "Most videos come out at about 15 seconds." |
+| Low balance | With 72 credits against 165, Approve was disabled with the top-up message. |
+| **Runner unreachable** (machine cordoned and stopped, then a plan approved; job ccbb064c) | **REFUNDED in 21 s**: step FAILED `runner_submit_failed`, ledger `debit -165` then `refund +165`, balance unchanged at 207, reconcile clean; the page showed "FAILED · REFUNDED — We couldn't start the video. Credits refunded — try again." No fal or Anthropic spend. |
+
+Notes from the last check: the generations route answers 200 with the job id even though the job has already failed and been refunded (the orchestrator's `start`
+returns `ok` after `failParent`, the same shape as Auto Short); the user still sees the correct failed-and-refunded panel through polling. `fly machine cordon`
+alone did not stop traffic to a running machine; it had to be stopped as well.
+
+Still unproven on staging: the automatic 45-minute timeout refund, a failure in the middle of a real run, and a reload during a live multi-minute run. Still unread:
+fal's real billing, so 165 credits and the $2.50 ceiling remain working numbers.
