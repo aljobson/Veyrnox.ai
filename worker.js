@@ -27,6 +27,8 @@ import { sweepSocialUploads } from './lib/social/uploadSweep.js';
 import { sweepUploads, sweepConsumedUploads } from './lib/uploadSweep.js';
 import { isConfigured as r2IsConfigured } from './packages/adapters/r2.js';
 import { sweepSteps } from './lib/autoShortSweep.js';
+import { sweepMontage } from './lib/montageSweep.js';
+import { montageDeps, runtimeConfig as montageConfig } from './lib/montageRuntime.js';
 import { sweepGrsai } from './lib/grsaiSweep.js';
 import { sweepByteplus } from './lib/byteplusSweep.js';
 import { reapAssets } from './lib/assetReap.js';
@@ -58,6 +60,7 @@ export default {
             observeRecovery('top_up_backfill', () => runScheduledBackfill(handler.fetch, env, ctx), env),
             observeRecovery('upload_sweep', () => runUploadSweep(env), env),
             observeRecovery('auto_short', () => runAutoShortSweep(env), env),
+            runMontageSweep(env), // not an observeRecovery task yet: inert until the runner is configured
             observeRecovery('asset_reap', () => runAssetReap(env), env),
             observeRecovery('grsai', () => sweepGrsai({
                 cfg: { supabaseUrl: env.SUPABASE_URL, serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY },
@@ -128,6 +131,17 @@ async function runAutoShortSweep(env) {
     const deps = runtimeDeps({ cfg, r2cfg, publicHost: env.PUBLIC_HOST, ...keys });
     const out = await sweepSteps({ cfg, deps, falKey: keys.falKey, kieKey: keys.kieKey });
     if (out.checked) console.error('[auto-short-sweep]', JSON.stringify(out));
+    return out;
+}
+
+/** Video-agent runs lost past their timeout (lib/montageSweep.js). Silent until the runner is configured. */
+async function runMontageSweep(env) {
+    const rt = montageConfig(env);
+    const cfg = { supabaseUrl: env.SUPABASE_URL, serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY };
+    const r2cfg = r2EnvFrom(env);
+    if (!rt || !cfg.supabaseUrl || !cfg.serviceRoleKey || !r2IsConfigured(r2cfg)) return { ok: false, skipped: 'not_configured' };
+    const out = await sweepMontage({ cfg, deps: montageDeps({ cfg, r2cfg, ...rt }) });
+    if (out.checked) console.error('[video-agent-sweep]', JSON.stringify(out));
     return out;
 }
 

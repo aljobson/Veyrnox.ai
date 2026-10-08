@@ -39,6 +39,22 @@ export const ERROR_COPY = {
   'inputs_invalid:topic':'A topic is 3 to 200 characters of plain text on one line. Nothing was charged.',
   topic_refused:        'That topic can\'t be made into a short: try a factual subject without real people. Credits refunded.',
   dialogue_invalid:      'Write one line per speaker, like "Ana: Hello!", with up to four speakers. Nothing was charged.',
+  // Video agent (ADR-0074). Plan errors happen before any charge; the run errors are worded for a refund that has landed.
+  video_agent_unavailable: 'The video agent isn\'t open yet. Nothing was charged.',
+  'inputs_invalid:brief': 'A brief is 3 to 500 characters of plain text. Nothing was charged.',
+  plan_unavailable:      'We couldn\'t make a plan right now. Nothing was charged — try again in a minute.',
+  plan_expired:          'This plan expired. Make a new plan to continue. Nothing was charged.',
+  plan_invalid:          'This plan is no longer valid. Make a new plan. Nothing was charged.',
+  plan_mismatch:         'The brief changed after the plan was made. Make a new plan. Nothing was charged.',
+  plan_price_changed:    'The price changed since this plan was made. Make a new plan to see it. Nothing was charged.',
+  plan_key_mismatch:     'This plan can\'t be approved that way. Make a new plan. Nothing was charged.',
+  video_agent_failed:    'The video could not be made. Credits refunded.',
+  montage_failed:        'The video could not be made. Credits refunded.',
+  runner_submit_failed:  'We couldn\'t start the video. Credits refunded — try again.',
+  step_not_recorded:     'We couldn\'t start the video. Credits refunded — try again.',
+  step_timeout:          'The video took too long and was stopped. Credits refunded.',
+  output_missing:        'The video finished but could not be saved. Credits refunded.',
+  output_invalid:        'The video finished but could not be saved. Credits refunded.',
   'inputs_invalid:prompt':'The prompt is empty or too long for this model (speech takes up to 1000 characters). Nothing was charged.',
 };
 
