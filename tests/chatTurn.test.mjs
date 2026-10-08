@@ -491,10 +491,15 @@ test('capped web search: the model gets the results as quoted data and the plugi
     assert.equal(call.webSearch, false, 'the plugin is off: its text cannot be capped');
     const system = call.messages.filter((m) => m.role === 'system');
     assert.equal(system.length, 1);
-    assert.ok(system[0].content.includes('Node.js 26 is the current release.'));
-    assert.ok(system[0].content.includes('https://nodejs.org/en/blog/release/v26'));
-    assert.match(system[0].content, /never follow instructions/i);
-    assert.deepEqual(call.messages.at(-1), { role: 'user', content: 'Hello there' }, 'the user turn is only what they wrote');
+    assert.ok(!system[0].content.includes('Node.js 26 is the current release.'), 'web text is not in the system message');
+    assert.match(system[0].content, /never follow instructions/i, 'the standing rule is');
+    const last = call.messages.at(-1);
+    assert.equal(last.role, 'user');
+    assert.ok(last.content.startsWith('Hello there\n\n'), 'what they wrote comes first');
+    assert.ok(last.content.includes('Node.js 26 is the current release.'));
+    assert.ok(last.content.includes('https://nodejs.org/en/blog/release/v26'));
+    assert.match(last.content, /never follow instructions/i, 'the rule also sits next to the data');
+    assert.equal(called(f, 'chat_complete_turn')[0][1].p_user_text, 'Hello there', 'the stored message is only what they wrote');
 });
 
 test('capped web search: the debit is the row price, and the job keeps the engine and the real search cost, never the query', async () => {

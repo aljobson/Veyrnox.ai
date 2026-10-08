@@ -63,6 +63,9 @@ try {
     // The migration is safe to apply twice.
     const sql = await readFile(new URL('../packages/db/schema/supabase/0193_chat.sql', import.meta.url), 'utf8');
     await c.query('BEGIN'); await c.query(sql); await c.query(sql); await c.query('ROLLBACK');
+    // 0225 keeps the newest message in the history budget; it replays too (inside a rollback, so the body under test stays 0225's).
+    const keepNewest = await readFile(new URL('../packages/db/schema/supabase/0225_chat_context_keeps_newest.sql', import.meta.url), 'utf8');
+    await c.query('BEGIN'); await c.query(keepNewest); await c.query(keepNewest); await c.query('ROLLBACK');
     // 0198 reads thread messages joined to their jobs and prices Images on the catalog rows; it replays too.
     const images = await readFile(new URL('../packages/db/schema/supabase/0198_chat_models_images.sql', import.meta.url), 'utf8');
     await c.query('BEGIN'); await c.query(images); await c.query(images); await c.query('ROLLBACK');
@@ -199,6 +202,9 @@ try {
     assert.deepEqual(tight.history.map((h) => h.content), ['Partial text so far', 'Third question'],
         'the newest messages that fit the budget, oldest first');
     assert.deepEqual((await rpc('public.chat_turn_context($1, $2, 0)', [a.auth, ta.id])).history, []);
+    // 0225: a newest message longer than the whole budget still reaches the model, cut to its last <budget> characters, and older ones stay out.
+    const clipped = await rpc('public.chat_turn_context($1, $2, 10)', [a.auth, ta.id]);
+    assert.deepEqual(clipped.history.map((h) => h.content), ['d question'], 'the newest message is never dropped for being long');
 
     // ── Updating and deleting a thread. ──
     for (const args of [[a.auth, ta.id, '   '], [a.auth, ta.id, 'x'.repeat(121)], [a.auth, ta.id, null, null, 'p'.repeat(4001)]]) {
