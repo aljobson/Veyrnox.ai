@@ -150,3 +150,20 @@ Reading: the token saving is about $0.23 a run, small next to fal (the three cli
 thinner product and did not look at it. Until the cost per video is known and quality is judged by a person, stay on the
 default model. Open product decision: the output resolution is whatever the agent picks (720p vs 1080p); the spec must
 state it, since fal bills the same clips either way but storage and bandwidth do not.
+
+### Pricing worksheet (prepared 2026-10-08; waits on one number: fal's real billing for runs 4 and 5)
+
+ADR-0014 floor: credits = ceil(cost / (0.5 x $0.033)) = ceil(cost / $0.0165). One run = three 5 s Kling v3 standard clips
+(15 s of video) + Anthropic tokens ($0.41 on Opus, run 4). fal's published rates (read 2026-10-08): $0.084 / $0.126 / $0.154 per
+second for audio off / audio on / audio + voice control.
+
+| fal tier the clips were billed at | fal (15 s) | + tokens | cost | **credits at the floor** |
+|---|---|---|---|---|
+| audio off | $1.26 | $0.41 | $1.67 | **102** |
+| audio on | $1.89 | $0.41 | $2.30 | **140** |
+| audio + voice control | $2.31 | $0.41 | $2.72 | **165** |
+
+Not in these numbers, so the real price is higher: the runner's own compute and storage, the cost of a **failed run**
+(fal bills clips that finished even when a later step fails, and the user is refunded in full), retries, and any
+music or other paid call added later. Until fal's real figure is known, the safe choice is the worst-case row (165 credits),
+which is also what the per-run ceiling protects. Compare Auto Short: 110 credits for 32 s at a $0.70 ceiling.
