@@ -55,7 +55,7 @@ they do not replace the real-account steps below.
 5. Set `PUBLISH_EXTENDED_NETWORKS_ENABLED="true"` on staging after the migration
    and shared secrets are present. `PUBLISH_ENABLED` must also be true.
    `PUBLISH_ANALYTICS_ENABLED` enables the existing sweep and Twitch statistics.
-   The extended switch defaults to false in both deployment configurations.
+   Production keeps the extended switch false; staging activation is recorded below.
 
 Shared prerequisites: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`,
 `SOCIAL_OAUTH_STATE_SECRET`, `SOCIAL_TOKEN_ENCRYPTION_KEY` (base64 32-byte key),
@@ -165,3 +165,27 @@ Never attach access/refresh tokens, app passwords or signed media URLs.
 Meta's direct documentation was rate-limited during this audit; its published
 Threads collection was used for the request shapes. Provider contract tests
 must be followed by real-account acceptance before broader activation.
+
+## Staging activation — 2026-10-08
+
+- PR #637 squash-merged as `21cb32d8469b2dc975be98bf52b4906b94a6e81e`.
+- Owner approved production workflow [37812866934](https://github.com/aljobson/Veyrnox.ai/actions/runs/37812866934);
+  0228 applied successfully and the migration ledger check passed.
+- The same 0228 file was applied to staging project `yrqzwqywxfesmbvhzjgj`.
+  Read-only checks confirmed forced RLS and no anonymous table read or
+  authenticated submission-marker execute grants.
+- Explicit staging build and Wrangler dry run passed; deployed Worker
+  `veyrnox-ai-staging`, version `46341992-80fa-4ee0-aa28-01b54f58e843`.
+  Live settings confirmed `APP_ENV=staging`, the staging Supabase URL and
+  `PUBLISH_EXTENDED_NETWORKS_ENABLED=true`. Production's switch remains false.
+- Browser inspection confirmed all eleven logos, the existing active YouTube
+  connection, library/device-upload controls and Post now / Schedule post.
+- Staging has shared secrets and YouTube OAuth credentials. Instagram,
+  LinkedIn, X, TikTok, Facebook, Threads, Pinterest, Twitch and Business Profile
+  still need administrator-provided OAuth app credentials; their connection
+  controls correctly show Setup required.
+- Bluesky needs no app secret and is configured for tester connections.
+  The owner's one-account slot is occupied by YouTube and was not changed.
+  Each tester should use their own staging sign-in and dedicated app password.
+- No real provider connection, disconnection or public submission was made
+  during this activation. New-provider acceptance remains outstanding.

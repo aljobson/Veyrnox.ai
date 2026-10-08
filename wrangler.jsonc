@@ -186,7 +186,8 @@
         "PUBLISH_CALENDAR_ENABLED": "true",
         // 0209 applied and real browser uploads verified on staging 2026-10-06.
         "PUBLISH_UPLOADS_ENABLED": "true",
-        "PUBLISH_EXTENDED_NETWORKS_ENABLED": "false",
+        // 0228 applied on staging 2026-10-08. Unconfigured providers remain unavailable.
+        "PUBLISH_EXTENDED_NETWORKS_ENABLED": "true",
         // Provider review approvals are still outstanding.
         "INSTAGRAM_INSIGHTS_SCOPE_ENABLED": "false",
         "TIKTOK_ANALYTICS_SCOPE_ENABLED": "false",
