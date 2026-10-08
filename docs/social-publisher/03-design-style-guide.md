@@ -7,14 +7,15 @@ brand palette) — only its *layout patterns* (calendar, composer, network badge
 below were read live from syntx.ai's rendered CSS, not guessed.
 
 
-> **Built state (2026-10-08, repo `main` at `42150476`).** This guide is still the design reference, but
+> **Built state (2026-10-08, repo `main` at `bee1ea4f`).** This guide is still the design reference, but
 > the shipped Publish screens differ from it in these ways; the rest of the guide is unbuilt design.
 > - **Tokens.** The `--publish-*` custom properties in §3.2 do not exist in code. The built pages
 >   (`app/veyrnox/app/publish/`) use the site's existing `vx-*` Tailwind tokens (`vx-accent`,
 >   `vx-border`, `vx-panel`, `vx-fg-muted`, `vx-danger`), so Publish follows the site's light and dark
 >   themes. Publish was never given its own palette.
 > - **Network badge.** Built as `NetworkLogo.js`: single-colour monochrome silhouettes (Simple Icons
->   11.0.0, CC0) for Instagram, LinkedIn, X, TikTok and YouTube, inheriting the text colour with an
+>   11.0.0, CC0; Bluesky from 12.4.0) for all eleven networks (Instagram, LinkedIn, X, TikTok, YouTube,
+>   Facebook, Threads, Pinterest, Bluesky, Twitch, Google Business Profile), inheriting the text colour with an
 >   accessible text label beside it. The brand-colour badges in §3.4 are not built.
 > - **Status pill.** Built as plain coloured text per target (accent for published or delivered,
 >   danger for failed, muted otherwise), not the `Chip` component: published, delivered ("finish in
@@ -24,11 +25,19 @@ below were read live from syntx.ai's rendered CSS, not guessed.
 >   confirmation form with the proposed time and nothing is saved until the user confirms; the
 >   Reschedule button is the keyboard and touch path. The lift and 2 degree rotation in §3.6 are not
 >   built.
+> - **Connect panel.** One card per network from the shared network list (`lib/social/networks.js`), with
+>   its logo and a note where needed. The button reads "Connect", "Setup required" (provider app secrets
+>   missing) or "Testing not enabled" (extended-network switch off) from the `networks` field of
+>   `GET /api/v1/social/accounts`. Bluesky opens an inline handle and app-password form (password cleared
+>   on submit). Facebook, Pinterest and Business Profile end on a callback page with a native select to
+>   choose the Page, board or location; Twitch connects for statistics and never appears in the composer's
+>   "Post to" list.
 > - **Composer.** One caption, a media picker (generations or Upload from device) with a thumbnail of the selection, account selection with network logos, a
->   date and time field defaulting to one hour ahead, and two actions, Post now and Schedule post.
+>   date and time field defaulting to one hour ahead, and two actions, Post now and Schedule post. It checks each
+>   selected account's media type and caption limit before submitting.
 >   There are no per-network tabs, no per-network preview and no best-time chip (§3.4); posting-insights
 >   heatmap and frequency live on the analytics page.
-> - **Analytics.** Followers chart, interactions and engagement, a posts or videos table, plus the
+> - **Analytics.** Instagram, YouTube and TikTok only (Twitch statistics are collected but the page does not list Twitch). Followers chart, interactions and engagement, a posts or videos table, plus the
 >   168-cell heatmap in a labelled, focusable panel that scrolls inside a 375 px page.
 
 ## 3.1 Source: syntx.ai visual tokens (captured live)

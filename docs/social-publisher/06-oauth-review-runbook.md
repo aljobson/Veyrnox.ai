@@ -1,8 +1,8 @@
-# 6. OAuth App Review Runbook — Meta, TikTok, YouTube
+# 6. OAuth App Review Runbook — Meta, TikTok, YouTube (and the six tester-stage networks)
 
-> **As of 2026-10-08 (repo `main` at `42150476`).** §6.0 is new and records where each network stands,
+> **As of 2026-10-08 (repo `main` at `bee1ea4f`).** §6.0 is new and records where each network stands,
 > taken only from `docs/social-publisher/ACCEPTANCE-2026-10-07.md`, the analytics handover, ADR-0061,
-> `docs/product/HANDOVER-2026-10-03.md` and `wrangler.jsonc`. **No provider approval is recorded
+> `docs/product/HANDOVER-2026-10-03.md`, `wrangler.jsonc` and, for the six networks added by PR #637, [INTEGRATIONS-TESTING-2026-10-08.md](INTEGRATIONS-TESTING-2026-10-08.md) (§6.8). **No provider approval is recorded
 > anywhere in the repo.** Where the records are silent this runbook says *unverified* instead of
 > guessing; the owner holds the developer-console state and should confirm each line below.
 
@@ -31,11 +31,21 @@ approval. Nothing was found that does.
 | **TikTok** | **No.** No real TikTok OAuth consent, publish or analytics request is recorded | None. The app is **unaudited**, so posts go through MEDIA_UPLOAD (draft in the creator's inbox) and the product says so. Analytics scopes `user.info.stats` and `video.list` need Display API plus approval (acceptance 2026-10-07: provider review still required) | Submission: not recorded (*unverified*). The TikTok DNS verification record was still listed as awaited on 2026-10-03 (`HANDOVER-2026-10-03.md`) and is not recorded as done | Domain verification, Content Posting API audit (needs the posting UX reviewed; Direct Post uses `video.publish`, not requested today), Display API approval for the analytics scopes then `TIKTOK_ANALYTICS_SCOPE_ENABLED` and a reconnect, apply and use migration 0190 rotation on a real account |
 | **X** | **No** | None recorded. No App-Review-style queue; posting sits behind a paid API tier | n/a | Confirm the posting tier and its cost (ADR-0061 open question 2, still open), provision `X_CLIENT_ID/SECRET`, live test. Analytics for X is not built and its scope and cost are an owner decision |
 | **LinkedIn** | **No** | None recorded | Application for the posting product: not recorded (*unverified*) | Provision `LINKEDIN_CLIENT_ID/SECRET`, request the posting product, live test. Member post statistics need a different API product and are not built |
+| **Facebook** | **No.** Contract tests with stubbed responses and a local database acceptance suite only. Staging shows "Setup required" (no Facebook or Meta app credentials set) | None | Not recorded (*unverified*) | A company developer-app administrator supplies `FACEBOOK_CLIENT_ID/SECRET` (or reuses `META_APP_ID/SECRET`) and adds testers; Meta App Review for `pages_manage_posts` and the other Page permissions; a real test Page. The owner does not want to use a personal Meta account for this |
+| **Threads** | **No** (stubs only; "Setup required" on staging) | None | Not recorded (*unverified*) | `THREADS_CLIENT_ID/SECRET`, testers, review of `threads_content_publish`; `SOCIAL_MEDIA_PROXY_SECRET` for image transfer; live test across several cron ticks |
+| **Pinterest** | **No** (stubs only; "Setup required" on staging) | None | Not recorded (*unverified*) | `PINTEREST_CLIENT_ID/SECRET`, Pinterest app access to `pins:write`; live test on an owned board |
+| **Bluesky** | **No** (stubs only). Needs no developer app, so it is the one new network that is configured on staging | n/a (no app approval; user-supplied app password) | n/a | A tester's own staging sign-in and dedicated app password; live test. The owner's one-account slot is held by YouTube and was not changed |
+| **Twitch** | **No** (stubs only; "Setup required" on staging) | None | Not recorded (*unverified*) | `TWITCH_CLIENT_ID/SECRET`; live check of latest-video statistics after an analytics sweep. Statistics are collected but the dashboard page does not yet list Twitch |
+| **Google Business Profile** | **No** (stubs only; "Setup required" on staging) | None. A YouTube OAuth client does not establish Business Profile API access | Not recorded (*unverified*) | `GMB_CLIENT_ID/SECRET`, the Business Profile APIs enabled and access approved by Google, a real location; the target completes only when Google reports the post LIVE |
+
+The six rows after LinkedIn were added on 2026-10-08. Their status is "built and tested with stubbed
+provider responses, not live-tested, no provider approval", and nothing more; "Setup required" is the
+connect button's state when the deployment lacks the provider's app secrets, and does not imply approval.
 
 Configuration facts that bear on review: the provider scopes the code requests today are in technical
 spec §2.4; the two optional scope families (Instagram insights, TikTok analytics) are off on both
 staging and production; production keeps `PUBLISH_ENABLED` off until the reviews and the Publish Plan
-land (`wrangler.jsonc`). Whether the provider client secrets are set in **production** is *unverified*.
+land, and keeps `PUBLISH_EXTENDED_NETWORKS_ENABLED` off (on in staging since PR #638) (`wrangler.jsonc`). Whether the provider client secrets are set in **production** is *unverified*.
 
 The earlier handover record "Google OAuth was configured in Testing for this acceptance. This verifies
 the owner's test account, not a public rollout or long-term refresh-token longevity" still applies.
@@ -84,7 +94,7 @@ Instagram and TikTok (record the connect → publish path once on a real account
    ownership proof). This gates access to advanced permissions and is a separate step from the app
    review below; start it early, it has its own multi-day turnaround.
 
-### Scopes needed for v1 (Instagram only — Facebook has no adapter on `main`)
+### Scopes needed for v1 (Instagram only — Facebook is a separate adapter, see §6.8)
 Matches `INSTAGRAM_SCOPES` in `packages/adapters/social/instagram.js` — Meta's newer scope names
 for Instagram API with Instagram Login, not the older Facebook Login scopes:
 - `instagram_business_basic` — read the connected account's identity (id, username, profile
@@ -285,3 +295,30 @@ Not asked for by name, included for completeness since both are in Publish's v1 
 - [ ] Google's scope classification (sensitive vs. restricted) confirmed for `youtube.upload` before
       committing to a timeline.
 - [ ] YouTube quota-increase request filed once real usage data exists to support it.
+- [ ] For Facebook, Threads, Pinterest, Twitch and Business Profile: an administrator-owned developer app, testers added, callback URL registered, secrets set, and a real-account run recorded (§6.8).
+
+## 6.8 Appendix — the six tester-stage networks (PR #637, 2026-10-08)
+
+Built natively (not through a scheduling-tool API) for other people to test; production stays off and none
+has a recorded provider approval. Callback URLs are `ORIGIN/social/connect/callback/{network}` with
+`ORIGIN` the deployment's exact `PUBLIC_HOST` (for Business Profile the network key is `gmb`). Scopes the
+code requests, from the adapters:
+
+| Network | Worker secrets | Scopes / credential |
+|---|---|---|
+| Facebook | `FACEBOOK_CLIENT_ID`, `FACEBOOK_CLIENT_SECRET` (fallback `META_APP_ID/SECRET`) | `pages_show_list`, `pages_read_engagement`, `pages_manage_posts`; the Page token comes from the chosen Page |
+| Threads | `THREADS_CLIENT_ID`, `THREADS_CLIENT_SECRET` | `threads_basic`, `threads_content_publish` |
+| Pinterest | `PINTEREST_CLIENT_ID`, `PINTEREST_CLIENT_SECRET` | `user_accounts:read`, `boards:read`, `pins:read`, `pins:write` |
+| Bluesky | none | dedicated app password; Bluesky-hosted accounts only |
+| Twitch | `TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET` | none (token client and user are validated) |
+| Google Business Profile | `GMB_CLIENT_ID`, `GMB_CLIENT_SECRET` | `https://www.googleapis.com/auth/business.manage`, offline access, PKCE |
+
+Administrator steps before inviting testers (from the handover): apply 0228 through the owner-approved
+`apply-migrations` workflow; set the secrets as Worker secrets (separate staging apps where the provider
+allows), never in issues or the repository; register the callback URLs; add testers to the provider app's
+roles or test-user lists; then set `PUBLISH_EXTENDED_NETWORKS_ENABLED` and keep `PUBLISH_ENABLED` true.
+Never enable an unapproved permission for a test invitation; Instagram insights and TikTok analytics keep
+their own switches. Whether provider review, quotas and billing access (for example for Business Profile
+or X reads) are obtainable is *unverified*. Tester evidence to record per network is listed in the
+handover (environment, destination, post id, visibility, permalink, disconnect result, error code; never
+tokens, app passwords or signed media URLs).

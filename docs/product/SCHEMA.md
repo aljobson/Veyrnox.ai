@@ -1,9 +1,12 @@
 # Backend Schema — Veyrnox.ai
 
-**Status:** Current · 2026-10-08 (audited against `main` at `42150476`) —
-reconstructed by replaying `packages/db/schema/0001_initial.sql` and
-`supabase/0003…0227` in order (84 tables). Every file through 0227 is in the
-production migration ledger (`check-migration-ledger.mjs`, 2026-10-08).
+**Status:** Current · 2026-10-08 (audited against `main` at `42150476`; amended
+against `bee1ea4f` for 0228) — reconstructed by replaying
+`packages/db/schema/0001_initial.sql` and `supabase/0003…0228` in order
+(85 tables; 0228 adds one). Every file through 0227 was in the production
+migration ledger (`check-migration-ledger.mjs`, 2026-10-08); 0228 was applied
+through the approved workflow afterwards (tester handover; ledger not re-read).
+Highest migration 0228, next free 0229.
 **Authority:** the SQL. When this file and a migration disagree, the
 migration wins and this file is wrong.
 **Diagrams:** [diagrams/schema-map.html](diagrams/schema-map.html) (tables by
@@ -14,7 +17,7 @@ API call) · [diagrams/job-lifecycle.html](diagrams/job-lifecycle.html)
 
 ## 1. Rules every table follows
 
-- **RLS enabled and forced on all 84 tables** (81 in `public`, 3 in
+- **RLS enabled and forced on all 85 tables** (82 in `public`, 3 in
   `private`; the count is `CREATE TABLE` minus `DROP TABLE` across every
   migration — 68 at 0166). The Worker uses the service role (bypasses RLS);
   RLS is the second line. The newer feature tables (chat, referrals, free
@@ -176,17 +179,18 @@ browser JWT may call.
 | `cinema_submissions`, `cinema_submission_reviews`, `cinema_moderation_actions`, `cinema_categories` | publication review and moderation |
 | `cinema_operator_actions`, `cinema_operator_refund_receipts` | operator reversals and pass refunds |
 
-### 3.7 Veyrnox Publish *(0154–0161, 0168–0169, 0181–0182, 0188–0192, 0223; dark in production)*
+### 3.7 Veyrnox Publish *(0154–0161, 0168–0169, 0181–0182, 0188–0192, 0223, 0228; dark in production)*
 
 | table | columns | keys and rules |
 |---|---|---|
 | `social_brands` | id, owner_user_id, label, timezone | → users (RESTRICT); one default brand per user |
-| `social_accounts` | id, brand_id, network, external_account_id, display_name, scopes_granted, access_token_enc / refresh_token_enc (AES-GCM bytea; cleared on disconnect, 0168), token_expires_at, status (active/expired/revoked/error) | → brands (CASCADE); U (brand, network, external id); a token is required unless revoked |
+| `social_accounts` | id, brand_id, network (CHECK lists all eleven; adapters for all eleven since PR #637), external_account_id, display_name, scopes_granted, access_token_enc / refresh_token_enc (AES-GCM bytea; cleared on disconnect, 0168), token_expires_at, status (active/expired/revoked/error) | → brands (CASCADE); U (brand, network, external id); a token is required unless revoked |
 | `social_account_actions` | actor_id, brand_id, action, target_id, detail | append-only |
 | `social_posts` | id, brand_id, created_by_user_id, status (draft \| scheduled \| published \| failed \| canceled; 0182), draft_batch_id, scheduled_at, global_text, idempotency_key | U (brand_id, idempotency_key); a draft needs a batch and is inert until `approve_social_post_batch` |
 | `social_post_media` | post_id, position, media_type, source_job_id → jobs (nullable), source_upload_id → social_uploads | exactly one source (CHECK `social_media_one_source`, 0223): the caller's own generated asset or a device upload |
 | `social_uploads` *(0223)* | id, user_id, r2_key (U), filename, mime_type (jpeg/png/webp/mp4), size_bytes ≤ 100 MB, status (pending \| ready \| deleting \| deleted), put_expires_at | immutable device uploads owned independently of jobs; `PUBLISH_UPLOADS_ENABLED` off in production |
 | `social_post_targets` | post_id, account_id, network, text_override, publish_status (pending/publishing/submitted/delivered/published/failed), attempts, claimed_at, claim_key, next_attempt_at, last_error, platform_post_id/url, provider_state | U (post_id, account_id); claimed by the cron sweep; only the current `claim_key` may report (0168); `reschedule_social_post` (0192) moves the parent and its pending targets together or not at all |
+| `social_connection_selections` *(0228)* | id, auth_id → auth.users (CASCADE), network (facebook \| pinterest \| gmb), payload_enc (AES-GCM bytea, 1 B–1 MiB), expires_at (default +10 minutes) | U (auth_id, network); RLS forced, all roles revoked; holds candidate Pages, boards or locations with their tokens until the user picks one; consumed once through `consume_social_connection_selection`; never readable by the browser |
 | `social_analytics_snapshots`, `social_analytics_posts`, `social_analytics_sync` *(0188)* | per account: daily metrics jsonb, per-post metrics (permalink, caption ≤ 500), next/last sync and error | → social_accounts (CASCADE); written by the analytics sweep (`PUBLISH_ANALYTICS_ENABLED`) through definers |
 | `social_best_time_cache` *(0191)* | account_id (PK), timezone, 84-day period, heatmap, frequency, recorded/measured post counts | descriptive posting patterns from stored counters; no raw tables exposed |
 
@@ -222,7 +226,7 @@ anon-callable read here: ranked template ids only.
 | rate limits | `check_generation_rate_limit`, `consume_*_request` (×9), `consume_youtube_upload_quota`, `reserve_upload`, `release_upload` |
 | admin | `ops_metrics_24h`, `admin_lookup_user`, `record_content_violation`, `list_content_violations` (all check `users.is_admin`) |
 | Cinema | profile/creator/draft/upload/unlock/pass/publication/operator families (~45 functions) |
-| Publish | `get_or_create_default_social_brand`, `list_social_accounts`, `record_social_account_connection`, `disconnect_social_account`, `create_social_post`, `list_social_posts`, `claim_due_social_post_targets`, `report_social_post_progress`, `complete_social_post_target`, `update_social_account_token`, `rotate_tiktok_account_tokens` (0190); drafts (`create_social_post_draft`, `list_social_post_drafts`, `approve_social_post_batch`, `discard_social_post_drafts`); calendar (`list_social_calendar`, `reschedule_social_post`); analytics (`claim_social_analytics_accounts`, `record_social_analytics[_failure]`, `get_social_analytics`, `refresh_social_posting_insights`, `get_social_posting_insights`); device uploads (`reserve_social_upload`, `complete_social_upload`, `read_social_upload`, `release_social_upload`, `remove_social_upload`, `claim_social_upload_cleanup`); internal `settle_social_post`, `social_fail_inactive_targets` (0168) |
+| Publish | `get_or_create_default_social_brand`, `list_social_accounts`, `record_social_account_connection`, `disconnect_social_account`, `create_social_post`, `list_social_posts`, `claim_due_social_post_targets`, `report_social_post_progress`, `complete_social_post_target`, `update_social_account_token`, `rotate_tiktok_account_tokens` (0190); drafts (`create_social_post_draft`, `list_social_post_drafts`, `approve_social_post_batch`, `discard_social_post_drafts`); calendar (`list_social_calendar`, `reschedule_social_post`); analytics (`claim_social_analytics_accounts`, `record_social_analytics[_failure]`, `get_social_analytics`, `refresh_social_posting_insights`, `get_social_posting_insights`); device uploads (`reserve_social_upload`, `complete_social_upload`, `read_social_upload`, `release_social_upload`, `remove_social_upload`, `claim_social_upload_cleanup`); 0228: `prepare_social_connection_selection`, `consume_social_connection_selection`, `rotate_extended_social_tokens` (atomic token rotation for Pinterest, Threads, Bluesky, Twitch, Business Profile), `mark_social_provider_submission` (durable pre-submission marker in `provider_state.submission_started`; Facebook, Threads, Pinterest, Bluesky, Business Profile); internal `settle_social_post`, `social_fail_inactive_targets` (0168) |
 
 Anon-callable by design (read-only status): `catalog_watch`,
 `applied_migration_names`, `reconcile_status`, `recovery_status`,

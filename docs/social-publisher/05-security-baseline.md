@@ -1,10 +1,12 @@
 # 5. Security Baseline — Veyrnox Publish
 
-> **As of 2026-10-08 (repo `main` at `42150476`).** This baseline was written before implementation. It
-> has been reconciled with the code (migrations 0154 to 0223, `app/api/v1/social/`, `lib/social/`,
+> **As of 2026-10-08 (repo `main` at `bee1ea4f`).** This baseline was written before implementation. It
+> has been reconciled with the code (migrations 0154 to 0228, `app/api/v1/social/`, `lib/social/`,
 > `packages/adapters/social/`, `worker.js`) and the staging acceptance records. Each row now says what
 > is built; a row whose control is not built says so rather than citing the design. *Unverified* marks
-> what could not be confirmed from the repo. Nothing here is a penetration test result.
+> what could not be confirmed from the repo. Nothing here is a penetration test result. Controls for the six
+> networks added by PR #637 are described from the code and automated tests only; none was run against a
+> real provider account (see [the tester handover](INTEGRATIONS-TESTING-2026-10-08.md)).
 
 **Purpose:** map Veyrnox Publish's design (specified in [02-technical-spec.md](02-technical-spec.md))
 against the named external security frameworks — OWASP, NIST, ISO/IEC 27001, and the UK NCSC — so
@@ -46,11 +48,11 @@ actual risk than the general OWASP Top 10 below.
 | API1 | Broken Object Level Authorization | **Built.** Every id-scoped RPC joins to `social_brands.owner_user_id = <caller>` using `p_auth_id`, independent of RLS (no browser role has any table grant); a foreign id returns the same `*_NOT_FOUND` as a missing one, mapped to 404 | §2.9 |
 | API2 | Broken Authentication | Reuses the existing repo-wide JWT gate (ES256 + JWKS via Web Crypto, §2.3) — no new authentication mechanism invented for this feature | §2.3, §2.9 |
 | API3 | Broken Object Property Level Authorization | **Built.** Handlers read named body keys only and pass them to RPCs; the reschedule RPC takes two timestamps. A body cannot set a status, brand or target field. There is no general post edit endpoint | §2.9 |
-| API4 | Unrestricted Resource Consumption | **Built, with one gap.** 20 write requests per user per 60 s on posts, drafts and uploads (`consume_social_post_write_request`); read limiter on reads; upload size and type caps (20 MiB images, 100 MiB MP4, ten files and 200 MiB per account); at most 20 accounts and 10 media per post; bounded retry (3 attempts, 5 to 60 minute backoff). The `/connect` routes have no limiter of their own (*unverified*) | §2.6, §2.10 |
+| API4 | Unrestricted Resource Consumption | **Built, with one gap.** 20 write requests per user per 60 s on posts, drafts and uploads (`consume_social_post_write_request`); read limiter on reads; upload size and type caps (20 MiB images, 100 MiB MP4, ten files and 200 MiB per account); at most 20 accounts and 10 media per post; bounded retry (3 attempts, 5 to 60 minute backoff). The `/connect` routes have no limiter of their own (*unverified*); the new callback and Bluesky connect routes use the account read limiter, and at most 200 destination candidates are accepted | §2.6, §2.10 |
 | API5 | Broken Function Level Authorization | **Built as owner-only.** There are no collaborator or reviewer roles; disconnect, draft approve and discard, upload removal and reschedule all require the brand or upload owner. Approver roles are design only | §2.9 |
 | API6 | Unrestricted Access to Sensitive Business Flows | **Built.** The write limiter above bounds post creation; "Post now" still needs an owned asset, an active account and an idempotency key. The free tier also bounds blast radius to one connected account (0169). Per-day post volume is not capped | §2.10 |
-| API7 | Server-Side Request Forgery | **Built.** No code path fetches a caller-supplied URL: the API accepts only `jobId` or `uploadId`, never a URL or storage path. Adapters call fixed platform bases; the only URLs fetched server-side are presigned R2 URLs the server minted. Callback URLs come from `PUBLIC_HOST`. The one public endpoint, `/media/social/:token`, serves a single HMAC-named object. Drive/Dropbox import remains gated on an allowlisted fetch service | §2.8 |
-| API8 | Security Misconfiguration | **Built.** Secrets via `wrangler secret put` only; RLS `FORCE`d with all roles revoked on every table; CSP unchanged; Publish gated by `PUBLISH_ENABLED` (off in production) with separate sub-switches. The upload bucket's CORS must name the exact origin (checked on staging) | §2.10 |
+| API7 | Server-Side Request Forgery | **Built.** No code path fetches a caller-supplied URL: the API accepts only `jobId` or `uploadId`, never a URL or storage path. Adapters call fixed platform bases (the six new adapters also use `redirect: 'error'` and a 15 s timeout; Bluesky accepts only `bsky.social` or `*.host.bsky.network`, so a handle cannot steer a credential to another host); the only URLs fetched server-side are presigned R2 URLs the server minted. Callback URLs come from `PUBLIC_HOST`. The one public endpoint, `/media/social/:token`, serves a single HMAC-named object. Drive/Dropbox import remains gated on an allowlisted fetch service | §2.8 |
+| API8 | Security Misconfiguration | **Built.** Secrets via `wrangler secret put` only; RLS `FORCE`d with all roles revoked on every table; CSP unchanged; Publish gated by `PUBLISH_ENABLED` (off in production) with separate sub-switches, including `PUBLISH_EXTENDED_NETWORKS_ENABLED` for the six new networks (off in production, on in staging; gates new connections and post creation, not already queued targets). The upload bucket's CORS must name the exact origin (checked on staging) | §2.10 |
 | API9 | Improper Inventory Management | **Built.** Routes are listed in §2.3 under `/api/v1/social/*` plus the one documented outside-the-gate route, `/media/social/:token` (in `CLAUDE.md` and `tests/routesOutsideGate.test.mjs`). The design routes that were never built (edit, cancel, approvals, SmartLinks) do not exist | §2.3 |
 | API10 | Unsafe Consumption of APIs | **Built.** Platform responses are untrusted: metrics pass `social_analytics_numbers` (numeric, well-named keys only), captions are capped at 500 characters, permalinks must be `https://`, post types match a pattern, all enforced by CHECK constraints; the analytics fetchers check the returned identity (TikTok `open_id`, YouTube channel) against the stored connection and ignore foreign records; React escapes at render | §2.11 risk 6 |
 
@@ -67,8 +69,8 @@ this table only calls out what's *specific* to Publish on top of that baseline.
 | A04 Insecure Design | The SSRF-avoidance decision in §2.8 is exactly this: a design choice that removes a risk class rather than a filter that mitigates it after the fact |
 | A05 Security Misconfiguration | CSP explicitly designed to require **no change** (§2.10) — every platform call is server-side |
 | A06 Vulnerable and Outdated Components | Adapters are hand-written `fetch` clients, not vendor SDKs, specifically to avoid an unaudited dependency landing on the SSR bundle (§2.1, §2.10) — this also minimizes the transitive-dependency surface this risk category targets |
-| A07 Identification and Authentication Failures | **Partly built** (§2.7): PKCE on X only (the other four providers do not support it for this flow); exact `PUBLIC_HOST` redirect; stateless HMAC `state` with ten-minute expiry, not single-use; TikTok rotation atomic; **reuse detection not built** |
-| A08 Software and Data Integrity Failures | **Built.** `create_social_post` idempotent on `(brand_id, idempotency_key)`; claim key stops a worker that lost its claim overwriting a result (0168, `CLAIM_LOST`); append-only audit log with a truncate guard. Platform calls are not idempotent (§2.6) |
+| A07 Identification and Authentication Failures | **Partly built** (§2.7): PKCE forwarded by X and Google Business Profile only (the other providers' adapters do not forward it); exact `PUBLIC_HOST` redirect; stateless HMAC `state` with ten-minute expiry, not single-use; TikTok rotation atomic, and since 0228 Pinterest, Threads, Bluesky, Twitch and Business Profile rotation compares both old ciphertexts; destination selections (Facebook, Pinterest, Business Profile) are encrypted, user- and network-bound, ten-minute and single-use; Bluesky uses a dedicated app password that is never stored; **reuse detection not built** |
+| A08 Software and Data Integrity Failures | **Built.** `create_social_post` idempotent on `(brand_id, idempotency_key)`; claim key stops a worker that lost its claim overwriting a result (0168, `CLAIM_LOST`); append-only audit log with a truncate guard. Platform calls are not idempotent for the original five (§2.6); for Facebook, Threads, Pinterest, Bluesky and Business Profile a committed pre-submission marker stops a second public submission and surfaces `provider_result_unknown_reconcile_before_retry` |
 | A09 Security Logging and Monitoring Failures | **Partly built.** `social_account_actions` (append-only) records connect, reconnect, disconnect, draft approve/discard and reschedule. Analytics failures live on `social_analytics_sync.last_error` (not the audit log); publish and token-refresh failures live on the target's `last_error`; the sweep logs claim, report and heartbeat failures with `console.error`, and `publish_sweep` feeds the worker heartbeat (0157). The analytics sweep has no heartbeat. There are no user notifications |
 | A10 Server-Side Request Forgery | Same as API7 above (§2.8) — listed twice deliberately since OWASP itself lists it in both the general Top 10 and the API Top 10 |
 
@@ -163,13 +165,15 @@ Naming these directly rather than implying full coverage. Status as of 2026-10-0
    produced against real code.
 5. **Supply-chain risk for each platform API itself** is not worked through beyond API10-style input
    validation.
-6. **Token lifetime handling is incomplete** (new): Instagram, X and LinkedIn tokens are never refreshed,
-   no account is ever marked `expired` or `error`, and there is no notification when a post fails.
+6. **Token lifetime handling is incomplete** (new): Instagram, X and LinkedIn tokens are never refreshed
+   and Facebook Page tokens have no stored expiry or refresh (Pinterest, Business Profile, Twitch, Bluesky
+   and Threads now renew), no account is ever marked `expired` or `error`, and there is no notification when a post fails.
 7. **No token-encryption key rotation path** and no documented runbook (new).
 8. **Disconnect does not revoke the grant at the platform** (new); it clears the stored tokens only.
 9. **OAuth state is not single-use** and reuse detection for rotated refresh tokens is not built (new,
    §2.7).
-10. **Production secrets** for the provider apps and the three social secrets: whether they are
+10. **Production secrets** for the provider apps (now ten OAuth apps plus Bluesky's password flow; the
+    tester handover says staging holds YouTube and the shared secrets only) and the three social secrets: whether they are
     provisioned in production is *unverified*. Production Publish is closed.
 
 ## 5.7 Pre-implementation checklist (derived from this document)
@@ -184,5 +188,6 @@ Naming these directly rather than implying full coverage. Status as of 2026-10-0
       runbook still missing.
 - [x] Each platform's OAuth scope request is the minimum for what ships; the two new scope families are
       behind their own switches. Re-check at each phase boundary.
-- [ ] Decide token refresh for Instagram, X and LinkedIn, and failure notifications.
+- [ ] Decide token refresh for Instagram, X and LinkedIn (and Facebook Page tokens), and failure notifications.
+- [ ] Real-account acceptance and provider app review for Facebook, Threads, Pinterest, Bluesky, Twitch and Business Profile before widening `PUBLISH_EXTENDED_NETWORKS_ENABLED` beyond staging.
 - [ ] Revoke the grant at the platform on disconnect.

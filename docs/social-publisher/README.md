@@ -2,8 +2,8 @@
 
 **Feature:** Native multi-platform social scheduling and publishing ("Veyrnox Publish")
 **Version:** 0.2 (reconciled with the code)
-**As of:** 2026-10-08, repo `main` at commit `42150476`. Every doc in this pack was checked against the
-code, migrations through 0223, `wrangler.jsonc`, ADR-0061/0062/0063 and the 2026-10-03 to 2026-10-07
+**As of:** 2026-10-08, repo `main` at commit `bee1ea4f` (includes PR #637 and #638). Every doc in this pack was checked against the
+code, migrations through 0228, `wrangler.jsonc`, ADR-0061/0062/0063 and the 2026-10-03 to 2026-10-07
 handover and acceptance records. Where the pack still describes a design the code does not (yet) do, the
 doc says so under a "Built state" or "not built" note instead of silently keeping the old text.
 **Status:** Accepted via [ADR-0061](../adr/0061-veyrnox-publish-social-scheduling.md)
@@ -15,8 +15,11 @@ tracked in each ADR's "Open questions".
 **Built state (2026-10-08):** the schedule-and-publish engine, composer, device uploads, draft review,
 calendar with safe rescheduling, and analytics for Instagram, YouTube and TikTok are built. Production
 keeps `PUBLISH_ENABLED` off, so none of it is open to users there; staging has every Publish flag on
-except the two provider-consent switches. The Publish Plan (ADR-0062/0063) is not built. Five networks
-are live in code (Instagram, X, LinkedIn, TikTok, YouTube). See the "Built state" notes in 01 and 02.
+except the two provider-consent switches. The Publish Plan (ADR-0062/0063) is not built. Eleven networks
+have native adapters: Instagram, X, LinkedIn, TikTok and YouTube (the original five), plus Facebook, Threads,
+Pinterest, Bluesky, Twitch and Google Business Profile built for testers on 2026-10-08 (migration 0228) behind
+`PUBLISH_EXTENDED_NETWORKS_ENABLED` (off in production, on in staging). Only YouTube has been run against a
+real account; the six new networks have contract tests and no provider approval. See the "Built state" notes in 01 and 02.
 **Audience:** Product, engineering, design
 
 ## Purpose
@@ -75,7 +78,7 @@ should look*.
    guidance), with explicit gaps named rather than implied coverage.
 6. [OAuth App Review Runbook](06-oauth-review-runbook.md) — prep steps, scopes, and submission
    requirements for Meta, TikTok and YouTube's developer/app-review processes (plus an X/LinkedIn
-   appendix), sequenced against what needs a working composer first vs. what can start today. Stops
+   appendix and, since 2026-10-08, a status table and setup appendix for the six tester-stage networks), sequenced against what needs a working composer first vs. what can start today. Stops
    short of actual account creation and submission — those need a human with real business
    credentials, not an agent.
 
@@ -87,7 +90,7 @@ should look*.
 9. [Staging acceptance, 2026-10-07](ACCEPTANCE-2026-10-07.md) — the real YouTube publication, real
    video analytics and the live calendar checks. This is the latest verified state.
 
-8. [All-network tester handover, 2026-10-08](INTEGRATIONS-TESTING-2026-10-08.md) — native
+10. [All-network tester handover, 2026-10-08](INTEGRATIONS-TESTING-2026-10-08.md) — native
    connections for eleven networks, supported publish actions, administrator credentials,
    feature switch, migration 0228 and live tester acceptance steps.
 

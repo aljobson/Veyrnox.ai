@@ -3,7 +3,7 @@
   "diagram_type": "architecture",
   "meta": {
     "title": "Veyrnox.ai system architecture (as of 2026-10-08)",
-    "subtitle": "Checked against main 42150476",
+    "subtitle": "Checked against main 96380e7f",
     "output": "system-architecture.html",
     "quality_profile": "showcase",
     "views": [
@@ -173,7 +173,7 @@
       "id": "pg",
       "type": "database",
       "label": "Supabase Postgres",
-      "sublabel": "84 tables, RPCs, pg_cron",
+      "sublabel": "85 tables, RPCs, pg_cron",
       "tag": "eu-central-1",
       "pos": [
         330,
@@ -187,8 +187,8 @@
     {
       "id": "other",
       "type": "external",
-      "label": "Stream, social, email",
-      "sublabel": "Cinema video, Publish, Resend",
+      "label": "Stream, 11 social networks, email",
+      "sublabel": "Cinema, Publish (Bluesky app password), Resend",
       "pos": [
         660,
         380
@@ -275,7 +275,7 @@
       "id": "media-calls",
       "from": "worker",
       "to": "other",
-      "label": "tus, publish, email",
+      "label": "tus, publish (11 networks), email",
       "fromSide": "bottom",
       "toSide": "top"
     }
@@ -305,7 +305,7 @@
       "title": "Production flags",
       "items": [
         "On: chat, free allowance, referrals, personas, clip captions",
-        "Off: subscriptions, Publish, Cinema, projects, video agent"
+        "Off: subscriptions, Publish, extended networks (6 of 11; on in staging), Cinema, projects, video agent"
       ]
     }
   ]

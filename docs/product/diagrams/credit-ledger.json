@@ -3,7 +3,7 @@
   "diagram_type": "dataflow",
   "meta": {
     "title": "Credit ledger flow (as of 2026-10-08)",
-    "subtitle": "Checked against main 42150476",
+    "subtitle": "Checked against main 96380e7f",
     "output": "credit-ledger.html",
     "viewBox": [
       1080,

@@ -1,8 +1,8 @@
 # 1. Product Specification — Veyrnox Publish
 
-> **As of 2026-10-08 (repo `main` at `42150476`).** §1.1 to §1.6 are the original product vision and
+> **As of 2026-10-08 (repo `main` at `bee1ea4f`, which includes PR #637 and #638).** §1.1 to §1.6 are the original product vision and
 > Metricool reference and are unchanged. §1.7 (MVP scope), §1.8 (entitlements) and the new §1.10
-> (built state) have been reconciled with the code. Items marked *unverified* could not be confirmed
+> (built state) have been reconciled with the code. The all-network tester build (eleven networks, migration 0228) is described in §1.10 and in the [tester handover](INTEGRATIONS-TESTING-2026-10-08.md). Items marked *unverified* could not be confirmed
 > from the repo or the acceptance records.
 
 ## 1.1 Vision
@@ -143,9 +143,13 @@ The user's ask was to copy every Metricool feature. In practice:
 
 ## 1.7 MVP scope
 
-**v1 scope as approved (ADR-0061):**
+**v1 scope as approved (ADR-0061), extended on 2026-10-08:**
 - Networks: Instagram, X (Twitter), TikTok, LinkedIn, YouTube — the five a solo creator is most
-  likely to already use, and the five with the most mainstream OAuth app-review paths.
+  likely to already use, and the five with the most mainstream OAuth app-review paths. By owner
+  direction (ADR-0061 amendment, 2026-10-08) native connections for Facebook, Threads, Pinterest,
+  Bluesky, Twitch and Google Business Profile were built for tester use behind
+  `PUBLISH_EXTENDED_NETWORKS_ENABLED` (off in production). Those six have not been run against real
+  provider accounts and have no provider app approval (§1.10).
 - Composer using the Veyrnox asset library as the primary media source; device upload was added later
   (§1.10).
 - Calendar (month/week/list) with confirmed reschedule.
@@ -155,9 +159,9 @@ The user's ask was to copy every Metricool feature. In practice:
   (ten measured posts over fourteen days, three in a slot — technical spec §2.5).
 - Basic per-network analytics (evolution + per-post).
 
-**Deferred to Phase 2/3:** everything in §1.5's Phase 2/3 lists, plus Facebook, Pinterest, Threads,
-Bluesky, Twitch, Google Business Profile as additional networks once the adapter pattern (§2.3 of
-the technical spec) is proven on the first five.
+**Deferred to Phase 2/3:** everything in §1.5's Phase 2/3 lists. The six additional networks, once
+deferred, now exist as tester-stage adapters (single image only; Twitch statistics only) and are not
+a production offering until provider setup and live acceptance are done.
 
 **Not in the v1 build, although §1.5 lists it as core:** per-network caption overrides, per-network
 post types (Reel, Story, Short, poll, pin), first comment, alt text, privacy and audience fields, and
@@ -205,28 +209,29 @@ post volume — the shape ADR-0062 follows:
   adapters mature.
 - Retention lift for users who connect at least one social account vs. those who don't.
 
-## 1.10 Built state (2026-10-08)
+## 1.10 Built state (2026-10-08, `main` at `bee1ea4f`)
 
-Sources: ADR-0061 and its amendments, migrations 0154 to 0223, `wrangler.jsonc`, the code under
+Sources: ADR-0061 and its amendments, migrations 0154 to 0228, `wrangler.jsonc`, the code under
 `app/api/v1/social/`, `app/veyrnox/app/publish/`, `lib/` and `packages/adapters/social/`, and the
 acceptance records in this folder.
 
 | Capability | State |
 |---|---|
-| Connect accounts (OAuth) for Instagram, X, LinkedIn, TikTok, YouTube; disconnect | Built. Full-page redirect (not a popup). Disconnect stops publishing and clears tokens (0168). Free cap of one account (0169). |
-| Composer: pick accounts, one caption (4,000 characters max), one image or video, date and time | Built. Two actions: **Post now** (server time, queued for the next sweep) and **Schedule post**. Media comes from the user's generations or device uploads. |
+| Connect accounts for Instagram, X, LinkedIn, TikTok, YouTube; disconnect | Built. OAuth by full-page redirect (not a popup). Disconnect stops publishing and clears tokens (0168). Free cap of one account (0169). |
+| Connect accounts for Facebook, Threads, Pinterest, Twitch, Google Business Profile (OAuth) and Bluesky (app password) | Built for testers (PR #637, migration 0228), behind `PUBLISH_EXTENDED_NETWORKS_ENABLED`. Facebook (Page), Pinterest (board) and Google Business Profile (location) need an explicit destination choice. Not run against real provider accounts; no provider app approval. See the network table below. |
+| Composer: pick accounts, one caption (4,000 characters max overall; each network also has its own limit, see below), one image or video, date and time | Built. Two actions: **Post now** (server time, queued for the next sweep) and **Schedule post**. Media comes from the user's generations or device uploads. A network with no upload destination (Twitch) is not offered as a destination. |
 | "Schedule this" from a generation | Built (Studio results, batch tiles, Library). Opens `/app/publish?job=<id>`; creates nothing until the user confirms. Caption suggestions are not built. |
 | Device uploads | Built (0223, `PUBLISH_UPLOADS_ENABLED`): JPG, PNG, WebP up to 20 MiB, MP4 up to 100 MiB; ten files and 200 MiB per account. |
 | Publishing engine | Built: five-minute cron sweep, claim and complete with a claim key, bounded retries. |
-| Draft posts and batch approval | Built (0182): weekly brand drafts for the owner's own accounts, reviewed and approved or discarded on `/app/publish`. This is a single-owner review step, not the multi-reviewer approval workflow in §1.5 item 7. |
+| Draft posts and batch approval | Built (0182): weekly brand drafts for the owner's own accounts (still the original five-network scope; the six new networks are used through the manual composer only), reviewed and approved or discarded on `/app/publish`. This is a single-owner review step, not the multi-reviewer approval workflow in §1.5 item 7. |
 | Calendar (month, week, list) with confirmed reschedule | Built (0192, `PUBLISH_CALENDAR_ENABLED`). Drag opens a confirmation form; a Reschedule button gives a keyboard and touch path. |
-| Analytics dashboard | Built for Instagram, YouTube and TikTok (0188, 0190). X and LinkedIn analytics are not built. |
+| Analytics dashboard | Built for Instagram, YouTube and TikTok (0188, 0190). X and LinkedIn analytics are not built. Twitch: the sweep collects the latest 20 videos with their own view counts (only while the extended switch and `PUBLISH_ANALYTICS_ENABLED` are on; no channel follower or subscriber totals), but the dashboard page's network list (`ANALYTICS_NETWORKS`) was not extended, so the page still says analytics for Twitch are not available. Facebook, Threads, Pinterest, Bluesky and Business Profile analytics are not built. |
 | Best time to post and posting frequency | Built as a weekly cached aggregate (0191) shown on the analytics page. It is not offered inside the composer. |
 | Approval workflow with reviewers, competitors, SmartLinks, hashtag tracker, inbox, flows, ads, reports | Not built. |
 | Publish Plan | Not built (§1.8). |
-| Facebook, Pinterest, Threads, Bluesky, Twitch, Google Business Profile | Not on `main`. The database CHECK lists already name them. A branch (`codex/social-integrations-all`, commit `0ef3bb80`, "native connections for all eleven social platforms") exists but is not merged; it is not described in this pack. |
+| Publish switches for the new networks | `PUBLISH_EXTENDED_NETWORKS_ENABLED`: `"false"` in production, `"true"` on staging (PR #638, 2026-10-08). It gates new connections and new post creation only; targets already queued can finish. `PUBLISH_ENABLED` must also be true. |
 
-**What each live network actually publishes** (from the adapters and `lib/socialPublishSweep.js`):
+**What each of the eleven networks publishes** (from the adapters, `lib/social/networks.js` and `lib/socialPublishSweep.js`). The first five are the original adapters; the last six are tester-stage and have **not** been exercised against real provider accounts:
 
 | Network | Result |
 |---|---|
@@ -235,25 +240,57 @@ acceptance records in this folder.
 | X | One image tweet (single upload, 5 MB limit). Video fails the target. |
 | TikTok | One photo post sent as **MEDIA_UPLOAD**: it lands as a draft in the creator's TikTok inbox to finish there, and the target shows "delivered", not "published". Direct posting waits for TikTok's audit. There is no video path in code. |
 | YouTube | One video, uploaded in resumable chunks across sweep ticks, always **public**. The title is the caption text. The Pacific-day upload quota is enforced (0181). |
+| Facebook | One image on the chosen Page (Page token, not the personal profile). Caption up to 4,000 characters. |
+| Threads | One image on the profile. Container processing is polled across cron ticks; the image is served through the signed media proxy (needs `SOCIAL_MEDIA_PROXY_SECRET`). Caption up to 500 characters. |
+| Pinterest | One image Pin on the chosen owned board. Caption up to 800 characters. |
+| Bluesky | One image post, up to 1,000,000 bytes, caption up to 300 graphemes. Connected with a handle and dedicated app password (not OAuth); Bluesky-hosted accounts only. |
+| Twitch | No publishing. Connect for statistics only (latest 20 videos); never offered in the composer. |
+| Google Business Profile | One image in a standard local post on the chosen location, caption up to 1,500 characters. The target completes only once Google reports the post LIVE; a REJECTED post fails the target. |
 
-The composer does not stop a user choosing a media type a selected network cannot take; the target
-fails at publish time with the reason in `last_error`.
+Since PR #637 the composer and `POST /api/v1/social/posts` check each selected account before anything
+is queued: a media type the network cannot take returns `unsupported_media_type`, a network with no
+upload destination returns `publishing_not_supported`, an over-long caption returns `caption_too_long`
+(per-network limits: Instagram 2,200, LinkedIn 3,000, X 280, TikTok 2,200, YouTube 4,000, Facebook
+4,000, Threads 500, Pinterest 800, Bluesky 300, Business Profile 1,500) and an extended network
+while the switch is off returns `network_unavailable`. Image-only networks reject a video and YouTube
+rejects an image at creation, not at publish time.
 
-**Live versus flagged.** Production: `PUBLISH_ENABLED` is `"false"`, which hides `/app/publish`, the
+**Explicit destinations and Bluesky.** Facebook Pages, Pinterest boards and Google Business Profile
+locations are always chosen by the user, even when only one exists. The candidate list and its tokens
+are stored encrypted server-side (selection expires after 10 minutes, one per user and network, used
+once) and never sent to the browser. Pinterest offers only boards owned by the connecting user;
+Facebook offers only Pages where the user can create content or manage. Bluesky takes a handle plus a
+dedicated app password; the password is cleared from the form on submit and never stored, only
+encrypted session tokens are. A custom or self-hosted PDS is rejected.
+
+**Duplicate-post protection.** For Facebook, Threads, Pinterest, Bluesky and Business Profile a durable
+marker is written (`mark_social_provider_submission`) before the provider request. If the response is
+lost, the target fails with `provider_result_unknown_reconcile_before_retry` instead of posting again;
+check the provider and reconcile before scheduling replacement content. This is not automatic
+reconciliation. Bluesky also uses a deterministic record key per target.
+
+**Live versus flagged.** Production: `PUBLISH_EXTENDED_NETWORKS_ENABLED` is `"false"`; `PUBLISH_ENABLED` is `"false"`, which hides `/app/publish`, the
 menu link and every `/api/v1/social/*` route; analytics, posting insights and uploads are `"false"`;
 `PUBLISH_CALENDAR_ENABLED` is `"true"` but has no effect while Publish is closed. The cron sweep itself
 is not gated, so anything already queued still finishes. Staging (`yrqzwqywxfesmbvhzjgj`): Publish,
-analytics, posting insights, calendar and uploads are all `"true"`; the Instagram insights and TikTok
+analytics, posting insights, calendar, uploads and `PUBLISH_EXTENDED_NETWORKS_ENABLED` are all `"true"`; the Instagram insights and TikTok
 analytics consent switches are `"false"` on both environments pending provider review.
 
 **Verified live on staging** (acceptance records, not fixtures): a real YouTube channel connected, a
 real owner-approved video published on 2026-10-07 (queued 20:30 UTC, public 20:40 UTC), real channel and
 video analytics fetched, YouTube token refresh exercised, calendar views, confirmed drag reschedule,
 daylight-saving cases, pagination and lock contention, device uploads to R2, and Apple and passkey
-sign-in. **Not verified live:** any Instagram, X, LinkedIn or TikTok publication or analytics fetch, and
-production activation of any of it.
+sign-in; on 2026-10-08 the Worker version with the new networks was deployed to staging and a browser
+inspection showed all eleven logos (no provider connection or public post was made). **Not verified
+live:** any Instagram, X, LinkedIn or TikTok publication or analytics fetch, any connection, publication
+or statistics fetch on Facebook, Threads, Pinterest, Bluesky, Twitch or Business Profile (contract
+tests with stubbed responses and local database acceptance only), and production activation of any
+of it. Staging holds credentials for YouTube only; the other OAuth networks show "Setup required"
+until an administrator supplies app credentials, and Bluesky needs none.
 
 **Outstanding.** The Publish Plan; provider reviews (06 §6.0); an owner-controlled Instagram Business or
-Creator account for publishing and analytics acceptance; X and LinkedIn analytics scope and cost
-decisions; caption suggestions; per-network options in the composer; production approval and apply of
-0223 (*unverified* whether applied) and the production switch flip.
+Creator account for publishing and analytics acceptance; real-account tester acceptance and provider app
+review for the six new networks; X and LinkedIn analytics scope and cost decisions; caption
+suggestions; per-network options in the composer; production switch flips. Migration 0228 was applied
+to production through the approved workflow and to staging on 2026-10-08 (per the tester handover);
+0223 on production remains *unverified*.

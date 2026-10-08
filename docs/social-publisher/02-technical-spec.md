@@ -1,10 +1,10 @@
 # 2. Technical Specification — Veyrnox Publish
 
-> **As of 2026-10-08 (repo `main` at `42150476`).** This spec began as a pre-implementation design. It
+> **As of 2026-10-08 (repo `main` at `bee1ea4f`, includes PR #637 and #638).** This spec began as a pre-implementation design. It
 > now describes what is built, and keeps the original design only where it is still the plan, marked
-> **Design only (not built)**. Each section was checked against migrations 0154 to 0223, the code
+> **Design only (not built)**. Each section was checked against migrations 0154 to 0228, the code
 > under `app/api/v1/social/`, `lib/`, `packages/adapters/social/`, `worker.js`, `wrangler.jsonc` and
-> ADR-0061 with its amendments. Items that could not be confirmed are marked *unverified*.
+> ADR-0061 with its amendments (including the 2026-10-08 all-network amendment) and the [tester handover](INTEGRATIONS-TESTING-2026-10-08.md). Items that could not be confirmed are marked *unverified*.
 
 This spec follows the constraints already in force for this repo (`CLAUDE.md`): Cloudflare Workers
 Builds, Supabase Postgres with RLS, RPC-only money-adjacent writes, no `jose` / no
@@ -42,6 +42,9 @@ amendments; nothing here changes CSP.
                                                         │  tiktok.js               │
                                                         │  linkedin.js             │
                                                         │  youtube.js              │
+                                                        │  facebook, threads,      │
+                                                        │  pinterest, bluesky,     │
+                                                        │  twitch, gmb (.js, 0228) │
                                                         └────────────┬──────────────┘
                                                                      │ HTTPS (fetch, no SDKs)
                                                         ┌────────────▼──────────────┐
@@ -49,7 +52,11 @@ amendments; nothing here changes CSP.
                                                         │ TikTok Content Posting &   │
                                                         │ Display APIs / X API v2 /  │
                                                         │ LinkedIn REST /            │
-                                                        │ YouTube Data API v3        │
+                                                        │ YouTube Data API v3 /      │
+                                                        │ Graph (Facebook, Threads) /│
+                                                        │ Pinterest v5 / Bluesky     │
+                                                        │ XRPC / Twitch Helix /      │
+                                                        │ Business Profile APIs      │
                                                         └────────────────────────────┘
 ```
 
@@ -101,6 +108,7 @@ ownership (`social_brands.owner_user_id`). Migrations are in `packages/db/schema
 | 0191 | `social_best_time_cache`; `refresh_social_posting_insights`, `get_social_posting_insights` |
 | 0192 | Calendar index `(brand_id, scheduled_at, id)`; `list_social_calendar`, `reschedule_social_post` |
 | 0223 | `social_uploads`, `social_post_media.source_upload_id`; `reserve_social_upload`, `read_social_upload`, `complete_social_upload`, `remove_social_upload`, `claim_social_upload_cleanup`, `release_social_upload`; `create_social_post` and the claim extended to uploads |
+| 0228 | `social_connection_selections` (the only table 0228 creates); `prepare_social_connection_selection`, `consume_social_connection_selection`, `rotate_extended_social_tokens`, `mark_social_provider_submission` (all `service_role` only). Table and function details below. |
 
 (0176 added the missing foreign-key lookup indexes; 0177 added the append-only truncate guard.)
 
@@ -127,7 +135,8 @@ social_accounts (
   unique (brand_id, network, external_account_id)
 )
 -- Only 'active' and 'revoked' are ever written. Nothing sets 'expired' or 'error' (see §2.6).
--- The CHECK lists all eleven networks; only five have adapters.
+-- The CHECK lists all eleven networks and, since 0228 and PR #637, all eleven have adapters
+-- (the six added in 0228 are tester-stage, behind PUBLISH_EXTENDED_NETWORKS_ENABLED).
 
 social_posts (
   id uuid pk, brand_id uuid not null references social_brands(id) on delete cascade,
@@ -158,7 +167,7 @@ social_post_targets (
   publish_status text not null default 'pending'
     check (publish_status in ('pending','publishing','submitted','delivered','published','failed')),
   attempts int not null default 0, claimed_at timestamptz, claim_key uuid,
-  next_attempt_at timestamptz, provider_state jsonb not null default '{}',
+  next_attempt_at timestamptz, provider_state jsonb not null default '{}',   -- 0228 adds {"submission_started": true}
   last_error text, platform_post_id text, platform_post_url text, published_at timestamptz,
   unique (post_id, account_id)
 )
@@ -169,6 +178,15 @@ social_uploads (            -- 0223: the owner's reusable device-upload library
   status text not null default 'pending' check (status in ('pending','ready','deleting','deleted')),
   created_at timestamptz, put_expires_at timestamptz     -- signed PUT window, 16 minutes
 )
+
+social_connection_selections (   -- 0228: pending Page / board / location choice, never readable by the browser
+  id uuid pk default gen_random_uuid(), auth_id uuid not null references auth.users(id) on delete cascade,
+  network text not null check (network in ('facebook','pinterest','gmb')),
+  payload_enc bytea not null check (octet_length between 1 and 1048576),   -- AES-GCM candidates + their tokens
+  expires_at timestamptz not null default now() + interval '10 minutes',
+  unique (auth_id, network))   -- a new attempt replaces the pending one (new id); consumed once
+-- RLS enabled and forced; all roles revoked. prepare_ deletes expired rows and upserts; consume_ deletes
+-- the row and returns the ciphertext only if id, user, network and expiry all match.
 
 social_post_write_rate_limits (user_id pk, window_started_at, request_count)   -- 0160
 youtube_upload_daily_quota (quota_date date pk, upload_count int)              -- 0161, keyed Pacific date (0181)
@@ -189,6 +207,15 @@ social_account_actions (
 -- Append-only. Actions written today: connect, reconnect, disconnect, draft approve/discard,
 -- post_rescheduled (and the fixture cleanup events recorded in the acceptance notes).
 ```
+
+**0228 functions.** `rotate_extended_social_tokens` replaces the stored access and refresh ciphertext for
+an active Pinterest, Threads, Bluesky, Twitch or Business Profile account only if both old ciphertexts
+still match and the new expiry is in the future, so a disconnect, reconnect or competing rotation wins
+over stale cron work (Threads has no refresh token; Facebook has no expiry and is never rotated).
+`mark_social_provider_submission(target, claim_key, network)` sets `provider_state.submission_started`
+on a `publishing` target of Facebook, Threads, Pinterest, Bluesky or Business Profile exactly once.
+Counts: 0228 adds one table, so the schema is now 85 tables (82 in `public`); highest migration 0228,
+next free 0229.
 
 **Statuses.** Post: `draft` (inert until the owner approves its batch), `scheduled`, `published` (at
 least one target succeeded), `failed` (none did), `canceled`. Target: `pending`, `publishing`
@@ -231,12 +258,13 @@ at the boundary, resolve the caller's default brand (`resolveBrand`) and call a 
 
 | Method & path | Purpose |
 |---|---|
-| `GET /api/v1/social/accounts` | List the caller's connected accounts (never any token). |
-| `POST /api/v1/social/accounts/{instagram,twitter,linkedin,tiktok,youtube}/connect` | Body `{ codeChallenge }`. Returns `{ authorizeUrl }` with a signed `state`. The browser navigates there with a full-page redirect. |
-| `POST /api/v1/social/accounts/{network}/callback` | Body carries the provider's `code`, `state` and (X only) the PKCE verifier. Verifies state, exchanges the code, encrypts and stores tokens through `record_social_account_connection`. It is a POST made by the callback page at `/social/connect/callback/{network}`, not a provider-facing GET. |
+| `GET /api/v1/social/accounts` | List the caller's connected accounts (never any token), plus `networks[]`: per network its capabilities and status `available`, `setup_required` (provider secrets missing) or `testing_disabled` (extended switch off). |
+| `POST /api/v1/social/accounts/{instagram,twitter,linkedin,tiktok,youtube,facebook,threads,pinterest,twitch,gmb}/connect` | Body `{ codeChallenge }`. Returns `{ authorizeUrl }` with a signed `state`. The browser navigates there with a full-page redirect. The facebook, threads, pinterest, twitch and gmb routes (PR #637) answer 404 `network_unavailable` while `PUBLISH_EXTENDED_NETWORKS_ENABLED` is not `"true"` and 503 `{network}_not_configured` without the provider's secrets. |
+| `POST /api/v1/social/accounts/bluesky/connect` | Body `{ identifier, appPassword }` (app password format `xxxx-xxxx-xxxx-xxxx`). Not OAuth: the Worker creates a session on `bsky.social`, accepts only Bluesky-hosted PDSs (`bsky.social` or `*.host.bsky.network`) and stores encrypted session tokens, never the password. Same extended switch. |
+| `POST /api/v1/social/accounts/{network}/callback` | Body carries the provider's `code`, `state` and (X only) the PKCE verifier. Verifies state, exchanges the code, encrypts and stores tokens through `record_social_account_connection`. For Facebook, Pinterest and Business Profile it instead returns `{ ok: false, selectionId, choices[] }` (labels and ids only) after storing the encrypted candidates; the page then posts `{ selectionId, resourceId }` to the same route to consume the selection and record the chosen Page, board or location (409 `selection_expired` after ten minutes or on a second use; 409 `NO_ELIGIBLE_RESOURCE` when nothing qualifies; more than 200 candidates is refused). It is a POST made by the callback page at `/social/connect/callback/{network}`, not a provider-facing GET. |
 | `DELETE /api/v1/social/accounts/:accountId` | Disconnect: marks the account revoked, clears both tokens, fails its open targets (0168). |
 | `GET /api/v1/social/posts` | Cursor-paginated list of the caller's posts with per-target status (`before_created_at`, `before_id`). |
-| `POST /api/v1/social/posts` | Create a scheduled post. Body `{ scheduledAt` **or** `publishNow: true, globalText, idempotencyKey, accountIds[1..20], media[1..10] }`. `publishNow` uses the server clock. Media items are `{ mediaType, jobId }` or `{ mediaType, uploadId }` (uploads only while `PUBLISH_UPLOADS_ENABLED`). Rate-limited. Returns `{ post_id, idempotent, target_count }`. |
+| `POST /api/v1/social/posts` | Create a scheduled post. Body `{ scheduledAt` **or** `publishNow: true, globalText, idempotencyKey, accountIds[1..20], media[1..10] }`. `publishNow` uses the server clock. Media items are `{ mediaType, jobId }` or `{ mediaType, uploadId }` (uploads only while `PUBLISH_UPLOADS_ENABLED`). Rate-limited. Returns `{ post_id, idempotent, target_count }`. Before creating, the route loads the caller's accounts and rejects `ACCOUNT_NOT_FOUND` (404), `network_unavailable`, `publishing_not_supported` (Twitch), `unsupported_media_type` (exactly one media item of a type the network accepts) and `caption_too_long` (400). |
 | `PATCH /api/v1/social/posts/:id/schedule` | Reschedule an unstarted post with `{ expectedAt, scheduledAt }` (0192); `POST_BUSY` and `SCHEDULE_CHANGED` conflicts. Only when `PUBLISH_CALENDAR_ENABLED`. |
 | `GET /api/v1/social/calendar?from=&to=&status=&network=&after_at=&after_id=` | Owner-only scheduled-date range, 100-post cursor pages, at most 43 days (0192). Only when `PUBLISH_CALENDAR_ENABLED`. |
 | `GET /api/v1/social/drafts`, `POST /api/v1/social/drafts` | List open drafts; `{ action: 'approve', batchId }` or `{ action: 'discard', batchId, postId? }` (0182). |
@@ -290,12 +318,17 @@ of follow-up posts for platforms that support threading).
 validation before enabling, and per-network tabs should surface which required field is missing
 (mirrors Metricool's own inline validation, described in the product spec).
 
-**As built (Instagram, X, LinkedIn, TikTok, YouTube).** The table above is the design contract and
-is *not* what the composer enforces. The composer sends one caption and one media item to every
-selected account; `create_social_post` checks ownership, active accounts, idempotency, schedule
-(no earlier than five minutes ago, so "Post now" works) and that the media belongs to the caller with a
-matching MIME family. Nothing checks a network's media type or caption length at schedule time:
-the dispatcher fails the target instead.
+**As built (all eleven networks).** The table above is the design contract and is *not* what the
+composer enforces. The composer sends one caption and one media item to every selected account.
+`create_social_post` checks ownership, active accounts, idempotency, schedule (no earlier than five
+minutes ago, so "Post now" works) and that the media belongs to the caller with a matching MIME family.
+Since PR #637 the route also runs `postCapabilityError` (`lib/social/postCapabilities.js`) against
+`lib/social/networks.js`, and the composer repeats the check: the single media item must be a type the
+network lists, a network with no media (Twitch) refuses publishing, and the caption must fit the
+network's limit (Instagram 2,200; LinkedIn 3,000; X 280; TikTok 2,200; YouTube 4,000; Facebook 4,000;
+Threads 500; Pinterest 800; Bluesky 300 graphemes; Business Profile 1,500). This replaces the earlier
+behaviour where the dispatcher failed the target at publish time. The design-contract fields (post
+types, first comment, alt text, privacy, board id as an option) are still not built.
 
 | Network | What dispatch does | Scopes requested |
 |---|---|---|
@@ -305,9 +338,33 @@ the dispatcher fails the target instead.
 | TikTok | Photo only, `post_mode: MEDIA_UPLOAD`, `PULL_FROM_URL` from `/media/social/:token`, `is_aigc: true`. Polls the publish id every 30 s for up to 2 hours; `SEND_TO_USER_INBOX` or `PUBLISH_COMPLETE` marks the target `delivered`. No video path. | `user.info.basic`, `video.upload`; plus `user.info.stats`, `video.list` only when `TIKTOK_ANALYTICS_SCOPE_ENABLED` |
 | YouTube | Video: opens a resumable session, sends one 8 MiB chunk per sweep tick, then polls processing every 60 s (24 h outer bound). Privacy is always `public`; the title and description are the caption. Spends one unit of the 80/day Pacific-date quota when a session opens; exhaustion defers to the next reset instead of failing. A dead session restarts up to twice. | `youtube.readonly`, `youtube.upload` |
 
+**Tester-stage networks (PR #637, migration 0228; no real-account run, no provider app approval).**
+Each is a plain `fetch` adapter in `packages/adapters/social/` sharing `common.js` (15 s timeout,
+`redirect: 'error'`, errors carry only a status code, never provider payloads):
+
+| Network | Connection and destination | What dispatch does | Scopes requested |
+|---|---|---|---|
+| Facebook | OAuth; long-lived user token exchanged, then the user's Pages with a CREATE_CONTENT or MANAGE task are offered (up to 1,000, ten pages of 100); the chosen Page's own token is stored (no expiry, no refresh) | One image to `/{page}/photos`, `published=true` | `pages_show_list`, `pages_read_engagement`, `pages_manage_posts` |
+| Threads | OAuth; long-lived token; the profile is the account | Create IMAGE container, then poll every 30 s (2 h bound) until FINISHED, then `threads_publish`; the image is served from `/media/social/:token` (needs `PUBLIC_HOST` and `SOCIAL_MEDIA_PROXY_SECRET`) | `threads_basic`, `threads_content_publish` |
+| Pinterest | OAuth with continuous refresh; only boards whose owner is the connecting user are offered | One image Pin (`media_source.image_url`); title is the first 100 characters of the caption | `user_accounts:read`, `boards:read`, `pins:read`, `pins:write` |
+| Bluesky | Handle plus dedicated app password; Bluesky-hosted PDS only (any other host is refused) | Download the image (up to 1,000,000 bytes, JPEG/PNG/WebP), `uploadBlob`, then `putRecord` with a deterministic record key derived from the target id | `app-password` (recorded; not an OAuth scope) |
+| Twitch | OAuth; token client id and user id are validated against the configured app | None: `publishing_not_supported`. Analytics only: `helix/videos?first=20`, per-video view counts, no channel totals | none |
+| Google Business Profile | OAuth with PKCE, offline access; accounts then locations (up to 200) are offered | One image in a STANDARD local post; the target stays in progress, checked every 60 s for up to 2 h, until Google reports LIVE; REJECTED fails it (`google_post_rejected`) | `business.manage` |
+
+**Duplicate-post guard.** These providers have no idempotency key we can reuse. For Facebook, Pinterest,
+Bluesky and Business Profile the dispatcher first calls `mark_social_provider_submission` and only then
+sends the request; for Threads the marker is written immediately before `threads_publish`, after the
+container is FINISHED (container creation is safe to repeat only until then). The provider result is
+checkpointed in `provider_state.result` and finished on a later tick (the second step is scheduled about
+five seconds later, so in practice it runs on the next cron tick). A target
+claimed again with `submission_started` set and no stored result fails with
+`provider_result_unknown_reconcile_before_retry`, which stops a second public submission when a response
+was lost or a worker died mid-request. Reconciliation is manual: look at the provider, then schedule
+replacement content if needed. Bluesky's deterministic record key additionally makes a retried
+`putRecord` overwrite rather than duplicate.
+
 An unknown network, or a target with no media, fails immediately with `network_not_implemented` or
-`missing_media`. Facebook, Pinterest, Threads, Bluesky, Twitch and Google Business Profile have no
-dispatcher on `main`.
+`missing_media`.
 
 ## 2.5 Analytics ingestion
 
@@ -317,7 +374,7 @@ about what each network will give.
 
 **Collector (`lib/socialAnalyticsSweep.js`, `PUBLISH_ANALYTICS_ENABLED`).** Runs inside the existing
 five-minute cron. `claim_social_analytics_accounts` claims up to five due active accounts of the
-networks that have a fetcher (Instagram, YouTube, TikTok) and moves each account's next turn six hours
+networks that have a fetcher (Instagram, YouTube, TikTok, and Twitch when the extended switch is on and `TWITCH_CLIENT_ID/SECRET` are set) and moves each account's next turn six hours
 on, so a tick that dies costs that account one round. Each fetch returns `{ metrics, posts }`;
 `record_social_analytics` stores one evolution snapshot per account per UTC day and one row per post,
 merging metrics key by key so a number a later fetch could not read is kept. A failed fetch is kept on
@@ -333,11 +390,12 @@ wrapping it needs a migration that widens the list.
 | Instagram | followers, following, post count; with insights: reach and accounts engaged over the last 24 h | likes and comments for the latest 50 posts; with insights: reach, views, saves, shares for the ten newest | insights need `instagram_business_manage_insights` (Meta review) |
 | YouTube | subscribers (rounded by YouTube), channel views, public video count | lifetime views, likes, comments for the latest 50 uploads | existing `youtube.readonly` grant; no YouTube Analytics API scope |
 | TikTok | followers, following, total likes, public video count | lifetime views, likes, comments, shares for up to 50 recent public videos | `user.info.stats`, `video.list` (Display API review); migration 0190 |
-| X, LinkedIn | not built (X reads are billed by X; LinkedIn member statistics need a different API product) | | |
+| Twitch (tester-stage, 0228) | none (no follower or subscriber count is claimed) | views for the latest 20 videos (`helix/videos`), one `video` row each | extended switch and Twitch app credentials; no privileged scope. **Collected but not yet shown:** `ANALYTICS_NETWORKS` in the dashboard page still lists only Instagram, YouTube and TikTok, so a Twitch account reads "Analytics … not available yet" there (`GET /api/v1/social/analytics` returns the stored rows) |
+| X, LinkedIn, Facebook, Threads, Pinterest, Bluesky, Business Profile | not built (X reads are billed by X; LinkedIn member statistics need a different API product) | | |
 
 The dashboard (`/app/publish/analytics`) shows these for 7, 30 or 90 days. Date ranges select
 publication dates; the counters are lifetime values, not views or interactions earned in the range.
-`ANALYTICS_NETWORKS` in the page and `FETCHERS` in the sweep must be kept in step when adding a network.
+`ANALYTICS_NETWORKS` in the page and `FETCHERS` in the sweep must be kept in step when adding a network. Extended-network tokens are renewed by the analytics sweep too (see the token refresh bullet in §2.6).
 
 **Best time to post and frequency (`social_best_time_cache`, migration 0191)**: recomputed
 at most weekly after successful ingestion, behind `PUBLISH_POSTING_INSIGHTS_ENABLED` (default
@@ -359,7 +417,7 @@ The result is shown on the analytics page; it is not wired into the composer's t
 
 ## 2.6 Scheduling engine
 
-As built (`lib/socialPublishSweep.js`, 352 lines; `worker.js`):
+As built (`lib/socialPublishSweep.js`; `worker.js`):
 
 - **Trigger:** the Worker's single Cloudflare Cron Trigger, `*/5 * * * *`. Resolution is therefore
   about five minutes, and the UI says "Publishing can take a few minutes". The sweep is deliberately
@@ -374,8 +432,10 @@ As built (`lib/socialPublishSweep.js`, 352 lines; `worker.js`):
   targets of any non-active account (`social_fail_inactive_targets`, 0168), and it joins only active
   accounts.
 - **Dispatch:** per target, decrypt the token, mint a fresh 15-minute presigned R2 GET URL (nothing is
-  baked in at schedule time), and call the network dispatcher (§2.4). Two networks do not finish in one
-  tick: TikTok (poll the publish id) and YouTube (chunked upload, then processing). They return
+  baked in at schedule time), and call the network dispatcher (§2.4). The networks that do not finish in one
+  tick are TikTok (poll the publish id), YouTube (chunked upload, then processing), Threads (container
+  processing) and Business Profile (until LIVE); Facebook, Pinterest and Bluesky submit once, checkpoint
+  the result and complete on the next tick (§2.4). They return
   `inProgress` with `provider_state` and a next check time, reported by `report_social_post_progress`
   without spending the retry budget.
 - **Report:** `complete_social_post_target` and `report_social_post_progress` apply only while the row
@@ -390,11 +450,20 @@ As built (`lib/socialPublishSweep.js`, 352 lines; `worker.js`):
   open targets at once (0168); a refreshed token is never written back onto a revoked account.
 - **Token refresh:** there is no separate refresh cron. YouTube's access token is refreshed inside the
   publish dispatch when it is within ten minutes of expiry, and YouTube and TikTok tokens are refreshed
-  by the analytics sweep. **Instagram, X and LinkedIn have no refresh path in code**, and nothing ever
-  sets an account to `expired` or `error`; an expired token for those networks simply fails the target
-  at publish time with the provider's error.
+  by the analytics sweep. Since PR #637, Pinterest, Business Profile, Twitch and Bluesky (refresh token,
+  ten-minute buffer; a Bluesky session is recorded as valid for 90 minutes) and Threads (the long-lived access token is
+  renewed one day before expiry) are renewed by `renewExtendedToken` (`lib/social/extendedTokens.js`) in
+  both the publish dispatch and the analytics sweep, written through `rotate_extended_social_tokens`.
+  A lost rotation fails the target as `token_refresh_failed`; revoked grants need a reconnect.
+  **Instagram, X and LinkedIn still have no refresh path in code**, and Facebook Page tokens carry no
+  expiry and are not refreshed (a Page revoked or a lost posting task needs a reconnect). Nothing sets
+  an account to `expired` or `error`; a dead token simply fails the target at publish time with the
+  provider's error.
 - **Not covered:** a post the platform already accepted from a worker whose claim was then lost is not
-  un-posted. Platform calls are not idempotent; the claim key bounds the damage to one extra attempt.
+  un-posted. For the original five, platform calls are not idempotent and the claim key bounds the
+  damage to one extra attempt. For Facebook, Threads, Pinterest, Bluesky and Business Profile the
+  pre-submission marker (§2.4) stops a second submission and surfaces
+  `provider_result_unknown_reconcile_before_retry`; automatic reconciliation is not built.
 - **Not built:** failure notifications (the user sees `failed` and `last_error` in the post list and
   calendar), a per-target Retry control, and manual / mobile-push mode.
 
@@ -402,7 +471,7 @@ Two further jobs run on the same cron: the **upload cleanup** (`PUBLISH_UPLOADS_
 abandoned uploads older than 24 hours, or removed files after the signed PUT window, and releases the
 database reservation only after R2 confirms deletion; and the **weekly brand drafts**
 (`lib/social/brandDrafts.js`) turns the last seven days of the owner's generations into up to seven
-draft posts on Mondays 06:00 UTC for the owner named by `BRAND_DRAFTS_AUTH_ID`. Drafts are inert until
+draft posts on Mondays 06:00 UTC for the owner named by `BRAND_DRAFTS_AUTH_ID`. Drafts stay on the original five networks; the six new networks are reached through the manual composer only. Drafts are inert until
 the owner approves the batch on `/app/publish`.
 
 ## 2.7 OAuth flow hardening
@@ -410,10 +479,14 @@ the owner approves the batch on `/app/publish`.
 What the connect flow does today, and where it falls short of the original list:
 
 - **PKCE (S256) where the provider supports it.** The browser generates a verifier, keeps it in
-  `sessionStorage` per network, and sends only the S256 challenge. **Only X uses it**: X requires
-  PKCE and the verifier is posted back to the callback. Instagram, LinkedIn, TikTok and YouTube have no
-  documented PKCE support for this web flow, so their routes validate the challenge for a uniform
-  contract and never forward it. The original "PKCE on every code exchange" is therefore not true.
+  `sessionStorage` per network, and sends only the S256 challenge. **X and Google Business Profile use
+  it**: X requires PKCE and Business Profile forwards the challenge and verifier to Google; the verifier
+  is posted back to the callback. The other extended OAuth routes (Facebook, Threads, Pinterest, Twitch)
+  validate the verifier's shape but do not forward it. Instagram, LinkedIn, TikTok and YouTube have no
+  PKCE forwarding in their adapters, so those routes validate the challenge for a uniform
+  contract and never forward it. (The tester handover labels YouTube "OAuth with PKCE"; the adapter
+  code on `main` does not forward a challenge, so that label is *unverified*.) The original "PKCE on
+  every code exchange" is therefore not true.
 - **Exact-match `redirect_uri`.** Built from `PUBLIC_HOST` (must be https) plus a per-network path,
   `/social/connect/callback/{network}`; never from request input. No query string, because several
   providers ignore it.
@@ -424,13 +497,19 @@ What the connect flow does today, and where it falls short of the original list:
   provider's one-time authorization code is what actually stops reuse.
 - **Refresh-token rotation, where the platform supports it.** TikTok rotation is implemented
   atomically (`rotate_tiktok_account_tokens`: both ciphertexts must still match and the account must be
-  active, so a disconnect, reconnect or competing refresh wins). **Reuse detection and token-family
+  active, so a disconnect, reconnect or competing refresh wins). 0228 adds the same compare-both-old-
+  ciphertexts rule for Pinterest, Threads, Bluesky, Twitch and Business Profile
+  (`rotate_extended_social_tokens`). **Reuse detection and token-family
   revocation are not built.**
 - **Tokens are never logged, never included in error responses, and never returned to the browser.**
   `list_social_accounts` returns ids, names and expiry only. Tokens are AES-GCM encrypted at rest with
   a random 12-byte IV (`lib/social/tokenCrypto.js`), key from `SOCIAL_TOKEN_ENCRYPTION_KEY` (base64 of
   exactly 32 bytes, a dedicated Worker secret). There is no key-rotation or re-encryption path; a key
   change would orphan stored tokens (users reconnect).
+- **Destination selection is server-side.** For Facebook, Pinterest and Business Profile the candidate
+  list, with each Page's own token, is encrypted into `social_connection_selections` and only labels and
+  ids reach the browser; the selection is bound to user and network, expires in ten minutes, and is
+  consumed once. A failed completion means starting the connection again.
 - **Scope minimization.** The scopes in §2.4 are the minimum for what is built. Insights and TikTok
   analytics scopes are requested only behind their own switches, so the consent screen never asks for a
   permission the provider has not approved. The callback stores the grant the provider actually
@@ -454,7 +533,7 @@ Every attached asset is either:
 There is no code path where Veyrnox's backend makes an outbound request to a URL a user typed in. The
 outbound media fetches that do exist target URLs the server minted: the X adapter downloads the image
 from a presigned R2 URL (15 minutes) and the upload completion reads the object it just signed.
-TikTok is the one network that fetches from us: its `PULL_FROM_URL` needs a DNS-verified host that is
+TikTok and Threads are the networks that fetch from us (the other networks receive a presigned R2 URL or the bytes): TikTok's `PULL_FROM_URL` needs a DNS-verified host that is
 ours, so `GET /media/social/:token` streams one R2 object for the holder of a short-lived HMAC token
 (`SOCIAL_MEDIA_PROXY_SECRET`, a dedicated secret; one-hour default lifetime; `no-store`). That route is
 public by design and is the only unauthenticated Publish endpoint.
@@ -491,9 +570,9 @@ and every RPC re-derives ownership from `p_auth_id` before touching a row, exact
 | No raw string interpolation into SQL | All access is parameterized RPC; no PostgREST filters |
 | SECURITY DEFINER functions `SET search_path = ''` | Every Publish RPC |
 | Every new function/table revokes explicitly | `REVOKE ALL ... FROM PUBLIC, anon, authenticated` + `GRANT EXECUTE ... TO service_role` on every RPC, naming the full signature; tables revoke all roles |
-| Idempotency keys on state-changing RPCs | `create_social_post` on `(brand_id, idempotency_key)`; connection upsert on `(brand_id, network, external_account_id)`; reschedule replay is a no-op. Provider calls are not idempotent (§2.6) |
+| Idempotency keys on state-changing RPCs | `create_social_post` on `(brand_id, idempotency_key)`; connection upsert on `(brand_id, network, external_account_id)`; reschedule replay is a no-op. Provider calls are not idempotent (§2.6); for the five synchronous tester-stage providers a committed pre-submission marker stops a second public submission (§2.4). Selections are single-use by delete-on-consume |
 | No `jose` / `@supabase/supabase-js` / `tsx` on SSR graph | Token encryption and OAuth state via `crypto.subtle`; adapters use raw `fetch`, no platform SDK |
-| Secrets via `wrangler secret put` | `META_APP_ID/SECRET`, `X_CLIENT_ID/SECRET`, `LINKEDIN_CLIENT_ID/SECRET`, `TIKTOK_CLIENT_KEY/SECRET`, `YOUTUBE_CLIENT_ID/SECRET`, `SOCIAL_OAUTH_STATE_SECRET`, `SOCIAL_TOKEN_ENCRYPTION_KEY`, `SOCIAL_MEDIA_PROXY_SECRET` are Worker secrets, never in `wrangler.jsonc`. Which are provisioned per environment is *unverified* from the repo: `wrangler.jsonc` comments still say the provider ones are "not yet provisioned", while the acceptance records show a working YouTube client on staging |
+| Secrets via `wrangler secret put` | `META_APP_ID/SECRET`, `X_CLIENT_ID/SECRET`, `LINKEDIN_CLIENT_ID/SECRET`, `TIKTOK_CLIENT_KEY/SECRET`, `YOUTUBE_CLIENT_ID/SECRET`, and since 0228 `FACEBOOK_CLIENT_ID/SECRET` (falls back to `META_APP_ID/SECRET`), `THREADS_CLIENT_ID/SECRET`, `PINTEREST_CLIENT_ID/SECRET`, `TWITCH_CLIENT_ID/SECRET`, `GMB_CLIENT_ID/SECRET` (Bluesky needs none), plus `SOCIAL_OAUTH_STATE_SECRET`, `SOCIAL_TOKEN_ENCRYPTION_KEY`, `SOCIAL_MEDIA_PROXY_SECRET` are Worker secrets, never in `wrangler.jsonc`. Which are provisioned per environment is *unverified* from the repo: `wrangler.jsonc` comments still say the provider ones are "not yet provisioned", while the acceptance records show a working YouTube client on staging; the tester handover records that staging has the shared secrets and YouTube credentials only, and the nine other OAuth apps await an administrator |
 | CSP `connect-src` is locked to `'self'` + Supabase + R2 | Unchanged. Platform API calls are server-side. Device uploads PUT to the R2 S3 endpoint, which `connect-src` already allows (ADR-0028) |
 | No CORS wildcards on `/api/v1/*` | Unchanged. The R2 bucket's own CORS must allow the exact origin for PUT, Content-Type and If-None-Match (checked on staging 2026-10-06) |
 | Webhook signature verification | No platform webhook is registered. Platform state is polled (TikTok publish id, YouTube processing), never trusted from a callback |
@@ -521,16 +600,22 @@ OWASP API Security Top 10, NIST, ISO/IEC 27001, NCSC) see
 4. **Token storage blast radius.** A compromised `SOCIAL_TOKEN_ENCRYPTION_KEY` would expose every
    connected account's posting ability. It is a dedicated secret; there is no documented rotation
    runbook and no re-encryption path.
-5. **Token lifetime gap.** Instagram, X and LinkedIn tokens are never refreshed and accounts never move
-   to `expired` or `error`; the first sign of a dead token is a failed post.
+5. **Token lifetime gap.** Instagram, X and LinkedIn tokens are never refreshed, Facebook Page tokens
+   have no stored expiry or refresh, and accounts never move to `expired` or `error`; the first sign of
+   a dead token is a failed post. (Pinterest, Business Profile, Twitch, Bluesky and Threads now renew.)
 6. **Third-party API response trust.** Captions, display names and analytics labels come from platform
    APIs and are attacker-influenceable. Stored fields are length- and type-checked in the database
    (`social_analytics_numbers`, CHECKs on caption, permalink and post type) and rendered by React; keep
    them escaped at every render site.
-7. **Platform actions are not idempotent.** See §2.6 "Not covered".
+7. **Platform actions are not idempotent.** See §2.6 "Not covered". For the new synchronous providers an
+   uncertain result is refused rather than retried, which trades possible duplicate posts for
+   `provider_result_unknown_reconcile_before_retry` cases that need manual reconciliation.
 8. **Security testing.** No penetration test or focused OAuth/media review has been run. Unit tests and
-   database acceptance tests exist (1,626 unit tests passed on 2026-10-07 across the repo; Publish
+   database acceptance tests exist (1,626 unit tests passed on 2026-10-07 and 1,697 on 2026-10-08 per the tester handover, across the repo; Publish
    files are `tests/social*.test.mjs` and `packages/db/social-*.acceptance.test.ts`).
+9. **The six new networks are unexercised against real accounts.** Automated contract tests (stubbed
+   provider responses) and a local database acceptance suite exist; provider app approval, quotas and
+   billing access (for example X reads, Business Profile API access) are separate and unconfirmed.
 
 
 ### Calendar implementation (0192)

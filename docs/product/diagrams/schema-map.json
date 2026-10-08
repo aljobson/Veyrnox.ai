@@ -3,7 +3,7 @@
   "diagram_type": "architecture",
   "meta": {
     "title": "Veyrnox.ai data model by domain (as of 2026-10-08)",
-    "subtitle": "84 tables through migration 0227, checked against main 42150476",
+    "subtitle": "85 tables through migration 0228, checked against main 96380e7f",
     "output": "schema-map.html",
     "quality_profile": "showcase"
   },
@@ -141,7 +141,7 @@
       "id": "social",
       "type": "database",
       "label": "social_*",
-      "sublabel": "12 tables: accounts, posts, analytics",
+      "sublabel": "13 tables: accounts, posts, analytics",
       "pos": [
         640,
         480
@@ -315,7 +315,7 @@
       "dot": "cyan",
       "title": "Access",
       "items": [
-        "All 84 tables (81 public, 3 private): RLS enabled and forced",
+        "All 85 tables (82 public, 3 private): RLS enabled and forced",
         "Worker uses service role; browser reads only its own rows",
         "Tenant tables are the one browser-facing PostgREST surface"
       ]
@@ -324,7 +324,7 @@
       "dot": "slate",
       "title": "New since 0166 and not drawn",
       "items": [
-        "16 new: chat 4, referral 3, subscription 3, social 5, allowance 1",
+        "17 new: chat 4, referral 3, subscription 3, social 6, allowance 1",
         "10 rate-limit tables (user_id 1:1)",
         "webhook_events, account_actions, audit_events"
       ]

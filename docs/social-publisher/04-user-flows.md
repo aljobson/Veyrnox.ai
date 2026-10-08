@@ -1,9 +1,12 @@
 # 4. User Flows — Veyrnox Publish
 
-> **As of 2026-10-08 (repo `main` at `42150476`).** Each flow below says what is built. §4.6 (reviewer
+> **As of 2026-10-08 (repo `main` at `bee1ea4f`).** Each flow below says what is built. §4.6 (reviewer
 > approval), §4.9 (SmartLink) and §4.10 (multi-brand) are **design only (not built)** and are kept as the
 > plan. Items marked *unverified* could not be confirmed from the code or the acceptance records.
 > Publish is closed in production (`PUBLISH_ENABLED` is `"false"`); every flow here runs on staging.
+> The six networks added by PR #637 (Facebook, Threads, Pinterest, Bluesky, Twitch, Google Business
+> Profile) also need `PUBLISH_EXTENDED_NETWORKS_ENABLED` (`"false"` in production, `"true"` on staging) and
+> have not been run against real provider accounts.
 
 Each flow lists the trigger, steps, system behavior, and edge cases. States referenced map to
 `social_posts.status` (`draft`, `scheduled`, `published`, `failed`, `canceled`) and
@@ -14,8 +17,10 @@ Each flow lists the trigger, steps, system behavior, and edge cases. States refe
 
 **Trigger:** User opens `/app/publish`, signed in.
 
-1. The page lists the five networks (Instagram, LinkedIn, X, TikTok, YouTube) with their logos and, under
-   "Connect an account", a Connect button for each. With no accounts the list reads "No accounts
+1. The page lists the eleven networks (Instagram, LinkedIn, X, TikTok, YouTube, Facebook, Threads,
+   Pinterest, Bluesky, Twitch, Google Business Profile) with their logos and, under "Connect an account",
+   a button for each. The button reads "Connect", "Setup required" when the provider app is not
+   configured on that deployment, or "Testing not enabled" when the extended-network switch is off. With no accounts the list reads "No accounts
    connected yet."
 2. User clicks Connect. The client creates a PKCE verifier, keeps it in `sessionStorage`, calls
    `POST /api/v1/social/accounts/:network/connect` with the S256 challenge, and **navigates the whole
@@ -26,7 +31,21 @@ Each flow lists the trigger, steps, system behavior, and edge cases. States refe
    signed state, exchanges the code, encrypts the tokens and stores them
    (`record_social_account_connection`, which also appends a `connect` or `reconnect` audit row).
 5. The page shows "Connected {network}. Redirecting…" and returns to `/app/publish`, where the account
-   appears in the account list with its name, network and status and can be chosen in the composer.
+   appears in the account list with its name, network and status and can be chosen in the composer
+   (Twitch is listed for statistics but is never offered as a destination).
+
+**Variants (PR #637, tester-stage).**
+- **Facebook, Pinterest, Business Profile.** After consent the callback page shows "Choose a Page /
+  board / location to connect" with a select, even when only one eligible destination exists. The
+  choices come from a ten-minute, single-use selection held encrypted on the server; the browser gets
+  only labels and ids. Choosing connects that destination only (Facebook stores the Page's own token;
+  Pinterest offers boards the user owns). An expired or reused selection shows "This selection has
+  expired. Start connecting again."; no eligible destination shows "No eligible Page, board or business
+  location was found…".
+- **Bluesky.** No redirect. Connect opens a form for the handle and a dedicated app password (created in
+  Bluesky Settings, never the main password). The password is cleared from the field on submit and not
+  stored; only encrypted session tokens are. Accounts on a custom or self-hosted server are refused.
+- **Threads and Twitch.** Ordinary consent and return; the profile or channel is the account.
 
 **Edge cases:**
 - Free users can connect **one** active account. The page disables the other Connect buttons and says
@@ -49,7 +68,9 @@ Each flow lists the trigger, steps, system behavior, and edge cases. States refe
 1. The composer lists the connected accounts with network logos; the user selects which this post
    targets.
 2. User writes one caption (up to 4,000 characters). The same text goes to every selected account;
-   there are no per-network overrides and no per-network character counter.
+   there are no per-network overrides and no live per-network character counter, but submitting checks
+   each selected network's limit (X 280, Bluesky 300 graphemes, Threads 500, Pinterest 800, Business
+   Profile 1,500, Instagram and TikTok 2,200, LinkedIn 3,000, Facebook and YouTube 4,000).
 3. User attaches **one** image or video, from their generations or, when uploads are on, **Upload from
    device** (progress and cancel, reusable list, previews, automatic selection once complete; an
    explicit rights confirmation is required; JPG/PNG/WebP up to 20 MiB, MP4 up to 100 MiB). Uploading
@@ -67,12 +88,16 @@ Each flow lists the trigger, steps, system behavior, and edge cases. States refe
 - No account selected, no media or an invalid time: the action fails with a message; a time more than
   five minutes in the past is rejected by the API.
 - Writes are limited to 20 per user per minute (posts, drafts, uploads); a 429 carries a retry time.
-- The composer does not stop a user choosing a media type a selected network cannot take. Instagram,
-  X, LinkedIn and TikTok take images only; YouTube takes video only. The mismatched target fails at
-  publish time and shows the reason on hover (`last_error`); a video to TikTok has no handler and is
-  *unverified*.
-- There is no pre-check of token health. Instagram, X and LinkedIn tokens are never refreshed and no
-  account moves to `expired` or `error`, so a dead token shows up as a failed target (§4.7).
+- Since PR #637 the composer and the API stop a media type a selected network cannot take, before
+  anything is queued: every network except YouTube takes one image only, YouTube takes one video only,
+  and Twitch takes nothing. The message reads "… does not support this media type." (API codes
+  `unsupported_media_type`, `publishing_not_supported`, `caption_too_long`, `network_unavailable`).
+- There is no pre-check of token health. Instagram, X, LinkedIn and Facebook Page tokens are not
+  refreshed (Pinterest, Business Profile, Twitch, Bluesky and Threads renew automatically before the
+  sweep uses them) and no account moves to `expired` or `error`, so a dead token shows up as a failed
+  target (§4.7).
+- Google Business Profile and Threads posts stay "in progress" until the provider finishes processing
+  (Business Profile completes only once Google reports the post LIVE).
 
 ## 4.3 Generate → Schedule handoff (Veyrnox differentiator)
 
@@ -179,7 +204,8 @@ expired.
    after the third attempt. Every error counts as an attempt. TikTok and YouTube continuations are not
    failures: a TikTok post stays `submitted` (shown "in progress") while its publish id is polled and a
    YouTube video stays `submitted` while it uploads and processes. A YouTube day-quota exhaustion waits
-   for the next Pacific midnight without failing the post.
+   for the next Pacific midnight without failing the post. Threads and Google Business Profile
+   continuations behave the same way while the provider processes the image.
 2. On a permanent or exhausted failure the target shows `failed` with the reason on hover, per network:
    a post to three networks where one failed shows the others as published. The post itself is
    `published` if any target succeeded and `failed` if none did.
@@ -189,13 +215,19 @@ expired.
 4. TikTok is not a failure but a different outcome: `delivered` ("finish in TikTok app") means the
    content reached the creator's TikTok inbox as a draft, not a public post.
 5. Disconnecting an account fails its open targets immediately with `account_disconnected`.
+6. **Uncertain result (Facebook, Threads, Pinterest, Bluesky, Business Profile).** A durable marker is
+   written before the provider request. If the response was lost or the worker died mid-request, the
+   target shows `provider_result_unknown_reconcile_before_retry` and is not sent again. Check the
+   provider for the post first; only then create replacement content. There is no automatic
+   reconciliation.
 
 ## 4.8 Analytics review
 
 **Trigger:** User opens `/app/publish/analytics` (or follows "See your analytics").
 
-1. The user selects a connected account (Instagram, YouTube or TikTok; X and LinkedIn show a message
-   that analytics for that network are not available) and a range of 7, 30 or 90 days. There is no
+1. The user selects a connected account (Instagram, YouTube or TikTok; every other network, including
+   X, LinkedIn and Twitch, shows a message that analytics for that network are not available. Twitch
+   video statistics are collected in the background but not yet displayed) and a range of 7, 30 or 90 days. There is no
    cross-network brand summary.
 2. The page shows account cards (followers or subscribers, and the other totals the network provides),
    a followers chart over time, and a table of the account's recent posts or videos. Columns depend on

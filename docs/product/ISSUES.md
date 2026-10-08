@@ -2,7 +2,8 @@
 
 **Scope:** found while rewriting the six product documents against `main` at
 `2da81dc` (2026-10-02), then re-checked item by item against `main` at
-`42150476` (2026-10-08, 207 commits later). Every item names its evidence.
+`42150476` (2026-10-08, 207 commits later); the Publish items P12-P13 were added against
+`bee1ea4f` after PR #637/#638. Every item names its evidence.
 "Verify" means the repo shows the defect but production may differ
 (hand-applied data, secrets and dashboard settings the repo cannot see).
 **Nothing here has been filed as a GitHub issue.** The six open GitHub issues
@@ -12,11 +13,11 @@ tracking, not this list. File these under the `needs-triage` label (see
 
 **Production evidence used for "applied":** `node scripts/check-migration-ledger.mjs`
 on 2026-10-08 reported "all 193 applied migrations accounted for", and the
-applied-name list holds every file from 0033 to 0227 (0037 and 0067 under their
-earlier names). `reconcile_status()` read the same day: all five drift counts 0.
+applied-name list held every file from 0033 to 0227 (0037 and 0067 under their
+earlier names); 0228 was applied afterwards per the tester handover (not re-read). `reconcile_status()` read the same day: all five drift counts 0.
 
-**Tally (2026-10-08): 60 tracked, 41 closed, 19 open** — 0 critical, 0 high,
-7 medium, 12 low. 8 items are new since 2026-10-02 (S18–S20, P10–P11, D8–D10).
+**Tally (2026-10-08): 62 tracked, 41 closed, 21 open** — 0 critical, 0 high,
+7 medium, 14 low. 10 items are new since 2026-10-02 (S18–S20, P10–P13, D8–D10).
 
 Severity: **critical** = money or data at risk now · **high** = wrong
 behaviour a user can hit · **medium** = latent defect or guard missing ·
@@ -62,6 +63,8 @@ behaviour a user can hit · **medium** = latent defect or guard missing ·
 | P9 | low | Projects asset APIs exist with no UI (nothing in `app/veyrnox/app/projects` touches assets). | `app/api/v1/projects/[id]/assets/*` | Expected (M02); note only. |
 | P10 | low — **new, verify** | Production chat depends on Worker secrets the repo cannot show: `OPENROUTER_CHAT_API_KEY` (required in production, no fallback), and `EXA_API_KEY` for the capped Web search (a capped row offers Web search only while a search key is set). `CHAT_ENABLED` is `"true"` and ten text models are active, so a missing key means refunded failures, not lost money. | `wrangler.jsonc` comments; `lib/chat.js` `rowOptions`; `packages/adapters/exa.js` | Check the secret names with `wrangler secret list`; walk one reply and one Web search on production. Unverified. |
 | P11 | low — **new, owner decision** | The 100-credit pack ($10) is still on sale (`/api/credit-packs` lists `web-100`) although ADR-0064's tiers start at 270. HANDOVER-2026-10-03 §8 item 6 asked the owner to retire or keep it; no decision is recorded. | `https://veyrnox.ai/api/credit-packs`, 2026-10-08; handover §8 | Owner: keep or retire (a catalog `active=false` migration). |
+| P12 | low — **new, open** | Twitch video statistics are collected (`lib/socialAnalyticsSweep.js` fetches the latest 20 videos when the extended switch is on) but the analytics page's `ANALYTICS_NETWORKS` still lists only Instagram, YouTube and TikTok, so a Twitch account reads "not available yet". | `app/veyrnox/app/publish/analytics/page.js:17`, `packages/adapters/social/twitch.js` | Add `twitch` to the page's set and check the table renders video-only rows. |
+| P13 | low — **new, open** | The six networks added by PR #637 are covered by stubbed contract tests only: no real-account run, no provider app approval, and 9 of the 10 OAuth apps have no credentials on staging. The tester handover also labels YouTube "OAuth with PKCE", which the adapter on `main` does not forward (*unverified*). Facebook Page tokens have no stored expiry or refresh. | `docs/social-publisher/INTEGRATIONS-TESTING-2026-10-08.md`; `packages/adapters/social/{facebook,youtube}.js` | Run the tester steps per network; correct the PKCE label; decide Page-token handling. |
 
 ## 3. Security, infrastructure and config
 

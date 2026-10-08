@@ -1,6 +1,6 @@
 # App Flow — Veyrnox.ai
 
-**Status:** Current · 2026-10-08 (audited against `main` at `42150476`; first
+**Status:** Current · 2026-10-08 (audited against `main` at `42150476`; section 7 amended against `bee1ea4f`; first
 written 2026-10-02 at `2da81dc`)
 **Reads with:** [PRD.md](PRD.md), [UI-UX.md](UI-UX.md). Feature flows (e.g.
 [face-filters/APP-FLOW.md](../face-filters/APP-FLOW.md)) extend this one.
@@ -44,7 +44,7 @@ is client-side; the API is the authority.
 | `/app/library` | past generations, 90-day retention | signed in | Clip Editor: `veyrnox_editor=1`; captions: `veyrnox_editor_captions=1` |
 | `/app/credits` | balance, packs, usage meters, statement, top-up history | buy needs sign-in | — |
 | `/app/account` | 2FA, passkeys, password, sessions, referral panel, data requests | signed in | — |
-| `/app/publish`, `/app/publish/calendar`, `/app/publish/analytics` | Veyrnox Publish | signed in | `PUBLISH_ENABLED` (**off in prod**; 503 `publish_not_open`); Free = 1 account; analytics, insights and device uploads each have their own flag |
+| `/app/publish`, `/app/publish/calendar`, `/app/publish/analytics` | Veyrnox Publish | signed in | `PUBLISH_ENABLED` (**off in prod**; 503 `publish_not_open`); Free = 1 account; analytics, insights and device uploads each have their own flag; Facebook, Threads, Pinterest, Bluesky, Twitch and Business Profile also need `PUBLISH_EXTENDED_NETWORKS_ENABLED` (off in prod, on in staging) |
 | `/app/video-agent` | video agent brief → plan → approve | signed in | `AGENT_VIDEO_ENABLED` (off) + `veyrnox_video_agent=1` |
 | `/app/projects`, `/app/projects/[id]` | workspaces, project document editor | signed in | `veyrnox_projects=1` + `TENANT_PROJECTS_ENABLED` |
 | `/app/admin`, `/app/admin/violations` | ops metrics, content violations | admin + aal2 | Cloudflare Access |
@@ -52,7 +52,7 @@ is client-side; the API is the authority.
 | `/social-cinema` (+ `/creator`, `/pass`, `/title/[id]`, `/watch/[id]`) | Cinema | mixed | `CINEMA_*` (off in prod) + `veyrnox_social_cinema=1` (or `true`) |
 | `/legal/{terms,privacy,gdpr,refund,aup}` | legal | public | — |
 | `/auth/callback` | OAuth PKCE exchange → `/` | — | — |
-| `/social/connect/callback/[network]` | Publish OAuth landing | signed in | — |
+| `/social/connect/callback/[network]` | Publish OAuth landing; for Facebook, Pinterest and Business Profile it also hosts the Page / board / location chooser | signed in | — |
 | `/media/social/[token]` | signed media proxy for TikTok pull | token | — |
 | `/design-system` | token and component reference | public, noindex | — |
 | `/m/*` | mobile design prototype, sample data | — | not linked |
@@ -220,21 +220,33 @@ disputed afterwards).
 
 ## 7. Distribute — Veyrnox Publish *(dark in production)*
 
-1. `/app/publish` → **Connect** a network →
+1. `/app/publish` → **Connect** one of eleven networks (the button reads
+   Setup required or Testing not enabled where the deployment is not ready) →
    `POST /api/v1/social/accounts/:net/connect` → provider consent →
    `/social/connect/callback/:net` → `POST …/callback` (tokens encrypted).
-   Free = one connected account.
+   Facebook, Pinterest and Business Profile stop at a chooser (Page, board,
+   location; encrypted, single-use, ten-minute selection) before anything is
+   stored. Bluesky has no redirect: handle plus a dedicated app password via
+   `POST /api/v1/social/accounts/bluesky/connect`. Twitch connects for
+   statistics and is not offered in the composer. Free = one connected account.
 2. **Compose:** pick one Library asset or upload from the device, write text,
    choose accounts → **Post now** or a time → `POST /api/v1/social/posts`
    (idempotency key). A Studio or Library result can be scheduled directly.
    Weekly **brand drafts** wait for batch approval before anything is queued.
 3. Cron claims due targets: Instagram / LinkedIn / X post directly; TikTok
    lands as a **draft in the creator's TikTok inbox** (`delivered`);
-   YouTube uploads resumably, one chunk per tick.
+   YouTube uploads resumably, one chunk per tick; Facebook, Pinterest and
+   Bluesky post one image and finish on the next tick; Threads and Business
+   Profile stay in progress until the provider finishes (Business Profile:
+   until LIVE). The API refuses a media type or caption length a network
+   cannot take before queuing. Where a response may have been lost, the target
+   fails with `provider_result_unknown_reconcile_before_retry` instead of
+   posting twice.
 4. `/app/publish/calendar`: month, week or list view; dragging proposes a new
    time and saves only after confirmation (a changed or busy target refuses
    with a conflict message). `/app/publish/analytics`: per-network metrics
-   and posting-time insights.
+   and posting-time insights (Instagram, YouTube, TikTok; Twitch statistics
+   are collected but not yet shown).
 5. Status and `last_error` show in the scheduled list. Disconnect →
    `DELETE /api/v1/social/accounts/:id`.
 

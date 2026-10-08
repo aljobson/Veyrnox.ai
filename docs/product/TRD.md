@@ -1,6 +1,6 @@
 # TRD — Veyrnox.ai technical requirements
 
-**Status:** Current · 2026-10-08 (audited against `main` at `42150476`; first written 2026-10-02 at `2da81dc`)
+**Status:** Current · 2026-10-08 (audited against `main` at `42150476`; first written 2026-10-02 at `2da81dc`; Publish statements amended against `bee1ea4f`, PR #637/#638, migration 0228)
 **Precedence:** [CLAUDE.md](../../CLAUDE.md) and [docs/adr/](../adr/README.md)
 win over this document. This is the blueprint an agent reads before making a
 technical choice: what the stack *is*, what is allowed, and what is banned.
@@ -24,6 +24,8 @@ Browser ──Bearer JWT──► Worker (middleware.js → Next route) ──RP
                            │  ├─ Checkout ─► Stripe ─webhook─► Worker
                            │  ├─ tus ─► Cloudflare Stream (Cinema)
                            │  ├─ OAuth + publish ─► IG / X / TikTok / LinkedIn / YouTube
+                           │  │                    + Facebook / Threads / Pinterest / Bluesky /
+                           │  │                      Twitch / Business Profile (tester-stage)
                            │  ├─ email ─► Resend (violation notices, subscription alerts)
                            │  └─ plan / run ─► montage runner ─signed callback─► Worker (video agent, off)
                            └─ cron */5: sweeps, polls, recovery, publish queue
@@ -90,7 +92,9 @@ Configuration: public values in `wrangler.jsonc` `vars`; credentials via
 (chat only, own spend cap, required in production), `EXA_API_KEY`,
 `GRSAI_API_KEY`, `BYTEPLUS_API_KEY`, `R2_*`, `STRIPE_SECRET_KEY`,
 `STRIPE_WEBHOOK_SECRET`, `RESEND_API_KEY`, `SUBSCRIPTION_ALERT_EMAIL`,
-`CINEMA_STREAM_*` (6), social OAuth client ids/secrets,
+`CINEMA_STREAM_*` (6), social OAuth client ids/secrets (Meta, X, LinkedIn,
+TikTok, YouTube and, since 0228, `FACEBOOK_*` (falls back to `META_*`),
+`THREADS_*`, `PINTEREST_*`, `TWITCH_*`, `GMB_*`; Bluesky needs none),
 `SOCIAL_OAUTH_STATE_SECRET`, `SOCIAL_TOKEN_ENCRYPTION_KEY`,
 `SOCIAL_MEDIA_PROXY_SECRET`, `MONTAGE_RUNNER_BASE`, `MONTAGE_SIGNING_SECRET`,
 `MONTAGE_PLAN_SECRET`, `TOP_UP_BACKFILL_TOKEN`, `ADMIN_REAP_TOKEN`,
@@ -103,7 +107,7 @@ commit:
 
 | on (`"true"`) | off (`"false"`) |
 |---|---|
-| `CHAT_ENABLED`, `FREE_ALLOWANCE_ENABLED`, `PERSONAS_ENABLED`, `REFERRALS_ENABLED`, `CLIP_EDIT_CAPTIONS_ENABLED`, `PUBLISH_CALENDAR_ENABLED` (moot while Publish is shut), `RECOVERY_HEALTH_ENABLED`, `ADMIN_REQUIRE_AAL2`, the six `*_RATE_LIMIT_ENABLED` | `PUBLISH_ENABLED`, `PUBLISH_ANALYTICS_ENABLED`, `PUBLISH_POSTING_INSIGHTS_ENABLED`, `PUBLISH_UPLOADS_ENABLED`, `INSTAGRAM_INSIGHTS_SCOPE_ENABLED`, `TIKTOK_ANALYTICS_SCOPE_ENABLED`, `SUBSCRIPTIONS_ENABLED`, `AGENT_VIDEO_ENABLED`, `TENANT_PROJECTS_ENABLED`, `UPLOAD_INTEGRITY_ENABLED`, every `CINEMA_*` / creator / voting / comments / PPV / premieres / recommendations flag |
+| `CHAT_ENABLED`, `FREE_ALLOWANCE_ENABLED`, `PERSONAS_ENABLED`, `REFERRALS_ENABLED`, `CLIP_EDIT_CAPTIONS_ENABLED`, `PUBLISH_CALENDAR_ENABLED` (moot while Publish is shut), `RECOVERY_HEALTH_ENABLED`, `ADMIN_REQUIRE_AAL2`, the six `*_RATE_LIMIT_ENABLED` | `PUBLISH_ENABLED`, `PUBLISH_EXTENDED_NETWORKS_ENABLED` (on in staging), `PUBLISH_ANALYTICS_ENABLED`, `PUBLISH_POSTING_INSIGHTS_ENABLED`, `PUBLISH_UPLOADS_ENABLED`, `INSTAGRAM_INSIGHTS_SCOPE_ENABLED`, `TIKTOK_ANALYTICS_SCOPE_ENABLED`, `SUBSCRIPTIONS_ENABLED`, `AGENT_VIDEO_ENABLED`, `TENANT_PROJECTS_ENABLED`, `UPLOAD_INTEGRITY_ENABLED`, every `CINEMA_*` / creator / voting / comments / PPV / premieres / recommendations flag |
 
 `JEV_SUBMIT_ERRORS_MODE` is `off`. `CHAT_RESEARCH_ENABLED` (Deep research) is
 read by `lib/chat.js` but not declared in `wrangler.jsonc`, so it is off by
@@ -147,7 +151,7 @@ preview switch any more.
 | Cloudflare Stream | `lib/cinema/stream.js` | Cinema upload (tus) and signed playback | Bearer + signing JWK | webhook HMAC (`webhook-signature`) |
 | Cloudflare Access | `lib/accessJwt.js` | admin routes | — | Worker re-verifies the Access JWT |
 | Turnstile | `components/Turnstile.jsx` | CAPTCHA on auth | — | verified by Supabase Auth |
-| Instagram, LinkedIn, X, TikTok, YouTube | `adapters/social/*` | Veyrnox Publish | OAuth2 (PKCE where supported); tokens AES-GCM encrypted at rest; HMAC-signed state | no inbound webhooks; cron publishes |
+| Instagram, LinkedIn, X, TikTok, YouTube, Facebook, Threads, Pinterest, Bluesky, Twitch, Google Business Profile | `adapters/social/*` (the last six: `facebook`, `threads`, `pinterest`, `bluesky`, `twitch`, `gmb`, shared `common.js`; PR #637) | Veyrnox Publish | OAuth2 (PKCE forwarded by X and Business Profile); Bluesky uses a dedicated app password, never stored; tokens AES-GCM encrypted at rest; HMAC-signed state; Facebook, Pinterest and Business Profile destinations chosen from an encrypted, single-use, ten-minute server-side selection (0228) | no inbound webhooks; cron publishes. Pinterest, Business Profile, Twitch, Bluesky and Threads tokens are renewed by the sweeps (atomic rotation, 0228); a durable pre-submission marker stops duplicate public posts (`provider_result_unknown_reconcile_before_retry`) |
 | typesafe.ai (Jev) | `lib/jev.js` | classify untyped provider refusals (ADR-0066) | API key | ships `off` |
 | Resend | `adapters/resend.js`, `lib/violationEmail.js` | violation notices from `support@veyrnox.ai`; subscription Operator alerts | Bearer | none |
 | Montage runner | `lib/montage*.js`, `app/api/webhook/montage` | the video agent: plan, run, signed callback (ADR-0074); the Worker never runs ffmpeg | HMAC-signed request | HMAC over timestamp + raw body, ±300 s, `webhook_events` dedupe; off |
@@ -209,7 +213,8 @@ cleanup, Cinema upload recovery and removal, Stripe top-up backfill, upload
 and reservation sweeps, Auto Short step sweep, video-agent (montage) sweep
 (inert until the runner is configured), asset reap, GrsAI and BytePlus polls,
 Veyrnox Publish queue, the Publish analytics sweep (only when
-`PUBLISH_ANALYTICS_ENABLED`), and weekly brand drafts.
+`PUBLISH_ANALYTICS_ENABLED`; also fetches Twitch video statistics when the extended
+switch is on), and weekly brand drafts (still the original five networks).
 
 `pg_cron` in Postgres: asset expiry (15 min), stuck-job sweep (10 min), Free
 Credit expiry (hourly :41), Subscription Credit expiry (hourly :07, 0184),

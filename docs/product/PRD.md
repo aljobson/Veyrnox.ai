@@ -1,7 +1,8 @@
 # PRD — Veyrnox.ai
 
 **Status:** Current · 2026-10-08 (audited against `main` at `42150476`; first
-written 2026-10-02 at `2da81dc`)
+written 2026-10-02 at `2da81dc`; Veyrnox Publish statements amended against
+`bee1ea4f` for PR #637/#638, migration 0228)
 **Scope:** the whole product. Feature-level specs live beside it
 ([face-filters](../face-filters/README.md), [editor](../editor/PRD.md),
 [editor captions](../editor/CAPTIONS.md), [auto-short](../auto-short/SPEC.md),
@@ -14,7 +15,8 @@ win wherever they disagree.
 > **What "shipped" means here.** The repo shows intent; it cannot prove what
 > is applied in production. Two things were read on 2026-10-08: the live
 > migration ledger (`check-migration-ledger.mjs`: 193 applied, every file
-> through 0227 accounted for) and the public `/api/catalog` and
+> through 0227 accounted for; 0228 was applied afterwards through the approved workflow
+> per the tester handover, ledger count not re-read) and the public `/api/catalog` and
 > `/api/credit-packs`. Switch values are the top-level `vars` in
 > `wrangler.jsonc` at the audited commit; a dashboard change would not show.
 > Catalog activations go through the owner-approved `apply-migrations`
@@ -34,7 +36,11 @@ Around that core sit three products that share the account:
 - **LLM Chat** — priced text replies from ten models, with Personas and Studio
   skills. **Live.**
 - **Veyrnox Publish** — schedule generated media to Instagram, LinkedIn, X,
-  TikTok and YouTube. Built, **dark in production** (`PUBLISH_ENABLED`).
+  TikTok and YouTube; since 2026-10-08 also Facebook, Threads, Pinterest,
+  Bluesky and Google Business Profile (one image) and Twitch (statistics
+  only), built for testers. Built, **dark in production** (`PUBLISH_ENABLED`;
+  the six new networks also need `PUBLISH_EXTENDED_NETWORKS_ENABLED`, off in
+  production, on in staging).
 - **Social Cinema** — creators publish short series; viewers unlock episodes
   with Credits or watch with a Cinema Pass. Built, **off in production**.
 
@@ -211,7 +217,7 @@ Freezes), Cinema creator and submission review.
 
 | feature | where it stands | gate |
 |---|---|---|
-| **Veyrnox Publish** (`/app/publish`): connect Instagram, LinkedIn, X, TikTok, YouTube; compose one Library asset or a **device upload** + text + accounts + time, **Post now** or schedule; weekly **brand drafts** with batch approval; **calendar** with safe rescheduling; **analytics** (YouTube, Instagram, TikTok) and posting-time insights; schedule from the Studio and Library | staging: a real YouTube video published and its analytics read (2026-10-07); calendar acceptance done | `PUBLISH_ENABLED="false"` hides the page, the menu link and `/api/v1/social/*`. `PUBLISH_ANALYTICS_ENABLED`, `PUBLISH_POSTING_INSIGHTS_ENABLED`, `PUBLISH_UPLOADS_ENABLED` also `"false"`; `PUBLISH_CALENDAR_ENABLED="true"` but moot while Publish is shut. The cron publish sweep is not gated. **Free tier enforced:** one connected account per user (ADR-0063, 0169). Instagram insights and TikTok analytics scopes need provider app review |
+| **Veyrnox Publish** (`/app/publish`): connect Instagram, LinkedIn, X, TikTok, YouTube, plus tester-stage Facebook (Page), Threads, Pinterest (board), Bluesky (app password), Twitch (statistics only) and Google Business Profile (location) (PR #637, 0228); compose one Library asset or a **device upload** + text + accounts + time, **Post now** or schedule; weekly **brand drafts** with batch approval; **calendar** with safe rescheduling; **analytics** (YouTube, Instagram, TikTok) and posting-time insights; schedule from the Studio and Library | staging: a real YouTube video published and its analytics read (2026-10-07); calendar acceptance done | `PUBLISH_ENABLED="false"` hides the page, the menu link and `/api/v1/social/*`. `PUBLISH_ANALYTICS_ENABLED`, `PUBLISH_POSTING_INSIGHTS_ENABLED`, `PUBLISH_UPLOADS_ENABLED` also `"false"`; `PUBLISH_CALENDAR_ENABLED="true"` but moot while Publish is shut. `PUBLISH_EXTENDED_NETWORKS_ENABLED="false"` in production (`"true"` on staging since #638) gates new connections and post creation for the six new networks only. The cron publish sweep is not gated. **Free tier enforced:** one connected account per user (ADR-0063, 0169). Instagram insights and TikTok analytics scopes need provider app review. The six new networks have no real-account test and no provider app approval; only YouTube is live-tested |
 | **Core subscriptions** (ADR-0064) Starter $19/270, Plus $59/1,200, Ultra $129/3,000 monthly: Subscription Credit ledger bucket (0183/0184), subscription state (0186/0187/0189), Stripe checkout/read/return/cancel routes and webhook | database applied to production; routes and webhook merged (#514); no pricing UI | `SUBSCRIPTIONS_ENABLED="false"` in production **and** staging; staging acceptance unchecked; Stripe's written acceptance and Finance/Legal wording outstanding |
 | Chat **Deep research** (ADR-0070): one plan call, four searches, one write; +Credits on Claude Sonnet 5.5 | built (0208, 0214), runbook written | `CHAT_RESEARCH_ENABLED` is unset (off) and is not declared in `wrangler.jsonc` |
 | **Video agent** (ADR-0074, accepted 2026-10-07): brief, plan and price, Approve, one priced job on an isolated OpenMontage runner | slices 1–3 and 5 built (0227, `/app/video-agent`, `/api/v1/montage/plan`, `/api/webhook/montage`); runner repo has the egress meter and headless harness; five test runs done on 2026-10-08 (two paid, three Kling v3 clips each). Working price **165 credits** with a **$2.50** per-run ceiling (owner: "use 165"), set on the inactive row; fal's real billing is unread, so the price is provisional | `AGENT_VIDEO_ENABLED="false"`, `localStorage.veyrnox_video_agent`; catalog row inactive |
@@ -267,8 +273,9 @@ Cinema: rights/age/territory policy, creator agreement, cooling-off wording,
 Stripe acceptance for recurring video subscriptions, Stream webhook repointed
 from staging to production, the same-second pass-event fix (ISSUES S19).
 
-Publish: platform app reviews (Meta, TikTok, YouTube), TikTok DNS
-verification, the Publish Plan, token-key rotation runbook. (The YouTube
+Publish: platform app reviews (Meta, TikTok, YouTube, and for the six
+new networks administrator-owned developer apps, tester evidence and review),
+TikTok DNS verification, the Publish Plan, token-key rotation runbook. (The YouTube
 upload fix, #399, is done.)
 
 Subscriptions: staging acceptance, Stripe's written acceptance of credit

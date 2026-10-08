@@ -1,6 +1,6 @@
 # Implementation Plan — Veyrnox.ai
 
-**Status:** Current · 2026-10-08 (audited against `main` at `42150476`; first
+**Status:** Current · 2026-10-08 (audited against `main` at `42150476`; Publish rows amended against `bee1ea4f`; first
 written 2026-10-02 at `2da81dc`)
 **Replaces:** [docs/PHASE-1.md](../PHASE-1.md) as the build sequence (it
 still names Clerk, Neon, Inngest and LemonSqueezy). Feature sets keep their
@@ -44,7 +44,7 @@ extending a layer depends on everything above it.
 | 0.12 | Composites: Auto Short, Clip Editor (flag-gated), Clip Editor captions (**live**, 0225) | ADR-0029, `docs/editor/` |
 | 0.13 | Tenant foundation: orgs, workspaces, projects, document history, media quarantine (**staging**) | 0135–0141, ADR-0051/0055/0056 |
 | 0.14 | Social Cinema: profiles → uploads → publication → paywall (**staging**) | 0132–0150, ADR-0048–0059 |
-| 0.15 | Veyrnox Publish: 5 networks, scheduling, async engine, drafts, analytics, calendar, device uploads (**built, dark in production**) | 0154–0161, 0182, 0188–0192, 0223, ADR-0061 |
+| 0.15 | Veyrnox Publish: 11 networks (5 original; Facebook, Threads, Pinterest, Bluesky, Twitch, Business Profile added 2026-10-08 for testers, not live-tested), scheduling, async engine, drafts, analytics, calendar, device uploads (**built, dark in production**) | 0154–0161, 0182, 0188–0192, 0223, 0228, ADR-0061 |
 | 0.16 | Receipt redesign of public and money screens | #404, #406 |
 | 0.17 | DB hardening: claim guards, unique ledger backstops, default-privilege revoke, FK indexes, TRUNCATE guards | 0167–0178 (S1–S16) |
 | 0.18 | Subscription Credit ledger bucket and reconcile (applied) | 0183–0185, ADR-0064 |
@@ -73,9 +73,9 @@ extending a layer depends on everything above it.
 | ~~B1~~ | **Done** (#399): YouTube auth on continuation PUTs, session restart, quota backoff | — | a YouTube test upload reached `published` on staging 2026-10-07 |
 | ~~B2~~ | **Done** (0168): disconnected accounts are never claimed; only the live claim may report | — | acceptance tests |
 | B3 | Publish Plan (ADR-0062/0063): plan table, account cap above Free, Stripe subscription, entitlement check in the connect route. **Not started** — no `publish_plan` code | A1 | Free user blocked at 2nd account (already true); Plan user at 6th; webhook drives status |
-| B4 | Platform app reviews (Meta, TikTok, YouTube), TikTok DNS record, token-key rotation runbook | B1 | approvals received; then enable `INSTAGRAM_INSIGHTS_SCOPE_ENABLED` / `TIKTOK_ANALYTICS_SCOPE_ENABLED` |
+| B4 | Platform app reviews (Meta, TikTok, YouTube), TikTok DNS record, token-key rotation runbook; for the six new networks: administrator-owned developer apps and secrets, tester real-account runs (`docs/social-publisher/INTEGRATIONS-TESTING-2026-10-08.md`), Twitch added to the analytics page | B1 | approvals received; then enable `INSTAGRAM_INSIGHTS_SCOPE_ENABLED` / `TIKTOK_ANALYTICS_SCOPE_ENABLED` |
 | B4a | Owner picks an Instagram Business/Creator account for publish and analytics acceptance (`ACCEPTANCE-2026-10-07.md` §Next) | B4 | a real Instagram post and its insights recorded |
-| B4b | Production activation order once B3/B4 land: migrations are already applied; set `PUBLISH_ENABLED`, then `PUBLISH_ANALYTICS_ENABLED`, `PUBLISH_POSTING_INSIGHTS_ENABLED`, `PUBLISH_UPLOADS_ENABLED` one at a time (uploads also need CSAM hash matching, D1) | B3, B4, D1 | each flip verified in the browser |
+| B4b | Production activation order once B3/B4 land: migrations are already applied; set `PUBLISH_ENABLED`, then `PUBLISH_EXTENDED_NETWORKS_ENABLED` only after real-account acceptance of the new networks, then `PUBLISH_ANALYTICS_ENABLED`, `PUBLISH_POSTING_INSIGHTS_ENABLED`, `PUBLISH_UPLOADS_ENABLED` one at a time (uploads also need CSAM hash matching, D1) | B3, B4, D1 | each flip verified in the browser |
 | B5 | Remove the A3 gate | B3, B4 | Publish in nav for everyone |
 
 ## Track C — Core subscriptions (ADR-0064)

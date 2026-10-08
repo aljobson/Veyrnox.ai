@@ -3,7 +3,7 @@
   "diagram_type": "lifecycle",
   "meta": {
     "title": "Job lifecycle, jobs.state (as of 2026-10-08)",
-    "subtitle": "Checked against main 42150476",
+    "subtitle": "Checked against main 96380e7f",
     "output": "job-lifecycle.html",
     "viewBox": [
       1030,
