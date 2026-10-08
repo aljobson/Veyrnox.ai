@@ -171,3 +171,27 @@ which is also what the per-run ceiling protects. Compare Auto Short: 110 credits
 **Decision 2026-10-08 (owner: "use 165")**: the working price is **165 credits** per video (the worst-case row), the per-run
 ceiling at the runner is **$2.50**, and the `video-agent` catalog row carries `credits_5s = 165`, `provider_cost_per_unit = 2.72`,
 still inactive (migration 0227). fal's real billing is still unread; when it is, the price may only come down, never silently go up.
+
+## 7. Staging plan (written 2026-10-08; nothing below is done)
+
+Every step touches shared infrastructure and waits for the owner's explicit yes. Staging is the Worker `veyrnox-ai-staging`
+(`wrangler.jsonc` `env.staging`), with its own database and bucket.
+
+| # | Step | Who | Check before the next step |
+|---|---|---|---|
+| 1 | Merge PR #618 (flag off everywhere) | owner | CI green on main; `AGENT_VIDEO_ENABLED` still `"false"` in both environments |
+| 2 | Apply migration `0227` to **staging** through the `apply-migrations` workflow | owner approves the run | `video-agent` row exists, inactive, 165 credits; `reconcile_balances()` clean |
+| 3 | Pick the runner host and prove the firewall there: `verify-lockdown.sh` must print 10 PASS on the real machine | owner picks, then me | all 10 pass **on that host**; if the guest kernel lacks netfilter support, choose another host (the container refuses to start rather than run unlocked) |
+| 4 | Deploy the runner (EU region, one machine per run, 1 concurrent) with `RUNNER_AGENT=claude`, `RUNNER_MAX_LLM_USD`, a `montage-runner` fal key with a low balance, `RUNNER_CEILING_MICRO_USD=2500000` | owner supplies keys by `read -s` / the host's secret store, never in chat | `/health` answers over HTTPS; an unsigned request is 401 |
+| 5 | Set the staging Worker's `MONTAGE_RUNNER_BASE`, `MONTAGE_SIGNING_SECRET` (same value as the runner's `RUNNER_SIGNING_SECRET`), `MONTAGE_PLAN_SECRET`, `AGENT_VIDEO_ENABLED="true"` (staging only); set the runner's `RUNNER_CALLBACK_URL` to the staging Worker's `/api/webhook/montage` | owner | Worker `/api/v1/montage/plan` returns a plan for a test account |
+| 6 | Activate the `video-agent` row on staging only and give the test account credits (ADR-0022 style manual grant, with a written reason) | owner | the page at `/app/video-agent` (with `localStorage.veyrnox_video_agent = "1"`) loads |
+| 7 | One real run through the page: plan, approve, a finished video in the Library; then a forced failure (stop the runner mid-run) and confirm exactly one refund | me, watching | ledger shows one debit, one refund; `reconcile_balances()` clean; the output object is in staging R2 |
+
+Known risks to settle on the way:
+- **The firewall on a real host (step 3).** Fly Machines are full VMs with their own kernel, so the rules are likely to
+  work, but a community report shows a Fly kernel without the `raw` iptables table; our rules use only the `filter` table.
+  Unverified until step 3 passes on the machine itself.
+- **fal's real billing is still unread**, so the 165-credit price and the $2.50 ceiling are working numbers.
+- **Output size and resolution** are not yet fixed by the product (see run 5).
+- **The Worker-to-runner call** goes over the public internet: it is HMAC-signed with a 300 s window, and the runner
+  accepts nothing unsigned, but a network allow-list on the runner host is a worthwhile second layer.
