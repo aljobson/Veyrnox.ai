@@ -134,3 +134,19 @@ New observations:
 
 The meter's worst case is conservative by design; the measured price must come from fal's billing, not from the meter or
 from the agent. Ten runs at this size would reserve up to $23 at fal and about $4 in tokens.
+
+### Fifth run (2026-10-08): Sonnet vs Opus, same brief, same $2.50 ceiling
+
+| | Opus (run 4) | Sonnet (run 5) |
+|---|---|---|
+| Anthropic tokens | $0.41 | **$0.18** |
+| Turns / time | 12 / 187 s | 7 / 194 s |
+| Paid fal calls | 3 x Kling v3 standard 5 s (+1 music refused) | 3 x Kling v3 standard 5 s |
+| Meter reservation | $2.31 | $2.31 |
+| Output | 1080x1920, 12.4 MB, crossfades, title, colour lift, drone | 720x1280, 2.7 MB, plain joins and fades, **no title, no music** |
+| Checked its own output | contact sheet of frames | **only ffprobe: "I didn't watch the video"** |
+
+Reading: the token saving is about $0.23 a run, small next to fal (the three clips are the real cost). Sonnet delivered a
+thinner product and did not look at it. Until the cost per video is known and quality is judged by a person, stay on the
+default model. Open product decision: the output resolution is whatever the agent picks (720p vs 1080p); the spec must
+state it, since fal bills the same clips either way but storage and bandwidth do not.
