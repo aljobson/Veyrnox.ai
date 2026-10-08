@@ -204,7 +204,9 @@ says the real fix is to cap the search text ourselves; this is that fix, in thre
 **Design.** Web search can run two ways, recorded per catalog row in `chat_web_engine`: `plugin` (today) and `capped`. The capped way
 makes one call to Exa (`POST https://api.exa.ai/search`, a constant URL; the key is the Worker secret `EXA_API_KEY`) for the user's
 message, asking for 3 results and at most 2,000 characters of text each (`contents.text.maxCharacters`), cuts the text again on our
-side, and puts it in the system message as untrusted quoted data with its source links. Nothing the page says can add a step or change
+side, and puts it after the user's message in that turn only, as untrusted quoted data with its source links, with a standing rule in
+the system message (amended 2026-10-07: it began in the system message, where web text would carry system authority; Deep research always
+kept it in the user turn). Nothing the page says can add a step or change
 the price: the model gets a bounded block of text and answers. The worst case is then real: one search fee (read from Exa's own
 `costDollars.total` on every call and kept on the job as `search_cost_usd`) plus at most 7,000 injected tokens at the model's rate
 (7,000 characters at one token per character, the ceiling for any language), so the Web search extra falls back to 1 to 3 Credits.

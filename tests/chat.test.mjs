@@ -1,7 +1,7 @@
 // ADR-0067: validation and prompt assembly.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { selectChatModels, SEARCH_CONTEXT_MAX_CHARS, searchApiKey, searchContextBlock, sourcesFromResults, webEngine, rowOptions, MAX_HISTORY_CHARS, MAX_REPLY_TOKENS, PLATFORM_INSTRUCTION, buildMessages, chatEnabled, sseFrame, makerOf, validateFolderName, validateThreadPatch, validateTurn } from '../lib/chat.js';
+import { selectChatModels, SEARCH_CONTEXT_MAX_CHARS, searchApiKey, searchContextBlock, sourcesFromResults, webEngine, rowOptions, MAX_HISTORY_CHARS, MAX_REPLY_TOKENS, PLATFORM_INSTRUCTION, SEARCH_STANDING_INSTRUCTION, buildMessages, chatEnabled, sseFrame, makerOf, validateFolderName, validateThreadPatch, validateTurn } from '../lib/chat.js';
 
 test('the caps the flat price depends on', () => {
     assert.equal(MAX_REPLY_TOKENS, 1024); assert.equal(MAX_HISTORY_CHARS, 24000);
@@ -141,14 +141,20 @@ test('sourcesFromResults gives the pages the model was shown, as url and title',
     assert.deepEqual(sourcesFromResults(null), []);
 });
 
-test('buildMessages adds the search block to the one system message, after the platform line and the chat instructions', () => {
-    const msgs = buildMessages({ systemPrompt: 'Be brief.', history: [], text: 'q', searchContext: searchContextBlock([RES(1)]) });
+test('buildMessages puts the search block in the user turn, with only a standing rule in the one system message', () => {
+    const block = searchContextBlock([RES(1)]);
+    const msgs = buildMessages({ systemPrompt: 'Be brief.', history: [], text: 'q', searchContext: block });
     assert.equal(msgs.filter((m) => m.role === 'system').length, 1, 'one system message');
     const sys = msgs[0].content;
     assert.ok(sys.startsWith(PLATFORM_INSTRUCTION));
-    assert.ok(sys.indexOf('Be brief.') < sys.indexOf('Title 1'));
-    assert.deepEqual(msgs.at(-1), { role: 'user', content: 'q' }, 'the search text is never put in the user turn');
+    assert.ok(sys.indexOf('Be brief.') < sys.indexOf(SEARCH_STANDING_INSTRUCTION));
+    assert.ok(!sys.includes('Title 1'), 'web text never has the authority of the system message');
+    assert.deepEqual(msgs.at(-1), { role: 'user', content: `q\n\n${block}` });
     assert.equal(buildMessages({ systemPrompt: '', history: [], text: 'q' })[0].content, PLATFORM_INSTRUCTION, 'no search, no change');
+    assert.deepEqual(buildMessages({ systemPrompt: '', history: [], text: 'q' }).at(-1), { role: 'user', content: 'q' });
+    const withImage = buildMessages({ systemPrompt: '', history: [], text: 'q', images: ['https://img/1'], searchContext: block }).at(-1);
+    assert.deepEqual(withImage.content[0], { type: 'text', text: `q\n\n${block}` }, 'with an image the block joins the text part');
+    assert.equal(withImage.content.length, 2);
 });
 
 test('rowOptions: a capped row offers Web search only when a search key is configured; a plugin row always does', () => {
