@@ -261,3 +261,13 @@ fal's real billing, so 165 credits and the $2.50 ceiling remain working numbers.
 **Correction (2026-10-08 18:40 UTC):** earlier sections of this file and of the staging runbook say migration `0227` is not applied on production. That stopped being
 true at 14:45 UTC, when the `apply-migrations` run for #618 applied it after the owner's approval: production has the `montage` kinds and the `video-agent` row at
 165 credits, **inactive**. Verified by a read-only query. The production rollout plan is [RUNBOOK-production.md](RUNBOOK-production.md).
+
+## 10. Capacity (gate G6): decided 2026-10-08
+
+**Decision 2026-10-08 (owner: "approve")**, on the proposal in [CAPACITY.md](CAPACITY.md): a busy runner is refused **before** the
+debit ("nothing was charged, try again"; on main since #651), capacity is added only when a measured trigger is hit, and no queue is
+built yet. The trigger put to the owner was two or more runs started within one hour, on three days out of seven, worked out for one slot.
+
+Not covered by that yes, because it changed after the proposal was written: the runner now takes **three** runs at once on its one
+machine (runner `096aaae`; on staging; its own comment says "not load-tested"). The same 10% rule then gives 17 or more runs started
+within one hour, which is proposed in CAPACITY.md and waits for the owner. Three runs at once have not been tried on staging.

@@ -17,7 +17,7 @@ Background: [ADR-0074](../adr/0074-openmontage-video-agent.md), [SPEC](SPEC.md) 
 
 So production is two switches (flag, row) and one missing service (runner) away. Nothing a user can reach today.
 
-## Gates: none of these is met yet
+## Gates: G6 is decided; none of the others is met yet
 
 Do not start the rollout until each has a written yes in the SPEC.
 
@@ -28,7 +28,7 @@ Do not start the rollout until each has a written yes in the SPEC.
 | G3 | **Ten measured runs** on staging: max and p95 cost, failure rate, time | one success is not a price or a reliability figure | me, with the owner's go (about $25 at fal, $4 in tokens) |
 | G4 | **The fal model is on the books**: Kling v3 standard text-to-video is not a catalog row; ADR-0074 says it is added through the usual verified-endpoint route before a user can reach it | CLAUDE.md "Money & billing": a model is live only once its endpoint is verified | owner decision, then a migration |
 | G5 | **Brief moderation decided.** Today the brief is checked for length and control characters only; the prompts the agent writes go to fal, which applies its own filter. There is no check of ours, and no refusal copy beyond the generic failure | every other generation path leans on the provider filter too, but this one writes its own prompts from free text | owner decision |
-| G6 | **Capacity decided.** The runner takes one run at a time; a second user gets `montage_busy`, which today fails and refunds the job instead of queueing | a launch with one slot refunds most people | owner decision: queue, more machines, or a waiting message |
+| G6 | **Capacity: decided 2026-10-08** (owner: "approve"; SPEC section 10). A busy runner is refused before the debit (#651: "nothing was charged, try again"), capacity is added at a measured trigger, and there is no queue yet. Design and numbers: [CAPACITY.md](CAPACITY.md) | open inside it: the runner went from one run at a time to three after the proposal was written, which is not load-tested and moves the trigger; a second machine needs routing first, not `fly scale count 2` | owner: the trigger for three slots; me, with the owner's go: three runs at once on staging |
 | G7 | **Monitoring exists**: the montage sweep is not in `worker_task_health` (`observeRecovery`), the runner is not in `site-health`, and an undelivered callback is only a log line on Fly | a silent runner outage holds credits for 45 minutes at a time | me (code), owner (alert destination) |
 | G8 | **Fly is on a paid footing.** The account is on the free trial (2 hours of machine time or 7 days) | the runner stops when the trial ends | owner (card on file) |
 
