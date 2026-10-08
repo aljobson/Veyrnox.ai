@@ -27,9 +27,9 @@ export function SourcePickers({ media, sources, onPick, onDraw, onLibrary }) {
     return (
       <div key={slot} className="mt-3 flex items-center gap-3 rounded-lg border border-vx-border bg-vx-panel p-3">
         {picked && slot === 'image' ? (
-          <img src={picked.previewUrl} alt="Start image" className="w-16 h-16 rounded object-cover bg-black shrink-0" />
+          <img src={picked.previewUrl} alt="Start image" className="w-16 h-16 rounded-sm object-cover bg-black shrink-0" />
         ) : (
-          <div className="w-16 h-16 rounded border border-dashed border-vx-border shrink-0 flex items-center justify-center text-vx-fg-faint" aria-hidden="true">
+          <div className="w-16 h-16 rounded-sm border border-dashed border-vx-border shrink-0 flex items-center justify-center text-vx-fg-faint" aria-hidden="true">
             {picked ? '✓' : ''}
           </div>
         )}

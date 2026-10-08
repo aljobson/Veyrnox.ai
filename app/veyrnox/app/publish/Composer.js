@@ -223,8 +223,8 @@ export function Composer({ accounts, onScheduled, initialJobId = null, uploadsEn
                         {selectedMedia ? 'Change' : 'Choose from library'}
                     </button>
                     {selectedMedia?.thumbUrl && (mediaType === 'video'
-                        ? <video src={selectedMedia.thumbUrl} aria-label="Selected video" controls playsInline className="h-24 w-40 rounded object-contain" />
-                        : <img src={selectedMedia.thumbUrl} alt="Selected image" className="h-10 w-10 rounded object-cover" />)}
+                        ? <video src={selectedMedia.thumbUrl} aria-label="Selected video" controls playsInline className="h-24 w-40 rounded-sm object-contain" />
+                        : <img src={selectedMedia.thumbUrl} alt="Selected image" className="h-10 w-10 rounded-sm object-cover" />)}
                 </div>
                 {loadingMedia && <p role="status" className="text-sm text-vx-fg-muted">Loading your generation…</p>}
                 {mediaError && <p role="alert" className="text-sm text-vx-danger">{mediaError}</p>}

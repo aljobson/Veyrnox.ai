@@ -36,8 +36,8 @@ function Footer({ m, starred, onStar }) {
   return (
     <p className="mt-2 flex items-center gap-3 font-vx-mono text-xs text-vx-fg-muted vx-num">
       <span>{label}</span>
-      <button type="button" onClick={copy} className="rounded px-1.5 py-0.5 font-sans hover:text-vx-fg" aria-label="Copy reply">{copied ? 'Copied' : 'Copy'}</button>
-      <button type="button" onClick={onStar} aria-pressed={starred} className="rounded px-1.5 py-0.5 font-sans hover:text-vx-fg" aria-label={starred ? 'Remove star' : 'Star reply'}>{starred ? '★ Starred' : '☆ Star'}</button>
+      <button type="button" onClick={copy} className="rounded-sm px-1.5 py-0.5 font-sans hover:text-vx-fg" aria-label="Copy reply">{copied ? 'Copied' : 'Copy'}</button>
+      <button type="button" onClick={onStar} aria-pressed={starred} className="rounded-sm px-1.5 py-0.5 font-sans hover:text-vx-fg" aria-label={starred ? 'Remove star' : 'Star reply'}>{starred ? '★ Starred' : '☆ Star'}</button>
     </p>
   );
 }
@@ -340,7 +340,7 @@ export function ChatWorkspace() {
                 <div className={m.role === 'user' ? 'max-w-[85%] rounded-2xl bg-vx-panel px-4 py-3' : 'w-full'}>
                   {m.role === 'user' ? (
                     <>
-                      <p className="whitespace-pre-wrap break-words text-[15px]">{m.content}</p>
+                      <p className="whitespace-pre-wrap wrap-break-word text-[15px]">{m.content}</p>
                       {m.attachments?.length > 0 && (
                         <ul className="mt-2 flex flex-wrap gap-1.5" aria-label="Attached images">
                           {m.attachments.map((a, i) => <li key={i} className="rounded-full border border-vx-border px-2 py-0.5 text-xs text-vx-fg-muted">{attachmentLabel(a)}</li>)}
@@ -414,7 +414,7 @@ export function ChatWorkspace() {
               <label className="sr-only" htmlFor="chat-msg">Message</label>
               <textarea id="chat-msg" rows={1} value={text} maxLength={MAX_TEXT} placeholder={skillById(skillId)?.starter || 'Message'} onChange={(e) => setText(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
-                className="max-h-48 min-h-10 flex-1 resize-none bg-transparent px-2 py-2 text-[15px] text-vx-fg outline-none placeholder:text-vx-fg-faint" />
+                className="max-h-48 min-h-10 flex-1 resize-none bg-transparent px-2 py-2 text-[15px] text-vx-fg outline-hidden placeholder:text-vx-fg-faint" />
               {busy
                 ? <button type="button" onClick={() => abortRef.current?.abort()} className="rounded-full border border-vx-border px-4 py-2 text-sm font-semibold">Stop</button>
                 : <button type="button" onClick={send} disabled={!text.trim() || imagesBlocked} className="rounded-full bg-vx-accent px-4 py-2 text-sm font-semibold text-vx-accent-ink disabled:opacity-50">{isFree ? `Send free (${freeLeft} left today)` : `Send for ${credits(price)}`}</button>}

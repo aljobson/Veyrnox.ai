@@ -192,9 +192,9 @@ function ClipRow({ item, index, count, onChange, onMove, onRemove }) {
         <div className="flex items-center justify-between gap-2">
           <span className="text-sm font-bold truncate">{index + 1}. {item.name || item.job_id.slice(0, 8)}</span>
           <span className="flex gap-1 shrink-0">
-            <button onClick={() => onMove(-1)} disabled={index === 0} aria-label="Move earlier" className="px-2 py-1 rounded border border-vx-border disabled:opacity-30">↑</button>
-            <button onClick={() => onMove(1)} disabled={index === count - 1} aria-label="Move later" className="px-2 py-1 rounded border border-vx-border disabled:opacity-30">↓</button>
-            <button onClick={onRemove} aria-label="Remove from edit" className="px-2 py-1 rounded border border-vx-border">✕</button>
+            <button onClick={() => onMove(-1)} disabled={index === 0} aria-label="Move earlier" className="px-2 py-1 rounded-sm border border-vx-border disabled:opacity-30">↑</button>
+            <button onClick={() => onMove(1)} disabled={index === count - 1} aria-label="Move later" className="px-2 py-1 rounded-sm border border-vx-border disabled:opacity-30">↓</button>
+            <button onClick={onRemove} aria-label="Remove from edit" className="px-2 py-1 rounded-sm border border-vx-border">✕</button>
           </span>
         </div>
         {['in_s', 'out_s'].map((key) => (

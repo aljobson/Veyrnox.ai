@@ -8,7 +8,7 @@ test('U3: warn is its own token in every theme block', () => {
   const css = read('app/globals.css');
   assert.equal((css.match(/--vx-warn:/g) || []).length, 3, 'dark, light and print');
   assert.match(read('app/veyrnox/veyrnox.css'), /\.vx-paper \{[^}]*--vx-warn:/);
-  assert.match(read('tailwind.config.js'), /warn: 'rgb\(var\(--vx-warn\) \/ <alpha-value>\)'/);
+  assert.match(css, /--color-vx-warn: rgb\(var\(--vx-warn\)\)/);
 });
 
 test('U3: warnings and notices do not use amber', () => {

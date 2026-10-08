@@ -36,14 +36,14 @@ function Catalogue() {
     {categories.length > 0 && <nav aria-label="Categories" className="mt-4 flex gap-2 overflow-x-auto pb-2">
       {[['', 'All'], ...categories.map((c) => [c.slug, c.label])].map(([slug, label]) => <button key={slug || 'all'} type="button" aria-pressed={category === slug}
         onClick={() => { setCategory(slug); load(null, slug); }}
-        className={`shrink-0 rounded-full px-4 py-2 text-sm font-bold focus-visible:outline focus-visible:outline-2 focus-visible:outline-vx-accent ${category === slug ? 'bg-vx-accent text-vx-accent-ink' : 'border border-vx-border text-vx-fg-muted hover:bg-vx-panel'}`}>{label}</button>)}
+        className={`shrink-0 rounded-full px-4 py-2 text-sm font-bold focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-vx-accent ${category === slug ? 'bg-vx-accent text-vx-accent-ink' : 'border border-vx-border text-vx-fg-muted hover:bg-vx-panel'}`}>{label}</button>)}
     </nav>}
     {titles.length === 0 ? <p className="mt-4 text-vx-fg-muted">{category ? 'Nothing in this category yet.' : 'Nothing is published yet. The first stories are on their way.'}</p> : <ul className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
       {titles.map((t) => <li key={t.id} className="flex flex-col rounded-2xl border border-vx-border bg-vx-base/60 p-5">
         <p className="font-vx-mono text-xs tracking-widest text-vx-accent uppercase">{t.content_type}{t.content_type === 'SERIES' ? ` · ${t.episode_count} episodes` : t.duration_seconds ? ` · ${Math.max(1, Math.round(t.duration_seconds / 60))} min` : ''}</p>
-        <h3 className="mt-2 text-xl font-bold break-words"><Link href={`/social-cinema/title/${t.id}`} className="hover:underline">{t.title}</Link></h3>
+        <h3 className="mt-2 text-xl font-bold wrap-break-word"><Link href={`/social-cinema/title/${t.id}`} className="hover:underline">{t.title}</Link></h3>
         <p className="mt-1 text-sm text-vx-fg-muted">{t.display_name}{t.categories?.length ? ` · ${t.categories.join(', ')}` : ''}</p>
-        <p className="mt-3 line-clamp-3 text-sm text-vx-fg-body break-words">{t.synopsis}</p>
+        <p className="mt-3 line-clamp-3 text-sm text-vx-fg-body wrap-break-word">{t.synopsis}</p>
         <Link href={`/social-cinema/title/${t.id}`} className="mt-4 inline-flex self-start rounded-full bg-vx-accent px-4 py-2 text-sm font-bold text-vx-accent-ink">Watch</Link>
       </li>)}
     </ul>}
@@ -72,7 +72,7 @@ export function SocialCinema() {
     <nav aria-label="Social Cinema" className="mt-10 flex gap-1 overflow-x-auto border-b border-vx-border pb-3">
       {sections.map(([label], index) => <button key={label} type="button"
         aria-current={section === index ? 'page' : undefined} onClick={() => setSection(index)}
-        className={`shrink-0 rounded-full px-5 py-3 text-sm font-bold focus-visible:outline focus-visible:outline-2 focus-visible:outline-vx-accent ${section === index ? 'bg-vx-accent text-vx-accent-ink' : 'text-vx-fg-muted hover:bg-vx-panel'}`}>{label}</button>)}
+        className={`shrink-0 rounded-full px-5 py-3 text-sm font-bold focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-vx-accent ${section === index ? 'bg-vx-accent text-vx-accent-ink' : 'text-vx-fg-muted hover:bg-vx-panel'}`}>{label}</button>)}
     </nav>
     <section aria-live="polite" className="grid gap-8 py-10 sm:grid-cols-[1fr_240px] sm:items-center">
       <div><p className="font-vx-mono text-xs text-vx-fg-muted">COMING NEXT</p>
@@ -124,8 +124,8 @@ function Profile() {
   }
   if (state === 'loading') return <p role="status" className="mt-4 text-vx-fg-muted">Loading your profile…</p>;
   if (state === 'closed' || state === 'error') return <div className="mt-4"><p role="status">{error}</p>{state === 'error' && <Button className="mt-4" onClick={() => setAttempt(n => n + 1)}>Try again</Button>}</div>;
-  if (profile) return <><div className="mt-5 rounded-2xl border border-vx-border p-6"><h3 className="text-xl font-bold">{profile.display_name}</h3><p className="mt-1 text-vx-accent">@{profile.username}</p><p className="mt-4 whitespace-pre-wrap break-words text-vx-fg-body">{profile.bio}</p><p className="mt-5 text-sm text-vx-fg-muted">Your profile is saved. Publishing and voting will open in a later release.</p></div><CreatorApplication />{profile.role === 'creator' && <Link href="/social-cinema/creator" className="mt-6 inline-flex rounded-full border border-vx-border px-5 py-3 font-bold text-vx-accent">Open creator workspace →</Link>}</>;
-  const input = 'mt-2 w-full rounded-xl border border-vx-border bg-vx-panel px-4 py-3 text-vx-fg focus:outline focus:outline-2 focus:outline-vx-accent';
+  if (profile) return <><div className="mt-5 rounded-2xl border border-vx-border p-6"><h3 className="text-xl font-bold">{profile.display_name}</h3><p className="mt-1 text-vx-accent">@{profile.username}</p><p className="mt-4 whitespace-pre-wrap wrap-break-word text-vx-fg-body">{profile.bio}</p><p className="mt-5 text-sm text-vx-fg-muted">Your profile is saved. Publishing and voting will open in a later release.</p></div><CreatorApplication />{profile.role === 'creator' && <Link href="/social-cinema/creator" className="mt-6 inline-flex rounded-full border border-vx-border px-5 py-3 font-bold text-vx-accent">Open creator workspace →</Link>}</>;
+  const input = 'mt-2 w-full rounded-xl border border-vx-border bg-vx-panel px-4 py-3 text-vx-fg focus:outline-solid focus:outline-2 focus:outline-vx-accent';
   return <form onSubmit={submit} className="mt-4 max-w-lg space-y-5">
     <p className="text-sm text-vx-fg-body">Your username, display name and bio are intended for your public profile. Your email stays private. Choose carefully: profile editing is not available yet.</p>
     <label className="block text-sm font-semibold" htmlFor="cinema-username">Username<input id="cinema-username" name="username" required minLength={3} maxLength={30} pattern="[a-z][a-z0-9_]{2,29}" autoCapitalize="none" autoCorrect="off" className={input} aria-describedby="username-help" /></label>

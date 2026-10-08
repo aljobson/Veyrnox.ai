@@ -1,5 +1,7 @@
 'use client';
 
+import { cn } from '../../../lib/utils';
+
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { FAQ, PRESETS, MODELS as MODELS_FALLBACK, SITE_PAGES, isShelfModel, presetCredits, presetTitle, templateHref } from '../_lib/tokens';
@@ -53,7 +55,7 @@ export function SiteSearch({ className = '' }) {
         onClick={() => setOpen(true)}
         data-print="hide"
         aria-label="Search Veyrnox"
-        className={`inline-flex h-9 items-center gap-2 rounded-full border border-vx-border px-3 text-[13px] font-semibold text-vx-fg-muted transition-colors hover:border-vx-accent hover:text-vx-fg ${className}`}
+        className={cn('inline-flex h-9 items-center gap-2 rounded-full border border-vx-border px-3 text-[13px] font-semibold text-vx-fg-muted transition-colors hover:border-vx-accent hover:text-vx-fg', className)}
       >
         <span aria-hidden="true">⌕</span>
         <span className="hidden md:inline">Search</span>
@@ -137,7 +139,7 @@ function SearchOverlay({ onClose }) {
       aria-modal="true"
       aria-label="Search Veyrnox"
       data-print="hide"
-      className="fixed inset-0 z-[70] flex items-start justify-center bg-black/70 px-4 pt-[12vh] backdrop-blur-sm"
+      className="fixed inset-0 z-[70] flex items-start justify-center bg-black/70 px-4 pt-[12vh] backdrop-blur-xs"
       onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div className="w-full max-w-[560px] overflow-hidden rounded-2xl border border-vx-border bg-vx-panel shadow-2xl">
@@ -156,7 +158,7 @@ function SearchOverlay({ onClose }) {
             onKeyDown={onKeyDown}
             placeholder="Search models, presets, pages, FAQ…"
             aria-label="Search query"
-            className="w-full bg-transparent py-4 text-[15px] text-vx-fg outline-none placeholder:text-vx-fg-faint"
+            className="w-full bg-transparent py-4 text-[15px] text-vx-fg outline-hidden placeholder:text-vx-fg-faint"
           />
           <button
             type="button"

@@ -52,7 +52,7 @@ export function LibraryPicker({ onPick, onClose }) {
           <div className="mt-4 grid grid-cols-3 sm:grid-cols-4 gap-2">
             {items.map((it) => (
               <button key={it.id} type="button" onClick={() => onPick(it)} title={it.label}
-                className="aspect-square overflow-hidden rounded-lg border border-vx-border hover:border-vx-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-vx-accent">
+                className="aspect-square overflow-hidden rounded-lg border border-vx-border hover:border-vx-accent focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-vx-accent">
                 <img src={it.url} alt={it.label} className="h-full w-full object-cover" />
               </button>
             ))}

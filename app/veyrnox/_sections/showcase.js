@@ -30,7 +30,7 @@ export function PresetWall({ catalog }) {
               mediaClassName={classes.media}
               mediaStyle={{ background: preset.bg }}
             >
-              <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
+              <div className="absolute inset-0 bg-linear-to-t from-black/75 via-black/10 to-transparent" />
               {/* Fixed light ink: this sits on a hardcoded gradient under a
                   black scrim, so theme tokens would read near-black in light
                   theme. Same reasoning as the feature cards. */}

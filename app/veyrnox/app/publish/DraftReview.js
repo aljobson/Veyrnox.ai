@@ -109,7 +109,7 @@ export function DraftReview({ onApproved }) {
                                 <p className="text-xs font-bold text-vx-fg-muted">
                                     {new Date(p.scheduled_at).toLocaleString()} · {(p.networks || []).map(networkLabel).join(', ')}
                                 </p>
-                                {p.global_text && <p className="text-sm text-vx-fg mt-1 break-words">{p.global_text}</p>}
+                                {p.global_text && <p className="text-sm text-vx-fg mt-1 wrap-break-word">{p.global_text}</p>}
                                 <button
                                     type="button" className="mt-2 text-xs font-bold text-vx-fg-muted underline disabled:opacity-50"
                                     disabled={busy !== null}

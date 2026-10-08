@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { listSocialUploads, uploadSocialFile, removeSocialUpload } from '../../../lib/socialUploadsClient.js';
 
-const button = 'rounded-full border border-vx-border px-4 py-2 text-sm font-bold disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-vx-accent';
+const button = 'rounded-full border border-vx-border px-4 py-2 text-sm font-bold disabled:opacity-50 focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-vx-accent';
 const errorCopy = (code) => ({
     upload_type_not_allowed: 'Choose a JPG, PNG, WebP image or an MP4 video.',
     upload_size_required: 'This file is empty. Choose another file.',
@@ -79,7 +79,7 @@ export default function DeviceUploads({ selected, onSelect, onBusyChange, list =
         <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {files.map((file) => <li key={file.id} className="min-w-0 rounded-lg border border-vx-border p-2">
                 <button type="button" aria-pressed={selected?.uploadId === file.id} disabled={busy || removing !== null}
-                    className="w-full text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-vx-accent"
+                    className="w-full text-left focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-vx-accent"
                     onClick={() => onSelect({ uploadId: file.id, thumbUrl: file.url, mediaType: file.mime_type.split('/')[0], filename: file.filename })}>
                     {file.mime_type.startsWith('video/') ? <video src={file.url} preload="metadata" muted playsInline className="h-24 w-full object-contain" /> : <img src={file.url} alt="" className="h-24 w-full object-contain" />}
                     <span className="block truncate text-sm">{file.filename}</span>

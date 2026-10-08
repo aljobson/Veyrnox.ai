@@ -176,7 +176,7 @@ function StorageNotice({ onDismiss }) {
       data-print="hide"
       role="region"
       aria-label="Browser storage notice"
-      className="fixed inset-x-0 bottom-0 z-50 border-t border-vx-border bg-vx-panel/95 px-4 py-3 backdrop-blur sm:px-6"
+      className="fixed inset-x-0 bottom-0 z-50 border-t border-vx-border bg-vx-panel/95 px-4 py-3 backdrop-blur-sm sm:px-6"
     >
       <div className="mx-auto flex max-w-[1100px] flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-[13px] leading-[1.55] text-vx-fg-body">
