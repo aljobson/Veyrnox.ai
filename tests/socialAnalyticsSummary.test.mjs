@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { postInteractions, rangeForDays, summarize } from '../lib/social/analyticsSummary.js';
+import { postInteractions, rangeForDays, summarize, totalViews } from '../lib/social/analyticsSummary.js';
 
 test('rangeForDays is inclusive of today and counts in UTC', () => {
     assert.deepEqual(rangeForDays(30, new Date('2026-10-03T23:59:00Z')), { from: '2026-09-04', to: '2026-10-03' });
@@ -48,4 +48,10 @@ test('YouTube video views are visible without Instagram reach or insights', () =
     assert.equal(out.hasViews, true);
     assert.equal(out.hasInsights, false);
     assert.equal(out.interactions, 4, 'views do not count as interactions');
+});
+
+test('totalViews adds the views networks reported and ignores the rest', () => {
+    assert.equal(totalViews([{ metrics: { views: 120 } }, { metrics: { views: 5 } }, { metrics: { likes: 9 } }, {}]), 125);
+    assert.equal(totalViews([{ metrics: { views: 'many' } }]), 0);
+    assert.equal(totalViews(undefined), 0);
 });
