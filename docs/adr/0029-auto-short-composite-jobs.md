@@ -179,6 +179,8 @@ debit, one all-or-nothing refund. What changes for the user and the auditor:
 4. **Callbacks** reuse `/api/webhook/fal`. The probe (docs/editor/CAPTIONS.md)
    showed the delivery verifies with `verifyWebhookSignature` unchanged.
 5. **Migration 0225** only widens `job_steps_step_check` by one kind. It adds
-   to the constraint's current list rather than restating it, because 0224
-   (the video agent) rewrites the same constraint.
+   to the constraint's current list rather than restating it, because the video
+   agent's migration (0227, first drafted as 0224) widens the same constraint
+   and a fixed list in either would drop the other's kind. Both add to what the
+   constraint allows now; production holds `captions` and `montage`.
 

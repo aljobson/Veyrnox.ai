@@ -163,8 +163,9 @@ cost.
   `captions: { preset }` input, checked at the boundary; refused with
   `captions_unavailable` while `CLIP_EDIT_CAPTIONS_ENABLED` is not "true".
 - Migration `0225_clip_edit_captions_step.sql`: adds the step kind. Tested on a
-  real Postgres in four cases (from 0092's list, after 0224's list, rerun,
-  missing constraint).
+  real Postgres in four cases (from 0092's list, after a list that already
+  held another kind, rerun, missing constraint). Applied on production
+  (2026-10-08) and staging.
 - Edit sheet: "Add captions" and a style pick, behind
   `localStorage.veyrnox_editor_captions = "1"`.
 - ADR-0029 addendum records the pricing rule and the flags.
@@ -173,10 +174,10 @@ cost.
 1. Check fal's invoice for the probe runs. If the 5 s run billed more than
    about $0.12, or the failed no-speech run was billed, revisit
    `CAPTIONS_UNITS` and the refund cost.
-2. Apply 0225 (owner approves the `apply-migrations` run). If PR #618's 0224
-   is still open, apply it first or renumber: both rewrite
-   `job_steps_step_check`, and 0224 restates a fixed list that would drop
-   `captions` if it applied after this one.
+2. ~~Apply 0225~~ Done: production (owner-approved `apply-migrations` run) and
+   staging. The video agent's migration, first numbered 0224, was renumbered
+   0227 and rewritten to add `montage` to the constraints rather than restate
+   them, so `captions` survived; production's constraint holds both.
 3. ~~Look at a real failed-callback payload against the handler~~ Done on
    staging 2026-10-08 (see Staging results).
 4. Reconcile jobs clean for 24 h, then flip on staging, then production.
