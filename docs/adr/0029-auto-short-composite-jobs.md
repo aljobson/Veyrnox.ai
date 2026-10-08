@@ -165,9 +165,13 @@ debit, one all-or-nothing refund. What changes for the user and the auditor:
    it does not set a price. At $0.033 a credit, 7 credits is $0.231 against
    about $0.10, over the ADR-0014 50% floor. The $0.10 is the published figure;
    fal's invoice for the probe runs is still to be checked.
-2. **No retry.** A speechless clip fails with a 422 `transcription_error` that
-   fal may bill, and a second attempt would fail the same way. Captions are
-   submitted once; a failure refunds the whole edit (decision 1, unchanged).
+2. **No retry, except one case.** A speechless clip fails with a 422
+   `transcription_error` that fal may bill, and a second attempt would fail the
+   same way, so a captions failure refunds the whole edit (decision 1,
+   unchanged). The exception is fal reporting `host_unreachable` for our signed
+   source URL: it fails in seconds, before any work, and the first production
+   edit hit it once (2026-10-08) and worked on the next call. That reason, and
+   only that one, is retried once; the failed step stores it as its error code.
 3. **Gated twice.** Worker flag `CLIP_EDIT_CAPTIONS_ENABLED` ("false" in
    production and staging) refuses the `captions` input with
    `captions_unavailable` before any debit; the edit sheet shows the control
