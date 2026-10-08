@@ -22,12 +22,14 @@ Diagrams (Archify — open the `.html`; edit the `.json` and re-run
 | [auth-flow](diagrams/auth-flow.html) | sequence |
 | [job-lifecycle](diagrams/job-lifecycle.html) | lifecycle |
 | [schema-map](diagrams/schema-map.html) | architecture (tables by domain) |
+| [credit-ledger](diagrams/credit-ledger.html) | data flow |
+| [generation-webhook](diagrams/generation-webhook.html) | sequence |
 
 **Precedence when documents disagree:** `CLAUDE.md` → `docs/adr/` →
 `CONTEXT.md` (vocabulary) → the SQL migrations (for schema) → these
 documents → feature sets.
 
-These describe the product as of 2026-10-02. When a PR changes what they say
+These describe the product as of 2026-10-08 (main 96380e7f). When a PR changes what they say
 is true, it updates them in the same change.
 
 - [HANDOVER-2026-10-03.md](HANDOVER-2026-10-03.md): project recap and handover to the next agent, as of 2026-10-03.
