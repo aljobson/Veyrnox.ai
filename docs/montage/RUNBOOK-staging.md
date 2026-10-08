@@ -9,7 +9,7 @@ project (`xdxdzmsztyzbnzeforxx`) and never the two other look-alikes ("veyrnox-S
 Supabase dashboard, project `veyrnox.ai staging` (yrqzwqywxfesmbvhzjgj), SQL editor: paste the whole of
 `packages/db/schema/supabase/0227_video_agent_steps.sql` and run it. Then tell me, and I verify read-only.
 
-## 2. Fly app and the runner
+## 2. Fly app and the runner  (DONE 2026-10-08 — app created and deployed; the firewall check passes 15/15 on the real machine)
 
 ```bash
 brew install flyctl
@@ -25,7 +25,7 @@ cd ~/Documents/GitHub/veyrnox-montage-runner && fly deploy --no-public-ips=false
 ```
 Do NOT set secrets yet: the first deploy runs without them and the container will stop (no signing secret). That is fine; we need the machine only to prove the firewall in step 3. If `fly deploy` refuses to start the machine, that is the answer to the NET_ADMIN question: stop and tell me.
 
-## 3. Prove the firewall on the real machine
+## 3. Prove the firewall on the real machine  (DONE — and the first design failed there; see SPEC section 8)
 
 ```bash
 cd ~/Documents/GitHub/veyrnox-montage-runner && scripts/verify-on-fly.sh veyrnox-montage-runner-staging

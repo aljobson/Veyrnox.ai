@@ -195,3 +195,15 @@ Known risks to settle on the way:
 - **Output size and resolution** are not yet fixed by the product (see run 5).
 - **The Worker-to-runner call** goes over the public internet: it is HMAC-signed with a 300 s window, and the runner
   accepts nothing unsigned, but a network allow-list on the runner host is a worthwhile second layer.
+
+## 8. Staging progress (2026-10-08)
+
+| Step | State |
+|---|---|
+| Migration `0227` on staging (project `yrqzwqywxfesmbvhzjgj`) | **done by the owner**, verified read-only: row inactive at 165 credits, `montage` and `captions` both allowed, `reconcile_balances()` 0 |
+| Fly app `veyrnox-montage-runner-staging` (ams, shared-cpu-4x 4 GB, one machine, scales to zero) | **created and deployed**; `https://veyrnox-montage-runner-staging.fly.dev` answers `/health` 200, unsigned or badly signed requests 401 |
+| Firewall on the real host | **first design failed**: Fly's kernel has no iptables `owner` match (`RULE_APPEND failed ... missing kernel module?`); the container refused to start, as designed. **Replaced** with a network namespace per agent (veth /30 to the proxy, no default route, forwarding off, runner refuses the agent's address): needs no netfilter, only namespaces and veth, which Fly's kernel has. **15/15 checks pass on the Fly machine and in Docker.** |
+| Runner secrets on Fly | **throwaway signing secret and a placeholder Anthropic value only**; the owner sets the real signing secret, Anthropic key and fal key (runbook step 4) |
+| Worker staging secrets, flag, row activation, test credits, a real run | **not done** |
+
+The verification script exit code was proven non-zero on a deliberately broken check (an earlier draft of a check hid its own failure).
