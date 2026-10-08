@@ -17,23 +17,9 @@
  */
 
 import { gatewayFetch } from '../veyrnox/_lib/gateway.js';
+import { SOCIAL_NETWORKS } from '../../lib/social/networks.js';
 
-export const NETWORKS = [
-    { key: 'instagram', label: 'Instagram', live: true },
-    { key: 'linkedin', label: 'LinkedIn', live: true },
-    { key: 'twitter', label: 'X', live: true },
-    // Publishing (ADR-0061 Phase 5, packages/adapters/social/tiktok.js)
-    // uses MEDIA_UPLOAD, not DIRECT_POST: content lands as a draft in the
-    // creator's own TikTok inbox for them to finish, not a live post —
-    // this app's TikTok developer app hasn't passed Content Posting API
-    // audit yet, and DIRECT_POST is silently forced private until it
-    // does. The composer/scheduled-posts UI surfaces this via the
-    // 'delivered' status, distinct from 'published'.
-    { key: 'tiktok', label: 'TikTok', live: true },
-    // Publishing (ADR-0061 Phase 5, packages/adapters/social/youtube.js)
-    // uses Google's resumable upload protocol, one chunk per sweep tick.
-    { key: 'youtube', label: 'YouTube', live: true },
-];
+export const NETWORKS = SOCIAL_NETWORKS.map((network) => ({ ...network, live: true }));
 
 function pkceKey(network) {
     return `veyrnox_social_pkce_verifier_${network}`;
@@ -108,4 +94,11 @@ export async function completeNetworkConnect(network) {
 /** Disconnects one of the caller's own accounts. Throws GatewayError. */
 export async function disconnectSocialAccount(accountId) {
     return gatewayFetch(`/social/accounts/${encodeURIComponent(accountId)}`, { method: 'DELETE' });
+}
+
+export async function selectNetworkResource(network, selectionId, resourceId) {
+    return gatewayFetch(`/social/accounts/${network}/callback`, { method: 'POST', body: JSON.stringify({ selectionId, resourceId }) });
+}
+export async function connectBluesky(identifier, appPassword) {
+    return gatewayFetch('/social/accounts/bluesky/connect', { method: 'POST', body: JSON.stringify({ identifier, appPassword }) });
 }

@@ -50,9 +50,9 @@ function stubFetch(handler) {
 }
 const okJson = (obj) => new Response(JSON.stringify(obj), { status: 200, headers: { 'content-type': 'application/json' } });
 
-test('NETWORKS lists all five v1 networks, all now connectable', () => {
-    assert.deepEqual(NETWORKS.map((n) => n.key), ['instagram', 'linkedin', 'twitter', 'tiktok', 'youtube']);
-    assert.deepEqual(NETWORKS.filter((n) => n.live).map((n) => n.key), ['instagram', 'linkedin', 'twitter', 'tiktok', 'youtube']);
+test('NETWORKS includes eleven native integrations and excludes Twitch from post destinations', () => {
+    assert.deepEqual(NETWORKS.map((n) => n.key), ['instagram', 'linkedin', 'twitter', 'tiktok', 'youtube', 'facebook', 'threads', 'pinterest', 'bluesky', 'twitch', 'gmb']);
+    assert.equal(NETWORKS.find((n) => n.key === 'twitch').media.length, 0);
 });
 
 test('listSocialAccounts calls the gateway with a bearer token', async () => {

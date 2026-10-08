@@ -40,6 +40,7 @@ function stub(results = {}) {
             consume_social_post_write_request: { ok: true },
             get_or_create_default_social_brand: { ok: true, idempotent: true, brand_id: brandId, label: 'My Brand', timezone: 'UTC' },
             list_social_posts: { ok: true, posts: [] },
+            list_social_accounts: { ok: true, accounts: [{ id: accountId, network: 'instagram', status: 'active' }] },
             create_social_post: { ok: true, idempotent: false, post_id: postId, target_count: 1 },
         })[name];
         if (result instanceof Error) throw result;

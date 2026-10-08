@@ -52,7 +52,7 @@ test('nothing claimed is a clean no-op, not an error', async () => {
 
 test('an unimplemented network fails its target with a named reason, never hangs as pending', async () => {
     await withFetch({
-        claim_due_social_post_targets: async () => [target({ network: 'pinterest', target_id: 't-2' })],
+        claim_due_social_post_targets: async () => [target({ network: 'unknown', target_id: 't-2' })],
         complete_social_post_target: async (body) => {
             assert.equal(body.p_target_id, 't-2');
             assert.equal(body.p_ok, false);

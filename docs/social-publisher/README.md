@@ -73,6 +73,10 @@ should look*.
 7. [Analytics handover, 2026-10-03](HANDOVER-analytics-2026-10-03.md) — what the analytics work
    built, what is switched off, what was and was not verified, and the next work in order.
 
+8. [All-network tester handover, 2026-10-08](INTEGRATIONS-TESTING-2026-10-08.md) — native
+   connections for eleven networks, supported publish actions, administrator credentials,
+   feature switch, migration 0228 and live tester acceptance steps.
+
 ## Non-goals for this pack
 
 - The build-vs-buy and platform-scope ADR ([ADR-0061](../adr/0061-veyrnox-publish-social-scheduling.md))
@@ -85,9 +89,9 @@ should look*.
 
 ## Open questions
 
-1. **Which platforms ship in v1?** Metricool supports eleven networks (Instagram, Facebook, X/Twitter,
-   LinkedIn, TikTok, YouTube, Pinterest, Threads, Bluesky, Twitch, Google Business Profile). Section
-   1.6 of the product spec proposes a phased rollout — confirm the v1 cut with the business.
+1. **Platform rollout.** The original five-network scope is extended to all eleven for tester
+   implementation by owner direction on 2026-10-08. Production activation still requires
+   provider setup and live acceptance. See the tester handover for format/analytics boundaries.
 2. **OAuth app approval lead time.** Meta (Instagram/Facebook), TikTok and YouTube each require app
    review before production posting scopes are granted — this can take weeks and should start in
    parallel with engineering, not after.

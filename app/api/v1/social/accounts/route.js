@@ -15,6 +15,7 @@
  */
 
 import { socialUploadsEnabled } from '../../../../../lib/social/uploadPolicy.js';
+import { networkReadiness } from '../../../../../lib/social/networkReadiness.js';
 import { NextResponse } from 'next/server';
 import { accountReadLimit } from '../../../../../lib/accountReadLimit.js';
 import { rpc, envConfig, SupabaseError } from '../../../../../packages/db/supabase-client.js';
@@ -65,5 +66,6 @@ export async function GET(req) {
         brand_id: brand.brand_id,
         accounts: accounts.accounts || [],
         uploadsEnabled: socialUploadsEnabled(),
+        networks: networkReadiness(),
     }, { headers: { 'Cache-Control': 'no-store' } });
 }

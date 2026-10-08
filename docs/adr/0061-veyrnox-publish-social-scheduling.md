@@ -414,3 +414,34 @@ before selecting a device file; uploading alone never creates a post. Activation
 exact-origin R2 CORS allowing PUT, Content-Type and If-None-Match, and a real staging
 browser upload/second-PUT rejection check. Keep the upload switch enabled for cleanup
 while files are held; the overall Publish switch can close entry points independently.
+
+## Amendment 2026-10-08: all-network tester implementation
+
+The owner requested all integrations be built for testing by other people and
+explicitly does not want a personal Meta account. Extend the native adapter
+pattern to Facebook Pages, Threads, Pinterest boards, Bluesky, Twitch and
+Google Business Profile locations. A company app administrator supplies
+credentials and invites testers; the owner's own Meta login is not required.
+
+Initial additional publishing scope is single-image posts. Twitch supports
+OAuth connection and recent-video statistics, not a general media-upload
+destination. Bluesky uses a dedicated app password for Bluesky-hosted PDSs;
+custom PDS discovery and federated OAuth are outside this tester slice.
+These are explicit capability limits, not claims of full Metricool parity.
+
+New connections and post creation require the server switch
+`PUBLISH_EXTENDED_NETWORKS_ENABLED` (false by default). The original five
+adapters and their consent switches remain separate. The one-account cap,
+Publish plan decision and generation-credit ledger are unchanged.
+
+Migration 0228 adds encrypted, identity-bound, single-use destination
+selections; atomic token rotation; and a durable pre-submission marker.
+Facebook Pages, Pinterest boards and business locations require explicit
+selection. No candidate credential is returned to the browser, even encrypted.
+Uncertain provider results require reconciliation before another public post.
+
+Automated contract tests and local database acceptance do not establish app
+approval or real-account success. Existing live YouTube evidence remains
+valid; each new provider needs separate live tester evidence.
+See [tester handover](../social-publisher/INTEGRATIONS-TESTING-2026-10-08.md)
+for setup, capabilities, rollout and the acceptance checklist.

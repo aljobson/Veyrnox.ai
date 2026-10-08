@@ -88,7 +88,7 @@ function MediaPicker({ selected, onSelect }) {
 }
 
 export function Composer({ accounts, onScheduled, initialJobId = null, uploadsEnabled = false }) {
-    const activeAccounts = (accounts || []).filter((a) => a.status === 'active');
+    const activeAccounts = (accounts || []).filter((a) => a.status === 'active' && NETWORKS.find((n) => n.key === a.network)?.media.length);
     const [selectedAccountIds, setSelectedAccountIds] = useState(() => new Set());
     const [caption, setCaption] = useState('');
     const [scheduledAt, setScheduledAt] = useState(defaultScheduleValue);
@@ -137,6 +137,13 @@ export function Composer({ accounts, onScheduled, initialJobId = null, uploadsEn
         setError(''); setSuccess('');
         if (selectedAccountIds.size === 0) { setError('Pick at least one connected account.'); return; }
         if (!selectedMedia) { setError('Choose an image or video from your library or device.'); return; }
+        for (const id of selectedAccountIds) {
+            const account = activeAccounts.find((a) => a.id === id);
+            const network = NETWORKS.find((n) => n.key === account?.network);
+            if (!network?.media.includes(mediaType)) { setError(`${network?.label || 'That account'} does not support this media type.`); return; }
+            const length = network.key === 'bluesky' ? [...new Intl.Segmenter('en', { granularity: 'grapheme' }).segment(caption)].length : [...caption].length;
+            if (length > network.captionLimit) { setError(`${network.label} supports captions up to ${network.captionLimit} characters.`); return; }
+        }
         const publishNow = e.nativeEvent.submitter?.value === 'now';
         const schedule = new Date(scheduledAt);
         if (!publishNow && (!Number.isFinite(schedule.getTime()) || schedule.getTime() <= Date.now())) {
@@ -160,6 +167,8 @@ export function Composer({ accounts, onScheduled, initialJobId = null, uploadsEn
             const code = err && err.code;
             setError(code === 'rate_limited'
                 ? 'Too many posts scheduled at once. Wait a moment and try again.'
+                : ['unsupported_media_type', 'publishing_not_supported'].includes(err.body?.error) ? 'That destination does not support this media type.'
+                : err.body?.error === 'caption_too_long' ? 'The caption is too long for a selected platform.'
                 : 'Could not submit that post. Check your connection and try again.');
         } finally {
             setSubmitting(false);
@@ -170,7 +179,7 @@ export function Composer({ accounts, onScheduled, initialJobId = null, uploadsEn
         <form onSubmit={onSubmit} className="space-y-4">
             <div>
                 <div className="text-sm font-bold mb-2">Post to</div>
-                {!activeAccounts.length && <p className="text-sm text-vx-fg-muted">Connect an account above before scheduling a post. You can choose media first.</p>}
+                {!activeAccounts.length && <p className="text-sm text-vx-fg-muted">Connect a publishing account above before creating a post. Twitch connects for statistics. You can choose media first.</p>}
                 <ul className="flex flex-wrap gap-2">
                     {activeAccounts.map((a) => {
                         const on = selectedAccountIds.has(a.id);

@@ -71,6 +71,7 @@ export default {
                 r2cfg: r2EnvFrom(env), apiKey: env.BYTEPLUS_API_KEY,
             }).then((out) => { if (out.checked) console.error('[byteplus-sweep]', JSON.stringify(out)); return out; }), env),
             observeRecovery('publish_sweep', () => runPublishSweep({
+                env,
                 cfg: { supabaseUrl: env.SUPABASE_URL, serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY },
                 cryptoCfg: tokenCryptoConfig(env),
                 r2cfg: r2EnvFrom(env),
@@ -81,6 +82,7 @@ export default {
             // nothing queued to finish, so the switch gates it outright. Not a
             // recovery task: worker_task_health (0157) has no name for it.
             ...(env.PUBLISH_ANALYTICS_ENABLED === 'true' ? [runAnalyticsSweep({
+                env,
                 youtubeCfg: youtubeConfig(env),
                 tiktokCfg: tiktokConfig(env),
                 postingInsightsOn: postingInsightsEnabled(env),

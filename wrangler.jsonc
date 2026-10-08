@@ -120,6 +120,8 @@
     // The overall Publish launch still follows PUBLISH_ENABLED.
     "PUBLISH_CALENDAR_ENABLED": "true",
     "PUBLISH_UPLOADS_ENABLED": "false",
+    // Requires 0228 and provider app credentials before tester activation.
+    "PUBLISH_EXTENDED_NETWORKS_ENABLED": "false",
     // Adds instagram_business_manage_insights to the Instagram consent
     // screen (reach, views, saves, shares). Only "true" asks for it; turn it
     // on after Meta approves the permission in app review.
@@ -184,6 +186,7 @@
         "PUBLISH_CALENDAR_ENABLED": "true",
         // 0209 applied and real browser uploads verified on staging 2026-10-06.
         "PUBLISH_UPLOADS_ENABLED": "true",
+        "PUBLISH_EXTENDED_NETWORKS_ENABLED": "false",
         // Provider review approvals are still outstanding.
         "INSTAGRAM_INSIGHTS_SCOPE_ENABLED": "false",
         "TIKTOK_ANALYTICS_SCOPE_ENABLED": "false",
@@ -261,6 +264,13 @@
   //                               Sign-In provider. Scope bump (added youtube.upload) needs
   //                               re-consent from every already-connected account. Not yet
   //                               provisioned.
+  //   FACEBOOK_CLIENT_ID, FACEBOOK_CLIENT_SECRET (falls back to META_APP_ID/SECRET)
+  //   THREADS_CLIENT_ID, THREADS_CLIENT_SECRET
+  //   PINTEREST_CLIENT_ID, PINTEREST_CLIENT_SECRET
+  //   TWITCH_CLIENT_ID, TWITCH_CLIENT_SECRET
+  //   GMB_CLIENT_ID, GMB_CLIENT_SECRET
+  //                               Additional native integrations (0228); separate provider apps.
+  //                               Bluesky uses a tester's dedicated app password, never retained.
   //   SOCIAL_OAUTH_STATE_SECRET   signs the OAuth `state` token (lib/social/oauthState.js, ADR-0061
   //                               §2.7) — this app is cookie-free, so state carries its own HMAC
   //                               binding instead of server-side session storage
