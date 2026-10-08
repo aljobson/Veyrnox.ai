@@ -284,12 +284,21 @@ staging has three accounts with 165 credits or more, and signing in is the owner
 | B. Keep the machine and set the slots back to 1 | Honest about what it can do: one at a time, about 4 an hour | A run right behind another is slow (11 minutes). Section 1's one-slot refusal figures apply |
 | C. Make a run need less CPU (720p output, a faster encode setting) | In proportion | Output quality: a product decision |
 
-A is the one that makes three slots true. Until one of these is chosen, three slots on this machine can turn a burst of three
-approvals into three refunds and a fal bill.
+A is the one that makes three slots true.
+
+**Decision 2026-10-08 (owner: "A"): dedicated CPUs.** Not applied yet: staging still runs the shared machine with three slots, so
+until it is applied a burst of three approvals there can still become three refunds and a fal bill. To apply it:
+
+1. Put the size in the runner's `fly.toml`. A `fly scale` on its own is undone by the next deploy from that file.
+2. Read Fly's current per-second price for the size and write the cost per run next to it. It has not been read.
+3. Deploy to staging when no run is in flight, then pass the lockdown checks on the new machine (`scripts/verify-on-fly.sh`).
+
+Proposed setting: `performance-2x` (2 CPUs) with 8 GB if three slots stay, or its standard 4 GB with two slots.
 
 ## Open questions and next measurements
 
-1. **Owner:** which of options A, B or C in section 5? The slot count and the stage 2b trigger follow from it.
+1. Decided: option A in section 5 (owner, 2026-10-08). Still open when it is applied: 8 GB with three slots, or 4 GB with two.
+   The stage 2b trigger is set after the first three-at-once run on the new machine.
 2. **Three runs at once on staging: only after option A.** It then costs about $7 at fal and $1.30 in tokens and needs three
    signed-in accounts. Record each run's time, the machine's peak memory, and any refusal from fal or Anthropic. It can be three of
    G3's ten runs.

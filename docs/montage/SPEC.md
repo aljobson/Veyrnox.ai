@@ -277,7 +277,10 @@ success (job `647470d0`) show a run needs about 220 CPU-seconds, nearly all in i
 machine is a `shared` size with a sustained quota of 0.25 of one CPU and a burst balance of about 200 CPU-seconds after a deploy. So
 the machine sustains about **4 runs an hour whatever the slot count**, and three runs started together after a deploy are predicted
 to take 30.5 minutes, past the runner's 30-minute limit: three refunds and about $7 spent at fal. Nothing was run to learn this.
-Options and the arithmetic are in [CAPACITY.md](CAPACITY.md) section 5; the choice (dedicated CPUs, one slot, or a lighter render) is the owner's.
+Options and the arithmetic are in [CAPACITY.md](CAPACITY.md) section 5.
+
+**Decision 2026-10-08 (owner: "A"): dedicated CPUs for the runner** (a Fly `performance` size), chosen over one slot and over a
+lighter render. Not applied yet: staging still runs the shared machine with three slots.
 
 ## 11. The remaining staging checks, and the lost-run check (2026-10-08, evening)
 
