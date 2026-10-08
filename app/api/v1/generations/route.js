@@ -30,7 +30,7 @@ import { resolveUploadedSource, resolveAssetSource } from '../../../../lib/resol
 import { envConfig as r2EnvConfig, isConfigured as r2IsConfigured } from '../../../../packages/adapters/r2.js';
 import { editUnits, clipCaptionsEnabled } from '../../../../lib/clipEdit.js';
 import { resolveEdit, defaultDeps as editDeps } from '../../../../lib/clipEditSources.js';
-import { verifyPlanToken, planIdempotencyKey } from '../../../../lib/montagePlan.js';
+import { checkPlan, checkCapacity } from '../../../../lib/montageGate.js';
 
 // The AUP statement version a consent tick attests to. Bump when the wording
 // at /legal/aup or on the create page changes; users re-attest under the new
@@ -323,12 +323,8 @@ export async function POST(req) {
     // plan route issued for this caller, this exact brief and this price, and
     // with the idempotency key that ticket names, so one plan buys one run.
     if (record.agent) {
-        const planned = await verifyPlanToken({
-            secret: process.env.MONTAGE_PLAN_SECRET, token: modelInputs.plan_id, authId,
-            brief: modelInputs.brief, aspect: modelInputs.aspect_ratio || '9:16', credits: priceFor(modelRow, {}),
-        });
-        if (!planned.ok) return NextResponse.json({ error: planned.error }, { status: planned.error === 'plan_expired' || planned.error === 'plan_price_changed' ? 409 : 400 });
-        if (idempotencyKey !== planIdempotencyKey(planned.nonce)) return NextResponse.json({ error: 'plan_key_mismatch' }, { status: 400 });
+        const bad = await checkPlan({ modelInputs, authId, idempotencyKey, credits: priceFor(modelRow, {}) });
+        if (bad) return NextResponse.json(bad.body, { status: bad.status });
     }
     // A model priced by output size or length caps its sources' pixels/seconds.
     const sourceCheck = checkSource(record, sources);
@@ -383,6 +379,14 @@ export async function POST(req) {
         return NextResponse.json({ error: 'user_lookup_failed' }, { status: 502 });
     }
     if (!userId) return NextResponse.json({ error: 'user_not_provisioned' }, { status: 409 });
+
+    // Video agent: is the runner free? Asked before the debit, so "busy" or "offline" charges nothing.
+    if (record.agent) {
+        const full = await checkCapacity({ userId, idempotencyKey, cfg });
+        if (full) {
+            return NextResponse.json(full.body, { status: full.status, headers: full.retryAfter ? { 'retry-after': String(full.retryAfter) } : undefined });
+        }
+    }
 
     // 3. Debit atomically. Creates jobs row too. Price = catalog unit price
     //    times the validated unit count; never a client-supplied number.
