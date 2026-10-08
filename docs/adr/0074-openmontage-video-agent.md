@@ -128,6 +128,10 @@ So the ceiling is enforced outside the process, which also keeps the "unmodified
    separate process reached only over HTTP, never imported into this repo. Any patch to its source needs a new ADR and
    triggers publishing that patch.
 
+2026-10-08: the owner accepted the recommendation to treat fal's Kling v3 standard text-to-video as in scope for the
+measured runs (same vendor and model family as the catalog's Kling v2.6 pro and v3 pro rows; not itself a catalog row).
+It must be added to `model_catalog` through the usual route before any user can reach it.
+
 Both are the owner's statement in chat; neither is a written opinion from counsel or from a provider. If either provider
 or counsel later says otherwise, this ADR is reopened.
 
