@@ -195,3 +195,46 @@ Known risks to settle on the way:
 - **Output size and resolution** are not yet fixed by the product (see run 5).
 - **The Worker-to-runner call** goes over the public internet: it is HMAC-signed with a 300 s window, and the runner
   accepts nothing unsigned, but a network allow-list on the runner host is a worthwhile second layer.
+
+## 9. First staging run (2026-10-08): what it found
+
+A real run through the page (sign in, plan, approve) on staging. The Worker-to-runner path, the debit, the step record and the agent all worked; the run failed safely
+(the agent picked an unpriced Kling v2.1, the proxy refused it at no media cost, $0.31 in tokens). Three bugs, none visible in any unit test:
+
+| Bug | Found how | Fix |
+|---|---|---|
+| Cloudflare answered the runner's default Python user-agent with **error 1010**, so every callback and upload was blocked and the "failed" never reached the Worker | zero `webhook_events`; reproduced with curl using that user-agent | own user-agent on callbacks and uploads; undelivered callbacks are logged; tests assert the user-agent (runner repo) |
+| The **Auto Short sweep** (`sweepSteps`) failed the live montage step after 12 minutes (it declares any provider it cannot read FAILED) and never touched the parent, so **165 credits stayed held**; the montage sweep only looked at SUBMITTED steps | step `FAILED:provider_failed` under a SUBMITTED job | `autoShortSweep` excludes `provider=neq.montage`; `montageSweep` also heals FAILED steps under a SUBMITTED parent through `failParent` (PR #639). **Verified on staging: refunded exactly once, balance 72 to 237, reconcile clean** |
+| The agent picked an **unpriced** model | meter log: 4 refused `kling-video/v2.1` calls | the agent prompt now names the priced endpoints, generated from the same price table the proxy reads |
+
+Also: my first staging build used no environment variables and baked the **development identity** into the client (no Google button, sign-in broken); the runbook now has the full recipe. The plan text says "about 30 seconds" whatever the brief asks (a fixed default in the runner).
+
+### Second staging run (2026-10-08, job 4e7d3820): a fourth bug, and the first run that reached fal
+
+With the three fixes deployed the agent used the **priced** endpoint (`kling-video/v3/standard/text-to-video`, the proxy reserved $2.31 of the $2.50 ceiling at the
+dearest tier) and was polling the clips when the run died: **Fly stopped the machine at about 346 seconds.** Fly's auto-stop only counts *inbound* traffic; `/run` answers
+202 at once and a run then talks outward, so the machine looked idle. The first failed run ended in seconds, which hid it.
+
+Fix: Fly auto-stop is off; the runner stops itself only after `RUNNER_IDLE_EXIT_SECONDS` (600) with **no run in flight and no request**, the restart policy is
+`on-failure` so a clean exit leaves it stopped, and `auto_start_machines` wakes it on the next signed request. Tests: the watchdog never exits while a run is active.
+The fal clips this run generated are probably billed with no video produced; the job stays SUBMITTED until the Worker's 45-minute timeout sweep refunds it (about 18:16 UTC).
+
+Open: fal's real billing for this run (clip count and audio tier) is still unread; it is the number that sets the price.
+
+### Third staging run (2026-10-08, job 647470d0): the first full success
+
+Brief to Library, through the real page, Worker, runner on Fly and fal:
+
+| Measure | Value |
+|---|---|
+| Result | job **STORED**; `video-agent/<job id>/final.mp4`, video/mp4, **9.9 MB**, 15.0 s, 1080x1920; shown in the Library as DONE, AI GENERATED, -165 cr |
+| Time | 4 min 05 s from approve to stored (agent 237 s, 17 turns) |
+| Paid calls | 3 x Kling v3 standard 5 s clips; proxy reserved **$2.31** of the $2.50 ceiling (dearest tier); nothing refused |
+| Anthropic tokens | **$0.43** (Opus) |
+| Ledger | exactly one `debit:generation -165`, no refund; balance 237 -> 72; `reconcile_balances()` 0 rows |
+| Callbacks | 2 `webhook_events` (source montage); the upload went through the Worker-minted presigned PUT |
+| Machine | stayed up for the whole run (auto-stop off; idle exit after 10 min) |
+
+Not yet done: a forced mid-run failure with the fixed code (the runbook's last step), fal's real billing figure, the "about 30 seconds" plan text, and the page did
+not show the finished video inline (it showed the "ready" toast and the Library entry; the brief box had been cleared). The second run's job was cancelled by hand
+through `job_step_failed`, `job_failed` and `ledger_refund` at the owner's request rather than waiting for the 45-minute timeout, so **the timeout path is still unproven on staging**.
