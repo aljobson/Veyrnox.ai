@@ -5,7 +5,7 @@ import { AppNav } from '../../../_components/NavBar';
 import { getSession, onSessionChange } from '../../../../lib/authClient';
 import { NETWORKS, listSocialAccounts } from '../../../../lib/socialConnectClient';
 import { getSocialAnalytics } from '../../../../lib/socialAnalyticsClient';
-import { postInteractions, rangeForDays, summarize } from '../../../../../lib/social/analyticsSummary.js';
+import { postInteractions, rangeForDays, summarize, totalViews } from '../../../../../lib/social/analyticsSummary.js';
 import { FollowersChart } from './FollowersChart';
 import { PostingInsights } from './PostingInsights';
 import NetworkLogo from '../NetworkLogo';
@@ -14,7 +14,7 @@ const currentAccount = () => getSession()?.user?.id || '';
 const noAccount = () => '';
 const button = 'rounded-full border border-vx-border px-4 py-2 text-sm font-bold disabled:opacity-50';
 // Networks the analytics sweep has a fetcher for (lib/socialAnalyticsSweep.js).
-const ANALYTICS_NETWORKS = new Set(['instagram', 'youtube', 'tiktok']);
+const ANALYTICS_NETWORKS = new Set(['instagram', 'youtube', 'tiktok', 'twitch']);
 const RANGES = [{ days: 7, label: '7 days' }, { days: 30, label: '30 days' }, { days: 90, label: '90 days' }];
 const whole = new Intl.NumberFormat();
 const oneDecimal = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
@@ -89,7 +89,7 @@ function Dashboard() {
     {ANALYTICS_NETWORKS.has(selected.network)
       ? <AccountAnalytics key={`${selected.id}:${days}`} accountId={selected.id} network={selected.network} days={days} />
       : <p className="rounded-2xl border border-vx-border p-5 text-sm text-vx-fg-body">
-          Analytics for {networkLabel(selected.network)} are not available yet. Instagram, YouTube and TikTok are supported today.
+          Analytics for {networkLabel(selected.network)} are not available yet. Instagram, YouTube, TikTok and Twitch are supported today.
         </p>}
   </div>;
 }
@@ -119,6 +119,7 @@ function AccountAnalytics({ accountId, network, days }) {
   const videoNetwork = youtube || tiktok;
   const audienceLabel = youtube ? 'Subscribers' : 'Followers';
   const channelMetrics = data.evolution.at(-1)?.metrics || {};
+  const twitch = network === 'twitch';
   const neverSynced = !data.sync?.last_ok_at;
   if (neverSynced && data.evolution.length === 0) {
     return <p className="rounded-2xl border border-vx-border p-5 text-sm text-vx-fg-body">
@@ -128,10 +129,33 @@ function AccountAnalytics({ accountId, network, days }) {
     </p>;
   }
 
+  const failing = data.sync?.failing && <p role="status" className="text-sm text-vx-fg-muted">
+    The latest update for this account failed, so these numbers may be out of date. Reconnecting it in Veyrnox Publish usually fixes this.
+  </p>;
+  const updated = data.sync?.last_ok_at && <p className="text-xs text-vx-fg-muted">
+    Updated {new Date(data.sync.last_ok_at).toLocaleString()}. Numbers refresh every few hours.
+  </p>;
+
+  // Twitch reports a view count per video and nothing else, so it gets its own
+  // view: no followers, interactions or engagement are shown or invented.
+  if (twitch) {
+    return <div className="space-y-6">
+      {failing}
+      <dl className="grid grid-cols-2 gap-3">
+        <Stat label="Videos" value={whole.format(data.posts.length)} note="In this period, from your latest 20" />
+        <Stat label="Views" value={whole.format(totalViews(data.posts))} note="Lifetime views of those videos" />
+      </dl>
+      <section className="rounded-2xl border border-vx-border p-5">
+        <h2 className="font-bold mb-4">Videos in this period</h2>
+        <PostsTable posts={data.posts} withViews viewsOnly />
+      </section>
+      <p className="text-xs text-vx-fg-muted">Twitch shares a view count for each of your latest 20 videos. Follower, subscriber, like and comment numbers are not available.</p>
+      {updated}
+    </div>;
+  }
+
   return <div className="space-y-6">
-    {data.sync?.failing && <p role="status" className="text-sm text-vx-fg-muted">
-      The latest update for this account failed, so these numbers may be out of date. Reconnecting it in Veyrnox Publish usually fixes this.
-    </p>}
+    {failing}
     <dl className={`grid grid-cols-2 ${videoNetwork ? 'sm:grid-cols-3' : 'sm:grid-cols-4'} gap-3`}>
       <Stat label={audienceLabel} value={summary.followers === null ? '—' : whole.format(summary.followers)}
         note={summary.followersChange === null ? null : `${summary.followersChange >= 0 ? '+' : ''}${whole.format(summary.followersChange)} in this period`} />
@@ -158,9 +182,7 @@ function AccountAnalytics({ accountId, network, days }) {
     {data.postingInsightsEnabled && <PostingInsights accountId={accountId} />}
     {youtube && <p className="text-xs text-vx-fg-muted">YouTube subscriber counts are rounded. Video metrics are lifetime totals for videos published in this period. The latest 50 uploads refresh each round.</p>}
     {tiktok && <p className="text-xs text-vx-fg-muted">TikTok video metrics cover public videos only. Video metrics are lifetime totals for videos published in this period. The latest 50 public videos refresh each round. Missing numbers may need additional permissions: reconnect in Veyrnox Publish after analytics access is enabled.</p>}
-    {data.sync?.last_ok_at && <p className="text-xs text-vx-fg-muted">
-      Updated {new Date(data.sync.last_ok_at).toLocaleString()}. Numbers refresh every few hours.
-    </p>}
+    {updated}
   </div>;
 }
 
@@ -172,7 +194,7 @@ function Stat({ label, value, note }) {
   </div>;
 }
 
-function PostsTable({ posts, withInsights, withViews, withShares }) {
+function PostsTable({ posts, withInsights, withViews, withShares, viewsOnly }) {
   if (posts.length === 0) return <p className="text-sm text-vx-fg-muted">No posts in this period.</p>;
   return <div className="overflow-x-auto">
     <table className="w-full text-sm">
@@ -182,10 +204,10 @@ function PostsTable({ posts, withInsights, withViews, withShares }) {
           <th scope="col" className="pb-2 pr-3 font-bold">Post</th>
           {withInsights && <th scope="col" className="pb-2 pr-3 font-bold text-right">Reach</th>}
           {withViews && <th scope="col" className="pb-2 pr-3 font-bold text-right">Views</th>}
-          <th scope="col" className="pb-2 pr-3 font-bold text-right">Likes</th>
-          <th scope="col" className="pb-2 pr-3 font-bold text-right">Comments</th>
+          {!viewsOnly && <th scope="col" className="pb-2 pr-3 font-bold text-right">Likes</th>}
+          {!viewsOnly && <th scope="col" className="pb-2 pr-3 font-bold text-right">Comments</th>}
           {withShares && <th scope="col" className="pb-2 pr-3 font-bold text-right">Shares</th>}
-          <th scope="col" className="pb-2 font-bold text-right">Interactions</th>
+          {!viewsOnly && <th scope="col" className="pb-2 font-bold text-right">Interactions</th>}
         </tr>
       </thead>
       <tbody>
@@ -204,10 +226,10 @@ function PostsTable({ posts, withInsights, withViews, withShares }) {
             </td>
             {withInsights && <td className="py-2 pr-3 text-right tabular-nums">{metric(p.metrics?.reach)}</td>}
             {withViews && <td className="py-2 pr-3 text-right tabular-nums">{metric(p.metrics?.views)}</td>}
-            <td className="py-2 pr-3 text-right tabular-nums">{metric(p.metrics?.likes)}</td>
-            <td className="py-2 pr-3 text-right tabular-nums">{metric(p.metrics?.comments)}</td>
+            {!viewsOnly && <td className="py-2 pr-3 text-right tabular-nums">{metric(p.metrics?.likes)}</td>}
+            {!viewsOnly && <td className="py-2 pr-3 text-right tabular-nums">{metric(p.metrics?.comments)}</td>}
             {withShares && <td className="py-2 pr-3 text-right tabular-nums">{metric(p.metrics?.shares)}</td>}
-            <td className="py-2 text-right tabular-nums font-bold">{whole.format(postInteractions(p))}</td>
+            {!viewsOnly && <td className="py-2 text-right tabular-nums font-bold">{whole.format(postInteractions(p))}</td>}
           </tr>
         ))}
       </tbody>
