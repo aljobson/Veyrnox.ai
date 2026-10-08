@@ -110,3 +110,8 @@ test('sendInOrder stops at the first failure and never retries', async () => {
     const first = await sendInOrder(3, async () => { throw boom; });
     assert.deepEqual(first, { started: 0, error: boom });
 });
+
+test('lost durable admission is an uncertain batch outcome', () => {
+    assert.equal(submitErrorCode('dispatch_acceptance_unknown'), 'outcome_unknown');
+    assert.match(batchNote(1, 3, submitErrorCode('dispatch_acceptance_unknown')), /may have too/);
+});
