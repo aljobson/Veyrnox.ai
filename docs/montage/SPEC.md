@@ -63,3 +63,22 @@ Planning shares the generation attempt limit (0113).
 | 6 | Price migration from measured ceiling, flag on | `reconcile_balances()` clean 24 h |
 
 Slices 1-3 spend no provider money and expose nothing to users. Slice 4 onward needs slice 0 closed.
+
+## 6. First real agent run (slice 4c dry run, 2026-10-08)
+
+The headless agent ran for the first time in the container, with the empty price table and no provider keys. It
+finished: a 15 s, 1080x1920 video, 25 turns, **$0.77** of Anthropic tokens (Opus, default model; under the $2 cap),
+**no paid provider call attempted** (it had none configured). Findings, each now fixed or open:
+
+| Finding | State |
+|---|---|
+| The runner's own callbacks were sent through the spend proxy and refused | fixed (only the agent child uses the proxy) |
+| Dry-run upload target unreachable from the container, so the run ended `upload_failed` | fixed in the test rig; the production path is untouched and not yet exercised against R2 |
+| Remotion could not render: no headless Chrome | fixed (downloaded at build) |
+| HyperFrames needs Node 22, image had 20 | fixed (Node 22.12.0, checksum-verified) |
+| Free stock-footage and music hosts blocked by the proxy (403) | **open decision**: allow GET-only on a short list (Pexels, Pixabay, archive.org) or stay generate-only |
+| No provider keys, so no paid call was priced | **open**: needs the owner's choice of providers and their keys on the runner only |
+| The agent probes `127.0.0.1/api/health` and `localhost/system_stats` (local ComfyUI checks); refused, harmless | none |
+| LLM cost is the default (Opus) model | open: try `--model sonnet` and compare quality before measuring |
+
+Not yet proven: a run that actually uploads to R2 through the Worker's presigned URL, and any paid provider call.
