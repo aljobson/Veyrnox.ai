@@ -123,6 +123,33 @@ R2 deletion retains its reservation. Record the evidence before a configuration
 PR enables UPLOAD_INTEGRITY_ENABLED. Wait at least 15 minutes after deployment
 for previously issued weaker URLs to expire. See ADR-0044.
 
+### State on 2026-10-09
+
+Checked from outside, with no credentials. Migration 0129 is applied on
+production and on staging (`applied_migration_names()`). A CORS preflight
+(`OPTIONS`, `Access-Control-Request-Method: PUT`) against each bucket's EU
+endpoint gave:
+
+| Bucket | Origin | Asks for `content-type` | Asks for `content-type, if-none-match` |
+|---|---|---|---|
+| `veyrnox-ai-media` (production) | `https://veyrnox.ai` | 204, allowed | **403, refused** |
+| `veyrnox-ai-staging-media` | `https://veyrnox-ai-staging.al-jobson.workers.dev` | 204, allowed | 204, allowed |
+
+So the flag can go on for staging, and it does in `wrangler.jsonc` from this
+date, to run the proof above there. It must not go on for production until
+the production bucket's CORS rule adds `If-None-Match` to its allowed headers:
+the strict path makes the browser send that header, and the bucket would
+refuse every upload. Still to do, in order:
+
+1. Deploy staging with the flag on. With a signed-in staging account, upload
+   one file from the browser; confirm it succeeds, that sending a different
+   byte count to the same URL fails, and that a second PUT to the same URL
+   returns 412.
+2. Add `If-None-Match` to the production bucket's CORS allowed headers. Repeat
+   the preflight above and see 204 for both columns.
+3. Enable the flag for production in its own configuration change, confirm the
+   upload sweep runs, and wait 15 minutes.
+
 ## Recovery activation proof
 
 After 0131, enable RECOVERY_HEALTH_ENABLED in a separate configuration PR.
