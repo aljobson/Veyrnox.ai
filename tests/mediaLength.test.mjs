@@ -146,8 +146,9 @@ test('MP4: only the real movie header is read, and a table cut short proves noth
     assert.equal(await mp4(box('moov', Buffer.concat([mvhdOf(1000, 5000), box('free', Buffer.alloc(4 * 1024 * 1024))]))), null, 'a movie box over 4 MiB');
 });
 
-test('the gateway reads a whole MP3 before measuring it', async () => {
+test('the gateway counts a whole MP3 from a stream, never a full-object buffer', async () => {
     const { readFileSync } = await import('node:fs');
     const source = readFileSync(new URL('../lib/resolveSource.js', import.meta.url), 'utf8');
-    assert.match(source, /mp3Seconds\(bytes\.length >= size \? bytes : await readRange\(0, size - 1\), size\)/);
+    assert.match(source, /streamWithTimeout\(/, 'the tail is streamed, not read into one buffer');
+    assert.doesNotMatch(source, /readRange\(0, size - 1\)/, 'the whole-object MP3 read is gone');
 });
