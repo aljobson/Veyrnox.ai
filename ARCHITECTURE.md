@@ -4,7 +4,7 @@ How Veyrnox.ai fits together. This is the map; the reasons behind each choice ar
 
 The [system design proposal](docs/architecture/system-design.md) develops this architecture with workload estimates, durable dispatch and recovery boundaries, service objectives, and a staged delivery plan. Proposed components are distinguished from the running application.
 
-[ADR 0077](docs/adr/0077-fal-event-driven-dispatch.md) proposes event-driven wakeups for the durable fal image slice after staging measured a 201.67-second wait before dispatch. It preserves database claims and the cron backstop; no queue resources or runtime changes are provisioned by the proposal.
+[ADR 0077](docs/adr/0077-fal-event-driven-dispatch.md) proposes event-driven wakeups for the durable fal image slice after staging measured a 201.67-second wait before dispatch. Its producer and consumer code preserve database claims and the cron backstop. The [staging plan](docs/architecture/fal-dispatch-queue.md) records provisioning and acceptance work; queue resources are unprovisioned and flags are off.
 
 ## The shape in one picture
 

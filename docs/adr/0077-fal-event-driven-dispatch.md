@@ -1,6 +1,6 @@
 # ADR 0077 — Event-driven wakeups for durable fal dispatch
 
-Status: Proposed 2026-10-09; design only. No queue, Worker, migration, or flag is provisioned by this ADR. ADR 0076's activation gates remain binding.
+Status: Proposed 2026-10-09; targeted claims and producer/consumer code built, queue resources unprovisioned, flags off. See the [implementation and staging plan](../architecture/fal-dispatch-queue.md). ADR 0076's activation gates remain binding.
 
 ## Problem and evidence
 
