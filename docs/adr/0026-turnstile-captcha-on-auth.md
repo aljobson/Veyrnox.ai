@@ -81,3 +81,29 @@ is on (row four of the table).
   CAPTCHA on the OAuth path).
 - `refresh_token` grants are not challenged, so existing sessions keep
   working through the switch.
+
+## Amendment 1 (2026-10-09): a failed check is said and logged
+
+On 2026-10-09 the widget failed in an embedded browser with Cloudflare's
+client error 600010. The dialog said nothing until submit, and then only
+"Complete the security check first". A check that fails in the browser sends
+nothing to Supabase, so it is in no auth log either.
+
+- `components/Turnstile.jsx` passes the error code from Turnstile's
+  `error-callback` to a new `onFailure` prop, and still drops the token.
+- `components/AuthGate.jsx` shows a notice in its status region when the
+  failure happens, and clears it when a token arrives. A submit without a
+  token repeats the reason. The wording is in `app/lib/turnstileFailure.js`:
+  the check did not pass in this browser (300* and 600*), the device clock is
+  wrong (200100), the widget could not load (200500, same advice as a blocked
+  script), and one sentence for anything else. No code is shown.
+- The code is written to the browser console once per failure, and nothing
+  else is. The callback returns `true`: Cloudflare treats a non-falsy return as
+  handled, and otherwise adds a console warning of its own on every retry.
+
+The check itself is unchanged: same site key, same widget options, automatic
+retry left on, and no request to Auth without a token.
+
+Not done here: counting failed checks. A console line in the visitor's browser
+tells them and us nothing in aggregate, so how many people are stopped is
+still unknown.
