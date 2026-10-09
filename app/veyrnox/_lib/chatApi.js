@@ -69,6 +69,7 @@ export function chatErrorCopy(code, { credits } = {}) {
     case 'upload_failed': case 'image_unreadable': return 'The image did not upload. Try again, or pick another. No Credits were used.';
     case 'invalid_text': return 'Messages can be up to 8,000 characters.';
     case 'turn_not_saved': return 'We could not save that reply, so you will not be charged.';
+    case 'reply_not_saved': return 'We could not save that reply to the chat. You received it, so its Credits were used.';
     case 'provider_cut_off': case 'provider_dropped': return 'The reply was cut off. No Credits were used.';
     case 'connection_lost': return 'The connection dropped before the reply finished. It may have used Credits. Check this chat before you send again.';
     case 'stop_saving': return 'Stopped. We are still saving this reply, and it may use Credits. Open this chat again in a moment to see what was kept.';

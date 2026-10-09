@@ -125,17 +125,21 @@ If a build starts failing after a dependency change, bisect these three first.
   the middleware reads any other `x-veyrnox-*` request header
   (`tests/identityHeaders.test.mjs`).
 - Every route under `/api/v1/admin/*` also verifies the Cloudflare Access
-  assertion in code, after the Supabase token and the second factor. The
-  dashboard routes (`metrics`, `violations`, `users/lookup`) call
+  assertion in code, after the Supabase token and the second factor, and
+  passes the assertion of a person's login only; one issued to a service
+  token is for the machine endpoints under `/api/admin/*` and is refused
+  here. The dashboard routes (`metrics`, `violations`, `users/lookup`) call
   `requireDashboardAccess` in `lib/accessJwt.js`: 403 `access_required`,
-  503 `access_not_configured`. The Cinema administrator routes do it in their
-  own handlers. A new admin route needs one of the two
+  503 `access_not_configured`. The Cinema administrator routes verify in
+  their own handlers with `verifyAccessLogin` from the same file. A new
+  admin route needs one of the two
   (`tests/adminDashboardAccess.test.mjs`). Access is an edge rule on one
   hostname and its paths, so the code check is the one that holds whichever
   way a request arrives. For the same reason `worker.js` answers
   `/_next/data/*` with 404 (there is no pages router), and the production
   Worker has `workers_dev` and `preview_urls` off in `wrangler.jsonc`;
-  staging keeps `workers_dev` on.
+  staging keeps `workers_dev` on. `deploy-production` reads both back after
+  each deploy and reports on the `deploy-failure` issue if either is on.
 - Standard-claim checks (issuer, audience `authenticated`, exp with 5s skew, sub
   present) run on every request. Missing/malformed -> 401, never 500.
 - Rate limit at the entry point. Baseline: 10 gens per user per 60s via the
