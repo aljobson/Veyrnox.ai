@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { adoptSession, clearSession, getSession, getFreshAccessToken } from '../app/lib/authClient.js';
+import { adoptSession, clearSession, getSession, getFreshAccessToken, getStoredUserId } from '../app/lib/authClient.js';
 import { readJobHistory, pushJobHistory } from '../app/veyrnox/_lib/jobHistory.js';
+import { NEW_CHAT, readDraft, writeDraft, readStars, toggleStar } from '../app/veyrnox/_lib/chatLocal.js';
 
 const store = new Map();
 globalThis.localStorage = {
@@ -34,6 +35,43 @@ test('switching account cannot read prior prompts, even if old scoped data remai
   assert.deepEqual(readJobHistory(), []);
   pushJobHistory({ job_id: 'bob-job' });
   assert.deepEqual(readJobHistory().map(j => j.job_id), ['bob-job']);
+  clearSession();
+});
+
+test('ending the session removes unsent chat text and starred replies', () => {
+  adoptSession(session('alice'));
+  assert.equal(getStoredUserId(), 'alice');
+  writeDraft(localStorage, getStoredUserId(), NEW_CHAT, 'private draft');
+  toggleStar(localStorage, getStoredUserId(), 'thread-1', 'm1');
+  store.set('veyrnox_chat_draft_v1:new', 'left by the unscoped version');
+  clearSession();
+  assert.equal(getStoredUserId(), null);
+  assert.equal([...store.keys()].some(k => k.startsWith('veyrnox_chat_')), false);
+});
+
+test('a different user signing in finds no chat text from the last one', () => {
+  adoptSession(session('alice'));
+  writeDraft(localStorage, getStoredUserId(), NEW_CHAT, 'private draft');
+  toggleStar(localStorage, getStoredUserId(), 'thread-1', 'm1');
+  adoptSession(session('bob'));
+  assert.equal(readDraft(localStorage, getStoredUserId(), NEW_CHAT), '');
+  assert.deepEqual(readStars(localStorage, getStoredUserId(), 'thread-1'), []);
+  assert.equal([...store.keys()].some(k => k.startsWith('veyrnox_chat_')), false);
+  clearSession();
+});
+
+test('refreshing the same user\'s session keeps their draft', () => {
+  adoptSession(session('alice'));
+  writeDraft(localStorage, getStoredUserId(), NEW_CHAT, 'still typing');
+  adoptSession(session('alice'));
+  assert.equal(readDraft(localStorage, getStoredUserId(), NEW_CHAT), 'still typing');
+  clearSession();
+});
+
+test('the draft belongs to the stored user even while the access token waits on a refresh', () => {
+  adoptSession(session('alice', -600));
+  assert.equal(getSession(), null);
+  assert.equal(getStoredUserId(), 'alice');
   clearSession();
 });
 

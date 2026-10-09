@@ -50,7 +50,7 @@ test('email recovery sign-in binds its code to this browser and our callback', a
         assert.equal(u.searchParams.get('redirect_to'),'https://veyrnox.test/auth/callback');
         assert.equal(body.code_challenge_method,'s256');
         assert.match(body.code_challenge,/^[A-Za-z0-9_-]{43}$/);
-        const verifier=store.get('veyrnox_pkce_verifier');
+        const {verifier}=JSON.parse(store.get('veyrnox_pkce_magic_verifier'));
         const digest=Buffer.from(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(verifier))).toString('base64url');
         assert.equal(digest,body.code_challenge);
         assert.equal(body.gotrue_meta_security.captcha_token,'captcha');
