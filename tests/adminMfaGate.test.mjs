@@ -4,7 +4,7 @@
 // credential in the product and the ledger is one read away from it.
 //
 // Also pins the middleware contract the gate rests on: `aal` is forwarded as
-// x-veyrnox-auth-aal and any client-supplied copy is deleted first. A spoofable
+// x-veyrnox-auth-aal and any client-supplied copy is replaced first. A spoofable
 // header would make the gate worse than useless.
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -95,14 +95,15 @@ test('only the literal "true" arms the gate', async () => {
     }
 });
 
-test('middleware strips an inbound aal header before forwarding its own', () => {
-    // IDENTITY_HEADERS is deleted from the inbound copy on every branch, the
-    // deprecated 410 passthrough included.
+test('middleware blanks an inbound aal header before forwarding its own', () => {
+    // Every IDENTITY_HEADERS entry is set to '' on every branch, then to the
+    // verified value. Set, not deleted: tests/identityHeaders.test.mjs.
     const list = middlewareSrc.slice(
         middlewareSrc.indexOf('const IDENTITY_HEADERS'),
         middlewareSrc.indexOf('];', middlewareSrc.indexOf('const IDENTITY_HEADERS')),
     );
     assert.ok(list.includes("'x-veyrnox-auth-aal'"), 'aal is not in IDENTITY_HEADERS — a client could spoof it');
-    assert.match(middlewareSrc, /for \(const h of IDENTITY_HEADERS\) headers\.delete\(h\);/);
-    assert.match(middlewareSrc, /headers\.set\('x-veyrnox-auth-aal', String\(claims\.aal\)\)/);
+    assert.match(middlewareSrc, /for \(const h of IDENTITY_HEADERS\) headers\.set\(h, ''\);/);
+    assert.doesNotMatch(middlewareSrc, /headers\.delete\(/);
+    assert.match(middlewareSrc, /headers\.set\('x-veyrnox-auth-aal', claims\.aal === 'aal2' \? 'aal2' : 'aal1'\)/);
 });

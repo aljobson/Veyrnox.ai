@@ -3,12 +3,13 @@
  *
  * The read behind the violations UI (ADR-0058 decision 7): one user's
  * standing and their last 25 generations, so an operator can pick the job a
- * warning or takedown is about. Same three gates as the other admin routes;
+ * warning or takedown is about. Same four gates as the other admin routes;
  * the RPC re-checks users.is_admin and raises 42501 for anyone else.
  */
 
 import { NextResponse } from 'next/server';
 import { rpc, envConfig, SupabaseError } from '../../../../../../packages/db/supabase-client.js';
+import { requireDashboardAccess } from '../../../../../../lib/accessJwt.js';
 
 const NOT_ADMIN = '42501';
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -24,6 +25,8 @@ export async function GET(req) {
     if (requireAal2() && req.headers.get('x-veyrnox-auth-aal') !== 'aal2') {
         return NextResponse.json({ error: 'mfa_required' }, { status: 403 });
     }
+    const access = await requireDashboardAccess(req);
+    if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status });
     const cfg = envConfig();
     if (!cfg.supabaseUrl || !cfg.serviceRoleKey) {
         return NextResponse.json({ error: 'supabase_not_configured' }, { status: 503 });
