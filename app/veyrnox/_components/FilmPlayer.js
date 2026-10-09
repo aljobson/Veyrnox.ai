@@ -3,9 +3,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { playbackMode } from '../_lib/playbackPolicy';
 
-// The landing film: a muted loop that starts once half of it is on screen and
-// stops when it leaves. It runs longer than five seconds, so it carries its
-// own Play/Pause button (WCAG 2.2.2); pressing Pause holds it until the
+// Landing films: muted loops that start once half on screen and stop when
+// they leave. Looping motion carries its own Play/Pause button (WCAG 2.2.2);
+// pressing Pause holds it until the
 // visitor presses Play. Reduced motion, data-saver or a slow connection on
 // touch: it never starts by itself, and the button still works.
 // preload="none" means no bytes move until the first play. A film that fails
@@ -13,7 +13,7 @@ import { playbackMode } from '../_lib/playbackPolicy';
 
 const VIEW_THRESHOLD = 0.5;
 
-export function FilmPlayer({ film }) {
+export function FilmPlayer({ film, label = 'the film', aspectRatio = '16 / 9' }) {
   const videoRef = useRef(null);
   // The visitor pressed Pause: scrolling back must not restart it for them.
   const heldRef = useRef(false);
@@ -62,8 +62,8 @@ export function FilmPlayer({ film }) {
 
   return (
     <div className="relative">
-      {/* aspect-video holds the space before the poster arrives. */}
-      <div className="aspect-video overflow-hidden rounded-2xl border border-vx-border bg-[#0a0a0b]">
+      {/* Reserve the film's full frame before the poster arrives. */}
+      <div style={{ aspectRatio }} className="aspect-video overflow-hidden rounded-2xl border border-vx-border bg-[#0a0a0b]">
         <video
           ref={videoRef}
           src={film.video}
@@ -87,14 +87,13 @@ export function FilmPlayer({ film }) {
           className="block h-full w-full"
         />
       </div>
-      {/* On a phone the film is under 200px tall and a 44px button would
-          cover a quarter of it, so the button sits below. From sm up it lies
+      {/* On a phone the button sits below to keep the full frame clear. From sm up it lies
           on the film, in fixed light ink: the film is dark in both themes. */}
       {!failed && (
       <button
         type="button"
         onClick={toggle}
-        aria-label={playing ? 'Pause the film' : 'Play the film'}
+        aria-label={`${playing ? 'Pause' : 'Play'} ${label}`}
         className="vx-press mt-3 inline-flex min-h-11 items-center gap-2 rounded-full border border-vx-border px-4 text-[13px] font-bold text-vx-fg-body hover:text-vx-fg sm:absolute sm:bottom-3 sm:left-3 sm:mt-0 sm:border-transparent sm:bg-black/70 sm:text-white sm:backdrop-blur-sm sm:hover:bg-black/85 sm:hover:text-white"
       >
         <svg aria-hidden="true" viewBox="0 0 12 12" className="h-3 w-3 fill-current">

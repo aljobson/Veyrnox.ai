@@ -137,3 +137,13 @@ test('disconnectSocialAccount calls DELETE on the account path', async () => {
     assert.equal(calls[0].url, '/api/v1/social/accounts/acc-1');
     assert.equal(calls[0].init.method, 'DELETE');
 });
+
+test('post client forwards explicit YouTube visibility without adding it to legacy requests', async () => {
+    const { createSocialPost } = await import('../app/lib/socialPostsClient.js');
+    const calls = stubFetch(() => okJson({ post_id: 'post-test' }));
+    const body = { publishNow: true, globalText: 'Test', idempotencyKey: 'test-key-123', accountIds: ['account'], media: [] };
+    await createSocialPost({ ...body, youtubeVisibility: 'private' });
+    assert.equal(JSON.parse(calls[0].init.body).youtubeVisibility, 'private');
+    await createSocialPost(body);
+    assert.equal('youtubeVisibility' in JSON.parse(calls[1].init.body), false);
+});

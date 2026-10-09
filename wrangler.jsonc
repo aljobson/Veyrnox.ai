@@ -150,6 +150,9 @@
     // menu link and /api/v1/social/*. Only "true" opens it. The publish
     // sweep is not gated, so anything already queued still finishes.
     "PUBLISH_ENABLED": "false",
+    // Private pilot allowlist is a Worker secret; absent leaves access closed.
+    // Migration 0241 is applied; the pilot composer defaults YouTube to Private.
+    "PUBLISH_YOUTUBE_VISIBILITY_ENABLED": "true",
     // First production release permits YouTube only; Publish remains off.
     "PUBLISH_RELEASED_NETWORKS": "youtube",
     // The Publish analytics sweep (lib/socialAnalyticsSweep.js). Only "true"
@@ -253,6 +256,8 @@
         "JEV_SUBMIT_ERRORS_MODE": "off",
         // Veyrnox Publish is open on staging for testing (see production).
         "PUBLISH_ENABLED": "true",
+        "PUBLISH_TESTER_AUTH_IDS": "",
+        "PUBLISH_YOUTUBE_VISIBILITY_ENABLED": "false",
         "PUBLISH_RELEASED_NETWORKS": "*",
         // Publish schema through 0192 provisioned on staging 2026-10-04.
         "PUBLISH_ANALYTICS_ENABLED": "true",
@@ -289,6 +294,7 @@
   // ------------------------------------------------------------------
   // Secrets (never here — `wrangler secret put <NAME>`), per ADR-0004
   // (Supabase auth + Postgres) and the shipped Phase 1 slices:
+  //   PUBLISH_TESTER_AUTH_IDS     verified Auth UUIDs for the private YouTube pilot
   //   SUPABASE_SERVICE_ROLE_KEY   PostgREST RPCs, bypasses RLS (packages/db/supabase-client.js)
   //   FAL_KEY                     fal.ai queue submit (packages/adapters/fal.js)
   //   FAL_WEBHOOK_USER_ID         our fal tenant id; webhook callbacks for any other are rejected

@@ -5,7 +5,6 @@ import { MobileMenu } from '../_components/MobileMenu';
 import { SiteSearch } from '../_components/SiteSearch';
 import { ThemeToggle } from '../_components/ThemeToggle';
 import { MediaTile } from '../_components/MediaTile';
-import { ShowcaseCredits } from '../_components/ShowcaseCredits';
 import { SHOWCASE_CLIPS } from '../_lib/showcase';
 import { NAV_CATEGORIES, FEATURE_CARDS, PRESETS, shelfName } from '../_lib/tokens';
 import { PriceSlip } from '../_components/PriceSlip';
@@ -111,7 +110,6 @@ export function FeaturedHeroCards({ catalog }) {
           );
         })}
       </div>
-      <ShowcaseCredits />
     </section>
   );
 }

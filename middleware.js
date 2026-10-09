@@ -21,7 +21,7 @@ import { recentMfaTimestamp } from './lib/cinema/strongAuth.js';
 import { NextResponse } from 'next/server';
 import { contentSecurityPolicy } from './lib/contentSecurityPolicy.mjs';
 import { readToken, validateClaims, verifyES256 } from './lib/supabaseJwt.js';
-import { isPublishApiPath, publishEnabled } from './lib/social/publishFeature.js';
+import { isPublishApiPath, publishShellAvailable, publishAllowed } from './lib/social/publishFeature.js';
 import { isUnknownStaticPage } from './lib/unknownStaticPage.js';
 
 export const config = {
@@ -73,8 +73,8 @@ export async function middleware(req) {
         return response;
     }
 
-    // Veyrnox Publish ships dark until PUBLISH_ENABLED is "true" (ISSUES P1).
-    if (isPublishApiPath(pathname) && !publishEnabled()) {
+    // No configured rollout: refuse before auth work. A pilot requires JWT verification below.
+    if (isPublishApiPath(pathname) && !publishShellAvailable()) {
         return jsonError(503, { error: 'publish_not_open', requestId });
     }
 
@@ -102,6 +102,10 @@ export async function middleware(req) {
 
     const claimError = validateClaims(claims, supabaseUrl);
     if (claimError) return reject(req, claimError, requestId);
+
+    if (isPublishApiPath(pathname) && !publishAllowed(claims.sub)) {
+        return jsonError(503, { error: 'publish_not_open', requestId });
+    }
 
     // Forward verified identity (inbound copies were blanked above).
     headers.set('x-veyrnox-auth-id', claims.sub);

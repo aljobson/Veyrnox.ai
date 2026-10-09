@@ -224,3 +224,29 @@ test('release restriction rejects an existing unreleased account before creating
         assert.equal(calls.some(c => c.name === 'create_social_post'), false);
     } finally { delete process.env.PUBLISH_RELEASED_NETWORKS; }
 });
+
+test('YouTube visibility fails closed while its migration switch is off', async () => {
+    stub();
+    const res = await POST(postRequest({ ...validBody(), youtubeVisibility: 'private' }));
+    assert.equal(res.status, 503);
+    assert.equal((await res.json()).error, 'youtube_visibility_not_open');
+    assert.deepEqual(calls, []);
+});
+
+test('YouTube visibility uses the atomic RPC and rejects unknown values', async () => {
+    process.env.PUBLISH_YOUTUBE_VISIBILITY_ENABLED = 'true';
+    try {
+        for (const visibility of ['private', 'unlisted', 'public']) {
+            stub({ create_social_post_with_youtube_visibility: { ok: true, post_id: postId } });
+            const res = await POST(postRequest({ ...validBody(), youtubeVisibility: visibility }));
+            assert.equal(res.status, 201);
+            assert.equal(calls.at(-1).name, 'create_social_post_with_youtube_visibility');
+            assert.equal(calls.at(-1).args.p_youtube_visibility, visibility);
+        }
+        for (const visibility of [null, '', 'PRIVATE', 'unknown', {}, 1]) {
+            stub();
+            assert.equal((await POST(postRequest({ ...validBody(), youtubeVisibility: visibility }))).status, 400);
+            assert.deepEqual(calls, []);
+        }
+    } finally { delete process.env.PUBLISH_YOUTUBE_VISIBILITY_ENABLED; }
+});

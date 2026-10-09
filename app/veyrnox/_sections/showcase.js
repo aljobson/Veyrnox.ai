@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import { MediaTile } from '../_components/MediaTile';
-import { ShowcaseCredits } from '../_components/ShowcaseCredits';
-import { SHOWCASE_CLIPS } from '../_lib/showcase';
+import { SHOWCASE_CLIPS, MODEL_SHOWCASE_KEYS } from '../_lib/showcase';
 import { wallShapes, tileClasses } from '../_lib/presetWall';
 import { WALL_PRESETS, presetHref, presetCredits, presetTitle, shelfName } from '../_lib/tokens';
 
@@ -46,7 +45,6 @@ export function PresetWall({ catalog }) {
           );
         })}
       </div>
-      <ShowcaseCredits />
     </section>
   );
 }
@@ -75,10 +73,19 @@ export function ModelShelf({ catalog }) {
       <div id="shelf" className="mt-12 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-12 gap-y-12">
         {groups.map((g) => (
           <div key={g.kind}>
-            <div className="flex items-baseline justify-between gap-3 border-b-2 border-vx-fg pb-2">
-              <h3 className="text-xl font-black">{g.label}</h3>
-              <span className="text-[13px] text-vx-fg-muted">{g.unit}</span>
-            </div>
+            <MediaTile
+              href="/models"
+              ariaLabel={`Explore ${g.label.toLowerCase()} models`}
+              clip={SHOWCASE_CLIPS[MODEL_SHOWCASE_KEYS[g.kind]]}
+              className="block rounded-2xl overflow-hidden mb-4"
+              mediaClassName="h-56"
+            >
+              <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/10 to-transparent" />
+              <div className="absolute inset-x-0 bottom-0 p-4 flex items-baseline justify-between gap-3 text-white">
+                <h3 className="text-xl font-black">{g.label}</h3>
+                <span className="text-[13px] text-white/85">{g.unit}</span>
+              </div>
+            </MediaTile>
             <ul className="mt-2 font-vx-mono text-[14px] vx-num">
               {g.rows.map((m) => (
                 <li key={m.id}>

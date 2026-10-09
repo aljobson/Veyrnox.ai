@@ -6,7 +6,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import vm from 'node:vm';
-import { LANDING_FILM, MAX_FILM_BYTES } from '../app/veyrnox/_lib/film.js';
+import { BREAKTHROUGH_FILM, LANDING_FILM, MAX_FILM_BYTES } from '../app/veyrnox/_lib/film.js';
 import { MODELS } from '../app/veyrnox/_lib/tokens.js';
 import { filmSourceHash } from '../scripts/landing-film/source-hash.mjs';
 
@@ -21,17 +21,21 @@ function filmPrices() {
     return JSON.parse(JSON.stringify(window.FilmPrices)).flatMap(([, rows]) => rows);
 }
 
-test('the film and its poster are in public/, same-origin, with the right extensions', () => {
-    assert.match(LANDING_FILM.video, /^\/film\/[a-z0-9-]+\.mp4$/);
-    assert.match(LANDING_FILM.poster, /^\/film\/[a-z0-9-]+\.jpg$/);
-    assert.ok(existsSync(`${PUBLIC}${LANDING_FILM.video}`), `${LANDING_FILM.video} is not in public/`);
-    assert.ok(existsSync(`${PUBLIC}${LANDING_FILM.poster}`), `${LANDING_FILM.poster} is not in public/`);
+test('the films and their posters are in public/, same-origin, with the right extensions', () => {
+    for (const film of [LANDING_FILM, BREAKTHROUGH_FILM]) {
+        assert.match(film.video, /^\/film\/[a-z0-9-]+\.mp4$/);
+        assert.match(film.poster, /^\/film\/[a-z0-9-]+\.jpg$/);
+        assert.ok(existsSync(`${PUBLIC}${film.video}`), `${film.video} is not in public/`);
+        assert.ok(existsSync(`${PUBLIC}${film.poster}`), `${film.poster} is not in public/`);
+    }
 });
 
-test('the film stays under the size cap', () => {
-    const { size } = statSync(`${PUBLIC}${LANDING_FILM.video}`);
-    assert.ok(size <= MAX_FILM_BYTES, `${LANDING_FILM.video} is ${size} bytes, over the ${MAX_FILM_BYTES} cap: encode it again`);
-    assert.ok(statSync(`${PUBLIC}${LANDING_FILM.poster}`).size <= 150 * 1024, 'the poster is over 150 KB');
+test('the films stay under the size cap', () => {
+    for (const film of [LANDING_FILM, BREAKTHROUGH_FILM]) {
+        const { size } = statSync(`${PUBLIC}${film.video}`);
+        assert.ok(size <= MAX_FILM_BYTES, `${film.video} is ${size} bytes, over the ${MAX_FILM_BYTES} cap: encode it again`);
+        assert.ok(statSync(`${PUBLIC}${film.poster}`).size <= 150 * 1024, `${film.poster} is over 150 KB`);
+    }
 });
 
 test('every price in the film matches the landing fallback list', () => {

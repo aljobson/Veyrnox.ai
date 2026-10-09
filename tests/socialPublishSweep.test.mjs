@@ -481,12 +481,13 @@ test('YouTube: an in-progress session uploads the whole small file in one chunk 
         claim_due_social_post_targets: async () => [youtubeTarget({
             access_token_enc: accessTokenEnc,
             provider_state: {
-                phase: 'uploading', session_uri: 'https://upload.example/session-1', total_bytes: 1000,
+                youtube_visibility: 'private', phase: 'uploading', session_uri: 'https://upload.example/session-1', total_bytes: 1000,
                 mime_type: 'video/mp4', bytes_confirmed: 0, started_at: new Date().toISOString(),
             },
         })],
         report_social_post_progress: async (body) => {
             assert.equal(body.p_provider_state.phase, 'processing');
+            assert.equal(body.p_provider_state.youtube_visibility, 'private');
             assert.equal(body.p_provider_state.video_id, 'video-1');
             return { ok: true };
         },
@@ -658,4 +659,49 @@ test('YouTube: an access token near expiry is refreshed before dispatch, and the
         assert.equal(sawBearer, 'Bearer yt-fresh-token');
         assert.ok(calls.includes('update_social_account_token'));
     });
+});
+
+test('YouTube preserves selected visibility through quota deferral, expired sessions and new upload initialization', async () => {
+    const accessTokenEnc = await encryptToken('yt-access-token', cryptoCfg);
+    for (const visibility of ['private', 'unlisted', 'public']) {
+        for (const stage of ['quota', 'expired', 'init']) {
+            const state = stage === 'expired'
+                ? { youtube_visibility: visibility, phase: 'uploading', session_uri: 'https://upload.example/dead', total_bytes: 1000, started_at: new Date().toISOString() }
+                : { youtube_visibility: visibility };
+            let progress;
+            await withFetch({
+                claim_due_social_post_targets: async () => [youtubeTarget({ access_token_enc: accessTokenEnc, provider_state: state })],
+                consume_youtube_upload_quota: async () => stage === 'quota' ? { ok: false, code: 'QUOTA_EXHAUSTED' } : { ok: true },
+                report_social_post_progress: async (body) => { progress = body.p_provider_state; return { ok: true }; },
+            }, async () => {
+                const real = globalThis.fetch;
+                globalThis.fetch = async (url, init) => {
+                    if (String(url) === 'https://upload.example/dead') return new Response('', { status: 404 });
+                    if (new URL(url).pathname === '/upload/youtube/v3/videos') {
+                        assert.equal(JSON.parse(init.body).status.privacyStatus, visibility);
+                        return new Response('', { status: 200, headers: { location: 'https://upload.example/new' } });
+                    }
+                    return real(url, init);
+                };
+                assert.equal((await runPublishSweep(asyncDeps)).errors, 0);
+                assert.equal(progress.youtube_visibility, visibility, stage);
+                if (stage === 'expired') assert.equal(progress.session_uri, undefined);
+            });
+        }
+    }
+});
+
+test('YouTube rejects invalid persisted visibility before calling upload or consuming quota', async () => {
+    const accessTokenEnc = await encryptToken('yt-access-token', cryptoCfg);
+    for (const visibility of ['invalid', null, 12]) {
+        let completed;
+        await withFetch({
+            claim_due_social_post_targets: async () => [youtubeTarget({ access_token_enc: accessTokenEnc, provider_state: { youtube_visibility: visibility } })],
+            complete_social_post_target: async (body) => { completed = body; return { ok: true }; },
+        }, async (calls) => {
+            assert.equal((await runPublishSweep(asyncDeps)).failed, 1);
+            assert.equal(completed.p_error, 'invalid_youtube_visibility');
+            assert.deepEqual(calls, ['claim_due_social_post_targets', 'complete_social_post_target']);
+        });
+    }
 });

@@ -25,7 +25,7 @@ const VIEW_THRESHOLD = 0.4;
 // scrolling a phone through the preset grid never decodes several at once.
 let activeTouchStop = null;
 
-export function MediaTile({ href, clip, mediaClassName = '', mediaStyle, className = '', style, children }) {
+export function MediaTile({ href, clip, mediaClassName = '', mediaStyle, className = '', style, ariaLabel, onClick, footer, children }) {
   const rootRef = useRef(null);
   const videoRef = useRef(null);
   const [failed, setFailed] = useState(false);
@@ -105,7 +105,7 @@ export function MediaTile({ href, clip, mediaClassName = '', mediaStyle, classNa
   const showVideo = clip && !failed;
 
   return (
-    <Link ref={rootRef} href={href} className={`group vx-tile ${className}`} style={style}>
+    <Link ref={rootRef} href={href} aria-label={ariaLabel} onClick={onClick} className={`group vx-tile ${className}`} style={style}>
       <div className={`relative overflow-hidden ${mediaClassName}`} style={mediaStyle}>
         {failed && clip?.poster && (
           <Image src={clip.poster} alt="" fill unoptimized className="object-cover" style={{ objectPosition: clip.objectPosition }} />
@@ -131,15 +131,16 @@ export function MediaTile({ href, clip, mediaClassName = '', mediaStyle, classNa
           />
         )}
         {children}
-        {clip?.source && (
+        {clip && (
           <span
-            title={`${clip.title} · ${clip.source}`}
+            title={clip.title}
             className="absolute left-3 top-3 max-w-[calc(100%-1.5rem)] rounded-full bg-black/60 px-2.5 py-1 text-[10px] font-semibold tracking-wide text-white backdrop-blur-sm"
           >
-            {clip.source} · Inspiration
+            Viral inspiration
           </span>
         )}
       </div>
+      {footer}
     </Link>
   );
 }
