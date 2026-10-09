@@ -17,6 +17,7 @@ const users = [];
 const admit = async (user, key = randomUUID(), inputs = { prompt: 'test' }, free = false) =>
     (await one('SELECT public.admit_fal_dispatch($1,$2,$3,$4,$4,$5,$6) AS r', [user, key, model, inputs, endpoint, free])).r;
 const start = async () => (await one('SELECT public.start_fal_dispatch() AS r')).r;
+const claim = async id => (await one('SELECT public.claim_fal_dispatch($1) AS r', [id])).r;
 const record = async (j, state, handle = null, token = j.attempt_token) =>
     (await one('SELECT public.record_fal_dispatch($1,$2,$3,$4) AS r', [j.job_id, token, state, handle])).r;
 const recover = async () => (await one('SELECT public.recover_fal_dispatch(25) AS r')).r;
@@ -36,7 +37,9 @@ async function check(name, run) {
     catch (e) { failed++; console.error(`  FAIL ${name}: ${e.message}`); }
 }
 try {
-    await pool.query(await readFile(new URL('../packages/db/schema/supabase/0230_fal_durable_dispatch.sql', import.meta.url), 'utf8'));
+    for (const file of ['0230_fal_durable_dispatch.sql', '0231_fal_targeted_claim.sql']) {
+        await pool.query(await readFile(new URL(`../packages/db/schema/supabase/${file}`, import.meta.url), 'utf8'));
+    }
     await pool.query(`INSERT INTO public.model_catalog
         (id,name,provider,provider_endpoint,modality,credits_5s,provider_cost_per_unit,cost_unit,gated_flag,active)
         VALUES ($1,'Dispatch test','fal',$2,'text-to-image',2,0.01,'per_generation',false,true)`, [model, endpoint]);
@@ -53,6 +56,71 @@ try {
         assert.equal((await record(claim, 'REJECTED')).ok, true);
         await recover();
         assert.equal(await balance(u), before);
+    });
+    await check('targeted claim selects only its reference and never reclaims STARTED or UNKNOWN', async () => {
+        const u = await user(), first = await admit(u), second = await admit(u);
+        const c = await claim(second.job_id);
+        assert.equal(c.disposition, 'CLAIMED');
+        assert.equal(c.job_id, second.job_id);
+        assert.equal(c.endpoint, endpoint);
+        assert.deepEqual(c.payload, { prompt: 'test' });
+        assert.equal((await dispatch(first.job_id)).state, 'READY');
+        assert.deepEqual(await claim(second.job_id), { disposition: 'INELIGIBLE' });
+        await record(c, 'UNKNOWN');
+        assert.deepEqual(await claim(second.job_id), { disposition: 'INELIGIBLE' });
+        await pool.query("SELECT public.ledger_refund($1,$2,2,'refund:test')", [second.job_id,u]);
+        const older = await start();
+        assert.equal(older.job_id, first.job_id);
+        assert.equal(older.disposition, undefined, 'cron keeps its existing response contract');
+        await record(older, 'REJECTED'); await recover();
+    });
+    await check('mixed cron and targeted races create exactly one attempt token', async () => {
+        const u = await user(), r = await admit(u);
+        const results = await Promise.all(Array.from({ length: 12 }, (_, i) => i % 2 ? start() : claim(r.job_id)));
+        const owned = results.filter(c => c?.job_id);
+        assert.equal(owned.length, 1);
+        assert.equal(owned[0].job_id, r.job_id);
+        assert.match(owned[0].attempt_token, /^[a-f0-9-]{36}$/);
+        assert.deepEqual(await claim(r.job_id), { disposition: 'INELIGIBLE' });
+        await record(owned[0], 'REJECTED'); await recover();
+    });
+    await check('locked job or outbox returns BUSY promptly without consuming its intent', async () => {
+        for (const table of ['jobs', 'fal_dispatch']) {
+            const u = await user(), r = await admit(u), locker = await pool.connect(), caller = await pool.connect();
+            try {
+                await locker.query('BEGIN');
+                await locker.query(table === 'jobs' ? 'SELECT id FROM public.jobs WHERE id=$1 FOR UPDATE'
+                    : 'SELECT job_id FROM public.fal_dispatch WHERE job_id=$1 FOR UPDATE', [r.job_id]);
+                await caller.query("SET statement_timeout='500ms'");
+                const result = (await caller.query('SELECT public.claim_fal_dispatch($1) AS r', [r.job_id])).rows[0].r;
+                assert.deepEqual(result, { disposition: 'BUSY' });
+                assert.equal((await dispatch(r.job_id)).state, 'READY');
+            } finally {
+                await locker.query('ROLLBACK'); locker.release();
+                await caller.query('RESET statement_timeout'); caller.release();
+            }
+            const c = await claim(r.job_id);
+            assert.equal(c.disposition, 'CLAIMED');
+            await record(c, 'REJECTED'); await recover();
+        }
+    });
+    await check('missing, legacy, expired and refunded references cannot acquire ownership', async () => {
+        assert.deepEqual(await claim(null), { disposition: 'MISSING' });
+        assert.deepEqual(await claim(randomUUID()), { disposition: 'MISSING' });
+        const u = await user();
+        const legacy = (await one("SELECT public.ledger_debit($1,$2,2,'debit:generation',$3,$4) AS r",
+            [u,randomUUID(),model,{prompt:'test'}])).r;
+        assert.deepEqual(await claim(legacy.job_id), { disposition: 'MISSING' });
+        assert.equal(await dispatch(legacy.job_id), undefined);
+        await pool.query("SELECT public.ledger_refund($1,$2,2,'refund:test')", [legacy.job_id,u]);
+        const r = await admit(u);
+        await pool.query("UPDATE public.jobs SET updated_at=now()-interval '14 minutes' WHERE id=$1", [r.job_id]);
+        assert.deepEqual(await claim(r.job_id), { disposition: 'EXPIRED' });
+        assert.equal((await dispatch(r.job_id)).state, 'READY');
+        assert.equal(await start(), null);
+        await pool.query("SELECT public.ledger_refund($1,$2,2,'refund:test')", [r.job_id,u]);
+        assert.deepEqual(await claim(r.job_id), { disposition: 'INELIGIBLE' });
+        await recover();
     });
     await check('changed inputs conflict, equivalent JSON key order replays', async () => {
         const u = await user(), key = randomUUID();
@@ -205,9 +273,10 @@ try {
     await check('outbox is forced RLS and internal RPCs reject browser roles', async () => {
         const table = await one("SELECT relrowsecurity,relforcerowsecurity FROM pg_class WHERE oid='public.fal_dispatch'::regclass");
         assert.deepEqual(table,{relrowsecurity:true,relforcerowsecurity:true});
+        assert.equal((await one("SELECT has_function_privilege('service_role','public.claim_fal_dispatch(uuid)','EXECUTE') AS p")).p, true);
         for (const role of ['anon','authenticated']) {
             assert.equal((await one("SELECT has_table_privilege($1,'public.fal_dispatch','SELECT,INSERT,UPDATE,DELETE,TRUNCATE') AS p",[role])).p,false);
-            for (const fn of ['admit_fal_dispatch(uuid,text,text,jsonb,jsonb,text,boolean)','start_fal_dispatch()',
+            for (const fn of ['admit_fal_dispatch(uuid,text,text,jsonb,jsonb,text,boolean)','start_fal_dispatch()', 'claim_fal_dispatch(uuid)',
                 'record_fal_dispatch(uuid,uuid,text,text)','recover_fal_dispatch(integer)']) {
                 assert.equal((await one('SELECT has_function_privilege($1,$2,\'EXECUTE\') AS p',[role,`public.${fn}`])).p,false);
             }
