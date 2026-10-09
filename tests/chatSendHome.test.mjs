@@ -208,7 +208,8 @@ test('opening a chat notes the press first, and a read that lands after another 
     // The chat could not be read: the person is back on the chat that was shown, and the notice stored for it is
     // shown after the failure's own words, never dropped. That covers one raised while they were on their way out,
     // and one that was on screen before the press: fail() has just written over it.
-    assert.match(open[1], /\} catch \(e\) \{ fail\(e\); if \(giveUp\(chatView\.current, id\)\) \{ const kept = waiting\(chatView\.current\.shown\); if \(kept\) setError\(\(was\) => \(was \? `\$\{was\} \$\{kept\}` : kept\)\); \} return false; \}$/);
+    // When the two are the same words (a stored notice with no code of its own reads as the general failure), they are said once.
+    assert.match(open[1], /\} catch \(e\) \{ fail\(e\); if \(giveUp\(chatView\.current, id\)\) \{ const kept = waiting\(chatView\.current\.shown\); if \(kept\) setError\(\(was\) => \(was && was !== kept \? `\$\{was\} \$\{kept\}` : kept\)\); \} return false; \}$/);
 });
 
 test('the screen says when the chat page is left, so an ending that lands afterwards changes nothing', () => {

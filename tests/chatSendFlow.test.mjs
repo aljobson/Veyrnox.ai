@@ -9,7 +9,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { NEW_CHAT } from '../app/veyrnox/_lib/chatLocal.js';
+import { NEW_CHAT, addToDraft, clearNotice, readDraft, readNotice, writeDraft, writeNotice } from '../app/veyrnox/_lib/chatLocal.js';
 import { loadFailure } from '../app/veyrnox/_lib/chatScreen.js';
 import { lostNotice } from '../app/veyrnox/_lib/chatStop.js';
 import { ask, forget, land, leave, newChatView, onScreen, sendHome } from '../app/veyrnox/_lib/chatSendHome.js';
@@ -24,13 +24,17 @@ class GatewayError extends Error {
 const stopped = () => Object.assign(new Error('aborted'), { name: 'AbortError' });
 const A = { id: 'chat-a', model_id: 'm' };
 const TEXT = 'Describe a lighthouse.';
+const ME = 'user-a';
+const memory = () => { const m = new Map(); return { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, v), removeItem: (k) => m.delete(k), key: (i) => [...m.keys()][i], get length() { return m.size; } }; };
+/** What the screen reads when a chat arrives on it after a page reload: its stored draft and its stored notice. */
+const afterReload = (storage, chat) => ({ box: readDraft(storage, ME, chat), notice: readNotice(storage, ME, chat) });
 
 /**
  * One send. `turn` plays the server: it gets sendTurn's arguments and the `person`, emits events, and returns or throws.
  * `person` moves about the screen the way the real one does: a press notes the chat asked for, and it is shown when
  * its messages arrive.
  */
-async function run({ active = null, turn, settle = 'pending', listDown = false, images = [], whileMaking = () => {}, kept = {}, text = TEXT }) {
+async function run({ active = null, turn, settle = 'pending', listDown = false, images = [], whileMaking = () => {}, kept = {}, text = TEXT, storage = null }) {
     const view = newChatView();
     if (active) { ask(view, active.id); land(view, active.id); }
     const log = { notices: [], box: [], saved: {}, added: {}, opened: [], deleted: [], activeSet: [], imagesCleared: 0, refreshed: 0, quietReads: 0, failures: [], kept: { ...kept }, keptWith: {}, dropped: [] };
@@ -67,6 +71,11 @@ async function run({ active = null, turn, settle = 'pending', listDown = false, 
         chatView: { current: view }, saveDraft: (id, t) => { log.saved[id] = t; }, addDraft: (id, t) => { log.added[id] = t; },
         keepNotice: (id, code, extra) => { log.kept[id] = code; log.keptWith[id] = extra; },
         dropNotice: (id) => { log.dropped.push(id); delete log.kept[id]; },
+        // With `storage`, the four go to the real store instead, written the way the screen writes it (ChatWorkspace.js).
+        ...(storage && {
+            saveDraft: (id, t) => writeDraft(storage, ME, id, t), addDraft: (id, t) => addToDraft(storage, ME, id, t),
+            keepNotice: (id, code, extra) => writeNotice(storage, ME, id, code, extra), dropNotice: (id) => clearNotice(storage, ME, id),
+        }),
     });
     await send();
     return { log, view, bubbles: () => onScreenMessages.map((m) => `${m.role}:${m.status}`), kept: () => ({ ...log.kept }) };
@@ -292,6 +301,50 @@ test('a reply that was saved with a stream error: its notice is on screen for th
     const nothing = async ({ onEvent }) => { onEvent('start', { job_id: 'j' }); onEvent('error', { error: 'provider_cut_off' }); onEvent('done', { status: 'failed' }); return { replay: false }; };
     const back = await run({ active: A, turn: nothing });
     assert.deepEqual([back.log.notices, back.log.box, back.kept()], [[null, 'provider_cut_off'], ['', TEXT], { 'chat-a': 'provider_cut_off' }]);
+});
+
+test('a chat made for the message and kept: its text and its notice are both under the new chat, not under New chat', async () => {
+    // Sent from a chat that has not started, Stop before any text, not settled: the chat is kept for a reply that may still land.
+    const { log, kept } = await run({ active: null, turn: stopBeforeText(), settle: 'pending' });
+    assert.deepEqual([log.activeSet, log.deleted, log.dropped], [['made'], [], [NEW_CHAT]]);
+    assert.deepEqual([log.saved, kept(), log.notices], [{ made: TEXT }, { made: 'stop_unsure' }, [null, 'stop_unsure']]);
+    // The same with another chat opened first: neither is on screen, both wait under the new chat.
+    const away = await run({ active: null, turn: stopBeforeText(toB), settle: 'pending' });
+    assert.deepEqual([away.log.added, away.kept(), away.log.notices], [{ made: TEXT }, { made: 'stop_unsure' }, [null]]);
+});
+
+// ---- through the real store: what a page reload finds ----
+
+test('after a reload the chat has its text and its notice: Stop before any text, in the chat and from another', async () => {
+    for (const meanwhile of [undefined, toB]) {
+        const storage = memory();
+        await run({ active: A, turn: stopBeforeText(meanwhile), settle: 'pending', storage });
+        assert.deepEqual(afterReload(storage, 'chat-a'), { box: TEXT, notice: { code: 'stop_unsure' } }, 'the money case: never the text without the warning');
+        assert.deepEqual(afterReload(storage, 'chat-b'), { box: '', notice: null }, 'and neither in another chat');
+        // Sent again and it runs to its end: the warning is gone, and stays gone.
+        await run({ active: A, turn: reply(), storage });
+        assert.equal(afterReload(storage, 'chat-a').notice, null);
+    }
+});
+
+test('after a reload a refusal still names its price, and a chat that is gone leaves both under New chat', async () => {
+    const storage = memory();
+    await run({ active: null, turn: refused(new GatewayError('no', { status: 402, code: 'insufficient_balance' })), storage });
+    assert.deepEqual(afterReload(storage, NEW_CHAT), { box: TEXT, notice: { code: 'insufficient_balance', credits: 2 } });
+    assert.deepEqual(afterReload(storage, 'made'), { box: '', notice: null }, 'nothing under the chat that was made for it and deleted');
+    // A failure with no code leaves the general notice with the text, never nothing.
+    const bare = memory();
+    await run({ active: A, turn: refused(new Error('boom')), storage: bare });
+    assert.deepEqual(afterReload(bare, 'chat-a'), { box: TEXT, notice: { code: 'unknown' } });
+});
+
+test('after a reload a notice that came with no text is there too, and one that was never kept is not', async () => {
+    const storage = memory();
+    await run({ active: A, turn: stopAfterText(), settle: 'pending', storage });
+    assert.deepEqual(afterReload(storage, 'chat-a'), { box: '', notice: { code: 'stop_saving' } });
+    const clean = memory();
+    await run({ active: A, turn: reply(), storage: clean });
+    assert.deepEqual(afterReload(clean, 'chat-a'), { box: '', notice: null });
 });
 
 test('Stop after text, still being saved: the notice is kept with the chat, and no text is given back', async () => {

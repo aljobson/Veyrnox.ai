@@ -142,7 +142,7 @@ export function ChatWorkspace() {
       if (chatView.current.asked !== id) { if (chatView.current.shown === id) setMessages(r.messages); return false; }
       setPersonaId(''); setActive(r.thread); setSkillId(''); setMessages(r.messages); setInstr(r.thread.system_prompt || ''); land(chatView.current, id); setError(waiting(id)); setDrawer(false);
       setText(readDraft(store(), getStoredUserId(), r.thread.id)); setStars(readStars(store(), getStoredUserId(), r.thread.id)); setStarredOnly(false); return true;
-    } catch (e) { fail(e); if (giveUp(chatView.current, id)) { const kept = waiting(chatView.current.shown); if (kept) setError((was) => (was ? `${was} ${kept}` : kept)); } return false; }
+    } catch (e) { fail(e); if (giveUp(chatView.current, id)) { const kept = waiting(chatView.current.shown); if (kept) setError((was) => (was && was !== kept ? `${was} ${kept}` : kept)); } return false; }
   };
   // A chat that has not started. A notice waits for it too: one about a message that was sent before a chat was made, or whose chat no longer exists.
   const clear = () => { setPersonaId(''); setActive(null); setSkillId(''); setMessages([]); setInstr(''); land(chatView.current, NEW_CHAT); setError(waiting(NEW_CHAT)); setDrawer(false); setText(readDraft(store(), getStoredUserId(), NEW_CHAT)); setStars([]); setStarredOnly(false); };

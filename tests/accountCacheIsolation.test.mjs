@@ -64,11 +64,13 @@ test('a different user signing in finds no chat text from the last one', () => {
   clearSession();
 });
 
-test('refreshing the same user\'s session keeps their draft', () => {
+test('refreshing the same user\'s session keeps their draft and the notice beside it', () => {
   adoptSession(session('alice'));
   writeDraft(localStorage, getStoredUserId(), NEW_CHAT, 'still typing');
+  writeNotice(localStorage, getStoredUserId(), NEW_CHAT, 'stop_unsure');
   adoptSession(session('alice'));
   assert.equal(readDraft(localStorage, getStoredUserId(), NEW_CHAT), 'still typing');
+  assert.deepEqual(readNotice(localStorage, getStoredUserId(), NEW_CHAT), { code: 'stop_unsure' }, 'an hourly token refresh must not take the warning away from the text');
   clearSession();
 });
 
