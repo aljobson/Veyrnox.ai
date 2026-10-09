@@ -280,31 +280,46 @@ const CINEMA_ROUTES = [
     ['cinema pass/refund POST', '../app/api/v1/admin/cinema/pass/refund/route.js', 'POST', '/api/v1/admin/cinema/pass/refund', { pass_id: TITLE, reason: 'Duplicate Pass charge' }],
 ];
 
+/** What a test logged through console.error: every line, and the Access gate's own. */
+function errorLog(t) {
+    const all = [];
+    t.mock.method(console, 'error', (...a) => all.push(a.join(' ')));
+    return { all, access: () => all.filter((line) => line.startsWith('[access]')) };
+}
+
 for (const route of CINEMA_ROUTES) {
     test(`${route[0]}: an assertion issued to a service token is refused, before Supabase`, async (t) => {
         t.mock.method(console, 'info', () => {});
+        const said = errorLog(t);
         const k = await keypair();
         const reached = stubNetwork([k.jwk], () => Response.json(CINEMA_ANSWER));
+        const assertion = await mint(k, {}, SERVICE_TOKEN);
         await withEnv({ ...SUPABASE, ...ACCESS, ...CINEMA_ON }, async () => {
-            const res = await call(route, { ...cinemaAdmin(), 'cf-access-jwt-assertion': await mint(k, {}, SERVICE_TOKEN) });
+            const res = await call(route, { ...cinemaAdmin(), 'cf-access-jwt-assertion': assertion });
             assert.deepEqual([res.status, (await res.json()).error], [403, 'access_required']);
         });
         assert.deepEqual(reached, []);
+        // The refusal is logged by kind, with nothing from the assertion.
+        assert.deepEqual(said.access(), ['[access] refused: not_a_login']);
+        for (const secret of [assertion, ...assertion.split('.'), SERVICE_TOKEN.common_name]) assert.ok(!said.all.join('\n').includes(secret));
     });
 
     test(`${route[0]}: a person's login passes the door`, async (t) => {
         t.mock.method(console, 'info', () => {});
         const k = await keypair();
         const reached = stubNetwork([k.jwk], () => Response.json(CINEMA_ANSWER));
+        const said = errorLog(t);
         await withEnv({ ...SUPABASE, ...ACCESS, ...CINEMA_ON }, async () => {
             const res = await call(route, { ...cinemaAdmin(), 'cf-access-jwt-assertion': await mint(k) });
             assert.equal(res.status, 200);
         });
         assert.ok(reached.length >= 2 && reached.every((u) => u.startsWith('https://db.test/')), reached.join(' '));
+        assert.deepEqual(said.access(), []);
     });
 
     test(`${route[0]}: an assertion that does not verify, or none, is still refused`, async (t) => {
         t.mock.method(console, 'info', () => {});
+        const said = errorLog(t);
         const k = await keypair();
         const reached = stubNetwork([k.jwk], () => Response.json(CINEMA_ANSWER));
         const bad = [undefined, 'not.a.jwt', await mint(await keypair('kid-1')), await mint(k, { aud: ['b'.repeat(64)] })];
@@ -315,6 +330,10 @@ for (const route of CINEMA_ROUTES) {
             }
         });
         assert.deepEqual(reached, []);
+        assert.deepEqual(said.access(), [
+            '[access] refused: no assertion on a Cinema administrator request',
+            '[access] refused: malformed', '[access] refused: signature', '[access] refused: audience',
+        ]);
     });
 }
 
