@@ -1,6 +1,6 @@
 # ADR 0076 — Durable fal image dispatch
 
-Status: Proposed 2026-10-08; built behind disabled flags. Local verification complete; staging and activation pending.
+Status: Proposed 2026-10-08; local verification and staging database/normal runner smoke complete. Authenticated staging acceptance and production activation pending.
 
 ## Problem and scope
 
@@ -77,7 +77,7 @@ Full fresh-schema replay and replaying 0230 succeeded. Real Postgres acceptance 
 
 ## Staging acceptance record
 
-All staging cases below are pending. Record the deployed revision, applied migration name, test account, job/attempt IDs, HTTP responses, database state, ledger effects, and redacted logs for each. Use an isolated staging database and a controlled adapter for fault injection; never redirect production fal traffic or expose an unsigned callback shortcut. A live provider smoke test needs a bounded, agreed spend.
+Partial staging evidence is recorded in the [8 October database record](../architecture/fal-dispatch-staging-2026-10-08.md) and [9 October live runner record](../architecture/fal-dispatch-staging-2026-10-09.md). The full cases below remain acceptance requirements; a private-RPC smoke does not establish signed user HTTP or Library behavior. Record the deployed revision, applied migration name, test account, job/attempt IDs, HTTP responses, database state, ledger effects, and redacted logs for each. Use an isolated staging database and a controlled adapter for fault injection; never redirect production fal traffic or expose an unsigned callback shortcut. A live provider smoke test needs a bounded, agreed spend.
 
 | Case | Required observation |
 | --- | --- |

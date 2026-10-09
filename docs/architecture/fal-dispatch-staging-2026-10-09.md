@@ -53,3 +53,18 @@ Dispatch heartbeat at 05:06:18.141546 had `last_ok:true`. Refreshed recovery cou
 ## Outstanding acceptance
 
 The browser-skill daemon was healthy but had no connected browser. Authenticated gateway responses, Studio/Library behavior, full callback redelivery and failure injection, free-allowance activation, queue-load latency, and the twenty-four-hour clean monitoring gate remain pending. A single normal completion cannot establish these guarantees. Production activation requires the remaining ADR 0076 checks.
+
+## Follow-up database and configuration checks
+
+PR 661's build, hard-wall, verification, migration-ledger, and Workers build checks passed on `0e2b1c75`. The ledger acceptance job was skipped because this PR changes configuration and evidence rather than ledger code. A further focused run passed 46 dispatch, admission, provider-outcome, signed-callback, and recovery-health tests.
+
+Two additional staging transactions passed assertions and explicitly rolled back, making no provider calls:
+
+- **Conflicting handle isolation:** admitted two database-only jobs, claimed each once, and saved synthetic ACCEPTED evidence. One job already had a different synthetic handle through `job_submitted`. Recovery reported one failure among two processed jobs, projected the healthy handle, retained the conflicting evidence without overwriting the job handle, and enforced its retry cooldown. Credit reconciliation remained clean inside the transaction.
+- **Free allowance refusal:** temporarily configured one daily allowance and a ten-generation budget on the catalog row, admitted one free job, recorded REJECTED evidence, and recovered twice. The job became REFUNDED, its allowance became RETURNED, and no job ledger entry or balance change occurred. Terminal replay returned the same refunded job. The temporary catalog changes and fixture were rolled back. The first setup attempt was rejected by the existing $1 daily provider-budget constraint; the corrected budget stayed within it.
+
+The missing staging `TOP_UP_BACKFILL_TOKEN` was created with 32 cryptographically random bytes and passed directly to Wrangler over stdin. Its value was neither logged nor saved to disk. Secret installation deployed version `f2f74919-93bd-4a7f-9792-9ce769f2db74` at 05:16:36 UTC, preserving every plain-text binding and adding only that secret name. The existing Stripe key bindings were present; no credential values were inspected. Staging had one credited Top-up and no pending Top-ups before the change. Production was not changed.
+
+Post-rollback reads confirmed zero synthetic fixture jobs, the original single live dispatch row, and the catalog allowance restored to zero. An unsigned completion POST returned HTTP 401. These checks do not prove early signed callback redelivery.
+
+The next scheduled pass verified the configuration repair: `top_up_backfill` and `fal_dispatch` both recorded `last_ok:true` at 05:21:20 UTC. The refreshed 05:21:47 recovery snapshot had no unhealthy tasks and zero for every queue counter. Balance, Free Credit, and Subscription Credit reconciliation again returned zero differences. This is the first recorded globally clean staging snapshot after the repair; the twenty-four-hour gate remains pending and needs continued evidence through at least 10 October 05:21:47 UTC. Empty-batch top-up success does not validate Stripe payment recovery under a fault.
