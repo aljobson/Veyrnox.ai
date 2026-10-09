@@ -1,7 +1,6 @@
 'use client';
 import { useState } from 'react';
 import { PresetCard } from './PresetCard';
-import { ShowcaseCredits } from './ShowcaseCredits';
 import { PRESET_CATEGORIES, templatesIn } from '../_lib/tokens';
 import { templateById } from '../_lib/templates';
 import { useCatalog } from '../_lib/useCatalog';
@@ -42,7 +41,6 @@ export function PresetGallery({ size = 'lg', columns = 'lg:grid-cols-3' }) {
           <PresetCard key={p.id} preset={p} catalog={models} size={size} />
         ))}
       </div>
-      <ShowcaseCredits />
     </>
   );
 }

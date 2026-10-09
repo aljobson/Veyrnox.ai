@@ -131,12 +131,12 @@ export function MediaTile({ href, clip, mediaClassName = '', mediaStyle, classNa
           />
         )}
         {children}
-        {clip?.source && (
+        {clip && (
           <span
-            title={`${clip.title} · ${clip.source}`}
+            title={clip.title}
             className="absolute left-3 top-3 max-w-[calc(100%-1.5rem)] rounded-full bg-black/60 px-2.5 py-1 text-[10px] font-semibold tracking-wide text-white backdrop-blur-sm"
           >
-            {clip.source} · Inspiration
+            Viral inspiration
           </span>
         )}
       </div>

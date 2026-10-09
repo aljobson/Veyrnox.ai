@@ -6,8 +6,10 @@ and [Higgsfield](https://higgsfield.ai/) on 9 October 2026. This replaces the
 previous requirement to use only clips generated on Veyrnox.
 
 These clips are visual inspiration, rather than output from the model or
-preset linked by the tile. Each tile displays a source badge, and each grid
-links to both source sites. Model links, prompts and live credit prices still
+preset linked by the tile. Each tile displays a generic “Viral inspiration”
+badge. The owner requested removal of visible SYNTX and Higgsfield labels and
+page credits on 9 October 2026; provenance remains recorded here and in the
+manifest. Model links, prompts and live credit prices still
 come from the existing catalog and templates.
 
 `app/veyrnox/_lib/showcase.js` maps all five `FEATURE_CARDS` keys and all
