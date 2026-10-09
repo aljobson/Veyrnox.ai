@@ -231,6 +231,7 @@ export function ChatWorkspace() {
     if (!content || busy || sendingRef.current || !model || imagesBlocked) return;
     sendingRef.current = true; setBusy(true); setError(null); setText('');
     let thread = active; let created = false; const pending = `pending-${Date.now()}`;
+    let started = false; // the `start` event arrived: the Credits have been debited
     try {
       // Images go to storage first, before anything is charged: a failed upload costs nothing.
       // A Library image is already in storage; the server checks it is the caller's own, so it is sent by id.
@@ -254,7 +255,7 @@ export function ChatWorkspace() {
       const r = await sendTurn({
         threadId: thread.id, text: content, key: makeIdempotencyKey(), options: chosen, attachments: refs, signal: ac.signal,
         onEvent: (ev, d) => {
-          if (ev === 'start') setProgress(null);
+          if (ev === 'start') { started = true; setProgress(null); }
           if (ev === 'progress') setProgress(d);
           if (ev === 'delta') setMessages((m) => m.map((x) => (x.id === pending ? { ...x, content: x.content + d.text } : x)));
           if (ev === 'error') streamError = d.error;
@@ -276,7 +277,13 @@ export function ChatWorkspace() {
       await refreshThreads();
     } catch (e) {
       if (e?.name === 'AbortError') { if (thread) await open(thread.id); await refreshThreads(); }
-      else {
+      else if (started) {
+        // The stream broke after the Credits moved. The server treats a dropped connection like Stop: text that appeared is
+        // kept and charged. So the chat is kept and reloaded, never deleted, and the message is not offered for sending again.
+        await open(thread.id); await refreshThreads();
+        setMessages((m) => m.filter((x) => x.id !== pending || x.content)); // if the reload failed too, nothing is left saying Thinking
+        setError(chatErrorCopy('connection_lost'));                          // last: open() clears the notice
+      } else {
         setMessages((m) => m.filter((x) => x.id !== pending && x.id !== `u-${pending}`)); setText(content);
         if (e instanceof GatewayError && e.code === 'insufficient_balance') setError(chatErrorCopy(e.code, { credits: price }));
         else if (e instanceof Error && e.message === 'image_unreadable') setError(chatErrorCopy('image_unreadable'));

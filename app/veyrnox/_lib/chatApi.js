@@ -61,6 +61,7 @@ export function chatErrorCopy(code, { credits } = {}) {
     case 'turn_not_saved': return 'We could not save that reply, so you will not be charged.';
     case 'reply_not_saved': return 'We could not save that reply to the chat. You received it, so its Credits were used.';
     case 'provider_cut_off': case 'provider_dropped': return 'The reply was cut off. No Credits were used.';
+    case 'connection_lost': return 'The connection dropped before the reply finished. It may have used Credits. Check this chat before you send again.';
     default: return code && code.startsWith('provider_')
       ? 'The model did not finish. No Credits were used. Try again, or pick another model.'
       : "That didn't work. Try again.";
