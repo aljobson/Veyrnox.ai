@@ -12,6 +12,7 @@ import {
     noticeWhileCaptchaWaits,
     turnstileErrorCode,
     turnstileFailureCopy,
+    turnstileReportCode,
 } from '../app/lib/turnstileFailure.js';
 
 // A Turnstile check that fails in the browser never reaches Supabase, so it is
@@ -210,10 +211,22 @@ test('a browser Turnstile refuses is told so, without advice that cannot help', 
     assert.doesNotMatch(UNSUPPORTED, /reload|retry|tick/i);
 });
 
-test('"unsupported" is not a Turnstile code, so it cannot be logged or reported as itself', () => {
+test('"unsupported" is not a Turnstile code: the widget cannot make the word', () => {
+    // Whatever the widget hands to error-callback goes through this first.
     assert.equal(turnstileErrorCode(CAPTCHA_UNSUPPORTED), 'unknown');
     assert.notEqual(CAPTCHA_UNSUPPORTED, CAPTCHA_WAITING);
     assert.equal(turnstileFailureCopy(CAPTCHA_UNSUPPORTED), GENERIC);
+});
+
+test('a report may hold a code, "unknown" or "unsupported", and nothing else', () => {
+    // ADR-0026 amendment 5: one rule for the browser and the route.
+    assert.equal(turnstileReportCode(CAPTCHA_UNSUPPORTED), 'unsupported');
+    for (const raw of ['600010', 600010, ' 300030 ', 'unknown', undefined, null, '', 'crashed', {}, [], '6'.repeat(40),
+        'someone@example.com', '0.AbCdEf-token-shaped_string.123456', 'Unsupported', 'unsupported ', ' unsupported', 'unsupportedx']) {
+        assert.equal(turnstileReportCode(raw), turnstileErrorCode(raw), String(raw));
+    }
+    // A wait is still not a failure and has no word of its own in the count.
+    assert.equal(turnstileReportCode(CAPTCHA_WAITING), 'unknown');
 });
 
 test('an unsupported browser shows straight away, by the rule a failure follows', () => {
@@ -230,8 +243,9 @@ test('an unsupported browser shows straight away, by the rule a failure follows'
     assert.equal(noticeAfterCaptchaToken(unsupported), null);
 });
 
-test('the widget says when Turnstile refuses the browser, and does nothing else then', () => {
-    assert.match(turnstile, /"unsupported-callback": \(\) => onUnsupported\(\),/);
+test('the widget says when Turnstile refuses the browser, and counts it', () => {
+    // Counted since amendment 5. The dialog is told whatever happens to the report.
+    assert.match(turnstile, /"unsupported-callback": \(\) => \{\s*reportTurnstileFailure\(CAPTCHA_UNSUPPORTED\);\s*onUnsupported\(\);\s*\},/);
     assert.doesNotMatch(turnstile, /onUnsupported\([^)]/, 'onUnsupported carries nothing');
     assert.match(turnstile, /export function Turnstile\(\{ onToken, onError, onFailure, onWaiting, onUnsupported, resetKey \}\)/);
 });

@@ -1,9 +1,10 @@
 // Tells our own server that Turnstile's check failed in this browser, so the
 // owner can count failures (ADR-0026 amendment 2). The body is the error code
-// and nothing else. The request carries no session, and names our site as
-// where it came from, not the page.
+// and nothing else, or the one word for a browser Turnstile refuses
+// (amendment 5). The request carries no session, and names our site as where
+// it came from, not the page.
 
-import { TURNSTILE_FAILURE_PATH, turnstileErrorCode } from './turnstileFailure.js';
+import { TURNSTILE_FAILURE_PATH, turnstileReportCode } from './turnstileFailure.js';
 
 // Turnstile retries by itself and a reopened dialog fails the same way, so a
 // code is reported once per page load. The cap bounds what one page can send
@@ -14,12 +15,12 @@ const reported = new Set();
 /**
  * Fire and forget. Returns nothing and never throws: a report that cannot be
  * sent, is refused or is rate limited is dropped, and is not tried again.
- * @param {unknown} raw Turnstile's error code
+ * @param {unknown} raw Turnstile's error code, or CAPTCHA_UNSUPPORTED
  * @returns {void}
  */
 export function reportTurnstileFailure(raw) {
     try {
-        const code = turnstileErrorCode(raw);
+        const code = turnstileReportCode(raw);
         if (reported.has(code) || reported.size >= MAX_REPORTS_PER_PAGE_LOAD) return;
         reported.add(code);
         fetch(TURNSTILE_FAILURE_PATH, {

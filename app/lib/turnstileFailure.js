@@ -39,7 +39,8 @@ const WAITING_COPY = "The security check above is waiting for you to tick its bo
 // Not one of Turnstile's codes either. Turnstile refuses a browser that is
 // out of date or unsupported through unsupported-callback and reports no
 // error (ADR-0026 amendment 4). Reloading gives the same answer and nothing
-// retries, so the wording says neither. Not logged and not reported.
+// retries, so the wording says neither. It is counted under this word
+// (amendment 5), and it writes no console line.
 export const CAPTCHA_UNSUPPORTED = 'unsupported';
 const UNSUPPORTED_COPY = "The security check can't run in this browser: it is out of date or not supported. Update the browser, or open veyrnox.ai in a different one. Continue with Google doesn't need the check.";
 
@@ -52,6 +53,18 @@ const UNSUPPORTED_COPY = "The security check can't run in this browser: it is ou
 export function turnstileErrorCode(raw) {
     const text = typeof raw === 'number' || typeof raw === 'string' ? String(raw).trim() : '';
     return /^\d{3,9}$/.test(text) ? text : 'unknown';
+}
+
+/**
+ * What a report to our own server may hold (ADR-0026 amendment 5): what
+ * turnstileErrorCode returns, or the one word of our own that is counted.
+ * The browser sends only this and the route accepts nothing else. The widget
+ * cannot make the word: its error codes go through turnstileErrorCode first.
+ * @param {unknown} raw
+ * @returns {string}
+ */
+export function turnstileReportCode(raw) {
+    return raw === CAPTCHA_UNSUPPORTED ? CAPTCHA_UNSUPPORTED : turnstileErrorCode(raw);
 }
 
 /**
