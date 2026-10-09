@@ -74,3 +74,26 @@ A guarded update permits only the known old/new cost-credit pairs and exact
 fal route/unit; unexpected drift aborts. Production application uses the
 owner-approved workflow (ADR-0023). No additional paid generation is needed
 for this pricing-only correction.
+
+## Update 2026-10-09 — ACE-Step cost correction (0236)
+
+The table above records `ace-step` at $0.01 and 69.7%. The cost was low.
+The [official fal endpoint page](https://fal.ai/models/fal-ai/ace-step)
+lists **$0.0002 per second of generated audio**, and our capability record
+pins a 60-second track, so one generation costs fal's rate times 60:
+**$0.012**. Migration 0236 corrects the recorded cost from $0.0100 to
+$0.0120.
+
+This is not a fal price change: the rate was the same when the record was
+written on 2026-09-22. The figure comes from fal's published rate, not from
+a fal invoice.
+
+The customer price stays at **1 credit**, since `ceil(0.012 / 0.0165) = 1`.
+At the $0.033 reference credit rate the margin is **63.6%**, not 69.7%,
+still above the 50% floor. The static reference catalog matches. The route,
+the pinned length, the unit and the activation state are preserved.
+
+A guarded update permits only the known old/new cost on the exact fal
+route and unit; unexpected drift aborts. Production application uses the
+owner-approved workflow (ADR-0023). No paid generation is needed for this
+cost-only correction.
