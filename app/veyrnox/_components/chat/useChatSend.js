@@ -89,7 +89,7 @@ export function useChatSend({ text, setText, model, imagesBlocked, chosen, price
         if (streamError) tell(chatErrorCopy(streamError));
       } else {
         att.clear();                                 // sent: the images are spent, so the next reply starts clean
-        if (streamError) tell(chatErrorCopy(streamError));
+        if (streamError && at().here) tell(chatErrorCopy(streamError)); // on screen only: the reload clears it, so there is nothing to hold
         await reload();                              // the saved messages, with their real status and price
         if (streamError === 'reply_not_saved') tell(chatErrorCopy(streamError)); // open() clears the notice, or replaces it when the chat is gone
       }

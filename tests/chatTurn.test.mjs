@@ -322,10 +322,8 @@ test('the screen has words for a reply that was charged but not saved, and they 
     const copy = /case 'reply_not_saved': return '([^']+)';/.exec(src);
     assert.ok(copy, 'chatErrorCopy knows reply_not_saved');
     assert.match(copy[1], /Credits were used/); assert.doesNotMatch(copy[1], /No Credits|not be charged/);
-    // send() lives in the useChatSend hook since it moved out of ChatWorkspace.js to keep that file under 500 lines.
-    const screen = readFileSync(new URL('../app/veyrnox/_components/chat/useChatSend.js', import.meta.url), 'utf8');
-    // reload() and tell() are open() and setError() while the chat is on screen (tests/chatSendHome.test.mjs).
-    assert.match(screen, /await reload\(\);[^\n]*\n\s*if \(streamError === 'reply_not_saved'\) tell\(chatErrorCopy\(streamError\)\)/, 'shown after the reload, which would otherwise clear it');
+    const screen = readFileSync(new URL('../app/veyrnox/_components/chat/useChatSend.js', import.meta.url), 'utf8'); // send() moved here from ChatWorkspace.js
+    assert.match(screen, /await reload\(\);[^\n]*\n\s*if \(streamError === 'reply_not_saved'\) tell\(chatErrorCopy\(streamError\)\)/, 'shown after the reload, which would otherwise clear it'); // reload() and tell(): open() and setError() while its chat is on screen (tests/chatSendHome.test.mjs)
 });
 
 test('a message with a character that cannot be stored is refused before any money moves', async () => {

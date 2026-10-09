@@ -240,6 +240,14 @@ test('a turn that never started gives the text back the same way, and its notice
     assert.equal(send.split('fail(e)').length - 1, 1, 'fail() is reached through failed() only');
 });
 
+test('what waits for a chat that is not on screen is what the person would have been left with had they stayed', () => {
+    // After a reply that was saved, the screen sets the stream's notice and then reads the chat again, which clears it
+    // (only "charged but not stored" is set again afterwards). So there is nothing to hold from the first of those.
+    assert.match(send, /\n {8}att\.clear\(\);[^\n]*\n {8}if \(streamError && at\(\)\.here\) tell\(chatErrorCopy\(streamError\)\);[^\n]*\n {8}await reload\(\);[^\n]*\n {8}if \(streamError === 'reply_not_saved'\) tell\(chatErrorCopy\(streamError\)\);/);
+    // A reply that ended with nothing is not reloaded, so its notice stays on screen, and is held when its chat is not.
+    assert.match(send, /\n {8}giveBack\(true\);\n {8}if \(streamError\) tell\(chatErrorCopy\(streamError\)\);/);
+});
+
 test('a dropped connection: a notice held for a chat not on screen is worded for the reload it will be read after', () => {
     // lostNotice says "this chat shows what was saved" only when the screen shows it. A held notice is shown by open(),
     // after that chat has been read again, so for a turn the job says was saved it can say so.
