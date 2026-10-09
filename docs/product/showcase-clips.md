@@ -90,16 +90,26 @@ instructions remain in `scripts/landing-film/README.md`.
 
 ## The breakthrough video
 
-The owner selected [this public Facebook reel](https://www.facebook.com/reel/1376753811233996)
-by Tim Gray on 9 October 2026, shared as
-`https://www.facebook.com/share/v/1E6dPQfyKL/?mibextid=wwXIfr`.
-Its title is “Make Viral Videos in 3 Clicks 💥”. The five-second clip shows a
-LEGO superhero carrying a coffee cup out of a social-media post.
+The owner approved an original Veyrnox.ai version on 9 October 2026,
+replacing the previously imported Spider-Man Facebook reel. The five-second
+clip shows a blond LEGO-style hero in navy Captain America-style armour
+leaning forward to offer a branded latte mug out of a Veyrnox.ai
+Facebook-style post. The author label reads Veyrnox.ai, and the mug carries
+the owner's mint V and VEYRNOX.ai wordmark.
+
+The character and café were generated with FAL Nano Banana Pro. The approved
+animation used `fal-ai/kling-video/o3/pro/image-to-video`, request
+`01a122cb-0e02-7591-9a93-aa34e3fe696b`, with audio disabled. The
+[approved FAL output](https://v3b.fal.media/files/b/0aadbdf8/lfFUolQrcdtBZK3HjGD97_output.mp4)
+is 1,292 × 1,604, 24 fps and 5.041667 seconds long. It is scaled without
+cropping for the homepage; the complete approved motion is retained.
 
 `BREAKTHROUGH_FILM` supplies the prominent portrait player immediately under
-the hero. The complete clip is served from `/film/breakthrough-superhero.mp4`
-as a silent H.264 file at 720 × 900, with no crop. Its poster is a frame at
-2.2 seconds. The existing `FilmPlayer` supplies visible Play/Pause, pauses
+the hero. The complete clip is served from `/film/breakthrough-veyrnox.mp4`
+as a silent H.264 file at 720 × 894, with no crop. Its poster is a frame at
+4.8 seconds showing the leaning hero and branded foreground mug. The
+previous Spider-Man video and poster are removed from `public/film/`.
+The existing `FilmPlayer` supplies visible Play/Pause, pauses
 off screen, leaves the poster still for reduced motion/data saver, and
 fetches the file only when playback begins. It is labelled as viral
 inspiration, without attributing it to a Veyrnox model.
