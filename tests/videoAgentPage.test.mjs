@@ -46,6 +46,8 @@ test('every code the plan route, the gateway and the runner can raise has its ow
     assert.match(copyFor('video_agent_offline'), /Nothing was charged/);
     assert.match(copyFor('video_agent_in_progress'), /Nothing was charged/);
     assert.match(copyFor('brief_refused'), /Credits refunded/);
+    // The copy names every rule the runner's agent refuses on (runner/agent.py), so a refused user can see which one applied.
+    for (const rule of [/real, named people/, /minors/, /sexual/, /violence/, /self-harm/, /hatred/, /artist/, /brand/]) assert.match(copyFor('brief_refused'), rule);
 });
 
 test('after a reload the page resumes the newest unsettled video-agent job from this browser\'s history', () => {
