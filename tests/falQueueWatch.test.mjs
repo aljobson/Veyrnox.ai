@@ -32,7 +32,10 @@ fs.appendFileSync(path.join(dir, 'calls'), JSON.stringify(args) + '\\n');
 const body = path.join(dir, 'body');
 if (args[0] === 'label') process.exit(0);
 if (args[1] === 'list') { process.stdout.write(fs.existsSync(body) ? '12\\n' : '\\n'); process.exit(0); }
-if (args[1] === 'view') { process.stdout.write(fs.readFileSync(body, 'utf8')); process.exit(0); }
+if (args[1] === 'view') {
+  if (args.includes('--template') && !args.includes('--json')) process.exit(98);
+  process.stdout.write(fs.readFileSync(body, 'utf8')); process.exit(0);
+}
 if (args[1] === 'create' || args[1] === 'edit') {
   fs.copyFileSync(args[args.indexOf('--body-file') + 1], body);
   fs.appendFileSync(path.join(dir, 'writes'), args[1] + '\\n');
