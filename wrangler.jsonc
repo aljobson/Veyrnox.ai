@@ -173,7 +173,8 @@
         "NEXT_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_bAxQiodzBhI6bV7lmo9gMQ_Hlg9_Ish",
         "TENANT_PROJECTS_ENABLED": "true",
         "FAL_SUBMIT_OUTCOME_ENABLED": "false",
-        "FAL_DISPATCH_SCHEMA_ENABLED": "false",
+        "FAL_DISPATCH_SCHEMA_ENABLED": "true",
+        "RECOVERY_HEALTH_ENABLED": "true",
         "FAL_DURABLE_DISPATCH_ENABLED": "false",
         "SUBSCRIPTIONS_ENABLED": "false",
         // ADR-0067: Chat is open on staging for testing only. No text model is
