@@ -296,11 +296,13 @@ export function shelfName(name) {
 // 2026-09-23, finding 12: "Auto Short" was priced at 110 credits on the
 // landing page while the picker kept it behind a flag).
 //
-// Two kinds of row are held back:
+// Three kinds of row are held back:
 //   - edit tools (Clip Editor) — they act on Library files, not on a prompt,
 //     so they belong in the Library, not on a shelf of models.
 //   - topic rows (Auto Short) — gated behind localStorage.veyrnox_auto_short
 //     in app/create until launch (CLAUDE.md "Delivery").
+//   - plan rows (the video agent, ADR-0074) — bought from an approved plan on
+//     its own page (app/video-agent), never from a prompt in the picker.
 //
 // Takes a capability record: `capabilityFor(row.provider_endpoint)` on the
 // server, or the `capabilities` GET /api/catalog attaches to each row.
@@ -308,5 +310,5 @@ export function shelfName(name) {
 // `topic` clause below come out in the same commit.
 export function isShelfModel(capabilities) {
   const inputs = (capabilities && capabilities.inputs) || {};
-  return !(capabilities && capabilities.edit) && !inputs.clips && !inputs.topic;
+  return !(capabilities && capabilities.edit) && !inputs.clips && !inputs.topic && !inputs.plan_id;
 }

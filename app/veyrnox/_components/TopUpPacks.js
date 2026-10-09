@@ -119,7 +119,7 @@ function median(nums) {
 function useTypicalCosts() {
   const { models, live } = useCatalog();
   if (!live) return null;
-  const open = models.filter((m) => !m.gated && m.credits > 0);
+  const open = models.filter((m) => !m.gated && !m.takesPlan && m.credits > 0); // the video agent is not a per-clip price
   const video = median(open.filter((m) => m.kind === 'video').map((m) => m.credits));
   const image = median(open.filter((m) => m.kind === 'image').map((m) => m.credits));
   return video || image ? { video, image } : null;
