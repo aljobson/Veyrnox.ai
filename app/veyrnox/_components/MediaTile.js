@@ -25,7 +25,7 @@ const VIEW_THRESHOLD = 0.4;
 // scrolling a phone through the preset grid never decodes several at once.
 let activeTouchStop = null;
 
-export function MediaTile({ href, clip, mediaClassName = '', mediaStyle, className = '', style, children }) {
+export function MediaTile({ href, clip, mediaClassName = '', mediaStyle, className = '', style, ariaLabel, onClick, footer, children }) {
   const rootRef = useRef(null);
   const videoRef = useRef(null);
   const [failed, setFailed] = useState(false);
@@ -105,7 +105,7 @@ export function MediaTile({ href, clip, mediaClassName = '', mediaStyle, classNa
   const showVideo = clip && !failed;
 
   return (
-    <Link ref={rootRef} href={href} className={`group vx-tile ${className}`} style={style}>
+    <Link ref={rootRef} href={href} aria-label={ariaLabel} onClick={onClick} className={`group vx-tile ${className}`} style={style}>
       <div className={`relative overflow-hidden ${mediaClassName}`} style={mediaStyle}>
         {failed && clip?.poster && (
           <Image src={clip.poster} alt="" fill unoptimized className="object-cover" style={{ objectPosition: clip.objectPosition }} />
@@ -140,6 +140,7 @@ export function MediaTile({ href, clip, mediaClassName = '', mediaStyle, classNa
           </span>
         )}
       </div>
+      {footer}
     </Link>
   );
 }
