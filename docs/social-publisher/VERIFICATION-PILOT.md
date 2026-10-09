@@ -28,7 +28,7 @@ cancellation operations first if those actions are wanted.
 ## Visibility rollout
 
 1. Merge this preparation PR only after checks pass; default settings stay off.
-2. Apply migration `0239_social_youtube_visibility` through the existing
+2. Apply migration `0241_social_youtube_visibility` through the existing
    apply-migrations workflow with the owner's production approval.
 3. Confirm the deployed Worker understands `provider_state.youtube_visibility`.
 4. Enable `PUBLISH_YOUTUBE_VISIBILITY_ENABLED` for the intended environment.

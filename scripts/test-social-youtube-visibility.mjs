@@ -11,7 +11,7 @@ const scalar = async (sql, args = []) => (await c.query(sql, args)).rows[0]?.res
 const signature = 'public.create_social_post_with_youtube_visibility(text,uuid,timestamptz,text,text,uuid[],jsonb,text)';
 try {
     await c.query('BEGIN');
-    const migration = await readFile(new URL('../packages/db/schema/supabase/0239_social_youtube_visibility.sql', import.meta.url), 'utf8');
+    const migration = await readFile(new URL('../packages/db/schema/supabase/0241_social_youtube_visibility.sql', import.meta.url), 'utf8');
     await c.query(migration);
     await c.query(migration);
     const auth = randomUUID(), other = randomUUID();
