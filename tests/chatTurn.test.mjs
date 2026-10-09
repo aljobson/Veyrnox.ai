@@ -1,6 +1,7 @@
 // ADR-0067: every ending of a chat turn, with the database and the provider faked.
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { runChatTurn } from '../lib/chatTurn.js';
 import { ChatProviderError } from '../packages/adapters/openrouterChat.js';
 import { PLATFORM_INSTRUCTION } from '../lib/chat.js';
@@ -21,6 +22,7 @@ function fakes({ replies = {}, model = MODEL, stream } = {}) {
         ledger_debit: { ok: true, job_id: JOB, balance_after: 8 },
         job_submitted: { ok: true },
         chat_complete_turn: { ok: true, message_id: 'msg-1', refund: false },
+        chat_settle_unsaved_turn: { ok: true, user_id: 'user-1', credits: 2 },
         job_failed: { ok: true },
         ledger_refund: { ok: true },
         job_submit_rejected: { ok: true },
@@ -219,6 +221,132 @@ test('if saving the turn fails, nothing is refunded here and the user is told; t
     assert.deepEqual(names(evs).slice(-2), ['error', 'done']);
     assert.equal(evs.at(-2).data.error, 'turn_not_saved'); assert.equal(evs.at(-1).data.credits_charged, 0);
     assert.equal(called(f, 'ledger_refund').length, 0);
+    assert.equal(called(f, 'chat_settle_unsaved_turn').length, 0, 'an outage is not a verdict: the job is left for the sweep');
+});
+
+// ── ADR-0067 amendment 9: a reply that was delivered is charged even when it cannot be stored ──
+const unsaved = (code) => ({ ok: false, code });
+
+test('the chat is gone when the reply is saved: the reply is still charged, nothing is refunded, and the user is told', async () => {
+    const f = fakes({ replies: { chat_complete_turn: unsaved('THREAD_NOT_FOUND') } });
+    const evs = await events(await run(f));
+    assert.deepEqual(names(evs), ['start', 'delta', 'delta', 'error', 'done']);
+    assert.deepEqual(evs.at(-2).data, { error: 'reply_not_saved' });
+    assert.deepEqual(evs.at(-1).data, { status: 'complete', credits_charged: 2, balance: 8 });
+    assert.deepEqual(called(f, 'chat_settle_unsaved_turn').map(([, a]) => a), [{ p_job_id: JOB }]);
+    assert.equal(called(f, 'ledger_refund').length, 0); assert.equal(called(f, 'job_failed').length, 0);
+});
+
+test('every answer that says the messages cannot be stored ends charged; any other refusal is left for the sweep', async () => {
+    for (const code of ['THREAD_NOT_FOUND', 'INVALID_REPLY', 'INVALID_TEXT']) {
+        const f = fakes({ replies: { chat_complete_turn: unsaved(code) } });
+        const evs = await events(await run(f));
+        assert.deepEqual([evs.at(-2).data.error, evs.at(-1).data.status, evs.at(-1).data.credits_charged], ['reply_not_saved', 'complete', 2], code);
+        assert.equal(called(f, 'ledger_refund').length, 0, code);
+    }
+    for (const reply of [unsaved('BAD_STATE'), unsaved('JOB_NOT_FOUND'), unsaved('INVALID_STATUS'), null]) {
+        const f = fakes({ replies: { chat_complete_turn: reply } });
+        const evs = await events(await run(f));
+        assert.deepEqual([evs.at(-2).data.error, evs.at(-1).data.credits_charged], ['turn_not_saved', 0], JSON.stringify(reply));
+        assert.equal(called(f, 'chat_settle_unsaved_turn').length, 0, JSON.stringify(reply));
+        assert.equal(called(f, 'ledger_refund').length, 0, JSON.stringify(reply));
+    }
+});
+
+test('stopped after text appeared and the chat is gone: charged as a stopped reply', async () => {
+    const ac = new AbortController();
+    const f = fakes({
+        replies: { chat_complete_turn: unsaved('THREAD_NOT_FOUND') },
+        stream: async function* ({ signal }) { yield { delta: 'Partial' }; ac.abort(); await untilAborted(signal); },
+    });
+    const evs = await events(await run(f, { signal: ac.signal }));
+    assert.deepEqual([evs.at(-1).data.status, evs.at(-1).data.credits_charged], ['canceled', 2]);
+    assert.equal(called(f, 'chat_settle_unsaved_turn').length, 1); assert.equal(called(f, 'ledger_refund').length, 0);
+});
+
+test('a cut-off reply is never charged, saved or not: with the chat gone it is left for the sweep to refund', async () => {
+    const f = fakes({
+        replies: { chat_complete_turn: unsaved('THREAD_NOT_FOUND') },
+        stream: async function* () { yield { delta: 'It started but' }; throw new ChatProviderError('provider_dropped'); },
+    });
+    const evs = await events(await run(f));
+    assert.equal(called(f, 'chat_complete_turn')[0][1].p_status, 'error');
+    assert.deepEqual([evs.at(-2).data.error, evs.at(-1).data.credits_charged], ['turn_not_saved', 0]);
+    assert.equal(called(f, 'chat_settle_unsaved_turn').length, 0);
+});
+
+test('before migration 0233 is applied, or if the settle is refused, the turn ends as it did before: not charged, left for the sweep', async () => {
+    const missing = Object.assign(new Error('rpc(chat_settle_unsaved_turn) failed: 404'), { status: 404, body: { code: 'PGRST202' } });
+    for (const settle of [missing, new Error('db down'), unsaved('BAD_STATE'), unsaved('JOB_NOT_FOUND'), null]) {
+        const f = fakes({ replies: { chat_complete_turn: unsaved('THREAD_NOT_FOUND'), chat_settle_unsaved_turn: settle } });
+        const evs = await events(await run(f));
+        assert.deepEqual([evs.at(-2).data.error, evs.at(-1).data.status, evs.at(-1).data.credits_charged], ['turn_not_saved', 'failed', 0]);
+        assert.equal(called(f, 'chat_settle_unsaved_turn').length, 1);
+        assert.equal(called(f, 'ledger_refund').length, 0, 'the sweep refunds it, not this request');
+    }
+});
+
+test('a reply longer than a message can hold is delivered in full, stored cut to fit, and charged', async () => {
+    const long = 'a'.repeat(20000);
+    const f = fakes({ stream: async function* () { yield { delta: long }; yield { delta: long }; } });
+    const evs = await events(await run(f));
+    assert.equal(evs.filter((e) => e.event === 'delta').map((e) => e.data.text).join('').length, 40000, 'the reader got all of it');
+    assert.equal(called(f, 'chat_complete_turn')[0][1].p_reply, 'a'.repeat(32000));
+    assert.deepEqual(names(evs).filter((n) => n === 'error'), []);
+    assert.deepEqual([evs.at(-1).data.status, evs.at(-1).data.credits_charged, evs.at(-1).data.message_id], ['complete', 2, 'msg-1']);
+    assert.equal(called(f, 'chat_settle_unsaved_turn').length, 0);
+});
+
+test('the stored copy is never cut through the middle of a character, and exactly the limit is stored whole', async () => {
+    const split = `${'a'.repeat(31999)}😀 and more`; // the emoji is two code units, the first of them at 31,999
+    let f = fakes({ stream: async function* () { yield { delta: split }; } });
+    await (await run(f)).text();
+    const stored = called(f, 'chat_complete_turn')[0][1].p_reply;
+    assert.equal(stored, 'a'.repeat(31999)); assert.ok(stored.isWellFormed());
+    const exact = 'b'.repeat(32000);
+    f = fakes({ stream: async function* () { yield { delta: exact }; } });
+    await (await run(f)).text();
+    assert.equal(called(f, 'chat_complete_turn')[0][1].p_reply, exact);
+});
+
+test('characters a message cannot hold are taken out of the stored reply, so the save cannot fail on them', async () => {
+    const f = fakes({ stream: async function* () { yield { delta: 'Here\u0000 it is \ud83d' }; yield { delta: ' and 😀.' }; } });
+    const evs = await events(await run(f));
+    const stored = called(f, 'chat_complete_turn')[0][1].p_reply;
+    assert.equal(stored, 'Here it is � and 😀.');
+    assert.equal(evs.at(-1).data.credits_charged, 2);
+});
+
+test('the screen has words for a reply that was charged but not saved, and they say the Credits were used', () => {
+    const src = readFileSync(new URL('../app/veyrnox/_lib/chatApi.js', import.meta.url), 'utf8');
+    const copy = /case 'reply_not_saved': return '([^']+)';/.exec(src);
+    assert.ok(copy, 'chatErrorCopy knows reply_not_saved');
+    assert.match(copy[1], /Credits were used/); assert.doesNotMatch(copy[1], /No Credits|not be charged/);
+    const screen = readFileSync(new URL('../app/veyrnox/_components/chat/ChatWorkspace.js', import.meta.url), 'utf8');
+    assert.match(screen, /await open\(thread\.id\);[^\n]*\n\s*if \(streamError === 'reply_not_saved'\) setError\(chatErrorCopy\(streamError\)\)/, 'shown after the reload, which would otherwise clear it');
+});
+
+test('a message with a character that cannot be stored is refused before any money moves', async () => {
+    for (const text of ['Hello\u0000there', 'Hello \ud83d there', 'Hello \ude00', '\u0085', '\u001c\u001d', '\u0085 \u0085']) {
+        const f = fakes();
+        const res = await run(f, { body: body({ text }) });
+        assert.equal(res.status, 400, JSON.stringify(text));
+        assert.deepEqual(await res.json(), { error: 'invalid_text' });
+        assert.equal(f.calls.length, 0, 'no RPC ran');
+    }
+    for (const text of ['A whole emoji is fine 😀', '\u001b[31merror\u001b[0m pasted from a terminal']) {
+        const f = fakes();
+        await (await run(f, { body: body({ text }) })).text();
+        assert.equal(called(f, 'chat_complete_turn')[0][1].p_user_text, text);
+    }
+});
+
+test('a reply with nothing in it that can be stored counts as nothing produced: refunded, not charged', async () => {
+    const f = fakes({ stream: async function* () { yield { delta: '\u0000\u0000' }; } });
+    const evs = await events(await run(f));
+    assert.equal(evs.at(-1).data.credits_charged, 0);
+    assert.equal(called(f, 'job_failed').length, 1); assert.equal(called(f, 'ledger_refund').length, 1);
+    assert.equal(called(f, 'chat_complete_turn').length, 0); assert.equal(called(f, 'chat_settle_unsaved_turn').length, 0);
 });
 
 test('a failed refund is logged and does not hide the result from the user', async () => {
@@ -648,6 +776,16 @@ test('a replay of a free reply returns it without calling the provider', async (
     const res = await run(f, { env: flagOn });
     assert.deepEqual(await res.json(), { replay: true, job_id: JOB, balance_after: 8 });
     assert.equal(f.streamCalls.length, 0);
+});
+
+test('a free reply that cannot be stored keeps its allowance spent: settled, charged nothing, nothing returned', async () => {
+    const f = fakes({ model: FREE_MODEL, replies: {
+        submit_free_job: { ok: true, taken: true, job_id: JOB, idempotent: false }, chat_complete_turn: unsaved('THREAD_NOT_FOUND'),
+    } });
+    const evs = await events(await run(f, { env: flagOn }));
+    assert.deepEqual([evs.at(-2).data.error, evs.at(-1).data.status, evs.at(-1).data.credits_charged], ['reply_not_saved', 'complete', 0]);
+    assert.equal(called(f, 'chat_settle_unsaved_turn').length, 1);
+    assert.equal(called(f, 'ledger_refund').length, 0, 'a refund of 0 would hand the allowance back');
 });
 
 // ── ADR-0070: Deep research is refused until it is switched on and the row offers it ─────────────────────────

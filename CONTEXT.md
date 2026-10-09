@@ -75,7 +75,7 @@ A conversation a user has with one text model, with its own optional instruction
 _Avoid_: Session, conversation (in code), room
 
 **Chat Reply**:
-One answer to one user message. It is a job priced as a whole number of Credits from the model's catalog row ("Credits per reply"), debited before the model runs and refunded if it fails. Never priced per token or per word.
+One answer to one user message. It is a job priced as a whole number of Credits from the model's catalog row ("Credits per reply"), debited before the model runs and refunded if it fails. A reply that was delivered is charged, whether or not it could be stored in the chat. Never priced per token or per word.
 _Avoid_: Generation (that word means media), completion, token cost
 
 **Reply Cap**:
