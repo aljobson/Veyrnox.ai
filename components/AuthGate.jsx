@@ -193,14 +193,34 @@ export default function AuthGate() {
         }
     }, []);
 
-    // Close when a session appears (from any tab).
-    useEffect(() => {
-        return onSessionChange((s) => {
-            if (s) setOpen(false);
-        });
+    // This component is mounted once in the root layout and never unmounts,
+    // so what was typed stays in state until something empties it. Left
+    // alone, the dialog reopened after a session ended with the last email
+    // and password filled in, and Show revealed the password.
+    const forgetCredentials = useCallback(() => {
+        setEmail("");
+        setPassword("");
+        setShowPassword(false);
     }, []);
+    const close = useCallback(() => {
+        setOpen(false);
+        forgetCredentials();
+    }, [forgetCredentials]);
+    const dismiss = close;
 
-    const dismiss = useCallback(() => setOpen(false), []);
+    // Close when a session appears (from any tab), and empty the fields when
+    // one ends. Only on a change: a repeated "signed out" notice (another 401
+    // while the dialog is open) must not wipe what the user is typing.
+    const wasSignedIn = useRef(false);
+    useEffect(() => {
+        wasSignedIn.current = Boolean(getSession());
+        return onSessionChange((s) => {
+            const signedIn = Boolean(s);
+            if (signedIn) close();
+            else if (wasSignedIn.current) forgetCredentials();
+            wasSignedIn.current = signedIn;
+        });
+    }, [close, forgetCredentials]);
 
     // signInWithOAuth is async and ends in a redirect. Unawaited, a throw on
     // the way to that redirect (blocked sessionStorage, missing env) became an
@@ -247,7 +267,7 @@ export default function AuthGate() {
                 return;
             }
             const session = await signInWithPasskey(captcha);
-            if (session) setOpen(false);
+            if (session) close();
         } catch (err) {
             setNotice({ kind: "error", text: humanAuthError(err) });
         } finally {
@@ -277,15 +297,17 @@ export default function AuthGate() {
             if (mode === "sign_up") {
                 const { session, needsConfirmation } = await signUp(email, password, captcha);
                 if (needsConfirmation) {
+                    setPassword("");
                     setNotice({ kind: "success", text: "Check your email to confirm your account." });
                 } else if (session) {
-                    setOpen(false);
+                    close();
                 }
             } else if (mode === "sign_in") {
                 await signInWithPassword(email, password, captcha);
-                setOpen(false);
+                close();
             } else {
                 await sendMagicLink(email, captcha);
+                setPassword("");
                 setNotice({ kind: "success", text: "Check your email for a sign-in link." });
             }
         } catch (err) {

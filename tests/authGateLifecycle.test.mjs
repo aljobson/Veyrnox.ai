@@ -17,6 +17,57 @@ test('destroying the widget clears the token it issued', () => {
     assert.match(cleanup, /onToken\(null\)/, 'cleanup must clear the token it issued');
 });
 
+// AuthGate is mounted once in the root layout and never unmounts, so anything
+// left in its state is still there the next time it opens.
+const code = authGate.replace(/\{\/\*[\s\S]*?\*\/\}/g, '').split('\n').filter((l) => !l.trim().startsWith('//')).join('\n');
+const body = (start) => {
+    const from = code.indexOf(start);
+    assert.ok(from >= 0, `${start} not found`);
+    return code.slice(from, code.indexOf('\n    }', from));
+};
+
+test('one helper empties the email, the password and the Show toggle', () => {
+    const forget = body('const forgetCredentials = useCallback(');
+    assert.match(forget, /setEmail\(""\)/);
+    assert.match(forget, /setPassword\(""\)/);
+    assert.match(forget, /setShowPassword\(false\)/);
+    // Nothing else may put a value back: only the input's own onChange.
+    assert.deepEqual([...new Set(code.match(/setPassword\([^)]*\)/g))], ['setPassword("")', 'setPassword(e.target.value)']);
+    assert.deepEqual([...new Set(code.match(/setEmail\([^)]*\)/g))], ['setEmail("")', 'setEmail(e.target.value)']);
+});
+
+test('every way the dialog closes goes through it', () => {
+    assert.match(body('const close = useCallback('), /setOpen\(false\);\s*forgetCredentials\(\);/);
+    // Dismiss (the × button and Escape) and each successful sign-in.
+    assert.match(code, /const dismiss = close;/);
+    assert.equal((code.match(/setOpen\(false\)/g) || []).length, 1, 'no path closes the dialog and keeps what was typed');
+    assert.match(body('async function startPasskey('), /if \(session\) close\(\);/);
+    const submit = body('async function handleSubmit(');
+    assert.match(submit, /await signInWithPassword\(email, password, captcha\);\s*close\(\);/);
+    assert.match(submit, /else if \(session\) \{\s*close\(\);/);
+});
+
+test('a session that starts or ends anywhere empties the fields', () => {
+    const effect = body('return onSessionChange(');
+    assert.match(effect, /if \(signedIn\) close\(\);/);
+    // Only on a change: a repeated "signed out" notice (a second 401 while the
+    // dialog is open) must not wipe what the user is typing.
+    assert.match(effect, /else if \(wasSignedIn\.current\) forgetCredentials\(\);/);
+    assert.match(effect, /wasSignedIn\.current = signedIn;/);
+});
+
+test('a sent form does not keep the password while it waits on an email', () => {
+    const submit = body('async function handleSubmit(');
+    assert.match(submit, /if \(needsConfirmation\) \{\s*setPassword\(""\);/);
+    assert.match(submit, /await sendMagicLink\(email, captcha\);\s*setPassword\(""\);/);
+});
+
+test('neither value is logged', () => {
+    for (const line of code.split('\n').filter((l) => /console\./.test(l))) {
+        assert.doesNotMatch(line, /\b(email|password)\b/, line.trim());
+    }
+});
+
 test('sign-up warns about breached passwords before the first attempt', () => {
     assert.match(authGate, /mode === "sign_up"\s*\?\s*"At least 8 characters\. Passwords found in data breaches are rejected/);
     assert.match(authGate, /aria-describedby="vx-password-hint"/);
