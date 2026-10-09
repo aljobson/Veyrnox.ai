@@ -228,6 +228,40 @@ capped search and is not priced until step 3 has real numbers.
 **Privacy.** The user's message text goes to Exa as the search query, as it already goes to the plugin's search engine through
 OpenRouter. The privacy notice says Web search sends the question to a search service; it should name Exa before the flip.
 
+## Amendment 10 2026-10-09: a reader who leaves is a Stop, and the turn is still finished
+
+Status: **Proposed**. The owner accepts it by merging, after the staging check below. (Amendment 9 is the change in pull request 686.)
+
+Point 4 says a reply stopped after text appeared is kept and charged. On the Worker that ending did not run as written. Pressing Stop
+or closing the tab ends the response, but the Worker was not told: Cloudflare reports a disconnect only through `request.signal`, and
+only when the `enable_request_signal` [compatibility flag](https://developers.cloudflare.com/workers/configuration/compatibility-flags/)
+is set. The response stream's `cancel()` is not called. So the turn went on as if the reader were still there, and finishing it leaned
+on the time the platform allows a request after its reader has gone
+([`ctx.waitUntil`](https://developers.cloudflare.com/workers/runtime-apis/context/), which OpenNext claims for every request).
+
+Three changes make the stated ending the real one:
+
+- `wrangler.jsonc` sets `enable_request_signal`, for every environment. The chat route already passes `req.signal` to the turn, so a
+  disconnect now stops the provider and the turn finishes at once: text so far kept and charged, or nothing produced and refunded.
+- The turn's work is handed to the request's own `waitUntil` (`lib/requestWaitUntil.js`). The save and the charge no longer depend on
+  the response being open or on the framework holding the request. Finishing after a Stop is two or three database calls, well inside
+  the platform's 30 seconds.
+- A reader who had already left when the reply was about to start is treated as a Stop before the provider is called: nothing is
+  written and the Credits come back.
+
+No ending changes. A database outage still leaves the job `SUBMITTED` for the sweep, as before. The flag is platform-wide: every
+route's `request.signal` now fires on a disconnect. Only the chat turn and the bounded body readers listen to it; other handlers run
+to their end as they did.
+
+Checked on the local Worker runtime with the provider and the database faked (2026-10-09). Without the flag, a reader leaving 2
+seconds into a 20-second reply was not noticed and the whole reply was saved as `complete`. With it, the provider stopped within 0.3
+seconds and the text so far was saved as `canceled`; a reader who stayed saw no difference. Before merging: deploy the branch to
+staging, send a message, press Stop after text appears, and confirm the reply is stored as `canceled` and its job is `STORED` within a
+few seconds.
+
+Not changed: the screen reloads the chat the moment Stop is pressed and can be a moment ahead of the save. A short retry there is a
+screen change with its own browser check.
+
 ## Not decided here
 
 - Which models, and their prices. Needs live endpoint checks and the margin validator. (Three were chosen

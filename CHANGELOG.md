@@ -23,6 +23,9 @@ Changes that touch the money spine, the ledger or the catalog are marked **[mone
 - **[money]** Web search is re-priced on all ten chat models (0212, ADR-0067 amendment 7) from measured worst cases: the plugin's search text is uncapped (12k to 50k input tokens) and its fee is $0.01 to $0.05. A Luna reply with Web search goes from 3 to 5 Credits, a Sonnet one from 7 to 15. Held as a draft for the owner's decision
 - `list_user_jobs` leaves chat jobs out of the Library (0193); the public catalog read excludes text models
 
+### Fixed
+- **[money]** Chat: pressing Stop or closing the tab now ends the reply at once and settles it, text so far kept and charged or nothing produced and refunded (ADR-0067 amendment 10). The Worker is told about a disconnect (`enable_request_signal`) and the turn's finishing work is handed to `waitUntil`. No migration.
+
 ## Unreleased (2026-09-29 to 2026-10-01)
 
 ### Added
