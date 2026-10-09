@@ -104,7 +104,9 @@ rolling daily creation limit, erase an account or approve a retention policy.
 ## Staging fal queue visibility
 
 The database snapshot does not inspect Cloudflare queue backlog or dead-letter
-arrivals. Use the protected manual [staging fal queue diagnostic](fal-queue-health.md)
-alongside UNKNOWN and overdue dispatch counts. Cloudflare metrics are approximate;
-this diagnostic has no schedule or paging integration and cannot establish
-continuous health or satisfy the production rollout gates.
+arrivals. Use the [staging fal queue monitor](fal-queue-health.md) alongside
+UNKNOWN and overdue dispatch counts. Its scheduled watch explicitly checks the
+staging database and retains counts-only evidence; this recovery-health workflow
+defaults to production. The protected manual queue diagnostic remains separate.
+Cloudflare metrics and scheduled database samples cannot establish uninterrupted
+health or independently satisfy the production rollout gates.

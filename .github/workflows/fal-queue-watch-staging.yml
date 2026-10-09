@@ -35,7 +35,7 @@ jobs:
         with:
           node-version: '22'
       - id: check
-        name: Read staging queue metrics
+        name: Read staging queue and database health
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_QUEUE_MONITOR_TOKEN }}
           TEST_ALERT: ${{ github.event_name == 'workflow_dispatch' && inputs.test_alert && 'true' || 'false' }}
@@ -43,6 +43,13 @@ jobs:
           set +e
           node scripts/check-fal-queue-health.mjs > "$RUNNER_TEMP/fal-queue-report.txt" 2>&1
           code=$?
+          node scripts/check-staging-database-health.mjs "$RUNNER_TEMP/staging-database-health.json" >> "$RUNNER_TEMP/fal-queue-report.txt" 2>&1
+          database_code=$?
+          if [ "$database_code" -eq 2 ] || [ "$code" -eq 2 ]; then
+            code=2
+          elif [ "$database_code" -ne 0 ]; then
+            code=1
+          fi
           test_mode=false
           if [ "$code" -eq 0 ] && [ "$TEST_ALERT" = 'true' ]; then
             cat "$RUNNER_TEMP/fal-queue-report.txt"
@@ -60,6 +67,14 @@ jobs:
             echo 'FAL_QUEUE_REPORT_EOF'
           } >> "$GITHUB_OUTPUT"
           exit "$code"
+      - name: Retain counts-only staging health evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: staging-database-health-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/staging-database-health.json
+          retention-days: 7
+          if-no-files-found: warn
 
   alert:
     needs: check
