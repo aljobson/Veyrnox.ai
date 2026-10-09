@@ -23,6 +23,7 @@ import {
 import { signInWithPasskey, passkeysSupported } from "../app/lib/passkeys.js";
 import { configuredProviders, readAuthSettings, providerAvailable, passkeyUnavailableReason } from "../app/lib/authProviders.js";
 import { Turnstile, TURNSTILE_SITE_KEY } from "./Turnstile.jsx";
+import { captchaNotice, noticeAfterCaptchaFailure, noticeAfterCaptchaToken, CAPTCHA_BLOCKED_CODE } from "../app/lib/turnstileFailure.js";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -109,6 +110,8 @@ export default function AuthGate() {
     // captchaReset and the widget issues a fresh one.
     const [captcha, setCaptcha] = useState(null);
     const [captchaReset, setCaptchaReset] = useState(0);
+    // The widget's last error code, so a submit without a token can say why.
+    const [captchaFailure, setCaptchaFailure] = useState(null);
     // Every entry point uses this dialog. Availability controls whether an
     // action can start, never whether Apple or passkeys disappear from it.
     const oauth = configuredProviders(process.env.NEXT_PUBLIC_AUTH_PROVIDERS);
@@ -205,6 +208,8 @@ export default function AuthGate() {
     const close = useCallback(() => {
         setOpen(false);
         forgetCredentials();
+        setCaptchaFailure(null);
+        setNotice(noticeAfterCaptchaToken);
     }, [forgetCredentials]);
     const dismiss = close;
 
@@ -256,7 +261,7 @@ export default function AuthGate() {
         // Without this the request is refused with captcha_failed before any
         // WebAuthn prompt appears, which looks like a broken button.
         if (TURNSTILE_SITE_KEY && !captcha) {
-            setNotice({ kind: "error", text: "Complete the security check first." });
+            setNotice(captchaNotice(captchaFailure));
             return;
         }
         setBusy(true);
@@ -289,7 +294,7 @@ export default function AuthGate() {
             return;
         }
         if (TURNSTILE_SITE_KEY && !captcha) {
-            setNotice({ kind: "error", text: "Complete the security check first." });
+            setNotice(captchaNotice(captchaFailure));
             return;
         }
         setBusy(true);
@@ -429,8 +434,9 @@ export default function AuthGate() {
                     )}
 
                     <Turnstile
-                        onToken={setCaptcha}
-                        onError={() => setNotice({ kind: "error", text: "The security check couldn't load. Disable content blockers for this site, or sign in with Google." })}
+                        onToken={(token) => { setCaptcha(token); if (token) { setCaptchaFailure(null); setNotice(noticeAfterCaptchaToken); } }}
+                        onFailure={(code) => { setCaptchaFailure(code); setNotice((n) => noticeAfterCaptchaFailure(n, code)); }}
+                        onError={() => { setCaptchaFailure(CAPTCHA_BLOCKED_CODE); setNotice(captchaNotice(CAPTCHA_BLOCKED_CODE)); }}
                         resetKey={captchaReset}
                     />
 

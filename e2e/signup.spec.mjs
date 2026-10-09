@@ -20,11 +20,19 @@ test('sign-up validates input and will not submit without the security check', a
     expect(await email.evaluate((el) => el.validity.typeMismatch)).toBe(true);
     expect(await password.getAttribute('minlength')).toBe('8');
 
-    // A valid form still needs the Turnstile token (ADR-0026).
-    await email.fill('e2e-never-sent@example.invalid');
+    // The form's own check: the browser accepts this address, the form does not.
+    const status = dialog.getByRole('status');
     await password.fill('long-enough-password');
+    await email.fill('e2e@never-sent');
     await submit.click();
-    await expect(dialog.getByText('Complete the security check first.')).toBeVisible();
+    await expect(status).toContainText('Enter a valid email address.');
+
+    // A valid form still needs the Turnstile token (ADR-0026). The words
+    // depend on whether the widget has reported a failure by now, as it does
+    // on a hostname its site key does not list. All of them name the check.
+    await email.fill('e2e-never-sent@example.invalid');
+    await submit.click();
+    await expect(status).toContainText('security check');
 
     expect(signupCalls).toBe(0);
 });

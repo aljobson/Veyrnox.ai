@@ -305,4 +305,5 @@ in the Library. Any failure, timeout, cancel or ceiling hit refunds once.
 | Publish target fails | `last_error` on the post target | — |
 | breached password on sign-up | "appeared in a data breach" | — |
 | CAPTCHA blocked by an extension | "security check couldn't load… or sign in with Google" | — |
+| CAPTCHA does not pass in this browser | "security check didn't pass in this browser… Continue with Google doesn't need the check", shown when it fails | — |
 | session expired mid-flow | 401 → modal → retry | none moved |
