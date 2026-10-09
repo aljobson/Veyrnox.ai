@@ -107,4 +107,115 @@ retry left on, and no request to Auth without a token.
 
 Not done here: counting failed checks. A console line in the visitor's browser
 tells them and us nothing in aggregate, so how many people are stopped is
-still unknown.
+still unknown. Amendment 2 does it.
+
+## Amendment 2 (2026-10-09): failed checks are counted
+
+A check that fails in the browser sends nothing to Supabase Auth and nothing
+to us. The owner could not tell whether it stops one person a week or fifty a
+day. The browser now tells our own server the error code, and the server
+writes it to the Worker's log.
+
+### What happens
+
+1. **The browser sends the code.** `components/Turnstile.jsx` calls
+   `reportTurnstileFailure` (`app/lib/reportTurnstileFailure.js`) where it
+   already writes the console line, and when the widget's script cannot load
+   (sent as 200500, the code the dialog already files that under). It is a
+   same-origin `fetch`: `POST /api/turnstile-failure`, and the body is the
+   code and nothing else. It is sent without cookies (`credentials: 'omit'`)
+   and without the page address: the referrer is cut to the site's origin
+   (`referrerPolicy: 'origin'`). It is not `no-referrer`, because that policy
+   can also blank the `Origin` header, which step 2 needs from a browser too
+   old to send `Sec-Fetch-Site`. One report per code per page load, five per
+   page load at most. Nothing waits for it, retries it or shows its result: a
+   report that cannot be sent is dropped.
+2. **A route outside the gate takes it.** The person is not signed in, so it
+   cannot live under `/api/v1`. The route takes a POST from our own pages
+   (`Sec-Fetch-Site: same-origin`, or an `Origin` that matches the host where
+   a browser sends no `Sec-Fetch-Site`), a body of 16 bytes at most, and only
+   a body that is 3 to 9 digits or `unknown`: the same rule as
+   `turnstileErrorCode`. It answers 204 with no body, and a typed error
+   otherwise. It reads no identity header.
+3. **`worker.js` rate limits it before the app.** A Workers rate-limit
+   binding, `TURNSTILE_REPORT_RATE_LIMITER`: 10 requests per 60 seconds per
+   connecting IP, per Cloudflare location. An IPv6 address counts as its /64,
+   because one connection holds a whole /64. It is the mechanism of
+   [ADR-0039](0039-admin-edge-rate-limit.md) with its own binding and
+   namespace, so reports and admin traffic never share a counter. Over the
+   limit is a typed 429. A wrong method is a typed 405. A missing or failing
+   binding is a typed 503: the report is not counted, and the log says the
+   limiter was unavailable.
+4. **The server writes one line:** `{ event: 'auth.turnstile_check_failed',
+   code }`. It is logged as an object, not as text, because Workers Logs
+   indexes an object's keys, so the count can be grouped by `code`.
+
+### What the number is
+
+Reports accepted: one per error code per page load on which the widget
+reported a failure or could not load. It is not a count of people.
+
+- It runs low when a content blocker stops the report, the device is offline,
+  the tab closes first, or many people behind one address fail in the same
+  minute.
+- It runs high because a check that fails and then passes on Turnstile's own
+  retry is still counted, a reload is a new page load, and a bot that
+  Turnstile stops is counted if it ran our page. Anyone can also send a valid
+  code to the route. The rate limit holds one connection to 10 a minute. It
+  does not hold a sender with many addresses.
+
+So read it as a trend, and by code:
+
+| Code | Meaning |
+|---|---|
+| `110200` | the site key does not list this hostname (expected on staging and localhost) |
+| `200100` | the device clock is wrong |
+| `200500` | the widget or its script could not load |
+| `300*`, `600*` | the challenge did not pass in this browser |
+| `unknown` | the widget gave no usable code |
+
+### What is not kept
+
+Our line holds the event name and the code. It holds no IP address, user
+agent, email, token, page address, session or account id, and the route does
+not read any of them.
+
+Two things have to be said next to that:
+
+- The connecting IP (the /64 of an IPv6 one) is used once in the Worker, as
+  the key of Cloudflare's rate-limit counter. It is not logged or stored by
+  us.
+- Like every request the Worker serves, the report has Cloudflare's own
+  request record in Workers Logs, with the request's metadata and headers.
+  This change adds nothing to that record. Sending the report without cookies
+  and without the page address means it carries less than a page view does.
+
+### How the owner reads it
+
+Cloudflare dashboard, Workers & Pages, `veyrnox-ai`, Observability. Search for
+`auth.turnstile_check_failed` (or filter on the field `event`), show a count,
+and group by the field `code`. Workers Logs keeps 7 days on the paid plan, so
+that is the longest range. `npx wrangler tail veyrnox-ai` shows the lines as
+they arrive.
+
+Staging is a separate Worker (`veyrnox-ai-staging`) with its own log. Its
+widget fails with 110200 on every dialog open, because the site key lists
+`veyrnox.ai` only, so its count means nothing and never mixes with
+production's.
+
+### Why not a database table
+
+A table needs a migration through the owner-approved workflow, a
+`SECURITY DEFINER` writer, a retention rule and a screen to read it. It would
+also let someone who is not signed in cause database writes. The log answers
+the question without any of that. The cost is history: 7 days, not for ever.
+If the owner wants a longer history or the number on the admin dashboard,
+that is a table and a new decision.
+
+### What does not change
+
+The check: same site key, same widget options, automatic retry on, and no
+request to Auth without a token. The CSP: `connect-src 'self'` already allows
+a same-origin POST, and `tests/securityHeaders.test.mjs` is untouched. The
+dialog: `components/AuthGate.jsx` is not edited, and a report that fails, is
+refused or is rate limited is never seen by it.

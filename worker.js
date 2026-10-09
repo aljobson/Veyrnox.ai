@@ -22,6 +22,7 @@ import { cleanupProjectAssets } from './lib/projectAssetCleanup.js';
 import { observeRecovery } from './lib/recoveryHealth.js';
 import { limitRequestBody } from './lib/requestBodyLimit.js';
 import { adminEdgeRateLimit } from './lib/adminEdgeRateLimit.js';
+import { turnstileReportRateLimit } from './lib/turnstileFailureReport.js';
 import { refuseNextData } from './lib/nextDataGuard.js';
 import { dropInternalHeaders } from './lib/internalRequestHeaders.js';
 import { runScheduledBackfill } from './lib/scheduledBackfill.js';
@@ -51,7 +52,7 @@ export default {
     async fetch(request, env, ctx) {
         const refused = refuseNextData(request);
         if (refused) return refused;
-        const limited = await adminEdgeRateLimit(request, env);
+        const limited = await adminEdgeRateLimit(request, env) || await turnstileReportRateLimit(request, env);
         if (limited) return limited;
         const bounded = await limitRequestBody(request);
         return bounded.response || handler.fetch(dropInternalHeaders(bounded.request), env, ctx);

@@ -9,7 +9,8 @@
  */
 
 import { useEffect, useRef } from "react";
-import { turnstileErrorCode } from "../app/lib/turnstileFailure.js";
+import { CAPTCHA_BLOCKED_CODE, turnstileErrorCode } from "../app/lib/turnstileFailure.js";
+import { reportTurnstileFailure } from "../app/lib/reportTurnstileFailure.js";
 
 export const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "";
 const SCRIPT_SRC = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
@@ -26,6 +27,7 @@ function loadScript() {
             s.onerror = () => {
                 // Let a later mount retry instead of caching the failure.
                 scriptPromise = null;
+                reportTurnstileFailure(CAPTCHA_BLOCKED_CODE);
                 reject(new Error("turnstile_load_failed"));
             };
             document.head.appendChild(s);
@@ -63,12 +65,14 @@ export function Turnstile({ onToken, onError, onFailure, resetKey }) {
                         onToken(null);
                         const code = turnstileErrorCode(raw);
                         // A failed check never reaches Supabase, so this line
-                        // is its only trace. Turnstile retries by itself and
-                        // calls back each time: log a failure once, not every
-                        // retry. Only the code; nothing typed, and no token.
+                        // and the report to our own server are its only
+                        // trace. Turnstile retries by itself and calls back
+                        // each time: log a failure once, not every retry.
+                        // Only the code; nothing typed, and no token.
                         if (lastFailure.current !== code) {
                             lastFailure.current = code;
                             console.error("[auth] turnstile check failed:", code);
+                            reportTurnstileFailure(code);
                         }
                         onFailure(code);
                         // Non-falsy means handled. Otherwise Turnstile adds a
