@@ -69,8 +69,9 @@ forced RLS and browser denial. The existing dispatch acceptance suite is run
 before this suite; each removes only its own synthetic outbox fixtures.
 
 Legacy direct submissions and Auto Short steps remain outside this reservation
-transaction. The independent admission pause covering those paths is not built
-by this slice. Claim fencing and existing cron recovery are preserved; old
+transaction. The [independent admission pause](fal-admission-pause.md) in
+migration 0239 covers new fal/composite jobs; it does not reserve their capacity.
+Claim fencing and existing cron recovery are preserved; old
 committed work is not disabled by applying a default-deny admission policy.
 Do not activate production or describe this as an account-wide limit until the
 other producers and rollback behavior are covered and tested.

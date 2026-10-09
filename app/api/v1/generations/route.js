@@ -423,6 +423,12 @@ export async function POST(req) {
             { status: 429, headers: { 'content-type': 'application/json', 'retry-after': String(retryAfter) } },
         );
     }
+    if (debit?.ok === false && debit.code === 'PROVIDER_ADMISSION_PAUSED') {
+        const retryAfter = Math.max(1, Math.min(600, Number(debit.retry_after_seconds) || 60));
+        return NextResponse.json({ error: 'provider_admission_paused' }, {
+            status: 503, headers: { 'retry-after': String(retryAfter) },
+        });
+    }
     if (!debit || debit.ok === false) {
         const status = debit && debit.code === 'INSUFFICIENT_BALANCE' ? 402
             : debit && debit.code === 'ACCOUNT_FROZEN' ? 403 : 400;
