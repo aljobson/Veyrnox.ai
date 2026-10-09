@@ -136,6 +136,11 @@ If a build starts failing after a dependency change, bisect these three first.
   `/_next/data/*` with 404 (there is no pages router), and the production
   Worker has `workers_dev` and `preview_urls` off in `wrangler.jsonc`;
   staging keeps `workers_dev` on.
+- `worker.js` removes the framework's own request headers (`x-isr`,
+  `x-prerender-revalidate*`, `x-open-next-*`) from every request before
+  OpenNext sees it (`lib/internalRequestHeaders.js`, ADR-0078 amendment 1):
+  its routing layer obeys them from any caller. Read that file before
+  configuring an OpenNext revalidation queue.
 - Standard-claim checks (issuer, audience `authenticated`, exp with 5s skew, sub
   present) run on every request. Missing/malformed -> 401, never 500.
 - Rate limit at the entry point. Baseline: 10 gens per user per 60s via the

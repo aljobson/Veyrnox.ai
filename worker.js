@@ -23,6 +23,7 @@ import { observeRecovery } from './lib/recoveryHealth.js';
 import { limitRequestBody } from './lib/requestBodyLimit.js';
 import { adminEdgeRateLimit } from './lib/adminEdgeRateLimit.js';
 import { refuseNextData } from './lib/nextDataGuard.js';
+import { dropInternalHeaders } from './lib/internalRequestHeaders.js';
 import { runScheduledBackfill } from './lib/scheduledBackfill.js';
 import { removeReservedUpload, sweepUploadReservations } from './lib/uploadReservations.js';
 import { sweepSocialUploads } from './lib/social/uploadSweep.js';
@@ -53,7 +54,7 @@ export default {
         const limited = await adminEdgeRateLimit(request, env);
         if (limited) return limited;
         const bounded = await limitRequestBody(request);
-        return bounded.response || handler.fetch(bounded.request, env, ctx);
+        return bounded.response || handler.fetch(dropInternalHeaders(bounded.request), env, ctx);
     },
 
     async scheduled(event, env, ctx) {

@@ -44,3 +44,30 @@ Neither is visible from this repository.
 
 1. After the deploy, the `veyrnox-ai` Worker's settings show the workers.dev route and Preview URLs as disabled, and `https://veyrnox.ai` still serves.
 2. Whether anyone was opening preview URLs for the production Worker. If so, set `preview_urls` back to `true` only together with an Access policy on those hostnames.
+
+## Amendment 1 2026-10-09: the framework's internal request headers are removed at the Worker
+
+A review of the change above found one more place where the request the middleware is meant to see is decided by the caller. It predates this ADR.
+
+**Problem.** OpenNext's routing layer reads a few request headers as its own instructions, and reads them from any request:
+
+- `x-isr` with `x-prerender-revalidate` is what its revalidation queue sends to mark a request as the framework's own, and such a request is not routed the way a client's is. The value the pair must carry is fixed at build time and no leak of it is known. The gate on `/api/v1` should not rest on that value staying private.
+- `x-open-next-city`, `-country`, `-region`, `-latitude` and `-longitude` carry the geolocation it derives from `request.cf`. Where Cloudflare supplied none, a value sent by the client was used instead, and a malformed one made the routing layer answer 500 before the middleware ran.
+
+**Decision.** `dropInternalHeaders` in `lib/internalRequestHeaders.js` removes `x-isr`, `x-prerender-revalidate`, `x-prerender-revalidate-if-generated` and every `x-open-next-*` header. `worker.js` calls it on every request, after the three refusals it already makes (data path, admin edge rate limit, body size) and immediately before the app. The Worker's `Request` is what OpenNext builds its event from, so a header removed here is really gone, which is not true of a deletion made in the middleware (decision 4).
+
+- A request carrying none of them is handed on as the same object. Otherwise a new request is built from it and only the headers differ: method, URL, body, redirect mode, abort signal and `cf` carry over.
+- The framework sets the geolocation headers itself afterwards, from `request.cf`, so real values are unaffected.
+- A revalidation header arriving from outside is logged in one fixed line, never with its value. The geolocation names are not logged.
+
+**No revalidation queue is configured**, so nothing legitimate sends the pair today: `open-next.config.ts` is `defineCloudflareConfig()` with no `queue`, `incrementalCache` or `tagCache`, and `wrangler.jsonc` has no `WORKER_SELF_REFERENCE` service binding and no queue Durable Object. Both of OpenNext's Cloudflare queues deliver their requests to this Worker's own `fetch` through that binding, carrying exactly these two headers. They would be removed like anyone else's, and revalidation would never report success. Configuring a queue therefore means changing this first: give the queue's requests their own entrypoint on the binding instead of trusting the headers from every caller again.
+
+**Also checked, no change needed** (`@opennextjs/aws` 4.1.7, `@opennextjs/cloudflare` 1.20.8, `next` 16.3.8; repeat on an upgrade of any of the three):
+
+- OpenNext removes Next's internal headers from every inbound request before routing: `x-middleware-rewrite`, `-redirect`, `-set-cookie`, `-skip`, `-override-headers`, `-next`, `x-now-route-matches`, `x-matched-path`, `x-nextjs-data`, `x-next-resume-state-length`, and anything starting `x-opennext-` or `x-middleware-response-`.
+- `x-matched-path` and `next-resume` are honoured by Next only in minimal mode, which OpenNext does not use. `x-middleware-subrequest` and the `x-invoke-*` names are not read by this Next version at all.
+- `x-middleware-prefetch`, `x-forwarded-host`, `x-deployment-id` (skew protection is off), `next-action` and the router prefetch headers do not affect whether the middleware runs.
+- `x-next-revalidate-tag-token` is compared with the same build value but only marks cache tags as stale. It is what a forwarded server action sends; the app has none, and the header is left alone.
+- An error thrown inside the routing layer (the malformed geolocation value above was the one found) is answered with a 500, not passed on to a route.
+
+**Verification.** `tests/internalRequestHeaders.test.mjs` sends requests through `worker.js` and checks what the app is handed: none of the internal headers, in any spelling, with every other header, the method, the URL and the body as sent; the same object when there was nothing to remove; the earlier refusals still first; the log line without the value. The same was exercised against a local `wrangler dev` build before and after: of 25 requests sent to a `/api/v1` route with no token, each with a different set of framework headers, one was answered by the route before the change and none after. Pages, a route outside the gate and requests with a body behaved as before.
