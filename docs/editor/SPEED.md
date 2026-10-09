@@ -115,6 +115,28 @@ twice): `01a121ce-8079-7e33-a62f-3d6910388714` (13 s) and
    the page. If built before the bill is read, use a deliberately high
    placeholder behind a flag, as the owner may choose.
 
+## Staging run through the app (2026-10-09)
+
+Staging on the current build (version after the `npm install` fix), flag and sheet
+switch on, 0237 applied. Edit of a video-agent clip (1080x1920, 15 s), kept 0 to
+4 s, **2x slower**, with a 1-credit ACE-Step track as the soundtrack. Job
+`35a8138d-aa28-4634-bfdc-ac1bb35145a5`.
+
+- The sheet refused without a soundtrack (button disabled, "Slowed clips cannot
+  keep their own sound") and, with one, showed **82 cr** (1 trim + 80 slow + 1
+  audio), the exact debit. The result length showed 8.0 s.
+- **trim 17 s, slow 253 s, audio 14 s; 5 min 42 s end to end**, all three stored
+  through the webhook (3 callbacks), no sweep, ledger net -82.
+- Output: 7.96 s, 1080x1920, H264, 24 fps (the pinned target), AAC 7.96 s: the
+  audio runs the whole length of the slowed picture, so the clip's own 4 s of
+  sound was replaced, not left half-length.
+- **The slow step took 253 s here against 30 to 55 s for a 5 s 1280x720 clip in
+  the probe.** The bigger frame (1080x1920 is 2.2x the pixels) is the likely
+  cause, and fal bills Topaz by output size, so the cost of this run is probably
+  above the probe's. Neither the time nor the cost is explained yet.
+- Not run: a failed slowed edit, a 30 fps source (the source's own rate was not
+  read; output is pinned to 24), factors 3 and 4, a slowed clip with captions.
+
 ## Shape, pending the probe
 
 An optional per-clip `slow: 2..8` (or one edit-wide factor, to decide) on the
