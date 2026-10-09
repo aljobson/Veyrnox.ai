@@ -1,6 +1,7 @@
 // After Stop (ADR-0067). Text that had appeared is kept and charged, but the server saves the stopped turn a moment
 // after the browser lets go. So the screen reads the job and the chat a few times, about three seconds in all,
-// instead of reloading once and coming back without the turn. No imports: the tests load this file directly.
+// instead of reloading once and coming back without the turn. A connection that drops mid-reply is looked for the
+// same way. No imports: the tests load this file directly.
 
 /** How long to wait before each read. The save is never there at once, so the first read waits too. */
 export const STOP_WAITS_MS = [250, 450, 700, 1000];
@@ -66,6 +67,20 @@ async function lookForTurn({ jobId, text, knownIds, getThread, getJob, wait = sl
     if (state === 'failed') return 'nothing';
   }
   return 'pending';
+}
+
+/**
+ * Which notice the screen shows once a turn cut off by a dropped connection has been looked for (a chatErrorCopy code).
+ * `reloaded`: the chat was read again, so the screen shows what the server kept and not just what had arrived.
+ * @param {'saved'|'unsaved'|'nothing'|'pending'} outcome
+ * @param {boolean} reloaded
+ * @returns {'connection_saved'|'reply_not_saved'|'connection_refunded'|'connection_lost'}
+ */
+export function lostNotice(outcome, reloaded) {
+  if (outcome === 'nothing') return 'connection_refunded'; // the job failed and nothing was stored: the Credits came back
+  if (outcome === 'unsaved') return 'reply_not_saved';     // charged, whether or not the chat could be read again
+  if (outcome === 'saved' && reloaded) return 'connection_saved';
+  return 'connection_lost';                                // not settled, or saved but not on screen: it may have used Credits
 }
 
 function sleep(ms) { return new Promise((resolve) => { setTimeout(resolve, ms); }); }
