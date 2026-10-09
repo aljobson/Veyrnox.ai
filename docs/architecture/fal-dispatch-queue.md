@@ -1,6 +1,6 @@
 # fal dispatch queue implementation and staging plan
 
-This implements the code boundary in [ADR 0077](../adr/0077-fal-event-driven-dispatch.md). Isolated staging queues, consumer credentials, and the application producer binding are deployed. A bounded live consumer test passed; request-scoped application publication remains pending. Producer and consumer flags are false after the test. Existing durable-admission and production activation gates still apply.
+This implements the code boundary in [ADR 0077](../adr/0077-fal-event-driven-dispatch.md). Isolated staging queues, consumer credentials, and the application producer binding are deployed. Bounded consumer and signed-in Create-to-Library tests passed, including request-scoped application publication. Producer, durable-admission, and consumer flags are false after the tests. Existing production activation gates still apply.
 
 ## Implemented path
 
@@ -104,6 +104,33 @@ Both queue peeks were empty after completion. Balance, Free Credit, and Subscrip
 Consumer execution was restored to false as version `725b7922-814b-4588-8ec2-f99dd443c6cb`. Remote readback verified schema access true, both runtime secret names retained, queue tuning unchanged, and the shared application's publication/admission flags still false. Cron recovery remains enabled; production was not changed.
 
 Request-scoped producer integration, authenticated gateway and Library behavior, live callback redelivery/fault injection, alerts, provider headroom, load percentiles, billing verification, and the twenty-four-hour clean gate remain outstanding. The earliest recorded clean window runs through 10 October 05:21:47 UTC; this spot check does not certify that window.
+
+## Signed-in producer and Library acceptance — 2026-10-09
+
+The owner approved one prepared Flux.2 image with a two-staging-credit limit. The in-app browser was already signed in to staging; no cookie, token, password, or browser credential was extracted. Before submission, Create showed the teapot prompt, Flux.2 [pro], one image, a two-credit Generate button, and balance 1,000. Library initially reported nine assets.
+
+Built main `84d94a76` with `APP_ENV=staging` and the staging callback host; OpenNext build and application/consumer dry-runs passed. A temporary configuration preserved all 42 deployed plain-text variables, including the independent montage overrides. `--keep-vars` retained runtime secrets. The application deployment `9d637d13-06a4-4f84-8c6f-87112abb1c11` enabled only `FAL_DURABLE_DISPATCH_ENABLED` and `FAL_DISPATCH_QUEUE_ENABLED`; schema access remained true and `FAL_SUBMIT_OUTCOME_ENABLED` remained false. Full binding readback matched the saved snapshot except those two intended flag values. The consumer was temporarily enabled as `55de358b-3fae-4855-a188-07283f638987`.
+
+The prepared Generate button was clicked once. The UI showed Sending, then QUEUED, and balance 998. No private admission or manual queue publication was used for this job. The dedicated consumer tail showed one actual delivery from `veyrnox-fal-dispatch-staging`, submitted 1, failed/retried/ignored 0, application `ok:true`, platform outcome `ok`, wall time 936 ms and CPU time 5 ms. The database linked that submission to the browser-created durable intent.
+
+| Event | UTC time / evidence |
+| --- | --- |
+| Admission | 11:04:54.598080; job `e6af4903-c0fd-4094-919c-baecf92d4943` |
+| Client idempotency key | `vx-6950ca9d-d7a2-46ed-ba7b-d69bdccd61a4` |
+| Queue invocation | 11:04:55.769 |
+| STARTED claim | 11:04:56.312177; attempt `7c8b01b2-8d03-4e82-941c-07900b220031` |
+| ACCEPTED evidence | 11:04:56.574028; provider `01a12056-69b1-7872-b6d8-97db94b63834` |
+| Handle projected | 11:04:56.663996 |
+| Signed callback processed | 11:05:07.135; webhook row created 11:05:06.300442 |
+| STORED | 11:05:07.196267; asset `d037eb2f-f881-446a-8814-c242407bc03e` |
+
+Admission-to-claim was **1.71 seconds** and admission-to-STORED **12.60 seconds**. These are single healthy-path measurements, not load percentiles. Browser navigation to Library initially displayed the optimistic QUEUED item, then fetched the completed record: DONE, AI GENERATED, a rendered teapot image, the two-credit charge, ten assets, and balance 998. Its Schedule link carried the same job UUID. A completion screenshot was retained locally for owner review; no private asset URL was exported.
+
+The JPEG registration has 114,980 bytes and a SHA-256 value. The job has exactly one `debit:generation` ledger entry, delta -2, Free delta 0, Subscription delta 0, no refund. Balance, Free Credit, and Subscription Credit reconciliation each returned zero differences. Recovery status showed no unhealthy tasks and all returned queue counters zero. Both queue peeks were empty.
+
+Producer/admission flags were restored to false first, as application version `f4df0fa1-402a-4543-8e14-7a2312ddb998`; the consumer was then disabled as `f74d192c-03a7-43c9-85ef-b6760287607e`. Full application binding comparison again matched the original snapshot, including independent montage overrides and secret names. Consumer readback retained schema access and both runtime secret names. Cron recovery remained on. Temporary deployment configurations were removed; repository defaults and production were not changed.
+
+This establishes one authenticated browser submission through the real application producer and a visible completed Library image. Exact HTTP response status/body, authenticated replay/conflict responses, forced publication failure, callback redelivery/fault injection, alerts, account billing, load/headroom, and the twenty-four-hour clean gate remain unverified. Local tests and the earlier private-RPC replay check do not substitute for those remaining runtime checks.
 
 ## Rollback and investigation
 
