@@ -1,0 +1,78 @@
+{
+  "date": "2026-09-29",
+  "scope": "Review of existing historical exports; no new app export or runtime change",
+  "files": [
+    {
+      "name": "veyrnox-memory-15s-1920.mp4",
+      "bytes": 12182122,
+      "sha256": "7881791de0d31bf575c65ea24074487570613ce03f9c272924ee3d139ac93bcd"
+    },
+    {
+      "name": "veyrnox-memory-15s-1920-enhanced (3).mp4",
+      "bytes": 7016277,
+      "sha256": "e46c03f7b58e83f6986f4aed3b71547a012fbcbbec882defdcddcc6107f16e27"
+    },
+    {
+      "name": "veyrnox-severe-occlusion-test.mp4",
+      "bytes": 6996128,
+      "sha256": "96f9d4c1f226915192efb8af71e7c00eb57c533e066f99d0861a277a093012cc"
+    },
+    {
+      "name": "veyrnox-severe-occlusion-control-enhanced.mp4",
+      "bytes": 4270605,
+      "sha256": "a7fb7f507c7ea6a5f51aeeafa6bf20a27cf4d390d36a17ab2d9b6adda77f9bc1"
+    },
+    {
+      "name": "veyrnox-severe-occlusion-test-enhanced.mp4",
+      "bytes": 4240835,
+      "sha256": "c8a7e9ad5a0da6fe8559a404be2323832f5394edd2574a8ceb170cac919bcfba"
+    },
+    {
+      "name": "occlusion-comparison.mp4",
+      "bytes": 16734325,
+      "sha256": "d1427b0f0acf9bf222a3541adff3721673b7e2f3cf6760f4b3b1f3c1e6d6db49"
+    },
+    {
+      "name": "portrait-comparison.mp4",
+      "bytes": 27595392,
+      "sha256": "e06fcf3499be19832bd6f289a1cad434159db65cb3c38efe5e2839aa80694a15"
+    }
+  ],
+  "paired_stills_reviewed": {
+    "portrait_source_vs_30_percent": [
+      2,
+      6,
+      8
+    ],
+    "occlusion_0_vs_30_percent": [
+      1.8,
+      11.2
+    ]
+  },
+  "additional_output_still_reviewed": {
+    "occlusion_30_percent": [
+      10.4
+    ]
+  },
+  "review_videos": {
+    "portrait-comparison.mp4": {
+      "left": "input fixture",
+      "right": "30% smoothing export",
+      "width": 3840,
+      "height": 1080,
+      "frames": 375
+    },
+    "occlusion-comparison.mp4": {
+      "left": "0% smoothing control export",
+      "right": "30% smoothing export",
+      "width": 2024,
+      "height": 1920,
+      "frames": 375
+    }
+  },
+  "limits": [
+    "Sampled still inspection; not continuous temporal-quality acceptance.",
+    "Review composites have an additional H.264 CRF16 encode; original files and extracted PNGs remain authoritative for texture inspection.",
+    "Two existing subjects; severe side profile and hair crossing face remain untested."
+  ]
+}

@@ -1,0 +1,235 @@
+{
+  "date": "2026-09-28",
+  "runtimeRevision": "1a76094",
+  "environment": "macOS 27.0 arm64; in-app Chromium; Next development mode",
+  "sourceUrl": "https://www.pexels.com/video/people-covering-the-face-of-a-woman-9463674/",
+  "author": "Ron Lach",
+  "licenseUrl": "https://www.pexels.com/license/",
+  "downloadUrl": "https://videos.pexels.com/video-files/9463674/9463674-uhd_1440_2732_25fps.mp4",
+  "fixture": "First 15 seconds, scale=-2:1920, libx264 CRF18, silent; 1012x1920, 25 fps, 375 frames",
+  "files": {
+    "original": {
+      "name": "veyrnox-severe-occlusion-original.mp4",
+      "bytes": 12809432,
+      "sha256": "ebd213a9288e08c4f05970d3c122beb5d314a9ff3bb34167599e8d877aa0a6d6"
+    },
+    "fixture": {
+      "name": "veyrnox-severe-occlusion-test.mp4",
+      "bytes": 6996128,
+      "sha256": "96f9d4c1f226915192efb8af71e7c00eb57c533e066f99d0861a277a093012cc"
+    },
+    "smoothing30": {
+      "name": "veyrnox-severe-occlusion-test-enhanced.mp4",
+      "bytes": 4240835,
+      "sha256": "c8a7e9ad5a0da6fe8559a404be2323832f5394edd2574a8ceb170cac919bcfba"
+    },
+    "smoothing0": {
+      "name": "veyrnox-severe-occlusion-control-enhanced.mp4",
+      "bytes": 4270605,
+      "sha256": "a7fb7f507c7ea6a5f51aeeafa6bf20a27cf4d390d36a17ab2d9b6adda77f9bc1"
+    }
+  },
+  "exports": "Natural look, smoothing 30% and 0%; both pass 375 frames, 1 ms timing and no audio added",
+  "observations": [
+    {
+      "wallTimeMs": 1790602276575,
+      "displayedSeconds": 0.2,
+      "status": "No face tracked. Smoothing is paused; colour settings still apply."
+    },
+    {
+      "wallTimeMs": 1790602277082,
+      "displayedSeconds": 0.7,
+      "status": "No face tracked. Smoothing is paused; colour settings still apply."
+    },
+    {
+      "wallTimeMs": 1790602277594,
+      "displayedSeconds": 1.2,
+      "status": "No face tracked. Smoothing is paused; colour settings still apply."
+    },
+    {
+      "wallTimeMs": 1790602278099,
+      "displayedSeconds": 1.7,
+      "status": "One face tracked. Smoothing is applied to the face region."
+    },
+    {
+      "wallTimeMs": 1790602278604,
+      "displayedSeconds": 2.2,
+      "status": "One face tracked. Smoothing is applied to the face region."
+    },
+    {
+      "wallTimeMs": 1790602279120,
+      "displayedSeconds": 2.7,
+      "status": "One face tracked. Smoothing is applied to the face region."
+    },
+    {
+      "wallTimeMs": 1790602279638,
+      "displayedSeconds": 3.2,
+      "status": "One face tracked. Smoothing is applied to the face region."
+    },
+    {
+      "wallTimeMs": 1790602280155,
+      "displayedSeconds": 3.7,
+      "status": "One face tracked. Smoothing is applied to the face region."
+    },
+    {
+      "wallTimeMs": 1790602280659,
+      "displayedSeconds": 4.2,
+      "status": "One face tracked. Smoothing is applied to the face region."
+    },
+    {
+      "wallTimeMs": 1790602281164,
+      "displayedSeconds": 4.7,
+      "status": "One face tracked. Smoothing is applied to the face region."
+    },
+    {
+      "wallTimeMs": 1790602281669,
+      "displayedSeconds": 5.3,
+      "status": "One face tracked. Smoothing is applied to the face region."
+    },
+    {
+      "wallTimeMs": 1790602282183,
+      "displayedSeconds": 5.7,
+      "status": "One face tracked. Smoothing is applied to the face region."
+    },
+    {
+      "wallTimeMs": 1790602282687,
+      "displayedSeconds": 6.3,
+      "status": "One face tracked. Smoothing is applied to the face region."
+    },
+    {
+      "wallTimeMs": 1790602283190,
+      "displayedSeconds": 6.8,
+      "status": "One face tracked. Smoothing is applied to the face region."
+    },
+    {
+      "wallTimeMs": 1790602283699,
+      "displayedSeconds": 7.3,
+      "status": "One face tracked. Smoothing is applied to the face region."
+    },
+    {
+      "wallTimeMs": 1790602284204,
+      "displayedSeconds": 7.8,
+      "status": "One face tracked. Smoothing is applied to the face region."
+    },
+    {
+      "wallTimeMs": 1790602284708,
+      "displayedSeconds": 8.3,
+      "status": "One face tracked. Smoothing is applied to the face region."
+    },
+    {
+      "wallTimeMs": 1790602285212,
+      "displayedSeconds": 8.8,
+      "status": "One face tracked. Smoothing is applied to the face region."
+    },
+    {
+      "wallTimeMs": 1790602285720,
+      "displayedSeconds": 9.2,
+      "status": "One face tracked. Smoothing is applied to the face region."
+    },
+    {
+      "wallTimeMs": 1790602286224,
+      "displayedSeconds": 9.8,
+      "status": "One face tracked. Smoothing is applied to the face region."
+    },
+    {
+      "wallTimeMs": 1790602286728,
+      "displayedSeconds": 10.3,
+      "status": "One face tracked. Smoothing is applied to the face region."
+    },
+    {
+      "wallTimeMs": 1790602287233,
+      "displayedSeconds": 10.8,
+      "status": "One face tracked. Smoothing is applied to the face region."
+    },
+    {
+      "wallTimeMs": 1790602287739,
+      "displayedSeconds": 11.3,
+      "status": "No face tracked. Smoothing is paused; colour settings still apply."
+    },
+    {
+      "wallTimeMs": 1790602288244,
+      "displayedSeconds": 11.8,
+      "status": "No face tracked. Smoothing is paused; colour settings still apply."
+    },
+    {
+      "wallTimeMs": 1790602288751,
+      "displayedSeconds": 12.3,
+      "status": "No face tracked. Smoothing is paused; colour settings still apply."
+    },
+    {
+      "wallTimeMs": 1790602289429,
+      "displayedSeconds": 13.0,
+      "status": "No face tracked. Smoothing is paused; colour settings still apply."
+    },
+    {
+      "wallTimeMs": 1790602289934,
+      "displayedSeconds": 13.5,
+      "status": "No face tracked. Smoothing is paused; colour settings still apply."
+    },
+    {
+      "wallTimeMs": 1790602290437,
+      "displayedSeconds": 14.0,
+      "status": "No face tracked. Smoothing is paused; colour settings still apply."
+    },
+    {
+      "wallTimeMs": 1790602290944,
+      "displayedSeconds": 14.5,
+      "status": "No face tracked. Smoothing is paused; colour settings still apply."
+    },
+    {
+      "wallTimeMs": 1790602291457,
+      "displayedSeconds": 14.9,
+      "status": "No face tracked. Smoothing is paused; colour settings still apply."
+    },
+    {
+      "wallTimeMs": 1790602291965,
+      "displayedSeconds": 14.9,
+      "status": "No face tracked. Smoothing is paused; colour settings still apply."
+    },
+    {
+      "wallTimeMs": 1790602292477,
+      "displayedSeconds": 14.9,
+      "status": "No face tracked. Smoothing is paused; colour settings still apply."
+    },
+    {
+      "wallTimeMs": 1790602292987,
+      "displayedSeconds": 14.9,
+      "status": "No face tracked. Smoothing is paused; colour settings still apply."
+    },
+    {
+      "wallTimeMs": 1790602293495,
+      "displayedSeconds": 14.9,
+      "status": "No face tracked. Smoothing is paused; colour settings still apply."
+    },
+    {
+      "wallTimeMs": 1790602294004,
+      "displayedSeconds": 14.9,
+      "status": "No face tracked. Smoothing is paused; colour settings still apply."
+    },
+    {
+      "wallTimeMs": 1790602294512,
+      "displayedSeconds": 14.9,
+      "status": "No face tracked. Smoothing is paused; colour settings still apply."
+    },
+    {
+      "wallTimeMs": 1790602295024,
+      "displayedSeconds": 14.9,
+      "status": "No face tracked. Smoothing is paused; colour settings still apply."
+    },
+    {
+      "wallTimeMs": 1790602295533,
+      "displayedSeconds": 14.9,
+      "status": "No face tracked. Smoothing is paused; colour settings still apply."
+    },
+    {
+      "wallTimeMs": 1790602296042,
+      "displayedSeconds": 14.9,
+      "status": "No face tracked. Smoothing is paused; colour settings still apply."
+    },
+    {
+      "wallTimeMs": 1790602296552,
+      "displayedSeconds": 14.9,
+      "status": "No face tracked. Smoothing is paused; colour settings still apply."
+    }
+  ]
+}

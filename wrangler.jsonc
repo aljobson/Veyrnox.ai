@@ -57,9 +57,12 @@
     // ADR-0072: chat Personas, saved instructions with a default model and options. On in production since 2026-10-07: staging
     // acceptance passed 2026-10-06 and migration 0216 is applied on production. Staging has its own value below.
     "PERSONAS_ENABLED": "true",
-    // ADR-0074: the video agent (isolated OpenMontage runner). "false" until the runner, MONTAGE_* secrets and the measured price exist
-    // (docs/montage/SPEC.md slices 4-6). A run already paid for still finishes or refunds with this off.
-    "AGENT_VIDEO_ENABLED": "false",
+    // ADR-0074: the video agent (isolated OpenMontage runner). Rollout step 7 (docs/montage/RUNBOOK-production.md): on in production once
+    // the eight gates were met, the runner and its secrets were in place and the catalog row had been active for 24 hours with the
+    // reconcile jobs clean. The page stays behind localStorage.veyrnox_video_agent and out of the navigation until step 9, but the API does
+    // not check that switch: a signed-in user who calls the plan route directly can buy a video. A run already paid for still finishes or
+    // refunds with this off. Rollback: set "false" and deploy. Staging has its own value below.
+    "AGENT_VIDEO_ENABLED": "true",
     // ADR-0074, rollout step 3: the production runner on Fly (app veyrnox-montage-runner, created 2026-10-09). A public address, not
     // a secret, and a constant: the Worker never takes a runner URL from a request. Every call to it is signed, and nothing calls it
     // until MONTAGE_SIGNING_SECRET and MONTAGE_PLAN_SECRET are set (step 4) and AGENT_VIDEO_ENABLED is "true" (step 7).
@@ -77,21 +80,21 @@
     "SUBSCRIPTIONS_ENABLED": "false",
     // Before activation: SUBSCRIPTION_ALERT_EMAIL must name the Operator;
     // SUBSCRIPTION_ALERT_FROM defaults to the existing VIOLATION_EMAIL_FROM.
-    // Cinema v1.0: server controls are default-off; local preview cannot bypass them.
-    // Activate only after the documented migration/reconciliation and preview gates.
-    "CINEMA_ENABLED": "false",
-    "CREATOR_APPLICATIONS_ENABLED": "false",
-    "CREATOR_CONTENT_ENABLED": "false",
-    "SOCIAL_CINEMA_PROFILES_ENABLED": "false",
-    "CREATOR_UPLOADS_ENABLED": "false",
-    "CINEMA_UPLOAD_RECOVERY_ENABLED": "false",
-    "CINEMA_UPLOAD_REMOVAL_ENABLED": "false",
-    "CINEMA_PROXY_UPLOADS_ENABLED": "false",
+    // Cinema first activation. Paid access and monetisation remain closed.
+    // Merge only after the documented production cutover gates pass.
+    "CINEMA_ENABLED": "true",
+    "CREATOR_APPLICATIONS_ENABLED": "true",
+    "CREATOR_CONTENT_ENABLED": "true",
+    "SOCIAL_CINEMA_PROFILES_ENABLED": "true",
+    "CREATOR_UPLOADS_ENABLED": "true",
+    "CINEMA_UPLOAD_RECOVERY_ENABLED": "true",
+    "CINEMA_UPLOAD_REMOVAL_ENABLED": "true",
+    "CINEMA_PROXY_UPLOADS_ENABLED": "true",
     "CREATOR_MONETISATION_ENABLED": "false",
     "CINEMA_SUBSCRIPTIONS_ENABLED": "false",
     "CINEMA_UNLOCKS_ENABLED": "false",
-    "CINEMA_PUBLISHING_ENABLED": "false",
-    "CINEMA_VIEWING_ENABLED": "false",
+    "CINEMA_PUBLISHING_ENABLED": "true",
+    "CINEMA_VIEWING_ENABLED": "true",
     "VOTING_ENABLED": "false",
     "COMMENTS_ENABLED": "false",
     "PPV_ENABLED": "false",

@@ -24,6 +24,13 @@ Track B is absent. It does not start until its ADR is accepted.
 
 ## Slice 0 — Verify the endpoints *(no product code)*
 
+**Video Enhance update, 2026-09-26:** [validation findings](VIDEO-ENHANCE.md)
+separate photo retouch from video smoothing. The public probe now runs without
+a key and resolves the endpoint's actual request schema. Paid video probes
+require `TEST_VIDEO_URL`; mixed-media endpoints also require an explicit
+`TEST_IMAGE_URL` reference frame. Missing inputs or output URLs fail verification.
+The Light-X default mode still needs endpoint-specific conditional inputs.
+
 Nothing below is worth building if the endpoints do not behave. Do this first
 and record the results.
 

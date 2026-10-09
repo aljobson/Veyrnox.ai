@@ -178,3 +178,42 @@ test('producer off avoids context access, and failed or timed-out sends resolve 
 test('dedicated consumer has no HTTP dispatch surface', async () => {
     assert.equal((await worker.fetch(new Request('https://consumer.test/'))).status, 404);
 });
+
+
+test('batch timing includes initial recovery, both evidence writes and failed RPC time without payloads', async t => {
+    const d = controlled(t, { evidenceFailures: 1 }), m = message(), summaries = [];
+    t.mock.method(console, 'log', value => summaries.push(JSON.parse(value)));
+    let clock = 0;
+    const rpc = async (name, args, cfg) => {
+        clock += name === 'recover_fal_dispatch' ? 2 : name === 'claim_fal_dispatch' ? 3 : 5;
+        return d.rpc(name, args, cfg);
+    };
+    const submit = async (...args) => { clock += 11; return d.submit(...args); };
+    const result = await runFalDispatchQueue(batch(m), env, { rpc, submit, measureNow: () => clock });
+    assert.equal(result.ok, true);
+    assert.equal(d.submits, 1);
+    assert.deepEqual(m.actions, ['ack']);
+    assert.equal(summaries.length, 1);
+    assert.equal(summaries[0].elapsed_ms, 28);
+    assert.deepEqual(summaries[0].rpc_timings, {
+        recover_fal_dispatch: { calls: 2, total_ms: 4, max_ms: 2 },
+        claim_fal_dispatch: { calls: 1, total_ms: 3, max_ms: 3 },
+        record_fal_dispatch: { calls: 2, total_ms: 10, max_ms: 5 },
+    });
+    assert.equal(JSON.stringify(summaries).includes('private fixture prompt'), false);
+    assert.equal(JSON.stringify(summaries).includes('test-service'), false);
+    assert.equal(JSON.stringify(summaries).includes('test-fal'), false);
+});
+
+test('a lost claim acknowledgement is timed and still retries without submission', async t => {
+    const d = controlled(t, { lostClaim: true }), m = message(), summaries = [];
+    t.mock.method(console, 'log', value => summaries.push(JSON.parse(value)));
+    let clock = 0;
+    const rpc = async (...args) => { clock += 8; return d.rpc(...args); };
+    await runFalDispatchQueue(batch(m), env, { ...d, rpc, measureNow: () => clock });
+    assert.deepEqual(m.actions, ['retry']);
+    assert.equal(d.submits, 0);
+    assert.equal(summaries[0].elapsed_ms, 16);
+    assert.deepEqual(summaries[0].rpc_timings.claim_fal_dispatch, { calls: 1, total_ms: 8, max_ms: 8 });
+    assert.equal(summaries[0].rpc_timings.record_fal_dispatch.calls, 0);
+});
