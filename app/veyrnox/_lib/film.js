@@ -16,6 +16,14 @@ export const LANDING_FILM = {
   renderedFrom: '37e3a2940363ef2a',
 };
 
-// One film, fetched only once it is half on screen. 720p of flat colour
-// encodes well under this; the cap is here to catch a careless re-encode.
+// Owner-selected public reel; provenance is in docs/product/showcase-clips.md.
+export const BREAKTHROUGH_FILM = {
+  video: '/film/breakthrough-superhero.mp4',
+  poster: '/film/breakthrough-superhero.jpg',
+  width: 720,
+  height: 900,
+};
+
+// Each film is fetched only once half on screen. The cap catches a careless
+// re-encode before it reaches the landing page.
 export const MAX_FILM_BYTES = 2 * 1024 * 1024;

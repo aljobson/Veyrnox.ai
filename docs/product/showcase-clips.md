@@ -87,3 +87,19 @@ replacement, also check the crop and hover/focus/touch behavior in a browser.
 The fifteen-second product film under the hero is separate. It shows the
 Generate button, credit statement and price list. Its source and render
 instructions remain in `scripts/landing-film/README.md`.
+
+## The breakthrough video
+
+The owner selected [this public Facebook reel](https://www.facebook.com/reel/1376753811233996)
+by Tim Gray on 9 October 2026, shared as
+`https://www.facebook.com/share/v/1E6dPQfyKL/?mibextid=wwXIfr`.
+Its title is “Make Viral Videos in 3 Clicks 💥”. The five-second clip shows a
+LEGO superhero carrying a coffee cup out of a social-media post.
+
+`BREAKTHROUGH_FILM` supplies the prominent portrait player immediately under
+the hero. The complete clip is served from `/film/breakthrough-superhero.mp4`
+as a silent H.264 file at 720 × 900, with no crop. Its poster is a frame at
+2.2 seconds. The existing `FilmPlayer` supplies visible Play/Pause, pauses
+off screen, leaves the poster still for reduced motion/data saver, and
+fetches the file only when playback begins. It is labelled as viral
+inspiration, without attributing it to a Veyrnox model.
