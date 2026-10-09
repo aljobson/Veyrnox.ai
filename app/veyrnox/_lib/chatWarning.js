@@ -3,7 +3,8 @@
 // Credits (chatLocal.js). The warning is kept with the job id that came with `start`. When its chat is next opened, a
 // page reload included, that job is read first, and a turn the server has settled takes the warning away or changes
 // what is kept. A read that fails, or a job that is not finished, changes nothing: the warning stays and is asked about
-// the next time. A warning with no job (Stop came before `start`) is never asked about.
+// the next time. A warning with no job is never asked about: Stop came before `start`, or the warning took the place of
+// another warning, so it stands for more than one turn (useChatSend.js).
 // The job read is handed in, and only the store is changed here: the screen then shows what is stored, as it does
 // whenever a chat arrives on it. One import, with its extension: the tests load this file directly.
 import { NEW_CHAT, clearNotice, readCreditsWarning, readDraft, textMark, writeDraft, writeNotice } from './chatLocal.js';
@@ -58,7 +59,8 @@ export async function askKeptWarning({ warning, getJob, limitMs = KEPT_READ_LIMI
  *   'saved'     the chat shows the reply and its price, so the warning is forgotten. After `stop_unsure` the same message
  *               is then in the chat, charged, and in the box: the box is emptied while it still holds exactly that
  *               message, text the person has changed is left, and `stop_saved` is kept either way so that it is said
- *               on screen and after a page reload. Under New chat there is no chat to show the reply, so nothing changes
+ *               on screen and after a page reload. Under New chat there is no chat to show the reply, so the warning
+ *               stays; the answer is final, so its job is let go and it is not asked about again
  * The answer is for the warning that was read. If another is kept by now (a later message ended with its own), or none
  * is (a later message was saved, the chat was deleted), nothing is changed.
  * @param {string} chatId the chat, or NEW_CHAT
@@ -72,7 +74,8 @@ export function settleKeptWarning(storage, userId, chatId, asked) {
   if (!now || now.code !== warning.code || now.job !== warning.job) return false;
   if (verdict === 'refunded') { clearNotice(storage, userId, chatId); return true; }
   if (verdict === 'unsaved') { writeNotice(storage, userId, chatId, 'reply_not_saved'); return true; }
-  if (verdict !== 'saved' || chatId === NEW_CHAT) return false;
+  if (verdict !== 'saved') return false;
+  if (chatId === NEW_CHAT) { writeNotice(storage, userId, chatId, warning.code); return true; }
   if (warning.code !== 'stop_unsure') { clearNotice(storage, userId, chatId); return true; }
   if (warning.sent && textMark(readDraft(storage, userId, chatId)) === warning.sent) writeDraft(storage, userId, chatId, '');
   writeNotice(storage, userId, chatId, 'stop_saved');

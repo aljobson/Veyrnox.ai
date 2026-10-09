@@ -76,7 +76,7 @@ export function chatErrorCopy(code, { credits } = {}) {
     case 'connection_refunded': return 'The connection dropped before the reply finished. Nothing was saved and no Credits were used. Your message is back in the box.';
     case 'stop_saving': return 'Stopped. We are still saving this reply, and it may use Credits. Open this chat again in a moment to see what was kept.';
     case 'stop_refunded': return 'Stopped. Nothing was saved and no Credits were used. Your message is back in the box.';
-    case 'stop_saved': return 'A reply was saved after you pressed Stop. This chat shows it and the Credits it used. You do not need to send that message again.';
+    case 'stop_saved': return 'A reply was saved after you pressed Stop. This chat shows it and its price. You do not need to send that message again.';
     case 'stop_unsure': return 'Stopped before any text arrived. If a reply is still saved, it will show in this chat and use Credits.';
     default: return code && code.startsWith('provider_')
       ? 'The model did not finish. No Credits were used. Try again, or pick another model.'

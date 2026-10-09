@@ -15,7 +15,7 @@ const ALL_PREFIXES = [DRAFT_PREFIX, STAR_PREFIX, NOTICE_PREFIX, 'veyrnox_chat_dr
 export const NEW_CHAT = 'new';
 export const MAX_DRAFT = 8000;
 export const MAX_STARS = 200;
-export const MAX_NOTICE = 120; // characters of one stored notice: a code, and the number its words may need
+export const MAX_NOTICE = 120; // characters of one stored notice: a code, the number its words may need, and for a warning its turn's job and text mark (88 at most)
 const MAX_NOTICE_CREDITS = 1_000_000;
 const UNKNOWN_NOTICE = 'unknown';
 // Notices that say Credits were used, or still may be, by a message the chat does not show: Stop or a dropped
@@ -107,8 +107,8 @@ function stored(storage, userId, chatId) {
 /**
  * The notice waiting for a chat ('new' for one not created yet): what the last message sent from it ended with. It
  * is stored beside that chat's draft so that text given back to the box is never there without it, a page reload
- * included. Reading does not forget it. Only a code is stored and only a code is read back: the screen makes the
- * words, so nothing found in storage is shown as it is.
+ * included. Reading does not forget it. Only a code is read back here, never words: the screen makes the words, so
+ * nothing found in storage is shown as it is. What else a warning is kept with is read by readCreditsWarning.
  * @returns {{code: string, credits?: number}|null} `credits` is the price, for the one notice whose words name it
  */
 export function readNotice(storage, userId, chatId) {
@@ -122,7 +122,7 @@ export function readNotice(storage, userId, chatId) {
  * that used no Credits (it was refused before it started, or it started and they came back) says nothing about the
  * one before it, so the send asks this first and leaves such a warning kept (useChatSend.js).
  * With it, what was kept about its turn: `job`, the id to ask the server by, and `sent`, the mark of the text that was
- * given back (textMark). Neither is there for a turn that never started.
+ * given back (textMark). Neither is there for a turn that never started, or for a warning that took another's place.
  * @returns {{code: string, job?: string, sent?: string}|null}
  */
 export function readCreditsWarning(storage, userId, chatId) {

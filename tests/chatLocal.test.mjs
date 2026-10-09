@@ -335,6 +335,12 @@ test('the one warning that gives the message back keeps a mark of its text besid
   }
   // The mark: the length and a 32-bit hash, in a fixed shape. The same text gives the same mark; a changed one does not.
   assert.match(textMark(text), /^[0-9a-z]{1,4}\.[0-9a-z]{1,7}$/);
+  // Both halves are there: the length first, in base 36, then the hash. Texts of the same length differ in the second.
+  assert.equal(textMark(text).split('.')[0], text.length.toString(36));
+  assert.equal(textMark('').split('.')[0], '0');
+  assert.equal(textMark('x'.repeat(MAX_DRAFT)).split('.')[0], MAX_DRAFT.toString(36));
+  assert.notEqual(textMark('abc').split('.')[1], textMark('abd').split('.')[1]);
+  assert.equal(textMark('abc'), '3.7aigaz', 'FNV-1a over the UTF-16 units: a known value, so the mark does not change under a stored warning');
   assert.equal(textMark(text), textMark('Describe a lighthouse.'));
   for (const other of ['Describe a lighthouse', 'describe a lighthouse.', 'Describe a lighthouse. ', `${text}\n\ntyped since`, '']) assert.notEqual(textMark(other), textMark(text), JSON.stringify(other));
   assert.match(textMark('x'.repeat(MAX_DRAFT)), /^[0-9a-z]{1,4}\.[0-9a-z]{1,7}$/, 'the longest draft still fits the shape');
@@ -350,7 +356,10 @@ test('storage is not trusted: a job or a mark is read back only in its own shape
   const key = rawNotice(s, 'thread-1');
   const mark = textMark('hello');
   // The job goes into a request path. Only a job id as the server makes them is ever read back.
-  const badJobs = ['job-1', '../../admin', `${JOB}/asset`, `${JOB}?x=1`, JOB.slice(0, 35), `${JOB}0`, JOB.replace('-', '_'), '', ' ', 42, null, true, [JOB], { id: JOB }];
+  // The whole string, start to end, in the one layout: something before it, after it, or 36 of the right characters in
+  // the wrong places is not a job id.
+  const badJobs = ['job-1', '../../admin', `${JOB}/asset`, `${JOB}?x=1`, JOB.slice(0, 35), `${JOB}0`, `0${JOB}`, `/${JOB}`, ` ${JOB}`, JOB.replace('-', '_'),
+    '6f1d2c3a0b4e-4c5d-8e9f-a1b2c3d4e5f6-', '-'.repeat(36), 'f'.repeat(36), JOB.replace('6f1d', '6g1d'), '', ' ', 42, null, true, [JOB], { id: JOB }];
   for (const bad of badJobs) {
     s.setItem(key, JSON.stringify({ code: 'stop_unsure', job: bad, sent: mark }));
     assert.deepEqual(readCreditsWarning(s, ME, 'thread-1'), { code: 'stop_unsure' }, `${JSON.stringify(bad)}: still a warning, with nothing to ask, and no mark without a job`);
@@ -373,6 +382,12 @@ test('storage is not trusted: a job or a mark is read back only in its own shape
   assert.deepEqual(readCreditsWarning(s, ME, 'thread-1'), { code: 'stop_unsure', job: JOB, sent: mark });
   s.setItem(key, JSON.stringify({ code: 'stop_unsure', job: JOB, pad: 'x'.repeat(MAX_NOTICE) }));
   assert.equal(readCreditsWarning(s, ME, 'thread-1'), null);
+  // The limit is 120 characters, and one character over it is too much. The longest record the screen writes is 88.
+  assert.equal(MAX_NOTICE, 120);
+  const fits = (n) => { const base = JSON.stringify({ code: 'stop_unsure', job: JOB, p: '' }); return JSON.stringify({ code: 'stop_unsure', job: JOB, p: 'x'.repeat(n - base.length) }); };
+  s.setItem(key, fits(120)); assert.deepEqual(readCreditsWarning(s, ME, 'thread-1'), { code: 'stop_unsure', job: JOB });
+  s.setItem(key, fits(121)); assert.equal(readCreditsWarning(s, ME, 'thread-1'), null);
+  assert.equal(readNotice(s, ME, 'thread-1'), null);
   // Nothing bad is written either: the write checks the same shapes.
   for (const bad of badJobs) {
     writeNotice(s, ME, 'thread-1', 'connection_lost', { job: bad });

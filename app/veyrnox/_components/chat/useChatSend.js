@@ -45,10 +45,13 @@ export function useChatSend({ text, setText, model, imagesBlocked, chosen, price
     const v = chatView.current;
     const at = () => sendHome(v, thread ? thread.id : null);
     // What an ending says is kept with its chat, as a code (chatLocal.js): the screen shows it whenever that chat is opened, a
-    // page reload included, until a later message is sent from it. It goes on screen now only while that chat is the one on it.
+    // page reload included, until a later message is sent from it or, for a warning, the server says its turn has settled.
+    // It goes on screen now only while that chat is the one on it.
     // The reply's job (none before `start`) and the text sent go to the store with it. The store keeps them only beside a warning
     // about a turn that is not settled, the text as a mark: opening the chat later asks that job, and a settled turn takes the warning away.
-    const tell = (code, extra) => { forgetEarlier(); const { home, here } = at(); keepNotice(home, code, { ...extra, job: jobId, sent: content }); if (here) setError(chatErrorCopy(code, extra)); };
+    // Not when a warning is still kept for the chat this message was sent from (`over`): this notice takes its place, so one warning
+    // then stands for two turns and one job cannot answer for both. It keeps no job, and stays until a later message accounts for Credits.
+    const tell = (code, extra) => { const over = !!heldWarning(from); forgetEarlier(); const { home, here } = at(); keepNotice(home, code, { ...extra, job: over ? null : jobId, sent: content }); if (here) setError(chatErrorCopy(code, extra)); };
     // A message that used no Credits (it never started, or it started and they came back) has its text given back, and what it says
     // is about itself. It does not take the place of a warning that the message before it used Credits or still may: that warning
     // stays kept, and while its chat is on screen both are said, this one first. True when such a warning is kept, said or not.
