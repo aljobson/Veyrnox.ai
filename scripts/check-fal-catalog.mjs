@@ -23,8 +23,8 @@
  *
  * Exit 0 = clean, 1 = dead endpoint or margin breach found, or the wrong
  * catalog where production is required. A price that moved on fal's page is
- * a note in a clean run unless FAL_DRIFT_FAILS (set in fal-catalog-watch.yml)
- * is "listed" or "all".
+ * a note in a clean run unless FAL_DRIFT_FAILS is "listed" (what
+ * fal-catalog-watch.yml sets) or "all".
  */
 
 import { readFileSync } from 'node:fs';

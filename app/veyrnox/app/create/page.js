@@ -114,7 +114,7 @@ export default function CreateStudio() {
   }, [models, modelId, catalogLoading]);
 
   const model = models.find((m) => m.id === modelId) || null;
-  const prompt = promptText(typed, model); // a starter shot until then; never on a speech model, which would read it aloud
+  const prompt = promptText(typed, model); // a starter shot until then; never on an audio model, which would speak it or make sound of it
   // The picked model stays listed even when the tier filter would hide it.
   const listed = filterByTier(models, tier);
   const visibleModels = model && !listed.includes(model) ? [model, ...listed] : listed;

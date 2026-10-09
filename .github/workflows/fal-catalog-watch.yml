@@ -30,13 +30,15 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
           # Whether a price that moved on fal's page fails the run, and so
-          # opens the issue below. 'false' is how the watch has always run:
-          # drift is a note in a green run. 'listed' fails on a figure
-          # recorded in scripts/lib/fal-unit-rates.mjs that moved: fal's base
-          # price on any row, or the rate quoted for a unit-priced one. 'all'
-          # adds the "$" figures on every other page, which files on noise
-          # (see failingCount). Turning it on is the owner's decision.
-          FAL_DRIFT_FAILS: 'false'
+          # opens the issue below. 'listed' fails on a figure recorded in
+          # scripts/lib/fal-unit-rates.mjs that moved, where the figure to
+          # look for is exact: fal's base price on any row, or the rate
+          # quoted for a unit-priced one (the owner's choice, 2026-10-09,
+          # made when it covered the unit-priced rows only). 'false' is how
+          # the watch ran before: drift is a note in a green run. 'all' adds
+          # the "$" figures on every other page, which files on noise (see
+          # failingCount).
+          FAL_DRIFT_FAILS: 'listed'
         run: |
           set +e
           # --require-production: the secrets above cannot be read back, and
@@ -69,7 +71,7 @@ jobs:
           # "fal's" closed that quoting and the step died with a syntax
           # error, so drift has never opened an issue (audit 2026-09-23).
           body=$(printf '%s\n\n%s\n\n```\n%s\n```\n' \
-            "The weekly fal catalog watcher found dead endpoints, margin breaches, or request contracts out of step with fal's live schema." \
+            "The weekly fal catalog watcher found dead endpoints, margin breaches, a listed price that moved on fal's page, or request contracts out of step with fal's live schema. A report that starts with catalog: NOT production means the watch's SUPABASE_URL secret is another project's and nothing was checked." \
             "Floor pricing (ADR-0014) leaves no headroom, so any fal price rise breaches immediately. A dead endpoint means every generation on that model debits, fails and refunds." \
             "$(cat report.txt)")
           if [ -n "$existing" ]; then
