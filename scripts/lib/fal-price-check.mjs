@@ -1,6 +1,6 @@
 // The sums behind scripts/check-fal-catalog.mjs: the prices on a fal model
 // page against one catalog row. No network here, so `npm test` covers it
-// (tests/falPriceCheck.test.mjs).
+// (tests/falPriceCheck.test.mjs, tests/falBasePrice.test.mjs).
 
 export const REFERENCE_DOLLARS_PER_CREDIT = 0.033;
 export const MARGIN_FLOOR = 0.5;
@@ -99,28 +99,104 @@ export function checkRow(row, prices, unitRates = {}) {
     return { id: row.id, listed, rate, unit, total, credits, margin, verdict, seen: prices.slice(0, 8), cost };
 }
 
+/**
+ * fal's own billing figure for an endpoint, from its model page. The page
+ * payload carries it as an object keyed endpointBilling (twice) and
+ * publicEndpointBilling, inside a script string, so its quotes arrive as \":
+ *
+ *   \"endpointBilling\":{\"endpoint\":\"fal-ai/ace-step\",\"billing_unit\":\"seconds\",\"price\":0.0002,...}
+ *
+ * Returns each distinct { unit, price } the page gives for `endpoint`: one
+ * when the copies agree, none when the object is gone or has no unit and
+ * numeric price. Copies that disagree are all returned; choosing between
+ * them is not this function's to do.
+ */
+export function extractBilling(html, endpoint) {
+    const found = new Map();
+    for (const m of html.replaceAll('\\"', '"').matchAll(/"(?:endpointBilling|publicEndpointBilling)":(\{[^{}]*\})/g)) {
+        let billing;
+        try { billing = JSON.parse(m[1]); } catch { continue; }
+        const { billing_unit: unit, price } = billing;
+        if (billing.endpoint !== endpoint || typeof unit !== 'string' || typeof price !== 'number') continue;
+        found.set(`${price}/${unit}`, { unit, price });
+    }
+    return [...found.values()];
+}
+
+/**
+ * The billing figures on an endpoint's page against the base price recorded
+ * for it in `basePrices`. A base price is the price of one unit, not of one
+ * generation, so it is only ever held against the copy taken from the same
+ * field, and exactly.
+ *
+ * status  'ok'        the page gives one figure and it is the recorded one
+ *         'moved'     a different price or unit, more than one figure, or none
+ *         'unlisted'  nothing is recorded for the endpoint, so nothing is compared
+ */
+export function checkBase(endpoint, readings, basePrices = {}) {
+    if (!Object.hasOwn(basePrices, endpoint)) return { status: 'unlisted', recorded: null, readings };
+    const recorded = basePrices[endpoint];
+    const same = readings.length === 1 && readings[0].price === recorded.price && readings[0].unit === recorded.unit;
+    return { status: same ? 'ok' : 'moved', recorded, readings };
+}
+
+/** One catalog row against its fal page: the "$" figures, and the billing figure as `base`. */
+export function checkPage(row, html, unitRates = {}, basePrices = {}) {
+    const base = checkBase(row.provider_endpoint, extractBilling(html, row.provider_endpoint), basePrices);
+    return { ...checkRow(row, extractPrices(html), unitRates), base };
+}
+
+/** A row whose page no longer shows what is expected of it. */
+export const drifts = (r) => r.verdict === 'drift' || r.base?.status === 'moved';
+
+/** The same, where the figure it is held to is exact: a base price, or a listed rate. */
+export const driftsExactly = (r) => r.base?.status === 'moved' || (r.listed && r.verdict === 'drift');
+
 const percent = (fraction) => (fraction * 100).toFixed(1);
+const figure = (b) => `$${b.price}/${b.unit}`;
+// None: the object is gone, renamed, or no longer a flat one with a unit and a price.
+const billingShown = (readings) => readings.map(figure).join(' and ') || 'none read from the page';
 
 /** What a COST? finding says, shared by the row line and the summary. */
 export function costSentence(r) {
     return `records $${r.total.toFixed(4)}, $${r.rate.toFixed(4)} ${r.unit} = $${r.cost.built.toFixed(4)}`;
 }
 
+/** What the summary says about a drifting row: a sentence for each figure that moved. */
+export function driftSummary(r) {
+    const out = [];
+    if (r.verdict === 'drift') out.push(`expected $${r.rate.toFixed(4)} ${r.unit}, page shows ${r.seen.map((p) => '$' + p).join(', ') || 'no price'}`);
+    if (r.base?.status === 'moved') out.push(`expected base price ${figure(r.base.recorded)}, fal's billing: ${billingShown(r.base.readings)}`);
+    return out;
+}
+
+/** One line on how many rows had their base price compared, so a plain `ok` is known to mean it was. */
+export function baseTally(checked) {
+    const count = (status) => checked.filter((r) => r.base.status === status).length;
+    const [moved, unlisted] = [count('moved'), count('unlisted')];
+    return `base prices: ${count('ok')} of ${checked.length} match fal's billing`
+        + (moved ? `, ${moved} moved` : '') + (unlisted ? `, ${unlisted} not recorded` : '');
+}
+
 /** The report lines for one checked row. */
 export function rowLines(r) {
     const id = r.id.padEnd(20);
+    const moved = r.base?.status === 'moved';
     const lines = [];
     if (r.verdict === 'breach') lines.push(`BREACH ${id} margin ${percent(r.margin)}% < ${MARGIN_FLOOR * 100}%`);
     if (r.verdict === 'drift') {
         const page = r.seen.length ? r.seen.map((p) => '$' + p).join(' ') : 'no price';
         lines.push(`DRIFT? ${id} expect $${r.rate.toFixed(4)} ${r.unit}  page: ${page}`);
     }
+    if (moved) lines.push(`DRIFT? ${id} expect base price ${figure(r.base.recorded)}  fal's billing: ${billingShown(r.base.readings)}`);
     if (r.cost) {
         const under = r.cost.margin < MARGIN_FLOOR ? ` < ${MARGIN_FLOOR * 100}%` : '';
         lines.push(`COST?  ${id} ${costSentence(r)}  ${r.credits}cr  margin ${percent(r.cost.margin)}% at that cost${under}`);
-    } else if (r.verdict === 'ok') {
+    } else if (r.verdict === 'ok' && !moved) {
         lines.push(`ok    ${id} $${r.rate.toFixed(4)} ${r.unit.padEnd(14)} ${r.credits}cr  margin ${percent(r.margin)}%`);
     }
+    // Nothing was compared with fal's billing, so the line must not read as if it was.
+    if (r.base?.status === 'unlisted') lines[lines.length - 1] += `  no base price recorded (fal's billing: ${billingShown(r.base.readings)})`;
     return lines;
 }
 
@@ -128,14 +204,16 @@ export const DRIFT_MODES = ['false', 'listed', 'all'];
 
 /**
  * How many findings fail the run. A dead endpoint and a recorded cost under
- * the floor always do. What fal's own rate says does only when asked for:
+ * the floor always do. What fal's own page says does only when asked for:
  *
- *   'listed'  a moved rate on a row in `unitRates`, where the figure to look
- *             for is exact, and a listed row that is under the floor at fal's
- *             rate while its recorded cost says otherwise
- *   'all'     those, and drift on every other row. A stray figure on fal's
- *             pages reads as drift on a row whose own page shows no price,
- *             so this one files on noise.
+ *   'listed'  a figure recorded in fal-unit-rates.mjs that moved, where the
+ *             figure to look for is exact (`listedDrift`: fal's base price on
+ *             any row, or the quoted rate of a row in `unitRates`), and a
+ *             listed row that is under the floor at fal's rate while its
+ *             recorded cost says otherwise
+ *   'all'     those, and the "$" figures on every other row. A stray figure
+ *             on fal's pages reads as drift on a row whose own page shows no
+ *             price, so this one files on noise.
  */
 export function failingCount({ dead, breach, drift, listedDrift, underFloor }, mode) {
     if (mode === 'all') return dead + breach + drift + underFloor;
