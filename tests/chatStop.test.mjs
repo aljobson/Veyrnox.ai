@@ -208,15 +208,17 @@ test('each ending of a Stop: saved shows the chat, nothing came back gives the t
     assert.match(stop, /if \(outcome === 'saved' \|\| outcome === 'unsaved'\) \{\n[^}]*await reload\(\);/);
     // Charged but not stored: the same words as when a reply that ran to its end could not be stored, after the reload
     // that would clear them.
-    assert.match(stop, /await reload\(\);[^\n]*\n {10}if \(outcome === 'unsaved'\) tell\(chatErrorCopy\('reply_not_saved'\)\);/);
+    assert.match(stop, /await reload\(\);[^\n]*\n {10}if \(outcome === 'unsaved'\) tell\('reply_not_saved'\);/);
     assert.match(stop, /\} else if \(outcome === 'nothing'\) giveBack\(true\);/);
     // Not settled, and no text had arrived (Stop before `start`, or after it but before the first words): there is
     // nothing on screen to keep, so the message goes back. The chat is kept, since nothing says the turn is over, and
     // the person is told a reply may still land.
     assert.match(sender, /if \(ev === 'delta'\) \{ hadText = true; setMessages\(/);
-    assert.match(stop, /else if \(!hadText\) \{\n[^}]*giveBack\(false\); tell\(chatErrorCopy\('stop_unsure'\)\);\n {8}\} else \{/);
-    const pending = stop.slice(stop.indexOf("chatErrorCopy('stop_unsure')"));
-    assert.match(pending, /tell\(chatErrorCopy\('stop_saving'\)\)/);
+    // tell() takes the code: it is kept with the chat, so the notice is still there after a page reload, and the words
+    // are made from it (tests/chatSendHome.test.mjs).
+    assert.match(stop, /else if \(!hadText\) \{\n[^}]*giveBack\(false\); tell\('stop_unsure'\);\n {8}\} else \{/);
+    const pending = stop.slice(stop.indexOf("tell('stop_unsure')"));
+    assert.match(pending, /tell\('stop_saving'\)/);
     assert.doesNotMatch(pending, /setText\(content\)|giveBack|chatApi\.remove|open\(thread\.id\)|reload\(/, 'pending keeps the text on screen and the chat as it is');
     assert.doesNotMatch(stop, /chatApi\.remove/, 'the Stop branch deletes a chat only through giveBack(true)');
 });
@@ -227,7 +229,7 @@ test('giving the text back deletes a chat made for the message only when the tur
     assert.match(give[1], /setText\(content\)/);
     assert.match(give[1], /if \(over && created\) \{ chatApi\.remove\(thread\.id\)\.catch\(\(\) => \{\}\);/);
     // The same path as a `done` event that says nothing came back.
-    assert.match(sender, /\n {8}giveBack\(true\);\n {8}if \(streamError\) tell\(chatErrorCopy\(streamError\)\);/);
+    assert.match(sender, /\n {8}giveBack\(true\);\n {8}if \(streamError\) tell\(streamError\);/);
 });
 
 test('a reply that is still being saved shows no price, and the button says it is stopping', () => {

@@ -1,6 +1,7 @@
 // Chat conveniences kept in this browser only, like the library favourites:
-// an unsent draft per chat and the replies a user starred. Nothing is sent to
-// the server, so neither follows the user to another device. Every key carries
+// an unsent draft per chat, the notice that goes with it, and the replies a
+// user starred. Nothing is sent to the server, so none of it follows the user
+// to another device. Every key carries
 // the signed-in user's id, and authClient's setSession calls clearChatLocal
 // when the session ends or a different user signs in, so one person's unsent
 // text is never shown to the next person to use this browser. With no user id
@@ -8,11 +9,15 @@
 
 const DRAFT_PREFIX = 'veyrnox_chat_draft_v2:';
 const STAR_PREFIX = 'veyrnox_chat_stars_v2:';
-// v1 keys had no user id in them. They are never read, only removed.
-const ALL_PREFIXES = [DRAFT_PREFIX, STAR_PREFIX, 'veyrnox_chat_draft_v1:', 'veyrnox_chat_stars_v1:'];
+const NOTICE_PREFIX = 'veyrnox_chat_notice_v1:';
+// The v1 draft and star keys had no user id in them. They are never read, only removed.
+const ALL_PREFIXES = [DRAFT_PREFIX, STAR_PREFIX, NOTICE_PREFIX, 'veyrnox_chat_draft_v1:', 'veyrnox_chat_stars_v1:'];
 export const NEW_CHAT = 'new';
 export const MAX_DRAFT = 8000;
 export const MAX_STARS = 200;
+export const MAX_NOTICE = 120; // characters of one stored notice: a code, and the number its words may need
+const MAX_NOTICE_CREDITS = 1_000_000;
+const UNKNOWN_NOTICE = 'unknown';
 const ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
 
 const ok = (id) => typeof id === 'string' && ID_RE.test(id);
@@ -50,6 +55,49 @@ export function addToDraft(storage, userId, chatId, text) {
   writeDraft(storage, userId, chatId, was.trim() && was !== text ? `${text}\n\n${was}` : text);
 }
 
+const wholeCredits = (n) => Number.isInteger(n) && n >= 0 && n <= MAX_NOTICE_CREDITS;
+
+/**
+ * The notice waiting for a chat ('new' for one not created yet): what the last message sent from it ended with. It
+ * is stored beside that chat's draft so that text given back to the box is never there without it, a page reload
+ * included. Reading does not forget it. Only a code is stored and only a code is read back: the screen makes the
+ * words, so nothing found in storage is shown as it is.
+ * @returns {{code: string, credits?: number}|null} `credits` is the price, for the one notice whose words name it
+ */
+export function readNotice(storage, userId, chatId) {
+  const key = keyFor(NOTICE_PREFIX, userId, chatId);
+  if (!key) return null;
+  try {
+    const raw = storage.getItem(key);
+    if (typeof raw !== 'string' || raw.length > MAX_NOTICE) return null;
+    const n = JSON.parse(raw);
+    if (!n || !ok(n.code)) return null;
+    return wholeCredits(n.credits) ? { code: n.code, credits: n.credits } : { code: n.code };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Keep one notice for a chat. A later one replaces it. A code that cannot be kept is kept as 'unknown', which reads
+ * as the general failure: something ended badly, and the chat must not look as if nothing did.
+ */
+export function writeNotice(storage, userId, chatId, code, { credits } = {}) {
+  const key = keyFor(NOTICE_PREFIX, userId, chatId);
+  if (!key) return;
+  try {
+    const n = { code: ok(code) ? code : UNKNOWN_NOTICE };
+    storage.setItem(key, JSON.stringify(wholeCredits(credits) ? { ...n, credits } : n));
+  } catch { /* blocked or full: nothing is kept, and the notice is on screen only */ }
+}
+
+/** Forget a chat's notice: a message was sent from that chat, or the chat was deleted. */
+export function clearNotice(storage, userId, chatId) {
+  const key = keyFor(NOTICE_PREFIX, userId, chatId);
+  if (!key) return;
+  try { storage.removeItem(key); } catch { /* storage may be unavailable */ }
+}
+
 /** @returns {string[]} message ids the user starred in this chat, newest first */
 export function readStars(storage, userId, threadId) {
   const key = keyFor(STAR_PREFIX, userId, threadId);
@@ -76,7 +124,7 @@ export function toggleStar(storage, userId, threadId, messageId) {
   }
 }
 
-/** Forget every draft and star held in this browser, whoever typed them. */
+/** Forget every draft, notice and star held in this browser, whoever typed them. */
 export function clearChatLocal(storage) {
   try {
     for (let i = storage.length - 1; i >= 0; i -= 1) {

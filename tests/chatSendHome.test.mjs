@@ -1,14 +1,16 @@
 // A send that ends after the person opened another chat, or pressed New chat (ADR-0067). A reply can take a while and
 // nothing stops them leaving. Owner decision, 2026-10-09: everything stays with the chat the message was sent in.
 // Nothing on the screen changes except the chat list; given-back text waits in that chat's stored draft and its
-// notice is held until that chat is opened; when that chat no longer exists, both wait under New chat.
+// notice is stored beside it, and shown whenever that chat is opened; when that chat no longer exists, both wait
+// under New chat. The notice was held in memory at first, and lost on a page reload while the text was not: the
+// store is tested in tests/chatLocal.test.mjs, and what a whole send keeps in tests/chatSendFlow.test.mjs.
 // Which chat an ending belongs to, and whether that chat is on screen, is a plain module and is tested directly.
 // The screen and the send hook are not importable here, so their part is pinned by reading the source.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { NEW_CHAT } from '../app/veyrnox/_lib/chatLocal.js';
-import { ask, enter, forget, giveUp, hold, land, leave, newChatView, onScreen, sendHome } from '../app/veyrnox/_lib/chatSendHome.js';
+import { ask, enter, forget, giveUp, land, leave, newChatView, onScreen, sendHome } from '../app/veyrnox/_lib/chatSendHome.js';
 
 const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
 const screen = read('../app/veyrnox/_components/chat/ChatWorkspace.js');
@@ -75,20 +77,21 @@ test('a pressed chat that could not be read leaves the person where they were', 
     assert.equal(view.asked, 'c');
 });
 
-test('a pressed chat that could not be read: what was held meanwhile for the chat still on screen is handed over', () => {
-    // The person pressed chat b, the send in chat a ended while b was being read (so its notice was held), and then b
-    // could not be read. They are still looking at chat a, and nothing would ever open it again to show the notice.
+test('a pressed chat that could not be read: the screen is told the person is back, so it shows what waits for the chat still on it', () => {
+    // The person pressed chat b, the send in chat a ended while b was being read (so its notice was not put on screen),
+    // and then b could not be read. They are still looking at chat a, and nothing would ever open it again to show the
+    // notice. giveUp() says they are back; the screen then reads chat a's stored notice (pinned below, in open()).
+    // It handed the notice over itself while notices were held here. Now that they are stored, it says only where the
+    // person is, and the notice is not used up by being shown.
     const view = showing('a');
     ask(view, 'b');
-    hold(view, 'a', 'If a reply is still saved, it will use Credits.');
-    assert.equal(giveUp(view, 'b'), 'If a reply is still saved, it will use Credits.');
+    assert.equal(giveUp(view, 'b'), true);
     assert.equal(onScreen(view, 'a'), true);
-    assert.equal(land(view, 'a'), null, 'handed over once');
-    // Nothing was held: nothing to hand over. A press the person has moved on from hands over nothing either.
-    ask(view, 'b');
-    assert.equal(giveUp(view, 'b'), null);
-    ask(view, 'b'); ask(view, 'c'); hold(view, 'a', 'x');
-    assert.equal(giveUp(view, 'b'), null);
+    assert.equal(view.shown, 'a', 'the chat whose notice the screen reads');
+    // A press the person has moved on from: they are on their way to chat c, which brings its own notice.
+    ask(view, 'b'); ask(view, 'c');
+    assert.equal(giveUp(view, 'b'), false);
+    assert.equal(view.asked, 'c');
 });
 
 test('on the way back to the chat: it is not on screen yet, but it is the one to read again', () => {
@@ -159,29 +162,35 @@ test('a chat that is opened again exists: its endings land in it', () => {
 });
 
 // ---- the notice ----
+// Three tests lived here while a notice was held in this module: held for a chat that is not on screen and never
+// shown in another, a later one replaces it, and it is dropped when its chat is deleted. The notice is stored now
+// (chatLocal.js), so the first two are tests of the store in tests/chatLocal.test.mjs, and the third is the pin on
+// remove() below. "Shown once" is gone on purpose: a notice that was used up by being shown would be missing after
+// the next page reload, with the given-back text still in the box.
 
-test('a notice for a chat that is not on screen is held, and shown once, when that chat is opened', () => {
-    const view = showing('b');
-    hold(view, 'a', 'It may have used Credits.');
-    assert.equal(land(view, 'b'), null, 'never in another chat');
-    assert.equal(land(view, NEW_CHAT), null, 'nor under New chat');
-    ask(view, 'a');
-    assert.equal(land(view, 'a'), 'It may have used Credits.');
-    assert.equal(land(view, 'a'), null, 'once');
+test('the view holds no notice: which chat is on screen is all it knows', () => {
+    const view = newChatView();
+    assert.deepEqual(Object.keys(view).sort(), ['asked', 'gone', 'left', 'shown']);
+    assert.equal(land(view, 'a'), undefined, 'landing says nothing: the screen reads the notice from the store');
 });
 
-test('a later notice for the same chat replaces the one held', () => {
-    const view = showing('b');
-    hold(view, 'a', 'first'); hold(view, 'a', 'second');
-    assert.equal(land(view, 'a'), 'second');
+test('a notice is put on screen only by reading the store, at each place a chat arrives on it', () => {
+    // On the first render (after a page reload the screen shows a chat that has not started), when a chat is opened,
+    // when New chat is shown, when a pressed chat could not be read, and when the first load is tried again.
+    assert.match(screen, /const \[error, setError\] = useState\(\(\) => waiting\(NEW_CHAT\)\);/);
+    assert.equal(screen.split('setError(waiting(').length - 1, 3, 'open(), clear() and Try again');
+    assert.match(screen, /const retry = \(\) => \{ setReady\(false\); setLoadFailed\(false\); setError\(waiting\(NEW_CHAT\)\); setAttempt\(\(n\) => n \+ 1\); \};/);
+    // Reading does not forget. The store is written by the send hook, and by remove() below.
+    assert.equal(screen.split('dropNotice(').length - 1, 1, 'the screen forgets a notice in one place: a chat that was deleted');
+    assert.equal(screen.split('keepNotice(').length - 1, 0, 'and never keeps one itself');
 });
 
-test('a notice held for a chat is dropped when that chat is deleted', () => {
-    const view = showing('b');
-    hold(view, 'a', 'Check this chat before you send again.');
-    forget(view, 'a');
-    assert.equal(land(view, 'a'), null);
-    assert.equal(land(view, NEW_CHAT), null, 'it does not move to New chat: it was about a chat the person chose to delete');
+test('a message sent from a chat forgets the notice kept for that chat', () => {
+    // At the press, with the box: the person has the notice in front of them, and it was about the message before.
+    // A chat that has not started keeps its notice under New chat.
+    assert.match(send, /\n {4}sendingRef\.current = true; setBusy\(true\); setError\(null\); setText\(''\);\n {4}dropNotice\(active \? active\.id : NEW_CHAT\);/);
+    assert.equal(send.split('dropNotice(').length - 1, 1, 'nowhere else: an ending never forgets a notice, it replaces it');
+    assert.ok(send.indexOf('dropNotice(') > send.indexOf('imagesBlocked) return;'), 'a press that sends nothing forgets nothing');
 });
 
 // ---- the screen: which chat is asked for and which is shown ----
@@ -195,10 +204,12 @@ test('opening a chat notes the press first, and a read that lands after another 
     // messages in place: if the pressed chat then fails to load, the person is not left looking at a reply that says
     // it is still arriving.
     assert.match(open[1], /const r = await chatApi\.get\(id\);\n(?: {6}\/\/[^\n]*\n)? {6}if \(chatView\.current\.asked !== id\) \{ if \(chatView\.current\.shown === id\) setMessages\(r\.messages\); return false; \}/);
-    assert.match(open[1], /setError\(land\(chatView\.current, id\)\);/, 'the chat arrives with the notice that was held for it, or none');
-    // The chat could not be read: the person is back on the chat that was shown, and a notice held for it meanwhile is
-    // shown after the failure's own words, never dropped.
-    assert.match(open[1], /\} catch \(e\) \{ fail\(e\); const waiting = giveUp\(chatView\.current, id\); if \(waiting\) setError\(\(was\) => \(was \? `\$\{was\} \$\{waiting\}` : waiting\)\); return false; \}$/);
+    assert.match(open[1], / land\(chatView\.current, id\); setError\(waiting\(id\)\);/, 'the chat arrives with the notice that is stored for it, or none');
+    // The chat could not be read: the person is back on the chat that was shown, and the notice stored for it is
+    // shown after the failure's own words, never dropped. That covers one raised while they were on their way out,
+    // and one that was on screen before the press: fail() has just written over it.
+    // When the two are the same words (a stored notice with no code of its own reads as the general failure), they are said once.
+    assert.match(open[1], /\} catch \(e\) \{ fail\(e\); if \(giveUp\(chatView\.current, id\)\) \{ const kept = waiting\(chatView\.current\.shown\); if \(kept\) setError\(\(was\) => \(was && was !== kept \? `\$\{was\} \$\{kept\}` : kept\)\); \} return false; \}$/);
 });
 
 test('the screen says when the chat page is left, so an ending that lands afterwards changes nothing', () => {
@@ -211,29 +222,31 @@ test('the draft effect stores the box under the chat on screen, and Stop is wire
     assert.match(sender, /\n {2}return \{ send, stop: \(\) => abortRef\.current\?\.abort\(\), busy, stopping, checking, progress \};\n/);
 });
 
-test('New chat notes the press and shows what was held for a chat that has not started', () => {
+test('New chat notes the press and shows what is stored for a chat that has not started', () => {
     assert.match(screen, /\n {2}const blank = \(\) => \{ ask\(chatView\.current, NEW_CHAT\); clear\(\); \};\n/);
     const clear = /\n {2}const clear = \(\) => \{([^\n]*)\};\n/.exec(screen);
     assert.ok(clear, 'the screen has clear()');
-    assert.match(clear[1], /setError\(land\(chatView\.current, NEW_CHAT\)\);/);
+    assert.match(clear[1], / land\(chatView\.current, NEW_CHAT\); setError\(waiting\(NEW_CHAT\)\);/);
     // The text given back for a chat that is gone is read from New chat's stored draft.
     assert.match(clear[1], /setText\(readDraft\(store\(\), getStoredUserId\(\), NEW_CHAT\)\);/);
 });
 
-test('deleting a chat forgets it, and clears the screen only when it was the one shown', () => {
+test('deleting a chat forgets it and its notice, and clears the screen only when it was the one shown', () => {
     const remove = /\n {2}const remove = async \(id\) => \{\n([\s\S]*?)\n {2}\};\n/.exec(screen);
     assert.ok(remove, 'the screen has remove()');
-    assert.match(remove[1], /await chatApi\.remove\(id\); setThreads\([^\n]*\); if \(forget\(chatView\.current, id\)\) clear\(\);/);
+    // The notice does not move to New chat: it was about a chat the person chose to delete. It is forgotten only once
+    // the server has deleted the chat: a delete that failed leaves the chat, and its notice, where they were.
+    assert.match(remove[1], /await chatApi\.remove\(id\); dropNotice\(id\); setThreads\([^\n]*\); if \(forget\(chatView\.current, id\)\) clear\(\);/);
     assert.doesNotMatch(remove[1], /blank\(\)/, 'a delete is not a press on New chat: a chat pressed meanwhile still opens');
 });
 
-test('the view is made once, and the send hook is given it and a way to store a draft', () => {
+test('the view is made once, and the send hook is given it and a way to store a draft and a notice', () => {
     assert.match(screen, /const chatView = useRef\(null\);\s+if \(chatView\.current === null\) chatView\.current = newChatView\(\);/);
     assert.match(screen, /\nconst saveDraft = \(chatId, text\) => writeDraft\(store\(\), getStoredUserId\(\), chatId, text\);/);
     assert.match(screen, /\nconst addDraft = \(chatId, text\) => addToDraft\(store\(\), getStoredUserId\(\), chatId, text\);/);
     const call = /useChatSend\(\{\n([\s\S]*?)\n {2}\}\);/.exec(screen);
     assert.ok(call, 'the screen calls the send hook');
-    assert.match(call[1], /\bchatView, saveDraft, addDraft\b/);
+    assert.match(call[1], /\bchatView, saveDraft, addDraft, keepNotice, dropNotice,$/);
 });
 
 // ---- send(): every ending goes through the same four doors ----
@@ -243,10 +256,15 @@ test('send() works out where its endings land from the chat it was sent in', () 
     assert.match(send, /\n {4}const at = \(\) => sendHome\(v, thread \? thread\.id : null\);\n/);
 });
 
-test('the notice goes on screen only when the chat is, and is held for it otherwise', () => {
-    assert.match(send, /\n {4}const tell = \(notice\) => \{ const \{ home, here \} = at\(\); if \(here\) setError\(notice\); else hold\(v, home, notice\); \};\n/);
-    // setError appears twice in send(): clearing the notice as the message is sent, and inside tell().
-    assert.equal(send.split('setError(').length - 1, 2, 'no ending sets a notice on whatever chat is on screen');
+test('the notice is always kept with its chat, as a code, and goes on screen only when that chat is', () => {
+    // tell() takes the code, not the words: the code is what is stored, and the words are made from it here for the
+    // screen and again by the screen each time the chat is opened. It was tell(words), held in memory when not here.
+    assert.match(send, /\n {4}const tell = \(code, extra\) => \{ const \{ home, here \} = at\(\); keepNotice\(home, code, extra\); if \(here\) setError\(chatErrorCopy\(code, extra\)\); \};\n/);
+    assert.equal(send.split('keepNotice(').length - 1, 1, 'every notice that is kept is kept by tell()');
+    assert.doesNotMatch(send, /tell\(chatErrorCopy\(/, 'no ending hands tell() words');
+    // setError appears three times in send(): clearing the notice as the message is sent, inside tell(), and the one
+    // notice that is not kept (below), which is guarded by the same `here`.
+    assert.equal(send.split('setError(').length - 1, 3, 'no ending sets a notice on whatever chat is on screen');
     assert.match(send, /sendingRef\.current = true; setBusy\(true\); setError\(null\); setText\(''\);/);
 });
 
@@ -279,8 +297,8 @@ test('given-back text always goes into its chat\'s stored draft, and into the bo
     // A chat that is not shown may have a draft of its own by now: the text is added to it, not written over it.
     assert.match(give[1], /\n {6}if \(showing\) \{ saveDraft\(home, content\); setText\(content\); \} else addDraft\(home, content\);[^\n]*\n {6}if \(!here\) att\.clear\(\);[^\n]*$/);
     // The money rule. A turn that may still be saved gives its text back together with a notice that says so. Once
-    // the chat page has been left that notice has nowhere to go, so the text is not kept either (as before this
-    // guard, when it was put in a box that was no longer there).
+    // the chat page has been left the text is not kept (as before this guard, when it was put in a box that was no
+    // longer there). The notice is: it is stored, and shows when the chat is next opened.
     assert.match(give[1], /\n {6}const \{ home, here, showing, left \} = at\(\);\n {6}if \(left && !over\) return;[^\n]*\n(?: {6}\/\/[^\n]*\n)* {6}if \(showing\)/);
     // The home is worked out after a chat made for the message has been deleted, so its text goes to New chat.
     assert.ok(give[1].indexOf('forget(v, thread.id)') < give[1].indexOf('const { home, here, showing, left } = at();'));
@@ -310,32 +328,37 @@ test('a turn that never started gives the text back the same way, and its notice
     const never = /\n {6}\} else \{\n([\s\S]*?)\n {6}\}\n {4}\} finally \{/.exec(send);
     assert.ok(never, 'the catch block ends with the turn that never started');
     assert.match(never[1], /\n {8}giveBack\(true\);\n/);
-    assert.match(never[1], /tell\(chatErrorCopy\(e\.code, \{ credits: price \}\)\);/);
-    assert.match(never[1], /tell\(chatErrorCopy\('image_unreadable'\)\);/);
+    // The price goes with the code: the words need it, and it is stored with it so they can be made again after a reload.
+    assert.match(never[1], /tell\(e\.code, \{ credits: price \}\);/);
+    assert.match(never[1], /tell\('image_unreadable'\);/);
     assert.match(never[1], /else failed\(e\);$/);
     // Closed chat and a signed-out reader are about the whole page, so they are raised wherever the person is.
-    // Any other refusal is about this message, and is held for its chat when that chat is not on screen.
-    assert.match(send, /\n {4}const failed = \(e\) => \{ if \(at\(\)\.here \|\| loadFailure\(e\) !== 'failed'\) fail\(e\); else tell\(chatErrorCopy\(e\?\.code\)\); \};\n/);
+    // Any other refusal is about this message. It goes through tell() wherever the person is, so it is kept with the
+    // text it gives back. It went through the screen's fail() while its chat was on screen, which shows the same
+    // words (both use chatErrorCopy) and keeps nothing.
+    assert.match(send, /\n {4}const failed = \(e\) => \{ if \(loadFailure\(e\) !== 'failed'\) fail\(e\); else tell\(e\?\.code\); \};\n/);
     assert.equal(send.split('fail(e)').length - 1, 1, 'fail() is reached through failed() only');
 });
 
 test('what waits for a chat that is not on screen is what the person would have been left with had they stayed', () => {
     // After a reply that was saved, the screen sets the stream's notice and then reads the chat again, which clears it
     // (only "charged but not stored" is set again afterwards). So there is nothing to hold from the first of those.
-    assert.match(send, /\n {8}att\.clear\(\);[^\n]*\n {8}if \(streamError && at\(\)\.here\) tell\(chatErrorCopy\(streamError\)\);[^\n]*\n {8}await reload\(\);[^\n]*\n {8}if \(streamError === 'reply_not_saved'\) tell\(chatErrorCopy\(streamError\)\);/);
-    // A reply that ended with nothing is not reloaded, so its notice stays on screen, and is held when its chat is not.
-    assert.match(send, /\n {8}giveBack\(true\);\n {8}if \(streamError\) tell\(chatErrorCopy\(streamError\)\);/);
+    // The first is the one notice that is not kept: it goes straight on screen, where the reload clears it. Kept, it
+    // would come back with the chat the reload reads, and stay.
+    assert.match(send, /\n {8}att\.clear\(\);[^\n]*\n {8}if \(streamError && at\(\)\.here\) setError\(chatErrorCopy\(streamError\)\);[^\n]*\n {8}await reload\(\);[^\n]*\n {8}if \(streamError === 'reply_not_saved'\) tell\(streamError\);/);
+    // A reply that ended with nothing is not reloaded, so its notice stays on screen, and is kept with its chat.
+    assert.match(send, /\n {8}giveBack\(true\);\n {8}if \(streamError\) tell\(streamError\);/);
 });
 
 test('one send at a time, and the lock is let go when the send ends', () => {
     assert.match(send, /\n {4}if \(!content \|\| busy \|\| sendingRef\.current \|\| !model \|\| imagesBlocked\) return;\n {4}sendingRef\.current = true;/);
     assert.match(send, /\n {4}\} finally \{ setBusy\(false\); setProgress\(null\); setStopping\(false\); setChecking\(false\); sendingRef\.current = false; abortRef\.current = null; \}\n/);
     // The images were sent with a reply that is still being saved: they are not offered again.
-    assert.match(send, /\n {10}att\.clear\(\); tell\(chatErrorCopy\('stop_saving'\)\);\n/);
+    assert.match(send, /\n {10}att\.clear\(\); tell\('stop_saving'\);\n/);
 });
 
-test('a dropped connection: a notice held for a chat not on screen is worded for the reload it will be read after', () => {
-    // lostNotice says "this chat shows what was saved" only when the screen shows it. A held notice is shown by open(),
-    // after that chat has been read again, so for a turn the job says was saved it can say so.
-    assert.match(send, /\n {8}tell\(chatErrorCopy\(lostNotice\(outcome, reloaded \|\| !at\(\)\.here\)\)\);/);
+test('a dropped connection: a notice kept for a chat not on screen is worded for the reload it will be read after', () => {
+    // lostNotice says "this chat shows what was saved" only when the screen shows it. A notice for a chat that is not
+    // on screen is shown by open(), after that chat has been read again, so for a turn the job says was saved it can say so.
+    assert.match(send, /\n {8}tell\(lostNotice\(outcome, reloaded \|\| !at\(\)\.here\)\);/);
 });
