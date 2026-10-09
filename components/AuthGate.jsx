@@ -23,6 +23,8 @@ import {
 import { signInWithPasskey, passkeysSupported } from "../app/lib/passkeys.js";
 import { configuredProviders, readAuthSettings, providerAvailable, passkeyUnavailableReason } from "../app/lib/authProviders.js";
 import { Turnstile, TURNSTILE_SITE_KEY } from "./Turnstile.jsx";
+import { AppleMark, PasskeyMark, GoogleMark } from "./AuthMarks.jsx";
+import { captchaNotice, noticeAfterCaptchaFailure, noticeAfterCaptchaToken, noticeWhileCaptchaWaits, CAPTCHA_BLOCKED_CODE, CAPTCHA_UNSUPPORTED, CAPTCHA_WAITING } from "../app/lib/turnstileFailure.js";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -63,40 +65,6 @@ function humanAuthError(err) {
     return "That didn't work. Try again.";
 }
 
-// Apple requires its mark on the button and the wording to be one of its
-// approved strings ("Continue with Apple"). currentColor makes the mark track
-// the button's text, so the white-on-dark and black-on-light variants — both
-// of which Apple allows — come from the theme tokens rather than two assets.
-function AppleMark() {
-    return (
-        <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-            <path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701" />
-        </svg>
-    );
-}
-
-// A key, not a fingerprint: passkeys are not always biometric — a PIN or a
-// hardware key satisfies the same ceremony.
-function PasskeyMark() {
-    return (
-        <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="9" cy="9" r="4" />
-            <path d="M11.8 11.8 20 20m-3-3 1.5-1.5M14 14l2 2" />
-        </svg>
-    );
-}
-
-function GoogleMark() {
-    return (
-        <svg aria-hidden="true" focusable="false" viewBox="0 0 48 48" width="16" height="16">
-            <path fill="#4285F4" d="M45.12 24.5c0-1.56-.14-3.06-.4-4.5H24v8.51h11.84c-.51 2.75-2.06 5.08-4.39 6.64v5.52h7.11c4.16-3.83 6.56-9.47 6.56-16.17z" />
-            <path fill="#34A853" d="M24 46c5.94 0 10.92-1.97 14.56-5.33l-7.11-5.52c-1.97 1.32-4.49 2.1-7.45 2.1-5.73 0-10.58-3.87-12.31-9.07H4.34v5.7C7.96 41.07 15.4 46 24 46z" />
-            <path fill="#FBBC05" d="M11.69 28.18C11.25 26.86 11 25.45 11 24s.25-2.86.69-4.18v-5.7H4.34C2.85 17.09 2 20.45 2 24s.85 6.91 2.34 9.88l7.35-5.7z" />
-            <path fill="#EA4335" d="M24 10.75c3.23 0 6.13 1.11 8.41 3.29l6.31-6.31C34.91 4.18 29.93 2 24 2 15.4 2 7.96 6.93 4.34 14.12l7.35 5.7c1.73-5.2 6.58-9.07 12.31-9.07z" />
-        </svg>
-    );
-}
-
 export default function AuthGate() {
     const [open, setOpen] = useState(false);
     const [mode, setMode] = useState("sign_in");
@@ -109,6 +77,9 @@ export default function AuthGate() {
     // captchaReset and the widget issues a fresh one.
     const [captcha, setCaptcha] = useState(null);
     const [captchaReset, setCaptchaReset] = useState(0);
+    // The widget's last error code, CAPTCHA_WAITING while it waits for a
+    // click, or CAPTCHA_UNSUPPORTED, so a submit without a token can say why.
+    const [captchaFailure, setCaptchaFailure] = useState(null);
     // Every entry point uses this dialog. Availability controls whether an
     // action can start, never whether Apple or passkeys disappear from it.
     const oauth = configuredProviders(process.env.NEXT_PUBLIC_AUTH_PROVIDERS);
@@ -193,14 +164,36 @@ export default function AuthGate() {
         }
     }, []);
 
-    // Close when a session appears (from any tab).
-    useEffect(() => {
-        return onSessionChange((s) => {
-            if (s) setOpen(false);
-        });
+    // This component is mounted once in the root layout and never unmounts,
+    // so what was typed stays in state until something empties it. Left
+    // alone, the dialog reopened after a session ended with the last email
+    // and password filled in, and Show revealed the password.
+    const forgetCredentials = useCallback(() => {
+        setEmail("");
+        setPassword("");
+        setShowPassword(false);
     }, []);
+    const close = useCallback(() => {
+        setOpen(false);
+        forgetCredentials();
+        setCaptchaFailure(null);
+        setNotice(noticeAfterCaptchaToken);
+    }, [forgetCredentials]);
+    const dismiss = close;
 
-    const dismiss = useCallback(() => setOpen(false), []);
+    // Close when a session appears (from any tab), and empty the fields when
+    // one ends. Only on a change: a repeated "signed out" notice (another 401
+    // while the dialog is open) must not wipe what the user is typing.
+    const wasSignedIn = useRef(false);
+    useEffect(() => {
+        wasSignedIn.current = Boolean(getSession());
+        return onSessionChange((s) => {
+            const signedIn = Boolean(s);
+            if (signedIn) close();
+            else if (wasSignedIn.current) forgetCredentials();
+            wasSignedIn.current = signedIn;
+        });
+    }, [close, forgetCredentials]);
 
     // signInWithOAuth is async and ends in a redirect. Unawaited, a throw on
     // the way to that redirect (blocked sessionStorage, missing env) became an
@@ -236,7 +229,7 @@ export default function AuthGate() {
         // Without this the request is refused with captcha_failed before any
         // WebAuthn prompt appears, which looks like a broken button.
         if (TURNSTILE_SITE_KEY && !captcha) {
-            setNotice({ kind: "error", text: "Complete the security check first." });
+            setNotice(captchaNotice(captchaFailure));
             return;
         }
         setBusy(true);
@@ -247,7 +240,7 @@ export default function AuthGate() {
                 return;
             }
             const session = await signInWithPasskey(captcha);
-            if (session) setOpen(false);
+            if (session) close();
         } catch (err) {
             setNotice({ kind: "error", text: humanAuthError(err) });
         } finally {
@@ -269,7 +262,7 @@ export default function AuthGate() {
             return;
         }
         if (TURNSTILE_SITE_KEY && !captcha) {
-            setNotice({ kind: "error", text: "Complete the security check first." });
+            setNotice(captchaNotice(captchaFailure));
             return;
         }
         setBusy(true);
@@ -277,15 +270,17 @@ export default function AuthGate() {
             if (mode === "sign_up") {
                 const { session, needsConfirmation } = await signUp(email, password, captcha);
                 if (needsConfirmation) {
+                    setPassword("");
                     setNotice({ kind: "success", text: "Check your email to confirm your account." });
                 } else if (session) {
-                    setOpen(false);
+                    close();
                 }
             } else if (mode === "sign_in") {
                 await signInWithPassword(email, password, captcha);
-                setOpen(false);
+                close();
             } else {
                 await sendMagicLink(email, captcha);
+                setPassword("");
                 setNotice({ kind: "success", text: "Check your email for a sign-in link." });
             }
         } catch (err) {
@@ -305,7 +300,7 @@ export default function AuthGate() {
             aria-label="Sign in to Veyrnox"
             ref={panelRef}
             onKeyDown={onKeyDown}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs px-4"
         >
             <div className="w-full max-w-sm rounded-2xl border border-vx-border bg-vx-panel p-6 shadow-2xl">
                 <div className="flex items-start justify-between mb-1">
@@ -362,7 +357,7 @@ export default function AuthGate() {
                             autoComplete="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            className="mt-1 w-full rounded-lg bg-vx-base border border-vx-border px-3 py-2 text-sm text-vx-fg outline-none focus:border-vx-accent focus-visible:ring-2 focus-visible:ring-vx-accent/40"
+                            className="mt-1 w-full rounded-lg bg-vx-base border border-vx-border px-3 py-2 text-sm text-vx-fg outline-hidden focus:border-vx-accent focus-visible:ring-2 focus-visible:ring-vx-accent/40"
                         />
                     </label>
 
@@ -381,7 +376,7 @@ export default function AuthGate() {
                                     // password; a generated one is never in a breach list.
                                     passwordrules={mode === "sign_up" ? "minlength: 12; required: lower; required: upper; required: digit;" : undefined}
                                     aria-describedby="vx-password-hint"
-                                    className="w-full rounded-lg bg-vx-base border border-vx-border pl-3 pr-16 py-2 text-sm text-vx-fg outline-none focus:border-vx-accent focus-visible:ring-2 focus-visible:ring-vx-accent/40"
+                                    className="w-full rounded-lg bg-vx-base border border-vx-border pl-3 pr-16 py-2 text-sm text-vx-fg outline-hidden focus:border-vx-accent focus-visible:ring-2 focus-visible:ring-vx-accent/40"
                                 />
                                 {/* A typo in a masked 8-character minimum is the
                                     commonest reason a sign-up bounces. */}
@@ -407,8 +402,11 @@ export default function AuthGate() {
                     )}
 
                     <Turnstile
-                        onToken={setCaptcha}
-                        onError={() => setNotice({ kind: "error", text: "The security check couldn't load. Disable content blockers for this site, or sign in with Google." })}
+                        onToken={(token) => { setCaptcha(token); if (token) { setCaptchaFailure(null); setNotice(noticeAfterCaptchaToken); } }}
+                        onFailure={(code) => { setCaptchaFailure(code); setNotice((n) => noticeAfterCaptchaFailure(n, code)); }}
+                        onError={() => { setCaptchaFailure(CAPTCHA_BLOCKED_CODE); setNotice(captchaNotice(CAPTCHA_BLOCKED_CODE)); }}
+                        onWaiting={() => { setCaptchaFailure(CAPTCHA_WAITING); setNotice(noticeWhileCaptchaWaits); }}
+                        onUnsupported={() => { setCaptchaFailure(CAPTCHA_UNSUPPORTED); setNotice((n) => noticeAfterCaptchaFailure(n, CAPTCHA_UNSUPPORTED)); }}
                         resetKey={captchaReset}
                     />
 
@@ -432,7 +430,7 @@ export default function AuthGate() {
                     <button
                         type="submit"
                         disabled={busy}
-                        className="w-full rounded-full bg-vx-accent text-vx-accent-ink font-extrabold py-2.5 text-sm hover:bg-vx-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vx-accent disabled:opacity-60"
+                        className="w-full rounded-full bg-vx-accent text-vx-accent-ink font-extrabold py-2.5 text-sm hover:bg-vx-accent-hover focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vx-accent disabled:opacity-60"
                     >
                         {busy
                             ? "Working…"

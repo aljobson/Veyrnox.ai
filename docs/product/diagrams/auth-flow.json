@@ -2,14 +2,15 @@
   "schema_version": 1,
   "diagram_type": "sequence",
   "meta": {
-    "title": "Sign-up, confirmation and an authenticated API call",
+    "title": "Sign-up, confirmation and an authenticated API call (as of 2026-10-08)",
     "output": "auth-flow.html",
     "viewBox": [
       1080,
       615
     ],
     "column_fit": "spread",
-    "quality_profile": "showcase"
+    "quality_profile": "showcase",
+    "subtitle": "Checked against main 96380e7f"
   },
   "participants": [
     {
@@ -60,7 +61,8 @@
       "to": "auth",
       "y": 180,
       "label": "POST /signup + Turnstile",
-      "variant": "emphasis"
+      "variant": "emphasis",
+      "note": "sign-in too; passkey, Google, Apple enter separately"
     },
     {
       "from": "auth",
@@ -90,7 +92,7 @@
       "y": 336,
       "label": "set email_confirmed_at",
       "variant": "emphasis",
-      "note": "0071 trigger: signup_grant, 10 Free Credits"
+      "note": "0071 trigger: signup_grant, 10 Free Credits (90 days)"
     },
     {
       "from": "auth",
@@ -112,7 +114,7 @@
       "y": 456,
       "label": "RPC, service role",
       "variant": "emphasis",
-      "note": "JWT verified via JWKS; x-veyrnox-auth-id set"
+      "note": "JWT via JWKS; sets x-veyrnox-auth-id, -aal"
     },
     {
       "from": "pg",

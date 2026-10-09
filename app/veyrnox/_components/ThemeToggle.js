@@ -1,5 +1,7 @@
 'use client';
 
+import { cn } from '../../../lib/utils';
+
 import { useCallback, useEffect, useSyncExternalStore } from 'react';
 
 // Dark is the default and the brand; light is opt-in and remembered per
@@ -72,7 +74,7 @@ export function ThemeToggle({ className = '' }) {
       data-print="hide"
       aria-label={goingLight ? 'Switch to light theme' : 'Switch to dark theme'}
       title={goingLight ? 'Light theme' : 'Dark theme'}
-      className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-vx-border text-vx-fg-muted transition-colors hover:border-vx-accent hover:text-vx-fg ${className}`}
+      className={cn('inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-vx-border text-vx-fg-muted transition-colors hover:border-vx-accent hover:text-vx-fg', className)}
     >
       <span aria-hidden="true" className="text-[13px] leading-none">
         {goingLight ? '☀' : '☾'}

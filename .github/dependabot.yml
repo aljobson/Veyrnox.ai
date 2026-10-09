@@ -19,18 +19,9 @@ updates:
       # typescript-eslint and Next 15 both reject TypeScript 7; 6.x is fine.
       - dependency-name: "typescript"
         versions: [">=7.0.0"]
-      # v4 needs a site-wide migration (PostCSS plugin, config, CSS layers).
-      # v3 gets no more releases, so that migration is owed.
-      - dependency-name: "tailwindcss"
-        update-types: ["version-update:semver-major"]
       # Types follow the runtime: CI, the deploy and the README use Node 22.
       # Raise by hand in the PR that raises node-version.
       - dependency-name: "@types/node"
-        update-types: ["version-update:semver-major"]
-      # Tried on Next 16 (2026-10-03): ESLint 10.12 installs but lint crashes
-      # with "scopeManager.addGlobals is not a function" in the parser that
-      # eslint-config-next 16.3.7 bundles. Retry when that config supports 10.
-      - dependency-name: "eslint"
         update-types: ["version-update:semver-major"]
     commit-message:
       prefix: "chore(deps)"

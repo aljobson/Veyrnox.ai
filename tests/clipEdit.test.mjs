@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { validateEdit, planEdit, editUnits, start, onStepOutcome, parentRef } from '../lib/clipEdit.js';
-import { handleStepCallback } from '../lib/autoShortWebhook.js';
+import { validateEdit, planEdit, editUnits, start, onStepOutcome, parentRef, CAPTION_PRESETS, CAPTIONS_UNITS, clipCaptionsEnabled } from '../lib/clipEdit.js';
+import { handleStepCallback, falOutcome, failureReason } from '../lib/autoShortWebhook.js';
 
 const JOB = '11111111-2222-4333-8444-555555555555';
 const clip = (key, in_s, out_s, duration_s = 10) => ({ key, in_s, out_s, duration_s, aspect: '9:16' });
@@ -167,4 +167,113 @@ test('a callback and the sweep advancing at once submit the next step only once'
     const merges = w.calls.submits.filter((c) => c.endpoint.includes('merge-videos'));
     assert.equal(merges.length, 1, 'fal was paid for the merge once');
     assert.equal(w.steps.filter((s) => s.step === 'merge').length, 1);
+});
+
+test('captions: a preset from veed/subtitles\' own list, and they make a whole single clip worth editing', () => {
+    const whole = [clip('a', 0, 10)];
+    assert.equal(validateEdit({ clips: whole }).error, 'nothing_to_do');
+    const ok = validateEdit({ clips: whole, captions: { preset: 'glass' } });
+    assert.equal(ok.ok, true);
+    assert.deepEqual(ok.captions, { preset: 'glass' });
+    assert.equal(validateEdit({ clips: whole, captions: { preset: 'not-a-preset' } }).error, 'captions_invalid');
+    assert.equal(validateEdit({ clips: whole, captions: {} }).error, 'captions_invalid');
+    assert.equal(validateEdit({ clips: [clip('a', 1, 4)] }).captions, null);
+    assert.ok(CAPTION_PRESETS.includes('simple'));
+});
+
+test('captions run last, after trim, merge and audio', () => {
+    const edit = validateEdit({ clips: [clip('a', 1, 4), clip('b', 0, 10)], audio: { key: 'm', offset_s: 2 }, captions: { preset: 'simple' } });
+    assert.deepEqual(planEdit(edit).map((p) => p.step), ['trim', 'merge', 'audio', 'captions']);
+});
+
+test('captions are billed as CAPTIONS_UNITS on their own, on top of the other steps', () => {
+    assert.equal(CAPTIONS_UNITS, 7);
+    // 5 s whole clip, captions only: 1 unit of length, 7 for the captions call.
+    assert.equal(editUnits(validateEdit({ clips: [clip('a', 0, 5, 5)], captions: { preset: 'simple' } })), 7);
+    // One trim + captions: 1 + 7.
+    assert.equal(editUnits(validateEdit({ clips: [clip('a', 1, 4)], captions: { preset: 'simple' } })), 8);
+    // A 55 s edit is already 11 length units; trim, merge and captions add up to 9, so length still sets the price.
+    assert.equal(editUnits(validateEdit({ clips: [clip('a', 0, 30, 30), clip('b', 1, 26, 30)], captions: { preset: 'simple' } })), 11);
+    // Without captions nothing changes.
+    assert.equal(editUnits(validateEdit({ clips: [clip('a', 1, 4)] })), 1);
+});
+
+test('captions read the audio step\'s output, send the preset, and store the parent from their output', async () => {
+    const edit = validateEdit({ clips: [clip('a', 1, 4), clip('b', 0, 10)], audio: { key: 'm', offset_s: 2 }, captions: { preset: 'glass' } });
+    const w = world(edit);
+    await start({ jobId: JOB, edit }, w.deps);
+    await w.deliver(); // trim
+    await w.deliver(); // merge
+    assert.equal((await w.deliver()).advanced, 'captions'); // audio
+    const last = w.calls.submits[3];
+    assert.equal(last.endpoint, 'veed/subtitles');
+    assert.deepEqual(last.inputs, { video_url: `https://r2.example/edits/${JOB}/audio-0.mp4`, preset: 'glass' });
+    assert.equal((await w.deliver()).stored, true);
+    assert.equal(w.calls.stored.p_r2_key, `edits/${JOB}/captions-0.mp4`);
+    assert.equal(w.calls.refunds, 0);
+});
+
+test('captions alone over a whole clip read the source and submit one step', async () => {
+    const edit = validateEdit({ clips: [clip('a', 0, 10)], captions: { preset: 'simple' } });
+    const w = world(edit);
+    await start({ jobId: JOB, edit }, w.deps);
+    assert.deepEqual(w.calls.submits.map((s) => s.endpoint), ['veed/subtitles']);
+    assert.deepEqual(w.calls.submits[0].inputs, { video_url: 'https://r2.example/a', preset: 'simple' });
+    assert.equal((await w.deliver()).stored, true);
+});
+
+test('a failed captions step is not retried (a speechless clip fails the same way), and refunds once', async () => {
+    const edit = validateEdit({ clips: [clip('a', 0, 10)], captions: { preset: 'simple' } });
+    const w = world(edit);
+    await start({ jobId: JOB, edit }, w.deps);
+    const r = await w.deliver('fail');
+    assert.equal(r.refunded, true);
+    assert.equal(w.calls.submits.length, 1, 'no second call to fal');
+    assert.equal(w.job.state, 'FAILED');
+    assert.equal(w.calls.refunds, 1);
+});
+
+test('the captions flag is only on for the exact string "true"', () => {
+    assert.equal(clipCaptionsEnabled({ CLIP_EDIT_CAPTIONS_ENABLED: 'true' }), true);
+    for (const v of ['false', '', 'TRUE', '1', undefined]) assert.equal(clipCaptionsEnabled({ CLIP_EDIT_CAPTIONS_ENABLED: v }), false);
+    assert.equal(clipCaptionsEnabled(undefined), false);
+});
+
+test('fal reporting an unreachable source URL is the one transient failure', () => {
+    const real = { status: 'ERROR', error: 'x', payload: { detail: [{ loc: ['body', 'video_url'], msg: 'Could not reach the host that serves your video URL.', type: 'host_unreachable' }] } };
+    assert.deepEqual(falOutcome({ step: 'captions' }, real), { state: 'fail', errorCode: 'provider_failed', reason: 'host_unreachable', transient: true });
+    // The same words in the error string alone still count; anything else does not.
+    assert.equal(falOutcome({ step: 'captions' }, { status: 'ERROR', error: 'host_unreachable' }).transient, true);
+    const speech = { status: 'ERROR', payload: { detail: [{ msg: 'No speech detected in the video', type: 'transcription_error' }] } };
+    assert.deepEqual(falOutcome({ step: 'captions' }, speech), { state: 'fail', errorCode: 'provider_failed' });
+    assert.equal(failureReason(undefined, null, ''), null);
+    assert.equal(failureReason({ circular: (() => { const a = {}; a.a = a; return a; })() }), null, 'an unserialisable body is no reason');
+});
+
+test('a captions step is retried once when fal could not reach the URL, then refunds like any step', async () => {
+    const edit = validateEdit({ clips: [clip('a', 0, 10)], captions: { preset: 'simple' } });
+    const w = world(edit);
+    await start({ jobId: JOB, edit }, w.deps);
+    const live = () => ({ ...w.steps.find((x) => x.state === 'SUBMITTED') });
+    const transient = { state: 'fail', errorCode: 'provider_failed', reason: 'host_unreachable', transient: true };
+    assert.equal((await onStepOutcome({ step: live(), outcome: transient }, w.deps)).retried, true);
+    assert.equal(w.calls.submits.length, 2, 'the same URL is sent a second time');
+    assert.equal(w.calls.submits[1].endpoint, 'veed/subtitles');
+    assert.equal(w.calls.refunds, 0);
+    // A second miss ends it: one retry, never a loop.
+    const r = await onStepOutcome({ step: live(), outcome: transient }, w.deps);
+    assert.equal(r.refunded, true);
+    assert.equal(w.calls.submits.length, 2);
+    assert.equal(w.calls.refunds, 1);
+    assert.equal(w.steps[0].state, 'FAILED');
+});
+
+test('a transient miss that then succeeds stores the captions', async () => {
+    const edit = validateEdit({ clips: [clip('a', 0, 10)], captions: { preset: 'simple' } });
+    const w = world(edit);
+    await start({ jobId: JOB, edit }, w.deps);
+    const live = () => ({ ...w.steps.find((x) => x.state === 'SUBMITTED') });
+    await onStepOutcome({ step: live(), outcome: { state: 'fail', errorCode: 'provider_failed', reason: 'host_unreachable', transient: true } }, w.deps);
+    assert.equal((await w.deliver()).stored, true);
+    assert.equal(w.calls.refunds, 0);
 });

@@ -399,8 +399,8 @@ hostname, so credentials are enrolled separately.
 
 1. Verify complete Apple and passkey sign-ins on staging using owner-controlled
    accounts and devices.
-2. Complete the remaining calendar cases listed below. Real YouTube upload and
-   publication are still unverified and require an explicit owner-approved post.
+2. Complete the remaining calendar cases listed below. Owner-approved YouTube
+   publication succeeded on 7 October; see the latest acceptance record.
 3. Complete provider review and real account acceptance for Instagram insights
    and TikTok analytics before enabling their new consent scopes.
 4. Decide X/LinkedIn analytics scope and cost before implementation. Analytics
@@ -467,4 +467,31 @@ app. Its page returned 200; unmarked subscription API requests still returned
 values read back unchanged, including the staging Supabase identity and Publish
 flags; secrets were retained without exporting their values. The five-minute
 cron remains configured. Production and enrolled MFA factors were not changed.
-Owner-completed Apple login and passkey enrollment/sign-in remain outstanding.
+Owner-completed Apple login and passkey enrollment/sign-in were subsequently
+verified as recorded below.
+
+## Apple and passkey acceptance — 2026-10-06
+
+Apple sign-in succeeded on staging on 4 October at 18:47:35 BST, confirmed
+by the authenticated UI and Supabase Auth login event. This Apple identity is
+separate from the Google account that owns the connected YouTube channel.
+
+On 6 October the owner enrolled an “Apple Passwords” passkey on that Apple
+account at 06:00:10 BST. After signing out this device, the homepage's
+“Sign in with a passkey” flow succeeded; Supabase recorded first use at
+06:01:04 BST. The protected account page loaded and displayed the credential
+with “last used 6 Oct 2026”. No credential material was retrieved or logged.
+This verifies enrollment and fresh sign-in on this device; cross-device use
+and recovery remain unverified. Existing Google-account MFA was not reset.
+
+Latest acceptance: [7 October publication and calendar checks](ACCEPTANCE-2026-10-07.md)
+supersedes the earlier publication and calendar gaps. Publishing still requires
+an owner-selected video, channel, caption and visibility for each real test.
+
+## Post now and Schedule post — 2026-10-06
+
+The owner requested both actions. Post now sends `publishNow: true`; the posts API assigns server time and queues it for the existing publishing sweep. Schedule post uses the selected future date/time. Publishing can take several minutes; the UI reports queuing rather than completion. Both actions retain ownership, media, rate-limit and idempotency checks. No migration or new switch. Staging version: `55bc43c8-d904-4166-998c-8c644f2c0259`.
+
+Validation: 1,624 unit tests passed (one skipped), 15 posts-route tests passed, lint/typecheck/staging build passed. Intercepted browser requests verified both payloads, failure handling, retry-key retention and the queued success message. Interception was removed and the page refreshed; no request reached the publishing API. Owner-approved real publication succeeded on 7 October; see the latest acceptance record.
+
+The connected channel remains `jobsonal1`. The owner-approved video was published successfully: [Veyrnox.ai publishing test](https://www.youtube.com/watch?v=GphiOYqr6fQ).

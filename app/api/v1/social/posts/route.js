@@ -8,15 +8,17 @@
  *   platform_post_url, last_error }] }] } — cursor-paginated via
  *   ?before_created_at&before_id (list_social_posts, 0160).
  *
- * POST body: { scheduledAt, globalText, idempotencyKey, accountIds: [uuid],
- *   media: [{ mediaType: 'image'|'video', jobId: uuid }] } — jobId must be
- *   one of the caller's own jobs with a stored asset (create_social_post
+ * POST body: { scheduledAt OR publishNow: true, globalText, idempotencyKey, accountIds: [uuid],
+ *   media: [{ mediaType: 'image'|'video', jobId: uuid OR uploadId: uuid }] } — jobId must be
+ *   one of the caller's own jobs with a stored asset; uploadId names a verified owned upload (create_social_post
  *   resolves the R2 object through it at publish time; no raw URL is ever
  *   accepted here — see lib/socialPublishSweep.js's dispatch-time presign).
  * POST response (201): { post_id, idempotent, target_count }.
  */
 
+import { socialUploadsEnabled } from '../../../../../lib/social/uploadPolicy.js';
 import { calendarEnabled } from '../../../../../lib/social/publishFeature.js';
+import { postCapabilityError } from '../../../../../lib/social/postCapabilities.js';
 import { NextResponse } from 'next/server';
 import { accountReadLimit } from '../../../../../lib/accountReadLimit.js';
 import { socialPostWriteLimit } from '../../../../../lib/socialPostWriteLimit.js';
@@ -94,7 +96,11 @@ export async function POST(req) {
         return NextResponse.json({ error: 'invalid_body' }, { status: 400 });
     }
 
-    const scheduledAt = body && body.scheduledAt;
+    if (body?.publishNow !== undefined && typeof body.publishNow !== 'boolean') {
+        return NextResponse.json({ error: 'invalid_publish_now' }, { status: 400 });
+    }
+    // Use the server clock so Post now is independent of the device's time/date field.
+    const scheduledAt = body?.publishNow === true ? new Date().toISOString() : body && body.scheduledAt;
     if (typeof scheduledAt !== 'string' || Number.isNaN(Date.parse(scheduledAt))) {
         return NextResponse.json({ error: 'invalid_schedule' }, { status: 400 });
     }
@@ -120,10 +126,12 @@ export async function POST(req) {
     for (const item of media) {
         const mediaType = item && item.mediaType;
         const jobId = item && item.jobId;
-        if (!MEDIA_TYPES.has(mediaType) || !isUuid(jobId)) {
+        const uploadId = item && item.uploadId;
+        if (!MEDIA_TYPES.has(mediaType) || (Boolean(jobId) === Boolean(uploadId))
+            || (jobId ? !isUuid(jobId) : !isUuid(uploadId) || !socialUploadsEnabled())) {
             return NextResponse.json({ error: 'invalid_media' }, { status: 400 });
         }
-        mediaItems.push({ media_type: mediaType, job_id: jobId });
+        mediaItems.push({ media_type: mediaType, ...(jobId ? { job_id: jobId } : { upload_id: uploadId }) });
     }
 
     const limited = await socialPostWriteLimit(authId, cfg);
@@ -134,6 +142,12 @@ export async function POST(req) {
 
     let result;
     try {
+        const listed = await rpc('list_social_accounts', { p_auth_id: authId, p_brand_id: brandId }, cfg);
+        if (!listed?.ok || !Array.isArray(listed.accounts)) throw new Error('account_lookup_failed');
+        const destinations = listed.accounts.filter((a) => accountIds.includes(a.id) && a.status === 'active');
+        if (destinations.length !== new Set(accountIds).size) return NextResponse.json({ error: 'ACCOUNT_NOT_FOUND' }, { status: 404 });
+        const capabilityError = postCapabilityError(destinations, mediaItems, globalText);
+        if (capabilityError) return NextResponse.json({ error: capabilityError }, { status: 400 });
         result = await rpc('create_social_post', {
             p_auth_id: authId,
             p_brand_id: brandId,

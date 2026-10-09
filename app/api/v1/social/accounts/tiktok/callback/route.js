@@ -23,6 +23,7 @@
  */
 
 import { NextResponse } from 'next/server';
+import { networkReleased } from '../../../../../../../lib/social/networks.js';
 import { rpc, envConfig, SupabaseError } from '../../../../../../../packages/db/supabase-client.js';
 import { tiktokConfig, exchangeCodeForToken, fetchConnectedAccount } from '../../../../../../../packages/adapters/social/tiktok.js';
 import { verifyOAuthState } from '../../../../../../../lib/social/oauthState.js';
@@ -38,6 +39,8 @@ export async function POST(req) {
     if (!authId || !UUID_RE.test(authId)) {
         return NextResponse.json({ error: 'not_authenticated' }, { status: 401 });
     }
+
+    if (!networkReleased('tiktok')) return NextResponse.json({ error: 'network_unavailable' }, { status: 404 });
 
     const cfg = envConfig();
     const ttCfg = tiktokConfig();

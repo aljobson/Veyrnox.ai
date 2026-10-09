@@ -58,14 +58,36 @@ async function startTurn(u, t, m, credits = 2, extraInputs = {}) {
 }
 const complete = (job, t, text, reply, status = 'complete') => rpc('public.chat_complete_turn($1, $2, $3, $4, $5)', [job, t, text, reply, status]);
 const refund = (u, job, credits) => rpc(`public.ledger_refund($1, $2, $3, 'refund:provider_failed')`, [job, u.id, credits]);
+const settle = (job) => rpc('public.chat_settle_unsaved_turn($1)', [job]);
+const ledgerRows = async (job) => (await q('SELECT delta, reason FROM public.ledger_entries WHERE job_id = $1 ORDER BY created_at, id', [job]))
+    .map((r) => [Number(r.delta), r.reason]);
 
 try {
     // The migration is safe to apply twice.
     const sql = await readFile(new URL('../packages/db/schema/supabase/0193_chat.sql', import.meta.url), 'utf8');
     await c.query('BEGIN'); await c.query(sql); await c.query(sql); await c.query('ROLLBACK');
+    // 0226 keeps the newest message in the history budget; it replays too (inside a rollback, so the body under test stays 0226's).
+    const keepNewest = await readFile(new URL('../packages/db/schema/supabase/0226_chat_context_keeps_newest.sql', import.meta.url), 'utf8');
+    await c.query('BEGIN'); await c.query(keepNewest); await c.query(keepNewest); await c.query('ROLLBACK');
     // 0198 reads thread messages joined to their jobs and prices Images on the catalog rows; it replays too.
     const images = await readFile(new URL('../packages/db/schema/supabase/0198_chat_models_images.sql', import.meta.url), 'utf8');
     await c.query('BEGIN'); await c.query(images); await c.query(images); await c.query('ROLLBACK');
+    // 0203 makes delete a real delete and clears chats that were only hidden before it; it replays too.
+    const hardDelete = await readFile(new URL('../packages/db/schema/supabase/0203_chat_delete_is_delete.sql', import.meta.url), 'utf8');
+    await c.query('BEGIN');
+    {
+        const u = await user(); const m = await model(`chat-purge-${randomUUID().slice(0, 8)}`);
+        const t = (await thread(u, m)).thread.id;
+        await q('UPDATE public.chat_threads SET deleted_at = now() WHERE id = $1', [t]);
+        await q("INSERT INTO public.chat_messages (thread_id, role, content, status) VALUES ($1, 'user', 'hidden but still stored', 'complete')", [t]);
+        await c.query(hardDelete); await c.query(hardDelete);
+        assert.equal((await q('SELECT count(*)::int AS n FROM public.chat_threads WHERE id = $1', [t]))[0].n, 0, 'a chat hidden before 0203 is removed by it');
+        assert.equal((await q('SELECT count(*)::int AS n FROM public.chat_messages WHERE thread_id = $1', [t]))[0].n, 0);
+    }
+    await c.query('ROLLBACK');
+    // 0233 settles a delivered reply that cannot be stored; it replays too.
+    const settleSql = await readFile(new URL('../packages/db/schema/supabase/0233_chat_settle_unsaved_turn.sql', import.meta.url), 'utf8');
+    await c.query('BEGIN'); await c.query(settleSql); await c.query(settleSql); await c.query('ROLLBACK');
 
     await c.query('BEGIN');
     const suffix = randomUUID().slice(0, 8);
@@ -186,6 +208,9 @@ try {
     assert.deepEqual(tight.history.map((h) => h.content), ['Partial text so far', 'Third question'],
         'the newest messages that fit the budget, oldest first');
     assert.deepEqual((await rpc('public.chat_turn_context($1, $2, 0)', [a.auth, ta.id])).history, []);
+    // 0226: a newest message longer than the whole budget still reaches the model, cut to its last <budget> characters, and older ones stay out.
+    const clipped = await rpc('public.chat_turn_context($1, $2, 10)', [a.auth, ta.id]);
+    assert.deepEqual(clipped.history.map((h) => h.content), ['d question'], 'the newest message is never dropped for being long');
 
     // ── Updating and deleting a thread. ──
     for (const args of [[a.auth, ta.id, '   '], [a.auth, ta.id, 'x'.repeat(121)], [a.auth, ta.id, null, null, 'p'.repeat(4001)]]) {
@@ -200,6 +225,107 @@ try {
     assert.equal((await getThread(a, t2.id)).code, 'THREAD_NOT_FOUND');
     assert.equal((await rpc('public.chat_delete_thread($1, $2)', [a.auth, t2.id])).code, 'THREAD_NOT_FOUND', 'deleting twice');
     assert.ok(!(await rpc('public.chat_list_threads($1)', [a.auth])).threads.some((t) => t.id === t2.id));
+
+    // ── Deleting a chat deletes it: the thread and its messages are gone, the money record stays (0203). ──
+    {
+        const u = await user(); const t = (await thread(u, fast)).thread.id;
+        const job = await startTurn(u, t, fast);
+        assert.equal((await complete(job, t, 'a private question', 'a private answer')).ok, true);
+        assert.equal((await rpc('public.chat_delete_thread($1, $2)', [u.auth, t])).ok, true);
+        assert.equal((await q('SELECT count(*)::int AS n FROM public.chat_threads WHERE id = $1', [t]))[0].n, 0, 'the thread row is gone, not hidden');
+        assert.equal((await q('SELECT count(*)::int AS n FROM public.chat_messages WHERE thread_id = $1', [t]))[0].n, 0, 'its messages went with it');
+        const [j] = await q('SELECT state, credits FROM public.jobs WHERE id = $1', [job]);
+        assert.deepEqual([j.state, j.credits], ['STORED', 2], 'the job and its charge stay: that is the ledger, and it never held the text');
+        assert.ok(!JSON.stringify(await q('SELECT inputs FROM public.jobs WHERE id = $1', [job])).includes('private'));
+    }
+
+    // ── A reply that was delivered but cannot be stored is still charged (0233, ADR-0067 amendment 9). ──
+    {
+        const u = await user(); const t = (await thread(u, fast)).thread.id;
+        const start = await balance(u);
+        const job = await startTurn(u, t, fast, 2);
+        // The chat goes while the reply is on its way, so the save has nowhere to put it.
+        assert.equal((await rpc('public.chat_delete_thread($1, $2)', [u.auth, t])).ok, true);
+        assert.equal((await complete(job, t, 'a question', 'an answer')).code, 'THREAD_NOT_FOUND');
+        assert.equal((await jobState(job)).s, 'SUBMITTED', 'the refused save leaves the job where it was');
+        const settled = await settle(job);
+        assert.deepEqual(settled, { ok: true, user_id: u.id, credits: 2 });
+        assert.deepEqual(await jobState(job), { s: 'STORED', error_code: 'reply_not_saved' });
+        assert.equal(await balance(u), start - 2, 'charged');
+        assert.deepEqual(await ledgerRows(job), [[-2, 'debit:chat']], 'the debit is the only ledger row: settling writes none');
+        assert.equal((await one('SELECT count(*)::int AS n FROM public.chat_messages WHERE job_id = $1', [job])).n, 0, 'no message is written');
+        // Replay: the same answer, marked, and nothing moves.
+        const stamp = (await one('SELECT updated_at FROM public.jobs WHERE id = $1', [job])).updated_at;
+        assert.deepEqual(await settle(job), { ok: true, idempotent: true, user_id: u.id, credits: 2 });
+        assert.deepEqual(await jobState(job), { s: 'STORED', error_code: 'reply_not_saved' });
+        assert.deepEqual((await one('SELECT updated_at FROM public.jobs WHERE id = $1', [job])).updated_at, stamp, 'a replay does not touch the row');
+        assert.deepEqual(await ledgerRows(job), [[-2, 'debit:chat']]);
+        // The charge stays: no refund is accepted for it, and the sweep leaves it alone however old it is.
+        assert.equal((await refund(u, job, 2)).code, 'JOB_SUCCEEDED');
+        await q(`UPDATE public.jobs SET updated_at = now() - interval '5 hours' WHERE id = $1`, [job]);
+        await rpc('public.sweep_stuck_jobs(15, 120, 200, 60)');
+        assert.deepEqual(await jobState(job), { s: 'STORED', error_code: 'reply_not_saved' });
+        assert.equal(await balance(u), start - 2, 'still charged after the sweep');
+        assert.deepEqual(await ledgerRows(job), [[-2, 'debit:chat']]);
+        await reconciles(u);
+
+        // A reply the text check refuses is settled the same way, with the chat still there and untouched.
+        const t2 = (await thread(u, fast)).thread.id;
+        const long = await startTurn(u, t2, fast, 2);
+        assert.equal((await complete(long, t2, 'a question', 'y'.repeat(32001))).code, 'INVALID_REPLY');
+        assert.equal((await settle(long)).ok, true);
+        assert.equal((await jobState(long)).s, 'STORED');
+        assert.deepEqual((await getThread(u, t2)).messages, []);
+        assert.equal((await getThread(u, t2)).thread.title, 'New chat');
+        assert.equal(await balance(u), start - 4);
+
+        // It only finishes a chat job that is waiting to be finished.
+        assert.equal((await settle(randomUUID())).code, 'JOB_NOT_FOUND');
+        const mediaJob = (await rpc(`public.ledger_debit($1, $2, 2, 'debit:generation', $3, '{"prompt":"a dog"}'::jsonb)`, [u.id, randomUUID(), vid])).job_id;
+        assert.equal((await rpc(`public.job_submitted($1, 'fal', $2)`, [mediaJob, mediaJob])).ok, true);
+        assert.equal((await settle(mediaJob)).code, 'JOB_NOT_FOUND', 'a media job is not a chat job, even when SUBMITTED');
+        assert.equal((await jobState(mediaJob)).s, 'SUBMITTED');
+        const debited = (await rpc(`public.ledger_debit($1, $2, 2, 'debit:chat', $3, $4::jsonb)`,
+            [u.id, randomUUID(), fast, JSON.stringify({ kind: 'chat', thread_id: t2 })])).job_id;
+        assert.equal((await settle(debited)).code, 'BAD_STATE', 'not yet submitted');
+        assert.equal((await jobState(debited)).s, 'DEBITED');
+        // A cut-off reply was refunded: settling cannot turn that into a charge.
+        const cutOff = await startTurn(u, t2, fast, 2);
+        assert.equal((await complete(cutOff, t2, 'a question', 'it began', 'error')).refund, true);
+        assert.equal((await settle(cutOff)).code, 'BAD_STATE', 'FAILED, awaiting its refund');
+        assert.equal((await refund(u, cutOff, 2)).ok, true);
+        assert.equal((await settle(cutOff)).code, 'BAD_STATE', 'REFUNDED');
+        assert.equal((await jobState(cutOff)).s, 'REFUNDED');
+        // A turn chat_complete_turn already finished is left exactly as it is.
+        const saved = await startTurn(u, t2, fast, 2);
+        assert.equal((await complete(saved, t2, 'another question', 'a stored answer')).ok, true);
+        assert.equal((await settle(saved)).idempotent, true);
+        assert.deepEqual(await jobState(saved), { s: 'STORED', error_code: null });
+        assert.equal((await one('SELECT count(*)::int AS n FROM public.chat_messages WHERE job_id = $1', [saved])).n, 2);
+        await reconciles(u);
+        for (const role of ['anon', 'authenticated']) await refusedAs(role, 'SELECT public.chat_settle_unsaved_turn($1)', [saved]);
+    }
+
+    // ── The data export (docs/product/chat-data-export.sql): one person's chats, in order, nobody else's. ──
+    {
+        const u = await user(); const v = await user();
+        const tu = (await thread(u, fast)).thread.id; const tv = (await thread(v, fast)).thread.id;
+        await rpc('public.chat_update_thread($1, $2, null, true, $3)', [u.auth, tu, 'Be brief.']);
+        const ju = await startTurn(u, tu, fast); assert.equal((await complete(ju, tu, 'mine first', 'reply one')).ok, true);
+        const ju2 = await startTurn(u, tu, fast); assert.equal((await complete(ju2, tu, 'mine second', 'reply two')).ok, true);
+        const jv = await startTurn(v, tv, fast); assert.equal((await complete(jv, tv, 'someone elses secret', 'their reply')).ok, true);
+        const sqlText = await readFile(new URL('../docs/product/chat-data-export.sql', import.meta.url), 'utf8');
+        const run = async (email) => (await c.query(sqlText.replace("lower('user@example.com')", `lower('${email}')`))).rows;
+        const [row] = await run(`${u.auth.toUpperCase()}@Example.invalid`); // case does not matter
+        const doc = JSON.parse(row.chat_export);
+        assert.equal(doc.account_email, `${u.auth}@example.invalid`);
+        assert.equal(doc.chats.length, 1);
+        assert.deepEqual([doc.chats[0].instructions, doc.chats[0].pinned], ['Be brief.', true]);
+        assert.deepEqual(doc.chats[0].messages.map((m) => [m.role, m.text]),
+            [['user', 'mine first'], ['assistant', 'reply one'], ['user', 'mine second'], ['assistant', 'reply two']], 'in order');
+        assert.ok(!row.chat_export.includes('someone elses secret') && !row.chat_export.includes('their reply'), "never another person's chat");
+        assert.equal((await run('nobody-at-all@example.invalid')).length, 0, 'no account, no row');
+    }
 
     // ── The per-user thread cap. ──
     const c3 = await user();

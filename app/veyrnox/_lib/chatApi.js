@@ -4,6 +4,8 @@
 // so sendTurn repeats the gateway's sign-in handling for it.
 
 import { getFreshAccessToken, getSession, clearSession } from '../../lib/authClient.js';
+import { turnOptions } from './chatTurnOptions';
+import { lostNotice, settleStoppedTurn } from './chatStop';
 import { gatewayFetch, GatewayError, ACCOUNT_PAUSED_COPY, makeIdempotencyKey, notifyBalanceChanged } from './gateway';
 
 const json = (body) => JSON.stringify(body);
@@ -15,6 +17,24 @@ export const chatApi = {
   get: (id) => gatewayFetch(`/chat/threads/${encodeURIComponent(id)}`),
   patch: (id, patch) => gatewayFetch(`/chat/threads/${encodeURIComponent(id)}`, { method: 'PATCH', body: json(patch) }),
   remove: (id) => gatewayFetch(`/chat/threads/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+  folders: () => gatewayFetch('/chat/folders'),
+  createFolder: (name) => gatewayFetch('/chat/folders', { method: 'POST', body: json({ name }) }),
+  renameFolder: (id, name) => gatewayFetch(`/chat/folders/${encodeURIComponent(id)}`, { method: 'PATCH', body: json({ name }) }),
+  removeFolder: (id) => gatewayFetch(`/chat/folders/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+  personas: () => gatewayFetch('/chat/personas'),
+  savePersona: (p) => gatewayFetch('/chat/personas', { method: 'POST', body: json(p) }),
+  updatePersona: (id, p) => gatewayFetch(`/chat/personas/${encodeURIComponent(id)}`, { method: 'PATCH', body: json(p) }),
+  removePersona: (id) => gatewayFetch(`/chat/personas/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+  move: (id, folderId) => gatewayFetch(`/chat/threads/${encodeURIComponent(id)}`, { method: 'PATCH', body: json({ folder_id: folderId }) }),
+  // A reply is a job (ADR-0067): its state, by the id the `start` event carries.
+  job: (id) => gatewayFetch(`/jobs/${encodeURIComponent(id)}`),
+  // After Stop or a dropped connection: look for the turn until it has settled ('saved', 'unsaved', 'nothing' or 'pending'),
+  // then have the nav read the balance again. The balance moved at the debit and moves back on a refund, so it is read last.
+  settleStop: async ({ threadId, jobId, text, knownIds }) => {
+    const outcome = await settleStoppedTurn({ jobId, text, knownIds, getThread: () => chatApi.get(threadId), getJob: chatApi.job });
+    notifyBalanceChanged();
+    return outcome;
+  },
 };
 
 /** What the user is told. Plain, specific, and always whether Credits were used (UI-UX.md section 8). */
@@ -23,8 +43,22 @@ export function chatErrorCopy(code, { credits } = {}) {
     case 'insufficient_balance': return `You need ${credits ?? 'more'} Credits for this reply. Top up to continue. Your message was not sent.`;
     case 'account_frozen': return ACCOUNT_PAUSED_COPY;
     case 'rate_limited': return 'You are sending messages quickly. Wait a few seconds and try again.';
-    case 'chat_not_open': return 'Chat is not open yet.';
+    case 'chat_not_open': return 'LLM Chat is not open yet.';
     case 'thread_not_found': return 'That chat no longer exists.';
+    case 'search_unavailable': return 'Web search is not working right now. Turn it off or try again. No Credits were used.';
+    case 'search_timeout': return 'Web search took too long. Try again, or turn it off. No Credits were used.';
+    case 'search_rate_limited': return 'Web search is busy. Try again in a moment. No Credits were used.';
+    case 'search_no_results': return 'No pages came back for that. Try again without Web search. No Credits were used.';
+    case 'folder_not_found': return 'That folder no longer exists.';
+    case 'folder_exists': return 'You already have a folder with that name.';
+    case 'folder_limit': return 'You can have up to 50 folders. Delete one to make another.';
+    case 'invalid_name': return 'Folder names can be 1 to 60 characters.';
+    case 'persona_not_found': return 'That persona no longer exists.';
+    case 'persona_exists': return 'You already have a persona with that name.';
+    case 'persona_limit': return 'You can have up to 20 personas. Delete one to make another.';
+    case 'invalid_persona_name': return 'Persona names can be 1 to 60 characters.';
+    case 'invalid_instructions': return 'Instructions can be 1 to 4,000 characters.';
+    case 'personas_unavailable': return 'Personas are not available yet.';
     case 'model_unavailable': case 'model_gated': case 'model_not_found': return 'That model is not available right now. Pick another. No Credits were used.';
     case 'option_unavailable': case 'invalid_options': return 'That option is not available for this model. Turn it off or pick another model. No Credits were used.';
     case 'attachment_not_found': case 'attachment_invalid': return 'We could not read that image. Remove it and attach it again. No Credits were used.';
@@ -35,14 +69,29 @@ export function chatErrorCopy(code, { credits } = {}) {
     case 'upload_failed': case 'image_unreadable': return 'The image did not upload. Try again, or pick another. No Credits were used.';
     case 'invalid_text': return 'Messages can be up to 8,000 characters.';
     case 'turn_not_saved': return 'We could not save that reply, so you will not be charged.';
+    case 'reply_not_saved': return 'We could not save that reply to the chat. You received it, so its Credits were used.';
     case 'provider_cut_off': case 'provider_dropped': return 'The reply was cut off. No Credits were used.';
+    case 'connection_lost': return 'The connection dropped before the reply finished. It may have used Credits. Check this chat before you send again.';
+    case 'connection_saved': return 'The connection dropped before the reply finished. This chat shows what was saved and the Credits it used.';
+    case 'connection_refunded': return 'The connection dropped before the reply finished. Nothing was saved and no Credits were used. Your message is back in the box.';
+    case 'stop_saving': return 'Stopped. We are still saving this reply, and it may use Credits. Open this chat again in a moment to see what was kept.';
+    case 'stop_unsure': return 'Stopped before any text arrived. If a reply is still saved, it will show in this chat and use Credits.';
     default: return code && code.startsWith('provider_')
       ? 'The model did not finish. No Credits were used. Try again, or pick another model.'
       : "That didn't work. Try again.";
   }
 }
 
-export { makeIdempotencyKey };
+/**
+ * A message that was refused before it started, in a chat that still holds a warning that the message before it used
+ * Credits or may (chatLocal.js). Why this one did not go comes first. The warning follows, marked as the earlier one,
+ * so that "was not sent" is not read as "nothing can be charged".
+ */
+export function chatRefusedCopy(code, extra, warning) {
+  return `${chatErrorCopy(code, extra)} Before that: ${chatErrorCopy(warning.code, warning)}`;
+}
+
+export { makeIdempotencyKey, lostNotice };
 
 /**
  * Send one message and stream the reply. Calls onEvent(name, data) for start, delta, error, done.
@@ -59,8 +108,8 @@ export async function sendTurn({ threadId, text, key, options, attachments = [],
     method: 'POST', signal,
     headers: { Authorization: `Bearer ${token}`, 'content-type': 'application/json' },
     body: json({
-      text, idempotency_key: key, options: { thinking: options?.thinking === true, web: options?.web === true },
-      ...(attachments.length ? { attachments: attachments.map((source_key) => ({ source_key })) } : {}),
+      text, idempotency_key: key, options: turnOptions(options),
+      ...(attachments.length ? { attachments: attachments.map((a) => (typeof a === 'string' ? { source_key: a } : a)) } : {}),
     }),
   });
   if (res.status === 401) {

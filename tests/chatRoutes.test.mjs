@@ -6,11 +6,13 @@ import { GET as getModels } from '../app/api/v1/chat/models/route.js';
 import { GET as listThreads, POST as createThread } from '../app/api/v1/chat/threads/route.js';
 import { GET as getThread, PATCH as patchThread, DELETE as deleteThread } from '../app/api/v1/chat/threads/[id]/route.js';
 import { POST as sendMessage } from '../app/api/v1/chat/threads/[id]/messages/route.js';
+import { GET as listFolders, POST as createFolder } from '../app/api/v1/chat/folders/route.js';
+import { PATCH as patchFolder, DELETE as deleteFolder } from '../app/api/v1/chat/folders/[id]/route.js';
 
 const AUTH = '11111111-1111-4111-8111-111111111111';
 const THREAD = '3f2b8c1e-5d4a-4c9b-8e7f-1a2b3c4d5e6f';
 const JOB = '22222222-2222-4222-8222-222222222222';
-const KEYS = ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'CHAT_ENABLED', 'OPENROUTER_API_KEY'];
+const KEYS = ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'CHAT_ENABLED', 'OPENROUTER_API_KEY', 'EXA_API_KEY'];
 const realFetch = globalThis.fetch;
 let calls; let rpcReplies; let catalogRows; let openrouter;
 
@@ -44,7 +46,9 @@ const rpcCalls = (name) => calls.filter((c) => c.url.endsWith(`/rpc/${name}`));
 const ROUTES = [
     ['models', () => getModels(req())], ['list', () => listThreads(req())], ['create', () => createThread(req('POST', { model_id: 'chat-fast' }))],
     ['get', () => getThread(req(), params())], ['patch', () => patchThread(req('PATCH', { title: 'x' }), params())],
-    ['delete', () => deleteThread(req('DELETE'), params())], ['send', () => sendMessage(req('POST', { text: 'hi', idempotency_key: 'key-0123456789' }), params())],
+    ['delete', () => deleteThread(req('DELETE'), params())],
+    ['folders', () => listFolders(req())], ['new folder', () => createFolder(req('POST', { name: 'Work' }))],
+    ['rename folder', () => patchFolder(req('PATCH', { name: 'Work' }), params())], ['delete folder', () => deleteFolder(req('DELETE'), params())], ['send', () => sendMessage(req('POST', { text: 'hi', idempotency_key: 'key-0123456789' }), params())],
 ];
 
 test('Chat is dark by default: every route says not open and nothing else happens', async () => {
@@ -85,16 +89,18 @@ test('models: only what a user needs, never cost, endpoint or provider', async (
     catalogRows = [{ id: 'chat-fast', name: 'Fast', credits_5s: 2, gated_flag: false, provider_cost_per_unit: 0.0004, provider_endpoint: 'vendor/fast', provider: 'openrouter-chat' }];
     const res = await getModels(req());
     const j = await res.json();
-    assert.deepEqual(j, { models: [{ id: 'chat-fast', name: 'Fast', credits_per_reply: 2, gated: false, max_reply_tokens: 1024, options: { thinking: null, web: null, images: null } }], max_reply_tokens: 1024, max_attachments: 4, max_image_edge: 2048 });
+    assert.deepEqual(j, { models: [{ id: 'chat-fast', name: 'Fast', maker: 'other', maker_label: 'Other', credits_per_reply: 2, gated: false, max_reply_tokens: 1024, options: { thinking: null, web: null, images: null } }], max_reply_tokens: 1024, max_attachments: 4, max_image_edge: 2048 });
     const q = new URL(calls.find((c) => c.url.includes('model_catalog')).url).searchParams;
     assert.equal(q.get('modality'), 'eq.text'); assert.equal(q.get('provider'), 'eq.openrouter-chat'); assert.equal(q.get('active'), 'eq.true');
-    assert.ok(!q.get('select').includes('provider_cost') && !q.get('select').includes('endpoint'));
+    // The endpoint is read only to name the model family; it never reaches the response, and neither does the cost.
+    assert.ok(!q.get('select').includes('provider_cost'));
+    assert.ok(!JSON.stringify(j).includes('vendor/fast') && !JSON.stringify(j).includes('0.0004'));
 });
 
 test('models: a row with its own reply cap reports it; reasoning effort is never exposed', async () => {
     catalogRows = [{ id: 'chat-deep', name: 'Deep', credits_5s: 4, gated_flag: false, provider: 'openrouter-chat', chat_max_reply_tokens: 4096, chat_reasoning_effort: 'low' }];
     const j = await (await getModels(req())).json();
-    assert.deepEqual(j.models, [{ id: 'chat-deep', name: 'Deep', credits_per_reply: 4, gated: false, max_reply_tokens: 4096, options: { thinking: null, web: null, images: null } }]);
+    assert.deepEqual(j.models, [{ id: 'chat-deep', name: 'Deep', maker: 'other', maker_label: 'Other', credits_per_reply: 4, gated: false, max_reply_tokens: 4096, options: { thinking: null, web: null, images: null } }]);
     assert.ok(!JSON.stringify(j).includes('reasoning'));
     const q = new URL(calls.find((c) => c.url.includes('model_catalog')).url).searchParams;
     assert.match(q.get('select'), /chat_max_reply_tokens/);
@@ -181,6 +187,27 @@ test('send: a full streamed turn through the route, debited from the catalog and
     assert.equal(or.url, 'https://openrouter.ai/api/v1/chat/completions'); assert.equal(or.body.model, 'vendor/fast'); assert.equal(or.body.max_tokens, 1024);
 });
 
+test('send: the turn is handed to the Worker, so it is saved and charged with nobody reading the reply', async (t) => {
+    const symbol = Symbol.for('__cloudflare-context__'), before = globalThis[symbol], kept = [];
+    globalThis[symbol] = { env: {}, ctx: { waitUntil(work) { kept.push(work); } } };
+    t.after(() => { if (before === undefined) delete globalThis[symbol]; else globalThis[symbol] = before; });
+    catalogRows = [{ id: 'chat-fast', provider: 'openrouter-chat', provider_endpoint: 'vendor/fast', modality: 'text', credits_5s: 3, gated_flag: false, active: true }];
+    rpcReplies.check_generation_rate_limit = { ok: true };
+    rpcReplies.chat_turn_context = { ok: true, user_id: 'user-1', model_id: 'chat-fast', system_prompt: '', history: [] };
+    rpcReplies.ledger_debit = { ok: true, job_id: JOB, balance_after: 7 };
+    rpcReplies.job_submitted = { ok: true };
+    rpcReplies.chat_complete_turn = { ok: true, message_id: 'msg-1', refund: false };
+    const frame = (text) => `data: ${JSON.stringify({ choices: [{ delta: { content: text } }] })}\n\n`;
+    openrouter = () => new Response(new ReadableStream({ start(c) { const e = new TextEncoder(); c.enqueue(e.encode(frame('Hello'))); c.enqueue(e.encode('data: [DONE]\n\n')); c.close(); } }));
+
+    const res = await sendMessage(req('POST', { text: 'Hi', idempotency_key: 'key-0123456789' }), params());
+    assert.equal(res.status, 200);
+    assert.equal(kept.length, 1, 'the whole turn, once');
+    await kept[0]; // the reply is never read
+    assert.equal(rpcCalls('chat_complete_turn')[0].body.p_status, 'complete');
+    assert.equal(rpcCalls('ledger_refund').length, 0);
+});
+
 test('send: a refusal before the stream is plain JSON with the right status', async () => {
     rpcReplies.check_generation_rate_limit = { ok: true };
     rpcReplies.chat_turn_context = { ok: false, code: 'THREAD_NOT_FOUND' };
@@ -198,4 +225,120 @@ test('models: the options a row offers are reported with their extra Credits; ef
     assert.ok(!JSON.stringify(j).includes('effort') && !JSON.stringify(j).includes('8192'));
     const q = new URL(calls.find((c) => c.url.includes('model_catalog')).url).searchParams;
     assert.match(q.get('select'), /chat_thinking_extra_credits/); assert.match(q.get('select'), /chat_web_extra_credits/); assert.match(q.get('select'), /chat_images_extra_credits/);
+});
+
+test('folders: list, create, rename and delete go through the definer functions with the verified identity', async () => {
+    const FOLDER = '4a3b8c1e-5d4a-4c9b-8e7f-1a2b3c4d5e6f';
+    rpcReplies.chat_list_folders = { ok: true, folders: [{ id: FOLDER, name: 'Work', count: 2 }] };
+    let res = await listFolders(req());
+    assert.equal(res.status, 200);
+    assert.deepEqual(await res.json(), { folders: [{ id: FOLDER, name: 'Work', count: 2 }] });
+    assert.deepEqual(rpcCalls('chat_list_folders')[0].body, { p_auth_id: AUTH });
+
+    rpcReplies.chat_create_folder = { ok: true, folder: { id: FOLDER, name: 'Work', count: 0 } };
+    res = await createFolder(req('POST', { name: '  Work ' }));
+    assert.equal(res.status, 201);
+    assert.deepEqual(rpcCalls('chat_create_folder')[0].body, { p_auth_id: AUTH, p_name: 'Work' }, 'trimmed before it is sent');
+
+    rpcReplies.chat_rename_folder = { ok: true, folder: { id: FOLDER, name: 'Clients', count: 2 } };
+    res = await patchFolder(req('PATCH', { name: 'Clients' }), params(FOLDER));
+    assert.equal(res.status, 200);
+    assert.deepEqual(rpcCalls('chat_rename_folder')[0].body, { p_auth_id: AUTH, p_folder_id: FOLDER, p_name: 'Clients' });
+
+    res = await deleteFolder(req('DELETE'), params(FOLDER));
+    assert.equal(res.status, 200);
+    assert.deepEqual(rpcCalls('chat_delete_folder')[0].body, { p_auth_id: AUTH, p_folder_id: FOLDER });
+});
+
+test('folders: bad input never reaches the database', async () => {
+    const FOLDER = '4a3b8c1e-5d4a-4c9b-8e7f-1a2b3c4d5e6f';
+    for (const [body, error] of [
+        [{}, 'invalid_name'], [{ name: '' }, 'invalid_name'], [{ name: '   ' }, 'invalid_name'], [{ name: 'x'.repeat(61) }, 'invalid_name'], [{ name: 5 }, 'invalid_name'],
+        [{ name: 'ok', owner: 'x' }, 'invalid_body'], [null, 'invalid_body'], [[], 'invalid_body'], ['text', 'invalid_body'],
+    ]) {
+        const res = await createFolder(req('POST', body));
+        assert.equal(res.status, 400, JSON.stringify(body));
+        assert.deepEqual(await res.json(), { error }, JSON.stringify(body));
+    }
+    assert.equal((await patchFolder(req('PATCH', { name: '' }), params(FOLDER))).status, 400);
+    assert.equal((await patchFolder(req('PATCH', { name: 'ok' }), params('not-a-uuid'))).status, 404);
+    assert.equal((await deleteFolder(req('DELETE'), params('not-a-uuid'))).status, 404);
+    assert.equal(rpcCalls('chat_create_folder').length + rpcCalls('chat_rename_folder').length + rpcCalls('chat_delete_folder').length, 0);
+});
+
+test('folders: the database refusals read as clear errors and never leak detail', async () => {
+    const FOLDER = '4a3b8c1e-5d4a-4c9b-8e7f-1a2b3c4d5e6f';
+    for (const [code, status, error] of [['FOLDER_EXISTS', 409, 'folder_exists'], ['FOLDER_LIMIT', 409, 'folder_limit'], ['FOLDER_NOT_FOUND', 404, 'folder_not_found']]) {
+        rpcReplies.chat_create_folder = { ok: false, code, detail: 'secret internals' };
+        const res = await createFolder(req('POST', { name: 'Work' }));
+        assert.equal(res.status, status, code);
+        assert.deepEqual(await res.json(), { error }, code);
+    }
+    rpcReplies.chat_delete_folder = { ok: false, code: 'FOLDER_NOT_FOUND' };
+    assert.equal((await deleteFolder(req('DELETE'), params(FOLDER))).status, 404);
+    rpcReplies.chat_list_folders = new Error('db exploded: password=hunter2');
+    const res = await listFolders(req());
+    assert.equal(res.status, 503);
+    assert.ok(!JSON.stringify(await res.json()).includes('hunter2'));
+});
+
+test('moving a chat: PATCH folder_id calls chat_move_thread, and nothing else is changed', async () => {
+    const FOLDER = '4a3b8c1e-5d4a-4c9b-8e7f-1a2b3c4d5e6f';
+    rpcReplies.chat_move_thread = { ok: true };
+    let res = await patchThread(req('PATCH', { folder_id: FOLDER }), params());
+    assert.equal(res.status, 200);
+    assert.deepEqual(await res.json(), { ok: true, folder_id: FOLDER });
+    assert.deepEqual(rpcCalls('chat_move_thread')[0].body, { p_auth_id: AUTH, p_thread_id: THREAD, p_folder_id: FOLDER });
+    assert.equal(rpcCalls('chat_update_thread').length, 0, 'a move does not touch title, pin or instructions');
+
+    res = await patchThread(req('PATCH', { folder_id: null }), params());
+    assert.equal(res.status, 200);
+    assert.deepEqual(rpcCalls('chat_move_thread')[1].body, { p_auth_id: AUTH, p_thread_id: THREAD, p_folder_id: null });
+
+    rpcReplies.chat_move_thread = { ok: false, code: 'FOLDER_NOT_FOUND' };
+    assert.equal((await patchThread(req('PATCH', { folder_id: FOLDER }), params())).status, 404);
+    assert.equal((await patchThread(req('PATCH', { folder_id: 'nope' }), params())).status, 400);
+    assert.equal((await patchThread(req('PATCH', { folder_id: FOLDER, title: 'x' }), params())).status, 400);
+});
+
+test('models: each row names its maker from the endpoint, and the endpoint itself never leaves the server', async () => {
+    catalogRows = [
+        { id: 'chat-a', name: 'Claude Sonnet 5.5', provider_endpoint: 'anthropic/claude-sonnet-5.5', credits_5s: 4, gated_flag: false },
+        { id: 'chat-b', name: 'DeepSeek V4.1 Flash', provider_endpoint: 'deepseek/deepseek-v4.1-flash', credits_5s: 1, gated_flag: false },
+        { id: 'chat-c', name: 'Mystery', provider_endpoint: 'newlab/model-1', credits_5s: 1, gated_flag: false },
+    ];
+    const res = await getModels(req());
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.deepEqual(body.models.map((m) => [m.id, m.maker, m.maker_label]), [['chat-a', 'claude', 'Claude'], ['chat-b', 'deepseek', 'DeepSeek'], ['chat-c', 'other', 'Other']]);
+    const text = JSON.stringify(body);
+    for (const leak of ['anthropic/', 'deepseek/', 'newlab/', 'provider_endpoint', 'openrouter']) assert.ok(!text.includes(leak), leak);
+});
+
+test('models: a capped row offers Web search only while a search key is set, and a plugin row always does', async () => {
+    catalogRows = [
+        { id: 'chat-cap', name: 'Capped', provider_endpoint: 'vendor/cap', credits_5s: 1, gated_flag: false, chat_web_extra_credits: 2, chat_web_engine: 'capped' },
+        { id: 'chat-plug', name: 'Plugin', provider_endpoint: 'vendor/plug', credits_5s: 1, gated_flag: false, chat_web_extra_credits: 4, chat_web_engine: 'plugin' },
+    ];
+    const web = async () => Object.fromEntries((await (await getModels(req())).json()).models.map((m) => [m.id, m.options.web]));
+    assert.deepEqual(await web(), { 'chat-cap': null, 'chat-plug': { extra_credits: 4 } }, 'no key: the capped row hides Web search');
+    process.env.EXA_API_KEY = 'exa-test';
+    assert.deepEqual(await web(), { 'chat-cap': { extra_credits: 2 }, 'chat-plug': { extra_credits: 4 } }, 'with the key it is offered at its own price');
+    const q = new URL(calls.find((c) => c.url.includes('model_catalog')).url).searchParams;
+    assert.match(q.get('select'), /chat_web_engine/);
+});
+
+test('models: before the engine column exists in the database, the list still loads and Web search reads as the plugin', async () => {
+    catalogRows = [{ id: 'chat-a', name: 'A', provider_endpoint: 'vendor/a', credits_5s: 1, gated_flag: false, chat_web_extra_credits: 2 }];
+    const inner = globalThis.fetch;
+    globalThis.fetch = async (input, init) => {
+        const u = new URL(typeof input === 'string' ? input : input.url ?? input.href);
+        if (u.pathname.endsWith('/model_catalog') && (u.searchParams.get('select') || '').includes('chat_web_engine')) {
+            return new Response('{"code":"42703","message":"column model_catalog.chat_web_engine does not exist"}', { status: 400 });
+        }
+        return inner(input, init);
+    };
+    const res = await getModels(req());
+    assert.equal(res.status, 200);
+    assert.deepEqual((await res.json()).models[0].options.web, { extra_credits: 2 });
 });

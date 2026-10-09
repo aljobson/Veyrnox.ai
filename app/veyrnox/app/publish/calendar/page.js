@@ -3,12 +3,13 @@ import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { AppNav } from '../../../_components/NavBar';
 import { Modal } from '../../../_components/Modal';
+import NetworkLogo from '../NetworkLogo';
 import { getSession, onSessionChange } from '../../../../lib/authClient';
 import { NETWORKS } from '../../../../lib/socialConnectClient';
 import { listSocialCalendar, rescheduleSocialPost } from '../../../../lib/socialPostsClient';
 import { calendarWindow, shiftCalendar, dateKey, droppedSchedule, localInput, localSchedule, POST_STATUSES } from '../../../../../lib/social/calendar.js';
 
-const button='rounded-full border border-vx-border px-4 py-2 text-sm font-bold disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-vx-accent';
+const button='rounded-full border border-vx-border px-4 py-2 text-sm font-bold disabled:opacity-50 focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-vx-accent';
 const input='rounded-lg border border-vx-border bg-vx-panel px-3 py-2 text-sm';
 const noAccount=()=>'';
 const currentAccount=()=>getSession()?.user?.id||'';
@@ -87,7 +88,7 @@ function CalendarControls({today}) {
             {!loadError&&posts.length===0&&<p className="text-sm text-vx-fg-muted">No posts in this period match your filters.</p>}
             {view==='list'?<div className="space-y-4">{range.days.filter(day=>groups.get(day).length).map(day=><section key={day} aria-label={dayLabel(day)}>
                 <h3 className="font-bold mb-2">{dayLabel(day)}</h3><ul className="space-y-2">{groups.get(day).map(post=><li key={post.id}><PostCard post={post} onEdit={()=>setEdit({post,value:localInput(post.scheduled_at)})}/></li>)}</ul>
-            </section>)}</div>:<div className="relative overflow-x-auto rounded-xl border border-vx-border focus-visible:outline focus-visible:outline-2 focus-visible:outline-vx-accent" tabIndex={0} role="region" aria-label={`${view} calendar, scroll horizontally on smaller screens`}>
+            </section>)}</div>:<div className="relative overflow-x-auto rounded-xl border border-vx-border focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-vx-accent" tabIndex={0} role="region" aria-label={`${view} calendar, scroll horizontally on smaller screens`}>
                 <table className="w-full min-w-[840px] table-fixed text-sm">
                     <caption className="sr-only">{title}. Scheduled posts by local date.</caption>
                     <thead><tr>{['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(day=><th scope="col" key={day} className="p-3 text-left text-vx-fg-muted">{day}</th>)}</tr></thead>
@@ -105,14 +106,14 @@ function CalendarControls({today}) {
 }
 
 function PostCard({post,onEdit}) {
-    return <article className="rounded-lg border border-vx-border bg-vx-panel p-2 space-y-2 break-words" draggable={post.can_reschedule===true}
+    return <article className="rounded-lg border border-vx-border bg-vx-panel p-2 space-y-2 wrap-break-word" draggable={post.can_reschedule===true}
         onDragStart={e=>{if(!post.can_reschedule){e.preventDefault();return;}e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('application/x-veyrnox-post',post.id);}} data-calendar-post={post.id}>
         <p className="text-xs font-bold"><time dateTime={post.scheduled_at}>{timeLabel(post.scheduled_at)}</time> · {post.status}</p>
         <p className="text-sm line-clamp-3">{post.global_text||'Media post'}</p>
-        <ul className="text-xs text-vx-fg-muted space-y-1">{(post.targets||[]).map(t=><li key={t.id}>{networkLabel(t.network)}: {t.publish_status==='delivered'?'delivered, finish in TikTok':t.publish_status==='submitted'?'in progress':t.publish_status}
+        <ul className="text-xs text-vx-fg-muted space-y-1">{(post.targets||[]).map(t=><li key={t.id} className="flex flex-wrap items-center gap-1"><NetworkLogo network={t.network} className="h-3.5 w-3.5" />{networkLabel(t.network)}: {t.publish_status==='delivered'?'delivered, finish in TikTok':t.publish_status==='submitted'?'in progress':t.publish_status}
             {t.publish_status==='published'&&/^https:\/\//.test(t.platform_post_url||'')&&<> · <a href={t.platform_post_url} target="_blank" rel="noreferrer" className="underline">View post</a></>}
         </li>)}</ul>
-        {post.can_reschedule?<button type="button" className="text-xs font-bold text-vx-accent underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-vx-accent" onClick={onEdit}>Reschedule<span className="sr-only"> {post.global_text||'media post'}</span></button>:<p className="text-xs text-vx-fg-muted">Schedule locked</p>}
+        {post.can_reschedule?<button type="button" className="text-xs font-bold text-vx-accent underline focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-vx-accent" onClick={onEdit}>Reschedule<span className="sr-only"> {post.global_text||'media post'}</span></button>:<p className="text-xs text-vx-fg-muted">Schedule locked</p>}
     </article>;
 }
 
@@ -133,7 +134,7 @@ function RescheduleDialog({post,value,timezone,onClose,onSaved}) {
     return <Modal onCancel={()=>{if(!busy)onClose();}} initialFocusRef={inputRef} className="items-center justify-center p-4" aria-labelledby="reschedule-title">
         <form onSubmit={save} className="w-full max-w-lg rounded-2xl border border-vx-border bg-vx-base p-5 space-y-4">
             <h2 id="reschedule-title" className="font-bold text-lg">Reschedule post</h2>
-            <p className="text-sm break-words line-clamp-3">{post.global_text||'Media post'}</p>
+            <p className="text-sm wrap-break-word line-clamp-3">{post.global_text||'Media post'}</p>
             <p className="text-xs text-vx-fg-muted">Current: {new Date(post.scheduled_at).toLocaleString()} · {timezone}. All targets move together. Publishing must not have started.</p>
             <label className="block text-sm font-bold">New date and time<input ref={inputRef} type="datetime-local" required className={`${input} mt-2 block w-full`} value={when} disabled={busy} onChange={e=>setWhen(e.target.value)}/></label>
             {proposed&&<p className="text-xs text-vx-fg-muted">New time in UTC: {proposed}. Repeated daylight-saving hours follow your browser&apos;s chosen offset.</p>}

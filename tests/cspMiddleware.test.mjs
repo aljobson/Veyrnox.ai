@@ -18,7 +18,8 @@ test('HTML receives fresh matching CSP/renderer nonces and cannot trust inbound 
         assert.match(nonce, /^[A-Za-z0-9+/]{22}==$/);
         assert.equal(response.headers.get('x-middleware-request-x-nonce'), nonce);
         assert.equal(response.headers.get('x-middleware-request-content-security-policy'), policy);
-        assert.equal(response.headers.get('x-middleware-request-x-veyrnox-auth-id'), null);
+        // Blanked rather than absent: a deletion is not applied on OpenNext (tests/identityHeaders.test.mjs).
+        assert.equal(response.headers.get('x-middleware-request-x-veyrnox-auth-id'), '');
         assert.ok(!policy.match(/script-src[^;]*unsafe-inline/));
         assert.match(response.headers.get('cache-control'), /no-store/);
         seen.push(nonce);

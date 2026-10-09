@@ -22,6 +22,7 @@
  */
 
 import { NextResponse } from 'next/server';
+import { networkReleased } from '../../../../../../../lib/social/networks.js';
 import { rpc, envConfig, SupabaseError } from '../../../../../../../packages/db/supabase-client.js';
 import { linkedinConfig, exchangeCodeForToken, fetchConnectedAccount, LINKEDIN_SCOPES } from '../../../../../../../packages/adapters/social/linkedin.js';
 import { verifyOAuthState } from '../../../../../../../lib/social/oauthState.js';
@@ -37,6 +38,8 @@ export async function POST(req) {
     if (!authId || !UUID_RE.test(authId)) {
         return NextResponse.json({ error: 'not_authenticated' }, { status: 401 });
     }
+
+    if (!networkReleased('linkedin')) return NextResponse.json({ error: 'network_unavailable' }, { status: 404 });
 
     const cfg = envConfig();
     const liCfg = linkedinConfig();

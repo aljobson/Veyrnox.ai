@@ -32,7 +32,7 @@ export default function MobileCreate() {
           aria-label="Prompt"
           placeholder="Describe the shot…"
           rows={3}
-          className="w-full bg-vx-panel border border-vx-border rounded-[10px] px-3 py-2.5 text-[13px] text-vx-fg leading-[1.5] resize-none mb-3 focus:outline-none focus:border-vx-accent"
+          className="w-full bg-vx-panel border border-vx-border rounded-[10px] px-3 py-2.5 text-[13px] text-vx-fg leading-[1.5] resize-none mb-3 focus:outline-hidden focus:border-vx-accent"
         />
 
         <div className="flex gap-1.5 flex-wrap mb-3">

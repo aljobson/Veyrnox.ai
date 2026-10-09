@@ -7,7 +7,7 @@ import { Modal } from '../../_components/Modal';
 import { gatewayFetch, makeIdempotencyKey } from '../../_lib/gateway';
 import { useProjectsPreview } from '../../_lib/useProjectsPreview';
 
-const field = 'w-full rounded-xl border border-vx-border bg-vx-base px-4 py-3 text-sm text-vx-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-vx-accent';
+const field = 'w-full rounded-xl border border-vx-border bg-vx-base px-4 py-3 text-sm text-vx-fg focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-vx-accent';
 function errorMessage(error) {
   if (error.code === 'account_changed') return 'Your account changed. Reload this page to continue.';
   if (error.status === 401) return 'Sign in to view your projects.';
@@ -88,7 +88,7 @@ export default function Projects() {
                 : <section aria-label="Projects" className="overflow-hidden rounded-2xl border border-vx-border">
                   <div className="flex items-center justify-between border-b border-vx-border bg-vx-panel px-5 py-3 text-xs text-vx-fg-muted"><span>{shown.length} {shown.length === 1 ? 'project' : 'projects'}</span><span>Newest first</span></div>
                   {!shown.length ? <p className="p-10 text-center text-vx-fg-muted">No projects match “{query}”.</p> : <ul className="divide-y divide-vx-border">{shown.map(p => <li key={p.id} className="flex flex-col items-start justify-between gap-4 px-5 py-5 sm:flex-row sm:items-center">
-                    <div className="min-w-0 flex-1"><h2 className="break-words font-bold"><Link className="hover:text-vx-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-vx-accent" href={`/app/projects/${encodeURIComponent(p.id)}`}>{p.name}</Link></h2><p className="mt-1 text-xs text-vx-fg-muted">Created {new Date(p.created_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}</p></div>
+                    <div className="min-w-0 flex-1"><h2 className="wrap-break-word font-bold"><Link className="hover:text-vx-accent focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-vx-accent" href={`/app/projects/${encodeURIComponent(p.id)}`}>{p.name}</Link></h2><p className="mt-1 text-xs text-vx-fg-muted">Created {new Date(p.created_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}</p></div>
                     <div className="flex gap-2"><Button size="sm" variant="ghost" aria-label={`Rename ${p.name}`} onClick={() => setDialog({ mode: 'rename', project: p })}>Rename</Button><Button size="sm" variant="ghost" aria-label={`Delete ${p.name}`} onClick={() => setDialog({ mode: 'delete', project: p })}>Delete</Button></div>
                   </li>)}</ul>}
                 </section>}
@@ -142,7 +142,7 @@ function ProjectDialog({ mode, project, workspace, onClose, onSaved }) {
   return <Modal aria-labelledby="project-dialog-title" onCancel={() => !busy && onClose()} initialFocusRef={input} className="items-center justify-center p-4">
     <form onSubmit={submit} className="w-full max-w-lg rounded-2xl border border-vx-border bg-vx-base p-6 sm:p-8">
       <h2 id="project-dialog-title" className="mb-3 text-2xl font-black">{title}</h2>
-      {removing ? <p className="mb-6 break-words text-sm text-vx-fg-muted">“{project.name}” will be removed from this workspace. Generated media in your library stays there.</p>
+      {removing ? <p className="mb-6 wrap-break-word text-sm text-vx-fg-muted">“{project.name}” will be removed from this workspace. Generated media in your library stays there.</p>
         : <label className="block text-sm font-semibold">Project name<input ref={input} className={`${field} mb-2 mt-3`} value={name} onChange={e => setName(e.target.value)} maxLength={120} required disabled={busy} autoComplete="off" /><span className="text-xs font-normal text-vx-fg-muted">Choose a name you will recognise. Up to 120 characters.</span></label>}
       {error && <p role="alert" className="mt-4 text-sm text-vx-fg-body">{error}</p>}
       <div className="mt-7 flex flex-wrap justify-end gap-3">

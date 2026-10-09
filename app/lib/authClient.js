@@ -29,6 +29,8 @@
  */
 
 import { clearJobHistory } from "../veyrnox/_lib/jobHistory.js";
+import { clearChatLocal } from "../veyrnox/_lib/chatLocal.js";
+import { keepOAuthVerifier, keepMagicVerifier, takeVerifier } from "./pkceVerifier.js";
 
 const STORAGE_KEY = "veyrnox_supabase_session";
 // Refresh when this close to expiry (seconds). Matches the 5s server skew
@@ -73,6 +75,16 @@ function readStored() {
     } catch {
         return null;
     }
+}
+/**
+ * Who the stored session belongs to, or null when signed out. Unlike
+ * getSession() this still answers while an expired access token waits on its
+ * refresh, so per-user browser data is not dropped once an hour.
+ * @returns {string|null}
+ */
+export function getStoredUserId() {
+    const id = readStored()?.user?.id;
+    return typeof id === "string" && id ? id : null;
 }
 /**
  * Convenience wrapper. Returns the raw JWT string, or null if no valid
@@ -136,7 +148,12 @@ export function sessionIsPersisted() { return storagePersisted; }
 
 function setSession(s) {
     if (typeof localStorage === "undefined") return;
-    if (!s || readStored()?.user?.id !== s.user?.id) clearJobHistory();
+    // Session ended or a different user: nothing the last one left in this
+    // browser (job history, unsent chat text, starred replies) is kept.
+    if (!s || readStored()?.user?.id !== s.user?.id) {
+        clearJobHistory();
+        clearChatLocal(localStorage);
+    }
     // Safari private browsing and blocked site data throw on setItem, not on
     // access. The read path was already guarded; this was not, so the throw
     // propagated out of signInWithPassword and surfaced a raw DOMException.
@@ -262,7 +279,7 @@ export async function signUp(email, password, captchaToken) {
  */
 export async function sendMagicLink(email, captchaToken) {
     const verifier = randomVerifier();
-    sessionStorage.setItem(PKCE_KEY, verifier);
+    keepMagicVerifier(verifier);
     const redirect = `${window.location.origin}/auth/callback`;
     await post(`/auth/v1/otp?redirect_to=${encodeURIComponent(redirect)}`, withCaptcha({
         email, create_user: true, code_challenge: await s256(verifier), code_challenge_method: 's256',
@@ -286,9 +303,10 @@ export async function signInWithOAuth(provider, redirectTo) {
     const back = redirectTo || `${window.location.origin}/auth/callback`;
     // PKCE: the callback carries a one-time `code` that only this browser
     // can exchange, because only this browser holds the verifier. A pasted
-    // or attacker-planted callback URL has no verifier and fails.
+    // or attacker-planted callback URL has no verifier and fails. Where the
+    // verifier is kept, and for how long, is in pkceVerifier.js.
     const verifier = randomVerifier();
-    sessionStorage.setItem(PKCE_KEY, verifier);
+    keepOAuthVerifier(verifier);
     const authorize = new URL("/auth/v1/authorize", url);
     authorize.searchParams.set("provider", provider);
     authorize.searchParams.set("redirect_to", back);
@@ -296,8 +314,6 @@ export async function signInWithOAuth(provider, redirectTo) {
     authorize.searchParams.set("code_challenge_method", "s256");
     window.location.assign(authorize.toString());
 }
-
-const PKCE_KEY = "veyrnox_pkce_verifier";
 
 function randomVerifier() {
     const bytes = new Uint8Array(32);
@@ -315,13 +331,6 @@ function b64url(bytes) {
 }
 
 /**
- * Finish the PKCE flow on /auth/callback: exchange `?code=` plus the
- * verifier this browser stored for a session. Returns null when there is
- * no code or no verifier (a callback this browser did not start). Never
- * overwrites a still-valid session.
- * @returns {Promise<VeyrnoxSession|null>}
- */
-/**
  * The error Supabase put on the callback URL when the provider or Auth config
  * refused the sign-in (e.g. `invalid_client`, `server_error`). It arrives in
  * the query or the fragment instead of `?code=`. Null when there is none.
@@ -334,12 +343,19 @@ export function oauthCallbackError(href) {
     return code ? code.slice(0, 64) : null;
 }
 
+/**
+ * Finish the PKCE flow on /auth/callback, for an OAuth redirect or an emailed
+ * link: exchange `?code=` plus the verifier this browser stored for a
+ * session. Returns null when there is no code or no usable verifier (a
+ * callback this browser did not start, or a link opened after its verifier
+ * expired). Never overwrites a still-valid session.
+ * @returns {Promise<VeyrnoxSession|null>}
+ */
 export async function completeOAuthFromCode() {
     if (typeof window === "undefined") return null;
     const code = new URL(window.location.href).searchParams.get("code");
     if (!code) return null;
-    const verifier = sessionStorage.getItem(PKCE_KEY);
-    sessionStorage.removeItem(PKCE_KEY);
+    const verifier = takeVerifier();
     if (!verifier) return null;
     if (getSession()) return getSession();
     const data = await post("/auth/v1/token?grant_type=pkce", { auth_code: code, code_verifier: verifier });
@@ -347,26 +363,30 @@ export async function completeOAuthFromCode() {
     setSession(s);
     return s;
 }
-/**
- * Revoke the Supabase session server-side and clear localStorage.
- * Both steps always run; server errors are swallowed so the client is
- * never wedged in a signed-in-but-can't-sign-out state.
- */
 /** Drop the local session without a server round-trip (gateway said 401). */
 export function clearSession() {
     setSession(null);
 }
 
+/**
+ * Revoke this device's Supabase session server-side and clear localStorage.
+ * Local state is always cleared; server errors are swallowed so the client is
+ * never wedged in a signed-in-but-can't-sign-out state. /logout only accepts
+ * a live access token, so an expired one is refreshed first: sent as it was,
+ * the 401 was swallowed and the refresh token stayed valid at Supabase.
+ * `scope=local` ends this session only, as the confirmation says; "Sign out
+ * everywhere" on /app/account ends the others (accountSecurity.js).
+ */
 export async function signOut() {
-    const s = readStored();
+    let token = null;
+    try { token = await getFreshAccessToken(); } catch { /* still sign out here */ }
     setSession(null);
-    if (s?.access_token) {
-        const { url, anonKey } = ensureCfg();
-        await fetch(new URL("/auth/v1/logout", url), {
-            method: "POST",
-            headers: { apikey: anonKey, Authorization: `Bearer ${s.access_token}` },
-        }).catch(() => {});
-    }
+    if (!token) return;
+    const { url, anonKey } = ensureCfg();
+    await fetch(new URL("/auth/v1/logout?scope=local", url), {
+        method: "POST",
+        headers: { apikey: anonKey, Authorization: `Bearer ${token}` },
+    }).catch(() => {});
 }
 
 // ─── MFA (TOTP) ─────────────────────────────────────────────────────────────

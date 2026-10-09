@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import DeviceUploads from './DeviceUploads.js';
+import NetworkLogo from './NetworkLogo.js';
 import { gatewayFetch } from '../../_lib/gateway.js';
 import { NETWORKS } from '../../../lib/socialConnectClient.js';
 import { createSocialPost, listSocialPosts, newIdempotencyKey } from '../../../lib/socialPostsClient.js';
@@ -34,16 +36,20 @@ function MediaPicker({ selected, onSelect }) {
                 const res = await gatewayFetch('/jobs?limit=24');
                 const withAssets = (res.jobs || []).filter((j) => j.has_asset);
                 if (cancelled) return;
-                setJobs(withAssets);
+
                 const entries = await Promise.all(withAssets.map(async (j) => {
                     try {
                         const asset = await gatewayFetch(`/jobs/${encodeURIComponent(j.job_id)}/asset`);
-                        return [j.job_id, asset.url];
+                        return [j.job_id, { url: asset.url, mediaType: asset.mime_type?.split('/')[0] }];
                     } catch {
                         return [j.job_id, null];
                     }
                 }));
-                if (!cancelled) setThumbs(Object.fromEntries(entries));
+                if (!cancelled) {
+                    const loaded = Object.fromEntries(entries);
+                    setThumbs(loaded);
+                    setJobs(withAssets.filter((j) => ['image', 'video'].includes(loaded[j.job_id]?.mediaType)));
+                }
             } catch {
                 if (!cancelled) setLoadError('Could not load your library. Check your connection and try again.');
             }
@@ -53,7 +59,7 @@ function MediaPicker({ selected, onSelect }) {
 
     if (loadError) return <p role="alert" className="text-sm text-vx-danger">{loadError}</p>;
     if (jobs === null) return <p className="text-sm text-vx-fg-muted">Loading your library…</p>;
-    if (jobs.length === 0) return <p className="text-sm text-vx-fg-muted">Nothing in your library yet. Generate something first.</p>;
+    if (jobs.length === 0) return <p className="text-sm text-vx-fg-muted">No generated images or videos in this library yet.</p>;
 
     return (
         <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-64 overflow-y-auto">
@@ -63,11 +69,15 @@ function MediaPicker({ selected, onSelect }) {
                     <button
                         key={j.job_id}
                         type="button"
-                        onClick={() => onSelect({ jobId: j.job_id, thumbUrl: thumbs[j.job_id] })}
+                        aria-label={`Choose ${thumbs[j.job_id]?.mediaType || 'media'} ${j.job_id.slice(0, 8)}`}
+                        aria-pressed={isSelected}
+                        onClick={() => onSelect({ jobId: j.job_id, thumbUrl: thumbs[j.job_id]?.url, mediaType: thumbs[j.job_id]?.mediaType })}
                         className={`relative aspect-square rounded-lg overflow-hidden border-2 ${isSelected ? 'border-vx-accent' : 'border-vx-border'}`}
                     >
                         {thumbs[j.job_id]
-                            ? <img src={thumbs[j.job_id]} alt="" className="h-full w-full object-cover" />
+                            ? thumbs[j.job_id]?.mediaType === 'video'
+                                ? <video src={thumbs[j.job_id]?.url} muted playsInline preload="metadata" className="h-full w-full object-cover" />
+                                : <img src={thumbs[j.job_id]?.url} alt="" className="h-full w-full object-cover" />
                             : <span className="flex h-full w-full items-center justify-center bg-vx-panel text-xs text-vx-fg-muted">…</span>}
                         {isSelected && <span aria-hidden="true" className="absolute inset-0 bg-vx-accent/20" />}
                     </button>
@@ -77,8 +87,8 @@ function MediaPicker({ selected, onSelect }) {
     );
 }
 
-export function Composer({ accounts, onScheduled, initialJobId = null }) {
-    const activeAccounts = (accounts || []).filter((a) => a.status === 'active');
+export function Composer({ accounts, onScheduled, initialJobId = null, uploadsEnabled = false }) {
+    const activeAccounts = (accounts || []).filter((a) => a.status === 'active' && a.publishingEnabled !== false && NETWORKS.find((n) => n.key === a.network)?.media.length);
     const [selectedAccountIds, setSelectedAccountIds] = useState(() => new Set());
     const [caption, setCaption] = useState('');
     const [scheduledAt, setScheduledAt] = useState(defaultScheduleValue);
@@ -86,6 +96,7 @@ export function Composer({ accounts, onScheduled, initialJobId = null }) {
     const [selectedMedia, setSelectedMedia] = useState(null);
     const [loadingMedia, setLoadingMedia] = useState(!!initialJobId);
     const [mediaError, setMediaError] = useState('');
+    const [uploading, setUploading] = useState(false);
     const [pickerOpen, setPickerOpen] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
@@ -125,18 +136,29 @@ export function Composer({ accounts, onScheduled, initialJobId = null }) {
         e.preventDefault();
         setError(''); setSuccess('');
         if (selectedAccountIds.size === 0) { setError('Pick at least one connected account.'); return; }
-        if (!selectedMedia) { setError('Pick an image or video from your library.'); return; }
-        const scheduledIso = new Date(scheduledAt).toISOString();
-        setSubmitting(true);
+        if (!selectedMedia) { setError('Choose an image or video from your library or device.'); return; }
+        for (const id of selectedAccountIds) {
+            const account = activeAccounts.find((a) => a.id === id);
+            const network = NETWORKS.find((n) => n.key === account?.network);
+            if (!network?.media.includes(mediaType)) { setError(`${network?.label || 'That account'} does not support this media type.`); return; }
+            const length = network.key === 'bluesky' ? [...new Intl.Segmenter('en', { granularity: 'grapheme' }).segment(caption)].length : [...caption].length;
+            if (length > network.captionLimit) { setError(`${network.label} supports captions up to ${network.captionLimit} characters.`); return; }
+        }
+        const publishNow = e.nativeEvent.submitter?.value === 'now';
+        const schedule = new Date(scheduledAt);
+        if (!publishNow && (!Number.isFinite(schedule.getTime()) || schedule.getTime() <= Date.now())) {
+            setError('Choose a future date and time to schedule your post.'); return;
+        }
+        setSubmitting(publishNow ? 'now' : 'schedule');
         try {
             await createSocialPost({
-                scheduledAt: scheduledIso,
+                ...(publishNow ? { publishNow: true } : { scheduledAt: schedule.toISOString() }),
                 globalText: caption,
                 idempotencyKey: idempotencyKey.current,
                 accountIds: [...selectedAccountIds],
-                media: [{ mediaType, jobId: selectedMedia.jobId }],
+                media: [{ mediaType, ...(selectedMedia.uploadId ? { uploadId: selectedMedia.uploadId } : { jobId: selectedMedia.jobId }) }],
             });
-            setSuccess('Post scheduled.');
+            setSuccess(publishNow ? 'Post queued for publishing. It can take a few minutes to appear.' : 'Post scheduled.');
             setCaption(''); setSelectedAccountIds(new Set()); setSelectedMedia(null);
             setScheduledAt(defaultScheduleValue());
             idempotencyKey.current = newIdempotencyKey();
@@ -145,20 +167,19 @@ export function Composer({ accounts, onScheduled, initialJobId = null }) {
             const code = err && err.code;
             setError(code === 'rate_limited'
                 ? 'Too many posts scheduled at once. Wait a moment and try again.'
-                : 'Could not schedule that post. Check your connection and try again.');
+                : ['unsupported_media_type', 'publishing_not_supported'].includes(err.body?.error) ? 'That destination does not support this media type.'
+                : err.body?.error === 'caption_too_long' ? 'The caption is too long for a selected platform.'
+                : 'Could not submit that post. Check your connection and try again.');
         } finally {
             setSubmitting(false);
         }
-    }
-
-    if (activeAccounts.length === 0) {
-        return <p className="text-sm text-vx-fg-muted">Connect an account above before scheduling a post.</p>;
     }
 
     return (
         <form onSubmit={onSubmit} className="space-y-4">
             <div>
                 <div className="text-sm font-bold mb-2">Post to</div>
+                {!activeAccounts.length && <p className="text-sm text-vx-fg-muted">Connect a publishing account above before creating a post. Twitch connects for statistics. You can choose media first.</p>}
                 <ul className="flex flex-wrap gap-2">
                     {activeAccounts.map((a) => {
                         const on = selectedAccountIds.has(a.id);
@@ -166,9 +187,11 @@ export function Composer({ accounts, onScheduled, initialJobId = null }) {
                             <li key={a.id}>
                                 <button
                                     type="button"
+                                    aria-pressed={on}
                                     onClick={() => toggleAccount(a.id)}
-                                    className={`rounded-full border px-3 py-1.5 text-sm font-bold ${on ? 'border-vx-accent text-vx-accent' : 'border-vx-border text-vx-fg'}`}
+                                    className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-bold ${on ? 'border-vx-accent text-vx-accent' : 'border-vx-border text-vx-fg'}`}
                                 >
+                                    <NetworkLogo network={a.network} className="h-4 w-4" />
                                     {networkLabel(a.network)}: {a.display_name || a.external_account_id}
                                 </button>
                             </li>
@@ -192,30 +215,31 @@ export function Composer({ accounts, onScheduled, initialJobId = null }) {
             <div>
                 <div className="text-sm font-bold mb-2">Media</div>
                 <div className="flex flex-wrap items-center gap-3 mb-2">
-                    <select value={mediaType} onChange={(e) => setMediaType(e.target.value)} className="rounded-lg border border-vx-border bg-transparent px-2 py-1 text-sm">
+                    <select aria-label="Media type" disabled={uploading || Boolean(selectedMedia?.uploadId)} value={mediaType} onChange={(e) => setMediaType(e.target.value)} className="rounded-lg border border-vx-border bg-transparent px-2 py-1 text-sm">
                         <option value="image">Image</option>
                         <option value="video">Video</option>
                     </select>
-                    <button type="button" disabled={loadingMedia} className={button} onClick={() => setPickerOpen((v) => !v)}>
+                    <button type="button" disabled={loadingMedia || uploading} className={button} onClick={() => setPickerOpen((v) => !v)}>
                         {selectedMedia ? 'Change' : 'Choose from library'}
                     </button>
                     {selectedMedia?.thumbUrl && (mediaType === 'video'
-                        ? <video src={selectedMedia.thumbUrl} aria-label="Selected video" controls playsInline className="h-24 w-40 rounded object-contain" />
-                        : <img src={selectedMedia.thumbUrl} alt="Selected image" className="h-10 w-10 rounded object-cover" />)}
+                        ? <video src={selectedMedia.thumbUrl} aria-label="Selected video" controls playsInline className="h-24 w-40 rounded-sm object-contain" />
+                        : <img src={selectedMedia.thumbUrl} alt="Selected image" className="h-10 w-10 rounded-sm object-cover" />)}
                 </div>
                 {loadingMedia && <p role="status" className="text-sm text-vx-fg-muted">Loading your generation…</p>}
                 {mediaError && <p role="alert" className="text-sm text-vx-danger">{mediaError}</p>}
                 {selectedMedia && <p className="text-sm text-vx-fg-muted">Media selected. Choose accounts, add a caption and confirm when to post.</p>}
+                {uploadsEnabled && <DeviceUploads selected={selectedMedia} onBusyChange={setUploading} onSelect={(m) => { setSelectedMedia(m); if (m) setMediaType(m.mediaType); setMediaError(''); setPickerOpen(false); }} />}
                 {pickerOpen && (
                     <MediaPicker
                         selected={selectedMedia}
-                        onSelect={(m) => { setSelectedMedia(m); setMediaError(''); setPickerOpen(false); }}
+                        onSelect={(m) => { setSelectedMedia(m); setMediaType(m.mediaType); setMediaError(''); setPickerOpen(false); }}
                     />
                 )}
             </div>
 
             <div>
-                <label htmlFor="publish-schedule" className="text-sm font-bold mb-2 block">When</label>
+                <label htmlFor="publish-schedule" className="text-sm font-bold mb-2 block">Schedule for</label>
                 <input
                     id="publish-schedule"
                     type="datetime-local"
@@ -228,9 +252,15 @@ export function Composer({ accounts, onScheduled, initialJobId = null }) {
             {error && <p role="alert" className="text-sm text-vx-danger">{error}</p>}
             {success && <p className="text-sm text-vx-accent">{success}</p>}
 
-            <button type="submit" disabled={submitting || loadingMedia} className={primaryButton}>
-                {submitting ? 'Scheduling…' : 'Schedule post'}
-            </button>
+            <div className="flex flex-wrap gap-3">
+                <button type="submit" value="now" formNoValidate disabled={submitting || loadingMedia || uploading || !activeAccounts.length} className={primaryButton}>
+                    {submitting === 'now' ? 'Submitting…' : 'Post now'}
+                </button>
+                <button type="submit" value="schedule" disabled={submitting || loadingMedia || uploading || !activeAccounts.length} className={button}>
+                    {submitting === 'schedule' ? 'Scheduling…' : 'Schedule post'}
+                </button>
+            </div>
+            <p className="text-xs text-vx-fg-muted">Post now starts publishing as soon as possible. Schedule post uses the date and time above. Publishing can take a few minutes.</p>
         </form>
     );
 }
@@ -245,7 +275,8 @@ function TargetBadge({ target }) {
     const tone = target.publish_status === 'published' || target.publish_status === 'delivered' ? 'text-vx-accent'
         : target.publish_status === 'failed' ? 'text-vx-danger' : 'text-vx-fg-muted';
     return (
-        <span className={`text-xs font-bold ${tone}`} title={target.last_error || ''}>
+        <span className={`inline-flex items-center gap-1.5 text-xs font-bold ${tone}`} title={target.last_error || ''}>
+            <NetworkLogo network={target.network} className="h-3.5 w-3.5" />
             {networkLabel(target.network)}: {STATUS_LABEL[target.publish_status] || target.publish_status}
             {target.platform_post_url && target.publish_status === 'published' && (
                 <> · <a href={target.platform_post_url} target="_blank" rel="noreferrer" className="underline">view</a></>

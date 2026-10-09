@@ -134,6 +134,7 @@ export const NAV_CATEGORIES = [
   { href: '/#models',    label: 'Models' },
   { href: '/presets',   label: 'Templates' },
   { href: '/tools',     label: 'Tools' },
+  { href: '/app/chat',  label: 'LLM Chat' },
   { href: '/pricing',   label: 'Pricing' },
   { href: '/#faq',       label: 'FAQ' },
 ];
@@ -146,6 +147,7 @@ export const SITE_PAGES = [
   { href: '/presets',           label: 'Templates',          description: 'Ready-made looks with their prompt and price up front.' },
   { href: '/tools',             label: 'Tools',              description: 'Upscale, cut out, expand, edit and animate your own files.' },
   { href: '/guides',            label: 'Guides',             description: 'Step-by-step answers to the things people do first.' },
+  { href: '/app/chat',          label: 'LLM Chat',           description: 'Ask leading AI models, with Web search if you want it, priced before you send.' },
   { href: '/app/create',        label: 'Create',             description: 'The studio: pick a model, see the cost, generate.' },
   { href: '/app/library',       label: 'Library',            description: 'Every generation you have run, successes and refunds.' },
   { href: '/app/credits',       label: 'Credits & billing',  description: 'Your balance, free-credit expiry and recent ledger rows.' },
@@ -294,11 +296,13 @@ export function shelfName(name) {
 // 2026-09-23, finding 12: "Auto Short" was priced at 110 credits on the
 // landing page while the picker kept it behind a flag).
 //
-// Two kinds of row are held back:
+// Three kinds of row are held back:
 //   - edit tools (Clip Editor) — they act on Library files, not on a prompt,
 //     so they belong in the Library, not on a shelf of models.
 //   - topic rows (Auto Short) — gated behind localStorage.veyrnox_auto_short
 //     in app/create until launch (CLAUDE.md "Delivery").
+//   - plan rows (the video agent, ADR-0074) — bought from an approved plan on
+//     its own page (app/video-agent), never from a prompt in the picker.
 //
 // Takes a capability record: `capabilityFor(row.provider_endpoint)` on the
 // server, or the `capabilities` GET /api/catalog attaches to each row.
@@ -306,5 +310,5 @@ export function shelfName(name) {
 // `topic` clause below come out in the same commit.
 export function isShelfModel(capabilities) {
   const inputs = (capabilities && capabilities.inputs) || {};
-  return !(capabilities && capabilities.edit) && !inputs.clips && !inputs.topic;
+  return !(capabilities && capabilities.edit) && !inputs.clips && !inputs.topic && !inputs.plan_id;
 }

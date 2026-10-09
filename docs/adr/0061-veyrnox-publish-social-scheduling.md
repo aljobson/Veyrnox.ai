@@ -385,3 +385,76 @@ Set both the parent schedule and every target's next-attempt time. Updating the 
 own due predicate prevents a claim using an older parent snapshot from dispatching early.
 A timestamp precondition rejects stale edits; a repeated desired timestamp is a no-op.
 Append one post_rescheduled audit entry on a real change. No credit ledger is involved.
+
+## Device uploads (2026-10-06)
+
+The owner requires posting media from their device even when their generation library
+is empty. Migration 0223 adds a separate, owner-scoped Publish upload library; no fake
+generation job, ledger mutation or external provider call is made. The composer accepts
+one existing job or one completed upload ID. Both resolve storage at dispatch time.
+
+Uploads use the existing R2 SigV4 client with exact Content-Length, Content-Type and
+If-None-Match signatures. A dedicated `social-uploads/{auth_id}/{uuid}.{ext}` prefix
+keeps permanent Publish files outside Transform-source cleanup. Before completion the
+Worker reads at most 16 bytes, checks the total size from Content-Range and verifies the
+file signature. No arbitrary URL or client-supplied storage path is accepted.
+
+Each account has ten slots and a 200 MiB combined budget, serialized by the user row
+lock. JPG/PNG/WebP images are limited to 20 MiB and MP4 video to 100 MiB. Completed
+files persist for reuse; unused files can be removed. Drafts, scheduled posts and any nonterminal target block removal. Completed/canceled
+posts retain an upload metadata receipt after removal, without holding storage capacity.
+Scheduling and removal share the user lock. The cleanup sweep claims abandoned uploads
+older than 24 hours, or removed files after the signed PUT's expiry safety window.
+Only confirmed R2 deletion releases the database reservation; failures retain the budget.
+
+`PUBLISH_UPLOADS_ENABLED` defaults false in both environments until 0223 is applied.
+Routes also require the overall Publish flag. Existing generated-media dispatch remains
+available while device uploads are disabled. Upload consent and retention copy appear
+before selecting a device file; uploading alone never creates a post. Activation requires
+exact-origin R2 CORS allowing PUT, Content-Type and If-None-Match, and a real staging
+browser upload/second-PUT rejection check. Keep the upload switch enabled for cleanup
+while files are held; the overall Publish switch can close entry points independently.
+
+## Amendment 2026-10-08: all-network tester implementation
+
+The owner requested all integrations be built for testing by other people and
+explicitly does not want a personal Meta account. Extend the native adapter
+pattern to Facebook Pages, Threads, Pinterest boards, Bluesky, Twitch and
+Google Business Profile locations. A company app administrator supplies
+credentials and invites testers; the owner's own Meta login is not required.
+
+Initial additional publishing scope is single-image posts. Twitch supports
+OAuth connection and recent-video statistics, not a general media-upload
+destination. Bluesky uses a dedicated app password for Bluesky-hosted PDSs;
+custom PDS discovery and federated OAuth are outside this tester slice.
+These are explicit capability limits, not claims of full Metricool parity.
+
+New connections and post creation require the server switch
+`PUBLISH_EXTENDED_NETWORKS_ENABLED` (false by default). The original five
+adapters and their consent switches remain separate. The one-account cap,
+Publish plan decision and generation-credit ledger are unchanged.
+
+Migration 0228 adds encrypted, identity-bound, single-use destination
+selections; atomic token rotation; and a durable pre-submission marker.
+Facebook Pages, Pinterest boards and business locations require explicit
+selection. No candidate credential is returned to the browser, even encrypted.
+Uncertain provider results require reconciliation before another public post.
+
+Automated contract tests and local database acceptance do not establish app
+approval or real-account success. Existing live YouTube evidence remains
+valid; each new provider needs separate live tester evidence.
+See [tester handover](../social-publisher/INTEGRATIONS-TESTING-2026-10-08.md)
+for setup, capabilities, rollout and the acceptance checklist.
+
+### Platform rollout gate — 9 October 2026
+
+The owner requested a production rollout starting with YouTube. The server
+reads `PUBLISH_RELEASED_NETWORKS`: comma-separated network keys, `*` for all
+known platforms, or an explicit empty list for none. Unset preserves existing
+deployments. Production source config allows `youtube` while Publish itself
+stays off; staging explicitly uses `*`. Credentials do not override this gate.
+OAuth start/callback, new composer targets and UI readiness enforce the list.
+Existing accounts remain readable and disconnectable; queued targets keep
+finishing. Limited releases disable weekly draft generation and batch approval
+because the atomic batch RPC has no network filter; discard remains available.
+No migration, provider approval, billing activation or Publish launch is included.

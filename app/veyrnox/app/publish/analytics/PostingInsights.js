@@ -52,7 +52,7 @@ export function PostingInsights({ accountId }) {
         <section className="rounded-2xl border border-vx-border p-5 space-y-4" aria-labelledby="frequency-heading">
             <h2 id="frequency-heading" className="font-bold">Posting frequency and engagement</h2>
             <p className="text-sm text-vx-fg-body">Compare weeks with the same number of recorded posts. Averages use measured posts only; this does not show that posting more caused higher engagement.</p>
-            <div className="relative overflow-x-auto rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-vx-accent" tabIndex={0} role="region" aria-label="Posting frequency comparison">
+            <div className="relative overflow-x-auto rounded-sm focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-vx-accent" tabIndex={0} role="region" aria-label="Posting frequency comparison">
                 <table className="w-full text-sm">
                     <caption className="sr-only">Recorded weekly posting frequency and average lifetime interactions per measured post</caption>
                     <thead><tr className="text-left text-xs text-vx-fg-muted">
@@ -75,7 +75,7 @@ export function PostingInsights({ accountId }) {
 }
 
 function Heatmap({ summary }) {
-    return <div className="relative overflow-x-auto rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-vx-accent" tabIndex={0} role="region" aria-label="Weekday and hour performance heatmap">
+    return <div className="relative overflow-x-auto rounded-sm focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-vx-accent" tabIndex={0} role="region" aria-label="Weekday and hour performance heatmap">
         <table className="w-full min-w-[680px] border-separate border-spacing-1 text-xs tabular-nums">
             <caption className="sr-only">Average lifetime interactions per post by local weekday and publication hour</caption>
             <thead><tr><th scope="col"><span className="sr-only">Day</span></th>{HOURS.map((hour) =>
@@ -86,7 +86,7 @@ function Heatmap({ summary }) {
                     const measured = cell?.posts >= MIN_SLOT_POSTS && Number.isFinite(cell.score);
                     const label = measured ? `${number.format(cell.score)} avg. interactions, ${cell.posts} posts` : `${cell?.posts || 0} measured posts; insufficient sample`;
                     const tone = measured ? tones[Math.min(3, Math.floor(cell.score / summary.maxScore * 3))] : 'bg-vx-panel';
-                    return <td key={hour} className={`${tone} rounded px-1 py-2 text-center`} title={`${day} ${hourLabel(hour)}: ${label}`}>
+                    return <td key={hour} className={`${tone} rounded-sm px-1 py-2 text-center`} title={`${day} ${hourLabel(hour)}: ${label}`}>
                         <span aria-hidden="true">{measured ? number.format(cell.score) : '—'}</span>
                         <span className="sr-only">{label}</span>
                     </td>;

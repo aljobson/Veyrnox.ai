@@ -1,0 +1,158 @@
+'use client';
+import { useRef, useState } from 'react';
+import { GatewayError } from '../../_lib/gateway';
+import { chatApi, chatErrorCopy, chatRefusedCopy, lostNotice, makeIdempotencyKey, sendTurn, uploadChatImage } from '../../_lib/chatApi';
+import { prepareImage } from '../../_lib/chatImages';
+import { NEW_CHAT } from '../../_lib/chatLocal';
+import { loadFailure } from '../../_lib/chatScreen';
+import { ask, forget, land, onScreen, sendHome } from '../../_lib/chatSendHome';
+
+/**
+ * Sending one message from the chat screen (ADR-0067), and every way that send can end: a replay, a reply that ran to
+ * its end, Stop, a dropped connection, and a turn that never started. The screen (ChatWorkspace.js) owns the chat on
+ * show and passes in what a send reads and changes; the send's own state lives here.
+ * `chatView` is the screen's record of which chat is on it (chatSendHome.js). `saveDraft(chatId, text)` stores a chat's
+ * draft; `addDraft` puts text above what is already stored there. `keepNotice(chatId, code, extra)` stores what a chat's
+ * last message ended with, beside its draft, and `dropNotice(chatId)` forgets it. `heldWarning(chatId)` is that notice when
+ * it warns that Credits were used or still may be (chatLocal.js), else null.
+ * @returns {{send: () => Promise<void>, stop: () => void, busy: boolean, stopping: boolean, checking: boolean, progress: object|null}}
+ */
+export function useChatSend({ text, setText, model, imagesBlocked, chosen, price, active, setActive, messages, setMessages, setThreads, setError, att, limits, draftModel, folders, folder, instr, open, refreshThreads, fail, chatView, saveDraft, addDraft, keepNotice, dropNotice, heldWarning }) {
+  const [busy, setBusy] = useState(false);
+  const [stopping, setStopping] = useState(false); // Stop was pressed and the stopped turn is being looked for
+  const [checking, setChecking] = useState(false); // the connection dropped mid-reply and the turn is being looked for
+  const [progress, setProgress] = useState(null); // the step a Deep research reply is on: plan, search n of m, write
+  const abortRef = useRef(null);
+  const sendingRef = useRef(false); // synchronous: a second Enter must not start a second turn
+
+  async function send() {
+    const content = text.trim();
+    if (!content || busy || sendingRef.current || !model || imagesBlocked) return;
+    sendingRef.current = true; setBusy(true); setError(null); setText('');
+    let thread = active; let created = false; const pending = `pending-${Date.now()}`;
+    const knownIds = new Set(messages.map((x) => x.id)); let jobId = null; // to tell this turn from the ones already on screen
+    // The notice kept for the chat this message is sent from is about the message before it, and goes at the press. Unless it warns
+    // that the one before used Credits or still may: that is forgotten only once this message is known to have gone out, or has a
+    // notice of its own to keep, so a message that is refused first leaves the warning kept.
+    const from = active ? active.id : NEW_CHAT; let forgotten = false;
+    const forgetEarlier = () => { if (!forgotten) { forgotten = true; dropNotice(from); } };
+    if (!heldWarning(from)) forgetEarlier();
+    // The person can open another chat, or press New chat, before this send ends. Its text, its notice and its bubbles
+    // belong to the chat it was sent in (chatSendHome.js): they reach the screen only while that chat is the one on it.
+    const v = chatView.current;
+    const at = () => sendHome(v, thread ? thread.id : null);
+    // What an ending says is kept with its chat, as a code (chatLocal.js): the screen shows it whenever that chat is opened, a
+    // page reload included, until a later message is sent from it. It goes on screen now only while that chat is the one on it.
+    const tell = (code, extra) => { forgetEarlier(); const { home, here } = at(); keepNotice(home, code, extra); if (here) setError(chatErrorCopy(code, extra)); };
+    // A message that never started was not charged, and what it says is about itself. It does not take the place of a warning that
+    // the message before it used Credits or still may: that warning stays kept, and both are said, this one first.
+    const refuse = (code, extra) => { const { home, here } = at(); const warning = heldWarning(home); if (!warning) tell(code, extra); else if (here) setError(chatRefusedCopy(code, extra, warning)); };
+    // False when the chat was not read: it is gone, it is not on screen, or the read failed. It is also read when the person is
+    // on their way back to it: the read that is already out may have been answered before this turn was saved.
+    // The chat is read for this message, so this message went out: open() must not show the notice kept for the one before it.
+    const reload = async () => { forgetEarlier(); const { home, here, coming } = at(); return home === thread.id && (here || coming) && open(thread.id); };
+    // The chat list is read again wherever the person is. A read that fails says so only in the send's own chat.
+    const relist = async () => { if (at().here) return refreshThreads(); try { setThreads((await chatApi.threads()).threads); } catch { /* the list stays as it was */ } };
+    // A closed chat or a signed-out reader is about the whole page. Any other refusal is about this message, and is told as one.
+    const failed = (e) => { if (loadFailure(e) !== 'failed') fail(e); else refuse(e?.code); };
+    // Nothing usable came back: take the bubbles away and give the text back. A chat made for this message goes too, but
+    // only when the turn is known to be over. A turn that may still be saved needs its chat.
+    const giveBack = (over) => {
+      setMessages((m) => m.filter((x) => x.id !== pending && x.id !== `u-${pending}`));
+      if (over && created) { chatApi.remove(thread.id).catch(() => {}); setThreads((ts) => ts.filter((t) => t.id !== thread.id)); if (forget(v, thread.id)) setActive(null); }
+      const { home, here, showing, left } = at();
+      if (left && !over) return;        // the chat page was left and this turn may still be saved: the text is not offered again. Its notice is kept, for when the chat is next opened
+      // Straight into its chat's stored draft (New chat's, when its chat is gone), where it waits. In the box too when that
+      // chat is the one shown. A chat that is not shown may have a draft of its own by now: the text goes above it.
+      if (showing) { saveDraft(home, content); setText(content); } else addDraft(home, content);
+      if (!here) att.clear();           // elsewhere, or leaving: the images cannot wait with it, and must not go out with another chat's message
+    };
+    let hadText = false; // some of the reply reached the screen
+    let started = false; // the `start` event arrived: the Credits have been debited
+    try {
+      // Images go to storage first, before anything is charged: a failed upload costs nothing.
+      // A Library image is already in storage; the server checks it is the caller's own, so it is sent by id.
+      const refs = [];
+      for (const it of att.items) refs.push(it.asset ? { source_asset: it.asset } : await uploadChatImage(await prepareImage(it.file, limits.maxEdge)));
+      if (!thread) {
+        thread = (await chatApi.create(draftModel || model.id)).thread; created = true;
+        // A chat started while a folder is open goes into it. If filing fails, the chat still starts, unfiled.
+        if (folders && folders.some((f) => f.id === folder)) {
+          try { await chatApi.move(thread.id, folder); thread = { ...thread, folder_id: folder }; } catch { /* stays unfiled */ }
+        }
+        // Instructions typed before the first message belong to the new chat. If saving fails, the chat still starts without them.
+        if (instr.trim()) {
+          try { const r = await chatApi.patch(thread.id, { system_prompt: instr }); thread = { ...thread, ...r.thread }; } catch { /* starts without */ }
+        }
+        // Still on the chat that had not started: it becomes this one. If another chat was opened meanwhile, this one only joins the list.
+        if (onScreen(v, NEW_CHAT)) { ask(v, thread.id); land(v, thread.id); setActive(thread); }
+        setThreads((ts) => [thread, ...ts]);
+      }
+      if (at().showing) setMessages((m) => [...m, { id: `u-${pending}`, role: 'user', content, status: 'complete', credits: 0, attachments: att.items.map(() => ({ type: 'image' })) }, { id: pending, role: 'assistant', content: '', status: 'streaming', credits: 0 }]);
+      const ac = new AbortController(); abortRef.current = ac;
+      let outcome = null; let streamError = null;
+      const r = await sendTurn({
+        threadId: thread.id, text: content, key: makeIdempotencyKey(), options: chosen, attachments: refs, signal: ac.signal,
+        onEvent: (ev, d) => {
+          if (ev === 'start') { started = true; jobId = d.job_id; setProgress(null); forgetEarlier(); }
+          if (ev === 'progress') setProgress(d);
+          if (ev === 'delta') { hadText = true; setMessages((m) => m.map((x) => (x.id === pending ? { ...x, content: x.content + d.text } : x))); }
+          if (ev === 'error') streamError = d.error;
+          if (ev === 'done') outcome = d;
+        },
+      });
+      if (r.replay) { await reload(); return; }
+      if (outcome && (outcome.status === 'failed' || (outcome.status === 'canceled' && !outcome.credits_charged && !outcome.message_id))) {
+        // Nothing usable came back and the Credits were returned.
+        giveBack(true);
+        if (streamError) tell(streamError);
+      } else {
+        att.clear();                                 // sent: the images are spent, so the next reply starts clean
+        if (streamError && at().here) setError(chatErrorCopy(streamError)); // on screen only, and not kept: the reload clears it
+        await reload();                              // the saved messages, with their real status and price
+        if (streamError === 'reply_not_saved') tell(streamError); // after the reload, which clears the notice or replaces it when the chat is gone
+      }
+      await relist();
+    } catch (e) {
+      if (e?.name === 'AbortError') {
+        // Stop. The server saves the stopped turn a moment after the browser lets go, so a reload at once can come back
+        // without it. The question and the text so far stay on screen while the turn is looked for.
+        setStopping(true); setMessages((m) => m.map((x) => (x.id === pending ? { ...x, status: 'saving' } : x)));
+        const outcome = await chatApi.settleStop({ threadId: thread.id, jobId, text: content, knownIds });
+        await relist();                                                  // first: a notice set below must not be replaced
+        if (outcome === 'saved' || outcome === 'unsaved') {
+          att.clear(); await reload();                                   // the saved messages, with their real status and price
+          if (outcome === 'unsaved') tell('reply_not_saved'); // charged, but it could not be stored: say so, after open()
+        } else if (outcome === 'nothing') giveBack(true);                // nothing was produced and the Credits came back
+        else if (!hadText) {
+          // Not settled, and no text had arrived: Stop came before `start` (no job to ask) or before the first words (the job
+          // had not ended). There is nothing on screen to keep, so the message goes back. But a reply may still be saved:
+          // the chat stays for it, and the notice says so.
+          giveBack(false); tell('stop_unsure');
+        } else {
+          // Still being saved when the tries ran out: the text stays on screen and the notice says so.
+          att.clear(); tell('stop_saving');
+        }
+      } else if (started) {
+        // The stream broke after the Credits moved. The server treats a dropped connection like Stop and saves the turn some time
+        // after the break, so it is looked for as after Stop. Only a job that kept nothing gives the message back or deletes the chat.
+        setChecking(true); setMessages((m) => m.map((x) => (x.id === pending ? { ...x, status: 'lost' } : x)));
+        const outcome = await chatApi.settleStop({ threadId: thread.id, jobId, text: content, knownIds });
+        await relist();                                                  // first: the notice set below must not be replaced
+        const reloaded = (outcome === 'saved' || outcome === 'unsaved') && await reload(); // the saved messages, with their real status and price
+        if (outcome === 'nothing') giveBack(true); else att.clear();     // kept nothing: the message goes back, images too. Otherwise neither is offered again
+        if (!reloaded) setMessages((m) => m.filter((x) => x.id !== pending || x.content)); // not settled, or still offline: the text that arrived stays
+        // Last: open() shows what is kept for the chat. A notice for a chat that is not on screen is read after that chat is opened, which reloads it.
+        tell(lostNotice(outcome, reloaded || !at().here));
+      } else {
+        // The turn never started and nothing was charged: the message goes back, and a chat made for it goes too.
+        giveBack(true);
+        if (e instanceof GatewayError && e.code === 'insufficient_balance') refuse(e.code, { credits: price });
+        else if (e instanceof Error && e.message === 'image_unreadable') refuse('image_unreadable');
+        else failed(e);
+      }
+    } finally { setBusy(false); setProgress(null); setStopping(false); setChecking(false); sendingRef.current = false; abortRef.current = null; }
+  }
+
+  return { send, stop: () => abortRef.current?.abort(), busy, stopping, checking, progress };
+}

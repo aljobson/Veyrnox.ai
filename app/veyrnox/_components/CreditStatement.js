@@ -6,6 +6,7 @@ const LABELS = {
   signup_grant: 'Welcome credits', free_credit_expiry: 'Free credits expired',
   generation: 'Generation', generation_refund: 'Generation refund',
   top_up: 'Top-up', payment_adjustment: 'Payment adjustment', adjustment: 'Credit adjustment',
+  referral_reward: 'Referral reward', referral_reward_reversed: 'Referral reward reversed',
 };
 const num = new Intl.NumberFormat('en-US', { signDisplay: 'always' });
 

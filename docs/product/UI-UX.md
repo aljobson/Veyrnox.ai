@@ -1,7 +1,8 @@
 # UI/UX Brief — Veyrnox.ai
 
-**Status:** Current · 2026-10-02 (audited against `main` at `2da81dc`, after
-the receipt redesign #404 and the slip tilt #406)
+**Status:** Current · 2026-10-08 (audited against `main` at `42150476`; Publish rows amended against `bee1ea4f`; first
+written 2026-10-02 at `2da81dc`, after the receipt redesign #404 and the slip
+tilt #406; colour rules revised by #482 and #478)
 **Source of truth:** the code. Tokens in `app/globals.css` and
 `app/veyrnox/veyrnox.css`, Tailwind mapping in `tailwind.config.js`, fonts in
 `app/layout.js` + `app/veyrnox/layout.js`, components in
@@ -47,7 +48,8 @@ it. There is no automatic `prefers-color-scheme` switch.
 | `--vx-accent-ink` | `6 35 31` | `255 255 255` | `255 255 255` | text on accent |
 | `--vx-money` | `228 169 60` | `138 90 0` | light value | Credit costs and balances |
 | `--vx-money-ink` | `35 23 3` | `255 255 255` | `255 255 255` | text on money fills |
-| `--vx-danger` | `255 92 71` | `196 36 26` | *not overridden* | errors, destructive |
+| `--vx-danger` | `255 92 71` | `196 36 26` | `196 36 26` (U7) | errors, destructive |
+| `--vx-warn` | `139 167 255` | `43 78 190` | `43 78 190` | warnings and notices (blue; `△` glyph carries the meaning) |
 
 `.vx-paper` adds **no new token names**: it re-points the colour tokens inside the
 slip and sets `color-scheme: light`, so any component works on paper
@@ -83,7 +85,7 @@ OFL) — no Google Fonts request.
 | body and UI on every Veyrnox page | Archivo | `.vx-root` applies `font-vx` |
 | display headings | Archivo 900 | `.vx-display`: line-height .94, tracking −0.04em, `text-wrap: balance` |
 | figures, ids, slip lines, Studio micro-labels | JetBrains Mono | `font-vx-mono`; `.vx-num` for tabular numerals |
-| fallback outside `.vx-root` | Inter (loaded, effectively unused) | see ISSUES.md §UI |
+| fallback outside `.vx-root` (`body`, `font-sans`) | Inter via `var(--font-inter)`, set on `<html>` (U5) | the sign-in dialog and toasts, which mount outside `.vx-root` |
 
 Scale is set per section, not tokenised:
 
@@ -114,7 +116,9 @@ Tailwind default breakpoints (sm 640, md 768, lg 1024, xl 1280).
 | Explore, Library | 1400 px | 16 / 32 px |
 | Studio | 1500 px | 16 / 32 px |
 | Credits | 1200 px | — |
-| Account, Publish | 900 px | — |
+| Account, Publish, Publish analytics, Guides | 900 px | — |
+| Publish calendar | 1100 px | — |
+| LLM Chat | 1500 px shell: thread list left, conversation column 760–820 px | — |
 | Cinema | 1000–1100 px | — |
 | legal text column | 68ch | — |
 
@@ -154,15 +158,24 @@ Tailwind default breakpoints (sm 640, md 768, lg 1024, xl 1280).
 | `MfaPanel`, `AccountBoundary` | TOTP enrolment; remount on identity change |
 | `JobWatcher`, `JobAssetPreview`, `AssetLoadStatus`, `AssetRetention` | job polling, output preview, load/error state, retention notice |
 | `SourcePickers`, `CameraPanel`, `CharacterPanel`, `DrawOnImage` | Studio inputs |
-| `EditSheet` | Clip Editor sheet in the Library |
+| `EditSheet` | Clip Editor sheet in the Library; the Add captions switch |
 | `IOSFrame` | bezel for `/m/*` |
+| `AnnouncementBar` | dismissible ink strip above the marketing nav; dismissal remembered per announcement id |
+| `ControlRow`, `GenerationSettings`, `StudioJobGrid` | Studio duration/aspect pills (`aria-pressed`), seed and negative prompt, the 1–4 image result grid |
+| `LibraryPicker`, `AskAboutThis`, `UseTemplate`, `ScheduleGeneration` | hand-offs: Library image as input or chat attachment, template to Studio, result to Publish |
+| `UsageMeters` | 24 h / 7 d / 30 d usage on Credits |
+| `PasskeyPanel`, `ReferralPanel`, `ReferralBridge` | passkeys and the Refer a friend panel on Account; code capture |
+| `PublishFlag` | context carrying the server's `PUBLISH_ENABLED`, so the account menu hides the Publish link while it is shut |
+| `chat/*` (`ChatWorkspace`, `ThreadList`, `ModelPicker`, `SettingsPanel`, `AttachBar`, `PersonaManager`, `PersonaPicker`, `SkillsPanel`, `StudioDraftCards`, `ChatText`) | LLM Chat; `ChatText` is the safe markdown reader (no raw HTML) |
+| Publish (`app/veyrnox/app/publish/`): `Composer`, `DeviceUploads`, `DraftReview`, `NetworkLogo`, `BlueskyConnect` | composer, device uploads, batch approval, network marks (all eleven networks, monochrome Simple Icons silhouettes), Bluesky handle and app-password form |
 
 **`app/veyrnox/_sections/`** — landing blocks: `hero.js` (`Hero`,
 `FeaturedHeroCards`), `showcase.js` (`PresetWall`, `ModelShelf`),
 `footer.js` (`LedgerExample`, `FAQBlock`, `ClosingCTA`, `FooterForest`).
 
 **`components/`** — `AuthGate` (the one sign-in modal), `Turnstile`,
-`ParticleButton` (Studio Generate), `ToasterMount`.
+`ParticleButton` (Studio Generate), `ToasterMount`, `shimmering-text`, and
+`charts/` (a visx-based area-chart set added in #425; no page imports it yet — Publish analytics draws its own SVG in `FollowersChart`).
 
 A new surface starts from these. A new component is justified only when none
 fits, and it uses tokens, not literals.
@@ -182,7 +195,8 @@ One easing: `--vx-ease-out: cubic-bezier(0.23, 1, 0.32, 1)`.
 | `.vx-particle` | 0.6 s | Studio Generate burst |
 
 Rules: continuous motion only for progress. `prefers-reduced-motion` kills
-all animation and transition under `.vx-root` and disables smooth scroll;
+all animation and transition site-wide (`app/globals.css`, so the sign-in dialog
+and toasts are covered too) and disables smooth scroll;
 JS-driven motion (`MediaTile`, back-to-top) checks `matchMedia` itself.
 Print disables all motion and shadow.
 
@@ -192,18 +206,22 @@ Print disables all motion and shadow.
 |---|---|
 | `/` landing | nav → hero (display h1 "The price is on the button." + ink-pill "Claim 10 credits" + "See every price" link; PriceSlip printing on the right) → 5 featured tiles → preset bento wall → `ModelShelf` price list with leaders → `LedgerExample` statement on paper → FAQ → closing CTA → footer |
 | `/pricing` | display h1; Credit Packs as paper slips (amber mono credits, perforation, "N credits — $X + applicable tax"); per-kind model price tables with copyable ids |
-| `/presets`, `/app` Explore | display h1 + `PresetGallery` (3 / 4 columns) |
+| `/presets` Templates, `/app` Explore | display h1 + `PresetGallery` (3 / 4 columns) with category filter (Cartoons, Movies, Fantasy, Realistic …) and a Popular sort once something ranks; `/presets/[id]` is one template's page with a Studio hand-off |
+| `/tools`, `/models`, `/guides` | display h1 ("Bring your own file.", "Every model. Exact prices."); tool/model groups with the price on each; guides in a 900 px column |
+| `/app/chat` LLM Chat | control room: thread list (folders, pins, search) left, conversation column, composer with option chips (Thinking, Web search, images) and the reply price; empty state h1 "What do you want to work on?" at 32 px; Studio skills grouped Make / Edit / Plan |
 | `/app/create` Studio | control room: canvas left with shimmer while generating; 360 px rail of panels (model list with amber costs, prompt, sources, duration, aspect); TOTAL COST in 36 px amber; `ParticleButton` |
-| `/app/library` | display h1; sentence-case inverted filter pills; 1/2/3-column cards; dashed empty state → "Open the studio"; fixed selection bar; `EditSheet` |
-| `/app/credits` | "Your balance" as a paper slip (72 px amber figure, free-credit and expiry leaders); billing explainer; `TopUpPacks`; `CreditStatement`; `TopUpHistory`; recent generations table |
-| `/app/account` | 900 px column of bordered sections: 2FA, password, devices, data export/delete |
-| `/app/publish` | 900 px: connected accounts grid, composer, scheduled posts |
+| `/app/library` | display h1; sentence-case inverted filter pills (type, favourites); grid or list; 1/2/3-column cards; FREE label on a free job; dashed empty state → "Open the studio"; fixed selection bar; `EditSheet` |
+| `/app/credits` | "Your balance" as a paper slip (72 px amber figure, free-credit and expiry leaders); billing explainer ("Credit Packs are one-off purchases. Nothing renews."); `UsageMeters`; `TopUpPacks`; `CreditStatement` (referral rewards labelled); `TopUpHistory`; recent generations table |
+| `/app/account` | 900 px column of bordered sections: 2FA, passkeys, password, devices, Refer a friend, data export/delete |
+| `/app/publish` *(dark in production)* | 900 px: connected accounts and an eleven-network connect panel with logos (buttons read Connect, Setup required or Testing not enabled), drafts to review, composer (Library asset or device upload, Post now or schedule), scheduled and published; `/calendar` 1100 px month/week/list with drag-to-reschedule confirmation; `/analytics` 900 px follower chart, per-network tables and posting-time insights |
+| `/app/video-agent` *(off)* | brief form, plan + price + Approve, step progress, result in the Library |
 | Cinema (`/social-cinema`, `/title/[id]`, `/watch/[id]`, `/pass`, `/creator`) | 1000–1100 px; mono accent kicker, large black h1, `Button`, aria-live notices; player page |
 | `/app/admin/*` | danger chip "ADMIN · OPS"; metric tiles; scrolling mono tables |
 | legal, 404 | display h1; legal 68ch with ink rule; 404 is a "voided slip" with leader links |
 
-Not yet in the receipt language: Studio, Account, Publish, Cinema, admin,
-`/design-system`, `loading.js`. Bringing them across is optional; mixing
+Not yet in the receipt language: Studio, Chat, Account, Publish, Cinema, admin,
+`/design-system` (which now has a receipt-slip section and shows `warn`),
+`loading.js`. Bringing them across is optional; mixing
 the two materials *within* one screen is not.
 
 ## 8. Copy
@@ -217,8 +235,11 @@ Plain, specific, no exclamation marks. Say what happened and what to do next.
 unmapped falls back to "That didn't work. Try again." — when a real failure
 shows the fallback, add a mapping. **Cost is shown in Credits before every
 action that spends it.** Dollar amounts appear only where money changes hands:
-Credit Packs (`/pricing`, `/app/credits`) and subscriptions (Cinema Pass,
-Publish Plan). The model provider is never named to the user.
+Credit Packs (`/pricing`, `/app/credits`) and subscriptions (Cinema Pass; the
+Core subscriptions and Publish Plan once they ship). The routing provider
+(fal, kie, OpenRouter, Exa) is never named to the user; a model's own name is
+shown, and for chat that is its maker's name (ADR-0067). A free job reads
+"FREE", never "FREE cr" or "0 cr".
 
 ## 9. Accessibility
 

@@ -50,7 +50,8 @@ If a build starts failing after a dependency change, bisect these three first.
   per `user_id`. Every mutation goes through `ledger_debit` / `ledger_refund` /
   `ledger_grant` / `signup_grant` / `expire_free_credits` / `credit_top_up` /
   `apply_top_up_refund` / `subscription_grant` / `expire_subscription_credits` /
-  `reverse_subscription_grant` RPC — never a raw `INSERT INTO ledger_entries` or a raw
+  `reverse_subscription_grant` / `referral_sweep` (ADR-0071: grants through `ledger_grant`,
+  clawbacks as `reverse:referral`) RPC — never a raw `INSERT INTO ledger_entries` or a raw
   `UPDATE credit_balances`.
 - **Frozen accounts** (#97): `apply_top_up_refund` and `apply_dispute_event`
   Freeze, `unfreeze_account` is the only way out, and all three write the
@@ -116,7 +117,40 @@ If a build starts failing after a dependency change, bisect these three first.
   `x-veyrnox-auth-id`, `x-veyrnox-auth-email`, `x-veyrnox-auth-role`,
   `x-veyrnox-auth-aal` and `x-veyrnox-auth-mfa-at` (the last two carry the
   second-factor level and when it was last proved).
-  Overwrite any inbound header of the same name — a client must never spoof it.
+  The middleware sets all five on every request it runs on, pages included:
+  to `''` first, then to the verified value, so a client can never spoof one.
+  Never rely on deleting an inbound header — OpenNext forwards what the
+  middleware set on top of the client's own headers and does not apply a
+  deletion (ADR-0078). A handler reads `''` as absent, and no handler behind
+  the middleware reads any other `x-veyrnox-*` request header
+  (`tests/identityHeaders.test.mjs`).
+- Every route under `/api/v1/admin/*` also verifies the Cloudflare Access
+  assertion in code, after the Supabase token and the second factor, and
+  passes the assertion of a person's login only; one issued to a service
+  token is for the machine endpoints under `/api/admin/*` and is refused
+  here. The dashboard routes (`metrics`, `violations`, `users/lookup`) call
+  `requireDashboardAccess` in `lib/accessJwt.js`: 403 `access_required`,
+  503 `access_not_configured`. The Cinema administrator routes verify in
+  their own handlers with `verifyAccessLogin` from the same file. A new
+  admin route needs one of the two
+  (`tests/adminDashboardAccess.test.mjs`). Access is an edge rule on one
+  hostname and its paths, so the code check is the one that holds whichever
+  way a request arrives. For the same reason `worker.js` answers
+  `/_next/data/*` with 404 (there is no pages router), and the production
+  Worker has `workers_dev` and `preview_urls` off in `wrangler.jsonc`;
+  staging keeps `workers_dev` on. `deploy-production` reads both back after
+  each deploy and reports on the `deploy-failure` issue if either is on.
+- `worker.js` removes the headers that are never a caller's to send from
+  every request before OpenNext sees it (`lib/internalRequestHeaders.js`,
+  ADR-0078 amendments 3 and 4). The framework's own (`x-isr`,
+  `x-prerender-revalidate*`, `x-open-next-*`, `x-vercel-ip-*`,
+  `x-middleware-response-*`, `x-opennext-*`): its routing layer obeys them
+  from any caller. And every `x-veyrnox-auth-*`: a handler sees an identity
+  header only if the middleware set it, so a request the middleware never
+  saw is refused. That holds only while every handler that reads the caller
+  id answers 401 without one (`tests/identityHeaders.test.mjs`), and a new
+  identity header must take the `x-veyrnox-auth-` prefix. Read that file
+  before configuring an OpenNext revalidation queue.
 - Standard-claim checks (issuer, audience `authenticated`, exp with 5s skew, sub
   present) run on every request. Missing/malformed -> 401, never 500.
 - Rate limit at the entry point. Baseline: 10 gens per user per 60s via the
@@ -130,12 +164,16 @@ If a build starts failing after a dependency change, bisect these three first.
   that carries a user. The middleware does not run on other `/api/*` paths, so
   an inbound `x-veyrnox-auth-*` header is NOT stripped there: a route outside
   `/api/v1` must never read one. Each has its own protection:
-  - `/api/catalog`, `/api/credit-packs`, `/api/cinema/titles[/:id]` —
-    anonymous, read-only, cached public data (prices, packs, published
-    titles). Nothing per-user.
+  - `/api/catalog`, `/api/credit-packs`, `/api/cinema/titles[/:id]`,
+    `/api/popular-templates` — anonymous, read-only, cached public data
+    (prices, packs, published titles, ranked template ids). Nothing per-user.
   - `/api/webhook/*` — the provider's signature (see Provider webhooks).
   - `/api/admin/*` — Cloudflare Access plus a shared token; cron callers only.
   - `/media/social/:token` — a short-lived HMAC token naming one R2 object.
+  - `/api/turnstile-failure` — anonymous and write-only: a POST from our own
+    pages whose body is one Turnstile error code or the word `unsupported`,
+    rate limited per connecting IP in `worker.js`. It logs that and nothing
+    about the sender (ADR-0026 amendments 2 and 5).
 
   A new route outside `/api/v1` needs one of these and an entry in
   `tests/routesOutsideGate.test.mjs`.

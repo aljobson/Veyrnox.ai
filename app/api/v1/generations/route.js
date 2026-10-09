@@ -1,33 +1,18 @@
+import { falDispatchEnabled, admitFalDispatch } from '../../../../lib/falDispatch.js';
+import { publishFalDispatchWakeup } from '../../../../lib/falDispatchWakeup.js';
 import { providerFor } from '../../../../packages/provider-sdk/registry.js';
-/**
- * POST /api/v1/generations — submit a generation.
- *
- * Full path:
- *   1. middleware.js verified the JWT and set x-veyrnox-auth-id
- *   2. Parse + validate body: { model_id, idempotency_key, inputs }
- *   3. Look up the model in model_catalog (price, endpoint, gated flag)
- *   4. Resolve users.id from auth_id
- *   5. ledger_debit RPC — atomic: creates jobs row (state=DEBITED),
- *      appends -delta ledger entry, updates balance. Returns fast on
- *      idempotent replay.
- *   6. fal.submitJob — POST to queue.fal.run/<endpoint>. Fails? refund.
- *   7. job_submitted RPC — records provider + provider_job_id, moves
- *      state DEBITED -> SUBMITTED.
- *   8. Return { job_id, state, balance_after }.
- *
- * The response never includes provider details (fal request id, status
- * url) — the client polls our /api/v1/jobs/:id in a later slice.
- */
-
 import { NextResponse } from 'next/server';
 import { rpc, select, envConfig, SupabaseError } from '../../../../packages/db/supabase-client.js';
 import { capabilityFor, declaredInputs, checkSource } from '../../../../lib/modelCapabilities.js';
-import { refundRejectedSubmit } from '../../../../lib/submitRejection.js';
+import { refundRejectedSubmit, unknownSubmitResponse, recordSubmittedJob } from '../../../../lib/submitRejection.js';
+import { freeAllowanceOn as isFreeAllowanceOn, takeFreeJob } from '../../../../lib/freeJob.js';
+import { templateStartId } from '../../../../lib/templateStart.js';
 import { classifySubmitFailure } from '../../../../lib/submitFailureClass.js';
 import { resolveUploadedSource, resolveAssetSource } from '../../../../lib/resolveSource.js';
 import { envConfig as r2EnvConfig, isConfigured as r2IsConfigured } from '../../../../packages/adapters/r2.js';
-import { editUnits } from '../../../../lib/clipEdit.js';
+import { editUnits, clipCaptionsEnabled } from '../../../../lib/clipEdit.js';
 import { resolveEdit, defaultDeps as editDeps } from '../../../../lib/clipEditSources.js';
+import { checkPlan, checkCapacity } from '../../../../lib/montageGate.js';
 
 // The AUP statement version a consent tick attests to. Bump when the wording
 // at /legal/aup or on the create page changes; users re-attest under the new
@@ -56,11 +41,16 @@ const MAX_SOURCES = 2;
 const ALLOWED_INPUTS = {
     prompt: { kind: 'string', max: 2000 },
     negative_prompt: { kind: 'string', max: 2000 },
+    voice_description: { kind: 'string', max: 500 }, // a voice in words, for speech models that take one; never a recording
     // Auto Short (ADR-0029); TOPIC_RE is checked again by its provider entry.
     topic: { kind: 'string', max: 200 },
+    // Video agent (ADR-0074): the approved brief and its plan token; both are re-checked by verifyPlanToken before the debit.
+    brief: { kind: 'string', max: 500 },
+    plan_id: { kind: 'string', max: 600 },
     // Clip Editor: structured, so checked by lib/clipEditSources.js (within MAX_INPUTS_BYTES).
     clips: { kind: 'edit' },
     audio: { kind: 'edit' },
+    captions: { kind: 'edit' },
     aspect_ratio: { kind: 'enum', values: ['16:9', '9:16', '1:1', '4:3', '3:4', '4:5', '21:9'] },
     duration_seconds: { kind: 'enum', values: [5, 10] },
     seed: { kind: 'int', min: 0, max: 2147483647 },
@@ -69,7 +59,6 @@ const ALLOWED_INPUTS = {
     // image_url: HTTPS only, bounded length, and in practice always a
     // presigned URL this server minted — never a client-supplied host.
     video_url: { kind: 'url' },
-
     // Filter feature selectors, verified against the live fal schemas on
     // 2026-09-18 (scripts/verify-filter-endpoints.mjs). These are NOT the
     // quantity knobs the comment above excludes: choosing a makeup style or
@@ -271,12 +260,14 @@ export async function POST(req) {
         }
     }
 
-    // 1. Look up the model in the catalog.
+    // 1. Look up the model in the catalog. The allowance column is asked for only when the flag is on, so a
+    //    Worker running before migration 0205 is applied never queries a column that does not exist yet.
+    const freeAllowanceOn = isFreeAllowanceOn(process.env);
     let modelRow;
     try {
         const rows = await select(
             'model_catalog',
-            { columns: 'id,provider,provider_endpoint,modality,credits_5s,gated_flag,active', filter: `id=eq.${encodeURIComponent(modelId)}` },
+            { columns: `id,provider,provider_endpoint,modality,credits_5s,gated_flag,active${freeAllowanceOn ? ',free_allowance_per_day' : ''}`, filter: `id=eq.${encodeURIComponent(modelId)}` },
             cfg,
         );
         modelRow = Array.isArray(rows) && rows[0];
@@ -310,6 +301,13 @@ export async function POST(req) {
     // the priced unit (a longer clip, an aspect ratio the model lacks, ...).
     const providerCheck = provider.check(record, modelRow, modelInputs);
     if (!providerCheck.ok) return NextResponse.json({ error: providerCheck.error }, { status: 400 });
+    // Video agent (ADR-0074): a job is accepted only with the Approve ticket the
+    // plan route issued for this caller, this exact brief and this price, and
+    // with the idempotency key that ticket names, so one plan buys one run.
+    if (record.agent) {
+        const bad = await checkPlan({ modelInputs, authId, idempotencyKey, credits: priceFor(modelRow, {}) });
+        if (bad) return NextResponse.json(bad.body, { status: bad.status });
+    }
     // A model priced by output size or length caps its sources' pixels/seconds.
     const sourceCheck = checkSource(record, sources);
     if (!sourceCheck.ok) return NextResponse.json({ error: sourceCheck.error }, { status: 400 });
@@ -329,6 +327,11 @@ export async function POST(req) {
     // and is priced on its output length, never on what the client sent.
     let pricedInputs = modelInputs;
     if (record.edit) {
+        // Captions are a new paid path: off until CLIP_EDIT_CAPTIONS_ENABLED is "true"
+        // (0225 applied, billed cost checked, docs/editor/CAPTIONS.md).
+        if (modelInputs.captions !== undefined && !clipCaptionsEnabled(process.env)) {
+            return NextResponse.json({ error: 'captions_unavailable' }, { status: 400 });
+        }
         let resolved;
         try {
             resolved = await resolveEdit(authId, modelInputs, editDeps(cfg, r2EnvConfig()));
@@ -359,18 +362,45 @@ export async function POST(req) {
     }
     if (!userId) return NextResponse.json({ error: 'user_not_provisioned' }, { status: 409 });
 
+    // Video agent: is the runner free? Asked before the debit, so "busy" or "offline" charges nothing.
+    if (record.agent) {
+        const full = await checkCapacity({ userId, idempotencyKey, modelId, cfg });
+        if (full) {
+            return NextResponse.json(full.body, { status: full.status, headers: full.retryAfter ? { 'retry-after': String(full.retryAfter) } : undefined });
+        }
+    }
+
     // 3. Debit atomically. Creates jobs row too. Price = catalog unit price
     //    times the validated unit count; never a client-supplied number.
-    const credits = priceFor(modelRow, pricedInputs);
-    let debit;
+    let credits = priceFor(modelRow, pricedInputs);
+    // ADR-0072: the template this started from, recorded on the job for the Popular ranking only. It is believed only if it names a
+    // real template that belongs to this model, it never reaches a provider (the provider gets storedInputs / modelInputs below),
+    // and a bad or missing one is simply ignored.
+    const presetId = templateStartId(body && body.preset, modelId);
+    const jobInputs = presetId ? { ...storedInputs, preset_id: presetId } : storedInputs;
+    if (falDispatchEnabled(process.env) && modelRow.provider === 'fal' && modelRow.modality === 'text-to-image'
+        && !rawKeys.length && !rawAssets.length) {
+        return admitFalDispatch({ userId, key: idempotencyKey, model: modelRow, record,
+            inputs: modelInputs, jobInputs, free: freeAllowanceOn, cfg, onCommitted: publishFalDispatchWakeup });
+    }
+    let debit = null;
+    // ADR-0069: allowance and zero-credit job are atomic. No allowance falls through to paid debit;
+    // after a lost acknowledgement ledger_debit finds the existing job by key.
+    if (freeAllowanceOn && Number(modelRow.free_allowance_per_day) > 0) {
+        debit = await takeFreeJob({
+            cfg, authId, userId, key: idempotencyKey, modelId, inputs: jobInputs,
+            limit: RATE_LIMIT_PER_WINDOW, windowSeconds: RATE_WINDOW_SECONDS,
+        });
+        if (debit && debit.free) credits = 0;
+    }
     try {
-        debit = await rpc('ledger_debit', {
+        if (!debit) debit = await rpc('ledger_debit', {
             p_user_id: userId,
             p_idempotency_key: idempotencyKey,
             p_credits: credits,
             p_reason: 'debit:generation',
             p_model_id: modelId,
-            p_inputs: storedInputs,
+            p_inputs: jobInputs,
             // Authoritative rate limit, counted under the same row lock as
             // the insert (0030). The RPC above is only the cheap early 429.
             p_limit_per_window: RATE_LIMIT_PER_WINDOW,
@@ -427,6 +457,10 @@ export async function POST(req) {
         return NextResponse.json({ job_id: jobId, idempotent: true, balance_after: balanceAfter });
     }
 
+    // ADR-0075: keep the staged behavior scoped to fal. Other provider and
+    // composite-job contracts retain their existing refund semantics.
+    const guardedSubmit = modelRow.provider === 'fal' && process.env.FAL_SUBMIT_OUTCOME_ENABLED === 'true';
+
     // 4. Submit to the provider.
     const submitResult = await provider.submit(
         { job_id: jobId, provider_endpoint: modelRow.provider_endpoint, inputs: record.edit ? storedInputs : modelInputs },
@@ -434,6 +468,7 @@ export async function POST(req) {
     );
 
     if (!submitResult.ok) {
+        if (guardedSubmit && submitResult.outcome === 'unknown') return unknownSubmitResponse(jobId, cfg);
         // Record why on the job, then refund — the provider wouldn't take the
         // job so we owe the credits back. An untyped refusal (fal and kie
         // return log strings) may be classified by Jev (ADR-0066); null keeps
@@ -452,22 +487,13 @@ export async function POST(req) {
     }
 
     // 5. Move state to SUBMITTED and record provider job id.
-    try {
-        await rpc('job_submitted', {
-            p_job_id: jobId,
-            p_provider: modelRow.provider,
-            p_provider_job_id: submitResult.providerJobId,
-        }, cfg);
-    } catch (err) {
-        // The debit + fal submit both succeeded — the state row is
-        // slightly out of sync. Not user-facing; the reconcile job or
-        // webhook arrival will correct it.
-        console.error('[generations] job_submitted RPC failed:', err);
-    }
+    const recorded = await recordSubmittedJob({ jobId, provider: modelRow.provider, providerJobId: submitResult.providerJobId }, cfg);
+    if (guardedSubmit && !recorded) return unknownSubmitResponse(jobId, cfg);
 
     return NextResponse.json({
         job_id: jobId,
         state: 'SUBMITTED',
         balance_after: balanceAfter,
+        ...(debit.free ? { free_allowance: true } : {}),
     });
 }

@@ -7,10 +7,13 @@ export default function robots() {
       userAgent: '*',
       allow: '/',
       // Auth-gated product surfaces and the gateway: nothing here belongs in
-      // an index, and a crawl of /app spends budget on a sign-in wall. Prefix
-      // match, so '/app' covers both /app and /app/create — no public route
-      // shares either prefix.
-      disallow: ['/api/', '/auth/', '/app', '/m'],
+      // an index, and a crawl of /app spends budget on a sign-in wall. A rule
+      // is a prefix match, so a bare '/app' or '/m' also closed /apple-icon.png,
+      // /models, every /models/* page in the sitemap and /media/*. Each is
+      // written twice instead: '/app/' for what is under it and '/app$' ('$'
+      // pins the end of the URL) for the page itself. tests/robots.test.mjs
+      // checks every sitemap path against these.
+      disallow: ['/api/', '/auth/', '/app/', '/app$', '/m/', '/m$'],
     },
     sitemap: 'https://veyrnox.ai/sitemap.xml',
     host: 'https://veyrnox.ai',

@@ -6,6 +6,9 @@
  * middleware-verified auth id. Same shape either way; no leak of
  * whether the job id exists at all.
  *
+ * `?download=1` signs a link the browser saves instead of showing, under a
+ * file name made here (lib/assetDownloadName.js). Same checks, same quota.
+ *
  * Response:
  *   { url, mime_type, size_bytes, expires_in, asset_expires_at }
  * Client GETs `url` directly (no proxy hop). 302 redirect would work
@@ -15,6 +18,7 @@
 import { NextResponse } from 'next/server';
 import { rpc, envConfig } from '../../../../../../packages/db/supabase-client.js';
 import { presignGetUrl, isConfigured as r2IsConfigured, envConfig as r2EnvConfig } from '../../../../../../packages/adapters/r2.js';
+import { assetDownloadName } from '../../../../../../lib/assetDownloadName.js';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 // CLAUDE.md R2 rule: "Presigned URL TTL <=15 min. Longer TTLs need an ADR."
@@ -27,6 +31,10 @@ export async function GET(req, { params }) {
     const { id } = await params;
     if (!id || !UUID_RE.test(id)) {
         return NextResponse.json({ error: 'invalid_job_id' }, { status: 400 });
+    }
+    const wanted = new URL(req.url).searchParams.getAll('download');
+    if (wanted.length > 1 || (wanted.length === 1 && wanted[0] !== '1')) {
+        return NextResponse.json({ error: 'invalid_download' }, { status: 400 });
     }
 
     const cfg = envConfig();
@@ -73,7 +81,8 @@ export async function GET(req, { params }) {
 
     let signed;
     try {
-        signed = await presignGetUrl(asset.r2_key, DEFAULT_EXPIRES_SEC, r2cfg);
+        signed = await presignGetUrl(asset.r2_key, DEFAULT_EXPIRES_SEC, r2cfg,
+            wanted.length ? { downloadFilename: assetDownloadName(id, asset.mime_type) } : undefined);
     } catch (err) {
         console.error('[jobs/asset] presign failed:', err);
         return NextResponse.json({ error: 'internal' }, { status: 502 });

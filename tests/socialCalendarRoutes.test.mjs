@@ -28,6 +28,21 @@ test('reschedule validates identity and body then passes compare-and-set timesta
     const res=await PATCH(req('',body),ctx);assert.equal(res.status,200);
     assert.deepEqual(calls.at(-1),{name:'reschedule_social_post',args:{p_auth_id:auth,p_post_id:id,p_expected_at:body.expectedAt,p_scheduled_at:body.scheduledAt}});
 });
+test('calendar UTC database cursors round-trip without plus signs or lost microseconds',async()=>{
+    for(const at of ['2026-10-31T12:00:00+00:00','2026-10-31T12:00:00.123456+00:00','2026-10-31T12:00:00Z']){
+        stub({list_social_calendar:{ok:true,posts:[{id}],next:{at,id}}});
+        const first=await (await GET(req(valid))).json();
+        assert.deepEqual(first.next,{at:at.replace('+00:00','Z'),id});
+        assert.deepEqual(first.posts,[{id}]);
+        const query=new URLSearchParams({after_at:first.next.at,after_id:first.next.id});
+        assert.ok(!query.toString().includes('%2B'));
+        stub();assert.equal((await GET(req(valid+'&'+query))).status,200);
+        assert.equal(calls.at(-1).args.p_after_at,first.next.at);
+        assert.equal(calls.at(-1).args.p_after_id,id);
+    }
+    stub();assert.equal((await GET(req(valid+'&'+new URLSearchParams({after_at:'2026-10-31T13:00:00+01:00',after_id:id})))).status,200);
+    assert.equal(calls.at(-1).args.p_after_at,'2026-10-31T13:00:00+01:00');
+});
 test('reschedule handles stale/started posts, owner refusals and rate limits without leaking database data',async()=>{
     for(const [code,status] of [['POST_BUSY',409],['POST_STARTED',409],['SCHEDULE_CHANGED',409],['POST_NOT_FOUND',404],['USER_NOT_FOUND',401],['INVALID_SCHEDULE',400]]){
         stub({reschedule_social_post:{ok:false,code,secret:'private'}});const res=await PATCH(req('',body),ctx);assert.equal(res.status,status);assert.ok(!(await res.text()).includes('private'));

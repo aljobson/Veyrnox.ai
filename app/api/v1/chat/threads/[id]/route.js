@@ -1,7 +1,8 @@
 /**
  * GET    /api/v1/chat/threads/:id — the thread and its messages.
- * PATCH  /api/v1/chat/threads/:id — { title?, pinned?, system_prompt?, model_id? }. Unknown keys are refused.
- * DELETE /api/v1/chat/threads/:id — soft delete: gone from every read at once.
+ * PATCH  /api/v1/chat/threads/:id — { title?, pinned?, system_prompt?, model_id? }, or { folder_id } alone to move it
+ *                                   into a folder (null takes it out). Unknown keys are refused.
+ * DELETE /api/v1/chat/threads/:id — deletes the thread and its messages (migration 0203). The jobs and ledger entries stay.
  */
 import { rpc } from '../../../../../../packages/db/supabase-client.js';
 import { limitRequestBody } from '../../../../../../lib/requestBodyLimit.js';
@@ -39,6 +40,10 @@ export async function PATCH(req, { params }) {
     try { body = await limited.request.json(); } catch { return reply({ error: 'invalid_body' }, 400); }
     const v = validateThreadPatch(body);
     if (!v.ok) return reply({ error: v.error }, 400);
+    if ('folder_id' in v.patch) {
+        const moved = await call(req, params, 'chat_move_thread', { p_folder_id: v.patch.folder_id });
+        return moved instanceof Response ? moved : reply({ ok: true, folder_id: v.patch.folder_id });
+    }
     const r = await call(req, params, 'chat_update_thread', {
         p_title: v.patch.title ?? null, p_pinned: v.patch.pinned ?? null,
         p_system_prompt: v.patch.system_prompt ?? null, p_model_id: v.patch.model_id ?? null,

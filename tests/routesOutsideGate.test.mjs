@@ -14,14 +14,17 @@ const OUTSIDE = {
     'app/api/credit-packs/route.js': 'public read',
     'app/api/cinema/titles/route.js': 'public read',
     'app/api/cinema/titles/[id]/route.js': 'public read',
+    'app/api/popular-templates/route.js': 'public read',
     'app/api/webhook/fal/route.js': 'provider signature',
     'app/api/webhook/kie/route.js': 'provider signature',
     'app/api/webhook/openrouter/route.js': 'provider signature',
     'app/api/webhook/stripe/route.js': 'provider signature',
+    'app/api/webhook/montage/route.js': 'provider signature',
     'app/api/webhook/cinema-stream/route.js': 'provider signature',
     'app/api/admin/reap-assets/route.js': 'access + token',
     'app/api/admin/top-up-backfill/route.js': 'access + token',
     'app/media/social/[token]/route.js': 'signed token',
+    'app/api/turnstile-failure/route.js': 'rate limit + fixed body',
 };
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
@@ -52,9 +55,24 @@ test('the admin routes check Cloudflare Access and a token', () => {
     }
 });
 
+// An anonymous write: the Worker limits it per connecting IP before the app,
+// and the handler takes one Turnstile error code or one fixed word and
+// nothing else (ADR-0026 amendments 2 and 5, tests/turnstileFailureReport.test.mjs).
+test('the anonymous report is rate limited in the Worker and handled in one place', () => {
+    const worker = readFileSync(join(ROOT, 'worker.js'), 'utf8');
+    const fetchHandler = worker.slice(worker.indexOf('async fetch(request, env, ctx) {'), worker.indexOf('async scheduled('));
+    assert.ok(fetchHandler.indexOf('turnstileReportRateLimit(request, env)') > 0, 'worker.js does not limit the report');
+    assert.ok(fetchHandler.indexOf('turnstileReportRateLimit(request, env)') < fetchHandler.indexOf('handler.fetch('), 'limited after the app');
+    for (const file of found.filter((f) => OUTSIDE[f] === 'rate limit + fixed body')) {
+        const src = readFileSync(join(ROOT, file), 'utf8');
+        assert.match(src, /export async function POST\(request\) \{\s*return acceptTurnstileFailure\(request\);\s*\}/, file);
+        assert.equal(src.match(/^export /gm).length, 1, `${file} answers POST only`);
+    }
+});
+
 test('CLAUDE.md names the public routes', () => {
     const rules = readFileSync(join(ROOT, 'CLAUDE.md'), 'utf8');
-    for (const path of ['/api/catalog', '/api/credit-packs', '/api/cinema/titles', '/api/webhook/*', '/api/admin/*', '/media/social/:token']) {
+    for (const path of ['/api/catalog', '/api/credit-packs', '/api/cinema/titles', '/api/webhook/*', '/api/admin/*', '/media/social/:token', '/api/turnstile-failure']) {
         assert.ok(rules.includes(path), `CLAUDE.md does not mention ${path}`);
     }
 });

@@ -12,7 +12,7 @@ const TABS = [
 export function MobileTabs() {
   const path = usePathname().replace(/^\/veyrnox/, '');
   return (
-    <div className="flex-shrink-0 border-t border-vx-border bg-vx-base pb-2 pt-2 px-3">
+    <div className="shrink-0 border-t border-vx-border bg-vx-base pb-2 pt-2 px-3">
       <div className="flex justify-around">
         {TABS.map((t) => {
           const active = path.startsWith(t.href.replace(/^\/veyrnox/, ''));

@@ -13,7 +13,7 @@ import { PriceSlip } from '../_components/PriceSlip';
 
 export function WideNav() {
   return (
-    <div data-print="hide" className="sticky top-0 z-40 h-16 border-b border-vx-border bg-vx-base/90 backdrop-blur">
+    <div data-print="hide" className="sticky top-0 z-40 h-16 border-b border-vx-border bg-vx-base/90 backdrop-blur-sm">
       <div className="h-full px-4 sm:px-6 flex items-center gap-3 lg:gap-6 max-w-[1300px] mx-auto">
         <Link href="/" className="flex items-center shrink-0" aria-label="Veyrnox.ai home">
           <Logo size={30} wordmark />
@@ -95,7 +95,7 @@ export function FeaturedHeroCards({ catalog }) {
               mediaClassName="aspect-[4/5]"
               mediaStyle={{ background: f.bg }}
             >
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/15 to-transparent" />
+              <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/15 to-transparent" />
               {/* Fixed light ink: these sit on a hardcoded dark gradient under
                   a black scrim in both themes. */}
               <div className="absolute inset-x-0 bottom-0 p-4 flex flex-col gap-3">

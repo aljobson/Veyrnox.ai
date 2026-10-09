@@ -25,6 +25,8 @@ export async function GET(req) {
         const result=await rpc('list_social_calendar',{p_auth_id:authId,p_brand_id:brandId,p_from:from,p_to:to,
             p_status:status||null,p_network:network||null,p_after_at:afterAt||null,p_after_id:afterId||null},cfg);
         if(result?.ok!==true) return NextResponse.json({error:'internal'},{status:502});
-        return NextResponse.json({posts:result.posts||[],next:result.next||null},{headers:{'Cache-Control':'no-store'}});
+        // Avoid '+' in the UTC query cursor while preserving PostgreSQL microseconds.
+        const next=result.next ? {...result.next,at:result.next.at.replace(/\+00:00$/, 'Z')} : null;
+        return NextResponse.json({posts:result.posts||[],next},{headers:{'Cache-Control':'no-store'}});
     } catch { return NextResponse.json({error:'internal'},{status:502}); }
 }
