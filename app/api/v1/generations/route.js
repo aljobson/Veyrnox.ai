@@ -10,7 +10,7 @@ import { templateStartId } from '../../../../lib/templateStart.js';
 import { classifySubmitFailure } from '../../../../lib/submitFailureClass.js';
 import { resolveUploadedSource, resolveAssetSource } from '../../../../lib/resolveSource.js';
 import { envConfig as r2EnvConfig, isConfigured as r2IsConfigured } from '../../../../packages/adapters/r2.js';
-import { editUnits, clipCaptionsEnabled } from '../../../../lib/clipEdit.js';
+import { editUnits, clipCaptionsEnabled, clipSlowEnabled } from '../../../../lib/clipEdit.js';
 import { resolveEdit, defaultDeps as editDeps } from '../../../../lib/clipEditSources.js';
 import { checkPlan, checkCapacity } from '../../../../lib/montageGate.js';
 
@@ -331,6 +331,12 @@ export async function POST(req) {
         // (0225 applied, billed cost checked, docs/editor/CAPTIONS.md).
         if (modelInputs.captions !== undefined && !clipCaptionsEnabled(process.env)) {
             return NextResponse.json({ error: 'captions_unavailable' }, { status: 400 });
+        }
+        // Slow motion is a new paid path with a placeholder price: off until CLIP_EDIT_SLOW_ENABLED is "true"
+        // (0237 applied, fal's billed cost read, docs/editor/SPEED.md). Checked before any lookup or debit.
+        if (Array.isArray(modelInputs.clips) && modelInputs.clips.some((c) => c && typeof c === 'object' && c.slow !== undefined)
+            && !clipSlowEnabled(process.env)) {
+            return NextResponse.json({ error: 'slow_unavailable' }, { status: 400 });
         }
         let resolved;
         try {

@@ -50,6 +50,12 @@ test('parseEditInputs refuses unknown keys, bad ids, junk numbers and too many c
     assert.equal(parseEditInputs({ clips: [clip], captions: { preset: 'nope' } }).error, 'inputs_invalid:captions');
     assert.equal(parseEditInputs({ clips: [clip], captions: { preset: 'glass', language: 'en' } }).ok, false, 'no extra keys');
     assert.equal(parseEditInputs({ clips: [clip], captions: 'glass' }).ok, false);
+    // Slow motion: a whole-number factor from 2 to 4 per clip, nothing else.
+    assert.equal(parseEditInputs({ clips: [{ ...clip, slow: 2 }] }).ok, true);
+    for (const bad of [1, 5, 8, 2.5, '2', null, true]) assert.equal(parseEditInputs({ clips: [{ ...clip, slow: bad }] }).ok, false, String(bad));
+    // Refused on the client's own arithmetic: 16 s of source slowed is over the 15 s cap, and 4 x 16 s is over 60 s.
+    assert.equal(parseEditInputs({ clips: [{ asset_id: A, in_s: 0, out_s: 16, slow: 2 }] }).error, 'slow_too_long');
+    assert.equal(parseEditInputs({ clips: [{ asset_id: A, in_s: 0, out_s: 15, slow: 4 }, { asset_id: B, in_s: 0, out_s: 2 }] }).error, 'too_long');
     // Refused on the client's own arithmetic, before any lookup or R2 read.
     assert.equal(parseEditInputs({ clips: Array(10).fill({ asset_id: A, in_s: 0, out_s: 30 }) }).error, 'too_long');
     assert.equal(parseEditInputs({ clips: [{ asset_id: A, in_s: 5, out_s: 5 }] }).error, 'inputs_invalid:clips');
@@ -146,6 +152,10 @@ function mockEditFetch(calls, file) {
         const u = String(url);
         calls.push({ url: u, body: init.body && typeof init.body === 'string' ? JSON.parse(init.body) : undefined });
         const rpc = /\/rpc\/([a-z_]+)/.exec(u);
+        // The soundtrack's id answers as audio; every other id is the video.
+        if (rpc && rpc[1] === 'get_user_asset' && init.body && JSON.parse(init.body).p_job_id === M) {
+            return Response.json({ ok: true, state: 'STORED', mime_type: 'audio/mpeg', r2_key: 'jobs/m.mp3', size_bytes: 900 });
+        }
         if (rpc && rpcs[rpc[1]]) return Response.json(rpcs[rpc[1]]);
         if (u.includes('/rest/v1/model_catalog')) return Response.json([{ id: 'clip-edit', provider: 'veyrnox', provider_endpoint: 'clip-edit:v1', modality: 'video-to-video', credits_5s: 1, gated_flag: false, active: true }]);
         if (u.includes('/rest/v1/users')) return Response.json([{ id: '00000000-0000-4000-8000-000000000009' }]);
@@ -190,4 +200,44 @@ test('generations: with the flag on, captions are priced as 7 units and the firs
     const fal = calls.find((c) => c.url.includes('queue.fal.run'));
     assert.ok(fal.url.includes('veed/subtitles'), fal.url);
     assert.equal(fal.body.preset, 'glass');
+});
+
+const slowRequest = (clips, extra = {}) => new Request('https://veyrnox.test/api/v1/generations', {
+    method: 'POST',
+    headers: { 'x-veyrnox-auth-id': 'auth-user-1', 'content-type': 'application/json' },
+    body: JSON.stringify({ model_id: 'clip-edit', idempotency_key: 'edit-key-0003', inputs: { clips, ...extra } }),
+});
+
+test('generations: slow motion is refused while CLIP_EDIT_SLOW_ENABLED is off, before any lookup or debit', async () => {
+    const calls = [];
+    mockEditFetch(calls, mp4(10, 720, 1280));
+    delete process.env.CLIP_EDIT_SLOW_ENABLED;
+    const res = await generations.POST(slowRequest([{ asset_id: A, in_s: 0, out_s: 4, slow: 2 }], { audio: { asset_id: M, offset_s: 0 } }));
+    assert.equal(res.status, 400);
+    assert.equal((await res.json()).error, 'slow_unavailable');
+    assert.equal(calls.some((c) => c.url.includes('/rpc/ledger_debit')), false);
+    assert.equal(calls.some((c) => c.url.includes('/rpc/get_user_asset')), false, 'not even the ownership lookup ran');
+    assert.equal(calls.some((c) => c.url.includes('queue.fal.run')), false);
+});
+
+test('generations: with the flag on, a slowed clip needs sound, is priced at the placeholder, and trims first', async () => {
+    const calls = [];
+    mockEditFetch(calls, mp4(10, 720, 1280));
+    process.env.CLIP_EDIT_SLOW_ENABLED = 'true';
+    try {
+        const noSound = await generations.POST(slowRequest([{ asset_id: A, in_s: 0, out_s: 4, slow: 2 }]));
+        assert.equal(noSound.status, 400);
+        assert.equal((await noSound.json()).error, 'slow_needs_audio');
+        assert.equal(calls.some((c) => c.url.includes('/rpc/ledger_debit')), false, 'refused before the debit');
+
+        const res = await generations.POST(slowRequest([{ asset_id: A, in_s: 0, out_s: 4, slow: 2 }], { audio: { asset_id: M, offset_s: 0 } }));
+        assert.equal(res.status, 200, JSON.stringify(await res.clone().json()));
+    } finally {
+        delete process.env.CLIP_EDIT_SLOW_ENABLED;
+    }
+    const debit = calls.find((c) => c.url.includes('/rpc/ledger_debit')).body;
+    assert.equal(debit.p_credits, 1 + 20 * 4 + 1, 'a trim (4 of 10 s) + 80 for the slow step (20 a second, 4 s kept) + the audio step');
+    assert.equal(debit.p_inputs.edit.clips[0].slow, 2);
+    const fal = calls.find((c) => c.url.includes('queue.fal.run'));
+    assert.ok(fal.url.includes('fal-ai/workflow-utilities/trim-video'), 'the first step is the trim of the 4 s kept: ' + fal.url);
 });

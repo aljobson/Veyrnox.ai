@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { validateEdit, planEdit, editUnits, start, onStepOutcome, parentRef, CAPTION_PRESETS, CAPTIONS_UNITS, clipCaptionsEnabled } from '../lib/clipEdit.js';
+import { validateEdit, planEdit, editUnits, start, onStepOutcome, parentRef, CAPTION_PRESETS, CAPTIONS_UNITS, clipCaptionsEnabled, SLOW_FACTORS, SLOW_UNITS_PER_SECOND, SLOW_MAX_SOURCE_S, clipSlowEnabled } from '../lib/clipEdit.js';
 import { handleStepCallback, falOutcome, failureReason } from '../lib/autoShortWebhook.js';
 
 const JOB = '11111111-2222-4333-8444-555555555555';
@@ -276,4 +276,118 @@ test('a transient miss that then succeeds stores the captions', async () => {
     await onStepOutcome({ step: live(), outcome: { state: 'fail', errorCode: 'provider_failed', reason: 'host_unreachable', transient: true } }, w.deps);
     assert.equal((await w.deliver()).stored, true);
     assert.equal(w.calls.refunds, 0);
+});
+
+const slowed = (key, in_s, out_s, slow, duration_s = 10) => ({ ...clip(key, in_s, out_s, duration_s), slow });
+const SOUND = { key: 'm', offset_s: 0 };
+
+test('slow motion: factors 2 to 4 only, it needs a soundtrack, and it lengthens the result', () => {
+    assert.deepEqual([...SLOW_FACTORS], [2, 3, 4]);
+    for (const bad of [1.5, 5, 8, 0, '2', null]) {
+        assert.equal(validateEdit({ clips: [slowed('a', 0, 4, bad)], audio: SOUND }).error, 'slow_invalid', String(bad));
+    }
+    assert.equal(validateEdit({ clips: [slowed('a', 0, 4, 2)] }).error, 'slow_needs_audio');
+    const ok = validateEdit({ clips: [slowed('a', 0, 4, 2), clip('b', 0, 3)], audio: SOUND });
+    assert.equal(ok.ok, true);
+    assert.equal(ok.output_s, 11, '4 s slowed twice is 8 s, plus 3 s');
+    assert.equal(ok.clips[0].slow, 2);
+    assert.equal(ok.clips[1].slow, undefined, 'an unslowed clip stores no slow key');
+    // The audio offset is checked against the slowed length, and so is the 60 s cap.
+    assert.equal(validateEdit({ clips: [slowed('a', 0, 4, 2)], audio: { key: 'm', offset_s: 7.5 } }).ok, true);
+    assert.equal(validateEdit({ clips: [slowed('a', 0, 4, 2)], audio: { key: 'm', offset_s: 8.5 } }).error, 'audio_invalid');
+    assert.equal(validateEdit({ clips: [slowed('a', 0, 15, 4, 15), clip('b', 0, 2)], audio: SOUND }).error, 'too_long', '60 s slowed plus 2 s is over the cap');
+    assert.equal(validateEdit({ clips: [slowed('a', 0, 15, 4, 15)], audio: SOUND }).ok, true, 'exactly 60 s is allowed');
+});
+
+test('slow motion: at most SLOW_MAX_SOURCE_S seconds of source in one edit, and it is not a no-op', () => {
+    assert.equal(SLOW_MAX_SOURCE_S, 15);
+    assert.equal(validateEdit({ clips: [slowed('a', 0, 8, 2), slowed('b', 0, 8, 2)], audio: SOUND }).error, 'slow_too_long');
+    assert.equal(validateEdit({ clips: [slowed('a', 0, 8, 2), slowed('b', 0, 7, 2)], audio: SOUND }).ok, true);
+    // A whole clip that is only slowed (with sound) is a real edit.
+    assert.equal(validateEdit({ clips: [slowed('a', 0, 10, 2)], audio: SOUND }).ok, true);
+});
+
+test('slow motion: the plan trims, then slows, per clip, then merges, lays the sound, captions', () => {
+    const edit = validateEdit({ clips: [slowed('a', 1, 4, 2), clip('b', 0, 10), slowed('c', 0, 10, 3)], audio: SOUND, captions: { preset: 'simple' } });
+    assert.deepEqual(planEdit(edit).map((p) => `${p.step}${p.ordinal}`), ['trim0', 'slow0', 'slow2', 'merge0', 'audio0', 'captions0']);
+    // An edit stored before slow motion existed has no slow keys and plans exactly as it did.
+    const old = { clips: [{ key: 'a', in_s: 1, out_s: 4, whole: false }, { key: 'b', in_s: 0, out_s: 5, whole: true }], audio: null, captions: null, output_s: 8 };
+    assert.deepEqual(planEdit(old).map((p) => p.step), ['trim', 'merge']);
+});
+
+test('slow motion: a slowed clip is billed SLOW_UNITS_PER_SECOND per started second of source it keeps', () => {
+    assert.equal(SLOW_UNITS_PER_SECOND, 20);
+    // 4 s kept, slowed 2x: 20 x 4 + the audio step = 81 units; the 8 s result is only 2 length units.
+    assert.equal(editUnits(validateEdit({ clips: [slowed('a', 0, 4, 2, 4)], audio: SOUND })), 81);
+    // A fraction of a second still starts a second: 3.5 s kept is 4 s of units (a trim, 80, the audio step).
+    assert.equal(editUnits(validateEdit({ clips: [slowed('a', 0, 3.5, 2)], audio: SOUND })), 82);
+    // Without slow motion nothing changes.
+    assert.equal(editUnits(validateEdit({ clips: [clip('a', 1, 4)], audio: SOUND })), 2);
+    // The worst case the cap allows: 15 s slowed 4x is a 60 s result, 300 units for the slow step plus the rest.
+    assert.equal(editUnits(validateEdit({ clips: [slowed('a', 0, 15, 4, 15)], audio: SOUND })), 301);
+});
+
+test('slow motion: the steps feed each other and the audio step is laid over the last slowed output', async () => {
+    const edit = validateEdit({ clips: [slowed('a', 2, 6, 2), slowed('b', 0, 10, 3)], audio: SOUND });
+    const w = world(edit);
+    await start({ jobId: JOB, edit }, w.deps);
+    // trim a, then slow a from the trim output
+    assert.equal(w.calls.submits[0].endpoint, 'fal-ai/workflow-utilities/trim-video');
+    assert.equal((await w.deliver()).advanced, 'slow');
+    assert.equal(w.calls.submits[1].endpoint, 'topaz/interpolate/video');
+    assert.deepEqual(w.calls.submits[1].inputs, {
+        video_url: `https://r2.example/edits/${JOB}/trim-0.mp4`, slowdown_factor: 2, target_fps: 24, model: 'Apollo', H264_output: true });
+    // slow b reads its own source (used whole), at its own factor
+    assert.equal((await w.deliver()).advanced, 'slow');
+    assert.deepEqual(w.calls.submits[2].inputs, { video_url: 'https://r2.example/b', slowdown_factor: 3, target_fps: 24, model: 'Apollo', H264_output: true });
+    // merge takes both slowed outputs, in order
+    assert.equal((await w.deliver()).advanced, 'merge');
+    assert.deepEqual(w.calls.submits[3].inputs.video_urls, [`https://r2.example/edits/${JOB}/slow-0.mp4`, `https://r2.example/edits/${JOB}/slow-1.mp4`]);
+    assert.equal((await w.deliver()).advanced, 'audio');
+    assert.equal((await w.deliver()).stored, true);
+    assert.equal(w.calls.stored.p_r2_key, `edits/${JOB}/audio-0.mp4`);
+    assert.equal(w.steps.filter((x) => x.state === 'SUBMITTED').length, 0);
+    assert.equal(w.calls.refunds, 0);
+});
+
+test('slow motion: one slowed clip with sound is slow then audio, and the audio step reads the slow output', async () => {
+    const edit = validateEdit({ clips: [slowed('a', 0, 10, 2)], audio: SOUND });
+    const w = world(edit);
+    await start({ jobId: JOB, edit }, w.deps);
+    assert.deepEqual(w.calls.submits.map((s) => s.endpoint), ['topaz/interpolate/video']);
+    assert.equal(w.calls.submits[0].inputs.video_url, 'https://r2.example/a');
+    await w.deliver();
+    assert.equal(w.calls.submits[1].endpoint, 'fal-ai/ffmpeg-api/merge-audio-video');
+    assert.equal(w.calls.submits[1].inputs.video_url, `https://r2.example/edits/${JOB}/slow-0.mp4`);
+});
+
+test('slow motion: a failed slow step is not retried (it is a dear call), and refunds once', async () => {
+    const edit = validateEdit({ clips: [slowed('a', 0, 10, 2)], audio: SOUND });
+    const w = world(edit);
+    await start({ jobId: JOB, edit }, w.deps);
+    const r = await w.deliver('fail');
+    assert.equal(r.refunded, true);
+    assert.equal(w.calls.submits.length, 1, 'no second call to fal');
+    assert.equal(w.calls.refunds, 1);
+    assert.equal(w.job.state, 'FAILED');
+});
+
+test('slow motion: only fal not reaching the source URL is retried, once', async () => {
+    const edit = validateEdit({ clips: [slowed('a', 0, 10, 2)], audio: SOUND });
+    const w = world(edit);
+    await start({ jobId: JOB, edit }, w.deps);
+    const live = () => ({ ...w.steps.find((x) => x.state === 'SUBMITTED') });
+    const transient = { state: 'fail', errorCode: 'provider_failed', reason: 'host_unreachable', transient: true };
+    assert.equal((await onStepOutcome({ step: live(), outcome: transient }, w.deps)).retried, true);
+    assert.equal(w.calls.submits.length, 2);
+    const r = await onStepOutcome({ step: live(), outcome: transient }, w.deps);
+    assert.equal(r.refunded, true);
+    assert.equal(w.calls.submits.length, 2);
+    assert.equal(w.calls.refunds, 1);
+});
+
+test('the slow-motion flag is only on for the exact string "true"', () => {
+    assert.equal(clipSlowEnabled({ CLIP_EDIT_SLOW_ENABLED: 'true' }), true);
+    for (const v of ['false', '', 'TRUE', '1', undefined]) assert.equal(clipSlowEnabled({ CLIP_EDIT_SLOW_ENABLED: v }), false);
+    assert.equal(clipSlowEnabled(undefined), false);
 });

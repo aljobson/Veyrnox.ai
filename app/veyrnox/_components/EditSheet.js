@@ -17,6 +17,12 @@ const CAPTIONS_UNITS = 7;
 const CAPTION_STYLES = ['simple', 'plain', 'glass', 'whisper', 'backdrop', 'corpo', 'handwritten', 'terminal'];
 // Per-browser preview switch on top of the server flag, like veyrnox_editor.
 const captionsPreview = () => { try { return window.localStorage.getItem('veyrnox_editor_captions') === '1'; } catch { return false; } };
+// Slow motion (docs/editor/SPEED.md): the same numbers lib/clipEdit.js holds (a test pins them). The price is
+// a deliberately high placeholder until fal's invoice is read, so the control is behind a switch of its own.
+const SLOW_FACTORS = [2, 3, 4];
+const SLOW_UNITS_PER_SECOND = 20;
+const SLOW_MAX_SOURCE_S = 15;
+const slowPreview = () => { try { return window.localStorage.getItem('veyrnox_editor_slow') === '1'; } catch { return false; } };
 
 const ERRORS = {
   mixed_aspect: 'These clips have different shapes. Pick clips that are all portrait or all landscape.',
@@ -25,6 +31,10 @@ const ERRORS = {
   nothing_to_do: 'Trim the clip, add audio or add captions: as it stands the result would be the same video.',
   captions_unavailable: 'Captions are not open yet.',
   captions_invalid: 'That caption style is not available.',
+  slow_unavailable: 'Slow motion is not open yet.',
+  slow_invalid: 'That slow-motion speed is not available.',
+  slow_needs_audio: 'Slowed clips cannot keep their own sound. Pick an audio track for the edit.',
+  slow_too_long: `At most ${SLOW_MAX_SOURCE_S} seconds of source video can be slowed in one edit.`,
   asset_not_found: 'One of these files is no longer available.',
   insufficient_balance: 'Not enough credits for this edit.',
   rate_limited: 'Too many requests. Wait a minute and try again.',
@@ -44,6 +54,7 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted }) {
   const [captions, setCaptions] = useState(false);
   const [style, setStyle] = useState(CAPTION_STYLES[0]);
   const showCaptions = captionsPreview();
+  const showSlow = slowPreview();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
 
@@ -60,24 +71,30 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted }) {
   const remove = (i) => setItems((xs) => xs.filter((_, k) => k !== i));
 
   const loaded = items.every((x) => x.duration != null);
-  const output = round(items.reduce((s, x) => s + Math.max(0, (x.out_s ?? 0) - x.in_s), 0));
+  // A slowed clip runs `slow` times longer in the result (the server counts it the same way).
+  const slowOf = (x) => (showSlow && x.slow > 1 ? x.slow : 1);
+  const output = round(items.reduce((s, x) => s + Math.max(0, (x.out_s ?? 0) - x.in_s) * slowOf(x), 0));
+  const slowedSource = round(items.reduce((s, x) => s + (slowOf(x) > 1 ? Math.max(0, (x.out_s ?? 0) - x.in_s) : 0), 0));
+  const slowNoAudio = slowedSource > 0 && !audioId;
+  const slowTooLong = slowedSource > SLOW_MAX_SOURCE_S;
   const mixed = new Set(items.filter((x) => x.ratio).map((x) => x.ratio)).size > 1;
   const badRange = items.some((x) => x.duration != null && !(x.in_s >= 0 && x.out_s > x.in_s && x.out_s <= x.duration));
-  const noop = items.length === 1 && !audioId && !captions && loaded && items[0].in_s === 0 && items[0].out_s >= items[0].duration;
+  const noop = items.length === 1 && !audioId && !captions && slowOf(items[0]) === 1 && loaded && items[0].in_s === 0 && items[0].out_s >= items[0].duration;
   // The same unit count the gateway bills (lib/clipEdit.js editUnits): a
   // many-clip edit costs per step, so steps set the floor under the length.
   const steps = items.filter((x) => !(x.duration != null && x.in_s === 0 && x.out_s >= x.duration)).length
-    + (items.length > 1 ? 1 : 0) + (audioId ? 1 : 0) + (captions ? CAPTIONS_UNITS : 0);
+    + (items.length > 1 ? 1 : 0) + (audioId ? 1 : 0) + (captions ? CAPTIONS_UNITS : 0)
+    + items.reduce((n, x) => n + (slowOf(x) > 1 ? SLOW_UNITS_PER_SECOND * Math.ceil((x.out_s ?? 0) - x.in_s - 1e-9) : 0), 0);
   const units = Math.max(1, Math.ceil(output / UNIT_S), steps);
   const cost = credits5s != null && output > 0 ? credits5s * units : null;
-  const blocked = !items.length || !loaded || mixed || badRange || noop || output > MAX_OUTPUT_S || cost == null || busy;
+  const blocked = !items.length || !loaded || mixed || badRange || noop || output > MAX_OUTPUT_S || slowNoAudio || slowTooLong || cost == null || busy;
 
   async function submit() {
     if (blocked) return;
     setBusy(true);
     setError(null);
     const inputs = {
-      clips: items.map((x) => ({ asset_id: x.job_id, in_s: round(x.in_s), out_s: round(x.out_s) })),
+      clips: items.map((x) => ({ asset_id: x.job_id, in_s: round(x.in_s), out_s: round(x.out_s), ...(slowOf(x) > 1 ? { slow: slowOf(x) } : {}) })),
       ...(audioId ? { audio: { asset_id: audioId, offset_s: round(Number(offset) || 0) } } : {}),
       ...(captions ? { captions: { preset: style } } : {}),
     };
@@ -107,7 +124,7 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted }) {
         <ol className="flex flex-col gap-3">
           {items.map((x, i) => (
             <ClipRow key={x.uid} item={x} index={i} count={items.length}
-              onChange={(p) => update(i, p)} onMove={(d) => move(i, d)} onRemove={() => remove(i)} />
+              showSlow={showSlow} onChange={(p) => update(i, p)} onMove={(d) => move(i, d)} onRemove={() => remove(i)} />
           ))}
         </ol>
 
@@ -155,6 +172,8 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted }) {
           {mixed && <span className="text-vx-danger">{ERRORS.mixed_aspect}</span>}
           {!mixed && output > MAX_OUTPUT_S && <span className="text-vx-danger">{ERRORS.too_long}</span>}
           {!mixed && badRange && <span className="text-vx-danger">{ERRORS.clip_range}</span>}
+          {slowTooLong && <span className="text-vx-danger">{ERRORS.slow_too_long}</span>}
+          {!slowTooLong && slowNoAudio && <span className="text-vx-danger">{ERRORS.slow_needs_audio}</span>}
           {noop && <span className="text-vx-fg-muted">{ERRORS.nothing_to_do}</span>}
           {error && <span className="text-vx-danger">{ERRORS[error] || 'That didn’t work. Your credits were not taken; try again.'}</span>}
         </div>
@@ -171,7 +190,7 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted }) {
   );
 }
 
-function ClipRow({ item, index, count, onChange, onMove, onRemove }) {
+function ClipRow({ item, index, count, showSlow, onChange, onMove, onRemove }) {
   const asset = useAssetUrl(item.job_id, item.asset_url);
   const ref = useRef(null);
   const d = item.duration;
@@ -211,6 +230,16 @@ function ClipRow({ item, index, count, onChange, onMove, onRemove }) {
             </button>
           </div>
         ))}
+        {showSlow && (
+          <label className="flex items-center gap-2 text-xs text-vx-fg-muted">
+            <span className="w-16">Speed</span>
+            <select value={item.slow || 1} onChange={(e) => onChange({ slow: Number(e.target.value) })}
+              className="rounded-lg bg-vx-base border border-vx-border px-2 py-1.5 text-sm text-vx-fg">
+              <option value={1}>Normal</option>
+              {SLOW_FACTORS.map((n) => <option key={n} value={n}>{n}x slower</option>)}
+            </select>
+          </label>
+        )}
         {d != null && <span className="font-vx-mono text-[11px] text-vx-fg-muted vx-num">{round(d)} s clip</span>}
       </div>
     </li>
