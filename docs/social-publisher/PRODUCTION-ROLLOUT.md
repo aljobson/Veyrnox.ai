@@ -5,6 +5,10 @@ The owner does not need accounts on every platform: designated administrators
 provide developer apps and designated testers perform real-account acceptance.
 This document prepares the release; it does not activate production.
 
+For the later configuration and database checks on 9 October, see
+[production readiness](PRODUCTION-READINESS-2026-10-09.md). The evidence below
+is the earlier pre-configuration snapshot.
+
 ## Current production evidence
 
 Read-only checks on 9 October against Worker `veyrnox-ai`, account

@@ -139,17 +139,13 @@
     // provider_moderation / provider_input_rejected. off | shadow | enforce.
     // Needs the TYPESAFE_API_KEY secret; shadow only logs the label.
     "JEV_SUBMIT_ERRORS_MODE": "off",
-    // Veyrnox Publish (ADR-0061) stays dark until the platform app reviews
-    // and the Publish Plan (ADR-0062/0063) land: hides /app/publish, the
-    // menu link and /api/v1/social/*. Only "true" opens it. The publish
-    // sweep is not gated, so anything already queued still finishes.
-    "PUBLISH_ENABLED": "false",
-    // First production release permits YouTube only; Publish remains off.
+    // YouTube-only initial release (docs/social-publisher/PRODUCTION-ROLLOUT.md).
+    // Merge this activation only after Google verification and release gates pass.
+    // The publish sweep is not gated: previously queued targets still finish.
+    "PUBLISH_ENABLED": "true",
     "PUBLISH_RELEASED_NETWORKS": "youtube",
-    // The Publish analytics sweep (lib/socialAnalyticsSweep.js). Only "true"
-    // runs it; turn it on after migration 0188 is applied. The analytics
-    // page and its API route follow PUBLISH_ENABLED like the rest of Publish.
-    "PUBLISH_ANALYTICS_ENABLED": "false",
+    // Production 0188 is applied; basic YouTube Data API statistics only.
+    "PUBLISH_ANALYTICS_ENABLED": "true",
     // Weekly historical timing/frequency insights; requires 0191.
     "PUBLISH_POSTING_INSIGHTS_ENABLED": "false",
     // Month/week/list calendar and rescheduling; 0192 approved 2026-10-04.
