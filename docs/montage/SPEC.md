@@ -280,7 +280,15 @@ to take 30.5 minutes, past the runner's 30-minute limit: three refunds and about
 Options and the arithmetic are in [CAPACITY.md](CAPACITY.md) section 5.
 
 **Decision 2026-10-08 (owner: "A"): dedicated CPUs for the runner** (a Fly `performance` size), chosen over one slot and over a
-lighter render. Not applied yet: staging still runs the shared machine with three slots.
+lighter render.
+
+**Update 2026-10-08 21:45 UTC: the figures above were the worst case, and option A is applied on staging.** Three more real runs
+finished that evening and used 50 to 107 CPU-seconds each, against the 220 of the first. Two of them overlapped and finished in
+244 s and 317 s with nothing throttled, so "about 4 runs an hour whatever the slot count" was too low for typical runs: it is 4 to
+18, by how heavy the cut is. One run peaked at 2.0 GB, so three at once would not have fitted in the machine's 4 GB. On the owner's
+"apply A" the staging runner moved to `performance-2x` with 8 GB at 21:35 UTC: the same image, 21 of 21 lockdown checks passing,
+and the runner's `fly.toml` on main agreeing (runner `0e7477f`). Machine time is about $0.030 a run, against $0.009 before. No run
+has been made on the new machine yet. All four runs are in [CAPACITY.md](CAPACITY.md) section 5.
 
 ## 11. The remaining staging checks, and the lost-run check (2026-10-08, evening)
 
