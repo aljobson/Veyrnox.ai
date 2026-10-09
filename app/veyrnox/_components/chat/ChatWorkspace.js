@@ -271,6 +271,7 @@ export function ChatWorkspace() {
         att.clear();                                 // sent: the images are spent, so the next reply starts clean
         if (streamError) setError(chatErrorCopy(streamError));
         await open(thread.id);                       // the saved messages, with their real status and price
+        if (streamError === 'reply_not_saved') setError(chatErrorCopy(streamError)); // open() clears the notice, or replaces it when the chat is gone
       }
       await refreshThreads();
     } catch (e) {

@@ -117,7 +117,8 @@ Ledger `reason` vocabulary: `grant:signup`, `grant:topup`,
 and refuses SUCCEEDED/STORED. `sweep_stuck_jobs` refunds anything stuck. A zero-credit free-allowance job is
 refunded by `ledger_refund`'s zero branch, which returns the allowance and
 writes no ledger row; a chat reply ends `STORED` with no `assets` row
-(`chat_complete_turn`).
+(`chat_complete_turn`, or `chat_settle_unsaved_turn` when the reply was
+delivered but its messages could not be stored: still charged, 0233).
 
 ### 3.3 Billing
 
@@ -219,7 +220,7 @@ anon-callable read here: ranked template ids only.
 | free allowance | `free_allowance_left`, `free_allowance_take`, `free_allowance_return`, `submit_free_job`, `reconcile_free_allowance` |
 | subscriptions | `list_credit_subscription_plans`, `start_credit_subscription`, `record_credit_subscription_session`, `apply_credit_subscription_event`, `grant_credit_subscription_invoice`, `reverse_credit_subscription_invoice`, `cancel_credit_subscription_cooling_off`, `mark_credit_subscription_cancelled`, `read_own_credit_subscription[_by_id]`, `read_credit_subscription_binding` |
 | referrals | `referral_code_for`, `attach_referral`, `referral_summary`, `referral_sweep` (qualify, release, clawback), `reconcile_referrals` |
-| chat | `chat_create_thread`, `chat_list_threads`, `chat_get_thread`, `chat_update_thread`, `chat_delete_thread`, `chat_turn_context`, `chat_complete_turn`, folder functions (`chat_create_folder` … `chat_move_thread`), `chat_save_persona`, `chat_list_personas`, `chat_delete_persona` |
+| chat | `chat_create_thread`, `chat_list_threads`, `chat_get_thread`, `chat_update_thread`, `chat_delete_thread`, `chat_turn_context`, `chat_complete_turn`, `chat_settle_unsaved_turn`, folder functions (`chat_create_folder` … `chat_move_thread`), `chat_save_persona`, `chat_list_personas`, `chat_delete_persona` |
 | jobs | `job_submitted`, `job_succeeded`, `job_failed`, `job_stored`, `job_submit_rejected`, `get_user_job`, `list_user_jobs`, `get_user_asset`, `job_step_*`, `sweep_stuck_jobs`, `expire_assets` |
 | top-ups | `create_pending_top_up`, `credit_top_up`, `read_top_up`, `apply_top_up_refund`, `apply_dispute_event`, `record_top_up_return_session`, `next_top_up_backfill_batch`, `close_top_up_return`, `operator_*` reads |
 | reconciliation | `reconcile_balances`, `reconcile_free_credits`, `reconcile_top_ups`, `reconcile_failed_refunds`, `reconcile_subscription_credits`, `reconcile_free_allowance`, `reconcile_referrals`, `refresh_reconciliation_snapshot`, `reconcile_status` (five counts only), `refresh_recovery_health`, `recovery_status` |
