@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS public.fal_capacity_policy (
     daily_budget_microusd INTEGER NOT NULL DEFAULT 300000 CHECK (daily_budget_microusd BETWEEN 1 AND 300000),
     CHECK (NOT enabled OR provider_account IS NOT NULL)
 );
+CREATE INDEX IF NOT EXISTS fal_capacity_policy_model_idx ON public.fal_capacity_policy(model_id);
 INSERT INTO public.fal_capacity_policy(singleton) VALUES (true) ON CONFLICT DO NOTHING;
 CREATE TABLE IF NOT EXISTS public.fal_capacity_reservations (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
