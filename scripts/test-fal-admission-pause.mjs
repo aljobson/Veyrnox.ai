@@ -22,10 +22,12 @@ const tally = () => one(`SELECT (SELECT balance FROM public.credit_balances WHER
     (SELECT count(*)::int FROM public.ledger_entries WHERE user_id=$1) ledger,
     (SELECT count(*)::int FROM public.model_free_allowance_claims WHERE user_id=$1) claims`,[user]);
 const migration = await readFile(new URL('../packages/db/schema/supabase/0239_fal_admission_pause.sql',import.meta.url),'utf8');
+const reservedMigration = await readFile(new URL('../packages/db/schema/supabase/0240_fal_reserved_only_admission.sql',import.meta.url),'utf8');
 async function check(name,fn) { await fn(); cases++; console.log(`  ok ${name}`); }
 try {
     // Earlier suites reapply predecessor RPCs; restore this slice before testing.
     await q(migration);
+    await q(reservedMigration);
     assert.equal((await one('SELECT paused FROM public.fal_admission_control')).paused,false);
     await q('INSERT INTO auth.users(id,email,email_confirmed_at) VALUES($1,$2,now())',[auth,`${auth}@example.invalid`]);
     user=(await one('SELECT id FROM public.users WHERE auth_id=$1',[auth])).id;
@@ -38,7 +40,7 @@ try {
     }
     await check('inactive control preserves admission; migration replay preserves operator pause',async()=>{
         assert.equal((await paid(models.fal)).ok,true);
-        await pause(true); await q(migration);
+        await pause(true); await q(migration); await q(reservedMigration);
         assert.equal((await one('SELECT paused FROM public.fal_admission_control')).paused,true);
     });
     await check('paid and free fal/composite admissions stop without any job, debit or allowance effect',async()=>{
@@ -79,6 +81,7 @@ try {
         assert.equal((await one('SELECT state FROM public.jobs WHERE id=$1',[first.job_id])).state,'REFUNDED');
     });
     await check('pause commit waits for an in-flight admission; later admissions stop',async()=>{
+        await q('UPDATE public.fal_capacity_policy SET enabled=false');
         await pause(false);
         const admission=await pool.connect(),operator=await pool.connect();
         let update;

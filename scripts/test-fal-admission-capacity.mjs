@@ -38,6 +38,7 @@ async function check(name, fn, { enabled = true } = {}) {
 try {
     // Earlier acceptance restores 0230. Reapply this slice before testing it.
     await q(await readFile(new URL('../packages/db/schema/supabase/0238_fal_admission_capacity.sql',import.meta.url),'utf8'));
+    await q(await readFile(new URL('../packages/db/schema/supabase/0240_fal_reserved_only_admission.sql',import.meta.url),'utf8'));
     assert.equal((await one('SELECT enabled FROM public.fal_capacity_policy')).enabled,false);
     await q(`INSERT INTO public.model_catalog(id,name,provider,provider_endpoint,modality,credits_5s,provider_cost_per_unit,cost_unit,gated_flag,active,free_allowance_per_day,free_allowance_daily_budget)
         VALUES($1,'Capacity test','fal',$2,'text-to-image',2,0.03,'per_generation',false,true,3,10)`,[model,endpoint]);
@@ -148,6 +149,7 @@ try {
     });
     await check('unreserved legacy replay keeps its original payload contract while paused', async () => {
         const u=await user(),key=randomUUID();
+        await q('UPDATE public.fal_capacity_policy SET enabled=false');
         const legacy=(await one("SELECT public.ledger_debit($1,$2,2,'debit:generation',$3,$4,10,60) r",[u,key,model,{prompt:'test'}])).r;
         await q('INSERT INTO public.fal_dispatch(job_id,endpoint,payload) VALUES($1,$2,$3)',[legacy.job_id,endpoint,{prompt:'test'}]);
         await q('UPDATE public.fal_capacity_policy SET enabled=false');
