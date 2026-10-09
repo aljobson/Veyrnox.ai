@@ -3,14 +3,18 @@ import { useRef, useState } from 'react';
 import { GatewayError } from '../../_lib/gateway';
 import { chatApi, chatErrorCopy, lostNotice, makeIdempotencyKey, sendTurn, uploadChatImage } from '../../_lib/chatApi';
 import { prepareImage } from '../../_lib/chatImages';
+import { NEW_CHAT } from '../../_lib/chatLocal';
+import { loadFailure } from '../../_lib/chatScreen';
+import { ask, forget, hold, land, onScreen, sendHome } from '../../_lib/chatSendHome';
 
 /**
  * Sending one message from the chat screen (ADR-0067), and every way that send can end: a replay, a reply that ran to
  * its end, Stop, a dropped connection, and a turn that never started. The screen (ChatWorkspace.js) owns the chat on
  * show and passes in what a send reads and changes; the send's own state lives here.
+ * `view` is the screen's record of which chat is on it (chatSendHome.js); `saveDraft(chatId, text)` stores a chat's draft.
  * @returns {{send: () => Promise<void>, stop: () => void, busy: boolean, stopping: boolean, checking: boolean, progress: object|null}}
  */
-export function useChatSend({ text, setText, model, imagesBlocked, chosen, price, active, setActive, messages, setMessages, setThreads, setError, att, limits, draftModel, folders, folder, instr, open, refreshThreads, fail }) {
+export function useChatSend({ text, setText, model, imagesBlocked, chosen, price, active, setActive, messages, setMessages, setThreads, setError, att, limits, draftModel, folders, folder, instr, open, refreshThreads, fail, view, saveDraft }) {
   const [busy, setBusy] = useState(false);
   const [stopping, setStopping] = useState(false); // Stop was pressed and the stopped turn is being looked for
   const [checking, setChecking] = useState(false); // the connection dropped mid-reply and the turn is being looked for
@@ -24,11 +28,25 @@ export function useChatSend({ text, setText, model, imagesBlocked, chosen, price
     sendingRef.current = true; setBusy(true); setError(null); setText('');
     let thread = active; let created = false; const pending = `pending-${Date.now()}`;
     const knownIds = new Set(messages.map((x) => x.id)); let jobId = null; // to tell this turn from the ones already on screen
+    // The person can open another chat, or press New chat, before this send ends. Its text, its notice and its bubbles
+    // belong to the chat it was sent in (chatSendHome.js): they reach the screen only while that chat is the one on it.
+    const v = view.current;
+    const at = () => sendHome(v, thread ? thread.id : null);
+    const tell = (notice) => { const { home, here } = at(); if (here) setError(notice); else hold(v, home, notice); };
+    const reload = async () => at().here && open(thread.id); // false when the chat was not read: it is not on screen, or the read failed
+    // The chat list is read again wherever the person is. A read that fails says so only in the send's own chat.
+    const relist = async () => { if (at().here) return refreshThreads(); try { setThreads((await chatApi.threads()).threads); } catch { /* the list stays as it was */ } };
+    // A closed chat or a signed-out reader is about the whole page. Any other refusal is about this message.
+    const failed = (e) => { if (at().here || loadFailure(e) !== 'failed') fail(e); else tell(chatErrorCopy(e?.code)); };
     // Nothing usable came back: take the bubbles away and give the text back. A chat made for this message goes too, but
     // only when the turn is known to be over. A turn that may still be saved needs its chat.
     const giveBack = (over) => {
-      setMessages((m) => m.filter((x) => x.id !== pending && x.id !== `u-${pending}`)); setText(content);
-      if (over && created) { chatApi.remove(thread.id).catch(() => {}); setThreads((ts) => ts.filter((t) => t.id !== thread.id)); setActive(null); }
+      setMessages((m) => m.filter((x) => x.id !== pending && x.id !== `u-${pending}`));
+      if (over && created) { chatApi.remove(thread.id).catch(() => {}); setThreads((ts) => ts.filter((t) => t.id !== thread.id)); if (forget(v, thread.id)) setActive(null); }
+      const { home, here, showing } = at();
+      saveDraft(home, content);         // straight into its chat's stored draft (New chat's, when its chat is gone): it waits there
+      if (showing) setText(content);    // and into the box, when that chat is the one shown
+      if (!here) att.clear();           // elsewhere, or leaving: the images cannot wait with it, and must not go out with another chat's message
     };
     let hadText = false; // some of the reply reached the screen
     let started = false; // the `start` event arrived: the Credits have been debited
@@ -47,9 +65,11 @@ export function useChatSend({ text, setText, model, imagesBlocked, chosen, price
         if (instr.trim()) {
           try { const r = await chatApi.patch(thread.id, { system_prompt: instr }); thread = { ...thread, ...r.thread }; } catch { /* starts without */ }
         }
-        setActive(thread); setThreads((ts) => [thread, ...ts]);
+        // Still on the chat that had not started: it becomes this one. If another chat was opened meanwhile, this one only joins the list.
+        if (onScreen(v, NEW_CHAT)) { ask(v, thread.id); land(v, thread.id); setActive(thread); }
+        setThreads((ts) => [thread, ...ts]);
       }
-      setMessages((m) => [...m, { id: `u-${pending}`, role: 'user', content, status: 'complete', credits: 0, attachments: att.items.map(() => ({ type: 'image' })) }, { id: pending, role: 'assistant', content: '', status: 'streaming', credits: 0 }]);
+      if (at().here) setMessages((m) => [...m, { id: `u-${pending}`, role: 'user', content, status: 'complete', credits: 0, attachments: att.items.map(() => ({ type: 'image' })) }, { id: pending, role: 'assistant', content: '', status: 'streaming', credits: 0 }]);
       const ac = new AbortController(); abortRef.current = ac;
       let outcome = null; let streamError = null;
       const r = await sendTurn({
@@ -62,54 +82,55 @@ export function useChatSend({ text, setText, model, imagesBlocked, chosen, price
           if (ev === 'done') outcome = d;
         },
       });
-      if (r.replay) { await open(thread.id); return; }
+      if (r.replay) { await reload(); return; }
       if (outcome && (outcome.status === 'failed' || (outcome.status === 'canceled' && !outcome.credits_charged && !outcome.message_id))) {
         // Nothing usable came back and the Credits were returned.
         giveBack(true);
-        if (streamError) setError(chatErrorCopy(streamError));
+        if (streamError) tell(chatErrorCopy(streamError));
       } else {
         att.clear();                                 // sent: the images are spent, so the next reply starts clean
-        if (streamError) setError(chatErrorCopy(streamError));
-        await open(thread.id);                       // the saved messages, with their real status and price
-        if (streamError === 'reply_not_saved') setError(chatErrorCopy(streamError)); // open() clears the notice, or replaces it when the chat is gone
+        if (streamError) tell(chatErrorCopy(streamError));
+        await reload();                              // the saved messages, with their real status and price
+        if (streamError === 'reply_not_saved') tell(chatErrorCopy(streamError)); // open() clears the notice, or replaces it when the chat is gone
       }
-      await refreshThreads();
+      await relist();
     } catch (e) {
       if (e?.name === 'AbortError') {
         // Stop. The server saves the stopped turn a moment after the browser lets go, so a reload at once can come back
         // without it. The question and the text so far stay on screen while the turn is looked for.
         setStopping(true); setMessages((m) => m.map((x) => (x.id === pending ? { ...x, status: 'saving' } : x)));
         const outcome = await chatApi.settleStop({ threadId: thread.id, jobId, text: content, knownIds });
-        await refreshThreads();                                          // first: a notice set below must not be replaced
+        await relist();                                                  // first: a notice set below must not be replaced
         if (outcome === 'saved' || outcome === 'unsaved') {
-          att.clear(); await open(thread.id);                            // the saved messages, with their real status and price
-          if (outcome === 'unsaved') setError(chatErrorCopy('reply_not_saved')); // charged, but it could not be stored: say so, after open()
+          att.clear(); await reload();                                   // the saved messages, with their real status and price
+          if (outcome === 'unsaved') tell(chatErrorCopy('reply_not_saved')); // charged, but it could not be stored: say so, after open()
         } else if (outcome === 'nothing') giveBack(true);                // nothing was produced and the Credits came back
         else if (!hadText) {
           // Not settled, and no text had arrived: Stop came before `start` (no job to ask) or before the first words (the job
           // had not ended). There is nothing on screen to keep, so the message goes back. But a reply may still be saved:
           // the chat stays for it, and the notice says so.
-          giveBack(false); setError(chatErrorCopy('stop_unsure'));
+          giveBack(false); tell(chatErrorCopy('stop_unsure'));
         } else {
           // Still being saved when the tries ran out: the text stays on screen and the notice says so.
-          att.clear(); setError(chatErrorCopy('stop_saving'));
+          att.clear(); tell(chatErrorCopy('stop_saving'));
         }
       } else if (started) {
         // The stream broke after the Credits moved. The server treats a dropped connection like Stop and saves the turn some time
         // after the break, so it is looked for as after Stop. Only a job that kept nothing gives the message back or deletes the chat.
         setChecking(true); setMessages((m) => m.map((x) => (x.id === pending ? { ...x, status: 'lost' } : x)));
         const outcome = await chatApi.settleStop({ threadId: thread.id, jobId, text: content, knownIds });
-        await refreshThreads();                                          // first: the notice set below must not be replaced
-        const reloaded = (outcome === 'saved' || outcome === 'unsaved') && await open(thread.id); // the saved messages, with their real status and price
+        await relist();                                                  // first: the notice set below must not be replaced
+        const reloaded = (outcome === 'saved' || outcome === 'unsaved') && await reload(); // the saved messages, with their real status and price
         if (outcome === 'nothing') giveBack(true); else att.clear();     // kept nothing: the message goes back, images too. Otherwise neither is offered again
         if (!reloaded) setMessages((m) => m.filter((x) => x.id !== pending || x.content)); // not settled, or still offline: the text that arrived stays
-        setError(chatErrorCopy(lostNotice(outcome, reloaded)));          // last: open() clears the notice
+        // Last: open() clears the notice. One held for a chat that is not on screen is read after that chat is opened, which reloads it.
+        tell(chatErrorCopy(lostNotice(outcome, reloaded || !at().here)));
       } else {
-        setMessages((m) => m.filter((x) => x.id !== pending && x.id !== `u-${pending}`)); setText(content);
-        if (e instanceof GatewayError && e.code === 'insufficient_balance') setError(chatErrorCopy(e.code, { credits: price }));
-        else if (e instanceof Error && e.message === 'image_unreadable') setError(chatErrorCopy('image_unreadable'));
-        else fail(e);
-        if (created && thread) { chatApi.remove(thread.id).catch(() => {}); setThreads((ts) => ts.filter((t) => t.id !== thread.id)); setActive(null); }
+        // The turn never started and nothing was charged: the message goes back, and a chat made for it goes too.
+        giveBack(true);
+        if (e instanceof GatewayError && e.code === 'insufficient_balance') tell(chatErrorCopy(e.code, { credits: price }));
+        else if (e instanceof Error && e.message === 'image_unreadable') tell(chatErrorCopy('image_unreadable'));
+        else failed(e);
       }
     } finally { setBusy(false); setProgress(null); setStopping(false); setChecking(false); sendingRef.current = false; abortRef.current = null; }
   }

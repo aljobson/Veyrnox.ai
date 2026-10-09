@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { GatewayError, gatewayFetch } from '../../_lib/gateway';
+import { gatewayFetch } from '../../_lib/gateway';
 import { getStoredUserId } from '../../../lib/authClient';
 import { chatApi, chatErrorCopy } from '../../_lib/chatApi';
 import { attachmentLabel } from '../../_lib/chatImages';
@@ -23,11 +23,13 @@ import { useChatSend } from './useChatSend';
 import { ALL_CHATS } from '../../_lib/chatFolders';
 import { defaultModel } from '../../_lib/chatModels';
 import { CHAT_SCREEN_COPY, chatScreen, loadFailure } from '../../_lib/chatScreen';
+import { ask, forget, giveUp, land, newChatView } from '../../_lib/chatSendHome';
 
 const credits = (n) => `${n} Credit${n === 1 ? '' : 's'}`;
 const MAX_TEXT = 8000;
 const MAX_PROMPT = 4000;
 const store = () => { try { return window.localStorage; } catch { return null; } };
+const saveDraft = (chatId, text) => writeDraft(store(), getStoredUserId(), chatId, text);
 // About three words for every four tokens, rounded to ten, from the chosen model's own reply cap.
 const wordsFor = (tokens) => Math.round(((tokens || 1024) * 0.75) / 10) * 10;
 // A reply still arriving, or stopped or cut off and not yet read back from the server: it has no price and nothing to star.
@@ -81,6 +83,9 @@ export function ChatWorkspace() {
   const [instr, setInstr] = useState('');
   const [saved, setSaved] = useState(false);
   const endRef = useRef(null);
+  // Which chat is on screen and which was last pressed (chatSendHome.js): a send that ends for another chat leaves this one alone.
+  const chatView = useRef(null);
+  if (chatView.current === null) chatView.current = newChatView();
 
   const fail = useCallback((e) => {
     const why = loadFailure(e);
@@ -105,7 +110,7 @@ export function ChatWorkspace() {
   }, [fail, attempt]);
   useEffect(() => { endRef.current?.scrollIntoView({ block: 'end' }); }, [messages]);
   // The unsent text follows the chat it was typed in, for the user who typed it; sending or clearing it forgets it.
-  useEffect(() => { writeDraft(store(), getStoredUserId(), active?.id ?? NEW_CHAT, text); }, [text, active?.id]);
+  useEffect(() => { saveDraft(active?.id ?? NEW_CHAT, text); }, [text, active?.id]);
 
   const model = models.find((x) => x.id === (active?.model_id ?? draftModel)) || defaultModel(models) || models[0];
   // An option counts only if the chosen model offers it; the price is the model's base plus each extra chosen.
@@ -123,13 +128,17 @@ export function ChatWorkspace() {
   const freeLeft = freeLeftFor(freeMap, model?.id);
   const isFree = freeLeft > 0 && !researchOn && !chosen.thinking && !chosen.web && !hasImages;
   const open = async (id) => {
+    ask(chatView.current, id);
     try {
       const r = await chatApi.get(id);
-      setPersonaId(''); setActive(r.thread); setSkillId(''); setMessages(r.messages); setInstr(r.thread.system_prompt || ''); setError(null); setDrawer(false);
+      if (chatView.current.asked !== id) return false; // another chat was pressed while this one was read: it is the one to show
+      setPersonaId(''); setActive(r.thread); setSkillId(''); setMessages(r.messages); setInstr(r.thread.system_prompt || ''); setError(land(chatView.current, id)); setDrawer(false);
       setText(readDraft(store(), getStoredUserId(), r.thread.id)); setStars(readStars(store(), getStoredUserId(), r.thread.id)); setStarredOnly(false); return true;
-    } catch (e) { fail(e); return false; }
+    } catch (e) { giveUp(chatView.current, id); fail(e); return false; }
   };
-  const blank = () => { setPersonaId(''); setActive(null); setSkillId(''); setMessages([]); setInstr(''); setError(null); setDrawer(false); setText(readDraft(store(), getStoredUserId(), NEW_CHAT)); setStars([]); setStarredOnly(false); };
+  // A chat that has not started. land() gives the notice held for it: one about a message whose chat no longer exists.
+  const clear = () => { setPersonaId(''); setActive(null); setSkillId(''); setMessages([]); setInstr(''); setError(land(chatView.current, NEW_CHAT)); setDrawer(false); setText(readDraft(store(), getStoredUserId(), NEW_CHAT)); setStars([]); setStarredOnly(false); };
+  const blank = () => { ask(chatView.current, NEW_CHAT); clear(); };
   const star = (id) => { if (active) setStars(toggleStar(store(), getStoredUserId(), active.id, id)); };
   const shown = starredOnly ? messages.filter((x) => x.role === 'assistant' && stars.includes(x.id)) : messages;
   const patch = async (id, body) => {
@@ -141,7 +150,7 @@ export function ChatWorkspace() {
     } catch (e) { fail(e); return false; }
   };
   const remove = async (id) => {
-    try { await chatApi.remove(id); setThreads((ts) => ts.filter((t) => t.id !== id)); if (active?.id === id) blank(); } catch (e) { fail(e); }
+    try { await chatApi.remove(id); setThreads((ts) => ts.filter((t) => t.id !== id)); if (forget(chatView.current, id)) clear(); } catch (e) { fail(e); }
   };
   const selectModel = (id) => (active ? patch(active.id, { model_id: id }) : setDraftModel(id));
   // Choosing a persona fills the draft of a chat that has not started: its instructions, its model if still offered, and its options.
@@ -235,7 +244,7 @@ export function ChatWorkspace() {
   // Sending, and every way a send can end, is its own hook (useChatSend.js): this file is kept under 500 lines.
   const { send, stop, busy, stopping, checking, progress } = useChatSend({
     text, setText, model, imagesBlocked, chosen, price, active, setActive, messages, setMessages, setThreads, setError,
-    att, limits, draftModel, folders, folder, instr, open, refreshThreads, fail,
+    att, limits, draftModel, folders, folder, instr, open, refreshThreads, fail, view: chatView, saveDraft,
   });
 
   if (!ready) return <div className="p-8 text-sm text-vx-fg-muted" role="status">Loading</div>;

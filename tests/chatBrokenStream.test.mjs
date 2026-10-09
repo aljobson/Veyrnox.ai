@@ -14,6 +14,9 @@ const screen = read('../app/veyrnox/_components/chat/ChatWorkspace.js');
 // send() and its endings moved out of ChatWorkspace.js into the useChatSend hook, unchanged and at the same indentation, to
 // keep the screen file under 500 lines. The patterns that pin send() read the hook; the ones that pin markup read the screen.
 const sender = read('../app/veyrnox/_components/chat/useChatSend.js');
+// Since the person can open another chat before a send ends (tests/chatSendHome.test.mjs), an ending no longer calls
+// open(), setError() or refreshThreads() itself. It calls reload(), tell() and relist(), which do the same while the
+// chat the message was sent in is on screen and leave the screen alone when it is not. The patterns below name those.
 const api = read('../app/veyrnox/_lib/chatApi.js');
 
 /** The words chatErrorCopy returns for one code. */
@@ -52,7 +55,7 @@ test('a stream that breaks after start looks for the turn first, and does not re
     const { brokenAfterStart } = catchBranches();
     const mark = brokenAfterStart.indexOf("status: 'lost'");
     const settle = brokenAfterStart.indexOf('await chatApi.settleStop(');
-    const reload = brokenAfterStart.indexOf('open(thread.id)');
+    const reload = brokenAfterStart.indexOf('await reload()');
     assert.ok(mark >= 0 && settle > mark, 'the question and the text so far stay on screen, marked, before anything is read');
     assert.ok(reload > settle, 'the chat is reloaded only after the turn was looked for');
     // The same look-up as Stop: the job id from `start`, the sent text, and the ids that were on screen before the send.
@@ -65,14 +68,14 @@ test('a stream that breaks after start looks for the turn first, and does not re
 test('each ending of a broken stream: saved shows the chat, nothing kept gives the text back, unsettled keeps what is on screen', () => {
     const { brokenAfterStart } = catchBranches();
     // The chat list is refreshed before the endings: a notice set by one of them must be the last word.
-    const refresh = brokenAfterStart.indexOf('await refreshThreads();');
+    const refresh = brokenAfterStart.indexOf('await relist();');
     const reload = brokenAfterStart.indexOf('const reloaded = ');
     assert.ok(refresh >= 0 && reload > refresh, 'the list is refreshed first');
     // Giving the text back deletes a chat made for it without waiting. A list read after that could bring the chat back.
     assert.ok(brokenAfterStart.indexOf('giveBack(true)') > refresh, 'and the chat list is read before a chat can be deleted');
     // A turn the server kept (or charged and could not store) is shown by reading the chat again, as after Stop.
     // A turn that is not settled is never reloaded: the chat would come back without the text that is on screen.
-    assert.match(brokenAfterStart, /const reloaded = \(outcome === 'saved' \|\| outcome === 'unsaved'\) && await open\(thread\.id\);/);
+    assert.match(brokenAfterStart, /const reloaded = \(outcome === 'saved' \|\| outcome === 'unsaved'\) && await reload\(\);/);
     // The job failed and nothing was stored: the Credits came back, so this is the "nothing came back" path. It is the
     // only ending that gives the message back or deletes a chat made for it.
     assert.match(brokenAfterStart, /\n {8}if \(outcome === 'nothing'\) giveBack\(true\);/);
@@ -83,20 +86,25 @@ test('each ending of a broken stream: saved shows the chat, nothing kept gives t
     // Not settled, or the chat could not be read (still offline): the text that arrived stays, and a reply bubble with
     // no text in it goes, so nothing is left saying it is checking. Nothing here reads the chat again.
     assert.match(brokenAfterStart, /\n {8}if \(!reloaded\) setMessages\(\(m\) => m\.filter\(\(x\) => x\.id !== pending \|\| x\.content\)\);/);
-    assert.equal(brokenAfterStart.split('open(thread.id)').length - 1, 1, 'the chat is read again in one place only, and never for a turn that is not settled');
+    assert.equal(brokenAfterStart.split('reload()').length - 1, 1, 'the chat is read again in one place only, and never for a turn that is not settled');
+    assert.doesNotMatch(brokenAfterStart, /open\(thread/, 'and never by opening it directly');
 });
 
 test('the person is told what happened last, after the reload that would clear the notice', () => {
     const { brokenAfterStart } = catchBranches();
     const lines = brokenAfterStart.split('\n').filter((l) => l.trim() && !l.trim().startsWith('//'));
-    assert.match(lines[lines.length - 1], /^ {8}setError\(chatErrorCopy\(lostNotice\(outcome, reloaded\)\)\);/, 'the notice is the last thing the branch does');
-    assert.equal(brokenAfterStart.split('setError(').length - 1, 1, 'and it is set once');
+    // `reloaded || !at().here`: a notice held for a chat that is not on screen is read after that chat has been opened
+    // again, which reloads it (tests/chatSendHome.test.mjs). In the chat itself the second half is false: as before.
+    assert.match(lines[lines.length - 1], /^ {8}tell\(chatErrorCopy\(lostNotice\(outcome, reloaded \|\| !at\(\)\.here\)\)\);/, 'the notice is the last thing the branch does');
+    assert.equal(brokenAfterStart.split('tell(').length - 1, 1, 'and it is set once');
+    assert.doesNotMatch(brokenAfterStart, /setError\(/, 'never straight onto whatever chat is on screen');
 });
 
 test('open() says whether the chat was read, so a failed reload is not taken for the saved turn on screen', () => {
     const open = /\n {2}const open = async \(id\) => \{\n([\s\S]*?)\n {2}\};\n/.exec(screen);
     assert.ok(open, 'the screen has open()');
-    assert.match(open[1], /return true;\n {4}\} catch \(e\) \{ fail\(e\); return false; \}$/);
+    // The catch also takes back the press, so a chat that could not be read is not taken for the one asked for.
+    assert.match(open[1], /return true;\n {4}\} catch \(e\) \{ giveUp\(chatView\.current, id\); fail\(e\); return false; \}$/);
 });
 
 test('the notice follows what the job said, and never claims more than is known', () => {
@@ -156,14 +164,21 @@ test('while the turn is looked for the bubble says the connection was lost, and 
 });
 
 test('only a turn that never started deletes the new chat and gives the text back', () => {
-    const { neverStarted } = catchBranches();
-    assert.match(neverStarted, /setText\(content\)/);
-    assert.match(neverStarted, /if \(created && thread\) \{ chatApi\.remove\(thread\.id\)\.catch\(\(\) => \{\}\);/);
-    // In the whole of send(), a chat is deleted in two places only: here, and in giveBack(), for a turn that is known
-    // to be over with nothing kept and the Credits returned (`done` said so, or the job did after a Stop or a
-    // dropped connection).
+    const { stopped, brokenAfterStart, neverStarted } = catchBranches();
+    // It used to put the text back and delete the chat with its own lines. It now calls giveBack(true), the one place
+    // that decides where given-back text goes, so that the text is not put in the box of another chat the person has
+    // opened (tests/chatSendHome.test.mjs). What it does while the person stays in the chat is the same.
+    assert.match(neverStarted, /\n {8}giveBack\(true\);\n/);
+    assert.doesNotMatch(neverStarted, /setText\(|chatApi\.remove|setActive\(/);
+    // In the whole of send(), a chat is deleted in one place only: giveBack(true), for a turn that is known to be over
+    // with nothing kept (`done` said so, the job did after a Stop or a dropped connection, or it never started).
     const send = sender.slice(sender.indexOf('async function send()'), sender.indexOf('\n  return { send,'));
-    assert.equal(send.split('chatApi.remove(thread.id)').length - 1, 2);
+    assert.equal(send.split('chatApi.remove(thread.id)').length - 1, 1);
+    // Each ending that may still be saved and charged calls it only for a job that kept nothing.
+    assert.equal(stopped.split('giveBack(true)').length - 1, 1);
+    assert.match(stopped, /\} else if \(outcome === 'nothing'\) giveBack\(true\);/);
+    assert.equal(brokenAfterStart.split('giveBack(true)').length - 1, 1);
+    assert.match(brokenAfterStart, /if \(outcome === 'nothing'\) giveBack\(true\);/);
 });
 
 test('the route header no longer calls DELETE a soft delete', () => {
