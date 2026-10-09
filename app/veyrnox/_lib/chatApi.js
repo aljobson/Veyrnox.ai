@@ -82,6 +82,15 @@ export function chatErrorCopy(code, { credits } = {}) {
   }
 }
 
+/**
+ * A message that was refused before it started, in a chat that still holds a warning that the message before it used
+ * Credits or may (chatLocal.js). Why this one did not go comes first. The warning follows, marked as the earlier one,
+ * so that "was not sent" is not read as "nothing can be charged".
+ */
+export function chatRefusedCopy(code, extra, warning) {
+  return `${chatErrorCopy(code, extra)} Before that: ${chatErrorCopy(warning.code, warning)}`;
+}
+
 export { makeIdempotencyKey, lostNotice };
 
 /**

@@ -18,6 +18,10 @@ export const MAX_STARS = 200;
 export const MAX_NOTICE = 120; // characters of one stored notice: a code, and the number its words may need
 const MAX_NOTICE_CREDITS = 1_000_000;
 const UNKNOWN_NOTICE = 'unknown';
+// Notices that say Credits were used, or still may be, by a message the chat does not show: Stop or a dropped
+// connection with the turn not settled, and a reply that was charged but could not be stored. Every other notice is
+// about a message that is settled, and either used no Credits or is in the chat with its price.
+const CREDITS_WARNINGS = new Set(['stop_unsure', 'stop_saving', 'connection_lost', 'reply_not_saved']);
 const ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
 
 const ok = (id) => typeof id === 'string' && ID_RE.test(id);
@@ -79,6 +83,17 @@ export function readNotice(storage, userId, chatId) {
 }
 
 /**
+ * The notice waiting for a chat when it is a warning about Credits (CREDITS_WARNINGS), else null. A later message
+ * that is refused before it starts was not charged and says nothing about the one before it, so the send asks this
+ * first and leaves such a warning kept (useChatSend.js).
+ * @returns {{code: string}|null}
+ */
+export function readCreditsWarning(storage, userId, chatId) {
+  const n = readNotice(storage, userId, chatId);
+  return n && CREDITS_WARNINGS.has(n.code) ? n : null;
+}
+
+/**
  * Keep one notice for a chat. A later one replaces it. A code that cannot be kept is kept as 'unknown', which reads
  * as the general failure: something ended badly, and the chat must not look as if nothing did.
  */
@@ -91,7 +106,7 @@ export function writeNotice(storage, userId, chatId, code, { credits } = {}) {
   } catch { /* blocked or full: nothing is kept, and the notice is on screen only */ }
 }
 
-/** Forget a chat's notice: a message was sent from that chat, or the chat was deleted. */
+/** Forget a chat's notice: a later message from that chat went out or ended with a notice of its own, or the chat was deleted. */
 export function clearNotice(storage, userId, chatId) {
   const key = keyFor(NOTICE_PREFIX, userId, chatId);
   if (!key) return;

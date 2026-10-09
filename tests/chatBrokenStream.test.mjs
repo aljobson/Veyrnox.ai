@@ -39,7 +39,8 @@ function catchBranches() {
 
 test('the screen remembers that the start event arrived, which is when the Credits have been debited', () => {
     // The same handler also keeps the job id, which the Stop branch uses.
-    assert.match(sender, /if \(ev === 'start'\) \{ started = true; [^\n]*setProgress\(null\); \}/);
+    // And, last, forgets the notice kept for the message before this one (tests/chatSendHome.test.mjs).
+    assert.match(sender, /if \(ev === 'start'\) \{ started = true; [^\n]*setProgress\(null\); forgetEarlier\(\); \}/);
     // Declared just before send()'s try, so the catch block can read it.
     assert.match(sender, /\n    let started = false;[^\n]*\n    try \{\n/);
     // On the server, the debit comes before the start event.

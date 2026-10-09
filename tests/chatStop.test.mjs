@@ -195,7 +195,8 @@ test('Stop no longer reloads the chat at once: the bubble is marked, then the tu
 });
 
 test('the start event gives the job id, and the ids already on screen are noted before the send', () => {
-    assert.match(sender, /if \(ev === 'start'\) \{ started = true; jobId = d\.job_id; setProgress\(null\); \}/);
+    // It also forgets the notice kept for the message before this one, now that this one has gone out (tests/chatSendHome.test.mjs).
+    assert.match(sender, /if \(ev === 'start'\) \{ started = true; jobId = d\.job_id; setProgress\(null\); forgetEarlier\(\); \}/);
     assert.match(sender, /const knownIds = new Set\(messages\.map\(\(x\) => x\.id\)\);/);
 });
 

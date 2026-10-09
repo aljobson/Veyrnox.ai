@@ -1,0 +1,96 @@
+// The harness of tests/chatSendFlow.test.mjs and tests/chatSendRefused.test.mjs: send() run for real, with the screen
+// and the network faked (ADR-0067). The hook's source is loaded with its imports handed in: the real plain modules
+// (where an ending lands, which notice, how a failure is sorted, the notice store) and fakes for React, the API and
+// the screen. Nothing here renders, so what the screen's own open() does with a chat is not covered:
+// tests/chatSendHome.test.mjs pins that. Not a test file itself: its name keeps it out of `npm test`'s pattern.
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { NEW_CHAT, addToDraft, clearNotice, readCreditsWarning, readDraft, readNotice, writeDraft, writeNotice } from '../app/veyrnox/_lib/chatLocal.js';
+import { loadFailure } from '../app/veyrnox/_lib/chatScreen.js';
+import { lostNotice } from '../app/veyrnox/_lib/chatStop.js';
+import { ask, forget, land, leave, newChatView, onScreen, sendHome } from '../app/veyrnox/_lib/chatSendHome.js';
+
+const source = readFileSync(new URL('../app/veyrnox/_components/chat/useChatSend.js', import.meta.url), 'utf8');
+const imported = [...source.matchAll(/^import \{ ([^}]+) \} from /gm)].flatMap((m) => m[1].split(',').map((n) => n.trim()));
+const body = source.replace(/^'use client';\n/, '').replace(/^import [^\n]+\n/gm, '').replace('export function useChatSend', 'return function useChatSend');
+
+export class GatewayError extends Error {
+    constructor(message, { status, code } = {}) { super(message); this.status = status; this.code = code; }
+}
+export const stopped = () => Object.assign(new Error('aborted'), { name: 'AbortError' });
+export const A = { id: 'chat-a', model_id: 'm' };
+export const TEXT = 'Describe a lighthouse.';
+export const ME = 'user-a';
+// The notices that say Credits were used, or still may be, by a message the chat does not show. Written out here, not
+// imported: tests/chatLocal.test.mjs holds the store to the same four.
+export const WARNINGS = ['stop_unsure', 'stop_saving', 'connection_lost', 'reply_not_saved'];
+export const memory = () => { const m = new Map(); return { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, v), removeItem: (k) => m.delete(k), key: (i) => [...m.keys()][i], get length() { return m.size; } }; };
+/** What the screen reads when a chat arrives on it after a page reload: its stored draft and its stored notice. */
+export const afterReload = (storage, chat) => ({ box: readDraft(storage, ME, chat), notice: readNotice(storage, ME, chat) });
+
+/**
+ * One send. `turn` plays the server: it gets sendTurn's arguments and the `person`, emits events, and returns or throws.
+ * `person` moves about the screen the way the real one does: a press notes the chat asked for, and it is shown when
+ * its messages arrive.
+ */
+export async function run({ active = null, turn, settle = 'pending', listDown = false, images = [], whileMaking = () => {}, kept = {}, text = TEXT, storage = null, making = null, upload = async () => 'k', prepare = async (f) => f }) {
+    const view = newChatView();
+    if (active) { ask(view, active.id); land(view, active.id); }
+    const log = { notices: [], box: [], saved: {}, added: {}, opened: [], shownOnOpen: [], deleted: [], activeSet: [], imagesCleared: 0, refreshed: 0, quietReads: 0, failures: [], kept: { ...kept }, keptWith: {}, dropped: [] };
+    let onScreenMessages = [];
+    const person = {
+        press: (id) => ask(view, id),
+        opens: (id) => { ask(view, id); land(view, id); onScreenMessages = []; },
+        leavesThePage: () => leave(view),
+        deletes: (id) => forget(view, id),
+    };
+    const deps = {
+        useState: (initial) => [initial, () => {}], useRef: (initial) => ({ current: initial }),
+        GatewayError, NEW_CHAT, loadFailure, lostNotice, ask, forget, land, onScreen, sendHome,
+        chatErrorCopy: (code) => code, chatRefusedCopy: (code, _extra, warning) => `${code}, and before that ${warning.code}`,
+        makeIdempotencyKey: () => 'key', uploadChatImage: upload, prepareImage: prepare,
+        sendTurn: (args) => turn(args, person),
+        chatApi: {
+            create: making || (async () => { whileMaking(person); return { thread: { id: 'made', model_id: 'm' } }; }), move: async () => ({}), patch: async () => ({ thread: {} }),
+            remove: (id) => { log.deleted.push(id); return Promise.resolve(); },
+            threads: async () => { log.quietReads += 1; if (listDown) throw new Error('offline'); return { threads: [] }; },
+            settleStop: async () => settle,
+        },
+    };
+    assert.deepEqual(imported.filter((n) => !(n in deps)), [], 'every name the hook imports is handed in here');
+    const useChatSend = new Function('deps', `const { ${Object.keys(deps).join(', ')} } = deps;\n${body}`)(deps);
+    const { send } = useChatSend({
+        // With `storage`, the box is stored under the chat on screen as it changes, as the screen's draft effect does.
+        text, setText: (t) => { log.box.push(t); if (storage) writeDraft(storage, ME, view.shown, t); }, model: { id: 'm' }, imagesBlocked: false, chosen: {}, price: 2,
+        active, setActive: (t) => log.activeSet.push(t ? t.id : null), messages: [],
+        setMessages: (f) => { onScreenMessages = typeof f === 'function' ? f(onScreenMessages) : f; },
+        setThreads: () => {}, setError: (n) => log.notices.push(n),
+        att: { items: images, clear: () => { log.imagesCleared += 1; } }, limits: { maxEdge: 2048 }, draftModel: 'm', folders: null, folder: 'all', instr: '',
+        // The screen's open(): here it only records the call, and the notice the real one would show with the chat, and says the chat was read.
+        open: async (id) => { log.opened.push(id); log.shownOnOpen.push(storage ? readNotice(storage, ME, id) : (log.kept[id] ?? null)); ask(view, id); land(view, id); return true; },
+        refreshThreads: async () => { log.refreshed += 1; }, fail: (e) => log.failures.push(e.code || e.message),
+        chatView: { current: view }, saveDraft: (id, t) => { log.saved[id] = t; }, addDraft: (id, t) => { log.added[id] = t; },
+        keepNotice: (id, code, extra) => { log.kept[id] = code; log.keptWith[id] = extra; },
+        dropNotice: (id) => { log.dropped.push(id); delete log.kept[id]; },
+        heldWarning: (id) => (WARNINGS.includes(log.kept[id]) ? { code: log.kept[id] } : null),
+        // With `storage`, the five go to the real store instead, written and read the way the screen does it (ChatWorkspace.js).
+        ...(storage && {
+            saveDraft: (id, t) => writeDraft(storage, ME, id, t), addDraft: (id, t) => addToDraft(storage, ME, id, t),
+            keepNotice: (id, code, extra) => writeNotice(storage, ME, id, code, extra), dropNotice: (id) => clearNotice(storage, ME, id),
+            heldWarning: (id) => readCreditsWarning(storage, ME, id),
+        }),
+    });
+    await send();
+    return { log, view, bubbles: () => onScreenMessages.map((m) => `${m.role}:${m.status}`), kept: () => ({ ...log.kept }) };
+}
+
+/** Server scripts. `meanwhile` is what the person does after the reply has started. */
+export const reply = (meanwhile = () => {}, done = { status: 'completed', credits_charged: 2, message_id: 'm1' }) => async ({ onEvent }, person) => {
+    onEvent('start', { job_id: 'job-1' }); onEvent('delta', { text: 'A lamp' }); meanwhile(person); onEvent('done', done);
+    return { replay: false };
+};
+export const stopBeforeText = (meanwhile = () => {}) => async ({ onEvent }, person) => { onEvent('start', { job_id: 'job-1' }); meanwhile(person); throw stopped(); };
+export const stopAfterText = (meanwhile = () => {}) => async ({ onEvent }, person) => { onEvent('start', { job_id: 'job-1' }); onEvent('delta', { text: 'A lamp' }); meanwhile(person); throw stopped(); };
+export const cutBeforeText = (meanwhile = () => {}) => async ({ onEvent }, person) => { onEvent('start', { job_id: 'job-1' }); meanwhile(person); throw new TypeError('network error'); };
+export const refused = (error, meanwhile = () => {}) => async (_args, person) => { meanwhile(person); throw error; };
+export const toB = (person) => person.opens('chat-b');

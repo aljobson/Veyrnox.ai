@@ -5,7 +5,7 @@ import { gatewayFetch } from '../../_lib/gateway';
 import { getStoredUserId } from '../../../lib/authClient';
 import { chatApi, chatErrorCopy } from '../../_lib/chatApi';
 import { attachmentLabel } from '../../_lib/chatImages';
-import { NEW_CHAT, addToDraft, clearNotice, readDraft, readNotice, writeDraft, writeNotice, readStars, toggleStar } from '../../_lib/chatLocal';
+import { NEW_CHAT, addToDraft, clearNotice, readCreditsWarning, readDraft, readNotice, writeDraft, writeNotice, readStars, toggleStar } from '../../_lib/chatLocal';
 import { useFreeAllowance } from '../../_lib/useFreeAllowance';
 import { freeLeftFor } from '../../_lib/freeAllowance';
 import { researchProgressLabel } from '../../_lib/chatResearchUi';
@@ -32,9 +32,10 @@ const store = () => { try { return window.localStorage; } catch { return null; }
 const saveDraft = (chatId, text) => writeDraft(store(), getStoredUserId(), chatId, text);
 const addDraft = (chatId, text) => addToDraft(store(), getStoredUserId(), chatId, text);
 // What the last message sent from a chat ended with waits with that chat, as a code (chatLocal.js). It is put into words here each
-// time the chat is opened, a page reload included, until a message is sent from that chat or the chat is deleted.
+// time the chat is opened, a page reload included, until a later message goes out from that chat or the chat is deleted.
 const keepNotice = (chatId, code, extra) => writeNotice(store(), getStoredUserId(), chatId, code, extra);
 const dropNotice = (chatId) => clearNotice(store(), getStoredUserId(), chatId);
+const heldWarning = (chatId) => readCreditsWarning(store(), getStoredUserId(), chatId);
 const waiting = (chatId) => { const n = readNotice(store(), getStoredUserId(), chatId); return n ? chatErrorCopy(n.code, n) : null; };
 // About three words for every four tokens, rounded to ten, from the chosen model's own reply cap.
 const wordsFor = (tokens) => Math.round(((tokens || 1024) * 0.75) / 10) * 10;
@@ -252,7 +253,7 @@ export function ChatWorkspace() {
   // Sending, and every way a send can end, is its own hook (useChatSend.js): this file is kept under 500 lines.
   const { send, stop, busy, stopping, checking, progress } = useChatSend({
     text, setText, model, imagesBlocked, chosen, price, active, setActive, messages, setMessages, setThreads, setError,
-    att, limits, draftModel, folders, folder, instr, open, refreshThreads, fail, chatView, saveDraft, addDraft, keepNotice, dropNotice,
+    att, limits, draftModel, folders, folder, instr, open, refreshThreads, fail, chatView, saveDraft, addDraft, keepNotice, dropNotice, heldWarning,
   });
 
   if (!ready) return <div className="p-8 text-sm text-vx-fg-muted" role="status">Loading</div>;

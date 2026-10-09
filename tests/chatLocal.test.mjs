@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { addToDraft, readDraft, writeDraft, readStars, toggleStar, readNotice, writeNotice, clearNotice, clearChatLocal, NEW_CHAT, MAX_DRAFT, MAX_STARS, MAX_NOTICE } from '../app/veyrnox/_lib/chatLocal.js';
+import { addToDraft, readDraft, writeDraft, readStars, toggleStar, readNotice, readCreditsWarning, writeNotice, clearNotice, clearChatLocal, NEW_CHAT, MAX_DRAFT, MAX_STARS, MAX_NOTICE } from '../app/veyrnox/_lib/chatLocal.js';
 
 const memory = () => {
   const m = new Map();
@@ -12,6 +12,7 @@ const memory = () => {
 };
 const blocked = { getItem() { throw new Error('blocked'); }, setItem() { throw new Error('blocked'); }, removeItem() { throw new Error('blocked'); } };
 const workspace = readFileSync(new URL('../app/veyrnox/_components/chat/ChatWorkspace.js', import.meta.url), 'utf8');
+const api = readFileSync(new URL('../app/veyrnox/_lib/chatApi.js', import.meta.url), 'utf8');
 const ME = 'user-a';
 /** The one stored notice, as it sits in storage. */
 const rawNotice = (s, chat) => s.keys().find((k) => k.startsWith('veyrnox_chat_notice_') && k.endsWith(`:${chat}`));
@@ -211,6 +212,57 @@ test('a notice with a bad chat id is neither stored nor read', () => {
   assert.equal(s.size(), 0);
 });
 
+// ---- a warning about Credits: the kept notice that a refused message must not replace ----
+// A message that is refused before it starts was not charged, and what it says is about itself. It used to take the
+// place of whatever was kept for the chat, a warning that the message before it may still be saved and use Credits
+// included. The send hook now asks the store whether such a warning is kept (tests/chatSendFlow.test.mjs).
+
+const CREDITS_WARNINGS = ['stop_unsure', 'stop_saving', 'connection_lost', 'reply_not_saved'];
+
+test('a kept notice is read as a warning about Credits only when it is one of the four', () => {
+  const s = memory();
+  for (const code of CREDITS_WARNINGS) {
+    writeNotice(s, ME, 'thread-1', code);
+    assert.deepEqual(readCreditsWarning(s, ME, 'thread-1'), { code }, code);
+  }
+  // Each of these is about a message that is settled: it used no Credits, or the chat itself shows the reply and its
+  // price (`connection_saved`). A later refusal may take its place.
+  for (const code of ['connection_saved', 'connection_refunded', 'insufficient_balance', 'rate_limited', 'turn_not_saved', 'provider_cut_off', 'image_unreadable', 'unknown']) {
+    writeNotice(s, ME, 'thread-1', code, { credits: 2 });
+    assert.equal(readCreditsWarning(s, ME, 'thread-1'), null, code);
+  }
+  assert.equal(readCreditsWarning(s, ME, 'thread-2'), null, 'nothing is kept for this chat');
+  assert.equal(readCreditsWarning(s, ME, NEW_CHAT), null);
+});
+
+test('each of the four says Credits were used or may be, and none says they were not', () => {
+  for (const code of CREDITS_WARNINGS) {
+    const copy = new RegExp(`case '${code}': return (['"])(.+?)\\1;`).exec(api);
+    assert.ok(copy, `chatErrorCopy has words for ${code}`);
+    assert.match(copy[2], /Credits/, code);
+    assert.doesNotMatch(copy[2], /No Credits|no Credits|not be charged/, code);
+  }
+});
+
+test('reading a warning does not forget it, and it passes the same checks as any notice read from storage', () => {
+  const s = memory();
+  writeNotice(s, ME, NEW_CHAT, 'stop_unsure');
+  assert.deepEqual(readCreditsWarning(s, ME, NEW_CHAT), { code: 'stop_unsure' });
+  assert.deepEqual(readNotice(s, ME, NEW_CHAT), { code: 'stop_unsure' }, 'still kept');
+  // Another user's, no user, storage that throws, and something in storage that is not a notice: nothing.
+  assert.equal(readCreditsWarning(s, 'user-b', NEW_CHAT), null);
+  assert.equal(readCreditsWarning(s, null, NEW_CHAT), null);
+  assert.equal(readCreditsWarning(blocked, ME, NEW_CHAT), null);
+  s.setItem(rawNotice(s, NEW_CHAT), 'Stopped before any text arrived.');
+  assert.equal(readCreditsWarning(s, ME, NEW_CHAT), null);
+});
+
+test('a refusal said together with a kept warning: the refusal first, then the warning, marked as the earlier one', () => {
+  // Words are made in one place (chatErrorCopy). The two are joined with words of their own so that "Your message was
+  // not sent" is never read as "so nothing can be charged": the warning is about the message before it.
+  assert.match(api, /\nexport function chatRefusedCopy\(code, extra, warning\) \{\n {2}return `\$\{chatErrorCopy\(code, extra\)\} Before that: \$\{chatErrorCopy\(warning\.code, warning\)\}`;\n\}\n/);
+});
+
 test('the workspace restores a draft on open and clears it only after a send', () => {
   assert.match(workspace, /readDraft\(/);
   assert.match(workspace, /writeDraft\(/);
@@ -220,8 +272,9 @@ test('the workspace restores a draft on open and clears it only after a send', (
 test('the workspace names the stored user on every read and write', () => {
   // Seven since addDraft: text given back to a chat that is not on screen is added to that chat's stored draft.
   // Ten since a chat's notice is stored: it is kept, read and forgotten for the same user as the draft beside it.
-  const users = [...workspace.matchAll(/\b(?:readDraft|writeDraft|addToDraft|readStars|toggleStar|readNotice|writeNotice|clearNotice)\(store\(\), ([^,]+),/g)].map((m) => m[1]);
-  assert.deepEqual(users, Array(10).fill('getStoredUserId()'));
+  // Eleven since the send hook asks whether a warning about Credits is kept before a refusal is told.
+  const users = [...workspace.matchAll(/\b(?:readDraft|writeDraft|addToDraft|readStars|toggleStar|readNotice|readCreditsWarning|writeNotice|clearNotice)\(store\(\), ([^,]+),/g)].map((m) => m[1]);
+  assert.deepEqual(users, Array(11).fill('getStoredUserId()'));
 });
 
 test('the workspace turns a stored notice into words itself, each time it is shown', () => {
@@ -230,4 +283,6 @@ test('the workspace turns a stored notice into words itself, each time it is sho
   assert.match(workspace, /\nconst waiting = \(chatId\) => \{ const n = readNotice\(store\(\), getStoredUserId\(\), chatId\); return n \? chatErrorCopy\(n\.code, n\) : null; \};\n/);
   assert.match(workspace, /\nconst keepNotice = \(chatId, code, extra\) => writeNotice\(store\(\), getStoredUserId\(\), chatId, code, extra\);\n/);
   assert.match(workspace, /\nconst dropNotice = \(chatId\) => clearNotice\(store\(\), getStoredUserId\(\), chatId\);\n/);
+  // The send hook is told whether a warning about Credits is kept for a chat. It gets the record, never words.
+  assert.match(workspace, /\nconst heldWarning = \(chatId\) => readCreditsWarning\(store\(\), getStoredUserId\(\), chatId\);\n/);
 });

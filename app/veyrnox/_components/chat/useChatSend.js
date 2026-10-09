@@ -1,7 +1,7 @@
 'use client';
 import { useRef, useState } from 'react';
 import { GatewayError } from '../../_lib/gateway';
-import { chatApi, chatErrorCopy, lostNotice, makeIdempotencyKey, sendTurn, uploadChatImage } from '../../_lib/chatApi';
+import { chatApi, chatErrorCopy, chatRefusedCopy, lostNotice, makeIdempotencyKey, sendTurn, uploadChatImage } from '../../_lib/chatApi';
 import { prepareImage } from '../../_lib/chatImages';
 import { NEW_CHAT } from '../../_lib/chatLocal';
 import { loadFailure } from '../../_lib/chatScreen';
@@ -13,10 +13,11 @@ import { ask, forget, land, onScreen, sendHome } from '../../_lib/chatSendHome';
  * show and passes in what a send reads and changes; the send's own state lives here.
  * `chatView` is the screen's record of which chat is on it (chatSendHome.js). `saveDraft(chatId, text)` stores a chat's
  * draft; `addDraft` puts text above what is already stored there. `keepNotice(chatId, code, extra)` stores what a chat's
- * last message ended with, beside its draft, and `dropNotice(chatId)` forgets it.
+ * last message ended with, beside its draft, and `dropNotice(chatId)` forgets it. `heldWarning(chatId)` is that notice when
+ * it warns that Credits were used or still may be (chatLocal.js), else null.
  * @returns {{send: () => Promise<void>, stop: () => void, busy: boolean, stopping: boolean, checking: boolean, progress: object|null}}
  */
-export function useChatSend({ text, setText, model, imagesBlocked, chosen, price, active, setActive, messages, setMessages, setThreads, setError, att, limits, draftModel, folders, folder, instr, open, refreshThreads, fail, chatView, saveDraft, addDraft, keepNotice, dropNotice }) {
+export function useChatSend({ text, setText, model, imagesBlocked, chosen, price, active, setActive, messages, setMessages, setThreads, setError, att, limits, draftModel, folders, folder, instr, open, refreshThreads, fail, chatView, saveDraft, addDraft, keepNotice, dropNotice, heldWarning }) {
   const [busy, setBusy] = useState(false);
   const [stopping, setStopping] = useState(false); // Stop was pressed and the stopped turn is being looked for
   const [checking, setChecking] = useState(false); // the connection dropped mid-reply and the turn is being looked for
@@ -28,23 +29,30 @@ export function useChatSend({ text, setText, model, imagesBlocked, chosen, price
     const content = text.trim();
     if (!content || busy || sendingRef.current || !model || imagesBlocked) return;
     sendingRef.current = true; setBusy(true); setError(null); setText('');
-    dropNotice(active ? active.id : NEW_CHAT); // a message is going out from this chat: the notice kept for the one before it no longer applies
     let thread = active; let created = false; const pending = `pending-${Date.now()}`;
     const knownIds = new Set(messages.map((x) => x.id)); let jobId = null; // to tell this turn from the ones already on screen
+    // The notice kept for the chat this message is sent from is about the message before it. It is forgotten once this one is known
+    // to have gone out, or has a notice of its own to keep, and not at the press: a message that is refused first leaves it kept.
+    const from = active ? active.id : NEW_CHAT; let forgotten = false;
+    const forgetEarlier = () => { if (!forgotten) { forgotten = true; dropNotice(from); } };
     // The person can open another chat, or press New chat, before this send ends. Its text, its notice and its bubbles
     // belong to the chat it was sent in (chatSendHome.js): they reach the screen only while that chat is the one on it.
     const v = chatView.current;
     const at = () => sendHome(v, thread ? thread.id : null);
     // What an ending says is kept with its chat, as a code (chatLocal.js): the screen shows it whenever that chat is opened, a
-    // page reload included, until a message is sent from it. It goes on screen now only while that chat is the one on it.
-    const tell = (code, extra) => { const { home, here } = at(); keepNotice(home, code, extra); if (here) setError(chatErrorCopy(code, extra)); };
+    // page reload included, until a later message goes out from it. It goes on screen now only while that chat is the one on it.
+    const tell = (code, extra) => { forgetEarlier(); const { home, here } = at(); keepNotice(home, code, extra); if (here) setError(chatErrorCopy(code, extra)); };
+    // A message that never started was not charged, and what it says is about itself. It does not take the place of a warning that
+    // the message before it used Credits or still may: that warning stays kept, and both are said, this one first.
+    const refuse = (code, extra) => { const { home, here } = at(); const warning = heldWarning(home); if (!warning) tell(code, extra); else if (here) setError(chatRefusedCopy(code, extra, warning)); };
     // False when the chat was not read: it is gone, it is not on screen, or the read failed. It is also read when the person is
     // on their way back to it: the read that is already out may have been answered before this turn was saved.
-    const reload = async () => { const { home, here, coming } = at(); return home === thread.id && (here || coming) && open(thread.id); };
+    // The chat is read for this message, so this message went out: open() must not show the notice kept for the one before it.
+    const reload = async () => { forgetEarlier(); const { home, here, coming } = at(); return home === thread.id && (here || coming) && open(thread.id); };
     // The chat list is read again wherever the person is. A read that fails says so only in the send's own chat.
     const relist = async () => { if (at().here) return refreshThreads(); try { setThreads((await chatApi.threads()).threads); } catch { /* the list stays as it was */ } };
-    // A closed chat or a signed-out reader is about the whole page. Any other refusal is about this message, and is kept with it.
-    const failed = (e) => { if (loadFailure(e) !== 'failed') fail(e); else tell(e?.code); };
+    // A closed chat or a signed-out reader is about the whole page. Any other refusal is about this message, and is told as one.
+    const failed = (e) => { if (loadFailure(e) !== 'failed') fail(e); else refuse(e?.code); };
     // Nothing usable came back: take the bubbles away and give the text back. A chat made for this message goes too, but
     // only when the turn is known to be over. A turn that may still be saved needs its chat.
     const giveBack = (over) => {
@@ -84,7 +92,7 @@ export function useChatSend({ text, setText, model, imagesBlocked, chosen, price
       const r = await sendTurn({
         threadId: thread.id, text: content, key: makeIdempotencyKey(), options: chosen, attachments: refs, signal: ac.signal,
         onEvent: (ev, d) => {
-          if (ev === 'start') { started = true; jobId = d.job_id; setProgress(null); }
+          if (ev === 'start') { started = true; jobId = d.job_id; setProgress(null); forgetEarlier(); }
           if (ev === 'progress') setProgress(d);
           if (ev === 'delta') { hadText = true; setMessages((m) => m.map((x) => (x.id === pending ? { ...x, content: x.content + d.text } : x))); }
           if (ev === 'error') streamError = d.error;
@@ -137,8 +145,8 @@ export function useChatSend({ text, setText, model, imagesBlocked, chosen, price
       } else {
         // The turn never started and nothing was charged: the message goes back, and a chat made for it goes too.
         giveBack(true);
-        if (e instanceof GatewayError && e.code === 'insufficient_balance') tell(e.code, { credits: price });
-        else if (e instanceof Error && e.message === 'image_unreadable') tell('image_unreadable');
+        if (e instanceof GatewayError && e.code === 'insufficient_balance') refuse(e.code, { credits: price });
+        else if (e instanceof Error && e.message === 'image_unreadable') refuse('image_unreadable');
         else failed(e);
       }
     } finally { setBusy(false); setProgress(null); setStopping(false); setChecking(false); sendingRef.current = false; abortRef.current = null; }
