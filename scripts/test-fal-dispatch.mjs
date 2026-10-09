@@ -289,6 +289,9 @@ try {
     }
 } finally {
     // Delete through auth/users cascades; model rows remain harmless in this disposable database.
+    // User erasure can retain job history. Remove only this script's synthetic
+    // outbox rows so subsequent capacity acceptance sees no unresolved fixtures.
+    await pool.query('DELETE FROM public.fal_dispatch WHERE job_id IN (SELECT id FROM public.jobs WHERE model_id=$1)',[model]);
     await pool.query('DELETE FROM auth.users WHERE id = ANY($1::uuid[])',[users]);
     await pool.end();
 }
