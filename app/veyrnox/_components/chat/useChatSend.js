@@ -33,8 +33,9 @@ export function useChatSend({ text, setText, model, imagesBlocked, chosen, price
     const knownIds = new Set(messages.map((x) => x.id)); let jobId = null; // to tell this turn from the ones already on screen
     // The notice kept for the chat this message is sent from is about the message before it, and goes at the press. Unless it warns
     // that the one before used Credits or still may: that is forgotten only by an ending of this message that accounts for Credits
-    // itself, which is the chat being read again for it (the chat shows what was saved, and its price) or a warning of its own to
-    // keep. The reply starting is not one: a message that starts can still end with nothing charged and its text given back.
+    // itself. Either this message was saved (reload(): the chat shows it and its price, and is read again when it is on screen), or
+    // it keeps a warning of its own. The reply starting is neither: a message that starts can still end with nothing charged and
+    // its text given back.
     const from = active ? active.id : NEW_CHAT; let forgotten = false;
     const forgetEarlier = () => { if (!forgotten) { forgotten = true; dropNotice(from); } };
     if (!heldWarning(from)) forgetEarlier();
@@ -47,11 +48,11 @@ export function useChatSend({ text, setText, model, imagesBlocked, chosen, price
     const tell = (code, extra) => { forgetEarlier(); const { home, here } = at(); keepNotice(home, code, extra); if (here) setError(chatErrorCopy(code, extra)); };
     // A message that used no Credits (it never started, or it started and they came back) has its text given back, and what it says
     // is about itself. It does not take the place of a warning that the message before it used Credits or still may: that warning
-    // stays kept, and while its chat is on screen both are said, this one first. False when no such warning is kept.
-    const beside = (code, extra) => { const { home, here } = at(); const warning = heldWarning(home); if (warning && here) setError(chatUnchargedCopy(code, extra, warning)); return !!warning; };
+    // stays kept, and while its chat is on screen both are said, this one first. True when such a warning is kept, said or not.
+    const besideWarning = (code, extra) => { const { home, here } = at(); const warning = heldWarning(home); if (warning && here) setError(chatUnchargedCopy(code, extra, warning)); return !!warning; };
     // With no warning kept it is told like any notice. An ending that says nothing on its own (Stop with nothing kept) skips this
-    // and is said only beside a warning.
-    const uncharged = (code, extra) => { if (!beside(code, extra)) tell(code, extra); };
+    // and is said only together with a warning.
+    const tellUncharged = (code, extra) => { if (!besideWarning(code, extra)) tell(code, extra); };
     // False when the chat was not read: it is gone, it is not on screen, or the read failed. It is also read when the person is
     // on their way back to it: the read that is already out may have been answered before this turn was saved.
     // The chat is read for this message, so this message went out: open() must not show the notice kept for the one before it.
@@ -59,7 +60,7 @@ export function useChatSend({ text, setText, model, imagesBlocked, chosen, price
     // The chat list is read again wherever the person is. A read that fails says so only in the send's own chat.
     const relist = async () => { if (at().here) return refreshThreads(); try { setThreads((await chatApi.threads()).threads); } catch { /* the list stays as it was */ } };
     // A closed chat or a signed-out reader is about the whole page. Any other refusal is about this message, and is told as one.
-    const failed = (e) => { if (loadFailure(e) !== 'failed') fail(e); else uncharged(e?.code); };
+    const failed = (e) => { if (loadFailure(e) !== 'failed') fail(e); else tellUncharged(e?.code); };
     // Nothing usable came back: take the bubbles away and give the text back. A chat made for this message goes too, but
     // only when the turn is known to be over. A turn that may still be saved needs its chat.
     const giveBack = (over) => {
@@ -110,15 +111,16 @@ export function useChatSend({ text, setText, model, imagesBlocked, chosen, price
       if (outcome && (outcome.status === 'failed' || (outcome.status === 'canceled' && !outcome.credits_charged && !outcome.message_id))) {
         // Nothing usable came back and the Credits were returned. With no error named (it was stopped before any text) nothing is
         // said, unless a warning is kept: that alone would read as being about this message.
+        await relist();                              // first: the notice set below must not be replaced
         giveBack(true);
-        if (streamError) uncharged(streamError); else beside('stop_refunded');
+        if (streamError) tellUncharged(streamError); else besideWarning('stop_refunded');
       } else {
         att.clear();                                 // sent: the images are spent, so the next reply starts clean
         if (streamError && at().here) setError(chatErrorCopy(streamError)); // on screen only, and not kept: the reload clears it
         await reload();                              // the saved messages, with their real status and price
         if (streamError === 'reply_not_saved') tell(streamError); // after the reload, which clears the notice or replaces it when the chat is gone
+        await relist();
       }
-      await relist();
     } catch (e) {
       if (e?.name === 'AbortError') {
         // Stop. The server saves the stopped turn a moment after the browser lets go, so a reload at once can come back
@@ -129,7 +131,7 @@ export function useChatSend({ text, setText, model, imagesBlocked, chosen, price
         if (outcome === 'saved' || outcome === 'unsaved') {
           att.clear(); await reload();                                   // the saved messages, with their real status and price
           if (outcome === 'unsaved') tell('reply_not_saved'); // charged, but it could not be stored: say so, after open()
-        } else if (outcome === 'nothing') { giveBack(true); beside('stop_refunded'); } // nothing was produced and the Credits came back
+        } else if (outcome === 'nothing') { giveBack(true); besideWarning('stop_refunded'); } // nothing was produced and the Credits came back
         else if (!hadText) {
           // Not settled, and no text had arrived: Stop came before `start` (no job to ask) or before the first words (the job
           // had not ended). There is nothing on screen to keep, so the message goes back. But a reply may still be saved:
@@ -150,12 +152,12 @@ export function useChatSend({ text, setText, model, imagesBlocked, chosen, price
         if (!reloaded) setMessages((m) => m.filter((x) => x.id !== pending || x.content)); // not settled, or still offline: the text that arrived stays
         // Last: open() shows what is kept for the chat. A notice for a chat that is not on screen is read after that chat is opened, which reloads it.
         const notice = lostNotice(outcome, reloaded || !at().here);
-        if (outcome === 'nothing') uncharged(notice); else tell(notice);
+        if (outcome === 'nothing') tellUncharged(notice); else tell(notice);
       } else {
         // The turn never started and nothing was charged: the message goes back, and a chat made for it goes too.
         giveBack(true);
-        if (e instanceof GatewayError && e.code === 'insufficient_balance') uncharged(e.code, { credits: price });
-        else if (e instanceof Error && e.message === 'image_unreadable') uncharged('image_unreadable');
+        if (e instanceof GatewayError && e.code === 'insufficient_balance') tellUncharged(e.code, { credits: price });
+        else if (e instanceof Error && e.message === 'image_unreadable') tellUncharged('image_unreadable');
         else failed(e);
       }
     } finally { setBusy(false); setProgress(null); setStopping(false); setChecking(false); sendingRef.current = false; abortRef.current = null; }

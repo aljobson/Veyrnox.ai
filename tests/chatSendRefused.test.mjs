@@ -19,7 +19,7 @@ import { A, GatewayError, ME, TEXT, WARNINGS, afterReload, cutBeforeText, memory
 const noCredits = () => new GatewayError('no', { status: 402, code: 'insufficient_balance' });
 const tooFast = () => new GatewayError('no', { status: 429, code: 'rate_limited' });
 const stopBeforeStart = async () => { throw stopped(); };
-/** The fake words for a refusal said together with the warning it must not replace (chatRefusedCopy in run()). */
+/** The fake words for a refusal said together with the warning it must not replace (chatUnchargedCopy in run()). */
 const said = (refusal, warning) => `${refusal}, and before that ${warning}`;
 /** Chat a after Stop before any text with the turn not settled: its text is in its box and the warning is stored. */
 async function stoppedUnsure() {

@@ -212,8 +212,8 @@ test('each ending of a Stop: saved shows the chat, nothing came back gives the t
     // that would clear them.
     assert.match(stop, /await reload\(\);[^\n]*\n {10}if \(outcome === 'unsaved'\) tell\('reply_not_saved'\);/);
     // Nothing came back: the text goes back and nothing is said, as before. Unless a warning about Credits is kept for
-    // the chat: then both are said, this Stop first (beside(), tests/chatSendHome.test.mjs).
-    assert.match(stop, /\} else if \(outcome === 'nothing'\) \{ giveBack\(true\); beside\('stop_refunded'\); \}/);
+    // the chat: then both are said, this Stop first (besideWarning(), tests/chatSendHome.test.mjs).
+    assert.match(stop, /\} else if \(outcome === 'nothing'\) \{ giveBack\(true\); besideWarning\('stop_refunded'\); \}/);
     // Not settled, and no text had arrived (Stop before `start`, or after it but before the first words): there is
     // nothing on screen to keep, so the message goes back. The chat is kept, since nothing says the turn is over, and
     // the person is told a reply may still land.
@@ -234,7 +234,7 @@ test('giving the text back deletes a chat made for the message only when the tur
     assert.match(give[1], /if \(over && created\) \{ chatApi\.remove\(thread\.id\)\.catch\(\(\) => \{\}\);/);
     // The same path as a `done` event that says nothing came back. Its notice was told with tell(); it is told as a
     // message that used no Credits, and with no error named it is this Stop's words beside a kept warning.
-    assert.match(sender, /\n {8}giveBack\(true\);\n {8}if \(streamError\) uncharged\(streamError\); else beside\('stop_refunded'\);/);
+    assert.match(sender, /\n {8}giveBack\(true\);\n {8}if \(streamError\) tellUncharged\(streamError\); else besideWarning\('stop_refunded'\);/);
 });
 
 test('a reply that is still being saved shows no price, and the button says it is stopping', () => {

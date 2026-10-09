@@ -6,8 +6,8 @@
 // failed). Its text came back with that ending's own "No Credits were used", or with nothing after Stop, and with
 // nothing about the first send, which may still be saved and use Credits if its turn is slow to settle.
 // Two changes close it. A kept warning (one of the WARNINGS) is no longer forgotten when the reply starts: only by an
-// ending that accounts for Credits itself, which is the chat being read again for the message or a warning of the
-// message's own. And an ending that gives the text back with nothing charged is told the way a refusal is
+// ending that accounts for Credits itself, which is the message being saved to the chat (read again when it is on
+// screen) or a warning of the message's own. And an ending that gives the text back with nothing charged is told the way a refusal is
 // (tests/chatSendRefused.test.mjs): the warning stays kept, and both are said on screen, the ending first.
 
 import test from 'node:test';
@@ -172,4 +172,22 @@ test('through the real store, from another chat: the text is added to the chat i
     writeNotice(other, ME, 'chat-b', 'connection_lost');
     const { log } = await run({ active: A, storage: other, turn: cutBeforeText(), settle: 'nothing' });
     assert.deepEqual([log.notices, afterReload(other, 'chat-a'), afterReload(other, 'chat-b').notice], [[null, 'connection_refunded'], { box: TEXT, notice: { code: 'connection_refunded' } }, { code: 'connection_lost' }]);
+});
+
+test('the chat list is read before the ending is said, so a list read that fails does not cover what was just said', async () => {
+    // The screen says so when its list read fails, over whatever notice is on it. After Stop and after a dropped
+    // connection the list was already read first. After a reply that failed it was read last, which was harmless
+    // while that ending had only its own notice to lose: now the warning about the message before is said there too
+    // (the independent review of this change).
+    for (const [code, name, how] of refunded()) {
+        const { log, kept } = await run({ active: A, ...how, kept: { 'chat-a': 'stop_unsure' }, listFails: true });
+        assert.deepEqual([log.notices, kept()], [[null, 'list_failed', said(code, 'stop_unsure')], { 'chat-a': 'stop_unsure' }], name);
+    }
+    // With no warning kept the ending's own notice is the last word too.
+    const alone = await run({ active: A, turn: failedWith('provider_cut_off'), listFails: true });
+    assert.deepEqual([alone.log.notices, alone.kept()], [[null, 'list_failed', 'provider_cut_off'], { 'chat-a': 'provider_cut_off' }]);
+    // A chat made for the message is deleted after the list is read, not before: a list read after the delete was
+    // sent could bring the chat back.
+    const made = await run({ active: null, turn: failedWith('provider_cut_off'), kept: { [NEW_CHAT]: 'stop_unsure' }, listFails: true });
+    assert.deepEqual([made.log.notices, made.log.deleted, made.log.refreshed], [[null, 'list_failed', said('provider_cut_off', 'stop_unsure')], ['made'], 1]);
 });

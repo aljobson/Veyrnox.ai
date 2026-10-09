@@ -98,12 +98,12 @@ test('the person is told what happened last, after the reload that would clear t
     // `reloaded || !at().here`: a notice kept for a chat that is not on screen is read after that chat has been opened
     // again, which reloads it (tests/chatSendHome.test.mjs). In the chat itself the second half is false: as before.
     // tell() takes the code lostNotice gives, and keeps it with the chat. For a job that kept nothing the code goes
-    // to uncharged() instead: the text is back and no Credits were used, which must not take the place of a warning
-    // kept for the message before (tests/chatSendHome.test.mjs). With no such warning uncharged() is tell().
+    // to tellUncharged() instead: the text is back and no Credits were used, which must not take the place of a warning
+    // kept for the message before (tests/chatSendHome.test.mjs). With no such warning tellUncharged() is tell().
     assert.match(lines[lines.length - 2], /^ {8}const notice = lostNotice\(outcome, reloaded \|\| !at\(\)\.here\);/);
-    assert.match(lines[lines.length - 1], /^ {8}if \(outcome === 'nothing'\) uncharged\(notice\); else tell\(notice\);/, 'the notice is the last thing the branch does');
+    assert.match(lines[lines.length - 1], /^ {8}if \(outcome === 'nothing'\) tellUncharged\(notice\); else tell\(notice\);/, 'the notice is the last thing the branch does');
     assert.equal(brokenAfterStart.split('tell(').length - 1, 1, 'and it is set once');
-    assert.equal(brokenAfterStart.split('uncharged(').length - 1, 1, 'or told once as a message that used no Credits');
+    assert.equal(brokenAfterStart.split('tellUncharged(').length - 1, 1, 'or told once as a message that used no Credits');
     assert.doesNotMatch(brokenAfterStart, /setError\(/, 'never straight onto whatever chat is on screen');
 });
 
