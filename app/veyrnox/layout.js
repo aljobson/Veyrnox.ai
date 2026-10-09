@@ -3,7 +3,7 @@ import './veyrnox.css';
 import { JobWatcher } from './_components/JobWatcher';
 import { AccountBoundary } from './_components/AccountBoundary';
 import { PublishFlagProvider } from './_components/PublishFlag';
-import { publishEnabled } from '../../lib/social/publishFeature.js';
+import { publishEnabled, publishShellAvailable } from '../../lib/social/publishFeature.js';
 
 // Self-hosted variable fonts (OFL, app/fonts); see app/layout.js.
 const archivo = localFont({
@@ -27,7 +27,7 @@ const jetbrains = localFont({
 export default function VeyrnoxLayout({ children }) {
   return (
     <div className={`${archivo.variable} ${jetbrains.variable} vx-root font-vx bg-vx-base text-vx-fg min-h-dvh`}>
-      <PublishFlagProvider enabled={publishEnabled()}>
+      <PublishFlagProvider enabled={publishEnabled()} pilot={publishShellAvailable() && !publishEnabled()}>
         <AccountBoundary>
           {children}
           <JobWatcher />

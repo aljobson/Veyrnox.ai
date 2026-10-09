@@ -216,3 +216,20 @@ test('every handler that reads the caller id refuses a request without one', () 
         assert.match(src, /not[_-]authenticated|UNAUTHORIZED/, `${rel} reads the caller id but has no refusal for a missing one`);
     }
 });
+
+test('Publish pilot authorizes only signed JWT sub, never forged headers or email', async () => {
+    const saved = { PUBLISH_ENABLED: process.env.PUBLISH_ENABLED, PUBLISH_TESTER_AUTH_IDS: process.env.PUBLISH_TESTER_AUTH_IDS };
+    Object.assign(process.env, { PUBLISH_ENABLED: 'false', PUBLISH_TESTER_AUTH_IDS: SUB });
+    try {
+        const path = 'http://localhost:3000/api/v1/social/access';
+        const allowed = await middleware(new Request(path, { headers: { authorization: `Bearer ${await token({})}` } }));
+        assert.equal(allowed.headers.get('x-middleware-next'), '1');
+        const other = await middleware(new Request(path, { headers: { authorization: `Bearer ${await token({ sub: '44444444-4444-4444-8444-444444444444', email: 'tester@example.test' })}`, 'x-veyrnox-auth-id': SUB } }));
+        assert.equal(other.status, 503);
+        assert.equal((await other.json()).error, 'publish_not_open');
+        assert.equal((await middleware(new Request(path, { headers: { 'x-veyrnox-auth-id': SUB } }))).status, 401);
+        assert.equal((await middleware(new Request(path, { headers: { authorization: 'Bearer forged' } }))).status, 401);
+    } finally {
+        for (const [key, value] of Object.entries(saved)) { if (value === undefined) delete process.env[key]; else process.env[key] = value; }
+    }
+});

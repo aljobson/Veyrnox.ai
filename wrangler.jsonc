@@ -146,6 +146,10 @@
     // menu link and /api/v1/social/*. Only "true" opens it. The publish
     // sweep is not gated, so anything already queued still finishes.
     "PUBLISH_ENABLED": "false",
+    // Verified Supabase Auth UUIDs only; empty leaves the private pilot off.
+    "PUBLISH_TESTER_AUTH_IDS": "",
+    // Requires 0239; keep off until the approved migration workflow completes.
+    "PUBLISH_YOUTUBE_VISIBILITY_ENABLED": "false",
     // First production release permits YouTube only; Publish remains off.
     "PUBLISH_RELEASED_NETWORKS": "youtube",
     // The Publish analytics sweep (lib/socialAnalyticsSweep.js). Only "true"
@@ -247,6 +251,8 @@
         "JEV_SUBMIT_ERRORS_MODE": "off",
         // Veyrnox Publish is open on staging for testing (see production).
         "PUBLISH_ENABLED": "true",
+        "PUBLISH_TESTER_AUTH_IDS": "",
+        "PUBLISH_YOUTUBE_VISIBILITY_ENABLED": "false",
         "PUBLISH_RELEASED_NETWORKS": "*",
         // Publish schema through 0192 provisioned on staging 2026-10-04.
         "PUBLISH_ANALYTICS_ENABLED": "true",
