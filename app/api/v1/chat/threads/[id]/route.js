@@ -2,7 +2,7 @@
  * GET    /api/v1/chat/threads/:id — the thread and its messages.
  * PATCH  /api/v1/chat/threads/:id — { title?, pinned?, system_prompt?, model_id? }, or { folder_id } alone to move it
  *                                   into a folder (null takes it out). Unknown keys are refused.
- * DELETE /api/v1/chat/threads/:id — soft delete: gone from every read at once.
+ * DELETE /api/v1/chat/threads/:id — deletes the thread and its messages (migration 0203). The jobs and ledger entries stay.
  */
 import { rpc } from '../../../../../../packages/db/supabase-client.js';
 import { limitRequestBody } from '../../../../../../lib/requestBodyLimit.js';
