@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { isShelfModel } from '../app/veyrnox/_lib/tokens.js';
 import { capabilityFor } from '../lib/modelCapabilities.js';
-import { CAPTIONS_UNITS, CAPTION_PRESETS } from '../lib/clipEdit.js';
+import { CAPTIONS_UNITS, CAPTION_PRESETS, SLOW_FACTORS, SLOW_UNITS_PER_SECOND, SLOW_MAX_SOURCE_S } from '../lib/clipEdit.js';
 
 // JSX sources, so these read the text, like createAutoShort.test.mjs.
 const library = readFileSync(new URL('../app/veyrnox/app/library/page.js', import.meta.url), 'utf8');
@@ -17,7 +17,8 @@ test('the editor is off unless localStorage.veyrnox_editor is "1"', () => {
 
 test('the sheet sends Library job ids and cut points only, as a clip-edit generation', () => {
     assert.match(sheet, /model_id: 'clip-edit', idempotency_key: makeIdempotencyKey\(\), inputs/);
-    assert.match(sheet, /clips: items\.map\(\(x\) => \(\{ asset_id: x\.job_id, in_s: round\(x\.in_s\), out_s: round\(x\.out_s\) \}\)\)/);
+    // Ids and cut points, plus a slow factor only for a clip that is slowed (never a price, key or length).
+    assert.match(sheet, /clips: items\.map\(\(x\) => \(\{ asset_id: x\.job_id, in_s: round\(x\.in_s\), out_s: round\(x\.out_s\), \.\.\.\(slowOf\(x\) > 1 \? \{ slow: slowOf\(x\) \} : \{\}\) \}\)\)/);
     // No price, key or length from the client: the gateway measures and prices.
     assert.doesNotMatch(sheet, /credits:\s*cost[^,]*,\s*\n?\s*inputs/);
     assert.doesNotMatch(sheet, /r2_key|duration_s/);
@@ -48,4 +49,15 @@ test('the sheet\'s captions share the server\'s unit count and only offer preset
     // Hidden unless the per-browser switch is on, and sent as a preset name only.
     assert.match(sheet, /veyrnox_editor_captions/);
     assert.match(sheet, /captions: \{ preset: style \}/);
+});
+
+test('the sheet\'s slow motion shares the server\'s numbers, sends a factor only, and is hidden behind its own switch', () => {
+    assert.match(sheet, new RegExp(`const SLOW_FACTORS = \\[${SLOW_FACTORS.join(', ')}\\];`));
+    assert.match(sheet, new RegExp(`const SLOW_UNITS_PER_SECOND = ${SLOW_UNITS_PER_SECOND};`));
+    assert.match(sheet, new RegExp(`const SLOW_MAX_SOURCE_S = ${SLOW_MAX_SOURCE_S};`));
+    assert.match(sheet, /veyrnox_editor_slow/);
+    assert.match(sheet, /\.\.\.\(slowOf\(x\) > 1 \? \{ slow: slowOf\(x\) \} : \{\}\)/);
+    // The sheet refuses what the gateway would: no sound, or too much slowed.
+    assert.ok(sheet.includes('slowNoAudio') && sheet.includes('slowTooLong'));
+    assert.doesNotMatch(sheet, /topaz|target_fps|slowdown_factor/, 'no provider detail reaches the browser');
 });
