@@ -1,6 +1,6 @@
 # ADR 0077 — Event-driven wakeups for durable fal dispatch
 
-Status: Proposed 2026-10-09; targeted claims and producer/consumer code built, queue resources unprovisioned, flags off. See the [implementation and staging plan](../architecture/fal-dispatch-queue.md). ADR 0076's activation gates remain binding.
+Status: Proposed 2026-10-09; targeted claims and producer/consumer code built, isolated staging queues provisioned, credentials and live acceptance pending, flags off. See the [implementation and staging plan](../architecture/fal-dispatch-queue.md). ADR 0076's activation gates remain binding.
 
 ## Problem and evidence
 
@@ -70,7 +70,7 @@ This preserves at most one application submission attempt per durable job. It do
 
 ## Capacity and back pressure
 
-Initial staging candidates are batch size 1, batch wait 0 seconds, consumer concurrency 2, three pre-claim delivery retries with a 30-second delay, and a dead-letter queue. These are proposed tuning values, not deployed settings or provider entitlements. Cloudflare supports configurable [batch size and wait](https://developers.cloudflare.com/queues/configuration/batching-retries/) and [consumer concurrency](https://developers.cloudflare.com/queues/configuration/consumer-concurrency/). Limit concurrency deliberately until provider and database headroom are measured.
+Initial staging settings are batch size 1, batch wait 0 seconds, consumer concurrency 2, three pre-claim delivery retries with a 30-second delay, and a dead-letter queue. These were verified on the disabled staging consumer; provider entitlements and live headroom remain unverified. Cloudflare supports configurable [batch size and wait](https://developers.cloudflare.com/queues/configuration/batching-retries/) and [consumer concurrency](https://developers.cloudflare.com/queues/configuration/consumer-concurrency/). Limit concurrency deliberately until provider and database headroom are measured.
 
 Let `f` be the eligible fraction of media jobs, `s` the measured seconds occupied by a submission handler, and `C` concurrent consumer invocations. With one serial job per invocation, ideal drain is `C/s` attempts/second. For illustration, `C=2` and `s=2 seconds` gives 1 attempt/second, or 86,400/day before retries and overhead. This is a service-time assumption, not a benchmark; the provider deadline alone can consume fifteen seconds.
 
