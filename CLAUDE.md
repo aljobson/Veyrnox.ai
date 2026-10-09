@@ -140,10 +140,16 @@ If a build starts failing after a dependency change, bisect these three first.
   Worker has `workers_dev` and `preview_urls` off in `wrangler.jsonc`;
   staging keeps `workers_dev` on. `deploy-production` reads both back after
   each deploy and reports on the `deploy-failure` issue if either is on.
-- `worker.js` removes the framework's own request headers (`x-isr`,
-  `x-prerender-revalidate*`, `x-open-next-*`, `x-vercel-ip-*`) from every
-  request before OpenNext sees it (`lib/internalRequestHeaders.js`, ADR-0078
-  amendment 3): its routing layer obeys them from any caller. Read that file
+- `worker.js` removes the headers that are never a caller's to send from
+  every request before OpenNext sees it (`lib/internalRequestHeaders.js`,
+  ADR-0078 amendments 3 and 4). The framework's own (`x-isr`,
+  `x-prerender-revalidate*`, `x-open-next-*`, `x-vercel-ip-*`,
+  `x-middleware-response-*`, `x-opennext-*`): its routing layer obeys them
+  from any caller. And every `x-veyrnox-auth-*`: a handler sees an identity
+  header only if the middleware set it, so a request the middleware never
+  saw is refused. That holds only while every handler that reads the caller
+  id answers 401 without one (`tests/identityHeaders.test.mjs`), and a new
+  identity header must take the `x-veyrnox-auth-` prefix. Read that file
   before configuring an OpenNext revalidation queue.
 - Standard-claim checks (issuer, audience `authenticated`, exp with 5s skew, sub
   present) run on every request. Missing/malformed -> 401, never 500.

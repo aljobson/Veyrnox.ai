@@ -187,6 +187,27 @@ test('send: a full streamed turn through the route, debited from the catalog and
     assert.equal(or.url, 'https://openrouter.ai/api/v1/chat/completions'); assert.equal(or.body.model, 'vendor/fast'); assert.equal(or.body.max_tokens, 1024);
 });
 
+test('send: the turn is handed to the Worker, so it is saved and charged with nobody reading the reply', async (t) => {
+    const symbol = Symbol.for('__cloudflare-context__'), before = globalThis[symbol], kept = [];
+    globalThis[symbol] = { env: {}, ctx: { waitUntil(work) { kept.push(work); } } };
+    t.after(() => { if (before === undefined) delete globalThis[symbol]; else globalThis[symbol] = before; });
+    catalogRows = [{ id: 'chat-fast', provider: 'openrouter-chat', provider_endpoint: 'vendor/fast', modality: 'text', credits_5s: 3, gated_flag: false, active: true }];
+    rpcReplies.check_generation_rate_limit = { ok: true };
+    rpcReplies.chat_turn_context = { ok: true, user_id: 'user-1', model_id: 'chat-fast', system_prompt: '', history: [] };
+    rpcReplies.ledger_debit = { ok: true, job_id: JOB, balance_after: 7 };
+    rpcReplies.job_submitted = { ok: true };
+    rpcReplies.chat_complete_turn = { ok: true, message_id: 'msg-1', refund: false };
+    const frame = (text) => `data: ${JSON.stringify({ choices: [{ delta: { content: text } }] })}\n\n`;
+    openrouter = () => new Response(new ReadableStream({ start(c) { const e = new TextEncoder(); c.enqueue(e.encode(frame('Hello'))); c.enqueue(e.encode('data: [DONE]\n\n')); c.close(); } }));
+
+    const res = await sendMessage(req('POST', { text: 'Hi', idempotency_key: 'key-0123456789' }), params());
+    assert.equal(res.status, 200);
+    assert.equal(kept.length, 1, 'the whole turn, once');
+    await kept[0]; // the reply is never read
+    assert.equal(rpcCalls('chat_complete_turn')[0].body.p_status, 'complete');
+    assert.equal(rpcCalls('ledger_refund').length, 0);
+});
+
 test('send: a refusal before the stream is plain JSON with the right status', async () => {
     rpcReplies.check_generation_rate_limit = { ok: true };
     rpcReplies.chat_turn_context = { ok: false, code: 'THREAD_NOT_FOUND' };

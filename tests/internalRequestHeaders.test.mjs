@@ -2,7 +2,8 @@
 // instructions: the pair its revalidation queue sends, and the geolocation it
 // derives from Cloudflare. Nothing outside the Worker has a reason to send
 // either, so worker.js removes them before the framework builds its event
-// (ADR-0078, amendment 3).
+// (ADR-0078, amendment 3). The identity headers go the same way, so a handler
+// only ever sees one the middleware set (amendment 4).
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -13,13 +14,14 @@ register('data:text/javascript,' + encodeURIComponent(`
     if (s.endsWith('/.open-next/worker.js')) return {
       url: 'data:text/javascript,' + encodeURIComponent('export default {fetch: (...args) => globalThis.__internalHeadersTestApp(...args)};'), shortCircuit: true
     };
-    return next(s, c);
+    return next(s === 'next/server' ? 'next/server.js' : s, c);
   }
 `));
 const worker = (await import('../worker.js')).default;
 const allow = { ADMIN_EDGE_RATE_LIMITER: { limit: async () => ({ success: true }) } };
 const ORIGIN = 'https://veyrnox.test';
-const LOGGED = '[internal-headers] dropped a revalidation header sent from outside';
+const logged = (...kinds) => `[internal-headers] dropped from an outside request: ${kinds.join(', ')}`;
+const FORGED_ID = '99999999-9999-4999-8999-999999999999';
 
 const REVALIDATION = {
     'x-isr': '1',
@@ -36,7 +38,24 @@ const GEO = {
     'x-vercel-ip-country': 'ZZ',
     'x-vercel-ip-country-region': 'ZZ',
 };
-const INTERNAL = { ...REVALIDATION, ...GEO };
+// Only the middleware may say who the caller is.
+const IDENTITY = {
+    'x-veyrnox-auth-id': FORGED_ID,
+    'x-veyrnox-auth-email': 'forged@example.test',
+    'x-veyrnox-auth-role': 'service_role',
+    'x-veyrnox-auth-aal': 'aal2',
+    'x-veyrnox-auth-mfa-at': '1790000000',
+    'x-veyrnox-auth-not-invented-yet': 'x',
+};
+// What the framework's routing half hands its rendering half. The first prefix
+// is taken off there, leaving the rest of the name as a request header.
+const FRAMEWORK = {
+    'x-middleware-response-x-veyrnox-auth-id': FORGED_ID,
+    'x-middleware-response-cache-control': 'public, max-age=31536000',
+    'x-opennext-initial-url': 'https://veyrnox.test/api/v1/session/me',
+    'x-opennext-resolved-routes': '[]',
+};
+const INTERNAL = { ...REVALIDATION, ...GEO, ...IDENTITY, ...FRAMEWORK };
 const ORDINARY = {
     authorization: 'Bearer anything',
     accept: 'application/json',
@@ -45,10 +64,11 @@ const ORDINARY = {
     'cf-connecting-ip': '203.0.113.7',
     'x-forwarded-for': '203.0.113.7',
     'idempotency-key': 'k-1',
-    // Left for the middleware, which gives every identity header its own value.
-    'x-veyrnox-auth-id': 'sent by the caller',
+    // The cron caller's own credential, on a route the middleware never runs on.
+    'x-veyrnox-admin-token': 'keep',
     // Names that only look like the internal ones are not this layer's business.
-    'x-isr-status': 'keep', 'x-prerender': 'keep', 'x-open-next': 'keep', 'x-opennext-debug': 'keep', 'x-vercel-id': 'keep',
+    'x-isr-status': 'keep', 'x-prerender': 'keep', 'x-open-next': 'keep', 'x-opennext': 'keep', 'x-vercel-id': 'keep',
+    'x-veyrnox-auth': 'keep', 'x-veyrnox-authority': 'keep', 'x-middleware-prefetch': 'keep',
 };
 
 /** Send one request through the Worker and return what the app was handed. */
@@ -95,6 +115,9 @@ test('each one is dropped on its own, however its name is spelt', async () => {
             assert.equal(seen.headers.has(name), false, spelt);
             assert.deepEqual(Object.fromEntries(seen.headers), ORDINARY, spelt);
         }
+        // Taking the framework's prefix off must not uncover a name that is then trusted.
+        const seen = await throughWorker(new Request(`${ORIGIN}/api/v1/session/me`, { headers: FRAMEWORK }));
+        assert.equal([...seen.headers.keys()].some((name) => name.endsWith('x-veyrnox-auth-id')), false);
     } });
 });
 
@@ -141,17 +164,40 @@ test('the earlier refusals still come first', async () => {
     assert.deepEqual(said, [], 'a request refused earlier is not reported here as well');
 });
 
-test('a revalidation header from outside is logged once, without its value; geolocation is not', async () => {
+test('what was dropped is logged in one line, by kind and never by value; geolocation is not', async () => {
     const secret = REVALIDATION['x-prerender-revalidate'];
-    for (const [name, value] of Object.entries(REVALIDATION)) {
-        const said = await quietly(() => throughWorker(new Request(`${ORIGIN}/api/v1/session/me`, { headers: { [name]: value } })));
-        assert.deepEqual(said, [LOGGED], name);
+    for (const [kind, group] of [['revalidation', REVALIDATION], ['identity', IDENTITY], ['framework', FRAMEWORK]]) {
+        for (const [name, value] of Object.entries(group)) {
+            const said = await quietly(() => throughWorker(new Request(`${ORIGIN}/api/v1/session/me`, { headers: { [name]: value } })));
+            assert.deepEqual(said, [logged(kind)], name);
+        }
     }
     const all = await quietly(() => throughWorker(new Request(`${ORIGIN}/api/v1/session/me?t=${secret}`, { headers: INTERNAL })));
-    assert.deepEqual(all, [LOGGED]);
-    assert.equal(all.join(' ').includes(secret), false);
+    assert.deepEqual(all, [logged('revalidation', 'identity', 'framework')]);
+    for (const value of [secret, FORGED_ID, 'forged@example.test']) assert.equal(all.join(' ').includes(value), false);
     assert.deepEqual(await quietly(() => throughWorker(new Request(`${ORIGIN}/pricing`, { headers: GEO }))), []);
     assert.deepEqual(await quietly(() => throughWorker(new Request(`${ORIGIN}/pricing`, { headers: ORDINARY }))), []);
+});
+
+// If the framework ever hands a request on without running the middleware,
+// the handler gets the Worker's request as it stands. With no identity header
+// left on it, the handler has no one to act for.
+test('a request the middleware never saw reaches a handler with no identity, and is refused', async () => {
+    const middlewareSrc = readFileSync(new URL('../middleware.js', import.meta.url), 'utf8');
+    const list = middlewareSrc.slice(middlewareSrc.indexOf('const IDENTITY_HEADERS'), middlewareSrc.indexOf('];', middlewareSrc.indexOf('const IDENTITY_HEADERS')));
+    const set = [...list.matchAll(/'(x-veyrnox-[a-z0-9-]+)'/g)].map((m) => m[1]);
+    assert.ok(set.length >= 5, 'middleware.js no longer lists its identity headers where this test reads them');
+    const forged = Object.fromEntries(set.map((name) => [name, name.endsWith('-id') ? FORGED_ID : 'aal2']));
+
+    const { GET: me } = await import('../app/api/v1/session/me/route.js');
+    const unguarded = await me(new Request(`${ORIGIN}/api/v1/session/me`, { headers: forged }));
+    assert.equal((await unguarded.json()).authId, FORGED_ID, 'the handler trusts the header, which is why the Worker must own it');
+
+    let seen;
+    await quietly(async () => { seen = await throughWorker(new Request(`${ORIGIN}/api/v1/session/me`, { headers: { ...ORDINARY, ...forged } })); });
+    for (const name of set) assert.equal(seen.headers.has(name), false, `${name} is set by the middleware but a caller's copy reaches the app`);
+    const res = await me(seen);
+    assert.deepEqual([res.status, await res.json()], [401, { error: 'not_authenticated' }]);
 });
 
 // The list in lib/internalRequestHeaders.js was written against one version of
