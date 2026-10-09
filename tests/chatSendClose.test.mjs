@@ -2,11 +2,12 @@
 // with only the network stubbed, and the chat turn's answer to a send that was closed.
 // The browser makes a send's idempotency key before any request, so it has the key even when Stop came before
 // `start` and no job id ever reached it. This route is how it asks about such a send: the database answers with the
-// job that send made, or, when it made none, closes the key in the same step (chat_close_send, migration 0241) so
+// job that send made, or, when it made none, closes the key in the same step (chat_close_send, migration 0242) so
 // that no chat reply can be charged for it afterwards. `closed: true` is that statement and nothing else is.
 import test, { beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { register } from 'node:module';
+import { readFileSync } from 'node:fs';
 import { POST as closeSend } from '../app/api/v1/chat/sends/close/route.js';
 import { runChatTurn } from '../lib/chatTurn.js';
 import { SupabaseError } from '../packages/db/supabase-client.js';
@@ -56,13 +57,25 @@ test('dark unless Chat is open and this route is switched on, and then nothing i
         assert.deepEqual([res.status, await res.json()], [503, { error: 'chat_not_open' }], `CHAT_ENABLED=${v}`);
     }
     process.env.CHAT_ENABLED = 'true';
-    // Its own switch, off until migration 0241 is applied: the browser reads this as no answer and its warning stays.
+    // Its own switch, off until migration 0242 is applied: the browser reads this as no answer and its warning stays.
     for (const v of [undefined, 'false', 'TRUE', '1', '']) {
         if (v === undefined) delete process.env.CHAT_SEND_CLOSE_ENABLED; else process.env.CHAT_SEND_CLOSE_ENABLED = v;
         const res = await closeSend(req());
         assert.deepEqual([res.status, await res.json()], [503, { error: 'send_close_not_open' }], `CHAT_SEND_CLOSE_ENABLED=${v}`);
     }
     assert.equal(calls.length, 0);
+    // Who is calling is settled first: without an identity the answer is 401 whether the switch is on or off.
+    delete process.env.CHAT_SEND_CLOSE_ENABLED;
+    assert.equal((await closeSend(req(undefined, { 'x-veyrnox-auth-id': '' }))).status, 401);
+});
+
+test('the browser asks this route, with the key under the name it reads', () => {
+    const api = readFileSync(new URL('../app/veyrnox/_lib/chatApi.js', import.meta.url), 'utf8');
+    const route = readFileSync(new URL('../app/api/v1/chat/sends/close/route.js', import.meta.url), 'utf8');
+    // gatewayFetch puts /api/v1 in front: the path is this route file's own, and the body field is the one it takes the key from.
+    assert.match(api, /\n {2}closeSend: \(key\) => gatewayFetch\('\/chat\/sends\/close', \{ method: 'POST', body: json\(\{ idempotency_key: key \}\) \}\),\n/);
+    assert.match(route, /const key = body && typeof body === 'object' \? body\.idempotency_key : undefined;/);
+    assert.match(route, /rpc\('chat_close_send', \{ p_auth_id: gate\.authId, p_idempotency_key: key \}, gate\.cfg\)/);
 });
 
 test('it needs the verified identity header, and a key in the one shape the browser makes', async () => {
@@ -116,7 +129,8 @@ test('a send that made a job is answered with that job, in the words of the job 
 });
 
 test('"closed" is passed on only as the database said it: any other answer is a failure, never "nothing was charged"', async () => {
-    const odd = [null, {}, { ok: true }, { ok: true, closed: 'true' }, { ok: true, closed: 1 }, { ok: 'true', closed: true }, { closed: true }, { ok: true, closed: true, job_id: JOB },
+    // `ISOLATION_LEVEL`: the database will not say "closed" where it could miss a job that was made while it waited.
+    const odd = [null, {}, { ok: true }, { ok: false, code: 'ISOLATION_LEVEL' }, { ok: true, closed: 'true' }, { ok: true, closed: 1 }, { ok: 'true', closed: true }, { closed: true }, { ok: true, closed: true, job_id: JOB },
         { ok: true, closed: true, state: 'SUBMITTED' }, { ok: true, closed: false }, found('DONE'), found(undefined), found(null), found('STORED', { job_id: 'job-1' }), found('STORED', { job_id: undefined }),
         { ok: false }, { ok: false, code: 'SOMETHING_NEW' }, 'closed', 42, []];
     for (const r of odd) {
@@ -144,7 +158,7 @@ test('the refusals: the shared job-read limit, the cap on closed sends, an accou
 });
 
 // ---- the turn: a send that was closed is never charged ----
-// The database refuses to make a chat job for a closed key (the trigger of migration 0241 raises, so the whole debit
+// The database refuses to make a chat job for a closed key (the trigger of migration 0242 raises, so the whole debit
 // is undone). The reader pressed Stop and is gone, so the answer goes to nobody: it is typed, quiet and charges nothing.
 
 const MODEL = { id: 'chat-fast', provider: 'openrouter-chat', provider_endpoint: 'vendor/fast', modality: 'text', credits_5s: 2, gated_flag: false, active: true };
@@ -167,7 +181,10 @@ test('a send that was closed before its debit is refused as send_closed: nothing
     assert.equal(t.streamed(), 0, 'the provider was never called');
     assert.deepEqual(logged, [], 'a person pressing Stop is not a failure of ours');
     // Any other failure of the debit is still a failure, said and logged as before.
+    // The refusal is known by all three: the status, the code and the message, as PostgREST sends what the trigger raised.
     for (const err of [new SupabaseError('rpc failed: 409', { status: 409, body: { code: 'PT409', message: 'SOMETHING_ELSE' } }), new SupabaseError('rpc failed: 500', { status: 500, body: { message: 'CHAT_SEND_CLOSED' } }),
+        new SupabaseError('rpc failed: 500', { status: 500, body: { code: 'PT409', message: 'CHAT_SEND_CLOSED' } }), new SupabaseError('rpc failed: 409', { status: 409, body: { code: 'P0001', message: 'CHAT_SEND_CLOSED' } }),
+        new SupabaseError('rpc failed: 409', { status: 409, body: { message: 'CHAT_SEND_CLOSED' } }),
         new SupabaseError('rpc failed: 409', { status: 409, body: 'CHAT_SEND_CLOSED' }), new Error('CHAT_SEND_CLOSED')]) {
         logged = [];
         const other = turn({ replies: { ledger_debit: err } });

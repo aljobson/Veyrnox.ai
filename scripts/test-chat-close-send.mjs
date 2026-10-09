@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// 0241 (ADR-0067 amendment 11): a chat send is asked about by its own key, and closed when it made no job. Runs
+// 0242 (ADR-0067 amendment 11): a chat send is asked about by its own key, and closed when it made no job. Runs
 // against the full migration replay (ledger-tests.yml). Fixtures are committed so the race between a close and a
 // debit can use real connections; the replay database is throwaway.
 import assert from 'node:assert/strict';
@@ -49,7 +49,7 @@ async function check(name, fn) {
 
 try {
     // Safe to apply twice, and a replay keeps what was closed.
-    const migration = await readFile(new URL('../packages/db/schema/supabase/0241_chat_close_send.sql', import.meta.url), 'utf8');
+    const migration = await readFile(new URL('../packages/db/schema/supabase/0242_chat_close_send.sql', import.meta.url), 'utf8');
     await pool.query(migration); await pool.query(migration);
     for (const id of [CHAT, FREE]) {
         await pool.query(`INSERT INTO public.model_catalog (id, name, provider, provider_endpoint, modality, credits_5s, provider_cost_per_unit, active)
@@ -164,20 +164,60 @@ try {
         assert.equal((await rpc('public.get_user_job($1, $2)', [u.auth, randomUUID()])).code, 'RATE_LIMITED');
     });
 
-    await check('at most 200 closed keys are kept for a person, and one older than 30 days makes room', async () => {
-        const u = await user();
-        await pool.query(`INSERT INTO public.chat_closed_sends (user_id, idempotency_key)
-            SELECT $1, 'vx-' || gen_random_uuid() FROM generate_series(1, 200)`, [u.id]);
+    await check('at most 200 closed keys are kept for a person, and only one older than 30 days makes room', async () => {
+        const u = await user(); const other = await user();
+        const fill = (who, n) => pool.query(`INSERT INTO public.chat_closed_sends (user_id, idempotency_key)
+            SELECT $1, 'vx-' || gen_random_uuid() FROM generate_series(1, $2::int)`, [who.id, n]);
+        await fill(u, 200);
         const key = newKey();
         assert.deepEqual(await close(u, key), { ok: false, code: 'CLOSE_LIMIT' });
         assert.equal(await closedRows(u), 200);
         assert.equal((await debit(u, key)).ok, true, 'not closed: nothing final was said, so the send can still be charged');
+        // The limit is each person's own: someone else closes a send as ever.
+        assert.deepEqual(await close(other, newKey()), { ok: true, closed: true });
         // One already closed still says so at the limit.
         const old = (await one('SELECT idempotency_key AS k FROM public.chat_closed_sends WHERE user_id = $1 LIMIT 1', [u.id])).k;
         assert.deepEqual(await close(u, old), { ok: true, closed: true });
-        await pool.query(`UPDATE public.chat_closed_sends SET closed_at = now() - interval '31 days' WHERE user_id = $1 AND idempotency_key <> $2`, [u.id, old]);
+        // Twenty-nine days is not old enough: nothing is removed, the limit holds, and the key is still refused its job.
+        await pool.query(`UPDATE public.chat_closed_sends SET closed_at = now() - interval '29 days' WHERE user_id = $1`, [u.id]);
+        assert.deepEqual(await close(u, newKey()), { ok: false, code: 'CLOSE_LIMIT' });
+        assert.equal(await closedRows(u), 200);
+        await refusedClosed(() => debit(u, old));
+        // Thirty-one days is. Only this person's old keys go: the other person's stay, however old.
+        await pool.query(`UPDATE public.chat_closed_sends SET closed_at = now() - interval '31 days' WHERE user_id = ANY($1::uuid[]) AND idempotency_key <> $2`, [[u.id, other.id], old]);
         assert.deepEqual(await close(u, newKey()), { ok: true, closed: true });
         assert.equal(await closedRows(u), 2, 'the 199 old ones were removed');
+        assert.equal(await closedRows(other), 1, 'another person\'s closed key is not this call\'s to remove');
+    });
+
+    await check('"closed" is said only under READ COMMITTED, and no function on this path sets another level', async () => {
+        const u = await user(); const key = newKey();
+        for (const level of ['REPEATABLE READ', 'SERIALIZABLE']) {
+            const c = await pool.connect();
+            try {
+                await c.query(`BEGIN ISOLATION LEVEL ${level}`);
+                assert.deepEqual((await c.query('SELECT public.chat_close_send($1, $2) AS r', [u.auth, key])).rows[0].r, { ok: false, code: 'ISOLATION_LEVEL' }, level);
+                await c.query('COMMIT');
+            } finally { await c.query('ROLLBACK').catch(() => {}); c.release(); }
+        }
+        assert.equal(await closedRows(u), 0);
+        assert.equal((await one('SHOW default_transaction_isolation')).default_transaction_isolation, 'read committed');
+        // The debit must see a close that committed while it waited, so it has to run at the default level too.
+        const set = (await pool.query(`SELECT n.nspname || '.' || p.proname AS fn FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+            WHERE p.proname IN ('chat_close_send', 'refuse_closed_chat_send', 'ledger_debit', 'ledger_debit_for_admission', 'submit_free_job', 'submit_free_job_for_admission')
+              AND EXISTS (SELECT 1 FROM unnest(COALESCE(p.proconfig, '{}')) c WHERE c LIKE 'default_transaction_isolation%' OR c LIKE 'transaction_isolation%')`)).rows;
+        assert.deepEqual(set, []);
+    });
+
+    await check('a person\'s closed keys go with the person', async () => {
+        const fk = await one(`SELECT confdeltype FROM pg_constraint WHERE conrelid = 'public.chat_closed_sends'::regclass AND contype = 'f'`);
+        assert.equal(fk.confdeltype, 'c', 'ON DELETE CASCADE to users');
+        // Someone with no jobs and no ledger rows can be deleted (other tests remove such fixtures): a closed key must not hold them.
+        const auth = randomUUID();
+        const { id } = await one('SELECT public.provision_user($1, $2) AS id', [auth, `${auth}@example.invalid`]);
+        assert.deepEqual(await close({ auth }, newKey()), { ok: true, closed: true });
+        assert.equal((await pool.query('DELETE FROM public.users WHERE id = $1', [id])).rowCount, 1);
+        assert.equal(await count('public.chat_closed_sends WHERE user_id = $1', [id]), 0);
     });
 
     await check('a close and a debit racing for one key: never both "closed" and a job', async () => {

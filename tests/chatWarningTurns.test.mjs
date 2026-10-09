@@ -279,6 +279,10 @@ test('two messages whose chats were deleted leave one warning under New chat for
     // Charged and not stored: said. Saved: New chat has no chat to show the reply, so the warning stays, and it is not asked about again.
     storage = await left();
     assert.deepEqual((await opened(storage, NEW_CHAT, byId({ [JOB]: JOBS.refunded, [OTHER_JOB]: JOBS.unsaved }))).notice, { code: 'reply_not_saved' });
+    // Under New chat the box is never emptied, whatever was saved: there is no chat on screen that shows the message.
+    storage = await left();
+    writeDraft(storage, ME, NEW_CHAT, TEXT);
+    assert.deepEqual(await opened(storage, NEW_CHAT, byId({ [JOB]: JOBS.saved, [OTHER_JOB]: JOBS.unsaved })), { box: TEXT, notice: { code: 'reply_not_saved' }, changed: true, calls: [JOB, OTHER_JOB] });
     storage = await left();
     const before = readNotice(storage, ME, NEW_CHAT);
     const after = await opened(storage, NEW_CHAT, byId({ [JOB]: JOBS.saved, [OTHER_JOB]: JOBS.refunded }));
@@ -300,4 +304,25 @@ test('answers for the turns that were read are not acted on once the warning sta
     for (const turns of [[{ job: JOB, sent: MARK }, { job: 'aaaaaaaa-0000-4000-8000-000000000009', sent: MARK }], [{ job: OTHER_JOB, sent: MARK }, { job: JOB, sent: MARK }], [{ job: JOB }, { job: OTHER_JOB, sent: MARK }]]) {
         assert.equal(settleKeptWarning(storage, ME, 'chat-a', { warning: { code: 'stop_unsure', turns }, verdicts: ['refunded', 'refunded'] }), false, JSON.stringify(turns));
     }
+    // The same for sends kept by their keys: an answer about one key says nothing of a warning kept with another.
+    const early = await leftBy(stopBeforeStart, { key: KEY });
+    assert.equal(settleKeptWarning(early, ME, 'chat-a', { warning: { code: 'stop_unsure', key: OTHER_KEY, sent: MARK }, verdicts: ['refunded'] }), false);
+    assert.deepEqual(kept(early), { code: 'stop_unsure', key: KEY, sent: MARK });
+    const both = await twice(stopBeforeStart, stopBeforeStart, { key: KEY }, { key: OTHER_KEY });
+    for (const turns of [[{ key: KEY, sent: MARK }, { key: 'vx-aaaaaaaa-0000-4000-8000-000000000009', sent: MARK }], [{ key: OTHER_KEY, sent: MARK }, { key: KEY, sent: MARK }], [{ job: JOB, sent: MARK }, { key: OTHER_KEY, sent: MARK }]]) {
+        assert.equal(settleKeptWarning(both, ME, 'chat-a', { warning: { code: 'stop_unsure', turns }, verdicts: ['refunded', 'refunded'] }), false, JSON.stringify(turns));
+    }
+    assert.equal(turnsOf(kept(both)).length, 2);
+});
+
+test('a browser that cannot make a key: the message ends like any that never started, with its text back', async () => {
+    // The key is made inside the guarded part of send(), as it was when it was made in the call itself. Outside it, a
+    // throw left the box empty and the composer busy until the page was reloaded.
+    const storage = memory();
+    const sent = [];
+    const { log } = await run({ active: A, turn: async (args) => { sent.push(args); return { replay: false }; }, storage, key: () => { throw new TypeError('crypto.randomUUID is not a function'); } });
+    assert.deepEqual(sent, [], 'nothing went out');
+    assert.deepEqual(log.box, ['', TEXT], 'emptied at the press, and given back');
+    assert.deepEqual(afterReload(storage, 'chat-a'), { box: TEXT, notice: { code: 'unknown' } }, 'said, as any failure before the reply starts is');
+    assert.equal(kept(storage), null, 'nothing was charged, so nothing warns of Credits');
 });

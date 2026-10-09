@@ -18,7 +18,7 @@ export async function POST(req) {
     // The quota is counted inside chat_close_send (consume_job_read_request), like the job read: not the chat read bucket.
     const gate = await enter(req, { readLimit: false });
     if (gate instanceof Response) return gate;
-    // Off until migration 0241 is applied. The browser reads any refusal as no answer, and its warning stays.
+    // Off until migration 0242 is applied. The browser reads any refusal as no answer, and its warning stays.
     if (!sendCloseEnabled(process.env)) return reply({ error: 'send_close_not_open' }, 503);
     const limited = await limitRequestBody(req);
     if (limited.response) return limited.response;

@@ -301,7 +301,7 @@ screen change with its own browser check.
 
 ## Amendment 11 2026-10-09: a send can be asked about by its own key, and closed
 
-Status: **Proposed**. The owner accepts it by merging the change, and it takes effect when migration 0241 is applied and
+Status: **Proposed**. The owner accepts it by merging the change, and it takes effect when migration 0242 is applied and
 `CHAT_SEND_CLOSE_ENABLED` is set to `"true"`.
 
 The chat screen keeps a warning when a message ended with its turn not settled ("If a reply is still saved, it will show in this
@@ -321,7 +321,7 @@ so "no job" can stop being true. No time limit makes it final either: the Worker
 that answers later is not seen, so there is no bound the server can promise. It is final only when the database says so in the
 same step that makes it so:
 
-- `chat_close_send(auth id, key)` (migration 0241), behind `POST /api/v1/chat/sends/close`. It returns the job that send made,
+- `chat_close_send(auth id, key)` (migration 0242), behind `POST /api/v1/chat/sends/close`. It returns the job that send made,
   in the shape of the job read. Or, when the send made none, it records the key in `chat_closed_sends` and answers
   `closed: true`.
 - From then on the database refuses to make a chat job for that person and key. A `BEFORE INSERT` trigger on `jobs` raises,
@@ -329,6 +329,9 @@ same step that makes it so:
   anything else. Nothing is charged, no allowance is used, and the turn answers `409 send_closed` to a reader who has gone.
 - The close and the debit take the same per-key advisory lock and hold it to the end of their transaction, so for one key
   exactly one of them wins: a debit that came first is found by the close, and a close that came first is seen by the trigger.
+  This rests on READ COMMITTED, the level the API runs every call in and the one the ledger's lock-then-read functions are
+  written for. `chat_close_send` answers nothing under any other level, and a database test fails if a function on this path
+  is given one.
 
 Closing is what the person asked for: a key with no job id is only ever kept for a message they stopped.
 
@@ -341,7 +344,13 @@ made a job never reaches the insert and is unchanged.
 four it keeps none, is never asked about, and stays until a later message is saved, as before this amendment: dropping the
 oldest would let the listed four settle a warning that still stands for a fifth. The same when it takes the place of a warning
 that had nothing to ask by. Every turn is asked about each time the chat is opened, and nothing changes until all of them have a
-final answer:
+final answer. (A later message from the chat that is saved still forgets the warning, as it always has. Keys kept with it are
+then not closed.)
+
+One turn is stored in the notice itself, as pull request 764 stored it. Several are stored in a record of their own beside the
+notice, and the notice carries only a tag the record repeats. A page still running pull request 764's code reads a notice of 120
+characters at most: with the list inside the notice it would read nothing, show no warning and forget it at the next send. Kept
+this way it reads the same warning with nothing to ask by, which is what that code kept for two messages itself.
 
 | All of them together | The warning | The box |
 |---|---|---|
@@ -365,10 +374,13 @@ in its place (the first rewrites the function every debit goes through, which tw
 second holds only for Workers that call the wrapper). A placeholder row in `jobs` for a closed key (it would show in job lists,
 counts and the 10-per-minute limit).
 
-**Order.** The Worker may deploy before 0241 is applied. The route then answers `503 send_close_not_open` (the switch is
-`"false"`), the screen reads that as no answer, and every warning stays as it did. After the migration is applied through the
-`apply-migrations` workflow, the switch is turned on by a change to `wrangler.jsonc`. The trigger refuses nothing until a key is
-closed, and nothing closes a key while the switch is off.
+**Order.** The Worker may deploy before 0242 is applied. The route then answers `503 send_close_not_open` (the switch is
+`"false"`), the screen reads that as no answer, and a warning for a message stopped before its reply started stays as it did.
+After the migration is applied through the `apply-migrations` workflow, the switch is turned on by a change to `wrangler.jsonc`.
+The trigger refuses nothing until a key is closed, and nothing closes a key while the switch is off.
+
+The switch covers only asking by key. A warning for several messages that each have a job id needs no migration: it is settled
+by job reads, as one message has been since pull request 764, from the moment the Worker deploys.
 
 Unchanged: every ending of a turn, the price, the refund paths and the sweep. A dropped connection before `start` (as opposed to
 Stop) still gives the message back as "not sent" and keeps no warning.

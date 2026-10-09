@@ -12,6 +12,9 @@
 -- The two cannot both happen for one key. Each takes the same per-key advisory lock first and holds it to the end of
 -- its transaction, so whichever comes second sees what the first committed: a debit that came first is found by the
 -- close, and a close that came first is seen by the trigger.
+-- "Sees what the first committed" is READ COMMITTED, the level the API runs every call in and the one the ledger's
+-- own lock-then-read functions are written for. chat_close_send says nothing under any other level, and no function
+-- here or on the debit path sets one (scripts/test-chat-close-send.mjs holds that).
 --
 -- Only a chat reply's job is refused (0193 marks it `kind: chat` in its inputs, as 0233 reads it). Every other insert
 -- into jobs passes untouched, whatever is in chat_closed_sends. A replay of a send that did make a job never reaches
@@ -42,7 +45,7 @@ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$
 BEGIN
     IF NEW.inputs->>'kind' IS DISTINCT FROM 'chat' THEN RETURN NEW; END IF;
     -- The same lock chat_close_send takes for this person and key, held until this transaction ends.
-    PERFORM pg_advisory_xact_lock(hashtextextended(NEW.user_id::text || ':' || NEW.idempotency_key, 241));
+    PERFORM pg_advisory_xact_lock(hashtextextended(NEW.user_id::text || ':' || NEW.idempotency_key, 242));
     IF EXISTS (SELECT 1 FROM public.chat_closed_sends c
                WHERE c.user_id = NEW.user_id AND c.idempotency_key = NEW.idempotency_key) THEN
         RAISE EXCEPTION 'CHAT_SEND_CLOSED' USING ERRCODE = 'PT409';
@@ -84,6 +87,12 @@ BEGIN
         RETURN jsonb_build_object('ok', false, 'code', 'INVALID_KEY');
     END IF;
 
+    -- After waiting for the lock below, this call must see a job the debit committed meanwhile. A snapshot taken
+    -- before the wait would not, and "closed" would be said of a send that has a job.
+    IF current_setting('transaction_isolation') <> 'read committed' THEN
+        RETURN jsonb_build_object('ok', false, 'code', 'ISOLATION_LEVEL');
+    END IF;
+
     SELECT id INTO v_user_id FROM public.users WHERE auth_id = p_auth_id;
     IF v_user_id IS NULL THEN
         RETURN jsonb_build_object('ok', false, 'code', 'USER_NOT_FOUND');
@@ -94,7 +103,7 @@ BEGIN
     IF v_rate->>'ok' IS DISTINCT FROM 'true' THEN RETURN v_rate; END IF;
 
     -- Wait for a debit that is making a job for this key right now, and keep one from starting until this call ends.
-    PERFORM pg_advisory_xact_lock(hashtextextended(v_user_id::text || ':' || p_idempotency_key, 241));
+    PERFORM pg_advisory_xact_lock(hashtextextended(v_user_id::text || ':' || p_idempotency_key, 242));
 
     -- The caller's own jobs only. Another person's key reads as one that made no job, whether it did or not.
     SELECT * INTO v_job FROM public.jobs

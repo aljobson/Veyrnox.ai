@@ -1,5 +1,6 @@
 // Chat conveniences kept in this browser only, like the library favourites:
-// an unsent draft per chat, the notice that goes with it, and the replies a
+// an unsent draft per chat, the notice that goes with it (and, for a warning
+// that stands for several messages, the list of them), and the replies a
 // user starred. Nothing is sent to the server, so none of it follows the user
 // to another device. Every key carries
 // the signed-in user's id, and authClient's setSession calls clearChatLocal
@@ -10,13 +11,15 @@
 const DRAFT_PREFIX = 'veyrnox_chat_draft_v2:';
 const STAR_PREFIX = 'veyrnox_chat_stars_v2:';
 const NOTICE_PREFIX = 'veyrnox_chat_notice_v1:';
+const TURNS_PREFIX = 'veyrnox_chat_turns_v1:'; // beside a chat's notice: the turns of a warning that stands for several messages
 // The v1 draft and star keys had no user id in them. They are never read, only removed.
-const ALL_PREFIXES = [DRAFT_PREFIX, STAR_PREFIX, NOTICE_PREFIX, 'veyrnox_chat_draft_v1:', 'veyrnox_chat_stars_v1:'];
+const ALL_PREFIXES = [DRAFT_PREFIX, STAR_PREFIX, NOTICE_PREFIX, TURNS_PREFIX, 'veyrnox_chat_draft_v1:', 'veyrnox_chat_stars_v1:'];
 export const NEW_CHAT = 'new';
 export const MAX_DRAFT = 8000;
 export const MAX_STARS = 200;
-export const MAX_NOTICE = 320; // characters of one stored notice: a code, the number its words may need, and for a warning the turns it stands for (315 at most)
+export const MAX_NOTICE = 120; // characters of one stored notice: a code, the number its words may need, and for a warning its one turn (91 at most)
 export const MAX_TURNS = 4;    // turns one warning can list. One more and it lists none: it is then never asked about (turnsFor below)
+export const MAX_TURNS_RECORD = 320; // characters of one stored list of turns (313 at most)
 const MAX_NOTICE_CREDITS = 1_000_000;
 const UNKNOWN_NOTICE = 'unknown';
 // Notices that say Credits were used, or still may be, by a message the chat does not show: Stop or a dropped
@@ -34,6 +37,7 @@ const ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
 const JOB_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i; // a job id as the server makes them
 const KEY_RE = /^vx-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/; // a send's idempotency key as the browser makes them (gateway.js)
 const MARK_RE = /^[0-9a-z]{1,4}\.[0-9a-z]{1,7}$/;
+const TAG_RE = /^[0-9a-z]{8}$/; // what ties a notice to its list of turns
 
 const ok = (id) => typeof id === 'string' && ID_RE.test(id);
 const keyFor = (prefix, userId, id) => (ok(userId) && ok(id) ? `${prefix}${userId}:${id}` : null);
@@ -105,29 +109,46 @@ export function turnsOf(warning) {
   return one ? [one] : [];
 }
 
-// What a notice is stored with for its turns. One turn is stored as it was before a warning could list several
-// (`job` or `key`, and `sent`), so a record written by an earlier version of this page reads the same.
+// What a warning is read back with for its turns: one as PR 764 read it (`job` or `key`, and `sent`), several as `turns`.
 const withTurns = (turns) => (turns.length > 1 ? { turns } : turns.length === 1 ? turns[0] : {});
 
-// The turns read back from one stored notice. A list is read whole or not at all: if one turn in it cannot be asked
-// about, the others must not settle the warning without it.
-function storedTurns(n) {
+// Where a warning's turns are stored. One turn sits in the notice itself, as it did before a warning could list several.
+// Several sit in a record of their own beside it, and the notice carries only a tag (`list`) that the record repeats.
+// A page still running the code from before this reads a notice of 120 characters at most, and one that is longer as no
+// notice at all: it would show nothing for the chat and forget the warning at the next send. Kept this way, it reads
+// the notice as that warning with nothing to ask by, which is what it kept itself for a warning that stood for two
+// messages. And a notice it writes over this one has no tag, so the list that was beside the old one is not read for it.
+// A list is read whole or not at all: if one turn in it cannot be asked about, the others must not settle the warning
+// without it.
+function storedTurns(storage, userId, chatId, n) {
   if (!ASKABLE.has(n.code)) return [];
-  if (n.turns === undefined) { const one = turn(n.job, n.key, n.code === GIVEN_BACK ? n.sent : null); return one ? [one] : []; }
-  if (!Array.isArray(n.turns) || n.turns.length < 2 || n.turns.length > MAX_TURNS || n.job !== undefined || n.key !== undefined) return [];
-  const turns = n.turns.map((t) => (t && typeof t === 'object' ? turn(t.job, t.key, t.sent) : null));
-  return turns.every(Boolean) ? turns : [];
+  if (n.list === undefined) { const one = turn(n.job, n.key, n.code === GIVEN_BACK ? n.sent : null); return one ? [one] : []; }
+  if (typeof n.list !== 'string' || !TAG_RE.test(n.list) || n.job !== undefined || n.key !== undefined) return [];
+  try {
+    const raw = storage.getItem(keyFor(TURNS_PREFIX, userId, chatId));
+    if (typeof raw !== 'string' || raw.length > MAX_TURNS_RECORD) return [];
+    const kept = JSON.parse(raw);
+    if (!kept || kept.list !== n.list || !Array.isArray(kept.turns) || kept.turns.length < 2 || kept.turns.length > MAX_TURNS) return [];
+    const turns = kept.turns.map((t) => (t && typeof t === 'object' ? turn(t.job, t.key, t.sent) : null));
+    return turns.every(Boolean) ? turns : [];
+  } catch {
+    return [];
+  }
 }
 
 // The turns a warning being written stands for: its own, after those of each warning it takes the place of. If any of
 // them cannot be listed (it had nothing to ask by, or there are more than MAX_TURNS) none is kept: answers about some
-// of the turns must never settle a warning that also stands for another.
+// of the turns must never settle a warning that also stands for another. A turn handed in twice (the warning read
+// before the write is also the one still kept there) is listed once.
 function turnsFor(code, own, earlier) {
   if (!ASKABLE.has(code) || !own) return [];
   const lists = earlier.filter(Boolean).map(turnsOf);
   if (lists.some((list) => !list.length)) return [];
   const all = [...lists.flat().map((t) => turn(t.job, t.key, t.sent)), own];
-  return all.every(Boolean) && all.length <= MAX_TURNS ? all : [];
+  if (!all.every(Boolean)) return [];
+  const seen = new Set();
+  const each = all.filter((t) => { const by = t.job || t.key; if (seen.has(by)) return false; seen.add(by); return true; });
+  return each.length <= MAX_TURNS ? each : [];
 }
 
 // One stored notice, as far as it can be trusted: it is short, it parses, and it has a code. Each reader below takes
@@ -169,7 +190,7 @@ export function readNotice(storage, userId, chatId) {
  */
 export function readCreditsWarning(storage, userId, chatId) {
   const n = stored(storage, userId, chatId);
-  return n && CREDITS_WARNINGS.has(n.code) ? { code: n.code, ...withTurns(storedTurns(n)) } : null;
+  return n && CREDITS_WARNINGS.has(n.code) ? { code: n.code, ...withTurns(storedTurns(storage, userId, chatId, n)) } : null;
 }
 
 /**
@@ -188,7 +209,12 @@ export function writeNotice(storage, userId, chatId, code, { credits, job, key, 
     const kept = ok(code) ? code : UNKNOWN_NOTICE;
     const own = turn(job, key, kept === GIVEN_BACK && typeof sent === 'string' ? textMark(sent) : null);
     const turns = turnsFor(kept, own, [after, readCreditsWarning(storage, userId, chatId)]);
-    storage.setItem(at, JSON.stringify({ code: kept, ...(wholeCredits(credits) && { credits }), ...withTurns(turns) }));
+    // Several turns: their list first, then the notice that names it. If the second write fails, the notice still
+    // there names another list or none, and has nothing to ask by.
+    const list = turns.length > 1 ? Math.random().toString(36).slice(2, 10).padEnd(8, '0') : null;
+    const beside = keyFor(TURNS_PREFIX, userId, chatId);
+    if (list) storage.setItem(beside, JSON.stringify({ list, turns })); else storage.removeItem(beside);
+    storage.setItem(at, JSON.stringify({ code: kept, ...(wholeCredits(credits) && { credits }), ...(list ? { list } : turns[0]) }));
   } catch { /* blocked or full: nothing is kept, and the notice is on screen only */ }
 }
 
@@ -196,7 +222,7 @@ export function writeNotice(storage, userId, chatId, code, { credits, job, key, 
 export function clearNotice(storage, userId, chatId) {
   const key = keyFor(NOTICE_PREFIX, userId, chatId);
   if (!key) return;
-  try { storage.removeItem(key); } catch { /* storage may be unavailable */ }
+  try { storage.removeItem(key); storage.removeItem(keyFor(TURNS_PREFIX, userId, chatId)); } catch { /* storage may be unavailable */ }
 }
 
 /** @returns {string[]} message ids the user starred in this chat, newest first */

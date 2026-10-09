@@ -33,7 +33,7 @@ export function useChatSend({ text, setText, model, imagesBlocked, chosen, price
     sendingRef.current = true; setBusy(true); setError(null); setText('');
     let thread = active; let created = false; const pending = `pending-${Date.now()}`;
     const knownIds = new Set(messages.map((x) => x.id)); let jobId = null; // to tell this turn from the ones already on screen
-    const key = makeIdempotencyKey(); // made before any request: with no job id (Stop before `start`), the server is asked about this send by it
+    let key = null; // this send's idempotency key, made below before any request: with no job id (Stop before `start`), the server is asked about the send by it
     // The notice kept for the chat this message is sent from is about the message before it, and goes at the press. Unless it warns
     // that the one before used Credits or still may: that is forgotten only by an ending of this message that accounts for Credits
     // itself. Either this message was saved (reload(): the chat shows it and its price, and is read again when it is on screen), or
@@ -85,6 +85,7 @@ export function useChatSend({ text, setText, model, imagesBlocked, chosen, price
     let hadText = false; // some of the reply reached the screen
     let started = false; // the `start` event arrived: the Credits have been debited
     try {
+      key = makeIdempotencyKey(); // in here: a browser that cannot make one ends like any message that never started
       // Images go to storage first, before anything is charged: a failed upload costs nothing.
       // A Library image is already in storage; the server checks it is the caller's own, so it is sent by id.
       const refs = [];

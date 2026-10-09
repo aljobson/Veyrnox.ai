@@ -5,15 +5,17 @@
 //   - the send's own idempotency key when there is no job id. The browser makes the key before any request, and the
 //     server can be asked about a send by it (POST /api/v1/chat/sends/close);
 //   - every turn the warning stands for, up to MAX_TURNS, when it took the place of another. Past that it keeps none.
+//     The list is kept in a record of its own beside the notice, so that a page still running the code from before
+//     this (which reads a notice of 120 characters at most) still reads the notice as that warning.
 // Storage is not trusted: each field is read back only in its own shape, and a list of turns whole or not at all.
 // tests/chatLocal.test.mjs holds the rest of the store; tests/chatWarningTurns.test.mjs what is done with the answers.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { MAX_DRAFT, MAX_NOTICE, MAX_TURNS, clearNotice, readCreditsWarning, readNotice, textMark, turnsOf, writeNotice } from '../app/veyrnox/_lib/chatLocal.js';
+import { MAX_DRAFT, MAX_NOTICE, MAX_TURNS, MAX_TURNS_RECORD, clearChatLocal, clearNotice, readCreditsWarning, readNotice, textMark, turnsOf, writeNotice } from '../app/veyrnox/_lib/chatLocal.js';
 
 const memory = () => {
   const m = new Map();
-  return { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, v), removeItem: (k) => m.delete(k), keys: () => [...m.keys()] };
+  return { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, v), removeItem: (k) => m.delete(k), keys: () => [...m.keys()], key: (i) => [...m.keys()][i], get length() { return m.size; } };
 };
 const ME = 'user-a';
 const CHAT = 'thread-1';
@@ -25,6 +27,14 @@ const ASKABLE = ['stop_unsure', 'stop_saving', 'connection_lost'];
 const keyOf = (s, chat = CHAT) => s.keys().find((k) => k.startsWith('veyrnox_chat_notice_') && k.endsWith(`:${chat}`));
 const raw = (s, chat = CHAT) => s.getItem(keyOf(s, chat));
 const kept = (s, chat = CHAT) => readCreditsWarning(s, ME, chat);
+// The list of turns of a warning that stands for several, as it sits in storage beside the notice.
+const listKey = (chat = CHAT) => `veyrnox_chat_turns_v1:${ME}:${chat}`;
+const rawList = (s, chat = CHAT) => s.getItem(listKey(chat));
+/** A warning for several turns written straight into storage: the notice with its tag, and the list that repeats it. */
+const setList = (s, code, turns, { tag = 'abcd1234', listTag = tag, chat = CHAT } = {}) => {
+  s.setItem(`veyrnox_chat_notice_v1:${ME}:${chat}`, JSON.stringify({ code, list: tag }));
+  s.setItem(listKey(chat), JSON.stringify({ list: listTag, turns }));
+};
 
 // ---- a send that never started: its own key ----
 
@@ -74,8 +84,8 @@ test('storage is not trusted: a key is read back only in the shape the browser m
     assert.equal(s.getItem(at), '{"code":"connection_lost"}', `not written either: ${JSON.stringify(bad)}`);
   }
   // A job and a key side by side (not something the screen writes): the job is the one read back.
-  s.setItem(at, JSON.stringify({ code: 'stop_unsure', job: JOB, key: KEY, sent: mark }));
-  assert.deepEqual(kept(s), { code: 'stop_unsure', job: JOB, sent: mark });
+  s.setItem(at, JSON.stringify({ code: 'stop_unsure', job: JOB, key: KEY }));
+  assert.deepEqual(kept(s), { code: 'stop_unsure', job: JOB });
   // A key beside a notice that cannot be asked about is not read back, whatever put it there.
   s.setItem(at, JSON.stringify({ code: 'reply_not_saved', key: KEY }));
   assert.deepEqual(kept(s), { code: 'reply_not_saved' });
@@ -98,11 +108,44 @@ test('a warning written over a kept warning keeps both turns, in the order they 
   writeNotice(s, ME, CHAT, 'stop_unsure', { job: JOB, sent: 'one' });
   writeNotice(s, ME, CHAT, 'stop_saving', { job: JOB_2, sent: 'two' });
   assert.deepEqual(kept(s), { code: 'stop_saving', turns: [{ job: JOB, sent: textMark('one') }, { job: JOB_2 }] }, 'each turn keeps the mark it was written with, or none');
-  assert.equal(raw(s), `{"code":"stop_saving","turns":[{"job":"${JOB}","sent":"${textMark('one')}"},{"job":"${JOB_2}"}]}`);
+  // In storage: the notice with a tag, and beside it the list that repeats the tag.
+  const tag = /^\{"code":"stop_saving","list":"([0-9a-z]{8})"\}$/.exec(raw(s));
+  assert.ok(tag, raw(s));
+  assert.equal(rawList(s), `{"list":"${tag[1]}","turns":[{"job":"${JOB}","sent":"${textMark('one')}"},{"job":"${JOB_2}"}]}`);
   assert.deepEqual(readNotice(s, ME, CHAT), { code: 'stop_saving' }, 'the screen still reads a code and nothing else');
-  // A send that never started joins the same way, by its key.
+  // A send that never started joins the same way, by its key. Each write has a tag of its own.
   writeNotice(s, ME, CHAT, 'stop_unsure', { key: KEY, sent: 'three' });
   assert.deepEqual(turnsOf(kept(s)), [{ job: JOB, sent: textMark('one') }, { job: JOB_2 }, { key: KEY, sent: textMark('three') }]);
+  assert.notEqual(JSON.parse(raw(s)).list, tag[1]);
+});
+
+test('a page running the code from before this still reads a several-turn warning as that warning, with nothing to ask by', () => {
+  // PR 764's reader: a notice longer than 120 characters is no notice, and a warning is `{code}` plus a `job` in the
+  // shape of a job id. A list inside the notice (130 to 320 characters) read as nothing there: the chat showed no
+  // notice beside the given-back text, and the next send from that page forgot the warning.
+  const olderReader = (rawNotice) => {
+    if (typeof rawNotice !== 'string' || rawNotice.length > 120) return null;
+    const n = JSON.parse(rawNotice);
+    return { code: n.code, ...(typeof n.job === 'string' && /^[0-9a-f-]{36}$/i.test(n.job) ? { job: n.job } : {}) };
+  };
+  const s = memory();
+  const long = 'x'.repeat(MAX_DRAFT);
+  for (const key of [KEY, KEY_2, 'vx-aaaaaaaa-0000-4000-8000-000000000003', 'vx-aaaaaaaa-0000-4000-8000-000000000004']) {
+    writeNotice(s, ME, CHAT, 'connection_lost', { key, sent: long });
+    // The longest code there is: the notice is the same short record however many turns it stands for.
+    assert.ok(raw(s).length <= 120, `${raw(s).length} characters`);
+    assert.deepEqual(olderReader(raw(s)), { code: 'connection_lost' }, 'a warning, and no job: that page never asks about it, so it stays');
+  }
+  assert.equal(turnsOf(kept(s)).length, 4);
+  // That page then writes a warning of its own over it (it keeps no job with one that takes another's place). The
+  // list that was beside the old notice is not read for the new one: it has no tag.
+  s.setItem(keyOf(s), '{"code":"stop_unsure"}');
+  assert.deepEqual(kept(s), { code: 'stop_unsure' });
+  assert.ok(rawList(s), 'the old list is still there, and is not read');
+  // One turn is stored in the notice itself, in the shape that page wrote and reads.
+  clearNotice(s, ME, CHAT); writeNotice(s, ME, CHAT, 'stop_unsure', { job: JOB, sent: 'one' });
+  assert.deepEqual(olderReader(raw(s)), { code: 'stop_unsure', job: JOB });
+  assert.equal(rawList(s), null);
 });
 
 test('a warning that was forgotten in one place and kept in another carries its turns with it', () => {
@@ -125,6 +168,19 @@ test('a warning that was forgotten in one place and kept in another carries its 
   assert.equal(raw(s, 'fresh'), `{"code":"stop_unsure","job":"${JOB}","sent":"${textMark('one')}"}`);
 });
 
+test('a turn that is handed in and also still kept where the warning lands is listed once', () => {
+  // The notice of the chat was forgotten at the press, and another tab then kept a warning for the same chat while
+  // this message was on its way: the warning read before the write is the very one the write lands on.
+  const s = memory();
+  writeNotice(s, ME, CHAT, 'stop_unsure', { job: JOB, sent: 'one' });
+  writeNotice(s, ME, CHAT, 'stop_unsure', { key: KEY, sent: 'two', after: kept(s) });
+  assert.deepEqual(kept(s), { code: 'stop_unsure', turns: [{ job: JOB, sent: textMark('one') }, { key: KEY, sent: textMark('two') }] });
+  // The same with a list: three turns stay three, and the fourth is the new one. Counted twice they would pass the limit and none would be kept.
+  writeNotice(s, ME, CHAT, 'stop_unsure', { job: JOB_2, sent: 'three', after: kept(s) });
+  writeNotice(s, ME, CHAT, 'stop_unsure', { key: KEY_2, sent: 'four', after: kept(s) });
+  assert.deepEqual(turnsOf(kept(s)).map((t) => t.job || t.key), [JOB, KEY, JOB_2, KEY_2]);
+});
+
 test('a notice that is not a warning about Credits is not a turn: what is written over it stands for one turn', () => {
   for (const code of ['insufficient_balance', 'stop_saved', 'turns_settled', 'connection_saved', 'connection_refunded', 'unknown']) {
     const s = memory();
@@ -139,17 +195,20 @@ test('a warning that takes the place of one with nothing to ask keeps nothing to
     (s) => writeNotice(s, ME, CHAT, 'stop_unsure'),                       // kept before sends had keys, or its key was not usable
     (s) => writeNotice(s, ME, CHAT, 'reply_not_saved'),                   // charged and not in the chat: settled, and still a warning
     (s) => s.setItem(`veyrnox_chat_notice_v1:${ME}:${CHAT}`, JSON.stringify({ code: 'stop_unsure', job: 'job-1' })), // changed in storage
+    (s) => setList(s, 'stop_unsure', [{ job: JOB }, { job: 'job-1' }]),   // a list with a turn that cannot be asked about
+    (s) => setList(s, 'stop_unsure', [{ job: JOB }, { job: JOB_2 }], { listTag: 'zzzz9999' }), // a list that is not this notice's
   ];
   for (const leave of unlisted) {
     const s = memory(); leave(s);
     writeNotice(s, ME, CHAT, 'stop_unsure', { job: JOB, key: KEY, sent: 'two' });
     assert.deepEqual(kept(s), { code: 'stop_unsure' });
+    assert.equal(rawList(s), null, 'and no list is left beside it');
     // And it stays that way: the next one stands for the unlisted turn too.
     writeNotice(s, ME, CHAT, 'connection_lost', { job: JOB_2 });
     assert.deepEqual(kept(s), { code: 'connection_lost' });
   }
   // The same when the earlier warning is handed in.
-  for (const after of [{ code: 'stop_unsure' }, { code: 'reply_not_saved' }, {}, { code: 'stop_unsure', turns: [] }, { code: 'stop_unsure', job: 'job-1' }, 'stop_unsure', 1]) {
+  for (const after of [{ code: 'stop_unsure' }, { code: 'reply_not_saved' }, {}, { code: 'stop_unsure', turns: [] }, { code: 'stop_unsure', job: 'job-1' }, { code: 'stop_unsure', turns: [{ job: JOB_2 }, { key: 'key' }] }, 'stop_unsure', 1]) {
     const s = memory();
     writeNotice(s, ME, CHAT, 'stop_unsure', { job: JOB, sent: 'two', after });
     assert.deepEqual(kept(s), { code: 'stop_unsure' }, JSON.stringify(after));
@@ -173,65 +232,98 @@ test('a warning lists at most four turns: one more and it keeps none, and none f
   // for a fifth, so nothing is kept: the warning is never asked about, and stays until a later message is saved.
   writeNotice(s, ME, CHAT, 'stop_unsure', { job: 'aaaaaaaa-0000-4000-8000-000000000005', sent: 'text 5' });
   assert.deepEqual(kept(s), { code: 'stop_unsure' });
-  assert.equal(raw(s), '{"code":"stop_unsure"}');
+  assert.deepEqual([raw(s), rawList(s)], ['{"code":"stop_unsure"}', null]);
   writeNotice(s, ME, CHAT, 'stop_unsure', { job: 'aaaaaaaa-0000-4000-8000-000000000006', sent: 'text 6' });
   assert.deepEqual(kept(s), { code: 'stop_unsure' });
 });
 
-test('the longest record there is fits the limit it is read back under, and one character more is no notice at all', () => {
-  assert.equal(MAX_NOTICE, 320);
+test('the longest list there is fits the limit it is read back under, and one character more is no list at all', () => {
+  assert.equal(MAX_TURNS_RECORD, 320);
   const s = memory();
   // Four sends that never started (a key is three characters longer than a job id), each given back with the longest
   // text a draft can hold.
   const long = 'x'.repeat(MAX_DRAFT);
   for (const key of [KEY, KEY_2, 'vx-aaaaaaaa-0000-4000-8000-000000000003', 'vx-aaaaaaaa-0000-4000-8000-000000000004']) writeNotice(s, ME, CHAT, 'stop_unsure', { key, sent: long });
   assert.equal(turnsOf(kept(s)).length, 4);
-  assert.ok(raw(s).length <= MAX_NOTICE, `${raw(s).length} characters`);
-  // The longest code, which never gives the text back, over three that did.
-  clearNotice(s, ME, CHAT);
-  for (const key of [KEY, KEY_2, 'vx-aaaaaaaa-0000-4000-8000-000000000003']) writeNotice(s, ME, CHAT, 'stop_unsure', { key, sent: long });
-  writeNotice(s, ME, CHAT, 'connection_lost', { key: 'vx-aaaaaaaa-0000-4000-8000-000000000004', sent: long });
-  assert.equal(turnsOf(kept(s)).length, 4);
-  assert.ok(raw(s).length <= MAX_NOTICE, `${raw(s).length} characters`);
-  const at = keyOf(s);
-  const fits = (n) => { const base = JSON.stringify({ code: 'stop_unsure', job: JOB, p: '' }); return JSON.stringify({ code: 'stop_unsure', job: JOB, p: 'x'.repeat(n - base.length) }); };
-  s.setItem(at, fits(320)); assert.deepEqual(kept(s), { code: 'stop_unsure', job: JOB });
-  s.setItem(at, fits(321)); assert.equal(kept(s), null);
-  assert.equal(readNotice(s, ME, CHAT), null);
+  assert.ok(rawList(s).length <= MAX_TURNS_RECORD, `${rawList(s).length} characters`);
+  // One turn, in the notice itself: the longest there is, a key and a mark, is inside the notice's own limit.
+  const one = memory();
+  writeNotice(one, ME, CHAT, 'stop_unsure', { key: KEY, sent: long });
+  assert.ok(raw(one).length <= MAX_NOTICE, `${raw(one).length} characters`);
+  // To the character: a list of 320 is read, and 321 is not. The warning itself is still there, with nothing to ask.
+  const turns = [{ job: JOB }, { job: JOB_2 }];
+  const padded = (n) => { const base = JSON.stringify({ list: 'abcd1234', turns, p: '' }); return JSON.stringify({ list: 'abcd1234', turns, p: 'x'.repeat(n - base.length) }); };
+  setList(s, 'stop_unsure', turns);
+  s.setItem(listKey(), padded(320)); assert.deepEqual(kept(s), { code: 'stop_unsure', turns });
+  s.setItem(listKey(), padded(321)); assert.deepEqual(kept(s), { code: 'stop_unsure' });
+  assert.deepEqual(readNotice(s, ME, CHAT), { code: 'stop_unsure' });
 });
 
 test('storage is not trusted: a list of turns is read back whole, each turn in its own shape, or not at all', () => {
   const s = memory();
-  writeNotice(s, ME, CHAT, 'stop_unsure');
-  const at = keyOf(s);
   const mark = textMark('hello');
   const good = [{ job: JOB, sent: mark }, { key: KEY }];
-  s.setItem(at, JSON.stringify({ code: 'stop_unsure', turns: good }));
+  setList(s, 'stop_unsure', good);
   assert.deepEqual(kept(s), { code: 'stop_unsure', turns: good });
   // One turn that cannot be asked about, and the warning has nothing to ask: the rest must not settle it without that one.
   const badTurns = [{ job: 'job-1' }, { key: 'key' }, {}, { sent: mark }, { job: JOB.slice(1) }, { key: KEY.toUpperCase() }, { job: `${JOB}/x` }, null, 'x', 42, [JOB], { job: [JOB] }];
   for (const bad of badTurns) {
     for (const turns of [[bad, { job: JOB }], [{ job: JOB }, bad], [{ job: JOB }, bad, { key: KEY }]]) {
-      s.setItem(at, JSON.stringify({ code: 'stop_unsure', turns }));
+      setList(s, 'stop_unsure', turns);
       assert.deepEqual(kept(s), { code: 'stop_unsure' }, JSON.stringify(turns));
     }
   }
-  // Not a list, a list of one (one turn is stored without a list), or more turns than a warning can list.
+  // Not a list, a list of one (one turn is stored in the notice), or more turns than a warning can list.
   const five = [JOB, JOB_2, 'aaaaaaaa-0000-4000-8000-000000000003', 'aaaaaaaa-0000-4000-8000-000000000004', 'aaaaaaaa-0000-4000-8000-000000000005'].map((job) => ({ job }));
   for (const turns of ['x', 42, {}, { 0: { job: JOB }, length: 2 }, [], [{ job: JOB }], five]) {
-    s.setItem(at, JSON.stringify({ code: 'stop_unsure', turns }));
+    setList(s, 'stop_unsure', turns);
     assert.deepEqual(kept(s), { code: 'stop_unsure' }, JSON.stringify(turns));
   }
-  // A list beside a turn of its own (not something the screen writes): which turns it stands for cannot be told.
-  s.setItem(at, JSON.stringify({ code: 'stop_unsure', job: JOB, turns: good }));
+  // The list has to be the one this notice names: another tag, no tag, a tag in another shape, no list, or one that does not parse.
+  setList(s, 'stop_unsure', good, { listTag: 'zzzz9999' }); assert.deepEqual(kept(s), { code: 'stop_unsure' });
+  for (const tag of ['', 'abc', 'ABCD1234', 'abcd12345', '../abcd12', 42, null, true, ['abcd1234']]) {
+    s.setItem(keyOf(s), JSON.stringify({ code: 'stop_unsure', list: tag })); s.setItem(listKey(), JSON.stringify({ list: tag, turns: good }));
+    assert.deepEqual(kept(s), { code: 'stop_unsure' }, JSON.stringify(tag));
+  }
+  setList(s, 'stop_unsure', good); s.removeItem(listKey()); assert.deepEqual(kept(s), { code: 'stop_unsure' });
+  for (const broken of ['{', 'null', '[]', '"abcd1234"', JSON.stringify({ turns: good })]) {
+    setList(s, 'stop_unsure', good); s.setItem(listKey(), broken);
+    assert.deepEqual(kept(s), { code: 'stop_unsure' }, broken);
+  }
+  // A notice that names a list and carries a turn of its own (not something the screen writes): which turns it stands for cannot be told.
+  setList(s, 'stop_unsure', good); s.setItem(keyOf(s), JSON.stringify({ code: 'stop_unsure', list: 'abcd1234', job: JOB }));
   assert.deepEqual(kept(s), { code: 'stop_unsure' });
+  // A list written into the notice itself (nothing writes one there) is longer than a notice can be: no notice at all.
+  s.setItem(keyOf(s), JSON.stringify({ code: 'stop_unsure', turns: [{ job: JOB }, { job: JOB_2 }] }));
+  assert.ok(raw(s).length > MAX_NOTICE);
+  assert.equal(kept(s), null);
   // A turn takes a job or a key, the job first, and nothing else found in it is passed on. A bad mark is dropped; its turn stays.
-  s.setItem(at, JSON.stringify({ code: 'stop_unsure', turns: [{ job: JOB, key: KEY, words: '<b>x</b>', sent: '<b>5.abc</b>' }, { key: KEY_2, sent: mark, more: 1 }] }));
+  setList(s, 'stop_unsure', [{ job: JOB, key: KEY, words: '<b>x</b>', sent: '<b>5.abc</b>' }, { key: KEY_2, sent: mark, more: 1 }]);
   assert.deepEqual(kept(s), { code: 'stop_unsure', turns: [{ job: JOB }, { key: KEY_2, sent: mark }] });
   // A list beside a notice that cannot be asked about is not read back.
-  s.setItem(at, JSON.stringify({ code: 'reply_not_saved', turns: good }));
-  assert.deepEqual(kept(s), { code: 'reply_not_saved' });
-  s.setItem(at, JSON.stringify({ code: 'stop_saved', turns: good }));
-  assert.equal(kept(s), null);
+  setList(s, 'reply_not_saved', good); assert.deepEqual(kept(s), { code: 'reply_not_saved' });
+  setList(s, 'stop_saved', good); assert.equal(kept(s), null);
   assert.deepEqual(readNotice(s, ME, CHAT), { code: 'stop_saved' });
+});
+
+test('forgetting a notice forgets its list, a warning for one turn leaves none behind, and so does the end of the session', () => {
+  const s = memory();
+  const two = () => { writeNotice(s, ME, CHAT, 'stop_unsure', { job: JOB, sent: 'one' }); writeNotice(s, ME, CHAT, 'stop_unsure', { key: KEY, sent: 'two' }); assert.ok(rawList(s)); };
+  two(); clearNotice(s, ME, CHAT);
+  assert.deepEqual([s.keys().filter((k) => k.endsWith(`:${CHAT}`)), kept(s)], [[], null]);
+  // A notice that is not a warning, or a warning for one turn, written over it: the list goes.
+  two(); writeNotice(s, ME, CHAT, 'stop_saved'); assert.equal(rawList(s), null);
+  two(); writeNotice(s, ME, CHAT, 'reply_not_saved'); assert.equal(rawList(s), null);
+  // Another chat's list is its own.
+  clearNotice(s, ME, CHAT); two(); writeNotice(s, ME, 'thread-2', 'stop_unsure', { job: JOB_2, sent: 'x' }); clearNotice(s, ME, 'thread-2');
+  assert.equal(turnsOf(kept(s)).length, 2);
+  // Signing out, or another person signing in, clears every chat key in this browser: the lists too.
+  s.setItem('unrelated', 'kept');
+  clearChatLocal(s);
+  assert.deepEqual(s.keys(), ['unrelated']);
+  // With no user, or storage that throws, nothing is read or written and nothing is thrown.
+  writeNotice(s, null, CHAT, 'stop_unsure', { job: JOB }); assert.deepEqual(s.keys(), ['unrelated']);
+  const blocked = { getItem() { throw new Error('blocked'); }, setItem() { throw new Error('blocked'); }, removeItem() { throw new Error('blocked'); } };
+  writeNotice(blocked, ME, CHAT, 'stop_unsure', { job: JOB }); clearNotice(blocked, ME, CHAT);
+  assert.equal(readCreditsWarning(blocked, ME, CHAT), null);
 });

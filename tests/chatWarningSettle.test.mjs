@@ -105,8 +105,10 @@ test('send() keeps the job with each warning about a turn that had started, and 
     // three): one place, not three call sites. With them goes the warning this notice takes the place of, read before
     // it is forgotten, so the store can keep every turn the new one stands for (tests/chatWarningTurns.test.mjs).
     assert.match(sender, /\n {4}const tell = \(code, extra\) => \{ const before = heldWarning\(from\); forgetEarlier\(\); const \{ home, here \} = at\(\); keepNotice\(home, code, \{ \.\.\.extra, job: jobId, key, sent: content, after: before \}\); if \(here\) setError\(chatErrorCopy\(code, extra\)\); \};\n/);
-    // The key is made once, before any request, and it is the one the send goes out with.
-    assert.match(sender, /\n {4}const key = makeIdempotencyKey\(\);[^\n]*\n/);
+    // The key is made once, before any request (the first thing inside the try: a browser that cannot make one ends like
+    // any message that never started), and it is the one the send goes out with.
+    assert.match(sender, /\n {4}let key = null;[^\n]*\n/);
+    assert.match(sender, /\n {4}try \{\n {6}key = makeIdempotencyKey\(\);[^\n]*\n/);
     assert.match(sender, /sendTurn\(\{\n {8}threadId: thread\.id, text: content, key, options: chosen,/);
     assert.equal(sender.split('makeIdempotencyKey(').length - 1, 1);
 });

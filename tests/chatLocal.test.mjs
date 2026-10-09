@@ -346,7 +346,7 @@ test('the one warning that gives the message back keeps a mark of its text besid
   assert.equal(textMark(text), textMark('Describe a lighthouse.'));
   for (const other of ['Describe a lighthouse', 'describe a lighthouse.', 'Describe a lighthouse. ', `${text}\n\ntyped since`, '']) assert.notEqual(textMark(other), textMark(text), JSON.stringify(other));
   assert.match(textMark('x'.repeat(MAX_DRAFT)), /^[0-9a-z]{1,4}\.[0-9a-z]{1,7}$/, 'the longest draft still fits the shape');
-  // The longest record for one turn still fits the limit it is read back under (four turns: tests/chatLocalTurns.test.mjs).
+  // The longest record there is still fits the limit it is read back under (a send's key in place of the job: tests/chatLocalTurns.test.mjs).
   clearNotice(s, ME, 'thread-1'); writeNotice(s, ME, 'thread-1', 'stop_unsure', { job: JOB, sent: 'x'.repeat(MAX_DRAFT) });
   assert.ok(s.getItem(rawNotice(s, 'thread-1')).length <= MAX_NOTICE);
   assert.deepEqual(readCreditsWarning(s, ME, 'thread-1'), { code: 'stop_unsure', job: JOB, sent: textMark('x'.repeat(MAX_DRAFT)) });
@@ -384,9 +384,14 @@ test('storage is not trusted: a job or a mark is read back only in its own shape
   assert.deepEqual(readCreditsWarning(s, ME, 'thread-1'), { code: 'stop_unsure', job: JOB, sent: mark });
   s.setItem(key, JSON.stringify({ code: 'stop_unsure', job: JOB, pad: 'x'.repeat(MAX_NOTICE) }));
   assert.equal(readCreditsWarning(s, ME, 'thread-1'), null);
-  // The limit is 320 characters since a warning can list four turns (315 at most), and one character over it is too
-  // much: tests/chatLocalTurns.test.mjs holds the limit to the character. One turn is still 88 at most.
-  assert.equal(MAX_NOTICE, 320);
+  // The limit is 120 characters, and one character over it is too much. The longest record the screen writes is 91:
+  // one turn. A warning that stands for several keeps their list in a record of its own (tests/chatLocalTurns.test.mjs),
+  // so that a page running older code can still read the notice.
+  assert.equal(MAX_NOTICE, 120);
+  const fits = (n) => { const base = JSON.stringify({ code: 'stop_unsure', job: JOB, p: '' }); return JSON.stringify({ code: 'stop_unsure', job: JOB, p: 'x'.repeat(n - base.length) }); };
+  s.setItem(key, fits(120)); assert.deepEqual(readCreditsWarning(s, ME, 'thread-1'), { code: 'stop_unsure', job: JOB });
+  s.setItem(key, fits(121)); assert.equal(readCreditsWarning(s, ME, 'thread-1'), null);
+  assert.equal(readNotice(s, ME, 'thread-1'), null);
   // Nothing bad is written either: the write checks the same shapes.
   for (const bad of badJobs) {
     clearNotice(s, ME, 'thread-1'); writeNotice(s, ME, 'thread-1', 'connection_lost', { job: bad });
