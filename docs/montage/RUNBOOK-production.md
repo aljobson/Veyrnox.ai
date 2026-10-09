@@ -23,7 +23,7 @@ Do not start the rollout until each has a written yes in the SPEC.
 
 | # | Gate | Why it blocks | Who |
 |---|---|---|---|
-| G1 | **fal's real bill read**, and the price confirmed or lowered | 165 credits and the $2.50 ceiling are worst-case guesses (CLAUDE.md: the catalog price must cover the provider cost; never guess it) | owner reads fal, then a price decision |
+| G1 | **fal's real bill read**, and the price confirmed or lowered | 165 credits and the $2.50 ceiling are worst-case guesses (CLAUDE.md: the catalog price must cover the provider cost; never guess it) | **read 2026-10-09**: $0.14 per second, $2.51 a run with tokens, 153 credits at the floor, so 165 covers it (SPEC pricing worksheet). Open: the owner keeps 165 or lowers it to 153 |
 | G2 | **The three unproven paths pass on staging**: the automatic 45-minute timeout refund, a failure in the middle of a real run, a reload during a live multi-minute run | "Every debit path has a matching refund path ... Test both" | me, with the owner's go (spends at fal) |
 | G3 | **Ten measured runs** on staging: max and p95 cost, failure rate, time | one success is not a price or a reliability figure | me, with the owner's go (about $25 at fal, $4 in tokens) |
 | G4 | **The fal model is on the books**: Kling v3 standard text-to-video is not a catalog row; ADR-0074 says it is added through the usual verified-endpoint route before a user can reach it | CLAUDE.md "Money & billing": a model is live only once its endpoint is verified | owner decision, then a migration |
