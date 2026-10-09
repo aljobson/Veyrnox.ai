@@ -143,7 +143,7 @@ If a build starts failing after a dependency change, bisect these three first.
 - `worker.js` removes the framework's own request headers (`x-isr`,
   `x-prerender-revalidate*`, `x-open-next-*`, `x-vercel-ip-*`) from every
   request before OpenNext sees it (`lib/internalRequestHeaders.js`, ADR-0078
-  amendment 2): its routing layer obeys them from any caller. Read that file
+  amendment 3): its routing layer obeys them from any caller. Read that file
   before configuring an OpenNext revalidation queue.
 - Standard-claim checks (issuer, audience `authenticated`, exp with 5s skew, sub
   present) run on every request. Missing/malformed -> 401, never 500.

@@ -2,7 +2,7 @@
 // instructions: the pair its revalidation queue sends, and the geolocation it
 // derives from Cloudflare. Nothing outside the Worker has a reason to send
 // either, so worker.js removes them before the framework builds its event
-// (ADR-0078, amendment 2).
+// (ADR-0078, amendment 3).
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -159,7 +159,7 @@ test('a revalidation header from outside is logged once, without its value; geol
 // what it relied on, so an update that changes any of it fails here first.
 test('the installed framework still reads request headers the way the list assumes', () => {
     const read = (path) => readFileSync(new URL(`../node_modules/@opennextjs/aws/dist/${path}`, import.meta.url), 'utf8');
-    const changed = 'the framework changed: re-read lib/internalRequestHeaders.js and ADR-0078 amendment 2 against the new code, then update this test';
+    const changed = 'the framework changed: re-read lib/internalRequestHeaders.js and ADR-0078 amendment 3 against the new code, then update this test';
 
     const names = read('utils/cacheHeaders.js');
     assert.match(names, /ISR_HEADER = "x-isr";/, changed);
