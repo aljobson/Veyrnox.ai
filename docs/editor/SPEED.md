@@ -1,6 +1,6 @@
 # PRD addendum — Clip Editor slow motion
 
-**Status:** Draft · 2026-10-09 · Slice 0 run once (three identical runs); billed cost not read; audio problem found, see Results
+**Status:** Built behind `CLIP_EDIT_SLOW_ENABLED` (off in production; on in staging from 2026-10-09) · 0237 applied on production and staging · placeholder price, fal's invoice not read · not yet run end to end
 **Extends:** [PRD.md](PRD.md), [CAPTIONS.md](CAPTIONS.md). Where they disagree, CLAUDE.md and the ADRs win.
 
 ## Decision log
@@ -80,20 +80,62 @@ The probe's cap of two clips is per invocation, not across invocations.
 - **Not seen:** billed cost (usage page, three request ids), a failure callback,
   a longer clip, a portrait clip, factors above 2, and the other models.
 
+### Audio step on a slowed clip (2026-10-09, `scripts/probe-fal-audio-merge.mjs`)
+
+Stand-in clip with Topaz's exact shape (10.04 s of picture, 5.04 s of voice,
+made locally with ffmpeg `setpts=2*PTS`), plus a steady 440 Hz tone, through
+`fal-ai/ffmpeg-api/merge-audio-video`. Two runs were billed (the command was run
+twice): `01a121ce-8079-7e33-a62f-3d6910388714` (13 s) and
+`01a121d2-7e70-7851-8900-3e2698b9863a` (17 s).
+
+- **The soundtrack replaces the clip's own sound.** Loudness of the output was
+  -21 dB in every second, the tone's level, with no voice in the first 5 s
+  (a mix would have been about 10 dB louder there; checked against a locally
+  simulated mix and replacement). Output: 10.08 s picture, 9.98 s audio, 1280x720.
+- Served directly (200) from `v3b.fal.media`; 13 to 17 s.
+- So the unstretched audio from Topaz is **overwritten, not mixed**, once a
+  soundtrack is laid over a slowed clip. The out-of-step sound only survives
+  when a slowed clip has no soundtrack step after it.
+
 ### What it means for the build
 
-1. **The sound problem decides the shape.** Options, none yet verified:
-   - lay a soundtrack over the slowed clip with the existing audio step
-     (`merge-audio-video`); whether that replaces the clip's own audio or mixes
-     with it is not recorded (the PRD tested only that it cuts the audio to the
-     video's length), so it needs one cheap probe;
-   - strip the clip's audio, which no fal endpoint found does;
-   - stretch the audio, which needs our own ffmpeg (`atempo`), the option
-     rejected earlier.
-   Until one is chosen, the edit sheet would have to say that slowed clips lose
-   their sound.
-2. **Price is unknown and could be high.** fal's page lists $0.30 to $0.60 for
-   Apollo and more for Aion, unit unclear. Do not set a catalog price from it.
+1. **Slow motion works with what we have if a soundtrack is always laid over it.**
+   Chain: trim, slow (Topaz), merge, audio (replaces the sound), captions. Two
+   ways to avoid the broken sound when the user picks no soundtrack:
+   - **v1 (recommended): require a soundtrack with slow motion.** The edit sheet
+     says slowed clips cannot keep their own sound and asks for one. No new probe.
+   - later: a silent track laid with the same step to mute it (not probed, but
+     the result above says it would replace).
+   Captions need speech in the final audio, so slow motion plus captions only
+   makes sense when the soundtrack has speech (a music bed fails the captions
+   step with `transcription_error`); the sheet must say so.
+2. **Price is still unknown and could be high.** fal's page lists $0.30 to $0.60
+   for Apollo and more for Aion, unit unclear, and the usage API needs an admin
+   key (the key tried on 2026-10-09 was refused). Do not set a catalog price from
+   the page. If built before the bill is read, use a deliberately high
+   placeholder behind a flag, as the owner may choose.
+
+## Staging run through the app (2026-10-09)
+
+Staging on the current build (version after the `npm install` fix), flag and sheet
+switch on, 0237 applied. Edit of a video-agent clip (1080x1920, 15 s), kept 0 to
+4 s, **2x slower**, with a 1-credit ACE-Step track as the soundtrack. Job
+`35a8138d-aa28-4634-bfdc-ac1bb35145a5`.
+
+- The sheet refused without a soundtrack (button disabled, "Slowed clips cannot
+  keep their own sound") and, with one, showed **82 cr** (1 trim + 80 slow + 1
+  audio), the exact debit. The result length showed 8.0 s.
+- **trim 17 s, slow 253 s, audio 14 s; 5 min 42 s end to end**, all three stored
+  through the webhook (3 callbacks), no sweep, ledger net -82.
+- Output: 7.96 s, 1080x1920, H264, 24 fps (the pinned target), AAC 7.96 s: the
+  audio runs the whole length of the slowed picture, so the clip's own 4 s of
+  sound was replaced, not left half-length.
+- **The slow step took 253 s here against 30 to 55 s for a 5 s 1280x720 clip in
+  the probe.** The bigger frame (1080x1920 is 2.2x the pixels) is the likely
+  cause, and fal bills Topaz by output size, so the cost of this run is probably
+  above the probe's. Neither the time nor the cost is explained yet.
+- Not run: a failed slowed edit, a 30 fps source (the source's own rate was not
+  read; output is pinned to 24), factors 3 and 4, a slowed clip with captions.
 
 ## Shape, pending the probe
 

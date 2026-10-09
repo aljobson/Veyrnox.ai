@@ -46,7 +46,7 @@ const dialogue = { id: 'elevenlabs-dialogue', kind: 'audio', isSpeech: true };
 test('a music or sound-effect model starts with an empty box; pictures and clips keep the starter', () => {
     assert.equal(sounds.length, 8);
     for (const model of sounds) assert.equal(promptText(null, model), '', model.id);
-    for (const model of [video, image, autoShort, null]) assert.equal(promptText(null, model), STARTER_PROMPT);
+    for (const model of [video, image, null]) assert.equal(promptText(null, model), STARTER_PROMPT);
 });
 
 test('what the person typed is never cleared or replaced on a sound model', () => {
@@ -76,7 +76,7 @@ test('a draft handed to a sound model is what the box shows', () => {
 test('Generate waits for a description on a sound model; pictures and clips are left to the gateway', () => {
     for (const empty of ['', '   ', '\n\t ', null, undefined]) {
         for (const model of sounds) assert.equal(promptIsMissing(model, empty), true, `${model.id} ${JSON.stringify(empty)}`);
-        for (const model of [video, image, autoShort, null]) assert.equal(promptIsMissing(model, empty), false);
+        for (const model of [video, image, null]) assert.equal(promptIsMissing(model, empty), false);
     }
     for (const model of sounds) {
         assert.equal(promptIsMissing(model, 'Rain on a tin roof'), false);

@@ -51,7 +51,9 @@ test('stayed, refused before it started: text back, the refusal shown, a chat ma
     assert.deepEqual(log.box, ['', TEXT]);
     assert.deepEqual(log.notices, [null, 'insufficient_balance']);
     assert.deepEqual(log.deleted, ['made']);
-    assert.deepEqual([kept(), log.keptWith[NEW_CHAT]], [{ [NEW_CHAT]: 'insufficient_balance' }, { credits: 2 }], 'kept with the price its words need');
+    // With the price, the job and the text since a kept warning can be settled later (tests/chatWarningSettle.test.mjs). A message
+    // that never started has no job, and the store keeps the job and a mark of the text only beside a warning a job can settle.
+    assert.deepEqual([kept(), log.keptWith[NEW_CHAT]], [{ [NEW_CHAT]: 'insufficient_balance' }, { credits: 2, job: null, sent: TEXT }], 'kept with the price its words need');
     // Any other refusal was shown by the screen's fail() while its chat was on screen, and kept nowhere. It is told
     // like every other notice now, so it is kept with the text it gives back. The words are the same.
     const plain = await run({ active: A, turn: refused(new GatewayError('no', { status: 429, code: 'rate_limited' })) });
@@ -223,6 +225,21 @@ test('a reply that was saved with a stream error: its notice is on screen for th
     const nothing = async ({ onEvent }) => { onEvent('start', { job_id: 'j' }); onEvent('error', { error: 'provider_cut_off' }); onEvent('done', { status: 'failed' }); return { replay: false }; };
     const back = await run({ active: A, turn: nothing });
     assert.deepEqual([back.log.notices, back.log.box, back.kept()], [[null, 'provider_cut_off'], ['', TEXT], { 'chat-a': 'provider_cut_off' }]);
+});
+
+test('charged but not stored, and the chat list read fails: the warning is the last thing said, and it is kept', async () => {
+    // The screen says so when its list read fails, over whatever notice is on it. After Stop and after a dropped
+    // connection the list was already read first (tests/chatSendRefunded.test.mjs has the endings with nothing charged).
+    // A reply that ran to its end read it last: the person was left with a list error where "charged but not stored" was.
+    const ranToItsEnd = async ({ onEvent }) => {
+        onEvent('start', { job_id: 'j' }); onEvent('delta', { text: 'A lamp' });
+        onEvent('error', { error: 'reply_not_saved' }); onEvent('done', { status: 'completed', credits_charged: 2 });
+        return { replay: false };
+    };
+    for (const [name, how] of [['a reply that ran to its end', { turn: ranToItsEnd }], ['Stop', { turn: stopAfterText(), settle: 'unsaved' }], ['a dropped connection', { turn: cutBeforeText(), settle: 'unsaved' }]]) {
+        const { log, kept } = await run({ active: A, ...how, listFails: true });
+        assert.deepEqual([log.notices.slice(-2), log.refreshed, kept()], [['list_failed', 'reply_not_saved'], 1, { 'chat-a': 'reply_not_saved' }], name);
+    }
 });
 
 test('a chat made for the message and kept: its text and its notice are both under the new chat, not under New chat', async () => {

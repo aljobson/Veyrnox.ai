@@ -69,3 +69,48 @@ test('response ceiling counts bytes despite a false content-length header', asyn
         await assert.rejects(fetchWithTimeout('https://example.invalid', {}, 1000, 4), { status: 413 });
     } finally { restore(); }
 });
+
+// A body too large to hold is handed on piece by piece instead.
+const pieces = (...parts) => new ReadableStream({
+    pull(controller) { if (parts.length) controller.enqueue(new Uint8Array(parts.shift())); else controller.close(); },
+}, { highWaterMark: 0 });
+
+test('a streamed body is handed on piece by piece, with its status and size', async () => {
+    const { streamWithTimeout } = await import('../lib/fetchWithTimeout.js');
+    let seenInit;
+    globalThis.fetch = async (_url, init) => { seenInit = init; return new Response(pieces([1, 2], [3], [4, 5, 6]), { status: 206 }); };
+    try {
+        const got = [];
+        const res = await streamWithTimeout('https://example.invalid', { headers: { Range: 'bytes=0-5' } }, 1000, 6, (piece) => { got.push([...piece]); });
+        assert.deepEqual(got, [[1, 2], [3], [4, 5, 6]]);
+        assert.equal(res.status, 206);
+        assert.equal(res.bytes, 6);
+        assert.deepEqual(seenInit.headers, { Range: 'bytes=0-5' });
+    } finally { restore(); }
+});
+
+test('a streamed body has the same ceiling and the same deadline through its last byte', async () => {
+    const { streamWithTimeout } = await import('../lib/fetchWithTimeout.js');
+    try {
+        globalThis.fetch = async () => new Response(pieces([1, 2, 3], [4, 5, 6]));
+        await assert.rejects(streamWithTimeout('https://example.invalid', {}, 1000, 5, () => {}), { status: 413 });
+        globalThis.fetch = async () => new Response(new ReadableStream({}));
+        await assert.rejects(streamWithTimeout('https://example.invalid', {}, 20, 5, () => {}), { name: 'AbortError' });
+    } finally { restore(); }
+});
+
+test('a streamed body stops being read when its reader has seen enough', async () => {
+    const { streamWithTimeout } = await import('../lib/fetchWithTimeout.js');
+    let cancelled = false;
+    let pulls = 0;
+    globalThis.fetch = async () => new Response(new ReadableStream({
+        pull(controller) { pulls += 1; controller.enqueue(new Uint8Array(10)); },
+        cancel() { cancelled = true; },
+    }, { highWaterMark: 0 }));
+    try {
+        const res = await streamWithTimeout('https://example.invalid', {}, 1000, 1000, () => false);
+        assert.equal(res.bytes, 10);
+        assert.equal(pulls, 1);
+        assert.equal(cancelled, true);
+    } finally { restore(); }
+});

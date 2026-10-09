@@ -13,15 +13,27 @@
  * checks what is actually shipped, not what the repo believes. Falls
  * back to `--offline` for a repo-only endpoint-shape lint.
  *
- * Exit 0 = clean, 1 = dead endpoint or margin breach found. A price that
- * moved on fal's page is a note in a clean run unless FAL_DRIFT_FAILS is
- * "listed" (what fal-catalog-watch.yml sets) or "all".
+ * The first line says whether SUPABASE_URL is the production project
+ * (the top-level vars in wrangler.jsonc). With `--require-production`, as
+ * the workflow runs it, any other catalog is refused before anything is read.
+ *
+ * A page is read twice over: the "$" figures in its text, and fal's own
+ * billing figure for the endpoint (its base price), which is held exactly
+ * against the copy in scripts/lib/fal-unit-rates.mjs.
+ *
+ * Exit 0 = clean, 1 = dead endpoint or margin breach found, or the wrong
+ * catalog where production is required. A price that moved on fal's page is
+ * a note in a clean run unless FAL_DRIFT_FAILS is "listed" (what
+ * fal-catalog-watch.yml sets) or "all".
  */
 
+import { readFileSync } from 'node:fs';
+
+import { catalogLine, productionUrl, readsProduction } from './lib/catalog-target.mjs';
 import {
-    DRIFT_MODES, MARGIN_FLOOR, checkRow, costSentence, creditsForFloor, extractPrices, failingCount, rowLines,
+    DRIFT_MODES, MARGIN_FLOOR, baseTally, checkPage, costSentence, creditsForFloor, driftSummary, drifts, driftsExactly, failingCount, rowLines,
 } from './lib/fal-price-check.mjs';
-import { UNIT_RATES } from './lib/fal-unit-rates.mjs';
+import { BASE_PRICES, UNIT_RATES } from './lib/fal-unit-rates.mjs';
 
 const FAL_MODEL_BASE = 'https://fal.ai/models/';
 const DRIFT_FAILS = process.env.FAL_DRIFT_FAILS || 'false';
@@ -76,11 +88,19 @@ async function main() {
         return 0;
     }
 
+    const production = productionUrl(readFileSync(new URL('../wrangler.jsonc', import.meta.url), 'utf8'));
+    console.log(catalogLine(process.env.SUPABASE_URL, production));
+    if (process.argv.includes('--require-production') && !readsProduction(process.env.SUPABASE_URL, production)) {
+        console.log('FAIL: not the production catalog, so nothing was checked. Set the repository secrets SUPABASE_URL and SUPABASE_ANON_KEY to the top-level vars in wrangler.jsonc.');
+        return 1;
+    }
+
     const rows = await loadCatalog();
     const dead = [];
     const drift = [];
     const breach = [];
     const cost = [];
+    const read = [];
 
     for (const row of rows) {
         const res = await checkEndpoint(row.provider_endpoint);
@@ -91,14 +111,17 @@ async function main() {
             continue;
         }
 
-        // Match on the unit fal actually quotes.
-        const checked = checkRow(row, extractPrices(res.html), UNIT_RATES);
+        // Match on the unit fal actually quotes, and on its own billing figure.
+        const checked = checkPage(row, res.html, UNIT_RATES, BASE_PRICES);
+        read.push(checked);
         if (checked.verdict === 'breach') breach.push({ ...row, margin: checked.margin });
-        if (checked.verdict === 'drift') drift.push(checked);
+        if (drifts(checked)) drift.push(checked);
         if (checked.cost) cost.push(checked);
         for (const line of rowLines(checked)) console.log(line);
     }
 
+    console.log('');
+    console.log(baseTally(read));
     console.log('');
     if (dead.length) {
         console.log(`## Dead endpoints (${dead.length}) — these refund every generation`);
@@ -117,7 +140,7 @@ async function main() {
     if (drift.length) {
         console.log(`## Possible price drift (${drift.length}) — verify by hand`);
         for (const d of drift) {
-            console.log(`- \`${d.id}\` expected $${d.rate.toFixed(4)} ${d.unit}, page shows ${d.seen.map((p) => '$' + p).join(', ') || 'no price'}`);
+            for (const moved of driftSummary(d)) console.log(`- \`${d.id}\` ${moved}`);
         }
         console.log('');
     }
@@ -134,7 +157,7 @@ async function main() {
         dead: dead.length,
         breach: breach.length,
         drift: drift.length,
-        listedDrift: drift.filter((d) => d.listed).length,
+        listedDrift: drift.filter(driftsExactly).length,
         underFloor: cost.filter((c) => c.cost.margin < MARGIN_FLOOR).length,
     }, DRIFT_FAILS);
     const notes = (n, what) => `${n} ${what} note${n === 1 ? '' : 's'}`;

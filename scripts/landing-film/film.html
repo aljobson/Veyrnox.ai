@@ -1,0 +1,87 @@
+<!doctype html>
+<!-- The landing film: "The price is on the button", 15 s, 1920x1080.
+     Drawn in code and captured frame by frame (render.mjs calls seek(t)).
+     Open this file in a browser to scrub it: ?t=7.2 shows one moment, and
+     with no query it plays in real time. See README.md in this folder. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Veyrnox landing film</title>
+<style>
+  @font-face { font-family: 'Archivo'; src: url('../../app/fonts/archivo-latin-wght-normal.woff2') format('woff2'); font-weight: 100 900; }
+  @font-face { font-family: 'Inter'; src: url('../../app/fonts/inter-latin-wght-normal.woff2') format('woff2'); font-weight: 100 900; }
+  @font-face { font-family: 'JetBrains Mono'; src: url('../../app/fonts/jetbrains-mono-latin-wght-normal.woff2') format('woff2'); font-weight: 100 800; }
+
+  /* The site's dark theme and its paper slip, from app/globals.css and veyrnox.css. */
+  :root {
+    --base: rgb(10 10 11); --panel: rgb(20 20 22); --border: rgb(62 62 68);
+    --fg: rgb(242 242 243); --body: rgb(201 201 207); --muted: rgb(154 154 163);
+    --accent: rgb(62 230 196); --accent-ink: rgb(6 35 31); --money: rgb(228 169 60);
+    --paper: rgb(236 240 238); --paper-fg: rgb(16 22 20); --paper-muted: rgb(78 88 84);
+    --paper-money: rgb(138 90 0);
+  }
+  html, body { margin: 0; background: var(--base); }
+  #stage { position: relative; width: 1920px; height: 1080px; overflow: hidden; background: var(--base); color: var(--fg); font-family: Inter, sans-serif; }
+  #world { position: absolute; left: 0; top: 0; width: 0; height: 0; transform-origin: 0 0; }
+  #world > * { position: absolute; left: 0; top: 0; }
+
+  .display { font-family: Archivo, sans-serif; font-weight: 900; letter-spacing: -0.04em; line-height: 0.94; white-space: nowrap; }
+  .display.center { text-align: center; transform: translateX(-50%); }
+  .mono { font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; }
+  .accent { color: var(--accent); }
+  /* Padding keeps the mask from shaving ascenders and descenders. */
+  .mask { display: inline-block; overflow: hidden; vertical-align: top; padding: 0.14em 0.05em 0.2em; margin: -0.14em 0.17em -0.2em -0.05em; }
+  .mask:last-child { margin-right: -0.05em; }
+  .rise { display: inline-block; }
+  .roller { display: inline-grid; overflow: hidden; height: 1.3em; line-height: 1.3em; vertical-align: top; }
+  .roll { grid-area: 1 / 1; justify-self: end; white-space: nowrap; }
+  .roller.left .roll { justify-self: start; }
+
+  /* Model chips, as on the hero slip. The white pill behind them is one
+     element that slides, so the selection reads as a liquid move. */
+  .chips { display: flex; gap: 16px; transform: translateX(-50%); }
+  .chip { position: relative; z-index: 1; height: 64px; padding: 0 32px; border-radius: 32px; border: 2px solid var(--border); font: 600 28px/60px Inter, sans-serif; white-space: nowrap; box-sizing: border-box; }
+  .chip-ind { position: absolute; top: 0; height: 64px; border-radius: 32px; background: var(--fg); }
+
+  .box { overflow: hidden; }
+  .face { position: absolute; left: 50%; top: 50%; width: 560px; height: 96px; margin: -48px 0 0 -280px; display: flex; align-items: center; justify-content: space-between; padding: 0 38px; box-sizing: border-box; color: var(--accent-ink); }
+  .face .label { font: 800 38px/1.3 Archivo, sans-serif; letter-spacing: -0.01em; }
+  .face .price { font-size: 38px; font-weight: 700; }
+  .failline { width: 560px; display: flex; align-items: baseline; gap: 12px; color: var(--muted); font-size: 26px; }
+  .leader { flex: 1; min-width: 24px; border-bottom: 2px dotted currentColor; opacity: 0.35; transform: translateY(-0.28em); }
+
+  .tile { position: absolute; left: 50%; top: 50%; width: 720px; height: 405px; margin: -202.5px 0 0 -360px; background: var(--panel); }
+  .tile .media { position: absolute; inset: 0; background-size: 220% 220%; }
+  .tile .scrim { position: absolute; inset: 0; background: linear-gradient(to top, rgb(0 0 0 / 0.6), rgb(0 0 0 / 0) 55%, rgb(0 0 0 / 0.28)); }
+  .tile .name { position: absolute; left: 30px; top: 24px; font: 700 28px/1.3 Inter, sans-serif; }
+  .tile .cost { position: absolute; right: 30px; top: 24px; font-size: 28px; font-weight: 700; }
+  .tile .pct { position: absolute; left: 30px; bottom: 30px; font-size: 54px; font-weight: 700; height: 1.3em; line-height: 1.3em; overflow: hidden; }
+  .tile .state { position: absolute; left: 30px; bottom: 30px; font: 900 54px/1.3 Archivo, sans-serif; letter-spacing: -0.03em; }
+  .tile .shine { position: absolute; inset: 0; background: linear-gradient(100deg, transparent 34%, rgb(62 230 196 / 0.16) 50%, transparent 66%); }
+  .tile .bar { position: absolute; left: 0; bottom: 0; height: 10px; background: var(--accent); }
+  .tile .badge { position: absolute; right: 30px; bottom: 34px; width: 76px; height: 76px; }
+
+  .slot { width: 760px; height: 14px; border-radius: 7px; background: rgb(38 38 42); box-shadow: inset 0 2px 3px rgb(0 0 0 / 0.7), 0 1px 0 var(--border); }
+  .paper-shadow { filter: drop-shadow(0 18px 28px rgb(0 0 0 / 0.45)); }
+  .paper { width: 720px; overflow: hidden; background: var(--paper); color: var(--paper-fg);
+    mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / 14px 100% repeat-x; }
+  .sheet { padding: 34px 40px 0; font-size: 30px; }
+  .srow { display: flex; align-items: baseline; gap: 12px; height: 52px; line-height: 52px; white-space: nowrap; }
+  .srow.head { font: 700 28px/52px Inter, sans-serif; justify-content: space-between; }
+  .srow.head .note { font-weight: 400; color: var(--paper-muted); }
+  .srow .amount { font-weight: 700; color: var(--paper-money); }
+  .srow.group { margin-top: 18px; border-bottom: 2px solid var(--paper-fg); font: 800 30px/52px Inter, sans-serif; }
+  .perf { height: 2px; margin: 14px 0 16px; background: repeating-linear-gradient(90deg, rgb(16 22 20 / 0.35) 0 8px, transparent 8px 15px); }
+
+  .brand { display: flex; align-items: center; gap: 16px; transform: translateX(-50%); font: 800 34px/1 Archivo, sans-serif; letter-spacing: -0.01em; }
+  .cursor { width: 44px; height: 44px; margin: -3px 0 0 -4px; transform-origin: 4px 3px; }
+</style>
+</head>
+<body>
+<div id="stage"><div id="world"></div></div>
+<script src="engine.js"></script>
+<script src="prices.js"></script>
+<script src="build.js"></script>
+<script src="film.js"></script>
+</body>
+</html>

@@ -2,15 +2,15 @@
 // only place that names a clip, so a typo or an oversized file has to fail
 // here, not as a silent 404 (or a 20 MB download) on the live page.
 //
-// The real manifest starts empty, so the checks are proven against a fake one
-// first: an empty manifest passing proves nothing on its own.
+// Invalid fixtures exercise the validator; coverage checks keep every landing
+// tile populated when the feature cards or template wall change.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, mkdirSync, mkdtempSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { SHOWCASE_CLIPS, MAX_CLIP_BYTES } from '../app/veyrnox/_lib/showcase.js';
-import { FEATURE_CARDS, PRESETS } from '../app/veyrnox/_lib/tokens.js';
+import { SHOWCASE_CLIPS, SHOWCASE_SOURCES, MODEL_SHOWCASE_KEYS, MAX_CLIP_BYTES } from '../app/veyrnox/_lib/showcase.js';
+import { FEATURE_CARDS, PRESETS, WALL_PRESETS } from '../app/veyrnox/_lib/tokens.js';
 
 const PUBLIC = new URL('../public', import.meta.url).pathname;
 const TILE_KEYS = new Set([...FEATURE_CARDS.map((f) => f.key), ...PRESETS.map((p) => p.id)]);
@@ -80,6 +80,50 @@ test('the size cap is a sane hover-preview budget', () => {
     assert.equal(MAX_CLIP_BYTES, 2 * 1024 * 1024);
 });
 
-test('the real manifest is sound (empty is valid: tiles keep their gradient)', () => {
+test('the real manifest is sound', () => {
     assert.deepEqual(problems(SHOWCASE_CLIPS, opts), []);
+});
+
+test('every landing tile has a distinct viral preview and a small poster', () => {
+    const keys = [...FEATURE_CARDS.map((f) => f.key), ...WALL_PRESETS.map((p) => p.id)];
+    const videos = new Set();
+    for (const key of keys) {
+        const clip = SHOWCASE_CLIPS[key];
+        assert.ok(clip, `${key} has no landing preview`);
+        assert.ok(clip.poster, `${key} has no still for reduced motion`);
+        assert.ok(statSync(`${PUBLIC}${clip.poster}`).size <= 80 * 1024, `${key} poster exceeds 80 KB`);
+        assert.ok(!videos.has(clip.video), `${key} repeats another tile's preview`);
+        videos.add(clip.video);
+    }
+});
+
+test('imported inspiration keeps its title and source credit', () => {
+    const sources = new Set(SHOWCASE_SOURCES.map((source) => source.name));
+    for (const [key, clip] of Object.entries(SHOWCASE_CLIPS)) {
+        assert.ok(clip.title?.trim(), `${key} has no source title`);
+        assert.ok(sources.has(clip.source), `${key} has an unknown source`);
+    }
+    assert.deepEqual(SHOWCASE_SOURCES.map((source) => source.url), [
+        'https://syntx.ai/trends',
+        'https://higgsfield.ai/',
+    ]);
+});
+
+test('the full preset gallery has a distinct preview and poster for every filter result', () => {
+    const videos = new Set();
+    for (const preset of PRESETS) {
+        const clip = SHOWCASE_CLIPS[preset.id];
+        assert.ok(clip?.video, `${preset.id} has no gallery preview`);
+        assert.ok(clip.poster, `${preset.id} has no gallery poster`);
+        assert.ok(statSync(`${PUBLIC}${clip.poster}`).size <= 80 * 1024, `${preset.id} poster exceeds 80 KB`);
+        assert.ok(!videos.has(clip.video), `${preset.id} repeats another preset's preview`);
+        videos.add(clip.video);
+    }
+});
+
+test('each model category has a video preview', () => {
+    assert.deepEqual(Object.keys(MODEL_SHOWCASE_KEYS), ['video', 'image', 'audio']);
+    for (const key of Object.values(MODEL_SHOWCASE_KEYS)) {
+        assert.ok(SHOWCASE_CLIPS[key]?.video, `${key} has no model-category preview`);
+    }
 });

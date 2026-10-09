@@ -1,7 +1,8 @@
-import Link from 'next/link';
+import { MediaTile } from './MediaTile';
+import { SHOWCASE_CLIPS } from '../_lib/showcase';
 import { templateHref, presetCredits, presetTitle } from '../_lib/tokens.js';
 
-// Preset card: thumbnail carries color, monochrome chrome around it.
+// Preset card: credited viral preview, monochrome chrome around it.
 //
 // Renders a Link, not a button. It used to be a <button onClick> and every
 // caller omitted onClick, so every card in the public gallery and the studio
@@ -19,24 +20,27 @@ export function PresetCard({ preset, size = 'md', onClick, catalog }) {
   // sent to the studio with them.
   const href = templateHref(preset);
   return (
-    <Link
+    <MediaTile
       href={href}
+      clip={SHOWCASE_CLIPS[preset.id]}
       onClick={onClick}
-      aria-label={`Open the ${presetTitle(preset.name)} template`}
-      className="vx-tile group block text-left w-full"
-    >
-      <div className={`${s.h} rounded-2xl relative`} style={{ background: preset.bg }}>
-        {preset.isNew && <span className="absolute left-3 top-3 rounded-full bg-vx-base/80 px-2 py-0.5 font-vx-mono text-[10px] font-bold tracking-[0.12em]">NEW</span>}
-      </div>
-      <div className="pt-3 flex items-baseline gap-2">
-        <div className="min-w-0">
-          <div className={`font-extrabold tracking-tight truncate ${s.title}`}>{presetTitle(preset.name)}</div>
-          <div className="mt-0.5 text-vx-fg-muted text-xs truncate">{preset.model}</div>
+      ariaLabel={`Open the ${presetTitle(preset.name)} template`}
+      className="block text-left w-full"
+      mediaClassName={`${s.h} rounded-2xl`}
+      mediaStyle={{ background: preset.bg }}
+      footer={
+        <div className="pt-3 flex items-baseline gap-2">
+          <div className="min-w-0">
+            <div className={`font-extrabold tracking-tight truncate ${s.title}`}>{presetTitle(preset.name)}</div>
+            <div className="mt-0.5 text-vx-fg-muted text-xs truncate">{preset.model}</div>
+          </div>
+          <span aria-hidden className="vx-leader flex-1 self-start mt-3 text-vx-fg-muted" />
+          <div className="shrink-0 self-start font-vx-mono text-[14px] font-bold text-vx-money vx-num pt-0.5">{presetCredits(preset, catalog)} cr</div>
         </div>
-        <span aria-hidden className="vx-leader flex-1 self-start mt-3 text-vx-fg-muted" />
-        <div className="shrink-0 self-start font-vx-mono text-[14px] font-bold text-vx-money vx-num pt-0.5">{presetCredits(preset, catalog)} cr</div>
-      </div>
-    </Link>
+      }
+    >
+      {preset.isNew && <span className="absolute right-3 top-3 rounded-full bg-vx-base/80 px-2 py-0.5 font-vx-mono text-[10px] font-bold tracking-[0.12em]">NEW</span>}
+    </MediaTile>
   );
 }
 

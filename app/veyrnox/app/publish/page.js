@@ -45,6 +45,7 @@ export default function Publish() {
 
 function PublishControls({ initialJobId }) {
   const [accounts, setAccounts] = useState(null);
+  const [youtubeVisibilityEnabled, setYoutubeVisibilityEnabled] = useState(false);
   const [uploadsEnabled, setUploadsEnabled] = useState(false);
   const [networks, setNetworks] = useState([]);
   const [blueskyOpen, setBlueskyOpen] = useState(false);
@@ -61,9 +62,11 @@ function PublishControls({ initialJobId }) {
       const res = await listSocialAccounts();
       setAccounts(res.accounts || []);
       setUploadsEnabled(res.uploadsEnabled === true);
+      setYoutubeVisibilityEnabled(res.youtubeVisibilityEnabled === true);
       setNetworks(res.networks || []);
-    } catch {
-      setLoadError('Could not load your connected accounts. Check your connection and try again.');
+    } catch (err) {
+      setLoadError(err.body?.error === 'publish_not_open' ? 'Publish is not available for this account yet.'
+        : 'Could not load your connected accounts. Check your connection and try again.');
     }
   }, []);
   useEffect(() => { load(); }, [load]);
@@ -181,7 +184,7 @@ function PublishControls({ initialJobId }) {
 
     <section className="rounded-2xl border border-vx-border p-5">
       <h2 id="schedule" className="font-bold mb-4 scroll-mt-6">Create a post</h2>
-      <Composer key={initialJobId || 'library'} initialJobId={initialJobId} accounts={accounts} uploadsEnabled={uploadsEnabled} onScheduled={() => setPostsRefreshToken((n) => n + 1)} />
+      <Composer youtubeVisibilityEnabled={youtubeVisibilityEnabled} key={initialJobId || 'library'} initialJobId={initialJobId} accounts={accounts} uploadsEnabled={uploadsEnabled} onScheduled={() => setPostsRefreshToken((n) => n + 1)} />
     </section>
 
     <section className="rounded-2xl border border-vx-border p-5">

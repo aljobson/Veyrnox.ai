@@ -10,7 +10,7 @@ import { templateStartId } from '../../../../lib/templateStart.js';
 import { classifySubmitFailure } from '../../../../lib/submitFailureClass.js';
 import { resolveUploadedSource, resolveAssetSource } from '../../../../lib/resolveSource.js';
 import { envConfig as r2EnvConfig, isConfigured as r2IsConfigured } from '../../../../packages/adapters/r2.js';
-import { editUnits, clipCaptionsEnabled } from '../../../../lib/clipEdit.js';
+import { editUnits, clipCaptionsEnabled, clipSlowEnabled } from '../../../../lib/clipEdit.js';
 import { resolveEdit, defaultDeps as editDeps } from '../../../../lib/clipEditSources.js';
 import { checkPlan, checkCapacity } from '../../../../lib/montageGate.js';
 
@@ -332,6 +332,12 @@ export async function POST(req) {
         if (modelInputs.captions !== undefined && !clipCaptionsEnabled(process.env)) {
             return NextResponse.json({ error: 'captions_unavailable' }, { status: 400 });
         }
+        // Slow motion is a new paid path with a placeholder price: off until CLIP_EDIT_SLOW_ENABLED is "true"
+        // (0237 applied, fal's billed cost read, docs/editor/SPEED.md). Checked before any lookup or debit.
+        if (Array.isArray(modelInputs.clips) && modelInputs.clips.some((c) => c && typeof c === 'object' && c.slow !== undefined)
+            && !clipSlowEnabled(process.env)) {
+            return NextResponse.json({ error: 'slow_unavailable' }, { status: 400 });
+        }
         let resolved;
         try {
             resolved = await resolveEdit(authId, modelInputs, editDeps(cfg, r2EnvConfig()));
@@ -416,6 +422,12 @@ export async function POST(req) {
             JSON.stringify({ error: 'rate_limited', limit: debit.limit, count: debit.count, retry_after_seconds: retryAfter }),
             { status: 429, headers: { 'content-type': 'application/json', 'retry-after': String(retryAfter) } },
         );
+    }
+    if (debit?.ok === false && debit.code === 'PROVIDER_ADMISSION_PAUSED') {
+        const retryAfter = Math.max(1, Math.min(600, Number(debit.retry_after_seconds) || 60));
+        return NextResponse.json({ error: 'provider_admission_paused' }, {
+            status: 503, headers: { 'retry-after': String(retryAfter) },
+        });
     }
     if (!debit || debit.ok === false) {
         const status = debit && debit.code === 'INSUFFICIENT_BALANCE' ? 402

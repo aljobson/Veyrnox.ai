@@ -17,7 +17,7 @@
  */
 
 import { socialUploadsEnabled } from '../../../../../lib/social/uploadPolicy.js';
-import { calendarEnabled } from '../../../../../lib/social/publishFeature.js';
+import { calendarEnabled, youtubeVisibilityEnabled } from '../../../../../lib/social/publishFeature.js';
 import { postCapabilityError } from '../../../../../lib/social/postCapabilities.js';
 import { NextResponse } from 'next/server';
 import { accountReadLimit } from '../../../../../lib/accountReadLimit.js';
@@ -96,6 +96,14 @@ export async function POST(req) {
         return NextResponse.json({ error: 'invalid_body' }, { status: 400 });
     }
 
+    const visibility = body?.youtubeVisibility;
+    if (visibility !== undefined && !['private', 'unlisted', 'public'].includes(visibility)) {
+        return NextResponse.json({ error: 'invalid_youtube_visibility' }, { status: 400 });
+    }
+    if (visibility !== undefined && !youtubeVisibilityEnabled()) {
+        return NextResponse.json({ error: 'youtube_visibility_not_open' }, { status: 503 });
+    }
+
     if (body?.publishNow !== undefined && typeof body.publishNow !== 'boolean') {
         return NextResponse.json({ error: 'invalid_publish_now' }, { status: 400 });
     }
@@ -148,7 +156,8 @@ export async function POST(req) {
         if (destinations.length !== new Set(accountIds).size) return NextResponse.json({ error: 'ACCOUNT_NOT_FOUND' }, { status: 404 });
         const capabilityError = postCapabilityError(destinations, mediaItems, globalText);
         if (capabilityError) return NextResponse.json({ error: capabilityError }, { status: 400 });
-        result = await rpc('create_social_post', {
+        result = await rpc(visibility !== undefined ? 'create_social_post_with_youtube_visibility' : 'create_social_post', {
+            ...(visibility !== undefined ? { p_youtube_visibility: visibility } : {}),
             p_auth_id: authId,
             p_brand_id: brandId,
             p_scheduled_at: scheduledAt,
@@ -166,7 +175,7 @@ export async function POST(req) {
         const code = result && result.code;
         const status = code === 'USER_NOT_FOUND' ? 401
             : ['BRAND_NOT_FOUND', 'ACCOUNT_NOT_FOUND', 'MEDIA_NOT_FOUND'].includes(code) ? 404
-            : ['INVALID_IDEMPOTENCY_KEY', 'INVALID_SCHEDULE', 'NO_TARGET_ACCOUNTS', 'INVALID_MEDIA'].includes(code) ? 400
+            : ['INVALID_IDEMPOTENCY_KEY', 'INVALID_SCHEDULE', 'NO_TARGET_ACCOUNTS', 'INVALID_MEDIA', 'INVALID_YOUTUBE_VISIBILITY'].includes(code) ? 400
             : 502;
         return NextResponse.json({ error: code || 'internal' }, { status });
     }

@@ -76,6 +76,8 @@
     // docs/editor/CAPTIONS.md: the Clip Editor's captions step. On 2026-10-08 at the owner's request: 0225 is applied on production, both
     // paths passed on staging. The edit sheet still hides it behind localStorage.veyrnox_editor_captions. Rollback: set "false" and deploy.
     "CLIP_EDIT_CAPTIONS_ENABLED": "true",
+    // docs/editor/SPEED.md: the Clip Editor's slow-motion step. Off until 0237 is applied and fal's billed cost is read (the price is a placeholder).
+    "CLIP_EDIT_SLOW_ENABLED": "false",
     // ADR-0064: checkout and account routes stay closed until staging acceptance.
     "SUBSCRIPTIONS_ENABLED": "false",
     // Before activation: SUBSCRIPTION_ALERT_EMAIL must name the Operator;
@@ -139,10 +141,12 @@
     // provider_moderation / provider_input_rejected. off | shadow | enforce.
     // Needs the TYPESAFE_API_KEY secret; shadow only logs the label.
     "JEV_SUBMIT_ERRORS_MODE": "off",
-    // YouTube-only initial release (docs/social-publisher/PRODUCTION-ROLLOUT.md).
-    // Merge this activation only after Google verification and release gates pass.
-    // The publish sweep is not gated: previously queued targets still finish.
+    // YouTube-only initial release: merge after Google verification and acceptance.
+    // Previously queued targets continue even when public Publish is disabled.
     "PUBLISH_ENABLED": "true",
+    // Preserve the private pilot secret and default YouTube uploads to Private.
+    "PUBLISH_YOUTUBE_VISIBILITY_ENABLED": "true",
+
     "PUBLISH_RELEASED_NETWORKS": "youtube",
     // Production 0188 is applied; basic YouTube Data API statistics only.
     "PUBLISH_ANALYTICS_ENABLED": "true",
@@ -235,10 +239,14 @@
         "REFERRALS_ENABLED": "false",
         // Vars are not inherited. 0225 is applied on staging (2026-10-08); on for testing, production stays "false".
         "CLIP_EDIT_CAPTIONS_ENABLED": "true",
+        // Vars are not inherited. 0237 is applied on staging (2026-10-09); on for testing the placeholder price, production stays "false".
+        "CLIP_EDIT_SLOW_ENABLED": "true",
         // ADR-0066; vars are not inherited, so staging names it too.
         "JEV_SUBMIT_ERRORS_MODE": "off",
         // Veyrnox Publish is open on staging for testing (see production).
         "PUBLISH_ENABLED": "true",
+        "PUBLISH_TESTER_AUTH_IDS": "",
+        "PUBLISH_YOUTUBE_VISIBILITY_ENABLED": "false",
         "PUBLISH_RELEASED_NETWORKS": "*",
         // Publish schema through 0192 provisioned on staging 2026-10-04.
         "PUBLISH_ANALYTICS_ENABLED": "true",
@@ -275,6 +283,7 @@
   // ------------------------------------------------------------------
   // Secrets (never here — `wrangler secret put <NAME>`), per ADR-0004
   // (Supabase auth + Postgres) and the shipped Phase 1 slices:
+  //   PUBLISH_TESTER_AUTH_IDS     verified Auth UUIDs for the private YouTube pilot
   //   SUPABASE_SERVICE_ROLE_KEY   PostgREST RPCs, bypasses RLS (packages/db/supabase-client.js)
   //   FAL_KEY                     fal.ai queue submit (packages/adapters/fal.js)
   //   FAL_WEBHOOK_USER_ID         our fal tenant id; webhook callbacks for any other are rejected

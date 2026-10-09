@@ -14,7 +14,8 @@ import { ask, forget, land, onScreen, sendHome } from '../../_lib/chatSendHome';
  * `chatView` is the screen's record of which chat is on it (chatSendHome.js). `saveDraft(chatId, text)` stores a chat's
  * draft; `addDraft` puts text above what is already stored there. `keepNotice(chatId, code, extra)` stores what a chat's
  * last message ended with, beside its draft, and `dropNotice(chatId)` forgets it. `heldWarning(chatId)` is that notice when
- * it warns that Credits were used or still may be (chatLocal.js), else null.
+ * it warns that Credits were used or still may be (chatLocal.js), else null. `extra` carries the reply's job and the text
+ * sent, for a warning the screen asks the server about when its chat is next opened (chatWarning.js).
  * @returns {{send: () => Promise<void>, stop: () => void, busy: boolean, stopping: boolean, checking: boolean, progress: object|null}}
  */
 export function useChatSend({ text, setText, model, imagesBlocked, chosen, price, active, setActive, messages, setMessages, setThreads, setError, att, limits, draftModel, folders, folder, instr, open, refreshThreads, fail, chatView, saveDraft, addDraft, keepNotice, dropNotice, heldWarning }) {
@@ -44,8 +45,13 @@ export function useChatSend({ text, setText, model, imagesBlocked, chosen, price
     const v = chatView.current;
     const at = () => sendHome(v, thread ? thread.id : null);
     // What an ending says is kept with its chat, as a code (chatLocal.js): the screen shows it whenever that chat is opened, a
-    // page reload included, until a later message is sent from it. It goes on screen now only while that chat is the one on it.
-    const tell = (code, extra) => { forgetEarlier(); const { home, here } = at(); keepNotice(home, code, extra); if (here) setError(chatErrorCopy(code, extra)); };
+    // page reload included, until a later message is sent from it or, for a warning, the server says its turn has settled.
+    // It goes on screen now only while that chat is the one on it.
+    // The reply's job (none before `start`) and the text sent go to the store with it. The store keeps them only beside a warning
+    // about a turn that is not settled, the text as a mark: opening the chat later asks that job, and a settled turn takes the warning away.
+    // Not when a warning is still kept for the chat this message was sent from (`over`): this notice takes its place, so one warning
+    // then stands for two turns and one job cannot answer for both. It keeps no job, and stays until a later message accounts for Credits.
+    const tell = (code, extra) => { const over = !!heldWarning(from); forgetEarlier(); const { home, here } = at(); keepNotice(home, code, { ...extra, job: over ? null : jobId, sent: content }); if (here) setError(chatErrorCopy(code, extra)); };
     // A message that used no Credits (it never started, or it started and they came back) has its text given back, and what it says
     // is about itself. It does not take the place of a warning that the message before it used Credits or still may: that warning
     // stays kept, and while its chat is on screen both are said, this one first. True when such a warning is kept, said or not.
@@ -118,8 +124,8 @@ export function useChatSend({ text, setText, model, imagesBlocked, chosen, price
         att.clear();                                 // sent: the images are spent, so the next reply starts clean
         if (streamError && at().here) setError(chatErrorCopy(streamError)); // on screen only, and not kept: the reload clears it
         await reload();                              // the saved messages, with their real status and price
+        await relist();                              // first: the notice set below must not be replaced
         if (streamError === 'reply_not_saved') tell(streamError); // after the reload, which clears the notice or replaces it when the chat is gone
-        await relist();
       }
     } catch (e) {
       if (e?.name === 'AbortError') {

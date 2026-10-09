@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { addToDraft, readDraft, writeDraft, readStars, toggleStar, readNotice, readCreditsWarning, writeNotice, clearNotice, clearChatLocal, NEW_CHAT, MAX_DRAFT, MAX_STARS, MAX_NOTICE } from '../app/veyrnox/_lib/chatLocal.js';
+import { addToDraft, readDraft, writeDraft, readStars, toggleStar, readNotice, readCreditsWarning, writeNotice, clearNotice, clearChatLocal, textMark, NEW_CHAT, MAX_DRAFT, MAX_STARS, MAX_NOTICE } from '../app/veyrnox/_lib/chatLocal.js';
 
 const memory = () => {
   const m = new Map();
@@ -228,7 +228,8 @@ test('a kept notice is read as a warning about Credits only when it is one of th
   }
   // Each of these is about a message that is settled: it used no Credits, or the chat itself shows the reply and its
   // price (`connection_saved`). A later refusal may take its place.
-  for (const code of ['connection_saved', 'connection_refunded', 'stop_refunded', 'insufficient_balance', 'rate_limited', 'turn_not_saved', 'provider_cut_off', 'image_unreadable', 'unknown']) {
+  // `stop_saved` since a kept warning can be settled later: a reply was saved after Stop, and the chat shows it and its price.
+  for (const code of ['connection_saved', 'stop_saved', 'connection_refunded', 'stop_refunded', 'insufficient_balance', 'rate_limited', 'turn_not_saved', 'provider_cut_off', 'image_unreadable', 'unknown']) {
     writeNotice(s, ME, 'thread-1', code, { credits: 2 });
     assert.equal(readCreditsWarning(s, ME, 'thread-1'), null, code);
   }
@@ -282,6 +283,118 @@ test('what a message that used no Credits ended with, said together with a kept 
   assert.doesNotMatch(api, /chatRefusedCopy/);
 });
 
+// ---- the turn a warning is about: kept with it, so the server can be asked later ----
+// A kept warning was forgotten only by a later message from its chat, a deleted chat or the end of the session:
+// nothing kept with it let the screen ask the server whether the turn it warns about had settled. So after Stop before
+// any text, a turn that was refunded a few seconds later left "it will show in this chat and use Credits" beside the
+// given-back text for good. The job id that came with `start` is now kept with the warning (chatWarning.js asks it).
+
+const JOB = '6f1d2c3a-0b4e-4c5d-8e9f-a1b2c3d4e5f6';
+const ASKABLE = ['stop_unsure', 'stop_saving', 'connection_lost'];
+
+test('a warning whose turn had started keeps the job id, and the words-facing read never carries it', () => {
+  const s = memory();
+  for (const code of ASKABLE) {
+    writeNotice(s, ME, 'thread-1', code, { job: JOB });
+    assert.deepEqual(readCreditsWarning(s, ME, 'thread-1'), { code, job: JOB }, code);
+    // readNotice is what the screen puts into words: a code, and the number its words may need. Nothing else.
+    assert.deepEqual(readNotice(s, ME, 'thread-1'), { code }, code);
+  }
+  assert.equal(s.getItem(rawNotice(s, 'thread-1')), `{"code":"connection_lost","job":"${JOB}"}`);
+  // Stop before `start` has no job: the warning is kept as it always was.
+  for (const none of [undefined, null, '']) {
+    writeNotice(s, ME, 'thread-1', 'stop_unsure', { job: none, sent: 'hello' });
+    assert.deepEqual(readCreditsWarning(s, ME, 'thread-1'), { code: 'stop_unsure' });
+    assert.equal(s.getItem(rawNotice(s, 'thread-1')), '{"code":"stop_unsure"}');
+  }
+});
+
+test('a job id is kept only beside a warning its job can settle', () => {
+  const s = memory();
+  // `reply_not_saved` is settled already (charged, and not in the chat): there is nothing to ask. The rest are not
+  // warnings, and the send hook hands the job to every notice it keeps.
+  for (const code of ['reply_not_saved', 'connection_saved', 'connection_refunded', 'stop_saved', 'insufficient_balance', 'provider_cut_off', 'unknown']) {
+    writeNotice(s, ME, 'thread-1', code, { job: JOB, sent: 'hello', credits: 2 });
+    assert.doesNotMatch(s.getItem(rawNotice(s, 'thread-1')), /job|sent/, code);
+  }
+  writeNotice(s, ME, 'thread-1', 'reply_not_saved', { job: JOB });
+  assert.deepEqual(readCreditsWarning(s, ME, 'thread-1'), { code: 'reply_not_saved' });
+});
+
+test('the one warning that gives the message back keeps a mark of its text beside the job, never the text', () => {
+  const s = memory();
+  const text = 'Describe a lighthouse.';
+  writeNotice(s, ME, 'thread-1', 'stop_unsure', { job: JOB, sent: text });
+  assert.deepEqual(readCreditsWarning(s, ME, 'thread-1'), { code: 'stop_unsure', job: JOB, sent: textMark(text) });
+  assert.doesNotMatch(s.getItem(rawNotice(s, 'thread-1')), /lighthouse/);
+  assert.deepEqual(readNotice(s, ME, 'thread-1'), { code: 'stop_unsure' });
+  // Only beside `stop_unsure`: the other two leave the box as the person has it, so nothing is compared with it later.
+  for (const code of ['stop_saving', 'connection_lost']) {
+    writeNotice(s, ME, 'thread-1', code, { job: JOB, sent: text });
+    assert.deepEqual(readCreditsWarning(s, ME, 'thread-1'), { code, job: JOB }, code);
+  }
+  // The mark: the length and a 32-bit hash, in a fixed shape. The same text gives the same mark; a changed one does not.
+  assert.match(textMark(text), /^[0-9a-z]{1,4}\.[0-9a-z]{1,7}$/);
+  // Both halves are there: the length first, in base 36, then the hash. Texts of the same length differ in the second.
+  assert.equal(textMark(text).split('.')[0], text.length.toString(36));
+  assert.equal(textMark('').split('.')[0], '0');
+  assert.equal(textMark('x'.repeat(MAX_DRAFT)).split('.')[0], MAX_DRAFT.toString(36));
+  assert.notEqual(textMark('abc').split('.')[1], textMark('abd').split('.')[1]);
+  assert.equal(textMark('abc'), '3.7aigaz', 'FNV-1a over the UTF-16 units: a known value, so the mark does not change under a stored warning');
+  assert.equal(textMark(text), textMark('Describe a lighthouse.'));
+  for (const other of ['Describe a lighthouse', 'describe a lighthouse.', 'Describe a lighthouse. ', `${text}\n\ntyped since`, '']) assert.notEqual(textMark(other), textMark(text), JSON.stringify(other));
+  assert.match(textMark('x'.repeat(MAX_DRAFT)), /^[0-9a-z]{1,4}\.[0-9a-z]{1,7}$/, 'the longest draft still fits the shape');
+  // The longest record there is still fits the limit it is read back under.
+  writeNotice(s, ME, 'thread-1', 'stop_unsure', { job: JOB, sent: 'x'.repeat(MAX_DRAFT) });
+  assert.ok(s.getItem(rawNotice(s, 'thread-1')).length <= MAX_NOTICE);
+  assert.deepEqual(readCreditsWarning(s, ME, 'thread-1'), { code: 'stop_unsure', job: JOB, sent: textMark('x'.repeat(MAX_DRAFT)) });
+});
+
+test('storage is not trusted: a job or a mark is read back only in its own shape, and a bad one leaves the warning kept without it', () => {
+  const s = memory();
+  writeNotice(s, ME, 'thread-1', 'stop_unsure');
+  const key = rawNotice(s, 'thread-1');
+  const mark = textMark('hello');
+  // The job goes into a request path. Only a job id as the server makes them is ever read back.
+  // The whole string, start to end, in the one layout: something before it, after it, or 36 of the right characters in
+  // the wrong places is not a job id.
+  const badJobs = ['job-1', '../../admin', `${JOB}/asset`, `${JOB}?x=1`, JOB.slice(0, 35), `${JOB}0`, `0${JOB}`, `/${JOB}`, ` ${JOB}`, JOB.replace('-', '_'),
+    '6f1d2c3a0b4e-4c5d-8e9f-a1b2c3d4e5f6-', '-'.repeat(36), 'f'.repeat(36), JOB.replace('6f1d', '6g1d'), '', ' ', 42, null, true, [JOB], { id: JOB }];
+  for (const bad of badJobs) {
+    s.setItem(key, JSON.stringify({ code: 'stop_unsure', job: bad, sent: mark }));
+    assert.deepEqual(readCreditsWarning(s, ME, 'thread-1'), { code: 'stop_unsure' }, `${JSON.stringify(bad)}: still a warning, with nothing to ask, and no mark without a job`);
+  }
+  for (const bad of ['hello', '5', '5.', '.abc', 'ZZ.zz', '12345.abc', '5.12345678', '<b>5.abc</b>', 5.5, null, [mark]]) {
+    s.setItem(key, JSON.stringify({ code: 'stop_unsure', job: JOB, sent: bad }));
+    assert.deepEqual(readCreditsWarning(s, ME, 'thread-1'), { code: 'stop_unsure', job: JOB }, JSON.stringify(bad));
+  }
+  // A job found beside a notice its job cannot settle is not read back, whatever put it there.
+  for (const code of ['reply_not_saved', 'connection_saved', 'insufficient_balance']) {
+    s.setItem(key, JSON.stringify({ code, job: JOB, sent: mark }));
+    assert.deepEqual(readNotice(s, ME, 'thread-1'), { code }, code);
+    assert.deepEqual(readCreditsWarning(s, ME, 'thread-1'), code === 'reply_not_saved' ? { code } : null, code);
+  }
+  // A mark beside a warning that does not give the text back is not read back either.
+  s.setItem(key, JSON.stringify({ code: 'connection_lost', job: JOB, sent: mark }));
+  assert.deepEqual(readCreditsWarning(s, ME, 'thread-1'), { code: 'connection_lost', job: JOB });
+  // Extra fields are dropped as before, and too much of anything is no notice at all.
+  s.setItem(key, JSON.stringify({ code: 'stop_unsure', job: JOB, sent: mark, words: '<b>x</b>' }));
+  assert.deepEqual(readCreditsWarning(s, ME, 'thread-1'), { code: 'stop_unsure', job: JOB, sent: mark });
+  s.setItem(key, JSON.stringify({ code: 'stop_unsure', job: JOB, pad: 'x'.repeat(MAX_NOTICE) }));
+  assert.equal(readCreditsWarning(s, ME, 'thread-1'), null);
+  // The limit is 120 characters, and one character over it is too much. The longest record the screen writes is 88.
+  assert.equal(MAX_NOTICE, 120);
+  const fits = (n) => { const base = JSON.stringify({ code: 'stop_unsure', job: JOB, p: '' }); return JSON.stringify({ code: 'stop_unsure', job: JOB, p: 'x'.repeat(n - base.length) }); };
+  s.setItem(key, fits(120)); assert.deepEqual(readCreditsWarning(s, ME, 'thread-1'), { code: 'stop_unsure', job: JOB });
+  s.setItem(key, fits(121)); assert.equal(readCreditsWarning(s, ME, 'thread-1'), null);
+  assert.equal(readNotice(s, ME, 'thread-1'), null);
+  // Nothing bad is written either: the write checks the same shapes.
+  for (const bad of badJobs) {
+    writeNotice(s, ME, 'thread-1', 'connection_lost', { job: bad });
+    assert.equal(s.getItem(key), '{"code":"connection_lost"}', JSON.stringify(bad));
+  }
+});
+
 test('the workspace restores a draft on open and clears it only after a send', () => {
   assert.match(workspace, /readDraft\(/);
   assert.match(workspace, /writeDraft\(/);
@@ -292,8 +405,10 @@ test('the workspace names the stored user on every read and write', () => {
   // Seven since addDraft: text given back to a chat that is not on screen is added to that chat's stored draft.
   // Ten since a chat's notice is stored: it is kept, read and forgotten for the same user as the draft beside it.
   // Eleven since the send hook asks whether a warning about Credits is kept before a refusal is told.
-  const users = [...workspace.matchAll(/\b(?:readDraft|writeDraft|addToDraft|readStars|toggleStar|readNotice|readCreditsWarning|writeNotice|clearNotice)\(store\(\), ([^,]+),/g)].map((m) => m[1]);
-  assert.deepEqual(users, Array(11).fill('getStoredUserId()'));
+  // Twelve since a kept warning is settled when its chat is opened (settleKeptWarning, chatWarning.js): it reads and
+  // changes the same user's notice and draft, so it is counted here with the store's own functions.
+  const users = [...workspace.matchAll(/\b(?:readDraft|writeDraft|addToDraft|readStars|toggleStar|readNotice|readCreditsWarning|writeNotice|clearNotice|settleKeptWarning)\(store\(\), ([^,]+),/g)].map((m) => m[1]);
+  assert.deepEqual(users, Array(12).fill('getStoredUserId()'));
 });
 
 test('the workspace turns a stored notice into words itself, each time it is shown', () => {

@@ -52,3 +52,20 @@ Google OAuth audience is External / In production; this is not verification appr
 ## Rollback
 
 Revert the two activation flags through the normal production workflow. Turning Publish off does not cancel already queued posts: use the supported cancellation path after checking claim/provider state. Preserve credentials, database data and ownership TXT record.
+
+## Latest pilot acceptance
+
+The production pilot is provisioned through a Worker secret with public Publish
+still disabled. Migration 0241 is applied with the approved 0238–0241 batch.
+The approved YouTube tester connected successfully; the owner-selected Tokyo
+alley video was uploaded with Private visibility. Studio confirmed Private,
+and the worker recorded published, one attempt and no error after processing.
+Google branding is verified and published. Sensitive-scope verification is
+still pending the actual English consent/use recording and reviewer URL.
+
+Deployment secret-loss protection is prepared in #775 and pilot analytics
+collection in #776; neither is claimed deployed in this record. Analytics,
+refresh, scheduling and disconnect acceptance remain to complete. Earlier
+evidence in this document is historical and does not supersede these results.
+This activation PR remains draft until Google data-access approval and the
+remaining acceptance checks are complete.

@@ -12,6 +12,7 @@ on:
       - "packages/catalog/**"
       - "scripts/migrate.mjs"
       - "scripts/test-social-cinema-foundation.mjs"
+      - "scripts/test-social-youtube-visibility.mjs"
       - "scripts/test-cinema-creators.mjs"
       - "scripts/test-tenant-foundation.mjs"
       - "scripts/test-project-documents.mjs"
@@ -33,6 +34,9 @@ on:
       - "scripts/test-chat-folders.mjs"
       - "scripts/test-free-allowance-jobs.mjs"
       - "scripts/test-fal-dispatch.mjs"
+      - "scripts/test-fal-admission-capacity.mjs"
+      - "scripts/test-fal-admission-pause.mjs"
+      - "scripts/test-fal-reserved-only.mjs"
       - "scripts/test-chat-research-columns.mjs"
       - "scripts/test-chat-personas.mjs"
       - "scripts/test-popular-templates.mjs"
@@ -139,6 +143,7 @@ jobs:
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-recovery-health.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-video-agent-sweep-health.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-social-cinema-foundation.mjs
+          DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-social-youtube-visibility.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-creators.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-tenant-foundation.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-project-documents.mjs
@@ -166,6 +171,9 @@ jobs:
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-chat-folders.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-free-allowance-jobs.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-fal-dispatch.mjs
+          DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-fal-admission-capacity.mjs
+          DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-fal-admission-pause.mjs
+          DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-fal-reserved-only.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-chat-research-columns.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-chat-personas.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-popular-templates.mjs

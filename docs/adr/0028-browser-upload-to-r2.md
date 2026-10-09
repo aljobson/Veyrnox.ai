@@ -116,3 +116,46 @@ change after it is measured, which is ADR-0044 (`UPLOAD_INTEGRITY_ENABLED`).
 Whether a provider bills by decoded length, and what cap it applies itself,
 was not measured.
 
+## Amendment 2026-10-10 — refuse a file two readers would decode differently
+
+The 2026-10-09 parsers took a length from what they read, but some files can be
+read more than one way: a short measurement here, a long one in the decoder the
+provider uses to produce (and bill) the output. Measured against ffmpeg/ffprobe
+on crafted files, each case below read under one second here while a decoder
+played tens of seconds to ten minutes. The parsers now refuse a structure they
+cannot read a single way, before the debit (`source_length_unknown`,
+`source_size_unknown`), rather than measure it. Well-formed files are
+unaffected.
+
+- **WAV:** a second format chunk (a reader may honour either), a format chunk
+  shorter than its fields, a sample size that does not fit the format (A-law and
+  mu-law are one byte; PCM and float must carry a real bit depth), and an
+  extensible format whose SubFormat is absent or not a fixed-frame PCM, float,
+  A-law or mu-law. The block-align field is no longer trusted to set the frame.
+- **MP3:** an `ID3` tag header that is not well formed (version bytes `0xFF`, or
+  size bytes that are not synch-safe) — a decoder that rejects the header reads
+  those bytes as audio — and a file that is mostly bytes that are not frames,
+  which a duration-estimating reader would time differently.
+- **MP4:** a track with a sample table but no media header; a second sample
+  table, or a single one placed off the canonical `mdia → minf → stbl` path,
+  where a lenient reader finds a table this one does not; and an edit list that
+  is anything but a single plain edit presenting no more than the media holds (a
+  replay of several edits, a speed other than 1, an empty edit, or a segment
+  longer than the media is refused).
+- **JPEG (pixel size):** a marker that carries no length field — TEM, a restart
+  marker, or SOI/EOI — before the frame header, or a segment length below two.
+  Read as length-prefixed, such a marker moves the walk to wherever the uploader
+  placed a second frame header, so the size the cap checks was not the size a
+  decoder uses. A real photo has none of these before its frame header.
+
+## Amendment 2026-10-10 — an MP3's length is counted from a stream
+
+Counting every MP3 frame still needs the whole object, but it is no longer held
+in one piece. The first ranged read is already in memory for the content and
+size checks; the rest is streamed and each chunk is counted and dropped. One
+measurement now holds at most one network chunk plus a frame-sized carry (under
+2 KiB), not a 20 MiB copy, so the memory one request can demand does not grow
+with the file and does not multiply when several measurements run at once in one
+isolate. The per-user attempt limit (0113) and the 20 MiB per-object type cap
+still bound the rest.
+

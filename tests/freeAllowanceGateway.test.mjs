@@ -149,3 +149,18 @@ test('a replay of a free job returns it without touching the provider again', ()
         assert.ok(!net.calls.some(c => c.url.includes('api.kie.ai')));
     } finally { net.restore(); }
 }));
+
+test('paid and free admission pauses return retryable 503 before any provider call', async () => {
+    for (const useFree of [false,true]) await withFlag(useFree ? 'true' : undefined, async () => {
+        const name=useFree?'submit_free_job':'ledger_debit';
+        const net=network({ model:offered, rpcs:{ [name]:{ ok:false,code:'PROVIDER_ADMISSION_PAUSED',retry_after_seconds:7 } } });
+        try {
+            const res=await post();assert.equal(res.status,503);
+            assert.equal(res.headers.get('retry-after'),'7');
+            assert.deepEqual(await res.json(),{ error:'provider_admission_paused' });
+            assert.equal(rpc(net,name).length,1);
+            if(useFree) assert.equal(rpc(net,'ledger_debit').length,0);
+            assert.equal(net.calls.filter(c=>new URL(c.url).hostname==='api.kie.ai').length,0);
+        } finally { net.restore(); }
+    });
+});
