@@ -52,6 +52,10 @@
     // ADR-0074: the video agent (isolated OpenMontage runner). "false" until the runner, MONTAGE_* secrets and the measured price exist
     // (docs/montage/SPEC.md slices 4-6). A run already paid for still finishes or refunds with this off.
     "AGENT_VIDEO_ENABLED": "false",
+    // ADR-0074, rollout step 3: the production runner on Fly (app veyrnox-montage-runner, created 2026-10-09). A public address, not
+    // a secret, and a constant: the Worker never takes a runner URL from a request. Every call to it is signed, and nothing calls it
+    // until MONTAGE_SIGNING_SECRET and MONTAGE_PLAN_SECRET are set (step 4) and AGENT_VIDEO_ENABLED is "true" (step 7).
+    "MONTAGE_RUNNER_BASE": "https://veyrnox-montage-runner.fly.dev",
     // ADR-0074: the video-agent sweep asks the runner which runs it still has and refunds a lost one in about five minutes, where the
     // timeout alone takes 45 to 50. Sound with ONE runner machine only (runs live in memory per machine); keep "false" with more.
     "MONTAGE_LIVENESS_ENABLED": "false",
