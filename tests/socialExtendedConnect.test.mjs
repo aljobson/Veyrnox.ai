@@ -116,3 +116,21 @@ test('Bluesky connects with a generated app password containing digits and store
     assert.equal(sessionCalls, 1);
     assert.equal(JSON.stringify(await res.json()).includes(appPassword), false);
 });
+
+test('Bluesky connection diagnostics identify provider failure without exposing its payload', async () => {
+    globalThis.fetch = async () => Response.json({ error: 'AuthenticationRequired', message: 'secret-provider-payload' }, { status: 401 });
+    const res = await finishExtendedConnect(request({ identifier: 'tester.bsky.social', appPassword: 'abcd-2345-efgh-6789' }), 'bluesky');
+    assert.equal(res.status, 502);
+    assert.deepEqual(await res.json(), { error: 'connect_failed', stage: 'provider_session', code: 'provider_request_failed_401' });
+});
+
+test('Bluesky connection diagnostics distinguish storage failure and redact unexpected exception messages', async () => {
+    globalThis.fetch = async (url) => {
+        if (new URL(url).pathname.endsWith('/com.atproto.server.createSession')) return Response.json({ did: 'did:plc:tester', accessJwt: 'access-test', refreshJwt: 'refresh-test',
+            didDoc: { id: 'did:plc:tester', service: [{ type: 'AtprotoPersonalDataServer', serviceEndpoint: 'https://bsky.social' }] } });
+        throw new Error('database-secret-payload');
+    };
+    const res = await finishExtendedConnect(request({ identifier: 'tester.bsky.social', appPassword: 'abcd-2345-efgh-6789' }), 'bluesky');
+    assert.equal(res.status, 502);
+    assert.deepEqual(await res.json(), { error: 'connect_failed', stage: 'record_account', code: 'unexpected_failure' });
+});
