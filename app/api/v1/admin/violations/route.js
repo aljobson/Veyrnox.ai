@@ -8,9 +8,10 @@
  *                                    takedown removes the job's assets at once
  *                                    and the third one Freezes the account.
  *
- * Same three gates as /api/v1/admin/metrics: middleware identity, the
- * ADMIN_REQUIRE_AAL2 second-factor flag, and the RPC's own users.is_admin
- * check (42501 'not_admin'). Every write lands in the append-only
+ * Same four gates as /api/v1/admin/metrics: middleware identity, the
+ * ADMIN_REQUIRE_AAL2 second-factor flag, the Cloudflare Access assertion
+ * verified in code, and the RPC's own users.is_admin check (42501
+ * 'not_admin'). Every write lands in the append-only
  * account_actions table with the admin's email as actor and the job as trace.
  *
  * After a write, the user is emailed (lib/violationEmail.js). `email` in the
@@ -20,6 +21,7 @@
 import { NextResponse } from 'next/server';
 import { rpc, envConfig, SupabaseError } from '../../../../../packages/db/supabase-client.js';
 import { notifyViolation } from '../../../../../lib/violationEmail.js';
+import { requireDashboardAccess } from '../../../../../lib/accessJwt.js';
 
 const NOT_ADMIN = '42501';
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -28,12 +30,14 @@ const MAX_BODY_BYTES = 4 * 1024;
 
 const requireAal2 = () => process.env.ADMIN_REQUIRE_AAL2 === 'true';
 
-function gate(req) {
+async function gate(req) {
     const authId = req.headers.get('x-veyrnox-auth-id');
     if (!authId) return { response: NextResponse.json({ error: 'not_authenticated' }, { status: 401 }) };
     if (requireAal2() && req.headers.get('x-veyrnox-auth-aal') !== 'aal2') {
         return { response: NextResponse.json({ error: 'mfa_required' }, { status: 403 }) };
     }
+    const access = await requireDashboardAccess(req);
+    if (!access.ok) return { response: NextResponse.json({ error: access.error }, { status: access.status }) };
     const cfg = envConfig();
     if (!cfg.supabaseUrl || !cfg.serviceRoleKey) {
         return { response: NextResponse.json({ error: 'supabase_not_configured' }, { status: 503 }) };
@@ -52,7 +56,7 @@ function rpcFailure(err, where) {
 }
 
 export async function GET(req) {
-    const g = gate(req);
+    const g = await gate(req);
     if (g.response) return g.response;
     const url = new URL(req.url);
     const userId = url.searchParams.get('user_id');
@@ -73,7 +77,7 @@ export async function GET(req) {
 }
 
 export async function POST(req) {
-    const g = gate(req);
+    const g = await gate(req);
     if (g.response) return g.response;
     const declared = Number(req.headers.get('content-length'));
     if (Number.isFinite(declared) && declared > MAX_BODY_BYTES) {

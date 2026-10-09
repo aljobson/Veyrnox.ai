@@ -9,9 +9,10 @@ test('approval freshness requires a recent verified TOTP event, not token refres
   for (const time of [now-301,now+6,0,'1900000000',Infinity,NaN]) assert.equal(recentMfaTimestamp(claim(time),now),null);
   for (const claims of [{aal:'aal1',amr:[{method:'totp',timestamp:now}]},{aal:'aal2',iat:now},{aal:'aal2',amr:[{method:'token_refresh',timestamp:now}]},{aal:'aal2',amr:[{method:'password',timestamp:now}]}]) assert.equal(recentMfaTimestamp(claims,now),null);
 });
-test('middleware strips caller freshness headers and derives them from verified claims',()=>{
+test('middleware blanks caller freshness headers and derives them from verified claims',()=>{
   const source=readFileSync(new URL('../middleware.js',import.meta.url),'utf8');
   assert.match(source,/'x-veyrnox-auth-mfa-at',/);
   assert.ok(source.indexOf('recentMfaTimestamp(claims)') > source.indexOf('validateClaims(claims'));
-  assert.match(source,/headers\.delete\(h\)/);
+  // Set to '', not deleted (tests/identityHeaders.test.mjs).
+  assert.match(source,/headers\.set\(h, ''\)/);
 });

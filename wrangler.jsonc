@@ -5,6 +5,14 @@
   "main": "worker.js",
   "compatibility_date": "2026-09-01",
   "compatibility_flags": ["nodejs_compat"],
+  // Production answers on the veyrnox.ai custom domain only (set in the
+  // dashboard, not here). Cloudflare Access is attached to that hostname by
+  // path, so the same Worker must not also answer on a hostname Access does
+  // not sit in front of: no <name>.<subdomain>.workers.dev route and no
+  // per-version preview URLs (ADR-0078). Both keys are inherited by
+  // environments, so staging turns workers_dev back on below.
+  "workers_dev": false,
+  "preview_urls": false,
   // Keep Worker logs (console.error on provider rejects, webhook signature
   // failures) in the dashboard instead of needing a live `wrangler tail`.
   "observability": { "enabled": true },
@@ -44,6 +52,10 @@
     // ADR-0074: the video agent (isolated OpenMontage runner). "false" until the runner, MONTAGE_* secrets and the measured price exist
     // (docs/montage/SPEC.md slices 4-6). A run already paid for still finishes or refunds with this off.
     "AGENT_VIDEO_ENABLED": "false",
+    // ADR-0074, rollout step 3: the production runner on Fly (app veyrnox-montage-runner, created 2026-10-09). A public address, not
+    // a secret, and a constant: the Worker never takes a runner URL from a request. Every call to it is signed, and nothing calls it
+    // until MONTAGE_SIGNING_SECRET and MONTAGE_PLAN_SECRET are set (step 4) and AGENT_VIDEO_ENABLED is "true" (step 7).
+    "MONTAGE_RUNNER_BASE": "https://veyrnox-montage-runner.fly.dev",
     // ADR-0074: the video-agent sweep asks the runner which runs it still has and refunds a lost one in about five minutes, where the
     // timeout alone takes 45 to 50. Sound with ONE runner machine only (runs live in memory per machine); keep "false" with more.
     "MONTAGE_LIVENESS_ENABLED": "false",
@@ -146,16 +158,23 @@
     // Cloudflare Access covers veyrnox.ai/app/admin*, /api/v1/admin/* and
     // /api/admin/* (one application, "Veyrnox.ai admin"). These two let the
     // Worker verify the assertion itself (lib/accessJwt.js) instead of
-    // trusting the edge: a policy loosened in the dashboard does not silently
-    // open the machine endpoints. Public values — the team domain is in every
-    // Access redirect and the AUD identifies the application, neither
-    // authenticates anything.
+    // trusting the edge: a policy loosened in the dashboard, or a request
+    // that arrives by a path the rule does not name, does not open them.
+    // The machine endpoints under /api/admin/* and the dashboard routes
+    // under /api/v1/admin/* both check it in code (ADR-0078); the dashboard
+    // routes answer 503 access_not_configured if either value is removed.
+    // Public values — the team domain is in every Access redirect and the
+    // AUD identifies the application, neither authenticates anything.
     "ACCESS_TEAM_DOMAIN": "fancy-lake-7c60.cloudflareaccess.com",
     "ACCESS_AUD": "4bea77db854633f7b4546a485bcb14c1e0c4389318ebd565e9a326edf17d0163"
   },
   "env": {
     "staging": {
       "name": "veyrnox-ai-staging",
+      // Staging has no custom domain: it lives on
+      // veyrnox-ai-staging.<subdomain>.workers.dev, so it needs the route
+      // production turns off. Preview URLs stay off here too (inherited).
+      "workers_dev": true,
       "queues": { "producers": [{
         "binding": "FAL_DISPATCH_QUEUE",
         "queue": "veyrnox-fal-dispatch-staging"
