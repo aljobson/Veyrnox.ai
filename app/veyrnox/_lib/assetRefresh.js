@@ -1,3 +1,11 @@
+/** What the user is told when a signed link for their file cannot be had. Shared by the preview and Download. */
+export function assetErrorMessage(error) {
+  return error?.status === 404 ? 'This file is no longer available.'
+    : error?.status === 401 ? 'Sign in again to load this file.'
+      : error?.status === 429 ? 'Too many file requests. Wait a minute, then retry.'
+        : 'Could not load this file. Try again.';
+}
+
 // One automatic retry per signed URL lifetime. A broken/deleted file must
 // not turn media error events into an endless stream of signing requests.
 export function createAssetRefresher({ jobId, fetchAsset, onChange, now = Date.now }) {
@@ -25,10 +33,7 @@ export function createAssetRefresher({ jobId, fetchAsset, onChange, now = Date.n
       onChange({ url: asset.url, loading: false, error: null });
     }).catch((error) => {
       if (disposed) return;
-      const message = error?.status === 404 ? 'This file is no longer available.'
-        : error?.status === 401 ? 'Sign in again to load this file.'
-          : error?.status === 429 ? 'Too many file requests. Wait a minute, then retry.'
-            : 'Could not load this file. Try again.';
+      const message = assetErrorMessage(error);
       lastError = message;
       onChange({ loading: false, error: message });
     }).finally(() => { pending = null; });

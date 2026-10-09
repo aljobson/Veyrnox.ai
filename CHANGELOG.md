@@ -17,6 +17,7 @@ Changes that touch the money spine, the ledger or the catalog are marked **[mone
 - Five more chat models turned on (0211): DeepSeek V4.1 Flash, Gemini 3.8 Flash, Grok 4.7, GPT-6.1 Sol, Claude Opus 5.5. New chats open on the cheapest model
 - Chat folders (0210, ADR-0067 amendment 5): group chats, move them in and out, rename or delete a folder (its chats stay). Up to 50 per person; `/api/v1/chat/folders`; a thread patch with `folder_id` moves a chat
 - Chat, behind `CHAT_ENABLED` (off) and the browser preview switch `veyrnox_chat`: threads and messages (0193), `/api/v1/chat/*`, a streaming reply that is one job priced per reply from `model_catalog`, finished by `chat_complete_turn` or refunded, and a `/app/chat` screen. No text model is active until an operator verifies one (ADR-0067, Accepted) **[money]**
+- Library: every finished card has a Download link. The card already said "Save a copy before then" and offered no way to do it. It asks `GET /api/v1/jobs/:id/asset?download=1`, which signs a 15-minute link the browser saves instead of showing, after the same ownership check and the same request quota as a normal file link.
 
 ### Changed
 - **[money]** Web search switches to the capped search and is re-priced from a live measurement (0220, ADR-0067 amendment 8): Exa charged a flat $0.007 a search, so most models are +1 Credit, the Sonnet class +2 and Opus +3. Engine and price change in one statement. Held as a draft until the capped search code is deployed and `EXA_API_KEY` is set
