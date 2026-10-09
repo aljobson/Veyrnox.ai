@@ -77,3 +77,22 @@ Review the resulting measurements and accepted-running headroom before changing
 submission concurrency or broadening admission. Local controlled-adapter tests
 can validate failure handling while admission is paused, but cannot substitute
 for this live capacity measurement.
+
+## Consumer timing fields
+
+`generation.dispatch_queue_batch` emits `elapsed_ms` for the consumer function
+and `rpc_timings` for the fixed recovery, claim and evidence RPC names. Each
+entry has `calls`, `total_ms` and `max_ms`, including thrown RPCs and repeated
+evidence writes. Durations use a separate monotonic clock from the invocation
+budget and are rounded to milliseconds. No RPC arguments, responses or secrets
+are added to these fields. With batch size one, a normal successful invocation
+should report two recovery calls, one claim and one evidence call.
+
+Elapsed time includes provider submission and RPC waits within the consumer;
+it excludes queue scheduling before invocation and callback processing after
+submission. Per-RPC fields aggregate within a batch; recovery combines its
+initial and post-attempt calls. Individual RPC percentiles cannot be derived
+from this summary alone. Use the observed batch sample count and outcomes when
+reporting handler percentiles; never mix retry-only batches with healthy claims.
+The fields become live evidence only after deployment of the dedicated consumer
+and an approved sample. Merging application code does not deploy that consumer.
