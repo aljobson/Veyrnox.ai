@@ -48,3 +48,48 @@ This workflow has no schedule, issue creation or paging integration. Scheduled
 coverage, an operator notification destination and tested alert delivery remain
 rollout gates. A manual clean snapshot does not satisfy the 24-hour clean
 reconciliation requirement or authorize production activation.
+
+## Scheduled monitor setup
+
+`fal-queue-watch-staging` adds an independently gated monitor. Both repository
+variables below are unset/off by default. Preparing this workflow does not
+activate notifications or establish continuous coverage.
+
+On 9 October 2026, `fal-queue-monitor-staging` was created and its selected
+branch policy was verified to allow only `main`. The monitoring secret is still
+unprovisioned and both repository activation variables remain unset. The owner
+selected GitHub issues as the destination; live delivery remains untested.
+
+1. Create the GitHub environment `fal-queue-monitor-staging` with a selected
+   deployment branch policy allowing only `main`. It holds only a monitoring
+   token, not deployment, fal or database secrets. Scheduled runs need to execute
+   without waiting for a human reviewer; keep deployment approval on the separate
+   `fal-dispatch-staging` environment.
+2. Create a Cloudflare token with **Account → Queues → Read**, restricted to
+   account `fb18d9f7052afbea5a5e0eae69948af2`. Save its value directly as environment
+   secret `CLOUDFLARE_QUEUE_MONITOR_TOKEN`. Do not paste it into chat or reuse the
+   broader deployment credential.
+3. Set repository variable `FAL_QUEUE_STAGING_WATCH_ENABLED=true`, then manually
+   run the watch workflow on `main`. Confirm the metrics report is readable.
+   The workflow checks the committed main snapshot; it does not require the head
+   to remain unchanged while running, avoiding routine monitoring gaps when main
+   advances. It has no untrusted dispatch inputs.
+4. Only after the owner selects GitHub issues as the notification destination,
+   set `FAL_QUEUE_STAGING_ISSUES_ENABLED=true`. Alert delivery must still be tested
+   through a separately authorized bounded incident exercise before calling this
+   gate complete. Unit tests cannot prove GitHub sends an operator notification.
+
+When enabled, the watch is scheduled every ten minutes. GitHub schedules are
+best effort and may be delayed or dropped; this is not an availability SLA or
+guaranteed paging. Confirm the latest successful run regularly and use an
+independent freshness watchdog/paging service if a bounded detection time is
+required. A failure before the checker starts also creates an incident when the
+issue gate is enabled; a run that never starts cannot report its own absence.
+
+Issue notification keeps one open `fal-queue-staging` incident and changes its
+body only when the redacted report changes. An unchanged failure stays quiet.
+The incident remains open after a clean run: the owner checks the latest Actions
+report and resolves it after investigation. Changed count/age values can update
+the report, so this does not promise a single notification for an entire outage.
+To stop checks, set the watch gate to `false`; to stop issue writes while retaining
+checks, set the issue gate to `false`. Neither action changes dispatch flags.
