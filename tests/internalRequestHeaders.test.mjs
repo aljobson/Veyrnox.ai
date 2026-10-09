@@ -5,6 +5,7 @@
 // (ADR-0078, amendment 1).
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { register } from 'node:module';
 
 register('data:text/javascript,' + encodeURIComponent(`
@@ -31,6 +32,9 @@ const GEO = {
     'x-open-next-region': 'ZZ',
     'x-open-next-latitude': '0',
     'x-open-next-longitude': '0',
+    'x-vercel-ip-city': 'Nowhere',
+    'x-vercel-ip-country': 'ZZ',
+    'x-vercel-ip-country-region': 'ZZ',
 };
 const INTERNAL = { ...REVALIDATION, ...GEO };
 const ORDINARY = {
@@ -44,7 +48,7 @@ const ORDINARY = {
     // Left for the middleware, which gives every identity header its own value.
     'x-veyrnox-auth-id': 'sent by the caller',
     // Names that only look like the internal ones are not this layer's business.
-    'x-isr-status': 'keep', 'x-prerender': 'keep', 'x-open-next': 'keep', 'x-opennext-debug': 'keep',
+    'x-isr-status': 'keep', 'x-prerender': 'keep', 'x-open-next': 'keep', 'x-opennext-debug': 'keep', 'x-vercel-id': 'keep',
 };
 
 /** Send one request through the Worker and return what the app was handed. */
@@ -148,4 +152,42 @@ test('a revalidation header from outside is logged once, without its value; geol
     assert.equal(all.join(' ').includes(secret), false);
     assert.deepEqual(await quietly(() => throughWorker(new Request(`${ORIGIN}/pricing`, { headers: GEO }))), []);
     assert.deepEqual(await quietly(() => throughWorker(new Request(`${ORIGIN}/pricing`, { headers: ORDINARY }))), []);
+});
+
+// The list in lib/internalRequestHeaders.js was written against one version of
+// the framework, and dependency updates can merge on green checks. These pin
+// what it relied on, so an update that changes any of it fails here first.
+test('the installed framework still reads request headers the way the list assumes', () => {
+    const read = (path) => readFileSync(new URL(`../node_modules/@opennextjs/aws/dist/${path}`, import.meta.url), 'utf8');
+    const changed = 'the framework changed: re-read lib/internalRequestHeaders.js and ADR-0078 amendment 1 against the new code, then update this test';
+
+    const names = read('utils/cacheHeaders.js');
+    assert.match(names, /ISR_HEADER = "x-isr";/, changed);
+    assert.match(names, /PRERENDER_REVALIDATE_HEADER = "x-prerender-revalidate";/, changed);
+
+    // Before it looks for a matching middleware, the routing layer hands a
+    // request on for one reason only, and reads only these two headers to decide.
+    const routing = read('core/routing/middleware.js');
+    const start = routing.indexOf('export async function handleMiddleware');
+    const end = routing.indexOf('localizePath(internalEvent)');
+    assert.ok(start > 0 && end > start, changed);
+    const head = routing.slice(start, end);
+    assert.equal(head.match(/\breturn\b/g)?.length, 1, changed);
+    assert.deepEqual([...head.matchAll(/headers\[([^\]]+)\]/g)].map((m) => m[1]).sort(), ['ISR_HEADER', 'PRERENDER_REVALIDATE_HEADER'], changed);
+
+    // The names it removes from a client's request by itself, and the geolocation names it sets.
+    const handler = read('core/routingHandler.js');
+    for (const name of ['x-middleware-rewrite', 'x-middleware-redirect', 'x-middleware-set-cookie', 'x-middleware-skip',
+        'x-middleware-override-headers', 'x-middleware-next', 'x-now-route-matches', 'x-matched-path', 'x-nextjs-data']) {
+        assert.ok(handler.includes(`"${name}",`), `${name}: ${changed}`);
+    }
+    assert.match(handler, /INTERNAL_HEADER_PREFIX = "x-opennext-";/, changed);
+    assert.match(handler, /MIDDLEWARE_HEADER_PREFIX = "x-middleware-response-";/, changed);
+    const geo = handler.slice(handler.indexOf('const geoHeaderToNextHeader = {'), handler.indexOf('};', handler.indexOf('const geoHeaderToNextHeader = {')));
+    const pairs = [...geo.matchAll(/"([^"]+)": "([^"]+)"/g)];
+    assert.ok(pairs.length >= 5, changed);
+    for (const [, from, to] of pairs) assert.ok(from.startsWith('x-open-next-') && to.startsWith('x-vercel-ip-'), `${from} -> ${to}: ${changed}`);
+
+    // Next honours x-matched-path and next-resume only in minimal mode, which OpenNext does not ask for.
+    assert.equal(/minimalMode/.test(read('core/util.js')), false, changed);
 });
