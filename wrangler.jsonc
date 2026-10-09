@@ -241,8 +241,9 @@
         // ADR-0067: Chat is open on staging for testing only. No text model is
         // active until the owner activates one; production stays "false".
         "CHAT_ENABLED": "true",
-        // ADR-0067 amendment 11 (vars are not inherited). Flip to "true" on staging only after 0242 is applied there.
-        "CHAT_SEND_CLOSE_ENABLED": "false",
+        // ADR-0067 amendment 11 (vars are not inherited). On in staging since 2026-10-09: 0242 was applied there that day
+        // (checked against the file: both function bodies match), on the owner's word.
+        "CHAT_SEND_CLOSE_ENABLED": "true",
         // ADR-0069 (vars are not inherited). Flip to "true" on staging only after 0205 and 0206 are applied there.
         "FREE_ALLOWANCE_ENABLED": "false",
         // ADR-0072 (vars are not inherited). Flip to "true" on staging only after 0216 is applied there.

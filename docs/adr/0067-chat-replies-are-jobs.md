@@ -303,7 +303,7 @@ screen change with its own browser check.
 
 Status: **Accepted 2026-10-09**, the owner merged it (pull request 774). Migration 0242 was applied to production the same day
 through `apply-migrations`, and `CHAT_SEND_CLOSE_ENABLED` was set to `"true"` in production that day on the owner's word, without
-the 24-hour wait between a migration and its flag. Staging keeps it `"false"` until 0242 is applied there.
+the 24-hour wait between a migration and its flag. Staging followed the same evening: 0242 applied there, then the switch.
 
 The chat screen keeps a warning when a message ended with its turn not settled ("If a reply is still saved, it will show in this
 chat and use Credits"). Since pull request 764 it keeps the reply's job id with the warning and reads that job when the chat is
