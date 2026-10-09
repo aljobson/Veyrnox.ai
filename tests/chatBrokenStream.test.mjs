@@ -11,6 +11,9 @@ import { lostNotice } from '../app/veyrnox/_lib/chatStop.js';
 
 const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
 const screen = read('../app/veyrnox/_components/chat/ChatWorkspace.js');
+// send() and its endings moved out of ChatWorkspace.js into the useChatSend hook, unchanged and at the same indentation, to
+// keep the screen file under 500 lines. The patterns that pin send() read the hook; the ones that pin markup read the screen.
+const sender = read('../app/veyrnox/_components/chat/useChatSend.js');
 const api = read('../app/veyrnox/_lib/chatApi.js');
 
 /** The words chatErrorCopy returns for one code. */
@@ -22,7 +25,7 @@ function copyFor(code) {
 
 /** The three endings of send()'s catch block: Stop, a stream that broke after `start`, and a turn that never started. */
 function catchBranches() {
-    const block = /\n    \} catch \(e\) \{\n([\s\S]*?)\n    \} finally \{ setBusy\(false\)/.exec(screen);
+    const block = /\n    \} catch \(e\) \{\n([\s\S]*?)\n    \} finally \{ setBusy\(false\)/.exec(sender);
     assert.ok(block, 'send() has a catch block followed by its finally');
     // Keyed on the catch block's own indentation, so an if/else added inside a branch does not move the split.
     // The Stop branch is a block of its own since it stopped reloading at once (tests/chatStop.test.mjs covers it).
@@ -33,9 +36,9 @@ function catchBranches() {
 
 test('the screen remembers that the start event arrived, which is when the Credits have been debited', () => {
     // The same handler also keeps the job id, which the Stop branch uses.
-    assert.match(screen, /if \(ev === 'start'\) \{ started = true; [^\n]*setProgress\(null\); \}/);
+    assert.match(sender, /if \(ev === 'start'\) \{ started = true; [^\n]*setProgress\(null\); \}/);
     // Declared just before send()'s try, so the catch block can read it.
-    assert.match(screen, /\n    let started = false;[^\n]*\n    try \{\n/);
+    assert.match(sender, /\n    let started = false;[^\n]*\n    try \{\n/);
     // On the server, the debit comes before the start event.
     const turn = read('../lib/chatTurn.js');
     const debit = turn.indexOf("rpc('ledger_debit'");
@@ -149,7 +152,7 @@ test('while the turn is looked for the bubble says the connection was lost, and 
     assert.match(screen, /m\.status === 'lost' \? 'Connection lost\. Checking what was saved\.' : /);
     // Its own state, cleared when the send ends, as for Stop.
     assert.match(screen, /disabled=\{stopping \|\| checking\}[^\n]*\{stopping \? 'Stopping' : checking \? 'Checking' : 'Stop'\}/);
-    assert.match(screen, /\} finally \{ setBusy\(false\); setProgress\(null\); setStopping\(false\); setChecking\(false\);/);
+    assert.match(sender, /\} finally \{ setBusy\(false\); setProgress\(null\); setStopping\(false\); setChecking\(false\);/);
 });
 
 test('only a turn that never started deletes the new chat and gives the text back', () => {
@@ -159,7 +162,7 @@ test('only a turn that never started deletes the new chat and gives the text bac
     // In the whole of send(), a chat is deleted in two places only: here, and in giveBack(), for a turn that is known
     // to be over with nothing kept and the Credits returned (`done` said so, or the job did after a Stop or a
     // dropped connection).
-    const send = screen.slice(screen.indexOf('async function send()'), screen.indexOf('if (!ready) return'));
+    const send = sender.slice(sender.indexOf('async function send()'), sender.indexOf('\n  return { send,'));
     assert.equal(send.split('chatApi.remove(thread.id)').length - 1, 2);
 });
 

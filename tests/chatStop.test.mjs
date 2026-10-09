@@ -9,6 +9,9 @@ import { STOP_LIMIT_MS, STOP_WAITS_MS, findSavedTurn, settleStoppedTurn } from '
 
 const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
 const screen = read('../app/veyrnox/_components/chat/ChatWorkspace.js');
+// send() and its endings moved out of ChatWorkspace.js into the useChatSend hook, unchanged and at the same indentation, to
+// keep the screen file under 500 lines. The patterns that pin send() read the hook; the ones that pin markup read the screen.
+const sender = read('../app/veyrnox/_components/chat/useChatSend.js');
 const api = read('../app/veyrnox/_lib/chatApi.js');
 
 const TEXT = 'Write about tea.';
@@ -173,7 +176,7 @@ test('a read that fails is not an answer: the next try decides', async () => {
 
 /** The Stop ending of send()'s catch block. */
 function stopBranch() {
-    const block = /\n {6}if \(e\?\.name === 'AbortError'\) \{\n([\s\S]*?)\n {6}\} else if \(started\) \{\n/.exec(screen);
+    const block = /\n {6}if \(e\?\.name === 'AbortError'\) \{\n([\s\S]*?)\n {6}\} else if \(started\) \{\n/.exec(sender);
     assert.ok(block, 'the catch block opens with the Stop branch');
     return block[1];
 }
@@ -189,8 +192,8 @@ test('Stop no longer reloads the chat at once: the bubble is marked, then the tu
 });
 
 test('the start event gives the job id, and the ids already on screen are noted before the send', () => {
-    assert.match(screen, /if \(ev === 'start'\) \{ started = true; jobId = d\.job_id; setProgress\(null\); \}/);
-    assert.match(screen, /const knownIds = new Set\(messages\.map\(\(x\) => x\.id\)\);/);
+    assert.match(sender, /if \(ev === 'start'\) \{ started = true; jobId = d\.job_id; setProgress\(null\); \}/);
+    assert.match(sender, /const knownIds = new Set\(messages\.map\(\(x\) => x\.id\)\);/);
 });
 
 test('each ending of a Stop: saved shows the chat, nothing came back gives the text back, pending says so', () => {
@@ -207,7 +210,7 @@ test('each ending of a Stop: saved shows the chat, nothing came back gives the t
     // Not settled, and no text had arrived (Stop before `start`, or after it but before the first words): there is
     // nothing on screen to keep, so the message goes back. The chat is kept, since nothing says the turn is over, and
     // the person is told a reply may still land.
-    assert.match(screen, /if \(ev === 'delta'\) \{ hadText = true; setMessages\(/);
+    assert.match(sender, /if \(ev === 'delta'\) \{ hadText = true; setMessages\(/);
     assert.match(stop, /else if \(!hadText\) \{\n[^}]*giveBack\(false\); setError\(chatErrorCopy\('stop_unsure'\)\);\n {8}\} else \{/);
     const pending = stop.slice(stop.indexOf("chatErrorCopy('stop_unsure')"));
     assert.match(pending, /setError\(chatErrorCopy\('stop_saving'\)\)/);
@@ -216,12 +219,12 @@ test('each ending of a Stop: saved shows the chat, nothing came back gives the t
 });
 
 test('giving the text back deletes a chat made for the message only when the turn is known to be over', () => {
-    const give = /\n {4}const giveBack = \(over\) => \{\n([\s\S]*?)\n {4}\};\n/.exec(screen);
+    const give = /\n {4}const giveBack = \(over\) => \{\n([\s\S]*?)\n {4}\};\n/.exec(sender);
     assert.ok(give, 'send() has one place that gives the text back');
     assert.match(give[1], /setText\(content\)/);
     assert.match(give[1], /if \(over && created\) \{ chatApi\.remove\(thread\.id\)\.catch\(\(\) => \{\}\);/);
     // The same path as a `done` event that says nothing came back.
-    assert.match(screen, /\n {8}giveBack\(true\);\n {8}if \(streamError\) setError\(chatErrorCopy\(streamError\)\);/);
+    assert.match(sender, /\n {8}giveBack\(true\);\n {8}if \(streamError\) setError\(chatErrorCopy\(streamError\)\);/);
 });
 
 test('a reply that is still being saved shows no price, and the button says it is stopping', () => {
@@ -235,7 +238,7 @@ test('a reply that is still being saved shows no price, and the button says it i
     // Its own state, cleared when the send ends. A bubble an earlier Stop left as 'saving' must not disable the button
     // on the next reply, so the button does not read the messages.
     assert.match(stopBranch(), /setStopping\(true\);/);
-    assert.match(screen, /\} finally \{ setBusy\(false\); setProgress\(null\); setStopping\(false\);/);
+    assert.match(sender, /\} finally \{ setBusy\(false\); setProgress\(null\); setStopping\(false\);/);
 });
 
 test('looking for the stopped turn reads the job and the chat, then refreshes the balance in the nav', () => {

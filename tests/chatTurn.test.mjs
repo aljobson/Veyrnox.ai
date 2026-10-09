@@ -322,7 +322,8 @@ test('the screen has words for a reply that was charged but not saved, and they 
     const copy = /case 'reply_not_saved': return '([^']+)';/.exec(src);
     assert.ok(copy, 'chatErrorCopy knows reply_not_saved');
     assert.match(copy[1], /Credits were used/); assert.doesNotMatch(copy[1], /No Credits|not be charged/);
-    const screen = readFileSync(new URL('../app/veyrnox/_components/chat/ChatWorkspace.js', import.meta.url), 'utf8');
+    // send() lives in the useChatSend hook since it moved out of ChatWorkspace.js to keep that file under 500 lines.
+    const screen = readFileSync(new URL('../app/veyrnox/_components/chat/useChatSend.js', import.meta.url), 'utf8');
     assert.match(screen, /await open\(thread\.id\);[^\n]*\n\s*if \(streamError === 'reply_not_saved'\) setError\(chatErrorCopy\(streamError\)\)/, 'shown after the reload, which would otherwise clear it');
 });
 
