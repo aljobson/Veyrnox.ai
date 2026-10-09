@@ -484,3 +484,11 @@ two calls of `unsupported-callback` sent one report, the route answered 204
 and wrote the line above, and the notice showed. Sent by hand, the route
 refused `unsupportedx`, `Unsupported` and `waiting` with 400, and the word
 from another site or with no browser headers with 403.
+
+Seen on production on 2026-10-09, once this amendment was deployed. A GET
+answered 405 and a POST with no browser headers 403. Then, on the owner's
+word, one test report: the live home page, signed out, the stand-in script,
+`unsupported-callback` called once. The route answered 204 and the notice
+showed; nothing went to Auth. It was sent at 15:47:06 UTC, so the count holds
+one `unsupported` line at that time that is no visitor. The log itself was
+not read. Still not seen: Turnstile refusing a real browser.
