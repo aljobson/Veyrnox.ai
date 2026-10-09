@@ -14,11 +14,22 @@ import { NEW_CHAT } from './chatLocal.js';
  * @property {string} shown the chat on screen, noted when its messages arrive; differs from `asked` while one is read
  * @property {Map<string, string>} held one notice per chat that was not on screen when it was raised
  * @property {Set<string>} gone chats deleted from this screen
+ * @property {boolean} left the chat page itself has been left: there is no screen, and nothing will read this again
  */
 
 /** @returns {ChatView} a screen that has just loaded: a chat that has not started */
 export function newChatView() {
-  return { asked: NEW_CHAT, shown: NEW_CHAT, held: new Map(), gone: new Set() };
+  return { asked: NEW_CHAT, shown: NEW_CHAT, held: new Map(), gone: new Set(), left: false };
+}
+
+/** The chat page is on show. */
+export function enter(view) {
+  view.left = false;
+}
+
+/** The person went to another page. A send can still be ending: it must find no screen to change. */
+export function leave(view) {
+  view.left = true;
 }
 
 /** The person pressed a chat, or New chat. */
@@ -26,9 +37,15 @@ export function ask(view, chat) {
   view.asked = chat;
 }
 
-/** A pressed chat could not be read, so the screen still shows the one before it. A press since then stands. */
+/**
+ * A pressed chat could not be read, so the screen still shows the one before it. A press since then stands.
+ * @returns {string|null} a notice that was held for the chat on screen while the person was on their way out of it.
+ *   Nothing will open that chat again to show it, so the caller does.
+ */
 export function giveUp(view, chat) {
-  if (view.asked === chat) view.asked = view.shown;
+  if (view.asked !== chat) return null;
+  view.asked = view.shown;
+  return land(view, view.shown);
 }
 
 /**
@@ -37,6 +54,7 @@ export function giveUp(view, chat) {
  */
 export function land(view, chat) {
   view.shown = chat;
+  view.gone.delete(chat); // it was read, so it exists: a delete that failed on the server does not strand its next message
   const notice = view.held.get(chat) ?? null;
   view.held.delete(chat);
   return notice;
@@ -70,11 +88,16 @@ export function forget(view, chat) {
  * Where an ending of a send lands.
  * @param {ChatView} view
  * @param {string|null} sentId the chat the message was sent in; null when none had been made for it yet
- * @returns {{home: string, here: boolean, showing: boolean}} `home`: the chat its text and notice belong to, NEW_CHAT
- *   when there is no chat to hold them. `here`: that chat is on screen and staying, so the ending may change the screen.
+ * @returns {{home: string, here: boolean, showing: boolean, coming: boolean, left: boolean}}
+ *   `home`: the chat its text and notice belong to, NEW_CHAT when there is no chat to hold them.
+ *   `here`: that chat is on screen and staying, so the ending may change the screen.
  *   `showing`: it is the chat shown, though the person may have pressed another, so the box on screen is still its box.
+ *   `coming`: the person has pressed it and it is not shown yet.
+ *   `left`: the chat page has been left, so none of the three above is true.
  */
 export function sendHome(view, sentId) {
   const home = sentId && !view.gone.has(sentId) ? sentId : NEW_CHAT;
-  return { home, here: onScreen(view, home), showing: view.shown === home };
+  const asked = !view.left && view.asked === home;
+  const showing = !view.left && view.shown === home;
+  return { home, here: asked && showing, showing, coming: asked && !showing, left: view.left };
 }

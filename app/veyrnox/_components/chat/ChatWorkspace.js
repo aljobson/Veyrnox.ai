@@ -5,7 +5,7 @@ import { gatewayFetch } from '../../_lib/gateway';
 import { getStoredUserId } from '../../../lib/authClient';
 import { chatApi, chatErrorCopy } from '../../_lib/chatApi';
 import { attachmentLabel } from '../../_lib/chatImages';
-import { NEW_CHAT, readDraft, writeDraft, readStars, toggleStar } from '../../_lib/chatLocal';
+import { NEW_CHAT, addToDraft, readDraft, writeDraft, readStars, toggleStar } from '../../_lib/chatLocal';
 import { useFreeAllowance } from '../../_lib/useFreeAllowance';
 import { freeLeftFor } from '../../_lib/freeAllowance';
 import { researchProgressLabel } from '../../_lib/chatResearchUi';
@@ -23,13 +23,14 @@ import { useChatSend } from './useChatSend';
 import { ALL_CHATS } from '../../_lib/chatFolders';
 import { defaultModel } from '../../_lib/chatModels';
 import { CHAT_SCREEN_COPY, chatScreen, loadFailure } from '../../_lib/chatScreen';
-import { ask, forget, giveUp, land, newChatView } from '../../_lib/chatSendHome';
+import { ask, enter, forget, giveUp, land, leave, newChatView } from '../../_lib/chatSendHome';
 
 const credits = (n) => `${n} Credit${n === 1 ? '' : 's'}`;
 const MAX_TEXT = 8000;
 const MAX_PROMPT = 4000;
 const store = () => { try { return window.localStorage; } catch { return null; } };
 const saveDraft = (chatId, text) => writeDraft(store(), getStoredUserId(), chatId, text);
+const addDraft = (chatId, text) => addToDraft(store(), getStoredUserId(), chatId, text);
 // About three words for every four tokens, rounded to ten, from the chosen model's own reply cap.
 const wordsFor = (tokens) => Math.round(((tokens || 1024) * 0.75) / 10) * 10;
 // A reply still arriving, or stopped or cut off and not yet read back from the server: it has no price and nothing to star.
@@ -86,6 +87,7 @@ export function ChatWorkspace() {
   // Which chat is on screen and which was last pressed (chatSendHome.js): a send that ends for another chat leaves this one alone.
   const chatView = useRef(null);
   if (chatView.current === null) chatView.current = newChatView();
+  useEffect(() => { const v = chatView.current; enter(v); return () => leave(v); }, []);
 
   const fail = useCallback((e) => {
     const why = loadFailure(e);
@@ -131,10 +133,11 @@ export function ChatWorkspace() {
     ask(chatView.current, id);
     try {
       const r = await chatApi.get(id);
-      if (chatView.current.asked !== id) return false; // another chat was pressed while this one was read: it is the one to show
+      // Another chat was pressed while this one was read: that one is the one to show. A re-read of the chat still on screen refreshes it in place.
+      if (chatView.current.asked !== id) { if (chatView.current.shown === id) setMessages(r.messages); return false; }
       setPersonaId(''); setActive(r.thread); setSkillId(''); setMessages(r.messages); setInstr(r.thread.system_prompt || ''); setError(land(chatView.current, id)); setDrawer(false);
       setText(readDraft(store(), getStoredUserId(), r.thread.id)); setStars(readStars(store(), getStoredUserId(), r.thread.id)); setStarredOnly(false); return true;
-    } catch (e) { giveUp(chatView.current, id); fail(e); return false; }
+    } catch (e) { fail(e); const waiting = giveUp(chatView.current, id); if (waiting) setError((was) => (was ? `${was} ${waiting}` : waiting)); return false; }
   };
   // A chat that has not started. land() gives the notice held for it: one about a message whose chat no longer exists.
   const clear = () => { setPersonaId(''); setActive(null); setSkillId(''); setMessages([]); setInstr(''); setError(land(chatView.current, NEW_CHAT)); setDrawer(false); setText(readDraft(store(), getStoredUserId(), NEW_CHAT)); setStars([]); setStarredOnly(false); };
@@ -244,7 +247,7 @@ export function ChatWorkspace() {
   // Sending, and every way a send can end, is its own hook (useChatSend.js): this file is kept under 500 lines.
   const { send, stop, busy, stopping, checking, progress } = useChatSend({
     text, setText, model, imagesBlocked, chosen, price, active, setActive, messages, setMessages, setThreads, setError,
-    att, limits, draftModel, folders, folder, instr, open, refreshThreads, fail, view: chatView, saveDraft,
+    att, limits, draftModel, folders, folder, instr, open, refreshThreads, fail, chatView, saveDraft, addDraft,
   });
 
   if (!ready) return <div className="p-8 text-sm text-vx-fg-muted" role="status">Loading</div>;

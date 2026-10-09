@@ -11,10 +11,11 @@ import { ask, forget, hold, land, onScreen, sendHome } from '../../_lib/chatSend
  * Sending one message from the chat screen (ADR-0067), and every way that send can end: a replay, a reply that ran to
  * its end, Stop, a dropped connection, and a turn that never started. The screen (ChatWorkspace.js) owns the chat on
  * show and passes in what a send reads and changes; the send's own state lives here.
- * `view` is the screen's record of which chat is on it (chatSendHome.js); `saveDraft(chatId, text)` stores a chat's draft.
+ * `chatView` is the screen's record of which chat is on it (chatSendHome.js). `saveDraft(chatId, text)` stores a chat's
+ * draft; `addDraft` puts text above what is already stored there.
  * @returns {{send: () => Promise<void>, stop: () => void, busy: boolean, stopping: boolean, checking: boolean, progress: object|null}}
  */
-export function useChatSend({ text, setText, model, imagesBlocked, chosen, price, active, setActive, messages, setMessages, setThreads, setError, att, limits, draftModel, folders, folder, instr, open, refreshThreads, fail, view, saveDraft }) {
+export function useChatSend({ text, setText, model, imagesBlocked, chosen, price, active, setActive, messages, setMessages, setThreads, setError, att, limits, draftModel, folders, folder, instr, open, refreshThreads, fail, chatView, saveDraft, addDraft }) {
   const [busy, setBusy] = useState(false);
   const [stopping, setStopping] = useState(false); // Stop was pressed and the stopped turn is being looked for
   const [checking, setChecking] = useState(false); // the connection dropped mid-reply and the turn is being looked for
@@ -30,10 +31,12 @@ export function useChatSend({ text, setText, model, imagesBlocked, chosen, price
     const knownIds = new Set(messages.map((x) => x.id)); let jobId = null; // to tell this turn from the ones already on screen
     // The person can open another chat, or press New chat, before this send ends. Its text, its notice and its bubbles
     // belong to the chat it was sent in (chatSendHome.js): they reach the screen only while that chat is the one on it.
-    const v = view.current;
+    const v = chatView.current;
     const at = () => sendHome(v, thread ? thread.id : null);
     const tell = (notice) => { const { home, here } = at(); if (here) setError(notice); else hold(v, home, notice); };
-    const reload = async () => at().here && open(thread.id); // false when the chat was not read: it is not on screen, or the read failed
+    // False when the chat was not read: it is gone, it is not on screen, or the read failed. It is also read when the person is
+    // on their way back to it: the read that is already out may have been answered before this turn was saved.
+    const reload = async () => { const { home, here, coming } = at(); return home === thread.id && (here || coming) && open(thread.id); };
     // The chat list is read again wherever the person is. A read that fails says so only in the send's own chat.
     const relist = async () => { if (at().here) return refreshThreads(); try { setThreads((await chatApi.threads()).threads); } catch { /* the list stays as it was */ } };
     // A closed chat or a signed-out reader is about the whole page. Any other refusal is about this message.
@@ -43,9 +46,11 @@ export function useChatSend({ text, setText, model, imagesBlocked, chosen, price
     const giveBack = (over) => {
       setMessages((m) => m.filter((x) => x.id !== pending && x.id !== `u-${pending}`));
       if (over && created) { chatApi.remove(thread.id).catch(() => {}); setThreads((ts) => ts.filter((t) => t.id !== thread.id)); if (forget(v, thread.id)) setActive(null); }
-      const { home, here, showing } = at();
-      saveDraft(home, content);         // straight into its chat's stored draft (New chat's, when its chat is gone): it waits there
-      if (showing) setText(content);    // and into the box, when that chat is the one shown
+      const { home, here, showing, left } = at();
+      if (left && !over) return;        // the chat page was left: the notice that this turn may still be saved cannot follow the text, so the text is not kept either
+      // Straight into its chat's stored draft (New chat's, when its chat is gone), where it waits. In the box too when that
+      // chat is the one shown. A chat that is not shown may have a draft of its own by now: the text goes above it.
+      if (showing) { saveDraft(home, content); setText(content); } else addDraft(home, content);
       if (!here) att.clear();           // elsewhere, or leaving: the images cannot wait with it, and must not go out with another chat's message
     };
     let hadText = false; // some of the reply reached the screen
@@ -69,7 +74,7 @@ export function useChatSend({ text, setText, model, imagesBlocked, chosen, price
         if (onScreen(v, NEW_CHAT)) { ask(v, thread.id); land(v, thread.id); setActive(thread); }
         setThreads((ts) => [thread, ...ts]);
       }
-      if (at().here) setMessages((m) => [...m, { id: `u-${pending}`, role: 'user', content, status: 'complete', credits: 0, attachments: att.items.map(() => ({ type: 'image' })) }, { id: pending, role: 'assistant', content: '', status: 'streaming', credits: 0 }]);
+      if (at().showing) setMessages((m) => [...m, { id: `u-${pending}`, role: 'user', content, status: 'complete', credits: 0, attachments: att.items.map(() => ({ type: 'image' })) }, { id: pending, role: 'assistant', content: '', status: 'streaming', credits: 0 }]);
       const ac = new AbortController(); abortRef.current = ac;
       let outcome = null; let streamError = null;
       const r = await sendTurn({
@@ -91,7 +96,7 @@ export function useChatSend({ text, setText, model, imagesBlocked, chosen, price
         att.clear();                                 // sent: the images are spent, so the next reply starts clean
         if (streamError && at().here) tell(chatErrorCopy(streamError)); // on screen only: the reload clears it, so there is nothing to hold
         await reload();                              // the saved messages, with their real status and price
-        if (streamError === 'reply_not_saved') tell(chatErrorCopy(streamError)); // open() clears the notice, or replaces it when the chat is gone
+        if (streamError === 'reply_not_saved') tell(chatErrorCopy(streamError)); // after the reload, which clears the notice or replaces it when the chat is gone
       }
       await relist();
     } catch (e) {

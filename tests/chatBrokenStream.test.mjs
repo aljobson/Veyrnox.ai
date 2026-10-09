@@ -103,8 +103,9 @@ test('the person is told what happened last, after the reload that would clear t
 test('open() says whether the chat was read, so a failed reload is not taken for the saved turn on screen', () => {
     const open = /\n {2}const open = async \(id\) => \{\n([\s\S]*?)\n {2}\};\n/.exec(screen);
     assert.ok(open, 'the screen has open()');
-    // The catch also takes back the press, so a chat that could not be read is not taken for the one asked for.
-    assert.match(open[1], /return true;\n {4}\} catch \(e\) \{ giveUp\(chatView\.current, id\); fail\(e\); return false; \}$/);
+    // The catch also takes back the press, so a chat that could not be read is not taken for the one asked for, and
+    // shows a notice that was held meanwhile for the chat still on screen (tests/chatSendHome.test.mjs).
+    assert.match(open[1], /return true;\n {4}\} catch \(e\) \{ fail\(e\); const waiting = giveUp\(chatView\.current, id\);[^\n]*return false; \}$/);
 });
 
 test('the notice follows what the job said, and never claims more than is known', () => {
