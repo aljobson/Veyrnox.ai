@@ -64,3 +64,11 @@ test('the picker still gates Auto Short, so the shelf must keep hiding it', () =
     assert.match(create, /AUTO_SHORT_FLAG = 'veyrnox_auto_short'/);
     assert.match(create, /autoShortOn \|\| !m\.takesTopic/);
 });
+
+test('the video agent stays off every shelf: it is bought from a plan on its own page, not from the picker', () => {
+    // Server shape and the client shape GET /api/catalog serves.
+    assert.equal(isShelfModel(capabilityFor('video-agent:v1')), false);
+    assert.equal(isShelfModel(publicCapabilities(capabilityFor('video-agent:v1'))), false);
+    // The mark the browser reads survives publicCapabilities().
+    assert.ok(publicCapabilities(capabilityFor('video-agent:v1')).inputs.plan_id);
+});

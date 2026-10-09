@@ -60,6 +60,12 @@ Do not start the rollout until each has a written yes in the SPEC.
   been uploaded 50 seconds before the script's own deploy, which is the case the procedure exists for.
   Not proven until step 8: that a signed call from the Worker is accepted by the runner. Nothing makes one while the flag is off.
 
+- **Found before step 5 (2026-10-09):** an active `video-agent` row was offered in the Create picker like any other video model
+  (seen on staging). Step 5 would have shown every production user a model that cannot be bought from that page, with the flag
+  off. Fixed: a row that takes a `plan_id` is held back by `isShelfModel` (landing shelf, pricing, model pages, search) and by the
+  Create picker, like the Clip Editor and Auto Short. Checked on staging: the picker no longer lists it, `/api/catalog` still does
+  (the page and the Library need its name and price), and `/app/video-agent` still makes a plan. **Step 5 waits for this to be live.**
+
 Next: step 5 (activate the `video-agent` row by migration; the owner approves the `apply-migrations` run), then step 6 (24 hours).
 
 Each step has its own check and its own undo. Stop at the first check that fails.
