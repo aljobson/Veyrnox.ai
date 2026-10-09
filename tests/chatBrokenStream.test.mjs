@@ -93,9 +93,10 @@ test('each ending of a broken stream: saved shows the chat, nothing kept gives t
 test('the person is told what happened last, after the reload that would clear the notice', () => {
     const { brokenAfterStart } = catchBranches();
     const lines = brokenAfterStart.split('\n').filter((l) => l.trim() && !l.trim().startsWith('//'));
-    // `reloaded || !at().here`: a notice held for a chat that is not on screen is read after that chat has been opened
+    // `reloaded || !at().here`: a notice kept for a chat that is not on screen is read after that chat has been opened
     // again, which reloads it (tests/chatSendHome.test.mjs). In the chat itself the second half is false: as before.
-    assert.match(lines[lines.length - 1], /^ {8}tell\(chatErrorCopy\(lostNotice\(outcome, reloaded \|\| !at\(\)\.here\)\)\);/, 'the notice is the last thing the branch does');
+    // tell() takes the code lostNotice gives, and keeps it with the chat.
+    assert.match(lines[lines.length - 1], /^ {8}tell\(lostNotice\(outcome, reloaded \|\| !at\(\)\.here\)\);/, 'the notice is the last thing the branch does');
     assert.equal(brokenAfterStart.split('tell(').length - 1, 1, 'and it is set once');
     assert.doesNotMatch(brokenAfterStart, /setError\(/, 'never straight onto whatever chat is on screen');
 });
@@ -104,8 +105,8 @@ test('open() says whether the chat was read, so a failed reload is not taken for
     const open = /\n {2}const open = async \(id\) => \{\n([\s\S]*?)\n {2}\};\n/.exec(screen);
     assert.ok(open, 'the screen has open()');
     // The catch also takes back the press, so a chat that could not be read is not taken for the one asked for, and
-    // shows a notice that was held meanwhile for the chat still on screen (tests/chatSendHome.test.mjs).
-    assert.match(open[1], /return true;\n {4}\} catch \(e\) \{ fail\(e\); const waiting = giveUp\(chatView\.current, id\);[^\n]*return false; \}$/);
+    // shows the notice that is stored for the chat still on screen (tests/chatSendHome.test.mjs).
+    assert.match(open[1], /return true;\n {4}\} catch \(e\) \{ fail\(e\); if \(giveUp\(chatView\.current, id\)\) \{[^\n]*\} return false; \}$/);
 });
 
 test('the notice follows what the job said, and never claims more than is known', () => {
