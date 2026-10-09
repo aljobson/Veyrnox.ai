@@ -76,7 +76,10 @@ the durable-image capacity policy or its deployment flags.
 
 This pause closes the rollback admission-control gap. It does not reserve
 account capacity or bound spend for legacy direct/composite jobs while running.
-Those paths still need a reservation protocol, terminal evidence and capacity
+Migration 0240 adds [reserved-only admission](fal-reserved-only-admission.md):
+while capacity is enabled, those paths are refused before charge and reserved
+images can still enter. Existing composite work still drains. Broadening the
+allowed set needs a reservation protocol, terminal evidence and capacity
 validation before production activation can claim an account-wide limit.
 
 Validation includes a fresh replay of all 225 migrations, eight real Postgres
