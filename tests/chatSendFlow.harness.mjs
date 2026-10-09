@@ -48,7 +48,7 @@ export async function run({ active = null, turn, settle = 'pending', listDown = 
     const deps = {
         useState: (initial) => [initial, () => {}], useRef: (initial) => ({ current: initial }),
         GatewayError, NEW_CHAT, loadFailure, lostNotice, ask, forget, land, onScreen, sendHome,
-        chatErrorCopy: (code) => code, chatRefusedCopy: (code, _extra, warning) => `${code}, and before that ${warning.code}`,
+        chatErrorCopy: (code) => code, chatUnchargedCopy: (code, _extra, warning) => `${code}, and before that ${warning.code}`,
         makeIdempotencyKey: () => 'key', uploadChatImage: upload, prepareImage: prepare,
         sendTurn: (args) => turn(args, person),
         chatApi: {

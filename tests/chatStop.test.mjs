@@ -195,8 +195,9 @@ test('Stop no longer reloads the chat at once: the bubble is marked, then the tu
 });
 
 test('the start event gives the job id, and the ids already on screen are noted before the send', () => {
-    // It also forgets the notice kept for the message before this one, now that this one has gone out (tests/chatSendHome.test.mjs).
-    assert.match(sender, /if \(ev === 'start'\) \{ started = true; jobId = d\.job_id; setProgress\(null\); forgetEarlier\(\); \}/);
+    // For a while it also forgot the notice kept for the message before this one. A warning about Credits now waits
+    // for an ending that accounts for them (tests/chatSendHome.test.mjs), so the handler is as it was.
+    assert.match(sender, /if \(ev === 'start'\) \{ started = true; jobId = d\.job_id; setProgress\(null\); \}/);
     assert.match(sender, /const knownIds = new Set\(messages\.map\(\(x\) => x\.id\)\);/);
 });
 
@@ -210,7 +211,9 @@ test('each ending of a Stop: saved shows the chat, nothing came back gives the t
     // Charged but not stored: the same words as when a reply that ran to its end could not be stored, after the reload
     // that would clear them.
     assert.match(stop, /await reload\(\);[^\n]*\n {10}if \(outcome === 'unsaved'\) tell\('reply_not_saved'\);/);
-    assert.match(stop, /\} else if \(outcome === 'nothing'\) giveBack\(true\);/);
+    // Nothing came back: the text goes back and nothing is said, as before. Unless a warning about Credits is kept for
+    // the chat: then both are said, this Stop first (beside(), tests/chatSendHome.test.mjs).
+    assert.match(stop, /\} else if \(outcome === 'nothing'\) \{ giveBack\(true\); beside\('stop_refunded'\); \}/);
     // Not settled, and no text had arrived (Stop before `start`, or after it but before the first words): there is
     // nothing on screen to keep, so the message goes back. The chat is kept, since nothing says the turn is over, and
     // the person is told a reply may still land.
@@ -229,8 +232,9 @@ test('giving the text back deletes a chat made for the message only when the tur
     assert.ok(give, 'send() has one place that gives the text back');
     assert.match(give[1], /setText\(content\)/);
     assert.match(give[1], /if \(over && created\) \{ chatApi\.remove\(thread\.id\)\.catch\(\(\) => \{\}\);/);
-    // The same path as a `done` event that says nothing came back.
-    assert.match(sender, /\n {8}giveBack\(true\);\n {8}if \(streamError\) tell\(streamError\);/);
+    // The same path as a `done` event that says nothing came back. Its notice was told with tell(); it is told as a
+    // message that used no Credits, and with no error named it is this Stop's words beside a kept warning.
+    assert.match(sender, /\n {8}giveBack\(true\);\n {8}if \(streamError\) uncharged\(streamError\); else beside\('stop_refunded'\);/);
 });
 
 test('a reply that is still being saved shows no price, and the button says it is stopping', () => {
@@ -264,6 +268,18 @@ test('a Stop before any text says a reply may still land, and does not promise e
     assert.match(copy[2], /If a reply is still saved/);
     assert.match(copy[2], /use Credits/);
     assert.doesNotMatch(copy[2], /No Credits|not be charged|Try again|!/);
+});
+
+test('Stop with nothing kept has words for when a warning is kept beside it: nothing was saved and no Credits were used', () => {
+    // On its own this ending says nothing (the text is simply back in the box). The words are for the screen only, said
+    // before "Before that:" and the kept warning, which alone would read as being about this Stop.
+    const copy = /case 'stop_refunded': return (['"])(.+?)\1;/.exec(api);
+    assert.ok(copy, 'chatErrorCopy knows stop_refunded');
+    assert.match(copy[2], /^Stopped\. /);
+    assert.match(copy[2], /Nothing was saved and no Credits were used/);
+    assert.match(copy[2], /message is back in the box/);
+    // Text can have reached the screen before the turn failed to save, so the words do not say that nothing arrived.
+    assert.doesNotMatch(copy[2], /may|still|before any|Try again|!/);
 });
 
 test('the words say the reply is still being saved and may use Credits', () => {
