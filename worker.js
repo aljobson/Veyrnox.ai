@@ -22,6 +22,7 @@ import { cleanupProjectAssets } from './lib/projectAssetCleanup.js';
 import { observeRecovery } from './lib/recoveryHealth.js';
 import { limitRequestBody } from './lib/requestBodyLimit.js';
 import { adminEdgeRateLimit } from './lib/adminEdgeRateLimit.js';
+import { refuseNextData } from './lib/nextDataGuard.js';
 import { runScheduledBackfill } from './lib/scheduledBackfill.js';
 import { removeReservedUpload, sweepUploadReservations } from './lib/uploadReservations.js';
 import { sweepSocialUploads } from './lib/social/uploadSweep.js';
@@ -47,6 +48,8 @@ import { listModels } from './app/veyrnox/_lib/modelPages.js';
 
 export default {
     async fetch(request, env, ctx) {
+        const refused = refuseNextData(request);
+        if (refused) return refused;
         const limited = await adminEdgeRateLimit(request, env);
         if (limited) return limited;
         const bounded = await limitRequestBody(request);

@@ -117,7 +117,20 @@ If a build starts failing after a dependency change, bisect these three first.
   `x-veyrnox-auth-id`, `x-veyrnox-auth-email`, `x-veyrnox-auth-role`,
   `x-veyrnox-auth-aal` and `x-veyrnox-auth-mfa-at` (the last two carry the
   second-factor level and when it was last proved).
-  Overwrite any inbound header of the same name — a client must never spoof it.
+  The middleware sets all five on every request it runs on, pages included:
+  to `''` first, then to the verified value, so a client can never spoof one.
+  Never rely on deleting an inbound header — OpenNext forwards what the
+  middleware set on top of the client's own headers and does not apply a
+  deletion (ADR-0078). A handler reads `''` as absent, and reads no other
+  `x-veyrnox-*` request header (`tests/identityHeaders.test.mjs`).
+- The admin dashboard routes (`/api/v1/admin/*`) also verify the Cloudflare
+  Access assertion in code (`requireDashboardAccess`, `lib/accessJwt.js`),
+  after the Supabase token and the second factor: 403 `access_required`,
+  503 `access_not_configured`. Access is an edge rule on one hostname and its
+  paths, so the code check is the one that holds whichever way a request
+  arrives. For the same reason `worker.js` answers `/_next/data/*` with 404
+  (there is no pages router), and the production Worker has `workers_dev` and
+  `preview_urls` off in `wrangler.jsonc`; staging keeps `workers_dev` on.
 - Standard-claim checks (issuer, audience `authenticated`, exp with 5s skew, sub
   present) run on every request. Missing/malformed -> 401, never 500.
 - Rate limit at the entry point. Baseline: 10 gens per user per 60s via the
