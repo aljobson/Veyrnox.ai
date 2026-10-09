@@ -1,0 +1,39 @@
+name: fal-queue-health-staging
+
+# Manual diagnostic only. Scheduling and operator paging remain rollout gates.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    if: github.ref == 'refs/heads/main'
+    environment: fal-dispatch-staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Require the current main revision
+        run: |
+          git fetch --quiet origin main
+          test "$(git rev-parse origin/main)" = "$GITHUB_SHA"
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22"
+
+      - name: Check staging queue metrics without consuming messages
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          set +e
+          node scripts/check-fal-queue-health.mjs > "$RUNNER_TEMP/fal-queue-health.txt" 2>&1
+          status=$?
+          cat "$RUNNER_TEMP/fal-queue-health.txt"
+          cat "$RUNNER_TEMP/fal-queue-health.txt" >> "$GITHUB_STEP_SUMMARY"
+          exit "$status"
