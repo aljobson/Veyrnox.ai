@@ -135,6 +135,10 @@ So the ceiling is enforced outside the process, which also keeps the "unmodified
 measured runs (same vendor and model family as the catalog's Kling v2.6 pro and v3 pro rows; not itself a catalog row).
 It must be added to `model_catalog` through the usual route before any user can reach it.
 
+2026-10-09: the owner accepted it as a model we resell ("go with recommendation"), after fal's model page was read: marked
+"Commercial use", no preview label. Migration 0232 records it in `model_catalog` as `kling-3.0-standard-t2v`, inactive, at the
+cost on fal's bill ($0.14 a second). It is not sold by itself; the `video-agent` price carries its cost.
+
 Both are the owner's statement in chat; neither is a written opinion from counsel or from a provider. If either provider
 or counsel later says otherwise, this ADR is reopened.
 
