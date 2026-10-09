@@ -132,6 +132,18 @@ Producer/admission flags were restored to false first, as application version `f
 
 This establishes one authenticated browser submission through the real application producer and a visible completed Library image. Exact HTTP response status/body, authenticated replay/conflict responses, forced publication failure, callback redelivery/fault injection, alerts, account billing, load/headroom, and the twenty-four-hour clean gate remain unverified. Local tests and the earlier private-RPC replay check do not substitute for those remaining runtime checks.
 
+## Live lock contention acceptance — 2026-10-09
+
+With no READY dispatch rows and both queues empty, the dedicated staging consumer was temporarily enabled as `929c501f-c1bc-4e66-9f9e-91b92e0cfdc1`. Public durable admission and application publication remained false. The probe reused the already STORED private fixture `afcb8e97-8b74-4bb7-95df-738084900cfc`; it created no job, debit, provider payload, or new provider attempt.
+
+A staging transaction held that job's row lock from 12:24:25.730828 to 12:24:55.761595 UTC, then rolled back. One reference publication was confirmed at 12:24:31.693. A local write marker prevented repeating a possibly committed publication. The first invocation at 12:24:32.492 was inside the lock interval: submitted 0, failed 0, retried 1, ignored 0, application `ok:false`. Its redelivery at 12:25:03.853 was after lock release: submitted/failed/retried 0, ignored 1, `ok:true`. Delivery timestamps were **31.361 seconds** apart, consistent with the configured thirty-second retry delay. This exercises the lock-contention retry followed by terminal acknowledgement; it does not establish live contention behavior for a newly admitted READY job.
+
+The job remained STORED with its original update timestamp. ACCEPTED evidence retained attempt `64616d08-f5d5-4b5d-ba98-568775b2b632` and provider `01a12018-1e4e-7111-b0f6-a793ff7bb150`. Its single original two-credit debit was unchanged; all three credit reconciliations returned zero differences. Both platform invocations had outcome `ok`, again demonstrating why application retry metrics must feed alerts.
+
+Two earlier setup attempts published nothing: one lock-observation check was inconclusive, and an expired local Wrangler OAuth token caused a settings-read HTTP 401 before publication. Their lock transactions rolled back. Wrangler refreshed its existing login; no credential was exposed or changed in a browser. Only the final successful probe reached the queue.
+
+Consumer execution was restored to false as version `946a2587-2418-4c1e-9783-3e53ce2b61da`. Readback retained schema access true, both runtime secret names, and application admission/publication false. Both queue peeks were empty. The shared application and production were not deployed during this probe. Fault injection, alerts, load/headroom, billing, and the twenty-four-hour gate remain outstanding.
+
 ## Rollback and investigation
 
 Disable producer publication first, keeping consumer and cron recovery active. A hard consumer pause degrades dispatch latency and must be reported. Pre-claim failures can exhaust delivery retries and reach the dead-letter queue; cron still owns recovery of eligible READY work. Never reset STARTED/UNKNOWN, resubmit from retained accepted evidence, or refund directly from a queue message. Signed callback and existing sweep rules decide completion/refund.
