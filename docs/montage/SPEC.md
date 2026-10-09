@@ -172,6 +172,26 @@ which is also what the per-run ceiling protects. Compare Auto Short: 110 credits
 ceiling at the runner is **$2.50**, and the `video-agent` catalog row carries `credits_5s = 165`, `provider_cost_per_unit = 2.72`,
 still inactive (migration 0227). fal's real billing is still unread; when it is, the price may only come down, never silently go up.
 
+**fal's bill, read 2026-10-09** (fal dashboard, Usage, October to date, whole account, read in the owner's signed-in browser):
+
+| Endpoint | Quantity | Unit price | Cost |
+|---|---|---|---|
+| `fal-ai/kling-video/v3/standard/text-to-video` | 153 s | $0.14 / s | $21.42 |
+| `veed/subtitles`, `fal-ai/topaz/upscale/video`, `fal-ai/flux-2-pro`, `fal-ai/sana/v1.5/4.8b`, `fal-ai/mmaudio-v2` | | | $1.69 |
+| Total | | | $23.11 |
+
+- **The rate is $0.14 per second.** That is none of the three published rates above; it sits between "audio on" and "audio + voice
+  control". Why is not known (a changed price list or a tier this account is on).
+- At $0.14 a 15 s video is $2.10 at fal, $2.51 with tokens, which is **153 credits at the floor**. The working price of 165 covers
+  it with 12 credits to spare, and the $2.50 ceiling at the runner allows 17 s of clips.
+- No other staging model used this endpoint in October (checked in `jobs`), so the 153 s are the video agent: 15 staging jobs (6
+  delivered, 9 refunded) and the dry runs of section 6. The page does not split spend by run, and it was not filtered to the
+  `montage-runner` key.
+- Six delivered videos are about 90 s. **The other 63 s or so, about $8.80, were clips fal billed for runs that were refunded**
+  (most of them deliberate failure tests). A refunded run is not free, as the note above says.
+
+The price is unchanged. Lowering it to 153 is the owner's decision and a catalog migration.
+
 ## 7. Staging plan (written 2026-10-08; nothing below is done)
 
 Every step touches shared infrastructure and waits for the owner's explicit yes. Staging is the Worker `veyrnox-ai-staging`
