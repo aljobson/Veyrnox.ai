@@ -94,7 +94,7 @@ jobs:
           printf '%s\n\n%s\n' "$title. Owner: repository owner. Follow docs/operations/fal-queue-health.md." "$REPORT" > "$RUNNER_TEMP/fal-queue-incident.txt"
           existing=$(gh issue list --label "$label" --state open --json number --jq '.[0].number // empty')
           if [ -n "$existing" ]; then
-            gh issue view "$existing" --template '{{.body}}' > "$RUNNER_TEMP/fal-queue-existing.txt"
+            gh issue view "$existing" --json body --template '{{.body}}' > "$RUNNER_TEMP/fal-queue-existing.txt"
             # The report is fixed diagnostic text and numeric metrics. Compare
             # before updating so identical incidents stay quiet.
             if cmp -s "$RUNNER_TEMP/fal-queue-existing.txt" "$RUNNER_TEMP/fal-queue-incident.txt"; then exit 0; fi
