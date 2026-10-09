@@ -180,7 +180,7 @@ must be followed by real-account acceptance before broader activation.
   `PUBLISH_EXTENDED_NETWORKS_ENABLED=true`. Production's switch remains false.
 - Browser inspection confirmed all eleven logos, the existing active YouTube
   connection, library/device-upload controls and Post now / Schedule post.
-- Staging has shared secrets and YouTube OAuth credentials. Instagram,
+- At activation, staging had shared secrets and YouTube OAuth credentials. Instagram,
   LinkedIn, X, TikTok, Facebook, Threads, Pinterest, Twitch and Business Profile
   still need administrator-provided OAuth app credentials; their connection
   controls correctly show Setup required.
@@ -189,3 +189,55 @@ must be followed by real-account acceptance before broader activation.
   Each tester should use their own staging sign-in and dedicated app password.
 - No real provider connection, disconnection or public submission was made
   during this activation. New-provider acceptance remains outstanding.
+
+## Google setup update — 2026-10-09
+
+The dedicated Google project is `veyrnox-ai-publish` (number `79068620878`).
+Its OAuth app, **Veyrnox Publish**, remains External and in **Testing**.
+Google's Verification Center confirms that OAuth verification is not required
+in Testing. This is separate from Business Profile API access approval.
+
+- The existing **Veyrnox Publish — staging** client remains for YouTube.
+- A separate **Veyrnox Business Profile — staging** web client was created on
+  2026-10-08 with callback
+  `https://veyrnox-ai-staging.al-jobson.workers.dev/social/connect/callback/gmb`.
+  `GMB_CLIENT_ID` and `GMB_CLIENT_SECRET` were installed and their names verified
+  in Worker `veyrnox-ai-staging`. No secret values belong in this handover.
+- OAuth test users are `al.jobson1@gmail.com` and `support@veyrnox.com`.
+  Other Google testers must be added to the test-user list before authorizing.
+- Data Access now declares exactly the adapter scopes:
+  `https://www.googleapis.com/auth/youtube.readonly`,
+  `https://www.googleapis.com/auth/youtube.upload`, and
+  `https://www.googleapis.com/auth/business.manage`.
+  Google confirmed **Data access changes saved!** on 2026-10-09.
+- Branding links are `https://veyrnox.ai/`,
+  `https://veyrnox.ai/legal/privacy`, and `https://veyrnox.ai/legal/terms`;
+  all three public pages were inspected. The support contact is
+  `support@veyrnox.com`. Authorized domains are `al-jobson.workers.dev` and
+  `veyrnox.ai`. Google confirmed **Branding changes saved!** on 2026-10-09.
+  Domain registration here does not establish Search Console ownership or
+  production OAuth verification. No consent-screen logo was uploaded.
+- The Business Profile API access application was submitted on 2026-10-08:
+  case **7-6874000042012**, with Google's estimate of **7–10 business days**.
+  The owner confirmed that VEYRNOX's profile has been verified for at least
+  60 days. API approval is still pending; no real Business Profile API call
+  or post has been tested.
+
+### Next acceptance steps
+
+1. After Google approves Business Profile API access, enable the required APIs
+   in this dedicated project and verify the approved quota before connecting.
+2. Have a listed tester use their own Veyrnox staging sign-in and Google account.
+   Verify connect, explicit location selection, denied consent and disconnect.
+   Preserve the owner's existing YouTube connection and one-account slot.
+3. With a tester-selected location and explicit approval for the actual content,
+   exercise Post now and Schedule post, verify Google's LIVE result and the
+   real public post, and record the evidence described above.
+4. Complete the separate production OAuth verification preparation before
+   requesting public access. The Testing configuration is not public approval.
+
+Instagram, LinkedIn, X, TikTok, Facebook, Threads, Pinterest and Twitch still
+need administrator-provided OAuth app credentials and provider-specific tester
+access. Bluesky needs no developer-app secret and can be tested independently
+with a tester's dedicated app password. Neither configuration nor stubbed
+contract tests establish live acceptance for these networks.
