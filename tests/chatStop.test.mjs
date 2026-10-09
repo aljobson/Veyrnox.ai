@@ -173,9 +173,10 @@ test('each ending of a Stop: saved shows the chat, nothing came back gives the t
     const stop = stopBranch();
     assert.match(stop, /if \(outcome === 'saved'\) \{[^\n]*await open\(thread\.id\);/);
     assert.match(stop, /else if \(outcome === 'nothing'\) giveBack\(true\);/);
-    // Stop before `start` with no turn found: the text goes back, but the chat is kept, since nothing says the turn is over.
-    assert.match(stop, /else if \(!started\) giveBack\(false\);/);
-    const pending = stop.slice(stop.indexOf('giveBack(false)'));
+    // Stop before `start` with no turn found: the text goes back, but the chat is kept, since nothing says the turn is
+    // over, and the person is told a reply may still land.
+    assert.match(stop, /else if \(!started\) \{\n[^}]*giveBack\(false\); setError\(chatErrorCopy\('stop_unsure'\)\);\n {8}\} else \{/);
+    const pending = stop.slice(stop.indexOf("chatErrorCopy('stop_unsure')"));
     assert.match(pending, /setError\(chatErrorCopy\('stop_saving'\)\)/);
     assert.doesNotMatch(pending, /setText\(content\)|chatApi\.remove|open\(thread\.id\)/, 'pending keeps the text on screen and the chat as it is');
     assert.doesNotMatch(stop, /chatApi\.remove/, 'the Stop branch deletes a chat only through giveBack(true)');
@@ -209,6 +210,15 @@ test('looking for the stopped turn reads the job and the chat, then refreshes th
     const found = settle[1].indexOf('await settleStoppedTurn(');
     const balance = settle[1].indexOf('notifyBalanceChanged()');
     assert.ok(found >= 0 && balance > found, 'the balance is refreshed after the turn has settled, not at the moment of the Stop');
+});
+
+test('a Stop before the reply started says a reply may still land, and does not promise either way', () => {
+    const copy = /case 'stop_unsure': return (['"])(.+?)\1;/.exec(api);
+    assert.ok(copy, 'chatErrorCopy knows stop_unsure');
+    assert.match(copy[2], /before the reply started/);
+    assert.match(copy[2], /If your message had already gone out/);
+    assert.match(copy[2], /use Credits/);
+    assert.doesNotMatch(copy[2], /No Credits|not be charged|Try again|!/);
 });
 
 test('the words say the reply is still being saved and may use Credits', () => {

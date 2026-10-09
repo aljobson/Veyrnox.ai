@@ -292,8 +292,11 @@ export function ChatWorkspace() {
         await refreshThreads();                                          // first: a notice set below must not be replaced
         if (outcome === 'saved') { att.clear(); await open(thread.id); } // the saved messages, with their real status and price
         else if (outcome === 'nothing') giveBack(true);                  // nothing was produced and the Credits came back
-        else if (!started) giveBack(false);                              // stopped before the reply began; the chat stays in case it did
-        else {
+        else if (!started) {
+          // Stopped before `start`, so there is no job to ask. Most likely nothing was sent, so the text goes back. But the
+          // message may have reached the server: the chat stays for a reply that could still land, and the notice says so.
+          giveBack(false); setError(chatErrorCopy('stop_unsure'));
+        } else {
           // Still being saved when the tries ran out: the text stays and the notice says so. An empty reply has nothing to keep.
           att.clear(); setMessages((m) => m.filter((x) => x.id !== pending || x.content));
           setError(chatErrorCopy('stop_saving'));

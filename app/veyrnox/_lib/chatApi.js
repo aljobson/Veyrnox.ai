@@ -72,6 +72,7 @@ export function chatErrorCopy(code, { credits } = {}) {
     case 'provider_cut_off': case 'provider_dropped': return 'The reply was cut off. No Credits were used.';
     case 'connection_lost': return 'The connection dropped before the reply finished. It may have used Credits. Check this chat before you send again.';
     case 'stop_saving': return 'Stopped. We are still saving this reply, and it may use Credits. Open this chat again in a moment to see what was kept.';
+    case 'stop_unsure': return 'Stopped before the reply started. If your message had already gone out, the reply will show in this chat and use Credits.';
     default: return code && code.startsWith('provider_')
       ? 'The model did not finish. No Credits were used. Try again, or pick another model.'
       : "That didn't work. Try again.";
