@@ -1,11 +1,11 @@
 'use client';
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { GatewayError, gatewayFetch } from '../../_lib/gateway';
+import { gatewayFetch } from '../../_lib/gateway';
 import { getStoredUserId } from '../../../lib/authClient';
-import { chatApi, chatErrorCopy, lostNotice, makeIdempotencyKey, sendTurn, uploadChatImage } from '../../_lib/chatApi';
-import { attachmentLabel, prepareImage } from '../../_lib/chatImages';
-import { NEW_CHAT, readDraft, writeDraft, readStars, toggleStar } from '../../_lib/chatLocal';
+import { chatApi, chatErrorCopy } from '../../_lib/chatApi';
+import { attachmentLabel } from '../../_lib/chatImages';
+import { NEW_CHAT, addToDraft, readDraft, writeDraft, readStars, toggleStar } from '../../_lib/chatLocal';
 import { useFreeAllowance } from '../../_lib/useFreeAllowance';
 import { freeLeftFor } from '../../_lib/freeAllowance';
 import { researchProgressLabel } from '../../_lib/chatResearchUi';
@@ -19,14 +19,18 @@ import { skillById, skillInstructions } from '../../_lib/studioSkills';
 import { ChatText } from './ChatText';
 import { SettingsPanel } from './SettingsPanel';
 import { ThreadList } from './ThreadList';
+import { useChatSend } from './useChatSend';
 import { ALL_CHATS } from '../../_lib/chatFolders';
 import { defaultModel } from '../../_lib/chatModels';
 import { CHAT_SCREEN_COPY, chatScreen, loadFailure } from '../../_lib/chatScreen';
+import { ask, enter, forget, giveUp, land, leave, newChatView } from '../../_lib/chatSendHome';
 
 const credits = (n) => `${n} Credit${n === 1 ? '' : 's'}`;
 const MAX_TEXT = 8000;
 const MAX_PROMPT = 4000;
 const store = () => { try { return window.localStorage; } catch { return null; } };
+const saveDraft = (chatId, text) => writeDraft(store(), getStoredUserId(), chatId, text);
+const addDraft = (chatId, text) => addToDraft(store(), getStoredUserId(), chatId, text);
 // About three words for every four tokens, rounded to ten, from the chosen model's own reply cap.
 const wordsFor = (tokens) => Math.round(((tokens || 1024) * 0.75) / 10) * 10;
 // A reply still arriving, or stopped or cut off and not yet read back from the server: it has no price and nothing to star.
@@ -58,16 +62,12 @@ export function ChatWorkspace() {
   const [stars, setStars] = useState([]);
   const [starredOnly, setStarredOnly] = useState(false);
   const [opts, setOpts] = useState({ thinking: false, web: false, research: false });
-  const [progress, setProgress] = useState(null); // the step a Deep research reply is on: plan, search n of m, write
   const [limits, setLimits] = useState({ maxAttachments: 4, maxEdge: 2048 });
   const att = useAttachments(limits.maxAttachments);
   const [pickingLibrary, setPickingLibrary] = useState(false);
   const [skillId, setSkillId] = useState(''); // a Studio skill chosen for a chat that has not started (ADR-0073)
   const { models: studioModels, loading: studioLoading } = useCatalog();
   const freeMap = useFreeAllowance(); // free replies left today per model; empty while the feature is off
-  const [busy, setBusy] = useState(false);
-  const [stopping, setStopping] = useState(false); // Stop was pressed and the stopped turn is being looked for
-  const [checking, setChecking] = useState(false); // the connection dropped mid-reply and the turn is being looked for
   const [error, setError] = useState(null);
   const [closed, setClosed] = useState(false);
   const [signedOut, setSignedOut] = useState(false);
@@ -83,9 +83,11 @@ export function ChatWorkspace() {
   const [tiers, setTiers] = useState(() => new Set());
   const [instr, setInstr] = useState('');
   const [saved, setSaved] = useState(false);
-  const abortRef = useRef(null);
-  const sendingRef = useRef(false); // synchronous: a second Enter must not start a second turn
   const endRef = useRef(null);
+  // Which chat is on screen and which was last pressed (chatSendHome.js): a send that ends for another chat leaves this one alone.
+  const chatView = useRef(null);
+  if (chatView.current === null) chatView.current = newChatView();
+  useEffect(() => { const v = chatView.current; enter(v); return () => leave(v); }, []);
 
   const fail = useCallback((e) => {
     const why = loadFailure(e);
@@ -110,7 +112,7 @@ export function ChatWorkspace() {
   }, [fail, attempt]);
   useEffect(() => { endRef.current?.scrollIntoView({ block: 'end' }); }, [messages]);
   // The unsent text follows the chat it was typed in, for the user who typed it; sending or clearing it forgets it.
-  useEffect(() => { writeDraft(store(), getStoredUserId(), active?.id ?? NEW_CHAT, text); }, [text, active?.id]);
+  useEffect(() => { saveDraft(active?.id ?? NEW_CHAT, text); }, [text, active?.id]);
 
   const model = models.find((x) => x.id === (active?.model_id ?? draftModel)) || defaultModel(models) || models[0];
   // An option counts only if the chosen model offers it; the price is the model's base plus each extra chosen.
@@ -128,13 +130,18 @@ export function ChatWorkspace() {
   const freeLeft = freeLeftFor(freeMap, model?.id);
   const isFree = freeLeft > 0 && !researchOn && !chosen.thinking && !chosen.web && !hasImages;
   const open = async (id) => {
+    ask(chatView.current, id);
     try {
       const r = await chatApi.get(id);
-      setPersonaId(''); setActive(r.thread); setSkillId(''); setMessages(r.messages); setInstr(r.thread.system_prompt || ''); setError(null); setDrawer(false);
+      // Another chat was pressed while this one was read: that one is the one to show. A re-read of the chat still on screen refreshes it in place.
+      if (chatView.current.asked !== id) { if (chatView.current.shown === id) setMessages(r.messages); return false; }
+      setPersonaId(''); setActive(r.thread); setSkillId(''); setMessages(r.messages); setInstr(r.thread.system_prompt || ''); setError(land(chatView.current, id)); setDrawer(false);
       setText(readDraft(store(), getStoredUserId(), r.thread.id)); setStars(readStars(store(), getStoredUserId(), r.thread.id)); setStarredOnly(false); return true;
-    } catch (e) { fail(e); return false; }
+    } catch (e) { fail(e); const waiting = giveUp(chatView.current, id); if (waiting) setError((was) => (was ? `${was} ${waiting}` : waiting)); return false; }
   };
-  const blank = () => { setPersonaId(''); setActive(null); setSkillId(''); setMessages([]); setInstr(''); setError(null); setDrawer(false); setText(readDraft(store(), getStoredUserId(), NEW_CHAT)); setStars([]); setStarredOnly(false); };
+  // A chat that has not started. land() gives the notice held for it: one about a message whose chat no longer exists.
+  const clear = () => { setPersonaId(''); setActive(null); setSkillId(''); setMessages([]); setInstr(''); setError(land(chatView.current, NEW_CHAT)); setDrawer(false); setText(readDraft(store(), getStoredUserId(), NEW_CHAT)); setStars([]); setStarredOnly(false); };
+  const blank = () => { ask(chatView.current, NEW_CHAT); clear(); };
   const star = (id) => { if (active) setStars(toggleStar(store(), getStoredUserId(), active.id, id)); };
   const shown = starredOnly ? messages.filter((x) => x.role === 'assistant' && stars.includes(x.id)) : messages;
   const patch = async (id, body) => {
@@ -146,7 +153,7 @@ export function ChatWorkspace() {
     } catch (e) { fail(e); return false; }
   };
   const remove = async (id) => {
-    try { await chatApi.remove(id); setThreads((ts) => ts.filter((t) => t.id !== id)); if (active?.id === id) blank(); } catch (e) { fail(e); }
+    try { await chatApi.remove(id); setThreads((ts) => ts.filter((t) => t.id !== id)); if (forget(chatView.current, id)) clear(); } catch (e) { fail(e); }
   };
   const selectModel = (id) => (active ? patch(active.id, { model_id: id }) : setDraftModel(id));
   // Choosing a persona fills the draft of a chat that has not started: its instructions, its model if still offered, and its options.
@@ -237,101 +244,11 @@ export function ChatWorkspace() {
     att.addAsset(it);
   }
 
-  async function send() {
-    const content = text.trim();
-    if (!content || busy || sendingRef.current || !model || imagesBlocked) return;
-    sendingRef.current = true; setBusy(true); setError(null); setText('');
-    let thread = active; let created = false; const pending = `pending-${Date.now()}`;
-    const knownIds = new Set(messages.map((x) => x.id)); let jobId = null; // to tell this turn from the ones already on screen
-    // Nothing usable came back: take the bubbles away and give the text back. A chat made for this message goes too, but
-    // only when the turn is known to be over. A turn that may still be saved needs its chat.
-    const giveBack = (over) => {
-      setMessages((m) => m.filter((x) => x.id !== pending && x.id !== `u-${pending}`)); setText(content);
-      if (over && created) { chatApi.remove(thread.id).catch(() => {}); setThreads((ts) => ts.filter((t) => t.id !== thread.id)); setActive(null); }
-    };
-    let hadText = false; // some of the reply reached the screen
-    let started = false; // the `start` event arrived: the Credits have been debited
-    try {
-      // Images go to storage first, before anything is charged: a failed upload costs nothing.
-      // A Library image is already in storage; the server checks it is the caller's own, so it is sent by id.
-      const refs = [];
-      for (const it of att.items) refs.push(it.asset ? { source_asset: it.asset } : await uploadChatImage(await prepareImage(it.file, limits.maxEdge)));
-      if (!thread) {
-        thread = (await chatApi.create(draftModel || model.id)).thread; created = true;
-        // A chat started while a folder is open goes into it. If filing fails, the chat still starts, unfiled.
-        if (folders && folders.some((f) => f.id === folder)) {
-          try { await chatApi.move(thread.id, folder); thread = { ...thread, folder_id: folder }; } catch { /* stays unfiled */ }
-        }
-        // Instructions typed before the first message belong to the new chat. If saving fails, the chat still starts without them.
-        if (instr.trim()) {
-          try { const r = await chatApi.patch(thread.id, { system_prompt: instr }); thread = { ...thread, ...r.thread }; } catch { /* starts without */ }
-        }
-        setActive(thread); setThreads((ts) => [thread, ...ts]);
-      }
-      setMessages((m) => [...m, { id: `u-${pending}`, role: 'user', content, status: 'complete', credits: 0, attachments: att.items.map(() => ({ type: 'image' })) }, { id: pending, role: 'assistant', content: '', status: 'streaming', credits: 0 }]);
-      const ac = new AbortController(); abortRef.current = ac;
-      let outcome = null; let streamError = null;
-      const r = await sendTurn({
-        threadId: thread.id, text: content, key: makeIdempotencyKey(), options: chosen, attachments: refs, signal: ac.signal,
-        onEvent: (ev, d) => {
-          if (ev === 'start') { started = true; jobId = d.job_id; setProgress(null); }
-          if (ev === 'progress') setProgress(d);
-          if (ev === 'delta') { hadText = true; setMessages((m) => m.map((x) => (x.id === pending ? { ...x, content: x.content + d.text } : x))); }
-          if (ev === 'error') streamError = d.error;
-          if (ev === 'done') outcome = d;
-        },
-      });
-      if (r.replay) { await open(thread.id); return; }
-      if (outcome && (outcome.status === 'failed' || (outcome.status === 'canceled' && !outcome.credits_charged && !outcome.message_id))) {
-        // Nothing usable came back and the Credits were returned.
-        giveBack(true);
-        if (streamError) setError(chatErrorCopy(streamError));
-      } else {
-        att.clear();                                 // sent: the images are spent, so the next reply starts clean
-        if (streamError) setError(chatErrorCopy(streamError));
-        await open(thread.id);                       // the saved messages, with their real status and price
-        if (streamError === 'reply_not_saved') setError(chatErrorCopy(streamError)); // open() clears the notice, or replaces it when the chat is gone
-      }
-      await refreshThreads();
-    } catch (e) {
-      if (e?.name === 'AbortError') {
-        // Stop. The server saves the stopped turn a moment after the browser lets go, so a reload at once can come back
-        // without it. The question and the text so far stay on screen while the turn is looked for.
-        setStopping(true); setMessages((m) => m.map((x) => (x.id === pending ? { ...x, status: 'saving' } : x)));
-        const outcome = await chatApi.settleStop({ threadId: thread.id, jobId, text: content, knownIds });
-        await refreshThreads();                                          // first: a notice set below must not be replaced
-        if (outcome === 'saved' || outcome === 'unsaved') {
-          att.clear(); await open(thread.id);                            // the saved messages, with their real status and price
-          if (outcome === 'unsaved') setError(chatErrorCopy('reply_not_saved')); // charged, but it could not be stored: say so, after open()
-        } else if (outcome === 'nothing') giveBack(true);                // nothing was produced and the Credits came back
-        else if (!hadText) {
-          // Not settled, and no text had arrived: Stop came before `start` (no job to ask) or before the first words (the job
-          // had not ended). There is nothing on screen to keep, so the message goes back. But a reply may still be saved:
-          // the chat stays for it, and the notice says so.
-          giveBack(false); setError(chatErrorCopy('stop_unsure'));
-        } else {
-          // Still being saved when the tries ran out: the text stays on screen and the notice says so.
-          att.clear(); setError(chatErrorCopy('stop_saving'));
-        }
-      } else if (started) {
-        // The stream broke after the Credits moved. The server treats a dropped connection like Stop and saves the turn some time
-        // after the break, so it is looked for as after Stop. Only a job that kept nothing gives the message back or deletes the chat.
-        setChecking(true); setMessages((m) => m.map((x) => (x.id === pending ? { ...x, status: 'lost' } : x)));
-        const outcome = await chatApi.settleStop({ threadId: thread.id, jobId, text: content, knownIds });
-        await refreshThreads();                                          // first: the notice set below must not be replaced
-        const reloaded = (outcome === 'saved' || outcome === 'unsaved') && await open(thread.id); // the saved messages, with their real status and price
-        if (outcome === 'nothing') giveBack(true); else att.clear();     // kept nothing: the message goes back, images too. Otherwise neither is offered again
-        if (!reloaded) setMessages((m) => m.filter((x) => x.id !== pending || x.content)); // not settled, or still offline: the text that arrived stays
-        setError(chatErrorCopy(lostNotice(outcome, reloaded)));          // last: open() clears the notice
-      } else {
-        setMessages((m) => m.filter((x) => x.id !== pending && x.id !== `u-${pending}`)); setText(content);
-        if (e instanceof GatewayError && e.code === 'insufficient_balance') setError(chatErrorCopy(e.code, { credits: price }));
-        else if (e instanceof Error && e.message === 'image_unreadable') setError(chatErrorCopy('image_unreadable'));
-        else fail(e);
-        if (created && thread) { chatApi.remove(thread.id).catch(() => {}); setThreads((ts) => ts.filter((t) => t.id !== thread.id)); setActive(null); }
-      }
-    } finally { setBusy(false); setProgress(null); setStopping(false); setChecking(false); sendingRef.current = false; abortRef.current = null; }
-  }
+  // Sending, and every way a send can end, is its own hook (useChatSend.js): this file is kept under 500 lines.
+  const { send, stop, busy, stopping, checking, progress } = useChatSend({
+    text, setText, model, imagesBlocked, chosen, price, active, setActive, messages, setMessages, setThreads, setError,
+    att, limits, draftModel, folders, folder, instr, open, refreshThreads, fail, chatView, saveDraft, addDraft,
+  });
 
   if (!ready) return <div className="p-8 text-sm text-vx-fg-muted" role="status">Loading</div>;
   const view = chatScreen({ closed, signedOut, loadFailed, modelCount: models.length });
@@ -473,7 +390,7 @@ export function ChatWorkspace() {
                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
                 className="max-h-48 min-h-10 flex-1 resize-none bg-transparent px-2 py-2 text-[15px] text-vx-fg outline-hidden placeholder:text-vx-fg-faint" />
               {busy
-                ? <button type="button" onClick={() => abortRef.current?.abort()} disabled={stopping || checking} className="rounded-full border border-vx-border px-4 py-2 text-sm font-semibold disabled:opacity-50">{stopping ? 'Stopping' : checking ? 'Checking' : 'Stop'}</button>
+                ? <button type="button" onClick={stop} disabled={stopping || checking} className="rounded-full border border-vx-border px-4 py-2 text-sm font-semibold disabled:opacity-50">{stopping ? 'Stopping' : checking ? 'Checking' : 'Stop'}</button>
                 : <button type="button" onClick={send} disabled={!text.trim() || imagesBlocked} className="rounded-full bg-vx-accent px-4 py-2 text-sm font-semibold text-vx-accent-ink disabled:opacity-50">{isFree ? `Send free (${freeLeft} left today)` : `Send for ${credits(price)}`}</button>}
             </div>
             <p className="mt-1.5 px-1 text-xs text-vx-fg-muted">

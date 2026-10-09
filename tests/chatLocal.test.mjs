@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { readDraft, writeDraft, readStars, toggleStar, clearChatLocal, NEW_CHAT, MAX_DRAFT, MAX_STARS } from '../app/veyrnox/_lib/chatLocal.js';
+import { addToDraft, readDraft, writeDraft, readStars, toggleStar, clearChatLocal, NEW_CHAT, MAX_DRAFT, MAX_STARS } from '../app/veyrnox/_lib/chatLocal.js';
 
 const memory = () => {
   const m = new Map();
@@ -21,6 +21,25 @@ test('a draft is kept per chat and does not leak between chats', () => {
   assert.equal(readDraft(s, ME, NEW_CHAT), 'hello');
   assert.equal(readDraft(s, ME, 'thread-1'), 'second');
   assert.equal(readDraft(s, ME, 'thread-2'), '');
+});
+
+test('text given back to a chat is added to its draft, above what is already waiting there', () => {
+  const s = memory();
+  addToDraft(s, ME, 'thread-1', 'the message that came back');
+  assert.equal(readDraft(s, ME, 'thread-1'), 'the message that came back', 'an empty draft just takes it');
+  writeDraft(s, ME, 'thread-2', 'typed since');
+  addToDraft(s, ME, 'thread-2', 'the message that came back');
+  assert.equal(readDraft(s, ME, 'thread-2'), 'the message that came back\n\ntyped since', 'neither text is lost');
+  // The same text is not stacked on itself, and a blank draft counts as empty.
+  addToDraft(s, ME, 'thread-1', 'the message that came back');
+  assert.equal(readDraft(s, ME, 'thread-1'), 'the message that came back');
+  writeDraft(s, ME, NEW_CHAT, 'x'); s.setItem([...s.keys()].find((k) => k.endsWith(`:${NEW_CHAT}`)), '   ');
+  addToDraft(s, ME, NEW_CHAT, 'back');
+  assert.equal(readDraft(s, ME, NEW_CHAT), 'back');
+  // With no user, or storage that is blocked, nothing is read and nothing is stored.
+  addToDraft(s, '', 'thread-3', 'x');
+  assert.equal(readDraft(s, ME, 'thread-3'), '');
+  assert.doesNotThrow(() => addToDraft(blocked, ME, 'thread-1', 'x'));
 });
 
 test('an empty draft is forgotten, not stored', () => {
@@ -106,6 +125,7 @@ test('the workspace restores a draft on open and clears it only after a send', (
 });
 
 test('the workspace names the stored user on every read and write', () => {
-  const users = [...workspace.matchAll(/\b(?:readDraft|writeDraft|readStars|toggleStar)\(store\(\), ([^,]+),/g)].map((m) => m[1]);
-  assert.deepEqual(users, Array(6).fill('getStoredUserId()'));
+  // Seven since addDraft: text given back to a chat that is not on screen is added to that chat's stored draft.
+  const users = [...workspace.matchAll(/\b(?:readDraft|writeDraft|addToDraft|readStars|toggleStar)\(store\(\), ([^,]+),/g)].map((m) => m[1]);
+  assert.deepEqual(users, Array(7).fill('getStoredUserId()'));
 });

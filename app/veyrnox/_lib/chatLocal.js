@@ -41,6 +41,15 @@ export function writeDraft(storage, userId, chatId, text) {
   } catch { /* blocked or full: the draft is a convenience */ }
 }
 
+/**
+ * Put text back in a chat's draft without losing what is already waiting there: the text goes first, then a blank
+ * line, then what was there. For a message that is given back to a chat that is not on screen.
+ */
+export function addToDraft(storage, userId, chatId, text) {
+  const was = readDraft(storage, userId, chatId);
+  writeDraft(storage, userId, chatId, was.trim() && was !== text ? `${text}\n\n${was}` : text);
+}
+
 /** @returns {string[]} message ids the user starred in this chat, newest first */
 export function readStars(storage, userId, threadId) {
   const key = keyFor(STAR_PREFIX, userId, threadId);

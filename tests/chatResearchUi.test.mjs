@@ -4,6 +4,8 @@ import { readFileSync } from 'node:fs';
 import { researchProgressLabel } from '../app/veyrnox/_lib/chatResearchUi.js';
 
 const workspace = readFileSync(new URL('../app/veyrnox/_components/chat/ChatWorkspace.js', import.meta.url), 'utf8');
+// send() moved out of the workspace into the useChatSend hook, unchanged, to keep the workspace file under 500 lines.
+const sender = readFileSync(new URL('../app/veyrnox/_components/chat/useChatSend.js', import.meta.url), 'utf8');
 // The option toggles live in the settings panel (ADR-0067 amendment 6); the workspace prices and sends them.
 const panel = readFileSync(new URL('../app/veyrnox/_components/chat/SettingsPanel.js', import.meta.url), 'utf8');
 
@@ -46,7 +48,7 @@ test('the option appears only for a model that offers it, and progress is cleare
     assert.match(panel, /\{offer\.research && \(/);
     assert.match(panel, /t === 'Deep research' && offer\.research/, 'it is not listed as unavailable on a model that offers it');
     assert.doesNotMatch(workspace, /\(offer\.thinking \|\| offer\.web \|\| offer\.research\) && \(/, 'the options are no longer a row above the message box');
-    assert.match(workspace, /if \(ev === 'progress'\) setProgress\(d\);/);
-    assert.match(workspace, /finally \{ setBusy\(false\); setProgress\(null\);/);
+    assert.match(sender, /if \(ev === 'progress'\) setProgress\(d\);/);
+    assert.match(sender, /finally \{ setBusy\(false\); setProgress\(null\);/);
     assert.match(workspace, /researchProgressLabel\(progress\) \|\| 'Thinking'/);
 });
