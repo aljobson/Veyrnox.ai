@@ -327,7 +327,7 @@ test('every route under /api/v1/admin verifies the Access assertion in code', as
     const { fileURLToPath } = await import('node:url');
     const walk = (dir) => readdirSync(dir).flatMap((name) => {
         const path = join(dir, name);
-        return statSync(path).isDirectory() ? walk(path) : name === 'route.js' ? [path] : [];
+        return statSync(path).isDirectory() ? walk(path) : /^route\.[jt]sx?$/.test(name) ? [path] : [];
     });
     const files = walk(fileURLToPath(new URL('../app/api/v1/admin', import.meta.url)));
     assert.ok(files.length >= 9, `found ${files.length} admin routes`);
@@ -339,6 +339,9 @@ test('every route under /api/v1/admin verifies the Access assertion in code', as
         if (/await requireDashboardAccess\(req\)/.test(src)) { dashboard++; continue; }
         const handlers = [...src.matchAll(/^export const ([A-Z]+) = (.+);$/gm)];
         assert.ok(handlers.length > 0, `${file} has no in-code Access check`);
+        // A method exported in any other form would not be read below.
+        const named = src.match(/\b(?:GET|HEAD|POST|PUT|PATCH|DELETE|OPTIONS)\b/g);
+        assert.equal(named.length, handlers.length, `${file} names a method outside a one-line export`);
         for (const [, method, handler] of handlers) {
             assert.match(handler, CINEMA_ADMIN, `${file}: ${handler}`);
             assert.ok(called.delete(`${file} ${method}`), `${file} ${method} is not in CINEMA_ROUTES`);

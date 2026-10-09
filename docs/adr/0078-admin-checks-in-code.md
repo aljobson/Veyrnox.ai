@@ -83,15 +83,15 @@ The Cinema administrator handlers (`creatorApi.js`, `publishApi.js`, `operatorAp
 
 ### Consequences
 
-- A Cinema administrator who works through `/app/admin/cinema` sees no change: the edge adds the assertion of their own login to those requests.
+- A Cinema administrator who works through `/app/admin/cinema` sees no change, as long as their login has the documented shape (owner check 1): the edge adds the assertion of their own login to those requests.
 - Every route under `/api/v1/admin/*` now takes a person's login and nothing else. A machine caller for one of them would need its own design, not the service token.
 
 ### Verification
 
 - `tests/adminDashboardAccess.test.mjs`: each of the eight Cinema administrator exports is called as the route file exports it, with the Access key set and Supabase stubbed. The documented service-token payload answers 403 with nothing reaching Supabase; the documented login payload answers 200; a missing, malformed, wrongly signed or wrong-audience assertion still answers 403. `verifyAccessLogin` is tested on its own, including that an assertion which does not verify is refused for that reason first.
-- The walk of `app/api/v1/admin` in the same file now also fails for a Cinema administrator export that is not in that list, so a new one cannot ship without being called with both kinds of assertion.
+- The walk of `app/api/v1/admin` in the same file now also fails for a Cinema administrator export that is not in that list, and for a route file that names a method anywhere but in a one-line `export const`, so a new export is either called with both kinds of assertion or fails the test. A route file that calls `requireDashboardAccess` is still passed as a whole, as before.
 
 ### Owner checks
 
 1. The check from Amendment 1 covers this change too: the owner's own `CF_Authorization` payload, decoded locally, shows a non-empty `email` and a non-empty `sub`. Anyone else who is to review Cinema submissions or run operator actions needs the same of their own login.
-2. On staging, where the Cinema switches are on, and again when they are first turned on in production: sign in through Access, open `/app/admin/cinema`, and confirm the review queue loads. A 403 `access_required` there means that login's assertion does not have the documented shape.
+2. On staging, where the Cinema switches are on, and again when they are first turned on in production: sign in through Access, open `/app/admin/cinema`, and confirm the review queue loads. A 403 `access_required` there says the assertion was refused, not why: these handlers give one answer for a missing, invalid or expired assertion and for one that is not a login, and they do not log which. Check 1 tells the last case from the others.
