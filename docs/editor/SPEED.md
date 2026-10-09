@@ -1,6 +1,6 @@
 # PRD addendum — Clip Editor slow motion
 
-**Status:** Draft · 2026-10-09 · Slice 0 run (Topaz x3, audio step x2); billed cost not read; the audio step replaces the slowed clip's sound, see Results
+**Status:** Built behind `CLIP_EDIT_SLOW_ENABLED` (off in production; on in staging from 2026-10-09) · 0237 applied on production and staging · placeholder price, fal's invoice not read · not yet run end to end
 **Extends:** [PRD.md](PRD.md), [CAPTIONS.md](CAPTIONS.md). Where they disagree, CLAUDE.md and the ADRs win.
 
 ## Decision log
