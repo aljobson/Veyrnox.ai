@@ -24,7 +24,7 @@ import { signInWithPasskey, passkeysSupported } from "../app/lib/passkeys.js";
 import { configuredProviders, readAuthSettings, providerAvailable, passkeyUnavailableReason } from "../app/lib/authProviders.js";
 import { Turnstile, TURNSTILE_SITE_KEY } from "./Turnstile.jsx";
 import { AppleMark, PasskeyMark, GoogleMark } from "./AuthMarks.jsx";
-import { captchaNotice, noticeAfterCaptchaFailure, noticeAfterCaptchaToken, noticeWhileCaptchaWaits, CAPTCHA_BLOCKED_CODE, CAPTCHA_WAITING } from "../app/lib/turnstileFailure.js";
+import { captchaNotice, noticeAfterCaptchaFailure, noticeAfterCaptchaToken, noticeWhileCaptchaWaits, CAPTCHA_BLOCKED_CODE, CAPTCHA_UNSUPPORTED, CAPTCHA_WAITING } from "../app/lib/turnstileFailure.js";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -77,8 +77,8 @@ export default function AuthGate() {
     // captchaReset and the widget issues a fresh one.
     const [captcha, setCaptcha] = useState(null);
     const [captchaReset, setCaptchaReset] = useState(0);
-    // The widget's last error code, or CAPTCHA_WAITING while it waits for a
-    // click, so a submit without a token can say why.
+    // The widget's last error code, CAPTCHA_WAITING while it waits for a
+    // click, or CAPTCHA_UNSUPPORTED, so a submit without a token can say why.
     const [captchaFailure, setCaptchaFailure] = useState(null);
     // Every entry point uses this dialog. Availability controls whether an
     // action can start, never whether Apple or passkeys disappear from it.
@@ -406,6 +406,7 @@ export default function AuthGate() {
                         onFailure={(code) => { setCaptchaFailure(code); setNotice((n) => noticeAfterCaptchaFailure(n, code)); }}
                         onError={() => { setCaptchaFailure(CAPTCHA_BLOCKED_CODE); setNotice(captchaNotice(CAPTCHA_BLOCKED_CODE)); }}
                         onWaiting={() => { setCaptchaFailure(CAPTCHA_WAITING); setNotice(noticeWhileCaptchaWaits); }}
+                        onUnsupported={() => { setCaptchaFailure(CAPTCHA_UNSUPPORTED); setNotice((n) => noticeAfterCaptchaFailure(n, CAPTCHA_UNSUPPORTED)); }}
                         resetKey={captchaReset}
                     />
 

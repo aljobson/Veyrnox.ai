@@ -36,6 +36,13 @@ export const CAPTCHA_WAITING = 'waiting';
 // The widget's label is not quoted: it follows the browser's language.
 const WAITING_COPY = "The security check above is waiting for you to tick its box. If it doesn't pass after that, reload the page, or open veyrnox.ai in your usual browser if you're inside another app. Continue with Google doesn't need the check.";
 
+// Not one of Turnstile's codes either. Turnstile refuses a browser that is
+// out of date or unsupported through unsupported-callback and reports no
+// error (ADR-0026 amendment 4). Reloading gives the same answer and nothing
+// retries, so the wording says neither. Not logged and not reported.
+export const CAPTCHA_UNSUPPORTED = 'unsupported';
+const UNSUPPORTED_COPY = "The security check can't run in this browser: it is out of date or not supported. Update the browser, or open veyrnox.ai in a different one. Continue with Google doesn't need the check.";
+
 /**
  * The code as digits, or "unknown". This is the value that gets logged, so
  * nothing else the widget might hand over passes through.
@@ -62,12 +69,13 @@ export function turnstileFailureCopy(code) {
 /**
  * A notice about the check. `captcha` marks it so a token can clear it
  * without touching the answer to something the person did.
- * @param {unknown} [code] the widget's last error code if it has failed, or
- *   CAPTCHA_WAITING while it waits for a click
+ * @param {unknown} [code] the widget's last error code if it has failed,
+ *   CAPTCHA_WAITING while it waits for a click, or CAPTCHA_UNSUPPORTED
  * @returns {{ kind: 'error', captcha: true, text: string }}
  */
 export function captchaNotice(code) {
     if (code === CAPTCHA_WAITING) return { kind: 'error', captcha: true, text: WAITING_COPY };
+    if (code === CAPTCHA_UNSUPPORTED) return { kind: 'error', captcha: true, text: UNSUPPORTED_COPY };
     return { kind: 'error', captcha: true, text: code ? turnstileFailureCopy(code) : CAPTCHA_REQUIRED_COPY };
 }
 
