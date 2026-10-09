@@ -354,3 +354,31 @@ Two earlier attempts lost the race, because the run finished before a hand-typed
 
 Still "false" in production and in `wrangler.jsonc` for both environments. Not tried: a runner that answers `ended`, and two machines
 (where the check must stay off).
+
+## 12. Measured runs (2026-10-09, production gate G3)
+
+Five real runs one after another on staging, one account, each a different 15-second brief. Runner release v18 on
+`performance-2x` (2 dedicated CPUs, 8 GB), three slots, real agent. Time is approve to stored, from `jobs`. Clip seconds and the
+meter figure are from the runner's per-run spend log (`/var/log/runner/meter.jsonl`, read over `fly ssh` before the machine
+exited); the meter prices at fal's dearest published rate ($0.154 a second), fal bills $0.14 (section 6, pricing worksheet).
+Tokens are the agent's own `total_cost_usd`.
+
+| Job | Time | Clips bought | Meter | fal at $0.14 | Tokens | Turns | Cost |
+|---|---|---|---|---|---|---|---|
+| `c56f2000` | 166 s | 15 s (2 calls) | $2.31 | $2.10 | $0.28 | 15 | $2.38 |
+| `05e1963c` | 345 s | 10 s (1 call) | $1.54 | $1.40 | $0.26 | 11 | $1.66 |
+| `c0638459` | 194 s | 15 s (2 calls) | $2.31 | $2.10 | $0.22 | 12 | $2.32 |
+| `8eb240f6` | 154 s | 15 s (2 calls) | $2.31 | $2.10 | $0.20 | 11 | $2.31 |
+| `b62c75a9` | 221 s | 15 s (2 calls) | $2.31 | $2.10 | $0.31 | 14 | $2.41 |
+
+- **All five delivered.** One debit each, no refund, `reconcile_balances()` 0 rows. No paid call was refused by the meter.
+- **Cost: $1.66 to $2.41 a run, mean $2.22.** Every run is under the $2.50 ceiling and under the $2.72 that 165 credits covers at
+  the floor. The most a run can spend at fal is fixed by the ceiling whatever the agent does.
+- **Time: 154 to 345 s, median 194 s.** With the seven earlier deliveries (245, 244, 317, 215, 445, 210 and 334 s) that is twelve
+  real runs: median 233 s, longest 445 s. Twelve is too few for a p95; the longest stands in for it.
+- **Failure rate.** Twelve of twelve runs that were left to finish delivered. Every failed job on staging since #639 was a test
+  made on purpose (cancelled, runner stopped or restarted, a refused brief). That is no failures seen, not a measured rate.
+- **To look at:** `05e1963c` bought 10 s of clips, not 15, and took the longest. The length of its video was not checked; the page
+  says "about 15 seconds".
+
+Not measured: runs at the same time as each other (CAPACITY.md), and the cost of the Fly machine itself (about 3 cents a run).
