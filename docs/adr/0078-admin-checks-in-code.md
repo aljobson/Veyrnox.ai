@@ -44,3 +44,27 @@ Neither is visible from this repository.
 
 1. After the deploy, the `veyrnox-ai` Worker's settings show the workers.dev route and Preview URLs as disabled, and `https://veyrnox.ai` still serves.
 2. Whether anyone was opening preview URLs for the production Worker. If so, set `preview_urls` back to `true` only together with an Access policy on those hostnames.
+
+## Amendment 1 (2026-10-09): four follow-ups from the review of this change
+
+Built in a second change, after the first was reviewed. No SQL migration, no feature flag.
+
+1. **A rotated Access key is picked up within a request.** `verifyAccessJwt` kept the key set for an hour and answered `kid` for a key it did not hold, so a warm isolate could refuse valid assertions for up to an hour after Access rotated its signing key. A miss now fetches the key set once more, at most once a minute per isolate (`CERTS_MISS_REFRESH_MS`), the way `lib/supabaseJwt.js` does. A failed refetch keeps the set already held. A key the fresh set does not hold is still refused. This covers every caller: the machine endpoints, the dashboard routes and the Cinema administrator routes.
+2. **`normalizedPath` always answers.** It is called for every request. The URL parser drops a tab or a newline wherever one sits, and the function collapsed slashes before the parser did that, so a path that decodes to one of those next to a slash could have its next segment read as a host name. The parser refused some of those and the Worker answered with the platform's error page. Tabs and newlines are now dropped first, so such a path is classified by what is left, like any other. If no path can be produced at all the function returns `null`, and each caller reads `null` as a match for the prefix it screens: the admin rate limiter counts the request as an admin one, and the data-path guard answers 404. No string could do that for both, because the two prefixes are different. A path that names an admin route or a data file is never classified less strictly than before.
+3. **The deploy reads the two hostname settings back.** `wrangler deploy` is the only thing that applies `workers_dev` and `preview_urls`, and a deploy from a checkout older than this ADR turns both back on without saying so. After each production deploy, `scripts/check-workers-dev.mjs` reads `GET /accounts/{id}/workers/scripts/{name}/subdomain` and expects `enabled` and `previews_enabled` to be `false`.
+   - It is the last step of the deploy job, after the smoke test and its rollback, and it cannot fail the job. By then the release is live, and a rollback restores the code, not these two settings, so a red job would describe something that did not happen and would change nothing.
+   - If either setting is on, or the answer cannot be read, the `report-workers-dev` job comments on the open `deploy-failure` issue or opens one. An unreadable answer is reported too, so the check cannot go quiet.
+   - It sees what this workflow's own deploy left behind. A deploy made some other way, from an older checkout, is not seen until the next run here.
+4. **The dashboard routes take a person's login.** Access issues two kinds of assertion for one application: to a person who logged in, and to a service token. Its application token reference gives the two payloads: a login carries `email` and the user's id in `sub`; a service token carries its client id in `common_name` and an empty `sub`. `requireDashboardAccess` now passes only the first kind (`email` and `sub` both non-empty text, no `common_name`) and answers `403 access_required` to any other validly signed assertion. `requireAccess` is unchanged: the machine endpoints are what the service token is for. The Cinema administrator routes are unchanged too; they call `verifyAccessJwt` directly.
+
+### Verification
+
+- `tests/accessGate.test.mjs`: a rotated key verifies after one refetch, for both gates; five misses in a row make one fetch; the window reopens after a minute; a failed refetch keeps the old keys; the machine endpoints take both kinds of assertion.
+- `tests/adminEdgeRateLimit.test.mjs` and `tests/nextDataGuard.test.mjs`: paths that decode to a tab or newline are screened or refused like their plain spellings; the paths that used to throw reach the app; a parser that refuses the path outright gives the closed answer in both callers.
+- `tests/workersDevCheck.test.mjs`: the API answer is read as documented; anything unclear is unknown, never off; the token is never in the output; the step sits after the smoke test and rollback and cannot fail the job.
+- `tests/adminDashboardAccess.test.mjs`: each dashboard route refuses a service token's assertion before anything reaches Supabase; the documented login payload passes.
+
+### Owner checks
+
+1. Before this is deployed: the owner's own Access assertion has the login shape. Decoded locally, the payload of the `CF_Authorization` cookie on the site shows a non-empty `email`, a non-empty `sub` and no `common_name`. If it does not, the dashboard routes would answer 403 to the owner, and item 4 must be reverted before deploying.
+2. The first production deploy after this: the last step of the deploy job prints that the workers.dev route and Preview URLs are off. That step has not run against the live API before. If it reports that it could not read the setting, the deploy token may lack read access to that endpoint.

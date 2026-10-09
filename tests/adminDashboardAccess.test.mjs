@@ -26,9 +26,13 @@ async function keypair(kid = 'kid-1') {
     const jwk = await crypto.subtle.exportKey('jwk', pair.publicKey);
     return { pair, jwk: { kty: 'RSA', n: jwk.n, e: jwk.e, kid, alg: 'RS256' } };
 }
-async function mint({ pair, jwk }, over = {}) {
+// The two payloads Access issues, as its application token reference gives
+// them: a person who logged in, and a service token.
+const PERSON = { type: 'app', email: 'owner@example.test', sub: '7335d417-61da-459d-899c-0a01c76a2f94', identity_nonce: '6ei69kawdKzMIAPF', country: 'GB' };
+const SERVICE_TOKEN = { type: 'app', common_name: 'e367826f93b8d71185e03fe518aff3b4.access', sub: '' };
+async function mint({ pair, jwk }, over = {}, base = PERSON) {
     const now = Math.floor(Date.now() / 1000);
-    const payload = { iss: `https://${TEAM}`, aud: [AUD], exp: now + 300, iat: now, sub: 'access-user', ...over };
+    const payload = { iss: `https://${TEAM}`, aud: [AUD], exp: now + 300, iat: now, nbf: now, ...base, ...over };
     const body = `${b64url(JSON.stringify({ alg: 'RS256', kid: jwk.kid, typ: 'JWT' }))}.${b64url(JSON.stringify(payload))}`;
     const sig = await crypto.subtle.sign({ name: 'RSASSA-PKCS1-v1_5' }, pair.privateKey, new TextEncoder().encode(body));
     return `${body}.${b64url(new Uint8Array(sig))}`;
@@ -120,6 +124,16 @@ for (const route of ROUTES) {
         assert.ok(reached.length >= 1 && reached.every((u) => u.startsWith('https://db.test/')), reached.join(' '));
     });
 
+    test(`${route[0]}: an assertion issued to a service token is refused, before Supabase`, async () => {
+        const k = await keypair();
+        const reached = stubNetwork([k.jwk]);
+        await withEnv({ ...SUPABASE, ...ACCESS }, async () => {
+            const res = await call(route, { ...ADMIN, ...EDGE, 'cf-access-jwt-assertion': await mint(k, {}, SERVICE_TOKEN) });
+            assert.deepEqual([res.status, await res.json()], [403, { error: 'access_required' }]);
+        });
+        assert.deepEqual(reached, []);
+    });
+
     test(`${route[0]}: the identity and second-factor gates still answer first`, async () => {
         const k = await keypair();
         const reached = stubNetwork([k.jwk]);
@@ -167,12 +181,57 @@ test('requireDashboardAccess: closed whenever Access is configured, local only w
     assert.deepEqual(await requireDashboardAccess(req(EDGE), ACCESS), refused);
     assert.deepEqual(await requireDashboardAccess(req({ ...EDGE, 'cf-access-jwt-assertion': 'not.a.jwt' }), ACCESS), refused);
     const good = await requireDashboardAccess(req({ ...EDGE, 'cf-access-jwt-assertion': await mint(k) }), ACCESS);
-    assert.deepEqual(good, { ok: true, via: 'access', subject: 'access-user' });
+    assert.deepEqual(good, { ok: true, via: 'access', subject: PERSON.sub });
 
     for (const partial of [{}, { ACCESS_TEAM_DOMAIN: TEAM }, { ACCESS_AUD: AUD }]) {
         assert.deepEqual(await requireDashboardAccess(req(EDGE), partial), { ok: false, status: 503, error: 'access_not_configured' });
         assert.deepEqual(await requireDashboardAccess(req({}), partial), { ok: true, via: 'local' });
     }
+});
+
+// One Access application and one audience cover the machine endpoints and the
+// dashboard, so a service token's assertion is valid for both. The dashboard
+// is for a person: it takes the assertion of a login and no other.
+test('requireDashboardAccess: a person\'s login passes, every other validly signed assertion is refused', async () => {
+    const k = await keypair();
+    stubNetwork([k.jwk]);
+    const gate = async (over, base) => requireDashboardAccess(new Request('https://veyrnox.test/api/v1/admin/metrics', {
+        headers: { ...EDGE, 'cf-access-jwt-assertion': await mint(k, over, base) },
+    }), ACCESS);
+    const refused = { ok: false, status: 403, error: 'access_required' };
+
+    assert.deepEqual(await gate(), { ok: true, via: 'access', subject: PERSON.sub });
+    // Claims Access may add to a login do not matter.
+    assert.equal((await gate({ custom: { groups: ['admins'] }, country: undefined, identity_nonce: undefined })).ok, true);
+
+    assert.deepEqual(await gate({}, SERVICE_TOKEN), refused, 'the service token payload as documented');
+    const notAPerson = [
+        [{ sub: '' }, 'an empty sub'],
+        [{ sub: undefined }, 'no sub'],
+        [{ sub: 7 }, 'a sub that is not text'],
+        [{ email: undefined }, 'no email'],
+        [{ email: '' }, 'an empty email'],
+        [{ email: ['owner@example.test'] }, 'an email that is not text'],
+        [{ common_name: SERVICE_TOKEN.common_name }, 'a login that also names a service token'],
+        [{ common_name: SERVICE_TOKEN.common_name, sub: '' }, 'a service token with an email added'],
+    ];
+    for (const [over, what] of notAPerson) assert.deepEqual(await gate(over), refused, what);
+    assert.deepEqual(await gate({ email: 'owner@example.test' }, SERVICE_TOKEN), refused);
+    assert.deepEqual(await gate({ sub: PERSON.sub }, SERVICE_TOKEN), refused);
+});
+
+test('requireDashboardAccess: the refusal is logged by kind, with nothing from the assertion', async () => {
+    const k = await keypair();
+    stubNetwork([k.jwk]);
+    const said = [];
+    const quiet = console.error;
+    console.error = (...a) => said.push(a.join(' '));
+    try {
+        await requireDashboardAccess(new Request('https://veyrnox.test/api/v1/admin/metrics', {
+            headers: { ...EDGE, 'cf-access-jwt-assertion': await mint(k, {}, SERVICE_TOKEN) },
+        }), ACCESS);
+    } finally { console.error = quiet; }
+    assert.deepEqual(said, ['[access] refused: not_a_login']);
 });
 
 // A handler factory that verifies the assertion itself, in the mode that does.
