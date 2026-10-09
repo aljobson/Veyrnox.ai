@@ -31,7 +31,7 @@ Google OAuth audience is External / In production; this is not verification appr
 ## Blocking gates
 
 1. Retry branding verification after the propagation interval; obtain branding approval/publication, then complete sensitive-scope verification. The demonstration recording and its accessible URL are not yet prepared. Scope justification draft exists locally, but no verification submission has been completed.
-   Before submission, make the public homepage's relationship to Veyrnox Publish clear and disclose YouTube data access, use, storage and sharing explicitly in the privacy policy. The current homepage describes generation only, and the policy's generic Publish paragraph does not explain YouTube token/channel/statistics handling. Google requires these disclosures in its [verification preparation guidance](https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification).
+   Public disclosures are complete: PR #757 squash-merged as `1a75ff5fc737320e565d1f24c31ea070de00d67a`. Production deployment run `37978982569` passed, including live smoke checks. Chrome verified the public homepage's Veyrnox Publish section and the linked YouTube privacy section on 9 October at approximately 19:22 UTC. The policy explains consent, channel/statistics data, encrypted tokens, selected-video transfer, disconnect and retention, and Limited Use. These disclosures do not constitute Google approval.
 2. Confirm project quota and any applicable YouTube approval conditions. The current [videos.insert documentation](https://developers.google.com/youtube/v3/docs/videos/insert), checked 9 October, states unverified API-project uploads are not automatically restricted to private mode. Do not treat the older private-upload assumption as current policy or infer project approval from staging results.
 3. Source-media delivery, byte-range reads, live cron registration and the Publish sweep heartbeat are verified. End-to-end provider delivery remains part of post-activation acceptance below.
 4. Review/approve this concrete activation PR after CI/build checks pass and the preceding gates are resolved. Squash-merge and use deploy-production.yml, with its smoke checks and rollback.
@@ -40,7 +40,7 @@ Google OAuth audience is External / In production; this is not verification appr
 ## Validation
 
 - 360 Publish and brand tests pass (provider/database responses are stubbed).
-- Full local unit suite: 2,328 pass, 1 skipped, 0 failures. The initial PR CI failure was the old production-off assertion; the release test now checks YouTube-only activation and that uploads/extended scopes remain disabled. CI and the Cloudflare build pass on `177d8a14f035fd5c8474c04357612a1c0072688b`; the documentation update requires its own current-head checks before merge.
+- Full local unit suite: 2,328 pass, 1 skipped, 0 failures. The initial PR CI failure was the old production-off assertion; the release test now checks YouTube-only activation and that uploads/extended scopes remain disabled. CI and the Cloudflare build pass on `9f80d4fa7e1e396d4f505f36be364d845de54db9`; this documentation update requires its own current-head checks before merge.
 - Security package type checking passes.
 - Lint: 0 errors, 74 warnings on the current checkout.
 - Production-identity Next.js and OpenNext Worker builds pass, including verification of all 10 Video Enhance assets.
