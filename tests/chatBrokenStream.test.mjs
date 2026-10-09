@@ -12,17 +12,21 @@ const screen = read('../app/veyrnox/_components/chat/ChatWorkspace.js');
 function catchBranches() {
     const block = /\n    \} catch \(e\) \{\n([\s\S]*?)\n    \} finally \{ setBusy\(false\)/.exec(screen);
     assert.ok(block, 'send() has a catch block followed by its finally');
-    const parts = /^(\s*if \(e\?\.name === 'AbortError'\)[^\n]*)\n\s*else if \(started\) \{\n([\s\S]*?)\n\s*\} else \{\n([\s\S]*)$/.exec(block[1]);
+    // Keyed on the catch block's own indentation, so an if/else added inside a branch does not move the split.
+    const parts = /^( {6}if \(e\?\.name === 'AbortError'\)[^\n]*)\n {6}else if \(started\) \{\n([\s\S]*?)\n {6}\} else \{\n([\s\S]*)$/.exec(block[1]);
     assert.ok(parts, 'the catch block branches on AbortError, then on started, then on everything else');
     return { stopped: parts[1], brokenAfterStart: parts[2], neverStarted: parts[3] };
 }
 
 test('the screen remembers that the start event arrived, which is when the Credits have been debited', () => {
-    assert.match(screen, /let started = false;/);
     assert.match(screen, /if \(ev === 'start'\) \{ started = true; setProgress\(null\); \}/);
-    // Declared before the try, so the catch block can read it.
-    assert.ok(screen.indexOf('let started = false;') < screen.indexOf('// Images go to storage first'), 'declared outside the try');
-    assert.match(read('../lib/chatTurn.js'), /send\('start', \{ job_id: jobId, credits, balance_after: debit\.balance_after \}\)/, 'start is sent after the debit');
+    // Declared just before send()'s try, so the catch block can read it.
+    assert.match(screen, /\n    let started = false;[^\n]*\n    try \{\n/);
+    // On the server, the debit comes before the start event.
+    const turn = read('../lib/chatTurn.js');
+    const debit = turn.indexOf("rpc('ledger_debit'");
+    const start = turn.indexOf("send('start'");
+    assert.ok(debit >= 0 && start > debit, 'start is sent after the debit');
 });
 
 test('a stream that breaks after start keeps the chat and reloads it, as Stop does', () => {
@@ -44,11 +48,11 @@ test('the person is told the connection dropped, after the reload that would cle
 });
 
 test('the words say the connection dropped and that Credits may have been used', () => {
-    const copy = /case 'connection_lost': return '([^']+)';/.exec(read('../app/veyrnox/_lib/chatApi.js'));
+    const copy = /case 'connection_lost': return (['"])(.+?)\1;/.exec(read('../app/veyrnox/_lib/chatApi.js'));
     assert.ok(copy, 'chatErrorCopy knows connection_lost');
-    assert.match(copy[1], /connection dropped/);
-    assert.match(copy[1], /may have used Credits/);
-    assert.doesNotMatch(copy[1], /No Credits|not be charged|Try again|!/);
+    assert.match(copy[2], /connection dropped/);
+    assert.match(copy[2], /may have used Credits/);
+    assert.doesNotMatch(copy[2], /No Credits|not be charged|Try again|!/);
 });
 
 test('only a turn that never started deletes the new chat and gives the text back', () => {
