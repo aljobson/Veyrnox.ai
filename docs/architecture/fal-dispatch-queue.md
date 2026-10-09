@@ -1,6 +1,6 @@
 # fal dispatch queue implementation and staging plan
 
-This implements the code boundary in [ADR 0077](../adr/0077-fal-event-driven-dispatch.md). Isolated staging queues and a disabled consumer are deployed; consumer credentials and application producer deployment remain pending. Producer and consumer flags default false. Existing durable-admission and production activation gates still apply.
+This implements the code boundary in [ADR 0077](../adr/0077-fal-event-driven-dispatch.md). Isolated staging queues, consumer credentials, and the application producer binding are deployed. Bounded consumer and signed-in Create-to-Library tests passed, including request-scoped application publication. Producer, durable-admission, and consumer flags are false after the tests. Existing production activation gates still apply.
 
 ## Implemented path
 
@@ -52,9 +52,9 @@ The dedicated staging consumer was deployed disabled as version `56ceb24b-f64a-4
 
 `.github/workflows/fal-dispatch-staging.yml` runs manually on current main in GitHub environment `fal-dispatch-staging`, restricted to the main branch and owner review. It checks required credentials and the staging-only nonexistent-job RPC, validates the bundle, deploys the disabled consumer, and provisions only its two runtime secrets through stdin. It cannot enable publication or consumer spending, and does not deploy the shared staging application. Secret upload creates a deployment; the consumer is deployed disabled before upload. See [Wrangler secret bulk](https://developers.cloudflare.com/workers/wrangler/commands/#secret-bulk) and [GitHub deployment environments](https://docs.github.com/en/rest/deployments/environments).
 
-The protected environment currently needs `CLOUDFLARE_API_TOKEN` with Worker-script and Queue write access on this account, staging `SUPABASE_SERVICE_ROLE_KEY`, and `FAL_KEY`. Configure them in [environment settings](https://github.com/aljobson/Veyrnox.ai/settings/environments); do not paste values into chat. The existing deployed app's secret names are visible, but values are not exportable. No credential was copied from browser state or deployed code.
+The protected environment requires `CLOUDFLARE_API_TOKEN` with Worker-script and Queue write access on this account, staging `SUPABASE_SERVICE_ROLE_KEY`, and `FAL_KEY`. The owner subsequently saved these through [environment settings](https://github.com/aljobson/Veyrnox.ai/settings/environments). Values are not exportable. No credential was copied from browser state or deployed code.
 
-The live staging application still has independent `AGENT_VIDEO_ENABLED=true`, `MONTAGE_LIVENESS_ENABLED=true`, and its montage runner URL. Those settings were read and left unchanged. Deployment of the application producer binding, consumer credentials, live latency, failure alerts, Library acceptance, and the clean recovery window remain pending.
+The live staging application still has independent `AGENT_VIDEO_ENABLED=true`, `MONTAGE_LIVENESS_ENABLED=true`, and its montage runner URL. Those settings were read and left unchanged. At initial provisioning, application producer deployment and consumer credentials were pending; the later verification below supersedes that snapshot. Failure alerts, Library acceptance, and the clean recovery window remain pending.
 
 ## Bounded delivery failure acceptance — 2026-10-09
 
@@ -73,6 +73,76 @@ Wrangler tail identified consumer version `56ceb24b-f64a-4cdb-bfe9-3396d12e87ae`
 Post-test reads confirmed zero fixture jobs/dispatch rows, the original single durable dispatch row, and zero balance/free/subscription reconciliation differences. Account Worker settings reported `default_usage_model=standard`; subscription billing and remaining shared allowance are still unverified. This bounded probe made two writes and five observed consumer invocations, not a load or cost measurement.
 
 These are live delivery/ACK/retry/dead-letter checks. They do not validate enabled database claims, provider submission, request-scoped application publication, normal-path p95 latency, or alerts. Every platform invocation had `outcome=ok`, including the four batches whose application metric was `ok=false`. Monitoring must inspect application retry/failure counters and dead-letter arrivals, not only Worker exceptions. Operator alert configuration remains an activation gate.
+
+## Enabled consumer acceptance — 2026-10-09
+
+Owner-approved [protected workflow run 37913389084](https://github.com/aljobson/Veyrnox.ai/actions/runs/37913389084) succeeded on main `a76e63d23d316e3fd43b67e250159870d750f890`. It validated the staging RPC and deployed the disabled consumer with both runtime secrets. The preceding run correctly stopped at its current-main guard when main advanced. Secret names/types were inspected; values were not read or logged.
+
+Before the bounded test, staging had no READY dispatch rows and both queue peeks were empty. The shared application already had its isolated producer binding, but `FAL_DISPATCH_QUEUE_ENABLED`, `FAL_DURABLE_DISPATCH_ENABLED`, and `FAL_SUBMIT_OUTCOME_ENABLED` were false. Its schema flag was true. The shared application was not redeployed during this test.
+
+The dedicated consumer bundle passed a dry-run, then was temporarily enabled as version `2a1578d7-81a4-42ce-983f-bbc7597a81aa`, preserving secrets with `--keep-vars`. An absent-job reference (`a3d23730-d527-438a-85b0-dbc2522a029a`) and the prior STORED fixture reference were each acknowledged: ignored 1, submitted/failed/retried 0, application `ok:true`. This exercised the enabled recovery/claim path without a new provider call.
+
+One private RPC admission used existing fixture user `2bb45f45-414e-4945-bc81-f6e0d8772e1f`, key `fal-queue-stage-20261009-smoke-01`, model `flux-2-pro`, endpoint `fal-ai/flux-2-pro`, and the same teapot prompt as the earlier cron fixture. Publication used the queue HTTP API, with a local write marker preventing accidental replay after an uncertain acknowledgement. Public admission and request-scoped application publication remained disabled.
+
+| Event | UTC time / evidence |
+| --- | --- |
+| Admission | 09:56:44.305664; job `afcb8e97-8b74-4bb7-95df-738084900cfc` |
+| Queue publication confirmed | 09:56:52.304 |
+| Consumer invocation | 09:56:53.479; submitted 1, failed/retried/ignored 0, `ok:true` |
+| STARTED claim | 09:56:53.778293; attempt `64616d08-f5d5-4b5d-ba98-568775b2b632` |
+| ACCEPTED evidence | 09:56:54.042763; provider `01a12018-1e4e-7111-b0f6-a793ff7bb150` |
+| Handle projected | 09:56:54.125079 |
+| Signed callback processed | 09:57:03.191; fal webhook row created 09:57:01.866445 |
+| STORED | 09:57:03.206412; asset `f227357e-2d65-4716-a803-44e4850e120c` |
+
+Publication-confirmation-to-claim was **1.47 seconds**. Admission-to-claim was **9.47 seconds**, including approximately eight seconds of manual publication delay; admission-to-STORED was **18.90 seconds**. The earlier cron fixture waited 201.67 seconds to claim. These are individual observations, not p50/p95/p99 results or proof of authenticated API latency. Consumer wall time was 690 ms and CPU time 4 ms for this invocation; neither establishes sustained capacity.
+
+The registered JPEG has 128,275 bytes and a SHA-256 value. Exactly one job and one ledger debit exist for this key: delta -2, Free delta -2, Subscription delta 0, no refund. Fixture balance moved 8 → 6. Equal admission replay returned the same STORED job and balance 6; changed input returned `IDEMPOTENCY_CONFLICT`. A deliberate duplicate reference was acknowledged at 09:57:39.319 with ignored 1 and submitted/failed/retried 0. The attempt token and provider handle remained unchanged. No provider retry or state reset occurred; live fixture financial evidence is retained.
+
+Both queue peeks were empty after completion. Balance, Free Credit, and Subscription Credit reconciliation each returned zero differences. Recovery status had no unhealthy tasks and zero in every returned queue counter. The catalog's $0.03 provider estimate is not an invoice measurement. Four publications and four consumer invocations do not establish account allowance, load headroom, or operating cost.
+
+Consumer execution was restored to false as version `725b7922-814b-4588-8ec2-f99dd443c6cb`. Remote readback verified schema access true, both runtime secret names retained, queue tuning unchanged, and the shared application's publication/admission flags still false. Cron recovery remains enabled; production was not changed.
+
+Request-scoped producer integration, authenticated gateway and Library behavior, live callback redelivery/fault injection, alerts, provider headroom, load percentiles, billing verification, and the twenty-four-hour clean gate remain outstanding. The earliest recorded clean window runs through 10 October 05:21:47 UTC; this spot check does not certify that window.
+
+## Signed-in producer and Library acceptance — 2026-10-09
+
+The owner approved one prepared Flux.2 image with a two-staging-credit limit. The in-app browser was already signed in to staging; no cookie, token, password, or browser credential was extracted. Before submission, Create showed the teapot prompt, Flux.2 [pro], one image, a two-credit Generate button, and balance 1,000. Library initially reported nine assets.
+
+Built main `84d94a76` with `APP_ENV=staging` and the staging callback host; OpenNext build and application/consumer dry-runs passed. A temporary configuration preserved all 42 deployed plain-text variables, including the independent montage overrides. `--keep-vars` retained runtime secrets. The application deployment `9d637d13-06a4-4f84-8c6f-87112abb1c11` enabled only `FAL_DURABLE_DISPATCH_ENABLED` and `FAL_DISPATCH_QUEUE_ENABLED`; schema access remained true and `FAL_SUBMIT_OUTCOME_ENABLED` remained false. Full binding readback matched the saved snapshot except those two intended flag values. The consumer was temporarily enabled as `55de358b-3fae-4855-a188-07283f638987`.
+
+The prepared Generate button was clicked once. The UI showed Sending, then QUEUED, and balance 998. No private admission or manual queue publication was used for this job. The dedicated consumer tail showed one actual delivery from `veyrnox-fal-dispatch-staging`, submitted 1, failed/retried/ignored 0, application `ok:true`, platform outcome `ok`, wall time 936 ms and CPU time 5 ms. The database linked that submission to the browser-created durable intent.
+
+| Event | UTC time / evidence |
+| --- | --- |
+| Admission | 11:04:54.598080; job `e6af4903-c0fd-4094-919c-baecf92d4943` |
+| Client idempotency key | `vx-6950ca9d-d7a2-46ed-ba7b-d69bdccd61a4` |
+| Queue invocation | 11:04:55.769 |
+| STARTED claim | 11:04:56.312177; attempt `7c8b01b2-8d03-4e82-941c-07900b220031` |
+| ACCEPTED evidence | 11:04:56.574028; provider `01a12056-69b1-7872-b6d8-97db94b63834` |
+| Handle projected | 11:04:56.663996 |
+| Signed callback processed | 11:05:07.135; webhook row created 11:05:06.300442 |
+| STORED | 11:05:07.196267; asset `d037eb2f-f881-446a-8814-c242407bc03e` |
+
+Admission-to-claim was **1.71 seconds** and admission-to-STORED **12.60 seconds**. These are single healthy-path measurements, not load percentiles. Browser navigation to Library initially displayed the optimistic QUEUED item, then fetched the completed record: DONE, AI GENERATED, a rendered teapot image, the two-credit charge, ten assets, and balance 998. Its Schedule link carried the same job UUID. A completion screenshot was retained locally for owner review; no private asset URL was exported.
+
+The JPEG registration has 114,980 bytes and a SHA-256 value. The job has exactly one `debit:generation` ledger entry, delta -2, Free delta 0, Subscription delta 0, no refund. Balance, Free Credit, and Subscription Credit reconciliation each returned zero differences. Recovery status showed no unhealthy tasks and all returned queue counters zero. Both queue peeks were empty.
+
+Producer/admission flags were restored to false first, as application version `f4df0fa1-402a-4543-8e14-7a2312ddb998`; the consumer was then disabled as `f74d192c-03a7-43c9-85ef-b6760287607e`. Full application binding comparison again matched the original snapshot, including independent montage overrides and secret names. Consumer readback retained schema access and both runtime secret names. Cron recovery remained on. Temporary deployment configurations were removed; repository defaults and production were not changed.
+
+This establishes one authenticated browser submission through the real application producer and a visible completed Library image. Exact HTTP response status/body, authenticated replay/conflict responses, forced publication failure, callback redelivery/fault injection, alerts, account billing, load/headroom, and the twenty-four-hour clean gate remain unverified. Local tests and the earlier private-RPC replay check do not substitute for those remaining runtime checks.
+
+## Live lock contention acceptance — 2026-10-09
+
+With no READY dispatch rows and both queues empty, the dedicated staging consumer was temporarily enabled as `929c501f-c1bc-4e66-9f9e-91b92e0cfdc1`. Public durable admission and application publication remained false. The probe reused the already STORED private fixture `afcb8e97-8b74-4bb7-95df-738084900cfc`; it created no job, debit, provider payload, or new provider attempt.
+
+A staging transaction held that job's row lock from 12:24:25.730828 to 12:24:55.761595 UTC, then rolled back. One reference publication was confirmed at 12:24:31.693. A local write marker prevented repeating a possibly committed publication. The first invocation at 12:24:32.492 was inside the lock interval: submitted 0, failed 0, retried 1, ignored 0, application `ok:false`. Its redelivery at 12:25:03.853 was after lock release: submitted/failed/retried 0, ignored 1, `ok:true`. Delivery timestamps were **31.361 seconds** apart, consistent with the configured thirty-second retry delay. This exercises the lock-contention retry followed by terminal acknowledgement; it does not establish live contention behavior for a newly admitted READY job.
+
+The job remained STORED with its original update timestamp. ACCEPTED evidence retained attempt `64616d08-f5d5-4b5d-ba98-568775b2b632` and provider `01a12018-1e4e-7111-b0f6-a793ff7bb150`. Its single original two-credit debit was unchanged; all three credit reconciliations returned zero differences. Both platform invocations had outcome `ok`, again demonstrating why application retry metrics must feed alerts.
+
+Two earlier setup attempts published nothing: one lock-observation check was inconclusive, and an expired local Wrangler OAuth token caused a settings-read HTTP 401 before publication. Their lock transactions rolled back. Wrangler refreshed its existing login; no credential was exposed or changed in a browser. Only the final successful probe reached the queue.
+
+Consumer execution was restored to false as version `946a2587-2418-4c1e-9783-3e53ce2b61da`. Readback retained schema access true, both runtime secret names, and application admission/publication false. Both queue peeks were empty. The shared application and production were not deployed during this probe. Fault injection, alerts, load/headroom, billing, and the twenty-four-hour gate remain outstanding.
 
 ## Rollback and investigation
 
