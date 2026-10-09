@@ -31,6 +31,7 @@
     // ADR-0076: keep recovery on when rolling back durable admission.
     "FAL_DISPATCH_SCHEMA_ENABLED": "false",
     "FAL_DURABLE_DISPATCH_ENABLED": "false",
+    "FAL_DISPATCH_QUEUE_ENABLED": "false",
     // ADR-0067: Chat is open here, but the screen is still behind the per-browser preview switch
     // (localStorage.veyrnox_chat). Needs OPENROUTER_CHAT_API_KEY on the Worker: production will not use the shared key.
     "CHAT_ENABLED": "true",
@@ -176,6 +177,7 @@
         "FAL_DISPATCH_SCHEMA_ENABLED": "true",
         "RECOVERY_HEALTH_ENABLED": "true",
         "FAL_DURABLE_DISPATCH_ENABLED": "false",
+        "FAL_DISPATCH_QUEUE_ENABLED": "false",
         "SUBSCRIPTIONS_ENABLED": "false",
         // ADR-0067: Chat is open on staging for testing only. No text model is
         // active until the owner activates one; production stays "false".

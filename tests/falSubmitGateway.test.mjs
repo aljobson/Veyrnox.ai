@@ -161,6 +161,45 @@ function durableFlags(t) {
         t.after(()=>{ if(previous===undefined) delete process.env[name]; else process.env[name]=previous; });
     }
 }
+function queueContext(t, send) {
+    const name = 'FAL_DISPATCH_QUEUE_ENABLED', previous = process.env[name];
+    const symbol = Symbol.for('__cloudflare-context__'), oldContext = globalThis[symbol], pending = [];
+    process.env[name] = 'true';
+    globalThis[symbol] = { env: { FAL_DISPATCH_QUEUE: { send } }, ctx: { waitUntil: p => pending.push(p) } };
+    t.after(() => {
+        if (previous === undefined) delete process.env[name]; else process.env[name] = previous;
+        if (oldContext === undefined) delete globalThis[symbol]; else globalThis[symbol] = oldContext;
+    });
+    return pending;
+}
+test('confirmed durable admission and replay publish references without changing their HTTP contract', async t => {
+    durableFlags(t);
+    const sent = [], pending = queueContext(t, async body => sent.push(body));
+    const calls = network(t, { durable: { ok: true } });
+    assert.equal((await post()).status, 202);
+    assert.equal((await post()).status, 200);
+    await Promise.all(pending);
+    assert.deepEqual(sent, [{ version: 1, job_id: JOB }, { version: 1, job_id: JOB }]);
+    assert.equal(submits(calls).length, 0);
+    assert.equal(rpc(calls, 'ledger_debit').length, 0);
+});
+test('queue failure preserves committed admission; lost admission acknowledgement publishes nothing', async t => {
+    durableFlags(t);
+    let sends = 0;
+    const pending = queueContext(t, async () => { sends++; throw new Error('queue unavailable'); });
+    network(t, { durable: { ok: true } });
+    const accepted = await post();
+    assert.equal(accepted.status, 202);
+    assert.equal((await accepted.json()).job_id, JOB);
+    await Promise.all(pending);
+    assert.equal(sends, 1);
+    const calls = network(t, { durable: new Error('admission acknowledgement lost') });
+    assert.equal((await post()).status, 503);
+    assert.equal(sends, 1);
+    assert.equal(pending.length, 1);
+    assert.equal(rpc(calls, 'ledger_debit').length, 0);
+    assert.equal(submits(calls).length, 0);
+});
 test('durable fal admission queues atomically and replay never submits from the route', async (t) => {
     durableFlags(t);
     const calls=network(t,{durable:{ok:true}});

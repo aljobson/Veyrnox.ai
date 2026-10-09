@@ -1,0 +1,29 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "veyrnox-fal-dispatch",
+  "main": "workers/fal-dispatch-worker.js",
+  "compatibility_date": "2026-10-09",
+  "workers_dev": false,
+  "observability": { "enabled": true, "traces": { "enabled": true } },
+  // Queue bindings are intentionally absent until staging resource review.
+  // Secrets: SUPABASE_SERVICE_ROLE_KEY, FAL_KEY. No browser or R2 credentials.
+  "vars": {
+    "FAL_DISPATCH_SCHEMA_ENABLED": "false",
+    "FAL_DISPATCH_QUEUE_CONSUMER_ENABLED": "false",
+    "FAL_DISPATCH_QUEUE_NAME": "veyrnox-fal-dispatch",
+    "SUPABASE_URL": "https://xdxdzmsztyzbnzeforxx.supabase.co",
+    "PUBLIC_HOST": "https://veyrnox.ai"
+  },
+  "env": {
+    "staging": {
+      "name": "veyrnox-fal-dispatch-staging",
+      "vars": {
+        "FAL_DISPATCH_SCHEMA_ENABLED": "false",
+        "FAL_DISPATCH_QUEUE_CONSUMER_ENABLED": "false",
+        "FAL_DISPATCH_QUEUE_NAME": "veyrnox-fal-dispatch-staging",
+        "SUPABASE_URL": "https://yrqzwqywxfesmbvhzjgj.supabase.co",
+        "PUBLIC_HOST": "https://veyrnox-ai-staging.al-jobson.workers.dev"
+      }
+    }
+  }
+}

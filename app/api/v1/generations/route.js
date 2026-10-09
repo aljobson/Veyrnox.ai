@@ -1,6 +1,6 @@
 import { falDispatchEnabled, admitFalDispatch } from '../../../../lib/falDispatch.js';
+import { publishFalDispatchWakeup } from '../../../../lib/falDispatchWakeup.js';
 import { providerFor } from '../../../../packages/provider-sdk/registry.js';
-
 import { NextResponse } from 'next/server';
 import { rpc, select, envConfig, SupabaseError } from '../../../../packages/db/supabase-client.js';
 import { capabilityFor, declaredInputs, checkSource } from '../../../../lib/modelCapabilities.js';
@@ -381,7 +381,7 @@ export async function POST(req) {
     if (falDispatchEnabled(process.env) && modelRow.provider === 'fal' && modelRow.modality === 'text-to-image'
         && !rawKeys.length && !rawAssets.length) {
         return admitFalDispatch({ userId, key: idempotencyKey, model: modelRow, record,
-            inputs: modelInputs, jobInputs, free: freeAllowanceOn, cfg });
+            inputs: modelInputs, jobInputs, free: freeAllowanceOn, cfg, onCommitted: publishFalDispatchWakeup });
     }
     let debit = null;
     // ADR-0069: allowance and zero-credit job are atomic. No allowance falls through to paid debit;
