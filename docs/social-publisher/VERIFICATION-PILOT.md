@@ -1,13 +1,14 @@
 # YouTube verification pilot
 
-This change supplies a tester path for recording the production Google OAuth
-client before opening Publish to the public. It does not activate that path.
-`PUBLISH_ENABLED` remains false, `PUBLISH_TESTER_AUTH_IDS` is empty and
-`PUBLISH_YOUTUBE_VISIBILITY_ENABLED` remains false on production.
+The tester path records the production Google OAuth client before opening
+Publish to the public. `PUBLISH_ENABLED` remains false. Production enables
+`PUBLISH_YOUTUBE_VISIBILITY_ENABLED` after migration 0241; pilot access requires
+the `PUBLISH_TESTER_AUTH_IDS` Worker secret. An absent secret leaves access closed.
 
 ## Access boundary
 
-Populate `PUBLISH_TESTER_AUTH_IDS` only with comma-separated Supabase Auth UUIDs
+Store `PUBLISH_TESTER_AUTH_IDS` as a production Worker secret, never in source
+control or client output. Populate it only with comma-separated Supabase Auth UUIDs
 for owner-designated **Veyrnox** testers. The Google account used to connect a
 YouTube channel is separate from the Veyrnox login. An email address is not an
 allowlist entry. Determine the tester's verified Auth UUID before configuring
