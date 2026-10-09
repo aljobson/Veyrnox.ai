@@ -4,10 +4,12 @@
 // keeps `stop_unsure` with the given-back text; the person presses Send again; that second message is refused before
 // it starts. The refusal took the place of the warning, on screen and in the store, so after a page reload the box
 // held the message with nothing saying that its first send may still be saved and use Credits.
-// Two changes close it. A kept warning (one of the WARNINGS) is forgotten when the next message is known to have gone
-// out (the `start` event, which follows the debit, or the chat being read again for it), not at the press; any other
-// notice still goes at the press. And a message that never started does not replace a warning: the warning stays
-// kept, and both are said on screen, the refusal first.
+// Two changes close it. A kept warning (one of the WARNINGS) is not forgotten at the press; any other notice still
+// is. And a message that never started does not replace a warning: the warning stays kept, and both are said on
+// screen, the refusal first.
+// The warning was then forgotten at the `start` event. It no longer is: a message that starts and ends with nothing
+// charged gives its text back too (tests/chatSendRefunded.test.mjs), so only an ending that accounts for Credits
+// forgets it: the chat being read again for the message, or a warning of the message's own.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -17,7 +19,7 @@ import { A, GatewayError, ME, TEXT, WARNINGS, afterReload, cutBeforeText, memory
 const noCredits = () => new GatewayError('no', { status: 402, code: 'insufficient_balance' });
 const tooFast = () => new GatewayError('no', { status: 429, code: 'rate_limited' });
 const stopBeforeStart = async () => { throw stopped(); };
-/** The fake words for a refusal said together with the warning it must not replace (chatRefusedCopy in run()). */
+/** The fake words for a refusal said together with the warning it must not replace (chatUnchargedCopy in run()). */
 const said = (refusal, warning) => `${refusal}, and before that ${warning}`;
 /** Chat a after Stop before any text with the turn not settled: its text is in its box and the warning is stored. */
 async function stoppedUnsure() {
@@ -47,14 +49,16 @@ test('Stop before any text, sent again and refused: the warning is still kept wi
     }
 });
 
-test('the whole sequence: refused, reloaded, refused again, then the message goes out and the warning is forgotten as the reply starts', async () => {
+test('the whole sequence: refused, reloaded, refused again, then the message goes out and the warning is forgotten when its reply has been saved', async () => {
     const storage = await stoppedUnsure();
     await run({ active: A, storage, turn: refused(noCredits()) });
     assert.deepEqual(afterReload(storage, 'chat-a'), { box: TEXT, notice: { code: 'stop_unsure' } });
     const again = await run({ active: A, storage, turn: refused(tooFast()) });
     assert.deepEqual(again.log.notices, [null, said('rate_limited', 'stop_unsure')], 'a second refusal says the same two things');
     assert.deepEqual(afterReload(storage, 'chat-a'), { box: TEXT, notice: { code: 'stop_unsure' } });
-    // Topped up and sent again. The warning is kept until the reply starts, which is after the debit, and not after that.
+    // Topped up and sent again. The warning is kept while the reply arrives, and forgotten when the chat is read again
+    // for the saved reply. It was forgotten at `start` (`afterStart: null`): a reply that started and was then refunded
+    // gave the text back with nothing said about the message before it.
     const seen = {};
     const goes = async ({ onEvent }) => {
         seen.beforeStart = readNotice(storage, ME, 'chat-a');
@@ -64,7 +68,7 @@ test('the whole sequence: refused, reloaded, refused again, then the message goe
         return { replay: false };
     };
     const sent = await run({ active: A, storage, turn: goes });
-    assert.deepEqual(seen, { beforeStart: { code: 'stop_unsure' }, afterStart: null });
+    assert.deepEqual(seen, { beforeStart: { code: 'stop_unsure' }, afterStart: { code: 'stop_unsure' } });
     assert.deepEqual([sent.log.notices, sent.log.opened, sent.log.shownOnOpen], [[null], ['chat-a'], [null]]);
     assert.deepEqual(afterReload(storage, 'chat-a'), { box: '', notice: null });
 });
@@ -104,26 +108,43 @@ test('a warning that waits under New chat stays there when the next message is r
     assert.deepEqual(afterReload(made, 'made'), { box: '', notice: null });
 });
 
-test('a second message that starts: whatever way it ends, the warning kept before it is gone, or replaced by its own notice', async () => {
+test('a second message that starts: an ending that accounts for Credits forgets the warning kept before it or replaces it, and one that gives the text back with nothing charged leaves it', async () => {
     const nothingKept = async ({ onEvent }) => { onEvent('start', { job_id: 'j' }); onEvent('error', { error: 'provider_cut_off' }); onEvent('done', { status: 'failed' }); return { replay: false }; };
+    const gone = () => ({ box: '', notice: null });
+    const own = (code, box = '') => () => ({ box, notice: { code } });
+    // The text is back in the box, and the notice kept with it is the one that was kept before this message.
+    const still = (was) => ({ box: TEXT, notice: { code: was } });
+    // Each ending, what it leaves for the chat, and for the three that changed what it says of itself on screen.
     const endings = [
-        ['ran to its end', { turn: reply() }, { box: '', notice: null }],
-        ['was stopped before any text, not settled', { turn: stopBeforeText(), settle: 'pending' }, { box: TEXT, notice: { code: 'stop_unsure' } }],
-        ['was stopped after text, still being saved', { turn: stopAfterText(), settle: 'pending' }, { box: '', notice: { code: 'stop_saving' } }],
-        ['was stopped, charged but not stored', { turn: stopAfterText(), settle: 'unsaved' }, { box: '', notice: { code: 'reply_not_saved' } }],
-        ['was stopped with nothing kept', { turn: stopBeforeText(), settle: 'nothing' }, { box: TEXT, notice: null }],
-        ['lost its connection with nothing kept', { turn: cutBeforeText(), settle: 'nothing' }, { box: TEXT, notice: { code: 'connection_refunded' } }],
-        ['lost its connection, not settled', { turn: cutBeforeText(), settle: 'pending' }, { box: '', notice: { code: 'connection_lost' } }],
-        ['lost its connection and was saved', { turn: cutBeforeText(), settle: 'saved' }, { box: '', notice: { code: 'connection_saved' } }],
-        ['failed with nothing kept', { turn: nothingKept }, { box: TEXT, notice: { code: 'provider_cut_off' } }],
+        // The chat is read again for the saved reply, so it shows what was saved and its price. As before.
+        ['ran to its end', { turn: reply() }, gone],
+        // Its own warning: this message may still be saved, and its text is back with that said. As before.
+        ['was stopped before any text, not settled', { turn: stopBeforeText(), settle: 'pending' }, own('stop_unsure', TEXT)],
+        // Its own warning, and no text is given back. As before.
+        ['was stopped after text, still being saved', { turn: stopAfterText(), settle: 'pending' }, own('stop_saving')],
+        // The chat is read again, then its own warning: charged and not in the chat. As before.
+        ['was stopped, charged but not stored', { turn: stopAfterText(), settle: 'unsaved' }, own('reply_not_saved')],
+        // CHANGED, from nothing kept. The job failed and the Credits came back, so this message is settled and its text
+        // is offered again. That says nothing about the message before it, which may still be saved.
+        ['was stopped with nothing kept', { turn: stopBeforeText(), settle: 'nothing' }, still, 'stop_refunded'],
+        // CHANGED, from `connection_refunded` kept: "no Credits were used" stood where the warning had been.
+        ['lost its connection with nothing kept', { turn: cutBeforeText(), settle: 'nothing' }, still, 'connection_refunded'],
+        // Its own warning, and no text is given back. As before.
+        ['lost its connection, not settled', { turn: cutBeforeText(), settle: 'pending' }, own('connection_lost')],
+        // The chat is read again, so it shows the saved reply and its price; then its own notice. As before.
+        ['lost its connection and was saved', { turn: cutBeforeText(), settle: 'saved' }, own('connection_saved')],
+        // CHANGED, from the failure's own "No Credits were used" kept in the warning's place.
+        ['failed with nothing kept', { turn: nothingKept }, still, 'provider_cut_off'],
     ];
     for (const was of WARNINGS) {
-        for (const [name, how, left] of endings) {
+        for (const [name, how, left, says] of endings) {
             const storage = memory();
             writeNotice(storage, ME, 'chat-a', was);
             const { log } = await run({ active: A, storage, ...how });
-            assert.deepEqual(afterReload(storage, 'chat-a'), left, `${was}, then a message that started and ${name}`);
+            assert.deepEqual(afterReload(storage, 'chat-a'), left(was), `${was}, then a message that started and ${name}`);
             assert.ok(log.shownOnOpen.every((n) => n === null), `${name}: a chat that is read again for the message is not shown the warning kept before it`);
+            // The person who never reloads is told both: what this message ended with, then the warning.
+            if (says) assert.deepEqual(log.notices, [null, said(says, was)], `${was}, then a message that started and ${name}`);
         }
     }
 });
@@ -157,7 +178,7 @@ test('a closed chat or a signed-out reader is about the whole page: a warning ke
     }
 });
 
-test('a notice that is not a warning goes at the press, a warning only when the reply starts', async () => {
+test('a notice that is not a warning goes at the press, a warning only when the message has ended in a way that accounts for Credits', async () => {
     const at = {};
     const watched = (was) => async ({ onEvent }, person) => {
         at[was] = { beforeStart: Object.keys(person.kept()) };
@@ -166,11 +187,16 @@ test('a notice that is not a warning goes at the press, a warning only when the 
         onEvent('done', { status: 'completed', credits_charged: 2, message_id: 'm1' });
         return { replay: false };
     };
-    for (const was of ['insufficient_balance', 'connection_saved', 'stop_unsure']) await run({ active: A, turn: watched(was), kept: { 'chat-a': was } });
+    for (const was of ['insufficient_balance', 'connection_saved', 'stop_unsure']) {
+        const { kept } = await run({ active: A, turn: watched(was), kept: { 'chat-a': was } });
+        at[was].atTheEnd = Object.keys(kept());
+    }
     // A page reload between the press and the start must not find "Your message was not sent" beside an empty box.
-    assert.deepEqual(at.insufficient_balance, { beforeStart: [], afterStart: [] });
-    assert.deepEqual(at.connection_saved, { beforeStart: [], afterStart: [] });
-    assert.deepEqual(at.stop_unsure, { beforeStart: ['chat-a'], afterStart: [] }, 'it would find the warning, which is still true');
+    assert.deepEqual(at.insufficient_balance, { beforeStart: [], afterStart: [], atTheEnd: [] });
+    assert.deepEqual(at.connection_saved, { beforeStart: [], afterStart: [], atTheEnd: [] });
+    // It would find the warning, which is still true, and after the start too (it was `afterStart: []`): the reply
+    // starting says nothing about the message before it. The saved reply's chat, read again, is what forgets it.
+    assert.deepEqual(at.stop_unsure, { beforeStart: ['chat-a'], afterStart: ['chat-a'], atTheEnd: [] });
 });
 
 test('the warning is looked for where the text goes back to: under New chat when the chat is gone', async () => {

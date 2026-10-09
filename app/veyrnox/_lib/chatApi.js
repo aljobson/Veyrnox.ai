@@ -75,6 +75,7 @@ export function chatErrorCopy(code, { credits } = {}) {
     case 'connection_saved': return 'The connection dropped before the reply finished. This chat shows what was saved and the Credits it used.';
     case 'connection_refunded': return 'The connection dropped before the reply finished. Nothing was saved and no Credits were used. Your message is back in the box.';
     case 'stop_saving': return 'Stopped. We are still saving this reply, and it may use Credits. Open this chat again in a moment to see what was kept.';
+    case 'stop_refunded': return 'Stopped. Nothing was saved and no Credits were used. Your message is back in the box.';
     case 'stop_unsure': return 'Stopped before any text arrived. If a reply is still saved, it will show in this chat and use Credits.';
     default: return code && code.startsWith('provider_')
       ? 'The model did not finish. No Credits were used. Try again, or pick another model.'
@@ -83,11 +84,12 @@ export function chatErrorCopy(code, { credits } = {}) {
 }
 
 /**
- * A message that was refused before it started, in a chat that still holds a warning that the message before it used
- * Credits or may (chatLocal.js). Why this one did not go comes first. The warning follows, marked as the earlier one,
- * so that "was not sent" is not read as "nothing can be charged".
+ * A message that used no Credits (refused before it started, or started and ended with nothing kept), in a chat that
+ * still holds a warning that the message before it used Credits or may (chatLocal.js). What this one ended with comes
+ * first. The warning follows, marked as the earlier one, so that "was not sent" or "No Credits were used" is not read
+ * as "nothing can be charged". `stop_refunded` is said only here: on its own, Stop with nothing kept says nothing.
  */
-export function chatRefusedCopy(code, extra, warning) {
+export function chatUnchargedCopy(code, extra, warning) {
   return `${chatErrorCopy(code, extra)} Before that: ${chatErrorCopy(warning.code, warning)}`;
 }
 

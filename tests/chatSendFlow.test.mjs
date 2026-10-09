@@ -5,8 +5,9 @@
 // `kept` is the notice store as the hook sees it: one code per chat, written by keepNotice and forgotten by dropNotice.
 // It took the place of the notices the view held in memory (`held()` in these tests until then): every ending that
 // held a notice now keeps it, and an ending in the chat on screen keeps its notice as well as showing it.
-// A kept notice is forgotten when the next message from its chat is known to have gone out, not at the press, and a
-// message that is refused before it starts does not replace a warning about Credits: tests/chatSendRefused.test.mjs.
+// A kept notice goes when the next message is sent from its chat. One that warns about Credits waits for that message
+// to end with the chat read again or with a warning of its own, and a message that used no Credits does not replace
+// it: tests/chatSendRefused.test.mjs (refused before it started), tests/chatSendRefunded.test.mjs (started, refunded).
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { NEW_CHAT } from '../app/veyrnox/_lib/chatLocal.js';

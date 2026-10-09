@@ -84,8 +84,8 @@ export function readNotice(storage, userId, chatId) {
 
 /**
  * The notice waiting for a chat when it is a warning about Credits (CREDITS_WARNINGS), else null. A later message
- * that is refused before it starts was not charged and says nothing about the one before it, so the send asks this
- * first and leaves such a warning kept (useChatSend.js).
+ * that used no Credits (it was refused before it started, or it started and they came back) says nothing about the
+ * one before it, so the send asks this first and leaves such a warning kept (useChatSend.js).
  * @returns {{code: string}|null}
  */
 export function readCreditsWarning(storage, userId, chatId) {
@@ -106,7 +106,7 @@ export function writeNotice(storage, userId, chatId, code, { credits } = {}) {
   } catch { /* blocked or full: nothing is kept, and the notice is on screen only */ }
 }
 
-/** Forget a chat's notice: a later message was sent from that chat (a warning about Credits waits until that message is known to have gone out), or the chat was deleted. */
+/** Forget a chat's notice: a later message was sent from that chat (a warning about Credits waits for that message to be saved to the chat, or to end with a warning of its own), or the chat was deleted. */
 export function clearNotice(storage, userId, chatId) {
   const key = keyFor(NOTICE_PREFIX, userId, chatId);
   if (!key) return;
