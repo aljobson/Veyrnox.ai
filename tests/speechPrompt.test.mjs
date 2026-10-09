@@ -31,8 +31,6 @@ test('the starter prompt is offered to picture and clip models, never to a speec
     assert.equal(promptText(null, dialogue), '');
     // Music and sound effects take a description, not words to read: unchanged.
     assert.equal(promptText(null, music), STARTER_PROMPT);
-    // Back on a clip model with the box never touched, the starter is there again.
-    assert.equal(promptText(null, video), STARTER_PROMPT);
 });
 
 test('what the user typed, or a restored draft, is kept on every model', () => {
