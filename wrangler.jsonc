@@ -99,6 +99,9 @@
     "CINEMA_PROXY_UPLOADS_ENABLED": "true",
     "CREATOR_MONETISATION_ENABLED": "false",
     "CINEMA_SUBSCRIPTIONS_ENABLED": "false",
+    // CINEMA_UNLOCKS_ENABLED also opens playback of free titles. Keep it
+    // "false" until free viewing has a monthly ceiling per account
+    // (docs/cinema/paywall-plan.md, P6).
     "CINEMA_UNLOCKS_ENABLED": "false",
     "CINEMA_PUBLISHING_ENABLED": "true",
     "CINEMA_VIEWING_ENABLED": "true",
