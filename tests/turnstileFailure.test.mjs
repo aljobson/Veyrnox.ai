@@ -4,9 +4,11 @@ import { readFileSync } from 'node:fs';
 import {
     CAPTCHA_BLOCKED_CODE,
     CAPTCHA_REQUIRED_COPY,
+    CAPTCHA_WAITING,
     captchaNotice,
     noticeAfterCaptchaFailure,
     noticeAfterCaptchaToken,
+    noticeWhileCaptchaWaits,
     turnstileErrorCode,
     turnstileFailureCopy,
 } from '../app/lib/turnstileFailure.js';
@@ -21,7 +23,8 @@ const DID_NOT_PASS = turnstileFailureCopy('600010');
 const CLOCK = turnstileFailureCopy('200100');
 const BLOCKED = turnstileFailureCopy('200500');
 const GENERIC = turnstileFailureCopy('110200');
-const EVERY_COPY = [DID_NOT_PASS, CLOCK, BLOCKED, GENERIC, CAPTCHA_REQUIRED_COPY];
+const WAITING = captchaNotice(CAPTCHA_WAITING).text;
+const EVERY_COPY = [DID_NOT_PASS, CLOCK, BLOCKED, GENERIC, WAITING, CAPTCHA_REQUIRED_COPY];
 
 test('the code is digits or "unknown", whatever the widget hands over', () => {
     assert.equal(turnstileErrorCode('600010'), '600010');
@@ -117,6 +120,57 @@ test('a token clears what was said about the check and nothing else', () => {
     assert.equal(noticeAfterCaptchaToken(sent), sent);
 });
 
+// ADR-0026 amendment 3. Seen 2026-10-09: the check failed with 600010, the
+// dialog said "It will retry by itself", and the widget had already retried
+// and was showing its checkbox, unticked. Each waited for the other.
+
+test('a widget that waits for a click is told apart from one that retries', () => {
+    assert.deepEqual(captchaNotice(CAPTCHA_WAITING), { kind: 'error', captcha: true, text: WAITING });
+    assert.match(WAITING, /^The security check above is waiting for you to tick its box\./);
+    // The one thing it must not say while the box is unticked.
+    assert.doesNotMatch(WAITING, /retry by itself/);
+    assert.match(WAITING, /reload the page/);
+    assert.match(WAITING, /inside another app/);
+    assert.match(WAITING, /Continue with Google doesn't need the check/);
+    // The widget's label follows the browser's language and the dialog is in
+    // English, so quoting it would be wrong everywhere else.
+    assert.doesNotMatch(WAITING, /Verify you are human/i);
+});
+
+test('"waiting" is not a Turnstile code, so it cannot be logged or reported as itself', () => {
+    assert.equal(turnstileErrorCode(CAPTCHA_WAITING), 'unknown');
+    assert.doesNotMatch(CAPTCHA_WAITING, /^\d/);
+    // Only captchaNotice knows the word. Asked as a code, it is no code.
+    assert.equal(turnstileFailureCopy(CAPTCHA_WAITING), GENERIC);
+});
+
+test('the wait changes a notice about the check and raises none of its own', () => {
+    const waiting = captchaNotice(CAPTCHA_WAITING);
+    assert.deepEqual(noticeWhileCaptchaWaits(captchaNotice('600010')), waiting);
+    assert.deepEqual(noticeWhileCaptchaWaits(captchaNotice('unknown')), waiting);
+    assert.deepEqual(noticeWhileCaptchaWaits(captchaNotice(null)), waiting);
+    // A first check that asks for a click has not failed: the widget is on
+    // screen and says what it wants.
+    assert.equal(noticeWhileCaptchaWaits(null), null);
+    // The answer to what the person just did stays, as it does on a failure.
+    const sent = { kind: 'success', text: 'Check your email for a sign-in link.' };
+    const wrong = { kind: 'error', text: "That email and password don't match. Check both and try again." };
+    assert.equal(noticeWhileCaptchaWaits(sent), sent);
+    assert.equal(noticeWhileCaptchaWaits(wrong), wrong);
+    // An unticked box times out and the widget refreshes to the same box.
+    const shown = noticeWhileCaptchaWaits(captchaNotice('600010'));
+    assert.equal(noticeWhileCaptchaWaits(shown), shown);
+});
+
+test('the wait ends in a token, or in a failure that says so', () => {
+    const waiting = captchaNotice(CAPTCHA_WAITING);
+    assert.equal(noticeAfterCaptchaToken(waiting), null);
+    // The box was ticked and the check failed again: back to that wording,
+    // until the widget's next retry stops on the box.
+    assert.deepEqual(noticeAfterCaptchaFailure(waiting, '600010'), captchaNotice('600010'));
+    assert.deepEqual(noticeWhileCaptchaWaits(captchaNotice('600010')), waiting);
+});
+
 // The two components are JSX, so these read the source, like
 // authCaptcha.test.mjs and authGateLifecycle.test.mjs.
 const turnstile = readFileSync(new URL('../components/Turnstile.jsx', import.meta.url), 'utf8');
@@ -138,7 +192,23 @@ test('the widget passes its error code up and still drops the token', () => {
     // Non-falsy tells Turnstile the error was handled; otherwise it adds its
     // own console warning on every retry (Cloudflare, client-side errors).
     assert.match(onError, /return true;$/);
-    assert.match(turnstile, /export function Turnstile\(\{ onToken, onError, onFailure, resetKey \}\)/);
+    assert.match(turnstile, /export function Turnstile\(\{ onToken, onError, onFailure, onWaiting, resetKey \}\)/);
+});
+
+test('the widget says when it shows its checkbox, and does nothing else then', () => {
+    // Turnstile reports the wait here and not through error-callback.
+    assert.match(turnstile, /"before-interactive-callback": \(\) => onWaiting\(\),/);
+    // A wait is not a failure: no console line and no report (the tests
+    // below and turnstileFailureReport.test.mjs count both).
+    assert.doesNotMatch(turnstile, /onWaiting\([^)]/, 'onWaiting carries nothing');
+});
+
+test('the check itself runs as before: no option is set, and one callback is added', () => {
+    const options = between(turnstile, 'ts.render(box.current, {', '\n                });');
+    const keys = [...options.matchAll(/^ {20}"?([A-Za-z-]+)"?:/gm)].map((m) => m[1]);
+    assert.deepEqual(keys, ['sitekey', 'callback', 'expired-callback', 'error-callback', 'before-interactive-callback']);
+    assert.match(options, /sitekey: TURNSTILE_SITE_KEY,/);
+    assert.doesNotMatch(options, /\.\.\./, 'no options spread in from elsewhere');
 });
 
 test('a script that cannot load still goes to onError alone', () => {
@@ -161,6 +231,13 @@ test('AuthGate shows the failure when it happens and clears it on a token', () =
     assert.match(widget, /onFailure=\{\(code\) => \{ setCaptchaFailure\(code\); setNotice\(\(n\) => noticeAfterCaptchaFailure\(n, code\)\); \}\}/);
     assert.match(widget, /onToken=\{\(token\) => \{ setCaptcha\(token\); if \(token\) \{ setCaptchaFailure\(null\); setNotice\(noticeAfterCaptchaToken\); \} \}\}/);
     assert.match(authGate, /<div role="status" aria-live="polite"/);
+});
+
+test('AuthGate remembers the wait and rewords what it is already saying', () => {
+    const widget = between(authGate, '<Turnstile', '/>');
+    // Remembered where the error code is, so a submit without a token says
+    // the same thing, and a token or closing the dialog forgets it.
+    assert.match(widget, /onWaiting=\{\(\) => \{ setCaptchaFailure\(CAPTCHA_WAITING\); setNotice\(noticeWhileCaptchaWaits\); \}\}/);
 });
 
 test('a blocked script is remembered like any other failure', () => {

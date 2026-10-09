@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { register } from 'node:module';
-import { CAPTCHA_BLOCKED_CODE, TURNSTILE_FAILURE_PATH } from '../app/lib/turnstileFailure.js';
+import { CAPTCHA_BLOCKED_CODE, CAPTCHA_WAITING, TURNSTILE_FAILURE_PATH } from '../app/lib/turnstileFailure.js';
 import { REPORT_BODY_LIMIT, acceptTurnstileFailure, turnstileReportRateLimit } from '../lib/turnstileFailureReport.js';
 
 // A Turnstile check that fails in the browser reaches neither Supabase nor us,
@@ -380,6 +380,19 @@ test('a script that cannot load is reported as the code the dialog files it unde
     assert.equal(CAPTCHA_BLOCKED_CODE, '200500');
     assert.match(turnstile, /s\.onerror = \(\) => \{[^}]*scriptPromise = null;\s*reportTurnstileFailure\(CAPTCHA_BLOCKED_CODE\);\s*reject\(new Error\("turnstile_load_failed"\)\);\s*\};/);
     assert.equal(turnstile.match(/reportTurnstileFailure\(/g).length, 2);
+});
+
+test('a widget that waits for a click is not counted: a wait is not a failure', async () => {
+    // ADR-0026 amendment 3. The callback tells the dialog and nothing else,
+    // and the two calls above stay the only places a report is sent from.
+    assert.match(turnstile, /"before-interactive-callback": \(\) => onWaiting\(\),/);
+    assert.equal(turnstile.match(/reportTurnstileFailure\(/g).length, 2);
+    // The word is no code, so it could not leave the browser as itself.
+    const page = await pageLoad();
+    try {
+        page.reportTurnstileFailure(CAPTCHA_WAITING);
+        assert.deepEqual(page.calls.map(([, init]) => init.body), ['unknown']);
+    } finally { page.restore(); }
 });
 
 test('the dialog itself knows nothing about the report', () => {
