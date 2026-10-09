@@ -156,3 +156,27 @@ Removing the headers at the one layer where a removal holds gives the property t
 - `tests/internalRequestHeaders.test.mjs`: a request with forged identity headers is sent through `worker.js` and what comes out is given to the real session handler, which answers 401. The same request given to the handler directly is answered with the forged id; that is the gap the Worker's removal stands in front of. The other cases from amendment 3 now cover the identity and framework names as well, and a name that only resembles one (`x-veyrnox-admin-token`, `x-middleware-prefetch`) is kept.
 - `tests/identityHeaders.test.mjs`: every file that reads the caller id has a refusal for a missing one.
 - A local `wrangler dev` build, run three ways. With neither this rule nor amendment 3's, and the framework's skip triggered on purpose, the session route, the dashboard route and the generations route ran for the forged caller (the dashboard route stopped at its Access check). With this rule alone, each answered `401 not_authenticated` from the handler. With both, each answered 401 from the middleware. A real token got the same answers in all three, with or without forged headers beside it.
+
+## Amendment 5 (2026-10-09): `worker.js` answers `/cdn-cgi/*` with 404
+
+Built in a separate change. No SQL migration, no feature flag. Takes effect with the Worker deployment.
+
+**Problem.** `/cdn-cgi/` is Cloudflare's prefix. Its network answers the endpoints under it before a Worker runs, and the app has no page, route or asset there. Whether a request under the prefix is ever handed to the Worker is decided at the edge, by hostname and zone settings that are not in this repository, and staging answers on a workers.dev hostname, where the answer may differ. A request that was handed on went to the framework like any other. The adapter's generated worker has a branch for one path under the prefix, meant for local preview, and assumes such a request never reaches a production Worker. That assumption is the platform's to keep; nothing here held or tested it. This is the case decision 2 was written for: what a request gets should not depend on which way it arrived.
+
+**Decision.** `refuseCdnCgi` in `lib/cdnCgiGuard.js` answers any path under `/cdn-cgi/` with the 404 that decision 2 gives a data path: the same body and headers, for every method, with the request body unread. `worker.js` calls it next to `refuseNextData`, before the rate limiters and the framework.
+
+- The path is tested as sent and as normalised, in any letter case, with the normaliser the other screens use (`normalizedPath`). A path that cannot be normalised is answered 404, as in amendment 1 item 2.
+- The path as sent is the string the generated worker reads, so every request it would have taken under the prefix is answered here first.
+- This rule logs nothing, so a scan of the prefix cannot fill the log. A path that cannot be normalised is still answered and logged by `refuseNextData`, which runs first.
+
+**Checked, no change needed.**
+
+- Nothing in `app/`, `components/` or `lib/` builds an address under the prefix on the site's own origin. The one mention is the Access key set in `lib/accessJwt.js`, which is fetched from the Access team domain. `next.config.mjs` has no `images` setting and nothing imports `next/image`. Turnstile is loaded from `challenges.cloudflare.com` and the Stream player and uploads use Stream's own hosts.
+- The endpoints Cloudflare serves under the prefix on the site's hostname (the Access sign-in and sign-out among them) are answered at the edge. The app has no route for any of them, so nothing that works today is answered by the Worker under the prefix.
+- Under `wrangler dev` the emulator answers its own endpoints under the prefix, the scheduled trigger included, before `worker.js` is called (read in the installed `miniflare`, 5.20261001.0-alpha).
+
+**Consequence.** An image loader that builds `/cdn-cgi/image/` addresses would be served only where the edge answers them, and would get this 404 wherever the Worker is what answers, local preview included. Adopting one means changing this rule first.
+
+**Verification.** `tests/cdnCgiGuard.test.mjs`: the prefix and its other spellings (encoded, doubled or backward slashes, a decoded tab or newline, upper case, a raw prefix whose remainder decodes to another path) answer 404 for seven methods before either rate limiter and the app, with nothing logged; before the change the same requests reached the app. Paths that only resemble the prefix pass through unchanged. The list includes a path each rate limiter would otherwise act on. Its last case fails if `app/cdn-cgi` or `public/cdn-cgi` appears, or if `next.config.mjs`, `middleware.js` or a source file under `app/`, `components/` or `lib/` names the prefix, other than the guard and `lib/accessJwt.js`.
+
+**Owner check.** Not visible from this repository: whether either hostname's edge hands such a request on at all. After the deploy, a search of each Worker's log for a request whose address contains `cdn-cgi` shows it; with this rule every such request has status 404.

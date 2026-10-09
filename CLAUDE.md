@@ -136,8 +136,12 @@ If a build starts failing after a dependency change, bisect these three first.
   (`tests/adminDashboardAccess.test.mjs`). Access is an edge rule on one
   hostname and its paths, so the code check is the one that holds whichever
   way a request arrives. For the same reason `worker.js` answers
-  `/_next/data/*` with 404 (there is no pages router), and the production
-  Worker has `workers_dev` and `preview_urls` off in `wrangler.jsonc`;
+  `/_next/data/*` with 404 (there is no pages router) and every path under
+  `/cdn-cgi/` with 404 (`lib/cdnCgiGuard.js`, amendment 5: the prefix is
+  Cloudflare's and the app has nothing there, so an image loader that
+  builds `/cdn-cgi/image/` addresses needs that rule changed first), and
+  the production Worker has `workers_dev` and `preview_urls` off in
+  `wrangler.jsonc`;
   staging keeps `workers_dev` on. `deploy-production` reads both back after
   each deploy and reports on the `deploy-failure` issue if either is on.
 - `worker.js` removes the headers that are never a caller's to send from
