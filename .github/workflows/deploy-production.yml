@@ -67,6 +67,11 @@ jobs:
       CLOUDFLARE_ACCOUNT_ID: fb18d9f7052afbea5a5e0eae69948af2
       WORKER_NAME: veyrnox-ai
       HAS_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}
+    # closed, open or unknown; empty when nothing was deployed. A check that
+    # crashed counts as unknown, so it cannot go quiet.
+    outputs:
+      workers_dev: ${{ steps.workers_dev.outputs.state || (steps.workers_dev.outcome == 'failure' && 'unknown') || '' }}
+      workers_dev_detail: ${{ steps.workers_dev.outputs.detail }}
     steps:
       - name: Skip until the deploy token is configured
         if: env.HAS_TOKEN != 'true'
@@ -112,6 +117,7 @@ jobs:
           echo "Live before this deploy: $(jq -c .versions previous-deployment.json)"
 
       - name: Deploy
+        id: deploy
         if: env.HAS_TOKEN == 'true' && steps.tip.outputs.stale != 'true'
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -136,6 +142,20 @@ jobs:
             "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/$WORKER_NAME/deployments" > /dev/null
           echo "::error::Smoke test failed after deploying $GITHUB_SHA; rolled back to $(jq -c .versions previous-deployment.json)"
           sleep 20 && node scripts/check-site-health.mjs
+
+      # wrangler.jsonc keeps this Worker off workers.dev and Preview URLs
+      # (ADR-0078), and `wrangler deploy` is the only thing that applies
+      # either. This reads both back. It is the last step and cannot fail the
+      # job: the release is already live, the smoke test and its rollback have
+      # run, and a rollback restores the code, not these two settings. An open
+      # or unreadable answer is reported by report-workers-dev below.
+      - name: Is the Worker still off workers.dev?
+        id: workers_dev
+        if: ${{ !cancelled() && steps.deploy.outcome == 'success' }}
+        continue-on-error: true
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: node scripts/check-workers-dev.mjs
 
   # One open issue per episode; a later green deploy does not close it,
   # because a rollback means main still holds the broken commit.
@@ -170,4 +190,41 @@ jobs:
             exit 0
           fi
           printf 'deploy-production did not deploy %s.\n\n%s\n\nRun: %s\n' "$GITHUB_SHA" "$detail" "$RUN_URL" > body.md
+          gh issue create --title "$title" --label deploy-failure --body-file body.md
+
+  # The release is live, but the Worker also answers on workers.dev or on
+  # Preview URLs, where the Access application does not apply, or the check
+  # could not tell. Not a failed deploy, so the deploy job stays green and
+  # this job says so on the same issue. It waits for report-failure so the
+  # two cannot each open one.
+  report-workers-dev:
+    needs: [deploy, report-failure]
+    if: always() && (needs.deploy.outputs.workers_dev == 'open' || needs.deploy.outputs.workers_dev == 'unknown')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - name: Say so on the deploy-failure issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          STATE: ${{ needs.deploy.outputs.workers_dev }}
+          DETAIL: ${{ needs.deploy.outputs.workers_dev_detail }}
+        run: |
+          if [ "$STATE" = "open" ]; then
+            title="Production Worker answers outside its own domain after ${GITHUB_SHA:0:7}"
+            detail='wrangler.jsonc sets workers_dev and preview_urls to false (ADR-0078), and the deploy did not leave them that way. Check both keys on main, then run deploy-production again. A rollback does not change either setting.'
+          else
+            title="Could not confirm the production Worker is off workers.dev after ${GITHUB_SHA:0:7}"
+            detail='The deploy itself went out. Read the last step of the deploy job, and check the workers.dev route and Preview URLs in the Worker settings by hand.'
+          fi
+          gh label create deploy-failure --color B60205 --description 'Production deploy failed or was rolled back' 2>/dev/null || true
+          existing=$(gh issue list --label deploy-failure --state open --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "$title (${DETAIL:-no detail}): $RUN_URL"
+            exit 0
+          fi
+          printf '%s.\n\n%s\n\n%s\n\nRun: %s\n' "$title" "${DETAIL:-no detail}" "$detail" "$RUN_URL" > body.md
           gh issue create --title "$title" --label deploy-failure --body-file body.md
