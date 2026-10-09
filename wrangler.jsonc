@@ -148,7 +148,7 @@
     "PUBLISH_ENABLED": "false",
     // Verified Supabase Auth UUIDs only; empty leaves the private pilot off.
     "PUBLISH_TESTER_AUTH_IDS": "",
-    // Requires 0239; keep off until the approved migration workflow completes.
+    // Requires 0241; keep off until the approved migration workflow completes.
     "PUBLISH_YOUTUBE_VISIBILITY_ENABLED": "false",
     // First production release permits YouTube only; Publish remains off.
     "PUBLISH_RELEASED_NETWORKS": "youtube",
