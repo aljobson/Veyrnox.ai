@@ -21,6 +21,7 @@ import { mkdirSync, unlinkSync } from 'node:fs';
 import { join } from 'node:path';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
+import { filmSourceHash } from './source-hash.mjs';
 
 const run = promisify(execFile);
 const WIDTH = 1920;
@@ -31,7 +32,9 @@ function parseArgs(argv) {
   for (let i = 0; i < argv.length; i += 2) {
     const key = argv[i].replace(/^--/, '');
     if (!(key in args)) throw new Error(`unknown option ${argv[i]}`);
-    args[key] = key === 'out' || key === 'at' ? argv[i + 1] : Number(argv[i + 1]);
+    const value = key === 'out' || key === 'at' ? argv[i + 1] : Number(argv[i + 1]);
+    if (value === undefined || Number.isNaN(value)) throw new Error(`${argv[i]} needs a value`);
+    args[key] = value;
   }
   if (!args.out) throw new Error('--out <directory> is required');
   return args;
@@ -112,6 +115,7 @@ async function main() {
     const blurred = frames.filter((frame) => frame.shots.length > 1);
     await pool(blurred, args.workers, (frame) => blend(args.out, frame));
     process.stdout.write(`${frames.length} frames in ${args.out} (${blurred.length} blurred)\n`);
+    process.stdout.write(`rendered from ${filmSourceHash()}: put this in LANDING_FILM.renderedFrom\n`);
   } finally {
     await browser.close();
   }

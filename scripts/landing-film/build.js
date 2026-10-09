@@ -15,7 +15,7 @@
     dot: 0.1, stretch: 0.5, label: 0.85, price: 1.0, pullBack: 1.5,
     chips: 2.5, pick: [3.0, 3.5, 4.0], press: 5.0, morph: 5.12,
     slot: 5.2, line1: 5.3, gen1: [5.45, 6.4], done1: 6.5,
-    job2: 7.0, line2: 7.12, gen2: [7.3, 7.85], fail: 8.0, refund: 8.2, line3: 8.5,
+    job2: 7.0, line2: 7.12, gen2: [7.3, 7.9], done2: 8.0, caption: 8.5,
     clear: 10.0, list: 10.1, feed: [10.2, 12.0], words: [10.5, 10.75, 11.0, 11.5],
     end: 12.4, out: 14.45, total: 15,
   };
@@ -24,7 +24,7 @@
   // at 60 frames a second. render.mjs blurs these and leaves the rest sharp.
   const BLUR = [
     [T.stretch, T.stretch + 0.4], [T.pullBack, T.pullBack + 0.5], [T.morph - 0.02, T.morph + 0.7],
-    [T.job2, T.job2 + 0.4], [T.refund, T.line3 + 0.1], [T.clear, T.list + 0.6],
+    [T.job2, T.job2 + 0.4], [T.clear, T.list + 0.6],
     [T.end, T.end + 0.8], [T.out - 0.05, T.total],
   ];
 
@@ -73,17 +73,16 @@
     const pct = el(el(node, 'div', 'pct mono'), 'div');
     const stateRoll = roller(el(node, 'div', 'state'), [state], 'left');
     const bar = el(node, 'div', 'bar');
-    const badge = svg(node, 'badge', '0 0 76 76', state[3]);
-    return { node, media, shine, costRoll, pct, stateRoll, bar, badge, edge: el(node, 'div', 'edge') };
+    const badge = svg(node, 'badge', '0 0 76 76', CHECK);
+    return { node, media, shine, costRoll, pct, stateRoll, bar, badge };
   }
 
   const CHECK = '<circle cx="38" cy="38" r="38" fill="rgb(62,230,196)"/><path d="M22 39 L33 50 L55 27" fill="none" stroke="rgb(6,35,31)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>';
-  const CROSS = '<circle cx="38" cy="38" r="38" fill="rgb(255,92,71)"/><path d="M26 26 L50 50 M50 26 L26 50" fill="none" stroke="rgb(35,8,4)" stroke-width="7" stroke-linecap="round"/>';
   const MARK = '<path d="M8 12 L38 12 L60 62 L82 12 L112 12 L60 112 Z" fill="rgb(62,230,196)"/>';
 
   /** One line of the statement: label, dotted leader, amount. */
-  function row(sheet, label, amount, className = '') {
-    const node = el(sheet, 'div', `srow mono ${className}`);
+  function row(sheet, label, amount) {
+    const node = el(sheet, 'div', 'srow mono');
     el(node, 'span', '', label);
     el(node, 'span', 'leader');
     el(node, 'span', 'amount', amount);
@@ -107,20 +106,20 @@
     name: 'Wan 2.5 · 5 s clip',
     gradient: 'linear-gradient(135deg,#0a1a2c 0%,#144a7a 55%,#3ec1e8 100%)',
     cost: [[T.line1, `−${PRICE.wan} cr`, 'var(--money)']],
-    state: [T.done1, 'Done', undefined, CHECK],
+    state: [T.done1, 'Done'],
   });
 
-  // ── B: a second job that fails, and the statement that records both ──
+  // ── B: a second job, and the statement that records both ──
   const job2Box = el(world, 'div', 'box');
   const job2 = tile(job2Box, {
-    name: 'Kling 2.6 Pro · 5 s clip',
-    gradient: 'linear-gradient(135deg,#1b0632 0%,#5a0e6a 55%,#e4318f 100%)',
-    cost: [[T.line2, `−${PRICE.kling} cr`, 'var(--money)'], [T.refund + 0.2, `+${PRICE.kling} cr back`, 'var(--accent)']],
-    state: [T.fail, 'Failed', 'var(--danger)', CROSS],
+    name: 'Nano Banana · one image',
+    gradient: 'linear-gradient(160deg,#2b1a0a 0%,#7a4a1e 60%,#f0b060 100%)',
+    cost: [[T.line2, `−${PRICE.banana} cr`, 'var(--money)']],
+    state: [T.done2, 'Done'],
   });
   const caption = place(el(world, 'div', 'display'), P.caption.x, P.caption.y);
   caption.style.fontSize = '76px';
-  const captionWords = ['Failed jobs refund', 'on their own.'].flatMap((line) => riseWords(el(caption, 'div'), line));
+  const captionWords = ['Every credit', 'leaves a line.'].flatMap((line) => riseWords(el(caption, 'div'), line));
 
   const slot = place(el(world, 'div', 'slot'), P.slip.x - 20, P.slip.y - 7);
   const paperShadow = place(el(world, 'div', 'paper-shadow'), P.slip.x, P.slip.y);
@@ -132,8 +131,7 @@
   el(sheet, 'div', 'perf');
   const lines = [
     row(sheet, 'Wan 2.5, 5 s clip', `−${PRICE.wan}`),
-    row(sheet, 'Kling 2.6 Pro, 5 s clip', `−${PRICE.kling}`),
-    row(sheet, 'Kling 2.6 Pro failed, refund', `+${PRICE.kling}`, 'refunded'),
+    row(sheet, 'Nano Banana, one image', `−${PRICE.banana}`),
   ];
   // ── C: the same slip keeps printing, and becomes the price list ──
   el(sheet, 'div', 'perf');
@@ -142,7 +140,6 @@
     el(sheet, 'div', 'srow group', group);
     rows.forEach(({ name, credits }) => row(sheet, name, `${credits} cr`));
   });
-  const refund = el(world, 'div', 'refund mono', `+${PRICE.kling} cr`);
 
   const type = place(el(world, 'div', 'display'), P.type.x, P.type.y);
   type.style.fontSize = '140px';
@@ -175,7 +172,6 @@
       chipCentres: chipRects.map((r) => boxLeft + r.left + r.width / 2),
       // How much paper is out once each statement line has printed.
       reveal: lines.map((line) => line.offsetTop + line.offsetHeight + pad),
-      lineY: lines.map((line) => P.slip.y + line.offsetTop + line.offsetHeight / 2),
       paperFull: sheet.offsetHeight + 36,
     };
   }
@@ -183,7 +179,7 @@
   window.FilmScene = {
     T, P, BLUR, world, measure,
     words, chips, chipInd, failLine, failRoll, hero, heroFace, job1,
-    job2Box, job2, caption, captionWords, slot, paper, refund,
+    job2Box, job2, caption, captionWords, slot, paper,
     typeWords, balanceWords, brand, endWords, endBox, endFace, cursor,
   };
 })();

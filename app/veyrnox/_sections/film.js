@@ -8,15 +8,15 @@ import { LANDING_FILM } from '../_lib/film';
 // never makes it wrong.
 const FILM_SUMMARY =
   'A fifteen-second animation with no sound. A Generate button shows its price in credits, and the price changes as a different model is picked. '
-  + 'Pressing it starts a job and prints a line on a credit statement. A second job fails, and its credits come back as their own line. '
+  + 'Pressing it starts a job and prints a line on a credit statement. A second job prints its own line. '
   + 'The statement then prints the price list: image, video and audio models on one credit balance.';
 
 export function LandingFilm() {
   return (
     <section aria-labelledby="film-title" className="px-4 sm:px-6 max-w-[1300px] mx-auto pb-16 lg:pb-24">
       <h2 id="film-title" className="sr-only">Veyrnox in fifteen seconds</h2>
-      <p id="film-summary" className="sr-only">{FILM_SUMMARY}</p>
-      <FilmPlayer film={LANDING_FILM} describedBy="film-summary" />
+      <p className="sr-only">{FILM_SUMMARY}</p>
+      <FilmPlayer film={LANDING_FILM} />
     </section>
   );
 }

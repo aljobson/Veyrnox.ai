@@ -11,6 +11,9 @@ export const LANDING_FILM = {
   poster: '/film/price-on-the-button.jpg',
   width: 1280,
   height: 720,
+  // The hash of scripts/landing-film the MP4 was rendered from (render.mjs
+  // prints it). The test fails when the source has moved on without a render.
+  renderedFrom: '37e3a2940363ef2a',
 };
 
 // One film, fetched only once it is half on screen. 720p of flat colour

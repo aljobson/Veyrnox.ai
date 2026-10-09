@@ -14,7 +14,6 @@
   const POP = { f: 4, z: 0.7 };
   const AQUA = [62, 230, 196];
   const PANEL = [20, 20, 22];
-  const DANGER = [255, 92, 71];
   const BODY = [201, 201, 207];
   const BASE = [10, 10, 11];
   const BORDER = [62, 62, 68];
@@ -81,24 +80,22 @@
     });
   }
 
-  /** A job card's own clock: progress, then the state it settles in. */
-  function job(tile, t, { gen, cap, settledAt, failed }) {
-    const p = easeInOut(seg(t, gen[0], gen[1])) * cap;
+  /** A job card's own clock: progress, then Done. */
+  function job(tile, t, { gen, settledAt }) {
+    const p = easeInOut(seg(t, gen[0], gen[1]));
     const settled = easeOut(seg(t, settledAt, settledAt + 0.3));
     tile.bar.style.width = `${p * 100}%`;
-    tile.bar.style.background = failed ? mixRgb(AQUA, DANGER, seg(t, settledAt, settledAt + 0.15)) : '';
     tile.pct.textContent = `${Math.round(p * 100)}%`;
     tile.pct.style.transform = `translateY(${-settled * 110}%)`;
     tile.stateRoll(t);
     tile.costRoll(t);
     tile.badge.style.transform = `scale(${spring(t, settledAt, { f: 4, z: 0.6 })})`;
-    tile.edge.style.opacity = failed ? seg(t, settledAt, settledAt + 0.15) : 0;
     // The studio's own loading shimmer, while the job runs.
     tile.shine.style.transform = `translateX(${(((t - gen[0]) / 1.1) % 1) * 200 - 100}%)`;
     tile.shine.style.opacity = t > gen[0] ? 1 - settled : 0;
     // A slow drift of the gradient: an abstract stand-in, not model output.
     tile.media.style.backgroundPosition = `${50 + 32 * Math.sin(t * 0.8)}% ${50 + 32 * Math.cos(t * 0.6)}%`;
-    tile.media.style.opacity = failed ? lerp(0.3, 0.1, settled) : lerp(0.3, 1, spring(t, settledAt, { f: 2.5, z: 1 }));
+    tile.media.style.opacity = lerp(0.3, 1, spring(t, settledAt, { f: 2.5, z: 1 }));
   }
 
   // One box all the way: a dot, the button, job 1, then its thumbnail.
@@ -122,37 +119,25 @@
     S.heroFace.node.style.filter = toTile > 0 ? `blur(${toTile * 10}px)` : '';
     S.job1.node.style.transform = `scale(${(left + right) / 720})`;
     S.job1.node.style.opacity = seg(t, T.morph + 0.12, T.morph + 0.4);
-    job(S.job1, t, { gen: T.gen1, cap: 1, settledAt: T.done1, failed: false });
+    job(S.job1, t, { gen: T.gen1, settledAt: T.done1 });
   }
 
   function job2(t) {
     const out = spring(t, T.job2, { f: 2.6, z: 0.8 });
     const gone = spring(t, T.clear + 0.06, SHUT);
-    const since = t - T.fail;
-    const shake = since > 0 ? 8 * Math.sin(since * 2 * Math.PI * 11) * Math.exp(-since * 9) : 0;
     setBox(S.job2Box, {
-      x: lerp(P.thumb.x, P.tile.x, out) + shake, y: lerp(P.thumb.y, P.tile.y, out),
+      x: lerp(P.thumb.x, P.tile.x, out), y: lerp(P.thumb.y, P.tile.y, out),
       left: 360, right: 360, h: 405, r: 30, scale: Math.max(0, out) * (1 - gone), bg: mixRgb(PANEL, PANEL, 0),
     });
-    job(S.job2, t, { gen: T.gen2, cap: 0.62, settledAt: T.fail, failed: true });
+    job(S.job2, t, { gen: T.gen2, settledAt: T.done2 });
   }
 
-  // The statement prints a line per event, then feeds out the price list.
+  // The statement prints a line per job, then feeds out the price list.
   function slip(t) {
     const PRINT = { f: 3, z: 0.9 };
-    const out = track(t, 0, [[T.line1, M.reveal[0], PRINT], [T.line2, M.reveal[1], PRINT], [T.line3, M.reveal[2], PRINT]]);
+    const out = track(t, 0, [[T.line1, M.reveal[0], PRINT], [T.line2, M.reveal[1], PRINT]]);
     S.slot.style.transform = `scaleX(${spring(t, T.slot, { f: 4, z: 0.8 })})`;
-    S.paper.style.height = `${Math.max(0, out + (M.paperFull - M.reveal[2]) * feed(t))}px`;
-  }
-
-  // The refund leaves the failed job and lands on its own statement line.
-  function refund(t) {
-    const p = easeInOut(seg(t, T.refund + 0.05, T.line3 + 0.02));
-    // From the failed job's price, top right of its card, to the refund line.
-    const x = lerp(P.tile.x + 270, P.slip.x + 610, p);
-    const y = lerp(P.tile.y - 160, M.lineY[2], p) - 70 * Math.sin(Math.PI * p);
-    const scale = spring(t, T.refund, { f: 5, z: 0.6 }) * (1 - easeIn(seg(t, T.line3 - 0.04, T.line3 + 0.1)));
-    S.refund.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
+    S.paper.style.height = `${Math.max(0, out + (M.paperFull - M.reveal[1]) * feed(t))}px`;
   }
 
   function cursor(t) {
@@ -202,9 +187,8 @@
     hero(t);
     job2(t);
     slip(t);
-    refund(t);
     S.captionWords.forEach((word, i) => {
-      const at = T.line3 + i * 0.07;
+      const at = T.caption + i * 0.07;
       setRise(word, easeOut(seg(t, at, at + 0.4)), easeIn(seg(t, T.clear - 0.14 + i * 0.02, T.clear + 0.12 + i * 0.02)));
     });
     S.typeWords.forEach((word, i) => setRise(word, easeOut(seg(t, T.words[i], T.words[i] + 0.4))));

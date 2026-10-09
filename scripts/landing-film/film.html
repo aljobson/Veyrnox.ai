@@ -16,9 +16,9 @@
   :root {
     --base: rgb(10 10 11); --panel: rgb(20 20 22); --border: rgb(62 62 68);
     --fg: rgb(242 242 243); --body: rgb(201 201 207); --muted: rgb(154 154 163);
-    --accent: rgb(62 230 196); --accent-ink: rgb(6 35 31); --money: rgb(228 169 60); --danger: rgb(255 92 71);
+    --accent: rgb(62 230 196); --accent-ink: rgb(6 35 31); --money: rgb(228 169 60);
     --paper: rgb(236 240 238); --paper-fg: rgb(16 22 20); --paper-muted: rgb(78 88 84);
-    --paper-accent: rgb(11 122 102); --paper-money: rgb(138 90 0);
+    --paper-money: rgb(138 90 0);
   }
   html, body { margin: 0; background: var(--base); }
   #stage { position: relative; width: 1920px; height: 1080px; overflow: hidden; background: var(--base); color: var(--fg); font-family: Inter, sans-serif; }
@@ -60,9 +60,6 @@
   .tile .shine { position: absolute; inset: 0; background: linear-gradient(100deg, transparent 34%, rgb(62 230 196 / 0.16) 50%, transparent 66%); }
   .tile .bar { position: absolute; left: 0; bottom: 0; height: 10px; background: var(--accent); }
   .tile .badge { position: absolute; right: 30px; bottom: 34px; width: 76px; height: 76px; }
-  .tile .edge { position: absolute; inset: 0; border: 3px solid var(--danger); border-radius: inherit; }
-
-  .refund { padding: 8px 20px; border-radius: 999px; background: var(--accent); color: var(--accent-ink); font-size: 28px; font-weight: 700; white-space: nowrap; margin: -26px 0 0 -70px; }
 
   .slot { width: 760px; height: 14px; border-radius: 7px; background: rgb(38 38 42); box-shadow: inset 0 2px 3px rgb(0 0 0 / 0.7), 0 1px 0 var(--border); }
   .paper-shadow { filter: drop-shadow(0 18px 28px rgb(0 0 0 / 0.45)); }
@@ -73,7 +70,6 @@
   .srow.head { font: 700 28px/52px Inter, sans-serif; justify-content: space-between; }
   .srow.head .note { font-weight: 400; color: var(--paper-muted); }
   .srow .amount { font-weight: 700; color: var(--paper-money); }
-  .srow.refunded, .srow.refunded .amount { color: var(--paper-accent); font-weight: 700; }
   .srow.group { margin-top: 18px; border-bottom: 2px solid var(--paper-fg); font: 800 30px/52px Inter, sans-serif; }
   .perf { height: 2px; margin: 14px 0 16px; background: repeating-linear-gradient(90deg, rgb(16 22 20 / 0.35) 0 8px, transparent 8px 15px); }
 

@@ -1,9 +1,9 @@
 # The landing film
 
 `public/film/price-on-the-button.mp4` is fifteen seconds of the product's own
-screens: the Generate button with its price, a job, a failed job and its
-refund, the credit statement, the price list. It is drawn in code here and
-captured frame by frame. Nothing in it comes from a video model.
+screens: the Generate button with its price, two jobs, the credit statement
+that records them, the price list. It is drawn in code here and captured
+frame by frame. Nothing in it comes from a video model.
 
 | File | What it holds |
 | --- | --- |
@@ -13,6 +13,7 @@ captured frame by frame. Nothing in it comes from a video model.
 | `build.js` | Builds the scene once, and holds the clock (`T`) and positions (`P`) |
 | `film.js` | `seek(t)`: every style, as a function of the time |
 | `render.mjs` | Captures the frames with Chrome |
+| `source-hash.mjs` | One hash over the five files above it |
 
 ## Look at it
 
@@ -26,20 +27,25 @@ moment.
   frames be captured in any order.
 - It shows what the product does and says what the site says. The copy is the
   landing page's own.
+- No job in it fails. The first cut showed a named model failing and being
+  refunded; the owner had that scene taken out.
 - A job card's picture is an abstract gradient. The film never shows a picture
   as if a model made it. Clips made by a model go in the tiles, from Veyrnox
   itself (`docs/product/showcase-clips.md`).
 - The last frame is the first frame, so it loops.
 
-## When a price changes
+## When a price or a scene changes
 
-The prices are baked into the frames. `tests/landingFilm.test.mjs` compares
-`prices.js` with the landing page's fallback list (`MODELS` in
-`app/veyrnox/_lib/tokens.js`) and fails when they differ. Then:
+The prices are baked into the frames. `tests/landingFilm.test.mjs` guards
+that twice. It compares `prices.js` with the landing page's fallback list
+(`MODELS` in `app/veyrnox/_lib/tokens.js`), and it compares the hash of the
+film's source with `LANDING_FILM.renderedFrom` in `app/veyrnox/_lib/film.js`,
+which is the hash the shipped MP4 was rendered from. So:
 
-1. Update `prices.js` from `GET /api/catalog`.
+1. Update `prices.js` from `GET /api/catalog`, or edit the scene.
 2. Render and encode again (below).
 3. Replace the two files in `public/film/`.
+4. Set `renderedFrom` to the hash `render.mjs` printed.
 
 ## Render
 

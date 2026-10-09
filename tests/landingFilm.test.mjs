@@ -8,6 +8,7 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import vm from 'node:vm';
 import { LANDING_FILM, MAX_FILM_BYTES } from '../app/veyrnox/_lib/film.js';
 import { MODELS } from '../app/veyrnox/_lib/tokens.js';
+import { filmSourceHash } from '../scripts/landing-film/source-hash.mjs';
 
 const PUBLIC = new URL('../public', import.meta.url).pathname;
 const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
@@ -43,6 +44,14 @@ test('every price in the film matches the landing fallback list', () => {
     }
 });
 
+test('the shipped film was rendered from the film source as it is now', () => {
+    assert.equal(
+        LANDING_FILM.renderedFrom,
+        filmSourceHash(),
+        'scripts/landing-film changed after the MP4 was rendered: render and encode it again, then set renderedFrom to the hash render.mjs prints',
+    );
+});
+
 test('the film shows no gated model, since the price list it prints is the open shelf', () => {
     const gated = new Set(MODELS.filter((m) => m.gated).map((m) => m.id));
     assert.deepEqual(filmPrices().filter(({ id }) => gated.has(id)), []);
@@ -51,8 +60,7 @@ test('the film shows no gated model, since the price list it prints is the open 
 test('the landing page mounts the film and gives it a text summary', () => {
     assert.match(read('../app/veyrnox/page.js'), /<LandingFilm \/>/);
     const section = read('../app/veyrnox/_sections/film.js');
-    assert.match(section, /describedBy="film-summary"/);
-    assert.match(section, /id="film-summary"/);
+    assert.match(section, /<p className="sr-only">\{FILM_SUMMARY\}<\/p>/);
     // A price in the summary would go stale the same way the frames can.
     assert.doesNotMatch(section.match(/const FILM_SUMMARY =[\s\S]*?;/)[0], /\d+ (credits|cr)\b/);
 });
@@ -62,4 +70,7 @@ test('the player has a pause control and never preloads the file', () => {
     assert.match(player, /preload="none"/);
     assert.match(player, /<button[\s\S]*onClick=\{toggle\}/);
     assert.match(player, /playbackMode\(/);
+    // A film that cannot load must not leave a button that does nothing.
+    assert.match(player, /onError=\{\(\) => setFailed\(true\)\}/);
+    assert.match(player, /\{!failed && \(/);
 });
