@@ -93,3 +93,23 @@ report and resolves it after investigation. Changed count/age values can update
 the report, so this does not promise a single notification for an entire outage.
 To stop checks, set the watch gate to `false`; to stop issue writes while retaining
 checks, set the issue gate to `false`. Neither action changes dispatch flags.
+
+## Controlled alert delivery exercise
+
+Manually dispatch `fal-queue-watch-staging` on `main` with `test_alert=true`.
+After a successful live read-only metrics check, this option deliberately fails
+the check with a fixed `TEST ONLY` report and runs the normal GitHub Actions
+alert job with its `issues: write` token. It creates an incident titled
+`TEST: staging fal queue alert delivery` with label `fal-queue-staging-test`,
+separate from real incidents. Scheduled checks always leave this option off.
+An actual metrics failure is never replaced by a test report and still uses the
+real incident label. No messages, attempts, credentials or provider work change.
+
+Dispatch twice and verify both alert jobs succeed, the same test issue is reused,
+and its body/timestamp remains unchanged on the second run. Then run with the
+default option off to confirm a clean check and skipped alert. Close only the
+test issue as completed after retaining the run links in its resolution comment.
+The two exercise runs intentionally conclude failure because their check fails;
+alert-job success and the resulting issue are the delivery evidence. This proves
+Actions can write the incident, not that email/push notifications reach the
+owner: the owner must confirm their GitHub notification settings and receipt.
