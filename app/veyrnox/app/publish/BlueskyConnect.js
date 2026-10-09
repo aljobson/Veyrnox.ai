@@ -17,6 +17,8 @@ export default function BlueskyConnect({ onConnected, onCancel }) {
             await onConnected();
         } catch (err) {
             setError(err.body?.code === 'ACCOUNT_LIMIT' ? 'Your plan connects one account. Disconnect it first.'
+                : err.body?.stage === 'record_account' ? 'Bluesky sign-in succeeded, but Veyrnox could not save the connection. Please try again later.'
+                : err.body?.stage === 'provider_session' && !['provider_request_failed_400', 'provider_request_failed_401'].includes(err.body?.code) ? 'Veyrnox could not complete the Bluesky connection. Please try again later.'
                 : 'Could not connect. Check your handle and app password, then try again.');
         } finally { setBusy(false); }
     }
