@@ -87,10 +87,12 @@ function MediaPicker({ selected, onSelect }) {
     );
 }
 
-export function Composer({ accounts, onScheduled, initialJobId = null, uploadsEnabled = false }) {
+export function Composer({ accounts, onScheduled, initialJobId = null, uploadsEnabled = false, youtubeVisibilityEnabled = false }) {
     const activeAccounts = (accounts || []).filter((a) => a.status === 'active' && a.publishingEnabled !== false && NETWORKS.find((n) => n.key === a.network)?.media.length);
     const [selectedAccountIds, setSelectedAccountIds] = useState(() => new Set());
     const [caption, setCaption] = useState('');
+    const [youtubeVisibility, setYoutubeVisibility] = useState('private');
+    const hasYoutube = activeAccounts.some((a) => a.network === 'youtube' && selectedAccountIds.has(a.id));
     const [scheduledAt, setScheduledAt] = useState(defaultScheduleValue);
     const [mediaType, setMediaType] = useState('image');
     const [selectedMedia, setSelectedMedia] = useState(null);
@@ -154,6 +156,7 @@ export function Composer({ accounts, onScheduled, initialJobId = null, uploadsEn
             await createSocialPost({
                 ...(publishNow ? { publishNow: true } : { scheduledAt: schedule.toISOString() }),
                 globalText: caption,
+                ...(hasYoutube && youtubeVisibilityEnabled ? { youtubeVisibility } : {}),
                 idempotencyKey: idempotencyKey.current,
                 accountIds: [...selectedAccountIds],
                 media: [{ mediaType, ...(selectedMedia.uploadId ? { uploadId: selectedMedia.uploadId } : { jobId: selectedMedia.jobId }) }],
@@ -161,6 +164,7 @@ export function Composer({ accounts, onScheduled, initialJobId = null, uploadsEn
             setSuccess(publishNow ? 'Post queued for publishing. It can take a few minutes to appear.' : 'Post scheduled.');
             setCaption(''); setSelectedAccountIds(new Set()); setSelectedMedia(null);
             setScheduledAt(defaultScheduleValue());
+            setYoutubeVisibility('private');
             idempotencyKey.current = newIdempotencyKey();
             onScheduled?.();
         } catch (err) {
@@ -199,6 +203,18 @@ export function Composer({ accounts, onScheduled, initialJobId = null, uploadsEn
                     })}
                 </ul>
             </div>
+
+            {hasYoutube && <div>
+                {youtubeVisibilityEnabled ? <>
+                    <label htmlFor="youtube-visibility" className="text-sm font-bold mb-2 block">YouTube visibility</label>
+                    <select id="youtube-visibility" value={youtubeVisibility} onChange={(e) => setYoutubeVisibility(e.target.value)} disabled={Boolean(submitting)} className="rounded-lg border border-vx-border bg-transparent px-3 py-2 text-sm">
+                        <option value="private">Private</option>
+                        <option value="unlisted">Unlisted</option>
+                        <option value="public">Public</option>
+                    </select>
+                    <p className="text-sm text-vx-fg-muted mt-2">{youtubeVisibility === 'private' ? 'Only you and people you invite on YouTube can watch.' : youtubeVisibility === 'unlisted' ? 'Anyone with the YouTube link can watch.' : 'Anyone can find and watch this video on YouTube.'} This applies only to YouTube.</p>
+                </> : <p className="text-sm text-vx-fg-muted">YouTube videos will be posted publicly.</p>}
+            </div>}
 
             <div>
                 <label htmlFor="publish-caption" className="text-sm font-bold mb-2 block">Caption</label>

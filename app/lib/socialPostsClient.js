@@ -25,10 +25,10 @@ export async function listSocialPosts({ beforeCreatedAt, beforeId } = {}) {
  * comment in packages/db/schema/supabase/0156): [{ mediaType, jobId }].
  * Returns { post_id, idempotent, target_count }. Throws GatewayError.
  */
-export async function createSocialPost({ scheduledAt, publishNow, globalText, idempotencyKey, accountIds, media }) {
+export async function createSocialPost({ scheduledAt, publishNow, globalText, idempotencyKey, accountIds, media, youtubeVisibility }) {
     return gatewayFetch('/social/posts', {
         method: 'POST',
-        body: JSON.stringify({ scheduledAt, ...(publishNow !== undefined ? { publishNow } : {}), globalText: globalText || null, idempotencyKey, accountIds, media }),
+        body: JSON.stringify({ scheduledAt, ...(publishNow !== undefined ? { publishNow } : {}), globalText: globalText || null, idempotencyKey, accountIds, media, youtubeVisibility }),
     });
 }
 
