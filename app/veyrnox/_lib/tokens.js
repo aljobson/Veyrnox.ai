@@ -32,10 +32,10 @@ export const MODELS = [
   { id: 'ace-step-1.5',       name: 'ACE-Step 1.5',        credits: 3,                                          kind: 'audio', durations: [5] },
   { id: 'elevenlabs-sfx-v2',  name: 'ElevenLabs Sound Effects', credits: 2,                                     kind: 'audio', durations: [5] },
   { id: 'mmaudio-v2',         name: 'MMAudio v2',          credits: 1,                                          kind: 'audio', durations: [5] },
-  { id: 'elevenlabs-tts-turbo', name: 'ElevenLabs TTS Turbo', credits: 4,                                       kind: 'audio', durations: [5] },
-  { id: 'minimax-speech-2.6-hd', name: 'MiniMax Speech 2.6 HD', credits: 7,                                     kind: 'audio', durations: [5] },
-  { id: 'inworld-tts',        name: 'Inworld TTS',         credits: 2,                                          kind: 'audio', durations: [5] },
-  { id: 'elevenlabs-dialogue', name: 'ElevenLabs Dialogue', credits: 7,  tag: 'NEW',                            kind: 'audio', durations: [5] },
+  { id: 'elevenlabs-tts-turbo', name: 'ElevenLabs TTS Turbo', credits: 4,                                       kind: 'audio', speech: true, durations: [5] },
+  { id: 'minimax-speech-2.6-hd', name: 'MiniMax Speech 2.6 HD', credits: 7,                                     kind: 'audio', speech: true, durations: [5] },
+  { id: 'inworld-tts',        name: 'Inworld TTS',         credits: 2,                                          kind: 'audio', speech: true, durations: [5] },
+  { id: 'elevenlabs-dialogue', name: 'ElevenLabs Dialogue', credits: 7,  tag: 'NEW',                            kind: 'audio', speech: true, durations: [5] },
 ];
 
 // 10s video = exactly 2x credits. Non-negotiable.

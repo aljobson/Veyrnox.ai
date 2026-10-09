@@ -13,14 +13,18 @@
  * checks what is actually shipped, not what the repo believes. Falls
  * back to `--offline` for a repo-only endpoint-shape lint.
  *
- * Exit 0 = clean, 1 = drift or dead endpoint found.
+ * Exit 0 = clean, 1 = dead endpoint or margin breach found. A price that
+ * moved on fal's page is a note in a clean run unless FAL_DRIFT_FAILS is
+ * "listed" (what fal-catalog-watch.yml sets) or "all".
  */
 
+import {
+    DRIFT_MODES, MARGIN_FLOOR, checkRow, costSentence, creditsForFloor, extractPrices, failingCount, rowLines,
+} from './lib/fal-price-check.mjs';
+import { UNIT_RATES } from './lib/fal-unit-rates.mjs';
+
 const FAL_MODEL_BASE = 'https://fal.ai/models/';
-const REFERENCE_DOLLARS_PER_CREDIT = 0.033;
-const MARGIN_FLOOR = 0.5;
-// fal rounds and re-tiers often; only shout when the move is real.
-const PRICE_DRIFT_TOLERANCE = 0.02;
+const DRIFT_FAILS = process.env.FAL_DRIFT_FAILS || 'false';
 const UA = 'Mozilla/5.0 (compatible; veyrnox-catalog-watch/1.0)';
 
 async function loadCatalog() {
@@ -59,52 +63,11 @@ async function checkEndpoint(endpoint) {
     }
 }
 
-/**
- * Pull candidate USD prices out of a fal model page. fal has no pricing
- * API and the markup changes, so we collect every price token and let
- * the caller decide which unit applies.
- *
- * Credit-pack and plan prices ($1 / $2 / $15 / $24 ...) pollute the set,
- * so drop round dollar amounts >= $1 — no per-unit fal rate is a whole
- * dollar, and the expensive video rows are matched on their per-second
- * rate rather than the clip total.
- */
-function extractPrices(html) {
-    const out = new Set();
-    for (const m of html.matchAll(/\$([0-9]+(?:\.[0-9]+)?)/g)) {
-        const v = Number(m[1]);
-        if (v <= 0 || v > 50) continue;
-        if (v >= 1 && Number.isInteger(v)) continue; // credit packs / plans
-        out.add(v);
-    }
-    return [...out].sort((a, b) => a - b);
-}
-
-/**
- * The comparison unit. For per-second rows the page quotes a rate, so we
- * divide our recorded total by billing_seconds before matching — this is
- * exactly the mistake migration 0021 had to undo.
- */
-function comparisonRate(row) {
-    const total = Number(row.provider_cost_per_unit);
-    if (row.cost_unit === 'per_second') {
-        const secs = Number(row.billing_seconds) || 5;
-        return { rate: total / secs, unit: `/s x ${secs}s`, total };
-    }
-    return { rate: total, unit: 'per generation', total };
-}
-
-function marginAt(costUsd, credits) {
-    const retail = credits * REFERENCE_DOLLARS_PER_CREDIT;
-    return retail > 0 ? (retail - costUsd) / retail : -1;
-}
-
-/** Smallest credit count that still clears the floor at the given cost. */
-function creditsForFloor(costUsd) {
-    return Math.ceil((costUsd / (1 - MARGIN_FLOOR)) / REFERENCE_DOLLARS_PER_CREDIT);
-}
-
 async function main() {
+    if (!DRIFT_MODES.includes(DRIFT_FAILS)) {
+        throw new Error(`FAL_DRIFT_FAILS is "${DRIFT_FAILS}"; it takes ${DRIFT_MODES.join(', ')}`);
+    }
+
     const offline = process.argv.includes('--offline');
     if (offline) {
         console.log('offline mode: endpoint-shape lint only');
@@ -117,10 +80,9 @@ async function main() {
     const dead = [];
     const drift = [];
     const breach = [];
+    const cost = [];
 
     for (const row of rows) {
-        const cost = Number(row.provider_cost_per_unit);
-        const credits = Number(row.credits_5s);
         const res = await checkEndpoint(row.provider_endpoint);
 
         if (!res.ok) {
@@ -129,24 +91,12 @@ async function main() {
             continue;
         }
 
-        const prices = extractPrices(res.html);
-        const { rate, unit, total } = comparisonRate(row);
         // Match on the unit fal actually quotes.
-        const tol = Math.max(0.0005, rate * 0.05);
-        const near = prices.filter((p) => Math.abs(p - rate) <= tol);
-        const m = marginAt(total, credits);
-
-        if (m < MARGIN_FLOOR) {
-            breach.push({ ...row, margin: m });
-            console.log(`BREACH ${row.id.padEnd(20)} margin ${(m * 100).toFixed(1)}% < ${MARGIN_FLOOR * 100}%`);
-        } else if (near.length === 0 && prices.length > 0) {
-            drift.push({ ...row, rate, unit, seen: prices.slice(0, 8) });
-            console.log(
-                `DRIFT? ${row.id.padEnd(20)} expect $${rate.toFixed(4)} ${unit}  page: ${prices.slice(0, 8).map((p) => '$' + p).join(' ')}`
-            );
-        } else {
-            console.log(`ok    ${row.id.padEnd(20)} $${rate.toFixed(4)} ${unit.padEnd(14)} ${credits}cr  margin ${(m * 100).toFixed(1)}%`);
-        }
+        const checked = checkRow(row, extractPrices(res.html), UNIT_RATES);
+        if (checked.verdict === 'breach') breach.push({ ...row, margin: checked.margin });
+        if (checked.verdict === 'drift') drift.push(checked);
+        if (checked.cost) cost.push(checked);
+        for (const line of rowLines(checked)) console.log(line);
     }
 
     console.log('');
@@ -167,13 +117,30 @@ async function main() {
     if (drift.length) {
         console.log(`## Possible price drift (${drift.length}) — verify by hand`);
         for (const d of drift) {
-            console.log(`- \`${d.id}\` expected $${d.rate.toFixed(4)} ${d.unit}, page shows ${d.seen.map((p) => '$' + p).join(', ')}`);
+            console.log(`- \`${d.id}\` expected $${d.rate.toFixed(4)} ${d.unit}, page shows ${d.seen.map((p) => '$' + p).join(', ') || 'no price'}`);
+        }
+        console.log('');
+    }
+    if (cost.length) {
+        console.log(`## Recorded cost is not what fal's rate comes to (${cost.length}) — correct the catalog row`);
+        for (const c of cost) {
+            const floor = c.cost.margin < MARGIN_FLOOR ? `, needs ${creditsForFloor(c.cost.built)} credits (has ${c.credits})` : '';
+            console.log(`- \`${c.id}\` ${costSentence(c)}: margin ${(c.cost.margin * 100).toFixed(1)}% at that cost${floor}`);
         }
         console.log('');
     }
 
-    const failed = dead.length + breach.length;
-    console.log(failed ? `FAIL: ${dead.length} dead, ${breach.length} breach, ${drift.length} drift` : `clean (${drift.length} drift notes)`);
+    const failed = failingCount({
+        dead: dead.length,
+        breach: breach.length,
+        drift: drift.length,
+        listedDrift: drift.filter((d) => d.listed).length,
+        underFloor: cost.filter((c) => c.cost.margin < MARGIN_FLOOR).length,
+    }, DRIFT_FAILS);
+    const notes = (n, what) => `${n} ${what} note${n === 1 ? '' : 's'}`;
+    console.log(failed
+        ? `FAIL: ${dead.length} dead, ${breach.length} breach, ${drift.length} drift, ${cost.length} cost`
+        : `clean (${notes(drift.length, 'drift')}, ${notes(cost.length, 'cost')})`);
     return failed ? 1 : 0;
 }
 

@@ -1,0 +1,171 @@
+{
+  "components": {
+    "schemas": {
+      "SanaV154.8bInput": {
+        "x-fal-order-properties": [
+          "prompt",
+          "negative_prompt",
+          "image_size",
+          "num_inference_steps",
+          "seed",
+          "guidance_scale",
+          "sync_mode",
+          "num_images",
+          "enable_safety_checker",
+          "output_format",
+          "style_name"
+        ],
+        "required": [
+          "prompt"
+        ],
+        "type": "object",
+        "title": "TextToImageInput",
+        "properties": {
+          "num_images": {
+            "title": "Num Images",
+            "type": "integer",
+            "maximum": 4,
+            "default": 1,
+            "minimum": 1,
+            "description": "The number of images to generate."
+          },
+          "style_name": {
+            "title": "Style Name",
+            "type": "string",
+            "default": "(No style)",
+            "enum": [
+              "(No style)",
+              "Cinematic",
+              "Photographic",
+              "Anime",
+              "Manga",
+              "Digital Art",
+              "Pixel art",
+              "Fantasy art",
+              "Neonpunk",
+              "3D Model"
+            ],
+            "description": "The style to generate the image in."
+          },
+          "guidance_scale": {
+            "title": "Guidance scale (CFG)",
+            "type": "number",
+            "maximum": 20,
+            "default": 5,
+            "minimum": 0,
+            "description": "\n            The CFG (Classifier Free Guidance) scale is a measure of how close you want\n            the model to stick to your prompt when looking for a related image to show you.\n        "
+          },
+          "seed": {
+            "title": "Seed",
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "\n            The same seed and the same prompt given to the same version of the model\n            will output the same image every time.\n        "
+          },
+          "output_format": {
+            "title": "Output Format",
+            "type": "string",
+            "default": "jpeg",
+            "enum": [
+              "jpeg",
+              "png"
+            ],
+            "description": "The format of the generated image."
+          },
+          "negative_prompt": {
+            "examples": [
+              ""
+            ],
+            "title": "Negative Prompt",
+            "type": "string",
+            "default": "",
+            "description": "\n            The negative prompt to use. Use it to address details that you don't want\n            in the image. This could be colors, objects, scenery and even the small details\n            (e.g. moustache, blurry, low resolution).\n        "
+          },
+          "image_size": {
+            "title": "Image Size",
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ImageSize"
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "square_hd",
+                  "square",
+                  "portrait_4_3",
+                  "portrait_16_9",
+                  "landscape_4_3",
+                  "landscape_16_9"
+                ]
+              }
+            ],
+            "default": {
+              "width": 3840,
+              "height": 2160
+            },
+            "description": "The size of the generated image."
+          },
+          "prompt": {
+            "examples": [
+              "Underwater coral reef ecosystem during peak bioluminescent activity, multiple layers of marine life - from microscopic plankton to massive coral structures, light refracting through crystal-clear tropical waters, creating prismatic color gradients, hyper-detailed texture of marine organisms"
+            ],
+            "title": "Prompt",
+            "type": "string",
+            "description": "The prompt to generate an image from."
+          },
+          "enable_safety_checker": {
+            "title": "Enable Safety Checker",
+            "type": "boolean",
+            "default": true,
+            "description": "If set to true, the safety checker will be enabled. Disabling it requires account authorization; unauthorized requests are always checked, and images flagged as unsafe are returned as black images."
+          },
+          "sync_mode": {
+            "title": "Sync Mode",
+            "type": "boolean",
+            "default": false,
+            "description": "If `True`, the media will be returned as a data URI and the output data won't be available in the request history."
+          },
+          "num_inference_steps": {
+            "title": "Num Inference Steps",
+            "type": "integer",
+            "maximum": 50,
+            "default": 18,
+            "minimum": 1,
+            "description": "The number of inference steps to perform."
+          }
+        }
+      },
+      "ImageSize": {
+        "x-fal-order-properties": [
+          "width",
+          "height"
+        ],
+        "title": "ImageSize",
+        "type": "object",
+        "properties": {
+          "width": {
+            "exclusiveMinimum": 0,
+            "title": "Width",
+            "type": "integer",
+            "maximum": 14142,
+            "default": 512,
+            "description": "The width of the generated image."
+          },
+          "height": {
+            "exclusiveMinimum": 0,
+            "title": "Height",
+            "type": "integer",
+            "maximum": 14142,
+            "default": 512,
+            "description": "The height of the generated image."
+          }
+        }
+      }
+    }
+  }
+}

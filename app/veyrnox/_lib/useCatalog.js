@@ -10,6 +10,7 @@ function fromFallback() {
   return MODELS.map((m) => ({
     id: m.id, name: m.name, kind: m.kind, credits: m.credits, gated: !!m.gated || !!m.premium,
     durations: m.durations || FALLBACK_DURATIONS,
+    isSpeech: !!m.speech,
   }));
 }
 
@@ -34,6 +35,8 @@ function fromApi(models) {
     takesNegative: !!m.capabilities?.inputs?.negative_prompt,
     // Speech in a voice the user describes in words; the description is required.
     takesVoice: !!m.capabilities?.inputs?.voice_description,
+    // Speech reads the prompt aloud, so the studio never offers it the starter prompt.
+    isSpeech: m.capabilities?.kind === 'speech',
   }));
 }
 

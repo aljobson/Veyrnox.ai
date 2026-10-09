@@ -28,6 +28,7 @@ import { VoiceDescription } from '../../_components/VoiceDescription';
 import { ControlRow } from '../../_components/ControlRow';
 import { TIERS, TIER_LABEL, filterByTier } from '../../_lib/modelTiers';
 import { settingsInputs, voiceIsMissing } from '../../_lib/generationSettings';
+import { promptText, promptIsMissing, promptPlaceholder } from '../../_lib/promptBox';
 import { ParticleButton } from '@/components/ParticleButton';
 import { jobStateUi, SLOW_MODEL_WAIT } from '../../_lib/studioStates';
 const DEFAULT_MODEL = 'wan-2.5-kie';
@@ -58,7 +59,7 @@ export default function CreateStudio() {
   const [tier, setTier] = useState(null);
   const [duration, setDuration] = useState('5s');
   const [aspect, setAspect] = useState('16:9');
-  const [prompt, setPrompt] = useState('A neon-lit Tokyo alley at 3am, low anamorphic tracking shot');
+  const [typed, setPrompt] = useState(null); // null until the user types or a draft is restored
   // Start image for models whose catalog capabilities declare an image slot.
   // Sources for the model's media slots: { image|video|audio: { file, previewUrl } },
   // or { assetId, previewUrl, label } for an image picked from the Library.
@@ -113,6 +114,7 @@ export default function CreateStudio() {
   }, [models, modelId, catalogLoading]);
 
   const model = models.find((m) => m.id === modelId) || null;
+  const prompt = promptText(typed, model); // a starter shot until then; never on a speech model, which would read it aloud
   // The picked model stays listed even when the tier filter would hide it.
   const listed = filterByTier(models, tier);
   const visibleModels = model && !listed.includes(model) ? [model, ...listed] : listed;
@@ -124,6 +126,7 @@ export default function CreateStudio() {
   const hasUpload = Object.keys(media).some((slot) => sources[slot]);
   const missingConsent = hasUpload && !consent;
   const missingVoice = voiceIsMissing(model, voice);
+  const missingPrompt = promptIsMissing(model, prompt);
   // Camera text suits pictures and clips; audio and speech would read it aloud.
   const isShort = !!model?.takesTopic;
   const takesCamera = !isShort && (model?.kind === 'image' || model?.kind === 'video');
@@ -232,6 +235,7 @@ export default function CreateStudio() {
     if (model.gated) { inFlight.current = false; setError({ code: 'model_gated' }); return; }
     if (missingSource) { inFlight.current = false; setError({ code: 'source_required' }); return; }
     if (missingConsent) { inFlight.current = false; setError({ code: 'consent_required' }); return; }
+    if (missingPrompt) { inFlight.current = false; setError({ code: 'inputs_invalid:prompt' }); return; }
     if (missingVoice) { inFlight.current = false; setError({ code: 'inputs_invalid:voice_description' }); return; }
     setError(null);
     setSending(true);
@@ -365,9 +369,7 @@ export default function CreateStudio() {
             maxLength={isShort ? 200 : undefined}
             rows={3}
             className="mt-3 w-full bg-vx-panel border border-vx-border rounded-lg p-3.5 text-sm text-vx-fg placeholder:text-vx-fg-faint resize-none focus:outline-hidden focus:border-vx-accent"
-            placeholder={isShort ? 'A topic for a 32-second short, e.g. 3 facts about octopuses'
-              : model?.id === 'elevenlabs-dialogue' ? 'One line per speaker, e.g.' + '\n' + 'Ana: Did you hear that?' + '\n' + 'Ben: [whispers] Stay quiet.'
-              : 'Describe the shot…'}
+            placeholder={promptPlaceholder(model)}
           />
           {model?.takesVoice && <VoiceDescription value={voice} onChange={setVoice} />}
 
@@ -513,7 +515,7 @@ export default function CreateStudio() {
             <ParticleButton
               onClick={generating ? cancel : onSubmit}
               className="mt-4 w-full flex items-center justify-between bg-vx-accent text-vx-accent-ink rounded-full px-6 py-3.5 font-extrabold hover:bg-vx-accent-hover disabled:opacity-40 disabled:cursor-not-allowed"
-              disabled={sending || (!generating && (!model || model.gated || missingVoice || balance == null || cost > balance || missingSource || missingConsent))}
+              disabled={sending || (!generating && (!model || model.gated || missingPrompt || missingVoice || balance == null || cost > balance || missingSource || missingConsent))}
               aria-label={sending || generating || model?.gated ? undefined : `Generate ${n > 1 ? `${n} images ` : ''}for ${cost} credits`}
             >
               <span>{sending ? 'Sending…' : generating ? 'New generation' : model?.gated ? 'Premium — gated' : n > 1 ? `Generate ${n}` : 'Generate'}</span>

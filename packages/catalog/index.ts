@@ -221,7 +221,7 @@ export const CATALOG: readonly CatalogRow[] = Object.freeze([
         name: "ACE-Step (music/SFX)",
         modality: "text-to-audio",
         providers: ["fal"],
-        provider_cost_usd: 0.010,
+        provider_cost_usd: 0.012,
         retail_usd: 0.033,
         credits: usdToCredits(0.033),
         gated: false,

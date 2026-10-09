@@ -39,8 +39,9 @@ function catchBranches() {
 
 test('the screen remembers that the start event arrived, which is when the Credits have been debited', () => {
     // The same handler also keeps the job id, which the Stop branch uses.
-    // And, last, forgets the notice kept for the message before this one (tests/chatSendHome.test.mjs).
-    assert.match(sender, /if \(ev === 'start'\) \{ started = true; [^\n]*setProgress\(null\); forgetEarlier\(\); \}/);
+    // For a while it also forgot the notice kept for the message before this one. It no longer does: the reply
+    // starting says nothing about that message's Credits (tests/chatSendHome.test.mjs).
+    assert.match(sender, /if \(ev === 'start'\) \{ started = true; [^\n]*setProgress\(null\); \}/);
     // Declared just before send()'s try, so the catch block can read it.
     assert.match(sender, /\n    let started = false;[^\n]*\n    try \{\n/);
     // On the server, the debit comes before the start event.
@@ -96,9 +97,13 @@ test('the person is told what happened last, after the reload that would clear t
     const lines = brokenAfterStart.split('\n').filter((l) => l.trim() && !l.trim().startsWith('//'));
     // `reloaded || !at().here`: a notice kept for a chat that is not on screen is read after that chat has been opened
     // again, which reloads it (tests/chatSendHome.test.mjs). In the chat itself the second half is false: as before.
-    // tell() takes the code lostNotice gives, and keeps it with the chat.
-    assert.match(lines[lines.length - 1], /^ {8}tell\(lostNotice\(outcome, reloaded \|\| !at\(\)\.here\)\);/, 'the notice is the last thing the branch does');
+    // tell() takes the code lostNotice gives, and keeps it with the chat. For a job that kept nothing the code goes
+    // to tellUncharged() instead: the text is back and no Credits were used, which must not take the place of a warning
+    // kept for the message before (tests/chatSendHome.test.mjs). With no such warning tellUncharged() is tell().
+    assert.match(lines[lines.length - 2], /^ {8}const notice = lostNotice\(outcome, reloaded \|\| !at\(\)\.here\);/);
+    assert.match(lines[lines.length - 1], /^ {8}if \(outcome === 'nothing'\) tellUncharged\(notice\); else tell\(notice\);/, 'the notice is the last thing the branch does');
     assert.equal(brokenAfterStart.split('tell(').length - 1, 1, 'and it is set once');
+    assert.equal(brokenAfterStart.split('tellUncharged(').length - 1, 1, 'or told once as a message that used no Credits');
     assert.doesNotMatch(brokenAfterStart, /setError\(/, 'never straight onto whatever chat is on screen');
 });
 
@@ -179,7 +184,7 @@ test('only a turn that never started deletes the new chat and gives the text bac
     assert.equal(send.split('chatApi.remove(thread.id)').length - 1, 1);
     // Each ending that may still be saved and charged calls it only for a job that kept nothing.
     assert.equal(stopped.split('giveBack(true)').length - 1, 1);
-    assert.match(stopped, /\} else if \(outcome === 'nothing'\) giveBack\(true\);/);
+    assert.match(stopped, /\} else if \(outcome === 'nothing'\) \{ giveBack\(true\); /);
     assert.equal(brokenAfterStart.split('giveBack(true)').length - 1, 1);
     assert.match(brokenAfterStart, /if \(outcome === 'nothing'\) giveBack\(true\);/);
 });
