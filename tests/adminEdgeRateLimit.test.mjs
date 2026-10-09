@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { register } from 'node:module';
-import { adminEdgeRateLimit } from '../lib/adminEdgeRateLimit.js';
+import { adminEdgeRateLimit, normalizedPath } from '../lib/adminEdgeRateLimit.js';
 
 register('data:text/javascript,' + encodeURIComponent(`
   export async function resolve(s, c, next) {
@@ -43,6 +43,44 @@ test('every admin namespace and normalized variant is screened before app work',
         assert.deepEqual(await res.json(), { error: 'rate_limited', retry_after_seconds: 60 });
     }
     assert.equal(called, paths.length * 3);
+});
+// The URL parser drops a tab or a newline wherever it sits. The slashes on
+// either side of one then meet, and what follows would be read as a host.
+test('a path that decodes to a tab or a newline is classified, never thrown on', async () => {
+    const admin = ['/%09/api/admin/reap-assets', '/%0A/api/v1/admin/metrics', '/%0d/api/admin', '/%0A/%0D/api/admin/top-up-backfill',
+        '/api/%09/admin/reap-assets', '/api%09/admin/reap-assets', '/api/v1/%0A%0D/admin/metrics', '/%09%5Capi/admin/reap-assets',
+        '/%09/x/%2e%2e/api/admin/reap-assets',
+        // Under the prefix as sent, whatever the rest normalises to.
+        '/api/v1/admin/%2e%09%2e', '/api/admin/%2e%0a%2e/x', '/api/v1/admin/%2e%0d%0a%2e/%2e%09%2e/health'];
+    globalThis.__adminTestApp = () => assert.fail('blocked request reached app');
+    for (const path of admin) {
+        const res = await worker.fetch(request(path), binding(async () => ({ success: false })), {});
+        assert.equal(res.status, 429, path);
+    }
+    // These decode to something the parser read as a host and refused. They
+    // name no admin route, so they go to the app, which has no such page.
+    const other = ['/%09/%5B', '/%0a/%5B', '/%0D/%5B', '/%09%5C%5B', '/%5C%09%5C%5B', '/%09/x:99999/api/admin', '/%09/a%20b/', '/%09/%25'];
+    const env = binding(() => assert.fail('unrelated request consumed admin quota'));
+    for (const path of other) {
+        let seen;
+        globalThis.__adminTestApp = (r) => { seen = r.url; return new Response('no such page', { status: 404 }); };
+        assert.equal((await worker.fetch(request(path), env, {})).status, 404, path);
+        assert.equal(seen, `https://veyrnox.test${path}`);
+    }
+});
+test('a path that cannot be normalised at all counts as an admin path', async () => {
+    const req = request('/somewhere');
+    const RealURL = globalThis.URL;
+    globalThis.URL = class extends RealURL {
+        constructor(input, base) { if (base === 'https://path.invalid') throw new TypeError('Invalid URL'); super(input, base); }
+    };
+    try {
+        assert.equal(normalizedPath(req.url), null);
+        const keys = [];
+        const res = await adminEdgeRateLimit(req, binding(async ({ key }) => { keys.push(key); return { success: false }; }));
+        assert.equal(res.status, 429);
+        assert.deepEqual(keys, ['veyrnox-ai:admin:v1:192.0.2.1']);
+    } finally { globalThis.URL = RealURL; }
 });
 test('allowed request reaches the same app handler with unchanged bytes/env/context', async () => {
     const req = request('/api/v1/admin/metrics', { authorization: 'Bearer test-only' });

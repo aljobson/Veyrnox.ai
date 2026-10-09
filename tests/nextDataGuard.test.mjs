@@ -29,6 +29,9 @@ test('a data-file path is answered 404 before the rate limiter and the app', asy
         '/x/%2e%2e/_next/data/x.json', '/_next\\data/x.json',
         // The raw prefix still counts when decoding would move the path elsewhere.
         `/_next/data/${BUILD}/%2e%2e%2f%2e%2e%2f%2e%2e%2fapi/v1/admin/metrics.json`,
+        // A decoded tab or newline is dropped by the URL parser, wherever it sits.
+        '/%09/_next/data/x.json', '/%0A/%0D/_next/data', '/_next/%0A/data/x.json', '/_next%09/data/x.json',
+        `/%09/_next/data/${BUILD}/api/v1/admin/metrics.json`, '/%09%5C_next/data/x.json',
     ];
     globalThis.__nextDataTestApp = () => assert.fail('a data-file request reached the app');
     const realError = console.error;
@@ -67,6 +70,36 @@ test('a refusal that names an API route is logged, without the path; the rest ar
         }
     } finally { console.error = realError; }
     assert.deepEqual(said, Array(3).fill('[next-data] refused a data path naming an API route'));
+});
+
+test('a path that decodes to something the URL parser refuses is not thrown on', async () => {
+    for (const path of ['/%09/%5B', '/%0a/%5B', '/%0D/%5B', '/%09%5C%5B', '/%09/x:99999/_next/data', '/%09/%25']) {
+        const expected = new Response('no such page', { status: 404 });
+        let seen;
+        globalThis.__nextDataTestApp = async (r) => { seen = r.url; return expected; };
+        assert.equal(await worker.fetch(new Request(`https://veyrnox.test${path}`), neverLimited, {}), expected, path);
+        assert.equal(seen, `https://veyrnox.test${path}`);
+    }
+});
+
+test('a path that cannot be normalised at all is answered 404, before the rate limiter and the app', async () => {
+    const req = new Request('https://veyrnox.test/somewhere', { method: 'POST', body: 'unread' });
+    globalThis.__nextDataTestApp = () => assert.fail('an unreadable path reached the app');
+    const said = [];
+    const realError = console.error;
+    const RealURL = globalThis.URL;
+    console.error = (...a) => said.push(a.join(' '));
+    globalThis.URL = class extends RealURL {
+        constructor(input, base) { if (base === 'https://path.invalid') throw new TypeError('Invalid URL'); super(input, base); }
+    };
+    try {
+        const res = await worker.fetch(req, neverLimited, {});
+        assert.equal(res.status, 404);
+        assert.equal(req.bodyUsed, false);
+        assert.equal(res.headers.get('cache-control'), 'no-store');
+        assert.deepEqual(await res.json(), { error: 'not_found' });
+    } finally { globalThis.URL = RealURL; console.error = realError; }
+    assert.deepEqual(said, ['[next-data] refused a path that could not be normalised']);
 });
 
 test('static assets, images and ordinary paths still reach the app unchanged', async () => {
