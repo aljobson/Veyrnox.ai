@@ -190,7 +190,9 @@ still inactive (migration 0227). fal's real billing is still unread; when it is,
 - Six delivered videos are about 90 s. **The other 63 s or so, about $8.80, were clips fal billed for runs that were refunded**
   (most of them deliberate failure tests). A refunded run is not free, as the note above says.
 
-The price is unchanged. Lowering it to 153 is the owner's decision and a catalog migration.
+**Decision 2026-10-09 (owner: "go with recommendation")**: the price stays at **165 credits**. The recommendation put to the owner:
+the 153 floor leaves out what refunded runs cost at fal (about $8.80 of this bill) and the runner's own compute, the $0.14 rate is
+unexplained and could move, and a price may come down later but must not go up silently. No catalog change.
 
 ## 7. Staging plan (written 2026-10-08; nothing below is done)
 
