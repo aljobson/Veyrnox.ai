@@ -48,7 +48,7 @@ export function GenerationSettings({ model, seed, onSeed, negative, onNegative }
             onChange={(e) => onNegative(e.target.value)}
             maxLength={2000}
             rows={2}
-            placeholder="e.g. text, watermark, blur"
+            placeholder="e.g. text, watermark, blur-sm"
             className="mt-1.5 w-full rounded-lg border border-vx-border bg-vx-base px-3 py-2 text-[13px]"
           />
         </div>

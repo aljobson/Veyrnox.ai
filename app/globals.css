@@ -1,6 +1,49 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss" source(none);
+@source "./";
+@source "../components";
+
+@theme inline {
+  --color-app-bg: #050505;
+  --color-panel-bg: #0a0a0a;
+  --color-card-bg: #141414;
+  --color-secondary: #a1a1aa;
+  --color-muted: #52525b;
+
+  --color-vx-base: rgb(var(--vx-base));
+  --color-vx-panel: rgb(var(--vx-panel));
+  --color-vx-border: rgb(var(--vx-border));
+  --color-vx-fg: rgb(var(--vx-fg));
+  --color-vx-fg-body: rgb(var(--vx-fg-body));
+  --color-vx-fg-muted: rgb(var(--vx-fg-muted));
+  --color-vx-fg-faint: rgb(var(--vx-fg-faint));
+  --color-vx-accent: rgb(var(--vx-accent));
+  --color-vx-accent-hover: rgb(var(--vx-accent-hover));
+  --color-vx-accent-ink: rgb(var(--vx-accent-ink));
+  --color-vx-money: rgb(var(--vx-money));
+  --color-vx-money-ink: rgb(var(--vx-money-ink));
+  --color-vx-danger: rgb(var(--vx-danger));
+  --color-vx-warn: rgb(var(--vx-warn));
+
+  --color-chart-label: var(--chart-label);
+  --color-chart-tooltip-background: var(--chart-tooltip-background);
+  --color-chart-tooltip-foreground: var(--chart-tooltip-foreground);
+  --color-chart-tooltip-muted: var(--chart-tooltip-muted);
+
+  --font-sans: var(--font-inter), system-ui, -apple-system, sans-serif;
+  --font-vx: var(--font-archivo), system-ui, sans-serif;
+  --font-vx-mono: var(--font-jetbrains), ui-monospace, monospace;
+
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+  --radius-3xl: 2rem;
+
+  --shadow-3xl: 0 35px 60px -15px rgba(0, 0, 0, 0.8);
+}
+
+@layer base {
+*, ::before, ::after, ::backdrop, ::file-selector-button {
+  border-color: var(--color-gray-200, currentColor);
+}
 
 /* Inter is served self-hosted by next/font in app/layout.js. The Google
    Fonts @import that used to live here was blocked by `style-src 'self'`
@@ -9,9 +52,9 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 /* ─── Theme tokens ────────────────────────────────────────────────────
-   Space-separated RGB channels so tailwind.config.js can wrap them in
-   `rgb(var(--x) / <alpha-value>)` and every existing `/opacity` modifier
-   keeps working.
+   Space-separated RGB channels consumed by the inline Tailwind theme.
+   Inline tokens also resolve inside scoped palettes such as .vx-paper;
+   opacity modifiers continue to work through color-mix().
 
    Dark is the default and the brand. Light is opt-in through the toggle
    in the nav, which writes `data-theme` on <html> and remembers the
@@ -66,7 +109,9 @@ body {
   font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
 }
+}
 
+@layer components {
 .custom-scrollbar::-webkit-scrollbar { width: 4px; }
 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
 .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
@@ -174,6 +219,7 @@ body {
     transition: none !important;
     box-shadow: none !important;
   }
+}
 }
 
 /* ─── Charts (components/charts, from the @bklit shadcn registry) ──────

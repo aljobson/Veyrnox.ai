@@ -94,8 +94,8 @@ export default function DesignSystem() {
         <div className="border border-vx-border rounded-2xl p-7">
           <div className="max-w-[300px] rounded-2xl border border-vx-border bg-vx-panel overflow-hidden">
             <div className="h-48 relative" style={{ background: 'linear-gradient(135deg,#1b0632,#5a0e6a,#e4318f)' }}>
-              <span className="absolute top-3 left-3 inline-flex items-center font-vx-mono text-[10px] font-bold uppercase tracking-[0.12em] rounded-full border px-3 py-1.5 border-vx-border text-vx-fg-muted bg-black/45 backdrop-blur">CACHED</span>
-              <span className="absolute top-3 right-3 font-vx-mono text-[11px] font-bold text-white/85 bg-black/45 backdrop-blur rounded-full px-2.5 py-1 vx-num">▶ 5.8k</span>
+              <span className="absolute top-3 left-3 inline-flex items-center font-vx-mono text-[10px] font-bold uppercase tracking-[0.12em] rounded-full border px-3 py-1.5 border-vx-border text-vx-fg-muted bg-black/45 backdrop-blur-sm">CACHED</span>
+              <span className="absolute top-3 right-3 font-vx-mono text-[11px] font-bold text-white/85 bg-black/45 backdrop-blur-sm rounded-full px-2.5 py-1 vx-num">▶ 5.8k</span>
             </div>
             <div className="px-4 py-3 flex items-start justify-between gap-3">
               <div className="min-w-0">

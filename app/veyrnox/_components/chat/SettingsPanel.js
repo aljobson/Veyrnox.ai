@@ -27,7 +27,7 @@ function Section({ id, title, open, onToggle, children }) {
 
 function Toggle({ label, extra, checked, disabled, onChange, hint }) {
   return (
-    <label className="flex cursor-pointer items-start gap-3 has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-vx-accent">
+    <label className="flex cursor-pointer items-start gap-3 has-focus-visible:outline-solid has-focus-visible:outline-2 has-focus-visible:outline-vx-accent">
       <input type="checkbox" className="mt-1 accent-[var(--vx-accent)]" checked={checked} disabled={disabled} onChange={(e) => onChange(e.target.checked)} />
       <span className="flex-1">
         <span className="font-semibold">{label}</span> <span className="font-vx-mono text-xs text-vx-money vx-num">+{credits(extra)}</span>

@@ -61,9 +61,9 @@ function Submission({ item, onDone }) {
   }
   return <article className="mt-6 rounded-2xl border border-vx-border p-5">
     <p className="font-vx-mono text-xs text-vx-fg-muted">{labels[item.content_type]} · {item.language} · {item.content_type === 'SERIES' ? `${item.episode_count} episodes · ` : ''}{minutes(item.duration_seconds)} · {(item.categories || []).join(', ') || 'no category'} · rights {item.rights_version}{item.prior_actions > 0 ? ` · ${item.prior_actions} prior action(s)` : ''}</p>
-    <h2 className="mt-2 text-xl font-bold break-words">{item.title}</h2>
+    <h2 className="mt-2 text-xl font-bold wrap-break-word">{item.title}</h2>
     <p className="text-vx-fg-muted">{item.display_name} <span>@{item.username}</span></p>
-    <p className="mt-4 whitespace-pre-wrap break-words text-vx-fg-body">{item.synopsis || 'No synopsis.'}</p>
+    <p className="mt-4 whitespace-pre-wrap wrap-break-word text-vx-fg-body">{item.synopsis || 'No synopsis.'}</p>
     {item.ai_disclosures?.length > 0 && <p className="mt-3 text-sm text-vx-fg-muted">AI disclosures: {item.ai_disclosures.join(', ')}</p>}
     <form onSubmit={submit} className="mt-5 space-y-4">
       <label className="block">Decision<select name="decision" required className="ml-3 rounded-lg bg-vx-panel p-2"><option value="">Choose…</option><option value="approved">Approve and publish</option><option value="rejected">Reject</option></select></label>

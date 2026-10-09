@@ -56,9 +56,9 @@ export function ThreadList({ threads, folders = null, folder = ALL_CHATS, onFold
             </div>
           ) : (
             <div className="flex gap-1 text-xs">
-              <button type="button" className="rounded px-2 py-1 hover:bg-vx-border/50" onClick={() => { setFolderDraft(''); setFolderMode('new'); }}>New folder</button>
-              {current && <button type="button" className="rounded px-2 py-1 hover:bg-vx-border/50" aria-label={`Rename folder ${current.name}`} onClick={() => { setFolderDraft(current.name); setFolderMode('rename'); }}>Rename</button>}
-              {current && <button type="button" className="rounded px-2 py-1 hover:bg-vx-border/50" aria-label={`Delete folder ${current.name}`} onClick={() => setFolderMode('delete')}>Delete</button>}
+              <button type="button" className="rounded-sm px-2 py-1 hover:bg-vx-border/50" onClick={() => { setFolderDraft(''); setFolderMode('new'); }}>New folder</button>
+              {current && <button type="button" className="rounded-sm px-2 py-1 hover:bg-vx-border/50" aria-label={`Rename folder ${current.name}`} onClick={() => { setFolderDraft(current.name); setFolderMode('rename'); }}>Rename</button>}
+              {current && <button type="button" className="rounded-sm px-2 py-1 hover:bg-vx-border/50" aria-label={`Delete folder ${current.name}`} onClick={() => setFolderMode('delete')}>Delete</button>}
             </div>
           )}
         </div>
@@ -98,10 +98,10 @@ export function ThreadList({ threads, folders = null, folder = ALL_CHATS, onFold
                   {t.pinned ? <span aria-label="Pinned" className="mr-1 text-vx-fg-muted">◆</span> : null}{t.title}
                 </button>
                 <span className="absolute right-1 top-1/2 flex -translate-y-1/2 gap-0.5 text-xs opacity-0 focus-within:opacity-100 group-hover:opacity-100">
-                  <button type="button" className="rounded px-1.5 py-1 hover:bg-vx-base" aria-label={`${t.pinned ? 'Unpin' : 'Pin'} ${t.title}`} onClick={() => onPatch(t.id, { pinned: !t.pinned })}>{t.pinned ? 'Unpin' : 'Pin'}</button>
-                  {folders && folders.length > 0 && <button type="button" className="rounded px-1.5 py-1 hover:bg-vx-base" aria-label={`Move ${t.title} to a folder`} onClick={() => setMoving(t.id)}>Move</button>}
-                  <button type="button" className="rounded px-1.5 py-1 hover:bg-vx-base" aria-label={`Rename ${t.title}`} onClick={() => { setRenaming(t.id); setDraft(t.title); }}>Rename</button>
-                  <button type="button" className="rounded px-1.5 py-1 hover:bg-vx-base" aria-label={`Delete ${t.title}`} onClick={() => setConfirm(t.id)}>Delete</button>
+                  <button type="button" className="rounded-sm px-1.5 py-1 hover:bg-vx-base" aria-label={`${t.pinned ? 'Unpin' : 'Pin'} ${t.title}`} onClick={() => onPatch(t.id, { pinned: !t.pinned })}>{t.pinned ? 'Unpin' : 'Pin'}</button>
+                  {folders && folders.length > 0 && <button type="button" className="rounded-sm px-1.5 py-1 hover:bg-vx-base" aria-label={`Move ${t.title} to a folder`} onClick={() => setMoving(t.id)}>Move</button>}
+                  <button type="button" className="rounded-sm px-1.5 py-1 hover:bg-vx-base" aria-label={`Rename ${t.title}`} onClick={() => { setRenaming(t.id); setDraft(t.title); }}>Rename</button>
+                  <button type="button" className="rounded-sm px-1.5 py-1 hover:bg-vx-base" aria-label={`Delete ${t.title}`} onClick={() => setConfirm(t.id)}>Delete</button>
                 </span>
               </>
             )}

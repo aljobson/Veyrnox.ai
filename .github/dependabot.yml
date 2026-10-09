@@ -19,10 +19,6 @@ updates:
       # typescript-eslint and Next 15 both reject TypeScript 7; 6.x is fine.
       - dependency-name: "typescript"
         versions: [">=7.0.0"]
-      # v4 needs a site-wide migration (PostCSS plugin, config, CSS layers).
-      # v3 gets no more releases, so that migration is owed.
-      - dependency-name: "tailwindcss"
-        update-types: ["version-update:semver-major"]
       # Types follow the runtime: CI, the deploy and the README use Node 22.
       # Raise by hand in the PR that raises node-version.
       - dependency-name: "@types/node"

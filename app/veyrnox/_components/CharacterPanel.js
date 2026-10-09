@@ -43,7 +43,7 @@ export function CharacterPanel({ enabled, onToggle, picks, onChange }) {
                     if (e.target.value) next[g.id] = e.target.value; else delete next[g.id];
                     onChange(next);
                   }}
-                  className="bg-vx-base border border-vx-border rounded-lg px-2 py-1.5 text-xs text-vx-fg focus:outline-none focus:border-vx-accent"
+                  className="bg-vx-base border border-vx-border rounded-lg px-2 py-1.5 text-xs text-vx-fg focus:outline-hidden focus:border-vx-accent"
                 >
                   <option value="">Any</option>
                   {g.options.map(([label]) => <option key={label} value={label}>{label}</option>)}

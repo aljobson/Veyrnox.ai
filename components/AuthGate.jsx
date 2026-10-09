@@ -305,7 +305,7 @@ export default function AuthGate() {
             aria-label="Sign in to Veyrnox"
             ref={panelRef}
             onKeyDown={onKeyDown}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs px-4"
         >
             <div className="w-full max-w-sm rounded-2xl border border-vx-border bg-vx-panel p-6 shadow-2xl">
                 <div className="flex items-start justify-between mb-1">
@@ -362,7 +362,7 @@ export default function AuthGate() {
                             autoComplete="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            className="mt-1 w-full rounded-lg bg-vx-base border border-vx-border px-3 py-2 text-sm text-vx-fg outline-none focus:border-vx-accent focus-visible:ring-2 focus-visible:ring-vx-accent/40"
+                            className="mt-1 w-full rounded-lg bg-vx-base border border-vx-border px-3 py-2 text-sm text-vx-fg outline-hidden focus:border-vx-accent focus-visible:ring-2 focus-visible:ring-vx-accent/40"
                         />
                     </label>
 
@@ -381,7 +381,7 @@ export default function AuthGate() {
                                     // password; a generated one is never in a breach list.
                                     passwordrules={mode === "sign_up" ? "minlength: 12; required: lower; required: upper; required: digit;" : undefined}
                                     aria-describedby="vx-password-hint"
-                                    className="w-full rounded-lg bg-vx-base border border-vx-border pl-3 pr-16 py-2 text-sm text-vx-fg outline-none focus:border-vx-accent focus-visible:ring-2 focus-visible:ring-vx-accent/40"
+                                    className="w-full rounded-lg bg-vx-base border border-vx-border pl-3 pr-16 py-2 text-sm text-vx-fg outline-hidden focus:border-vx-accent focus-visible:ring-2 focus-visible:ring-vx-accent/40"
                                 />
                                 {/* A typo in a masked 8-character minimum is the
                                     commonest reason a sign-up bounces. */}
@@ -432,7 +432,7 @@ export default function AuthGate() {
                     <button
                         type="submit"
                         disabled={busy}
-                        className="w-full rounded-full bg-vx-accent text-vx-accent-ink font-extrabold py-2.5 text-sm hover:bg-vx-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vx-accent disabled:opacity-60"
+                        className="w-full rounded-full bg-vx-accent text-vx-accent-ink font-extrabold py-2.5 text-sm hover:bg-vx-accent-hover focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vx-accent disabled:opacity-60"
                     >
                         {busy
                             ? "Working…"

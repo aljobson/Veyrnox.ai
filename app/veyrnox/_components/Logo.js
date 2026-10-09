@@ -1,8 +1,9 @@
+import { cn } from '../../../lib/utils';
 // Veyrnox.ai mark — filled aqua V glyph (SVG) with optional VEYRNOX.ai wordmark.
 // Match set with the marketing prototype so both surfaces read as one brand.
 export function Logo({ size = 30, wordmark = false, className = '' }) {
   return (
-    <span className={`inline-flex items-center gap-2.5 ${className}`}>
+    <span className={cn('inline-flex items-center gap-2.5', className)}>
       <svg
         viewBox="0 0 120 120"
         xmlns="http://www.w3.org/2000/svg"

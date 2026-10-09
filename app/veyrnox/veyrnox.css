@@ -1,3 +1,4 @@
+@layer components {
 /* Veyrnox.ai — shared page CSS scoped under .vx-root.
    `color-scheme` and the colour tokens live on :root in globals.css so the
    theme also reaches chrome mounted outside this subtree (AuthGate, the
@@ -184,4 +185,6 @@
   line-height: 0.94;
   letter-spacing: -0.04em;
   text-wrap: balance;
+}
+
 }

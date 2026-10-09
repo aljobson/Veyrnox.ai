@@ -27,9 +27,9 @@ export const ALLOWED = [
   {
     id: 'GHSA-vfj7-8cjw-p6xm',
     reason: 'braces <= 3.0.3 (every published version): stack exhaustion on deeply nested brace patterns. '
-      + 'It reaches us only through devDependencies (tailwindcss 3 via chokidar and micromatch, '
+      + 'It reaches us only through devDependencies ('
       + 'eslint-config-next via fast-glob), which expand globs from our own config at build and lint time. '
-      + 'Nothing on the Worker\'s request path loads it; `npm audit --omit=dev` is clean. Added 2026-10-03.',
+      + 'Nothing on the Worker\'s request path loads it; `npm audit --omit=dev` is clean. Added 2026-10-03; Tailwind path removed by the v4 migration.',
   },
 ];
 

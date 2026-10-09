@@ -55,7 +55,7 @@ function Review({ item, onDone }) {
   }
   return <article className="mt-6 rounded-2xl border border-vx-border p-5">
     <h2 className="font-bold">{item.display_name} <span className="text-vx-fg-muted">@{item.username}</span></h2>
-    <p className="mt-4 whitespace-pre-wrap break-words">{item.statement}</p>
+    <p className="mt-4 whitespace-pre-wrap wrap-break-word">{item.statement}</p>
     <form onSubmit={submit} className="mt-5 space-y-4">
       <label className="block">Decision<select name="decision" required className="ml-3 rounded-lg bg-vx-panel p-2"><option value="">Choose…</option><option value="approved">Approve</option><option value="rejected">Reject</option></select></label>
       <label className="block">Internal review reason<textarea name="reason" required minLength={3} maxLength={500} rows={2} className="mt-2 w-full rounded-lg border border-vx-border bg-vx-panel p-3" /></label>

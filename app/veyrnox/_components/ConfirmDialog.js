@@ -30,7 +30,7 @@ export function ConfirmDialog({
       initialFocusRef={cancelRef}
       aria-label={title}
       data-print="hide"
-      className="items-center justify-center px-4 backdrop-blur-sm"
+      className="items-center justify-center px-4 backdrop-blur-xs"
     >
       <div className="w-full max-w-sm rounded-2xl border border-vx-border bg-vx-panel p-6 shadow-2xl">
         <h2 className="text-lg font-black tracking-[-0.01em] text-vx-fg">{title}</h2>

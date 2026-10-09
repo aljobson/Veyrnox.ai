@@ -101,7 +101,7 @@ function Violations() {
         <label className="grow min-w-[260px]">
           <span className="block font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted">EMAIL, USER ID OR JOB ID</span>
           <input value={query} onChange={(e) => setQuery(e.target.value)} autoComplete="off" spellCheck={false}
-            className="mt-1 w-full rounded-lg border border-vx-border bg-vx-panel p-3 text-sm font-vx-mono focus:outline-none focus:border-vx-accent" />
+            className="mt-1 w-full rounded-lg border border-vx-border bg-vx-panel p-3 text-sm font-vx-mono focus:outline-hidden focus:border-vx-accent" />
         </label>
         <Button type="submit" disabled={busy || !query.trim()}>{busy ? 'Looking…' : 'Find'}</Button>
         {lookup && <Button type="button" variant="ghost" onClick={() => { setLookup(null); setQuery(''); loadRecord(null); }}>Clear</Button>}
@@ -257,7 +257,7 @@ function Record({ rows, loaded, scoped }) {
                 <div className="truncate">{r.email}</div>
                 {r.job_id && <div className="font-vx-mono text-[10px] text-vx-fg-muted break-all">{r.model_id || 'job'} · {r.job_id}</div>}
               </div>
-              <div className="whitespace-pre-wrap break-words pr-3">{r.reason}</div>
+              <div className="whitespace-pre-wrap wrap-break-word pr-3">{r.reason}</div>
               <div className="text-xs text-vx-fg-muted truncate">{r.actor}</div>
             </div>
           ))}

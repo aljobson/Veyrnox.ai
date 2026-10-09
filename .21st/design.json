@@ -6,7 +6,7 @@
     "stack": [
       "nextjs",
       "react",
-      "tailwind-v3"
+      "tailwind-v4"
     ]
   },
   "sources": {
@@ -105,7 +105,7 @@
       "source": "package.json"
     },
     {
-      "fact": "project.stack:tailwind-v3",
+      "fact": "project.stack:tailwind-v4",
       "source": "package.json"
     }
   ],
