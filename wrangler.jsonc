@@ -100,7 +100,9 @@
     "PPV_ENABLED": "false",
     "PREMIERES_ENABLED": "false",
     "AI_RECOMMENDATIONS_ENABLED": "false",
-    // Enable only after migration 0129, bucket CORS and real browser/R2 checks (ADR-0044).
+    // Enable only after migration 0129, bucket CORS and real browser/R2 checks (ADR-0044). 0129 is applied. On
+    // 2026-10-09 the production bucket's CORS allowed PUT with Content-Type only: a preflight that also asks for
+    // If-None-Match was refused, so "true" here would stop every browser upload until that header is added.
     "UPLOAD_INTEGRITY_ENABLED": "false",
     // 0131 applied; verify fresh task/snapshot evidence after deploy, then arm the watcher.
     "RECOVERY_HEALTH_ENABLED": "true",
@@ -214,6 +216,10 @@
         "FAL_SUBMIT_OUTCOME_ENABLED": "false",
         "FAL_DISPATCH_SCHEMA_ENABLED": "true",
         "RECOVERY_HEALTH_ENABLED": "true",
+        // ADR-0044 (vars are not inherited). On for the activation proof: 0129 is applied here and the staging bucket's
+        // CORS allows PUT with Content-Type and If-None-Match from this origin (preflight checked 2026-10-09).
+        // Production stays "false" until its bucket allows If-None-Match too; today it would refuse every upload.
+        "UPLOAD_INTEGRITY_ENABLED": "true",
         "FAL_DURABLE_DISPATCH_ENABLED": "false",
         "FAL_DISPATCH_QUEUE_ENABLED": "false",
         "SUBSCRIPTIONS_ENABLED": "false",
