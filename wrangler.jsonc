@@ -5,6 +5,14 @@
   "main": "worker.js",
   "compatibility_date": "2026-09-01",
   "compatibility_flags": ["nodejs_compat"],
+  // Production answers on the veyrnox.ai custom domain only (set in the
+  // dashboard, not here). Cloudflare Access is attached to that hostname by
+  // path, so the same Worker must not also answer on a hostname Access does
+  // not sit in front of: no <name>.<subdomain>.workers.dev route and no
+  // per-version preview URLs (ADR-0078). Both keys are inherited by
+  // environments, so staging turns workers_dev back on below.
+  "workers_dev": false,
+  "preview_urls": false,
   // Keep Worker logs (console.error on provider rejects, webhook signature
   // failures) in the dashboard instead of needing a live `wrangler tail`.
   "observability": { "enabled": true },
@@ -150,16 +158,23 @@
     // Cloudflare Access covers veyrnox.ai/app/admin*, /api/v1/admin/* and
     // /api/admin/* (one application, "Veyrnox.ai admin"). These two let the
     // Worker verify the assertion itself (lib/accessJwt.js) instead of
-    // trusting the edge: a policy loosened in the dashboard does not silently
-    // open the machine endpoints. Public values — the team domain is in every
-    // Access redirect and the AUD identifies the application, neither
-    // authenticates anything.
+    // trusting the edge: a policy loosened in the dashboard, or a request
+    // that arrives by a path the rule does not name, does not open them.
+    // The machine endpoints under /api/admin/* and the dashboard routes
+    // under /api/v1/admin/* both check it in code (ADR-0078); the dashboard
+    // routes answer 503 access_not_configured if either value is removed.
+    // Public values — the team domain is in every Access redirect and the
+    // AUD identifies the application, neither authenticates anything.
     "ACCESS_TEAM_DOMAIN": "fancy-lake-7c60.cloudflareaccess.com",
     "ACCESS_AUD": "4bea77db854633f7b4546a485bcb14c1e0c4389318ebd565e9a326edf17d0163"
   },
   "env": {
     "staging": {
       "name": "veyrnox-ai-staging",
+      // Staging has no custom domain: it lives on
+      // veyrnox-ai-staging.<subdomain>.workers.dev, so it needs the route
+      // production turns off. Preview URLs stay off here too (inherited).
+      "workers_dev": true,
       "queues": { "producers": [{
         "binding": "FAL_DISPATCH_QUEUE",
         "queue": "veyrnox-fal-dispatch-staging"
