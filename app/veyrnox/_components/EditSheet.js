@@ -146,6 +146,12 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted }) {
           {audioId && <p className="text-xs text-vx-fg-muted basis-full">The audio is cut to the video&rsquo;s length.</p>}
         </div>
 
+        {slowedSource > 0 && (
+          <p className="mt-3 text-xs text-vx-fg-muted">
+            Slow motion can take several minutes to finish, longer for taller or larger videos. If it fails, your credits are refunded.
+          </p>
+        )}
+
         {showCaptions && (
           <div className="mt-3 rounded-xl border border-vx-border bg-vx-panel p-3 flex flex-wrap items-center gap-3">
             <label className="flex items-center gap-2 text-sm text-vx-fg">
