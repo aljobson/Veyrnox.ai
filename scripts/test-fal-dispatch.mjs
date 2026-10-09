@@ -127,6 +127,39 @@ try {
         assert.equal((await job(r.job_id)).state, 'SUBMITTED');
         assert.equal(await start(), null);
     });
+    await check('a conflicting handle cannot block another job or overwrite either piece of evidence', async () => {
+        const u = await user(), bad = await admit(u), good = await admit(u);
+        const handles = new Map([[bad.job_id, 'poison-evidence'], [good.job_id, 'healthy-evidence']]);
+        for (let i = 0; i < 2; i++) {
+            const c = await start();
+            assert.ok(c && handles.has(c.job_id));
+            assert.equal((await record(c, 'ACCEPTED', handles.get(c.job_id))).ok, true);
+        }
+        const db = await pool.connect();
+        try {
+            await db.query('BEGIN');
+            const submitted = (await db.query("SELECT public.job_submitted($1,'fal','conflicting-handle') AS r", [bad.job_id])).rows[0].r;
+            assert.equal(submitted.ok, true);
+            const recovered = (await db.query('SELECT public.recover_fal_dispatch(25) AS r')).rows[0].r;
+            assert.deepEqual(recovered, { ok: false, processed: 2, failed: 1 });
+            const rows = (await db.query(`SELECT j.id,j.state,j.provider_job_id AS job_handle,
+                d.provider_job_id AS evidence,d.projected_at,d.recovery_checked_at
+                FROM public.jobs j JOIN public.fal_dispatch d ON d.job_id=j.id
+                WHERE j.id=ANY($1::uuid[])`, [[bad.job_id, good.job_id]])).rows;
+            const poisoned = rows.find(r => r.id === bad.job_id), healthy = rows.find(r => r.id === good.job_id);
+            assert.equal(poisoned.job_handle, 'conflicting-handle');
+            assert.equal(poisoned.evidence, 'poison-evidence');
+            assert.equal(poisoned.projected_at, null);
+            assert.ok(poisoned.recovery_checked_at);
+            assert.equal(healthy.state, 'SUBMITTED');
+            assert.equal(healthy.job_handle, 'healthy-evidence');
+            assert.ok(healthy.projected_at);
+            assert.equal((await db.query('SELECT public.recover_fal_dispatch(25) AS r')).rows[0].r.processed, 0);
+        } finally { await db.query('ROLLBACK'); db.release(); }
+        assert.equal((await recover()).ok, true);
+        assert.equal((await job(bad.job_id)).provider_job_id, 'poison-evidence');
+        for (const id of handles.keys()) await pool.query("SELECT public.ledger_refund($1,$2,2,'refund:test')", [id,u]);
+    });
     await check('legacy replay never adds an intent', async () => {
         const u = await user(), key = randomUUID();
         const r = (await one("SELECT public.ledger_debit($1,$2,2,'debit:generation',$3,$4) AS r", [u,key,model,{prompt:'test'}])).r;
