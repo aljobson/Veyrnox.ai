@@ -48,13 +48,31 @@ Queues were created in account `fb18d9f7052afbea5a5e0eae69948af2` with zero deli
 
 The application config adds only a staging producer binding. The dedicated staging consumer config uses batch size 1, wait 0, concurrency 2, three retries, thirty-second retry delay and the isolated dead-letter queue. Producer publication and consumer execution remain false; staging schema access is true after applying 0231.
 
-The dedicated staging consumer was deployed disabled as version `56ceb24b-f64a-4cdb-bfe9-3396d12e87ae`. Its queue trigger is registered; no HTTP route or workers.dev endpoint is exposed. Remote settings verified consumer execution false, schema access true, staging database/callback origins, and the exact queue tuning above. Secret list is empty; the queue has one consumer and zero producers, and the dead-letter queue has neither. This does not prove live processing: no runtime secrets or test messages were installed. Application and consumer dry-runs passed; the application dry-run retained the repository's existing warnings about omitted staging vars. The shared application was not deployed.
+The dedicated staging consumer was deployed disabled as version `56ceb24b-f64a-4cdb-bfe9-3396d12e87ae`. Its queue trigger is registered; no HTTP route or workers.dev endpoint is exposed. Remote settings verified consumer execution false, schema access true, staging database/callback origins, and the exact queue tuning above. Secret list is empty; the queue has one consumer and zero producers, and the dead-letter queue has neither. No runtime secrets or test messages were installed at deployment time. Application and consumer dry-runs passed; the application dry-run retained the repository's existing warnings about omitted staging vars. The shared application was not deployed.
 
 `.github/workflows/fal-dispatch-staging.yml` runs manually on current main in GitHub environment `fal-dispatch-staging`, restricted to the main branch and owner review. It checks required credentials and the staging-only nonexistent-job RPC, validates the bundle, deploys the disabled consumer, and provisions only its two runtime secrets through stdin. It cannot enable publication or consumer spending, and does not deploy the shared staging application. Secret upload creates a deployment; the consumer is deployed disabled before upload. See [Wrangler secret bulk](https://developers.cloudflare.com/workers/wrangler/commands/#secret-bulk) and [GitHub deployment environments](https://docs.github.com/en/rest/deployments/environments).
 
 The protected environment currently needs `CLOUDFLARE_API_TOKEN` with Worker-script and Queue write access on this account, staging `SUPABASE_SERVICE_ROLE_KEY`, and `FAL_KEY`. Configure them in [environment settings](https://github.com/aljobson/Veyrnox.ai/settings/environments); do not paste values into chat. The existing deployed app's secret names are visible, but values are not exportable. No credential was copied from browser state or deployed code.
 
 The live staging application still has independent `AGENT_VIDEO_ENABLED=true`, `MONTAGE_LIVENESS_ENABLED=true`, and its montage runner URL. Those settings were read and left unchanged. Deployment of the application producer binding, consumer credentials, live latency, failure alerts, Library acceptance, and the clean recovery window remain pending.
+
+## Bounded delivery failure acceptance — 2026-10-09
+
+Two explicit [HTTP publications](https://developers.cloudflare.com/queues/examples/publish-to-a-queue-via-http/) exercised only the isolated staging queue while consumer execution was false and its secret list empty. The fixture reference was `7b4fe9d4-dea2-4f54-b3e0-0644e7d0a5e5`, with no corresponding database job or dispatch row. The bodies contained only version and job ID: version 0 tested malformed-message handling; version 1 tested disabled-consumer retries. Each publication was attempted once; local write markers prevented rerunning an uncertain send. No app admission, provider credential, prompt, credit operation, flag change, or plan change was involved.
+
+| Observed event (UTC) | Result |
+| --- | --- |
+| 08:50:32.855 / 08:50:33.051 | HTTP publications confirmed |
+| 08:50:35.968 | Malformed reference: ignored 1, retried 0, submitted 0 |
+| 08:50:36.397 | Valid reference: first delivery, retried 1, submitted 0 |
+| 08:51:07.322 / 08:51:37.784 / 08:52:08.433 | Three more deliveries, each retried 1 and submitted 0 |
+| 08:52:09.108 | Exact version-1 body observed in the isolated dead-letter queue |
+
+Wrangler tail identified consumer version `56ceb24b-f64a-4cdb-bfe9-3396d12e87ae` on all five invocations. The malformed reference was acknowledged once. The valid reference exhausted the configured initial delivery plus three retries, with observed gaps 30.925, 30.462 and 30.649 seconds. Its dead-letter message ID was `63fb2eb27afabadf92f825165f789cd4`. [Peek](https://developers.cloudflare.com/api/resources/queues/subresources/messages/methods/peek/) observed the body without leasing it. Targeted cleanup used only that fixture's returned ref; no queue-wide purge or financial deletion occurred. Both queue peeks were empty after cleanup.
+
+Post-test reads confirmed zero fixture jobs/dispatch rows, the original single durable dispatch row, and zero balance/free/subscription reconciliation differences. Account Worker settings reported `default_usage_model=standard`; subscription billing and remaining shared allowance are still unverified. This bounded probe made two writes and five observed consumer invocations, not a load or cost measurement.
+
+These are live delivery/ACK/retry/dead-letter checks. They do not validate enabled database claims, provider submission, request-scoped application publication, normal-path p95 latency, or alerts. Every platform invocation had `outcome=ok`, including the four batches whose application metric was `ok=false`. Monitoring must inspect application retry/failure counters and dead-letter arrivals, not only Worker exceptions. Operator alert configuration remains an activation gate.
 
 ## Rollback and investigation
 
