@@ -10,6 +10,15 @@ shows what the product produces. Do not use footage from other generators or
 from competitor sites, and do not put real people, brands or readable text in a
 prompt.
 
+## The landing film is a different thing
+
+Under the hero sits a fifteen-second film of the product's own screens (the
+Generate button and its price, a job, a refund, the statement, the price
+list). It is drawn in code and makes no claim to be model output, so the rule
+above does not cover it and it never goes in a tile. Its source, the render
+steps and what to do when a price changes are in
+`scripts/landing-film/README.md`.
+
 ## Which tiles get a clip
 
 Only tiles that are backed by something real.
