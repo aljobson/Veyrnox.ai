@@ -25,8 +25,10 @@ function Reviews() {
     } catch(e) { if (version === generation.current) setError(message(e.code)); }
     finally { if (version === generation.current) setBusy(false); }
   }, []);
+  // A request counter, not a DOM node: the cleanup must bump the live value.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); return () => { generation.current++; }; }, [load]);
-  return <main id="main" className="mx-auto max-w-3xl px-4 py-10 pb-32 sm:px-8">
+  return <div className="mx-auto max-w-3xl px-4 py-10 pb-32 sm:px-8">
     <Link href="/app/admin" className="text-sm underline">Back to operations</Link>
     <h1 className="mt-5 text-3xl font-black">Cinema creator applications</h1>
     <p className="my-5 text-vx-fg-body">Review requires a Cinema administrator account and a fresh authenticator check. Approval grants a creator role only.</p>
@@ -36,7 +38,7 @@ function Reviews() {
     {loaded && items.length === 0 && <p role="status" className="mt-6">No pending applications.</p>}
     {items.map(item => <Review key={item.id} item={item} onDone={load} />)}
     {items.length === 50 && <p className="mt-5 text-sm">Showing the oldest 50 pending applications. Refresh after reviewing to load more.</p>}
-  </main>;
+  </div>;
 }
 function Review({ item, onDone }) {
   const [busy, setBusy] = useState(false);
@@ -53,7 +55,7 @@ function Review({ item, onDone }) {
   }
   return <article className="mt-6 rounded-2xl border border-vx-border p-5">
     <h2 className="font-bold">{item.display_name} <span className="text-vx-fg-muted">@{item.username}</span></h2>
-    <p className="mt-4 whitespace-pre-wrap break-words">{item.statement}</p>
+    <p className="mt-4 whitespace-pre-wrap wrap-break-word">{item.statement}</p>
     <form onSubmit={submit} className="mt-5 space-y-4">
       <label className="block">Decision<select name="decision" required className="ml-3 rounded-lg bg-vx-panel p-2"><option value="">Choose…</option><option value="approved">Approve</option><option value="rejected">Reject</option></select></label>
       <label className="block">Internal review reason<textarea name="reason" required minLength={3} maxLength={500} rows={2} className="mt-2 w-full rounded-lg border border-vx-border bg-vx-panel p-3" /></label>

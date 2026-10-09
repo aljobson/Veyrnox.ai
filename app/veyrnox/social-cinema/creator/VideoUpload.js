@@ -53,7 +53,7 @@ export function VideoUpload({content,proxyUploadsEnabled=false,onClose}) {
   const busy=state==='uploading'||state==='removing';
   const status=upload?({provisioning:'The upload reservation is being prepared. If it stays here, contact support; creating another reservation will not help.',uploading:proxyEnabled?'Ready to upload or resume the original file.':'This upload is paused while we resolve an upload security issue.',processing:'Video received. Stream is processing it.',ready:'Video processing is complete. It remains private and has not been reviewed or published.',error:'The video could not be accepted. Remove it before uploading a replacement.',expired:'The upload window has expired. Remove this video before starting again.',deleting:'Removal requested. Your draft is safe. Removal is awaiting verification; replacement remains unavailable.'})[upload.state]: 'Attach a video to this private draft.';
   return <section className="mt-6 max-w-2xl space-y-5" aria-labelledby="video-upload-title">
-    <h3 id="video-upload-title" className="break-words text-xl font-bold">Video for {content.title}</h3>
+    <h3 id="video-upload-title" className="wrap-break-word text-xl font-bold">Video for {content.title}</h3>
     <p className="text-sm text-vx-fg-body">Up to 2 GiB and 10 minutes. Uploads remain private. You can pause and resume with the same file within one hour.</p>
     {state==='loading'?<p role="status">Loading upload status…</p>:<p role="status">{status}</p>}
     {!proxyEnabled&&state!=='loading'&&<p role="status">Video uploads and replacements are temporarily paused while we resolve an upload security issue. Your private drafts are safe.</p>}

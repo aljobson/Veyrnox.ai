@@ -1,0 +1,295 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "Credit ledger flow (as of 2026-10-08)",
+    "subtitle": "Checked against main 96380e7f",
+    "output": "credit-ledger.html",
+    "viewBox": [
+      1080,
+      720
+    ],
+    "quality_profile": "showcase"
+  },
+  "stages": [
+    {
+      "label": "Money events"
+    },
+    {
+      "label": "Only writers"
+    },
+    {
+      "label": "Append-only"
+    },
+    {
+      "label": "Derived"
+    },
+    {
+      "label": "Guards"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "signup",
+      "type": "security",
+      "label": "Email confirmed",
+      "sublabel": "auth.users trigger",
+      "stage": 0,
+      "row": 0,
+      "tag": "free"
+    },
+    {
+      "id": "referral",
+      "type": "backend",
+      "label": "Referral reward",
+      "sublabel": "referral_sweep, hourly",
+      "stage": 0,
+      "row": 1,
+      "tag": "grant"
+    },
+    {
+      "id": "stripe",
+      "type": "external",
+      "label": "Stripe payment",
+      "sublabel": "Pack order or invoice",
+      "stage": 0,
+      "row": 2,
+      "tag": "paid"
+    },
+    {
+      "id": "spend",
+      "type": "frontend",
+      "label": "Spend",
+      "sublabel": "generation, chat, edit",
+      "stage": 0,
+      "row": 3,
+      "tag": "priced from catalog"
+    },
+    {
+      "id": "reversal",
+      "type": "external",
+      "label": "Refund or dispute",
+      "sublabel": "Stripe event",
+      "stage": 0,
+      "row": 4,
+      "tag": "reversal"
+    },
+    {
+      "id": "credit_in",
+      "type": "backend",
+      "label": "ledger_grant",
+      "sublabel": "signup_grant, credit_top_up",
+      "stage": 1,
+      "row": 1,
+      "width": 150,
+      "tag": "+ subscription_grant"
+    },
+    {
+      "id": "debit",
+      "type": "backend",
+      "label": "ledger_debit",
+      "sublabel": "and ledger_refund",
+      "stage": 1,
+      "row": 3,
+      "tag": "idempotent"
+    },
+    {
+      "id": "reverse",
+      "type": "backend",
+      "label": "apply_top_up_refund",
+      "sublabel": "apply_dispute_event",
+      "stage": 1,
+      "row": 4,
+      "tag": "also reverse_*"
+    },
+    {
+      "id": "ledger",
+      "type": "database",
+      "label": "ledger_entries",
+      "sublabel": "delta + bucket deltas",
+      "stage": 2,
+      "row": 3,
+      "tag": "no update or delete"
+    },
+    {
+      "id": "balances",
+      "type": "database",
+      "label": "credit_balances",
+      "sublabel": "balance + 2 buckets",
+      "stage": 3,
+      "row": 2,
+      "tag": "same txn"
+    },
+    {
+      "id": "actions",
+      "type": "database",
+      "label": "account_actions",
+      "sublabel": "frozen_at",
+      "stage": 3,
+      "row": 4,
+      "tag": "audit log"
+    },
+    {
+      "id": "reconcile",
+      "type": "security",
+      "label": "reconcile_*",
+      "sublabel": "nightly + hourly",
+      "stage": 4,
+      "row": 3,
+      "tag": "zero rows"
+    }
+  ],
+  "flows": [
+    {
+      "from": "signup",
+      "to": "credit_in",
+      "label": "confirmed",
+      "variant": "emphasis",
+      "route": "vertical-channel",
+      "channelX": 170,
+      "labelAt": [
+        170,
+        200
+      ]
+    },
+    {
+      "from": "referral",
+      "to": "credit_in",
+      "label": "reward",
+      "variant": "default",
+      "route": "straight"
+    },
+    {
+      "from": "stripe",
+      "to": "credit_in",
+      "label": "paid",
+      "variant": "emphasis",
+      "route": "vertical-channel",
+      "channelX": 170,
+      "labelAt": [
+        170,
+        340
+      ]
+    },
+    {
+      "from": "spend",
+      "to": "debit",
+      "label": "submit",
+      "classification": "refund on fail",
+      "variant": "emphasis",
+      "route": "straight"
+    },
+    {
+      "from": "reversal",
+      "to": "reverse",
+      "label": "verified",
+      "classification": "id only",
+      "variant": "security",
+      "route": "straight"
+    },
+    {
+      "from": "credit_in",
+      "to": "ledger",
+      "label": "credit",
+      "variant": "emphasis",
+      "route": "vertical-channel",
+      "channelX": 448,
+      "labelAt": [
+        448,
+        400
+      ]
+    },
+    {
+      "from": "debit",
+      "to": "ledger",
+      "label": "spend",
+      "variant": "emphasis",
+      "route": "straight",
+      "labelAt": [
+        398,
+        499
+      ]
+    },
+    {
+      "from": "reverse",
+      "to": "ledger",
+      "label": "clawback",
+      "variant": "security",
+      "route": "auto",
+      "fromSide": "right",
+      "toSide": "bottom",
+      "via": [
+        [
+          530,
+          613
+        ]
+      ],
+      "labelAt": [
+        530,
+        572
+      ]
+    },
+    {
+      "from": "reverse",
+      "to": "actions",
+      "label": "freeze",
+      "classification": "unfreeze only way out",
+      "variant": "security",
+      "route": "straight",
+      "labelAt": [
+        620,
+        613
+      ]
+    },
+    {
+      "from": "ledger",
+      "to": "balances",
+      "label": "applied",
+      "classification": "same txn",
+      "variant": "emphasis",
+      "route": "vertical-channel"
+    },
+    {
+      "from": "ledger",
+      "to": "reconcile",
+      "label": "sum deltas",
+      "classification": "read-only",
+      "variant": "default",
+      "route": "straight"
+    },
+    {
+      "from": "balances",
+      "to": "reconcile",
+      "label": "compare",
+      "classification": "read-only",
+      "variant": "default",
+      "route": "vertical-channel"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "amber",
+      "title": "One way in",
+      "items": [
+        "Every credit movement is an RPC, never a raw INSERT or UPDATE",
+        "A trigger raises on any UPDATE or DELETE of a ledger row"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Three buckets",
+      "items": [
+        "Spend order: Subscription, then Free, then Pack",
+        "Free is grant:signup only, expiring after 90 days"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Checked, not assumed",
+      "items": [
+        "Nightly cron fails on one row from any reconcile function",
+        "A free-allowance job writes no ledger row at all"
+      ]
+    }
+  ]
+}

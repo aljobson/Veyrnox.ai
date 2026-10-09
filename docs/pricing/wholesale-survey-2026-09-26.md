@@ -120,7 +120,7 @@ since 2026-09-24, so it is treated as our verified cost.
 | ElevenLabs v3 / dialogue, per 1k chars | 0.10 | 0.07 | 0.10 | | kie 0.07 | 4 | fal 0.10, 7 cr |
 | MiniMax Speech 2.6 HD, per 1k chars | 0.10 | n/a | 0.10 | WaveSpeed 0.10 | 0.10 everywhere | 6 | fal 0.10, 7 cr |
 | MiniMax Speech 2.6 Turbo, per 1k chars | 0.06 | n/a | 0.06 | WaveSpeed 0.06 (speech-02 turbo 0.03) | WaveSpeed speech-02 turbo 0.03 | 2 | none |
-| Budget TTS, per 1k chars | Inworld 0.01, Kokoro 0.02 | n/a | Vidu 0.01, Alibaba Qwen3 0.0115, OpenAI mini 0.012 | Novita 0.015 | fal Inworld 0.01 | 1 | fal Inworld recorded 0.02, 2 cr (list is 0.01, verify) |
+| Budget TTS, per 1k chars | Inworld 0.01, Kokoro 0.02 | n/a | Vidu 0.01, Alibaba Qwen3 0.0115, OpenAI mini 0.012 | Novita 0.015 | fal Inworld 0.01 | 1 | fal Inworld 0.02 per generation up to 2k chars, 2 cr (same 0.01/1k rate; corrected 29 Sep) |
 | Sound effect, 10s | ElevenLabs 0.002/s = 0.02; MMAudio 0.001/s | n/a | ElevenLabs 0.12/min = 0.02 | Pika 0.0002/s = 0.002 | Pika 0.002; ElevenLabs 0.02 | 1 / 2 | fal ElevenLabs 0.02, 2 cr |
 | Video to audio, 8s | MMAudio 0.008, ThinkSound 0.008 | n/a | n/a | WaveSpeed Kling v2a 0.035 per video | fal MMAudio 0.008 | 1 | fal MMAudio 0.008, 1 cr |
 | Music, 3 min track | ACE-Step 0.036, Cassette 0.06, Lyria 2 0.60, ElevenLabs 1.80 (0.60/min), Stable Audio 0.20 per clip, MiniMax 0.035 | Suno 0.06 per request, 2 tracks (grey) | Google Lyria 3 0.04 per song, Lyria 3 Pro 0.08; ElevenLabs 0.45 (0.15/min); MiniMax 0.15 (closed to new accounts) | MuAPI Suno 0.09, 302.ai 0.10, Evolink 0.11, Atlas 0.13 (all grey) | ACE-Step 0.036; Lyria 3 0.04 per song | 3 | fal ACE-Step 1.5 0.036, 3 cr |
@@ -194,7 +194,7 @@ Current rows where a cheaper verified source exists:
 | elevenlabs-tts-turbo (fal) | 0.05 | kie 0.03 | 40% | 4 to 2 |
 | elevenlabs-dialogue v3 (fal) | 0.10 | kie 0.07 | 30% | 7 to 4 |
 | minimax-speech-2.6-hd | 0.10 | 0.10, no cheaper source | 0% | 7 to 6 at the floor |
-| inworld-tts | 0.02 recorded | fal list is 0.01 | 50% | 2 to 1, verify the recorded cost |
+| inworld-tts | 0.02 per generation, up to 2k chars | fal 0.01/1k chars = 0.02 at cap | 0% (corrected 29 Sep) | retain 2; see [unit verification](wholesale-review-2026-09-28.md#follow-up--29-september-delivered-routes-and-inworld-correction) |
 | wan-2.5-kie | 0.30 | 0.30, already cheapest | 0% | 19 to 17 at the floor |
 | veo-3.1-fast-kie | 0.30 | 0.30, already cheapest | 0% | 19 to 17 |
 | veo-3.1-kie | 1.25 | 1.25, already cheapest | 0% | 76 to 70 |

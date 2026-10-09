@@ -1,6 +1,6 @@
 # Veyrnox wholesale buying review — 28 September 2026
 
-Live public catalogue checked: 30 entries. Current public KIE rate card: 509 entries. This is a procurement shortlist, not proof of globally lowest negotiated prices.
+Historical public catalogue check on 28 September: 30 entries. See the 29 September follow-up below for subsequent activations. Current public KIE rate card: 509 entries. This is a procurement shortlist, not proof of globally lowest negotiated prices.
 
 ## Critical correction: BytePlus packs
 
@@ -30,7 +30,7 @@ Recorded costs below are the 24 September repository snapshot, NOT a fresh priva
 | Seedream v4 (`seedream-4`) | fal | 0.03 | KIE $0.0325 is Seedream 4.5, not equivalent v4. No cheaper exact v4 route established in this refresh. |
 | ElevenLabs Dialogue v3 (up to 4 voices) (`elevenlabs-dialogue`) | fal | 0.1 | KIE current $0.07/1,000 characters vs recorded fal $0.10: 30% potential saving; verify four-speaker feature parity. |
 | ElevenLabs TTS Turbo 2.5 (speech) (`elevenlabs-tts-turbo`) | fal | 0.05 | KIE current $0.03/1,000 characters vs recorded fal $0.05: 40% potential saving; verify voices/output and job charge before activation. |
-| Inworld TTS (speech) (`inworld-tts`) | fal | 0.02 | Prior survey suggested $0.01/1k characters vs recorded $0.02. Needs current endpoint billing verification. |
+| Inworld TTS (speech) (`inworld-tts`) | fal | 0.02 | Corrected 29 September: fal lists $0.01/1,000 characters; this route allows 2,000, so its $0.02 per-generation cost ceiling is consistent. No 50% saving; retain 2 credits. |
 | MiniMax Speech 2.6 HD (speech) (`minimax-speech-2.6-hd`) | fal | 0.1 | No cheaper equivalent supplier established in this refresh; recorded baseline needs current quote before procurement. |
 | Auto Short (32s) (`auto-short-32s`) | veyrnox | 0.7 | Veyrnox composite workflow; cost depends on constituent calls. Not one wholesale model. |
 | Kling 2.6 Pro (`kling-2.6-pro-kie`) | kie | 0.275 | KIE current $0.275/5s without audio; retain pending a better equivalent quote. |
@@ -137,3 +137,111 @@ pending, followed by a separate guarded production activation migration.
 PR #382 merged as `189b81395eefd659b4bf1af5ec48e5ec94e65386`. Its production
 migration run was queued behind an earlier run awaiting approval; no queued
 production migration was approved as part of this storage check.
+
+
+## Follow-up — 29 September: delivered routes and Inworld correction
+
+The implementation checks above are historical. Flux Pro 1K is now active via
+KIE (migration 0162, PR #391), and Nano Banana Pro editing is active via GrsAI
+(migration 0166, PR #396), both at 2 Veyrnox credits. Their deployed acceptance
+records are [Flux verification](../operations/flux-staging-verification-2026-09-29.md)
+and [GrsAI edit verification](../operations/grsai-edit-staging-verification-2026-09-29.md).
+Existing fal options remain separate.
+
+Inworld is not another 50% saving. The exact
+[fal endpoint](https://fal.ai/models/fal-ai/inworld-tts) currently identifies
+TTS-1.5 Max and lists $0.01 per 1,000 characters. Its
+[API schema](https://fal.ai/models/fal-ai/inworld-tts/api) permits 2,000 characters.
+Veyrnox uses the same 2,000-character cap in `lib/modelCapabilities.js`;
+migration 0036 explicitly records $0.02 **per generation**, not per 1,000
+characters. At the maximum accepted input, 2 × $0.01 = $0.02. Shorter requests
+may cost less, but do not establish a supplier discount for the existing
+maximum-length product. Keep the current 2-credit price. This is a public
+rate/unit verification, not a new paid test or private invoice audit.
+
+Next procurement work is comparable volume quotes using the brief above.
+Public starting prices alone do not establish another deployable saving.
+KIE Turbo and Dialogue remain blocked by the recorded failed provider tests;
+repeat paid probes need new evidence that the failure has been fixed.
+ElevenLabs Music direct would be a new model offering, not a cost reduction
+on an existing Music row. BytePlus activation remains gated, and the old pack
+saving remains withdrawn. No supplier message or purchase was made in this
+follow-up.
+
+
+## Supplier quote pack — 30 September, draft for owner approval
+
+The following is ready to copy to supplier sales/support. Send the common
+message plus only the relevant rows and supplier-specific questions. This is
+an initial priority shortlist, not a claim to cover every catalogue model.
+No supplier has been contacted. Quote tiers are scenarios, not a forecast or
+commitment; actual spend by supplier has not been established in this review.
+
+### Common message
+
+Subject: Veyrnox.ai — API volume pricing and platform-use confirmation
+
+We operate Veyrnox.ai, an end-user AI generation platform, and are reviewing
+API suppliers. Please quote USD pay-as-you-go pricing and any available volume
+pricing at illustrative aggregate monthly spend of $500, $1,250 and $5,000
+with your service. These figures are scenarios, not purchase commitments.
+Please state whether tiers apply across models or separately per model.
+
+For each supported configuration below, provide the exact API model/endpoint,
+price per stated unit, all minimum charges and rounding, and output dimensions
+or audio format. Mark unsupported configurations explicitly. Quote alternative
+versions or reduced features separately so we can compare like for like.
+
+Please also confirm minimum spend, contract duration, prepayment, unused-credit
+expiry/refunds, termination terms, currency/FX fees and whether tax is included.
+Separate credit bonuses from cash discounts and give promotion/quote expiry.
+State concurrency, rate limits, typical completion time, failure/timeout billing,
+refund handling and whether resubmitting an ambiguous request can double-charge.
+Confirm that our end-user generation platform use is permitted, your authority
+to supply the models, output commercial-use terms, processing locations, media
+retention/deletion and whether inputs or outputs are used for training.
+Please identify any terms that vary by model or region and link the applicable
+contractual documents. We can then select a small synthetic verification test.
+
+### Configuration schedule
+
+These specifications come from `lib/modelCapabilities.js` and
+`lib/additionalModelCapabilities.js` at main `da36343`. Supplier resolution
+labels are tiers; require actual dimensions rather than assuming square images.
+
+| Configuration to quote | One quoted unit and required features |
+|---|---|
+| Nano Banana Pro text-to-image | One image, 2K tier, one output; quote 1:1, 16:9 and 9:16; no seed requirement. |
+| Nano Banana Pro image editing | One output, 2K tier, one reference image plus text instruction; same three aspect ratios; no seed requirement. Quote separately from text-to-image. |
+| Flux.2 Pro text-to-image | One output, 1K tier, 1:1/16:9/9:16; no seed requirement for this option. State dimensions and any aspect-dependent billing. |
+| Kling 3.0 Pro image-to-video | One start image, single shot, no audio; separate 5s and 10s, 1080p quotes. Quote optional end-frame and negative-prompt support separately from the base option. |
+| Kling 2.6 text-to-video | Separate 5s and 10s, no audio, 16:9/9:16/1:1. State exact output resolution and tier; do not assume the endpoint name alone establishes them. |
+| Hailuo 02 Standard text-to-video | One 6s, 768p output. Quote the actual six-second output, not a five-second accounting unit. |
+| Wan 2.5 text-to-video | Separate 5s and 10s, 720p, 16:9/9:16/1:1. State audio behavior and any audio-related charge. |
+| Seedance 2.0 Fast | Separate 5s and 10s, 720p, audio on, 16:9/9:16; separate text-only and single first-frame input quotes, no video input. Disclose seed support and any token/deduction multipliers. |
+| ElevenLabs Turbo v2.5 | 1,000 input characters, Rachel voice, timestamps off; specify voice ID, character counting and output format. |
+| ElevenLabs Dialogue v3 | Up to four voices, 1,000-character script; identify Aria/Roger/Sarah/George availability and seed support. Quote other voices/no-seed as a separate option. |
+| Inworld TTS-1.5 Max | 2,000 characters per request; provide per-1,000-character rate and full-request cost, default voice and output format. No substitution with TTS-2 or Flash in this row. |
+
+### Supplier-specific additions
+
+| Recipient | Send these rows | Additional question |
+|---|---|---|
+| KIE sales/support | All except Inworld; mark unavailable models explicitly | Please diagnose Turbo tasks `35201225f44de02b46fd1dd9b873b2e1`, `cf740906504bb5f35e7689cdca91c131` and `aa3eaf7d2e199f8a1e37827ff9cbd1c5`, which returned code 500. Confirm billing/refunds and whether the issue is resolved before another paid probe. Provide the supported Turbo voice identifier and Dialogue voice/seed contract. |
+| GrsAI sales/support | The two Nano Banana Pro rows | Confirm credits per successful 2K image/edit, USD credit purchase tiers, bonus/expiry rules, and whether edit/text generation have identical charges. Confirm global API availability and failed-job credit handling. |
+| fal sales | All supported rows | Quote an account-level volume discount and which endpoints are excluded. Identify any private rate differing from public list, its billing unit, effective date and duration. |
+
+### Internal evaluation after replies
+
+Keep our current supplier costs out of the initial outreach. Compare replies
+using the exact unit above and observed successful-job billing. Effective cash
+cost per used credit is cash paid divided by credits actually consumed before
+expiry; bonuses are only fully valuable if used. Add mandatory fees and model
+multipliers before calculating savings. Rank with measured usage when available;
+do not invent a workload mix or promise a monthly saving from a unit discount.
+
+A cheaper quote advances to a bounded synthetic test, feature/rights review and
+normal staging acceptance. It does not itself authorize a top-up, contract,
+production price change or activation. KIE speech remains blocked pending new
+failure-resolution evidence. This pack is ready for owner approval to contact
+KIE, GrsAI and fal; no account credentials or customer media are included.

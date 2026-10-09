@@ -1,15 +1,20 @@
 'use client';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { AppNav } from '../../_components/NavBar';
 import { Chip } from '../../_components/Chip';
 import { gatewayFetch, GatewayError, notifyBalanceChanged } from '../../_lib/gateway';
 import { readJobHistory, pushJobHistory } from '../../_lib/jobHistory';
 import { useAssetUrl } from '../../_lib/useAssetUrl';
-import { AssetRetention } from '../../_components/AssetRetention';
+import { ScheduleGeneration } from '../../_components/ScheduleGeneration';
+import { AssetFooter } from '../../_components/AssetFooter';
 import { AssetLoadStatus } from '../../_components/AssetLoadStatus';
 import { EditSheet } from '../../_components/EditSheet';
 import { useCatalog } from '../../_lib/useCatalog';
 import { mergeHydrated, shouldPoll } from '../../_lib/jobWindow';
+import { STATE_TABS, KIND_TABS, KIND_LABEL, VIEWS, VIEW_KEY, filterRows, readView } from '../../_lib/libraryFilter';
+import { readFavourites, toggleFavourite } from '../../_lib/favourites';
+import { getSession } from '../../../lib/authClient.js';
 
 // Account list is authoritative; local history supplies cached display names.
 const STATE_UI = {
@@ -19,7 +24,7 @@ const STATE_UI = {
   // FAILED is not REFUNDED: the refund is a second call, and /jobs/:id says
   // whether it has landed. Claiming it either way was the old bug.
   failed:    { chip: 'danger', glyph: '✕', label: 'FAILED · REFUNDED' },
-  failed_pending: { chip: 'danger', glyph: '✕', label: 'FAILED · REFUND DUE' },
+  failed_pending: { chip: 'danger', glyph: '✕', label: 'FAILED · REFUND PENDING' },
   // We could not read this job's state: it 404s (not ours, or aged out of the
   // window) or the server was unreachable. Deliberately neutral — claiming
   // either DONE or FAILED · REFUNDED would assert something about the ledger
@@ -38,12 +43,29 @@ const PAGE = 12;
 // Clip Editor stays hidden until launch unless this browser opts in
 // (CLAUDE.md "Delivery": new user paths behind localStorage.veyrnox_*).
 const EDITOR_FLAG = 'veyrnox_editor';
+// Browser-only values read once: off / 'grid' on the server and first paint.
+const never = () => () => {};
+const editorFlag = () => { try { return window.localStorage.getItem(EDITOR_FLAG) === '1'; } catch { return false; } };
+const savedView = () => readView(window.localStorage);
+const off = () => false;
+const gridView = () => 'grid';
 const isVideo = (r) => !!r.asset_url && !!r.mime_type?.startsWith('video/');
 const isAudio = (r) => !!r.asset_url && !!r.mime_type?.startsWith('audio/');
 
 export default function Library() {
   const { models } = useCatalog();
   const [tab, setTab] = useState('all');
+  const [kind, setKind] = useState('all');
+  // Starred job ids, per account in this browser (_lib/favourites.js).
+  const [favourites, setFavourites] = useState([]);
+  const [favOnly, setFavOnly] = useState(false);
+  useEffect(() => { setFavourites(readFavourites(window.localStorage, getSession()?.user?.id)); }, []);
+  const star = (id) => setFavourites(toggleFavourite(window.localStorage, getSession()?.user?.id, id));
+  // Grid on the server and first paint; the saved layout is applied after mount.
+  const stored = useSyncExternalStore(never, savedView, gridView);
+  const [chosen, setChosen] = useState(null);
+  const view = chosen ?? stored;
+  const chooseView = (v) => { setChosen(v); try { window.localStorage.setItem(VIEW_KEY, v); } catch { /* not remembered */ } };
   const [balance, setBalance] = useState(null);
   // History lives in localStorage, which the server cannot read. Start empty
   // on both sides so hydration matches, then load it after mount.
@@ -54,14 +76,11 @@ export default function Library() {
   const [unreachable, setUnreachable] = useState(false);
   const [nextCursor, setNextCursor] = useState(null);
   const [listLive, setListLive] = useState(null);
-  const [editorOn, setEditorOn] = useState(false);
+  const editorOn = useSyncExternalStore(never, editorFlag, off);
   const rowsRef = useRef(rows);
   rowsRef.current = rows;
   const [selected, setSelected] = useState([]);
   const [editing, setEditing] = useState(false);
-  useEffect(() => {
-    try { setEditorOn(window.localStorage.getItem(EDITOR_FLAG) === '1'); } catch { /* storage blocked: editor stays off */ }
-  }, []);
 
   // load balance
   const loadBalance = useCallback(async () => {
@@ -227,7 +246,7 @@ export default function Library() {
   }, [nextCursor]);
 
   const shown = rows.slice(0, visible);
-  const list = tab === 'all' ? shown : shown.filter((r) => r.state === tab);
+  const list = filterRows(shown, { state: tab, kind, favourites: favOnly ? favourites : null }, models);
   const hasMore = rows.length > visible;
   const canSelect = (r) => editorOn && r.state === 'succeeded' && (isVideo(r) || isAudio(r));
   const toggle = (id) => setSelected((xs) => (xs.includes(id) ? xs.filter((x) => x !== id) : [...xs, id]));
@@ -270,43 +289,63 @@ export default function Library() {
       )}
 
       <section className="max-w-[1400px] mx-auto px-4 sm:px-8 pt-10 pb-4">
-        <Chip tone="accent" className="mb-3">LIBRARY · YOUR GENERATIONS</Chip>
-        <h1 className="text-[28px] sm:text-[34px] md:text-[40px] font-black tracking-[-0.02em]">Everything you&rsquo;ve made</h1>
-        <p className="text-vx-fg-body mt-2">
-          Failed jobs refund automatically — they still show here so you can retry.
+        <h1 className="vx-display text-[40px] sm:text-[56px]">Everything you&rsquo;ve made</h1>
+        <p className="text-vx-fg-body mt-3">
+          Failed jobs refund automatically. They still show here so you can retry.
         </p>
 
         <div className="mt-6 flex flex-wrap gap-2">
-          {['all', 'succeeded', 'running', 'queued', 'failed'].map((t) => (
+          {STATE_TABS.map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
               aria-pressed={tab === t}
-              className={`font-vx-mono text-[11px] tracking-[0.12em] font-bold rounded-full px-4 py-2 border ${
-                tab === t
-                  ? 'bg-vx-panel text-vx-fg border-vx-border'
-                  : 'border-transparent text-vx-fg-muted hover:text-vx-fg'
-              }`}
+              type="button"
+              className="vx-press rounded-full border px-4 py-2 text-[14px] font-semibold capitalize border-vx-border text-vx-fg-body hover:border-vx-fg-muted aria-pressed:border-vx-fg aria-pressed:bg-vx-fg aria-pressed:text-vx-base"
             >
-              {t.toUpperCase()}
+              {t}
             </button>
           ))}
+        </div>
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by type">
+            {KIND_TABS.map((k) => (
+              <button key={k} onClick={() => setKind(k)} aria-pressed={kind === k} type="button"
+                className="vx-press rounded-full border px-4 py-2 text-[14px] font-semibold border-vx-border text-vx-fg-body hover:border-vx-fg-muted aria-pressed:border-vx-fg aria-pressed:bg-vx-fg aria-pressed:text-vx-base">
+                {KIND_LABEL[k]}
+              </button>
+            ))}
+            <button onClick={() => setFavOnly((v) => !v)} aria-pressed={favOnly} type="button"
+              className="vx-press rounded-full border px-4 py-2 text-[14px] font-semibold border-vx-border text-vx-fg-body hover:border-vx-fg-muted aria-pressed:border-vx-fg aria-pressed:bg-vx-fg aria-pressed:text-vx-base">
+              ★ Favourites
+            </button>
+          </div>
+          <div className="flex gap-2" role="group" aria-label="Layout">
+            {VIEWS.map((v) => (
+              <button key={v} onClick={() => chooseView(v)} aria-pressed={view === v} type="button"
+                className="vx-press rounded-full border px-4 py-2 text-[14px] font-semibold capitalize border-vx-border text-vx-fg-body hover:border-vx-fg-muted aria-pressed:border-vx-fg aria-pressed:bg-vx-fg aria-pressed:text-vx-base">
+                {v}
+              </button>
+            ))}
+          </div>
         </div>
       </section>
 
       <section className="max-w-[1400px] mx-auto px-4 sm:px-8 pb-16">
         {!historyLoaded ? null : list.length === 0 ? (
-          <div className="rounded-2xl border border-vx-border bg-vx-panel p-12 text-center">
-            <div className="font-vx-mono text-[11px] tracking-[0.12em] text-vx-fg-muted">EMPTY</div>
-            <div className="text-lg font-black mt-2">Nothing here yet.</div>
-            <div className="text-sm text-vx-fg-muted mt-1">
-              Head to Create and press Generate — jobs will appear here as they run.
+          <div className="rounded-2xl border border-dashed border-vx-border p-12 text-center">
+            <div className="text-lg font-black">Nothing here yet.</div>
+            <div className="text-[15px] text-vx-fg-body mt-1">
+              Jobs appear here as they run, failed ones included.
             </div>
+            <Link href="/app/create" className="vx-press inline-block mt-5 rounded-full bg-vx-accent text-vx-accent-ink px-5 py-2.5 text-sm font-extrabold hover:bg-vx-accent-hover">
+              Open the studio
+            </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className={view === 'list' ? 'grid grid-cols-1 gap-3 max-w-[760px]' : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3'}>
             {list.map((r) => (
-              <JobCard key={r.job_id} row={r} models={models}
+              <JobCard key={r.job_id} row={r} models={models} starred={favourites.includes(r.job_id)} onStar={() => star(r.job_id)}
                 selectable={canSelect(r)} selected={selected.includes(r.job_id)} onToggle={() => toggle(r.job_id)} />
             ))}
           </div>
@@ -315,9 +354,10 @@ export default function Library() {
           <div className="mt-6 flex justify-center">
             <button
               onClick={() => (hasMore ? setVisible((v) => v + PAGE) : loadOlder())}
-              className="font-vx-mono text-[11px] tracking-[0.12em] font-bold rounded-full px-5 py-2.5 border border-vx-border bg-vx-panel text-vx-fg hover:text-vx-fg"
+              type="button"
+              className="vx-press rounded-full px-5 py-2.5 border border-vx-border text-[14px] font-bold text-vx-fg hover:border-vx-fg-muted"
             >
-              {hasMore ? `LOAD MORE · ${rows.length - visible} OLDER` : 'LOAD OLDER'}
+              {hasMore ? `Show ${rows.length - visible} older` : 'Load older'}
             </button>
           </div>
         )}
@@ -349,16 +389,20 @@ export default function Library() {
   );
 }
 
-function JobCard({ row, models, selectable, selected, onToggle }) {
+function JobCard({ row, models, selectable, selected, onToggle, starred, onStar }) {
   const asset = useAssetUrl(row.job_id, row.asset_url);
-  const refundPending = row.state === 'failed' && row.refunded === false;
+  const refundPending = row.state === 'failed' && row.refunded !== true;
   const s = STATE_UI[refundPending ? 'failed_pending' : row.state] || STATE_UI.queued;
   // No delta for `unknown`: a +N would claim a refund landed and a −N would
   // claim the debit stands, and we do not know which.
   // No delta while a refund is owed but not yet made: +N would claim it landed.
+  // A job that used a free allowance (ADR-0069) has credits 0: say FREE, and show nothing if it failed
+  // (its allowance went back, there is no refund line to claim).
+  const free = row.credits === 0;
   const delta = row.state === 'unknown' || refundPending ? ''
+    : free ? (row.state === 'failed' ? '' : 'FREE')
     : row.state === 'failed' ? `+${row.credits}` : `−${row.credits}`;
-  const deltaCls = row.state === 'failed' ? 'text-vx-accent' : 'text-vx-fg-muted';
+  const deltaCls = free || row.state === 'failed' ? 'text-vx-accent' : 'text-vx-fg-muted';
   // Live catalog (tokens.js fallback) so newly added models show their name.
   const model = models.find((m) => m.id === row.model_id);
   return (
@@ -409,11 +453,16 @@ function JobCard({ row, models, selectable, selected, onToggle }) {
             {row.submitted_at ? ` · ${formatWhen(row.submitted_at)}` : ''}
           </div>
         </div>
-        <div className={`shrink-0 font-vx-mono text-[13px] font-bold vx-num pt-1 ${deltaCls}`}>
-          {delta} cr
+        <div className="shrink-0 flex items-center gap-3">
+          <span className={`font-vx-mono text-[13px] font-bold vx-num ${deltaCls}`}>{delta}{free ? '' : ' cr'}</span>
+          <button onClick={onStar} aria-pressed={starred} aria-label={starred ? 'Remove from favourites' : 'Add to favourites'} type="button"
+            className={`text-[18px] leading-none ${starred ? 'text-vx-accent' : 'text-vx-fg-faint hover:text-vx-fg'}`}>
+            {starred ? '★' : '☆'}
+          </button>
         </div>
       </div>
-      <AssetRetention row={row} />
+      <ScheduleGeneration job={row} className="mx-4 mb-3" />
+      <AssetFooter row={row} />
     </div>
   );
 }

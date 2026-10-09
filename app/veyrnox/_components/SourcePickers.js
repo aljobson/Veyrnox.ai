@@ -17,8 +17,9 @@ const pill = 'font-vx-mono text-[11px] font-bold rounded-full px-3.5 py-1.5 bord
  * @param {Record<string,{file:File, previewUrl:string}>} props.sources
  * @param {(slot:string, file:File|null) => void} props.onPick
  * @param {(() => void)|null} props.onDraw  shown for the image slot when set
+ * @param {((slot:string) => void)|null} props.onLibrary  "From library", image slot only
  */
-export function SourcePickers({ media, sources, onPick, onDraw }) {
+export function SourcePickers({ media, sources, onPick, onDraw, onLibrary }) {
   return Object.entries(media).filter(([slot]) => SLOTS[slot]).map(([slot, spec]) => {
     const ui = SLOTS[slot];
     const picked = sources[slot];
@@ -26,9 +27,9 @@ export function SourcePickers({ media, sources, onPick, onDraw }) {
     return (
       <div key={slot} className="mt-3 flex items-center gap-3 rounded-lg border border-vx-border bg-vx-panel p-3">
         {picked && slot === 'image' ? (
-          <img src={picked.previewUrl} alt="Start image" className="w-16 h-16 rounded object-cover bg-black shrink-0" />
+          <img src={picked.previewUrl} alt="Start image" className="w-16 h-16 rounded-sm object-cover bg-black shrink-0" />
         ) : (
-          <div className="w-16 h-16 rounded border border-dashed border-vx-border shrink-0 flex items-center justify-center text-vx-fg-faint" aria-hidden="true">
+          <div className="w-16 h-16 rounded-sm border border-dashed border-vx-border shrink-0 flex items-center justify-center text-vx-fg-faint" aria-hidden="true">
             {picked ? '✓' : ''}
           </div>
         )}
@@ -37,11 +38,15 @@ export function SourcePickers({ media, sources, onPick, onDraw }) {
             {ui.label}{spec.required ? ' · REQUIRED' : ' · OPTIONAL'}
           </div>
           <div className="text-xs text-vx-fg-body truncate mt-1">
-            {picked ? picked.file.name : [ui.hint, ...limits].join(', ')}
+            {picked ? (picked.file ? picked.file.name : `From library: ${picked.label}`) : [ui.hint, ...limits].join(', ')}
           </div>
         </div>
-        {picked && slot === 'image' && onDraw && (
+        {/* A Library image is a presigned R2 URL: the canvas cannot read it back. */}
+        {picked?.file && slot === 'image' && onDraw && (
           <button onClick={onDraw} className={pill}>Draw</button>
+        )}
+        {slot === 'image' && onLibrary && (
+          <button type="button" onClick={() => onLibrary(slot)} className={pill}>From library</button>
         )}
         <label className={`${pill} cursor-pointer`}>
           {picked ? 'Replace' : ui.add}

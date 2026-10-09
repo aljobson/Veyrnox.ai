@@ -1,0 +1,105 @@
+name: fal-queue-watch-staging
+
+# Independent activation gates control checking and issue notifications.
+on:
+  schedule:
+    - cron: '4,14,24,34,44,54 * * * *'
+  workflow_dispatch:
+    inputs:
+      test_alert:
+        description: 'Exercise alert delivery after a clean metrics check; no queue changes'
+        type: boolean
+        default: false
+
+permissions: {}
+
+concurrency:
+  group: fal-queue-watch-staging
+  cancel-in-progress: false
+
+jobs:
+  check:
+    if: github.ref == 'refs/heads/main' && vars.FAL_QUEUE_STAGING_WATCH_ENABLED == 'true'
+    environment: fal-queue-monitor-staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions:
+      contents: read
+    outputs:
+      exit: ${{ steps.check.outputs.exit }}
+      report: ${{ steps.check.outputs.report }}
+      test_mode: ${{ steps.check.outputs.test_mode }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22'
+      - id: check
+        name: Read staging queue metrics
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_QUEUE_MONITOR_TOKEN }}
+          TEST_ALERT: ${{ github.event_name == 'workflow_dispatch' && inputs.test_alert && 'true' || 'false' }}
+        run: |
+          set +e
+          node scripts/check-fal-queue-health.mjs > "$RUNNER_TEMP/fal-queue-report.txt" 2>&1
+          code=$?
+          test_mode=false
+          if [ "$code" -eq 0 ] && [ "$TEST_ALERT" = 'true' ]; then
+            cat "$RUNNER_TEMP/fal-queue-report.txt"
+            printf '%s\n' 'TEST ONLY: staging queue alert delivery exercise. Live metrics passed; no queue messages or provider work changed.' > "$RUNNER_TEMP/fal-queue-report.txt"
+            code=1
+            test_mode=true
+          fi
+          cat "$RUNNER_TEMP/fal-queue-report.txt"
+          cat "$RUNNER_TEMP/fal-queue-report.txt" >> "$GITHUB_STEP_SUMMARY"
+          echo "exit=$code" >> "$GITHUB_OUTPUT"
+          echo "test_mode=$test_mode" >> "$GITHUB_OUTPUT"
+          {
+            echo 'report<<FAL_QUEUE_REPORT_EOF'
+            cat "$RUNNER_TEMP/fal-queue-report.txt"
+            echo 'FAL_QUEUE_REPORT_EOF'
+          } >> "$GITHUB_OUTPUT"
+          exit "$code"
+
+  alert:
+    needs: check
+    if: >-
+      always() && github.ref == 'refs/heads/main' &&
+      vars.FAL_QUEUE_STAGING_ISSUES_ENABLED == 'true' &&
+      needs.check.result == 'failure'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions:
+      issues: write
+    steps:
+      - name: Maintain one staging queue incident
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          REPORT: ${{ needs.check.outputs.report }}
+          TEST_MODE: ${{ needs.check.outputs.test_mode }}
+          RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          label=fal-queue-staging
+          title='Staging fal queue health needs attention'
+          if [ "$TEST_MODE" = 'true' ]; then
+            label=fal-queue-staging-test
+            title='TEST: staging fal queue alert delivery'
+          fi
+          gh label create "$label" --color B60205 --description 'Staging fal queue monitor incident or delivery exercise' --force
+          if [ -z "$REPORT" ]; then
+            REPORT='Monitoring job failed before it produced a report. Inspect Actions setup and credential availability.'
+          fi
+          printf '%s\n\n%s\n' "$title. Owner: repository owner. Follow docs/operations/fal-queue-health.md." "$REPORT" > "$RUNNER_TEMP/fal-queue-incident.txt"
+          existing=$(gh issue list --label "$label" --state open --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            gh issue view "$existing" --json body --template '{{.body}}' > "$RUNNER_TEMP/fal-queue-existing.txt"
+            # The report is fixed diagnostic text and numeric metrics. Compare
+            # before updating so identical incidents stay quiet.
+            if cmp -s "$RUNNER_TEMP/fal-queue-existing.txt" "$RUNNER_TEMP/fal-queue-incident.txt"; then exit 0; fi
+            gh issue edit "$existing" --body-file "$RUNNER_TEMP/fal-queue-incident.txt"
+          else
+            gh issue create --title "$title" --label "$label" --body-file "$RUNNER_TEMP/fal-queue-incident.txt"
+          fi
+          printf 'Diagnostic run: %s\n' "$RUN_URL"

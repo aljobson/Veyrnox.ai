@@ -29,7 +29,7 @@ test('middleware overwrites forged headers, retains recent MFA handling and neve
     const response=await middleware(new Request('http://localhost:3000/api/v1/projects',{headers:{authorization:`Bearer ${h}.${p}.${Buffer.from(signature).toString('base64url')}`,'x-veyrnox-auth-id':crypto.randomUUID(),'x-veyrnox-auth-aal':'aal2','x-veyrnox-organisation-id':workspaceId,'x-request-id':'forged'}}));
     assert.equal(response.headers.get('x-middleware-request-x-veyrnox-auth-id'),userId);
     assert.equal(response.headers.get('x-middleware-request-x-veyrnox-auth-aal'),'aal1');
-    assert.equal(response.headers.get('x-middleware-request-x-veyrnox-organisation-id'),null);
+    assert.equal(response.headers.get('x-middleware-request-x-veyrnox-organisation-id'),'');
     assert.notEqual(response.headers.get('x-request-id'),'forged');
     assert.equal(response.headers.get('cache-control'),'private, no-store');
 });

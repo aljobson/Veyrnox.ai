@@ -45,6 +45,11 @@ test('parseEditInputs refuses unknown keys, bad ids, junk numbers and too many c
     assert.equal(parseEditInputs({ clips: [{ ...clip, out_s: Infinity }] }).ok, false);
     assert.equal(parseEditInputs({ clips: Array(11).fill(clip) }).ok, false);
     assert.equal(parseEditInputs({ clips: [clip], audio: { asset_id: M, offset_s: -1 } }).ok, false);
+    assert.deepEqual(parseEditInputs({ clips: [clip], captions: { preset: 'glass' } }).captions, { preset: 'glass' });
+    assert.equal(parseEditInputs({ clips: [clip] }).captions, null);
+    assert.equal(parseEditInputs({ clips: [clip], captions: { preset: 'nope' } }).error, 'inputs_invalid:captions');
+    assert.equal(parseEditInputs({ clips: [clip], captions: { preset: 'glass', language: 'en' } }).ok, false, 'no extra keys');
+    assert.equal(parseEditInputs({ clips: [clip], captions: 'glass' }).ok, false);
     // Refused on the client's own arithmetic, before any lookup or R2 read.
     assert.equal(parseEditInputs({ clips: Array(10).fill({ asset_id: A, in_s: 0, out_s: 30 }) }).error, 'too_long');
     assert.equal(parseEditInputs({ clips: [{ asset_id: A, in_s: 5, out_s: 5 }] }).error, 'inputs_invalid:clips');
@@ -127,4 +132,62 @@ test('generations: a clip-edit is priced on its output, stores the resolved edit
     assert.ok(fal.url.includes('fal-ai/workflow-utilities/trim-video'), fal.url);
     assert.equal(fal.body.start_time, 2);
     assert.equal(fal.body.end_time, 8.5);
+});
+
+/** Shared fetch mock for the captions gateway tests. */
+function mockEditFetch(calls, file) {
+    const rpcs = {
+        check_generation_rate_limit: { ok: true },
+        get_user_asset: { ok: true, state: 'STORED', mime_type: 'video/mp4', r2_key: 'jobs/src.mp4', size_bytes: file.length },
+        ledger_debit: { ok: true, job_id: '66666666-6666-4666-8666-666666666666', idempotent: false, balance_after: 40 },
+        job_submitted: { ok: true }, job_step_claim: { ok: true, claimed: true }, job_step_submitted: { ok: true },
+    };
+    globalThis.fetch = async (url, init = {}) => {
+        const u = String(url);
+        calls.push({ url: u, body: init.body && typeof init.body === 'string' ? JSON.parse(init.body) : undefined });
+        const rpc = /\/rpc\/([a-z_]+)/.exec(u);
+        if (rpc && rpcs[rpc[1]]) return Response.json(rpcs[rpc[1]]);
+        if (u.includes('/rest/v1/model_catalog')) return Response.json([{ id: 'clip-edit', provider: 'veyrnox', provider_endpoint: 'clip-edit:v1', modality: 'video-to-video', credits_5s: 1, gated_flag: false, active: true }]);
+        if (u.includes('/rest/v1/users')) return Response.json([{ id: '00000000-0000-4000-8000-000000000009' }]);
+        if (u.includes('r2.cloudflarestorage.com')) {
+            const [, s, e] = /bytes=(\d+)-(\d+)/.exec(new Headers(init.headers).get('range'));
+            return new Response(file.subarray(Number(s), Number(e) + 1), { status: 206 });
+        }
+        if (u.includes('queue.fal.run')) return Response.json({ request_id: 'req-cap-0' });
+        throw new Error(`unexpected fetch ${u}`);
+    };
+}
+const captionsRequest = () => new Request('https://veyrnox.test/api/v1/generations', {
+    method: 'POST',
+    headers: { 'x-veyrnox-auth-id': 'auth-user-1', 'content-type': 'application/json' },
+    body: JSON.stringify({ model_id: 'clip-edit', idempotency_key: 'edit-key-0002', inputs: { clips: [{ asset_id: A, in_s: 0, out_s: 10 }], captions: { preset: 'glass' } } }),
+});
+
+test('generations: captions are refused while CLIP_EDIT_CAPTIONS_ENABLED is off, before any debit', async () => {
+    const calls = [];
+    mockEditFetch(calls, mp4(10, 720, 1280));
+    delete process.env.CLIP_EDIT_CAPTIONS_ENABLED;
+    const res = await generations.POST(captionsRequest());
+    assert.equal(res.status, 400);
+    assert.equal((await res.json()).error, 'captions_unavailable');
+    assert.equal(calls.some((c) => c.url.includes('/rpc/ledger_debit')), false);
+    assert.equal(calls.some((c) => c.url.includes('queue.fal.run')), false);
+});
+
+test('generations: with the flag on, captions are priced as 7 units and the first call is veed/subtitles', async () => {
+    const calls = [];
+    mockEditFetch(calls, mp4(10, 720, 1280));
+    process.env.CLIP_EDIT_CAPTIONS_ENABLED = 'true';
+    try {
+        const res = await generations.POST(captionsRequest());
+        assert.equal(res.status, 200, JSON.stringify(await res.clone().json()));
+    } finally {
+        delete process.env.CLIP_EDIT_CAPTIONS_ENABLED;
+    }
+    const debit = calls.find((c) => c.url.includes('/rpc/ledger_debit')).body;
+    assert.equal(debit.p_credits, 7, 'a 10 s whole clip is 2 length units; captions set the floor at 7');
+    assert.deepEqual(debit.p_inputs.edit.captions, { preset: 'glass' });
+    const fal = calls.find((c) => c.url.includes('queue.fal.run'));
+    assert.ok(fal.url.includes('veed/subtitles'), fal.url);
+    assert.equal(fal.body.preset, 'glass');
 });

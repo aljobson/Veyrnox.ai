@@ -7,8 +7,9 @@ import pg from 'pg';
 // Exercises 0154_social_publish_foundation.sql (ADR-0061 Phase 1): brands,
 // accounts, the append-only audit log, and the four narrow RPCs. Applies the
 // migration twice to prove idempotency, the same discipline as the other
-// acceptance tests in this package.
-describe('social publish foundation (0154)', { skip: !process.env.DATABASE_URL }, () => {
+// acceptance tests in this package. 0169 adds the Free tier's one-account
+// cap to record_social_account_connection.
+describe('social publish foundation (0154, 0169)', { skip: !process.env.DATABASE_URL }, () => {
     let pool: pg.Pool;
     const users: string[] = [];
     const authIds: string[] = [];
@@ -21,8 +22,10 @@ describe('social publish foundation (0154)', { skip: !process.env.DATABASE_URL }
                     EXECUTE format('CREATE ROLE %I NOLOGIN', r);
                 END IF;
             END LOOP; END $$`);
-        for (const round of [1, 2]) {
-            await pool.query(await readFile(new URL('./schema/supabase/0154_social_publish_foundation.sql', import.meta.url), 'utf8'));
+        for (const name of ['0154_social_publish_foundation.sql', '0169_social_publish_free_account_cap.sql', '0175_social_actions_actor_restrict.sql']) {
+            for (const round of [1, 2]) {
+                await pool.query(await readFile(new URL(`./schema/supabase/${name}`, import.meta.url), 'utf8'));
+            }
         }
     });
     after(async () => {
@@ -38,7 +41,8 @@ describe('social publish foundation (0154)', { skip: !process.env.DATABASE_URL }
             await pool.query(`DELETE FROM public.social_brands b WHERE b.owner_user_id = ANY($1::uuid[])
                 AND NOT EXISTS (SELECT 1 FROM public.social_account_actions a WHERE a.brand_id = b.id)`, [users]);
             const deletableUsers = (await pool.query(`SELECT id FROM public.users u WHERE u.id = ANY($1::uuid[])
-                AND NOT EXISTS (SELECT 1 FROM public.social_brands b WHERE b.owner_user_id = u.id)`, [users])).rows.map((r) => r.id);
+                AND NOT EXISTS (SELECT 1 FROM public.social_brands b WHERE b.owner_user_id = u.id)
+                AND NOT EXISTS (SELECT 1 FROM public.social_account_actions a WHERE a.actor_id = u.id)`, [users])).rows.map((r) => r.id);
             await pool.query('DELETE FROM public.users WHERE id = ANY($1::uuid[])', [deletableUsers]);
             await pool.query('DELETE FROM auth.users WHERE id = ANY($1::uuid[])', [authIds]);
         } finally { await pool.end(); }
@@ -158,6 +162,64 @@ describe('social publish foundation (0154)', { skip: !process.env.DATABASE_URL }
             pool.query('DELETE FROM public.social_account_actions WHERE id = $1', [row.id]),
             /append-only/,
         );
+    });
+
+    // ── 0169: Free tier, one connected account ───────────────────────────
+    const activeCount = async (userId: string) => Number((await one(
+        `SELECT count(*) FROM public.social_accounts a JOIN public.social_brands b ON b.id = a.brand_id
+         WHERE b.owner_user_id = $1 AND a.status = 'active'`, [userId])).count);
+
+    it('refuses a second account on the Free tier, on any network', async () => {
+        const u = await user();
+        const brand = await getOrCreateBrand(u.auth);
+        assert.equal((await connect(u.auth, brand.brand_id)).ok, true);
+        for (const second of [{ externalId: 'ig-other' }, { network: 'linkedin', externalId: 'li-1' }]) {
+            assert.deepEqual(await connect(u.auth, brand.brand_id, second), { ok: false, code: 'ACCOUNT_LIMIT', limit: 1 });
+        }
+        assert.equal(await activeCount(u.id), 1, 'nothing was stored');
+    });
+
+    it('reconnecting the same account still works at the limit', async () => {
+        const u = await user();
+        const brand = await getOrCreateBrand(u.auth);
+        const first = await connect(u.auth, brand.brand_id);
+        const again = await connect(u.auth, brand.brand_id, { accessEnc: Buffer.from('cipher-new') });
+        assert.deepEqual([again.ok, again.idempotent, again.account_id], [true, true, first.account_id]);
+    });
+
+    it('a disconnected account frees the slot', async () => {
+        const u = await user();
+        const brand = await getOrCreateBrand(u.auth);
+        const first = await connect(u.auth, brand.brand_id);
+        assert.equal((await disconnect(u.auth, first.account_id)).ok, true);
+        const next = await connect(u.auth, brand.brand_id, { network: 'twitter', externalId: 'x-1' });
+        assert.equal(next.ok, true);
+        assert.equal(await activeCount(u.id), 1);
+    });
+
+    it('two concurrent connections cannot both pass the cap', async () => {
+        const u = await user();
+        const brand = await getOrCreateBrand(u.auth);
+        const results = await Promise.all(['a', 'b', 'c'].map((k) =>
+            connect(u.auth, brand.brand_id, { externalId: `ig-race-${k}` })));
+        assert.equal(results.filter((r) => r.ok).length, 1);
+        assert.equal(results.filter((r) => r.code === 'ACCOUNT_LIMIT').length, 2);
+        assert.equal(await activeCount(u.id), 1);
+    });
+
+    it('a user with Publish history cannot be deleted out from under the audit log (0175)', async () => {
+        const owner = await user();
+        const brand = await getOrCreateBrand(owner.auth);
+        // A second user referenced only as an action's actor, so actor_id is the one FK in play.
+        const actor = await user();
+        await pool.query(`INSERT INTO public.social_account_actions (actor_id, brand_id, action) VALUES ($1, $2, 'connect')`,
+            [actor.id, brand.brand_id]);
+        const fk = await one(`SELECT confdeltype FROM pg_constraint WHERE conname = 'social_account_actions_actor_id_fkey'`);
+        assert.equal(fk.confdeltype, 'r', 'ON DELETE RESTRICT');
+        // Before 0175, SET NULL fired the append-only trigger (P0001). Now the FK refuses:
+        // PG16 reports RESTRICT as 23503, PG18 as 23001.
+        await assert.rejects(pool.query('DELETE FROM public.users WHERE id = $1', [actor.id]),
+            (e: { code?: string }) => e.code === '23503' || e.code === '23001');
     });
 
     it('forces RLS and permits service-role RPC execution only, on every table', async () => {

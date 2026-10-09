@@ -3,7 +3,7 @@
  *
  * Verification lives in `lib/supabaseJwt.js` (ES256 + JWKS via Web Crypto,
  * Bearer-only, no shared secret, no jose) and is unit-tested there. This
- * file only wires it to the request: strip inbound identity headers → read
+ * file only wires it to the request: blank inbound identity headers → read
  * token → verify signature → check claims → forward verified identity.
  *
  * Downstream route handlers read `x-veyrnox-auth-id` (set here after
@@ -21,12 +21,17 @@ import { recentMfaTimestamp } from './lib/cinema/strongAuth.js';
 import { NextResponse } from 'next/server';
 import { contentSecurityPolicy } from './lib/contentSecurityPolicy.mjs';
 import { readToken, validateClaims, verifyES256 } from './lib/supabaseJwt.js';
+import { isPublishApiPath, publishEnabled } from './lib/social/publishFeature.js';
+import { isUnknownStaticPage } from './lib/unknownStaticPage.js';
 
 export const config = {
     matcher: ['/api/v1/:path*', '/((?!api(?:/|$)|_next(?:/|$)).*)'],
 };
 
 // Identity headers set by this middleware and trusted by /api/v1 handlers.
+// These are the only x-veyrnox-* request headers a handler may read
+// (tests/identityHeaders.test.mjs): every one is given a value here on every
+// request, and '' means the verified token had nothing to put in it.
 const IDENTITY_HEADERS = [
     'x-veyrnox-auth-id',
     'x-veyrnox-auth-email',
@@ -39,12 +44,14 @@ const IDENTITY_HEADERS = [
 ];
 
 export async function middleware(req) {
-    // Identity headers are ours to set. Strip any inbound copy on every
-    // branch, so no handler can ever read a client-supplied value.
+    // Identity headers are ours to set. Give every one an explicit value on
+    // every branch, so no handler can ever read a client-supplied one.
+    // Deleting is not enough: OpenNext forwards the headers set here on top of
+    // the client's own and does not apply a deletion (ADR-0078).
     const headers = stripContext(req.headers);
     const requestId = crypto.randomUUID();
     headers.set('x-request-id', requestId);
-    for (const h of IDENTITY_HEADERS) headers.delete(h);
+    for (const h of IDENTITY_HEADERS) headers.set(h, '');
 
     // Page navigation authenticates through the existing client flow. Never
     // demand an API Bearer token for HTML. The renderer consumes this request
@@ -56,10 +63,19 @@ export async function middleware(req) {
         const policy = contentSecurityPolicy(nonce, process.env.NODE_ENV === 'development');
         headers.set('x-nonce', nonce);
         headers.set('Content-Security-Policy', policy);
-        const response = NextResponse.next({ request: { headers } });
+        // An unknown guide or template is sent to a path with no route, so the
+        // site's not-found page answers with a real 404 (lib/unknownStaticPage.js).
+        const response = isUnknownStaticPage(pathname)
+            ? NextResponse.rewrite(new URL('/_unknown-page', req.url), { request: { headers } })
+            : NextResponse.next({ request: { headers } });
         response.headers.set('Content-Security-Policy', policy);
         response.headers.set('Cache-Control', 'private, no-store, max-age=0');
         return response;
+    }
+
+    // Veyrnox Publish ships dark until PUBLISH_ENABLED is "true" (ISSUES P1).
+    if (isPublishApiPath(pathname) && !publishEnabled()) {
+        return jsonError(503, { error: 'publish_not_open', requestId });
     }
 
     const supabaseUrl = process.env.SUPABASE_URL;
@@ -87,11 +103,11 @@ export async function middleware(req) {
     const claimError = validateClaims(claims, supabaseUrl);
     if (claimError) return reject(req, claimError, requestId);
 
-    // Forward verified identity (inbound copies were deleted above).
+    // Forward verified identity (inbound copies were blanked above).
     headers.set('x-veyrnox-auth-id', claims.sub);
     if (claims.email) headers.set('x-veyrnox-auth-email', String(claims.email));
     if (claims.role) headers.set('x-veyrnox-auth-role', String(claims.role));
-    if (claims.aal) headers.set('x-veyrnox-auth-aal', String(claims.aal));
+    headers.set('x-veyrnox-auth-aal', claims.aal === 'aal2' ? 'aal2' : 'aal1');
 
     const mfaAt = recentMfaTimestamp(claims);
     if (mfaAt !== null) headers.set('x-veyrnox-auth-mfa-at', String(mfaAt));

@@ -1,5 +1,23 @@
 # Current state — 25 September 2026
 
+> **Dated baseline, not the current state.** This is the assessment taken on
+> 25 September 2026 and is kept as written. What has changed since, as of
+> 3 October 2026:
+>
+> - **Migrations** run through 0182, not 0133. The tenant foundation (0135 on)
+>   is built; it is on in staging and off in production.
+> - **Lint works.** ESLint 9 runs clean in CI; "lint command unusable" below
+>   is no longer true.
+> - **Framework** is Next.js 16, not 15.
+> - **CSP** is nonce-based with no inline scripts (ADR-0060, live).
+> - **Providers** now include BytePlus, which is polled, not a webhook.
+> - **Veyrnox Publish** (`lib/social`, `app/api/v1/social`) did not exist at
+>   this baseline; it is built and off in production.
+> - **Cinema** publication, viewing and the paywall are built behind flags.
+>
+> For the current picture read [ARCHITECTURE.md](../../ARCHITECTURE.md) and
+> [docs/product/TRD.md](../product/TRD.md).
+
 Assessment baseline: `ca9a75a` (origin/main). [Implementation brief](https://chatgpt.com/s/t_6ab64fd555c88191bcadd66e190edb7c), sections 126–128, requires assessment, backlog, then P0 implementation. The original local checkout was `3beaedf`, behind the live database; implementation was moved to current main before finalizing changes. No remote database was changed.
 
 ## Verified environment identities

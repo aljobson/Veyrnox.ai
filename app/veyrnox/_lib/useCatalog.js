@@ -27,6 +27,13 @@ function fromApi(models) {
     takesTopic: !!m.capabilities?.inputs?.topic,
     // Clip Editor: edits Library files, so it is started from the Library, never Create.
     isEdit: !!m.capabilities?.inputs?.clips,
+    // Video agent (ADR-0074): bought from an approved plan on its own page, never from the picker.
+    takesPlan: !!m.capabilities?.inputs?.plan_id,
+    // Optional settings the gateway accepts for this model.
+    takesSeed: !!m.capabilities?.inputs?.seed,
+    takesNegative: !!m.capabilities?.inputs?.negative_prompt,
+    // Speech in a voice the user describes in words; the description is required.
+    takesVoice: !!m.capabilities?.inputs?.voice_description,
   }));
 }
 

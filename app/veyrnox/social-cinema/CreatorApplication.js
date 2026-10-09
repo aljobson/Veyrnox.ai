@@ -36,7 +36,7 @@ export function CreatorApplication() {
     <h3 id="creator-title" className="text-xl font-bold">Become a Cinema creator</h3>
     {state === 'loading' ? <p role="status" className="mt-4">Loading your application…</p> : state === 'error' ? <div className="mt-4"><p role="alert">{error}</p><Button className="mt-3" onClick={() => { setState('loading'); setVersion(n => n + 1); }}>Try again</Button></div> : application ? <div className="mt-4">
       <p role="status">{({ pending: 'Your application is waiting for review.', approved: 'Your creator application is approved. Uploading and publishing are not open yet.', rejected: 'Your application was not approved. Contact support if you need help.' })[application.status]}</p>
-      <p className="mt-3 whitespace-pre-wrap break-words text-vx-fg-muted">{application.statement}</p>
+      <p className="mt-3 whitespace-pre-wrap wrap-break-word text-vx-fg-muted">{application.statement}</p>
     </div> : <form onSubmit={submit} className="mt-4 max-w-lg space-y-4">
       <p className="text-sm text-vx-fg-body">Tell us about the films or series you want to make. Your application is private and reviewed by the Cinema team. Do not include payment or identity documents.</p>
       <label className="block font-semibold" htmlFor="creator-statement">Your creative plans<textarea id="creator-statement" name="statement" required minLength={20} maxLength={1000} rows={5} className="mt-2 w-full rounded-xl border border-vx-border bg-vx-panel p-3 focus-visible:outline-vx-accent" /></label>

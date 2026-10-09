@@ -2,8 +2,16 @@ import { ACCOUNT_PAUSED_COPY } from './gateway';
 
 // What the create page says for each gateway error code.
 export const ERROR_COPY = {
+  // A submit whose reply never arrived (imageBatch.submitErrorCode): it may have been charged.
+  dispatch_acceptance_unknown: 'We lost the reply to this request, so it may be queued and charged. Open Library to check before trying again.',
+  idempotency_conflict: 'This request key was already used with different settings. Open Library to check the original job.',
+  outcome_unknown:       'We lost the reply to this request, so it may have started and been charged. Open Library to check before trying again.',
   poll_unreachable:      'Lost contact with the server, so we stopped checking. Your generation may still have run — open Library to see.',
   moderation:            'The provider declined this prompt on safety grounds. Credits refunded.',
+  // The code grsai and byteplus emit on a failed job, and Jev on a refused submit (ADR-0066).
+  provider_moderation:   'The provider declined this prompt on safety grounds. Credits refunded.',
+  provider_input_rejected:'The model would not accept one of these settings or inputs. Credits refunded — change it and try again.',
+  provider_submit_failed:'The model would not take this job. Credits refunded — try again.',
   provider_timeout:      'The model took too long. Credits refunded — try again.',
   provider_error:        'The model returned an error. Credits refunded.',
   internal:              'Something on our side broke. Credits refunded.',
@@ -33,5 +41,36 @@ export const ERROR_COPY = {
   'inputs_invalid:topic':'A topic is 3 to 200 characters of plain text on one line. Nothing was charged.',
   topic_refused:        'That topic can\'t be made into a short: try a factual subject without real people. Credits refunded.',
   dialogue_invalid:      'Write one line per speaker, like "Ana: Hello!", with up to four speakers. Nothing was charged.',
+  // Video agent (ADR-0074). Plan errors happen before any charge; the run errors are worded for a refund that has landed.
+  video_agent_unavailable: 'The video agent isn\'t open yet. Nothing was charged.',
+  'inputs_invalid:brief': 'A brief is 3 to 500 characters of plain text. Nothing was charged.',
+  plan_unavailable:      'We couldn\'t make a plan right now. Nothing was charged — try again in a minute.',
+  plan_expired:          'This plan expired. Make a new plan to continue. Nothing was charged.',
+  plan_invalid:          'This plan is no longer valid. Make a new plan. Nothing was charged.',
+  plan_mismatch:         'The brief changed after the plan was made. Make a new plan. Nothing was charged.',
+  plan_price_changed:    'The price changed since this plan was made. Make a new plan to see it. Nothing was charged.',
+  plan_key_mismatch:     'This plan can\'t be approved that way. Make a new plan. Nothing was charged.',
+  video_agent_in_progress:'You already have a video being made. Nothing was charged — start another when it finishes.',
+  video_agent_busy:      'Every video agent slot is in use right now. Nothing was charged — try again in a few minutes.',
+  video_agent_offline:   'The video agent can\'t be reached right now. Nothing was charged — try again shortly.',
+  brief_refused:         'That brief can\'t be made into a video. It must not show real, named people or minors in harm\'s way, be sexual, promote violence, self-harm or hatred, or copy a named artist\'s or brand\'s look. Credits refunded.',
+  video_agent_failed:    'The video could not be made. Credits refunded.',
+  montage_failed:        'The video could not be made. Credits refunded.',
+  runner_submit_failed:  'We couldn\'t start the video. Credits refunded — try again.',
+  step_not_recorded:     'We couldn\'t start the video. Credits refunded — try again.',
+  step_timeout:          'The video took too long and was stopped. Credits refunded.',
+  run_lost:              'The video agent stopped before it finished. Credits refunded — try again.',
+  output_missing:        'The video finished but could not be saved. Credits refunded.',
+  output_invalid:        'The video finished but could not be saved. Credits refunded.',
   'inputs_invalid:prompt':'The prompt is empty or too long for this model (speech takes up to 1000 characters). Nothing was charged.',
+  'inputs_invalid:voice_description':'Describe the voice in up to 500 characters. Nothing was charged.',
 };
+
+// What a FAILED job says. "Credits refunded" only once /jobs/:id reports the
+// refund (refunded: true); a failed job's refund can still be on its way.
+// That covers the per-code copy above too, which is worded for a refund that
+// has landed.
+export function failedJobCopy(job) {
+  const copy = ERROR_COPY[job.error_code] || 'Something went wrong. Credits refunded.';
+  return job.refunded === true ? copy : copy.replace('Credits refunded', 'Your credits are on their way back');
+}

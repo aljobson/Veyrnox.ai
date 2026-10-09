@@ -56,3 +56,21 @@ test('unauthenticated and malformed cursors perform no reads; quotas stop databa
     globalThis.fetch = async () => { calls++; return Response.json({ ok: false, code: 'RATE_LIMITED', retry_after_seconds: 12 }); };
     assert.equal((await GET(req())).status, 429); assert.equal(calls, 1);
 });
+
+test('referral rewards and their reversals get their own labels, and the raw reason (which carries the friend id) is never returned', async () => {
+    const friend = '33333333-3333-4333-8333-333333333333';
+    globalThis.fetch = async (url) => {
+        const u = new URL(url);
+        if (u.pathname.endsWith('/consume_account_read_request')) return Response.json({ ok: true });
+        if (u.pathname.endsWith('/users')) return Response.json([{ id: owner }]);
+        return Response.json([
+            { id: 'r1', delta: 27, free_delta: 0, reason: `grant:referral#referral-${friend}`, created_at: '2026-09-24T12:00:00Z' },
+            { id: 'r2', delta: -9, free_delta: 0, reason: 'reverse:referral', created_at: '2026-09-24T12:01:00Z' },
+            { id: 'r3', delta: -3, free_delta: 0, reason: 'reverse:topup_refund', created_at: '2026-09-24T12:02:00Z' },
+            { id: 'r4', delta: 5, free_delta: 0, reason: 'grant:referral-lookalike', created_at: '2026-09-24T12:03:00Z' },
+        ]);
+    };
+    const body = await (await GET(req())).json();
+    assert.deepEqual(body.entries.map((e) => [e.delta, e.kind]), [[27, 'referral_reward'], [-9, 'referral_reward_reversed'], [-3, 'payment_adjustment'], [5, 'adjustment']]);
+    assert.equal(JSON.stringify(body).includes(friend), false, 'the friend id inside the reason never leaves the server');
+});

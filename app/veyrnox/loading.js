@@ -1,3 +1,5 @@
+import { ANNOUNCEMENT } from './_lib/announcement';
+
 // Route-level skeleton for the marketing shell. The landing page reads the
 // live catalog from Postgres before it can render, so on a cold Worker this
 // is what fills the gap instead of a blank document.
@@ -5,7 +7,8 @@ export default function Loading() {
   return (
     <div className="min-h-dvh vx-root font-vx bg-vx-base text-vx-fg" aria-busy="true" aria-live="polite">
       <span className="sr-only">Loading Veyrnox.ai…</span>
-      <div className="h-9 bg-vx-money/60" />
+      {/* The announcement bar (AnnouncementBar.js), when one is set. */}
+      {ANNOUNCEMENT && <div className="h-9 bg-vx-fg" />}
       <div className="h-16 border-b border-vx-border" />
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 pt-16">
         <div className="mx-auto flex max-w-[900px] flex-col items-center gap-4">

@@ -1,6 +1,6 @@
 # ADR-0053 — Recover missed Cinema upload completion
 
-Status: Proposed, 25 September 2026. Extends ADR-0052.
+Status: Proposed, 25 September 2026. Extends ADR-0052. Built and merged; migrations applied in production; **off in production** (`CINEMA_ENABLED` and the other `CINEMA_*` flags are `false`), on in staging (status corrected 2026-10-03).
 
 A missed Stream callback currently leaves a private video waiting until its creator manually refreshes. Add a bounded pass to the existing five-minute Worker cron. Read only recorded Stream UIDs through the existing ten-second, 64 KiB adapter and persist the same validated observation used by manual refresh and signed webhooks. Never create another video, infer an unknown UID, return an upload capability, publish content or free storage capacity.
 

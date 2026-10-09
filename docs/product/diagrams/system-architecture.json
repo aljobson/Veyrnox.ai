@@ -1,0 +1,312 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Veyrnox.ai system architecture (as of 2026-10-08)",
+    "subtitle": "Checked against main 96380e7f",
+    "output": "system-architecture.html",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "request",
+        "label": "Signed-in request",
+        "focus": [
+          "browser",
+          "auth",
+          "worker",
+          "pg"
+        ],
+        "note": "Browser holds a Supabase ES256 JWT; the Worker verifies it and calls Postgres RPCs with the service role."
+      },
+      {
+        "id": "generation",
+        "label": "Generation",
+        "focus": [
+          "worker",
+          "providers",
+          "r2",
+          "pg"
+        ],
+        "note": "Debit, submit, signed webhook or 5-minute poll, copy the output to EU R2, mark STORED."
+      },
+      {
+        "id": "money",
+        "label": "Money",
+        "focus": [
+          "browser",
+          "worker",
+          "stripe",
+          "pg"
+        ],
+        "note": "Stripe Checkout; the signed webhook credits the ledger through RPCs. Subscriptions are built but off."
+      },
+      {
+        "id": "agent",
+        "label": "Video agent",
+        "focus": [
+          "worker",
+          "runner",
+          "r2",
+          "pg"
+        ],
+        "note": "Dark in production: the Worker signs a run, the Fly.io runner calls back, output goes to a presigned R2 PUT."
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "auth",
+      "type": "security",
+      "label": "Supabase Auth",
+      "sublabel": "email, Google, Apple, passkey",
+      "tag": "Turnstile",
+      "pos": [
+        40,
+        40
+      ],
+      "size": [
+        200,
+        64
+      ]
+    },
+    {
+      "id": "access",
+      "type": "security",
+      "label": "Cloudflare Access",
+      "sublabel": "admin routes",
+      "pos": [
+        330,
+        40
+      ],
+      "size": [
+        190,
+        64
+      ]
+    },
+    {
+      "id": "stripe",
+      "type": "external",
+      "label": "Stripe",
+      "sublabel": "Checkout; subscriptions off",
+      "pos": [
+        660,
+        40
+      ],
+      "size": [
+        210,
+        64
+      ]
+    },
+    {
+      "id": "browser",
+      "type": "frontend",
+      "label": "Browser",
+      "sublabel": "Next.js 16 / React 19",
+      "pos": [
+        40,
+        210
+      ],
+      "size": [
+        200,
+        64
+      ]
+    },
+    {
+      "id": "worker",
+      "type": "backend",
+      "label": "Worker veyrnox-ai",
+      "sublabel": "OpenNext + cron */5",
+      "tag": "ES256 / JWKS",
+      "pos": [
+        330,
+        210
+      ],
+      "size": [
+        190,
+        64
+      ]
+    },
+    {
+      "id": "providers",
+      "type": "external",
+      "label": "Model providers",
+      "sublabel": "fal, kie, OpenRouter, GrsAI, BytePlus",
+      "pos": [
+        660,
+        210
+      ],
+      "size": [
+        250,
+        64
+      ]
+    },
+    {
+      "id": "r2",
+      "type": "cloud",
+      "label": "R2 (EU jurisdiction)",
+      "sublabel": "SigV4, 15 min URLs",
+      "pos": [
+        1010,
+        210
+      ],
+      "size": [
+        200,
+        64
+      ]
+    },
+    {
+      "id": "runner",
+      "type": "external",
+      "label": "Montage runner",
+      "sublabel": "Fly.io, OpenMontage",
+      "tag": "flag off",
+      "pos": [
+        40,
+        380
+      ],
+      "size": [
+        200,
+        64
+      ]
+    },
+    {
+      "id": "pg",
+      "type": "database",
+      "label": "Supabase Postgres",
+      "sublabel": "85 tables, RPCs, pg_cron",
+      "tag": "eu-central-1",
+      "pos": [
+        330,
+        380
+      ],
+      "size": [
+        190,
+        64
+      ]
+    },
+    {
+      "id": "other",
+      "type": "external",
+      "label": "Stream, 11 social networks, email",
+      "sublabel": "Cinema, Publish (Bluesky app password), Resend",
+      "pos": [
+        660,
+        380
+      ],
+      "size": [
+        250,
+        64
+      ]
+    }
+  ],
+  "boundaries": [],
+  "connections": [
+    {
+      "id": "sign-in",
+      "from": "browser",
+      "to": "auth",
+      "label": "sign in",
+      "variant": "security"
+    },
+    {
+      "id": "api-call",
+      "from": "browser",
+      "to": "worker",
+      "label": "Bearer JWT",
+      "variant": "emphasis"
+    },
+    {
+      "id": "admin-gate",
+      "from": "access",
+      "to": "worker",
+      "label": "Access JWT",
+      "variant": "security",
+      "labelDy": 24
+    },
+    {
+      "id": "rpc",
+      "from": "worker",
+      "to": "pg",
+      "label": "RPC (service role)",
+      "variant": "emphasis",
+      "labelAt": [
+        425,
+        352
+      ]
+    },
+    {
+      "id": "checkout",
+      "from": "worker",
+      "to": "stripe",
+      "label": "Checkout + webhook",
+      "fromSide": "right",
+      "toSide": "left",
+      "labelAt": [
+        590,
+        150
+      ]
+    },
+    {
+      "id": "submit",
+      "from": "worker",
+      "to": "providers",
+      "label": "submit",
+      "variant": "emphasis",
+      "labelAt": [
+        628,
+        228
+      ]
+    },
+    {
+      "id": "store-media",
+      "from": "providers",
+      "to": "r2",
+      "label": "output copied"
+    },
+    {
+      "id": "run-video",
+      "from": "worker",
+      "to": "runner",
+      "label": "signed run",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "media-calls",
+      "from": "worker",
+      "to": "other",
+      "label": "tus, publish (11 networks), email",
+      "fromSide": "bottom",
+      "toSide": "top"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Edge",
+      "items": [
+        "One Worker serves pages and /api/v1",
+        "Nonce CSP on every HTML request",
+        "Cron every 5 minutes polls GrsAI and BytePlus and runs the sweeps"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Data and money",
+      "items": [
+        "All writes are SECURITY DEFINER RPCs",
+        "Stripe is the only billing provider",
+        "Three credit buckets: Subscription, Free, Pack",
+        "Every debit has a refund path"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Production flags",
+      "items": [
+        "On: chat, free allowance, referrals, personas, clip captions",
+        "Off: subscriptions, Publish, extended networks (6 of 11; on in staging), Cinema, projects, video agent"
+      ]
+    }
+  ]
+}

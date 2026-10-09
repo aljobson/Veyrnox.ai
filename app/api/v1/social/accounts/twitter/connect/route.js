@@ -21,6 +21,7 @@
  */
 
 import { NextResponse } from 'next/server';
+import { networkReleased } from '../../../../../../../lib/social/networks.js';
 import { envConfig } from '../../../../../../../packages/db/supabase-client.js';
 import { xConfig, buildAuthorizeUrl } from '../../../../../../../packages/adapters/social/twitter.js';
 import { createOAuthState } from '../../../../../../../lib/social/oauthState.js';
@@ -37,6 +38,8 @@ export async function POST(req) {
     if (!authId || !UUID_RE.test(authId)) {
         return NextResponse.json({ error: 'not_authenticated' }, { status: 401 });
     }
+
+    if (!networkReleased('twitter')) return NextResponse.json({ error: 'network_unavailable' }, { status: 404 });
 
     const cfg = envConfig();
     const xCfg = xConfig();

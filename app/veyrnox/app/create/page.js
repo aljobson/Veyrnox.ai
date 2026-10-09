@@ -1,40 +1,36 @@
 'use client';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import Link from 'next/link';
 import { AppNav } from '../../_components/NavBar';
 import { Chip } from '../../_components/Chip';
 import { ASPECT_RATIOS } from '../../_lib/tokens';
 import { gatewayFetch, makeIdempotencyKey, notifyBalanceChanged, GatewayError } from '../../_lib/gateway';
-import { ERROR_COPY } from '../../_lib/createErrors';
-import { pushJobHistory, markJobSettled } from '../../_lib/jobHistory';
+import { ERROR_COPY, failedJobCopy } from '../../_lib/createErrors';
+import { pushJobHistory } from '../../_lib/jobHistory';
 import { JobAssetPreview } from '../../_components/JobAssetPreview';
+import { StudioJobGrid } from '../../_components/StudioJobGrid';
+import { useStudioJobs } from '../../_lib/useStudioJobs';
+import { IMAGE_COUNTS, takesImageCount, imageCount, totalCost, inputsForIndex, batchNote, sendInOrder, submitErrorCode } from '../../_lib/imageBatch';
 import { useCatalog } from '../../_lib/useCatalog';
+import { useFreeAllowance } from '../../_lib/useFreeAllowance';
+import { freeCost, freeLeftFor } from '../../_lib/freeAllowance';
+import { takeStudioDraft } from '../../_lib/landingDraft';
+import { templateStartId } from '../../../../lib/templateStart';
 import { DEFAULT_CINEMA, buildCinemaPrompt } from '../../_lib/cinema';
 import { CameraPanel } from '../../_components/CameraPanel';
 import { CharacterPanel } from '../../_components/CharacterPanel';
 import { buildCharacterPrompt } from '../../_lib/character';
 import { DrawOnImage } from '../../_components/DrawOnImage';
 import { SourcePickers } from '../../_components/SourcePickers';
+import { LibraryPicker } from '../../_components/LibraryPicker';
+import { GenerationSettings } from '../../_components/GenerationSettings';
+import { VoiceDescription } from '../../_components/VoiceDescription';
+import { ControlRow } from '../../_components/ControlRow';
+import { TIERS, TIER_LABEL, filterByTier } from '../../_lib/modelTiers';
+import { settingsInputs, voiceIsMissing } from '../../_lib/generationSettings';
 import { ParticleButton } from '@/components/ParticleButton';
-// State glyphs — colour-blind safety net matches the design system §08.
-const STATE_UI = {
-  queued:    { glyph: '●', tone: 'accent',  label: 'QUEUED' },
-  running:   { glyph: '●', tone: 'accent',  label: 'RUNNING' },
-  succeeded: { glyph: '✓', tone: 'accent',  label: 'DONE' },
-  failed:    { glyph: '✕', tone: 'danger',  label: 'FAILED · REFUNDED' },
-};
-// How many consecutive poll failures before we stop and tell the user. At
-// 2s an interval that is ~1 minute of silence, which is long enough to ride
-// out a blip and short enough that nobody watches a dead shimmer.
-const POLL_GIVE_UP_AFTER = 30;
+import { jobStateUi, SLOW_MODEL_WAIT } from '../../_lib/studioStates';
 const DEFAULT_MODEL = 'wan-2.5-kie';
-// Models measured well over a minute end to end in live tests (2026-09-13).
-// ponytail: hand-kept list; move to the catalog if more slow models land.
-const SLOW_MODEL_WAIT = {
-  'ace-step-1.5': 'Music takes about 3–4 minutes.',
-  'mmaudio-v2': 'Sound effects take about 3 minutes.',
-  'seedance-2.0-fast': 'Video takes about 2 minutes.',
-  'auto-short-32s': 'About 2–10 minutes: script, voiceover, four scenes, then the stitch.',
-};
 // Auto Short stays hidden until launch unless this browser opts in
 // (CLAUDE.md "Delivery": new user paths behind localStorage.veyrnox_*).
 const AUTO_SHORT_FLAG = 'veyrnox_auto_short';
@@ -43,39 +39,66 @@ function readFlag(name) {
   try { return window.localStorage.getItem(name) === '1'; } catch { return false; }
 }
 
+function errorFor(e) {
+  return e instanceof GatewayError ? { code: e.code, retryAfter: e.retryAfter } : { code: 'internal' };
+}
+
+// Off on the server and first paint, then whatever this browser has stored.
+const never = () => () => {};
+const autoShortFlag = () => readFlag(AUTO_SHORT_FLAG);
+const off = () => false;
+
 export default function CreateStudio() {
   const { models: catalogModels, live: catalogLive, loading: catalogLoading } = useCatalog();
-  const [autoShortOn, setAutoShortOn] = useState(false);
-  useEffect(() => { setAutoShortOn(readFlag(AUTO_SHORT_FLAG)); }, []);
-  const models = catalogModels.filter((m) => !m.isEdit && (autoShortOn || !m.takesTopic));
+  const freeMap = useFreeAllowance(); // ADR-0069: free jobs left today per model; empty while the feature is off
+  const autoShortOn = useSyncExternalStore(never, autoShortFlag, off);
+  const models = catalogModels.filter((m) => !m.isEdit && !m.takesPlan && (autoShortOn || !m.takesTopic));
   const [modelId, setModelId] = useState(DEFAULT_MODEL);
+  const [presetParam, setPresetParam] = useState(null);
+  const [tier, setTier] = useState(null);
   const [duration, setDuration] = useState('5s');
   const [aspect, setAspect] = useState('16:9');
   const [prompt, setPrompt] = useState('A neon-lit Tokyo alley at 3am, low anamorphic tracking shot');
   // Start image for models whose catalog capabilities declare an image slot.
-  // Uploads for the model's media slots: { image|video|audio: { file, previewUrl } }.
+  // Sources for the model's media slots: { image|video|audio: { file, previewUrl } },
+  // or { assetId, previewUrl, label } for an image picked from the Library.
   const [sources, setSources] = useState({});
+  const [libraryFor, setLibraryFor] = useState(null);
   const [drawing, setDrawing] = useState(false);
   // Uploads can carry a real face or voice: the AUP consent statement is
   // required before one is sent, and the gateway records it on the job (0096).
   const [consent, setConsent] = useState(false);
   const [cinemaOn, setCinemaOn] = useState(false);
   const [cinema, setCinema] = useState(DEFAULT_CINEMA);
+  const [seed, setSeed] = useState('');
+  const [negative, setNegative] = useState('');
+  const [voice, setVoice] = useState(''); // the voice in words, for a speech model that takes one
   const [characterOn, setCharacterOn] = useState(false);
   const [character, setCharacter] = useState({});
+  const [count, setCount] = useState(1);
 
   const [balance, setBalance] = useState(null);
-  const [job, setJob] = useState(null);          // { job_id, state, credits, model_id, error_code?, asset_url? }
   const [error, setError] = useState(null);
-
-  const pollRef = useRef(null);
+  const onUnreachable = useCallback(() => setError({ code: 'poll_unreachable' }), []);
+  const { jobs, generating, startJobs, addJob, clearJobs } = useStudioJobs({ onUnreachable });
+  const job = jobs.length === 1 ? jobs[0] : null;
+  // True while a batch is still being sent, so New generation cannot clear it halfway.
+  const [sending, setSending] = useState(false);
 
   // ?model=<id> from landing tiles / hero cards. Read once on mount —
   // avoids the Suspense boundary useSearchParams demands on client pages.
+  // ?duration=10s and the prompt come from the landing price slip; the
+  // duration effect below drops a length the model does not sell.
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const wanted = new URLSearchParams(window.location.search).get('model');
+    const params = new URLSearchParams(window.location.search);
+    const wanted = params.get('model');
     if (wanted) setModelId(wanted);
+    setPresetParam(params.get('preset')); // a template's id, from its studio link; sent only while its own model is selected
+    if (params.get('duration') === '10s') setDuration('10s');
+    const draft = takeStudioDraft(window.sessionStorage, wanted);
+    if (draft) setPrompt(draft.prompt);
+    if (draft?.aspect) setAspect(draft.aspect);
   }, []);
 
   // If the selected id isn't in the (live or fallback) catalog, fall back to
@@ -90,6 +113,9 @@ export default function CreateStudio() {
   }, [models, modelId, catalogLoading]);
 
   const model = models.find((m) => m.id === modelId) || null;
+  // The picked model stays listed even when the tier filter would hide it.
+  const listed = filterByTier(models, tier);
+  const visibleModels = model && !listed.includes(model) ? [model, ...listed] : listed;
   // Lengths the gateway will actually sell for this model, from the catalog.
   // Rendering anything else offers a price the server then refuses.
   const durations = (model && model.durations && model.durations.length ? model.durations : [5]).map((s) => `${s}s`);
@@ -97,6 +123,7 @@ export default function CreateStudio() {
   const missingSource = Object.entries(media).some(([slot, spec]) => spec.required && !sources[slot]);
   const hasUpload = Object.keys(media).some((slot) => sources[slot]);
   const missingConsent = hasUpload && !consent;
+  const missingVoice = voiceIsMissing(model, voice);
   // Camera text suits pictures and clips; audio and speech would read it aloud.
   const isShort = !!model?.takesTopic;
   const takesCamera = !isShort && (model?.kind === 'image' || model?.kind === 'video');
@@ -104,10 +131,14 @@ export default function CreateStudio() {
   const aspectOptions = isShort ? []
     : model?.aspects ? ASPECT_RATIOS.filter((a) => model.aspects.includes(a))
     : model?.kind === 'video' ? ASPECT_RATIOS : [];
-  const cost = model ? model.credits * (duration === '10s' && model.kind === 'video' ? 2 : 1) : 0;
+  const unitCost = model ? model.credits * (duration === '10s' && model.kind === 'video' ? 2 : 1) : 0;
+  // Other models always send one; the count control is image-only.
+  const n = imageCount(model, count);
+  // The server decides what is free; the first `freeLeft` jobs of a batch are, the rest cost the catalog price.
+  const freeLeft = freeLeftFor(freeMap, modelId);
+  const cost = freeLeft > 0 ? freeCost(unitCost, n, freeLeft) : totalCost(unitCost, n);
   const durationKey = durations.join(',');
-  const generating = job && (job.state === 'queued' || job.state === 'running');
-  // `generating` is derived from `job`, which is only set AFTER the await in
+  // `generating` is derived from `jobs`, which is only set AFTER the await in
   // onSubmit. Between the click and that setState the button stayed enabled,
   // so a second click minted a second idempotency key — a legitimately new
   // job to ledger_debit, and a second debit. The server is idempotent per
@@ -119,13 +150,14 @@ export default function CreateStudio() {
   useEffect(() => {
     if (!durations.includes(duration)) setDuration(durations[0]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [durationKey]);
+  }, [durationKey, duration]);
 
-  function pickSource(slot, file) {
+  function pickSource(slot, file, asset = null) {
     setSources((prev) => {
-      if (prev[slot]) URL.revokeObjectURL(prev[slot].previewUrl);
+      if (prev[slot]?.file) URL.revokeObjectURL(prev[slot].previewUrl);
       const next = { ...prev };
       if (file) next[slot] = { file, previewUrl: URL.createObjectURL(file) };
+      else if (asset) next[slot] = { assetId: asset.id, previewUrl: asset.url, label: asset.label };
       else delete next[slot];
       return next;
     });
@@ -181,43 +213,6 @@ export default function CreateStudio() {
     };
   }, [loadBalance]);
 
-  // ── poll job state ────────────────────────────────────────────────
-  useEffect(() => {
-    if (!job || job.state === 'succeeded' || job.state === 'failed') {
-      if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
-      return;
-    }
-    // Consecutive failures used to be swallowed forever: offline or against a
-    // 500 the shimmer span at 2s intervals with no error and no end, and each
-    // failed call re-dispatched veyrnox:auth-required, so a dismissed sign-in
-    // modal reappeared every 2 seconds indefinitely. Give up like TopUpPacks
-    // already does.
-    let failures = 0;
-    pollRef.current = setInterval(async () => {
-      try {
-        const next = await gatewayFetch(`/jobs/${job.job_id}`);
-        failures = 0;
-        setJob((prev) => prev ? { ...prev, ...next } : prev);
-        if (next.state === 'succeeded' || next.state === 'failed') markJobSettled(job.job_id, next.state);
-        if (next.state === 'succeeded') {
-          const asset = await gatewayFetch(`/jobs/${job.job_id}/asset`);
-          setJob((prev) => prev ? { ...prev, asset_url: asset.url, mime_type: asset.mime_type } : prev);
-          notifyBalanceChanged();
-        } else if (next.state === 'failed') {
-          notifyBalanceChanged();
-        }
-      } catch (e) {
-        failures += 1;
-        console.error('[create/poll] failed', e);
-        if (failures >= POLL_GIVE_UP_AFTER) {
-          if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
-          setError({ code: 'poll_unreachable' });
-        }
-      }
-    }, 2000);
-    return () => { if (pollRef.current) clearInterval(pollRef.current); };
-  }, [job?.job_id, job?.state]);
-
   // Character traits go first, the camera description last; each keeps the
   // result under the gateway's 2000-character limit by cutting the user text.
   function finalPrompt() {
@@ -228,69 +223,82 @@ export default function CreateStudio() {
   }
 
   // ── submit ────────────────────────────────────────────────────────
+  // N images are N separate generations: each its own key, debit, refund path
+  // and job. Sent one at a time; the first failure stops the rest, and none is
+  // ever retried under a new key.
   async function onSubmit() {
-    if (inFlight.current || generating || !model || balance == null || cost > balance) return;
+    if (inFlight.current || sending || generating || !model || balance == null || cost > balance) return;
     inFlight.current = true;
     if (model.gated) { inFlight.current = false; setError({ code: 'model_gated' }); return; }
     if (missingSource) { inFlight.current = false; setError({ code: 'source_required' }); return; }
     if (missingConsent) { inFlight.current = false; setError({ code: 'consent_required' }); return; }
+    if (missingVoice) { inFlight.current = false; setError({ code: 'inputs_invalid:voice_description' }); return; }
     setError(null);
-    const idempotency_key = makeIdempotencyKey();
+    setSending(true);
+    const keys = Array.from({ length: n }, () => makeIdempotencyKey());
     // An Auto Short takes only its topic; the pipeline picks the format.
     const inputs = isShort ? { topic: prompt.trim() } : {
       prompt: finalPrompt(),
       aspect_ratio: aspect,
       duration_seconds: model.kind === 'video' ? Number(duration.replace('s', '')) : undefined,
+      ...settingsInputs(model, { seed, negative, voice }),
     };
     // strip undefined so server sees a clean object
     Object.keys(inputs).forEach((k) => inputs[k] === undefined && delete inputs[k]);
 
     try {
       // Only the slots this model takes; a leftover upload from another model stays local.
+      // Each file is uploaded once and its key reused by every request.
       const source_keys = [];
+      const source_assets = [];
       for (const slot of Object.keys(media)) {
-        if (sources[slot]) source_keys.push(await uploadSource(sources[slot].file));
+        if (sources[slot]?.assetId) source_assets.push(sources[slot].assetId);
+        else if (sources[slot]) source_keys.push(await uploadSource(sources[slot].file));
       }
-      const submitted = await gatewayFetch('/generations', {
-        method: 'POST',
-        body: JSON.stringify({
-          model_id: modelId, idempotency_key, inputs,
-          source_keys: source_keys.length ? source_keys : undefined,
-          consent: source_keys.length ? true : undefined,
-        }),
+      const anySource = source_keys.length + source_assets.length > 0;
+      const { started, error: failure } = await sendInOrder(n, async (i) => {
+        const submitted = await gatewayFetch('/generations', {
+          method: 'POST',
+          body: JSON.stringify({
+            model_id: modelId, idempotency_key: keys[i], inputs: inputsForIndex(inputs, i, n),
+            preset: templateStartId(presetParam, modelId) || undefined,
+            source_keys: source_keys.length ? source_keys : undefined,
+            source_assets: source_assets.length ? source_assets : undefined,
+            consent: anySource ? true : undefined,
+          }),
+        });
+        // A job that took a free allowance (ADR-0069) cost nothing; the server says so.
+        const jobCredits = submitted.free_allowance === true ? 0 : unitCost;
+        // The first accepted job replaces the previous click's jobs.
+        (i === 0 ? startJobs : addJob)({ job_id: submitted.job_id, state: 'queued', credits: jobCredits, model_id: modelId });
+        pushJobHistory({
+          job_id: submitted.job_id,
+          model_id: modelId,
+          credits: jobCredits,
+          prompt: prompt.slice(0, 60),
+          name: prompt.slice(0, 40),
+        });
+        if (submitted.balance_after != null) setBalance(submitted.balance_after);
       });
-      setJob({
-        job_id: submitted.job_id,
-        state: submitted.state === 'DEBITED' || submitted.state === 'SUBMITTED' ? 'queued' : 'queued',
-        credits: cost,
-        model_id: modelId,
-      });
-      pushJobHistory({
-        job_id: submitted.job_id,
-        model_id: modelId,
-        credits: cost,
-        prompt: prompt.slice(0, 60),
-        name: prompt.slice(0, 40),
-      });
-      setBalance(submitted.balance_after);
-      notifyBalanceChanged();
+      if (started > 0) notifyBalanceChanged();
+      if (failure) {
+        const err = errorFor(failure);
+        const code = submitErrorCode(err.code);
+        setError({ ...err, code, note: batchNote(started, n, code) });
+      }
     } catch (e) {
-      if (e instanceof GatewayError) {
-        setError({ code: e.code, retryAfter: e.retryAfter });
-      } else {
-        setError({ code: 'internal' });
-      }
+      setError(errorFor(e));
     } finally {
       inFlight.current = false;
+      setSending(false);
     }
   }
 
-  // Leaves the running job to finish in the background (JobWatcher announces
-  // it); the charge stands, so this never claimed to cancel anything.
+  // Leaves the running jobs to finish in the background (JobWatcher announces
+  // them); the charge stands, so this never claimed to cancel anything.
   function cancel() {
-    setJob(null);
+    clearJobs();
     setError(null);
-    if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
   }
 
   return (
@@ -308,48 +316,47 @@ export default function CreateStudio() {
             <Chip tone="accent">UNSAVED DRAFT</Chip>
           </div>
 
-          <div
-            className={`relative rounded-2xl border border-vx-border bg-vx-panel overflow-hidden ${generating ? 'vx-shimmer' : ''}`}
-            style={{ aspectRatio: (isShort ? '9:16' : aspect).replace(':', '/') }}
-          >
-            {job?.asset_url ? (
-              <JobAssetPreview job={job} />
-            ) : (
-              <div className="absolute inset-0 flex items-center justify-center">
-                {generating ? (
-                  <div className="text-center">
-                    <div className="font-vx-mono text-[11px] tracking-[0.14em] text-vx-accent">
-                      <span aria-hidden="true">●</span> {STATE_UI[job.state].label} · {model.name.toUpperCase()}
+          {jobs.length > 1 ? <StudioJobGrid jobs={jobs} aspect={aspect} /> : (
+            <div
+              className={`relative rounded-2xl border border-vx-border bg-vx-panel overflow-hidden ${generating ? 'vx-shimmer' : ''}`}
+              style={{ aspectRatio: (isShort ? '9:16' : aspect).replace(':', '/') }}
+            >
+              {job?.asset_url ? (
+                <JobAssetPreview job={job} />
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  {generating ? (
+                    <div className="text-center">
+                      <div className="font-vx-mono text-[11px] tracking-[0.14em] text-vx-accent">
+                        <span aria-hidden="true">●</span> {jobStateUi(job).label} · {model.name.toUpperCase()}
+                      </div>
+                      <div className="mt-2 font-vx-mono text-[42px] font-bold vx-num">…</div>
+                      {SLOW_MODEL_WAIT[model.id] && (
+                        <div className="text-xs text-vx-fg-body mt-2">{SLOW_MODEL_WAIT[model.id]}</div>
+                      )}
+                      <div className="text-xs text-vx-fg-muted mt-2">Keeps running if you leave or start another — we&apos;ll tell you when it&apos;s ready. Refund on failure, always.</div>
                     </div>
-                    <div className="mt-2 font-vx-mono text-[42px] font-bold vx-num">…</div>
-                    {SLOW_MODEL_WAIT[model.id] && (
-                      <div className="text-xs text-vx-fg-body mt-2">{SLOW_MODEL_WAIT[model.id]}</div>
-                    )}
-                    <div className="text-xs text-vx-fg-muted mt-2">Keeps running if you leave or start another — we&apos;ll tell you when it&apos;s ready. Refund on failure, always.</div>
-                  </div>
-                ) : job?.state === 'failed' ? (
-                  <div className="text-center max-w-md px-6">
-                    <div className="font-vx-mono text-[11px] tracking-[0.14em] text-vx-danger">
-                      <span aria-hidden="true">✕</span> FAILED · REFUNDED
+                  ) : job?.state === 'failed' ? (
+                    <div className="text-center max-w-md px-6">
+                      <div className="font-vx-mono text-[11px] tracking-[0.14em] text-vx-danger">
+                        <span aria-hidden="true">✕</span> {jobStateUi(job).label}
+                      </div>
+                      <div className="mt-2 text-sm text-vx-fg-body">
+                        {failedJobCopy(job)}
+                      </div>
                     </div>
-                    <div className="mt-2 text-sm text-vx-fg-body">
-                      {ERROR_COPY[job.error_code]
-                        || (job.refunded
-                          ? 'Something went wrong. Credits refunded.'
-                          : 'Something went wrong. Your credits are on their way back.')}
+                  ) : (
+                    <div className="text-center">
+                      <div className="w-16 h-16 rounded-full border border-vx-border/60 flex items-center justify-center mx-auto opacity-70">
+                        <div className="w-0 h-0 border-l-[16px] border-l-vx-fg-muted border-y-[10px] border-y-transparent ml-1" />
+                      </div>
+                      <div className="mt-3 text-sm text-vx-fg-muted">Type a prompt or pick a preset</div>
                     </div>
-                  </div>
-                ) : (
-                  <div className="text-center">
-                    <div className="w-16 h-16 rounded-full border border-vx-border/60 flex items-center justify-center mx-auto opacity-70">
-                      <div className="w-0 h-0 border-l-[16px] border-l-vx-fg-muted border-y-[10px] border-y-transparent ml-1" />
-                    </div>
-                    <div className="mt-3 text-sm text-vx-fg-muted">Type a prompt or pick a preset</div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           <textarea
             value={prompt}
@@ -357,14 +364,29 @@ export default function CreateStudio() {
             aria-label={isShort ? 'Topic' : 'Prompt'}
             maxLength={isShort ? 200 : undefined}
             rows={3}
-            className="mt-3 w-full bg-vx-panel border border-vx-border rounded-lg p-3.5 text-sm text-vx-fg placeholder:text-vx-fg-faint resize-none focus:outline-none focus:border-vx-accent"
+            className="mt-3 w-full bg-vx-panel border border-vx-border rounded-lg p-3.5 text-sm text-vx-fg placeholder:text-vx-fg-faint resize-none focus:outline-hidden focus:border-vx-accent"
             placeholder={isShort ? 'A topic for a 32-second short, e.g. 3 facts about octopuses'
               : model?.id === 'elevenlabs-dialogue' ? 'One line per speaker, e.g.' + '\n' + 'Ana: Did you hear that?' + '\n' + 'Ben: [whispers] Stay quiet.'
               : 'Describe the shot…'}
           />
+          {model?.takesVoice && <VoiceDescription value={voice} onChange={setVoice} />}
+
+          {!isShort && (
+            <p className="mt-2 text-xs text-vx-fg-muted">
+              Need help? Ask a Studio skill (1 Credit a reply):{' '}
+              <Link href="/app/chat?skill=prompt-writer" className="text-vx-accent hover:underline">Prompt writer</Link>,{' '}
+              <Link href="/app/chat?skill=fix-my-prompt" className="text-vx-accent hover:underline">Fix my prompt</Link>,{' '}
+              <Link href="/app/chat?skill=model-picker" className="text-vx-accent hover:underline">Model picker</Link> or{' '}
+              <Link href="/app/chat" className="text-vx-accent hover:underline">all skills</Link>.
+            </p>
+          )}
 
           <SourcePickers media={media} sources={sources} onPick={pickSource}
-            onDraw={model?.kind === 'image' ? () => setDrawing(true) : null} />
+            onDraw={model?.kind === 'image' ? () => setDrawing(true) : null} onLibrary={setLibraryFor} />
+          {libraryFor && (
+            <LibraryPicker onClose={() => setLibraryFor(null)}
+              onPick={(item) => { pickSource(libraryFor, null, item); setLibraryFor(null); }} />
+          )}
 
           {hasUpload && (
             <label className="mt-3 flex items-start gap-2.5 rounded-lg border border-vx-border bg-vx-panel px-4 py-3 text-sm text-vx-fg-body cursor-pointer">
@@ -383,7 +405,7 @@ export default function CreateStudio() {
             </label>
           )}
 
-          {drawing && sources.image && (
+          {drawing && sources.image?.file && (
             <DrawOnImage file={sources.image.file} onDone={applyDrawing} onCancel={() => setDrawing(false)} />
           )}
 
@@ -393,6 +415,7 @@ export default function CreateStudio() {
               <span>
                 {ERROR_COPY[error.code] || 'Something went wrong. Nothing was charged unless the panel above says otherwise.'}
                 {error.retryAfter && ` Retry in ${error.retryAfter}s.`}
+                {error.note && ` ${error.note}`}
               </span>
             </div>
           )}
@@ -411,8 +434,22 @@ export default function CreateStudio() {
                 <span className="font-vx-mono text-[9px] tracking-[0.12em] text-vx-fg-faint">CACHED</span>
               )}
             </div>
+            <div className="flex gap-1.5 mb-3" role="group" aria-label="Price tier">
+              {TIERS.map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setTier(tier === t ? null : t)}
+                  aria-pressed={tier === t}
+                  className={`rounded-full px-3 py-1 border font-vx-mono text-[10px] tracking-[0.1em] uppercase ${
+                    tier === t ? 'border-vx-accent text-vx-accent' : 'border-vx-fg/15 text-vx-fg-muted hover:bg-vx-fg/[0.04]'
+                  }`}
+                >
+                  {TIER_LABEL[t]}
+                </button>
+              ))}
+            </div>
             <div className="flex flex-col gap-1.5">
-              {models.map((m) => (
+              {visibleModels.map((m) => (
                 <button
                   key={m.id}
                   onClick={() => setModelId(m.id)}
@@ -430,7 +467,9 @@ export default function CreateStudio() {
                     )}
                     <span className="font-vx-mono text-[10px] tracking-[0.1em] text-vx-fg-faint uppercase shrink-0">{m.kind}</span>
                   </span>
-                  <span className="font-vx-mono text-[12px] font-bold text-vx-money vx-num shrink-0">{m.credits} cr</span>
+                  {freeLeftFor(freeMap, m.id) > 0
+                    ? <span className="font-vx-mono text-[12px] font-bold text-vx-accent shrink-0">FREE · {freeLeftFor(freeMap, m.id)} left</span>
+                    : <span className="font-vx-mono text-[12px] font-bold text-vx-money vx-num shrink-0">{m.credits} cr</span>}
                 </button>
               ))}
             </div>
@@ -442,9 +481,16 @@ export default function CreateStudio() {
           {aspectOptions.length > 0 && (
             <ControlRow label="ASPECT" options={aspectOptions} value={aspect} onChange={setAspect} />
           )}
+          {takesImageCount(model) && (
+            <ControlRow label="IMAGES" options={IMAGE_COUNTS} value={count} onChange={setCount} />
+          )}
 
           {model?.kind === 'image' && (
             <CharacterPanel enabled={characterOn} onToggle={setCharacterOn} picks={character} onChange={setCharacter} />
+          )}
+
+          {!isShort && (
+            <GenerationSettings model={model} seed={seed} onSeed={setSeed} negative={negative} onNegative={setNegative} />
           )}
 
           {takesCamera && (
@@ -459,12 +505,18 @@ export default function CreateStudio() {
               </span>
             </div>
             <div className="mt-1 font-vx-mono text-[36px] font-bold text-vx-money vx-num">−{cost} cr</div>
+            {freeLeft > 0 && (
+              <div role="status" className="mt-1 font-vx-mono text-[11px] tracking-[0.08em] text-vx-accent">
+                {n > freeLeft ? `FREE · ${freeLeft} OF ${n} · ${freeLeft} LEFT TODAY` : `FREE · ${freeLeft} LEFT TODAY`}
+              </div>
+            )}
             <ParticleButton
               onClick={generating ? cancel : onSubmit}
               className="mt-4 w-full flex items-center justify-between bg-vx-accent text-vx-accent-ink rounded-full px-6 py-3.5 font-extrabold hover:bg-vx-accent-hover disabled:opacity-40 disabled:cursor-not-allowed"
-              disabled={!generating && (!model || model.gated || balance == null || cost > balance || missingSource || missingConsent)}
+              disabled={sending || (!generating && (!model || model.gated || missingVoice || balance == null || cost > balance || missingSource || missingConsent))}
+              aria-label={sending || generating || model?.gated ? undefined : `Generate ${n > 1 ? `${n} images ` : ''}for ${cost} credits`}
             >
-              <span>{generating ? 'New generation' : model?.gated ? 'Premium — gated' : 'Generate'}</span>
+              <span>{sending ? 'Sending…' : generating ? 'New generation' : model?.gated ? 'Premium — gated' : n > 1 ? `Generate ${n}` : 'Generate'}</span>
               <span className="font-vx-mono text-sm">−{cost} cr</span>
             </ParticleButton>
             <div className="mt-2 font-vx-mono text-[9.5px] tracking-[0.1em] text-vx-fg-faint text-center">
@@ -472,29 +524,6 @@ export default function CreateStudio() {
             </div>
           </div>
         </aside>
-      </div>
-    </div>
-  );
-}
-
-function ControlRow({ label, options, value, onChange }) {
-  return (
-    <div className="rounded-2xl border border-vx-border bg-vx-panel p-5">
-      <div className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted mb-3">{label}</div>
-      <div className="flex flex-wrap gap-1.5">
-        {options.map((o) => (
-          <button
-            key={o}
-            onClick={() => onChange(o)}
-            className={`font-vx-mono text-[11px] font-bold rounded-full px-3.5 py-1.5 border ${
-              value === o
-                ? 'border-vx-accent text-vx-accent bg-vx-accent/[0.07]'
-                : 'border-vx-border text-vx-fg-muted hover:text-vx-fg'
-            }`}
-          >
-            {o}
-          </button>
-        ))}
       </div>
     </div>
   );

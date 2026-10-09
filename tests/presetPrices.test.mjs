@@ -12,15 +12,22 @@ const read = (rel) => readFileSync(new URL(`../${rel}`, import.meta.url), 'utf8'
 // explanation, not the code.
 const code = (rel) => read(rel).split('\n').filter((l) => !l.trim().startsWith('//')).join('\n');
 
+test('/presets and Explore render through the shared gallery', () => {
+    for (const page of ['app/veyrnox/presets/page.js', 'app/veyrnox/app/page.js']) {
+        assert.match(code(page), /<PresetGallery\b/, page);
+    }
+});
+
 test('PresetCard prints the catalog price, not the preset constant', () => {
     const src = code('app/veyrnox/_components/PresetCard.js');
     assert.match(src, /presetCredits\(preset, catalog\)/, 'price must resolve through the catalog');
     assert.ok(!/\{preset\.credits\}/.test(src), 'must not print preset.credits directly');
 });
 
+// /presets and the studio's Explore tab share PresetGallery, which owns the
+// catalog read for both.
 for (const page of [
-    'app/veyrnox/presets/page.js',
-    'app/veyrnox/app/page.js',
+    'app/veyrnox/_components/PresetGallery.js',
     'app/veyrnox/m/explore/page.js',
 ]) {
     test(`${page} reads the live catalog once and hands it to every card`, () => {

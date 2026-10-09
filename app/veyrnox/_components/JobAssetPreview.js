@@ -1,5 +1,6 @@
 'use client';
 import { useAssetUrl } from '../_lib/useAssetUrl';
+import { ScheduleGeneration } from './ScheduleGeneration';
 import { AssetLoadStatus } from './AssetLoadStatus';
 
 export function JobAssetPreview({ job }) {
@@ -17,5 +18,6 @@ export function JobAssetPreview({ job }) {
       <img src={asset.url} onError={asset.onError} onLoad={asset.onLoad} alt="Generated result"
         className="absolute inset-0 w-full h-full object-contain bg-black" />
     )}
+    <div className="absolute top-3 right-3 z-10"><ScheduleGeneration job={job} /></div>
   </>;
 }

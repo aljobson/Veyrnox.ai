@@ -1,62 +1,28 @@
 'use client';
-import { useState } from 'react';
+import Link from 'next/link';
 import { AppNav } from '../_components/NavBar';
-import { Chip } from '../_components/Chip';
-import { PresetCard } from '../_components/PresetCard';
-import { PRESETS, PRESET_CATEGORIES } from '../_lib/tokens';
-import { useCatalog } from '../_lib/useCatalog';
+import { PresetGallery } from '../_components/PresetGallery';
 
 export default function Explore() {
-  const [cat, setCat] = useState('ALL');
-  const { models } = useCatalog();
-  const list = cat === 'ALL' ? PRESETS : PRESETS.filter((p) => p.category === cat);
-
   return (
     <div className="min-h-dvh">
       {/* No balance prop: AppNav reads the signed-in balance itself. This
           used to pass a hardcoded 823, so the pill showed a number that
           belonged to nobody. */}
       <AppNav active="explore" />
-
-      <section className="max-w-[1400px] mx-auto px-4 sm:px-8 pt-10 pb-4">
-        <Chip tone="accent" className="mb-3">EXPLORE · CURATED PRESETS</Chip>
-        <h1 className="text-[28px] sm:text-[36px] md:text-[44px] font-black tracking-[-0.03em] leading-[1.08] sm:leading-[1.05] text-balance">
-          One-tap looks. Exact prices.
-        </h1>
-        <p className="text-vx-fg-body mt-3 max-w-[640px] leading-[1.6]">
-          Every preset is pinned to its best-fit model and shows its credit cost up front.
-          Demos play free from cache — nothing debits until you generate.
+      <section className="max-w-[1400px] mx-auto px-4 sm:px-8 pt-10 pb-16">
+        <h1 className="vx-display text-[40px] sm:text-[56px]">Explore presets</h1>
+        <p className="mt-3 mb-8 text-vx-fg-body max-w-[52ch] leading-[1.6]">
+          Each one opens the studio on its model and prompt, priced before you press Generate.
         </p>
-
-        <div className="mt-6 flex flex-wrap gap-2">
-          {PRESET_CATEGORIES.map((c) => (
-            <button
-              key={c}
-              onClick={() => setCat(c)}
-              aria-pressed={cat === c}
-              className={`font-vx-mono text-[11px] tracking-[0.12em] font-bold rounded-full px-4 py-2 border transition-colors ${
-                cat === c
-                  ? 'bg-vx-accent text-vx-accent-ink border-transparent'
-                  : 'border-vx-border text-vx-fg-muted hover:text-vx-fg'
-              }`}
-            >
-              {c}
-            </button>
-          ))}
-        </div>
-      </section>
-
-      <section className="max-w-[1400px] mx-auto px-4 sm:px-8 pt-4 pb-4 flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="text-xl font-black tracking-[-0.02em]">Presets</h2>
-        <div className="font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted">
-          {list.length} PRESETS · {new Set(list.map((p) => p.model)).size} MODELS · CACHED DEMOS FREE
-        </div>
-      </section>
-
-      <section className="max-w-[1400px] mx-auto px-4 sm:px-8 pb-16">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          {list.map((p) => <PresetCard key={p.id} preset={p} catalog={models} size="md" />)}
-        </div>
+        <Link href="/app/chat" className="mb-8 flex flex-col gap-1 rounded-2xl border border-vx-border bg-vx-panel p-5 transition-colors hover:border-vx-accent sm:flex-row sm:items-center sm:justify-between">
+          <span>
+            <span className="block text-lg font-semibold">LLM Chat</span>
+            <span className="block text-vx-fg-body">Ask leading AI models, with Web search if you want it. Every reply shows its price in Credits before you send.</span>
+          </span>
+          <span aria-hidden="true" className="font-semibold text-vx-accent">Open chat →</span>
+        </Link>
+        <PresetGallery size="md" columns="lg:grid-cols-4" />
       </section>
     </div>
   );

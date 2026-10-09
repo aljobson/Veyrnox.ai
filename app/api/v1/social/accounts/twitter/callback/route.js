@@ -21,6 +21,7 @@
  */
 
 import { NextResponse } from 'next/server';
+import { networkReleased } from '../../../../../../../lib/social/networks.js';
 import { rpc, envConfig, SupabaseError } from '../../../../../../../packages/db/supabase-client.js';
 import { xConfig, exchangeCodeForToken, fetchConnectedAccount, X_SCOPES } from '../../../../../../../packages/adapters/social/twitter.js';
 import { verifyOAuthState } from '../../../../../../../lib/social/oauthState.js';
@@ -36,6 +37,8 @@ export async function POST(req) {
     if (!authId || !UUID_RE.test(authId)) {
         return NextResponse.json({ error: 'not_authenticated' }, { status: 401 });
     }
+
+    if (!networkReleased('twitter')) return NextResponse.json({ error: 'network_unavailable' }, { status: 404 });
 
     const cfg = envConfig();
     const xCfg = xConfig();
@@ -121,6 +124,10 @@ export async function POST(req) {
         const status = err instanceof SupabaseError ? err.status : 0;
         console.error('[api/v1/social/accounts/twitter/callback] account record failed:', status, err && err.body);
         return NextResponse.json({ error: 'internal' }, { status: 502 });
+    }
+    if (recorded && recorded.code === 'ACCOUNT_LIMIT') {
+        // Free tier: one connected account per user (ADR-0063, 0169).
+        return NextResponse.json({ ok: false, code: 'ACCOUNT_LIMIT' }, { status: 409 });
     }
     if (!recorded || recorded.ok !== true) {
         return NextResponse.json({ error: 'internal' }, { status: 502 });

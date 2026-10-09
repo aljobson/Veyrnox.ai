@@ -90,4 +90,9 @@ test('fal requests are read from the app queue: pending, completed, and failed r
         { state: 'success', outputUrl: 'https://v3b.fal.media/a.mp3', timestamps: [] });
     assert.equal((await pollFal(voice, 'k', reply('COMPLETED', { detail: 'bad input' }, 422))).state, 'fail');
     assert.deepEqual(await pollFal(voice, 'k', reply('COMPLETED', {}, 503)), { state: 'pending' });
+    // A read-back that shows fal could not reach the source URL is marked transient, like the callback is.
+    const unreachable = { detail: [{ loc: ['body', 'video_url'], msg: 'Could not reach the host', type: 'host_unreachable' }] };
+    assert.deepEqual(await pollFal(voice, 'k', reply('COMPLETED', unreachable, 422)),
+        { state: 'fail', errorCode: 'provider_failed', reason: 'host_unreachable', transient: true });
+    assert.deepEqual(await pollFal(voice, 'k', reply('COMPLETED', { detail: 'bad input' }, 422)), { state: 'fail', errorCode: 'provider_failed' });
 });

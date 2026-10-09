@@ -1,0 +1,40 @@
+# Weekly dependency PRs. dependabot-automerge.yml merges patch and minor
+# bumps once required checks pass; majors wait for the owner.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "05:00"
+      timezone: Europe/London
+    open-pull-requests-limit: 5
+    groups:
+      npm-minor-and-patch:
+        update-types: [minor, patch]
+    # Majors that cannot land by themselves (triaged 2026-10-03). Remove an
+    # entry in the PR that does the upgrade it is waiting for.
+    ignore:
+      # typescript-eslint and Next 15 both reject TypeScript 7; 6.x is fine.
+      - dependency-name: "typescript"
+        versions: [">=7.0.0"]
+      # Types follow the runtime: CI, the deploy and the README use Node 22.
+      # Raise by hand in the PR that raises node-version.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
+    commit-message:
+      prefix: "chore(deps)"
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "05:00"
+      timezone: Europe/London
+    groups:
+      actions:
+        patterns: ["*"]
+    commit-message:
+      prefix: "ci(deps)"

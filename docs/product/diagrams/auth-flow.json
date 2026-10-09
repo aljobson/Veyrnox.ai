@@ -1,0 +1,160 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "Sign-up, confirmation and an authenticated API call (as of 2026-10-08)",
+    "output": "auth-flow.html",
+    "viewBox": [
+      1080,
+      615
+    ],
+    "column_fit": "spread",
+    "quality_profile": "showcase",
+    "subtitle": "Checked against main 96380e7f"
+  },
+  "participants": [
+    {
+      "id": "browser",
+      "type": "frontend",
+      "label": "Browser",
+      "sublabel": "AuthGate.jsx"
+    },
+    {
+      "id": "auth",
+      "type": "security",
+      "label": "Supabase Auth",
+      "sublabel": "GoTrue /auth/v1"
+    },
+    {
+      "id": "pg",
+      "type": "database",
+      "label": "Postgres",
+      "sublabel": "auth.users triggers"
+    },
+    {
+      "id": "worker",
+      "type": "backend",
+      "label": "Worker",
+      "sublabel": "middleware.js"
+    }
+  ],
+  "segments": [
+    {
+      "from": 160,
+      "to": 270,
+      "label": "Sign up"
+    },
+    {
+      "from": 282,
+      "to": 390,
+      "label": "Confirm"
+    },
+    {
+      "from": 402,
+      "to": 545,
+      "label": "API call"
+    }
+  ],
+  "messages": [
+    {
+      "from": "browser",
+      "to": "auth",
+      "y": 180,
+      "label": "POST /signup + Turnstile",
+      "variant": "emphasis",
+      "note": "sign-in too; passkey, Google, Apple enter separately"
+    },
+    {
+      "from": "auth",
+      "to": "pg",
+      "y": 216,
+      "label": "INSERT auth.users",
+      "variant": "default",
+      "note": "0010/0071: public.users + zero balance"
+    },
+    {
+      "from": "auth",
+      "to": "browser",
+      "y": 252,
+      "label": "check your email",
+      "variant": "return"
+    },
+    {
+      "from": "browser",
+      "to": "auth",
+      "y": 300,
+      "label": "open confirm link",
+      "variant": "default"
+    },
+    {
+      "from": "auth",
+      "to": "pg",
+      "y": 336,
+      "label": "set email_confirmed_at",
+      "variant": "emphasis",
+      "note": "0071 trigger: signup_grant, 10 Free Credits (90 days)"
+    },
+    {
+      "from": "auth",
+      "to": "browser",
+      "y": 372,
+      "label": "ES256 access + refresh",
+      "variant": "return"
+    },
+    {
+      "from": "browser",
+      "to": "worker",
+      "y": 420,
+      "label": "Authorization: Bearer",
+      "variant": "emphasis"
+    },
+    {
+      "from": "worker",
+      "to": "pg",
+      "y": 456,
+      "label": "RPC, service role",
+      "variant": "emphasis",
+      "note": "JWT via JWKS; sets x-veyrnox-auth-id, -aal"
+    },
+    {
+      "from": "pg",
+      "to": "worker",
+      "y": 492,
+      "label": "row / typed error",
+      "variant": "return"
+    },
+    {
+      "from": "worker",
+      "to": "browser",
+      "y": 528,
+      "label": "JSON or 401",
+      "variant": "return"
+    }
+  ],
+  "activations": [
+    {
+      "participant": "auth",
+      "from": 174,
+      "to": 258,
+      "type": "security"
+    },
+    {
+      "participant": "auth",
+      "from": 294,
+      "to": 378,
+      "type": "security"
+    },
+    {
+      "participant": "worker",
+      "from": 414,
+      "to": 534,
+      "type": "backend"
+    },
+    {
+      "participant": "pg",
+      "from": 450,
+      "to": 498,
+      "type": "database"
+    }
+  ]
+}

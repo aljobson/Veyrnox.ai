@@ -145,7 +145,8 @@ Per the spec pack's phasing (§1.7 of the product spec):
   (month/week/list) with drag-to-reschedule, auto-publish scheduling engine, best-time-
   to-post (static heuristic until enough per-account history exists), basic per-network
   analytics (evolution + per-post).
-- **Deferred:** approval workflow, competitor tracking, SmartLinks (link-in-bio),
+- **Deferred:** approval workflow (a draft-and-approve step was later added for
+  automated brand posts; see the 2026-10-02 amendment below), competitor tracking, SmartLinks (link-in-bio),
   unified inbox, automation rules ("Flows"), ads dashboard, exportable reports — all
   specified in the pack's §1.5 Phase 2/3 lists, none scoped for this ADR's v1.
 - **No credit-ledger change in v1.** Whether Publish draws from the existing
@@ -235,6 +236,87 @@ The headline decisions it documents, all already folded into §2.7–§2.11 of t
   the accepted cost of Option A and should be weighed against Option B's recurring
   vendor fee when the product owner reviews this ADR.
 
+## Amendment 2026-10-02: draft posts and batch approval
+
+The owner asked for Veyrnox's own brand accounts to be fed automatically, on the
+condition that nothing generated is published without their review. Migration
+`0182_social_post_drafts.sql` adds the minimum the schema needs for that:
+
+- `social_posts.status` gains `draft`, and a draft always carries a
+  `draft_batch_id`. Every function that moves a post towards a network filters
+  `status = 'scheduled'` (claim, settle, sweep health, due index), so a draft is inert.
+- `create_social_post_draft` runs `create_social_post` unchanged (same ownership,
+  account, media and idempotency checks), then parks the new row as a draft in the
+  same transaction.
+- `approve_social_post_batch` schedules a batch's drafts, never earlier than the
+  approval time. It settles each one, so a draft whose accounts were disconnected
+  meanwhile becomes `failed`, not `scheduled` with nothing left to send.
+  `discard_social_post_drafts` cancels one draft or the rest of a batch. Both are
+  limited to the brand owner and logged in `social_account_actions`.
+- All four new functions are service-role only. There is no ledger or entitlement
+  change, and publishing still needs `PUBLISH_ENABLED` and live platform approvals.
+
+Out of scope: editing or rescheduling a draft (discard and regenerate instead),
+multi-person approval, and the generator and review UI, which follow in their own
+changes on top of these functions.
+
+## Amendment 2026-10-03: analytics storage and the first dashboard
+
+The v1 scope above includes "basic per-network analytics (evolution + per-post)".
+Migration `0188_social_analytics.sql` and the analytics sweep are the first part of it:
+
+- Three tables, closed to browser roles like the rest of Publish: one evolution
+  snapshot per account per day, one row per post the network reports, and a sync row
+  saying when each account is next due. `get_social_analytics` is the only read and
+  returns an account's numbers to its owner alone.
+- `lib/socialAnalyticsSweep.js` runs on the existing five-minute cron behind
+  `PUBLISH_ANALYTICS_ENABLED` (off). Each account is fetched every six hours. A failed
+  fetch is kept on that account's sync row; it is **not** appended to
+  `social_account_actions` as §2.5 of the technical spec first proposed, because a
+  broken account would then add a permanent audit row every few hours.
+- Instagram was the first network fetched. With the scopes the connect flow has
+  always requested it reads followers, following, post count, and likes and comments
+  per post.
+- Reach, views, saves and shares need `instagram_business_manage_insights`. The owner
+  approved adding it (2026-10-03). The connect flow requests it only when
+  `INSTAGRAM_INSIGHTS_SCOPE_ENABLED` is "true"; it ships "false" because Meta must
+  approve the permission in app review first. An account connected before the switch
+  keeps its old grant until it reconnects, and the sweep asks for insights only for
+  accounts whose stored grant includes the permission. Insights are refreshed for the
+  ten newest posts each round; stored metrics are merged, so older posts keep theirs.
+- `/app/publish/analytics` shows followers over time, posts, interactions and
+  engagement (interactions per post, per 1,000 followers) for 7, 30 or 90 days.
+
+No ledger or entitlement change. Analytics are not gated by plan yet; ADR-0063 decides
+whether they should be.
+
+YouTube follow-up (2026-10-03): basic channel and video statistics use the existing
+`youtube.readonly` grant, with the same analytics storage and switch. Each round reads
+the connected channel, its latest 50 uploads and one batched video-statistics response.
+Expired/expiring tokens are refreshed with the existing Google adapter and encrypted
+before the existing account-token RPC stores them. The dashboard labels subscribers
+and videos separately and shows views without requiring Instagram reach. Subscribers
+are rounded; channel/video views, likes and comments are lifetime counters, with the
+post date range selecting publication dates. No YouTube Analytics API scope is added.
+
+TikTok follow-up (2026-10-03): the owner approved proceeding with TikTok analytics.
+`TIKTOK_ANALYTICS_SCOPE_ENABLED` adds `user.info.stats` and `video.list` only when "true";
+it ships "false" until Display API/scopes approval. The callback stores actual granted
+scopes, including partial consent. The sweep reads connected-account statistics and
+up to 50 recent public videos (three pages maximum), only under the relevant grants.
+Videos store lifetime views, likes, comments and shares; account snapshots store
+followers, following, total likes and public video count. Publication-date filtering
+is explicit in the dashboard. No reach or private-video statistics are implied.
+
+TikTok access tokens expire daily and refresh tokens may rotate. Additive migration
+`0190_tiktok_token_rotation.sql` atomically persists both encrypted tokens, expiry and
+actual scopes only on an active TikTok connection whose old token pair still matches.
+A disconnect, reconnect or competing update makes stale work stop before fetching.
+YouTube's existing access-only RPC and scope behavior stay as implemented above.
+Apply 0190 before TikTok collection; production switches remain off.
+
+Not built yet: X and LinkedIn analytics, best time to post, and the calendar.
+
 ## Open questions
 
 **Resolved at acceptance (2026-09-28):** Option A (build native) and the v1 platform
@@ -261,3 +343,118 @@ implementation but all of which should close before GA:
 6. Extend the existing incident-response runbook to name a compromised social-platform
    token as its own scenario, distinct from the generation/billing scenarios it already
    covers (security baseline §5.3 "Gap, stated plainly").
+
+
+## Posting insights implementation (2026-10-03)
+
+Migration **0191_social_posting_insights.sql** adds weekly cached timing and posting-frequency
+aggregates. `PUBLISH_POSTING_INSIGHTS_ENABLED` defaults to `"false"`; apply 0191 through the
+protected main migration workflow before enabling it. Publish and analytics collection must
+also be enabled. No additional platform permission or external API is required.
+
+The implementation uses publication timestamps and counters in `social_analytics_posts`,
+not daily account snapshots. One JSON aggregate per account updates timing, frequency and
+empty-history metadata atomically. It covers twelve complete weeks in the brand timezone,
+independent of the dashboard's date filter. Invalid timezones fall back to UTC.
+
+Measured posts need numeric likes and comments and must be at least 48 hours old. Timing
+recommendations need ten measured posts spanning fourteen days and three posts in a slot.
+Unknown scores stay null; sparse histories receive no generic recommendation. Frequency
+counts every stored post and weights averages by measured posts. Lifetime counters favour
+older posts; these observations do not establish causation or audience availability, and
+collection may omit older/private/deleted posts. These choices amend the original heatmap
+schema and generic cold-start proposal in technical spec §2.5.
+
+Owner-only reads, service-only functions, RLS/FORCE RLS and denied direct table grants match
+analytics security. Cache failure does not block successful ingestion or other dashboard
+analytics. Next engineering slice: the calendar view. X/LinkedIn analytics and live account
+verification remain dependent on owner API-access and permission decisions. Staging Publish
+schema provisioning remains outstanding; this change does not enable any remote switches.
+
+## Calendar and rescheduling (2026-10-04)
+
+Migration 0192 implements owner-only range reads and compare-and-set rescheduling, behind
+`PUBLISH_CALENDAR_ENABLED` (default false). The calendar uses the viewer's local timezone,
+matching the composer, with month/week/list modes, status/network filters and explicit
+100-post pagination. Drafts stay in batch review until approved. Dragging opens the same
+confirmation form as the keyboard-accessible Reschedule button; it does not persist a move.
+
+Only scheduled posts with exclusively pristine pending targets may move. Lock targets
+before the parent, with NOWAIT to avoid waits against a worker or multi-target disconnect.
+Set both the parent schedule and every target's next-attempt time. Updating the target's
+own due predicate prevents a claim using an older parent snapshot from dispatching early.
+A timestamp precondition rejects stale edits; a repeated desired timestamp is a no-op.
+Append one post_rescheduled audit entry on a real change. No credit ledger is involved.
+
+## Device uploads (2026-10-06)
+
+The owner requires posting media from their device even when their generation library
+is empty. Migration 0223 adds a separate, owner-scoped Publish upload library; no fake
+generation job, ledger mutation or external provider call is made. The composer accepts
+one existing job or one completed upload ID. Both resolve storage at dispatch time.
+
+Uploads use the existing R2 SigV4 client with exact Content-Length, Content-Type and
+If-None-Match signatures. A dedicated `social-uploads/{auth_id}/{uuid}.{ext}` prefix
+keeps permanent Publish files outside Transform-source cleanup. Before completion the
+Worker reads at most 16 bytes, checks the total size from Content-Range and verifies the
+file signature. No arbitrary URL or client-supplied storage path is accepted.
+
+Each account has ten slots and a 200 MiB combined budget, serialized by the user row
+lock. JPG/PNG/WebP images are limited to 20 MiB and MP4 video to 100 MiB. Completed
+files persist for reuse; unused files can be removed. Drafts, scheduled posts and any nonterminal target block removal. Completed/canceled
+posts retain an upload metadata receipt after removal, without holding storage capacity.
+Scheduling and removal share the user lock. The cleanup sweep claims abandoned uploads
+older than 24 hours, or removed files after the signed PUT's expiry safety window.
+Only confirmed R2 deletion releases the database reservation; failures retain the budget.
+
+`PUBLISH_UPLOADS_ENABLED` defaults false in both environments until 0223 is applied.
+Routes also require the overall Publish flag. Existing generated-media dispatch remains
+available while device uploads are disabled. Upload consent and retention copy appear
+before selecting a device file; uploading alone never creates a post. Activation requires
+exact-origin R2 CORS allowing PUT, Content-Type and If-None-Match, and a real staging
+browser upload/second-PUT rejection check. Keep the upload switch enabled for cleanup
+while files are held; the overall Publish switch can close entry points independently.
+
+## Amendment 2026-10-08: all-network tester implementation
+
+The owner requested all integrations be built for testing by other people and
+explicitly does not want a personal Meta account. Extend the native adapter
+pattern to Facebook Pages, Threads, Pinterest boards, Bluesky, Twitch and
+Google Business Profile locations. A company app administrator supplies
+credentials and invites testers; the owner's own Meta login is not required.
+
+Initial additional publishing scope is single-image posts. Twitch supports
+OAuth connection and recent-video statistics, not a general media-upload
+destination. Bluesky uses a dedicated app password for Bluesky-hosted PDSs;
+custom PDS discovery and federated OAuth are outside this tester slice.
+These are explicit capability limits, not claims of full Metricool parity.
+
+New connections and post creation require the server switch
+`PUBLISH_EXTENDED_NETWORKS_ENABLED` (false by default). The original five
+adapters and their consent switches remain separate. The one-account cap,
+Publish plan decision and generation-credit ledger are unchanged.
+
+Migration 0228 adds encrypted, identity-bound, single-use destination
+selections; atomic token rotation; and a durable pre-submission marker.
+Facebook Pages, Pinterest boards and business locations require explicit
+selection. No candidate credential is returned to the browser, even encrypted.
+Uncertain provider results require reconciliation before another public post.
+
+Automated contract tests and local database acceptance do not establish app
+approval or real-account success. Existing live YouTube evidence remains
+valid; each new provider needs separate live tester evidence.
+See [tester handover](../social-publisher/INTEGRATIONS-TESTING-2026-10-08.md)
+for setup, capabilities, rollout and the acceptance checklist.
+
+### Platform rollout gate — 9 October 2026
+
+The owner requested a production rollout starting with YouTube. The server
+reads `PUBLISH_RELEASED_NETWORKS`: comma-separated network keys, `*` for all
+known platforms, or an explicit empty list for none. Unset preserves existing
+deployments. Production source config allows `youtube` while Publish itself
+stays off; staging explicitly uses `*`. Credentials do not override this gate.
+OAuth start/callback, new composer targets and UI readiness enforce the list.
+Existing accounts remain readable and disconnectable; queued targets keep
+finishing. Limited releases disable weekly draft generation and batch approval
+because the atomic batch RPC has no network filter; discard remains available.
+No migration, provider approval, billing activation or Publish launch is included.

@@ -1,4 +1,5 @@
 import { buildConfig } from './packages/security/config.js';
+import { oauthProvidersFor } from './packages/security/environments.js';
 const identityConfig = buildConfig(process.env);
 
 /** @type {import('next').NextConfig} */
@@ -21,6 +22,8 @@ const nextConfig = {
   env: {
     NEXT_PUBLIC_SUPABASE_URL: identityConfig.supabaseUrl,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: identityConfig.publishableKey,
+    // Which "Continue with ..." buttons sign-in shows (environments.js).
+    NEXT_PUBLIC_AUTH_PROVIDERS: oauthProvidersFor(identityConfig.appEnv).join(','),
     // Public, like the anon key. Empty = no widget and no token sent, which is
     // the pre-CAPTCHA behaviour. Never empty this while Supabase CAPTCHA is on:
     // every email/password sign-in would fail (ADR-0026).
@@ -58,6 +61,12 @@ const nextConfig = {
       { source: '/veyrnox/social-cinema/:path*', destination: '/social-cinema/:path*', permanent: true },
       { source: '/veyrnox/pricing', destination: '/pricing', permanent: true },
       { source: '/veyrnox/presets', destination: '/presets', permanent: true },
+      { source: '/veyrnox/presets/:id', destination: '/presets/:id', permanent: true },
+      { source: '/veyrnox/tools', destination: '/tools', permanent: true },
+      { source: '/veyrnox/guides', destination: '/guides', permanent: true },
+      { source: '/veyrnox/guides/:id', destination: '/guides/:id', permanent: true },
+      { source: '/veyrnox/models', destination: '/models', permanent: true },
+      { source: '/veyrnox/models/:id', destination: '/models/:id', permanent: true },
       { source: '/veyrnox/design-system', destination: '/design-system', permanent: true },
       { source: '/veyrnox/app', destination: '/app', permanent: true },
       { source: '/veyrnox/app/:path*', destination: '/app/:path*', permanent: true },
@@ -77,6 +86,12 @@ const nextConfig = {
         { source: '/social-cinema/watch/:id', destination: '/veyrnox/social-cinema/watch/:id' },
         { source: '/pricing', destination: '/veyrnox/pricing' },
         { source: '/presets', destination: '/veyrnox/presets' },
+        { source: '/presets/:id', destination: '/veyrnox/presets/:id' },
+        { source: '/tools', destination: '/veyrnox/tools' },
+        { source: '/guides', destination: '/veyrnox/guides' },
+        { source: '/guides/:id', destination: '/veyrnox/guides/:id' },
+        { source: '/models', destination: '/veyrnox/models' },
+        { source: '/models/:id', destination: '/veyrnox/models/:id' },
         { source: '/design-system', destination: '/veyrnox/design-system' },
         { source: '/app', destination: '/veyrnox/app' },
         { source: '/app/:path*', destination: '/veyrnox/app/:path*' },

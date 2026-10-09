@@ -46,9 +46,13 @@ const landing = readFileSync(new URL('../app/veyrnox/page.js', import.meta.url),
 const search = readFileSync(new URL('../app/veyrnox/_components/SiteSearch.js', import.meta.url), 'utf8');
 const create = readFileSync(new URL('../app/veyrnox/app/create/page.js', import.meta.url), 'utf8');
 const pricing = readFileSync(new URL('../app/veyrnox/pricing/page.js', import.meta.url), 'utf8');
+const modelPages = readFileSync(new URL('../app/veyrnox/_lib/modelPages.js', import.meta.url), 'utf8');
 
 test('every public surface uses the one predicate', () => {
-    assert.match(landing, /rows\.filter\(\(m\) => isShelfModel\(capabilityFor\(m\.provider_endpoint\)\)\)/);
+    // The landing page reads lib/publicCatalog.js, whose rows carry the
+    // publicCapabilities() shape; the test above shows it is enough.
+    assert.match(landing, /rows\.filter\(\(m\) => isShelfModel\(m\.capabilities\)\)/);
+    assert.match(modelPages, /\.filter\(\(m\) => isShelfModel\(m\.capabilities\)\)/);
     assert.match(search, /models\.filter\(\(m\) => isShelfModel\(m\.capabilities\)\)/);
     // The pricing page filtered nothing at all and quoted both held-back rows.
     assert.match(pricing, /data\.models\.filter\(\(m\) => isShelfModel\(m\.capabilities\)\)/);
@@ -59,4 +63,12 @@ test('the picker still gates Auto Short, so the shelf must keep hiding it', () =
     // the two sides disagree again — in the other direction.
     assert.match(create, /AUTO_SHORT_FLAG = 'veyrnox_auto_short'/);
     assert.match(create, /autoShortOn \|\| !m\.takesTopic/);
+});
+
+test('the video agent stays off every shelf: it is bought from a plan on its own page, not from the picker', () => {
+    // Server shape and the client shape GET /api/catalog serves.
+    assert.equal(isShelfModel(capabilityFor('video-agent:v1')), false);
+    assert.equal(isShelfModel(publicCapabilities(capabilityFor('video-agent:v1'))), false);
+    // The mark the browser reads survives publicCapabilities().
+    assert.ok(publicCapabilities(capabilityFor('video-agent:v1')).inputs.plan_id);
 });

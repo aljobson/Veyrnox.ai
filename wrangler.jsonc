@@ -4,15 +4,31 @@
   // worker.js wraps the generated .open-next/worker.js to add the Cron Trigger.
   "main": "worker.js",
   "compatibility_date": "2026-09-01",
-  "compatibility_flags": ["nodejs_compat"],
+  // enable_request_signal: the Worker is told when a reader disconnects, so a chat reply that is stopped or
+  // abandoned ends at once and is settled (ADR-0067 amendment 10). Environments inherit this list.
+  "compatibility_flags": ["nodejs_compat", "enable_request_signal"],
+  // Production answers on the veyrnox.ai custom domain only (set in the
+  // dashboard, not here). Cloudflare Access is attached to that hostname by
+  // path, so the same Worker must not also answer on a hostname Access does
+  // not sit in front of: no <name>.<subdomain>.workers.dev route and no
+  // per-version preview URLs (ADR-0078). Both keys are inherited by
+  // environments, so staging turns workers_dev back on below.
+  "workers_dev": false,
+  "preview_urls": false,
   // Keep Worker logs (console.error on provider rejects, webhook signature
   // failures) in the dashboard instead of needing a live `wrangler tail`.
   "observability": { "enabled": true },
   // ADR-0039: approximate per-IP/per-location screening before admin routes.
+  // ADR-0026 amendment 2: the same screening, in a namespace of its own, before
+  // POST /api/turnstile-failure (the sign-in dialog's report of a failed check).
   "ratelimits": [{
     "name": "ADMIN_EDGE_RATE_LIMITER",
     "namespace_id": "2026092401",
     "simple": { "limit": 60, "period": 60 }
+  }, {
+    "name": "TURNSTILE_REPORT_RATE_LIMITER",
+    "namespace_id": "2026100901",
+    "simple": { "limit": 10, "period": 60 }
   }],
   // Top-up backfill (#94): GitHub Actions schedules proved unreliable, so the
   // Worker runs POST /api/admin/top-up-backfill itself (worker.js).
@@ -26,6 +42,41 @@
   "vars": {
     "APP_ENV": "production",
     "TENANT_PROJECTS_ENABLED": "false",
+    // ADR-0075: stage uncertain fal submission handling before activation.
+    "FAL_SUBMIT_OUTCOME_ENABLED": "false",
+    // ADR-0076: keep recovery on when rolling back durable admission.
+    "FAL_DISPATCH_SCHEMA_ENABLED": "false",
+    "FAL_DURABLE_DISPATCH_ENABLED": "false",
+    "FAL_DISPATCH_QUEUE_ENABLED": "false",
+    // ADR-0067: Chat is open here, but the screen is still behind the per-browser preview switch
+    // (localStorage.veyrnox_chat). Needs OPENROUTER_CHAT_API_KEY on the Worker: production will not use the shared key.
+    "CHAT_ENABLED": "true",
+    // ADR-0069: a per-model free allowance, taken as a price waiver. On in production since 2026-10-07: staging acceptance passed
+    // 2026-10-06, and migrations 0205, 0206 and 0222 (the two models offered) are applied. At most $1.00 a day of provider spend.
+    "FREE_ALLOWANCE_ENABLED": "true",
+    // ADR-0072: chat Personas, saved instructions with a default model and options. On in production since 2026-10-07: staging
+    // acceptance passed 2026-10-06 and migration 0216 is applied on production. Staging has its own value below.
+    "PERSONAS_ENABLED": "true",
+    // ADR-0074: the video agent (isolated OpenMontage runner). "false" until the runner, MONTAGE_* secrets and the measured price exist
+    // (docs/montage/SPEC.md slices 4-6). A run already paid for still finishes or refunds with this off.
+    "AGENT_VIDEO_ENABLED": "false",
+    // ADR-0074, rollout step 3: the production runner on Fly (app veyrnox-montage-runner, created 2026-10-09). A public address, not
+    // a secret, and a constant: the Worker never takes a runner URL from a request. Every call to it is signed, and nothing calls it
+    // until MONTAGE_SIGNING_SECRET and MONTAGE_PLAN_SECRET are set (step 4) and AGENT_VIDEO_ENABLED is "true" (step 7).
+    "MONTAGE_RUNNER_BASE": "https://veyrnox-montage-runner.fly.dev",
+    // ADR-0074: the video-agent sweep asks the runner which runs it still has and refunds a lost one in about five minutes, where the
+    // timeout alone takes 45 to 50. Sound with ONE runner machine only (runs live in memory per machine); keep "false" with more.
+    "MONTAGE_LIVENESS_ENABLED": "false",
+    // ADR-0071: referrals. Migrations 0217 to 0219 are applied on production. On only after the reconcile jobs have run clean for
+    // 24 hours (CLAUDE.md, Delivery); the storage notice is re-prompted in the same change so the referral wording is seen.
+    "REFERRALS_ENABLED": "true",
+    // docs/editor/CAPTIONS.md: the Clip Editor's captions step. On 2026-10-08 at the owner's request: 0225 is applied on production, both
+    // paths passed on staging. The edit sheet still hides it behind localStorage.veyrnox_editor_captions. Rollback: set "false" and deploy.
+    "CLIP_EDIT_CAPTIONS_ENABLED": "true",
+    // ADR-0064: checkout and account routes stay closed until staging acceptance.
+    "SUBSCRIPTIONS_ENABLED": "false",
+    // Before activation: SUBSCRIPTION_ALERT_EMAIL must name the Operator;
+    // SUBSCRIPTION_ALERT_FROM defaults to the existing VIOLATION_EMAIL_FROM.
     // Cinema first activation. Paid access and monetisation remain closed.
     // Merge only after the documented production cutover gates pass.
     "CINEMA_ENABLED": "true",
@@ -46,7 +97,9 @@
     "PPV_ENABLED": "false",
     "PREMIERES_ENABLED": "false",
     "AI_RECOMMENDATIONS_ENABLED": "false",
-    // Enable only after migration 0129, bucket CORS and real browser/R2 checks (ADR-0044).
+    // Enable only after migration 0129, bucket CORS and real browser/R2 checks (ADR-0044). 0129 is applied. On
+    // 2026-10-09 the production bucket's CORS allowed PUT with Content-Type only: a preflight that also asks for
+    // If-None-Match was refused, so "true" here would stop every browser upload until that header is added.
     "UPLOAD_INTEGRITY_ENABLED": "false",
     // 0131 applied; verify fresh task/snapshot evidence after deploy, then arm the watcher.
     "RECOVERY_HEALTH_ENABLED": "true",
@@ -65,13 +118,6 @@
     "SUPABASE_URL": "https://xdxdzmsztyzbnzeforxx.supabase.co",
     "NEXT_PUBLIC_SUPABASE_URL": "https://xdxdzmsztyzbnzeforxx.supabase.co",
     "NEXT_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_HwEQqi6FXJOmWpy5eqR9-A_Zvy8_ii1",
-    // LemonSqueezy store (#91). Test and live mode share the store id; the
-    // API key decides the mode. Variant ids live in public.credit_packs.
-    "LEMONSQUEEZY_STORE_ID": "473468",
-    // Which orders the webhook credits (#93). "true" while the store and API
-    // key are test mode; flip to "false" with the live key at launch (#101).
-    // Anything else and /api/webhook/lemonsqueezy answers 503.
-    "LEMONSQUEEZY_TEST_MODE": "true",
     // Stripe Tax (ADR-0031, amendment 2026-09-23). Managed Payments is enabled
     // on both accounts, so Stripe is the Merchant of Record and charges and
     // remits the tax. Automatic tax is ON; unset means ON. Setting this to
@@ -86,25 +132,75 @@
     // before an admin holds a factor locks every admin out of their own
     // dashboard, so that order is not optional.
     "ADMIN_REQUIRE_AAL2": "true",
+    // ADR-0066: Jev sorts untyped provider submit refusals into
+    // provider_moderation / provider_input_rejected. off | shadow | enforce.
+    // Needs the TYPESAFE_API_KEY secret; shadow only logs the label.
+    "JEV_SUBMIT_ERRORS_MODE": "off",
+    // Veyrnox Publish (ADR-0061) stays dark until the platform app reviews
+    // and the Publish Plan (ADR-0062/0063) land: hides /app/publish, the
+    // menu link and /api/v1/social/*. Only "true" opens it. The publish
+    // sweep is not gated, so anything already queued still finishes.
+    "PUBLISH_ENABLED": "false",
+    // First production release permits YouTube only; Publish remains off.
+    "PUBLISH_RELEASED_NETWORKS": "youtube",
+    // The Publish analytics sweep (lib/socialAnalyticsSweep.js). Only "true"
+    // runs it; turn it on after migration 0188 is applied. The analytics
+    // page and its API route follow PUBLISH_ENABLED like the rest of Publish.
+    "PUBLISH_ANALYTICS_ENABLED": "false",
+    // Weekly historical timing/frequency insights; requires 0191.
+    "PUBLISH_POSTING_INSIGHTS_ENABLED": "false",
+    // Month/week/list calendar and rescheduling; 0192 approved 2026-10-04.
+    // The overall Publish launch still follows PUBLISH_ENABLED.
+    "PUBLISH_CALENDAR_ENABLED": "true",
+    "PUBLISH_UPLOADS_ENABLED": "false",
+    // Requires 0228 and provider app credentials before tester activation.
+    "PUBLISH_EXTENDED_NETWORKS_ENABLED": "false",
+    // Adds instagram_business_manage_insights to the Instagram consent
+    // screen (reach, views, saves, shares). Only "true" asks for it; turn it
+    // on after Meta approves the permission in app review.
+    "INSTAGRAM_INSIGHTS_SCOPE_ENABLED": "false",
+    // TikTok analytics consent (user.info.stats + video.list). Enable after
+    // Display API approval; existing connections need to reconnect.
+    "TIKTOK_ANALYTICS_SCOPE_ENABLED": "false",
+    // Sender for violation notices (lib/violationEmail.js, issue #479). The
+    // domain is verified in Resend; nothing sends until RESEND_API_KEY is set.
+    "VIOLATION_EMAIL_FROM": "Veyrnox.ai <support@veyrnox.ai>",
+    // veyrnox.ai has no MX records, so replies go to the .com mailbox.
+    "VIOLATION_EMAIL_REPLY_TO": "support@veyrnox.com",
     // Cloudflare Access covers veyrnox.ai/app/admin*, /api/v1/admin/* and
     // /api/admin/* (one application, "Veyrnox.ai admin"). These two let the
     // Worker verify the assertion itself (lib/accessJwt.js) instead of
-    // trusting the edge: a policy loosened in the dashboard does not silently
-    // open the machine endpoints. Public values — the team domain is in every
-    // Access redirect and the AUD identifies the application, neither
-    // authenticates anything.
+    // trusting the edge: a policy loosened in the dashboard, or a request
+    // that arrives by a path the rule does not name, does not open them.
+    // The machine endpoints under /api/admin/* and the dashboard routes
+    // under /api/v1/admin/* both check it in code (ADR-0078); the dashboard
+    // routes answer 503 access_not_configured if either value is removed.
+    // Public values — the team domain is in every Access redirect and the
+    // AUD identifies the application, neither authenticates anything.
     "ACCESS_TEAM_DOMAIN": "fancy-lake-7c60.cloudflareaccess.com",
     "ACCESS_AUD": "4bea77db854633f7b4546a485bcb14c1e0c4389318ebd565e9a326edf17d0163"
   },
   "env": {
     "staging": {
       "name": "veyrnox-ai-staging",
+      // Staging has no custom domain: it lives on
+      // veyrnox-ai-staging.<subdomain>.workers.dev, so it needs the route
+      // production turns off. Preview URLs stay off here too (inherited).
+      "workers_dev": true,
+      "queues": { "producers": [{
+        "binding": "FAL_DISPATCH_QUEUE",
+        "queue": "veyrnox-fal-dispatch-staging"
+      }] },
       // Recovery and removal of Cinema uploads run from the cron; the other
       // scheduled tasks skip on staging because their secrets are not set.
       "ratelimits": [{
         "name": "ADMIN_EDGE_RATE_LIMITER",
         "namespace_id": "2026092601",
         "simple": { "limit": 60, "period": 60 }
+      }, {
+        "name": "TURNSTILE_REPORT_RATE_LIMITER",
+        "namespace_id": "2026100902",
+        "simple": { "limit": 10, "period": 60 }
       }],
       "triggers": { "crons": ["*/5 * * * *"] },
       "vars": {
@@ -116,9 +212,49 @@
         "NEXT_PUBLIC_SUPABASE_URL": "https://yrqzwqywxfesmbvhzjgj.supabase.co",
         "NEXT_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_bAxQiodzBhI6bV7lmo9gMQ_Hlg9_Ish",
         "TENANT_PROJECTS_ENABLED": "true",
+        "FAL_SUBMIT_OUTCOME_ENABLED": "false",
+        "FAL_DISPATCH_SCHEMA_ENABLED": "true",
+        "RECOVERY_HEALTH_ENABLED": "true",
+        // ADR-0044 (vars are not inherited). On for the activation proof: 0129 is applied here and the staging bucket's
+        // CORS allows PUT with Content-Type and If-None-Match from this origin (preflight checked 2026-10-09).
+        // Production stays "false" until its bucket allows If-None-Match too; today it would refuse every upload.
+        "UPLOAD_INTEGRITY_ENABLED": "true",
+        "FAL_DURABLE_DISPATCH_ENABLED": "false",
+        "FAL_DISPATCH_QUEUE_ENABLED": "false",
+        "SUBSCRIPTIONS_ENABLED": "false",
+        // ADR-0067: Chat is open on staging for testing only. No text model is
+        // active until the owner activates one; production stays "false".
+        "CHAT_ENABLED": "true",
+        // ADR-0069 (vars are not inherited). Flip to "true" on staging only after 0205 and 0206 are applied there.
+        "FREE_ALLOWANCE_ENABLED": "false",
+        // ADR-0072 (vars are not inherited). Flip to "true" on staging only after 0216 is applied there.
+        "PERSONAS_ENABLED": "false",
+        "AGENT_VIDEO_ENABLED": "false",
+        // Recovery still needs its isolated runner even when new video admission is paused.
+        "MONTAGE_RUNNER_BASE": "https://veyrnox-montage-runner-staging.fly.dev",
+        "MONTAGE_LIVENESS_ENABLED": "false",
+        "REFERRALS_ENABLED": "false",
+        // Vars are not inherited. 0225 is applied on staging (2026-10-08); on for testing, production stays "false".
+        "CLIP_EDIT_CAPTIONS_ENABLED": "true",
+        // ADR-0066; vars are not inherited, so staging names it too.
+        "JEV_SUBMIT_ERRORS_MODE": "off",
+        // Veyrnox Publish is open on staging for testing (see production).
+        "PUBLISH_ENABLED": "true",
+        "PUBLISH_RELEASED_NETWORKS": "*",
+        // Publish schema through 0192 provisioned on staging 2026-10-04.
+        "PUBLISH_ANALYTICS_ENABLED": "true",
+        "PUBLISH_POSTING_INSIGHTS_ENABLED": "true",
+        "PUBLISH_CALENDAR_ENABLED": "true",
+        // 0209 applied and real browser uploads verified on staging 2026-10-06.
+        "PUBLISH_UPLOADS_ENABLED": "true",
+        // 0228 applied on staging 2026-10-08. Unconfigured providers remain unavailable.
+        "PUBLISH_EXTENDED_NETWORKS_ENABLED": "true",
+        // Provider review approvals are still outstanding.
+        "INSTAGRAM_INSIGHTS_SCOPE_ENABLED": "false",
+        "TIKTOK_ANALYTICS_SCOPE_ENABLED": "false",
         // Cinema Stream upload preview (ADR-0052/0053/0054). Staging only:
-        // vars are not inherited by environments. Stream secrets are set on
-        // this Worker; see
+        // vars are not inherited by environments and production keeps every
+        // one of these "false". Stream secrets are set on this Worker; see
         // docs/architecture/staging-rollout.md.
         "CINEMA_ENABLED": "true",
         "SOCIAL_CINEMA_PROFILES_ENABLED": "true",
@@ -130,7 +266,7 @@
         "CINEMA_PROXY_UPLOADS_ENABLED": "false",
         // Publication acceptance: administrators can publish the prepared
         // staging title and viewers can load and play entitled Stream media.
-        // Production activation is tracked separately.
+        // Production keeps all three switches false.
         "CINEMA_UNLOCKS_ENABLED": "true",
         "CINEMA_PUBLISHING_ENABLED": "true",
         "CINEMA_VIEWING_ENABLED": "true"
@@ -153,15 +289,15 @@
   //                               kie.ai submit + callback HMAC (ADR-0020)
   //   OPENROUTER_API_KEY, OPENROUTER_WEBHOOK_SECRET
   //                               OpenRouter video submit + webhook signature (ADR-0020)
+  //   OPENROUTER_CHAT_API_KEY      OpenRouter key for Chat only, with its own spend cap (ADR-0067). Required in
+  //                               production; staging falls back to OPENROUTER_API_KEY
+  //   TYPESAFE_API_KEY            Jev classifier for provider submit refusals (lib/jev.js, ADR-0066)
   //   STRIPE_SECRET_KEY           Checkout Session create + session re-fetch (packages/adapters/stripe.js);
   //                               sk_test_… until the live account clears review (ADR-0031). Its prefix
   //                               is what decides which livemode the webhook will credit.
   //   STRIPE_WEBHOOK_SECRET       whsec_… signs /api/webhook/stripe AND the Top-up id in session metadata (#93)
-  //   LEMONSQUEEZY_API_KEY        retired by ADR-0031; the routes stay in the tree, unused
-  //   LEMONSQUEEZY_WEBHOOK_SECRET retired by ADR-0031; see above
   //   TOP_UP_BACKFILL_TOKEN       bearer for /api/admin/top-up-backfill (#94); same value in the TOP_UP_BACKFILL_TOKEN Actions secret
   //   ADMIN_REAP_TOKEN            /api/admin/reap-assets shared secret (ADR-0008)
-  //   UPLOAD_PROXY_ALLOWED_HOSTS  legacy upload proxy allowlist (docs/UPLOAD_PROXY_CONFIG.md)
   //   META_APP_ID, META_APP_SECRET
   //                               Instagram OAuth connect/callback + Graph API calls, via
   //                               Instagram API with Instagram Login (packages/adapters/social/
@@ -190,6 +326,13 @@
   //                               Sign-In provider. Scope bump (added youtube.upload) needs
   //                               re-consent from every already-connected account. Not yet
   //                               provisioned.
+  //   FACEBOOK_CLIENT_ID, FACEBOOK_CLIENT_SECRET (falls back to META_APP_ID/SECRET)
+  //   THREADS_CLIENT_ID, THREADS_CLIENT_SECRET
+  //   PINTEREST_CLIENT_ID, PINTEREST_CLIENT_SECRET
+  //   TWITCH_CLIENT_ID, TWITCH_CLIENT_SECRET
+  //   GMB_CLIENT_ID, GMB_CLIENT_SECRET
+  //                               Additional native integrations (0228); separate provider apps.
+  //                               Bluesky uses a tester's dedicated app password, never retained.
   //   SOCIAL_OAUTH_STATE_SECRET   signs the OAuth `state` token (lib/social/oauthState.js, ADR-0061
   //                               §2.7) — this app is cookie-free, so state carries its own HMAC
   //                               binding instead of server-side session storage
@@ -202,6 +345,16 @@
   //                               TikTok must DNS-verify the domain it pulls from and an R2
   //                               presigned URL's host is Cloudflare's, not ours. A dedicated
   //                               secret, never reused from the two above. Not yet provisioned.
+  //   CINEMA_STREAM_ACCOUNT_ID, CINEMA_STREAM_API_TOKEN
+  //                               Cloudflare Stream direct uploads, status and removal
+  //                               (lib/cinema/stream.js, ADR-0052/0053/0054)
+  //   CINEMA_STREAM_WEBHOOK_SECRET
+  //                               verifies /api/webhook/cinema-stream (lib/cinema/streamWebhook.js);
+  //                               the subscription is account-wide and points at staging until
+  //                               Cinema activation repoints it (docs/architecture/staging-rollout.md)
+  //   CINEMA_STREAM_SIGNING_KEY_ID, CINEMA_STREAM_SIGNING_JWK, CINEMA_STREAM_CUSTOMER_CODE
+  //                               RS256 signed playback tokens, at most 15 minutes, for entitled
+  //                               viewers (lib/cinema/stream.js, ADR-0057); the JWK is base64 JSON
   //
   // No R2 binding: r2.js signs plain fetch against the S3 endpoint so the
   // Worker never needs `env.MEDIA` / getCloudflareContext() in middleware.

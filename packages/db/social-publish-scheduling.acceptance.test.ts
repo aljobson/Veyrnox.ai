@@ -9,12 +9,13 @@ import pg from 'pg';
 // see 0160's own header for the URL-durability bug that fixed) and 0161
 // (Phase 5's async dispatch engine: provider_state, 'submitted'/'delivered'
 // statuses, report_social_post_progress, complete_social_post_target's
-// p_delivered). Applies 0154/0156/0160/0161 twice each, the same
+// p_delivered) and 0168 (claim keys; a disconnected account stops
+// publishing). Applies 0154/0156/0160/0161/0168 twice each, the same
 // idempotency discipline as the other acceptance tests in this package.
 // 0157 (the worker_task_health widening) is deliberately not applied here
 // — see its own header comment, verified by the full migration replay
 // instead.
-describe('social publish scheduling (0156, 0160, 0161)', { skip: !process.env.DATABASE_URL }, () => {
+describe('social publish scheduling (0156, 0160, 0161, 0168)', { skip: !process.env.DATABASE_URL }, () => {
     let pool: pg.Pool;
     const users: string[] = [];
     const one = async (sql: string, args: unknown[] = []) => (await pool.query(sql, args)).rows[0];
@@ -31,6 +32,7 @@ describe('social publish scheduling (0156, 0160, 0161)', { skip: !process.env.DA
         for (const name of [
             '0154_social_publish_foundation.sql', '0156_social_publish_scheduling.sql',
             '0160_social_publish_composer.sql', '0161_social_publish_async_engine.sql',
+            '0168_social_publish_claim_guards.sql', '0181_youtube_quota_pacific_day.sql',
         ]) {
             for (const round of [1, 2]) {
                 await pool.query(await readFile(new URL(`./schema/supabase/${name}`, import.meta.url), 'utf8'));
@@ -354,6 +356,138 @@ describe('social publish scheduling (0156, 0160, 0161)', { skip: !process.env.DA
         assert.equal(reclaimed.attempts, 2, 'a stale reclaim bumps attempts even though it started life as a submitted continuation');
     });
 
+    // ── 0168: claim keys (S3) ──────────────────────────────────────────────
+    const completeAs = async (targetId: string, key: string | null, ok = true) =>
+        (await one('SELECT public.complete_social_post_target($1, $2, NULL, NULL, $3, false, $4) AS r',
+            [targetId, ok, ok ? null : 'boom', key])).r;
+    const target = async (id: string) =>
+        one('SELECT publish_status, claim_key, attempts, last_error, platform_post_id FROM public.social_post_targets WHERE id = $1', [id]);
+
+    it('claims hand out a key, and only that key can report', async () => {
+        const u = await user();
+        const brand = (await getOrCreateBrand(u.auth)).brand_id;
+        const account = (await connect(u.auth, brand)).account_id;
+        const post = (await createPost(u, brand, [account])).post_id;
+        const row = await claimFor(post);
+        assert.match(row.claim_key, /^[0-9a-f-]{36}$/);
+
+        const wrong = await completeAs(row.target_id, randomUUID());
+        assert.deepEqual([wrong.ok, wrong.code], [false, 'CLAIM_LOST']);
+        assert.equal((await target(row.target_id)).publish_status, 'publishing', 'a wrong key changes nothing');
+
+        const right = await completeAs(row.target_id, row.claim_key);
+        assert.equal(right.ok, true);
+        const after = await target(row.target_id);
+        assert.deepEqual([after.publish_status, after.claim_key], ['published', null]);
+    });
+
+    it('a worker whose claim was taken over cannot overwrite the new claim or a finished result', async () => {
+        const u = await user();
+        const brand = (await getOrCreateBrand(u.auth)).brand_id;
+        const account = (await connect(u.auth, brand)).account_id;
+        const post = (await createPost(u, brand, [account])).post_id;
+        const first = await claimFor(post);
+        // Worker A goes quiet past the 15-minute backstop; worker B reclaims.
+        await pool.query(`UPDATE public.social_post_targets SET claimed_at = now() - interval '16 minutes' WHERE id = $1`,
+            [first.target_id]);
+        const second = await claimFor(post);
+        assert.notEqual(second.claim_key, first.claim_key);
+
+        const stale = await completeAs(first.target_id, first.claim_key, false);
+        assert.equal(stale.code, 'CLAIM_LOST', "A's late failure must not flip B's claim back to pending");
+        assert.equal((await target(first.target_id)).publish_status, 'publishing');
+
+        assert.equal((await completeAs(second.target_id, second.claim_key)).ok, true);
+        const late = await completeAs(first.target_id, first.claim_key, false);
+        assert.equal(late.code, 'CLAIM_LOST', 'a finished result is final');
+        assert.equal((await target(first.target_id)).publish_status, 'published');
+    });
+
+    it('progress needs the live claim, and a missing check time cannot strand the row', async () => {
+        const u = await user();
+        const brand = (await getOrCreateBrand(u.auth)).brand_id;
+        const account = (await connect(u.auth, brand, 'youtube')).account_id;
+        const post = (await createPost(u, brand, [account])).post_id;
+        const row = await claimFor(post);
+        const lost = (await one('SELECT public.report_social_post_progress($1, $2, $3, $4) AS r',
+            [row.target_id, '{}', null, randomUUID()])).r;
+        assert.equal(lost.code, 'CLAIM_LOST');
+        const ok = (await one('SELECT public.report_social_post_progress($1, $2, $3, $4) AS r',
+            [row.target_id, '{"step":1}', null, row.claim_key])).r;
+        assert.equal(ok.ok, true);
+        const after = await one('SELECT publish_status, next_attempt_at IS NOT NULL AS has_next FROM public.social_post_targets WHERE id = $1',
+            [row.target_id]);
+        assert.deepEqual([after.publish_status, after.has_next], ['submitted', true]);
+    });
+
+    // ── 0168: disconnect stops publishing (S2) ───────────────────────────
+    const disconnect = async (auth: string, accountId: string) =>
+        (await one('SELECT public.disconnect_social_account($1, $2) AS r', [auth, accountId])).r;
+
+    it('disconnecting clears the tokens and fails the queued posts at once', async () => {
+        const u = await user();
+        const brand = (await getOrCreateBrand(u.auth)).brand_id;
+        const account = (await connect(u.auth, brand)).account_id;
+        const post = (await createPost(u, brand, [account])).post_id;
+
+        assert.equal((await disconnect(u.auth, account)).ok, true);
+        const acct = await one('SELECT status, access_token_enc, refresh_token_enc FROM public.social_accounts WHERE id = $1', [account]);
+        assert.deepEqual([acct.status, acct.access_token_enc, acct.refresh_token_enc], ['revoked', null, null]);
+        const t = await one('SELECT publish_status, last_error FROM public.social_post_targets WHERE post_id = $1', [post]);
+        assert.deepEqual([t.publish_status, t.last_error], ['failed', 'account_disconnected']);
+        assert.equal((await one('SELECT status FROM public.social_posts WHERE id = $1', [post])).status, 'failed');
+        assert.equal((await claim()).some((r) => r.post_id === post), false, 'never claimed');
+    });
+
+    it('a live in-flight claim on a disconnected account still reports; a dead one is failed by the next claim', async () => {
+        const u = await user();
+        const brand = (await getOrCreateBrand(u.auth)).brand_id;
+        const account = (await connect(u.auth, brand)).account_id;
+        const livePost = (await createPost(u, brand, [account])).post_id;
+        const live = await claimFor(livePost);
+        assert.equal((await disconnect(u.auth, account)).ok, true);
+        assert.equal((await target(live.target_id)).publish_status, 'publishing', 'a fresh claim is left to finish');
+        assert.equal((await completeAs(live.target_id, live.claim_key)).ok, true, 'and its true outcome is recorded');
+
+        const u2 = await user();
+        const brand2 = (await getOrCreateBrand(u2.auth)).brand_id;
+        const account2 = (await connect(u2.auth, brand2)).account_id;
+        const deadPost = (await createPost(u2, brand2, [account2])).post_id;
+        const dead = await claimFor(deadPost);
+        assert.equal((await disconnect(u2.auth, account2)).ok, true);
+        await pool.query(`UPDATE public.social_post_targets SET claimed_at = now() - interval '16 minutes' WHERE id = $1`,
+            [dead.target_id]);
+        await claim();
+        const t = await target(dead.target_id);
+        assert.deepEqual([t.publish_status, t.last_error], ['failed', 'account_disconnected']);
+        assert.equal((await one('SELECT status FROM public.social_posts WHERE id = $1', [deadPost])).status, 'failed');
+    });
+
+    it('a token refresh cannot write onto a disconnected account, and reconnecting restores it', async () => {
+        const u = await user();
+        const brand = (await getOrCreateBrand(u.auth)).brand_id;
+        const externalId = `ext-${randomUUID()}`;
+        const account = (await connect(u.auth, brand, 'instagram', externalId)).account_id;
+        await disconnect(u.auth, account);
+        const refreshed = (await one('SELECT public.update_social_account_token($1, $2, now()) AS r',
+            [account, Buffer.from('late-token')])).r;
+        assert.equal(refreshed, null);
+        assert.equal((await one('SELECT access_token_enc FROM public.social_accounts WHERE id = $1', [account])).access_token_enc, null);
+
+        const again = (await connect(u.auth, brand, 'instagram', externalId)).account_id;
+        assert.equal(again, account, 'same row re-activated');
+        const acct = await one('SELECT status, access_token_enc IS NOT NULL AS has_token FROM public.social_accounts WHERE id = $1', [account]);
+        assert.deepEqual([acct.status, acct.has_token], ['active', true]);
+    });
+
+    it('counts YouTube uploads on the Pacific quota day YouTube resets on (0181)', async () => {
+        const day = (await one(`SELECT (now() AT TIME ZONE 'America/Los_Angeles')::date::text AS d`)).d;
+        const before = Number((await one('SELECT COALESCE((SELECT upload_count FROM public.youtube_upload_daily_quota WHERE quota_date = $1::date), 0) AS n', [day])).n);
+        const r = (await one('SELECT public.consume_youtube_upload_quota() AS r')).r;
+        assert.equal(r.ok, true);
+        assert.equal(Number((await one('SELECT upload_count FROM public.youtube_upload_daily_quota WHERE quota_date = $1::date', [day])).upload_count), before + 1);
+    });
+
     it('forces RLS and permits service-role RPC execution only, on every new table', async () => {
         for (const table of ['social_posts', 'social_post_media', 'social_post_targets', 'youtube_upload_daily_quota']) {
             const info = await one(
@@ -374,8 +508,9 @@ describe('social publish scheduling (0156, 0160, 0161)', { skip: !process.env.DA
         const fns = [
             'public.create_social_post(text, uuid, timestamptz, text, text, uuid[], jsonb)',
             'public.claim_due_social_post_targets(integer)',
-            'public.complete_social_post_target(uuid, boolean, text, text, text, boolean)',
-            'public.report_social_post_progress(uuid, jsonb, timestamptz)',
+            'public.complete_social_post_target(uuid, boolean, text, text, text, boolean, uuid)',
+            'public.report_social_post_progress(uuid, jsonb, timestamptz, uuid)',
+            'public.disconnect_social_account(text, uuid)',
             'public.update_social_account_token(uuid, bytea, timestamptz)',
             'public.consume_youtube_upload_quota()',
         ];
@@ -394,5 +529,19 @@ describe('social publish scheduling (0156, 0160, 0161)', { skip: !process.env.DA
         const oldOverload = await one(`SELECT count(*) FROM pg_proc WHERE proname = 'complete_social_post_target'
             AND pronargs = 5`);
         assert.equal(oldOverload.count, '0', 'the 5-arg form was dropped, not left behind as an overload');
+        // 0168 adds p_claim_key: the 6-arg form and the 3-arg progress must not survive beside it.
+        const stray = await one(`SELECT count(*) FROM pg_proc WHERE
+            (proname = 'complete_social_post_target' AND pronargs = 6)
+            OR (proname = 'report_social_post_progress' AND pronargs = 3)`);
+        assert.equal(stray.count, '0', 'pre-0168 forms dropped');
+        // Internal helpers: no role may call them directly.
+        for (const fn of ['public.settle_social_post(uuid)', 'public.social_fail_inactive_targets(uuid)']) {
+            for (const role of ['anon', 'authenticated', 'service_role']) {
+                assert.equal(
+                    (await one('SELECT has_function_privilege($1, $2, $3) AS p', [role, fn, 'EXECUTE'])).p,
+                    false, `${role} EXECUTE on ${fn}`,
+                );
+            }
+        }
     });
 });

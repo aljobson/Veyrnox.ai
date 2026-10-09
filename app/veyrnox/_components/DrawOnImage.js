@@ -82,7 +82,7 @@ export function DrawOnImage({ file, onDone, onCancel }) {
   const btn = 'font-vx-mono text-[11px] font-bold rounded-full px-3.5 py-1.5 border border-vx-border text-vx-fg-muted hover:text-vx-fg disabled:opacity-40';
   return (
     <div role="dialog" aria-modal="true" aria-label="Draw on start image"
-      className="fixed inset-0 z-[80] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
+      className="fixed inset-0 z-[80] flex items-center justify-center bg-black/80 p-4 backdrop-blur-xs">
       <div className="w-full max-w-4xl rounded-2xl border border-vx-border bg-vx-panel p-4 flex flex-col gap-3">
         <div className="flex flex-wrap items-center gap-2">
           <span className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted mr-2">DRAW TO EDIT</span>

@@ -60,12 +60,12 @@ export function Player({ id }) {
   const back = <p className="mt-6 text-sm"><Link href={`/social-cinema/title/${id}`} className="underline">Back to the title</Link> · <Link href="/social-cinema" className="underline">Social Cinema</Link></p>;
   const copy = { locked: 'This episode is locked. Unlock it from the title page or get a Cinema Pass.', not_ready: 'This video is still being prepared. Try again in a few minutes.', missing: 'This title is not available.', closed: 'Social Cinema viewing is not open yet.', pass_ceiling: 'Your Cinema Pass has reached its viewing limit for this month. You can still unlock episodes with credits.', error: 'Playback is unavailable right now. Try again in a moment.' };
 
-  return <main id="main" className="mx-auto max-w-[1000px] px-4 py-8 pb-40 sm:px-8 sm:pb-32">
+  return <div className="mx-auto max-w-[1000px] px-4 py-8 pb-40 sm:px-8 sm:pb-32">
     {state === 'playing' ? <div className="aspect-[9/16] w-full max-w-[420px] overflow-hidden rounded-2xl border border-vx-border bg-black mx-auto sm:aspect-video sm:max-w-none">
       <iframe title="Now playing" src={src} allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture" allowFullScreen className="h-full w-full" />
     </div> : state === 'loading' ? <p role="status" className="text-vx-fg-muted">Preparing playback…</p>
       : state === 'signin' ? <div><p className="mb-4 text-vx-fg-body">Sign in to watch.</p><Button onClick={() => window.dispatchEvent(new CustomEvent('veyrnox:auth-required'))}>Sign in</Button></div>
         : <p role="status">{copy[state === 'blocked' ? reason : state] || copy.error}</p>}
     {back}
-  </main>;
+  </div>;
 }

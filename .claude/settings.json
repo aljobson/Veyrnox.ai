@@ -67,6 +67,16 @@
             "timeout": 5
           }
         ]
+      },
+      {
+        "matcher": "Bash|Write|Edit|MultiEdit|mcp__.*__(apply_migration|execute_sql)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/veyrnox/pre-tool.mjs\"",
+            "timeout": 15
+          }
+        ]
       }
     ],
     "PostToolUse": [
@@ -86,6 +96,16 @@
           {
             "type": "command",
             "command": "CLAUDE_PLUGIN_ROOT=\"$CLAUDE_PROJECT_DIR/.claude/ecc\" node \"$CLAUDE_PROJECT_DIR/.claude/ecc/scripts/hooks/run-with-flags.js\" post:edit:console-warn scripts/hooks/post-edit-console-warn.js standard,strict",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/veyrnox/post-migration.mjs\"",
             "timeout": 5
           }
         ]

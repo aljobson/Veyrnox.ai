@@ -126,39 +126,43 @@ test('initResumableUpload throws if the response carries no session URI', async 
     await assert.rejects(initResumableUpload('access-1', { totalBytes: 100 }, fetcher), /missing_session_uri/);
 });
 
-test('probeUploadOffset reads the confirmed byte count off a 308\'s Range header, or zero if absent', async () => {
-    const withRange = async () => headerRes({ range: 'bytes=0-999' }, 308);
-    assert.deepEqual(await probeUploadOffset('https://upload.example/s', 5000, withRange), { done: false, bytesConfirmed: 1000 });
+test('probeUploadOffset reads the confirmed byte count off a 308\'s Range header, or zero if absent, and always authenticates the PUT', async () => {
+    let sentAuth;
+    const withRange = async (url, init) => { sentAuth = init.headers.Authorization; return headerRes({ range: 'bytes=0-999' }, 308); };
+    assert.deepEqual(await probeUploadOffset('https://upload.example/s', 5000, 'access-1', withRange), { done: false, bytesConfirmed: 1000 });
+    assert.equal(sentAuth, 'Bearer access-1', 'the session URI is not itself a bearer token — every PUT still needs Authorization');
     const withoutRange = async () => headerRes({}, 308);
-    assert.deepEqual(await probeUploadOffset('https://upload.example/s', 5000, withoutRange), { done: false, bytesConfirmed: 0 });
+    assert.deepEqual(await probeUploadOffset('https://upload.example/s', 5000, 'access-1', withoutRange), { done: false, bytesConfirmed: 0 });
 });
 
 test('probeUploadOffset treats a completed session (200/201 with a video body) as done', async () => {
     const fetcher = async () => ({ ok: true, status: 201, headers: headerGet({}), json: async () => ({ id: 'video-9' }) });
-    assert.deepEqual(await probeUploadOffset('https://upload.example/s', 5000, fetcher), { done: true, bytesConfirmed: 5000, videoId: 'video-9' });
+    assert.deepEqual(await probeUploadOffset('https://upload.example/s', 5000, 'access-1', fetcher), { done: true, bytesConfirmed: 5000, videoId: 'video-9' });
 });
 
 test('probeUploadOffset reports an expired session distinctly, not as a generic failure', async () => {
     const fetcher = async () => headerRes({}, 404);
-    await assert.rejects(probeUploadOffset('https://upload.example/s', 5000, fetcher), (err) => err.code === 'UPLOAD_SESSION_EXPIRED');
+    await assert.rejects(probeUploadOffset('https://upload.example/s', 5000, 'access-1', fetcher), (err) => err.code === 'UPLOAD_SESSION_EXPIRED');
 });
 
-test('uploadChunk fetches the byte range from mediaUrl and PUTs it with the right Content-Range', async () => {
-    let sentRangeHeader, sentContentRange;
+test('uploadChunk fetches the byte range from mediaUrl and PUTs it with the right Content-Range and Authorization', async () => {
+    let sentRangeHeader, sentContentRange, sentAuth;
     const fetcher = async (url, init) => {
         if (url === 'https://r2.example/media') {
             sentRangeHeader = init.headers.Range;
             return { ok: true, status: 206, headers: headerGet({}), arrayBuffer: async () => new Uint8Array(1000).buffer };
         }
         sentContentRange = init.headers['Content-Range'];
+        sentAuth = init.headers.Authorization;
         return headerRes({ range: 'bytes=0-999' }, 308);
     };
     const result = await uploadChunk('https://upload.example/s', {
-        mediaUrl: 'https://r2.example/media', startByte: 0, endByte: 999, totalBytes: 5000, mimeType: 'video/mp4',
+        mediaUrl: 'https://r2.example/media', startByte: 0, endByte: 999, totalBytes: 5000, mimeType: 'video/mp4', accessToken: 'access-1',
     }, fetcher);
     assert.deepEqual(result, { done: false, bytesConfirmed: 1000 });
     assert.equal(sentRangeHeader, 'bytes=0-999');
     assert.equal(sentContentRange, 'bytes 0-999/5000');
+    assert.equal(sentAuth, 'Bearer access-1');
 });
 
 test('checkProcessingStatus reads status and processingDetails by exact field name', async () => {

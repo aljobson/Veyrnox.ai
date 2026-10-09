@@ -11,6 +11,7 @@ import { gatewayFetch, GatewayError } from '../_lib/gateway';
 import { getSession, onSessionChange } from '../../lib/authClient';
 import { accountLabel } from '../_lib/account';
 import { useProjectsPreview } from '../_lib/useProjectsPreview';
+import { AnnouncementBar } from './AnnouncementBar';
 
 // Marketing site nav (Home / Gallery / Pricing).
 export function MarketingNav() {
@@ -18,12 +19,18 @@ export function MarketingNav() {
   const path = usePathname().replace(/^\/veyrnox/, '') || '/';
   const items = [
     { href: '/',         label: 'Home' },
-    { href: '/presets', label: 'Gallery' },
+    { href: '/presets', label: 'Templates' },
+    { href: '/tools', label: 'Tools' },
+    { href: '/app/chat', label: 'LLM Chat' },
     { href: '/social-cinema', label: 'Social Cinema' },
     { href: '/pricing', label: 'Pricing' },
   ];
   return (
-    <div data-print="hide" className="sticky top-0 z-40 flex items-center justify-between gap-3 px-4 sm:px-8 h-16 border-b border-vx-border bg-vx-base/[0.88] backdrop-blur">
+    <>
+    <AnnouncementBar />
+    <div data-print="hide" className="sticky top-0 z-40 h-16 border-b border-vx-border bg-vx-base/88 backdrop-blur-sm">
+      {/* Same 1300px column as the page body, so the logo sits on its edge. */}
+      <div className="h-full max-w-[1300px] mx-auto px-4 sm:px-6 flex items-center justify-between gap-3">
       <Link href="/" aria-label="Veyrnox.ai — home" className="flex items-center gap-2.5 shrink-0">
         <Logo wordmark />
       </Link>
@@ -53,7 +60,9 @@ export function MarketingNav() {
             off this page was the browser back button. */}
         <MobileMenu items={items} className="lg:hidden" />
       </div>
+      </div>
     </div>
+    </>
   );
 }
 
@@ -71,6 +80,7 @@ export function AppNav({ balance, active = 'explore' }) {
   const items = [
     { key: 'explore', href: '/app',         label: 'Explore' },
     { key: 'create',  href: '/app/create',  label: 'Create' },
+    { key: 'chat', href: '/app/chat', label: 'LLM Chat' },
     { key: 'library', href: '/app/library', label: 'Library' },
     ...(projectsEnabled ? [{ key: 'projects', href: '/app/projects', label: 'Projects' }] : []),
   ];
@@ -115,7 +125,7 @@ export function AppNav({ balance, active = 'explore' }) {
   const assetFmt = assets != null ? new Intl.NumberFormat('en-US').format(assets) : '—';
   const assetWord = assets === 1 ? 'asset' : 'assets';
   return (
-    <div data-print="hide" className="sticky top-0 z-40 flex items-center justify-between gap-2 px-4 sm:px-8 h-16 border-b border-vx-border bg-vx-base/[0.88] backdrop-blur">
+    <div data-print="hide" className="sticky top-0 z-40 flex items-center justify-between gap-2 px-4 sm:px-8 h-16 border-b border-vx-border bg-vx-base/88 backdrop-blur-sm">
       <Link
         href="/app"
         aria-label="Veyrnox studio — explore"

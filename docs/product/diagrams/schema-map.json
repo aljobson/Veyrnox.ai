@@ -1,0 +1,333 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Veyrnox.ai data model by domain (as of 2026-10-08)",
+    "subtitle": "85 tables through migration 0228, checked against main 96380e7f",
+    "output": "schema-map.html",
+    "quality_profile": "showcase"
+  },
+  "components": [
+    {
+      "id": "authusers",
+      "type": "security",
+      "label": "auth.users",
+      "sublabel": "Supabase Auth",
+      "tag": "triggers 0071",
+      "pos": [
+        40,
+        60
+      ],
+      "size": [
+        200,
+        64
+      ]
+    },
+    {
+      "id": "balances",
+      "type": "database",
+      "label": "credit_balances",
+      "sublabel": "balance, free, subscription",
+      "pos": [
+        40,
+        260
+      ],
+      "size": [
+        200,
+        64
+      ]
+    },
+    {
+      "id": "tenants",
+      "type": "database",
+      "label": "organisations",
+      "sublabel": "workspaces, projects",
+      "tag": "RLS for browser",
+      "pos": [
+        40,
+        460
+      ],
+      "size": [
+        200,
+        64
+      ]
+    },
+    {
+      "id": "users",
+      "type": "database",
+      "label": "public.users",
+      "sublabel": "auth_id, frozen_at",
+      "tag": "hub",
+      "pos": [
+        320,
+        260
+      ],
+      "size": [
+        200,
+        64
+      ]
+    },
+    {
+      "id": "growth",
+      "type": "database",
+      "label": "referral_*, plans",
+      "sublabel": "referral 3, credit_subscription 3",
+      "pos": [
+        300,
+        460
+      ],
+      "size": [
+        240,
+        64
+      ]
+    },
+    {
+      "id": "ledger",
+      "type": "database",
+      "label": "ledger_entries",
+      "sublabel": "append-only, delta + bucket deltas",
+      "pos": [
+        640,
+        40
+      ],
+      "size": [
+        220,
+        64
+      ]
+    },
+    {
+      "id": "jobs",
+      "type": "database",
+      "label": "jobs + job_steps",
+      "sublabel": "state, idempotency_key, steps",
+      "pos": [
+        640,
+        150
+      ],
+      "size": [
+        220,
+        64
+      ]
+    },
+    {
+      "id": "chat",
+      "type": "database",
+      "label": "chat_*",
+      "sublabel": "threads, messages, folders, personas",
+      "pos": [
+        640,
+        260
+      ],
+      "size": [
+        220,
+        64
+      ]
+    },
+    {
+      "id": "cinema",
+      "type": "database",
+      "label": "cinema_*",
+      "sublabel": "21 tables: content, uploads, passes",
+      "pos": [
+        640,
+        370
+      ],
+      "size": [
+        220,
+        64
+      ]
+    },
+    {
+      "id": "social",
+      "type": "database",
+      "label": "social_*",
+      "sublabel": "13 tables: accounts, posts, analytics",
+      "pos": [
+        640,
+        480
+      ],
+      "size": [
+        220,
+        64
+      ]
+    },
+    {
+      "id": "topups",
+      "type": "database",
+      "label": "top_ups",
+      "sublabel": "credit_packs, Stripe orders",
+      "pos": [
+        960,
+        40
+      ],
+      "size": [
+        210,
+        64
+      ]
+    },
+    {
+      "id": "assets",
+      "type": "database",
+      "label": "assets",
+      "sublabel": "r2_key, sha256, expires_at",
+      "pos": [
+        960,
+        150
+      ],
+      "size": [
+        210,
+        64
+      ]
+    },
+    {
+      "id": "catalog",
+      "type": "database",
+      "label": "model_catalog",
+      "sublabel": "credits_5s, active, allowance",
+      "tag": "no FK",
+      "pos": [
+        960,
+        260
+      ],
+      "size": [
+        210,
+        64
+      ]
+    }
+  ],
+  "boundaries": [],
+  "connections": [
+    {
+      "id": "provision",
+      "from": "authusers",
+      "to": "users",
+      "label": "provision",
+      "variant": "security",
+      "fromSide": "right",
+      "toSide": "top"
+    },
+    {
+      "id": "balance",
+      "from": "users",
+      "to": "balances",
+      "label": "1:1"
+    },
+    {
+      "id": "tenant",
+      "from": "users",
+      "to": "tenants",
+      "label": "personal org"
+    },
+    {
+      "id": "users-growth",
+      "from": "users",
+      "to": "growth",
+      "label": "1:N",
+      "labelAt": [
+        420,
+        392
+      ]
+    },
+    {
+      "id": "users-ledger",
+      "from": "users",
+      "to": "ledger",
+      "label": "1:N",
+      "variant": "emphasis",
+      "labelAt": [
+        600,
+        72
+      ]
+    },
+    {
+      "id": "users-jobs",
+      "from": "users",
+      "to": "jobs",
+      "label": "1:N",
+      "variant": "emphasis",
+      "labelAt": [
+        600,
+        182
+      ]
+    },
+    {
+      "id": "users-chat",
+      "from": "users",
+      "to": "chat",
+      "label": "1:N",
+      "labelAt": [
+        600,
+        292
+      ]
+    },
+    {
+      "id": "users-cinema",
+      "from": "users",
+      "to": "cinema",
+      "label": "1:N",
+      "labelAt": [
+        600,
+        402
+      ]
+    },
+    {
+      "id": "users-social",
+      "from": "users",
+      "to": "social",
+      "label": "1:N",
+      "labelAt": [
+        600,
+        512
+      ]
+    },
+    {
+      "id": "grant",
+      "from": "topups",
+      "to": "ledger",
+      "label": "grant_entry_id",
+      "variant": "emphasis"
+    },
+    {
+      "id": "job-assets",
+      "from": "jobs",
+      "to": "assets",
+      "label": "1:N"
+    },
+    {
+      "id": "job-model",
+      "from": "jobs",
+      "to": "catalog",
+      "label": "model_id",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "amber",
+      "title": "Money spine",
+      "items": [
+        "balance = SUM(ledger_entries.delta) per user; Free and Subscription buckets carry their own deltas",
+        "Writes only through SECURITY DEFINER RPCs",
+        "Ledger, account_actions and audit logs are append-only"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Access",
+      "items": [
+        "All 85 tables (82 public, 3 private): RLS enabled and forced",
+        "Worker uses service role; browser reads only its own rows",
+        "Tenant tables are the one browser-facing PostgREST surface"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "New since 0166 and not drawn",
+      "items": [
+        "17 new: chat 4, referral 3, subscription 3, social 6, allowance 1",
+        "10 rate-limit tables (user_id 1:1)",
+        "webhook_events, account_actions, audit_events"
+      ]
+    }
+  ]
+}

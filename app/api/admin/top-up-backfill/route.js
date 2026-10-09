@@ -11,8 +11,8 @@
  * Re-fetch each returned Stripe Session, verify its signed Top-up binding,
  * then credit its PaymentIntent through credit_top_up. Close terminal returns
  * using the Session id and a NULL identifier (0108). Transient failures remain
- * due after their database backoff. The retired LemonSqueezy sweep is disabled;
- * a Stripe search sweep is outside ADR-0033's scope.
+ * due after their database backoff. A Stripe search sweep is outside
+ * ADR-0033's scope.
  * Response: { checked, credited, idempotent, flagged, refused, skipped, retry,
  *   stopped, sweep: null }.
  */

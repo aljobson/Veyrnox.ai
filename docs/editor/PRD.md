@@ -1,5 +1,5 @@
 # PRD — Clip Editor (stitch, trim, add audio)
-**Status:** Draft · 2026-09-22 · Slice 0 done (live results in §9) · Slice 1a (orchestrator, 0092) merged in #235
+**Status:** Built · written 2026-09-22 · Slice 0 done (live results in §9) · orchestrator (0092), Library selection and the edit sheet merged in #235, #240 and #243 · `clip-edit` is active in the catalogue (0095, #244). Header updated 2026-10-03; the body is as written.
 **Owner:** product owner (Al Jobson)
 **Language:** terms are as defined in [CONTEXT.md](../../CONTEXT.md).
 **Precedence:** [CLAUDE.md](../../CLAUDE.md) and [docs/adr/](../adr/README.md)

@@ -16,8 +16,9 @@ import { NextResponse } from 'next/server';
 
 export async function GET(req) {
     const authId = req.headers.get('x-veyrnox-auth-id');
-    const email = req.headers.get('x-veyrnox-auth-email');
-    const role = req.headers.get('x-veyrnox-auth-role');
+    // The middleware sets every identity header; '' means the token had no such claim.
+    const email = req.headers.get('x-veyrnox-auth-email') || null;
+    const role = req.headers.get('x-veyrnox-auth-role') || null;
     if (!authId) {
         // Should be impossible — the middleware fail-closes before reaching
         // this handler. Guard anyway.

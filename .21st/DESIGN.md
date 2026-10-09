@@ -1,6 +1,6 @@
 # Veyrnox.ai design context
 
-Next.js / React / Tailwind v3. Dark by default, light via the existing theme toggle. Tokens are defined in `app/globals.css`, mapped in `tailwind.config.js`; use the `vx` token classes so both themes work.
+Next.js / React / Tailwind v4. Dark by default, light via the existing theme toggle. Tokens are defined in `app/globals.css`, mapped by `@theme inline` in the same stylesheet; use the `vx` token classes so both themes work.
 
 Reuse `AppNav`, `Button`, `Modal`, and `Chip` from `app/veyrnox/_components`. Archivo is the studio typeface; JetBrains Mono supplies small labels. Aqua indicates actions; amber is reserved for money. Use compact layouts, pill buttons, and rounded bordered sections.
 

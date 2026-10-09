@@ -1,13 +1,16 @@
 /**
  * GET /api/v1/admin/metrics — 24h operational metrics for admins.
  *
- * Three gates, deliberately:
+ * Four gates, deliberately:
  *   1. middleware.js verifies the Supabase JWT and sets x-veyrnox-auth-id.
  *   2. With ADMIN_REQUIRE_AAL2='true', the session must have satisfied a
  *      second factor (Supabase `aal` claim = 'aal2'). An admin password is
  *      the highest-value credential in the product, and the ledger is one
  *      read away from it.
- *   3. ops_metrics_24h() re-checks users.is_admin and raises 42501 if the
+ *   3. The Cloudflare Access assertion is verified here, not only at the
+ *      edge, so the check does not depend on which path or hostname the
+ *      request arrived by (lib/accessJwt.js, ADR-0078).
+ *   4. ops_metrics_24h() re-checks users.is_admin and raises 42501 if the
  *      caller is not an admin, so the data is protected even if a future
  *      route change forgets to check.
  *
@@ -17,6 +20,7 @@
 
 import { NextResponse } from 'next/server';
 import { rpc, envConfig, SupabaseError } from '../../../../../packages/db/supabase-client.js';
+import { requireDashboardAccess } from '../../../../../lib/accessJwt.js';
 
 // Postgres insufficient_privilege — ops_metrics_24h raises it for non-admins.
 const NOT_ADMIN = '42501';
@@ -39,6 +43,9 @@ export async function GET(req) {
         // about whether they would have been an admin if they had done it.
         return NextResponse.json({ error: 'mfa_required' }, { status: 403 });
     }
+
+    const access = await requireDashboardAccess(req);
+    if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status });
 
     const cfg = envConfig();
     if (!cfg.supabaseUrl || !cfg.serviceRoleKey) {

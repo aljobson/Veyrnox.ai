@@ -1,62 +1,19 @@
-'use client';
-import { useState } from 'react';
 import { MarketingNav } from '../_components/NavBar';
-import { Chip } from '../_components/Chip';
-import { PresetCard } from '../_components/PresetCard';
-import { PRESETS, PRESET_CATEGORIES } from '../_lib/tokens';
-import { useCatalog } from '../_lib/useCatalog';
+import { PresetGallery } from '../_components/PresetGallery';
 
-// Public preset gallery — cached demos, no card, no cost.
+// Public preset gallery. No card, no cost until you generate.
 export default function Gallery() {
-  const [cat, setCat] = useState('ALL');
-  const { models } = useCatalog();
-  const list = cat === 'ALL' ? PRESETS : PRESETS.filter((p) => p.category === cat);
-
   return (
     <div className="min-h-dvh">
       <MarketingNav />
-
-      <section className="max-w-[1200px] mx-auto px-4 sm:px-10 pt-12 sm:pt-16 pb-8">
-        <Chip tone="accent" className="mb-4">EXPLORE · CURATED PRESETS</Chip>
-        <h1 className="text-[30px] sm:text-[38px] md:text-[48px] font-black tracking-[-0.03em] leading-[1.08] sm:leading-[1.05] text-balance">
+      <section className="max-w-[1300px] mx-auto px-4 sm:px-6 pt-14 sm:pt-20 pb-28">
+        <h1 className="vx-display text-[52px] sm:text-[80px] lg:text-[104px] max-w-[12ch]">
           One-tap looks. Exact prices.
         </h1>
-        <p className="text-vx-fg-body mt-4 max-w-[620px] leading-[1.6]">
-          Every preset is pinned to its best-fit model and shows its credit cost up front.
-          Demos play free from cache — nothing debits until you generate.
+        <p className="mt-6 mb-10 text-lg sm:text-xl text-vx-fg-body max-w-[46ch] leading-[1.5] text-pretty">
+          Ready-made looks, each pinned to the model it suits, with its prompt and credit cost shown up front. Some take a photo of yours. Nothing is charged until you generate.
         </p>
-
-        <div className="mt-8 flex flex-wrap gap-2">
-          {PRESET_CATEGORIES.map((c) => (
-            <button
-              key={c}
-              onClick={() => setCat(c)}
-              aria-pressed={cat === c}
-              className={`font-vx-mono text-[11px] tracking-[0.12em] font-bold rounded-full px-4 py-2 border transition-colors ${
-                cat === c
-                  ? 'bg-vx-accent text-vx-accent-ink border-transparent'
-                  : 'border-vx-border text-vx-fg-muted hover:text-vx-fg'
-              }`}
-            >
-              {c}
-            </button>
-          ))}
-        </div>
-      </section>
-
-      <section className="max-w-[1200px] mx-auto px-4 sm:px-10 pb-8 flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="text-xl sm:text-2xl font-black tracking-[-0.02em]">Presets</h2>
-        <div className="font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted">
-          {list.length} PRESETS · {new Set(list.map((p) => p.model)).size} MODELS · CACHED DEMOS FREE
-        </div>
-      </section>
-
-      <section className="max-w-[1200px] mx-auto px-4 sm:px-10 pb-24">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {list.map((p) => (
-            <PresetCard key={p.id} preset={p} catalog={models} size="lg" />
-          ))}
-        </div>
+        <PresetGallery />
       </section>
     </div>
   );

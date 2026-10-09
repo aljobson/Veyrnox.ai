@@ -66,3 +66,13 @@ test('returns a TikTok authorize URL bound to our https per-network callback and
     assert.ok(url.searchParams.get('state').includes('.'), 'state is a signed token, not a raw value');
     assert.equal(url.searchParams.get('code_challenge'), null, 'never forwarded to TikTok, which has no documented PKCE support for a web client');
 });
+
+test('analytics switch adds the two approved analytics scopes to consent', async () => {
+    setConfigured();
+    process.env.TIKTOK_ANALYTICS_SCOPE_ENABLED = 'true';
+    try {
+        const res = await POST(request({ codeChallenge: challenge }));
+        assert.equal(res.status, 200);
+        assert.equal(new URL((await res.json()).authorizeUrl).searchParams.get('scope'), 'user.info.basic,video.upload,user.info.stats,video.list');
+    } finally { delete process.env.TIKTOK_ANALYTICS_SCOPE_ENABLED; }
+});

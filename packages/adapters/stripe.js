@@ -1,8 +1,8 @@
 /**
  * Stripe adapter — Credit Pack checkout after LemonSqueezy refused AI media
- * generation (2026-09-22). Same shape as packages/adapters/lemonsqueezy.js:
- * plain fetch against a constant API host, no SDK (the Workers bundle rule in
- * CLAUDE.md), and the network function injected so tests never touch it.
+ * generation (2026-09-22). Plain fetch against a constant API host, no SDK
+ * (the Workers bundle rule in CLAUDE.md), and the network function injected
+ * so tests never touch it.
  *
  * A Checkout Session is built from our own catalog price with inline
  * `price_data`, so there are no Stripe Product or Price objects to keep in
@@ -132,8 +132,7 @@ export async function createCheckout(input, cfg) {
         console.error('[stripe] checkout create failed:', res.status, data && data.error && data.error.code);
         return { ok: false, error: `stripe ${res.status}` };
     }
-    // The browser navigates top-level to this URL, so it must be Stripe's —
-    // same guard the LemonSqueezy adapter carried.
+    // The browser navigates top-level to this URL, so it must be Stripe's.
     let checkoutUrl;
     try { checkoutUrl = new URL(data.url); } catch { checkoutUrl = null; }
     if (!checkoutUrl || checkoutUrl.protocol !== 'https:'
@@ -148,7 +147,7 @@ export async function createCheckout(input, cfg) {
  * Verify a `Stripe-Signature` header over the exact raw bytes.
  * Header shape: `t=<unix>,v1=<hex>[,v1=<hex>…]`; the signed payload is
  * `<t>.<body>`. Stale timestamps are refused, so a captured delivery cannot
- * be replayed days later (LemonSqueezy sends none — ADR-0018 §replay).
+ * be replayed days later.
  *
  * @param {Uint8Array} rawBody
  * @param {string} header
@@ -468,10 +467,15 @@ export async function cancelSubscriptionNow(subscriptionId, cfg) {
     } catch (err) {
         return { ok: false, error: `transport: ${err && err.message}` };
     }
-    const data = await res.json().catch(() => null);
-    // A subscription already canceled is a 400 resource_missing-style refusal we treat as done.
-    if (!res.ok && !(res.status === 400 && data && data.error && /already been canceled/i.test(String(data.error.message || '')))) {
-        return { ok: false, error: `stripe ${res.status}` };
+    if (!res.ok) {
+        // Stripe can refuse a repeated DELETE with resource_missing. Its
+        // error wording is not a cancellation receipt: verify current state.
+        const current = await fetchSubscription(subscriptionId, cfg);
+        const sub = current.subscription;
+        if (!current.ok || sub?.id !== subscriptionId || sub.status !== 'canceled'
+            || sub.livemode !== cfg.apiKey.startsWith('sk_live_')) {
+            return { ok: false, error: `stripe ${res.status}` };
+        }
     }
     return { ok: true };
 }

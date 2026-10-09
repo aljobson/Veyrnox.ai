@@ -1,108 +1,256 @@
 # UI/UX Brief — Veyrnox.ai
 
-**Status:** Current · 2026-09-21
-**Source of truth:** the code. Tokens in `app/globals.css`, type in
-`tailwind.config.js`, components in `app/veyrnox/_components/` and
-`components/`. This brief records the language so new work extends it rather
-than starting a second one.
+**Status:** Current · 2026-10-08 (audited against `main` at `42150476`; Publish rows amended against `bee1ea4f`; first
+written 2026-10-02 at `2da81dc`, after the receipt redesign #404 and the slip
+tilt #406; colour rules revised by #482 and #478)
+**Source of truth:** the code. Tokens in `app/globals.css` and
+`app/veyrnox/veyrnox.css`, Tailwind mapping in `tailwind.config.js`, fonts in
+`app/layout.js` + `app/veyrnox/layout.js`, components in
+`app/veyrnox/_components/`, page sections in `app/veyrnox/_sections/`.
+This brief records the language so new work extends it instead of starting a
+second one. Known gaps are listed in [ISSUES.md](ISSUES.md) §UI.
 
 ## 1. Look and feel
 
-A control room, not a toy. Near-black ground, one teal accent, one amber that
-only ever means money. Flat surfaces and hairline borders; almost no shadow.
-Dense monospaced metadata carries the character. Every click spends Credits,
-so the interface reads as an instrument with honest numbers.
+Two materials on one near-black ground:
+
+- **The control room** — flat panels, hairline borders, one teal accent,
+  dense monospaced figures. The Studio, Account, Publish, Cinema and admin
+  screens.
+- **The receipt** — cool thermal-paper slips (`.vx-paper`) with torn edges,
+  perforations and dotted leaders, printed out of a slot. Used where money is
+  stated: the landing hero, `/pricing`, `/app/credits`, the credit statement,
+  the 404. The idea: every generation has an exact price, so the price looks
+  like a till receipt.
+
+Every click spends Credits, so the interface reads as an instrument with
+honest numbers. No illustration, no gradients-as-decoration, no emoji.
 
 ## 2. Colour
 
-Space-separated RGB channels in `app/globals.css`, consumed through Tailwind
-with `<alpha-value>`. **Never hard-code a colour.** Dark is the default; the
-nav's theme toggle writes `data-theme="light"` on `<html>` and remembers it.
+Tokens are space-separated RGB channels, consumed through Tailwind as
+`rgb(var(--vx-*) / <alpha-value>)`. **Never hard-code a colour.** Dark is the
+default; `ThemeToggle` writes `data-theme="light"` on `<html>` and remembers
+it. There is no automatic `prefers-color-scheme` switch.
 
-| token | dark | light | use |
-|---|---|---|---|
-| `--vx-base` | `10 10 11` | `255 255 255` | page ground |
-| `--vx-panel` | `20 20 22` | `246 246 247` | cards, rails, modals |
-| `--vx-border` | `38 38 42` | `220 220 224` | hairlines |
-| `--vx-border-boost` | `62 62 68` | `168 168 176` | high-contrast borders |
-| `--vx-fg` | `242 242 243` | `10 10 11` | headings |
-| `--vx-fg-body` | `201 201 207` | `63 63 70` | body |
-| `--vx-fg-muted` | `154 154 163` | `82 82 91` | labels, metadata |
-| `--vx-fg-faint` | `130 130 137` | `107 107 115` | hints, disabled |
-| `--vx-accent` | `62 230 196` | `11 122 102` | primary action, focus ring |
-| `--vx-accent-hover` | `111 242 216` | `9 95 80` | accent hover |
-| `--vx-accent-ink` | `6 35 31` | `255 255 255` | text on accent |
-| `--vx-money` | `228 169 60` | `138 90 0` | Credit costs and balances **only** |
-| `--vx-danger` | `255 92 71` | `196 36 26` | errors, destructive |
+| token | dark | light | paper (`.vx-paper`) | use |
+|---|---|---|---|---|
+| `--vx-base` | `10 10 11` | `255 255 255` | `255 255 255` | page ground |
+| `--vx-panel` | `20 20 22` | `246 246 247` | `236 240 238` | cards, rails, the slip itself |
+| `--vx-border` | `38 38 42` | `220 220 224` | `196 204 200` | hairlines |
+| `--vx-border-boost` | `62 62 68` | `168 168 176` | `150 160 155` | high-contrast borders (CSS only, no Tailwind key) |
+| `--vx-fg` | `242 242 243` | `10 10 11` | `16 22 20` | headings, ink rules, ink-pill CTA |
+| `--vx-fg-body` | `201 201 207` | `63 63 70` | `52 61 57` | body |
+| `--vx-fg-muted` | `154 154 163` | `82 82 91` | `78 88 84` | labels, metadata |
+| `--vx-fg-faint` | `130 130 137` | `107 107 115` | `104 114 110` | hints, disabled |
+| `--vx-accent` | `62 230 196` | `11 122 102` | light value | primary action, focus ring, refunds/credits-in |
+| `--vx-accent-hover` | `111 242 216` | `9 95 80` | light value | accent hover |
+| `--vx-accent-ink` | `6 35 31` | `255 255 255` | `255 255 255` | text on accent |
+| `--vx-money` | `228 169 60` | `138 90 0` | light value | Credit costs and balances |
+| `--vx-money-ink` | `35 23 3` | `255 255 255` | `255 255 255` | text on money fills |
+| `--vx-danger` | `255 92 71` | `196 36 26` | `196 36 26` (U7) | errors, destructive |
+| `--vx-warn` | `139 167 255` | `43 78 190` | `43 78 190` | warnings and notices (blue; `△` glyph carries the meaning) |
+
+`.vx-paper` adds **no new token names**: it re-points the colour tokens inside the
+slip and sets `color-scheme: light`, so any component works on paper
+unchanged. `@media print` re-points them again for paper output.
 
 Rules:
-- **Amber means Credits.** If a number is amber it is a quantity of money;
-  nothing else is amber.
-- **One accent.** A second accent colour is a regression.
-- A new colour need becomes a token first, in both themes.
-- `prefers-contrast: more` swaps borders and text up a step
-  (`app/veyrnox/veyrnox.css`); every component must survive it.
+- **Amber means Credits.** A number in amber is a quantity of Credits. The
+  only non-number use allowed is the "premium" tag on a premium-priced model,
+  because it is a price signal. Nothing else is amber. A price printed over
+  media uses the fixed dark-theme amber (`#E4A93C`), since the theme token
+  turns brown in the light theme. A price inside a filled button (Generate)
+  takes the button's ink. Small muted figures (a balance caption, a Library
+  row's cost) may stay muted.
+- **Warnings and notices are `warn`, never amber.** `--vx-warn` /
+  `text-vx-warn` is a blue, chosen to be unmistakable next to amber, red and
+  teal; the `△` glyph carries the meaning without colour. It is a status hue
+  like `danger`, not a second accent.
+- **One accent hue.** Teal is the only chromatic accent. The ink pill
+  (`bg-vx-fg text-vx-base`) is the marketing primary CTA and inverted
+  selected state; it is a neutral, not a second accent.
+- A new colour need becomes a token first, in dark, light and paper.
+- `prefers-contrast: more` swaps borders and text up a step;
+  `forced-colors: active` keeps accent and money fills. Every component
+  survives both.
 
 ## 3. Type
 
-| role | face | Tailwind |
-|---|---|---|
-| body | Inter | `font-sans` |
-| display, headings | Archivo (`--font-archivo`) | `font-vx` |
-| metadata, costs, ids, labels | JetBrains Mono (`--font-jetbrains`) | `font-vx-mono` |
+All three faces are self-hosted with `next/font/local` (`app/fonts/*.woff2`,
+OFL) — no Google Fonts request.
 
-- Headings heavy, tight tracking (`-0.02em`), sentence case.
-- Labels: mono, ~10px, uppercase, wide tracking — the signature. Every state
-  label, Credit cost and model id uses it.
-- Numbers that change (balance, cost, progress) are monospaced so they don't
-  jitter.
+| role | face | how |
+|---|---|---|
+| body and UI on every Veyrnox page | Archivo | `.vx-root` applies `font-vx` |
+| display headings | Archivo 900 | `.vx-display`: line-height .94, tracking −0.04em, `text-wrap: balance` |
+| figures, ids, slip lines, Studio micro-labels | JetBrains Mono | `font-vx-mono`; `.vx-num` for tabular numerals |
+| fallback outside `.vx-root` (`body`, `font-sans`) | Inter via `var(--font-inter)`, set on `<html>` (U5) | the sign-in dialog and toasts, which mount outside `.vx-root` |
+
+Scale is set per section, not tokenised:
+
+| role | size |
+|---|---|
+| landing hero h1 | 52 / 76 / 92 px (base / sm / lg) |
+| pricing, presets h1 | 52 / 80 / 104 |
+| closing CTA | 52 / 84 / 112 |
+| section h2 | 40 / 56 |
+| app h1 (Explore, Library, Credits) | 40 / 56, `.vx-display` |
+| Studio, Account, Publish, admin h1 | `text-2xl`–`text-3xl font-black` |
+| lead paragraph | 18–20 px, `fg-body`, leading 1.5 |
+| slip lines | mono 13–13.5 px |
+| balance figure | mono 56 / 72 px, amber |
+
+Labels: on public and money screens, **sentence-case Archivo 13–14 px
+semibold**. Mono uppercase micro-labels (9–11 px, tracking .1–.14em) remain
+in the Studio and admin only. Numbers that change are mono so they don't
+jitter.
 
 ## 4. Layout
 
-- Max content width ~1500px; gutters 16px mobile, 32px from `sm`.
-- Studio: canvas left, control rail right, one column below `lg`.
-- Radii: `xl` 1rem, `2xl` 1.5rem, `3xl` 2rem — cards `2xl`, the primary
-  button fully rounded.
-- `/m/*` is a separate mobile prototype in an `IOSFrame`; the main app is
-  responsive on its own and does not route phones there.
+Tailwind default breakpoints (sm 640, md 768, lg 1024, xl 1280).
+
+| surface | max width | gutters |
+|---|---|---|
+| marketing (landing, pricing, presets, legal, 404) | 1300 px | 16 / 24 px |
+| Explore, Library | 1400 px | 16 / 32 px |
+| Studio | 1500 px | 16 / 32 px |
+| Credits | 1200 px | — |
+| Account, Publish, Publish analytics, Guides | 900 px | — |
+| Publish calendar | 1100 px | — |
+| LLM Chat | 1500 px shell: thread list left, conversation column 760–820 px | — |
+| Cinema | 1000–1100 px | — |
+| legal text column | 68ch | — |
+
+- Marketing rhythm: sections `pt-28 sm:pt-36`.
+- Grids: hero `lg:[1.1fr_0.9fr]`; Studio `lg:[minmax(0,1fr)_360px]` (canvas
+  left, rail right, one column below lg); Credits `md:[1fr_340px]`.
+- Nav: sticky, 64 px, `bg-vx-base/90` + backdrop blur; anchors get
+  `scroll-margin-top: 5rem`.
+- Radii: pills and buttons `rounded-full`; cards and panels `rounded-2xl`
+  (1.5rem); pack radios and the slip button `rounded-xl` (1rem); inputs
+  `rounded-lg`. **Paper is never rounded** — it has torn edges
+  (`--vx-tooth: 14px` conic mask).
+- Rules: `border-t-2 border-vx-fg` ink rule above lists; hairline
+  `border-b border-vx-border` between rows; dashed border for empty states.
+- Depth: flat by default. The only shadows are the paper drop-shadow
+  (`.vx-paper-shadow`) and the printer slot's inset (`.vx-slot`).
+- `/m/*` is a separate mobile prototype inside `IOSFrame`; the main app is
+  responsive on its own and never routes phones there.
 
 ## 5. Components — reuse before building
 
-`app/veyrnox/_components/`: `Button`, `Chip`, `BalancePill`, `ConfirmDialog`,
-`CopyButton`, `PresetCard`, `NavBar`, `NavAuthButtons`, `MobileMenu`,
-`SiteChrome`, `SiteSearch`, `ThemeToggle`, `TopUpPacks`, `TopUpHistory`,
-`MfaPanel`, `Logo`, `IOSFrame`.
-`components/`: `AuthGate` (the one sign-in modal), `Turnstile`,
-`ToasterMount`.
+**`app/veyrnox/_components/`**
+
+| component | purpose |
+|---|---|
+| `Button` | pill button: primary, money, ghost, danger; optional mono `−N cr` cost |
+| `Chip` | mono micro-label with a glyph per tone (✓ ◆ ✕ ★ △) so colour is never alone |
+| `Modal`, `ConfirmDialog` | native `<dialog>` with focus containment and return; destructive confirm |
+| `PriceSlip` | landing hero working form on paper: prompt, model chips, length toggle, price and refund lines; hands off to Studio via `_lib/landingDraft.js` |
+| `PresetGallery`, `PresetCard` | category filter + grid shared by `/presets` and `/app`; card shows leader + amber `N cr` |
+| `MediaTile` | image/video tile with hover/touch/reduced-motion playback policy |
+| `CreditStatement` | the user's ledger as a receipt list |
+| `TopUpPacks`, `TopUpHistory` | pack chooser with supply consent (exports `TopUpReturn`); purchase history |
+| `NavBar` (`MarketingNav`, `AppNav`), `NavAuthButtons`, `MobileMenu`, `Logo`, `ThemeToggle`, `SiteSearch`, `SiteChrome` | chrome |
+| `BalancePill` | amber balance with tick-up; now used only in `/m/*` |
+| `CopyButton` | copy a model id with aria-live confirmation |
+| `MfaPanel`, `AccountBoundary` | TOTP enrolment; remount on identity change |
+| `JobWatcher`, `JobAssetPreview`, `AssetLoadStatus`, `AssetRetention` | job polling, output preview, load/error state, retention notice |
+| `SourcePickers`, `CameraPanel`, `CharacterPanel`, `DrawOnImage` | Studio inputs |
+| `EditSheet` | Clip Editor sheet in the Library; the Add captions switch |
+| `IOSFrame` | bezel for `/m/*` |
+| `AnnouncementBar` | dismissible ink strip above the marketing nav; dismissal remembered per announcement id |
+| `ControlRow`, `GenerationSettings`, `StudioJobGrid` | Studio duration/aspect pills (`aria-pressed`), seed and negative prompt, the 1–4 image result grid |
+| `LibraryPicker`, `AskAboutThis`, `UseTemplate`, `ScheduleGeneration` | hand-offs: Library image as input or chat attachment, template to Studio, result to Publish |
+| `UsageMeters` | 24 h / 7 d / 30 d usage on Credits |
+| `PasskeyPanel`, `ReferralPanel`, `ReferralBridge` | passkeys and the Refer a friend panel on Account; code capture |
+| `PublishFlag` | context carrying the server's `PUBLISH_ENABLED`, so the account menu hides the Publish link while it is shut |
+| `chat/*` (`ChatWorkspace`, `ThreadList`, `ModelPicker`, `SettingsPanel`, `AttachBar`, `PersonaManager`, `PersonaPicker`, `SkillsPanel`, `StudioDraftCards`, `ChatText`) | LLM Chat; `ChatText` is the safe markdown reader (no raw HTML) |
+| Publish (`app/veyrnox/app/publish/`): `Composer`, `DeviceUploads`, `DraftReview`, `NetworkLogo`, `BlueskyConnect` | composer, device uploads, batch approval, network marks (all eleven networks, monochrome Simple Icons silhouettes), Bluesky handle and app-password form |
+
+**`app/veyrnox/_sections/`** — landing blocks: `hero.js` (`Hero`,
+`FeaturedHeroCards`), `showcase.js` (`PresetWall`, `ModelShelf`),
+`footer.js` (`LedgerExample`, `FAQBlock`, `ClosingCTA`, `FooterForest`).
+
+**`components/`** — `AuthGate` (the one sign-in modal), `Turnstile`,
+`ParticleButton` (Studio Generate), `ToasterMount`, `shimmering-text`, and
+`charts/` (a visx-based area-chart set added in #425; no page imports it yet — Publish analytics draws its own SVG in `FollowersChart`).
 
 A new surface starts from these. A new component is justified only when none
-of them fits, and it uses tokens, not literals.
+fits, and it uses tokens, not literals.
 
 ## 6. Motion
 
-Restrained: 150–200ms ease-out on hover, focus and state change. Continuous
-motion only for progress (job spinner, upload bar). Respect
-`prefers-reduced-motion`.
+One easing: `--vx-ease-out: cubic-bezier(0.23, 1, 0.32, 1)`.
 
-## 7. Copy
+| class | spec | use |
+|---|---|---|
+| `.vx-press` | transform 140 ms; colours 160 ms; `:active` scale .97 | every pressable |
+| `.vx-tile` | 200 ms; hover 1.015 only on fine pointers; active .98 | tiles, preset cards |
+| `.vx-rise` | 300 ms, stagger `--vx-i × 50 ms` | hero feature cards |
+| `.vx-print` | 900 ms `cubic-bezier(.32,.72,0,1)`, 150 ms delay; clip-path reveal from the slot plus `rotateX(7deg → 2deg → 0)` pivoted at the top edge | PriceSlip only — the one authored entrance |
+| `.vx-tick` | 220 ms rise + unblur, re-keyed on change | prices on the slip |
+| `.vx-shimmer` | 1.6 s linear loop | progress only (generating, loading) |
+| `.vx-particle` | 0.6 s | Studio Generate burst |
+
+Rules: continuous motion only for progress. `prefers-reduced-motion` kills
+all animation and transition site-wide (`app/globals.css`, so the sign-in dialog
+and toasts are covered too) and disables smooth scroll;
+JS-driven motion (`MediaTile`, back-to-top) checks `matchMedia` itself.
+Print disables all motion and shadow.
+
+## 7. Screens
+
+| screen | layout |
+|---|---|
+| `/` landing | nav → hero (display h1 "The price is on the button." + ink-pill "Claim 10 credits" + "See every price" link; PriceSlip printing on the right) → 5 featured tiles → preset bento wall → `ModelShelf` price list with leaders → `LedgerExample` statement on paper → FAQ → closing CTA → footer |
+| `/pricing` | display h1; Credit Packs as paper slips (amber mono credits, perforation, "N credits — $X + applicable tax"); per-kind model price tables with copyable ids |
+| `/presets` Templates, `/app` Explore | display h1 + `PresetGallery` (3 / 4 columns) with category filter (Cartoons, Movies, Fantasy, Realistic …) and a Popular sort once something ranks; `/presets/[id]` is one template's page with a Studio hand-off |
+| `/tools`, `/models`, `/guides` | display h1 ("Bring your own file.", "Every model. Exact prices."); tool/model groups with the price on each; guides in a 900 px column |
+| `/app/chat` LLM Chat | control room: thread list (folders, pins, search) left, conversation column, composer with option chips (Thinking, Web search, images) and the reply price; empty state h1 "What do you want to work on?" at 32 px; Studio skills grouped Make / Edit / Plan |
+| `/app/create` Studio | control room: canvas left with shimmer while generating; 360 px rail of panels (model list with amber costs, prompt, sources, duration, aspect); TOTAL COST in 36 px amber; `ParticleButton` |
+| `/app/library` | display h1; sentence-case inverted filter pills (type, favourites); grid or list; 1/2/3-column cards; FREE label on a free job; dashed empty state → "Open the studio"; fixed selection bar; `EditSheet` |
+| `/app/credits` | "Your balance" as a paper slip (72 px amber figure, free-credit and expiry leaders); billing explainer ("Credit Packs are one-off purchases. Nothing renews."); `UsageMeters`; `TopUpPacks`; `CreditStatement` (referral rewards labelled); `TopUpHistory`; recent generations table |
+| `/app/account` | 900 px column of bordered sections: 2FA, passkeys, password, devices, Refer a friend, data export/delete |
+| `/app/publish` *(dark in production)* | 900 px: connected accounts and an eleven-network connect panel with logos (buttons read Connect, Setup required or Testing not enabled), drafts to review, composer (Library asset or device upload, Post now or schedule), scheduled and published; `/calendar` 1100 px month/week/list with drag-to-reschedule confirmation; `/analytics` 900 px follower chart, per-network tables and posting-time insights |
+| `/app/video-agent` *(off)* | brief form, plan + price + Approve, step progress, result in the Library |
+| Cinema (`/social-cinema`, `/title/[id]`, `/watch/[id]`, `/pass`, `/creator`) | 1000–1100 px; mono accent kicker, large black h1, `Button`, aria-live notices; player page |
+| `/app/admin/*` | danger chip "ADMIN · OPS"; metric tiles; scrolling mono tables |
+| legal, 404 | display h1; legal 68ch with ink rule; 404 is a "voided slip" with leader links |
+
+Not yet in the receipt language: Studio, Chat, Account, Publish, Cinema, admin,
+`/design-system` (which now has a receipt-slip section and shows `warn`),
+`loading.js`. Bringing them across is optional; mixing
+the two materials *within* one screen is not.
+
+## 8. Copy
 
 Plain, specific, no exclamation marks. Say what happened and what to do next.
 
 - Good: "That password has appeared in a data breach. Choose a different one."
 - Bad: "Oops! Something went wrong 😔"
 
-Never show a raw error code: `AuthGate` translates Supabase's messages
-(`AUTH_ERROR_COPY`) and anything unmapped falls back to "That didn't work.
-Try again." — so when a real failure shows the fallback, add a mapping
-(see #197). Cost is always shown, in amber, in Credits, before the action
-that spends it; currency appears only on the Credits page.
+`AuthGate` translates Supabase messages (`AUTH_ERROR_COPY`); anything
+unmapped falls back to "That didn't work. Try again." — when a real failure
+shows the fallback, add a mapping. **Cost is shown in Credits before every
+action that spends it.** Dollar amounts appear only where money changes hands:
+Credit Packs (`/pricing`, `/app/credits`) and subscriptions (Cinema Pass; the
+Core subscriptions and Publish Plan once they ship). The routing provider
+(fal, kie, OpenRouter, Exa) is never named to the user; a model's own name is
+shown, and for chat that is its maker's name (ADR-0067). A free job reads
+"FREE", never "FREE cr" or "0 cr".
 
-## 8. Accessibility
+## 9. Accessibility
 
-- 2px accent focus ring on every interactive element.
-- The sign-in modal traps focus, closes on Escape, and returns focus to where
-  it came from.
-- Field hints are linked with `aria-describedby`; status messages sit in an
-  always-mounted `aria-live` region.
-- Contrast holds in both themes and under `prefers-contrast: more`.
-- Nothing is conveyed by colour or motion alone.
+- 2 px accent `:focus-visible` ring, offset 2 px; text inputs use an accent
+  border instead.
+- Skip link `.vx-skip` → `<main id="main" tabIndex={-1}>` in `app/layout.js`.
+  Pages must not render a second `<main>`.
+- The sign-in modal and `Modal` trap focus, close on Escape, and return focus.
+- Live regions: PriceSlip price (sr-only), PresetGallery count, CopyButton,
+  TopUpPacks, AuthGate, Cinema notices. Toggles use `aria-pressed`.
+- Leaders and perforations are `aria-hidden`; pricing tables carry an sr-only
+  header row.
+- Contrast holds in dark, light, paper and `prefers-contrast: more`.
+- Nothing is conveyed by colour or motion alone (Chip glyphs).

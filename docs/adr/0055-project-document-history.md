@@ -1,6 +1,6 @@
 # ADR-0055: Versioned project briefs and canvas
 
-Status: accepted for staging preview; production rollout remains protected by ADR-0023.
+Status: accepted for staging preview; production rollout remains protected by ADR-0023. Built and merged; migrations applied in production; **off in production** (`TENANT_PROJECTS_ENABLED` is `false`), on in staging (status corrected 2026-10-03).
 
 Project metadata alone cannot preserve creative decisions or recover overwritten work. Introduce a canonical v1 document containing `schema_version`, server-validated `project_id`, `brief` (up to 6,000 UTF-16 units at the API) and `canvas` (`aspect_ratio`: 16:9/9:16/1:1; numeric `frame_rate`: 24/25/30/60). The database also validates the schema and bounds JSON storage to 32 KiB. Media/timeline are intentionally absent until their authorization and validation contracts exist.
 

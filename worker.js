@@ -1,3 +1,4 @@
+import { runFalDispatch } from './lib/falDispatch.js';
 /**
  * Worker entry (OpenNext custom worker): the generated app handler, plus the
  * Cron Triggers that run every 5 minutes (wrangler.jsonc `triggers.crons`):
@@ -21,11 +22,17 @@ import { cleanupProjectAssets } from './lib/projectAssetCleanup.js';
 import { observeRecovery } from './lib/recoveryHealth.js';
 import { limitRequestBody } from './lib/requestBodyLimit.js';
 import { adminEdgeRateLimit } from './lib/adminEdgeRateLimit.js';
+import { turnstileReportRateLimit } from './lib/turnstileFailureReport.js';
+import { refuseNextData } from './lib/nextDataGuard.js';
+import { dropInternalHeaders } from './lib/internalRequestHeaders.js';
 import { runScheduledBackfill } from './lib/scheduledBackfill.js';
 import { removeReservedUpload, sweepUploadReservations } from './lib/uploadReservations.js';
+import { sweepSocialUploads } from './lib/social/uploadSweep.js';
 import { sweepUploads, sweepConsumedUploads } from './lib/uploadSweep.js';
 import { isConfigured as r2IsConfigured } from './packages/adapters/r2.js';
 import { sweepSteps } from './lib/autoShortSweep.js';
+import { sweepMontage } from './lib/montageSweep.js';
+import { montageDeps, runtimeConfig as montageConfig } from './lib/montageRuntime.js';
 import { sweepGrsai } from './lib/grsaiSweep.js';
 import { sweepByteplus } from './lib/byteplusSweep.js';
 import { reapAssets } from './lib/assetReap.js';
@@ -33,24 +40,36 @@ import { runtimeDeps, runtimeKeys } from './lib/autoShortRuntime.js';
 import { recoverCinemaUploads } from './lib/cinema/uploadRecovery.js';
 import { removeCinemaUploads } from './lib/cinema/uploadRemoval.js';
 import { runPublishSweep } from './lib/socialPublishSweep.js';
+import { tiktokConfig } from './packages/adapters/social/tiktok.js';
+import { youtubeConfig } from './packages/adapters/social/youtube.js';
+import { runAnalyticsSweep } from './lib/socialAnalyticsSweep.js';
 import { tokenCryptoConfig } from './lib/social/tokenCrypto.js';
+import { runBrandDrafts } from './lib/social/brandDrafts.js';
+import { publishEnabled, postingInsightsEnabled } from './lib/social/publishFeature.js';
+import { listModels } from './app/veyrnox/_lib/modelPages.js';
 
 export default {
     async fetch(request, env, ctx) {
-        const limited = await adminEdgeRateLimit(request, env);
+        const refused = refuseNextData(request);
+        if (refused) return refused;
+        const limited = await adminEdgeRateLimit(request, env) || await turnstileReportRateLimit(request, env);
         if (limited) return limited;
         const bounded = await limitRequestBody(request);
-        return bounded.response || handler.fetch(bounded.request, env, ctx);
+        return bounded.response || handler.fetch(dropInternalHeaders(bounded.request), env, ctx);
     },
 
     async scheduled(event, env, ctx) {
         const results = await Promise.allSettled([
+            ...(env.FAL_DISPATCH_SCHEMA_ENABLED === 'true'
+                ? [observeRecovery('fal_dispatch', () => runFalDispatch(env), env)] : []),
             cleanupProjectAssets(env),
             recoverCinemaUploads(env),
             removeCinemaUploads(env),
             observeRecovery('top_up_backfill', () => runScheduledBackfill(handler.fetch, env, ctx), env),
             observeRecovery('upload_sweep', () => runUploadSweep(env), env),
             observeRecovery('auto_short', () => runAutoShortSweep(env), env),
+            // Expected by the heartbeat only while the video-agent catalog row is active (0229).
+            observeRecovery('video_agent', () => runMontageSweep(env), env),
             observeRecovery('asset_reap', () => runAssetReap(env), env),
             observeRecovery('grsai', () => sweepGrsai({
                 cfg: { supabaseUrl: env.SUPABASE_URL, serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY },
@@ -61,12 +80,32 @@ export default {
                 r2cfg: r2EnvFrom(env), apiKey: env.BYTEPLUS_API_KEY,
             }).then((out) => { if (out.checked) console.error('[byteplus-sweep]', JSON.stringify(out)); return out; }), env),
             observeRecovery('publish_sweep', () => runPublishSweep({
+                env,
                 cfg: { supabaseUrl: env.SUPABASE_URL, serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY },
                 cryptoCfg: tokenCryptoConfig(env),
                 r2cfg: r2EnvFrom(env),
                 publicHost: env.PUBLIC_HOST,
                 mediaProxySecret: env.SOCIAL_MEDIA_PROXY_SECRET,
             }).then((out) => { if (out.claimed) console.error('[publish-sweep]', JSON.stringify(out)); return out; }), env),
+            // Off until 0188 is applied; unlike the publish sweep there is
+            // nothing queued to finish, so the switch gates it outright. Not a
+            // recovery task: worker_task_health (0157) has no name for it.
+            ...(env.PUBLISH_ANALYTICS_ENABLED === 'true' ? [runAnalyticsSweep({
+                env,
+                youtubeCfg: youtubeConfig(env),
+                tiktokCfg: tiktokConfig(env),
+                postingInsightsOn: postingInsightsEnabled(env),
+                cfg: { supabaseUrl: env.SUPABASE_URL, serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY },
+                cryptoCfg: tokenCryptoConfig(env),
+            }).then((out) => { if (out.claimed || out.ok === false) console.error('[analytics-sweep]', JSON.stringify(out)); return out; })] : []),
+            // Weekly brand drafts (ADR-0061 amendment): nothing publishes
+            // until the owner approves the batch on /app/publish.
+            runBrandDrafts({
+                cfg: { supabaseUrl: env.SUPABASE_URL, serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY },
+                ownerAuthId: env.BRAND_DRAFTS_AUTH_ID,
+                publishOn: publishEnabled(env),
+                loadModels: () => listModels({ cfg: { supabaseUrl: env.SUPABASE_URL, serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY } }),
+            }).then((out) => { if (out.created || out.ok === false) console.error('[brand-drafts]', JSON.stringify(out)); return out; }),
         ]);
         for (const r of results) {
             if (r.status === 'rejected') console.error('[cron] task threw:', r.reason && r.reason.message);
@@ -106,6 +145,17 @@ async function runAutoShortSweep(env) {
     return out;
 }
 
+/** Video-agent runs lost past their timeout (lib/montageSweep.js). Silent until the runner is configured. */
+async function runMontageSweep(env) {
+    const rt = montageConfig(env);
+    const cfg = { supabaseUrl: env.SUPABASE_URL, serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY };
+    const r2cfg = r2EnvFrom(env);
+    if (!rt || !cfg.supabaseUrl || !cfg.serviceRoleKey || !r2IsConfigured(r2cfg)) return { ok: false, skipped: 'not_configured' };
+    const out = await sweepMontage({ cfg, deps: montageDeps({ cfg, r2cfg, ...rt }), liveness: env.MONTAGE_LIVENESS_ENABLED === 'true' });
+    if (out.checked) console.error('[video-agent-sweep]', JSON.stringify(out));
+    return out;
+}
+
 function r2EnvFrom(env) {
     return {
         accountId: env.R2_ACCOUNT_ID,
@@ -132,6 +182,10 @@ async function runUploadSweep(env) {
     if (strict && (!dbcfg.supabaseUrl || !dbcfg.serviceRoleKey)) return { ok: false, error: 'upload reservations not configured' };
     const opts = strict ? { remove: (key) => removeReservedUpload(key, cfg, dbcfg) } : {};
     let reservationFailure = false;
+    if (env.PUBLISH_UPLOADS_ENABLED === 'true') {
+        const social = await sweepSocialUploads(cfg, dbcfg);
+        if (!social.ok) { reservationFailure = true; console.error('[social-uploads] cleanup failed'); }
+    }
     if (strict) {
         const reservations = await sweepUploadReservations(cfg, dbcfg);
         if (!reservations.ok) {

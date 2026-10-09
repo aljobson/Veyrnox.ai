@@ -1,0 +1,104 @@
+name: runner-health
+
+# Is the video agent's runner on Fly reachable? (ADR-0074, production gate G7.)
+#
+# Off until the repository variable MONTAGE_RUNNER_HEALTH_URL is set to the production runner's
+# https://.../health (rollout step 1 in docs/montage/RUNBOOK-production.md). A failure opens one
+# runner-health issue per episode; the first green run after it closes the issue.
+#
+# Four times a day, not every 15 minutes like site-health, and not part of it:
+#   - an idle runner is stopped, and a probe starts it. It then runs for about 10 minutes before it exits
+#     again, so every probe costs machine time (about 9 cents a day at this rate on performance-2x);
+#   - deploy-production rolls the Worker back when site-health fails, and a runner outage is no reason to.
+# A stopped machine that starts for the probe is healthy: that cold start is what a user's first request does.
+# Users are safe while the runner is down (refused before the debit; a run lost mid-way is refunded by the sweep).
+
+on:
+  schedule:
+    - cron: '27 1,7,13,19 * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: runner-health
+  cancel-in-progress: false
+
+jobs:
+  check:
+    if: vars.MONTAGE_RUNNER_HEALTH_URL != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    outputs:
+      exit: ${{ steps.check.outputs.exit }}
+      report: ${{ steps.check.outputs.report }}
+    steps:
+      - id: check
+        env:
+          HEALTH_URL: ${{ vars.MONTAGE_RUNNER_HEALTH_URL }}
+        run: |
+          set +e
+          case "$HEALTH_URL" in
+            https://*/health) ;;
+            *) echo "MONTAGE_RUNNER_HEALTH_URL must be an https URL ending in /health" > report.txt; code=2 ;;
+          esac
+          if [ -z "$code" ]; then
+            code=1
+            # Three tries a few seconds apart: the first one may be starting a stopped machine.
+            for try in 1 2 3; do
+              status=$(curl -s -o body.txt -w '%{http_code}' --max-time 45 -A 'veyrnox-runner-health/1.0' -- "$HEALTH_URL")
+              echo "try $try: HTTP $status" >> report.txt
+              if [ "$status" = "200" ] && grep -q '"ok": *true' body.txt; then code=0; break; fi
+              sleep 10
+            done
+          fi
+          cat report.txt
+          echo "exit=$code" >> "$GITHUB_OUTPUT"
+          {
+            echo 'report<<RUNNER_HEALTH_REPORT_EOF'
+            cat report.txt
+            echo 'RUNNER_HEALTH_REPORT_EOF'
+          } >> "$GITHUB_OUTPUT"
+          exit "$code"
+
+  alert:
+    needs: check
+    if: always() && (needs.check.outputs.exit == '1' || needs.check.outputs.exit == '2') && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - name: Open one issue per episode
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          REPORT: ${{ needs.check.outputs.report }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh label create runner-health --color B60205 --description 'The video agent runner did not answer its health check' 2>/dev/null || true
+          existing=$(gh issue list --label runner-health --state open --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then exit 0; fi
+          printf '%s\n\n```\n%s\n```\n\nRun: %s\n' \
+            'The video agent runner did not answer its health check. Users are refused before any charge while it is down. Check the machine on Fly (`fly status`, `fly logs`) and docs/montage/RUNBOOK-production.md. This issue closes itself on the next green run.' \
+            "$REPORT" "$RUN_URL" > body.md
+          gh issue create --title "Video agent runner unreachable — $(date -u +%Y-%m-%dT%H:%MZ)" --label runner-health --body-file body.md
+
+  resolve:
+    needs: check
+    if: needs.check.outputs.exit == '0' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - name: Close the open episode, if any
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          for n in $(gh issue list --label runner-health --state open --json number --jq '.[].number'); do
+            gh issue close "$n" --comment "Healthy again: $RUN_URL"
+          done

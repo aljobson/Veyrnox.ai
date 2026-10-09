@@ -19,9 +19,9 @@ test('environment selection isolates the two AI projects and excludes the wallet
     assert.throws(() => buildConfig({APP_ENV:'development',SUPABASE_URL:AI_ENVIRONMENTS.production.supabaseUrl}));
     assert.throws(() => readConfig({}));
 });
-test('spoofed current and future internal headers are stripped; bearer is retained', () => {
+test('spoofed current and future internal headers are blanked; bearer is retained', () => {
     const headers = stripContext(new Headers({'x-veyrnox-auth-aal':'aal2','x-veyrnox-org':'forged','x-request-id':'forged',authorization:'Bearer valid'}));
-    assert.deepEqual([...headers], [['authorization','Bearer valid']]);
+    assert.deepEqual([...headers], [['authorization','Bearer valid'],['x-request-id',''],['x-veyrnox-auth-aal',''],['x-veyrnox-org','']]);
     const context = verifiedContext({sub:userId, user_metadata:{role:'OWNER'}, aal:'aal1'},requestId);
     assert.equal(context.authLevel,'aal1');
     assert.equal(context.roles,undefined);

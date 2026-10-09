@@ -39,6 +39,8 @@ export function TopUpHistory() {
     window.addEventListener('focus', refresh);
     window.addEventListener('veyrnox:balance-changed', refresh);
     return () => {
+      // A request counter, not a DOM node: the cleanup must bump the live value.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
       latest.current++;
       window.removeEventListener('focus', refresh);
       window.removeEventListener('veyrnox:balance-changed', refresh);

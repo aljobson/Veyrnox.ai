@@ -203,11 +203,14 @@ async function interpretUploadResponse(res, totalBytes) {
 /** Asks the session what it actually has, without sending any bytes —
  * always call this before deciding what to upload next: a previous
  * tick's PUT may have succeeded even if the Worker died before recording
- * it, and this is the documented way to reconcile that safely. */
-export async function probeUploadOffset(sessionUri, totalBytes, fetcher = fetch) {
+ * it, and this is the documented way to reconcile that safely. The
+ * session URI is not itself a bearer token — every PUT against it still
+ * needs the caller's own Authorization header, same as the initiating
+ * POST. */
+export async function probeUploadOffset(sessionUri, totalBytes, accessToken, fetcher = fetch) {
     const res = await fetcher(sessionUri, {
         method: 'PUT',
-        headers: { 'Content-Range': `bytes */${totalBytes}` },
+        headers: { Authorization: `Bearer ${accessToken}`, 'Content-Range': `bytes */${totalBytes}` },
         signal: AbortSignal.timeout(10000),
     });
     return interpretUploadResponse(res, totalBytes);
@@ -216,7 +219,7 @@ export async function probeUploadOffset(sessionUri, totalBytes, fetcher = fetch)
 /** Uploads one chunk — the source bytes come from `mediaUrl` (a fresh R2
  * presign the caller mints each tick) via an HTTP Range request, never
  * held in Worker memory ahead of time. `endByte` is inclusive. */
-export async function uploadChunk(sessionUri, { mediaUrl, startByte, endByte, totalBytes, mimeType }, fetcher = fetch) {
+export async function uploadChunk(sessionUri, { mediaUrl, startByte, endByte, totalBytes, mimeType, accessToken }, fetcher = fetch) {
     const rangeRes = await fetcher(mediaUrl, {
         headers: { Range: `bytes=${startByte}-${endByte}` },
         signal: AbortSignal.timeout(20000),
@@ -227,6 +230,7 @@ export async function uploadChunk(sessionUri, { mediaUrl, startByte, endByte, to
     const res = await fetcher(sessionUri, {
         method: 'PUT',
         headers: {
+            Authorization: `Bearer ${accessToken}`,
             'Content-Length': String(chunkBytes.length),
             'Content-Range': `bytes ${startByte}-${endByte}/${totalBytes}`,
             'Content-Type': mimeType || 'application/octet-stream',
@@ -257,4 +261,60 @@ export async function checkProcessingStatus(accessToken, videoId, fetcher = fetc
         failureReason: (video.processingDetails && video.processingDetails.processingFailureReason) || null,
         rejectionReason: (video.status && video.status.rejectionReason) || null,
     };
+}
+
+// Basic Data API statistics use the existing youtube.readonly scope. Three
+// bounded reads: the connected channel, its latest 50 uploads, then one
+// batched videos.list. Watch time/revenue need the separate Analytics API.
+// References checked 2026-10-03: developers.google.com/youtube/v3/docs/
+// channels, playlistItems/list, videos. Subscriber counts are rounded.
+export async function fetchAnalytics(accessToken, { externalAccountId } = {}, fetcher = fetch) {
+    const channels = await analyticsGet('channels', { part: 'statistics,contentDetails', mine: 'true', maxResults: '50' }, accessToken, fetcher);
+    const channel = channels.items.find((c) => c?.id === externalAccountId);
+    if (!channel) throw new Error('youtube_channel_not_found');
+    const stats = channel.statistics || {};
+    const metrics = analyticsNumbers({
+        followers: stats.hiddenSubscriberCount ? undefined : stats.subscriberCount,
+        views: stats.viewCount, posts_count: stats.videoCount,
+    });
+    const uploads = channel.contentDetails?.relatedPlaylists?.uploads;
+    if (!uploads) return { metrics, posts: [] };
+    const playlist = await analyticsGet('playlistItems', { part: 'contentDetails', playlistId: uploads, maxResults: '50' }, accessToken, fetcher);
+    const ids = [...new Set(playlist.items.map((i) => i?.contentDetails?.videoId)
+        .filter((id) => typeof id === 'string' && /^[A-Za-z0-9_-]{11}$/.test(id)))].slice(0, 50);
+    if (!ids.length) return { metrics, posts: [] };
+    const videos = await analyticsGet('videos', { part: 'snippet,statistics', id: ids.join(',') }, accessToken, fetcher);
+    const posts = [];
+    for (const video of videos.items) {
+        if (!video) continue;
+        const snippet = video.snippet || {};
+        const published = Date.parse(snippet.publishedAt);
+        if (!ids.includes(video.id) || snippet.channelId !== externalAccountId || !Number.isFinite(published)) continue;
+        posts.push({
+            id: video.id, published_at: new Date(published).toISOString(), type: 'video',
+            permalink: `https://www.youtube.com/watch?v=${encodeURIComponent(video.id)}`,
+            caption: typeof snippet.title === 'string' ? snippet.title.slice(0, 500) : null,
+            metrics: analyticsNumbers({ views: video.statistics?.viewCount, likes: video.statistics?.likeCount, comments: video.statistics?.commentCount }),
+        });
+    }
+    return { metrics, posts };
+}
+
+async function analyticsGet(resource, params, accessToken, fetcher) {
+    const url = new URL(`${API_BASE}/youtube/v3/${resource}`);
+    for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
+    const res = await fetcher(url.toString(), {
+        headers: { Authorization: `Bearer ${accessToken}` }, signal: AbortSignal.timeout(10000),
+    });
+    const body = await res.json().catch(() => null);
+    if (!res.ok) throw new Error(`youtube_analytics_failed_${res.status}`);
+    if (!Array.isArray(body?.items)) throw new Error('youtube_analytics_invalid_response');
+    return body;
+}
+
+function analyticsNumbers(fields) {
+    return Object.fromEntries(Object.entries(fields).flatMap(([key, value]) => {
+        if (typeof value === 'string' && /^\d+$/.test(value)) value = Number(value);
+        return Number.isSafeInteger(value) && value >= 0 ? [[key, value]] : [];
+    }));
 }
