@@ -15,6 +15,7 @@
  */
 
 import { socialUploadsEnabled } from '../../../../../lib/social/uploadPolicy.js';
+import { networkEnabled } from '../../../../../lib/social/networks.js';
 import { networkReadiness } from '../../../../../lib/social/networkReadiness.js';
 import { NextResponse } from 'next/server';
 import { accountReadLimit } from '../../../../../lib/accountReadLimit.js';
@@ -64,7 +65,7 @@ export async function GET(req) {
 
     return NextResponse.json({
         brand_id: brand.brand_id,
-        accounts: accounts.accounts || [],
+        accounts: (accounts.accounts || []).map((account) => ({ ...account, publishingEnabled: networkEnabled(account.network) })),
         uploadsEnabled: socialUploadsEnabled(),
         networks: networkReadiness(),
     }, { headers: { 'Cache-Control': 'no-store' } });

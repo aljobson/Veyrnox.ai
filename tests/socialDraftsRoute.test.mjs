@@ -55,7 +55,7 @@ test('GET lists the caller\'s drafts on their own brand', async () => {
     stub({ list_social_post_drafts: { ok: true, drafts } });
     const res = await GET(getRequest());
     assert.equal(res.status, 200);
-    assert.deepEqual(await res.json(), { brand_id: brandId, drafts });
+    assert.deepEqual(await res.json(), { brand_id: brandId, drafts, approvalEnabled: true });
     assert.equal(res.headers.get('cache-control'), 'no-store');
     assert.deepEqual(calls.find((c) => c.name === 'list_social_post_drafts').args, { p_auth_id: auth, p_brand_id: brandId });
 });
@@ -114,4 +114,28 @@ test('database outcomes map to typed errors without leaking details', async () =
         assert.equal(res.status, 502);
         assert.deepEqual(await res.json(), { error: 'internal' });
     } finally { console.error = original; }
+});
+
+test('release restriction prevents approving a batch containing an unreleased network', async () => {
+    process.env.PUBLISH_RELEASED_NETWORKS = 'youtube';
+    try {
+        stub({ list_social_post_drafts: { ok: true, drafts: [{ id: postId, draft_batch_id: batchId, networks: ['youtube', 'tiktok'] }] } });
+        const res = await POST(postRequest({ action: 'approve', batchId }));
+        assert.equal(res.status, 503);
+        assert.equal((await res.json()).error, 'draft_approval_not_available');
+        assert.equal(names().includes('approve_social_post_batch'), false);
+        stub();
+        assert.equal((await (await GET(getRequest())).json()).approvalEnabled, false);
+    } finally { delete process.env.PUBLISH_RELEASED_NETWORKS; }
+});
+test('restricted release blocks legacy batch approval but still permits discarding drafts', async () => {
+    process.env.PUBLISH_RELEASED_NETWORKS = 'youtube';
+    try {
+        stub({ list_social_post_drafts: { ok: true, drafts: [{ id: postId, draft_batch_id: batchId, networks: ['youtube'] }] } });
+        assert.equal((await POST(postRequest({ action: 'approve', batchId }))).status, 503);
+        assert.equal(names().includes('approve_social_post_batch'), false);
+        stub();
+        assert.equal((await POST(postRequest({ action: 'discard', batchId }))).status, 200);
+        assert.equal(names().includes('discard_social_post_drafts'), true);
+    } finally { delete process.env.PUBLISH_RELEASED_NETWORKS; }
 });

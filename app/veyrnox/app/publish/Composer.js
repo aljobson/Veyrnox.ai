@@ -88,7 +88,7 @@ function MediaPicker({ selected, onSelect }) {
 }
 
 export function Composer({ accounts, onScheduled, initialJobId = null, uploadsEnabled = false }) {
-    const activeAccounts = (accounts || []).filter((a) => a.status === 'active' && NETWORKS.find((n) => n.key === a.network)?.media.length);
+    const activeAccounts = (accounts || []).filter((a) => a.status === 'active' && a.publishingEnabled !== false && NETWORKS.find((n) => n.key === a.network)?.media.length);
     const [selectedAccountIds, setSelectedAccountIds] = useState(() => new Set());
     const [caption, setCaption] = useState('');
     const [scheduledAt, setScheduledAt] = useState(defaultScheduleValue);
