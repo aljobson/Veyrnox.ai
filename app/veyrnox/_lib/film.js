@@ -16,12 +16,12 @@ export const LANDING_FILM = {
   renderedFrom: '37e3a2940363ef2a',
 };
 
-// Owner-selected public reel; provenance is in docs/product/showcase-clips.md.
+// Owner-approved FAL generation; provenance is in docs/product/showcase-clips.md.
 export const BREAKTHROUGH_FILM = {
-  video: '/film/breakthrough-superhero.mp4',
-  poster: '/film/breakthrough-superhero.jpg',
+  video: '/film/breakthrough-veyrnox.mp4',
+  poster: '/film/breakthrough-veyrnox.jpg',
   width: 720,
-  height: 900,
+  height: 894,
 };
 
 // Each film is fetched only once half on screen. The cap catches a careless
