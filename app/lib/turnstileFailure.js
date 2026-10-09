@@ -27,6 +27,15 @@ const CLOCK_COPY = "The security check failed because this device's clock looks 
 
 const GENERIC_COPY = "The security check didn't finish, so reload the page to try again, or use Continue with Google.";
 
+// Not one of Turnstile's codes. In Managed mode the widget can show its
+// checkbox and wait for a click, and after a failure its own retry can stop
+// there. Turnstile says so through before-interactive-callback, not
+// error-callback (ADR-0026 amendment 3). The dialog keeps this word where it
+// keeps the code. It is not a failure: nothing logs or reports it.
+export const CAPTCHA_WAITING = 'waiting';
+// The widget's label is not quoted: it follows the browser's language.
+const WAITING_COPY = "The security check above is waiting for you to tick its box. If it doesn't pass after that, reload the page, or open veyrnox.ai in your usual browser if you're inside another app. Continue with Google doesn't need the check.";
+
 /**
  * The code as digits, or "unknown". This is the value that gets logged, so
  * nothing else the widget might hand over passes through.
@@ -53,10 +62,12 @@ export function turnstileFailureCopy(code) {
 /**
  * A notice about the check. `captcha` marks it so a token can clear it
  * without touching the answer to something the person did.
- * @param {unknown} [code] the widget's last error code, if it has failed
+ * @param {unknown} [code] the widget's last error code if it has failed, or
+ *   CAPTCHA_WAITING while it waits for a click
  * @returns {{ kind: 'error', captcha: true, text: string }}
  */
 export function captchaNotice(code) {
+    if (code === CAPTCHA_WAITING) return { kind: 'error', captcha: true, text: WAITING_COPY };
     return { kind: 'error', captcha: true, text: code ? turnstileFailureCopy(code) : CAPTCHA_REQUIRED_COPY };
 }
 
@@ -70,6 +81,19 @@ export function noticeAfterCaptchaFailure(current, code) {
     if (current && !current.captcha) return current;
     const next = captchaNotice(code || 'unknown');
     return current && current.text === next.text ? current : next;
+}
+
+/**
+ * The notice once the widget shows its checkbox and waits for a click. What
+ * is being said about the check must stop saying it will retry by itself. A
+ * dialog that is saying nothing, or is answering the person's own action,
+ * stays as it is: the widget is on screen and asks for the click itself. An
+ * unticked box times out and comes back, so the same wording keeps the same
+ * object.
+ */
+export function noticeWhileCaptchaWaits(current) {
+    if (!current || !current.captcha) return current;
+    return current.text === WAITING_COPY ? current : captchaNotice(CAPTCHA_WAITING);
 }
 
 /**
