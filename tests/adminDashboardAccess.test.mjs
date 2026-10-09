@@ -201,8 +201,10 @@ test('requireDashboardAccess: a person\'s login passes, every other validly sign
     const refused = { ok: false, status: 403, error: 'access_required' };
 
     assert.deepEqual(await gate(), { ok: true, via: 'access', subject: PERSON.sub });
-    // Claims Access may add to a login do not matter.
+    // Claims Access may add to a login do not matter. That includes a
+    // common_name: a policy can ask a person for a client certificate as well.
     assert.equal((await gate({ custom: { groups: ['admins'] }, country: undefined, identity_nonce: undefined })).ok, true);
+    assert.equal((await gate({ common_name: 'laptop.example.test' })).ok, true);
 
     assert.deepEqual(await gate({}, SERVICE_TOKEN), refused, 'the service token payload as documented');
     const notAPerson = [
@@ -212,7 +214,6 @@ test('requireDashboardAccess: a person\'s login passes, every other validly sign
         [{ email: undefined }, 'no email'],
         [{ email: '' }, 'an empty email'],
         [{ email: ['owner@example.test'] }, 'an email that is not text'],
-        [{ common_name: SERVICE_TOKEN.common_name }, 'a login that also names a service token'],
         [{ common_name: SERVICE_TOKEN.common_name, sub: '' }, 'a service token with an email added'],
     ];
     for (const [over, what] of notAPerson) assert.deepEqual(await gate(over), refused, what);

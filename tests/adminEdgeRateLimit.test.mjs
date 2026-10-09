@@ -49,7 +49,9 @@ test('every admin namespace and normalized variant is screened before app work',
 test('a path that decodes to a tab or a newline is classified, never thrown on', async () => {
     const admin = ['/%09/api/admin/reap-assets', '/%0A/api/v1/admin/metrics', '/%0d/api/admin', '/%0A/%0D/api/admin/top-up-backfill',
         '/api/%09/admin/reap-assets', '/api%09/admin/reap-assets', '/api/v1/%0A%0D/admin/metrics', '/%09%5Capi/admin/reap-assets',
-        '/%09/x/%2e%2e/api/admin/reap-assets'];
+        '/%09/x/%2e%2e/api/admin/reap-assets',
+        // Under the prefix as sent, whatever the rest normalises to.
+        '/api/v1/admin/%2e%09%2e', '/api/admin/%2e%0a%2e/x', '/api/v1/admin/%2e%0d%0a%2e/%2e%09%2e/health'];
     globalThis.__adminTestApp = () => assert.fail('blocked request reached app');
     for (const path of admin) {
         const res = await worker.fetch(request(path), binding(async () => ({ success: false })), {});

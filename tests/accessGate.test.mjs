@@ -178,7 +178,8 @@ test('a key the fresh set still does not hold is refused, and a stream of them f
     assert.equal(served.calls, 3);
 });
 
-test('a refetch that fails keeps the key set already held', async () => {
+test('a refetch that fails keeps the key set already held, and still uses up the minute', async (t) => {
+    t.mock.timers.enable({ apis: ['Date'], now: Date.now() });
     const k1 = await keypair('kid-1');
     const k2 = await keypair('kid-2');
     const served = servedCerts([k1]);
@@ -189,4 +190,34 @@ test('a refetch that fails keeps the key set already held', async () => {
     assert.equal(served.calls, 2);
     const payload = await verifyAccessJwt(await mint(k1), { teamDomain: TEAM, aud: AUD });
     assert.equal(payload.common_name, 'veyrnox-cron');
+
+    // With the key endpoint down, a stream of misses must not become a stream
+    // of fetches that each wait out a timeout. So the failed attempt counts,
+    // and a rotated key waits for the next window even once the endpoint is back.
+    await assert.rejects(verifyAccessJwt(await mint(k2), { teamDomain: TEAM, aud: AUD }), { reason: 'kid' });
+    served.down = false;
+    served.keys = [k1, k2];
+    await assert.rejects(verifyAccessJwt(await mint(k2), { teamDomain: TEAM, aud: AUD }), { reason: 'kid' });
+    assert.equal(served.calls, 2);
+    t.mock.timers.tick(CERTS_MISS_REFRESH_MS);
+    await verifyAccessJwt(await mint(k2), { teamDomain: TEAM, aud: AUD });
+    assert.equal(served.calls, 3);
+});
+
+test('misses that arrive together make one refetch; the ones that lost the race pass on retry', async () => {
+    const k1 = await keypair('kid-1');
+    const k2 = await keypair('kid-2');
+    const served = servedCerts([k1]);
+    await verifyAccessJwt(await mint(k1), { teamDomain: TEAM, aud: AUD });
+
+    served.keys = [k1, k2];
+    const rotated = await mint(k2);
+    const together = await Promise.allSettled([1, 2, 3].map(() => verifyAccessJwt(rotated, { teamDomain: TEAM, aud: AUD })));
+    assert.equal(served.calls, 2, 'one refetch for three misses');
+    assert.equal(together[0].status, 'fulfilled');
+    // A fetch belongs to the request that started it, so the others are not
+    // made to wait on it. They are refused once and the cache then has the key.
+    for (const lost of together.slice(1)) assert.equal(lost.reason?.reason, 'kid');
+    await verifyAccessJwt(rotated, { teamDomain: TEAM, aud: AUD });
+    assert.equal(served.calls, 2);
 });
