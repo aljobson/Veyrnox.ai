@@ -1,6 +1,6 @@
 # fal dispatch queue implementation and staging plan
 
-This implements the code boundary in [ADR 0077](../adr/0077-fal-event-driven-dispatch.md). Queue resources and secret bindings are not provisioned; producer and consumer flags default false. Existing durable-admission and production activation gates still apply.
+This implements the code boundary in [ADR 0077](../adr/0077-fal-event-driven-dispatch.md). Isolated staging queues and a disabled consumer are deployed; consumer credentials and application producer deployment remain pending. Producer and consumer flags default false. Existing durable-admission and production activation gates still apply.
 
 ## Implemented path
 
@@ -33,7 +33,46 @@ If other queues already consume the allowance, those examples add up to $0.18 an
 6. Run controlled failure tests before a bounded live generation. Capture admitted job/attempt IDs, actual queue delivery, claim latency, provider handle, signed completion, ledger effects, and private stored asset. Compare latency with the earlier 201.67-second cron wait. Local fixtures and a bundle dry-run do not establish queue delivery or a p95 target.
 7. Verify queue failure alerts, exhausted pre-claim references, queue/cron races, provider headroom, RPC amplification, cost, signed-in Library behavior, callback redelivery, and twenty-four hours clean reconciliation/recovery before wider admission. A consumer concurrency cap limits submission handlers, not accepted fal generations still running.
 
-`wrangler.fal-dispatch.jsonc` deliberately has no queue binding. Its dry-run validates the bundle and environment schema; deploying it as-is does not establish a working queue consumer. There is no automated consumer deployment workflow yet.
+Production has no queue binding. Staging bindings use the isolated resources below. A dry-run validates the bundle and configuration; it does not establish live queue delivery.
+
+## Staging provisioning evidence — 2026-10-09
+
+Migration `0231_fal_targeted_claim` was applied to staging `yrqzwqywxfesmbvhzjgj` as version `20261009083938`. A nonexistent-job probe returned MISSING; anon/authenticated execute access is false, service-role execute is true. Balance, free-credit and subscription-credit reconciliation each returned zero differences. Production schema was not changed.
+
+Queues were created in account `fb18d9f7052afbea5a5e0eae69948af2` with zero delivery delay and 86,400-second retention. Both had zero producers/consumers immediately after creation. Names and IDs were verified through the control plane; existing queues were untouched. Queue creation used the existing Wrangler OAuth permission `queues:write`. Account subscriptions returned HTTP 403, so the billing plan and available shared allowance remain unverified. No plan change or test message was made. The retention value is supported on both published plans; confirm billing before traffic.
+
+| Staging resource | Verified queue ID |
+| --- | --- |
+| `veyrnox-fal-dispatch-staging` | `93f44fe046034ccda42a6014ccdaa6f7` |
+| `veyrnox-fal-dispatch-staging-dlq` | `25500fbb12af4b558982e08d6b337ab8` |
+
+The application config adds only a staging producer binding. The dedicated staging consumer config uses batch size 1, wait 0, concurrency 2, three retries, thirty-second retry delay and the isolated dead-letter queue. Producer publication and consumer execution remain false; staging schema access is true after applying 0231.
+
+The dedicated staging consumer was deployed disabled as version `56ceb24b-f64a-4cdb-bfe9-3396d12e87ae`. Its queue trigger is registered; no HTTP route or workers.dev endpoint is exposed. Remote settings verified consumer execution false, schema access true, staging database/callback origins, and the exact queue tuning above. Secret list is empty; the queue has one consumer and zero producers, and the dead-letter queue has neither. No runtime secrets or test messages were installed at deployment time. Application and consumer dry-runs passed; the application dry-run retained the repository's existing warnings about omitted staging vars. The shared application was not deployed.
+
+`.github/workflows/fal-dispatch-staging.yml` runs manually on current main in GitHub environment `fal-dispatch-staging`, restricted to the main branch and owner review. It checks required credentials and the staging-only nonexistent-job RPC, validates the bundle, deploys the disabled consumer, and provisions only its two runtime secrets through stdin. It cannot enable publication or consumer spending, and does not deploy the shared staging application. Secret upload creates a deployment; the consumer is deployed disabled before upload. See [Wrangler secret bulk](https://developers.cloudflare.com/workers/wrangler/commands/#secret-bulk) and [GitHub deployment environments](https://docs.github.com/en/rest/deployments/environments).
+
+The protected environment currently needs `CLOUDFLARE_API_TOKEN` with Worker-script and Queue write access on this account, staging `SUPABASE_SERVICE_ROLE_KEY`, and `FAL_KEY`. Configure them in [environment settings](https://github.com/aljobson/Veyrnox.ai/settings/environments); do not paste values into chat. The existing deployed app's secret names are visible, but values are not exportable. No credential was copied from browser state or deployed code.
+
+The live staging application still has independent `AGENT_VIDEO_ENABLED=true`, `MONTAGE_LIVENESS_ENABLED=true`, and its montage runner URL. Those settings were read and left unchanged. Deployment of the application producer binding, consumer credentials, live latency, failure alerts, Library acceptance, and the clean recovery window remain pending.
+
+## Bounded delivery failure acceptance — 2026-10-09
+
+Two explicit [HTTP publications](https://developers.cloudflare.com/queues/examples/publish-to-a-queue-via-http/) exercised only the isolated staging queue while consumer execution was false and its secret list empty. The fixture reference was `7b4fe9d4-dea2-4f54-b3e0-0644e7d0a5e5`, with no corresponding database job or dispatch row. The bodies contained only version and job ID: version 0 tested malformed-message handling; version 1 tested disabled-consumer retries. Each publication was attempted once; local write markers prevented rerunning an uncertain send. No app admission, provider credential, prompt, credit operation, flag change, or plan change was involved.
+
+| Observed event (UTC) | Result |
+| --- | --- |
+| 08:50:32.855 / 08:50:33.051 | HTTP publications confirmed |
+| 08:50:35.968 | Malformed reference: ignored 1, retried 0, submitted 0 |
+| 08:50:36.397 | Valid reference: first delivery, retried 1, submitted 0 |
+| 08:51:07.322 / 08:51:37.784 / 08:52:08.433 | Three more deliveries, each retried 1 and submitted 0 |
+| 08:52:09.108 | Exact version-1 body observed in the isolated dead-letter queue |
+
+Wrangler tail identified consumer version `56ceb24b-f64a-4cdb-bfe9-3396d12e87ae` on all five invocations. The malformed reference was acknowledged once. The valid reference exhausted the configured initial delivery plus three retries, with observed gaps 30.925, 30.462 and 30.649 seconds. Its dead-letter message ID was `63fb2eb27afabadf92f825165f789cd4`. [Peek](https://developers.cloudflare.com/api/resources/queues/subresources/messages/methods/peek/) observed the body without leasing it. Targeted cleanup used only that fixture's returned ref; no queue-wide purge or financial deletion occurred. Both queue peeks were empty after cleanup.
+
+Post-test reads confirmed zero fixture jobs/dispatch rows, the original single durable dispatch row, and zero balance/free/subscription reconciliation differences. Account Worker settings reported `default_usage_model=standard`; subscription billing and remaining shared allowance are still unverified. This bounded probe made two writes and five observed consumer invocations, not a load or cost measurement.
+
+These are live delivery/ACK/retry/dead-letter checks. They do not validate enabled database claims, provider submission, request-scoped application publication, normal-path p95 latency, or alerts. Every platform invocation had `outcome=ok`, including the four batches whose application metric was `ok=false`. Monitoring must inspect application retry/failure counters and dead-letter arrivals, not only Worker exceptions. Operator alert configuration remains an activation gate.
 
 ## Rollback and investigation
 

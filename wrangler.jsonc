@@ -156,6 +156,10 @@
   "env": {
     "staging": {
       "name": "veyrnox-ai-staging",
+      "queues": { "producers": [{
+        "binding": "FAL_DISPATCH_QUEUE",
+        "queue": "veyrnox-fal-dispatch-staging"
+      }] },
       // Recovery and removal of Cinema uploads run from the cron; the other
       // scheduled tasks skip on staging because their secrets are not set.
       "ratelimits": [{

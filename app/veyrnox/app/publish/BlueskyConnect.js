@@ -29,7 +29,7 @@ export default function BlueskyConnect({ onConnected, onCancel }) {
         </label>
         <label className="block text-sm">App password
             <input required type="password" autoComplete="off" value={password} onChange={(e) => setPassword(e.target.value)} maxLength={19}
-                pattern="[a-z]{4}(-[a-z]{4}){3}" className="mt-1 w-full rounded-lg border border-vx-border bg-transparent p-2" />
+                pattern="[a-z0-9]{4}(-[a-z0-9]{4}){3}" title="Use the four groups of letters and numbers from your Bluesky app password, separated by hyphens." className="mt-1 w-full rounded-lg border border-vx-border bg-transparent p-2" />
         </label>
         {error && <p role="alert" className="text-sm text-vx-danger">{error}</p>}
         <div className="flex gap-3">
