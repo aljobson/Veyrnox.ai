@@ -1,6 +1,6 @@
 # fal dispatch queue implementation and staging plan
 
-This implements the code boundary in [ADR 0077](../adr/0077-fal-event-driven-dispatch.md). Queue resources and secret bindings are not provisioned; producer and consumer flags default false. Existing durable-admission and production activation gates still apply.
+This implements the code boundary in [ADR 0077](../adr/0077-fal-event-driven-dispatch.md). Isolated staging queues and a disabled consumer are deployed; consumer credentials and application producer deployment remain pending. Producer and consumer flags default false. Existing durable-admission and production activation gates still apply.
 
 ## Implemented path
 
@@ -33,7 +33,28 @@ If other queues already consume the allowance, those examples add up to $0.18 an
 6. Run controlled failure tests before a bounded live generation. Capture admitted job/attempt IDs, actual queue delivery, claim latency, provider handle, signed completion, ledger effects, and private stored asset. Compare latency with the earlier 201.67-second cron wait. Local fixtures and a bundle dry-run do not establish queue delivery or a p95 target.
 7. Verify queue failure alerts, exhausted pre-claim references, queue/cron races, provider headroom, RPC amplification, cost, signed-in Library behavior, callback redelivery, and twenty-four hours clean reconciliation/recovery before wider admission. A consumer concurrency cap limits submission handlers, not accepted fal generations still running.
 
-`wrangler.fal-dispatch.jsonc` deliberately has no queue binding. Its dry-run validates the bundle and environment schema; deploying it as-is does not establish a working queue consumer. There is no automated consumer deployment workflow yet.
+Production has no queue binding. Staging bindings use the isolated resources below. A dry-run validates the bundle and configuration; it does not establish live queue delivery.
+
+## Staging provisioning evidence — 2026-10-09
+
+Migration `0231_fal_targeted_claim` was applied to staging `yrqzwqywxfesmbvhzjgj` as version `20261009083938`. A nonexistent-job probe returned MISSING; anon/authenticated execute access is false, service-role execute is true. Balance, free-credit and subscription-credit reconciliation each returned zero differences. Production schema was not changed.
+
+Queues were created in account `fb18d9f7052afbea5a5e0eae69948af2` with zero delivery delay and 86,400-second retention. Both had zero producers/consumers immediately after creation. Names and IDs were verified through the control plane; existing queues were untouched. Queue creation used the existing Wrangler OAuth permission `queues:write`. Account subscriptions returned HTTP 403, so the billing plan and available shared allowance remain unverified. No plan change or test message was made. The retention value is supported on both published plans; confirm billing before traffic.
+
+| Staging resource | Verified queue ID |
+| --- | --- |
+| `veyrnox-fal-dispatch-staging` | `93f44fe046034ccda42a6014ccdaa6f7` |
+| `veyrnox-fal-dispatch-staging-dlq` | `25500fbb12af4b558982e08d6b337ab8` |
+
+The application config adds only a staging producer binding. The dedicated staging consumer config uses batch size 1, wait 0, concurrency 2, three retries, thirty-second retry delay and the isolated dead-letter queue. Producer publication and consumer execution remain false; staging schema access is true after applying 0231.
+
+The dedicated staging consumer was deployed disabled as version `56ceb24b-f64a-4cdb-bfe9-3396d12e87ae`. Its queue trigger is registered; no HTTP route or workers.dev endpoint is exposed. Remote settings verified consumer execution false, schema access true, staging database/callback origins, and the exact queue tuning above. Secret list is empty; the queue has one consumer and zero producers, and the dead-letter queue has neither. This does not prove live processing: no runtime secrets or test messages were installed. Application and consumer dry-runs passed; the application dry-run retained the repository's existing warnings about omitted staging vars. The shared application was not deployed.
+
+`.github/workflows/fal-dispatch-staging.yml` runs manually on current main in GitHub environment `fal-dispatch-staging`, restricted to the main branch and owner review. It checks required credentials and the staging-only nonexistent-job RPC, validates the bundle, deploys the disabled consumer, and provisions only its two runtime secrets through stdin. It cannot enable publication or consumer spending, and does not deploy the shared staging application. Secret upload creates a deployment; the consumer is deployed disabled before upload. See [Wrangler secret bulk](https://developers.cloudflare.com/workers/wrangler/commands/#secret-bulk) and [GitHub deployment environments](https://docs.github.com/en/rest/deployments/environments).
+
+The protected environment currently needs `CLOUDFLARE_API_TOKEN` with Worker-script and Queue write access on this account, staging `SUPABASE_SERVICE_ROLE_KEY`, and `FAL_KEY`. Configure them in [environment settings](https://github.com/aljobson/Veyrnox.ai/settings/environments); do not paste values into chat. The existing deployed app's secret names are visible, but values are not exportable. No credential was copied from browser state or deployed code.
+
+The live staging application still has independent `AGENT_VIDEO_ENABLED=true`, `MONTAGE_LIVENESS_ENABLED=true`, and its montage runner URL. Those settings were read and left unchanged. Deployment of the application producer binding, consumer credentials, live latency, failure alerts, Library acceptance, and the clean recovery window remain pending.
 
 ## Rollback and investigation
 
