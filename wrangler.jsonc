@@ -171,6 +171,10 @@
       // veyrnox-ai-staging.<subdomain>.workers.dev, so it needs the route
       // production turns off. Preview URLs stay off here too (inherited).
       "workers_dev": true,
+      "queues": { "producers": [{
+        "binding": "FAL_DISPATCH_QUEUE",
+        "queue": "veyrnox-fal-dispatch-staging"
+      }] },
       // Recovery and removal of Cinema uploads run from the cron; the other
       // scheduled tasks skip on staging because their secrets are not set.
       "ratelimits": [{
