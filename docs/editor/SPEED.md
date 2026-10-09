@@ -1,6 +1,6 @@
 # PRD addendum — Clip Editor slow motion
 
-**Status:** Draft · 2026-10-09 · Slice 0 (live probe) not run
+**Status:** Draft · 2026-10-09 · Slice 0 run once (three identical runs); billed cost not read; audio problem found, see Results
 **Extends:** [PRD.md](PRD.md), [CAPTIONS.md](CAPTIONS.md). Where they disagree, CLAUDE.md and the ADRs win.
 
 ## Decision log
@@ -54,6 +54,46 @@ Things the schema already tells us:
    whether a failed run bills.
 6. Does a failed run (bad URL, host unreachable) arrive as a normal fal
    failure callback, and does the webhook verify as for captions.
+
+## Slice 0 results (2026-10-09)
+
+`scripts/probe-fal-slowmo.mjs` on the 5.04 s landscape clip (1280x720, 24 fps,
+H264, AAC audio with a voice), factor 2, `target_fps` 24, Apollo, `H264_output`
+true. The same command was run three times by mistake (the second and third
+re-ran a stale copy of the script after a failed `cp`), so **three runs were
+billed**: `01a121b7-797d-7b72-acb0-352dd2c8f50a`,
+`01a121ba-9e31-7c51-9989-0e5e14692743`, `01a121be-f451-7b30-ab96-270f73fc00b5`.
+The probe's cap of two clips is per invocation, not across invocations.
+
+- **Length:** 5.04 s in, 10.04 s out (expected 10.08). Factor 2 does double the
+  length.
+- **Audio is not stretched.** The output file is 10.04 s but its AAC stream is
+  still 5.04 s. The voice stays at normal speed and then stops, so the sound is
+  out of step with the slowed picture for the second half. A slow-motion
+  clip with its own sound would be wrong in the product as it stands.
+- **Format:** 1280x720, 24 fps (the requested `target_fps`), H264: it plays in
+  the Library. Resolution and codec are preserved.
+- **Time:** 30 s, 55 s, 53 s for a 5 s clip, so allow about a minute, longer than
+  captions (about 30 s).
+- **Delivery:** `video/mp4`, served directly (200, no redirect) from
+  `v3b.fal.media`, which `copyUrlToR2` allows. 7.4 to 7.5 MB for 10 s.
+- **Not seen:** billed cost (usage page, three request ids), a failure callback,
+  a longer clip, a portrait clip, factors above 2, and the other models.
+
+### What it means for the build
+
+1. **The sound problem decides the shape.** Options, none yet verified:
+   - lay a soundtrack over the slowed clip with the existing audio step
+     (`merge-audio-video`); whether that replaces the clip's own audio or mixes
+     with it is not recorded (the PRD tested only that it cuts the audio to the
+     video's length), so it needs one cheap probe;
+   - strip the clip's audio, which no fal endpoint found does;
+   - stretch the audio, which needs our own ffmpeg (`atempo`), the option
+     rejected earlier.
+   Until one is chosen, the edit sheet would have to say that slowed clips lose
+   their sound.
+2. **Price is unknown and could be high.** fal's page lists $0.30 to $0.60 for
+   Apollo and more for Aion, unit unclear. Do not set a catalog price from it.
 
 ## Shape, pending the probe
 
