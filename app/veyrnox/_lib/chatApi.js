@@ -28,7 +28,7 @@ export const chatApi = {
   move: (id, folderId) => gatewayFetch(`/chat/threads/${encodeURIComponent(id)}`, { method: 'PATCH', body: json({ folder_id: folderId }) }),
   // A reply is a job (ADR-0067): its state, by the id the `start` event carries.
   job: (id) => gatewayFetch(`/jobs/${encodeURIComponent(id)}`),
-  // After Stop: look for the stopped turn until it has settled ('saved', 'nothing' or 'pending'), then have the nav
+  // After Stop: look for the stopped turn until it has settled ('saved', 'unsaved', 'nothing' or 'pending'), then have the nav
   // read the balance again. The balance moved at the debit and moves back on a refund, so it is read last.
   settleStop: async ({ threadId, jobId, text, knownIds }) => {
     const outcome = await settleStoppedTurn({ jobId, text, knownIds, getThread: () => chatApi.get(threadId), getJob: chatApi.job });
@@ -73,7 +73,7 @@ export function chatErrorCopy(code, { credits } = {}) {
     case 'provider_cut_off': case 'provider_dropped': return 'The reply was cut off. No Credits were used.';
     case 'connection_lost': return 'The connection dropped before the reply finished. It may have used Credits. Check this chat before you send again.';
     case 'stop_saving': return 'Stopped. We are still saving this reply, and it may use Credits. Open this chat again in a moment to see what was kept.';
-    case 'stop_unsure': return 'Stopped before the reply started. If your message had already gone out, the reply will show in this chat and use Credits.';
+    case 'stop_unsure': return 'Stopped before any text arrived. If a reply is still saved, it will show in this chat and use Credits.';
     default: return code && code.startsWith('provider_')
       ? 'The model did not finish. No Credits were used. Try again, or pick another model.'
       : "That didn't work. Try again.";

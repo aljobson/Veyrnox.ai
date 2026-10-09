@@ -241,6 +241,7 @@ export function ChatWorkspace() {
       setMessages((m) => m.filter((x) => x.id !== pending && x.id !== `u-${pending}`)); setText(content);
       if (over && created) { chatApi.remove(thread.id).catch(() => {}); setThreads((ts) => ts.filter((t) => t.id !== thread.id)); setActive(null); }
     };
+    let hadText = false; // some of the reply reached the screen
     let started = false; // the `start` event arrived: the Credits have been debited
     try {
       // Images go to storage first, before anything is charged: a failed upload costs nothing.
@@ -267,7 +268,7 @@ export function ChatWorkspace() {
         onEvent: (ev, d) => {
           if (ev === 'start') { started = true; jobId = d.job_id; setProgress(null); }
           if (ev === 'progress') setProgress(d);
-          if (ev === 'delta') setMessages((m) => m.map((x) => (x.id === pending ? { ...x, content: x.content + d.text } : x)));
+          if (ev === 'delta') { hadText = true; setMessages((m) => m.map((x) => (x.id === pending ? { ...x, content: x.content + d.text } : x))); }
           if (ev === 'error') streamError = d.error;
           if (ev === 'done') outcome = d;
         },
@@ -291,16 +292,18 @@ export function ChatWorkspace() {
         setStopping(true); setMessages((m) => m.map((x) => (x.id === pending ? { ...x, status: 'saving' } : x)));
         const outcome = await chatApi.settleStop({ threadId: thread.id, jobId, text: content, knownIds });
         await refreshThreads();                                          // first: a notice set below must not be replaced
-        if (outcome === 'saved') { att.clear(); await open(thread.id); } // the saved messages, with their real status and price
-        else if (outcome === 'nothing') giveBack(true);                  // nothing was produced and the Credits came back
-        else if (!started) {
-          // Stopped before `start`, so there is no job to ask. Most likely nothing was sent, so the text goes back. But the
-          // message may have reached the server: the chat stays for a reply that could still land, and the notice says so.
+        if (outcome === 'saved' || outcome === 'unsaved') {
+          att.clear(); await open(thread.id);                            // the saved messages, with their real status and price
+          if (outcome === 'unsaved') setError(chatErrorCopy('reply_not_saved')); // charged, but it could not be stored: say so, after open()
+        } else if (outcome === 'nothing') giveBack(true);                // nothing was produced and the Credits came back
+        else if (!hadText) {
+          // Not settled, and no text had arrived: Stop came before `start` (no job to ask) or before the first words (the job
+          // had not ended). There is nothing on screen to keep, so the message goes back. But a reply may still be saved:
+          // the chat stays for it, and the notice says so.
           giveBack(false); setError(chatErrorCopy('stop_unsure'));
         } else {
-          // Still being saved when the tries ran out: the text stays and the notice says so. An empty reply has nothing to keep.
-          att.clear(); setMessages((m) => m.filter((x) => x.id !== pending || x.content));
-          setError(chatErrorCopy('stop_saving'));
+          // Still being saved when the tries ran out: the text stays on screen and the notice says so.
+          att.clear(); setError(chatErrorCopy('stop_saving'));
         }
       } else if (started) {
         // The stream broke after the Credits moved. The server treats a dropped connection like Stop: text that appeared is

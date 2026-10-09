@@ -28,12 +28,13 @@ export function findSavedTurn(messages, knownIds, text) {
  * Wait for a stopped turn to settle. The job (its id comes with the `start` event) says whether the turn is over; the
  * chat says what was kept. Without a job id, Stop came before `start` and the chat alone is read.
  *   'saved'    the chat holds the turn: reload it for the real status and price
+ *   'unsaved'  the reply was charged but its messages could not be stored (the chat was deleted, or the text refused)
  *   'nothing'  the job failed and nothing was stored: the Credits came back
  *   'pending'  not settled when the tries ran out or the time limit passed
  * @param {{jobId?:string|null, text:string, knownIds:Set<string>, getThread:() => Promise<{messages:object[]}>,
- *          getJob:(id:string) => Promise<{state:string, refunded?:boolean}>, wait?:(ms:number) => Promise<void>, waits?:number[],
+ *          getJob:(id:string) => Promise<{state:string, refunded?:boolean, error_code?:string}>, wait?:(ms:number) => Promise<void>, waits?:number[],
  *          limitMs?:number}} args
- * @returns {Promise<'saved'|'nothing'|'pending'>}
+ * @returns {Promise<'saved'|'unsaved'|'nothing'|'pending'>}
  */
 export async function settleStoppedTurn({ limitMs = STOP_LIMIT_MS, ...args }) {
   const clock = { over: false };
@@ -49,15 +50,19 @@ async function lookForTurn({ jobId, text, knownIds, getThread, getJob, wait = sl
     // Either read can fail (offline, a rate limit). A failed read is not an answer: the next try decides.
     let job = null;
     if (jobId) { try { job = await getJob(jobId); } catch { /* read failed */ } }
+    if (clock.over) break;
     const state = job ? job.state : null;
     if (state === 'queued' || state === 'running') continue; // not finished, so the chat cannot hold the turn yet
+    // The server stores the messages in the same step that ends the job, so a finished job needs no look at the chat.
+    if (state === 'succeeded') return job.error_code === 'reply_not_saved' ? 'unsaved' : 'saved';
     // The refund is a second step after the job fails. Until it lands the balance is not final, so read again if a try is left.
     if (state === 'failed' && !job.refunded && i < waits.length - 1) continue;
     let messages = null;
     try { messages = (await getThread()).messages; } catch { /* read failed */ }
     if (!Array.isArray(messages)) continue;
-    // The job was read first: a failed job whose turn is not in a chat read after it stored nothing.
-    if (state === 'succeeded' || findSavedTurn(messages, knownIds, text)) return 'saved';
+    // A failed job can still have stored a reply the provider cut off. The job was read first, so a failed job whose
+    // turn is not in a chat read after it stored nothing.
+    if (findSavedTurn(messages, knownIds, text)) return 'saved';
     if (state === 'failed') return 'nothing';
   }
   return 'pending';

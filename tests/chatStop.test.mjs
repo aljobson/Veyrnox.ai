@@ -54,6 +54,12 @@ test('a message the screen already had is never taken for this send, even with t
     assert.deepEqual(findSavedTurn([...repeat, ...saved], new Set(['m1', 'm2']), TEXT), { user: saved[0], reply: saved[1] });
 });
 
+test('when the same text was sent twice, the later turn is this send', () => {
+    // An earlier Stop can leave its turn unsaved on screen; if that one lands too, both are new to the screen.
+    const earlier = [{ id: 'e1', role: 'user', content: TEXT }, { id: 'e2', role: 'assistant', content: 'First', status: 'canceled', credits: 1 }];
+    assert.deepEqual(findSavedTurn([...old, ...earlier, ...saved], known, TEXT), { user: saved[0], reply: saved[1] });
+});
+
 test('the waits add up to about three seconds, and there are only a few', () => {
     const total = STOP_WAITS_MS.reduce((a, b) => a + b, 0);
     assert.ok(STOP_WAITS_MS.length >= 3 && STOP_WAITS_MS.length <= 5, 'a bounded number of tries');
@@ -70,6 +76,13 @@ test('a read that hangs does not leave Stop hanging: the look-up ends at the tim
     assert.ok(Date.now() - before < 1000, 'it answered at the limit, not when the read came back');
     assert.equal(h.log.jobReads, 1);
 
+    // The limit answers while the job read of a try is still out: that try does not go on to read the chat.
+    const mid = harness({ jobs: [{ state: 'failed', refunded: true }], chats: [old] });
+    const lateJob = { ...mid.deps, getJob: async () => { mid.log.jobReads += 1; await new Promise((resolve) => { setTimeout(resolve, 80); }); return { state: 'failed', refunded: true }; } };
+    assert.equal(await settleStoppedTurn({ jobId: 'job-1', text: TEXT, knownIds: known, ...lateJob, limitMs: 30 }), 'pending');
+    await new Promise((resolve) => { setTimeout(resolve, 150); });
+    assert.equal(mid.log.chatReads, 0, 'no chat read after the limit');
+
     // Slow rather than hung: the limit answers, and the tries that were left are not made.
     const slow = harness({ jobs: [{ state: 'running' }], chats: [old] });
     const real = (ms) => new Promise((resolve) => { setTimeout(resolve, ms); });
@@ -78,11 +91,13 @@ test('a read that hangs does not leave Stop hanging: the look-up ends at the tim
     assert.equal(slow.log.jobReads, 1, 'no read after the limit');
 });
 
-test('Stop after text: the job finishes, then the chat is read and holds the turn', async () => {
-    const h = harness({ jobs: [{ state: 'running' }, { state: 'succeeded' }], chats: [[...old, ...saved]] });
+test('Stop after text: once the job has finished the turn is saved, with no need to read the chat', async () => {
+    const h = harness({ jobs: [{ state: 'running' }, { state: 'succeeded' }], chats: [new Error('offline')] });
     assert.equal(await settleStoppedTurn({ jobId: 'job-1', text: TEXT, knownIds: known, ...h.deps }), 'saved');
-    assert.deepEqual(h.log.waits, STOP_WAITS_MS.slice(0, 2), 'it waits before each read and stops once the turn is there');
-    assert.equal(h.log.chatReads, 1, 'the chat is not read while the job is still running');
+    assert.deepEqual(h.log.waits, STOP_WAITS_MS.slice(0, 2), 'it waits before each read and stops once the job has finished');
+    // The messages are stored in the same step that ends the job, so a finished job is enough. The screen reloads the
+    // chat itself; a chat read that failed here must not turn a saved reply into "still saving".
+    assert.equal(h.log.chatReads, 0);
 });
 
 test('Stop before any text: the job failed, the Credits are back and nothing was stored', async () => {
@@ -118,9 +133,18 @@ test('the save has not landed when the tries run out: pending, after a bounded n
     assert.equal(h.log.chatReads, 0);
 });
 
-test('a finished job is believed even if the turn cannot be picked out of the chat', async () => {
+test('a reply that was charged but could not be stored is its own ending, not a saved turn', async () => {
+    // lib/chatTurn.js ends such a job STORED with this error code and no messages (ADR-0067 amendment 9).
+    assert.match(read('../packages/db/schema/supabase/0233_chat_settle_unsaved_turn.sql'), /state = 'STORED', error_code = 'reply_not_saved'/);
+    const h = harness({ jobs: [{ state: 'succeeded', error_code: 'reply_not_saved' }], chats: [old] });
+    assert.equal(await settleStoppedTurn({ jobId: 'job-1', text: TEXT, knownIds: known, ...h.deps }), 'unsaved');
+});
+
+test('the time limit is cleared when the look-up ends first, so nothing is left running', async (t) => {
+    const cleared = t.mock.method(globalThis, 'clearTimeout');
     const h = harness({ jobs: [{ state: 'succeeded' }], chats: [old] });
     assert.equal(await settleStoppedTurn({ jobId: 'job-1', text: TEXT, knownIds: known, ...h.deps }), 'saved');
+    assert.equal(cleared.mock.callCount(), 1);
 });
 
 test('Stop before the start event: no job id, so the chat alone is read', async () => {
@@ -171,14 +195,23 @@ test('the start event gives the job id, and the ids already on screen are noted 
 
 test('each ending of a Stop: saved shows the chat, nothing came back gives the text back, pending says so', () => {
     const stop = stopBranch();
-    assert.match(stop, /if \(outcome === 'saved'\) \{[^\n]*await open\(thread\.id\);/);
-    assert.match(stop, /else if \(outcome === 'nothing'\) giveBack\(true\);/);
-    // Stop before `start` with no turn found: the text goes back, but the chat is kept, since nothing says the turn is
-    // over, and the person is told a reply may still land.
-    assert.match(stop, /else if \(!started\) \{\n[^}]*giveBack\(false\); setError\(chatErrorCopy\('stop_unsure'\)\);\n {8}\} else \{/);
+    // The chat list is refreshed before the endings: a notice set by one of them must be the last word.
+    const refresh = stop.indexOf('await refreshThreads();');
+    assert.ok(refresh >= 0 && refresh < stop.indexOf("if (outcome === 'saved'"), 'the list is refreshed first');
+    assert.match(stop, /if \(outcome === 'saved' \|\| outcome === 'unsaved'\) \{\n {10}att\.clear\(\);/, 'the images were sent: the next reply starts clean');
+    assert.match(stop, /if \(outcome === 'saved' \|\| outcome === 'unsaved'\) \{\n[^}]*await open\(thread\.id\);/);
+    // Charged but not stored: the same words as when a reply that ran to its end could not be stored, after the reload
+    // that would clear them.
+    assert.match(stop, /await open\(thread\.id\);[^\n]*\n {10}if \(outcome === 'unsaved'\) setError\(chatErrorCopy\('reply_not_saved'\)\);/);
+    assert.match(stop, /\} else if \(outcome === 'nothing'\) giveBack\(true\);/);
+    // Not settled, and no text had arrived (Stop before `start`, or after it but before the first words): there is
+    // nothing on screen to keep, so the message goes back. The chat is kept, since nothing says the turn is over, and
+    // the person is told a reply may still land.
+    assert.match(screen, /if \(ev === 'delta'\) \{ hadText = true; setMessages\(/);
+    assert.match(stop, /else if \(!hadText\) \{\n[^}]*giveBack\(false\); setError\(chatErrorCopy\('stop_unsure'\)\);\n {8}\} else \{/);
     const pending = stop.slice(stop.indexOf("chatErrorCopy('stop_unsure')"));
     assert.match(pending, /setError\(chatErrorCopy\('stop_saving'\)\)/);
-    assert.doesNotMatch(pending, /setText\(content\)|chatApi\.remove|open\(thread\.id\)/, 'pending keeps the text on screen and the chat as it is');
+    assert.doesNotMatch(pending, /setText\(content\)|giveBack|chatApi\.remove|open\(thread\.id\)/, 'pending keeps the text on screen and the chat as it is');
     assert.doesNotMatch(stop, /chatApi\.remove/, 'the Stop branch deletes a chat only through giveBack(true)');
 });
 
@@ -212,11 +245,11 @@ test('looking for the stopped turn reads the job and the chat, then refreshes th
     assert.ok(found >= 0 && balance > found, 'the balance is refreshed after the turn has settled, not at the moment of the Stop');
 });
 
-test('a Stop before the reply started says a reply may still land, and does not promise either way', () => {
+test('a Stop before any text says a reply may still land, and does not promise either way', () => {
     const copy = /case 'stop_unsure': return (['"])(.+?)\1;/.exec(api);
     assert.ok(copy, 'chatErrorCopy knows stop_unsure');
-    assert.match(copy[2], /before the reply started/);
-    assert.match(copy[2], /If your message had already gone out/);
+    assert.match(copy[2], /before any text arrived/);
+    assert.match(copy[2], /If a reply is still saved/);
     assert.match(copy[2], /use Credits/);
     assert.doesNotMatch(copy[2], /No Credits|not be charged|Try again|!/);
 });
