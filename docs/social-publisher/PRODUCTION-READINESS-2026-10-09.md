@@ -34,6 +34,7 @@ Google OAuth audience is External / In production; this is not verification appr
 ## Validation
 
 - 360 Publish and brand tests pass (provider/database responses are stubbed).
+- Full local unit suite: 2,328 pass, 1 skipped, 0 failures. The initial PR CI failure was the old production-off assertion; the release test now checks YouTube-only activation and that uploads/extended scopes remain disabled. Updated CI must still pass before merge.
 - Security package type checking passes.
 - Lint: 0 errors, 74 warnings on the current checkout.
 - Production-identity Next.js and OpenNext Worker builds pass, including verification of all 10 Video Enhance assets.
