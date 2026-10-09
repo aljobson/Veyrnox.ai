@@ -17,7 +17,7 @@ Background: [ADR-0074](../adr/0074-openmontage-video-agent.md), [SPEC](SPEC.md) 
 
 So production is two switches (flag, row) and one missing service (runner) away. Nothing a user can reach today.
 
-## Gates: G1 and G6 are done; the rest are open or partly met (table brought up to date 2026-10-09)
+## Gates: G1, G6 and G8 are done; the rest are open or partly met (table brought up to date 2026-10-09)
 
 Do not start the rollout until each has a written yes in the SPEC.
 
@@ -30,7 +30,7 @@ Do not start the rollout until each has a written yes in the SPEC.
 | G5 | **Brief moderation decided.** Today the brief is checked for length and control characters only; the prompts the agent writes go to fal, which applies its own filter. There is no check of ours, and no refusal copy beyond the generic failure | every other generation path leans on the provider filter too, but this one writes its own prompts from free text | **built, not signed off.** Since #651 and runner `2377a1b` the agent has content rules and a refused brief fails as `brief_refused` with its own copy and a full refund (seen on staging: refunded in 15 s, $0.07 of tokens). The first two sentences of this row are out of date. Open: the owner accepts those rules as the moderation, or asks for more |
 | G6 | **Capacity: decided 2026-10-08** (owner: "approve"; SPEC section 10). A busy runner is refused before the debit (#651: "nothing was charged, try again"), capacity is added at a measured trigger, and there is no queue yet. Design and numbers: [CAPACITY.md](CAPACITY.md) | **done on staging 2026-10-08 21:35 UTC:** the runner is on 2 dedicated CPUs and 8 GB (`performance-2x`; owner: "apply A"). On the shared machine it had been on, the CPU quota and the 4 GB were the limits, not the slot count (CAPACITY.md section 5). Step 1 creates the production runner from the runner's `fly.toml` as it now is. Not yet tried: a run on the new machine, and three at once. A second machine needs routing first, not `fly scale count 2` | with the owner's go: one run, then three at once, on staging |
 | G7 | **Monitoring exists**: the montage sweep is not in `worker_task_health` (`observeRecovery`), the runner is not in `site-health`, and an undelivered callback is only a log line on Fly | a silent runner outage holds credits for 45 minutes at a time | **partly met.** The sweep reports to the Worker heartbeat as `video_agent` (#650, migration 0229; the `apply-migrations` run of 2026-10-08 20:47 UTC succeeded after it merged and `migration-ledger` is green on main; production was not queried for this update). Still true: the runner is not in `site-health`, and an undelivered callback is only a log line on Fly. With the lost-run flag on, a dead runner holds credits for about 6 minutes, not 45 (SPEC section 11). Open: the alert destination (owner) |
-| G8 | **Fly is on a paid footing.** The account is on the free trial (2 hours of machine time or 7 days) | the runner stops when the trial ends | owner (card on file). Not rechecked for this update |
+| G8 | **Fly is on a paid footing.** The account is on the free trial (2 hours of machine time or 7 days) | the runner stops when the trial ends | **met 2026-10-09.** Fly's billing page for the `personal` organisation (billing email support@veyrnox.com), read in the owner's browser: Account Status "Good Standing", Payment Method "Charged automatically", upcoming invoice $0.95, no trial notice. Which card it is was not looked at |
 
 ## Rollout, once the gates are met
 
