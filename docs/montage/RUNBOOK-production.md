@@ -66,7 +66,12 @@ Do not start the rollout until each has a written yes in the SPEC.
   Create picker, like the Clip Editor and Auto Short. Checked on staging: the picker no longer lists it, `/api/catalog` still does
   (the page and the Library need its name and price), and `/app/video-agent` still makes a plan. **Step 5 waits for this to be live.**
 
-Next: step 5 (activate the `video-agent` row by migration; the owner approves the `apply-migrations` run), then step 6 (24 hours).
+- **Step 5, in hand:** the picker fix is live on production (#697, deploy run 37924602437). Migration `0234_video_agent_activate`
+  sets the row active with the row-count guard. Checked on production before writing it: 0233 is the latest applied migration, the
+  `video_agent` heartbeat is arriving and healthy (so `recovery-health` will not alert when the row turns active), and the row is
+  inactive at 165 credits. Done once the owner approves the `apply-migrations` run; step 6's 24 hours start then.
+
+Next: step 6 (24 hours of clean reconcile jobs), then step 7 (the flag).
 
 Each step has its own check and its own undo. Stop at the first check that fails.
 
