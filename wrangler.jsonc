@@ -230,6 +230,8 @@
         // ADR-0072 (vars are not inherited). Flip to "true" on staging only after 0216 is applied there.
         "PERSONAS_ENABLED": "false",
         "AGENT_VIDEO_ENABLED": "false",
+        // Recovery still needs its isolated runner even when new video admission is paused.
+        "MONTAGE_RUNNER_BASE": "https://veyrnox-montage-runner-staging.fly.dev",
         "MONTAGE_LIVENESS_ENABLED": "false",
         "REFERRALS_ENABLED": "false",
         // Vars are not inherited. 0225 is applied on staging (2026-10-08); on for testing, production stays "false".
