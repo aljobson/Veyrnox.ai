@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { register } from 'node:module';
-import { CAPTCHA_BLOCKED_CODE, CAPTCHA_WAITING, TURNSTILE_FAILURE_PATH } from '../app/lib/turnstileFailure.js';
+import { CAPTCHA_BLOCKED_CODE, CAPTCHA_UNSUPPORTED, CAPTCHA_WAITING, TURNSTILE_FAILURE_PATH } from '../app/lib/turnstileFailure.js';
 import { REPORT_BODY_LIMIT, acceptTurnstileFailure, turnstileReportRateLimit } from '../lib/turnstileFailureReport.js';
 
 // A Turnstile check that fails in the browser reaches neither Supabase nor us,
@@ -391,6 +391,18 @@ test('a widget that waits for a click is not counted: a wait is not a failure', 
     const page = await pageLoad();
     try {
         page.reportTurnstileFailure(CAPTCHA_WAITING);
+        assert.deepEqual(page.calls.map(([, init]) => init.body), ['unknown']);
+    } finally { page.restore(); }
+});
+
+test('an unsupported browser is not counted: Turnstile gives it no code', async () => {
+    // ADR-0026 amendment 4. The route takes a code or "unknown" and nothing
+    // else, so counting this case would be a decision about the route.
+    assert.match(turnstile, /"unsupported-callback": \(\) => onUnsupported\(\),/);
+    assert.equal(turnstile.match(/reportTurnstileFailure\(/g).length, 2);
+    const page = await pageLoad();
+    try {
+        page.reportTurnstileFailure(CAPTCHA_UNSUPPORTED);
         assert.deepEqual(page.calls.map(([, init]) => init.body), ['unknown']);
     } finally { page.restore(); }
 });

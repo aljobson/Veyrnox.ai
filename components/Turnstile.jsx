@@ -37,14 +37,15 @@ function loadScript() {
 }
 
 /**
- * @param {{ onToken: (token: string|null) => void, onError: () => void, onFailure: (code: string) => void, onWaiting: () => void, resetKey: number }} props
+ * @param {{ onToken: (token: string|null) => void, onError: () => void, onFailure: (code: string) => void, onWaiting: () => void, onUnsupported: () => void, resetKey: number }} props
  *   onToken   receives a fresh token, or null when it expires or errors
  *   onError   the script could not load (blocked by an extension, offline)
  *   onFailure the check ran and failed; receives Turnstile's error code
  *   onWaiting the widget shows its checkbox and waits for a click
+ *   onUnsupported Turnstile refuses this browser as out of date or unsupported
  *   resetKey  bump after every submit: tokens are single-use
  */
-export function Turnstile({ onToken, onError, onFailure, onWaiting, resetKey }) {
+export function Turnstile({ onToken, onError, onFailure, onWaiting, onUnsupported, resetKey }) {
     const box = useRef(null);
     const widgetId = useRef(null);
     const lastFailure = useRef(null);
@@ -85,6 +86,10 @@ export function Turnstile({ onToken, onError, onFailure, onWaiting, resetKey }) 
                     // and it says so through this and not error-callback.
                     // A wait is not a failure: no log line and no report.
                     "before-interactive-callback": () => onWaiting(),
+                    // Turnstile refuses this browser as out of date or
+                    // unsupported. It reports no error and gives no code,
+                    // so this is not counted: no log line and no report.
+                    "unsupported-callback": () => onUnsupported(),
                 });
             })
             .catch(() => {

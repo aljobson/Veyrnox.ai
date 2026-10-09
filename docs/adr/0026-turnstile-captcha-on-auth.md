@@ -358,3 +358,88 @@ That is one browser and one run. The challenge frame's own code is not
 public, so beyond it the behaviour rests on Cloudflare's reference and on the
 script, which calls the callback for every `interactiveBegin` message the
 frame sends.
+
+## Amendment 4 (2026-10-09): an unsupported browser is told so
+
+Amendment 3 left one case alone. When Turnstile refuses a browser as out of
+date or unsupported, the widget shows a state of its own and reports no
+error, so the dialog said nothing. A submit then said "Complete the security
+check first", which that browser cannot do. This has not been seen on the
+site. It is closed because the person it happens to has no way to find out
+what is wrong.
+
+### What Turnstile reports
+
+Read on 2026-10-09 in Cloudflare's widget configuration reference, its widget
+states and its supported browsers page, and in the script the widget loads.
+
+- `unsupported-callback` is "invoked when a given client/browser is not
+  supported by Turnstile". The script calls it when the challenge frame
+  rejects the browser with the reason `unsupported_browser`.
+- The script calls nothing else then: not `error-callback`, and not
+  `before-interactive-callback`. It does not retry.
+- Cloudflare lists Internet Explorer as unsupported, and browsers more than
+  five years old and embedded or heavily modified browsers as limited.
+
+### Decision
+
+1. `components/Turnstile.jsx` registers `unsupported-callback` and calls a
+   new `onUnsupported` prop.
+2. `components/AuthGate.jsx` keeps it where it keeps the error code, as the
+   word `unsupported` (`CAPTCHA_UNSUPPORTED`), and shows the notice straight
+   away by the rule a failure follows: unless the dialog is answering
+   something the person just did. This is not the wait of amendment 3. The
+   check cannot be passed in this browser, so the dialog says so without
+   waiting for a submit.
+3. The wording is in `app/lib/turnstileFailure.js`: "The security check can't
+   run in this browser: it is out of date or not supported. Update the
+   browser, or open veyrnox.ai in a different one. Continue with Google
+   doesn't need the check." It does not say to reload and does not say the
+   check will retry. Neither is true here.
+4. Closing the dialog clears it, like every notice about the check. No token
+   can arrive in this state.
+
+### Not counted
+
+The count of failed checks (amendment 2) is a count of Turnstile's error
+codes. The route takes 3 to 9 digits or `unknown` and nothing else, and
+Turnstile gives this case no code. Counting it would mean the route accepting
+a new word, which is a decision of its own. So an unsupported browser sends
+no report and writes no console line, and the count runs low by however many
+there are. `unsupported` is not a code: `turnstileErrorCode` turns it into
+`unknown`, so it could not be logged or sent as itself.
+
+### What does not change
+
+The check: same site key, same mode, every option still at its default, and
+no request to Auth without a token. One more callback is listened to. The
+CSP is untouched. Amendment 3's wait is untouched.
+
+### What was and was not seen
+
+Not seen: Turnstile refusing a real browser. Three things were tried on a
+local build on 2026-10-09 and none produced it:
+
+- A headless browser sending Internet Explorer 11's user agent, with our own
+  site key. The hostname check came first: 110200 and the generic notice.
+- The same with Cloudflare's test key that always passes. The test key
+  ignored the user agent and issued its dummy token.
+- No test key refuses a browser.
+
+So that Turnstile calls `unsupported-callback` for such a browser rests on
+Cloudflare's reference and on the script. The challenge frame's own code is
+not public.
+
+Seen, on a local build with a stand-in for Cloudflare's script that records
+the options the widget is given and lets each callback be called by hand:
+
+- The widget passes six options: the site key and five callbacks, the two
+  new ones among them.
+- `unsupported-callback`: the dialog showed the new wording at once. No
+  report was sent.
+- "Sign in with a passkey" with no token repeated it, and nothing went to
+  Auth. Closing the dialog cleared it, and a reopened dialog said nothing.
+- In a new dialog: `error-callback` with 600010 gave "It will retry by
+  itself" and one report; `before-interactive-callback` changed it to
+  "waiting for you to tick its box"; `unsupported-callback` changed it to the
+  new wording; a token cleared it. One report in all.

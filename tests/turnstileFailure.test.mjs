@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import {
     CAPTCHA_BLOCKED_CODE,
     CAPTCHA_REQUIRED_COPY,
+    CAPTCHA_UNSUPPORTED,
     CAPTCHA_WAITING,
     captchaNotice,
     noticeAfterCaptchaFailure,
@@ -24,7 +25,8 @@ const CLOCK = turnstileFailureCopy('200100');
 const BLOCKED = turnstileFailureCopy('200500');
 const GENERIC = turnstileFailureCopy('110200');
 const WAITING = captchaNotice(CAPTCHA_WAITING).text;
-const EVERY_COPY = [DID_NOT_PASS, CLOCK, BLOCKED, GENERIC, WAITING, CAPTCHA_REQUIRED_COPY];
+const UNSUPPORTED = captchaNotice(CAPTCHA_UNSUPPORTED).text;
+const EVERY_COPY = [DID_NOT_PASS, CLOCK, BLOCKED, GENERIC, WAITING, UNSUPPORTED, CAPTCHA_REQUIRED_COPY];
 
 test('the code is digits or "unknown", whatever the widget hands over', () => {
     assert.equal(turnstileErrorCode('600010'), '600010');
@@ -192,7 +194,46 @@ test('the widget passes its error code up and still drops the token', () => {
     // Non-falsy tells Turnstile the error was handled; otherwise it adds its
     // own console warning on every retry (Cloudflare, client-side errors).
     assert.match(onError, /return true;$/);
-    assert.match(turnstile, /export function Turnstile\(\{ onToken, onError, onFailure, onWaiting, resetKey \}\)/);
+    assert.match(turnstile, /export function Turnstile\(\{ onToken, onError, onFailure, onWaiting, onUnsupported, resetKey \}\)/);
+});
+
+// ADR-0026 amendment 4. Turnstile refuses a browser as out of date or
+// unsupported through unsupported-callback and reports no error, so the
+// dialog said nothing, and a submit asked for a check that browser cannot do.
+
+test('a browser Turnstile refuses is told so, without advice that cannot help', () => {
+    assert.deepEqual(captchaNotice(CAPTCHA_UNSUPPORTED), { kind: 'error', captcha: true, text: UNSUPPORTED });
+    assert.match(UNSUPPORTED, /^The security check can't run in this browser: it is out of date or not supported\./);
+    assert.match(UNSUPPORTED, /Update the browser, or open veyrnox\.ai in a different one\./);
+    assert.match(UNSUPPORTED, /Continue with Google doesn't need the check/);
+    // Neither is true here: the same browser fails again, and nothing retries.
+    assert.doesNotMatch(UNSUPPORTED, /reload|retry|tick/i);
+});
+
+test('"unsupported" is not a Turnstile code, so it cannot be logged or reported as itself', () => {
+    assert.equal(turnstileErrorCode(CAPTCHA_UNSUPPORTED), 'unknown');
+    assert.notEqual(CAPTCHA_UNSUPPORTED, CAPTCHA_WAITING);
+    assert.equal(turnstileFailureCopy(CAPTCHA_UNSUPPORTED), GENERIC);
+});
+
+test('an unsupported browser shows straight away, by the rule a failure follows', () => {
+    const unsupported = captchaNotice(CAPTCHA_UNSUPPORTED);
+    // Not the wait of amendment 3: this check cannot be passed, so the
+    // dialog speaks without waiting for a submit.
+    assert.deepEqual(noticeAfterCaptchaFailure(null, CAPTCHA_UNSUPPORTED), unsupported);
+    assert.deepEqual(noticeAfterCaptchaFailure(captchaNotice(null), CAPTCHA_UNSUPPORTED), unsupported);
+    const sent = { kind: 'success', text: 'Check your email for a sign-in link.' };
+    assert.equal(noticeAfterCaptchaFailure(sent, CAPTCHA_UNSUPPORTED), sent);
+    const shown = noticeAfterCaptchaFailure(null, CAPTCHA_UNSUPPORTED);
+    assert.equal(noticeAfterCaptchaFailure(shown, CAPTCHA_UNSUPPORTED), shown);
+    // Closing the dialog clears it like the rest.
+    assert.equal(noticeAfterCaptchaToken(unsupported), null);
+});
+
+test('the widget says when Turnstile refuses the browser, and does nothing else then', () => {
+    assert.match(turnstile, /"unsupported-callback": \(\) => onUnsupported\(\),/);
+    assert.doesNotMatch(turnstile, /onUnsupported\([^)]/, 'onUnsupported carries nothing');
+    assert.match(turnstile, /export function Turnstile\(\{ onToken, onError, onFailure, onWaiting, onUnsupported, resetKey \}\)/);
 });
 
 test('the widget says when it shows its checkbox, and does nothing else then', () => {
@@ -203,10 +244,10 @@ test('the widget says when it shows its checkbox, and does nothing else then', (
     assert.doesNotMatch(turnstile, /onWaiting\([^)]/, 'onWaiting carries nothing');
 });
 
-test('the check itself runs as before: no option is set, and one callback is added', () => {
+test('the check itself runs as before: no option is set, and two callbacks are added', () => {
     const options = between(turnstile, 'ts.render(box.current, {', '\n                });');
     const keys = [...options.matchAll(/^ {20}"?([A-Za-z-]+)"?:/gm)].map((m) => m[1]);
-    assert.deepEqual(keys, ['sitekey', 'callback', 'expired-callback', 'error-callback', 'before-interactive-callback']);
+    assert.deepEqual(keys, ['sitekey', 'callback', 'expired-callback', 'error-callback', 'before-interactive-callback', 'unsupported-callback']);
     assert.match(options, /sitekey: TURNSTILE_SITE_KEY,/);
     assert.doesNotMatch(options, /\.\.\./, 'no options spread in from elsewhere');
 });
@@ -238,6 +279,11 @@ test('AuthGate remembers the wait and rewords what it is already saying', () => 
     // Remembered where the error code is, so a submit without a token says
     // the same thing, and a token or closing the dialog forgets it.
     assert.match(widget, /onWaiting=\{\(\) => \{ setCaptchaFailure\(CAPTCHA_WAITING\); setNotice\(noticeWhileCaptchaWaits\); \}\}/);
+});
+
+test('AuthGate remembers an unsupported browser and says so at once', () => {
+    const widget = between(authGate, '<Turnstile', '/>');
+    assert.match(widget, /onUnsupported=\{\(\) => \{ setCaptchaFailure\(CAPTCHA_UNSUPPORTED\); setNotice\(\(n\) => noticeAfterCaptchaFailure\(n, CAPTCHA_UNSUPPORTED\)\); \}\}/);
 });
 
 test('a blocked script is remembered like any other failure', () => {
