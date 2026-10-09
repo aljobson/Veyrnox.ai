@@ -11,61 +11,24 @@
 //   3. a turn that was saved after all: the given-back text is taken out of the box when it is still exactly the message
 //   4. Stop before `start` has no job: nothing here removes that warning
 //   5. `stop_saving` and `connection_lost` are settled the same way; `reply_not_saved` is never asked about
-// And one rule the independent review of the first commit found missing: a chat keeps one warning, so a warning that
-// takes the place of another stands for two turns, and one job cannot answer for both. It keeps no job.
+// Choice 4 and the rule for one warning that stands for two turns were both "nothing can be asked" when this was
+// written. Both are closed now: a send that never started is asked about by its own key, and a warning keeps every
+// turn it stands for (tests/chatWarningTurns.test.mjs). What is here is one warning, one turn, asked by its job.
 // send() runs for real against the real store (tests/chatSendFlow.harness.mjs); the screen's open() is pinned by pattern.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { NEW_CHAT, readCreditsWarning, readDraft, readNotice, textMark, writeDraft, writeNotice } from '../app/veyrnox/_lib/chatLocal.js';
+import { NEW_CHAT, clearNotice, readCreditsWarning, readNotice, textMark, writeDraft, writeNotice } from '../app/veyrnox/_lib/chatLocal.js';
 import { KEPT_READ_LIMIT_MS, askKeptWarning, keptTurnVerdict, settleKeptWarning } from '../app/veyrnox/_lib/chatWarning.js';
 import { A, ME, TEXT, afterReload, memory, run, stopped } from './chatSendFlow.harness.mjs';
+import { JOB, JOBS, OTHER_JOB, answers, cutAfterStart, leftBy, opened, stopAfterText, stopBeforeStart, stopBeforeText, stoppedBeforeText } from './chatWarning.harness.mjs';
 
 const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
 const screen = read('../app/veyrnox/_components/chat/ChatWorkspace.js');
 const sender = read('../app/veyrnox/_components/chat/useChatSend.js');
 const settler = read('../app/veyrnox/_lib/chatWarning.js');
 const api = read('../app/veyrnox/_lib/chatApi.js');
-
-const JOB = '6f1d2c3a-0b4e-4c5d-8e9f-a1b2c3d4e5f6';
-const OTHER_JOB = '0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d';
-/** GET /api/v1/jobs/:id, as the route answers for a chat reply. */
-const JOBS = {
-    queued: { state: 'queued', refunded: false, credits: 2 },
-    running: { state: 'running', refunded: false, credits: 2 },
-    failed: { state: 'failed', refunded: false, credits: 2, error_code: 'user_canceled' }, // the refund is a second step
-    refunded: { state: 'failed', refunded: true, credits: 2, error_code: 'user_canceled' },
-    saved: { state: 'succeeded', refunded: false, credits: 2 },
-    unsaved: { state: 'succeeded', refunded: false, credits: 2, error_code: 'reply_not_saved' },
-};
-const answers = (job) => async () => job;
-
-/** Server scripts for send(). The job id is one the server could have made: anything else is not kept (chatLocal.js). */
-const stoppedBeforeText = (job) => async ({ onEvent }) => { onEvent('start', { job_id: job }); throw stopped(); };
-const stoppedAfterText = (job) => async ({ onEvent }) => { onEvent('start', { job_id: job }); onEvent('delta', { text: 'A lamp' }); throw stopped(); };
-const cutAfter = (job) => async ({ onEvent }) => { onEvent('start', { job_id: job }); throw new TypeError('network error'); };
-const stopBeforeText = stoppedBeforeText(JOB);
-const stopBeforeStart = async () => { throw stopped(); };
-const stopAfterText = stoppedAfterText(JOB);
-const cutAfterStart = cutAfter(JOB);
-
-/** A chat left by a send whose turn was not settled when the look for it ended. */
-async function leftBy(turn, { active = A, settle = 'pending' } = {}) {
-    const storage = memory();
-    await run({ active, turn, settle, storage });
-    return storage;
-}
-/**
- * The chat arrives on screen, the way open() does it: the job of its kept warning is read, then the chat, then the
- * store is settled, and the screen reads the box and the notice from the store.
- */
-async function opened(storage, chat, getJob) {
-    const calls = [];
-    const asked = await askKeptWarning({ warning: readCreditsWarning(storage, ME, chat), getJob: (id) => { calls.push(id); return getJob(id); } });
-    const changed = settleKeptWarning(storage, ME, chat, asked);
-    return { ...afterReload(storage, chat), changed, calls };
-}
 
 // ---- 2. what a job says ----
 
@@ -85,10 +48,11 @@ test('the job is asked by the id kept with the warning, once, and nothing is ask
     const calls = [];
     const getJob = async (id) => { calls.push(id); return JOBS.refunded; };
     const warning = { code: 'stop_unsure', job: JOB, sent: textMark(TEXT) };
-    assert.deepEqual(await askKeptWarning({ warning, getJob }), { warning, verdict: 'refunded' });
+    assert.deepEqual(await askKeptWarning({ warning, getJob }), { warning, verdicts: ['refunded'] });
     assert.deepEqual(calls, [JOB]);
-    // No warning kept, or one with no job (Stop before `start`, or `reply_not_saved`): no request is made.
-    for (const none of [null, undefined, { code: 'stop_unsure' }, { code: 'reply_not_saved' }, { code: 'stop_unsure', job: '' }]) {
+    // No warning kept, or one with no turn to ask about (`reply_not_saved`, or a warning that stands for more turns
+    // than it could list): no request is made.
+    for (const none of [null, undefined, { code: 'stop_unsure' }, { code: 'reply_not_saved' }, { code: 'stop_unsure', job: '' }, { code: 'stop_unsure', turns: [] }]) {
         assert.equal(await askKeptWarning({ warning: none, getJob }), null, JSON.stringify(none));
     }
     assert.deepEqual(calls, [JOB], 'still the one request');
@@ -121,7 +85,8 @@ test('send() keeps the job with each warning about a turn that had started, and 
     let storage = await leftBy(stopBeforeText);
     assert.deepEqual(readCreditsWarning(storage, ME, 'chat-a'), { code: 'stop_unsure', job: JOB, sent: textMark(TEXT) });
     assert.deepEqual(afterReload(storage, 'chat-a'), { box: TEXT, notice: { code: 'stop_unsure' } }, 'the screen reads the same words as before');
-    // 4. Stop before `start`: no job id ever reached the browser.
+    // 4. Stop before `start`: no job id ever reached the browser. The send's own key is kept in its place
+    // (tests/chatWarningTurns.test.mjs). This harness's default key is not one the browser makes, so nothing is kept.
     storage = await leftBy(stopBeforeStart);
     assert.deepEqual(readCreditsWarning(storage, ME, 'chat-a'), { code: 'stop_unsure' });
     assert.deepEqual(afterReload(storage, 'chat-a'), { box: TEXT, notice: { code: 'stop_unsure' } });
@@ -136,48 +101,20 @@ test('send() keeps the job with each warning about a turn that had started, and 
     // A chat made for the message stays when its turn is not settled, and holds the warning the same way.
     storage = await leftBy(stopBeforeText, { active: null });
     assert.deepEqual(readCreditsWarning(storage, ME, 'made'), { code: 'stop_unsure', job: JOB, sent: textMark(TEXT) });
-    // The job is handed to tell() for every notice (the store keeps it only beside the three): one place, not three call sites.
-    // No job when this notice takes the place of a warning that is still kept (`over`, tested below).
-    assert.match(sender, /\n {4}const tell = \(code, extra\) => \{ const over = !!heldWarning\(from\); forgetEarlier\(\); const \{ home, here \} = at\(\); keepNotice\(home, code, \{ \.\.\.extra, job: over \? null : jobId, sent: content \}\); if \(here\) setError\(chatErrorCopy\(code, extra\)\); \};\n/);
+    // The job, the send's key and the text are handed to tell() for every notice (the store keeps them only beside the
+    // three): one place, not three call sites. With them goes the warning this notice takes the place of, read before
+    // it is forgotten, so the store can keep every turn the new one stands for (tests/chatWarningTurns.test.mjs).
+    assert.match(sender, /\n {4}const tell = \(code, extra\) => \{ const before = heldWarning\(from\); forgetEarlier\(\); const \{ home, here \} = at\(\); keepNotice\(home, code, \{ \.\.\.extra, job: jobId, key, sent: content, after: before \}\); if \(here\) setError\(chatErrorCopy\(code, extra\)\); \};\n/);
+    // The key is made once, before any request, and it is the one the send goes out with.
+    assert.match(sender, /\n {4}const key = makeIdempotencyKey\(\);[^\n]*\n/);
+    assert.match(sender, /sendTurn\(\{\n {8}threadId: thread\.id, text: content, key, options: chosen,/);
+    assert.equal(sender.split('makeIdempotencyKey(').length - 1, 1);
 });
 
 // ---- one warning, two turns ----
-// Found by the independent review of the first commit. A chat keeps one warning. An ending that keeps a warning of its
-// own takes the place of the one kept before it (#736), and kept its own job. Settling that job then removed the only
-// notice, while the turn of the warning it had replaced could still be saved and charged, with its text in the box.
-
-test('a warning that takes the place of another warning keeps no job, so it is never asked about and stays as it did before jobs were kept', async () => {
-    const twice = async (first, second) => { const storage = await leftBy(first); await run({ active: A, turn: second, settle: 'pending', storage }); return storage; };
-    const never = async (storage, code, box) => {
-        assert.deepEqual(readCreditsWarning(storage, ME, 'chat-a'), { code }, 'no job and no mark');
-        for (const job of Object.values(JOBS)) assert.deepEqual(await opened(storage, 'chat-a', answers(job)), { box, notice: { code }, changed: false, calls: [] }, `${code} ${job.state}`);
-    };
-    // Stop before any text twice, neither settled. The second job may be refunded while the first is still running.
-    await never(await twice(stopBeforeText, stoppedBeforeText(OTHER_JOB)), 'stop_unsure', TEXT);
-    // The first Stop came before `start` (no job to ask), the second after it: the second's job says nothing of the first.
-    await never(await twice(stopBeforeStart, stoppedBeforeText(OTHER_JOB)), 'stop_unsure', TEXT);
-    // The second ended some other way that is not settled: still saving after Stop, or a dropped connection.
-    await never(await twice(stopBeforeText, stoppedAfterText(OTHER_JOB)), 'stop_saving', '');
-    await never(await twice(stopBeforeText, cutAfter(OTHER_JOB)), 'connection_lost', '');
-    await never(await twice(cutAfterStart, stoppedBeforeText(OTHER_JOB)), 'stop_unsure', TEXT);
-    // A chain: the third takes the place of one that had no job, and has none either.
-    const storage = await twice(stopBeforeText, stoppedBeforeText(OTHER_JOB));
-    await run({ active: A, turn: stoppedBeforeText(JOB), settle: 'pending', storage });
-    await never(storage, 'stop_unsure', TEXT);
-});
-
-test('the earlier warning waited under New chat, and the next message made a chat: the warning kept for that chat has no job', async () => {
-    // The first message's chat was deleted while its reply was on its way, so its warning is under New chat. The next
-    // message is sent from New chat, a chat is made for it, and it is stopped the same way: that chat stays for its
-    // turn, and its warning takes the place of the one under New chat.
-    const storage = memory();
-    await run({ active: A, turn: async (args, person) => { args.onEvent('start', { job_id: JOB }); person.deletes('chat-a'); throw stopped(); }, settle: 'pending', storage });
-    assert.deepEqual(readCreditsWarning(storage, ME, NEW_CHAT), { code: 'stop_unsure', job: JOB, sent: textMark(TEXT) });
-    await run({ active: null, turn: stoppedBeforeText(OTHER_JOB), settle: 'pending', storage });
-    assert.equal(readNotice(storage, ME, NEW_CHAT), null, 'forgotten there: the message went out from New chat');
-    assert.deepEqual(readCreditsWarning(storage, ME, 'made'), { code: 'stop_unsure' });
-    assert.deepEqual(await opened(storage, 'made', answers(JOBS.refunded)), { box: TEXT, notice: { code: 'stop_unsure' }, changed: false, calls: [] });
-});
+// A chat keeps one warning. An ending that keeps a warning of its own takes the place of the one kept before it (#736).
+// PR 764 kept no job with such a warning, because one job cannot answer for two turns. It now keeps every turn it
+// stands for, and goes only when all of them are settled: tests/chatWarningTurns.test.mjs.
 
 test('a warning keeps its job when nothing unsettled is kept before it', async () => {
     // The earlier warning was settled when its chat was opened: the next one stands for one turn again.
@@ -272,7 +209,8 @@ test('Stop before any text, and the reply was charged but could not be stored: t
 
 // ---- 4. Stop before `start` ----
 
-test('Stop before the reply started: there is no job to ask, so nothing here removes the warning', async () => {
+test('a warning kept with neither a job nor a key the browser makes has nothing to ask, so nothing here removes it', async () => {
+    // What a warning kept before sends had keys reads as, and what one reads as after its key was changed in storage.
     const storage = await leftBy(stopBeforeStart);
     for (const job of Object.values(JOBS)) {
         assert.deepEqual(await opened(storage, 'chat-a', answers(job)), { box: TEXT, notice: { code: 'stop_unsure' }, changed: false, calls: [] });
@@ -310,33 +248,39 @@ test('a reply that was charged and not stored is never asked about: it is settle
 // ---- the store is changed only for the warning that was asked about ----
 
 test('a warning that was replaced or forgotten while its job was read is left as it is', async () => {
-    const asked = { warning: { code: 'stop_unsure', job: JOB, sent: textMark(TEXT) }, verdict: 'refunded' };
-    // A later message from the chat ended with a warning of its own, about another job.
+    const asked = { warning: { code: 'stop_unsure', job: JOB, sent: textMark(TEXT) }, verdicts: ['refunded'] };
+    // A later message from the chat ended with a warning of its own, about another job: what is kept now stands for
+    // both turns, and the answer was for the first alone.
     let storage = await leftBy(stopBeforeText);
     writeNotice(storage, ME, 'chat-a', 'connection_lost', { job: OTHER_JOB });
     assert.equal(settleKeptWarning(storage, ME, 'chat-a', asked), false);
-    assert.deepEqual(readCreditsWarning(storage, ME, 'chat-a'), { code: 'connection_lost', job: OTHER_JOB });
+    assert.deepEqual(readCreditsWarning(storage, ME, 'chat-a'), { code: 'connection_lost', turns: [{ job: JOB, sent: textMark(TEXT) }, { job: OTHER_JOB }] });
     // The same warning again, for a later send that was stopped the same way: its job is another one.
-    writeNotice(storage, ME, 'chat-a', 'stop_unsure', { job: OTHER_JOB, sent: TEXT });
-    assert.equal(settleKeptWarning(storage, ME, 'chat-a', { ...asked, verdict: 'saved' }), false);
+    storage = await leftBy(stopBeforeText);
+    clearNotice(storage, ME, 'chat-a'); writeNotice(storage, ME, 'chat-a', 'stop_unsure', { job: OTHER_JOB, sent: TEXT });
+    assert.equal(settleKeptWarning(storage, ME, 'chat-a', { ...asked, verdicts: ['saved'] }), false);
     assert.deepEqual(afterReload(storage, 'chat-a'), { box: TEXT, notice: { code: 'stop_unsure' } }, 'neither the warning nor the text is touched');
     // The same job under another warning (not something send() does): the answer was for the one that was read.
-    writeNotice(storage, ME, 'chat-a', 'stop_saving', { job: JOB });
+    clearNotice(storage, ME, 'chat-a'); writeNotice(storage, ME, 'chat-a', 'stop_saving', { job: JOB });
+    assert.equal(settleKeptWarning(storage, ME, 'chat-a', asked), false);
+    // The same job, and the mark of another text: not the warning that was read.
+    clearNotice(storage, ME, 'chat-a'); writeNotice(storage, ME, 'chat-a', 'stop_unsure', { job: JOB, sent: 'Another message.' });
     assert.equal(settleKeptWarning(storage, ME, 'chat-a', asked), false);
     // Forgotten: a later message was saved, or the chat was deleted. Nothing is put back.
     storage = await leftBy(stopBeforeText);
     writeNotice(storage, ME, 'chat-a', 'connection_saved');
-    assert.equal(settleKeptWarning(storage, ME, 'chat-a', { ...asked, verdict: 'unsaved' }), false);
+    assert.equal(settleKeptWarning(storage, ME, 'chat-a', { ...asked, verdicts: ['unsaved'] }), false);
     assert.deepEqual(readNotice(storage, ME, 'chat-a'), { code: 'connection_saved' });
-    // No answer, or an answer this does not know: nothing.
+    // No answer, an answer this does not know, or not one answer for each turn: nothing.
     storage = await leftBy(stopBeforeText);
-    for (const none of [null, undefined, { warning: asked.warning, verdict: null }, { warning: asked.warning, verdict: 'pending' }, { warning: asked.warning, verdict: 'nothing' }]) {
-        assert.equal(settleKeptWarning(storage, ME, 'chat-a', none), false, JSON.stringify(none));
-    }
+    const odd = [null, undefined, { warning: asked.warning }, { warning: asked.warning, verdict: 'refunded' }, { warning: asked.warning, verdicts: 'refunded' },
+        { warning: asked.warning, verdicts: [] }, { warning: asked.warning, verdicts: [null] }, { warning: asked.warning, verdicts: ['pending'] },
+        { warning: asked.warning, verdicts: ['nothing'] }, { warning: asked.warning, verdicts: ['refunded', 'refunded'] }];
+    for (const none of odd) assert.equal(settleKeptWarning(storage, ME, 'chat-a', none), false, JSON.stringify(none));
     assert.deepEqual(afterReload(storage, 'chat-a'), { box: TEXT, notice: { code: 'stop_unsure' } });
     // Another chat's warning and draft are not this chat's.
     writeDraft(storage, ME, 'chat-b', TEXT); writeNotice(storage, ME, 'chat-b', 'stop_unsure', { job: JOB, sent: TEXT });
-    assert.equal(settleKeptWarning(storage, ME, 'chat-a', { ...asked, verdict: 'saved' }), true);
+    assert.equal(settleKeptWarning(storage, ME, 'chat-a', { ...asked, verdicts: ['saved'] }), true);
     assert.deepEqual(afterReload(storage, 'chat-b'), { box: TEXT, notice: { code: 'stop_unsure' } });
     // With no user, or storage that throws, nothing is read, nothing is changed and nothing is thrown.
     assert.equal(settleKeptWarning(storage, null, 'chat-b', asked), false);
@@ -381,8 +325,9 @@ test('opening a chat reads the job of its kept warning before the chat, and sett
     assert.ok(at('settleKept(id, asked);') < at('} catch (e) {'));
     assert.equal(open[1].split('settleKept(').length - 1, 1);
     assert.equal(open[1].split('askKept(').length - 1, 1);
-    // The two helpers: the warning is read from the store for the stored user, and the job is read by chatApi.job.
-    assert.match(screen, /\nconst askKept = \(chatId\) => askKeptWarning\(\{ warning: heldWarning\(chatId\), getJob: chatApi\.job \}\);\n/);
+    // The two helpers: the warning is read from the store for the stored user, a turn with a job is read by chatApi.job,
+    // and a turn with only its send's key is asked about by chatApi.closeSend.
+    assert.match(screen, /\nconst askKept = \(chatId\) => askKeptWarning\(\{ warning: heldWarning\(chatId\), getJob: chatApi\.job, closeSend: chatApi\.closeSend \}\);\n/);
     assert.match(screen, /\nconst settleKept = \(chatId, asked\) => settleKeptWarning\(store\(\), getStoredUserId\(\), chatId, asked\);\n/);
     assert.match(screen, /import \{ askKeptWarning, settleKeptWarning \} from '\.\.\/\.\.\/_lib\/chatWarning';/);
 });
@@ -408,6 +353,6 @@ test('New chat shows what is kept at once and asks after: the screen changes onl
 
 test('the settle module asks nothing itself and changes only the store', () => {
     // One import, the store, with its extension so the tests load it directly. The job read is handed in.
-    assert.deepEqual([...settler.matchAll(/^import [^\n]+$/gm)].map((m) => m[0]), ["import { NEW_CHAT, clearNotice, readCreditsWarning, readDraft, textMark, writeDraft, writeNotice } from './chatLocal.js';"]);
+    assert.deepEqual([...settler.matchAll(/^import [^\n]+$/gm)].map((m) => m[0]), ["import { NEW_CHAT, clearNotice, readCreditsWarning, readDraft, textMark, turnsOf, writeDraft, writeNotice } from './chatLocal.js';"]);
     assert.doesNotMatch(settler, /fetch\(|gatewayFetch|chatApi|window\.|localStorage|setError|setText/);
 });

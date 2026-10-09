@@ -39,9 +39,10 @@ const keepNotice = (chatId, code, extra) => writeNotice(store(), getStoredUserId
 const dropNotice = (chatId) => clearNotice(store(), getStoredUserId(), chatId);
 const heldWarning = (chatId) => readCreditsWarning(store(), getStoredUserId(), chatId);
 const waiting = (chatId) => { const n = readNotice(store(), getStoredUserId(), chatId); return n ? chatErrorCopy(n.code, n) : null; };
-// A warning about a turn that was not settled is kept with that turn's job (chatWarning.js). When its chat arrives on screen the
-// job is read, and a turn the server has settled takes the warning out of the store, or changes what is kept, before the screen reads it.
-const askKept = (chatId) => askKeptWarning({ warning: heldWarning(chatId), getJob: chatApi.job });
+// A warning about a turn that was not settled is kept with what the server can be asked about it by: the turn's job, or the key its
+// send went out with (chatWarning.js). When its chat arrives on screen each turn it stands for is asked about, and once the server
+// has settled them all the warning is taken out of the store, or what is kept is changed, before the screen reads it.
+const askKept = (chatId) => askKeptWarning({ warning: heldWarning(chatId), getJob: chatApi.job, closeSend: chatApi.closeSend });
 const settleKept = (chatId, asked) => settleKeptWarning(store(), getStoredUserId(), chatId, asked);
 // About three words for every four tokens, rounded to ten, from the chosen model's own reply cap.
 const wordsFor = (tokens) => Math.round(((tokens || 1024) * 0.75) / 10) * 10;

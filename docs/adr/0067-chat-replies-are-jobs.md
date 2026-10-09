@@ -299,6 +299,80 @@ words and a long reply stopped a second and a half into its text were each store
 Not changed: the screen reloads the chat the moment Stop is pressed and can be a moment ahead of the save. A short retry there is a
 screen change with its own browser check.
 
+## Amendment 11 2026-10-09: a send can be asked about by its own key, and closed
+
+Status: **Proposed**. The owner accepts it by merging the change, and it takes effect when migration 0241 is applied and
+`CHAT_SEND_CLOSE_ENABLED` is set to `"true"`.
+
+The chat screen keeps a warning when a message ended with its turn not settled ("If a reply is still saved, it will show in this
+chat and use Credits"). Since pull request 764 it keeps the reply's job id with the warning and reads that job when the chat is
+opened. Two warnings could still not be settled, and stayed long after their turns had in fact been refunded:
+
+1. **Stop before `start`.** No job id ever reached the browser. Reading the chat cannot settle it either: a chat that does not
+   show the turn cannot tell "refunded" from "still running" or "charged, not stored".
+2. **One warning for two turns.** A chat keeps one warning. A second message that also ended unsettled takes the first one's
+   place, and one job cannot answer for both, so no job was kept with it.
+
+**What the browser has.** The send's idempotency key. It is made in the browser before any request, the debit is unique on
+`(user_id, idempotency_key)`, and the debit is what makes the job. The key is now kept with the warning when there is no job id.
+
+**What "no job for this key" means.** Nothing, on its own. A request the browser gave up on can still be debited a moment later,
+so "no job" can stop being true. No time limit makes it final either: the Worker waits 8 seconds for a database call and a call
+that answers later is not seen, so there is no bound the server can promise. It is final only when the database says so in the
+same step that makes it so:
+
+- `chat_close_send(auth id, key)` (migration 0241), behind `POST /api/v1/chat/sends/close`. It returns the job that send made,
+  in the shape of the job read. Or, when the send made none, it records the key in `chat_closed_sends` and answers
+  `closed: true`.
+- From then on the database refuses to make a chat job for that person and key. A `BEFORE INSERT` trigger on `jobs` raises,
+  which undoes the whole debit that was making the job: `ledger_debit` and `submit_free_job` insert the job before they write
+  anything else. Nothing is charged, no allowance is used, and the turn answers `409 send_closed` to a reader who has gone.
+- The close and the debit take the same per-key advisory lock and hold it to the end of their transaction, so for one key
+  exactly one of them wins: a debit that came first is found by the close, and a close that came first is seen by the trigger.
+
+Closing is what the person asked for: a key with no job id is only ever kept for a message they stopped.
+
+The trigger is in the database and not in the Worker, so the rule holds whichever version of the Worker makes the debit. It
+refuses only a chat reply's job (`inputs.kind = 'chat'`, as 0193 and 0233 read it). `chat_close_send` closes only a key in the
+shape the browser makes (`vx-` and a UUID), so no key the server derives for its own jobs can be closed. A replay of a send that
+made a job never reaches the insert and is unchanged.
+
+**Several turns under one warning.** The warning keeps every turn it stands for, each as a job id or a key, four at most. Past
+four it keeps none, is never asked about, and stays until a later message is saved, as before this amendment: dropping the
+oldest would let the listed four settle a warning that still stands for a fifth. The same when it takes the place of a warning
+that had nothing to ask by. Every turn is asked about each time the chat is opened, and nothing changes until all of them have a
+final answer:
+
+| All of them together | The warning | The box |
+|---|---|---|
+| None used Credits (refunded, or closed) | removed, nothing said | unchanged |
+| One was charged and could not be stored | becomes "We could not save that reply to the chat..." | emptied only of a message that is now in the chat |
+| Some were saved, and a saved message had been given back to the box | replaced by a notice (below) | emptied only while it still holds exactly a saved message |
+| Some were saved, none of them given back | removed, nothing said: the chat shows each reply and its price | unchanged |
+
+For one turn the notice is the one pull request 764 added. For several it is: "Some messages here ended before we knew if they
+were saved. Each reply that was saved now shows in this chat with its price. A message that does not show here used no Credits."
+It does not say "you do not need to send that message again", because the box can then hold a message that was not saved.
+
+**Limits.** The route is counted against the shared job-read quota (0115) inside the database call. A closed key is kept for 30
+days and at most 200 are kept per person; past that, closing is refused and the warning stays. Thirty days is longer than any
+request can wait: it carries an access token the gateway refuses once expired (Supabase allows at most 7 days), and the turn's
+steps before the debit are bounded in seconds.
+
+**Not chosen.** Sending the job id before the debit (the debit makes the id, and Stop can come before any response). A read of a
+job by key with a waiting time after Stop (not final, as above). The check inside `ledger_debit`, or a wrapper the chat turn calls
+in its place (the first rewrites the function every debit goes through, which two other changes replaced on 2026-10-09; the
+second holds only for Workers that call the wrapper). A placeholder row in `jobs` for a closed key (it would show in job lists,
+counts and the 10-per-minute limit).
+
+**Order.** The Worker may deploy before 0241 is applied. The route then answers `503 send_close_not_open` (the switch is
+`"false"`), the screen reads that as no answer, and every warning stays as it did. After the migration is applied through the
+`apply-migrations` workflow, the switch is turned on by a change to `wrangler.jsonc`. The trigger refuses nothing until a key is
+closed, and nothing closes a key while the switch is off.
+
+Unchanged: every ending of a turn, the price, the refund paths and the sweep. A dropped connection before `start` (as opposed to
+Stop) still gives the message back as "not sent" and keeps no warning.
+
 ## Not decided here
 
 - Which models, and their prices. Needs live endpoint checks and the margin validator. (Three were chosen

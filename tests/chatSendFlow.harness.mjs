@@ -33,7 +33,9 @@ export const afterReload = (storage, chat) => ({ box: readDraft(storage, ME, cha
  * `person` moves about the screen the way the real one does: a press notes the chat asked for, and it is shown when
  * its messages arrive.
  */
-export async function run({ active = null, turn, settle = 'pending', listDown = false, listFails = false, images = [], whileMaking = () => {}, kept = {}, text = TEXT, storage = null, making = null, upload = async () => 'k', prepare = async (f) => f }) {
+// `key` is the send's idempotency key. The default is not one the browser could have made, so the store keeps none
+// with a warning (chatLocal.js): a test of a send that is asked about by its key passes a real one.
+export async function run({ active = null, turn, settle = 'pending', listDown = false, listFails = false, images = [], whileMaking = () => {}, kept = {}, text = TEXT, storage = null, making = null, upload = async () => 'k', prepare = async (f) => f, key = 'key' }) {
     const view = newChatView();
     if (active) { ask(view, active.id); land(view, active.id); }
     const log = { notices: [], box: [], saved: {}, added: {}, opened: [], shownOnOpen: [], deleted: [], activeSet: [], imagesCleared: 0, refreshed: 0, quietReads: 0, failures: [], kept: { ...kept }, keptWith: {}, dropped: [] };
@@ -49,7 +51,7 @@ export async function run({ active = null, turn, settle = 'pending', listDown = 
         useState: (initial) => [initial, () => {}], useRef: (initial) => ({ current: initial }),
         GatewayError, NEW_CHAT, loadFailure, lostNotice, ask, forget, land, onScreen, sendHome,
         chatErrorCopy: (code) => code, chatUnchargedCopy: (code, _extra, warning) => `${code}, and before that ${warning.code}`,
-        makeIdempotencyKey: () => 'key', uploadChatImage: upload, prepareImage: prepare,
+        makeIdempotencyKey: () => key, uploadChatImage: upload, prepareImage: prepare,
         sendTurn: (args) => turn(args, person),
         chatApi: {
             create: making || (async () => { whileMaking(person); return { thread: { id: 'made', model_id: 'm' } }; }), move: async () => ({}), patch: async () => ({ thread: {} }),

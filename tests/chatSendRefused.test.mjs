@@ -83,9 +83,10 @@ test('a refusal leaves each of the four warnings about Credits where it was, and
     // `connection_saved` is one of these: the saved reply and its price are in the chat.
     for (const code of ['connection_saved', 'connection_refunded', 'insufficient_balance', 'rate_limited', 'provider_cut_off', 'unknown']) {
         const { log, kept } = await run({ active: A, turn: refused(noCredits()), kept: { 'chat-a': code } });
-        // Every notice is handed its message's job and text as well (tests/chatWarningSettle.test.mjs): a refusal has no job, and
-        // the store keeps neither beside a notice that is not a warning a job can settle.
-        assert.deepEqual([kept(), log.keptWith['chat-a'], log.notices], [{ 'chat-a': 'insufficient_balance' }, { credits: 2, job: null, sent: TEXT }, [null, 'insufficient_balance']], code);
+        // Every notice is handed its message's job, its send's key and its text as well (tests/chatWarningSettle.test.mjs,
+        // tests/chatWarningTurns.test.mjs): a refusal has no job, and the store keeps none of them beside a notice that is not
+        // a warning the server can be asked about. `after` is the kept warning it takes the place of: none, here.
+        assert.deepEqual([kept(), log.keptWith['chat-a'], log.notices], [{ 'chat-a': 'insufficient_balance' }, { credits: 2, job: null, key: 'key', sent: TEXT, after: null }, [null, 'insufficient_balance']], code);
     }
 });
 
