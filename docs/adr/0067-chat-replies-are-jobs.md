@@ -399,14 +399,17 @@ only when no job id has come (Stop before `start`). The browser's part only: no 
 
 | The server's answer | What follows |
 |---|---|
-| `closed: true`, alone | No reply was charged and none can be. The ending of a job that kept nothing, with no look: the text and its images are back, a chat made for the message is deleted, and no warning is kept. |
+| `closed: true`, alone | No reply was charged and none can be. The ending of a job that kept nothing, with no look: the text is back (its images too, while its chat is still the one on screen), a chat made for the message is deleted, and no warning is kept. |
 | The job that send made | Its id is now known. The turn is looked for by it, and every ending is the one Stop after `start` has. A warning that is still needed is kept with the job id, not the key. |
 | Anything else | Nothing is known, and the look runs with no job id as it did before. It nearly always ends not settled: the warning is kept with the key, and is asked about when the chat is next opened (amendment 11). |
 
 "Anything else" is a refusal (the route's switch off, a rate limit, the 200-key limit, a database failure, a signed-out or
 changed account), a failed request, an answer in a shape the route does not send, and an answer that takes more than 2 seconds.
-An answer that comes after those 2 seconds is not acted on. `closed` is read as amendment 11 reads it: the boolean `true`, with
-no job beside it. A job is taken only from `closed: false` with an id in the shape the server makes.
+An answer that has not come within those 2 seconds is not waited for. The request is not taken back, so the server may still
+close the key; the warning kept meanwhile is then settled by the same question when the chat is next opened. `closed` is read
+only as the boolean `true` with no other field beside it. Amendment 11's reader, used when a chat is opened, is held to the
+same (it allowed other fields as long as none was a job's). A job is taken only from `closed: false` with an id in the shape
+the server makes.
 
 **What the person is told when the send was closed.** Nothing, as for Stop with nothing kept today: the message is back in the
 box. If a warning is kept for the message before it, both are said, this Stop first ("Stopped. Nothing was saved and no Credits
@@ -420,9 +423,13 @@ and then warned.
 and stored record is what it was before this amendment. The browser makes one more request for each Stop before `start`, and
 "Stopping" shows for that round trip longer.
 
-**The 200-key limit.** Each Stop before `start` whose send had not reached the debit now closes a key at once. Before, a key
-was closed only when a chat holding its warning was opened again. Past 200 in 30 days closing is refused, and that person is
-back to the warning.
+**The 200-key limit.** Each Stop before `start` whose send had not reached the debit now closes a key at once, a Stop that
+came before the request had left the browser included. Before, a key was closed only when a chat holding its warning was
+opened again. Past 200 in 30 days closing is refused, and that person is back to the warning.
+
+**A page reload while the button reads "Stopping".** The message is not in the box during the look, and a warning is stored
+only when the look ends, as before. With no answer that time grows from 3.5 seconds at most to 5.5. A reload inside it leaves
+neither the text nor a warning: nothing is offered to send again.
 
 Unchanged: Stop after `start`, a dropped connection and a message that never started ask nothing and end as they did. So does
 every ending of a turn on the server.

@@ -70,7 +70,8 @@ export async function run({ active = null, turn, settle = 'pending', listDown = 
         },
     };
     assert.deepEqual(imported.filter((n) => !(n in deps)), [], 'every name the hook imports is handed in here');
-    const useChatSend = new Function('deps', `const { ${Object.keys(deps).join(', ')} } = deps;\n${body}`)(deps);
+    // Only the names the hook imports are in scope: one it uses without importing throws here, as it would in the browser.
+    const useChatSend = new Function('deps', `const { ${imported.join(', ')} } = deps;\n${body}`)(deps);
     const { send } = useChatSend({
         // With `storage`, the box is stored under the chat on screen as it changes, as the screen's draft effect does.
         text, setText: (t) => { log.box.push(t); if (storage) writeDraft(storage, ME, view.shown, t); }, model: { id: 'm' }, imagesBlocked: false, chosen: {}, price: 2,

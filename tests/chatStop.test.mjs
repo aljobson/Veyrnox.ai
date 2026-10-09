@@ -209,7 +209,9 @@ test('anything else is no answer: a refusal, a rate limit, the route not open, a
 test('an answer in a shape the route does not send is no answer, and "closed" is read exactly as a kept warning reads it', async () => {
     // tests/chatWarningTurns.test.mjs holds keptTurnVerdict to the same list: `closed` is the boolean, alone.
     const odd = [{ closed: 'true' }, { closed: 1 }, { closed: 'yes' }, { closed: null }, { closed: true, state: 'running' }, { closed: true, state: 'failed', refunded: true }, { closed: true, state: 'succeeded' },
-        { closed: true, job_id: JOB }, { found: false }, { job: null }, { error: 'send_close_not_open' }, { error: 'not_found' }, { ok: true }, {}, null, undefined, 'closed', true, 0, [], [{ closed: true }]];
+        { closed: true, job_id: JOB }, { found: false }, { job: null }, { error: 'send_close_not_open' }, { error: 'not_found' }, { ok: true }, {}, null, undefined, 'closed', true, 0, [], [{ closed: true }],
+        // Alone means alone: any other field beside it, even an empty one, and it is not the statement the route makes.
+        { closed: true, job_id: null }, { closed: true, state: null }, { closed: true, state: undefined }, { closed: true, error: 'close_failed' }, { closed: true, ok: false }, { closed: true, job: JOB }, { closed: true, refunded: true }];
     for (const answer of odd) {
         assert.deepEqual(await askStoppedSend({ key: KEY, closeSend: says(answer) }), NO_ANSWER, JSON.stringify(answer));
         assert.notEqual(keptTurnVerdict(answer), 'refunded', `the kept warning does not take it for closed either: ${JSON.stringify(answer)}`);
@@ -225,15 +227,34 @@ test('an answer that hangs does not leave Stop hanging: the question ends at its
     const before = Date.now();
     assert.deepEqual(await askStoppedSend({ key: KEY, closeSend: () => new Promise(() => {}), limitMs: 30 }), NO_ANSWER);
     assert.ok(Date.now() - before < 1000, 'it answered at the limit');
-    // An answer that comes after the limit is not acted on: what was said first stands.
-    const late = (answer) => () => new Promise((resolve) => { setTimeout(() => resolve(answer), 80); });
-    assert.deepEqual(await askStoppedSend({ key: KEY, closeSend: late({ closed: true }), limitMs: 30 }), NO_ANSWER);
-    assert.deepEqual(await askStoppedSend({ key: KEY, closeSend: late({ closed: false, job_id: JOB, state: 'running' }), limitMs: 30 }), NO_ANSWER);
-    assert.deepEqual(await askStoppedSend({ key: KEY, closeSend: late({ closed: true }), limitMs: 500 }), { closed: true, job: null }, 'slow, and inside the limit');
-    await new Promise((resolve) => { setTimeout(resolve, 120); });
+    // An answer that has not come by the limit is not waited for. It arrives here only after "no answer" was said, so
+    // no clock decides the order.
+    for (const answer of [{ closed: true }, { closed: false, job_id: JOB, state: 'running' }]) {
+        let arrive;
+        const pending = new Promise((resolve) => { arrive = resolve; });
+        assert.deepEqual(await askStoppedSend({ key: KEY, closeSend: () => pending, limitMs: 30 }), NO_ANSWER, JSON.stringify(answer));
+        arrive(answer); await pending;
+    }
+    // Slow, and inside the limit: it is waited for.
+    const slow = () => new Promise((resolve) => { setTimeout(() => resolve({ closed: true }), 20); });
+    assert.deepEqual(await askStoppedSend({ key: KEY, closeSend: slow, limitMs: 60_000 }), { closed: true, job: null });
     // The same limit as the same question asked when a chat is opened (chatWarning.js): one number for one route.
     assert.equal(STOP_ASK_LIMIT_MS, KEPT_READ_LIMIT_MS);
     assert.ok(STOP_ASK_LIMIT_MS + STOP_LIMIT_MS <= 6000, 'with the look after it, Stop still ends in a few seconds at the very worst');
+});
+
+test('with no limit handed in, the question waits STOP_ASK_LIMIT_MS and not a millisecond more', async (t) => {
+    t.mock.timers.enable({ apis: ['setTimeout'] });
+    const turn = () => new Promise((resolve) => { setImmediate(resolve); });
+    let said = null;
+    const asking = askStoppedSend({ key: KEY, closeSend: () => new Promise(() => {}) }).then((v) => { said = v; });
+    await turn();
+    t.mock.timers.tick(STOP_ASK_LIMIT_MS - 1);
+    await turn();
+    assert.equal(said, null, 'still waiting one millisecond before the limit');
+    t.mock.timers.tick(1);
+    await asking;
+    assert.deepEqual(said, NO_ANSWER);
 });
 
 test('the question\'s time limit is cleared when the answer comes first, and with no key nothing is asked', async (t) => {

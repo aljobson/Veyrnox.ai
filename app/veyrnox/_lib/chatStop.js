@@ -79,11 +79,13 @@ const NO_ANSWER = Object.freeze({ closed: false, job: null });
  * Stop came before `start`, so no job id reached the browser and the look above could only read the chat. The server
  * is asked about the send by the idempotency key it went out with (POST /api/v1/chat/sends/close), before the look:
  *   `closed`  the send made no job, and the server has closed its key: no reply was charged, and none can be. Final.
- *             Read only from `closed: true`, alone, as a kept warning reads it (chatWarning.js)
+ *             Read only from `closed: true` with no other field beside it, as a kept warning reads it (chatWarning.js)
  *   `job`     the id of the job the send made: the turn is looked for by it, as after `start`
  *   neither   nothing is known: a refusal, a rate limit, the route not open, a failed request, an answer that took
  *             longer than the limit, or one in a shape this does not know. The look runs as it does with no job id
- * Never throws, and never waits longer than the limit. An answer that comes after the limit is not acted on.
+ * Never throws, and never waits longer than the limit. An answer that has not come by then is not waited for: the
+ * request is not taken back, so the server may still close the key, and the warning kept meanwhile is settled by the
+ * same question when its chat is next opened.
  * @param {{key?: string|null, closeSend?: (key: string) => Promise<object>, limitMs?: number}} args
  * @returns {Promise<{closed: boolean, job: string|null}>}
  */
@@ -94,7 +96,7 @@ export async function askStoppedSend({ key, closeSend, limitMs = STOP_ASK_LIMIT_
   try {
     const answer = await Promise.race([closeSend(key), limit]);
     if (!answer || typeof answer !== 'object') return NO_ANSWER;
-    if (answer.closed === true) return answer.state === undefined && answer.job_id === undefined ? { closed: true, job: null } : NO_ANSWER;
+    if (answer.closed === true) return Object.keys(answer).length === 1 ? { closed: true, job: null } : NO_ANSWER;
     return answer.closed === false && typeof answer.job_id === 'string' && JOB_ID_RE.test(answer.job_id) ? { closed: false, job: answer.job_id } : NO_ANSWER;
   } catch {
     return NO_ANSWER; // not an answer: the look decides, as it did before the send could be asked about

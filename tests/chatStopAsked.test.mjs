@@ -114,7 +114,7 @@ test('no answer changes nothing: every ending is the one the route gives with it
         ['a key the route does not take', refusal(400, 'invalid_key')], ['offline', async () => { throw new TypeError('Failed to fetch'); }], ['an empty answer', answers({})], ['no body', answers(null)],
         ['"closed" in a shape the route does not send', answers({ closed: 'true' })], ['closed beside a job', answers({ closed: true, job_id: JOB })], ['only "no job was found"', answers({ found: false })],
         ['a job with no id', answers({ closed: false, state: 'running' })], ['a job id the server could not have made', answers({ closed: false, job_id: 'job-1', state: 'running' })],
-        ['an answer that never comes', () => new Promise(() => {}), { askLimitMs: 20 }], ['an answer that comes too late', () => new Promise((resolve) => { setTimeout(() => resolve(SENDS.closed), 60); }), { askLimitMs: 20 }]];
+        ['an answer that never comes', () => new Promise(() => {}), { askLimitMs: 20 }]];
     for (const settle of ['pending', 'saved', 'unsaved', 'nothing']) for (const [from, active] of FROM) {
         const off = memory();
         const before = await run({ active, turn: stopBeforeStart, settle, storage: off, key: KEY, closeSend: notOpen, images: IMAGES });
@@ -124,6 +124,18 @@ test('no answer changes nothing: every ending is the one the route gives with it
             const sent = await run({ active, turn: stopBeforeStart, settle, storage, key: KEY, closeSend, images: IMAGES, ...more });
             assert.deepEqual(ending(sent, storage), ending(before, off), `${why}, ${settle}, sent from ${from}`);
             assert.deepEqual([sent.log.closes, sent.log.looks], [[KEY], [null]], why);
+        }
+        // An answer that comes after the limit. It arrives here only once the send has ended, so no clock decides the
+        // order: the ending is the same, and the late answer changes nothing that was left.
+        for (const answer of [SENDS.closed, SENDS.saved]) {
+            let arrive;
+            const pending = new Promise((resolve) => { arrive = resolve; });
+            const storage = memory();
+            const sent = await run({ active, turn: stopBeforeStart, settle, storage, key: KEY, closeSend: () => pending, images: IMAGES, askLimitMs: 20 });
+            const left = ending(sent, storage);
+            assert.deepEqual(left, ending(before, off), `an answer that comes too late, ${settle}, sent from ${from}`);
+            arrive(answer); await pending; await new Promise((resolve) => { setImmediate(resolve); });
+            assert.deepEqual(ending(sent, storage), left, 'the late answer changes nothing');
         }
     }
     // Not settled is what the look nearly always says with no job id: the text is back, with the warning and the key.
