@@ -1,12 +1,17 @@
 "use client";
 
-// OAuth callback (PKCE). Supabase returns a one-time `?code=`; we exchange
-// it with the verifier this browser stored when it started the flow.
+// Sign-in callback (PKCE) for OAuth and for emailed links. Supabase returns a
+// one-time `?code=`; we exchange it with the verifier this browser stored
+// when it started the flow (app/lib/pkceVerifier.js).
 
 import { useEffect, useState } from "react";
 import { completeOAuthFromCode, oauthCallbackError } from "../../lib/authClient.js";
+import { MAGIC_VERIFIER_TTL_MS } from "../../lib/pkceVerifier.js";
 
 const TRY_AGAIN = "Nothing was changed. Go back and try signing in again.";
+// No verifier here: an emailed link opened in another browser or on another
+// device, or opened after the verifier kept for it had expired.
+const NOT_STARTED_HERE = `This sign-in was not started in this browser, or its link is more than ${Math.round(MAGIC_VERIFIER_TTL_MS / 60000)} minutes old. Open the link in the browser where you asked for it, or go back and ask for a new one.`;
 
 export default function AuthCallback() {
     const [status, setStatus] = useState("Signing you in…");
@@ -31,7 +36,7 @@ export default function AuthCallback() {
                     setStatus("Signed in. Redirecting…");
                     window.location.replace("/");
                 } else {
-                    fail("This sign-in was started in a different browser or tab. Start signing in again here.");
+                    fail(NOT_STARTED_HERE);
                 }
             })
             .catch((err) => {

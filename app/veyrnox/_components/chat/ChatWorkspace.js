@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { GatewayError, gatewayFetch } from '../../_lib/gateway';
+import { getStoredUserId } from '../../../lib/authClient';
 import { chatApi, chatErrorCopy, makeIdempotencyKey, sendTurn, uploadChatImage } from '../../_lib/chatApi';
 import { attachmentLabel, prepareImage } from '../../_lib/chatImages';
 import { NEW_CHAT, readDraft, writeDraft, readStars, toggleStar } from '../../_lib/chatLocal';
@@ -50,7 +51,7 @@ export function ChatWorkspace() {
   const [active, setActive] = useState(null);
   const [messages, setMessages] = useState([]);
   const [draftModel, setDraftModel] = useState('');
-  const [text, setText] = useState(() => readDraft(store(), NEW_CHAT));
+  const [text, setText] = useState(() => readDraft(store(), getStoredUserId(), NEW_CHAT));
   const [stars, setStars] = useState([]);
   const [starredOnly, setStarredOnly] = useState(false);
   const [opts, setOpts] = useState({ thinking: false, web: false, research: false });
@@ -97,8 +98,8 @@ export function ChatWorkspace() {
     })();
   }, [fail]);
   useEffect(() => { endRef.current?.scrollIntoView({ block: 'end' }); }, [messages]);
-  // The unsent text follows the chat it was typed in; sending or clearing it forgets it.
-  useEffect(() => { writeDraft(store(), active?.id ?? NEW_CHAT, text); }, [text, active?.id]);
+  // The unsent text follows the chat it was typed in, for the user who typed it; sending or clearing it forgets it.
+  useEffect(() => { writeDraft(store(), getStoredUserId(), active?.id ?? NEW_CHAT, text); }, [text, active?.id]);
 
   const model = models.find((x) => x.id === (active?.model_id ?? draftModel)) || defaultModel(models) || models[0];
   // An option counts only if the chosen model offers it; the price is the model's base plus each extra chosen.
@@ -119,11 +120,11 @@ export function ChatWorkspace() {
     try {
       const r = await chatApi.get(id);
       setPersonaId(''); setActive(r.thread); setSkillId(''); setMessages(r.messages); setInstr(r.thread.system_prompt || ''); setError(null); setDrawer(false);
-      setText(readDraft(store(), r.thread.id)); setStars(readStars(store(), r.thread.id)); setStarredOnly(false);
+      setText(readDraft(store(), getStoredUserId(), r.thread.id)); setStars(readStars(store(), getStoredUserId(), r.thread.id)); setStarredOnly(false);
     } catch (e) { fail(e); }
   };
-  const blank = () => { setPersonaId(''); setActive(null); setSkillId(''); setMessages([]); setInstr(''); setError(null); setDrawer(false); setText(readDraft(store(), NEW_CHAT)); setStars([]); setStarredOnly(false); };
-  const star = (id) => { if (active) setStars(toggleStar(store(), active.id, id)); };
+  const blank = () => { setPersonaId(''); setActive(null); setSkillId(''); setMessages([]); setInstr(''); setError(null); setDrawer(false); setText(readDraft(store(), getStoredUserId(), NEW_CHAT)); setStars([]); setStarredOnly(false); };
+  const star = (id) => { if (active) setStars(toggleStar(store(), getStoredUserId(), active.id, id)); };
   const shown = starredOnly ? messages.filter((x) => x.role === 'assistant' && stars.includes(x.id)) : messages;
   const patch = async (id, body) => {
     try {
