@@ -44,3 +44,55 @@ Neither is visible from this repository.
 
 1. After the deploy, the `veyrnox-ai` Worker's settings show the workers.dev route and Preview URLs as disabled, and `https://veyrnox.ai` still serves.
 2. Whether anyone was opening preview URLs for the production Worker. If so, set `preview_urls` back to `true` only together with an Access policy on those hostnames.
+
+## Amendment 1 (2026-10-09): four follow-ups from the review of this change
+
+Built in a second change, after the first was reviewed. No SQL migration, no feature flag.
+
+1. **A rotated Access key is picked up by the first request that carries it.** `verifyAccessJwt` kept the key set for an hour and answered `kid` for a key it did not hold, so a warm isolate could refuse valid assertions for up to an hour after Access rotated its signing key. A miss now fetches the key set once more, at most once a minute per isolate (`CERTS_MISS_REFRESH_MS`), the way `lib/supabaseJwt.js` does. A failed refetch keeps the set already held. A key the fresh set does not hold is still refused. This covers every caller: the machine endpoints, the dashboard routes and the Cinema administrator routes.
+   - The minute is taken before the fetch, whether or not it succeeds, so that misses cannot become a stream of fetches while the key endpoint is down. Two limits follow. A miss that arrives while the refetch is in flight is refused once and passes on retry. After a refetch that failed, a rotated key waits for the next minute. Both were an hour before.
+   - The one extra fetch is on top of the ordinary load, so a cold isolate that meets an unknown key fetches twice in that request.
+2. **`normalizedPath` always answers.** It is called for every request. The URL parser drops a tab or a newline wherever one sits, and the function collapsed slashes before the parser did that, so a path that decodes to one of those next to a slash could have its next segment read as a host name. The parser refused some of those and the Worker answered with the platform's error page. Tabs and newlines are now dropped first, so such a path is classified by what is left, like any other. If no path can be produced at all the function returns `null`, and each caller reads `null` as a match for the prefix it screens: the admin rate limiter counts the request as an admin one, and the data-path guard answers 404. No string could do that for both, because the two prefixes are different. The admin rate limiter now also tests the path as sent, as the data-path guard already did, so a path under the admin prefix is counted as one whatever the rest of it normalises to. A path that names an admin route or a data file is never classified less strictly than before.
+3. **The deploy reads the two hostname settings back.** `wrangler deploy` is the only thing that applies `workers_dev` and `preview_urls`, and a deploy from a checkout older than this ADR turns both back on without saying so. After each production deploy, `scripts/check-workers-dev.mjs` reads `GET /accounts/{id}/workers/scripts/{name}/subdomain` and expects `enabled` and `previews_enabled` to be `false`.
+   - It is the last step of the deploy job, after the smoke test and its rollback, and it cannot fail the job. By then the release is live, and a rollback restores the code, not these two settings, so a red job would describe something that did not happen and would change nothing.
+   - If either setting is on, or the answer cannot be read, the `report-workers-dev` job comments on the open `deploy-failure` issue or opens one. An unreadable answer is reported too, so the check cannot go quiet.
+   - It sees what this workflow's own deploy left behind. A deploy made some other way, from an older checkout, is not seen until the next run here.
+4. **The dashboard routes take a person's login.** Access issues two kinds of assertion for one application: to a person who logged in, and to a service token. Its application token reference gives the two payloads: a login carries `email` and the user's id in `sub`; a service token carries its client id in `common_name` and an empty `sub`. `requireDashboardAccess` now passes only the first kind (`email` and `sub` both non-empty text) and answers `403 access_required` to any other validly signed assertion. `common_name` is not read: a policy can also ask a person for a client certificate, and the reference does not say that a login then carries none. `requireAccess` is unchanged: the machine endpoints are what the service token is for. The Cinema administrator routes were left as they were in this change and still took either kind; Amendment 2 gives them the same rule.
+
+### Verification
+
+- `tests/accessGate.test.mjs`: a rotated key verifies after one refetch, for both gates; five misses in a row make one fetch; the window reopens after a minute; a failed refetch keeps the old keys and uses up the minute; three misses at once make one fetch; the machine endpoints take both kinds of assertion.
+- `tests/adminEdgeRateLimit.test.mjs` and `tests/nextDataGuard.test.mjs`: paths that decode to a tab or newline are screened or refused like their plain spellings; the paths that used to throw reach the app; a parser that refuses the path outright gives the closed answer in both callers.
+- `tests/workersDevCheck.test.mjs`: the API answer is read as documented; anything unclear is unknown, never off; the token is never in the output; the step sits after the smoke test and rollback and cannot fail the job.
+- `tests/adminDashboardAccess.test.mjs`: each dashboard route refuses a service token's assertion before anything reaches Supabase; the documented login payload passes.
+
+### Owner checks
+
+1. Before this is deployed: the owner's own Access assertion has the login shape. Decoded locally, the payload of the `CF_Authorization` cookie on the site shows a non-empty `email` and a non-empty `sub`. If it does not, the dashboard routes would answer 403 to the owner, and item 4 must be reverted before deploying.
+2. The first production deploy after this: the last step of the deploy job prints that the workers.dev route and Preview URLs are off. That step has not run against the live API before. If it reports that it could not read the setting, the deploy token may lack read access to that endpoint.
+
+## Amendment 2 (2026-10-09): the Cinema administrator routes take a person's login
+
+Built in a third change. No SQL migration, no feature flag. Cinema is behind `CINEMA_*` switches that are `false` in production, so these routes answer 503 there before any of this is reached. On staging the switches are on and the rule applies as soon as this is deployed there.
+
+The Cinema administrator handlers (`creatorApi.js`, `publishApi.js`, `operatorApi.js` and `earningsApi.js` under `lib/cinema/`) verify the Access assertion themselves, after the identity and second-factor gates. They called `verifyAccessJwt`, so they passed any validly signed assertion for the application, the kind issued to a service token included. Amendment 1 item 4 closed that for the dashboard routes only.
+
+1. **One rule, in one place.** `lib/accessJwt.js` exports `verifyAccessLogin`: it runs `verifyAccessJwt`, then refuses a payload that is not a login, with the reason `not_a_login`. The rule is the one from Amendment 1 item 4 (`email` and `sub` both non-empty text, `common_name` not read). `requireDashboardAccess` now calls it too, so there is no second copy.
+2. **It is the default verifier of the four handlers** in their administrator modes: the creator review queue and decision, the submission queue, review and suspension, the two operator actions, and the earnings read. That is every route under `/api/v1/admin/cinema/`. A service token's assertion answers `403 access_required` before any RPC is made, as a missing or invalid one already did.
+3. **A refusal says why, in the log.** The handlers answered `403 access_required` without recording the cause. Each now writes one `[access] refused: <reason>` line, in the form `requireDashboardAccess` uses: `not_a_login` for a service token's assertion, the verifier's own reason for one that does not verify (`expired`, `audience`, `signature` and so on), and a fixed sentence when no assertion arrived. Only the reason is written, never the assertion or anything read from it. The answer to the caller is unchanged.
+4. **Unchanged:** `verifyAccessJwt` and `requireAccess`, so the machine endpoints under `/api/admin/*` still take the service token. The creator-facing modes of the same handlers (apply, submit, withdraw) never asked for an assertion and still do not. Nothing in this repository calls a Cinema administrator route with a service token: its one user is `.github/workflows/top-up-backfill.yml`, which calls `/api/admin/top-up-backfill`.
+
+### Consequences
+
+- A Cinema administrator who works through `/app/admin/cinema` sees no change, as long as their login has the documented shape (owner check 1): the edge adds the assertion of their own login to those requests.
+- Every route under `/api/v1/admin/*` now takes a person's login and nothing else. A machine caller for one of them would need its own design, not the service token.
+
+### Verification
+
+- `tests/adminDashboardAccess.test.mjs`: each of the eight Cinema administrator exports is called as the route file exports it, with the Access key set and Supabase stubbed. The documented service-token payload answers 403 with nothing reaching Supabase; the documented login payload answers 200; a missing, malformed, wrongly signed or wrong-audience assertion still answers 403. Each refusal is checked for its log line, and the service-token case for a log that holds no part of the assertion; a login that passes logs nothing. `verifyAccessLogin` is tested on its own, including that an assertion which does not verify is refused for that reason first.
+- The walk of `app/api/v1/admin` in the same file now also fails for a Cinema administrator export that is not in that list, and for a route file that names a method anywhere but in a one-line `export const`, so a new export is either called with both kinds of assertion or fails the test. A route file that calls `requireDashboardAccess` is still passed as a whole, as before.
+
+### Owner checks
+
+1. The check from Amendment 1 covers this change too: the owner's own `CF_Authorization` payload, decoded locally, shows a non-empty `email` and a non-empty `sub`. Anyone else who is to review Cinema submissions or run operator actions needs the same of their own login.
+2. On staging, where the Cinema switches are on, and again when they are first turned on in production: sign in through Access, open `/app/admin/cinema`, and confirm the review queue loads. A 403 `access_required` there says the assertion was refused, not why: the answer is the same for a missing, invalid or expired assertion and for one that is not a login. The Worker log has the reason (`wrangler tail`, the `[access] refused:` line); `not_a_login` means that login's assertion does not have the documented shape.

@@ -51,7 +51,27 @@ Do not start the rollout until each has a written yes in the SPEC.
 - **Step 3:** `MONTAGE_RUNNER_BASE` = `https://veyrnox-montage-runner.fly.dev` in the top-level `vars` of `wrangler.jsonc`, flag still
   "false". With no `MONTAGE_SIGNING_SECRET` in the Worker yet, the routes and the sweep still answer "not configured".
 
-Next: step 4 (the Worker's two secrets, by the secret-edit procedure).
+- **Step 4, 10:54 UTC:** the owner ran a script with no prompts. It ran `deploy-production` on main first (run 37920270605), checked
+  before each edit that the newest uploaded version was the live one, and set `MONTAGE_SIGNING_SECRET` (piped from the file step 2
+  left, so it is the runner's value) and `MONTAGE_PLAN_SECRET` (random, kept nowhere else). The live script was the same before and
+  after, and the file was deleted. Checked from outside afterwards: both names are on the production Worker; an unsigned
+  `POST /api/webhook/montage` answers 401 `invalid_signature` (it was 503 `not_configured`); the plan route still answers 401 signed
+  out; the catalog does not list `video-agent`. The next ordinary deploy of main (`84d94a76`) kept both secrets. A branch preview had
+  been uploaded 50 seconds before the script's own deploy, which is the case the procedure exists for.
+  Not proven until step 8: that a signed call from the Worker is accepted by the runner. Nothing makes one while the flag is off.
+
+- **Found before step 5 (2026-10-09):** an active `video-agent` row was offered in the Create picker like any other video model
+  (seen on staging). Step 5 would have shown every production user a model that cannot be bought from that page, with the flag
+  off. Fixed: a row that takes a `plan_id` is held back by `isShelfModel` (landing shelf, pricing, model pages, search) and by the
+  Create picker, like the Clip Editor and Auto Short. Checked on staging: the picker no longer lists it, `/api/catalog` still does
+  (the page and the Library need its name and price), and `/app/video-agent` still makes a plan. **Step 5 waits for this to be live.**
+
+- **Step 5, in hand:** the picker fix is live on production (#697, deploy run 37924602437). Migration `0234_video_agent_activate`
+  sets the row active with the row-count guard. Checked on production before writing it: 0233 is the latest applied migration, the
+  `video_agent` heartbeat is arriving and healthy (so `recovery-health` will not alert when the row turns active), and the row is
+  inactive at 165 credits. Done once the owner approves the `apply-migrations` run; step 6's 24 hours start then.
+
+Next: step 6 (24 hours of clean reconcile jobs), then step 7 (the flag).
 
 Each step has its own check and its own undo. Stop at the first check that fails.
 

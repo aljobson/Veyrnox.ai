@@ -51,7 +51,7 @@ export default function CreateStudio() {
   const { models: catalogModels, live: catalogLive, loading: catalogLoading } = useCatalog();
   const freeMap = useFreeAllowance(); // ADR-0069: free jobs left today per model; empty while the feature is off
   const autoShortOn = useSyncExternalStore(never, autoShortFlag, off);
-  const models = catalogModels.filter((m) => !m.isEdit && (autoShortOn || !m.takesTopic));
+  const models = catalogModels.filter((m) => !m.isEdit && !m.takesPlan && (autoShortOn || !m.takesTopic));
   const [modelId, setModelId] = useState(DEFAULT_MODEL);
   const [presetParam, setPresetParam] = useState(null);
   const [tier, setTier] = useState(null);

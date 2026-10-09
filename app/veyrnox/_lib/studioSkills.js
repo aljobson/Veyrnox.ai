@@ -79,9 +79,9 @@ export function skillById(id) {
   return SKILLS.find((s) => s.id === id) || null;
 }
 
-/** Studio models a draft may name: open (not gated), and not the Library-only editors or Auto Short, which take no prompt. */
+/** Studio models a draft may name: open (not gated), and not the Library-only editors, Auto Short or the video agent, which take no prompt. */
 function draftable(models) {
-  return (models || []).filter((m) => m && m.id && !m.gated && !m.isEdit && !m.takesTopic);
+  return (models || []).filter((m) => m && m.id && !m.gated && !m.isEdit && !m.takesTopic && !m.takesPlan);
 }
 
 function needsOf(m) {

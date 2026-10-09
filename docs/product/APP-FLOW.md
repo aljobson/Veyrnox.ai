@@ -183,7 +183,9 @@ switch) adds the last step and 7 billed units.
 3. **Stop:** before the first character → refund; after text appeared → text
    kept and charged (the work was received). A provider cut-off after partial
    text keeps the text and **refunds**. A quiet timeout counts as cut off.
-4. The job ends `STORED` (`chat_complete_turn` writes both messages). A free
+4. The job ends `STORED` (`chat_complete_turn` writes both messages). A reply
+   that was delivered but cannot be stored, for example because the chat was
+   deleted meanwhile, is still charged (`chat_settle_unsaved_turn`). A free
    allowance applies only to a plain reply (no Thinking, Web search or images).
 5. A skill's final **Open in Studio** card fills the Studio prompt through the
    same hand-off as a template; only the person's press of Generate there

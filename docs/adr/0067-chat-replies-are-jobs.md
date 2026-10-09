@@ -35,6 +35,7 @@ spine instead.
    Provider cut-off after partial text: the partial text is kept, the job fails and the Credits are refunded
    (a failed reply refunds, as everywhere). The user pressing Stop after text appeared keeps the text and is
    charged: they received the work and chose to end it.
+   (Amendment 9 adds: a reply that was delivered is charged even when it cannot be stored.)
 5. **A chat job ends in `STORED`, never `SUCCEEDED`.** `sweep_stuck_jobs` turns a `SUCCEEDED` job with no row
    in `assets` into `FAILED` and refunds it after 60 minutes. A reply has no asset, so a new function,
    `chat_complete_turn`, writes both messages and moves the job `SUBMITTED` -> `STORED` in one transaction.
@@ -228,9 +229,38 @@ capped search and is not priced until step 3 has real numbers.
 **Privacy.** The user's message text goes to Exa as the search query, as it already goes to the plugin's search engine through
 OpenRouter. The privacy notice says Web search sends the question to a search service; it should name Exa before the flip.
 
+## Amendment 9 2026-10-09: a delivered reply is charged, stored or not
+
+Status: **Proposed**. The owner accepts it by merging the change. Found by the 2026-10-09 audit (finding M-01).
+
+Point 4 charges for text the user received. One case did not follow it: the reply had streamed to the screen, but
+`chat_complete_turn` answered that the messages could not be stored, and the turn ended uncharged. The rule is now the same
+everywhere: **text that was delivered is charged. Deleting the chat does not undo the charge.**
+
+- When `chat_complete_turn` answers that the messages cannot be stored (the chat no longer exists, or the text is refused), the
+  turn calls `chat_settle_unsaved_turn` (migration 0233). It moves the job `SUBMITTED` -> `STORED`, writes no message and no
+  ledger row (the debit was taken when the turn started), and records `error_code = 'reply_not_saved'` on the job so the
+  record shows why a charged reply has no messages. Replaying it changes nothing. `ledger_refund` refuses a `STORED` job and
+  the sweep does not select one, so the charge stays.
+- The stream ends with `error: reply_not_saved` and `credits_charged` equal to the price, and the screen says the Credits were used.
+- A reply longer than a stored message (32,000 characters) is delivered in full and stored cut to that length, instead of
+  failing to save.
+- A message containing a character the database cannot hold, or nothing but whitespace and control characters, is refused
+  (`invalid_text`) before any Credits move. Characters that cannot be held are taken out of the stored copy of a reply, and
+  a reply with nothing left after that counts as nothing produced (refunded).
+- A reply that used a free allowance (ADR-0069) follows the same rule: it is settled at 0 Credits and the allowance stays used.
+
+Unchanged: nothing produced is refunded; a reply the provider cut off is refunded and is never settled this way; and when the
+database gives no answer at all (an outage, or the request cut short) the job stays `SUBMITTED` and the 120-minute sweep
+refunds it, which is the safe direction for the user when the fault is ours.
+
+**Order.** The Worker may deploy before 0233 is applied: the settle call then fails and that turn ends as it did before this
+amendment. The rule takes effect once the migration is applied through the `apply-migrations` workflow. The stored-reply cut
+and the message check need no migration and apply as soon as the Worker deploys.
+
 ## Amendment 10 2026-10-09: a reader who leaves is a Stop, and the turn is still finished
 
-Status: **Proposed**. The owner accepts it by merging, after the staging check below. (Amendment 9 is the change in pull request 686.)
+Status: **Proposed**. The owner accepts it by merging, after the staging check below.
 
 Point 4 says a reply stopped after text appeared is kept and charged. On the Worker that ending did not run as written. Pressing Stop
 or closing the tab ends the response, but the Worker was not told: Cloudflare reports a disconnect only through `request.signal`, and
