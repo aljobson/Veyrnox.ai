@@ -29,6 +29,12 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          # Whether a price that moved on fal's page fails the run, and so
+          # opens the issue below. 'false' is how the watch has always run:
+          # drift is a note in a green run. 'listed' fails on the rows in
+          # scripts/lib/fal-unit-rates.mjs; 'all' on every row, which files
+          # on noise (see failingCount). Turning it on is the owner's decision.
+          FAL_DRIFT_FAILS: 'false'
         run: |
           set +e
           node scripts/check-fal-catalog.mjs > report.txt 2>&1
