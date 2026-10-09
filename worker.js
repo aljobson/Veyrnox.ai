@@ -24,6 +24,7 @@ import { limitRequestBody } from './lib/requestBodyLimit.js';
 import { adminEdgeRateLimit } from './lib/adminEdgeRateLimit.js';
 import { turnstileReportRateLimit } from './lib/turnstileFailureReport.js';
 import { refuseNextData } from './lib/nextDataGuard.js';
+import { refuseCdnCgi } from './lib/cdnCgiGuard.js';
 import { dropInternalHeaders } from './lib/internalRequestHeaders.js';
 import { runScheduledBackfill } from './lib/scheduledBackfill.js';
 import { removeReservedUpload, sweepUploadReservations } from './lib/uploadReservations.js';
@@ -50,7 +51,7 @@ import { listModels } from './app/veyrnox/_lib/modelPages.js';
 
 export default {
     async fetch(request, env, ctx) {
-        const refused = refuseNextData(request);
+        const refused = refuseNextData(request) || refuseCdnCgi(request);
         if (refused) return refused;
         const limited = await adminEdgeRateLimit(request, env) || await turnstileReportRateLimit(request, env);
         if (limited) return limited;

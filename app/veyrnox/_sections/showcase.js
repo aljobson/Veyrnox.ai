@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { MediaTile } from '../_components/MediaTile';
+import { ShowcaseCredits } from '../_components/ShowcaseCredits';
 import { SHOWCASE_CLIPS } from '../_lib/showcase';
 import { wallShapes, tileClasses } from '../_lib/presetWall';
 import { WALL_PRESETS, presetHref, presetCredits, presetTitle, shelfName } from '../_lib/tokens';
@@ -45,6 +46,7 @@ export function PresetWall({ catalog }) {
           );
         })}
       </div>
+      <ShowcaseCredits />
     </section>
   );
 }

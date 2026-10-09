@@ -184,3 +184,49 @@ debit, one all-or-nothing refund. What changes for the user and the auditor:
    and a fixed list in either would drop the other's kind. Both add to what the
    constraint allows now; production holds `captions` and `montage`.
 
+## Addendum 2026-10-09: Clip Editor slow motion
+
+A fifth editor step, `slow` (fal `topaz/interpolate/video`), runs per slowed clip,
+after that clip's trim and before the merge. Still one `clip-edit` row, one debit
+and one all-or-nothing refund. Probed live first (docs/editor/SPEED.md).
+
+1. **Whole-number slow motion only, 2x to 4x, no speed-up.** fal has no plain speed
+   endpoint, and this is the only one with a factor. Only factor 2 was probed, so
+   3 and 4 are allowed on the same shape with the cost caveat below; 5 to 8 are
+   refused. Frame rate is pinned to 24 (the probed value) and the output to H264,
+   because fal defaults to 60 fps, which it bills, and to H265, which browsers
+   mostly will not play.
+2. **A slowed clip needs a soundtrack.** Topaz leaves the clip's own audio at its
+   original length (5.04 s of voice inside a 10.04 s file), so it runs out of step
+   and stops. The audio step replaces a clip's own sound (probed: the output was
+   the tone's level in every second), so a soundtrack laid over the slowed result
+   overwrites it. An edit with a slowed clip and no soundtrack is refused
+   (`slow_needs_audio`) before the debit.
+3. **Price: a deliberately high placeholder.** The cost is unknown: fal's page lists
+   $0.30 to $0.60 with the unit unclear, its sibling upscale endpoint bills per
+   second of video, and the three probe runs have not been read off an invoice. So
+   each slowed clip counts `SLOW_UNITS_PER_SECOND = 20` billed units per started
+   second of source video it keeps, inside `editUnits` as captions do. At $0.033 a
+   credit that is $0.66 a second against a worst case of $0.30 a second, over the
+   ADR-0014 floor even if the unit is per second. The unit price stays in the
+   catalog. At most 15 s of source may be slowed in one edit (so the slow step is at
+   most 300 units), and the result is at most 60 s.
+4. **No retry, except one case.** As for captions, a failed slow step refunds the
+   whole edit; only fal reporting `host_unreachable` is retried once.
+5. **Gated twice.** Worker flag `CLIP_EDIT_SLOW_ENABLED` ("false" everywhere) makes
+   the gateway refuse a clip carrying `slow` with `slow_unavailable`, before any
+   lookup or debit; the edit sheet shows the Speed control only with
+   `localStorage.veyrnox_editor_slow = "1"`.
+6. **Migration 0237** adds the `slow` kind to `job_steps_step_check` by reading what
+   the constraint allows now and adding to it (0225 added `captions`, 0227
+   `montage`), and restates `job_steps_ordinal_check` so `slow` takes ordinals 0 to
+   9 like `trim`; that check's shape is generic (only `scene` and `trim` were
+   special), so restating it is safe. Tested on a real Postgres against the
+   production list, a rerun, the 0092-only list and a missing constraint.
+
+**Before the flag goes on:** apply 0237 (owner-approved `apply-migrations` run),
+read fal's invoice for the Topaz runs and set `SLOW_UNITS_PER_SECOND` from it (the
+sheet's copy of the number moves with it; a test pins them), run a slowed edit on
+staging end to end including a 30 fps source (only a 24 fps clip was probed), and
+a failed one.
+

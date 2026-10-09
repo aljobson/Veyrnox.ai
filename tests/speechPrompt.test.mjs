@@ -23,14 +23,14 @@ const music = { id: 'ace-step', kind: 'audio' };
 const speech = { id: 'inworld-tts', kind: 'audio', isSpeech: true };
 const dialogue = { id: 'elevenlabs-dialogue', kind: 'audio', isSpeech: true };
 
-test('the starter prompt is offered to picture and clip models, never to a speech model', () => {
+test('the starter prompt is offered to picture and clip models, never to an audio model', () => {
     assert.equal(STARTER_PROMPT, 'A neon-lit Tokyo alley at 3am, low anamorphic tracking shot');
     assert.equal(promptText(null, video), STARTER_PROMPT);
     assert.equal(promptText(null, null), STARTER_PROMPT, 'first paint, before a model is known');
     assert.equal(promptText(null, speech), '');
     assert.equal(promptText(null, dialogue), '');
-    // Music and sound effects take a description, not words to read: unchanged.
-    assert.equal(promptText(null, music), STARTER_PROMPT);
+    // Music and sound effects make audio about the box: no starter there either (tests/audioPrompt.test.mjs).
+    assert.equal(promptText(null, music), '');
 });
 
 test('what the user typed, or a restored draft, is kept on every model', () => {
@@ -43,12 +43,12 @@ test('what the user typed, or a restored draft, is kept on every model', () => {
     }
 });
 
-test('Generate waits for words on a speech model, and only there', () => {
+test('Generate waits for words on a speech model; picture and clip models are left to the gateway', () => {
     for (const empty of ['', '   ', '\n\t ', null, undefined]) {
         assert.equal(promptIsMissing(speech, empty), true, JSON.stringify(empty));
         assert.equal(promptIsMissing(dialogue, empty), true);
         assert.equal(promptIsMissing(video, empty), false);
-        assert.equal(promptIsMissing(music, empty), false);
+        assert.equal(promptIsMissing(music, empty), true);
         assert.equal(promptIsMissing(null, empty), false);
     }
     assert.equal(promptIsMissing(speech, 'Welcome aboard.'), false);
@@ -58,7 +58,8 @@ test('a speech model says what the box is for; dialogue and Auto Short keep thei
     assert.equal(promptPlaceholder(speech), 'Type the words to say…');
     assert.equal(promptPlaceholder(dialogue), 'One line per speaker, e.g.\nAna: Did you hear that?\nBen: [whispers] Stay quiet.');
     assert.equal(promptPlaceholder({ id: 'auto-short', kind: 'video', takesTopic: true }), 'A topic for a 32-second short, e.g. 3 facts about octopuses');
-    for (const model of [video, music, null]) assert.equal(promptPlaceholder(model), 'Describe the shot…');
+    for (const model of [video, null]) assert.equal(promptPlaceholder(model), 'Describe the shot…');
+    assert.equal(promptPlaceholder(music), 'Describe the sound or music…');
 });
 
 // The page's rule is the gateway's: every speech record requires its prompt,
@@ -124,6 +125,8 @@ test('the tokens.js fallback marks the same models as speech that the capability
         const record = capabilityFor(endpointById[m.id]);
         assert.ok(record, `${m.id} has a capability record`);
         assert.equal(!!m.speech, record.kind === 'speech', `${m.id} fallback speech mark`);
+        // A row with no speech mark is music or sound effects: the box starts empty there too.
+        assert.equal(!m.speech, record.kind === 'audio', `${m.id} fallback kind`);
     }
     assert.deepEqual(MODELS.filter((m) => m.speech && m.kind !== 'audio'), []);
 });

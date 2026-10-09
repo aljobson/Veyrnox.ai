@@ -72,20 +72,21 @@ process.exit(99);
 });
 
 test('synthetic failure requires a clean live check and leaves genuine failures on the incident path', () => {
-    const checkerScript = workflow.split('        run: |\n')[1].split('\n  alert:')[0]
+    const checkerScript = workflow.split('        run: |\n')[1].split('\n      - name: Retain counts-only')[0]
         .split('\n').map(line => line.startsWith('          ') ? line.slice(10) : line).join('\n');
     const dir = mkdtempSync(join(tmpdir(), 'fal-watch-check-'));
     try {
-        writeFileSync(join(dir, 'node'), '#!/bin/bash\necho "Live metrics fixture"\nexit "$CHECK_EXIT"\n', { mode: 0o755 });
-        for (const [testAlert, checkExit, expectedExit, testMode] of [
-            ['true', '0', 1, 'true'], ['false', '0', 0, 'false'], ['true', '2', 2, 'false'],
+        writeFileSync(join(dir, 'node'), '#!/bin/bash\necho "Live health fixture"\nif [[ "$1" == *check-staging-database-health* ]]; then exit "$DATABASE_EXIT"; fi\nexit "$CHECK_EXIT"\n', { mode: 0o755 });
+        for (const [testAlert, checkExit, databaseExit, expectedExit, testMode] of [
+            ['true', '0', '0', 1, 'true'], ['false', '0', '0', 0, 'false'], ['true', '2', '0', 2, 'false'],
+            ['true', '0', '1', 1, 'false'], ['true', '0', '2', 2, 'false'], ['false', '2', '1', 2, 'false'],
         ]) {
             const output = join(dir, 'output');
             writeFileSync(output, '');
             const result = spawnSync('bash', ['-c', checkerScript], {
                 encoding: 'utf8', env: { ...process.env, PATH: `${dir}:${process.env.PATH}`, RUNNER_TEMP: dir,
                     GITHUB_OUTPUT: output, GITHUB_STEP_SUMMARY: join(dir, 'summary'),
-                    TEST_ALERT: testAlert, CHECK_EXIT: checkExit },
+                    TEST_ALERT: testAlert, CHECK_EXIT: checkExit, DATABASE_EXIT: databaseExit },
             });
             assert.equal(result.status, expectedExit, result.stderr);
             assert.ok(readFileSync(output, 'utf8').includes(`test_mode=${testMode}`));

@@ -355,9 +355,10 @@ test('the chat list is read again wherever the person is, and a failed read is q
     // Four: after a reply that was saved, before a reply that failed is told, after Stop, after a dropped connection.
     // It was three, with one call after both endings of `done`. A reply that failed is now told after the list is read,
     // as the other two always were: the screen's list read says so when it fails, over the notice that is there.
+    // A reply that was saved was still read last, after "charged but not stored" was said: that is said after it now too.
     assert.equal(send.split('await relist();').length - 1, 4);
     assert.match(send, /\n {8}await relist\(\);[^\n]*\n {8}giveBack\(true\);\n {8}if \(streamError\) tellUncharged\(streamError\); else besideWarning\('stop_refunded'\);\n {6}\} else \{\n/);
-    assert.match(send, /\n {8}if \(streamError === 'reply_not_saved'\) tell\(streamError\);[^\n]*\n {8}await relist\(\);\n {6}\}\n {4}\} catch \(e\) \{\n/);
+    assert.match(send, /\n {8}await reload\(\);[^\n]*\n {8}await relist\(\);[^\n]*\n {8}if \(streamError === 'reply_not_saved'\) tell\(streamError\);[^\n]*\n {6}\}\n {4}\} catch \(e\) \{\n/);
 });
 
 test('given-back text always goes into its chat\'s stored draft, and into the box only when that chat is the one shown', () => {
@@ -421,7 +422,7 @@ test('what waits for a chat that is not on screen is what the person would have 
     // (only "charged but not stored" is set again afterwards). So there is nothing to hold from the first of those.
     // The first is the one notice that is not kept: it goes straight on screen, where the reload clears it. Kept, it
     // would come back with the chat the reload reads, and stay.
-    assert.match(send, /\n {8}att\.clear\(\);[^\n]*\n {8}if \(streamError && at\(\)\.here\) setError\(chatErrorCopy\(streamError\)\);[^\n]*\n {8}await reload\(\);[^\n]*\n {8}if \(streamError === 'reply_not_saved'\) tell\(streamError\);/);
+    assert.match(send, /\n {8}att\.clear\(\);[^\n]*\n {8}if \(streamError && at\(\)\.here\) setError\(chatErrorCopy\(streamError\)\);[^\n]*\n {8}await reload\(\);[^\n]*\n {8}await relist\(\);[^\n]*\n {8}if \(streamError === 'reply_not_saved'\) tell\(streamError\);/);
     // A reply that ended with nothing is not reloaded, so its notice stays on screen, and is kept with its chat. It was
     // tell(streamError): it is told as a message that used no Credits, so a warning kept before it stays kept (above).
     assert.match(send, /\n {8}giveBack\(true\);\n {8}if \(streamError\) tellUncharged\(streamError\);/);

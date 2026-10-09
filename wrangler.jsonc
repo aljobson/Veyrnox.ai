@@ -76,6 +76,8 @@
     // docs/editor/CAPTIONS.md: the Clip Editor's captions step. On 2026-10-08 at the owner's request: 0225 is applied on production, both
     // paths passed on staging. The edit sheet still hides it behind localStorage.veyrnox_editor_captions. Rollback: set "false" and deploy.
     "CLIP_EDIT_CAPTIONS_ENABLED": "true",
+    // docs/editor/SPEED.md: the Clip Editor's slow-motion step. Off until 0237 is applied and fal's billed cost is read (the price is a placeholder).
+    "CLIP_EDIT_SLOW_ENABLED": "false",
     // ADR-0064: checkout and account routes stay closed until staging acceptance.
     "SUBSCRIPTIONS_ENABLED": "false",
     // Before activation: SUBSCRIPTION_ALERT_EMAIL must name the Operator;
@@ -239,6 +241,8 @@
         "REFERRALS_ENABLED": "false",
         // Vars are not inherited. 0225 is applied on staging (2026-10-08); on for testing, production stays "false".
         "CLIP_EDIT_CAPTIONS_ENABLED": "true",
+        // Vars are not inherited. 0237 is applied on staging (2026-10-09); on for testing the placeholder price, production stays "false".
+        "CLIP_EDIT_SLOW_ENABLED": "true",
         // ADR-0066; vars are not inherited, so staging names it too.
         "JEV_SUBMIT_ERRORS_MODE": "off",
         // Veyrnox Publish is open on staging for testing (see production).
