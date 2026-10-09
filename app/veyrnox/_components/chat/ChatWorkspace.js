@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { GatewayError, gatewayFetch } from '../../_lib/gateway';
 import { getStoredUserId } from '../../../lib/authClient';
-import { chatApi, chatErrorCopy, makeIdempotencyKey, sendTurn, uploadChatImage } from '../../_lib/chatApi';
+import { chatApi, chatErrorCopy, lostNotice, makeIdempotencyKey, sendTurn, uploadChatImage } from '../../_lib/chatApi';
 import { attachmentLabel, prepareImage } from '../../_lib/chatImages';
 import { NEW_CHAT, readDraft, writeDraft, readStars, toggleStar } from '../../_lib/chatLocal';
 import { useFreeAllowance } from '../../_lib/useFreeAllowance';
@@ -29,8 +29,8 @@ const MAX_PROMPT = 4000;
 const store = () => { try { return window.localStorage; } catch { return null; } };
 // About three words for every four tokens, rounded to ten, from the chosen model's own reply cap.
 const wordsFor = (tokens) => Math.round(((tokens || 1024) * 0.75) / 10) * 10;
-// A reply still arriving, or stopped and not yet read back from the server: it has no price and nothing to star.
-const isLive = (m) => m.status === 'streaming' || m.status === 'saving';
+// A reply still arriving, or stopped or cut off and not yet read back from the server: it has no price and nothing to star.
+const isLive = (m) => m.status === 'streaming' || m.status === 'saving' || m.status === 'lost';
 
 function Footer({ m, starred, onStar }) {
   const [copied, setCopied] = useState(false);
@@ -67,6 +67,7 @@ export function ChatWorkspace() {
   const freeMap = useFreeAllowance(); // free replies left today per model; empty while the feature is off
   const [busy, setBusy] = useState(false);
   const [stopping, setStopping] = useState(false); // Stop was pressed and the stopped turn is being looked for
+  const [checking, setChecking] = useState(false); // the connection dropped mid-reply and the turn is being looked for
   const [error, setError] = useState(null);
   const [closed, setClosed] = useState(false);
   const [signedOut, setSignedOut] = useState(false);
@@ -130,8 +131,8 @@ export function ChatWorkspace() {
     try {
       const r = await chatApi.get(id);
       setPersonaId(''); setActive(r.thread); setSkillId(''); setMessages(r.messages); setInstr(r.thread.system_prompt || ''); setError(null); setDrawer(false);
-      setText(readDraft(store(), getStoredUserId(), r.thread.id)); setStars(readStars(store(), getStoredUserId(), r.thread.id)); setStarredOnly(false);
-    } catch (e) { fail(e); }
+      setText(readDraft(store(), getStoredUserId(), r.thread.id)); setStars(readStars(store(), getStoredUserId(), r.thread.id)); setStarredOnly(false); return true;
+    } catch (e) { fail(e); return false; }
   };
   const blank = () => { setPersonaId(''); setActive(null); setSkillId(''); setMessages([]); setInstr(''); setError(null); setDrawer(false); setText(readDraft(store(), getStoredUserId(), NEW_CHAT)); setStars([]); setStarredOnly(false); };
   const star = (id) => { if (active) setStars(toggleStar(store(), getStoredUserId(), active.id, id)); };
@@ -313,11 +314,15 @@ export function ChatWorkspace() {
           att.clear(); setError(chatErrorCopy('stop_saving'));
         }
       } else if (started) {
-        // The stream broke after the Credits moved. The server treats a dropped connection like Stop: text that appeared is
-        // kept and charged. So the chat is kept and reloaded, never deleted, and the message is not offered for sending again.
-        await open(thread.id); await refreshThreads();
-        setMessages((m) => m.filter((x) => x.id !== pending || x.content)); // if the reload failed too, nothing is left saying Thinking
-        setError(chatErrorCopy('connection_lost'));                          // last: open() clears the notice
+        // The stream broke after the Credits moved. The server treats a dropped connection like Stop and saves the turn some time
+        // after the break, so it is looked for as after Stop. Only a job that kept nothing gives the message back or deletes the chat.
+        setChecking(true); setMessages((m) => m.map((x) => (x.id === pending ? { ...x, status: 'lost' } : x)));
+        const outcome = await chatApi.settleStop({ threadId: thread.id, jobId, text: content, knownIds });
+        await refreshThreads();                                          // first: the notice set below must not be replaced
+        const reloaded = (outcome === 'saved' || outcome === 'unsaved') && await open(thread.id); // the saved messages, with their real status and price
+        if (outcome === 'nothing') giveBack(true); else att.clear();     // kept nothing: the message goes back, images too. Otherwise neither is offered again
+        if (!reloaded) setMessages((m) => m.filter((x) => x.id !== pending || x.content)); // not settled, or still offline: the text that arrived stays
+        setError(chatErrorCopy(lostNotice(outcome, reloaded)));          // last: open() clears the notice
       } else {
         setMessages((m) => m.filter((x) => x.id !== pending && x.id !== `u-${pending}`)); setText(content);
         if (e instanceof GatewayError && e.code === 'insufficient_balance') setError(chatErrorCopy(e.code, { credits: price }));
@@ -325,7 +330,7 @@ export function ChatWorkspace() {
         else fail(e);
         if (created && thread) { chatApi.remove(thread.id).catch(() => {}); setThreads((ts) => ts.filter((t) => t.id !== thread.id)); setActive(null); }
       }
-    } finally { setBusy(false); setProgress(null); setStopping(false); sendingRef.current = false; abortRef.current = null; }
+    } finally { setBusy(false); setProgress(null); setStopping(false); setChecking(false); sendingRef.current = false; abortRef.current = null; }
   }
 
   if (!ready) return <div className="p-8 text-sm text-vx-fg-muted" role="status">Loading</div>;
@@ -399,8 +404,8 @@ export function ChatWorkspace() {
                       )}
                     </>
                   )
-                    : <div aria-live={m.status === 'streaming' ? 'polite' : undefined}>{m.content ? <ChatText text={m.content} /> : <p className="text-vx-fg-muted">{m.status === 'saving' ? 'Stopping' : researchProgressLabel(progress) || 'Thinking'}</p>}</div>}
-                  {m.status === 'saving' && m.content && <p role="status" className="mt-2 font-vx-mono text-xs text-vx-fg-muted">Stopped. Saving this reply.</p>}
+                    : <div aria-live={m.status === 'streaming' ? 'polite' : undefined}>{m.content ? <ChatText text={m.content} /> : <p className="text-vx-fg-muted">{m.status === 'saving' ? 'Stopping' : m.status === 'lost' ? 'Connection lost. Checking what was saved.' : researchProgressLabel(progress) || 'Thinking'}</p>}</div>}
+                  {(m.status === 'saving' || m.status === 'lost') && m.content && <p role="status" className="mt-2 font-vx-mono text-xs text-vx-fg-muted">{m.status === 'saving' ? 'Stopped. Saving this reply.' : 'Connection lost before this reply finished.'}</p>}
                   {m.role === 'assistant' && !isLive(m) && <StudioDraftCards text={m.content} models={studioModels} />}
                   {m.role === 'assistant' && !isLive(m) && <Footer m={m} starred={stars.includes(m.id)} onStar={() => star(m.id)} />}
                 </div>
@@ -468,7 +473,7 @@ export function ChatWorkspace() {
                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
                 className="max-h-48 min-h-10 flex-1 resize-none bg-transparent px-2 py-2 text-[15px] text-vx-fg outline-hidden placeholder:text-vx-fg-faint" />
               {busy
-                ? <button type="button" onClick={() => abortRef.current?.abort()} disabled={stopping} className="rounded-full border border-vx-border px-4 py-2 text-sm font-semibold disabled:opacity-50">{stopping ? 'Stopping' : 'Stop'}</button>
+                ? <button type="button" onClick={() => abortRef.current?.abort()} disabled={stopping || checking} className="rounded-full border border-vx-border px-4 py-2 text-sm font-semibold disabled:opacity-50">{stopping ? 'Stopping' : checking ? 'Checking' : 'Stop'}</button>
                 : <button type="button" onClick={send} disabled={!text.trim() || imagesBlocked} className="rounded-full bg-vx-accent px-4 py-2 text-sm font-semibold text-vx-accent-ink disabled:opacity-50">{isFree ? `Send free (${freeLeft} left today)` : `Send for ${credits(price)}`}</button>}
             </div>
             <p className="mt-1.5 px-1 text-xs text-vx-fg-muted">

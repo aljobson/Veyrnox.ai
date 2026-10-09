@@ -123,3 +123,36 @@ The review of the original change found one more place where the request the mid
 - An error thrown inside the routing layer (the malformed geolocation value above was the one found) is answered with a 500, not passed on to a route.
 
 **Verification.** `tests/internalRequestHeaders.test.mjs` sends requests through `worker.js` and checks what the app is handed: none of the internal headers, in any spelling, with every other header, the method, the URL and the body as sent; the same object when there was nothing to remove; the earlier refusals still first; the log line without the value. Its last test reads the installed `@opennextjs/aws` and fails if the two header names change, if the routing layer gains another reason to hand a request on before it looks for a middleware, if a name leaves OpenNext's own strip list, if the geolocation names change, or if OpenNext starts running Next in minimal mode. The same was exercised against a local `wrangler dev` build before and after: of 25 requests sent to a `/api/v1` route with no token, each with a different set of framework headers, one was answered by the route before the change and none after. Pages, a route outside the gate and requests with a body behaved as before.
+
+## Amendment 4 (2026-10-09): a handler only sees an identity header the middleware set
+
+Amendment 3 closed the one known way a request could reach a route without the middleware having run. This one makes any other such way end in a refusal, whatever its cause.
+
+**Problem.** A `/api/v1` handler reads who the caller is from `x-veyrnox-auth-id` and trusts it because the middleware set it. Decision 4 makes that true whenever the middleware runs. If the framework handed a request on without running it, the handler would receive the caller's own headers as sent. The guarantee should not depend on there being no second case like the one in amendment 3.
+
+**Decision.** `dropInternalHeaders` (amendment 3) also removes, from every inbound request:
+
+- every `x-veyrnox-auth-*` header: the five identity headers, and any added under that prefix later;
+- every `x-middleware-response-*` and `x-opennext-*` header. These are the names OpenNext's routing half uses to hand things to its rendering half. It takes the first prefix off there and keeps the rest of the name as a request header, so a name under it could become an identity header. OpenNext already removes both from a client's request, and the test from amendment 3 pins that. They are removed here as well, so the rule does not rest on OpenNext's list.
+
+An identity header therefore reaches a handler only if the middleware set it in that request. A request the middleware never saw arrives with none, and a handler that finds no caller id answers 401.
+
+- Other `x-veyrnox-*` names are left alone. `/api/admin/reap-assets` reads its caller's own `x-veyrnox-admin-token`, on a route the middleware does not run on.
+- The middleware still sets all five on every request (decision 4). That is what holds under `next dev`, where `worker.js` does not run and Next applies the middleware's headers itself.
+- A new identity header must take the `x-veyrnox-auth-` prefix. A test reads the names from `middleware.js` and fails for one the Worker would let through.
+- The log line now names the kinds removed (`revalidation`, `identity`, `framework`) in one line per request, and still no value. It replaces the line described in amendment 3.
+
+**Signing was considered and not built.** The alternative was for the middleware to add a keyed digest over the identity headers, and for a handler to refuse a request without a valid one. It would also cover a case that is not known to exist: the framework turning some other header of the caller's into an identity header after `worker.js` has run. Against it:
+
+- 57 files read the caller id straight from the header. Each of them, and its tests, would change.
+- The key has to be the same in the middleware and in the handlers. That is either a Worker secret, whose absence would refuse every `/api/v1` request, or a value held in the isolate, which would have to be shown to be shared everywhere the app runs (the Worker, `next dev`, the tests).
+
+Removing the headers at the one layer where a removal holds gives the property that was wanted, with no change to a handler and nothing to configure. If handlers are ever given a single reader for identity, a digest can be checked there.
+
+**What this rests on.** Every handler that reads the caller id refuses a request without one. `/api/v1/health` is the exception: it echoes the id back, reads nothing of the caller's and changes nothing.
+
+**Verification.**
+
+- `tests/internalRequestHeaders.test.mjs`: a request with forged identity headers is sent through `worker.js` and what comes out is given to the real session handler, which answers 401. The same request given to the handler directly is answered with the forged id; that is the gap the Worker's removal stands in front of. The other cases from amendment 3 now cover the identity and framework names as well, and a name that only resembles one (`x-veyrnox-admin-token`, `x-middleware-prefetch`) is kept.
+- `tests/identityHeaders.test.mjs`: every file that reads the caller id has a refusal for a missing one.
+- A local `wrangler dev` build, run three ways. With neither this rule nor amendment 3's, and the framework's skip triggered on purpose, the session route, the dashboard route and the generations route ran for the forged caller (the dashboard route stopped at its Access check). With this rule alone, each answered `401 not_authenticated` from the handler. With both, each answered 401 from the middleware. A real token got the same answers in all three, with or without forged headers beside it.

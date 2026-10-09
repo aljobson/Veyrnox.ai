@@ -181,8 +181,9 @@ function sources(dir) {
 }
 // A caller's own credential on a route the middleware never runs on.
 const ALLOWED_ELSEWHERE = { 'app/api/admin/reap-assets/route.js': ['x-veyrnox-admin-token'] };
-// The one place the prefix itself is matched.
-const PREFIX_OWNER = 'packages/security/context.js';
+// The places a prefix itself is matched: the middleware's blanking, and the
+// Worker's removal of a caller's identity headers (ADR-0078 amendment 4).
+const PREFIX_OWNERS = { 'packages/security/context.js': 'x-veyrnox-', 'lib/internalRequestHeaders.js': 'x-veyrnox-auth-' };
 
 test('handlers read no x-veyrnox-* request header outside IDENTITY_HEADERS', () => {
     const files = ['app', 'lib', 'packages'].flatMap((dir) => sources(join(ROOT, dir)));
@@ -191,7 +192,7 @@ test('handlers read no x-veyrnox-* request header outside IDENTITY_HEADERS', () 
     for (const file of files) {
         const rel = relative(ROOT, file).split('\\').join('/');
         for (const [, name] of readFileSync(file, 'utf8').matchAll(/['"`](x-veyrnox-[a-z0-9-]*)['"`]/g)) {
-            if (name === 'x-veyrnox-' && rel === PREFIX_OWNER) continue;
+            if (PREFIX_OWNERS[rel] === name) continue;
             if ((ALLOWED_ELSEWHERE[rel] || []).includes(name)) continue;
             assert.ok(IDENTITY_HEADERS.includes(name), `${rel} reads ${name}, which middleware.js does not set`);
             readers.add(name);
@@ -199,4 +200,19 @@ test('handlers read no x-veyrnox-* request header outside IDENTITY_HEADERS', () 
     }
     // The scan saw the readers it is meant to police.
     assert.deepEqual([...readers].sort(), [...IDENTITY_HEADERS].sort());
+});
+
+// The Worker removes a caller's identity headers, so a request the middleware
+// never saw arrives with none (ADR-0078 amendment 4). That only protects a
+// handler that refuses when the id is missing, so every reader must.
+const ACTS_FOR_NO_ONE = ['app/api/v1/health/route.js']; // echoes the id back; reads nothing of the caller's
+test('every handler that reads the caller id refuses a request without one', () => {
+    const readers = ['app', 'lib', 'packages'].flatMap((dir) => sources(join(ROOT, dir)))
+        .map((file) => [relative(ROOT, file).split('\\').join('/'), readFileSync(file, 'utf8')])
+        .filter(([, src]) => /headers\.get\(['"]x-veyrnox-auth-id['"]\)/.test(src));
+    assert.ok(readers.length > 40, 'the scan found too few readers to be believed');
+    for (const [rel, src] of readers) {
+        if (ACTS_FOR_NO_ONE.includes(rel)) continue;
+        assert.match(src, /not[_-]authenticated|UNAUTHORIZED/, `${rel} reads the caller id but has no refusal for a missing one`);
+    }
 });
