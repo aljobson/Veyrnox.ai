@@ -4,7 +4,9 @@
   // worker.js wraps the generated .open-next/worker.js to add the Cron Trigger.
   "main": "worker.js",
   "compatibility_date": "2026-09-01",
-  "compatibility_flags": ["nodejs_compat"],
+  // enable_request_signal: the Worker is told when a reader disconnects, so a chat reply that is stopped or
+  // abandoned ends at once and is settled (ADR-0067 amendment 10). Environments inherit this list.
+  "compatibility_flags": ["nodejs_compat", "enable_request_signal"],
   // Production answers on the veyrnox.ai custom domain only (set in the
   // dashboard, not here). Cloudflare Access is attached to that hostname by
   // path, so the same Worker must not also answer on a hostname Access does

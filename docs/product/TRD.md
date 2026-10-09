@@ -40,7 +40,7 @@ Browser ──Bearer JWT──► Worker (middleware.js → Next route) ──RP
 | styling | Tailwind CSS + CSS custom properties | 3.4 (v4 tracked in #476); tokens in `app/globals.css`, `app/veyrnox/veyrnox.css` |
 | fonts | `next/font/local`, self-hosted | Archivo, JetBrains Mono, Inter (`app/fonts/`) |
 | adapter | `@opennextjs/cloudflare` | 1.20; `open-next.config.ts` defaults |
-| runtime | Cloudflare Workers, `nodejs_compat` | `wrangler.jsonc`, compat date 2026-09-01 |
+| runtime | Cloudflare Workers, `nodejs_compat`, `enable_request_signal` (a disconnect reaches `request.signal`, ADR-0067 amendment 10) | `wrangler.jsonc`, compat date 2026-09-01 |
 | Worker entry | `worker.js` wraps `.open-next/worker.js` | `fetch`: admin edge rate limit → body-size limit → OpenNext; `scheduled`: sweeps |
 | language | JavaScript; TypeScript in `packages/db`, `packages/catalog`, typecheck of `packages/security` | TS 6.0.3 |
 | Node | 22 | `engines` `>=22` and `.nvmrc` (ISSUES I6) |

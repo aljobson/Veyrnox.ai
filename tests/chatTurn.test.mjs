@@ -916,3 +916,50 @@ test('a stream that ends quietly when the time limit aborts it is refunded, not 
     assert.deepEqual(evs.find((e) => e.event === 'error').data, { error: 'provider_timeout' });
     assert.equal(evs.at(-1).data.credits_charged, 0);
 });
+
+// ADR-0067 amendment 10: the turn is finished after the reader has gone.
+test('the whole turn is handed to waitUntil: saved and charged with nobody reading the reply', async () => {
+    let finishWriting;
+    const stillWriting = new Promise((resolve) => { finishWriting = resolve; });
+    const f = fakes({ stream: async function* () { yield { delta: 'Hi ' }; await stillWriting; yield { delta: 'there.' }; } });
+    const kept = [];
+    await run(f, { waitUntil: (work) => kept.push(work) });
+    assert.equal(kept.length, 1, 'one promise, the whole turn');
+    assert.equal(called(f, 'chat_complete_turn').length, 0, 'handed over while the reply is still being written');
+    finishWriting();
+    await kept[0]; // the reader never reads a byte
+    assert.equal(called(f, 'chat_complete_turn')[0][1].p_status, 'complete');
+    assert.equal(called(f, 'ledger_refund').length, 0);
+});
+
+test('the reader leaves after text: the provider is stopped, the text so far is kept and charged', async () => {
+    const ac = new AbortController();
+    const kept = [];
+    const f = fakes({ stream: async function* ({ signal }) {
+        yield { delta: 'Partial' };
+        ac.abort(); // the Worker reports the disconnect
+        await untilAborted(signal);
+    } });
+    await run(f, { signal: ac.signal, waitUntil: (work) => kept.push(work) });
+    await kept[0];
+    const [, save] = called(f, 'chat_complete_turn')[0];
+    assert.deepEqual([save.p_status, save.p_reply], ['canceled', 'Partial']);
+    assert.equal(called(f, 'ledger_refund').length, 0); assert.equal(called(f, 'job_failed').length, 0);
+});
+
+test('the reader had already left before the reply began: the provider is stopped at once, no messages are stored and the Credits come back', async () => {
+    const ac = new AbortController();
+    ac.abort();
+    const f = fakes({ stream: async function* ({ signal }) { if (!signal.aborted) yield { delta: 'nobody is there to read this' }; } });
+    const evs = await events(await run(f, { signal: ac.signal }));
+    assert.deepEqual([evs.at(-1).data.status, evs.at(-1).data.credits_charged], ['canceled', 0]);
+    assert.equal(called(f, 'job_failed')[0][1].p_error_code, 'user_canceled');
+    assert.equal(called(f, 'ledger_refund').length, 1); assert.equal(called(f, 'chat_complete_turn').length, 0);
+});
+
+test('a waitUntil that refuses the work does not break the turn', async () => {
+    const f = fakes();
+    const evs = await events(await run(f, { waitUntil: () => { throw new TypeError('Illegal invocation'); } }));
+    assert.deepEqual([evs.at(-1).data.status, evs.at(-1).data.credits_charged], ['complete', 2]);
+    assert.equal(called(f, 'chat_complete_turn').length, 1);
+});
