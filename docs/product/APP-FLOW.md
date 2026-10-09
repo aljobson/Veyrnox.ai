@@ -146,6 +146,9 @@ modal ─┬─ Continue with Google / Apple ─► Supabase authorize (PKCE)
    Output copied to R2 with a SHA-256 → `STORED`.
 9. `GET /api/v1/jobs/:id/asset` → presigned GET (≤ 15 min) → result renders.
    It also appears in the Library (a free job reads FREE, not "0 cr").
+   Download on a Library card asks the same route with `?download=1`: the
+   same checks and quota, and a link the browser saves under a name made on
+   the server (`veyrnox-<first 8 of the job id>.<ext>`).
 
 ### `?model=` deep links
 An id that is not an active catalog row **silently falls back** to the first
