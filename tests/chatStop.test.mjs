@@ -225,10 +225,13 @@ test('giving the text back deletes a chat made for the message only when the tur
 });
 
 test('a reply that is still being saved shows no price, and the button says it is stopping', () => {
-    assert.match(screen, /const isLive = \(m\) => m\.status === 'streaming' \|\| m\.status === 'saving';/);
+    // 'lost' is the same for a dropped connection (tests/chatBrokenStream.test.mjs), so the pattern stops before it.
+    assert.match(screen, /const isLive = \(m\) => m\.status === 'streaming' \|\| m\.status === 'saving'/);
     assert.match(screen, /!isLive\(m\) && <Footer /, 'no price, Copy or Star until the saved reply is shown');
-    assert.match(screen, /m\.status === 'saving' && m\.content && <p role="status"[^>]*>Stopped\. Saving this reply\.<\/p>/);
-    assert.match(screen, /disabled=\{stopping\}[^\n]*\{stopping \? 'Stopping' : 'Stop'\}/);
+    // One line under the text serves both look-ups (Stop here, a dropped connection in tests/chatBrokenStream.test.mjs).
+    assert.match(screen, /m\.status === 'lost'\) && m\.content && <p role="status"[^>]*>\{m\.status === 'saving' \? 'Stopped\. Saving this reply\.' : /);
+    // The button is also disabled, and reads "Checking", while a turn cut off by a dropped connection is looked for.
+    assert.match(screen, /disabled=\{stopping \|\| checking\}[^\n]*\{stopping \? 'Stopping' : /);
     // Its own state, cleared when the send ends. A bubble an earlier Stop left as 'saving' must not disable the button
     // on the next reply, so the button does not read the messages.
     assert.match(stopBranch(), /setStopping\(true\);/);
