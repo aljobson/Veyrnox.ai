@@ -78,9 +78,11 @@ At the design's 5× peak factor, initial arrival is `5,000/86,400 × 5 × f = 0.
 
 Provider-running concurrency is a separate constraint: at 60-second generation duration, growth's sustained peak implies approximately `2.89 × 60 = 174` active generations if all are eligible. The queue's two submission slots do not enforce that limit. Measure catalog eligibility, fal account quotas, accepted-running jobs, UNKNOWN exposure, HTTP deadlines, and credit refunds before setting admission bounds.
 
-A normal consumer path adds approximately three DB HTTP RPCs per job: targeted claim, evidence write, and projection/recovery. At 5,000 eligible jobs/day that is approximately 15,000 calls/day, excluding admission, authentication, callbacks, duplicate references, and retries. Measure actual amplification and service time. Queue operation and Worker CPU costs need a current priced estimate before provisioning; provider charges dominate only if measured costs support that conclusion.
+A normal consumer invocation makes one initial recovery RPC, then three RPCs per claimed job: targeted claim, evidence write, and projection/recovery. With the configured batch size of one, this is four RPCs per job. At 5,000 eligible jobs/day that is approximately 20,000 calls/day, excluding admission, authentication, callbacks, duplicate references, and retries. A duplicate terminal reference still makes initial recovery and claim calls; evidence retry adds one more call. Measure actual amplification and service time. Queue operation and Worker CPU costs need a current priced estimate before provisioning; provider charges dominate only if measured costs support that conclusion.
 
 Back pressure must happen before a new debit or free-allowance claim, using committed database backlog and provider headroom rather than queue depth as a financial authority. The eventual admission policy needs an atomic shared capacity reservation across accounts; a read-then-check count is insufficient. Existing equal replay must still return its job without consuming a capacity slot. Keep bounded staging admission until that policy and live headroom are accepted. When capacity is exhausted, return a typed retryable response before new money effects; do not invite clients to change keys after an uncertain committed admission.
+
+See the [capacity readiness review](../architecture/fal-dispatch-capacity-readiness.md) for the current evidence and remaining measurements.
 
 ## Rollout and acceptance
 
