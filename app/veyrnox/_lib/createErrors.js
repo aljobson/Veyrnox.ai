@@ -53,7 +53,7 @@ export const ERROR_COPY = {
   video_agent_in_progress:'You already have a video being made. Nothing was charged — start another when it finishes.',
   video_agent_busy:      'Every video agent slot is in use right now. Nothing was charged — try again in a few minutes.',
   video_agent_offline:   'The video agent can\'t be reached right now. Nothing was charged — try again shortly.',
-  brief_refused:         'That brief can\'t be made into a video: it must not show real, named people, minors in harm\'s way, or sexual or hateful content. Credits refunded.',
+  brief_refused:         'That brief can\'t be made into a video. It must not show real, named people or minors in harm\'s way, be sexual, promote violence, self-harm or hatred, or copy a named artist\'s or brand\'s look. Credits refunded.',
   video_agent_failed:    'The video could not be made. Credits refunded.',
   montage_failed:        'The video could not be made. Credits refunded.',
   runner_submit_failed:  'We couldn\'t start the video. Credits refunded — try again.',
