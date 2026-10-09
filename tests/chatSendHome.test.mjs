@@ -6,6 +6,8 @@
 // store is tested in tests/chatLocal.test.mjs, and what a whole send keeps in tests/chatSendFlow.test.mjs.
 // Which chat an ending belongs to, and whether that chat is on screen, is a plain module and is tested directly.
 // The screen and the send hook are not importable here, so their part is pinned by reading the source.
+// A kept notice is forgotten at the press, unless it warns about Credits: that one is forgotten when the next message
+// is known to have gone out, and a message refused before it starts leaves it where it was. The pins on send() say why.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -185,12 +187,29 @@ test('a notice is put on screen only by reading the store, at each place a chat 
     assert.equal(screen.split('keepNotice(').length - 1, 0, 'and never keeps one itself');
 });
 
-test('a message sent from a chat forgets the notice kept for that chat', () => {
-    // At the press, with the box: the person has the notice in front of them, and it was about the message before.
-    // A chat that has not started keeps its notice under New chat.
-    assert.match(send, /\n {4}sendingRef\.current = true; setBusy\(true\); setError\(null\); setText\(''\);\n {4}dropNotice\(active \? active\.id : NEW_CHAT\);/);
-    assert.equal(send.split('dropNotice(').length - 1, 1, 'nowhere else: an ending never forgets a notice, it replaces it');
-    assert.ok(send.indexOf('dropNotice(') > send.indexOf('imagesBlocked) return;'), 'a press that sends nothing forgets nothing');
+test('a kept warning about Credits is forgotten when the next message is known to have gone out; any other notice at the press', () => {
+    // Every notice was forgotten at the press, with the box (`dropNotice(active ? active.id : NEW_CHAT)` on the line
+    // after it). A message that was then refused before it started left the refusal in the notice's place. When the
+    // notice said that the message before may still be saved and use Credits, a page reload showed the given-back
+    // text with no warning (the one finding about Credits in the review of PR 724).
+    assert.match(send, /\n {4}sendingRef\.current = true; setBusy\(true\); setError\(null\); setText\(''\);\n {4}let thread = active;/);
+    // The chat the message is sent from is noted at the press: a chat that has not started keeps its notice under New chat.
+    assert.match(send, /\n {4}const from = active \? active\.id : NEW_CHAT; let forgotten = false;\n {4}const forgetEarlier = \(\) => \{ if \(!forgotten\) \{ forgotten = true; dropNotice\(from\); \} \};\n/);
+    assert.equal(send.split('dropNotice(').length - 1, 1, 'in one place, and once a send: it can never forget a notice this message has kept');
+    // At the press still, for a notice that is not such a warning: left until `start`, it would be shown again beside
+    // an empty box by a page reload before the reply started, and would outlive a closed chat (the review of this change).
+    assert.match(send, /\n {4}const forgetEarlier = [^\n]*\n {4}if \(!heldWarning\(from\)\) forgetEarlier\(\);\n/);
+    assert.ok(send.indexOf('if (!heldWarning(from)) forgetEarlier();') > send.indexOf('imagesBlocked) return;'), 'a press that sends nothing forgets nothing');
+    // A warning waits for one of three things. The `start` event: the Credits have been debited, so a message really went out.
+    assert.match(send, /if \(ev === 'start'\) \{ started = true; jobId = d\.job_id; setProgress\(null\); forgetEarlier\(\); \}/);
+    // The chat being read again for this message (a replay, or a Stop before `start` whose turn was found saved): the
+    // message went out, and open() shows whatever is still kept for the chat.
+    assert.match(send, /\n {4}const reload = async \(\) => \{ forgetEarlier\(\); const \{ home, here, coming \} = at\(\);/);
+    // And an ending that keeps a notice of its own (tell(), pinned below): it takes the earlier one's place, also when
+    // it is kept under a chat that was made for the message and the earlier one waited under New chat.
+    assert.equal(send.split('forgetEarlier();').length - 1, 4, 'the press (unless a warning is kept), start, reload() and tell()');
+    // A message that is refused before it starts reaches none of the last three (refuse(), below), and neither does
+    // one that is about the whole page (a closed chat, a signed-out reader): a warning that was kept stays kept.
 });
 
 // ---- the screen: which chat is asked for and which is shown ----
@@ -246,7 +265,8 @@ test('the view is made once, and the send hook is given it and a way to store a 
     assert.match(screen, /\nconst addDraft = \(chatId, text\) => addToDraft\(store\(\), getStoredUserId\(\), chatId, text\);/);
     const call = /useChatSend\(\{\n([\s\S]*?)\n {2}\}\);/.exec(screen);
     assert.ok(call, 'the screen calls the send hook');
-    assert.match(call[1], /\bchatView, saveDraft, addDraft, keepNotice, dropNotice,$/);
+    // `heldWarning` since a refusal asks whether a warning about Credits is kept for the chat (tests/chatLocal.test.mjs pins its line).
+    assert.match(call[1], /\bchatView, saveDraft, addDraft, keepNotice, dropNotice, heldWarning,$/);
 });
 
 // ---- send(): every ending goes through the same four doors ----
@@ -259,19 +279,36 @@ test('send() works out where its endings land from the chat it was sent in', () 
 test('the notice is always kept with its chat, as a code, and goes on screen only when that chat is', () => {
     // tell() takes the code, not the words: the code is what is stored, and the words are made from it here for the
     // screen and again by the screen each time the chat is opened. It was tell(words), held in memory when not here.
-    assert.match(send, /\n {4}const tell = \(code, extra\) => \{ const \{ home, here \} = at\(\); keepNotice\(home, code, extra\); if \(here\) setError\(chatErrorCopy\(code, extra\)\); \};\n/);
+    // It first forgets what was kept for the chat the message was sent from: the notice it keeps takes that one's place.
+    assert.match(send, /\n {4}const tell = \(code, extra\) => \{ forgetEarlier\(\); const \{ home, here \} = at\(\); keepNotice\(home, code, extra\); if \(here\) setError\(chatErrorCopy\(code, extra\)\); \};\n/);
     assert.equal(send.split('keepNotice(').length - 1, 1, 'every notice that is kept is kept by tell()');
     assert.doesNotMatch(send, /tell\(chatErrorCopy\(/, 'no ending hands tell() words');
-    // setError appears three times in send(): clearing the notice as the message is sent, inside tell(), and the one
-    // notice that is not kept (below), which is guarded by the same `here`.
-    assert.equal(send.split('setError(').length - 1, 3, 'no ending sets a notice on whatever chat is on screen');
+    // setError appears four times in send(): clearing the notice as the message is sent, inside tell(), inside refuse()
+    // (next test), and the one notice that is not kept (below). The last three are guarded by the same `here`.
+    // It was three until a refusal could be said together with a warning that stays kept.
+    assert.equal(send.split('setError(').length - 1, 4, 'no ending sets a notice on whatever chat is on screen');
     assert.match(send, /sendingRef\.current = true; setBusy\(true\); setError\(null\); setText\(''\);/);
+});
+
+test('a message that never started does not take the place of a warning about Credits: the warning stays kept, and both are said', () => {
+    // The store says whether the notice kept for the chat is such a warning (chatLocal.js, tests/chatLocal.test.mjs).
+    // With none kept, the refusal is told like any notice, and replaces what was there. With one, nothing is kept or
+    // forgotten: the refusal is said on screen with the warning after it, and only while that chat is the one on it.
+    assert.match(send, /\n {4}const refuse = \(code, extra\) => \{ const \{ home, here \} = at\(\); const warning = heldWarning\(home\); if \(!warning\) tell\(code, extra\); else if \(here\) setError\(chatRefusedCopy\(code, extra, warning\)\); \};\n/);
+    // Under `home`, where the given-back text now is and the refusal would be kept: New chat when the chat is gone.
+    assert.equal(send.split('heldWarning(').length - 1, 2, 'the store is asked twice: at the press, and here');
+    assert.equal(send.split('chatRefusedCopy(').length - 1, 1);
+    // Only the turn that never started is told this way (pinned further down): three calls, all in that branch or in failed().
+    // An ending of a turn that started has a notice of its own about Credits, and tell() keeps it.
+    assert.equal(send.split('refuse(').length - 1, 3);
+    assert.ok(send.indexOf('const refuse = ') > send.indexOf('const tell = ') && send.indexOf('const refuse = ') < send.indexOf('const failed = '));
 });
 
 test('the chat is read again only while it is on screen', () => {
     // Or while the person is on their way back to it: see "on the way back to the chat" above.
     // And never for a chat that is gone: its ending belongs to New chat, and there is nothing to read.
-    assert.match(send, /\n {4}const reload = async \(\) => \{ const \{ home, here, coming \} = at\(\); return home === thread\.id && \(here \|\| coming\) && open\(thread\.id\); \};/);
+    // It first forgets the notice kept for the message before (pinned above): the chat is read again for this one.
+    assert.match(send, /\n {4}const reload = async \(\) => \{ forgetEarlier\(\); const \{ home, here, coming \} = at\(\); return home === thread\.id && \(here \|\| coming\) && open\(thread\.id\); \};/);
     assert.match(send, /\n {6}if \(r\.replay\) \{ await reload\(\); return; \}\n/, 'a replay shows the chat the same way');
     // Comments mention open(); the only call is the one inside reload().
     assert.equal(send.split('open(thread').length - 1, 1, 'no ending opens the chat itself: that would pull the person back to it');
@@ -329,14 +366,16 @@ test('a turn that never started gives the text back the same way, and its notice
     assert.ok(never, 'the catch block ends with the turn that never started');
     assert.match(never[1], /\n {8}giveBack\(true\);\n/);
     // The price goes with the code: the words need it, and it is stored with it so they can be made again after a reload.
-    assert.match(never[1], /tell\(e\.code, \{ credits: price \}\);/);
-    assert.match(never[1], /tell\('image_unreadable'\);/);
+    // Each was tell(). It is refuse() now: told the same way unless a warning about Credits is kept for the chat.
+    assert.match(never[1], /\n {8}giveBack\(true\);\n {8}if \(e instanceof GatewayError && e\.code === 'insufficient_balance'\) refuse\(e\.code, \{ credits: price \}\);/, 'after the text is back: a chat made for the message is gone by then, so the notice is looked for under New chat');
+    assert.match(never[1], /refuse\('image_unreadable'\);/);
     assert.match(never[1], /else failed\(e\);$/);
+    assert.doesNotMatch(never[1].slice(never[1].lastIndexOf('giveBack(true);')), /tell\(/, 'nothing in this branch is told without asking whether a warning is kept');
     // Closed chat and a signed-out reader are about the whole page, so they are raised wherever the person is.
-    // Any other refusal is about this message. It goes through tell() wherever the person is, so it is kept with the
-    // text it gives back. It went through the screen's fail() while its chat was on screen, which shows the same
-    // words (both use chatErrorCopy) and keeps nothing.
-    assert.match(send, /\n {4}const failed = \(e\) => \{ if \(loadFailure\(e\) !== 'failed'\) fail\(e\); else tell\(e\?\.code\); \};\n/);
+    // Any other refusal is about this message. It is told wherever the person is, so it is kept with the text it
+    // gives back (unless a warning about Credits is kept there already: refuse(), above). It went through the screen's
+    // fail() while its chat was on screen, which shows the same words (both use chatErrorCopy) and keeps nothing.
+    assert.match(send, /\n {4}const failed = \(e\) => \{ if \(loadFailure\(e\) !== 'failed'\) fail\(e\); else refuse\(e\?\.code\); \};\n/);
     assert.equal(send.split('fail(e)').length - 1, 1, 'fail() is reached through failed() only');
 });
 
