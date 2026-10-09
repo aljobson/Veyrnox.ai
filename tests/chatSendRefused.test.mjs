@@ -14,7 +14,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { NEW_CHAT, readNotice, writeNotice } from '../app/veyrnox/_lib/chatLocal.js';
-import { A, GatewayError, ME, TEXT, WARNINGS, afterReload, cutBeforeText, memory, refused, reply, run, stopAfterText, stopBeforeText, stopped, toB } from './chatSendFlow.harness.mjs';
+import { A, GatewayError, ME, TEXT, WARNINGS, afterReload, cutBeforeText, memory, noAnswer, refused, reply, run, stopAfterText, stopBeforeText, stopped, toB } from './chatSendFlow.harness.mjs';
 
 const noCredits = () => new GatewayError('no', { status: 402, code: 'insufficient_balance' });
 const tooFast = () => new GatewayError('no', { status: 429, code: 'rate_limited' });
@@ -35,7 +35,11 @@ test('Stop before any text, sent again and refused: the warning is still kept wi
         ['rate_limited', { turn: refused(tooFast()) }],
         ['upload_failed', { images: [{ file: {} }], upload: async () => { throw new GatewayError('upload_failed', { status: 0, code: 'upload_failed' }); } }],
         ['image_unreadable', { images: [{ file: {} }], prepare: async () => { throw new Error('image_unreadable'); } }],
-        // No answer at all to the request: nothing says a turn started, so it is told as a refusal with no code of its own.
+        // No answer at all to the request. It was told at once as a refusal with no code of its own (a bare network error
+        // from sendTurn). sendTurn now says the request got no answer, and the server is asked about the send by its key
+        // (tests/chatSendUnanswered.test.mjs). Here it says the send made no job and its key is closed: a refusal, as before.
+        ['send_unanswered', { turn: noAnswer(), onAsk: { closed: true } }],
+        // An error with no code raised by anything else still leaves the general notice with the text.
         [undefined, { turn: refused(new TypeError('network error')) }],
     ];
     for (const [code, how] of refusals) {

@@ -5,6 +5,8 @@
 // reload included, the turn is asked about first, and a turn the server has settled takes the warning away or changes
 // what is kept. A read that fails, or a turn that is not finished, changes nothing: the warning stays and is asked about
 // the next time.
+// A send whose own request got no answer before `start` is asked about by its key too, at once (askSend below). Only
+// when that gives no answer is its warning kept, with the key, for the next time the chat is opened.
 // A warning that took the place of another stands for both turns and is kept with both (four at most). It is settled
 // only when every one of them is. A warning with no turn kept is never asked about: it stands for a turn it could not list.
 // The reads are handed in, and only the store is changed here: the screen then shows what is stored, as it does
@@ -63,6 +65,30 @@ export async function askKeptWarning({ warning, getJob, closeSend, limitMs = KEP
   }
 }
 
+/**
+ * Ask about one send at once, by its key: its own request went out and no answer came back, so the server may hold it
+ * all the same (useChatSend.js). The same question as when a chat is opened, put the moment the answer is missing.
+ * Never throws and never waits longer than the limit: the person is waiting on it.
+ * @param {{key: string, closeSend: (key: string) => Promise<object>, limitMs?: number}} args
+ * @returns {Promise<{closed: true}|{job: string}|null>} `closed`: the send made no job and the server has closed its
+ *   key, so none can be made and nothing can be charged for it. `job`: the id of the job it made, whatever its state.
+ *   Null: no answer to act on (the route is not open, the read failed or ran out of time, a shape this does not know)
+ */
+export async function askSend({ key, closeSend, limitMs = KEPT_READ_LIMIT_MS }) {
+  let timer;
+  const limit = new Promise((resolve) => { timer = setTimeout(() => resolve(null), limitMs); });
+  try {
+    const answer = await Promise.race([closeSend(key), limit]);
+    if (!answer || typeof answer !== 'object') return null;
+    if (answer.closed === true) return Object.keys(answer).length === 1 ? { closed: true } : null; // only as the one thing the route says
+    return answer.closed === false && typeof answer.job_id === 'string' && answer.job_id ? { job: answer.job_id } : null;
+  } catch {
+    return null; // not an answer: the send is then kept with a warning, and asked about when its chat is opened
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 const sameTurns = (a, b) => a.length === b.length && a.every((t, i) => t.job === b[i].job && t.key === b[i].key && t.sent === b[i].sent);
 
 /**
@@ -74,8 +100,9 @@ const sameTurns = (a, b) => a.length === b.length && a.every((t, i) => t.job ===
  *                                             given back stays in the box
  *   some were saved                           the chat shows each reply and its price, so the warning is forgotten. If
  *               a saved message had been given back to the box, a notice is kept in the warning's place so that it is
- *               said on screen and after a page reload: `stop_saved` for a warning about one turn, `turns_settled`
- *               for several (the box may then hold a message that was not saved). Under New chat there is no chat to
+ *               said on screen and after a page reload: for a warning about one turn `stop_saved`, or `connection_saved`
+ *               when its connection dropped (nobody pressed Stop), and `turns_settled` for several (the box may then
+ *               hold a message that was not saved). Under New chat there is no chat to
  *               show a reply, so the warning stays; the answers are final, so its turns are let go and it is not asked
  *               about again
  * The box is emptied only while it still holds exactly a message that is now in the chat: text the person has changed
@@ -102,6 +129,6 @@ export function settleKeptWarning(storage, userId, chatId, asked) {
   const gaveBack = saved.some((t) => t.sent) || (warning.code === 'stop_unsure' && saved.includes(turns[turns.length - 1]));
   if (!gaveBack) { clearNotice(storage, userId, chatId); return true; }
   emptyBox();
-  writeNotice(storage, userId, chatId, turns.length > 1 ? 'turns_settled' : 'stop_saved');
+  writeNotice(storage, userId, chatId, turns.length > 1 ? 'turns_settled' : warning.code === 'connection_lost' ? 'connection_saved' : 'stop_saved');
   return true;
 }

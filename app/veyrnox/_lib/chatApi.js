@@ -6,6 +6,7 @@
 import { getFreshAccessToken, getSession, clearSession } from '../../lib/authClient.js';
 import { turnOptions } from './chatTurnOptions';
 import { lostNotice, settleStoppedTurn } from './chatStop';
+import { askSend } from './chatWarning';
 import { gatewayFetch, GatewayError, ACCOUNT_PAUSED_COPY, makeIdempotencyKey, notifyBalanceChanged } from './gateway';
 
 const json = (body) => JSON.stringify(body);
@@ -31,6 +32,9 @@ export const chatApi = {
   // A send that was stopped before `start` has no job id here. The server is asked by the send's own key: it answers
   // with the job that send made, or, when it made none, closes the key so none can be made, and says `closed`.
   closeSend: (key) => gatewayFetch('/chat/sends/close', { method: 'POST', body: json({ idempotency_key: key }) }),
+  // The same question at once, for a send whose own request went out and got no answer before `start` (sendTurn below):
+  // `{ closed: true }`, `{ job }`, or null when the server gave no answer to act on. Never throws (chatWarning.js).
+  askSend: (key) => askSend({ key, closeSend: chatApi.closeSend }),
   // After Stop or a dropped connection: look for the turn until it has settled ('saved', 'unsaved', 'nothing' or 'pending'),
   // then have the nav read the balance again. The balance moved at the debit and moves back on a refund, so it is read last.
   settleStop: async ({ threadId, jobId, text, knownIds }) => {
@@ -100,9 +104,16 @@ export function chatUnchargedCopy(code, extra, warning) {
 
 export { makeIdempotencyKey, lostNotice };
 
+// The message's own request went out and no answer of ours came back: it failed on the way, the reply stream broke or
+// ended with no event of ours in it, or what came back was neither ours nor a refusal. The server may hold the send
+// all the same, so this is not "nothing was sent": the screen asks the server about the send by its key
+// (useChatSend.js). Stop is the person's own doing and is passed on as it is, wherever in the request it lands.
+const unanswered = (e, status = 0) => (e?.name === 'AbortError' ? e : new GatewayError('send_unanswered', { status, code: 'send_unanswered' }));
+
 /**
  * Send one message and stream the reply. Calls onEvent(name, data) for start, delta, error, done.
- * Resolves { replay: true } when the same send already ran. Throws GatewayError for a refusal before the stream.
+ * Resolves { replay: true } when the same send already ran. Throws GatewayError for a refusal before the stream, and
+ * with the code `send_unanswered` when the request went out and nothing of ours says what became of it (above).
  * Aborting `signal` is the Stop button.
  */
 export async function sendTurn({ threadId, text, key, options, attachments = [], signal, onEvent }) {
@@ -111,14 +122,19 @@ export async function sendTurn({ threadId, text, key, options, attachments = [],
     if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('veyrnox:auth-required'));
     throw new GatewayError('not authenticated', { status: 401, code: 'no_token' });
   }
-  const res = await fetch(`/api/v1/chat/threads/${encodeURIComponent(threadId)}/messages`, {
-    method: 'POST', signal,
-    headers: { Authorization: `Bearer ${token}`, 'content-type': 'application/json' },
-    body: json({
-      text, idempotency_key: key, options: turnOptions(options),
-      ...(attachments.length ? { attachments: attachments.map((a) => (typeof a === 'string' ? { source_key: a } : a)) } : {}),
-    }),
-  });
+  let res;
+  try {
+    res = await fetch(`/api/v1/chat/threads/${encodeURIComponent(threadId)}/messages`, {
+      method: 'POST', signal,
+      headers: { Authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+      body: json({
+        text, idempotency_key: key, options: turnOptions(options),
+        ...(attachments.length ? { attachments: attachments.map((a) => (typeof a === 'string' ? { source_key: a } : a)) } : {}),
+      }),
+    });
+  } catch (e) {
+    throw unanswered(e); // from here on the request may be at the server, whatever the browser saw of it
+  }
   if (res.status === 401) {
     if (getSession()?.access_token === token) clearSession();
     if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('veyrnox:auth-required'));
@@ -126,27 +142,38 @@ export async function sendTurn({ threadId, text, key, options, attachments = [],
   }
   if (!(res.headers.get('content-type') || '').includes('text/event-stream')) {
     let body = null;
-    try { body = await res.json(); } catch { /* no body */ }
+    try { body = await res.json(); } catch (e) { if (e?.name === 'AbortError') throw e; /* otherwise: no body */ }
     if (res.ok && body?.replay) return { replay: true };
+    // A refusal of ours names itself (`error`), and no reply runs after one. A 4xx that names nothing was made in front
+    // of the turn (the edge, a proxy, the framework). Anything else says nothing about the turn: a Worker that failed
+    // after the debit answers that way, with the turn still running.
+    if (!body?.error && !(res.status >= 400 && res.status < 500)) throw unanswered(null, res.status);
     throw new GatewayError(body?.error || `HTTP ${res.status}`, { status: res.status, code: body?.error || 'gateway_error', body });
   }
-  const reader = res.body.getReader();
-  const dec = new TextDecoder();
-  let buf = '';
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buf += dec.decode(value, { stream: true });
-    let i;
-    while ((i = buf.indexOf('\n\n')) >= 0) {
-      const frame = buf.slice(0, i);
-      buf = buf.slice(i + 2);
-      const event = /^event: (.+)$/m.exec(frame)?.[1];
-      const data = /^data: (.+)$/m.exec(frame)?.[1];
-      if (!event || !data) continue;
-      try { onEvent(event, JSON.parse(data)); } catch { /* a malformed frame is skipped, the stream goes on */ }
+  // A reply stream: the server answers with one only after the debit, and writes `start` first.
+  let events = 0;
+  try {
+    const reader = res.body.getReader();
+    const dec = new TextDecoder();
+    let buf = '';
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      let i;
+      while ((i = buf.indexOf('\n\n')) >= 0) {
+        const frame = buf.slice(0, i);
+        buf = buf.slice(i + 2);
+        const event = /^event: (.+)$/m.exec(frame)?.[1];
+        const data = /^data: (.+)$/m.exec(frame)?.[1];
+        if (!event || !data) continue;
+        try { const d = JSON.parse(data); events += 1; onEvent(event, d); } catch { /* a malformed frame is skipped, the stream goes on */ }
+      }
     }
+  } catch (e) {
+    throw unanswered(e);
   }
+  if (!events) throw unanswered(); // it ended with no event of ours in it: cut off before `start` could arrive
   notifyBalanceChanged();
   return { replay: false };
 }
