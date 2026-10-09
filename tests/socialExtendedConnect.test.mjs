@@ -90,3 +90,29 @@ test('Bluesky accepts only dedicated app passwords, not an arbitrary account pas
     const res = await finishExtendedConnect(request({ identifier: 'tester.bsky.social', appPassword: 'my-main-password' }), 'bluesky');
     assert.equal(res.status, 400);
 });
+
+test('Bluesky connects with a generated app password containing digits and stores only encrypted session tokens', async () => {
+    const appPassword = 'abcd-2345-efgh-6789';
+    const did = 'did:plc:tester';
+    let sessionCalls = 0;
+    globalThis.fetch = async (url, init) => {
+        const path = new URL(url).pathname;
+        const body = JSON.parse(init.body);
+        if (path.endsWith('/com.atproto.server.createSession')) {
+            sessionCalls++;
+            assert.deepEqual(body, { identifier: 'tester.bsky.social', password: appPassword });
+            return Response.json({ did, handle: 'tester.bsky.social', accessJwt: 'access-test', refreshJwt: 'refresh-test',
+                didDoc: { id: did, service: [{ type: 'AtprotoPersonalDataServer', serviceEndpoint: 'https://bsky.social' }] } });
+        }
+        if (path.endsWith('/get_or_create_default_social_brand')) return Response.json({ ok: true, brand_id: selectionId });
+        assert.ok(path.endsWith('/record_social_account_connection'));
+        assert.equal(body.p_external_account_id, did);
+        assert.equal(JSON.stringify(body).includes(appPassword), false);
+        assert.equal(JSON.parse(await decryptToken(body.p_access_token_enc, cryptoCfg)).jwt, 'access-test');
+        return Response.json({ ok: true, account_id: selectionId });
+    };
+    const res = await finishExtendedConnect(request({ identifier: 'tester.bsky.social', appPassword }), 'bluesky');
+    assert.equal(res.status, 200);
+    assert.equal(sessionCalls, 1);
+    assert.equal(JSON.stringify(await res.json()).includes(appPassword), false);
+});
