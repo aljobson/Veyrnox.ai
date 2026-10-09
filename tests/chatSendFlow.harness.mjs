@@ -33,7 +33,7 @@ export const afterReload = (storage, chat) => ({ box: readDraft(storage, ME, cha
  * `person` moves about the screen the way the real one does: a press notes the chat asked for, and it is shown when
  * its messages arrive.
  */
-export async function run({ active = null, turn, settle = 'pending', listDown = false, images = [], whileMaking = () => {}, kept = {}, text = TEXT, storage = null, making = null, upload = async () => 'k', prepare = async (f) => f }) {
+export async function run({ active = null, turn, settle = 'pending', listDown = false, listFails = false, images = [], whileMaking = () => {}, kept = {}, text = TEXT, storage = null, making = null, upload = async () => 'k', prepare = async (f) => f }) {
     const view = newChatView();
     if (active) { ask(view, active.id); land(view, active.id); }
     const log = { notices: [], box: [], saved: {}, added: {}, opened: [], shownOnOpen: [], deleted: [], activeSet: [], imagesCleared: 0, refreshed: 0, quietReads: 0, failures: [], kept: { ...kept }, keptWith: {}, dropped: [] };
@@ -48,7 +48,7 @@ export async function run({ active = null, turn, settle = 'pending', listDown = 
     const deps = {
         useState: (initial) => [initial, () => {}], useRef: (initial) => ({ current: initial }),
         GatewayError, NEW_CHAT, loadFailure, lostNotice, ask, forget, land, onScreen, sendHome,
-        chatErrorCopy: (code) => code, chatRefusedCopy: (code, _extra, warning) => `${code}, and before that ${warning.code}`,
+        chatErrorCopy: (code) => code, chatUnchargedCopy: (code, _extra, warning) => `${code}, and before that ${warning.code}`,
         makeIdempotencyKey: () => 'key', uploadChatImage: upload, prepareImage: prepare,
         sendTurn: (args) => turn(args, person),
         chatApi: {
@@ -69,7 +69,8 @@ export async function run({ active = null, turn, settle = 'pending', listDown = 
         att: { items: images, clear: () => { log.imagesCleared += 1; } }, limits: { maxEdge: 2048 }, draftModel: 'm', folders: null, folder: 'all', instr: '',
         // The screen's open(): here it only records the call, and the notice the real one would show with the chat, and says the chat was read.
         open: async (id) => { log.opened.push(id); log.shownOnOpen.push(storage ? readNotice(storage, ME, id) : (log.kept[id] ?? null)); ask(view, id); land(view, id); return true; },
-        refreshThreads: async () => { log.refreshed += 1; }, fail: (e) => log.failures.push(e.code || e.message),
+        // The screen's refreshThreads(): a read that fails is said on screen, over whatever notice is there (its fail()).
+        refreshThreads: async () => { log.refreshed += 1; if (listFails) log.notices.push('list_failed'); }, fail: (e) => log.failures.push(e.code || e.message),
         chatView: { current: view }, saveDraft: (id, t) => { log.saved[id] = t; }, addDraft: (id, t) => { log.added[id] = t; },
         keepNotice: (id, code, extra) => { log.kept[id] = code; log.keptWith[id] = extra; },
         dropNotice: (id) => { log.dropped.push(id); delete log.kept[id]; },

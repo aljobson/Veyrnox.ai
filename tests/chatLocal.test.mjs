@@ -228,7 +228,7 @@ test('a kept notice is read as a warning about Credits only when it is one of th
   }
   // Each of these is about a message that is settled: it used no Credits, or the chat itself shows the reply and its
   // price (`connection_saved`). A later refusal may take its place.
-  for (const code of ['connection_saved', 'connection_refunded', 'insufficient_balance', 'rate_limited', 'turn_not_saved', 'provider_cut_off', 'image_unreadable', 'unknown']) {
+  for (const code of ['connection_saved', 'connection_refunded', 'stop_refunded', 'insufficient_balance', 'rate_limited', 'turn_not_saved', 'provider_cut_off', 'image_unreadable', 'unknown']) {
     writeNotice(s, ME, 'thread-1', code, { credits: 2 });
     assert.equal(readCreditsWarning(s, ME, 'thread-1'), null, code);
   }
@@ -248,7 +248,7 @@ test('each of the four says Credits were used or may be, and none says they were
 test('no other words say Credits were used or may be: a new notice that does has to be put on the list', () => {
   // Every `case` of chatErrorCopy, with the codes that share its words. "The Credits it used" (`connection_saved`) is
   // about a reply the chat shows with its price, and "No Credits were used" is the opposite of a warning.
-  const body = api.slice(api.indexOf('export function chatErrorCopy'), api.indexOf('export function chatRefusedCopy'));
+  const body = api.slice(api.indexOf('export function chatErrorCopy'), api.indexOf('export function chatUnchargedCopy'));
   const warns = [];
   for (const line of body.split('\n').filter((l) => /^\s+case '/.test(l))) {
     // One case returns words kept elsewhere (a paused account, in gateway.js): its statement there is read whole.
@@ -274,10 +274,12 @@ test('reading a warning does not forget it, and it passes the same checks as any
   assert.equal(readCreditsWarning(s, ME, NEW_CHAT), null);
 });
 
-test('a refusal said together with a kept warning: the refusal first, then the warning, marked as the earlier one', () => {
+test('what a message that used no Credits ended with, said together with a kept warning: the ending first, then the warning, marked as the earlier one', () => {
   // Words are made in one place (chatErrorCopy). The two are joined with words of their own so that "Your message was
-  // not sent" is never read as "so nothing can be charged": the warning is about the message before it.
-  assert.match(api, /\nexport function chatRefusedCopy\(code, extra, warning\) \{\n {2}return `\$\{chatErrorCopy\(code, extra\)\} Before that: \$\{chatErrorCopy\(warning\.code, warning\)\}`;\n\}\n/);
+  // not sent" or "No Credits were used" is never read as "so nothing can be charged": the warning is about the message
+  // before it. It was chatRefusedCopy while only a refusal was said this way; the words and the join are unchanged.
+  assert.match(api, /\nexport function chatUnchargedCopy\(code, extra, warning\) \{\n {2}return `\$\{chatErrorCopy\(code, extra\)\} Before that: \$\{chatErrorCopy\(warning\.code, warning\)\}`;\n\}\n/);
+  assert.doesNotMatch(api, /chatRefusedCopy/);
 });
 
 test('the workspace restores a draft on open and clears it only after a send', () => {
