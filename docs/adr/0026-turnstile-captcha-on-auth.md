@@ -328,9 +328,33 @@ ticked:
   one console line and one report for the page load.
 - Our own key on localhost: 110200 and the generic notice, as before.
 
-Not seen: a failure followed by a retry that stops on the checkbox, which is
-what happened on production. No test key does both, and our site key lists
-`veyrnox.ai` only. That a retry's checkbox reports itself like any other
-rests on Cloudflare's reference and on the script, which calls the callback
-for every `interactiveBegin` message the challenge frame sends. The frame's
-own code is not public.
+Not seen before the merge: a failure followed by a retry that stops on the
+checkbox, which is what happened on production. No test key does both, and
+our site key lists `veyrnox.ai` only.
+
+Seen on production later on 2026-10-09, once this amendment was deployed, in
+the embedded browser where the failure was first seen, signed out:
+
+- Left unticked for 10 minutes, the widget stayed on its checkbox and did not
+  fail. The dialog said nothing, and no report was sent.
+- With the box unticked and no token, "Sign in with a passkey" gave the new
+  wording. Before the deploy the same press gave "Complete the security check
+  first."
+- The owner then ticked the box. Times are seconds since the page loaded.
+  The first row is when the failure report was sent. The others are what a
+  reading of the page found at that time:
+
+  | Time | The widget | The dialog |
+  |---|---|---|
+  | 182 s | the tick has failed with 600010 | not read |
+  | 194 s | empty space, retrying | "The security check didn't pass in this browser. It will retry by itself. …" |
+  | 207 s | back on its unticked checkbox | "The security check above is waiting for you to tick its box. …" |
+  | 222 s | the same | the same |
+
+  One report was sent for the page load. Nothing went to Auth and no token
+  was issued.
+
+That is one browser and one run. The challenge frame's own code is not
+public, so beyond it the behaviour rests on Cloudflare's reference and on the
+script, which calls the callback for every `interactiveBegin` message the
+frame sends.
