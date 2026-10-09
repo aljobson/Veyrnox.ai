@@ -97,7 +97,7 @@ checks, set the issue gate to `false`. Neither action changes dispatch flags.
 ## Controlled alert delivery exercise
 
 Manually dispatch `fal-queue-watch-staging` on `main` with `test_alert=true`.
-After a successful live read-only metrics check, this option deliberately fails
+After successful live read-only queue and staging database checks, this option deliberately fails
 the check with a fixed `TEST ONLY` report and runs the normal GitHub Actions
 alert job with its `issues: write` token. It creates an incident titled
 `TEST: staging fal queue alert delivery` with label `fal-queue-staging-test`,
@@ -113,3 +113,43 @@ The two exercise runs intentionally conclude failure because their check fails;
 alert-job success and the resulting issue are the delivery evidence. This proves
 Actions can write the incident, not that email/push notifications reach the
 owner: the owner must confirm their GitHub notification settings and receipt.
+
+## Staging database coverage and rollout evidence
+
+The scheduled watch also runs `check-staging-database-health.mjs`. It reads
+the bounded `recovery_status` and `reconcile_status` RPCs with the public key
+from the explicit staging configuration in `wrangler.jsonc`. It refuses a
+missing staging configuration or the production project; ambient Supabase
+variables and root production defaults are not used. No service-role key,
+database scan, snapshot refresh, generation or ledger write occurs.
+
+Recovery checks require all staging counts, including UNKNOWN/overdue dispatch,
+and the complete Cinema group. Reconciliation checks require all five drift
+counts. Nonzero counts fail with exit 1; unreadable, stale or malformed snapshots
+fail with exit 2. Both database reads are attempted even if one fails, and a
+queue failure still retains database diagnostics. The synthetic alert option
+cannot replace a real database failure. The existing incident gate applies to
+both queue and database failures.
+
+Every run that reaches the database checker uploads `staging-database-health`
+evidence containing a UTC client observation time, fixed staging project ID,
+bounded counts and unhealthy task names. Artifacts are retained for seven days.
+They contain no credentials, prompts, job payloads or asset URLs. Server-side
+snapshot freshness remains enforced by the existing RPCs; the observation time
+is when the checker read them, not when the underlying scans ran. An unreadable
+snapshot is explicitly recorded. Configuration/setup failures may produce no
+artifact and must be treated as gaps, never successful health observations.
+
+The existing `recovery-health` and `reconcile-watch` workflows default to the
+production database. Their green runs do not establish staging health. Historical
+queue-only staging runs likewise provide no database evidence. Retained staging
+database coverage starts with the first successful run after this addition is
+merged, under the already enabled watch gate. Earlier manual clean reads cannot
+fill the historical gap between snapshots.
+
+For rollout review, inspect database artifacts, workflow failures and scheduling
+gaps across the proposed clean window alongside source/DLQ metrics. Scheduled
+sampling does not prove uninterrupted health between checks. No time alone or
+single green run satisfies the continuous 24-hour requirement; retain an explicit
+operator assessment of the evidence and its gaps. This workflow does not enable
+dispatch or authorize production activation.
