@@ -195,3 +195,116 @@ Known risks to settle on the way:
 - **Output size and resolution** are not yet fixed by the product (see run 5).
 - **The Worker-to-runner call** goes over the public internet: it is HMAC-signed with a 300 s window, and the runner
   accepts nothing unsigned, but a network allow-list on the runner host is a worthwhile second layer.
+
+## 9. First staging run (2026-10-08): what it found
+
+A real run through the page (sign in, plan, approve) on staging. The Worker-to-runner path, the debit, the step record and the agent all worked; the run failed safely
+(the agent picked an unpriced Kling v2.1, the proxy refused it at no media cost, $0.31 in tokens). Three bugs, none visible in any unit test:
+
+| Bug | Found how | Fix |
+|---|---|---|
+| Cloudflare answered the runner's default Python user-agent with **error 1010**, so every callback and upload was blocked and the "failed" never reached the Worker | zero `webhook_events`; reproduced with curl using that user-agent | own user-agent on callbacks and uploads; undelivered callbacks are logged; tests assert the user-agent (runner repo) |
+| The **Auto Short sweep** (`sweepSteps`) failed the live montage step after 12 minutes (it declares any provider it cannot read FAILED) and never touched the parent, so **165 credits stayed held**; the montage sweep only looked at SUBMITTED steps | step `FAILED:provider_failed` under a SUBMITTED job | `autoShortSweep` excludes `provider=neq.montage`; `montageSweep` also heals FAILED steps under a SUBMITTED parent through `failParent` (PR #639). **Verified on staging: refunded exactly once, balance 72 to 237, reconcile clean** |
+| The agent picked an **unpriced** model | meter log: 4 refused `kling-video/v2.1` calls | the agent prompt now names the priced endpoints, generated from the same price table the proxy reads |
+
+Also: my first staging build used no environment variables and baked the **development identity** into the client (no Google button, sign-in broken); the runbook now has the full recipe. The plan text says "about 30 seconds" whatever the brief asks (a fixed default in the runner).
+
+### Second staging run (2026-10-08, job 4e7d3820): a fourth bug, and the first run that reached fal
+
+With the three fixes deployed the agent used the **priced** endpoint (`kling-video/v3/standard/text-to-video`, the proxy reserved $2.31 of the $2.50 ceiling at the
+dearest tier) and was polling the clips when the run died: **Fly stopped the machine at about 346 seconds.** Fly's auto-stop only counts *inbound* traffic; `/run` answers
+202 at once and a run then talks outward, so the machine looked idle. The first failed run ended in seconds, which hid it.
+
+Fix: Fly auto-stop is off; the runner stops itself only after `RUNNER_IDLE_EXIT_SECONDS` (600) with **no run in flight and no request**, the restart policy is
+`on-failure` so a clean exit leaves it stopped, and `auto_start_machines` wakes it on the next signed request. Tests: the watchdog never exits while a run is active.
+The fal clips this run generated are probably billed with no video produced; the job stays SUBMITTED until the Worker's 45-minute timeout sweep refunds it (about 18:16 UTC).
+
+Open: fal's real billing for this run (clip count and audio tier) is still unread; it is the number that sets the price.
+
+### Third staging run (2026-10-08, job 647470d0): the first full success
+
+Brief to Library, through the real page, Worker, runner on Fly and fal:
+
+| Measure | Value |
+|---|---|
+| Result | job **STORED**; `video-agent/<job id>/final.mp4`, video/mp4, **9.9 MB**, 15.0 s, 1080x1920; shown in the Library as DONE, AI GENERATED, -165 cr |
+| Time | 4 min 05 s from approve to stored (agent 237 s, 17 turns) |
+| Paid calls | 3 x Kling v3 standard 5 s clips; proxy reserved **$2.31** of the $2.50 ceiling (dearest tier); nothing refused |
+| Anthropic tokens | **$0.43** (Opus) |
+| Ledger | exactly one `debit:generation -165`, no refund; balance 237 -> 72; `reconcile_balances()` 0 rows |
+| Callbacks | 2 `webhook_events` (source montage); the upload went through the Worker-minted presigned PUT |
+| Machine | stayed up for the whole run (auto-stop off; idle exit after 10 min) |
+
+Not yet done: a forced mid-run failure with the fixed code (the runbook's last step), fal's real billing figure, the "about 30 seconds" plan text, and the page did
+not show the finished video inline (it showed the "ready" toast and the Library entry; the brief box had been cleared). The second run's job was cancelled by hand
+through `job_step_failed`, `job_failed` and `ledger_refund` at the owner's request rather than waiting for the 45-minute timeout, so **the timeout path is still unproven on staging**.
+
+### Later the same day (2026-10-08): the remaining staging checks
+
+| Check | Result |
+|---|---|
+| Third real run (job 647470d0) | **Full success**: STORED, 9.9 MB 15 s 1080x1920 MP4 in the Library, 4 min 05 s, three Kling v3 standard clips ($2.31 reserved at the dearest tier), $0.43 of tokens, exactly one 165-credit debit, reconcile clean. The machine stayed up (auto-stop off). |
+| Second real run (job 4e7d3820) | Killed by Fly's auto-stop at about 346 s (fixed: auto-stop off, the runner exits itself after 10 idle minutes with no run in flight). Cancelled by hand at the owner's request through `job_step_failed`, `job_failed`, `ledger_refund`: REFUNDED, one debit and one refund. |
+| Test-pattern run (runner `RUNNER_AGENT=fake`, no fal or Anthropic spend) | STORED in 5 s; the page showed progress and then the video inline. The missing inline video on the 4-minute run was the tab having reloaded, not a page fault. |
+| Resume after reload (PR #647) | A freshly loaded page picked the job back up from this browser's job history and showed the video with no click. Checked by removing the last job's "settled" mark; a reload during a live multi-minute run is still untested. |
+| Plan text | No longer invents "about 30 seconds"; says "Most videos come out at about 15 seconds." |
+| Low balance | With 72 credits against 165, Approve was disabled with the top-up message. |
+| **Runner unreachable** (machine cordoned and stopped, then a plan approved; job ccbb064c) | **REFUNDED in 21 s**: step FAILED `runner_submit_failed`, ledger `debit -165` then `refund +165`, balance unchanged at 207, reconcile clean; the page showed "FAILED · REFUNDED — We couldn't start the video. Credits refunded — try again." No fal or Anthropic spend. |
+
+Notes from the last check: the generations route answers 200 with the job id even though the job has already failed and been refunded (the orchestrator's `start`
+returns `ok` after `failParent`, the same shape as Auto Short); the user still sees the correct failed-and-refunded panel through polling. `fly machine cordon`
+alone did not stop traffic to a running machine; it had to be stopped as well.
+
+Still unproven on staging: the automatic 45-minute timeout refund, a failure in the middle of a real run, and a reload during a live multi-minute run. Still unread:
+fal's real billing, so 165 credits and the $2.50 ceiling remain working numbers.
+
+**Correction (2026-10-08 18:40 UTC):** earlier sections of this file and of the staging runbook say migration `0227` is not applied on production. That stopped being
+true at 14:45 UTC, when the `apply-migrations` run for #618 applied it after the owner's approval: production has the `montage` kinds and the `video-agent` row at
+165 credits, **inactive**. Verified by a read-only query. The production rollout plan is [RUNBOOK-production.md](RUNBOOK-production.md).
+
+## 10. Capacity (gate G6): decided 2026-10-08
+
+**Decision 2026-10-08 (owner: "approve")**, on the proposal in [CAPACITY.md](CAPACITY.md): a busy runner is refused **before** the
+debit ("nothing was charged, try again"; on main since #651), capacity is added only when a measured trigger is hit, and no queue is
+built yet. The trigger put to the owner was two or more runs started within one hour, on three days out of seven, worked out for one slot.
+
+Not covered by that yes, because it changed after the proposal was written: the runner now takes **three** runs at once on its one
+machine (runner `096aaae`; on staging; its own comment says "not load-tested"). The same 10% rule then gives 17 or more runs started
+within one hour, which was proposed in CAPACITY.md. Three runs at once have not been tried on staging.
+
+**Update 2026-10-08 21:30 UTC: that proposal is withdrawn, and the three-at-once test was not run.** Fly's metrics for the one full
+success (job `647470d0`) show a run needs about 220 CPU-seconds, nearly all in its last 80 s, and about 1 GB of memory. The runner's
+machine is a `shared` size with a sustained quota of 0.25 of one CPU and a burst balance of about 200 CPU-seconds after a deploy. So
+the machine sustains about **4 runs an hour whatever the slot count**, and three runs started together after a deploy are predicted
+to take 30.5 minutes, past the runner's 30-minute limit: three refunds and about $7 spent at fal. Nothing was run to learn this.
+Options and the arithmetic are in [CAPACITY.md](CAPACITY.md) section 5.
+
+**Decision 2026-10-08 (owner: "A"): dedicated CPUs for the runner** (a Fly `performance` size), chosen over one slot and over a
+lighter render. Not applied yet: staging still runs the shared machine with three slots.
+
+## 11. The remaining staging checks, and the lost-run check (2026-10-08, evening)
+
+Three paths that section 9 left unproven were exercised on staging on main's code (Worker `bcd8c005`, job `f6001734`):
+
+- **Timeout refund.** The owner stopped the runner machine about two minutes into a real run. The job stayed SUBMITTED, the Auto
+  Short sweep left it alone (#639), and the montage sweep failed it as `step_timeout` and refunded it at 21:06:04 UTC: one debit, one
+  refund, `reconcile_balances()` 0 rows. The credits were held for **49 minutes 38 seconds** (the 45-minute timeout plus the wait for
+  the next five-minute pass).
+- **Second run refused.** A second Approve from the same account while that run was in flight answered `video_agent_in_progress`
+  with no job and no debit.
+- **Reload mid-run.** A full reload brought the RUNNING panel back with an empty brief box (#647).
+
+**Lost-run check (built, flag off).** Fifty minutes is too long to hold credits for a run that died in its second minute. With
+`MONTAGE_LIVENESS_ENABLED="true"` the sweep asks the runner's signed `POST /runs` which of the young runs it still has, and fails a
+run as `run_lost` when the runner answers `unknown` (the machine restarted: runs live in memory) or `ended` (its thread finished and
+no result reached us). Refund in about five minutes. Rules:
+
+- Only those two answers act. `running`, no answer, an unreachable runner or an answer that cannot be read all leave the run to the
+  45-minute timeout, which stays as the backstop.
+- A run is not asked about for its first 3 minutes, nor once it is past the timeout.
+- The failure goes through the same `webhook_events` dedup as a callback, so a result that lands at the same moment wins or loses
+  once, never both.
+- **One machine only.** A second machine would answer `unknown` for the first one's live runs and the sweep would refund work still
+  in progress. Turn the flag off before adding a machine (CAPACITY.md), or give `/runs` a machine-wide view first.
+
+Not yet tried against a real runner: the flag is "false" in both environments and the runner endpoint is not deployed.

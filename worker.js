@@ -1,3 +1,4 @@
+import { runFalDispatch } from './lib/falDispatch.js';
 /**
  * Worker entry (OpenNext custom worker): the generated app handler, plus the
  * Cron Triggers that run every 5 minutes (wrangler.jsonc `triggers.crons`):
@@ -54,13 +55,16 @@ export default {
 
     async scheduled(event, env, ctx) {
         const results = await Promise.allSettled([
+            ...(env.FAL_DISPATCH_SCHEMA_ENABLED === 'true'
+                ? [observeRecovery('fal_dispatch', () => runFalDispatch(env), env)] : []),
             cleanupProjectAssets(env),
             recoverCinemaUploads(env),
             removeCinemaUploads(env),
             observeRecovery('top_up_backfill', () => runScheduledBackfill(handler.fetch, env, ctx), env),
             observeRecovery('upload_sweep', () => runUploadSweep(env), env),
             observeRecovery('auto_short', () => runAutoShortSweep(env), env),
-            runMontageSweep(env), // not an observeRecovery task yet: inert until the runner is configured
+            // Expected by the heartbeat only while the video-agent catalog row is active (0229).
+            observeRecovery('video_agent', () => runMontageSweep(env), env),
             observeRecovery('asset_reap', () => runAssetReap(env), env),
             observeRecovery('grsai', () => sweepGrsai({
                 cfg: { supabaseUrl: env.SUPABASE_URL, serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY },
@@ -142,7 +146,7 @@ async function runMontageSweep(env) {
     const cfg = { supabaseUrl: env.SUPABASE_URL, serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY };
     const r2cfg = r2EnvFrom(env);
     if (!rt || !cfg.supabaseUrl || !cfg.serviceRoleKey || !r2IsConfigured(r2cfg)) return { ok: false, skipped: 'not_configured' };
-    const out = await sweepMontage({ cfg, deps: montageDeps({ cfg, r2cfg, ...rt }) });
+    const out = await sweepMontage({ cfg, deps: montageDeps({ cfg, r2cfg, ...rt }), liveness: env.MONTAGE_LIVENESS_ENABLED === 'true' });
     if (out.checked) console.error('[video-agent-sweep]', JSON.stringify(out));
     return out;
 }

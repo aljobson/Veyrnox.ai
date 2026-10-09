@@ -25,6 +25,9 @@ test('a disabled rollout makes no health write',async()=>{
 test('watcher refuses incomplete or malformed snapshots and reports every actionable counter',()=>{
  const clean={unhealthy_tasks:[],reap_exhausted:0,reap_overdue:0,stale_jobs:0,stale_top_up_returns:0,unreviewed_flagged_orders:0,unreviewed_order_collisions:0};
  assert.deepEqual(assessRecovery(clean),[]);
+ assert.deepEqual(assessRecovery({...clean,unhealthy_tasks:['fal_dispatch']}),['unhealthy task: fal_dispatch']);
+ assert.deepEqual(assessRecovery({...clean,fal_dispatch_unknown:1,fal_dispatch_overdue:0}),['fal_dispatch_unknown: 1']);
+ assert.throws(()=>assessRecovery({...clean,fal_dispatch_unknown:0}),/invalid fal_dispatch_overdue/);
  assert.throws(()=>assessRecovery({}),/invalid/);
  assert.throws(()=>assessRecovery({...clean,stale_jobs:null}),/invalid/);
  assert.deepEqual(assessRecovery({...clean,unhealthy_tasks:['grsai'],reap_exhausted:2}),['unhealthy task: grsai','reap_exhausted: 2']);

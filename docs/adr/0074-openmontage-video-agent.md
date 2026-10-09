@@ -56,6 +56,9 @@ This mirrors ADR-0072's rule for Agents: media spend only through a priced job, 
 
 - Runner to Worker: a signed callback (HMAC-SHA256 over timestamp + raw body, ±300 s, `webhook_events(source, external_id)`
   dedupe), same shape as Stripe. The callback names the job id only; `user_id` always comes from our `jobs` row.
+- The runner asks before it spends (2026-10-08): the Worker writes the run id on the step before it calls `/run`, and the
+  runner's first callback, `started`, is answered yes only while that step and the job are live. A `/run` that reaches
+  the runner after the Worker gave up and refunded gets a 409 and never starts, even when the Worker's `/cancel` was lost.
 - Worker to runner: the URL is a constant (`MONTAGE_RUNNER_BASE`), never derived from input. Runner endpoints accept only
   our signature. The runner has no Supabase key and no R2 write key; it uploads to a **presigned PUT** that the Worker
   minted for a random-UUID key scoped to the job (TTL ≤ 15 min, so the runner asks for a fresh URL at finish).
@@ -151,3 +154,11 @@ Public-terms check that preceded the answers (search only, the full current text
    already in the catalog, so check the existing terms first; any new provider goes through the verified-endpoint rule.
 3. **AGPL position.** Counsel to confirm that unmodified, separate-process use over HTTP does not extend the licence to this
    repo. If a patch is ever needed, we publish that patch.
+
+## Amendment 2026-10-08: a lost run is refunded before its timeout (flag off)
+
+The timeout refund was proven on staging the same day and held the credits for 49 minutes 38 seconds for a run whose runner died
+two minutes in. Behind `MONTAGE_LIVENESS_ENABLED` (default "false") the sweep asks the runner which young runs it still has and
+refunds one the runner does not know, or whose thread has ended without a result, as `run_lost` after about five minutes. The
+refund path, the dedup and the all-or-nothing rule are unchanged; only when the failure is declared moves. It is sound with one
+runner machine only, because the runner keeps its runs in memory per machine. Detail: docs/montage/SPEC.md section 11.

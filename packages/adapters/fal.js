@@ -1,4 +1,5 @@
 import { fetchWithTimeout } from '../../lib/fetchWithTimeout.js';
+import { readBoundedBody } from '../../lib/boundedBody.js';
 
 /**
  * fal.ai provider adapter — Worker-runtime version.
@@ -44,20 +45,20 @@ let jwksCache = null;
  * @param {string} cfg.falKey            FAL_KEY (Backend secret)
  * @param {string} cfg.webhookBaseUrl    Our host + /api/webhook/fal (public)
  * @param {number} [cfg.timeoutMs=15000] submit timeout
- * @returns {Promise<{ok: boolean, providerJobId?: string, statusUrl?: string, error?: string}>}
+ * @returns {Promise<{ok: boolean, outcome: 'accepted'|'rejected'|'unknown', providerJobId?: string, statusUrl?: string, error?: string}>}
  */
 export async function submitJob(job, cfg) {
     // Job-id-only signalling. fal will call us back with the job_id in the
     // webhook_url's query string so we can look up the matching row.
     if (!/^[A-Za-z0-9._-]{1,128}$/.test(job.job_id)) {
-        return { ok: false, error: 'invalid job_id' };
+        return { ok: false, outcome: 'rejected', error: 'invalid job_id' };
     }
     const endpoint = job.provider_endpoint;
     if (!endpoint || !/^[A-Za-z0-9/_.-]{3,128}$/.test(endpoint)) {
-        return { ok: false, error: 'invalid provider_endpoint' };
+        return { ok: false, outcome: 'rejected', error: 'invalid provider_endpoint' };
     }
     if (endpoint.includes('..') || endpoint.includes('//')) {
-        return { ok: false, error: 'invalid provider_endpoint' };
+        return { ok: false, outcome: 'rejected', error: 'invalid provider_endpoint' };
     }
 
     // fal takes the webhook URL as a `fal_webhook` query parameter on the
@@ -66,11 +67,11 @@ export async function submitJob(job, cfg) {
     try {
         webhookUrl = new URL(cfg.webhookBaseUrl);
     } catch {
-        return { ok: false, error: 'invalid webhookBaseUrl' };
+        return { ok: false, outcome: 'rejected', error: 'invalid webhookBaseUrl' };
     }
     // Fal POSTs webhook payloads over the public internet — must be TLS.
     if (webhookUrl.protocol !== 'https:') {
-        return { ok: false, error: 'webhookBaseUrl must be https' };
+        return { ok: false, outcome: 'rejected', error: 'webhookBaseUrl must be https' };
     }
     webhookUrl.searchParams.set('job_id', job.job_id);
 
@@ -96,26 +97,32 @@ export async function submitJob(job, cfg) {
         } catch (err) {
             const msg = err && err.message;
             console.error('fal submit transport error:', msg);
-            return { ok: false, error: `transport: ${msg}` };
+            return { ok: false, outcome: 'unknown', error: `transport: ${msg}` };
         }
 
         if (!res.ok) {
-            const text = await res.text().catch(() => '');
+            const bytes = await readBoundedBody(res.body, 128 * 1024, controller.signal).catch(() => null);
+            const text = bytes ? new TextDecoder().decode(bytes) : '';
             console.error('fal submit non-ok:', res.status, text.slice(0, 200));
-            return { ok: false, error: `fal ${res.status}: ${text.slice(0, 200)}` };
+            // A timeout or server error can follow acceptance of the request.
+            const outcome = res.status >= 400 && res.status < 500 && res.status !== 408 ? 'rejected' : 'unknown';
+            return { ok: false, outcome, error: `fal ${res.status}: ${text.slice(0, 200)}` };
         }
         /** @type {any} */
         let data;
-        try { data = await res.json(); } catch {
+        try {
+            const bytes = await readBoundedBody(res.body, 128 * 1024, controller.signal);
+            data = JSON.parse(new TextDecoder().decode(bytes));
+        } catch {
             console.error('fal submit returned non-JSON');
-            return { ok: false, error: 'fal returned non-JSON' };
+            return { ok: false, outcome: 'unknown', error: 'fal returned non-JSON' };
         }
-        const providerJobId = data.request_id || data.id;
-        if (!providerJobId) {
+        const providerJobId = data?.request_id || data?.id;
+        if (typeof providerJobId !== 'string' || !/^[A-Za-z0-9._-]{1,128}$/.test(providerJobId)) {
             console.error('fal submit missing request_id');
-            return { ok: false, error: 'fal did not return request_id' };
+            return { ok: false, outcome: 'unknown', error: 'fal did not return request_id' };
         }
-        return { ok: true, providerJobId, statusUrl: data.status_url };
+        return { ok: true, outcome: 'accepted', providerJobId, statusUrl: data.status_url };
     } finally {
         clearTimeout(timer);
     }

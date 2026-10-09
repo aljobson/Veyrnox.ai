@@ -26,6 +26,11 @@
   "vars": {
     "APP_ENV": "production",
     "TENANT_PROJECTS_ENABLED": "false",
+    // ADR-0075: stage uncertain fal submission handling before activation.
+    "FAL_SUBMIT_OUTCOME_ENABLED": "false",
+    // ADR-0076: keep recovery on when rolling back durable admission.
+    "FAL_DISPATCH_SCHEMA_ENABLED": "false",
+    "FAL_DURABLE_DISPATCH_ENABLED": "false",
     // ADR-0067: Chat is open here, but the screen is still behind the per-browser preview switch
     // (localStorage.veyrnox_chat). Needs OPENROUTER_CHAT_API_KEY on the Worker: production will not use the shared key.
     "CHAT_ENABLED": "true",
@@ -38,6 +43,9 @@
     // ADR-0074: the video agent (isolated OpenMontage runner). "false" until the runner, MONTAGE_* secrets and the measured price exist
     // (docs/montage/SPEC.md slices 4-6). A run already paid for still finishes or refunds with this off.
     "AGENT_VIDEO_ENABLED": "false",
+    // ADR-0074: the video-agent sweep asks the runner which runs it still has and refunds a lost one in about five minutes, where the
+    // timeout alone takes 45 to 50. Sound with ONE runner machine only (runs live in memory per machine); keep "false" with more.
+    "MONTAGE_LIVENESS_ENABLED": "false",
     // ADR-0071: referrals. Migrations 0217 to 0219 are applied on production. On only after the reconcile jobs have run clean for
     // 24 hours (CLAUDE.md, Delivery); the storage notice is re-prompted in the same change so the referral wording is seen.
     "REFERRALS_ENABLED": "true",
@@ -164,6 +172,9 @@
         "NEXT_PUBLIC_SUPABASE_URL": "https://yrqzwqywxfesmbvhzjgj.supabase.co",
         "NEXT_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_bAxQiodzBhI6bV7lmo9gMQ_Hlg9_Ish",
         "TENANT_PROJECTS_ENABLED": "true",
+        "FAL_SUBMIT_OUTCOME_ENABLED": "false",
+        "FAL_DISPATCH_SCHEMA_ENABLED": "false",
+        "FAL_DURABLE_DISPATCH_ENABLED": "false",
         "SUBSCRIPTIONS_ENABLED": "false",
         // ADR-0067: Chat is open on staging for testing only. No text model is
         // active until the owner activates one; production stays "false".
@@ -173,6 +184,7 @@
         // ADR-0072 (vars are not inherited). Flip to "true" on staging only after 0216 is applied there.
         "PERSONAS_ENABLED": "false",
         "AGENT_VIDEO_ENABLED": "false",
+        "MONTAGE_LIVENESS_ENABLED": "false",
         "REFERRALS_ENABLED": "false",
         // Vars are not inherited. 0225 is applied on staging (2026-10-08); on for testing, production stays "false".
         "CLIP_EDIT_CAPTIONS_ENABLED": "true",

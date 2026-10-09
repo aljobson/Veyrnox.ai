@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { pickResumable } from '../app/veyrnox/_lib/videoAgentResume.js';
 
 // JSX page, so this reads the source, like createAutoShort.test.mjs.
 const page = readFileSync(new URL('../app/veyrnox/app/video-agent/page.js', import.meta.url), 'utf8');
@@ -34,10 +35,35 @@ test('Approve is disabled when the plan has expired or the balance cannot cover 
 test('every code the plan route, the gateway and the runner can raise has its own copy', () => {
     for (const code of ['video_agent_unavailable', 'inputs_invalid:brief', 'plan_unavailable', 'plan_expired', 'plan_invalid',
         'plan_mismatch', 'plan_price_changed', 'plan_key_mismatch', 'video_agent_failed', 'montage_failed',
-        'runner_submit_failed', 'step_not_recorded', 'step_timeout', 'output_missing', 'output_invalid']) {
+        'runner_submit_failed', 'step_not_recorded', 'step_timeout', 'run_lost', 'output_missing', 'output_invalid',
+        'video_agent_busy', 'video_agent_offline', 'video_agent_in_progress', 'brief_refused']) {
         assert.ok(copyFor(code), code);
     }
     // Run failures promise a refund (failedJobCopy rewrites it until the refund lands); plan errors promise nothing was charged.
     assert.match(copyFor('montage_failed'), /Credits refunded/);
     assert.match(copyFor('plan_expired'), /Nothing was charged/);
+    assert.match(copyFor('video_agent_busy'), /Nothing was charged/);
+    assert.match(copyFor('video_agent_offline'), /Nothing was charged/);
+    assert.match(copyFor('video_agent_in_progress'), /Nothing was charged/);
+    assert.match(copyFor('brief_refused'), /Credits refunded/);
+});
+
+test('after a reload the page resumes the newest unsettled video-agent job from this browser\'s history', () => {
+    assert.match(page, /const pending = pickResumable\(jobsToWatch\(readJobHistory\(\)\), MODEL_ID\);/);
+    assert.match(page, /if \(pending\) startJobs\(pending\);/);
+    // once per mount, and only when the preview flag is on
+    assert.match(page, /if \(!enabled \|\| resumed\.current\) return;/);
+});
+
+test('pickResumable takes the newest matching job and ignores other models and bad rows', () => {
+    const rows = [
+        { job_id: 'img-1', model_id: 'flux-2-pro', credits: 2 },
+        { job_id: 'va-new', model_id: 'video-agent', credits: 165 },
+        { job_id: 'va-old', model_id: 'video-agent', credits: 165 },
+    ];
+    assert.deepEqual(pickResumable(rows, 'video-agent'), { job_id: 'va-new', state: 'queued', credits: 165, model_id: 'video-agent' });
+    assert.equal(pickResumable([{ job_id: 'img-1', model_id: 'flux-2-pro' }], 'video-agent'), null);
+    assert.equal(pickResumable([{ model_id: 'video-agent' }, null, { job_id: '', model_id: 'video-agent' }], 'video-agent'), null);
+    assert.equal(pickResumable(undefined, 'video-agent'), null);
+    assert.equal(pickResumable([{ job_id: 'x', model_id: 'video-agent', credits: 'abc' }], 'video-agent').credits, 0);
 });
