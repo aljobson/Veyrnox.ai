@@ -154,7 +154,7 @@
     // The Publish analytics sweep (lib/socialAnalyticsSweep.js). Only "true"
     // runs it; turn it on after migration 0188 is applied. The analytics
     // page and its API route follow PUBLISH_ENABLED like the rest of Publish.
-    "PUBLISH_ANALYTICS_ENABLED": "false",
+    "PUBLISH_ANALYTICS_ENABLED": "true",
     // Weekly historical timing/frequency insights; requires 0191.
     "PUBLISH_POSTING_INSIGHTS_ENABLED": "false",
     // Month/week/list calendar and rescheduling; 0192 approved 2026-10-04.
