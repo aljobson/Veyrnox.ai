@@ -24,6 +24,11 @@ for (const [input, row, host] of choices) {
     await assert.rejects(inspectCloudSelection(input, 'token', async () => Response.json({ ...row, id: 'different' })), /cloud_file_unavailable/);
     await assert.rejects(inspectCloudSelection(input, 'token', async () => Response.json({ ...row, size: input.provider === 'google_drive' ? '2147483649' : 2147483649 })), /cloud_video_not_supported/);
   });
+  test(`${input.provider} rejects non-object metadata with a safe error`, async () => {
+    for (const row of [null, [], 'provider secret', 42, true]) {
+      await assert.rejects(inspectCloudSelection(input, 'token', async () => Response.json(row)), /^Error: cloud_metadata_invalid$/);
+    }
+  });
 }
 test('rejects URLs, unsupported providers and unrecognized input fields before network I/O', async () => {
   for (const input of [{provider:'gdrive',file_id:'x'}, {provider:'google_drive',file_id:'https://localhost'}, {provider:'google_drive',file_id:'..'}, {...choices[0][0],url:'https://localhost'}, {...choices[2][0],drive_id:'../me'}]) {
