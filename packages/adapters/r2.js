@@ -388,11 +388,16 @@ function decodeXmlText(s) {
  * clamped to [60, 900] — CLAUDE.md rule: presigned URL TTL <=15 min,
  * longer TTLs need an ADR. Defense in depth against future callers;
  * the API route already caps at 900.
+ * `downloadFilename` makes it a link the browser saves under that name; the
+ * header is part of the signature, so the name cannot be changed afterwards.
  * Returns { url } or throws for config errors.
  */
-export async function presignGetUrl(key, expiresSeconds, cfg) {
+export async function presignGetUrl(key, expiresSeconds, cfg, { downloadFilename } = {}) {
     if (!isConfigured(cfg)) {
         throw new Error('R2 not configured');
+    }
+    if (downloadFilename !== undefined && !/^[A-Za-z0-9._-]{1,80}$/.test(downloadFilename)) {
+        throw new Error('invalid download file name');
     }
     const expires = Math.max(60, Math.min(900, expiresSeconds | 0));
     const amzDate = iso8601BasicNow();
@@ -401,26 +406,23 @@ export async function presignGetUrl(key, expiresSeconds, cfg) {
     const canonicalUri = `/${cfg.bucket}/${key.split('/').map(rfc3986).join('/')}`;
     const credentialScope = `${dateStamp}/${REGION}/${SERVICE}/aws4_request`;
 
-    const params = new URLSearchParams({
+    const params = {
         'X-Amz-Algorithm': 'AWS4-HMAC-SHA256',
         'X-Amz-Credential': `${cfg.accessKeyId}/${credentialScope}`,
         'X-Amz-Date': amzDate,
         'X-Amz-Expires': String(expires),
         'X-Amz-SignedHeaders': 'host',
-    });
-    // Params sorted lexicographically per SigV4.
-    const sorted = new URLSearchParams();
-    for (const [k, v] of [...params.entries()].sort(([a], [b]) => a.localeCompare(b))) sorted.append(k, v);
-    const canonicalQuery = sorted.toString();
+    };
+    if (downloadFilename) params['response-content-disposition'] = `attachment; filename="${downloadFilename}"`;
+    // SigV4: sorted by code point (capitals first) and RFC 3986 encoded. URLSearchParams writes a space as "+".
+    const canonicalQuery = Object.keys(params).sort().map((k) => `${rfc3986(k)}=${rfc3986(params[k])}`).join('&');
 
     const canonicalRequest = `GET\n${canonicalUri}\n${canonicalQuery}\nhost:${host}\n\nhost\nUNSIGNED-PAYLOAD`;
     const stringToSign =
         `AWS4-HMAC-SHA256\n${amzDate}\n${credentialScope}\n${await sha256Hex(new TextEncoder().encode(canonicalRequest))}`;
     const kSigning = await signingKey(cfg.secretAccessKey, dateStamp);
     const signature = bytesToHex(await hmacSha256(kSigning, stringToSign));
-    sorted.append('X-Amz-Signature', signature);
-
-    return { url: `https://${host}${canonicalUri}?${sorted.toString()}`, expires };
+    return { url: `https://${host}${canonicalUri}?${canonicalQuery}&X-Amz-Signature=${signature}`, expires };
 }
 
 /**

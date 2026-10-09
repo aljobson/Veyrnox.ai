@@ -22,6 +22,7 @@ import { ThreadList } from './ThreadList';
 import { useChatSend } from './useChatSend';
 import { ALL_CHATS } from '../../_lib/chatFolders';
 import { defaultModel } from '../../_lib/chatModels';
+import { CHAT_SCREEN_COPY, chatScreen, loadFailure } from '../../_lib/chatScreen';
 
 const credits = (n) => `${n} Credit${n === 1 ? '' : 's'}`;
 const MAX_TEXT = 8000;
@@ -66,6 +67,9 @@ export function ChatWorkspace() {
   const freeMap = useFreeAllowance(); // free replies left today per model; empty while the feature is off
   const [error, setError] = useState(null);
   const [closed, setClosed] = useState(false);
+  const [signedOut, setSignedOut] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false); // the first load failed for a reason other than the two above
+  const [attempt, setAttempt] = useState(0); // Try again runs the first load once more
   const [ready, setReady] = useState(false);
   const [drawer, setDrawer] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -79,8 +83,11 @@ export function ChatWorkspace() {
   const endRef = useRef(null);
 
   const fail = useCallback((e) => {
-    if (e instanceof GatewayError && e.code === 'chat_not_open') setClosed(true);
-    else if (!(e instanceof GatewayError && e.status === 401)) setError(chatErrorCopy(e?.code));
+    const why = loadFailure(e);
+    if (why === 'closed') setClosed(true);
+    else if (why === 'signed_out') setSignedOut(true); // the sign-in dialog is already open; this is what sits behind it
+    else setError(chatErrorCopy(e?.code));
+    return why;
   }, []);
   const refreshThreads = useCallback(async () => { try { setThreads((await chatApi.threads()).threads); } catch (e) { fail(e); } }, [fail]);
 
@@ -93,9 +100,9 @@ export function ChatWorkspace() {
         // Personas are optional too: any failure leaves the feature hidden and chat unchanged.
         chatApi.personas().then((r) => { if (r && r.enabled) { setPersonasOn(true); setPersonas(r.personas || []); } }).catch(() => {});
         setModels(m.models); setLimits({ maxAttachments: m.max_attachments || 4, maxEdge: m.max_image_edge || 2048 }); setThreads(t.threads); setDraftModel(defaultModel(m.models)?.id || '');
-      } catch (e) { fail(e); } finally { setReady(true); }
+      } catch (e) { if (fail(e) === 'failed') setLoadFailed(true); } finally { setReady(true); }
     })();
-  }, [fail]);
+  }, [fail, attempt]);
   useEffect(() => { endRef.current?.scrollIntoView({ block: 'end' }); }, [messages]);
   // The unsent text follows the chat it was typed in, for the user who typed it; sending or clearing it forgets it.
   useEffect(() => { writeDraft(store(), getStoredUserId(), active?.id ?? NEW_CHAT, text); }, [text, active?.id]);
@@ -232,12 +239,19 @@ export function ChatWorkspace() {
   });
 
   if (!ready) return <div className="p-8 text-sm text-vx-fg-muted" role="status">Loading</div>;
-  if (closed || models.length === 0) {
+  const view = chatScreen({ closed, signedOut, loadFailed, modelCount: models.length });
+  if (view !== 'ready') {
+    const action = 'mt-6 inline-block rounded-full border border-vx-border px-5 py-2 text-sm font-semibold hover:border-vx-accent';
+    const retry = () => { setReady(false); setLoadFailed(false); setError(null); setAttempt((n) => n + 1); };
     return (
       <div className="mx-auto max-w-[640px] px-4 py-16">
-        <h1 className="vx-display text-[32px]">LLM Chat is not open yet</h1>
-        <p className="mt-3 text-vx-fg-body">{closed ? 'We will open it here when it is ready.' : 'There are no chat models available right now.'}</p>
-        <Link href="/app/create" className="mt-6 inline-block rounded-full border border-vx-border px-5 py-2 text-sm font-semibold hover:border-vx-accent">Back to Create</Link>
+        <h1 className="vx-display text-[32px]">{CHAT_SCREEN_COPY[view].title}</h1>
+        <p className="mt-3 text-vx-fg-body">{(view === 'failed' && error) || CHAT_SCREEN_COPY[view].body}</p>
+        {view === 'signed_out'
+          ? <button type="button" className={action} onClick={() => window.dispatchEvent(new CustomEvent('veyrnox:auth-required'))}>Sign in</button>
+          : view === 'failed'
+            ? <button type="button" className={action} onClick={retry}>Try again</button>
+            : <Link href="/app/create" className={action}>Back to Create</Link>}
       </div>
     );
   }

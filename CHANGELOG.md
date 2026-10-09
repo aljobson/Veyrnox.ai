@@ -17,6 +17,7 @@ Changes that touch the money spine, the ledger or the catalog are marked **[mone
 - Five more chat models turned on (0211): DeepSeek V4.1 Flash, Gemini 3.8 Flash, Grok 4.7, GPT-6.1 Sol, Claude Opus 5.5. New chats open on the cheapest model
 - Chat folders (0210, ADR-0067 amendment 5): group chats, move them in and out, rename or delete a folder (its chats stay). Up to 50 per person; `/api/v1/chat/folders`; a thread patch with `folder_id` moves a chat
 - Chat, behind `CHAT_ENABLED` (off) and the browser preview switch `veyrnox_chat`: threads and messages (0193), `/api/v1/chat/*`, a streaming reply that is one job priced per reply from `model_catalog`, finished by `chat_complete_turn` or refunded, and a `/app/chat` screen. No text model is active until an operator verifies one (ADR-0067, Accepted) **[money]**
+- Library: every finished card has a Download link. The card already said "Save a copy before then" and offered no way to do it. It asks `GET /api/v1/jobs/:id/asset?download=1`, which signs a 15-minute link the browser saves instead of showing, after the same ownership check and the same request quota as a normal file link.
 
 ### Changed
 - **[money]** Web search switches to the capped search and is re-priced from a live measurement (0220, ADR-0067 amendment 8): Exa charged a flat $0.007 a search, so most models are +1 Credit, the Sonnet class +2 and Opus +3. Engine and price change in one statement. Held as a draft until the capped search code is deployed and `EXA_API_KEY` is set
@@ -25,6 +26,7 @@ Changes that touch the money spine, the ledger or the catalog are marked **[mone
 
 ### Fixed
 - **[money]** Chat: pressing Stop or closing the tab now ends the reply at once and settles it, text so far kept and charged or nothing produced and refunded (ADR-0067 amendment 10). The Worker is told about a disconnect (`enable_request_signal`) and the turn's finishing work is handed to `waitUntil`. No migration.
+- Chat: signed out, `/app/chat` now says "Sign in to use LLM Chat" with a Sign in button, where it said "LLM Chat is not open yet. There are no chat models available right now." A first load that fails for another reason says "LLM Chat did not load" with a Try again button, where it said the same thing.
 
 ## Unreleased (2026-09-29 to 2026-10-01)
 

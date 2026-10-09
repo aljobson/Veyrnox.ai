@@ -2,10 +2,15 @@
 // browser (ADR-0026). Turnstile hands its error-callback a code whose first
 // three digits are the family:
 // https://developers.cloudflare.com/turnstile/troubleshooting/client-side-errors/error-codes/
-// A failed check never reaches Supabase, so it is in no auth log: the notice
-// and one console line (components/Turnstile.jsx) are all there is.
+// A failed check never reaches Supabase, so it is in no auth log: the notice,
+// one console line (components/Turnstile.jsx) and one report of the code to
+// our own server (reportTurnstileFailure.js) are all there is.
 
 export const CAPTCHA_REQUIRED_COPY = 'Complete the security check first.';
+
+// Where the browser reports a failed check (ADR-0026 amendment 2). Outside
+// /api/v1: whoever is stopped at the check is not signed in.
+export const TURNSTILE_FAILURE_PATH = '/api/turnstile-failure';
 
 // Turnstile's code for an iframe that could not load. A script that never
 // loads cannot report a code at all, so the dialog files it under this one.
