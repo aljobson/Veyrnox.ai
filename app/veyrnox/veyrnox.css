@@ -1,3 +1,4 @@
+@layer components {
 /* Veyrnox.ai — shared page CSS scoped under .vx-root.
    `color-scheme` and the colour tokens live on :root in globals.css so the
    theme also reaches chrome mounted outside this subtree (AuthGate, the
@@ -13,10 +14,6 @@
 
 /* motion — mirrors handoff spec */
 @keyframes vxScan { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
-@keyframes vxPulse { 0%,100% { opacity: 1; } 50% { opacity: .25; } }
-@keyframes vxSlideUp { 0% { transform: translateY(100%); } 100% { transform: none; } }
-@keyframes vxFade { 0% { opacity: 0; } 100% { opacity: 1; } }
-@keyframes vxDrift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
 @keyframes vxTickUp { 0% { opacity: 0; transform: translateY(6px); } 40% { opacity: 1; } 100% { opacity: 0; transform: translateY(-12px); } }
 
 /* Tile motion. One strong ease-out for every UI response; the built-in
@@ -50,12 +47,8 @@
   animation: vxScan 1.6s linear infinite;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .vx-root *, .vx-root *::before, .vx-root *::after {
-    animation: none !important;
-    transition: none !important;
-  }
-}
+/* The reduced-motion kill switch is in app/globals.css, so it also covers
+   chrome mounted outside .vx-root (sign-in dialog, toasts). */
 
 /* Accessibility ─── colour-blind + high-contrast safety net */
 .vx-root :focus-visible {
@@ -111,6 +104,9 @@
   --vx-accent-ink: 255 255 255;
   --vx-money: 138 90 0;
   --vx-money-ink: 255 255 255;
+  /* The light-theme red: the dark-theme one is too pale on paper. */
+  --vx-danger: 196 36 26;
+  --vx-warn: 43 78 190;
   color-scheme: light;
   color: rgb(var(--vx-fg));
   background: rgb(var(--vx-panel));
@@ -189,4 +185,6 @@
   line-height: 0.94;
   letter-spacing: -0.04em;
   text-wrap: balance;
+}
+
 }

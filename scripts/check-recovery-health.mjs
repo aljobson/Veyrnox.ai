@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { supabaseConfig } from './check-migration-ledger.mjs';
 const COUNTS = ['reap_exhausted', 'reap_overdue', 'stale_jobs', 'stale_top_up_returns', 'unreviewed_flagged_orders', 'unreviewed_order_collisions'];
-const TASKS = new Set(['top_up_backfill', 'upload_sweep', 'asset_reap', 'auto_short', 'grsai', 'byteplus']);
+const TASKS = new Set(['top_up_backfill', 'upload_sweep', 'asset_reap', 'auto_short', 'grsai', 'byteplus', 'video_agent', 'fal_dispatch']);
 const CINEMA_COUNTS = ['cinema_poll_overdue', 'cinema_poll_failed', 'cinema_provisioning_stuck', 'cinema_processing_stuck', 'cinema_cleanup_required'];
 export function assessRecovery(value) {
     if (!value || !Array.isArray(value.unhealthy_tasks) || value.unhealthy_tasks.some(task => !TASKS.has(task))) throw Error('invalid task health');
@@ -16,6 +16,15 @@ export function assessRecovery(value) {
     // approval. Once any Cinema field exists, require the entire group.
     if (CINEMA_COUNTS.some(key => Object.hasOwn(value, key))) {
         for (const key of CINEMA_COUNTS) {
+            if (!Number.isSafeInteger(value[key]) || value[key] < 0) throw Error(`invalid ${key}`);
+            if (value[key] > 0) issues.push(`${key}: ${value[key]}`);
+        }
+    }
+    // Optional until 0230 is applied. Unknown work needs investigation even
+    // when an otherwise healthy cron continues reporting fresh heartbeats.
+    const falCounts = ['fal_dispatch_unknown', 'fal_dispatch_overdue'];
+    if (falCounts.some(key => Object.hasOwn(value, key))) {
+        for (const key of falCounts) {
             if (!Number.isSafeInteger(value[key]) || value[key] < 0) throw Error(`invalid ${key}`);
             if (value[key] > 0) issues.push(`${key}: ${value[key]}`);
         }

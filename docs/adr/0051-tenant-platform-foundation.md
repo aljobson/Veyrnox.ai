@@ -1,6 +1,6 @@
 # ADR 0051: Add tenant foundations without replacing the running application
 
-Status: proposed for staged rollout. Date: 2026-09-25.
+Status: proposed for staged rollout. Date: 2026-09-25. Built and merged; migrations applied in production; **off in production** (`TENANT_PROJECTS_ENABLED` is `false`), on in staging (status corrected 2026-10-03).
 
 The architecture brief requires tenant-aware projects, recoverable changes, audits, environment isolation and replaceable AI providers. Current main already has billing, several providers, upload inspection, Auto Short/Clip Editor and Social Cinema foundations. The initial checkout was stale; this implementation is based on ca9a75a, preserving those features.
 

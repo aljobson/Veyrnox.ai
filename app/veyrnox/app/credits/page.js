@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Chip } from '../../_components/Chip';
 import { TopUpPacks, TopUpReturn } from '../../_components/TopUpPacks';
 import { CreditStatement } from '../../_components/CreditStatement';
+import { UsageMeters } from '../../_components/UsageMeters';
 import { TopUpHistory } from '../../_components/TopUpHistory';
 import { gatewayFetch, GatewayError } from '../../_lib/gateway';
 import { readJobHistory } from '../../_lib/jobHistory';
@@ -94,7 +95,7 @@ export default function Credits() {
                     <div className="mt-4 flex items-baseline gap-2 font-vx-mono text-[13px] vx-num">
                       <span>Free credits</span>
                       <span aria-hidden className="vx-leader flex-1" />
-                      <span className="font-bold">{new Intl.NumberFormat('en-US').format(free.credits)} cr</span>
+                      <span className="font-bold text-vx-money">{new Intl.NumberFormat('en-US').format(free.credits)} cr</span>
                     </div>
                     <div className="mt-1.5 flex items-baseline gap-2 font-vx-mono text-[13px] text-vx-fg-muted vx-num">
                       <span>Expire</span>
@@ -115,7 +116,7 @@ export default function Credits() {
             )}
 
             {error === 'sign_in_required' && (
-              <div className="mt-6 rounded-lg border border-vx-money/40 bg-vx-money/[0.07] px-4 py-3 text-sm text-vx-money flex items-start gap-2">
+              <div className="mt-6 rounded-lg border border-vx-warn/40 bg-vx-warn/[0.07] px-4 py-3 text-sm text-vx-warn flex items-start gap-2">
                 <span aria-hidden="true">△</span>
                 <span>Sign in to see your balance.</span>
               </div>
@@ -133,12 +134,13 @@ export default function Credits() {
               <li>One balance covers every model. Free credits are spent first.</li>
               <li>Each generation is charged at the price on its button, when you press it.</li>
               <li>Failed jobs refund automatically, as their own line in your statement.</li>
-              <li>No subscription. Every account works the same way.</li>
+              <li>Credit Packs are one-off purchases. Nothing renews.</li>
             </ul>
           </div>
         </div>
       </section>
 
+      {balance != null && <UsageMeters />}
       {balance != null && <CreditStatement />}
       {balance != null && <TopUpHistory />}
 

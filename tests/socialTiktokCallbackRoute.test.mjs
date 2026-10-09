@@ -26,19 +26,21 @@ const request = (body, headers = {}) => new Request('https://veyrnox.test/api/v1
 });
 
 let calls;
+let recordedArgs;
 function stub({ rpcOverrides = {} } = {}) {
-    calls = [];
+    calls = []; recordedArgs = null;
     globalThis.fetch = async (url, init) => {
         const u = new URL(url);
         calls.push(u.hostname + u.pathname);
         if (u.hostname === 'open.tiktokapis.com' && u.pathname === '/v2/oauth/token/') {
-            return Response.json({ access_token: 'access-token-1', refresh_token: 'refresh-token-1', expires_in: 86400, open_id: 'open-1' });
+            return Response.json({ access_token: 'access-token-1', refresh_token: 'refresh-token-1', expires_in: 86400, open_id: 'open-1', scope: 'user.info.basic,video.upload' });
         }
         if (u.hostname === 'open.tiktokapis.com' && u.pathname === '/v2/user/info/') {
             return Response.json({ data: { user: { open_id: 'open-1', display_name: 'Creator Name', avatar_url: 'https://example.com/a.jpg' } }, error: { code: 'ok', message: '', log_id: 'x' } });
         }
         // db.test — Supabase PostgREST RPC calls
         const name = u.pathname.split('/').pop();
+        if (name === 'record_social_account_connection') recordedArgs = JSON.parse(init.body);
         const result = rpcOverrides[name] ?? ({
             get_or_create_default_social_brand: { ok: true, idempotent: true, brand_id: brandId, label: 'My Brand', timezone: 'UTC' },
             record_social_account_connection: { ok: true, account_id: accountId, idempotent: false },
@@ -103,4 +105,14 @@ test('each required config var missing degrades to a clean 503 before any networ
         assert.deepEqual(calls, []);
     }
     setConfigured();
+});
+
+
+test('records actual TikTok grants, never all requested scopes', async () => {
+    setConfigured(); stub();
+    process.env.TIKTOK_ANALYTICS_SCOPE_ENABLED = 'true';
+    const res = await POST(request({ code: 'auth-code', state: await validState(), codeVerifier: verifier }));
+    assert.equal(res.status, 200);
+    assert.deepEqual(recordedArgs.p_scopes, ['user.info.basic', 'video.upload']);
+    delete process.env.TIKTOK_ANALYTICS_SCOPE_ENABLED;
 });

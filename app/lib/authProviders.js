@@ -1,10 +1,7 @@
-// Which OAuth buttons the sign-in dialog shows (components/AuthGate.jsx).
-//
-// The build's list (NEXT_PUBLIC_AUTH_PROVIDERS, from
-// packages/security/environments.js) is the default, so the buttons render
-// at once and on every page, whether or not the live settings read succeeds.
-// The live read (`/auth/v1/settings`) can only remove one: a provider
-// switched off in Supabase would otherwise redirect to a 400 page.
+// OAuth provider policy for the shared sign-in dialog. Apple and passkeys
+// always have a place in the dialog; live settings gate starting an action.
+// Google follows the build list. Unavailable methods explain what needs setup
+// without navigating to Supabase's raw error page.
 
 export const OAUTH_PROVIDERS = ['apple', 'google'];
 
@@ -12,13 +9,6 @@ export const OAUTH_PROVIDERS = ['apple', 'google'];
 export function configuredProviders(list) {
     const named = new Set(String(list || '').split(',').map((s) => s.trim()).filter(Boolean));
     return Object.fromEntries(OAUTH_PROVIDERS.map((p) => [p, named.has(p)]));
-}
-
-/** Narrow the configured set by a successful settings read; a failed read changes nothing. */
-export function withLiveSettings(configured, settings) {
-    if (!settings || typeof settings !== 'object') return configured;
-    const ext = settings.external && typeof settings.external === 'object' ? settings.external : {};
-    return Object.fromEntries(OAUTH_PROVIDERS.map((p) => [p, !!configured[p] && ext[p] === true]));
 }
 
 /**
@@ -49,4 +39,11 @@ export function providerAvailable(settings, provider) {
     if (!settings || typeof settings !== 'object') return true;
     const ext = settings.external && typeof settings.external === 'object' ? settings.external : {};
     return ext[provider] === true;
+}
+
+/** A visible passkey option explains missing support rather than disappearing. */
+export function passkeyUnavailableReason(settings, supported) {
+    if (!supported) return "This browser cannot use passkeys. Try a supported browser over HTTPS, or use another method.";
+    if (settings && settings.passkeys_enabled !== true) return "Passkey sign-in isn't enabled for this environment yet. Use another method.";
+    return null;
 }

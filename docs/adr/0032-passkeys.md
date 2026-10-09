@@ -93,6 +93,15 @@ time with a comment explaining why; the comment is in the script.
   revocation is only possible through the Supabase admin API. This is a real
   gap, named rather than hidden.
 
+  > **Update, 2026-10-03.** The Account page now has a Passkeys panel
+  > (`app/veyrnox/_components/PasskeyPanel.js`): it lists the account's
+  > passkeys, adds one and removes one. It shows only when
+  > `/auth/v1/settings` reports `passkeys_enabled`, like the sign-in button.
+  > It was driven end to end in Chrome with a virtual authenticator against a
+  > local stand-in for GoTrue, which proves the browser ceremony and the
+  > request bodies we send. It does **not** prove GoTrue accepts them: rollout
+  > steps 3 and 4 below (a real passkey on a real account) are still to do.
+
 - **Passkey sign-in DOES pass Turnstile**, unlike OAuth. GoTrue treats the
   authentication challenge as a sign-in, so Attack Protection applies:
   `/auth/v1/passkeys/authentication/options` refuses a tokenless request with
@@ -119,3 +128,36 @@ time with a comment explaining why; the comment is in the script.
    needs a real browser with a Turnstile token and a session.
 3. Register a passkey on a real account, sign out, sign in with it.
 4. Then, and only then, treat the verify bodies in decision 1 as confirmed.
+
+> **Registration confirmed on production, 2026-10-03.** From the Passkeys
+> panel on `/app/account`, signed in on a real account:
+> `GET /auth/v1/passkeys` → 200 (an empty list rendered as "no passkeys"),
+> `POST …/registration/options` → 200, the browser created the credential,
+> `POST …/registration/verify` → 200, and the next list showed the passkey
+> (named "Chromium Browser" by Supabase). So `decodeOptions`, the
+> `{challenge_id, credential}` registration verify body and the list shape are
+> confirmed. A second attempt on the same device was refused by the browser
+> and reported as a duplicate, as designed.
+>
+> **Still unconfirmed:** the *sign-in* half of step 3 (sign out, then sign in
+> with the passkey), which also exercises the authentication verify body.
+
+## Amendment — 2026-10-04: every sign-in entry point
+
+The owner requires Apple and passkeys in every sign-in dialog, including staging.
+The root-mounted `AuthGate` now keeps both options visible in sign-in, sign-up
+and magic-link modes. Live settings gate starting an action, rather than hiding
+its button. Missing project configuration is explained in the dialog, and an
+unsupported browser gets a passkey-specific message. Failed settings reads
+permit an attempt; OAuth error handling and passkey CAPTCHA protection remain.
+This supersedes the earlier button-visibility rule.
+
+At inspection, production reported Apple and passkeys enabled; staging reported
+both disabled. Staging Apple requires the AI Services ID to accept
+`https://yrqzwqywxfesmbvhzjgj.supabase.co/auth/v1/callback`, plus its valid client
+secret in the staging Supabase provider. Staging passkeys require a separate RP
+ID `veyrnox-ai-staging.al-jobson.workers.dev` and matching HTTPS origin. Production
+RP ID stays `veyrnox.ai`; production passkeys cannot be used on the staging host.
+Staging passkeys were subsequently enabled in Supabase and the public settings
+read back `passkeys_enabled: true`. Apple staging configuration remains pending.
+Showing a button does not establish a successful real sign-in.

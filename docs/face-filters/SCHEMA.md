@@ -1,7 +1,9 @@
 # Backend Schema — Face Filters & Media Authenticity
 
-**Status:** Draft · 2026-09-18
+**Status:** Draft · 2026-09-18 · checked against `main` at `42150476` on 2026-10-08
 **Reads with:** [TRD.md](TRD.md), `packages/db/schema/0001_initial.sql`, [../../CLAUDE.md](../../CLAUDE.md)
+
+*Status 2026-10-08: still true for Track A's own work (no filter table or column exists). Other work since has added columns to the tables below; the main ones are listed in the notes. For the full current schema see `docs/product/SCHEMA.md`.*
 
 Track A adds **no tables and no columns**. This document records the existing
 shape an agent must work within, then the one new table Track B would need.
@@ -9,7 +11,7 @@ shape an agent must work within, then the one new table Track B would need.
 ## 1. Authentication flow
 
 Supabase Auth is the only identity source. Providers: email/password, Apple,
-Google.
+Google *(2026-10-08: plus passkey sign-in, ADR-0032)*.
 
 ```
 Browser                    Supabase Auth              Worker                 Postgres
@@ -46,6 +48,8 @@ migrations `0010` and `0071`. The `grant:signup` credit follows
 ## 2. Existing tables — what filters touch
 
 ### `users`
+*2026-10-08: gained `rights_attested_at` and `rights_attestation_version` (0146). `plan` was reported unused in the 2026-10-02 audit (ISSUES S14).*
+
 | Column | Type | Notes |
 |--------|------|-------|
 | `id` | UUID PK | internal identity; every FK points here |
@@ -57,6 +61,8 @@ migrations `0010` and `0071`. The `grant:signup` credit follows
 Not modified. Supplies the `user_id` that prefixes every upload key.
 
 ### `credit_balances`
+*2026-10-08: also carries `subscription_balance` (ADR-0064, 0183/0184); the invariant is now `free_balance + subscription_balance <= balance`.*
+
 | Column | Type | Notes |
 |--------|------|-------|
 | `user_id` | UUID PK → `users.id` | |
@@ -81,6 +87,8 @@ UPDATE and DELETE raise via trigger `ledger_entries_append_only`. A filter debit
 is an ordinary row — same reason format, same refund path. No new reason vocabulary.
 
 ### `jobs`
+*2026-10-08: gained `consent_attested_at` (0096, set once by `job_consent_attested`) and other columns; the state list below is as written 2026-09-18 and was not re-checked.*
+
 | Column | Type | Notes |
 |--------|------|-------|
 | `id` | UUID PK | |
@@ -99,6 +107,8 @@ URL.** A signed URL in a durable column is a credential that outlives its use.
 The enum is unchanged — a filter moves through exactly the same states.
 
 ### `model_catalog` — normative for pricing
+*2026-10-08: `modality` values `image-to-image` and `video-to-video` already exist in the catalog (0086, 0088, 0089, 0090, 0221). No Track A row is present. The table also has `cost_unit`, `billing_seconds` and `free_allowance_per_day` (ADR-0069) among others.*
+
 | Column | Type | Notes |
 |--------|------|-------|
 | `id` | TEXT PK | lowercase slug, `^[a-z0-9][a-z0-9.-]{0,63}$` |
@@ -126,7 +136,7 @@ no DDL — but `kindOf()` and `priceFor()` must be pinned by tests first (TRD §
 | `expires_at` | TIMESTAMPTZ NULL | retention sweep |
 | `created_at` | TIMESTAMPTZ | |
 
-Holds **results only**. A user's uploaded source is not an asset row — it has no
+*2026-10-08: the 24-hour age sweep and the consumed-source sweep for `uploads/` are in `lib/uploadSweep.js`, run by the 5-minute cron.* Holds **results only**. A user's uploaded source is not an asset row — it has no
 job, no output, and a different retention need. It lives in R2 under
 `uploads/{user_id}/{uuid}` and is swept by prefix and age.
 
@@ -182,7 +192,7 @@ SECURITY DEFINER function, and an idempotency key on any state-changing RPC.
 
 ## 6. Migrations
 
-Filters need at most two files, both idempotent, both
+*2026-10-08: next free migration number on `main` is 0228 (latest present: 0227; 0224 was renumbered to 0227). Check open PRs first.* Filters need at most two files, both idempotent, both
 `packages/db/schema/supabase/NNNN_<snake_case>.sql`:
 
 1. The catalog rows — `INSERT ... ON CONFLICT (id) DO UPDATE`, inserted with

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import { Button } from '../../_components/Button';
 import { getSession, onSessionChange } from '../../../lib/authClient';
 import { gatewayFetch, makeIdempotencyKey } from '../../_lib/gateway';
+import { useCinemaPreview } from '../preview';
 
 const identity = () => getSession()?.user?.id || '';
 const noIdentity = () => '';
@@ -16,11 +17,8 @@ const CONSENT_TEXT = 'Start my Cinema Pass now. I understand it renews automatic
 
 export function PassPanel() {
   const account = useSyncExternalStore(onSessionChange, identity, noIdentity);
-  const [preview, setPreview] = useState(false);
-  useEffect(() => {
-    try { setPreview(localStorage.getItem('veyrnox_social_cinema') === 'true'); } catch {}
-  }, []);
-  return <main id="main" className="mx-auto max-w-[900px] px-4 py-10 pb-40 sm:px-8 sm:py-16 sm:pb-32">
+  const preview = useCinemaPreview();
+  return <div className="mx-auto max-w-[900px] px-4 py-10 pb-40 sm:px-8 sm:py-16 sm:pb-32">
     <header className="max-w-2xl">
       <p className="mb-4 font-vx-mono text-xs tracking-widest text-vx-accent">SOCIAL CINEMA · CINEMA PASS</p>
       <h1 className="text-4xl font-black leading-tight sm:text-5xl">Every story, one Pass.</h1>
@@ -30,7 +28,7 @@ export function PassPanel() {
     {!preview ? <p className="mt-10 text-vx-fg-muted">Cinema Pass is not open yet.</p>
       : !account ? <div className="mt-10"><p className="mb-4 text-vx-fg-body">Use your Veyrnox.ai account to continue.</p><Button onClick={() => window.dispatchEvent(new CustomEvent('veyrnox:auth-required'))}>Sign in</Button></div>
         : <Pass key={account} />}
-  </main>;
+  </div>;
 }
 
 function Pass() {
@@ -96,7 +94,7 @@ function Pass() {
   const live = pass && ['active', 'past_due'].includes(pass.status);
   return <div className="mt-10 space-y-10">
     {notice && <p role="status" aria-live="polite" className="rounded-lg border border-vx-border bg-vx-base/60 px-4 py-3 text-sm text-vx-fg-body">{notice}</p>}
-    {live && <section aria-labelledby="own-pass" className="rounded-2xl border border-vx-money/40 bg-vx-money/[0.07] p-6">
+    {live && <section aria-labelledby="own-pass" className="rounded-2xl border border-vx-accent/40 bg-vx-accent/[0.07] p-6">
       <h2 id="own-pass" className="text-xl font-extrabold">Your Cinema Pass</h2>
       <p className="mt-2 text-vx-fg-body">{pass.status === 'past_due' ? 'Payment is overdue; update your card to keep watching.' : pass.cancel_at_period_end ? `Ends ${when(pass.current_period_end)}.` : `Renews ${when(pass.current_period_end)} at ${usd.format(pass.price_usd_cents / 100)} plus tax.`}</p>
       {pass.within_cooling_off && !pass.cancel_at_period_end && <p className="mt-2 text-sm text-vx-fg-muted">Cancel before {when(pass.cooling_off_until)} for a pro-rata refund.</p>}
@@ -116,7 +114,7 @@ function Pass() {
         {plans.map((p) => <li key={p.id} className="flex flex-col rounded-2xl border border-vx-border bg-vx-base/60 p-5">
           <p className="font-vx-mono text-xs tracking-widest text-vx-accent uppercase">{INTERVAL[p.billing_interval]}ly</p>
           <p className="mt-3 text-3xl font-black">{usd.format(p.price_usd_cents / 100)}<span className="text-base font-normal text-vx-fg-muted"> / {INTERVAL[p.billing_interval]}</span></p>
-          {p.intro_price_usd_cents != null && <p className="mt-1 text-sm text-vx-money">First {INTERVAL[p.billing_interval]} {usd.format(p.intro_price_usd_cents / 100)} for new Pass holders.</p>}
+          {p.intro_price_usd_cents != null && <p className="mt-1 text-sm font-bold text-vx-fg-body">First {INTERVAL[p.billing_interval]} {usd.format(p.intro_price_usd_cents / 100)} for new Pass holders.</p>}
           <Button className="mt-5" disabled={busy || !agreed} onClick={() => start(p.id)}>Start {INTERVAL[p.billing_interval]}ly Pass</Button>
         </li>)}
       </ul>

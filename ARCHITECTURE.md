@@ -2,6 +2,10 @@
 
 How Veyrnox.ai fits together. This is the map; the reasons behind each choice are in [`docs/adr/`](docs/adr/), the rules that protect it are in [`CLAUDE.md`](CLAUDE.md), and the domain vocabulary is in [`CONTEXT.md`](CONTEXT.md). Environment-specific detail lives in [`docs/architecture/`](docs/architecture/) (`current-state.md`, `target-state.md`, `environments.md`).
 
+The [system design proposal](docs/architecture/system-design.md) develops this architecture with workload estimates, durable dispatch and recovery boundaries, service objectives, and a staged delivery plan. Proposed components are distinguished from the running application.
+
+[ADR 0077](docs/adr/0077-fal-event-driven-dispatch.md) proposes event-driven wakeups for the durable fal image slice after staging measured a 201.67-second wait before dispatch. Its producer and consumer code preserve database claims and the cron backstop. The [staging evidence](docs/architecture/fal-dispatch-queue.md) records private queue acceptance and a signed-in browser generation claimed 1.71 seconds after admission, then rendered in Library. These single observations are not latency percentiles. Wider fault/load/monitoring acceptance remains pending; flags are off.
+
 ## The shape in one picture
 
 ```
@@ -31,7 +35,7 @@ The browser never talks to Postgres. Only the Worker holds the service-role key,
 1. **Edge.** `worker.js` caps request bodies, rate-limits admin paths before OpenNext sees them, and runs the scheduled recovery tasks.
 2. **Auth gate.** `middleware.js` rejects any `/api/v1/*` request without a valid Supabase JWT (signature, issuer, audience `authenticated`, expiry with 5 s skew, `sub`). Identity then travels only in server-set `x-veyrnox-auth-id`, `-email` and `-role` headers. Routes trust those headers and never trust a user id in a body.
 3. **Route handler.** Validates input at the boundary, applies a Postgres-backed rate limit, then calls RPCs. Errors are typed `{error: "kebab_case_code"}` and never leak provider payloads or DB messages.
-4. **Unauthenticated endpoints** (Stripe, fal, BytePlus and other provider webhooks) authenticate by cryptographic signature instead.
+4. **Unauthenticated endpoints** (the Stripe, fal, kie, OpenRouter and Cloudflare Stream webhooks) authenticate by cryptographic signature instead. BytePlus and GrsAI have no signed callback, so their jobs are polled by a sweep and never register a webhook.
 
 ## The money spine
 
@@ -102,7 +106,7 @@ Two separate Supabase projects exist (AI staging and AI production), each with i
 
 - **Bundler traps.** Cloudflare Workers Builds breaks if `tsx` is a root devDependency, or if `jose` or `@supabase/supabase-js` is on the SSR import graph. Auth uses Web Crypto and plain `fetch`.
 - **Hard wall.** This repo contains no wallet or on-chain framing. `scripts/check-hard-wall.sh` enforces it in CI.
-- **EU residency.** Database and media stay in the EU ([ADR-0005](docs/adr/0005-phase-0-business-preconditions.md), [ADR-0021](docs/adr/0021-media-in-eu-jurisdiction-r2.md)).
+- **EU residency.** The production database and media stay in the EU (staging's Supabase project is in `us-east-2` and holds test data only) ([ADR-0005](docs/adr/0005-phase-0-business-preconditions.md), [ADR-0021](docs/adr/0021-media-in-eu-jurisdiction-r2.md)).
 
 ## Where to look first
 

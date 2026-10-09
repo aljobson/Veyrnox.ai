@@ -33,7 +33,7 @@ export function CameraPanel({ enabled, onToggle, settings, onChange }) {
               <select
                 value={settings[f.key]}
                 onChange={(e) => onChange({ ...settings, [f.key]: f.key === 'focal' ? Number(e.target.value) : e.target.value })}
-                className="bg-vx-base border border-vx-border rounded-lg px-2 py-1.5 text-xs text-vx-fg focus:outline-none focus:border-vx-accent"
+                className="bg-vx-base border border-vx-border rounded-lg px-2 py-1.5 text-xs text-vx-fg focus:outline-hidden focus:border-vx-accent"
               >
                 {f.options.map((o) => <option key={o} value={o}>{o}{f.suffix || ''}</option>)}
               </select>

@@ -30,7 +30,7 @@ export function PresetWall({ catalog }) {
               mediaClassName={classes.media}
               mediaStyle={{ background: preset.bg }}
             >
-              <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
+              <div className="absolute inset-0 bg-linear-to-t from-black/75 via-black/10 to-transparent" />
               {/* Fixed light ink: this sits on a hardcoded gradient under a
                   black scrim, so theme tokens would read near-black in light
                   theme. Same reasoning as the feature cards. */}
@@ -39,7 +39,7 @@ export function PresetWall({ catalog }) {
                   <div className={`font-black text-white tracking-tight ${isHero ? 'text-3xl sm:text-4xl' : 'text-[15px]'}`}>{presetTitle(preset.name)}</div>
                   <div className={`mt-0.5 text-white/85 truncate ${isHero ? 'text-sm' : 'text-xs'}`}>{preset.model}</div>
                 </div>
-                <div className={`shrink-0 font-vx-mono font-bold text-white vx-num ${isHero ? 'text-lg' : 'text-[13px]'}`}>{presetCredits(preset, catalog)} cr</div>
+                <div className={`shrink-0 font-vx-mono font-bold text-[#E4A93C] vx-num ${isHero ? 'text-lg' : 'text-[13px]'}`}>{presetCredits(preset, catalog)} cr</div>
               </div>
             </MediaTile>
           );

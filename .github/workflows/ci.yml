@@ -87,6 +87,9 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Bundle fal dispatch consumer
+        run: npx wrangler deploy --config wrangler.fal-dispatch.jsonc --env staging --dry-run
+
       # High and critical advisories fail; the exceptions, each with its
       # reason, are the ALLOWED list in the script.
       - name: Audit (high and above)

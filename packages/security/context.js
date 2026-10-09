@@ -1,12 +1,16 @@
 import { ApiError } from './errors.js';
 import { UUID_RE } from './input.js';
 /** @typedef {{requestId: string, userId: string, authLevel: 'aal1' | 'aal2', sessionId?: string}} RequestContext */
-/** Remove every private context header, including future fields.
+/** Blank every private context header the caller sent, including future fields.
+ * Blanked, not deleted: OpenNext forwards the headers a middleware set on top of
+ * the caller's own, so a deletion is not applied there and only an explicit
+ * value replaces what was sent (ADR-0078). Handlers read '' as absent, and may
+ * read only the names middleware.js sets itself (IDENTITY_HEADERS).
  * @param {Headers} input
  */
 export function stripContext(input) {
     const headers = new Headers(input);
-    for (const name of [...headers.keys()]) if (name.startsWith('x-veyrnox-') || name === 'x-request-id') headers.delete(name);
+    for (const name of [...headers.keys()]) if (name.startsWith('x-veyrnox-') || name === 'x-request-id') headers.set(name, '');
     return headers;
 }
 /** Only call with claims after cryptographic verification + standard claim checks.

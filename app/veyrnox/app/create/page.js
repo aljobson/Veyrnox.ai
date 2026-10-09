@@ -1,5 +1,6 @@
 'use client';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import Link from 'next/link';
 import { AppNav } from '../../_components/NavBar';
 import { Chip } from '../../_components/Chip';
 import { ASPECT_RATIOS } from '../../_lib/tokens';
@@ -11,7 +12,10 @@ import { StudioJobGrid } from '../../_components/StudioJobGrid';
 import { useStudioJobs } from '../../_lib/useStudioJobs';
 import { IMAGE_COUNTS, takesImageCount, imageCount, totalCost, inputsForIndex, batchNote, sendInOrder, submitErrorCode } from '../../_lib/imageBatch';
 import { useCatalog } from '../../_lib/useCatalog';
+import { useFreeAllowance } from '../../_lib/useFreeAllowance';
+import { freeCost, freeLeftFor } from '../../_lib/freeAllowance';
 import { takeStudioDraft } from '../../_lib/landingDraft';
+import { templateStartId } from '../../../../lib/templateStart';
 import { DEFAULT_CINEMA, buildCinemaPrompt } from '../../_lib/cinema';
 import { CameraPanel } from '../../_components/CameraPanel';
 import { CharacterPanel } from '../../_components/CharacterPanel';
@@ -20,8 +24,10 @@ import { DrawOnImage } from '../../_components/DrawOnImage';
 import { SourcePickers } from '../../_components/SourcePickers';
 import { LibraryPicker } from '../../_components/LibraryPicker';
 import { GenerationSettings } from '../../_components/GenerationSettings';
+import { VoiceDescription } from '../../_components/VoiceDescription';
 import { ControlRow } from '../../_components/ControlRow';
-import { settingsInputs } from '../../_lib/generationSettings';
+import { TIERS, TIER_LABEL, filterByTier } from '../../_lib/modelTiers';
+import { settingsInputs, voiceIsMissing } from '../../_lib/generationSettings';
 import { ParticleButton } from '@/components/ParticleButton';
 import { jobStateUi, SLOW_MODEL_WAIT } from '../../_lib/studioStates';
 const DEFAULT_MODEL = 'wan-2.5-kie';
@@ -37,12 +43,19 @@ function errorFor(e) {
   return e instanceof GatewayError ? { code: e.code, retryAfter: e.retryAfter } : { code: 'internal' };
 }
 
+// Off on the server and first paint, then whatever this browser has stored.
+const never = () => () => {};
+const autoShortFlag = () => readFlag(AUTO_SHORT_FLAG);
+const off = () => false;
+
 export default function CreateStudio() {
   const { models: catalogModels, live: catalogLive, loading: catalogLoading } = useCatalog();
-  const [autoShortOn, setAutoShortOn] = useState(false);
-  useEffect(() => { setAutoShortOn(readFlag(AUTO_SHORT_FLAG)); }, []);
-  const models = catalogModels.filter((m) => !m.isEdit && (autoShortOn || !m.takesTopic));
+  const freeMap = useFreeAllowance(); // ADR-0069: free jobs left today per model; empty while the feature is off
+  const autoShortOn = useSyncExternalStore(never, autoShortFlag, off);
+  const models = catalogModels.filter((m) => !m.isEdit && !m.takesPlan && (autoShortOn || !m.takesTopic));
   const [modelId, setModelId] = useState(DEFAULT_MODEL);
+  const [presetParam, setPresetParam] = useState(null);
+  const [tier, setTier] = useState(null);
   const [duration, setDuration] = useState('5s');
   const [aspect, setAspect] = useState('16:9');
   const [prompt, setPrompt] = useState('A neon-lit Tokyo alley at 3am, low anamorphic tracking shot');
@@ -59,6 +72,7 @@ export default function CreateStudio() {
   const [cinema, setCinema] = useState(DEFAULT_CINEMA);
   const [seed, setSeed] = useState('');
   const [negative, setNegative] = useState('');
+  const [voice, setVoice] = useState(''); // the voice in words, for a speech model that takes one
   const [characterOn, setCharacterOn] = useState(false);
   const [character, setCharacter] = useState({});
   const [count, setCount] = useState(1);
@@ -80,6 +94,7 @@ export default function CreateStudio() {
     const params = new URLSearchParams(window.location.search);
     const wanted = params.get('model');
     if (wanted) setModelId(wanted);
+    setPresetParam(params.get('preset')); // a template's id, from its studio link; sent only while its own model is selected
     if (params.get('duration') === '10s') setDuration('10s');
     const draft = takeStudioDraft(window.sessionStorage, wanted);
     if (draft) setPrompt(draft.prompt);
@@ -98,6 +113,9 @@ export default function CreateStudio() {
   }, [models, modelId, catalogLoading]);
 
   const model = models.find((m) => m.id === modelId) || null;
+  // The picked model stays listed even when the tier filter would hide it.
+  const listed = filterByTier(models, tier);
+  const visibleModels = model && !listed.includes(model) ? [model, ...listed] : listed;
   // Lengths the gateway will actually sell for this model, from the catalog.
   // Rendering anything else offers a price the server then refuses.
   const durations = (model && model.durations && model.durations.length ? model.durations : [5]).map((s) => `${s}s`);
@@ -105,6 +123,7 @@ export default function CreateStudio() {
   const missingSource = Object.entries(media).some(([slot, spec]) => spec.required && !sources[slot]);
   const hasUpload = Object.keys(media).some((slot) => sources[slot]);
   const missingConsent = hasUpload && !consent;
+  const missingVoice = voiceIsMissing(model, voice);
   // Camera text suits pictures and clips; audio and speech would read it aloud.
   const isShort = !!model?.takesTopic;
   const takesCamera = !isShort && (model?.kind === 'image' || model?.kind === 'video');
@@ -115,7 +134,9 @@ export default function CreateStudio() {
   const unitCost = model ? model.credits * (duration === '10s' && model.kind === 'video' ? 2 : 1) : 0;
   // Other models always send one; the count control is image-only.
   const n = imageCount(model, count);
-  const cost = totalCost(unitCost, n);
+  // The server decides what is free; the first `freeLeft` jobs of a batch are, the rest cost the catalog price.
+  const freeLeft = freeLeftFor(freeMap, modelId);
+  const cost = freeLeft > 0 ? freeCost(unitCost, n, freeLeft) : totalCost(unitCost, n);
   const durationKey = durations.join(',');
   // `generating` is derived from `jobs`, which is only set AFTER the await in
   // onSubmit. Between the click and that setState the button stayed enabled,
@@ -211,6 +232,7 @@ export default function CreateStudio() {
     if (model.gated) { inFlight.current = false; setError({ code: 'model_gated' }); return; }
     if (missingSource) { inFlight.current = false; setError({ code: 'source_required' }); return; }
     if (missingConsent) { inFlight.current = false; setError({ code: 'consent_required' }); return; }
+    if (missingVoice) { inFlight.current = false; setError({ code: 'inputs_invalid:voice_description' }); return; }
     setError(null);
     setSending(true);
     const keys = Array.from({ length: n }, () => makeIdempotencyKey());
@@ -219,7 +241,7 @@ export default function CreateStudio() {
       prompt: finalPrompt(),
       aspect_ratio: aspect,
       duration_seconds: model.kind === 'video' ? Number(duration.replace('s', '')) : undefined,
-      ...settingsInputs(model, { seed, negative }),
+      ...settingsInputs(model, { seed, negative, voice }),
     };
     // strip undefined so server sees a clean object
     Object.keys(inputs).forEach((k) => inputs[k] === undefined && delete inputs[k]);
@@ -239,21 +261,24 @@ export default function CreateStudio() {
           method: 'POST',
           body: JSON.stringify({
             model_id: modelId, idempotency_key: keys[i], inputs: inputsForIndex(inputs, i, n),
+            preset: templateStartId(presetParam, modelId) || undefined,
             source_keys: source_keys.length ? source_keys : undefined,
             source_assets: source_assets.length ? source_assets : undefined,
             consent: anySource ? true : undefined,
           }),
         });
+        // A job that took a free allowance (ADR-0069) cost nothing; the server says so.
+        const jobCredits = submitted.free_allowance === true ? 0 : unitCost;
         // The first accepted job replaces the previous click's jobs.
-        (i === 0 ? startJobs : addJob)({ job_id: submitted.job_id, state: 'queued', credits: unitCost, model_id: modelId });
+        (i === 0 ? startJobs : addJob)({ job_id: submitted.job_id, state: 'queued', credits: jobCredits, model_id: modelId });
         pushJobHistory({
           job_id: submitted.job_id,
           model_id: modelId,
-          credits: unitCost,
+          credits: jobCredits,
           prompt: prompt.slice(0, 60),
           name: prompt.slice(0, 40),
         });
-        setBalance(submitted.balance_after);
+        if (submitted.balance_after != null) setBalance(submitted.balance_after);
       });
       if (started > 0) notifyBalanceChanged();
       if (failure) {
@@ -339,11 +364,22 @@ export default function CreateStudio() {
             aria-label={isShort ? 'Topic' : 'Prompt'}
             maxLength={isShort ? 200 : undefined}
             rows={3}
-            className="mt-3 w-full bg-vx-panel border border-vx-border rounded-lg p-3.5 text-sm text-vx-fg placeholder:text-vx-fg-faint resize-none focus:outline-none focus:border-vx-accent"
+            className="mt-3 w-full bg-vx-panel border border-vx-border rounded-lg p-3.5 text-sm text-vx-fg placeholder:text-vx-fg-faint resize-none focus:outline-hidden focus:border-vx-accent"
             placeholder={isShort ? 'A topic for a 32-second short, e.g. 3 facts about octopuses'
               : model?.id === 'elevenlabs-dialogue' ? 'One line per speaker, e.g.' + '\n' + 'Ana: Did you hear that?' + '\n' + 'Ben: [whispers] Stay quiet.'
               : 'Describe the shot…'}
           />
+          {model?.takesVoice && <VoiceDescription value={voice} onChange={setVoice} />}
+
+          {!isShort && (
+            <p className="mt-2 text-xs text-vx-fg-muted">
+              Need help? Ask a Studio skill (1 Credit a reply):{' '}
+              <Link href="/app/chat?skill=prompt-writer" className="text-vx-accent hover:underline">Prompt writer</Link>,{' '}
+              <Link href="/app/chat?skill=fix-my-prompt" className="text-vx-accent hover:underline">Fix my prompt</Link>,{' '}
+              <Link href="/app/chat?skill=model-picker" className="text-vx-accent hover:underline">Model picker</Link> or{' '}
+              <Link href="/app/chat" className="text-vx-accent hover:underline">all skills</Link>.
+            </p>
+          )}
 
           <SourcePickers media={media} sources={sources} onPick={pickSource}
             onDraw={model?.kind === 'image' ? () => setDrawing(true) : null} onLibrary={setLibraryFor} />
@@ -398,8 +434,22 @@ export default function CreateStudio() {
                 <span className="font-vx-mono text-[9px] tracking-[0.12em] text-vx-fg-faint">CACHED</span>
               )}
             </div>
+            <div className="flex gap-1.5 mb-3" role="group" aria-label="Price tier">
+              {TIERS.map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setTier(tier === t ? null : t)}
+                  aria-pressed={tier === t}
+                  className={`rounded-full px-3 py-1 border font-vx-mono text-[10px] tracking-[0.1em] uppercase ${
+                    tier === t ? 'border-vx-accent text-vx-accent' : 'border-vx-fg/15 text-vx-fg-muted hover:bg-vx-fg/[0.04]'
+                  }`}
+                >
+                  {TIER_LABEL[t]}
+                </button>
+              ))}
+            </div>
             <div className="flex flex-col gap-1.5">
-              {models.map((m) => (
+              {visibleModels.map((m) => (
                 <button
                   key={m.id}
                   onClick={() => setModelId(m.id)}
@@ -417,7 +467,9 @@ export default function CreateStudio() {
                     )}
                     <span className="font-vx-mono text-[10px] tracking-[0.1em] text-vx-fg-faint uppercase shrink-0">{m.kind}</span>
                   </span>
-                  <span className="font-vx-mono text-[12px] font-bold text-vx-money vx-num shrink-0">{m.credits} cr</span>
+                  {freeLeftFor(freeMap, m.id) > 0
+                    ? <span className="font-vx-mono text-[12px] font-bold text-vx-accent shrink-0">FREE · {freeLeftFor(freeMap, m.id)} left</span>
+                    : <span className="font-vx-mono text-[12px] font-bold text-vx-money vx-num shrink-0">{m.credits} cr</span>}
                 </button>
               ))}
             </div>
@@ -453,10 +505,15 @@ export default function CreateStudio() {
               </span>
             </div>
             <div className="mt-1 font-vx-mono text-[36px] font-bold text-vx-money vx-num">−{cost} cr</div>
+            {freeLeft > 0 && (
+              <div role="status" className="mt-1 font-vx-mono text-[11px] tracking-[0.08em] text-vx-accent">
+                {n > freeLeft ? `FREE · ${freeLeft} OF ${n} · ${freeLeft} LEFT TODAY` : `FREE · ${freeLeft} LEFT TODAY`}
+              </div>
+            )}
             <ParticleButton
               onClick={generating ? cancel : onSubmit}
               className="mt-4 w-full flex items-center justify-between bg-vx-accent text-vx-accent-ink rounded-full px-6 py-3.5 font-extrabold hover:bg-vx-accent-hover disabled:opacity-40 disabled:cursor-not-allowed"
-              disabled={sending || (!generating && (!model || model.gated || balance == null || cost > balance || missingSource || missingConsent))}
+              disabled={sending || (!generating && (!model || model.gated || missingVoice || balance == null || cost > balance || missingSource || missingConsent))}
               aria-label={sending || generating || model?.gated ? undefined : `Generate ${n > 1 ? `${n} images ` : ''}for ${cost} credits`}
             >
               <span>{sending ? 'Sending…' : generating ? 'New generation' : model?.gated ? 'Premium — gated' : n > 1 ? `Generate ${n}` : 'Generate'}</span>

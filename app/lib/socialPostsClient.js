@@ -25,10 +25,10 @@ export async function listSocialPosts({ beforeCreatedAt, beforeId } = {}) {
  * comment in packages/db/schema/supabase/0156): [{ mediaType, jobId }].
  * Returns { post_id, idempotent, target_count }. Throws GatewayError.
  */
-export async function createSocialPost({ scheduledAt, globalText, idempotencyKey, accountIds, media }) {
+export async function createSocialPost({ scheduledAt, publishNow, globalText, idempotencyKey, accountIds, media }) {
     return gatewayFetch('/social/posts', {
         method: 'POST',
-        body: JSON.stringify({ scheduledAt, globalText: globalText || null, idempotencyKey, accountIds, media }),
+        body: JSON.stringify({ scheduledAt, ...(publishNow !== undefined ? { publishNow } : {}), globalText: globalText || null, idempotencyKey, accountIds, media }),
     });
 }
 
@@ -51,5 +51,16 @@ export async function approveDraftBatch(batchId) {
 export async function discardDrafts(batchId, postId) {
     return gatewayFetch('/social/drafts', {
         method: 'POST', body: JSON.stringify({ action: 'discard', batchId, ...(postId ? { postId } : {}) }),
+    });
+}
+
+export async function listSocialCalendar({ from, to, status, network, afterAt, afterId }) {
+    const params = new URLSearchParams({ from, to });
+    for (const [key,value] of Object.entries({status,network,after_at:afterAt,after_id:afterId})) if(value)params.set(key,value);
+    return gatewayFetch(`/social/calendar?${params}`);
+}
+export async function rescheduleSocialPost(postId, expectedAt, scheduledAt) {
+    return gatewayFetch(`/social/posts/${encodeURIComponent(postId)}/schedule`, {
+        method:'PATCH',body:JSON.stringify({expectedAt,scheduledAt}),
     });
 }

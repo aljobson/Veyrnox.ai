@@ -9,7 +9,7 @@ export function Chip({ tone = 'neutral', children, className = '', noGlyph = fal
     money:   { cls: 'border-vx-money/40 text-vx-money bg-vx-money/[0.07]',               glyph: '◆'  },
     danger:  { cls: 'border-vx-danger/40 text-vx-danger bg-vx-danger/[0.07]',            glyph: '✕'  },
     solid:   { cls: 'border-transparent bg-vx-money text-vx-money-ink',                  glyph: '★'  },
-    warn:    { cls: 'border-vx-money/40 text-vx-money bg-vx-money/[0.07]',               glyph: '△'  },
+    warn:    { cls: 'border-vx-warn/40 text-vx-warn bg-vx-warn/[0.07]',                  glyph: '△'  },
   };
   const t = tones[tone] || tones.neutral;
   return (

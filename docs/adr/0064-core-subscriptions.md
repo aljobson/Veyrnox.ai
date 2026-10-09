@@ -32,6 +32,8 @@ be confused with each other.
 **What ADR-0018 already decided, two weeks ago, and why this ADR doesn't re-litigate it:**
 
 - Credit Packs ship first, which they now have (100cr/$10, 300cr/$25, 1000cr/$75, live).
+  > Note, 2026-10-03: the packs on sale today are 100/$10, 270/$19, 1,200/$59
+  > and 3,000/$129. The 300 and 1,000 packs were retired.
 - Subscriptions are "the target end state... the next slice... deferred, not rejected."
 - Two pricing floors already fixed: every Sales Channel must net ≥ $0.033/credit after fees
   (ADR-0014's margin), and **a Credit Pack must cost more per credit than every Subscription,
@@ -177,11 +179,110 @@ tiers.** The product owner approved this, and the spend-order question below, wi
   (soonest-expiring-first: Subscription → Free → Pack). `CONTEXT.md`'s Free Credits and
   Subscription entries are updated to state this explicitly.
 
+**Ledger design, built 2026-10-03 (migrations 0183, 0184; IMPLEMENTATION-PLAN C2/C3):**
+
+- **Bucket.** `ledger_entries.subscription_delta`, `credit_balances.subscription_balance`
+  and `credit_balances.subscription_expires_at`, beside the Free Credit columns.
+  `free_balance + subscription_balance <= balance`, enforced by a CHECK. A `subscription_cycle`
+  counter on both tables says which cycle a row's Subscription part belongs to.
+- **Spend order** as accepted above: Subscription, then Free, then Pack, in `ledger_debit` and
+  in the Cinema `ledger_unlock`.
+- **Grant.** `subscription_grant(user, credits, period_end, key)`. The key is the provider's id
+  for the paid invoice; a replay is a no-op, however late, and the same key can never credit a
+  second account. An invoice whose period does not end after the current one is refused
+  (`PERIOD_NOT_NEWER`), so an older invoice delivered out of order cannot replace a newer cycle.
+  **This also refuses three invoices a customer has paid: a mid-cycle upgrade, a switch from
+  annual to monthly before the annual end, and a resubscription to a shorter plan before the old
+  end date. Each returns `PERIOD_NOT_NEWER` and grants nothing. C4 must decide what those mean
+  before the webhook calls this function; the rule may need to allow them.** Decided 2026-10-03,
+  below ("Plan changes"): the rule stays as built, and C4 arranges billing so none of the three
+  produces such an invoice.
+- **No rollover.** A grant first expires whatever the previous cycle left.
+- **Cycle end.** Past `subscription_expires_at` the credits cannot be spent, and an hourly sweep
+  (`expire_subscription_credits`) removes them. Balance readers leave them out in the meantime.
+- **Refunds.** Each part returns to the bucket it came from. The Subscription part that came
+  from a cycle which has since ended or been replaced is returned and expired again in the same
+  call: the ledger shows the refund and an `expire:subscription` row, and the bucket is
+  unchanged. Returning it as Pack Credits would turn expiring credits into permanent ones;
+  leaving it in the bucket after a renewal would be a rollover. Both were rejected. The same
+  rule applies to a reversed Cinema unlock.
+- **Clawback.** A Pack refund or dispute takes Pack Credits only.
+- **Audit.** `reconcile_subscription_credits()` joins the nightly reconcile, and the hourly
+  `reconcile_status` snapshot carries its count (0185).
+- **Not live.** Nothing calls `subscription_grant`, so every balance has zero Subscription
+  Credits and the changed functions behave as before.
+
+**Cancellation and failed renewals, confirmed by the product owner 2026-10-03** (the defaults
+the ledger design implies, now decisions for C4):
+
+- **A cancelled subscription keeps its credits until the period it paid for ends.** Nothing is
+  taken back at cancellation; the cycle expires at `subscription_expires_at` as any other does.
+- **A failed renewal gets no grace period.** No paid invoice means no grant, so the old cycle
+  expires at its end and the account has no Subscription Credits until a renewal is paid.
+
+**Plan changes, confirmed by the product owner 2026-10-03.** Upgrades happen now with a new
+period; everything else waits for the paid period to end.
+
+- **Upgrade mid-cycle** (to a higher tier): takes effect immediately and
+  starts a fresh billing period. Stripe credits the unused time on the old plan against the new
+  charge. The new plan's full credits are granted and the old cycle's remainder expires, as at
+  any renewal (no rollover). The owner accepted that an upgrading customer loses what was left.
+- **Downgrade, or annual to monthly:** takes effect when the current paid period ends. Nothing
+  is invoiced or granted before then.
+- **Resubscribing while a cancelled plan is still running:** the customer can resume the same
+  plan; a different plan starts when the current period ends.
+- Not decided: monthly to annual on the same tier. Until it is, C4 treats it like the other
+  non-upgrade changes and starts it at the period end.
+
+Every invoice this produces ends after the current cycle, so `subscription_grant` and its
+`PERIOD_NOT_NEWER` rule need no change. C4 must configure Stripe to match: reset the billing
+cycle on an upgrade, schedule every other change for the period end, and refuse a second
+checkout while a subscription is active or running out. If Stripe sends an invoice the rule
+refuses anyway, the webhook must log it for an Operator and not acknowledge it as granted.
+
+**First version, refunds and cooling-off, confirmed by the product owner 2026-10-03:**
+
+- **Monthly only at launch.** Annual plans follow once their prices are set (question 2 below).
+- **A refunded subscription payment** removes what is left of that cycle's Subscription
+  Credits and nothing else. Free and Pack Credits are untouched, and credits already spent are
+  not charged back. **A dispute** does the same, ends the subscription and Freezes the account,
+  as a Pack dispute does (ADR-0019).
+- **Cooling-off:** a full refund within 14 days of the subscription starting, only while none
+  of that cycle's credits have been spent. The credits are removed before the money is
+  returned. Finance/Legal still owes the consent wording that goes with this.
+
+**Subscription state, built 2026-10-03 (migrations 0186, 0187; IMPLEMENTATION-PLAN C4, database
+  slice):**
+
+- **Tables.** `credit_subscription_plans` (the three tiers), `credit_subscriptions` (one live
+  per user; price and credits copied from the plan when the checkout opens) and the append-only
+  `credit_subscription_events`. Modelled on the Cinema Pass (0143).
+- **Activation grants nothing.** `apply_credit_subscription_event` only tracks Stripe's state.
+  Credits come from `grant_credit_subscription_invoice`, called for a paid invoice and keyed by
+  the invoice id, so two events for one invoice grant once.
+- **A refused invoice** (`PERIOD_NOT_NEWER`, a flagged or ended subscription, a zero payment) is
+  written to the event log as `refused` for an Operator and stays refused on retry. An invoice
+  that arrives before its subscription is bound is not recorded, so Stripe's retry succeeds.
+- **Full-refund ordering (0189).** A full refund ends the subscription row in
+  the same transaction as the invoice reversal, before Stripe cancellation.
+  A refund ahead of `invoice.paid` therefore prevents its late grant. An old
+  invoice's refund still reclaims only that invoice's cycle; it cannot take
+  a replacement subscription's credits. Partial refunds remain audit-only
+  and require an Operator review until their policy is confirmed.
+- **Reversal.** `reverse_subscription_grant` is the one ledger writer: it removes the cycle's
+  remaining credits (`reverse:subscription_refund`) and ends the cycle, so a job refunded
+  afterwards is returned and expired in one call instead of putting the credits back.
+- **Not live.** The initial monthly adapter, webhook and account routes are
+  built behind `SUBSCRIPTIONS_ENABLED`, off in production and staging. The
+  flag gates checkout/account access; existing payment settlement continues
+  even when checkout is disabled. Every refused paid invoice requires a
+  delivered Operator alert. Plan changes and staging acceptance remain; see
+  `docs/operations/credit-subscription-acceptance.md`.
+
 **Still open, none blocking implementation start:**
 
-1. **Dunning grace period and mid-cycle-cancellation credit handling** — not specified here,
-   needs a short design note before implementation, following Cinema Pass's precedent where one
-   applies.
+1. ~~Dunning grace period, mid-cycle-cancellation credit handling and the three
+   `PERIOD_NOT_NEWER` cases~~ — decided 2026-10-03, above.
 2. **Annual price points below the Ultra tier** (Starter/Plus annual) — the recommendation above
    computes Ultra's floor explicitly; Starter and Plus annual rates need the same per-tier net-floor
    check before publishing, not a flat percentage-off assumption.

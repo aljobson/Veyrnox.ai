@@ -1,6 +1,6 @@
 # ADR-0056: Project media, quarantine and format inspection
 
-Status: proposed 2026-09-26. Staging preview only; production rollout remains protected by ADR-0023.
+Status: proposed 2026-09-26. Staging preview only; production rollout remains protected by ADR-0023. Built and merged; migrations applied in production; **off in production** (`TENANT_PROJECTS_ENABLED` is `false`), on in staging (status corrected 2026-10-03).
 
 Backlog item M02 (`docs/architecture/implementation-backlog.md`), which M03 (project-aware
 generation) and M05 (editor timeline) both depend on. This ADR covers the first slice: the

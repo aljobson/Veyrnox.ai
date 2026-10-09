@@ -1,12 +1,13 @@
 'use client';
 import Link from 'next/link';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { AppNav } from '../../_components/NavBar';
 import { Chip } from '../../_components/Chip';
 import { gatewayFetch, GatewayError, notifyBalanceChanged } from '../../_lib/gateway';
 import { readJobHistory, pushJobHistory } from '../../_lib/jobHistory';
 import { useAssetUrl } from '../../_lib/useAssetUrl';
-import { AssetRetention } from '../../_components/AssetRetention';
+import { ScheduleGeneration } from '../../_components/ScheduleGeneration';
+import { AssetFooter } from '../../_components/AssetFooter';
 import { AssetLoadStatus } from '../../_components/AssetLoadStatus';
 import { EditSheet } from '../../_components/EditSheet';
 import { useCatalog } from '../../_lib/useCatalog';
@@ -42,6 +43,12 @@ const PAGE = 12;
 // Clip Editor stays hidden until launch unless this browser opts in
 // (CLAUDE.md "Delivery": new user paths behind localStorage.veyrnox_*).
 const EDITOR_FLAG = 'veyrnox_editor';
+// Browser-only values read once: off / 'grid' on the server and first paint.
+const never = () => () => {};
+const editorFlag = () => { try { return window.localStorage.getItem(EDITOR_FLAG) === '1'; } catch { return false; } };
+const savedView = () => readView(window.localStorage);
+const off = () => false;
+const gridView = () => 'grid';
 const isVideo = (r) => !!r.asset_url && !!r.mime_type?.startsWith('video/');
 const isAudio = (r) => !!r.asset_url && !!r.mime_type?.startsWith('audio/');
 
@@ -55,9 +62,10 @@ export default function Library() {
   useEffect(() => { setFavourites(readFavourites(window.localStorage, getSession()?.user?.id)); }, []);
   const star = (id) => setFavourites(toggleFavourite(window.localStorage, getSession()?.user?.id, id));
   // Grid on the server and first paint; the saved layout is applied after mount.
-  const [view, setView] = useState('grid');
-  useEffect(() => { setView(readView(window.localStorage)); }, []);
-  const chooseView = (v) => { setView(v); try { window.localStorage.setItem(VIEW_KEY, v); } catch { /* not remembered */ } };
+  const stored = useSyncExternalStore(never, savedView, gridView);
+  const [chosen, setChosen] = useState(null);
+  const view = chosen ?? stored;
+  const chooseView = (v) => { setChosen(v); try { window.localStorage.setItem(VIEW_KEY, v); } catch { /* not remembered */ } };
   const [balance, setBalance] = useState(null);
   // History lives in localStorage, which the server cannot read. Start empty
   // on both sides so hydration matches, then load it after mount.
@@ -68,14 +76,11 @@ export default function Library() {
   const [unreachable, setUnreachable] = useState(false);
   const [nextCursor, setNextCursor] = useState(null);
   const [listLive, setListLive] = useState(null);
-  const [editorOn, setEditorOn] = useState(false);
+  const editorOn = useSyncExternalStore(never, editorFlag, off);
   const rowsRef = useRef(rows);
   rowsRef.current = rows;
   const [selected, setSelected] = useState([]);
   const [editing, setEditing] = useState(false);
-  useEffect(() => {
-    try { setEditorOn(window.localStorage.getItem(EDITOR_FLAG) === '1'); } catch { /* storage blocked: editor stays off */ }
-  }, []);
 
   // load balance
   const loadBalance = useCallback(async () => {
@@ -391,9 +396,13 @@ function JobCard({ row, models, selectable, selected, onToggle, starred, onStar 
   // No delta for `unknown`: a +N would claim a refund landed and a −N would
   // claim the debit stands, and we do not know which.
   // No delta while a refund is owed but not yet made: +N would claim it landed.
+  // A job that used a free allowance (ADR-0069) has credits 0: say FREE, and show nothing if it failed
+  // (its allowance went back, there is no refund line to claim).
+  const free = row.credits === 0;
   const delta = row.state === 'unknown' || refundPending ? ''
+    : free ? (row.state === 'failed' ? '' : 'FREE')
     : row.state === 'failed' ? `+${row.credits}` : `−${row.credits}`;
-  const deltaCls = row.state === 'failed' ? 'text-vx-accent' : 'text-vx-fg-muted';
+  const deltaCls = free || row.state === 'failed' ? 'text-vx-accent' : 'text-vx-fg-muted';
   // Live catalog (tokens.js fallback) so newly added models show their name.
   const model = models.find((m) => m.id === row.model_id);
   return (
@@ -445,14 +454,15 @@ function JobCard({ row, models, selectable, selected, onToggle, starred, onStar 
           </div>
         </div>
         <div className="shrink-0 flex items-center gap-3">
-          <span className={`font-vx-mono text-[13px] font-bold vx-num ${deltaCls}`}>{delta} cr</span>
+          <span className={`font-vx-mono text-[13px] font-bold vx-num ${deltaCls}`}>{delta}{free ? '' : ' cr'}</span>
           <button onClick={onStar} aria-pressed={starred} aria-label={starred ? 'Remove from favourites' : 'Add to favourites'} type="button"
-            className={`text-[18px] leading-none ${starred ? 'text-vx-money' : 'text-vx-fg-faint hover:text-vx-fg'}`}>
+            className={`text-[18px] leading-none ${starred ? 'text-vx-accent' : 'text-vx-fg-faint hover:text-vx-fg'}`}>
             {starred ? '★' : '☆'}
           </button>
         </div>
       </div>
-      <AssetRetention row={row} />
+      <ScheduleGeneration job={row} className="mx-4 mb-3" />
+      <AssetFooter row={row} />
     </div>
   );
 }

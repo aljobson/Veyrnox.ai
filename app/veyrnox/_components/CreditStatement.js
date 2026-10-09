@@ -6,6 +6,7 @@ const LABELS = {
   signup_grant: 'Welcome credits', free_credit_expiry: 'Free credits expired',
   generation: 'Generation', generation_refund: 'Generation refund',
   top_up: 'Top-up', payment_adjustment: 'Payment adjustment', adjustment: 'Credit adjustment',
+  referral_reward: 'Referral reward', referral_reward_reversed: 'Referral reward reversed',
 };
 const num = new Intl.NumberFormat('en-US', { signDisplay: 'always' });
 
@@ -33,6 +34,8 @@ export function CreditStatement() {
     load();
     const refresh = () => load();
     window.addEventListener('veyrnox:balance-changed', refresh);
+    // A request counter, not a DOM node: the cleanup must bump the live value.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     return () => { sequence.current++; window.removeEventListener('veyrnox:balance-changed', refresh); };
   }, [load]);
   return (
@@ -48,7 +51,7 @@ export function CreditStatement() {
             <time dateTime={entry.created_at} className="text-xs text-vx-fg-muted">{new Date(entry.created_at).toLocaleString('en-GB')}</time>
           </div>
           <span aria-hidden className="vx-leader flex-1 self-start mt-3 text-vx-fg-muted" />
-          <span className={`shrink-0 self-start font-vx-mono text-[15px] font-bold vx-num ${entry.delta > 0 ? 'text-vx-accent' : 'text-vx-fg'}`}>{num.format(entry.delta)} cr</span>
+          <span className={`shrink-0 self-start font-vx-mono text-[15px] font-bold vx-num ${entry.delta > 0 ? 'text-vx-accent' : 'text-vx-money'}`}>{num.format(entry.delta)} cr</span>
         </li>)}
       </ul>}
       {next && <button type="button" disabled={busy} onClick={() => load(next)} className="vx-press mt-4 rounded-full border border-vx-border px-5 py-2 text-sm font-bold hover:border-vx-fg-muted disabled:opacity-50">{busy ? 'Loading…' : 'Load older movements'}</button>}

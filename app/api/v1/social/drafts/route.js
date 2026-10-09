@@ -54,7 +54,8 @@ export async function GET(req) {
     if (listed.error) return listed.error;
     if (!listed.result || listed.result.ok !== true) return NextResponse.json({ error: 'internal' }, { status: 502 });
 
-    return NextResponse.json({ brand_id: brand.brandId, drafts: listed.result.drafts || [] },
+    return NextResponse.json({ brand_id: brand.brandId, drafts: listed.result.drafts || [],
+        approvalEnabled: process.env.PUBLISH_RELEASED_NETWORKS === undefined || process.env.PUBLISH_RELEASED_NETWORKS === '*' },
         { headers: { 'Cache-Control': 'no-store' } });
 }
 
@@ -85,6 +86,11 @@ export async function POST(req) {
     if (brand.error) return brand.error;
 
     const tag = 'api/v1/social/drafts:POST';
+    // The batch RPC approves all targets atomically but has no network filter.
+    // A preflight read is capped and cannot safely enforce a partial release.
+    if (action === 'approve' && process.env.PUBLISH_RELEASED_NETWORKS !== undefined && process.env.PUBLISH_RELEASED_NETWORKS !== '*') {
+        return NextResponse.json({ error: 'draft_approval_not_available' }, { status: 503 });
+    }
     const out = action === 'approve'
         ? await call('approve_social_post_batch', { p_auth_id: authId, p_brand_id: brand.brandId, p_batch_id: batchId }, cfg, tag)
         : await call('discard_social_post_drafts',

@@ -80,3 +80,39 @@ decide whether a request fits its price.
    used uploads stayed for the 24-hour age sweep and counted towards the
    10-per-account cap, so a user was blocked after about 10 jobs a day (5 lip
    syncs). The cap and the 24-hour sweep for abandoned uploads are unchanged.
+
+## Amendment 2026-10-09 — a source's length is what a decoder plays
+
+Models that take a user's audio or video are priced for a capped length
+(`maxSeconds` in `lib/modelCapabilities.js`), and the provider bills for what
+it decodes. `lib/mediaLength.js` read that length from fields that only
+describe the file: a WAV's byte rate, an MP3's Xing frame count or first-frame
+bitrate, an MP4's movie header. Whoever makes the file writes those fields. A
+file could say ten seconds over an hour of audio, pass the cap, and be priced
+as short. A fragmented MP4, which is what a browser records, read as 0 seconds.
+
+The length is now taken from the same data a decoder plays from:
+
+- **WAV:** the bytes after the data chunk's header, to the end of the file,
+  over sample rate times frame size. The byte-rate field and the data chunk's
+  declared size are not read. A compressed format (anything but PCM, float,
+  A-law or mu-law) has no fixed frame size and is refused.
+- **MP3:** every Layer III frame, counted. The whole file is read for this, at
+  most the 20 MiB type cap. A Xing or VBRI count is not read. A Layer I or II
+  frame, or a free-format one, makes the length unknown.
+- **MP4:** the longest of the movie header, each track header and each track's
+  time-to-sample table. Boxes are walked by their sizes, so a `mvhd` that is
+  only bytes inside another box is not read. A fragmented file (`mvex`, or a
+  `moof` anywhere at the top level), a movie box over 4 MiB, or a table that
+  runs past its box is refused.
+
+Refused means `source_length_unknown`, before any debit. Measured on real
+files this agrees with ffprobe to within 0.13 s, always on the long side for
+MP3 (encoder padding and the Xing frame are counted). A browser-recorded MP4
+must be re-saved as a plain MP4 before it can be used.
+
+This closes the length half of the gap only while the stored file cannot
+change after it is measured, which is ADR-0044 (`UPLOAD_INTEGRITY_ENABLED`).
+Whether a provider bills by decoded length, and what cap it applies itself,
+was not measured.
+

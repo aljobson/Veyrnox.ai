@@ -174,6 +174,10 @@ Refunds are all-or-nothing (ADR-0029 §5).
 generation (LemonSqueezy refused on 2026-09-22). Slices 0–3 can proceed.
 Slice 5 waits for billing.
 
+> **Update, 2026-10-03.** Billing is in place (Stripe, ADR-0031) and slice 5
+> is done: `auto-short-32s` is active in the production catalogue at 110
+> credits.
+
 ## 9. Owner decisions (2026-09-22)
 
 1. **110 credits** for 32 seconds, re-checked against measured cost in the activating migration.

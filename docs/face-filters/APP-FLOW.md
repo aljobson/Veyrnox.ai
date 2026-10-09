@@ -1,7 +1,9 @@
 # App Flow — Face Filters
 
-**Status:** Draft · 2026-09-18
+**Status:** Draft · 2026-09-18 · checked against `main` at `42150476` on 2026-10-08
 **Reads with:** [PRD.md](PRD.md), [TRD.md](TRD.md), [UI-UX.md](UI-UX.md)
+
+*Status 2026-10-08: the upload, submit, poll and failure paths below are built. The Generate/Transform mode switch (§3), the Transform result view (§8) and the source thumbnail in Library (§9) are not. No Track A filter is in the catalog, so no user can run one. Marked inline as 2026-10-08.*
 
 Describes the user journey for Track A only. Track B has no flow until its ADR
 lands. Existing behaviour is marked *(today)*; new behaviour *(new)*.
@@ -15,6 +17,8 @@ lands. Existing behaviour is marked *(today)*; new behaviour *(new)*.
 | `/veyrnox/app/library` | Past generations and their assets *(today)* | required |
 | `/veyrnox/app/credits` | Balance, Credit Packs, Top-up history *(today)* | required |
 | `/auth/callback` | OAuth fragment handler *(today)* | — |
+
+*2026-10-08: a `/tools` page now exists (#456). It lists, from the live catalog, the models that start from your own file (upscale, background removal, expand, prompt editing, photo to video, talking avatar, lip sync), each linking into the Studio. It is a directory, not a second submit path, so the paragraph below still holds.*
 
 Filters do **not** get their own route. They are models, and models live in the
 Studio. A separate `/filters` page would fork the submit path, the balance
@@ -31,6 +35,8 @@ Sign in ──► Studio ──► pick mode ──► configure ──► submi
 
 ## 3. Studio: mode selection *(new)*
 
+*2026-10-08: not built. There is no Generate/Transform control. Today the Studio shows an upload field per media slot a model declares (`SourcePickers`: start image, video, speech), plus "From library" for an image, and the model list is filtered by price tier (#537), not by mode.*
+
 The Studio gains one control above the model picker: **Generate** or **Transform**.
 
 - **Generate** *(today's behaviour, default)* — prompt in, media out. Model list
@@ -43,6 +49,8 @@ uploads a photo, runs a retouch, then switches to Generate should find their
 prompt where they left it.
 
 ## 4. Upload *(new)*
+
+*2026-10-08: built, with a different front end (the Studio's per-slot upload field, ADR-0028, #217). Differences from the steps below: step 2 is refused with `insufficient_credits` (402) for a zero balance, is rate limited (ADR-0035) and capped at 10 unconsumed uploads; the allowed types now include audio; and the submit in §6 must carry `consent: true`.*
 
 Trigger: the drop zone in the Transform panel, by click or drag.
 
@@ -63,7 +71,7 @@ credit movement. An upload costs nothing.
 **What happens on the way back:** the object is now in R2 under the user's
 prefix. It is not a `jobs` row, not an `assets` row, and not visible in Library.
 It is reachable only by a presigned GET the server mints for its owner. Uploads
-that are never used by a job are swept on the retention schedule.
+that are never used by a job are swept on the retention schedule *(2026-10-08: 24 hours; a used upload is deleted within minutes of its job finishing)*.
 
 ## 5. Configure
 
@@ -85,6 +93,8 @@ inputs}`. The only difference is the shape of `inputs`:
 |------|--------|
 | Generate | `{prompt, aspect_ratio, duration_seconds?}` *(today)* |
 | Transform | `{image_url}` or `{video_url}`, plus `prompt` where the model takes a text instruction |
+
+*2026-10-08: the body field is `source_key` (or `source_keys` when a model takes two uploads), and `source_assets` names a Library image by its job id. A client-sent `image_url` or `video_url` is discarded.*
 
 The client never builds the URL. It sends the R2 **key** it holds, and the
 server mints the presigned GET at submit time — see TRD §3. The client-side
@@ -109,6 +119,8 @@ event refreshes every other balance display on the page *(today)*.
 
 ## 8. Result
 
+*2026-10-08: not built. The canvas shows the result only; there is no before/after view.*
+
 The canvas shows the output. For a Transform job it shows **before and after**:
 the uploaded source beside the result, so the user can judge the change. This is
 the one genuinely new piece of result UI.
@@ -116,6 +128,8 @@ the one genuinely new piece of result UI.
 Actions: download, run again with different settings, open in Library.
 
 ## 9. Library
+
+*2026-10-08: the Library gained type filters, list view and starring (#455, #458); the Transform source thumbnail is not built.*
 
 *(today, unchanged)* Filter jobs appear alongside every other generation. A
 Transform job's card shows its source thumbnail so it is distinguishable from a
@@ -126,6 +140,8 @@ text-to-image result at a glance.
 | What fails | User sees | Credits |
 |-----------|-----------|---------|
 | File too large / wrong type | Typed reason in the drop zone | none moved |
+| Zero balance when asking for an upload URL *(2026-10-08)* | `insufficient_credits`, no URL issued | none moved |
+| Source attached without the consent statement *(2026-10-08)* | `consent_required` | none moved |
 | Upload PUT fails or is cancelled | Drop zone resets | none moved |
 | Presigned URL expired before submit | "Upload expired, add the file again" | none moved |
 | Insufficient balance | Submit becomes **Top up** | none moved |
@@ -140,4 +156,4 @@ A user deleting a generation from Library deletes the result asset *(today)*.
 Deleting the **source upload** is separate: the upload is not an asset row, so
 it has no Library card. Sources are removed on the retention sweep and on
 account closure. If a user needs on-demand source deletion before launch, that
-is a scope addition, not an implied behaviour.
+is a scope addition, not an implied behaviour. *2026-10-08: account-closure deletion of uploads was not found in code (unverified).*

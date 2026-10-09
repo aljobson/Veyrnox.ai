@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { adoptSession, clearSession, getSession, getFreshAccessToken } from '../app/lib/authClient.js';
+import { adoptSession, clearSession, getSession, getFreshAccessToken, getStoredUserId } from '../app/lib/authClient.js';
 import { readJobHistory, pushJobHistory } from '../app/veyrnox/_lib/jobHistory.js';
+import { NEW_CHAT, readDraft, writeDraft, readStars, toggleStar, readNotice, writeNotice } from '../app/veyrnox/_lib/chatLocal.js';
 
 const store = new Map();
 globalThis.localStorage = {
@@ -34,6 +35,49 @@ test('switching account cannot read prior prompts, even if old scoped data remai
   assert.deepEqual(readJobHistory(), []);
   pushJobHistory({ job_id: 'bob-job' });
   assert.deepEqual(readJobHistory().map(j => j.job_id), ['bob-job']);
+  clearSession();
+});
+
+test('ending the session removes unsent chat text, starred replies and a chat\'s waiting notice', () => {
+  adoptSession(session('alice'));
+  assert.equal(getStoredUserId(), 'alice');
+  writeDraft(localStorage, getStoredUserId(), NEW_CHAT, 'private draft');
+  toggleStar(localStorage, getStoredUserId(), 'thread-1', 'm1');
+  writeNotice(localStorage, getStoredUserId(), 'thread-1', 'stop_unsure');
+  assert.deepEqual(readNotice(localStorage, getStoredUserId(), 'thread-1'), { code: 'stop_unsure' });
+  store.set('veyrnox_chat_draft_v1:new', 'left by the unscoped version');
+  clearSession();
+  assert.equal(getStoredUserId(), null);
+  assert.equal([...store.keys()].some(k => k.startsWith('veyrnox_chat_')), false);
+});
+
+test('a different user signing in finds no chat text from the last one', () => {
+  adoptSession(session('alice'));
+  writeDraft(localStorage, getStoredUserId(), NEW_CHAT, 'private draft');
+  toggleStar(localStorage, getStoredUserId(), 'thread-1', 'm1');
+  writeNotice(localStorage, getStoredUserId(), NEW_CHAT, 'insufficient_balance', { credits: 3 });
+  adoptSession(session('bob'));
+  assert.equal(readDraft(localStorage, getStoredUserId(), NEW_CHAT), '');
+  assert.deepEqual(readStars(localStorage, getStoredUserId(), 'thread-1'), []);
+  assert.equal(readNotice(localStorage, getStoredUserId(), NEW_CHAT), null);
+  assert.equal([...store.keys()].some(k => k.startsWith('veyrnox_chat_')), false);
+  clearSession();
+});
+
+test('refreshing the same user\'s session keeps their draft and the notice beside it', () => {
+  adoptSession(session('alice'));
+  writeDraft(localStorage, getStoredUserId(), NEW_CHAT, 'still typing');
+  writeNotice(localStorage, getStoredUserId(), NEW_CHAT, 'stop_unsure');
+  adoptSession(session('alice'));
+  assert.equal(readDraft(localStorage, getStoredUserId(), NEW_CHAT), 'still typing');
+  assert.deepEqual(readNotice(localStorage, getStoredUserId(), NEW_CHAT), { code: 'stop_unsure' }, 'an hourly token refresh must not take the warning away from the text');
+  clearSession();
+});
+
+test('the draft belongs to the stored user even while the access token waits on a refresh', () => {
+  adoptSession(session('alice', -600));
+  assert.equal(getSession(), null);
+  assert.equal(getStoredUserId(), 'alice');
   clearSession();
 });
 

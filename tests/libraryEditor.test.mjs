@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { isShelfModel } from '../app/veyrnox/_lib/tokens.js';
 import { capabilityFor } from '../lib/modelCapabilities.js';
+import { CAPTIONS_UNITS, CAPTION_PRESETS } from '../lib/clipEdit.js';
 
 // JSX sources, so these read the text, like createAutoShort.test.mjs.
 const library = readFileSync(new URL('../app/veyrnox/app/library/page.js', import.meta.url), 'utf8');
@@ -10,7 +11,7 @@ const sheet = readFileSync(new URL('../app/veyrnox/_components/EditSheet.js', im
 
 test('the editor is off unless localStorage.veyrnox_editor is "1"', () => {
     assert.match(library, /const EDITOR_FLAG = 'veyrnox_editor';/);
-    assert.match(library, /setEditorOn\(window\.localStorage\.getItem\(EDITOR_FLAG\) === '1'\)/);
+    assert.match(library, /const editorFlag = \(\) => \{ try \{ return window\.localStorage\.getItem\(EDITOR_FLAG\) === '1'; \} catch \{ return false; \} \};/);
     assert.match(library, /const canSelect = \(r\) => editorOn && r\.state === 'succeeded' && /);
 });
 
@@ -37,4 +38,14 @@ test('the landing shelf and site search never list the Clip Editor as a model', 
     const search = readFileSync(new URL('../app/veyrnox/_components/SiteSearch.js', import.meta.url), 'utf8');
     assert.match(landing, /filter\(\(m\) => isShelfModel\(/);
     assert.match(search, /filter\(\(m\) => isShelfModel\(/);
+});
+
+test('the sheet\'s captions share the server\'s unit count and only offer presets the server accepts', () => {
+    assert.match(sheet, new RegExp(`const CAPTIONS_UNITS = ${CAPTIONS_UNITS};`));
+    const styles = /const CAPTION_STYLES = \[([^\]]+)\];/.exec(sheet)[1].split(',').map((x) => x.trim().replace(/'/g, ''));
+    assert.ok(styles.length > 0);
+    for (const n of styles) assert.ok(CAPTION_PRESETS.includes(n), n);
+    // Hidden unless the per-browser switch is on, and sent as a preset name only.
+    assert.match(sheet, /veyrnox_editor_captions/);
+    assert.match(sheet, /captions: \{ preset: style \}/);
 });

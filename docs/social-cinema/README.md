@@ -1,5 +1,10 @@
 # Veyrnox.ai Technical Specification Pack
 
+> **Superseded.** This pack specifies a React Native + Expo app that was not
+> built. Social Cinema ships as part of the Next.js web app; the decisions
+> that apply are [ADR-0048](../adr/0048-social-cinema-foundation.md) onward and
+> the notes in [docs/cinema/](../cinema/README.md). Kept for history.
+
 **Product:** Veyrnox.ai Social Cinema  
 **Version:** 1.0  
 **Status:** MVP Baseline  

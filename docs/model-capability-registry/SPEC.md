@@ -1,6 +1,6 @@
 # Model capability registry — spec
 
-- **Status**: Draft for owner review (2026-09-22)
+- **Status**: Implemented. Accepted as [ADR-0027](../adr/0027-model-capability-registry.md) on 2026-09-22; the registry is `lib/modelCapabilities.js`. (This header read "Draft for owner review" until 2026-10-03.)
 - **Related**: `lib/modelCapabilities.js` ([ADR-0027](../adr/0027-model-capability-registry.md); replaced `lib/providerDuration.js`), `app/api/v1/generations/route.js`,
   `app/api/catalog/route.js`, `app/veyrnox/app/create/page.js`,
   [ADR-0020](../adr/0020-kie-and-openrouter-providers.md)

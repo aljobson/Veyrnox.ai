@@ -62,6 +62,7 @@ Against main 90a96b06e8ea293f732591c6ba7b0c0b508a27f3:
 
 - Direct `node scripts/check-reconcile.mjs`: balance_drift,
   free_credit_drift, top_up_drift and failed_refund_drift all **0**.
+  (Since 0185 the check also reports subscription_credit_drift.)
 - Direct `node scripts/check-migration-ledger.mjs`: **104 applied migrations
   accounted for**. This checks recorded applied names; it does not prove every
   repository migration has been applied.

@@ -119,7 +119,7 @@ function median(nums) {
 function useTypicalCosts() {
   const { models, live } = useCatalog();
   if (!live) return null;
-  const open = models.filter((m) => !m.gated && m.credits > 0);
+  const open = models.filter((m) => !m.gated && !m.takesPlan && m.credits > 0); // the video agent is not a per-clip price
   const video = median(open.filter((m) => m.kind === 'video').map((m) => m.credits));
   const image = median(open.filter((m) => m.kind === 'image').map((m) => m.credits));
   return video || image ? { video, image } : null;
@@ -196,7 +196,7 @@ export function TopUpPacks({ signedIn }) {
               return (
                 <label
                   key={p.id}
-                  className={`flex flex-col items-start rounded-xl border px-4 py-3 cursor-pointer bg-vx-base/60 has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-vx-accent ${on ? 'border-vx-money' : 'border-vx-border hover:border-vx-money/60'}`}
+                  className={`flex flex-col items-start rounded-xl border px-4 py-3 cursor-pointer bg-vx-base/60 has-focus-visible:outline-solid has-focus-visible:outline-2 has-focus-visible:outline-vx-accent ${on ? 'border-vx-money' : 'border-vx-border hover:border-vx-money/60'}`}
                 >
                   <input type="radio" name="credit-pack" value={p.id} checked={on} onChange={() => { setSelected(p.id); setIdempotencyKey(makeIdempotencyKey()); }} className="sr-only" />
                   <span className="font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted">CREDIT PACK</span>

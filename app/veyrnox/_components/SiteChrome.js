@@ -1,10 +1,12 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { SUPPORT_EMAIL } from '../_lib/tokens';
 import { clearAttribution } from '../_lib/utm';
 import { applyStoredTheme } from './ThemeToggle';
+import ReferralBridge from './ReferralBridge';
 
 // Everything that floats over every page: the read-progress bar, the
 // back-to-top button, the contact button, and the one-time storage notice.
@@ -13,10 +15,27 @@ import { applyStoredTheme } from './ThemeToggle';
 // Each piece is `data-print="hide"` — none of it means anything on paper.
 
 const NOTICE_KEY = 'veyrnox_storage_notice';
+// Bumped when the notice gains an item (2026-10: the referral code), so visitors who dismissed the old wording see the new one once.
+const NOTICE_ACK = 'ack-2026-10-referral';
 const TOP_AT = 700; // px scrolled before the back-to-top button earns its place
 
+const never = () => () => {};
+const noticeUnread = () => {
+  try {
+    return localStorage.getItem(NOTICE_KEY) !== NOTICE_ACK;
+  } catch {
+    // Storage blocked — nothing is being stored, so nothing to disclose.
+    return false;
+  }
+};
+const noticeOnServer = () => false;
+
 export default function SiteChrome() {
-  const [noticeOpen, setNoticeOpen] = useState(false);
+  const unread = useSyncExternalStore(never, noticeUnread, noticeOnServer);
+  const [acked, setAcked] = useState(false);
+  const noticeOpen = unread && !acked;
+  // The chat composer sits at the bottom edge, so the buttons ride above it there.
+  const onChat = (usePathname() || '').startsWith('/app/chat');
 
   // Retire unused campaign storage, including records left by older clients.
   useEffect(() => {
@@ -29,27 +48,20 @@ export default function SiteChrome() {
     applyStoredTheme();
   }, []);
 
-  useEffect(() => {
-    try {
-      if (localStorage.getItem(NOTICE_KEY) !== 'ack') setNoticeOpen(true);
-    } catch {
-      // Storage blocked — nothing is being stored, so nothing to disclose.
-    }
-  }, []);
-
   const ackNotice = useCallback(() => {
-    setNoticeOpen(false);
+    setAcked(true);
     try {
-      localStorage.setItem(NOTICE_KEY, 'ack');
+      localStorage.setItem(NOTICE_KEY, NOTICE_ACK);
     } catch {}
   }, []);
 
   return (
     <>
       <ScrollProgress />
+      <ReferralBridge />
       {/* The buttons ride above the notice while it is up, instead of
           sitting under it in the same bottom-right corner. */}
-      <FloatingActions raised={noticeOpen} />
+      <FloatingActions raised={noticeOpen || onChat} />
       {noticeOpen && <StorageNotice onDismiss={ackNotice} />}
     </>
   );
@@ -164,12 +176,12 @@ function StorageNotice({ onDismiss }) {
       data-print="hide"
       role="region"
       aria-label="Browser storage notice"
-      className="fixed inset-x-0 bottom-0 z-50 border-t border-vx-border bg-vx-panel/95 px-4 py-3 backdrop-blur sm:px-6"
+      className="fixed inset-x-0 bottom-0 z-50 border-t border-vx-border bg-vx-panel/95 px-4 py-3 backdrop-blur-sm sm:px-6"
     >
       <div className="mx-auto flex max-w-[1100px] flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-[13px] leading-[1.55] text-vx-fg-body">
           Veyrnox keeps your sign-in session, recent job display history and your theme choice in this browser&rsquo;s local
-          storage. No advertising cookies, no third-party trackers.{' '}
+          storage, plus a friend&rsquo;s referral code for up to three days if you arrived through their link. No advertising cookies, no third-party trackers.{' '}
           <Link href="/legal/privacy" className="text-vx-accent underline underline-offset-4">
             Privacy Policy
           </Link>

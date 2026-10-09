@@ -2,7 +2,8 @@
   "schema_version": 1,
   "diagram_type": "architecture",
   "meta": {
-    "title": "Veyrnox.ai system architecture",
+    "title": "Veyrnox.ai system architecture (as of 2026-10-08)",
+    "subtitle": "Checked against main 96380e7f",
     "output": "system-architecture.html",
     "quality_profile": "showcase",
     "views": [
@@ -26,7 +27,7 @@
           "r2",
           "pg"
         ],
-        "note": "Debit, submit, webhook or poll, copy the output to EU R2, mark STORED."
+        "note": "Debit, submit, signed webhook or 5-minute poll, copy the output to EU R2, mark STORED."
       },
       {
         "id": "money",
@@ -37,7 +38,18 @@
           "stripe",
           "pg"
         ],
-        "note": "Stripe Checkout; the signed webhook credits the ledger through RPCs."
+        "note": "Stripe Checkout; the signed webhook credits the ledger through RPCs. Subscriptions are built but off."
+      },
+      {
+        "id": "agent",
+        "label": "Video agent",
+        "focus": [
+          "worker",
+          "runner",
+          "r2",
+          "pg"
+        ],
+        "note": "Dark in production: the Worker signs a run, the Fly.io runner calls back, output goes to a presigned R2 PUT."
       }
     ]
   },
@@ -46,14 +58,14 @@
       "id": "auth",
       "type": "security",
       "label": "Supabase Auth",
-      "sublabel": "email, Google, Apple",
+      "sublabel": "email, Google, Apple, passkey",
       "tag": "Turnstile",
       "pos": [
         40,
         40
       ],
       "size": [
-        180,
+        200,
         64
       ]
     },
@@ -75,7 +87,7 @@
       "id": "stripe",
       "type": "external",
       "label": "Stripe",
-      "sublabel": "Checkout, subscriptions",
+      "sublabel": "Checkout; subscriptions off",
       "pos": [
         660,
         40
@@ -89,13 +101,13 @@
       "id": "browser",
       "type": "frontend",
       "label": "Browser",
-      "sublabel": "Next.js 15 / React 19",
+      "sublabel": "Next.js 16 / React 19",
       "pos": [
         40,
         210
       ],
       "size": [
-        180,
+        200,
         64
       ]
     },
@@ -118,13 +130,13 @@
       "id": "providers",
       "type": "external",
       "label": "Model providers",
-      "sublabel": "fal, kie, OpenRouter, GrsAI",
+      "sublabel": "fal, kie, OpenRouter, GrsAI, BytePlus",
       "pos": [
         660,
         210
       ],
       "size": [
-        210,
+        250,
         64
       ]
     },
@@ -134,8 +146,23 @@
       "label": "R2 (EU jurisdiction)",
       "sublabel": "SigV4, 15 min URLs",
       "pos": [
-        990,
+        1010,
         210
+      ],
+      "size": [
+        200,
+        64
+      ]
+    },
+    {
+      "id": "runner",
+      "type": "external",
+      "label": "Montage runner",
+      "sublabel": "Fly.io, OpenMontage",
+      "tag": "flag off",
+      "pos": [
+        40,
+        380
       ],
       "size": [
         200,
@@ -146,7 +173,7 @@
       "id": "pg",
       "type": "database",
       "label": "Supabase Postgres",
-      "sublabel": "RPCs, RLS, pg_cron",
+      "sublabel": "85 tables, RPCs, pg_cron",
       "tag": "eu-central-1",
       "pos": [
         330,
@@ -158,16 +185,16 @@
       ]
     },
     {
-      "id": "media",
+      "id": "other",
       "type": "external",
-      "label": "Stream + social APIs",
-      "sublabel": "Cinema video, Publish",
+      "label": "Stream, 11 social networks, email",
+      "sublabel": "Cinema, Publish (Bluesky app password), Resend",
       "pos": [
         660,
         380
       ],
       "size": [
-        210,
+        250,
         64
       ]
     }
@@ -202,13 +229,22 @@
       "to": "pg",
       "label": "RPC (service role)",
       "variant": "emphasis",
-      "labelDy": 24
+      "labelAt": [
+        425,
+        352
+      ]
     },
     {
       "id": "checkout",
       "from": "worker",
       "to": "stripe",
-      "label": "Checkout"
+      "label": "Checkout + webhook",
+      "fromSide": "right",
+      "toSide": "left",
+      "labelAt": [
+        590,
+        150
+      ]
     },
     {
       "id": "submit",
@@ -218,7 +254,7 @@
       "variant": "emphasis",
       "labelAt": [
         628,
-        242
+        228
       ]
     },
     {
@@ -228,10 +264,20 @@
       "label": "output copied"
     },
     {
+      "id": "run-video",
+      "from": "worker",
+      "to": "runner",
+      "label": "signed run",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
       "id": "media-calls",
       "from": "worker",
-      "to": "media",
-      "label": "tus, publish"
+      "to": "other",
+      "label": "tus, publish (11 networks), email",
+      "fromSide": "bottom",
+      "toSide": "top"
     }
   ],
   "cards": [
@@ -241,7 +287,7 @@
       "items": [
         "One Worker serves pages and /api/v1",
         "Nonce CSP on every HTML request",
-        "Cron every 5 minutes runs sweeps and polls"
+        "Cron every 5 minutes polls GrsAI and BytePlus and runs the sweeps"
       ]
     },
     {
@@ -249,8 +295,17 @@
       "title": "Data and money",
       "items": [
         "All writes are SECURITY DEFINER RPCs",
-        "Stripe is the only live payment provider",
+        "Stripe is the only billing provider",
+        "Three credit buckets: Subscription, Free, Pack",
         "Every debit has a refund path"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Production flags",
+      "items": [
+        "On: chat, free allowance, referrals, personas, clip captions",
+        "Off: subscriptions, Publish, extended networks (6 of 11; on in staging), Cinema, projects, video agent"
       ]
     }
   ]
