@@ -52,9 +52,10 @@
     // (localStorage.veyrnox_chat). Needs OPENROUTER_CHAT_API_KEY on the Worker: production will not use the shared key.
     "CHAT_ENABLED": "true",
     // ADR-0067 amendment 11: POST /api/v1/chat/sends/close, which lets the chat screen settle a warning about a message that
-    // was stopped before its reply started. Flip to "true" only after migration 0242 is applied; until then the screen keeps
-    // such a warning as it always has.
-    "CHAT_SEND_CLOSE_ENABLED": "false",
+    // was stopped before its reply started. On in production since 2026-10-09: migration 0242 was applied there the same day
+    // (apply-migrations, approved by the owner), and the owner asked for it on that day, without the 24-hour wait. Set it back
+    // to "false" to stop keys being closed: the screen then keeps such a warning as it always has. Staging has its own value below.
+    "CHAT_SEND_CLOSE_ENABLED": "true",
     // ADR-0069: a per-model free allowance, taken as a price waiver. On in production since 2026-10-07: staging acceptance passed
     // 2026-10-06, and migrations 0205, 0206 and 0222 (the two models offered) are applied. At most $1.00 a day of provider spend.
     "FREE_ALLOWANCE_ENABLED": "true",

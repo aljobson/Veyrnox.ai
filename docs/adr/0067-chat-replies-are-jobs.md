@@ -301,8 +301,9 @@ screen change with its own browser check.
 
 ## Amendment 11 2026-10-09: a send can be asked about by its own key, and closed
 
-Status: **Proposed**. The owner accepts it by merging the change, and it takes effect when migration 0242 is applied and
-`CHAT_SEND_CLOSE_ENABLED` is set to `"true"`.
+Status: **Accepted 2026-10-09**, the owner merged it (pull request 774). Migration 0242 was applied to production the same day
+through `apply-migrations`, and `CHAT_SEND_CLOSE_ENABLED` was set to `"true"` in production that day on the owner's word, without
+the 24-hour wait between a migration and its flag. Staging keeps it `"false"` until 0242 is applied there.
 
 The chat screen keeps a warning when a message ended with its turn not settled ("If a reply is still saved, it will show in this
 chat and use Credits"). Since pull request 764 it keeps the reply's job id with the warning and reads that job when the chat is
