@@ -241,8 +241,8 @@
         "REFERRALS_ENABLED": "false",
         // Vars are not inherited. 0225 is applied on staging (2026-10-08); on for testing, production stays "false".
         "CLIP_EDIT_CAPTIONS_ENABLED": "true",
-        // Vars are not inherited. Off until 0237 is applied on staging.
-        "CLIP_EDIT_SLOW_ENABLED": "false",
+        // Vars are not inherited. 0237 is applied on staging (2026-10-09); on for testing the placeholder price, production stays "false".
+        "CLIP_EDIT_SLOW_ENABLED": "true",
         // ADR-0066; vars are not inherited, so staging names it too.
         "JEV_SUBMIT_ERRORS_MODE": "off",
         // Veyrnox Publish is open on staging for testing (see production).
