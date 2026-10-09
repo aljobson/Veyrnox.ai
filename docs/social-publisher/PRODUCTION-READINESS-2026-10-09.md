@@ -36,7 +36,8 @@ Google OAuth audience is External / In production; this is not verification appr
 - 360 Publish and brand tests pass (provider/database responses are stubbed).
 - Security package type checking passes.
 - Lint: 0 errors, 74 warnings on the current checkout.
-- Production-identity Next.js build passes; Worker build and packaging checks pending.
+- Production-identity Next.js and OpenNext Worker builds pass, including verification of all 10 Video Enhance assets.
+- Wrangler production packaging dry run passes; this did not upload or deploy the activation.
 - Live Publish accounts API returns 503 while the feature remains off.
 - A direct read-only Cloudflare schedules request returned an authentication error; browser trigger inspection also stalled. No trigger change was attempted. Live cron registration is still unverified.
 
