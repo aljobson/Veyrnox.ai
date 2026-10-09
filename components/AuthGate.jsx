@@ -23,7 +23,7 @@ import {
 import { signInWithPasskey, passkeysSupported } from "../app/lib/passkeys.js";
 import { configuredProviders, readAuthSettings, providerAvailable, passkeyUnavailableReason } from "../app/lib/authProviders.js";
 import { Turnstile, TURNSTILE_SITE_KEY } from "./Turnstile.jsx";
-import { captchaNotice, noticeAfterCaptchaFailure, noticeAfterCaptchaToken, CAPTCHA_BLOCKED_COPY } from "../app/lib/turnstileFailure.js";
+import { captchaNotice, noticeAfterCaptchaFailure, noticeAfterCaptchaToken, CAPTCHA_BLOCKED_CODE } from "../app/lib/turnstileFailure.js";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -208,6 +208,8 @@ export default function AuthGate() {
     const close = useCallback(() => {
         setOpen(false);
         forgetCredentials();
+        setCaptchaFailure(null);
+        setNotice(noticeAfterCaptchaToken);
     }, [forgetCredentials]);
     const dismiss = close;
 
@@ -434,7 +436,7 @@ export default function AuthGate() {
                     <Turnstile
                         onToken={(token) => { setCaptcha(token); if (token) { setCaptchaFailure(null); setNotice(noticeAfterCaptchaToken); } }}
                         onFailure={(code) => { setCaptchaFailure(code); setNotice((n) => noticeAfterCaptchaFailure(n, code)); }}
-                        onError={() => setNotice({ kind: "error", text: CAPTCHA_BLOCKED_COPY })}
+                        onError={() => { setCaptchaFailure(CAPTCHA_BLOCKED_CODE); setNotice(captchaNotice(CAPTCHA_BLOCKED_CODE)); }}
                         resetKey={captchaReset}
                     />
 

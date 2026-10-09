@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
-    CAPTCHA_BLOCKED_COPY,
+    CAPTCHA_BLOCKED_CODE,
     CAPTCHA_REQUIRED_COPY,
     captchaNotice,
     noticeAfterCaptchaFailure,
@@ -18,8 +18,9 @@ import {
 
 const DID_NOT_PASS = turnstileFailureCopy('600010');
 const CLOCK = turnstileFailureCopy('200100');
+const BLOCKED = turnstileFailureCopy('200500');
 const GENERIC = turnstileFailureCopy('110200');
-const EVERY_COPY = [DID_NOT_PASS, CLOCK, CAPTCHA_BLOCKED_COPY, GENERIC, CAPTCHA_REQUIRED_COPY];
+const EVERY_COPY = [DID_NOT_PASS, CLOCK, BLOCKED, GENERIC, CAPTCHA_REQUIRED_COPY];
 
 test('the code is digits or "unknown", whatever the widget hands over', () => {
     assert.equal(turnstileErrorCode('600010'), '600010');
@@ -39,7 +40,9 @@ test('a check that did not pass in this browser says what to do next', () => {
         assert.equal(turnstileFailureCopy(code), DID_NOT_PASS, String(code));
     }
     assert.match(DID_NOT_PASS, /didn't pass in this browser/);
-    assert.match(DID_NOT_PASS, /Reload the page/);
+    // Turnstile retries these by itself, and a reload loses what was typed,
+    // so reloading is the second thing to try, not the first.
+    assert.match(DID_NOT_PASS, /retry by itself\. If this message stays, reload the page/);
     assert.match(DID_NOT_PASS, /inside another app/);
     assert.match(DID_NOT_PASS, /Continue with Google doesn't need the check/);
 });
@@ -53,9 +56,13 @@ test('a wrong device clock is named', () => {
 });
 
 test('a widget that could not load gets the same advice as a blocked script', () => {
-    assert.equal(turnstileFailureCopy('200500'), CAPTCHA_BLOCKED_COPY);
-    assert.match(CAPTCHA_BLOCKED_COPY, /couldn't load/);
-    assert.match(CAPTCHA_BLOCKED_COPY, /content blockers/);
+    // A script that never loads cannot report a code, so the dialog files it
+    // under Turnstile's own code for an iframe that could not load.
+    assert.equal(CAPTCHA_BLOCKED_CODE, '200500');
+    assert.match(BLOCKED, /couldn't load/);
+    assert.match(BLOCKED, /content blockers/);
+    assert.match(BLOCKED, /Google/);
+    assert.deepEqual(captchaNotice(CAPTCHA_BLOCKED_CODE), { kind: 'error', captcha: true, text: BLOCKED });
 });
 
 test('anything else is one generic sentence', () => {
@@ -152,8 +159,21 @@ test('AuthGate shows the failure when it happens and clears it on a token', () =
     const widget = between(authGate, '<Turnstile', '/>');
     assert.match(widget, /onFailure=\{\(code\) => \{ setCaptchaFailure\(code\); setNotice\(\(n\) => noticeAfterCaptchaFailure\(n, code\)\); \}\}/);
     assert.match(widget, /onToken=\{\(token\) => \{ setCaptcha\(token\); if \(token\) \{ setCaptchaFailure\(null\); setNotice\(noticeAfterCaptchaToken\); \} \}\}/);
-    assert.match(widget, /onError=\{\(\) => setNotice\(\{ kind: "error", text: CAPTCHA_BLOCKED_COPY \}\)\}/);
     assert.match(authGate, /<div role="status" aria-live="polite"/);
+});
+
+test('a blocked script is remembered like any other failure', () => {
+    // Otherwise the next submit wiped the advice and asked the person to
+    // complete a check that is not on the page.
+    const widget = between(authGate, '<Turnstile', '/>');
+    assert.match(widget, /onError=\{\(\) => \{ setCaptchaFailure\(CAPTCHA_BLOCKED_CODE\); setNotice\(captchaNotice\(CAPTCHA_BLOCKED_CODE\)\); \}\}/);
+});
+
+test('closing the dialog forgets what its widget reported', () => {
+    // The widget unmounts with the dialog and a new one runs on reopen. The
+    // old reason must not be repeated for a widget that has not failed.
+    const close = between(authGate, 'const close = useCallback(', '}, [forgetCredentials]);');
+    assert.match(close, /setCaptchaFailure\(null\);\s*setNotice\(noticeAfterCaptchaToken\);/);
 });
 
 test('a submit without a token gives the reason when there is one', () => {

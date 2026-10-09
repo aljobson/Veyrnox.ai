@@ -92,11 +92,12 @@ nothing to Supabase, so it is in no auth log either.
 - `components/Turnstile.jsx` passes the error code from Turnstile's
   `error-callback` to a new `onFailure` prop, and still drops the token.
 - `components/AuthGate.jsx` shows a notice in its status region when the
-  failure happens, and clears it when a token arrives. A submit without a
-  token repeats the reason. The wording is in `app/lib/turnstileFailure.js`:
-  the check did not pass in this browser (300* and 600*), the device clock is
-  wrong (200100), the widget could not load (200500, same advice as a blocked
-  script), and one sentence for anything else. No code is shown.
+  failure happens, and clears it when a token arrives or the dialog closes. A
+  submit without a token repeats the reason, and that now includes a blocked
+  script. The wording is in `app/lib/turnstileFailure.js`: the check did not
+  pass in this browser (300* and 600*), the device clock is wrong (200100),
+  the widget could not load (200500, same advice as a blocked script), and
+  one sentence for anything else. No code is shown.
 - The code is written to the browser console once per failure, and nothing
   else is. The callback returns `true`: Cloudflare treats a non-falsy return as
   handled, and otherwise adds a console warning of its own on every retry.

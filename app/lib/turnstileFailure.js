@@ -7,12 +7,16 @@
 
 export const CAPTCHA_REQUIRED_COPY = 'Complete the security check first.';
 
-// Also shown when the script itself is blocked (Turnstile's onError).
-export const CAPTCHA_BLOCKED_COPY = "The security check couldn't load. Disable content blockers for this site, or sign in with Google.";
+// Turnstile's code for an iframe that could not load. A script that never
+// loads cannot report a code at all, so the dialog files it under this one.
+export const CAPTCHA_BLOCKED_CODE = '200500';
+const BLOCKED_COPY = "The security check couldn't load. Disable content blockers for this site, or sign in with Google.";
 
 // 300* and 600*: Cloudflare's "generic challenge failure". Common in in-app
-// and embedded browsers. OAuth is not challenged, so Google is a way through.
-const DID_NOT_PASS_COPY = "The security check didn't pass in this browser. Reload the page to try again. If you're inside another app, open veyrnox.ai in your usual browser instead. Continue with Google doesn't need the check.";
+// and embedded browsers. Turnstile retries these by itself and a reload loses
+// what was typed, so reloading comes second. OAuth is not challenged, so
+// Google is a way through.
+const DID_NOT_PASS_COPY = "The security check didn't pass in this browser. It will retry by itself. If this message stays, reload the page, or open veyrnox.ai in your usual browser if you're inside another app. Continue with Google doesn't need the check.";
 
 const CLOCK_COPY = "The security check failed because this device's clock looks wrong. Set the date and time to automatic, then reload the page.";
 
@@ -36,7 +40,7 @@ export function turnstileErrorCode(raw) {
 export function turnstileFailureCopy(code) {
     const known = turnstileErrorCode(code);
     if (known === '200100') return CLOCK_COPY;
-    if (known === '200500') return CAPTCHA_BLOCKED_COPY;
+    if (known === CAPTCHA_BLOCKED_CODE) return BLOCKED_COPY;
     if (/^(300|600)\d{3}$/.test(known)) return DID_NOT_PASS_COPY;
     return GENERIC_COPY;
 }
@@ -63,7 +67,10 @@ export function noticeAfterCaptchaFailure(current, code) {
     return current && current.text === next.text ? current : next;
 }
 
-/** The notice after a token arrives: anything about the check is over. */
+/**
+ * The notice after a token arrives, or after the dialog and its widget have
+ * gone: anything said about the check is over.
+ */
 export function noticeAfterCaptchaToken(current) {
     return current && current.captcha ? null : current;
 }
