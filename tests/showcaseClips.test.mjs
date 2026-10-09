@@ -9,7 +9,7 @@ import assert from 'node:assert/strict';
 import { existsSync, mkdirSync, mkdtempSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { SHOWCASE_CLIPS, SHOWCASE_SOURCES, MAX_CLIP_BYTES } from '../app/veyrnox/_lib/showcase.js';
+import { SHOWCASE_CLIPS, SHOWCASE_SOURCES, MODEL_SHOWCASE_KEYS, MAX_CLIP_BYTES } from '../app/veyrnox/_lib/showcase.js';
 import { FEATURE_CARDS, PRESETS, WALL_PRESETS } from '../app/veyrnox/_lib/tokens.js';
 
 const PUBLIC = new URL('../public', import.meta.url).pathname;
@@ -107,4 +107,23 @@ test('imported inspiration keeps its title and source credit', () => {
         'https://syntx.ai/trends',
         'https://higgsfield.ai/',
     ]);
+});
+
+test('the full preset gallery has a distinct preview and poster for every filter result', () => {
+    const videos = new Set();
+    for (const preset of PRESETS) {
+        const clip = SHOWCASE_CLIPS[preset.id];
+        assert.ok(clip?.video, `${preset.id} has no gallery preview`);
+        assert.ok(clip.poster, `${preset.id} has no gallery poster`);
+        assert.ok(statSync(`${PUBLIC}${clip.poster}`).size <= 80 * 1024, `${preset.id} poster exceeds 80 KB`);
+        assert.ok(!videos.has(clip.video), `${preset.id} repeats another preset's preview`);
+        videos.add(clip.video);
+    }
+});
+
+test('each model category has a video preview', () => {
+    assert.deepEqual(Object.keys(MODEL_SHOWCASE_KEYS), ['video', 'image', 'audio']);
+    for (const key of Object.values(MODEL_SHOWCASE_KEYS)) {
+        assert.ok(SHOWCASE_CLIPS[key]?.video, `${key} has no model-category preview`);
+    }
 });
