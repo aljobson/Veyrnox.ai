@@ -2,6 +2,7 @@ import { FAQ, MODELS as MODELS_FALLBACK, kindOf, isShelfModel } from './_lib/tok
 import { readPublicCatalog } from '../../lib/publicCatalog.js';
 import { SITE_URL, JsonLd } from '../seo';
 import { WideNav, Hero, FeaturedHeroCards } from './_sections/hero';
+import { LandingFilm } from './_sections/film';
 import { PresetWall, ModelShelf } from './_sections/showcase';
 import { LedgerExample, FAQBlock, ClosingCTA, FooterForest } from './_sections/footer';
 import { AnnouncementBar } from './_components/AnnouncementBar';
@@ -65,6 +66,7 @@ export default async function VeyrnoxLanding() {
       <AnnouncementBar />
       <WideNav />
       <Hero models={catalog} />
+      <LandingFilm />
       <FeaturedHeroCards catalog={catalog} />
       <PresetWall catalog={catalog} />
       <ModelShelf catalog={catalog} />
