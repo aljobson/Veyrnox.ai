@@ -386,6 +386,47 @@ by job reads, as one message has been since pull request 764, from the moment th
 Unchanged: every ending of a turn, the price, the refund paths and the sweep. A dropped connection before `start` (as opposed to
 Stop) still gives the message back as "not sent" and keeps no warning.
 
+## Amendment 12 2026-10-09: a message stopped before its reply started is asked about at the moment of Stop
+
+Status: **Proposed**. The owner accepts it by merging the change. It takes effect wherever amendment 11 is in effect, as soon
+as it is deployed: migration 0242 is applied and `CHAT_SEND_CLOSE_ENABLED` is `"true"` in production and on staging since
+2026-10-09.
+
+Amendment 11 asked about a send by its key when its chat was next opened. Until then the person saw "Stopped before any text
+arrived. If a reply is still saved, it will show in this chat and use Credits." beside the given-back text, although most such
+sends never reached the debit. The same question is now asked as soon as Stop is pressed, before the turn is looked for, and
+only when no job id has come (Stop before `start`). The browser's part only: no route, no migration and no switch is added.
+
+| The server's answer | What follows |
+|---|---|
+| `closed: true`, alone | No reply was charged and none can be. The ending of a job that kept nothing, with no look: the text and its images are back, a chat made for the message is deleted, and no warning is kept. |
+| The job that send made | Its id is now known. The turn is looked for by it, and every ending is the one Stop after `start` has. A warning that is still needed is kept with the job id, not the key. |
+| Anything else | Nothing is known, and the look runs with no job id as it did before. It nearly always ends not settled: the warning is kept with the key, and is asked about when the chat is next opened (amendment 11). |
+
+"Anything else" is a refusal (the route's switch off, a rate limit, the 200-key limit, a database failure, a signed-out or
+changed account), a failed request, an answer in a shape the route does not send, and an answer that takes more than 2 seconds.
+An answer that comes after those 2 seconds is not acted on. `closed` is read as amendment 11 reads it: the boolean `true`, with
+no job beside it. A job is taken only from `closed: false` with an id in the shape the server makes.
+
+**What the person is told when the send was closed.** Nothing, as for Stop with nothing kept today: the message is back in the
+box. If a warning is kept for the message before it, both are said, this Stop first ("Stopped. Nothing was saved and no Credits
+were used. Your message is back in the box. Before that: ..."), and that warning stays kept with its turns.
+
+**Time.** The question has its own limit of 2 seconds, the one the same question has when a chat is opened. The look that may
+follow is unchanged: about 3 seconds, 3.5 at most. A closed send ends in one round trip, where the look took about 3 seconds
+and then warned.
+
+**If the switch is turned off again.** The route answers `503 send_close_not_open`, which is no answer: every ending, notice
+and stored record is what it was before this amendment. The browser makes one more request for each Stop before `start`, and
+"Stopping" shows for that round trip longer.
+
+**The 200-key limit.** Each Stop before `start` whose send had not reached the debit now closes a key at once. Before, a key
+was closed only when a chat holding its warning was opened again. Past 200 in 30 days closing is refused, and that person is
+back to the warning.
+
+Unchanged: Stop after `start`, a dropped connection and a message that never started ask nothing and end as they did. So does
+every ending of a turn on the server.
+
 ## Not decided here
 
 - Which models, and their prices. Needs live endpoint checks and the margin validator. (Three were chosen

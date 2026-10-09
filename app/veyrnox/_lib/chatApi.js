@@ -5,7 +5,7 @@
 
 import { getFreshAccessToken, getSession, clearSession } from '../../lib/authClient.js';
 import { turnOptions } from './chatTurnOptions';
-import { lostNotice, settleStoppedTurn } from './chatStop';
+import { askStoppedSend, lostNotice, settleStoppedTurn } from './chatStop';
 import { gatewayFetch, GatewayError, ACCOUNT_PAUSED_COPY, makeIdempotencyKey, notifyBalanceChanged } from './gateway';
 
 const json = (body) => JSON.stringify(body);
@@ -98,7 +98,7 @@ export function chatUnchargedCopy(code, extra, warning) {
   return `${chatErrorCopy(code, extra)} Before that: ${chatErrorCopy(warning.code, warning)}`;
 }
 
-export { makeIdempotencyKey, lostNotice };
+export { makeIdempotencyKey, lostNotice, askStoppedSend };
 
 /**
  * Send one message and stream the reply. Calls onEvent(name, data) for start, delta, error, done.
