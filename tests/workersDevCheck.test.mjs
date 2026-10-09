@@ -115,9 +115,15 @@ test('the check runs after the smoke test and its rollback, and cannot fail the 
     assert.match(check.text, /\n        continue-on-error: true\n/);
     assert.match(check.text, /\n        run: node scripts\/check-workers-dev\.mjs\n/);
     assert.match(check.text, /CLOUDFLARE_API_TOKEN: \$\{\{ secrets\.CLOUDFLARE_API_TOKEN \}\}/);
-    // The steps that decide a rollback are as they were.
+    // Smoke failures and lost secrets both trigger rollback; route checks remain separate.
     assert.match(smoke.text, /\n        id: smoke\n        if: env\.HAS_TOKEN == 'true' && steps\.tip\.outputs\.stale != 'true'\n        run: sleep 20 && node scripts\/check-site-health\.mjs\n/);
-    assert.match(rollback.text, /\n        if: failure\(\) && steps\.smoke\.outcome == 'failure'\n/);
+    assert.match(rollback.text, /\n        if: failure\(\) && \(steps\.smoke\.outcome == 'failure' \|\| steps\.secret_check\.outcome == 'failure'\)\n/);
+    const secrets = stepAt('Verify live secret bindings survived');
+    const baseline = stepAt('Record live secret binding names');
+    assert.ok(baseline.at < deploy.at && deploy.at < secrets.at && secrets.at < smoke.at);
+    assert.match(secrets.text, /id: secret_check/);
+    assert.match(secrets.text, /check-worker-secrets\.mjs verify previous-secrets\.json/);
+    assert.match(rollback.text, /check-worker-secrets\.mjs verify previous-secrets\.json/);
 });
 
 test('an open or unreadable setting is reported on the deploy-failure issue by its own job', () => {
