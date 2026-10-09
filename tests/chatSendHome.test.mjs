@@ -291,9 +291,11 @@ test('the notice is always kept with its chat, as a code, and goes on screen onl
     // What is kept was `extra` alone. The reply's job (null before `start`) and the text sent go with it now, so a warning
     // about a turn that was not settled can be asked about when its chat is next opened (tests/chatWarningSettle.test.mjs).
     // The store decides which notices keep them (tests/chatLocal.test.mjs). The words are still made from `extra` alone.
-    // `over`: a warning is still kept for the chat the message was sent from, and this notice is about to take its place. One
-    // warning then stands for two turns, and one job cannot answer for both, so no job is kept with it.
-    assert.match(send, /\n {4}const tell = \(code, extra\) => \{ const over = !!heldWarning\(from\); forgetEarlier\(\); const \{ home, here \} = at\(\); keepNotice\(home, code, \{ \.\.\.extra, job: over \? null : jobId, sent: content \}\); if \(here\) setError\(chatErrorCopy\(code, extra\)\); \};\n/);
+    // `before`: a warning still kept for the chat the message was sent from, read before it is forgotten. This notice is about
+    // to take its place, so one warning then stands for both turns. PR 764 kept no job with it (one job cannot answer for two
+    // turns). It is handed to the store now, with this send's own key, and the store keeps every turn the new warning stands
+    // for (tests/chatLocalTurns.test.mjs, tests/chatWarningTurns.test.mjs).
+    assert.match(send, /\n {4}const tell = \(code, extra\) => \{ const before = heldWarning\(from\); forgetEarlier\(\); const \{ home, here \} = at\(\); keepNotice\(home, code, \{ \.\.\.extra, job: jobId, key, sent: content, after: before \}\); if \(here\) setError\(chatErrorCopy\(code, extra\)\); \};\n/);
     assert.equal(send.split('keepNotice(').length - 1, 1, 'every notice that is kept is kept by tell()');
     assert.doesNotMatch(send, /tell\(chatErrorCopy\(/, 'no ending hands tell() words');
     // setError appears four times in send(): clearing the notice as the message is sent, inside tell(), inside besideWarning()
@@ -313,7 +315,7 @@ test('a message that used no Credits does not take the place of a warning about 
     // message that started and was refunded, which is not a refusal.
     assert.match(send, /\n {4}const tellUncharged = \(code, extra\) => \{ if \(!besideWarning\(code, extra\)\) tell\(code, extra\); \};\n/);
     // Under `home`, where the given-back text now is and the notice would be kept: New chat when the chat is gone.
-    // Three since tell() asks whether its notice takes the place of a kept warning (tests/chatWarningSettle.test.mjs). It was two.
+    // Three since tell() reads the kept warning its notice takes the place of (tests/chatWarningTurns.test.mjs). It was two.
     assert.equal(send.split('heldWarning(').length - 1, 3, 'the store is asked three times: at the press, here, and in tell()');
     assert.equal(send.split('chatUnchargedCopy(').length - 1, 1);
     // Five endings are told this way, each right after giveBack(true), the one call that offers the text again with

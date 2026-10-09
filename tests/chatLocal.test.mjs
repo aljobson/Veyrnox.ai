@@ -229,7 +229,8 @@ test('a kept notice is read as a warning about Credits only when it is one of th
   // Each of these is about a message that is settled: it used no Credits, or the chat itself shows the reply and its
   // price (`connection_saved`). A later refusal may take its place.
   // `stop_saved` since a kept warning can be settled later: a reply was saved after Stop, and the chat shows it and its price.
-  for (const code of ['connection_saved', 'stop_saved', 'connection_refunded', 'stop_refunded', 'insufficient_balance', 'rate_limited', 'turn_not_saved', 'provider_cut_off', 'image_unreadable', 'unknown']) {
+  // `turns_settled` the same, for a warning that stood for several turns: every reply that was saved is in the chat with its price.
+  for (const code of ['connection_saved', 'stop_saved', 'turns_settled', 'connection_refunded', 'stop_refunded', 'insufficient_balance', 'rate_limited', 'turn_not_saved', 'provider_cut_off', 'image_unreadable', 'unknown']) {
     writeNotice(s, ME, 'thread-1', code, { credits: 2 });
     assert.equal(readCreditsWarning(s, ME, 'thread-1'), null, code);
   }
@@ -295,15 +296,16 @@ const ASKABLE = ['stop_unsure', 'stop_saving', 'connection_lost'];
 test('a warning whose turn had started keeps the job id, and the words-facing read never carries it', () => {
   const s = memory();
   for (const code of ASKABLE) {
-    writeNotice(s, ME, 'thread-1', code, { job: JOB });
+    // Forgotten first: a warning written over a kept warning stands for both turns (tests/chatLocalTurns.test.mjs).
+    clearNotice(s, ME, 'thread-1'); writeNotice(s, ME, 'thread-1', code, { job: JOB });
     assert.deepEqual(readCreditsWarning(s, ME, 'thread-1'), { code, job: JOB }, code);
     // readNotice is what the screen puts into words: a code, and the number its words may need. Nothing else.
     assert.deepEqual(readNotice(s, ME, 'thread-1'), { code }, code);
   }
   assert.equal(s.getItem(rawNotice(s, 'thread-1')), `{"code":"connection_lost","job":"${JOB}"}`);
-  // Stop before `start` has no job: the warning is kept as it always was.
+  // Stop before `start` has no job: with no key either, the warning is kept as it always was.
   for (const none of [undefined, null, '']) {
-    writeNotice(s, ME, 'thread-1', 'stop_unsure', { job: none, sent: 'hello' });
+    clearNotice(s, ME, 'thread-1'); writeNotice(s, ME, 'thread-1', 'stop_unsure', { job: none, sent: 'hello' });
     assert.deepEqual(readCreditsWarning(s, ME, 'thread-1'), { code: 'stop_unsure' });
     assert.equal(s.getItem(rawNotice(s, 'thread-1')), '{"code":"stop_unsure"}');
   }
@@ -330,7 +332,7 @@ test('the one warning that gives the message back keeps a mark of its text besid
   assert.deepEqual(readNotice(s, ME, 'thread-1'), { code: 'stop_unsure' });
   // Only beside `stop_unsure`: the other two leave the box as the person has it, so nothing is compared with it later.
   for (const code of ['stop_saving', 'connection_lost']) {
-    writeNotice(s, ME, 'thread-1', code, { job: JOB, sent: text });
+    clearNotice(s, ME, 'thread-1'); writeNotice(s, ME, 'thread-1', code, { job: JOB, sent: text });
     assert.deepEqual(readCreditsWarning(s, ME, 'thread-1'), { code, job: JOB }, code);
   }
   // The mark: the length and a 32-bit hash, in a fixed shape. The same text gives the same mark; a changed one does not.
@@ -344,8 +346,8 @@ test('the one warning that gives the message back keeps a mark of its text besid
   assert.equal(textMark(text), textMark('Describe a lighthouse.'));
   for (const other of ['Describe a lighthouse', 'describe a lighthouse.', 'Describe a lighthouse. ', `${text}\n\ntyped since`, '']) assert.notEqual(textMark(other), textMark(text), JSON.stringify(other));
   assert.match(textMark('x'.repeat(MAX_DRAFT)), /^[0-9a-z]{1,4}\.[0-9a-z]{1,7}$/, 'the longest draft still fits the shape');
-  // The longest record there is still fits the limit it is read back under.
-  writeNotice(s, ME, 'thread-1', 'stop_unsure', { job: JOB, sent: 'x'.repeat(MAX_DRAFT) });
+  // The longest record there is still fits the limit it is read back under (a send's key in place of the job: tests/chatLocalTurns.test.mjs).
+  clearNotice(s, ME, 'thread-1'); writeNotice(s, ME, 'thread-1', 'stop_unsure', { job: JOB, sent: 'x'.repeat(MAX_DRAFT) });
   assert.ok(s.getItem(rawNotice(s, 'thread-1')).length <= MAX_NOTICE);
   assert.deepEqual(readCreditsWarning(s, ME, 'thread-1'), { code: 'stop_unsure', job: JOB, sent: textMark('x'.repeat(MAX_DRAFT)) });
 });
@@ -382,7 +384,9 @@ test('storage is not trusted: a job or a mark is read back only in its own shape
   assert.deepEqual(readCreditsWarning(s, ME, 'thread-1'), { code: 'stop_unsure', job: JOB, sent: mark });
   s.setItem(key, JSON.stringify({ code: 'stop_unsure', job: JOB, pad: 'x'.repeat(MAX_NOTICE) }));
   assert.equal(readCreditsWarning(s, ME, 'thread-1'), null);
-  // The limit is 120 characters, and one character over it is too much. The longest record the screen writes is 88.
+  // The limit is 120 characters, and one character over it is too much. The longest record the screen writes is 91:
+  // one turn. A warning that stands for several keeps their list in a record of its own (tests/chatLocalTurns.test.mjs),
+  // so that a page running older code can still read the notice.
   assert.equal(MAX_NOTICE, 120);
   const fits = (n) => { const base = JSON.stringify({ code: 'stop_unsure', job: JOB, p: '' }); return JSON.stringify({ code: 'stop_unsure', job: JOB, p: 'x'.repeat(n - base.length) }); };
   s.setItem(key, fits(120)); assert.deepEqual(readCreditsWarning(s, ME, 'thread-1'), { code: 'stop_unsure', job: JOB });
@@ -390,7 +394,7 @@ test('storage is not trusted: a job or a mark is read back only in its own shape
   assert.equal(readNotice(s, ME, 'thread-1'), null);
   // Nothing bad is written either: the write checks the same shapes.
   for (const bad of badJobs) {
-    writeNotice(s, ME, 'thread-1', 'connection_lost', { job: bad });
+    clearNotice(s, ME, 'thread-1'); writeNotice(s, ME, 'thread-1', 'connection_lost', { job: bad });
     assert.equal(s.getItem(key), '{"code":"connection_lost"}', JSON.stringify(bad));
   }
 });
