@@ -35,7 +35,7 @@ async function accept(request) {
 // ---- the route: what is accepted, and what is written ----
 
 test('a code from our own page is counted: 204, no body, one line', async () => {
-    for (const code of ['600010', '110200', '200500', '300', '123456789', 'unknown']) {
+    for (const code of ['600010', '110200', '200500', '300', '123456789', 'unknown', 'unsupported']) {
         const { res, lines } = await accept(post(code));
         assert.equal(res.status, 204, code);
         assert.equal(await res.text(), '');
@@ -46,7 +46,9 @@ test('a code from our own page is counted: 204, no body, one line', async () => 
 
 test('anything that is not exactly a code is refused and never logged', async () => {
     const bad = ['', '12', '1234567890', ' 600010', '600010 ', '600010\n', '6000a0', '-60001', '600.10', 'Unknown', 'UNKNOWN',
-        'unknown ', '{"code":600010}', '"600010"', 'a@b.co', '0.AbCd-token_1', '600010,600020', '٦٠٠٠١٠'];
+        'unknown ', '{"code":600010}', '"600010"', 'a@b.co', '0.AbCd-token_1', '600010,600020', '٦٠٠٠١٠',
+        // One word is counted besides "unknown" (amendment 5). Its neighbours are not, and neither is the dialog's other word.
+        'Unsupported', 'UNSUPPORTED', 'unsupported ', ' unsupported', 'unsupported\n', 'unsupportedx', 'unsupporte', 'waiting', 'supported'];
     for (const body of bad) {
         const { res, lines } = await accept(post(body));
         assert.equal(res.status, 400, JSON.stringify(body));
@@ -379,14 +381,14 @@ test('the widget reports a failure where it logs it: once, not on every retry', 
 test('a script that cannot load is reported as the code the dialog files it under', () => {
     assert.equal(CAPTCHA_BLOCKED_CODE, '200500');
     assert.match(turnstile, /s\.onerror = \(\) => \{[^}]*scriptPromise = null;\s*reportTurnstileFailure\(CAPTCHA_BLOCKED_CODE\);\s*reject\(new Error\("turnstile_load_failed"\)\);\s*\};/);
-    assert.equal(turnstile.match(/reportTurnstileFailure\(/g).length, 2);
+    assert.equal(turnstile.match(/reportTurnstileFailure\(/g).length, 3);
 });
 
 test('a widget that waits for a click is not counted: a wait is not a failure', async () => {
     // ADR-0026 amendment 3. The callback tells the dialog and nothing else,
     // and the two calls above stay the only places a report is sent from.
     assert.match(turnstile, /"before-interactive-callback": \(\) => onWaiting\(\),/);
-    assert.equal(turnstile.match(/reportTurnstileFailure\(/g).length, 2);
+    assert.equal(turnstile.match(/reportTurnstileFailure\(/g).length, 3);
     // The word is no code, so it could not leave the browser as itself.
     const page = await pageLoad();
     try {
@@ -395,16 +397,29 @@ test('a widget that waits for a click is not counted: a wait is not a failure', 
     } finally { page.restore(); }
 });
 
-test('an unsupported browser is not counted: Turnstile gives it no code', async () => {
-    // ADR-0026 amendment 4. The route takes a code or "unknown" and nothing
-    // else, so counting this case would be a decision about the route.
-    assert.match(turnstile, /"unsupported-callback": \(\) => onUnsupported\(\),/);
-    assert.equal(turnstile.match(/reportTurnstileFailure\(/g).length, 2);
+test('an unsupported browser is counted under a word of our own, once per page load', async () => {
+    // ADR-0026 amendment 5. Turnstile gives this case no code, so the count gets the word "unsupported".
+    assert.match(turnstile, /"unsupported-callback": \(\) => \{\s*reportTurnstileFailure\(CAPTCHA_UNSUPPORTED\);\s*onUnsupported\(\);\s*\},/);
+    // Three places send a report: a failed check, a script that cannot load, and this.
+    assert.equal(turnstile.match(/reportTurnstileFailure\(/g).length, 3);
+    assert.equal(CAPTCHA_UNSUPPORTED, 'unsupported');
     const page = await pageLoad();
     try {
-        page.reportTurnstileFailure(CAPTCHA_UNSUPPORTED);
-        assert.deepEqual(page.calls.map(([, init]) => init.body), ['unknown']);
+        // A reopened dialog mounts a new widget, which is refused again.
+        for (let i = 0; i < 5; i++) page.reportTurnstileFailure(CAPTCHA_UNSUPPORTED);
+        assert.equal(page.calls.length, 1);
+        const [url, init] = page.calls[0];
+        assert.equal(url, '/api/turnstile-failure');
+        assert.deepEqual(init, { method: 'POST', body: 'unsupported', keepalive: true, credentials: 'omit', cache: 'no-store', referrerPolicy: 'origin' });
+        // It shares the cap of five with the codes.
+        for (let code = 300010; code < 300030; code++) page.reportTurnstileFailure(code);
+        assert.equal(page.calls.length, 5);
     } finally { page.restore(); }
+    // The route takes it from a page of ours and writes the word in the same field.
+    const { res, lines } = await accept(post('unsupported'));
+    assert.equal(res.status, 204);
+    assert.deepEqual(lines, [LINE('unsupported')]);
+    assert.ok(new TextEncoder().encode('unsupported').length <= REPORT_BODY_LIMIT);
 });
 
 test('the dialog itself knows nothing about the report', () => {

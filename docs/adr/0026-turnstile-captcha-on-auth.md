@@ -443,3 +443,44 @@ the options the widget is given and lets each callback be called by hand:
   itself" and one report; `before-interactive-callback` changed it to
   "waiting for you to tick its box"; `unsupported-callback` changed it to the
   new wording; a token cleared it. One report in all.
+
+## Amendment 5 (2026-10-09): unsupported browsers are counted
+
+Amendment 4 left an unsupported browser out of the count of failed checks,
+because that count held Turnstile's error codes and this case has none. The
+owner decided it belongs there: it is a person stopped at the check, and
+that is what the count is for.
+
+1. **The browser reports it.** `components/Turnstile.jsx` calls
+   `reportTurnstileFailure` from `unsupported-callback` with the word
+   `unsupported` (`CAPTCHA_UNSUPPORTED`). It is the request every report is:
+   a same-origin POST whose body is that word and nothing else, without
+   cookies or the page address, once per value per page load, five per page
+   load at most, and dropped if it cannot be sent.
+2. **One rule says what a report may hold, on both sides.**
+   `turnstileReportCode` in `app/lib/turnstileFailure.js`: 3 to 9 digits,
+   `unknown`, or `unsupported`. The browser sends only what it returns, and
+   the route accepts only a body it returns unchanged. `turnstileErrorCode`
+   is not changed: what the widget hands to `error-callback` is still cut to
+   digits or `unknown`, so the word cannot come from the widget.
+3. **The server writes the same line**, with the word in the same field:
+   `{ event: 'auth.turnstile_check_failed', code: 'unsupported' }`.
+4. **No console line.** That line carries an error code for someone looking
+   into a failure. This case has none, and the notice says what happened.
+
+The count gains one row: `unsupported`, Turnstile refused the browser as out
+of date or unsupported. What amendment 2 says about the number holds for it:
+page loads, not people; anyone can send it; a trend. One thing holds for this
+row alone. The real widget has not been seen to refuse a browser (amendment
+4), so a zero means either that no such browser came or that Turnstile did
+not call the callback. It is not proof of the first.
+
+Unchanged: the rate limit, our own pages only, 16 bytes at most (the word is
+11), nothing about the sender read or kept, and a fixed list of bodies, one
+word longer. The check, the CSP, the notices and the console line.
+
+Seen on a local build on 2026-10-09 with the stand-in script of amendment 4:
+two calls of `unsupported-callback` sent one report, the route answered 204
+and wrote the line above, and the notice showed. Sent by hand, the route
+refused `unsupportedx`, `Unsupported` and `waiting` with 400, and the word
+from another site or with no browser headers with 403.

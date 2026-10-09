@@ -56,8 +56,8 @@ test('the admin routes check Cloudflare Access and a token', () => {
 });
 
 // An anonymous write: the Worker limits it per connecting IP before the app,
-// and the handler takes one Turnstile error code and nothing else
-// (ADR-0026 amendment 2, tests/turnstileFailureReport.test.mjs).
+// and the handler takes one Turnstile error code or one fixed word and
+// nothing else (ADR-0026 amendments 2 and 5, tests/turnstileFailureReport.test.mjs).
 test('the anonymous report is rate limited in the Worker and handled in one place', () => {
     const worker = readFileSync(join(ROOT, 'worker.js'), 'utf8');
     const fetchHandler = worker.slice(worker.indexOf('async fetch(request, env, ctx) {'), worker.indexOf('async scheduled('));

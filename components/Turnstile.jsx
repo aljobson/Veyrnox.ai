@@ -9,7 +9,7 @@
  */
 
 import { useEffect, useRef } from "react";
-import { CAPTCHA_BLOCKED_CODE, turnstileErrorCode } from "../app/lib/turnstileFailure.js";
+import { CAPTCHA_BLOCKED_CODE, CAPTCHA_UNSUPPORTED, turnstileErrorCode } from "../app/lib/turnstileFailure.js";
 import { reportTurnstileFailure } from "../app/lib/reportTurnstileFailure.js";
 
 export const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "";
@@ -88,8 +88,12 @@ export function Turnstile({ onToken, onError, onFailure, onWaiting, onUnsupporte
                     "before-interactive-callback": () => onWaiting(),
                     // Turnstile refuses this browser as out of date or
                     // unsupported. It reports no error and gives no code,
-                    // so this is not counted: no log line and no report.
-                    "unsupported-callback": () => onUnsupported(),
+                    // so it is counted under a word of our own, once per
+                    // page load. No console line: there is no code to show.
+                    "unsupported-callback": () => {
+                        reportTurnstileFailure(CAPTCHA_UNSUPPORTED);
+                        onUnsupported();
+                    },
                 });
             })
             .catch(() => {
