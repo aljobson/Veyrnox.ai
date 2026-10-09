@@ -10,6 +10,21 @@ const MONDAY_6 = new Date('2026-10-05T06:02:00Z');
 const models = [{ id: 'wan-2.5-kie', title: 'Wan 2.5' }, { id: 'nano-banana-kie', title: 'Nano Banana' }];
 const accounts = [{ id: 'acc-ig', network: 'instagram' }, { id: 'acc-yt', network: 'youtube' }, { id: 'acc-x', network: 'twitter' }];
 
+test('limited release skips weekly drafts before database access', async () => {
+    const saved = process.env.PUBLISH_RELEASED_NETWORKS;
+    process.env.PUBLISH_RELEASED_NETWORKS = 'youtube';
+    try {
+        const result = await runBrandDrafts({ publishOn: true, db: {
+            select() { throw new Error('must not read drafts'); },
+            rpc() { throw new Error('must not create drafts'); },
+        } });
+        assert.deepEqual(result, { ok: true, skipped: 'limited_network_release' });
+    } finally {
+        if (saved === undefined) delete process.env.PUBLISH_RELEASED_NETWORKS;
+        else process.env.PUBLISH_RELEASED_NETWORKS = saved;
+    }
+});
+
 test('ISO weeks and the Monday 06:00 UTC run window', () => {
     assert.equal(isoWeekKey(new Date('2026-10-05T00:00:00Z')), '2026-W41');
     assert.equal(isoWeekKey(new Date('2026-01-01T12:00:00Z')), '2026-W01');

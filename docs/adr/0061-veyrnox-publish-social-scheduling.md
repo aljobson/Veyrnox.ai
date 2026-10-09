@@ -445,3 +445,16 @@ approval or real-account success. Existing live YouTube evidence remains
 valid; each new provider needs separate live tester evidence.
 See [tester handover](../social-publisher/INTEGRATIONS-TESTING-2026-10-08.md)
 for setup, capabilities, rollout and the acceptance checklist.
+
+### Platform rollout gate — 9 October 2026
+
+The owner requested a production rollout starting with YouTube. The server
+reads `PUBLISH_RELEASED_NETWORKS`: comma-separated network keys, `*` for all
+known platforms, or an explicit empty list for none. Unset preserves existing
+deployments. Production source config allows `youtube` while Publish itself
+stays off; staging explicitly uses `*`. Credentials do not override this gate.
+OAuth start/callback, new composer targets and UI readiness enforce the list.
+Existing accounts remain readable and disconnectable; queued targets keep
+finishing. Limited releases disable weekly draft generation and batch approval
+because the atomic batch RPC has no network filter; discard remains available.
+No migration, provider approval, billing activation or Publish launch is included.

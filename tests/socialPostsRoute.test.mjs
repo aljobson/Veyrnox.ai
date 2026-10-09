@@ -213,3 +213,14 @@ test('POST: uploads require the switch and exactly one source', async () => {
         if (oldUploads === undefined) delete process.env.PUBLISH_UPLOADS_ENABLED; else process.env.PUBLISH_UPLOADS_ENABLED = oldUploads;
     }
 });
+
+test('release restriction rejects an existing unreleased account before creating a post', async () => {
+    process.env.PUBLISH_RELEASED_NETWORKS = 'youtube';
+    try {
+        stub();
+        const res = await POST(postRequest(validBody()));
+        assert.equal(res.status, 400);
+        assert.equal((await res.json()).error, 'network_unavailable');
+        assert.equal(calls.some(c => c.name === 'create_social_post'), false);
+    } finally { delete process.env.PUBLISH_RELEASED_NETWORKS; }
+});

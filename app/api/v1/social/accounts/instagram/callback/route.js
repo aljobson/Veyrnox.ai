@@ -24,6 +24,7 @@
  */
 
 import { NextResponse } from 'next/server';
+import { networkReleased } from '../../../../../../../lib/social/networks.js';
 import { rpc, envConfig, SupabaseError } from '../../../../../../../packages/db/supabase-client.js';
 import { instagramConfig, exchangeCodeForToken, fetchConnectedAccount, instagramScopes } from '../../../../../../../packages/adapters/social/instagram.js';
 import { verifyOAuthState } from '../../../../../../../lib/social/oauthState.js';
@@ -39,6 +40,8 @@ export async function POST(req) {
     if (!authId || !UUID_RE.test(authId)) {
         return NextResponse.json({ error: 'not_authenticated' }, { status: 401 });
     }
+
+    if (!networkReleased('instagram')) return NextResponse.json({ error: 'network_unavailable' }, { status: 404 });
 
     const cfg = envConfig();
     const igCfg = instagramConfig();

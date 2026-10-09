@@ -59,6 +59,22 @@ test('rate limiting stops the request before any RPC call', async () => {
     assert.equal(calls.length, 1);
 });
 
+test('unreleased connected accounts remain visible but cannot be composed to', async () => {
+    const saved = process.env.PUBLISH_RELEASED_NETWORKS;
+    process.env.PUBLISH_RELEASED_NETWORKS = 'youtube';
+    try {
+        stub({ list_social_accounts: { ok: true, accounts: [
+            { id: 'a1', network: 'instagram', status: 'active' },
+            { id: 'a2', network: 'youtube', status: 'active' },
+        ] } });
+        const body = await (await GET(request())).json();
+        assert.deepEqual(body.accounts.map(a => [a.id, a.publishingEnabled]), [['a1', false], ['a2', true]]);
+    } finally {
+        if (saved === undefined) delete process.env.PUBLISH_RELEASED_NETWORKS;
+        else process.env.PUBLISH_RELEASED_NETWORKS = saved;
+    }
+});
+
 test('a brand lookup failure never leaks upstream detail', async () => {
     stub({ get_or_create_default_social_brand: new Error('secret upstream detail') });
     const res = await GET(request());
