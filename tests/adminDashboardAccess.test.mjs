@@ -175,10 +175,26 @@ test('requireDashboardAccess: closed whenever Access is configured, local only w
     }
 });
 
-test('the three dashboard routes all call the gate', async () => {
-    const { readFileSync } = await import('node:fs');
-    for (const [, file] of ROUTES) {
-        const src = readFileSync(new URL(file, import.meta.url), 'utf8');
-        assert.match(src, /await requireDashboardAccess\(req\)/, file);
+// A handler factory that verifies the assertion itself, in the mode that does.
+const CINEMA_ADMIN = /^(?:creatorHandler\(\{ review: true\b|earningsHandler\(|operatorHandler\(\{ action: '(?:reverse_unlocks|refund_pass)'|publishHandler\(\{ action: '(?:queue|review|suspend)')/;
+
+test('every route under /api/v1/admin verifies the Access assertion in code', async () => {
+    const { readFileSync, readdirSync, statSync } = await import('node:fs');
+    const { join } = await import('node:path');
+    const { fileURLToPath } = await import('node:url');
+    const walk = (dir) => readdirSync(dir).flatMap((name) => {
+        const path = join(dir, name);
+        return statSync(path).isDirectory() ? walk(path) : name === 'route.js' ? [path] : [];
+    });
+    const files = walk(fileURLToPath(new URL('../app/api/v1/admin', import.meta.url)));
+    assert.ok(files.length >= 9, `found ${files.length} admin routes`);
+    let dashboard = 0;
+    for (const file of files) {
+        const src = readFileSync(file, 'utf8');
+        if (/await requireDashboardAccess\(req\)/.test(src)) { dashboard++; continue; }
+        const handlers = [...src.matchAll(/^export const [A-Z]+ = (.+);$/gm)].map((m) => m[1]);
+        assert.ok(handlers.length > 0, `${file} has no in-code Access check`);
+        for (const handler of handlers) assert.match(handler, CINEMA_ADMIN, `${file}: ${handler}`);
     }
+    assert.equal(dashboard, 3);
 });

@@ -31,7 +31,9 @@ test('a data-file path is answered 404 before the rate limiter and the app', asy
         `/_next/data/${BUILD}/%2e%2e%2f%2e%2e%2f%2e%2e%2fapi/v1/admin/metrics.json`,
     ];
     globalThis.__nextDataTestApp = () => assert.fail('a data-file request reached the app');
-    for (const path of paths) for (const method of ['GET', 'HEAD', 'POST']) {
+    const realError = console.error;
+    console.error = () => {};
+    try { for (const path of paths) for (const method of ['GET', 'HEAD', 'POST']) {
         const req = new Request(`https://veyrnox.test${path}`, {
             method, headers: { authorization: 'Bearer anything', 'x-nextjs-data': '1' },
             ...(method === 'POST' ? { body: 'unread' } : {}),
@@ -48,7 +50,23 @@ test('a data-file path is answered 404 before the rate limiter and the app', asy
         assert.equal(res.headers.get('referrer-policy'), 'strict-origin-when-cross-origin');
         assert.equal(res.headers.get('permissions-policy'), 'camera=(), microphone=(), geolocation=()');
         assert.deepEqual(await res.json(), { error: 'not_found' });
-    }
+    } } finally { console.error = realError; }
+});
+
+test('a refusal that names an API route is logged, without the path; the rest are not', async () => {
+    const said = [];
+    const realError = console.error;
+    console.error = (...a) => said.push(a.join(' '));
+    try {
+        for (const path of [`/_next/data/${BUILD}/index.json`, '/_next/data/', `/_next/data/${BUILD}/app/admin.json`, `/_next/data/${BUILD}/apiary.json`]) {
+            await worker.fetch(new Request(`https://veyrnox.test${path}`), neverLimited, {});
+        }
+        assert.deepEqual(said, []);
+        for (const path of [`/_next/data/${BUILD}/api/v1/admin/metrics.json`, `/_next/data/${BUILD}/API/admin/reap-assets.json`, `/_next/data/${BUILD}/%2e%2e%2fapi/v1/balance.json`]) {
+            await worker.fetch(new Request(`https://veyrnox.test${path}`), neverLimited, {});
+        }
+    } finally { console.error = realError; }
+    assert.deepEqual(said, Array(3).fill('[next-data] refused a data path naming an API route'));
 });
 
 test('static assets, images and ordinary paths still reach the app unchanged', async () => {
