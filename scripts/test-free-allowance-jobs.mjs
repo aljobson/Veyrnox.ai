@@ -217,6 +217,25 @@ try {
         assert.deepEqual(await balance(u), before);
     });
 
+    await check('a free chat reply that cannot be stored keeps its allowance spent (0233)', async () => {
+        await setChat(3, 100);
+        const u = await user(); const before = await balance(u);
+        const auth = await authOf(u);
+        const t = (await one('SELECT public.chat_create_thread($1, $2) AS r', [auth, CHAT])).r.thread.id;
+        const free = (await one('SELECT public.submit_free_job($1, $2, $3, $4::jsonb) AS r', [u, 'chat-free-3', CHAT, JSON.stringify({ kind: 'chat', thread_id: t })])).r;
+        assert.equal((await one(`SELECT public.job_submitted($1, 'openrouter-chat', $2) AS r`, [free.job_id, String(free.job_id)])).r.ok, true);
+        assert.equal((await one('SELECT public.chat_delete_thread($1, $2) AS r', [auth, t])).r.ok, true);
+        assert.equal((await one('SELECT public.chat_complete_turn($1, $2, $3, $4, $5) AS r', [free.job_id, t, 'hello', 'hi there', 'complete'])).r.code, 'THREAD_NOT_FOUND');
+        const settled = (await one('SELECT public.chat_settle_unsaved_turn($1) AS r', [free.job_id])).r;
+        assert.deepEqual([settled.ok, Number(settled.credits)], [true, 0], JSON.stringify(settled));
+        assert.equal((await one('SELECT state::text AS s FROM public.jobs WHERE id = $1', [free.job_id])).s, 'STORED');
+        // The delivered reply used the allowance: a refund of 0 is refused, so nothing hands it back.
+        assert.equal((await refund(free.job_id, u, 0)).code, 'JOB_SUCCEEDED');
+        assert.equal(await claim(u, 'chat-free-3'), 'TAKEN');
+        assert.equal(await ledgerRows(free.job_id), 0);
+        assert.deepEqual(await balance(u), before);
+    });
+
     await check('submit_free_job is service-role only', async () => {
         const sig = 'public.submit_free_job(uuid,text,text,jsonb,integer,integer)';
         assert.deepEqual(await one(`SELECT has_function_privilege('anon', '${sig}', 'EXECUTE') AS anon,
