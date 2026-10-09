@@ -22,7 +22,8 @@
  *   node scripts/verify-filter-endpoints.mjs --submit       # SPENDS MONEY
  *   node scripts/verify-filter-endpoints.mjs --submit --only=retouch
  *
- * Reads FAL_KEY from the environment. Never prints it.
+ * Only --submit reads FAL_KEY. Video models require TEST_VIDEO_URL; models
+ * requiring a reference frame also need an explicit TEST_IMAGE_URL.
  */
 
 import { readFileSync, existsSync, writeFileSync } from 'node:fs';
@@ -65,20 +66,20 @@ function loadKey() {
     return null;
 }
 
-const FAL_KEY = loadKey();
-if (!FAL_KEY) {
+const FAL_KEY = doSubmit ? loadKey() : null;
+if (doSubmit && !FAL_KEY) {
     console.error('FAL_KEY not set. Put it in .env.local (already gitignored) or export it.');
     console.error('Do not paste it into a chat — CLAUDE.md requires rotating any secret that does.');
     process.exit(2);
 }
-const auth = { Authorization: `Key ${FAL_KEY}` };
+const auth = FAL_KEY ? { Authorization: `Key ${FAL_KEY}` } : {};
 
 /** Free: does this endpoint exist, and what does it take? */
 async function probe(c) {
     const url = `https://fal.ai/api/openapi/queue/openapi.json?endpoint_id=${encodeURIComponent(c.endpoint)}`;
     let res;
     try {
-        res = await fetch(url, { headers: { 'user-agent': 'veyrnox-slice0/1.0' } });
+        res = await fetch(url, { headers: { 'user-agent': 'veyrnox-slice0/1.0' }, signal: AbortSignal.timeout(30000) });
     } catch (err) {
         return { ...c, exists: false, note: `transport: ${err.message}` };
     }
@@ -90,11 +91,13 @@ async function probe(c) {
     // Pull the input schema's property names — that is what tells us whether
     // it takes image_url/video_url and what else it expects.
     const schemas = (spec.components && spec.components.schemas) || {};
-    const inputKey = Object.keys(schemas).find((k) => /input/i.test(k));
-    const props = inputKey && schemas[inputKey] && schemas[inputKey].properties
-        ? Object.keys(schemas[inputKey].properties)
-        : [];
-    const required = (inputKey && schemas[inputKey] && schemas[inputKey].required) || [];
+    const requestSchema = spec.paths?.[`/${c.endpoint}`]?.post?.requestBody?.content?.['application/json']?.schema;
+    const refPrefix = '#/components/schemas/';
+    const inputSchema = requestSchema?.$ref?.startsWith(refPrefix)
+        ? schemas[requestSchema.$ref.slice(refPrefix.length)] : requestSchema;
+    if (!inputSchema?.properties) return { ...c, exists: false, note: 'request input schema not resolved' };
+    const props = Object.keys(inputSchema.properties);
+    const required = inputSchema.required || [];
 
     return {
         ...c,
@@ -108,11 +111,25 @@ async function probe(c) {
 
 /** PAID: queue one real job and wait for it. */
 async function submit(c) {
-    const payload = c.takesVideo && !c.takesImage
-        ? { video_url: process.env.TEST_VIDEO_URL || TEST_IMAGE }
-        : { image_url: TEST_IMAGE };
+    const payload = {};
+    if (c.takesVideo) {
+        if (!process.env.TEST_VIDEO_URL) {
+            return { ...c, submitted: false, ok: false, note: 'TEST_VIDEO_URL is required; an image is not a video fixture' };
+        }
+        payload.video_url = process.env.TEST_VIDEO_URL;
+    }
+    if (c.takesImage && (!c.takesVideo || c.required.includes('image_url'))) {
+        if (c.takesVideo && !process.env.TEST_IMAGE_URL) {
+            return { ...c, submitted: false, ok: false, note: 'TEST_IMAGE_URL must be the corresponding reference frame for this video' };
+        }
+        payload.image_url = TEST_IMAGE;
+    }
     // Some endpoints want an instruction alongside the source.
     if ((c.required || []).includes('prompt')) payload.prompt = 'subtle, natural result';
+    const missing = c.required.filter((key) => payload[key] === undefined);
+    if (missing.length || (!payload.video_url && !payload.image_url)) {
+        return { ...c, submitted: false, ok: false, note: `unsupported input requirements: ${missing.join(', ') || 'no media input'}` };
+    }
 
     const started = Date.now();
     let res;
@@ -143,7 +160,8 @@ async function submit(c) {
             const out = await r.json().catch(() => ({}));
             const outUrl = out?.image?.url || out?.images?.[0]?.url || out?.video?.url || null;
             return {
-                ...c, submitted: true, ok: true, requestId,
+                ...c, submitted: true, ok: r.ok && Boolean(outUrl), requestId,
+                ...(!r.ok || !outUrl ? { note: 'completed job has no successful output response' } : {}),
                 // Wall clock includes queue wait; inference is the provider's
                 // own number. A cold endpoint can queue for minutes while
                 // computing for seconds, and the user waits for both.
@@ -184,7 +202,7 @@ if (!doSubmit) {
     console.error('No jobs submitted and nothing spent. Re-run with --submit to queue one real job each (THIS COSTS MONEY).');
     writeFileSync('scripts/.slice0-probe.json', JSON.stringify(probed, null, 2));
     console.error('Probe written to scripts/.slice0-probe.json');
-    process.exit(0);
+    process.exit(live.length === targets.length ? 0 : 1);
 }
 
 console.error(`\nSUBMIT (paid): ${live.length} job(s). Each one spends fal credits.\n`);
@@ -201,3 +219,4 @@ writeFileSync('scripts/.slice0-results.json', JSON.stringify(results, null, 2));
 console.error(`\n${results.filter((r) => r.ok).length}/${results.length} produced output.`);
 console.error('Written to scripts/.slice0-results.json');
 console.error('Cost per call is NOT in this output — read it from the fal dashboard and pair it with these ids before writing any catalog row.');
+process.exitCode = live.length === targets.length && results.every((r) => r.ok) ? 0 : 1;

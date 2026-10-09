@@ -1,0 +1,15 @@
+Video Enhance runtime inventory
+
+MediaPipe Tasks Vision 1.0.1: Apache-2.0 (package metadata).
+https://github.com/google-ai-edge/mediapipe
+Apache license text retained from MediaPipe v0.10.32/LICENSE.
+
+Face Landmarker float16 model, version 1:
+https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task
+Model documentation and terms: https://ai.google.dev/edge/mediapipe/solutions/vision/face_landmarker
+Model provenance is recorded separately from the SDK license; this inventory does not constitute model license approval.
+
+Mediabunny 1.60.0: MPL-2.0; bundled application dependency.
+https://github.com/Vanilagy/mediabunny/tree/v1.60.0
+Its distributed LICENSE is retained here.
+No test footage is included.

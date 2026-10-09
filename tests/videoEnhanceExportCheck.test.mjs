@@ -1,0 +1,80 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { mkdtempSync, rmSync, readFileSync } from 'node:fs';
+import { inspectVideoExport, exportEnhancedVideo } from '../app/veyrnox/_lib/videoEnhanceExport.mjs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const available = ['ffmpeg', 'ffprobe'].every(tool => spawnSync(tool, ['-version']).status === 0);
+if (process.env.CI && !available) throw new Error('CI requires ffmpeg and ffprobe for media regression tests');
+const checker = fileURLToPath(new URL('../scripts/check-video-enhance-export.mjs', import.meta.url));
+
+// Real synthetic media exercises ffprobe parsing and decoded-audio comparison.
+test('export checker accepts preserved media and rejects fidelity regressions', { skip: available ? false : 'Requires ffmpeg and ffprobe' }, async t => {
+    const directory = mkdtempSync(join(tmpdir(), 'enhance-check-'));
+    const source = join(directory, 'source.mov');
+    const ffmpeg = args => execFileSync('ffmpeg', ['-v', 'error', '-y', ...args]);
+    const check = result => spawnSync(process.execPath, [checker, source, result], { encoding: 'utf8' });
+    try {
+        ffmpeg(['-f', 'lavfi', '-i', 'testsrc2=size=64x64:rate=10', '-f', 'lavfi', '-i',
+            'sine=frequency=440:sample_rate=48000', '-t', '0.5', '-c:v', 'mpeg4', '-c:a', 'pcm_s16le', source]);
+        await t.test('unchanged frames and audio pass', () => {
+            const result = check(source);
+            assert.equal(result.status, 0, result.stderr);
+            assert.match(result.stdout, /PASS: 5 frames/);
+        });
+        await t.test('unqualified PCM audio is preview-only', async () => {
+            assert.match(await inspectVideoExport(new Blob([readFileSync(source)])), /supports AAC/);
+        });
+        await t.test('AAC MOV is rejected by detected container, regardless of MIME label', async () => {
+            const path = join(directory, 'aac.mov');
+            ffmpeg(['-i', source, '-c:v', 'copy', '-c:a', 'aac', path]);
+            assert.match(await inspectVideoExport(new Blob([readFileSync(path)], { type: 'video/mp4' })), /MP4 input only/);
+        });
+        await t.test('a real MP4 cannot pass preflight without a supported decoder', async () => {
+            const path = join(directory, 'unsupported.mp4');
+            ffmpeg(['-i', source, '-c:v', 'copy', '-an', path]);
+            const file = new Blob([readFileSync(path)], { type: 'video/mp4' });
+            assert.match(await inspectVideoExport(file), /cannot decode/);
+            await assert.rejects(exportEnhancedVideo(file, {
+                signal: new AbortController().signal,
+                process() { assert.fail('Unsupported decoder processed a frame'); },
+            }), /cannot decode/);
+        });
+        for (const [name, maps] of [
+            ['extra audio', ['0:v:0', '0:a:0', '0:a:0']],
+            ['extra video', ['0:v:0', '0:v:0', '0:a:0']],
+            ['audio only', ['0:a:0']],
+        ]) {
+            await t.test(`${name} cannot silently lose tracks during export`, async () => {
+                const path = join(directory, `${name}.mov`);
+                ffmpeg(['-i', source, ...maps.flatMap(track => ['-map', track]), '-c', 'copy', path]);
+                const file = new Blob([readFileSync(path)]);
+                assert.match(await inspectVideoExport(file), /exactly one video track/);
+                await assert.rejects(exportEnhancedVideo(file, {
+                    signal: new AbortController().signal,
+                    process() { assert.fail('Unsupported multi-track input processed a frame'); },
+                }), /exactly one video track/);
+            });
+        }
+        for (const [name, args, message] of [
+            ['missing audio', ['-c:v', 'copy', '-an'], /No source track may disappear/],
+            ['changed sample rate', ['-c:v', 'copy', '-c:a', 'pcm_s16le', '-ar', '24000'], /Audio sample rate changed/],
+            ['changed channels', ['-c:v', 'copy', '-c:a', 'pcm_s16le', '-ac', '2'], /Audio channel count changed/],
+            ['changed samples', ['-c:v', 'copy', '-c:a', 'pcm_s16le', '-af', 'volume=0.5'], /Decoded audio differs/],
+            ['dropped frame', ['-vf', 'select=not(eq(n\\,2))', '-fps_mode', 'vfr', '-c:v', 'mpeg4', '-c:a', 'copy'], /preserve every source video frame/],
+        ]) {
+            await t.test(name, () => {
+                const result = join(directory, `${name}.mov`);
+                ffmpeg(['-i', source, ...args, result]);
+                const report = check(result);
+                assert.notEqual(report.status, 0);
+                assert.match(report.stderr, message);
+            });
+        }
+    } finally {
+        rmSync(directory, { recursive: true, force: true });
+    }
+});

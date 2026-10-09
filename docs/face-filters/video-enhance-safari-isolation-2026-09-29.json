@@ -1,0 +1,40 @@
+{
+  "date": "2026-09-29",
+  "commit": "6a85e1e",
+  "browser": "Safari 27.0",
+  "os": "macOS 27.0 arm64",
+  "runtime": "Next development",
+  "fixture": "veyrnox-memory-15s-1920.mp4",
+  "settings": "Natural; smoothing 30%",
+  "fresh_engine": "stalled at sample timestamp 0.28 without prior playback or cancellation",
+  "codec_trace": {
+    "active_decoder": {
+      "outputs": 46,
+      "queue": 0,
+      "state": "configured",
+      "errors": []
+    },
+    "active_encoder": {
+      "outputs": 0,
+      "queue": 4,
+      "state": "configured",
+      "errors": []
+    }
+  },
+  "experiments": {
+    "prefer_software": "stalled at 0.28 seconds",
+    "realtime_latency_default_hardware": "completed"
+  },
+  "output": {
+    "name": "veyrnox-memory-15s-1920-enhanced-2.mp4",
+    "bytes": 10742259,
+    "sha256": "419522e9b9d5fa38865957821d656101247a1c1ee2d75ae9a644cbf4c3585ba6",
+    "check": "375 frames; timestamps/durations within 1 ms; no audio added"
+  },
+  "limitations": [
+    "Diagnostic global configure override only; no application fix committed.",
+    "One silent 1080p clip on one Mac; no general Safari qualification.",
+    "No native-player playback, listening, visual-quality or performance acceptance in this run."
+  ],
+  "cleanup": "Restored original VideoEncoder/VideoDecoder constructors and VideoEncoder.configure; deleted diagnostic state; closed inspector."
+}

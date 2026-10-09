@@ -1,0 +1,55 @@
+{
+  "date": "2026-09-29",
+  "commit": "8e7cc24ff5aa3f8bb0c745abe5f816cf2d448b4c",
+  "environment": "Next development; Codex in-app Chromium 154; macOS 27.0 arm64; same Mac as previous measurements",
+  "input": {
+    "name": "veyrnox-memory-15s-1920.mp4",
+    "sha256": "7881791de0d31bf575c65ea24074487570613ce03f9c272924ee3d139ac93bcd",
+    "duration_seconds": 15,
+    "width": 1920,
+    "height": 1080,
+    "fps": 25,
+    "frames": 375,
+    "audio": false
+  },
+  "settings": {
+    "look": "Natural",
+    "smoothing_percent": 30,
+    "tracked_faces": 1
+  },
+  "method": {
+    "timing": "performance.now from capturing Export video click to MutationObserver detecting the Download MP4 anchor",
+    "observer": "PerformanceObserver longtask with buffered:false; entries filtered by startTime inside the export interval",
+    "repeat": "Three sequential exports on the same initialized engine; setup excluded",
+    "visibility": "document.visibilityState was visible at each export start; continuous visibility was not logged",
+    "calibration": "After exports, a separate observer detected an 80 ms setTimeout busy-loop task with measured 80 ms duration; excluded from export intervals"
+  },
+  "runs": [
+    {
+      "elapsed_ms": 11975.3,
+      "long_tasks": []
+    },
+    {
+      "elapsed_ms": 9948.6,
+      "long_tasks": []
+    },
+    {
+      "elapsed_ms": 9753.4,
+      "long_tasks": []
+    }
+  ],
+  "output": {
+    "name": "veyrnox-memory-15s-1920-enhanced (3).mp4",
+    "bytes": 7016277,
+    "sha256": "e46c03f7b58e83f6986f4aed3b71547a012fbcbbec882defdcddcc6107f16e27",
+    "check": "PASS: 375 frames, timestamps/durations within 1ms, no audio track added",
+    "scope": "Only the third output was downloaded and checked in this run"
+  },
+  "limits": [
+    "No observed long tasks above the API threshold does not establish zero jank or input latency.",
+    "No cancellation-latency, frame-budget, GPU/WASM/native-memory or total CPU measurements.",
+    "One repeated fixture, one Mac, development runtime; no worst-case or other-device qualification.",
+    "Warm-up and system load not isolated.",
+    "Temporary observers and calibration state removed; no application code changes."
+  ]
+}

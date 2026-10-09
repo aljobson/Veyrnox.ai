@@ -1,0 +1,477 @@
+# Video Enhance production-readiness review
+
+Updated 2026-09-29; implementation and CI reviewed at `80fe649`.
+Historical measurements retain their original commit and device attribution.
+Decision: suitable for continued local evaluation; not ready for customer activation.
+Includes local Chromium measurements; this is not a deployment approval or a multi-device qualification.
+
+## Current review status
+
+At `80fe649`, build-test, hard-wall guard, ledger acceptance, migration ledger,
+verify, and Workers Builds all succeeded. The migration drift report was skipped.
+Local validation: 843 tests passed, 1 skipped; scoped lint and Next production
+build passed. The working tree was clean at review. These results cover the
+current development-only scope, not enabled production inference/export.
+
+Setup deadlines, export cancellation/retry, graphics-loss recovery, abandoned
+seeks, source replacement, and editor unmount now have targeted regression or
+browser evidence below. The later Safari follow-up below found an unresolved export-retry stall;
+Chromium lifecycle success does not qualify that browser.
+
+The next qualification step is the supported device/browser matrix and
+full-resolution moving-video review, including severe profiles and hand/hair
+coverage. Keep this separate from the production-policy decision: ADR-0065
+remains Proposed, model-terms review remains open, and an enabled production
+preview still needs privacy, CSP-boundary and export acceptance checks.
+
+## Prioritized release gates
+
+| Priority | Finding and evidence | Required exit condition |
+| --- | --- | --- |
+| P1 | Production is intentionally disabled in both `useVideoEnhancePreview.js` and `videoEnhanceEngine.js`. `lib/contentSecurityPolicy.mjs` enables evaluation only in development and has no production WASM compilation exception. | Choose the production engine and document the CSP decision in an ADR. Test the actual production build and headers before changing activation gates. Do not copy the development evaluation policy into production. |
+| P1 | Versioned assets are prepared during builds and verified in `.open-next/assets`; runtime and model provenance notices are retained. | Deployed static asset bytes and MIME/cache checks now pass (see delivery report). Complete model-terms review and enabled-editor runtime checks; disabled-editor delivery does not verify inference/export. |
+| P1 | The renderer uses a face-oval mask with eye/brow/lip exclusions, not semantic skin, hand or hair segmentation. One detected face can still contain an occluding hand inside that mask. | Qualify severe profiles, hand-over-eye/mouth, hair, facial hair and varied subjects at normal speed and full resolution. Choose segmentation, a conservative smoothing fallback, or a narrower supported scope based on measured failures. Mild cheek-touch spot checks do not establish protection of hand texture. |
+| P1 | Local Chromium has completed measured exports; Safari 27 initialization and cancellation work, but its export retry stalled (see follow-up below). Preflight now checks detected MP4/AAC scope, source decoder support and H.264 encoding at clip dimensions. | Establish an explicit supported browser/device matrix and test decode, preview, export, cancellation and playback of the downloaded file on each. Disable unsupported export paths with an actionable message. |
+| P2 | CPU landmark detection runs synchronously on the UI thread. Export buffers the entire output before making a Blob, with several full-resolution canvases/textures. File-size and duration limits do not establish a decoded-memory or responsiveness budget. | Measure 5/10/15-second 720p/1080p clips, including high-frame-rate inputs, on target devices. Record elapsed time, responsiveness, cancellation latency and memory where measurable. Set supported limits from evidence; consider worker processing or streaming only where measurements justify it. |
+
+## Scope decisions that need not block a limited release
+
+- Opus may remain preview-only with the existing early warning and export guard.
+  AAC and silent clips can define an initial export scope. Supporting Opus later
+  requires decoded sample-count and timing regression evidence, not just matching
+  container duration.
+- Library persistence, provider upload and charging are absent. They require
+  separate design work only if included in the chosen product scope. A free local
+  download workflow does not inherently require a credits or storage integration.
+- A commercial SDK is an alternative if the current engine fails qualification,
+  not a prerequisite already established by this review.
+
+## Existing evidence and its limits
+
+The latest code CI passed before this documentation review. Automated media
+checks run with ffmpeg installed and fail CI if it is unavailable. Local fixtures
+covered AAC, silence, variable frame rate, rotation, cancellation and tracking
+loss/recovery. Licensed real-motion and mild cheek-touch clips exported 255 and
+360 frames respectively within the checker's 1 ms timing tolerance. These are
+useful initial examples, not a representative device or visual-quality matrix.
+Full provenance and historical results are in [the validation record](VIDEO-ENHANCE.md).
+
+## Setup reliability follow-up, 2026-09-28
+
+The setup deadline finding above is addressed in the local prototype: a single
+30-second deadline now covers media loading through tracker creation. Timeout
+aborts the attempt and invites selection of the same or another clip. Replaced
+attempts suppress stale callbacks; a tracker resolving after cancellation closes
+before renderer attachment. Tests cover stalled creation, late cleanup, source
+replacement, pre-cancelled setup and initialization failure. Normal loading of
+the licensed moving-face clip reached ready in the browser. This bounds async
+waiting; it cannot preempt synchronous work that blocks the browser event loop.
+
+## Local performance baseline, 2026-09-28
+
+Measured on macOS 27.0 / arm64 in the Codex in-app Chromium browser, against
+local Next development mode after the setup lifecycle fix (`cffe11a`). Natural
+look, 30% smoothing, one face, silent H.264 input, 25 fps. Model initialization
+finished before timing; each measurement runs from the automation's Export
+click through observation of the Download MP4 link. These are single-run
+wall-clock observations with automation/wait overhead, not precise encoder-only
+measurements. Run order was the order below; warm-up effects were not isolated.
+
+| Input | Observed export time | Output verification |
+| --- | --- | --- |
+| 5 seconds, 1280×720 | 8.719 seconds | 125 frames, timing/duration within 1 ms, no audio added |
+| 10 seconds, 1920×1080 | 12.428 seconds | 250 frames, timing/duration within 1 ms, no audio added |
+| 15 seconds, 1920×1080 | 17.220 seconds | 375 frames, timing/duration within 1 ms, no audio added |
+
+Fixtures derive from the licensed Mikhail Nilov / Pexels 8731403 sample in the
+validation record, using ffmpeg `-stream_loop -1`, `-t 5/10/15`, scaling to the
+listed widths, H.264 CRF 18 and no audio. The 15-second fixture repeats the source
+past its 10.2-second end. Local input/output copies and measurements are retained
+in ignored `.scratch/video-enhance/performance/`.
+
+All runs completed; export controls re-enabled afterward. This does not measure
+peak memory, UI responsiveness during synchronous inference, cancellation latency,
+repeated-run variance, high-frame-rate sources or mobile/Safari/Firefox behaviour
+in this initial baseline. Repeated measurements below add limited evidence.
+Duration and resolution vary together here, so the measurements cannot isolate
+resolution scaling. A complete performance gate remains open.
+
+## Cancellation and retry observation, 2026-09-28
+
+Using the same loaded 15-second 1080p fixture at Natural / 30% smoothing,
+started export and cancelled it while running. The cancellation message appeared
+and Export re-enabled in 0.306 seconds measured from the automation click;
+no Download MP4 link remained. A fresh export on the same engine then completed
+in 10.580 seconds. Its downloaded output passed the checker: 375 frames,
+timestamps/duration within 1 ms and no audio added.
+
+This is one successful cancellation/retry observation, not a worst-case latency
+bound. The retry was substantially faster than the prior 17.220-second run,
+underscoring warm-up/system-load variability and the need for repeated controlled
+measurements before setting a performance target. Peak memory and cancellation
+during a long synchronous inference step remain unmeasured.
+
+## Track-contract follow-up, 2026-09-28
+
+Preflight and export now require exactly one detected video track and at most
+one detected audio track. Additional audio/video tracks result in a preview-only
+warning instead of being silently omitted. The editor explicitly states that
+subtitles and descriptive metadata are not included; this is not a subtitle
+preservation or detection guarantee. Opus remains separately blocked.
+
+Real-container tests cover extra audio, extra video, audio-only input and valid
+single video/audio input. Browser verification confirmed multi-audio preview
+remains usable while export is disabled, and selecting a supported clip removes
+the warning and restores export. Local suite: 828 passed, one skipped; scoped
+lint passed. This addresses the primary audio/video selection finding for the
+narrow stated contract, not arbitrary container track preservation.
+
+## Recommended next implementation
+
+ADR-0065 is proposed, and versioned asset packaging is implemented. Decode/encode capability and MP4/AAC format preflight are implemented. Next,
+complete device/quality measurements. Local delivery-header checks now pass at the configured compatibility date using
+Wrangler 4.142.0, and the existing deployed version passes the same checks.
+Enabled-editor production acceptance remains pending. Keep PR #361 as a draft until the release gates are settled.
+
+## Repeated local performance qualification, 2026-09-28
+
+Measured at `1a76094` on the same macOS 27.0 arm64 / in-app Chromium environment,
+with Natural look, 30% smoothing, silent H.264 input and H.264 MP4 output.
+Three sequential exports per fixture; each repeat selects a new copy of the input
+and initializes a new tracker. Setup is excluded from timing. Measurements span
+automation Export click to observation of Download MP4, including polling overhead.
+No isolated warm-up, hardware-load control or encoder-only timing is claimed.
+
+| Input (duration–width) | Runs, seconds | Median, seconds |
+| --- | --- | --- |
+| 5s-1280 | 6.810, 6.141, 5.656 | 6.141 |
+| 10s-1920 | 10.764, 10.150, 9.833 | 10.150 |
+| 15s-1920 | 13.647, 12.517, 14.221 | 13.647 |
+
+All nine exports retained their expected 125/250/375 frames, source-relative
+timestamps and durations within 1 ms, and did not add audio. A separate 5-second
+1280×720 60 fps case took 10.796 seconds and retained all 300 frames with the same
+timing checks. This 60 fps fixture was made by duplicating frames from the 25 fps
+source (`ffmpeg -vf fps=60`), so it tests processing load, not real 60 fps motion.
+
+Fixtures reuse the licensed source and preparation described above. A side-by-side
+still at 4 seconds in the 60 fps source/output shows no obvious gross face-mask
+misalignment; this resized single-frame check is not temporal or occlusion
+qualification. Severe occlusion, varied subjects, full-resolution temporal review,
+peak memory, worst-case cancellation and other browsers/devices remain open.
+
+Machine-readable run order, timings, fidelity results and source/output SHA-256
+hashes are retained in [the measurement record](video-enhance-performance-2026-09-28.json).
+Local media copies remain in ignored `.scratch/video-enhance/repeated-performance/`.
+The measurements support continued local evaluation, not customer activation or
+a promise that every clip within the current limits will perform similarly.
+
+## Sampled JavaScript heap and cancellation, 2026-09-28
+
+At `5864450` (runtime `1a76094`), tested the same 15-second, 1920×1080,
+25 fps silent fixture on local macOS 27.0 arm64 / in-app Chromium. Natural
+look, 30% smoothing. Three cancelled exports followed by a complete retry on
+the same loaded engine; no reload or forced garbage collection between runs.
+
+CDP `Performance.getMetrics` sampled JS heap approximately every 500 ms plus
+metric/UI request overhead. Timing includes automation transport and UI checks.
+This is **not total peak memory**: native decoder, GPU, WASM memory and process
+resident memory are not accounted for by the JS heap metric. Sampling can miss
+short peaks. These measurements cannot set a device memory budget or prove
+the absence of leaks.
+
+| Run | Before JS heap, MiB | Sampled max, MiB | After, MiB | Cancel to controls ready, ms |
+| --- | --- | --- | --- | --- |
+| Cancel after 3.08s output | 27.44 | 31.30 | 31.55 | 285 |
+| Cancel after 7.20s output | 28.75 | 32.40 | 30.34 | 285 |
+| Cancel after 11.20s output | 30.42 | 34.71 | 31.80 | 286 |
+| Complete retry | 31.89 | 35.51 | 28.54 | — |
+
+All three cancellations showed “Export cancelled”, restored Export, and left
+no Download link. The complete retry took 10.368 seconds including sampling
+and polling overhead. Its download preserved all 375 frames, timing/durations
+within 1 ms and no added audio. Selecting the 5-second fixture afterward
+restored one-face preview and cleared the old download; JS heap at that point
+was 28.46 MiB. Instrumentation was disabled afterward.
+
+This adds three successful mid-export cancellation observations, not a maximum
+latency guarantee: a cancellation requested during a long synchronous inference
+can still wait for the main thread. Total memory, long-task profiling, genuine
+high-frame-rate motion, severe occlusion and the target-device matrix remain open.
+
+[Raw samples and run metadata](video-enhance-memory-2026-09-28.ndjson) include
+source/output hashes. Diagnostic media are retained locally under ignored
+`.scratch/video-enhance/memory-cancellation/`; no application code changed.
+
+## Asset delivery follow-up, 2026-09-28
+
+The pinned asset directory now has immutable browser caching; the model has an
+explicit binary MIME type. The built Worker passed HTTP checks for all asset
+hashes/MIME/cache headers, manifest, missing-file 404, private editor HTML, nonce
+CSP without evaluation exceptions and the disabled editor. The reusable checker
+is `scripts/check-video-enhance-delivery.mjs`.
+
+The installed local workerd rejects the configured 2026-09-01 compatibility date
+because its supported maximum is 2026-08-08. These checks used only a local CLI
+date override. The repository date, CSP and activation guards remain unchanged.
+A matching runtime and deployed-preview verification are still required; this
+local result does not close production acceptance.
+
+## Exact-date runtime follow-up, 2026-09-28
+
+Wrangler 4.142.0, run from an isolated npm execution cache, starts the same built
+Worker with the unchanged configured compatibility date **2026-09-01**. No date
+override was supplied. The complete delivery checker passes: model/runtime and
+notice bytes, MIME/cache headers, manifest, missing-file 404, private HTML, nonce
+CSP without evaluation exceptions and disabled production editor.
+
+This supersedes the local-date limitation above. The repository dependencies and
+lockfile remain unchanged; the reproducible pinned CLI command is in the
+[delivery report](VIDEO-ENHANCE-DELIVERY.md).
+The temporary local Worker was stopped after testing. Deployed-preview checks,
+CSP decision acceptance, enabled-editor tests and device/quality gates remain open.
+
+## Deployed delivery follow-up, 2026-09-28
+
+Existing version `76e1a586-3fe2-462f-aad5-5dfcbd437af6`, tagged with the
+`codex-video-enhance-validation` alias, passed the complete HTTP delivery checker
+at its immutable version URL. Runtime metadata confirms `2026-09-01`.
+This closes the outstanding deployed static-delivery check, while the editor
+remains disabled. No new deployment or activation was performed.
+
+The [delivery report](VIDEO-ENHANCE-DELIVERY.md) records version identity,
+commands, results, the limit on commit attribution and remaining release gates.
+
+## Stronger occlusion follow-up, 2026-09-28
+
+A licensed Ron Lach clip now exercises hands covering both eyes and mouth,
+reveal, and renewed coverage. Sampled preview states showed no-face → one-face →
+no-face recovery, and both 30%/0% smoothing exports preserved 375 frames and
+timing within 1 ms. Partial coverage still tracked a face, which does not
+exclude hands from the smoothing mask. The UI now recommends smoothing off
+for covered faces. This guidance does not close the quality gate.
+
+See the [occlusion evaluation](VIDEO-ENHANCE-OCCLUSION.md) for provenance,
+control comparison, sample limits and remaining qualification.
+
+## Graphics failure recovery, 2026-09-29
+
+The engine now handles `webglcontextlost` even while paused, stops scheduling
+preview frames, aborts an active export, and reports one actionable error.
+Renderer initialization failures release partially allocated GPU resources;
+close is idempotent and intentional disposal removes the loss listener first.
+The renderer checks loss before and after drawing. Export completion is scoped
+to the selected source, so an old export cannot replace a newer editor state.
+
+Local Chromium validation used `WEBGL_lose_context` on the enhanced canvas:
+
+- Paused loss immediately displayed the graphics-access error and disabled
+  preview/export controls.
+- Loss during a 15-second export stopped at the displayed 3.2-second position,
+  showed the graphics error rather than generic cancellation, and offered no
+  download.
+- Choosing the same source again recovered without a page reload. A full retry
+  produced a downloadable MP4; the export checker confirmed 375 frames,
+  timestamps/durations within 1 ms, and no added audio.
+
+Four regression tests cover shader compile/link cleanup, idempotent renderer
+closure, lost-context draw rejection, and engine export abort/error disposal.
+Full suite: 840 passed, 1 skipped. Next production build and scoped lint passed;
+final source-selection guard and stopped-status copy also compiled in next dev.
+This is synthetic local graphics loss, not a physical GPU reset qualification.
+Production activation and all other release gates remain unchanged.
+
+## Abandoned seek cleanup, 2026-09-29
+
+Pending seeks now release their timer and completion listener when superseded,
+when the engine closes, or when graphics fail. A synchronous seek assignment
+failure also cleans up. The editor ignores cancellation and stale seek/playback
+results after a source replacement or unmount, preserving the new edit's state.
+
+Regression coverage exercises successive seeks, successful completion,
+assignment failure, timeout/retry, graphics failure, and close while pending.
+In local Chromium, a test listener withheld one `seeked` event before replacing
+the 15-second portrait clip with the occlusion clip. The replacement remained
+ready beyond the old five-second deadline, with no stale error; seeking in the
+replacement still worked. The discarded video held the test listener, so no
+fault injection remains on the replacement.
+
+Validation: 841 tests passed, 1 skipped; expanded lifecycle test rerun passed;
+scoped lint and Next production build passed. Production remains disabled.
+
+## Export unmount boundary, 2026-09-29
+
+The engine now checks cancellation/disposal before processing each export frame
+and before returning the completed blob. The conversion helper already checks
+cancellation; these additional engine checks avoid relying solely on that helper
+when a late callback or result reaches a cancelled/closed engine.
+
+Two regression cases deliberately deliver frames and completion after cancel
+or close. Both reject before decoding the late frame and do not return the late
+blob. They also verify duplicate-export rejection, visibility-listener cleanup,
+resource disposal, and successful retry after ordinary cancellation.
+
+Local Chromium: after warming the Explore route, navigation completed while a
+15-second export was active. Returning to Enhance showed an empty editor with
+no stale download or error. This verifies visible navigation behavior; it is
+not a measurement of total native/GPU memory reclamation.
+
+Validation: 843 tests passed, 1 skipped; scoped lint and Next production build
+passed. Production remains disabled.
+
+
+## Desktop Chrome follow-up, 2026-09-29
+
+At `f740e82`, installed Google Chrome 154.0.8037.58 on the same macOS 27.0
+arm64 machine passed two local Next-development cases:
+
+| Case | Result |
+| --- | --- |
+| 5-second AAC pattern, Warm / 100% | Export preserved 150 frames within 1 ms and source audio. |
+| Cancel that export, then retry | Cancellation cleared download and restored controls; retry preserved the same 150-frame/audio contract. |
+| 15-second 1920×1080 silent moving face, Natural / 30% smoothing | Preview reported one face; export preserved 375 frames within 1 ms and added no audio. |
+
+The extension's file-URL permission prevented automated file assignment. Native
+file selection succeeded without changing extension permissions. The moving-face
+fixture reuses the licensed Mikhail Nilov sample and preparation described above.
+Inputs/outputs and hashes are listed in the [Chrome record](video-enhance-chrome-2026-09-29.json).
+
+This broadens browser-shell coverage, not physical-device or rendering-engine
+coverage: both tested browsers are Chromium on one Mac. At this stage, downloaded-player
+playback was unchecked; the follow-up below adds a native-player smoke test. Full
+temporal quality, peak memory, other operating systems and Safari/Firefox/mobile
+remain unqualified. No code or activation gates changed.
+
+
+## Native-player follow-up, 2026-09-29
+
+QuickTime Player 10.5 on the same macOS 27.0 arm64 machine opened and played
+both Chrome downloads recorded above. The AAC retry reached the final burned-in
+frame, 149 at 00:00:04.967. The 15-second moving-face export opened at 00:00,
+was observed playing at 00:14, and stopped at 00:15 with timeline value 15.
+
+This is a downloaded-file playback smoke test, not continuous frame-by-frame
+quality review or an audio listening/A/V synchronization assessment. Earlier
+file comparisons establish frame/timestamp and decoded-audio preservation.
+The [Chrome record](video-enhance-chrome-2026-09-29.json) includes this follow-up.
+Production remains disabled and the PR remains a draft.
+
+
+## Export long-task observation, 2026-09-29
+
+At `8e7cc24`, three sequential exports of the 15-second 1920×1080, 25 fps
+moving-face fixture completed in 11.975, 9.949 and 9.753 seconds (median 9.949).
+This uses the same initialized engine, Natural / 30% smoothing, in-app Chromium
+154 and macOS 27.0 arm64. Setup is excluded. Timing runs inside the page from
+Export click capture to the Download MP4 anchor appearing.
+
+A temporary PerformanceObserver reported no long tasks over the API's 50 ms
+threshold during these export intervals. A separate post-export calibration
+successfully reported a deliberately scheduled 80 ms task. This verifies that
+the observer was functional; it does not establish zero jank, input latency,
+frame-budget compliance, or worst-case responsiveness. Visibility was sampled
+at each start, not logged continuously. No CPU or native/GPU memory claim is made.
+
+The third download passed the media checker: 375 frames, timestamps/durations
+within 1 ms, and no added audio. Earlier two outputs were not downloaded in
+this run. Temporary instrumentation was removed. The
+[measurement record](video-enhance-responsiveness-2026-09-29.json) retains method,
+fixture/output hashes, results and limits. No code or production gate changed.
+
+
+## Safari qualification failure, 2026-09-29
+
+At `fe9d766`, Safari 27.0 on the same macOS 27.0 arm64 machine loaded the local
+development editor, initialized the tracker and reported one face for the
+15-second 1920×1080 portrait fixture. Comparison playback began. Settings were
+Natural / 30% smoothing. The local preview flag was explicitly enabled in Safari.
+
+Reproduction: choose `veyrnox-memory-15s-1920.mp4`, start comparison playback,
+start export, cancel, then retry export on the same engine. The first cancellation
+restored controls and showed `Export cancelled.` with no download. The retry
+reported progress 0.28 seconds and remained there across checks separated by
+at least 50 seconds. The Exporting state persisted with no Download MP4 link.
+Cancelling the stalled retry restored controls again. No output was produced or
+qualified. This is an observed stall, not proof of a particular decoder, encoder,
+tracker or cancellation root cause. Fresh-engine export still needs isolation.
+
+After the first cancellation, the UI briefly reported multiple faces at preview
+position 5.74 seconds despite this being a single-person fixture. Retry returned
+to one face. Treat this as a tracking-quality observation pending investigation,
+not a confirmed explanation for the stall. The original/enhanced images differed
+during export, when comparison playback controls were disabled; this alone does
+not establish incorrect exported frames.
+
+Safari remains unqualified. Resolve or reliably reject the failing path before
+including Safari in a supported release matrix. Production remains disabled;
+ADR-0065 is still Proposed. No security, download or browser settings were changed
+beyond the application's local preview flag. The test window is left recovered.
+
+
+## Safari encoder isolation, 2026-09-29
+
+At `6a85e1e`, reloading Safari and selecting the same portrait fixture reproduced
+the 0.28-second stall without prior playback or cancellation. This rules out
+cancellation as a necessary trigger in this case.
+
+Temporary console instrumentation counted native codec callbacks. During a
+stalled run, the active decoder delivered 46 outputs, with queue size 0; the
+active H.264 encoder delivered 0 outputs, with queue size 4. Both were configured
+and reported no codec error. The separate probe decoder/encoder each produced
+one output and closed. Mediabunny 1.60.0's `media-source.ts` waits for a dequeue
+event when encodeQueueSize reaches 4. Together these observations localize the
+wait to encoder backpressure; they do not prove the underlying WebKit cause.
+
+Forcing `hardwareAcceleration: prefer-software` at encoder configuration still
+stalled at 0.28 seconds. A second isolated experiment restored the normal
+hardware preference and forced `latencyMode: realtime`; export completed. Its
+download preserved all 375 frames, timestamps/durations within 1 ms, and silence.
+The [diagnostic record](video-enhance-safari-isolation-2026-09-29.json) identifies
+the output and its hash. This is an experimental configuration result, not an
+application fix or a general Safari qualification. AAC, VFR, cancellation/retry,
+quality and repeated-run acceptance remain required for a proposed fix.
+
+Both codec constructors and the original configure method were restored, and
+Web Inspector was closed. No runtime override or source-code change is retained.
+Safari's localhost download permission was allowed to save the diagnostic file.
+Next: implement a scoped encoder configuration through a supported library API
+(or reject the unqualified path), then repeat the export contract checks. Do not
+ship the temporary global codec override used for diagnosis.
+
+
+## WebKit export containment, 2026-09-29
+
+WebKit-identifying browsers now remain preview-only. Both compatibility preflight
+and direct export return an actionable desktop Google Chrome recommendation
+before opening the media input. Safari 27 was verified with the portrait fixture:
+one face tracked, comparison playback advanced, and Export unavailable prevented
+the known stalled path. Preview and adjustment controls remain available.
+
+This is containment, not a realtime-encoder implementation. The pinned
+Conversion API does not expose its lower-level source encoder-configuration hook;
+no global codec override or dependency patch is shipped. The UA check excludes
+desktop Chromium tokens and also covers WebKit-identifying iOS browser tokens.
+It is a compatibility restriction, not a security boundary or a mobile-browser
+qualification. Other browsers still run existing codec/container capability checks.
+
+Regression tests cover Safari/iOS identifiers, desktop Chromium exceptions,
+early preflight/direct-export rejection and cancellation precedence. Removing
+this restriction requires a scoped fix and media-contract/quality acceptance.
+Production remains disabled and PR #361 stays a draft.
+
+Validation: 845 tests passed, 1 skipped; focused tests rerun after copy cleanup,
+scoped lint and Next production build passed. In-app Chromium exported the
+5-second AAC fixture with Natural look: 150 frames, timestamps/durations within
+1 ms, source audio preserved (`veyrnox-capability-aac-enhanced (3).mp4`).
+
+## Side-profile fixture, 2026-09-29
+
+A new cottonbro studio Pexels fixture includes turns to both side profiles.
+At commit `6144748`, in-app Chromium exported the 15-second, 1920×1012,
+25 fps segment with Natural look and 30% smoothing. The media checker passed
+all 375 frames, timestamps/durations within 1 ms, and no audio track added.
+The source/output pair at 2 seconds showed no obvious gross facial displacement.
+This is sampled inspection, not continuous temporal-quality acceptance or a
+0% control comparison. Provenance, hashes and limits are in
+[the profile record](video-enhance-profile-2026-09-29.json).
+Production remains disabled; PR #361 remains a draft.

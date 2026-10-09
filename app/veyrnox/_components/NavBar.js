@@ -11,6 +11,7 @@ import { gatewayFetch, GatewayError } from '../_lib/gateway';
 import { getSession, onSessionChange } from '../../lib/authClient';
 import { accountLabel } from '../_lib/account';
 import { useProjectsPreview } from '../_lib/useProjectsPreview';
+import { useVideoEnhancePreview } from '../_lib/useVideoEnhancePreview';
 import { AnnouncementBar } from './AnnouncementBar';
 
 // Marketing site nav (Home / Gallery / Pricing).
@@ -71,18 +72,20 @@ export function MarketingNav() {
 // out it is a single sign-in button and no figures at all.
 // If `balance` prop is provided the parent owns it; otherwise the pill
 // self-fetches and subscribes to veyrnox:balance-changed.
-export function AppNav({ balance, active = 'explore' }) {
+export function AppNav({ balance, active = 'explore', readAccount = true }) {
   const projectsEnabled = useProjectsPreview();
+  const enhanceEnabled = useVideoEnhancePreview();
   const tabs = useRef(null);
   useEffect(() => {
     tabs.current?.querySelector('[aria-current="page"]')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-  }, [active, projectsEnabled]);
+  }, [active, projectsEnabled, enhanceEnabled]);
   const items = [
     { key: 'explore', href: '/app',         label: 'Explore' },
     { key: 'create',  href: '/app/create',  label: 'Create' },
     { key: 'chat', href: '/app/chat', label: 'LLM Chat' },
     { key: 'library', href: '/app/library', label: 'Library' },
     ...(projectsEnabled ? [{ key: 'projects', href: '/app/projects', label: 'Projects' }] : []),
+    ...(enhanceEnabled ? [{ key: 'enhance', href: '/app/enhance', label: 'Enhance' }] : []),
   ];
   // One server read for all three figures: who you are, the balance and
   // the true asset count for the account (not this browser's history).
@@ -90,6 +93,7 @@ export function AppNav({ balance, active = 'explore' }) {
   // veyrnox:balance-changed is already the moment all of it moved.
   const [summary, setSummary] = useState(null);
   const loadSummary = useCallback(async () => {
+    if (!readAccount) { setSummary(null); return; }
     try {
       setSummary(await gatewayFetch('/account'));
     } catch (e) {
@@ -98,7 +102,7 @@ export function AppNav({ balance, active = 'explore' }) {
       // an unanswered read renders "—", never a spinner.
       if (e instanceof GatewayError && e.status === 401) setSummary(null);
     }
-  }, []);
+  }, [readAccount]);
   useEffect(() => {
     loadSummary();
     const onBal = () => loadSummary();
