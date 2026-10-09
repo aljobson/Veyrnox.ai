@@ -100,3 +100,11 @@ because a request failed. No new override API is provided.
 Confirmed removal preserves a private replay tombstone and the content draft,
 permits replacement, and frees active storage capacity. It does not reset the
 rolling daily creation limit, erase an account or approve a retention policy.
+
+## Staging fal queue visibility
+
+The database snapshot does not inspect Cloudflare queue backlog or dead-letter
+arrivals. Use the protected manual [staging fal queue diagnostic](fal-queue-health.md)
+alongside UNKNOWN and overdue dispatch counts. Cloudflare metrics are approximate;
+this diagnostic has no schedule or paging integration and cannot establish
+continuous health or satisfy the production rollout gates.
