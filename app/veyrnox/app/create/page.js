@@ -24,9 +24,10 @@ import { DrawOnImage } from '../../_components/DrawOnImage';
 import { SourcePickers } from '../../_components/SourcePickers';
 import { LibraryPicker } from '../../_components/LibraryPicker';
 import { GenerationSettings } from '../../_components/GenerationSettings';
+import { VoiceDescription } from '../../_components/VoiceDescription';
 import { ControlRow } from '../../_components/ControlRow';
 import { TIERS, TIER_LABEL, filterByTier } from '../../_lib/modelTiers';
-import { settingsInputs } from '../../_lib/generationSettings';
+import { settingsInputs, voiceIsMissing } from '../../_lib/generationSettings';
 import { ParticleButton } from '@/components/ParticleButton';
 import { jobStateUi, SLOW_MODEL_WAIT } from '../../_lib/studioStates';
 const DEFAULT_MODEL = 'wan-2.5-kie';
@@ -71,6 +72,7 @@ export default function CreateStudio() {
   const [cinema, setCinema] = useState(DEFAULT_CINEMA);
   const [seed, setSeed] = useState('');
   const [negative, setNegative] = useState('');
+  const [voice, setVoice] = useState(''); // the voice in words, for a speech model that takes one
   const [characterOn, setCharacterOn] = useState(false);
   const [character, setCharacter] = useState({});
   const [count, setCount] = useState(1);
@@ -121,6 +123,7 @@ export default function CreateStudio() {
   const missingSource = Object.entries(media).some(([slot, spec]) => spec.required && !sources[slot]);
   const hasUpload = Object.keys(media).some((slot) => sources[slot]);
   const missingConsent = hasUpload && !consent;
+  const missingVoice = voiceIsMissing(model, voice);
   // Camera text suits pictures and clips; audio and speech would read it aloud.
   const isShort = !!model?.takesTopic;
   const takesCamera = !isShort && (model?.kind === 'image' || model?.kind === 'video');
@@ -229,6 +232,7 @@ export default function CreateStudio() {
     if (model.gated) { inFlight.current = false; setError({ code: 'model_gated' }); return; }
     if (missingSource) { inFlight.current = false; setError({ code: 'source_required' }); return; }
     if (missingConsent) { inFlight.current = false; setError({ code: 'consent_required' }); return; }
+    if (missingVoice) { inFlight.current = false; setError({ code: 'inputs_invalid:voice_description' }); return; }
     setError(null);
     setSending(true);
     const keys = Array.from({ length: n }, () => makeIdempotencyKey());
@@ -237,7 +241,7 @@ export default function CreateStudio() {
       prompt: finalPrompt(),
       aspect_ratio: aspect,
       duration_seconds: model.kind === 'video' ? Number(duration.replace('s', '')) : undefined,
-      ...settingsInputs(model, { seed, negative }),
+      ...settingsInputs(model, { seed, negative, voice }),
     };
     // strip undefined so server sees a clean object
     Object.keys(inputs).forEach((k) => inputs[k] === undefined && delete inputs[k]);
@@ -365,6 +369,7 @@ export default function CreateStudio() {
               : model?.id === 'elevenlabs-dialogue' ? 'One line per speaker, e.g.' + '\n' + 'Ana: Did you hear that?' + '\n' + 'Ben: [whispers] Stay quiet.'
               : 'Describe the shot…'}
           />
+          {model?.takesVoice && <VoiceDescription value={voice} onChange={setVoice} />}
 
           {!isShort && (
             <p className="mt-2 text-xs text-vx-fg-muted">
@@ -508,7 +513,7 @@ export default function CreateStudio() {
             <ParticleButton
               onClick={generating ? cancel : onSubmit}
               className="mt-4 w-full flex items-center justify-between bg-vx-accent text-vx-accent-ink rounded-full px-6 py-3.5 font-extrabold hover:bg-vx-accent-hover disabled:opacity-40 disabled:cursor-not-allowed"
-              disabled={sending || (!generating && (!model || model.gated || balance == null || cost > balance || missingSource || missingConsent))}
+              disabled={sending || (!generating && (!model || model.gated || missingVoice || balance == null || cost > balance || missingSource || missingConsent))}
               aria-label={sending || generating || model?.gated ? undefined : `Generate ${n > 1 ? `${n} images ` : ''}for ${cost} credits`}
             >
               <span>{sending ? 'Sending…' : generating ? 'New generation' : model?.gated ? 'Premium — gated' : n > 1 ? `Generate ${n}` : 'Generate'}</span>
