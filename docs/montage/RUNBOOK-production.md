@@ -76,6 +76,14 @@ Do not start the rollout until each has a written yes in the SPEC.
   `reconcile_free_credits()` and `reconcile_top_ups()` return 0 rows; the `video_agent` heartbeat is healthy; no production job exists
   for the model. **Step 6 runs until 2026-10-10 11:56 UTC.**
 
+- **Runner image changed during step 6 (2026-10-09 14:2x UTC, owner: "deploy the format fix to production").** The five measured
+  videos were all 15 s long but came out at two sizes (three at 720x1280, two at 1080x1920) and one was 61 MB. Runner `50ff92e` tells
+  the agent one size per aspect ratio (1080x1920, 1920x1080, 1080x1080), 30 fps, H.264 at no more than 8 Mbit/s. One real run on
+  staging with the brief of the 61 MB video: 1080x1920, 15 s, 6.4 MB, delivered in 262 s (job `1fe7c06f`). Production now runs that
+  image at its digest (`sha256:77a60a8c...cba0`), replacing `sha256:426dcb91...a208`: 21 lockdown checks pass, `/health` 200, the five
+  signed routes answer 401 unsigned, the four secrets are deployed, settings unchanged. The only difference from the image the gates
+  were met on is that paragraph of the agent's instructions; it has had one real run, at 9:16.
+
 Next: step 6 (24 hours of clean reconcile jobs), then step 7 (the flag).
 
 Each step has its own check and its own undo. Stop at the first check that fails.
