@@ -76,7 +76,12 @@ Do not start the rollout until each has a written yes in the SPEC.
   `reconcile_free_credits()` and `reconcile_top_ups()` return 0 rows; the `video_agent` heartbeat is healthy; no production job exists
   for the model. **Step 6 runs until 2026-10-10 11:56 UTC.**
 
-Next: step 6 (24 hours of clean reconcile jobs), then step 7 (the flag).
+- **Step 7, prepared 2026-10-09:** a draft PR sets `AGENT_VIDEO_ENABLED` to "true" in the production `vars`. It was written during
+  step 6 and **must not be merged before 2026-10-10 11:56 UTC**, and only if the step 6 check is clean. After it deploys: the plan
+  route answers a signed-in request; step 8 is the owner's one real video with `localStorage.veyrnox_video_agent = "1"`.
+  `MONTAGE_LIVENESS_ENABLED` stays "false" (a lost run is refunded by the 45-minute timeout); turning it on is a separate decision.
+
+Next: step 6 ends 2026-10-10 11:56 UTC, then step 7 (merge the flag PR).
 
 Each step has its own check and its own undo. Stop at the first check that fails.
 
