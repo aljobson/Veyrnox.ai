@@ -781,11 +781,14 @@ test('a stream that ends quietly when the time limit aborts it is refunded, not 
 
 // ADR-0067 amendment 10: the turn is finished after the reader has gone.
 test('the whole turn is handed to waitUntil: saved and charged with nobody reading the reply', async () => {
-    const f = fakes();
+    let finishWriting;
+    const stillWriting = new Promise((resolve) => { finishWriting = resolve; });
+    const f = fakes({ stream: async function* () { yield { delta: 'Hi ' }; await stillWriting; yield { delta: 'there.' }; } });
     const kept = [];
     await run(f, { waitUntil: (work) => kept.push(work) });
     assert.equal(kept.length, 1, 'one promise, the whole turn');
-    assert.equal(called(f, 'chat_complete_turn').length, 0, 'handed over before the turn has finished');
+    assert.equal(called(f, 'chat_complete_turn').length, 0, 'handed over while the reply is still being written');
+    finishWriting();
     await kept[0]; // the reader never reads a byte
     assert.equal(called(f, 'chat_complete_turn')[0][1].p_status, 'complete');
     assert.equal(called(f, 'ledger_refund').length, 0);
@@ -806,7 +809,7 @@ test('the reader leaves after text: the provider is stopped, the text so far is 
     assert.equal(called(f, 'ledger_refund').length, 0); assert.equal(called(f, 'job_failed').length, 0);
 });
 
-test('the reader had already left before the reply began: nothing is written and the Credits come back', async () => {
+test('the reader had already left before the reply began: the provider is stopped at once, no messages are stored and the Credits come back', async () => {
     const ac = new AbortController();
     ac.abort();
     const f = fakes({ stream: async function* ({ signal }) { if (!signal.aborted) yield { delta: 'nobody is there to read this' }; } });

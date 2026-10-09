@@ -246,12 +246,17 @@ Three changes make the stated ending the real one:
 - The turn's work is handed to the request's own `waitUntil` (`lib/requestWaitUntil.js`). The save and the charge no longer depend on
   the response being open or on the framework holding the request. Finishing after a Stop is two or three database calls, well inside
   the platform's 30 seconds.
-- A reader who had already left when the reply was about to start is treated as a Stop before the provider is called: nothing is
-  written and the Credits come back.
+- A reader who had already left when the reply was about to start is treated as a Stop before the provider is called: no reply is
+  asked for, no messages are stored and the Credits come back.
 
 No ending changes. A database outage still leaves the job `SUBMITTED` for the sweep, as before. The flag is platform-wide: every
 route's `request.signal` now fires on a disconnect. Only the chat turn and the bounded body readers listen to it; other handlers run
 to their end as they did.
+
+The Worker cannot tell a pressed Stop from a lost connection or a phone that suspends the tab. Each is a disconnect, and each now
+ends the reply where it was: the reader keeps the text they had received, at the same price. Before, such a reply went on being
+written unseen. Treating them alike is the decision the owner makes by merging; telling them apart would need the screen to say
+which it was.
 
 Checked on the local Worker runtime with the provider and the database faked (2026-10-09). Without the flag, a reader leaving 2
 seconds into a 20-second reply was not noticed and the whole reply was saved as `complete`. With it, the provider stopped within 0.3
