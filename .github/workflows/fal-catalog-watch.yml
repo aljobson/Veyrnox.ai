@@ -30,11 +30,12 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
           # Whether a price that moved on fal's page fails the run, and so
-          # opens the issue below. 'false' is how the watch has always run:
-          # drift is a note in a green run. 'listed' fails on the rows in
-          # scripts/lib/fal-unit-rates.mjs; 'all' on every row, which files
-          # on noise (see failingCount). Turning it on is the owner's decision.
-          FAL_DRIFT_FAILS: 'false'
+          # opens the issue below. 'listed' fails on the rows in
+          # scripts/lib/fal-unit-rates.mjs, where the figure to look for is
+          # exact (the owner's choice, 2026-10-09). 'false' is how the watch
+          # ran before: drift is a note in a green run. 'all' fails on every
+          # row, which files on noise (see failingCount).
+          FAL_DRIFT_FAILS: 'listed'
         run: |
           set +e
           node scripts/check-fal-catalog.mjs > report.txt 2>&1
@@ -62,7 +63,7 @@ jobs:
           # "fal's" closed that quoting and the step died with a syntax
           # error, so drift has never opened an issue (audit 2026-09-23).
           body=$(printf '%s\n\n%s\n\n```\n%s\n```\n' \
-            "The weekly fal catalog watcher found dead endpoints, margin breaches, or request contracts out of step with fal's live schema." \
+            "The weekly fal catalog watcher found dead endpoints, margin breaches, a listed price that moved on fal's page, or request contracts out of step with fal's live schema." \
             "Floor pricing (ADR-0014) leaves no headroom, so any fal price rise breaches immediately. A dead endpoint means every generation on that model debits, fails and refunds." \
             "$(cat report.txt)")
           if [ -n "$existing" ]; then

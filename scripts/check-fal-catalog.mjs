@@ -14,8 +14,8 @@
  * back to `--offline` for a repo-only endpoint-shape lint.
  *
  * Exit 0 = clean, 1 = dead endpoint or margin breach found. A price that
- * moved on fal's page is a note in a clean run unless FAL_DRIFT_FAILS (set
- * in fal-catalog-watch.yml) is "listed" or "all".
+ * moved on fal's page is a note in a clean run unless FAL_DRIFT_FAILS is
+ * "listed" (what fal-catalog-watch.yml sets) or "all".
  */
 
 import {
