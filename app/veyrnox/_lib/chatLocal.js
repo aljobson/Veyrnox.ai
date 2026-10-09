@@ -106,7 +106,7 @@ export function writeNotice(storage, userId, chatId, code, { credits } = {}) {
   } catch { /* blocked or full: nothing is kept, and the notice is on screen only */ }
 }
 
-/** Forget a chat's notice: a later message from that chat went out or ended with a notice of its own, or the chat was deleted. */
+/** Forget a chat's notice: a later message was sent from that chat (a warning about Credits waits until that message is known to have gone out), or the chat was deleted. */
 export function clearNotice(storage, userId, chatId) {
   const key = keyFor(NOTICE_PREFIX, userId, chatId);
   if (!key) return;

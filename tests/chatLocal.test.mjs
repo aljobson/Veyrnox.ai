@@ -13,6 +13,7 @@ const memory = () => {
 const blocked = { getItem() { throw new Error('blocked'); }, setItem() { throw new Error('blocked'); }, removeItem() { throw new Error('blocked'); } };
 const workspace = readFileSync(new URL('../app/veyrnox/_components/chat/ChatWorkspace.js', import.meta.url), 'utf8');
 const api = readFileSync(new URL('../app/veyrnox/_lib/chatApi.js', import.meta.url), 'utf8');
+const gateway = readFileSync(new URL('../app/veyrnox/_lib/gateway.js', import.meta.url), 'utf8');
 const ME = 'user-a';
 /** The one stored notice, as it sits in storage. */
 const rawNotice = (s, chat) => s.keys().find((k) => k.startsWith('veyrnox_chat_notice_') && k.endsWith(`:${chat}`));
@@ -242,6 +243,22 @@ test('each of the four says Credits were used or may be, and none says they were
     assert.match(copy[2], /Credits/, code);
     assert.doesNotMatch(copy[2], /No Credits|no Credits|not be charged/, code);
   }
+});
+
+test('no other words say Credits were used or may be: a new notice that does has to be put on the list', () => {
+  // Every `case` of chatErrorCopy, with the codes that share its words. "The Credits it used" (`connection_saved`) is
+  // about a reply the chat shows with its price, and "No Credits were used" is the opposite of a warning.
+  const body = api.slice(api.indexOf('export function chatErrorCopy'), api.indexOf('export function chatRefusedCopy'));
+  const warns = [];
+  for (const line of body.split('\n').filter((l) => /^\s+case '/.test(l))) {
+    // One case returns words kept elsewhere (a paused account, in gateway.js): its statement there is read whole.
+    const named = /return ([A-Z_]+);$/.exec(line.trim());
+    const from = named ? gateway.indexOf(`export const ${named[1]} =`) : -1;
+    const words = named ? (from >= 0 && gateway.slice(from, gateway.indexOf(';', from))) : /return (['"`])(.+)\1;$/.exec(line.trim())?.[2];
+    assert.ok(words, line.trim().slice(0, 60));
+    if (/\b(?:use|used) Credits\b|(?<![Nn]o )Credits were used/.test(words)) warns.push(...[...line.matchAll(/case '([a-z_]+)'/g)].map((m) => m[1]));
+  }
+  assert.deepEqual(warns.sort(), [...CREDITS_WARNINGS].sort());
 });
 
 test('reading a warning does not forget it, and it passes the same checks as any notice read from storage', () => {

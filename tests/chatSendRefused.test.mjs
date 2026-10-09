@@ -4,9 +4,10 @@
 // keeps `stop_unsure` with the given-back text; the person presses Send again; that second message is refused before
 // it starts. The refusal took the place of the warning, on screen and in the store, so after a page reload the box
 // held the message with nothing saying that its first send may still be saved and use Credits.
-// Two changes close it. A kept notice is forgotten when the next message is known to have gone out (the `start`
-// event, which follows the debit, or the chat being read again for it), not at the press. And a message that never
-// started does not replace one of the WARNINGS: the warning stays kept, and both are said on screen, the refusal first.
+// Two changes close it. A kept warning (one of the WARNINGS) is forgotten when the next message is known to have gone
+// out (the `start` event, which follows the debit, or the chat being read again for it), not at the press; any other
+// notice still goes at the press. And a message that never started does not replace a warning: the warning stays
+// kept, and both are said on screen, the refusal first.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -143,14 +144,59 @@ test('endings that never see the reply start, and are not refusals: Stop keeps i
     assert.deepEqual([afterReload(replayed, 'chat-a'), third.log.opened, third.log.shownOnOpen], [{ box: '', notice: null }, ['chat-a'], [null]]);
 });
 
-test('a closed chat or a signed-out reader is about the whole page: what was kept for the chat is left as it was', async () => {
+test('a closed chat or a signed-out reader is about the whole page: a warning kept for the chat is left as it was', async () => {
     // Neither says anything about this chat, and the message did not go out. (When a session ends, authClient clears the store.)
     for (const [status, code] of [[503, 'chat_not_open'], [401, 'unauthenticated']]) {
-        for (const was of ['stop_unsure', 'rate_limited']) {
+        for (const was of WARNINGS) {
             const { log, kept } = await run({ active: A, turn: refused(new GatewayError('no', { status, code })), kept: { 'chat-a': was } });
             assert.deepEqual([kept(), log.dropped, log.failures, log.notices], [{ 'chat-a': was }, [], [code], [null]], `${code}, with ${was} kept`);
         }
+        // Any other notice went at the press, as it always did: nothing stale is left beside the given-back text.
+        const { log, kept } = await run({ active: A, turn: refused(new GatewayError('no', { status, code })), kept: { 'chat-a': 'rate_limited' } });
+        assert.deepEqual([kept(), log.dropped, log.failures, log.notices], [{}, ['chat-a'], [code], [null]], `${code}, with a refusal kept`);
     }
+});
+
+test('a notice that is not a warning goes at the press, a warning only when the reply starts', async () => {
+    const at = {};
+    const watched = (was) => async ({ onEvent }, person) => {
+        at[was] = { beforeStart: Object.keys(person.kept()) };
+        onEvent('start', { job_id: 'j' });
+        at[was].afterStart = Object.keys(person.kept());
+        onEvent('done', { status: 'completed', credits_charged: 2, message_id: 'm1' });
+        return { replay: false };
+    };
+    for (const was of ['insufficient_balance', 'connection_saved', 'stop_unsure']) await run({ active: A, turn: watched(was), kept: { 'chat-a': was } });
+    // A page reload between the press and the start must not find "Your message was not sent" beside an empty box.
+    assert.deepEqual(at.insufficient_balance, { beforeStart: [], afterStart: [] });
+    assert.deepEqual(at.connection_saved, { beforeStart: [], afterStart: [] });
+    assert.deepEqual(at.stop_unsure, { beforeStart: ['chat-a'], afterStart: [] }, 'it would find the warning, which is still true');
+});
+
+test('the warning is looked for where the text goes back to: under New chat when the chat is gone', async () => {
+    // The chat was deleted while the message was on its way, and the message was then refused: its text goes under New
+    // chat, so the warning that must not be replaced is the one kept there. The screen has fallen back to New chat.
+    const gone = await run({ active: A, turn: refused(tooFast(), (p) => p.deletes('chat-a')), kept: { [NEW_CHAT]: 'stop_unsure' } });
+    assert.deepEqual([gone.kept(), gone.log.notices, gone.log.saved], [{ [NEW_CHAT]: 'stop_unsure' }, [null, said('rate_limited', 'stop_unsure')], { [NEW_CHAT]: TEXT }]);
+    // A warning kept for the chat that was deleted is not carried to New chat: it was about a chat the person chose to
+    // delete (the screen forgets it with the chat). The refusal is kept with the text, as any notice is.
+    const own = await run({ active: A, turn: refused(tooFast(), (p) => p.deletes('chat-a')), kept: { 'chat-a': 'stop_unsure' } });
+    assert.deepEqual([own.kept(), own.log.notices], [{ [NEW_CHAT]: 'rate_limited' }, [null, 'rate_limited']]);
+});
+
+test('a message known to have gone out forgets the warning wherever the person is', async () => {
+    // A replay, and a Stop before the reply started whose turn was found: neither reads the chat again while another
+    // chat is on screen, and both still say the message went out.
+    for (const how of [{ turn: async (_args, person) => { person.opens('chat-b'); return { replay: true }; } }, { turn: async (_args, person) => { person.opens('chat-b'); throw stopped(); }, settle: 'saved' }]) {
+        const storage = await stoppedUnsure();
+        const { log } = await run({ active: A, storage, ...how });
+        assert.deepEqual([readNotice(storage, ME, 'chat-a'), log.opened, log.notices], [null, [], [null]]);
+    }
+});
+
+test('refused after the chat page was left, with a warning kept: the warning stays and the text waits in its chat', async () => {
+    const { log, kept } = await run({ active: A, turn: refused(noCredits(), (p) => p.leavesThePage()), kept: { 'chat-a': 'stop_unsure' } });
+    assert.deepEqual([kept(), log.notices, log.added, log.box], [{ 'chat-a': 'stop_unsure' }, [null], { 'chat-a': TEXT }, ['']]);
 });
 
 test('refused while the person is in another chat, with a warning kept: the warning stays, and nothing is said in the chat on screen', async () => {
@@ -162,9 +208,9 @@ test('refused while the person is in another chat, with a warning kept: the warn
     assert.deepEqual([leaving.kept(), leaving.log.notices, leaving.log.box], [{ 'chat-a': 'stop_unsure' }, [null], ['', TEXT]]);
 });
 
-test('a notice the message keeps under a chat made for it takes the place of the one that waited under New chat', async () => {
+test('a notice the message keeps under a chat made for it takes the place of the warning that waited under New chat', async () => {
     // Stop before the reply started, not settled: the new chat is kept, with the text and its own warning. What waited under New
     // chat was about the message before, and New chat's box is empty now: left there, it would be shown beside nothing.
-    const { log, kept } = await run({ active: null, turn: stopBeforeStart, settle: 'pending', kept: { [NEW_CHAT]: 'connection_refunded' } });
+    const { log, kept } = await run({ active: null, turn: stopBeforeStart, settle: 'pending', kept: { [NEW_CHAT]: 'reply_not_saved' } });
     assert.deepEqual([kept(), log.dropped, log.saved], [{ made: 'stop_unsure' }, [NEW_CHAT], { made: TEXT }]);
 });

@@ -31,16 +31,18 @@ export function useChatSend({ text, setText, model, imagesBlocked, chosen, price
     sendingRef.current = true; setBusy(true); setError(null); setText('');
     let thread = active; let created = false; const pending = `pending-${Date.now()}`;
     const knownIds = new Set(messages.map((x) => x.id)); let jobId = null; // to tell this turn from the ones already on screen
-    // The notice kept for the chat this message is sent from is about the message before it. It is forgotten once this one is known
-    // to have gone out, or has a notice of its own to keep, and not at the press: a message that is refused first leaves it kept.
+    // The notice kept for the chat this message is sent from is about the message before it, and goes at the press. Unless it warns
+    // that the one before used Credits or still may: that is forgotten only once this message is known to have gone out, or has a
+    // notice of its own to keep, so a message that is refused first leaves the warning kept.
     const from = active ? active.id : NEW_CHAT; let forgotten = false;
     const forgetEarlier = () => { if (!forgotten) { forgotten = true; dropNotice(from); } };
+    if (!heldWarning(from)) forgetEarlier();
     // The person can open another chat, or press New chat, before this send ends. Its text, its notice and its bubbles
     // belong to the chat it was sent in (chatSendHome.js): they reach the screen only while that chat is the one on it.
     const v = chatView.current;
     const at = () => sendHome(v, thread ? thread.id : null);
     // What an ending says is kept with its chat, as a code (chatLocal.js): the screen shows it whenever that chat is opened, a
-    // page reload included, until a later message goes out from it. It goes on screen now only while that chat is the one on it.
+    // page reload included, until a later message is sent from it. It goes on screen now only while that chat is the one on it.
     const tell = (code, extra) => { forgetEarlier(); const { home, here } = at(); keepNotice(home, code, extra); if (here) setError(chatErrorCopy(code, extra)); };
     // A message that never started was not charged, and what it says is about itself. It does not take the place of a warning that
     // the message before it used Credits or still may: that warning stays kept, and both are said, this one first.

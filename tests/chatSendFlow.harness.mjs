@@ -43,6 +43,7 @@ export async function run({ active = null, turn, settle = 'pending', listDown = 
         opens: (id) => { ask(view, id); land(view, id); onScreenMessages = []; },
         leavesThePage: () => leave(view),
         deletes: (id) => forget(view, id),
+        kept: () => ({ ...log.kept }), // what is kept right now, for a server script that looks mid-send
     };
     const deps = {
         useState: (initial) => [initial, () => {}], useRef: (initial) => ({ current: initial }),

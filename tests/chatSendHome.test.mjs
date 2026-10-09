@@ -6,8 +6,8 @@
 // store is tested in tests/chatLocal.test.mjs, and what a whole send keeps in tests/chatSendFlow.test.mjs.
 // Which chat an ending belongs to, and whether that chat is on screen, is a plain module and is tested directly.
 // The screen and the send hook are not importable here, so their part is pinned by reading the source.
-// A kept notice was forgotten at the press. It is forgotten now when the next message is known to have gone out, and a
-// message refused before it starts leaves a warning about Credits where it was: the pins on send() below say why.
+// A kept notice is forgotten at the press, unless it warns about Credits: that one is forgotten when the next message
+// is known to have gone out, and a message refused before it starts leaves it where it was. The pins on send() say why.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -187,25 +187,29 @@ test('a notice is put on screen only by reading the store, at each place a chat 
     assert.equal(screen.split('keepNotice(').length - 1, 0, 'and never keeps one itself');
 });
 
-test('the notice kept for a chat is forgotten when the next message from it is known to have gone out, not at the press', () => {
-    // It was forgotten at the press, with the box (`dropNotice(active ? active.id : NEW_CHAT)` on the line after it).
-    // A message that was then refused before it started left the refusal in the notice's place. When the notice said
-    // that the message before may still be saved and use Credits, a page reload showed the given-back text with no
-    // warning (the one finding about Credits in the review of PR 724). The press now clears the screen and forgets nothing.
+test('a kept warning about Credits is forgotten when the next message is known to have gone out; any other notice at the press', () => {
+    // Every notice was forgotten at the press, with the box (`dropNotice(active ? active.id : NEW_CHAT)` on the line
+    // after it). A message that was then refused before it started left the refusal in the notice's place. When the
+    // notice said that the message before may still be saved and use Credits, a page reload showed the given-back
+    // text with no warning (the one finding about Credits in the review of PR 724).
     assert.match(send, /\n {4}sendingRef\.current = true; setBusy\(true\); setError\(null\); setText\(''\);\n {4}let thread = active;/);
     // The chat the message is sent from is noted at the press: a chat that has not started keeps its notice under New chat.
     assert.match(send, /\n {4}const from = active \? active\.id : NEW_CHAT; let forgotten = false;\n {4}const forgetEarlier = \(\) => \{ if \(!forgotten\) \{ forgotten = true; dropNotice\(from\); \} \};\n/);
     assert.equal(send.split('dropNotice(').length - 1, 1, 'in one place, and once a send: it can never forget a notice this message has kept');
-    // Three things call it. The `start` event: the Credits have been debited, so a message really went out.
+    // At the press still, for a notice that is not such a warning: left until `start`, it would be shown again beside
+    // an empty box by a page reload before the reply started, and would outlive a closed chat (the review of this change).
+    assert.match(send, /\n {4}const forgetEarlier = [^\n]*\n {4}if \(!heldWarning\(from\)\) forgetEarlier\(\);\n/);
+    assert.ok(send.indexOf('if (!heldWarning(from)) forgetEarlier();') > send.indexOf('imagesBlocked) return;'), 'a press that sends nothing forgets nothing');
+    // A warning waits for one of three things. The `start` event: the Credits have been debited, so a message really went out.
     assert.match(send, /if \(ev === 'start'\) \{ started = true; jobId = d\.job_id; setProgress\(null\); forgetEarlier\(\); \}/);
     // The chat being read again for this message (a replay, or a Stop before `start` whose turn was found saved): the
     // message went out, and open() shows whatever is still kept for the chat.
     assert.match(send, /\n {4}const reload = async \(\) => \{ forgetEarlier\(\); const \{ home, here, coming \} = at\(\);/);
     // And an ending that keeps a notice of its own (tell(), pinned below): it takes the earlier one's place, also when
     // it is kept under a chat that was made for the message and the earlier one waited under New chat.
-    assert.equal(send.split('forgetEarlier();').length - 1, 3, 'start, reload() and tell()');
-    // A message that is refused before it starts reaches none of the three (refuse(), below), and neither does one
-    // that is about the whole page (a closed chat, a signed-out reader): what was kept stays kept.
+    assert.equal(send.split('forgetEarlier();').length - 1, 4, 'the press (unless a warning is kept), start, reload() and tell()');
+    // A message that is refused before it starts reaches none of the last three (refuse(), below), and neither does
+    // one that is about the whole page (a closed chat, a signed-out reader): a warning that was kept stays kept.
 });
 
 // ---- the screen: which chat is asked for and which is shown ----
@@ -291,7 +295,8 @@ test('a message that never started does not take the place of a warning about Cr
     // With none kept, the refusal is told like any notice, and replaces what was there. With one, nothing is kept or
     // forgotten: the refusal is said on screen with the warning after it, and only while that chat is the one on it.
     assert.match(send, /\n {4}const refuse = \(code, extra\) => \{ const \{ home, here \} = at\(\); const warning = heldWarning\(home\); if \(!warning\) tell\(code, extra\); else if \(here\) setError\(chatRefusedCopy\(code, extra, warning\)\); \};\n/);
-    assert.equal(send.split('heldWarning(').length - 1, 1, 'the store is asked in one place');
+    // Under `home`, where the given-back text now is and the refusal would be kept: New chat when the chat is gone.
+    assert.equal(send.split('heldWarning(').length - 1, 2, 'the store is asked twice: at the press, and here');
     assert.equal(send.split('chatRefusedCopy(').length - 1, 1);
     // Only the turn that never started is told this way (pinned further down): three calls, all in that branch or in failed().
     // An ending of a turn that started has a notice of its own about Credits, and tell() keeps it.

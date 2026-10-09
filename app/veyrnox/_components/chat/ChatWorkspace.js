@@ -32,7 +32,7 @@ const store = () => { try { return window.localStorage; } catch { return null; }
 const saveDraft = (chatId, text) => writeDraft(store(), getStoredUserId(), chatId, text);
 const addDraft = (chatId, text) => addToDraft(store(), getStoredUserId(), chatId, text);
 // What the last message sent from a chat ended with waits with that chat, as a code (chatLocal.js). It is put into words here each
-// time the chat is opened, a page reload included, until a later message goes out from that chat or the chat is deleted.
+// time the chat is opened, a page reload included, until a later message is sent from that chat or the chat is deleted.
 const keepNotice = (chatId, code, extra) => writeNotice(store(), getStoredUserId(), chatId, code, extra);
 const dropNotice = (chatId) => clearNotice(store(), getStoredUserId(), chatId);
 const heldWarning = (chatId) => readCreditsWarning(store(), getStoredUserId(), chatId);
