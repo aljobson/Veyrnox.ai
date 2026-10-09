@@ -165,3 +165,14 @@ test('lost asset registration acknowledgement preserves the committed asset on r
     assert.equal(state.stored, 1);
     assert.equal(state.calls.filter(c => c.method === 'PUT').length, 1);
 });
+
+
+test('public route rejects unsigned callbacks before any database or storage effects', async t => {
+    const state = network(t, { mapped: true });
+    const req = new Request('https://veyrnox.test/api/webhook/fal', {
+        method: 'POST', body: JSON.stringify({ request_id: requestId, status: 'OK' }),
+        headers: { 'x-exercise-verify': 'true' },
+    });
+    assert.equal((await POST(req)).status, 401);
+    assert.deepEqual(state.calls, []);
+});
