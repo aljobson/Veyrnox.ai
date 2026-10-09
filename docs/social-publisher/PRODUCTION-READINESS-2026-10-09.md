@@ -6,7 +6,7 @@ This activation change is a draft. Do not merge until the blocking gates below a
 
 Enable Publish and basic analytics on production, with YouTube as the sole released network. Calendar remains enabled. Device uploads, posting insights, extended networks and additional provider-consent scopes remain off. The first slice uses videos already available in the generation library. Weekly batch drafting/approval remains unavailable for the restricted platform release. No paid Publish billing is activated.
 
-## Read-only production evidence
+## Production evidence
 
 - Production Supabase: `xdxdzmsztyzbnzeforxx`.
 - All 13 public `social_*` tables have RLS enabled and forced.
@@ -17,7 +17,8 @@ Enable Publish and basic analytics on production, with YouTube as the sole relea
 - Secret names confirm production YouTube client ID/secret, OAuth state signing, token encryption, media proxy and R2 credentials exist. Secret values were not retrieved. Presence does not prove credential validity.
 - Live cron registration is confirmed as `*/5 * * * *` in the production Cloudflare dashboard. Ten displayed executions from 17:55:59 through 18:41:06 UTC on 9 October succeeded.
 - The production `publish_sweep` heartbeat independently confirms `last_ok=true` and matching attempt/success at 18:41:07 UTC. The queue is empty; this proves the sweep runs, not a real upload or analytics collection.
-- Production has 16 non-expired `video/mp4` assets belonging to STORED jobs. Object delivery still requires an authenticated owner check; Chrome was signed out when inspected.
+- After explicit approval for one 9-credit generation, the signed-in owner's blue-cube test video reached STORED: job `b376c000-eae8-4105-b6b1-f5773264cc7e`, MP4, 225,544 bytes. Balance moved from 10 to 1 credit. No other users' media were accessed.
+- The live authenticated asset endpoint returned 200 and its signed production R2 URL returned 206 with `Content-Range: bytes 0-225543/225544`. Chrome decoded 1366×768 video, duration 5.875 seconds, readyState 4, with no media error. This validates owner source delivery and byte-range reads; it does not exercise a YouTube upload or token renewal.
 
 ## Google production setup
 
@@ -29,14 +30,14 @@ Google OAuth audience is External / In production; this is not verification appr
 
 1. Retry branding verification after the propagation interval; obtain branding approval/publication, then complete sensitive-scope verification. The demonstration recording and its accessible URL are not yet prepared. Scope justification draft exists locally, but no verification submission has been completed.
 2. Confirm project quota and any applicable YouTube approval conditions. The current [videos.insert documentation](https://developers.google.com/youtube/v3/docs/videos/insert), checked 9 October, states unverified API-project uploads are not automatically restricted to private mode. Do not treat the older private-upload assumption as current policy or infer project approval from staging results.
-3. Confirm production generation-library media can be read through the publishing path. Live cron registration and the Publish sweep heartbeat are now verified; R2 secret presence alone is insufficient for media acceptance.
+3. Source-media delivery, byte-range reads, live cron registration and the Publish sweep heartbeat are verified. End-to-end provider delivery remains part of post-activation acceptance below.
 4. Review/approve this concrete activation PR after CI/build checks pass and the preceding gates are resolved. Squash-merge and use deploy-production.yml, with its smoke checks and rollback.
 5. Perform real production-account acceptance: connect, denied consent, analytics, disconnect/reconnect and token renewal; then separately approve exact video/title/description/channel/visibility for Post now and Schedule post. No production social account is connected yet. No public video was posted during preparation.
 
 ## Validation
 
 - 360 Publish and brand tests pass (provider/database responses are stubbed).
-- Full local unit suite: 2,328 pass, 1 skipped, 0 failures. The initial PR CI failure was the old production-off assertion; the release test now checks YouTube-only activation and that uploads/extended scopes remain disabled. Updated CI must still pass before merge.
+- Full local unit suite: 2,328 pass, 1 skipped, 0 failures. The initial PR CI failure was the old production-off assertion; the release test now checks YouTube-only activation and that uploads/extended scopes remain disabled. CI and the Cloudflare build pass on `177d8a14f035fd5c8474c04357612a1c0072688b`; the documentation update requires its own current-head checks before merge.
 - Security package type checking passes.
 - Lint: 0 errors, 74 warnings on the current checkout.
 - Production-identity Next.js and OpenNext Worker builds pass, including verification of all 10 Video Enhance assets.
