@@ -58,7 +58,7 @@ These existed without an index row. Status is as written in each file.
 | [ADR-0009 — fal 429 retry policy](0009-fal-429-retry-policy.md) | Accepted 2026-09-11 | How a rate-limited fal submit is retried. | — |
 | [ADR-0010 — `copyUrlToR2` streaming vs buffered](0010-copyurltor2-streaming-vs-buffered.md) | Proposed 2026-09-11 | Whether provider output is streamed or buffered into R2. | — |
 | [ADR-0011 — Model catalog gaps](0011-model-catalog-gaps.md) | Accepted 2026-09-11 | Models dropped or corrected after checking them against fal. | — |
-| [ADR-0012 — TTS provider selection](0012-tts-provider-selection.md) | Proposed 2026-09-11; **decision open while TTS is live** | Four options weighed; none recorded as chosen. Four speech models are live. | — |
+| [ADR-0012 — TTS provider selection](0012-tts-provider-selection.md) | Proposed 2026-09-11; **decision open while TTS is live** | Four options weighed; none recorded as chosen. Four speech models are live; a fifth (Qwen voice design) is staged inactive (0235). | — |
 | [ADR-0013 — Credit expiry policy](0013-credit-expiry-policy.md) | Accepted 2026-09-11 | Only sign-up credits are free, and they expire. | — |
 | [ADR-0014 — Floor pricing: every model at the 50% margin minimum](0014-floor-pricing.md) | Accepted 2026-09-12 | Prices every model at the margin floor. | — |
 | [ADR-0015 — Legacy MuAPI studio extraction](0015-legacy-studio-extraction.md) | Accepted 2026-09-12 | Removes the inherited studio package. | — |

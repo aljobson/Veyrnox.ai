@@ -41,6 +41,7 @@ const MAX_SOURCES = 2;
 const ALLOWED_INPUTS = {
     prompt: { kind: 'string', max: 2000 },
     negative_prompt: { kind: 'string', max: 2000 },
+    voice_description: { kind: 'string', max: 500 }, // a voice in words, for speech models that take one; never a recording
     // Auto Short (ADR-0029); TOPIC_RE is checked again by its provider entry.
     topic: { kind: 'string', max: 200 },
     // Video agent (ADR-0074): the approved brief and its plan token; both are re-checked by verifyPlanToken before the debit.
@@ -58,7 +59,6 @@ const ALLOWED_INPUTS = {
     // image_url: HTTPS only, bounded length, and in practice always a
     // presigned URL this server minted — never a client-supplied host.
     video_url: { kind: 'url' },
-
     // Filter feature selectors, verified against the live fal schemas on
     // 2026-09-18 (scripts/verify-filter-endpoints.mjs). These are NOT the
     // quantity knobs the comment above excludes: choosing a makeup style or

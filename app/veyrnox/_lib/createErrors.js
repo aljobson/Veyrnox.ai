@@ -63,6 +63,7 @@ export const ERROR_COPY = {
   output_missing:        'The video finished but could not be saved. Credits refunded.',
   output_invalid:        'The video finished but could not be saved. Credits refunded.',
   'inputs_invalid:prompt':'The prompt is empty or too long for this model (speech takes up to 1000 characters). Nothing was charged.',
+  'inputs_invalid:voice_description':'Describe the voice in up to 500 characters. Nothing was charged.',
 };
 
 // What a FAILED job says. "Credits refunded" only once /jobs/:id reports the

@@ -32,6 +32,8 @@ function fromApi(models) {
     // Optional settings the gateway accepts for this model.
     takesSeed: !!m.capabilities?.inputs?.seed,
     takesNegative: !!m.capabilities?.inputs?.negative_prompt,
+    // Speech in a voice the user describes in words; the description is required.
+    takesVoice: !!m.capabilities?.inputs?.voice_description,
   }));
 }
 

@@ -33,6 +33,8 @@ const CATALOG = [
     // BytePlus ModelArk rows staged inactive by migration 0145 (ADR-0058).
     'byteplus:seedance-2.0-fast', 'byteplus:seedance-2.0-mini', 'byteplus:seedance-2.0',
     'byteplus:seedance-2.5', 'byteplus:seedance-1.0-pro-fast',
+    // Qwen 3 TTS Voice Design, staged inactive by migration 0235.
+    'fal-ai/qwen-3-tts/voice-design/1.7b',
 ];
 
 // Endpoints the pre-registry snapshot does not cover: corrected on purpose
@@ -41,7 +43,7 @@ const CORRECTED = new Set(['fal-ai/sana/v1.5/4.8b', 'fal-ai/kling-video/v3/pro/i
     'fal-ai/elevenlabs/tts/turbo-v2.5', 'fal-ai/minimax/speech-2.6-hd', 'fal-ai/mmaudio-v2/text-to-audio', 'fal-ai/bria/background/remove',
     'fal-ai/topaz/upscale/image', 'fal-ai/bria/expand', 'fal-ai/latentsync', 'fal-ai/kling-video/ai-avatar/v2/standard',
     'fal-ai/mmaudio-v2', 'fal-ai/topaz/upscale/video',
-    'fal-ai/elevenlabs/text-to-dialogue/eleven-v3']);
+    'fal-ai/elevenlabs/text-to-dialogue/eleven-v3', 'fal-ai/qwen-3-tts/voice-design/1.7b']);
 
 /** Every valid combination of a record's inputs: all declared keys, each enum value, each length. */
 function fixtures(record) {
@@ -203,6 +205,27 @@ test('speech text is capped at the 1000 characters its price covers', () => {
     }
     assert.deepEqual(shapePayload(capabilityFor('fal-ai/elevenlabs/tts/turbo-v2.5'), { prompt: 'hi' }), { text: 'hi', timestamps: false });
     assert.deepEqual(shapePayload(capabilityFor('fal-ai/minimax/speech-2.6-hd'), { prompt: 'hi' }), { prompt: 'hi', output_format: 'url' });
+});
+
+test('Qwen voice design sends the words as fal\'s text and the described voice as its prompt, with the audio limit pinned', () => {
+    const r = capabilityFor('fal-ai/qwen-3-tts/voice-design/1.7b');
+    // fal's default of 200 codec tokens is 16s of audio (12.5 tokens a second), so the limit is pinned.
+    const pins = { language: 'Auto', max_new_tokens: 8192, enable_safety_checker: true };
+    assert.deepEqual(shapePayload(r, { prompt: 'Hello there.', voice_description: 'A calm older man' }),
+        { text: 'Hello there.', prompt: 'A calm older man', ...pins });
+    // fal requires both fields; a request missing either is refused before the debit.
+    assert.deepEqual(checkInputs(r, { prompt: 'Hello there.' }), { ok: false, error: 'inputs_invalid:voice_description' });
+    assert.deepEqual(checkInputs(r, { prompt: 'Hello there.', voice_description: '  ' }), { ok: false, error: 'inputs_invalid:voice_description' });
+    assert.deepEqual(checkInputs(r, { voice_description: 'A calm older man' }), { ok: false, error: 'inputs_invalid:prompt' });
+    // The price covers 1000 spoken characters; the description is capped at 500.
+    assert.deepEqual(checkInputs(r, { prompt: 'x'.repeat(1000), voice_description: 'v'.repeat(500) }), { ok: true });
+    assert.equal(checkInputs(r, { prompt: 'x'.repeat(1001), voice_description: 'v' }).ok, false);
+    assert.equal(checkInputs(r, { prompt: 'x', voice_description: 'v'.repeat(501) }).ok, false);
+    // A client cannot lift a pin, and there is no slot for a recording to copy (the AUP forbids voice cloning).
+    assert.deepEqual(declaredInputs(r, { prompt: 'p', voice_description: 'v', max_new_tokens: 1, language: 'Chinese',
+        enable_safety_checker: false, audio_url: 'https://r2/voice.mp3', aspect_ratio: '16:9' }), { prompt: 'p', voice_description: 'v' });
+    assert.deepEqual(r.media, {});
+    assert.deepEqual(publicCapabilities(r).inputs, { prompt: { type: 'string' }, voice_description: { type: 'string' } });
 });
 
 test('MMAudio buys one 8s clip, and background removal sends only the image', () => {
