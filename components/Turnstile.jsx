@@ -37,13 +37,14 @@ function loadScript() {
 }
 
 /**
- * @param {{ onToken: (token: string|null) => void, onError: () => void, onFailure: (code: string) => void, resetKey: number }} props
+ * @param {{ onToken: (token: string|null) => void, onError: () => void, onFailure: (code: string) => void, onWaiting: () => void, resetKey: number }} props
  *   onToken   receives a fresh token, or null when it expires or errors
  *   onError   the script could not load (blocked by an extension, offline)
  *   onFailure the check ran and failed; receives Turnstile's error code
+ *   onWaiting the widget shows its checkbox and waits for a click
  *   resetKey  bump after every submit: tokens are single-use
  */
-export function Turnstile({ onToken, onError, onFailure, resetKey }) {
+export function Turnstile({ onToken, onError, onFailure, onWaiting, resetKey }) {
     const box = useRef(null);
     const widgetId = useRef(null);
     const lastFailure = useRef(null);
@@ -79,6 +80,11 @@ export function Turnstile({ onToken, onError, onFailure, resetKey }) {
                         // console warning of its own for every retry.
                         return true;
                     },
+                    // The widget shows its checkbox and waits for a click.
+                    // After a failure, Turnstile's own retry can stop here,
+                    // and it says so through this and not error-callback.
+                    // A wait is not a failure: no log line and no report.
+                    "before-interactive-callback": () => onWaiting(),
                 });
             })
             .catch(() => {

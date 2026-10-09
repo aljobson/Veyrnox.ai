@@ -219,3 +219,142 @@ request to Auth without a token. The CSP: `connect-src 'self'` already allows
 a same-origin POST, and `tests/securityHeaders.test.mjs` is untouched. The
 dialog: `components/AuthGate.jsx` is not edited, and a report that fails, is
 refused or is rate limited is never seen by it.
+
+## Amendment 3 (2026-10-09): a check that waits for a click says so
+
+Seen on production on 2026-10-09, signed out, in an embedded browser: the
+check failed with 600010 and the dialog said "It will retry by itself". By
+then the widget had retried and was showing its checkbox, unticked. The
+dialog told the person to wait while the widget waited for the person.
+Someone who believes the notice waits for ever.
+
+### What Turnstile reports
+
+Read on 2026-10-09 in Cloudflare's widget configuration reference and
+client-side errors page, and in the script the widget loads
+(`challenges.cloudflare.com/turnstile/v0/api.js`). This widget is Managed
+mode, rendered explicitly, and leaves every option at its default:
+`retry: auto`, `retry-interval: 8000`, `refresh-timeout: auto`,
+`appearance: always`.
+
+| Callback | When the script calls it |
+|---|---|
+| `error-callback` | The challenge frame reports a failure. With `retry: auto` and a handler that returns `true`, the script loads the challenge again 2 seconds plus `retry-interval` later: 10 seconds here. |
+| `before-interactive-callback` | The challenge frame says it is entering interactive mode: it shows its checkbox and waits for a click. Managed mode only. It is called every time, so also when a retry ends on the checkbox. |
+| `after-interactive-callback` | The frame has left interactive mode: the box was ticked, or the wait timed out and the widget is about to refresh itself. |
+| `timeout-callback` | The box was not ticked in time. With `refresh-timeout: auto` the widget then refreshes itself. |
+| `unsupported-callback` | The frame refuses the browser as unsupported. There is no box to tick. |
+
+So what was seen was `error-callback`, the retry, then
+`before-interactive-callback`. The dialog listened to the first and not the
+last. A callback does report the wait, so the dialog can say what is true in
+each state and needs no wording that hedges between the two.
+
+### Decision
+
+1. `components/Turnstile.jsx` registers `before-interactive-callback` and
+   calls a new `onWaiting` prop. It registers nothing else new.
+2. `components/AuthGate.jsx` remembers the wait where it remembers the error
+   code, as the word `waiting` (`CAPTCHA_WAITING`), so a submit without a
+   token says the same thing. A notice about the check that is already on
+   screen changes to the new wording. No notice is raised from nothing: a
+   first check that asks for a click has not failed, the widget is on screen
+   and says what it wants, and an error notice next to it would be noise.
+3. The wording is in `app/lib/turnstileFailure.js`: "The security check above
+   is waiting for you to tick its box. If it doesn't pass after that, reload
+   the page, or open veyrnox.ai in your usual browser if you're inside
+   another app. Continue with Google doesn't need the check." It does not
+   quote the widget's label. The widget follows the browser's language and
+   the dialog is in English, so "Verify you are human" would be the wrong
+   words in every other language. The widget has one box and sits directly
+   above the notice.
+4. It ends the way every notice about the check ends. A token or closing the
+   dialog clears it. A new failure replaces it with that failure's wording,
+   and the next wait replaces that.
+
+### What the dialog says in each state
+
+For a check that did not pass in this browser (300* and 600*). After any
+other failure the second row is the same: if the box is showing, ticking it
+is the next step.
+
+| The widget | The dialog |
+|---|---|
+| has failed and will retry in 10 seconds | "The security check didn't pass in this browser. It will retry by itself. …" (unchanged) |
+| shows its checkbox after that failure | "The security check above is waiting for you to tick its box. …" |
+| shows its checkbox and has not failed | nothing, until a submit without a token; then the same sentence |
+| has issued a token | nothing |
+
+### Not used, and why
+
+- `after-interactive-callback`. Every way out of the wait ends in a token, a
+  failure or another wait, and each of those already sets the notice.
+  Clearing the notice here would lose it when an unticked box times out and
+  the widget refreshes to a box again. The cost is a few seconds in which the
+  notice still says to tick the box and there is none to tick: while the
+  widget verifies a tick, and when a refresh after a timeout runs without
+  asking for one.
+- `timeout-callback`. The widget already refreshes itself, and the refreshed
+  checkbox reports itself through `before-interactive-callback` again.
+- `unsupported-callback`. A different case with no box to tick. The dialog
+  still says nothing about it until a submit. Not fixed here.
+
+### What does not change
+
+The check: same site key, same mode, every option still at its default,
+automatic retry on, and no request to Auth without a token. A callback is
+something the page listens to; it does not change how the check runs. The
+CSP is untouched.
+
+The count of failed checks (amendment 2) is untouched: one report per error
+code per page load, sent from `error-callback` and from a script that cannot
+load, and from nowhere else. A wait is not a failure, so it writes no console
+line and sends no report. `waiting` is not a code either: `turnstileErrorCode`
+turns it into `unknown`, so it could not be logged or sent as itself.
+
+### What was and was not seen
+
+Seen on a local build on 2026-10-09, with Cloudflare's published test site
+keys in place of ours (never committed), and without the checkbox ever being
+ticked:
+
+- The key that forces an interactive challenge. The widget showed its
+  checkbox and the dialog said nothing. A submit without a token gave the new
+  wording, which it can only do if `before-interactive-callback` fired. With
+  a notice about the check already on screen, the notice changed to the new
+  wording by itself when the checkbox appeared.
+- The key that always fails. It fails with 600010, the code seen on
+  production. The "retry by itself" notice stayed through the retries, with
+  one console line and one report for the page load.
+- Our own key on localhost: 110200 and the generic notice, as before.
+
+Not seen before the merge: a failure followed by a retry that stops on the
+checkbox, which is what happened on production. No test key does both, and
+our site key lists `veyrnox.ai` only.
+
+Seen on production later on 2026-10-09, once this amendment was deployed, in
+the embedded browser where the failure was first seen, signed out:
+
+- Left unticked for 10 minutes, the widget stayed on its checkbox and did not
+  fail. The dialog said nothing, and no report was sent.
+- With the box unticked and no token, "Sign in with a passkey" gave the new
+  wording. Before the deploy the same press gave "Complete the security check
+  first."
+- The owner then ticked the box. Times are seconds since the page loaded.
+  The first row is when the failure report was sent. The others are what a
+  reading of the page found at that time:
+
+  | Time | The widget | The dialog |
+  |---|---|---|
+  | 182 s | the tick has failed with 600010 | not read |
+  | 194 s | empty space, retrying | "The security check didn't pass in this browser. It will retry by itself. …" |
+  | 207 s | back on its unticked checkbox | "The security check above is waiting for you to tick its box. …" |
+  | 222 s | the same | the same |
+
+  One report was sent for the page load. Nothing went to Auth and no token
+  was issued.
+
+That is one browser and one run. The challenge frame's own code is not
+public, so beyond it the behaviour rests on Cloudflare's reference and on the
+script, which calls the callback for every `interactiveBegin` message the
+frame sends.

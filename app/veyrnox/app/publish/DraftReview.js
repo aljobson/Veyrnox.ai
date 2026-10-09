@@ -43,6 +43,7 @@ function Preview({ media }) {
 
 export function DraftReview({ onApproved }) {
     const [drafts, setDrafts] = useState(null);
+    const [approvalEnabled, setApprovalEnabled] = useState(true);
     const [error, setError] = useState('');
     const [busy, setBusy] = useState(null);
 
@@ -51,6 +52,7 @@ export function DraftReview({ onApproved }) {
         try {
             const res = await listSocialDrafts();
             setDrafts(res.drafts || []);
+            setApprovalEnabled(res.approvalEnabled !== false);
         } catch {
             setError('Could not load your drafts.');
         }
@@ -76,8 +78,9 @@ export function DraftReview({ onApproved }) {
 
     return <div className="space-y-6">
         {error && <p role="alert" className="text-sm text-vx-danger">{error}</p>}
+        {!approvalEnabled && <p className="text-sm text-vx-fg-muted">Weekly drafts and batch approval are paused during the limited rollout. Use Compose to schedule a post or post now.</p>}
         {drafts && batches.length === 0 && (
-            <p className="text-sm text-vx-fg-muted">No drafts waiting. Each Monday your generations from the past week arrive here as drafts.</p>
+            <p className="text-sm text-vx-fg-muted">{approvalEnabled ? 'No drafts waiting. Each Monday your generations from the past week arrive here as drafts.' : 'No drafts waiting.'}</p>
         )}
         {batches.map((batch) => (
             <div key={batch.id} className="rounded-xl border border-vx-border p-4">
@@ -91,7 +94,7 @@ export function DraftReview({ onApproved }) {
                             {busy === `discard:${batch.id}` ? 'Discarding…' : 'Discard all'}
                         </button>
                         <button
-                            type="button" className={primaryButton} disabled={busy !== null}
+                            type="button" className={primaryButton} disabled={busy !== null || !approvalEnabled}
                             onClick={async () => {
                                 const out = await act(`approve:${batch.id}`, () => approveDraftBatch(batch.id), 'Could not approve this batch. Try again.');
                                 if (out && onApproved) onApproved(out);

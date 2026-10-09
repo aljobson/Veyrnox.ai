@@ -150,7 +150,7 @@ function PublishControls({ initialJobId }) {
                 connected
                   ? <span className="text-xs font-bold text-vx-accent">Connected</span>
                   : <button type="button" disabled={connecting != null || atLimit || readiness?.available !== true} className={button} onClick={() => onConnect(n.key)}>
-                      {connecting === n.key ? 'Connecting…' : !readiness ? 'Loading…' : readiness.status === 'setup_required' ? 'Setup required' : readiness.status === 'testing_disabled' ? 'Testing not enabled' : 'Connect'}
+                      {connecting === n.key ? 'Connecting…' : !readiness ? 'Loading…' : readiness.status === 'not_released' ? 'Coming soon' : readiness.status === 'setup_required' ? 'Setup required' : readiness.status === 'testing_disabled' ? 'Testing not enabled' : 'Connect'}
                     </button>
               ) : (
                 <span className="text-xs font-semibold text-vx-fg-muted rounded-full border border-vx-border px-3 py-1">Coming soon</span>

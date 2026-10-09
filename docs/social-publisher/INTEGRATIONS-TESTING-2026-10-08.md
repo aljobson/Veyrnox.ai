@@ -241,3 +241,26 @@ need administrator-provided OAuth app credentials and provider-specific tester
 access. Bluesky needs no developer-app secret and can be tested independently
 with a tester's dedicated app password. Neither configuration nor stubbed
 contract tests establish live acceptance for these networks.
+
+## Production preparation and tester blockers — 2026-10-09
+
+The owner requested a staged production rollout starting with YouTube, with
+other people testing the remaining platforms. See
+[the production rollout runbook](PRODUCTION-ROLLOUT.md) for checked live flags,
+credential gaps, release gates, deployment, acceptance and rollback.
+Production Publish remains off; no activation was performed for this preparation.
+
+Bluesky real connection attempts returned HTTP 502 `connect_failed`; tracked in
+[#695](https://github.com/aljobson/Veyrnox.ai/issues/695). The owner's staging
+YouTube connection was disconnected with permission to free the test account
+slot. Earlier instructions to preserve that connection describe an older state.
+The public YouTube acceptance video remains; do not republish it.
+
+LinkedIn staging app **Veyrnox Publish — staging** (266600565) was created with
+the owner-confirmed Veyrnox Page, privacy URL, logo and staging callback.
+Share on LinkedIn and Sign In with LinkedIn using OpenID Connect were both
+provisioned. Company verification failed because the signed-in account is not
+authorized to verify the app; a company Page admin must complete it. Its client
+credentials have not been installed in either Worker. No LinkedIn live connection
+or publication was verified. Twitch developer setup reached sign-in only; the
+owner does not need to create a personal account to continue the tester handover.

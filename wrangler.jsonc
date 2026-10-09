@@ -141,6 +141,8 @@
     // menu link and /api/v1/social/*. Only "true" opens it. The publish
     // sweep is not gated, so anything already queued still finishes.
     "PUBLISH_ENABLED": "false",
+    // First production release permits YouTube only; Publish remains off.
+    "PUBLISH_RELEASED_NETWORKS": "youtube",
     // The Publish analytics sweep (lib/socialAnalyticsSweep.js). Only "true"
     // runs it; turn it on after migration 0188 is applied. The analytics
     // page and its API route follow PUBLISH_ENABLED like the rest of Publish.
@@ -236,6 +238,7 @@
         "JEV_SUBMIT_ERRORS_MODE": "off",
         // Veyrnox Publish is open on staging for testing (see production).
         "PUBLISH_ENABLED": "true",
+        "PUBLISH_RELEASED_NETWORKS": "*",
         // Publish schema through 0192 provisioned on staging 2026-10-04.
         "PUBLISH_ANALYTICS_ENABLED": "true",
         "PUBLISH_POSTING_INSIGHTS_ENABLED": "true",
