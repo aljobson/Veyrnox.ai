@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { MediaTile } from '../_components/MediaTile';
-import { ShowcaseCredits } from '../_components/ShowcaseCredits';
 import { SHOWCASE_CLIPS, MODEL_SHOWCASE_KEYS } from '../_lib/showcase';
 import { wallShapes, tileClasses } from '../_lib/presetWall';
 import { WALL_PRESETS, presetHref, presetCredits, presetTitle, shelfName } from '../_lib/tokens';
@@ -46,7 +45,6 @@ export function PresetWall({ catalog }) {
           );
         })}
       </div>
-      <ShowcaseCredits />
     </section>
   );
 }
@@ -106,7 +104,6 @@ export function ModelShelf({ catalog }) {
           </div>
         ))}
       </div>
-      <ShowcaseCredits />
       <p className="mt-10 text-[14px] text-vx-fg-muted">
         Failed generations refund in full. <Link href="/pricing" className="font-bold text-vx-fg-body underline underline-offset-4 hover:text-vx-fg">Credit packs</Link>
         {' · '}<Link href="/models" className="font-bold text-vx-fg-body underline underline-offset-4 hover:text-vx-fg">Every model</Link>
