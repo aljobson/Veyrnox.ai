@@ -25,6 +25,16 @@ test('every production monitor can open an issue when it goes red', () => {
     }
 });
 
+// The weekly fal watch had findings to file on 2026-09-28 and 2026-10-05, then
+// died on "could not add label: 'fal-drift' not found": nobody had made the
+// label, so the run went red and no issue was opened.
+test('the fal catalog watch makes its label before it files an issue under it', () => {
+    const s = wf('fal-catalog-watch.yml');
+    const made = s.indexOf('gh label create fal-drift');
+    assert.ok(made > -1, 'never creates the fal-drift label');
+    assert.ok(made < s.indexOf('gh issue create'), 'creates the label after the issue that needs it');
+});
+
 test('the signup gate treats "could not check" as not-a-pass, and says which it was', () => {
     const s = wf('signup-gate.yml');
     // The check itself already distinguishes the three states.

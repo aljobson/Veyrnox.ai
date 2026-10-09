@@ -47,6 +47,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           title="fal catalog drift — $(date -u +%Y-%m-%d)"
+          # An issue cannot carry a label the repository does not have: the
+          # runs of 2026-09-28 and 2026-10-05 had findings to file and died
+          # on this, so nothing was filed.
+          gh label create fal-drift --color B60205 --description 'fal endpoint, price or request contract out of step with the catalog' 2>/dev/null || true
           existing=$(gh issue list --label fal-drift --state open --json number --jq '.[0].number // empty')
           # printf with double-quoted parts, not $'...': the apostrophe in
           # "fal's" closed that quoting and the step died with a syntax
