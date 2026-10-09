@@ -171,9 +171,9 @@ If a build starts failing after a dependency change, bisect these three first.
   - `/api/admin/*` — Cloudflare Access plus a shared token; cron callers only.
   - `/media/social/:token` — a short-lived HMAC token naming one R2 object.
   - `/api/turnstile-failure` — anonymous and write-only: a POST from our own
-    pages whose body is one Turnstile error code, rate limited per connecting
-    IP in `worker.js`. It logs that code and nothing about the sender
-    (ADR-0026 amendment 2).
+    pages whose body is one Turnstile error code or the word `unsupported`,
+    rate limited per connecting IP in `worker.js`. It logs that and nothing
+    about the sender (ADR-0026 amendments 2 and 5).
 
   A new route outside `/api/v1` needs one of these and an entry in
   `tests/routesOutsideGate.test.mjs`.
