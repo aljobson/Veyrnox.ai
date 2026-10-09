@@ -24,11 +24,14 @@ Enable Publish and basic analytics on production, with YouTube as the sole relea
 
 Project `veyrnox-publish-production` (41641120885), separate from staging. YouTube Data API v3 enabled. Web client callback is `https://veyrnox.ai/social/connect/callback/youtube`. Scopes match the adapter: `youtube.readonly`, `youtube.upload`. Branding uses Veyrnox Publish, support@veyrnox.com and production homepage/privacy/terms URLs.
 
+Production Cloud Console quotas checked under support@veyrnox.com on 9 October: video uploads 100/day and 100/minute; queries 10,000/day. All displayed usage was zero. No quota increase was requested. These are provider limits, not a guarantee of application throughput or verification approval.
+
 Google OAuth audience is External / In production; this is not verification approval. Search Console confirmed domain ownership for support@veyrnox.com using the approved Cloudflare TXT record at approximately 17:38 UTC on 9 October. Keep the record. Google branding reported the domain not registered to the account before verification and explicitly required waiting 24 hours before retrying. Retry no earlier than 17:39 UTC on 10 October (18:39 UK).
 
 ## Blocking gates
 
 1. Retry branding verification after the propagation interval; obtain branding approval/publication, then complete sensitive-scope verification. The demonstration recording and its accessible URL are not yet prepared. Scope justification draft exists locally, but no verification submission has been completed.
+   Before submission, make the public homepage's relationship to Veyrnox Publish clear and disclose YouTube data access, use, storage and sharing explicitly in the privacy policy. The current homepage describes generation only, and the policy's generic Publish paragraph does not explain YouTube token/channel/statistics handling. Google requires these disclosures in its [verification preparation guidance](https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification).
 2. Confirm project quota and any applicable YouTube approval conditions. The current [videos.insert documentation](https://developers.google.com/youtube/v3/docs/videos/insert), checked 9 October, states unverified API-project uploads are not automatically restricted to private mode. Do not treat the older private-upload assumption as current policy or infer project approval from staging results.
 3. Source-media delivery, byte-range reads, live cron registration and the Publish sweep heartbeat are verified. End-to-end provider delivery remains part of post-activation acceptance below.
 4. Review/approve this concrete activation PR after CI/build checks pass and the preceding gates are resolved. Squash-merge and use deploy-production.yml, with its smoke checks and rollback.
