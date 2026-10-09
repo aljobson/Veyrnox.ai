@@ -315,4 +315,20 @@ no result reached us). Refund in about five minutes. Rules:
 - **One machine only.** A second machine would answer `unknown` for the first one's live runs and the sweep would refund work still
   in progress. Turn the flag off before adding a machine (CAPACITY.md), or give `/runs` a machine-wide view first.
 
-Not yet tried against a real runner: the flag is "false" in both environments and the runner endpoint is not deployed.
+**Tried on staging, 2026-10-09** (Worker `09c91307` built from main `d348ebe7` with the flag on by `--var`; runner release v17,
+which has `/runs`). The owner restarted the runner machine during a real run:
+
+- Job `4e282a58` started at 04:55:40 UTC. The sweep that began at about 05:01 asked the runner, was told `unknown`, failed the step
+  as `run_lost` and refunded at 05:01:47: **6 minutes 7 seconds** after the start, against 49 minutes 38 seconds by the timeout
+  alone. One debit, one refund, `reconcile_balances()` 0 rows. The sweep logged `{"checked":2,"timedOut":0,"lost":2}`.
+- The second lost run was not planned: job `d4c66dcf`, started by another account at 04:53:27, was on the same machine when it was
+  restarted. It was refunded as `run_lost` in the same pass, also once. A restart loses every run on the machine, and each is
+  refunded.
+- A full run with the flag on finished normally the evening before (job `9e4b021a`, 3 minutes 35 seconds): a live run is answered
+  `running` and left alone.
+
+Two earlier attempts lost the race, because the run finished before a hand-typed restart landed. What worked: the owner started
+`sleep 45; for i in 1 2 3 4 5 6; do fly machine restart <id> -a <app>; sleep 30; done`, and Approve was clicked inside the 45 seconds.
+
+Still "false" in production and in `wrangler.jsonc` for both environments. Not tried: a runner that answers `ended`, and two machines
+(where the check must stay off).
