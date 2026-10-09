@@ -159,5 +159,6 @@ test('scheduled recovery calls the app directly even when external rate limiting
 test('deployment binds the intended namespace and quota', () => {
     const raw = readFileSync(new URL('../wrangler.jsonc', import.meta.url), 'utf8');
     const ratelimits = JSON.parse(raw.match(/"ratelimits"\s*:\s*(\[[\s\S]*?\])/)[1]);
-    assert.deepEqual(ratelimits, [{ name: 'ADMIN_EDGE_RATE_LIMITER', namespace_id: '2026092401', simple: { limit: 60, period: 60 } }]);
+    // The array also holds the limiter for the sign-in dialog's failure report (tests/turnstileFailureReport.test.mjs).
+    assert.deepEqual(ratelimits.filter((r) => r.name.startsWith('ADMIN')), [{ name: 'ADMIN_EDGE_RATE_LIMITER', namespace_id: '2026092401', simple: { limit: 60, period: 60 } }]);
 });

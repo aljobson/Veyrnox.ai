@@ -12,9 +12,10 @@ import {
 } from '../app/lib/turnstileFailure.js';
 
 // A Turnstile check that fails in the browser never reaches Supabase, so it is
-// in no auth log. What the dialog says and one console line are the whole
+// in no auth log. What the dialog says and one console line were the whole
 // record (seen 2026-10-09: an embedded browser, and a dialog that only said
-// "Complete the security check first" after submit).
+// "Complete the security check first" after submit). The count of failures
+// is in turnstileFailureReport.test.mjs.
 
 const DID_NOT_PASS = turnstileFailureCopy('600010');
 const CLOCK = turnstileFailureCopy('200100');
