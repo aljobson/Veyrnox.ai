@@ -260,7 +260,7 @@ and the message check need no migration and apply as soon as the Worker deploys.
 
 ## Amendment 10 2026-10-09: a reader who leaves is a Stop, and the turn is still finished
 
-Status: **Proposed**. The owner accepts it by merging, after the staging check below.
+Status: **Accepted 2026-10-09**, the owner merged it (pull request 693). The staging check below was run the same day.
 
 Point 4 says a reply stopped after text appeared is kept and charged. On the Worker that ending did not run as written. Pressing Stop
 or closing the tab ends the response, but the Worker was not told: Cloudflare reports a disconnect only through `request.signal`, and
@@ -290,9 +290,11 @@ which it was.
 
 Checked on the local Worker runtime with the provider and the database faked (2026-10-09). Without the flag, a reader leaving 2
 seconds into a 20-second reply was not noticed and the whole reply was saved as `complete`. With it, the provider stopped within 0.3
-seconds and the text so far was saved as `canceled`; a reader who stayed saw no difference. Before merging: deploy the branch to
-staging, send a message, press Stop after text appears, and confirm the reply is stored as `canceled` and its job is `STORED` within a
-few seconds.
+seconds and the text so far was saved as `canceled`; a reader who stayed saw no difference.
+
+Checked on staging with this change deployed (2026-10-09), using the screen's own Stop button. A short reply stopped at its first
+words and a long reply stopped a second and a half into its text were each stored as `canceled` with the text so far, their jobs
+`STORED` and charged, 0.3 and 0.1 seconds after Stop.
 
 Not changed: the screen reloads the chat the moment Stop is pressed and can be a moment ahead of the save. A short retry there is a
 screen change with its own browser check.
