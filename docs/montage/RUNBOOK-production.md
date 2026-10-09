@@ -48,7 +48,10 @@ Do not start the rollout until each has a written yes in the SPEC.
   the table below), `/health` 200, unsigned `/plan`, `/run`, `/cancel`, `/status` and `/runs` all 401.
 - **G7:** the repository variable `MONTAGE_RUNNER_HEALTH_URL` is set and `runner-health` run 37911078018 was green.
 
-The Worker does not know this runner yet (step 3), so nothing can start a run on it. Next: step 3.
+- **Step 3:** `MONTAGE_RUNNER_BASE` = `https://veyrnox-montage-runner.fly.dev` in the top-level `vars` of `wrangler.jsonc`, flag still
+  "false". With no `MONTAGE_SIGNING_SECRET` in the Worker yet, the routes and the sweep still answer "not configured".
+
+Next: step 4 (the Worker's two secrets, by the secret-edit procedure).
 
 Each step has its own check and its own undo. Stop at the first check that fails.
 
