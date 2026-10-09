@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { register } from 'node:module';
 import { STARTER_PROMPT, promptText, promptIsMissing, promptPlaceholder } from '../app/veyrnox/_lib/promptBox.js';
 import { MODELS, kindOf } from '../app/veyrnox/_lib/tokens.js';
@@ -152,6 +152,33 @@ test('the tokens.js fallback gives a sound model the marks the live catalog does
 
 // JSX page and a React hook, so these read the source, like speechPrompt.test.mjs.
 const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
+
+// The page reads a live row's kind from its modality, not from its capability
+// record. So a row the migrations insert with an audio modality must be bound
+// to a record that requires its prompt, or to none (lib/publicCatalog.js does
+// not list a row with no record). Otherwise Generate could never be pressed.
+test('every catalog row the picker reads as audio is bound to a record that requires its prompt', () => {
+    const rows = [];
+    for (const dir of ['../packages/db/schema/', '../packages/db/schema/supabase/']) {
+        for (const file of readdirSync(new URL(dir, import.meta.url)).filter((name) => name.endsWith('.sql'))) {
+            // ('id', 'name', 'provider', 'provider_endpoint', 'modality', ...
+            for (const m of read(dir + file).matchAll(/\('([a-z0-9][a-z0-9._-]*)',\s*'[^']*',\s*'[a-z-]+',\s*'([^']+)',\s*'([a-z]+(?:-[a-z]+)*)'/g)) {
+                rows.push({ id: m[1], endpoint: m[2], modality: m[3] });
+            }
+        }
+    }
+    const audio = rows.filter((row) => kindOf(row.modality) === 'audio');
+    assert.ok(audio.length >= 11, 'audio rows found in the migrations');
+    for (const id of Object.keys(LIVE_SOUND)) {
+        assert.deepEqual([...new Set(rows.filter((row) => row.id === id).map((row) => row.modality))], ['text-to-audio'], id);
+    }
+    for (const row of audio) {
+        const record = capabilityFor(row.endpoint);
+        if (!record) continue;
+        assert.ok(record.kind === 'audio' || record.kind === 'speech', `${row.id} record kind`);
+        assert.equal(record.inputs.prompt?.required, true, `${row.id} requires its prompt`);
+    }
+});
 
 test('a sound model is known by its kind from the catalog row, not by a list of ids', () => {
     const helper = read('../app/veyrnox/_lib/promptBox.js');

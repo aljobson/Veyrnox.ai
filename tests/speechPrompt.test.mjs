@@ -23,7 +23,7 @@ const music = { id: 'ace-step', kind: 'audio' };
 const speech = { id: 'inworld-tts', kind: 'audio', isSpeech: true };
 const dialogue = { id: 'elevenlabs-dialogue', kind: 'audio', isSpeech: true };
 
-test('the starter prompt is offered to picture and clip models, never to a speech model', () => {
+test('the starter prompt is offered to picture and clip models, never to an audio model', () => {
     assert.equal(STARTER_PROMPT, 'A neon-lit Tokyo alley at 3am, low anamorphic tracking shot');
     assert.equal(promptText(null, video), STARTER_PROMPT);
     assert.equal(promptText(null, null), STARTER_PROMPT, 'first paint, before a model is known');
