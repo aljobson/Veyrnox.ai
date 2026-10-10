@@ -1,4 +1,4 @@
--- 0251_refunded_jobs_recent.sql
+-- 0259_refunded_jobs_recent.sql
 -- How many of a user's jobs on the given models were refunded in the last
 -- rolling day (audit 2026-10-09, M-07).
 --

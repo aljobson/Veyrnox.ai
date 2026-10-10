@@ -31,7 +31,7 @@ test('under the ceiling the job goes ahead; at it the job is refused with a retr
     assert.equal(refused.retryAfter, 3600);
 });
 
-test('a database without the count (before 0251), or a count that is not a number, admits the job', async () => {
+test('a database without the count (before 0259), or a count that is not a number, admits the job', async () => {
     for (const value of [new Error('PGRST202 function not found'), null, 'many', undefined]) {
         const f = rpcReturning(value);
         assert.equal(await compositeRefundGate({ rpc: f.rpc, cfg, userId: USER, modelId: 'clip-edit' }), null, String(value));
