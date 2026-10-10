@@ -1,0 +1,72 @@
+[
+  {
+    "event": "staging.fal_transport_result",
+    "job_id": "21b9b8a3-0e55-46cf-9ba4-5ca129749a69",
+    "scenario": "lost_reply",
+    "transport_posts": 1,
+    "evidence_writes": 2,
+    "ok": false,
+    "submitted": 1,
+    "failed": 1,
+    "retried": 0,
+    "ignored": 0,
+    "timestamp_ms": 1791617347844,
+    "version": "093f4e65-4afb-48bf-b96c-8bf3e1e4cd73"
+  },
+  {
+    "event": "staging.fal_transport_result",
+    "job_id": "90714890-8a42-46aa-97c4-b7981319afe3",
+    "scenario": "lost_body",
+    "transport_posts": 1,
+    "evidence_writes": 1,
+    "ok": false,
+    "submitted": 1,
+    "failed": 1,
+    "retried": 0,
+    "ignored": 0,
+    "timestamp_ms": 1791617348617,
+    "version": "093f4e65-4afb-48bf-b96c-8bf3e1e4cd73"
+  },
+  {
+    "event": "staging.fal_transport_result",
+    "job_id": "21b9b8a3-0e55-46cf-9ba4-5ca129749a69",
+    "scenario": "lost_reply",
+    "transport_posts": 0,
+    "evidence_writes": 0,
+    "ok": true,
+    "submitted": 0,
+    "failed": 0,
+    "retried": 0,
+    "ignored": 1,
+    "timestamp_ms": 1791617377664,
+    "version": "093f4e65-4afb-48bf-b96c-8bf3e1e4cd73"
+  },
+  {
+    "event": "staging.fal_transport_result",
+    "job_id": "90714890-8a42-46aa-97c4-b7981319afe3",
+    "scenario": "lost_body",
+    "transport_posts": 0,
+    "evidence_writes": 0,
+    "ok": true,
+    "submitted": 0,
+    "failed": 0,
+    "retried": 0,
+    "ignored": 1,
+    "timestamp_ms": 1791617378416,
+    "version": "093f4e65-4afb-48bf-b96c-8bf3e1e4cd73"
+  },
+  {
+    "event": "staging.fal_transport_received",
+    "job_id": "21b9b8a3-0e55-46cf-9ba4-5ca129749a69",
+    "scenario": "lost_reply",
+    "timestamp_ms": 1791617347454,
+    "version": "ff72ddb6-6654-4c9c-878e-db936fc1cb04"
+  },
+  {
+    "event": "staging.fal_transport_received",
+    "job_id": "90714890-8a42-46aa-97c4-b7981319afe3",
+    "scenario": "lost_body",
+    "timestamp_ms": 1791617348473,
+    "version": "ff72ddb6-6654-4c9c-878e-db936fc1cb04"
+  }
+]
