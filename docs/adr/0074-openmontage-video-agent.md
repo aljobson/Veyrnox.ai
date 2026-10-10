@@ -166,3 +166,7 @@ two minutes in. Behind `MONTAGE_LIVENESS_ENABLED` (default "false") the sweep as
 refunds one the runner does not know, or whose thread has ended without a result, as `run_lost` after about five minutes. The
 refund path, the dedup and the all-or-nothing rule are unchanged; only when the failure is declared moves. It is sound with one
 runner machine only, because the runner keeps its runs in memory per machine. Detail: docs/montage/SPEC.md section 11.
+
+2026-10-10: the lost-run check is on in production (owner: "turn on the lost-run check"), after the first real video there. One
+runner machine; the flag goes back to "false" before a second is added.
+
