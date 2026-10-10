@@ -88,7 +88,18 @@ Do not start the rollout until each has a written yes in the SPEC.
   signed routes answer 401 unsigned, the four secrets are deployed, settings unchanged. The only difference from the image the gates
   were met on is that paragraph of the agent's instructions; it has had one real run, at 9:16.
 
-Next: step 6 ends 2026-10-10 11:56 UTC, then step 7 (merge the flag PR).
+- **Step 7 happened early.** The flag PR (#710) was marked ready and merged at 2026-10-09 16:23 UTC from the owner's GitHub account,
+  about four and a half hours into step 6, not after it. `AGENT_VIDEO_ENABLED` has been "true" on the live Worker since that deploy.
+  The session that wrote the PR did not merge it and found this on 2026-10-10 09:35 UTC. Checked then, 21.5 hours after the row went
+  active: `reconcile-watch` 22 runs, `recovery-health` 41, `site-health` 62 and four scheduled `runner-health` runs, none failed;
+  the three reconcile checks at 0 rows; the heartbeat healthy; **no video-agent job from any user**. So the 24 hours were not kept
+  before the flag, and nothing went wrong in them.
+- **Step 8, started 2026-10-10:** with the browser switch on and the owner signed in, **Make a plan works on production** (the plan
+  step is a signed call from the Worker to the runner, so the signing secret matches on both sides). Approve was refused before any
+  charge: the account held 86 Credits. The owner chose a manual grant of 79 (ADR-0074, amendment of 2026-10-10). Still unproven:
+  the production fal and Anthropic keys, which only a real run uses.
+
+Next: the owner's first real video (step 8), then a clean week before step 9.
 
 Each step has its own check and its own undo. Stop at the first check that fails.
 
