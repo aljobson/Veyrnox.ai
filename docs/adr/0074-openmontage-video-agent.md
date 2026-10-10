@@ -166,13 +166,3 @@ two minutes in. Behind `MONTAGE_LIVENESS_ENABLED` (default "false") the sweep as
 refunds one the runner does not know, or whose thread has ended without a result, as `run_lost` after about five minutes. The
 refund path, the dedup and the all-or-nothing rule are unchanged; only when the failure is declared moves. It is sound with one
 runner machine only, because the runner keeps its runs in memory per machine. Detail: docs/montage/SPEC.md section 11.
-
-## Amendment 2026-10-10: one manual grant on production for the first real video
-
-Rollout step 8 is the owner making one real video on production. The owner's own account (al.jobson@21stclick.co.uk) held 86
-Credits and a video costs 165. **Decision (owner, 2026-10-10: "prepare the grant"):** grant that one account 79 Credits through
-`ledger_grant`, with the reason `grant:manual Al Jobson video agent production first video (ADR-0074)` and a fixed idempotency
-key so a second run of the statement grants nothing. The owner runs the statement; no session does. It is a test cost, not a
-gift to a customer: the balance after the video is 0, or 165 if the run fails and is refunded. No other manual grant is covered
-by this amendment.
-
