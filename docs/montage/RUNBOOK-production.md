@@ -114,8 +114,11 @@ Do not start the rollout until each has a written yes in the SPEC.
 
 - **Step 9, prepared 2026-10-10 as a draft PR:** the page no longer checks `localStorage.veyrnox_video_agent`, the PREVIEW chip is
   gone, and the studio nav has a "Video agent" tab between Create and LLM Chat. The model stays out of the Create picker (#697).
-  `AGENT_VIDEO_ENABLED` stays the switch: with it off the plan route answers "isn't open yet". **Not to be merged before
-  2026-10-17** (a week after the first production video with no stuck job) unless the owner says otherwise.
+  `AGENT_VIDEO_ENABLED` stays the switch: with it off the plan route answers "isn't open yet".
+  **No date is attached (owner, 2026-10-10: "drop the date").** The table below says "after a week of step 8 without a stuck job";
+  that line was written before anything was tested, and a hidden feature nobody can find makes no jobs to get stuck, so the week
+  would prove little. The 24-hour rule of CLAUDE.md is separate and its window (to 2026-10-10 11:56 UTC) was clean. The owner
+  merges this when the video quality is right.
 
 Next: step 9 (merge the launch PR). That is the owner's decision.
 
