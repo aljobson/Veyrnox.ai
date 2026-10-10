@@ -10,7 +10,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { register } from 'node:module';
 
 register('data:text/javascript,' + encodeURIComponent(
@@ -204,16 +204,61 @@ test('handlers read no x-veyrnox-* request header outside IDENTITY_HEADERS', () 
 
 // The Worker removes a caller's identity headers, so a request the middleware
 // never saw arrives with none (ADR-0078 amendment 4). That only protects a
-// handler that refuses when the id is missing, so every reader must.
-const ACTS_FOR_NO_ONE = ['app/api/v1/health/route.js']; // echoes the id back; reads nothing of the caller's
-test('every handler that reads the caller id refuses a request without one', () => {
-    const readers = ['app', 'lib', 'packages'].flatMap((dir) => sources(join(ROOT, dir)))
-        .map((file) => [relative(ROOT, file).split('\\').join('/'), readFileSync(file, 'utf8')])
-        .filter(([, src]) => /headers\.get\(['"]x-veyrnox-auth-id['"]\)/.test(src));
-    assert.ok(readers.length > 40, 'the scan found too few readers to be believed');
-    for (const [rel, src] of readers) {
-        if (ACTS_FOR_NO_ONE.includes(rel)) continue;
-        assert.match(src, /not[_-]authenticated|UNAUTHORIZED/, `${rel} reads the caller id but has no refusal for a missing one`);
+// handler that refuses when the id is missing, so every one must. Each
+// /api/v1 handler is called here with no id, and with the '' the middleware
+// sets for a caller it could not name: it has to answer 401 before it reads
+// anything. Every *_ENABLED flag is on, so a closed feature cannot answer first.
+const ANSWERS_ANYONE = {
+    'app/api/v1/[[...path]]/route.js': 404, // the catch-all: no such route, whoever asks
+    'app/api/v1/health/route.js': 503,      // echoes the id back; reads nothing of the caller's
+};
+// These three check the body before the caller, so an empty one would be answered 400.
+const BODIES = {
+    'app/api/v1/chat/folders/[id]/route.js': { name: 'A' },
+    'app/api/v1/chat/personas/[id]/route.js': { name: 'A', instructions: 'Be brief.' },
+    'app/api/v1/chat/threads/[id]/route.js': { title: 'A' },
+};
+test('every /api/v1 handler refuses a request with no caller id, before any outbound call', async () => {
+    const flags = [...readFileSync(join(ROOT, 'wrangler.jsonc'), 'utf8').matchAll(/"([A-Z0-9_]+_ENABLED)"\s*:/g)].map((m) => m[1]);
+    const env = {
+        ...Object.fromEntries(flags.map((flag) => [flag, 'true'])),
+        APP_ENV: 'development', NEXT_PUBLIC_SUPABASE_URL: SUPABASE_URL,
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: 'sb_publishable_test', PUBLIC_HOST: 'http://localhost:3000',
+    };
+    const saved = Object.fromEntries(Object.keys(env).map((key) => [key, process.env[key]]));
+    const stubbedFetch = globalThis.fetch;
+    const realInfo = console.info;
+    let outbound = [];
+    Object.assign(process.env, env);
+    globalThis.fetch = async (input) => { outbound.push(String(input?.url || input)); throw new Error('no outbound call is expected'); };
+    console.info = () => {};
+    try {
+        const routes = sources(join(ROOT, 'app', 'api', 'v1')).filter((file) => /[\\/]route\.js$/.test(file));
+        let called = 0;
+        for (const file of routes) {
+            const rel = relative(ROOT, file).split('\\').join('/');
+            const handlers = await import(pathToFileURL(file).href);
+            const params = Object.fromEntries([...rel.matchAll(/\[(\w+)\]/g)].map((m) => [m[1], SUB]));
+            const url = `http://localhost:3000/${rel.slice('app/'.length, -'/route.js'.length).replace(/\[+[.\w]+\]+/g, SUB)}`;
+            for (const method of ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']) {
+                if (typeof handlers[method] !== 'function') continue;
+                for (const id of [undefined, '']) {
+                    outbound = [];
+                    const headers = { 'content-type': 'application/json', ...(id === undefined ? {} : { 'x-veyrnox-auth-id': id }) };
+                    const body = method === 'GET' ? undefined : JSON.stringify(BODIES[rel] || {});
+                    const response = await handlers[method](new Request(url, { method, headers, body }), { params: Promise.resolve(params) });
+                    const sent = id === undefined ? 'no id header' : 'an empty id';
+                    assert.equal(response.status, ANSWERS_ANYONE[rel] ?? 401, `${method} ${rel} with ${sent}`);
+                    if (!(rel in ANSWERS_ANYONE)) assert.deepEqual(outbound, [], `${method} ${rel} made an outbound call with ${sent}`);
+                    called += 1;
+                }
+            }
+        }
+        assert.ok(called > 250, `only ${called} calls were made: the scan found too few handlers to be believed`);
+    } finally {
+        globalThis.fetch = stubbedFetch;
+        console.info = realInfo;
+        for (const [key, value] of Object.entries(saved)) { if (value === undefined) delete process.env[key]; else process.env[key] = value; }
     }
 });
 
