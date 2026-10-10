@@ -23,7 +23,7 @@ export function takeStudioDraft(storage, modelId, now = Date.now()) {
     return {
       prompt: draft.prompt,
       aspect: typeof draft.aspect === 'string' ? draft.aspect : null,
-      ...([5, 10].includes(draft.durationSeconds) ? { durationSeconds: draft.durationSeconds } : {}),
+      ...(Number.isInteger(draft.durationSeconds) && draft.durationSeconds >= 1 && draft.durationSeconds <= 60 ? { durationSeconds: draft.durationSeconds } : {}),
       ...(typeof draft.negativePrompt === 'string' ? { negativePrompt: draft.negativePrompt } : {}),
       ...(typeof draft.templateId === 'string' ? { templateId: draft.templateId } : {}),
     };

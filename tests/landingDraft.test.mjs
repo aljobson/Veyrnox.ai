@@ -46,3 +46,12 @@ test('a template draft carries its aspect ratio through to the studio', async ()
     assert.equal(map.has(LANDING_DRAFT_KEY), false);
     assert.equal(writeStudioDraft({ setItem() { throw new Error('denied'); } }, { prompt: 'x', model: 'y' }), false);
 });
+
+test('a Film Studio draft carries its clip length without changing older drafts', async()=>{
+    const {takeStudioDraft,writeStudioDraft}=await import('../app/veyrnox/_lib/landingDraft.js');
+    const map=new Map();const s={getItem:k=>map.get(k)??null,setItem:(k,v)=>map.set(k,v),removeItem:k=>map.delete(k)};
+    writeStudioDraft(s,{prompt:'a room',model:'wan',durationSeconds:10},NOW);
+    assert.deepEqual(takeStudioDraft(s,'wan',NOW),{prompt:'a room',aspect:null,durationSeconds:10});
+    writeStudioDraft(s,{prompt:'a room',model:'wan',durationSeconds:500},NOW);
+    assert.deepEqual(takeStudioDraft(s,'wan',NOW),{prompt:'a room',aspect:null});
+});
