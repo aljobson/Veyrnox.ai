@@ -63,9 +63,16 @@ export async function GET(req) {
     let assets = null;
     if (user && user.id) {
         try {
-            assets = await count('assets', {
+            const generated = await count('assets', {
                 query: `select=id,jobs!inner(user_id)&jobs.user_id=eq.${encodeURIComponent(user.id)}`,
             }, cfg);
+            let masters = 0;
+            if (process.env.FILM_LIBRARY_MASTERS_ENABLED === 'true') {
+                const saved = await rpc('list_film_library_masters', { p_auth_id: authId }, cfg);
+                if (saved?.ok !== true || !Array.isArray(saved.masters)) throw new Error('master_count_unavailable');
+                masters = saved.masters.length;
+            }
+            assets = generated + masters;
         } catch (err) {
             const status = err instanceof SupabaseError ? err.status : 0;
             console.error('[api/v1/account] asset count failed:', status, err && err.body);
