@@ -9,9 +9,11 @@
 // (tests/presetLinking.test.mjs). Prices shown come from the live catalog.
 
 // CARTOONS, MOVIES, FANTASY and REALISTIC are the Trends categories (ADR-0072); each has at least one template, or its filter would show an empty page.
-export const PRESET_CATEGORIES = ['ALL', 'NEW', 'YOUR PHOTO', 'CINEMATIC', 'ANIME', 'CARTOONS', 'MOVIES', 'FANTASY', 'REALISTIC', 'FASHION', 'PRODUCTS', 'VFX', 'UGC', 'ADS'];
+import { SOURCE_TEMPLATES } from './sourceTemplates.js';
 
-export const PRESETS = [
+const CATEGORY_ORDER = ['YOUR PHOTO', 'CINEMATIC', 'ANIME', 'CARTOONS', 'MOVIES', 'FANTASY', 'REALISTIC', 'FASHION', 'PRODUCTS', 'VFX', 'UGC', 'ADS'];
+
+export const LEGACY_PRESETS = [
   { id: 'cctv-night', name: 'CCTV NIGHT', model: 'Wan 2.5', credits: 19, category: 'CINEMATIC', aspect: '16:9',
     bg: 'linear-gradient(180deg,#08120b 0%,#0e3a1e 60%,#2ea258 100%)', cached: true, badge: 'CACHED',
     prompt: 'Grainy night-vision security camera footage of an empty car park, a single figure crossing under a flickering sodium lamp, timestamp overlay, fixed high corner angle, faint scan lines' },
@@ -86,8 +88,13 @@ export const PRESETS = [
 
 // The landing wall's seven, each with a showcase clip (showcase.js); its
 // bento is shaped for exactly this many (presetWall.js).
-export const WALL_PRESETS = ['cctv-night', 'sunset-drift', 'neon-alley', 'warm-portrait', 'film-portrait', 'talking-head', 'clean-cutout']
-  .map((id) => PRESETS.find((p) => p.id === id));
+const GALLERY_CLIP_KEYS = LEGACY_PRESETS.map((p) => p.id);
+const WALL_CLIP_KEYS = ['wall-cctv-night', 'wall-sunset-drift', 'wall-neon-alley', 'wall-warm-portrait', 'wall-film-portrait', 'wall-talking-head', 'wall-clean-cutout'];
+export const PRESETS = GALLERY_CLIP_KEYS.map((key) => SOURCE_TEMPLATES.find((p) => p.clipKey === key));
+export const WALL_PRESETS = WALL_CLIP_KEYS.map((key) => SOURCE_TEMPLATES.find((p) => p.clipKey === key));
+// Old bookmarks retain their original prompt, without an unrelated demo clip.
+export const ALL_TEMPLATES = [...SOURCE_TEMPLATES, ...LEGACY_PRESETS];
+export const PRESET_CATEGORIES = ['ALL', 'NEW', ...CATEGORY_ORDER.filter((category) => PRESETS.some((p) => p.category === category))];
 
 // "New" is a flag, not a home category: a new template also sits in its own.
 export function templatesIn(category) {
@@ -97,7 +104,7 @@ export function templatesIn(category) {
 }
 
 export function templateById(id) {
-  return PRESETS.find((p) => p.id === id) || null;
+  return ALL_TEMPLATES.find((p) => p.id === id) || null;
 }
 
 /** The template's own page, where its prompt and inputs are shown before use. */

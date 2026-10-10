@@ -17,7 +17,7 @@ const ALL_PREFIXES = [DRAFT_PREFIX, STAR_PREFIX, NOTICE_PREFIX, TURNS_PREFIX, 'v
 export const NEW_CHAT = 'new';
 export const MAX_DRAFT = 8000;
 export const MAX_STARS = 200;
-export const MAX_NOTICE = 120; // characters of one stored notice: a code, the number its words may need, and for a warning its one turn (91 at most)
+export const MAX_NOTICE = 120; // characters of one stored notice: a code, the number its words may need, and for a warning its one turn (95 at most)
 export const MAX_TURNS = 4;    // turns one warning can list. One more and it lists none: it is then never asked about (turnsFor below)
 export const MAX_TURNS_RECORD = 320; // characters of one stored list of turns (313 at most)
 const MAX_NOTICE_CREDITS = 1_000_000;
@@ -30,9 +30,16 @@ const CREDITS_WARNINGS = new Set(['stop_unsure', 'stop_saving', 'connection_lost
 // kept with them (chatWarning.js): the job id that came with `start`, or, when Stop came before `start`, the key the
 // send went out with. `reply_not_saved` is settled already, charged, so there is nothing to ask.
 const ASKABLE = new Set(['stop_unsure', 'stop_saving', 'connection_lost']);
-// The one of them that is kept with its message given back to the box. A mark of that text is kept with it: if the turn
-// turns out to be saved, the box is emptied only while it still holds exactly that message.
+// The one of them that is always kept with its message given back to the box. A mark of that text is kept with it: if
+// the turn turns out to be saved, the box is emptied only while it still holds exactly that message.
 const GIVEN_BACK = 'stop_unsure';
+// A dropped connection's warning is kept by the send's key, with no job id, in one ending only: no `start` came, the
+// message's own request got no answer, and the server could say nothing final about the send (useChatSend.js). That
+// ending puts the message back in its chat's box or stored draft, so the mark is kept with it. Kept by a job id, the
+// message was left on screen as sent, and no mark is kept. (The server's job ids always have a job id's shape. One
+// that did not would be kept by the key as well, with the mark of a message that is not in the box: a mark only ever
+// empties a box that still holds exactly that text.)
+const DROPPED = 'connection_lost';
 const ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
 const JOB_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i; // a job id as the server makes them
 const KEY_RE = /^vx-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/; // a send's idempotency key as the browser makes them (gateway.js)
@@ -96,6 +103,13 @@ function turn(job, key, mark) {
   return by && typeof mark === 'string' && MARK_RE.test(mark) ? { ...by, sent: mark } : by;
 }
 
+// The one turn of a warning with this code, with its mark only when that warning's message was given back (above).
+// The same rule when it is written and when it is read back, so a mark found anywhere else in storage is not passed on.
+function ownTurn(code, job, key, mark) {
+  const by = turn(job, key, null);
+  return by && (code === GIVEN_BACK || (code === DROPPED && !by.job)) ? turn(job, key, mark) : by;
+}
+
 /**
  * The turns a warning can be asked about, oldest first: one for each message it stands for, or none. A warning that
  * took the place of another stands for both, and lists both (turnsFor below).
@@ -122,7 +136,7 @@ const withTurns = (turns) => (turns.length > 1 ? { turns } : turns.length === 1 
 // without it.
 function storedTurns(storage, userId, chatId, n) {
   if (!ASKABLE.has(n.code)) return [];
-  if (n.list === undefined) { const one = turn(n.job, n.key, n.code === GIVEN_BACK ? n.sent : null); return one ? [one] : []; }
+  if (n.list === undefined) { const one = ownTurn(n.code, n.job, n.key, n.sent); return one ? [one] : []; }
   if (typeof n.list !== 'string' || !TAG_RE.test(n.list) || n.job !== undefined || n.key !== undefined) return [];
   try {
     const raw = storage.getItem(keyFor(TURNS_PREFIX, userId, chatId));
@@ -197,7 +211,8 @@ export function readCreditsWarning(storage, userId, chatId) {
  * Keep one notice for a chat. A later one replaces it. A code that cannot be kept is kept as 'unknown', which reads
  * as the general failure: something ended badly, and the chat must not look as if nothing did.
  * `job` is the reply's job id, `key` the idempotency key its send went out with, and `sent` the text of the message:
- * they are kept only beside a warning that needs them, the key only with no job, and the text only as its mark.
+ * they are kept only beside a warning that needs them, the key only with no job, and the text only as its mark and
+ * only when that warning gave the message back to the box.
  * A warning written over a kept warning stands for that one's turns too. So does one written `after` a warning that
  * was forgotten elsewhere for it (the send hook forgets the one of the chat a message was sent from, and the ending
  * can land in another chat). turnsFor above keeps them all, or none.
@@ -207,7 +222,7 @@ export function writeNotice(storage, userId, chatId, code, { credits, job, key, 
   if (!at) return;
   try {
     const kept = ok(code) ? code : UNKNOWN_NOTICE;
-    const own = turn(job, key, kept === GIVEN_BACK && typeof sent === 'string' ? textMark(sent) : null);
+    const own = ownTurn(kept, job, key, typeof sent === 'string' ? textMark(sent) : null);
     const turns = turnsFor(kept, own, [after, readCreditsWarning(storage, userId, chatId)]);
     // Several turns: their list first, then the notice that names it. If the second write fails, the notice still
     // there names another list or none, and has nothing to ask by.

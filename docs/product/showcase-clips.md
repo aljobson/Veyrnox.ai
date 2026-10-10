@@ -5,19 +5,27 @@ public preset cards and the three model-category cards have viral previews. The 
 and [Higgsfield](https://higgsfield.ai/) on 9 October 2026. This replaces the
 previous requirement to use only clips generated on Veyrnox.
 
-These clips are visual inspiration, rather than output from the model or
-preset linked by the tile. Each tile displays a generic “Viral inspiration”
+These clips are source previews, rather than output generated on Veyrnox.
+Template clips now link to their own matching recipes and compatible remix
+prompts (see [template recipes](template-recipes.md)). Each tile displays a generic “Viral inspiration”
 badge. The owner requested removal of visible SYNTX and Higgsfield labels and
 page credits on 9 October 2026; provenance remains recorded here and in the
-manifest. Model links, prompts and live credit prices still
-come from the existing catalog and templates.
+manifest. Model-category and feature cards remain inspiration; template pages
+distinguish the original recipe from the supported Veyrnox adaptation. Live
+credit prices come from the catalog.
 
 `app/veyrnox/_lib/showcase.js` maps all five `FEATURE_CARDS` keys and all
-`PRESETS` ids to local videos, posters, original titles and source names.
-`MODEL_SHOWCASE_KEYS` selects three of those clips for the Video, Image and
-Audio cards in `/#models`. The shared `PresetCard` also brings the previews
-to the studio Explore gallery. Each public preset uses a distinct clip; five
-reuse the feature-card footage across pages.
+`PRESETS` clip keys to local videos, posters, original titles and source names.
+`MODEL_SHOWCASE_KEYS` selects three dedicated clips for the Video, Image and
+Audio cards in `/#models`. `WALL_SHOWCASE_KEYS` selects seven dedicated
+homepage previews with their own recipes. The shared
+`PresetCard` also brings the gallery previews to the studio Explore gallery.
+
+All 37 public tile placements use different footage: five feature cards,
+seven homepage template cards, three model-category cards and 22 gallery
+cards. Homepage and gallery clips now describe separate templates, preserving
+distinct footage as requested by the owner on 9 October 2026. Fifteen
+unused source clips replace the former reuse across sections and pages.
 
 ## Imported previews
 
@@ -38,7 +46,6 @@ excerpt. No audio is retained.
 | `film-portrait` | Epic Train Doorway Scene | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/D32W06o9qJoCOHnFxtLC6BH9Lvftpyaf6sD75RBD.webm) | 6 s |
 | `talking-head` | Fat Parkour | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/xAXfvbGmMPLFCk6AHfqkew9D5k2KomNk3fVZdZZo.webm) | 8 s |
 | `clean-cutout` | Cutout | [Higgsfield](https://cdn.higgsfield.ai/viral_hub/a64711ac-93b8-46ee-a9ce-37ee5c18e148.mp4) | 1 s |
-
 | `editorial-flatlay` | Floating fall | [Higgsfield](https://cdn.higgsfield.ai/viral_hub/d877f71c-d2f3-44df-9317-f3ce6889bcb6.mp4) | 0 s |
 | `street-portrait` | Eyes in | [Higgsfield](https://cdn.higgsfield.ai/viral_hub/dba03734-6e8a-4337-acb4-17ce943563d8.mp4) | 0 s |
 | `packshot-studio` | Smash and grab | [Higgsfield](https://cdn.higgsfield.ai/viral_hub/c32886ee-2d15-4697-a366-041a9deaffe2.mp4) | 0 s |
@@ -49,11 +56,21 @@ excerpt. No audio is retained.
 | `noir-one-sheet` | Burning man | [Higgsfield](https://cdn.higgsfield.ai/viral_hub/c370022d-d99a-4cff-bb35-9d73b7a3a95d.mp4) | 0 s |
 | `saturday-cartoon` | Melting | [Higgsfield](https://cdn.higgsfield.ai/viral_hub/f661157c-af00-46f7-8b7c-6a7ae711ef98.mp4) | 0 s |
 | `anime-hero` | Crazy Frog Race | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/1yALI02uHd8mdSUDqWMWvFHagMDaKMbGr1ja55gB.webm) | 0 s |
-| `photo-to-motion` | High flip | [Higgsfield](https://cdn.higgsfield.ai/viral_hub/001156a7-cfdb-4e16-8f13-68c246ddc06c.mp4) | 4 s |
-| `runway-walk` | Medieval Runway Look | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/Uz4mSaF5whThHf4UxXBl86UBGyelRKtdkn3PMtj5.webm) | 8 s |
-| `anime-opening` | Keyboard Duo Swap | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/uCxc5t2yK9MJEjxzKtevpNdeMw6yYQyIzxHJiqZY.webm) | 0 s |
-| `portal-burst` | World morphing | [Higgsfield](https://cdn.higgsfield.ai/viral_hub/950efc04-6ae6-4b31-bfa5-83c87244014c.mp4) | 2 s |
-| `floating-castle` | Street colossus | [Higgsfield](https://cdn.higgsfield.ai/viral_hub/e0278141-12c9-4139-91eb-b4294d833ed9.mp4) | 2 s |
+| `photo-to-motion` | Frozen in motion | [Higgsfield](https://cdn.higgsfield.ai/viral_hub/59c46689-f756-4843-b298-f34b9761187e.mp4) | 1 s |
+| `runway-walk` | Fallen angel | [Higgsfield](https://cdn.higgsfield.ai/viral_hub/67a78431-c90b-4aa5-95c4-9069da87a173.mp4) | 1 s |
+| `anime-opening` | Monster dab | [Higgsfield](https://cdn.higgsfield.ai/viral_hub/0ab0fb19-95df-44c7-9b92-6804122e02ff.mp4) | 1 s |
+| `portal-burst` | The Push | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/PWzjzgOZCwLDPT9E28a7cEsJ2ylDVN37zJIKpEWX.webm) | 1 s |
+| `floating-castle` | Dreamworks Castle | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/nhbAJzO7cngEHWm0HpyupSPbUSd3zhYkJI0SqeTQ.webm) | 1 s |
+| `model-video` | Bullet time | [Higgsfield](https://cdn.higgsfield.ai/viral_hub/08dad223-9baf-4d51-a07d-07062cf392d9.mp4) | 1 s |
+| `model-image` | Pearl earring | [Higgsfield](https://cdn.higgsfield.ai/viral_hub/1565d8db-fefe-4934-a7e5-1f3800df0419.mp4) | 1 s |
+| `model-audio` | Superstar | [Higgsfield](https://cdn.higgsfield.ai/viral_hub/69352fc9-6a72-4197-b13d-969d906512ce.mp4) | 1 s |
+| `wall-cctv-night` | Lidar transition | [Higgsfield](https://cdn.higgsfield.ai/viral_hub/9a8e4804-9e49-4a3b-8087-021ba9b447cf.mp4) | 1 s |
+| `wall-sunset-drift` | boarding pass | [Higgsfield](https://cdn.higgsfield.ai/viral_hub/dcd67e05-0b1e-4475-9b6c-3f96e69c5384.mp4) | 1 s |
+| `wall-neon-alley` | Architecture wave | [Higgsfield](https://cdn.higgsfield.ai/viral_hub/0cc7ac70-a981-406b-aac6-1d9fcc06e218.mp4) | 1 s |
+| `wall-talking-head` | Clones | [Higgsfield](https://cdn.higgsfield.ai/viral_hub/9cedf121-64a9-4eb9-88e9-608844ff1929.mp4) | 1 s |
+| `wall-clean-cutout` | Vanish | [Higgsfield](https://cdn.higgsfield.ai/viral_hub/d63d47dd-d00f-42c8-9c45-9bddd3df7a38.mp4) | 0 s |
+| `wall-warm-portrait` | A Moment Between Strangers | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/ZIHALUhjLlXzmqu1ScRKcF00CaztsLlYoweeuLbd.webm) | 1 s |
+| `wall-film-portrait` | The Last Stagecoach | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/om40sLJ19J3k1oTRX48KPV8CJihmHZY28WWjMYev.webm) | 1 s |
 
 ## Playback and budgets
 
@@ -79,7 +96,9 @@ ffmpeg -ss POSTER_TIME -i public/showcase/SLUG.mp4 -frames:v 1 -q:v 4 public/sho
 ```
 
 `tests/showcaseClips.test.mjs` checks local paths, file existence, budgets,
-unique clips, source credits and coverage of every landing tile, public preset and model category. After a
+unique video paths, poster paths and video file hashes across the homepage
+and gallery together, source credits and coverage of every landing tile,
+public preset and model category. After a
 replacement, also check the crop and hover/focus/touch behavior in a browser.
 
 ## The landing film
@@ -90,16 +109,26 @@ instructions remain in `scripts/landing-film/README.md`.
 
 ## The breakthrough video
 
-The owner selected [this public Facebook reel](https://www.facebook.com/reel/1376753811233996)
-by Tim Gray on 9 October 2026, shared as
-`https://www.facebook.com/share/v/1E6dPQfyKL/?mibextid=wwXIfr`.
-Its title is “Make Viral Videos in 3 Clicks 💥”. The five-second clip shows a
-LEGO superhero carrying a coffee cup out of a social-media post.
+The owner approved an original Veyrnox.ai version on 9 October 2026,
+replacing the previously imported Spider-Man Facebook reel. The five-second
+clip shows a blond LEGO-style hero in navy Captain America-style armour
+leaning forward to offer a branded latte mug out of a Veyrnox.ai
+Facebook-style post. The author label reads Veyrnox.ai, and the mug carries
+the owner's mint V and VEYRNOX.ai wordmark.
+
+The character and café were generated with FAL Nano Banana Pro. The approved
+animation used `fal-ai/kling-video/o3/pro/image-to-video`, request
+`01a122cb-0e02-7591-9a93-aa34e3fe696b`, with audio disabled. The
+[approved FAL output](https://v3b.fal.media/files/b/0aadbdf8/lfFUolQrcdtBZK3HjGD97_output.mp4)
+is 1,292 × 1,604, 24 fps and 5.041667 seconds long. It is scaled without
+cropping for the homepage; the complete approved motion is retained.
 
 `BREAKTHROUGH_FILM` supplies the prominent portrait player immediately under
-the hero. The complete clip is served from `/film/breakthrough-superhero.mp4`
-as a silent H.264 file at 720 × 900, with no crop. Its poster is a frame at
-2.2 seconds. The existing `FilmPlayer` supplies visible Play/Pause, pauses
+the hero. The complete clip is served from `/film/breakthrough-veyrnox.mp4`
+as a silent H.264 file at 720 × 894, with no crop. Its poster is a frame at
+4.8 seconds showing the leaning hero and branded foreground mug. The
+previous Spider-Man video and poster are removed from `public/film/`.
+The existing `FilmPlayer` supplies visible Play/Pause, pauses
 off screen, leaves the poster still for reduced motion/data saver, and
 fetches the file only when playback begins. It is labelled as viral
 inspiration, without attributing it to a Veyrnox model.

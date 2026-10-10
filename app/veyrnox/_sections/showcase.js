@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { MediaTile } from '../_components/MediaTile';
 import { SHOWCASE_CLIPS, MODEL_SHOWCASE_KEYS } from '../_lib/showcase';
 import { wallShapes, tileClasses } from '../_lib/presetWall';
-import { WALL_PRESETS, presetHref, presetCredits, presetTitle, distinctShelfNames } from '../_lib/tokens';
+import { WALL_PRESETS, templateHref, presetCredits, presetTitle, distinctShelfNames } from '../_lib/tokens';
 
 /* ─── Preset wall: the real presets, as a bento ─── */
 
@@ -24,8 +24,8 @@ export function PresetWall({ catalog }) {
           return (
             <MediaTile
               key={preset.id}
-              href={presetHref(preset)}
-              clip={SHOWCASE_CLIPS[preset.id]}
+              href={templateHref(preset)}
+              clip={SHOWCASE_CLIPS[preset.clipKey]}
               className={`block rounded-2xl overflow-hidden ${classes.link}`}
               mediaClassName={classes.media}
               mediaStyle={{ background: preset.bg }}

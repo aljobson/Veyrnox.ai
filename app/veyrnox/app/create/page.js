@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from '
 import Link from 'next/link';
 import { AppNav } from '../../_components/NavBar';
 import { Chip } from '../../_components/Chip';
-import { ASPECT_RATIOS } from '../../_lib/tokens';
+import { ASPECT_RATIOS, modelIdForName } from '../../_lib/tokens';
 import { gatewayFetch, makeIdempotencyKey, notifyBalanceChanged, GatewayError } from '../../_lib/gateway';
 import { ERROR_COPY, failedJobCopy } from '../../_lib/createErrors';
 import { pushJobHistory } from '../../_lib/jobHistory';
@@ -15,6 +15,8 @@ import { useCatalog } from '../../_lib/useCatalog';
 import { useFreeAllowance } from '../../_lib/useFreeAllowance';
 import { freeCost, freeLeftFor } from '../../_lib/freeAllowance';
 import { takeStudioDraft } from '../../_lib/landingDraft';
+import { templateById } from '../../_lib/templates';
+import { resolveTemplateDraft } from '../../_lib/templateDraft';
 import { templateStartId } from '../../../../lib/templateStart';
 import { DEFAULT_CINEMA, buildCinemaPrompt } from '../../_lib/cinema';
 import { CameraPanel } from '../../_components/CameraPanel';
@@ -93,13 +95,18 @@ export default function CreateStudio() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
-    const wanted = params.get('model');
+    const preset = templateById(params.get('preset'));
+    const wanted = params.get('model') || (preset && modelIdForName(preset.model));
     if (wanted) setModelId(wanted);
     setPresetParam(params.get('preset')); // a template's id, from its studio link; sent only while its own model is selected
     if (params.get('duration') === '10s') setDuration('10s');
-    const draft = takeStudioDraft(window.sessionStorage, wanted);
+    let storedDraft = null;
+    try { storedDraft = takeStudioDraft(window.sessionStorage, wanted); } catch { /* The URL recipe still works. */ }
+    const draft = resolveTemplateDraft(preset, wanted, storedDraft);
     if (draft) setPrompt(draft.prompt);
     if (draft?.aspect) setAspect(draft.aspect);
+    if (draft?.durationSeconds) setDuration(`${draft.durationSeconds}s`);
+    if (draft?.negativePrompt) setNegative(draft.negativePrompt);
   }, []);
 
   // If the selected id isn't in the (live or fallback) catalog, fall back to
@@ -114,6 +121,7 @@ export default function CreateStudio() {
   }, [models, modelId, catalogLoading]);
 
   const model = models.find((m) => m.id === modelId) || null;
+  const activeTemplate = templateStartId(presetParam, modelId) ? templateById(presetParam) : null;
   const prompt = promptText(typed, model); // a starter shot until then, on picture and clip models only (see promptBox)
   // The picked model stays listed even when the tier filter would hide it.
   const listed = filterByTier(models, tier);
@@ -132,6 +140,7 @@ export default function CreateStudio() {
   const takesCamera = !isShort && (model?.kind === 'image' || model?.kind === 'video');
   // The model's own aspect list when the catalog has one; every video takes the default set.
   const aspectOptions = isShort ? []
+    : catalogLive ? ASPECT_RATIOS.filter((a) => model?.aspects?.includes(a))
     : model?.aspects ? ASPECT_RATIOS.filter((a) => model.aspects.includes(a))
     : model?.kind === 'video' ? ASPECT_RATIOS : [];
   const unitCost = model ? model.credits * (duration === '10s' && model.kind === 'video' ? 2 : 1) : 0;
@@ -243,7 +252,7 @@ export default function CreateStudio() {
     // An Auto Short takes only its topic; the pipeline picks the format.
     const inputs = isShort ? { topic: prompt.trim() } : {
       prompt: finalPrompt(),
-      aspect_ratio: aspect,
+      aspect_ratio: aspectOptions.length ? aspect : undefined,
       duration_seconds: model.kind === 'video' ? Number(duration.replace('s', '')) : undefined,
       ...settingsInputs(model, { seed, negative, voice }),
     };
@@ -371,6 +380,11 @@ export default function CreateStudio() {
             className="mt-3 w-full bg-vx-panel border border-vx-border rounded-lg p-3.5 text-sm text-vx-fg placeholder:text-vx-fg-faint resize-none focus:outline-hidden focus:border-vx-accent"
             placeholder={promptPlaceholder(model)}
           />
+          {activeTemplate?.sourceRecipe && (
+            <p className="mt-2 text-sm text-vx-fg-body">
+              {activeTemplate.needs}. This prompt creates a similar scene using your image.
+            </p>
+          )}
           {model?.takesVoice && <VoiceDescription value={voice} onChange={setVoice} />}
 
           {!isShort && (
