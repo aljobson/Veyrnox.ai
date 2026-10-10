@@ -1,7 +1,8 @@
 # One-image staging callback validation after tenant configuration
 
-Status: prepared on 10 October 2026; not submitted. A new bounded owner approval
-is required before pressing Generate. Earlier completed test budgets are exhausted.
+Status: prepared, explicitly approved and executed once on 10 October 2026.
+See the [live evidence and unmeasured assertions](fal-post-tenant-callback-evidence.md).
+The approved one-image budget is consumed; no further generation is authorized.
 [ADR 0075](../adr/0075-fal-submit-outcomes.md) requires: “a paid live test needs a
 bounded approved spend.”
 
@@ -114,5 +115,7 @@ staging and production policy locks and pauses do not cover one account or
 external montage submitters; broader activation needs a design covering all
 submitters or an explicitly reviewed operational partition.
 
-Reticle is skipped for this documentation-only preparation. No live generation
-verdict exists yet; the prepared UI is evidence of the proposed request only.
+The original preparation was documentation-only. The subsequent live sample
+has browser, callback and database evidence in the linked report; no Reticle
+verdict is claimed, and its unmeasured provider-history/billing assertions remain
+explicit.
