@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS public.film_library_masters (
  CHECK(expires_at>created_at AND expires_at<=created_at+interval '90 days')
 );
 CREATE INDEX IF NOT EXISTS film_library_masters_owner_idx ON public.film_library_masters(user_id,created_at DESC,id DESC);
+CREATE INDEX IF NOT EXISTS film_library_masters_source_idx ON public.film_library_masters(source_job_id);
 CREATE INDEX IF NOT EXISTS film_library_masters_expiry_idx ON public.film_library_masters(expires_at);
 ALTER TABLE public.film_library_masters ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.film_library_masters FORCE ROW LEVEL SECURITY;
