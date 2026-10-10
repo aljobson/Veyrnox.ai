@@ -12,7 +12,7 @@ const base = { since: '2026-10-10T09:25:31Z', until: '2026-10-11T09:26:31Z', bas
 function artifact(id) {
     return { project: 'yrqzwqywxfesmbvhzjgj', checked_at: id === 1 ? base.since : base.until,
         recovery: { counts: Object.fromEntries(names.map(n => [n, 0])), unhealthy_tasks: [], issues: [] },
-        reconciliation: { balance_drift: 0, free_credit_drift: 0, top_up_drift: 0, failed_refund_drift: 0, subscription_credit_drift: 0 } };
+        reconciliation: { balance_drift: 0, free_credit_drift: 0, top_up_drift: 0, failed_refund_drift: 0, subscription_credit_drift: 0, free_allowance_drift: 0, referral_drift: 0 } };
 }
 test('24 elapsed hours and sparse clean samples still require gap and operator review', () => {
     const r = reviewWindow(base, artifact);
@@ -46,4 +46,11 @@ test('incomplete window, duplicate and unsafe run identifiers cannot pass', () =
     assert.equal(r.observed_span_24_hours, false);
     assert.throws(() => reviewWindow({ ...base, runs: [base.runs[0], base.runs[0]] }, artifact));
     assert.throws(() => reviewWindow({ ...base, runs: [{ ...base.runs[0], databaseId: '../escape' }] }, artifact));
+});
+
+test('expanded financial coverage requires both new counts and rejects either drift', () => {
+    for (const key of ['free_allowance_drift', 'referral_drift']) {
+        assert.equal(reviewWindow(base, id => { const a = artifact(id); delete a.reconciliation[key]; return a; }).problems[0].kind, 'invalid_artifact');
+        assert.equal(reviewWindow(base, id => { const a = artifact(id); a.reconciliation[key] = 1; return a; }).problems[0].kind, 'unhealthy_observation');
+    }
 });

@@ -56,7 +56,10 @@ export async function checkStagingDatabase(config) {
         const reconciliation = await fetchStatus(config);
         evidence.reconciliation = reconciliation;
         const bad = Object.entries(reconciliation).filter(([, count]) => count > 0);
-        reports.push(bad.length ? `Staging reconciliation: ${bad.map(([name, count]) => `${name}: ${count}`).join('; ')}` : 'Staging reconciliation: all five drift counts zero.');
+        const pending = Object.entries(reconciliation).filter(([, count]) => count === null).map(([name]) => name);
+        reports.push(bad.length ? `Staging reconciliation: ${bad.map(([name, count]) => `${name}: ${count}`).join('; ')}`
+            : pending.length ? `Staging reconciliation: measured counts zero; pending 0264: ${pending.join(', ')}.`
+            : 'Staging reconciliation: all seven drift counts zero.');
         if (bad.length && exit === 0) exit = 1;
     } catch {
         evidence.reconciliation = { unreadable: true };

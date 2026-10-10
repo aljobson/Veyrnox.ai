@@ -92,3 +92,20 @@ price and cost predicates and exact positive row-count guards remain. Missing
 or changed catalog prerequisites still abort atomically. This does not raise
 allowances, change prices, enable a flag or mint Credits. Staging records
 0262 as an explicit forward repair; the old file and history remain intact.
+
+## Hourly reconciliation coverage (0264, 2026-10-10)
+
+Track A8 / S20 adds the free-allowance drift count to the counts-only public
+snapshot and hourly watcher. Migration 0264 measures all seven existing
+reconciliation functions before publishing the replacement snapshot, retains
+the 45-minute freshness bound, forced RLS and service-only refresh, and
+changes no allowance, reward, credit or launch policy.
+
+The checker distinguishes an unapplied migration from missing measurements:
+0264-absent fields remain explicitly unmeasured only while its actual receipt
+is absent. Once applied, missing or malformed new counts fail closed. Local
+SQL fixtures seed allowance overuse and an unmatched referral grant; the actual
+watcher exits 1 for either, 0 for measured zeroes and 2 for invalid evidence.
+New health-window reviews require all seven measurements; older five-count
+artifacts remain historical evidence and cannot prove the expanded coverage.
+Production application uses the protected main workflow and owner review.

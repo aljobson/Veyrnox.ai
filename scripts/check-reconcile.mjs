@@ -21,21 +21,23 @@
 
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { supabaseConfig } from './check-migration-ledger.mjs';
+import { supabaseConfig, fetchLedger } from './check-migration-ledger.mjs';
 
-const LABELS = {
+export const LABELS = {
     balance_drift: 'credit_balances.balance != SUM(ledger_entries.delta)',
     free_credit_drift: 'free_balance outside 0 <= free_balance <= balance',
     top_up_drift: 'credited Top-ups that do not tie out to their ledger entry',
     failed_refund_drift: 'FAILED jobs still holding the credits they should have refunded',
     subscription_credit_drift: 'subscription_balance off its ledger sum, or past its cycle end and unswept',
+    free_allowance_drift: 'free-allowance claims above account/model caps or the global cost ceiling',
+    referral_drift: 'referral rewards, clawbacks or monthly caps do not tie out',
 };
 
-// Counts a migration adds and production does not carry yet. Such a count is
-// reported as absent, not failed, so merging before the owner approves the
-// apply does not page anyone. Remove a key once its migration is applied.
-// Empty since 0185 was applied on 2026-10-03.
-const PENDING = {};
+// During merge-before-approval rollout, missing new fields are explicitly
+// unmeasured only while their real migration receipt is absent. After apply,
+// absence fails closed automatically; no permanent nullable allowlist.
+const EXPANSION = '0264_reconciliation_free_allowance_referrals';
+const NEW_COUNTS = ['free_allowance_drift', 'referral_drift'];
 
 export async function fetchStatus({ url, key }) {
     const res = await fetch(new URL('/rest/v1/rpc/reconcile_status', url), {
@@ -45,15 +47,21 @@ export async function fetchStatus({ url, key }) {
         signal: AbortSignal.timeout(20000),
     });
     if (!res.ok) {
-        throw new Error(`reconcile_status answered ${res.status} — check snapshot freshness and migrations 0128 and 0185`);
+        throw new Error(`reconcile_status answered ${res.status} — check snapshot freshness and migrations 0128, 0185 and 0264`);
     }
     const body = await res.json();
     // PostgREST returns a SETOF as an array; one row is expected.
     const row = Array.isArray(body) ? body[0] : body;
     if (!row || typeof row !== 'object') throw new Error('reconcile_status returned no row');
+    const missingNew = NEW_COUNTS.some(k => !(k in row));
+    let expansionApplied = true;
+    if (missingNew) {
+        const names = await fetchLedger({ url, key });
+        expansionApplied = names.includes(EXPANSION) || names.includes(EXPANSION.slice(5));
+    }
     const out = {};
     for (const k of Object.keys(LABELS)) {
-        if (PENDING[k] && !(k in row)) { out[k] = null; continue; }
+        if (NEW_COUNTS.includes(k) && !expansionApplied && !(k in row)) { out[k] = null; continue; }
         // A missing or non-numeric count is not a zero. Number(null) is 0, so
         // the type is checked first.
         const n = typeof row[k] === 'number' ? row[k] : NaN;
@@ -75,11 +83,13 @@ if (isMain) {
     }
     const bad = Object.entries(status).filter(([, n]) => n > 0);
     for (const [k, n] of Object.entries(status)) {
-        if (n === null) { console.log(`n/a          ${k}: not reported until migration ${PENDING[k]} is applied`); continue; }
+        if (n === null) { console.log(`n/a          ${k}: not reported until migration 0264 is applied`); continue; }
         console.log(`${n === 0 ? 'ok  ' : 'DRIFT'} ${String(n).padStart(6)}  ${k} — ${LABELS[k]}`);
     }
     if (bad.length === 0) {
-        console.log('\nledger reconciles');
+        console.log(Object.values(status).some(n => n === null)
+            ? '\nreported counts reconcile; 0264 allowance/referral measurements are pending.'
+            : '\nall seven reconciliation counts are zero');
         process.exit(0);
     }
     console.error('\nthe ledger does not reconcile; every row here is money that does not add up');

@@ -9,7 +9,7 @@ const recovery = { stale_jobs: 0, reap_overdue: 0, reap_exhausted: 0,
     cinema_processing_stuck: 0, cinema_cleanup_required: 0,
     fal_dispatch_unknown: 0, fal_dispatch_overdue: 0, unhealthy_tasks: [] };
 const reconciliation = { balance_drift: 0, free_credit_drift: 0, top_up_drift: 0,
-    failed_refund_drift: 0, subscription_credit_drift: 0 };
+    failed_refund_drift: 0, subscription_credit_drift: 0, free_allowance_drift: 0, referral_drift: 0 };
 
 test('staging targeting cannot fall back to production configuration', () => {
     assert.throws(() => stagingConfig({ vars: { SUPABASE_URL: config.url, NEXT_PUBLIC_SUPABASE_ANON_KEY: config.key } }));
