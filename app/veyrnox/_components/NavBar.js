@@ -87,6 +87,8 @@ export function AppNav({ balance, active = 'explore', readAccount = true }) {
   const items = [
     { key: 'explore', href: '/app',         label: 'Explore' },
     { key: 'create',  href: '/app/create',  label: 'Create' },
+    // Video agent (ADR-0074): bought from a plan on its own page, so it has its own tab and is not in the Create picker.
+    { key: 'agent', href: '/app/video-agent', label: 'Video agent' },
     { key: 'chat', href: '/app/chat', label: 'LLM Chat' },
     { key: 'library', href: '/app/library', label: 'Library' },
     ...(projectsEnabled ? [{ key: 'projects', href: '/app/projects', label: 'Projects' }] : []),
