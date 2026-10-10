@@ -155,7 +155,7 @@
     // Preserve the private pilot secret and default YouTube uploads to Private.
     "PUBLISH_YOUTUBE_VISIBILITY_ENABLED": "true",
 
-    "PUBLISH_RELEASED_NETWORKS": "youtube",
+    "PUBLISH_RELEASED_NETWORKS": "youtube,linkedin",
     // Production 0188 is applied; basic YouTube Data API statistics only.
     "PUBLISH_ANALYTICS_ENABLED": "true",
     // Weekly historical timing/frequency insights; requires 0191.
