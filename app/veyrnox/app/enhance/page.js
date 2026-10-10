@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { AppNav } from '../../_components/NavBar';
+import { Main } from '../../_components/Main';
 import { Button } from '../../_components/Button';
 import { useVideoEnhancePreview } from '../../_lib/useVideoEnhancePreview';
 import { VIDEO_LOOKS, validateVideo, downloadName } from '../../_lib/videoEnhance.mjs';
@@ -147,8 +148,8 @@ function Editor() {
 
 export default function VideoEnhance() {
     const enabled = useVideoEnhancePreview();
-    return <><AppNav active="enhance" readAccount={false} /><div className="mx-auto max-w-6xl px-4 py-8 sm:px-8 sm:py-12">
+    return <><AppNav active="enhance" readAccount={false} /><Main className="mx-auto max-w-6xl px-4 py-8 sm:px-8 sm:py-12">
         <p className="mb-2 font-vx-mono text-xs tracking-widest text-vx-accent">LOCAL PREVIEW</p><h1 className="mb-3 text-3xl font-black sm:text-4xl">Video Enhance</h1>
         {enabled ? <Editor /> : <section className="mt-6 rounded-2xl border border-vx-border p-8"><h2 className="text-lg font-bold">Preview unavailable</h2><p className="mt-2 text-sm text-vx-fg-muted">Video Enhance is available only in an enabled local development preview.</p>{process.env.NODE_ENV === 'development' && <Button className="mt-5 mr-5" onClick={() => { try { localStorage.setItem('veyrnox_video_enhance', '1'); window.dispatchEvent(new Event('storage')); } catch { /* Storage unavailable: keep the preview closed. */ } }}>Enable local preview</Button>}<Link className="mt-5 inline-block text-vx-accent underline" href="/app">Back to Explore</Link></section>}
-    </div></>;
+    </Main></>;
 }

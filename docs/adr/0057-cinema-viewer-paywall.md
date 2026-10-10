@@ -1,6 +1,6 @@
 # ADR-0057 — Social Cinema viewer paywall, modelled on ReelShort
 
-- **Status**: Accepted 2026-09-26 (owner: "approved, build phase 1", then "build phase 2"). Phases 1 to 3 built on PR #344. Owner asked for "the same as ReelShort"; this records what that means here and where it cannot be literal.
+- **Status**: Accepted 2026-09-26 (owner: "approved, build phase 1", then "build phase 2"). Phases 1 to 3 built on PR #344. Owner asked for "the same as ReelShort"; this records what that means here and where it cannot be literal. An amendment is proposed in the last section (2026-10-10): a $9.99 monthly Pass as the only plan, a 1,500-minute ceiling and a 30% creator share.
 - **Deciders**: Product owner (approver); Finance/Legal for cooling-off wording; Stripe acceptance in writing before build.
 - **Related**: [ADR-0013](0013-credit-expiry-policy.md) (Free vs Pack Credits), [ADR-0018](0018-credit-pack-top-ups.md) / [ADR-0031](0031-stripe-replaces-lemonsqueezy.md) (Stripe Managed Payments, refunds, Freeze), [ADR-0019](0019-dispute-webhooks-freeze.md), [ADR-0037](0037-higgsfield-credit-parity.md) (packs unchanged), [ADR-0048](0048-social-cinema-foundation.md) to [ADR-0054](0054-cinema-upload-removal.md) (Cinema), `CONTEXT.md` (Social Cinema viewing). Plan: [docs/cinema/paywall-plan.md](../cinema/paywall-plan.md).
 
@@ -116,6 +116,65 @@ account is built and switched on before `CINEMA_UNLOCKS_ENABLED` is `true` in
 production. It is not built yet. Its value, how minutes are counted and what a
 Cinema Pass holder gets past it are decided when it is built; it is
 precondition P6 in the [paywall plan](../cinema/paywall-plan.md).
+
+## Proposed: $9.99 monthly Pass only, 1,500-minute ceiling, 30% creator share (2026-10-10)
+
+Status: **Proposed.** Owner, 2026-10-10: "record $9.99, 1,500 minutes and
+30%", then "withdraw them" for the weekly and yearly plans. Migration 0244 is
+written and not applied. No Pass is on sale:
+`CINEMA_SUBSCRIPTIONS_ENABLED` is `false` in production and unset on staging,
+so there is no subscriber to reprice.
+
+| | Decision 3 above | Proposed | Where it lives |
+|---|---|---|---|
+| Monthly Cinema Pass | $49.99 | $9.99 | `cinema_pass_plans`, row `pass-monthly` (0244) |
+| Weekly Pass ($14.99, first week $11.99) and yearly Pass ($199.99) | on sale | withdrawn | `cinema_pass_plans.active` is `false` for both (0244) |
+| Pass ceiling, delivered minutes per calendar month | 3,000 | 1,500 | `cinema_prices.pass_ceiling_minutes` (0244) |
+| Creator share of Pass revenue | none; a separate ADR | 30% | this section only, no code |
+
+$9.99 is the lowest price `cinema_pass_plans` accepts (the 999 floor in 0143).
+The ceiling is one value for every Pass.
+
+The weekly and yearly plans are withdrawn because at $9.99 a month both cost
+more for the same time: $9.99 a month is $119.88 a year. A withdrawn plan keeps
+its row, since Passes reference it. `list_cinema_pass_plans` stops offering it
+and `start_cinema_pass` answers `PLAN_NOT_FOUND` for a new start. The $11.99
+first week existed only on the weekly plan, so no intro price is on offer.
+Putting a plan back on sale is a new migration.
+
+Why the ceiling halves with the price. These figures are a model, not a
+measurement. They use Stream's list rate of $1 per 1,000 minutes delivered
+(read 2026-10-09), about $0.80 of payment fees on a $9.99 charge (an
+assumption from Stripe's UK list rates; the Managed Payments fee was not read
+and comes on top), the owner's working assumption that free viewing equals Pass
+viewing minute for minute, and a 30% share taken after payment fees ($2.76).
+
+| Pass minutes in the month | Delivery, free viewing included | Left per Pass |
+|---|---|---|
+| 100 | $0.20 | about $6.20 |
+| 1,000 | $2.00 | about $4.40 |
+| 1,500, the proposed ceiling | $3.00 | about $3.40 |
+| 3,000, the ceiling today | $6.00 | about $0.40 |
+
+At 3,000 minutes a Pass at its ceiling roughly breaks even. At 1,500 it keeps
+about a third of the price. Both hold only while free viewing is bounded,
+which is precondition P6.
+
+What this does not decide:
+
+- **How the creator share is paid.** 30% is the intended share. It was modelled
+  on Pass revenue after payment fees, split by the Pass seconds per title that
+  `operator_cinema_earnings` already sums. Whether it comes before or after
+  fees, and payout, tax and creator identity, are still the separate ADR that
+  decision 6 requires. Nothing is paid out until that ADR is accepted, and
+  creator terms keep saying so (P3).
+- **Unlock prices and Free Episodes.** Unchanged.
+
+To move this to Accepted: the Stripe and Managed Payments fees are read from
+the fee schedule (the open check under Consequences), and 0244 is applied
+through `apply-migrations` (precondition P7). A Pass sold before 0244 keeps its
+plan and the price it was sold at, on its own row and at Stripe. From its next
+heartbeat it has the 1,500-minute ceiling.
 
 ## Free viewing ceiling as built (0245, 2026-10-10)
 

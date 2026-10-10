@@ -357,15 +357,18 @@ export default function AuthGate() {
                             autoComplete="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            className="mt-1 w-full rounded-lg bg-vx-base border border-vx-border px-3 py-2 text-sm text-vx-fg outline-hidden focus:border-vx-accent focus-visible:ring-2 focus-visible:ring-vx-accent/40"
+                            className="mt-1 w-full rounded-lg bg-vx-base border border-vx-field px-3 py-2 text-sm text-vx-fg outline-hidden focus:border-vx-accent focus-visible:ring-2 focus-visible:ring-vx-accent/40"
                         />
                     </label>
 
                     {mode !== "magic" && (
-                        <label className="block">
-                            <span className="text-xs text-vx-fg-muted">Password</span>
+                        // Not one wrapping <label>: the button and the hint sat inside
+                        // it and were read out as part of the field's name.
+                        <div>
+                            <label htmlFor="vx-password" className="text-xs text-vx-fg-muted">Password</label>
                             <span className="relative mt-1 block">
                                 <input
+                                    id="vx-password"
                                     type={showPassword ? "text" : "password"}
                                     required
                                     autoComplete={mode === "sign_up" ? "new-password" : "current-password"}
@@ -376,14 +379,15 @@ export default function AuthGate() {
                                     // password; a generated one is never in a breach list.
                                     passwordrules={mode === "sign_up" ? "minlength: 12; required: lower; required: upper; required: digit;" : undefined}
                                     aria-describedby="vx-password-hint"
-                                    className="w-full rounded-lg bg-vx-base border border-vx-border pl-3 pr-16 py-2 text-sm text-vx-fg outline-hidden focus:border-vx-accent focus-visible:ring-2 focus-visible:ring-vx-accent/40"
+                                    className="w-full rounded-lg bg-vx-base border border-vx-field pl-3 pr-16 py-2 text-sm text-vx-fg outline-hidden focus:border-vx-accent focus-visible:ring-2 focus-visible:ring-vx-accent/40"
                                 />
                                 {/* A typo in a masked 8-character minimum is the
                                     commonest reason a sign-up bounces. */}
                                 <button
                                     type="button"
                                     onClick={() => setShowPassword((v) => !v)}
-                                    aria-pressed={showPassword}
+                                    // The name changes with the state, so there is no
+                                    // aria-pressed: "Hide password, pressed" says two things.
                                     aria-label={showPassword ? "Hide password" : "Show password"}
                                     className="absolute inset-y-0 right-0 px-3 text-[11px] font-bold uppercase tracking-wide text-vx-fg-muted hover:text-vx-fg"
                                 >
@@ -398,7 +402,7 @@ export default function AuthGate() {
                                     ? "At least 8 characters. Passwords found in data breaches are rejected, so use a new one — let your browser or password manager suggest it."
                                     : "At least 8 characters."}
                             </span>
-                        </label>
+                        </div>
                     )}
 
                     <Turnstile

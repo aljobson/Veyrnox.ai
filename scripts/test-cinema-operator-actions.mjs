@@ -49,7 +49,7 @@ try {
 
   // Two pending checkouts before either activates produce one live and one flagged Pass.
   const buyer = await person();
-  const start = () => value('SELECT public.start_cinema_pass($1,$2,$3,$4,5,600) AS value', [buyer, 'pass-weekly', randomUUID(), 'cinema-pass-2026-09-26']);
+  const start = () => value('SELECT public.start_cinema_pass($1,$2,$3,$4,5,600) AS value', [buyer, 'pass-monthly', randomUUID(), 'cinema-pass-2026-09-26']);
   const first = await start(), second = await start();
   const suffix = randomUUID().replaceAll('-', '');
   const apply = (pass, sub) => value('SELECT public.apply_cinema_pass_event($1,$2,$3,$4,$5,$6,$7,$8,$9) AS value',
@@ -83,7 +83,7 @@ try {
   // Completion also ends a still-flagged Pass, and preserves an intervening dispute.
   for (const disputed of [false, true]) {
     const anotherBuyer = await person();
-    const pending = await value('SELECT public.start_cinema_pass($1,$2,$3,$4,5,600) AS value', [anotherBuyer, 'pass-weekly', randomUUID(), 'cinema-pass-2026-09-26']);
+    const pending = await value('SELECT public.start_cinema_pass($1,$2,$3,$4,5,600) AS value', [anotherBuyer, 'pass-monthly', randomUUID(), 'cinema-pass-2026-09-26']);
     const sub = `sub_${randomUUID().replaceAll('-', '')}`;
     await q("UPDATE public.cinema_passes SET status='flagged', end_reason='superseded', stripe_subscription_id=$2, stripe_customer_id=$3 WHERE id=$1", [pending.pass_id, sub, `cus_${suffix}`]);
     const pendingOp = await begin(operator, 'refund_pass', pending.pass_id);

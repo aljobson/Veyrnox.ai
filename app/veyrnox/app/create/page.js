@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { AppNav } from '../../_components/NavBar';
+import { Main } from '../../_components/Main';
 import { Chip } from '../../_components/Chip';
 import { ASPECT_RATIOS, modelIdForName } from '../../_lib/tokens';
 import { gatewayFetch, makeIdempotencyKey, notifyBalanceChanged, GatewayError } from '../../_lib/gateway';
@@ -318,7 +319,7 @@ export default function CreateStudio() {
     <div className="min-h-dvh">
       <AppNav balance={balance} active="create" />
 
-      <div className="max-w-[1500px] mx-auto px-4 sm:px-8 pt-6 pb-16 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-6">
+      <Main className="max-w-[1500px] mx-auto px-4 sm:px-8 pt-6 pb-16 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-6">
         {/* ============ CANVAS ============ */}
         <div>
           <div className="flex items-center justify-between mb-3">
@@ -377,7 +378,7 @@ export default function CreateStudio() {
             aria-label={isShort ? 'Topic' : 'Prompt'}
             maxLength={isShort ? 200 : undefined}
             rows={3}
-            className="mt-3 w-full bg-vx-panel border border-vx-border rounded-lg p-3.5 text-sm text-vx-fg placeholder:text-vx-fg-faint resize-none focus:outline-hidden focus:border-vx-accent"
+            className="mt-3 w-full bg-vx-panel border border-vx-field rounded-lg p-3.5 text-sm text-vx-fg placeholder:text-vx-fg-faint resize-none focus:outline-hidden focus:border-vx-accent"
             placeholder={promptPlaceholder(model)}
           />
           {activeTemplate?.sourceRecipe && (
@@ -540,7 +541,7 @@ export default function CreateStudio() {
             </div>
           </div>
         </aside>
-      </div>
+      </Main>
     </div>
   );
 }
