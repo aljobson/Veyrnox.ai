@@ -50,13 +50,15 @@ as the authority for whether a new credit debit is safe.
 | Healthy live path | Two bounded queue generations reached STORED; admission-to-claim delays 9.47 and 1.71 seconds. These samples do not establish p95/p99 or sustained drain. Detailed live evidence remains in PR #690. |
 | Delivery failure | Malformed ACK, disabled-consumer retry exhaustion/DLQ, duplicate no-resubmit, and terminal BUSY redelivery observed. A terminal row-lock probe is not a concurrent READY claim load test. |
 | Alerts | Scheduled queue monitoring and GitHub issue creation, update and deduplication exercised. Normal run 37949816509 and scheduled run 37952664939 passed. Notification delivery to the owner is not established by issue creation alone. |
-| Recovery window | Missing staging runner URL caused unhealthy video recovery after the 14:43 UTC deployment. Restored live; real heartbeat succeeded at 15:41:17 UTC. Normal aggregate refresh at 15:45:00 UTC is clean; 15:47:14 UTC read showed all recovery counters and five reconciliation drift counters zero. PR #727 preserves the URL in configuration. A point-in-time read does not prove 24 continuous healthy hours. |
-| Measured capacity | Full handler occupancy, DB RPC latency distributions, throughput under eligible READY load, provider quota/headroom, duplicate amplification and cost remain unmeasured. Account billing allowance remains unverified. |
-| Admission bound | A proposed ten-second claim p95 and a workload-specific capacity reservation need acceptance before broader admission. Per-user rate limits alone do not bound account-wide accepted work. |
+| Recovery window | The missing staging runner URL was restored and PR #727 preserves it. PR #745 adds explicit staging database checks; the earlier recovery/reconciliation watchers target production. First retained staging report in [run 37975031090](https://github.com/aljobson/Veyrnox.ai/actions/runs/37975031090) observed all recovery and drift counts zero at 18:41:39 UTC on 9 October. Point reads and scheduled samples do not prove uninterrupted health. |
+| Measured capacity | [Ten approved images](fal-dispatch-timing-sample-2026-10-09.md) reached STORED with zero dispatch failures/retries and exactly twenty credits debited. Consumer occupancy 403–1,062 ms; claim delay 1.851–4.879 s. The sampled fal account showed limit ten and active zero. Individual recovery-RPC distributions, sustained eligible READY throughput, account-wide reservations, load amplification and isolated per-request billing remain unestablished. |
+| Admission bound | [ADR 0079](../adr/0079-fal-admission-capacity.md) proposes transactional provider-account reservations and an independent admission pause. Scope/account ownership, policy acceptance and implementation remain pending. Existing per-user rate limits, two consumers and disabling durable-dispatch routing do not bound all accepted work. |
 
-Earliest review of the fresh clean window is after 2026-10-10 16:41 London,
-provided no further recovery or reconciliation failure occurs. This is a
-review time, not a promised production activation time.
+Earliest review of a full day of retained staging reports is after
+2026-10-10 19:41 London, measured from the first combined monitor observation.
+Review failures and sampling gaps; earlier manual clean reads cannot fill the
+historical monitoring gap. This is a review time, not a promised production
+activation time or proof of continuous health.
 
 ## Bounded measurement protocol
 
