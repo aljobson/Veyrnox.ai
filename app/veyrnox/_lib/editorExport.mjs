@@ -55,12 +55,13 @@ export async function exportBlocker(size = { width: 1280, height: 720 }) {
  * Render the timeline to an MP4 Blob. `blobs` maps media id to the file's bytes. `onProgress({ stage, done, total })`.
  * Rejects with an AbortError when `signal` aborts; any partial output is discarded.
  */
-export async function exportTimeline(tl, blobs, { signal = new AbortController().signal, height = 720, frameRate = 30, format = 'mp4', quality = 'standard', onProgress = () => {} } = {}) {
+export async function exportTimeline(tl, blobs, { signal = new AbortController().signal, height = 720, frameRate = 30, format = 'mp4', quality = 'standard', fitMode = 'contain', onProgress = () => {} } = {}) {
     if (signal.aborted) throw abortError();
     const total = totalFrames(tl);
     if (total < 1) throw new Error('Add a clip first.');
     const settingsProblem = validateExportSettings({ height, frameRate, format, quality }, total / FPS);
     if (settingsProblem) throw new Error(settingsProblem);
+    if (!['contain', 'cover'].includes(fitMode)) throw new Error('Choose valid frame fitting.');
     const memoryProblem = exportMemoryProblem(tl, height, quality); if (memoryProblem) throw new Error(memoryProblem);
     const outputFrames = Math.ceil(total / FPS * frameRate);
     const { width: W, height: H } = timelineSize(tl, height);
@@ -111,7 +112,7 @@ export async function exportTimeline(tl, blobs, { signal = new AbortController()
         for (let i = 0; i < outputFrames; i++) {
             if (signal.aborted) throw abortError();
             const layers = frameLayers(tl, Math.min(total - 1, i / frameRate * FPS));
-            paintFrame(g, W, H, layers, await resolvePictures(layers, (k, time) => readers[k].at(time)));
+            paintFrame(g, W, H, layers, await resolvePictures(layers, (k, time) => readers[k].at(time)), fitMode);
             for (const [k, entry] of layout.entries()) {
                 const until = entry.start + entry.clip.len + (tl.schemaVersion === 3 ? sequenceTransitionAfter(tl, entry.clip) : effectiveTransition(tl, k + 1));
                 if (!retired.has(k) && (i + 1) / frameRate * FPS >= until) { await readers[k].close(); retired.add(k); }

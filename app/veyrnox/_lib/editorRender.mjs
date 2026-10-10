@@ -54,21 +54,21 @@ export async function resolvePictures(layers, picture) {
     };
 }
 
-const fit = (g, pic, W, H) => {
-    const s = Math.min(W / pic.width, H / pic.height);
+const fit = (g, pic, W, H, fitMode) => {
+    const s = (fitMode === 'cover' ? Math.max : Math.min)(W / pic.width, H / pic.height);
     g.drawImage(pic, (W - pic.width * s) / 2, (H - pic.height * s) / 2, pic.width * s, pic.height * s);
 };
 
 /** Paint one frame onto a 2D context of size W x H from the layers and their resolved pictures. Synchronous. */
-export function paintFrame(g, W, H, layers, pics) {
+export function paintFrame(g, W, H, layers, pics, fitMode = 'contain') {
     if (layers.visuals) return paintSequence(g, W, H, layers, pics);
     g.globalAlpha = 1;
     g.fillStyle = '#000';
     g.fillRect(0, 0, W, H);
-    if (pics.base) fit(g, pics.base, W, H);
+    if (pics.base) fit(g, pics.base, W, H, fitMode);
     if (layers.over && pics.over) {
         g.globalAlpha = Math.max(0, Math.min(1, layers.over.alpha));
-        fit(g, pics.over, W, H);
+        fit(g, pics.over, W, H, fitMode);
         g.globalAlpha = 1;
     }
     for (const x of layers.texts) drawText(g, W, H, x);
