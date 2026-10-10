@@ -307,10 +307,10 @@
         "CINEMA_UNLOCKS_ENABLED": "true",
         "CINEMA_PUBLISHING_ENABLED": "true",
         "CINEMA_VIEWING_ENABLED": "true",
-        // Monthly ceiling on free viewing minutes (ADR-0057). Set to "true"
-        // once migration 0245 is applied on the staging database: before
-        // that, play, heartbeat and entitlement would answer 503 here.
-        "CINEMA_FREE_CEILING_ENABLED": "false"
+        // Monthly ceiling on free viewing minutes (ADR-0057). Migration 0245
+        // is applied on the staging database (2026-10-10), so the metered
+        // functions exist here. Production keeps this "false".
+        "CINEMA_FREE_CEILING_ENABLED": "true"
       }
     }
   },
