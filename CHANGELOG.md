@@ -30,6 +30,7 @@ Changes that touch the money spine, the ledger or the catalog are marked **[mone
 - `list_user_jobs` leaves chat jobs out of the Library (0193); the public catalog read excludes text models
 
 ### Fixed
+- The Turnstile check in the sign-in dialog takes the site's theme (ADR-0026 amendment 6). It followed the operating system, so anyone whose system is set to light saw a white box in the dark dialog. Appearance only: how and when the check runs is unchanged.
 - The search box's dark backdrop covered a 108px strip under the nav and left the page lit behind the panel; the mobile menu's backdrop was 0px tall, so tapping outside it did nothing. The nav's backdrop blur makes it the containing block for `fixed` children. Search is now a native modal (top layer, focus contained, focus handed back on close) and the menu backdrop has its own height.
 - Two models printed under one name: "Nano Banana Pro Edit" at 10 cr and at 2 cr on the landing price list and `/models`, and "MMAudio v2" twice in the footer, with both model pages sharing a title. A list that holds both now keeps the full name on the ones that collide (`distinctShelfNames`).
 - On a phone the storage notice had grown taller than the fixed offset of the floating buttons, so the Contact button sat half under it. The buttons and the notice are one bottom stack; on a phone Back to top waits until the notice is dismissed.
