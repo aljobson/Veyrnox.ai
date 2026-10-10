@@ -233,8 +233,8 @@ export const FAQ = [
 
 
 
-// Four-column footer forest (plus tools). Every listed model row is a real
-// catalog entry so a follow-up wiring can link them by id.
+// The footer's short columns. The models are not listed here: the footer
+// reads them from the live catalog and sets them as their own band.
 export const MORE_FEATURES = [
   { group: 'Product',   items: [
     { label: 'Explore', href: '/#explore' },
@@ -244,7 +244,6 @@ export const MORE_FEATURES = [
     { label: 'Tools', href: '/tools' },
     { label: 'Guides', href: '/guides' },
   ] },
-  { group: 'Models',    items: [] }, // filled from the live catalog in page.js
   { group: 'Tools',     items: [
     { label: 'Image Generator', href: '/app/create?model=nano-banana-kie' },
     { label: 'Video Generator', href: '/app/create?model=wan-2.5-kie' },
@@ -286,6 +285,16 @@ export const SITE_UPDATED = '2026-09-22';
 // a catalog name ("Kling 3.0 (image-to-video)") is redundant for display.
 export function shelfName(name) {
   return String(name || '').replace(/\s*\([^()]*\)\s*$/, '');
+}
+
+// Two rows can share a name once the parenthetical is gone: "Nano Banana Pro
+// Edit" is sold at 10 cr and, from another provider, at 2 cr. A list that
+// prints both keeps the full name on the ones that collide, so no two rows
+// read the same. Returns the naming function for that list.
+export function distinctShelfNames(rows) {
+  const count = new Map();
+  for (const m of rows) count.set(shelfName(m.name), (count.get(shelfName(m.name)) || 0) + 1);
+  return (m) => (count.get(shelfName(m.name)) > 1 ? String(m.name || '') : shelfName(m.name));
 }
 
 // Which catalog rows the public surfaces may advertise.

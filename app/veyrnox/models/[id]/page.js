@@ -40,6 +40,19 @@ export default async function ModelPage({ params }) {
           <span className="text-lg text-vx-fg-muted">{unitFor(model.kind)}</span>
           {model.gated && <span className="text-[13px] font-bold text-vx-money">premium</span>}
         </p>
+        {/* The price rides the button, as it does everywhere else, and the
+            button comes before the facts: on a phone it sat below the fold. */}
+        <div className="mt-8 flex flex-wrap items-center gap-4">
+          <Link
+            href={`/app/create?model=${encodeURIComponent(model.id)}`}
+            className="vx-press inline-flex items-center gap-4 rounded-full bg-vx-accent px-6 py-3.5 font-extrabold text-vx-accent-ink hover:bg-vx-accent-hover"
+          >
+            <span>Generate with {model.title}</span>
+            <span className="font-vx-mono vx-num text-[15px] font-bold">{model.credits} cr</span>
+          </Link>
+          <Link href="/pricing" className="font-bold text-vx-fg-body underline underline-offset-4 hover:text-vx-fg">Credit packs</Link>
+        </div>
+        <p className="mt-4 text-[14px] text-vx-fg-muted">Nothing is charged until you press Generate. Failed generations refund in full.</p>
         <dl className="mt-10 border-t border-vx-border">
           {facts.map((f) => (
             <div key={f.label} className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-6 py-3 border-b border-vx-border">
@@ -48,16 +61,6 @@ export default async function ModelPage({ params }) {
             </div>
           ))}
         </dl>
-        <div className="mt-10 flex flex-wrap items-center gap-4">
-          <Link
-            href={`/app/create?model=${encodeURIComponent(model.id)}`}
-            className="inline-flex items-center rounded-full bg-vx-accent px-6 py-3 font-bold text-vx-accent-ink hover:bg-vx-accent-hover"
-          >
-            Generate with {model.title}
-          </Link>
-          <Link href="/pricing" className="font-bold text-vx-fg-body underline underline-offset-4 hover:text-vx-fg">Credit packs</Link>
-        </div>
-        <p className="mt-6 text-[14px] text-vx-fg-muted">Failed generations refund in full.</p>
       </section>
     </div>
   );

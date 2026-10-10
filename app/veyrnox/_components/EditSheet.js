@@ -111,7 +111,7 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted }) {
   }
 
   return (
-    <Modal aria-labelledby="edit-sheet-title" onCancel={() => !busy && onClose()} className="items-end sm:items-center justify-center p-0 sm:p-6">
+    <Modal aria-labelledby="edit-sheet-title" onCancel={() => !busy && onClose()} className="vx-overlay-sheet items-end sm:items-center justify-center p-0 sm:p-6">
       <div
         onClick={(e) => e.stopPropagation()}
         className="w-full sm:max-w-[760px] max-h-[92dvh] overflow-y-auto rounded-t-2xl sm:rounded-2xl border border-vx-border bg-vx-base p-4 sm:p-6"

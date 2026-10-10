@@ -317,7 +317,7 @@ export default function CreateStudio() {
               <div className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">STUDIO · UNTITLED</div>
               <h1 className="text-2xl sm:text-3xl font-black tracking-[-0.02em] mt-1">Create</h1>
             </div>
-            <Chip tone="accent">UNSAVED DRAFT</Chip>
+            <Chip tone="neutral">UNSAVED DRAFT</Chip>
           </div>
 
           {jobs.length > 1 ? <StudioJobGrid jobs={jobs} aspect={aspect} /> : (
@@ -412,7 +412,7 @@ export default function CreateStudio() {
           )}
 
           {error && (
-            <div className="mt-3 rounded-lg border border-vx-danger/40 bg-vx-danger/[0.07] px-4 py-3 text-sm text-vx-danger flex items-start gap-2">
+            <div role="alert" className="mt-3 rounded-lg border border-vx-danger/40 bg-vx-danger/[0.07] px-4 py-3 text-sm text-vx-danger flex items-start gap-2">
               <span aria-hidden="true">✕</span>
               <span>
                 {ERROR_COPY[error.code] || 'Something went wrong. Nothing was charged unless the panel above says otherwise.'}
@@ -450,7 +450,7 @@ export default function CreateStudio() {
                 </button>
               ))}
             </div>
-            <div className="flex flex-col gap-1.5">
+            <div role="group" aria-label="Model" className="flex flex-col gap-1.5">
               {visibleModels.map((m) => (
                 <button
                   key={m.id}
@@ -503,7 +503,7 @@ export default function CreateStudio() {
             <div className="flex items-baseline justify-between">
               <span className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">TOTAL COST</span>
               <span className="font-vx-mono text-[12px] text-vx-fg-muted vx-num">
-                balance {balance ?? '—'} cr
+                balance {balance == null ? '—' : balance.toLocaleString('en-US')} cr
               </span>
             </div>
             <div className="mt-1 font-vx-mono text-[36px] font-bold text-vx-money vx-num">−{cost} cr</div>

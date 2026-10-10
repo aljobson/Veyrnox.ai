@@ -1,8 +1,12 @@
 'use client';
 import { useEffect, useRef } from 'react';
 
-/** Native modal supplies keyboard containment and an inert background. */
-export function Modal({ children, onCancel, initialFocusRef, className = '', ...labels }) {
+/**
+ * Native modal supplies keyboard containment and an inert background, and
+ * renders in the top layer, so no ancestor can clip or re-anchor it.
+ * `instant` skips the entrance, for a dialog a keystroke opens.
+ */
+export function Modal({ children, onCancel, initialFocusRef, instant = false, className = '', ...labels }) {
   const ref = useRef(null);
   useEffect(() => {
     const previous = document.activeElement;
@@ -28,7 +32,7 @@ export function Modal({ children, onCancel, initialFocusRef, className = '', ...
     }
   }
   return <dialog ref={ref} tabIndex={-1} onKeyDown={containTab} {...labels}
-    className={`fixed inset-0 m-0 h-dvh w-screen max-h-none max-w-none border-0 text-vx-fg bg-black/70 backdrop:bg-transparent hidden open:flex ${className}`}
+    className={`${instant ? '' : 'vx-overlay '}fixed inset-0 m-0 h-dvh w-screen max-h-none max-w-none border-0 text-vx-fg bg-black/70 backdrop:bg-transparent hidden open:flex ${className}`}
     onCancel={event => { event.preventDefault(); onCancel(); }}
     onClick={event => { if (event.target === event.currentTarget) onCancel(); }}>
     {children}

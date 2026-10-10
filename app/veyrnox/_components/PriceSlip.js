@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { writeStudioDraft } from '../_lib/landingDraft';
+import { distinctShelfNames } from '../_lib/tokens';
 
 // The landing hero's working form: pick a model and a length, and the slip
 // prints what the button will charge. Pressing Generate opens the studio on
@@ -90,7 +91,7 @@ export function PriceSlip({ models }) {
                 type="button"
                 aria-pressed={m.id === model.id}
                 onClick={() => pickModel(m.id)}
-                className="vx-press rounded-full border px-3 py-1.5 text-[13px] font-semibold transition-colors border-vx-border text-vx-fg-body hover:border-vx-fg-muted aria-pressed:border-vx-fg aria-pressed:bg-vx-fg aria-pressed:text-vx-base"
+                className="vx-press rounded-full border px-3 py-1.5 text-[13px] font-semibold pointer-coarse:min-h-10 border-vx-border text-vx-fg-body hover:border-vx-fg-muted aria-pressed:border-vx-fg aria-pressed:bg-vx-fg aria-pressed:text-vx-base"
               >
                 {shortName(m.name)}
               </button>
@@ -99,17 +100,18 @@ export function PriceSlip({ models }) {
               aria-label="Every other model"
               value={inChips ? '' : model.id}
               onChange={(e) => e.target.value && pickModel(e.target.value)}
-              className={`rounded-full border bg-transparent px-3 py-1.5 text-[13px] font-semibold ${inChips ? 'border-vx-border text-vx-fg-muted' : 'border-vx-fg text-vx-fg'}`}
+              className={`rounded-full border bg-transparent px-3 py-1.5 text-[13px] font-semibold pointer-coarse:min-h-10 ${inChips ? 'border-vx-border text-vx-fg-muted' : 'border-vx-fg text-vx-fg'}`}
             >
               <option value="">{models.length - chips.length} more…</option>
               {['video', 'image', 'audio'].map((kind) => {
                 const rows = models.filter((m) => m.kind === kind && !chips.includes(m));
                 if (!rows.length) return null;
+                const nameOf = distinctShelfNames(rows);
                 return (
                   <optgroup key={kind} label={KIND_LABEL[kind]}>
                     {rows.map((m) => (
                       <option key={m.id} value={m.id}>
-                        {shortName(m.name)}{m.gated ? ' (premium)' : ''}
+                        {nameOf(m)}{m.gated ? ' (premium)' : ''}
                       </option>
                     ))}
                   </optgroup>
@@ -129,7 +131,7 @@ export function PriceSlip({ models }) {
                   type="button"
                   aria-pressed={s === seconds}
                   onClick={() => setSeconds(s)}
-                  className="vx-press rounded-full px-3.5 py-1 text-[13px] font-semibold text-vx-fg-body aria-pressed:bg-vx-fg aria-pressed:text-vx-base"
+                  className="vx-press rounded-full px-3.5 py-1 text-[13px] font-semibold text-vx-fg-body pointer-coarse:min-h-9 pointer-coarse:px-4 aria-pressed:bg-vx-fg aria-pressed:text-vx-base"
                 >
                   {s} s
                 </button>
@@ -150,7 +152,7 @@ export function PriceSlip({ models }) {
 
         <button
           type="submit"
-          className="vx-press group mt-6 flex w-full items-center justify-between gap-4 rounded-xl bg-vx-accent px-5 py-4 text-left text-vx-accent-ink transition-colors hover:bg-vx-accent-hover"
+          className="vx-press group mt-6 flex w-full items-center justify-between gap-4 rounded-xl bg-vx-accent px-5 py-4 text-left text-vx-accent-ink hover:bg-vx-accent-hover"
         >
           <span className="text-[17px] font-extrabold">Generate</span>
           <span key={cost} className="vx-tick font-vx-mono text-[17px] font-bold vx-num">{cost} cr</span>

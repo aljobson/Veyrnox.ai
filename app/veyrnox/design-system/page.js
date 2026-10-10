@@ -73,7 +73,7 @@ export default function DesignSystem() {
           </button>
           <button className="bg-vx-money text-vx-money-ink rounded-full px-6 py-3 font-extrabold">Top up · $9</button>
           <button className="bg-transparent border border-vx-border text-vx-fg rounded-full px-6 py-3 font-bold hover:border-vx-accent">Ghost</button>
-          <button className="bg-vx-danger text-white rounded-full px-6 py-3 font-extrabold">Open breaker</button>
+          <button className="bg-vx-danger text-vx-danger-ink rounded-full px-6 py-3 font-extrabold">Open breaker</button>
           <button disabled className="bg-vx-accent text-vx-accent-ink rounded-full px-6 py-3 font-extrabold opacity-40 cursor-not-allowed">Disabled</button>
         </div>
       </Section>

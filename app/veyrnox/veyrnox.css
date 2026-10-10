@@ -16,13 +16,8 @@
 @keyframes vxScan { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
 @keyframes vxTickUp { 0% { opacity: 0; transform: translateY(6px); } 40% { opacity: 1; } 100% { opacity: 0; transform: translateY(-12px); } }
 
-/* Tile motion. One strong ease-out for every UI response; the built-in
-   easings are too weak to feel intentional. */
-.vx-root { --vx-ease-out: cubic-bezier(0.23, 1, 0.32, 1); }
-
+/* Tile motion. --vx-ease-out is on :root in globals.css. */
 .vx-tile { transition: transform 200ms var(--vx-ease-out); }
-/* Press feedback: the card confirms the click landed. */
-.vx-tile:active { transform: scale(0.98); }
 .vx-tile-video { transition: opacity 300ms var(--vx-ease-out); }
 /* The global :focus-visible rule squares corners to 4px; on a clipped tile
    that squares the video and gradient too. Keep the card's own radius. */
@@ -30,6 +25,17 @@
 /* Hover lift only where hover exists; on touch it fires on tap and sticks. */
 @media (hover: hover) and (pointer: fine) {
   .vx-tile:hover { transform: scale(1.015); }
+}
+/* Press feedback: the card confirms the click landed. After the hover rule,
+   which has the same weight: before it, a mouse press never showed. */
+.vx-tile:active { transform: scale(0.98); }
+
+/* The scrim under a tile's caption. Its stops are pixels, not a share of the
+   tile: as a percentage gradient the dark band shrank with the tile, and on
+   a phone's 118px thumbnails the amber price sat on 20-40% black over a
+   bright poster (1.5 to 2.8:1). */
+.vx-tile-scrim {
+  background: linear-gradient(to top, rgb(0 0 0 / 0.85) 0, rgb(0 0 0 / 0.78) 72px, transparent 160px);
 }
 
 /* Short first-paint stagger for the hero cards. Decorative, and it never
@@ -106,6 +112,7 @@
   --vx-money-ink: 255 255 255;
   /* The light-theme red: the dark-theme one is too pale on paper. */
   --vx-danger: 196 36 26;
+  --vx-danger-ink: 255 255 255;
   --vx-warn: 43 78 190;
   color-scheme: light;
   color: rgb(var(--vx-fg));
@@ -163,19 +170,16 @@
 }
 .vx-tick { display: inline-block; animation: vxTick 220ms var(--vx-ease-out) backwards; }
 
-/* Press feedback for anything that acts on click. */
+/* Press feedback for anything that acts on click. Do not add a Tailwind
+   transition-* utility to the same element: utilities outrank this layer
+   and would drop `transform` from the list, so the press would snap. */
 .vx-press { transition: transform 140ms var(--vx-ease-out), background-color 160ms ease, color 160ms ease, border-color 160ms ease; }
 .vx-press:active { transform: scale(0.97); }
 
-/* Anchors sit under the sticky 64px nav without a hand-placed spacer. */
+/* Anchors sit under the sticky 64px nav without a hand-placed spacer.
+   The smooth scroll itself is on <html> in globals.css. */
 .vx-root [id] {
   scroll-margin-top: 5rem;
-}
-.vx-root {
-  scroll-behavior: smooth;
-}
-@media (prefers-reduced-motion: reduce) {
-  .vx-root { scroll-behavior: auto; }
 }
 
 /* Display voice: Archivo at full weight, set tight. One scale step per role,

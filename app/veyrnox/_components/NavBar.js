@@ -168,7 +168,7 @@ export function AppNav({ balance, active = 'explore', readAccount = true }) {
               <Link
                 href="/app/credits"
                 aria-label={`Credit balance: ${fmt} credits`}
-                className="flex items-center gap-1.5 py-1 leading-none transition-opacity hover:opacity-80"
+                className="flex min-h-6 items-center gap-1.5 py-1 leading-none transition-opacity hover:opacity-80"
               >
                 <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-vx-money" />
                 <span className="font-vx-mono text-[11px] font-bold text-vx-money vx-num">{fmt} cr</span>
@@ -176,7 +176,7 @@ export function AppNav({ balance, active = 'explore', readAccount = true }) {
               <Link
                 href="/app/library"
                 aria-label={`${assetFmt} ${assetWord} in your library`}
-                className="flex items-center gap-1.5 py-1 leading-none transition-opacity hover:opacity-80"
+                className="flex min-h-6 items-center gap-1.5 py-1 leading-none transition-opacity hover:opacity-80"
               >
                 {/* Keeps the count's first digit under the balance's. */}
                 <span aria-hidden="true" className="h-1.5 w-1.5" />

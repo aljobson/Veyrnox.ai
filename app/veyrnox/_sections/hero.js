@@ -95,7 +95,7 @@ export function FeaturedHeroCards({ catalog }) {
               mediaClassName="aspect-[4/5]"
               mediaStyle={{ background: f.bg }}
             >
-              <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/15 to-transparent" />
+              <div className="vx-tile-scrim absolute inset-0" />
               {/* Fixed light ink: these sit on a hardcoded dark gradient under
                   a black scrim in both themes. */}
               <div className="absolute inset-x-0 bottom-0 p-4 flex flex-col gap-3">

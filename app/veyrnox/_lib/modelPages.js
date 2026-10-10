@@ -2,16 +2,17 @@
 // read from the live catalog (lib/publicCatalog.js); nothing here sets a
 // price or describes a model in words the catalog does not hold.
 import { readPublicCatalog } from '../../../lib/publicCatalog.js';
-import { isShelfModel, kindOf, shelfName } from './tokens.js';
+import { isShelfModel, kindOf, distinctShelfNames } from './tokens.js';
 
 // Catalog ids are lowercase slugs such as `wan-2.5-kie`.
 export const MODEL_ID_RE = /^[a-z0-9][a-z0-9.-]{0,63}$/;
 
 // Same rule as the landing shelf: only what the picker sells to everyone.
 export function shelfModels(rows) {
-  return rows
-    .filter((m) => isShelfModel(m.capabilities))
-    .map((m) => ({ ...m, kind: kindOf(m.modality), title: shelfName(m.name) }));
+  const shelf = rows.filter((m) => isShelfModel(m.capabilities));
+  // Titles head the list and each model's own page, so no two may match.
+  const titleOf = distinctShelfNames(shelf);
+  return shelf.map((m) => ({ ...m, kind: kindOf(m.modality), title: titleOf(m) }));
 }
 
 // `options` reaches readPublicCatalog; the cron passes its own cfg, since

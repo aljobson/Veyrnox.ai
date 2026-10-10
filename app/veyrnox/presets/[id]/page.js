@@ -54,7 +54,7 @@ export default async function TemplatePage({ params }) {
               </p>
             )}
             <h2 className="mt-8 font-vx-mono text-[11px] tracking-[0.12em] text-vx-fg-muted">PROMPT</h2>
-            <p className="mt-2 rounded-xl bg-vx-raised/60 px-4 py-3 text-[15px] leading-[1.55] text-vx-fg-body">{t.prompt}</p>
+            <p className="mt-2 rounded-xl bg-vx-panel px-4 py-3 text-[15px] leading-[1.55] text-vx-fg-body">{t.prompt}</p>
             <p className="mt-2 text-[13px] text-vx-fg-muted">You can edit it before you generate.</p>
             <UseTemplate preset={t} />
           </div>
