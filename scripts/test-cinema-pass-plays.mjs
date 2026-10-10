@@ -33,7 +33,9 @@ async function activePass(actor, plan = 'pass-monthly') {
   return s.pass_id;
 }
 try {
-  const migration = await readFile(new URL('../packages/db/schema/supabase/0144_cinema_pass_plays.sql', import.meta.url), 'utf8');
+  // 0245 added a cinema_prices key that this file's CHECK does not list, so 0144 only
+  // re-applies without that row. The replay removes it first; the ROLLBACK below restores it.
+  const migration = "DELETE FROM public.cinema_prices WHERE key = 'free_ceiling_minutes';\n" + await readFile(new URL('../packages/db/schema/supabase/0144_cinema_pass_plays.sql', import.meta.url), 'utf8');
   // Idempotency proof inside a rolled-back transaction, so the re-apply cannot
   // reinstate this file's function bodies over later migrations for the rest of the run.
   await c.query('BEGIN'); await c.query(migration); await c.query(migration); await c.query('ROLLBACK');
