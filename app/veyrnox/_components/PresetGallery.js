@@ -9,7 +9,7 @@ const CATEGORY_LABEL = { ALL: 'All', NEW: 'New', POPULAR: 'Popular', 'YOUR PHOTO
 
 // The preset filter and grid, shared by the public /presets page and the
 // studio's Explore tab so the two never drift apart.
-export function PresetGallery({ size = 'lg', columns = 'lg:grid-cols-3' }) {
+export function PresetGallery({ size = 'lg', columns = 'lg:columns-3' }) {
   const [cat, setCat] = useState('ALL');
   const { models } = useCatalog();
   const popularIds = usePopularTemplates();
@@ -35,7 +35,7 @@ export function PresetGallery({ size = 'lg', columns = 'lg:grid-cols-3' }) {
       <p className="mt-8 mb-6 text-[14px] text-vx-fg-muted" aria-live="polite">
         {list.length} {list.length === 1 ? 'template' : 'templates'} on {new Set(list.map((p) => p.model)).size} models
       </p>
-      <div className={`grid grid-cols-1 sm:grid-cols-2 ${columns} gap-x-6 gap-y-10`}>
+      <div className={`columns-1 sm:columns-2 ${columns} gap-6 [&>a]:mb-10 [&>a]:break-inside-avoid`}>
         {list.map((p) => (
           <PresetCard key={p.id} preset={p} catalog={models} size={size} />
         ))}

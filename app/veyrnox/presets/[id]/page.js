@@ -42,7 +42,7 @@ export default async function TemplatePage({ params }) {
           <div>
             {clip ? (
               <div className="mx-auto max-w-[480px]">
-                <FilmPlayer key={t.id} film={clip} label={`${presetTitle(t.name)} preview`} aspectRatio={t.previewAspect || '9 / 16'} />
+                <FilmPlayer key={t.id} film={clip} label={`${presetTitle(t.name)} preview`} aspectRatio={clip.aspectRatio || t.previewAspect || '9 / 16'} />
                 <p className="mt-3 text-sm text-vx-fg-muted">{clip.generatedOnVeyrnox ? 'Five-second example generated on Veyrnox with the prompt below.' : 'Five-second source preview. Use the recipe to create your own version.'}</p>
               </div>
             ) : <div className="min-h-[280px] lg:min-h-[480px] rounded-3xl" style={{ background: t.bg }} aria-hidden />}
