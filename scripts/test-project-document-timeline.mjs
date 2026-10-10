@@ -71,6 +71,29 @@ try {
         ];
         for (const doc of bad) await rejects(save, [project, 3, doc, randomUUID(), null], 'PT400');
     });
+    await check('direct saves reject missing required fields without adding history or audit rows', async () => {
+        const missingVersion = { ...v1 }; delete missingVersion.schema_version;
+        const bad = [missingVersion, { ...v1, schema_version: null }];
+        for (const key of ['schemaVersion', 'fps', 'seq', 'aspect', 'media', 'video', 'audio', 'text']) {
+            const incomplete = timeline(); delete incomplete[key];
+            bad.push(withTimeline(v1, incomplete));
+        }
+        for (const [key, invalid] of [['seq', 'bad'], ['media', []], ['video', {}], ['audio', null], ['text', 1]]) {
+            bad.push(withTimeline(v1, { ...timeline(), [key]: invalid }));
+        }
+        const beforeHistory = await value('SELECT count(*) FROM public.project_document_versions WHERE project_id=$1', [project]);
+        await db.query('RESET ROLE');
+        const beforeAudit = await value('SELECT count(*) FROM public.audit_events WHERE resource_id=$1', [project]);
+        for (const doc of bad.filter(doc => doc.schema_version === 2)) {
+            assert.equal(await value('SELECT private.project_timeline_within_bounds($1)', [doc.timeline]), false);
+        }
+        await actor(owner);
+        for (const doc of bad) await rejects(save, [project, 3, doc, randomUUID(), null], 'PT400');
+        assert.equal(await value('SELECT count(*) FROM public.project_document_versions WHERE project_id=$1', [project]), beforeHistory);
+        await db.query('RESET ROLE');
+        assert.equal(await value('SELECT count(*) FROM public.audit_events WHERE resource_id=$1', [project]), beforeAudit);
+        await actor(owner);
+    });
     await check('restore of a v2 revision appends a new version carrying the timeline', async () => {
         const r = await value(save, [project, 3, null, 'tl-restore', 2]);
         assert.equal(r.revision, 4); assert.equal(r.restored_from, 2);

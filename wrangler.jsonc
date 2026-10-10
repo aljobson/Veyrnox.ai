@@ -123,8 +123,8 @@
     "PREMIERES_ENABLED": "false",
     "AI_RECOMMENDATIONS_ENABLED": "false",
     // Enable only after migration 0129, bucket CORS and real browser/R2 checks (ADR-0044). 0129 is applied. On
-    // 2026-10-09 the production bucket's CORS allowed PUT with Content-Type only: a preflight that also asks for
-    // If-None-Match was refused, so "true" here would stop every browser upload until that header is added.
+    // Production CORS now allows If-None-Match (read back 2026-10-10). Keep the flag off until the
+    // browser File / real R2 success, wrong-length and replacement checks in ADR-0044 are recorded.
     "UPLOAD_INTEGRITY_ENABLED": "false",
     // 0131 applied; verify fresh task/snapshot evidence after deploy, then arm the watcher.
     "RECOVERY_HEALTH_ENABLED": "true",
@@ -251,7 +251,7 @@
         "ADMIN_REQUIRE_AAL2": "true",
         // ADR-0044 (vars are not inherited). On for the activation proof: 0129 is applied here and the staging bucket's
         // CORS allows PUT with Content-Type and If-None-Match from this origin (preflight checked 2026-10-09).
-        // Production stays "false" until its bucket allows If-None-Match too; today it would refuse every upload.
+        // Production CORS is ready as of 2026-10-10; the real browser/R2 activation proof is still required.
         "UPLOAD_INTEGRITY_ENABLED": "true",
         "FAL_DURABLE_DISPATCH_ENABLED": "false",
         "FAL_DISPATCH_QUEUE_ENABLED": "false",
@@ -264,14 +264,15 @@
         "CHAT_SEND_CLOSE_ENABLED": "true",
         // ADR-0069 (vars are not inherited). Flip to "true" on staging only after 0205 and 0206 are applied there.
         "FREE_ALLOWANCE_ENABLED": "false",
-        // Browser timeline editor (ADR-0080): the /app/editor route 404s unless "true". Off in both blocks; staging turns it on by deploy --var.
-        "EDITOR_TIMELINE_ENABLED": "false",
+        // Preserve the live staging editor flag in source so a normal deploy cannot undo the preview.
+        "EDITOR_TIMELINE_ENABLED": "true",
         // ADR-0072 (vars are not inherited). Flip to "true" on staging only after 0216 is applied there.
         "PERSONAS_ENABLED": "false",
-        "AGENT_VIDEO_ENABLED": "false",
+        // Already live on staging; source must preserve the deployed preview and its recovery checks.
+        "AGENT_VIDEO_ENABLED": "true",
         // Recovery still needs its isolated runner even when new video admission is paused.
         "MONTAGE_RUNNER_BASE": "https://veyrnox-montage-runner-staging.fly.dev",
-        "MONTAGE_LIVENESS_ENABLED": "false",
+        "MONTAGE_LIVENESS_ENABLED": "true",
         "REFERRALS_ENABLED": "false",
         // Vars are not inherited. 0225 is applied on staging (2026-10-08); on for testing, production stays "false".
         "CLIP_EDIT_CAPTIONS_ENABLED": "true",

@@ -3,15 +3,15 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { outputSize } from '../app/veyrnox/_lib/editorExport.mjs';
 import { contentSecurityPolicy } from '../lib/contentSecurityPolicy.mjs';
+import { parseJsonc } from '../scripts/check-migration-ledger.mjs';
 
 const read = f => readFileSync(new URL(`../${f}`, import.meta.url), 'utf8');
 
 // ADR-0080: the editor has no server API, so the server flag closes the route itself and a per-browser switch hides it while staged.
-test('the editor flag is off in production and in the staging block of the repo', () => {
-    const text = read('wrangler.jsonc');
-    const hits = [...text.matchAll(/"EDITOR_TIMELINE_ENABLED":\s*"(\w+)"/g)].map(m => m[1]);
-    assert.deepEqual(hits, ['false', 'false'], 'one in each block, both off');
-    assert.ok(text.indexOf('"EDITOR_TIMELINE_ENABLED"') < text.indexOf('"env"'), 'the first one is the production block');
+test('the editor stays off in production and the live staging preview is preserved by ordinary deploys', () => {
+    const config = parseJsonc(read('wrangler.jsonc'));
+    assert.equal(config.vars.EDITOR_TIMELINE_ENABLED, 'false');
+    assert.equal(config.env.staging.vars.EDITOR_TIMELINE_ENABLED, 'true');
 });
 
 test('the route is closed by the flag and the page needs the browser switch', () => {
