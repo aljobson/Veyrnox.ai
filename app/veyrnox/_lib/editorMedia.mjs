@@ -65,7 +65,6 @@ export async function probeMedia(blob) {
     }
 }
 
-let localSeq = 0;
-/** Media ids are `[A-Za-z0-9_-]` only (the timeline refuses anything else): `j-<job id>` for a generation, `l-<n>` for a local file. */
+/** Local ids remain distinct when a saved project is reopened in a fresh tab. */
 export const libraryMediaId = jobId => `j-${String(jobId).replace(/[^A-Za-z0-9_-]/g, '').slice(0, 60)}`;
-export const localMediaId = () => `l-${++localSeq}`;
+export const localMediaId = () => `l-${crypto.randomUUID()}`;

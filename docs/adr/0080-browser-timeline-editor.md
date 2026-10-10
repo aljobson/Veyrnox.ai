@@ -142,3 +142,10 @@ Production activation remains pending the 24-hour clean reconciliation window
 after 0261, applied at 2026-10-10 15:32:27 UTC. Its earliest end is
 2026-10-11 15:32:27 UTC (16:32:27 BST). This preparation leaves production
 `TENANT_PROJECTS_ENABLED=false`. No schema or ledger behavior changes.
+
+
+## Full editor scope amendment — 2026-10-10
+
+The owner requested every feature area of the signed-in CapCut editor. The complete observed inventory and dependency sequence are in `docs/editor/CAPCUT-GAP-2026-10-10.md`; earlier slice limits describe the shipped base rather than the final scope. Features outside those slices are now requested work, subject to their document migrations, codec qualification, provider contracts and measured costs.
+
+The first follow-on release strengthens that base: audible synchronized playback, full-source imports, collision-resistant media ids, retained undo/redo, duplicate and pointer/keyboard trims, drag reorder/move, zoom, title-driven duration and export of the latest title draft. Preview and export share audio mixing and release their decoder resources. Real-browser verdicts and decoded MP4 checks are documented in `docs/editor/FOUNDATION-VERIFICATION-2026-10-10.md`. It does not assert full CapCut parity.
