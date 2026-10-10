@@ -8,7 +8,7 @@ const cfg = { supabaseUrl: 'https://db.test', serviceRoleKey: 'svc' };
 const job = { id: 'job-1', user_id: 'user-1', credits: 19, state: 'SUBMITTED' };
 
 // Fake network: records RPC names and answers per scenario.
-function fakeNet({ dedup = [{ id: 'row' }], processedAt = 'x', rpcs = {}, source = () => new Response('vid', { status: 200, headers: { 'content-type': 'video/mp4' } }) }) {
+function fakeNet({ dedup = [{ id: 'row' }], processedAt = 'x', currentState = 'SUCCEEDED', rpcs = {}, source = () => new Response('vid', { status: 200, headers: { 'content-type': 'video/mp4' } }) }) {
     const calls = [];
     const real = globalThis.fetch;
     globalThis.fetch = async (url, init = {}) => {
@@ -22,6 +22,10 @@ function fakeNet({ dedup = [{ id: 'row' }], processedAt = 'x', rpcs = {}, source
             if (init.method === 'POST') return Response.json(dedup, { status: 201 });
             if (init.method === 'PATCH') { calls.push({ name: 'processed' }); return new Response(null, { status: 204 }); }
             return Response.json([{ processed_at: processedAt }]);
+        }
+        if (u.includes('/rest/v1/jobs?')) {
+            calls.push({ name: 'job_state', url: u });
+            return Response.json(currentState ? [{ state: currentState }] : []);
         }
         if (u.includes('r2.cloudflarestorage.com')) { calls.push({ name: 'r2_put' }); return new Response(null, { status: 200 }); }
         calls.push({ name: 'source', url: u, auth: init.headers && init.headers.Authorization });
@@ -98,7 +102,7 @@ test('job_stored receives the content hash', async () => {
     } finally { net.restore(); }
 });
 
-for (const host of ['file1.aitohumanize.com', 'file5.aitohumanize.com', 'file6.aitohumanize.com']) test(`GrsAI scheduled completion from ${host} uses explicit R2 config and keeps the key off the CDN`, async () => {
+for (const host of ['file1.aitohumanize.com', 'file5.aitohumanize.com', 'file6.aitohumanize.com', 'file8.aitohumanize.com']) test(`GrsAI scheduled completion from ${host} uses explicit R2 config and keeps the key off the CDN`, async () => {
     const saved = process.env.R2_ACCOUNT_ID;
     delete process.env.R2_ACCOUNT_ID;
     const net = fakeNet({ source: () => new Response(new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 0, 0, 0, 0, 0])) });
@@ -118,14 +122,14 @@ test('GrsAI accepts only its verified exact CDN hosts and refuses redirects', as
     const r2cfg = { accountId: 'a', accessKeyId: 'k', secretAccessKey: 's', bucket: 'b' };
     const net = fakeNet({ source: () => new Response(null, { status: 302, headers: { location: 'https://evil.test/a' } }) });
     try {
-        for (const host of ['file1.aitohumanize.com.evil.test', 'file5.aitohumanize.com.evil.test', 'file6.aitohumanize.com.evil.test', 'file7.aitohumanize.com', 'aitohumanize.com', 'tempfile.aiquickdraw.com', 'localhost']) {
+        for (const host of ['file1.aitohumanize.com.evil.test', 'file5.aitohumanize.com.evil.test', 'file6.aitohumanize.com.evil.test', 'file8.aitohumanize.com.evil.test', 'file7.aitohumanize.com', 'aitohumanize.com', 'tempfile.aiquickdraw.com', 'localhost']) {
             assert.equal((await copyUrlToR2(`https://${host}/a.png`, 'key', r2cfg, { provider: 'grsai' })).error, 'source host not allowed');
         }
         assert.equal(net.calls.length, 0);
-        for (const host of ['file1.aitohumanize.com', 'file5.aitohumanize.com', 'file6.aitohumanize.com']) {
+        for (const host of ['file1.aitohumanize.com', 'file5.aitohumanize.com', 'file6.aitohumanize.com', 'file8.aitohumanize.com']) {
             assert.equal((await copyUrlToR2(`https://${host}/a.png`, 'key', r2cfg, { provider: 'grsai' })).error, 'source 302');
         }
-        assert.equal(net.calls.filter((c) => c.name === 'source').length, 3);
+        assert.equal(net.calls.filter((c) => c.name === 'source').length, 4);
         assert.equal(net.calls.some((c) => c.name === 'r2_put'), false);
     } finally { net.restore(); }
 });
@@ -142,5 +146,50 @@ test('GrsAI provider failure refunds once; processed replay has no side effects'
     try {
         assert.equal((await completeJob(call)).body.duplicate, true);
         assert.equal(net.calls.length, 0);
+    } finally { net.restore(); }
+});
+
+test('GrsAI rejects an unverified output host without marking the copy complete', async () => {
+    const net = fakeNet({});
+    try {
+        const r = await completeJob({ source: 'grsai', job, providerJobId: 'grs-copy',
+            outcome: { state: 'success', outputUrl: 'https://unverified.example/a.png' }, ext: '.png', cfg });
+        assert.equal(r.status, 500);
+        assert.equal(r.body.error, 'asset_store_failed');
+        assert.deepEqual(net.calls.map((c) => c.name), ['job_succeeded']);
+    } finally { net.restore(); }
+});
+
+test('GrsAI recovers a previously processed success that still has no stored asset', async () => {
+    const net = fakeNet({ dedup: [], processedAt: 'done', rpcs: { job_succeeded: { ok: false, code: 'JOB_NOT_FOUND_OR_BAD_STATE' } } });
+    try {
+        const r = await completeJob({ source: 'grsai', job: { ...job, state: 'SUCCEEDED' }, providerJobId: 'grs-copy',
+            outcome: { state: 'success', outputUrl: 'https://file6.aitohumanize.com/a.png' }, ext: '.png', cfg });
+        assert.equal(r.status, 200);
+        assert.deepEqual(net.calls.map((c) => c.name), ['job_state', 'job_succeeded', 'source', 'r2_put', 'job_stored', 'processed']);
+        const q = new URL(net.calls[0].url).searchParams;
+        assert.equal(q.get('id'), 'eq.job-1');
+        assert.equal(q.get('provider'), 'eq.grsai');
+        assert.equal(q.get('provider_job_id'), 'eq.grs-copy');
+    } finally { net.restore(); }
+});
+
+for (const state of ['STORED', 'FAILED', 'CANCELLED', null]) test(`GrsAI recovery cannot copy a stale SUCCEEDED snapshot when the current job is ${state}`, async () => {
+    const net = fakeNet({ dedup: [], processedAt: 'done', currentState: state });
+    try {
+        const r = await completeJob({ source: 'grsai', job: { ...job, state: 'SUCCEEDED' }, providerJobId: 'grs-copy',
+            outcome: { state: 'success', outputUrl: 'https://file6.aitohumanize.com/a.png' }, ext: '.png', cfg });
+        assert.equal(r.body.duplicate, true);
+        assert.deepEqual(net.calls.map((c) => c.name), ['job_state']);
+    } finally { net.restore(); }
+});
+
+test('GrsAI recovery still enforces the output host allowlist', async () => {
+    const net = fakeNet({ dedup: [], processedAt: 'done' });
+    try {
+        const r = await completeJob({ source: 'grsai', job: { ...job, state: 'SUCCEEDED' }, providerJobId: 'grs-copy',
+            outcome: { state: 'success', outputUrl: 'https://file6.aitohumanize.com.evil.test/a.png' }, ext: '.png', cfg });
+        assert.equal(r.status, 500);
+        assert.deepEqual(net.calls.map((c) => c.name), ['job_state', 'job_succeeded']);
     } finally { net.restore(); }
 });
