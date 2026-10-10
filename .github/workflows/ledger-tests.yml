@@ -23,6 +23,7 @@ on:
       - "scripts/test-cinema-upload-recovery.mjs"
       - "scripts/test-cinema-upload-removal.mjs"
       - "scripts/test-cinema-proxy-transfers.mjs"
+      - "scripts/test-cinema-library-uploads.mjs"
       - "scripts/test-cinema-operator-actions.mjs"
       - "scripts/test-cinema-free-plays.mjs"
       - "scripts/test-ledger-backstops.mjs"
@@ -158,6 +159,7 @@ jobs:
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-upload-recovery.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-upload-removal.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-proxy-transfers.mjs
+          DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-library-uploads.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-unlocks.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-passes.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-pass-plays.mjs
