@@ -79,3 +79,25 @@ authorize further grants or change customer billing.
   review, no landing page or template preview had been replaced. The owner
   subsequently approved using this output as the Frozen In Motion template
   preview; see [template recipes](../product/template-recipes.md).
+
+## 2026-10-10 — Film Studio empty-room production test and repair
+
+Al Jobson requested the real seven-stage empty-room test and asked Codex to add
+Credits. After the first run exposed missing image delivery, he requested the
+delivery fix and full rerun. Test grants use the same ledger path and account:
+production `xdxdzmsztyzbnzeforxx`, user
+`29f57b4b-5e5e-4e4a-ac8e-67e43c9af246`.
+
+- Initial grant: 100 Credits, key `codex-film-room-20261010-01`, reason
+  `grant:manual Al Jobson Film Studio empty-room end-to-end test`.
+  Ledger entry `3713687e-32e5-4a52-82bc-5b6afe3fead7`; balance 0 -> 100.
+- Repair/rerun grant: 60 Credits, key `codex-film-room-20261010-repair-01`,
+  reason `grant:manual Al Jobson Film Studio repair and seven-stage rerun`.
+  Ledger entry `fe75c008-e89c-4eb4-b275-db57be95e51d`; balance 28 -> 88.
+  This covers a reference sheet, six static asset tests and a fresh 10-second
+  Kling take after delivery recovery. No Credit purchase is made.
+- Both grants returned `ok: true`, `idempotent: false`, with `free_delta` 0.
+  Reuse the recorded keys for an unknown outcome; never issue duplicate grants.
+- These are test credits funding actual provider calls, not customer revenue.
+  The first run's 70-Credit debit and 30-Credit remaining balance reconciled.
+  The 2-Credit delivery diagnostic explains the 28-Credit pre-rerun balance.
