@@ -19,7 +19,7 @@ const LANDING_KEYS = [
     ...WALL_PRESETS.map((p) => WALL_SHOWCASE_KEYS[p.id]),
     ...Object.values(MODEL_SHOWCASE_KEYS),
 ];
-const PUBLIC_KEYS = [...LANDING_KEYS, ...PRESETS.map((p) => p.id)];
+const PUBLIC_KEYS = [...LANDING_KEYS, ...PRESETS.map((p) => p.clipKey)];
 const TILE_KEYS = new Set(PUBLIC_KEYS);
 const PATH_RE = {
     video: /^\/showcase\/[a-z0-9-]+\.(mp4|webm)$/,
@@ -144,7 +144,7 @@ test('imported inspiration keeps its title and source credit', () => {
 test('the full preset gallery has a distinct preview and poster for every filter result', () => {
     const videos = new Set();
     for (const preset of PRESETS) {
-        const clip = SHOWCASE_CLIPS[preset.id];
+        const clip = SHOWCASE_CLIPS[preset.clipKey];
         assert.ok(clip?.video, `${preset.id} has no gallery preview`);
         assert.ok(clip.poster, `${preset.id} has no gallery poster`);
         assert.ok(statSync(`${PUBLIC}${clip.poster}`).size <= 80 * 1024, `${preset.id} poster exceeds 80 KB`);

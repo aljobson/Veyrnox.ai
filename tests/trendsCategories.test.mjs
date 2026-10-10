@@ -23,7 +23,7 @@ test('every template belongs to a listed category, with a unique id and a non-em
 });
 
 test('the new templates are flagged New and sit in their own category as well', () => {
-    for (const [id, category] of [['saturday-cartoon', 'CARTOONS'], ['noir-one-sheet', 'MOVIES'], ['floating-castle', 'FANTASY'], ['street-portrait', 'REALISTIC']]) {
+    for (const [id, category] of [['monster-dab', 'CARTOONS'], ['epic-train-doorway-scene', 'MOVIES'], ['dreamworks-castle', 'FANTASY'], ['eyes-in', 'REALISTIC']]) {
         const p = PRESETS.find((x) => x.id === id);
         assert.ok(p && p.isNew && p.category === category, id);
         assert.ok(templatesIn('NEW').includes(p) && templatesIn(category).includes(p), id);

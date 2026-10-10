@@ -22,7 +22,7 @@ export function PresetCard({ preset, size = 'md', onClick, catalog }) {
   return (
     <MediaTile
       href={href}
-      clip={SHOWCASE_CLIPS[preset.id]}
+      clip={SHOWCASE_CLIPS[preset.clipKey]}
       onClick={onClick}
       ariaLabel={`Open the ${presetTitle(preset.name)} template`}
       className="block text-left w-full"
@@ -32,7 +32,7 @@ export function PresetCard({ preset, size = 'md', onClick, catalog }) {
         <div className="pt-3 flex items-baseline gap-2">
           <div className="min-w-0">
             <div className={`font-extrabold tracking-tight truncate ${s.title}`}>{presetTitle(preset.name)}</div>
-            <div className="mt-0.5 text-vx-fg-muted text-xs truncate">{preset.model}</div>
+            <div className="mt-0.5 text-vx-fg-muted text-xs truncate">{preset.model}{preset.durationSeconds ? ` · ${preset.durationSeconds}s` : ''}</div>
           </div>
           <span aria-hidden className="vx-leader flex-1 self-start mt-3 text-vx-fg-muted" />
           <div className="shrink-0 self-start font-vx-mono text-[14px] font-bold text-vx-money vx-num pt-0.5">{presetCredits(preset, catalog)} cr</div>

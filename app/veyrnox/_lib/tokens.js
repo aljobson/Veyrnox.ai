@@ -65,7 +65,7 @@ export function kindOf(modality) {
 
 
 // Templates live in templates.js; re-exported so existing imports keep working.
-export { PRESETS, PRESET_CATEGORIES, WALL_PRESETS, templatesIn, templateById, templateHref } from './templates.js';
+export { PRESETS, PRESET_CATEGORIES, WALL_PRESETS, ALL_TEMPLATES, templatesIn, templateById, templateHref } from './templates.js';
 
 // Preset names are stored upper-case for the studio's chips. Shown as a title
 // they read better in title case, except for the acronyms they contain.
@@ -101,7 +101,7 @@ export function modelIdForName(name) {
 export function presetHref(preset) {
   const modelId = modelIdForName(preset.model);
   return modelId
-    ? `/app/create?model=${encodeURIComponent(modelId)}&preset=${encodeURIComponent(preset.id)}`
+    ? `/app/create?model=${encodeURIComponent(modelId)}&preset=${encodeURIComponent(preset.id)}${preset.durationSeconds === 10 ? '&duration=10s' : ''}`
     : `/app/create?preset=${encodeURIComponent(preset.id)}`;
 }
 
@@ -115,7 +115,8 @@ export function presetHref(preset) {
 export function presetCredits(preset, catalog) {
   const id = modelIdForName(preset.model);
   const row = id && Array.isArray(catalog) ? catalog.find((m) => m.id === id) : null;
-  return row && typeof row.credits === 'number' ? row.credits : preset.credits;
+  const unit = row && typeof row.credits === 'number' ? row.credits : preset.credits;
+  return unit * (preset.durationSeconds === 10 ? COST_MULTIPLIER_10S : 1);
 }
 
 export const ASPECT_RATIOS = ['16:9', '9:16', '1:1', '4:5', '21:9'];

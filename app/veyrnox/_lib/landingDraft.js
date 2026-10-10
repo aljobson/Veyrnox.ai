@@ -20,7 +20,13 @@ export function takeStudioDraft(storage, modelId, now = Date.now()) {
     if (!draft || typeof draft.prompt !== 'string' || !draft.prompt) return null;
     if (!Number.isFinite(draft.at) || now - draft.at > MAX_AGE_MS) return null;
     if (!modelId || draft.model !== modelId) return null;
-    return { prompt: draft.prompt, aspect: typeof draft.aspect === 'string' ? draft.aspect : null };
+    return {
+      prompt: draft.prompt,
+      aspect: typeof draft.aspect === 'string' ? draft.aspect : null,
+      ...([5, 10].includes(draft.durationSeconds) ? { durationSeconds: draft.durationSeconds } : {}),
+      ...(typeof draft.negativePrompt === 'string' ? { negativePrompt: draft.negativePrompt } : {}),
+      ...(typeof draft.templateId === 'string' ? { templateId: draft.templateId } : {}),
+    };
   } catch {
     return null;
   }
@@ -32,9 +38,9 @@ export function takeLandingDraft(storage, modelId, now = Date.now()) {
 }
 
 /** Hand a prompt (and optional aspect) to the studio. False if storage is blocked. */
-export function writeStudioDraft(storage, { prompt, model, aspect = null }, now = Date.now()) {
+export function writeStudioDraft(storage, { prompt, model, aspect = null, durationSeconds, negativePrompt, templateId }, now = Date.now()) {
   try {
-    storage.setItem(LANDING_DRAFT_KEY, JSON.stringify({ prompt, model, aspect, at: now }));
+    storage.setItem(LANDING_DRAFT_KEY, JSON.stringify({ prompt, model, aspect, durationSeconds, negativePrompt, templateId, at: now }));
     return true;
   } catch {
     return false;
