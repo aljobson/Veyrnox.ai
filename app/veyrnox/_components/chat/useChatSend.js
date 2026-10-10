@@ -83,7 +83,7 @@ export function useChatSend({ text, setText, model, imagesBlocked, chosen, price
       if (!here) att.clear();           // elsewhere, or leaving: the images cannot wait with it, and must not go out with another chat's message
     };
     let hadText = false; // some of the reply reached the screen
-    let unsure = false;  // no `start`, no answer to the message's own request, and the server has not said the send is over
+    let unsure = false;  // no `start`, and nothing final is known of the send: its request got no answer, or was answered as a replay, and the server has not said it is over
     let looked = null;   // what the look for the turn found, when it was made for a job the server named and not one `start` brought
     let started = false; // the `start` event arrived, or the server named this send's job and the turn has settled: the Credits have been debited
     try {
@@ -109,6 +109,10 @@ export function useChatSend({ text, setText, model, imagesBlocked, chosen, price
       if (at().showing) setMessages((m) => [...m, { id: `u-${pending}`, role: 'user', content, status: 'complete', credits: 0, attachments: att.items.map(() => ({ type: 'image' })) }, { id: pending, role: 'assistant', content: '', status: 'streaming', credits: 0 }]);
       const ac = new AbortController(); abortRef.current = ac;
       let outcome = null; let streamError = null;
+      // The server named the job this send made, and no `start` came with it: the turn is looked for by that job, now. Settled,
+      // the send ends as a stream that broke after `start` does, on what this look found. Not settled, the job id is not kept:
+      // the send stays `unsure`, and its warning is kept with the send's key, which finds the same job when the chat is opened.
+      const lookFor = async (job) => { looked = await chatApi.settleStop({ threadId: thread.id, jobId: job, text: content, knownIds }); if (looked === 'pending') looked = null; else { started = true; jobId = job; } };
       const r = await sendTurn({
         threadId: thread.id, text: content, key, options: chosen, attachments: refs, signal: ac.signal,
         onEvent: (ev, d) => {
@@ -132,13 +136,21 @@ export function useChatSend({ text, setText, model, imagesBlocked, chosen, price
         setChecking(true); setMessages((m) => m.map((x) => (x.id === pending ? { ...x, status: 'lost' } : x)));
         const found = await askStoppedSend({ key, closeSend: chatApi.closeSend });
         if (found.closed) unsure = false;
-        else if (found.job) {
-          looked = await chatApi.settleStop({ threadId: thread.id, jobId: found.job, text: content, knownIds });
-          if (looked === 'pending') looked = null; else { started = true; jobId = found.job; } // `started` is asked first below
-        }
+        else if (found.job) await lookFor(found.job); // settled: `started`, which is asked first below
         throw e;
       });
-      if (r.replay) { await reload(); return; }
+      if (r.replay) {
+        // The server already holds a job for this send. This screen sends a key once, so that job was not made by a request it saw
+        // answered. A browser sends a POST again by itself when its connection dies with no answer: the first copy can have
+        // reached the server, which debited and took the reader that had gone as Stop (usually refunded, sometimes saved and
+        // charged), and this is the answer to the second. Or the job was made and never run (lib/freeJob.js: a free job whose own
+        // answer was lost). So a replay does not say the reply ran, or how it ended. It ends as a request that got no answer and
+        // whose job the server named: that job is looked for, now. No job named (the server always names one): `unsure`.
+        unsure = true; // as above: whatever goes wrong while the turn is looked for must end with the warning
+        setChecking(true); setMessages((m) => m.map((x) => (x.id === pending ? { ...x, status: 'lost' } : x)));
+        if (r.job) await lookFor(r.job);
+        throw new GatewayError('send_replayed', { status: 200, code: 'send_replayed' }); // to the endings below, and never told: `started` or `unsure` is set
+      }
       if (outcome && (outcome.status === 'failed' || (outcome.status === 'canceled' && !outcome.credits_charged && !outcome.message_id))) {
         // Nothing usable came back and the Credits were returned. With no error named (it was stopped before any text) nothing is
         // said, unless a warning is kept: that alone would read as being about this message.
@@ -180,9 +192,10 @@ export function useChatSend({ text, setText, model, imagesBlocked, chosen, price
       } else if (started) {
         // The stream broke after the Credits moved. The server treats a dropped connection like Stop and saves the turn some time
         // after the break, so it is looked for as after Stop. Only a job that kept nothing gives the message back or deletes the chat.
-        // (A request that got no answer before `start`, whose job the server named, was looked for already: `looked`.)
+        // (A request that got no answer before `start`, or a replay, whose job the server named was looked for already: `looked`.)
+        // A look that goes wrong is not an answer: the turn counts as not settled, and the warning is kept.
         setChecking(true); setMessages((m) => m.map((x) => (x.id === pending ? { ...x, status: 'lost' } : x)));
-        const outcome = looked || await chatApi.settleStop({ threadId: thread.id, jobId, text: content, knownIds });
+        const outcome = looked || await chatApi.settleStop({ threadId: thread.id, jobId, text: content, knownIds }).catch(() => 'pending');
         await relist();                                                  // first: the notice set below must not be replaced
         const reloaded = (outcome === 'saved' || outcome === 'unsaved') && await reload(); // the saved messages, with their real status and price
         if (outcome === 'nothing') giveBack(true); else att.clear();     // kept nothing: the message goes back, images too. Otherwise neither is offered again
@@ -192,7 +205,8 @@ export function useChatSend({ text, setText, model, imagesBlocked, chosen, price
         if (outcome === 'nothing') tellUncharged(notice); else tell(notice);
       } else if (unsure) {
         // The request got no answer and the server could say nothing final: it could not be asked (its route refuses, still
-        // offline, too slow), or the job it named was not settled when the look ended. A reply may still be saved and charged,
+        // offline, too slow), or the job it named was not settled when the look ended. The same for a replay whose job was not
+        // settled, or that named none. A reply may still be saved and charged,
         // so this ends as Stop before `start` does: the message goes back, a chat made for it stays for that reply, and the
         // warning is kept beside the text with the send's key, to be asked about when the chat is next opened (chatWarning.js).
         // Its words are the ones for a dropped connection that is not settled.

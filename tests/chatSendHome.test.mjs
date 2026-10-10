@@ -342,7 +342,12 @@ test('the chat is read again only while it is on screen', () => {
     // And never for a chat that is gone: its ending belongs to New chat, and there is nothing to read.
     // It first forgets the notice kept for the message before (pinned above): the chat is read again for this one.
     assert.match(send, /\n {4}const reload = async \(\) => \{ forgetEarlier\(\); const \{ home, here, coming \} = at\(\); return home === thread\.id && \(here \|\| coming\) && open\(thread\.id\); \};/);
-    assert.match(send, /\n {6}if \(r\.replay\) \{ await reload\(\); return; \}\n/, 'a replay shows the chat the same way');
+    // CHANGED (ADR-0067 amendment 14): a replay read the chat again itself (`if (r.replay) { await reload(); return; }`), said
+    // nothing, and so forgot a warning kept for the message before with nothing asked. It is looked for by the job the
+    // server names and ends as a stream that broke after `start` does (tests/chatSendReplay.test.mjs): the chat is read
+    // again only for a turn found saved, by the one reload() of that branch.
+    assert.doesNotMatch(send, /if \(r\.replay\) \{[^\n]*reload\(/, 'a replay no longer reads the chat again by itself');
+    assert.equal(send.split('await reload()').length - 1, 3, 'a reply that ran to its end, Stop, and a turn looked for after a break. It was four, with a replay');
     // Comments mention open(); the only call is the one inside reload().
     assert.equal(send.split('open(thread').length - 1, 1, 'no ending opens the chat itself: that would pull the person back to it');
     assert.doesNotMatch(send, /await open\(/);

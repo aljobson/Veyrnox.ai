@@ -43,12 +43,13 @@ export const afterReload = (storage, chat) => ({ box: readDraft(storage, ME, cha
 // `askLimitMs` is how long that question may take here. `log.closes` is each key asked about, `log.looks` the job id
 // each look for the turn was given (null: the chat alone).
 // The same route is asked for a send whose own request got no answer before `start` (tests/chatSendUnanswered.test.mjs).
-// `closeSend` is also handed the log so far. `settle` may be a function, for a look that throws. `openDown`: the chat
-// cannot be read again. `log.checking` is what the hook's `checking` state was set to, in order.
-export async function run({ active = null, turn, settle = 'pending', listDown = false, listFails = false, images = [], whileMaking = () => {}, kept = {}, text = TEXT, storage = null, making = null, upload = async () => 'k', prepare = async (f) => f, key = 'key', closeSend = notOpen, askLimitMs = null, openDown = false }) {
+// `closeSend` is also handed the log so far. `settle` may be a function, for a look that throws; it is handed the
+// `person` and the log so far, to see the screen while the turn is looked for. `openDown`: the chat cannot be read again.
+// `log.lookedIn` is what each look was handed: the chat, the text, and the ids of the messages on screen before the send (`shown`). `log.checking` is what the hook's `checking` state was set to, in order.
+export async function run({ active = null, turn, settle = 'pending', listDown = false, listFails = false, images = [], whileMaking = () => {}, kept = {}, text = TEXT, storage = null, making = null, upload = async () => 'k', prepare = async (f) => f, key = 'key', closeSend = notOpen, askLimitMs = null, openDown = false, shown = [] }) {
     const view = newChatView();
     if (active) { ask(view, active.id); land(view, active.id); }
-    const log = { notices: [], box: [], saved: {}, added: {}, opened: [], shownOnOpen: [], deleted: [], activeSet: [], imagesCleared: 0, refreshed: 0, quietReads: 0, failures: [], kept: { ...kept }, keptWith: {}, dropped: [], closes: [], looks: [], checking: [] };
+    const log = { notices: [], box: [], saved: {}, added: {}, opened: [], shownOnOpen: [], deleted: [], activeSet: [], imagesCleared: 0, refreshed: 0, quietReads: 0, failures: [], kept: { ...kept }, keptWith: {}, dropped: [], closes: [], looks: [], lookedIn: [], checking: [] };
     let onScreenMessages = []; let states = 0;
     const person = {
         press: (id) => ask(view, id),
@@ -70,7 +71,7 @@ export async function run({ active = null, turn, settle = 'pending', listDown = 
             create: making || (async () => { whileMaking(person); return { thread: { id: 'made', model_id: 'm' } }; }), move: async () => ({}), patch: async () => ({ thread: {} }),
             remove: (id) => { log.deleted.push(id); return Promise.resolve(); },
             threads: async () => { log.quietReads += 1; if (listDown) throw new Error('offline'); return { threads: [] }; },
-            settleStop: async ({ jobId }) => { log.looks.push(jobId ?? null); if (typeof settle === 'function') return settle(); return settle; },
+            settleStop: async ({ threadId, jobId, text: sent, knownIds }) => { log.looks.push(jobId ?? null); log.lookedIn.push({ chat: threadId, text: sent, known: [...knownIds] }); if (typeof settle === 'function') return settle(person, log); return settle; },
             closeSend: (k) => { log.closes.push(k); return closeSend(k, person, log); },
         },
     };
@@ -80,7 +81,7 @@ export async function run({ active = null, turn, settle = 'pending', listDown = 
     const { send } = useChatSend({
         // With `storage`, the box is stored under the chat on screen as it changes, as the screen's draft effect does.
         text, setText: (t) => { log.box.push(t); if (storage) writeDraft(storage, ME, view.shown, t); }, model: { id: 'm' }, imagesBlocked: false, chosen: {}, price: 2,
-        active, setActive: (t) => log.activeSet.push(t ? t.id : null), messages: [],
+        active, setActive: (t) => log.activeSet.push(t ? t.id : null), messages: shown.map((id) => ({ id })),
         setMessages: (f) => { onScreenMessages = typeof f === 'function' ? f(onScreenMessages) : f; },
         setThreads: () => {}, setError: (n) => log.notices.push(n),
         att: { items: images, clear: () => { log.imagesCleared += 1; } }, limits: { maxEdge: 2048 }, draftModel: 'm', folders: null, folder: 'all', instr: '',
