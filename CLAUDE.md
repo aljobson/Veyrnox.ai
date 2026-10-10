@@ -171,7 +171,7 @@ If a build starts failing after a dependency change, bisect these three first.
   - `/api/catalog`, `/api/credit-packs`, `/api/cinema/titles[/:id]`,
     `/api/popular-templates` — anonymous, read-only, cached public data
     (prices, packs, published titles, ranked template ids). Nothing per-user.
-  - `/api/cinema/voting`, `/api/cinema/comments`, `/api/cinema/story-polls`, `/api/credit-subscription-plans` — anonymous read-only, explicitly gated, no-store projections. Factories use `authed: false`, ignore inbound identity headers, and never return another account’s votes, pending comments, reports or billing records.
+  - `/api/cinema/voting`, `/api/cinema/discovery`, `/api/cinema/comments`, `/api/cinema/story-polls`, `/api/credit-subscription-plans` — anonymous read-only, explicitly gated, no-store projections. Factories use `authed: false`, ignore inbound identity headers, and never return another account’s votes, pending comments, reports or billing records.
   - `/api/webhook/*` — the provider's signature (see Provider webhooks).
   - `/api/admin/*` — Cloudflare Access plus a shared token; cron callers only.
   - `/media/social/:token` — a short-lived HMAC token naming one R2 object.

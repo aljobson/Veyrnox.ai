@@ -23,7 +23,7 @@ const RENEW_BEFORE_MS = 3 * 60 * 1000;
  * media events rather than the time the watch page is open. The server records
  * those for Cinema Pass viewing and, with the monthly ceiling on, free titles.
  */
-export function Player({ id }) {
+export function Player({ id, titleId = null }) {
   const account = useSyncExternalStore(onSessionChange, identity, noIdentity);
   const [state, setState] = useState('loading');
   const [src, setSrc] = useState('');
@@ -129,7 +129,7 @@ export function Player({ id }) {
     };
   }, [id, account, src, state, sdkReady]);
 
-  const back = <p className="mt-6 text-sm"><Link href={`/social-cinema/title/${id}`} className="underline">Back to the title</Link> · <Link href="/social-cinema" className="underline">Social Cinema</Link></p>;
+  const back = <p className="mt-6 text-sm">{UUID.test(titleId || '') && <><Link href={`/social-cinema/title/${titleId}`} className="underline">Back to the title</Link> · </>}<Link href="/social-cinema" className="underline">Social Cinema</Link></p>;
   const copy = { locked: 'This episode is locked. Unlock it from the title page or get a Cinema Pass.', not_ready: 'This video is still being prepared. Try again in a few minutes.', missing: 'This title is not available.', closed: 'Social Cinema viewing is not open yet.', pass_ceiling: 'Your Cinema Pass has reached its viewing limit for this month. You can still unlock episodes with credits.', free_ceiling: 'You have reached the free viewing limit for this month. Free viewing starts again next month.', error: 'Playback is unavailable right now. Try again in a moment.' };
 
   return <>{scriptNonce && account && <Script src="https://embed.cloudflarestream.com/embed/sdk.latest.js" nonce={scriptNonce || undefined} onReady={() => setSdkReady(typeof window.Stream === 'function')} onError={() => setState('error')} />}

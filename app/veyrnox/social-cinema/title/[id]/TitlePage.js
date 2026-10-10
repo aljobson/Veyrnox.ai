@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { CinemaComments } from '../../CinemaComments';
 import { CinemaVoting } from '../../CinemaVoting.js';
+import { CinemaShare } from '../../CinemaShare';
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import { Button } from '../../../_components/Button';
 import { getSession, onSessionChange } from '../../../../lib/authClient';
@@ -61,7 +62,7 @@ export function TitlePage({ id }) {
       {item.synopsis && <p className="mt-1 line-clamp-2 text-sm text-vx-fg-body wrap-break-word">{item.synopsis}</p>}
       <p className="mt-1 font-vx-mono text-xs text-vx-fg-muted">{minutes(item.duration_seconds)}{item.access === 'free' ? ' · Free' : item.access === 'unlocked' ? ' · Unlocked' : item.access === 'pass' ? ' · Cinema Pass' : item.reason === 'pass_ceiling' ? ' · Pass limit reached this month' : ''}</p>
     </div>
-    {playable(item) ? <Link href={`/social-cinema/watch/${item.id}`} className="rounded-full bg-vx-accent px-5 py-2 text-sm font-bold text-vx-accent-ink">Play</Link>
+    {playable(item) ? <Link href={`/social-cinema/watch/${item.id}?title_id=${id}`} className="rounded-full bg-vx-accent px-5 py-2 text-sm font-bold text-vx-accent-ink">Play</Link>
       : <Button size="sm" disabled={busy === item.id || (account && !agreed)} onClick={() => unlock(item)}>{account ? `Unlock for ${item.credits} credits` : 'Sign in to unlock'}</Button>}
   </li>;
   const locked = title.content_type === 'SERIES' ? title.seasons.some((s) => s.episodes.some((e) => e.access === 'locked')) : title.access === 'locked';
@@ -71,6 +72,7 @@ export function TitlePage({ id }) {
     <h1 className="vx-display vx-title-detail wrap-break-word">{title.title}</h1>
     <p className="mt-3 text-vx-fg-muted">by <Link href={`/social-cinema`} className="underline">{title.creator?.display_name}</Link> · {title.language}{title.categories?.length ? ` · ${title.categories.join(', ')}` : ''}{title.ai_disclosures?.length ? ` · AI: ${title.ai_disclosures.join(', ').replaceAll('_', ' ')}` : ''}</p>
     {title.synopsis && <p className="mt-6 max-w-2xl leading-relaxed text-vx-fg-body whitespace-pre-wrap wrap-break-word">{title.synopsis}</p>}
+    <CinemaShare key={id} id={id} title={title.title} />
     {notice && <p role="status" aria-live="polite" className="mt-6 rounded-lg border border-vx-border bg-vx-base/60 px-4 py-3 text-sm">{notice}</p>}
     {locked && account && <div className="mt-8 rounded-2xl border border-vx-border p-5">
       <label className="flex items-start gap-3 text-sm text-vx-fg-body"><input type="checkbox" className="mt-1" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} /><span>{CONSENT_TEXT}</span></label>
