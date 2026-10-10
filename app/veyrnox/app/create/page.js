@@ -160,10 +160,13 @@ export default function CreateStudio() {
 
   // A 10s selection must not survive a switch to a model that only sells 5s:
   // the gateway would reject it and the quoted price would have been double.
+  // A restored Film Studio draft can name a model absent from the fallback
+  // catalog. Preserve its duration until that model's real lengths arrive.
   useEffect(() => {
-    if (!durations.includes(duration)) setDuration(durations[0]);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [durationKey, duration]);
+    if (catalogLoading || !model) return;
+    const available = durationKey.split(',');
+    if (!available.includes(duration)) setDuration(available[0]);
+  }, [catalogLoading, model, durationKey, duration]);
 
   function pickSource(slot, file, asset = null) {
     setSources((prev) => {
