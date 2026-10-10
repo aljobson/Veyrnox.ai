@@ -5,6 +5,9 @@
 // reload included, the turn is asked about first, and a turn the server has settled takes the warning away or changes
 // what is kept. A read that fails, or a turn that is not finished, changes nothing: the warning stays and is asked about
 // the next time.
+// A send whose own request got no answer before `start` is asked about by its key at once, as a Stop before `start` is
+// (askStoppedSend in chatStop.js). Only when that says nothing final is its warning kept, with the key, for the next
+// time the chat is opened.
 // A warning that took the place of another stands for both turns and is kept with both (four at most). It is settled
 // only when every one of them is. A warning with no turn kept is never asked about: it stands for a turn it could not list.
 // The reads are handed in, and only the store is changed here: the screen then shows what is stored, as it does
@@ -74,8 +77,9 @@ const sameTurns = (a, b) => a.length === b.length && a.every((t, i) => t.job ===
  *                                             given back stays in the box
  *   some were saved                           the chat shows each reply and its price, so the warning is forgotten. If
  *               a saved message had been given back to the box, a notice is kept in the warning's place so that it is
- *               said on screen and after a page reload: `stop_saved` for a warning about one turn, `turns_settled`
- *               for several (the box may then hold a message that was not saved). Under New chat there is no chat to
+ *               said on screen and after a page reload: for a warning about one turn `stop_saved`, or `connection_saved`
+ *               when its connection dropped (nobody pressed Stop), and `turns_settled` for several (the box may then
+ *               hold a message that was not saved). Under New chat there is no chat to
  *               show a reply, so the warning stays; the answers are final, so its turns are let go and it is not asked
  *               about again
  * The box is emptied only while it still holds exactly a message that is now in the chat: text the person has changed
@@ -102,6 +106,6 @@ export function settleKeptWarning(storage, userId, chatId, asked) {
   const gaveBack = saved.some((t) => t.sent) || (warning.code === 'stop_unsure' && saved.includes(turns[turns.length - 1]));
   if (!gaveBack) { clearNotice(storage, userId, chatId); return true; }
   emptyBox();
-  writeNotice(storage, userId, chatId, turns.length > 1 ? 'turns_settled' : 'stop_saved');
+  writeNotice(storage, userId, chatId, turns.length > 1 ? 'turns_settled' : warning.code === 'connection_lost' ? 'connection_saved' : 'stop_saved');
   return true;
 }

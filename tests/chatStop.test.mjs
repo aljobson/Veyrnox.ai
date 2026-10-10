@@ -303,9 +303,12 @@ test('Stop before the start event: the send is asked about first, by its key, an
     // The server closed the send: the ending of a job that kept nothing, with no look at all. Anything else: the look,
     // in the words it has always had (the same call a dropped connection makes, tests/chatBrokenStream.test.mjs).
     assert.match(stop, /\n {8}const outcome = asked\?\.closed \? 'nothing' : await chatApi\.settleStop\(\{ threadId: thread\.id, jobId, text: content, knownIds \}\);\n/);
-    // Asked in one place in the whole hook: Stop. A dropped connection and a turn that never started do not close a send.
-    assert.equal(sender.split('askStoppedSend(').length - 1, 1);
-    assert.equal(sender.split('chatApi.closeSend').length - 1, 1);
+    // Asked in two places in the whole hook, with this one function: Stop before `start` (here), and since amendment 13 a
+    // message whose own request got no answer before `start` (tests/chatSendUnanswered.test.mjs). It was one. A stream
+    // that broke after `start`, a refusal and a turn that never started do not close a send.
+    assert.equal(sender.split('askStoppedSend(').length - 1, 2);
+    assert.equal(sender.split('chatApi.closeSend').length - 1, 2);
+    assert.equal(stop.split('askStoppedSend(').length - 1, 1, 'once in the Stop branch');
     assert.match(api, /\nexport \{ makeIdempotencyKey, lostNotice, askStoppedSend \};\n/);
     assert.match(api, /\nimport \{ askStoppedSend, lostNotice, settleStoppedTurn \} from '\.\/chatStop';\n/);
     // The look itself has no imports, so the route is handed in.

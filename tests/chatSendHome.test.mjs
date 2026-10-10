@@ -380,7 +380,14 @@ test('given-back text always goes into its chat\'s stored draft, and into the bo
     assert.ok(give[1].indexOf('forget(v, thread.id)') < give[1].indexOf('const { home, here, showing, left } = at();'));
     // setText appears twice in send(): emptying the box as the message is sent, and here.
     assert.equal(send.split('setText(').length - 1, 2, 'no ending puts the text in whatever box is on screen');
-    assert.equal(send.split('giveBack(').length - 1, 5, 'nothing came back, Stop with nothing, Stop before any text, a dropped connection with nothing, never started');
+    // Six since a request that got no answer before `start`, with the server unable to say what became of it, gives the text
+    // back with a warning as Stop before any text does (tests/chatSendUnanswered.test.mjs). It was five.
+    assert.equal(send.split('giveBack(').length - 1, 6, 'nothing came back, Stop with nothing, Stop before any text, a dropped connection with nothing, no answer and the server could not say, never started');
+    assert.equal(send.split('giveBack(false)').length - 1, 2, 'the two that may still be saved and charged: each keeps the chat and tells a warning');
+    assert.match(send, /giveBack\(false\); tell\('stop_unsure'\);/);
+    // The second also keeps the text when the chat page was left: its warning is stored beside it. Stop's does not (the
+    // guard above), which was decided before a notice could be stored and is not changed here.
+    assert.match(send, /\n {8}giveBack\(false\);\n {8}if \(at\(\)\.left\) addDraft\(at\(\)\.home, content\);[^\n]*\n {8}tell\('connection_lost'\);\n/);
 });
 
 test('a chat made for the message and deleted closes the screen only when it was the one shown', () => {

@@ -147,10 +147,12 @@ test('no answer changes nothing: every ending is the one the route gives with it
     assert.deepEqual(await opened(storage, 'chat-a', answers(SENDS.closed)), { box: TEXT, notice: null, changed: true, calls: [KEY] });
 });
 
-test('only Stop before `start` asks: once a job id has come, or when the message was not stopped, no send is closed', async () => {
+// Since amendment 13 one more ending asks, with the same question: a message whose own request got no answer before
+// `start`, which sendTurn raises as `send_unanswered` (tests/chatSendUnanswered.test.mjs). Nothing listed here is that.
+test('Stop asks only before `start`: once a job id has come, or for any of these messages that were not stopped, no send is closed', async () => {
     const closing = { key: KEY, closeSend: answers(SENDS.closed) };
     const others = [['Stop after `start`, before any text', { turn: stopBeforeText() }], ['Stop after text', { turn: stopAfterText() }], ['a dropped connection after `start`', { turn: cutBeforeText() }],
-        ['a dropped connection before `start`', { turn: refused(new TypeError('network error')) }], ['refused before it started', { turn: refused(new GatewayError('insufficient_balance', { status: 402, code: 'insufficient_balance' })) }],
+        ['an error with no code before `start` (not the one sendTurn raises for a request that got no answer)', { turn: refused(new TypeError('network error')) }], ['refused before it started', { turn: refused(new GatewayError('insufficient_balance', { status: 402, code: 'insufficient_balance' })) }],
         ['a reply that ran to its end', { turn: reply() }], ['a replay', { turn: async () => ({ replay: true }) }], ['an image that would not upload', { turn: reply(), images: IMAGES, upload: async () => { throw new GatewayError('upload_failed', { code: 'upload_failed' }); }, prepare: async () => ({}) , imagesAre: [{ file: {} }] }]];
     for (const [name, { imagesAre, ...how }] of others) for (const settle of ['pending', 'nothing', 'saved']) {
         const { log } = await run({ active: A, settle, storage: memory(), ...closing, ...how, ...(imagesAre && { images: imagesAre }) });

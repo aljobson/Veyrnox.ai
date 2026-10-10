@@ -384,7 +384,7 @@ The switch covers only asking by key. A warning for several messages that each h
 by job reads, as one message has been since pull request 764, from the moment the Worker deploys.
 
 Unchanged: every ending of a turn, the price, the refund paths and the sweep. A dropped connection before `start` (as opposed to
-Stop) still gives the message back as "not sent" and keeps no warning.
+Stop) still gives the message back as "not sent" and keeps no warning. (Amendment 13 changes that.)
 
 ## Amendment 12 2026-10-09: a message stopped before its reply started is asked about at the moment of Stop
 
@@ -432,7 +432,62 @@ only when the look ends, as before. With no answer that time grows from 3.5 seco
 neither the text nor a warning: nothing is offered to send again.
 
 Unchanged: Stop after `start`, a dropped connection and a message that never started ask nothing and end as they did. So does
-every ending of a turn on the server.
+every ending of a turn on the server. (Amendment 13 has a request that got no answer before `start` ask the same question.)
+
+## Amendment 13 2026-10-10: a send that got no answer before `start` is asked about at once, and warned about when the server cannot say
+
+Status: **Proposed**. The owner accepts it by merging the change. Browser only: no route, migration or switch. It asks the
+question of amendment 12 (`askStoppedSend`, 2 seconds) through the route of amendment 11.
+
+A connection that drops before `start`, with no Stop, ended as a message that never started: the text went back to the box
+with an ordinary notice and a chat made for the message was deleted. But the request can be at the server all the same, which
+takes a reader that has gone as Stop (amendment 10): it debits, usually refunds, and in a narrow window saves text and charges.
+The person held the message in the box with nothing saying so, and deleting the chat left a late reply charged and not stored.
+
+**Which failures can mean the request is at the server.** Only what happens to the message's own request once it has gone out.
+`sendTurn` raises the first three as one error, `send_unanswered`. Before `start`, that error alone starts what follows.
+
+| What the browser saw | May the server hold the send? |
+|---|---|
+| The request failed with no answer (`fetch` rejected) | Yes. "Never left" and "arrived, and the answer was lost" look the same |
+| A reply stream began and broke, or ended with no event of ours that could be read | Yes: the server answers with a stream only after the debit |
+| An answer with no `error` of ours and a status that is not 4xx (an edge or proxy page, a Worker that failed) | Yes: nothing in it says the turn did not run |
+| A refusal that names itself (`error`), whatever its status | No. No reply runs after one. `provider_submit_failed` and `debit_failed` come after the debit: the refund or the sweep returns the Credits |
+| A 4xx with no `error` | No: made in front of the turn (the edge, a proxy, no such route) |
+| No session, an image not read or uploaded, a chat or a key that could not be made | No: the message's request never went out |
+| Stop, wherever in the request it lands | Stop's own ending (amendment 12), now also while an answer that is not a stream is being read |
+
+**What the screen does.** The button says Checking while the server is asked.
+
+| The server says | The ending |
+|---|---|
+| No job, and the key is now closed | It never started and never can: the ending it always had (text back, the general notice, a chat made for it deleted) |
+| A job, and its turn settles within the look (3.5 seconds) | As a stream that broke after `start`: saved, charged and not stored, or nothing kept (text back, "no Credits were used") |
+| Nothing final: offline, a refusal, no answer in 2 seconds, a job not settled when the look ends, or anything going wrong meanwhile | The message goes back **with** "The connection dropped before the reply finished. It may have used Credits. Check this chat before you send again.", kept beside it with the send's key. A chat made for the message stays |
+
+The third row is the ending of a Stop before `start` that is not settled, in a dropped connection's words, settled the same way
+when the chat is next opened; saved then leaves "...This chat shows what was saved and the Credits it used." No new words. A job
+found and not settled is kept by the key: left on screen as sent, a refunded message would be in neither the chat nor the box.
+If the chat page was left, the message is stored in its chat's draft beside the warning (Stop still drops it there).
+
+**Closing a key the person did not stop.** The key of a send that got no answer and made no job is closed. That is what makes
+"That didn't work. Try again." true: a request that arrives late is refused and never charged.
+
+**What is kept.** The code is `connection_lost`, which pages on older code already read as a warning. A mark of the text is
+kept with it only when it is kept by the key, the one ending where a dropped connection puts the message back. A page still on
+amendment 11's code reads it without the mark: if that send was saved, it removes the warning and leaves the message in the box.
+
+**Cost.** When the server cannot be asked, every send whose request got no answer ends with the warning and keeps a chat made
+for it, a send from an offline device included: the browser cannot tell. It is settled when the chat is next opened online. The
+limits of amendments 11 and 12 (200 closed keys in 30 days, four turns to a warning) now also count sends nobody stopped.
+
+**Not chosen.** The warning without asking (it would warn after every blip when the server can say at once that nothing was
+sent). Storing the text and the warning before the ask (a saved turn would have its text in the box until corrected). A new
+warning code with its own words (older pages would read it as an ordinary notice and forget it at the next send).
+
+Left as they were: a replay (the browser resends a request whose connection died, and the resend is answered `replay: true`
+while the first copy runs with no reader) still reads the chat again, says nothing and forgets a warning kept before; a stream
+that ends cleanly after `start` with no `done` still ends as sent. Until the look ends nothing is stored, as after Stop.
 
 ## Not decided here
 
