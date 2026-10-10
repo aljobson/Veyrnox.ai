@@ -31,9 +31,10 @@ export function MarketingNav() {
     <AnnouncementBar />
     <div data-print="hide" className="sticky top-0 z-40 h-16 border-b border-vx-border bg-vx-base/88 backdrop-blur-sm">
       {/* Same 1300px column as the page body, so the logo sits on its edge. */}
-      <div className="h-full max-w-[1300px] mx-auto px-4 sm:px-6 flex items-center justify-between gap-3">
+      <div className="h-full max-w-[1300px] mx-auto px-4 sm:px-6 flex items-center justify-between gap-1 sm:gap-3">
       <Link href="/" aria-label="Veyrnox.ai — home" className="flex items-center gap-2.5 shrink-0">
-        <Logo wordmark />
+        <Logo className="min-[360px]:hidden" />
+        <Logo wordmark className="hidden min-[360px]:inline-flex" />
       </Link>
       <nav aria-label="Primary" className="hidden lg:flex gap-1.5 text-sm font-semibold">
         {items.map((it) => {
@@ -53,7 +54,7 @@ export function MarketingNav() {
           );
         })}
       </nav>
-      <div className="flex items-center gap-2 shrink-0">
+      <div className="flex items-center gap-1 sm:gap-2 shrink-0">
         <SiteSearch className="hidden sm:inline-flex" />
         <ThemeToggle className="hidden sm:inline-flex" />
         <NavAuthButtons />
