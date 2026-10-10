@@ -13,11 +13,12 @@ import { verifyRunnerBody, SIGNATURE_HEADER, TIMESTAMP_HEADER } from '../../../.
 import { findStep } from '../../../../lib/autoShortRuntime.js';
 import { montageDeps, runtimeConfig } from '../../../../lib/montageRuntime.js';
 import { parseEvent, handleRunnerEvent, SOURCE } from '../../../../lib/montageWebhook.js';
+import { withDeliveryLog } from '../../../../lib/webhookDelivery.js';
 
 const RUN_ID_RE = /^mr_[0-9a-f-]{36}$/i;
 const MAX_BODY = 16 * 1024;
 
-export async function POST(req) {
+async function handler(req) {
     const cfg = envConfig();
     const rt = runtimeConfig();
     const r2cfg = r2EnvConfig();
@@ -50,3 +51,6 @@ export async function POST(req) {
         return NextResponse.json({ error: 'internal' }, { status: 500 });
     }
 }
+
+// Every delivery and its answer is logged for /app/admin/webhooks (ADR-0083).
+export const POST = withDeliveryLog('montage', handler);

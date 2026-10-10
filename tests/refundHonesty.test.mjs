@@ -6,7 +6,7 @@ import { register } from 'node:module';
 // createErrors.js takes one string from the gateway client; the copy under
 // test needs none of the client itself.
 register('data:text/javascript,' + encodeURIComponent(`export async function resolve(s, c, next) {
-    if (s === './gateway') return { url: 'data:text/javascript,export const ACCOUNT_PAUSED_COPY = "";', shortCircuit: true };
+    if (s === './gateway') return { url: 'data:text/javascript,export const ACCOUNT_PAUSED_COPY = ""; export const ACCOUNT_ON_HOLD_COPY = "";', shortCircuit: true };
     return next(s === 'next/server' ? 'next/server.js' : s, c);
 }`));
 Object.assign(process.env, { SUPABASE_URL: 'https://db.test', SUPABASE_SERVICE_ROLE_KEY: 'service-role-test' });

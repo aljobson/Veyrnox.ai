@@ -36,6 +36,7 @@ import { rpc, envConfig } from '../../../../packages/db/supabase-client.js';
 import { dedup, markProcessed } from '../../../../lib/providerCompletion.js';
 import { handleCreditSubscriptionEvent, handleCreditSubscriptionCharge, handleCreditSubscriptionCheckout } from '../../../../lib/subscriptions/webhook.js';
 import { invoiceForCharge, fetchCreditInvoice } from '../../../../packages/adapters/stripeCreditSubscriptions.js';
+import { withDeliveryLog } from '../../../../lib/webhookDelivery.js';
 
 const SOURCE = 'billing:stripe';
 const LOG = '[stripe-webhook]';
@@ -69,7 +70,7 @@ const DISPUTE_REFUSED = new Set(['TOP_UP_NOT_FOUND', 'INVALID_ORDER_ID']);
 // charge was never credited and no redelivery will change that.
 const DISPUTE_RETRY_SECONDS = 3600;
 
-export async function POST(req) {
+async function handler(req) {
     const cfg = envConfig();
     const secret = process.env.STRIPE_WEBHOOK_SECRET;
     const apiKey = process.env.STRIPE_SECRET_KEY;
@@ -420,3 +421,6 @@ async function handlePassCharge(cfg, { invoiceId, object, eventId, type, apiKey,
 function occurredAt(eventCreated) {
     return new Date(Number.isSafeInteger(eventCreated) && eventCreated > 0 ? eventCreated * 1000 : Date.now()).toISOString();
 }
+
+// Every delivery and its answer is logged for /app/admin/webhooks (ADR-0083).
+export const POST = withDeliveryLog('stripe', handler);

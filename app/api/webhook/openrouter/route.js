@@ -11,10 +11,11 @@ import { verifyWebhook, fetchVideo, contentUrl } from '../../../../packages/adap
 import { envConfig } from '../../../../packages/db/supabase-client.js';
 import { isConfigured as r2IsConfigured, envConfig as r2EnvConfig } from '../../../../packages/adapters/r2.js';
 import { findJob, completeJob } from '../../../../lib/providerCompletion.js';
+import { withDeliveryLog } from '../../../../lib/webhookDelivery.js';
 
 const SOURCE = 'openrouter';
 
-export async function POST(req) {
+async function handler(req) {
     const cfg = envConfig();
     const apiKey = process.env.OPENROUTER_API_KEY;
     const secret = process.env.OPENROUTER_WEBHOOK_SECRET;
@@ -59,3 +60,6 @@ export async function POST(req) {
         return NextResponse.json({ error: 'internal' }, { status: 500 });
     }
 }
+
+// Every delivery and its answer is logged for /app/admin/webhooks (ADR-0083).
+export const POST = withDeliveryLog('openrouter', handler);
