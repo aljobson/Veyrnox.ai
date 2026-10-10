@@ -165,3 +165,15 @@ test('Kling 3.0 i2v pins pro/no-audio and requires a first frame', () => {
         assert.equal(buildRequest(target, { ...inputs, [key]: value }).error, `inputs_key_not_allowed:${key}`);
     }
 });
+
+test('Kling treats versioned Film Studio passport handles as labels, preserving the stored prompt', () => {
+    const target = parseEndpoint('market:kling-3.0/video');
+    const inputs = { prompt: 'Active references @room:v1 @Hero_2:v12. Keep @room:v1 unchanged. @element_dog follows.', image_url: 'https://r2.example/first.png', duration_seconds: 10 };
+    const original = inputs.prompt;
+    const request = buildRequest(target, inputs);
+    assert.equal(request.body.input.prompt, 'Active references room:v1 Hero_2:v12. Keep room:v1 unchanged. @element_dog follows.');
+    assert.equal(inputs.prompt, original);
+    assert.equal(request.body.input.duration, '10');
+    assert.equal(request.body.input.kling_elements, undefined);
+    assert.equal(buildRequest(parseEndpoint('market:kling-2.6/text-to-video'), { prompt: original }).body.input.prompt, original);
+});

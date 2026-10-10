@@ -113,8 +113,13 @@ export function buildRequest(target, inputs) {
         const seconds = clipSeconds(inputs);
         if (seconds === null) return { ok: false, error: 'duration_not_supported' };
         const image_urls = [inputs.image_url];
+        // Film Studio's versioned passport handles are labels, not Kling's
+        // @element references (which require a kling_elements payload). Keep
+        // the stored draft intact and render only these handles as plain text
+        // at the supplier boundary. Ordinary @element syntax stays untouched.
+        const supplierPrompt = prompt.replace(/@([a-zA-Z][a-zA-Z0-9_]{0,39}:v[1-9]\d{0,3})\b/g, '$1');
         return { ok: true, body: { model: target.model, input: {
-            prompt, image_urls, duration: String(seconds), mode: 'pro',
+            prompt: supplierPrompt, image_urls, duration: String(seconds), mode: 'pro',
             sound: false, multi_shots: false, multi_prompt: [],
         } } };
     }

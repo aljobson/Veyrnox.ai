@@ -531,3 +531,30 @@ left the pricing API, and the 8-credit figure on the Chinese page and in the
 docs example did not apply to a 2K request on this account. Re-run the same
 probe before any rollback is applied, and treat a `creditsConsumed` other than
 18 as a reason to re-cost first.
+
+## Update (2026-10-10): Film Studio passport labels in Kling prompts
+
+The real seven-stage empty-room rerun reached Kling with a 1,969-character
+fifteen-block prompt and a ten-second owned image-to-video request. Kie
+returned HTTP 200 / code 422: `kling_elements` is required when a prompt
+contains role references. Film Studio's `@room:v1` is a versioned location
+passport label, not a supplier element. Both submissions were fully refunded.
+
+Only the `market:kling-3.0/video` adapter now renders valid Film Studio
+versioned handles as plain labels (`room:v1`) at the supplier boundary.
+The saved prompt, passport descriptor, generation inputs, references, duration,
+pro mode and no-audio configuration remain intact. Unversioned supplier
+`@element` syntax is unchanged, and the adapter still refuses an undeclared
+`kling_elements` input. Other routes do not receive this transformation.
+
+Create also waits for the catalog and a resolved model before clamping a
+restored draft duration. Previously a ten-second Film Studio handoff named a
+model absent from the fallback catalog; the temporary five-second fallback
+reset its restored length before live capabilities arrived. Actual model
+switches still clamp unsupported lengths after the catalog resolves.
+
+Validation includes adapter/gateway regression tests, the full repository
+suite, and a running-app Reticle duration verdict with a delayed public
+catalog. Temporary verification instrumentation and the catalog fixture are
+excluded from the production patch. Production acceptance is recorded
+separately in the exported test evidence; submission alone is not a passed take.
