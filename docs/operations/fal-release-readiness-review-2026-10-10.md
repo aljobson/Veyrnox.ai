@@ -26,6 +26,12 @@ The queried monitor history also has a 62-minute-32-second interval between sche
 
 ## Next release sequence
 
+### Account attribution check at 09:48 UTC
+
+The owner identified a logged-in fal Preview tab. Its account profile showed `support-qjjpkm6xe9vz`; billing showed $31.97 available and concurrency showed zero active requests against a limit of ten. These are observations for that account, not yet production credential attribution. No API key was read and no account setting was changed.
+
+A read-only query of production project `xdxdzmsztyzbnzeforxx` found its latest STORED fal job `5c5755b0-83d8-4459-96c2-2732277f2bf6`, created at `2026-10-10T07:07:01.47736Z`, with provider handle `01a124a2-f54f-79a2-a6ab-aa389e0c4e5d`. That exact handle was present in the aljobson Chrome account history during the preceding signed retry preflight, alongside known staging handles. Thus the earlier separate-account statement cannot be used as verified attribution for all current production traffic. A credential change after this job, or different producer credentials, could explain the difference; neither is established. Owner clarification of current production account assignment is pending. Do not substitute Preview's balance/headroom for the account used by that observed production request.
+
 1. Retain the restored disabled configuration while ordinary staging monitoring collects evidence. Review actual counts-only artifacts and queue metrics over the full proposed interval; record gaps explicitly. No new watcher or duplicate notification automation is needed.
 2. Review and separately authorize merging the remaining controlled transport PR #795. Recheck its exact head and CI before squash-merge.
 3. Obtain read-only evidence for the correct production fal account's balance, quota, existing producers and available running headroom. Do not extract keys or substitute staging account data. Confirm production migration/deployment revisions and disabled flags through the protected workflow records.
