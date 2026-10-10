@@ -10,6 +10,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { NETWORKS, completeNetworkConnect, selectNetworkResource } from '../../../../lib/socialConnectClient.js';
+import { Main } from '../../../../veyrnox/_components/Main.js';
 
 const TRY_AGAIN = 'Nothing was connected. Go back and try again.';
 const ERROR_COPY = {
@@ -81,7 +82,7 @@ export default function SocialConnectCallback() {
     }
 
     return (
-        <div className="min-h-screen bg-vx-base text-vx-fg flex items-center justify-center px-6">
+        <Main className="min-h-screen bg-vx-base text-vx-fg flex items-center justify-center px-6">
             <div className="text-center max-w-sm">
                 <div className="text-sm text-zinc-400">{status}</div>
                 {selection && <form onSubmit={choose} className="mt-4 space-y-4">
@@ -98,6 +99,6 @@ export default function SocialConnectCallback() {
                     <a href="/app/publish" className="mt-4 inline-block text-sm text-white underline">Back to Veyrnox Publish</a>
                 )}
             </div>
-        </div>
+        </Main>
     );
 }

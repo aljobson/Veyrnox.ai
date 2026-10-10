@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { MarketingNav } from '../../_components/NavBar';
+import { Main } from '../../_components/Main';
 import { PremiumTag } from '../../_components/PremiumTag';
 import { LIST_GROUPS } from '../../_sections/showcase';
 import { findModel, modelFacts } from '../../_lib/modelPages';
@@ -35,7 +36,7 @@ export default async function ModelPage({ params }) {
       <MarketingNav />
       {/* The shell every public page shares, so this page starts on the
           logo's edge. The reading measure is the inner block. */}
-      <section className="max-w-[1300px] mx-auto px-4 sm:px-6 pt-14 sm:pt-20 pb-28">
+      <Main className="max-w-[1300px] mx-auto px-4 sm:px-6 pt-14 sm:pt-20 pb-28">
         <div className="max-w-[852px]">
         <Link href="/models" className="text-[14px] text-vx-fg-muted hover:text-vx-fg underline-offset-4 hover:underline">All models</Link>
         <h1 className="mt-4 vx-display vx-title-detail">{model.title}</h1>
@@ -66,7 +67,7 @@ export default async function ModelPage({ params }) {
           ))}
         </dl>
         </div>
-      </section>
+      </Main>
     </div>
   );
 }

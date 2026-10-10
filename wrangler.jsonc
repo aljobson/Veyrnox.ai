@@ -104,9 +104,11 @@
     "CREATOR_MONETISATION_ENABLED": "false",
     "CINEMA_SUBSCRIPTIONS_ENABLED": "false",
     // CINEMA_UNLOCKS_ENABLED also opens playback of free titles. Keep it
-    // "false" until free viewing has a monthly ceiling per account
-    // (docs/cinema/paywall-plan.md, P6).
+    // "false" until CINEMA_FREE_CEILING_ENABLED is "true": that switch gives
+    // each account a monthly ceiling on free viewing minutes (ADR-0057,
+    // docs/cinema/paywall-plan.md P6) and needs migration 0245 applied first.
     "CINEMA_UNLOCKS_ENABLED": "false",
+    "CINEMA_FREE_CEILING_ENABLED": "false",
     "CINEMA_PUBLISHING_ENABLED": "true",
     "CINEMA_VIEWING_ENABLED": "true",
     "VOTING_ENABLED": "false",
@@ -293,7 +295,11 @@
         // Production keeps all three switches false.
         "CINEMA_UNLOCKS_ENABLED": "true",
         "CINEMA_PUBLISHING_ENABLED": "true",
-        "CINEMA_VIEWING_ENABLED": "true"
+        "CINEMA_VIEWING_ENABLED": "true",
+        // Monthly ceiling on free viewing minutes (ADR-0057). Set to "true"
+        // once migration 0245 is applied on the staging database: before
+        // that, play, heartbeat and entitlement would answer 503 here.
+        "CINEMA_FREE_CEILING_ENABLED": "false"
       }
     }
   },
