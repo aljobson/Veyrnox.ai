@@ -51,9 +51,10 @@ test('stayed, refused before it started: text back, the refusal shown, a chat ma
     assert.deepEqual(log.box, ['', TEXT]);
     assert.deepEqual(log.notices, [null, 'insufficient_balance']);
     assert.deepEqual(log.deleted, ['made']);
-    // With the price, the job and the text since a kept warning can be settled later (tests/chatWarningSettle.test.mjs). A message
-    // that never started has no job, and the store keeps the job and a mark of the text only beside a warning a job can settle.
-    assert.deepEqual([kept(), log.keptWith[NEW_CHAT]], [{ [NEW_CHAT]: 'insufficient_balance' }, { credits: 2, job: null, sent: TEXT }], 'kept with the price its words need');
+    // With the price, the job, the send's key and the text since a kept warning can be settled later (tests/chatWarningSettle.test.mjs,
+    // tests/chatWarningTurns.test.mjs), and the warning it takes the place of (none here). A message that never started has no job,
+    // and the store keeps a job or a key and a mark of the text only beside a warning the server can be asked about.
+    assert.deepEqual([kept(), log.keptWith[NEW_CHAT]], [{ [NEW_CHAT]: 'insufficient_balance' }, { credits: 2, job: null, key: 'key', sent: TEXT, after: null }], 'kept with the price its words need');
     // Any other refusal was shown by the screen's fail() while its chat was on screen, and kept nowhere. It is told
     // like every other notice now, so it is kept with the text it gives back. The words are the same.
     const plain = await run({ active: A, turn: refused(new GatewayError('no', { status: 429, code: 'rate_limited' })) });

@@ -98,3 +98,21 @@ a title: unlock, entitlement, playback and Pass plays all answer
 `content_not_found` before any debit. Viewers who unlocked it earlier regain
 access when the creator is reinstated; an Operator can refund them meanwhile
 with `reverse_cinema_unlocks`.
+
+## Free viewing needs a ceiling before unlocks open in production (2026-10-09)
+
+Phase 3 records only Pass Plays, on the reasoning that the cost of free,
+unlocked and locked viewing is already accounted for. That holds for an Unlock,
+which is paid for, and for locked viewing, which plays nothing. It does not
+hold for free viewing: SHORT and TRAILER titles and Free Episodes are delivered
+by Stream at the same per-minute rate, and no minutes are counted for them.
+
+No viewer is affected today. `CINEMA_UNLOCKS_ENABLED` gates playback as well as
+unlocks and is `false` in production, so no playback token is issued there.
+`CINEMA_VIEWING_ENABLED` opens the catalogue only.
+
+Decision (owner, 2026-10-09): a monthly ceiling on free viewing minutes per
+account is built and switched on before `CINEMA_UNLOCKS_ENABLED` is `true` in
+production. It is not built yet. Its value, how minutes are counted and what a
+Cinema Pass holder gets past it are decided when it is built; it is
+precondition P6 in the [paywall plan](../cinema/paywall-plan.md).

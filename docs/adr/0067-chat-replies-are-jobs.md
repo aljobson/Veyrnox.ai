@@ -299,6 +299,141 @@ words and a long reply stopped a second and a half into its text were each store
 Not changed: the screen reloads the chat the moment Stop is pressed and can be a moment ahead of the save. A short retry there is a
 screen change with its own browser check.
 
+## Amendment 11 2026-10-09: a send can be asked about by its own key, and closed
+
+Status: **Accepted 2026-10-09**, the owner merged it (pull request 774). Migration 0242 was applied to production the same day
+through `apply-migrations`, and `CHAT_SEND_CLOSE_ENABLED` was set to `"true"` in production that day on the owner's word, without
+the 24-hour wait between a migration and its flag. Staging followed the same evening: 0242 applied there, then the switch.
+
+The chat screen keeps a warning when a message ended with its turn not settled ("If a reply is still saved, it will show in this
+chat and use Credits"). Since pull request 764 it keeps the reply's job id with the warning and reads that job when the chat is
+opened. Two warnings could still not be settled, and stayed long after their turns had in fact been refunded:
+
+1. **Stop before `start`.** No job id ever reached the browser. Reading the chat cannot settle it either: a chat that does not
+   show the turn cannot tell "refunded" from "still running" or "charged, not stored".
+2. **One warning for two turns.** A chat keeps one warning. A second message that also ended unsettled takes the first one's
+   place, and one job cannot answer for both, so no job was kept with it.
+
+**What the browser has.** The send's idempotency key. It is made in the browser before any request, the debit is unique on
+`(user_id, idempotency_key)`, and the debit is what makes the job. The key is now kept with the warning when there is no job id.
+
+**What "no job for this key" means.** Nothing, on its own. A request the browser gave up on can still be debited a moment later,
+so "no job" can stop being true. No time limit makes it final either: the Worker waits 8 seconds for a database call and a call
+that answers later is not seen, so there is no bound the server can promise. It is final only when the database says so in the
+same step that makes it so:
+
+- `chat_close_send(auth id, key)` (migration 0242), behind `POST /api/v1/chat/sends/close`. It returns the job that send made,
+  in the shape of the job read. Or, when the send made none, it records the key in `chat_closed_sends` and answers
+  `closed: true`.
+- From then on the database refuses to make a chat job for that person and key. A `BEFORE INSERT` trigger on `jobs` raises,
+  which undoes the whole debit that was making the job: `ledger_debit` and `submit_free_job` insert the job before they write
+  anything else. Nothing is charged, no allowance is used, and the turn answers `409 send_closed` to a reader who has gone.
+- The close and the debit take the same per-key advisory lock and hold it to the end of their transaction, so for one key
+  exactly one of them wins: a debit that came first is found by the close, and a close that came first is seen by the trigger.
+  This rests on READ COMMITTED, the level the API runs every call in and the one the ledger's lock-then-read functions are
+  written for. `chat_close_send` answers nothing under any other level, and a database test fails if a function on this path
+  is given one.
+
+Closing is what the person asked for: a key with no job id is only ever kept for a message they stopped.
+
+The trigger is in the database and not in the Worker, so the rule holds whichever version of the Worker makes the debit. It
+refuses only a chat reply's job (`inputs.kind = 'chat'`, as 0193 and 0233 read it). `chat_close_send` closes only a key in the
+shape the browser makes (`vx-` and a UUID), so no key the server derives for its own jobs can be closed. A replay of a send that
+made a job never reaches the insert and is unchanged.
+
+**Several turns under one warning.** The warning keeps every turn it stands for, each as a job id or a key, four at most. Past
+four it keeps none, is never asked about, and stays until a later message is saved, as before this amendment: dropping the
+oldest would let the listed four settle a warning that still stands for a fifth. The same when it takes the place of a warning
+that had nothing to ask by. Every turn is asked about each time the chat is opened, and nothing changes until all of them have a
+final answer. (A later message from the chat that is saved still forgets the warning, as it always has. Keys kept with it are
+then not closed.)
+
+One turn is stored in the notice itself, as pull request 764 stored it. Several are stored in a record of their own beside the
+notice, and the notice carries only a tag the record repeats. A page still running pull request 764's code reads a notice of 120
+characters at most: with the list inside the notice it would read nothing, show no warning and forget it at the next send. Kept
+this way it reads the same warning with nothing to ask by, which is what that code kept for two messages itself.
+
+| All of them together | The warning | The box |
+|---|---|---|
+| None used Credits (refunded, or closed) | removed, nothing said | unchanged |
+| One was charged and could not be stored | becomes "We could not save that reply to the chat..." | emptied only of a message that is now in the chat |
+| Some were saved, and a saved message had been given back to the box | replaced by a notice (below) | emptied only while it still holds exactly a saved message |
+| Some were saved, none of them given back | removed, nothing said: the chat shows each reply and its price | unchanged |
+
+For one turn the notice is the one pull request 764 added. For several it is: "Some messages here ended before we knew if they
+were saved. Each reply that was saved now shows in this chat with its price. A message that does not show here used no Credits."
+It does not say "you do not need to send that message again", because the box can then hold a message that was not saved.
+
+**Limits.** The route is counted against the shared job-read quota (0115) inside the database call. A closed key is kept for 30
+days and at most 200 are kept per person; past that, closing is refused and the warning stays. Thirty days is longer than any
+request can wait: it carries an access token the gateway refuses once expired (Supabase allows at most 7 days), and the turn's
+steps before the debit are bounded in seconds.
+
+**Not chosen.** Sending the job id before the debit (the debit makes the id, and Stop can come before any response). A read of a
+job by key with a waiting time after Stop (not final, as above). The check inside `ledger_debit`, or a wrapper the chat turn calls
+in its place (the first rewrites the function every debit goes through, which two other changes replaced on 2026-10-09; the
+second holds only for Workers that call the wrapper). A placeholder row in `jobs` for a closed key (it would show in job lists,
+counts and the 10-per-minute limit).
+
+**Order.** The Worker may deploy before 0242 is applied. The route then answers `503 send_close_not_open` (the switch is
+`"false"`), the screen reads that as no answer, and a warning for a message stopped before its reply started stays as it did.
+After the migration is applied through the `apply-migrations` workflow, the switch is turned on by a change to `wrangler.jsonc`.
+The trigger refuses nothing until a key is closed, and nothing closes a key while the switch is off.
+
+The switch covers only asking by key. A warning for several messages that each have a job id needs no migration: it is settled
+by job reads, as one message has been since pull request 764, from the moment the Worker deploys.
+
+Unchanged: every ending of a turn, the price, the refund paths and the sweep. A dropped connection before `start` (as opposed to
+Stop) still gives the message back as "not sent" and keeps no warning.
+
+## Amendment 12 2026-10-09: a message stopped before its reply started is asked about at the moment of Stop
+
+Status: **Proposed**. The owner accepts it by merging the change. It takes effect wherever amendment 11 is in effect, as soon
+as it is deployed: migration 0242 is applied and `CHAT_SEND_CLOSE_ENABLED` is `"true"` in production and on staging since
+2026-10-09.
+
+Amendment 11 asked about a send by its key when its chat was next opened. Until then the person saw "Stopped before any text
+arrived. If a reply is still saved, it will show in this chat and use Credits." beside the given-back text, although most such
+sends never reached the debit. The same question is now asked as soon as Stop is pressed, before the turn is looked for, and
+only when no job id has come (Stop before `start`). The browser's part only: no route, no migration and no switch is added.
+
+| The server's answer | What follows |
+|---|---|
+| `closed: true`, alone | No reply was charged and none can be. The ending of a job that kept nothing, with no look: the text is back (its images too, while its chat is still the one on screen), a chat made for the message is deleted, and no warning is kept. |
+| The job that send made | Its id is now known. The turn is looked for by it, and every ending is the one Stop after `start` has. A warning that is still needed is kept with the job id, not the key. |
+| Anything else | Nothing is known, and the look runs with no job id as it did before. It nearly always ends not settled: the warning is kept with the key, and is asked about when the chat is next opened (amendment 11). |
+
+"Anything else" is a refusal (the route's switch off, a rate limit, the 200-key limit, a database failure, a signed-out or
+changed account), a failed request, an answer in a shape the route does not send, and an answer that takes more than 2 seconds.
+An answer that has not come within those 2 seconds is not waited for. The request is not taken back, so the server may still
+close the key; the warning kept meanwhile is then settled by the same question when the chat is next opened. `closed` is read
+only as the boolean `true` with no other field beside it. Amendment 11's reader, used when a chat is opened, is held to the
+same (it allowed other fields as long as none was a job's). A job is taken only from `closed: false` with an id in the shape
+the server makes.
+
+**What the person is told when the send was closed.** Nothing, as for Stop with nothing kept today: the message is back in the
+box. If a warning is kept for the message before it, both are said, this Stop first ("Stopped. Nothing was saved and no Credits
+were used. Your message is back in the box. Before that: ..."), and that warning stays kept with its turns.
+
+**Time.** The question has its own limit of 2 seconds, the one the same question has when a chat is opened. The look that may
+follow is unchanged: about 3 seconds, 3.5 at most. A closed send ends in one round trip, where the look took about 3 seconds
+and then warned.
+
+**If the switch is turned off again.** The route answers `503 send_close_not_open`, which is no answer: every ending, notice
+and stored record is what it was before this amendment. The browser makes one more request for each Stop before `start`, and
+"Stopping" shows for that round trip longer.
+
+**The 200-key limit.** Each Stop before `start` whose send had not reached the debit now closes a key at once, a Stop that
+came before the request had left the browser included. Before, a key was closed only when a chat holding its warning was
+opened again. Past 200 in 30 days closing is refused, and that person is back to the warning.
+
+**A page reload while the button reads "Stopping".** The message is not in the box during the look, and a warning is stored
+only when the look ends, as before. With no answer that time grows from 3.5 seconds at most to 5.5. A reload inside it leaves
+neither the text nor a warning: nothing is offered to send again.
+
+Unchanged: Stop after `start`, a dropped connection and a message that never started ask nothing and end as they did. So does
+every ending of a turn on the server.
+
 ## Not decided here
 
 - Which models, and their prices. Needs live endpoint checks and the margin validator. (Three were chosen

@@ -5,7 +5,7 @@
 
 import { getFreshAccessToken, getSession, clearSession } from '../../lib/authClient.js';
 import { turnOptions } from './chatTurnOptions';
-import { lostNotice, settleStoppedTurn } from './chatStop';
+import { askStoppedSend, lostNotice, settleStoppedTurn } from './chatStop';
 import { gatewayFetch, GatewayError, ACCOUNT_PAUSED_COPY, makeIdempotencyKey, notifyBalanceChanged } from './gateway';
 
 const json = (body) => JSON.stringify(body);
@@ -28,6 +28,9 @@ export const chatApi = {
   move: (id, folderId) => gatewayFetch(`/chat/threads/${encodeURIComponent(id)}`, { method: 'PATCH', body: json({ folder_id: folderId }) }),
   // A reply is a job (ADR-0067): its state, by the id the `start` event carries.
   job: (id) => gatewayFetch(`/jobs/${encodeURIComponent(id)}`),
+  // A send that was stopped before `start` has no job id here. The server is asked by the send's own key: it answers
+  // with the job that send made, or, when it made none, closes the key so none can be made, and says `closed`.
+  closeSend: (key) => gatewayFetch('/chat/sends/close', { method: 'POST', body: json({ idempotency_key: key }) }),
   // After Stop or a dropped connection: look for the turn until it has settled ('saved', 'unsaved', 'nothing' or 'pending'),
   // then have the nav read the balance again. The balance moved at the debit and moves back on a refund, so it is read last.
   settleStop: async ({ threadId, jobId, text, knownIds }) => {
@@ -77,6 +80,7 @@ export function chatErrorCopy(code, { credits } = {}) {
     case 'stop_saving': return 'Stopped. We are still saving this reply, and it may use Credits. Open this chat again in a moment to see what was kept.';
     case 'stop_refunded': return 'Stopped. Nothing was saved and no Credits were used. Your message is back in the box.';
     case 'stop_saved': return 'A reply was saved after you pressed Stop. This chat shows it and its price. You do not need to send that message again.';
+    case 'turns_settled': return 'Some messages here ended before we knew if they were saved. Each reply that was saved now shows in this chat with its price. A message that does not show here used no Credits.';
     case 'stop_unsure': return 'Stopped before any text arrived. If a reply is still saved, it will show in this chat and use Credits.';
     default: return code && code.startsWith('provider_')
       ? 'The model did not finish. No Credits were used. Try again, or pick another model.'
@@ -94,7 +98,7 @@ export function chatUnchargedCopy(code, extra, warning) {
   return `${chatErrorCopy(code, extra)} Before that: ${chatErrorCopy(warning.code, warning)}`;
 }
 
-export { makeIdempotencyKey, lostNotice };
+export { makeIdempotencyKey, lostNotice, askStoppedSend };
 
 /**
  * Send one message and stream the reply. Calls onEvent(name, data) for start, delta, error, done.

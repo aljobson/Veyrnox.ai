@@ -1,6 +1,6 @@
 # Publish production readiness — 9 October 2026
 
-This activation change is a draft. Do not merge until the blocking gates below are resolved.
+Status update, 10 October 2026: the owner explicitly requested merging #749 before Google data-access approval. The earlier blocking-gate notes below are historical. Branding is verified; the Unlisted demo and scope justification have been submitted. Google still reports data access under review. Public activation does not constitute Google approval and retains the unverified-app warning and unverified-user cap.
 
 ## Prepared release
 
@@ -69,3 +69,8 @@ refresh, scheduling and disconnect acceptance remain to complete. Earlier
 evidence in this document is historical and does not supersede these results.
 This activation PR remains draft until Google data-access approval and the
 remaining acceptance checks are complete.
+
+
+## Owner-authorized activation, 10 October 2026
+
+The owner explicitly requested merging #749 while Google review is pending. Reviewer demo: https://youtu.be/nSokLHt_C3Q (Unlisted). Google confirms receipt; homepage and branding complete, remaining review stages in progress. PRs #775 and #776 are merged and deployed. Production private upload and live analytics succeeded; disconnect/reconnect preserved post history. Scheduling and token refresh have not been claimed as fully verified end to end. The earlier draft-only instructions are superseded by this owner authorization. YouTube is the only released network.

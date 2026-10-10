@@ -51,6 +51,11 @@
     // ADR-0067: Chat is open here, but the screen is still behind the per-browser preview switch
     // (localStorage.veyrnox_chat). Needs OPENROUTER_CHAT_API_KEY on the Worker: production will not use the shared key.
     "CHAT_ENABLED": "true",
+    // ADR-0067 amendment 11: POST /api/v1/chat/sends/close, which lets the chat screen settle a warning about a message that
+    // was stopped before its reply started. On in production since 2026-10-09: migration 0242 was applied there the same day
+    // (apply-migrations, approved by the owner), and the owner asked for it on that day, without the 24-hour wait. Set it back
+    // to "false" to stop keys being closed: the screen then keeps such a warning as it always has. Staging has its own value below.
+    "CHAT_SEND_CLOSE_ENABLED": "true",
     // ADR-0069: a per-model free allowance, taken as a price waiver. On in production since 2026-10-07: staging acceptance passed
     // 2026-10-06, and migrations 0205, 0206 and 0222 (the two models offered) are applied. At most $1.00 a day of provider spend.
     "FREE_ALLOWANCE_ENABLED": "true",
@@ -94,6 +99,9 @@
     "CINEMA_PROXY_UPLOADS_ENABLED": "true",
     "CREATOR_MONETISATION_ENABLED": "false",
     "CINEMA_SUBSCRIPTIONS_ENABLED": "false",
+    // CINEMA_UNLOCKS_ENABLED also opens playback of free titles. Keep it
+    // "false" until free viewing has a monthly ceiling per account
+    // (docs/cinema/paywall-plan.md, P6).
     "CINEMA_UNLOCKS_ENABLED": "false",
     "CINEMA_PUBLISHING_ENABLED": "true",
     "CINEMA_VIEWING_ENABLED": "true",
@@ -141,7 +149,7 @@
     // provider_moderation / provider_input_rejected. off | shadow | enforce.
     // Needs the TYPESAFE_API_KEY secret; shadow only logs the label.
     "JEV_SUBMIT_ERRORS_MODE": "off",
-    // YouTube-only initial release: merge after Google verification and acceptance.
+    // YouTube-only public release; Google data-access review remains pending.
     // Previously queued targets continue even when public Publish is disabled.
     "PUBLISH_ENABLED": "true",
     // Preserve the private pilot secret and default YouTube uploads to Private.
@@ -228,6 +236,9 @@
         // ADR-0067: Chat is open on staging for testing only. No text model is
         // active until the owner activates one; production stays "false".
         "CHAT_ENABLED": "true",
+        // ADR-0067 amendment 11 (vars are not inherited). On in staging since 2026-10-09: 0242 was applied there that day
+        // (checked against the file: both function bodies match), on the owner's word.
+        "CHAT_SEND_CLOSE_ENABLED": "true",
         // ADR-0069 (vars are not inherited). Flip to "true" on staging only after 0205 and 0206 are applied there.
         "FREE_ALLOWANCE_ENABLED": "false",
         // ADR-0072 (vars are not inherited). Flip to "true" on staging only after 0216 is applied there.

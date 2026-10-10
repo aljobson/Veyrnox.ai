@@ -1,7 +1,7 @@
 'use client';
 import { useRef, useState } from 'react';
 import { GatewayError } from '../../_lib/gateway';
-import { chatApi, chatErrorCopy, chatUnchargedCopy, lostNotice, makeIdempotencyKey, sendTurn, uploadChatImage } from '../../_lib/chatApi';
+import { askStoppedSend, chatApi, chatErrorCopy, chatUnchargedCopy, lostNotice, makeIdempotencyKey, sendTurn, uploadChatImage } from '../../_lib/chatApi';
 import { prepareImage } from '../../_lib/chatImages';
 import { NEW_CHAT } from '../../_lib/chatLocal';
 import { loadFailure } from '../../_lib/chatScreen';
@@ -14,8 +14,9 @@ import { ask, forget, land, onScreen, sendHome } from '../../_lib/chatSendHome';
  * `chatView` is the screen's record of which chat is on it (chatSendHome.js). `saveDraft(chatId, text)` stores a chat's
  * draft; `addDraft` puts text above what is already stored there. `keepNotice(chatId, code, extra)` stores what a chat's
  * last message ended with, beside its draft, and `dropNotice(chatId)` forgets it. `heldWarning(chatId)` is that notice when
- * it warns that Credits were used or still may be (chatLocal.js), else null. `extra` carries the reply's job and the text
- * sent, for a warning the screen asks the server about when its chat is next opened (chatWarning.js).
+ * it warns that Credits were used or still may be (chatLocal.js), else null. `extra` carries the reply's job, the send's
+ * key and the text sent, for a warning the screen asks the server about when its chat is next opened (chatWarning.js),
+ * and the warning this one takes the place of.
  * @returns {{send: () => Promise<void>, stop: () => void, busy: boolean, stopping: boolean, checking: boolean, progress: object|null}}
  */
 export function useChatSend({ text, setText, model, imagesBlocked, chosen, price, active, setActive, messages, setMessages, setThreads, setError, att, limits, draftModel, folders, folder, instr, open, refreshThreads, fail, chatView, saveDraft, addDraft, keepNotice, dropNotice, heldWarning }) {
@@ -32,6 +33,7 @@ export function useChatSend({ text, setText, model, imagesBlocked, chosen, price
     sendingRef.current = true; setBusy(true); setError(null); setText('');
     let thread = active; let created = false; const pending = `pending-${Date.now()}`;
     const knownIds = new Set(messages.map((x) => x.id)); let jobId = null; // to tell this turn from the ones already on screen
+    let key = null; // this send's idempotency key, made below before any request: with no job id (Stop before `start`), the server is asked about the send by it
     // The notice kept for the chat this message is sent from is about the message before it, and goes at the press. Unless it warns
     // that the one before used Credits or still may: that is forgotten only by an ending of this message that accounts for Credits
     // itself. Either this message was saved (reload(): the chat shows it and its price, and is read again when it is on screen), or
@@ -47,11 +49,12 @@ export function useChatSend({ text, setText, model, imagesBlocked, chosen, price
     // What an ending says is kept with its chat, as a code (chatLocal.js): the screen shows it whenever that chat is opened, a
     // page reload included, until a later message is sent from it or, for a warning, the server says its turn has settled.
     // It goes on screen now only while that chat is the one on it.
-    // The reply's job (none before `start`) and the text sent go to the store with it. The store keeps them only beside a warning
-    // about a turn that is not settled, the text as a mark: opening the chat later asks that job, and a settled turn takes the warning away.
-    // Not when a warning is still kept for the chat this message was sent from (`over`): this notice takes its place, so one warning
-    // then stands for two turns and one job cannot answer for both. It keeps no job, and stays until a later message accounts for Credits.
-    const tell = (code, extra) => { const over = !!heldWarning(from); forgetEarlier(); const { home, here } = at(); keepNotice(home, code, { ...extra, job: over ? null : jobId, sent: content }); if (here) setError(chatErrorCopy(code, extra)); };
+    // The reply's job (none before `start`), this send's key and the text sent go to the store with it. The store keeps them only
+    // beside a warning about a turn that is not settled, the key only with no job and the text as a mark: opening the chat later
+    // asks about that turn, and a settled turn takes the warning away.
+    // A warning still kept for the chat this message was sent from is read first (`before`) and handed on: this notice takes its
+    // place, so it then stands for that warning's turns as well, and the store keeps them with it. It goes only when all are settled.
+    const tell = (code, extra) => { const before = heldWarning(from); forgetEarlier(); const { home, here } = at(); keepNotice(home, code, { ...extra, job: jobId, key, sent: content, after: before }); if (here) setError(chatErrorCopy(code, extra)); };
     // A message that used no Credits (it never started, or it started and they came back) has its text given back, and what it says
     // is about itself. It does not take the place of a warning that the message before it used Credits or still may: that warning
     // stays kept, and while its chat is on screen both are said, this one first. True when such a warning is kept, said or not.
@@ -82,6 +85,7 @@ export function useChatSend({ text, setText, model, imagesBlocked, chosen, price
     let hadText = false; // some of the reply reached the screen
     let started = false; // the `start` event arrived: the Credits have been debited
     try {
+      key = makeIdempotencyKey(); // in here: a browser that cannot make one ends like any message that never started
       // Images go to storage first, before anything is charged: a failed upload costs nothing.
       // A Library image is already in storage; the server checks it is the caller's own, so it is sent by id.
       const refs = [];
@@ -104,7 +108,7 @@ export function useChatSend({ text, setText, model, imagesBlocked, chosen, price
       const ac = new AbortController(); abortRef.current = ac;
       let outcome = null; let streamError = null;
       const r = await sendTurn({
-        threadId: thread.id, text: content, key: makeIdempotencyKey(), options: chosen, attachments: refs, signal: ac.signal,
+        threadId: thread.id, text: content, key, options: chosen, attachments: refs, signal: ac.signal,
         onEvent: (ev, d) => {
           if (ev === 'start') { started = true; jobId = d.job_id; setProgress(null); }
           if (ev === 'progress') setProgress(d);
@@ -132,16 +136,21 @@ export function useChatSend({ text, setText, model, imagesBlocked, chosen, price
         // Stop. The server saves the stopped turn a moment after the browser lets go, so a reload at once can come back
         // without it. The question and the text so far stay on screen while the turn is looked for.
         setStopping(true); setMessages((m) => m.map((x) => (x.id === pending ? { ...x, status: 'saving' } : x)));
-        const outcome = await chatApi.settleStop({ threadId: thread.id, jobId, text: content, knownIds });
+        // Stop before `start`: no job id came, so the look could only read the chat. The server is first asked about the send by
+        // its key (chatStop.js). It closed the send: no reply was charged and none can be, which is the ending of a job that kept
+        // nothing. It named the job the send made: that job is looked for, as after `start`. No answer: the look, as it always was.
+        const asked = jobId ? null : await askStoppedSend({ key, closeSend: chatApi.closeSend });
+        if (asked?.job) jobId = asked.job;
+        const outcome = asked?.closed ? 'nothing' : await chatApi.settleStop({ threadId: thread.id, jobId, text: content, knownIds });
         await relist();                                                  // first: a notice set below must not be replaced
         if (outcome === 'saved' || outcome === 'unsaved') {
           att.clear(); await reload();                                   // the saved messages, with their real status and price
           if (outcome === 'unsaved') tell('reply_not_saved'); // charged, but it could not be stored: say so, after open()
-        } else if (outcome === 'nothing') { giveBack(true); besideWarning('stop_refunded'); } // nothing was produced and the Credits came back
+        } else if (outcome === 'nothing') { giveBack(true); besideWarning('stop_refunded'); } // nothing was produced and the Credits came back, or the send was closed before any were taken
         else if (!hadText) {
-          // Not settled, and no text had arrived: Stop came before `start` (no job to ask) or before the first words (the job
-          // had not ended). There is nothing on screen to keep, so the message goes back. But a reply may still be saved:
-          // the chat stays for it, and the notice says so.
+          // Not settled, and no text had arrived: Stop came before `start` (and the server did not say what became of the send, or
+          // named a job that had not ended) or before the first words (the job had not ended). There is nothing on screen to
+          // keep, so the message goes back. But a reply may still be saved: the chat stays for it, and the notice says so.
           giveBack(false); tell('stop_unsure');
         } else {
           // Still being saved when the tries ran out: the text stays on screen and the notice says so.

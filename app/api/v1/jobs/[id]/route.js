@@ -5,7 +5,7 @@
  *   { state, credits, model_id, error_code? }
  *   state ∈ ("queued" | "running" | "succeeded" | "failed")
  *
- * DB → UI state mapping (kept here so UI stays honest with the ledger):
+ * DB → UI state mapping (lib/jobState.js, so the UI stays honest with the ledger):
  *   PRICED, DEBITED, FAILOVER   → queued  (nothing user-visible yet)
  *   SUBMITTED, SUCCEEDED        → running (provider working / asset copying
  *                                  to R2 — no asset row until STORED)
@@ -24,39 +24,10 @@
 
 import { NextResponse } from 'next/server';
 import { jobReadLimitResponse } from '../../../../../lib/jobReadLimit.js';
+import { publicJob } from '../../../../../lib/jobState.js';
 import { rpc, envConfig } from '../../../../../packages/db/supabase-client.js';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-function mapState(dbState) {
-    switch (dbState) {
-        case 'PRICED':
-        case 'DEBITED':
-        case 'FAILOVER':
-            return 'queued';
-        case 'SUBMITTED':
-        case 'SUCCEEDED':
-            return 'running';
-        case 'STORED':
-            return 'succeeded';
-        // Both map to `failed` for the client's flow control; `refunded`
-        // below carries the money fact.
-        case 'FAILED':
-        case 'REFUNDED':
-            return 'failed';
-        default:
-            return 'queued';
-    }
-}
-
-// Provider error codes are vendor strings; only our own short codes and a
-// safe slug shape cross to the client.
-const PUBLIC_ERROR_RE = /^[a-z0-9_]{1,64}$/;
-function publicErrorCode(code) {
-    if (!code) return undefined;
-    const s = String(code).toLowerCase();
-    return PUBLIC_ERROR_RE.test(s) ? s : 'provider_error';
-}
 
 export async function GET(req, { params }) {
     const authId = req.headers.get('x-veyrnox-auth-id');
@@ -85,15 +56,6 @@ export async function GET(req, { params }) {
         return NextResponse.json({ error: 'not_found' }, { status: 404 });
     }
 
-    return NextResponse.json({
-        state: mapState(row.state),
-        // FAILED is not REFUNDED: job_failed settles the job, and the refund
-        // is a second call that can still be in flight (or, before 0099, lost).
-        // The UI said "credits refunded" for both; now it can only say it when
-        // the ledger says so.
-        refunded: row.state === 'REFUNDED',
-        credits: row.credits,
-        model_id: row.model_id,
-        error_code: publicErrorCode(row.error_code),
-    }, { headers: { 'Cache-Control': 'no-store' } });
+    // The mapping lives in lib/jobState.js, shared with the route that answers for a send by its key.
+    return NextResponse.json(publicJob(row), { headers: { 'Cache-Control': 'no-store' } });
 }

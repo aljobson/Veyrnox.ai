@@ -6,14 +6,21 @@
 // tile populated when the feature cards or template wall change.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, mkdirSync, mkdtempSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { SHOWCASE_CLIPS, SHOWCASE_SOURCES, MODEL_SHOWCASE_KEYS, MAX_CLIP_BYTES } from '../app/veyrnox/_lib/showcase.js';
+import { SHOWCASE_CLIPS, SHOWCASE_SOURCES, MODEL_SHOWCASE_KEYS, WALL_SHOWCASE_KEYS, MAX_CLIP_BYTES } from '../app/veyrnox/_lib/showcase.js';
 import { FEATURE_CARDS, PRESETS, WALL_PRESETS } from '../app/veyrnox/_lib/tokens.js';
 
 const PUBLIC = new URL('../public', import.meta.url).pathname;
-const TILE_KEYS = new Set([...FEATURE_CARDS.map((f) => f.key), ...PRESETS.map((p) => p.id)]);
+const LANDING_KEYS = [
+    ...FEATURE_CARDS.map((f) => f.key),
+    ...WALL_PRESETS.map((p) => WALL_SHOWCASE_KEYS[p.id]),
+    ...Object.values(MODEL_SHOWCASE_KEYS),
+];
+const PUBLIC_KEYS = [...LANDING_KEYS, ...PRESETS.map((p) => p.id)];
+const TILE_KEYS = new Set(PUBLIC_KEYS);
 const PATH_RE = {
     video: /^\/showcase\/[a-z0-9-]+\.(mp4|webm)$/,
     poster: /^\/showcase\/[a-z0-9-]+\.(jpg|webp)$/,
@@ -23,7 +30,7 @@ const PATH_RE = {
 function problems(manifest, { tileKeys, publicDir, maxBytes }) {
     const found = [];
     for (const [key, clip] of Object.entries(manifest)) {
-        if (!tileKeys.has(key)) found.push(`"${key}" matches no FEATURE_CARDS key or PRESETS id`);
+        if (!tileKeys.has(key)) found.push(`"${key}" matches no public tile placement`);
         for (const field of ['video', 'poster']) {
             const src = clip[field];
             if (field === 'poster' && src === undefined) continue;
@@ -85,15 +92,40 @@ test('the real manifest is sound', () => {
 });
 
 test('every landing tile has a distinct viral preview and a small poster', () => {
-    const keys = [...FEATURE_CARDS.map((f) => f.key), ...WALL_PRESETS.map((p) => p.id)];
     const videos = new Set();
-    for (const key of keys) {
+    for (const key of LANDING_KEYS) {
         const clip = SHOWCASE_CLIPS[key];
         assert.ok(clip, `${key} has no landing preview`);
         assert.ok(clip.poster, `${key} has no still for reduced motion`);
         assert.ok(statSync(`${PUBLIC}${clip.poster}`).size <= 80 * 1024, `${key} poster exceeds 80 KB`);
         assert.ok(!videos.has(clip.video), `${key} repeats another tile's preview`);
         videos.add(clip.video);
+    }
+});
+
+test('homepage and presets together never reuse a clip, poster or video file content', () => {
+    assert.equal(TILE_KEYS.size, PUBLIC_KEYS.length, 'two public placements use the same manifest key');
+    const videos = new Set();
+    const posters = new Set();
+    const contents = new Set();
+    for (const key of PUBLIC_KEYS) {
+        const clip = SHOWCASE_CLIPS[key];
+        assert.ok(clip?.video, `${key} has no preview`);
+        assert.ok(clip.poster, `${key} has no poster`);
+        assert.ok(!videos.has(clip.video), `${key} repeats another public tile's video`);
+        assert.ok(!posters.has(clip.poster), `${key} repeats another public tile's poster`);
+        const hash = createHash('sha256').update(readFileSync(`${PUBLIC}${clip.video}`)).digest('hex');
+        assert.ok(!contents.has(hash), `${key} uses a renamed copy of another public tile's video`);
+        videos.add(clip.video);
+        posters.add(clip.poster);
+        contents.add(hash);
+    }
+});
+
+test('every homepage template has its own wall placement', () => {
+    assert.deepEqual(Object.keys(WALL_SHOWCASE_KEYS), WALL_PRESETS.map((preset) => preset.id));
+    for (const preset of WALL_PRESETS) {
+        assert.notEqual(WALL_SHOWCASE_KEYS[preset.id], preset.id, `${preset.id} reuses its gallery placement`);
     }
 });
 

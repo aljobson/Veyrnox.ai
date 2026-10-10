@@ -71,3 +71,21 @@ this change.
 Keep public activation PR #749 draft until the applicable verification and
 acceptance gates are met. See the production readiness record and
 [Google's verification guidance](https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification).
+
+## Production evidence — 9 October 2026
+
+One owner-approved Tokyo alley video was delivered through the production
+YouTube adapter with Private visibility. YouTube Studio confirmed Private,
+and the worker recorded `published`, one attempt, and no error after processing.
+Google branding is verified and published. Data-access verification remains
+pending the actual consent and scope-use recording; screenshots and the source
+video are not substitutes for that recording. Public Publish remains disabled.
+
+During this acceptance, a production deployment was followed by loss of
+`PUBLISH_TESTER_AUTH_IDS` (#772). The existing approved secret was restored.
+The production workflow now captures secret **names** from serving versions
+before deploying, then checks all serving versions afterwards. Missing or
+unreadable metadata fails the check and triggers the existing rollback path.
+This detects binding loss; it does not compare secret values or establish the
+root cause of the incident. Intentional secret removal must be performed
+separately before a code deployment so the recorded baseline reflects it.
