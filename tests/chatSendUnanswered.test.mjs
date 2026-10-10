@@ -1,4 +1,4 @@
-// A message whose own request went out and got no answer, before the reply's `start` (ADR-0067 amendment 12).
+// A message whose own request went out and got no answer, before the reply's `start` (ADR-0067 amendment 13).
 // PR 774 named this as left open. send() ended it as a message that never started: the text went back to the box with an
 // ordinary notice, and a chat made for it was deleted. But a request that got no answer can be at the server all the same.
 // The server takes the missing reader as Stop: it debits, usually refunds, and in a narrow window saves text and charges.
@@ -6,8 +6,9 @@
 //   1. sendTurn says when that is so (`send_unanswered`): its request failed, the reply stream broke or ended with no
 //      event, or the answer was neither ours nor a refusal. A typed refusal, a 4xx, and anything before the request
 //      (an image, the chat, the key, the session) cannot mean it, and end as they always did.
-//   2. send() asks the server about that send by its key, at once (PR 774's route). "No job, and the key is closed" is
-//      the ending it had. A job is looked for at once: settled, it ends as a stream that broke after `start` does.
+//   2. send() asks the server about that send by its key, at once: PR 774's route, with the question PR 784 asks at
+//      the moment of Stop (askStoppedSend, tests/chatStop.test.mjs). "No job, and the key is closed" is the ending it
+//      had. A job is looked for at once: settled, it ends as a stream that broke after `start` does.
 //   3. Nothing final (the route refuses, still offline, slow, or the job is not settled when the look ends): the message
 //      goes back with the warning for a dropped connection kept beside it, on screen and after a page reload, with the
 //      send's key. A chat made for the message stays. Opening the chat later asks again and settles it
@@ -18,9 +19,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { MAX_NOTICE, NEW_CHAT, clearNotice, readCreditsWarning, textMark, writeDraft, writeNotice } from '../app/veyrnox/_lib/chatLocal.js';
-import { lostNotice, settleStoppedTurn } from '../app/veyrnox/_lib/chatStop.js';
-import { KEPT_READ_LIMIT_MS, askSend } from '../app/veyrnox/_lib/chatWarning.js';
-import { A, GatewayError, ME, TEXT, afterReload, cutBeforeText, memory, noAnswer, refused, reply, run, stopped, toB, unanswered } from './chatSendFlow.harness.mjs';
+import { askStoppedSend, lostNotice, settleStoppedTurn } from '../app/veyrnox/_lib/chatStop.js';
+import { A, GatewayError, ME, TEXT, afterReload, cutBeforeText, memory, noAnswer, notOpen, refused, reply, run, stopped, toB, unanswered } from './chatSendFlow.harness.mjs';
 import { JOB, JOBS, KEY, OTHER_KEY, SENDS, answers, leftBy, opened, stopBeforeStart } from './chatWarning.harness.mjs';
 
 const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
@@ -39,7 +39,7 @@ function loadApi(fetch, { token = 'token' } = {}) {
     const calls = [];
     const deps = {
         getFreshAccessToken: async () => token, getSession: () => ({ access_token: token }), clearSession: () => {}, turnOptions: (o) => o,
-        lostNotice, settleStoppedTurn, askSend, gatewayFetch: async () => { throw new Error('not used here'); }, GatewayError,
+        lostNotice, settleStoppedTurn, askStoppedSend, gatewayFetch: async () => { throw new Error('not used here'); }, GatewayError,
         ACCOUNT_PAUSED_COPY: 'paused', makeIdempotencyKey: () => KEY, notifyBalanceChanged: () => {},
     };
     assert.deepEqual(imported.filter((n) => !(n in deps)), [], 'every name chatApi.js imports is handed in here');
@@ -165,43 +165,12 @@ test('with no session nothing goes out, so there is nothing to ask about', async
 
 // ---- 2. asking about the send at once, by its key ----
 
-test('the send is asked about by its key, and only two answers are taken: its key is closed, or the job it made', async () => {
-    const asked = [];
-    const closeSend = (answer) => async (key) => { asked.push(key); return answer; };
-    assert.deepEqual(await askSend({ key: KEY, closeSend: closeSend(SENDS.closed) }), { closed: true });
-    assert.deepEqual(asked, [KEY], 'asked once, by the key the send went out with');
-    // Any job, whatever its state: send() then looks for the turn by it, as it does for a job that came with `start`.
-    for (const send of [SENDS.queued, SENDS.running, SENDS.failed, SENDS.refunded, SENDS.saved, SENDS.unsaved]) {
-        assert.deepEqual(await askSend({ key: KEY, closeSend: closeSend(send) }), { job: JOB }, send.state);
-    }
-    // Anything else is no answer. `closed` is taken only as the one thing the route says: beside anything else it is not a shape it sends.
-    const odd = [null, undefined, 'closed', 42, [], {}, { closed: 'true' }, { closed: 1 }, { closed: null }, { closed: false }, { closed: true, job_id: JOB }, { closed: true, state: 'running' },
-        { closed: true, refunded: false }, { closed: true, ok: true }, { closed: true, error: 'close_failed' },
-        { closed: false, job_id: 42 }, { closed: false, job_id: '' }, { job_id: JOB }, { job_id: JOB, state: 'running' }, { error: 'send_close_not_open' }, { found: false }, { ok: true }];
-    for (const answer of odd) assert.equal(await askSend({ key: KEY, closeSend: closeSend(answer) }), null, JSON.stringify(answer));
-});
-
-test('a failed ask is no answer, and neither is a slow one: it never throws and never hangs', async () => {
-    const failures = [['still offline', async () => { throw dropped(); }], ['the route is not open', refusal(503, 'send_close_not_open')], ['rate limited', refusal(429, 'rate_limited')],
-        ['too many sends closed', refusal(429, 'close_limit')], ['the database gave no answer', refusal(502, 'close_failed')], ['thrown at once', () => { throw new Error('sync'); }]];
-    for (const [name, closeSend] of failures) assert.equal(await askSend({ key: KEY, closeSend }), null, name);
-    const began = Date.now();
-    assert.equal(await askSend({ key: KEY, closeSend: () => new Promise(() => {}), limitMs: 30 }), null);
-    assert.ok(Date.now() - began < 1000, 'cut off by its limit');
-    assert.equal(KEPT_READ_LIMIT_MS, 2000, 'the same limit as the ask when a chat is opened: the person is waiting on it');
-    // The screen's own call hands in the route of PR 774 and nothing else.
-    assert.match(apiSource, /\n {2}askSend: \(key\) => askSend\(\{ key, closeSend: chatApi\.closeSend \}\),\n/);
-});
-
-test('with no limit handed in, the ask ends at two seconds and not before', async (t) => {
-    t.mock.timers.enable({ apis: ['setTimeout'] });
-    let answer = 'waiting';
-    askSend({ key: KEY, closeSend: () => new Promise(() => {}) }).then((a) => { answer = a; });
-    const settle = () => new Promise((resolve) => { setImmediate(resolve); });
-    t.mock.timers.tick(KEPT_READ_LIMIT_MS - 1); await settle();
-    assert.equal(answer, 'waiting');
-    t.mock.timers.tick(1); await settle();
-    assert.equal(answer, null);
+test('one question, asked in two endings: the same ask as Stop before `start`, through the same route', () => {
+    // What it takes as an answer, its 2-second limit and that it never throws are tested where it lives (tests/chatStop.test.mjs).
+    const ask = 'await askStoppedSend({ key, closeSend: chatApi.closeSend })';
+    assert.equal(sender.split(ask).length - 1, 2, 'Stop before `start`, and a request that got no answer');
+    assert.equal(sender.split('askStoppedSend(').length - 1, 2);
+    assert.doesNotMatch(apiSource + read('../app/veyrnox/_lib/chatWarning.js'), /\bask(?!Stopped|Kept)[A-Z]\w*\(/, 'no second copy of the question');
 });
 
 // ---- 3. send(): no final answer. The message goes back with the warning, never without it ----
@@ -209,7 +178,7 @@ test('with no limit handed in, the ask ends at two seconds and not before', asyn
 test('no answer, and the server could not say: the text is back in the box with the warning, on screen and after a reload', async () => {
     const storage = memory();
     const { log, bubbles } = await run({ active: A, turn: noAnswer(), key: KEY, storage, images: [{ asset: 'x' }] });
-    assert.deepEqual(log.asked, [KEY], 'asked about by the key it went out with');
+    assert.deepEqual(log.closes, [KEY], 'asked about by the key it went out with');
     assert.deepEqual(log.box, ['', TEXT]);
     assert.deepEqual(log.notices, [null, 'connection_lost'], 'the words for a dropped connection that is not settled: it may have used Credits');
     // The money rule. After a page reload the box holds the message and the warning is beside it.
@@ -217,7 +186,7 @@ test('no answer, and the server could not say: the text is back in the box with 
     // Kept with the send's key, to be asked about when the chat is opened, and a mark of the text that was given back.
     assert.deepEqual(kept(storage), { code: 'connection_lost', key: KEY, sent: MARK });
     // As Stop before `start`: the chat stays, nothing is read again, the images stay with the message, no bubble is left.
-    assert.deepEqual([log.deleted, log.opened, log.lookedFor, log.imagesCleared, bubbles()], [[], [], [], 0, []]);
+    assert.deepEqual([log.deleted, log.opened, log.looks, log.imagesCleared, bubbles()], [[], [], [], 0, []]);
     assert.deepEqual(log.failures, [], 'not the screen\'s general failure');
 });
 
@@ -235,7 +204,7 @@ test('every way the ask can fail to give a final answer ends the same: the route
         ['an answer in a shape the route does not send', answers({ found: false })], ['no answer in time', () => new Promise(() => {})]];
     for (const [name, closeSend] of none) {
         const storage = memory();
-        const { log } = await run({ active: A, turn: noAnswer(), key: KEY, storage, onAsk: (key) => askSend({ key, closeSend, limitMs: 30 }) });
+        const { log } = await run({ active: A, turn: noAnswer(), key: KEY, storage, closeSend, askLimitMs: 30 });
         assert.deepEqual([log.notices, log.box, log.deleted], [[null, 'connection_lost'], ['', TEXT], []], name);
         assert.deepEqual([afterReload(storage, 'chat-a'), kept(storage)], [{ box: TEXT, notice: { code: 'connection_lost' } }, { code: 'connection_lost', key: KEY, sent: MARK }], name);
     }
@@ -276,7 +245,7 @@ test('the chat page was left before it ended: the message is not lost, it waits 
 
 test('while the server is asked the button says Checking, and the look ends when the send does', async () => {
     let atAsk = null; let bubblesAtAsk = null;
-    const { log } = await run({ active: A, turn: noAnswer(), key: KEY, onAsk: (_key, person, soFar) => { atAsk = [...soFar.checking]; bubblesAtAsk = person.bubbles(); return null; } });
+    const { log } = await run({ active: A, turn: noAnswer(), key: KEY, closeSend: (_key, person, soFar) => { atAsk = [...soFar.checking]; bubblesAtAsk = person.bubbles(); return notOpen(); } });
     assert.deepEqual([atAsk, log.checking], [[true], [true, false]]);
     // The reply bubble says the connection was lost while the server is asked, and both bubbles go when the text goes back.
     assert.deepEqual(bubblesAtAsk, ['user:complete', 'assistant:lost']);
@@ -284,8 +253,8 @@ test('while the server is asked the button says Checking, and the look ends when
     // The reply bubble says the connection was lost, as for a stream that broke: it is marked before the ask.
     const ask = /\n {6}\}\)\.catch\(async \(e\) => \{\n([\s\S]*?)\n {6}\}\);\n {6}if \(r\.replay\)/.exec(sender);
     assert.ok(ask, 'the ask sits on the request it is about');
-    assert.ok(ask[1].indexOf('setChecking(true);') >= 0 && ask[1].indexOf("status: 'lost'") > 0 && ask[1].indexOf('setChecking(true);') < ask[1].indexOf('await chatApi.askSend(key)'));
-    assert.equal(sender.split('chatApi.askSend(').length - 1, 1, 'asked in one place');
+    assert.ok(ask[1].indexOf('setChecking(true);') >= 0 && ask[1].indexOf("status: 'lost'") > 0 && ask[1].indexOf('setChecking(true);') < ask[1].indexOf('await askStoppedSend('));
+    assert.equal(ask[1].split('await askStoppedSend(').length - 1, 1, 'asked once here');
     assert.match(ask[1], /\n {8}throw e;$/, 'the failure itself goes on to the endings, whatever was answered');
 });
 
@@ -293,8 +262,8 @@ test('while the server is asked the button says Checking, and the look ends when
 
 test('the server says the send made no job and has closed its key: it never started, and ends as that always did', async () => {
     const storage = memory();
-    const { log } = await run({ active: null, turn: noAnswer(), key: KEY, storage, onAsk: { closed: true } });
-    assert.deepEqual([log.asked, log.lookedFor], [[KEY], []]);
+    const { log } = await run({ active: null, turn: noAnswer(), key: KEY, storage, closeSend: answers(SENDS.closed) });
+    assert.deepEqual([log.closes, log.looks], [[KEY], []]);
     assert.deepEqual([log.activeSet, log.deleted, log.box], [['made', null], ['made'], ['', TEXT]], 'the chat made for it goes: no reply can be saved to it now');
     assert.deepEqual(afterReload(storage, NEW_CHAT), { box: TEXT, notice: { code: 'send_unanswered' } });
     assert.deepEqual([kept(storage, NEW_CHAT), kept(storage, 'made')], [null, null], 'nothing can be charged for it, so nothing warns of Credits');
@@ -303,10 +272,10 @@ test('the server says the send made no job and has closed its key: it never star
 });
 
 test('the server says the send made a job: the turn is looked for by that job, and once settled ends exactly as after a stream that broke', async () => {
-    const withJob = (settle, more = {}) => run({ active: A, turn: noAnswer(), key: KEY, onAsk: { job: JOB }, settle, images: [{ asset: 'x' }], ...more });
+    const withJob = (settle, more = {}) => run({ active: A, turn: noAnswer(), key: KEY, closeSend: answers(SENDS.running), settle, images: [{ asset: 'x' }], ...more });
     // Debited and refunded, nothing kept: the usual end of a send whose reader had gone.
     const nothing = await withJob('nothing');
-    assert.deepEqual([nothing.log.asked, nothing.log.lookedFor], [[KEY], [JOB]], 'the job the server named is the one read, in one look');
+    assert.deepEqual([nothing.log.closes, nothing.log.looks], [[KEY], [JOB]], 'the job the server named is the one read, in one look');
     assert.deepEqual([nothing.log.box, nothing.log.notices, nothing.kept(), nothing.log.imagesCleared], [['', TEXT], [null, 'connection_refunded'], { 'chat-a': 'connection_refunded' }, 0]);
     // The same from a chat made for the message: it goes, and the text is under New chat.
     const made = await withJob('nothing', { active: null });
@@ -317,7 +286,7 @@ test('the server says the send made a job: the turn is looked for by that job, a
     // Charged and not stored.
     const unsaved = await withJob('unsaved');
     assert.deepEqual([unsaved.log.box, unsaved.kept()], [[''], { 'chat-a': 'reply_not_saved' }]);
-    for (const settled of [saved, unsaved, nothing, made]) assert.deepEqual(settled.log.lookedFor, [JOB], 'looked for once');
+    for (const settled of [saved, unsaved, nothing, made]) assert.deepEqual(settled.log.looks, [JOB], 'looked for once');
     // Saved, but the chat cannot be read again (still offline): the screen cannot show it, so the warning is kept, by that job.
     const storage = memory();
     const unread = await withJob('saved', { storage, openDown: true });
@@ -328,11 +297,11 @@ test('whatever goes wrong while the server is asked, the send ends with the warn
     // The server has just named a job for the send, and the look for its turn throws (a chat read in a shape the look
     // does not know). The job exists, so a reply can still be saved: the chat must stay and the warning must be kept.
     const storage = memory();
-    const { log } = await run({ active: null, turn: noAnswer(), key: KEY, storage, onAsk: { job: JOB }, settle: () => { throw new TypeError("Cannot read properties of null (reading 'role')"); } });
+    const { log } = await run({ active: null, turn: noAnswer(), key: KEY, storage, closeSend: answers(SENDS.running), settle: () => { throw new TypeError("Cannot read properties of null (reading 'role')"); } });
     assert.deepEqual([log.deleted, log.box, log.notices], [[], ['', TEXT], [null, 'connection_lost']], 'the chat made for the message is not deleted');
     assert.deepEqual([afterReload(storage, 'made'), kept(storage, 'made')], [{ box: TEXT, notice: { code: 'connection_lost' } }, { code: 'connection_lost', key: KEY, sent: MARK }]);
-    // The same if the ask itself were ever to throw.
-    const thrown = await run({ active: A, turn: noAnswer(), key: KEY, onAsk: () => { throw new Error('boom'); } });
+    // The same when the route itself throws.
+    const thrown = await run({ active: A, turn: noAnswer(), key: KEY, closeSend: () => { throw new Error('boom'); } });
     assert.deepEqual([thrown.log.deleted, thrown.log.box, thrown.kept()], [[], ['', TEXT], { 'chat-a': 'connection_lost' }]);
 });
 
@@ -341,8 +310,8 @@ test('the send made a job that is not settled when the look ends: the message go
     // server had text) or refunded (the usual end, or a job the sweep takes back later). Left on screen as sent, a
     // refund would have lost the message: before this ending its text was always given back.
     const storage = memory();
-    const { log, bubbles } = await run({ active: null, turn: noAnswer(), key: KEY, onAsk: { job: JOB }, settle: 'pending', storage, images: [{ asset: 'x' }] });
-    assert.deepEqual([log.asked, log.lookedFor], [[KEY], [JOB]]);
+    const { log, bubbles } = await run({ active: null, turn: noAnswer(), key: KEY, closeSend: answers(SENDS.running), settle: 'pending', storage, images: [{ asset: 'x' }] });
+    assert.deepEqual([log.closes, log.looks], [[KEY], [JOB]]);
     assert.deepEqual([log.box, log.notices, log.deleted, log.opened, log.imagesCleared, bubbles()], [['', TEXT], [null, 'connection_lost'], [], [], 0, []]);
     assert.deepEqual(afterReload(storage, 'made'), { box: TEXT, notice: { code: 'connection_lost' } });
     // Kept by the send's key, which finds the same job when the chat is opened, with the mark of the text given back.
@@ -365,19 +334,19 @@ test('only a send whose own request got no answer is asked about', async () => {
         ['a key that could not be made', { key: () => { throw new TypeError('crypto.randomUUID is not a function'); } }, undefined],
     ];
     for (const [name, how, code] of cases) {
-        const { log } = await run({ active: A, turn: reply(), key: KEY, onAsk: () => { throw new Error('must not be asked'); }, ...how });
-        assert.deepEqual([log.asked, log.lookedFor, log.checking], [[], [], [false]], name);
+        const { log } = await run({ active: A, turn: reply(), key: KEY, closeSend: () => { throw new Error('must not be asked'); }, ...how });
+        assert.deepEqual([log.closes, log.looks, log.checking], [[], [], [false]], name);
         assert.deepEqual([log.notices, log.box], [[null, code], ['', TEXT]], name);
     }
-    // Stop, before `start` or after it, is never asked about here: it looks for its own turn.
-    for (const turn of [stopBeforeStart, async ({ onEvent }) => { onEvent('start', { job_id: JOB }); throw stopped(); }]) {
-        const { log } = await run({ active: A, turn, key: KEY, settle: 'pending' });
-        assert.deepEqual([log.asked, log.notices], [[], [null, 'stop_unsure']]);
-    }
+    // Stop is not this ending. Before `start` it asks through its own branch (PR 784); after `start` it has its job. Neither shows Checking.
+    const early = await run({ active: A, turn: stopBeforeStart, key: KEY, settle: 'pending' });
+    assert.deepEqual([early.log.closes, early.log.notices, early.log.checking], [[KEY], [null, 'stop_unsure'], [false]]);
+    const late = await run({ active: A, turn: async ({ onEvent }) => { onEvent('start', { job_id: JOB }); throw stopped(); }, key: KEY, settle: 'pending' });
+    assert.deepEqual([late.log.closes, late.log.notices, late.log.checking], [[], [null, 'stop_unsure'], [false]]);
     // Nor is a stream that broke after `start`: its job came with `start`.
     for (const turn of [cutBeforeText(), async ({ onEvent }) => { onEvent('start', { job_id: 'job-1' }); throw unanswered(); }]) {
         const { log } = await run({ active: A, turn, key: KEY, settle: 'nothing' });
-        assert.deepEqual([log.asked, log.lookedFor, log.notices], [[], ['job-1'], [null, 'connection_refunded']]);
+        assert.deepEqual([log.closes, log.looks, log.notices], [[], ['job-1'], [null, 'connection_refunded']]);
     }
 });
 
@@ -405,7 +374,7 @@ test('two sends under one dropped-connection warning that settled differently: t
 
 test('a second message the server says never started says so beside the warning kept before it, which stays', async () => {
     const storage = await leftBy(stopBeforeStart, { key: KEY });
-    const { log } = await run({ active: A, turn: noAnswer(), key: OTHER_KEY, storage, onAsk: { closed: true } });
+    const { log } = await run({ active: A, turn: noAnswer(), key: OTHER_KEY, storage, closeSend: answers(SENDS.closed) });
     assert.deepEqual(log.notices, [null, 'send_unanswered, and before that stop_unsure']);
     assert.deepEqual([afterReload(storage, 'chat-a'), kept(storage)], [{ box: TEXT, notice: { code: 'stop_unsure' } }, { code: 'stop_unsure', key: KEY, sent: MARK }]);
 });
@@ -487,8 +456,8 @@ test('the ending for no final answer is Stop-before-start\'s, with a dropped con
     assert.match(sender, /\n {4}let unsure = false;[^\n]*\n {4}let looked = null;[^\n]*\n {4}let started = false;[^\n]*\n {4}try \{\n/);
     // It is set before the server is asked and cleared only by "closed": anything else, a throw included, ends with the warning.
     const ask = /\n {6}\}\)\.catch\(async \(e\) => \{\n([\s\S]*?)\n {6}\}\);\n/.exec(sender)[1];
-    assert.ok(ask.indexOf('unsure = true;') > 0 && ask.indexOf('unsure = true;') < ask.indexOf('await chatApi.askSend(key)'));
-    assert.match(ask, /\n {8}if \(found\?\.closed\) unsure = false;\n/);
+    assert.ok(ask.indexOf('unsure = true;') > 0 && ask.indexOf('unsure = true;') < ask.indexOf('await askStoppedSend('));
+    assert.match(ask, /\n {8}if \(found\.closed\) unsure = false;\n/);
     assert.match(ask, /looked = await chatApi\.settleStop\(\{ threadId: thread\.id, jobId: found\.job, text: content, knownIds \}\);/);
     assert.equal(sender.split('unsure = ').length - 1, 3, 'declared, set before the ask, cleared by "closed"');
     // The look made for the server's job is the one the ending acts on: the turn is not looked for twice.

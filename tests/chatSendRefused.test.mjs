@@ -38,7 +38,7 @@ test('Stop before any text, sent again and refused: the warning is still kept wi
         // No answer at all to the request. It was told at once as a refusal with no code of its own (a bare network error
         // from sendTurn). sendTurn now says the request got no answer, and the server is asked about the send by its key
         // (tests/chatSendUnanswered.test.mjs). Here it says the send made no job and its key is closed: a refusal, as before.
-        ['send_unanswered', { turn: noAnswer(), onAsk: { closed: true } }],
+        ['send_unanswered', { turn: noAnswer(), closeSend: async () => ({ closed: true }) }],
         // An error with no code raised by anything else still leaves the general notice with the text.
         [undefined, { turn: refused(new TypeError('network error')) }],
     ];

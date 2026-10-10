@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { NEW_CHAT, addToDraft, clearNotice, readCreditsWarning, readDraft, readNotice, writeDraft, writeNotice } from '../app/veyrnox/_lib/chatLocal.js';
 import { loadFailure } from '../app/veyrnox/_lib/chatScreen.js';
-import { lostNotice } from '../app/veyrnox/_lib/chatStop.js';
+import { askStoppedSend, lostNotice } from '../app/veyrnox/_lib/chatStop.js';
 import { ask, forget, land, leave, newChatView, onScreen, sendHome } from '../app/veyrnox/_lib/chatSendHome.js';
 
 const source = readFileSync(new URL('../app/veyrnox/_components/chat/useChatSend.js', import.meta.url), 'utf8');
@@ -18,6 +18,8 @@ export class GatewayError extends Error {
     constructor(message, { status, code } = {}) { super(message); this.status = status; this.code = code; }
 }
 export const stopped = () => Object.assign(new Error('aborted'), { name: 'AbortError' });
+/** POST /api/v1/chat/sends/close while its switch is off (CHAT_SEND_CLOSE_ENABLED): a refusal, as the gateway throws it. */
+export const notOpen = async () => { throw new GatewayError('send_close_not_open', { status: 503, code: 'send_close_not_open' }); };
 export const A = { id: 'chat-a', model_id: 'm' };
 export const TEXT = 'Describe a lighthouse.';
 export const ME = 'user-a';
@@ -36,13 +38,17 @@ export const afterReload = (storage, chat) => ({ box: readDraft(storage, ME, cha
 // `key` is the send's idempotency key. The default is not one the browser could have made, so the store keeps none
 // with a warning (chatLocal.js): a test of a send that is asked about by its key passes a real one, and a function
 // stands for the browser's own maker (one that throws: a browser that cannot make a key).
-// `onAsk` plays the server when it is asked about the send by its key, at once (chatApi.askSend): an answer, or a function
-// of the key, the person and the log so far that returns one. `{ closed: true }`, `{ job }`, or null for no answer, which is the default:
-// the route is not open, the browser is still offline. Only a send whose own request got no answer is asked about.
-export async function run({ active = null, turn, settle = 'pending', listDown = false, listFails = false, images = [], whileMaking = () => {}, kept = {}, text = TEXT, storage = null, making = null, upload = async () => 'k', prepare = async (f) => f, key = 'key', onAsk = null, openDown = false }) {
+// `closeSend` plays that route for a Stop that came before `start` (it gets the key and the `person`). The default is the route with its switch off, so a
+// test that does not name it sees every ending as it was before the send was asked about at the moment of Stop.
+// `askLimitMs` is how long that question may take here. `log.closes` is each key asked about, `log.looks` the job id
+// each look for the turn was given (null: the chat alone).
+// The same route is asked for a send whose own request got no answer before `start` (tests/chatSendUnanswered.test.mjs).
+// `closeSend` is also handed the log so far. `settle` may be a function, for a look that throws. `openDown`: the chat
+// cannot be read again. `log.checking` is what the hook's `checking` state was set to, in order.
+export async function run({ active = null, turn, settle = 'pending', listDown = false, listFails = false, images = [], whileMaking = () => {}, kept = {}, text = TEXT, storage = null, making = null, upload = async () => 'k', prepare = async (f) => f, key = 'key', closeSend = notOpen, askLimitMs = null, openDown = false }) {
     const view = newChatView();
     if (active) { ask(view, active.id); land(view, active.id); }
-    const log = { notices: [], box: [], saved: {}, added: {}, opened: [], shownOnOpen: [], deleted: [], activeSet: [], imagesCleared: 0, refreshed: 0, quietReads: 0, failures: [], kept: { ...kept }, keptWith: {}, dropped: [], asked: [], lookedFor: [], checking: [] };
+    const log = { notices: [], box: [], saved: {}, added: {}, opened: [], shownOnOpen: [], deleted: [], activeSet: [], imagesCleared: 0, refreshed: 0, quietReads: 0, failures: [], kept: { ...kept }, keptWith: {}, dropped: [], closes: [], looks: [], checking: [] };
     let onScreenMessages = []; let states = 0;
     const person = {
         press: (id) => ask(view, id),
@@ -56,6 +62,7 @@ export async function run({ active = null, turn, settle = 'pending', listDown = 
         // The third state is `checking` (pinned in tests/chatSendUnanswered.test.mjs): what it is set to is recorded, in order.
         useState: (initial) => { states += 1; const nth = states; return [initial, (value) => { if (nth === 3) log.checking.push(value); }]; }, useRef: (initial) => ({ current: initial }),
         GatewayError, NEW_CHAT, loadFailure, lostNotice, ask, forget, land, onScreen, sendHome,
+        askStoppedSend: (args) => askStoppedSend({ ...args, ...(askLimitMs && { limitMs: askLimitMs }) }),
         chatErrorCopy: (code) => code, chatUnchargedCopy: (code, _extra, warning) => `${code}, and before that ${warning.code}`,
         makeIdempotencyKey: () => (typeof key === 'function' ? key() : key), uploadChatImage: upload, prepareImage: prepare,
         sendTurn: (args) => turn(args, person),
@@ -63,12 +70,13 @@ export async function run({ active = null, turn, settle = 'pending', listDown = 
             create: making || (async () => { whileMaking(person); return { thread: { id: 'made', model_id: 'm' } }; }), move: async () => ({}), patch: async () => ({ thread: {} }),
             remove: (id) => { log.deleted.push(id); return Promise.resolve(); },
             threads: async () => { log.quietReads += 1; if (listDown) throw new Error('offline'); return { threads: [] }; },
-            settleStop: async ({ jobId }) => { log.lookedFor.push(jobId); if (typeof settle === 'function') return settle(); return settle; },
-            askSend: async (k) => { log.asked.push(k); return typeof onAsk === 'function' ? onAsk(k, person, log) : onAsk; },
+            settleStop: async ({ jobId }) => { log.looks.push(jobId ?? null); if (typeof settle === 'function') return settle(); return settle; },
+            closeSend: (k) => { log.closes.push(k); return closeSend(k, person, log); },
         },
     };
     assert.deepEqual(imported.filter((n) => !(n in deps)), [], 'every name the hook imports is handed in here');
-    const useChatSend = new Function('deps', `const { ${Object.keys(deps).join(', ')} } = deps;\n${body}`)(deps);
+    // Only the names the hook imports are in scope: one it uses without importing throws here, as it would in the browser.
+    const useChatSend = new Function('deps', `const { ${imported.join(', ')} } = deps;\n${body}`)(deps);
     const { send } = useChatSend({
         // With `storage`, the box is stored under the chat on screen as it changes, as the screen's draft effect does.
         text, setText: (t) => { log.box.push(t); if (storage) writeDraft(storage, ME, view.shown, t); }, model: { id: 'm' }, imagesBlocked: false, chosen: {}, price: 2,

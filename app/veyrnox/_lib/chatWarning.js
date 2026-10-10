@@ -5,8 +5,9 @@
 // reload included, the turn is asked about first, and a turn the server has settled takes the warning away or changes
 // what is kept. A read that fails, or a turn that is not finished, changes nothing: the warning stays and is asked about
 // the next time.
-// A send whose own request got no answer before `start` is asked about by its key too, at once (askSend below). Only
-// when that gives no answer is its warning kept, with the key, for the next time the chat is opened.
+// A send whose own request got no answer before `start` is asked about by its key at once, as a Stop before `start` is
+// (askStoppedSend in chatStop.js). Only when that says nothing final is its warning kept, with the key, for the next
+// time the chat is opened.
 // A warning that took the place of another stands for both turns and is kept with both (four at most). It is settled
 // only when every one of them is. A warning with no turn kept is never asked about: it stands for a turn it could not list.
 // The reads are handed in, and only the store is changed here: the screen then shows what is stored, as it does
@@ -26,7 +27,7 @@ const FINAL = new Set(['saved', 'unsaved', 'refunded']);
  *   'unsaved'   the reply was charged but its messages could not be stored
  *   'refunded'  no Credits were used. The job failed and the refund has landed (the chat may still hold a reply the
  *               provider cut off, shown as not charged). Or the send made no job and the server has closed its key:
- *               none was charged, and none can be. Only `closed: true`, alone, says that
+ *               none was charged, and none can be. Only `closed: true` with no other field beside it says that
  *   null        not settled, or not known: queued, running, failed with the refund still on its way (it is a second
  *               step), or an answer in a shape this does not know
  * @param {{state?: string, refunded?: boolean, error_code?: string, closed?: boolean}|null|undefined} answer
@@ -34,7 +35,7 @@ const FINAL = new Set(['saved', 'unsaved', 'refunded']);
  */
 export function keptTurnVerdict(answer) {
   if (!answer || typeof answer !== 'object') return null;
-  if (answer.closed === true) return answer.state === undefined && answer.job_id === undefined ? 'refunded' : null;
+  if (answer.closed === true) return Object.keys(answer).length === 1 ? 'refunded' : null;
   if (answer.state === 'succeeded') return answer.error_code === 'reply_not_saved' ? 'unsaved' : 'saved';
   if (answer.state === 'failed' && answer.refunded === true) return 'refunded';
   return null;
@@ -60,30 +61,6 @@ export async function askKeptWarning({ warning, getJob, closeSend, limitMs = KEP
     return verdicts.length === turns.length && verdicts.every(Boolean) ? { warning, verdicts } : null;
   } catch {
     return null; // offline, a rate limit, a job the server does not show this person, a route that is not open: not an answer
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
-/**
- * Ask about one send at once, by its key: its own request went out and no answer came back, so the server may hold it
- * all the same (useChatSend.js). The same question as when a chat is opened, put the moment the answer is missing.
- * Never throws and never waits longer than the limit: the person is waiting on it.
- * @param {{key: string, closeSend: (key: string) => Promise<object>, limitMs?: number}} args
- * @returns {Promise<{closed: true}|{job: string}|null>} `closed`: the send made no job and the server has closed its
- *   key, so none can be made and nothing can be charged for it. `job`: the id of the job it made, whatever its state.
- *   Null: no answer to act on (the route is not open, the read failed or ran out of time, a shape this does not know)
- */
-export async function askSend({ key, closeSend, limitMs = KEPT_READ_LIMIT_MS }) {
-  let timer;
-  const limit = new Promise((resolve) => { timer = setTimeout(() => resolve(null), limitMs); });
-  try {
-    const answer = await Promise.race([closeSend(key), limit]);
-    if (!answer || typeof answer !== 'object') return null;
-    if (answer.closed === true) return Object.keys(answer).length === 1 ? { closed: true } : null; // only as the one thing the route says
-    return answer.closed === false && typeof answer.job_id === 'string' && answer.job_id ? { job: answer.job_id } : null;
-  } catch {
-    return null; // not an answer: the send is then kept with a warning, and asked about when its chat is opened
   } finally {
     clearTimeout(timer);
   }

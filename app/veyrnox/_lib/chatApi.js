@@ -5,8 +5,7 @@
 
 import { getFreshAccessToken, getSession, clearSession } from '../../lib/authClient.js';
 import { turnOptions } from './chatTurnOptions';
-import { lostNotice, settleStoppedTurn } from './chatStop';
-import { askSend } from './chatWarning';
+import { askStoppedSend, lostNotice, settleStoppedTurn } from './chatStop';
 import { gatewayFetch, GatewayError, ACCOUNT_PAUSED_COPY, makeIdempotencyKey, notifyBalanceChanged } from './gateway';
 
 const json = (body) => JSON.stringify(body);
@@ -32,9 +31,6 @@ export const chatApi = {
   // A send that was stopped before `start` has no job id here. The server is asked by the send's own key: it answers
   // with the job that send made, or, when it made none, closes the key so none can be made, and says `closed`.
   closeSend: (key) => gatewayFetch('/chat/sends/close', { method: 'POST', body: json({ idempotency_key: key }) }),
-  // The same question at once, for a send whose own request went out and got no answer before `start` (sendTurn below):
-  // `{ closed: true }`, `{ job }`, or null when the server gave no answer to act on. Never throws (chatWarning.js).
-  askSend: (key) => askSend({ key, closeSend: chatApi.closeSend }),
   // After Stop or a dropped connection: look for the turn until it has settled ('saved', 'unsaved', 'nothing' or 'pending'),
   // then have the nav read the balance again. The balance moved at the debit and moves back on a refund, so it is read last.
   settleStop: async ({ threadId, jobId, text, knownIds }) => {
@@ -102,7 +98,7 @@ export function chatUnchargedCopy(code, extra, warning) {
   return `${chatErrorCopy(code, extra)} Before that: ${chatErrorCopy(warning.code, warning)}`;
 }
 
-export { makeIdempotencyKey, lostNotice };
+export { makeIdempotencyKey, lostNotice, askStoppedSend };
 
 // The message's own request went out and no answer of ours came back: it failed on the way, the reply stream broke or
 // ended with no event of ours in it, or what came back was neither ours nor a refusal. The server may hold the send
