@@ -1,6 +1,8 @@
 'use client';
 
 import Link from 'next/link';
+import { CinemaComments } from '../../CinemaComments';
+import { CinemaVoting } from '../../CinemaVoting.js';
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import { Button } from '../../../_components/Button';
 import { getSession, onSessionChange } from '../../../../lib/authClient';
@@ -78,6 +80,7 @@ export function TitlePage({ id }) {
       <h2 id={`season-${s.id}`} className="text-xl font-extrabold">Season {s.position}{s.title && s.title !== title.title ? `: ${s.title}` : ''}</h2>
       <ul className="mt-2 divide-y divide-vx-border border-y border-vx-border">{s.episodes.map((e) => renderItem(e, `${e.position}. `))}</ul>
     </section>) : <ul className="mt-10 border-y border-vx-border">{renderItem(title, '')}</ul>}
+    <CinemaVoting contentId={id} /><CinemaComments contentId={id} />
     <p className="mt-10 text-sm"><Link href="/social-cinema" className="underline">Back to Social Cinema</Link></p>
   </div></div>;
 }

@@ -31,6 +31,7 @@ function Reviews() {
   useEffect(() => { load(); return () => { generation.current++; }; }, [load]);
   return <div className="mx-auto max-w-3xl px-4 py-10 pb-32 sm:px-8">
     <Link href="/app/admin" className="text-sm underline">Back to operations</Link>
+    <Link href="/app/admin/cinema/voting" className="ml-4 text-sm underline">Voting operations</Link> <Link href="/app/admin/cinema/comments" className="ml-4 text-sm underline">Comment moderation</Link>
     <h1 className="mt-5 text-3xl font-black">Cinema creator applications</h1>
     <p className="my-5 text-vx-fg-body">Review requires a Cinema administrator account and a fresh authenticator check. Approval grants a creator role only.</p>
     <MfaPanel requireFresh onVerified={load} />

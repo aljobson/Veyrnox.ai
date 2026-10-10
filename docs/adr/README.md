@@ -83,6 +83,11 @@ These existed without an index row. Status is as written in each file.
 
 There is no ADR-0065: the number was never used.
 
+## Current feature increments
+
+- [ADR-0081 — Cinema community voting and pre-approved comments](0081-cinema-community-votes-comments.md)
+- [ADR-0082 — Credit Subscription UI and billing management](0082-credit-subscription-ui.md)
+
 ## Decision graph
 
 ```

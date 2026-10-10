@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { MarketingNav } from '../_components/NavBar';
 import { Main } from '../_components/Main';
+import { CreditSubscriptionOffer } from '../_components/CreditSubscriptions';
 import { PremiumTag } from '../_components/PremiumTag';
 import { CopyButton } from '../_components/CopyButton';
 import { MODELS as MODELS_FALLBACK, SITE_UPDATED, isShelfModel, kindOf } from '../_lib/tokens';
@@ -131,6 +132,7 @@ export default function Pricing() {
         </section>
       )}
 
+      <CreditSubscriptionOffer />
       <section className="max-w-[1300px] mx-auto px-4 sm:px-6 pt-24 sm:pt-32 pb-8">
         <div className="flex items-end justify-between flex-wrap gap-4">
           <h2 className="vx-display text-[40px] sm:text-[56px]">Every model, priced.</h2>

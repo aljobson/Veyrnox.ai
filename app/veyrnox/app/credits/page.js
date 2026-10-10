@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Chip } from '../../_components/Chip';
 import { TopUpPacks, TopUpReturn } from '../../_components/TopUpPacks';
 import { CreditStatement } from '../../_components/CreditStatement';
+import { CreditSubscriptions } from '../../_components/CreditSubscriptions';
 import { UsageMeters } from '../../_components/UsageMeters';
 import { TopUpHistory } from '../../_components/TopUpHistory';
 import { gatewayFetch, GatewayError } from '../../_lib/gateway';
@@ -135,12 +136,13 @@ export default function Credits() {
               <li>One balance covers every model. Free credits are spent first.</li>
               <li>Each generation is charged at the price on its button, when you press it.</li>
               <li>Failed jobs refund automatically, as their own line in your statement.</li>
-              <li>Credit Packs are one-off purchases. Nothing renews.</li>
+              <li>Credit Packs are one-off purchases and do not renew.</li>
             </ul>
           </div>
         </div>
       </section>
 
+      <CreditSubscriptions />
       {balance != null && <UsageMeters />}
       {balance != null && <CreditStatement />}
       {balance != null && <TopUpHistory />}

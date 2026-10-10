@@ -61,15 +61,33 @@ const request = (body, auth = AUTH) => new Request('https://veyrnox.test/api/v1/
 const env = () => Object.assign(process.env, { SUBSCRIPTIONS_ENABLED: 'true', STRIPE_SECRET_KEY: cfg.apiKey,
   STRIPE_WEBHOOK_SECRET: SECRET, PUBLIC_HOST: cfg.publicHost, SUPABASE_URL: 'https://db.test', SUPABASE_SERVICE_ROLE_KEY: 'test' });
 
-test('authentication and closed flag stop requests before any RPC; read response strips private Stripe ids', async () => {
+test('authentication stops reads; closing sales stops new checkout while owned management stays available', async () => {
   env(); let calls = 0;
   const handler = subscriptionHandler({ rpcCall: async (fn) => { calls++; return fn === 'consume_account_read_request' ? { ok: true } : { ok: true, subscription: { ...binding, status: 'active' } }; } });
   assert.equal((await handler(request(undefined, null))).status, 401);
   process.env.SUBSCRIPTIONS_ENABLED = 'false';
-  assert.equal((await handler(request())).status, 503); assert.equal(calls, 0);
+  const closedSales = subscriptionHandler({ action: 'plans', rpcCall: async () => { throw Error('closed sales must not reach the database'); } });
+  assert.equal((await closedSales(request())).status, 503); assert.equal(calls, 0);
+  assert.equal((await handler(request())).status, 200, 'owned read survives a sales shutdown');
   process.env.SUBSCRIPTIONS_ENABLED = 'true';
   const response = await handler(request()); assert.equal(response.status, 200);
   const body = await response.json(); assert.ok(!JSON.stringify(body).includes('cus_1')); assert.ok(!JSON.stringify(body).includes('sub_1'));
+});
+
+test('closing sales preserves explicit owned period-end cancellation and blocks starting checkout', async () => {
+  env(); process.env.SUBSCRIPTIONS_ENABLED = 'false'; const calls=[];
+  const cancel = subscriptionHandler({ action: 'cancel', rpcCall: async(fn,args)=> {
+    calls.push({fn,args});
+    if(fn==='consume_account_read_request') return {ok:true};
+    if(fn==='read_own_credit_subscription_by_id') return {ok:true,subscription:{...binding,status:'active'}};
+    if(fn==='mark_credit_subscription_cancelled') return {ok:true,current_period_end:'2026-11-10T00:00:00Z'};
+    throw Error('unexpected function');
+  },stripe:{cancelSubscriptionAtPeriodEnd:async id=>{assert.equal(id,'sub_1');return {ok:true};}} });
+  const response=await cancel(request({mode:'period_end',subscription_id:ID}));
+  assert.equal(response.status,200);assert.equal((await response.json()).mode,'period_end');
+  assert.deepEqual(calls.find(x=>x.fn==='read_own_credit_subscription_by_id').args,{p_auth_id:AUTH,p_id:ID});
+  const start=subscriptionHandler({action:'start',rpcCall:async()=>{throw Error('closed sales');}});
+  assert.equal((await start(request({}))).status,503);
 });
 
 test('checkout uses the RPC snapshot and refuses client prices, absent consent and a second live subscription', async () => {
@@ -203,4 +221,13 @@ test('return recovery stops an owned unbound duplicate after session or subscrip
       }
     }
   } finally { globalThis.fetch = previousFetch; }
+});
+
+
+test('public plan discovery strips private provider fields, rejects invalid prices, and never trusts spoofed identity', async () => {
+  env(); const calls=[];
+  const handler=subscriptionHandler({action:'plans',authed:false,rpcCall:async(fn,args)=>{calls.push({fn,args});return [{id:'starter-monthly',billing_interval:'month',price_usd_cents:1900,credits:270,stripe_price_id:'private'}];}});
+  const r=await handler(request(undefined,null)); assert.equal(r.status,200);assert.ok(!(await r.text()).includes('private'));assert.deepEqual(calls,[{fn:'list_credit_subscription_plans',args:{}}]);
+  assert.throws(()=>subscriptionHandler({action:'cancel',authed:false}));
+  const broken=subscriptionHandler({action:'plans',authed:false,rpcCall:async()=>[{id:'starter-monthly',billing_interval:'month',price_usd_cents:-1,credits:270}]});assert.equal((await broken(request(undefined,null))).status,503);
 });
