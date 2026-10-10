@@ -104,15 +104,20 @@ jobs:
 
       # The rollback target. The whole deployment is kept, so a gradual
       # split is restored as it was, not collapsed onto one version.
+      # One failed read here deployed nothing on 2026-10-09 (a 504 after 55 s,
+      # #753), so it is tried up to five times: 1, 2, 4 and 8 s apart, 10 s a
+      # try, no new try after 45 s. Into a file, not a pipe: a try that broke
+      # off would leave half an answer in front of the next one.
       - name: Record the live deployment
         if: env.HAS_TOKEN == 'true' && steps.tip.outputs.stale != 'true'
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
-          curl -fsS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
-            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/$WORKER_NAME/deployments" \
-            | jq -c '.result.deployments | sort_by(.created_on) | last
-                     | {strategy, versions: [.versions[] | {version_id, percentage}]}' > previous-deployment.json
+          curl -f --no-progress-meter --retry 4 --retry-all-errors --max-time 10 --retry-max-time 45 \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -o live-deployments.json \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/$WORKER_NAME/deployments"
+          jq -c '.result.deployments | sort_by(.created_on) | last
+                 | {strategy, versions: [.versions[] | {version_id, percentage}]}' live-deployments.json > previous-deployment.json
           jq -e '.versions | length > 0' previous-deployment.json > /dev/null
           echo "Live before this deploy: $(jq -c .versions previous-deployment.json)"
 
@@ -143,6 +148,9 @@ jobs:
 
       # Rolls back the Worker only. Applied migrations stay applied, which is
       # why migrations must keep working with the previous release.
+      # The request is tried up to five times, as the read above is. Sending
+      # it twice is safe: each one makes the recorded versions live again, so
+      # a repeat only adds an entry to the deployment history.
       - name: Roll back to the recorded deployment
         if: failure() && (steps.smoke.outcome == 'failure' || steps.secret_check.outcome == 'failure')
         env:
@@ -150,9 +158,13 @@ jobs:
         run: |
           jq --arg msg "auto-rollback: production validation failed after $GITHUB_SHA" \
             '. + {annotations: {"workers/message": $msg}}' previous-deployment.json > rollback.json
-          curl -fsS -X POST -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H "Content-Type: application/json" \
+          if ! curl -f --no-progress-meter --retry 4 --retry-all-errors --max-time 10 --retry-max-time 45 \
+            -X POST -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H "Content-Type: application/json" \
             --data @rollback.json \
-            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/$WORKER_NAME/deployments" > /dev/null
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/$WORKER_NAME/deployments" > /dev/null; then
+            echo "::error::ROLLBACK FAILED after deploying $GITHUB_SHA: production may still be serving it. Roll back by hand to $(jq -c .versions previous-deployment.json)"
+            exit 1
+          fi
           echo "::error::Production validation failed after deploying $GITHUB_SHA; rolled back to $(jq -c .versions previous-deployment.json)"
           node scripts/check-worker-secrets.mjs verify previous-secrets.json
           sleep 20 && node scripts/check-site-health.mjs
