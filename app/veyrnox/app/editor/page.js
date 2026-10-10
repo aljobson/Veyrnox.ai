@@ -30,7 +30,7 @@ function Editor() {
     const [library, setLibrary] = useState(null), [libraryError, setLibraryError] = useState('');
     const [blocker, setBlocker] = useState(''), [exporting, setExporting] = useState(false), [progress, setProgress] = useState(0);
     const [result, setResult] = useState(null), [height, setHeight] = useState(720);
-    const [draft, setDraft] = useState('');
+    const [draft, setDraft] = useState({ forId: null, base: '', value: '' }); // the words being typed for one text item, until committed
     const total = totalFrames(tl);
     const size = useMemo(() => timelineSize(tl, 720), [tl]);
 
@@ -108,8 +108,9 @@ function Editor() {
     const clip = selected && selected.track !== 'text' ? tl[selected.track].find(c => c.id === selected.id) : null;
     const textItem = selected?.track === 'text' ? tl.text.find(x => x.id === selected.id) : null;
     const videoIndex = selected?.track === 'video' ? tl.video.findIndex(c => c.id === selected.id) : -1;
-    useEffect(() => { setDraft(textItem ? textItem.text : ''); }, [textItem?.id, textItem?.text]);
-    const commitDraft = () => { if (textItem && draft.trim() !== textItem.text) apply(t => updateText(t, textItem.id, { text: draft })); };
+    // The draft counts only while it belongs to this item and the item has not changed under it; otherwise the input shows the item.
+    const draftValue = textItem && draft.forId === textItem.id && draft.base === textItem.text ? draft.value : (textItem?.text ?? '');
+    const commitDraft = () => { if (textItem && draftValue.trim() !== textItem.text) apply(t => updateText(t, textItem.id, { text: draftValue })); };
     const media = clip ? tl.media[clip.mediaId] : null;
     const layoutStart = clip && selected.track === 'video' ? videoLayout(tl).find(l => l.clip.id === clip.id)?.start : clip?.start;
     const edit = fn => selected && apply(t => fn(t, selected.track, selected.id));
@@ -184,7 +185,7 @@ function Editor() {
                     <h2 className="text-sm font-bold">Text</h2>
                     <p className="font-vx-mono text-xs text-vx-fg-muted">Shows from {formatTime(textItem.start)} for {formatTime(textItem.len)}</p>
                     <label className="block text-sm font-bold">Words
-                        <input className={`${field} mt-2 w-full`} type="text" maxLength={LIMITS.maxTextChars} value={draft} onChange={e => setDraft(e.target.value)} onBlur={commitDraft} onKeyDown={e => { if (e.key === 'Enter') commitDraft(); }} /></label>
+                        <input className={`${field} mt-2 w-full`} type="text" maxLength={LIMITS.maxTextChars} value={draftValue} onChange={e => setDraft({ forId: textItem.id, base: textItem.text, value: e.target.value })} onBlur={commitDraft} onKeyDown={e => { if (e.key === 'Enter') commitDraft(); }} /></label>
                     <div className="flex flex-wrap gap-2">
                         <Button size="sm" variant="ghost" onClick={() => apply(t => updateText(t, textItem.id, { start: Math.min(frame, MAX_FRAMES - textItem.len) }))}>Start at playhead</Button>
                         <Button size="sm" variant="ghost" onClick={() => { apply(t => removeText(t, textItem.id)); setSelected(null); }}>Delete</Button>
