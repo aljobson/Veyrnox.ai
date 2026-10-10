@@ -122,3 +122,23 @@ render; and whether to add a WebGL layer later. The engine is decided: **Mediabu
 - **Cost:** browser memory and codec support vary, so support is "desktop Chrome" and a clear refusal elsewhere. A free local export
   leaves no server-side copy, so there is nothing to recover if the user loses the file.
 - **Risk:** real footage, other browsers and smaller machines still need qualification beyond the measured slice 0 clips. Desktop Chromium capability checks remain authoritative.
+
+## Cloud project saving rollout — 2026-10-10
+
+The owner requested cloud project saving in production. The normal Studio
+Projects entry and editor Save to a project controls now use the same
+request-time `TENANT_PROJECTS_ENABLED` flag as the project APIs. The retired
+`veyrnox_projects` browser switch no longer hides an enabled feature. Disabling
+the server flag hides both controls and returns 404 for project pages/APIs.
+
+This release stores project documents, timeline decisions and immutable history.
+Library files are fetched again by generation id; local files are relinked on
+reopen and are not uploaded. Project media reservation needs the separate
+`PROJECT_MEDIA_UPLOADS_ENABLED` flag, false in production and true in staging.
+It cannot issue an upload URL while production moderation/malware acceptance is
+open. No scanner exception or paid feature activation is part of cloud saving.
+
+Production activation remains pending the 24-hour clean reconciliation window
+after 0261, applied at 2026-10-10 15:32:27 UTC. Its earliest end is
+2026-10-11 15:32:27 UTC (16:32:27 BST). This preparation leaves production
+`TENANT_PROJECTS_ENABLED=false`. No schema or ledger behavior changes.

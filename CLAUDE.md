@@ -351,9 +351,10 @@ If a build starts failing after a dependency change, bisect these three first.
 - Feature flag new user paths until the DB migration has landed and the
   reconciliation job has run for 24h clean. Flags are server vars in
   `wrangler.jsonc` (`*_ENABLED`, `"false"` in production, e.g. `CINEMA_*`,
-  `TENANT_PROJECTS_ENABLED`, `PUBLISH_ENABLED`). Two surfaces also need a
-  per-browser preview switch on top: `localStorage.veyrnox_social_cinema` and
-  `localStorage.veyrnox_projects`.
+  `TENANT_PROJECTS_ENABLED`, `PUBLISH_ENABLED`). Cinema also needs the per-browser preview switch
+  `localStorage.veyrnox_social_cinema`. Projects navigation and cloud saving
+  share the request-time `TENANT_PROJECTS_ENABLED` server flag; project media
+  uploads have the additional `PROJECT_MEDIA_UPLOADS_ENABLED` gate.
 - Every PR touching the money spine (ledger, jobs, webhooks) needs an ADR
   update if behavior visible to the user or auditor changes.
 

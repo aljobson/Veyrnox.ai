@@ -212,7 +212,7 @@ function Editor() {
                     <Button className="w-full justify-center" disabled={empty || exporting || Boolean(blocker)} onClick={runExport}>Export MP4</Button>
                     {exporting && <><progress aria-label="Export progress" className="w-full accent-vx-accent" value={progress} max={1} /><Button size="sm" variant="ghost" onClick={() => exportAbort.current?.abort()}>Cancel export</Button></>}
                     {result && <div role="status"><a className="break-words text-sm font-bold text-vx-accent underline" href={result.url} download={result.name}>Download {result.name} ({(result.size / 1048576).toFixed(1)} MiB)</a></div>}
-                    <p className="text-xs leading-relaxed text-vx-fg-muted">Everything stays in this browser and uses no credits. Keep this tab open during export. Sound is mixed when you export; the preview is silent.</p>
+                    <p className="text-xs leading-relaxed text-vx-fg-muted">Editing and export run in this browser and use no credits. Saving a project stores its timeline and settings in your workspace; files from this computer stay here. Keep this tab open during export. Sound is mixed when you export; the preview is silent.</p>
                 </div>
             </aside>
         </div>
