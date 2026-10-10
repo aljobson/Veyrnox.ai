@@ -17,6 +17,7 @@ import { mergeHydrated, shouldPoll } from '../../_lib/jobWindow';
 import { STATE_TABS, KIND_TABS, KIND_LABEL, VIEWS, VIEW_KEY, filterRows, readView } from '../../_lib/libraryFilter';
 import { readFavourites, toggleFavourite } from '../../_lib/favourites';
 import { formatWhen } from '../../_lib/formatWhen';
+import { FilmLibraryMasters } from '../../_components/film/FilmLibraryMasters';
 import { getSession } from '../../../lib/authClient.js';
 
 // Account list is authoritative; local history supplies cached display names.
@@ -333,6 +334,8 @@ export default function Library() {
           </div>
         </div>
       </section>
+
+      <FilmLibraryMasters visible={['all','succeeded'].includes(tab) && ['all','video'].includes(kind) && !favOnly}/>
 
       <section className="max-w-[1400px] mx-auto px-4 sm:px-8 pb-16">
         {!historyLoaded ? null : list.length === 0 ? (
