@@ -27,3 +27,22 @@ Stress-test and take verdicts are human reviews of supplied outputs. The app enf
 ## Verification
 
 `tests/filmStudio.test.mjs` exercises missing-field gates, exact variants, reference counts, pairing matrices, failed/duplicate results, stale locks, descriptor and dialogue preservation, revision constraints, acceptance, the failure ceiling, account-scoped storage and exports. `tests/landingDraft.test.mjs` covers the clip-length handoff. Reticle drives the actual stage forms, imported workspaces, approvals, locks, prompt generation, acceptance and revision errors.
+## Exact 16:9 accepted-take master
+
+For a 16:9 film, an accepted take offers **Prepare 16:9 master**. A Library
+job ID loads the owner's delivered video; an external take can use its video
+file. The existing browser video renderer creates a 1920×1080 H.264 MP4 at
+24 fps, trimmed to the shot card's length. A centre crop fills the frame
+without stretching. The source generation and its Library file stay intact.
+
+This step is required for an exact master when an image-to-video provider
+inherits the start image's dimensions. Kling 3.0's aspect parameter is ignored
+when frames are provided ([supplier contract](https://kie.ai/kling-3-0)).
+The Film Studio format setting alone therefore does not certify the raw
+supplier video's dimensions. The exported master is decoded and its exact
+1920×1080 frame and duration are checked before Download is offered.
+
+Export uses the editor's existing desktop Chromium codec qualification and
+memory limits, can be cancelled, costs no Credits and saves locally. It does
+not create a second generation or upload the master to the Library. Stale
+passports, rejected takes, shorter videos and other film aspects are refused.

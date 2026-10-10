@@ -101,3 +101,20 @@ production `xdxdzmsztyzbnzeforxx`, user
 - These are test credits funding actual provider calls, not customer revenue.
   The first run's 70-Credit debit and 30-Credit remaining balance reconciled.
   The 2-Credit delivery diagnostic explains the 28-Credit pre-rerun balance.
+
+## 2026-10-10 — Exact 16:9 Film Studio rerun
+
+Al Jobson requested the aspect-ratio fix and a fresh empty-room production
+test. His earlier authorization to add Credits funds this same test workflow.
+The balance was 12 Credits; one ten-second Kling take costs 56 Credits.
+
+- Grant: 44 paid-equivalent Credits through `public.ledger_grant`, with
+  `free_delta = 0`, to the same production account above. Balance 12 -> 56.
+- Reason: `grant:manual Al Jobson Film Studio exact 16:9 rerun`.
+- Idempotency key: `codex-film-room-20261010-aspect-01`; reuse for an unknown
+  outcome, never issue a duplicate grant.
+- Ledger entry: `4432311c-3108-41a7-8e56-645ae1c92a2d`. RPC returned
+  `ok: true` and `idempotent: false`.
+- Purpose: one fresh ten-second take with the existing approved room
+  references, then the free Film Studio 1920×1080 master export. These Credits
+  fund an actual provider call and are not customer revenue or a purchase.
