@@ -6,7 +6,7 @@
  *                                    (reasons included: this is the operator
  *                                    view) and the account_actions log
  *   POST { user_id, credits, reason } append a Pack grant through
- *                                    admin_credit_grant with the admin's email
+ *                                    admin_credit_grant_guarded with the admin's email
  *                                    as actor and the note on the action row.
  *                                    Requires an Idempotency-Key header: a
  *                                    replay answers 200 with the first result
@@ -50,6 +50,13 @@ export async function GET(req) {
 export async function POST(req) {
     const g = await adminGate(req);
     if (g.response) return g.response;
+    if (process.env.ADMIN_CREDIT_GRANTS_ENABLED !== 'true') return NextResponse.json({ error: 'grants_not_open' }, { status: 503, headers: NO_STORE });
+    const rawMfa = req.headers.get('x-veyrnox-auth-mfa-at');
+    const mfaAt = rawMfa && /^\d+$/.test(rawMfa) ? Number(rawMfa) : NaN;
+    const nowSec = Math.floor(Date.now() / 1000);
+    if (req.headers.get('x-veyrnox-auth-aal') !== 'aal2' || !Number.isSafeInteger(mfaAt) || mfaAt < nowSec - 300 || mfaAt > nowSec + 5) {
+        return NextResponse.json({ error: 'mfa_required' }, { status: 403, headers: NO_STORE });
+    }
     const k = idempotencyKey(req);
     if (k.response) return k.response;
     const b = await readJsonObject(req);
@@ -61,7 +68,8 @@ export async function POST(req) {
 
     let result;
     try {
-        result = await rpc('admin_credit_grant', {
+        result = await rpc('admin_credit_grant_guarded', {
+            p_aal: 'aal2', p_mfa_at: mfaAt,
             p_auth_id: g.authId, p_user_id: userId, p_credits: credits, p_reason: reason.trim(), p_idempotency_key: k.key,
         }, g.cfg);
     } catch (err) {
