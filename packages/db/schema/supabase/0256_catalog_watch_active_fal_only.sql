@@ -1,4 +1,4 @@
--- 0247_catalog_watch_active_fal_only.sql
+-- 0256_catalog_watch_active_fal_only.sql
 -- catalog_watch() returns only the rows the fal catalog watcher compares
 -- (audit 2026-10-09, P-04).
 --
