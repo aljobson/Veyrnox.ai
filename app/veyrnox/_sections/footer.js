@@ -103,7 +103,7 @@ export function FAQBlock() {
         <h2 className="vx-display text-[40px] sm:text-[56px] lg:sticky lg:top-24 self-start">Questions.</h2>
         <div className="border-t-2 border-vx-fg">
           {FAQ.map((row) => (
-            <details key={row.q} className="group border-b border-vx-border">
+            <details key={row.q} className="vx-details group border-b border-vx-border">
               <summary className="cursor-pointer list-none flex items-center justify-between gap-6 py-5">
                 <span className="text-[17px] font-bold">{row.q}</span>
                 <span

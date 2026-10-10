@@ -215,7 +215,7 @@ function SearchOverlay({ onClose }) {
 
         <div className="flex items-center justify-between border-t border-vx-border px-5 py-2.5 font-vx-mono text-[9.5px] tracking-[0.12em] text-vx-fg-faint">
           <span>↑↓ MOVE · ↵ OPEN · ESC CLOSE</span>
-          <span aria-live="polite">{results.length} RESULT{results.length === 1 ? '' : 'S'}</span>
+          <span aria-live="polite" aria-atomic="true">{results.length} RESULT{results.length === 1 ? '' : 'S'}</span>
         </div>
       </div>
     </Modal>

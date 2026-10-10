@@ -190,20 +190,6 @@ body {
 }
 main:focus-visible { outline: none; }
 
-/* ─── Hit area ────────────────────────────────────────────────────────
-   Grows what a finger can press to at least 40px without moving what the
-   eye sees. For small controls that must stay small. */
-.vx-hit { position: relative; }
-.vx-hit::after {
-  content: '';
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: max(100%, 40px);
-  height: max(100%, 40px);
-  transform: translate(-50%, -50%);
-}
-
 /* ─── Overlay motion ──────────────────────────────────────────────────
    The design-system page has always specified these (overlays fade 200ms,
    bottom sheets slide up 280ms); they were never written, so every dialog
@@ -221,22 +207,27 @@ main:focus-visible { outline: none; }
 .vx-overlay > :first-child { animation: vx-pop 200ms var(--vx-ease-out) backwards; }
 /* On a phone the panel is a bottom sheet; it rises on the slip's own curve. */
 @media (max-width: 639px) {
+  /* Not a scroll container while its panel rises from below: focusing the
+     first control would scroll the dialog after the panel and it would snap. */
+  .vx-overlay-sheet { overflow: clip; }
   .vx-overlay-sheet > :first-child { animation: vx-slide-up 280ms cubic-bezier(0.32, 0.72, 0, 1) backwards; }
 }
 
-/* An opened <details> grows and fades in rather than snapping; where the
-   browser cannot do it, it opens as before. Screen only: print shows every
-   answer through the rule below. */
+/* An opened FAQ answer grows and fades in rather than snapping; where the
+   browser cannot do it, it opens as before. Opt-in by class, so no other
+   <details> on the site changes. Clipped on the block axis only: a focus
+   ring at the answer's side edge still shows. Screen only: print shows
+   every answer through the rule below. */
 @media screen and (prefers-reduced-motion: no-preference) {
   @supports selector(::details-content) {
-    details { interpolate-size: allow-keywords; }
-    details::details-content {
+    .vx-details { interpolate-size: allow-keywords; }
+    .vx-details::details-content {
       block-size: 0;
-      overflow: clip;
+      overflow-y: clip;
       opacity: 0;
       transition: block-size 220ms var(--vx-ease-out), opacity 160ms var(--vx-ease-out), content-visibility 220ms allow-discrete;
     }
-    details[open]::details-content { block-size: auto; opacity: 1; }
+    .vx-details[open]::details-content { block-size: auto; opacity: 1; }
   }
 }
 

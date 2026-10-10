@@ -23,10 +23,6 @@ const PROMPT_MAX = 2000;
 
 const KIND_LABEL = { video: 'Video', image: 'Image', audio: 'Audio' };
 
-function shortName(name) {
-  return String(name || '').replace(/\s*\([^()]*\)\s*$/, '');
-}
-
 export function PriceSlip({ models }) {
   const router = useRouter();
   const open = useMemo(() => models.filter((m) => !m.gated), [models]);
@@ -34,6 +30,9 @@ export function PriceSlip({ models }) {
     () => FEATURED.map((id) => open.find((m) => m.id === id)).filter(Boolean),
     [open],
   );
+  // One naming function for the chips, the select and the slip line, so the
+  // picker never prints the same name for two models.
+  const nameOf = useMemo(() => distinctShelfNames(models), [models]);
   const [modelId, setModelId] = useState((chips[0] || open[0] || models[0])?.id);
   const [wanted, setSeconds] = useState(5);
   const [prompt, setPrompt] = useState('');
@@ -82,7 +81,7 @@ export function PriceSlip({ models }) {
           className="mt-2 w-full resize-none rounded-lg border border-vx-border bg-vx-base px-3 py-2.5 text-[15px] leading-snug text-vx-fg placeholder:text-vx-fg-faint focus:border-vx-accent focus:outline-hidden"
         />
 
-        <fieldset className="mt-4">
+        <fieldset className="mt-4 min-w-0">
           <legend className="text-[13px] font-bold text-vx-fg">Model</legend>
           <div className="mt-2 flex flex-wrap gap-1.5">
             {chips.map((m) => (
@@ -93,20 +92,19 @@ export function PriceSlip({ models }) {
                 onClick={() => pickModel(m.id)}
                 className="vx-press rounded-full border px-3 py-1.5 text-[13px] font-semibold pointer-coarse:min-h-10 border-vx-border text-vx-fg-body hover:border-vx-fg-muted aria-pressed:border-vx-fg aria-pressed:bg-vx-fg aria-pressed:text-vx-base"
               >
-                {shortName(m.name)}
+                {nameOf(m)}
               </button>
             ))}
             <select
               aria-label="Every other model"
               value={inChips ? '' : model.id}
               onChange={(e) => e.target.value && pickModel(e.target.value)}
-              className={`rounded-full border bg-transparent px-3 py-1.5 text-[13px] font-semibold pointer-coarse:min-h-10 ${inChips ? 'border-vx-border text-vx-fg-muted' : 'border-vx-fg text-vx-fg'}`}
+              className={`min-w-0 max-w-full rounded-full border bg-transparent px-3 py-1.5 text-[13px] font-semibold pointer-coarse:min-h-10 ${inChips ? 'border-vx-border text-vx-fg-muted' : 'border-vx-fg text-vx-fg'}`}
             >
               <option value="">{models.length - chips.length} more…</option>
               {['video', 'image', 'audio'].map((kind) => {
                 const rows = models.filter((m) => m.kind === kind && !chips.includes(m));
                 if (!rows.length) return null;
-                const nameOf = distinctShelfNames(rows);
                 return (
                   <optgroup key={kind} label={KIND_LABEL[kind]}>
                     {rows.map((m) => (
@@ -122,7 +120,7 @@ export function PriceSlip({ models }) {
         </fieldset>
 
         {lengths.length > 1 && (
-          <fieldset className="mt-4">
+          <fieldset className="mt-4 min-w-0">
             <legend className="text-[13px] font-bold text-vx-fg">Length</legend>
             <div className="mt-2 inline-flex rounded-full border border-vx-border p-0.5">
               {lengths.map((s) => (
@@ -143,9 +141,9 @@ export function PriceSlip({ models }) {
         <div className="vx-perf mt-6" aria-hidden />
 
         {/* One short announcement per change, not the whole slip re-read. */}
-        <p className="sr-only" aria-live="polite">{`${shortName(model.name)}, ${unit}: ${cost} credits.`}</p>
+        <p className="sr-only" aria-live="polite">{`${nameOf(model)}, ${unit}: ${cost} credits.`}</p>
         <dl className="mt-4 space-y-1.5 font-vx-mono text-[13px] vx-num">
-          <SlipLine label={`${shortName(model.name)}, ${unit}`} value={`${cost} cr`} tick={`${model.id}-${seconds}`} />
+          <SlipLine label={`${nameOf(model)}, ${unit}`} value={`${cost} cr`} tick={`${model.id}-${seconds}`} />
           <SlipLine label="If it fails" value={`${cost} cr back`} muted tick={`${model.id}-${seconds}-r`} />
           {model.gated && <SlipLine label="Premium model" value="sign-up needed" muted />}
         </dl>

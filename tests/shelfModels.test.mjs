@@ -91,5 +91,5 @@ test('the landing price list, the footer and the hero picker all print distinct 
     const read = (p) => readFileSync(new URL(p, import.meta.url), 'utf8');
     assert.match(read('../app/veyrnox/_sections/showcase.js'), /distinctShelfNames\(g\.rows\)/);
     assert.match(read('../app/veyrnox/_sections/footer.js'), /distinctShelfNames\(catalog\)/);
-    assert.match(read('../app/veyrnox/_components/PriceSlip.js'), /distinctShelfNames\(rows\)/);
+    assert.match(read('../app/veyrnox/_components/PriceSlip.js'), /distinctShelfNames\(models\)/);
 });

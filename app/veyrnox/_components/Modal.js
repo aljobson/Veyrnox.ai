@@ -8,15 +8,21 @@ import { useEffect, useRef } from 'react';
  */
 export function Modal({ children, onCancel, initialFocusRef, instant = false, className = '', ...labels }) {
   const ref = useRef(null);
+  const pressedOnScrim = useRef(false);
+  // Opened once per mount. A caller that swaps its focus target (the persona
+  // list and its form) used to close and reopen the dialog, which now would
+  // replay the entrance; only the focus moves.
   useEffect(() => {
     const previous = document.activeElement;
     const dialog = ref.current;
     dialog.showModal();
-    initialFocusRef?.current?.focus();
     return () => {
       dialog.close();
       if (previous?.isConnected) previous.focus();
     };
+  }, []);
+  useEffect(() => {
+    initialFocusRef?.current?.focus();
   }, [initialFocusRef]);
   function containTab(event) {
     if (event.key !== 'Tab') return;
@@ -34,7 +40,10 @@ export function Modal({ children, onCancel, initialFocusRef, instant = false, cl
   return <dialog ref={ref} tabIndex={-1} onKeyDown={containTab} {...labels}
     className={`${instant ? '' : 'vx-overlay '}fixed inset-0 m-0 h-dvh w-screen max-h-none max-w-none border-0 text-vx-fg bg-black/70 backdrop:bg-transparent hidden open:flex ${className}`}
     onCancel={event => { event.preventDefault(); onCancel(); }}
-    onClick={event => { if (event.target === event.currentTarget) onCancel(); }}>
+    // The press must start on the scrim too: a text selection dragged out of
+    // a field and released on the scrim is a click on the dialog.
+    onMouseDown={event => { pressedOnScrim.current = event.target === event.currentTarget; }}
+    onClick={event => { if (pressedOnScrim.current && event.target === event.currentTarget) onCancel(); }}>
     {children}
   </dialog>;
 }

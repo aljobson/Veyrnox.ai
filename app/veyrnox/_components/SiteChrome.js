@@ -121,9 +121,10 @@ function ScrollProgress() {
 }
 
 /* ─── Back to top + contact, bottom-right ───
-   `raised` lifts them clear of the chat composer. `tucked` drops them on a
-   phone while the storage notice is up: it already takes a fifth of the
-   screen there, and two more buttons on top of it crowd the first visit. */
+   `raised` lifts them clear of the chat composer. `tucked` drops Back to
+   top on a phone while the storage notice is up, which already takes a
+   fifth of the screen there. Contact stays: on most pages it is the only
+   contact link. */
 function FloatingActions({ raised = false, tucked = false }) {
   const [showTop, setShowTop] = useState(false);
 
@@ -144,7 +145,7 @@ function FloatingActions({ raised = false, tucked = false }) {
 
   return (
     <div
-      className={`mr-4 flex-col items-end gap-2 sm:mr-6 ${tucked ? 'hidden sm:flex' : 'flex'} ${
+      className={`mr-4 flex flex-col items-end gap-2 sm:mr-6 ${
         raised ? 'mb-36 sm:mb-24' : 'mb-4 sm:mb-6'
       }`}
     >
@@ -154,7 +155,7 @@ function FloatingActions({ raised = false, tucked = false }) {
         type="button"
         onClick={toTop}
         aria-label="Back to top"
-        className={`inline-flex h-11 w-11 items-center justify-center rounded-full border border-vx-border bg-vx-panel text-vx-fg-body shadow-lg transition-[opacity,visibility] duration-200 hover:border-vx-accent hover:text-vx-fg ${
+        className={`${tucked ? 'hidden sm:inline-flex' : 'inline-flex'} h-11 w-11 items-center justify-center rounded-full border border-vx-border bg-vx-panel text-vx-fg-body shadow-lg transition-[opacity,visibility] duration-200 hover:border-vx-accent hover:text-vx-fg ${
           showTop ? 'pointer-events-auto visible opacity-100' : 'invisible opacity-0'
         }`}
       >
