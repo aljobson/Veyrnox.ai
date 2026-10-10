@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// The caps 0248 puts on the tenant write functions a signed-in user can call
+// The caps 0254 puts on the tenant write functions a signed-in user can call
 // directly with the publishable key (audit 2026-10-09, P-05). Fixtures are
 // seeded as a privileged writer to reach each cap without 1,000 round trips,
 // then the wrapper is called as the user. Throwaway LOCAL database only;

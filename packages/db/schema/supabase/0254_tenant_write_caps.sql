@@ -1,4 +1,4 @@
--- 0248_tenant_write_caps.sql
+-- 0254_tenant_write_caps.sql
 -- Caps on the tenant write functions a signed-in user can call directly
 -- (audit 2026-10-09, P-05; ADR-0051).
 --
@@ -47,7 +47,7 @@ BEGIN
         RETURN jsonb_build_object('project', to_jsonb(created), 'idempotent', true);
     END IF;
     IF (SELECT count(*) FROM public.audit_events WHERE actor_id = actor AND created_at > now() - interval '1 minute') >= 30 THEN RAISE EXCEPTION 'RATE_LIMITED' USING ERRCODE = 'PT429'; END IF;
-    -- Cap: 200 live projects per workspace (0248). A removed project no longer counts.
+    -- Cap: 200 live projects per workspace (0254). A removed project no longer counts.
     IF (SELECT count(*) FROM public.projects p WHERE p.workspace_id = workspace AND p.deleted_at IS NULL) >= 200 THEN
         RAISE EXCEPTION 'LIMIT_REACHED' USING ERRCODE = 'PT429', DETAIL = 'workspace_projects';
     END IF;
@@ -87,7 +87,7 @@ BEGIN
     END IF;
     SELECT coalesce(max(v.revision),0) INTO head FROM public.project_document_versions v WHERE v.project_id = project;
     IF expected <> head THEN RAISE EXCEPTION 'VERSION_CONFLICT' USING ERRCODE = 'PT409'; END IF;
-    -- Cap: 1,000 revisions per project (0248). Revisions are append-only, so
+    -- Cap: 1,000 revisions per project (0254). Revisions are append-only, so
     -- this is the project's size ceiling: 1,000 x 32 KiB.
     IF head >= 1000 THEN
         RAISE EXCEPTION 'LIMIT_REACHED' USING ERRCODE = 'PT429', DETAIL = 'project_revisions';
@@ -114,7 +114,7 @@ BEGIN
     IF (SELECT count(*) FROM public.audit_events WHERE actor_id = actor AND created_at > now() - interval '1 minute') >= 30 THEN
         RAISE EXCEPTION 'RATE_LIMITED' USING ERRCODE = 'PT429';
     END IF;
-    -- Cap: 2,000 document saves per actor per rolling day (0248), from the
+    -- Cap: 2,000 document saves per actor per rolling day (0254), from the
     -- audit rows this function writes. 2,000 x 32 KiB bounds a day at 64 MiB.
     IF (SELECT count(*) FROM public.audit_events e
          WHERE e.actor_id = actor AND e.created_at > now() - interval '1 day'
