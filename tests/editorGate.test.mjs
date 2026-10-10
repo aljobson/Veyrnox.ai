@@ -27,8 +27,14 @@ test('the editor adds no network call of its own and no engine the policy forbid
     for (const f of files) assert.doesNotMatch(read(f), /\bWebAssembly\b|wasm|eval\(|new Function|dangerouslySetInnerHTML/, f);
     const csp = contentSecurityPolicy('AAAAAAAAAAAAAAAAAAAAAA==', false, 'production');
     assert.doesNotMatch(csp, /wasm-unsafe-eval|unsafe-eval/, 'the production policy still forbids runtime code and WebAssembly');
-    // The only server calls are the two Library reads in editorLibrary.mjs; the page itself never posts anything.
+    // The page itself never posts anything. Server calls live in two places: the Library reads (editorLibrary.mjs) and the
+    // project bar (slice 3), which may only speak to the projects and workspaces routes, behind the projects preview switch.
     assert.doesNotMatch(read('app/veyrnox/app/editor/page.js'), /method:\s*['"](POST|PUT|PATCH|DELETE)/);
+    const bar = read('app/veyrnox/_components/editor/ProjectBar.js');
+    for (const m of bar.matchAll(/gatewayFetch\((?:`|')([^`']*)/g)) assert.match(m[1], /^(\/(projects|workspaces)|\$\{endpoint\})/, m[1]);
+    assert.match(bar, /const endpoint = projectId \? `\/projects\//);
+    assert.match(bar, /useProjectsPreview\(\)/);
+    assert.match(bar, /if \(!enabled\) return null/);
 });
 
 test('output size keeps the first clip shape, even and within 1920 wide', () => {
