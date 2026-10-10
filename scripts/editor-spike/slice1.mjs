@@ -14,7 +14,7 @@ const [mediaDir, outDir] = process.argv.slice(2);
 if (!mediaDir || !outDir || !process.env.PLAYWRIGHT_CORE) { console.error('usage: PLAYWRIGHT_CORE=<dir> node slice1.mjs <media dir> <out dir>'); process.exit(2); }
 mkdirSync(outDir, { recursive: true });
 const { chromium } = createRequire(import.meta.url)(process.env.PLAYWRIGHT_CORE);
-const LIB = ['editorTimeline.mjs', 'editorMedia.mjs', 'editorExport.mjs', 'videoEnhance.mjs'];
+const LIB = ['editorTimeline.mjs', 'editorMedia.mjs', 'editorExport.mjs', 'editorRender.mjs', 'editorPreview.mjs', 'videoEnhance.mjs'];
 const server = http.createServer((req, res) => {
     const url = new URL(req.url, 'http://x');
     if (req.method === 'POST' && url.pathname.startsWith('/out/')) { req.pipe(createWriteStream(path.join(outDir, path.basename(url.pathname)))).on('finish', () => res.end('ok')); return; }
@@ -43,7 +43,9 @@ const frameAt = (f, t) => {
     let r = 0, g = 0, b = 0, n = 0, sx = 0;
     for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const i = (y * w + x) * 3; r += u[i]; g += u[i + 1]; b += u[i + 2]; if (u[i] > 225 && u[i + 1] > 225 && u[i + 2] > 225) { n++; sx += x; } }
     const px = (x, y) => [u[(y * w + x) * 3], u[(y * w + x) * 3 + 1], u[(y * w + x) * 3 + 2]];
-    return { avg: [r, g, b].map(v => Math.round(v / (w * h))), boxX: n ? sx / n : null, left: px(1, 18), mid: px(32, 18) };
+    let bottomWhite = 0;
+    for (let y = 29; y <= 32; y++) for (let x = 0; x < w; x++) { const i = (y * w + x) * 3; if (u[i] > 200 && u[i + 1] > 200 && u[i + 2] > 200) bottomWhite++; }
+    return { avg: [r, g, b].map(v => Math.round(v / (w * h))), boxX: n ? sx / n : null, left: px(1, 18), mid: px(32, 18), top: px(32, 2), bottomWhite };
 };
 const tones = (f, t) => {
     const fs = 8000, n = 4000;
@@ -154,6 +156,58 @@ check('output sizes are even and the long edge stays at or under 1920', edge.siz
 check('download names are safe', edge.name.every(n => /^[\p{L}\p{N}_-]+\.mp4$/u.test(n)), edge.name.join(' | '));
 const ao = probe(path.join(outDir, 'slice1-audio-only.mp4'));
 check('audio-only export has 60 frames of picture and a 2 s sound', Number(ao.streams.find(s => s.codec_type === 'video')?.nb_read_frames) === 60 && Math.abs(Number(ao.format.duration) - 2) < 0.2, `${ao.format.duration}s`);
+
+console.log('\nslice 2: dissolve, text and aspect preset');
+const s2 = await page.evaluate(async media => {
+    const { TL, EX, RD, PV, blobs } = window.s1;
+    const must = r => { if (r.error) throw new Error(r.error); return r; };
+    let t = TL.emptyTimeline();
+    for (const id of ['l-1', 'l-2']) t = must(TL.addMedia(t, media[id]));
+    t = must(TL.addVideoClip(t, 'l-1', { in: 0, len: 90 }));  // A: blue, 3 s of a 4 s file, tone 440 (so it has a second to continue under the dissolve)
+    t = must(TL.addVideoClip(t, 'l-2'));                      // B: red, 120 frames, tone 880
+    t = must(TL.setTransition(t, 'v2', 30));                  // 1 s dissolve into B over frames 90..119
+    t = must(TL.addText(t, { text: 'HELLO', start: 30, len: 90, y: 0.86, size: 12 }));
+    t = must(TL.setAspect(t, '9:16'));
+    const problem = TL.validateTimeline(JSON.parse(JSON.stringify(t)));
+    const t0 = performance.now();
+    const blob = await EX.exportTimeline(t, blobs, {});
+    const ms = Math.round(performance.now() - t0);
+    await fetch('/out/slice2.mp4', { method: 'POST', body: blob });
+    // Frame for frame: the preview painter against the decoded export, at the same frames.
+    const { width: W, height: H } = RD.timelineSize(t, 720);
+    const { Input, BlobSource, ALL_FORMATS, CanvasSink } = await import('mediabunny');
+    const input = new Input({ source: new BlobSource(blob), formats: ALL_FORMATS });
+    const sink = new CanvasSink(await input.getPrimaryVideoTrack(), { poolSize: 2 });
+    const previewer = PV.createPreviewer(blobs);
+    const pc = new OffscreenCanvas(W, H), ec = new OffscreenCanvas(W, H);
+    const diffs = [];
+    for (const i of [15, 45, 89, 90, 105, 119, 120, 200]) {
+        await previewer.draw(t, i, pc);
+        const got = await sink.getCanvas(i / 30);
+        const eg = ec.getContext('2d'); eg.fillStyle = '#000'; eg.fillRect(0, 0, W, H);
+        if (got) eg.drawImage(got.canvas, 0, 0, W, H);
+        const a = pc.getContext('2d').getImageData(0, 0, W, H).data, b = eg.getImageData(0, 0, W, H).data;
+        let sum = 0;
+        for (let q = 0; q < a.length; q += 4) sum += Math.abs(a[q] - b[q]) + Math.abs(a[q + 1] - b[q + 1]) + Math.abs(a[q + 2] - b[q + 2]);
+        diffs.push({ i, mean: +(sum / (a.length / 4) / 3).toFixed(2) });
+    }
+    previewer.dispose(); input.dispose();
+    return { problem, bytes: blob.size, ms, W, H, diffs, total: TL.totalFrames(t) };
+}, media);
+const f2 = path.join(outDir, 'slice2.mp4');
+const p2 = probe(f2), v2 = p2.streams.find(s => s.codec_type === 'video');
+check('slice 2 timeline validates and exports', s2.problem === null && s2.bytes > 1000, `${s2.problem} / ${s2.bytes} bytes in ${s2.ms} ms`);
+check('the 9:16 preset gives a 406x720 picture with the frame count intact', v2.width === 406 && v2.height === 720 && Number(v2.nb_read_frames) === s2.total, `${v2.width}x${v2.height}, ${v2.nb_read_frames} of ${s2.total}`);
+const b25 = frameAt(f2, 2.5), b35 = frameAt(f2, 3.5), b45 = frameAt(f2, 4.5), b05 = frameAt(f2, 0.5), b15 = frameAt(f2, 1.5);
+check('a landscape clip in a portrait picture is letterboxed (black top, colour in the middle)', b25.top.every(v => v < 25) && b25.mid[2] > 120, `top ${b25.top} mid ${b25.mid}`);
+check('t=2.5 before the dissolve is clip A (blue)', b25.mid[2] > b25.mid[0] + 60, `mid ${b25.mid}`);
+check('t=3.5 halfway through the dissolve is a blend of blue and red', b35.mid[0] > 60 && b35.mid[2] > 60 && Math.abs(b35.mid[0] - b35.mid[2]) < 90, `mid ${b35.mid}`);
+check('t=4.5 after the dissolve is clip B (red) alone', b45.mid[0] > b45.mid[2] + 60, `mid ${b45.mid}`);
+check('the text shows on its frames and not before (white in the bottom band)', b15.bottomWhite - b05.bottomWhite > 10, `white px: before ${b05.bottomWhite}, during ${b15.bottomWhite}`);
+const d25 = tones(f2, 2.5), d35 = tones(f2, 3.5), d45 = tones(f2, 4.5);
+check('the sound crossfades with the picture: 440 before, both tones through the dissolve, 880 after', top(d25) === '440' && d35[440] > 150 && d35[880] > 150 && top(d45) === '880' && d45[440] < 60, `${JSON.stringify(d25)} | ${JSON.stringify(d35)} | ${JSON.stringify(d45)}`);
+const worst = Math.max(...s2.diffs.map(d => d.mean));
+check('the preview and the export agree frame for frame (mean channel difference under 8 of 255 at 8 sampled frames, dissolve and text included)', worst < 8, s2.diffs.map(d => `${d.i}:${d.mean}`).join(' '));
 
 await context.close();
 server.close();
