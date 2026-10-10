@@ -18,17 +18,17 @@ const CONSENT_TEXT = 'Start my Cinema Pass now. I understand it renews automatic
 export function PassPanel() {
   const account = useSyncExternalStore(onSessionChange, identity, noIdentity);
   const preview = useCinemaPreview();
-  return <div className="mx-auto max-w-[900px] px-4 py-10 pb-40 sm:px-8 sm:py-16 sm:pb-32">
+  return <div className="mx-auto max-w-[1300px] px-4 py-10 pb-40 sm:px-6 sm:py-16 sm:pb-32"><div className="max-w-[852px]">
     <header className="max-w-2xl">
       <p className="mb-4 font-vx-mono text-xs tracking-widest text-vx-accent">SOCIAL CINEMA · CINEMA PASS</p>
-      <h1 className="text-4xl font-black leading-tight sm:text-5xl">Every story, one Pass.</h1>
+      <h1 className="vx-display vx-title-detail">Every story, one Pass.</h1>
       <p className="mt-6 text-lg leading-relaxed text-vx-fg-body">A Cinema Pass unlocks every published episode and film while it is active. It adds no credits; your credits stay yours for the Studio.</p>
       <p className="mt-3 text-sm text-vx-fg-muted"><Link href="/social-cinema" className="underline">Back to Social Cinema</Link></p>
     </header>
     {!preview ? <p className="mt-10 text-vx-fg-muted">Cinema Pass is not open yet.</p>
       : !account ? <div className="mt-10"><p className="mb-4 text-vx-fg-body">Use your Veyrnox.ai account to continue.</p><Button onClick={() => window.dispatchEvent(new CustomEvent('veyrnox:auth-required'))}>Sign in</Button></div>
         : <Pass key={account} />}
-  </div>;
+  </div></div>;
 }
 
 function Pass() {

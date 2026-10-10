@@ -129,8 +129,13 @@ export const RESOLUTIONS = ['1K', '2K', '4K'];
 // button both read it, so there is one address to change.
 export const SUPPORT_EMAIL = 'legal@veyrnox.com';
 
+// The primary nav on every public page (MarketingNav), the home page included.
+// What works today comes first, in the order a new visitor needs it: what it
+// makes, on which models, the ready-made starts, their own files, chat. Then
+// the price and the questions. Social Cinema is last: its page says it is not
+// open yet. The logo is the Home link. A `/#…` entry is a section of the home
+// page; from any other page it opens the home page at that section.
 export const NAV_CATEGORIES = [
-  { href: '/social-cinema', label: 'Social Cinema' },
   { href: '/#explore',   label: 'Explore' },
   { href: '/#models',    label: 'Models' },
   { href: '/presets',   label: 'Templates' },
@@ -138,6 +143,7 @@ export const NAV_CATEGORIES = [
   { href: '/app/chat',  label: 'LLM Chat' },
   { href: '/pricing',   label: 'Pricing' },
   { href: '/#faq',       label: 'FAQ' },
+  { href: '/social-cinema', label: 'Social Cinema' },
 ];
 
 // Every public route, with the blurb search and the 404 page reuse.

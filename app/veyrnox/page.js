@@ -1,11 +1,12 @@
 import { FAQ, MODELS as MODELS_FALLBACK, kindOf, isShelfModel } from './_lib/tokens';
 import { readPublicCatalog } from '../../lib/publicCatalog.js';
 import { SITE_URL, JsonLd } from '../seo';
-import { WideNav, Hero, FeaturedHeroCards } from './_sections/hero';
+import { Hero, FeaturedHeroCards } from './_sections/hero';
 import { BreakthroughVideo, LandingFilm } from './_sections/film';
 import { PresetWall, ModelShelf } from './_sections/showcase';
 import { LedgerExample, FAQBlock, ClosingCTA, FooterForest } from './_sections/footer';
-import { AnnouncementBar } from './_components/AnnouncementBar';
+import { MarketingNav } from './_components/NavBar';
+import { SectionJump } from './_components/SectionJump';
 
 // FAQPage built from the same FAQ constant the page renders, so the markup
 // and the structured data cannot drift apart.
@@ -63,8 +64,7 @@ export default async function VeyrnoxLanding() {
   const catalog = await loadCatalog();
   return (
     <div className="min-h-dvh">
-      <AnnouncementBar />
-      <WideNav />
+      <MarketingNav />
       <BreakthroughVideo />
       <LandingFilm />
       <Hero models={catalog} />
@@ -94,6 +94,7 @@ export default async function VeyrnoxLanding() {
       <ClosingCTA />
       <FooterForest catalog={catalog} />
       <JsonLd data={FAQ_LD} />
+      <SectionJump />
     </div>
   );
 }

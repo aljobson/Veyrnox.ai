@@ -23,7 +23,7 @@ export default function NotFound() {
         </Link>
         <div className="mt-20 sm:mt-28 grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-14 lg:gap-20 items-start">
           <div>
-            <h1 className="vx-display text-[52px] sm:text-[84px] max-w-[11ch]">This page isn&rsquo;t here.</h1>
+            <h1 className="vx-display vx-title-index max-w-[11ch]">This page isn&rsquo;t here.</h1>
             <p className="mt-6 text-lg text-vx-fg-body max-w-[40ch] leading-[1.5]">The link may be out of date, or the page has moved. Nothing was charged.</p>
             <Link
               href="/"
