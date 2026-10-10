@@ -18,6 +18,8 @@ The probe passed first on disposable local PostgreSQL (substituting only its fix
 
 Production apply run [38031604263](https://github.com/aljobson/Veyrnox.ai/actions/runs/38031604263) was waiting for owner approval after merge. This staging exercise did not approve it or apply any production migration. Production changes remain behind the protected `apply-migrations` workflow (ADR-0023).
 
+The owner subsequently approved **0243 only**, and run 38031604263 applied only that migration and passed its ledger check. Production readback at `2026-10-10T06:56:10.776810Z` found exactly one 0243 entry, the same function definition hash as validated staging (`d9ed6cd956e1fbe2b59f8b9744beb23d`), and preserved execution grants. Capacity remained disabled with its original policy, admission remained unpaused, and active reservations/pending dispatches were both zero. This schema installation did not activate production dispatch.
+
 Post-probe monitor [38031856861](https://github.com/aljobson/Veyrnox.ai/actions/runs/38031856861) passed its actual queue/database health check. Dispatch and dead-letter queue backlog were both zero; oldest-message age was unavailable. The retained database artifact at `2026-10-10T06:42:31.263Z` reported all thirteen recovery counts and all five reconciliation drift counts zero, with no unhealthy tasks or issues. This is a clean point-in-time result; continuous monitoring and the remaining provider failure/recovery gates still apply before production activation.
 
 Reticle verification was skipped for this operator SQL probe because it has no browser UI surface. Deployed database behavior was verified directly on staging; the admission-helper HTTP mapping was verified locally against PostgreSQL.
