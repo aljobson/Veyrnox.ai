@@ -85,6 +85,26 @@ No additional provider call, credit purchase, migration or production flag chang
 
 `node scripts/review-staging-health-window.mjs /absolute/evidence/directory` reads retained local artifacts only. Put `inventory.json` in that directory with `since`, `until`, `baseline_run_id` and `runs`; the run entries use the `databaseId`, `createdAt`, `status` and `conclusion` fields returned by `gh run list --workflow fal-queue-watch-staging.yml --limit 1000 --json databaseId,createdAt,status,conclusion`. Ensure this inventory is exhaustive through the interval and includes baseline run 38041323437; check that pagination/limits did not truncate it. Store each run's downloaded `staging-database-health.json` under a directory named for its numeric run ID. Download the artifact for the reviewed attempt, not a different successful attempt masking a failure.
 
-The reviewer requires all thirteen recovery and five reconciliation counters, the exact staging project, task/issue arrays, valid observation timestamps and successful workflow conclusions. Missing or invalid artifacts and unhealthy observations return exit 2. Clean observations spanning less than 24 hours return exit 1. Exit 0 means sufficient clean observed span to begin operator review, not continuous health certification or deployment permission. Every output reports the largest sampling gap and retains an explicit operator-review requirement. Queue metrics, inventory completeness, server scan freshness and gaps still need assessment against the original workflow evidence; this tool does not fetch credentials, refresh snapshots, publish notifications or change configuration.
+The reviewer now requires all thirteen recovery and seven reconciliation counters (0264 / #856), the exact staging project, task/issue arrays, valid observation timestamps and successful workflow conclusions. Missing or invalid artifacts and unhealthy observations return exit 2. Clean observations spanning less than 24 hours return exit 1. Exit 0 means sufficient clean observed span to begin operator review, not continuous health certification or deployment permission. Every output reports the largest sampling gap and retains an explicit operator-review requirement. Queue metrics, inventory completeness, server scan freshness and gaps still need assessment against the original workflow evidence; this tool does not fetch credentials, refresh snapshots, publish notifications or change configuration.
 
 An initial local review at 09:36:52 UTC used the retained artifacts for runs 38041323437, 38041708728 and 38041894211. All three were clean, spanning only 575.553 seconds of observations; the largest observation/boundary gap was 385.747 seconds. The reviewer correctly returned exit 1 for an incomplete window. Six focused tests cover sparse sampling, failed workflows with clean artifacts, missing evidence, UNKNOWN recovery, invalid project/timestamp/counts, incomplete coverage and unsafe/duplicate inventory IDs.
+
+## Expanded measurement baseline — 10 October, 16:43 UTC
+
+PR #795 and this review (#805) are now squash-merged, along with the capacity
+reservation design (#755); those merges authorize no provider spend or flag
+activation. Migration 0264 adds actual allowance/referral measurements. The
+reviewer deliberately refuses an older artifact that lacks either count.
+Earlier five-count evidence remains historical; it cannot prove these two
+measurements were zero.
+
+Staging applied 0264 at 16:36:21 UTC. The first retained seven-count baseline is
+[run 38068792515](https://github.com/aljobson/Veyrnox.ai/actions/runs/38068792515),
+observed **2026-10-10T16:43:18.231Z**: all seven reconciliation counts zero,
+all recovery counts zero and no unhealthy tasks. A review claiming 24 hours
+of expanded measured coverage cannot finish before **11 October 16:43:18 UTC
+(17:43:18 BST)** and still needs the actual subsequent artifacts, exhaustive
+run inventory, gaps and queue metrics assessed. This adds measurement scope;
+it is not a new transport activation, a completed clean window or a launch
+promise. Production applied 0264 at 16:43:15 UTC through owner-approved run
+38068581693, with all seven counts zero.

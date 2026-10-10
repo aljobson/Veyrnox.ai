@@ -1,6 +1,6 @@
 # Implementation Plan — Veyrnox.ai
 
-**Status:** Current · 2026-10-08 (audited against `main` at `42150476`; Publish rows amended against `bee1ea4f`; first
+**Status:** Current · 2026-10-10 (A8, D1 and S19 rollout update at `09957c52`) · prior audit 2026-10-08 (audited against `main` at `42150476`; Publish rows amended against `bee1ea4f`; first
 written 2026-10-02 at `2da81dc`)
 **Replaces:** [docs/PHASE-1.md](../PHASE-1.md) as the build sequence (it
 still names Clerk, Neon, Inngest and LemonSqueezy). Feature sets keep their
@@ -64,7 +64,7 @@ extending a layer depends on everything above it.
 | A5 | Ops checklist (#204, open): email quota or bounded plan, HIBP on, prod admin AAL2 journey, recovery-health alert delivery, DMCA agent | — | every #204 box ticked |
 | A6 | Playwright smoke exists (`e2e/`, daily `e2e.yml`; sign-up runs); generate and buy wait for a staging test account in `E2E_EMAIL`/`E2E_PASSWORD` (ISSUES I5) | A1 | green in CI against staging with the account set |
 | A7 | 24 h clean reconciliation, then widen sign-up | A4–A6 | reconcile watch silent 24 h; `check:signup-gate` closed |
-| A8 | Close the reconcile gap: add `reconcile_free_allowance()` and `reconcile_referrals()` to the snapshot, `reconcile_status()` and `check-reconcile.mjs` (ISSUES S20) | — | the hourly watcher fails on a seeded drift in either |
+| ~~A8~~ | **Done, 2026-10-10 (#856, 0264 applied staging/production).** Snapshot and hourly checker measure all seven counts; seeded allowance/referral drift makes the actual CLI fail. Missing fields after the real receipt fail closed | — | five local SQL/CLI checks; seven zero production counts; protected run 38068581693 |
 
 ## Track B — Publish to the public
 
@@ -93,8 +93,8 @@ extending a layer depends on everything above it.
 
 | step | build | needs | exit check |
 |---|---|---|---|
-| D1 | Choose and integrate CSAM hash matching on every upload path, now including Publish device uploads (ADR-0025 §8.1). **Not started** | — | known-hash test file is refused before storage |
-| D2 | Cinema fixes: ~~creator-status check on unlock (S7)~~ and ~~nested `<main>` (U1)~~ done; legacy upload removal (S4) and the same-second pass-event fix (S19) open | — | acceptance tests |
+| D1 | Choose and integrate CSAM hash matching on every upload path, now including Publish device uploads (ADR-0025 §8.1). **Enrollment/integration proposal prepared, not integrated.** [Provider evidence, traced ingest paths and owner requirements](../operations/upload-scanning-enrollment-2026-10-10.md); IWF Image Intercept is the recommended eligibility inquiry, PhotoDNA an image-only fallback | — | provider-approved benign match fixture is refused before storage; documented image/video coverage and reporting policy |
+| D2 | Cinema fixes: ~~creator-status check on unlock (S7)~~ and ~~nested `<main>` (U1)~~ done; legacy upload removal (S4) remains to be closed; **S19 fixed in production by 0263 / #854** | — | acceptance tests |
 | D3 | Turn on `CINEMA_SUBSCRIPTIONS_ENABLED` on staging with Stripe test keys; full Pass drill | S19 | buy, play to ceiling, cancel in cooling-off, refund |
 | D4 | Legal: rights/age/territory policy, creator agreement, cooling-off and supply-consent wording; Stripe acceptance for recurring video | — | signed off |
 | D5 | Repoint the Stream webhook to production; activate Cinema (#369, open) — profiles, creators, content, uploads, publishing, viewing | D1, D2, D4 | staging acceptance repeated on production |
