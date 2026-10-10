@@ -78,7 +78,7 @@ export function ModelShelf({ catalog }) {
               ariaLabel={`Explore ${g.label.toLowerCase()} models`}
               clip={SHOWCASE_CLIPS[MODEL_SHOWCASE_KEYS[g.kind]]}
               className="block rounded-2xl overflow-hidden mb-4"
-              mediaClassName="h-56"
+              mediaClassName="aspect-[4/5] md:aspect-auto md:h-56 [&_video]:object-contain [&_img]:object-contain md:[&_video]:object-cover md:[&_img]:object-cover"
             >
               <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/10 to-transparent" />
               <div className="absolute inset-x-0 bottom-0 p-4 flex items-baseline justify-between gap-3 text-white">
