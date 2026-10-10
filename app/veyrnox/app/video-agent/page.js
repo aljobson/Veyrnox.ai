@@ -1,8 +1,7 @@
 'use client';
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppNav } from '../../_components/NavBar';
 import { Main } from '../../_components/Main';
-import { Chip } from '../../_components/Chip';
 import { JobAssetPreview } from '../../_components/JobAssetPreview';
 import { gatewayFetch, notifyBalanceChanged, GatewayError } from '../../_lib/gateway';
 import { ERROR_COPY, failedJobCopy } from '../../_lib/createErrors';
@@ -12,21 +11,15 @@ import { useStudioJobs } from '../../_lib/useStudioJobs';
 import { jobStateUi } from '../../_lib/studioStates';
 
 // Video agent (ADR-0074): brief -> plan and price -> Approve -> one priced job.
-// Hidden until launch unless this browser opts in (CLAUDE.md "Delivery").
-const FLAG = 'veyrnox_video_agent';
+// Open to every signed-in user since rollout step 9; the server flag AGENT_VIDEO_ENABLED is the switch.
 const MODEL_ID = 'video-agent';
 const ASPECTS = ['9:16', '16:9', '1:1'];
 const MIN_BRIEF = 3;
 const MAX_BRIEF = 500;
 
-const never = () => () => {};
-const flagOn = () => { try { return window.localStorage.getItem(FLAG) === '1'; } catch { return false; } };
-const off = () => false;
-
 const errorFor = (e) => (e instanceof GatewayError ? { code: e.code, retryAfter: e.retryAfter } : { code: 'internal' });
 
 export default function VideoAgent() {
-  const enabled = useSyncExternalStore(never, flagOn, off);
   const [balance, setBalance] = useState(null);
   const [brief, setBrief] = useState('');
   const [aspect, setAspect] = useState('9:16');
@@ -41,20 +34,19 @@ export default function VideoAgent() {
     try { setBalance((await gatewayFetch('/balance')).balance); } catch { /* the header shows a dash */ }
   }, []);
   useEffect(() => {
-    if (!enabled) return undefined;
     refreshBalance();
     window.addEventListener('veyrnox:balance-changed', refreshBalance);
     return () => window.removeEventListener('veyrnox:balance-changed', refreshBalance);
-  }, [enabled, refreshBalance]);
+  }, [refreshBalance]);
 
   // After a reload, pick the run in flight back up: the job history in this browser knows it was started.
   const resumed = useRef(false);
   useEffect(() => {
-    if (!enabled || resumed.current) return;
+    if (resumed.current) return;
     resumed.current = true;
     const pending = pickResumable(jobsToWatch(readJobHistory()), MODEL_ID);
     if (pending) startJobs(pending);
-  }, [enabled, startJobs]);
+  }, [startJobs]);
 
   const briefOk = brief.trim().length >= MIN_BRIEF && brief.trim().length <= MAX_BRIEF;
   const expired = plan && Date.now() / 1000 > plan.expires_at;
@@ -95,25 +87,13 @@ export default function VideoAgent() {
     } finally { inFlight.current = false; setBusy(false); }
   }
 
-  if (!enabled) {
-    return (
-      <div className="min-h-dvh">
-        <AppNav balance={balance} active="create" />
-        <Main className="max-w-xl mx-auto px-4 pt-16 text-center text-vx-fg-body">This feature isn&apos;t available yet.</Main>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-dvh">
-      <AppNav balance={balance} active="create" />
+      <AppNav balance={balance} active="agent" />
       <Main className="max-w-3xl mx-auto px-4 sm:px-8 pt-6 pb-16">
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            <div className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">VIDEO AGENT</div>
-            <h1 className="text-2xl sm:text-3xl font-black tracking-[-0.02em] mt-1">Make a video from a brief</h1>
-          </div>
-          <Chip tone="accent">PREVIEW</Chip>
+        <div className="mb-3">
+          <div className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">VIDEO AGENT</div>
+          <h1 className="text-2xl sm:text-3xl font-black tracking-[-0.02em] mt-1">Make a video from a brief</h1>
         </div>
 
         <div className="rounded-2xl border border-vx-border bg-vx-panel p-5">

@@ -37,7 +37,7 @@ try {
   // Idempotency proof inside a rolled-back transaction, so the re-apply cannot
   // reinstate this file's function bodies over later migrations for the rest of the run.
   await c.query('BEGIN'); await c.query(migration); await c.query(migration); await c.query('ROLLBACK');
-  assert.equal(await value("SELECT value FROM public.cinema_prices WHERE key='pass_ceiling_minutes'"), 3000);
+  assert.equal(await value("SELECT value FROM public.cinema_prices WHERE key='pass_ceiling_minutes'"), 1500, '0244 halved the ceiling');
   await assert.rejects(q("UPDATE public.cinema_prices SET value=51 WHERE key='episode_unlock'"), /check/i);
   await assert.rejects(q("INSERT INTO public.cinema_prices(key,value) VALUES('rent_price',1)"), /check/i);
 
@@ -62,7 +62,7 @@ try {
   const passId = await activePass(holder);
   for (const s of [0, 61, -5]) assert.equal((await play(holder, ep8, s)).error, 'invalid_seconds', String(s));
   const first = await play(holder, ep8, 30);
-  assert.deepEqual([first.recorded, first.access, first.seconds, first.minutes_used, first.ceiling_minutes], [true, 'pass', 30, 0, 3000]);
+  assert.deepEqual([first.recorded, first.access, first.seconds, first.minutes_used, first.ceiling_minutes], [true, 'pass', 30, 0, 1500]);
   assert.equal((await q('SELECT pass_id, content_id, seconds FROM public.cinema_pass_plays'))[0].pass_id, passId);
   // Unlocked content on a Pass account records nothing: the credits already paid for it.
   assert.equal((await value('SELECT public.unlock_cinema_content($1,$2,$3) AS value', [holder, ep9, 'unlock-2026-09-26'])).access, 'unlocked');
@@ -81,7 +81,7 @@ try {
   const burst = await race(Array.from({ length: 6 }, () => (client) => play(racer, ep8, 20, client)));
   assert.equal(burst.filter((r) => r.recorded).reduce((n, r) => n + r.seconds, 0), 60, 'six concurrent 20-second heartbeats record exactly one minute');
 
-  // The ceiling: a Pass at 3,000 minutes this month is locked with a reason, may still unlock, and records nothing more.
+  // The ceiling: a Pass at 1,500 minutes this month is locked with a reason, may still unlock, and records nothing more.
   const heavy = await person();
   const heavyPass = await activePass(heavy);
   const heavyUser = await value('SELECT id AS value FROM public.users WHERE auth_id=$1', [heavy]);
@@ -89,10 +89,10 @@ try {
   // One past instant inside this month. Spacing the rows a minute apart from
   // the 1st dated the last ones in the future for the month's first ~50 hours,
   // and the 60-second cap counts future rows, so the closing play read too_fast.
-  await q('INSERT INTO public.cinema_pass_plays(pass_id,user_id,content_id,seconds,played_at) SELECT $1,$2,$3,60,GREATEST($4::timestamptz, now() - interval \'2 minutes\') FROM generate_series(0, 2998) g', [heavyPass, heavyUser, ep8, monthStart]);
+  await q('INSERT INTO public.cinema_pass_plays(pass_id,user_id,content_id,seconds,played_at) SELECT $1,$2,$3,60,GREATEST($4::timestamptz, now() - interval \'2 minutes\') FROM generate_series(0, 1498) g', [heavyPass, heavyUser, ep8, monthStart]);
   assert.deepEqual(await entitlement(heavy, ep8), { access: 'pass', credits: 0 });
   const last = await play(heavy, ep8, 60);
-  assert.deepEqual([last.recorded, last.seconds, last.minutes_used], [true, 60, 3000]);
+  assert.deepEqual([last.recorded, last.seconds, last.minutes_used], [true, 60, 1500]);
   assert.deepEqual(await entitlement(heavy, ep8), { access: 'locked', credits: 6, reason: 'pass_ceiling' });
   assert.deepEqual((await play(heavy, ep8, 30)), { ok: true, recorded: false, access: 'locked', reason: 'pass_ceiling' });
   assert.equal((await value('SELECT public.read_cinema_playback($1,$2) AS value', [heavy, ep8])).error, 'locked');
@@ -106,7 +106,7 @@ try {
   assert.deepEqual(await entitlement(light, ep8), { access: 'pass', credits: 0 });
 
   // Operator earnings: admin only, month aligned, unlock credits and pass seconds per title.
-  assert.equal((await value("SELECT public.start_cinema_pass($1,'pass-weekly',$2,$3,5,600) AS value", [viewer, randomUUID(), 'cinema-pass-2026-09-26'])).ok, true);
+  assert.equal((await value("SELECT public.start_cinema_pass($1,'pass-monthly',$2,$3,5,600) AS value", [viewer, randomUUID(), 'cinema-pass-2026-09-26'])).ok, true);
   await assert.rejects(earnings(viewer, `${monthStart.slice(0, 7)}-01`), (e) => e.code === '42501');
   const operator = await person();
   await q('UPDATE public.users SET is_admin=true WHERE auth_id=$1', [operator]);
@@ -115,7 +115,7 @@ try {
   assert.equal(report.ok, true);
   const row8 = report.content.find((r) => r.content_id === ep8), row9 = report.content.find((r) => r.content_id === ep9);
   assert.deepEqual([row8.unlocks, row8.unlock_credits], [1, 6], 'heavy unlocked ep8 after the ceiling');
-  assert.equal(row8.pass_seconds, 30 + 30 + 60 + 2999 * 60 + 60, 'holder, racer and heavy this month; light was last month');
+  assert.equal(row8.pass_seconds, 30 + 30 + 60 + 1499 * 60 + 60, 'holder, racer and heavy this month; light was last month');
   assert.deepEqual([row9.unlocks, row9.unlock_credits, row9.pass_seconds], [1, 6, 0]);
   assert.equal(report.content.some((r) => r.content_id === free), false, 'no activity, no row');
   // Other scripts share this database and month, so totals are checked as a sum over the rows, not a fixed number.

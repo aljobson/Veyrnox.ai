@@ -45,7 +45,7 @@ is client-side; the API is the authority.
 | `/app/credits` | balance, packs, usage meters, statement, top-up history | buy needs sign-in | — |
 | `/app/account` | 2FA, passkeys, password, sessions, referral panel, data requests | signed in | — |
 | `/app/publish`, `/app/publish/calendar`, `/app/publish/analytics` | Veyrnox Publish | signed in | `PUBLISH_ENABLED` (**off in prod**; 503 `publish_not_open`); Free = 1 account; analytics, insights and device uploads each have their own flag; Facebook, Threads, Pinterest, Bluesky, Twitch and Business Profile also need `PUBLISH_EXTENDED_NETWORKS_ENABLED` (off in prod, on in staging) |
-| `/app/video-agent` | video agent brief → plan → approve | signed in | `AGENT_VIDEO_ENABLED` (off) + `veyrnox_video_agent=1` |
+| `/app/video-agent` | video agent brief → plan → approve | signed in | `AGENT_VIDEO_ENABLED` (on in production since 2026-10-09); its own tab in the studio nav, no browser switch |
 | `/app/projects`, `/app/projects/[id]` | workspaces, project document editor | signed in | `veyrnox_projects=1` + `TENANT_PROJECTS_ENABLED` |
 | `/app/admin`, `/app/admin/violations` | ops metrics, content violations | admin + aal2 | Cloudflare Access |
 | `/app/admin/cinema`, `…/submissions` | creator and publication review | Cinema admin + fresh MFA | Access + Cinema flags |
@@ -267,7 +267,8 @@ Creator: profile → apply → admin approves → draft series/episodes → uplo
 to Stream (tus) → submit → admin review → published in the catalogue.
 Viewer: title page → entitlement (free / unlocked / pass / locked) → unlock
 for 6 Credits or buy a Cinema Pass (Stripe subscription) → player with
-heartbeat; Pass plays count toward a 3,000-minute monthly ceiling.
+heartbeat; Pass plays count toward a 3,000-minute monthly ceiling (1,500
+once 0244 is applied).
 Every Cinema API returns 503 `*_not_open` while its flag is off.
 
 ## 9a. Video agent (built, off)

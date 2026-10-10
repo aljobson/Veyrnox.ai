@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { ClipBadge } from './ClipBadge';
 
 // A landing tile whose backdrop is a gradient until a showcase clip exists.
 // With a clip, it plays a muted loop, as decided by _lib/playbackPolicy
@@ -58,14 +59,7 @@ export function MediaTile({ href, clip, mediaClassName = '', mediaStyle, classNa
           />
         )}
         {children}
-        {clip && (
-          <span
-            title={clip.title}
-            className="absolute left-3 top-3 max-w-[calc(100%-1.5rem)] rounded-full bg-black/60 px-2.5 py-1 text-[10px] font-semibold tracking-wide text-white backdrop-blur-sm"
-          >
-            {clip.generatedOnVeyrnox ? 'Generated on Veyrnox' : 'Viral inspiration'}
-          </span>
-        )}
+        {clip && <ClipBadge clip={clip} />}
       </div>
       {footer}
     </Link>
