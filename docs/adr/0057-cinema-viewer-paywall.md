@@ -120,8 +120,9 @@ precondition P6 in the [paywall plan](../cinema/paywall-plan.md).
 ## Proposed: $9.99 monthly Pass only, 1,500-minute ceiling, 30% creator share (2026-10-10)
 
 Status: **Proposed.** Owner, 2026-10-10: "record $9.99, 1,500 minutes and
-30%", then "withdraw them" for the weekly and yearly plans. Migration 0244 is
-written and not applied. No Pass is on sale:
+30%", then "withdraw them" for the weekly and yearly plans. Migration 0244 was
+applied to production and staging on 2026-10-10 (owner-approved run). No Pass
+is on sale:
 `CINEMA_SUBSCRIPTIONS_ENABLED` is `false` in production and unset on staging,
 so there is no subscriber to reprice.
 
@@ -178,9 +179,10 @@ heartbeat it has the 1,500-minute ceiling.
 
 ## Free viewing ceiling as built (0245, 2026-10-10)
 
-Owner, 2026-10-10: build it. Built behind `CINEMA_FREE_CEILING_ENABLED`, which
-is `false` in production and on staging until migration 0245 is applied there.
-The migration is written and not applied.
+Owner, 2026-10-10: build it. Built behind `CINEMA_FREE_CEILING_ENABLED`.
+Migration 0245 was applied to production (apply-migrations run 38053327460,
+after 0244) and to the staging database on 2026-10-10. The switch is `true`
+on staging and `false` in production.
 
 - **The rule.** An account has `cinema_prices.free_ceiling_minutes` of free
   viewing per calendar month (UTC). The proposed value is 300 and the owner
