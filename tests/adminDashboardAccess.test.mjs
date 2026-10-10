@@ -66,6 +66,13 @@ const ROUTES = [
     ['violations GET', '../app/api/v1/admin/violations/route.js', 'GET', '/api/v1/admin/violations', undefined],
     ['violations POST', '../app/api/v1/admin/violations/route.js', 'POST', '/api/v1/admin/violations', { user_id: USER, tier: 'warning', reason: 'test' }],
     ['users/lookup GET', '../app/api/v1/admin/users/lookup/route.js', 'GET', `/api/v1/admin/users/lookup?user_id=${USER}`, undefined],
+    ['users/ledger GET', '../app/api/v1/admin/users/ledger/route.js', 'GET', `/api/v1/admin/users/ledger?user_id=${USER}`, undefined],
+    ['users/ledger POST', '../app/api/v1/admin/users/ledger/route.js', 'POST', '/api/v1/admin/users/ledger', { user_id: USER, credits: 5, reason: 'test' }],
+    ['appeals GET', '../app/api/v1/admin/appeals/route.js', 'GET', '/api/v1/admin/appeals', undefined],
+    ['appeals POST', '../app/api/v1/admin/appeals/route.js', 'POST', '/api/v1/admin/appeals', { appeal_id: USER, decision: 'rejected', reason: 'test' }],
+    ['reports GET', '../app/api/v1/admin/reports/route.js', 'GET', '/api/v1/admin/reports', undefined],
+    ['reports POST', '../app/api/v1/admin/reports/route.js', 'POST', '/api/v1/admin/reports', { report_id: USER, resolution: 'test' }],
+    ['webhooks GET', '../app/api/v1/admin/webhooks/route.js', 'GET', '/api/v1/admin/webhooks', undefined],
 ];
 async function call([, file, method, path, body], headers) {
     const mod = await import(`${new URL(file, import.meta.url).href}?t=${Math.random()}`);
@@ -364,7 +371,8 @@ test('every route under /api/v1/admin verifies the Access assertion in code', as
     let dashboard = 0;
     for (const file of files) {
         const src = readFileSync(file, 'utf8');
-        if (/await requireDashboardAccess\(req\)/.test(src)) { dashboard++; continue; }
+        // Either the check itself, or the shared gate that makes it (lib/adminGate.js, asserted below).
+        if (/await requireDashboardAccess\(req\)/.test(src) || /await adminGate\(req\)/.test(src)) { dashboard++; continue; }
         const handlers = [...src.matchAll(/^export const ([A-Z]+) = (.+);$/gm)];
         assert.ok(handlers.length > 0, `${file} has no in-code Access check`);
         // A method exported in any other form would not be read below.
@@ -375,6 +383,9 @@ test('every route under /api/v1/admin verifies the Access assertion in code', as
             assert.ok(called.delete(`${file} ${method}`), `${file} ${method} is not in CINEMA_ROUTES`);
         }
     }
-    assert.equal(dashboard, 3);
+    const gate = readFileSync(fileURLToPath(new URL('../lib/adminGate.js', import.meta.url)), 'utf8');
+    assert.match(gate, /await requireDashboardAccess\(req\)/, 'lib/adminGate.js must make the Access check');
+    // Every dashboard route file is exercised above with a service token's assertion and a login's.
+    assert.equal(dashboard, new Set(ROUTES.map(([, file]) => file)).size);
     assert.deepEqual([...called], [], 'CINEMA_ROUTES names a route that does not exist');
 });

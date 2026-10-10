@@ -1,4 +1,4 @@
-import { ACCOUNT_PAUSED_COPY } from './gateway';
+import { ACCOUNT_PAUSED_COPY, ACCOUNT_ON_HOLD_COPY } from './gateway';
 
 // What the create page says for each gateway error code.
 export const ERROR_COPY = {
@@ -22,6 +22,7 @@ export const ERROR_COPY = {
   duration_invalid:      'Pick a 5s or 10s clip. Nothing was charged.',
   insufficient_balance:  'Not enough credits for this generation. Nothing was charged — top up to continue.',
   account_frozen:        ACCOUNT_PAUSED_COPY,
+  account_on_hold:       ACCOUNT_ON_HOLD_COPY,
   user_not_provisioned:  'Your account is still being set up. Try again in a moment.',
   debit_rejected:        'The ledger declined this debit. Nothing was charged.',
   no_token:              'Sign in to generate.',

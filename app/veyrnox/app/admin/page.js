@@ -70,8 +70,12 @@ export default function Admin() {
 
         {state === 'ready' && (
           <div className="mt-5 flex flex-wrap gap-5">
+            <Link href="/app/admin/users" className="text-sm underline">Account ledger and credit grants</Link>
             <Link href="/app/admin/cinema" className="text-sm underline">Review Cinema creator applications</Link>
             <Link href="/app/admin/violations" className="text-sm underline">Content warnings and takedowns</Link>
+            <Link href="/app/admin/appeals" className="text-sm underline">Content appeals</Link>
+            <Link href="/app/admin/reports" className="text-sm underline">User reports</Link>
+            <Link href="/app/admin/webhooks" className="text-sm underline">Inbound webhooks</Link>
           </div>
         )}
 

@@ -10,6 +10,10 @@ import { getFreshAccessToken, getSession, clearSession } from '../../lib/authCli
 export const ACCOUNT_PAUSED_COPY =
   'Your account is paused while we review a payment dispute, so generating and buying are unavailable. '
   + 'Your library and downloads still work. Contact support@veyrnox.com to resolve it.';
+// A standing content strike (ADR-0083): generating waits out the hold; buying and the Library do not.
+export const ACCOUNT_ON_HOLD_COPY =
+  'Generating is paused on your account for a few days after a content removal. '
+  + 'Your library, downloads and credits are unaffected. You can appeal from Account & security.';
 
 export class GatewayError extends Error {
   constructor(message, { status, code, retryAfter, body } = {}) {

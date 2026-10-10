@@ -61,6 +61,14 @@ function AccountControls() {
     {message && <p role="status" className="text-sm text-vx-accent">{message}</p>}
     {error && <p role="alert" className="text-sm text-vx-danger">{error}</p>}
     <section className="rounded-2xl border border-vx-border p-5">
+      <h2 className="font-bold mb-2">Content decisions</h2>
+      <p className="text-sm text-vx-fg-muted mb-4">If content on your account was given a warning or removed, you can see the decision and appeal it.</p>
+      <div className="flex flex-wrap gap-4 text-sm underline">
+        <a href="/app/account/appeals">Content decisions and appeals</a>
+        <a href="/app/account/report">Report content</a>
+      </div>
+    </section>
+    <section className="rounded-2xl border border-vx-border p-5">
       <h2 className="font-bold mb-2">Your data</h2>
       <p className="text-sm text-vx-fg-muted mb-4">Request an export or account deletion by email. These links open a draft; your request is submitted when you send it. Replies and progress arrive by email. Some payment records must be retained as described in our Privacy Policy.</p>
       <div className="flex flex-wrap gap-4 text-sm underline">
