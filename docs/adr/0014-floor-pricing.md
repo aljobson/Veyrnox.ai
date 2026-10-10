@@ -53,7 +53,7 @@ least-privilege hygiene, not as concealment. Anything that must actually be
 confidential (negotiated rates, volume discounts) must live outside this
 repository and outside the watcher's output.
 
-*2026-10-10 (0247, audit P-04).* `catalog_watch()`, the anon
+*2026-10-10 (0256, audit P-04).* `catalog_watch()`, the anon
 read the watcher uses, returned every catalog row: 19 inactive models with
 their endpoints and costs before anyone could buy them, and the endpoints of
 every other provider, which 0028 withholds from the same role. It now returns

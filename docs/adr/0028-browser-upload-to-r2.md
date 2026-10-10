@@ -159,3 +159,13 @@ with the file and does not multiply when several measurements run at once in one
 isolate. The per-user attempt limit (0113) and the 20 MiB per-object type cap
 still bound the rest.
 
+## Amendment 2 (2026-10-10): browser GET for the editor and device uploads
+
+ADR-0080 slice 1 fetches a generation's bytes into the browser timeline editor with `fetch` on the signed R2 URL (`credentials: 'omit'`),
+and ADR-0061's device uploads sign PUTs with `If-None-Match: *`. Both are cross-origin requests the bucket rule above refuses: on
+2026-10-10 the production bucket `veyrnox-ai-media` allowed only `PUT` with `Content-Type`, while `veyrnox-ai-staging-media` already
+allowed `GET, HEAD, PUT` with `Content-Type, Range, If-None-Match` and exposed `ETag`. The production rule becomes the same for the
+`https://veyrnox.ai` origin only (`docs/infra/r2-cors-veyrnox-ai-media.json`). Still no wildcard, no other origin. A GET still needs a
+signed URL minted through `get_user_asset` (15 minutes), so CORS widens who may *read a response the browser already holds a key for*,
+not who may read the bucket. Applied to production only on the owner's word; until then `EDITOR_TIMELINE_ENABLED` stays off there.
+

@@ -29,6 +29,7 @@ on:
       - "scripts/test-cinema-operator-actions.mjs"
       - "scripts/test-cinema-free-plays.mjs"
       - "scripts/test-ledger-backstops.mjs"
+      - "scripts/test-topup-refund-shortfall.mjs"
       - "scripts/test-default-privileges.mjs"
       - "scripts/test-fk-indexes.mjs"
       - "scripts/test-append-only.mjs"
@@ -172,6 +173,7 @@ jobs:
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-operator-actions.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-administrator-provisioning.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-ledger-backstops.mjs
+          DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-topup-refund-shortfall.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-default-privileges.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-fk-indexes.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-append-only.mjs
