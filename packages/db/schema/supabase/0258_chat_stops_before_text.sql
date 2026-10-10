@@ -1,4 +1,4 @@
--- 0250_chat_stops_before_text.sql
+-- 0258_chat_stops_before_text.sql
 -- How many chat replies a user stopped before their first character in the
 -- last rolling day (audit 2026-10-09, M-05; ADR-0067 amendment 15).
 --

@@ -258,7 +258,7 @@ test('too many replies stopped before text today: 429 stop_limit before any mone
     assert.equal((await run(under)).status, 200);
 });
 
-test('a database without the stop count (before 0250) lets the send through', async () => {
+test('a database without the stop count (before 0258) lets the send through', async () => {
     const f = fakes({ replies: { chat_stops_before_text: new Error('PGRST202 function not found') } });
     const evs = await events(await run(f));
     assert.equal(evs.at(-1).data.status, 'complete');

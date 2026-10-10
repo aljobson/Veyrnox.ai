@@ -4,7 +4,7 @@
 - **Amends**: [ADR-0067: Chat, a reply is a job](0067-chat-replies-are-jobs.md), points 3 and 4. A file of its own
   because ADR-0067 is at the 500-line limit. Follows amendment 14.
 - **Scope**: the turn (`lib/chatTurn.js`), the caps (`lib/chat.js`), two lines of screen wording, and one read-only
-  database function (migration 0250). No price changes.
+  database function (migration 0258). No price changes.
 - **Source**: the QA and security audit of 2026-10-09, findings M-04, M-05 and M-06, all Medium.
 
 ## Context
@@ -37,11 +37,11 @@ about 36,000 input tokens for the price of 9,000.
    as a stopped reply and is charged."). When it fires with nothing produced, the reply is refunded as
    `provider_timeout`, as before. A provider cut-off after text is still refunded; only our own ceiling changes side.
 2. **Stops before the first character are counted, and the count has a ceiling.** `chat_stops_before_text(user)`
-   (0250) counts the user's chat jobs that ended `FAILED` with `user_canceled` in the last rolling day, from the
+   (0258) counts the user's chat jobs that ended `FAILED` with `user_canceled` in the last rolling day, from the
    `jobs` rows those endings already leave. The turn asks it after the context read and before any money moves; at
    20 (`STOPS_BEFORE_TEXT_PER_DAY`) the send is refused with 429 `stop_limit` ("Too many replies were stopped before
    they started today. You can send again tomorrow. No Credits were used."). Point 4's refund stands: the twenty are
-   still refunded in full. What is bounded is how often it can happen. A Worker running before 0250 is applied gets an
+   still refunded in full. What is bounded is how often it can happen. A Worker running before 0258 is applied gets an
    error from the missing function and lets the send through, which is the behaviour it had.
 3. **The three input caps also hold in estimated tokens.** `estimateTokens` counts a quarter per ASCII code point and
    one per anything else, never below the tokenizers in use for the text in question and equal to the
@@ -66,7 +66,7 @@ about 36,000 input tokens for the price of 9,000.
 
 - `tests/chatTurn.test.mjs`: the ceiling after text (kept, charged, `reply_time_limit`), the ceiling before text
   (refunded, `provider_timeout`), the ceiling's growth with the cap, the stop cap at exactly the ceiling and one under,
-  and the pre-0250 fall-through. The earlier test that pinned the refund-on-ceiling rule now pins this one.
+  and the pre-0258 fall-through. The earlier test that pinned the refund-on-ceiling rule now pins this one.
 - `tests/chat.test.mjs`: `estimateTokens`, the CJK refusals at 2,001 and 1,001 characters, the history trim.
-- 0250 on a local replay of the full chain, applied twice: a user with 21 chat stops (one older than a day), one
+- 0258 on a local replay of the full chain, applied twice: a user with 21 chat stops (one older than a day), one
   non-chat stop and other failures counts 20; `anon` cannot call it, `service_role` can.
