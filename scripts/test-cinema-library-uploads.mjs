@@ -1,5 +1,5 @@
 // Disposable local database only. Never contacts Cloudflare or production.
-// Migration 0246: a Cinema video reserved from the creator's own finished Library job.
+// Migration 0248: a Cinema video reserved from the creator's own finished Library job.
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
 import {readFile} from 'node:fs/promises';
@@ -27,7 +27,7 @@ async function job(actor,{mime='video/mp4',size=5000,state='STORED',expires=null
   return debit.job_id;
 }
 try {
-  const migration=await readFile(new URL('../packages/db/schema/supabase/0246_cinema_library_uploads.sql',import.meta.url),'utf8');
+  const migration=await readFile(new URL('../packages/db/schema/supabase/0248_cinema_library_uploads.sql',import.meta.url),'utf8');
   await q('BEGIN');await c.query(migration);await c.query(migration);await q('ROLLBACK');
   for(const actor of actors){await q('INSERT INTO auth.users(id,email,email_confirmed_at) VALUES($1,$2,now())',[actor,`${actor}@example.invalid`]);await val('SELECT public.create_cinema_profile($1,$2,$3) AS value',[actor,randomUUID(),{username:`l_${actor.replaceAll('-','').slice(0,20)}`,display_name:'Library test'}]);await q("UPDATE public.cinema_memberships SET role='creator' WHERE user_id=(SELECT id FROM public.users WHERE auth_id=$1)",[actor]);}
   const [owner,other]=actors,content=(await draft(owner)).id,video=await job(owner),secondVideo=await job(owner);
