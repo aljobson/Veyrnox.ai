@@ -24,7 +24,7 @@ const FINAL = new Set(['saved', 'unsaved', 'refunded']);
  *   'unsaved'   the reply was charged but its messages could not be stored
  *   'refunded'  no Credits were used. The job failed and the refund has landed (the chat may still hold a reply the
  *               provider cut off, shown as not charged). Or the send made no job and the server has closed its key:
- *               none was charged, and none can be. Only `closed: true`, alone, says that
+ *               none was charged, and none can be. Only `closed: true` with no other field beside it says that
  *   null        not settled, or not known: queued, running, failed with the refund still on its way (it is a second
  *               step), or an answer in a shape this does not know
  * @param {{state?: string, refunded?: boolean, error_code?: string, closed?: boolean}|null|undefined} answer
@@ -32,7 +32,7 @@ const FINAL = new Set(['saved', 'unsaved', 'refunded']);
  */
 export function keptTurnVerdict(answer) {
   if (!answer || typeof answer !== 'object') return null;
-  if (answer.closed === true) return answer.state === undefined && answer.job_id === undefined ? 'refunded' : null;
+  if (answer.closed === true) return Object.keys(answer).length === 1 ? 'refunded' : null;
   if (answer.state === 'succeeded') return answer.error_code === 'reply_not_saved' ? 'unsaved' : 'saved';
   if (answer.state === 'failed' && answer.refunded === true) return 'refunded';
   return null;

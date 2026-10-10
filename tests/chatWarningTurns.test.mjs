@@ -61,7 +61,9 @@ test('"no reply was charged for this send" is taken only from the server saying 
     for (const send of [SENDS.queued, SENDS.running, SENDS.failed]) assert.equal(keptTurnVerdict(send), null, send.state);
     // `closed` has to be the boolean the route sends, alone. Beside a job's state it is not an answer this knows.
     const odd = [{ closed: 'true' }, { closed: 1 }, { closed: 'yes' }, { closed: false }, { closed: null }, { closed: true, state: 'running' }, { closed: true, state: 'failed', refunded: true },
-        { closed: true, state: 'succeeded' }, { closed: true, job_id: JOB }, { found: false }, { job: null }, { error: 'send_close_not_open' }, { error: 'not_found' }, { ok: true }];
+        { closed: true, state: 'succeeded' }, { closed: true, job_id: JOB }, { found: false }, { job: null }, { error: 'send_close_not_open' }, { error: 'not_found' }, { ok: true },
+        // Alone means alone, as for the same question asked at the moment of Stop (tests/chatStop.test.mjs): any other field beside it, even an empty one.
+        { closed: true, job_id: null }, { closed: true, state: null }, { closed: true, state: undefined }, { closed: true, error: 'close_failed' }, { closed: true, ok: false }, { closed: true, job: JOB }, { closed: true, refunded: true }];
     for (const answer of odd) assert.equal(keptTurnVerdict(answer), null, JSON.stringify(answer));
 });
 

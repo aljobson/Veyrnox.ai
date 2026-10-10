@@ -1,7 +1,7 @@
 'use client';
 import { useRef, useState } from 'react';
 import { GatewayError } from '../../_lib/gateway';
-import { chatApi, chatErrorCopy, chatUnchargedCopy, lostNotice, makeIdempotencyKey, sendTurn, uploadChatImage } from '../../_lib/chatApi';
+import { askStoppedSend, chatApi, chatErrorCopy, chatUnchargedCopy, lostNotice, makeIdempotencyKey, sendTurn, uploadChatImage } from '../../_lib/chatApi';
 import { prepareImage } from '../../_lib/chatImages';
 import { NEW_CHAT } from '../../_lib/chatLocal';
 import { loadFailure } from '../../_lib/chatScreen';
@@ -136,16 +136,21 @@ export function useChatSend({ text, setText, model, imagesBlocked, chosen, price
         // Stop. The server saves the stopped turn a moment after the browser lets go, so a reload at once can come back
         // without it. The question and the text so far stay on screen while the turn is looked for.
         setStopping(true); setMessages((m) => m.map((x) => (x.id === pending ? { ...x, status: 'saving' } : x)));
-        const outcome = await chatApi.settleStop({ threadId: thread.id, jobId, text: content, knownIds });
+        // Stop before `start`: no job id came, so the look could only read the chat. The server is first asked about the send by
+        // its key (chatStop.js). It closed the send: no reply was charged and none can be, which is the ending of a job that kept
+        // nothing. It named the job the send made: that job is looked for, as after `start`. No answer: the look, as it always was.
+        const asked = jobId ? null : await askStoppedSend({ key, closeSend: chatApi.closeSend });
+        if (asked?.job) jobId = asked.job;
+        const outcome = asked?.closed ? 'nothing' : await chatApi.settleStop({ threadId: thread.id, jobId, text: content, knownIds });
         await relist();                                                  // first: a notice set below must not be replaced
         if (outcome === 'saved' || outcome === 'unsaved') {
           att.clear(); await reload();                                   // the saved messages, with their real status and price
           if (outcome === 'unsaved') tell('reply_not_saved'); // charged, but it could not be stored: say so, after open()
-        } else if (outcome === 'nothing') { giveBack(true); besideWarning('stop_refunded'); } // nothing was produced and the Credits came back
+        } else if (outcome === 'nothing') { giveBack(true); besideWarning('stop_refunded'); } // nothing was produced and the Credits came back, or the send was closed before any were taken
         else if (!hadText) {
-          // Not settled, and no text had arrived: Stop came before `start` (no job to ask) or before the first words (the job
-          // had not ended). There is nothing on screen to keep, so the message goes back. But a reply may still be saved:
-          // the chat stays for it, and the notice says so.
+          // Not settled, and no text had arrived: Stop came before `start` (and the server did not say what became of the send, or
+          // named a job that had not ended) or before the first words (the job had not ended). There is nothing on screen to
+          // keep, so the message goes back. But a reply may still be saved: the chat stays for it, and the notice says so.
           giveBack(false); tell('stop_unsure');
         } else {
           // Still being saved when the tries ran out: the text stays on screen and the notice says so.

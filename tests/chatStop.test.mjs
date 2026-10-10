@@ -5,7 +5,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { STOP_LIMIT_MS, STOP_WAITS_MS, findSavedTurn, settleStoppedTurn } from '../app/veyrnox/_lib/chatStop.js';
+import { STOP_ASK_LIMIT_MS, STOP_LIMIT_MS, STOP_WAITS_MS, askStoppedSend, findSavedTurn, settleStoppedTurn } from '../app/veyrnox/_lib/chatStop.js';
+import { KEPT_READ_LIMIT_MS, keptTurnVerdict } from '../app/veyrnox/_lib/chatWarning.js';
 
 const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
 const screen = read('../app/veyrnox/_components/chat/ChatWorkspace.js');
@@ -175,6 +176,100 @@ test('a read that fails is not an answer: the next try decides', async () => {
     assert.equal(await settleStoppedTurn({ jobId: 'job-1', text: TEXT, knownIds: known, ...allDown.deps }), 'pending');
 });
 
+// ---- Stop before `start`: the send is asked about by its own key, at the moment of Stop ----
+// No job id reached the browser, so the look above can only read the chat, and nearly always ends 'pending'. The
+// server can say at once what became of the send (POST /api/v1/chat/sends/close, ADR-0067 amendment 11): it closed
+// the key, so no reply was charged and none can be, or it names the job that send made.
+
+const KEY = 'vx-1b2c3d4e-5f6a-4b7c-8d9e-0f1a2b3c4d5e';
+const JOB = '6f1d2c3a-0b4e-4c5d-8e9f-a1b2c3d4e5f6';
+const NO_ANSWER = { closed: false, job: null };
+const says = (answer) => async () => answer;
+const refuses = (status, code) => async () => { throw Object.assign(new Error(code), { status, code }); };
+
+test('asked by its key, the server says it closed the send, or names the job that send made', async () => {
+    const asked = [];
+    const route = (answer) => async (key) => { asked.push(key); return answer; };
+    assert.deepEqual(await askStoppedSend({ key: KEY, closeSend: route({ closed: true }) }), { closed: true, job: null });
+    // The job is named whatever it is doing: the look that follows reads it by its id, as after `start`.
+    for (const job of [{ state: 'queued', refunded: false }, { state: 'running', refunded: false }, { state: 'failed', refunded: false }, { state: 'failed', refunded: true }, { state: 'succeeded', refunded: false }, { state: 'succeeded', refunded: false, error_code: 'reply_not_saved' }]) {
+        assert.deepEqual(await askStoppedSend({ key: KEY, closeSend: route({ closed: false, job_id: JOB, credits: 2, model_id: 'm', ...job }) }), { closed: false, job: JOB }, JSON.stringify(job));
+    }
+    assert.deepEqual(asked, Array(7).fill(KEY), 'asked once each time, by the key');
+});
+
+test('anything else is no answer: a refusal, a rate limit, the route not open, a failed request', async () => {
+    const none = [['the route is not open (its switch is off)', refuses(503, 'send_close_not_open')], ['rate limited', refuses(429, 'rate_limited')], ['too many sends closed', refuses(429, 'close_limit')],
+        ['the database gave no answer', refuses(502, 'close_failed')], ['a key the route does not take', refuses(400, 'invalid_key')], ['signed out', refuses(401, 'unauthenticated')],
+        ['another account signed in', refuses(409, 'account_changed')], ['offline', async () => { throw new TypeError('Failed to fetch'); }], ['a throw that is not an error', async () => { throw null; }],
+        ['a route that throws at once', () => { throw new Error('sync'); }]];
+    for (const [name, closeSend] of none) assert.deepEqual(await askStoppedSend({ key: KEY, closeSend }), NO_ANSWER, name);
+});
+
+test('an answer in a shape the route does not send is no answer, and "closed" is read exactly as a kept warning reads it', async () => {
+    // tests/chatWarningTurns.test.mjs holds keptTurnVerdict to the same list: `closed` is the boolean, alone.
+    const odd = [{ closed: 'true' }, { closed: 1 }, { closed: 'yes' }, { closed: null }, { closed: true, state: 'running' }, { closed: true, state: 'failed', refunded: true }, { closed: true, state: 'succeeded' },
+        { closed: true, job_id: JOB }, { found: false }, { job: null }, { error: 'send_close_not_open' }, { error: 'not_found' }, { ok: true }, {}, null, undefined, 'closed', true, 0, [], [{ closed: true }],
+        // Alone means alone: any other field beside it, even an empty one, and it is not the statement the route makes.
+        { closed: true, job_id: null }, { closed: true, state: null }, { closed: true, state: undefined }, { closed: true, error: 'close_failed' }, { closed: true, ok: false }, { closed: true, job: JOB }, { closed: true, refunded: true }];
+    for (const answer of odd) {
+        assert.deepEqual(await askStoppedSend({ key: KEY, closeSend: says(answer) }), NO_ANSWER, JSON.stringify(answer));
+        assert.notEqual(keptTurnVerdict(answer), 'refunded', `the kept warning does not take it for closed either: ${JSON.stringify(answer)}`);
+    }
+    assert.equal(keptTurnVerdict({ closed: true }), 'refunded');
+    // A job is named only by `closed: false` and an id the server could have made. Without both, nothing is known.
+    const noJob = [{ closed: false }, { closed: false, state: 'running' }, { closed: false, job_id: null }, { closed: false, job_id: '' }, { closed: false, job_id: 'job-1' }, { closed: false, job_id: 42 },
+        { closed: false, job_id: `${JOB}0` }, { closed: false, job_id: ` ${JOB}` }, { closed: false, job_id: KEY }, { closed: false, job_id: [JOB] }, { job_id: JOB, state: 'running' }, { closed: 0, job_id: JOB }, { closed: 'false', job_id: JOB }];
+    for (const answer of noJob) assert.deepEqual(await askStoppedSend({ key: KEY, closeSend: says(answer) }), NO_ANSWER, JSON.stringify(answer));
+});
+
+test('an answer that hangs does not leave Stop hanging: the question ends at its time limit, as no answer', async () => {
+    const before = Date.now();
+    assert.deepEqual(await askStoppedSend({ key: KEY, closeSend: () => new Promise(() => {}), limitMs: 30 }), NO_ANSWER);
+    assert.ok(Date.now() - before < 1000, 'it answered at the limit');
+    // An answer that has not come by the limit is not waited for. It arrives here only after "no answer" was said, so
+    // no clock decides the order.
+    for (const answer of [{ closed: true }, { closed: false, job_id: JOB, state: 'running' }]) {
+        let arrive;
+        const pending = new Promise((resolve) => { arrive = resolve; });
+        assert.deepEqual(await askStoppedSend({ key: KEY, closeSend: () => pending, limitMs: 30 }), NO_ANSWER, JSON.stringify(answer));
+        arrive(answer); await pending;
+    }
+    // Slow, and inside the limit: it is waited for.
+    const slow = () => new Promise((resolve) => { setTimeout(() => resolve({ closed: true }), 20); });
+    assert.deepEqual(await askStoppedSend({ key: KEY, closeSend: slow, limitMs: 60_000 }), { closed: true, job: null });
+    // The same limit as the same question asked when a chat is opened (chatWarning.js): one number for one route.
+    assert.equal(STOP_ASK_LIMIT_MS, KEPT_READ_LIMIT_MS);
+    assert.ok(STOP_ASK_LIMIT_MS + STOP_LIMIT_MS <= 6000, 'with the look after it, Stop still ends in a few seconds at the very worst');
+});
+
+test('with no limit handed in, the question waits STOP_ASK_LIMIT_MS and not a millisecond more', async (t) => {
+    t.mock.timers.enable({ apis: ['setTimeout'] });
+    const turn = () => new Promise((resolve) => { setImmediate(resolve); });
+    let said = null;
+    const asking = askStoppedSend({ key: KEY, closeSend: () => new Promise(() => {}) }).then((v) => { said = v; });
+    await turn();
+    t.mock.timers.tick(STOP_ASK_LIMIT_MS - 1);
+    await turn();
+    assert.equal(said, null, 'still waiting one millisecond before the limit');
+    t.mock.timers.tick(1);
+    await asking;
+    assert.deepEqual(said, NO_ANSWER);
+});
+
+test('the question\'s time limit is cleared when the answer comes first, and with no key nothing is asked', async (t) => {
+    const cleared = t.mock.method(globalThis, 'clearTimeout');
+    assert.deepEqual(await askStoppedSend({ key: KEY, closeSend: says({ closed: true }) }), { closed: true, job: null });
+    assert.equal(cleared.mock.callCount(), 1);
+    assert.deepEqual(await askStoppedSend({ key: KEY, closeSend: refuses(503, 'send_close_not_open') }), NO_ANSWER);
+    assert.equal(cleared.mock.callCount(), 2, 'after a refusal too');
+    let calls = 0;
+    const counted = async () => { calls += 1; return { closed: true }; };
+    for (const key of [null, undefined, '', 42, {}]) assert.deepEqual(await askStoppedSend({ key, closeSend: counted }), NO_ANSWER, String(key));
+    assert.equal(calls, 0);
+    assert.deepEqual(await askStoppedSend({ key: KEY }), NO_ANSWER, 'nothing to ask with');
+});
+
 // ---- the screen ----
 
 /** The Stop ending of send()'s catch block. */
@@ -192,6 +287,29 @@ test('Stop no longer reloads the chat at once: the bubble is marked, then the tu
     assert.ok(mark >= 0 && settle > mark, 'the text so far stays on screen, marked as being saved, before anything is read');
     assert.ok(reload > settle, 'the chat is reloaded only after the turn was looked for');
     assert.match(stop, /settleStop\(\{ threadId: thread\.id, jobId, text: content, knownIds \}\)/);
+});
+
+test('Stop before the start event: the send is asked about first, by its key, and only then is the turn looked for', () => {
+    const stop = stopBranch();
+    const mark = stop.indexOf("status: 'saving'");
+    const ask = stop.indexOf('await askStoppedSend(');
+    const settle = stop.indexOf('await chatApi.settleStop(');
+    assert.ok(mark >= 0 && ask > mark, 'the button says Stopping while the server is asked');
+    assert.ok(settle > ask, 'the question comes before the look');
+    // Only with no job id: once `start` has come the job is read, and reading a job changes nothing on the server.
+    assert.match(stop, /\n {8}const asked = jobId \? null : await askStoppedSend\(\{ key, closeSend: chatApi\.closeSend \}\);\n/);
+    // The send made a job: that id is the one looked for, and the one kept with a warning (tell() hands on jobId).
+    assert.match(stop, /\n {8}if \(asked\?\.job\) jobId = asked\.job;\n/);
+    // The server closed the send: the ending of a job that kept nothing, with no look at all. Anything else: the look,
+    // in the words it has always had (the same call a dropped connection makes, tests/chatBrokenStream.test.mjs).
+    assert.match(stop, /\n {8}const outcome = asked\?\.closed \? 'nothing' : await chatApi\.settleStop\(\{ threadId: thread\.id, jobId, text: content, knownIds \}\);\n/);
+    // Asked in one place in the whole hook: Stop. A dropped connection and a turn that never started do not close a send.
+    assert.equal(sender.split('askStoppedSend(').length - 1, 1);
+    assert.equal(sender.split('chatApi.closeSend').length - 1, 1);
+    assert.match(api, /\nexport \{ makeIdempotencyKey, lostNotice, askStoppedSend \};\n/);
+    assert.match(api, /\nimport \{ askStoppedSend, lostNotice, settleStoppedTurn \} from '\.\/chatStop';\n/);
+    // The look itself has no imports, so the route is handed in.
+    assert.doesNotMatch(read('../app/veyrnox/_lib/chatStop.js'), /^import |\brequire\(/m);
 });
 
 test('the start event gives the job id, and the ids already on screen are noted before the send', () => {
