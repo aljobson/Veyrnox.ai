@@ -1,7 +1,9 @@
 # Pause new fal admissions while existing jobs drain
 
-Staging and production use separate fal accounts and separate databases. Each
-has its own `fal_admission_control` row. Migration 0239 adds an independent
+Staging and production use the same aljobson fal account and separate databases.
+Each has its own `fal_admission_control` row. Pausing one database does not
+pause new submissions from the other database or independent montage producers.
+See the [shared-account release review](../operations/fal-release-readiness-review-2026-10-10.md). Migration 0239 adds an independent
 pause to the database functions that create paid and free jobs. It does not
 replace the durable-image capacity policy in [PR 758](https://github.com/aljobson/Veyrnox.ai/pull/758).
 This change is stacked on that PR and must follow its migration.

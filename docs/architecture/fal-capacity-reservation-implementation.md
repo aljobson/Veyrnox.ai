@@ -1,8 +1,11 @@
 # Durable-image capacity reservations — first implementation slice
 
-The owner confirmed staging and production use separate fal accounts on
-9 October 2026. Each database can therefore hold its own account policy; this
-does not establish that every producer within an environment uses the pool.
+The original 9 October design assumed separate fal accounts. On 10 October,
+the owner confirmed both environments should use aljobson. Each database still
+holds its own policy, but independent database locks do not serialize one
+shared provider account. These bounds are per database, not account-wide;
+legacy and montage producers must also be included before broader activation.
+See the [shared-account release review](../operations/fal-release-readiness-review-2026-10-10.md).
 The [proposed design in PR 755](https://github.com/aljobson/Veyrnox.ai/pull/755)
 remains the broader rollout plan.
 
