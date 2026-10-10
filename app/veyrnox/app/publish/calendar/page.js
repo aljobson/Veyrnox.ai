@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { AppNav } from '../../../_components/NavBar';
+import { Main } from '../../../_components/Main';
 import { Modal } from '../../../_components/Modal';
 import NetworkLogo from '../NetworkLogo';
 import { getSession, onSessionChange } from '../../../../lib/authClient';
@@ -22,12 +23,12 @@ const networkLabel=(key)=>NETWORKS.find(n=>n.key===key)?.label||key;
 export default function Calendar() {
     const account=useSyncExternalStore(onSessionChange,currentAccount,noAccount);
     const date=useSyncExternalStore(noSubscription,today,noAccount);
-    return <><AppNav/><div className="max-w-[1100px] mx-auto px-4 sm:px-8 py-10">
+    return <><AppNav/><Main className="max-w-[1100px] mx-auto px-4 sm:px-8 py-10">
         <Link href="/app/publish" className="text-sm text-vx-accent underline">Veyrnox Publish</Link>
         <h1 className="text-3xl font-black mt-3 mb-2">Publishing calendar</h1>
         <p className="text-sm text-vx-fg-muted mb-6">Scheduled and completed posts. Drafts appear here once approved.</p>
         {account&&date?<CalendarControls key={account} today={date}/>:<p className="text-sm">Sign in to view your calendar. <button type="button" className={button} onClick={()=>window.dispatchEvent(new CustomEvent('veyrnox:auth-required'))}>Sign in</button></p>}
-    </div></>;
+    </Main></>;
 }
 
 function CalendarControls({today}) {

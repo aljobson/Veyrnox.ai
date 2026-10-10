@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { MarketingNav } from '../../_components/NavBar';
+import { Main } from '../../_components/Main';
 import { TemplateRecipe } from '../../_components/TemplateRecipe';
 import { FilmPlayer } from '../../_components/FilmPlayer';
 import { SHOWCASE_CLIPS } from '../../_lib/showcase';
@@ -36,7 +37,7 @@ export default async function TemplatePage({ params }) {
   return (
     <div className="min-h-dvh">
       <MarketingNav />
-      <section className="max-w-[1100px] mx-auto px-4 sm:px-6 pt-10 sm:pt-16 pb-28">
+      <Main className="max-w-[1100px] mx-auto px-4 sm:px-6 pt-10 sm:pt-16 pb-28">
         <Link href="/presets" className="text-[14px] text-vx-fg-muted hover:text-vx-fg underline-offset-4 hover:underline">All templates</Link>
         <div className="mt-6 grid gap-10 lg:grid-cols-[1fr_420px]">
           <div>
@@ -66,7 +67,7 @@ export default async function TemplatePage({ params }) {
             <TemplateRecipe key={t.id} preset={t} generatedPreview={clip?.generatedOnVeyrnox} />
           </div>
         </div>
-      </section>
+      </Main>
     </div>
   );
 }

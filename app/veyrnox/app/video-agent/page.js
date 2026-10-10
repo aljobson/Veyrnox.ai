@@ -1,6 +1,7 @@
 'use client';
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { AppNav } from '../../_components/NavBar';
+import { Main } from '../../_components/Main';
 import { Chip } from '../../_components/Chip';
 import { JobAssetPreview } from '../../_components/JobAssetPreview';
 import { gatewayFetch, notifyBalanceChanged, GatewayError } from '../../_lib/gateway';
@@ -98,7 +99,7 @@ export default function VideoAgent() {
     return (
       <div className="min-h-dvh">
         <AppNav balance={balance} active="create" />
-        <div className="max-w-xl mx-auto px-4 pt-16 text-center text-vx-fg-body">This feature isn&apos;t available yet.</div>
+        <Main className="max-w-xl mx-auto px-4 pt-16 text-center text-vx-fg-body">This feature isn&apos;t available yet.</Main>
       </div>
     );
   }
@@ -106,7 +107,7 @@ export default function VideoAgent() {
   return (
     <div className="min-h-dvh">
       <AppNav balance={balance} active="create" />
-      <div className="max-w-3xl mx-auto px-4 sm:px-8 pt-6 pb-16">
+      <Main className="max-w-3xl mx-auto px-4 sm:px-8 pt-6 pb-16">
         <div className="flex items-center justify-between mb-3">
           <div>
             <div className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">VIDEO AGENT</div>
@@ -180,7 +181,7 @@ export default function VideoAgent() {
             )}
           </div>
         )}
-      </div>
+      </Main>
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { ANNOUNCEMENT } from './_lib/announcement';
+import { Main } from './_components/Main';
 
 // Route-level skeleton for the marketing shell. The landing page reads the
 // live catalog from Postgres before it can render, so on a cold Worker this
@@ -10,7 +11,7 @@ export default function Loading() {
       {/* The announcement bar (AnnouncementBar.js), when one is set. */}
       {ANNOUNCEMENT && <div className="h-9 bg-vx-fg" />}
       <div className="h-16 border-b border-vx-border" />
-      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 pt-16">
+      <Main className="max-w-[1400px] mx-auto px-4 sm:px-6 pt-16">
         <div className="mx-auto flex max-w-[900px] flex-col items-center gap-4">
           <Bar className="h-4 w-40 rounded-full" />
           <Bar className="h-12 sm:h-16 w-full max-w-[820px] rounded-2xl" />
@@ -22,7 +23,7 @@ export default function Loading() {
             <Bar key={i} className="aspect-[4/5] rounded-2xl" />
           ))}
         </div>
-      </div>
+      </Main>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { MarketingNav } from '../../_components/NavBar';
+import { Main } from '../../_components/Main';
 import { LIST_GROUPS } from '../../_sections/showcase';
 import { findModel, modelFacts } from '../../_lib/modelPages';
 
@@ -32,7 +33,7 @@ export default async function ModelPage({ params }) {
   return (
     <div className="min-h-dvh">
       <MarketingNav />
-      <section className="max-w-[900px] mx-auto px-4 sm:px-6 pt-14 sm:pt-20 pb-28">
+      <Main className="max-w-[900px] mx-auto px-4 sm:px-6 pt-14 sm:pt-20 pb-28">
         <Link href="/models" className="text-[14px] text-vx-fg-muted hover:text-vx-fg underline-offset-4 hover:underline">All models</Link>
         <h1 className="mt-4 vx-display text-[44px] sm:text-[72px] leading-[0.95]">{model.title}</h1>
         <p className="mt-6 flex flex-wrap items-baseline gap-x-3 gap-y-1">
@@ -61,7 +62,7 @@ export default async function ModelPage({ params }) {
             </div>
           ))}
         </dl>
-      </section>
+      </Main>
     </div>
   );
 }

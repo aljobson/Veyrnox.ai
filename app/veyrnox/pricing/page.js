@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { MarketingNav } from '../_components/NavBar';
+import { Main } from '../_components/Main';
 import { CopyButton } from '../_components/CopyButton';
 import { MODELS as MODELS_FALLBACK, SITE_UPDATED, isShelfModel, kindOf } from '../_lib/tokens';
 
@@ -75,7 +76,7 @@ export default function Pricing() {
   return (
     <div className="min-h-dvh">
       <MarketingNav />
-
+      <Main>
       <section className="max-w-[1300px] mx-auto px-4 sm:px-6 pt-14 sm:pt-20">
         <h1 className="vx-display text-[52px] sm:text-[80px] lg:text-[104px] max-w-[12ch]">
           One balance. Every model.
@@ -195,6 +196,7 @@ export default function Pricing() {
           Browse presets
         </Link>
       </section>
+      </Main>
     </div>
   );
 }

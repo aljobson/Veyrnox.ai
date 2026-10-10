@@ -17,8 +17,9 @@ export function CharacterPanel({ enabled, onToggle, picks, onChange }) {
   return (
     <div className="rounded-2xl border border-vx-border bg-vx-panel p-5">
       <div className="flex items-center justify-between">
-        <span className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">CHARACTER</span>
-        <button onClick={() => onToggle(!enabled)} aria-pressed={enabled} className={pill(enabled)}>
+        <span id="vx-character-title" className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">CHARACTER</span>
+        {/* Named "Character ON", not just "ON": the heading is part of the name. */}
+        <button id="vx-character-switch" aria-labelledby="vx-character-title vx-character-switch" onClick={() => onToggle(!enabled)} aria-pressed={enabled} className={pill(enabled)}>
           {enabled ? 'ON' : 'OFF'}
         </button>
       </div>
@@ -43,7 +44,7 @@ export function CharacterPanel({ enabled, onToggle, picks, onChange }) {
                     if (e.target.value) next[g.id] = e.target.value; else delete next[g.id];
                     onChange(next);
                   }}
-                  className="bg-vx-base border border-vx-border rounded-lg px-2 py-1.5 text-xs text-vx-fg focus:outline-hidden focus:border-vx-accent"
+                  className="bg-vx-base border border-vx-field rounded-lg px-2 py-1.5 text-xs text-vx-fg focus:outline-hidden focus:border-vx-accent"
                 >
                   <option value="">Any</option>
                   {g.options.map(([label]) => <option key={label} value={label}>{label}</option>)}

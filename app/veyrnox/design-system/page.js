@@ -1,9 +1,11 @@
 import { Logo } from '../_components/Logo';
+import { Main } from '../_components/Main';
 
 const COLORS = [
   { name: 'Base',      hex: '#0A0A0B', token: 'bg-base',    use: 'True-black app background. OLED-dark.' },
   { name: 'Panel',     hex: '#141416', token: 'bg-panel',   use: 'Elevated cards, sheets, inputs.' },
   { name: 'Hairline',  hex: '#26262A', token: 'border',     use: 'All borders and dividers. 1px.' },
+  { name: 'Field edge', hex: '#64646A', token: 'field',     use: 'The outline of an input, textarea or select, nothing else. 3:1 on base and panel.' },
   { name: 'Text',      hex: '#F2F2F3', token: 'fg',         use: 'Primary text. Body copy #C9C9CF.' },
   { name: 'Muted',     hex: '#9A9AA3', token: 'fg-muted',   use: 'Secondary text, micro-labels.' },
   { name: 'Aqua',      hex: '#3EE6C4', token: 'accent',     use: 'Actions, selection, live states. Hover #6FF2D8. Ink text #06231F on fills.' },
@@ -14,7 +16,7 @@ const COLORS = [
 
 export default function DesignSystem() {
   return (
-    <div className="min-h-dvh px-4 sm:px-8 lg:px-14 py-10 sm:py-16 pb-24 max-w-[1200px] mx-auto">
+    <Main className="min-h-dvh px-4 sm:px-8 lg:px-14 py-10 sm:py-16 pb-24 max-w-[1200px] mx-auto">
       <div className="flex items-center gap-2.5">
         <Logo wordmark />
       </div>
@@ -237,7 +239,7 @@ export default function DesignSystem() {
           </div>
         </div>
       </Section>
-    </div>
+    </Main>
   );
 }
 
