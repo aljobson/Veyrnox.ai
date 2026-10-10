@@ -1,0 +1,125 @@
+-- 0249_top_up_refund_shortfall_freeze.sql
+-- A Top-up Refund that cannot take back every credit it is owed Freezes the
+-- account (audit 2026-10-09, D-02; ADR-0019, ADR-0057).
+--
+-- The clawback caps what it takes at the Pack Credits still held, and the
+-- Freeze test asked only whether a job was created since the purchase. Both
+-- were written when a job was the only way to spend. Cinema unlocks
+-- (ledger_unlock, 0142/0184) spend without a jobs row, so a buyer who spent a
+-- Pack on unlocks and then had the Pack refunded kept the unlocks, the refund
+-- took nothing, and nothing Froze: the credits were written off.
+--
+-- Now a shortfall (owed more than taken) Freezes as well. A shortfall means
+-- Pack Credits from this purchase were consumed, by whatever path; the
+-- existing job test stays for the case where everything was taken back but a
+-- job is still in flight (its later Credit Refund would otherwise return
+-- credits the Pack no longer paid for). top_ups.shortfall_credits records the
+-- shortfall per Top-up, as clawed_back_credits records the clawback, so an
+-- Operator sees both without reading account_actions.
+--
+-- Body is 0183's with the two changes. Same signature and grants (0066).
+-- Idempotent: ADD COLUMN IF NOT EXISTS, OR REPLACE, REVOKE and GRANT re-run.
+
+ALTER TABLE public.top_ups ADD COLUMN IF NOT EXISTS shortfall_credits INTEGER NOT NULL DEFAULT 0 CHECK (shortfall_credits >= 0);
+
+CREATE OR REPLACE FUNCTION public.apply_top_up_refund(
+    p_order_id TEXT,
+    p_refunded_cents BIGINT,
+    p_total_cents BIGINT,
+    p_top_up_id UUID DEFAULT NULL
+) RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+    v_top_up public.top_ups%ROWTYPE;
+    v_balance INTEGER;
+    v_free INTEGER;
+    v_sub INTEGER;
+    v_sub_dead INTEGER;
+    v_share INTEGER;
+    v_owed INTEGER;
+    v_taken INTEGER;
+    v_frozen BOOLEAN := false;
+BEGIN
+    IF p_order_id IS NULL OR p_order_id !~ '^[A-Za-z0-9_]{1,64}$' THEN
+        RETURN jsonb_build_object('ok', false, 'code', 'INVALID_ORDER_ID');
+    END IF;
+    IF p_total_cents IS NULL OR p_total_cents <= 0 OR p_refunded_cents IS NULL
+       OR p_refunded_cents < 0 OR p_refunded_cents > p_total_cents OR p_total_cents > 2147483647 THEN
+        RETURN jsonb_build_object('ok', false, 'code', 'INVALID_AMOUNT');
+    END IF;
+
+    SELECT * INTO v_top_up FROM public.top_ups t WHERE t.order_id = p_order_id FOR UPDATE;
+    IF NOT FOUND THEN
+        IF EXISTS (SELECT 1 FROM public.top_up_flagged_orders f WHERE f.order_id = p_order_id) THEN
+            RETURN jsonb_build_object('ok', true, 'idempotent', false, 'flagged', true, 'taken', 0, 'shortfall', 0,
+                                      'frozen', false);
+        END IF;
+        IF EXISTS (SELECT 1 FROM public.top_ups t WHERE t.id = p_top_up_id AND t.status = 'pending') THEN
+            RETURN jsonb_build_object('ok', false, 'code', 'NOT_CREDITED_YET');
+        END IF;
+        RETURN jsonb_build_object('ok', false, 'code', 'ORDER_NOT_FOUND');
+    END IF;
+
+    -- A replay or an older amount changes nothing, so it can never re-Freeze
+    -- an account an Operator has unfrozen.
+    IF p_refunded_cents <= v_top_up.refunded_cents THEN
+        SELECT b.balance - CASE WHEN b.subscription_expires_at > now() THEN 0 ELSE b.subscription_balance END
+        INTO v_balance FROM public.credit_balances b WHERE b.user_id = v_top_up.user_id;
+        RETURN jsonb_build_object('ok', true, 'idempotent', true, 'top_up_id', v_top_up.id,
+                                  'user_id', v_top_up.user_id, 'taken', 0, 'shortfall', 0,
+                                  'balance_after', v_balance, 'frozen', false);
+    END IF;
+
+    v_share := (v_top_up.credits::BIGINT * p_refunded_cents / p_total_cents)::INTEGER;
+    v_owed := v_share - (v_top_up.credits::BIGINT * v_top_up.refunded_cents / p_total_cents)::INTEGER;
+
+    -- A Pack clawback takes Pack Credits only: never Free, never Subscription.
+    SELECT b.balance, b.free_balance, b.subscription_balance,
+           CASE WHEN b.subscription_expires_at > now() THEN 0 ELSE b.subscription_balance END
+    INTO v_balance, v_free, v_sub, v_sub_dead
+    FROM public.credit_balances b WHERE b.user_id = v_top_up.user_id FOR UPDATE;
+    v_taken := GREATEST(0, LEAST(v_owed, v_balance - v_free - v_sub));
+
+    IF v_taken > 0 THEN
+        INSERT INTO public.ledger_entries (user_id, delta, free_delta, reason, job_id)
+        VALUES (v_top_up.user_id, -v_taken, 0, 'reverse:topup_refund', NULL);
+        UPDATE public.credit_balances
+        SET balance = balance - v_taken, updated_at = now()
+        WHERE user_id = v_top_up.user_id;
+    END IF;
+
+    UPDATE public.top_ups
+    SET refunded_cents = p_refunded_cents::INTEGER,
+        clawed_back_credits = clawed_back_credits + v_taken,
+        shortfall_credits = shortfall_credits + (v_owed - v_taken)
+    WHERE id = v_top_up.id;
+
+    -- Chargeback (ADR-0019), on either count: Pack Credits from this purchase
+    -- were consumed (a shortfall, 0249), or a job was created since it was
+    -- bought and did not
+    -- end in a Credit Refund. "Bought" is the pending row's created_at, not
+    -- credited_at: the backfill credits and claws back in one transaction
+    -- (0063), so credited_at is always later than every job.
+    IF v_owed > v_taken OR EXISTS (
+        SELECT 1 FROM public.jobs j
+        WHERE j.user_id = v_top_up.user_id
+          AND j.created_at > v_top_up.created_at
+          AND j.state <> 'REFUNDED'
+    ) THEN
+        PERFORM public.freeze_account(v_top_up.user_id,
+            format('Top-up Refund of %s cents on order %s after generating', p_refunded_cents, p_order_id),
+            v_top_up.id, v_taken, v_owed - v_taken);
+        v_frozen := true;
+    END IF;
+
+    RETURN jsonb_build_object('ok', true, 'idempotent', false, 'top_up_id', v_top_up.id,
+                              'user_id', v_top_up.user_id, 'share', v_share,
+                              'taken', v_taken, 'shortfall', v_owed - v_taken,
+                              'balance_after', v_balance - v_taken - v_sub_dead, 'frozen', v_frozen);
+END $$;
+
+REVOKE ALL ON FUNCTION public.apply_top_up_refund(TEXT, BIGINT, BIGINT, UUID) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.apply_top_up_refund(TEXT, BIGINT, BIGINT, UUID) TO service_role;
