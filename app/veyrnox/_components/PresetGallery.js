@@ -1,8 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { PresetCard } from './PresetCard';
-import { PRESET_CATEGORIES, templatesIn } from '../_lib/tokens';
-import { templateById } from '../_lib/templates';
+import { PRESETS, PRESET_CATEGORIES, templatesIn } from '../_lib/tokens';
 import { useCatalog } from '../_lib/useCatalog';
 import { usePopularTemplates } from '../_lib/usePopularTemplates';
 
@@ -15,7 +14,7 @@ export function PresetGallery({ size = 'lg', columns = 'lg:grid-cols-3' }) {
   const { models } = useCatalog();
   const popularIds = usePopularTemplates();
   // Popular (ADR-0072) is a ranking, not a home category: it appears only once some template has enough use to rank, in rank order.
-  const popular = popularIds.map(templateById).filter(Boolean);
+  const popular = popularIds.map((id) => PRESETS.find((preset) => preset.id === id)).filter(Boolean);
   const categories = popular.length ? ['ALL', 'NEW', 'POPULAR', ...PRESET_CATEGORIES.slice(2)] : PRESET_CATEGORIES;
   const list = cat === 'POPULAR' ? popular : templatesIn(cat);
   return (

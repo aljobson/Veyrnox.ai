@@ -239,13 +239,13 @@ export const SHOWCASE_CLIPS = {
 
 // Give each public placement its own clip, including templates also on /presets.
 export const WALL_SHOWCASE_KEYS = {
-  'cctv-night': 'wall-cctv-night',
-  'sunset-drift': 'wall-sunset-drift',
-  'neon-alley': 'wall-neon-alley',
-  'warm-portrait': 'wall-warm-portrait',
-  'film-portrait': 'wall-film-portrait',
-  'talking-head': 'wall-talking-head',
-  'clean-cutout': 'wall-clean-cutout',
+  'lidar': 'wall-cctv-night',
+  'boarding-pass': 'wall-sunset-drift',
+  'architecture-wave': 'wall-neon-alley',
+  'a-moment-between-strangers': 'wall-warm-portrait',
+  'the-last-stagecoach': 'wall-film-portrait',
+  'clones': 'wall-talking-head',
+  'vanish': 'wall-clean-cutout',
 };
 
 export const MODEL_SHOWCASE_KEYS = {

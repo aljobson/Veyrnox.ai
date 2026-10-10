@@ -135,7 +135,7 @@ test('the wall builds its links and prices through the shared helpers', () => {
     const raw = readFileSync(new URL('../app/veyrnox/_sections/showcase.js', import.meta.url), 'utf8');
     const src = raw.split('\n').filter((l) => !l.trim().startsWith('//')).join('\n');
     const wall = src.slice(src.indexOf('export function PresetWall'), src.indexOf('Model shelf'));
-    assert.match(wall, /presetHref\(preset\)/, 'wall links must come from presetHref');
+    assert.match(wall, /templateHref\(preset\)/, 'wall must show the matching recipe before the studio');
     assert.match(wall, /presetCredits\(preset, catalog\)/, 'wall prices must resolve through the catalog');
     assert.ok(!/\{preset\.credits\}/.test(wall), 'must not print the hardcoded preset credits');
 });

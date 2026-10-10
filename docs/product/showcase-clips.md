@@ -5,24 +5,26 @@ public preset cards and the three model-category cards have viral previews. The 
 and [Higgsfield](https://higgsfield.ai/) on 9 October 2026. This replaces the
 previous requirement to use only clips generated on Veyrnox.
 
-These clips are visual inspiration, rather than output from the model or
-preset linked by the tile. Each tile displays a generic “Viral inspiration”
+These clips are source previews, rather than output generated on Veyrnox.
+Template clips now link to their own matching recipes and compatible remix
+prompts (see [template recipes](template-recipes.md)). Each tile displays a generic “Viral inspiration”
 badge. The owner requested removal of visible SYNTX and Higgsfield labels and
 page credits on 9 October 2026; provenance remains recorded here and in the
-manifest. Model links, prompts and live credit prices still
-come from the existing catalog and templates.
+manifest. Model-category and feature cards remain inspiration; template pages
+distinguish the original recipe from the supported Veyrnox adaptation. Live
+credit prices come from the catalog.
 
 `app/veyrnox/_lib/showcase.js` maps all five `FEATURE_CARDS` keys and all
-`PRESETS` ids to local videos, posters, original titles and source names.
+`PRESETS` clip keys to local videos, posters, original titles and source names.
 `MODEL_SHOWCASE_KEYS` selects three dedicated clips for the Video, Image and
 Audio cards in `/#models`. `WALL_SHOWCASE_KEYS` selects seven dedicated
-homepage previews for templates that also appear in `/presets`. The shared
+homepage previews with their own recipes. The shared
 `PresetCard` also brings the gallery previews to the studio Explore gallery.
 
 All 37 public tile placements use different footage: five feature cards,
 seven homepage template cards, three model-category cards and 22 gallery
-cards. This includes distinct footage for the same template on the homepage
-and in the gallery, as requested by the owner on 9 October 2026. Fifteen
+cards. Homepage and gallery clips now describe separate templates, preserving
+distinct footage as requested by the owner on 9 October 2026. Fifteen
 unused source clips replace the former reuse across sections and pages.
 
 ## Imported previews
