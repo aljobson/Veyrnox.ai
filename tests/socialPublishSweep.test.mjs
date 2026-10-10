@@ -70,6 +70,7 @@ test('publishes an Instagram image target and reports the platform ids back', as
     let publishCalls = 0;
     await withFetch({
         claim_due_social_post_targets: async () => [target({ access_token_enc: accessTokenEnc })],
+        mark_social_provider_submission: async () => ({ ok: true }),
         complete_social_post_target: async (body) => {
             assert.equal(body.p_ok, true);
             assert.equal(body.p_platform_post_id, 'media-1');
@@ -101,6 +102,7 @@ test('publishes a LinkedIn image target and reports the platform ids back', asyn
         claim_due_social_post_targets: async () => [target({
             network: 'linkedin', target_id: 't-li', external_account_id: 'member-42', access_token_enc: accessTokenEnc,
         })],
+        mark_social_provider_submission: async () => ({ ok: true }),
         complete_social_post_target: async (body) => {
             assert.equal(body.p_ok, true);
             assert.equal(body.p_platform_post_id, 'urn:li:share:123');
@@ -143,6 +145,7 @@ test('publishes an X image target and reports the platform ids back', async () =
         claim_due_social_post_targets: async () => [target({
             network: 'twitter', target_id: 't-x', external_account_id: '987654321', access_token_enc: accessTokenEnc,
         })],
+        mark_social_provider_submission: async () => ({ ok: true }),
         complete_social_post_target: async (body) => {
             assert.equal(body.p_ok, true);
             assert.equal(body.p_platform_post_id, 'tweet-1');
@@ -180,6 +183,127 @@ test('publishes an X image target and reports the platform ids back', async () =
         const out = await runPublishSweep({ cfg, cryptoCfg, r2cfg });
         assert.deepEqual(out, { ok: true, claimed: 1, published: 1, failed: 0, errors: 0 });
         assert.equal(publishCalls, 5);
+    });
+});
+
+// Audit 2026-10-09 S-03: the core networks mark the row before the provider call, and never resend a marked one.
+test('a core target already marked as submitted is not sent again: it ends as a result to reconcile', async () => {
+    const accessTokenEnc = await encryptToken('ig-access-token', cryptoCfg);
+    let providerCalls = 0;
+    await withFetch({
+        claim_due_social_post_targets: async () => [target({ access_token_enc: accessTokenEnc, claim_key: 'k-9', provider_state: { submission_started: true } })],
+        complete_social_post_target: async (body) => {
+            assert.equal(body.p_ok, false);
+            assert.equal(body.p_error, 'provider_result_unknown_reconcile_before_retry');
+            assert.equal(body.p_claim_key, 'k-9');
+            return { ok: true };
+        },
+    }, async (calls) => {
+        const real = globalThis.fetch;
+        globalThis.fetch = async (url, init) => {
+            if (new URL(url).hostname === 'graph.instagram.com') { providerCalls += 1; return Response.json({ id: 'x' }); }
+            return real(url, init);
+        };
+        const out = await runPublishSweep({ cfg, cryptoCfg, r2cfg });
+        assert.deepEqual(out, { ok: true, claimed: 1, published: 0, failed: 1, errors: 0 });
+        assert.equal(providerCalls, 0, 'the provider was not called again');
+        assert.ok(!calls.includes('mark_social_provider_submission'), 'nothing to mark: it already was');
+    });
+});
+
+test('a core target whose marker is lost to another sweep is not sent either', async () => {
+    const accessTokenEnc = await encryptToken('li-access-token', cryptoCfg);
+    let providerCalls = 0;
+    await withFetch({
+        claim_due_social_post_targets: async () => [target({ network: 'linkedin', target_id: 't-li2', external_account_id: 'member-1', access_token_enc: accessTokenEnc, claim_key: 'k-2' })],
+        mark_social_provider_submission: async (body) => {
+            assert.deepEqual(body, { p_target_id: 't-li2', p_claim_key: 'k-2', p_network: 'linkedin' });
+            return null; // the row is no longer ours, or already marked
+        },
+        complete_social_post_target: async (body) => { assert.equal(body.p_error, 'submission_claim_lost'); return { ok: true }; },
+    }, async () => {
+        const real = globalThis.fetch;
+        globalThis.fetch = async (url, init) => {
+            if (new URL(url).hostname === 'api.linkedin.com') { providerCalls += 1; return Response.json({}); }
+            return real(url, init);
+        };
+        const out = await runPublishSweep({ cfg, cryptoCfg, r2cfg });
+        assert.deepEqual(out, { ok: true, claimed: 1, published: 0, failed: 1, errors: 0 });
+        assert.equal(providerCalls, 0);
+    });
+});
+
+// Audit 2026-10-09 S-04: X tokens last about two hours and were never refreshed on this path.
+test('X: a token near expiry is refreshed first, the rotated pair is stored with a compare-and-swap, and the post goes out with the new token', async () => {
+    Object.assign(process.env, { X_CLIENT_ID: 'x-client-id-1234', X_CLIENT_SECRET: 'x-secret-12345678' });
+    const accessTokenEnc = await encryptToken('x-old-token', cryptoCfg);
+    const refreshTokenEnc = await encryptToken('x-old-refresh', cryptoCfg);
+    const seen = { auth: [], rotate: null };
+    await withFetch({
+        claim_due_social_post_targets: async () => [target({
+            network: 'twitter', target_id: 't-x2', external_account_id: '987654321', account_id: 'acct-x', claim_key: 'k-x',
+            access_token_enc: accessTokenEnc, refresh_token_enc: refreshTokenEnc,
+            token_expires_at: new Date(Date.now() + 60 * 1000).toISOString(), // inside the ten-minute buffer
+        })],
+        rotate_extended_social_tokens: async (body) => { seen.rotate = body; return { ok: true }; },
+        mark_social_provider_submission: async () => ({ ok: true }),
+        complete_social_post_target: async (body) => { assert.equal(body.p_ok, true); return { ok: true }; },
+    }, async () => {
+        const real = globalThis.fetch;
+        const headerGet = (values) => ({ get: (k) => values[k.toLowerCase()] ?? null });
+        globalThis.fetch = async (url, init) => {
+            const u = new URL(url);
+            if (u.hostname === 'api.x.com' && u.pathname === '/2/oauth2/token') {
+                const params = new URLSearchParams(init.body);
+                assert.equal(params.get('grant_type'), 'refresh_token');
+                assert.equal(params.get('refresh_token'), 'x-old-refresh');
+                return { ok: true, status: 200, json: async () => ({ access_token: 'x-new-token', refresh_token: 'x-new-refresh', expires_in: 7200 }) };
+            }
+            if (u.hostname === 'api.x.com') seen.auth.push(new Headers(init.headers).get('authorization'));
+            if (u.hostname === 'acct.r2.cloudflarestorage.com') return { ok: true, status: 200, headers: headerGet({ 'content-type': 'image/jpeg' }), arrayBuffer: async () => new Uint8Array([1]).buffer };
+            if (u.pathname === '/2/media/upload/initialize') return { ok: true, status: 200, headers: headerGet({}), json: async () => ({ data: { id: 'm-1' } }) };
+            if (u.pathname === '/2/media/upload/m-1/append') return { ok: true, status: 204, headers: headerGet({}) };
+            if (u.pathname === '/2/media/upload/m-1/finalize') return { ok: true, status: 200, headers: headerGet({}), json: async () => ({ data: { id: 'm-1' } }) };
+            if (u.pathname === '/2/tweets') return { ok: true, status: 201, headers: headerGet({}), json: async () => ({ data: { id: 'tweet-2' } }) };
+            return real(url, init);
+        };
+        const out = await runPublishSweep({ cfg, cryptoCfg, r2cfg });
+        assert.deepEqual(out, { ok: true, claimed: 1, published: 1, failed: 0, errors: 0 });
+        assert.ok(seen.auth.length > 0 && seen.auth.every((h) => h === 'Bearer x-new-token'), `every X call used the new token: ${seen.auth}`);
+        assert.equal(seen.rotate.p_account_id, 'acct-x');
+        assert.equal(seen.rotate.p_network, 'twitter');
+        assert.equal(seen.rotate.p_expected_access_token_enc, accessTokenEnc, 'the pair that was read');
+        assert.equal(seen.rotate.p_expected_refresh_token_enc, refreshTokenEnc);
+        assert.notEqual(seen.rotate.p_refresh_token_enc, refreshTokenEnc, 'the rotated refresh token is stored');
+        assert.ok(Date.parse(seen.rotate.p_token_expires_at) > Date.now() + 7000 * 1000);
+    });
+});
+
+test('X: a rotation that loses the compare-and-swap fails the attempt without publishing; no app credentials is its own reason', async () => {
+    const accessTokenEnc = await encryptToken('x-old-token', cryptoCfg);
+    const refreshTokenEnc = await encryptToken('x-old-refresh', cryptoCfg);
+    const expiring = () => target({ network: 'twitter', target_id: 't-x3', external_account_id: '1', access_token_enc: accessTokenEnc, refresh_token_enc: refreshTokenEnc, token_expires_at: new Date(Date.now() + 1000).toISOString() });
+    Object.assign(process.env, { X_CLIENT_ID: 'x-client-id-1234', X_CLIENT_SECRET: 'x-secret-12345678' });
+    await withFetch({
+        claim_due_social_post_targets: async () => [expiring()],
+        rotate_extended_social_tokens: async () => null,
+        complete_social_post_target: async (body) => { assert.equal(body.p_error, 'token_refresh_failed'); return { ok: true }; },
+    }, async (calls) => {
+        const real = globalThis.fetch;
+        globalThis.fetch = async (url, init) => {
+            if (new URL(url).pathname === '/2/oauth2/token') return { ok: true, status: 200, json: async () => ({ access_token: 'n', refresh_token: 'r', expires_in: 7200 }) };
+            if (new URL(url).hostname === 'api.x.com') throw new Error('must not publish');
+            return real(url, init);
+        };
+        assert.deepEqual(await runPublishSweep({ cfg, cryptoCfg, r2cfg }), { ok: true, claimed: 1, published: 0, failed: 1, errors: 0 });
+        assert.ok(!calls.includes('mark_social_provider_submission'));
+    });
+    delete process.env.X_CLIENT_ID; delete process.env.X_CLIENT_SECRET;
+    await withFetch({
+        claim_due_social_post_targets: async () => [expiring()],
+        complete_social_post_target: async (body) => { assert.equal(body.p_error, 'token_refresh_unavailable'); return { ok: true }; },
+    }, async () => {
+        assert.deepEqual(await runPublishSweep({ cfg, cryptoCfg, r2cfg }), { ok: true, claimed: 1, published: 0, failed: 1, errors: 0 });
     });
 });
 
