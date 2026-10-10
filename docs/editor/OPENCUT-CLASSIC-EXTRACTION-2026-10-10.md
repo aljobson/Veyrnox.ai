@@ -76,7 +76,7 @@ Across the editor folders **nothing imports the database or auth layer**, and on
 3. **Start with the exporter, the scene graph and the time module**, because slice 0 already proved that path; then the command stack.
 4. **Do not import its assets, stickers, sounds, fonts or services.** Use our Library and project assets, bundled fonts, and our own
    (priced) AI steps.
-5. **First task after a go-ahead:** a one-day extraction spike that copies `media-time`, `ripple`, `retime` and `scene-exporter` into a
+5. **Done 2026-10-10 (see [OPENCUT-EXTRACTION-SPIKE-2026-10-10.md](OPENCUT-EXTRACTION-SPIKE-2026-10-10.md)): it passed.** Original wording: a one-day extraction spike that copies `media-time`, `ripple`, `retime` and `scene-exporter` into a
    scratch folder, replaces the WASM time module, and runs their own unit tests against it. If those pass, adopt; if not, write our own.
 
 ## Not checked
