@@ -7,6 +7,9 @@
  *                                    record a 'warning' or a 'takedown'. A
  *                                    takedown removes the job's assets at once
  *                                    and the third one Freezes the account.
+ *                                    Requires an Idempotency-Key header: a
+ *                                    replay answers 200 with the first record
+ *                                    and `replayed: true`, never a second strike.
  *
  * Same four gates as /api/v1/admin/metrics: middleware identity, the
  * ADMIN_REQUIRE_AAL2 second-factor flag, the Cloudflare Access assertion
@@ -27,6 +30,10 @@ const NOT_ADMIN = '42501';
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const TIERS = new Set(['warning', 'takedown']);
 const MAX_BODY_BYTES = 4 * 1024;
+// The form sends one key per attempt; the RPC stores it on the strike and
+// answers a replay with the first result, so a lost response and a resubmit
+// record one strike, not two (0253, audit P-07).
+const IDEMPOTENCY_RE = /^[A-Za-z0-9._-]{8,128}$/;
 
 const requireAal2 = () => process.env.ADMIN_REQUIRE_AAL2 === 'true';
 
@@ -79,6 +86,10 @@ export async function GET(req) {
 export async function POST(req) {
     const g = await gate(req);
     if (g.response) return g.response;
+    const idempotencyKey = req.headers.get('idempotency-key');
+    if (typeof idempotencyKey !== 'string' || !IDEMPOTENCY_RE.test(idempotencyKey)) {
+        return NextResponse.json({ error: 'idempotency_key_invalid' }, { status: 400 });
+    }
     const declared = Number(req.headers.get('content-length'));
     if (Number.isFinite(declared) && declared > MAX_BODY_BYTES) {
         return NextResponse.json({ error: 'body_too_large' }, { status: 413 });
@@ -99,6 +110,7 @@ export async function POST(req) {
     try {
         result = await rpc('record_content_violation', {
             p_auth_id: g.authId, p_user_id: userId, p_job_id: jobId, p_tier: tier, p_reason: reason.trim(),
+            p_idempotency_key: idempotencyKey,
         }, g.cfg);
     } catch (err) {
         return rpcFailure(err, 'record');
@@ -107,6 +119,14 @@ export async function POST(req) {
         const code = result && result.code ? String(result.code).toLowerCase() : 'violation_rejected';
         const status = code === 'user_not_found' || code === 'job_not_found' ? 404 : 400;
         return NextResponse.json({ error: code }, { status });
+    }
+    if (result.replayed === true) {
+        // The strike was recorded by an earlier delivery of this key and the
+        // user was notified then. Report it; do not write or email again.
+        return NextResponse.json({
+            action_id: result.action_id, tier: result.tier, assets_removed: result.assets_removed,
+            takedowns: result.takedowns, frozen: result.frozen, email: 'skipped', replayed: true,
+        }, { status: 200, headers: { 'Cache-Control': 'no-store' } });
     }
     console.error('[api/v1/admin/violations] recorded', tier, 'for', userId, 'job', jobId, 'takedowns', result.takedowns, 'frozen', result.frozen);
     const email = await notifyViolation({
