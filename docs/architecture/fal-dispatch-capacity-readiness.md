@@ -6,6 +6,8 @@ to the implementation in [ADR 0077](../adr/0077-fal-event-driven-dispatch.md).
 Source inspection establishes bounds; it does not establish live throughput.
 Production queue activation remains blocked on the evidence below.
 
+The [10 October release readiness review](../operations/fal-release-readiness-review-2026-10-10.md) consolidates later live timing and signed retry results, corrects the health-window baseline after the controlled UNKNOWN exercise, and lists the current remaining gates. Dates and outstanding evidence in the original 9 October review below are historical.
+
 ## Database and handler budget
 
 `runFalDispatchQueue` performs initial recovery once per invocation. Every
