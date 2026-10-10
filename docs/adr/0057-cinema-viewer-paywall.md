@@ -120,23 +120,28 @@ precondition P6 in the [paywall plan](../cinema/paywall-plan.md).
 ## Free viewing ceiling as built (0245, 2026-10-10)
 
 Owner, 2026-10-10: build it. Built behind `CINEMA_FREE_CEILING_ENABLED`, which
-is `false` in production and `true` on staging. Migration 0245 is written and
-not applied.
+is `false` in production and on staging until migration 0245 is applied there.
+The migration is written and not applied.
 
 - **The rule.** An account has `cinema_prices.free_ceiling_minutes` of free
   viewing per calendar month (UTC). The proposed value is 300 and the owner
   confirms it; the CHECK admits 0 to 100,000. The app layer never computes it.
 - **What counts.** A Free Play is seconds of a free title (SHORT, TRAILER or a
   Free Episode) recorded for an account in the append-only `cinema_free_plays`.
-  Granting playback counts one minute, or what is left of the month. After
-  that the player's heartbeat counts seconds with the Pass Play caps: at most
-  60 per heartbeat, and no more than wall-clock time per account, serialized
-  per account. Counting at the grant means a play shorter than a heartbeat
-  still counts and the total does not rest on the heartbeat alone. The player
-  renews its token every 12 minutes, and a renewal is a play start: it counts
-  a minute, and the wall-clock cap then refuses the heartbeats of the minute
-  that follows, so continuous viewing is counted at about wall-clock rate.
-  Nothing is counted when playback is refused or the video is not ready.
+  Granting playback counts one minute, or what is left of the month, whether
+  or not the player reports back; a repeated request counts again. After that
+  the player's heartbeat meters the viewing with the Pass Play caps: at most
+  60 seconds per heartbeat, and no more than 60 seconds per 55 of wall-clock
+  time per account, serialized per account. The window is 55 seconds rather
+  than 60 because a steady 30-second heartbeat lands the row from two beats
+  ago at 60 seconds plus or minus jitter, and a 60-second window refused
+  about a third of honest beats; the price is that a scripted client can log
+  about a tenth more than wall-clock. The minute at the grant is a floor, not
+  a meter: a client that sends no heartbeat is counted one minute per play
+  start while the token it holds lasts up to 15 minutes, and a token already
+  issued keeps working until it expires. The player renews its token every 12
+  minutes, and a renewal is a play start. Nothing is counted when playback is
+  refused or the video is not ready.
 - **At the ceiling.** Entitlement for a free title reports `locked` with reason
   `free_ceiling` and 0 credits, playback returns no stream uid so no token is
   signed, and the watch page says the free viewing limit for the month is
@@ -157,6 +162,9 @@ not applied.
   before: the minute at a play start applies to free viewing only.
 - **No money moves.** Nothing in 0245 touches `ledger_entries` or
   `credit_balances`.
+- **Personal data.** `cinema_free_plays` records who watched which free title
+  and when, for every signed-in viewer, append-only. The erasure path ADR-0008
+  leaves open must cover it.
 
 The entitlement endpoint now reports `pass` for a Cinema Pass holder, where it
 answered 503 before. No Pass is on sale, so no one sees a difference today.

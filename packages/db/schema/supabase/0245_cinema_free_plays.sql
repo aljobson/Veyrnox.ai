@@ -140,9 +140,10 @@ BEGIN
 END $$;
 
 -- ── cinema_record_pass_seconds: the Pass Play caps, for a resolved user ───
--- The body of record_cinema_pass_play (0144) from its lock onwards, so a free
--- title played under a Pass is recorded with the same two caps. The caller
--- has already decided this viewing is Pass viewing.
+-- The body of record_cinema_pass_play (0144) from its lock onwards, with a
+-- 55-second window, so a free title played under a Pass is recorded with
+-- the same two caps. The caller has already decided this viewing is Pass
+-- viewing.
 CREATE OR REPLACE FUNCTION public.cinema_record_pass_seconds(p_user_id UUID, p_content_id UUID, p_seconds INTEGER)
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -169,8 +170,12 @@ BEGIN
         RETURN jsonb_build_object('ok', true, 'recorded', false, 'access', 'locked', 'reason', 'pass_ceiling',
                                   'minutes_used', v_used / 60, 'ceiling_minutes', v_ceiling);
     END IF;
+    -- The window is 55 seconds, not 60: a steady 30-second heartbeat puts the
+    -- row from two beats ago at 60 seconds plus or minus network jitter, and a
+    -- 60-second window refused about a third of honest beats. A scripted client
+    -- can now log 60 seconds per 55 of wall-clock, about a tenth over.
     SELECT COALESCE(SUM(x.seconds), 0) INTO v_recent FROM public.cinema_pass_plays x
-    WHERE x.pass_id = v_pass AND x.played_at > now() - interval '60 seconds';
+    WHERE x.pass_id = v_pass AND x.played_at > now() - interval '55 seconds';
     IF v_recent >= 60 THEN
         RETURN jsonb_build_object('ok', true, 'recorded', false, 'access', 'pass', 'reason', 'too_fast',
                                   'minutes_used', v_used / 60, 'ceiling_minutes', v_ceiling);
@@ -189,8 +194,10 @@ END $$;
 -- {error} with not_authenticated, content_not_found, locked (+credits,
 -- +reason when there is one) or not_ready. Granting playback of a free title
 -- counts one minute of the account's free minutes (or what is left of them),
--- so the count does not depend on the player reporting back. Nothing is
--- counted when playback is refused or the video is not ready.
+-- whether or not the player reports back; the heartbeat meters the rest. A
+-- repeated request counts again: there is no idempotency key, because a new
+-- request is a new grant. Nothing is counted when playback is refused or the
+-- video is not ready.
 CREATE OR REPLACE FUNCTION public.start_cinema_playback(p_auth_id TEXT, p_content_id UUID)
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -247,8 +254,9 @@ END $$;
 -- Same contract as record_cinema_pass_play (0144), which it replaces while
 -- the free ceiling is on. Paid titles behave exactly as there. A free title
 -- records a Free Play with the same two caps: a heartbeat is at most 60
--- seconds, and an account cannot log more seconds than wall-clock time (the
--- minute counted at a play start is inside that cap). Past the free ceiling
+-- seconds, and an account cannot log more than 60 seconds per 55 of
+-- wall-clock time (the minute counted at a play start is inside that cap).
+-- Past the free ceiling
 -- a Pass holder's heartbeat is a Pass Play; anyone else's records nothing.
 -- Returns {ok:true, recorded, access, seconds, minutes_used, ceiling_minutes}
 -- with reason 'free_ceiling', 'pass_ceiling' or 'too_fast' when nothing was
@@ -302,8 +310,9 @@ BEGIN
         RETURN jsonb_build_object('ok', true, 'recorded', false, 'access', v_ent->>'access', 'reason', v_ent->'reason',
                                   'minutes_used', v_used / 60, 'ceiling_minutes', v_ceiling);
     END IF;
+    -- 55-second window, for the reason given in cinema_record_pass_seconds.
     SELECT COALESCE(SUM(x.seconds), 0) INTO v_recent FROM public.cinema_free_plays x
-    WHERE x.user_id = v_user AND x.played_at > now() - interval '60 seconds';
+    WHERE x.user_id = v_user AND x.played_at > now() - interval '55 seconds';
     IF v_recent >= 60 THEN
         RETURN jsonb_build_object('ok', true, 'recorded', false, 'access', 'free', 'reason', 'too_fast',
                                   'minutes_used', v_used / 60, 'ceiling_minutes', v_ceiling);

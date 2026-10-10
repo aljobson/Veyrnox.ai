@@ -144,6 +144,35 @@ try {
   const starts = await race(Array.from({ length: 4 }, () => (client) => start(crowd, free, client)));
   assert.deepEqual([starts.filter((r) => r.access === 'free').length, starts.filter((r) => r.reason === 'free_ceiling').length], [1, 3]);
   assert.equal(await freeSeconds(crowd), CEILING * 60);
+  const mixed = await person();
+  await fill(mixed, free, (CEILING - 1) * 60);
+  const both = await race([free, free2, free, free2, free, free2].map((title, i) => (client) => (i % 2 ? beat(mixed, title, 45, client) : start(mixed, title, client))));
+  assert.equal(await freeSeconds(mixed), CEILING * 60, 'three starts and three heartbeats on two titles cannot pass the ceiling');
+  assert.ok(both.every((r) => r.access === 'free' || r.reason === 'free_ceiling' || r.reason === 'too_fast'), JSON.stringify(both));
+
+  // The wall-clock window is 55 seconds: a steady 30-second heartbeat whose row from two beats
+  // ago sits at 58 seconds is counted in full; rows 50 and 30 seconds old still fill the minute.
+  const steadyHand = await person();
+  const clock = new Date().toISOString();
+  await fill(steadyHand, free, 30, "$4::timestamptz - interval '58 seconds'", clock);
+  await fill(steadyHand, free2, 30, "$4::timestamptz - interval '30 seconds'", clock);
+  const inTime = await beat(steadyHand, free, 30);
+  assert.deepEqual([inTime.recorded, inTime.seconds], [true, 30], 'a row 58 seconds old is outside the window');
+  const tight = await person();
+  await fill(tight, free, 30, "$4::timestamptz - interval '50 seconds'", clock);
+  await fill(tight, free2, 30, "$4::timestamptz - interval '30 seconds'", clock);
+  assert.deepEqual([(await beat(tight, free, 30)).recorded, (await beat(tight, free, 30)).reason], [false, 'too_fast'], 'a row 50 seconds old is inside the window');
+  // Rows dated next month do not count against this month either.
+  const ahead = await person();
+  await fill(ahead, free, CEILING * 60, '$4::timestamptz', new Date(Date.UTC(monthStart.getUTCFullYear(), monthStart.getUTCMonth() + 1, 1)).toISOString());
+  assert.deepEqual(await metered(ahead, free), { access: 'free', credits: 0 });
+  // No price row: nothing free plays, and nothing is counted.
+  await q('BEGIN');
+  await q("DELETE FROM public.cinema_prices WHERE key='free_ceiling_minutes'");
+  assert.deepEqual(await start(steady, free), { error: 'locked', credits: 0, reason: 'free_ceiling' });
+  assert.deepEqual(await metered(steady, free), { access: 'locked', credits: 0, reason: 'free_ceiling' });
+  await q('ROLLBACK');
+  assert.equal(await freeSeconds(steady), 60);
 
   // Calendar month, UTC: last month's plays do not count; the month's first instant does.
   const light = await person(), eve = await person(), first = await person();
@@ -185,6 +214,41 @@ try {
   assert.deepEqual([topUp.recorded, topUp.access, topUp.seconds], [true, 'pass', 30]);
   assert.deepEqual([(await beat(holder, free, 10)).reason, (await beat(holder, ep8, 10)).reason], ['too_fast', 'too_fast']);
   assert.equal(await passSeconds(holder), 60);
+  // Near the Pass ceiling, a free title's heartbeat is cut to what the Pass has left.
+  const nearly = await person();
+  const nearlyPass = await activePass(nearly);
+  await fill(nearly, free, CEILING * 60);
+  await q(`INSERT INTO public.cinema_pass_plays(pass_id,user_id,content_id,seconds,played_at) SELECT $1,$2,$3,60,${AGED} FROM generate_series(1, $5::int)`, [nearlyPass, await userId(nearly), ep8, monthStart.toISOString(), PASS_CEILING - 1]);
+  await q(`INSERT INTO public.cinema_pass_plays(pass_id,user_id,content_id,seconds,played_at) VALUES ($1,$2,$3,50,${AGED})`, [nearlyPass, await userId(nearly), ep8, monthStart.toISOString()]);
+  const cut = await beat(nearly, free, 30);
+  assert.deepEqual([cut.recorded, cut.access, cut.seconds, cut.minutes_used], [true, 'pass', 10, PASS_CEILING]);
+  assert.deepEqual(await metered(nearly, free), { access: 'locked', credits: 0, reason: 'free_ceiling' });
+  assert.equal((await beat(nearly, free, 30)).reason, 'free_ceiling', 'the Pass is spent too');
+  // A Pass that lapsed or was cancelled does not play free titles past the free ceiling.
+  for (const [label, sql] of [['lapsed', "UPDATE public.cinema_passes SET current_period_end = now() - interval '1 hour' WHERE id=$1"], ['ended', "UPDATE public.cinema_passes SET status='ended', ended_at=now(), end_reason='subscription_ended' WHERE id=$1"]]) {
+    const former = await person();
+    const formerPass = await activePass(former);
+    await fill(former, free, CEILING * 60);
+    assert.deepEqual(await metered(former, free), { access: 'pass', credits: 0 }, label);
+    await q(sql, [formerPass]);
+    assert.deepEqual(await metered(former, free), { access: 'locked', credits: 0, reason: 'free_ceiling' }, label);
+    assert.deepEqual(await start(former, free), { error: 'locked', credits: 0, reason: 'free_ceiling' }, label);
+    assert.deepEqual([(await beat(former, free)).recorded, (await beat(former, free)).reason], [false, 'free_ceiling'], label);
+    assert.equal(await passSeconds(former), 0, label);
+  }
+  // A Pass that lapses between the entitlement read and the heartbeat's lock records nothing.
+  const racing = await person();
+  const racingPass = await activePass(racing);
+  await fill(racing, free, CEILING * 60);
+  const held = new pg.Client({ connectionString: url }); await held.connect();
+  await held.query('BEGIN'); await held.query('SELECT 1 FROM public.cinema_passes WHERE id=$1 FOR UPDATE', [racingPass]);
+  const pending = beat(racing, free, 30);
+  await new Promise((r) => setTimeout(r, 300));
+  await held.query("UPDATE public.cinema_passes SET current_period_end = now() - interval '1 hour' WHERE id=$1", [racingPass]);
+  await held.query('COMMIT'); await held.end();
+  assert.deepEqual([(await pending).recorded, (await pending).reason], [false, 'pass_lapsed']);
+  assert.equal(await passSeconds(racing), 0);
+
   // Both ceilings reached: locked, and there is nothing to pay for a free title.
   const spent = await person();
   const spentPass = await activePass(spent);
@@ -206,6 +270,10 @@ try {
   assert.deepEqual(await metered(heavy, ep6), { access: 'unlocked', credits: 0 });
   assert.deepEqual(await start(heavy, ep6), { access: 'unlocked', stream_uid: uid.ep6 });
   assert.deepEqual(await beat(heavy, ep6), { ok: true, recorded: false, access: 'unlocked', reason: null, minutes_used: CEILING, ceiling_minutes: CEILING });
+  // Once the Unlock is reversed (takedown), the free ceiling applies again.
+  assert.equal((await value("SELECT public.reverse_cinema_unlocks($1,'operator','test takedown') AS value", [ep6])).unlocks_reversed, 1);
+  assert.deepEqual(await metered(heavy, ep6), { access: 'locked', credits: 0, reason: 'free_ceiling' });
+  assert.deepEqual(await start(heavy, ep6), { error: 'locked', credits: 0, reason: 'free_ceiling' });
   await q('ROLLBACK');
   assert.equal(await freeSeconds(heavy), CEILING * 60);
 
@@ -249,5 +317,5 @@ try {
     await assert.rejects(start(viewer, free), /permission denied/, role);
     await q('ROLLBACK');
   }
-  console.log('Cinema free play checks passed: a minute per play start, heartbeat caps and replay, the ceiling boundary, concurrency, month boundaries, the price row, Pass holder rules, Unlock precedence, older functions unchanged, ledger untouched, append-only, RLS and grants.');
+  console.log('Cinema free play checks passed: a minute per play start, the 55-second heartbeat window and replay, the ceiling boundary, mixed concurrency, month boundaries, the price row, Pass holder rules (near, lapsed, ended, racing), Unlock precedence and reversal, older functions unchanged, ledger untouched, append-only, RLS and grants.');
 } finally { await c.end(); }
