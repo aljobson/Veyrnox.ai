@@ -2,6 +2,8 @@
 
 Scope: initial main `37b617af82309b12304695bbe726490deb371761`, integrated editor release `6f288e2a7348703cc17b9a08600ea6e001da5d78` (#852), deployed Workers, the two AI Supabase projects, migration coverage, runtime flags, recovery/reconciliation snapshots, repository checks, and feature rollout requirements. The original dirty checkout is preserved in place. Wallet and studio experiment databases are outside this audit.
 
+> Historical baseline below; see [the follow-up rollout](#follow-up-rollout--10-october-2026-1645-utc) for current fixed/live status and remaining gates.
+
 ## Production baseline
 
 - Production `https://veyrnox.ai` is serving Worker `dce70208-7779-4476-a825-9485dbcb5278` from successful main deployment run [38059492472](https://github.com/aljobson/Veyrnox.ai/actions/runs/38059492472). The deploy and preservation checks actually ran.
@@ -94,3 +96,45 @@ Coverage uses an explicit environment identity and ignores ambient Supabase vari
 
 Deployed staging and production do not contain the Reticle SDK. The existing Reticle setup is uncommitted in the original checkout and development-only; a remote lease returned `SDK_never_dialled` and was released. No Reticle pass is claimed. The new fix was verified directly against PostgreSQL; the staging browser was inspected without creating provider jobs, payment transactions or public posts. Deployment smoke checks do not replace feature acceptance.
 
+
+## Follow-up rollout — 10 October 2026, 16:45 UTC
+
+This section supersedes the earlier pending-fix and staging-history findings above; the earlier sections retain the inspected baseline. Scope now includes implementing the unfinished roadmap, as explicitly requested by the owner, as well as promoting completed features.
+
+### Completed fixes and deployments
+
+- **0261 applied in production** at 15:32:27 UTC via the approved workflow: required project-document fields cannot evade validation through SQL NULL.
+- **#854 squash-merged**: [protected run 38066700872](https://github.com/aljobson/Veyrnox.ai/actions/runs/38066700872) applied 0262 at 16:20:19 UTC and 0263 at 16:20:23 UTC. 0262 explicitly reconciles staging's already-correct 0222 values with replay-safe catalog guards. 0263 prevents an incomplete Stripe snapshot from removing established Cinema Pass access or opening a second checkout. Production function text and service-only ACLs were checked.
+- The nine historical staging receipts are now accounted by exact captured SQL, timestamps and SHA-256 values in `docs/archive/staging-migrations-2026-10-10/`. No historical receipt was fabricated or deleted, and no obsolete payment/wallet branch was replayed. Staging coverage is green with the explicit 0222 → 0262 forward repair; the original 0222 receipt remains absent by design.
+- **#795, #805 and #755 squash-merged** after green checks: controlled staging fal transport tests, health-window review and capacity-reservation design. These do not enable fal transport or authorize more provider spend. [Production deploy 38066937777](https://github.com/aljobson/Veyrnox.ai/actions/runs/38066937777) succeeded at merged main `ead0883c`.
+- Staging was rebuilt at `ead0883c` and deployed as Worker **348e103a-1b44-4bb2-b0c8-20c13473c652**. All 37 secret names and 57 plain variables were preserved; locked Next/OpenNext build and ten Video Enhance asset checks passed. The actual staging URL passed all five site-health checks; recovery and migration coverage were healthy.
+- **#856 squash-merged**, main `09957c52`: migration 0264 adds hourly allowance/referral monitoring. [Owner-approved protected run 38068581693](https://github.com/aljobson/Veyrnox.ai/actions/runs/38068581693) applied it in production at **16:43:15 UTC**; [production deploy 38068581936](https://github.com/aljobson/Veyrnox.ai/actions/runs/38068581936) succeeded. Staging applied it at 16:36:21 UTC. Both environments report all **seven** drift counts zero. Public reads still expose cached counts only; direct table access and refresh remain unavailable to anon. Production ledger accounts for all 224 actual receipts, and every source migration is covered. Recovery and signup safeguards pass.
+
+The 0264 test replays all **244** source migrations into fresh PostgreSQL, then seeds actual allowance overuse and an unmatched referral grant. The real hourly CLI exits 1 for each, 0 for measured zeroes and 2 for invalid evidence; repeat application, stale/future snapshots, ACL/RLS and cached-read isolation pass. Full suite: 2,740 tests, 2,739 passed, one skipped. CI database acceptance and build checks passed. Reticle was skipped for these database/monitoring/docs changes because they have no UI surface. Existing UI evidence is not replaced by a database test.
+
+The concurrent cloud-saving preparation (#857) was reviewed and reached main while this follow-up ran. Its production flags remain off. That UI evidence is the author's recorded verification, not a new Reticle run by this database/monitoring audit.
+
+### Remaining gates and unfinished scope
+
+The audit has **not made every feature public**. Runtime flags and preview gates still govern the unreleased paths. Completed source does not establish provider qualification, payment acceptance or a full clean interval.
+
+| Area | What remains |
+|---|---|
+| Projects | #857 is merged at `44304136`: documents/history use the server gate, media admission has separate `PROJECT_MEDIA_UPLOADS_ENABLED`. The PR records local Reticle save/reload and gate-off verdicts plus a real staging document/history drill. Production stays off pending a clean window after 0261, no earlier than 11 Oct 15:32:27 UTC / 16:32:27 BST; media retains D1 independently |
+| Paid Cinema Pass | Current sandbox buy/play/ceiling/cancel/refund drill; rights/consent/refund sign-off; written Stripe acceptance; invoice-backed Stream cost; approved production catalogue. 0263's relevant 24-hour interval cannot finish before 11 Oct 16:20:23 UTC / 17:20:23 BST |
+| Uploads across Transform, Publish, Projects and Cinema | Provider enrollment, documented image/video matching, trusted pre-storage byte admission, reporting/preservation policy and actual benign acceptance. See the prepared [integration/enrollment review](upload-scanning-enrollment-2026-10-10.md). Provider accounts and real scan adapter remain unimplemented |
+| Credit subscriptions | C4's remaining Stripe sandbox lifecycle/recovery/alert evidence and provider/Finance/Legal acceptance, then C4a plan changes and C5 public pricing/account UI. The existing C4 backend is built and default-off; the UI remains unfinished |
+| Publish | Build accepted Publish Plan entitlement/billing (B3); complete actual platform review/account acceptance for extended networks; cached posting-insights walk; upload gates |
+| Cinema voting/comments/PPV/premieres/recommendations | Build and verify the reserved features against reviewed product rules. Existing 6-Credit Unlocks and Pass are distinct from the reserved PPV flag; do not invent new prices, payout terms or voting eligibility |
+| Captions, Slowmo, Topaz/Qwen, deep research | Remaining provider/output/worst-case cost qualification and reviewed launch settings; current preview/default-off states remain |
+| Durable fal transport | Correct production account/key attribution, shared-account producer/capacity enforcement, reviewed budget/canary and retained expanded health evidence. Existing paid sample budgets are exhausted |
+
+The first retained seven-count staging observation is [run 38068792515](https://github.com/aljobson/Veyrnox.ai/actions/runs/38068792515), measured at **16:43:18.231 UTC**. Older five-count artifacts cannot establish the newly measured allowance/referral history. An expanded 24-hour evidence review cannot finish before **11 Oct 16:43:18 UTC / 17:43:18 BST** and still requires complete run inventory, subsequent clean samples, gaps and queue metrics. No elapsed-time waiver was requested or assumed.
+
+### Owner actions
+
+The approved 0261–0264 database work is complete; there is no remaining approval for those runs. Future migration PRs will request approval for their exact protected run after review and tests.
+
+The next enrollment packet needs the operating entity/registration details, authorized business applicant, technical contact and reporting owner. IWF Image Intercept is the recommended candidate inquiry, pending eligibility and actual video/API terms; no application or external message has been sent. The proposal identifies additional contract, reporting-policy and bounded budget decisions before activation.
+
+Paid launches also need the existing written Stripe/product/legal acceptance and invoice-backed provider costs. Real payment/provider canaries and public test posts will be prepared with exact content, destination and spend bounds before requesting authorization. Ordinary source fixes and accepted roadmap implementation continue within the owner's build-and-rollout scope.

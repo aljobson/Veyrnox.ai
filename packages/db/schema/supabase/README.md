@@ -189,9 +189,22 @@ abandoned branch is never reused.
 | 0118–0119 | renumbered to 0121–0122 before merge (commit `ba1a78a`) |
 | 0151, 0158 | renumbered to 0163, 0164 after production advanced to 0162; staging's ledger keeps the original names (see each file's `Applied name:` header) |
 | 0179 | renumbered to 0181 before merge: 0180 reached production first; never applied anywhere |
+| 0195 | starter chat activation replaced by 0201 (`432762db`, #539); earlier draft `c896ef76` |
+| 0204 | draft video-to-audio/upscale activation became MMAudio-only 0221; Topaz remained staged (`1b77c498`, #553) |
+| 0209 | research pricing renumbered to 0214 (`f87acbe7`); device uploads independently used the number, then became 0223 (`c6efe755`, #611). The staging device-upload receipt keeps its Applied-name mapping |
+| 0224 | video-agent steps renumbered to 0227 (`5eeda4a0`, #618) |
+| 0246 | colliding Library-upload and violation-idempotency changes became 0248 (`23e2b8b9`) and 0253 (`699eefbc`) before apply |
+| 0247 | catalog watcher narrowing renumbered to 0256 after production advanced to 0254 (`4c26bfba`, #848); 0255 was taken by the document timeline |
+| 0249 | Top-up refund shortfall freeze renumbered to 0257 (`e42534ad`) after production advanced to 0254 |
+| 0250 | chat stops before text renumbered to 0258 (`b998bfc6`) after production advanced to 0254 |
+| 0251 | refunded-job ceiling renumbered to 0259 (`3d4da5bb`) after production advanced to 0254 |
+| 0252 | social dispatch/rotation renumbered to 0260 (`5d01b8c4`) after production advanced to 0254 |
 
-All verified 2026-10-02 against the production ledger: none of these numbers
-was ever applied there. (0033–0034, listed here before, are real migrations.)
+The original rows through 0179 were verified 2026-10-02 against the production
+ledger. Rows 0195 onward were refreshed 2026-10-10 against tracked rename/replacement
+history and current environment coverage. A staging Applied-name mapping is
+not a missing migration; retain it. (0033–0034, listed here before, are real
+migrations.)
 
 `check-migration-numbers.sh` only detects duplicates, so it cannot see a gap.
 An unexplained one is the shape of "applied to production, never committed" —
