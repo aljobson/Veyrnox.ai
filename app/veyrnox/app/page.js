@@ -22,7 +22,7 @@ export default function Explore() {
           </span>
           <span aria-hidden="true" className="font-semibold text-vx-accent">Open chat →</span>
         </Link>
-        <PresetGallery size="md" columns="lg:grid-cols-4" />
+        <PresetGallery size="md" columns="lg:columns-4" />
       </section>
     </div>
   );

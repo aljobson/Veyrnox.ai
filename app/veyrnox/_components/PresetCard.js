@@ -11,24 +11,24 @@ import { templateHref, presetCredits, presetTitle } from '../_lib/tokens.js';
 // An onClick is still honoured for callers that want to intercept.
 export function PresetCard({ preset, size = 'md', onClick, catalog }) {
   const sizes = {
-    sm: { h: 'lg:h-40', title: 'text-sm', tag: 'text-[10px]' },
-    md: { h: 'lg:h-52', title: 'text-base', tag: 'text-[10px]' },
-    lg: { h: 'lg:h-72', title: 'text-lg', tag: 'text-[10px]' },
+    sm: { title: 'text-sm' },
+    md: { title: 'text-base' },
+    lg: { title: 'text-lg' },
   };
   const s = sizes[size];
   // The template's own page shows its prompt and inputs before anyone is
   // sent to the studio with them.
   const href = templateHref(preset);
+  const clip = SHOWCASE_CLIPS[preset.clipKey];
   return (
     <MediaTile
       href={href}
-      clip={SHOWCASE_CLIPS[preset.clipKey]}
-      uncroppedOnMobile
+      clip={clip && { ...clip, objectFit: 'contain' }}
       onClick={onClick}
       ariaLabel={`Open the ${presetTitle(preset.name)} template`}
       className="block text-left w-full"
-      mediaClassName={`aspect-[4/5] lg:aspect-auto ${s.h} rounded-2xl`}
-      mediaStyle={{ background: preset.bg }}
+      mediaClassName="rounded-2xl"
+      mediaStyle={{ background: preset.bg, aspectRatio: clip?.aspectRatio || '4 / 5' }}
       footer={
         <div className="pt-3 flex items-baseline gap-2">
           <div className="min-w-0">
