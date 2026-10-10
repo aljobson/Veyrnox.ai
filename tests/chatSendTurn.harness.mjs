@@ -1,6 +1,7 @@
 // The harness of tests/chatSendUnanswered.test.mjs and tests/chatSendReplay.test.mjs: sendTurn run for real against a
 // faked fetch (ADR-0067). chatApi.js is loaded with its imports handed in, the way tests/chatSendFlow.harness.mjs loads
-// the hook. It was part of tests/chatSendUnanswered.test.mjs, and moved here unchanged when a second file needed it.
+// the hook. It was part of tests/chatSendUnanswered.test.mjs, and moved here when a second file needed it. Added since:
+// `jobIdOf` among what is handed in, a count of the balance being asked for again, and `real()`.
 // Not a test file itself: its name keeps it out of `npm test`'s pattern.
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -14,23 +15,29 @@ const apiSource = readFileSync(new URL('../app/veyrnox/_lib/chatApi.js', import.
 export function loadApi(fetch, { token = 'token' } = {}) {
     const imported = [...apiSource.matchAll(/^import \{ ([^}]+) \} from /gm)].flatMap((m) => m[1].split(',').map((n) => n.trim()));
     const body = apiSource.replace(/^'use client';\n/, '').replace(/^import [^\n]+\n/gm, '').replace(/^export \{[^\n]*\n/gm, '').replace(/^export /gm, '');
-    const calls = [];
+    const calls = []; const notified = { balance: 0 };
     const deps = {
         getFreshAccessToken: async () => token, getSession: () => ({ access_token: token }), clearSession: () => {}, turnOptions: (o) => o,
         lostNotice, settleStoppedTurn, askStoppedSend, jobIdOf, gatewayFetch: async () => { throw new Error('not used here'); }, GatewayError,
-        ACCOUNT_PAUSED_COPY: 'paused', makeIdempotencyKey: () => KEY, notifyBalanceChanged: () => {},
+        ACCOUNT_PAUSED_COPY: 'paused', makeIdempotencyKey: () => KEY, notifyBalanceChanged: () => { notified.balance += 1; },
     };
     assert.deepEqual(imported.filter((n) => !(n in deps)), [], 'every name chatApi.js imports is handed in here');
     const made = new Function('deps', 'fetch', `const { ${Object.keys(deps).join(', ')} } = deps;\n${body}\nreturn { chatApi, sendTurn, chatErrorCopy };`);
-    return { ...made(deps, (...args) => { calls.push(args); return fetch(...args); }), calls };
+    return { ...made(deps, (...args) => { calls.push(args); return fetch(...args); }), calls, notified };
 }
 /** One sendTurn: what it returned or threw, the events it handed on, and the requests it made. */
 export async function sent(fetch, more) {
     const events = [];
-    const { sendTurn, calls } = loadApi(fetch, more);
+    const { sendTurn, calls, notified } = loadApi(fetch, more);
     const args = { threadId: 'chat-a', text: TEXT, key: KEY, options: {}, signal: more?.signal, onEvent: (ev) => events.push(ev) };
-    return sendTurn(args).then((r) => ({ r, events, calls }), (e) => ({ e, events, calls }));
+    return sendTurn(args).then((r) => ({ r, events, calls, notified }), (e) => ({ e, events, calls, notified }));
 }
+/**
+ * The real sendTurn as the `turn` of tests/chatSendFlow.harness.mjs's run(): send() and sendTurn run together, with only
+ * the network faked. `answer()` is the server's answer to the message's request; `meanwhile` is what the person does
+ * before it comes.
+ */
+export const real = (answer, meanwhile = () => {}) => (args, person) => loadApi(async () => { meanwhile(person); return answer(); }).sendTurn(args);
 export const frame = (event, data) => `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
 export const START = frame('start', { job_id: JOB });
 export const DONE = frame('done', { status: 'complete', credits_charged: 2 });

@@ -41,6 +41,8 @@ job, at once**. The job is the replay answer's `job_id`, or the `job_id` that ca
 - A replay that is not settled when the look ends, or that named no job, ends as amendment 13's third row: the message
   goes back with the warning, kept by the send's key.
 - A stream with no `done` reaches the branch for a stream that broke after `start` by itself: `start` had come.
+- In that branch a look that goes wrong (a chat read in a shape it does not know) now counts as not settled, so the send
+  ends with the warning. It used to reject with nothing said and nothing stored. A replay has the same guard.
 
 | What the look finds | Words on screen and after a reload | The text | A chat made for the message | Attached images | A warning kept for the message before |
 |---|---|---|---|---|---|
@@ -73,9 +75,12 @@ removes the warning. Saying something truer there needs the server: see "Left".
   is looked for by its job, and ends as saved or refunded on what the job says.
 - The look for a job the server named is one function in `send()` (`lookFor`), used by amendment 13's ending and by a
   replay. The ask by key is still made in two places only (Stop before `start`, a request that got no answer).
-- Tests: `tests/chatSendReplay.test.mjs`. Four earlier assertions pinned the old replay on purpose and are changed, each
-  with the reason beside it (`tests/chatSendHome.test.mjs`, `tests/chatSendRefused.test.mjs`,
-  `tests/chatSendUnanswered.test.mjs`, `tests/chatStop.test.mjs`).
+- A replay that is not settled is kept by the send's key, so its warning is settled through `POST /api/v1/chat/sends/close`
+  (amendment 11). With that route off it would stay until a later message is saved, as amendment 13's does.
+- Tests: `tests/chatSendReplay.test.mjs` runs `sendTurn` and `send()` together, with only the network and the look faked.
+  Earlier assertions that pinned the old replay, or the lines this changes, are changed on purpose, each with the reason
+  beside it (`tests/chatSendHome.test.mjs`, `tests/chatSendRefused.test.mjs`, `tests/chatSendUnanswered.test.mjs`,
+  `tests/chatStop.test.mjs`).
 
 ## Not chosen
 
@@ -95,4 +100,11 @@ removes the warning. Saying something truer there needs the server: see "Left".
 - **A turn that broke after `start`, was not settled, and is refunded later** (a Worker cut mid-reply is refunded by the sweep
   after 120 minutes): the warning is removed when the chat is opened, and the message is then in neither the chat nor the
   box. This is the branch for a stream that broke, as it was; a stream with no `done` now reaches it too.
-- Text typed while the button says Checking is replaced when the message is given back. Nothing is stored during the look.
+- **Found saved, but the chat could not be read again** (still offline): the warning kept is this turn's alone. One kept for
+  the message before is forgotten before the read is tried, so its turn is no longer listed. The branch for a stream that
+  broke has always done this.
+- **Stop's own look is not guarded**: if it goes wrong, the send still rejects with nothing said.
+- **A free job left failed without its zero refund is never swept** (the sweep takes failed jobs only when they cost
+  Credits), so a warning kept for it never settles. Server side, and older than this change.
+- Text typed while the button says Checking is replaced when the message is given back. Nothing is stored during the look,
+  so a page reloaded in those 3.5 seconds finds neither the text nor a warning. A replay used to leave neither at once.

@@ -100,11 +100,12 @@ export function chatUnchargedCopy(code, extra, warning) {
 
 export { makeIdempotencyKey, lostNotice, askStoppedSend };
 
-// The message's own request went out and nothing of ours says what became of it: it failed on the way, the reply
-// stream broke or ended with no `done`, or what came back was neither ours nor a refusal. The server may hold the send
-// all the same, so this is not "nothing was sent": before `start` the screen asks the server about the send by its
-// key, and after it looks for the turn by its job (useChatSend.js). Stop is the person's own doing and is passed on as
-// it is, wherever in the request it lands.
+// The message's own request went out and what came back does not say how the send ended: it failed on the way, the
+// reply stream broke or ended with no `done`, or the answer was neither ours nor a refusal. The server may hold the
+// send all the same, so this is not "nothing was sent": before `start` the screen asks the server about the send by its
+// key, and after it looks for the turn by its job (useChatSend.js). A stream that breaks after its `done` is raised the
+// same way, and the look then finds the finished turn. Stop is the person's own doing and is passed on as it is,
+// wherever in the request it lands.
 const unanswered = (e, status = 0) => (e?.name === 'AbortError' ? e : new GatewayError('send_unanswered', { status, code: 'send_unanswered' }));
 
 /**
@@ -114,7 +115,7 @@ const unanswered = (e, status = 0) => (e?.name === 'AbortError' ? e : new Gatewa
  * null if the answer named none. It is not "this reply was shown": the screen sends a key once, so the job was made by
  * a copy of the request whose answer never reached it, and how its turn ended is for the screen to look for.
  * Throws GatewayError for a refusal before the stream, and with the code `send_unanswered` when the request went out
- * and nothing of ours says what became of it (above). Aborting `signal` is the Stop button.
+ * and what came back does not say how the send ended (above). Aborting `signal` is the Stop button.
  */
 export async function sendTurn({ threadId, text, key, options, attachments = [], signal, onEvent }) {
   const token = await getFreshAccessToken();

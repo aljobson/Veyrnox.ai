@@ -74,7 +74,7 @@ async function lookForTurn({ jobId, text, knownIds, getThread, getJob, wait = sl
 export const STOP_ASK_LIMIT_MS = 2000;
 const JOB_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i; // a job id as the server makes them
 const NO_ANSWER = Object.freeze({ closed: false, job: null });
-/** A job id as the server makes them, or null: the only thing a look for a turn is handed as the job a send made. */
+/** A job id as the server makes them, or null. A job named by an answer that is not the reply's `start` (a replay) is taken only in this shape. */
 export const jobIdOf = (value) => (typeof value === 'string' && JOB_ID_RE.test(value) ? value : null);
 
 /**

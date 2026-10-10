@@ -432,7 +432,9 @@ test('the ending for no final answer is Stop-before-start\'s, with a dropped con
     // CHANGED (amendment 14): it was 3. A replay sets it too, before its job is looked for, and nothing there clears it.
     assert.equal(sender.split('unsure = ').length - 1, 4, 'declared, set before the ask, cleared by "closed", set by a replay');
     // The look made for the server's job is the one the ending acts on: the turn is not looked for twice.
-    assert.match(sender, /\n {8}const outcome = looked \|\| await chatApi\.settleStop\(\{ threadId: thread\.id, jobId, text: content, knownIds \}\);/);
+    // CHANGED (amendment 14): the line ended at `);`. A look that goes wrong there now counts as not settled, so the send
+    // ends with the warning and does not reject with nothing said (tests/chatSendReplay.test.mjs). The look is the same.
+    assert.match(sender, /\n {8}const outcome = looked \|\| await chatApi\.settleStop\(\{ threadId: thread\.id, jobId, text: content, knownIds \}\)\.catch\(\(\) => 'pending'\);/);
     // Asked only before `start`, and only for the one error sendTurn raises for a request that got no answer.
     assert.match(sender, /if \(started \|\| !\(e instanceof GatewayError\) \|\| e\.code !== 'send_unanswered'\) throw e;/);
 });

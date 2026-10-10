@@ -83,7 +83,7 @@ export function useChatSend({ text, setText, model, imagesBlocked, chosen, price
       if (!here) att.clear();           // elsewhere, or leaving: the images cannot wait with it, and must not go out with another chat's message
     };
     let hadText = false; // some of the reply reached the screen
-    let unsure = false;  // no `start`, no answer to the message's own request, and the server has not said the send is over
+    let unsure = false;  // no `start`, and nothing final is known of the send: its request got no answer, or was answered as a replay, and the server has not said it is over
     let looked = null;   // what the look for the turn found, when it was made for a job the server named and not one `start` brought
     let started = false; // the `start` event arrived, or the server named this send's job and the turn has settled: the Credits have been debited
     try {
@@ -193,8 +193,9 @@ export function useChatSend({ text, setText, model, imagesBlocked, chosen, price
         // The stream broke after the Credits moved. The server treats a dropped connection like Stop and saves the turn some time
         // after the break, so it is looked for as after Stop. Only a job that kept nothing gives the message back or deletes the chat.
         // (A request that got no answer before `start`, or a replay, whose job the server named was looked for already: `looked`.)
+        // A look that goes wrong is not an answer: the turn counts as not settled, and the warning is kept.
         setChecking(true); setMessages((m) => m.map((x) => (x.id === pending ? { ...x, status: 'lost' } : x)));
-        const outcome = looked || await chatApi.settleStop({ threadId: thread.id, jobId, text: content, knownIds });
+        const outcome = looked || await chatApi.settleStop({ threadId: thread.id, jobId, text: content, knownIds }).catch(() => 'pending');
         await relist();                                                  // first: the notice set below must not be replaced
         const reloaded = (outcome === 'saved' || outcome === 'unsaved') && await reload(); // the saved messages, with their real status and price
         if (outcome === 'nothing') giveBack(true); else att.clear();     // kept nothing: the message goes back, images too. Otherwise neither is offered again
