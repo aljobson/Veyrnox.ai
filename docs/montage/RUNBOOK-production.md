@@ -88,7 +88,25 @@ Do not start the rollout until each has a written yes in the SPEC.
   signed routes answer 401 unsigned, the four secrets are deployed, settings unchanged. The only difference from the image the gates
   were met on is that paragraph of the agent's instructions; it has had one real run, at 9:16.
 
-Next: step 6 ends 2026-10-10 11:56 UTC, then step 7 (merge the flag PR).
+- **Step 7 happened early.** The flag PR (#710) was marked ready and merged at 2026-10-09 16:23 UTC from the owner's GitHub account,
+  about four and a half hours into step 6, not after it. `AGENT_VIDEO_ENABLED` has been "true" on the live Worker since that deploy.
+  The session that wrote the PR did not merge it and found this on 2026-10-10 09:35 UTC. Checked then, 21.5 hours after the row went
+  active: `reconcile-watch` 22 runs, `recovery-health` 41, `site-health` 62 and four scheduled `runner-health` runs, none failed;
+  the three reconcile checks at 0 rows; the heartbeat healthy; **no video-agent job from any user**. So the 24 hours were not kept
+  before the flag, and nothing went wrong in them.
+- **Step 8 done, 2026-10-10 09:55 UTC.** With the browser switch on and the owner signed in (and the owner's "yes" to the purchase
+  in the session), one real video was bought and delivered on production: job `33d1c8d6`, 9:16, brief "a 15 second teaser for a
+  small-batch coffee roaster, warm and cinematic".
+  - Approve to stored: 362 s. One debit of 165 Credits, no refund; the account went from 205 to 40. `reconcile_balances()` 0 rows.
+  - The video: 1080x1920, 15 s, 10.0 MB, in the Library. That is the size and the bitrate cap the runner now asks for.
+  - Spend, from the runner's own log: one paid fal call, 10 s of clips ($1.54 on the meter, $1.40 at the billed rate); tokens $0.37
+    over 17 turns. About $1.77 against the $2.72 the price covers.
+  - What it proved for the first time: the Worker and the runner accept each other's signed calls (plan, run and the callbacks), and
+    the production fal key and Anthropic key work.
+  - An earlier Approve on a second account was refused before any charge ("Not enough credits": it held 86). A manual grant was
+    prepared for it and **not run**; no manual grant was made on production.
+
+Next: step 9 (open it to users) after a week of step 8 without a stuck job. That is the owner's decision.
 
 Each step has its own check and its own undo. Stop at the first check that fails.
 
