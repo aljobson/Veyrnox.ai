@@ -93,8 +93,9 @@ function Violations() {
       <h1 className="text-3xl font-black tracking-[-0.02em]">Content violations</h1>
       <p className="my-5 text-vx-fg-body max-w-[640px]">
         A <b>warning</b> is recorded against the account and removes nothing. A <b>takedown</b> removes that generation&apos;s
-        asset immediately; the third takedown freezes the account. Every action names you, the reason and the job, and
-        cannot be edited. Process: <code className="font-vx-mono text-xs">docs/agents/incident-response.md</code>.
+        asset immediately; the first standing one pauses generating for 3 days, the second for 7, the third freezes the account.
+        A takedown an <Link href="/app/admin/appeals" className="underline">appeal</Link> reverses stops counting. Every action names you,
+        the reason and the job, and cannot be edited. Process: <code className="font-vx-mono text-xs">docs/agents/incident-response.md</code>.
       </p>
       <MfaPanel />
 
@@ -131,7 +132,10 @@ function UserCard({ user, onDone }) {
         </div>
         <div className="flex flex-wrap gap-2">
           {user.frozen_at && <Chip tone="danger">Frozen {when(user.frozen_at)}</Chip>}
-          <Chip tone={user.takedowns >= 2 ? 'danger' : user.takedowns ? 'warn' : 'neutral'} noGlyph>{user.takedowns} takedown{user.takedowns === 1 ? '' : 's'}</Chip>
+          {user.hold_until && <Chip tone="warn" noGlyph>Held until {when(user.hold_until)}</Chip>}
+          <Chip tone={user.takedowns >= 2 ? 'danger' : user.takedowns ? 'warn' : 'neutral'} noGlyph>{user.takedowns} standing takedown{user.takedowns === 1 ? '' : 's'}</Chip>
+          {user.reversed_takedowns > 0 && <Chip tone="neutral" noGlyph>{user.reversed_takedowns} reversed on appeal</Chip>}
+          {user.open_appeals > 0 && <Chip tone="accent" noGlyph>{user.open_appeals} open appeal{user.open_appeals === 1 ? '' : 's'}</Chip>}
           <Chip tone="neutral" noGlyph>{user.warnings} warning{user.warnings === 1 ? '' : 's'}</Chip>
         </div>
       </div>
@@ -209,7 +213,7 @@ function ActionForm({ tier, userId, jobId = null, strikes = 0, onCancel, onDone 
     return (
       <div role="status" className="mt-3 rounded-lg border border-vx-border p-4 text-sm">
         Recorded {result.tier}{result.assets_removed ? `, ${result.assets_removed} asset${result.assets_removed === 1 ? '' : 's'} removed` : ''}.
-        {' '}{result.takedowns} takedown{result.takedowns === 1 ? '' : 's'} on this account{result.frozen ? '; the account is now frozen.' : '.'}
+        {' '}{result.takedowns} standing takedown{result.takedowns === 1 ? '' : 's'} on this account{result.frozen ? '; the account is now frozen.' : result.hold_until ? `; generating is held until ${when(result.hold_until)}.` : '.'}
         {result.email === 'sent' && <p className="mt-2 text-vx-fg-muted">The user has been emailed.</p>}
         {result.email === 'failed' && <p role="alert" className="mt-2 text-vx-danger">The email to the user failed. The {result.tier} stands; tell them yourself.</p>}
         {result.email === 'skipped' && <p className="mt-2 text-vx-warn">No email was sent: email sending is not configured.</p>}
@@ -227,7 +231,8 @@ function ActionForm({ tier, userId, jobId = null, strikes = 0, onCancel, onDone 
       <p className="text-xs text-vx-fg-muted">
         Recorded with your email in the append-only account log{jobId ? ' against this job' : ''}. Do not paste the content itself or other people&apos;s details.
         {tier === 'takedown' && ' The asset is removed the moment this is saved.'}
-        {willFreeze && ' This is the third takedown: the account will be frozen.'}
+        {tier === 'takedown' && !willFreeze && ` Generating will be held for ${strikes === 0 ? '3' : '7'} days.`}
+        {willFreeze && ' This is the third standing takedown: the account will be frozen.'}
       </p>
       {error && <p role="alert" className="text-vx-danger text-sm">{error}</p>}
       <div className="flex gap-2">
@@ -253,7 +258,7 @@ function Record({ rows, loaded, scoped }) {
           {rows.map((r) => (
             <div key={r.id} className="grid grid-cols-[150px_110px_1fr_1fr_170px] items-start px-5 py-3 border-b border-vx-border/60 last:border-b-0 text-sm">
               <div className="font-vx-mono text-xs">{when(r.created_at)}</div>
-              <div><Chip tone={r.action === 'warning' ? 'warn' : 'danger'} noGlyph>{r.action}</Chip></div>
+              <div><Chip tone={r.action === 'warning' ? 'warn' : r.action === 'appeal_upheld' ? 'accent' : r.action === 'appeal_rejected' ? 'neutral' : 'danger'} noGlyph>{r.action.replace('_', ' ')}</Chip></div>
               <div className="min-w-0">
                 <div className="truncate">{r.email}</div>
                 {r.job_id && <div className="font-vx-mono text-[10px] text-vx-fg-muted break-all">{r.model_id || 'job'} · {r.job_id}</div>}

@@ -5,8 +5,10 @@
  *                                    Freezes, newest first
  *   POST { user_id, job_id?, tier, reason }
  *                                    record a 'warning' or a 'takedown'. A
- *                                    takedown removes the job's assets at once
- *                                    and the third one Freezes the account.
+ *                                    takedown removes the job's assets at once;
+ *                                    the first standing one holds generation
+ *                                    for 3 days, the second for 7, the third
+ *                                    Freezes the account (ADR-0083).
  *                                    Requires an Idempotency-Key header: a
  *                                    replay answers 200 with the first record
  *                                    and `replayed: true`, never a second strike.
@@ -125,15 +127,16 @@ export async function POST(req) {
         // user was notified then. Report it; do not write or email again.
         return NextResponse.json({
             action_id: result.action_id, tier: result.tier, assets_removed: result.assets_removed,
-            takedowns: result.takedowns, frozen: result.frozen, email: 'skipped', replayed: true,
+            takedowns: result.takedowns, frozen: result.frozen, hold_until: result.hold_until || null, email: 'skipped', replayed: true,
         }, { status: 200, headers: { 'Cache-Control': 'no-store' } });
     }
     console.error('[api/v1/admin/violations] recorded', tier, 'for', userId, 'job', jobId, 'takedowns', result.takedowns, 'frozen', result.frozen);
     const email = await notifyViolation({
         cfg: g.cfg, userId, actionId: result.action_id, tier, takedowns: result.takedowns, frozen: result.frozen,
+        holdUntil: result.hold_until || null,
     });
     return NextResponse.json({
         action_id: result.action_id, tier: result.tier, assets_removed: result.assets_removed,
-        takedowns: result.takedowns, frozen: result.frozen, email,
+        takedowns: result.takedowns, frozen: result.frozen, hold_until: result.hold_until || null, email,
     }, { status: 201, headers: { 'Cache-Control': 'no-store' } });
 }

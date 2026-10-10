@@ -68,6 +68,8 @@ const ROUTES = [
     ['users/lookup GET', '../app/api/v1/admin/users/lookup/route.js', 'GET', `/api/v1/admin/users/lookup?user_id=${USER}`, undefined],
     ['users/ledger GET', '../app/api/v1/admin/users/ledger/route.js', 'GET', `/api/v1/admin/users/ledger?user_id=${USER}`, undefined],
     ['users/ledger POST', '../app/api/v1/admin/users/ledger/route.js', 'POST', '/api/v1/admin/users/ledger', { user_id: USER, credits: 5, reason: 'test' }],
+    ['appeals GET', '../app/api/v1/admin/appeals/route.js', 'GET', '/api/v1/admin/appeals', undefined],
+    ['appeals POST', '../app/api/v1/admin/appeals/route.js', 'POST', '/api/v1/admin/appeals', { appeal_id: USER, decision: 'rejected', reason: 'test' }],
 ];
 async function call([, file, method, path, body], headers) {
     const mod = await import(`${new URL(file, import.meta.url).href}?t=${Math.random()}`);

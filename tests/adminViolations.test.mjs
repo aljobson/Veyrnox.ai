@@ -83,7 +83,7 @@ test('a takedown is recorded through the RPC with the admin auth id and reported
         const res = await POST(request('POST', ADMIN, { user_id: USER, job_id: JOB, tier: 'takedown', reason: '  Real person without consent  ' }));
         assert.equal(res.status, 201);
         // Sending is not configured in this test, so the notice is skipped.
-        assert.deepEqual(await res.json(), { action_id: '33333333-3333-4333-8333-333333333333', tier: 'takedown', assets_removed: 1, takedowns: 3, frozen: true, email: 'skipped' });
+        assert.deepEqual(await res.json(), { action_id: '33333333-3333-4333-8333-333333333333', tier: 'takedown', assets_removed: 1, takedowns: 3, frozen: true, hold_until: null, email: 'skipped' });
         assert.equal(res.headers.get('cache-control'), 'no-store');
     });
     assert.equal(calls.length, 1);
@@ -120,7 +120,7 @@ test('a replayed key reports the first strike and sends no second notice', async
     await withEnv({ ...CONFIGURED, RESEND_API_KEY: 're_test', VIOLATION_EMAIL_FROM: 'Veyrnox <support@veyrnox.test>' }, async ({ POST }) => {
         const res = await POST(request('POST', ADMIN, { user_id: USER, job_id: JOB, tier: 'takedown', reason: 'again' }));
         assert.equal(res.status, 200, 'a replay is not a new record');
-        assert.deepEqual(await res.json(), { action_id: '33333333-3333-4333-8333-333333333333', tier: 'takedown', assets_removed: 0, takedowns: 1, frozen: false, email: 'skipped', replayed: true });
+        assert.deepEqual(await res.json(), { action_id: '33333333-3333-4333-8333-333333333333', tier: 'takedown', assets_removed: 0, takedowns: 1, frozen: false, hold_until: null, email: 'skipped', replayed: true });
     });
     assert.equal(calls.filter((c) => c.url.includes('/rpc/record_content_violation')).length, 1);
     assert.equal(notified, 0, 'no user lookup or email for a replay');

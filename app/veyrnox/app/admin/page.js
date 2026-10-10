@@ -73,6 +73,7 @@ export default function Admin() {
             <Link href="/app/admin/users" className="text-sm underline">Account ledger and credit grants</Link>
             <Link href="/app/admin/cinema" className="text-sm underline">Review Cinema creator applications</Link>
             <Link href="/app/admin/violations" className="text-sm underline">Content warnings and takedowns</Link>
+            <Link href="/app/admin/appeals" className="text-sm underline">Content appeals</Link>
           </div>
         )}
 

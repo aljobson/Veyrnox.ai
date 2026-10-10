@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { isConfigured, resendConfig, sendEmail } from '../packages/adapters/resend.js';
-import { notifyViolation, violationEmail } from '../lib/violationEmail.js';
+import { notifyViolation, violationEmail, appealEmail } from '../lib/violationEmail.js';
 
 const mail = { apiKey: 're_test_key', from: 'Veyrnox <support@veyrnox.ai>' };
 const message = { to: 'user@example.com', subject: 'S', text: 'T', idempotencyKey: 'violation-11111111-1111-4111-8111-111111111111' };
@@ -87,7 +87,25 @@ test('the admin reason and the job never reach the email', () => {
     const source = readFileSync(new URL('../lib/violationEmail.js', import.meta.url), 'utf8');
     assert.doesNotMatch(source, /reason[,:]|jobId|job_id|prompt:/);
     const route = readFileSync(new URL('../app/api/v1/admin/violations/route.js', import.meta.url), 'utf8');
-    assert.match(route, /notifyViolation\(\{\s*cfg: g\.cfg, userId, actionId: result\.action_id, tier, takedowns: result\.takedowns, frozen: result\.frozen,\s*\}\)/);
+    assert.match(route, /notifyViolation\(\{\s*cfg: g\.cfg, userId, actionId: result\.action_id, tier, takedowns: result\.takedowns, frozen: result\.frozen,\s*holdUntil: result\.hold_until \|\| null,\s*\}\)/);
+});
+
+// ADR-0083: a takedown that holds generation says until when, every notice
+// points at the appeal page, and the appeal outcome mail carries no reason.
+test('the hold, the appeal page and the appeal outcomes are worded for the user', () => {
+    const held = violationEmail({ tier: 'takedown', takedowns: 1, holdUntil: '2026-10-13T20:00:00Z' });
+    assert.match(held.text, /removal 1 of 3\. 2 more will freeze the account\. Generating is paused on your account until 2026-10-13 \(UTC\)/);
+    assert.doesNotMatch(violationEmail({ tier: 'takedown', takedowns: 1 }).text, /paused/);
+    for (const m of [held, violationEmail({ tier: 'warning' })]) assert.match(m.text, /https:\/\/veyrnox\.ai\/app\/account\/appeals/);
+    const won = appealEmail({ decision: 'upheld', appealedAction: 'takedown', unfrozen: true, holdUntil: null });
+    assert.match(won.subject, /successful/);
+    assert.match(won.text, /no longer counts against your account\. Your account is no longer frozen\. Generating is open again\. Files that were deleted cannot be restored/);
+    assert.match(appealEmail({ decision: 'upheld', appealedAction: 'takedown', holdUntil: '2026-10-17T00:00:00Z' }).text, /Generating resumes on 2026-10-17/);
+    assert.match(appealEmail({ decision: 'upheld', appealedAction: 'warning' }).text, /warning has been withdrawn/);
+    const lost = appealEmail({ decision: 'rejected' });
+    assert.match(lost.subject, /not successful/);
+    assert.match(lost.text, /original decision stands/);
+    assert.match(lost.text, /https:\/\/veyrnox\.ai\/legal\/aup/);
 });
 
 test('the admin page shows each email outcome the route can return', () => {

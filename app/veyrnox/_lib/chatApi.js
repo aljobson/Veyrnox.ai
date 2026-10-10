@@ -6,7 +6,7 @@
 import { getFreshAccessToken, getSession, clearSession } from '../../lib/authClient.js';
 import { turnOptions } from './chatTurnOptions';
 import { askStoppedSend, jobIdOf, lostNotice, settleStoppedTurn } from './chatStop';
-import { gatewayFetch, GatewayError, ACCOUNT_PAUSED_COPY, makeIdempotencyKey, notifyBalanceChanged } from './gateway';
+import { gatewayFetch, GatewayError, ACCOUNT_PAUSED_COPY, ACCOUNT_ON_HOLD_COPY, makeIdempotencyKey, notifyBalanceChanged } from './gateway';
 
 const json = (body) => JSON.stringify(body);
 
@@ -45,6 +45,7 @@ export function chatErrorCopy(code, { credits } = {}) {
   switch (code) {
     case 'insufficient_balance': return `You need ${credits ?? 'more'} Credits for this reply. Top up to continue. Your message was not sent.`;
     case 'account_frozen': return ACCOUNT_PAUSED_COPY;
+    case 'account_on_hold': return ACCOUNT_ON_HOLD_COPY;
     case 'rate_limited': return 'You are sending messages quickly. Wait a few seconds and try again.';
     case 'chat_not_open': return 'LLM Chat is not open yet.';
     case 'thread_not_found': return 'That chat no longer exists.';
