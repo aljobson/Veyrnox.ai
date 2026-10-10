@@ -6,7 +6,7 @@ import { AppNav } from '../../../_components/NavBar';
 import { Main } from '../../../_components/Main';
 import { Button } from '../../../_components/Button';
 import { Modal } from '../../../_components/Modal';
-import { useProjectsPreview } from '../../../_lib/useProjectsPreview';
+import { useProjectsEnabled } from '../../../_components/ProjectsFlag';
 import { gatewayFetch, makeIdempotencyKey } from '../../../_lib/gateway';
 import { equalProjectDocuments as same } from '../../../../../lib/projectDocument';
 
@@ -20,7 +20,7 @@ function message(e) {
   return 'Could not save your changes. Your draft is still here; retry when your connection is back.';
 }
 export default function ProjectPage(){
-  const enabled=useProjectsPreview();
+  const enabled=useProjectsEnabled();
   const {id}=useParams();
   return <>{enabled ? <DocumentEditor key={id} id={id}/> : <><AppNav active="projects"/><Main className="mx-auto max-w-6xl p-8"><h1 className="text-3xl font-black">Projects preview</h1><p className="mt-4">Projects are not available in this browser yet.</p><Link href="/app/projects" className="mt-5 inline-block text-vx-accent underline">Back to projects</Link></Main></>}</>;
 }

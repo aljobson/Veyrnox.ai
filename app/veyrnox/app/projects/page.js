@@ -6,7 +6,7 @@ import { Main } from '../../_components/Main';
 import { Button } from '../../_components/Button';
 import { Modal } from '../../_components/Modal';
 import { gatewayFetch, makeIdempotencyKey } from '../../_lib/gateway';
-import { useProjectsPreview } from '../../_lib/useProjectsPreview';
+import { useProjectsEnabled } from '../../_components/ProjectsFlag';
 
 const field = 'w-full rounded-xl border border-vx-border bg-vx-base px-4 py-3 text-sm text-vx-fg focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-vx-accent';
 function errorMessage(error) {
@@ -20,7 +20,7 @@ function errorMessage(error) {
 }
 
 export default function Projects() {
-  const enabled = useProjectsPreview();
+  const enabled = useProjectsEnabled();
   const [workspaces, setWorkspaces] = useState([]);
   const [workspace, setWorkspace] = useState('');
   const [projects, setProjects] = useState([]);
