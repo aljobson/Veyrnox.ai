@@ -32,7 +32,7 @@ const TIERS = new Set(['warning', 'takedown']);
 const MAX_BODY_BYTES = 4 * 1024;
 // The form sends one key per attempt; the RPC stores it on the strike and
 // answers a replay with the first result, so a lost response and a resubmit
-// record one strike, not two (0246, audit P-07).
+// record one strike, not two (0253, audit P-07).
 const IDEMPOTENCY_RE = /^[A-Za-z0-9._-]{8,128}$/;
 
 const requireAal2 = () => process.env.ADMIN_REQUIRE_AAL2 === 'true';
