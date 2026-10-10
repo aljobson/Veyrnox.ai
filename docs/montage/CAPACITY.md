@@ -305,6 +305,22 @@ What still holds: the change costs about 2 cents a run more and removes two fail
 **Not done yet:** a real run on the new machine, three at once, and production. Production has no runner; rollout step 1 creates it
 from the runner's `fly.toml` as it now is.
 
+## Update 2026-10-10: the three-at-once run was not made (owner: "skip the overlap")
+
+The video agent is on in production (RUNBOOK-production.md, steps 7 and 8) and no run of two or more at once has been made on
+the dedicated-CPU machine, on staging or production. The owner chose to go on without it. What is known instead:
+
+- **Nine solo runs on `performance-2x`** (staging and one on production): 154 to 362 s approve to stored, all delivered.
+- **One run's load, sampled every 20 s** (staging, job `6b220231`, 195 s): the machine sat at a load of 0.03 to 0.19 for the first
+  two and a half minutes (waiting on fal), then rose to 1.45 for the cut and was back under 0.5 about 80 s later. It has 2 CPUs.
+  Three cuts landing together would be about 4.5 CPUs of work on 2, so the cuts would take two to three times as long: a minute or
+  two more per video. That is arithmetic from one run, not a test. Memory was not captured (the sampling command was wrong).
+- **What protects a user if three at once goes badly:** a fourth approval is refused before the debit; a run past 30 minutes is
+  stopped by the runner and refunded; a run the runner loses is refunded in about six minutes (`MONTAGE_LIVENESS_ENABLED`, on in
+  production since 2026-10-10); each run's spend is capped at $2.50.
+
+So the stage 2b trigger has no number yet. It will be read from production: runs started per hour, and any refusal for "busy".
+
 ## Open questions and next measurements
 
 1. Applied on staging: `performance-2x`, 8 GB, three slots (section 5). The stage 2b trigger is set after the first three-at-once
