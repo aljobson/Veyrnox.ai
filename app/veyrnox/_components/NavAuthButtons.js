@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
-import { getSession, onSessionChange, signOut } from '../../lib/authClient';
+import { getFreshAccessToken, getStoredSession, onSessionChange, signOut } from '../../lib/authClient';
 import { ConfirmDialog } from './ConfirmDialog';
 import { accountLabel } from '../_lib/account.js';
 import { usePublishEnabled } from './PublishFlag';
@@ -16,8 +16,12 @@ const ACCOUNT_LINKS = [
   { href: '/app/account', label: 'Account & security' },
 ];
 
-// A string, so the snapshot is equal between reads of the same session.
-const storedAccount = () => JSON.stringify(accountLabel(getSession()));
+// A string, so the snapshot is equal between reads of the same session. The
+// stored session, expiry or not: an expired access token with a live refresh
+// token is still a signed-in person, and the mount effect below refreshes it.
+// getSession() said null for that hour, so the nav offered "Log in" to someone
+// the next page would sign straight back in (audit 2026-10-09, A-03).
+const storedAccount = () => JSON.stringify(accountLabel(getStoredSession()));
 const noAccount = () => 'null';
 
 // `account` is optional: pass one (AppNav does, so the email can come from
@@ -35,6 +39,9 @@ export function NavAuthButtons({ account: given }) {
   const links = publishOpen ? ACCOUNT_LINKS : ACCOUNT_LINKS.filter((l) => l.href !== '/app/publish');
 
   const account = given || sessionAccount;
+  // Refresh an expired access token on mount. setSession notifies the store,
+  // so a refresh that is refused (revoked, reused) turns the menu into Log in.
+  useEffect(() => { getFreshAccessToken().catch(() => null); }, []);
 
   // Close on Escape or a click anywhere outside the menu. Escape hands focus
   // back to the button: the link it was on is about to leave the page.

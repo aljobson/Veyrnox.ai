@@ -177,7 +177,7 @@ test('a send that was closed before its debit is refused as send_closed: nothing
     const t = turn({ replies: { ledger_debit: closedSend() } });
     const res = await t.go();
     assert.deepEqual([res.status, await res.json()], [409, { error: 'send_closed' }]);
-    assert.deepEqual(t.rpcs, ['check_generation_rate_limit', 'chat_turn_context', 'ledger_debit'], 'no job was made, so nothing follows the debit');
+    assert.deepEqual(t.rpcs, ['check_generation_rate_limit', 'chat_turn_context', 'chat_stops_before_text', 'ledger_debit'], 'no job was made, so nothing follows the debit');
     assert.equal(t.streamed(), 0, 'the provider was never called');
     assert.deepEqual(logged, [], 'a person pressing Stop is not a failure of ours');
     // Any other failure of the debit is still a failure, said and logged as before.
@@ -199,7 +199,7 @@ test('the same on the free allowance path: the free job is refused, and the paid
     const t = turn({ model: free, env: { OPENROUTER_API_KEY: 'sk-test', FREE_ALLOWANCE_ENABLED: 'true' }, replies: { submit_free_job: closedSend() } });
     const res = await t.go();
     assert.deepEqual([res.status, await res.json()], [409, { error: 'send_closed' }]);
-    assert.deepEqual(t.rpcs, ['check_generation_rate_limit', 'chat_turn_context', 'submit_free_job']);
+    assert.deepEqual(t.rpcs, ['check_generation_rate_limit', 'chat_turn_context', 'chat_stops_before_text', 'submit_free_job']);
     assert.deepEqual(logged, []);
     // A free call that fails any other way still falls through to the paid debit, as it always has.
     const other = turn({ model: free, env: { OPENROUTER_API_KEY: 'sk-test', FREE_ALLOWANCE_ENABLED: 'true' }, replies: { submit_free_job: new Error('timeout') } });

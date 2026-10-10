@@ -247,3 +247,21 @@ test('the free ceiling switch needs the Cinema master switch', async () => {
   assert.equal(cinemaFeatures({ CINEMA_ENABLED: 'false', CINEMA_FREE_CEILING_ENABLED: 'true' }).freeCeiling, false);
   assert.equal(cinemaFeatures({ CINEMA_ENABLED: 'true' }).freeCeiling, false);
 });
+
+test('with the free ceiling on and unlocks off, every viewer action is refused before any RPC', async () => {
+  // Production since 2026-10-10: the ceiling switch is on behind a closed unlocks switch.
+  Object.assign(process.env, STREAM_ENV, { CINEMA_FREE_CEILING_ENABLED: 'true', CINEMA_UNLOCKS_ENABLED: 'false' });
+  try {
+    const requests = { entitlement: requestFor('entitlement'), play: requestFor('play'), heartbeat: requestFor('heartbeat'), unlock: post('unlocks', consent) };
+    for (const [action, request] of Object.entries(requests)) {
+      const s = setup(action);
+      const res = await s.handle(request);
+      assert.equal(res.status, 503, action);
+      assert.equal((await res.json()).error, 'unlocks_not_open', action);
+      assert.deepEqual(s.calls, [], action);
+    }
+  } finally {
+    delete process.env.CINEMA_FREE_CEILING_ENABLED;
+    process.env.CINEMA_UNLOCKS_ENABLED = 'true';
+  }
+});
