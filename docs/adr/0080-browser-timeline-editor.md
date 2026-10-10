@@ -35,8 +35,7 @@ Facts from the repo (read 2026-10-10):
     change we have not agreed; its auth and database layer (better-auth, drizzle, Postgres, Upstash); and its asset providers and
     remote fonts, whose licences and hosts are unchecked.
   - So it is a **reference and a possible source of MIT TypeScript** (timeline model, command and undo stack, ripple, retime, subtitle
-    handling), not a dependency or a host. Anything copied keeps its MIT notice. Nothing is decided until slice 0b says the core is
-    separable from the app.
+    handling), not a dependency or a host. Anything copied keeps its MIT notice. Slice 0b (2026-10-10) found the core separable; adopting it is the owner's call.
 
 ## Owner decisions (2026-10-10)
 
@@ -104,7 +103,7 @@ render; and whether to add a WebGL layer later. The engine is decided: **Mediabu
 | # | Slice | Done when |
 |---|---|---|
 | 0 (**done 2026-10-10**) | **Spike, no UI shipped.** With the pinned Mediabunny 1.60.0, decode two or more MP4 inputs, composite them and a text layer on a canvas, mix audio, and write one MP4, in desktop Chrome | Measured on real clips: peak memory, encode time per second of output, and failure modes. Writes the caps. Confirms or kills the engine choice |
-| 0b | **OpenCut Classic extraction check, no code adopted.** Read its timeline, commands, ripple, retime and subtitle code; list what is separable from its Next app, database and WASM, its licence notices, and any bundled asset licences | A written yes or no with file lists. If yes, the owner decides what to adapt, and anything copied keeps its MIT notice |
+| 0b (**done 2026-10-10**) | **OpenCut Classic extraction check, no code adopted.** Read its timeline, commands, ripple, retime and subtitle code; list what is separable from its Next app, database and WASM, its licence notices, and any bundled asset licences | **Yes** (`docs/editor/OPENCUT-CLASSIC-EXTRACTION-2026-10-10.md`): the editor core is separable; its WebAssembly use is time maths plus an unused-by-default compositor; the owner decides what to adapt, and anything copied keeps its MIT notice |
 | 1 | Timeline shell on staging: Library and project assets onto tracks, split, trim, reorder, volume, preview, local export | Capability-checked export; cancellation works; validation tests; no CSP change |
 | 2 | Text, simple transitions, aspect presets with letterboxing | Rendered output matches the preview frame for frame on the test clips |
 | 3 | Save and reopen as a project document, with history | Stale-update, bound and XSS tests pass |
