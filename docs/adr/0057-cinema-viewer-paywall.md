@@ -232,3 +232,24 @@ acceptance of the ceiling and 24 hours of clean reconciliation after 0245.
 
 The entitlement endpoint now reports `pass` for a Cinema Pass holder, where it
 answered 503 before. No Pass is on sale, so no one sees a difference today.
+
+## Incomplete event ordering repair (0263, 2026-10-10)
+
+S19 is independently reproduced: an active Pass followed by an incomplete
+subscription snapshot with the same Stripe created second becomes pending
+under 0143. That removes paid access and permits another checkout.
+
+Forward migration 0263 records an incomplete snapshot as stale whenever the
+bound Pass is active or past_due, matching the credit-subscription guard in
+0186. It preserves every Pass field, including period, customer, cancellation
+and last-event timestamp, and retains the immutable event receipt. Initial
+pending-to-active transitions, newer renewal/past_due updates, binding checks,
+replay idempotency and terminal ended/flagged behavior remain intact. The RPC
+remains service-only. No credit, price, viewing ceiling or launch flag changes.
+
+The rollback-only local acceptance script reproduces the original failure,
+then checks same-second and later incomplete events against both live states,
+initial activation, second-checkout refusal, renewal, duplicate-payment
+flagging, terminal states, binding, ledger invariance and function privileges.
+Production application still requires the protected main workflow and owner
+review; a green local or staging check does not authorize paid activation.
