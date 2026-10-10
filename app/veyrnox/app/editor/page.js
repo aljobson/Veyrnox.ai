@@ -8,8 +8,10 @@ import { gatewayFetch } from '../../_lib/gateway';
 import { useEditorPreview } from '../../_lib/useEditorPreview';
 import {
     FPS, LIMITS, emptyTimeline, addMedia, addVideoClip, addAudioClip, splitClip, trimClip, removeClip, setVolume, moveVideoClip,
-    moveAudioClip, pruneMedia, totalFrames, videoLayout, formatTime,
+    moveAudioClip, pruneMedia, totalFrames, videoLayout, formatTime, MAX_FRAMES, MAX_TRANSITION, ASPECTS, setAspect, setTransition,
+    effectiveTransition, addText, updateText, removeText,
 } from '../../_lib/editorTimeline.mjs';
+import { timelineSize } from '../../_lib/editorRender.mjs';
 import { checkLocalFile, probeMedia, checkProbe, mediaFromProbe, libraryMediaId, localMediaId } from '../../_lib/editorMedia.mjs';
 import { listLibraryMedia, loadLibraryBlob } from '../../_lib/editorLibrary.mjs';
 import { createPreviewer } from '../../_lib/editorPreview.mjs';
@@ -28,7 +30,9 @@ function Editor() {
     const [library, setLibrary] = useState(null), [libraryError, setLibraryError] = useState('');
     const [blocker, setBlocker] = useState(''), [exporting, setExporting] = useState(false), [progress, setProgress] = useState(0);
     const [result, setResult] = useState(null), [height, setHeight] = useState(720);
+    const [draft, setDraft] = useState({ forId: null, base: '', value: '' }); // the words being typed for one text item, until committed
     const total = totalFrames(tl);
+    const size = useMemo(() => timelineSize(tl, 720), [tl]);
 
     useEffect(() => { alive.current = true; return () => { alive.current = false; exportAbort.current?.abort(); }; }, []);
     useEffect(() => { exportBlocker().then(text => alive.current && setBlocker(text || '')); }, []);
@@ -101,7 +105,12 @@ function Editor() {
         if (alive.current) setBusy(false);
     }
 
-    const clip = selected ? tl[selected.track].find(c => c.id === selected.id) : null;
+    const clip = selected && selected.track !== 'text' ? tl[selected.track].find(c => c.id === selected.id) : null;
+    const textItem = selected?.track === 'text' ? tl.text.find(x => x.id === selected.id) : null;
+    const videoIndex = selected?.track === 'video' ? tl.video.findIndex(c => c.id === selected.id) : -1;
+    // The draft counts only while it belongs to this item and the item has not changed under it; otherwise the input shows the item.
+    const draftValue = textItem && draft.forId === textItem.id && draft.base === textItem.text ? draft.value : (textItem?.text ?? '');
+    const commitDraft = () => { if (textItem && draftValue.trim() !== textItem.text) apply(t => updateText(t, textItem.id, { text: draftValue })); };
     const media = clip ? tl.media[clip.mediaId] : null;
     const layoutStart = clip && selected.track === 'video' ? videoLayout(tl).find(l => l.clip.id === clip.id)?.start : clip?.start;
     const edit = fn => selected && apply(t => fn(t, selected.track, selected.id));
@@ -116,7 +125,7 @@ function Editor() {
         finally { if (alive.current) setExporting(false); exportAbort.current = null; }
     }
 
-    const empty = tl.video.length + tl.audio.length === 0;
+    const empty = tl.video.length + tl.audio.length + tl.text.length === 0;
     return <div className="space-y-6">
         <div className="flex flex-wrap items-center gap-3">
             <label className="inline-flex cursor-pointer rounded-full border border-vx-border px-5 py-3 text-sm font-bold focus-within:outline focus-within:outline-2 focus-within:outline-vx-accent">
@@ -124,6 +133,7 @@ function Editor() {
                 <input aria-label="Add files from this computer" className="sr-only" type="file" multiple accept="video/mp4,video/webm,video/quicktime,audio/mpeg,audio/wav,audio/mp4,audio/x-m4a" disabled={busy || exporting} onChange={chooseFiles} />
             </label>
             <Button variant="ghost" size="md" disabled={busy || exporting} onClick={openLibrary}>Add from my Library</Button>
+            <Button variant="ghost" size="md" disabled={exporting} onClick={() => { const id = `t${tl.seq + 1}`; apply(t => addText(t, { text: 'Your text', start: Math.min(frame, MAX_FRAMES - 3 * FPS), len: 3 * FPS })); setSelected({ track: 'text', id }); }}>Add text</Button>
             <Button variant="ghost" size="md" disabled={!history.past.length || exporting} onClick={undo}>Undo</Button>
             {busy && <span role="status" className="text-sm text-vx-fg-muted">Reading file…</span>}
         </div>
@@ -139,7 +149,7 @@ function Editor() {
         <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
             <div className="min-w-0 space-y-4">
                 <div className="overflow-hidden rounded-2xl border border-vx-border bg-black">
-                    <canvas ref={canvas} width={1280} height={720} className="block aspect-video w-full" role="img" aria-label="Preview of the frame at the playhead" />
+                    <canvas ref={canvas} width={size.width} height={size.height} className="mx-auto block h-auto max-h-[60vh] w-auto max-w-full" role="img" aria-label="Preview of the frame at the playhead" />
                 </div>
                 <div className="flex flex-wrap items-center gap-3">
                     <Button size="sm" disabled={empty || exporting} onClick={() => { if (!playing && frame >= total - 1) setFrame(0); setPlaying(p => !p); }}>{playing ? 'Pause' : 'Play'}</Button>
@@ -147,7 +157,7 @@ function Editor() {
                     <input aria-label="Playhead" className={`${range} mt-0 flex-1`} type="range" min={0} max={Math.max(total - 1, 0)} value={Math.min(frame, Math.max(total - 1, 0))} disabled={empty} onChange={e => { setPlaying(false); setFrame(Number(e.target.value)); }} />
                 </div>
                 {empty ? <p className="rounded-2xl border border-dashed border-vx-border p-8 text-center text-sm text-vx-fg-muted">Add a video to start. Up to {LIMITS.maxSeconds} seconds, {LIMITS.maxVideoClips} video clips and {LIMITS.maxAudioClips} sounds.</p>
-                    : <TimelineView tl={tl} frame={frame} selected={clip} ppf={PPF} onSelect={s => { setSelected(s); }} onSeek={f => { setPlaying(false); setFrame(f); }} />}
+                    : <TimelineView tl={tl} frame={frame} selected={clip || textItem} ppf={PPF} onSelect={s => { setSelected(s); }} onSeek={f => { setPlaying(false); setFrame(f); }} />}
             </div>
 
             <aside className="space-y-5 rounded-2xl border border-vx-border bg-vx-panel p-5" aria-label="Clip and export">
@@ -168,10 +178,29 @@ function Editor() {
                         <Button size="sm" variant="ghost" onClick={() => { const i = tl.video.findIndex(c => c.id === clip.id); edit((t, _k, id) => moveVideoClip(t, id, i - 1)); }}>Move earlier</Button>
                         <Button size="sm" variant="ghost" onClick={() => { const i = tl.video.findIndex(c => c.id === clip.id); edit((t, _k, id) => moveVideoClip(t, id, i + 1)); }}>Move later</Button>
                     </div> : <Button size="sm" variant="ghost" onClick={() => edit((t, _k, id) => moveAudioClip(t, id, frame))}>Start at playhead</Button>}
+                    {videoIndex > 0 && <label className="block text-sm font-bold">Dissolve from the clip before <span className="float-right font-vx-mono text-vx-fg-muted">{formatTime(effectiveTransition(tl, videoIndex))}</span>
+                        <input className={range} type="range" min={0} max={Math.min(MAX_TRANSITION, clip.len, tl.video[videoIndex - 1].len)} value={effectiveTransition(tl, videoIndex)} onChange={e => { const n = Number(e.target.value); edit((t, _k, id) => setTransition(t, id, n)); }} /></label>}
                     {selected.track === 'video' && media?.hasAudio && <Button size="sm" variant="ghost" onClick={() => apply(t => addAudioClip(t, clip.mediaId, { start: layoutStart, in: clip.in, len: clip.len }))}>Use its sound on the sound track</Button>}
-                </div> : <p className="text-sm text-vx-fg-muted">Select a clip on the timeline to trim, split, move or change its volume.</p>}
+                </div> : textItem ? <div className="space-y-3">
+                    <h2 className="text-sm font-bold">Text</h2>
+                    <p className="font-vx-mono text-xs text-vx-fg-muted">Shows from {formatTime(textItem.start)} for {formatTime(textItem.len)}</p>
+                    <label className="block text-sm font-bold">Words
+                        <input className={`${field} mt-2 w-full`} type="text" maxLength={LIMITS.maxTextChars} value={draftValue} onChange={e => setDraft({ forId: textItem.id, base: textItem.text, value: e.target.value })} onBlur={commitDraft} onKeyDown={e => { if (e.key === 'Enter') commitDraft(); }} /></label>
+                    <div className="flex flex-wrap gap-2">
+                        <Button size="sm" variant="ghost" onClick={() => apply(t => updateText(t, textItem.id, { start: Math.min(frame, MAX_FRAMES - textItem.len) }))}>Start at playhead</Button>
+                        <Button size="sm" variant="ghost" onClick={() => { apply(t => removeText(t, textItem.id)); setSelected(null); }}>Delete</Button>
+                    </div>
+                    <label className="block text-sm font-bold">Shows for <span className="float-right font-vx-mono text-vx-fg-muted">{formatTime(textItem.len)}</span>
+                        <input className={range} type="range" min={1} max={Math.max(1, Math.min(MAX_FRAMES - textItem.start, 60 * FPS))} value={textItem.len} onChange={e => { const n = Number(e.target.value); apply(t => updateText(t, textItem.id, { len: n })); }} /></label>
+                    <label className="block text-sm font-bold">Size <span className="float-right font-vx-mono text-vx-fg-muted">{textItem.size}</span>
+                        <input className={range} type="range" min={LIMITS.minTextSize} max={LIMITS.maxTextSize} value={textItem.size} onChange={e => { const n = Number(e.target.value); apply(t => updateText(t, textItem.id, { size: n })); }} /></label>
+                    <label className="block text-sm font-bold">Position
+                        <select className={`${field} mt-2 w-full`} value={textItem.y <= 0.3 ? 'top' : textItem.y >= 0.7 ? 'bottom' : 'middle'} onChange={e => { const y = { top: 0.12, middle: 0.5, bottom: 0.85 }[e.target.value]; apply(t => updateText(t, textItem.id, { y })); }}><option value="top">Top</option><option value="middle">Middle</option><option value="bottom">Bottom</option></select></label>
+                </div> : <p className="text-sm text-vx-fg-muted">Select a clip or a text on the timeline to change it.</p>}
 
                 <div className="space-y-3 border-t border-vx-border pt-5">
+                    <label className="block text-sm font-bold">Shape
+                        <select className={`${field} mt-2 w-full`} value={tl.aspect} onChange={e => { const a = e.target.value; apply(t => setAspect(t, a)); }} disabled={exporting}>{ASPECTS.map(a => <option key={a} value={a}>{a === 'source' ? 'Same as the first clip' : a === '16:9' ? '16:9 landscape' : a === '9:16' ? '9:16 portrait' : '1:1 square'}</option>)}</select></label>
                     <label className="block text-sm font-bold">Size
                         <select className={`${field} mt-2 w-full`} value={height} onChange={e => setHeight(Number(e.target.value))} disabled={exporting}><option value={720}>720p</option><option value={1080}>1080p</option></select></label>
                     {blocker && <p role="status" className="rounded-xl border border-vx-border bg-vx-base p-3 text-xs leading-relaxed">{blocker}</p>}

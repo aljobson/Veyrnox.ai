@@ -6,14 +6,17 @@
 // new object (or { error }), never mutating its input. The document shape is versioned so slice 3 can save it as a project document.
 
 export const FPS = 30;
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 export const LIMITS = Object.freeze({
     maxSeconds: 60, maxVideoClips: 10, maxAudioClips: 10, maxMedia: 24, maxNameLength: 120,
+    maxTexts: 10, maxTextChars: 120, minTextSize: 2, maxTextSize: 20, maxTransitionSeconds: 2,
 });
+/** Output shape: the first clip's own shape, or a preset; anything that does not fit is letterboxed or pillarboxed. */
+export const ASPECTS = Object.freeze(['source', '16:9', '9:16', '1:1']);
 export const MAX_FRAMES = LIMITS.maxSeconds * FPS;
 
 export function emptyTimeline() {
-    return { schemaVersion: SCHEMA_VERSION, fps: FPS, seq: 0, media: {}, video: [], audio: [] };
+    return { schemaVersion: SCHEMA_VERSION, fps: FPS, seq: 0, aspect: 'source', media: {}, video: [], audio: [], text: [] };
 }
 
 const err = error => ({ error });
@@ -58,7 +61,7 @@ export function addVideoClip(tl, mediaId, { in: from = 0, len } = {}) {
     if (tl.video.length >= LIMITS.maxVideoClips) return err(`A project holds up to ${LIMITS.maxVideoClips} video clips.`);
     if (videoFrames(tl) + length > MAX_FRAMES) return err(`A project holds up to ${LIMITS.maxSeconds} seconds.`);
     const { seq, id } = nextId(tl, 'v');
-    return { ...tl, seq, video: [...tl.video, { id, mediaId, in: from, len: length, volume: 1 }] };
+    return { ...tl, seq, video: [...tl.video, { id, mediaId, in: from, len: length, volume: 1, transition: 0 }] };
 }
 
 /** Audio goes at `start`, or at the first free frame at or after it. */
@@ -90,7 +93,7 @@ export function splitClip(tl, track, id, frame) {
     if (track === 'audio' && tl.audio.length >= LIMITS.maxAudioClips) return err(`A project holds up to ${LIMITS.maxAudioClips} audio clips.`);
     const { seq, id: newId } = nextId(tl, track === 'video' ? 'v' : 'a');
     const first = { ...clip, len: offset };
-    const second = { ...clip, id: newId, in: clip.in + offset, len: clip.len - offset, ...(track === 'audio' ? { start: clip.start + offset } : {}) };
+    const second = { ...clip, id: newId, in: clip.in + offset, len: clip.len - offset, ...(track === 'audio' ? { start: clip.start + offset } : { transition: 0 }) };
     return { ...tl, seq, [track]: [...tl[track].slice(0, i), first, second, ...tl[track].slice(i + 1)] };
 }
 
@@ -160,6 +163,8 @@ export function validateTimeline(doc) {
     if (doc.schemaVersion !== SCHEMA_VERSION) return 'Unsupported timeline version.';
     if (doc.fps !== FPS) return `Only ${FPS} frames a second is supported.`;
     if (!isInt(doc.seq) || doc.seq < 0 || doc.seq > 1e6) return 'Bad counter.';
+    if (!ASPECTS.includes(doc.aspect)) return 'Bad aspect.';
+    if (!Array.isArray(doc.text)) return 'Bad text list.';
     if (!doc.media || typeof doc.media !== 'object' || Array.isArray(doc.media)) return 'Bad media list.';
     if (!Array.isArray(doc.video) || !Array.isArray(doc.audio)) return 'Bad tracks.';
     const ids = Object.keys(doc.media);
@@ -185,14 +190,87 @@ export function validateTimeline(doc) {
         if (!isInt(c.in) || !isInt(c.len) || c.in < 0 || c.len < 1 || c.in + c.len > m.frames) return 'A clip range is outside its file.';
         if (typeof c.volume !== 'number' || !Number.isFinite(c.volume) || c.volume < 0 || c.volume > 1) return 'Bad volume.';
         if (track === 'audio' && (!isInt(c.start) || c.start < 0)) return 'Bad audio start.';
+        if (track === 'video' && (!isInt(c.transition) || c.transition < 0 || c.transition > MAX_TRANSITION)) return 'Bad transition.';
         return null;
     };
     for (const c of doc.video) { const e = clipError(c, 'video'); if (e) return e; }
     for (const c of doc.audio) { const e = clipError(c, 'audio'); if (e) return e; }
     if (overlaps(doc.audio)) return 'Audio clips overlap.';
+    if (doc.text.length > LIMITS.maxTexts) return 'Too many texts.';
+    for (const x of doc.text) {
+        if (!x || typeof x !== 'object' || typeof x.id !== 'string' || !/^t[0-9]{1,7}$/.test(x.id) || seen.has(x.id)) return 'Bad text id.';
+        seen.add(x.id);
+        if (textError(x)) return textError(x);
+    }
     if (totalFrames(doc) > MAX_FRAMES) return `A project holds up to ${LIMITS.maxSeconds} seconds.`;
     return null;
 }
+
+// ---- Slice 2 (ADR-0080): aspect presets, crossfade transitions and on-canvas text. ----
+
+export const MAX_TRANSITION = LIMITS.maxTransitionSeconds * FPS;
+
+export function setAspect(tl, aspect) {
+    return ASPECTS.includes(aspect) ? { ...tl, aspect } : err('Choose a shape from the list.');
+}
+
+/**
+ * A crossfade on video clip k dissolves it in over the END of clip k-1 (which keeps playing underneath, past its out point when the
+ * file has more, else on its last frame). The sequence timing does not change. Stored on the clip; the length that applies is clamped
+ * here so a later trim, move or delete can never make it read outside either clip.
+ */
+export function effectiveTransition(tl, k) {
+    if (k < 1 || k >= tl.video.length) return 0;
+    const clip = tl.video[k], prev = tl.video[k - 1];
+    return Math.max(0, Math.min(clip.transition || 0, clip.len, prev.len, MAX_TRANSITION));
+}
+
+export function setTransition(tl, id, frames) {
+    const i = find(tl, 'video', id);
+    if (i < 0) return err('Select a clip first.');
+    if (i === 0) return err('The first clip has nothing to dissolve from.');
+    if (!isInt(frames) || frames < 0 || frames > MAX_TRANSITION) return err(`A dissolve is up to ${LIMITS.maxTransitionSeconds} seconds.`);
+    if (frames > Math.min(tl.video[i].len, tl.video[i - 1].len)) return err('A dissolve cannot be longer than either clip.');
+    return { ...tl, video: replace(tl.video, i, { ...tl.video[i], transition: frames }) };
+}
+
+const CONTROL_RE = /[\u0000-\u001f\u007f\u2028\u2029]/;
+/** Why a text item is unusable, or null. Text is drawn on a canvas and never put into the page, so its content needs no escaping. */
+function textError(x) {
+    if (typeof x.text !== 'string' || x.text.length < 1 || x.text.length > LIMITS.maxTextChars || CONTROL_RE.test(x.text)) return 'Text is 1 to 120 characters on one line.';
+    if (!isInt(x.start) || !isInt(x.len) || x.start < 0 || x.len < 1 || x.start + x.len > MAX_FRAMES) return 'Text timing is outside the project.';
+    if (typeof x.x !== 'number' || typeof x.y !== 'number' || !(x.x >= 0 && x.x <= 1 && x.y >= 0 && x.y <= 1)) return 'Text position is off the picture.';
+    if (!isInt(x.size) || x.size < LIMITS.minTextSize || x.size > LIMITS.maxTextSize) return 'Text size is 2 to 20.';
+    return null;
+}
+
+/** Add a caption: `start`/`len` in frames, `x`/`y` as a fraction of the picture, `size` as a percentage of its height. */
+export function addText(tl, { text, start = 0, len = 3 * FPS, x = 0.5, y = 0.85, size = 6 } = {}) {
+    if (tl.text.length >= LIMITS.maxTexts) return err(`A project holds up to ${LIMITS.maxTexts} texts.`);
+    const item = { text: typeof text === 'string' ? text.trim() : '', start, len, x, y, size };
+    const bad = textError(item);
+    if (bad) return err(bad);
+    const { seq, id } = nextId(tl, 't');
+    return { ...tl, seq, text: [...tl.text, { id, ...item }] };
+}
+
+export function updateText(tl, id, patch) {
+    const i = tl.text.findIndex(x => x.id === id);
+    if (i < 0) return err('Select a text first.');
+    const allowed = ['text', 'start', 'len', 'x', 'y', 'size'];
+    const next = { ...tl.text[i] };
+    for (const key of Object.keys(patch || {})) if (allowed.includes(key)) next[key] = key === 'text' && typeof patch.text === 'string' ? patch.text.trim() : patch[key];
+    const bad = textError(next);
+    if (bad) return err(bad);
+    return { ...tl, text: replace(tl.text, i, next) };
+}
+
+export function removeText(tl, id) {
+    return tl.text.some(x => x.id === id) ? { ...tl, text: tl.text.filter(x => x.id !== id) } : err('Select a text first.');
+}
+
+/** The texts showing on timeline frame `i`. */
+export function textsAt(tl, i) { return tl.text.filter(x => i >= x.start && i < x.start + x.len); }
 
 /** "0:07.4" style label for a frame count. */
 export function formatTime(frames) {
