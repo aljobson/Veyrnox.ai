@@ -1,3 +1,5 @@
+import { EDITOR_EXPORT_HEIGHTS } from './editorExportSettings.mjs';
+import { sequenceLayers, paintSequence } from './editorSequenceRender.mjs';
 // Browser timeline editor, slice 2 (ADR-0080): the one place that decides what a frame looks like. The preview and the export both
 // call frameLayers() then paintFrame(), so they agree frame for frame; only where the pictures come from differs (a seekable sink
 // in the preview, sequential readers in the export). Text is drawn with the canvas text API and never put into the page.
@@ -7,18 +9,18 @@ export const EXPORT_HEIGHTS = Object.freeze([720, 1080]);
 const ASPECT_RATIO = { '16:9': 16 / 9, '9:16': 9 / 16, '1:1': 1 };
 
 /** Even pixel sizes at the chosen shape (or the first clip's), with the long edge no wider than 1920. */
-export function outputSize(width, height, targetHeight = 720, aspect = 'source') {
+export function outputSize(width, height, targetHeight = 720, aspect = 'source', maximumWidth = 1920) {
     const ratio = ASPECT_RATIO[aspect] ?? (width > 0 && height > 0 ? width / height : 16 / 9);
-    let h = EXPORT_HEIGHTS.includes(targetHeight) ? targetHeight : 720;
+    let h = (maximumWidth === 3840 ? EDITOR_EXPORT_HEIGHTS : EXPORT_HEIGHTS).includes(targetHeight) ? targetHeight : 720;
     let w = h * ratio;
-    if (w > 1920) { w = 1920; h = w / ratio; }
+    if (w > maximumWidth) { w = maximumWidth; h = w / ratio; }
     const even = n => Math.max(2, Math.round(n / 2) * 2);
     return { width: even(w), height: even(h) };
 }
 
 export function timelineSize(tl, targetHeight = 720) {
     const first = tl.video.length ? tl.media[tl.video[0].mediaId] : null;
-    return outputSize(first?.width, first?.height, targetHeight, tl.aspect);
+    return outputSize(first?.width, first?.height, targetHeight, tl.aspect, tl.schemaVersion === 3 ? 3840 : 1920);
 }
 
 /**
@@ -27,6 +29,7 @@ export function timelineSize(tl, targetHeight = 720) {
  * `over.alpha` ramps from just above 0 to 1 across the dissolve, so the frame after the dissolve is the clip alone.
  */
 export function frameLayers(tl, i) {
+    if (tl.schemaVersion === 3) return sequenceLayers(tl, i);
     const layout = videoLayout(tl);
     const k = layout.findIndex(item => i >= item.start && i < item.end);
     const texts = textsAt(tl, i);
@@ -44,6 +47,7 @@ export function frameLayers(tl, i) {
 
 /** Fetch the drawables a frame needs. `picture(k, time)` resolves to a drawable for video clip k at that source time, or null. */
 export async function resolvePictures(layers, picture) {
+    if (layers.visuals) return { visuals: await Promise.all(layers.visuals.map(v => picture(v.k, v.time))) };
     return {
         base: layers.base ? await picture(layers.base.k, layers.base.time) : null,
         over: layers.over ? await picture(layers.over.k, layers.over.time) : null,
@@ -57,6 +61,7 @@ const fit = (g, pic, W, H) => {
 
 /** Paint one frame onto a 2D context of size W x H from the layers and their resolved pictures. Synchronous. */
 export function paintFrame(g, W, H, layers, pics) {
+    if (layers.visuals) return paintSequence(g, W, H, layers, pics);
     g.globalAlpha = 1;
     g.fillStyle = '#000';
     g.fillRect(0, 0, W, H);

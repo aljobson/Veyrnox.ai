@@ -56,3 +56,22 @@ test('a v2 document with a timeline forwards; a damaged timeline never reaches u
  const noKey={...emptyProjectDocument(id),schema_version:2};
  assert.equal((await PUT(req({expected_revision:2,document:noKey}),params)).status,400);
 });
+
+test('v3 saves require the advanced server flag; valid saves forward and damaged values never reach the database', async () => {
+ const { withTimeline } = await import('../lib/projectDocument.js');
+ const { emptySequence, addSequenceText } = await import('../app/veyrnox/_lib/editorSequence.mjs');
+ const doc = withTimeline(emptyProjectDocument(id), addSequenceText(emptySequence(), { text: 'Timed title', start: 30, len: 60 }));
+ const oldFlag = process.env.EDITOR_MULTITRACK_ENABLED;
+ try {
+  process.env.EDITOR_MULTITRACK_ENABLED = 'false';
+  globalThis.fetch = async () => { throw Error('disabled v3 save must not reach upstream'); };
+  assert.equal((await PUT(req({ expected_revision: 0, document: doc }), params)).status, 404);
+  process.env.EDITOR_MULTITRACK_ENABLED = 'true';
+  let sent; globalThis.fetch = async (url, init) => { sent = JSON.parse(init.body); return Response.json({ revision: 1, document: doc }); };
+  assert.equal((await PUT(req({ expected_revision: 0, document: doc }), params)).status, 200);
+  assert.deepEqual(sent.p_document, doc);
+  globalThis.fetch = async () => { throw Error('damaged v3 save must not reach upstream'); };
+  const damaged = structuredClone(doc); damaged.timeline.text[0].len = 18001;
+  assert.equal((await PUT(req({ expected_revision: 0, document: damaged }), params)).status, 400);
+ } finally { if (oldFlag === undefined) delete process.env.EDITOR_MULTITRACK_ENABLED; else process.env.EDITOR_MULTITRACK_ENABLED = oldFlag; }
+});

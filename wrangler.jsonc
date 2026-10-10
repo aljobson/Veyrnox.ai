@@ -64,6 +64,7 @@
     // ADR-0080: free browser editing and MP4 export, visible in Studio (owner, 2026-10-10).
     // Cloud saving and Projects navigation share the separate TENANT_PROJECTS_ENABLED gate.
     "EDITOR_TIMELINE_ENABLED": "true",
+    "EDITOR_MULTITRACK_ENABLED": "false",
     // ADR-0072: chat Personas, saved instructions with a default model and options. On in production since 2026-10-07: staging
     // acceptance passed 2026-10-06 and migration 0216 is applied on production. Staging has its own value below.
     "PERSONAS_ENABLED": "true",
@@ -273,6 +274,7 @@
         "FREE_ALLOWANCE_ENABLED": "false",
         // ADR-0080: browser editing is open; project saving keeps its separate gate.
         "EDITOR_TIMELINE_ENABLED": "true",
+        "EDITOR_MULTITRACK_ENABLED": "true",
         // ADR-0072 (vars are not inherited). Flip to "true" on staging only after 0216 is applied there.
         "PERSONAS_ENABLED": "false",
         // Already live on staging; source must preserve the deployed preview and its recovery checks.

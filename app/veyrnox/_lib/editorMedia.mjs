@@ -9,23 +9,25 @@ export const MEDIA_LIMITS = Object.freeze({
 });
 
 const VIDEO_TYPES = new Set(['video/mp4', 'video/quicktime', 'video/webm']);
+const IMAGE_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp']);
 const AUDIO_TYPES = new Set(['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/x-wav', 'audio/wave', 'audio/mp4', 'audio/x-m4a', 'audio/aac', 'audio/webm', 'audio/ogg']);
 
 /** Judge what a local file CLAIMS to be, before reading any of it. Returns { kind } or { error }. */
 export function checkLocalFile(file) {
-    if (!file || typeof file.size !== 'number' || typeof file.type !== 'string') return { error: 'Choose a video or audio file.' };
-    const video = VIDEO_TYPES.has(file.type), audio = AUDIO_TYPES.has(file.type);
-    if (!video && !audio) return { error: 'Choose an MP4, MOV or WebM video, or an MP3, WAV or M4A sound.' };
+    if (!file || typeof file.size !== 'number' || typeof file.type !== 'string') return { error: 'Choose a video, image or audio file.' };
+    const video = VIDEO_TYPES.has(file.type), audio = AUDIO_TYPES.has(file.type), image = IMAGE_TYPES.has(file.type);
+    if (!video && !audio && !image) return { error: 'Choose an MP4, MOV or WebM video, an MP3, WAV or M4A sound, or a PNG, JPEG or WebP image.' };
     if (!(file.size > 0)) return { error: 'That file is empty.' };
     if (video && file.size > MEDIA_LIMITS.videoBytes) return { error: 'Choose a video under 100 MiB.' };
     if (audio && file.size > MEDIA_LIMITS.audioBytes) return { error: 'Choose a sound under 20 MiB.' };
-    return { kind: video ? 'video' : 'audio' };
+    if (image && file.size > 20 * 1024 * 1024) return { error: 'Choose an image under 20 MiB.' };
+    return { kind: video ? 'video' : image ? 'image' : 'audio' };
 }
 
 /** Judge what the browser READ from the file. Pure, so the rules are tested without a browser. */
 export function checkProbe(probe) {
     if (!probe || probe.error) return probe?.error || 'This file could not be read.';
-    if (probe.kind === 'video') {
+    if (probe.kind === 'video' || probe.kind === 'image') {
         if (!probe.canDecodeVideo) return 'This browser cannot decode that video. Try an H.264 MP4.';
         if (!(probe.width > 0 && probe.height > 0)) return 'That video has no picture size.';
         if (Math.max(probe.width, probe.height) > MEDIA_LIMITS.maxEdge) return `Choose a video up to ${MEDIA_LIMITS.maxEdge} pixels wide.`;
@@ -46,6 +48,11 @@ export function mediaFromProbe(id, name, probe) {
 export async function probeMedia(blob) {
     let input;
     try {
+        if (IMAGE_TYPES.has(blob.type)) {
+            const bitmap = await createImageBitmap(blob);
+            const result = { kind: 'image', seconds: 3, width: bitmap.width, height: bitmap.height, hasAudio: false, canDecodeVideo: true };
+            bitmap.close(); return result;
+        }
         const { Input, BlobSource, ALL_FORMATS } = await import('mediabunny');
         input = new Input({ source: new BlobSource(blob), formats: ALL_FORMATS });
         const video = await input.getPrimaryVideoTrack();

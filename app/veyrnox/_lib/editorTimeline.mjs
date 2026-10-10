@@ -1,3 +1,5 @@
+import { sequenceTransition } from './editorSequence.mjs';
+import { validateSequence } from './editorSequenceValidation.mjs';
 // Browser timeline editor, slice 1 (ADR-0080). Pure model: no React, no network, no browser APIs, so every rule here is unit-testable.
 //
 // Time is whole FRAMES at the project rate, so there is no floating-point drift to reconcile at export.
@@ -26,10 +28,11 @@ export const framesToSeconds = f => f / FPS;
 
 /** Where each video clip sits: the sequence is contiguous, so a clip's start is the sum of the lengths before it. */
 export function videoLayout(tl) {
+    if (tl.schemaVersion === 3) return tl.video.map(clip => ({ clip, start: clip.start, end: clip.start + clip.len }));
     let at = 0;
     return tl.video.map(clip => { const item = { clip, start: at, end: at + clip.len }; at += clip.len; return item; });
 }
-export function videoFrames(tl) { return tl.video.reduce((n, c) => n + c.len, 0); }
+export function videoFrames(tl) { return tl.schemaVersion === 3 ? Math.max(0, ...tl.video.map(c => c.start + c.len)) : tl.video.reduce((n, c) => n + c.len, 0); }
 export function audioEnd(tl) { return tl.audio.reduce((n, c) => Math.max(n, c.start + c.len), 0); }
 /** Text can extend the project too, including a title-only video over black. */
 export function totalFrames(tl) { return Math.max(videoFrames(tl), audioEnd(tl), tl.text.reduce((end, x) => Math.max(end, x.start + x.len), 0)); }
@@ -160,6 +163,7 @@ export function pruneMedia(tl) {
  * Never repairs. Every number must be a whole, finite, in-range value and every clip must point at known media.
  */
 export function validateTimeline(doc) {
+    if (doc?.schemaVersion === 3) return validateSequence(doc);
     if (!doc || typeof doc !== 'object' || Array.isArray(doc)) return 'Not a timeline.';
     if (doc.schemaVersion !== SCHEMA_VERSION) return 'Unsupported timeline version.';
     if (doc.fps !== FPS) return `Only ${FPS} frames a second is supported.`;
@@ -221,6 +225,7 @@ export function setAspect(tl, aspect) {
  * here so a later trim, move or delete can never make it read outside either clip.
  */
 export function effectiveTransition(tl, k) {
+    if (tl.schemaVersion === 3) return sequenceTransition(tl, k);
     if (k < 1 || k >= tl.video.length) return 0;
     const clip = tl.video[k], prev = tl.video[k - 1];
     return Math.max(0, Math.min(clip.transition || 0, clip.len, prev.len, MAX_TRANSITION));

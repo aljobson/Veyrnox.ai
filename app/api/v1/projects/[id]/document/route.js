@@ -26,6 +26,8 @@ export async function PUT(request, { params }) {
     const restore = body.restore_revision !== undefined;
     if (restore ? (body.document !== undefined || !Number.isSafeInteger(body.restore_revision) || body.restore_revision < 1 || body.restore_revision >= 2147483647)
       : !validProjectDocument(body.document, id)) throw new ApiError(400, 'INVALID_DOCUMENT', 'The project document is invalid.');
+    if (!restore && body.document?.schema_version === 3 && process.env.EDITOR_MULTITRACK_ENABLED !== 'true')
+      throw new ApiError(404, 'NOT_FOUND', 'Multitrack saving is not available here yet.');
     const result = await tenantRequest(request, context, 'rpc/save_project_document', { method: 'POST', body: {
       p_project_id: id, p_expected_revision: body.expected_revision, p_document: restore ? null : body.document,
       p_idempotency_key: idempotencyKey(request), p_restore_revision: restore ? body.restore_revision : null,

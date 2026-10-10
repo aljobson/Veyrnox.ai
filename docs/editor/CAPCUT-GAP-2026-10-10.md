@@ -55,7 +55,7 @@ The owner screenshots and raw UI/network evidence remain private local artifacts
 
 ## Delivery sequence
 
-1. **Editing foundation:** source identity/import recovery, title duration/export, bounded undo/redo, duplicate/split, trim/reorder/move, zoom/keyboard, audible synchronized preview, export progress/cancel and resource disposal. This PR implements this step; see [verification](FOUNDATION-VERIFICATION-2026-10-10.md).
+1. **Editing foundation:** source identity/import recovery, title duration/export, bounded undo/redo, duplicate/split, trim/reorder/move, zoom/keyboard, audible synchronized preview, export progress/cancel and resource disposal. The foundation release implements this step; see [verification](FOUNDATION-VERIFICATION-2026-10-10.md).
 2. **Workspace and multitrack:** resizable panels, source viewer, filmstrips/waveforms, images/overlays, overlapping audio, mute/solo/lock, multi-select/groups, ripple and snapping. Design the versioned document, backward-compatible reader, Worker validator and database migration together; round-trip existing projects and preserve their appearance.
 3. **Visual/audio controls:** transforms/crop/fit/fill/flips, opacity/blend, masks/feather, backgrounds, colour/HSL/curves, fades/gain/EQ/noise, constant speed/ramps and keyframes/easing. Preview and export must share parameter and time evaluation.
 4. **Typography, captions and transcript:** multiline styles/animations; manual timed captions and bounded file import/export; editable transcript and source-aligned range edits; job-backed word timing, translation and lyrics.
@@ -71,4 +71,29 @@ The owner screenshots and raw UI/network evidence remain private local artifacts
 - Production server uploads still need the agreed moderation/inspection rollout. Cloud project saving has been prepared independently and follows its migration observation gate. The owner has not waived that gate.
 - CSP and identity isolation remain in place. A new WASM engine, origin or server rendering system needs its own decision and validation.
 
-Every feature area is included. The remaining stages are **unimplemented scope**, not hidden working controls.
+## Advanced workspace implementation status
+
+The next release implements the following browser-local capabilities behind
+`EDITOR_MULTITRACK_ENABLED`. The production flag remains false until migration
+0269 and its reconciliation gate are clear. This is implementation coverage,
+not full CapCut parity or a production activation announcement.
+
+| Area | Implemented | Remaining within the requested scope |
+|---|---|---|
+| Workspace/media | Adjustable media panel, source viewer with in/out range, image import, thumbnails, waveforms, search/type filters, Library insertion, missing-source relink | Folders, proxy media, richer panel docking |
+| Timeline/commands | Independent timed video/audio/text tracks, overlap, track ordering, hide/mute/solo/lock, snap, trims, split, groups, multi-select, copy/paste, duplicate, lane ripple deletion and undo/redo | Global ripple modes and more keyboard/gesture qualification |
+| Picture | Crop, contain/cover, position/scale/rotation/flips, opacity, seven blends, geometric masks | Mask inversion/feather and animated mask geometry |
+| Colour/background | Brightness, contrast, saturation, hue and blur; reusable original looks; solid canvas colour | Exposure/temperature, per-channel HSL/curves, blur/image backgrounds |
+| Animation | Transform/opacity keyframes with four easing modes; original in/out presets | Combo presets, editable motion paths and additional parameter keyframes |
+| Audio/speed | Multiple overlapping sound tracks, synchronized audible preview, volume/fades/pan, three-band EQ, extraction, mute/solo, constant 0.1–8x rate | Pitch preservation, noise removal, voice transformation, speed ramps/reverse/freeze and optical flow |
+| Text/captions/transcript | Multiline typography, three system font families, alignment/colour/outline/background, original titles, timed manual captions, SRT/VTT/ASS/LRC import, SRT/VTT export, source-aligned range deletion and undo | Automatic transcription, word timings, translation/lyrics and text shadows/additional fonts |
+| Catalogs | Five original shapes, original looks, three replaceable-media templates, four effect choices and five transition types | Licensed stock/music/Giphy/avatar catalogs, tracked/body effects, broader catalogs and searchable licensing metadata |
+| Studio generation | Existing priced catalog/job/idempotency/Library path, prompts, model/duration/shape, Library sources, explicit source consent, progress/result insertion; unavailable live prices disable submission | Additional start/end source contracts, new smart-tool endpoints, live paid end-to-end qualification |
+| Export | File name, PNG cover, MP4/MOV H.264/AAC, six resolutions through 4K, five frame rates through 60 fps, bitrate presets, progress/cancel, encoded and working-memory guards | Real-footage qualification on smaller machines, proxy/server fallback, Library render storage |
+| Brand/plugins/review/publish | Existing Studio capabilities retained | Workspace brand kit, scoped plugin contract, permission-aware review/comments/collaboration and editor-to-Publish handoff |
+
+Real browser checks, decoded files, database round-trips and remaining test
+limits are recorded in [the advanced workspace verification](MULTITRACK-VERIFICATION-2026-10-10.md).
+
+Every observed area remains in scope. Rows marked remaining are work still to
+implement and qualify; they are not working controls hidden behind a flag.

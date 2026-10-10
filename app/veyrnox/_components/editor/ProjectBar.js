@@ -1,5 +1,6 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useMultitrackEnabled } from './MultitrackFlag';
 import { Button } from '../Button';
 import { Modal } from '../Modal';
 import { gatewayFetch, makeIdempotencyKey } from '../../_lib/gateway';
@@ -20,6 +21,7 @@ const date = v => (v ? new Date(v).toLocaleString() : '');
  */
 export function ProjectBar({ tl, blobs, onLoadTimeline, onRelinked }) {
     const enabled = useProjectsEnabled();
+    const multitrack = useMultitrackEnabled();
     const alive = useRef(true), pending = useRef(null), timer = useRef(null);
     const [projectId, setProjectId] = useState(null), [name, setName] = useState('');
     const [doc, setDoc] = useState(null), [revision, setRevision] = useState(0), [savedAt, setSavedAt] = useState(null);
@@ -49,6 +51,7 @@ export function ProjectBar({ tl, blobs, onLoadTimeline, onRelinked }) {
         try {
             const [p, d] = await Promise.all([gatewayFetch(`/projects/${encodeURIComponent(id)}`), gatewayFetch(`/projects/${encodeURIComponent(id)}/document`)]);
             if (!alive.current) return;
+            if (d.document.schema_version === 3 && !multitrack) { setError('This project needs the multitrack editor. Its saved work has been kept.'); return; }
             const { timeline, problem } = timelineFromDocument(d.document);
             setProjectId(id); setName(p.project?.name || 'Project'); setDoc(d.document); setRevision(d.revision); setSavedAt(d.created_at);
             onLoadTimeline(timeline);
@@ -57,7 +60,7 @@ export function ProjectBar({ tl, blobs, onLoadTimeline, onRelinked }) {
             if (need.library.length) fetchLibrary(need.library, timeline);
         } catch (e) { if (alive.current) setError(e.status === 404 ? 'This project is not available here.' : 'Could not open the project.'); }
         finally { if (alive.current) setBusy(false); }
-    }, [onLoadTimeline, refreshRelink, fetchLibrary]);
+    }, [onLoadTimeline, refreshRelink, fetchLibrary, multitrack]);
     useEffect(() => {
         const id = new URLSearchParams(window.location.search).get('project');
         if (enabled && id && UUID.test(id)) open(id.toLowerCase());
@@ -69,6 +72,7 @@ export function ProjectBar({ tl, blobs, onLoadTimeline, onRelinked }) {
     const save = useCallback(async ({ against = revision, restore = null } = {}) => {
         if (!endpoint || !doc) return;
         const snapshot = restore ? null : documentForTimeline(doc, tl);
+        if (snapshot && new TextEncoder().encode(JSON.stringify(snapshot)).byteLength > 32768) { setError('This project exceeds the save limit. Shorten its brief or use fewer clips and caption lines.'); return; }
         if (!pending.current || pending.current.restore !== restore || (!restore && !equalProjectDocuments(pending.current.snapshot, snapshot))) pending.current = { key: makeIdempotencyKey(), snapshot, restore };
         setBusy(true); setError('');
         try {
@@ -113,12 +117,13 @@ export function ProjectBar({ tl, blobs, onLoadTimeline, onRelinked }) {
     }
     async function attach(id, created = null) {
         setPicker(null);
-        window.history.replaceState(null, '', `${window.location.pathname}?project=${encodeURIComponent(id)}`);
         // Open the project but keep the timeline being edited: save it as the first version of the editor's work there.
         setBusy(true); setError('');
         try {
             const d = await gatewayFetch(`/projects/${encodeURIComponent(id)}/document`);
             if (!alive.current) return;
+            if (d.document.schema_version === 3 && !multitrack) { setError('This project needs the multitrack editor. Its saved work has been kept.'); return; }
+            window.history.replaceState(null, '', `${window.location.pathname}?project=${encodeURIComponent(id)}`);
             setProjectId(id); setName(created || 'Project'); setDoc(d.document); setRevision(d.revision); setSavedAt(d.created_at);
         } catch { if (alive.current) setError('Could not open the project.'); }
         finally { if (alive.current) setBusy(false); }
@@ -152,15 +157,15 @@ export function ProjectBar({ tl, blobs, onLoadTimeline, onRelinked }) {
             {relinking && <span role="status" className="text-xs text-vx-fg-muted">Fetching the project files…</span>}
         </div>
         {error && <p role="alert" className="text-sm">{error}</p>}
-        {remote && <div className="rounded-xl border border-vx-accent p-3 text-sm"><p>Saved version {remote.revision} is newer than what you have.</p>
+        {remote && <div className="rounded-xl border border-vx-accent p-3 text-sm"><p>Saved version {remote.revision} is newer than what you have.</p>{remote.document.schema_version === 3 && !multitrack && <p role="alert">Open this project in the multitrack editor to resolve the conflict. Both versions are kept.</p>}
             <div className="mt-2 flex flex-wrap gap-2">
-                <Button size="sm" variant="ghost" disabled={busy} onClick={() => { const { timeline } = timelineFromDocument(remote.document); setDoc(remote.document); setRevision(remote.revision); setSavedAt(remote.created_at); setRemote(null); setError(''); onLoadTimeline(timeline); const need = refreshRelink(timeline); if (need.library.length) fetchLibrary(need.library, timeline); }}>Use saved version</Button>
-                <Button size="sm" disabled={busy} onClick={() => save({ against: remote.revision })}>Save mine instead</Button>
+                <Button size="sm" variant="ghost" disabled={busy || (remote.document.schema_version === 3 && !multitrack)} onClick={() => { const { timeline } = timelineFromDocument(remote.document); setDoc(remote.document); setRevision(remote.revision); setSavedAt(remote.created_at); setRemote(null); setError(''); onLoadTimeline(timeline); const need = refreshRelink(timeline); if (need.library.length) fetchLibrary(need.library, timeline); }}>Use saved version</Button>
+                <Button size="sm" disabled={busy || (remote.document.schema_version === 3 && !multitrack)} onClick={() => save({ against: remote.revision })}>Save mine instead</Button>
             </div></div>}
         {relink.local.length > 0 && <div className="rounded-xl border border-vx-border p-3 text-sm">
             <p>This project needs files from your computer again (they were never uploaded):</p>
             <ul className="mt-1 list-disc pl-5">{relink.local.map(m => <li key={m.id}>{m.name}</li>)}</ul>
-            <label className="mt-2 inline-flex cursor-pointer rounded-full border border-vx-border px-4 py-2 text-xs font-bold">Choose a file<input className="sr-only" type="file" accept="video/mp4,video/webm,video/quicktime,audio/mpeg,audio/wav,audio/mp4,audio/x-m4a" onChange={chooseAgain} /></label>
+            <label className="mt-2 inline-flex cursor-pointer rounded-full border border-vx-border px-4 py-2 text-xs font-bold">Choose a file<input className="sr-only" type="file" accept="video/mp4,video/webm,video/quicktime,audio/mpeg,audio/wav,audio/mp4,audio/x-m4a,image/png,image/jpeg,image/webp" onChange={chooseAgain} /></label>
         </div>}
         {relink.library.length > 0 && !relinking && <p className="text-xs text-vx-fg-muted">{relink.library.length} Library file(s) could not be fetched. <button type="button" className="underline" onClick={() => fetchLibrary(relink.library, tl)}>Try again</button></p>}
         {picker && <Modal aria-label="Save to a project" onCancel={() => setPicker(null)} className="items-center justify-center p-4"><div className="w-full max-w-md rounded-2xl border border-vx-border bg-vx-base p-6">
@@ -177,9 +182,9 @@ export function ProjectBar({ tl, blobs, onLoadTimeline, onRelinked }) {
             {versions.length === 0 ? <p className="mt-3 text-sm text-vx-fg-muted">No versions yet.</p> : <ol className="mt-3 max-h-60 space-y-2 overflow-auto">
                 {versions.map(v => <li key={v.revision}><button type="button" className={`${field} w-full text-left`} onClick={() => viewVersion(v.revision)}>Version {v.revision}{v.revision === revision ? ' · Current' : ''}<span className="block text-xs text-vx-fg-muted">{date(v.created_at)}{v.restored_from ? ` · restored from ${v.restored_from}` : ''}</span></button></li>)}
             </ol>}
-            {preview && <div className="mt-4 rounded-xl border border-vx-border p-3 text-sm"><p className="font-bold">Version {preview.revision}</p><p className="text-xs text-vx-fg-muted">{date(preview.created_at)} · {preview.document.schema_version === 2 && preview.document.timeline ? `${preview.document.timeline.video.length} video clips, ${preview.document.timeline.audio.length} sounds, ${preview.document.timeline.text.length} texts` : 'no timeline'}</p>
+            {preview && <div className="mt-4 rounded-xl border border-vx-border p-3 text-sm"><p className="font-bold">Version {preview.revision}</p><p className="text-xs text-vx-fg-muted">{date(preview.created_at)} · {[2, 3].includes(preview.document.schema_version) && preview.document.timeline ? `${preview.document.timeline.video.length} video clips, ${preview.document.timeline.audio.length} sounds, ${preview.document.timeline.text.length} texts` : 'no timeline'}</p>
                 <p className="mt-2 text-xs text-vx-fg-muted">{dirty ? 'Save your current work before restoring.' : 'Restoring makes a new version; history is kept.'}</p>
-                <Button size="sm" className="mt-2" disabled={busy || dirty || preview.revision === revision} onClick={() => save({ restore: preview.revision })}>Restore as new version</Button></div>}
+                <Button size="sm" className="mt-2" disabled={busy || dirty || preview.revision === revision || (preview.document.schema_version === 3 && !multitrack)} onClick={() => save({ restore: preview.revision })}>Restore as new version</Button></div>}
             <div className="mt-4 flex justify-end"><Button size="sm" variant="ghost" onClick={() => { setVersions(null); setPreview(null); }}>Close</Button></div>
         </div></Modal>}
     </section>;

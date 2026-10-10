@@ -6,7 +6,7 @@ import { withTimeline } from '../../../lib/projectDocument.js';
 
 /** The timeline inside a project document, or an empty one. `problem` names why a stored timeline could not be used. */
 export function timelineFromDocument(doc) {
-    if (!doc || doc.schema_version !== 2 || doc.timeline === null || doc.timeline === undefined) return { timeline: emptyTimeline(), problem: null };
+    if (!doc || ![2, 3].includes(doc.schema_version) || doc.timeline === null || doc.timeline === undefined) return { timeline: emptyTimeline(), problem: null };
     const problem = validateTimeline(doc.timeline);
     return problem ? { timeline: emptyTimeline(), problem } : { timeline: doc.timeline, problem: null };
 }
@@ -22,7 +22,7 @@ export const jobIdFromMediaId = id => (typeof id === 'string' && id.startsWith('
 export function mediaToRelink(tl, loaded = new Set()) {
     const library = [], local = [];
     for (const m of Object.values(tl.media)) {
-        if (loaded.has(m.id)) continue;
+        if (loaded.has(m.id) || m.kind === 'graphic') continue;
         const jobId = jobIdFromMediaId(m.id);
         if (jobId) library.push({ id: m.id, jobId, name: m.name });
         else local.push({ id: m.id, name: m.name, frames: m.frames, kind: m.kind });
