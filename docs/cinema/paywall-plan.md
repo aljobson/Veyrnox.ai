@@ -2,12 +2,14 @@
 
 Companion to [ADR-0057](../adr/0057-cinema-viewer-paywall.md). Phases 1 to 3 are built (PR #344, per ADR-0057) and off in production: `CINEMA_SUBSCRIPTIONS_ENABLED` and `CINEMA_UNLOCKS_ENABLED` are `false`. (This line read "Nothing here is built" until 2026-10-03.) Each phase is one PR, lands behind a switch that ships off, and is applied to production only through the `apply-migrations` workflow (ADR-0023). Numbers below are the ADR's; change them there, not here.
 
-## Preconditions (owner and legal, before Phase 1)
+## Activation preconditions (owner and legal)
+
+On 2026-10-10 the owner instructed: "just build it I will deal with Stripe". Engineering can finish and verify the built paths while the owner handles Stripe acceptance. This instruction supplies no approval document or verified payment fee schedule. Production paid activation remains a separate rollout step; its current switches stay off.
 
 | # | Item | Owner | Why it blocks |
 |---|---|---|---|
 | P1 | Publication slice: **done, ADR-0059, migration 0147** (review queue, public reads, catalogue, title and player pages). | Eng | Nothing is viewable, so nothing is sellable. |
-| P2 | Written Stripe acceptance of recurring viewer plans over user-uploaded video under Managed Payments, and confirmation that Managed Payments supports Checkout `mode=subscription` and the Customer Portal. | Owner | ADR-0031: category refusals are not appealable. |
+| P2 | Owner handles written Stripe acceptance of recurring viewer plans over user-uploaded video under Managed Payments, and confirmation that Managed Payments supports Checkout `mode=subscription` and the Customer Portal. | Owner | Required for paid activation; engineering build and verification are authorized. |
 | P3 | Cooling-off and Supply Consent wording for Unlocks and Passes; creator terms stating no revenue share yet. | Legal | Distance-selling rules in UK/EU. |
 | P4 | Stream credentials and webhook live (ADR-0052 gates), delivery rate verified against the invoice. | Owner | Pass margin depends on it. |
 | P5 | `ledger_debit` inserts a `jobs` row (0059), so an Unlock cannot reuse it. 0142 adds a sibling `ledger_unlock` RPC in the same family: Free-first, Frozen check, `free_delta` bookkeeping, idempotent on `(user_id, content_id)`, joining the RPC-only writer set in `CLAUDE.md`. | Eng | No raw INSERT into `ledger_entries`; reconciliation must stay at zero rows. |
