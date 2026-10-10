@@ -1,4 +1,4 @@
--- 0252_social_core_submission_and_x_rotation.sql
+-- 0260_social_core_submission_and_x_rotation.sql
 -- Two widenings for the core publishing networks (audit 2026-10-09, S-03
 -- and S-04; D-01 is the same two on the day Publish opens in production).
 --
