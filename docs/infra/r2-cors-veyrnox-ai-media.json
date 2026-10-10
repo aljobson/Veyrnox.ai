@@ -1,0 +1,13 @@
+{
+  "rules": [
+    {
+      "allowed": {
+        "origins": ["https://veyrnox.ai"],
+        "methods": ["GET", "HEAD", "PUT"],
+        "headers": ["Content-Type", "Range", "If-None-Match"]
+      },
+      "exposeHeaders": ["ETag"],
+      "maxAgeSeconds": 3600
+    }
+  ]
+}
