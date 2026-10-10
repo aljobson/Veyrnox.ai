@@ -1,0 +1,9 @@
+{
+  "name": "local-fal-signed-retry-test",
+  "main": "../../workers/staging-fal-signed-retry-worker.js",
+  "compatibility_date": "2026-10-09",
+  "workers_dev": false,
+  "durable_objects": {"bindings": [{"name": "CALLBACK_GATE", "class_name": "FalSignedRetryGate"}]},
+  "migrations": [{"tag": "v1", "new_sqlite_classes": ["FalSignedRetryGate"]}],
+  "vars": {"APP_ENV": "staging", "PUBLIC_HOST": "https://veyrnox-ai-staging.al-jobson.workers.dev", "FAL_WEBHOOK_USER_ID": "test-tenant", "FAL_SIGNED_RETRY_ENABLED": "false"}
+}
