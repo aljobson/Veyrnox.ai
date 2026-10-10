@@ -9,7 +9,8 @@ if(!['localhost','127.0.0.1'].includes(url.hostname)||!/^\/(veyrnox_capacity|reb
 const pool=new pg.Pool({connectionString:url.toString(),max:16});
 const q=(s,a=[])=>pool.query(s,a),one=async(s,a=[])=>(await q(s,a)).rows[0];
 const tag=randomUUID().slice(0,8),models={},authIds=[],userIds=[];let checks=0;
-const migration=await readFile(new URL('../packages/db/schema/supabase/0240_fal_reserved_only_admission.sql',import.meta.url),'utf8');
+const migration=(await readFile(new URL('../packages/db/schema/supabase/0240_fal_reserved_only_admission.sql',import.meta.url),'utf8'))
+ +(await readFile(new URL('../packages/db/schema/supabase/0243_fal_pinned_payload_validation.sql',import.meta.url),'utf8'));
 async function user(){const id=randomUUID();authIds.push(id);await q('INSERT INTO auth.users(id,email,email_confirmed_at) VALUES($1,$2,now())',[id,`${id}@example.invalid`]);const u=(await one('SELECT id FROM public.users WHERE auth_id=$1',[id])).id;userIds.push(u);return u;}
 const paid=(u,m,key=randomUUID(),client=pool)=>client.query("SELECT public.ledger_debit($1,$2,2,'debit:generation',$3,$4) r",[u,key,m,{prompt:'test',reserved:true}]).then(r=>r.rows[0].r);
 const free=(u,m,key=randomUUID())=>one('SELECT public.submit_free_job($1,$2,$3,$4) r',[u,key,m,{prompt:'test'}]).then(r=>r.r);
