@@ -89,7 +89,11 @@ test('entitlement reads exactly one content id and reports the consent version',
   assert.deepEqual([data.access, data.credits, data.consent_version], ['locked', 6, UNLOCK_CONSENT_VERSION]);
   const missing = setup('entitlement', { cinema_entitlement: { error: 'content_not_found' } });
   assert.equal((await missing.handle(get(`?content_id=${id}`))).status, 404);
-  const odd = setup('entitlement', { cinema_entitlement: { access: 'pass' } });
+  // A Cinema Pass holder's access is reported, not treated as an unknown answer.
+  const pass = setup('entitlement', { cinema_entitlement: { access: 'pass', credits: 0 } });
+  const passRes = await pass.handle(get(`?content_id=${id}`));
+  assert.deepEqual([passRes.status, (await passRes.json()).access], [200, 'pass']);
+  const odd = setup('entitlement', { cinema_entitlement: { access: 'vip' } });
   assert.equal((await odd.handle(get(`?content_id=${id}`))).status, 503);
 });
 
@@ -161,4 +165,85 @@ test('a heartbeat records seconds only for a Pass holder and reports the ceiling
   // Entitlement passes a ceiling reason through.
   const ent = setup('entitlement', { cinema_entitlement: { access: 'locked', credits: 6, reason: 'pass_ceiling' } });
   assert.equal((await (await ent.handle(get(`?content_id=${id}`))).json()).reason, 'pass_ceiling');
+});
+
+const STREAM_ENV = { CINEMA_STREAM_SIGNING_KEY_ID: 'b'.repeat(32), CINEMA_STREAM_SIGNING_JWK: btoa(JSON.stringify({ kty: 'RSA', d: 'private' })), CINEMA_STREAM_CUSTOMER_CODE: 'abc123' };
+const requestFor = (action) => (action === 'entitlement' ? get(`?content_id=${id}`) : post(action === 'play' ? 'play' : 'play/heartbeat', action === 'play' ? { content_id: id } : { content_id: id, seconds: 30 }));
+
+test('the free ceiling is off unless its switch is exactly "true", and then nothing about the calls changes', async () => {
+  Object.assign(process.env, STREAM_ENV);
+  const answers = { cinema_entitlement: { access: 'free', credits: 0 }, read_cinema_playback: { access: 'free', stream_uid: uid }, record_cinema_pass_play: { ok: true, recorded: false, access: 'free', reason: null } };
+  for (const value of [undefined, 'false', 'TRUE', '1', ' true ']) {
+    if (value === undefined) delete process.env.CINEMA_FREE_CEILING_ENABLED; else process.env.CINEMA_FREE_CEILING_ENABLED = value;
+    for (const [action, rpcName] of [['entitlement', 'cinema_entitlement'], ['play', 'read_cinema_playback'], ['heartbeat', 'record_cinema_pass_play']]) {
+      const s = setup(action, answers);
+      assert.equal((await s.handle(requestFor(action))).status, 200, `${value} ${action}`);
+      assert.deepEqual(s.calls.map((c) => c.name), ['consume_account_read_request', rpcName], `${value} ${action}`);
+    }
+  }
+  delete process.env.CINEMA_FREE_CEILING_ENABLED;
+});
+
+test('with the free ceiling on, viewing goes through the metered RPCs and a reached ceiling is reported', async () => {
+  Object.assign(process.env, STREAM_ENV, { CINEMA_FREE_CEILING_ENABLED: 'true' });
+  try {
+    // Same arguments as before; identity still comes only from the middleware header.
+    const ent = setup('entitlement', { cinema_metered_entitlement: { access: 'locked', credits: 0, reason: 'free_ceiling' } });
+    const entBody = await (await ent.handle(get(`?content_id=${id}`))).json();
+    assert.deepEqual([entBody.access, entBody.credits, entBody.reason], ['locked', 0, 'free_ceiling']);
+    assert.deepEqual(ent.calls[1], { name: 'cinema_metered_entitlement', args: { p_auth_id: id, p_content_id: id } });
+
+    // Under the ceiling a token is minted exactly as before, from the stream uid the database returned.
+    const ok = setup('play', { start_cinema_playback: { access: 'free', stream_uid: uid } });
+    const okRes = await ok.handle(post('play', { content_id: id }));
+    assert.equal(okRes.status, 200);
+    assert.equal((await okRes.json()).token, `signed:${uid}:${'b'.repeat(32)}:${1_800_000_000 + 900}`);
+    assert.deepEqual(ok.calls[1], { name: 'start_cinema_playback', args: { p_auth_id: id, p_content_id: id } });
+    // At the ceiling no stream uid comes back, so nothing is signed, and the reason reaches the page.
+    let signed = 0;
+    const at = unlockHandler({ action: 'play', sign: async () => { signed += 1; return 'never'; }, rpcCall: async (name) => (name === 'consume_account_read_request' ? { ok: true } : { error: 'locked', credits: 0, reason: 'free_ceiling' }) });
+    const atRes = await at(post('play', { content_id: id }));
+    const atBody = await atRes.json();
+    assert.deepEqual([atRes.status, atBody.error, atBody.credits, atBody.reason, atBody.token, signed], [402, 'locked', 0, 'free_ceiling', undefined, 0]);
+    // A paid title that is simply locked carries no reason.
+    const paid = setup('play', { start_cinema_playback: { error: 'locked', credits: 6 } });
+    const paidBody = await (await paid.handle(post('play', { content_id: id }))).json();
+    assert.deepEqual([paidBody.credits, Object.hasOwn(paidBody, 'reason')], [6, false]);
+    const anonymous = setup('play', { start_cinema_playback: { error: 'not_authenticated' } });
+    assert.equal((await anonymous.handle(post('play', { content_id: id }))).status, 401);
+
+    // A heartbeat on a free title records a Free Play and reports the free ceiling.
+    const beat = setup('heartbeat', { record_cinema_play: { ok: true, recorded: true, access: 'free', seconds: 30, minutes_used: 12, ceiling_minutes: 300 } });
+    const beatBody = await (await beat.handle(post('play/heartbeat', { content_id: id, seconds: 30 }))).json();
+    assert.deepEqual([beatBody.recorded, beatBody.access, beatBody.seconds, beatBody.minutes_used, beatBody.ceiling_minutes, beatBody.reason], [true, 'free', 30, 12, 300, undefined]);
+    assert.deepEqual(beat.calls[1], { name: 'record_cinema_play', args: { p_auth_id: id, p_content_id: id, p_seconds: 30 } });
+    const stopped = setup('heartbeat', { record_cinema_play: { ok: true, recorded: false, access: 'locked', reason: 'free_ceiling', minutes_used: 300, ceiling_minutes: 300 } });
+    const stoppedBody = await (await stopped.handle(post('play/heartbeat', { content_id: id, seconds: 30 }))).json();
+    assert.deepEqual([stoppedBody.recorded, stoppedBody.access, stoppedBody.reason, stoppedBody.seconds], [false, 'locked', 'free_ceiling', 0]);
+
+    // Past the free ceiling a Cinema Pass holder plays the free title under the Pass.
+    const holder = setup('entitlement', { cinema_metered_entitlement: { access: 'pass', credits: 0 } });
+    assert.equal((await (await holder.handle(get(`?content_id=${id}`))).json()).access, 'pass');
+    const holderPlay = setup('play', { start_cinema_playback: { access: 'pass', stream_uid: uid } });
+    assert.equal((await holderPlay.handle(post('play', { content_id: id }))).status, 200);
+    const holderBeat = setup('heartbeat', { record_cinema_play: { ok: true, recorded: true, access: 'pass', seconds: 30, minutes_used: 40, ceiling_minutes: 3000 } });
+    assert.equal((await (await holderBeat.handle(post('play/heartbeat', { content_id: id, seconds: 30 }))).json()).access, 'pass');
+
+    // The older RPCs are not called at all, and an Unlock is untouched by the switch.
+    for (const s of [ent, ok, beat, holder, holderPlay, holderBeat]) assert.ok(s.calls.every((c) => !['cinema_entitlement', 'read_cinema_playback', 'record_cinema_pass_play'].includes(c.name)));
+    const unlock = setup('unlock', { unlock_cinema_content: { ok: true, access: 'unlocked', credits: 6, balance_after: 4, idempotent: false } });
+    assert.equal((await unlock.handle(post('unlocks', consent))).status, 201);
+    assert.equal(unlock.calls[1].name, 'unlock_cinema_content');
+    // A missing function (migration not applied) fails closed: no token.
+    const missing = unlockHandler({ action: 'play', sign: async () => 'never', rpcCall: async (name) => { if (name === 'consume_account_read_request') return { ok: true }; throw new Error('PGRST202 could not find the function'); } });
+    const missingRes = await missing(post('play', { content_id: id }));
+    assert.deepEqual([missingRes.status, (await missingRes.json()).error], [503, 'temporarily_unavailable']);
+  } finally { delete process.env.CINEMA_FREE_CEILING_ENABLED; }
+});
+
+test('the free ceiling switch needs the Cinema master switch', async () => {
+  const { cinemaFeatures } = await import('../lib/cinema/features.js');
+  assert.equal(cinemaFeatures({ CINEMA_ENABLED: 'true', CINEMA_FREE_CEILING_ENABLED: 'true' }).freeCeiling, true);
+  assert.equal(cinemaFeatures({ CINEMA_ENABLED: 'false', CINEMA_FREE_CEILING_ENABLED: 'true' }).freeCeiling, false);
+  assert.equal(cinemaFeatures({ CINEMA_ENABLED: 'true' }).freeCeiling, false);
 });

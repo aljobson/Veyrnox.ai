@@ -100,6 +100,10 @@ _Avoid_: VIP, membership, tier, unlimited plan
 A record of a Cinema Pass holder watching some of a title. It counts toward that Pass's monthly viewing ceiling.
 _Avoid_: View, stream, session
 
+**Free Play**:
+A record of an account watching some of a free title. It counts toward that account's monthly ceiling on free viewing.
+_Avoid_: View, stream, free view
+
 **Unlock Reversal**:
 Returning the credits of an Episode Unlock because the content was taken down. No money moves.
 _Avoid_: Refund (on its own), chargeback

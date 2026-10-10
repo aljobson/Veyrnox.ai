@@ -120,8 +120,9 @@ precondition P6 in the [paywall plan](../cinema/paywall-plan.md).
 ## Proposed: $9.99 monthly Pass only, 1,500-minute ceiling, 30% creator share (2026-10-10)
 
 Status: **Proposed.** Owner, 2026-10-10: "record $9.99, 1,500 minutes and
-30%", then "withdraw them" for the weekly and yearly plans. Migration 0244 is
-written and not applied. No Pass is on sale:
+30%", then "withdraw them" for the weekly and yearly plans. Migration 0244 was
+applied to production and staging on 2026-10-10 (owner-approved run). No Pass
+is on sale:
 `CINEMA_SUBSCRIPTIONS_ENABLED` is `false` in production and unset on staging,
 so there is no subscriber to reprice.
 
@@ -175,3 +176,56 @@ the fee schedule (the open check under Consequences), and 0244 is applied
 through `apply-migrations` (precondition P7). A Pass sold before 0244 keeps its
 plan and the price it was sold at, on its own row and at Stripe. From its next
 heartbeat it has the 1,500-minute ceiling.
+
+## Free viewing ceiling as built (0245, 2026-10-10)
+
+Owner, 2026-10-10: build it. Built behind `CINEMA_FREE_CEILING_ENABLED`.
+Migration 0245 was applied to production (apply-migrations run 38053327460,
+after 0244) and to the staging database on 2026-10-10. The switch is `true`
+on staging and `false` in production.
+
+- **The rule.** An account has `cinema_prices.free_ceiling_minutes` of free
+  viewing per calendar month (UTC). The proposed value is 300 and the owner
+  confirms it; the CHECK admits 0 to 100,000. The app layer never computes it.
+- **What counts.** A Free Play is seconds of a free title (SHORT, TRAILER or a
+  Free Episode) recorded for an account in the append-only `cinema_free_plays`.
+  Granting playback counts one minute, or what is left of the month, whether
+  or not the player reports back; a repeated request counts again. After that
+  the player's heartbeat meters the viewing with the Pass Play caps: at most
+  60 seconds per heartbeat, and no more than 60 seconds per 55 of wall-clock
+  time per account, serialized per account. The window is 55 seconds rather
+  than 60 because a steady 30-second heartbeat lands the row from two beats
+  ago at 60 seconds plus or minus jitter, and a 60-second window refused
+  about a third of honest beats; the price is that a scripted client can log
+  about a tenth more than wall-clock. The minute at the grant is a floor, not
+  a meter: a client that sends no heartbeat is counted one minute per play
+  start while the token it holds lasts up to 15 minutes, and a token already
+  issued keeps working until it expires. The player renews its token every 12
+  minutes, and a renewal is a play start. Nothing is counted when playback is
+  refused or the video is not ready.
+- **At the ceiling.** Entitlement for a free title reports `locked` with reason
+  `free_ceiling` and 0 credits, playback returns no stream uid so no token is
+  signed, and the watch page says the free viewing limit for the month is
+  reached. The ceiling is the account's, not the title's. Paid titles answer
+  as before.
+- **Cinema Pass holders.** Free minutes are used first. Past the free ceiling
+  a free title plays under the Pass, is recorded as a Pass Play and counts
+  toward the Pass ceiling. With both ceilings reached it is locked. A live
+  Unlock of a title that later became free still plays it.
+- **With the switch off nothing changes.** `cinema_entitlement`,
+  `read_cinema_playback` and `record_cinema_pass_play` keep their bodies. Only
+  while the switch is on does the Worker call `cinema_metered_entitlement`,
+  `start_cinema_playback` and `record_cinema_play` in their place. If the
+  switch is on before 0245 is applied, those calls fail and playback answers
+  503, so apply the migration first.
+- **Not covered.** The title page still labels a free title "Free" past the
+  ceiling; the message is on the watch page. Pass Plays are recorded as
+  before: the minute at a play start applies to free viewing only.
+- **No money moves.** Nothing in 0245 touches `ledger_entries` or
+  `credit_balances`.
+- **Personal data.** `cinema_free_plays` records who watched which free title
+  and when, for every signed-in viewer, append-only. The erasure path ADR-0008
+  leaves open must cover it.
+
+The entitlement endpoint now reports `pass` for a Cinema Pass holder, where it
+answered 503 before. No Pass is on sale, so no one sees a difference today.
