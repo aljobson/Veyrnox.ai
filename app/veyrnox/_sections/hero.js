@@ -43,7 +43,12 @@ export function FeaturedHeroCards({ catalog }) {
   const rowOf = (id) => catalog.find((m) => m.id === id);
   return (
     <section id="explore" className="px-4 sm:px-6 max-w-[1300px] mx-auto">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 items-start gap-x-3 gap-y-6">
+      {/* Below sm the five tiles are one swipe row, not a stack. It runs to
+          the screen edge so the next tile shows there is more; the vertical
+          padding keeps the rise and the focus ring inside the scroller,
+          which clips both axes. Tiles keep their clip's own shape, so they
+          are top-aligned, as in the grid from sm up. */}
+      <div className="-mx-4 -my-2 flex snap-x snap-mandatory items-start gap-x-3 gap-y-6 overflow-x-auto scroll-pl-4 px-4 py-2 sm:mx-0 sm:my-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:py-0 lg:grid-cols-5">
         {FEATURE_CARDS.map((f, i) => {
           const row = rowOf(modelOf(f.href));
           const clip = SHOWCASE_CLIPS[f.key];
@@ -52,7 +57,7 @@ export function FeaturedHeroCards({ catalog }) {
               key={f.key}
               href={f.href}
               clip={clip && { ...clip, objectFit: 'contain' }}
-              className="vx-rise block text-left"
+              className="vx-rise block w-[72%] shrink-0 snap-start text-left sm:w-auto"
               style={{ '--vx-i': i }}
               mediaClassName="rounded-2xl"
               mediaStyle={{ background: f.bg, aspectRatio: clip?.aspectRatio || '4 / 5' }}

@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { playbackMode, TOUCH_MAX_PLAY_MS } from '../app/veyrnox/_lib/playbackPolicy.js';
 
 const base = { reducedMotion: false, saveData: false, effectiveType: '4g', canHover: true };
@@ -35,4 +36,19 @@ test('a slow connection does not block hover: nothing plays until the user asks'
 
 test('touch autoplay stops within the WCAG 2.2.2 five second line', () => {
     assert.ok(TOUCH_MAX_PLAY_MS <= 5000);
+});
+
+test('Library clips play by the same policy as the landing tiles, never on their own', () => {
+    const read = (p) => readFileSync(new URL(`../app/veyrnox/${p}`, import.meta.url), 'utf8');
+    // They used to loop from page load with no way to stop them (WCAG 2.2.2).
+    assert.doesNotMatch(read('app/library/page.js'), /autoPlay/);
+    assert.match(read('app/library/page.js'), /<LibraryClip cardRef=\{card\} /);
+    const clip = read('_components/LibraryClip.js');
+    assert.match(clip, /useClipPlayback\(cardRef, videoRef\)/);
+    assert.doesNotMatch(clip, /autoPlay|controls/);
+    assert.match(read('_components/MediaTile.js'), /useClipPlayback\(rootRef, videoRef\)/);
+    const hook = read('_lib/useClipPlayback.js');
+    assert.match(hook, /playbackMode\(\{\s*reducedMotion: reducedQuery\.matches,\s*saveData: /);
+    assert.match(hook, /window\.setTimeout\(stop, TOUCH_MAX_PLAY_MS\)/);
+    assert.match(hook, /if \(mode === 'off'\) return undefined;/);
 });

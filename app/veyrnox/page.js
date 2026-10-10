@@ -7,6 +7,7 @@ import { PresetWall, ModelShelf } from './_sections/showcase';
 import { LedgerExample, FAQBlock, ClosingCTA, FooterForest } from './_sections/footer';
 import { MarketingNav } from './_components/NavBar';
 import { SectionJump } from './_components/SectionJump';
+import { Main } from './_components/Main';
 
 // FAQPage built from the same FAQ constant the page renders, so the markup
 // and the structured data cannot drift apart.
@@ -65,6 +66,7 @@ export default async function VeyrnoxLanding() {
   return (
     <div className="min-h-dvh">
       <MarketingNav />
+      <Main>
       <BreakthroughVideo />
       <LandingFilm />
       <Hero models={catalog} />
@@ -92,6 +94,7 @@ export default async function VeyrnoxLanding() {
       </section>
       <FAQBlock />
       <ClosingCTA />
+      </Main>
       <FooterForest catalog={catalog} />
       <JsonLd data={FAQ_LD} />
       <SectionJump />

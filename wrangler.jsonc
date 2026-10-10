@@ -59,6 +59,8 @@
     // ADR-0069: a per-model free allowance, taken as a price waiver. On in production since 2026-10-07: staging acceptance passed
     // 2026-10-06, and migrations 0205, 0206 and 0222 (the two models offered) are applied. At most $1.00 a day of provider spend.
     "FREE_ALLOWANCE_ENABLED": "true",
+    // Browser timeline editor (ADR-0080): the /app/editor route 404s unless "true". Off in both blocks; staging turns it on by deploy --var.
+    "EDITOR_TIMELINE_ENABLED": "false",
     // ADR-0072: chat Personas, saved instructions with a default model and options. On in production since 2026-10-07: staging
     // acceptance passed 2026-10-06 and migration 0216 is applied on production. Staging has its own value below.
     "PERSONAS_ENABLED": "true",
@@ -102,9 +104,11 @@
     "CREATOR_MONETISATION_ENABLED": "false",
     "CINEMA_SUBSCRIPTIONS_ENABLED": "false",
     // CINEMA_UNLOCKS_ENABLED also opens playback of free titles. Keep it
-    // "false" until free viewing has a monthly ceiling per account
-    // (docs/cinema/paywall-plan.md, P6).
+    // "false" until CINEMA_FREE_CEILING_ENABLED is "true": that switch gives
+    // each account a monthly ceiling on free viewing minutes (ADR-0057,
+    // docs/cinema/paywall-plan.md P6) and needs migration 0245 applied first.
     "CINEMA_UNLOCKS_ENABLED": "false",
+    "CINEMA_FREE_CEILING_ENABLED": "false",
     "CINEMA_PUBLISHING_ENABLED": "true",
     "CINEMA_VIEWING_ENABLED": "true",
     "VOTING_ENABLED": "false",
@@ -243,6 +247,8 @@
         "CHAT_SEND_CLOSE_ENABLED": "true",
         // ADR-0069 (vars are not inherited). Flip to "true" on staging only after 0205 and 0206 are applied there.
         "FREE_ALLOWANCE_ENABLED": "false",
+        // Browser timeline editor (ADR-0080): the /app/editor route 404s unless "true". Off in both blocks; staging turns it on by deploy --var.
+        "EDITOR_TIMELINE_ENABLED": "false",
         // ADR-0072 (vars are not inherited). Flip to "true" on staging only after 0216 is applied there.
         "PERSONAS_ENABLED": "false",
         "AGENT_VIDEO_ENABLED": "false",
@@ -289,7 +295,11 @@
         // Production keeps all three switches false.
         "CINEMA_UNLOCKS_ENABLED": "true",
         "CINEMA_PUBLISHING_ENABLED": "true",
-        "CINEMA_VIEWING_ENABLED": "true"
+        "CINEMA_VIEWING_ENABLED": "true",
+        // Monthly ceiling on free viewing minutes (ADR-0057). Set to "true"
+        // once migration 0245 is applied on the staging database: before
+        // that, play, heartbeat and entitlement would answer 503 here.
+        "CINEMA_FREE_CEILING_ENABLED": "false"
       }
     }
   },

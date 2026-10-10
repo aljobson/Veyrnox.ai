@@ -34,9 +34,23 @@ try {
   // Idempotency proof inside a rolled-back transaction, so the re-apply cannot
   // reinstate this file's function bodies over later migrations for the rest of the run.
   await c.query('BEGIN'); await c.query(migration); await c.query(migration); await c.query('ROLLBACK');
-  const plans = await value('SELECT public.list_cinema_pass_plans() AS value');
-  assert.deepEqual(plans.map((p) => [p.id, p.billing_interval, p.price_usd_cents, p.intro_price_usd_cents]),
-    [['pass-weekly', 'week', 1499, 1199], ['pass-monthly', 'month', 4999, null], ['pass-yearly', 'year', 19999, null]]);
+  // 0244 sets absolute values, so applying it twice ends where once does:
+  // the monthly Pass alone is on sale, at $9.99.
+  const repricing = await readFile(new URL('../packages/db/schema/supabase/0244_cinema_pass_monthly_only_999_ceiling_1500.sql', import.meta.url), 'utf8');
+  await c.query(repricing); await c.query(repricing);
+  const offered = async () => (await value('SELECT public.list_cinema_pass_plans() AS value')).map((p) => [p.id, p.billing_interval, p.price_usd_cents, p.intro_price_usd_cents]);
+  const everyPlan = [['pass-monthly', 'month', 999, null], ['pass-weekly', 'week', 1499, 1199], ['pass-yearly', 'year', 19999, null]];
+  assert.deepEqual(await offered(), [everyPlan[0]]);
+  // A withdrawn plan keeps its row, because Passes reference it, and cannot be started.
+  assert.deepEqual((await q('SELECT id, active FROM public.cinema_pass_plans ORDER BY id')).map((r) => [r.id, r.active]),
+    [['pass-monthly', true], ['pass-weekly', false], ['pass-yearly', false]]);
+  const shopper = await person();
+  for (const plan of ['pass-weekly', 'pass-yearly']) assert.equal((await start(shopper, plan)).code, 'PLAN_NOT_FOUND', plan);
+  // The weekly intro and the yearly plan are withdrawn, not deleted, and their
+  // code paths remain. Put both back on sale in this throwaway database so the
+  // checks below still cover them; the end of the script withdraws them again.
+  await q("UPDATE public.cinema_pass_plans SET active = true WHERE id IN ('pass-weekly', 'pass-yearly')");
+  assert.deepEqual(await offered(), everyPlan);
 
   // A published locked episode to be entitled to.
   const creator = await person();
@@ -194,5 +208,8 @@ try {
   await q('BEGIN'); await q('SET LOCAL ROLE service_role');
   assert.equal((await start(carol, 'pass-monthly')).ok, true);
   await q('ROLLBACK');
-  console.log('Cinema pass checks passed: plans, start/replay, binding, ordering, entitlement precedence, one live pass, intro once, refund/dispute endings, cancellation marks, rate limit, ledger untouched and grants.');
+  // Leave the catalogue as 0244 leaves it for the scripts that share this database.
+  await q("UPDATE public.cinema_pass_plans SET active = false WHERE id IN ('pass-weekly', 'pass-yearly')");
+  assert.deepEqual(await offered(), [everyPlan[0]]);
+  console.log('Cinema pass checks passed: plans and withdrawn plans, start/replay, binding, ordering, entitlement precedence, one live pass, intro once, refund/dispute endings, cancellation marks, rate limit, ledger untouched and grants.');
 } finally { await c.end(); }

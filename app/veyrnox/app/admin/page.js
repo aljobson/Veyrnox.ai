@@ -13,6 +13,7 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { AppNav } from '../../_components/NavBar';
+import { Main } from '../../_components/Main';
 import { Chip } from '../../_components/Chip';
 import { gatewayFetch, GatewayError } from '../../_lib/gateway';
 import { MfaPanel } from '../../_components/MfaPanel';
@@ -47,7 +48,7 @@ export default function Admin() {
     <div className="min-h-dvh">
       <AppNav active="explore" />
 
-      <section className="max-w-[1400px] mx-auto px-4 sm:px-8 pt-10 pb-6">
+      <Main className="max-w-[1400px] mx-auto px-4 sm:px-8 pt-10 pb-6">
         <Chip tone="danger" className="mb-3">ADMIN · OPS</Chip>
         <h1 className="text-[36px] font-black tracking-[-0.02em]">Last 24 hours</h1>
 
@@ -83,7 +84,7 @@ export default function Admin() {
             </p>
           </>
         )}
-      </section>
+      </Main>
     </div>
   );
 }

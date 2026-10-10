@@ -496,3 +496,38 @@ in `docs/operations/grsai-edit-staging-verification-2026-09-29.md`: normal cron,
 matching stored/downloaded hash and clean reconciliation. It checks the exact
 endpoint, modality, price and ungated tier before enabling only the GrsAI edit.
 Production still requires the owner-approved migration workflow.
+
+## Update (2026-10-10): the kie Nano Banana Pro rollback is live and still $0.09
+
+While PR #829 (provider low-balance watch) was being checked, the kie price
+for `nano-banana-pro` looked ambiguous: kie's pricing API
+(`POST /client/v1/model-pricing/page`) no longer lists the model at all (it
+lists nano-banana-2-1 and nano-banana-2-lite), the English model page says
+"18 credits (~$0.09)", the Chinese page says "8 credits (≈ $0.04) for 1K/2K",
+and docs.kie.ai still documents `model: nano-banana-pro` on
+`/api/v1/jobs/createTask` with an example `creditsConsumed: 8`.
+
+One STAGING-keyed probe through `packages/adapters/kie.js` (the exact body
+production sends: `resolution: 2K`, `aspect_ratio: 1:1`, `output_format: png`)
+settled it:
+
+| | |
+|---|---|
+| taskId | `1386158d0bdcfbd4b51feda313134141` |
+| createTask | HTTP 200, code 200 |
+| recordInfo | `state: success`, `model: nano-banana-pro`, `costTime: 33` |
+| `creditsConsumed` | **18** (account balance moved by exactly 18 as well) |
+| output | `tempfile.aiquickdraw.com`, HTTP 200, no redirect, `image/png`, 2048×2048, 9,289,709 bytes, renders (the requested teapot) |
+
+18 kie credits is $0.09, the value `nano-banana-pro-kie` has carried since 0105
+and the charge 0106 recorded on 2026-09-24. The row therefore needs no
+re-costing migration: `provider_cost_per_unit` 0.09, 6 Credits, inactive. The
+rollback described under the 2026-09-24 update (deactivate
+`nano-banana-pro-grsai`, reactivate `nano-banana-pro-kie` at 6 credits)
+remains usable as written.
+
+What this does not prove: that kie will keep the model listed. It has already
+left the pricing API, and the 8-credit figure on the Chinese page and in the
+docs example did not apply to a 2K request on this account. Re-run the same
+probe before any rollback is applied, and treat a `creditsConsumed` other than
+18 as a reason to re-cost first.

@@ -1,0 +1,22 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Editor slice 1 export check</title>
+<body>Slice 1 export check (ADR-0080). Driven by slice1.mjs.
+<script type="importmap">{ "imports": { "mediabunny": "/mediabunny.mjs" } }</script>
+<script type="module">
+  import * as TL from '/lib/editorTimeline.mjs';
+  import * as MD from '/lib/editorMedia.mjs';
+  import * as EX from '/lib/editorExport.mjs';
+  import * as RD from '/lib/editorRender.mjs';
+  import * as PV from '/lib/editorPreview.mjs';
+  const blobs = new Map();
+  async function load(file, id) {
+    const blob = await (await fetch(`/media/${file}`)).blob();
+    const probe = await MD.probeMedia(blob);
+    const problem = MD.checkProbe(probe);
+    if (problem) return { error: problem };
+    blobs.set(id, blob);
+    return MD.mediaFromProbe(id, file, probe);
+  }
+  window.s1 = { TL, MD, EX, RD, PV, blobs, load, ready: true };
+</script>

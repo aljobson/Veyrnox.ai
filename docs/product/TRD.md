@@ -115,7 +115,7 @@ being unset (ISSUES D10). While `PUBLISH_ENABLED` is not `"true"`,
 `middleware.js` answers `/api/v1/social/*` with 503 `publish_not_open`; the
 cron publish sweep is not gated. Client-only previews use `localStorage.veyrnox_*`:
 `veyrnox_editor`, `veyrnox_editor_captions`, `veyrnox_auto_short`,
-`veyrnox_video_agent`, `veyrnox_projects`, `veyrnox_social_cinema`. Chat has no
+`veyrnox_projects`, `veyrnox_social_cinema`. Chat and the video agent have no
 preview switch any more.
 
 ## 5. Data access
