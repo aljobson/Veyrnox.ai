@@ -106,8 +106,9 @@ jobs:
       # split is restored as it was, not collapsed onto one version.
       # One failed read here deployed nothing on 2026-10-09 (a 504 after 55 s,
       # #753), so it is tried up to five times: 1, 2, 4 and 8 s apart, 10 s a
-      # try, no new try after 45 s. Into a file, not a pipe: a try that broke
-      # off would leave half an answer in front of the next one.
+      # try. curl stops trying again once a try fails more than 45 s in, so
+      # about a minute at the very worst. Into a file, not a pipe: a try that
+      # broke off would leave half an answer in front of the next one.
       - name: Record the live deployment
         if: env.HAS_TOKEN == 'true' && steps.tip.outputs.stale != 'true'
         env:
@@ -148,9 +149,10 @@ jobs:
 
       # Rolls back the Worker only. Applied migrations stay applied, which is
       # why migrations must keep working with the previous release.
-      # The request is tried up to five times, as the read above is. Sending
-      # it twice is safe: each one makes the recorded versions live again, so
-      # a repeat only adds an entry to the deployment history.
+      # The request is tried up to five times, as the read above is. Each one
+      # asks for the recorded versions to be live, so a repeat asks for what is
+      # already so. A try cut off at 10 s may still have been applied, which
+      # is why a failure here says "may".
       - name: Roll back to the recorded deployment
         if: failure() && (steps.smoke.outcome == 'failure' || steps.secret_check.outcome == 'failure')
         env:
@@ -207,7 +209,7 @@ jobs:
             detail='ci did not pass on this commit, so it was not deployed. Production still runs the previous version. Fix ci on main; the next green commit deploys.'
           else
             title="Production deploy failed — ${GITHUB_SHA:0:7}"
-            detail='If the smoke test or secret preservation check failed, production was rolled back automatically to the previously live version; main still holds the failing commit, so fix forward or revert it.'
+            detail='If the smoke test or secret preservation check failed, the workflow rolled production back to the previously live version, unless the run log says ROLLBACK FAILED; main still holds the failing commit, so fix forward or revert it.'
           fi
           gh label create deploy-failure --color B60205 --description 'Production deploy failed or was rolled back' 2>/dev/null || true
           existing=$(gh issue list --label deploy-failure --state open --json number --jq '.[0].number // empty')

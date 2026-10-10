@@ -41,13 +41,15 @@ export function assertPreserved(required, versions) {
 }
 
 // The name of what went wrong, never its message: that may repeat the URL.
+// A refused connection keeps its code one level further down.
 function errorName(error) {
-    const name = error?.cause?.code ?? error?.name;
+    const name = error?.cause?.code ?? error?.cause?.errors?.[0]?.code ?? error?.name;
     return typeof name === 'string' && /^\w{1,40}$/.test(name) ? name : 'Error';
 }
 
 export async function liveVersions({ accountId, workerName, token, fetchImpl = fetch, delaysMs = RETRY_DELAYS_MS,
-    budgetMs = BUDGET_MS, now = Date.now, sleep = (ms) => new Promise((r) => setTimeout(r, ms)), log = console.log }) {
+    tryTimeoutMs = TRY_TIMEOUT_MS, budgetMs = BUDGET_MS, now = Date.now,
+    sleep = (ms) => new Promise((r) => setTimeout(r, ms)), log = console.log }) {
     if (!accountId || !workerName || !token) throw new Unreadable('Cloudflare deployment credentials unavailable');
     const base = `https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(accountId)}/workers/scripts/${encodeURIComponent(workerName)}`;
     const started = now();
@@ -80,12 +82,12 @@ export async function liveVersions({ accountId, workerName, token, fetchImpl = f
         for (let tries = 1; ; tries++) {
             const left = deadline - now();
             if (left <= 0) throw new Unreadable(`${what} was not tried: the ${budgetMs / 1000} s for the whole check were used up`);
-            const outcome = await once(path, Math.min(TRY_TIMEOUT_MS, left));
+            const outcome = await once(path, Math.min(tryTimeoutMs, left));
             if (outcome.result) return outcome.result;
             if (!outcome.again) throw new Unreadable(`${what} ${outcome.why}; not tried again`);
             const delay = delaysMs[tries - 1];
             if (delay === undefined || now() + delay >= deadline) {
-                throw new Unreadable(`${what} ${outcome.why}; gave up after ${tries} tries over ${Math.round((now() - started) / 1000)} s`);
+                throw new Unreadable(`${what} ${outcome.why}; gave up after ${tries} ${tries === 1 ? 'try' : 'tries'} over ${Math.round((now() - started) / 1000)} s`);
             }
             log(`::notice::${what} ${outcome.why} (try ${tries} of ${delaysMs.length + 1}); trying again in ${delay / 1000} s.`);
             await sleep(delay);

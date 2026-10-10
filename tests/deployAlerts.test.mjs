@@ -45,4 +45,8 @@ test('the rollback request is tried again, and says so when it still fails', () 
     const rolledBack = rollback.indexOf('rolled back to $(jq -c .versions previous-deployment.json)');
     assert.ok(failed !== -1 && failed < rolledBack, 'a failed rollback is not reported as done');
     assert.match(rollback.slice(failed, rolledBack), /\n\s+exit 1\n\s+fi\n/);
+    // The issue is opened either way, so its text must not say the rollback happened when it did not.
+    const report = deploy.slice(deploy.indexOf('\n  report-failure:'));
+    assert.match(report, /rolled production back to the previously live version, unless the run log says ROLLBACK FAILED;/);
+    assert.equal(/was rolled back automatically/.test(report), false);
 });

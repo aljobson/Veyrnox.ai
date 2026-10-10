@@ -1,5 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { assertPreserved, failureLine, liveVersions, secretNames } from '../scripts/check-worker-secrets.mjs';
 
 const version = (names) => ({ resources: { bindings: names.map((name) => ({ type: 'secret_text', name })) } });
@@ -162,4 +167,71 @@ test('no binding value, API error text or token reaches the log or the error', a
     assert.equal(said.includes(PRIVATE), false);
     assert.equal(/[\r\n]/.test(said), false, 'a version id from the API broke the log line');
     assert.equal(api.lines.length, 6);
+});
+
+// A faked fetch that ignores its signal cannot show that a try is cut off.
+// This one hangs until the signal it was handed fires, as a real fetch does.
+test('a read that never answers is cut off: at the per-try limit, or at what is left of the budget', { timeout: 10_000 }, async () => {
+    let tries = 0;
+    const hang = (url, { signal }) => new Promise((resolve, reject) => {
+        tries++;
+        signal.addEventListener('abort', () => reject(signal.reason), { once: true });
+    });
+    const failure = (options) => liveVersions({ accountId: 'account', workerName: 'worker', token: TOKEN, fetchImpl: hang,
+        sleep: async () => {}, log: () => {}, ...options }).then(() => assert.fail('the read passed'), (error) => error);
+    let started = Date.now();
+    assert.match((await failure({ tryTimeoutMs: 30 })).message, /^GET \/deployments did not answer \(TimeoutError\); gave up after 5 tries over 0 s$/);
+    assert.equal(tries, 5);
+    assert.ok(Date.now() - started < 3000, 'a try outlived the per-try limit');
+    // The limit is 10 s a try. With 60 ms left for the whole check, the try gets 60 ms.
+    started = Date.now();
+    assert.match((await failure({ budgetMs: 60 })).message, /^GET \/deployments did not answer \(TimeoutError\); gave up after 1 try over 0 s$/);
+    assert.ok(Date.now() - started < 3000, 'a try outlived the budget');
+});
+
+test('a refused connection is named by its code, which sits one level further down', async () => {
+    const refused = new TypeError('fetch failed', { cause: new AggregateError([Object.assign(new Error('connect'), { code: 'ECONNREFUSED' })]) });
+    const api = fakeApi({ deployments: [refused, ok(DEPLOYMENTS)] });
+    await api.read();
+    assert.match(api.lines[0], /GET \/deployments did not answer \(ECONNREFUSED\) \(try 1 of 5\)/);
+});
+
+// The script itself, start to finish, as the workflow runs it. The network is
+// replaced by tests/fixtures/worker-secrets-fetch.mjs. The exit code is what
+// the workflow acts on: 1 rolls production back.
+const script = fileURLToPath(new URL('../scripts/check-worker-secrets.mjs', import.meta.url));
+const stub = new URL('./fixtures/worker-secrets-fetch.mjs', import.meta.url).href;
+function cli(mode, baseline, answers) {
+    const run = spawnSync(process.execPath, ['--import', stub, script, mode, baseline], {
+        env: { PATH: process.env.PATH, CLOUDFLARE_ACCOUNT_ID: 'account', WORKER_NAME: 'worker', CLOUDFLARE_API_TOKEN: TOKEN,
+            WORKER_SECRETS_STUB: JSON.stringify(answers) },
+        encoding: 'utf8',
+    });
+    return { status: run.status, out: run.stdout.trim(), err: run.stderr.trim(), all: run.stdout + run.stderr };
+}
+const PASSED = 'Live Worker secret binding check passed (2 names).';
+
+test('run as the workflow runs it: exit 0 when every name is there, exit 1 and the right line when not', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'worker-secrets-'));
+    const baseline = join(dir, 'previous-secrets.json');
+    try {
+        const capture = cli('capture', baseline, { names: ['PILOT', 'API_KEY'] });
+        assert.deepEqual([capture.status, capture.out, capture.err], [0, PASSED, '']);
+        assert.deepEqual(JSON.parse(readFileSync(baseline, 'utf8')), ['API_KEY', 'PILOT']);
+        const kept = cli('verify', baseline, { names: ['API_KEY', 'PILOT', 'NEW'] });
+        assert.deepEqual([kept.status, kept.out, kept.err], [0, PASSED, '']);
+        // The 2026-10-10 rollback: the version uploaded a moment ago answers 404 once.
+        const lagging = cli('verify', baseline, { names: ['API_KEY', 'PILOT'], versionFirst: 404 });
+        assert.deepEqual([lagging.status, lagging.out, lagging.err],
+            [0, `::notice::GET /versions/live answered 404 (try 1 of 5); trying again in 1 s.\n${PASSED}`, '']);
+        const lost = cli('verify', baseline, { names: ['API_KEY'] });
+        assert.deepEqual([lost.status, lost.out, lost.err],
+            [1, '', '::error::Secret binding check failed: Live Worker is missing secret bindings: PILOT']);
+        const refused = cli('verify', baseline, { names: ['API_KEY', 'PILOT'], version: 403 });
+        assert.deepEqual([refused.status, refused.out, refused.err], [1, '',
+            '::error::Secret binding check could not read the live Worker, so the bindings were NOT checked: GET /versions/live answered 403; not tried again']);
+        for (const run of [capture, kept, lagging, lost, refused]) assert.equal(/cf-token|private value/.test(run.all), false);
+    } finally {
+        rmSync(dir, { recursive: true, force: true });
+    }
 });
