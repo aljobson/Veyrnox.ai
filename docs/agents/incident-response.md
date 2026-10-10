@@ -65,8 +65,14 @@ Short on purpose: an incident is not the time to read.
 | Tier | When | What happens | Record |
 |---|---|---|---|
 | Warning | First policy breach with no third-party harm | Nothing removed. User sees no change today; an email is the follow-up. | `account_actions.action = 'warning'` with `job_id` |
-| Takedown | Content that breaches the AUP or a provider policy | The job's assets are deleted and queued for R2 deletion at once. | `account_actions.action = 'takedown'` with `job_id` |
-| Freeze | Third takedown, or a chargeback, or immediate danger | Generating and buying stop. Sign-in, library and account deletion still work. `unfreeze_account` is the only way back. | `account_actions.action = 'freeze'`, reason `content:third_takedown` |
+| Takedown | Content that breaches the AUP or a provider policy | The job's assets are deleted and queued for R2 deletion at once. The first standing takedown pauses generating for 3 days, the second for 7 (`users.hold_until`, refused as `ACCOUNT_ON_HOLD`); buying and the Library continue. | `account_actions.action = 'takedown'` with `job_id` and `hold_until` |
+| Freeze | Third standing takedown, or a chargeback, or immediate danger | Generating and buying stop. Sign-in, library and account deletion still work. `unfreeze_account` is the only way back; an upheld appeal calls it when fewer than three strikes remain. | `account_actions.action = 'freeze'`, reason `content:third_takedown` |
+| CSAM escalation | Child sexual abuse material, real or generated | Files stop being served but are kept on an evidence hold (`evidence_holds`, never the reaper) for the IWF/NCMEC report; the account is Frozen; no email. Procedure: `docs/agents/csam-escalation.md`. | `account_actions.action = 'csam_escalation'`, Freeze reason `content:csam_escalation`, later `evidence_released` |
+
+A user can appeal a warning, a takedown or a content Freeze from `/app/account/appeals`
+(Ofcom ICU D1/D2/D10). Decide at `/app/admin/appeals`: upholding takes the strike
+out of the count, recomputes the hold and lifts a content Freeze; both outcomes are
+emailed without the reason. User reports arrive at `/app/admin/reports`, CSAM first.
 
 Operate it at `/app/admin/violations` (find the user by email, user id or job id, then
 record a warning or a per-job takedown), or read the record with

@@ -9,6 +9,10 @@
  *                                    the first standing one holds generation
  *                                    for 3 days, the second for 7, the third
  *                                    Freezes the account (ADR-0083).
+ *                                    'csam_escalation' stops serving the job's
+ *                                    files but keeps the bytes on an evidence
+ *                                    hold, Freezes the account and emails
+ *                                    nobody (docs/agents/csam-escalation.md).
  *                                    Requires an Idempotency-Key header: a
  *                                    replay answers 200 with the first record
  *                                    and `replayed: true`, never a second strike.
@@ -30,7 +34,7 @@ import { requireDashboardAccess } from '../../../../../lib/accessJwt.js';
 
 const NOT_ADMIN = '42501';
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const TIERS = new Set(['warning', 'takedown']);
+const TIERS = new Set(['warning', 'takedown', 'csam_escalation']);
 const MAX_BODY_BYTES = 4 * 1024;
 // The form sends one key per attempt; the RPC stores it on the strike and
 // answers a replay with the first result, so a lost response and a resubmit
@@ -106,14 +110,18 @@ export async function POST(req) {
     if (jobId !== null && (typeof jobId !== 'string' || !UUID_RE.test(jobId))) return NextResponse.json({ error: 'job_id_invalid' }, { status: 400 });
     if (!TIERS.has(tier)) return NextResponse.json({ error: 'tier_invalid' }, { status: 400 });
     if (typeof reason !== 'string' || !reason.trim() || reason.length > 500) return NextResponse.json({ error: 'reason_invalid' }, { status: 400 });
-    if (tier === 'takedown' && jobId === null) return NextResponse.json({ error: 'job_id_required' }, { status: 400 });
+    if (tier !== 'warning' && jobId === null) return NextResponse.json({ error: 'job_id_required' }, { status: 400 });
 
     let result;
     try {
-        result = await rpc('record_content_violation', {
-            p_auth_id: g.authId, p_user_id: userId, p_job_id: jobId, p_tier: tier, p_reason: reason.trim(),
-            p_idempotency_key: idempotencyKey,
-        }, g.cfg);
+        result = tier === 'csam_escalation'
+            ? await rpc('record_csam_escalation', {
+                p_auth_id: g.authId, p_user_id: userId, p_job_id: jobId, p_reason: reason.trim(), p_idempotency_key: idempotencyKey,
+            }, g.cfg)
+            : await rpc('record_content_violation', {
+                p_auth_id: g.authId, p_user_id: userId, p_job_id: jobId, p_tier: tier, p_reason: reason.trim(),
+                p_idempotency_key: idempotencyKey,
+            }, g.cfg);
     } catch (err) {
         return rpcFailure(err, 'record');
     }
@@ -121,6 +129,14 @@ export async function POST(req) {
         const code = result && result.code ? String(result.code).toLowerCase() : 'violation_rejected';
         const status = code === 'user_not_found' || code === 'job_not_found' ? 404 : 400;
         return NextResponse.json({ error: code }, { status });
+    }
+    if (tier === 'csam_escalation') {
+        // Never a notice for this tier: the procedure says the person is not told.
+        console.error('[api/v1/admin/violations] csam escalation recorded for', userId, 'job', jobId, 'preserved', result.preserved, 'frozen', result.frozen);
+        return NextResponse.json({
+            action_id: result.action_id, tier: result.tier, assets_removed: result.assets_removed, preserved: result.preserved,
+            takedowns: null, frozen: result.frozen, hold_until: null, email: 'skipped', replayed: result.replayed === true,
+        }, { status: result.replayed === true ? 200 : 201, headers: { 'Cache-Control': 'no-store' } });
     }
     if (result.replayed === true) {
         // The strike was recorded by an earlier delivery of this key and the

@@ -74,6 +74,7 @@ export default function Admin() {
             <Link href="/app/admin/cinema" className="text-sm underline">Review Cinema creator applications</Link>
             <Link href="/app/admin/violations" className="text-sm underline">Content warnings and takedowns</Link>
             <Link href="/app/admin/appeals" className="text-sm underline">Content appeals</Link>
+            <Link href="/app/admin/reports" className="text-sm underline">User reports</Link>
           </div>
         )}
 

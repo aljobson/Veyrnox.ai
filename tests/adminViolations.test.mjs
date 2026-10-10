@@ -155,3 +155,28 @@ test('GET lists through list_content_violations with a validated user filter and
         assert.equal(calls.length, 1, 'invalid filters never reach the RPC');
     });
 });
+
+// ADR-0083: the tier above a takedown goes through record_csam_escalation,
+// needs a job, and never emails the user, configured or not.
+test('a csam_escalation goes through record_csam_escalation and sends no notice', async () => {
+    let notified = 0;
+    const calls = stubRpc((u) => {
+        if (u.includes('/rpc/record_csam_escalation')) {
+            return Response.json({ ok: true, action_id: '77777777-7777-4777-8777-777777777777', tier: 'csam_escalation', assets_removed: 2, preserved: 2, frozen: true, replayed: false });
+        }
+        notified += 1;
+        return Response.json([]);
+    });
+    await withEnv({ ...CONFIGURED, RESEND_API_KEY: 're_test', VIOLATION_EMAIL_FROM: 'Veyrnox <support@veyrnox.test>' }, async ({ POST }) => {
+        const noJob = await POST(request('POST', ADMIN, { user_id: USER, tier: 'csam_escalation', reason: 'IWF ref' }));
+        assert.deepEqual([noJob.status, (await noJob.json()).error], [400, 'job_id_required']);
+        const res = await POST(request('POST', ADMIN, { user_id: USER, job_id: JOB, tier: 'csam_escalation', reason: ' IWF ref 123 ' }));
+        assert.equal(res.status, 201);
+        assert.deepEqual(await res.json(), { action_id: '77777777-7777-4777-8777-777777777777', tier: 'csam_escalation', assets_removed: 2, preserved: 2, takedowns: null, frozen: true, hold_until: null, email: 'skipped', replayed: false });
+    });
+    const escalations = calls.filter((c) => c.url.includes('/rpc/record_csam_escalation'));
+    assert.equal(escalations.length, 1);
+    assert.deepEqual(escalations[0].body, { p_auth_id: 'auth-admin', p_user_id: USER, p_job_id: JOB, p_reason: 'IWF ref 123', p_idempotency_key: KEY });
+    assert.equal(calls.filter((c) => c.url.includes('/rpc/record_content_violation')).length, 0, 'not the strike RPC');
+    assert.equal(notified, 0, 'no user lookup, no email');
+});

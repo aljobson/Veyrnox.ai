@@ -247,12 +247,43 @@ function Actions({ rows }) {
                 {r.reason}
                 {r.job_id && <div className="font-vx-mono text-[10px] text-vx-fg-muted break-all">job {r.job_id}</div>}
               </div>
-              <div className="text-xs text-vx-fg-muted truncate">{r.actor}</div>
+              <div className="text-xs text-vx-fg-muted truncate">{r.actor}{r.action === 'csam_escalation' && <ReleaseEvidence actionId={r.id} />}</div>
             </div>
           ))}
         </div>
       </div>
     </section>
+  );
+}
+
+function ReleaseEvidence({ actionId }) {
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState('');
+  async function submit(event) {
+    event.preventDefault();
+    setBusy(true);
+    try {
+      const r = await gatewayFetch('/admin/reports', { method: 'POST', body: JSON.stringify({ release_action_id: actionId, reason: reason.trim() }) });
+      setResult(r.released ? `${r.released} file${r.released === 1 ? '' : 's'} queued for deletion.` : 'Nothing was left on hold.');
+    } catch (e) {
+      setResult(message(e.code));
+    } finally {
+      setBusy(false);
+    }
+  }
+  if (result) return <div className="mt-1 text-[11px]">{result}</div>;
+  if (!open) return <div className="mt-1"><button type="button" onClick={() => setOpen(true)} className="text-[11px] underline">Release evidence</button></div>;
+  return (
+    <form onSubmit={submit} className="mt-1 space-y-1" aria-label="Release evidence hold">
+      <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Report acknowledged, retention over" required minLength={3} maxLength={500}
+        className="w-full rounded border border-vx-border bg-vx-panel p-1 text-[11px]" />
+      <div className="flex gap-2">
+        <button type="submit" disabled={busy || reason.trim().length < 3} className="text-[11px] font-bold underline disabled:opacity-50">Release</button>
+        <button type="button" onClick={() => setOpen(false)} className="text-[11px] underline">Cancel</button>
+      </div>
+    </form>
   );
 }
 
@@ -270,5 +301,7 @@ function message(code) {
     idempotency_key_reused: 'That attempt key was used for a different grant. Cancel and start again.',
     grant_already_applied: 'The ledger already holds this grant. Refresh and check the ledger before trying again.',
     rate_limited: 'Too many requests. Wait a minute and try again.',
+    action_not_found: 'That escalation no longer exists.',
+    reason_invalid: 'Give a reason of 3 to 500 characters.',
   })[code] || 'The account ledger is unavailable right now. Please retry.';
 }

@@ -146,7 +146,7 @@ function UserCard({ user, onDone }) {
 }
 
 function Jobs({ jobs, user, onDone }) {
-  const [open, setOpen] = useState(null); // job_id with the takedown form open
+  const [open, setOpen] = useState(null); // { job, tier } with a form open
   return (
     <section className="mt-6">
       <h2 className="text-lg font-black tracking-[-0.02em] mb-3">Last {jobs.length} generation{jobs.length === 1 ? '' : 's'}</h2>
@@ -168,15 +168,18 @@ function Jobs({ jobs, user, onDone }) {
                 <div className="text-xs">
                   {j.taken_down ? <Chip tone="danger" noGlyph>Taken down</Chip> : j.has_asset ? <Chip tone="accent" noGlyph>Served</Chip> : <span className="text-vx-fg-muted">none</span>}
                 </div>
-                <div className="text-right">
-                  {!j.taken_down && j.has_asset && open !== j.job_id && (
-                    <Button size="sm" variant="danger" onClick={() => setOpen(j.job_id)}>Take down</Button>
+                <div className="text-right space-x-2">
+                  {!j.taken_down && j.has_asset && open === null && (
+                    <Button size="sm" variant="danger" onClick={() => setOpen({ job: j.job_id, tier: 'takedown' })}>Take down</Button>
+                  )}
+                  {j.has_asset && open === null && (
+                    <button type="button" onClick={() => setOpen({ job: j.job_id, tier: 'csam_escalation' })} className="text-[11px] font-semibold text-vx-danger underline">Escalate (CSAM)</button>
                   )}
                 </div>
               </div>
-              {open === j.job_id && (
+              {open?.job === j.job_id && (
                 <div className="px-5 pb-4">
-                  <ActionForm tier="takedown" userId={user.id} jobId={j.job_id} strikes={user.takedowns}
+                  <ActionForm tier={open.tier} userId={user.id} jobId={j.job_id} strikes={user.takedowns}
                     onCancel={() => setOpen(null)} onDone={() => { setOpen(null); onDone(); }} />
                 </div>
               )}
@@ -194,7 +197,8 @@ function ActionForm({ tier, userId, jobId = null, strikes = 0, onCancel, onDone 
   const [error, setError] = useState('');
   const [result, setResult] = useState(null);
   const attempt = useRef(null);
-  const willFreeze = tier === 'takedown' && strikes >= 2;
+  const willFreeze = (tier === 'takedown' && strikes >= 2) || tier === 'csam_escalation';
+  const escalation = tier === 'csam_escalation';
 
   async function submit(event) {
     event.preventDefault();
@@ -212,19 +216,27 @@ function ActionForm({ tier, userId, jobId = null, strikes = 0, onCancel, onDone 
   if (result) {
     return (
       <div role="status" className="mt-3 rounded-lg border border-vx-border p-4 text-sm">
-        Recorded {result.tier}{result.assets_removed ? `, ${result.assets_removed} asset${result.assets_removed === 1 ? '' : 's'} removed` : ''}.
-        {' '}{result.takedowns} standing takedown{result.takedowns === 1 ? '' : 's'} on this account{result.frozen ? '; the account is now frozen.' : result.hold_until ? `; generating is held until ${when(result.hold_until)}.` : '.'}
+        {result.tier === 'csam_escalation'
+          ? `Escalated. ${result.preserved} file${result.preserved === 1 ? '' : 's'} no longer served and held as evidence; the account is frozen. No email was sent. Now report it: docs/agents/csam-escalation.md.`
+          : <>Recorded {result.tier}{result.assets_removed ? `, ${result.assets_removed} asset${result.assets_removed === 1 ? '' : 's'} removed` : ''}.
+            {' '}{result.takedowns} standing takedown{result.takedowns === 1 ? '' : 's'} on this account{result.frozen ? '; the account is now frozen.' : result.hold_until ? `; generating is held until ${when(result.hold_until)}.` : '.'}</>}
         {result.email === 'sent' && <p className="mt-2 text-vx-fg-muted">The user has been emailed.</p>}
         {result.email === 'failed' && <p role="alert" className="mt-2 text-vx-danger">The email to the user failed. The {result.tier} stands; tell them yourself.</p>}
-        {result.email === 'skipped' && <p className="mt-2 text-vx-warn">No email was sent: email sending is not configured.</p>}
+        {result.email === 'skipped' && result.tier !== 'csam_escalation' && <p className="mt-2 text-vx-warn">No email was sent: email sending is not configured.</p>}
         <div className="mt-3"><Button size="sm" onClick={onDone}>Done</Button></div>
       </div>
     );
   }
   return (
-    <form onSubmit={submit} className="mt-3 rounded-lg border border-vx-border p-4 space-y-3" aria-label={`Record a ${tier}`}>
+    <form onSubmit={submit} className="mt-3 rounded-lg border border-vx-border p-4 space-y-3" aria-label={escalation ? 'Escalate as CSAM' : `Record a ${tier}`}>
+      {escalation && (
+        <p className="text-sm font-bold text-vx-danger">
+          Child sexual abuse material. This stops the files being served, keeps them on an evidence hold for the report, freezes the
+          account and sends no email. Then follow docs/agents/csam-escalation.md: IWF or NCMEC within 24 hours.
+        </p>
+      )}
       <label className="block text-sm">
-        Reason for the {tier}
+        {escalation ? 'Reference or reason (no description of the content)' : `Reason for the ${tier}`}
         <textarea value={reason} onChange={(e) => setReason(e.target.value)} required minLength={3} maxLength={500} rows={2}
           className="mt-2 w-full rounded-lg border border-vx-border bg-vx-panel p-3 text-sm" />
       </label>
@@ -232,12 +244,12 @@ function ActionForm({ tier, userId, jobId = null, strikes = 0, onCancel, onDone 
         Recorded with your email in the append-only account log{jobId ? ' against this job' : ''}. Do not paste the content itself or other people&apos;s details.
         {tier === 'takedown' && ' The asset is removed the moment this is saved.'}
         {tier === 'takedown' && !willFreeze && ` Generating will be held for ${strikes === 0 ? '3' : '7'} days.`}
-        {willFreeze && ' This is the third standing takedown: the account will be frozen.'}
+        {tier === 'takedown' && willFreeze && ' This is the third standing takedown: the account will be frozen.'}
       </p>
       {error && <p role="alert" className="text-vx-danger text-sm">{error}</p>}
       <div className="flex gap-2">
-        <Button type="submit" size="sm" variant={tier === 'takedown' ? 'danger' : 'primary'} disabled={busy || reason.trim().length < 3}>
-          {busy ? 'Saving…' : willFreeze ? 'Take down and freeze' : tier === 'takedown' ? 'Take down' : 'Record warning'}
+        <Button type="submit" size="sm" variant={tier === 'warning' ? 'primary' : 'danger'} disabled={busy || reason.trim().length < 3}>
+          {busy ? 'Saving…' : escalation ? 'Escalate and freeze' : willFreeze ? 'Take down and freeze' : tier === 'takedown' ? 'Take down' : 'Record warning'}
         </Button>
         <Button type="button" size="sm" variant="ghost" onClick={onCancel} disabled={busy}>Cancel</Button>
       </div>
@@ -258,7 +270,7 @@ function Record({ rows, loaded, scoped }) {
           {rows.map((r) => (
             <div key={r.id} className="grid grid-cols-[150px_110px_1fr_1fr_170px] items-start px-5 py-3 border-b border-vx-border/60 last:border-b-0 text-sm">
               <div className="font-vx-mono text-xs">{when(r.created_at)}</div>
-              <div><Chip tone={r.action === 'warning' ? 'warn' : r.action === 'appeal_upheld' ? 'accent' : r.action === 'appeal_rejected' ? 'neutral' : 'danger'} noGlyph>{r.action.replace('_', ' ')}</Chip></div>
+              <div><Chip tone={r.action === 'warning' ? 'warn' : r.action === 'appeal_upheld' ? 'accent' : r.action === 'appeal_rejected' || r.action === 'evidence_released' ? 'neutral' : 'danger'} noGlyph>{r.action.replace(/_/g, ' ')}</Chip></div>
               <div className="min-w-0">
                 <div className="truncate">{r.email}</div>
                 {r.job_id && <div className="font-vx-mono text-[10px] text-vx-fg-muted break-all">{r.model_id || 'job'} · {r.job_id}</div>}

@@ -135,7 +135,7 @@ test('handlers read the forwarded headers as absent', async () => {
 
     process.env.ADMIN_REQUIRE_AAL2 = 'true';
     try {
-        for (const [file, path] of [['metrics', '/api/v1/admin/metrics'], ['violations', '/api/v1/admin/violations'], ['users/lookup', `/api/v1/admin/users/lookup?user_id=${SUB}`], ['users/ledger', `/api/v1/admin/users/ledger?user_id=${SUB}`], ['appeals', '/api/v1/admin/appeals']]) {
+        for (const [file, path] of [['metrics', '/api/v1/admin/metrics'], ['violations', '/api/v1/admin/violations'], ['users/lookup', `/api/v1/admin/users/lookup?user_id=${SUB}`], ['users/ledger', `/api/v1/admin/users/ledger?user_id=${SUB}`], ['appeals', '/api/v1/admin/appeals'], ['reports', '/api/v1/admin/reports']]) {
             const res = await (await import(`../app/api/v1/admin/${file}/route.js`)).GET(request(path));
             assert.deepEqual([res.status, await res.json()], [403, { error: 'mfa_required' }], file);
         }

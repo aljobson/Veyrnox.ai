@@ -63,7 +63,10 @@ function AccountControls() {
     <section className="rounded-2xl border border-vx-border p-5">
       <h2 className="font-bold mb-2">Content decisions</h2>
       <p className="text-sm text-vx-fg-muted mb-4">If content on your account was given a warning or removed, you can see the decision and appeal it.</p>
-      <a href="/app/account/appeals" className="text-sm underline">Content decisions and appeals</a>
+      <div className="flex flex-wrap gap-4 text-sm underline">
+        <a href="/app/account/appeals">Content decisions and appeals</a>
+        <a href="/app/account/report">Report content</a>
+      </div>
     </section>
     <section className="rounded-2xl border border-vx-border p-5">
       <h2 className="font-bold mb-2">Your data</h2>
