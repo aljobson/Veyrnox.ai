@@ -45,9 +45,10 @@ let jwksCache = null;
  * @param {string} cfg.falKey            FAL_KEY (Backend secret)
  * @param {string} cfg.webhookBaseUrl    Our host + /api/webhook/fal (public)
  * @param {number} [cfg.timeoutMs=15000] submit timeout
+ * @param {typeof fetch} [fetchImpl=fetch] Internal transport injection for isolated exercises.
  * @returns {Promise<{ok: boolean, outcome: 'accepted'|'rejected'|'unknown', providerJobId?: string, statusUrl?: string, error?: string}>}
  */
-export async function submitJob(job, cfg) {
+export async function submitJob(job, cfg, fetchImpl = fetch) {
     // Job-id-only signalling. fal will call us back with the job_id in the
     // webhook_url's query string so we can look up the matching row.
     if (!/^[A-Za-z0-9._-]{1,128}$/.test(job.job_id)) {
@@ -85,7 +86,7 @@ export async function submitJob(job, cfg) {
     try {
         let res;
         try {
-            res = await fetch(postUrl.toString(), {
+            res = await fetchImpl(postUrl.toString(), {
                 method: 'POST',
                 signal: controller.signal,
                 headers: {
