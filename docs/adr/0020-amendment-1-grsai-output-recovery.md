@@ -40,3 +40,12 @@ redirect/lookalike refusal, recovery of stranded processed events, and refusal
 to copy from a stale SUCCEEDED snapshot after a stored or failed transition.
 Production acceptance requires actual stored image files and a full Film Studio
 journey with reviewed outputs; a provider-success status alone is insufficient.
+
+## Production follow-up at 19:20 UTC
+
+Release fcb26b1b recovered the original REF04 and REF06 jobs and the diagnostic
+without another debit. REF07 and REF08 remained without assets. The same
+authenticated production polling path recorded exact rejected CDN hosts
+`file2.aitohumanize.com` and `file4.aitohumanize.com`. Add these two observed
+hosts with the same protections and positive, redirect and lookalike coverage.
+Unobserved sibling hosts remain refused.
