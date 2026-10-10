@@ -28,7 +28,7 @@ export function TemplateRecipe({ preset, generatedPreview = false }) {
     <>
       <h2 className="mt-8 font-vx-mono text-[11px] tracking-[0.12em] text-vx-fg-muted">{original ? 'VEYRNOX REMIX PROMPT' : 'PROMPT'}</h2>
       <textarea aria-label="Template prompt" value={prompt} onChange={(event) => setPrompt(event.target.value)} maxLength={2000} rows={8}
-        className="mt-2 w-full rounded-xl border border-vx-border bg-vx-raised/60 px-4 py-3 text-[15px] leading-[1.55] text-vx-fg-body focus:outline-hidden focus:border-vx-accent" />
+        className="mt-2 w-full rounded-xl border border-vx-border bg-vx-panel px-4 py-3 text-[15px] leading-[1.55] text-vx-fg-body focus:outline-hidden focus:border-vx-accent" />
       <CopyPrompt text={prompt} label="Copy prompt" />
       <p className="mt-3 text-[13px] text-vx-fg-muted">{generatedPreview ? 'The preview was generated using this prompt and an original starting image. Your image and model results can vary.' : original ? 'Adapted for the model below to create similar content with your image. The preview shows the source effect.' : 'Edit it here or in the studio before generating.'}</p>
       {preset.steps && (
@@ -44,7 +44,7 @@ export function TemplateRecipe({ preset, generatedPreview = false }) {
             <p>{original.prompt ? 'Published source prompt, preserved with its reference labels. Use the source setup below for the full sequence.' : 'The source uses an effect workflow whose internal prompt is not public. The Veyrnox remix prompt above is our adaptation.'}</p>
             {original.prompt && (
               <>
-                <pre className="mt-4 max-h-80 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-vx-raised/60 p-3 font-sans text-sm leading-relaxed" tabIndex={0}>{original.prompt}</pre>
+                <pre className="mt-4 max-h-80 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-vx-panel p-3 font-sans text-sm leading-relaxed" tabIndex={0}>{original.prompt}</pre>
                 <CopyPrompt text={original.prompt} label="Copy original prompt" />
               </>
             )}

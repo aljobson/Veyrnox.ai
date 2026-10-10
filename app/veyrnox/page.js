@@ -72,7 +72,11 @@ export default async function VeyrnoxLanding() {
       <PresetWall catalog={catalog} />
       <ModelShelf catalog={catalog} />
       <LedgerExample catalog={catalog} />
-      <section id="publish" aria-labelledby="publish-title" className="max-w-[1300px] mx-auto px-4 sm:px-6 py-16 border-t border-vx-border">
+      {/* Same gap above as every other section, and the rule sits on the
+          content column: it used to touch the statement section's last line
+          and overhang the text by the page gutter on both sides. */}
+      <section id="publish" aria-labelledby="publish-title" className="max-w-[1300px] mx-auto px-4 sm:px-6 mt-28 sm:mt-36">
+        <div className="border-t border-vx-border pt-16">
         <h2 id="publish-title" className="vx-display text-[36px] sm:text-[48px]">Veyrnox Publish</h2>
         <p className="mt-5 max-w-[68ch] text-vx-fg-body text-[16px] leading-[1.7]">
           Our social publishing workspace is being prepared for release, starting with YouTube.
@@ -84,6 +88,7 @@ export default async function VeyrnoxLanding() {
           Videos are sent to your selected channel only when you choose to post or schedule them.
           Read our <a href="/legal/privacy#youtube" className="underline underline-offset-4">YouTube data privacy information</a> and <a href="/legal/terms" className="underline underline-offset-4">Terms</a>.
         </p>
+        </div>
       </section>
       <FAQBlock />
       <ClosingCTA />

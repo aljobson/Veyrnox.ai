@@ -7,6 +7,7 @@ import { SUPPORT_EMAIL } from '../_lib/tokens';
 import { clearAttribution } from '../_lib/utm';
 import { applyStoredTheme } from './ThemeToggle';
 import ReferralBridge from './ReferralBridge';
+import { Icon } from './Icon';
 
 // Everything that floats over every page: the read-progress bar, the
 // back-to-top button, the contact button, and the one-time storage notice.
@@ -59,15 +60,22 @@ export default function SiteChrome() {
     <>
       <ScrollProgress />
       <ReferralBridge />
-      {/* The buttons ride above the notice while it is up, instead of
-          sitting under it in the same bottom-right corner. */}
-      <FloatingActions raised={noticeOpen || onChat} />
-      {noticeOpen && <StorageNotice onDismiss={ackNotice} />}
+      {/* One bottom stack: the buttons sit on top of the notice whatever
+          height it wraps to. A fixed offset stopped clearing it on a phone
+          once the notice grew a sentence, and the Contact button slid half
+          under it. The stack itself takes no clicks; its children do. */}
+      <div data-print="hide" className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex flex-col items-end">
+        <FloatingActions raised={onChat && !noticeOpen} tucked={noticeOpen} />
+        {noticeOpen && <StorageNotice onDismiss={ackNotice} />}
+      </div>
     </>
   );
 }
 
-/* ─── Read-progress bar ─── */
+/* ─── Read-progress bar ───
+   Decoration: it reports where the page is scrolled to, not the progress of
+   a task, so it is hidden from assistive tech instead of being a
+   progressbar whose value was rewritten on every frame. */
 function ScrollProgress() {
   const barRef = useRef(null);
 
@@ -83,7 +91,6 @@ function ScrollProgress() {
       // A page shorter than the viewport has no progress to report.
       const ratio = scrollable > 0 ? Math.min(1, Math.max(0, window.scrollY / scrollable)) : 0;
       bar.style.transform = `scaleX(${ratio})`;
-      bar.setAttribute('aria-valuenow', String(Math.round(ratio * 100)));
     };
 
     const onScroll = () => {
@@ -107,18 +114,18 @@ function ScrollProgress() {
       ref={barRef}
       data-print="hide"
       className="vx-progress"
-      role="progressbar"
-      aria-label="Page scroll progress"
-      aria-valuemin={0}
-      aria-valuemax={100}
-      aria-valuenow={0}
+      aria-hidden="true"
       style={{ transform: 'scaleX(0)' }}
     />
   );
 }
 
-/* ─── Back to top + contact, bottom-right ─── */
-function FloatingActions({ raised = false }) {
+/* ─── Back to top + contact, bottom-right ───
+   `raised` lifts them clear of the chat composer. `tucked` drops Back to
+   top on a phone while the storage notice is up, which already takes a
+   fifth of the screen there. Contact stays: on most pages it is the only
+   contact link. */
+function FloatingActions({ raised = false, tucked = false }) {
   const [showTop, setShowTop] = useState(false);
 
   useEffect(() => {
@@ -138,26 +145,27 @@ function FloatingActions({ raised = false }) {
 
   return (
     <div
-      data-print="hide"
-      className={`fixed right-4 z-50 flex flex-col items-end gap-2 transition-[bottom] sm:right-6 ${
-        raised ? 'bottom-36 sm:bottom-24' : 'bottom-4 sm:bottom-6'
+      className={`mr-4 flex flex-col items-end gap-2 sm:mr-6 ${
+        raised ? 'mb-36 sm:mb-24' : 'mb-4 sm:mb-6'
       }`}
     >
+      {/* `invisible` as well as transparent: a see-through button still
+          took a Tab stop at the top of every page. */}
       <button
         type="button"
         onClick={toTop}
         aria-label="Back to top"
-        className={`inline-flex h-11 w-11 items-center justify-center rounded-full border border-vx-border bg-vx-panel text-vx-fg-body shadow-lg transition-opacity hover:border-vx-accent hover:text-vx-fg ${
-          showTop ? 'opacity-100' : 'pointer-events-none opacity-0'
+        className={`${tucked ? 'hidden sm:inline-flex' : 'inline-flex'} h-11 w-11 items-center justify-center rounded-full border border-vx-border bg-vx-panel text-vx-fg-body shadow-lg transition-[opacity,visibility] duration-200 hover:border-vx-accent hover:text-vx-fg ${
+          showTop ? 'pointer-events-auto visible opacity-100' : 'invisible opacity-0'
         }`}
       >
-        <span aria-hidden="true" className="text-base leading-none">↑</span>
+        <Icon name="arrowUp" size={18} />
       </button>
       <a
         href={`mailto:${SUPPORT_EMAIL}`}
-        className="inline-flex h-11 items-center gap-2 rounded-full bg-vx-accent px-4 text-sm font-extrabold text-vx-accent-ink shadow-lg hover:bg-vx-accent-hover"
+        className="pointer-events-auto inline-flex h-11 items-center gap-2 rounded-full bg-vx-accent px-4 text-sm font-extrabold text-vx-accent-ink shadow-lg hover:bg-vx-accent-hover"
       >
-        <span aria-hidden="true">✉</span>
+        <Icon name="mail" />
         <span className="hidden sm:inline">Contact</span>
         <span className="sr-only sm:hidden">Contact support by email</span>
       </a>
@@ -173,10 +181,9 @@ function FloatingActions({ raised = false }) {
 function StorageNotice({ onDismiss }) {
   return (
     <div
-      data-print="hide"
       role="region"
       aria-label="Browser storage notice"
-      className="fixed inset-x-0 bottom-0 z-50 border-t border-vx-border bg-vx-panel/95 px-4 py-3 backdrop-blur-sm sm:px-6"
+      className="vx-slide-up pointer-events-auto w-full border-t border-vx-border bg-vx-panel/95 px-4 py-3 backdrop-blur-sm sm:px-6"
     >
       <div className="mx-auto flex max-w-[1100px] flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-[13px] leading-[1.55] text-vx-fg-body">

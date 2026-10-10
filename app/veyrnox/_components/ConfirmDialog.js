@@ -21,7 +21,7 @@ export function ConfirmDialog({
 
   const confirmCls =
     tone === 'danger'
-      ? 'bg-vx-danger text-white hover:brightness-110'
+      ? 'bg-vx-danger text-vx-danger-ink hover:brightness-110'
       : 'bg-vx-accent text-vx-accent-ink hover:bg-vx-accent-hover';
 
   return (

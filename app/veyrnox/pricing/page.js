@@ -98,7 +98,7 @@ export default function Pricing() {
         <section className="max-w-[1300px] mx-auto px-4 sm:px-6 pt-24 sm:pt-32" aria-labelledby="credit-packs-heading">
           <h2 id="credit-packs-heading" className="vx-display text-[40px] sm:text-[56px]">Top up when you need to.</h2>
           <p className="mt-4 text-vx-fg-body max-w-[52ch] leading-[1.6]">One-off credit packs. Purchased credits never expire.</p>
-          <ul className="mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <ul className="mt-10 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
             {packs.map((p) => (
               <li key={p.id} className="vx-paper-shadow">
                 <div className="vx-paper px-6 pt-9 pb-10">

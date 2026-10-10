@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { MediaTile } from '../_components/MediaTile';
 import { SHOWCASE_CLIPS, MODEL_SHOWCASE_KEYS } from '../_lib/showcase';
 import { wallShapes, tileClasses } from '../_lib/presetWall';
-import { WALL_PRESETS, templateHref, presetCredits, presetTitle, shelfName } from '../_lib/tokens';
+import { WALL_PRESETS, templateHref, presetCredits, presetTitle, distinctShelfNames } from '../_lib/tokens';
 
 /* ─── Preset wall: the real presets, as a bento ─── */
 
@@ -31,7 +31,7 @@ export function PresetWall({ catalog }) {
               mediaClassName={classes.media}
               mediaStyle={{ background: preset.bg }}
             >
-              <div className="absolute inset-0 bg-linear-to-t from-black/75 via-black/10 to-transparent" />
+              <div className="vx-tile-scrim absolute inset-0" />
               {/* Fixed light ink: this sits on a hardcoded gradient under a
                   black scrim, so theme tokens would read near-black in light
                   theme. Same reasoning as the feature cards. */}
@@ -61,7 +61,8 @@ export const LIST_GROUPS = [
 export function ModelShelf({ catalog }) {
   const groups = LIST_GROUPS
     .map((g) => ({ ...g, rows: catalog.filter((m) => m.kind === g.kind) }))
-    .filter((g) => g.rows.length > 0);
+    .filter((g) => g.rows.length > 0)
+    .map((g) => ({ ...g, nameOf: distinctShelfNames(g.rows) }));
   if (groups.length === 0) return null;
   const total = groups.reduce((n, g) => n + g.rows.length, 0);
 
@@ -82,7 +83,7 @@ export function ModelShelf({ catalog }) {
               className="block rounded-2xl overflow-hidden mb-4"
               mediaClassName="aspect-[4/5] lg:aspect-auto lg:h-56"
             >
-              <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/10 to-transparent" />
+              <div className="vx-tile-scrim absolute inset-0" />
               <div className="absolute inset-x-0 bottom-0 p-4 flex items-baseline justify-between gap-3 text-white">
                 <h3 className="text-xl font-black">{g.label}</h3>
                 <span className="text-[13px] text-white/85">{g.unit}</span>
@@ -95,7 +96,7 @@ export function ModelShelf({ catalog }) {
                     href={`/app/create?model=${encodeURIComponent(m.id)}`}
                     className="group flex items-baseline gap-2 py-2 text-vx-fg-body hover:text-vx-fg"
                   >
-                    <span className="min-w-0 truncate group-hover:underline underline-offset-4">{shelfName(m.name)}</span>
+                    <span className="min-w-0 truncate group-hover:underline underline-offset-4">{g.nameOf(m)}</span>
                     {m.gated && <span className="shrink-0 text-[11px] text-vx-money">premium</span>}
                     <span aria-hidden className="vx-leader flex-1" />
                     <span className="shrink-0 font-bold text-vx-money">{m.credits} cr</span>

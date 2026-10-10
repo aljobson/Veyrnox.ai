@@ -196,10 +196,10 @@ export function TopUpPacks({ signedIn }) {
               return (
                 <label
                   key={p.id}
-                  className={`flex flex-col items-start rounded-xl border px-4 py-3 cursor-pointer bg-vx-base/60 has-focus-visible:outline-solid has-focus-visible:outline-2 has-focus-visible:outline-vx-accent ${on ? 'border-vx-money' : 'border-vx-border hover:border-vx-money/60'}`}
+                  className={`flex flex-col items-start rounded-xl border px-4 py-3 cursor-pointer transition-colors duration-150 has-focus-visible:outline-solid has-focus-visible:outline-2 has-focus-visible:outline-vx-accent ${on ? 'border-vx-money bg-vx-money/[0.07] shadow-[inset_0_0_0_1px_rgb(var(--vx-money))]' : 'border-vx-border bg-vx-base/60 hover:border-vx-money/60'}`}
                 >
                   <input type="radio" name="credit-pack" value={p.id} checked={on} onChange={() => { setSelected(p.id); setIdempotencyKey(makeIdempotencyKey()); }} className="sr-only" />
-                  <span className="font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted">CREDIT PACK</span>
+                  <span className="flex w-full items-center justify-between gap-3 font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted">CREDIT PACK{on && <span aria-hidden="true" className="text-vx-money">✓</span>}</span>
                   <span className="font-vx-mono text-[18px] font-bold text-vx-money mt-1 vx-num">+{new Intl.NumberFormat('en-US').format(p.credits)} cr</span>
                   <span className="font-vx-mono text-[12px] text-vx-fg-body mt-1">
                     {new Intl.NumberFormat('en-US').format(p.credits)} credits — {usd.format(p.price_usd_cents / 100)} <span className="text-vx-fg-muted">+ applicable tax</span>
@@ -223,7 +223,7 @@ export function TopUpPacks({ signedIn }) {
           </p>
 
           <label className="mt-4 flex items-start gap-2 text-sm text-vx-fg-body cursor-pointer">
-            <input type="checkbox" required checked={consent} onChange={(e) => setConsent(e.target.checked)} className="mt-1" />
+            <input type="checkbox" required checked={consent} onChange={(e) => setConsent(e.target.checked)} className="mt-1 accent-vx-accent" />
             <span>
               {SUPPLY_CONSENT_TEXT}{' '}
               <a href="/legal/refund" className="underline text-vx-fg-muted">Refund policy</a>
@@ -231,7 +231,7 @@ export function TopUpPacks({ signedIn }) {
           </label>
 
           <div className="mt-4 flex items-center gap-3">
-            <Button variant="money" onClick={buy} disabled={!selected || !consent || busy}>
+            <Button variant="money" className="min-w-[11.5rem] justify-center" onClick={buy} disabled={!selected || !consent || busy}>
               {busy ? 'Opening checkout…' : 'Buy credits'}
             </Button>
             <span className="font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-faint">SECURE CHECKOUT BY STRIPE · STRIPE, INC. IS MERCHANT OF RECORD</span>

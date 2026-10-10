@@ -57,7 +57,8 @@ export function ParticleButton({
               top: burst.y,
               '--dx': `${p.dx}px`,
               '--dy': `${p.dy}px`,
-              animationDelay: `${i * 0.1}s`,
+              // 40ms apart: at 100ms the last dot was still flying when the burst unmounted.
+              animationDelay: `${i * 40}ms`,
             }}
           />
         ))}
@@ -65,7 +66,7 @@ export function ParticleButton({
         ref={buttonRef}
         type="button"
         onClick={handleClick}
-        className={`relative transition-transform duration-100 ${burst ? 'scale-95' : ''} ${className}`}
+        className={`relative transition-[scale,background-color] duration-150 ease-out enabled:active:scale-[0.97] ${className}`}
         {...props}
       >
         {children}

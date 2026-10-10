@@ -34,7 +34,7 @@ export function GenerationSettings({ model, seed, onSeed, negative, onNegative }
               Roll
             </button>
           </div>
-          <p id="vx-seed-help" className={`mt-1.5 text-[12px] ${bad ? 'text-vx-danger' : 'text-vx-fg-muted'}`}>
+          <p id="vx-seed-help" aria-live="polite" className={`mt-1.5 text-[12px] ${bad ? 'text-vx-danger' : 'text-vx-fg-muted'}`}>
             {bad ? `A whole number from 0 to ${SEED_MAX}.` : 'The same seed and prompt give a similar result. Leave blank for a new one each time.'}
           </p>
         </div>
