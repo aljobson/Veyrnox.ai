@@ -40,6 +40,8 @@ on:
       - "scripts/test-chat-close-send.mjs"
       - "scripts/test-chat-folders.mjs"
       - "scripts/test-free-allowance-jobs.mjs"
+      - "scripts/test-free-allowance-starting-values.mjs"
+      - "scripts/test-cinema-pass-event-ordering.mjs"
       - "scripts/test-fal-dispatch.mjs"
       - "scripts/test-fal-admission-capacity.mjs"
       - "scripts/test-fal-admission-pause.mjs"
@@ -148,6 +150,8 @@ jobs:
             })();
           "
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/replay-migrations.mjs
+          DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-free-allowance-starting-values.mjs
+          DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-pass-event-ordering.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-reconciliation-snapshot.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-recovery-health.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-video-agent-sweep-health.mjs

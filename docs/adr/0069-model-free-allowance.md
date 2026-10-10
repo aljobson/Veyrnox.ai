@@ -81,3 +81,14 @@ that chooses Thinking, Web search or images is priced normally, because those ex
 allowance's per-job cost bound ($0.05) was not set against. A plain reply is the row's base price, which is what the allowance
 waives. The check is `price == the row's base credits`, so a new option cannot slip into a free reply. Everything else in this
 ADR is unchanged: the flag, the caps, the refund returning the allowance, and eligibility.
+
+## Addendum 2026-10-10: replay and staging history
+
+Migration 0222 filtered on the old zero allowances, so its positive row-count
+guards refused a replay even when the intended values were already present.
+0262 assigns the same 3/account/day, 100-global chat and 40-global image values
+without the old-zero predicates. All original provider, active, modality,
+price and cost predicates and exact positive row-count guards remain. Missing
+or changed catalog prerequisites still abort atomically. This does not raise
+allowances, change prices, enable a flag or mint Credits. Staging records
+0262 as an explicit forward repair; the old file and history remain intact.

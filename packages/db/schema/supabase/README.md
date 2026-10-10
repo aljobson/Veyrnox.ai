@@ -197,3 +197,30 @@ was ever applied there. (0033–0034, listed here before, are real migrations.)
 An unexplained one is the shape of "applied to production, never committed" —
 `scripts/check-migration-ledger.mjs` is what actually rules that out, because
 it reads the live `applied_migration_names()` ledger.
+
+## Reconciled historical staging receipts — 10 October 2026
+
+The following AI staging receipts are historical, not pending production SQL.
+Their recorded statements and checksums are preserved in
+[the staging archive](../../../../docs/archive/staging-migrations-2026-10-10/README.md).
+No receipt is removed and no obsolete SQL is replayed.
+
+| Full applied name | Explanation |
+| --- | --- |
+| `0035_stripe_credit_packs` | Unmerged Stripe #108 branch; reverted before the current Credit Pack schema. |
+| `0036_purchase_supply_consent` | Unmerged Stripe #108 branch; reverted before the current Credit Pack schema. |
+| `0037_proportional_refund_clawback` | Unmerged Stripe #108 branch; reverted before the current Credit Pack schema. |
+| `0039_sales_channel` | Unmerged Stripe #108 branch; reverted before the current Credit Pack schema. |
+| `0040_pricing_floors` | Unmerged Stripe #108 branch; reverted before the current Credit Pack schema. |
+| `0041_dispute_opened_freeze` | Unmerged Stripe #108 branch; reverted before the current Credit Pack schema. |
+| `revert_pr108_stripe_objects_0035_0041` | Rollback of those six branch migrations; obsolete objects are absent. |
+| `drop_wallet_residue_staging` | Separate-product cleanup; old tables, views, functions and cron are absent. |
+| `staging_publish_append_only_no_truncate` | 0177 truncate guards replayed after the Publish tables existed; guards are present. |
+
+Staging already held the complete intended catalog values of 0222 without its
+receipt. Forward migration `0262_free_allowance_replay_safe_starting_values`
+reassigns those exact values under the original provider/price/cost predicates
+and exact positive row-count guards, then records its own receipt. The original
+0222 file and missing receipt are preserved. Read-only coverage reports the
+explicit forward reconciliation separately; the protected production apply
+planner's original-receipt and ordering rules are unchanged.
