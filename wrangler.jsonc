@@ -232,6 +232,17 @@
         "FAL_SUBMIT_OUTCOME_ENABLED": "false",
         "FAL_DISPATCH_SCHEMA_ENABLED": "true",
         "RECOVERY_HEALTH_ENABLED": "true",
+        // Production controls, named here because vars are not inherited (audit 2026-10-09, S-02;
+        // tests/stagingControlVars.test.mjs keeps the two blocks aligned). The six limits need
+        // migrations 0110 to 0125, which staging has. The second-factor gate locks out an admin
+        // who holds no factor: enrol TOTP at /app/admin on staging before deploying this.
+        "TOP_UP_RETURN_RATE_LIMIT_ENABLED": "true",
+        "TOP_UP_READ_RATE_LIMIT_ENABLED": "true",
+        "TOP_UP_CHECKOUT_RATE_LIMIT_ENABLED": "true",
+        "ACCOUNT_READ_RATE_LIMIT_ENABLED": "true",
+        "UPLOAD_REQUEST_RATE_LIMIT_ENABLED": "true",
+        "ASSET_LINK_RATE_LIMIT_ENABLED": "true",
+        "ADMIN_REQUIRE_AAL2": "true",
         // ADR-0044 (vars are not inherited). On for the activation proof: 0129 is applied here and the staging bucket's
         // CORS allows PUT with Content-Type and If-None-Match from this origin (preflight checked 2026-10-09).
         // Production stays "false" until its bucket allows If-None-Match too; today it would refuse every upload.
