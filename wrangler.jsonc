@@ -261,6 +261,8 @@
         "FAL_DURABLE_DISPATCH_ENABLED": "false",
         "FAL_DISPATCH_QUEUE_ENABLED": "false",
         "SUBSCRIPTIONS_ENABLED": "false",
+        "VOTING_ENABLED": "false",
+        "COMMENTS_ENABLED": "false",
         // ADR-0067: Chat is open on staging for testing only. No text model is
         // active until the owner activates one; production stays "false".
         "CHAT_ENABLED": "true",

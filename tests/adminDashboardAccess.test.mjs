@@ -260,9 +260,11 @@ test('verifyAccessLogin: returns a login\'s payload and throws for any other ass
 const TITLE = '22222222-2222-4222-8222-222222222222';
 const CINEMA_ON = {
     CINEMA_ENABLED: 'true', SOCIAL_CINEMA_PROFILES_ENABLED: 'true', CREATOR_APPLICATIONS_ENABLED: 'true', CREATOR_CONTENT_ENABLED: 'true',
+    CINEMA_VIEWING_ENABLED: 'true', VOTING_ENABLED: 'true', COMMENTS_ENABLED: 'true',
     CINEMA_PUBLISHING_ENABLED: 'true', CINEMA_UNLOCKS_ENABLED: 'true', CINEMA_SUBSCRIPTIONS_ENABLED: 'true',
 };
 const CINEMA_ANSWER = {
+    competitions: [], votes: [], comments: [], reports: [], idempotent: true,
     ok: true, applications: [], submissions: [], content: [], id: USER, status: 'approved',
     content_id: TITLE, pass_id: TITLE, unlocks_reversed: 0, credits_returned: 0, complete: true, refund_usd_cents: 100,
 };
@@ -271,6 +273,10 @@ const cinemaAdmin = () => ({
     'idempotency-key': USER, ...EDGE,
 });
 const CINEMA_ROUTES = [
+    ['cinema voting GET', '../app/api/v1/admin/cinema/voting/route.js', 'GET', '/api/v1/admin/cinema/voting', undefined],
+    ['cinema voting POST', '../app/api/v1/admin/cinema/voting/route.js', 'POST', '/api/v1/admin/cinema/voting', { action: 'close_competition', id: TITLE, reason: 'Window completed' }],
+    ['cinema comments GET', '../app/api/v1/admin/cinema/comments/route.js', 'GET', '/api/v1/admin/cinema/comments', undefined],
+    ['cinema comments POST', '../app/api/v1/admin/cinema/comments/route.js', 'POST', '/api/v1/admin/cinema/comments', { action: 'review_comment', id: TITLE, decision: 'approved', reason: 'Comment reviewed' }],
     ['cinema creators GET', '../app/api/v1/admin/cinema/creators/route.js', 'GET', '/api/v1/admin/cinema/creators', undefined],
     ['cinema creators POST', '../app/api/v1/admin/cinema/creators/route.js', 'POST', '/api/v1/admin/cinema/creators', { application_id: TITLE, decision: 'approved', reason: 'Original work' }],
     ['cinema earnings GET', '../app/api/v1/admin/cinema/earnings/route.js', 'GET', '/api/v1/admin/cinema/earnings', undefined],
@@ -293,7 +299,7 @@ for (const route of CINEMA_ROUTES) {
         t.mock.method(console, 'info', () => {});
         const said = errorLog(t);
         const k = await keypair();
-        const reached = stubNetwork([k.jwk], () => Response.json(CINEMA_ANSWER));
+        const reached = stubNetwork([k.jwk], (u) => Response.json(u.endsWith('/manage_cinema_voting') ? { ...CINEMA_ANSWER, status: 'closed' } : CINEMA_ANSWER));
         const assertion = await mint(k, {}, SERVICE_TOKEN);
         await withEnv({ ...SUPABASE, ...ACCESS, ...CINEMA_ON }, async () => {
             const res = await call(route, { ...cinemaAdmin(), 'cf-access-jwt-assertion': assertion });
@@ -308,7 +314,7 @@ for (const route of CINEMA_ROUTES) {
     test(`${route[0]}: a person's login passes the door`, async (t) => {
         t.mock.method(console, 'info', () => {});
         const k = await keypair();
-        const reached = stubNetwork([k.jwk], () => Response.json(CINEMA_ANSWER));
+        const reached = stubNetwork([k.jwk], (u) => Response.json(u.endsWith('/manage_cinema_voting') ? { ...CINEMA_ANSWER, status: 'closed' } : CINEMA_ANSWER));
         const said = errorLog(t);
         await withEnv({ ...SUPABASE, ...ACCESS, ...CINEMA_ON }, async () => {
             const res = await call(route, { ...cinemaAdmin(), 'cf-access-jwt-assertion': await mint(k) });
@@ -322,7 +328,7 @@ for (const route of CINEMA_ROUTES) {
         t.mock.method(console, 'info', () => {});
         const said = errorLog(t);
         const k = await keypair();
-        const reached = stubNetwork([k.jwk], () => Response.json(CINEMA_ANSWER));
+        const reached = stubNetwork([k.jwk], (u) => Response.json(u.endsWith('/manage_cinema_voting') ? { ...CINEMA_ANSWER, status: 'closed' } : CINEMA_ANSWER));
         const bad = [undefined, 'not.a.jwt', await mint(await keypair('kid-1')), await mint(k, { aud: ['b'.repeat(64)] })];
         await withEnv({ ...SUPABASE, ...ACCESS, ...CINEMA_ON }, async () => {
             for (const assertion of bad) {
@@ -339,7 +345,7 @@ for (const route of CINEMA_ROUTES) {
 }
 
 // A handler factory that verifies the assertion itself, in the mode that does.
-const CINEMA_ADMIN = /^(?:creatorHandler\(\{ review: true\b|earningsHandler\(|operatorHandler\(\{ action: '(?:reverse_unlocks|refund_pass)'|publishHandler\(\{ action: '(?:queue|review|suspend)')/;
+const CINEMA_ADMIN = /^(?:creatorHandler\(\{ review: true\b|earningsHandler\(|operatorHandler\(\{ action: '(?:reverse_unlocks|refund_pass)'|publishHandler\(\{ action: '(?:queue|review|suspend)'|(?:votingHandler|commentsHandler)\(\{ action: '(?:queue|manage)')/;
 
 test('every route under /api/v1/admin verifies the Access assertion in code', async () => {
     const { readFileSync, readdirSync, statSync } = await import('node:fs');

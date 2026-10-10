@@ -167,3 +167,10 @@ Live renewal acceptance needs a separate setup that aligns those clocks.
 Live renewal, spent/late cooling-off refusal, replacement purchase API retry,
 return recovery, refund-before-first-invoice ordering, disputes and the
 remaining checklist above still require acceptance evidence.
+
+
+## UI increment prepared 10 October 2026 (ADR-0082)
+
+Public Pricing and Credits & billing now implement the gated offer, explicit recurring-price consent, checkout return recovery and owned cancellation controls. `SUBSCRIPTIONS_ENABLED=false` still blocks offers/new sales. Owned authenticated reads, cancellation and paid-checkout recovery stay available when sales are off; webhooks are unchanged. `/api/credit-subscription-plans` is an anonymous, read-only, no-store projection that ignores inbound identity headers.
+
+Local unit/API and synthetic Reticle evidence does not close the real Stripe acceptance items above. Customer wording in ADR-0082 and matching Terms still need Finance/Legal approval. Real test-account purchase, return, renewal, both cancellation modes, pending/refused refund, dispute, alert and account-switch acceptance remain launch requirements.

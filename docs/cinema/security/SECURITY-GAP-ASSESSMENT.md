@@ -62,3 +62,8 @@ provider removal. Daily creation caps bound churn after capacity release. G10 is
 still OPEN for account erasure, approved retention/purge and unknown provisioning
 reconciliation. Copied tus capability invalidation requires live testing before
 activation. No automatic expiration purge or real provider deletion was performed.
+
+
+## Community increment (ADR-0081, 10 October 2026)
+
+T03/T09/T10/T11 and G01/G02/G03/G04/G09/G10/G11 gain scoped competition-window, durable ballot uniqueness, velocity holds, pre-approved plain-text comments, author withdrawal, private reports, cursor pagination and reasoned append-only review. Trusted service RPCs enforce current Auth/profile/membership and parent publication checks. Administrator routes verify a person’s Access login and recent TOTP; a service-token assertion cannot authorize review. Current public projections exclude ineligible authors/voters and all private review data. Real PostgreSQL and API/Access fixtures cover negative permissions and concurrent retries; Reticle covers the visible vote, submission and review journeys using synthetic local identity/API. Broader ASVS coverage stays PARTIAL. Distributed account abuse, real staging/Access acceptance, moderation staffing/report-response policy, incident escalation, legal retention and deletion/backups remain OPEN and block activation. No payment or ranking algorithm is introduced by this increment.
