@@ -1,7 +1,7 @@
 // A kept warning about Credits, asked about later (ADR-0067). Stop or a dropped connection can leave a turn that had not
 // settled when the look for it ended (chatStop.js), and the chat keeps a warning that it may still be saved and use
-// Credits (chatLocal.js). The warning is kept with what the server can be asked about its turn by: the job id that came
-// with `start`, or, when Stop came before `start`, the key the send went out with. When its chat is next opened, a page
+// Credits (chatLocal.js). The warning is kept with what the server can be asked about its turn by: the reply's job id (it
+// came with `start`, or the server named it), or, with none, the key the send went out with. When its chat is next opened, a page
 // reload included, the turn is asked about first, and a turn the server has settled takes the warning away or changes
 // what is kept. A read that fails, or a turn that is not finished, changes nothing: the warning stays and is asked about
 // the next time.
