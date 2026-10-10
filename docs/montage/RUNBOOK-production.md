@@ -112,7 +112,12 @@ Do not start the rollout until each has a written yes in the SPEC.
   Checked first: the production app has one machine, and its image answers `/runs` (401 unsigned). Not tried on production: an
   actual lost run. **Before a second runner machine is added, set this back to "false"** (CAPACITY.md stage 2b).
 
-Next: step 9 (open it to users) after a week of step 8 without a stuck job. That is the owner's decision.
+- **Step 9, prepared 2026-10-10 as a draft PR:** the page no longer checks `localStorage.veyrnox_video_agent`, the PREVIEW chip is
+  gone, and the studio nav has a "Video agent" tab between Create and LLM Chat. The model stays out of the Create picker (#697).
+  `AGENT_VIDEO_ENABLED` stays the switch: with it off the plan route answers "isn't open yet". **Not to be merged before
+  2026-10-17** (a week after the first production video with no stuck job) unless the owner says otherwise.
+
+Next: step 9 (merge the launch PR). That is the owner's decision.
 
 Each step has its own check and its own undo. Stop at the first check that fails.
 
