@@ -2,10 +2,12 @@
 
 // Sign-in callback (PKCE) for OAuth and for emailed links. Supabase returns a
 // one-time `?code=`; we exchange it with the verifier this browser stored
-// when it started the flow (app/lib/pkceVerifier.js).
+// when it started the flow (app/lib/pkceVerifier.js). The email-confirmation
+// link instead returns tokens in the fragment; those are taken into the
+// session and cleared from the URL (completeFromFragment).
 
 import { useEffect, useState } from "react";
-import { completeOAuthFromCode, oauthCallbackError } from "../../lib/authClient.js";
+import { completeFromFragment, completeOAuthFromCode, oauthCallbackError } from "../../lib/authClient.js";
 import { MAGIC_VERIFIER_TTL_MS } from "../../lib/pkceVerifier.js";
 import { Main } from "../../veyrnox/_components/Main.js";
 
@@ -25,6 +27,20 @@ export default function AuthCallback() {
             // The provider or our Auth config refused: not a browser problem.
             console.error("[auth-callback] provider returned", providerError);
             fail(`Sign-in was refused by the provider. ${TRY_AGAIN}`);
+            return;
+        }
+        // The email-confirmation link answers with tokens in the fragment, not a
+        // code: take them into the session and clear them from the address bar.
+        if (new URLSearchParams(new URL(href).hash.replace(/^#/, "")).has("access_token")) {
+            completeFromFragment()
+                .then((s) => {
+                    if (s) { setStatus("Signed in. Redirecting…"); window.location.replace("/"); }
+                    else fail(`Sign-in could not be completed. ${TRY_AGAIN}`);
+                })
+                .catch((err) => {
+                    console.error("[auth-callback] fragment sign-in failed", err?.status, err?.code);
+                    fail(`Sign-in could not be completed. ${TRY_AGAIN}`);
+                });
             return;
         }
         if (!new URL(href).searchParams.get("code")) {

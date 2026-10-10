@@ -161,6 +161,34 @@ variant comparison for Stripe's null, so the amount check against
 `price_usd_cents` remains the guard. `credit_packs.variant_id` is still dead
 data under Stripe and can be dropped later.
 
+### 2026-10-10 — a delayed payment method is credited when the money arrives (audit M-08)
+
+Decision 6 lists `checkout.session.completed` as the credit event. That holds
+for a card, where the session completes paid. `createCheckout` does not pin
+`payment_method_types`, so Stripe may offer a delayed method (a bank debit,
+some wallets) to a buyer; such a session completes with `payment_status`
+`unpaid`, `interpretSession` refuses it, and the event was marked processed.
+The payment that landed hours later arrived as
+`checkout.session.async_payment_succeeded`, which was not a handled type, so
+the buyer was never credited unless the 7-day backfill (ADR-0033) caught it.
+
+The webhook now routes `checkout.session.async_payment_succeeded` through the
+same path as a completed session: signature check on the metadata, re-fetch
+from Stripe, `payment_status` must be `paid`, `credit_top_up` once. The
+earlier unpaid `completed` event stays recorded without a credit, so nothing
+is credited twice. `checkout.session.async_payment_failed` is recorded and
+credits nothing; the Top-up stays pending and expires as an abandoned checkout
+does.
+
+Payment methods are still not pinned: under Managed Payments Stripe chooses
+the methods it offers, and refusing them in code would have to be checked
+against that account's rules first.
+
+**Owner step.** The Stripe webhook endpoint must be subscribed to the two
+`async_payment_*` event types as well; the Dashboard setting is not visible
+from this repository. Until it is, the code path exists but no event reaches
+it.
+
 ## Open questions
 
 - Which VAT registrations Veyrnox Ltd needs, and by what revenue threshold, to

@@ -102,6 +102,39 @@ test('a signed checkout.session.completed from our own checkout credits its Top-
     assert.ok(calls.some((c) => c.method === 'PATCH' && c.url.includes('webhook_events')), 'marked processed');
 });
 
+// A delayed payment method (bank debit, some wallets) completes the session
+// before the money arrives: checkout.session.completed carries
+// payment_status "unpaid" and the credit must wait for
+// checkout.session.async_payment_succeeded (audit 2026-10-09, M-08).
+test('a completed session that is not yet paid credits nothing, and the later async_payment_succeeded credits it', async () => {
+    const unpaid = { ...paidSession(checkoutMetadata), payment_status: 'unpaid' };
+    let calls = stubFetch(routes({ session: unpaid }));
+    let res = await stripeWebhook.POST(signed(sessionEvent('evt_unpaid', checkoutMetadata)));
+    assert.equal(res.status, 200);
+    assert.deepEqual(await res.json(), { ok: true, warn: 'session_not_creditable' });
+    assert.ok(!calls.some((c) => c.url.includes('/rpc/credit_top_up')), 'nothing credited while unpaid');
+
+    calls = stubFetch(routes());
+    const later = { ...sessionEvent('evt_async_paid', checkoutMetadata), type: 'checkout.session.async_payment_succeeded' };
+    res = await stripeWebhook.POST(signed(later));
+    assert.equal(res.status, 200);
+    assert.deepEqual(await res.json(), { ok: true });
+    const credit = calls.find((c) => c.url.includes('/rpc/credit_top_up'));
+    assert.ok(credit, 'the paid session is credited once the money arrives');
+    assert.equal(credit.body.p_top_up_id, TOP_UP_ID);
+    assert.equal(credit.body.p_order_id, PAYMENT_INTENT);
+});
+
+test('async_payment_failed is recorded and credits nothing', async () => {
+    const calls = stubFetch(routes());
+    const failed = { ...sessionEvent('evt_async_failed', checkoutMetadata), type: 'checkout.session.async_payment_failed' };
+    const res = await stripeWebhook.POST(signed(failed));
+    assert.equal(res.status, 200);
+    assert.deepEqual(await res.json(), { ok: true, warn: 'payment_failed' });
+    assert.ok(!calls.some((c) => c.url.includes('/rpc/')), 'no RPC');
+    assert.ok(calls.some((c) => c.method === 'PATCH' && c.url.includes('webhook_events')), 'marked processed');
+});
+
 test('a session whose metadata lacks our signature credits nothing', async () => {
     for (const metadata of [{ top_up_id: TOP_UP_ID }, { top_up_id: TOP_UP_ID, top_up_sig: 'ab'.repeat(32) }, undefined]) {
         const calls = stubFetch(routes());
