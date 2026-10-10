@@ -17,6 +17,7 @@
 -- ── account_actions: the grant tier and its ledger trace ────────────────────
 ALTER TABLE public.account_actions ADD COLUMN IF NOT EXISTS ledger_entry_id UUID NULL
     REFERENCES public.ledger_entries(id) ON DELETE RESTRICT;
+CREATE INDEX IF NOT EXISTS account_actions_ledger_entry_idx ON public.account_actions (ledger_entry_id);
 ALTER TABLE public.account_actions ADD COLUMN IF NOT EXISTS credits_delta INTEGER NULL
     CHECK (credits_delta IS NULL OR credits_delta <> 0);
 ALTER TABLE public.account_actions DROP CONSTRAINT IF EXISTS account_actions_action_check;

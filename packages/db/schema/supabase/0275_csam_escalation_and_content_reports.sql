@@ -39,6 +39,8 @@ CREATE TABLE IF NOT EXISTS public.evidence_holds (
     CHECK ((released_at IS NULL) = (release_action_id IS NULL))
 );
 CREATE INDEX IF NOT EXISTS evidence_holds_action_idx ON public.evidence_holds (action_id);
+CREATE INDEX IF NOT EXISTS evidence_holds_job_idx ON public.evidence_holds (job_id);
+CREATE INDEX IF NOT EXISTS evidence_holds_release_action_idx ON public.evidence_holds (release_action_id);
 ALTER TABLE public.evidence_holds ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.evidence_holds FORCE ROW LEVEL SECURITY;
 REVOKE ALL ON public.evidence_holds FROM PUBLIC, anon, authenticated;
@@ -64,6 +66,9 @@ REVOKE ALL ON FUNCTION public.evidence_holds_released_once() FROM PUBLIC, anon, 
 DROP TRIGGER IF EXISTS evidence_holds_released_once ON public.evidence_holds;
 CREATE TRIGGER evidence_holds_released_once BEFORE UPDATE OR DELETE ON public.evidence_holds
     FOR EACH ROW EXECUTE FUNCTION public.evidence_holds_released_once();
+DROP TRIGGER IF EXISTS evidence_holds_no_truncate ON public.evidence_holds;
+CREATE TRIGGER evidence_holds_no_truncate BEFORE TRUNCATE ON public.evidence_holds
+    FOR EACH STATEMENT EXECUTE FUNCTION public.append_only_no_truncate();
 
 -- ── record_csam_escalation (admin) ──────────────────────────────────────────
 CREATE OR REPLACE FUNCTION public.record_csam_escalation(

@@ -50,6 +50,7 @@ CREATE TABLE IF NOT EXISTS public.content_appeals (
 );
 CREATE INDEX IF NOT EXISTS content_appeals_open_idx ON public.content_appeals (submitted_at) WHERE status = 'open';
 CREATE INDEX IF NOT EXISTS content_appeals_user_idx ON public.content_appeals (user_id, submitted_at);
+CREATE INDEX IF NOT EXISTS content_appeals_decision_action_idx ON public.content_appeals (decision_action_id);
 ALTER TABLE public.content_appeals ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.content_appeals FORCE ROW LEVEL SECURITY;
 REVOKE ALL ON public.content_appeals FROM PUBLIC, anon, authenticated;
@@ -77,6 +78,9 @@ REVOKE ALL ON FUNCTION public.content_appeals_decided_once() FROM PUBLIC, anon, 
 DROP TRIGGER IF EXISTS content_appeals_decided_once ON public.content_appeals;
 CREATE TRIGGER content_appeals_decided_once BEFORE UPDATE OR DELETE ON public.content_appeals
     FOR EACH ROW EXECUTE FUNCTION public.content_appeals_decided_once();
+DROP TRIGGER IF EXISTS content_appeals_no_truncate ON public.content_appeals;
+CREATE TRIGGER content_appeals_no_truncate BEFORE TRUNCATE ON public.content_appeals
+    FOR EACH STATEMENT EXECUTE FUNCTION public.append_only_no_truncate();
 
 -- ── private.standing_takedowns: strikes that an appeal has not reversed ─────
 CREATE OR REPLACE FUNCTION private.standing_takedowns(p_user_id UUID)
