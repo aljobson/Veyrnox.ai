@@ -75,6 +75,7 @@ export default function Admin() {
             <Link href="/app/admin/violations" className="text-sm underline">Content warnings and takedowns</Link>
             <Link href="/app/admin/appeals" className="text-sm underline">Content appeals</Link>
             <Link href="/app/admin/reports" className="text-sm underline">User reports</Link>
+            <Link href="/app/admin/webhooks" className="text-sm underline">Inbound webhooks</Link>
           </div>
         )}
 

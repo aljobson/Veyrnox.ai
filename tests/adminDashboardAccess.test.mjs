@@ -72,6 +72,7 @@ const ROUTES = [
     ['appeals POST', '../app/api/v1/admin/appeals/route.js', 'POST', '/api/v1/admin/appeals', { appeal_id: USER, decision: 'rejected', reason: 'test' }],
     ['reports GET', '../app/api/v1/admin/reports/route.js', 'GET', '/api/v1/admin/reports', undefined],
     ['reports POST', '../app/api/v1/admin/reports/route.js', 'POST', '/api/v1/admin/reports', { report_id: USER, resolution: 'test' }],
+    ['webhooks GET', '../app/api/v1/admin/webhooks/route.js', 'GET', '/api/v1/admin/webhooks', undefined],
 ];
 async function call([, file, method, path, body], headers) {
     const mod = await import(`${new URL(file, import.meta.url).href}?t=${Math.random()}`);

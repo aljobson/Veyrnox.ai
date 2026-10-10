@@ -10,8 +10,8 @@ export function AssetFooter({ row }) {
     <>
       <AskAboutThis row={row} />
       <DownloadAsset row={row} />
-      <ReportAsset row={row} />
       <AssetRetention row={row} />
+      <ReportAsset row={row} />
     </>
   );
 }

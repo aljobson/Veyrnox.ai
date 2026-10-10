@@ -19,7 +19,7 @@ export function loadApi(fetch, { token = 'token' } = {}) {
     const deps = {
         getFreshAccessToken: async () => token, getSession: () => ({ access_token: token }), clearSession: () => {}, turnOptions: (o) => o,
         lostNotice, settleStoppedTurn, askStoppedSend, jobIdOf, gatewayFetch: async () => { throw new Error('not used here'); }, GatewayError,
-        ACCOUNT_PAUSED_COPY: 'paused', makeIdempotencyKey: () => KEY, notifyBalanceChanged: () => { notified.balance += 1; },
+        ACCOUNT_PAUSED_COPY: 'paused', ACCOUNT_ON_HOLD_COPY: 'held', makeIdempotencyKey: () => KEY, notifyBalanceChanged: () => { notified.balance += 1; },
     };
     assert.deepEqual(imported.filter((n) => !(n in deps)), [], 'every name chatApi.js imports is handed in here');
     const made = new Function('deps', 'fetch', `const { ${Object.keys(deps).join(', ')} } = deps;\n${body}\nreturn { chatApi, sendTurn, chatErrorCopy };`);

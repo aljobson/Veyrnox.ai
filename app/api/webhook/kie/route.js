@@ -13,10 +13,11 @@ import { isConfigured as r2IsConfigured, envConfig as r2EnvConfig } from '../../
 import { findJob, completeJob, extFromUrl } from '../../../../lib/providerCompletion.js';
 import { findStep, runtimeDeps, runtimeKeys } from '../../../../lib/autoShortRuntime.js';
 import { handleStepCallback } from '../../../../lib/autoShortWebhook.js';
+import { withDeliveryLog } from '../../../../lib/webhookDelivery.js';
 
 const SOURCE = 'kie';
 
-export async function POST(req) {
+async function handler(req) {
     const cfg = envConfig();
     const apiKey = process.env.KIE_API_KEY;
     const hmacKey = process.env.KIE_WEBHOOK_HMAC_KEY;
@@ -82,3 +83,6 @@ async function kieStep(cfg, apiKey, taskId, step) {
     const r = await handleStepCallback({ source: SOURCE, providerJobId: taskId, step, outcome, deps, cfg });
     return { body: r.body, init: { status: r.status } };
 }
+
+// Every delivery and its answer is logged for /app/admin/webhooks (ADR-0083).
+export const POST = withDeliveryLog('kie', handler);
