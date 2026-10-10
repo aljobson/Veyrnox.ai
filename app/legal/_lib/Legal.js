@@ -22,7 +22,7 @@ export function LegalPage({ title, updated, children }) {
                     <Logo size={26} wordmark />
                 </Link>
                 <div className="max-w-[68ch] mt-16 sm:mt-20">
-                    <h1 className="vx-display text-[44px] sm:text-[64px]">{title}</h1>
+                    <h1 className="vx-display vx-title-detail">{title}</h1>
                     <p className="mt-5 text-[14px] text-vx-fg-muted leading-[1.6]">
                         {ENTITY.name}, trading as {ENTITY.trading}. Company no. {ENTITY.companyNo}. Last updated {updated}.
                     </p>

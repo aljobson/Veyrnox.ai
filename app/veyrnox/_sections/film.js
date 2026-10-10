@@ -5,7 +5,7 @@ import { BREAKTHROUGH_FILM, LANDING_FILM } from '../_lib/film';
 export function BreakthroughVideo() {
   return (
     <section id="breakthrough" aria-labelledby="breakthrough-title" className="scroll-mt-20 px-4 sm:px-6 max-w-[1300px] mx-auto pt-12 sm:pt-16 lg:pt-20 pb-16 lg:pb-24">
-      <div className="grid gap-8 lg:grid-cols-[1fr_420px] lg:gap-16 items-center rounded-3xl border border-vx-border bg-vx-panel p-6 sm:p-10">
+      <div className="grid gap-8 lg:grid-cols-[1fr_420px] lg:gap-16 items-center rounded-2xl border border-vx-border bg-vx-panel p-6 sm:p-10">
         <div>
           <p className="text-xs font-bold tracking-wide text-vx-fg-muted">Viral inspiration · 5 seconds</p>
           <h1 id="breakthrough-title" className="vx-display mt-4 text-[36px] sm:text-[48px] lg:text-[64px] text-balance">Feeling Creative, use VEYRNOX.AI to serve you something inspirational.</h1>

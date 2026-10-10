@@ -28,7 +28,7 @@ export default async function Tools() {
     <div className="min-h-dvh">
       <MarketingNav />
       <section className="max-w-[1300px] mx-auto px-4 sm:px-6 pt-14 sm:pt-20 pb-28">
-        <h1 className="vx-display text-[52px] sm:text-[80px] lg:text-[104px] max-w-[12ch]">Bring your own file.</h1>
+        <h1 className="vx-display vx-title-index max-w-[12ch]">Bring your own file.</h1>
         <p className="mt-6 mb-12 text-lg sm:text-xl text-vx-fg-body max-w-[46ch] leading-[1.5] text-pretty">
           Tools that start from an image or video you already have. The price is on each one, and nothing is charged until you generate.
         </p>

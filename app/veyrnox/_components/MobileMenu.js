@@ -60,17 +60,22 @@ export function MobileMenu({ items, className = '' }) {
             className="vx-drop-in fixed inset-x-0 top-16 z-40 border-b border-vx-border bg-vx-base px-4 py-3 shadow-xl"
           >
             <ul className="flex flex-col">
-              {items.map((it) => (
-                <li key={it.href}>
-                  <Link
-                    href={it.href}
-                    onClick={() => setOpen(false)}
-                    className="block rounded-xl px-3 py-3 text-[15px] font-bold text-vx-fg-body hover:bg-vx-panel hover:text-vx-fg"
-                  >
-                    {it.label}
-                  </Link>
-                </li>
-              ))}
+              {items.map((it) => {
+                // A section of the home page (`/#faq`) is a plain link, as
+                // on the bar (see MarketingNav).
+                const Item = it.href.includes('#') ? 'a' : Link;
+                return (
+                  <li key={it.href}>
+                    <Item
+                      href={it.href}
+                      onClick={() => setOpen(false)}
+                      className="block rounded-xl px-3 py-3 text-[15px] font-bold text-vx-fg-body hover:bg-vx-panel hover:text-vx-fg"
+                    >
+                      {it.label}
+                    </Item>
+                  </li>
+                );
+              })}
             </ul>
             <div className="mt-2 flex items-center justify-between border-t border-vx-border pt-3">
               <span className="font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-faint">THEME</span>
