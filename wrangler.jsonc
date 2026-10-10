@@ -104,9 +104,11 @@
     "CREATOR_MONETISATION_ENABLED": "false",
     "CINEMA_SUBSCRIPTIONS_ENABLED": "false",
     // CINEMA_UNLOCKS_ENABLED also opens playback of free titles. Keep it
-    // "false" until free viewing has a monthly ceiling per account
-    // (docs/cinema/paywall-plan.md, P6).
+    // "false" until CINEMA_FREE_CEILING_ENABLED is "true": that switch gives
+    // each account a monthly ceiling on free viewing minutes (ADR-0057,
+    // docs/cinema/paywall-plan.md P6) and needs migration 0245 applied first.
     "CINEMA_UNLOCKS_ENABLED": "false",
+    "CINEMA_FREE_CEILING_ENABLED": "false",
     "CINEMA_PUBLISHING_ENABLED": "true",
     "CINEMA_VIEWING_ENABLED": "true",
     "VOTING_ENABLED": "false",
@@ -230,6 +232,17 @@
         "FAL_SUBMIT_OUTCOME_ENABLED": "false",
         "FAL_DISPATCH_SCHEMA_ENABLED": "true",
         "RECOVERY_HEALTH_ENABLED": "true",
+        // Production controls, named here because vars are not inherited (audit 2026-10-09, S-02;
+        // tests/stagingControlVars.test.mjs keeps the two blocks aligned). The six limits need
+        // migrations 0110 to 0125, which staging has. The second-factor gate locks out an admin
+        // who holds no factor: enrol TOTP at /app/admin on staging before deploying this.
+        "TOP_UP_RETURN_RATE_LIMIT_ENABLED": "true",
+        "TOP_UP_READ_RATE_LIMIT_ENABLED": "true",
+        "TOP_UP_CHECKOUT_RATE_LIMIT_ENABLED": "true",
+        "ACCOUNT_READ_RATE_LIMIT_ENABLED": "true",
+        "UPLOAD_REQUEST_RATE_LIMIT_ENABLED": "true",
+        "ASSET_LINK_RATE_LIMIT_ENABLED": "true",
+        "ADMIN_REQUIRE_AAL2": "true",
         // ADR-0044 (vars are not inherited). On for the activation proof: 0129 is applied here and the staging bucket's
         // CORS allows PUT with Content-Type and If-None-Match from this origin (preflight checked 2026-10-09).
         // Production stays "false" until its bucket allows If-None-Match too; today it would refuse every upload.
@@ -293,7 +306,11 @@
         // Production keeps all three switches false.
         "CINEMA_UNLOCKS_ENABLED": "true",
         "CINEMA_PUBLISHING_ENABLED": "true",
-        "CINEMA_VIEWING_ENABLED": "true"
+        "CINEMA_VIEWING_ENABLED": "true",
+        // Monthly ceiling on free viewing minutes (ADR-0057). Migration 0245
+        // is applied on the staging database (2026-10-10), so the metered
+        // functions exist here. Production keeps this "false".
+        "CINEMA_FREE_CEILING_ENABLED": "true"
       }
     }
   },

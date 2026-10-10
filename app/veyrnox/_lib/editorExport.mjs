@@ -7,22 +7,12 @@
 //   - Audio is mixed with an OfflineAudioContext and added to the muxer a second at a time, between video frames.
 //   - Cancel stops within a frame; the half-written output is discarded.
 import { Input, BlobSource, ALL_FORMATS, Output, BufferTarget, Mp4OutputFormat, CanvasSink, CanvasSource, AudioBufferSink, AudioBufferSource, canEncodeVideo, canEncodeAudio, QUALITY_HIGH } from 'mediabunny';
-import { FPS, totalFrames, videoLayout } from './editorTimeline.mjs';
+import { FPS, videoLayout, totalFrames, effectiveTransition } from './editorTimeline.mjs';
+import { frameLayers, resolvePictures, paintFrame, timelineSize } from './editorRender.mjs';
+export { EXPORT_HEIGHTS, outputSize } from './editorRender.mjs';
 import { validateExportBrowser } from './videoEnhance.mjs';
 
 const SAMPLE_RATE = 48000;
-export const EXPORT_HEIGHTS = Object.freeze([720, 1080]);
-
-/** Even pixel sizes at the first clip's shape, with the long edge no wider than 1920. */
-export function outputSize(width, height, targetHeight = 720) {
-    const aspect = width > 0 && height > 0 ? width / height : 16 / 9;
-    let h = EXPORT_HEIGHTS.includes(targetHeight) ? targetHeight : 720;
-    let w = h * aspect;
-    if (w > 1920) { w = 1920; h = w / aspect; }
-    const even = n => Math.max(2, Math.round(n / 2) * 2);
-    return { width: even(w), height: even(h) };
-}
-
 class Reader {
     constructor(sink, from, to) { this.it = sink.canvases(from, to); this.cur = null; this.nxt = null; this.done = false; }
     async at(t) {
@@ -40,19 +30,24 @@ const abortError = () => Object.assign(new Error('Export cancelled.'), { name: '
 async function mixAudio(tl, inputs, length, signal) {
     const ctx = new OfflineAudioContext(2, length, SAMPLE_RATE);
     const layers = [
-        ...videoLayout(tl).map(({ clip, start }) => ({ clip, start })),
-        ...tl.audio.map(clip => ({ clip, start: clip.start })),
+        ...videoLayout(tl).map(({ clip, start }, k) => ({ clip, start, fadeIn: effectiveTransition(tl, k), fadeOut: effectiveTransition(tl, k + 1) })),
+        ...tl.audio.map(clip => ({ clip, start: clip.start, fadeIn: 0, fadeOut: 0 })),
     ];
     let used = 0;
-    for (const { clip, start } of layers) {
+    for (const { clip, start, fadeIn, fadeOut } of layers) {
         if (signal.aborted) throw abortError();
         const media = tl.media[clip.mediaId];
         if (!media.hasAudio || clip.volume === 0) continue;
         const track = await inputs.get(clip.mediaId).getPrimaryAudioTrack();
         if (!track) continue;
-        const from = clip.in / FPS, to = (clip.in + clip.len) / FPS, at = start / FPS, end = at + clip.len / FPS;
+        // A dissolve crossfades the sound the way it does the picture: this clip keeps playing UNDER the next clip's dissolve (as far
+        // as its file goes) while ramping down, and ramps up over its own dissolve.
+        const extra = Math.min(fadeOut, media.frames - (clip.in + clip.len));
+        const from = clip.in / FPS, to = (clip.in + clip.len + extra) / FPS, at = start / FPS, cut = at + clip.len / FPS, end = cut + extra / FPS;
         const gain = ctx.createGain();
         gain.gain.value = clip.volume;
+        if (fadeIn > 0) { gain.gain.setValueAtTime(0, at); gain.gain.linearRampToValueAtTime(clip.volume, at + fadeIn / FPS); }
+        if (fadeOut > 0) { gain.gain.setValueAtTime(clip.volume, cut); gain.gain.linearRampToValueAtTime(0, cut + fadeOut / FPS); }
         gain.connect(ctx.destination);
         for await (const wrapped of new AudioBufferSink(track).buffers(from, to)) {
             const node = ctx.createBufferSource();
@@ -94,8 +89,7 @@ export async function exportTimeline(tl, blobs, { signal = new AbortController()
     if (signal.aborted) throw abortError();
     const total = totalFrames(tl);
     if (total < 1) throw new Error('Add a clip first.');
-    const firstVideo = tl.video.length ? tl.media[tl.video[0].mediaId] : null;
-    const { width: W, height: H } = outputSize(firstVideo?.width, firstVideo?.height, height);
+    const { width: W, height: H } = timelineSize(tl, height);
     const blocked = await exportBlocker({ width: W, height: H });
     if (blocked) throw new Error(blocked);
 
@@ -111,10 +105,12 @@ export async function exportTimeline(tl, blobs, { signal = new AbortController()
         const g = canvas.getContext('2d');
         const layout = videoLayout(tl);
         const readers = [];
-        for (const { clip } of layout) {
+        for (const [k, { clip }] of layout.entries()) {
             const track = await inputs.get(clip.mediaId).getPrimaryVideoTrack();
             if (!track || !await track.canDecode()) throw new Error('This browser cannot decode one of the videos.');
-            readers.push(new Reader(new CanvasSink(track, { poolSize: 6 }), clip.in / FPS, (clip.in + clip.len) / FPS));
+            // A clip keeps playing under the next clip's dissolve, so its reader runs that much further (never past the file).
+            const to = Math.min(clip.in + clip.len + effectiveTransition(tl, k + 1), tl.media[clip.mediaId].frames) / FPS;
+            readers.push(new Reader(new CanvasSink(track, { poolSize: 6 }), clip.in / FPS, to));
         }
 
         onProgress({ stage: 'audio', done: 0, total });
@@ -137,17 +133,8 @@ export async function exportTimeline(tl, blobs, { signal = new AbortController()
         };
         for (let i = 0; i < total; i++) {
             if (signal.aborted) throw abortError();
-            g.fillStyle = '#000';
-            g.fillRect(0, 0, W, H);
-            const k = layout.findIndex(item => i >= item.start && i < item.end);
-            if (k >= 0) {
-                const { clip, start } = layout[k];
-                const frame = await readers[k].at((clip.in + (i - start)) / FPS);
-                if (frame) {
-                    const s = Math.min(W / frame.width, H / frame.height);
-                    g.drawImage(frame, (W - frame.width * s) / 2, (H - frame.height * s) / 2, frame.width * s, frame.height * s);
-                }
-            }
+            const layers = frameLayers(tl, i);
+            paintFrame(g, W, H, layers, await resolvePictures(layers, (k, time) => readers[k].at(time)));
             await video.add(i / FPS, 1 / FPS);
             if ((i + 1) % FPS === 0) { await flush((i + 1) / FPS * SAMPLE_RATE); onProgress({ stage: 'encode', done: i + 1, total }); }
         }

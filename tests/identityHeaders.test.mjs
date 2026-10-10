@@ -168,6 +168,25 @@ test('handlers read the forwarded headers as absent', async () => {
     } finally { console.info = realInfo; }
 });
 
+test('the Library-to-Cinema route reads only the forwarded identity and refuses without it', async () => {
+    const { libraryUploadHandler } = await import('../lib/cinema/libraryUploadApi.js');
+    const handler = libraryUploadHandler({ rpcCall: async () => assert.fail('reached the database'), presign: async () => assert.fail('signed an object'), copyVideo: async () => assert.fail('reached Stream') });
+    const post = (headers) => new Request('http://localhost:3000/api/v1/cinema/uploads/from-library', { method: 'POST', headers: { ...headers, 'content-type': 'application/json', 'idempotency-key': SUB }, body: JSON.stringify({ content_id: SUB, job_id: SUB }) });
+    const realInfo = console.info;
+    console.info = () => {};
+    Object.assign(process.env, { CINEMA_ENABLED: 'true', SOCIAL_CINEMA_PROFILES_ENABLED: 'true', CREATOR_CONTENT_ENABLED: 'true', CREATOR_UPLOADS_ENABLED: 'true' });
+    try {
+        // A page request: the middleware blanked every identity header, whatever the client sent.
+        const page = await forwarded('/social-cinema/creator', FORGED);
+        assert.deepEqual([(await handler(post(Object.fromEntries(page)))).status], [401]);
+        // A verified identity with uploads held: refused before the database, under the same hold as a browser upload.
+        const api = await forwarded('/api/v1/cinema/uploads/from-library', { authorization: `Bearer ${await token({})}`, ...FORGED });
+        assert.equal(api.get('x-veyrnox-auth-id'), SUB);
+        const held = await handler(post(Object.fromEntries(api)));
+        assert.deepEqual([held.status, (await held.json()).error], [503, 'upload_safety_hold']);
+    } finally { console.info = realInfo; }
+});
+
 // stripContext blanks whatever x-veyrnox-* name a client sent, but a handler
 // that read a name the middleware does not set would be reading a blank the
 // day that stops being true. So the set of names is closed.
