@@ -15,6 +15,15 @@
   (pricing/refund mechanics this Plan reuses), `docs/pricing/metricool-buffer-pricing-2026-09-28.md`
   (the source data this ADR is built on).
 
+## Owner amendment — 10 October 2026
+
+The owner superseded the account-based pricing below: basic scheduling is free
+across several accounts, with paid advanced features. The initial implementation
+uses five free active accounts per user across brands. Do not present $19 for
+five accounts or $4/account as the current offer. Future premium feature and
+price proposals remain to be reviewed; this amendment does not approve a new
+premium price. The historic pricing rationale below is retained as history.
+
 ## Context
 
 ADR-0062 decided Publish is billed as an independent recurring "Publish Plan," never touching

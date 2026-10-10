@@ -60,7 +60,7 @@ export default function SocialConnectCallback() {
                 } else {
                     const code = result && result.code;
                     console.error('[social-connect-callback] connect failed', network, code);
-                    fail(ERROR_COPY[code] || `${networkLabel(network)} could not be connected. ${TRY_AGAIN}`);
+                    fail(code === 'ACCOUNT_LIMIT' && result.limit === 5 ? 'You have reached the five-account free limit. Disconnect an account, then try again.' : ERROR_COPY[code] || `${networkLabel(network)} could not be connected. ${TRY_AGAIN}`);
                 }
             })
             .catch((err) => {
@@ -76,7 +76,7 @@ export default function SocialConnectCallback() {
             if (!result.ok) throw new Error(result.code);
             window.location.replace('/app/publish');
         } catch (err) {
-            setStatus(ERROR_COPY[err.body?.error || err.body?.code || err.message] || `Could not connect that destination. ${TRY_AGAIN}`);
+            setStatus(err.body?.code === 'ACCOUNT_LIMIT' && err.body?.limit === 5 ? 'You have reached the five-account free limit. Disconnect an account, then try again.' : ERROR_COPY[err.body?.error || err.body?.code || err.message] || `Could not connect that destination. ${TRY_AGAIN}`);
             setFailed(true); setSelection(null);
         } finally { setBusy(false); }
     }

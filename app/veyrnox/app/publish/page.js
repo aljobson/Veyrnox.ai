@@ -22,9 +22,6 @@ const subscribeLocation = (listener) => {
   return () => window.removeEventListener('popstate', listener);
 };
 const button = 'rounded-full border border-vx-border px-4 py-2 text-sm font-bold disabled:opacity-50';
-// Free tier: one connected account (ADR-0063). The database enforces it (0169);
-// this only saves a wasted OAuth round trip.
-const FREE_ACCOUNT_LIMIT = 1;
 
 export default function Publish() {
   const initialJobId = useSyncExternalStore(subscribeLocation, currentJob, noJob);
@@ -46,6 +43,7 @@ export default function Publish() {
 
 function PublishControls({ initialJobId }) {
   const [accounts, setAccounts] = useState(null);
+  const [accountLimit, setAccountLimit] = useState(1);
   const [youtubeVisibilityEnabled, setYoutubeVisibilityEnabled] = useState(false);
   const [uploadsEnabled, setUploadsEnabled] = useState(false);
   const [networks, setNetworks] = useState([]);
@@ -62,6 +60,7 @@ function PublishControls({ initialJobId }) {
     try {
       const res = await listSocialAccounts();
       setAccounts(res.accounts || []);
+      setAccountLimit(res.accountLimit === 5 ? 5 : 1);
       setUploadsEnabled(res.uploadsEnabled === true);
       setYoutubeVisibilityEnabled(res.youtubeVisibilityEnabled === true);
       setNetworks(res.networks || []);
@@ -100,11 +99,12 @@ function PublishControls({ initialJobId }) {
 
   const active = (accounts || []).filter((a) => a.status === 'active');
   const byNetwork = new Map(active.map((a) => [a.network, a]));
-  const atLimit = active.length >= FREE_ACCOUNT_LIMIT;
+  const atLimit = active.length >= accountLimit;
 
   return <div className="space-y-6">
     <section className="rounded-2xl border border-vx-border p-5">
       <h2 className="font-bold mb-4">Connected accounts</h2>
+      {accountLimit === 5 && <p className="text-sm text-vx-fg-muted mb-3">Basic scheduling is free for up to five connected accounts.</p>}
       {accounts === null && !loadError && <p className="text-sm text-vx-fg-muted">Loading…</p>}
       {loadError && <p role="alert" className="text-sm text-vx-danger mb-3">{loadError}</p>}
       {accounts !== null && active.length === 0 && !loadError && (
@@ -141,7 +141,7 @@ function PublishControls({ initialJobId }) {
       <h2 className="font-bold mb-1">Connect an account</h2>
       <p className="text-sm text-vx-fg-muted mb-4">Choose a platform to connect. Facebook uses Pages, Pinterest uses boards and Google Business Profile uses business locations. TikTok delivers a draft to your inbox. Twitch connects for video statistics.</p>
       {connectError && <p role="alert" className="text-sm text-vx-danger mb-3">{connectError}</p>}
-      {atLimit && <p className="text-sm text-vx-fg-muted mb-3">Your plan connects one account. Disconnect it to connect a different one.</p>}
+      {atLimit && <p className="text-sm text-vx-fg-muted mb-3">{accountLimit === 5 ? 'You have reached the five-account free limit. Disconnect an account to connect another.' : 'Your plan connects one account. Disconnect it to connect a different one.'}</p>}
       <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {NETWORKS.map((n) => {
           const connected = byNetwork.get(n.key);
@@ -153,7 +153,7 @@ function PublishControls({ initialJobId }) {
               {n.live ? (
                 connected
                   ? <span className="text-xs font-bold text-vx-accent">Connected</span>
-                  : <button type="button" disabled={connecting != null || atLimit || readiness?.available !== true} className={button} onClick={() => onConnect(n.key)}>
+                  : <button type="button" data-testid={`social-connect-${n.key}`} disabled={connecting != null || atLimit || readiness?.available !== true} className={button} onClick={() => onConnect(n.key)}>
                       {connecting === n.key ? 'Connecting…' : !readiness ? 'Loading…' : readiness.status === 'not_released' ? 'Coming soon' : readiness.status === 'setup_required' ? 'Setup required' : readiness.status === 'testing_disabled' ? 'Testing not enabled' : 'Connect'}
                     </button>
               ) : (

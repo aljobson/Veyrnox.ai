@@ -19,6 +19,19 @@
   (Managed Payments, Checkout Sessions), `CONTEXT.md` (Credit Pack / Top-up /
   Subscription glossary).
 
+## Owner amendment — 10 October 2026
+
+The owner's rollout direction is now: “Make basic scheduling free across several
+accounts; charge for advanced features.” This supersedes the one-account-free /
+paid-extra-accounts boundary below. The independent non-credit entitlement
+mechanism remains the intended mechanism for future advanced paid features.
+Five free active accounts per user is the initial implementation allowance,
+shared across owned brands; it is an implementation choice, not an owner-specified
+number. Existing fair-use, per-account scheduling quotas and network rollout
+controls remain. The earlier $19/five-account and $4-extra-account billing work
+is unmerged and will not be activated. Advanced feature boundaries and new
+pricing need a concrete product proposal before checkout is offered.
+
 ## Context
 
 ADR-0061 specified *what* Veyrnox Publish does and explicitly refused to decide *how

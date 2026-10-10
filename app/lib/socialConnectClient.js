@@ -87,7 +87,8 @@ export async function completeNetworkConnect(network) {
         // gatewayFetch's usual { error } shape — read the raw body first so
         // that code survives, instead of gatewayFetch's generic
         // 'gateway_error' fallback.
-        return { ok: false, code: (err && err.body && err.body.code) || (err && err.code) || 'connect_failed' };
+        return { ok: false, code: (err && err.body && err.body.code) || (err && err.code) || 'connect_failed',
+            ...(err?.body?.limit === 5 ? { limit: 5 } : {}) };
     }
 }
 

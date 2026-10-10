@@ -1,5 +1,13 @@
 # 1. Product Specification — Veyrnox Publish
 
+> Current owner direction (10 October 2026): basic scheduling is free across
+> several accounts; paid plans unlock advanced features. Initial implementation
+> allowance is five free active accounts per user across brands, behind
+> `PUBLISH_MULTI_ACCOUNT_ENABLED`. This supersedes historical account-based
+> pricing and the one-account boundary below; see ADR-0062/0063 amendments.
+> Premium feature boundaries/prices are not yet approved.
+
+
 > **As of 2026-10-08 (repo `main` at `bee1ea4f`, which includes PR #637 and #638).** §1.1 to §1.6 are the original product vision and
 > Metricool reference and are unchanged. §1.7 (MVP scope), §1.8 (entitlements) and the new §1.10
 > (built state) have been reconciled with the code. The all-network tester build (eleven networks, migration 0228) is described in §1.10 and in the [tester handover](INTEGRATIONS-TESTING-2026-10-08.md). Items marked *unverified* could not be confirmed
@@ -170,21 +178,26 @@ account. See §1.10.
 
 ## 1.8 Entitlement / plan model
 
-**Accepted as [ADR-0062](../adr/0062-veyrnox-publish-entitlement-model.md)**: an independent "Publish Plan," modelled on the already-Accepted
-Cinema Pass pattern (ADR-0057) — a recurring entitlement sold via Stripe Checkout subscription
-mode, never touching the generation-credit ledger, with entitlement derived server-side by RPC.
-This section keeps the original reasoning for context; ADR-0062 is the source of truth on the
-billing *mechanism*, and [ADR-0063](../adr/0063-veyrnox-publish-plan-pricing.md) (**Accepted**)
-has the actual numbers: Free (1 account, unlimited posts fair-use bounded) and Publish Plan
-($19/mo, 5 accounts, $4/account add-on beyond that), grounded in live Metricool and Buffer pricing.
+**Current owner decision (10 October 2026):** basic scheduling is free across
+several accounts; paid plans unlock advanced features. The initial allowance is
+five active accounts per user across owned brands. Premium feature boundaries
+and prices remain to be reviewed. The old $19/five-account and $4-extra-account
+proposal is superseded; [ADR-0062](../adr/0062-veyrnox-publish-entitlement-model.md)
+and [ADR-0063](../adr/0063-veyrnox-publish-plan-pricing.md) retain that history and
+record the owner's amendment. Future paid entitlement stays independent of the
+generation-credit ledger.
 
-**Built state (2026-10-08): the Publish Plan is not built.** There is no plan table, checkout or
-entitlement RPC; `social_publish_plans` exists only in the ADRs. What is enforced today is the Free
-limit alone: `record_social_account_connection` refuses a second active account with `ACCOUNT_LIMIT`
-(migration 0169, a constant of 1 for every user; a revoked account does not count, and accounts
-connected before 0169 are left alone). Posts are not otherwise metered or gated by plan, and neither
-are analytics (a plan-gating decision for analytics is still open). `wrangler.jsonc` notes that
-Publish stays dark in production until the platform app reviews and the Publish Plan land.
+**Implementation:** migration 0265 adds a service-only writer with an exact
+five-account cap and serialized concurrent callbacks. The Worker chooses it
+only when `PUBLISH_MULTI_ACCOUNT_ENABLED=true`; otherwise it retains 0169's
+one-account writer. The account screen reads the server's allowance and the
+callback gives the matching limit message. Both environment flags initially
+remain false pending migration, the clean window and acceptance. No premium
+checkout or entitlement is active. Existing posts, calendar and basic analytics
+remain available on released networks without charging generation Credits.
+
+The comparison below records the original account-based pricing rationale;
+it does not override the owner's revised free scheduling direction.
 
 Metricool's own gating axis is the number of connected profiles ("blogs") and network breadth, not
 post volume — the shape ADR-0062 follows:
@@ -217,7 +230,7 @@ acceptance records in this folder.
 
 | Capability | State |
 |---|---|
-| Connect accounts for Instagram, X, LinkedIn, TikTok, YouTube; disconnect | Built. OAuth by full-page redirect (not a popup). Disconnect stops publishing and clears tokens (0168). Free cap of one account (0169). |
+| Connect accounts for Instagram, X, LinkedIn, TikTok, YouTube; disconnect | Built. OAuth by full-page redirect (not a popup). Disconnect stops publishing and clears tokens (0168). One-account baseline (0169); five-free-account writer/API/UI added behind the 0265 rollout gate. |
 | Connect accounts for Facebook, Threads, Pinterest, Twitch, Google Business Profile (OAuth) and Bluesky (app password) | Built for testers (PR #637, migration 0228), behind `PUBLISH_EXTENDED_NETWORKS_ENABLED`. Facebook (Page), Pinterest (board) and Google Business Profile (location) need an explicit destination choice. Not run against real provider accounts; no provider app approval. See the network table below. |
 | Composer: pick accounts, one caption (4,000 characters max overall; each network also has its own limit, see below), one image or video, date and time | Built. Two actions: **Post now** (server time, queued for the next sweep) and **Schedule post**. Media comes from the user's generations or device uploads. A network with no upload destination (Twitch) is not offered as a destination. |
 | "Schedule this" from a generation | Built (Studio results, batch tiles, Library). Opens `/app/publish?job=<id>`; creates nothing until the user confirms. Caption suggestions are not built. |

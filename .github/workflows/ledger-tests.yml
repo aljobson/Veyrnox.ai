@@ -14,6 +14,7 @@ on:
       - "scripts/migrate.mjs"
       - "scripts/test-social-cinema-foundation.mjs"
       - "scripts/test-social-youtube-visibility.mjs"
+      - "scripts/test-social-free-multi-account.mjs"
       - "scripts/test-cinema-creators.mjs"
       - "scripts/test-tenant-foundation.mjs"
       - "scripts/test-project-documents.mjs"
@@ -155,6 +156,7 @@ jobs:
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-pass-event-ordering.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-reconciliation-allowance-referrals.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-reconciliation-snapshot.mjs
+          DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-social-free-multi-account.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-recovery-health.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-video-agent-sweep-health.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-social-cinema-foundation.mjs

@@ -14,6 +14,7 @@
  * client-supplied id can never reach this handler.
  */
 
+import { freeSocialAccountLimit } from '../../../../../lib/social/accountAllowance.js';
 import { youtubeVisibilityEnabled } from '../../../../../lib/social/publishFeature.js';
 import { socialUploadsEnabled } from '../../../../../lib/social/uploadPolicy.js';
 import { networkEnabled } from '../../../../../lib/social/networks.js';
@@ -66,6 +67,7 @@ export async function GET(req) {
 
     return NextResponse.json({
         brand_id: brand.brand_id,
+        accountLimit: freeSocialAccountLimit(),
         accounts: (accounts.accounts || []).map((account) => ({ ...account, publishingEnabled: networkEnabled(account.network) })),
         uploadsEnabled: socialUploadsEnabled(),
         youtubeVisibilityEnabled: youtubeVisibilityEnabled(),

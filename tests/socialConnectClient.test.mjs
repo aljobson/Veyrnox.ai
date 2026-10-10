@@ -147,3 +147,12 @@ test('post client forwards explicit YouTube visibility without adding it to lega
     await createSocialPost(body);
     assert.equal('youtubeVisibility' in JSON.parse(calls[1].init.body), false);
 });
+
+test('five-account callback refusal preserves the server limit for correct browser guidance', async () => {
+    sessionStore.set(pkceKey('youtube'), 'stashed-verifier-value-that-is-long-enough');
+    window.location.href = 'https://veyrnox.ai/social/connect/callback/youtube?code=auth-code&state=signed-state';
+    stubFetch(() => new Response(JSON.stringify({ ok: false, code: 'ACCOUNT_LIMIT', limit: 5 }), {
+        status: 409, headers: { 'content-type': 'application/json' },
+    }));
+    assert.deepEqual(await completeNetworkConnect('youtube'), { ok: false, code: 'ACCOUNT_LIMIT', limit: 5 });
+});

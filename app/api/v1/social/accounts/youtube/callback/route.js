@@ -24,6 +24,7 @@
  */
 
 import { NextResponse } from 'next/server';
+import { socialConnectionWriter, freeSocialAccountLimit } from '../../../../../../../lib/social/accountAllowance.js';
 import { networkReleased } from '../../../../../../../lib/social/networks.js';
 import { rpc, envConfig, SupabaseError } from '../../../../../../../packages/db/supabase-client.js';
 import { youtubeConfig, exchangeCodeForToken, fetchConnectedAccount, YOUTUBE_SCOPES } from '../../../../../../../packages/adapters/social/youtube.js';
@@ -114,7 +115,7 @@ export async function POST(req) {
 
     let recorded;
     try {
-        recorded = await rpc('record_social_account_connection', {
+        recorded = await rpc(socialConnectionWriter(), {
             p_auth_id: authId,
             p_brand_id: brand.brand_id,
             p_network: 'youtube',
@@ -132,8 +133,7 @@ export async function POST(req) {
         return NextResponse.json({ error: 'internal' }, { status: 502 });
     }
     if (recorded && recorded.code === 'ACCOUNT_LIMIT') {
-        // Free tier: one connected account per user (ADR-0063, 0169).
-        return NextResponse.json({ ok: false, code: 'ACCOUNT_LIMIT' }, { status: 409 });
+        return NextResponse.json({ ok: false, code: 'ACCOUNT_LIMIT', limit: freeSocialAccountLimit() }, { status: 409 });
     }
     if (!recorded || recorded.ok !== true) {
         return NextResponse.json({ error: 'internal' }, { status: 502 });
