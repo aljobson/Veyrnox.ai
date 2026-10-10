@@ -171,11 +171,14 @@ test('no binding value, API error text or token reaches the log or the error', a
 
 // A faked fetch that ignores its signal cannot show that a try is cut off.
 // This one hangs until the signal it was handed fires, as a real fetch does.
+// It holds a timer the way a real fetch holds a socket: the signal's own
+// timer does not keep the process alive, and on Node 22 the test ended first.
 test('a read that never answers is cut off: at the per-try limit, or at what is left of the budget', { timeout: 10_000 }, async () => {
     let tries = 0;
     const hang = (url, { signal }) => new Promise((resolve, reject) => {
         tries++;
-        signal.addEventListener('abort', () => reject(signal.reason), { once: true });
+        const socket = setInterval(() => {}, 1000);
+        signal.addEventListener('abort', () => { clearInterval(socket); reject(signal.reason); }, { once: true });
     });
     const failure = (options) => liveVersions({ accountId: 'account', workerName: 'worker', token: TOKEN, fetchImpl: hang,
         sleep: async () => {}, log: () => {}, ...options }).then(() => assert.fail('the read passed'), (error) => error);
