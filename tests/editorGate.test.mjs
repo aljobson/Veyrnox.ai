@@ -3,16 +3,16 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { outputSize } from '../app/veyrnox/_lib/editorExport.mjs';
 import { contentSecurityPolicy } from '../lib/contentSecurityPolicy.mjs';
+import { parseJsonc } from '../scripts/check-migration-ledger.mjs';
 
 const read = f => readFileSync(new URL(`../${f}`, import.meta.url), 'utf8');
 
 // ADR-0080: free browser editing is open; project persistence has its own server gate.
-test('the editor rollout is enabled in both environments without opening production projects', () => {
-    const text = read('wrangler.jsonc');
-    const hits = [...text.matchAll(/"EDITOR_TIMELINE_ENABLED":\s*"(\w+)"/g)].map(m => m[1]);
-    assert.deepEqual(hits, ['true', 'true'], 'one in each block, both enabled');
-    assert.match(text.slice(0, text.indexOf('"env"')), /"TENANT_PROJECTS_ENABLED":\s*"false"/);
-    assert.ok(text.indexOf('"EDITOR_TIMELINE_ENABLED"') < text.indexOf('"env"'), 'the first one is the production block');
+test('the editor rollout is preserved in both environments while production projects stay closed', () => {
+    const config = parseJsonc(read('wrangler.jsonc'));
+    assert.equal(config.vars.EDITOR_TIMELINE_ENABLED, 'true');
+    assert.equal(config.env.staging.vars.EDITOR_TIMELINE_ENABLED, 'true');
+    assert.equal(config.vars.TENANT_PROJECTS_ENABLED, 'false');
 });
 
 test('the request-time server flag controls the route and the Studio navigation', () => {

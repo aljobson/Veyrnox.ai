@@ -68,6 +68,16 @@ function isApplied(file, applied, appliedStems, ranges) {
     return ranges.some((r) => n >= r.from && n <= r.to);
 }
 
+// Read-only coverage, including gaps older than an applied migration. A missing
+// receipt does not prove its SQL never ran; only the apply planner enforces order.
+export function missingMigrationReceipts(appliedNames, files) {
+    const applied = new Set(appliedNames);
+    const stems = new Set(appliedNames.map(descriptiveName));
+    const ranges = appliedNames.map(batchRange).filter((r) => r && !r.invalid);
+    return files.filter((f) => FILE_RE.test(f.name) && !isApplied(f, applied, stems, ranges))
+        .sort((a, b) => fileNumber(a.name) - fileNumber(b.name) || a.name.localeCompare(b.name));
+}
+
 /**
  * @param {string[]} appliedNames  production's migration names
  * @param {{name: string, text: string}[]} files  supabase schema files (the ones that can be applied)
