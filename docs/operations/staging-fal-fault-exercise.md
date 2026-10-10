@@ -33,3 +33,7 @@ Restored consumer version `d623e77d-4356-4de0-8ac6-ab508eb38667` uses the origin
 Restored application version `4f0d13dc-1b27-4930-a15f-fe64633e6811`; its plaintext variables match the captured pre-exercise version exactly. Schema recovery is true; durable admission, queue publication and submit outcome remain false. The consumer's variables also match its pre-exercise version exactly, and the temporary exercise binding/variables are absent.
 
 Post-restoration [staging health run 37990574869](https://github.com/aljobson/Veyrnox.ai/actions/runs/37990574869) passed at `2026-10-09T20:59:23.311Z`: both queue backlogs zero, all thirteen recovery counts zero, no unhealthy tasks or issues, and all five reconciliation drift counts zero.
+
+## Terminal fixture closure — 10 October 2026
+
+The two refunded controlled-adapter fixtures above still occupied the unreserved-work capacity count: one UNKNOWN and one synthetic ACCEPTED. Reviewed deployed logs and the exercise worker establish zero real fal submissions for both. An operator update closed only those two exact REFUNDED jobs, matching fixture user/model, endpoint, previous state, provider-handle expectation and recorded attempt tokens. The update asserted exactly two rows. Both intents are now CLOSED; their tokens, handle, timestamps, job and refund ledger evidence remain retained. No job was reset or recharged. This closure applies to these known synthetic/no-submit fixtures, not unresolved real provider work.
