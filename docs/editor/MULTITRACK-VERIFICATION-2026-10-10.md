@@ -58,17 +58,24 @@ allocation guards; selecting 4K does not guarantee that every edit fits.
 
 ## Database and automated checks
 
-All 246 migration files replayed on a disposable local PostgreSQL database.
+The 246-file baseline chain replayed on a disposable local PostgreSQL database.
+PR CI then replayed all 249 migration files from the combined main/release
+checkout successfully, including the three intervening Cinema migrations.
+Migration 0269 also applied twice locally without error.
 The new six-case multitrack suite proves exact v3 save/restore, idempotent replay,
 changed-payload conflict, typed rejection of malformed direct saves without
 appending history, tenant isolation and private helper ACLs. Existing timeline,
 project-document, write-cap and default-privilege suites also passed.
 
-The full unit run passed 2,792 tests, with one existing skipped test and no
-failures (2,793 total). The initial sandboxed runtime failed on a refused local
-socket; the permitted run passed without weakening the test. Release lint,
-type/security, migration-number/catalog, audit and Worker-build results are
-added once their final runs finish.
+The final local unit run passed 2,796 tests, with one existing skipped test and
+no failures (2,797 total). The initial sandboxed runtime failed on a refused local
+socket; the permitted run passed without weakening the test. Release lint passed with existing repository warnings and no errors; the
+changed editor files have no lint warnings. Type/security checks passed
+(308 client modules), as did migration numbering, catalog guards and dependency
+audit. The clean production Worker build passed; the final preview cleanup
+revision is rebuilt and checked again before merge. The hard-wall check passed
+in Linux CI; the local macOS grep command reported matches in unchanged binary
+showcase assets, so that local result is not recorded as a pass.
 
 ## Activation sequence
 
@@ -82,3 +89,16 @@ added once their final runs finish.
 
 The migration is backward compatible, so the prior workspace remains usable
 through the observation window and if the advanced flag is rolled back.
+
+
+Final review found that legacy previews painted correctly but their decoder
+cleanup assumed the v3 visual-layer array and rejected the paint promise. The
+cleanup now handles legacy base/overlay frames. A focused regression catches
+the original exception; Reticle then proved a real local import and scrub both
+finish with `previewPainted=true`. Caption-track reordering was also qualified
+with a real downloaded three-second export: the later white text layer draws
+over an earlier teal layer at the same position.
+
+Affected-flow discovery selected a different checkout rather than this isolated
+release and was reported with sanitized feedback. Direct scoped checks remain
+the evidence; the automated affected/replay gate is unresolved, not passed.

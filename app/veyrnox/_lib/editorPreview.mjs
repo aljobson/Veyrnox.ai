@@ -47,7 +47,8 @@ export function createPreviewer(blobs) {
             });
             if (disposed || ticket !== latest) return false;
             paintFrame(canvas.getContext('2d'), canvas.width, canvas.height, layers, pics);
-            const used = new Set(layers.visuals.map(v => `${tl.video[v.k].mediaId}:${tl.video[v.k].id}`)), usedMedia = new Set(layers.visuals.map(v => tl.video[v.k].mediaId));
+            const active = layers.visuals || [layers.base, layers.over].filter(Boolean);
+            const used = new Set(active.map(v => `${tl.video[v.k].mediaId}:${tl.video[v.k].id}`)), usedMedia = new Set(active.map(v => tl.video[v.k].mediaId));
             for (const [key, entry] of sinks) if (!used.has(key)) { entry.input?.dispose(); sinks.delete(key); }
             for (const [id, picture] of images) if (!usedMedia.has(id)) { picture.then(b => b.close?.(), () => {}); images.delete(id); }
             return true;
