@@ -232,3 +232,20 @@ acceptance of the ceiling and 24 hours of clean reconciliation after 0245.
 
 The entitlement endpoint now reports `pass` for a Cinema Pass holder, where it
 answered 503 before. No Pass is on sale, so no one sees a difference today.
+
+### Playback metering correction (2026-10-10)
+
+Staging acceptance found that the watch page sent 30-second heartbeats after a
+six-second video ended, and renewed tokens while idle. The player now uses the
+[official Stream Player API](https://developers.cloudflare.com/stream/viewing-videos/using-the-stream-player/using-the-player-api/)
+`playing`, `pause`, `ended`, `waiting`, `seeking` and error events. It records
+visible playback wall time, retains fractional seconds, flushes earned seconds
+on stop/hide, and caps a delayed browser beat at 60 seconds. Token renewal only
+runs during visible playback or when the viewer explicitly presses Play.
+The server remains authoritative for entitlement, ceilings and wall-time caps.
+
+The SDK is loaded only on the watch page from Cloudflare's documented
+`https://embed.cloudflarestream.com/embed/sdk.latest.js`, with the current
+HTML document's CSP nonce, including after client navigation. No wildcard
+script or connection host is added to the production CSP. A failed SDK load
+shows playback unavailable before requesting a token or spending a play grant.
