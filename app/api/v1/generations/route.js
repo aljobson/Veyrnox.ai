@@ -11,6 +11,7 @@ import { classifySubmitFailure } from '../../../../lib/submitFailureClass.js';
 import { resolveUploadedSource, resolveAssetSource } from '../../../../lib/resolveSource.js';
 import { envConfig as r2EnvConfig, isConfigured as r2IsConfigured } from '../../../../packages/adapters/r2.js';
 import { editUnits, clipCaptionsEnabled, clipSlowEnabled } from '../../../../lib/clipEdit.js';
+import { compositeRefundGate } from '../../../../lib/compositeRefunds.js';
 import { resolveEdit, defaultDeps as editDeps } from '../../../../lib/clipEditSources.js';
 import { checkPlan, checkCapacity } from '../../../../lib/montageGate.js';
 
@@ -374,6 +375,12 @@ export async function POST(req) {
         if (full) {
             return NextResponse.json(full.body, { status: full.status, headers: full.retryAfter ? { 'retry-after': String(full.retryAfter) } : undefined });
         }
+    }
+
+    // A composite job whose account has had too many refunded in a day waits for the day to turn (M-07).
+    const refundsGate = await compositeRefundGate({ rpc, cfg, userId, modelId });
+    if (refundsGate) {
+        return NextResponse.json(refundsGate.body, { status: refundsGate.status, headers: { 'retry-after': String(refundsGate.retryAfter) } });
     }
 
     // 3. Debit atomically. Creates jobs row too. Price = catalog unit price
