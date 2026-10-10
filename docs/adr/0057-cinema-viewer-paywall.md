@@ -116,3 +116,47 @@ account is built and switched on before `CINEMA_UNLOCKS_ENABLED` is `true` in
 production. It is not built yet. Its value, how minutes are counted and what a
 Cinema Pass holder gets past it are decided when it is built; it is
 precondition P6 in the [paywall plan](../cinema/paywall-plan.md).
+
+## Free viewing ceiling as built (0245, 2026-10-10)
+
+Owner, 2026-10-10: build it. Built behind `CINEMA_FREE_CEILING_ENABLED`, which
+is `false` in production and `true` on staging. Migration 0245 is written and
+not applied.
+
+- **The rule.** An account has `cinema_prices.free_ceiling_minutes` of free
+  viewing per calendar month (UTC). The proposed value is 300 and the owner
+  confirms it; the CHECK admits 0 to 100,000. The app layer never computes it.
+- **What counts.** A Free Play is seconds of a free title (SHORT, TRAILER or a
+  Free Episode) recorded for an account in the append-only `cinema_free_plays`.
+  Granting playback counts one minute, or what is left of the month. After
+  that the player's heartbeat counts seconds with the Pass Play caps: at most
+  60 per heartbeat, and no more than wall-clock time per account, serialized
+  per account. Counting at the grant means a play shorter than a heartbeat
+  still counts and the total does not rest on the heartbeat alone. The player
+  renews its token every 12 minutes, and a renewal is a play start: it counts
+  a minute, and the wall-clock cap then refuses the heartbeats of the minute
+  that follows, so continuous viewing is counted at about wall-clock rate.
+  Nothing is counted when playback is refused or the video is not ready.
+- **At the ceiling.** Entitlement for a free title reports `locked` with reason
+  `free_ceiling` and 0 credits, playback returns no stream uid so no token is
+  signed, and the watch page says the free viewing limit for the month is
+  reached. The ceiling is the account's, not the title's. Paid titles answer
+  as before.
+- **Cinema Pass holders.** Free minutes are used first. Past the free ceiling
+  a free title plays under the Pass, is recorded as a Pass Play and counts
+  toward the Pass ceiling. With both ceilings reached it is locked. A live
+  Unlock of a title that later became free still plays it.
+- **With the switch off nothing changes.** `cinema_entitlement`,
+  `read_cinema_playback` and `record_cinema_pass_play` keep their bodies. Only
+  while the switch is on does the Worker call `cinema_metered_entitlement`,
+  `start_cinema_playback` and `record_cinema_play` in their place. If the
+  switch is on before 0245 is applied, those calls fail and playback answers
+  503, so apply the migration first.
+- **Not covered.** The title page still labels a free title "Free" past the
+  ceiling; the message is on the watch page. Pass Plays are recorded as
+  before: the minute at a play start applies to free viewing only.
+- **No money moves.** Nothing in 0245 touches `ledger_entries` or
+  `credit_balances`.
+
+The entitlement endpoint now reports `pass` for a Cinema Pass holder, where it
+answered 503 before. No Pass is on sale, so no one sees a difference today.

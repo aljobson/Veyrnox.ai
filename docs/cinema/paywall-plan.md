@@ -11,7 +11,7 @@ Companion to [ADR-0057](../adr/0057-cinema-viewer-paywall.md). Phases 1 to 3 are
 | P3 | Cooling-off and Supply Consent wording for Unlocks and Passes; creator terms stating no revenue share yet. | Legal | Distance-selling rules in UK/EU. |
 | P4 | Stream credentials and webhook live (ADR-0052 gates), delivery rate verified against the invoice. | Owner | Pass margin depends on it. |
 | P5 | `ledger_debit` inserts a `jobs` row (0059), so an Unlock cannot reuse it. 0142 adds a sibling `ledger_unlock` RPC in the same family: Free-first, Frozen check, `free_delta` bookkeeping, idempotent on `(user_id, content_id)`, joining the RPC-only writer set in `CLAUDE.md`. | Eng | No raw INSERT into `ledger_entries`; reconciliation must stay at zero rows. |
-| P6 | A monthly ceiling on free viewing minutes per account, built and switched on. **Not built** (2026-10-09). Blocks `CINEMA_UNLOCKS_ENABLED` in production only; the owner sets the value. | Eng, Owner | The same switch opens playback of free titles, and only Cinema Pass viewing is counted (ADR-0057, 2026-10-09). |
+| P6 | A monthly ceiling on free viewing minutes per account, built and switched on. **Built behind `CINEMA_FREE_CEILING_ENABLED`, off in production; migration 0245 not applied** (2026-10-10). Blocks `CINEMA_UNLOCKS_ENABLED` in production only; the owner confirms the value (300 minutes proposed). | Eng, Owner | The same switch opens playback of free titles, and only Cinema Pass viewing is counted (ADR-0057, 2026-10-09). |
 
 ## Phase 1 — Free Episodes and Episode Unlock (migration 0142, switch `CINEMA_UNLOCKS_ENABLED`)
 

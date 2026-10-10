@@ -25,6 +25,7 @@ Read [REPO-ASSESSMENT.md](REPO-ASSESSMENT.md) first for the repository-specific 
 | CREATOR_UPLOADS_ENABLED | Master + profiles |
 | CINEMA_SUBSCRIPTIONS_ENABLED | Master |
 | CINEMA_UNLOCKS_ENABLED | Master + profiles |
+| CINEMA_FREE_CEILING_ENABLED | Master |
 | CINEMA_PUBLISHING_ENABLED | Master + profiles + content |
 | CINEMA_VIEWING_ENABLED | Master |
 | CREATOR_MONETISATION_ENABLED | Master + profiles + subscriptions |
@@ -71,6 +72,10 @@ ADR-0057 and migration 0143 add the Cinema Pass: recurring Stripe subscriptions 
 ## Pass Plays increment (Phase 3)
 
 ADR-0057 and migration 0144 add Pass Plays: `POST /api/v1/cinema/play/heartbeat` records up to 60 seconds per call for a viewer whose access to the title is `pass` (free, unlocked and locked viewing record nothing), a Pass can never log more seconds than wall-clock time, and `cinema_prices.pass_ceiling_minutes` (3,000) is now enforced: at the ceiling `cinema_entitlement` answers `locked` with reason `pass_ceiling` and the unlock price, so the viewer can still pay per episode. `GET /api/v1/admin/cinema/earnings?month=YYYY-MM` is the Operator read of Unlock credits and Pass seconds per title, behind the same identity, fresh-MFA and Cloudflare Access gates as the creator review queue, with `is_admin` re-checked in the database. Nothing is paid out; a creator revenue share is its own ADR.
+
+## Free viewing ceiling (0245)
+
+ADR-0057 and migration 0245 add Free Plays and a monthly ceiling on free viewing, behind `CINEMA_FREE_CEILING_ENABLED` (off in production). An account has `cinema_prices.free_ceiling_minutes` (300 proposed) of free titles per calendar month, UTC. Granting playback of a free title counts one minute; after that `POST /api/v1/cinema/play/heartbeat` counts seconds with the Pass Play caps, in the append-only `cinema_free_plays`. At the ceiling entitlement reports `locked` with reason `free_ceiling`, `POST /api/v1/cinema/play` returns 402 with that reason and signs nothing, and the watch page says the month's free viewing limit is reached. A Cinema Pass holder past the free ceiling plays the title under the Pass, counted toward the Pass ceiling. With the switch on the routes call `cinema_metered_entitlement`, `start_cinema_playback` and `record_cinema_play`; with it off they call the functions from 0142 and 0144, which are unchanged. No credits move.
 
 ## Publication increment (ADR-0059)
 
