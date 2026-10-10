@@ -84,6 +84,21 @@ Alternatives considered:
 | 5 | Upload your own media | **A new ADR**: moderation, likeness and the payment-provider review (#101); can reuse the 0223 upload library |
 | 6 | Templates, stock library, collaboration | Licences and product definition; not planned |
 
+## Signed-in CapCut, home page only (read 2026-10-10)
+
+Read from the owner's signed-in Browser pane, **home page only**. The editor itself was not opened, because opening it creates a project
+in the owner's CapCut account; that needs the owner's say-so.
+
+- **Credits, not only subscriptions.** The header shows a credit count, an Upgrade button and "Free credits"; AI generations are priced
+  in credits, with promotions on specific models. That is the same shape as Veyrnox.ai's ledger, and it supports the plan that AI steps
+  are priced while composing stays free.
+- **Two entry points.** A prompt box ("Video" or "Design", an "Auto" mode, "Skills", and "Agent mode: Standard or Director") that builds a
+  video from a brief, and a separate "Video Editor: timeline-based editing". Veyrnox already has the first (Studio skills, the video
+  agent); the second is this plan.
+- **Popular features listed:** Video Editor, Video Studio, Design Studio, text to speech (100+ voices), generate captions (20+
+  languages), remove background, and long video to shorts. Long video to shorts is not on the earlier gap list and is a candidate AI step.
+- Everything else seen (effects, templates, inspiration tiles) is marketing content and is not copied.
+
 ## Owner decisions (2026-10-10)
 
 1. Two-layer plan: **yes**.
