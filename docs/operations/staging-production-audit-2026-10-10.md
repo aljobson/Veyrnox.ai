@@ -112,13 +112,15 @@ This section supersedes the earlier pending-fix and staging-history findings abo
 
 The 0264 test replays all **244** source migrations into fresh PostgreSQL, then seeds actual allowance overuse and an unmatched referral grant. The real hourly CLI exits 1 for each, 0 for measured zeroes and 2 for invalid evidence; repeat application, stale/future snapshots, ACL/RLS and cached-read isolation pass. Full suite: 2,740 tests, 2,739 passed, one skipped. CI database acceptance and build checks passed. Reticle was skipped for these database/monitoring/docs changes because they have no UI surface. Existing UI evidence is not replaced by a database test.
 
+The concurrent cloud-saving preparation (#857) was reviewed and reached main while this follow-up ran. Its production flags remain off. That UI evidence is the author's recorded verification, not a new Reticle run by this database/monitoring audit.
+
 ### Remaining gates and unfinished scope
 
 The audit has **not made every feature public**. Runtime flags and preview gates still govern the unreleased paths. Completed source does not establish provider qualification, payment acceptance or a full clean interval.
 
 | Area | What remains |
 |---|---|
-| Projects | Current browser/tenant acceptance, D1 upload policy and a clean window after 0261. Earliest elapsed 24 hours: 11 Oct 15:32:27 UTC / 16:32:27 BST; actual observations are required |
+| Projects | #857 is merged at `44304136`: documents/history use the server gate, media admission has separate `PROJECT_MEDIA_UPLOADS_ENABLED`. The PR records local Reticle save/reload and gate-off verdicts plus a real staging document/history drill. Production stays off pending a clean window after 0261, no earlier than 11 Oct 15:32:27 UTC / 16:32:27 BST; media retains D1 independently |
 | Paid Cinema Pass | Current sandbox buy/play/ceiling/cancel/refund drill; rights/consent/refund sign-off; written Stripe acceptance; invoice-backed Stream cost; approved production catalogue. 0263's relevant 24-hour interval cannot finish before 11 Oct 16:20:23 UTC / 17:20:23 BST |
 | Uploads across Transform, Publish, Projects and Cinema | Provider enrollment, documented image/video matching, trusted pre-storage byte admission, reporting/preservation policy and actual benign acceptance. See the prepared [integration/enrollment review](upload-scanning-enrollment-2026-10-10.md). Provider accounts and real scan adapter remain unimplemented |
 | Credit subscriptions | C4's remaining Stripe sandbox lifecycle/recovery/alert evidence and provider/Finance/Legal acceptance, then C4a plan changes and C5 public pricing/account UI. The existing C4 backend is built and default-off; the UI remains unfinished |
