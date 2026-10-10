@@ -42,3 +42,17 @@ test('history pagination is bounded and excludes document content',async()=>{
  assert.match(urls[1],/limit=50/);assert.match(urls[1],/revision=lt.40/);assert.ok(!urls[1].includes(',document'));
  assert.equal((await history(req(undefined,'?before=0'),params)).status,400);
 });
+test('a v2 document with a timeline forwards; a damaged timeline never reaches upstream (ADR-0080 slice 3)',async()=>{
+ const { withTimeline } = await import('../lib/projectDocument.js');
+ const { emptyTimeline, addMedia, addVideoClip } = await import('../app/veyrnox/_lib/editorTimeline.mjs');
+ let tl=emptyTimeline(); tl=addMedia(tl,{id:'j-abc',kind:'video',frames:120,name:'a.mp4',hasAudio:true,width:1280,height:720}); tl=addVideoClip(tl,'j-abc');
+ const doc=withTimeline(emptyProjectDocument(id),JSON.parse(JSON.stringify(tl)));
+ let sent;globalThis.fetch=async(url,init)=>{sent=JSON.parse(init.body);return Response.json({revision:3,document:doc});};
+ assert.equal((await PUT(req({expected_revision:2,document:doc}),params)).status,200);
+ assert.equal(sent.p_document.schema_version,2);assert.equal(sent.p_document.timeline.video.length,1);
+ globalThis.fetch=async()=>{throw Error('must not call upstream');};
+ const damaged=JSON.parse(JSON.stringify(doc));damaged.timeline.video[0].len=99999;
+ assert.equal((await PUT(req({expected_revision:2,document:damaged}),params)).status,400);
+ const noKey={...emptyProjectDocument(id),schema_version:2};
+ assert.equal((await PUT(req({expected_revision:2,document:noKey}),params)).status,400);
+});

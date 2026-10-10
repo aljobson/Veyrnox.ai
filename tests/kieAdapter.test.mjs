@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parseEndpoint, buildRequest, interpretRecord, verifyCallback, callbackTaskId } from '../packages/adapters/kie.js';
+import { parseEndpoint, buildRequest, interpretRecord, verifyCallback, callbackTaskId, submitTask } from '../packages/adapters/kie.js';
 
 async function sign(taskId, ts, key) {
     const k = await crypto.subtle.importKey('raw', new TextEncoder().encode(key), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
@@ -104,6 +104,38 @@ test('callback HMAC: valid, wrong key, stale, unsigned, no key configured', asyn
     assert.equal(await verifyCallback('task_1', { signature: sig, timestamp: String(now) }, { hmacKey: 'secret', nowSeconds: now + 3600 }), false);
     assert.equal(await verifyCallback('task_1', { signature: null, timestamp: null }, { hmacKey: 'secret', nowSeconds: now }), false);
     assert.equal(await verifyCallback('task_1', { signature: sig, timestamp: String(now) }, {}), false);
+});
+
+/** submitTask against a stubbed kie answer; restores fetch afterwards. */
+async function submitAgainst(status, body) {
+    const real = globalThis.fetch;
+    const calls = [];
+    globalThis.fetch = async (url, init) => { calls.push({ url: String(url), init }); return Response.json(body, { status }); };
+    try {
+        const job = { job_id: 'job-1', provider_endpoint: 'market:google/nano-banana', inputs: { prompt: 'a cat' } };
+        return { result: await submitTask(job, { apiKey: 'kie-test', callbackUrl: 'https://veyrnox.test/api/webhook/kie' }), calls };
+    } finally { globalThis.fetch = real; }
+}
+
+test('an out-of-funds refusal is typed provider_payment_required; every other refusal stays a log string', async () => {
+    // kie documents 402 "Insufficient Credits - Account does not have enough
+    // credits to perform the operation", as a code inside an HTTP 200.
+    const inBody = await submitAgainst(200, { code: 402, msg: 'Insufficient credits', data: null });
+    assert.equal(inBody.result.ok, false);
+    assert.equal(inBody.result.errorCode, 'provider_payment_required');
+    assert.match(inBody.result.error, /^kie 200\/402: /);
+    assert.equal(inBody.calls[0].url, 'https://api.kie.ai/api/v1/jobs/createTask');
+    // Or as the HTTP status itself.
+    const asStatus = await submitAgainst(402, { msg: 'Insufficient credits' });
+    assert.equal(asStatus.result.errorCode, 'provider_payment_required');
+    // Anything else is left for the classifier (ADR-0066): no errorCode.
+    for (const [status, body] of [[200, { code: 500, msg: 'rejected' }], [200, { code: 422, msg: 'bad prompt' }], [401, { code: 401, msg: 'no' }], [429, { code: 429 }], [500, null]]) {
+        const r = await submitAgainst(status, body);
+        assert.equal(r.result.ok, false, `${status}`);
+        assert.equal('errorCode' in r.result, false, `${status} ${JSON.stringify(body)}`);
+    }
+    const accepted = await submitAgainst(200, { code: 200, data: { taskId: 'task-1' } });
+    assert.deepEqual(accepted.result, { ok: true, providerJobId: 'task-1' });
 });
 
 test('finds the task id wherever kie puts it', () => {

@@ -13,7 +13,8 @@ register('data:text/javascript,' + encodeURIComponent(
 const route = new URL('../app/api/v1/admin/violations/route.js', import.meta.url);
 const USER = '11111111-1111-4111-8111-111111111111';
 const JOB = '22222222-2222-4222-8222-222222222222';
-const ADMIN = { 'x-veyrnox-auth-id': 'auth-admin', 'x-veyrnox-auth-aal': 'aal2' };
+const KEY = 'a1b2c3d4-0000-4000-8000-000000000001';
+const ADMIN = { 'x-veyrnox-auth-id': 'auth-admin', 'x-veyrnox-auth-aal': 'aal2', 'idempotency-key': KEY };
 
 async function withEnv(env, run) {
     const before = {};
@@ -86,7 +87,43 @@ test('a takedown is recorded through the RPC with the admin auth id and reported
         assert.equal(res.headers.get('cache-control'), 'no-store');
     });
     assert.equal(calls.length, 1);
-    assert.deepEqual(calls[0].body, { p_auth_id: 'auth-admin', p_user_id: USER, p_job_id: JOB, p_tier: 'takedown', p_reason: 'Real person without consent' });
+    assert.deepEqual(calls[0].body, { p_auth_id: 'auth-admin', p_user_id: USER, p_job_id: JOB, p_tier: 'takedown', p_reason: 'Real person without consent', p_idempotency_key: KEY });
+});
+
+// A lost response and a resubmit must not record a second strike (audit
+// 2026-10-09, P-07): the form's Idempotency-Key reaches the RPC, and a
+// replayed result is reported as such without a second notice email.
+test('POST without a usable Idempotency-Key is refused before the RPC', async () => {
+    await withEnv(CONFIGURED, async ({ POST }) => {
+        const calls = stubRpc(() => Response.json({ ok: true }));
+        for (const headers of [
+            { 'x-veyrnox-auth-id': 'auth-admin', 'x-veyrnox-auth-aal': 'aal2' },
+            { 'x-veyrnox-auth-id': 'auth-admin', 'x-veyrnox-auth-aal': 'aal2', 'idempotency-key': 'short' },
+            { 'x-veyrnox-auth-id': 'auth-admin', 'x-veyrnox-auth-aal': 'aal2', 'idempotency-key': 'has space in it' },
+        ]) {
+            const res = await POST(request('POST', headers, { user_id: USER, tier: 'warning', reason: 'r' }));
+            assert.deepEqual([res.status, (await res.json()).error], [400, 'idempotency_key_invalid']);
+        }
+        assert.equal(calls.length, 0, 'no RPC');
+    });
+});
+
+test('a replayed key reports the first strike and sends no second notice', async () => {
+    let notified = 0;
+    const calls = stubRpc((u) => {
+        if (u.includes('/rpc/record_content_violation')) {
+            return Response.json({ ok: true, action_id: '33333333-3333-4333-8333-333333333333', tier: 'takedown', assets_removed: 0, takedowns: 1, frozen: false, replayed: true });
+        }
+        notified += 1;
+        return Response.json([]);
+    });
+    await withEnv({ ...CONFIGURED, RESEND_API_KEY: 're_test', VIOLATION_EMAIL_FROM: 'Veyrnox <support@veyrnox.test>' }, async ({ POST }) => {
+        const res = await POST(request('POST', ADMIN, { user_id: USER, job_id: JOB, tier: 'takedown', reason: 'again' }));
+        assert.equal(res.status, 200, 'a replay is not a new record');
+        assert.deepEqual(await res.json(), { action_id: '33333333-3333-4333-8333-333333333333', tier: 'takedown', assets_removed: 0, takedowns: 1, frozen: false, email: 'skipped', replayed: true });
+    });
+    assert.equal(calls.filter((c) => c.url.includes('/rpc/record_content_violation')).length, 1);
+    assert.equal(notified, 0, 'no user lookup or email for a replay');
 });
 
 test('RPC refusals map to typed errors: not_admin is 403, unknown user or job 404, others 400', async () => {

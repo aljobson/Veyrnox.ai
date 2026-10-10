@@ -4,6 +4,7 @@ import { AppNav } from '../../_components/NavBar';
 import { Main } from '../../_components/Main';
 import { Button } from '../../_components/Button';
 import { TimelineView } from '../../_components/editor/TimelineView';
+import { ProjectBar } from '../../_components/editor/ProjectBar';
 import { gatewayFetch } from '../../_lib/gateway';
 import { useEditorPreview } from '../../_lib/useEditorPreview';
 import {
@@ -31,8 +32,12 @@ function Editor() {
     const [blocker, setBlocker] = useState(''), [exporting, setExporting] = useState(false), [progress, setProgress] = useState(0);
     const [result, setResult] = useState(null), [height, setHeight] = useState(720);
     const [draft, setDraft] = useState({ forId: null, base: '', value: '' }); // the words being typed for one text item, until committed
+    const [tick, setTick] = useState(0); // bumped when a reopened project's files arrive, so the preview repaints
     const total = totalFrames(tl);
     const size = useMemo(() => timelineSize(tl, 720), [tl]);
+    // A project opened (or a version restored) replaces the timeline; undo history starts again from there.
+    const loadTimeline = useCallback(next => { setHistory({ past: [], now: next }); setSelected(null); setFrame(0); setPlaying(false); setResult(null); }, []);
+    const relinked = useCallback(() => setTick(t => t + 1), []);
 
     useEffect(() => { alive.current = true; return () => { alive.current = false; exportAbort.current?.abort(); }; }, []);
     useEffect(() => { exportBlocker().then(text => alive.current && setBlocker(text || '')); }, []);
@@ -56,7 +61,7 @@ function Editor() {
         if (!canvas.current) return;
         if (!previewer.current) previewer.current = createPreviewer(blobs.current);
         previewer.current.draw(tl, Math.min(frame, Math.max(total - 1, 0)), canvas.current).catch(() => {});
-    }, [tl, frame, total]);
+    }, [tl, frame, total, tick]);
 
     useEffect(() => {
         if (!playing) return undefined;
@@ -138,6 +143,7 @@ function Editor() {
             {busy && <span role="status" className="text-sm text-vx-fg-muted">Reading file…</span>}
         </div>
         {notice && <p role="alert" className="rounded-xl border border-vx-border bg-vx-panel p-3 text-sm">{notice}</p>}
+        <ProjectBar tl={tl} blobs={blobs} onLoadTimeline={loadTimeline} onRelinked={relinked} />
         {library && <section aria-label="My Library" className="rounded-2xl border border-vx-border p-4">
             <div className="mb-2 flex items-center justify-between"><h2 className="text-sm font-bold">My Library</h2><Button variant="ghost" size="sm" onClick={() => setLibrary(null)}>Close</Button></div>
             {library.length === 0 ? <p className="text-sm text-vx-fg-muted">Looking for videos and sounds you made…</p> : <ul className="grid gap-2 sm:grid-cols-2">
