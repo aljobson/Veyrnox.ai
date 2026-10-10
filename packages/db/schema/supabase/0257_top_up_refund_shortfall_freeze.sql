@@ -1,4 +1,4 @@
--- 0249_top_up_refund_shortfall_freeze.sql
+-- 0257_top_up_refund_shortfall_freeze.sql
 -- A Top-up Refund that cannot take back every credit it is owed Freezes the
 -- account (audit 2026-10-09, D-02; ADR-0019, ADR-0057).
 --
@@ -98,7 +98,7 @@ BEGIN
     WHERE id = v_top_up.id;
 
     -- Chargeback (ADR-0019), on either count: Pack Credits from this purchase
-    -- were consumed (a shortfall, 0249), or a job was created since it was
+    -- were consumed (a shortfall, 0257), or a job was created since it was
     -- bought and did not
     -- end in a Credit Refund. "Bought" is the pending row's created_at, not
     -- credited_at: the backfill credits and claws back in one transaction

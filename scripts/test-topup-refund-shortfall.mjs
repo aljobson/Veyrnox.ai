@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // A Top-up Refund that cannot take back every credit it is owed Freezes the
-// account, whatever the credits were spent on (0249, audit 2026-10-09 D-02).
+// account, whatever the credits were spent on (0257, audit 2026-10-09 D-02).
 // Runs on the full replayed chain, because the spend path that exposed the
 // gap, ledger_unlock, lives far later than the refund acceptance tests'
 // fixed migration lists. Throwaway LOCAL database only; everything rolls back.
@@ -121,7 +121,7 @@ try {
         await invariants(t.userId);
     });
 
-    await check('a job in flight still Freezes even when the clawback takes everything (the pre-0249 rule holds)', async () => {
+    await check('a job in flight still Freezes even when the clawback takes everything (the pre-0257 rule holds)', async () => {
         const t = await creditedTopUp();
         // The debit comes out of the Free bucket, so the Pack is whole and the
         // clawback has no shortfall; the job alone must trip the Freeze.

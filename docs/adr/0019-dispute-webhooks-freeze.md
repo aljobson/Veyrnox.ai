@@ -58,7 +58,7 @@ never refunds (for example, the dispute is won), we never find out at all.
 - The `CONTEXT.md` Chargeback definition changes: reported by the Merchant of
   Record, or inferred.
 
-## Amendment 2026-10-10 — a shortfall Freezes too (0249, audit D-02)
+## Amendment 2026-10-10 — a shortfall Freezes too (0257, audit D-02)
 
 The refund clawback (`apply_top_up_refund`, ADR-0018 and 0058 onward) caps what
 it takes at the Pack Credits still held, and its Freeze test asked only whether a
@@ -68,7 +68,7 @@ row, so a buyer who spent a Pack on unlocks and then had the Pack refunded kept
 the unlocks, the clawback took nothing, and nothing Froze: the credits were
 written off.
 
-Since 0249 any shortfall (owed more than taken) Freezes the account, with the
+Since 0257 any shortfall (owed more than taken) Freezes the account, with the
 same `freeze_account` call and the same `credits_taken` / `credits_shortfall`
 record in `account_actions`; the job test stays for the case where everything
 was taken back but a job is still in flight, whose later Credit Refund would
