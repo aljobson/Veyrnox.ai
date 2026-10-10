@@ -39,6 +39,7 @@ try {
     // Earlier acceptance restores 0230. Reapply this slice before testing it.
     await q(await readFile(new URL('../packages/db/schema/supabase/0238_fal_admission_capacity.sql',import.meta.url),'utf8'));
     await q(await readFile(new URL('../packages/db/schema/supabase/0240_fal_reserved_only_admission.sql',import.meta.url),'utf8'));
+    await q(await readFile(new URL('../packages/db/schema/supabase/0243_fal_pinned_payload_validation.sql',import.meta.url),'utf8'));
     assert.equal((await one('SELECT enabled FROM public.fal_capacity_policy')).enabled,false);
     await q(`INSERT INTO public.model_catalog(id,name,provider,provider_endpoint,modality,credits_5s,provider_cost_per_unit,cost_unit,gated_flag,active,free_allowance_per_day,free_allowance_daily_budget)
         VALUES($1,'Capacity test','fal',$2,'text-to-image',2,0.03,'per_generation',false,true,3,10)`,[model,endpoint]);
