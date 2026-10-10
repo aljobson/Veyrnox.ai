@@ -20,8 +20,9 @@
 .vx-tile { transition: transform 200ms var(--vx-ease-out); }
 .vx-tile-video { transition: opacity 300ms var(--vx-ease-out); }
 /* The global :focus-visible rule squares corners to 4px; on a clipped tile
-   that squares the video and gradient too. Keep the card's own radius. */
-.vx-root .vx-tile:focus-visible { border-radius: 1.5rem; }
+   that squares the video and gradient too. Keep the card's own radius
+   (rounded-2xl, as every large panel is). */
+.vx-root .vx-tile:focus-visible { border-radius: 1rem; }
 /* Hover lift only where hover exists; on touch it fires on tap and sticks. */
 @media (hover: hover) and (pointer: fine) {
   .vx-tile:hover { transform: scale(1.015); }
@@ -182,13 +183,33 @@
   scroll-margin-top: 5rem;
 }
 
-/* Display voice: Archivo at full weight, set tight. One scale step per role,
-   sizes chosen per section in markup. */
+/* Display voice: Archivo at full weight, set tight. Section headings choose
+   their size in markup; a page title takes one of the two classes below. */
 .vx-display {
   font-weight: 900;
   line-height: 0.94;
   letter-spacing: -0.04em;
   text-wrap: balance;
+}
+
+/* Page titles, with .vx-display. Two sizes and no third.
+   Index: a page that lists or sells (pricing, models, templates, tools,
+   guides, the 404). On the home page it is the hero line ("The price is on
+   the button.") and the closing line, so nothing there is set larger.
+   Detail: one thing (a model, a template, a guide, a legal page, Social
+   Cinema). Also the size of a section heading.
+   One title is neither: the home page's, which sits in the video panel and
+   keeps the 36/48/64 it was given. At the detail size its longest word is
+   262px in the 238px a 320px phone leaves it.
+   The breakpoints are Tailwind's sm and lg. */
+.vx-title-index { font-size: 52px; }
+.vx-title-detail { font-size: 40px; }
+@media (min-width: 40rem) {
+  .vx-title-index { font-size: 76px; }
+  .vx-title-detail { font-size: 56px; }
+}
+@media (min-width: 64rem) {
+  .vx-title-index { font-size: 92px; }
 }
 
 }

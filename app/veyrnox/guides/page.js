@@ -14,8 +14,9 @@ export default function Guides() {
   return (
     <div className="min-h-dvh">
       <MarketingNav />
-      <section className="max-w-[900px] mx-auto px-4 sm:px-6 pt-14 sm:pt-20 pb-28">
-        <h1 className="vx-display text-[52px] sm:text-[80px] leading-[0.95]">Guides</h1>
+      <section className="max-w-[1300px] mx-auto px-4 sm:px-6 pt-14 sm:pt-20 pb-28">
+        <div className="max-w-[852px]">
+        <h1 className="vx-display vx-title-index">Guides</h1>
         <p className="mt-6 mb-10 text-lg text-vx-fg-body max-w-[46ch] leading-[1.5]">Short, step-by-step answers to the things people do first.</p>
         <ul className="border-t border-vx-border">
           {GUIDES.map((g) => (
@@ -27,6 +28,7 @@ export default function Guides() {
             </li>
           ))}
         </ul>
+        </div>
       </section>
     </div>
   );

@@ -36,7 +36,10 @@ export default async function TemplatePage({ params }) {
   return (
     <div className="min-h-dvh">
       <MarketingNav />
-      <section className="max-w-[1100px] mx-auto px-4 sm:px-6 pt-10 sm:pt-16 pb-28">
+      {/* The shell every public page shares, so this page starts on the
+          logo's edge. Its own width is the inner block. */}
+      <section className="max-w-[1300px] mx-auto px-4 sm:px-6 pt-10 sm:pt-16 pb-28">
+        <div className="max-w-[1052px]">
         <Link href="/presets" className="text-[14px] text-vx-fg-muted hover:text-vx-fg underline-offset-4 hover:underline">All templates</Link>
         <div className="mt-6 grid gap-10 lg:grid-cols-[1fr_420px]">
           <div>
@@ -45,13 +48,13 @@ export default async function TemplatePage({ params }) {
                 <FilmPlayer key={t.id} film={clip} label={`${presetTitle(t.name)} preview`} aspectRatio={clip.aspectRatio || t.previewAspect || '9 / 16'} />
                 <p className="mt-3 text-sm text-vx-fg-muted">{clip.generatedOnVeyrnox ? 'Five-second example generated on Veyrnox with the prompt below.' : 'Five-second source preview. Use the recipe to create your own version.'}</p>
               </div>
-            ) : <div className="min-h-[280px] lg:min-h-[480px] rounded-3xl" style={{ background: t.bg }} aria-hidden />}
+            ) : <div className="min-h-[280px] lg:min-h-[480px] rounded-2xl" style={{ background: t.bg }} aria-hidden />}
           </div>
           <div>
             <p className="font-vx-mono text-[11px] tracking-[0.12em] text-vx-fg-muted">
               {t.category}{t.isNew ? ' · NEW' : ''}
             </p>
-            <h1 className="mt-2 vx-display text-[40px] sm:text-[56px] leading-[0.95]">{presetTitle(t.name)}</h1>
+            <h1 className="mt-2 vx-display vx-title-detail">{presetTitle(t.name)}</h1>
             <p className="mt-4 text-vx-fg-body">
               Runs on{' '}
               {modelId
@@ -65,6 +68,7 @@ export default async function TemplatePage({ params }) {
             )}
             <TemplateRecipe key={t.id} preset={t} generatedPreview={clip?.generatedOnVeyrnox} />
           </div>
+        </div>
         </div>
       </section>
     </div>

@@ -137,7 +137,7 @@ export function FAQBlock() {
 export function ClosingCTA() {
   return (
     <section className="px-4 sm:px-6 pt-28 sm:pt-36 max-w-[1300px] mx-auto">
-      <h2 className="vx-display text-[52px] sm:text-[84px] lg:text-[112px] max-w-[11ch]">
+      <h2 className="vx-display vx-title-index max-w-[11ch]">
         Your first 10 credits are on us.
       </h2>
       <div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-4">

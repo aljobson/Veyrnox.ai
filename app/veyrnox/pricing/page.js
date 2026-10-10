@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { MarketingNav } from '../_components/NavBar';
+import { PremiumTag } from '../_components/PremiumTag';
 import { CopyButton } from '../_components/CopyButton';
 import { MODELS as MODELS_FALLBACK, SITE_UPDATED, isShelfModel, kindOf } from '../_lib/tokens';
 
@@ -77,7 +78,7 @@ export default function Pricing() {
       <MarketingNav />
 
       <section className="max-w-[1300px] mx-auto px-4 sm:px-6 pt-14 sm:pt-20">
-        <h1 className="vx-display text-[52px] sm:text-[80px] lg:text-[104px] max-w-[12ch]">
+        <h1 className="vx-display vx-title-index max-w-[12ch]">
           One balance. Every model.
         </h1>
         <p className="mt-6 text-lg sm:text-xl text-vx-fg-body max-w-[46ch] leading-[1.5] text-pretty">
@@ -101,7 +102,10 @@ export default function Pricing() {
           <ul className="mt-10 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
             {packs.map((p) => (
               <li key={p.id} className="vx-paper-shadow">
-                <div className="vx-paper px-6 pt-9 pb-10">
+                {/* h-full: the slips share a row, and a line that wraps on one
+                    (the longest price line does at four across) must not leave
+                    it taller than its neighbours. */}
+                <div className="vx-paper h-full px-6 pt-9 pb-10">
                   <div className="font-vx-mono text-[40px] font-bold leading-none text-vx-money vx-num">{num.format(p.credits)} cr</div>
                   <div className="vx-perf mt-6" aria-hidden />
                   {/* #99 item 1, approved v1: keep verbatim. */}
@@ -156,7 +160,7 @@ export default function Pricing() {
                     <tr key={m.id} className="border-b border-vx-border">
                       <th scope="row" className="py-3 pr-3 text-left font-normal">
                         <span className="text-[15px] font-bold">{m.name}</span>
-                        {m.gated && <span className="ml-2 text-[12px] font-bold text-vx-money">premium</span>}
+                        {m.gated && <PremiumTag className="ml-2" />}
                         <span className="block sm:hidden mt-1"><CopyButton value={m.id} label={m.id} copiedLabel="Model id copied" /></span>
                       </th>
                       {/* The model id is what goes in an API call: the one
