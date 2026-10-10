@@ -111,6 +111,8 @@ render; and whether to add a WebGL layer later. The engine is decided: **Mediabu
 | 4 | AI buttons on a clip (one at a time) | Endpoint verified live and the fal bill read, then a price |
 | 5 | Uploads in the editor in production | Moderation decision and #101 settled |
 
+**Production gate found 2026-10-10:** the production bucket's CORS allowed only `PUT` from `https://veyrnox.ai`, so the editor's Library fetch (a browser `GET` of a signed URL) would fail there. ADR-0028 amendment 2 widens it to `GET, HEAD, PUT` with `Range` and `If-None-Match`, the rule staging already has; apply with the command in `docs/infra/README.md` before any production flip.
+
 ## Consequences
 
 - **Good:** the editor feels like CapCut (instant, interactive) and costs nothing to run; reuses M01, M02, Mediabunny and `job_steps`.
