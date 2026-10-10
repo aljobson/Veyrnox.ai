@@ -64,9 +64,9 @@ test('an upload request also records the account-level rights attestation, servi
     }
     // Both admin RPCs check users.is_admin themselves, like ops_metrics_24h.
     assert.equal((migration.match(/RAISE EXCEPTION 'not_admin' USING ERRCODE = '42501'/g) || []).length, 2);
-    // 0246 replaces the five-argument record with an idempotent six-argument
+    // 0253 replaces the five-argument record with an idempotent six-argument
     // one, drops the old signature, and revokes the new one the same way.
-    const idem = readFileSync(new URL('../packages/db/schema/supabase/0246_content_violation_idempotency.sql', import.meta.url), 'utf8');
+    const idem = readFileSync(new URL('../packages/db/schema/supabase/0253_content_violation_idempotency.sql', import.meta.url), 'utf8');
     assert.ok(idem.includes('DROP FUNCTION IF EXISTS public.record_content_violation(TEXT, UUID, UUID, TEXT, TEXT);'));
     const six = 'record_content_violation(TEXT, UUID, UUID, TEXT, TEXT, TEXT)';
     assert.ok(idem.includes(`REVOKE ALL ON FUNCTION public.${six} FROM PUBLIC, anon, authenticated;`));
