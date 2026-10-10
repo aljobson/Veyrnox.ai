@@ -1,0 +1,56 @@
+[
+  {
+    "name": "0035_stripe_credit_packs",
+    "version": "20260913061855",
+    "sha256": "792cdcabfcaa13252b5eb16b779f8d9d87f905d1149340474a57f971890fb8a1",
+    "bytes": 12335
+  },
+  {
+    "name": "0036_purchase_supply_consent",
+    "version": "20260913063348",
+    "sha256": "41755ffa6ab8e7c75a247d4af444b526b09e8bb5acf8c494c6003f4b3af48eab",
+    "bytes": 4391
+  },
+  {
+    "name": "0037_proportional_refund_clawback",
+    "version": "20260913064104",
+    "sha256": "3da23b433479fbcbaeefd9e5fbe86f7d6c1abeb693c8bea45680c7c87eec904f",
+    "bytes": 4309
+  },
+  {
+    "name": "0039_sales_channel",
+    "version": "20260913070247",
+    "sha256": "b365fee3634d40ad4e16cbe5c681ce3983908fb7eece0649b1766fa9dd7f6972",
+    "bytes": 8883
+  },
+  {
+    "name": "0040_pricing_floors",
+    "version": "20260913071013",
+    "sha256": "a401bc76c91c39a288b890c14022a2369254b8fadd8afc4841ed7a42af76dc45",
+    "bytes": 7867
+  },
+  {
+    "name": "0041_dispute_opened_freeze",
+    "version": "20260913081202",
+    "sha256": "eb630576c5f09e9aa816c6992713c75176ae255b05f888ac55fa22eb287ec075",
+    "bytes": 3655
+  },
+  {
+    "name": "revert_pr108_stripe_objects_0035_0041",
+    "version": "20260913084952",
+    "sha256": "b488aca500f6353d52141867df4e3f04e4e3cee2eb8509ad162edbf352544117",
+    "bytes": 5957
+  },
+  {
+    "name": "drop_wallet_residue_staging",
+    "version": "20260913103405",
+    "sha256": "d22505d21280673d50eb911d09277cc27f657f4798377d8c22b86491544cde1e",
+    "bytes": 1084
+  },
+  {
+    "name": "staging_publish_append_only_no_truncate",
+    "version": "20261004065037",
+    "sha256": "4d73aae2f458ea3d1f56ff0e70390ae4d40003a4745992fb29f08890bcc2d5fe",
+    "bytes": 1849
+  }
+]

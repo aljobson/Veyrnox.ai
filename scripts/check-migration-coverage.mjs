@@ -20,9 +20,25 @@ export function coverageConfig(config, environment) {
 }
 
 export function assessCoverage(names, files) {
-    const missing = missingMigrationReceipts(names, files).map((f) => f.name);
+    const pending = missingMigrationReceipts(names, files);
+    const pendingNames = new Set(pending.map(f => f.name));
+    const numbered = files.filter(f => /^\d{4}_[a-z0-9_]+\.sql$/.test(f.name));
+    const missing = [];
+    const reconciled = [];
+    for (const file of pending) {
+        // A forward repair needs its own real receipt and must name an older
+        // source file explicitly. Prose, absent receipts and cycles cannot cover it.
+        const repairs = numbered.filter(candidate => !pendingNames.has(candidate.name)
+            && Number(candidate.name.slice(0, 4)) > Number(file.name.slice(0, 4))
+            && [...candidate.text.matchAll(/^--\s*Reconciles migration:\s*(\d{4}_[a-z0-9_]+)\s*$/gm)]
+                .some(match => match[1] + '.sql' === file.name));
+        if (repairs.length > 1) throw Error('Ambiguous forward repairs for ' + file.name);
+        if (repairs.length) reconciled.push({ migration: file.name, reconciled_by: repairs[0].name });
+        else missing.push(file.name);
+    }
     const unknown = unaccounted(names, files);
-    return { missing_receipts: missing, unaccounted_receipts: unknown, complete: !missing.length && !unknown.length };
+    return { missing_receipts: missing, reconciled_receipts: reconciled, unaccounted_receipts: unknown,
+        complete: !missing.length && !unknown.length };
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
@@ -31,7 +47,13 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
         const root = join(dirname(fileURLToPath(import.meta.url)), '..');
         const config = coverageConfig(parseJsonc(readFileSync(join(root, 'wrangler.jsonc'), 'utf8')), environment);
         const coverage = assessCoverage(await fetchLedger(config), readSchemaFiles(root));
-        if (coverage.complete) console.log(`${environment}: every source migration has an accounted receipt.`);
+        for (const repair of coverage.reconciled_receipts) {
+            console.log('Forward reconciliation: ' + repair.migration + ' via ' + repair.reconciled_by
+                + '; the original receipt remains absent.');
+        }
+        if (coverage.complete) console.log(coverage.reconciled_receipts.length
+            ? environment + ': every source migration has an accounted receipt or explicit applied forward repair.'
+            : environment + ': every source migration has an accounted receipt.');
         else {
             console.error(`${environment}: migration coverage is incomplete; health snapshots are not a schema-readiness verdict.`);
             for (const name of coverage.missing_receipts) console.error(`Missing receipt: ${name}`);
