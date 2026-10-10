@@ -31,8 +31,8 @@ export function videoLayout(tl) {
 }
 export function videoFrames(tl) { return tl.video.reduce((n, c) => n + c.len, 0); }
 export function audioEnd(tl) { return tl.audio.reduce((n, c) => Math.max(n, c.start + c.len), 0); }
-/** The project is as long as the video, or the audio if that runs longer (a music bed past the last clip plays over black). */
-export function totalFrames(tl) { return Math.max(videoFrames(tl), audioEnd(tl)); }
+/** Text can extend the project too, including a title-only video over black. */
+export function totalFrames(tl) { return Math.max(videoFrames(tl), audioEnd(tl), tl.text.reduce((end, x) => Math.max(end, x.start + x.len), 0)); }
 
 export function videoClipAt(tl, frame) {
     return videoLayout(tl).find(item => frame >= item.start && frame < item.end) || null;
@@ -98,13 +98,14 @@ export function splitClip(tl, track, id, frame) {
 }
 
 /** Change which part of the source a clip plays. `in`/`len` are source frames and must stay inside the media. */
-export function trimClip(tl, track, id, { in: from, len }) {
+export function trimClip(tl, track, id, { in: from, len, start }) {
     const i = find(tl, track, id);
     if (i < 0) return err('Select a clip first.');
     const clip = tl[track][i], media = tl.media[clip.mediaId];
     const nextIn = from ?? clip.in, nextLen = len ?? clip.len;
     if (!isInt(nextIn) || !isInt(nextLen) || nextIn < 0 || nextLen < 1 || nextIn + nextLen > media.frames) return err('That range is outside the clip.');
-    const next = replace(tl[track], i, { ...clip, in: nextIn, len: nextLen });
+    if (track === 'audio' && start !== undefined && (!isInt(start) || start < 0)) return err('That range is outside the clip.');
+    const next = replace(tl[track], i, { ...clip, in: nextIn, len: nextLen, ...(track === 'audio' && start !== undefined ? { start } : {}) });
     const out = { ...tl, [track]: next };
     if (track === 'video' && videoFrames(out) > MAX_FRAMES) return err(`A project holds up to ${LIMITS.maxSeconds} seconds.`);
     if (track === 'audio' && overlaps(out.audio)) return err('Audio clips cannot overlap.');

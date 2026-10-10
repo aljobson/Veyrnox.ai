@@ -6,15 +6,16 @@
 //   - The SEQUENTIAL decode iterator (`canvases()`), not the sparse-access one, which made the first second take 5 to 25 s.
 //   - Audio is mixed with an OfflineAudioContext and added to the muxer a second at a time, between video frames.
 //   - Cancel stops within a frame; the half-written output is discarded.
-import { Input, BlobSource, ALL_FORMATS, Output, BufferTarget, Mp4OutputFormat, CanvasSink, CanvasSource, AudioBufferSink, AudioBufferSource, canEncodeVideo, canEncodeAudio, QUALITY_HIGH } from 'mediabunny';
+import { Input, BlobSource, ALL_FORMATS, Output, BufferTarget, Mp4OutputFormat, CanvasSink, CanvasSource, AudioBufferSource, canEncodeVideo, canEncodeAudio, QUALITY_HIGH } from 'mediabunny';
 import { FPS, videoLayout, totalFrames, effectiveTransition } from './editorTimeline.mjs';
 import { frameLayers, resolvePictures, paintFrame, timelineSize } from './editorRender.mjs';
 export { EXPORT_HEIGHTS, outputSize } from './editorRender.mjs';
 import { validateExportBrowser } from './videoEnhance.mjs';
 
-const SAMPLE_RATE = 48000;
+import { SAMPLE_RATE, mixAudio } from './editorAudio.mjs';
 class Reader {
     constructor(sink, from, to) { this.it = sink.canvases(from, to); this.cur = null; this.nxt = null; this.done = false; }
+    async close() { await this.it.return?.(); this.cur = null; this.nxt = null; }
     async at(t) {
         if (!this.cur && !this.done) { const r = await this.it.next(); if (r.done) this.done = true; else this.cur = r.value; }
         while (!this.done) {
@@ -27,41 +28,6 @@ class Reader {
 
 const abortError = () => Object.assign(new Error('Export cancelled.'), { name: 'AbortError' });
 
-async function mixAudio(tl, inputs, length, signal) {
-    const ctx = new OfflineAudioContext(2, length, SAMPLE_RATE);
-    const layers = [
-        ...videoLayout(tl).map(({ clip, start }, k) => ({ clip, start, fadeIn: effectiveTransition(tl, k), fadeOut: effectiveTransition(tl, k + 1) })),
-        ...tl.audio.map(clip => ({ clip, start: clip.start, fadeIn: 0, fadeOut: 0 })),
-    ];
-    let used = 0;
-    for (const { clip, start, fadeIn, fadeOut } of layers) {
-        if (signal.aborted) throw abortError();
-        const media = tl.media[clip.mediaId];
-        if (!media.hasAudio || clip.volume === 0) continue;
-        const track = await inputs.get(clip.mediaId).getPrimaryAudioTrack();
-        if (!track) continue;
-        // A dissolve crossfades the sound the way it does the picture: this clip keeps playing UNDER the next clip's dissolve (as far
-        // as its file goes) while ramping down, and ramps up over its own dissolve.
-        const extra = Math.min(fadeOut, media.frames - (clip.in + clip.len));
-        const from = clip.in / FPS, to = (clip.in + clip.len + extra) / FPS, at = start / FPS, cut = at + clip.len / FPS, end = cut + extra / FPS;
-        const gain = ctx.createGain();
-        gain.gain.value = clip.volume;
-        if (fadeIn > 0) { gain.gain.setValueAtTime(0, at); gain.gain.linearRampToValueAtTime(clip.volume, at + fadeIn / FPS); }
-        if (fadeOut > 0) { gain.gain.setValueAtTime(clip.volume, cut); gain.gain.linearRampToValueAtTime(0, cut + fadeOut / FPS); }
-        gain.connect(ctx.destination);
-        for await (const wrapped of new AudioBufferSink(track).buffers(from, to)) {
-            const node = ctx.createBufferSource();
-            node.buffer = wrapped.buffer;
-            node.connect(gain);
-            let when = at + (wrapped.timestamp - from), offset = 0;
-            if (when < at) { offset = at - when; when = at; }
-            node.start(when, offset);
-            node.stop(end);
-        }
-        used += 1;
-    }
-    return used ? await ctx.startRendering() : null;
-}
 
 const slice = (mix, from, to) => {
     const out = new AudioBuffer({ length: to - from, sampleRate: SAMPLE_RATE, numberOfChannels: 2 });
@@ -94,17 +60,17 @@ export async function exportTimeline(tl, blobs, { signal = new AbortController()
     if (blocked) throw new Error(blocked);
 
     const inputs = new Map();
-    for (const id of new Set([...tl.video, ...tl.audio].map(c => c.mediaId))) {
-        const blob = blobs.get(id);
-        if (!blob) throw new Error('A file in this project is not loaded. Add it again.');
-        inputs.set(id, new Input({ source: new BlobSource(blob), formats: ALL_FORMATS }));
-    }
+    const readers = [];
     let output;
     try {
+        for (const id of new Set([...tl.video, ...tl.audio].map(c => c.mediaId))) {
+            const blob = blobs.get(id);
+            if (!blob) throw new Error('A file in this project is not loaded. Add it again.');
+            inputs.set(id, new Input({ source: new BlobSource(blob), formats: ALL_FORMATS }));
+        }
         const canvas = new OffscreenCanvas(W, H);
         const g = canvas.getContext('2d');
         const layout = videoLayout(tl);
-        const readers = [];
         for (const [k, { clip }] of layout.entries()) {
             const track = await inputs.get(clip.mediaId).getPrimaryVideoTrack();
             if (!track || !await track.canDecode()) throw new Error('This browser cannot decode one of the videos.');
@@ -148,6 +114,7 @@ export async function exportTimeline(tl, blobs, { signal = new AbortController()
         if (output) await output.cancel().catch(() => {});
         throw signal.aborted ? abortError() : error;
     } finally {
+        await Promise.allSettled(readers.map(reader => reader.close()));
         for (const input of inputs.values()) input.dispose();
     }
 }

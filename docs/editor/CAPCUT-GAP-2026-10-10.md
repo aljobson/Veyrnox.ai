@@ -1,123 +1,74 @@
-# CapCut capability gap, and how to build it in Veyrnox.ai
+# CapCut feature inventory and editor delivery scope — 2026-10-10
 
-**Status:** Direction chosen by the owner 2026-10-10 · nothing built · ADR-0080 proposed (see [ADR-0080](../adr/0080-browser-timeline-editor.md))
-**Extends:** [PRD.md](PRD.md), [CAPTIONS.md](CAPTIONS.md), [SPEED.md](SPEED.md). Where they disagree, CLAUDE.md and the ADRs win.
+The owner requested **all feature areas** in the signed-in CapCut editor and supplied a screenshot. This supersedes the earlier limited comparison in this document. All rows below are in scope; this is not a parity or production-completion announcement.
 
-## How this was researched (and what it was not)
+## Evidence boundary
 
-- Read: CapCut's **public** pages (`capcut.com`, `/tools/online-video-editor`) and this repo.
-- Not done: the signed-in `my-edit` page. The Browser pane was not signed in, and credentials are the owner's to enter.
-- Not done, on purpose: no scraping of CapCut's app bundle, API or assets. Features are fair to match; their code, UI, brand,
-  templates, effects and music are not. Everything below is written fresh.
+The signed-in editor's twelve library areas, six inspector categories and export settings were inspected. No owner media, selected clip, preset, paid job or export was changed or submitted. Observed controls establish the exposed feature surface, not their behavior, quality or prices for other accounts. Unnamed toolbar commands and complete shortcut mappings still need a disposable-project execution pass.
 
-## What Veyrnox.ai has today
+REA 6.3.0 inspected a passive request/response metadata capture offline. It contains 122 records in an incomplete synthetic HAR; the initial load and evicted events are absent. Headers, cookies, bodies, auth and original query values were not retained. No recorded URLs were fetched. Status zero means the response was not captured. Worker/WASM manifest requests establish resource requests, not execution or internal implementation.
 
-| Area | State |
-|---|---|
-| Clip Editor: trim, stitch (2 to 10 clips, same aspect, 60 s cap), add audio | **Live**, server-side `job_steps` chain, one priced job, Library "Edit" sheet |
-| Captions (`veed/subtitles`) | Flag on in production, UI hidden behind `localStorage.veyrnox_editor_captions`; 7-credit price **not checked against fal's invoice** |
-| Slow motion (Topaz interpolate) | Built; production flag off, staging on; placeholder price |
-| Video agent (OpenMontage, ADR-0074) | Built; flag as written in `wrangler.jsonc` on main: production `"true"`, staging `"false"` (verify live before relying on it) |
-| Video Enhance (face smoothing, colour) in `/app/enhance` | **Dev-only prototype** (PR #361 draft); runs in the browser on WebCodecs via Mediabunny; no upload, no credits |
-| AI generation: 9 video, 6 image, 4 speech, 4 audio/music models; lip sync; avatar | Live in Studio |
-| Image tools: background removal, expand, upscale, edit | Live in `/tools` |
-| Video to audio (MMAudio) | Live since 2026-10-07 |
-| Publish (schedule to social), device uploads library (`social_uploads`, 0223) | Built; uploads flag state per `wrangler.jsonc` |
-| Projects (documents with history, ADR-0051/0055) | Built behind `TENANT_PROJECTS_ENABLED` |
+Evidence ID: `ev_2c1bac8ec500c5671a3464e4ea887aa00f3b560650c791e8474d7cd1b5d5aeb8`.
 
-**OpenCut is not in the repo.** It was evaluated 2026-09-22 and rejected again 2026-10-07: `opencut-classic` is archived, the
-rewrite has its own Postgres/Redis/auth, its engine is WebAssembly (the CSP blocks it), and its Editor API is roadmap only. It is
-MIT, so it stays worth a look when that API ships.
+Capture SHA-256: `6c21a5c7697572484b44d0d7dda7ebe33e09c661a2fb2549f59b628989d13913`.
 
-## CapCut features (public pages) against Veyrnox.ai
+The owner screenshots and raw UI/network evidence remain private local artifacts. No CapCut code, media, presets, music, stickers, templates or thumbnails are adopted.
 
-Status: **Have** = live. **Part** = built but hidden, flagged or server-only. **Gap** = nothing yet.
+## Entire requested feature surface
 
-| CapCut feature | Veyrnox.ai | Notes |
+| Area | Actual CapCut UI observed | Veyrnox gap and required work |
 |---|---|---|
-| Multi-clip timeline with drag, split, trim, reorder | **Part** | Trim and stitch exist as a form, not a timeline. No preview of the combined result (PRD section 3, "Out") |
-| Real-time preview of the edit | **Gap** | Needs a browser engine |
-| Crop, reverse, mirror, resize / aspect ratios | **Gap** | Letterboxing and mixed aspect are explicitly out of v1 |
-| Speed change | **Part** | Slow motion only, 2x to 8x; no speed-up (nothing on fal does it) |
-| Transitions, filters, effects | **Gap** | Enhance has a WebGL filter pipeline to learn from |
-| Text overlays, stickers | **Gap** | |
-| Keyframes, multiple tracks | **Gap** | |
-| Auto subtitles / transcribe | **Part** | Captions step; one style preset, no hand editing, no translation |
-| Text to speech | **Have** | 4 models in Studio; not placeable on a timeline yet |
-| Music and sound effects | **Have** (generated) | CapCut offers a licensed library; we generate. A stock library needs licences |
-| Background remover (video), people remover, text remover, inpainting | **Gap** for video | Image background removal exists |
-| Noise removal, voice enhance, extract audio | **Gap** | Candidate fal ffmpeg and audio endpoints, all unverified |
-| Video converter, custom export (720p to 4K, MP4/MOV, 24 to 60 fps) | **Gap** | Output today is whatever the last step returns |
-| AI video, image and character generation | **Have** | Plus Auto Short and the video agent |
-| "Video Studio" (chat builds a video) | **Part** | The video agent and Studio skills do this, one job at a time |
-| Templates (Reels, TikTok, business) | **Part** | Studio presets are for generation, not edited videos |
-| Upload from computer, Drive, Dropbox, QR | **Part** | Publish has an owner-scoped device-upload library (10 files, 200 MB, MP4/JPEG/PNG/WebP); the editor edits **generated assets only** |
-| Cloud storage, team spaces, collaboration | **Gap** | Out of scope for v1 (PRD: no shared projects) |
-| Long-to-short, auto-cut | **Gap** | |
+| Workspace | Left media/tool library, centre canvas, contextual inspector at right, timeline below; canvas bounds and handles | Dedicated editing workspace with resizable panels, visible selection and canvas interaction |
+| Project | Editable title, space identity, cloud-save indicator | Existing project documents/history; cloud activation follows the migration observation window |
+| Media | Uploads and Generated tabs, thumbnails and source lengths; uploaded clip marked Added | Rich bin, image import, folders/search, source preview, drag to timeline, relink and recovery |
+| AI generation | Prompt, start/end image inputs, model picker, estimated credits and Generate | Bridge existing Studio jobs into the editor, display verified price before submission, return output to bin |
+| Templates | Search and catalog categories including intro, outro, logo reveal, vlog, slideshow, business and promo | Original reusable edit templates with replaceable media/text; generation presets are a separate existing capability |
+| Elements | Stock video, photos, stickers, Giphy and avatar entries | Images/overlays, original vector shapes and stickers; source/license metadata and catalog search |
+| Audio library | Music and Sound effects tabs, search, categories, duration/creator rows | User/generated sound selection, waveform preview and insertion; licensed stock requires a catalog and usage terms |
+| Text | Add heading/body, Text templates/Text effects tabs, preset categories | Multiline text, font/weight/alignment, colours, outline/background/shadow, positioning, reusable styles, text animations |
+| Captions | Auto captions, language picker, Manual captions, upload .srt/.ass/.lrc, Auto lyrics | Editable timed captions and file import/export; word timings, styling and translation; priced transcription integration |
+| Transcript | Spoken language, track selection, transcript-based editing and Transcribe | Editable transcript with timing-to-timeline mapping, range deletion, undo and source alignment |
+| Effects | Video effects/Body effects, search, named categories and presets | Parameterised effect clips/ranges and compositor support; tracked/body effects need additional analysis/model work |
+| Transitions | Instruction to drag between clips, categories and catalog | Transition slots, configurable duration, preview/export agreement and an original transition catalog |
+| Filters | Themed filter catalogs including mono, film, portrait, landscape and restoration entries | Reusable original looks with intensity control, colour pipeline and export parity |
+| Brand kit | Trial/Create entry; examples of videos, images, text/adjustment presets, stickers and music | Workspace brand assets and styles, ownership/permissions, reusable palette/fonts and licence tracking |
+| Plugins | Epidemic Sound catalog entry | Define an extension contract with scoped capabilities and licensed providers; an external link alone is not plugin parity |
+| Basic/mask | Mask section and None selector | Geometric masks, inversion, feather, transforms and keyframes |
+| Basic/colour | Colour adjustment entry labelled Basic, HSL, Curves | Exposure/contrast/saturation/temperature, channel adjustment and editable curves |
+| Basic/blend | Normal mode selector, opacity slider/input | Blend modes, opacity, render ordering and keyframes |
+| Basic/transform | Scale, X/Y position and rotation controls | Crop/fit/fill, translation, scaling, rotation, flips and direct canvas manipulation |
+| Basic/restoration | Stabilize, Reduce image noise, Remove flicker switches | Separate processing jobs or measured local algorithms; reliability, preview and result replacement |
+| Background | Colour picker, Recents, Brand Color, Recommended, Apply to all | Solid/blur/image backgrounds and per-clip/project controls; other CapCut tabs remain unnamed in captured DOM |
+| Smart tools | Auto reframe, Retouch, Remove background, Camera tracking, Relight, AI movement, Optical flow | Explicit tool contracts, local/remote execution decisions, progress/cancel/retry, verified pricing for remote jobs |
+| Clip audio | Volume in dB, fade-in/out duration, Basic and Voice changer tabs | Audible synchronized preview, gain envelope/fades, extraction, mute/solo, overlapping music/voice tracks, noise/EQ tools |
+| Voice changer | Library/Custom; processing and voice presets; Apply to all | Local DSP where suitable; voice transformation jobs where needed; original presets and result preview |
+| Animation | In, Out, Combo tabs and many movement presets | Transform/opacity keyframe engine, easing, original animation presets and editable durations |
+| Speed | Normal/Curve; 1x, duration, Pitch, Smooth slow-mo | Rate/remapping model, constant speed, source-to-output time mapping, pitch decision, reversal/freeze and optical-flow integration |
+| Speed curves | None, Custom and multiple curve presets | Editable speed ramp points; preview, audio and export use the same time mapping |
+| Selection/edit commands | Selection, undo/redo icons; canvas toolbar and timeline toolbar; selected clip has trim handles | Command history, duplicate/copy/paste, split/delete, linked/group selection, keyboard controls, ripple/snap and track locks |
+| Timeline | Time ruler, playhead, clip filmstrip, audio control, timeline zoom and selected clip bounds | Drag trims/reorder/move, multitrack overlays, waveforms/filmstrips, zoom/pan, snapping and readable track headers |
+| Export | Name, cover, resolution, quality, frame rate, format | Export settings tied to codec support, progress/cancel, clear failure and file validation |
+| Export resolution | 360p, 480p, 720p, 1080p, 2K, 4K options | Measure higher resolutions and longer edits on supported browsers before exposing them |
+| Export frame rate | 24, 25, 30, 50, 60 fps | Versioned project timebase and resampling; no frame-count drift |
+| Export quality/format | High, Recommended, Fast; MP4/MOV | Codec/bitrate/quality controls and supported containers, with preview/export parity |
+| Sharing/publish | Review link, presentation link, TikTok, TikTok Ads, YouTube/Shorts, Facebook, Instagram Reels and Schedule | Connect existing Publish with explicit destinations; review permissions/comments and shared project work need their own implementation |
 
-## The decision that shapes everything
+## Delivery sequence
 
-CapCut is a **browser timeline** with AI tools attached. Veyrnox's editor is a **server chain** of priced steps. Those are
-different products, and the chain cannot become a timeline: it has no preview and each change is a paid job.
+1. **Editing foundation:** source identity/import recovery, title duration/export, bounded undo/redo, duplicate/split, trim/reorder/move, zoom/keyboard, audible synchronized preview, export progress/cancel and resource disposal. This PR implements this step; see [verification](FOUNDATION-VERIFICATION-2026-10-10.md).
+2. **Workspace and multitrack:** resizable panels, source viewer, filmstrips/waveforms, images/overlays, overlapping audio, mute/solo/lock, multi-select/groups, ripple and snapping. Design the versioned document, backward-compatible reader, Worker validator and database migration together; round-trip existing projects and preserve their appearance.
+3. **Visual/audio controls:** transforms/crop/fit/fill/flips, opacity/blend, masks/feather, backgrounds, colour/HSL/curves, fades/gain/EQ/noise, constant speed/ramps and keyframes/easing. Preview and export must share parameter and time evaluation.
+4. **Typography, captions and transcript:** multiline styles/animations; manual timed captions and bounded file import/export; editable transcript and source-aligned range edits; job-backed word timing, translation and lyrics.
+5. **Original catalogs:** parameterised effects/transitions/filters, replaceable-media templates, elements and workspace brand styles. Retain external licence/source metadata; qualify each operation's undo, persistence and preview/export agreement.
+6. **Smart tools and Studio:** generation, speech/captions, segmentation/reframe/retouch/tracking/relight, interpolation/stabilization/restoration and voice transformation through explicit local or remote contracts. Remote jobs use verified endpoints/prices and the normal debit/refund/idempotency path, with progress/cancel/retry and result insertion.
+7. **Export/review/production:** measured 2K/4K/longer outputs, multiple timebases, codec/quality options, proxy/server fallback if selected, Library/Publish handoff, permission-aware review and collaboration. Require real outputs, clean CI/deployment and live verification.
 
-**Recommended: two layers, and the second one already exists.**
+## Boundaries that implementation must respect
 
-1. **Compose in the browser, free.** A timeline on WebCodecs plus a canvas, exporting MP4 locally with Mediabunny 1.60.0, which is
-   already a dependency (`/app/enhance` uses it: decode, composite, mux; no WebAssembly; CSP already allows `blob:` media).
-   Nothing is uploaded, nothing is debited, like the accepted scope of ADR-0065. This is what makes it feel like CapCut.
-2. **AI as priced steps.** Captions, speech, slow motion, video to audio, background removal and the rest stay as `job_steps`
-   jobs with one debit and an all-or-nothing refund. The timeline calls them and drops the result back onto a track.
+- The present schema is fixed at 30 fps, a 60-second edit, 24 media files, 10 video clips, 10 non-overlapping audio clips and 10 single-line text items. The Worker/document/SQL boundaries enforce these limits, including a 32-KiB project-document ceiling. Multitrack, richer persisted parameters and timebase changes require a coordinated migration; adding UI alone cannot supply them.
+- Browser-local editing/export stays free. New remote operations require controlled live endpoint tests and provider invoice verification before publishing a price. Current hidden caption pricing and prototype restoration/slow-motion integrations are not verified prices for this rollout.
+- Licensed music/stock/fonts/provider catalogs need usage rights or an original alternative. Capability contracts and licences cannot be inferred from the passive CapCut capture.
+- Production server uploads still need the agreed moderation/inspection rollout. Cloud project saving has been prepared independently and follows its migration observation gate. The owner has not waived that gate.
+- CSP and identity isolation remain in place. A new WASM engine, origin or server rendering system needs its own decision and validation.
 
-Alternatives considered:
-- **Adopt OpenCut.** Its Editor API does not exist; needs its own auth and database. Revisit later.
-- **Server-side render of a whole timeline.** The Slice 0 probe found fal's `compose` ignores durations and distorts portrait clips.
-  Our own ffmpeg (the video agent's Fly runner) works but is a second product's infrastructure and a bigger build.
-
-## Proposed slices (each behind its own flag, off in production)
-
-| # | Slice | Needs |
-|---|---|---|
-| 1 | Timeline shell: Library assets onto tracks, split, trim, reorder, volume, preview, local MP4 export | Browser engine on Mediabunny; **an ADR** (new route, memory and codec limits, same qualification gates as ADR-0065: desktop Chromium, caps) |
-| 2 | Text overlays, simple transitions, aspect-ratio presets and letterboxing | Canvas compositor; no money path |
-| 3 | Save and reopen a timeline as a Project document | ADR-0051/0055 documents; flag `TENANT_PROJECTS_ENABLED` |
-| 4 | AI buttons on a clip: captions, speech, slow motion, noise and voice clean-up, video background removal | Each is a priced step; each endpoint verified live and its fal bill **read** before a price is set |
-| 5 | Upload your own media | **A new ADR**: moderation, likeness and the payment-provider review (#101); can reuse the 0223 upload library |
-| 6 | Templates, stock library, collaboration | Licences and product definition; not planned |
-
-## Signed-in CapCut, home page only (read 2026-10-10)
-
-Read from the owner's signed-in Browser pane, **home page only**. The editor itself was not opened, because opening it creates a project
-in the owner's CapCut account; that needs the owner's say-so.
-
-- **Credits, not only subscriptions.** The header shows a credit count, an Upgrade button and "Free credits"; AI generations are priced
-  in credits, with promotions on specific models. That is the same shape as Veyrnox.ai's ledger, and it supports the plan that AI steps
-  are priced while composing stays free.
-- **Two entry points.** A prompt box ("Video" or "Design", an "Auto" mode, "Skills", and "Agent mode: Standard or Director") that builds a
-  video from a brief, and a separate "Video Editor: timeline-based editing". Veyrnox already has the first (Studio skills, the video
-  agent); the second is this plan.
-- **Popular features listed:** Video Editor, Video Studio, Design Studio, text to speech (100+ voices), generate captions (20+
-  languages), remove background, and long video to shorts. Long video to shorts is not on the earlier gap list and is a candidate AI step.
-- Everything else seen (effects, templates, inspiration tiles) is marketing content and is not copied.
-
-## Owner decisions (2026-10-10)
-
-1. Two-layer plan: **yes**.
-2. Editing uploaded media: **yes**, through ADR-0056's project-asset layer; production use waits for moderation (M03) and #101.
-3. Free, browser-local, desktop-Chromium first: **yes** (recommendation accepted).
-4. Read the signed-in CapCut layout: **yes**, once the owner signs in inside the Browser pane (layout only; no scraping).
-
-**Found after the first draft:** this is backlog item **M05** in `docs/architecture/implementation-backlog.md`, and its two prerequisites (M01 project documents, M02 project media) are built, so no new upload system is needed.
-
-## What I needed from the owner (answered above)
-
-1. **Direction:** the two-layer plan above, or something else?
-2. **Uploads:** is editing the user's own uploaded media in scope, or generated assets only (the PRD's current rule)? CapCut's whole
-   appeal is uploads, so "generated only" caps how close this can get.
-3. **Free local export:** OK to ship slice 1 as free, browser-local, desktop-Chromium-first (the ADR-0065 shape), with priced AI
-   steps added in slice 4?
-4. **First look:** sign in to CapCut in the Browser pane if you want me to read the signed-in editor's layout (read-only).
-
-## Not decided, deliberately
-
-Prices for any new step (no price without a read fal invoice, per CAPTIONS.md); the licence for any stock media; and whether
-slice 1's engine is Mediabunny alone or Mediabunny plus a small WebGL layer (decide from a Slice 0 spike, as before).
+Every feature area is included. The remaining stages are **unimplemented scope**, not hidden working controls.

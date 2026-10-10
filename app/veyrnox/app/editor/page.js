@@ -5,10 +5,14 @@ import { Main } from '../../_components/Main';
 import { Button } from '../../_components/Button';
 import { TimelineView } from '../../_components/editor/TimelineView';
 import { ProjectBar } from '../../_components/editor/ProjectBar';
+import { MediaBin } from '../../_components/editor/MediaBin';
+import { importMedia, insertMedia, duplicateSelection, detachAudio, splitSelection, trimEdge, stepFrame, initialText, removeMedia } from '../../_lib/editorCommands.mjs';
+import { createHistory, commitHistory, undoHistory, redoHistory, retainedMedia } from '../../_lib/editorHistory.mjs';
+import { createAudioPlayer } from '../../_lib/editorPlayback.mjs';
 import { gatewayFetch } from '../../_lib/gateway';
 import {
-    FPS, LIMITS, emptyTimeline, addMedia, addVideoClip, addAudioClip, splitClip, trimClip, removeClip, setVolume, moveVideoClip,
-    moveAudioClip, pruneMedia, totalFrames, videoLayout, formatTime, MAX_FRAMES, MAX_TRANSITION, ASPECTS, setAspect, setTransition,
+    FPS, LIMITS, emptyTimeline, trimClip, removeClip, setVolume, moveVideoClip,
+    moveAudioClip, totalFrames, videoLayout, formatTime, MAX_FRAMES, MAX_TRANSITION, ASPECTS, setAspect, setTransition,
     effectiveTransition, addText, updateText, removeText,
 } from '../../_lib/editorTimeline.mjs';
 import { timelineSize } from '../../_lib/editorRender.mjs';
@@ -17,13 +21,14 @@ import { listLibraryMedia, loadLibraryBlob } from '../../_lib/editorLibrary.mjs'
 import { createPreviewer } from '../../_lib/editorPreview.mjs';
 import { exportBlocker, exportTimeline, exportFileName } from '../../_lib/editorExport.mjs';
 
-const PPF = 4; // pixels per frame on the timeline (120 px a second)
 const field = 'rounded-xl border border-vx-border bg-vx-base px-3 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-vx-accent';
 const range = 'mt-2 w-full accent-vx-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-vx-accent';
 
 function Editor() {
     const canvas = useRef(null), blobs = useRef(new Map()), previewer = useRef(null), exportAbort = useRef(null), alive = useRef(true);
-    const [history, setHistory] = useState({ past: [], now: emptyTimeline() });
+    const [history, setHistory] = useState(() => createHistory(emptyTimeline()));
+    const historyRef = useRef(history), player = useRef(null), playRequest = useRef(0);
+    const [ppf, setPpf] = useState(2), [preparing, setPreparing] = useState(false);
     const tl = history.now;
     const [frame, setFrame] = useState(0), [playing, setPlaying] = useState(false), [selected, setSelected] = useState(null);
     const [notice, setNotice] = useState(''), [busy, setBusy] = useState(false);
@@ -35,25 +40,37 @@ function Editor() {
     const total = totalFrames(tl);
     const size = useMemo(() => timelineSize(tl, 720), [tl]);
     // A project opened (or a version restored) replaces the timeline; undo history starts again from there.
-    const loadTimeline = useCallback(next => { setHistory({ past: [], now: next }); setSelected(null); setFrame(0); setPlaying(false); setResult(null); }, []);
-    const relinked = useCallback(() => setTick(t => t + 1), []);
+    const replaceHistory = useCallback(next => { historyRef.current = next; setHistory(next); }, []);
+    const pause = useCallback(() => { playRequest.current++; player.current?.stop(); setPlaying(false); setPreparing(false); }, []);
+    const loadTimeline = useCallback(next => { exportAbort.current?.abort(); pause(); previewer.current?.dispose(); previewer.current = null; replaceHistory(createHistory(next)); setSelected(null); setFrame(0); setResult(null); }, [pause, replaceHistory]);
+    const relinked = useCallback(() => { pause(); previewer.current?.dispose(); previewer.current = null; setTick(t => t + 1); }, [pause]);
 
     useEffect(() => { alive.current = true; return () => { alive.current = false; exportAbort.current?.abort(); }; }, []);
     useEffect(() => { exportBlocker().then(text => alive.current && setBlocker(text || '')); }, []);
-    useEffect(() => () => { previewer.current?.dispose(); }, []);
+    useEffect(() => () => { previewer.current?.dispose(); previewer.current = null; player.current?.dispose(); player.current = null; }, []);
+    useEffect(() => {
+        const keep = retainedMedia(history);
+        for (const id of blobs.current.keys()) if (!keep.has(id)) blobs.current.delete(id);
+        previewer.current?.retain(keep);
+    }, [history]);
     useEffect(() => () => { if (result) URL.revokeObjectURL(result.url); }, [result]);
 
     // Apply an edit. A model refusal ({ error }) is shown and nothing changes; a success is one undo step.
     const apply = useCallback(fn => {
-        setNotice(''); setResult(null);
-        setHistory(h => {
-            const next = fn(h.now);
-            if (next?.error) { setNotice(next.error); return h; }
-            if (next === h.now) return h;
-            return { past: [...h.past.slice(-49), h.now], now: next };
-        });
-    }, []);
-    const undo = () => { setResult(null); setHistory(h => (h.past.length ? { past: h.past.slice(0, -1), now: h.past[h.past.length - 1] } : h)); };
+        const next = fn(historyRef.current.now);
+        if (next?.error) { setNotice(next.error); return null; }
+        pause(); setNotice(''); setResult(null);
+        replaceHistory(commitHistory(historyRef.current, next));
+        return next;
+    }, [pause, replaceHistory]);
+    const travel = operation => {
+        const next = operation(historyRef.current);
+        pause(); setResult(null); setNotice(''); replaceHistory(next);
+        setSelected(current => current && next.now[current.track]?.some(item => item.id === current.id) ? current : null);
+    };
+    const undo = () => travel(undoHistory);
+    const redo = () => travel(redoHistory);
+    const duplicate = () => { const next = apply(t => duplicateSelection(t, selected)); if (next) setSelected({ track: selected.track, id: `${selected.track[0]}${next.seq}` }); };
 
     // Draw the frame under the playhead. A new previewer is made whenever files change, so decoders never outlive their blobs.
     useEffect(() => {
@@ -64,28 +81,39 @@ function Editor() {
 
     useEffect(() => {
         if (!playing) return undefined;
-        let raf = 0, last = performance.now(), carry = 0;
-        const tick = now => {
-            carry += ((now - last) / 1000) * FPS; last = now;
-            const step = Math.floor(carry); carry -= step;
-            if (step > 0) setFrame(f => { const n = f + step; if (n >= total) { setPlaying(false); return Math.max(total - 1, 0); } return n; });
+        let raf = 0;
+        const tick = () => {
+            const next = player.current.frame();
+            setFrame(Math.min(next, Math.max(total - 1, 0)));
+            if (next >= total) { pause(); return; }
             raf = requestAnimationFrame(tick);
         };
         raf = requestAnimationFrame(tick);
         return () => cancelAnimationFrame(raf);
-    }, [playing, total]);
+    }, [playing, total, pause]);
+
+    async function togglePlayback() {
+        if (playing || preparing) { pause(); return; }
+        player.current ||= createAudioPlayer();
+        const ticket = ++playRequest.current;
+        const start = frame >= total - 1 ? 0 : frame;
+        setFrame(start); setPreparing(true); setNotice('');
+        try { if (await player.current.start(tl, blobs.current, start) && alive.current && ticket === playRequest.current) setPlaying(true); }
+        catch (error) { if (alive.current && ticket === playRequest.current && error.name !== 'AbortError') setNotice(error.message || 'Playback could not start.'); }
+        finally { if (alive.current && ticket === playRequest.current) setPreparing(false); }
+    }
 
     async function ingest(id, name, blob) {
         const probe = await probeMedia(blob);
         const bad = checkProbe(probe);
         if (bad) throw new Error(bad);
-        blobs.current.set(id, blob);
         const media = mediaFromProbe(id, name, probe);
-        apply(t => {
-            const withMedia = addMedia(t, media);
-            if (withMedia.error) return withMedia;
-            return media.kind === 'video' ? addVideoClip(withMedia, id) : addAudioClip(withMedia, id, { start: 0 });
-        });
+        const next = apply(t => importMedia(t, media));
+        if (!next) return;
+        blobs.current.set(id, blob); setTick(t => t + 1);
+        const inserted = [...next.video, ...next.audio].filter(x => x.mediaId === id).at(-1);
+        if (!inserted) setNotice('File imported into Project media. Trim or remove a clip, then add it to the timeline.');
+        else if (inserted.len < media.frames) setNotice(`Source imported in full; the first ${formatTime(inserted.len)} fits this edit. Adjust its start and length to use another section.`);
     }
     async function chooseFiles(event) {
         const files = [...event.target.files]; event.target.value = '';
@@ -114,31 +142,53 @@ function Editor() {
     const videoIndex = selected?.track === 'video' ? tl.video.findIndex(c => c.id === selected.id) : -1;
     // The draft counts only while it belongs to this item and the item has not changed under it; otherwise the input shows the item.
     const draftValue = textItem && draft.forId === textItem.id && draft.base === textItem.text ? draft.value : (textItem?.text ?? '');
-    const commitDraft = () => { if (textItem && draftValue.trim() !== textItem.text) apply(t => updateText(t, textItem.id, { text: draftValue })); };
+    const commitDraft = () => {
+        const current = textItem && historyRef.current.now.text.find(item => item.id === textItem.id);
+        if (current && draftValue.trim() !== current.text) return apply(t => updateText(t, current.id, { text: draftValue }));
+    };
     const media = clip ? tl.media[clip.mediaId] : null;
     const layoutStart = clip && selected.track === 'video' ? videoLayout(tl).find(l => l.clip.id === clip.id)?.start : clip?.start;
     const edit = fn => selected && apply(t => fn(t, selected.track, selected.id));
 
     async function runExport() {
+        if (commitDraft() === null) return;
+        const exportTimelineSnapshot = historyRef.current.now;
         const abort = new AbortController(); exportAbort.current = abort;
-        setPlaying(false); setNotice(''); setResult(null); setProgress(0); setExporting(true);
+        pause(); setNotice(''); setResult(null); setProgress(0); setExporting(true);
         try {
-            const blob = await exportTimeline(tl, blobs.current, { signal: abort.signal, height, onProgress: p => alive.current && setProgress(p) });
+            const blob = await exportTimeline(exportTimelineSnapshot, blobs.current, { signal: abort.signal, height, onProgress: p => alive.current && setProgress(p.total > 0 ? p.done / p.total : 0) });
             if (alive.current) setResult({ url: URL.createObjectURL(blob), name: exportFileName(), size: blob.size });
         } catch (e) { if (alive.current && e.name !== 'AbortError') setNotice(e.message || 'Export failed.'); }
         finally { if (alive.current) setExporting(false); exportAbort.current = null; }
     }
 
     const empty = tl.video.length + tl.audio.length + tl.text.length === 0;
-    return <div className="space-y-6">
+    const seek = f => { pause(); setFrame(Math.max(0, Math.min(f, Math.max(total - 1, 0)))); };
+    const deleteSelected = () => { if (!selected) return; apply(t => selected.track === 'text' ? removeText(t, selected.id) : removeClip(t, selected.track, selected.id)); setSelected(null); };
+    function keyboard(event) {
+        if (exporting || busy || event.target.closest('input, textarea, select, [contenteditable="true"]')) return;
+        const key = event.key.toLowerCase(), mod = event.metaKey || event.ctrlKey;
+        if (mod && key === 'z') { event.preventDefault(); event.shiftKey ? redo() : undo(); }
+        else if (mod && key === 'd' && selected) { event.preventDefault(); duplicate(); }
+        else if (!mod && !event.altKey) {
+            if (key === ' ' && !empty && !event.target.closest('button, a')) { event.preventDefault(); void togglePlayback(); }
+            else if (key === 's' && selected) { event.preventDefault(); apply(t => splitSelection(t, selected, frame)); }
+            else if (['delete', 'backspace'].includes(key) && selected) { event.preventDefault(); deleteSelected(); }
+            else if (key === 'arrowleft' || key === 'arrowright') { event.preventDefault(); seek(stepFrame(frame, (key === 'arrowleft' ? -1 : 1) * (event.shiftKey ? FPS : 1), total)); }
+            else if (key === 'home' || key === 'end') { event.preventDefault(); seek(key === 'home' ? 0 : total - 1); }
+        }
+    }
+    return <div className="space-y-6 outline-none" role="region" aria-label="Video editing workspace" tabIndex={0} onKeyDown={keyboard}>
         <div className="flex flex-wrap items-center gap-3">
             <label className="inline-flex cursor-pointer rounded-full border border-vx-border px-5 py-3 text-sm font-bold focus-within:outline focus-within:outline-2 focus-within:outline-vx-accent">
                 Add files from this computer
                 <input aria-label="Add files from this computer" className="sr-only" type="file" multiple accept="video/mp4,video/webm,video/quicktime,audio/mpeg,audio/wav,audio/mp4,audio/x-m4a" disabled={busy || exporting} onChange={chooseFiles} />
             </label>
             <Button variant="ghost" size="md" disabled={busy || exporting} onClick={openLibrary}>Add from my Library</Button>
-            <Button variant="ghost" size="md" disabled={exporting} onClick={() => { const id = `t${tl.seq + 1}`; apply(t => addText(t, { text: 'Your text', start: Math.min(frame, MAX_FRAMES - 3 * FPS), len: 3 * FPS })); setSelected({ track: 'text', id }); }}>Add text</Button>
+            <Button variant="ghost" size="md" disabled={exporting} onClick={() => { const next = apply(t => addText(t, initialText(frame))); if (next) setSelected({ track: 'text', id: `t${next.seq}` }); }}>Add text</Button>
             <Button variant="ghost" size="md" disabled={!history.past.length || exporting} onClick={undo}>Undo</Button>
+            <Button variant="ghost" size="md" disabled={!history.future.length || exporting} onClick={redo}>Redo</Button>
+            <Button variant="ghost" size="md" disabled={!selected || exporting} onClick={duplicate}>Duplicate</Button>
             {busy && <span role="status" className="text-sm text-vx-fg-muted">Reading file…</span>}
         </div>
         {notice && <p role="alert" className="rounded-xl border border-vx-border bg-vx-panel p-3 text-sm">{notice}</p>}
@@ -150,6 +200,7 @@ function Editor() {
             </ul>}
         </section>}
         {libraryError && <p role="alert" className="text-sm">{libraryError}</p>}
+        <MediaBin tl={tl} disabled={busy || exporting} onAdd={id => apply(t => insertMedia(t, id))} onRemove={id => { apply(t => removeMedia(t, id)); setSelected(null); }} />
 
         <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
             <div className="min-w-0 space-y-4">
@@ -157,21 +208,29 @@ function Editor() {
                     <canvas ref={canvas} width={size.width} height={size.height} className="mx-auto block h-auto max-h-[60vh] w-auto max-w-full" role="img" aria-label="Preview of the frame at the playhead" />
                 </div>
                 <div className="flex flex-wrap items-center gap-3">
-                    <Button size="sm" disabled={empty || exporting} onClick={() => { if (!playing && frame >= total - 1) setFrame(0); setPlaying(p => !p); }}>{playing ? 'Pause' : 'Play'}</Button>
+                    <Button size="sm" disabled={empty || exporting} onClick={togglePlayback}>{playing || preparing ? 'Pause' : 'Play'}</Button>
+                    {preparing && <span role="status" className="text-xs text-vx-fg-muted">Preparing playback…</span>}
                     <span className="font-vx-mono text-sm" aria-live="off">{formatTime(frame)} / {formatTime(total)}</span>
-                    <input aria-label="Playhead" className={`${range} mt-0 flex-1`} type="range" min={0} max={Math.max(total - 1, 0)} value={Math.min(frame, Math.max(total - 1, 0))} disabled={empty} onChange={e => { setPlaying(false); setFrame(Number(e.target.value)); }} />
+                    <input aria-label="Playhead" className={`${range} mt-0 flex-1`} type="range" min={0} max={Math.max(total - 1, 0)} value={Math.min(frame, Math.max(total - 1, 0))} disabled={empty} onChange={e => seek(Number(e.target.value))} />
                 </div>
-                {empty ? <p className="rounded-2xl border border-dashed border-vx-border p-8 text-center text-sm text-vx-fg-muted">Add a video to start. Up to {LIMITS.maxSeconds} seconds, {LIMITS.maxVideoClips} video clips and {LIMITS.maxAudioClips} sounds.</p>
-                    : <TimelineView tl={tl} frame={frame} selected={clip || textItem} ppf={PPF} onSelect={s => { setSelected(s); }} onSeek={f => { setPlaying(false); setFrame(f); }} />}
+                <div className="flex flex-wrap items-center gap-3 text-xs text-vx-fg-muted">
+                    <label className="flex items-center gap-2">Timeline zoom <input aria-label="Timeline zoom" className="accent-vx-accent" type="range" min={0.5} max={8} step={0.5} value={ppf} onChange={e => setPpf(Number(e.target.value))} /></label>
+                    <span>Space play · S split · ⌘/Ctrl Z undo · Shift Z redo · ⌘/Ctrl D duplicate</span>
+                </div>
+                {empty ? <p className="rounded-2xl border border-dashed border-vx-border p-8 text-center text-sm text-vx-fg-muted">Add a video, sound or title to start. Up to {LIMITS.maxSeconds} seconds, {LIMITS.maxVideoClips} video clips and {LIMITS.maxAudioClips} sounds.</p>
+                    : <TimelineView tl={tl} frame={frame} selected={clip || textItem} ppf={ppf} disabled={exporting} onSelect={s => { setSelected(s); }} onSeek={seek}
+                        onTrim={(track, id, edge, delta) => apply(t => trimEdge(t, track, id, edge, delta))}
+                        onMove={(track, id, to) => apply(t => track === 'video' ? moveVideoClip(t, id, to) : track === 'text' ? updateText(t, id, { start: to }) : moveAudioClip(t, id, to))} />}
             </div>
 
             <aside className="space-y-5 rounded-2xl border border-vx-border bg-vx-panel p-5" aria-label="Clip and export">
+                <fieldset disabled={exporting} className="min-w-0">
                 {clip ? <div className="space-y-3">
                     <h2 className="text-sm font-bold">{media?.name} <span className="font-normal text-vx-fg-muted">({selected.track})</span></h2>
                     <p className="font-vx-mono text-xs text-vx-fg-muted">Starts {formatTime(layoutStart)} · lasts {formatTime(clip.len)}</p>
                     <div className="flex flex-wrap gap-2">
-                        <Button size="sm" variant="ghost" onClick={() => edit((t, k, id) => splitClip(t, k, id, frame))}>Split at playhead</Button>
-                        <Button size="sm" variant="ghost" onClick={() => { edit((t, k, id) => pruneMedia(removeClip(t, k, id))); setSelected(null); }}>Delete</Button>
+                        <Button size="sm" variant="ghost" onClick={() => apply(t => splitSelection(t, selected, frame))}>Split at playhead</Button>
+                        <Button size="sm" variant="ghost" onClick={() => { edit((t, k, id) => removeClip(t, k, id)); setSelected(null); }}>Delete</Button>
                     </div>
                     <label className="block text-sm font-bold">Start of the clip <span className="float-right font-vx-mono text-vx-fg-muted">{formatTime(clip.in)}</span>
                         <input className={range} type="range" min={0} max={Math.max(media.frames - 1, 0)} value={clip.in} onChange={e => { const n = Number(e.target.value); edit((t, k, id) => trimClip(t, k, id, { in: n, len: Math.max(1, Math.min(clip.len, media.frames - n)) })); }} /></label>
@@ -185,7 +244,7 @@ function Editor() {
                     </div> : <Button size="sm" variant="ghost" onClick={() => edit((t, _k, id) => moveAudioClip(t, id, frame))}>Start at playhead</Button>}
                     {videoIndex > 0 && <label className="block text-sm font-bold">Dissolve from the clip before <span className="float-right font-vx-mono text-vx-fg-muted">{formatTime(effectiveTransition(tl, videoIndex))}</span>
                         <input className={range} type="range" min={0} max={Math.min(MAX_TRANSITION, clip.len, tl.video[videoIndex - 1].len)} value={effectiveTransition(tl, videoIndex)} onChange={e => { const n = Number(e.target.value); edit((t, _k, id) => setTransition(t, id, n)); }} /></label>}
-                    {selected.track === 'video' && media?.hasAudio && <Button size="sm" variant="ghost" onClick={() => apply(t => addAudioClip(t, clip.mediaId, { start: layoutStart, in: clip.in, len: clip.len }))}>Use its sound on the sound track</Button>}
+                    {selected.track === 'video' && media?.hasAudio && <Button size="sm" variant="ghost" onClick={() => apply(t => detachAudio(t, clip.id))}>Extract audio to sound track</Button>}
                 </div> : textItem ? <div className="space-y-3">
                     <h2 className="text-sm font-bold">Text</h2>
                     <p className="font-vx-mono text-xs text-vx-fg-muted">Shows from {formatTime(textItem.start)} for {formatTime(textItem.len)}</p>
@@ -202,6 +261,7 @@ function Editor() {
                     <label className="block text-sm font-bold">Position
                         <select className={`${field} mt-2 w-full`} value={textItem.y <= 0.3 ? 'top' : textItem.y >= 0.7 ? 'bottom' : 'middle'} onChange={e => { const y = { top: 0.12, middle: 0.5, bottom: 0.85 }[e.target.value]; apply(t => updateText(t, textItem.id, { y })); }}><option value="top">Top</option><option value="middle">Middle</option><option value="bottom">Bottom</option></select></label>
                 </div> : <p className="text-sm text-vx-fg-muted">Select a clip or a text on the timeline to change it.</p>}
+                </fieldset>
 
                 <div className="space-y-3 border-t border-vx-border pt-5">
                     <label className="block text-sm font-bold">Shape
@@ -212,7 +272,7 @@ function Editor() {
                     <Button className="w-full justify-center" disabled={empty || exporting || Boolean(blocker)} onClick={runExport}>Export MP4</Button>
                     {exporting && <><progress aria-label="Export progress" className="w-full accent-vx-accent" value={progress} max={1} /><Button size="sm" variant="ghost" onClick={() => exportAbort.current?.abort()}>Cancel export</Button></>}
                     {result && <div role="status"><a className="break-words text-sm font-bold text-vx-accent underline" href={result.url} download={result.name}>Download {result.name} ({(result.size / 1048576).toFixed(1)} MiB)</a></div>}
-                    <p className="text-xs leading-relaxed text-vx-fg-muted">Editing and export run in this browser and use no credits. Saving a project stores its timeline and settings in your workspace; files from this computer stay here. Keep this tab open during export. Sound is mixed when you export; the preview is silent.</p>
+                    <p className="text-xs leading-relaxed text-vx-fg-muted">Editing and export run in this browser and use no credits. Saving a project stores its timeline and settings in your workspace; files from this computer stay here. Keep this tab open during export. Preview and export share the same audio mix. Imported sources can be up to 10 minutes; this edit is up to 60 seconds.</p>
                 </div>
             </aside>
         </div>
@@ -220,8 +280,8 @@ function Editor() {
 }
 
 export default function EditorPage() {
-    return <><AppNav active="editor" readAccount={false} /><Main className="mx-auto max-w-6xl px-4 py-8 sm:px-8 sm:py-12">
-        <p className="mb-2 font-vx-mono text-xs tracking-widest text-vx-accent">PREVIEW</p><h1 className="mb-3 text-3xl font-black sm:text-4xl">Video editor</h1>
+    return <><AppNav active="editor" readAccount={false} /><Main className="mx-auto max-w-[1600px] px-4 py-8 sm:px-8 sm:py-12">
+        <h1 className="mb-5 text-2xl font-black">Video editor</h1>
         <Editor />
     </Main></>;
 }
