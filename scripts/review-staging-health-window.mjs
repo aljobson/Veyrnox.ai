@@ -7,7 +7,7 @@ const recovery = ['stale_jobs', 'reap_overdue', 'reap_exhausted', 'stale_top_up_
     'unreviewed_flagged_orders', 'unreviewed_order_collisions', 'cinema_poll_overdue',
     'cinema_poll_failed', 'cinema_provisioning_stuck', 'cinema_processing_stuck',
     'cinema_cleanup_required', 'fal_dispatch_unknown', 'fal_dispatch_overdue'];
-const drift = ['balance_drift', 'free_credit_drift', 'top_up_drift', 'failed_refund_drift', 'subscription_credit_drift'];
+const drift = ['balance_drift', 'free_credit_drift', 'top_up_drift', 'failed_refund_drift', 'subscription_credit_drift', 'free_allowance_drift', 'referral_drift'];
 const stamp = value => typeof value === 'string' ? Date.parse(value) : NaN;
 
 // Inventory is supplied from gh run list for the staging workflow. Never infer

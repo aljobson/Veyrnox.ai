@@ -108,3 +108,20 @@ highest **open PR** (see CLAUDE.md), not just after main.
 **Part 4, capture and panel (2026-10-05, #590).** `?ref=<code>` is kept in `localStorage` for three days (not `sessionStorage`: the email-confirmation link usually opens in a new tab), the address is tidied, and the code is sent to the attach route once the visitor is signed in; an answer from the server about the code or account is final and clears it. The account page has a "Refer a friend" panel (link, copy button, count). The storage notice, Privacy Policy, Terms and Refund Policy describe it, and a test pins that they do. Returning visitors who already dismissed the storage notice do not see the new wording; re-prompting everyone means changing its stored key and is left to the owner.
 
 Remaining: staging acceptance with `REFERRALS_ENABLED` on (see `docs/product/referrals-staging-runbook-2026-10-05.md`), then production through `apply-migrations` (`0205`, then `0217` to `0219`).
+
+## Hourly reconciliation coverage (0264, 2026-10-10)
+
+Track A8 / S20 adds the referral drift count to the counts-only public
+snapshot and hourly watcher. Migration 0264 measures all seven existing
+reconciliation functions before publishing the replacement snapshot, retains
+the 45-minute freshness bound, forced RLS and service-only refresh, and
+changes no allowance, reward, credit or launch policy.
+
+The checker distinguishes an unapplied migration from missing measurements:
+0264-absent fields remain explicitly unmeasured only while its actual receipt
+is absent. Once applied, missing or malformed new counts fail closed. Local
+SQL fixtures seed allowance overuse and an unmatched referral grant; the actual
+watcher exits 1 for either, 0 for measured zeroes and 2 for invalid evidence.
+New health-window reviews require all seven measurements; older five-count
+artifacts remain historical evidence and cannot prove the expanded coverage.
+Production application uses the protected main workflow and owner review.

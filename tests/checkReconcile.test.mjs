@@ -2,27 +2,42 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { fetchStatus } from '../scripts/check-reconcile.mjs';
 
-const FOUR = { balance_drift: 0, free_credit_drift: 0, top_up_drift: 0, failed_refund_drift: 0 };
+const FIVE = { balance_drift: 0, free_credit_drift: 0, top_up_drift: 0,
+  failed_refund_drift: 0, subscription_credit_drift: 0 };
+const SEVEN = { ...FIVE, free_allowance_drift: 0, referral_drift: 0 };
 const cfg = { url: 'https://example.invalid', key: 'k' };
-
-async function withRow(row, fn) {
+const expansion = '0264_reconciliation_free_allowance_referrals';
+async function withRow(row, fn, ledger = []) {
   const real = globalThis.fetch;
-  globalThis.fetch = async () => new Response(JSON.stringify([row]), { status: 200, headers: { 'content-type': 'application/json' } });
+  globalThis.fetch = async url => Response.json(String(url).endsWith('applied_migration_names') ? ledger.map(name => ({ name })) : [row]);
   try { return await fn(); } finally { globalThis.fetch = real; }
 }
 
-test('the watcher reads all five counts', async () => {
-  const status = await withRow({ ...FOUR, subscription_credit_drift: 2 }, () => fetchStatus(cfg));
-  assert.deepEqual(status, { ...FOUR, subscription_credit_drift: 2 });
+test('the watcher reads all seven measured counts including new drift', async () => {
+  const measured = { ...SEVEN, free_allowance_drift: 2, referral_drift: 1 };
+  assert.deepEqual(await withRow(measured, () => fetchStatus(cfg)), measured);
 });
-
-test('0185 is applied, so a reply without the fifth count is an error', async () => {
-  await assert.rejects(withRow(FOUR, () => fetchStatus(cfg)), /subscription_credit_drift was not a count/);
+test('five existing counts stay required even before the expansion applies', async () => {
+  for (const key of Object.keys(FIVE)) {
+    const incomplete = { ...FIVE }; delete incomplete[key];
+    await assert.rejects(withRow(incomplete, () => fetchStatus(cfg)), /was not a count/);
+  }
 });
-
-test('a missing long-standing count still fails, and so does a malformed fifth', async () => {
-  const { balance_drift, ...rest } = FOUR;
-  await assert.rejects(withRow(rest, () => fetchStatus(cfg)), /balance_drift was not a count/);
-  await assert.rejects(withRow({ ...FOUR, subscription_credit_drift: null }, () => fetchStatus(cfg)), /subscription_credit_drift was not a count/);
-  await assert.rejects(withRow({ ...FOUR, subscription_credit_drift: -1 }, () => fetchStatus(cfg)), /not a count/);
+test('new counts are explicitly unmeasured only while the receipt is actually absent', async () => {
+  assert.deepEqual(await withRow(FIVE, () => fetchStatus(cfg)), { ...FIVE, free_allowance_drift: null, referral_drift: null });
+  for (const name of [expansion, expansion.slice(5)]) {
+    await assert.rejects(withRow(FIVE, () => fetchStatus(cfg), [name]), /free_allowance_drift was not a count/);
+  }
+});
+test('present malformed counts fail regardless of pending migration or other valid counts', async () => {
+  for (const key of Object.keys(SEVEN)) {
+    for (const value of [null, -1, 1.5, '0']) {
+      await assert.rejects(withRow({ ...SEVEN, [key]: value }, () => fetchStatus(cfg)), /was not a count/);
+    }
+  }
+});
+test('unreadable receipt evidence cannot make absent measurements pass', async t => {
+  t.mock.method(globalThis, 'fetch', async url => String(url).endsWith('applied_migration_names')
+    ? new Response('private error', { status: 503 }) : Response.json([FIVE]));
+  await assert.rejects(fetchStatus(cfg), /ledger RPC answered 503/);
 });
