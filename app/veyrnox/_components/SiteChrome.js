@@ -140,7 +140,7 @@ function FloatingActions({ raised = false, tucked = false }) {
     window.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' });
     // Send focus somewhere sensible rather than leaving it on a button that
     // is about to disappear.
-    document.getElementById('main')?.focus?.();
+    document.getElementById('main')?.focus?.({ preventScroll: true });
   }, []);
 
   return (

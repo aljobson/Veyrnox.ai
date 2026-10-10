@@ -7,6 +7,7 @@
 import { useEffect, useState } from "react";
 import { completeOAuthFromCode, oauthCallbackError } from "../../lib/authClient.js";
 import { MAGIC_VERIFIER_TTL_MS } from "../../lib/pkceVerifier.js";
+import { Main } from "../../veyrnox/_components/Main.js";
 
 const TRY_AGAIN = "Nothing was changed. Go back and try signing in again.";
 // No verifier here: an emailed link opened in another browser or on another
@@ -45,13 +46,13 @@ export default function AuthCallback() {
             });
     }, []);
     return (
-        <div className="min-h-screen bg-black text-white flex items-center justify-center px-6">
+        <Main className="min-h-screen bg-black text-white flex items-center justify-center px-6">
             <div className="text-center">
                 <div className="text-sm text-zinc-400">{status}</div>
                 {failed && (
                     <a href="/" className="mt-4 inline-block text-sm text-white underline">Back to Veyrnox</a>
                 )}
             </div>
-        </div>
+        </Main>
     );
 }

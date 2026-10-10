@@ -24,7 +24,7 @@ export function MarketingNav() {
   return (
     <>
     <AnnouncementBar />
-    <div data-print="hide" className="sticky top-0 z-40 h-16 border-b border-vx-border bg-vx-base/88 backdrop-blur-sm">
+    <header data-print="hide" className="sticky top-0 z-40 h-16 border-b border-vx-border bg-vx-base/88 backdrop-blur-sm">
       {/* Same 1300px column as the page body, so the logo sits on its edge. */}
       <div className="h-full max-w-[1300px] mx-auto px-4 sm:px-6 flex items-center gap-1 sm:gap-3 xl:gap-6">
       <Link href="/" aria-label="Veyrnox.ai home" className="flex items-center shrink-0">
@@ -67,7 +67,7 @@ export function MarketingNav() {
         <MobileMenu items={NAV_CATEGORIES} className="xl:hidden" />
       </div>
       </div>
-    </div>
+    </header>
     </>
   );
 }
@@ -81,12 +81,24 @@ export function AppNav({ balance, active = 'explore', readAccount = true }) {
   const projectsEnabled = useProjectsPreview();
   const enhanceEnabled = useVideoEnhancePreview();
   const tabs = useRef(null);
+  // Keeps the current tab on screen in the strip a phone scrolls sideways. The
+  // strip is moved by hand: scrollIntoView() also moves where the next Tab
+  // starts from, so on every studio page the first Tab went past "Skip to
+  // content" and the tabs before this one.
   useEffect(() => {
-    tabs.current?.querySelector('[aria-current="page"]')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    const strip = tabs.current;
+    const current = strip?.querySelector('[aria-current="page"]');
+    if (!current) return;
+    const edge = strip.getBoundingClientRect();
+    const tab = current.getBoundingClientRect();
+    if (tab.left < edge.left) strip.scrollLeft -= edge.left - tab.left;
+    else if (tab.right > edge.right) strip.scrollLeft += tab.right - edge.right;
   }, [active, projectsEnabled, enhanceEnabled]);
   const items = [
     { key: 'explore', href: '/app',         label: 'Explore' },
     { key: 'create',  href: '/app/create',  label: 'Create' },
+    // Video agent (ADR-0074): bought from a plan on its own page, so it has its own tab and is not in the Create picker.
+    { key: 'agent', href: '/app/video-agent', label: 'Video agent' },
     { key: 'chat', href: '/app/chat', label: 'LLM Chat' },
     { key: 'library', href: '/app/library', label: 'Library' },
     ...(projectsEnabled ? [{ key: 'projects', href: '/app/projects', label: 'Projects' }] : []),
@@ -134,7 +146,7 @@ export function AppNav({ balance, active = 'explore', readAccount = true }) {
   const assetFmt = assets != null ? new Intl.NumberFormat('en-US').format(assets) : '—';
   const assetWord = assets === 1 ? 'asset' : 'assets';
   return (
-    <div data-print="hide" className="sticky top-0 z-40 flex items-center justify-between gap-2 px-4 sm:px-8 h-16 border-b border-vx-border bg-vx-base/88 backdrop-blur-sm">
+    <header data-print="hide" className="sticky top-0 z-40 flex items-center justify-between gap-2 px-4 sm:px-8 h-16 border-b border-vx-border bg-vx-base/88 backdrop-blur-sm">
       <Link
         href="/app"
         aria-label="Veyrnox studio — explore"
@@ -204,6 +216,6 @@ export function AppNav({ balance, active = 'explore', readAccount = true }) {
           </button>
         )}
       </div>
-    </div>
+    </header>
   );
 }
