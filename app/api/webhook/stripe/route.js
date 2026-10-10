@@ -5,7 +5,8 @@
  *
  *   1. Verify `Stripe-Signature` over the exact raw bytes. Invalid -> 401
  *      plus console.error. Nothing in the body is read before this.
- *   2. Checkout, refund/dispute, subscription lifecycle and invoice events are
+ *   2. Checkout (completed, and async_payment_succeeded for a delayed payment
+ *      method), refund/dispute, subscription lifecycle and invoice events are
  *      routed to their billing product; every other type -> 200 ignored.
  *   3. Dedupe in webhook_events(source 'billing:stripe') on the Stripe event
  *      id, which is already unique per delivery. Already processed -> 200.
@@ -47,7 +48,14 @@ const PASS_REFUSED = new Set(['PASS_NOT_FOUND', 'PASS_MISMATCH', 'INVALID_EVENT'
 const SUBSCRIPTION_RE = /^sub_[A-Za-z0-9_]{1,250}$/;
 const INVOICE_RE = /^in_[A-Za-z0-9_]{1,250}$/;
 const CHARGE_RE = /^ch_[A-Za-z0-9_]{1,250}$/;
-const HANDLED = new Set(['checkout.session.completed', 'charge.refunded', 'charge.dispute.created', 'charge.dispute.closed', ...PASS_TYPES]);
+// A delayed payment method completes the session before the money arrives:
+// that checkout.session.completed carries payment_status "unpaid" and is
+// recorded without a credit. The credit then follows
+// checkout.session.async_payment_succeeded, re-read from Stripe like any
+// completed session (ADR-0031, amendment 2026-10-10). async_payment_failed is
+// recorded so the retry queue drains; the Top-up stays pending and expires.
+const CHECKOUT_TYPES = new Set(['checkout.session.completed', 'checkout.session.async_payment_succeeded']);
+const HANDLED = new Set([...CHECKOUT_TYPES, 'checkout.session.async_payment_failed', 'charge.refunded', 'charge.dispute.created', 'charge.dispute.closed', ...PASS_TYPES]);
 // Paid orders we took money for but must not grant: an Operator refunds them.
 const FLAGGED = new Set(['ALREADY_CREDITED', 'VARIANT_MISMATCH', 'AMOUNT_MISMATCH', 'CURRENCY_MISMATCH']);
 // Final refusals a redelivery cannot change.
@@ -119,8 +127,13 @@ export async function POST(req) {
         if (type === 'charge.refunded' && INVOICE_RE.test(String(refundInvoiceId ?? ''))) {
             return await handlePassCharge(cfg, { invoiceId: refundInvoiceId, object, eventId, type, apiKey, expectLiveMode, eventCreated: event.created });
         }
-        if (type === 'checkout.session.completed') {
+        if (CHECKOUT_TYPES.has(type)) {
             return await handleCheckout(cfg, { object, eventId, secret, apiKey, expectLiveMode });
+        }
+        if (type === 'checkout.session.async_payment_failed') {
+            console.error(LOG, 'delayed payment failed, Top-up stays pending:', object.id);
+            await markProcessed(cfg, SOURCE, eventId);
+            return NextResponse.json({ ok: true, warn: 'payment_failed' });
         }
         if (type === 'charge.refunded') return await handleRefund(cfg, { object, eventId, secret, apiKey, expectLiveMode, eventCreated: event.created });
         return await handleDispute(cfg, { object, eventId, type, apiKey, expectLiveMode, eventCreated: event.created });

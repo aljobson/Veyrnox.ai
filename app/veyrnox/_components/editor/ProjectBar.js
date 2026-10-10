@@ -35,14 +35,15 @@ export function ProjectBar({ tl, blobs, onLoadTimeline, onRelinked }) {
         setRelink(need);
         return need;
     }, [blobs]);
-    const fetchLibrary = useCallback(async items => {
+    // Fetch Library files again. The missing list is recomputed when this finishes, so a file that arrived is not still shown as missing.
+    const fetchLibrary = useCallback(async (items, timeline) => {
         setRelinking(true);
         for (const item of items) {
             try { const { blob } = await loadLibraryBlob(gatewayFetch, item.jobId); blobs.current.set(item.id, blob); }
             catch { /* stays listed as missing */ }
         }
-        if (alive.current) { setRelinking(false); onRelinked(); }
-    }, [blobs, onRelinked]);
+        if (alive.current) { setRelinking(false); refreshRelink(timeline); onRelinked(); }
+    }, [blobs, onRelinked, refreshRelink]);
     const open = useCallback(async id => {
         setBusy(true); setError('');
         try {
@@ -53,7 +54,7 @@ export function ProjectBar({ tl, blobs, onLoadTimeline, onRelinked }) {
             onLoadTimeline(timeline);
             if (problem) setError(`The saved timeline could not be opened (${problem}). Starting empty.`);
             const need = refreshRelink(timeline);
-            if (need.library.length) fetchLibrary(need.library);
+            if (need.library.length) fetchLibrary(need.library, timeline);
         } catch (e) { if (alive.current) setError(e.status === 404 ? 'This project is not available here.' : 'Could not open the project.'); }
         finally { if (alive.current) setBusy(false); }
     }, [onLoadTimeline, refreshRelink, fetchLibrary]);
@@ -75,7 +76,7 @@ export function ProjectBar({ tl, blobs, onLoadTimeline, onRelinked }) {
             const r = await gatewayFetch(`${endpoint}/document`, { method: 'PUT', body, headers: { 'idempotency-key': pending.current.key }, signal: AbortSignal.timeout(15000) });
             if (!alive.current) return;
             setDoc(r.document); setRevision(r.revision); setSavedAt(r.created_at); setRemote(null); pending.current = null;
-            if (restore) { const { timeline } = timelineFromDocument(r.document); onLoadTimeline(timeline); const need = refreshRelink(timeline); if (need.library.length) fetchLibrary(need.library); setPreview(null); setVersions(null); }
+            if (restore) { const { timeline } = timelineFromDocument(r.document); onLoadTimeline(timeline); const need = refreshRelink(timeline); if (need.library.length) fetchLibrary(need.library, timeline); setPreview(null); setVersions(null); }
         } catch (e) {
             if (!alive.current) return;
             setError(saveProblem(e));
@@ -153,7 +154,7 @@ export function ProjectBar({ tl, blobs, onLoadTimeline, onRelinked }) {
         {error && <p role="alert" className="text-sm">{error}</p>}
         {remote && <div className="rounded-xl border border-vx-accent p-3 text-sm"><p>Saved version {remote.revision} is newer than what you have.</p>
             <div className="mt-2 flex flex-wrap gap-2">
-                <Button size="sm" variant="ghost" disabled={busy} onClick={() => { const { timeline } = timelineFromDocument(remote.document); setDoc(remote.document); setRevision(remote.revision); setSavedAt(remote.created_at); setRemote(null); setError(''); onLoadTimeline(timeline); const need = refreshRelink(timeline); if (need.library.length) fetchLibrary(need.library); }}>Use saved version</Button>
+                <Button size="sm" variant="ghost" disabled={busy} onClick={() => { const { timeline } = timelineFromDocument(remote.document); setDoc(remote.document); setRevision(remote.revision); setSavedAt(remote.created_at); setRemote(null); setError(''); onLoadTimeline(timeline); const need = refreshRelink(timeline); if (need.library.length) fetchLibrary(need.library, timeline); }}>Use saved version</Button>
                 <Button size="sm" disabled={busy} onClick={() => save({ against: remote.revision })}>Save mine instead</Button>
             </div></div>}
         {relink.local.length > 0 && <div className="rounded-xl border border-vx-border p-3 text-sm">
@@ -161,7 +162,7 @@ export function ProjectBar({ tl, blobs, onLoadTimeline, onRelinked }) {
             <ul className="mt-1 list-disc pl-5">{relink.local.map(m => <li key={m.id}>{m.name}</li>)}</ul>
             <label className="mt-2 inline-flex cursor-pointer rounded-full border border-vx-border px-4 py-2 text-xs font-bold">Choose a file<input className="sr-only" type="file" accept="video/mp4,video/webm,video/quicktime,audio/mpeg,audio/wav,audio/mp4,audio/x-m4a" onChange={chooseAgain} /></label>
         </div>}
-        {relink.library.length > 0 && !relinking && <p className="text-xs text-vx-fg-muted">{relink.library.length} Library file(s) could not be fetched. <button type="button" className="underline" onClick={() => fetchLibrary(relink.library)}>Try again</button></p>}
+        {relink.library.length > 0 && !relinking && <p className="text-xs text-vx-fg-muted">{relink.library.length} Library file(s) could not be fetched. <button type="button" className="underline" onClick={() => fetchLibrary(relink.library, tl)}>Try again</button></p>}
         {picker && <Modal aria-label="Save to a project" onCancel={() => setPicker(null)} className="items-center justify-center p-4"><div className="w-full max-w-md rounded-2xl border border-vx-border bg-vx-base p-6">
             <h2 className="text-lg font-black">Save to a project</h2>
             {picker.problem && <p role="alert" className="mt-2 text-sm">{picker.problem}</p>}
