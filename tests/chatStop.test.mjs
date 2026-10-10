@@ -310,7 +310,9 @@ test('Stop before the start event: the send is asked about first, by its key, an
     assert.equal(sender.split('chatApi.closeSend').length - 1, 2);
     assert.equal(stop.split('askStoppedSend(').length - 1, 1, 'once in the Stop branch');
     assert.match(api, /\nexport \{ makeIdempotencyKey, lostNotice, askStoppedSend \};\n/);
-    assert.match(api, /\nimport \{ askStoppedSend, lostNotice, settleStoppedTurn \} from '\.\/chatStop';\n/);
+    // CHANGED (amendment 14): `jobIdOf` joins the import. A replay's answer names a job, and chatApi.js takes only a job id
+    // as the server makes them for one (tests/chatSendReplay.test.mjs). The ask is imported and passed on as before.
+    assert.match(api, /\nimport \{ askStoppedSend, jobIdOf, lostNotice, settleStoppedTurn \} from '\.\/chatStop';\n/);
     // The look itself has no imports, so the route is handed in.
     assert.doesNotMatch(read('../app/veyrnox/_lib/chatStop.js'), /^import |\brequire\(/m);
 });

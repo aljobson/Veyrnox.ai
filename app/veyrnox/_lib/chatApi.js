@@ -5,7 +5,7 @@
 
 import { getFreshAccessToken, getSession, clearSession } from '../../lib/authClient.js';
 import { turnOptions } from './chatTurnOptions';
-import { askStoppedSend, lostNotice, settleStoppedTurn } from './chatStop';
+import { askStoppedSend, jobIdOf, lostNotice, settleStoppedTurn } from './chatStop';
 import { gatewayFetch, GatewayError, ACCOUNT_PAUSED_COPY, makeIdempotencyKey, notifyBalanceChanged } from './gateway';
 
 const json = (body) => JSON.stringify(body);
@@ -100,17 +100,21 @@ export function chatUnchargedCopy(code, extra, warning) {
 
 export { makeIdempotencyKey, lostNotice, askStoppedSend };
 
-// The message's own request went out and no answer of ours came back: it failed on the way, the reply stream broke or
-// ended with no event of ours in it, or what came back was neither ours nor a refusal. The server may hold the send
-// all the same, so this is not "nothing was sent": the screen asks the server about the send by its key
-// (useChatSend.js). Stop is the person's own doing and is passed on as it is, wherever in the request it lands.
+// The message's own request went out and nothing of ours says what became of it: it failed on the way, the reply
+// stream broke or ended with no `done`, or what came back was neither ours nor a refusal. The server may hold the send
+// all the same, so this is not "nothing was sent": before `start` the screen asks the server about the send by its
+// key, and after it looks for the turn by its job (useChatSend.js). Stop is the person's own doing and is passed on as
+// it is, wherever in the request it lands.
 const unanswered = (e, status = 0) => (e?.name === 'AbortError' ? e : new GatewayError('send_unanswered', { status, code: 'send_unanswered' }));
 
 /**
  * Send one message and stream the reply. Calls onEvent(name, data) for start, delta, error, done.
- * Resolves { replay: true } when the same send already ran. Throws GatewayError for a refusal before the stream, and
- * with the code `send_unanswered` when the request went out and nothing of ours says what became of it (above).
- * Aborting `signal` is the Stop button.
+ * Resolves { replay: false } only once `done` has been handed on: the reply's ending is known.
+ * Resolves { replay: true, job } when the server already holds a job for this send's key. `job` is that job's id, or
+ * null if the answer named none. It is not "this reply was shown": the screen sends a key once, so the job was made by
+ * a copy of the request whose answer never reached it, and how its turn ended is for the screen to look for.
+ * Throws GatewayError for a refusal before the stream, and with the code `send_unanswered` when the request went out
+ * and nothing of ours says what became of it (above). Aborting `signal` is the Stop button.
  */
 export async function sendTurn({ threadId, text, key, options, attachments = [], signal, onEvent }) {
   const token = await getFreshAccessToken();
@@ -139,15 +143,16 @@ export async function sendTurn({ threadId, text, key, options, attachments = [],
   if (!(res.headers.get('content-type') || '').includes('text/event-stream')) {
     let body = null;
     try { body = await res.json(); } catch (e) { if (e?.name === 'AbortError') throw e; /* otherwise: no body */ }
-    if (res.ok && body?.replay) return { replay: true };
+    if (res.ok && body?.replay) return { replay: true, job: jobIdOf(body.job_id) };
     // A refusal of ours names itself (`error`), and no reply runs after one. A 4xx that names nothing was made in front
     // of the turn (the edge, a proxy, the framework). Anything else says nothing about the turn: a Worker that failed
     // after the debit answers that way, with the turn still running.
     if (!body?.error && !(res.status >= 400 && res.status < 500)) throw unanswered(null, res.status);
     throw new GatewayError(body?.error || `HTTP ${res.status}`, { status: res.status, code: body?.error || 'gateway_error', body });
   }
-  // A reply stream: the server answers with one only after the debit, and writes `start` first.
-  let events = 0;
+  // A reply stream: the server answers with one only after the debit, writes `start` first, and writes `done` last on
+  // every path that ends the turn (lib/chatTurn.js).
+  let ended = false;
   try {
     const reader = res.body.getReader();
     const dec = new TextDecoder();
@@ -163,13 +168,13 @@ export async function sendTurn({ threadId, text, key, options, attachments = [],
         const event = /^event: (.+)$/m.exec(frame)?.[1];
         const data = /^data: (.+)$/m.exec(frame)?.[1];
         if (!event || !data) continue;
-        try { const d = JSON.parse(data); events += 1; onEvent(event, d); } catch { /* a malformed frame is skipped, the stream goes on */ }
+        try { const d = JSON.parse(data); onEvent(event, d); if (event === 'done') ended = true; } catch { /* a malformed frame is skipped, the stream goes on */ }
       }
     }
   } catch (e) {
     throw unanswered(e);
   }
-  if (!events) throw unanswered(); // it ended with no event of ours in it: cut off before `start` could arrive
+  if (!ended) throw unanswered(); // it ended with no `done`: cut off before `start` could arrive, or after it with nothing saying how the reply ended
   notifyBalanceChanged();
   return { replay: false };
 }

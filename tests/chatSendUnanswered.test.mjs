@@ -19,9 +19,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { MAX_NOTICE, NEW_CHAT, clearNotice, readCreditsWarning, textMark, writeDraft, writeNotice } from '../app/veyrnox/_lib/chatLocal.js';
-import { askStoppedSend, lostNotice, settleStoppedTurn } from '../app/veyrnox/_lib/chatStop.js';
 import { A, GatewayError, ME, TEXT, afterReload, cutBeforeText, memory, noAnswer, notOpen, refused, reply, run, stopped, toB, unanswered } from './chatSendFlow.harness.mjs';
 import { JOB, JOBS, KEY, OTHER_KEY, SENDS, answers, leftBy, opened, stopBeforeStart } from './chatWarning.harness.mjs';
+// sendTurn run for real against a faked fetch: shared with tests/chatSendReplay.test.mjs.
+import { DONE, START, dropped, frame, isUnanswered, json, loadApi, page, sent, stream } from './chatSendTurn.harness.mjs';
 
 const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
 const apiSource = read('../app/veyrnox/_lib/chatApi.js');
@@ -31,42 +32,6 @@ const kept = (storage, chat = 'chat-a') => readCreditsWarning(storage, ME, chat)
 const refusal = (status, code) => async () => { throw Object.assign(new Error(code), { status, code }); };
 
 // ---- 1. sendTurn: which failures mean the request may be at the server ----
-
-/** chatApi.js with its imports handed in, as the harness loads the hook: sendTurn runs for real against a faked fetch. */
-function loadApi(fetch, { token = 'token' } = {}) {
-    const imported = [...apiSource.matchAll(/^import \{ ([^}]+) \} from /gm)].flatMap((m) => m[1].split(',').map((n) => n.trim()));
-    const body = apiSource.replace(/^'use client';\n/, '').replace(/^import [^\n]+\n/gm, '').replace(/^export \{[^\n]*\n/gm, '').replace(/^export /gm, '');
-    const calls = [];
-    const deps = {
-        getFreshAccessToken: async () => token, getSession: () => ({ access_token: token }), clearSession: () => {}, turnOptions: (o) => o,
-        lostNotice, settleStoppedTurn, askStoppedSend, gatewayFetch: async () => { throw new Error('not used here'); }, GatewayError,
-        ACCOUNT_PAUSED_COPY: 'paused', makeIdempotencyKey: () => KEY, notifyBalanceChanged: () => {},
-    };
-    assert.deepEqual(imported.filter((n) => !(n in deps)), [], 'every name chatApi.js imports is handed in here');
-    const made = new Function('deps', 'fetch', `const { ${Object.keys(deps).join(', ')} } = deps;\n${body}\nreturn { chatApi, sendTurn, chatErrorCopy };`);
-    return { ...made(deps, (...args) => { calls.push(args); return fetch(...args); }), calls };
-}
-/** One sendTurn: what it returned or threw, the events it handed on, and the requests it made. */
-async function sent(fetch, more) {
-    const events = [];
-    const { sendTurn, calls } = loadApi(fetch, more);
-    const args = { threadId: 'chat-a', text: TEXT, key: KEY, options: {}, signal: more?.signal, onEvent: (ev) => events.push(ev) };
-    return sendTurn(args).then((r) => ({ r, events, calls }), (e) => ({ e, events, calls }));
-}
-const frame = (event, data) => `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
-const START = frame('start', { job_id: JOB });
-const DONE = frame('done', { status: 'complete', credits_charged: 2 });
-/** A reply stream: the frames one read at a time, then a clean end, or `breaks` thrown by the next read. */
-function stream(frames, breaks = null) {
-    let i = 0;
-    const source = { pull(c) { if (i < frames.length) { c.enqueue(new TextEncoder().encode(frames[i])); i += 1; } else if (breaks) c.error(breaks); else c.close(); } };
-    return new Response(new ReadableStream(source), { status: 200, headers: { 'content-type': 'text/event-stream; charset=utf-8' } });
-}
-const json = (status, body) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
-const page = (status) => new Response('<html><body>error</body></html>', { status, headers: { 'content-type': 'text/html' } });
-const dropped = () => new TypeError('Failed to fetch');
-/** The one thing send() asks about: a GatewayError, so it is told from an error raised before the request, with the status that came. */
-const isUnanswered = (e, status = 0) => e instanceof GatewayError && e.code === 'send_unanswered' && e.status === status;
 
 test('the request failed after it went out: no answer, which is not "nothing was sent"', async () => {
     const lost = await sent(async () => { throw dropped(); });
@@ -110,8 +75,10 @@ test('a reply stream that ends without one event is no answer either, and one th
 });
 
 test('an answer of ours is an answer: a replay, and a refusal that names itself, whatever its status', async () => {
+    // CHANGED (amendment 14): it was `{ replay: true }`, with the job the server names dropped. The job goes with it now:
+    // a replay is looked for by it (tests/chatSendReplay.test.mjs).
     const replay = await sent(async () => json(200, { replay: true, job_id: JOB }));
-    assert.deepEqual(replay.r, { replay: true });
+    assert.deepEqual(replay.r, { replay: true, job: JOB });
     // Every refusal the turn can send is JSON with `error` (lib/chatTurn.js). Two of them come after the debit
     // (`provider_submit_failed`, and `debit_failed` when the database's answer was lost): no reply runs after either.
     for (const [status, error] of [[400, 'invalid_text'], [402, 'insufficient_balance'], [403, 'account_frozen'], [404, 'thread_not_found'], [409, 'send_closed'], [429, 'rate_limited'],
@@ -458,8 +425,12 @@ test('the ending for no final answer is Stop-before-start\'s, with a dropped con
     const ask = /\n {6}\}\)\.catch\(async \(e\) => \{\n([\s\S]*?)\n {6}\}\);\n/.exec(sender)[1];
     assert.ok(ask.indexOf('unsure = true;') > 0 && ask.indexOf('unsure = true;') < ask.indexOf('await askStoppedSend('));
     assert.match(ask, /\n {8}if \(found\.closed\) unsure = false;\n/);
-    assert.match(ask, /looked = await chatApi\.settleStop\(\{ threadId: thread\.id, jobId: found\.job, text: content, knownIds \}\);/);
-    assert.equal(sender.split('unsure = ').length - 1, 3, 'declared, set before the ask, cleared by "closed"');
+    // CHANGED (amendment 14): the look for a job the server named was written out here. A replay names a job too, so it is
+    // one function now, `lookFor`, called from both (tests/chatSendReplay.test.mjs pins it). What it does is the same.
+    assert.match(ask, /\n {8}else if \(found\.job\) await lookFor\(found\.job\);[^\n]*\n/);
+    assert.match(sender, /const lookFor = async \(job\) => \{ looked = await chatApi\.settleStop\(\{ threadId: thread\.id, jobId: job, text: content, knownIds \}\); if \(looked === 'pending'\) looked = null; else \{ started = true; jobId = job; \} \};/);
+    // CHANGED (amendment 14): it was 3. A replay sets it too, before its job is looked for, and nothing there clears it.
+    assert.equal(sender.split('unsure = ').length - 1, 4, 'declared, set before the ask, cleared by "closed", set by a replay');
     // The look made for the server's job is the one the ending acts on: the turn is not looked for twice.
     assert.match(sender, /\n {8}const outcome = looked \|\| await chatApi\.settleStop\(\{ threadId: thread\.id, jobId, text: content, knownIds \}\);/);
     // Asked only before `start`, and only for the one error sendTurn raises for a request that got no answer.
