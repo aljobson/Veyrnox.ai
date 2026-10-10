@@ -104,8 +104,8 @@ export { makeIdempotencyKey, lostNotice, askStoppedSend };
 // reply stream broke or ended with no `done`, or the answer was neither ours nor a refusal. The server may hold the
 // send all the same, so this is not "nothing was sent": before `start` the screen asks the server about the send by its
 // key, and after it looks for the turn by its job (useChatSend.js). A stream that breaks after its `done` is raised the
-// same way, and the look then finds the finished turn. Stop is the person's own doing and is passed on as it is,
-// wherever in the request it lands.
+// same way, and is looked for like any other. Stop is the person's own doing and is passed on as it is, wherever in the
+// request it lands.
 const unanswered = (e, status = 0) => (e?.name === 'AbortError' ? e : new GatewayError('send_unanswered', { status, code: 'send_unanswered' }));
 
 /**

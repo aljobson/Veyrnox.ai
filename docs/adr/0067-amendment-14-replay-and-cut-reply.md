@@ -35,29 +35,43 @@ job, at once**. The job is the replay answer's `job_id`, or the `job_id` that ca
 - `sendTurn` hands on the job of a replay (`{ replay: true, job }`), taking only a job id as the server makes them. It
   resolves `{ replay: false }` only once `done` has been handed on. A stream that ends without `done` raises
   `send_unanswered`, as one that breaks does.
-- `send()`, on a replay: the button says Checking and the job is looked for (3.5 seconds, the look of amendment 10). No
-  send is asked about by its key, and none is closed: the answer already named the job.
+- `send()`, on a replay: the button says Checking and the job is looked for, with the look made after Stop and after a
+  stream that broke (about 3 seconds, 3.5 at most). No send is asked about by its key, and none is closed: the answer
+  already named the job.
 - A turn that settles within the look ends through the branch for a stream that broke after `start`, unchanged.
 - A replay that is not settled when the look ends, or that named no job, ends as amendment 13's third row: the message
   goes back with the warning, kept by the send's key.
-- A stream with no `done` reaches the branch for a stream that broke after `start` by itself: `start` had come.
+- A stream with no `done` reaches the branch for a stream that broke after `start` by itself when `start` had come. If
+  `start` itself was lost or could not be read, the send is asked about by its key, as amendment 13 does.
 - In that branch a look that goes wrong (a chat read in a shape it does not know) now counts as not settled, so the send
   ends with the warning. It used to reject with nothing said and nothing stored. A replay has the same guard.
 
-| What the look finds | Words on screen and after a reload | The text | A chat made for the message | Attached images | A warning kept for the message before |
+What each outcome does, while the chat the message was sent in is on screen:
+
+| What the look finds | Words | The text | A chat made for the message | Attached images | A warning kept for the message before |
 |---|---|---|---|---|---|
-| Failed and refunded, nothing stored | "The connection dropped before the reply finished. Nothing was saved and no Credits were used. Your message is back in the box." | Back in the box | Deleted: nothing can be saved to it now | Stay with the message | Stays kept. Both are said, this one first |
+| The job failed and nothing was stored: the Credits come back | "The connection dropped before the reply finished. Nothing was saved and no Credits were used. Your message is back in the box." | Back in the box | Deleted: nothing can be saved to it now | Stay with the message | Stays kept, and is what a reload shows. On screen both are said, this one first |
 | Saved, and the chat is read again | "The connection dropped before the reply finished. This chat shows what was saved and the Credits it used." | Not given back: it is in the chat | Stays, and shows the turn | Cleared | Forgotten: the chat was read again and shows each saved reply with its price |
-| Charged, and it could not be stored | "We could not save that reply to the chat. You received it, so its Credits were used." | Not given back | Stays | Cleared | This warning takes its place |
-| Not settled, after a replay (nothing of the reply was ever on screen), or a replay that named no job | "The connection dropped before the reply finished. It may have used Credits. Check this chat before you send again." kept by the send's key with a mark of the text | Back in the box, beside the warning. If the chat page was left, stored in its chat's draft | Stays | Stay, while its chat is on screen | This warning takes its place and stands for both sends |
+| Charged, and it could not be stored | "We could not save that reply to the chat. You received it, so its Credits were used." | Not given back | Stays | Cleared | This warning takes its place. It lists no turn: it is settled |
+| Not settled, after a replay (nothing of the reply was ever on screen), or a replay that named no job | "The connection dropped before the reply finished. It may have used Credits. Check this chat before you send again." kept by the send's key with a mark of the text | Back in the box, beside the warning | Stays | Stay with the message | This warning takes its place and stands for both sends |
 | Not settled, after a stream with no `done` | The same words, kept by the job | Not given back. What arrived stays on screen | Stays | Cleared | This warning takes its place and stands for both turns |
 
-The last two rows are settled when the chat is next opened, as every kept warning is (amendments 11 and 13): saved leaves
-"...This chat shows what was saved and the Credits it used." and empties a box that still holds exactly that message;
-refunded removes the warning and leaves the text.
+Each notice is kept with its chat, so a reload shows it, except in the first row beside an earlier warning. When the
+person is in another chat or has left the chat page, nothing is said there: what is kept waits in the message's own chat,
+given-back text is stored in that chat's draft, the images are cleared (they cannot wait), and a chat found saved is not
+read again until it is opened (its notice says "shows what was saved", and a warning kept before is still forgotten).
 
-**Words.** None are new. The three dropped-connection notices and `reply_not_saved` are used as they stand. For a replay
-they are true in the common case (a connection did drop, which is why the browser sent the request again).
+When the chat is next opened, the last two rows are settled as every kept warning is (amendments 11 and 13):
+
+- Kept by the key (a replay): saved leaves "...This chat shows what was saved and the Credits it used." and empties a box
+  that still holds exactly that message. Refunded removes the warning and leaves the text.
+- Kept by the job (a stream with no `done`): saved removes the warning and says nothing more, because the chat shows the
+  reply and its price. Refunded removes the warning too: see "Left".
+
+**Words.** None are new. The three dropped-connection notices are true for a replay in the common case (a connection did
+drop, which is why the browser sent the request again). "You received it" in the third row is not true after a replay,
+or after amendment 13's ending: nothing of that reply reached the screen. It takes the chat being deleted while the first
+copy runs. See "Left".
 
 **A replay on a first and only request** (the second row of the first table). The screen cannot tell it from a first
 copy that is still running: a job exists and is not settled. So it ends as "not settled": the message goes back with the
@@ -67,9 +81,10 @@ removes the warning. Saying something truer there needs the server: see "Left".
 
 ## Consequences
 
-- A replay is no longer silent, and no longer forgets a warning. A warning kept for the message before goes only when
-  this message was found saved (the chat is read again and shows what was charged) or keeps a warning of its own, which
-  then stands for both.
+- A replay is no longer silent, and no longer forgets a warning with nothing known. A warning kept for the message
+  before now goes only when this message was found saved or charged (the chat, read again now or when it is next opened,
+  shows each saved reply with its price) or when this message keeps a warning of its own. A `connection_lost` kept for a
+  turn that is not settled stands for both. Refunded leaves it kept.
 - A reply whose stream is cut cleanly after `start` now shows Checking for up to 3.5 seconds and then says what was kept.
 - `sendTurn` no longer counts events. `done` alone ends a reply. A reply whose `done` frame was lost or could not be read
   is looked for by its job, and ends as saved or refunded on what the job says.
@@ -77,7 +92,7 @@ removes the warning. Saying something truer there needs the server: see "Left".
   replay. The ask by key is still made in two places only (Stop before `start`, a request that got no answer).
 - A replay that is not settled is kept by the send's key, so its warning is settled through `POST /api/v1/chat/sends/close`
   (amendment 11). With that route off it would stay until a later message is saved, as amendment 13's does.
-- Tests: `tests/chatSendReplay.test.mjs` runs `sendTurn` and `send()` together, with only the network and the look faked.
+- Tests: `tests/chatSendReplay.test.mjs` runs `sendTurn` and `send()` together, with the screen and the network faked.
   Earlier assertions that pinned the old replay, or the lines this changes, are changed on purpose, each with the reason
   beside it (`tests/chatSendHome.test.mjs`, `tests/chatSendRefused.test.mjs`, `tests/chatSendUnanswered.test.mjs`,
   `tests/chatStop.test.mjs`).
@@ -94,9 +109,14 @@ removes the warning. Saying something truer there needs the server: see "Left".
 ## Left
 
 - **The free job that is made and never run** answers `replay` and leaves a job no turn will ever run for up to 25 minutes.
-  The turn could run that job itself, or answer in a way the screen can read as "nothing ran". Server change.
+  It holds one free allowance until the sweep returns it, so the same message sent again meanwhile can cost Credits where
+  the first send would have been free. The turn could run that job itself, or answer in a way the screen can read as
+  "nothing ran". Server change.
 - **`debit_failed` and `provider_submit_failed`** are still refusals: they come after the debit, and the refund or the sweep
-  returns the Credits. The screen says "That didn't work. Try again." with no word about Credits.
+  returns the Credits. For `debit_failed` the screen says "That didn't work. Try again." with no word about Credits. For
+  `provider_submit_failed` it says "No Credits were used", which is true once its refund has landed.
+- **"You received it, so its Credits were used."** is said for a reply that was charged and could not be stored, also when
+  nothing of it reached the screen (a replay, amendment 13's ending). Words of its own would be new words.
 - **A turn that broke after `start`, was not settled, and is refunded later** (a Worker cut mid-reply is refunded by the sweep
   after 120 minutes): the warning is removed when the chat is opened, and the message is then in neither the chat nor the
   box. This is the branch for a stream that broke, as it was; a stream with no `done` now reaches it too.

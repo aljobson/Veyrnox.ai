@@ -81,7 +81,7 @@ test('a replay whose first copy was refunded: the message is back in the box, an
     const storage = memory();
     const { log, bubbles } = await run({ active: A, turn: replayed(), key: KEY, settle: 'nothing', storage, images: [{ asset: 'x' }] });
     assert.deepEqual([log.looks, log.closes], [[JOB], []], 'looked for by the job the replay named, and no send is closed');
-    assert.deepEqual(log.lookedIn, [{ chat: 'chat-a', text: TEXT }], 'in the chat the message was sent in, for the text that was sent');
+    assert.deepEqual(log.lookedIn, [{ chat: 'chat-a', text: TEXT, known: [] }], 'in the chat the message was sent in, for the text that was sent');
     assert.deepEqual([log.box, log.notices], [['', TEXT], [null, 'connection_refunded']]);
     assert.deepEqual([afterReload(storage, 'chat-a'), kept(storage)], [{ box: TEXT, notice: { code: 'connection_refunded' } }, null], 'said after a reload too, and not as a warning: nothing can be charged');
     assert.deepEqual([log.opened, log.deleted, log.imagesCleared, bubbles()], [[], [], 0, []], 'the images stay with the message that went back');
@@ -140,7 +140,7 @@ test('a replay that names no job, or a look that goes wrong: the warning, never 
     // The look for the job throws (a chat read in a shape it does not know): the job exists, so the chat and the warning stay.
     const storage = memory();
     const thrown = await run({ active: null, turn: replayed(), key: KEY, storage, settle: () => { throw new TypeError("Cannot read properties of null (reading 'role')"); } });
-    assert.deepEqual([thrown.log.deleted, thrown.log.box, thrown.log.notices], [[], ['', TEXT], [null, 'connection_lost']]);
+    assert.deepEqual([thrown.log.looks, thrown.log.deleted, thrown.log.box, thrown.log.notices], [[JOB], [], ['', TEXT], [null, 'connection_lost']]);
     assert.deepEqual([afterReload(storage, 'made'), kept(storage, 'made')], [{ box: TEXT, notice: { code: 'connection_lost' } }, { code: 'connection_lost', key: KEY, sent: MARK }]);
 });
 
@@ -204,6 +204,7 @@ test('a stream that ended with no `done` is looked for by the job from `start`, 
     // Refunded with nothing kept: the message goes back, images with it. It was read again as sent, and the message was nowhere.
     const nothing = await cut('nothing');
     assert.deepEqual([nothing.log.looks, nothing.log.closes], [[JOB], []], 'its job came with `start`: no send is asked about by its key');
+    assert.deepEqual(nothing.log.lookedIn, [{ chat: 'chat-a', text: TEXT, known: [] }]);
     assert.deepEqual([nothing.log.box, nothing.log.notices, nothing.kept(), nothing.log.imagesCleared, nothing.bubbles()], [['', TEXT], [null, 'connection_refunded'], { 'chat-a': 'connection_refunded' }, 0, []]);
     const made = await cut('nothing', { active: null });
     assert.deepEqual([made.log.deleted, made.log.saved, made.kept()], [['made'], { [NEW_CHAT]: TEXT }, { [NEW_CHAT]: 'connection_refunded' }]);
@@ -248,9 +249,19 @@ test('the look is waited for, wherever it is made for a job the server named', a
     const replay = await run({ active: A, turn: replayed(), key: KEY, settle: later('nothing') });
     assert.deepEqual([replay.log.notices, replay.log.box], [[null, 'connection_refunded'], ['', TEXT]]);
     const noAnswerAtAll = await run({ active: A, turn: noAnswer(), key: KEY, closeSend: answers(SENDS.running), settle: later('nothing') });
-    assert.deepEqual([noAnswerAtAll.log.notices, noAnswerAtAll.log.box, noAnswerAtAll.log.lookedIn], [[null, 'connection_refunded'], ['', TEXT], [{ chat: 'chat-a', text: TEXT }]]);
+    assert.deepEqual([noAnswerAtAll.log.notices, noAnswerAtAll.log.box, noAnswerAtAll.log.lookedIn], [[null, 'connection_refunded'], ['', TEXT], [{ chat: 'chat-a', text: TEXT, known: [] }]]);
     const cut = await run({ active: A, turn: endedEarly(), key: KEY, settle: later('saved') });
     assert.deepEqual([cut.log.notices, cut.log.opened], [[null, 'connection_saved'], ['chat-a']]);
+});
+
+test('each look is handed the messages that were on screen before the send, so an older turn with the same words is not taken for this one', async () => {
+    // The look finds the saved turn by its text among the messages the screen did not have (chatStop.js: findSavedTurn).
+    const before = { shown: ['m0', 'm1'] };
+    const handed = [{ chat: 'chat-a', text: TEXT, known: ['m0', 'm1'] }];
+    for (const [name, how] of [['a replay', { turn: replayed() }], ['a stream with no `done`', { turn: endedEarly() }], ['a request with no answer, its job named', { turn: noAnswer(), closeSend: answers(SENDS.running) }]]) {
+        const { log } = await run({ active: A, key: KEY, settle: 'pending', ...before, ...how });
+        assert.deepEqual(log.lookedIn, handed, name);
+    }
 });
 
 // ---- 5. the shape of both, and no new words ----
