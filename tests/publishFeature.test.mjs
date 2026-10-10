@@ -87,7 +87,7 @@ test('every OAuth callback turns the Free-tier refusal into a typed 409', () => 
     for (const n of ['instagram', 'linkedin', 'twitter', 'tiktok', 'youtube']) {
         const src = read(`app/api/v1/social/accounts/${n}/callback/route.js`);
         assert.match(src, /recorded\.code === 'ACCOUNT_LIMIT'/, n);
-        assert.match(src, /\{ ok: false, code: 'ACCOUNT_LIMIT' \}, \{ status: 409 \}/, n);
+        assert.match(src, /\{ ok: false, code: 'ACCOUNT_LIMIT', limit: freeSocialAccountLimit\(\) \}, \{ status: 409 \}/, n);
     }
     assert.match(read('app/social/connect/callback/[network]/page.js'), /ACCOUNT_LIMIT:/);
 });

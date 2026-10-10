@@ -134,3 +134,26 @@ test('Bluesky connection diagnostics distinguish storage failure and redact unex
     assert.equal(res.status, 502);
     assert.deepEqual(await res.json(), { error: 'connect_failed', stage: 'record_account', code: 'unexpected_failure' });
 });
+
+test('extended resource selection uses the free five-account writer behind the exact rollout flag', async () => {
+    const previous = process.env.PUBLISH_MULTI_ACCOUNT_ENABLED;
+    process.env.PUBLISH_MULTI_ACCOUNT_ENABLED = 'true';
+    const payload = await encryptToken(JSON.stringify([{ externalAccountId: '123', accessToken: 'page-secret' }]), cryptoCfg);
+    const calls = [];
+    globalThis.fetch = async (url) => {
+        const name = new URL(url).pathname.split('/').pop(); calls.push(name);
+        if (name === 'consume_social_connection_selection') return Response.json({ payload_enc: payload });
+        if (name === 'get_or_create_default_social_brand') return Response.json({ ok: true, brand_id: selectionId });
+        assert.equal(name, 'record_social_multi_account_connection');
+        return Response.json({ ok: false, code: 'ACCOUNT_LIMIT', limit: 5 });
+    };
+    try {
+        const res = await finishExtendedConnect(request({ selectionId, resourceId: '123' }), 'facebook');
+        assert.equal(res.status, 409);
+        assert.deepEqual(await res.json(), { ok: false, code: 'ACCOUNT_LIMIT', limit: 5 });
+        assert.equal(calls.includes('record_social_account_connection'), false);
+    } finally {
+        if (previous === undefined) delete process.env.PUBLISH_MULTI_ACCOUNT_ENABLED;
+        else process.env.PUBLISH_MULTI_ACCOUNT_ENABLED = previous;
+    }
+});

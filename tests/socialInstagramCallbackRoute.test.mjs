@@ -107,3 +107,21 @@ test('each required config var missing degrades to a clean 503 before any networ
     }
     setConfigured();
 });
+
+// The rollout writer must be used at callback time, not trusted client input.
+test('multi-account flag selects the new writer and returns its bounded free limit', async () => {
+    setConfigured();
+    const previous = process.env.PUBLISH_MULTI_ACCOUNT_ENABLED;
+    process.env.PUBLISH_MULTI_ACCOUNT_ENABLED = 'true';
+    try {
+        stub({ rpcOverrides: { record_social_multi_account_connection: { ok: false, code: 'ACCOUNT_LIMIT', limit: 5 } } });
+        const res = await POST(request({ code: 'auth-code', state: await validState(), codeVerifier: verifier }));
+        assert.equal(res.status, 409);
+        assert.deepEqual(await res.json(), { ok: false, code: 'ACCOUNT_LIMIT', limit: 5 });
+        assert.ok(calls.some(c => c.endsWith('/record_social_multi_account_connection')));
+        assert.ok(!calls.some(c => c.endsWith('/record_social_account_connection')));
+    } finally {
+        if (previous === undefined) delete process.env.PUBLISH_MULTI_ACCOUNT_ENABLED;
+        else process.env.PUBLISH_MULTI_ACCOUNT_ENABLED = previous;
+    }
+});

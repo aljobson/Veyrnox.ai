@@ -95,3 +95,17 @@ test('an account list failure never leaks upstream detail', async () => {
     assert.equal(res.status, 502);
     assert.deepEqual(await res.json(), { error: 'internal' });
 });
+
+test('account allowance follows the exact server rollout flag, without client overrides', async () => {
+    const previous = process.env.PUBLISH_MULTI_ACCOUNT_ENABLED;
+    try {
+        for (const flag of ['true', 'false', 'TRUE', '1']) {
+            process.env.PUBLISH_MULTI_ACCOUNT_ENABLED = flag; stub();
+            const res = await GET(request({ 'x-veyrnox-account-limit': '50' }));
+            assert.equal((await res.json()).accountLimit, flag === 'true' ? 5 : 1);
+        }
+    } finally {
+        if (previous === undefined) delete process.env.PUBLISH_MULTI_ACCOUNT_ENABLED;
+        else process.env.PUBLISH_MULTI_ACCOUNT_ENABLED = previous;
+    }
+});
