@@ -25,7 +25,7 @@ const VIEW_THRESHOLD = 0.4;
 // scrolling a phone through the preset grid never decodes several at once.
 let activeTouchStop = null;
 
-export function MediaTile({ href, clip, mediaClassName = '', mediaStyle, className = '', style, ariaLabel, onClick, footer, children }) {
+export function MediaTile({ href, clip, mediaClassName = '', mediaStyle, className = '', style, ariaLabel, onClick, footer, children, uncroppedOnMobile = false }) {
   const rootRef = useRef(null);
   const videoRef = useRef(null);
   const [failed, setFailed] = useState(false);
@@ -103,12 +103,13 @@ export function MediaTile({ href, clip, mediaClassName = '', mediaStyle, classNa
   }, []);
 
   const showVideo = clip && !failed;
+  const mediaFit = uncroppedOnMobile ? 'object-contain lg:object-cover' : 'object-cover';
 
   return (
     <Link ref={rootRef} href={href} aria-label={ariaLabel} onClick={onClick} className={`group vx-tile ${className}`} style={style}>
       <div className={`relative overflow-hidden ${mediaClassName}`} style={mediaStyle}>
         {failed && clip?.poster && (
-          <Image src={clip.poster} alt="" fill unoptimized className="object-cover" style={{ objectPosition: clip.objectPosition, objectFit: clip.objectFit }} />
+          <Image src={clip.poster} alt="" fill unoptimized className={mediaFit} style={{ objectPosition: clip.objectPosition, objectFit: clip.objectFit }} />
         )}
         {showVideo && (
           <video
@@ -125,7 +126,7 @@ export function MediaTile({ href, clip, mediaClassName = '', mediaStyle, classNa
             onPlaying={() => setPlaying(true)}
             onError={() => setFailed(true)}
             style={{ objectPosition: clip.objectPosition, objectFit: clip.objectFit }}
-            className={`absolute inset-0 h-full w-full object-cover pointer-events-none vx-tile-video ${
+            className={`absolute inset-0 h-full w-full ${mediaFit} pointer-events-none vx-tile-video ${
               playing || clip.poster ? 'opacity-100' : 'opacity-0'
             }`}
           />
