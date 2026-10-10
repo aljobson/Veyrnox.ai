@@ -7,7 +7,9 @@ shared provider account. These bounds are per database, not account-wide;
 legacy and montage producers must also be included before broader activation.
 See the [shared-account release review](../operations/fal-release-readiness-review-2026-10-10.md).
 The [proposed design in PR 755](https://github.com/aljobson/Veyrnox.ai/pull/755)
-remains the broader rollout plan.
+describes the broader reservation authority; the
+[shared-account rollout proposal](fal-shared-account-rollout.md) refines the
+first bounded activation using fixed allocations and explicit producer fencing.
 
 Migration `0238_fal_admission_capacity` replaces durable-image admission with
 one transaction that serializes the user's balance, checks equal replay, locks
