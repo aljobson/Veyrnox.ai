@@ -1,6 +1,6 @@
 # ADR-0080 — Browser timeline editor (backlog M05), free and local first
 
-- **Status**: **Proposed 2026-10-10.** Nothing is built. Owner decisions recorded below.
+- **Status**: **Proposed 2026-10-10.** Slice 0 (the engine spike) is done: see `docs/editor/SLICE-0-RESULTS-2026-10-10.md`. No product code is built. Owner decisions recorded below.
 - **Related**: backlog M05 (`docs/architecture/implementation-backlog.md`), ADR-0029 (Auto Short, `job_steps`), ADR-0051 and
   ADR-0055 (tenant projects, project documents with history), ADR-0056 (project media, quarantine and inspection), ADR-0060
   (CSP), ADR-0065 (Video Enhance browser runtime), ADR-0074 (video agent), `docs/editor/PRD.md`, `docs/editor/CAPCUT-GAP-2026-10-10.md`
@@ -18,13 +18,25 @@ Facts from the repo (read 2026-10-10):
   allows `blob:` for `media-src` and `img-src`. It is gated and not live (PR #361, ADR-0065 "Proposed").
 - **Its proven limits are narrow.** MP4 in and out, one video track and at most one AAC audio track, H.264 output, and a runtime
   `canEncodeVideo` check. Opus export is refused (padding loss in the pinned converter). WebKit is preview-only (Safari 27 stalled with
-  four queued encoder requests). The prototype caps clips at 15 s, 100 MiB and 1920 px. None of that has been tested for a
-  multi-clip composite.
+  four queued encoder requests). The prototype caps clips at 15 s, 100 MiB and 1920 px. Slice 0 has since tested a multi-clip composite
+  (see Decision 4).
 - **The persistence and media layers are built.** Project documents with autosave and history (M01, ADR-0055) and project media with
   quarantine, inspection and 15-minute signed downloads (M02, ADR-0056) exist. `TENANT_PROJECTS_ENABLED` is `"false"` in production
   and on in staging.
-- **OpenCut was rejected twice** (2026-09-22, 2026-10-07): archived classic version, a rewrite with its own Postgres, Redis and auth,
-  a WebAssembly engine the CSP blocks, and an Editor API that is roadmap only. MIT-licensed, so worth revisiting when that API ships.
+- **OpenCut was rejected twice** (2026-09-22, 2026-10-07) as a *host* for the editor: its current repo is a ground-up rewrite
+  (the README lists an Editor API, plugins and a Rust core as "coming"), it has its own Postgres, Redis and auth, and its compositor is
+  WebAssembly, which the CSP blocks. **Revisited 2026-10-10 after the owner asked how it could help**, from public GitHub data only
+  (directory names, `package.json`, README; no code was read):
+  - **OpenCut Classic** (`opencut-app/opencut-classic`, archived 2026-05-17, MIT, 266 stars) is the web editor that actually shipped.
+    It is **Next.js 16, React 19 and Mediabunny ^1.29**, the same stack and engine as Veyrnox.ai, with source folders for `timeline`,
+    `commands`, `actions`, `selection`, `ripple`, `retime`, `speed`, `text`, `subtitles`, `stickers`, `masks`, `effects`, `export`,
+    `canvas`, `preview` and `rendering`.
+  - Not to take: its Rust/WASM crates (`gpu`, `compositor`, `effects`, `masks`, `time`; the `opencut-wasm` package), which need a CSP
+    change we have not agreed; its auth and database layer (better-auth, drizzle, Postgres, Upstash); and its asset providers and
+    remote fonts, whose licences and hosts are unchecked.
+  - So it is a **reference and a possible source of MIT TypeScript** (timeline model, command and undo stack, ripple, retime, subtitle
+    handling), not a dependency or a host. Anything copied keeps its MIT notice. Nothing is decided until slice 0b says the core is
+    separable from the app.
 
 ## Owner decisions (2026-10-10)
 
@@ -68,9 +80,12 @@ A timeline is a versioned JSON document inside a Project (M01), so it gets autos
 ### 4. Export, and what is qualified
 
 Local MP4 (H.264 video, AAC audio), desktop Chromium only, using the **same qualification gate as ADR-0065**: real decode and encode
-capability checks, not browser identity alone; WebKit stays preview-only; Opus audio is refused until a regression passes. Caps start
-at the Clip Editor's (60 s total, 10 video clips) and are **lowered, not raised, by the Slice 0 spike** if memory or encode time
-demands. No number here is a measured guarantee. Saving the rendered file back to the Library is **out of slice 1**: it creates a
+capability checks, not browser identity alone; WebKit stays preview-only; Opus audio is refused until a regression passes. **Measured in slice 0** (one Apple M5, 16 GiB, Chrome 154, synthetic clips; see the results doc for what it does not prove):
+a 55.5 s, 10-clip, 1080p timeline with crossfades and text exported in 26 s (2.15x real time, 868 MB peak browser memory), and every
+content check passed. **Encode with `hardwareAcceleration: 'prefer-software'`:** the default hardware encoder stalled for 4.5 to 86 s on
+first use in a browser session, and a warm-up did not reliably remove it. Decode with the library's sequential iterator, not the
+sparse-access one. Caps for slice 1 stay at the Clip Editor's (60 s total, 10 video clips, 720p or 1080p); 4K is out until measured.
+Memory with real footage, other browsers and smaller machines are **unmeasured**. Saving the rendered file back to the Library is **out of slice 1**: it creates a
 stored asset and belongs with the isolated render queue (M07).
 
 ### 5. Flags and rollout
@@ -82,13 +97,14 @@ It requires `TENANT_PROJECTS_ENABLED`, so it ships to staging first and reaches 
 ## Not decided
 
 Prices for any AI step; stock music, footage or templates (licences); collaboration, shared projects and cloud storage; a server-side
-render; and whether the engine is Mediabunny alone or Mediabunny plus a small WebGL layer (decided from the spike).
+render; and whether to add a WebGL layer later. The engine is decided: **Mediabunny with a Canvas 2D compositor** (slice 0), because it worked.
 
 ## Slices (each its own PR, each off in production)
 
 | # | Slice | Done when |
 |---|---|---|
-| 0 | **Spike, no UI shipped.** With the pinned Mediabunny 1.60.0, decode two or more MP4 inputs, composite them and a text layer on a canvas, mix audio, and write one MP4, in desktop Chrome | Measured on real clips: peak memory, encode time per second of output, and failure modes. Writes the caps. Confirms or kills the engine choice |
+| 0 (**done 2026-10-10**) | **Spike, no UI shipped.** With the pinned Mediabunny 1.60.0, decode two or more MP4 inputs, composite them and a text layer on a canvas, mix audio, and write one MP4, in desktop Chrome | Measured on real clips: peak memory, encode time per second of output, and failure modes. Writes the caps. Confirms or kills the engine choice |
+| 0b | **OpenCut Classic extraction check, no code adopted.** Read its timeline, commands, ripple, retime and subtitle code; list what is separable from its Next app, database and WASM, its licence notices, and any bundled asset licences | A written yes or no with file lists. If yes, the owner decides what to adapt, and anything copied keeps its MIT notice |
 | 1 | Timeline shell on staging: Library and project assets onto tracks, split, trim, reorder, volume, preview, local export | Capability-checked export; cancellation works; validation tests; no CSP change |
 | 2 | Text, simple transitions, aspect presets with letterboxing | Rendered output matches the preview frame for frame on the test clips |
 | 3 | Save and reopen as a project document, with history | Stale-update, bound and XSS tests pass |

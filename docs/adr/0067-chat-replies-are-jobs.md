@@ -485,9 +485,9 @@ limits of amendments 11 and 12 (200 closed keys in 30 days, four turns to a warn
 sent). Storing the text and the warning before the ask (a saved turn would have its text in the box until corrected). A new
 warning code with its own words (older pages would read it as an ordinary notice and forget it at the next send).
 
-Left as they were: a replay (the browser resends a request whose connection died, and the resend is answered `replay: true`
-while the first copy runs with no reader) still reads the chat again, says nothing and forgets a warning kept before; a stream
-that ends cleanly after `start` with no `done` still ends as sent. Until the look ends nothing is stored, as after Stop.
+Left as they were here, and closed by amendment 14, which is a file of its own because this one is at its length limit
+([0067-amendment-14-replay-and-cut-reply.md](0067-amendment-14-replay-and-cut-reply.md)): a replay, and a stream that ends
+cleanly after `start` with no `done`. Both ended as sent. Until the look ends nothing is stored, as after Stop.
 
 ## Not decided here
 

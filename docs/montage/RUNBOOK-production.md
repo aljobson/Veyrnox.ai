@@ -106,6 +106,12 @@ Do not start the rollout until each has a written yes in the SPEC.
   - An earlier Approve on a second account was refused before any charge ("Not enough credits": it held 86). A manual grant was
     prepared for it and **not run**; no manual grant was made on production.
 
+- **Lost-run check on in production (2026-10-10, owner: "turn on the lost-run check").** `MONTAGE_LIVENESS_ENABLED` is "true" in the
+  production `vars`. A run the runner no longer has (the machine restarted, or its thread ended with no result) is failed as
+  `run_lost` and refunded at the next five-minute pass once it is three minutes old, where the timeout alone takes 45 to 50 minutes.
+  Checked first: the production app has one machine, and its image answers `/runs` (401 unsigned). Not tried on production: an
+  actual lost run. **Before a second runner machine is added, set this back to "false"** (CAPACITY.md stage 2b).
+
 Next: step 9 (open it to users) after a week of step 8 without a stuck job. That is the owner's decision.
 
 Each step has its own check and its own undo. Stop at the first check that fails.
