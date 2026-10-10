@@ -1,6 +1,6 @@
 # One-image staging signed callback retry plan
 
-Status: prepared and locally tested; not deployed, no provider submission made. PR #795 contains the completed controlled transport evidence and is green but remains unmerged. This plan addresses a different gap: real fal signature verification and provider-originated redelivery after a deliberate retryable response.
+Status: the owner-approved one-image live staging exercise passed on 2026-10-10. See [measured evidence](fal-signed-provider-retry-evidence.md). The consumer and application settings are restored; the dedicated relay is disabled and has no public or preview URL. PR #795 contains the separate controlled transport evidence and remains unmerged. This protocol addresses real fal signature verification and provider-originated redelivery after a deliberate retryable response.
 
 The design follows Donne Martin's [System Design Primer](https://github.com/donnemartin/system-design-primer#message-queues): assume repeated deliveries and persist the decision before acknowledging. One SQLite Durable Object coordinates the dedicated job's immutable provider mapping and a one-time fault marker. It is not a global admission lock or a new production callback implementation.
 
