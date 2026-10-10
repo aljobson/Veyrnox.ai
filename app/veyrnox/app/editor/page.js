@@ -1,6 +1,7 @@
 'use client';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppNav } from '../../_components/NavBar';
+import { Main } from '../../_components/Main';
 import { Button } from '../../_components/Button';
 import { TimelineView } from '../../_components/editor/TimelineView';
 import { gatewayFetch } from '../../_lib/gateway';
@@ -186,8 +187,8 @@ function Editor() {
 
 export default function EditorPage() {
     const enabled = useEditorPreview();
-    return <><AppNav active="editor" readAccount={false} /><div className="mx-auto max-w-6xl px-4 py-8 sm:px-8 sm:py-12">
+    return <><AppNav active="editor" readAccount={false} /><Main className="mx-auto max-w-6xl px-4 py-8 sm:px-8 sm:py-12">
         <p className="mb-2 font-vx-mono text-xs tracking-widest text-vx-accent">PREVIEW</p><h1 className="mb-3 text-3xl font-black sm:text-4xl">Video editor</h1>
         {enabled ? <Editor /> : <section className="mt-6 rounded-2xl border border-vx-border p-8"><h2 className="text-lg font-bold">Preview unavailable</h2><p className="mt-2 text-sm text-vx-fg-muted">This editor is not switched on for your browser yet.</p></section>}
-    </div></>;
+    </Main></>;
 }

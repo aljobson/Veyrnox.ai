@@ -170,7 +170,7 @@ test('the bar names the account beside the avatar, and hides that name below sm'
     // `truncate` only bites on a block box. It works here because the span
     // is a direct child of the flex button, which blockifies it — move it
     // out of that row and the ellipsis silently stops.
-    const button = authSrc.slice(authSrc.indexOf('aria-haspopup="menu"'), authSrc.indexOf(span[0]));
+    const button = authSrc.slice(authSrc.indexOf('aria-expanded={menuOpen}'), authSrc.indexOf(span[0]));
     assert.match(button, /className="flex items-center/, 'the name sits in the flex row that blockifies it');
 });
 

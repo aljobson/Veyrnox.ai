@@ -1,4 +1,5 @@
 import { MarketingNav } from '../_components/NavBar';
+import { Main } from '../_components/Main';
 import { SocialCinema } from './SocialCinema';
 
 export const metadata = {
@@ -8,5 +9,5 @@ export const metadata = {
 };
 
 export default function Page() {
-  return <><MarketingNav /><SocialCinema /></>;
+  return <><MarketingNav /><Main><SocialCinema /></Main></>;
 }

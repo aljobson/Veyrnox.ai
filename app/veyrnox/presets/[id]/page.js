@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { MarketingNav } from '../../_components/NavBar';
+import { Main } from '../../_components/Main';
 import { TemplateRecipe } from '../../_components/TemplateRecipe';
 import { FilmPlayer } from '../../_components/FilmPlayer';
 import { ClipBadge } from '../../_components/ClipBadge';
@@ -39,7 +40,7 @@ export default async function TemplatePage({ params }) {
       <MarketingNav />
       {/* The shell every public page shares, so this page starts on the
           logo's edge. Its own width is the inner block. */}
-      <section className="max-w-[1300px] mx-auto px-4 sm:px-6 pt-10 sm:pt-16 pb-28">
+      <Main className="max-w-[1300px] mx-auto px-4 sm:px-6 pt-10 sm:pt-16 pb-28">
         <div className="max-w-[1052px]">
         <Link href="/presets" className="text-[14px] text-vx-fg-muted hover:text-vx-fg underline-offset-4 hover:underline">All templates</Link>
         {/* In one column the name, model and inputs come before the preview:
@@ -79,7 +80,7 @@ export default async function TemplatePage({ params }) {
           </div>
         </div>
         </div>
-      </section>
+      </Main>
     </div>
   );
 }

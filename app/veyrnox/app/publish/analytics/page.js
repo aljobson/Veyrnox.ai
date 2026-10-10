@@ -2,6 +2,7 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { AppNav } from '../../../_components/NavBar';
+import { Main } from '../../../_components/Main';
 import { getSession, onSessionChange } from '../../../../lib/authClient';
 import { NETWORKS, listSocialAccounts } from '../../../../lib/socialConnectClient';
 import { getSocialAnalytics } from '../../../../lib/socialAnalyticsClient';
@@ -25,7 +26,7 @@ function networkLabel(key) {
 
 export default function PublishAnalytics() {
   const account = useSyncExternalStore(onSessionChange, currentAccount, noAccount);
-  return <><AppNav /><div className="max-w-[900px] mx-auto px-4 sm:px-8 py-10">
+  return <><AppNav /><Main className="max-w-[900px] mx-auto px-4 sm:px-8 py-10">
     <p className="text-sm mb-2"><Link href="/app/publish" className="text-vx-accent underline">Veyrnox Publish</Link></p>
     <h1 className="text-3xl font-black mb-2">Analytics</h1>
     <p className="text-sm text-vx-fg-muted mb-6">How your connected accounts and their posts are doing.</p>
@@ -33,7 +34,7 @@ export default function PublishAnalytics() {
       <p className="mb-4">Sign in to see your analytics.</p>
       <button type="button" className={button} onClick={() => window.dispatchEvent(new CustomEvent('veyrnox:auth-required'))}>Sign in</button>
     </div>}
-  </div></>;
+  </Main></>;
 }
 
 function Dashboard() {

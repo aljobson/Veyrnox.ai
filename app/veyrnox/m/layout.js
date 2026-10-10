@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { IOSFrame } from '../_components/IOSFrame';
 import { MobileJumps } from './_MobileNav';
+import { Main } from '../_components/Main';
 
 // These screens are a design prototype with sample data (balance, jobs,
 // ledger rows). Say so on every screen and keep them out of search until
@@ -20,7 +21,8 @@ export default function MobileLayout({ children }) {
         <Link href="/app" className="underline underline-offset-2 hover:text-vx-fg">OPEN THE APP</Link>
       </div>
       <MobileJumps />
-      <IOSFrame>{children}</IOSFrame>
+      {/* Full width, so the frame centres and shrinks against the page as it did as a direct child. */}
+      <Main className="w-full"><IOSFrame>{children}</IOSFrame></Main>
     </div>
   );
 }

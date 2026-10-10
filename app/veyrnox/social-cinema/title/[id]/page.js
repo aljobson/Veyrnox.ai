@@ -1,4 +1,5 @@
 import { MarketingNav } from '../../../_components/NavBar';
+import { Main } from '../../../_components/Main';
 import { TitlePage } from './TitlePage';
 
 export const metadata = {
@@ -9,5 +10,5 @@ export const metadata = {
 
 export default async function Page({ params }) {
   const { id } = await params;
-  return <><MarketingNav /><TitlePage id={String(id || '').toLowerCase()} /></>;
+  return <><MarketingNav /><Main><TitlePage id={String(id || '').toLowerCase()} /></Main></>;
 }

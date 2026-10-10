@@ -2,6 +2,8 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { AppNav } from '../../_components/NavBar';
+import { Main } from '../../_components/Main';
+import { LibraryClip } from '../../_components/LibraryClip';
 import { Chip } from '../../_components/Chip';
 import { gatewayFetch, GatewayError, notifyBalanceChanged } from '../../_lib/gateway';
 import { readJobHistory, pushJobHistory } from '../../_lib/jobHistory';
@@ -14,6 +16,7 @@ import { useCatalog } from '../../_lib/useCatalog';
 import { mergeHydrated, shouldPoll } from '../../_lib/jobWindow';
 import { STATE_TABS, KIND_TABS, KIND_LABEL, VIEWS, VIEW_KEY, filterRows, readView } from '../../_lib/libraryFilter';
 import { readFavourites, toggleFavourite } from '../../_lib/favourites';
+import { formatWhen } from '../../_lib/formatWhen';
 import { getSession } from '../../../lib/authClient.js';
 
 // Account list is authoritative; local history supplies cached display names.
@@ -269,7 +272,7 @@ export default function Library() {
   return (
     <div className="min-h-dvh">
       <AppNav balance={balance} active="library" />
-
+      <Main>
       {listLive === false && (
         <div className="max-w-[1500px] mx-auto px-4 sm:px-8 pt-4">
           <div role="status" className="rounded-lg border border-vx-border bg-vx-panel px-4 py-3 text-sm text-vx-fg-body flex items-start gap-2">
@@ -385,6 +388,7 @@ export default function Library() {
         <EditSheet clips={pickedClips} audios={audios} credits5s={editCredits}
           onClose={() => setEditing(false)} onSubmitted={onEditSubmitted} />
       )}
+      </Main>
     </div>
   );
 }
@@ -405,14 +409,15 @@ function JobCard({ row, models, selectable, selected, onToggle, starred, onStar 
   const deltaCls = free || row.state === 'failed' ? 'text-vx-accent' : 'text-vx-fg-muted';
   // Live catalog (tokens.js fallback) so newly added models show their name.
   const model = models.find((m) => m.id === row.model_id);
+  const card = useRef(null);
   return (
-    <div className="rounded-2xl border border-vx-border bg-vx-panel overflow-hidden">
+    <div ref={card} className="rounded-2xl border border-vx-border bg-vx-panel overflow-hidden">
       <div
         className={`h-48 relative ${row.state === 'running' ? 'vx-shimmer' : ''}`}
         style={{ background: row.asset_url ? 'black' : row.bg }}
       >
         {row.asset_url && row.mime_type?.startsWith('video/') && (
-          <video src={asset.url} onError={asset.onError} onLoadedData={asset.onLoad} className="absolute inset-0 w-full h-full object-cover" muted playsInline autoPlay loop />
+          <LibraryClip cardRef={card} src={asset.url} onError={asset.onError} onLoadedData={asset.onLoad} />
         )}
         {row.asset_url && row.mime_type?.startsWith('audio/') && (
           <div className="absolute inset-0 flex items-end px-4 pb-4">
@@ -437,7 +442,7 @@ function JobCard({ row, models, selectable, selected, onToggle, starred, onStar 
           </div>
         )}
         {selectable && (
-          <button onClick={onToggle} aria-pressed={selected} aria-label={selected ? 'Remove from edit' : 'Add to edit'}
+          <button onClick={onToggle} aria-pressed={selected} aria-label="Add to edit"
             className={`absolute top-3 right-3 w-8 h-8 rounded-full border-2 flex items-center justify-center font-bold ${
               selected ? 'bg-vx-accent border-vx-accent text-vx-accent-ink' : 'bg-black/50 border-white/70 text-transparent'
             }`}>
@@ -455,7 +460,7 @@ function JobCard({ row, models, selectable, selected, onToggle, starred, onStar 
         </div>
         <div className="shrink-0 flex items-center gap-3">
           <span className={`font-vx-mono text-[13px] font-bold vx-num ${deltaCls}`}>{delta}{free ? '' : ' cr'}</span>
-          <button onClick={onStar} aria-pressed={starred} aria-label={starred ? 'Remove from favourites' : 'Add to favourites'} type="button"
+          <button onClick={onStar} aria-pressed={starred} aria-label="Favourite" type="button"
             className={`text-[18px] leading-none ${starred ? 'text-vx-accent' : 'text-vx-fg-faint hover:text-vx-fg'}`}>
             {starred ? '★' : '☆'}
           </button>
@@ -486,14 +491,4 @@ function gradientFor(id) {
   const seed = [...id].reduce((n, c) => (n * 31 + c.charCodeAt(0)) | 0, 0);
   const hue = Math.abs(seed) % 360;
   return `linear-gradient(135deg, hsl(${hue} 40% 12%), hsl(${hue} 50% 30%), hsl(${(hue + 30) % 360} 55% 55%))`;
-}
-
-function formatWhen(ts) {
-  const s = Math.max(0, Math.floor((Date.now() - ts) / 1000));
-  if (s < 60) return `${s}s ago`;
-  const m = Math.floor(s / 60);
-  if (m < 60) return `${m}m ago`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h ago`;
-  return `${Math.floor(h / 24)}d ago`;
 }

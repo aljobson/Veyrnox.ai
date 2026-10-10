@@ -52,6 +52,7 @@ test('the favourites filter combines with the others and is off by default', () 
 test('the Library offers a star on each card and a Favourites filter', () => {
     const page = readFileSync(new URL('../app/veyrnox/app/library/page.js', import.meta.url), 'utf8');
     assert.match(page, /favourites: favOnly \? favourites : null/);
-    assert.match(page, /aria-label=\{starred \? 'Remove from favourites' : 'Add to favourites'\}/);
+    // One name; whether it is starred is the pressed state, not a second name.
+    assert.match(page, /aria-pressed=\{starred\} aria-label="Favourite"/);
     assert.ok(page.split('\n').length <= 500, 'library page stays under 500 lines');
 });

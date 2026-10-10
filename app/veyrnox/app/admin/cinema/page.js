@@ -2,13 +2,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { AppNav } from '../../../_components/NavBar';
+import { Main } from '../../../_components/Main';
 import { AccountBoundary } from '../../../_components/AccountBoundary';
 import { MfaPanel } from '../../../_components/MfaPanel';
 import { Button } from '../../../_components/Button';
 import { gatewayFetch } from '../../../_lib/gateway';
 
 export default function Page() {
-  return <><AppNav /><AccountBoundary><Reviews /></AccountBoundary></>;
+  return <><AppNav /><Main><AccountBoundary><Reviews /></AccountBoundary></Main></>;
 }
 function Reviews() {
   const [items, setItems] = useState([]);

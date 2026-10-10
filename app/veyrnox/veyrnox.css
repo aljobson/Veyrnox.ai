@@ -74,6 +74,17 @@
 @media (forced-colors: active) {
   .vx-root .bg-vx-accent { forced-color-adjust: none; }
   .vx-root .bg-vx-money  { forced-color-adjust: none; }
+  /* A pressed chip or switch is told apart by a fill or a tint, and forced
+     colours remove both. It takes the system's own selected pair instead.
+     !important because the fills are utilities, which outrank this layer.
+     forced-color-adjust: none, or the browser paints a Canvas backplate
+     behind the label and HighlightText on it is white on white. */
+  .vx-root [aria-pressed='true'] {
+    background-color: Highlight !important;
+    color: HighlightText !important;
+    border-color: Highlight !important;
+    forced-color-adjust: none;
+  }
 }
 
 /* ─── Scroll progress + floating chrome ─────────────────────────────── */
@@ -102,6 +113,7 @@
   --vx-panel: 236 240 238;
   --vx-border: 196 204 200;
   --vx-border-boost: 150 160 155;
+  --vx-field: 126 136 131; /* 3.7:1 on the white field, 3.2:1 on the paper */
   --vx-fg: 16 22 20;
   --vx-fg-body: 52 61 57;
   --vx-fg-muted: 78 88 84;
@@ -176,12 +188,6 @@
    and would drop `transform` from the list, so the press would snap. */
 .vx-press { transition: transform 140ms var(--vx-ease-out), background-color 160ms ease, color 160ms ease, border-color 160ms ease; }
 .vx-press:active { transform: scale(0.97); }
-
-/* Anchors sit under the sticky 64px nav without a hand-placed spacer.
-   The smooth scroll itself is on <html> in globals.css. */
-.vx-root [id] {
-  scroll-margin-top: 5rem;
-}
 
 /* Display voice: Archivo at full weight, set tight. Section headings choose
    their size in markup; a page title takes one of the two classes below. */

@@ -30,15 +30,21 @@ export function NavAuthButtons({ account: given }) {
   const [confirming, setConfirming] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const wrapRef = useRef(null);
+  const triggerRef = useRef(null);
   const publishOpen = usePublishEnabled();
   const links = publishOpen ? ACCOUNT_LINKS : ACCOUNT_LINKS.filter((l) => l.href !== '/app/publish');
 
   const account = given || sessionAccount;
 
-  // Close on Escape or a click anywhere outside the menu.
+  // Close on Escape or a click anywhere outside the menu. Escape hands focus
+  // back to the button: the link it was on is about to leave the page.
   useEffect(() => {
     if (!menuOpen) return undefined;
-    const onKey = (e) => { if (e.key === 'Escape') setMenuOpen(false); };
+    const onKey = (e) => {
+      if (e.key !== 'Escape') return;
+      setMenuOpen(false);
+      triggerRef.current?.focus();
+    };
     const onDown = (e) => { if (!wrapRef.current?.contains(e.target)) setMenuOpen(false); };
     window.addEventListener('keydown', onKey);
     window.addEventListener('pointerdown', onDown);
@@ -67,11 +73,14 @@ export function NavAuthButtons({ account: given }) {
   if (account) {
     return (
       <div ref={wrapRef} className="relative">
+        {/* A button that shows and hides a short list of links. Not an ARIA
+            menu: that role promises arrow keys and typeahead, and this has Tab. */}
         <button
+          ref={triggerRef}
           type="button"
           onClick={() => setMenuOpen((v) => !v)}
-          aria-haspopup="menu"
           aria-expanded={menuOpen}
+          aria-controls="vx-account-menu"
           aria-label={`Account: ${account.name}`}
           className="flex items-center gap-2 rounded-full pl-1 pr-1 sm:pr-3 py-1 text-sm font-semibold text-vx-fg-body hover:text-vx-fg hover:bg-vx-fg/[0.05]"
         >
@@ -83,7 +92,7 @@ export function NavAuthButtons({ account: given }) {
 
         {menuOpen && (
           <div
-            role="menu"
+            id="vx-account-menu"
             className="absolute right-0 top-full mt-2 w-60 rounded-xl border border-vx-border bg-vx-panel p-1.5 shadow-2xl z-50"
           >
             <div className="px-3 py-2 border-b border-vx-border mb-1">
@@ -96,7 +105,6 @@ export function NavAuthButtons({ account: given }) {
               <Link
                 key={l.href}
                 href={l.href}
-                role="menuitem"
                 onClick={() => setMenuOpen(false)}
                 className="block rounded-lg px-3 py-2 text-sm text-vx-fg-body hover:bg-vx-fg/[0.05] hover:text-vx-fg"
               >
@@ -105,8 +113,9 @@ export function NavAuthButtons({ account: given }) {
             ))}
             <button
               type="button"
-              role="menuitem"
-              onClick={() => { setMenuOpen(false); setConfirming(true); }}
+              // Focus goes to the account button first: this one unmounts with the
+              // list, and the dialog returns focus to whatever held it on opening.
+              onClick={() => { triggerRef.current?.focus(); setMenuOpen(false); setConfirming(true); }}
               className="block w-full text-left rounded-lg px-3 py-2 text-sm text-vx-fg-body hover:bg-vx-fg/[0.05] hover:text-vx-fg"
             >
               Sign out

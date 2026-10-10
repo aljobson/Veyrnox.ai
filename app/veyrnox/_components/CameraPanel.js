@@ -14,8 +14,11 @@ export function CameraPanel({ enabled, onToggle, settings, onChange }) {
   return (
     <div className="rounded-2xl border border-vx-border bg-vx-panel p-5">
       <div className="flex items-center justify-between">
-        <span className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">CINEMA CAMERA</span>
+        <span id="vx-camera-title" className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">CINEMA CAMERA</span>
+        {/* Named "Cinema camera ON", not just "ON": the heading is part of the name. */}
         <button
+          id="vx-camera-switch"
+          aria-labelledby="vx-camera-title vx-camera-switch"
           onClick={() => onToggle(!enabled)}
           aria-pressed={enabled}
           className={`font-vx-mono text-[11px] font-bold rounded-full px-3.5 py-1.5 border ${
@@ -33,7 +36,7 @@ export function CameraPanel({ enabled, onToggle, settings, onChange }) {
               <select
                 value={settings[f.key]}
                 onChange={(e) => onChange({ ...settings, [f.key]: f.key === 'focal' ? Number(e.target.value) : e.target.value })}
-                className="bg-vx-base border border-vx-border rounded-lg px-2 py-1.5 text-xs text-vx-fg focus:outline-hidden focus:border-vx-accent"
+                className="bg-vx-base border border-vx-field rounded-lg px-2 py-1.5 text-xs text-vx-fg focus:outline-hidden focus:border-vx-accent"
               >
                 {f.options.map((o) => <option key={o} value={o}>{o}{f.suffix || ''}</option>)}
               </select>

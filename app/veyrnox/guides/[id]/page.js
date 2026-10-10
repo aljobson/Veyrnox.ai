@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { MarketingNav } from '../../_components/NavBar';
+import { Main } from '../../_components/Main';
 import { GUIDES, guideById } from '../../_lib/guides';
 
 export function generateStaticParams() {
@@ -27,6 +28,7 @@ export default async function GuidePage({ params }) {
   return (
     <div className="min-h-dvh">
       <MarketingNav />
+      <Main>
       <article className="max-w-[1300px] mx-auto px-4 sm:px-6 pt-10 sm:pt-16 pb-28">
         <div className="max-w-[712px]">
         <Link href="/guides" className="text-[14px] text-vx-fg-muted hover:text-vx-fg underline-offset-4 hover:underline">All guides</Link>
@@ -53,6 +55,7 @@ export default async function GuidePage({ params }) {
         </div>
         </div>
       </article>
+      </Main>
     </div>
   );
 }
