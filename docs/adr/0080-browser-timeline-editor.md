@@ -1,6 +1,6 @@
 # ADR-0080 — Browser timeline editor (backlog M05), free and local first
 
-- **Status**: **Proposed 2026-10-10.** Slice 0 (the engine spike) is done: see `docs/editor/SLICE-0-RESULTS-2026-10-10.md`. No product code is built. Owner decisions recorded below.
+- **Status**: **Accepted for browser-local editing 2026-10-10.** Slices 0–2 are built and verified; slice 3 is built and remains behind the projects gates. The owner requested a visible Studio navigation entry on 2026-10-10. See `docs/operations/three-session-rollout-2026-10-10.md` for rollout evidence.
 - **Related**: backlog M05 (`docs/architecture/implementation-backlog.md`), ADR-0029 (Auto Short, `job_steps`), ADR-0051 and
   ADR-0055 (tenant projects, project documents with history), ADR-0056 (project media, quarantine and inspection), ADR-0060
   (CSP), ADR-0065 (Video Enhance browser runtime), ADR-0074 (video agent), `docs/editor/PRD.md`, `docs/editor/CAPCUT-GAP-2026-10-10.md`
@@ -44,6 +44,7 @@ Facts from the repo (read 2026-10-10):
 3. **Free, browser-local first, desktop Chromium only:** accepted as the recommendation.
 4. **Read the signed-in CapCut layout:** yes, once the owner signs in inside the Browser pane. Observation of layout only: no
    scraping of CapCut's app, API, assets, templates, effects or music.
+5. **Expose the browser editor in Studio navigation:** yes (2026-10-10). Free local composition and export can open independently of cloud project saving.
 
 ## Decision
 
@@ -71,9 +72,10 @@ A timeline is a versioned JSON document inside a Project (M01), so it gets autos
 ### 3. Media sources
 
 - **Generated assets**, through the existing signed-asset path (`get_user_asset`, 15 minutes at most).
+- **Files from this computer** are decoded in the browser and remain local. MP4, MOV and WebM video and MP3, WAV and MP4 audio are checked by `editorMedia.mjs`; codec probing can refuse an unsupported file. Choosing a local file creates no server upload or stored asset.
 - **Uploaded project assets** once `state = 'inspected'` (ADR-0056). Accepted today: JPEG, PNG, WebP, MP4, MP3, WAV, with the
-  per-type ceilings in `lib/uploadSource.js` (20 MB, 20 MB, 20 MB, 100 MB, 20 MB, 20 MB). **MOV and WebM are not accepted** in slice 1.
-- **Uploads inside the editor stay off in production** until two things are decided: moderation of uploaded media (backlog M03, which
+  per-type ceilings in `lib/uploadSource.js` (20 MB, 20 MB, 20 MB, 100 MB, 20 MB, 20 MB). This server upload path does not accept MOV or WebM.
+- **Server uploads inside the editor stay off in production** until two things are decided: moderation of uploaded media (backlog M03, which
   ADR-0056 explicitly left out) and the payment-provider review (#101). `inspected` means well-formed, not safe. Staging may use them.
 
 ### 4. Export, and what is qualified
@@ -89,8 +91,9 @@ stored asset and belongs with the isolated render queue (M07).
 
 ### 5. Flags and rollout
 
-`EDITOR_TIMELINE_ENABLED` (server var, `"false"` in production) plus a per-browser preview switch, as with the other staged surfaces.
-It requires `TENANT_PROJECTS_ENABLED`, so it ships to staging first and reaches production only when tenant projects do. The CSP is
+`EDITOR_TIMELINE_ENABLED` is the request-time server switch for both `/app/editor` and its Studio navigation entry. The owner approved opening it in production and staging on 2026-10-10; the per-browser editor preview switch is retired. Setting it to `"false"` hides the link and makes the route return 404.
+
+Browser-local composition and export use no new database or money path. Cloud saving and reopening still require `TENANT_PROJECTS_ENABLED` and the projects preview switch. Production projects stay off while their migration and reconciliation rollout gate is pending. The CSP is
 **unchanged**: if the spike finds it needs `wasm-unsafe-eval` or a new host, the work stops and comes back as its own ADR.
 
 ## Not decided
@@ -111,11 +114,11 @@ render; and whether to add a WebGL layer later. The engine is decided: **Mediabu
 | 4 | AI buttons on a clip (one at a time) | Endpoint verified live and the fal bill read, then a price |
 | 5 | Uploads in the editor in production | Moderation decision and #101 settled |
 
-**Production gate found 2026-10-10:** the production bucket's CORS allowed only `PUT` from `https://veyrnox.ai`, so the editor's Library fetch (a browser `GET` of a signed URL) would fail there. ADR-0028 amendment 2 widens it to `GET, HEAD, PUT` with `Range` and `If-None-Match`, the rule staging already has; apply with the command in `docs/infra/README.md` before any production flip.
+**Production CORS gate cleared 2026-10-10:** the production bucket originally allowed only `PUT` from `https://veyrnox.ai`. ADR-0028 amendment 2's `GET, HEAD, PUT` rule with `Range` and `If-None-Match` was applied and read back; a browser range GET returned 206 with video bytes. The rule and apply command are in `docs/infra/README.md`.
 
 ## Consequences
 
 - **Good:** the editor feels like CapCut (instant, interactive) and costs nothing to run; reuses M01, M02, Mediabunny and `job_steps`.
 - **Cost:** browser memory and codec support vary, so support is "desktop Chrome" and a clear refusal elsewhere. A free local export
   leaves no server-side copy, so there is nothing to recover if the user loses the file.
-- **Risk:** the multi-input composite has not been tried on this engine. That is why slice 0 comes first and can end the plan.
+- **Risk:** real footage, other browsers and smaller machines still need qualification beyond the measured slice 0 clips. Desktop Chromium capability checks remain authoritative.

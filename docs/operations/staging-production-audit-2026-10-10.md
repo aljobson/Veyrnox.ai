@@ -1,6 +1,6 @@
 # Staging and production release audit — 2026-10-10
 
-Scope: main `37b617af82309b12304695bbe726490deb371761`, deployed Workers, the two AI Supabase projects, migration coverage, runtime flags, recovery/reconciliation snapshots, repository checks, and feature rollout requirements. The original dirty checkout is preserved in place. Wallet and studio experiment databases are outside this audit.
+Scope: initial main `37b617af82309b12304695bbe726490deb371761`, integrated editor release `6f288e2a7348703cc17b9a08600ea6e001da5d78` (#852), deployed Workers, the two AI Supabase projects, migration coverage, runtime flags, recovery/reconciliation snapshots, repository checks, and feature rollout requirements. The original dirty checkout is preserved in place. Wallet and studio experiment databases are outside this audit.
 
 ## Production baseline
 
@@ -29,7 +29,7 @@ The stricter new coverage check also identifies historical staging receipts with
 `0035_stripe_credit_packs`, `0036_purchase_supply_consent`, `0037_proportional_refund_clawback`, `0039_sales_channel`, `0040_pricing_floors`, `0041_dispute_opened_freeze`, `revert_pr108_stripe_objects_0035_0041`, `drop_wallet_residue_staging`, and `staging_publish_append_only_no_truncate`.
 These need explicit historical reconciliation before declaring complete schema parity. They were not silently allowlisted.
 
-The source configuration now preserves three existing live staging overrides: `EDITOR_TIMELINE_ENABLED`, `AGENT_VIDEO_ENABLED` and `MONTAGE_LIVENESS_ENABLED` are true. They were already true remotely; ordinary deployments previously reverted them to false. Production flags retain their existing values.
+The source configuration now preserves three existing live staging overrides: `EDITOR_TIMELINE_ENABLED`, `AGENT_VIDEO_ENABLED` and `MONTAGE_LIVENESS_ENABLED` are true. They were already true remotely; ordinary deployments previously reverted them to false. Production flags retain the values on current main, including the browser editor opened by #852 during this audit.
 
 ## New database finding and fix
 
@@ -58,7 +58,7 @@ Runtime flags and current source determine the live column; old roadmap/runbook 
 | Extended publishing networks | Off | Real-account connection/post/reconnect checks and applicable platform app approval; Bluesky connect failure remains open |
 | TikTok analytics / Instagram insights scopes | Off | Provider permissions/app review and real reads |
 | Projects, document history and project media | Off | New required-fields fix, protected production apply, clean reconciliation window and browser acceptance; media moderation/payment review remains a separate gate |
-| Browser timeline editor | Off | Requires production projects; new document fix and current preview/history/export acceptance. Library CORS is now ready |
+| Browser timeline editor | Live after #852 | Free browser composition/export is open. Cloud project saving remains separately gated; the new document fix and projects observation/acceptance still apply. #852 records owner approval and Reticle export evidence |
 | Browser Video Enhance | Preview only | ADR-0065 remains proposed; engine/codec/runtime and policy qualifications must be settled before public navigation |
 | Clip Editor captions | Server flag on, browser preview gate | Real captions/billing evidence and explicit preview removal before claiming a public launch |
 | Slow-motion step | Off | Placeholder price and fal invoice/cost/audio acceptance |
@@ -72,6 +72,12 @@ Runtime flags and current source determine the live column; old roadmap/runbook 
 | Admin AAL2, request limits and recovery health | Live | Preserve parity and fail closed on unreadable evidence |
 
 Protected production database approval is required by [apply-migrations.yml](../../.github/workflows/apply-migrations.yml) and ADR-0023. Feature-dependent migrations must be applied and the reconciliation job clean for 24h under CLAUDE.md's Delivery rules, unless the owner explicitly records an exception. The newest migrations were applied on 10 October; current zero counts cannot establish this interval. Any new project-validation migration starts its relevant observation period when production applies it.
+
+## Deployment and final verification
+
+Staging Worker `3037ebad-bb33-49f7-9854-7281e46147e1` was deployed from the locked staging build. All five public smoke checks passed, all thirty-seven secret names and every existing plain variable were preserved, all source staging vars matched, and the HTML CSP contained only the staging Supabase identity. Recovery/reconciliation remained healthy. A subsequent editor release on main is integrated before the final merge.
+
+Final local suite: 2,721 tests, 2,720 passed and one skipped. Lint retained zero errors/74 warnings, typecheck and credential boundary passed, as did migration numbering and dependency policy. The locked Next 16.3.8/OpenNext staging build passed.
 
 ## Repeatable checks and verification limits
 

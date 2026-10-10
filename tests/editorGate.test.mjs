@@ -7,19 +7,21 @@ import { parseJsonc } from '../scripts/check-migration-ledger.mjs';
 
 const read = f => readFileSync(new URL(`../${f}`, import.meta.url), 'utf8');
 
-// ADR-0080: the editor has no server API, so the server flag closes the route itself and a per-browser switch hides it while staged.
-test('the editor stays off in production and the live staging preview is preserved by ordinary deploys', () => {
+// ADR-0080: free browser editing is open; project persistence has its own server gate.
+test('the editor rollout is preserved in both environments while production projects stay closed', () => {
     const config = parseJsonc(read('wrangler.jsonc'));
-    assert.equal(config.vars.EDITOR_TIMELINE_ENABLED, 'false');
+    assert.equal(config.vars.EDITOR_TIMELINE_ENABLED, 'true');
     assert.equal(config.env.staging.vars.EDITOR_TIMELINE_ENABLED, 'true');
+    assert.equal(config.vars.TENANT_PROJECTS_ENABLED, 'false');
 });
 
-test('the route is closed by the flag and the page needs the browser switch', () => {
+test('the request-time server flag controls the route and the Studio navigation', () => {
     const layout = read('app/veyrnox/app/editor/layout.js');
     assert.match(layout, /EDITOR_TIMELINE_ENABLED !== 'true'\) notFound\(\)/);
     assert.match(layout, /robots: \{ index: false/);
-    assert.match(read('app/veyrnox/_lib/useEditorPreview.js'), /veyrnox_editor_timeline/);
-    assert.doesNotMatch(read('app/veyrnox/_components/NavBar.js'), /editor/i, 'no nav link while staged');
+    assert.match(read('app/veyrnox/app/layout.js'), /EditorFlagProvider enabled=\{process.env.EDITOR_TIMELINE_ENABLED === 'true'\}/);
+    assert.match(read('app/veyrnox/_components/NavBar.js'), /editorEnabled \? \[\{ key: 'editor', href: '\/app\/editor'/);
+    assert.doesNotMatch(read('app/veyrnox/app/editor/page.js'), /useEditorPreview|Preview unavailable/);
 });
 
 test('the editor adds no network call of its own and no engine the policy forbids', () => {
