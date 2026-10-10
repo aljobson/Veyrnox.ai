@@ -53,6 +53,14 @@ least-privilege hygiene, not as concealment. Anything that must actually be
 confidential (negotiated rates, volume discounts) must live outside this
 repository and outside the watcher's output.
 
+*2026-10-10 (0247, audit P-04).* `catalog_watch()`, the anon
+read the watcher uses, returned every catalog row: 19 inactive models with
+their endpoints and costs before anyone could buy them, and the endpoints of
+every other provider, which 0028 withholds from the same role. It now returns
+only `active AND provider = 'fal'`, which is all the watcher ever compared.
+The visibility decision above is unchanged; what stops being readable is the
+unreleased roadmap and the non-fal endpoints.
+
 ## Update 2026-09-24 — Seedream 4 cost correction (0114)
 
 The owner chose to retain Seedream 4 on fal and lower its customer price.
