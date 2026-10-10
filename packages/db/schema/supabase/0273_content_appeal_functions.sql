@@ -1,4 +1,4 @@
--- The appeal functions over 0271's content_appeals (ADR-0083).
+-- The appeal functions over 0272's content_appeals (ADR-0083).
 --
 --   list_my_sanctions       the user's own warnings, takedowns and content
 --                           Freezes with each one's appeal state. No operator

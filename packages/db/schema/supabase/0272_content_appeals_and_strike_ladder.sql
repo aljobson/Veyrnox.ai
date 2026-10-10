@@ -13,7 +13,7 @@
 --     as a strike; strike 1 holds generation for 3 days, strike 2 for 7 days,
 --     strike 3 Freezes (unchanged). users.hold_until carries the hold and the
 --     admission functions refuse ACCOUNT_ON_HOLD while it is in the future
---     (0272). An upheld appeal takes the strike out of the count, recomputes
+--     (0273). An upheld appeal takes the strike out of the count, recomputes
 --     the hold from the strikes that still stand, and lifts a content Freeze
 --     through unfreeze_account when fewer than three strikes remain. Deleted
 --     assets are not restored: the reaper has usually run.

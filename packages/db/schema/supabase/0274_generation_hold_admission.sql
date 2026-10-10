@@ -1,4 +1,4 @@
--- Generation hold for a standing strike (ADR-0083, with 0271).
+-- Generation hold for a standing strike (ADR-0083, with 0272).
 --
 -- The two admission functions from 0240, unchanged except for one check after
 -- the Freeze: while users.hold_until is in the future the debit is refused
@@ -77,7 +77,7 @@ BEGIN
     IF EXISTS (SELECT 1 FROM public.users u WHERE u.id = p_user_id AND u.frozen_at IS NOT NULL) THEN
         RETURN jsonb_build_object('ok', false, 'code', 'ACCOUNT_FROZEN');
     END IF;
-    -- A standing strike's hold (0271): generation waits, buying and the Library do not.
+    -- A standing strike's hold (0272): generation waits, buying and the Library do not.
     SELECT u.hold_until INTO v_hold_until FROM public.users u WHERE u.id = p_user_id AND u.hold_until > now();
     IF v_hold_until IS NOT NULL THEN
         RETURN jsonb_build_object('ok', false, 'code', 'ACCOUNT_ON_HOLD', 'hold_until', v_hold_until);
@@ -177,7 +177,7 @@ BEGIN
     IF EXISTS (SELECT 1 FROM public.users u WHERE u.id = p_user_id AND u.frozen_at IS NOT NULL) THEN
         RETURN jsonb_build_object('ok', false, 'code', 'ACCOUNT_FROZEN');
     END IF;
-    -- A standing strike's hold (0271): generation waits, buying and the Library do not.
+    -- A standing strike's hold (0272): generation waits, buying and the Library do not.
     SELECT u.hold_until INTO v_hold_until FROM public.users u WHERE u.id = p_user_id AND u.hold_until > now();
     IF v_hold_until IS NOT NULL THEN
         RETURN jsonb_build_object('ok', false, 'code', 'ACCOUNT_ON_HOLD', 'hold_until', v_hold_until);
