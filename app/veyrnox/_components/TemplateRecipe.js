@@ -21,7 +21,7 @@ function CopyPrompt({ text, label }) {
   );
 }
 
-export function TemplateRecipe({ preset }) {
+export function TemplateRecipe({ preset, generatedPreview = false }) {
   const [prompt, setPrompt] = useState(preset.prompt);
   const original = preset.sourceRecipe;
   return (
@@ -30,7 +30,7 @@ export function TemplateRecipe({ preset }) {
       <textarea aria-label="Template prompt" value={prompt} onChange={(event) => setPrompt(event.target.value)} maxLength={2000} rows={8}
         className="mt-2 w-full rounded-xl border border-vx-border bg-vx-raised/60 px-4 py-3 text-[15px] leading-[1.55] text-vx-fg-body focus:outline-hidden focus:border-vx-accent" />
       <CopyPrompt text={prompt} label="Copy prompt" />
-      <p className="mt-3 text-[13px] text-vx-fg-muted">{original ? 'Adapted for the model below to create similar content with your image. The preview shows the source effect.' : 'Edit it here or in the studio before generating.'}</p>
+      <p className="mt-3 text-[13px] text-vx-fg-muted">{generatedPreview ? 'The preview was generated using this prompt and an original starting image. Your image and model results can vary.' : original ? 'Adapted for the model below to create similar content with your image. The preview shows the source effect.' : 'Edit it here or in the studio before generating.'}</p>
       {preset.steps && (
         <ol className="mt-5 list-decimal space-y-2 pl-5 text-sm text-vx-fg-body">
           {preset.steps.map((step) => <li key={step}>{step}</li>)}

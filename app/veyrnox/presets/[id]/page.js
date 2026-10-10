@@ -43,7 +43,7 @@ export default async function TemplatePage({ params }) {
             {clip ? (
               <div className="mx-auto max-w-[480px]">
                 <FilmPlayer key={t.id} film={clip} label={`${presetTitle(t.name)} preview`} aspectRatio={t.previewAspect || '9 / 16'} />
-                <p className="mt-3 text-sm text-vx-fg-muted">Five-second source preview. Use the recipe to create your own version.</p>
+                <p className="mt-3 text-sm text-vx-fg-muted">{clip.generatedOnVeyrnox ? 'Five-second example generated on Veyrnox with the prompt below.' : 'Five-second source preview. Use the recipe to create your own version.'}</p>
               </div>
             ) : <div className="min-h-[280px] lg:min-h-[480px] rounded-3xl" style={{ background: t.bg }} aria-hidden />}
           </div>
@@ -63,7 +63,7 @@ export default async function TemplatePage({ params }) {
                 <span className="font-bold">You add:</span> {t.needs}. You upload it in the studio.
               </p>
             )}
-            <TemplateRecipe key={t.id} preset={t} />
+            <TemplateRecipe key={t.id} preset={t} generatedPreview={clip?.generatedOnVeyrnox} />
           </div>
         </div>
       </section>

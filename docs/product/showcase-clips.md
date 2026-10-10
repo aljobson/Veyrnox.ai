@@ -5,10 +5,11 @@ public preset cards and the three model-category cards have viral previews. The 
 and [Higgsfield](https://higgsfield.ai/) on 9 October 2026. This replaces the
 previous requirement to use only clips generated on Veyrnox.
 
-These clips are source previews, rather than output generated on Veyrnox.
+Imported clips are source previews. Frozen In Motion now uses the owner's
+approved output generated through Veyrnox with its published template prompt.
 Template clips now link to their own matching recipes and compatible remix
-prompts (see [template recipes](template-recipes.md)). Each tile displays a generic “Viral inspiration”
-badge. The owner requested removal of visible SYNTX and Higgsfield labels and
+prompts (see [template recipes](template-recipes.md)). Imported tiles display a generic “Viral inspiration”
+badge; the tested example displays “Generated on Veyrnox”. The owner requested removal of visible SYNTX and Higgsfield labels and
 page credits on 9 October 2026; provenance remains recorded here and in the
 manifest. Model-category and feature cards remain inspiration; template pages
 distinguish the original recipe from the supported Veyrnox adaptation. Live
@@ -27,7 +28,7 @@ cards. Homepage and gallery clips now describe separate templates, preserving
 distinct footage as requested by the owner on 9 October 2026. Fifteen
 unused source clips replace the former reuse across sections and pages.
 
-## Imported previews
+## Preview provenance
 
 The table records the original public asset and the start of the five-second
 excerpt. No audio is retained.
@@ -56,7 +57,7 @@ excerpt. No audio is retained.
 | `noir-one-sheet` | Burning man | [Higgsfield](https://cdn.higgsfield.ai/viral_hub/c370022d-d99a-4cff-bb35-9d73b7a3a95d.mp4) | 0 s |
 | `saturday-cartoon` | Melting | [Higgsfield](https://cdn.higgsfield.ai/viral_hub/f661157c-af00-46f7-8b7c-6a7ae711ef98.mp4) | 0 s |
 | `anime-hero` | Crazy Frog Race | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/1yALI02uHd8mdSUDqWMWvFHagMDaKMbGr1ja55gB.webm) | 0 s |
-| `photo-to-motion` | Frozen in motion | [Higgsfield](https://cdn.higgsfield.ai/viral_hub/59c46689-f756-4843-b298-f34b9761187e.mp4) | 1 s |
+| `photo-to-motion` | Frozen in motion | Veyrnox job `5c5755b0-83d8-4459-96c2-2732277f2bf6` (see below) | 0 s |
 | `runway-walk` | Fallen angel | [Higgsfield](https://cdn.higgsfield.ai/viral_hub/67a78431-c90b-4aa5-95c4-9069da87a173.mp4) | 1 s |
 | `anime-opening` | Monster dab | [Higgsfield](https://cdn.higgsfield.ai/viral_hub/0ab0fb19-95df-44c7-9b92-6804122e02ff.mp4) | 1 s |
 | `portal-burst` | The Push | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/PWzjzgOZCwLDPT9E28a7cEsJ2ylDVN37zJIKpEWX.webm) | 1 s |
@@ -100,6 +101,27 @@ unique video paths, poster paths and video file hashes across the homepage
 and gallery together, source credits and coverage of every landing tile,
 public preset and model category. After a
 replacement, also check the crop and hover/focus/touch behavior in a browser.
+
+## Frozen In Motion generated example
+
+On 10 October 2026 the owner approved replacing the imported
+[Higgsfield preview](https://cdn.higgsfield.ai/viral_hub/59c46689-f756-4843-b298-f34b9761187e.mp4)
+with the video tested in the Veyrnox studio. Job
+`5c5755b0-83d8-4459-96c2-2732277f2bf6` used `kling-3.0-i2v` through FAL,
+five seconds, 34 credits, the published prompt unchanged and its existing
+negative prompt. The original starting image shows a fictional woman already
+suspended mid-leap on a city sidewalk. Pedestrians move behind her as the
+camera moves around her fixed pose. Slight hair and clothing drift remains.
+
+The original H.264 output is 1080 x 1916, 24 fps, 5.041667 seconds, with
+SHA-256 `09bbc79f2129aefe1636460a0b20c68172d3f87908dd51ab05a848dd3db7f539`.
+Its five-second preview is scaled without cropping to 406 x 720, silent,
+343,635 bytes, served from `/showcase/veyrnox-frozen-in-motion.mp4`, with
+SHA-256 `e5434e1ce0d31e224cc2c3daf886584f734b441a3a837dc4c0b6a0633b665959`.
+The matching JPG poster is the frame at 2.5 seconds. Both the gallery card
+and template detail page share these assets. The old imported local video
+and poster are removed. Higgsfield's original effect setup remains separately
+documented as the inspiration for the Veyrnox adaptation.
 
 ## The landing film
 

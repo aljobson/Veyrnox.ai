@@ -1,12 +1,13 @@
-// Viral inspiration for every landing tile, sourced at the owner's request.
-// These previews are credited to their source and do not represent a specific
-// Veyrnox model or preset output. Provenance and encode settings:
+// Preview provenance is recorded per clip. Imported inspiration does not
+// represent a Veyrnox model output; tested Veyrnox examples are marked below.
+// Provenance and encode settings:
 // docs/product/showcase-clips.md
 //
 // Local files keep playback within the existing same-origin media policy.
 export const SHOWCASE_SOURCES = [
   { name: 'SYNTX', url: 'https://syntx.ai/trends' },
   { name: 'Higgsfield', url: 'https://higgsfield.ai/' },
+  { name: 'Veyrnox', url: 'https://veyrnox.ai/' },
 ];
 
 export const SHOWCASE_CLIPS = {
@@ -146,10 +147,12 @@ export const SHOWCASE_CLIPS = {
     source: 'SYNTX',
   },
   'photo-to-motion': {
-    video: '/showcase/higgsfield-frozen-in-motion.mp4',
-    poster: '/showcase/higgsfield-frozen-in-motion.jpg',
+    video: '/showcase/veyrnox-frozen-in-motion.mp4',
+    poster: '/showcase/veyrnox-frozen-in-motion.jpg',
     title: 'Frozen in motion',
-    source: 'Higgsfield',
+    source: 'Veyrnox',
+    generatedOnVeyrnox: true,
+    objectFit: 'contain',
   },
   'runway-walk': {
     video: '/showcase/higgsfield-fallen-angel.mp4',
