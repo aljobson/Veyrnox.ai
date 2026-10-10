@@ -1,3 +1,4 @@
+-- Merged as 0246_cinema_library_uploads (#838) and renumbered before any apply: #832 took 0246 the same minute and 0247 is #833.
 -- A Cinema video made from the creator's own finished Library job (ADR-0052 amendment 1).
 -- The reservation is the same bounded row as a browser upload (0137/0139/0164): same
 -- owner checks, same capacity, same lock. It differs in three ways: the bytes come from

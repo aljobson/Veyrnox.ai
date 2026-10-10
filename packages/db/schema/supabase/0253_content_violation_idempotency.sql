@@ -1,4 +1,4 @@
--- 0246_content_violation_idempotency.sql
+-- 0253_content_violation_idempotency.sql
 -- Recording a content violation is idempotent (audit 2026-10-09, P-07).
 --
 -- The admin form already sends an Idempotency-Key with every POST to
