@@ -135,8 +135,8 @@ function Editor() {
         </section>}
         {libraryError && <p role="alert" className="text-sm">{libraryError}</p>}
 
-        <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
-            <div className="space-y-4">
+        <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+            <div className="min-w-0 space-y-4">
                 <div className="overflow-hidden rounded-2xl border border-vx-border bg-black">
                     <canvas ref={canvas} width={1280} height={720} className="block aspect-video w-full" role="img" aria-label="Preview of the frame at the playhead" />
                 </div>
