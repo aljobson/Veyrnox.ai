@@ -1,4 +1,6 @@
 // ADR-0060: framework scripts must use this request's nonce, never cached HTML.
+import { EditorFlagProvider } from '../_components/EditorFlag';
+
 export const dynamic = 'force-dynamic';
 
 // Metadata for /app (Explore). Child routes — create, library, credits,
@@ -15,5 +17,5 @@ export const metadata = {
 };
 
 export default function Layout({ children }) {
-  return children;
+  return <EditorFlagProvider enabled={process.env.EDITOR_TIMELINE_ENABLED === 'true'}>{children}</EditorFlagProvider>;
 }

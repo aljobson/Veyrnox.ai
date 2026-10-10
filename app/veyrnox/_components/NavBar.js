@@ -12,6 +12,7 @@ import { getSession, onSessionChange } from '../../lib/authClient';
 import { accountLabel } from '../_lib/account';
 import { useProjectsPreview } from '../_lib/useProjectsPreview';
 import { useVideoEnhancePreview } from '../_lib/useVideoEnhancePreview';
+import { useEditorEnabled } from './EditorFlag';
 import { NAV_CATEGORIES } from '../_lib/tokens';
 import { AnnouncementBar } from './AnnouncementBar';
 
@@ -80,6 +81,7 @@ export function MarketingNav() {
 export function AppNav({ balance, active = 'explore', readAccount = true }) {
   const projectsEnabled = useProjectsPreview();
   const enhanceEnabled = useVideoEnhancePreview();
+  const editorEnabled = useEditorEnabled();
   const tabs = useRef(null);
   // Keeps the current tab on screen in the strip a phone scrolls sideways. The
   // strip is moved by hand: scrollIntoView() also moves where the next Tab
@@ -93,7 +95,7 @@ export function AppNav({ balance, active = 'explore', readAccount = true }) {
     const tab = current.getBoundingClientRect();
     if (tab.left < edge.left) strip.scrollLeft -= edge.left - tab.left;
     else if (tab.right > edge.right) strip.scrollLeft += tab.right - edge.right;
-  }, [active, projectsEnabled, enhanceEnabled]);
+  }, [active, projectsEnabled, enhanceEnabled, editorEnabled]);
   const items = [
     { key: 'explore', href: '/app',         label: 'Explore' },
     { key: 'create',  href: '/app/create',  label: 'Create' },
@@ -101,6 +103,7 @@ export function AppNav({ balance, active = 'explore', readAccount = true }) {
     { key: 'agent', href: '/app/video-agent', label: 'Video agent' },
     { key: 'chat', href: '/app/chat', label: 'LLM Chat' },
     { key: 'library', href: '/app/library', label: 'Library' },
+    ...(editorEnabled ? [{ key: 'editor', href: '/app/editor', label: 'Video editor' }] : []),
     ...(projectsEnabled ? [{ key: 'projects', href: '/app/projects', label: 'Projects' }] : []),
     ...(enhanceEnabled ? [{ key: 'enhance', href: '/app/enhance', label: 'Enhance' }] : []),
   ];

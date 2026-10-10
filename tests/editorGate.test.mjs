@@ -6,20 +6,22 @@ import { contentSecurityPolicy } from '../lib/contentSecurityPolicy.mjs';
 
 const read = f => readFileSync(new URL(`../${f}`, import.meta.url), 'utf8');
 
-// ADR-0080: the editor has no server API, so the server flag closes the route itself and a per-browser switch hides it while staged.
-test('the editor flag is off in production and in the staging block of the repo', () => {
+// ADR-0080: free browser editing is open; project persistence has its own server gate.
+test('the editor rollout is enabled in both environments without opening production projects', () => {
     const text = read('wrangler.jsonc');
     const hits = [...text.matchAll(/"EDITOR_TIMELINE_ENABLED":\s*"(\w+)"/g)].map(m => m[1]);
-    assert.deepEqual(hits, ['false', 'false'], 'one in each block, both off');
+    assert.deepEqual(hits, ['true', 'true'], 'one in each block, both enabled');
+    assert.match(text.slice(0, text.indexOf('"env"')), /"TENANT_PROJECTS_ENABLED":\s*"false"/);
     assert.ok(text.indexOf('"EDITOR_TIMELINE_ENABLED"') < text.indexOf('"env"'), 'the first one is the production block');
 });
 
-test('the route is closed by the flag and the page needs the browser switch', () => {
+test('the request-time server flag controls the route and the Studio navigation', () => {
     const layout = read('app/veyrnox/app/editor/layout.js');
     assert.match(layout, /EDITOR_TIMELINE_ENABLED !== 'true'\) notFound\(\)/);
     assert.match(layout, /robots: \{ index: false/);
-    assert.match(read('app/veyrnox/_lib/useEditorPreview.js'), /veyrnox_editor_timeline/);
-    assert.doesNotMatch(read('app/veyrnox/_components/NavBar.js'), /editor/i, 'no nav link while staged');
+    assert.match(read('app/veyrnox/app/layout.js'), /EditorFlagProvider enabled=\{process.env.EDITOR_TIMELINE_ENABLED === 'true'\}/);
+    assert.match(read('app/veyrnox/_components/NavBar.js'), /editorEnabled \? \[\{ key: 'editor', href: '\/app\/editor'/);
+    assert.doesNotMatch(read('app/veyrnox/app/editor/page.js'), /useEditorPreview|Preview unavailable/);
 });
 
 test('the editor adds no network call of its own and no engine the policy forbids', () => {
