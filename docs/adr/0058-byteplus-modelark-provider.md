@@ -251,7 +251,10 @@ Decision 7's four controls now have homes, mapped in
    (admin-checked) removes a taken-down job's assets in the same transaction and Freezes
    on the third takedown through `freeze_account`; `list_content_violations` is the
    auditor's read; `/api/v1/admin/violations` is the operator surface behind the same
-   three gates as the metrics route.
+   three gates as the metrics route. Since 0246 (audit 2026-10-09, P-07) the record
+   is idempotent: the form's `Idempotency-Key` is stored on the strike, a replay
+   answers with the first record and sends no second notice, so a lost response and
+   a resubmit cannot count two strikes, let alone Freeze on a phantom third.
 4. *Rights in uploads*: the gateway now also records the consent statement once at
    account level with its wording version (`attest_upload_rights`,
    `users.rights_attested_at`, `RIGHTS_ATTESTATION_VERSION`), `/api/v1/account` exposes
