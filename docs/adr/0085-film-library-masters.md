@@ -23,7 +23,7 @@ Library download still matches the digest. The source take remains unchanged.
 There is **no public upload endpoint**, no arbitrary-file acceptance or general
 exception to the scanner/moderation gate in ADR-0080.
 
-Deploy the read surface with `FILM_LIBRARY_MASTERS_ENABLED=false`, apply 0277 only
+Deploy the read surface with `FILM_LIBRARY_MASTERS_ENABLED=false`, apply 0279 only
 through the owner-approved migration workflow, and enable reads afterwards.
 The 24-hour credit reconciliation rollout delay is unnecessary for this read
 surface: no money spine writer or job transition is added or modified. Existing
