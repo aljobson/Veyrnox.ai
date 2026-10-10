@@ -258,10 +258,18 @@ test('the widget says when it shows its checkbox, and does nothing else then', (
     assert.doesNotMatch(turnstile, /onWaiting\([^)]/, 'onWaiting carries nothing');
 });
 
-test('the check itself runs as before: no option is set, and two callbacks are added', () => {
+test('the check itself runs as before: the one option set is the theme, which is appearance only, and two callbacks are added', () => {
     const options = between(turnstile, 'ts.render(box.current, {', '\n                });');
-    const keys = [...options.matchAll(/^ {20}"?([A-Za-z-]+)"?:/gm)].map((m) => m[1]);
-    assert.deepEqual(keys, ['sitekey', 'callback', 'expired-callback', 'error-callback', 'before-interactive-callback', 'unsupported-callback']);
+    // A key in either kind of quote, or none: `theme` brought the first
+    // single-quoted strings into this object.
+    const keys = [...options.matchAll(/^ {20}["']?([A-Za-z-]+)["']?:/gm)].map((m) => m[1]);
+    // ADR-0026 amendment 6 added `theme`. The options that change how or when
+    // the check runs (retry, retry-interval, refresh-timeout, appearance,
+    // execution) stay at Turnstile's default: none is in this list.
+    assert.deepEqual(keys, ['sitekey', 'theme', 'callback', 'expired-callback', 'error-callback', 'before-interactive-callback', 'unsupported-callback']);
+    // The site's own theme, not the operating system's: dark unless the
+    // visitor chose light, which ThemeToggle records as data-theme on <html>.
+    assert.match(options, /theme: document\.documentElement\.dataset\.theme === 'light' \? 'light' : 'dark',/);
     assert.match(options, /sitekey: TURNSTILE_SITE_KEY,/);
     assert.doesNotMatch(options, /\.\.\./, 'no options spread in from elsewhere');
 });

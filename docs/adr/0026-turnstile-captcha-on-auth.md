@@ -492,3 +492,8 @@ word, one test report: the live home page, signed out, the stand-in script,
 showed; nothing went to Auth. It was sent at 15:47:06 UTC, so the count holds
 one `unsupported` line at that time that is no visitor. The log itself was
 not read. Still not seen: Turnstile refusing a real browser.
+
+## Amendment 6 (2026-10-10): the widget takes the site's theme
+
+In a file of its own, because this record is at the 500-line limit:
+[0026-amendment-6-widget-theme.md](0026-amendment-6-widget-theme.md).
