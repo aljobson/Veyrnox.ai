@@ -82,32 +82,30 @@ export function FeaturedHeroCards({ catalog }) {
   const rowOf = (id) => catalog.find((m) => m.id === id);
   return (
     <section id="explore" className="px-4 sm:px-6 max-w-[1300px] mx-auto">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 items-start gap-x-3 gap-y-6">
         {FEATURE_CARDS.map((f, i) => {
           const row = rowOf(modelOf(f.href));
+          const clip = SHOWCASE_CLIPS[f.key];
           return (
             <MediaTile
               key={f.key}
               href={f.href}
-              clip={SHOWCASE_CLIPS[f.key]}
-              uncroppedOnMobile
-              className="vx-rise block text-left rounded-2xl overflow-hidden"
+              clip={clip && { ...clip, objectFit: 'contain' }}
+              className="vx-rise block text-left"
               style={{ '--vx-i': i }}
-              mediaClassName="aspect-[4/5]"
-              mediaStyle={{ background: f.bg }}
-            >
-              <div className="vx-tile-scrim absolute inset-0" />
-              {/* Fixed light ink: these sit on a hardcoded dark gradient under
-                  a black scrim in both themes. */}
-              <div className="absolute inset-x-0 bottom-0 p-4 flex flex-col gap-3">
-                <div className="font-black text-[17px] leading-[1.15] text-balance text-white">{f.title}</div>
-                <div className="flex items-baseline gap-2 font-vx-mono text-[12px] text-white/90 vx-num">
-                  <span className="truncate">{row ? shelfName(row.name) : 'Presets'}</span>
-                  <span aria-hidden className="vx-leader flex-1" />
-                  <span className={`shrink-0 font-bold ${row ? 'text-[#E4A93C]' : ''}`}>{row ? `${row.credits} cr` : `${PRESETS.length} looks`}</span>
+              mediaClassName="rounded-2xl"
+              mediaStyle={{ background: f.bg, aspectRatio: clip?.aspectRatio || '4 / 5' }}
+              footer={
+                <div className="pt-3 flex flex-col gap-2">
+                  <div className="font-black text-[17px] leading-[1.15] text-balance">{f.title}</div>
+                  <div className="flex items-baseline gap-2 font-vx-mono text-[12px] text-vx-fg-body vx-num">
+                    <span className="truncate">{row ? shelfName(row.name) : 'Presets'}</span>
+                    <span aria-hidden className="vx-leader flex-1" />
+                    <span className={`shrink-0 font-bold ${row ? 'text-vx-money' : ''}`}>{row ? `${row.credits} cr` : `${PRESETS.length} looks`}</span>
+                  </div>
                 </div>
-              </div>
-            </MediaTile>
+              }
+            />
           );
         })}
       </div>
