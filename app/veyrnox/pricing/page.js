@@ -101,7 +101,10 @@ export default function Pricing() {
           <ul className="mt-10 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
             {packs.map((p) => (
               <li key={p.id} className="vx-paper-shadow">
-                <div className="vx-paper px-6 pt-9 pb-10">
+                {/* h-full: the slips share a row, and a line that wraps on one
+                    (the longest price line does at four across) must not leave
+                    it taller than its neighbours. */}
+                <div className="vx-paper h-full px-6 pt-9 pb-10">
                   <div className="font-vx-mono text-[40px] font-bold leading-none text-vx-money vx-num">{num.format(p.credits)} cr</div>
                   <div className="vx-perf mt-6" aria-hidden />
                   {/* #99 item 1, approved v1: keep verbatim. */}
