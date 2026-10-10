@@ -267,7 +267,8 @@ Creator: profile → apply → admin approves → draft series/episodes → uplo
 to Stream (tus) → submit → admin review → published in the catalogue.
 Viewer: title page → entitlement (free / unlocked / pass / locked) → unlock
 for 6 Credits or buy a Cinema Pass (Stripe subscription) → player with
-heartbeat; Pass plays count toward a 3,000-minute monthly ceiling.
+heartbeat; Pass plays count toward a 3,000-minute monthly ceiling (1,500
+once 0244 is applied).
 Every Cinema API returns 503 `*_not_open` while its flag is off.
 
 ## 9a. Video agent (built, off)

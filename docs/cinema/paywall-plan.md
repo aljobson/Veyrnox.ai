@@ -12,6 +12,7 @@ Companion to [ADR-0057](../adr/0057-cinema-viewer-paywall.md). Phases 1 to 3 are
 | P4 | Stream credentials and webhook live (ADR-0052 gates), delivery rate verified against the invoice. | Owner | Pass margin depends on it. |
 | P5 | `ledger_debit` inserts a `jobs` row (0059), so an Unlock cannot reuse it. 0142 adds a sibling `ledger_unlock` RPC in the same family: Free-first, Frozen check, `free_delta` bookkeeping, idempotent on `(user_id, content_id)`, joining the RPC-only writer set in `CLAUDE.md`. | Eng | No raw INSERT into `ledger_entries`; reconciliation must stay at zero rows. |
 | P6 | A monthly ceiling on free viewing minutes per account, built and switched on. **Not built** (2026-10-09). Blocks `CINEMA_UNLOCKS_ENABLED` in production only; the owner sets the value. | Eng, Owner | The same switch opens playback of free titles, and only Cinema Pass viewing is counted (ADR-0057, 2026-10-09). |
+| P7 | Migration 0244 applied: the monthly Pass at $9.99 as the only plan on sale, weekly and yearly withdrawn, the Pass ceiling at 1,500 minutes (owner, 2026-10-10). **Not applied.** Blocks `CINEMA_SUBSCRIPTIONS_ENABLED`. | Owner (approves the `apply-migrations` run) | Until it is applied the database still offers $14.99 weekly, $49.99 monthly and $199.99 yearly with a 3,000-minute ceiling (ADR-0057, proposed 2026-10-10). |
 
 ## Phase 1 — Free Episodes and Episode Unlock (migration 0142, switch `CINEMA_UNLOCKS_ENABLED`)
 
