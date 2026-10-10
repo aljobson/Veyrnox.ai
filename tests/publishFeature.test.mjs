@@ -71,11 +71,11 @@ test('the page, the OAuth landing and the menu link are gated on the same switch
     assert.match(nav, /\{links\.map\(/);
 });
 
-test('production activates only the YouTube release; staging remains enabled', () => {
+test('production activates only YouTube and LinkedIn; staging remains enabled', () => {
     const wrangler = read('wrangler.jsonc');
     const [prod, staging] = wrangler.split('"env": {');
     assert.match(prod, /"PUBLISH_ENABLED": "true"/);
-    assert.match(prod, /"PUBLISH_RELEASED_NETWORKS": "youtube"/);
+    assert.match(prod, /"PUBLISH_RELEASED_NETWORKS": "youtube,linkedin"/);
     assert.match(prod, /"PUBLISH_ANALYTICS_ENABLED": "true"/);
     for (const flag of ['PUBLISH_UPLOADS_ENABLED', 'PUBLISH_POSTING_INSIGHTS_ENABLED', 'PUBLISH_EXTENDED_NETWORKS_ENABLED', 'INSTAGRAM_INSIGHTS_SCOPE_ENABLED', 'TIKTOK_ANALYTICS_SCOPE_ENABLED']) {
         assert.match(prod, new RegExp(`"${flag}": "false"`), flag);
