@@ -108,7 +108,7 @@ export function MediaTile({ href, clip, mediaClassName = '', mediaStyle, classNa
     <Link ref={rootRef} href={href} aria-label={ariaLabel} onClick={onClick} className={`group vx-tile ${className}`} style={style}>
       <div className={`relative overflow-hidden ${mediaClassName}`} style={mediaStyle}>
         {failed && clip?.poster && (
-          <Image src={clip.poster} alt="" fill unoptimized className="object-cover" style={{ objectPosition: clip.objectPosition }} />
+          <Image src={clip.poster} alt="" fill unoptimized className="object-cover" style={{ objectPosition: clip.objectPosition, objectFit: clip.objectFit }} />
         )}
         {showVideo && (
           <video
@@ -124,7 +124,7 @@ export function MediaTile({ href, clip, mediaClassName = '', mediaStyle, classNa
             disableRemotePlayback
             onPlaying={() => setPlaying(true)}
             onError={() => setFailed(true)}
-            style={{ objectPosition: clip.objectPosition }}
+            style={{ objectPosition: clip.objectPosition, objectFit: clip.objectFit }}
             className={`absolute inset-0 h-full w-full object-cover pointer-events-none vx-tile-video ${
               playing || clip.poster ? 'opacity-100' : 'opacity-0'
             }`}
@@ -136,7 +136,7 @@ export function MediaTile({ href, clip, mediaClassName = '', mediaStyle, classNa
             title={clip.title}
             className="absolute left-3 top-3 max-w-[calc(100%-1.5rem)] rounded-full bg-black/60 px-2.5 py-1 text-[10px] font-semibold tracking-wide text-white backdrop-blur-sm"
           >
-            Viral inspiration
+            {clip.generatedOnVeyrnox ? 'Generated on Veyrnox' : 'Viral inspiration'}
           </span>
         )}
       </div>
