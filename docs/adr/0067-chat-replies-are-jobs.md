@@ -393,9 +393,9 @@ as it is deployed: migration 0242 is applied and `CHAT_SEND_CLOSE_ENABLED` is `"
 2026-10-09.
 
 Amendment 11 asked about a send by its key when its chat was next opened. Until then the person saw "Stopped before any text
-arrived. If a reply is still saved, it will show in this chat and use Credits." beside the given-back text, although most such
-sends never reached the debit. The same question is now asked as soon as Stop is pressed, before the turn is looked for, and
-only when no job id has come (Stop before `start`). The browser's part only: no route, no migration and no switch is added.
+arrived. If a reply is still saved, it will show in this chat and use Credits." beside the given-back text, although nearly all
+such sends end with nothing charged: one that reached the server is debited and, with no text, refunded. The same question is
+now asked as soon as Stop is pressed, before the look, and only when no job id has come. Browser only: nothing else is added.
 
 | The server's answer | What follows |
 |---|---|
@@ -416,8 +416,8 @@ box. If a warning is kept for the message before it, both are said, this Stop fi
 were used. Your message is back in the box. Before that: ..."), and that warning stays kept with its turns.
 
 **Time.** The question has its own limit of 2 seconds, the one the same question has when a chat is opened. The look that may
-follow is unchanged: about 3 seconds, 3.5 at most. A closed send ends in one round trip, where the look took about 3 seconds
-and then warned.
+follow is unchanged: about 3 seconds, 3.5 at most. A closed send skips the look, which took about 3 seconds and then warned.
+The read of the chat list follows either way, as before.
 
 **If the switch is turned off again.** The route answers `503 send_close_not_open`, which is no answer: every ending, notice
 and stored record is what it was before this amendment. The browser makes one more request for each Stop before `start`, and
@@ -427,9 +427,9 @@ and stored record is what it was before this amendment. The browser makes one mo
 came before the request had left the browser included. Before, a key was closed only when a chat holding its warning was
 opened again. Past 200 in 30 days closing is refused, and that person is back to the warning.
 
-**A page reload while the button reads "Stopping".** The message is not in the box during the look, and a warning is stored
-only when the look ends, as before. With no answer that time grows from 3.5 seconds at most to 5.5. A reload inside it leaves
-neither the text nor a warning: nothing is offered to send again.
+**A page reload while the button reads "Stopping".** The message is not in the box until the look and the read of the chat
+list after it have ended, and a warning is stored only then, as before. With no answer the question adds up to 2 seconds to
+that time. A reload inside it leaves neither the text nor a warning: nothing is offered to send again.
 
 Unchanged: Stop after `start`, a dropped connection and a message that never started ask nothing and end as they did. So does
 every ending of a turn on the server. (Amendment 13 has a request that got no answer before `start` ask the same question.)
