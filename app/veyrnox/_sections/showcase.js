@@ -26,6 +26,7 @@ export function PresetWall({ catalog }) {
               key={preset.id}
               href={templateHref(preset)}
               clip={SHOWCASE_CLIPS[preset.clipKey]}
+              uncroppedOnMobile
               className={`block rounded-2xl overflow-hidden ${classes.link}`}
               mediaClassName={classes.media}
               mediaStyle={{ background: preset.bg }}
@@ -78,8 +79,9 @@ export function ModelShelf({ catalog }) {
               href="/models"
               ariaLabel={`Explore ${g.label.toLowerCase()} models`}
               clip={SHOWCASE_CLIPS[MODEL_SHOWCASE_KEYS[g.kind]]}
+              uncroppedOnMobile
               className="block rounded-2xl overflow-hidden mb-4"
-              mediaClassName="h-56"
+              mediaClassName="aspect-[4/5] lg:aspect-auto lg:h-56"
             >
               <div className="vx-tile-scrim absolute inset-0" />
               <div className="absolute inset-x-0 bottom-0 p-4 flex items-baseline justify-between gap-3 text-white">

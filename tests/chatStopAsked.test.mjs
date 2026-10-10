@@ -108,6 +108,22 @@ test('the send made a job and it had not settled when the look ended: the warnin
     assert.deepEqual(kept(two), { code: 'stop_unsure', turns: [{ key: OTHER_KEY, sent: MARK }, { job: JOB, sent: MARK }] });
 });
 
+test('`start` came with no job id the screen can use: Stop asks by the key all the same, whether or not text had arrived', async () => {
+    // What decides is the job id, not `start`: with none, the look has nothing to read a job by.
+    for (const start of [{}, { job_id: '' }, { job_id: null }]) {
+        const storage = memory();
+        const { log } = await run({ active: A, turn: async ({ onEvent }) => { onEvent('start', start); throw stopped(); }, settle: 'pending', storage, key: KEY, closeSend: answers(SENDS.running) });
+        assert.deepEqual([log.closes, log.looks], [[KEY], [JOB]], JSON.stringify(start));
+        assert.deepEqual(kept(storage), { code: 'stop_unsure', job: JOB, sent: MARK }, JSON.stringify(start));
+    }
+    // Text had arrived: asked the same way, and it ends as Stop after text does, the reply left on screen and the named job kept.
+    const storage = memory();
+    const { log } = await run({ active: A, turn: async ({ onEvent }) => { onEvent('start', {}); onEvent('delta', { text: 'A lamp' }); throw stopped(); }, settle: 'pending', storage, key: KEY, closeSend: answers(SENDS.running) });
+    assert.deepEqual([log.closes, log.looks], [[KEY], [JOB]]);
+    assert.deepEqual(kept(storage), { code: 'stop_saving', job: JOB });
+    assert.deepEqual(afterReload(storage, 'chat-a'), { box: '', notice: { code: 'stop_saving' } });
+});
+
 test('no answer changes nothing: every ending is the one the route gives with its switch off, the warning kept with the key', async () => {
     const refusal = (status, code) => async () => { throw new GatewayError(code, { status, code }); };
     const none = [['rate limited', refusal(429, 'rate_limited')], ['too many sends closed', refusal(429, 'close_limit')], ['the database gave no answer', refusal(502, 'close_failed')],

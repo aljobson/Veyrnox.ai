@@ -65,9 +65,9 @@ export default async function VeyrnoxLanding() {
     <div className="min-h-dvh">
       <AnnouncementBar />
       <WideNav />
-      <Hero models={catalog} />
       <BreakthroughVideo />
       <LandingFilm />
+      <Hero models={catalog} />
       <FeaturedHeroCards catalog={catalog} />
       <PresetWall catalog={catalog} />
       <ModelShelf catalog={catalog} />

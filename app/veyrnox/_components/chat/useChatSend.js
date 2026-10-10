@@ -49,7 +49,7 @@ export function useChatSend({ text, setText, model, imagesBlocked, chosen, price
     // What an ending says is kept with its chat, as a code (chatLocal.js): the screen shows it whenever that chat is opened, a
     // page reload included, until a later message is sent from it or, for a warning, the server says its turn has settled.
     // It goes on screen now only while that chat is the one on it.
-    // The reply's job (none before `start`), this send's key and the text sent go to the store with it. The store keeps them only
+    // The reply's job (none before `start`, unless the server named it), this send's key and the text sent go to the store with it. The store keeps them only
     // beside a warning about a turn that is not settled, the key only with no job and the text as a mark: opening the chat later
     // asks about that turn, and a settled turn takes the warning away.
     // A warning still kept for the chat this message was sent from is read first (`before`) and handed on: this notice takes its

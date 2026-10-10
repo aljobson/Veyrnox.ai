@@ -218,7 +218,8 @@ test('an answer in a shape the route does not send is no answer, and "closed" is
     }
     assert.equal(keptTurnVerdict({ closed: true }), 'refunded');
     // A job is named only by `closed: false` and an id the server could have made. Without both, nothing is known.
-    const noJob = [{ closed: false }, { closed: false, state: 'running' }, { closed: false, job_id: null }, { closed: false, job_id: '' }, { closed: false, job_id: 'job-1' }, { closed: false, job_id: 42 },
+    // The last two: one character short, and a letter that is not hex. The shape is the one the store keeps a job id in (chatLocal.js).
+    const noJob = [{ closed: false }, { closed: false, state: 'running' }, { closed: false, job_id: null }, { closed: false, job_id: JOB.slice(0, -1) }, { closed: false, job_id: `z${JOB.slice(1)}` }, { closed: false, job_id: '' }, { closed: false, job_id: 'job-1' }, { closed: false, job_id: 42 },
         { closed: false, job_id: `${JOB}0` }, { closed: false, job_id: ` ${JOB}` }, { closed: false, job_id: KEY }, { closed: false, job_id: [JOB] }, { job_id: JOB, state: 'running' }, { closed: 0, job_id: JOB }, { closed: 'false', job_id: JOB }];
     for (const answer of noJob) assert.deepEqual(await askStoppedSend({ key: KEY, closeSend: says(answer) }), NO_ANSWER, JSON.stringify(answer));
 });

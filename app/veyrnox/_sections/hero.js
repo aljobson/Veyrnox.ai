@@ -14,7 +14,7 @@ import { PriceSlip } from '../_components/PriceSlip';
 export function WideNav() {
   return (
     <div data-print="hide" className="sticky top-0 z-40 h-16 border-b border-vx-border bg-vx-base/90 backdrop-blur-sm">
-      <div className="h-full px-4 sm:px-6 flex items-center gap-3 lg:gap-6 max-w-[1300px] mx-auto">
+      <div className="h-full px-4 sm:px-6 flex items-center gap-1 sm:gap-3 lg:gap-6 max-w-[1300px] mx-auto">
         <Link href="/" className="flex items-center shrink-0" aria-label="Veyrnox.ai home">
           <Logo size={30} wordmark />
         </Link>
@@ -50,9 +50,9 @@ export function Hero({ models }) {
     <section className="relative px-4 sm:px-6 max-w-[1300px] mx-auto pt-12 sm:pt-16 lg:pt-20 pb-16 lg:pb-24">
       <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-12 lg:gap-16 items-start">
         <div className="lg:pt-10">
-          <h1 className="vx-display text-[52px] sm:text-[76px] lg:text-[92px] text-balance">
+          <h2 className="vx-display text-[52px] sm:text-[76px] lg:text-[92px] text-balance">
             The price is on the button.
-          </h1>
+          </h2>
           <p className="mt-6 text-lg sm:text-xl text-vx-fg-body max-w-[40ch] leading-[1.5] text-pretty">
             Image, video and audio models on one credit balance. Failed jobs refund on their own.
           </p>
@@ -90,6 +90,7 @@ export function FeaturedHeroCards({ catalog }) {
               key={f.key}
               href={f.href}
               clip={SHOWCASE_CLIPS[f.key]}
+              uncroppedOnMobile
               className="vx-rise block text-left rounded-2xl overflow-hidden"
               style={{ '--vx-i': i }}
               mediaClassName="aspect-[4/5]"

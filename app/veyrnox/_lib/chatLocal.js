@@ -27,8 +27,8 @@ const UNKNOWN_NOTICE = 'unknown';
 // about a message that is settled, and either used no Credits or is in the chat with its price.
 const CREDITS_WARNINGS = new Set(['stop_unsure', 'stop_saving', 'connection_lost', 'reply_not_saved']);
 // The three whose turn was not settled when the look for it ended. What the server can be asked about that turn by is
-// kept with them (chatWarning.js): the job id that came with `start`, or, when Stop came before `start`, the key the
-// send went out with. `reply_not_saved` is settled already, charged, so there is nothing to ask.
+// kept with them (chatWarning.js): the reply's job id (it came with `start`, or the server named it), or, with none, the
+// key the send went out with. `reply_not_saved` is settled already, charged, so there is nothing to ask.
 const ASKABLE = new Set(['stop_unsure', 'stop_saving', 'connection_lost']);
 // The one of them that is always kept with its message given back to the box. A mark of that text is kept with it: if
 // the turn turns out to be saved, the box is emptied only while it still holds exactly that message.
