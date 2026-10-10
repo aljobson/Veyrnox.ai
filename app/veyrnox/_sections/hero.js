@@ -50,9 +50,9 @@ export function Hero({ models }) {
     <section className="relative px-4 sm:px-6 max-w-[1300px] mx-auto pt-12 sm:pt-16 lg:pt-20 pb-16 lg:pb-24">
       <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-12 lg:gap-16 items-start">
         <div className="lg:pt-10">
-          <h1 className="vx-display text-[52px] sm:text-[76px] lg:text-[92px] text-balance">
+          <h2 className="vx-display text-[52px] sm:text-[76px] lg:text-[92px] text-balance">
             The price is on the button.
-          </h1>
+          </h2>
           <p className="mt-6 text-lg sm:text-xl text-vx-fg-body max-w-[40ch] leading-[1.5] text-pretty">
             Image, video and audio models on one credit balance. Failed jobs refund on their own.
           </p>
