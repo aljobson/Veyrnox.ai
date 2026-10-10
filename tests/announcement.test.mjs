@@ -30,9 +30,11 @@ test('the announcement, when set, has an id and links to a page that exists', ()
 test('the bar sits above the marketing nav and can be dismissed', () => {
     const nav = readFileSync(new URL('../app/veyrnox/_components/NavBar.js', import.meta.url), 'utf8');
     assert.match(nav, /<AnnouncementBar \/>\s*<header data-print="hide" className="sticky/);
-    // The landing page has its own nav (WideNav), so it places the bar itself.
+    // The landing page takes the same nav as every other public page, so the
+    // nav places the bar there too. A bar of the page's own would show twice.
     const home = readFileSync(new URL('../app/veyrnox/page.js', import.meta.url), 'utf8');
-    assert.match(home, /<AnnouncementBar \/>\s*<WideNav \/>/);
+    assert.match(home, /<div className="min-h-dvh">\s*<MarketingNav \/>/);
+    assert.doesNotMatch(home, /AnnouncementBar/);
     const bar = readFileSync(new URL('../app/veyrnox/_components/AnnouncementBar.js', import.meta.url), 'utf8');
     assert.match(bar, /aria-label="Dismiss announcement"/);
     assert.match(bar, /dismiss\(window\.localStorage, ANNOUNCEMENT\.id\)/);

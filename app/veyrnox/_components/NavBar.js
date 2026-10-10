@@ -12,55 +12,59 @@ import { getSession, onSessionChange } from '../../lib/authClient';
 import { accountLabel } from '../_lib/account';
 import { useProjectsPreview } from '../_lib/useProjectsPreview';
 import { useVideoEnhancePreview } from '../_lib/useVideoEnhancePreview';
+import { NAV_CATEGORIES } from '../_lib/tokens';
 import { AnnouncementBar } from './AnnouncementBar';
 
-// Marketing site nav (Home / Gallery / Pricing).
+// The public site's nav: every marketing page, the home page included. One
+// list (NAV_CATEGORIES), one order, set from the logo's edge so the links
+// hold their place when the right-hand side changes width (signed in or out).
 export function MarketingNav() {
   // Rewrites serve /veyrnox/* at /*, so the browser path has no prefix.
   const path = usePathname().replace(/^\/veyrnox/, '') || '/';
-  const items = [
-    { href: '/',         label: 'Home' },
-    { href: '/presets', label: 'Templates' },
-    { href: '/tools', label: 'Tools' },
-    { href: '/app/chat', label: 'LLM Chat' },
-    { href: '/social-cinema', label: 'Social Cinema' },
-    { href: '/pricing', label: 'Pricing' },
-  ];
   return (
     <>
     <AnnouncementBar />
     <header data-print="hide" className="sticky top-0 z-40 h-16 border-b border-vx-border bg-vx-base/88 backdrop-blur-sm">
       {/* Same 1300px column as the page body, so the logo sits on its edge. */}
-      <div className="h-full max-w-[1300px] mx-auto px-4 sm:px-6 flex items-center justify-between gap-1 sm:gap-3">
-      <Link href="/" aria-label="Veyrnox.ai — home" className="flex items-center gap-2.5 shrink-0">
+      <div className="h-full max-w-[1300px] mx-auto px-4 sm:px-6 flex items-center gap-1 sm:gap-3 xl:gap-6">
+      <Link href="/" aria-label="Veyrnox.ai home" className="flex items-center shrink-0">
         <Logo className="min-[360px]:hidden" />
         <Logo wordmark className="hidden min-[360px]:inline-flex" />
       </Link>
-      <nav aria-label="Primary" className="hidden lg:flex gap-1.5 text-sm font-semibold">
-        {items.map((it) => {
-          const target = it.href.replace(/^\/veyrnox/, '') || '/';
-          const active = target === '/' ? path === '/' : path.startsWith(target);
+      {/* From xl, not lg: the eight links, search and the account buttons
+          need about 1,200px, and between 1024 and 1200 the links ran under
+          the search box. Below xl they are in the menu. */}
+      <nav aria-label="Primary" className="hidden xl:flex flex-1 min-w-0 items-center gap-1 text-[13px] font-semibold">
+        {NAV_CATEGORIES.map((it) => {
+          // A section of the home page (`/#faq`) is never the current page,
+          // and it is a plain link: on the home page the browser glides to
+          // it, and from another page the home page loads and SectionJump
+          // lands on it.
+          const section = it.href.includes('#');
+          const active = !section && path.startsWith(it.href);
+          const Item = section ? 'a' : Link;
           return (
-            <Link
+            <Item
               key={it.href}
               href={it.href}
               aria-current={active ? 'page' : undefined}
-              className={`px-4 py-2 rounded-full transition-colors ${
-                active ? 'bg-vx-panel text-vx-fg' : 'text-vx-fg-muted hover:text-vx-fg'
+              className={`shrink-0 px-3.5 py-2 rounded-full transition-colors ${
+                active ? 'bg-vx-panel text-vx-fg' : 'text-vx-fg-body hover:text-vx-fg hover:bg-vx-panel'
               }`}
             >
               {it.label}
-            </Link>
+            </Item>
           );
         })}
       </nav>
-      <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+      <div className="flex flex-1 xl:flex-none items-center justify-end gap-1 sm:gap-2 shrink-0">
         <SiteSearch className="hidden sm:inline-flex" />
-        <ThemeToggle className="hidden sm:inline-flex" />
+        {/* Below xl the theme switch is inside the menu. */}
+        <ThemeToggle className="hidden xl:inline-flex" />
         <NavAuthButtons />
-        {/* Below sm the links above are hidden — without this the only way
-            off this page was the browser back button. */}
-        <MobileMenu items={items} className="lg:hidden" />
+        {/* Below xl the links above are hidden: without this the only way
+            off the page was the browser back button. */}
+        <MobileMenu items={NAV_CATEGORIES} className="xl:hidden" />
       </div>
       </div>
     </header>

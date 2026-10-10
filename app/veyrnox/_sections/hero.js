@@ -1,47 +1,8 @@
 import Link from 'next/link';
-import { Logo } from '../_components/Logo';
-import { NavAuthButtons } from '../_components/NavAuthButtons';
-import { MobileMenu } from '../_components/MobileMenu';
-import { SiteSearch } from '../_components/SiteSearch';
-import { ThemeToggle } from '../_components/ThemeToggle';
 import { MediaTile } from '../_components/MediaTile';
 import { SHOWCASE_CLIPS } from '../_lib/showcase';
-import { NAV_CATEGORIES, FEATURE_CARDS, PRESETS, shelfName } from '../_lib/tokens';
+import { FEATURE_CARDS, PRESETS, shelfName } from '../_lib/tokens';
 import { PriceSlip } from '../_components/PriceSlip';
-
-/* ─── Wide sticky nav ─── */
-
-export function WideNav() {
-  return (
-    <header data-print="hide" className="sticky top-0 z-40 h-16 border-b border-vx-border bg-vx-base/90 backdrop-blur-sm">
-      <div className="h-full px-4 sm:px-6 flex items-center gap-1 sm:gap-3 lg:gap-6 max-w-[1300px] mx-auto">
-        <Link href="/" className="flex items-center shrink-0" aria-label="Veyrnox.ai home">
-          <Logo size={30} wordmark />
-        </Link>
-        {/* The links used to live in a horizontal scroller that, on a phone,
-            looked like a truncated row nobody swipes. Below lg they move
-            into the menu instead. */}
-        <nav aria-label="Primary" className="hidden lg:flex gap-1 items-center flex-1 min-w-0">
-          {NAV_CATEGORIES.map((c) => (
-            <a
-              key={c.href}
-              href={c.href}
-              className="shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-full text-[13px] font-semibold text-vx-fg-body transition-colors hover:text-vx-fg hover:bg-vx-panel"
-            >
-              {c.label}
-            </a>
-          ))}
-        </nav>
-        <div className="flex flex-1 lg:flex-none items-center justify-end gap-2 shrink-0">
-          <SiteSearch className="hidden sm:inline-flex" />
-          <ThemeToggle className="hidden lg:inline-flex" />
-          <NavAuthButtons />
-          <MobileMenu items={NAV_CATEGORIES} className="lg:hidden" />
-        </div>
-      </div>
-    </header>
-  );
-}
 
 /* ─── Hero: the promise on the left, the working price slip on the right ─── */
 
@@ -50,7 +11,7 @@ export function Hero({ models }) {
     <section className="relative px-4 sm:px-6 max-w-[1300px] mx-auto pt-12 sm:pt-16 lg:pt-20 pb-16 lg:pb-24">
       <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-12 lg:gap-16 items-start">
         <div className="lg:pt-10">
-          <h2 className="vx-display text-[52px] sm:text-[76px] lg:text-[92px] text-balance">
+          <h2 className="vx-display vx-title-index">
             The price is on the button.
           </h2>
           <p className="mt-6 text-lg sm:text-xl text-vx-fg-body max-w-[40ch] leading-[1.5] text-pretty">

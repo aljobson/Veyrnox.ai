@@ -29,9 +29,10 @@ export default async function GuidePage({ params }) {
     <div className="min-h-dvh">
       <MarketingNav />
       <Main>
-      <article className="max-w-[760px] mx-auto px-4 sm:px-6 pt-10 sm:pt-16 pb-28">
+      <article className="max-w-[1300px] mx-auto px-4 sm:px-6 pt-10 sm:pt-16 pb-28">
+        <div className="max-w-[712px]">
         <Link href="/guides" className="text-[14px] text-vx-fg-muted hover:text-vx-fg underline-offset-4 hover:underline">All guides</Link>
-        <h1 className="mt-4 vx-display text-[40px] sm:text-[56px] leading-[0.95]">{g.title}</h1>
+        <h1 className="mt-4 vx-display vx-title-detail">{g.title}</h1>
         <p className="mt-4 text-lg text-vx-fg-body">{g.summary}</p>
         <ol className="mt-10 space-y-6">
           {g.steps.map((s, i) => (
@@ -51,6 +52,7 @@ export default async function GuidePage({ params }) {
               {l.label}
             </Link>
           ))}
+        </div>
         </div>
       </article>
       </Main>

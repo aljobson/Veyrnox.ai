@@ -16,11 +16,11 @@ const COLORS = [
 
 export default function DesignSystem() {
   return (
-    <Main className="min-h-dvh px-4 sm:px-8 lg:px-14 py-10 sm:py-16 pb-24 max-w-[1200px] mx-auto">
+    <Main className="min-h-dvh max-w-[1300px] mx-auto px-4 sm:px-6 py-10 sm:py-16 pb-24">
       <div className="flex items-center gap-2.5">
         <Logo wordmark />
       </div>
-      <h1 className="text-[30px] sm:text-[38px] md:text-[48px] font-black tracking-[-0.03em] leading-[1.08] sm:leading-[1.05] mt-3">Design system v2</h1>
+      <h1 className="vx-display vx-title-detail mt-3">Design system v2</h1>
       <p className="text-vx-fg-muted mt-3 max-w-[640px] leading-[1.6]">
         Tokens and components for Veyrnox.ai.
         Rule of the system: <b className="text-vx-accent">aqua does things</b>,{' '}
@@ -57,8 +57,10 @@ export default function DesignSystem() {
       {/* 02 TYPE */}
       <Section num="02" title="TYPE — ARCHIVO + JETBRAINS MONO">
         <div className="border border-vx-border rounded-2xl p-7 flex flex-col gap-5">
-          <TypeRow sample="Hero 64–72"      klass="text-[64px] font-black tracking-[-0.035em] leading-none" spec="ARCHIVO 900 · −0.035EM · SENTENCE CASE" />
-          <TypeRow sample="Screen title 28–32" klass="text-[30px] font-extrabold tracking-[-0.02em]"        spec="ARCHIVO 800 · −0.02EM" />
+          {/* Page titles come in two sizes and no third (veyrnox.css). */}
+          <TypeRow sample="Index title 52 / 76 / 92" klass="vx-display vx-title-index" spec="ARCHIVO 900 · −0.04EM · 0.94 · PRICING, MODELS, TEMPLATES, TOOLS, GUIDES · THE HOME PAGE'S HERO AND CLOSING LINES" />
+          <TypeRow sample="Detail title 40 / 56" klass="vx-display vx-title-detail" spec="ARCHIVO 900 · −0.04EM · 0.94 · ONE MODEL, TEMPLATE, GUIDE OR LEGAL PAGE · SECTION HEADINGS" />
+          <TypeRow sample="Studio screen title 24–30" klass="text-3xl font-black tracking-[-0.02em]" spec="ARCHIVO 900 · −0.02EM" />
           <TypeRow sample="Card / section title 15–17" klass="text-[17px] font-bold"                        spec="ARCHIVO 700" />
           <TypeRow sample="Body 13–14 / 1.55 — neutral #C9C9CF on black, never aqua" klass="text-[14px] text-vx-fg-body leading-[1.6]" spec="ARCHIVO 500" />
           <TypeRow sample="MICRO-LABEL 10–11 · +0.12EM TRACKING · UPPERCASE" klass="font-vx-mono text-[11px] tracking-[0.12em] text-vx-fg-muted" spec="JETBRAINS MONO 700" />
