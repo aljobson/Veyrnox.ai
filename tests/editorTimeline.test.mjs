@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import {
     FPS, LIMITS, MAX_FRAMES, emptyTimeline, addMedia, addVideoClip, addAudioClip, splitClip, trimClip, removeClip, setVolume,
     moveVideoClip, moveAudioClip, pruneMedia, validateTimeline, videoLayout, videoFrames, totalFrames, videoClipAt, formatTime,
-    secondsToFrames, framesToSeconds,
+    secondsToFrames, framesToSeconds, ASPECTS, MAX_TRANSITION, setAspect, setTransition, effectiveTransition, addText, updateText,
+    removeText, textsAt,
 } from '../app/veyrnox/_lib/editorTimeline.mjs';
 
 const vid = (id, seconds, extra = {}) => ({ id, kind: 'video', frames: seconds * FPS, name: `${id}.mp4`, hasAudio: true, width: 1280, height: 720, ...extra });
@@ -153,7 +154,7 @@ test('a sound timeline validates, and each kind of damage is refused with a reas
     assert.equal(validateTimeline(tl), null);
     assert.equal(validateTimeline(JSON.parse(JSON.stringify(tl))), null);
     const bad = (mutate, pattern) => { const copy = JSON.parse(JSON.stringify(tl)); mutate(copy); assert.match(validateTimeline(copy), pattern); };
-    bad(c => { c.schemaVersion = 2; }, /version/);
+    bad(c => { c.schemaVersion = 99; }, /version/);
     bad(c => { c.fps = 24; }, /frames a second/);
     bad(c => { c.video[0].mediaId = 'ghost'; }, /missing file/);
     bad(c => { c.video[0].in = 9999; }, /outside its file/);
@@ -168,6 +169,15 @@ test('a sound timeline validates, and each kind of damage is refused with a reas
     bad(c => { c.media.a.frames = -1; }, /media length/);
     bad(c => { c.video = 'nope'; }, /tracks/);
     bad(c => { c.video[0].len = 2000; c.media.a.frames = 5000; }, /60 seconds/);
+    bad(c => { c.aspect = '4:3'; }, /aspect/);
+    bad(c => { delete c.text; }, /text list/);
+    bad(c => { c.video[1].transition = 61; }, /transition/);
+    bad(c => { c.video[1].transition = -1; }, /transition/);
+    bad(c => { c.text.push({ id: 't1', text: 'hi', start: 0, len: 30, x: 0.5, y: 0.5, size: 6 }); c.text.push({ ...c.text[0] }); }, /text id/);
+    bad(c => { c.text.push({ id: 't1', text: 'a\u2028b', start: 0, len: 30, x: 0.5, y: 0.5, size: 6 }); }, /one line/);
+    bad(c => { c.text.push({ id: 't1', text: 'hi', start: 0, len: 30, x: 1.5, y: 0.5, size: 6 }); }, /off the picture/);
+    bad(c => { c.text.push({ id: 't1', text: 'hi', start: 0, len: 30, x: 0.5, y: 0.5, size: 40 }); }, /size/);
+    bad(c => { c.text.push({ id: 't1', text: 'hi', start: 1790, len: 30, x: 0.5, y: 0.5, size: 6 }); }, /outside the project/);
     for (const junk of [null, 5, 'x', [], {}]) assert.ok(validateTimeline(junk));
 });
 
@@ -184,4 +194,59 @@ test('time helpers round to whole frames and format as minutes and seconds', () 
     assert.equal(formatTime(222), '0:07.4');
     assert.equal(formatTime(1800), '1:00.0');
     assert.equal(formatTime(-5), '0:00.0');
+});
+
+test('aspect is one of the presets and defaults to the first clip shape', () => {
+    const tl = withTwoClips();
+    assert.equal(tl.aspect, 'source');
+    assert.deepEqual(ASPECTS, ['source', '16:9', '9:16', '1:1']);
+    assert.equal(ok(setAspect(tl, '9:16')).aspect, '9:16');
+    assert.match(setAspect(tl, '4:3').error, /shape/);
+});
+
+test('a dissolve sits on the second clip, is bounded by both clips and two seconds, and the first clip has none', () => {
+    const tl = withTwoClips();
+    assert.equal(tl.video[1].transition, 0);
+    assert.match(setTransition(tl, 'v1', 30).error, /first clip/);
+    assert.match(setTransition(tl, 'v2', MAX_TRANSITION + 1).error, /2 seconds/);
+    assert.match(setTransition(ok(trimClip(tl, 'video', 'v1', { in: 0, len: 40 })), 'v2', 50).error, /either clip/);
+    const faded = ok(setTransition(tl, 'v2', 45));
+    assert.equal(effectiveTransition(faded, 1), 45);
+    assert.equal(effectiveTransition(faded, 0), 0);
+    // A later trim of the first clip below the dissolve length clamps what applies, without rewriting the clip.
+    const short = ok(trimClip(faded, 'video', 'v1', { in: 0, len: 20 }));
+    assert.equal(short.video[1].transition, 45);
+    assert.equal(effectiveTransition(short, 1), 20);
+    // Splitting a faded clip keeps the dissolve on the first half only.
+    const split = ok(splitClip(faded, 'video', 'v2', 120 + 60));
+    assert.deepEqual(split.video.map(c => c.transition), [0, 45, 0]);
+    // Moving the faded clip to the front makes its dissolve inert.
+    const moved = ok(moveVideoClip(faded, 'v2', 0));
+    assert.equal(effectiveTransition(moved, 0), 0);
+    assert.equal(validateTimeline(JSON.parse(JSON.stringify(faded))), null);
+});
+
+test('text is added, edited and removed with bounds, and never repaired', () => {
+    let tl = withTwoClips();
+    tl = ok(addText(tl, { text: '  Hello  ', start: 30, len: 60 }));
+    assert.deepEqual(tl.text, [{ id: 't3', text: 'Hello', start: 30, len: 60, x: 0.5, y: 0.85, size: 6 }]);
+    assert.deepEqual(textsAt(tl, 29), []);
+    assert.equal(textsAt(tl, 30).length, 1);
+    assert.deepEqual(textsAt(tl, 90), []);
+    assert.match(addText(tl, { text: '' }).error, /1 to 120/);
+    assert.match(addText(tl, { text: 'x'.repeat(121) }).error, /1 to 120/);
+    assert.match(addText(tl, { text: 'a\nb' }).error, /one line/);
+    assert.match(addText(tl, { text: 'late', start: 1790, len: 30 }).error, /outside/);
+    tl = ok(updateText(tl, 't3', { text: 'Bye', y: 0.1, size: 12, ignored: 'x' }));
+    assert.equal(tl.text[0].text, 'Bye');
+    assert.equal(tl.text[0].y, 0.1);
+    assert.equal(tl.text[0].ignored, undefined);
+    assert.match(updateText(tl, 't3', { size: 1 }).error, /size/);
+    assert.match(updateText(tl, 'nope', { size: 5 }).error, /Select/);
+    assert.equal(validateTimeline(JSON.parse(JSON.stringify(tl))), null);
+    for (let i = 0; i < 9; i++) tl = ok(addText(tl, { text: `t${i}` }));
+    assert.match(addText(tl, { text: 'one too many' }).error, /up to 10/);
+    tl = ok(removeText(tl, 't3'));
+    assert.equal(tl.text.length, 9);
+    assert.match(removeText(tl, 't3').error, /Select/);
 });

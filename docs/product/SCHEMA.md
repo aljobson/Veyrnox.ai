@@ -31,6 +31,7 @@ API call) · [diagrams/job-lifecycle.html](diagrams/job-lifecycle.html)
   `ledger_entries`, `account_actions`, `top_up_order_collisions`, `top_up_flagged_orders` (0174),
   `audit_events`, `project_document_versions`, `cinema_creator_reviews`,
   `cinema_unlock_reversals`, `cinema_pass_events`, `cinema_pass_plays`,
+  `cinema_free_plays` (0245),
   `cinema_submission_reviews`, `cinema_moderation_actions`,
   `cinema_operator_actions`, `cinema_operator_refund_receipts`,
   `social_account_actions`, `credit_subscription_events` (0186). Each also has a
@@ -174,9 +175,10 @@ browser JWT may call.
 | `cinema_creator_applications`, `cinema_creator_reviews` | apply → review (append-only) |
 | `cinema_content`, `cinema_content_mutations` | SERIES → SEASON → EPISODE tree (self-FK on (parent_id, creator_id)); lifecycle DRAFT/UNDER_REVIEW/PUBLISHED/SUSPENDED; categories ≤ 2 |
 | `cinema_uploads` | Stream upload per content; states provisioning → uploading → processing → ready / error → deleting → deleted; recovery, removal and proxy-transfer claims |
-| `cinema_prices` | episode_unlock 6, film_unlock 6, free_episodes 5, pass_ceiling_minutes 3,000 (1,500 once 0244 is applied) |
+| `cinema_prices` | episode_unlock 6, film_unlock 6, free_episodes 5, pass_ceiling_minutes 3,000 (1,500 once 0244 is applied), free_ceiling_minutes 300 (0245) |
 | `cinema_unlocks`, `cinema_unlock_reversals` | credit unlock → ledger entry; one live unlock per (user, content) |
 | `cinema_pass_plans`, `cinema_passes`, `cinema_pass_events`, `cinema_pass_plays` | Stripe subscription state; one active pass per user; play seconds toward the ceiling |
+| `cinema_free_plays` | seconds of free titles watched per account (0245); counted toward the monthly free ceiling; append-only |
 | `cinema_submissions`, `cinema_submission_reviews`, `cinema_moderation_actions`, `cinema_categories` | publication review and moderation |
 | `cinema_operator_actions`, `cinema_operator_refund_receipts` | operator reversals and pass refunds |
 

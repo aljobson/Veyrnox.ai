@@ -12,6 +12,7 @@
   --color-vx-base: rgb(var(--vx-base));
   --color-vx-panel: rgb(var(--vx-panel));
   --color-vx-border: rgb(var(--vx-border));
+  --color-vx-field: rgb(var(--vx-field));
   --color-vx-fg: rgb(var(--vx-fg));
   --color-vx-fg-body: rgb(var(--vx-fg-body));
   --color-vx-fg-muted: rgb(var(--vx-fg-muted));
@@ -69,6 +70,11 @@
   --vx-panel: 20 20 22;
   --vx-border: 38 38 42;
   --vx-border-boost: 62 62 68;
+  /* The outline of an input, textarea or select, and nothing else. A field's
+     fill is within 1.1:1 of the card it sits on, so the outline is the only
+     sign it is there: it has to reach 3:1 on both (WCAG 1.4.11). Here 3.4:1
+     on base and 3.1:1 on panel; the hairline above is 1.3:1. */
+  --vx-field: 100 100 106;
   --vx-fg: 242 242 243;
   --vx-fg-body: 201 201 207;
   --vx-fg-muted: 154 154 163;
@@ -97,6 +103,7 @@
   --vx-panel: 246 246 247;
   --vx-border: 220 220 224;
   --vx-border-boost: 168 168 176;
+  --vx-field: 138 138 146; /* 3.4:1 on base, 3.2:1 on panel */
   --vx-fg: 10 10 11;
   --vx-fg-body: 63 63 70;
   --vx-fg-muted: 82 82 91;
@@ -116,6 +123,11 @@
 @media (prefers-reduced-motion: no-preference) {
   html { scroll-behavior: smooth; }
 }
+/* Whatever the browser scrolls into view stops clear of the sticky 64px nav:
+   an in-page anchor, and a control reached with Tab or Shift+Tab, which used
+   to land underneath it (WCAG 2.4.11). On the scroller, so one rule covers
+   both; a scroll-margin on every [id] covered anchors only. */
+html { scroll-padding-top: 5rem; }
 
 body {
   background: rgb(var(--vx-base));

@@ -78,7 +78,7 @@ export function PriceSlip({ models }) {
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           placeholder="Slow push-in along a rain-soaked street at dusk, neon reflected in the puddles"
-          className="mt-2 w-full resize-none rounded-lg border border-vx-border bg-vx-base px-3 py-2.5 text-[15px] leading-snug text-vx-fg placeholder:text-vx-fg-faint focus:border-vx-accent focus:outline-hidden"
+          className="mt-2 w-full resize-none rounded-lg border border-vx-field bg-vx-base px-3 py-2.5 text-[15px] leading-snug text-vx-fg placeholder:text-vx-fg-faint focus:border-vx-accent focus:outline-hidden"
         />
 
         <fieldset className="mt-4 min-w-0">
@@ -95,6 +95,8 @@ export function PriceSlip({ models }) {
                 {nameOf(m)}
               </button>
             ))}
+            {/* Drawn as one more chip, so it keeps the chips' hairline and not the
+                field outline (owner's call, 2026-10-10). */}
             <select
               aria-label="Every other model"
               value={inChips ? '' : model.id}

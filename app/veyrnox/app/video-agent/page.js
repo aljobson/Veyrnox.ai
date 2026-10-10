@@ -1,6 +1,7 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppNav } from '../../_components/NavBar';
+import { Main } from '../../_components/Main';
 import { JobAssetPreview } from '../../_components/JobAssetPreview';
 import { gatewayFetch, notifyBalanceChanged, GatewayError } from '../../_lib/gateway';
 import { ERROR_COPY, failedJobCopy } from '../../_lib/createErrors';
@@ -89,7 +90,7 @@ export default function VideoAgent() {
   return (
     <div className="min-h-dvh">
       <AppNav balance={balance} active="agent" />
-      <div className="max-w-3xl mx-auto px-4 sm:px-8 pt-6 pb-16">
+      <Main className="max-w-3xl mx-auto px-4 sm:px-8 pt-6 pb-16">
         <div className="mb-3">
           <div className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">VIDEO AGENT</div>
           <h1 className="text-2xl sm:text-3xl font-black tracking-[-0.02em] mt-1">Make a video from a brief</h1>
@@ -160,7 +161,7 @@ export default function VideoAgent() {
             )}
           </div>
         )}
-      </div>
+      </Main>
     </div>
   );
 }

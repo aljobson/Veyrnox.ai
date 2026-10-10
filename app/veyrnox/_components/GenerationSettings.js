@@ -24,7 +24,7 @@ export function GenerationSettings({ model, seed, onSeed, negative, onNegative }
               placeholder="Random"
               aria-invalid={bad}
               aria-describedby="vx-seed-help"
-              className="min-w-0 flex-1 rounded-lg border border-vx-border bg-vx-base px-3 py-2 font-vx-mono text-[13px]"
+              className="min-w-0 flex-1 rounded-lg border border-vx-field bg-vx-base px-3 py-2 font-vx-mono text-[13px]"
             />
             <button
               type="button"
@@ -49,7 +49,7 @@ export function GenerationSettings({ model, seed, onSeed, negative, onNegative }
             maxLength={2000}
             rows={2}
             placeholder="e.g. text, watermark, blur-sm"
-            className="mt-1.5 w-full rounded-lg border border-vx-border bg-vx-base px-3 py-2 text-[13px]"
+            className="mt-1.5 w-full rounded-lg border border-vx-field bg-vx-base px-3 py-2 text-[13px]"
           />
         </div>
       )}

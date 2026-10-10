@@ -36,7 +36,7 @@ export function MobileMenu({ items, className = '' }) {
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         aria-controls="vx-mobile-menu"
-        aria-label={open ? 'Close menu' : 'Open menu'}
+        aria-label="Menu"
         className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-vx-border text-vx-fg-body hover:border-vx-accent hover:text-vx-fg"
       >
         <Icon name={open ? 'close' : 'menu'} size={18} />

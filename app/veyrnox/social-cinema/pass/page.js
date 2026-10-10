@@ -1,4 +1,5 @@
 import { MarketingNav } from '../../_components/NavBar';
+import { Main } from '../../_components/Main';
 import { PassPanel } from './PassPanel';
 
 export const metadata = {
@@ -9,5 +10,5 @@ export const metadata = {
 };
 
 export default function Page() {
-  return <><MarketingNav /><PassPanel /></>;
+  return <><MarketingNav /><Main><PassPanel /></Main></>;
 }

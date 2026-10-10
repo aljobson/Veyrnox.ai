@@ -18,7 +18,8 @@ const RENEW_MS = 12 * 60 * 1000;
  * Plays one title through Cloudflare Stream's player. The page mints a signed
  * playback token from /api/v1/cinema/play (only an entitled viewer gets one),
  * renews it before it expires, and while the tab is visible sends a heartbeat
- * every 30 seconds; the server only records those for Cinema Pass viewing.
+ * every 30 seconds; the server records those for Cinema Pass viewing and, when
+ * the monthly free ceiling is on, for free titles.
  */
 export function Player({ id }) {
   const account = useSyncExternalStore(onSessionChange, identity, noIdentity);
@@ -42,7 +43,7 @@ export function Player({ id }) {
         setState('playing');
       } catch (err) {
         if (!active) return;
-        setReason(err?.code === 'locked' ? 'locked' : err?.code === 'not_ready' ? 'not_ready' : err?.code === 'content_not_found' ? 'missing' : err?.status === 503 ? 'closed' : 'error');
+        setReason(err?.code === 'locked' ? (err?.body?.reason === 'free_ceiling' ? 'free_ceiling' : 'locked') : err?.code === 'not_ready' ? 'not_ready' : err?.code === 'content_not_found' ? 'missing' : err?.status === 503 ? 'closed' : 'error');
         setState('blocked');
       }
     };
@@ -51,14 +52,14 @@ export function Player({ id }) {
     timers.current.push(setInterval(() => {
       if (document.visibilityState !== 'visible') return;
       gatewayFetch('/cinema/play/heartbeat', { method: 'POST', body: JSON.stringify({ content_id: id, seconds: HEARTBEAT_SECONDS }) })
-        .then((h) => { if (active && h.reason === 'pass_ceiling') { setReason('pass_ceiling'); setState('blocked'); } })
+        .then((h) => { if (active && ['pass_ceiling', 'free_ceiling'].includes(h.reason)) { setReason(h.reason); setState('blocked'); } })
         .catch(() => { /* a missed heartbeat is not an error the viewer can act on */ });
     }, HEARTBEAT_SECONDS * 1000));
     return () => { active = false; timers.current.forEach(clearInterval); timers.current = []; };
   }, [id, account]);
 
   const back = <p className="mt-6 text-sm"><Link href={`/social-cinema/title/${id}`} className="underline">Back to the title</Link> · <Link href="/social-cinema" className="underline">Social Cinema</Link></p>;
-  const copy = { locked: 'This episode is locked. Unlock it from the title page or get a Cinema Pass.', not_ready: 'This video is still being prepared. Try again in a few minutes.', missing: 'This title is not available.', closed: 'Social Cinema viewing is not open yet.', pass_ceiling: 'Your Cinema Pass has reached its viewing limit for this month. You can still unlock episodes with credits.', error: 'Playback is unavailable right now. Try again in a moment.' };
+  const copy = { locked: 'This episode is locked. Unlock it from the title page or get a Cinema Pass.', not_ready: 'This video is still being prepared. Try again in a few minutes.', missing: 'This title is not available.', closed: 'Social Cinema viewing is not open yet.', pass_ceiling: 'Your Cinema Pass has reached its viewing limit for this month. You can still unlock episodes with credits.', free_ceiling: 'You have reached the free viewing limit for this month. Free viewing starts again next month.', error: 'Playback is unavailable right now. Try again in a moment.' };
 
   return <div className="mx-auto max-w-[1300px] px-4 py-8 pb-40 sm:px-6 sm:pb-32"><div className="max-w-[952px]">
     {state === 'playing' ? <div className="aspect-[9/16] w-full max-w-[420px] overflow-hidden rounded-2xl border border-vx-border bg-black mx-auto sm:aspect-video sm:max-w-none">

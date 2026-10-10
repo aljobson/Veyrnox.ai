@@ -12,7 +12,7 @@ function ClipBox({ clip, name, start, ppf, selected, tone, onSelect }) {
     </button>;
 }
 
-/** Two lanes and a playhead. Pure view: every change goes back to the page through the callbacks. */
+/** Three lanes (video, sound, text) and a playhead. Pure view: every change goes back to the page through the callbacks. */
 export function TimelineView({ tl, frame, selected, ppf, onSelect, onSeek }) {
     const total = totalFrames(tl);
     const width = Math.max(total + FPS * 10, FPS * 20) * ppf;
@@ -30,6 +30,10 @@ export function TimelineView({ tl, frame, selected, ppf, onSelect, onSeek }) {
             <div className={LANE} onClick={seek} aria-label="Audio track" role="group">
                 {tl.audio.map(clip => <ClipBox key={clip.id} clip={clip} name={tl.media[clip.mediaId]?.name || 'Sound'} start={clip.start} ppf={ppf} tone="bg-vx-base"
                     selected={selected?.id === clip.id} onSelect={() => onSelect({ track: 'audio', id: clip.id })} />)}
+            </div>
+            <div className={LANE} onClick={seek} aria-label="Text track" role="group">
+                {tl.text.map(x => <ClipBox key={x.id} clip={{ len: x.len }} name={x.text} start={x.start} ppf={ppf} tone="bg-vx-panel"
+                    selected={selected?.id === x.id} onSelect={() => onSelect({ track: 'text', id: x.id })} />)}
             </div>
             <div aria-hidden="true" className="pointer-events-none absolute top-0 bottom-0 w-px bg-vx-accent" style={{ left: frame * ppf }}>
                 <span className="absolute -left-1 top-0 size-2 rounded-full bg-vx-accent" />

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import VeyrnoxLayout from './veyrnox/layout';
 import { Logo } from './veyrnox/_components/Logo';
+import { Main } from './veyrnox/_components/Main';
 import { SITE_PAGES } from './veyrnox/_lib/tokens';
 
 export const metadata = {
@@ -18,10 +19,12 @@ export default function NotFound() {
   return (
     <VeyrnoxLayout>
       <div className="min-h-dvh max-w-[1300px] mx-auto px-4 sm:px-6 pt-8 pb-24">
-        <Link href="/" aria-label="Veyrnox.ai home" className="inline-flex">
-          <Logo size={26} wordmark />
-        </Link>
-        <div className="mt-20 sm:mt-28 grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-14 lg:gap-20 items-start">
+        <header>
+          <Link href="/" aria-label="Veyrnox.ai home" className="inline-flex">
+            <Logo size={26} wordmark />
+          </Link>
+        </header>
+        <Main className="mt-20 sm:mt-28 grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-14 lg:gap-20 items-start">
           <div>
             <h1 className="vx-display vx-title-index max-w-[11ch]">This page isn&rsquo;t here.</h1>
             <p className="mt-6 text-lg text-vx-fg-body max-w-[40ch] leading-[1.5]">The link may be out of date, or the page has moved. Nothing was charged.</p>
@@ -54,7 +57,7 @@ export default function NotFound() {
               </ul>
             </div>
           </div>
-        </div>
+        </Main>
       </div>
     </VeyrnoxLayout>
   );
