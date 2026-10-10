@@ -182,7 +182,10 @@ heartbeat it has the 1,500-minute ceiling.
 Owner, 2026-10-10: build it. Built behind `CINEMA_FREE_CEILING_ENABLED`.
 Migration 0245 was applied to production (apply-migrations run 38053327460,
 after 0244) and to the staging database on 2026-10-10. The switch is `true`
-on staging and `false` in production.
+on staging. In production it is `true` since 2026-10-10 (owner), and has no
+effect there while `CINEMA_UNLOCKS_ENABLED` is `false`: it is read only after
+the unlocks gate. Playback in production still waits for the staging
+acceptance of the ceiling and 24 hours of clean reconciliation after 0245.
 
 - **The rule.** An account has `cinema_prices.free_ceiling_minutes` of free
   viewing per calendar month (UTC). The proposed value is 300 and the owner
