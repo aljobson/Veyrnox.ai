@@ -8,7 +8,7 @@ export function BreakthroughVideo() {
       <div className="grid gap-8 lg:grid-cols-[1fr_420px] lg:gap-16 items-center rounded-3xl border border-vx-border bg-vx-panel p-6 sm:p-10">
         <div>
           <p className="text-xs font-bold tracking-wide text-vx-fg-muted">Viral inspiration · 5 seconds</p>
-          <h1 id="breakthrough-title" className="vx-display mt-4 text-[36px] sm:text-[48px] lg:text-[64px] text-balance">Feeling Creative, use VEYNOX.AI to serve you something inspirational.</h1>
+          <h1 id="breakthrough-title" className="vx-display mt-4 text-[36px] sm:text-[48px] lg:text-[64px] text-balance">Feeling Creative, use VEYRNOX.AI to serve you something inspirational.</h1>
           <Link href="/models" className="mt-7 inline-flex min-h-11 items-center text-[15px] font-bold text-vx-fg underline underline-offset-4 hover:text-vx-accent">Explore video models</Link>
         </div>
         <div className="order-first lg:order-last w-full max-w-[420px] mx-auto">
