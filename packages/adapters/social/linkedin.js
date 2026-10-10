@@ -23,7 +23,10 @@ const TOKEN_URL = 'https://www.linkedin.com/oauth/v2/accessToken';
 const API_BASE = 'https://api.linkedin.com';
 // YYYYMM per LinkedIn's versioned-API convention; bump alongside their
 // published deprecation schedule.
-const LINKEDIN_VERSION = '202509';
+// Current supported version checked 2026-10-10:
+// https://learn.microsoft.com/en-us/linkedin/marketing/integrations/recent-changes
+// 202509 was sunset on 2026-09-15.
+const LINKEDIN_VERSION = '202609';
 export const LINKEDIN_SCOPES = ['openid', 'profile', 'w_member_social'];
 
 /** Loads and validates LinkedIn app config from Worker secrets. Returns
@@ -50,9 +53,9 @@ export function buildAuthorizeUrl(cfg, { redirectUri, state }) {
     return url.toString();
 }
 
-/** Exchanges an authorization code for an access token (+ refresh token —
- * unlike Meta, LinkedIn issues one). Tokens are ~60 days per LinkedIn's
- * documented lifespan. */
+/** Exchanges an authorization code for an access token. A refresh token
+ * is optional and depends on the app's LinkedIn access; ordinary member
+ * connections may need reauthorization after the access token expires. */
 export async function exchangeCodeForToken(cfg, { code, redirectUri }, fetcher = fetch) {
     const body = new URLSearchParams({
         grant_type: 'authorization_code',
