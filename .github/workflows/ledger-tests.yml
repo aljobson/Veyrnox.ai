@@ -149,6 +149,7 @@ jobs:
             })();
           "
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/replay-migrations.mjs
+          DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-free-allowance-starting-values.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-reconciliation-snapshot.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-recovery-health.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-video-agent-sweep-health.mjs
@@ -186,7 +187,6 @@ jobs:
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-chat-close-send.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-chat-folders.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-free-allowance-jobs.mjs
-          DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-free-allowance-starting-values.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-fal-dispatch.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-fal-admission-capacity.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-fal-admission-pause.mjs
