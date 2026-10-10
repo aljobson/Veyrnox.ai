@@ -9,7 +9,7 @@ these copies. Signing out or switching accounts clears the master cards.
 
 This release supplies a private read surface and a service-only import RPC.
 There is no public file upload route or new generation/credit operation.
-`FILM_LIBRARY_MASTERS_ENABLED` remains false until migration 0277 is approved
+`FILM_LIBRARY_MASTERS_ENABLED` remains false until migration 0279 is approved
 and applied through the production migration workflow.
 
 ## Operator procedure
@@ -38,7 +38,7 @@ checks authenticated owner arguments, denied lookups, rate limits, no-store
 responses, signing lifetime, download headers, digest/expiry preservation,
 account counts and failure behavior with an unchanged zero Credit balance.
 
-The SQL replay check executes migration 0277 twice in PostgreSQL, exercises
+The SQL replay check executes migration 0279 twice in PostgreSQL, exercises
 import/replay, owner/source/digest/bounds checks, private table/RPC privileges,
 unchanged jobs/assets/ledger/balances, expiry and the R2 reap queue. The local
 PGlite run uses a recording stub for `cron.schedule`; it does not simulate cron:

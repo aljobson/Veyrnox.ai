@@ -18,7 +18,7 @@ await db.exec(`
  INSERT INTO public.jobs VALUES('aaaaaaaa-1111-4111-8111-111111111111','11111111-1111-4111-8111-111111111111','STORED'),('bbbbbbbb-1111-4111-8111-111111111111','22222222-2222-4222-8222-222222222222','STORED');
  INSERT INTO public.assets VALUES('aaaaaaaa-2222-4222-8222-222222222222','aaaaaaaa-1111-4111-8111-111111111111',repeat('a',64),'video/mp4',now()+interval '20 days'),('bbbbbbbb-2222-4222-8222-222222222222','bbbbbbbb-1111-4111-8111-111111111111',repeat('a',64),'video/mp4',now()+interval '20 days');
 `);
-const migration=readFileSync(new URL('../packages/db/schema/supabase/0277_film_library_masters.sql',import.meta.url),'utf8');
+const migration=readFileSync(new URL('../packages/db/schema/supabase/0279_film_library_masters.sql',import.meta.url),'utf8');
 await db.exec(migration);await db.exec(migration);
 const master='cccccccc-1111-4111-8111-111111111111';const source='aaaaaaaa-1111-4111-8111-111111111111';
 const params=['owner',master,source,'a'.repeat(64),'Empty room — final 16:9 master','b'.repeat(64),9616540,10];
