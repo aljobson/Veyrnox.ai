@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { CreatorApplication } from './CreatorApplication';
+import { CinemaDiscovery } from './CinemaDiscovery';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { Button } from '../_components/Button';
 import { getSession, onSessionChange } from '../../lib/authClient';
@@ -10,46 +11,6 @@ import { useCinemaPreview } from './preview';
 
 const identity = () => getSession()?.user?.id || '';
 const noIdentity = () => '';
-
-// Published titles, once viewing is open; the marketing sections stay until then.
-function Catalogue() {
-  const [titles, setTitles] = useState(null);
-  const [state, setState] = useState('loading');
-  const [next, setNext] = useState(null);
-  const [categories, setCategories] = useState([]);
-  const [category, setCategory] = useState('');
-  const load = async (before, slug = category) => {
-    try {
-      const params = new URLSearchParams();
-      if (before) { params.set('before', before.at); params.set('before_id', before.id); }
-      if (slug) params.set('category', slug);
-      const r = await fetch(`/api/cinema/titles${params.size ? `?${params}` : ''}`);
-      if (!r.ok) { setState(r.status === 503 ? 'closed' : 'error'); return; }
-      const data = await r.json();
-      setTitles((prev) => (before && prev ? [...prev, ...data.titles] : data.titles)); setNext(data.next && data.next_id ? { at: data.next, id: data.next_id } : null); setCategories(data.categories || []); setState('ready');
-    } catch { setState('error'); }
-  };
-  useEffect(() => { load(null); }, []); // eslint-disable-line react-hooks/exhaustive-deps
-  if (state !== 'ready') return null;
-  return <section className="mt-12" aria-labelledby="catalogue-title">
-    <h2 id="catalogue-title" className="text-2xl font-extrabold">Now showing</h2>
-    {categories.length > 0 && <nav aria-label="Categories" className="mt-4 flex gap-2 overflow-x-auto pb-2">
-      {[['', 'All'], ...categories.map((c) => [c.slug, c.label])].map(([slug, label]) => <button key={slug || 'all'} type="button" aria-pressed={category === slug}
-        onClick={() => { setCategory(slug); load(null, slug); }}
-        className={`shrink-0 rounded-full px-4 py-2 text-sm font-bold focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-vx-accent ${category === slug ? 'bg-vx-accent text-vx-accent-ink' : 'border border-vx-border text-vx-fg-muted hover:bg-vx-panel'}`}>{label}</button>)}
-    </nav>}
-    {titles.length === 0 ? <p className="mt-4 text-vx-fg-muted">{category ? 'Nothing in this category yet.' : 'Nothing is published yet. The first stories are on their way.'}</p> : <ul className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-      {titles.map((t) => <li key={t.id} className="flex flex-col rounded-2xl border border-vx-border bg-vx-base/60 p-5">
-        <p className="font-vx-mono text-xs tracking-widest text-vx-accent uppercase">{t.content_type}{t.content_type === 'SERIES' ? ` · ${t.episode_count} episodes` : t.duration_seconds ? ` · ${Math.max(1, Math.round(t.duration_seconds / 60))} min` : ''}</p>
-        <h3 className="mt-2 text-xl font-bold wrap-break-word"><Link href={`/social-cinema/title/${t.id}`} className="hover:underline">{t.title}</Link></h3>
-        <p className="mt-1 text-sm text-vx-fg-muted">{t.display_name}{t.categories?.length ? ` · ${t.categories.join(', ')}` : ''}</p>
-        <p className="mt-3 line-clamp-3 text-sm text-vx-fg-body wrap-break-word">{t.synopsis}</p>
-        <Link href={`/social-cinema/title/${t.id}`} className="mt-4 inline-flex self-start rounded-full bg-vx-accent px-4 py-2 text-sm font-bold text-vx-accent-ink">Watch</Link>
-      </li>)}
-    </ul>}
-    {next && <Button variant="secondary" className="mt-6" onClick={() => load(next)}>Show more</Button>}
-  </section>;
-}
 
 const sections = [
   ['For You', 'The first stories are still ahead.', 'The vertical episode feed is being built. Published stories will appear here when viewing opens.'],
@@ -60,21 +21,22 @@ const sections = [
 
 export function SocialCinema() {
   const [section, setSection] = useState(0);
+  const [viewingOpen, setViewingOpen] = useState(false);
   const account = useSyncExternalStore(onSessionChange, identity, noIdentity);
   const preview = useCinemaPreview();
   return <div className="mx-auto max-w-[1300px] px-4 py-10 pb-40 sm:px-6 sm:py-16 sm:pb-32"><div className="max-w-[1052px]">
     <header className="max-w-2xl">
-      <p className="mb-4 font-vx-mono text-xs tracking-widest text-vx-accent">SOCIAL CINEMA · IN DEVELOPMENT</p>
+      <p className="mb-4 font-vx-mono text-xs tracking-widest text-vx-accent">SOCIAL CINEMA{viewingOpen ? '' : ' · IN DEVELOPMENT'}</p>
       <h1 className="vx-display vx-title-detail">Stories worth<br />coming back for.</h1>
       <p className="mt-6 text-lg leading-relaxed text-vx-fg-body">Short episodes. Ongoing series. An audience with a say in what happens next.</p>
-      <p className="mt-3 text-sm text-vx-fg-muted">We’re building Social Cinema on Veyrnox.ai. Watching, publishing and voting are not open yet.</p>
+      <p className="mt-3 text-sm text-vx-fg-muted">{viewingOpen ? 'Discover published stories, ongoing series and audience competitions.' : 'We’re building Social Cinema on Veyrnox.ai. Viewing and participation open after launch review.'}</p>
     </header>
     <nav aria-label="Social Cinema" className="mt-10 flex gap-1 overflow-x-auto border-b border-vx-border pb-3">
       {sections.map(([label], index) => <button key={label} type="button"
         aria-current={section === index ? 'page' : undefined} onClick={() => setSection(index)}
         className={`shrink-0 rounded-full px-5 py-3 text-sm font-bold focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-vx-accent ${section === index ? 'bg-vx-accent text-vx-accent-ink' : 'text-vx-fg-muted hover:bg-vx-panel'}`}>{label}</button>)}
     </nav>
-    <section aria-live="polite" className="grid gap-8 py-10 sm:grid-cols-[1fr_240px] sm:items-center">
+    {section === 3 ? <section aria-live="polite" className="grid gap-8 py-10 sm:grid-cols-[1fr_240px] sm:items-center">
       <div><p className="font-vx-mono text-xs text-vx-fg-muted">COMING NEXT</p>
         <h2 className="mt-3 text-2xl font-extrabold">{sections[section][1]}</h2>
         <p className="mt-4 max-w-lg leading-relaxed text-vx-fg-body">{sections[section][2]}</p>
@@ -83,8 +45,7 @@ export function SocialCinema() {
       <div aria-hidden="true" className="hidden aspect-[3/4] items-center justify-center rounded-2xl border border-vx-border bg-vx-panel sm:flex">
         <div className="text-center"><span className="text-5xl text-vx-accent">▷</span><p className="mt-6 font-vx-mono text-xs leading-loose text-vx-fg-muted">WATCH<br />VOTE<br />RETURN</p></div>
       </div>
-    </section>
-    <Catalogue />
+    </section> : <CinemaDiscovery mode={['all', 'series', 'voting'][section]} onAvailability={section === 2 ? undefined : setViewingOpen} />}
     {preview && <section className="border-t border-vx-border pt-8" aria-labelledby="profile-title">
       <h2 id="profile-title" className="text-xl font-extrabold">Your Social Cinema profile</h2>
       {account ? <Profile key={account} /> : <div className="mt-4"><p className="mb-4 text-vx-fg-body">Use your Veyrnox.ai account to get started.</p><Button onClick={() => window.dispatchEvent(new CustomEvent('veyrnox:auth-required'))}>Sign in</Button></div>}
