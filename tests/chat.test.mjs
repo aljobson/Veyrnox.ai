@@ -1,10 +1,43 @@
 // ADR-0067: validation and prompt assembly.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { selectChatModels, SEARCH_CONTEXT_MAX_CHARS, searchApiKey, searchContextBlock, sourcesFromResults, webEngine, rowOptions, MAX_HISTORY_CHARS, MAX_REPLY_TOKENS, PLATFORM_INSTRUCTION, SEARCH_STANDING_INSTRUCTION, buildMessages, chatEnabled, sseFrame, makerOf, validateFolderName, validateThreadPatch, validateTurn } from '../lib/chat.js';
+import { estimateTokens, trimHistoryToTokens, MAX_USER_TEXT_TOKENS, MAX_SYSTEM_PROMPT_TOKENS, MAX_HISTORY_TOKENS, selectChatModels, SEARCH_CONTEXT_MAX_CHARS, searchApiKey, searchContextBlock, sourcesFromResults, webEngine, rowOptions, MAX_HISTORY_CHARS, MAX_REPLY_TOKENS, PLATFORM_INSTRUCTION, SEARCH_STANDING_INSTRUCTION, buildMessages, chatEnabled, sseFrame, makerOf, validateFolderName, validateThreadPatch, validateTurn } from '../lib/chat.js';
 
 test('the caps the flat price depends on', () => {
     assert.equal(MAX_REPLY_TOKENS, 1024); assert.equal(MAX_HISTORY_CHARS, 24000);
+    // The price assumes four characters a token: 6,000 + 2,000 + 1,000 = the 9,000 input tokens in ADR-0067.
+    assert.deepEqual([MAX_HISTORY_TOKENS, MAX_USER_TEXT_TOKENS, MAX_SYSTEM_PROMPT_TOKENS], [6000, 2000, 1000]);
+});
+
+// Audit 2026-10-09 M-06: the character caps alone let CJK text carry four times the tokens the price assumed.
+test('estimateTokens: a quarter per ASCII character, one per anything else', () => {
+    assert.equal(estimateTokens(''), 0);
+    assert.equal(estimateTokens('abcd'), 1);
+    assert.equal(estimateTokens('abcde'), 2, 'rounded up');
+    assert.equal(estimateTokens('日本語'), 3);
+    assert.equal(estimateTokens('ab日本'), 3);
+    assert.equal(estimateTokens('😀'), 1, 'one code point, one token');
+    assert.equal(estimateTokens('x'.repeat(8000)), 2000, 'the English cap is unchanged');
+});
+
+test('a message is refused once its estimated tokens pass the cap, even inside the character cap', () => {
+    const key = 'abcdefgh1234';
+    assert.equal(validateTurn({ text: '日'.repeat(2000), idempotency_key: key }).ok, true, '2,000 CJK characters is the token cap');
+    assert.deepEqual(validateTurn({ text: '日'.repeat(2001), idempotency_key: key }), { ok: false, error: 'invalid_text' });
+    assert.deepEqual(validateThreadPatch({ system_prompt: '日'.repeat(1001) }), { ok: false, error: 'invalid_system_prompt' });
+    assert.equal(validateThreadPatch({ system_prompt: '日'.repeat(1000) }).ok, true);
+});
+
+test('buildMessages keeps the newest history that fits the token budget, whole messages only', () => {
+    const big = { role: 'user', content: '日'.repeat(4000) };
+    const older = { role: 'assistant', content: '日'.repeat(600) };
+    const newer = { role: 'user', content: '日'.repeat(1500) };
+    const out = buildMessages({ systemPrompt: '', history: [older, big, newer], text: 'now' });
+    // big (4,000) + newer (1,500) fits 6,000; older (600) would push it over, so it and everything before it go.
+    assert.deepEqual(out.slice(1, -1), [big, newer]);
+    assert.deepEqual(trimHistoryToTokens([{ role: 'user', content: '日'.repeat(6001) }]), [], 'one message over the budget on its own is dropped too');
+    assert.equal(buildMessages({ systemPrompt: '', history: Array.from({ length: 30 }, () => ({ role: 'user', content: 'x'.repeat(800) })), text: 'now' }).length, 32,
+        '24,000 English characters, the database cap, all fit');
 });
 
 test('only the exact string "true" turns chat on', () => {

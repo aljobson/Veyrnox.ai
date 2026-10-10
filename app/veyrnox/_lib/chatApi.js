@@ -74,6 +74,8 @@ export function chatErrorCopy(code, { credits } = {}) {
     case 'turn_not_saved': return 'We could not save that reply, so you will not be charged.';
     case 'reply_not_saved': return 'We could not save that reply to the chat. You received it, so its Credits were used.';
     case 'provider_cut_off': case 'provider_dropped': return 'The reply was cut off. No Credits were used.';
+    case 'reply_time_limit': return 'The reply reached its time limit and was stopped there. It counts as a stopped reply and is charged.';
+    case 'stop_limit': return 'Too many replies were stopped before they started today. You can send again tomorrow. No Credits were used.';
     case 'connection_lost': return 'The connection dropped before the reply finished. It may have used Credits. Check this chat before you send again.';
     case 'connection_saved': return 'The connection dropped before the reply finished. This chat shows what was saved and the Credits it used.';
     case 'connection_refunded': return 'The connection dropped before the reply finished. Nothing was saved and no Credits were used. Your message is back in the box.';

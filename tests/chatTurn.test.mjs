@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { runChatTurn } from '../lib/chatTurn.js';
+import { runChatTurn, turnCeilingMs, STOPS_BEFORE_TEXT_PER_DAY } from '../lib/chatTurn.js';
 import { ChatProviderError } from '../packages/adapters/openrouterChat.js';
 import { PLATFORM_INSTRUCTION } from '../lib/chat.js';
 
@@ -27,6 +27,7 @@ function fakes({ replies = {}, model = MODEL, stream } = {}) {
         ledger_refund: { ok: true },
         job_submit_rejected: { ok: true },
         read_user_credits: { balance: 8 },
+        chat_stops_before_text: 0,
     };
     const rpc = async (name, args) => {
         calls.push([name, args]);
@@ -213,6 +214,55 @@ test('the user presses Stop after text: kept and charged; before any text: refun
     assert.deepEqual([evs.at(-1).data.status, evs.at(-1).data.credits_charged], ['canceled', 0]);
     assert.equal(called(f, 'job_failed')[0][1].p_error_code, 'user_canceled');
     assert.equal(called(f, 'ledger_refund').length, 1); assert.equal(called(f, 'chat_complete_turn').length, 0);
+});
+
+// Audit 2026-10-09 M-04: our own ceiling is not a provider failure once text is on screen.
+test('the ceiling fires after text: kept and charged as a stopped reply, and the user is told why', async () => {
+    const f = fakes({ stream: async function* ({ signal }) {
+        yield { delta: 'Long reply so far' };
+        await untilAborted(signal); // never ends on its own; the ceiling has to end it
+    } });
+    const evs = await events(await run(f, { deps: { ...f.deps, ceilingMs: 30 } }));
+    assert.deepEqual(names(evs), ['start', 'delta', 'error', 'done']);
+    assert.equal(evs[2].data.error, 'reply_time_limit');
+    assert.deepEqual([evs.at(-1).data.status, evs.at(-1).data.credits_charged], ['canceled', 2]);
+    assert.equal(called(f, 'chat_complete_turn')[0][1].p_status, 'canceled');
+    assert.equal(called(f, 'ledger_refund').length, 0, 'the text was delivered: charged');
+});
+
+test('the ceiling fires before any text: refunded as a timeout, as before', async () => {
+    const f = fakes({ stream: async function* ({ signal }) { await untilAborted(signal); } });
+    const evs = await events(await run(f, { deps: { ...f.deps, ceilingMs: 30 } }));
+    assert.equal(evs.find((e) => e.event === 'error').data.error, 'provider_timeout');
+    assert.deepEqual([evs.at(-1).data.status, evs.at(-1).data.credits_charged], ['failed', 0]);
+    assert.equal(called(f, 'job_failed')[0][1].p_error_code, 'provider_timeout');
+    assert.equal(called(f, 'ledger_refund').length, 1);
+});
+
+test('the ceiling grows with the row\'s reply cap: 90 s at 1,024 tokens, about 233 s at 8,192', () => {
+    assert.equal(turnCeilingMs(1024), 90_000);
+    assert.equal(turnCeilingMs(undefined), 90_000);
+    assert.equal(turnCeilingMs(256), 90_000, 'never below the base');
+    assert.equal(turnCeilingMs(8192), 90_000 + (8192 - 1024) * 20);
+});
+
+// Audit 2026-10-09 M-05: so many stops before the first character a day, then the send waits for the day to turn.
+test('too many replies stopped before text today: 429 stop_limit before any money moves', async () => {
+    const f = fakes({ replies: { chat_stops_before_text: STOPS_BEFORE_TEXT_PER_DAY } });
+    const res = await run(f);
+    assert.equal(res.status, 429);
+    assert.deepEqual(await res.json(), { error: 'stop_limit' });
+    assert.equal(called(f, 'ledger_debit').length, 0);
+    assert.equal(f.streamCalls.length, 0);
+    const under = fakes({ replies: { chat_stops_before_text: STOPS_BEFORE_TEXT_PER_DAY - 1 } });
+    assert.equal((await run(under)).status, 200);
+});
+
+test('a database without the stop count (before 0258) lets the send through', async () => {
+    const f = fakes({ replies: { chat_stops_before_text: new Error('PGRST202 function not found') } });
+    const evs = await events(await run(f));
+    assert.equal(evs.at(-1).data.status, 'complete');
+    assert.equal(called(f, 'ledger_debit').length, 1);
 });
 
 test('if saving the turn fails, nothing is refunded here and the user is told; the sweep owns the job', async () => {
@@ -896,10 +946,9 @@ test('capped web search: a balance that cannot be read stops the search too (fai
     assert.equal(f.searches.length, 0);
 });
 
-test('a stream that ends quietly when the time limit aborts it is refunded, not charged as complete', async (t) => {
+test('a stream that ends quietly when the default time limit aborts it, with text on screen, is charged as a stopped reply (ADR-0067 amendment 15)', async (t) => {
     t.mock.timers.enable({ apis: ['setTimeout'] });
     const f = fakes({
-        replies: { chat_complete_turn: { ok: true, message_id: 'msg-1', refund: true } },
         stream: async function* ({ signal }) {
             yield { delta: 'Half an ans' };
             await new Promise((resolve) => signal.addEventListener('abort', resolve, { once: true }));
@@ -909,12 +958,12 @@ test('a stream that ends quietly when the time limit aborts it is refunded, not 
     const res = await run(f);
     const pending = events(res);
     await new Promise((r) => setImmediate(r));
-    t.mock.timers.tick(90_001);
+    t.mock.timers.tick(90_001); // the default ceiling, for a 1,024-token row
     const evs = await pending;
-    assert.equal(called(f, 'chat_complete_turn')[0][1].p_status, 'error');
-    assert.equal(called(f, 'ledger_refund').length, 1);
-    assert.deepEqual(evs.find((e) => e.event === 'error').data, { error: 'provider_timeout' });
-    assert.equal(evs.at(-1).data.credits_charged, 0);
+    assert.equal(called(f, 'chat_complete_turn')[0][1].p_status, 'canceled');
+    assert.equal(called(f, 'ledger_refund').length, 0);
+    assert.equal(evs.find((e) => e.event === 'error').data.error, 'reply_time_limit');
+    assert.deepEqual([evs.at(-1).data.status, evs.at(-1).data.credits_charged], ['canceled', 2]);
 });
 
 // ADR-0067 amendment 10: the turn is finished after the reader has gone.
