@@ -5,6 +5,8 @@ import { Main } from '../../_components/Main';
 import { Button } from '../../_components/Button';
 import { TimelineView } from '../../_components/editor/TimelineView';
 import { ProjectBar } from '../../_components/editor/ProjectBar';
+import { MultitrackWorkspace } from '../../_components/editor/MultitrackWorkspace';
+import { useMultitrackEnabled } from '../../_components/editor/MultitrackFlag';
 import { MediaBin } from '../../_components/editor/MediaBin';
 import { importMedia, insertMedia, duplicateSelection, detachAudio, splitSelection, trimEdge, stepFrame, initialText, removeMedia } from '../../_lib/editorCommands.mjs';
 import { createHistory, commitHistory, undoHistory, redoHistory, retainedMedia } from '../../_lib/editorHistory.mjs';
@@ -280,8 +282,9 @@ function Editor() {
 }
 
 export default function EditorPage() {
+    const multitrack = useMultitrackEnabled();
     return <><AppNav active="editor" readAccount={false} /><Main className="mx-auto max-w-[1600px] px-4 py-8 sm:px-8 sm:py-12">
         <h1 className="mb-5 text-2xl font-black">Video editor</h1>
-        <Editor />
+        {multitrack ? <MultitrackWorkspace /> : <Editor />}
     </Main></>;
 }

@@ -149,3 +149,46 @@ after 0261, applied at 2026-10-10 15:32:27 UTC. Its earliest end is
 The owner requested every feature area of the signed-in CapCut editor. The complete observed inventory and dependency sequence are in `docs/editor/CAPCUT-GAP-2026-10-10.md`; earlier slice limits describe the shipped base rather than the final scope. Features outside those slices are now requested work, subject to their document migrations, codec qualification, provider contracts and measured costs.
 
 The first follow-on release strengthens that base: audible synchronized playback, full-source imports, collision-resistant media ids, retained undo/redo, duplicate and pointer/keyboard trims, drag reorder/move, zoom, title-driven duration and export of the latest title draft. Preview and export share audio mixing and release their decoder resources. Real-browser verdicts and decoded MP4 checks are documented in `docs/editor/FOUNDATION-VERIFICATION-2026-10-10.md`. It does not assert full CapCut parity.
+
+
+## Independent tracks and advanced workspace — 2026-10-10
+
+The owner requested implementation of the full observed feature inventory.
+The advanced workspace introduces timeline and project document v3 together:
+independent starts for video/audio/text, up to 16 tracks, 40 media, 40 video
+clips, 40 sounds, 150 text/caption items and a ten-minute composition. The
+project timebase stays 30 fps; export resamples to 24/25/30/50/60 fps without
+changing stored timing. The Worker validates every bounded property; migration
+0269 extends the SQL shape bounds while preserving old documents, invoker/RLS,
+write caps, history, conflicts and idempotency. The 32-KiB ceiling still applies.
+The older editor refuses a v3 open/restore/conflict without replacing its work.
+
+The shared compositor now evaluates crop, transform, geometric masks, blends,
+keyframes/easing, original animation/effect/transition presets and multiline
+caption styling. Audio preview and export share gain/fades, pan, three-band EQ,
+rate and overlapping mix normalization. Constant speed changes sound pitch;
+pitch preservation and speed curves require further implementation.
+
+Local export adds MP4/MOV H.264/AAC, PNG cover capture, six resolution options
+through 2160p and bitrate presets. A 400-MiB estimated encoded-output cap and
+1-GiB conservative working-allocation estimate refuse oversized exports.
+Decoding uses two export workers and retires finished inputs. These estimates
+are guards, not measured peak-RAM promises. Actual synthetic exports qualify
+six-second 4K/60 fps, six-second 480p/24 fps MOV and 76-second 720p/30 fps with
+audio; they do not qualify every ten-minute/4K combination or smaller machines.
+AAC duration includes encoder padding, documented in the verification report.
+
+`EDITOR_MULTITRACK_ENABLED` is a request-time server flag, false in production
+and true in staging. It gates both the new workspace and new v3 document writes.
+Apply 0269 through the owner-approved workflow, then require 24 hours of clean
+reconciliation before production activation. Cloud saving additionally requires
+`TENANT_PROJECTS_ENABLED`; server uploads retain their separate gate.
+
+Editor generation reuses the existing live Studio catalog, debit/refund,
+idempotency and Library paths. No new model price, provider endpoint, remote
+asset host or server-upload exception is introduced. Source media is chosen
+from the existing Library and requires the same consent statement as Create.
+New smart tools, licensed catalogs, plugins and collaboration remain requested
+work under their existing contract, price, licence and permission requirements.
+The [coverage inventory](../editor/CAPCUT-GAP-2026-10-10.md) distinguishes the
+implemented subset from the remaining full scope.

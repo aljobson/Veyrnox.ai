@@ -3,10 +3,10 @@
 // A signed link lasts at most 15 minutes, so a link is fetched when a file is ADDED, never stored.
 import { MEDIA_LIMITS } from './editorMedia.mjs';
 
-const kindOf = mime => (mime?.startsWith('video/') ? 'video' : mime?.startsWith('audio/') ? 'audio' : null);
+const kindOf = mime => (mime?.startsWith('video/') ? 'video' : mime?.startsWith('audio/') ? 'audio' : mime?.startsWith('image/') ? 'image' : null);
 
 /** The account's generated videos and sounds, newest first: [{ jobId, label, kind }]. */
-export async function listLibraryMedia(fetcher, { limit = 30, concurrency = 6 } = {}) {
+export async function listLibraryMedia(fetcher, { limit = 30, concurrency = 6, includeImages = false } = {}) {
     const page = await fetcher(`/jobs?limit=${limit}`);
     const jobs = (Array.isArray(page?.jobs) ? page.jobs : []).filter(j => j && j.has_asset && typeof j.job_id === 'string');
     const found = new Array(jobs.length).fill(null);
@@ -17,7 +17,7 @@ export async function listLibraryMedia(fetcher, { limit = 30, concurrency = 6 } 
             try {
                 const asset = await fetcher(`/jobs/${encodeURIComponent(jobs[i].job_id)}/asset`);
                 const kind = kindOf(asset?.mime_type);
-                if (kind) found[i] = { jobId: jobs[i].job_id, label: String(jobs[i].label || jobs[i].model_id || 'Generation').slice(0, 80), kind };
+                if (kind && (kind !== 'image' || includeImages)) found[i] = { jobId: jobs[i].job_id, label: String(jobs[i].label || jobs[i].model_id || 'Generation').slice(0, 80), kind };
             } catch { /* expired or removed: simply not offered */ }
         }
     }

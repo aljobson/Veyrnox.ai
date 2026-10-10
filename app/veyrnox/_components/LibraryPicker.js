@@ -13,6 +13,7 @@ const SHOWN = 12;
 const KINDS = {
   image: { prefix: 'image/', noun: 'image', plural: 'images' },
   video: { prefix: 'video/', noun: 'video', plural: 'videos' },
+  audio: { prefix: 'audio/', noun: 'audio', plural: 'audio files' },
 };
 
 export function LibraryPicker({ onPick, onClose, kind = 'image' }) {
@@ -43,7 +44,7 @@ export function LibraryPicker({ onPick, onClose, kind = 'image' }) {
   }, [prefix, noun]);
 
   return (
-    <div role="dialog" aria-modal="true" aria-label={`Choose ${kind === 'video' ? 'a video' : 'an image'} from your library`}
+    <div role="dialog" aria-modal="true" aria-label={`Choose ${kind === 'video' ? 'a video' : kind === 'audio' ? 'audio' : 'an image'} from your library`}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
       <div className="w-full max-w-[720px] max-h-[80dvh] overflow-y-auto rounded-2xl border border-vx-border bg-vx-panel p-5"
         onClick={(e) => e.stopPropagation()}>
@@ -61,7 +62,7 @@ export function LibraryPicker({ onPick, onClose, kind = 'image' }) {
                 className="aspect-square overflow-hidden rounded-lg border border-vx-border hover:border-vx-accent focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-vx-accent">
                 {kind === 'video'
                   ? <video src={it.url} muted playsInline preload="metadata" aria-label={it.label} className="h-full w-full object-cover" />
-                  : <img src={it.url} alt={it.label} className="h-full w-full object-cover" />}
+                  : kind === 'audio' ? <span className="p-2 text-xs">♫ {it.label}</span> : <img src={it.url} alt={it.label} className="h-full w-full object-cover" />}
               </button>
             ))}
           </div>

@@ -24,8 +24,10 @@ export function createAudioPlayer() {
                 const inputs = new Map();
                 try {
                     for (const id of ids) {
+                        if (tl.media[id].kind === 'graphic') continue;
                         const blob = blobs.get(id);
                         if (!blob) throw new Error('Relink the missing files before playing this project.');
+                        if (tl.media[id].kind === 'image') continue;
                         inputs.set(id, new Input({ source: new BlobSource(blob), formats: ALL_FORMATS }));
                     }
                     mix = await mixAudio(tl, inputs, Math.max(1, Math.ceil(totalFrames(tl) / FPS * SAMPLE_RATE)), controller.signal);

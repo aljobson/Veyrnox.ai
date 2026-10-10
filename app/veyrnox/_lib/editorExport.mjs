@@ -1,3 +1,6 @@
+import { exportMemoryProblem } from './editorExportMemory.mjs';
+import { validateExportSettings, EXPORT_BITRATES } from './editorExportSettings.mjs';
+import { graphicCanvas } from './editorGraphics.mjs';
 // Browser timeline editor, slice 1 (ADR-0080): the local export. Decodes the timeline's clips, draws them on a canvas, mixes the audio, and
 // writes one MP4 (H.264 + AAC) in the browser. Nothing is uploaded and nothing is charged. Imported on demand by the page, never on the server.
 //
@@ -6,12 +9,13 @@
 //   - The SEQUENTIAL decode iterator (`canvases()`), not the sparse-access one, which made the first second take 5 to 25 s.
 //   - Audio is mixed with an OfflineAudioContext and added to the muxer a second at a time, between video frames.
 //   - Cancel stops within a frame; the half-written output is discarded.
-import { Input, BlobSource, ALL_FORMATS, Output, BufferTarget, Mp4OutputFormat, CanvasSink, CanvasSource, AudioBufferSource, canEncodeVideo, canEncodeAudio, QUALITY_HIGH } from 'mediabunny';
+import { Input, BlobSource, ALL_FORMATS, Output, BufferTarget, Mp4OutputFormat, MovOutputFormat, Quality, CanvasSink, CanvasSource, AudioBufferSource, canEncodeVideo, canEncodeAudio, QUALITY_HIGH } from 'mediabunny';
 import { FPS, videoLayout, totalFrames, effectiveTransition } from './editorTimeline.mjs';
 import { frameLayers, resolvePictures, paintFrame, timelineSize } from './editorRender.mjs';
 export { EXPORT_HEIGHTS, outputSize } from './editorRender.mjs';
 import { validateExportBrowser } from './videoEnhance.mjs';
 
+import { sequenceTransitionAfter } from './editorSequence.mjs';
 import { SAMPLE_RATE, mixAudio } from './editorAudio.mjs';
 class Reader {
     constructor(sink, from, to) { this.it = sink.canvases(from, to); this.cur = null; this.nxt = null; this.done = false; }
@@ -51,40 +55,47 @@ export async function exportBlocker(size = { width: 1280, height: 720 }) {
  * Render the timeline to an MP4 Blob. `blobs` maps media id to the file's bytes. `onProgress({ stage, done, total })`.
  * Rejects with an AbortError when `signal` aborts; any partial output is discarded.
  */
-export async function exportTimeline(tl, blobs, { signal = new AbortController().signal, height = 720, onProgress = () => {} } = {}) {
+export async function exportTimeline(tl, blobs, { signal = new AbortController().signal, height = 720, frameRate = 30, format = 'mp4', quality = 'standard', onProgress = () => {} } = {}) {
     if (signal.aborted) throw abortError();
     const total = totalFrames(tl);
     if (total < 1) throw new Error('Add a clip first.');
+    const settingsProblem = validateExportSettings({ height, frameRate, format, quality }, total / FPS);
+    if (settingsProblem) throw new Error(settingsProblem);
+    const memoryProblem = exportMemoryProblem(tl, height, quality); if (memoryProblem) throw new Error(memoryProblem);
+    const outputFrames = Math.ceil(total / FPS * frameRate);
     const { width: W, height: H } = timelineSize(tl, height);
     const blocked = await exportBlocker({ width: W, height: H });
     if (blocked) throw new Error(blocked);
 
     const inputs = new Map();
-    const readers = [];
+    const readers = [], images = new Map(), retired = new Set();
     let output;
     try {
         for (const id of new Set([...tl.video, ...tl.audio].map(c => c.mediaId))) {
+            if (tl.media[id].kind === 'graphic') { images.set(id, graphicCanvas(tl.media[id].graphic)); continue; }
             const blob = blobs.get(id);
             if (!blob) throw new Error('A file in this project is not loaded. Add it again.');
+            if (tl.media[id].kind === 'image') { images.set(id, await createImageBitmap(blob)); continue; }
             inputs.set(id, new Input({ source: new BlobSource(blob), formats: ALL_FORMATS }));
         }
         const canvas = new OffscreenCanvas(W, H);
         const g = canvas.getContext('2d');
         const layout = videoLayout(tl);
         for (const [k, { clip }] of layout.entries()) {
+            if (images.has(clip.mediaId)) { readers.push({ at: async () => images.get(clip.mediaId), close: async () => {} }); continue; }
             const track = await inputs.get(clip.mediaId).getPrimaryVideoTrack();
             if (!track || !await track.canDecode()) throw new Error('This browser cannot decode one of the videos.');
             // A clip keeps playing under the next clip's dissolve, so its reader runs that much further (never past the file).
-            const to = Math.min(clip.in + clip.len + effectiveTransition(tl, k + 1), tl.media[clip.mediaId].frames) / FPS;
-            readers.push(new Reader(new CanvasSink(track, { poolSize: 6 }), clip.in / FPS, to));
+            const to = Math.min(clip.in + clip.len * (clip.rate ?? 1) + (tl.schemaVersion === 3 ? sequenceTransitionAfter(tl, clip) * (clip.rate ?? 1) : effectiveTransition(tl, k + 1)), tl.media[clip.mediaId].frames) / FPS;
+            readers.push(new Reader(new CanvasSink(track, { poolSize: 2 }), clip.in / FPS, to));
         }
 
         onProgress({ stage: 'audio', done: 0, total });
         const mix = await mixAudio(tl, inputs, Math.ceil(total / FPS * SAMPLE_RATE), signal);
 
-        output = new Output({ format: new Mp4OutputFormat({ fastStart: 'in-memory' }), target: new BufferTarget() });
-        const video = new CanvasSource(canvas, { codec: 'avc', quality: QUALITY_HIGH, keyFrameInterval: 2, hardwareAcceleration: 'prefer-software' });
-        output.addVideoTrack(video, { frameRate: FPS });
+        output = new Output({ format: format === 'mov' ? new MovOutputFormat({ fastStart: 'in-memory' }) : new Mp4OutputFormat({ fastStart: 'in-memory' }), target: new BufferTarget() });
+        const video = new CanvasSource(canvas, { codec: 'avc', quality: new Quality({ bitrate: EXPORT_BITRATES[quality] }), keyFrameInterval: 2, hardwareAcceleration: 'prefer-software' });
+        output.addVideoTrack(video, { frameRate });
         const audio = mix ? new AudioBufferSource({ codec: 'aac', bitrate: 128000 }) : null;
         if (audio) output.addAudioTrack(audio);
         await output.start();
@@ -97,27 +108,32 @@ export async function exportTimeline(tl, blobs, { signal = new AbortController()
                 sent = to;
             }
         };
-        for (let i = 0; i < total; i++) {
+        for (let i = 0; i < outputFrames; i++) {
             if (signal.aborted) throw abortError();
-            const layers = frameLayers(tl, i);
+            const layers = frameLayers(tl, Math.min(total - 1, i / frameRate * FPS));
             paintFrame(g, W, H, layers, await resolvePictures(layers, (k, time) => readers[k].at(time)));
-            await video.add(i / FPS, 1 / FPS);
-            if ((i + 1) % FPS === 0) { await flush((i + 1) / FPS * SAMPLE_RATE); onProgress({ stage: 'encode', done: i + 1, total }); }
+            for (const [k, entry] of layout.entries()) {
+                const until = entry.start + entry.clip.len + (tl.schemaVersion === 3 ? sequenceTransitionAfter(tl, entry.clip) : effectiveTransition(tl, k + 1));
+                if (!retired.has(k) && (i + 1) / frameRate * FPS >= until) { await readers[k].close(); retired.add(k); }
+            }
+            await video.add(i / frameRate, Math.min(1 / frameRate, total / FPS - i / frameRate));
+            if ((i + 1) % frameRate === 0) { await flush(Math.floor((i + 1) / frameRate * SAMPLE_RATE)); onProgress({ stage: 'encode', done: i + 1, total: outputFrames }); }
         }
         await flush(mix ? mix.length : 0);
         video.close();
         audio?.close();
         await output.finalize();
         onProgress({ stage: 'done', done: total, total });
-        return new Blob([output.target.buffer], { type: 'video/mp4' });
+        return new Blob([output.target.buffer], { type: format === 'mov' ? 'video/quicktime' : 'video/mp4' });
     } catch (error) {
         if (output) await output.cancel().catch(() => {});
         throw signal.aborted ? abortError() : error;
     } finally {
-        await Promise.allSettled(readers.map(reader => reader.close()));
+        await Promise.allSettled(readers.filter((_, k) => !retired.has(k)).map(reader => reader.close()));
         for (const input of inputs.values()) input.dispose();
+        for (const bitmap of images.values()) bitmap.close?.();
     }
 }
 
-export const exportFileName = (title = 'veyrnox-edit') =>
-    `${String(title).replace(/\.[^.]+$/, '').replace(/[^\p{L}\p{N}_-]+/gu, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'veyrnox-edit'}.mp4`;
+export const exportFileName = (title = 'veyrnox-edit', format = 'mp4') =>
+    `${String(title).replace(/\.[^.]+$/, '').replace(/[^\p{L}\p{N}_-]+/gu, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'veyrnox-edit'}.${format === 'mov' ? 'mov' : 'mp4'}`;
