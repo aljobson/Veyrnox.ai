@@ -14,7 +14,7 @@ import { PriceSlip } from '../_components/PriceSlip';
 export function WideNav() {
   return (
     <div data-print="hide" className="sticky top-0 z-40 h-16 border-b border-vx-border bg-vx-base/90 backdrop-blur-sm">
-      <div className="h-full px-4 sm:px-6 flex items-center gap-3 lg:gap-6 max-w-[1300px] mx-auto">
+      <div className="h-full px-4 sm:px-6 flex items-center gap-1 sm:gap-3 lg:gap-6 max-w-[1300px] mx-auto">
         <Link href="/" className="flex items-center shrink-0" aria-label="Veyrnox.ai home">
           <Logo size={30} wordmark />
         </Link>
@@ -90,6 +90,7 @@ export function FeaturedHeroCards({ catalog }) {
               key={f.key}
               href={f.href}
               clip={SHOWCASE_CLIPS[f.key]}
+              uncroppedOnMobile
               className="vx-rise block text-left rounded-2xl overflow-hidden"
               style={{ '--vx-i': i }}
               mediaClassName="aspect-[4/5]"
