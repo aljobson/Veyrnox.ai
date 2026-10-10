@@ -20,6 +20,8 @@ import { presignPutUrl, isConfigured, envConfig } from '../../../../../../packag
 
 export async function POST(request, { params }) {
   return protectedRoute(request, async context => {
+    // Cloud document saving can open independently of device-media upload acceptance.
+    if (process.env.PROJECT_MEDIA_UPLOADS_ENABLED !== 'true') throw new ApiError(404, 'NOT_FOUND', 'The resource was not found.');
     const id = uuid((await params).id).toLowerCase();
     const body = await readJson(request, 4096);
     exactKeys(body, ['media_type', 'size_bytes']);

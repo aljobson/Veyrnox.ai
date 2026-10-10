@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button } from '../Button';
 import { Modal } from '../Modal';
 import { gatewayFetch, makeIdempotencyKey } from '../../_lib/gateway';
-import { useProjectsPreview } from '../../_lib/useProjectsPreview';
+import { useProjectsEnabled } from '../ProjectsFlag';
 import { equalProjectDocuments } from '../../../../lib/projectDocument.js';
 import { timelineFromDocument, documentForTimeline, mediaToRelink, matchLocalFile, saveProblem } from '../../_lib/editorProject.mjs';
 import { loadLibraryBlob } from '../../_lib/editorLibrary.mjs';
@@ -16,10 +16,10 @@ const date = v => (v ? new Date(v).toLocaleString() : '');
 /**
  * Slice 3 (ADR-0080): the timeline lives in a project document (v2). `onLoadTimeline(tl)` replaces the page's timeline; `blobs` is
  * the page's file map, filled here when a reopened project's files are fetched (Library) or chosen again (local). Shown only behind
- * the projects preview switch; the API itself answers 404 wherever TENANT_PROJECTS_ENABLED is off.
+ * TENANT_PROJECTS_ENABLED; the API itself answers 404 wherever the flag is off.
  */
 export function ProjectBar({ tl, blobs, onLoadTimeline, onRelinked }) {
-    const enabled = useProjectsPreview();
+    const enabled = useProjectsEnabled();
     const alive = useRef(true), pending = useRef(null), timer = useRef(null);
     const [projectId, setProjectId] = useState(null), [name, setName] = useState('');
     const [doc, setDoc] = useState(null), [revision, setRevision] = useState(0), [savedAt, setSavedAt] = useState(null);

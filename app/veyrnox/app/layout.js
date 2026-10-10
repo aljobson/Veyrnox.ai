@@ -1,5 +1,6 @@
 // ADR-0060: framework scripts must use this request's nonce, never cached HTML.
 import { EditorFlagProvider } from '../_components/EditorFlag';
+import { ProjectsFlagProvider } from '../_components/ProjectsFlag';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,5 +18,7 @@ export const metadata = {
 };
 
 export default function Layout({ children }) {
-  return <EditorFlagProvider enabled={process.env.EDITOR_TIMELINE_ENABLED === 'true'}>{children}</EditorFlagProvider>;
+  return <EditorFlagProvider enabled={process.env.EDITOR_TIMELINE_ENABLED === 'true'}>
+    <ProjectsFlagProvider enabled={process.env.TENANT_PROJECTS_ENABLED === 'true'}>{children}</ProjectsFlagProvider>
+  </EditorFlagProvider>;
 }

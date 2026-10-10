@@ -10,7 +10,7 @@ import { ThemeToggle } from './ThemeToggle';
 import { gatewayFetch, GatewayError } from '../_lib/gateway';
 import { getSession, onSessionChange } from '../../lib/authClient';
 import { accountLabel } from '../_lib/account';
-import { useProjectsPreview } from '../_lib/useProjectsPreview';
+import { useProjectsEnabled } from './ProjectsFlag';
 import { useVideoEnhancePreview } from '../_lib/useVideoEnhancePreview';
 import { useEditorEnabled } from './EditorFlag';
 import { NAV_CATEGORIES } from '../_lib/tokens';
@@ -79,7 +79,7 @@ export function MarketingNav() {
 // If `balance` prop is provided the parent owns it; otherwise the pill
 // self-fetches and subscribes to veyrnox:balance-changed.
 export function AppNav({ balance, active = 'explore', readAccount = true }) {
-  const projectsEnabled = useProjectsPreview();
+  const projectsEnabled = useProjectsEnabled();
   const enhanceEnabled = useVideoEnhancePreview();
   const editorEnabled = useEditorEnabled();
   const tabs = useRef(null);
