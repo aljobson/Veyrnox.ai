@@ -129,7 +129,7 @@ test('every homepage template has its own wall placement', () => {
     }
 });
 
-test('imported inspiration keeps its title and source credit', () => {
+test('previews keep their title and source credit', () => {
     const sources = new Set(SHOWCASE_SOURCES.map((source) => source.name));
     for (const [key, clip] of Object.entries(SHOWCASE_CLIPS)) {
         assert.ok(clip.title?.trim(), `${key} has no source title`);
@@ -138,6 +138,7 @@ test('imported inspiration keeps its title and source credit', () => {
     assert.deepEqual(SHOWCASE_SOURCES.map((source) => source.url), [
         'https://syntx.ai/trends',
         'https://higgsfield.ai/',
+        'https://veyrnox.ai/',
     ]);
 });
 

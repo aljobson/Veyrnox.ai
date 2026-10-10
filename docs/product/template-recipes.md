@@ -4,7 +4,7 @@ On 10 October 2026 the owner requested usable recipes for the imported previews,
 including prompts and inputs, rather than unrelated footage in preset cards.
 The source template workflows were inspected with Agent Reach and the REA skill.
 
-`sourceTemplates.js` associates each of the 37 imported clips with its own title,
+`sourceTemplates.js` associates each of the 37 effect recipes with its own title,
 clip key, Veyrnox remix prompt, supported video model, duration, upload guidance
 and original recipe. The gallery exposes 22 recipes; the homepage wall exposes
 seven different recipes. These 29 visible template placements retain distinct
@@ -75,3 +75,22 @@ references and navigation to the correct model/preset sign-in gate. The in-app
 browser clipboard reader returned an empty string, so clipboard contents and
 the authenticated studio were not independently verified in this session.
 Actual model output can vary; the UI describes this as creating similar content.
+
+## Tested Frozen In Motion preview
+
+On 10 October 2026 the owner signed in and requested a generation using the
+published Frozen In Motion prompt unchanged. Veyrnox job
+`5c5755b0-83d8-4459-96c2-2732277f2bf6` reached STORED through FAL's
+`kling-3.0-i2v` at five seconds and 34 credits. The original synthetic starting
+image already places the woman in a suspended leap. Review at the beginning,
+middle and end shows a stable bent-knee pose with moving pedestrians and
+camera motion; there is slight hair/clothing drift.
+
+The owner then approved this generated video as the template preview.
+The card and detail page label it as generated on Veyrnox, and input guidance
+now specifies a person already suspended mid-leap. The runnable prompt,
+negative prompt, model, duration and credit cost are unchanged. The imported
+source recipe remains available separately. See [showcase provenance](showcase-clips.md)
+for output hashes and encode details, and [ADR-0022](../adr/0022-manual-test-credit-grant.md)
+for the approved one-time test grant. This verifies one example, not every
+possible customer upload or repeated generation.
