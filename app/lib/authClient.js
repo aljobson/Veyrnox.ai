@@ -30,6 +30,7 @@
 
 import { clearJobHistory } from "../veyrnox/_lib/jobHistory.js";
 import { clearChatLocal } from "../veyrnox/_lib/chatLocal.js";
+import { clearFilmLocal } from "../veyrnox/_lib/filmStudioStorage.js";
 import { keepOAuthVerifier, keepMagicVerifier, takeVerifier } from "./pkceVerifier.js";
 
 const STORAGE_KEY = "veyrnox_supabase_session";
@@ -165,6 +166,7 @@ function setSession(s) {
     if (!s || readStored()?.user?.id !== s.user?.id) {
         clearJobHistory();
         clearChatLocal(localStorage);
+        clearFilmLocal(localStorage);
     }
     // Safari private browsing and blocked site data throw on setItem, not on
     // access. The read path was already guarded; this was not, so the throw

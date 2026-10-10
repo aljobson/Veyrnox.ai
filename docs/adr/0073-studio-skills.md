@@ -45,3 +45,7 @@ a model-triggered spend is the dangerous part. Everything else an assistant does
 - No new access path, no database change, and the money rules are untouched.
 - A skill's quality is the model's: it can write a poor prompt, but not charge for it.
 - Adding a skill is adding an entry and a test, and the 4,000-character test covers the catalog growing.
+
+## Film Studio extension — 2026-10-10
+
+Seven Film assistants now follow setup, studio-init, film-breakdown, reference-board, asset-passport, stress-test and shot-prompt. Their instructions remain ordinary priced Chat replies. A native `/app/film-studio` workspace owns structured cards, references, approval and lock decisions, versioned prompts and generation results. Chat cannot set those decisions. The workspace uses account-scoped browser storage and exports instead of the preview tenant Projects API. It opens the existing Studio draft handoff and never calls a generation API itself. See [Film Studio](../product/film-studio.md) for the gates, persistence, limits and verification.

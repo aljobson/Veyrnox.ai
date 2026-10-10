@@ -3,11 +3,13 @@
 // no flag. It never makes anything and never spends Credits: its result is a "Studio draft", a fenced block the chat
 // turns into an Open in Studio button, and only the person's own press of Generate charges anything.
 
+import { FILM_ASSISTANTS } from './filmStudioAssistants.js';
+
 export const MAX_INSTRUCTIONS = 4000; // the chat's own Instructions limit (ADR-0067)
 export const MAX_DRAFTS = 6;          // cards for one reply (a storyboard is the most that needs several)
 export const MAX_DRAFT_PROMPT = 2000;
 
-export const SKILL_GROUPS = ['Make', 'Edit', 'Plan'];
+export const SKILL_GROUPS = ['Make', 'Edit', 'Plan', 'Film'];
 
 // 1 Credit, reads images: the cheapest chat model that can look at a picture the person attached.
 const SKILL_MODEL = 'chat-gpt-6-luna';
@@ -23,7 +25,7 @@ const PREAMBLE = [
   'Keep replies short and plain. If something essential is missing, ask one question first.',
 ].join('\n');
 
-/** @type {{id:string, name:string, blurb:string, group:'Make'|'Edit'|'Plan', model:string, starter:string, body:string}[]} */
+/** @type {{id:string, name:string, blurb:string, group:'Make'|'Edit'|'Plan'|'Film', model:string, starter:string, body:string}[]} */
 export const SKILLS = [
   {
     id: 'prompt-writer', name: 'Prompt writer', group: 'Make', model: SKILL_MODEL,
@@ -73,6 +75,7 @@ export const SKILLS = [
     starter: 'Paste the prompt and say what went wrong',
     body: 'Skill: Fix my prompt. They paste a prompt and say what went wrong, or attach the result. Name the likely cause in one or two lines: too vague, conflicting instructions, too many subjects, or the wrong model for the job. Rewrite the prompt and say what you changed. If a different model would suit better, say which.',
   },
+  ...FILM_ASSISTANTS,
 ];
 
 export function skillById(id) {
