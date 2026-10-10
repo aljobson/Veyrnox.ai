@@ -212,7 +212,10 @@ export function buildRequest(target, inputs) {
  * @param {string} cfg.apiKey            KIE_API_KEY
  * @param {string} cfg.callbackUrl       https URL of /api/webhook/kie
  * @param {number} [cfg.timeoutMs=15000]
- * @returns {Promise<{ok:true, providerJobId:string}|{ok:false, error:string, clientError?:string}>}
+ * `error` is for the server log. `errorCode` is set only for the one refusal
+ * kie types for us (402, the kie balance is empty); every other refusal is
+ * left to the classifier (ADR-0066).
+ * @returns {Promise<{ok:true, providerJobId:string}|{ok:false, error:string, errorCode?:string, clientError?:string}>}
  */
 export async function submitTask(job, cfg) {
     if (!/^[A-Za-z0-9._-]{1,128}$/.test(String(job.job_id || ''))) return { ok: false, error: 'invalid job_id' };
@@ -246,7 +249,15 @@ export async function submitTask(job, cfg) {
         // kie reports errors both as HTTP status and as a `code` field in a 200.
         const code = data && typeof data.code === 'number' ? data.code : res.status;
         if (!res.ok || code !== 200) {
-            return { ok: false, error: `kie ${res.status}/${code}: ${String((data && data.msg) || '').slice(0, 200)}` };
+            const error = `kie ${res.status}/${code}: ${String((data && data.msg) || '').slice(0, 200)}`;
+            // 402 is the one refusal kie documents as ours to fix, not the
+            // user's: "Insufficient Credits - Account does not have enough
+            // credits" (docs.kie.ai, createTask and veo/generate). Typed so
+            // jobs.error_code says the kie balance is empty; the refund is
+            // the same (lib/submitRejection.js). Every other code stays a log
+            // string for the classifier (ADR-0066).
+            if (code === 402 || res.status === 402) return { ok: false, error, errorCode: 'provider_payment_required' };
+            return { ok: false, error };
         }
         const taskId = data && data.data && data.data.taskId;
         if (typeof taskId !== 'string' || !/^[A-Za-z0-9._-]{1,128}$/.test(taskId)) {

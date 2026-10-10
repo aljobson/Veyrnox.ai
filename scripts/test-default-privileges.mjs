@@ -17,7 +17,7 @@ const can = async (role, fn) => (await q('SELECT has_function_privilege($1, $2, 
 // migration named. A new entry here is a deliberate decision, not a default.
 const BROWSER_CALLABLE = new Set([
     'public.applied_migration_names()',         // 0034, anon: migration-ledger CI check
-    'public.catalog_watch()',                   // 0030, anon: fal-catalog-watch
+    'public.catalog_watch()',                   // 0030, anon: fal-catalog-watch; active fal rows only since 0247
     'public.reconcile_status()',                // 0128, anon: reconcile-watch
     'public.recovery_status()',                 // 0131, anon: recovery-health
     'public.create_project(uuid,text,text)',    // 0135+, authenticated: tenant wrappers (ADR-0051)

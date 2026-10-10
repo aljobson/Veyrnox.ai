@@ -1,0 +1,125 @@
+name: provider-balances
+
+# Are the prepaid provider balances above their floors?
+#
+# fal.ai, kie.ai and OpenRouter are paid from balances the owner tops up by
+# hand. An empty one refuses every submit: the customer is refunded, so no
+# money is lost, but every model on that provider is down until someone
+# notices. Nothing in the app reads a balance, so this does, hourly, through
+# each provider's read-only endpoint (scripts/check-provider-balances.mjs),
+# and opens one issue per episode. Runbook: docs/operations/provider-balances.md.
+#
+# Off until the repository variable PROVIDER_BALANCE_WATCH_ENABLED is 'true',
+# because every run needs all three keys below and a monitor that cannot read
+# a balance files an issue (could not check is never a pass).
+#
+# Secrets (Actions only, never on the Worker):
+#   FAL_BILLING_KEY            a fal key on the BILLING or READONLY preset
+#   KIE_BALANCE_API_KEY        a kie API key, made for this watch so it can be revoked alone
+#   OPENROUTER_MANAGEMENT_KEY  an OpenRouter Management key with an expiry set
+# Floors are repository variables with defaults in scripts/lib/provider-balances.mjs.
+#
+# The report names the verdict and the floor, never the balance: the repo,
+# its Actions logs and its issues are public.
+
+on:
+  schedule:
+    - cron: '41 * * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: provider-balances
+  cancel-in-progress: true
+
+jobs:
+  check:
+    # Only main: a workflow_dispatch on another branch would run that
+    # branch's copy of the script with this job's secrets.
+    if: vars.PROVIDER_BALANCE_WATCH_ENABLED == 'true' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      exit: ${{ steps.check.outputs.exit }}
+      report: ${{ steps.check.outputs.report }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22'
+
+      # Node builtins and global fetch only, so no npm install.
+      # Exit 0 = all above floor, 1 = low, 2 = could not read.
+      - name: Read the balances
+        id: check
+        env:
+          FAL_BILLING_KEY: ${{ secrets.FAL_BILLING_KEY }}
+          KIE_BALANCE_API_KEY: ${{ secrets.KIE_BALANCE_API_KEY }}
+          OPENROUTER_MANAGEMENT_KEY: ${{ secrets.OPENROUTER_MANAGEMENT_KEY }}
+          PROVIDER_BALANCE_FLOOR_FAL_USD: ${{ vars.PROVIDER_BALANCE_FLOOR_FAL_USD }}
+          PROVIDER_BALANCE_FLOOR_KIE_CREDITS: ${{ vars.PROVIDER_BALANCE_FLOOR_KIE_CREDITS }}
+          PROVIDER_BALANCE_FLOOR_OPENROUTER_USD: ${{ vars.PROVIDER_BALANCE_FLOOR_OPENROUTER_USD }}
+        run: |
+          set +e
+          node scripts/check-provider-balances.mjs > report.txt 2>&1
+          code=$?
+          set -e
+          cat report.txt
+          echo "exit=$code" >> "$GITHUB_OUTPUT"
+          {
+            echo 'report<<BALANCE_REPORT_EOF'
+            cat report.txt
+            echo 'BALANCE_REPORT_EOF'
+          } >> "$GITHUB_OUTPUT"
+          {
+            echo '### Provider balances'
+            case "$code" in
+              0) echo 'Every prepaid balance is above its floor.' ;;
+              1) echo '**Low:** a provider balance is at or under its floor. Top up before it refuses submits.' ;;
+              *) echo '**Could not check:** a balance was unreadable. This is not a pass.' ;;
+            esac
+            echo '```'
+            cat report.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit "$code"
+
+  # A low balance and an unreadable one both file: a monitor that cannot
+  # answer is the same risk as one that is red (signup-gate, recovery-health).
+  # One open issue per episode; the hourly job summary shows current state.
+  report:
+    needs: check
+    if: always() && (needs.check.outputs.exit == '1' || needs.check.outputs.exit == '2') && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - name: Open one issue per episode
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          EXIT: ${{ needs.check.outputs.exit }}
+          REPORT: ${{ needs.check.outputs.report }}
+        run: |
+          existing=$(gh issue list --label provider-balance --state open --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            echo "Already tracked in #$existing"
+            exit 0
+          fi
+          gh label create provider-balance --color B60205 \
+            --description 'a prepaid provider balance is low or could not be read' 2>/dev/null || true
+          if [ "$EXIT" = "1" ]; then
+            title="Provider balance is LOW — $(date -u +%Y-%m-%d)"
+            lead='A prepaid provider balance is at or under its floor. When it reaches zero the provider refuses every submit: each customer is refunded, and every model on that provider is down until it is topped up.'
+            fix='Top up the provider named below in its billing dashboard. Then confirm the next hourly run is green and close this issue. To change a floor, set the repository variable named in docs/operations/provider-balances.md.'
+          else
+            title="Provider balance could not be read — $(date -u +%Y-%m-%d)"
+            lead='The hourly check could not read a balance, which is not a pass: it may be low right now.'
+            fix='Read the line below for the provider and the reason (a missing or expired key, a key without the billing permission, a provider outage). Fix the key in Actions secrets or run scripts/check-provider-balances.mjs by hand with the same key. A monitor that cannot answer is the same risk as a monitor that is red. Runbook: docs/operations/provider-balances.md.'
+          fi
+          printf '%s\n\n%s\n\n```\n%s\n```\n' "$lead" "$fix" "$REPORT" > body.md
+          gh issue create --title "$title" --label provider-balance --body-file body.md
