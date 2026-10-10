@@ -174,7 +174,7 @@ browser JWT may call.
 | `cinema_creator_applications`, `cinema_creator_reviews` | apply → review (append-only) |
 | `cinema_content`, `cinema_content_mutations` | SERIES → SEASON → EPISODE tree (self-FK on (parent_id, creator_id)); lifecycle DRAFT/UNDER_REVIEW/PUBLISHED/SUSPENDED; categories ≤ 2 |
 | `cinema_uploads` | Stream upload per content; states provisioning → uploading → processing → ready / error → deleting → deleted; recovery, removal and proxy-transfer claims |
-| `cinema_prices` | episode_unlock 6, film_unlock 6, free_episodes 5, pass_ceiling_minutes 3,000 |
+| `cinema_prices` | episode_unlock 6, film_unlock 6, free_episodes 5, pass_ceiling_minutes 3,000 (1,500 once 0244 is applied) |
 | `cinema_unlocks`, `cinema_unlock_reversals` | credit unlock → ledger entry; one live unlock per (user, content) |
 | `cinema_pass_plans`, `cinema_passes`, `cinema_pass_events`, `cinema_pass_plays` | Stripe subscription state; one active pass per user; play seconds toward the ceiling |
 | `cinema_submissions`, `cinema_submission_reviews`, `cinema_moderation_actions`, `cinema_categories` | publication review and moderation |
