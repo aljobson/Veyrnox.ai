@@ -7,6 +7,8 @@
   import * as TL from '/lib/editorTimeline.mjs';
   import * as MD from '/lib/editorMedia.mjs';
   import * as EX from '/lib/editorExport.mjs';
+  import * as RD from '/lib/editorRender.mjs';
+  import * as PV from '/lib/editorPreview.mjs';
   const blobs = new Map();
   async function load(file, id) {
     const blob = await (await fetch(`/media/${file}`)).blob();
@@ -16,5 +18,5 @@
     blobs.set(id, blob);
     return MD.mediaFromProbe(id, file, probe);
   }
-  window.s1 = { TL, MD, EX, blobs, load, ready: true };
+  window.s1 = { TL, MD, EX, RD, PV, blobs, load, ready: true };
 </script>

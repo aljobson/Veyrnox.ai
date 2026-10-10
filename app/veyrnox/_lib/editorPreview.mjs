@@ -1,7 +1,7 @@
-// Browser timeline editor, slice 1 (ADR-0080): draws the frame under the playhead on a canvas. Silent (sound is mixed at export).
+// Browser timeline editor (ADR-0080): draws the frame under the playhead on a canvas through editorRender.mjs, as the export does. Silent (sound is mixed at export).
 // One decoder per file, created on first use. Frames are asked for by time, so scrubbing in any direction works; a newer request
 // always wins, so a slow decode never paints over a later position.
-import { FPS, videoClipAt } from './editorTimeline.mjs';
+import { frameLayers, resolvePictures, paintFrame } from './editorRender.mjs';
 
 export function createPreviewer(blobs) {
     const sinks = new Map();
@@ -19,20 +19,15 @@ export function createPreviewer(blobs) {
         /** Returns true when the frame was painted, false when a newer request replaced it. */
         async draw(tl, frame, canvas) {
             const ticket = ++latest;
-            const g = canvas.getContext('2d');
-            const hit = videoClipAt(tl, frame);
-            let picture = null;
-            if (hit && blobs.has(hit.clip.mediaId)) {
-                const sink = await sinkFor(hit.clip.mediaId);
-                if (sink && !disposed) picture = (await sink.getCanvas((hit.clip.in + (frame - hit.start)) / FPS))?.canvas ?? null;
-            }
+            const layers = frameLayers(tl, frame);
+            const pics = await resolvePictures(layers, async (k, time) => {
+                const id = tl.video[k].mediaId;
+                if (!blobs.has(id)) return null;
+                const sink = await sinkFor(id);
+                return sink && !disposed ? (await sink.getCanvas(time))?.canvas ?? null : null;
+            });
             if (disposed || ticket !== latest) return false;
-            g.fillStyle = '#000';
-            g.fillRect(0, 0, canvas.width, canvas.height);
-            if (picture) {
-                const s = Math.min(canvas.width / picture.width, canvas.height / picture.height);
-                g.drawImage(picture, (canvas.width - picture.width * s) / 2, (canvas.height - picture.height * s) / 2, picture.width * s, picture.height * s);
-            }
+            paintFrame(canvas.getContext('2d'), canvas.width, canvas.height, layers, pics);
             return true;
         },
         dispose() { disposed = true; for (const { input } of sinks.values()) input.dispose(); sinks.clear(); },
