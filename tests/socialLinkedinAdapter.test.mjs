@@ -31,7 +31,7 @@ test('buildAuthorizeUrl refuses a non-https redirect', () => {
     assert.throws(() => buildAuthorizeUrl(cfg, { redirectUri: 'http://veyrnox.ai/cb', state: 's' }));
 });
 
-test('exchangeCodeForToken posts form-urlencoded and captures the refresh token LinkedIn (unlike Meta) issues', async () => {
+test('exchangeCodeForToken posts form-urlencoded and captures a refresh token when LinkedIn returns one', async () => {
     let sentUrl = null, sentBody = null, sentHeaders = null;
     const fetcher = async (url, init) => {
         sentUrl = url; sentBody = init.body; sentHeaders = init.headers;
@@ -119,7 +119,7 @@ test('publishPost initializes an image upload, PUTs the source bytes through, th
 
     const init = calls.find((c) => c.url.includes('initializeUpload'));
     assert.equal(init.init.method, 'POST');
-    assert.equal(init.init.headers['Linkedin-Version'], '202509');
+    assert.equal(init.init.headers['Linkedin-Version'], '202609');
     assert.equal(init.init.headers['X-Restli-Protocol-Version'], '2.0.0');
     assert.deepEqual(JSON.parse(init.init.body), { initializeUploadRequest: { owner: 'urn:li:person:member-42' } });
 
@@ -129,6 +129,7 @@ test('publishPost initializes an image upload, PUTs the source bytes through, th
     assert.equal(upload.init.headers.Authorization, 'Bearer token');
 
     const post = calls.find((c) => c.url === 'https://api.linkedin.com/rest/posts');
+    assert.equal(post.init.headers['Linkedin-Version'], '202609');
     const postBody = JSON.parse(post.init.body);
     assert.equal(postBody.author, 'urn:li:person:member-42');
     assert.equal(postBody.commentary, 'hello world');
