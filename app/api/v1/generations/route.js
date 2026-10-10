@@ -11,6 +11,7 @@ import { classifySubmitFailure } from '../../../../lib/submitFailureClass.js';
 import { resolveUploadedSource, resolveAssetSource } from '../../../../lib/resolveSource.js';
 import { envConfig as r2EnvConfig, isConfigured as r2IsConfigured } from '../../../../packages/adapters/r2.js';
 import { editUnits, clipCaptionsEnabled, clipSlowEnabled } from '../../../../lib/clipEdit.js';
+import { compositeRefundGate } from '../../../../lib/compositeRefunds.js';
 import { resolveEdit, defaultDeps as editDeps } from '../../../../lib/clipEditSources.js';
 import { checkPlan, checkCapacity } from '../../../../lib/montageGate.js';
 
@@ -376,6 +377,12 @@ export async function POST(req) {
         }
     }
 
+    // A composite job whose account has had too many refunded in a day waits for the day to turn (M-07).
+    const refundsGate = await compositeRefundGate({ rpc, cfg, userId, modelId });
+    if (refundsGate) {
+        return NextResponse.json(refundsGate.body, { status: refundsGate.status, headers: { 'retry-after': String(refundsGate.retryAfter) } });
+    }
+
     // 3. Debit atomically. Creates jobs row too. Price = catalog unit price
     //    times the validated unit count; never a client-supplied number.
     let credits = priceFor(modelRow, pricedInputs);
@@ -422,6 +429,12 @@ export async function POST(req) {
             JSON.stringify({ error: 'rate_limited', limit: debit.limit, count: debit.count, retry_after_seconds: retryAfter }),
             { status: 429, headers: { 'content-type': 'application/json', 'retry-after': String(retryAfter) } },
         );
+    }
+    if (debit?.ok === false && debit.code === 'PROVIDER_ADMISSION_PAUSED') {
+        const retryAfter = Math.max(1, Math.min(600, Number(debit.retry_after_seconds) || 60));
+        return NextResponse.json({ error: 'provider_admission_paused' }, {
+            status: 503, headers: { 'retry-after': String(retryAfter) },
+        });
     }
     if (!debit || debit.ok === false) {
         const status = debit && debit.code === 'INSUFFICIENT_BALANCE' ? 402

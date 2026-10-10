@@ -1,5 +1,7 @@
 import Link from 'next/link';
 import { MarketingNav } from '../_components/NavBar';
+import { Main } from '../_components/Main';
+import { PremiumTag } from '../_components/PremiumTag';
 import { LIST_GROUPS } from '../_sections/showcase';
 import { listModels } from '../_lib/modelPages';
 
@@ -23,8 +25,8 @@ export default async function ModelsIndex() {
   return (
     <div className="min-h-dvh">
       <MarketingNav />
-      <section className="max-w-[1300px] mx-auto px-4 sm:px-6 pt-14 sm:pt-20 pb-28">
-        <h1 className="vx-display text-[52px] sm:text-[80px] lg:text-[104px] max-w-[12ch]">Every model. Exact prices.</h1>
+      <Main className="max-w-[1300px] mx-auto px-4 sm:px-6 pt-14 sm:pt-20 pb-28">
+        <h1 className="vx-display vx-title-index max-w-[12ch]">Every model. Exact prices.</h1>
         <p className="mt-6 mb-12 text-lg sm:text-xl text-vx-fg-body max-w-[46ch] leading-[1.5] text-pretty">
           {models.length} models, at the credits the button will show. Read live from the catalog.
         </p>
@@ -40,7 +42,7 @@ export default async function ModelsIndex() {
                   <li key={m.id}>
                     <Link href={`/models/${encodeURIComponent(m.id)}`} className="group flex items-baseline gap-2 py-2 text-vx-fg-body hover:text-vx-fg">
                       <span className="min-w-0 truncate group-hover:underline underline-offset-4">{m.title}</span>
-                      {m.gated && <span className="shrink-0 text-[11px] text-vx-money">premium</span>}
+                      {m.gated && <PremiumTag className="shrink-0" />}
                       <span aria-hidden className="vx-leader flex-1" />
                       <span className="shrink-0 font-bold text-vx-money">{m.credits} cr</span>
                     </Link>
@@ -50,7 +52,7 @@ export default async function ModelsIndex() {
             </div>
           ))}
         </div>
-      </section>
+      </Main>
     </div>
   );
 }

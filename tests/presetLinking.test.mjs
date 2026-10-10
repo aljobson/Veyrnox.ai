@@ -34,7 +34,9 @@ test('the template card navigates to its template page', () => {
     const raw = readFileSync(new URL('../app/veyrnox/_components/PresetCard.js', import.meta.url), 'utf8');
     // Strip comments first, so an explanation cannot satisfy or fail a check.
     const src = raw.split('\n').filter((l) => !l.trim().startsWith('//')).join('\n');
-    assert.match(src, /<Link/, 'must render a Link');
+    assert.match(src, /<MediaTile/, 'must render the linked media tile');
+    const tile = readFileSync(new URL('../app/veyrnox/_components/MediaTile.js', import.meta.url), 'utf8');
+    assert.match(tile, /<Link[^>]*href=\{href\}/, 'the media tile must forward its destination to a Link');
     assert.match(src, /templateHref\(preset\)/, 'must link to the template page');
     assert.ok(!/<button[\s>]/.test(src), 'must not go back to a button every caller forgets to wire');
     assert.equal(templateHref({ id: 'cctv-night' }), '/presets/cctv-night');

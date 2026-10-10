@@ -77,6 +77,12 @@ jobs:
       - name: Unit tests
         run: npm test
 
+      - name: Signed callback retry Workers runtime tests
+        run: |
+          npm ci --prefix tests/fal-signed-retry-runtime --ignore-scripts --no-audit --no-fund
+          npm audit --prefix tests/fal-signed-retry-runtime --audit-level=high
+          npm test --prefix tests/fal-signed-retry-runtime
+
       # tsx strips types without checking them, so packages/catalog and
       # packages/db were never type-checked anywhere. That is how a Modality
       # union that its own rows violated sat in the file CLAUDE.md calls

@@ -65,7 +65,7 @@ export function kindOf(modality) {
 
 
 // Templates live in templates.js; re-exported so existing imports keep working.
-export { PRESETS, PRESET_CATEGORIES, WALL_PRESETS, templatesIn, templateById, templateHref } from './templates.js';
+export { PRESETS, PRESET_CATEGORIES, WALL_PRESETS, ALL_TEMPLATES, templatesIn, templateById, templateHref } from './templates.js';
 
 // Preset names are stored upper-case for the studio's chips. Shown as a title
 // they read better in title case, except for the acronyms they contain.
@@ -101,7 +101,7 @@ export function modelIdForName(name) {
 export function presetHref(preset) {
   const modelId = modelIdForName(preset.model);
   return modelId
-    ? `/app/create?model=${encodeURIComponent(modelId)}&preset=${encodeURIComponent(preset.id)}`
+    ? `/app/create?model=${encodeURIComponent(modelId)}&preset=${encodeURIComponent(preset.id)}${preset.durationSeconds === 10 ? '&duration=10s' : ''}`
     : `/app/create?preset=${encodeURIComponent(preset.id)}`;
 }
 
@@ -115,7 +115,8 @@ export function presetHref(preset) {
 export function presetCredits(preset, catalog) {
   const id = modelIdForName(preset.model);
   const row = id && Array.isArray(catalog) ? catalog.find((m) => m.id === id) : null;
-  return row && typeof row.credits === 'number' ? row.credits : preset.credits;
+  const unit = row && typeof row.credits === 'number' ? row.credits : preset.credits;
+  return unit * (preset.durationSeconds === 10 ? COST_MULTIPLIER_10S : 1);
 }
 
 export const ASPECT_RATIOS = ['16:9', '9:16', '1:1', '4:5', '21:9'];
@@ -128,8 +129,13 @@ export const RESOLUTIONS = ['1K', '2K', '4K'];
 // button both read it, so there is one address to change.
 export const SUPPORT_EMAIL = 'legal@veyrnox.com';
 
+// The primary nav on every public page (MarketingNav), the home page included.
+// What works today comes first, in the order a new visitor needs it: what it
+// makes, on which models, the ready-made starts, their own files, chat. Then
+// the price and the questions. Social Cinema is last: its page says it is not
+// open yet. The logo is the Home link. A `/#…` entry is a section of the home
+// page; from any other page it opens the home page at that section.
 export const NAV_CATEGORIES = [
-  { href: '/social-cinema', label: 'Social Cinema' },
   { href: '/#explore',   label: 'Explore' },
   { href: '/#models',    label: 'Models' },
   { href: '/presets',   label: 'Templates' },
@@ -137,6 +143,7 @@ export const NAV_CATEGORIES = [
   { href: '/app/chat',  label: 'LLM Chat' },
   { href: '/pricing',   label: 'Pricing' },
   { href: '/#faq',       label: 'FAQ' },
+  { href: '/social-cinema', label: 'Social Cinema' },
 ];
 
 // Every public route, with the blurb search and the 404 page reuse.
@@ -233,8 +240,8 @@ export const FAQ = [
 
 
 
-// Four-column footer forest (plus tools). Every listed model row is a real
-// catalog entry so a follow-up wiring can link them by id.
+// The footer's short columns. The models are not listed here: the footer
+// reads them from the live catalog and sets them as their own band.
 export const MORE_FEATURES = [
   { group: 'Product',   items: [
     { label: 'Explore', href: '/#explore' },
@@ -244,7 +251,6 @@ export const MORE_FEATURES = [
     { label: 'Tools', href: '/tools' },
     { label: 'Guides', href: '/guides' },
   ] },
-  { group: 'Models',    items: [] }, // filled from the live catalog in page.js
   { group: 'Tools',     items: [
     { label: 'Image Generator', href: '/app/create?model=nano-banana-kie' },
     { label: 'Video Generator', href: '/app/create?model=wan-2.5-kie' },
@@ -286,6 +292,16 @@ export const SITE_UPDATED = '2026-09-22';
 // a catalog name ("Kling 3.0 (image-to-video)") is redundant for display.
 export function shelfName(name) {
   return String(name || '').replace(/\s*\([^()]*\)\s*$/, '');
+}
+
+// Two rows can share a name once the parenthetical is gone: "Nano Banana Pro
+// Edit" is sold at 10 cr and, from another provider, at 2 cr. A list that
+// prints both keeps the full name on the ones that collide, so no two rows
+// read the same. Returns the naming function for that list.
+export function distinctShelfNames(rows) {
+  const count = new Map();
+  for (const m of rows) count.set(shelfName(m.name), (count.get(shelfName(m.name)) || 0) + 1);
+  return (m) => (count.get(shelfName(m.name)) > 1 ? String(m.name || '') : shelfName(m.name));
 }
 
 // Which catalog rows the public surfaces may advertise.

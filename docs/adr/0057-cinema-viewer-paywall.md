@@ -1,6 +1,6 @@
 # ADR-0057 — Social Cinema viewer paywall, modelled on ReelShort
 
-- **Status**: Accepted 2026-09-26 (owner: "approved, build phase 1", then "build phase 2"). Phases 1 to 3 built on PR #344. Owner asked for "the same as ReelShort"; this records what that means here and where it cannot be literal.
+- **Status**: Accepted 2026-09-26 (owner: "approved, build phase 1", then "build phase 2"). Phases 1 to 3 built on PR #344. Owner asked for "the same as ReelShort"; this records what that means here and where it cannot be literal. An amendment is proposed in the last section (2026-10-10): a $9.99 monthly Pass as the only plan, a 1,500-minute ceiling and a 30% creator share.
 - **Deciders**: Product owner (approver); Finance/Legal for cooling-off wording; Stripe acceptance in writing before build.
 - **Related**: [ADR-0013](0013-credit-expiry-policy.md) (Free vs Pack Credits), [ADR-0018](0018-credit-pack-top-ups.md) / [ADR-0031](0031-stripe-replaces-lemonsqueezy.md) (Stripe Managed Payments, refunds, Freeze), [ADR-0019](0019-dispute-webhooks-freeze.md), [ADR-0037](0037-higgsfield-credit-parity.md) (packs unchanged), [ADR-0048](0048-social-cinema-foundation.md) to [ADR-0054](0054-cinema-upload-removal.md) (Cinema), `CONTEXT.md` (Social Cinema viewing). Plan: [docs/cinema/paywall-plan.md](../cinema/paywall-plan.md).
 
@@ -98,3 +98,154 @@ a title: unlock, entitlement, playback and Pass plays all answer
 `content_not_found` before any debit. Viewers who unlocked it earlier regain
 access when the creator is reinstated; an Operator can refund them meanwhile
 with `reverse_cinema_unlocks`.
+
+## Free viewing needs a ceiling before unlocks open in production (2026-10-09)
+
+Phase 3 records only Pass Plays, on the reasoning that the cost of free,
+unlocked and locked viewing is already accounted for. That holds for an Unlock,
+which is paid for, and for locked viewing, which plays nothing. It does not
+hold for free viewing: SHORT and TRAILER titles and Free Episodes are delivered
+by Stream at the same per-minute rate, and no minutes are counted for them.
+
+No viewer is affected today. `CINEMA_UNLOCKS_ENABLED` gates playback as well as
+unlocks and is `false` in production, so no playback token is issued there.
+`CINEMA_VIEWING_ENABLED` opens the catalogue only.
+
+Decision (owner, 2026-10-09): a monthly ceiling on free viewing minutes per
+account is built and switched on before `CINEMA_UNLOCKS_ENABLED` is `true` in
+production. It is not built yet. Its value, how minutes are counted and what a
+Cinema Pass holder gets past it are decided when it is built; it is
+precondition P6 in the [paywall plan](../cinema/paywall-plan.md).
+
+## Proposed: $9.99 monthly Pass only, 1,500-minute ceiling, 30% creator share (2026-10-10)
+
+Status: **Proposed.** Owner, 2026-10-10: "record $9.99, 1,500 minutes and
+30%", then "withdraw them" for the weekly and yearly plans. Migration 0244 was
+applied to production and staging on 2026-10-10 (owner-approved run). No Pass
+is on sale:
+`CINEMA_SUBSCRIPTIONS_ENABLED` is `false` in production and unset on staging,
+so there is no subscriber to reprice.
+
+| | Decision 3 above | Proposed | Where it lives |
+|---|---|---|---|
+| Monthly Cinema Pass | $49.99 | $9.99 | `cinema_pass_plans`, row `pass-monthly` (0244) |
+| Weekly Pass ($14.99, first week $11.99) and yearly Pass ($199.99) | on sale | withdrawn | `cinema_pass_plans.active` is `false` for both (0244) |
+| Pass ceiling, delivered minutes per calendar month | 3,000 | 1,500 | `cinema_prices.pass_ceiling_minutes` (0244) |
+| Creator share of Pass revenue | none; a separate ADR | 30% | this section only, no code |
+
+$9.99 is the lowest price `cinema_pass_plans` accepts (the 999 floor in 0143).
+The ceiling is one value for every Pass.
+
+The weekly and yearly plans are withdrawn because at $9.99 a month both cost
+more for the same time: $9.99 a month is $119.88 a year. A withdrawn plan keeps
+its row, since Passes reference it. `list_cinema_pass_plans` stops offering it
+and `start_cinema_pass` answers `PLAN_NOT_FOUND` for a new start. The $11.99
+first week existed only on the weekly plan, so no intro price is on offer.
+Putting a plan back on sale is a new migration.
+
+Why the ceiling halves with the price. These figures are a model, not a
+measurement. They use Stream's list rate of $1 per 1,000 minutes delivered
+(read 2026-10-09), about $0.80 of payment fees on a $9.99 charge (an
+assumption from Stripe's UK list rates; the Managed Payments fee was not read
+and comes on top), the owner's working assumption that free viewing equals Pass
+viewing minute for minute, and a 30% share taken after payment fees ($2.76).
+
+| Pass minutes in the month | Delivery, free viewing included | Left per Pass |
+|---|---|---|
+| 100 | $0.20 | about $6.20 |
+| 1,000 | $2.00 | about $4.40 |
+| 1,500, the proposed ceiling | $3.00 | about $3.40 |
+| 3,000, the ceiling today | $6.00 | about $0.40 |
+
+At 3,000 minutes a Pass at its ceiling roughly breaks even. At 1,500 it keeps
+about a third of the price. Both hold only while free viewing is bounded,
+which is precondition P6.
+
+What this does not decide:
+
+- **How the creator share is paid.** 30% is the intended share. It was modelled
+  on Pass revenue after payment fees, split by the Pass seconds per title that
+  `operator_cinema_earnings` already sums. Whether it comes before or after
+  fees, and payout, tax and creator identity, are still the separate ADR that
+  decision 6 requires. Nothing is paid out until that ADR is accepted, and
+  creator terms keep saying so (P3).
+- **Unlock prices and Free Episodes.** Unchanged.
+
+To move this to Accepted: the Stripe and Managed Payments fees are read from
+the fee schedule (the open check under Consequences), and 0244 is applied
+through `apply-migrations` (precondition P7). A Pass sold before 0244 keeps its
+plan and the price it was sold at, on its own row and at Stripe. From its next
+heartbeat it has the 1,500-minute ceiling.
+
+## Free viewing ceiling as built (0245, 2026-10-10)
+
+Owner, 2026-10-10: build it. Built behind `CINEMA_FREE_CEILING_ENABLED`.
+Migration 0245 was applied to production (apply-migrations run 38053327460,
+after 0244) and to the staging database on 2026-10-10. The switch is `true`
+on staging. In production it is `true` since 2026-10-10 (owner), and has no
+effect there while `CINEMA_UNLOCKS_ENABLED` is `false`: it is read only after
+the unlocks gate. Playback in production still waits for the staging
+acceptance of the ceiling and 24 hours of clean reconciliation after 0245.
+
+- **The rule.** An account has `cinema_prices.free_ceiling_minutes` of free
+  viewing per calendar month (UTC). The proposed value is 300 and the owner
+  confirms it; the CHECK admits 0 to 100,000. The app layer never computes it.
+- **What counts.** A Free Play is seconds of a free title (SHORT, TRAILER or a
+  Free Episode) recorded for an account in the append-only `cinema_free_plays`.
+  Granting playback counts one minute, or what is left of the month, whether
+  or not the player reports back; a repeated request counts again. After that
+  the player's heartbeat meters the viewing with the Pass Play caps: at most
+  60 seconds per heartbeat, and no more than 60 seconds per 55 of wall-clock
+  time per account, serialized per account. The window is 55 seconds rather
+  than 60 because a steady 30-second heartbeat lands the row from two beats
+  ago at 60 seconds plus or minus jitter, and a 60-second window refused
+  about a third of honest beats; the price is that a scripted client can log
+  about a tenth more than wall-clock. The minute at the grant is a floor, not
+  a meter: a client that sends no heartbeat is counted one minute per play
+  start while the token it holds lasts up to 15 minutes, and a token already
+  issued keeps working until it expires. The player renews its token every 12
+  minutes, and a renewal is a play start. Nothing is counted when playback is
+  refused or the video is not ready.
+- **At the ceiling.** Entitlement for a free title reports `locked` with reason
+  `free_ceiling` and 0 credits, playback returns no stream uid so no token is
+  signed, and the watch page says the free viewing limit for the month is
+  reached. The ceiling is the account's, not the title's. Paid titles answer
+  as before.
+- **Cinema Pass holders.** Free minutes are used first. Past the free ceiling
+  a free title plays under the Pass, is recorded as a Pass Play and counts
+  toward the Pass ceiling. With both ceilings reached it is locked. A live
+  Unlock of a title that later became free still plays it.
+- **With the switch off nothing changes.** `cinema_entitlement`,
+  `read_cinema_playback` and `record_cinema_pass_play` keep their bodies. Only
+  while the switch is on does the Worker call `cinema_metered_entitlement`,
+  `start_cinema_playback` and `record_cinema_play` in their place. If the
+  switch is on before 0245 is applied, those calls fail and playback answers
+  503, so apply the migration first.
+- **Not covered.** The title page still labels a free title "Free" past the
+  ceiling; the message is on the watch page. Pass Plays are recorded as
+  before: the minute at a play start applies to free viewing only.
+- **No money moves.** Nothing in 0245 touches `ledger_entries` or
+  `credit_balances`.
+- **Personal data.** `cinema_free_plays` records who watched which free title
+  and when, for every signed-in viewer, append-only. The erasure path ADR-0008
+  leaves open must cover it.
+
+The entitlement endpoint now reports `pass` for a Cinema Pass holder, where it
+answered 503 before. No Pass is on sale, so no one sees a difference today.
+
+### Playback metering correction (2026-10-10)
+
+Staging acceptance found that the watch page sent 30-second heartbeats after a
+six-second video ended, and renewed tokens while idle. The player now uses the
+[official Stream Player API](https://developers.cloudflare.com/stream/viewing-videos/using-the-stream-player/using-the-player-api/)
+`playing`, `pause`, `ended`, `waiting`, `seeking` and error events. It records
+visible playback wall time, retains fractional seconds, flushes earned seconds
+on stop/hide, and caps a delayed browser beat at 60 seconds. Token renewal only
+runs during visible playback or when the viewer explicitly presses Play.
+The server remains authoritative for entitlement, ceilings and wall-time caps.
+
+The SDK is loaded only on the watch page from Cloudflare's documented
+`https://embed.cloudflarestream.com/embed/sdk.latest.js`, with the current
+HTML document's CSP nonce, including after client navigation. No wildcard
+script or connection host is added to the production CSP. A failed SDK load
+shows playback unavailable before requesting a token or spending a play grant.

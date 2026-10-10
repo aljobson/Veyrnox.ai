@@ -34,7 +34,7 @@ async function signedRequest() {
     });
 }
 
-function network(t, { mapped = false, lookupFails = false, copyFailures = 0 } = {}) {
+function network(t, { mapped = false, lookupFails = false, copyFailures = 0, putFailures = 0, storedFailures = 0, lostStoredAck = false } = {}) {
     _resetJwksCache();
     const state = { mapped, processed: false, event: false, stored: 0, jobState: 'SUBMITTED', calls: [] };
     t.mock.method(console, 'error', () => {});
@@ -45,7 +45,8 @@ function network(t, { mapped = false, lookupFails = false, copyFailures = 0 } = 
         if (u.hostname === 'rest.alpha.fal.ai') return Response.json({ keys: [jwk] });
         if (u.pathname === '/rest/v1/jobs') {
             if (lookupFails) return new Response(null, { status: 503 });
-            return Response.json(state.mapped ? [{ id: 'job-fixture', user_id: 'user-fixture',
+            const allowed = !u.searchParams.has('state') || u.searchParams.get('state').includes(state.jobState);
+            return Response.json(state.mapped && allowed ? [{ id: 'job-fixture', user_id: 'user-fixture',
                 credits: 2, state: state.jobState }] : []);
         }
         if (u.pathname === '/rest/v1/job_steps') return Response.json([]);
@@ -66,7 +67,9 @@ function network(t, { mapped = false, lookupFails = false, copyFailures = 0 } = 
             return Response.json({ ok: true });
         }
         if (u.pathname === '/rest/v1/rpc/job_stored') {
+            if (storedFailures-- > 0) return new Response(null, { status: 503 });
             state.stored++; state.jobState = 'STORED';
+            if (lostStoredAck) { lostStoredAck = false; throw new Error('committed storage acknowledgement lost'); }
             return Response.json({ ok: true });
         }
         if (u.hostname === 'fal.media') {
@@ -74,6 +77,7 @@ function network(t, { mapped = false, lookupFails = false, copyFailures = 0 } = 
             return new Response('image-fixture', { headers: { 'content-type': 'image/jpeg' } });
         }
         if (u.hostname.endsWith('.r2.cloudflarestorage.com') && method === 'PUT') {
+            if (putFailures-- > 0) return new Response(null, { status: 503 });
             return new Response(null, { status: 200 });
         }
         throw new Error(`Unexpected fixture request: ${method} ${u.hostname}${u.pathname}`);
@@ -121,4 +125,54 @@ test('transient asset copy leaves the signed delivery unfinished and redelivery 
     assert.equal(state.processed, true);
     assert.equal(state.stored, 1);
     assert.equal(state.calls.filter(c => c.method === 'PUT').length, 1);
+});
+
+for (const [name, failure] of [
+    ['R2 write outage', { putFailures: 1 }],
+    ['asset registration outage before commit', { storedFailures: 1 }],
+]) {
+    test(`${name} leaves delivery retryable and reuses the object key`, async t => {
+        const state = network(t, { mapped: true, ...failure });
+        assert.equal((await POST(await signedRequest())).status, 500);
+        assert.equal(state.jobState, 'SUCCEEDED');
+        assert.equal(state.processed, false);
+        assert.equal(state.stored, 0);
+        assert.equal((await POST(await signedRequest())).status, 200);
+        assert.equal(state.jobState, 'STORED');
+        assert.equal(state.processed, true);
+        assert.equal(state.stored, 1);
+        const puts = state.calls.filter(c => c.method === 'PUT');
+        assert.equal(puts.length, 2);
+        assert.equal(puts[0].path, puts[1].path, 'retry overwrites the same object');
+        const before = state.calls.filter(c => c.method === 'PUT').length;
+        assert.equal((await POST(await signedRequest())).status, 200);
+        assert.equal(state.stored, 1);
+        assert.equal(state.calls.filter(c => c.method === 'PUT').length, before);
+    });
+}
+
+test('lost asset registration acknowledgement preserves the committed asset on redelivery', async t => {
+    const state = network(t, { mapped: true, lostStoredAck: true });
+    assert.equal((await POST(await signedRequest())).status, 500);
+    assert.equal(state.jobState, 'STORED');
+    assert.equal(state.stored, 1);
+    assert.equal(state.processed, false);
+    assert.equal((await POST(await signedRequest())).status, 200);
+    assert.equal(state.processed, true);
+    assert.equal(state.stored, 1);
+    assert.equal(state.calls.filter(c => c.method === 'PUT').length, 1);
+    assert.equal((await POST(await signedRequest())).status, 200);
+    assert.equal(state.stored, 1);
+    assert.equal(state.calls.filter(c => c.method === 'PUT').length, 1);
+});
+
+
+test('public route rejects unsigned callbacks before any database or storage effects', async t => {
+    const state = network(t, { mapped: true });
+    const req = new Request('https://veyrnox.test/api/webhook/fal', {
+        method: 'POST', body: JSON.stringify({ request_id: requestId, status: 'OK' }),
+        headers: { 'x-exercise-verify': 'true' },
+    });
+    assert.equal((await POST(req)).status, 401);
+    assert.deepEqual(state.calls, []);
 });

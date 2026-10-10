@@ -51,9 +51,17 @@
     // ADR-0067: Chat is open here, but the screen is still behind the per-browser preview switch
     // (localStorage.veyrnox_chat). Needs OPENROUTER_CHAT_API_KEY on the Worker: production will not use the shared key.
     "CHAT_ENABLED": "true",
+    // ADR-0067 amendment 11: POST /api/v1/chat/sends/close, which lets the chat screen settle a warning about a message that
+    // was stopped before its reply started. On in production since 2026-10-09: migration 0242 was applied there the same day
+    // (apply-migrations, approved by the owner), and the owner asked for it on that day, without the 24-hour wait. Set it back
+    // to "false" to stop keys being closed: the screen then keeps such a warning as it always has. Staging has its own value below.
+    "CHAT_SEND_CLOSE_ENABLED": "true",
     // ADR-0069: a per-model free allowance, taken as a price waiver. On in production since 2026-10-07: staging acceptance passed
     // 2026-10-06, and migrations 0205, 0206 and 0222 (the two models offered) are applied. At most $1.00 a day of provider spend.
     "FREE_ALLOWANCE_ENABLED": "true",
+    // ADR-0080: free browser editing and MP4 export, visible in Studio (owner, 2026-10-10).
+    // Project saving remains gated separately by TENANT_PROJECTS_ENABLED and the projects preview switch.
+    "EDITOR_TIMELINE_ENABLED": "true",
     // ADR-0072: chat Personas, saved instructions with a default model and options. On in production since 2026-10-07: staging
     // acceptance passed 2026-10-06 and migration 0216 is applied on production. Staging has its own value below.
     "PERSONAS_ENABLED": "true",
@@ -68,8 +76,10 @@
     // until MONTAGE_SIGNING_SECRET and MONTAGE_PLAN_SECRET are set (step 4) and AGENT_VIDEO_ENABLED is "true" (step 7).
     "MONTAGE_RUNNER_BASE": "https://veyrnox-montage-runner.fly.dev",
     // ADR-0074: the video-agent sweep asks the runner which runs it still has and refunds a lost one in about five minutes, where the
-    // timeout alone takes 45 to 50. Sound with ONE runner machine only (runs live in memory per machine); keep "false" with more.
-    "MONTAGE_LIVENESS_ENABLED": "false",
+    // timeout alone takes 45 to 50. Sound with ONE runner machine only (runs live in memory per machine): set it to "false" BEFORE a
+    // second machine is added, or live runs on the other machine are refunded. On in production since 2026-10-10 (owner: "turn on the
+    // lost-run check"): the production runner is one machine and its image answers /runs. Proven on staging 2026-10-09 (SPEC section 11).
+    "MONTAGE_LIVENESS_ENABLED": "true",
     // ADR-0071: referrals. Migrations 0217 to 0219 are applied on production. On only after the reconcile jobs have run clean for
     // 24 hours (CLAUDE.md, Delivery); the storage notice is re-prompted in the same change so the referral wording is seen.
     "REFERRALS_ENABLED": "true",
@@ -94,7 +104,18 @@
     "CINEMA_PROXY_UPLOADS_ENABLED": "true",
     "CREATOR_MONETISATION_ENABLED": "false",
     "CINEMA_SUBSCRIPTIONS_ENABLED": "false",
+    // CINEMA_UNLOCKS_ENABLED also opens playback of free titles. It stays
+    // "false" until the free ceiling is accepted on staging and the
+    // reconciliation job has run clean for 24 hours after 0245 (applied
+    // 2026-10-10 13:08 UTC). Never switch it on while
+    // CINEMA_FREE_CEILING_ENABLED is "false".
     "CINEMA_UNLOCKS_ENABLED": "false",
+    // Monthly ceiling on free viewing minutes per account (ADR-0057,
+    // docs/cinema/paywall-plan.md P6). On since 2026-10-10 at the owner's
+    // request; migration 0245 is applied. It is read only after the unlocks
+    // gate, so it changes nothing while CINEMA_UNLOCKS_ENABLED is "false".
+    // Rollback: set "false" and deploy.
+    "CINEMA_FREE_CEILING_ENABLED": "true",
     "CINEMA_PUBLISHING_ENABLED": "true",
     "CINEMA_VIEWING_ENABLED": "true",
     "VOTING_ENABLED": "false",
@@ -103,8 +124,8 @@
     "PREMIERES_ENABLED": "false",
     "AI_RECOMMENDATIONS_ENABLED": "false",
     // Enable only after migration 0129, bucket CORS and real browser/R2 checks (ADR-0044). 0129 is applied. On
-    // 2026-10-09 the production bucket's CORS allowed PUT with Content-Type only: a preflight that also asks for
-    // If-None-Match was refused, so "true" here would stop every browser upload until that header is added.
+    // Production CORS now allows If-None-Match (read back 2026-10-10). Keep the flag off until the
+    // browser File / real R2 success, wrong-length and replacement checks in ADR-0044 are recorded.
     "UPLOAD_INTEGRITY_ENABLED": "false",
     // 0131 applied; verify fresh task/snapshot evidence after deploy, then arm the watcher.
     "RECOVERY_HEALTH_ENABLED": "true",
@@ -141,17 +162,15 @@
     // provider_moderation / provider_input_rejected. off | shadow | enforce.
     // Needs the TYPESAFE_API_KEY secret; shadow only logs the label.
     "JEV_SUBMIT_ERRORS_MODE": "off",
-    // Veyrnox Publish (ADR-0061) stays dark until the platform app reviews
-    // and the Publish Plan (ADR-0062/0063) land: hides /app/publish, the
-    // menu link and /api/v1/social/*. Only "true" opens it. The publish
-    // sweep is not gated, so anything already queued still finishes.
-    "PUBLISH_ENABLED": "false",
-    // First production release permits YouTube only; Publish remains off.
-    "PUBLISH_RELEASED_NETWORKS": "youtube",
-    // The Publish analytics sweep (lib/socialAnalyticsSweep.js). Only "true"
-    // runs it; turn it on after migration 0188 is applied. The analytics
-    // page and its API route follow PUBLISH_ENABLED like the rest of Publish.
-    "PUBLISH_ANALYTICS_ENABLED": "false",
+    // YouTube and LinkedIn public release; Google data-access review remains pending.
+    // Previously queued targets continue even when public Publish is disabled.
+    "PUBLISH_ENABLED": "true",
+    // Preserve the private pilot secret and default YouTube uploads to Private.
+    "PUBLISH_YOUTUBE_VISIBILITY_ENABLED": "true",
+
+    "PUBLISH_RELEASED_NETWORKS": "youtube,linkedin",
+    // Production 0188 is applied; basic YouTube Data API statistics only.
+    "PUBLISH_ANALYTICS_ENABLED": "true",
     // Weekly historical timing/frequency insights; requires 0191.
     "PUBLISH_POSTING_INSIGHTS_ENABLED": "false",
     // Month/week/list calendar and rescheduling; 0192 approved 2026-10-04.
@@ -220,9 +239,20 @@
         "FAL_SUBMIT_OUTCOME_ENABLED": "false",
         "FAL_DISPATCH_SCHEMA_ENABLED": "true",
         "RECOVERY_HEALTH_ENABLED": "true",
+        // Production controls, named here because vars are not inherited (audit 2026-10-09, S-02;
+        // tests/stagingControlVars.test.mjs keeps the two blocks aligned). The six limits need
+        // migrations 0110 to 0125, which staging has. The second-factor gate locks out an admin
+        // who holds no factor: enrol TOTP at /app/admin on staging before deploying this.
+        "TOP_UP_RETURN_RATE_LIMIT_ENABLED": "true",
+        "TOP_UP_READ_RATE_LIMIT_ENABLED": "true",
+        "TOP_UP_CHECKOUT_RATE_LIMIT_ENABLED": "true",
+        "ACCOUNT_READ_RATE_LIMIT_ENABLED": "true",
+        "UPLOAD_REQUEST_RATE_LIMIT_ENABLED": "true",
+        "ASSET_LINK_RATE_LIMIT_ENABLED": "true",
+        "ADMIN_REQUIRE_AAL2": "true",
         // ADR-0044 (vars are not inherited). On for the activation proof: 0129 is applied here and the staging bucket's
         // CORS allows PUT with Content-Type and If-None-Match from this origin (preflight checked 2026-10-09).
-        // Production stays "false" until its bucket allows If-None-Match too; today it would refuse every upload.
+        // Production CORS is ready as of 2026-10-10; the real browser/R2 activation proof is still required.
         "UPLOAD_INTEGRITY_ENABLED": "true",
         "FAL_DURABLE_DISPATCH_ENABLED": "false",
         "FAL_DISPATCH_QUEUE_ENABLED": "false",
@@ -230,14 +260,20 @@
         // ADR-0067: Chat is open on staging for testing only. No text model is
         // active until the owner activates one; production stays "false".
         "CHAT_ENABLED": "true",
+        // ADR-0067 amendment 11 (vars are not inherited). On in staging since 2026-10-09: 0242 was applied there that day
+        // (checked against the file: both function bodies match), on the owner's word.
+        "CHAT_SEND_CLOSE_ENABLED": "true",
         // ADR-0069 (vars are not inherited). Flip to "true" on staging only after 0205 and 0206 are applied there.
         "FREE_ALLOWANCE_ENABLED": "false",
+        // ADR-0080: browser editing is open; project saving keeps its separate gate.
+        "EDITOR_TIMELINE_ENABLED": "true",
         // ADR-0072 (vars are not inherited). Flip to "true" on staging only after 0216 is applied there.
         "PERSONAS_ENABLED": "false",
-        "AGENT_VIDEO_ENABLED": "false",
+        // Already live on staging; source must preserve the deployed preview and its recovery checks.
+        "AGENT_VIDEO_ENABLED": "true",
         // Recovery still needs its isolated runner even when new video admission is paused.
         "MONTAGE_RUNNER_BASE": "https://veyrnox-montage-runner-staging.fly.dev",
-        "MONTAGE_LIVENESS_ENABLED": "false",
+        "MONTAGE_LIVENESS_ENABLED": "true",
         "REFERRALS_ENABLED": "false",
         // Vars are not inherited. 0225 is applied on staging (2026-10-08); on for testing, production stays "false".
         "CLIP_EDIT_CAPTIONS_ENABLED": "true",
@@ -247,6 +283,8 @@
         "JEV_SUBMIT_ERRORS_MODE": "off",
         // Veyrnox Publish is open on staging for testing (see production).
         "PUBLISH_ENABLED": "true",
+        "PUBLISH_TESTER_AUTH_IDS": "",
+        "PUBLISH_YOUTUBE_VISIBILITY_ENABLED": "false",
         "PUBLISH_RELEASED_NETWORKS": "*",
         // Publish schema through 0192 provisioned on staging 2026-10-04.
         "PUBLISH_ANALYTICS_ENABLED": "true",
@@ -276,13 +314,19 @@
         // Production keeps all three switches false.
         "CINEMA_UNLOCKS_ENABLED": "true",
         "CINEMA_PUBLISHING_ENABLED": "true",
-        "CINEMA_VIEWING_ENABLED": "true"
+        "CINEMA_VIEWING_ENABLED": "true",
+        // Monthly ceiling on free viewing minutes (ADR-0057). Migration 0245
+        // is applied on the staging database (2026-10-10), so the metered
+        // functions exist here. Production has it on too, behind a closed
+        // unlocks switch.
+        "CINEMA_FREE_CEILING_ENABLED": "true"
       }
     }
   },
   // ------------------------------------------------------------------
   // Secrets (never here — `wrangler secret put <NAME>`), per ADR-0004
   // (Supabase auth + Postgres) and the shipped Phase 1 slices:
+  //   PUBLISH_TESTER_AUTH_IDS     verified Auth UUIDs for the private YouTube pilot
   //   SUPABASE_SERVICE_ROLE_KEY   PostgREST RPCs, bypasses RLS (packages/db/supabase-client.js)
   //   FAL_KEY                     fal.ai queue submit (packages/adapters/fal.js)
   //   FAL_WEBHOOK_USER_ID         our fal tenant id; webhook callbacks for any other are rejected

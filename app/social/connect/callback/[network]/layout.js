@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
-import { publishEnabled } from '../../../../../lib/social/publishFeature.js';
+import { publishShellAvailable } from '../../../../../lib/social/publishFeature.js';
 
 export default function Layout({ children }) {
-    if (!publishEnabled()) notFound();
+    if (!publishShellAvailable()) notFound();
     return children;
 }

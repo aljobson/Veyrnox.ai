@@ -26,15 +26,21 @@ function copyFor(code) {
     return copy[2];
 }
 
-/** The three endings of send()'s catch block: Stop, a stream that broke after `start`, and a turn that never started. */
+/**
+ * The four endings of send()'s catch block: Stop, a stream that broke after `start`, a request that got no answer with
+ * the server unable to say what became of it, and a turn that never started.
+ */
 function catchBranches() {
     const block = /\n    \} catch \(e\) \{\n([\s\S]*?)\n    \} finally \{ setBusy\(false\)/.exec(sender);
     assert.ok(block, 'send() has a catch block followed by its finally');
     // Keyed on the catch block's own indentation, so an if/else added inside a branch does not move the split.
     // The Stop branch is a block of its own since it stopped reloading at once (tests/chatStop.test.mjs covers it).
-    const parts = /^ {6}if \(e\?\.name === 'AbortError'\) \{\n([\s\S]*?)\n {6}\} else if \(started\) \{\n([\s\S]*?)\n {6}\} else \{\n([\s\S]*)$/.exec(block[1]);
-    assert.ok(parts, 'the catch block branches on AbortError, then on started, then on everything else');
-    return { stopped: parts[1], brokenAfterStart: parts[2], neverStarted: parts[3] };
+    // Four branches since a request that got no answer before `start` has an ending of its own (tests/chatSendUnanswered.test.mjs).
+    // It was three. The new branch sits after the one for a stream that broke, so the split names it: read the old way, that
+    // branch would hold the new ending's lines as well, and every pin below on what it does once would count them.
+    const parts = /^ {6}if \(e\?\.name === 'AbortError'\) \{\n([\s\S]*?)\n {6}\} else if \(started\) \{\n([\s\S]*?)\n {6}\} else if \(unsure\) \{\n([\s\S]*?)\n {6}\} else \{\n([\s\S]*)$/.exec(block[1]);
+    assert.ok(parts, 'the catch block branches on AbortError, then on started, then on unsure, then on everything else');
+    return { stopped: parts[1], brokenAfterStart: parts[2], unanswered: parts[3], neverStarted: parts[4] };
 }
 
 test('the screen remembers that the start event arrived, which is when the Credits have been debited', () => {
@@ -187,6 +193,8 @@ test('only a turn that never started deletes the new chat and gives the text bac
     assert.match(stopped, /\} else if \(outcome === 'nothing'\) \{ giveBack\(true\); /);
     assert.equal(brokenAfterStart.split('giveBack(true)').length - 1, 1);
     assert.match(brokenAfterStart, /if \(outcome === 'nothing'\) giveBack\(true\);/);
+    // A request that got no answer, with the server unable to say: a reply may still be saved to the chat, so it stays.
+    assert.doesNotMatch(catchBranches().unanswered, /giveBack\(true\)|chatApi\.remove|setActive\(/);
 });
 
 test('the route header no longer calls DELETE a soft delete', () => {

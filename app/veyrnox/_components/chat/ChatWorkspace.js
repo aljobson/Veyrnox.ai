@@ -23,7 +23,8 @@ import { useChatSend } from './useChatSend';
 import { ALL_CHATS } from '../../_lib/chatFolders';
 import { defaultModel } from '../../_lib/chatModels';
 import { CHAT_SCREEN_COPY, chatScreen, loadFailure } from '../../_lib/chatScreen';
-import { ask, enter, forget, giveUp, land, leave, newChatView } from '../../_lib/chatSendHome';
+import { ask, enter, forget, giveUp, land, leave, newChatView, onScreen } from '../../_lib/chatSendHome';
+import { askKeptWarning, settleKeptWarning } from '../../_lib/chatWarning';
 
 const credits = (n) => `${n} Credit${n === 1 ? '' : 's'}`;
 const MAX_TEXT = 8000;
@@ -32,11 +33,17 @@ const store = () => { try { return window.localStorage; } catch { return null; }
 const saveDraft = (chatId, text) => writeDraft(store(), getStoredUserId(), chatId, text);
 const addDraft = (chatId, text) => addToDraft(store(), getStoredUserId(), chatId, text);
 // What the last message sent from a chat ended with waits with that chat, as a code (chatLocal.js). It is put into words here each
-// time the chat is opened, a page reload included, until a later message is sent from that chat or the chat is deleted.
+// time the chat is opened, a page reload included, until a later message is sent from that chat, the chat is deleted, or (a warning
+// about a turn that was not settled) the server says that turn has settled.
 const keepNotice = (chatId, code, extra) => writeNotice(store(), getStoredUserId(), chatId, code, extra);
 const dropNotice = (chatId) => clearNotice(store(), getStoredUserId(), chatId);
 const heldWarning = (chatId) => readCreditsWarning(store(), getStoredUserId(), chatId);
 const waiting = (chatId) => { const n = readNotice(store(), getStoredUserId(), chatId); return n ? chatErrorCopy(n.code, n) : null; };
+// A warning about a turn that was not settled is kept with what the server can be asked about it by: the turn's job, or the key its
+// send went out with (chatWarning.js). When its chat arrives on screen each turn it stands for is asked about, and once the server
+// has settled them all the warning is taken out of the store, or what is kept is changed, before the screen reads it.
+const askKept = (chatId) => askKeptWarning({ warning: heldWarning(chatId), getJob: chatApi.job, closeSend: chatApi.closeSend });
+const settleKept = (chatId, asked) => settleKeptWarning(store(), getStoredUserId(), chatId, asked);
 // About three words for every four tokens, rounded to ten, from the chosen model's own reply cap.
 const wordsFor = (tokens) => Math.round(((tokens || 1024) * 0.75) / 10) * 10;
 // A reply still arriving, or stopped or cut off and not yet read back from the server: it has no price and nothing to star.
@@ -138,15 +145,26 @@ export function ChatWorkspace() {
   const open = async (id) => {
     ask(chatView.current, id);
     try {
+      const asked = await askKept(id); // the job of a kept warning first: the chat read after it shows what that turn left
       const r = await chatApi.get(id);
       // Another chat was pressed while this one was read: that one is the one to show. A re-read of the chat still on screen refreshes it in place.
       if (chatView.current.asked !== id) { if (chatView.current.shown === id) setMessages(r.messages); return false; }
+      settleKept(id, asked); // in the store, so the notice and the box read from it below are what the server now says
       setPersonaId(''); setActive(r.thread); setSkillId(''); setMessages(r.messages); setInstr(r.thread.system_prompt || ''); land(chatView.current, id); setError(waiting(id)); setDrawer(false);
       setText(readDraft(store(), getStoredUserId(), r.thread.id)); setStars(readStars(store(), getStoredUserId(), r.thread.id)); setStarredOnly(false); return true;
     } catch (e) { fail(e); if (giveUp(chatView.current, id)) { const kept = waiting(chatView.current.shown); if (kept) setError((was) => (was && was !== kept ? `${was} ${kept}` : kept)); } return false; }
   };
+  // New chat has no chat to read, so what is kept for it is shown at once and its job is asked after. The screen changes only
+  // while New chat is still on it and still says that warning: a notice set since, or another chat's, is left alone.
+  const settleNew = async () => {
+    const asked = await askKept(NEW_CHAT);
+    if (!settleKept(NEW_CHAT, asked) || !onScreen(chatView.current, NEW_CHAT)) return;
+    const was = chatErrorCopy(asked.warning.code, asked.warning);
+    setError((now) => (now === was ? waiting(NEW_CHAT) : now));
+  };
+  useEffect(() => { settleNew(); }, []); // once: a page that has just loaded shows New chat
   // A chat that has not started. A notice waits for it too: one about a message that was sent before a chat was made, or whose chat no longer exists.
-  const clear = () => { setPersonaId(''); setActive(null); setSkillId(''); setMessages([]); setInstr(''); land(chatView.current, NEW_CHAT); setError(waiting(NEW_CHAT)); setDrawer(false); setText(readDraft(store(), getStoredUserId(), NEW_CHAT)); setStars([]); setStarredOnly(false); };
+  const clear = () => { setPersonaId(''); setActive(null); setSkillId(''); setMessages([]); setInstr(''); land(chatView.current, NEW_CHAT); setError(waiting(NEW_CHAT)); setDrawer(false); setText(readDraft(store(), getStoredUserId(), NEW_CHAT)); setStars([]); setStarredOnly(false); settleNew(); };
   const blank = () => { ask(chatView.current, NEW_CHAT); clear(); };
   const star = (id) => { if (active) setStars(toggleStar(store(), getStoredUserId(), active.id, id)); };
   const shown = starredOnly ? messages.filter((x) => x.role === 'assistant' && stars.includes(x.id)) : messages;

@@ -1,0 +1,20 @@
+{
+  "name": "veyrnox-fal-signed-retry-staging",
+  "account_id": "fb18d9f7052afbea5a5e0eae69948af2",
+  "main": "workers/staging-fal-signed-retry-worker.js",
+  "compatibility_date": "2026-10-09",
+  "workers_dev": true,
+  "preview_urls": false,
+  "observability": {"enabled": true},
+  "durable_objects": {"bindings": [{"name": "CALLBACK_GATE", "class_name": "FalSignedRetryGate"}]},
+  "migrations": [{"tag": "signed-retry-v1", "new_sqlite_classes": ["FalSignedRetryGate"]}],
+  "services": [{"binding": "STAGING_APP", "service": "veyrnox-ai-staging"}],
+  "vars": {
+    "APP_ENV": "staging",
+    "PUBLIC_HOST": "https://veyrnox-ai-staging.al-jobson.workers.dev",
+    "FAL_SIGNED_RETRY_ENABLED": "false",
+    "FAL_SIGNED_RETRY_JOB_ID": "",
+    "FAL_SIGNED_RETRY_EXPIRES_AT": "",
+    "FAL_WEBHOOK_USER_ID": ""
+  }
+}

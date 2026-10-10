@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { AppNav } from '../../_components/NavBar';
+import { Main } from '../../_components/Main';
 import { ConfirmDialog } from '../../_components/ConfirmDialog';
 import { getSession, onSessionChange } from '../../../lib/authClient';
 import {
@@ -28,7 +29,7 @@ const FREE_ACCOUNT_LIMIT = 1;
 export default function Publish() {
   const initialJobId = useSyncExternalStore(subscribeLocation, currentJob, noJob);
   const account = useSyncExternalStore(onSessionChange, currentAccount, noAccount);
-  return <><AppNav /><div className="max-w-[900px] mx-auto px-4 sm:px-8 py-10">
+  return <><AppNav /><Main className="max-w-[900px] mx-auto px-4 sm:px-8 py-10">
     <h1 className="text-3xl font-black mb-2">Veyrnox Publish</h1>
     <p className="text-sm text-vx-fg-muted mb-6">Connect your social accounts to schedule posts from Veyrnox. <Link href="/app/publish/analytics" className="text-vx-accent underline">See your analytics</Link></p>
     <ul aria-label="Social platforms" className="flex flex-wrap gap-3 mb-6">
@@ -40,11 +41,12 @@ export default function Publish() {
       <p className="mb-4">Sign in to connect a social account.</p>
       <button type="button" className={button} onClick={() => window.dispatchEvent(new CustomEvent('veyrnox:auth-required'))}>Sign in</button>
     </div>}
-  </div></>;
+  </Main></>;
 }
 
 function PublishControls({ initialJobId }) {
   const [accounts, setAccounts] = useState(null);
+  const [youtubeVisibilityEnabled, setYoutubeVisibilityEnabled] = useState(false);
   const [uploadsEnabled, setUploadsEnabled] = useState(false);
   const [networks, setNetworks] = useState([]);
   const [blueskyOpen, setBlueskyOpen] = useState(false);
@@ -61,9 +63,11 @@ function PublishControls({ initialJobId }) {
       const res = await listSocialAccounts();
       setAccounts(res.accounts || []);
       setUploadsEnabled(res.uploadsEnabled === true);
+      setYoutubeVisibilityEnabled(res.youtubeVisibilityEnabled === true);
       setNetworks(res.networks || []);
-    } catch {
-      setLoadError('Could not load your connected accounts. Check your connection and try again.');
+    } catch (err) {
+      setLoadError(err.body?.error === 'publish_not_open' ? 'Publish is not available for this account yet.'
+        : 'Could not load your connected accounts. Check your connection and try again.');
     }
   }, []);
   useEffect(() => { load(); }, [load]);
@@ -181,7 +185,7 @@ function PublishControls({ initialJobId }) {
 
     <section className="rounded-2xl border border-vx-border p-5">
       <h2 id="schedule" className="font-bold mb-4 scroll-mt-6">Create a post</h2>
-      <Composer key={initialJobId || 'library'} initialJobId={initialJobId} accounts={accounts} uploadsEnabled={uploadsEnabled} onScheduled={() => setPostsRefreshToken((n) => n + 1)} />
+      <Composer youtubeVisibilityEnabled={youtubeVisibilityEnabled} key={initialJobId || 'library'} initialJobId={initialJobId} accounts={accounts} uploadsEnabled={uploadsEnabled} onScheduled={() => setPostsRefreshToken((n) => n + 1)} />
     </section>
 
     <section className="rounded-2xl border border-vx-border p-5">

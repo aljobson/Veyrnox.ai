@@ -62,10 +62,10 @@ export function SocialCinema() {
   const [section, setSection] = useState(0);
   const account = useSyncExternalStore(onSessionChange, identity, noIdentity);
   const preview = useCinemaPreview();
-  return <div className="mx-auto max-w-[1100px] px-4 py-10 pb-40 sm:px-8 sm:py-16 sm:pb-32">
+  return <div className="mx-auto max-w-[1300px] px-4 py-10 pb-40 sm:px-6 sm:py-16 sm:pb-32"><div className="max-w-[1052px]">
     <header className="max-w-2xl">
       <p className="mb-4 font-vx-mono text-xs tracking-widest text-vx-accent">SOCIAL CINEMA · IN DEVELOPMENT</p>
-      <h1 className="text-4xl font-black leading-tight sm:text-6xl">Stories worth<br />coming back for.</h1>
+      <h1 className="vx-display vx-title-detail">Stories worth<br />coming back for.</h1>
       <p className="mt-6 text-lg leading-relaxed text-vx-fg-body">Short episodes. Ongoing series. An audience with a say in what happens next.</p>
       <p className="mt-3 text-sm text-vx-fg-muted">We’re building Social Cinema on Veyrnox.ai. Watching, publishing and voting are not open yet.</p>
     </header>
@@ -80,7 +80,7 @@ export function SocialCinema() {
         <p className="mt-4 max-w-lg leading-relaxed text-vx-fg-body">{sections[section][2]}</p>
         <Link href="/app/create?model=wan-2.5-kie" className="mt-6 inline-flex rounded-full border border-vx-border px-5 py-3 text-sm font-bold hover:border-vx-accent">Make a video in Studio ↗</Link>
       </div>
-      <div aria-hidden="true" className="hidden aspect-[3/4] items-center justify-center rounded-3xl border border-vx-border bg-vx-panel sm:flex">
+      <div aria-hidden="true" className="hidden aspect-[3/4] items-center justify-center rounded-2xl border border-vx-border bg-vx-panel sm:flex">
         <div className="text-center"><span className="text-5xl text-vx-accent">▷</span><p className="mt-6 font-vx-mono text-xs leading-loose text-vx-fg-muted">WATCH<br />VOTE<br />RETURN</p></div>
       </div>
     </section>
@@ -89,7 +89,7 @@ export function SocialCinema() {
       <h2 id="profile-title" className="text-xl font-extrabold">Your Social Cinema profile</h2>
       {account ? <Profile key={account} /> : <div className="mt-4"><p className="mb-4 text-vx-fg-body">Use your Veyrnox.ai account to get started.</p><Button onClick={() => window.dispatchEvent(new CustomEvent('veyrnox:auth-required'))}>Sign in</Button></div>}
     </section>}
-  </div>;
+  </div></div>;
 }
 
 function Profile() {

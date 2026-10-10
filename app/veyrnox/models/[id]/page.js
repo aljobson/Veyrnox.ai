@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { MarketingNav } from '../../_components/NavBar';
+import { Main } from '../../_components/Main';
+import { PremiumTag } from '../../_components/PremiumTag';
 import { LIST_GROUPS } from '../../_sections/showcase';
 import { findModel, modelFacts } from '../../_lib/modelPages';
 
@@ -32,14 +34,30 @@ export default async function ModelPage({ params }) {
   return (
     <div className="min-h-dvh">
       <MarketingNav />
-      <section className="max-w-[900px] mx-auto px-4 sm:px-6 pt-14 sm:pt-20 pb-28">
+      {/* The shell every public page shares, so this page starts on the
+          logo's edge. The reading measure is the inner block. */}
+      <Main className="max-w-[1300px] mx-auto px-4 sm:px-6 pt-14 sm:pt-20 pb-28">
+        <div className="max-w-[852px]">
         <Link href="/models" className="text-[14px] text-vx-fg-muted hover:text-vx-fg underline-offset-4 hover:underline">All models</Link>
-        <h1 className="mt-4 vx-display text-[44px] sm:text-[72px] leading-[0.95]">{model.title}</h1>
+        <h1 className="mt-4 vx-display vx-title-detail">{model.title}</h1>
         <p className="mt-6 flex flex-wrap items-baseline gap-x-3 gap-y-1">
           <span className="font-vx-mono vx-num text-[40px] font-bold text-vx-money">{model.credits} credits</span>
           <span className="text-lg text-vx-fg-muted">{unitFor(model.kind)}</span>
-          {model.gated && <span className="text-[13px] font-bold text-vx-money">premium</span>}
+          {model.gated && <PremiumTag />}
         </p>
+        {/* The price rides the button, as it does everywhere else, and the
+            button comes before the facts: on a phone it sat below the fold. */}
+        <div className="mt-8 flex flex-wrap items-center gap-4">
+          <Link
+            href={`/app/create?model=${encodeURIComponent(model.id)}`}
+            className="vx-press inline-flex items-center gap-4 rounded-full bg-vx-accent px-6 py-3.5 font-extrabold text-vx-accent-ink hover:bg-vx-accent-hover"
+          >
+            <span>Generate with {model.title}</span>
+            <span className="font-vx-mono vx-num text-[15px] font-bold">{model.credits} cr</span>
+          </Link>
+          <Link href="/pricing" className="font-bold text-vx-fg-body underline underline-offset-4 hover:text-vx-fg">Credit packs</Link>
+        </div>
+        <p className="mt-4 text-[14px] text-vx-fg-muted">Nothing is charged until you press Generate. Failed generations refund in full.</p>
         <dl className="mt-10 border-t border-vx-border">
           {facts.map((f) => (
             <div key={f.label} className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-6 py-3 border-b border-vx-border">
@@ -48,17 +66,8 @@ export default async function ModelPage({ params }) {
             </div>
           ))}
         </dl>
-        <div className="mt-10 flex flex-wrap items-center gap-4">
-          <Link
-            href={`/app/create?model=${encodeURIComponent(model.id)}`}
-            className="inline-flex items-center rounded-full bg-vx-accent px-6 py-3 font-bold text-vx-accent-ink hover:bg-vx-accent-hover"
-          >
-            Generate with {model.title}
-          </Link>
-          <Link href="/pricing" className="font-bold text-vx-fg-body underline underline-offset-4 hover:text-vx-fg">Credit packs</Link>
         </div>
-        <p className="mt-6 text-[14px] text-vx-fg-muted">Failed generations refund in full.</p>
-      </section>
+      </Main>
     </div>
   );
 }

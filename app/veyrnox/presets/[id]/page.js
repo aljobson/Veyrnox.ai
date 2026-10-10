@@ -1,13 +1,17 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { MarketingNav } from '../../_components/NavBar';
-import { UseTemplate } from '../../_components/UseTemplate';
-import { PRESETS, templateById, presetTitle, modelIdForName } from '../../_lib/tokens';
+import { Main } from '../../_components/Main';
+import { TemplateRecipe } from '../../_components/TemplateRecipe';
+import { FilmPlayer } from '../../_components/FilmPlayer';
+import { ClipBadge } from '../../_components/ClipBadge';
+import { SHOWCASE_CLIPS } from '../../_lib/showcase';
+import { ALL_TEMPLATES, templateById, presetTitle, modelIdForName } from '../../_lib/tokens';
 
 // Templates are static data, so each page is built once; the price is read
 // from the live catalog in the browser (UseTemplate), never from here.
 export function generateStaticParams() {
-  return PRESETS.map((p) => ({ id: p.id }));
+  return ALL_TEMPLATES.map((p) => ({ id: p.id }));
 }
 export const dynamicParams = false;
 
@@ -16,7 +20,7 @@ export async function generateMetadata({ params }) {
   const t = templateById(id);
   if (!t) return { title: 'Template not found', robots: { index: false } };
   const title = presetTitle(t.name);
-  const description = `${title}: a ready-made ${t.model} template. See the prompt and the credit cost before you generate.`;
+  const description = `${title}: a ${t.model} template. See the preview, prompt, inputs and credit cost before you generate.`;
   return {
     title: `${title} template`,
     description,
@@ -30,18 +34,26 @@ export default async function TemplatePage({ params }) {
   const t = templateById(id);
   if (!t) notFound();
   const modelId = modelIdForName(t.model);
+  const clip = SHOWCASE_CLIPS[t.clipKey];
   return (
     <div className="min-h-dvh">
       <MarketingNav />
-      <section className="max-w-[1100px] mx-auto px-4 sm:px-6 pt-10 sm:pt-16 pb-28">
+      {/* The shell every public page shares, so this page starts on the
+          logo's edge. Its own width is the inner block. */}
+      <Main className="max-w-[1300px] mx-auto px-4 sm:px-6 pt-10 sm:pt-16 pb-28">
+        <div className="max-w-[1052px]">
         <Link href="/presets" className="text-[14px] text-vx-fg-muted hover:text-vx-fg underline-offset-4 hover:underline">All templates</Link>
-        <div className="mt-6 grid gap-10 lg:grid-cols-[1fr_420px]">
-          <div className="min-h-[280px] lg:min-h-[480px] rounded-3xl" style={{ background: t.bg }} aria-hidden />
-          <div>
+        {/* In one column the name, model and inputs come before the preview:
+            a 9:16 clip fills a phone's first screen and used to push the
+            title below it. From lg the preview is the left column again and
+            spans both rows; the first row hugs the heading (auto) so a tall
+            clip cannot open a gap above the recipe. */}
+        <div className="mt-6 grid gap-x-10 gap-y-6 lg:grid-cols-[1fr_420px] lg:grid-rows-[auto_1fr] lg:gap-y-0">
+          <div className="lg:col-start-2 lg:row-start-1">
             <p className="font-vx-mono text-[11px] tracking-[0.12em] text-vx-fg-muted">
               {t.category}{t.isNew ? ' · NEW' : ''}
             </p>
-            <h1 className="mt-2 vx-display text-[40px] sm:text-[56px] leading-[0.95]">{presetTitle(t.name)}</h1>
+            <h1 className="mt-2 vx-display vx-title-detail">{presetTitle(t.name)}</h1>
             <p className="mt-4 text-vx-fg-body">
               Runs on{' '}
               {modelId
@@ -53,13 +65,22 @@ export default async function TemplatePage({ params }) {
                 <span className="font-bold">You add:</span> {t.needs}. You upload it in the studio.
               </p>
             )}
-            <h2 className="mt-8 font-vx-mono text-[11px] tracking-[0.12em] text-vx-fg-muted">PROMPT</h2>
-            <p className="mt-2 rounded-xl bg-vx-raised/60 px-4 py-3 text-[15px] leading-[1.55] text-vx-fg-body">{t.prompt}</p>
-            <p className="mt-2 text-[13px] text-vx-fg-muted">You can edit it before you generate.</p>
-            <UseTemplate preset={t} />
+          </div>
+          <div className="lg:col-start-1 lg:row-start-1 lg:row-span-2">
+            {clip ? (
+              <div className="relative mx-auto max-w-[480px]">
+                <FilmPlayer key={t.id} film={clip} label={`${presetTitle(t.name)} preview`} aspectRatio={clip.aspectRatio || t.previewAspect || '9 / 16'} />
+                <ClipBadge clip={clip} />
+                <p className="mt-3 text-sm text-vx-fg-muted">{clip.generatedOnVeyrnox ? 'Five-second example generated on Veyrnox with the prompt below.' : 'Five-second source preview. Use the recipe to create your own version.'}</p>
+              </div>
+            ) : <div className="min-h-[280px] lg:min-h-[480px] rounded-2xl" style={{ background: t.bg }} aria-hidden />}
+          </div>
+          <div className="lg:col-start-2 lg:row-start-2">
+            <TemplateRecipe key={t.id} preset={t} generatedPreview={clip?.generatedOnVeyrnox} />
           </div>
         </div>
-      </section>
+        </div>
+      </Main>
     </div>
   );
 }

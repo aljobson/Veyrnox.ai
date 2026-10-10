@@ -48,7 +48,7 @@ export function SourcePickers({ media, sources, onPick, onDraw, onLibrary }) {
         {slot === 'image' && onLibrary && (
           <button type="button" onClick={() => onLibrary(slot)} className={pill}>From library</button>
         )}
-        <label className={`${pill} cursor-pointer`}>
+        <label className={`${pill} cursor-pointer has-focus-visible:outline-solid has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-vx-accent`}>
           {picked ? 'Replace' : ui.add}
           <input type="file" accept={ui.accept} className="sr-only"
             onChange={(e) => { const f = e.target.files && e.target.files[0]; e.target.value = ''; onPick(slot, f || null); }} />

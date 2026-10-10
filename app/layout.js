@@ -53,14 +53,14 @@ export const viewport = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={inter.variable}>
+    <html lang="en" data-scroll-behavior="smooth" className={inter.variable}>
       <body>
         <a href="#main" className="vx-skip rounded-full bg-vx-accent px-4 py-2 text-sm font-extrabold text-vx-accent-ink">
           Skip to content
         </a>
-        {/* tabIndex -1 so the skip link and the back-to-top button can land
-            focus here without making the region itself tabbable. */}
-        <main id="main" tabIndex={-1}>{children}</main>
+        {/* #main is the page's own Main (app/veyrnox/_components/Main.js): it
+            starts after the nav, so this link skips it. */}
+        {children}
         <SiteChrome />
         <ToasterMount />
         <AuthGate />

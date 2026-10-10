@@ -2,12 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { register } from 'node:module';
-import { isPublishApiPath, publishEnabled } from '../lib/social/publishFeature.js';
+import { isPublishApiPath, publishEnabled, publishShellAvailable, publishAllowed } from '../lib/social/publishFeature.js';
 register('data:text/javascript,' + encodeURIComponent(`export async function resolve(s,c,next){ return next(s==='next/server'?'next/server.js':s,c); }`));
 const { NextRequest } = await import('next/server.js');
 const { middleware } = await import('../middleware.js');
 
-// Veyrnox Publish ships dark (docs/product/ISSUES.md P1): PUBLISH_ENABLED
+// Veyrnox Publish remains controlled by PUBLISH_ENABLED, which
 // must be exactly "true" before the page, the menu link or any
 // /api/v1/social route answers.
 
@@ -63,18 +63,23 @@ test('with Publish on, social routes go through the normal token check', async (
 test('the page, the OAuth landing and the menu link are gated on the same switch', () => {
     for (const p of ['app/veyrnox/app/publish/layout.js', 'app/social/connect/callback/[network]/layout.js']) {
         const src = read(p);
-        assert.match(src, /if \(!publishEnabled\(\)\) notFound\(\);/, p);
+        assert.match(src, /if \(!publishShellAvailable\(\)\) notFound\(\);/, p);
     }
-    assert.match(read('app/veyrnox/layout.js'), /<PublishFlagProvider enabled=\{publishEnabled\(\)\}>/);
+    assert.match(read('app/veyrnox/layout.js'), /<PublishFlagProvider enabled=\{publishEnabled\(\)\} pilot=/);
     const nav = read('app/veyrnox/_components/NavAuthButtons.js');
     assert.match(nav, /usePublishEnabled\(\)/);
     assert.match(nav, /\{links\.map\(/);
 });
 
-test('production ships Publish off, staging on', () => {
+test('production activates only YouTube and LinkedIn; staging remains enabled', () => {
     const wrangler = read('wrangler.jsonc');
     const [prod, staging] = wrangler.split('"env": {');
-    assert.match(prod, /"PUBLISH_ENABLED": "false"/);
+    assert.match(prod, /"PUBLISH_ENABLED": "true"/);
+    assert.match(prod, /"PUBLISH_RELEASED_NETWORKS": "youtube,linkedin"/);
+    assert.match(prod, /"PUBLISH_ANALYTICS_ENABLED": "true"/);
+    for (const flag of ['PUBLISH_UPLOADS_ENABLED', 'PUBLISH_POSTING_INSIGHTS_ENABLED', 'PUBLISH_EXTENDED_NETWORKS_ENABLED', 'INSTAGRAM_INSIGHTS_SCOPE_ENABLED', 'TIKTOK_ANALYTICS_SCOPE_ENABLED']) {
+        assert.match(prod, new RegExp(`"${flag}": "false"`), flag);
+    }
     assert.match(staging, /"PUBLISH_ENABLED": "true"/);
 });
 
@@ -85,4 +90,26 @@ test('every OAuth callback turns the Free-tier refusal into a typed 409', () => 
         assert.match(src, /\{ ok: false, code: 'ACCOUNT_LIMIT' \}, \{ status: 409 \}/, n);
     }
     assert.match(read('app/social/connect/callback/[network]/page.js'), /ACCOUNT_LIMIT:/);
+});
+
+test('pilot allows exact UUIDs only; shell does not expose the allowlist', () => {
+    const id = '11111111-1111-4111-8111-111111111111';
+    const env = { PUBLISH_ENABLED: 'false', PUBLISH_TESTER_AUTH_IDS: ` invalid, ${id.toUpperCase()} ` };
+    assert.equal(publishShellAvailable(env), true);
+    assert.equal(publishAllowed(id, env), true);
+    for (const other of ['', undefined, 'invalid', '22222222-2222-4222-8222-222222222222']) assert.equal(publishAllowed(other, env), false);
+    assert.equal(publishShellAvailable({ PUBLISH_TESTER_AUTH_IDS: 'invalid' }), false);
+});
+
+test('pilot access response exposes only a boolean and never accepts malformed identity', async () => {
+    const { GET } = await import('../app/api/v1/social/access/route.js');
+    const id = '11111111-1111-4111-8111-111111111111';
+    await withEnv({ PUBLISH_ENABLED: 'false', PUBLISH_TESTER_AUTH_IDS: id }, async () => {
+        for (const identity of ['', 'invalid']) {
+            assert.equal(GET(new Request('https://example.test/api/v1/social/access', { headers: { 'x-veyrnox-auth-id': identity } })).status, 401);
+        }
+        const res = GET(new Request('https://example.test/api/v1/social/access', { headers: { 'x-veyrnox-auth-id': id } }));
+        assert.equal(res.headers.get('cache-control'), 'no-store');
+        assert.deepEqual(await res.json(), { enabled: true });
+    });
 });

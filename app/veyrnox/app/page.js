@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { AppNav } from '../_components/NavBar';
+import { Main } from '../_components/Main';
 import { PresetGallery } from '../_components/PresetGallery';
 
 export default function Explore() {
@@ -10,7 +11,7 @@ export default function Explore() {
           used to pass a hardcoded 823, so the pill showed a number that
           belonged to nobody. */}
       <AppNav active="explore" />
-      <section className="max-w-[1400px] mx-auto px-4 sm:px-8 pt-10 pb-16">
+      <Main className="max-w-[1400px] mx-auto px-4 sm:px-8 pt-10 pb-16">
         <h1 className="vx-display text-[40px] sm:text-[56px]">Explore presets</h1>
         <p className="mt-3 mb-8 text-vx-fg-body max-w-[52ch] leading-[1.6]">
           Each one opens the studio on its model and prompt, priced before you press Generate.
@@ -22,8 +23,8 @@ export default function Explore() {
           </span>
           <span aria-hidden="true" className="font-semibold text-vx-accent">Open chat →</span>
         </Link>
-        <PresetGallery size="md" columns="lg:grid-cols-4" />
-      </section>
+        <PresetGallery size="md" columns="lg:columns-4" />
+      </Main>
     </div>
   );
 }

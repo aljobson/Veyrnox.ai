@@ -1,13 +1,12 @@
 import Link from 'next/link';
 import { MediaTile } from '../_components/MediaTile';
-import { SHOWCASE_CLIPS } from '../_lib/showcase';
-import { wallShapes, tileClasses } from '../_lib/presetWall';
-import { WALL_PRESETS, presetHref, presetCredits, presetTitle, shelfName } from '../_lib/tokens';
+import { PremiumTag } from '../_components/PremiumTag';
+import { SHOWCASE_CLIPS, MODEL_SHOWCASE_KEYS } from '../_lib/showcase';
+import { WALL_PRESETS, templateHref, presetCredits, presetTitle, distinctShelfNames } from '../_lib/tokens';
 
-/* ─── Preset wall: the real presets, as a bento ─── */
+/* ─── Preset wall: the real presets ─── */
 
 export function PresetWall({ catalog }) {
-  const shapes = wallShapes(WALL_PRESETS.length);
   return (
     <section className="px-4 sm:px-6 pt-28 sm:pt-36 max-w-[1300px] mx-auto">
       <div className="flex items-end justify-between mb-8 flex-wrap gap-4">
@@ -16,32 +15,27 @@ export function PresetWall({ catalog }) {
           All templates
         </Link>
       </div>
-      <div className="grid grid-cols-2 lg:grid-cols-4 lg:auto-rows-[220px] gap-3">
-        {WALL_PRESETS.map((preset, i) => {
-          const shape = shapes[i];
-          const classes = tileClasses(shape);
-          const isHero = shape.kind === 'hero';
+      <div className="columns-1 sm:columns-2 lg:columns-4 gap-3 [&>a]:mb-6 [&>a]:break-inside-avoid">
+        {WALL_PRESETS.map((preset) => {
+          const clip = SHOWCASE_CLIPS[preset.clipKey];
           return (
             <MediaTile
               key={preset.id}
-              href={presetHref(preset)}
-              clip={SHOWCASE_CLIPS[preset.id]}
-              className={`block rounded-2xl overflow-hidden ${classes.link}`}
-              mediaClassName={classes.media}
-              mediaStyle={{ background: preset.bg }}
-            >
-              <div className="absolute inset-0 bg-linear-to-t from-black/75 via-black/10 to-transparent" />
-              {/* Fixed light ink: this sits on a hardcoded gradient under a
-                  black scrim, so theme tokens would read near-black in light
-                  theme. Same reasoning as the feature cards. */}
-              <div className={`absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 text-left ${isHero ? 'p-5 sm:p-6' : 'p-3'}`}>
-                <div className="min-w-0">
-                  <div className={`font-black text-white tracking-tight ${isHero ? 'text-3xl sm:text-4xl' : 'text-[15px]'}`}>{presetTitle(preset.name)}</div>
-                  <div className={`mt-0.5 text-white/85 truncate ${isHero ? 'text-sm' : 'text-xs'}`}>{preset.model}</div>
+              href={templateHref(preset)}
+              clip={clip && { ...clip, objectFit: 'contain' }}
+              className="block text-left w-full"
+              mediaClassName="rounded-2xl"
+              mediaStyle={{ background: preset.bg, aspectRatio: clip?.aspectRatio || '4 / 5' }}
+              footer={
+                <div className="pt-3 flex items-baseline justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="font-black tracking-tight text-[15px]">{presetTitle(preset.name)}</div>
+                    <div className="mt-0.5 text-vx-fg-muted truncate text-xs">{preset.model}</div>
+                  </div>
+                  <div className="shrink-0 font-vx-mono font-bold text-vx-money vx-num text-[13px]">{presetCredits(preset, catalog)} cr</div>
                 </div>
-                <div className={`shrink-0 font-vx-mono font-bold text-[#E4A93C] vx-num ${isHero ? 'text-lg' : 'text-[13px]'}`}>{presetCredits(preset, catalog)} cr</div>
-              </div>
-            </MediaTile>
+              }
+            />
           );
         })}
       </div>
@@ -60,7 +54,8 @@ export const LIST_GROUPS = [
 export function ModelShelf({ catalog }) {
   const groups = LIST_GROUPS
     .map((g) => ({ ...g, rows: catalog.filter((m) => m.kind === g.kind) }))
-    .filter((g) => g.rows.length > 0);
+    .filter((g) => g.rows.length > 0)
+    .map((g) => ({ ...g, nameOf: distinctShelfNames(g.rows) }));
   if (groups.length === 0) return null;
   const total = groups.reduce((n, g) => n + g.rows.length, 0);
 
@@ -71,29 +66,42 @@ export function ModelShelf({ catalog }) {
         All {total} models, at the credits the button will show. Read live from the catalog.
       </p>
       <div id="shelf" className="mt-12 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-12 gap-y-12">
-        {groups.map((g) => (
-          <div key={g.kind}>
-            <div className="flex items-baseline justify-between gap-3 border-b-2 border-vx-fg pb-2">
-              <h3 className="text-xl font-black">{g.label}</h3>
-              <span className="text-[13px] text-vx-fg-muted">{g.unit}</span>
+        {groups.map((g) => {
+          const clip = SHOWCASE_CLIPS[MODEL_SHOWCASE_KEYS[g.kind]];
+          return (
+            <div key={g.kind}>
+              <MediaTile
+                href="/models"
+                ariaLabel={`Explore ${g.label.toLowerCase()} models`}
+                clip={clip && { ...clip, objectFit: 'contain' }}
+                className="block mb-4"
+                mediaClassName="rounded-2xl"
+                mediaStyle={{ aspectRatio: clip?.aspectRatio || '4 / 5' }}
+                footer={
+                  <div className="pt-3 flex items-baseline justify-between gap-3">
+                    <h3 className="text-xl font-black">{g.label}</h3>
+                    <span className="text-[13px] text-vx-fg-body">{g.unit}</span>
+                  </div>
+                }
+              />
+              <ul className="mt-2 font-vx-mono text-[14px] vx-num">
+                {g.rows.map((m) => (
+                  <li key={m.id}>
+                    <Link
+                      href={`/app/create?model=${encodeURIComponent(m.id)}`}
+                      className="group flex items-baseline gap-2 py-2 text-vx-fg-body hover:text-vx-fg"
+                    >
+                      <span className="min-w-0 truncate group-hover:underline underline-offset-4">{g.nameOf(m)}</span>
+                      {m.gated && <PremiumTag className="shrink-0" />}
+                      <span aria-hidden className="vx-leader flex-1" />
+                      <span className="shrink-0 font-bold text-vx-money">{m.credits} cr</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
             </div>
-            <ul className="mt-2 font-vx-mono text-[14px] vx-num">
-              {g.rows.map((m) => (
-                <li key={m.id}>
-                  <Link
-                    href={`/app/create?model=${encodeURIComponent(m.id)}`}
-                    className="group flex items-baseline gap-2 py-2 text-vx-fg-body hover:text-vx-fg"
-                  >
-                    <span className="min-w-0 truncate group-hover:underline underline-offset-4">{shelfName(m.name)}</span>
-                    {m.gated && <span className="shrink-0 text-[11px] text-vx-money">premium</span>}
-                    <span aria-hidden className="vx-leader flex-1" />
-                    <span className="shrink-0 font-bold text-vx-money">{m.credits} cr</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))}
+          );
+        })}
       </div>
       <p className="mt-10 text-[14px] text-vx-fg-muted">
         Failed generations refund in full. <Link href="/pricing" className="font-bold text-vx-fg-body underline underline-offset-4 hover:text-vx-fg">Credit packs</Link>

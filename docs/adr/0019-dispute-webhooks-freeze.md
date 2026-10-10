@@ -57,3 +57,22 @@ never refunds (for example, the dispute is won), we never find out at all.
   backstop still applies.
 - The `CONTEXT.md` Chargeback definition changes: reported by the Merchant of
   Record, or inferred.
+
+## Amendment 2026-10-10 — a shortfall Freezes too (0257, audit D-02)
+
+The refund clawback (`apply_top_up_refund`, ADR-0018 and 0058 onward) caps what
+it takes at the Pack Credits still held, and its Freeze test asked only whether a
+job had been created since the purchase. Both were written when a job was the
+only way to spend. Cinema unlocks (`ledger_unlock`, 0142) spend without a jobs
+row, so a buyer who spent a Pack on unlocks and then had the Pack refunded kept
+the unlocks, the clawback took nothing, and nothing Froze: the credits were
+written off.
+
+Since 0257 any shortfall (owed more than taken) Freezes the account, with the
+same `freeze_account` call and the same `credits_taken` / `credits_shortfall`
+record in `account_actions`; the job test stays for the case where everything
+was taken back but a job is still in flight, whose later Credit Refund would
+return credits the Pack no longer paid for. `top_ups.shortfall_credits` records
+the shortfall per Top-up, beside `clawed_back_credits`. A replay or an older
+amount still changes nothing and never re-Freezes an account an Operator has
+unfrozen. A full refund of an untouched Pack still Freezes nobody.

@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
     xConfig, buildAuthorizeUrl, exchangeCodeForToken, fetchConnectedAccount, publishPost, X_SCOPES,
+    refreshAccessToken,
 } from '../packages/adapters/social/twitter.js';
 
 const cfg = { clientId: 'test-client-id-abc123', clientSecret: 'a'.repeat(20) };
@@ -51,6 +52,21 @@ test('exchangeCodeForToken authenticates with HTTP Basic (confidential client), 
     assert.equal(params.get('code'), 'auth-code');
     assert.equal(params.get('code_verifier'), 'v'.repeat(43));
     assert.equal(params.get('client_id'), null, 'confidential clients authenticate via Basic auth, not a body client_id');
+});
+
+test('refreshAccessToken uses the refresh grant with Basic auth and keeps the old refresh token when none is returned', async () => {
+    let sentBody = null, sentHeaders = null;
+    const fetcher = async (_url, init) => { sentBody = init.body; sentHeaders = init.headers; return jsonRes({ access_token: 'access-2', refresh_token: 'refresh-2', expires_in: 7200 }); };
+    const r = await refreshAccessToken(cfg, 'refresh-1', fetcher);
+    assert.deepEqual([r.accessToken, r.refreshToken], ['access-2', 'refresh-2']);
+    assert.ok(new Date(r.expiresAt).getTime() > Date.now() + 7100 * 1000);
+    assert.equal(sentHeaders.Authorization, `Basic ${Buffer.from(`${cfg.clientId}:${cfg.clientSecret}`).toString('base64')}`);
+    const params = new URLSearchParams(sentBody);
+    assert.equal(params.get('grant_type'), 'refresh_token');
+    assert.equal(params.get('refresh_token'), 'refresh-1');
+    const kept = await refreshAccessToken(cfg, 'refresh-1', async () => jsonRes({ access_token: 'access-3' }));
+    assert.equal(kept.refreshToken, 'refresh-1', 'no rotation in the response: the old one still works');
+    await assert.rejects(refreshAccessToken(cfg, 'bad', async () => jsonRes({ error: 'invalid_request' }, 400)), /invalid_request/);
 });
 
 test('exchangeCodeForToken surfaces X\'s error rather than swallowing it', async () => {

@@ -14,7 +14,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { NEW_CHAT, readNotice, writeNotice } from '../app/veyrnox/_lib/chatLocal.js';
-import { A, GatewayError, ME, TEXT, WARNINGS, afterReload, cutBeforeText, memory, refused, reply, run, stopAfterText, stopBeforeText, stopped, toB } from './chatSendFlow.harness.mjs';
+import { A, GatewayError, ME, TEXT, WARNINGS, afterReload, cutBeforeText, memory, noAnswer, refused, reply, run, stopAfterText, stopBeforeText, stopped, toB } from './chatSendFlow.harness.mjs';
+import { JOB } from './chatWarning.harness.mjs'; // a job id as the server makes them: sendTurn hands on nothing else with a replay
 
 const noCredits = () => new GatewayError('no', { status: 402, code: 'insufficient_balance' });
 const tooFast = () => new GatewayError('no', { status: 429, code: 'rate_limited' });
@@ -35,7 +36,11 @@ test('Stop before any text, sent again and refused: the warning is still kept wi
         ['rate_limited', { turn: refused(tooFast()) }],
         ['upload_failed', { images: [{ file: {} }], upload: async () => { throw new GatewayError('upload_failed', { status: 0, code: 'upload_failed' }); } }],
         ['image_unreadable', { images: [{ file: {} }], prepare: async () => { throw new Error('image_unreadable'); } }],
-        // No answer at all to the request: nothing says a turn started, so it is told as a refusal with no code of its own.
+        // No answer at all to the request. It was told at once as a refusal with no code of its own (a bare network error
+        // from sendTurn). sendTurn now says the request got no answer, and the server is asked about the send by its key
+        // (tests/chatSendUnanswered.test.mjs). Here it says the send made no job and its key is closed: a refusal, as before.
+        ['send_unanswered', { turn: noAnswer(), closeSend: async () => ({ closed: true }) }],
+        // An error with no code raised by anything else still leaves the general notice with the text.
         [undefined, { turn: refused(new TypeError('network error')) }],
     ];
     for (const [code, how] of refusals) {
@@ -83,7 +88,10 @@ test('a refusal leaves each of the four warnings about Credits where it was, and
     // `connection_saved` is one of these: the saved reply and its price are in the chat.
     for (const code of ['connection_saved', 'connection_refunded', 'insufficient_balance', 'rate_limited', 'provider_cut_off', 'unknown']) {
         const { log, kept } = await run({ active: A, turn: refused(noCredits()), kept: { 'chat-a': code } });
-        assert.deepEqual([kept(), log.keptWith['chat-a'], log.notices], [{ 'chat-a': 'insufficient_balance' }, { credits: 2 }, [null, 'insufficient_balance']], code);
+        // Every notice is handed its message's job, its send's key and its text as well (tests/chatWarningSettle.test.mjs,
+        // tests/chatWarningTurns.test.mjs): a refusal has no job, and the store keeps none of them beside a notice that is not
+        // a warning the server can be asked about. `after` is the kept warning it takes the place of: none, here.
+        assert.deepEqual([kept(), log.keptWith['chat-a'], log.notices], [{ 'chat-a': 'insufficient_balance' }, { credits: 2, job: null, key: 'key', sent: TEXT, after: null }, [null, 'insufficient_balance']], code);
     }
 });
 
@@ -159,10 +167,16 @@ test('endings that never see the reply start, and are not refusals: Stop keeps i
     const found = await stoppedUnsure();
     const second = await run({ active: A, storage: found, turn: stopBeforeStart, settle: 'saved' });
     assert.deepEqual([afterReload(found, 'chat-a'), second.log.opened, second.log.shownOnOpen, second.log.notices], [{ box: '', notice: null }, ['chat-a'], [null], [null]]);
-    // The server says this very message already ran: the same.
+    // CHANGED (ADR-0067 amendment 14). The server says it already holds a job for this very message. That was taken as "it
+    // already ran": the chat was read again, nothing was said, and the warning was forgotten with no turn asked about. The
+    // job is looked for now (tests/chatSendReplay.test.mjs). Found saved, the chat is read again as before, and says so.
     const replayed = await stoppedUnsure();
-    const third = await run({ active: A, storage: replayed, turn: async () => ({ replay: true }) });
-    assert.deepEqual([afterReload(replayed, 'chat-a'), third.log.opened, third.log.shownOnOpen], [{ box: '', notice: null }, ['chat-a'], [null]]);
+    const third = await run({ active: A, storage: replayed, turn: async () => ({ replay: true, job: JOB }), settle: 'saved' });
+    assert.deepEqual([afterReload(replayed, 'chat-a'), third.log.opened, third.log.shownOnOpen], [{ box: '', notice: { code: 'connection_saved' } }, ['chat-a'], [null]]);
+    // Not found settled, the warning is not forgotten: this message goes back with a warning of its own, which stands for both.
+    const unsettled = await stoppedUnsure();
+    const fourth = await run({ active: A, storage: unsettled, turn: async () => ({ replay: true, job: JOB }), settle: 'pending' });
+    assert.deepEqual([afterReload(unsettled, 'chat-a'), fourth.log.opened, fourth.log.notices], [{ box: TEXT, notice: { code: 'connection_lost' } }, [], [null, 'connection_lost']]);
 });
 
 test('a closed chat or a signed-out reader is about the whole page: a warning kept for the chat is left as it was', async () => {
@@ -211,12 +225,17 @@ test('the warning is looked for where the text goes back to: under New chat when
 });
 
 test('a message known to have gone out forgets the warning wherever the person is', async () => {
-    // A replay, and a Stop before the reply started whose turn was found: neither reads the chat again while another
-    // chat is on screen, and both still say the message went out.
-    for (const how of [{ turn: async (_args, person) => { person.opens('chat-b'); return { replay: true }; } }, { turn: async (_args, person) => { person.opens('chat-b'); throw stopped(); }, settle: 'saved' }]) {
+    // A Stop before the reply started whose turn was found: the chat is not read again while another chat is on screen,
+    // and the turn found still says the message went out.
+    // CHANGED (ADR-0067 amendment 14): a replay was the other case here, and forgot the warning with nothing asked. Its job
+    // is looked for now. Found saved, the warning is forgotten the same way, and the notice a dropped connection leaves when
+    // its turn was saved is kept for the chat, to be said when it is next opened (which reads it again).
+    const cases = [[{ turn: async (_args, person) => { person.opens('chat-b'); throw stopped(); } }, null],
+        [{ turn: async (_args, person) => { person.opens('chat-b'); return { replay: true, job: JOB }; } }, { code: 'connection_saved' }]];
+    for (const [how, left] of cases) {
         const storage = await stoppedUnsure();
-        const { log } = await run({ active: A, storage, ...how });
-        assert.deepEqual([readNotice(storage, ME, 'chat-a'), log.opened, log.notices], [null, [], [null]]);
+        const { log } = await run({ active: A, storage, settle: 'saved', ...how });
+        assert.deepEqual([readNotice(storage, ME, 'chat-a'), log.opened, log.notices], [left, [], [null]]);
     }
 });
 

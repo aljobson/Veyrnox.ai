@@ -30,10 +30,10 @@ export function wallShapes(count) {
 const TILE_CLASSES = {
   hero: {
     link: 'col-span-2 lg:col-span-2 lg:row-span-2 lg:h-full',
-    media: 'aspect-[16/9] lg:aspect-auto lg:h-full',
+    media: 'aspect-[4/5] lg:aspect-auto lg:h-full',
   },
-  tile: { link: 'col-span-1 lg:h-full', media: 'aspect-[4/3] lg:aspect-auto lg:h-full' },
-  wide: { link: 'col-span-1 lg:col-span-2 lg:h-full', media: 'aspect-[4/3] lg:aspect-auto lg:h-full' },
+  tile: { link: 'col-span-1 lg:h-full', media: 'aspect-[4/5] lg:aspect-auto lg:h-full' },
+  wide: { link: 'col-span-1 lg:col-span-2 lg:h-full', media: 'aspect-[4/5] lg:aspect-auto lg:h-full' },
 };
 
 export function tileClasses(shape) {

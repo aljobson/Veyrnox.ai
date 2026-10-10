@@ -12,57 +12,63 @@ import { getSession, onSessionChange } from '../../lib/authClient';
 import { accountLabel } from '../_lib/account';
 import { useProjectsPreview } from '../_lib/useProjectsPreview';
 import { useVideoEnhancePreview } from '../_lib/useVideoEnhancePreview';
+import { useEditorEnabled } from './EditorFlag';
+import { NAV_CATEGORIES } from '../_lib/tokens';
 import { AnnouncementBar } from './AnnouncementBar';
 
-// Marketing site nav (Home / Gallery / Pricing).
+// The public site's nav: every marketing page, the home page included. One
+// list (NAV_CATEGORIES), one order, set from the logo's edge so the links
+// hold their place when the right-hand side changes width (signed in or out).
 export function MarketingNav() {
   // Rewrites serve /veyrnox/* at /*, so the browser path has no prefix.
   const path = usePathname().replace(/^\/veyrnox/, '') || '/';
-  const items = [
-    { href: '/',         label: 'Home' },
-    { href: '/presets', label: 'Templates' },
-    { href: '/tools', label: 'Tools' },
-    { href: '/app/chat', label: 'LLM Chat' },
-    { href: '/social-cinema', label: 'Social Cinema' },
-    { href: '/pricing', label: 'Pricing' },
-  ];
   return (
     <>
     <AnnouncementBar />
-    <div data-print="hide" className="sticky top-0 z-40 h-16 border-b border-vx-border bg-vx-base/88 backdrop-blur-sm">
+    <header data-print="hide" className="sticky top-0 z-40 h-16 border-b border-vx-border bg-vx-base/88 backdrop-blur-sm">
       {/* Same 1300px column as the page body, so the logo sits on its edge. */}
-      <div className="h-full max-w-[1300px] mx-auto px-4 sm:px-6 flex items-center justify-between gap-3">
-      <Link href="/" aria-label="Veyrnox.ai — home" className="flex items-center gap-2.5 shrink-0">
-        <Logo wordmark />
+      <div className="h-full max-w-[1300px] mx-auto px-4 sm:px-6 flex items-center gap-1 sm:gap-3 xl:gap-6">
+      <Link href="/" aria-label="Veyrnox.ai home" className="flex items-center shrink-0">
+        <Logo className="min-[360px]:hidden" />
+        <Logo wordmark className="hidden min-[360px]:inline-flex" />
       </Link>
-      <nav aria-label="Primary" className="hidden lg:flex gap-1.5 text-sm font-semibold">
-        {items.map((it) => {
-          const target = it.href.replace(/^\/veyrnox/, '') || '/';
-          const active = target === '/' ? path === '/' : path.startsWith(target);
+      {/* From xl, not lg: the eight links, search and the account buttons
+          need about 1,200px, and between 1024 and 1200 the links ran under
+          the search box. Below xl they are in the menu. */}
+      <nav aria-label="Primary" className="hidden xl:flex flex-1 min-w-0 items-center gap-1 text-[13px] font-semibold">
+        {NAV_CATEGORIES.map((it) => {
+          // A section of the home page (`/#faq`) is never the current page,
+          // and it is a plain link: on the home page the browser glides to
+          // it, and from another page the home page loads and SectionJump
+          // lands on it.
+          const section = it.href.includes('#');
+          const active = !section && path.startsWith(it.href);
+          const Item = section ? 'a' : Link;
           return (
-            <Link
+            <Item
               key={it.href}
               href={it.href}
               aria-current={active ? 'page' : undefined}
-              className={`px-4 py-2 rounded-full transition-colors ${
-                active ? 'bg-vx-panel text-vx-fg' : 'text-vx-fg-muted hover:text-vx-fg'
+              className={`shrink-0 px-3.5 py-2 rounded-full transition-colors ${
+                active ? 'bg-vx-panel text-vx-fg' : 'text-vx-fg-body hover:text-vx-fg hover:bg-vx-panel'
               }`}
             >
               {it.label}
-            </Link>
+            </Item>
           );
         })}
       </nav>
-      <div className="flex items-center gap-2 shrink-0">
+      <div className="flex flex-1 xl:flex-none items-center justify-end gap-1 sm:gap-2 shrink-0">
         <SiteSearch className="hidden sm:inline-flex" />
-        <ThemeToggle className="hidden sm:inline-flex" />
+        {/* Below xl the theme switch is inside the menu. */}
+        <ThemeToggle className="hidden xl:inline-flex" />
         <NavAuthButtons />
-        {/* Below sm the links above are hidden — without this the only way
-            off this page was the browser back button. */}
-        <MobileMenu items={items} className="lg:hidden" />
+        {/* Below xl the links above are hidden: without this the only way
+            off the page was the browser back button. */}
+        <MobileMenu items={NAV_CATEGORIES} className="xl:hidden" />
       </div>
       </div>
-    </div>
+    </header>
     </>
   );
 }
@@ -75,15 +81,29 @@ export function MarketingNav() {
 export function AppNav({ balance, active = 'explore', readAccount = true }) {
   const projectsEnabled = useProjectsPreview();
   const enhanceEnabled = useVideoEnhancePreview();
+  const editorEnabled = useEditorEnabled();
   const tabs = useRef(null);
+  // Keeps the current tab on screen in the strip a phone scrolls sideways. The
+  // strip is moved by hand: scrollIntoView() also moves where the next Tab
+  // starts from, so on every studio page the first Tab went past "Skip to
+  // content" and the tabs before this one.
   useEffect(() => {
-    tabs.current?.querySelector('[aria-current="page"]')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-  }, [active, projectsEnabled, enhanceEnabled]);
+    const strip = tabs.current;
+    const current = strip?.querySelector('[aria-current="page"]');
+    if (!current) return;
+    const edge = strip.getBoundingClientRect();
+    const tab = current.getBoundingClientRect();
+    if (tab.left < edge.left) strip.scrollLeft -= edge.left - tab.left;
+    else if (tab.right > edge.right) strip.scrollLeft += tab.right - edge.right;
+  }, [active, projectsEnabled, enhanceEnabled, editorEnabled]);
   const items = [
     { key: 'explore', href: '/app',         label: 'Explore' },
     { key: 'create',  href: '/app/create',  label: 'Create' },
+    // Video agent (ADR-0074): bought from a plan on its own page, so it has its own tab and is not in the Create picker.
+    { key: 'agent', href: '/app/video-agent', label: 'Video agent' },
     { key: 'chat', href: '/app/chat', label: 'LLM Chat' },
     { key: 'library', href: '/app/library', label: 'Library' },
+    ...(editorEnabled ? [{ key: 'editor', href: '/app/editor', label: 'Video editor' }] : []),
     ...(projectsEnabled ? [{ key: 'projects', href: '/app/projects', label: 'Projects' }] : []),
     ...(enhanceEnabled ? [{ key: 'enhance', href: '/app/enhance', label: 'Enhance' }] : []),
   ];
@@ -129,7 +149,7 @@ export function AppNav({ balance, active = 'explore', readAccount = true }) {
   const assetFmt = assets != null ? new Intl.NumberFormat('en-US').format(assets) : '—';
   const assetWord = assets === 1 ? 'asset' : 'assets';
   return (
-    <div data-print="hide" className="sticky top-0 z-40 flex items-center justify-between gap-2 px-4 sm:px-8 h-16 border-b border-vx-border bg-vx-base/88 backdrop-blur-sm">
+    <header data-print="hide" className="sticky top-0 z-40 flex items-center justify-between gap-2 px-4 sm:px-8 h-16 border-b border-vx-border bg-vx-base/88 backdrop-blur-sm">
       <Link
         href="/app"
         aria-label="Veyrnox studio — explore"
@@ -168,7 +188,7 @@ export function AppNav({ balance, active = 'explore', readAccount = true }) {
               <Link
                 href="/app/credits"
                 aria-label={`Credit balance: ${fmt} credits`}
-                className="flex items-center gap-1.5 py-1 leading-none transition-opacity hover:opacity-80"
+                className="flex min-h-6 items-center gap-1.5 py-1 leading-none transition-opacity hover:opacity-80"
               >
                 <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-vx-money" />
                 <span className="font-vx-mono text-[11px] font-bold text-vx-money vx-num">{fmt} cr</span>
@@ -176,7 +196,7 @@ export function AppNav({ balance, active = 'explore', readAccount = true }) {
               <Link
                 href="/app/library"
                 aria-label={`${assetFmt} ${assetWord} in your library`}
-                className="flex items-center gap-1.5 py-1 leading-none transition-opacity hover:opacity-80"
+                className="flex min-h-6 items-center gap-1.5 py-1 leading-none transition-opacity hover:opacity-80"
               >
                 {/* Keeps the count's first digit under the balance's. */}
                 <span aria-hidden="true" className="h-1.5 w-1.5" />
@@ -199,6 +219,6 @@ export function AppNav({ balance, active = 'explore', readAccount = true }) {
           </button>
         )}
       </div>
-    </div>
+    </header>
   );
 }

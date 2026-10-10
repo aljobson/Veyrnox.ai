@@ -1,9 +1,11 @@
 import { Logo } from '../_components/Logo';
+import { Main } from '../_components/Main';
 
 const COLORS = [
   { name: 'Base',      hex: '#0A0A0B', token: 'bg-base',    use: 'True-black app background. OLED-dark.' },
   { name: 'Panel',     hex: '#141416', token: 'bg-panel',   use: 'Elevated cards, sheets, inputs.' },
   { name: 'Hairline',  hex: '#26262A', token: 'border',     use: 'All borders and dividers. 1px.' },
+  { name: 'Field edge', hex: '#64646A', token: 'field',     use: 'The outline of an input, textarea or select, nothing else. 3:1 on base and panel.' },
   { name: 'Text',      hex: '#F2F2F3', token: 'fg',         use: 'Primary text. Body copy #C9C9CF.' },
   { name: 'Muted',     hex: '#9A9AA3', token: 'fg-muted',   use: 'Secondary text, micro-labels.' },
   { name: 'Aqua',      hex: '#3EE6C4', token: 'accent',     use: 'Actions, selection, live states. Hover #6FF2D8. Ink text #06231F on fills.' },
@@ -14,11 +16,11 @@ const COLORS = [
 
 export default function DesignSystem() {
   return (
-    <div className="min-h-dvh px-4 sm:px-8 lg:px-14 py-10 sm:py-16 pb-24 max-w-[1200px] mx-auto">
+    <Main className="min-h-dvh max-w-[1300px] mx-auto px-4 sm:px-6 py-10 sm:py-16 pb-24">
       <div className="flex items-center gap-2.5">
         <Logo wordmark />
       </div>
-      <h1 className="text-[30px] sm:text-[38px] md:text-[48px] font-black tracking-[-0.03em] leading-[1.08] sm:leading-[1.05] mt-3">Design system v2</h1>
+      <h1 className="vx-display vx-title-detail mt-3">Design system v2</h1>
       <p className="text-vx-fg-muted mt-3 max-w-[640px] leading-[1.6]">
         Tokens and components for Veyrnox.ai.
         Rule of the system: <b className="text-vx-accent">aqua does things</b>,{' '}
@@ -55,8 +57,10 @@ export default function DesignSystem() {
       {/* 02 TYPE */}
       <Section num="02" title="TYPE — ARCHIVO + JETBRAINS MONO">
         <div className="border border-vx-border rounded-2xl p-7 flex flex-col gap-5">
-          <TypeRow sample="Hero 64–72"      klass="text-[64px] font-black tracking-[-0.035em] leading-none" spec="ARCHIVO 900 · −0.035EM · SENTENCE CASE" />
-          <TypeRow sample="Screen title 28–32" klass="text-[30px] font-extrabold tracking-[-0.02em]"        spec="ARCHIVO 800 · −0.02EM" />
+          {/* Page titles come in two sizes and no third (veyrnox.css). */}
+          <TypeRow sample="Index title 52 / 76 / 92" klass="vx-display vx-title-index" spec="ARCHIVO 900 · −0.04EM · 0.94 · PRICING, MODELS, TEMPLATES, TOOLS, GUIDES · THE HOME PAGE'S HERO AND CLOSING LINES" />
+          <TypeRow sample="Detail title 40 / 56" klass="vx-display vx-title-detail" spec="ARCHIVO 900 · −0.04EM · 0.94 · ONE MODEL, TEMPLATE, GUIDE OR LEGAL PAGE · SECTION HEADINGS" />
+          <TypeRow sample="Studio screen title 24–30" klass="text-3xl font-black tracking-[-0.02em]" spec="ARCHIVO 900 · −0.02EM" />
           <TypeRow sample="Card / section title 15–17" klass="text-[17px] font-bold"                        spec="ARCHIVO 700" />
           <TypeRow sample="Body 13–14 / 1.55 — neutral #C9C9CF on black, never aqua" klass="text-[14px] text-vx-fg-body leading-[1.6]" spec="ARCHIVO 500" />
           <TypeRow sample="MICRO-LABEL 10–11 · +0.12EM TRACKING · UPPERCASE" klass="font-vx-mono text-[11px] tracking-[0.12em] text-vx-fg-muted" spec="JETBRAINS MONO 700" />
@@ -73,7 +77,7 @@ export default function DesignSystem() {
           </button>
           <button className="bg-vx-money text-vx-money-ink rounded-full px-6 py-3 font-extrabold">Top up · $9</button>
           <button className="bg-transparent border border-vx-border text-vx-fg rounded-full px-6 py-3 font-bold hover:border-vx-accent">Ghost</button>
-          <button className="bg-vx-danger text-white rounded-full px-6 py-3 font-extrabold">Open breaker</button>
+          <button className="bg-vx-danger text-vx-danger-ink rounded-full px-6 py-3 font-extrabold">Open breaker</button>
           <button disabled className="bg-vx-accent text-vx-accent-ink rounded-full px-6 py-3 font-extrabold opacity-40 cursor-not-allowed">Disabled</button>
         </div>
       </Section>
@@ -237,7 +241,7 @@ export default function DesignSystem() {
           </div>
         </div>
       </Section>
-    </div>
+    </Main>
   );
 }
 

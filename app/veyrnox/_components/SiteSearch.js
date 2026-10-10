@@ -6,6 +6,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { FAQ, PRESETS, MODELS as MODELS_FALLBACK, SITE_PAGES, isShelfModel, presetCredits, presetTitle, templateHref } from '../_lib/tokens';
 import { searchIndex, MIN_QUERY } from '../_lib/searchIndex';
+import { Icon } from './Icon';
+import { Modal } from './Modal';
 
 // Site-wide search. Everything this site contains is either a route, a
 // catalog row, a preset or an FAQ answer, and all four fit in memory — so
@@ -55,9 +57,9 @@ export function SiteSearch({ className = '' }) {
         onClick={() => setOpen(true)}
         data-print="hide"
         aria-label="Search Veyrnox"
-        className={cn('inline-flex h-9 items-center gap-2 rounded-full border border-vx-border px-3 text-[13px] font-semibold text-vx-fg-muted transition-colors hover:border-vx-accent hover:text-vx-fg', className)}
+        className={cn('inline-flex h-10 items-center gap-2 rounded-full border border-vx-border px-3 text-[13px] font-semibold text-vx-fg-muted transition-colors hover:border-vx-accent hover:text-vx-fg', className)}
       >
-        <span aria-hidden="true">⌕</span>
+        <Icon name="search" size={14} />
         <span className="hidden md:inline">Search</span>
       </button>
       {open && <SearchOverlay onClose={() => setOpen(false)} />}
@@ -88,10 +90,6 @@ function SearchOverlay({ onClose }) {
   const [cursor, setCursor] = useState(0);
   const [models, setModels] = useState(null);
   const inputRef = useRef(null);
-
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
 
   // Live catalog, with the bundled list as the floor so search works offline.
   useEffect(() => {
@@ -134,17 +132,22 @@ function SearchOverlay({ onClose }) {
   const short = query.trim().length > 0 && query.trim().length < MIN_QUERY;
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
+    // A native modal, not a fixed div: the trigger sits in the nav, whose
+    // backdrop blur makes the nav the containing block for anything `fixed`
+    // inside it, so the old scrim covered a strip under the nav and left the
+    // page lit behind the panel. The top layer also brings focus containment
+    // and hands focus back to whatever opened it.
+    <Modal
       aria-label="Search Veyrnox"
       data-print="hide"
-      className="fixed inset-0 z-[70] flex items-start justify-center bg-black/70 px-4 pt-[12vh] backdrop-blur-xs"
-      onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      onCancel={onClose}
+      initialFocusRef={inputRef}
+      instant
+      className="items-start justify-center px-4 pt-[12vh] backdrop-blur-xs"
     >
       <div className="w-full max-w-[560px] overflow-hidden rounded-2xl border border-vx-border bg-vx-panel shadow-2xl">
         <div className="flex items-center gap-3 border-b border-vx-border px-4">
-          <span aria-hidden="true" className="text-vx-fg-muted">⌕</span>
+          <Icon name="search" className="text-vx-fg-muted" />
           <input
             ref={inputRef}
             type="search"
@@ -164,9 +167,9 @@ function SearchOverlay({ onClose }) {
             type="button"
             onClick={onClose}
             aria-label="Close search"
-            className="shrink-0 px-2 text-xl leading-none text-vx-fg-muted hover:text-vx-fg"
+            className="-mr-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-vx-fg-muted hover:text-vx-fg"
           >
-            ×
+            <Icon name="close" />
           </button>
         </div>
 
@@ -196,7 +199,7 @@ function SearchOverlay({ onClose }) {
                   i === cursor ? 'bg-vx-accent/[0.08]' : 'hover:bg-vx-accent/[0.05]'
                 }`}
               >
-                <span className="mt-0.5 w-[62px] shrink-0 font-vx-mono text-[9px] uppercase tracking-[0.12em] text-vx-fg-faint">
+                <span className="mt-0.5 w-[62px] shrink-0 font-vx-mono text-[9px] uppercase tracking-[0.12em] text-vx-fg-muted">
                   {item.group}
                 </span>
                 <span className="min-w-0">
@@ -212,9 +215,9 @@ function SearchOverlay({ onClose }) {
 
         <div className="flex items-center justify-between border-t border-vx-border px-5 py-2.5 font-vx-mono text-[9.5px] tracking-[0.12em] text-vx-fg-faint">
           <span>↑↓ MOVE · ↵ OPEN · ESC CLOSE</span>
-          <span>{results.length} RESULT{results.length === 1 ? '' : 'S'}</span>
+          <span aria-live="polite" aria-atomic="true">{results.length} RESULT{results.length === 1 ? '' : 'S'}</span>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ThemeToggle } from './ThemeToggle';
+import { Icon } from './Icon';
 
 // Hamburger + slide-down panel for the marketing navs. Below `sm` the nav
 // links were either hidden outright (MarketingNav) or pushed into a
@@ -35,38 +36,46 @@ export function MobileMenu({ items, className = '' }) {
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         aria-controls="vx-mobile-menu"
-        aria-label={open ? 'Close menu' : 'Open menu'}
+        aria-label="Menu"
         className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-vx-border text-vx-fg-body hover:border-vx-accent hover:text-vx-fg"
       >
-        <span aria-hidden="true" className="text-base leading-none">{open ? '✕' : '☰'}</span>
+        <Icon name={open ? 'close' : 'menu'} size={18} />
       </button>
 
       {open && (
         <>
+          {/* Height in dvh, not `bottom-0`: the nav's backdrop blur makes it the
+              containing block for `fixed` children, so top and bottom both
+              measured from the 64px bar and the scrim was 0px tall. */}
           <button
             type="button"
             tabIndex={-1}
             aria-hidden="true"
             onClick={() => setOpen(false)}
-            className="fixed inset-x-0 bottom-0 top-16 z-30 cursor-default bg-black/50"
+            className="vx-fade-in fixed inset-x-0 top-16 z-30 h-dvh cursor-default bg-black/50"
           />
           <nav
             id="vx-mobile-menu"
             aria-label="Site"
-            className="fixed inset-x-0 top-16 z-40 border-b border-vx-border bg-vx-base px-4 py-3 shadow-xl"
+            className="vx-drop-in fixed inset-x-0 top-16 z-40 border-b border-vx-border bg-vx-base px-4 py-3 shadow-xl"
           >
             <ul className="flex flex-col">
-              {items.map((it) => (
-                <li key={it.href}>
-                  <Link
-                    href={it.href}
-                    onClick={() => setOpen(false)}
-                    className="block rounded-xl px-3 py-3 text-[15px] font-bold text-vx-fg-body hover:bg-vx-panel hover:text-vx-fg"
-                  >
-                    {it.label}
-                  </Link>
-                </li>
-              ))}
+              {items.map((it) => {
+                // A section of the home page (`/#faq`) is a plain link, as
+                // on the bar (see MarketingNav).
+                const Item = it.href.includes('#') ? 'a' : Link;
+                return (
+                  <li key={it.href}>
+                    <Item
+                      href={it.href}
+                      onClick={() => setOpen(false)}
+                      className="block rounded-xl px-3 py-3 text-[15px] font-bold text-vx-fg-body hover:bg-vx-panel hover:text-vx-fg"
+                    >
+                      {it.label}
+                    </Item>
+                  </li>
+                );
+              })}
             </ul>
             <div className="mt-2 flex items-center justify-between border-t border-vx-border pt-3">
               <span className="font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-faint">THEME</span>

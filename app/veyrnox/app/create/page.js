@@ -2,8 +2,9 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { AppNav } from '../../_components/NavBar';
+import { Main } from '../../_components/Main';
 import { Chip } from '../../_components/Chip';
-import { ASPECT_RATIOS } from '../../_lib/tokens';
+import { ASPECT_RATIOS, modelIdForName } from '../../_lib/tokens';
 import { gatewayFetch, makeIdempotencyKey, notifyBalanceChanged, GatewayError } from '../../_lib/gateway';
 import { ERROR_COPY, failedJobCopy } from '../../_lib/createErrors';
 import { pushJobHistory } from '../../_lib/jobHistory';
@@ -15,6 +16,8 @@ import { useCatalog } from '../../_lib/useCatalog';
 import { useFreeAllowance } from '../../_lib/useFreeAllowance';
 import { freeCost, freeLeftFor } from '../../_lib/freeAllowance';
 import { takeStudioDraft } from '../../_lib/landingDraft';
+import { templateById } from '../../_lib/templates';
+import { resolveTemplateDraft } from '../../_lib/templateDraft';
 import { templateStartId } from '../../../../lib/templateStart';
 import { DEFAULT_CINEMA, buildCinemaPrompt } from '../../_lib/cinema';
 import { CameraPanel } from '../../_components/CameraPanel';
@@ -93,13 +96,18 @@ export default function CreateStudio() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
-    const wanted = params.get('model');
+    const preset = templateById(params.get('preset'));
+    const wanted = params.get('model') || (preset && modelIdForName(preset.model));
     if (wanted) setModelId(wanted);
     setPresetParam(params.get('preset')); // a template's id, from its studio link; sent only while its own model is selected
     if (params.get('duration') === '10s') setDuration('10s');
-    const draft = takeStudioDraft(window.sessionStorage, wanted);
+    let storedDraft = null;
+    try { storedDraft = takeStudioDraft(window.sessionStorage, wanted); } catch { /* The URL recipe still works. */ }
+    const draft = resolveTemplateDraft(preset, wanted, storedDraft);
     if (draft) setPrompt(draft.prompt);
     if (draft?.aspect) setAspect(draft.aspect);
+    if (draft?.durationSeconds) setDuration(`${draft.durationSeconds}s`);
+    if (draft?.negativePrompt) setNegative(draft.negativePrompt);
   }, []);
 
   // If the selected id isn't in the (live or fallback) catalog, fall back to
@@ -114,6 +122,7 @@ export default function CreateStudio() {
   }, [models, modelId, catalogLoading]);
 
   const model = models.find((m) => m.id === modelId) || null;
+  const activeTemplate = templateStartId(presetParam, modelId) ? templateById(presetParam) : null;
   const prompt = promptText(typed, model); // a starter shot until then, on picture and clip models only (see promptBox)
   // The picked model stays listed even when the tier filter would hide it.
   const listed = filterByTier(models, tier);
@@ -132,6 +141,7 @@ export default function CreateStudio() {
   const takesCamera = !isShort && (model?.kind === 'image' || model?.kind === 'video');
   // The model's own aspect list when the catalog has one; every video takes the default set.
   const aspectOptions = isShort ? []
+    : catalogLive ? ASPECT_RATIOS.filter((a) => model?.aspects?.includes(a))
     : model?.aspects ? ASPECT_RATIOS.filter((a) => model.aspects.includes(a))
     : model?.kind === 'video' ? ASPECT_RATIOS : [];
   const unitCost = model ? model.credits * (duration === '10s' && model.kind === 'video' ? 2 : 1) : 0;
@@ -243,7 +253,7 @@ export default function CreateStudio() {
     // An Auto Short takes only its topic; the pipeline picks the format.
     const inputs = isShort ? { topic: prompt.trim() } : {
       prompt: finalPrompt(),
-      aspect_ratio: aspect,
+      aspect_ratio: aspectOptions.length ? aspect : undefined,
       duration_seconds: model.kind === 'video' ? Number(duration.replace('s', '')) : undefined,
       ...settingsInputs(model, { seed, negative, voice }),
     };
@@ -309,7 +319,7 @@ export default function CreateStudio() {
     <div className="min-h-dvh">
       <AppNav balance={balance} active="create" />
 
-      <div className="max-w-[1500px] mx-auto px-4 sm:px-8 pt-6 pb-16 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-6">
+      <Main className="max-w-[1500px] mx-auto px-4 sm:px-8 pt-6 pb-16 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-6">
         {/* ============ CANVAS ============ */}
         <div>
           <div className="flex items-center justify-between mb-3">
@@ -317,7 +327,7 @@ export default function CreateStudio() {
               <div className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">STUDIO · UNTITLED</div>
               <h1 className="text-2xl sm:text-3xl font-black tracking-[-0.02em] mt-1">Create</h1>
             </div>
-            <Chip tone="accent">UNSAVED DRAFT</Chip>
+            <Chip tone="neutral">UNSAVED DRAFT</Chip>
           </div>
 
           {jobs.length > 1 ? <StudioJobGrid jobs={jobs} aspect={aspect} /> : (
@@ -368,9 +378,14 @@ export default function CreateStudio() {
             aria-label={isShort ? 'Topic' : 'Prompt'}
             maxLength={isShort ? 200 : undefined}
             rows={3}
-            className="mt-3 w-full bg-vx-panel border border-vx-border rounded-lg p-3.5 text-sm text-vx-fg placeholder:text-vx-fg-faint resize-none focus:outline-hidden focus:border-vx-accent"
+            className="mt-3 w-full bg-vx-panel border border-vx-field rounded-lg p-3.5 text-sm text-vx-fg placeholder:text-vx-fg-faint resize-none focus:outline-hidden focus:border-vx-accent"
             placeholder={promptPlaceholder(model)}
           />
+          {activeTemplate?.sourceRecipe && (
+            <p className="mt-2 text-sm text-vx-fg-body">
+              {activeTemplate.needs}. This prompt creates a similar scene using your image.
+            </p>
+          )}
           {model?.takesVoice && <VoiceDescription value={voice} onChange={setVoice} />}
 
           {!isShort && (
@@ -412,7 +427,7 @@ export default function CreateStudio() {
           )}
 
           {error && (
-            <div className="mt-3 rounded-lg border border-vx-danger/40 bg-vx-danger/[0.07] px-4 py-3 text-sm text-vx-danger flex items-start gap-2">
+            <div role="alert" className="mt-3 rounded-lg border border-vx-danger/40 bg-vx-danger/[0.07] px-4 py-3 text-sm text-vx-danger flex items-start gap-2">
               <span aria-hidden="true">✕</span>
               <span>
                 {ERROR_COPY[error.code] || 'Something went wrong. Nothing was charged unless the panel above says otherwise.'}
@@ -450,7 +465,7 @@ export default function CreateStudio() {
                 </button>
               ))}
             </div>
-            <div className="flex flex-col gap-1.5">
+            <div role="group" aria-label="Model" className="flex flex-col gap-1.5">
               {visibleModels.map((m) => (
                 <button
                   key={m.id}
@@ -503,7 +518,7 @@ export default function CreateStudio() {
             <div className="flex items-baseline justify-between">
               <span className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">TOTAL COST</span>
               <span className="font-vx-mono text-[12px] text-vx-fg-muted vx-num">
-                balance {balance ?? '—'} cr
+                balance {balance == null ? '—' : balance.toLocaleString('en-US')} cr
               </span>
             </div>
             <div className="mt-1 font-vx-mono text-[36px] font-bold text-vx-money vx-num">−{cost} cr</div>
@@ -526,7 +541,7 @@ export default function CreateStudio() {
             </div>
           </div>
         </aside>
-      </div>
+      </Main>
     </div>
   );
 }

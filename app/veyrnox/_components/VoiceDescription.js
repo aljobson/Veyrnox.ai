@@ -21,7 +21,7 @@ export function VoiceDescription({ value, onChange }) {
         rows={2}
         aria-required="true"
         aria-describedby="vx-voice-help"
-        className="mt-1.5 w-full bg-vx-panel border border-vx-border rounded-lg p-3.5 text-sm text-vx-fg placeholder:text-vx-fg-faint resize-none focus:outline-hidden focus:border-vx-accent"
+        className="mt-1.5 w-full bg-vx-panel border border-vx-field rounded-lg p-3.5 text-sm text-vx-fg placeholder:text-vx-fg-faint resize-none focus:outline-hidden focus:border-vx-accent"
         placeholder="e.g. A warm, unhurried woman in her fifties with a soft Irish accent"
       />
       <p id="vx-voice-help" className="mt-1.5 text-xs text-vx-fg-muted">

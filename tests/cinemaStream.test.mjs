@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createStreamUpload,readStreamVideo,mediaObservation,verifyStreamSignature,validUploadUrl} from '../lib/cinema/stream.js';
+import {createStreamUpload,copyStreamVideo,validSourceUrl,readStreamVideo,mediaObservation,verifyStreamSignature,validUploadUrl} from '../lib/cinema/stream.js';
 import {uploadChunks} from '../app/veyrnox/social-cinema/creator/tusUpload.js';
 const uid='a'.repeat(32),url=`https://upload.cloudflarestream.com/${uid}`,cfg={account:'b'.repeat(32),token:'synthetic-token'};
 const video={uid,requireSignedURLs:true,readyToStream:true,status:{state:'ready',pctComplete:'100'},duration:42,input:{width:1080,height:1920}};
@@ -38,4 +38,17 @@ test('tus resume honors provider offset and sends no app credentials',async()=>{
   await uploadChunks(file,url,{fetcher});assert.equal(calls.length,2);assert.equal(calls[1].init.body.size,1048576);assert.equal(calls[1].init.headers['Upload-Offset'],'5242880');assert.equal(calls[1].init.headers.Authorization,undefined);assert.equal(calls[1].init.credentials,'omit');
   await assert.rejects(uploadChunks(file,url,{fetcher:async()=>new Response(null,{headers:{'upload-offset':'0','upload-length':'1'}})}));
   await assert.rejects(uploadChunks(file,url,{fetcher:async(_,init)=>init.method==='HEAD'?new Response(null,{headers:{'upload-offset':'0','upload-length':String(file.size)}}):new Response(null,{status:204,headers:{'upload-offset':'999'}})}));
+});
+test('upload via link sends only our own presigned R2 object, privately, and validates the answer',async()=>{
+  const source=`https://${'c'.repeat(32)}.eu.r2.cloudflarestorage.com/media/assets/x.mp4?X-Amz-Signature=private`;
+  let called;
+  const result=await copyStreamVideo({id:'reservation-id'},source,cfg,async(target,init)=>{called={target,init};return Response.json({success:true,result:{uid,status:{state:'downloading'}}});});
+  assert.equal(result.uid,uid);assert.match(called.target,/\/stream\/copy$/);assert.equal(called.init.method,'POST');assert.equal(called.init.redirect,'manual');assert.ok(called.init.signal);
+  const sent=JSON.parse(called.init.body);assert.equal(sent.url,source);assert.equal(sent.requireSignedURLs,true);assert.equal(sent.meta.name,'cinema_reservation-id');assert.deepEqual(Object.keys(sent).sort(),['meta','requireSignedURLs','url']);
+  for(const bad of ['https://evil.invalid/x.mp4','https://upload.cloudflarestream.com/x',`https://${'c'.repeat(32)}.eu.r2.cloudflarestorage.com.evil.invalid/x`,`http://${'c'.repeat(32)}.r2.cloudflarestorage.com/x`,`https://user@${'c'.repeat(32)}.r2.cloudflarestorage.com/x`])assert.equal(validSourceUrl(bad),false);
+  assert.equal(validSourceUrl(`https://${'c'.repeat(32)}.r2.cloudflarestorage.com/media/x`),true);
+  await assert.rejects(copyStreamVideo({id:'r'},'https://evil.invalid/x.mp4',cfg,async()=>assert.fail('no request for a foreign URL')));
+  await assert.rejects(copyStreamVideo({id:'r'},source,cfg,async()=>Response.json({success:true,result:{uid:'short'}})));
+  await assert.rejects(copyStreamVideo({id:'r'},source,cfg,async()=>Response.json({success:false,errors:[{message:'private'}]},{status:400})));
+  await assert.rejects(copyStreamVideo({id:'r'},source,cfg,async()=>new Response('x'.repeat(66000))));
 });

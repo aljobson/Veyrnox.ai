@@ -2,15 +2,19 @@
 
 Companion to [ADR-0057](../adr/0057-cinema-viewer-paywall.md). Phases 1 to 3 are built (PR #344, per ADR-0057) and off in production: `CINEMA_SUBSCRIPTIONS_ENABLED` and `CINEMA_UNLOCKS_ENABLED` are `false`. (This line read "Nothing here is built" until 2026-10-03.) Each phase is one PR, lands behind a switch that ships off, and is applied to production only through the `apply-migrations` workflow (ADR-0023). Numbers below are the ADR's; change them there, not here.
 
-## Preconditions (owner and legal, before Phase 1)
+## Activation preconditions (owner and legal)
+
+On 2026-10-10 the owner instructed: "just build it I will deal with Stripe". Engineering can finish and verify the built paths while the owner handles Stripe acceptance. This instruction supplies no approval document or verified payment fee schedule. Production paid activation remains a separate rollout step; its current switches stay off.
 
 | # | Item | Owner | Why it blocks |
 |---|---|---|---|
 | P1 | Publication slice: **done, ADR-0059, migration 0147** (review queue, public reads, catalogue, title and player pages). | Eng | Nothing is viewable, so nothing is sellable. |
-| P2 | Written Stripe acceptance of recurring viewer plans over user-uploaded video under Managed Payments, and confirmation that Managed Payments supports Checkout `mode=subscription` and the Customer Portal. | Owner | ADR-0031: category refusals are not appealable. |
+| P2 | Owner handles written Stripe acceptance of recurring viewer plans over user-uploaded video under Managed Payments, and confirmation that Managed Payments supports Checkout `mode=subscription` and the Customer Portal. | Owner | Required for paid activation; engineering build and verification are authorized. |
 | P3 | Cooling-off and Supply Consent wording for Unlocks and Passes; creator terms stating no revenue share yet. | Legal | Distance-selling rules in UK/EU. |
 | P4 | Stream credentials and webhook live (ADR-0052 gates), delivery rate verified against the invoice. | Owner | Pass margin depends on it. |
 | P5 | `ledger_debit` inserts a `jobs` row (0059), so an Unlock cannot reuse it. 0142 adds a sibling `ledger_unlock` RPC in the same family: Free-first, Frozen check, `free_delta` bookkeeping, idempotent on `(user_id, content_id)`, joining the RPC-only writer set in `CLAUDE.md`. | Eng | No raw INSERT into `ledger_entries`; reconciliation must stay at zero rows. |
+| P6 | A monthly ceiling on free viewing minutes per account, built and switched on. **Built behind `CINEMA_FREE_CEILING_ENABLED`; migration 0245 applied to production and staging 2026-10-10; the switch is on for staging and, since 2026-10-10, for production, where it has no effect while `CINEMA_UNLOCKS_ENABLED` is `false`. Acceptance evidence (staging SQL, real Stream playback and isolated browser ceiling checks) is recorded in [the 2026-10-10 launch readiness report](launch-readiness-2026-10-10.md). The 24-hour reconciliation window after 0245 is still incomplete; its earliest end is 2026-10-11 at 14:08:22 BST.** Blocks `CINEMA_UNLOCKS_ENABLED` in production only; the owner confirms the value (300 minutes proposed). | Eng, Owner | The same switch opens playback of free titles, and only Cinema Pass viewing is counted (ADR-0057, 2026-10-09). |
+| P7 | Migration 0244 applied: the monthly Pass at $9.99 as the only plan on sale, weekly and yearly withdrawn, the Pass ceiling at 1,500 minutes (owner, 2026-10-10). **Applied to production and staging 2026-10-10.** Blocks `CINEMA_SUBSCRIPTIONS_ENABLED`. | Owner (approves the `apply-migrations` run) | Until it is applied the database still offers $14.99 weekly, $49.99 monthly and $199.99 yearly with a 3,000-minute ceiling (ADR-0057, proposed 2026-10-10). |
 
 ## Phase 1 — Free Episodes and Episode Unlock (migration 0142, switch `CINEMA_UNLOCKS_ENABLED`)
 

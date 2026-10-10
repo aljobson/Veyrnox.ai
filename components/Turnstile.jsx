@@ -58,6 +58,12 @@ export function Turnstile({ onToken, onError, onFailure, onWaiting, onUnsupporte
                 if (cancelled || !box.current) return;
                 widgetId.current = ts.render(box.current, {
                     sitekey: TURNSTILE_SITE_KEY,
+                    // Appearance only (ADR-0026 amendment 6). The site is dark
+                    // unless the visitor chose light (`data-theme` on <html>).
+                    // At its default the widget follows the operating system,
+                    // which put a white box in the dark dialog for anyone
+                    // whose system is light.
+                    theme: document.documentElement.dataset.theme === 'light' ? 'light' : 'dark',
                     callback: (token) => {
                         lastFailure.current = null;
                         onToken(token);

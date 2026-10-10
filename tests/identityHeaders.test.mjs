@@ -10,7 +10,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { register } from 'node:module';
 
 register('data:text/javascript,' + encodeURIComponent(
@@ -168,6 +168,25 @@ test('handlers read the forwarded headers as absent', async () => {
     } finally { console.info = realInfo; }
 });
 
+test('the Library-to-Cinema route reads only the forwarded identity and refuses without it', async () => {
+    const { libraryUploadHandler } = await import('../lib/cinema/libraryUploadApi.js');
+    const handler = libraryUploadHandler({ rpcCall: async () => assert.fail('reached the database'), presign: async () => assert.fail('signed an object'), copyVideo: async () => assert.fail('reached Stream') });
+    const post = (headers) => new Request('http://localhost:3000/api/v1/cinema/uploads/from-library', { method: 'POST', headers: { ...headers, 'content-type': 'application/json', 'idempotency-key': SUB }, body: JSON.stringify({ content_id: SUB, job_id: SUB }) });
+    const realInfo = console.info;
+    console.info = () => {};
+    Object.assign(process.env, { CINEMA_ENABLED: 'true', SOCIAL_CINEMA_PROFILES_ENABLED: 'true', CREATOR_CONTENT_ENABLED: 'true', CREATOR_UPLOADS_ENABLED: 'true' });
+    try {
+        // A page request: the middleware blanked every identity header, whatever the client sent.
+        const page = await forwarded('/social-cinema/creator', FORGED);
+        assert.deepEqual([(await handler(post(Object.fromEntries(page)))).status], [401]);
+        // A verified identity with uploads held: refused before the database, under the same hold as a browser upload.
+        const api = await forwarded('/api/v1/cinema/uploads/from-library', { authorization: `Bearer ${await token({})}`, ...FORGED });
+        assert.equal(api.get('x-veyrnox-auth-id'), SUB);
+        const held = await handler(post(Object.fromEntries(api)));
+        assert.deepEqual([held.status, (await held.json()).error], [503, 'upload_safety_hold']);
+    } finally { console.info = realInfo; }
+});
+
 // stripContext blanks whatever x-veyrnox-* name a client sent, but a handler
 // that read a name the middleware does not set would be reading a blank the
 // day that stops being true. So the set of names is closed.
@@ -204,15 +223,77 @@ test('handlers read no x-veyrnox-* request header outside IDENTITY_HEADERS', () 
 
 // The Worker removes a caller's identity headers, so a request the middleware
 // never saw arrives with none (ADR-0078 amendment 4). That only protects a
-// handler that refuses when the id is missing, so every reader must.
-const ACTS_FOR_NO_ONE = ['app/api/v1/health/route.js']; // echoes the id back; reads nothing of the caller's
-test('every handler that reads the caller id refuses a request without one', () => {
-    const readers = ['app', 'lib', 'packages'].flatMap((dir) => sources(join(ROOT, dir)))
-        .map((file) => [relative(ROOT, file).split('\\').join('/'), readFileSync(file, 'utf8')])
-        .filter(([, src]) => /headers\.get\(['"]x-veyrnox-auth-id['"]\)/.test(src));
-    assert.ok(readers.length > 40, 'the scan found too few readers to be believed');
-    for (const [rel, src] of readers) {
-        if (ACTS_FOR_NO_ONE.includes(rel)) continue;
-        assert.match(src, /not[_-]authenticated|UNAUTHORIZED/, `${rel} reads the caller id but has no refusal for a missing one`);
+// handler that refuses when the id is missing, so every one must. Each
+// /api/v1 handler is called here with no id, and with the '' the middleware
+// sets for a caller it could not name: it has to answer 401 before it reads
+// anything. Every *_ENABLED flag is on, so a closed feature cannot answer first.
+const ANSWERS_ANYONE = {
+    'app/api/v1/[[...path]]/route.js': 404, // the catch-all: no such route, whoever asks
+    'app/api/v1/health/route.js': 503,      // echoes the id back; reads nothing of the caller's
+};
+// These three check the body before the caller, so an empty one would be answered 400.
+const BODIES = {
+    'app/api/v1/chat/folders/[id]/route.js': { name: 'A' },
+    'app/api/v1/chat/personas/[id]/route.js': { name: 'A', instructions: 'Be brief.' },
+    'app/api/v1/chat/threads/[id]/route.js': { title: 'A' },
+};
+test('every /api/v1 handler refuses a request with no caller id, before any outbound call', async () => {
+    const flags = [...readFileSync(join(ROOT, 'wrangler.jsonc'), 'utf8').matchAll(/"([A-Z0-9_]+_ENABLED)"\s*:/g)].map((m) => m[1]);
+    const env = {
+        ...Object.fromEntries(flags.map((flag) => [flag, 'true'])),
+        APP_ENV: 'development', NEXT_PUBLIC_SUPABASE_URL: SUPABASE_URL,
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: 'sb_publishable_test', PUBLIC_HOST: 'http://localhost:3000',
+    };
+    const saved = Object.fromEntries(Object.keys(env).map((key) => [key, process.env[key]]));
+    const stubbedFetch = globalThis.fetch;
+    const realInfo = console.info;
+    let outbound = [];
+    Object.assign(process.env, env);
+    globalThis.fetch = async (input) => { outbound.push(String(input?.url || input)); throw new Error('no outbound call is expected'); };
+    console.info = () => {};
+    try {
+        const routes = sources(join(ROOT, 'app', 'api', 'v1')).filter((file) => /[\\/]route\.js$/.test(file));
+        let called = 0;
+        for (const file of routes) {
+            const rel = relative(ROOT, file).split('\\').join('/');
+            const handlers = await import(pathToFileURL(file).href);
+            const params = Object.fromEntries([...rel.matchAll(/\[(\w+)\]/g)].map((m) => [m[1], SUB]));
+            const url = `http://localhost:3000/${rel.slice('app/'.length, -'/route.js'.length).replace(/\[+[.\w]+\]+/g, SUB)}`;
+            for (const method of ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']) {
+                if (typeof handlers[method] !== 'function') continue;
+                for (const id of [undefined, '']) {
+                    outbound = [];
+                    const headers = { 'content-type': 'application/json', ...(id === undefined ? {} : { 'x-veyrnox-auth-id': id }) };
+                    const body = method === 'GET' ? undefined : JSON.stringify(BODIES[rel] || {});
+                    const response = await handlers[method](new Request(url, { method, headers, body }), { params: Promise.resolve(params) });
+                    const sent = id === undefined ? 'no id header' : 'an empty id';
+                    assert.equal(response.status, ANSWERS_ANYONE[rel] ?? 401, `${method} ${rel} with ${sent}`);
+                    if (!(rel in ANSWERS_ANYONE)) assert.deepEqual(outbound, [], `${method} ${rel} made an outbound call with ${sent}`);
+                    called += 1;
+                }
+            }
+        }
+        assert.ok(called > 250, `only ${called} calls were made: the scan found too few handlers to be believed`);
+    } finally {
+        globalThis.fetch = stubbedFetch;
+        console.info = realInfo;
+        for (const [key, value] of Object.entries(saved)) { if (value === undefined) delete process.env[key]; else process.env[key] = value; }
+    }
+});
+
+test('Publish pilot authorizes only signed JWT sub, never forged headers or email', async () => {
+    const saved = { PUBLISH_ENABLED: process.env.PUBLISH_ENABLED, PUBLISH_TESTER_AUTH_IDS: process.env.PUBLISH_TESTER_AUTH_IDS };
+    Object.assign(process.env, { PUBLISH_ENABLED: 'false', PUBLISH_TESTER_AUTH_IDS: SUB });
+    try {
+        const path = 'http://localhost:3000/api/v1/social/access';
+        const allowed = await middleware(new Request(path, { headers: { authorization: `Bearer ${await token({})}` } }));
+        assert.equal(allowed.headers.get('x-middleware-next'), '1');
+        const other = await middleware(new Request(path, { headers: { authorization: `Bearer ${await token({ sub: '44444444-4444-4444-8444-444444444444', email: 'tester@example.test' })}`, 'x-veyrnox-auth-id': SUB } }));
+        assert.equal(other.status, 503);
+        assert.equal((await other.json()).error, 'publish_not_open');
+        assert.equal((await middleware(new Request(path, { headers: { 'x-veyrnox-auth-id': SUB } }))).status, 401);
+        assert.equal((await middleware(new Request(path, { headers: { authorization: 'Bearer forged' } }))).status, 401);
+    } finally {
+        for (const [key, value] of Object.entries(saved)) { if (value === undefined) delete process.env[key]; else process.env[key] = value; }
     }
 });

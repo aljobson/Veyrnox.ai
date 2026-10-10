@@ -83,6 +83,34 @@ export async function exchangeCodeForToken(cfg, { code, codeVerifier, redirectUr
     };
 }
 
+/** Refreshes an access token with the refresh grant (offline.access). X
+ * rotates the refresh token on every use, so the caller must store the one
+ * returned here, or the next refresh fails. Same Basic authentication as the
+ * code exchange; X's access tokens last about two hours (audit 2026-10-09,
+ * S-04: before this nothing refreshed them, so a post scheduled more than two
+ * hours after connecting failed every attempt). */
+export async function refreshAccessToken(cfg, refreshToken, fetcher = fetch) {
+    const body = new URLSearchParams({ grant_type: 'refresh_token', refresh_token: refreshToken, client_id: cfg.clientId });
+    const basic = btoa(`${cfg.clientId}:${cfg.clientSecret}`);
+    const res = await fetcher(TOKEN_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded', Authorization: `Basic ${basic}` },
+        body: body.toString(),
+        signal: AbortSignal.timeout(10000),
+    });
+    const data = await res.json().catch(() => null);
+    if (!res.ok || !data || typeof data.access_token !== 'string' || !data.access_token) {
+        throw new Error((data && (data.error_description || data.error)) || `x_token_refresh_failed_${res.status}`);
+    }
+    const expiresInSec = Number.isFinite(data.expires_in) && data.expires_in > 0 ? data.expires_in : 7200;
+    return {
+        accessToken: data.access_token,
+        // Rotated on every refresh; a response without one keeps the old token usable.
+        refreshToken: typeof data.refresh_token === 'string' && data.refresh_token ? data.refresh_token : refreshToken,
+        expiresAt: new Date(Date.now() + expiresInSec * 1000).toISOString(),
+    };
+}
+
 /** Resolves the connected account's identity (GET /2/users/me). The
  * numeric `id` is externalAccountId; `username` is kept separately since
  * publishPost needs it to build a real permalink (X's create-post

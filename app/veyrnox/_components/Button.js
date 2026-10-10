@@ -2,13 +2,13 @@
 
 // Veyrnox buttons — pill (999px), cost rides the primary. Aqua = action, Amber = money.
 export function Button({ variant = 'primary', size = 'md', cost, children, className = '', ...props }) {
-  const base = 'inline-flex items-center gap-3 rounded-full font-vx font-extrabold cursor-pointer transition-colors duration-200 ease-out disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vx-accent';
+  const base = 'inline-flex items-center gap-3 rounded-full font-vx font-extrabold cursor-pointer transition-[color,background-color,border-color,filter,scale] duration-150 ease-(--vx-ease-out) enabled:active:scale-[0.97] disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vx-accent';
   const sizes = { sm: 'text-xs px-4 py-2', md: 'text-sm px-6 py-3', lg: 'text-base px-7 py-4' };
   const variants = {
     primary: 'bg-vx-accent text-vx-accent-ink hover:bg-vx-accent-hover',
     money:   'bg-vx-money  text-vx-money-ink  hover:brightness-110',
     ghost:   'bg-transparent text-vx-fg border border-vx-border hover:border-vx-accent',
-    danger:  'bg-vx-danger text-white hover:brightness-110',
+    danger:  'bg-vx-danger text-vx-danger-ink hover:brightness-110',
   };
   return (
     <button className={`${base} ${sizes[size]} ${variants[variant]} ${className}`} {...props}>

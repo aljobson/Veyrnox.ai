@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { isShelfModel, MODELS } from '../app/veyrnox/_lib/tokens.js';
+import { isShelfModel, MODELS, distinctShelfNames } from '../app/veyrnox/_lib/tokens.js';
 import { capabilityFor, publicCapabilities } from '../lib/modelCapabilities.js';
 
 // Audit 2026-09-23, finding 12: the landing page advertised "Auto Short" at
@@ -71,4 +71,25 @@ test('the video agent stays off every shelf: it is bought from a plan on its own
     assert.equal(isShelfModel(publicCapabilities(capabilityFor('video-agent:v1'))), false);
     // The mark the browser reads survives publicCapabilities().
     assert.ok(publicCapabilities(capabilityFor('video-agent:v1')).inputs.plan_id);
+});
+
+// Design pass 2026-10-09: the price list printed "Nano Banana Pro Edit" twice,
+// at 10 cr and at 2 cr, and the footer linked "MMAudio v2" twice to different
+// models. shelfName() drops the parenthetical that told them apart.
+test('names that collide once shortened keep their full name; the rest stay short', () => {
+    const rows = [
+        { id: 'a', name: 'Nano Banana Pro Edit' },
+        { id: 'b', name: 'Nano Banana Pro Edit (GrsAI, no seed)' },
+        { id: 'c', name: 'Kling 3.0 (image-to-video)' },
+    ];
+    const nameOf = distinctShelfNames(rows);
+    assert.deepEqual(rows.map(nameOf), ['Nano Banana Pro Edit', 'Nano Banana Pro Edit (GrsAI, no seed)', 'Kling 3.0']);
+    assert.equal(new Set(rows.map(nameOf)).size, rows.length, 'every row can be told apart');
+});
+
+test('the landing price list, the footer and the hero picker all print distinct names', () => {
+    const read = (p) => readFileSync(new URL(p, import.meta.url), 'utf8');
+    assert.match(read('../app/veyrnox/_sections/showcase.js'), /distinctShelfNames\(g\.rows\)/);
+    assert.match(read('../app/veyrnox/_sections/footer.js'), /distinctShelfNames\(catalog\)/);
+    assert.match(read('../app/veyrnox/_components/PriceSlip.js'), /distinctShelfNames\(models\)/);
 });

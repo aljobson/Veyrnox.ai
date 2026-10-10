@@ -77,6 +77,18 @@ function readStored() {
     }
 }
 /**
+ * The stored session whether or not its access token has expired, or null when
+ * signed out. A page that only shows who is signed in should read this and let
+ * getFreshAccessToken() do the refresh: getSession() says null for the hour
+ * between expiry and the next refresh, and a nav that read it showed "Log in"
+ * to someone whose refresh token was still live in this browser (audit
+ * 2026-10-09, A-03). Never use its access_token for a request.
+ * @returns {VeyrnoxSession|null}
+ */
+export function getStoredSession() {
+    return readStored();
+}
+/**
  * Who the stored session belongs to, or null when signed out. Unlike
  * getSession() this still answers while an expired access token waits on its
  * refresh, so per-user browser data is not dropped once an hour.
@@ -360,6 +372,44 @@ export async function completeOAuthFromCode() {
     if (getSession()) return getSession();
     const data = await post("/auth/v1/token?grant_type=pkce", { auth_code: code, code_verifier: verifier });
     const s = normalise(data);
+    setSession(s);
+    return s;
+}
+/**
+ * Finish a flow that returned tokens in the URL fragment (`#access_token=…`):
+ * the email-confirmation link, which is sent without a PKCE challenge, and any
+ * provider still on the implicit flow. The fragment never reaches a server,
+ * but it stays in the tab's history and in whatever reads the URL, so it is
+ * taken into the session and cleared from the address bar in the same step
+ * (audit 2026-10-09, A-05). Returns null when the fragment holds no tokens.
+ * Never overwrites a still-valid session; the fragment is cleared either way.
+ * @returns {Promise<VeyrnoxSession|null>}
+ */
+export async function completeFromFragment() {
+    if (typeof window === "undefined") return null;
+    const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+    const accessToken = hash.get("access_token");
+    if (!accessToken) return null;
+    const clean = new URL(window.location.href);
+    clean.hash = "";
+    try { window.history.replaceState(null, "", clean.toString()); } catch { /* nothing to clear from */ }
+    const live = getSession();
+    if (live) return live;
+    const expiresIn = Number(hash.get("expires_in"));
+    const expiresAt = Number(hash.get("expires_at"));
+    const s = normalise({
+        access_token: accessToken,
+        refresh_token: hash.get("refresh_token") || null,
+        ...(Number.isFinite(expiresAt) && expiresAt > 0 ? { expires_at: expiresAt } : {}),
+        ...(Number.isFinite(expiresIn) && expiresIn > 0 ? { expires_in: expiresIn } : {}),
+    });
+    // The fragment carries no user; ask who the token belongs to, so the account
+    // menu has a name. A failure here leaves user null, which every reader allows.
+    try {
+        const { url, anonKey } = ensureCfg();
+        const res = await fetch(new URL("/auth/v1/user", url), { headers: { apikey: anonKey, Authorization: `Bearer ${accessToken}` } });
+        if (res.ok) s.user = await res.json();
+    } catch { /* user stays null */ }
     setSession(s);
     return s;
 }

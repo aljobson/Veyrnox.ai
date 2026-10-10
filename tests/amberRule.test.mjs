@@ -27,8 +27,8 @@ test('U3: warnings and notices do not use amber', () => {
 test('U3: debits and tile prices are amber', () => {
   assert.match(read('app/veyrnox/_components/CreditStatement.js'), /entry\.delta > 0 \? 'text-vx-accent' : 'text-vx-money'/);
   assert.match(read('app/veyrnox/_sections/footer.js'), /l\.delta > 0 \? 'text-vx-accent' : 'text-vx-money'/);
-  assert.match(read('app/veyrnox/_sections/showcase.js'), /text-\[#E4A93C\] vx-num/);
-  assert.match(read('app/veyrnox/_sections/hero.js'), /row \? 'text-\[#E4A93C\]' : ''/);
+  assert.match(read('app/veyrnox/_sections/showcase.js'), /text-vx-money vx-num/);
+  assert.match(read('app/veyrnox/_sections/hero.js'), /row \? 'text-vx-money' : ''/);
 });
 
 test('U8: the design-system page shows the receipt slip and the warn colour', () => {

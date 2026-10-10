@@ -300,9 +300,9 @@ export default function AuthGate() {
             aria-label="Sign in to Veyrnox"
             ref={panelRef}
             onKeyDown={onKeyDown}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs px-4"
+            className="vx-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4"
         >
-            <div className="w-full max-w-sm rounded-2xl border border-vx-border bg-vx-panel p-6 shadow-2xl">
+            <div className="max-h-full w-full max-w-sm overflow-y-auto overscroll-contain rounded-2xl border border-vx-border bg-vx-panel p-5 sm:p-6 shadow-2xl">
                 <div className="flex items-start justify-between mb-1">
                     <h2 className="text-lg font-semibold text-vx-fg">
                         {mode === "sign_up" ? "Create your account" : mode === "magic" ? "Email sign-in link" : "Sign in to Veyrnox"}
@@ -312,7 +312,7 @@ export default function AuthGate() {
                         ref={closeRef}
                         aria-label="Close"
                         onClick={dismiss}
-                        className="text-vx-fg-muted hover:text-vx-fg text-xl leading-none"
+                        className="-m-2.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-xl leading-none text-vx-fg-muted hover:text-vx-fg"
                     >
                         ×
                     </button>
@@ -327,7 +327,7 @@ export default function AuthGate() {
                             <PasskeyMark />
                             Sign in with a passkey
                         </button>
-                        <button type="button" onClick={() => startOAuth("apple")} disabled={busy} className="flex w-full items-center justify-center gap-2 rounded-lg bg-vx-fg text-vx-base font-semibold py-2 text-sm hover:opacity-90 disabled:opacity-60">
+                        <button type="button" onClick={() => startOAuth("apple")} disabled={busy} className="flex w-full items-center justify-center gap-2 rounded-lg border border-transparent bg-vx-fg text-vx-base font-semibold py-2 text-sm hover:opacity-90 disabled:opacity-60">
                             <AppleMark />
                             Continue with Apple
                         </button>
@@ -357,15 +357,18 @@ export default function AuthGate() {
                             autoComplete="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            className="mt-1 w-full rounded-lg bg-vx-base border border-vx-border px-3 py-2 text-sm text-vx-fg outline-hidden focus:border-vx-accent focus-visible:ring-2 focus-visible:ring-vx-accent/40"
+                            className="mt-1 w-full rounded-lg bg-vx-base border border-vx-field px-3 py-2 text-sm text-vx-fg outline-hidden focus:border-vx-accent focus-visible:ring-2 focus-visible:ring-vx-accent/40"
                         />
                     </label>
 
                     {mode !== "magic" && (
-                        <label className="block">
-                            <span className="text-xs text-vx-fg-muted">Password</span>
+                        // Not one wrapping <label>: the button and the hint sat inside
+                        // it and were read out as part of the field's name.
+                        <div>
+                            <label htmlFor="vx-password" className="text-xs text-vx-fg-muted">Password</label>
                             <span className="relative mt-1 block">
                                 <input
+                                    id="vx-password"
                                     type={showPassword ? "text" : "password"}
                                     required
                                     autoComplete={mode === "sign_up" ? "new-password" : "current-password"}
@@ -376,14 +379,15 @@ export default function AuthGate() {
                                     // password; a generated one is never in a breach list.
                                     passwordrules={mode === "sign_up" ? "minlength: 12; required: lower; required: upper; required: digit;" : undefined}
                                     aria-describedby="vx-password-hint"
-                                    className="w-full rounded-lg bg-vx-base border border-vx-border pl-3 pr-16 py-2 text-sm text-vx-fg outline-hidden focus:border-vx-accent focus-visible:ring-2 focus-visible:ring-vx-accent/40"
+                                    className="w-full rounded-lg bg-vx-base border border-vx-field pl-3 pr-16 py-2 text-sm text-vx-fg outline-hidden focus:border-vx-accent focus-visible:ring-2 focus-visible:ring-vx-accent/40"
                                 />
                                 {/* A typo in a masked 8-character minimum is the
                                     commonest reason a sign-up bounces. */}
                                 <button
                                     type="button"
                                     onClick={() => setShowPassword((v) => !v)}
-                                    aria-pressed={showPassword}
+                                    // The name changes with the state, so there is no
+                                    // aria-pressed: "Hide password, pressed" says two things.
                                     aria-label={showPassword ? "Hide password" : "Show password"}
                                     className="absolute inset-y-0 right-0 px-3 text-[11px] font-bold uppercase tracking-wide text-vx-fg-muted hover:text-vx-fg"
                                 >
@@ -398,7 +402,7 @@ export default function AuthGate() {
                                     ? "At least 8 characters. Passwords found in data breaches are rejected, so use a new one — let your browser or password manager suggest it."
                                     : "At least 8 characters."}
                             </span>
-                        </label>
+                        </div>
                     )}
 
                     <Turnstile
@@ -444,17 +448,17 @@ export default function AuthGate() {
 
                 <div className="mt-4 flex flex-wrap gap-3 text-xs text-vx-fg-muted">
                     {mode !== "sign_in" && (
-                        <button type="button" className="underline hover:text-vx-fg" onClick={() => setMode("sign_in")}>
+                        <button type="button" className="-my-2 py-2 underline hover:text-vx-fg" onClick={() => setMode("sign_in")}>
                             Have an account? Sign in
                         </button>
                     )}
                     {mode !== "sign_up" && (
-                        <button type="button" className="underline hover:text-vx-fg" onClick={() => setMode("sign_up")}>
+                        <button type="button" className="-my-2 py-2 underline hover:text-vx-fg" onClick={() => setMode("sign_up")}>
                             New? Create an account
                         </button>
                     )}
                     {mode !== "magic" && (
-                        <button type="button" className="underline hover:text-vx-fg" onClick={() => setMode("magic")}>
+                        <button type="button" className="-my-2 py-2 underline hover:text-vx-fg" onClick={() => setMode("magic")}>
                             Email me a link instead
                         </button>
                     )}

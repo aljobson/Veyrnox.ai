@@ -8,10 +8,15 @@ const page = readFileSync(new URL('../app/veyrnox/app/video-agent/page.js', impo
 const errors = readFileSync(new URL('../app/veyrnox/_lib/createErrors.js', import.meta.url), 'utf8');
 const copyFor = (code) => { const m = errors.match(new RegExp(`^\\s*'?${code}'?:\\s*'((?:[^'\\\\]|\\\\.)*)'`, 'm')); return m ? m[1] : null; };
 
-test('the video agent page is hidden unless localStorage.veyrnox_video_agent is "1"', () => {
-    assert.match(page, /const FLAG = 'veyrnox_video_agent';/);
-    assert.match(page, /localStorage\.getItem\(FLAG\) === '1'/);
-    assert.match(page, /This feature isn&apos;t available yet\./);
+test('the video agent page is open to every signed-in user and has its own tab (rollout step 9)', () => {
+    // No browser switch any more: the server flag AGENT_VIDEO_ENABLED is the only gate, and the plan route answers
+    // video_agent_unavailable (with its own copy) when that is off.
+    assert.doesNotMatch(page, /veyrnox_video_agent/);
+    assert.doesNotMatch(page, /isn&apos;t available yet/);
+    assert.match(page, /<AppNav balance=\{balance\} active="agent" \/>/);
+    const nav = readFileSync(new URL('../app/veyrnox/_components/NavBar.js', import.meta.url), 'utf8');
+    assert.match(nav, /\{ key: 'agent', href: '\/app\/video-agent', label: 'Video agent' \}/);
+    assert.ok(copyFor('video_agent_unavailable'));
 });
 
 test('Approve sends exactly the planned brief, ticket and aspect, under the key the plan named', () => {
@@ -53,8 +58,8 @@ test('every code the plan route, the gateway and the runner can raise has its ow
 test('after a reload the page resumes the newest unsettled video-agent job from this browser\'s history', () => {
     assert.match(page, /const pending = pickResumable\(jobsToWatch\(readJobHistory\(\)\), MODEL_ID\);/);
     assert.match(page, /if \(pending\) startJobs\(pending\);/);
-    // once per mount, and only when the preview flag is on
-    assert.match(page, /if \(!enabled \|\| resumed\.current\) return;/);
+    // once per mount
+    assert.match(page, /if \(resumed\.current\) return;/);
 });
 
 test('pickResumable takes the newest matching job and ignores other models and bad rows', () => {

@@ -1,6 +1,7 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
 import { AppNav } from '../../_components/NavBar';
+import { Main } from '../../_components/Main';
 import Link from 'next/link';
 import { Chip } from '../../_components/Chip';
 import { TopUpPacks, TopUpReturn } from '../../_components/TopUpPacks';
@@ -73,7 +74,7 @@ export default function Credits() {
   return (
     <div className="min-h-dvh">
       <AppNav balance={balance} active="credits" />
-
+      <Main>
       <section className="max-w-[1200px] mx-auto px-4 sm:px-8 pt-10 pb-8">
         <h1 className="vx-display text-[40px] sm:text-[56px]">Your balance</h1>
 
@@ -198,6 +199,7 @@ export default function Credits() {
           </div>
         )}
       </section>
+      </Main>
     </div>
   );
 }

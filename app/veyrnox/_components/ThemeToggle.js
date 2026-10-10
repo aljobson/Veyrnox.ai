@@ -3,6 +3,7 @@
 import { cn } from '../../../lib/utils';
 
 import { useCallback, useEffect, useSyncExternalStore } from 'react';
+import { Icon } from './Icon';
 
 // Dark is the default and the brand; light is opt-in and remembered per
 // browser. The palette itself is 15 CSS variables in app/globals.css, so
@@ -74,11 +75,9 @@ export function ThemeToggle({ className = '' }) {
       data-print="hide"
       aria-label={goingLight ? 'Switch to light theme' : 'Switch to dark theme'}
       title={goingLight ? 'Light theme' : 'Dark theme'}
-      className={cn('inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-vx-border text-vx-fg-muted transition-colors hover:border-vx-accent hover:text-vx-fg', className)}
+      className={cn('inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-vx-border text-vx-fg-muted transition-colors hover:border-vx-accent hover:text-vx-fg', className)}
     >
-      <span aria-hidden="true" className="text-[13px] leading-none">
-        {goingLight ? '☀' : '☾'}
-      </span>
+      <Icon name={goingLight ? 'sun' : 'moon'} size={15} />
     </button>
   );
 }

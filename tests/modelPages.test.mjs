@@ -68,3 +68,15 @@ test('image models do not list clip lengths', () => {
     const facts = modelFacts({ modality: 'text-to-image', kind: 'image', durations: [5], capabilities: { inputs: {}, media: {} } });
     assert.equal(facts.some((f) => f.label === 'Clip lengths'), false);
 });
+
+// Design pass 2026-10-09: /models listed "Nano Banana Pro Edit" twice (10 cr
+// and 2 cr) and both model pages carried the same title.
+test('two shelf models never share a title', () => {
+    const rows = toPublicModels([row('a', shelfEndpoint), row('b', shelfEndpoint)]).map((m, i) => ({
+        ...m,
+        name: i === 0 ? 'Nano Banana Pro Edit' : 'Nano Banana Pro Edit (GrsAI, no seed)',
+    }));
+    assert.deepEqual(shelfModels(rows).map((m) => m.title), ['Nano Banana Pro Edit', 'Nano Banana Pro Edit (GrsAI, no seed)']);
+    const lone = toPublicModels([row('c', shelfEndpoint)]).map((m) => ({ ...m, name: 'Kling 3.0 (image-to-video)' }));
+    assert.deepEqual(shelfModels(lone).map((m) => m.title), ['Kling 3.0'], 'a name with no twin stays short');
+});

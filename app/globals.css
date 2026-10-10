@@ -12,6 +12,7 @@
   --color-vx-base: rgb(var(--vx-base));
   --color-vx-panel: rgb(var(--vx-panel));
   --color-vx-border: rgb(var(--vx-border));
+  --color-vx-field: rgb(var(--vx-field));
   --color-vx-fg: rgb(var(--vx-fg));
   --color-vx-fg-body: rgb(var(--vx-fg-body));
   --color-vx-fg-muted: rgb(var(--vx-fg-muted));
@@ -22,6 +23,7 @@
   --color-vx-money: rgb(var(--vx-money));
   --color-vx-money-ink: rgb(var(--vx-money-ink));
   --color-vx-danger: rgb(var(--vx-danger));
+  --color-vx-danger-ink: rgb(var(--vx-danger-ink));
   --color-vx-warn: rgb(var(--vx-warn));
 
   --color-chart-label: var(--chart-label);
@@ -68,6 +70,11 @@
   --vx-panel: 20 20 22;
   --vx-border: 38 38 42;
   --vx-border-boost: 62 62 68;
+  /* The outline of an input, textarea or select, and nothing else. A field's
+     fill is within 1.1:1 of the card it sits on, so the outline is the only
+     sign it is there: it has to reach 3:1 on both (WCAG 1.4.11). Here 3.4:1
+     on base and 3.1:1 on panel; the hairline above is 1.3:1. */
+  --vx-field: 100 100 106;
   --vx-fg: 242 242 243;
   --vx-fg-body: 201 201 207;
   --vx-fg-muted: 154 154 163;
@@ -78,7 +85,13 @@
   --vx-money: 228 169 60;
   --vx-money-ink: 35 23 3;
   --vx-danger: 255 92 71;
+  --vx-danger-ink: 40 6 2;
   --vx-warn: 139 167 255;
+  /* One strong ease-out for every UI response; the built-in easings are too
+     weak to feel intentional. On :root, not .vx-root: the sign-in dialog,
+     the floating buttons and the toasts mount outside that subtree, and an
+     unresolved var() in an `animation` shorthand silently drops the lot. */
+  --vx-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 /* Light theme. Every foreground is checked against its own surface:
@@ -90,6 +103,7 @@
   --vx-panel: 246 246 247;
   --vx-border: 220 220 224;
   --vx-border-boost: 168 168 176;
+  --vx-field: 138 138 146; /* 3.4:1 on base, 3.2:1 on panel */
   --vx-fg: 10 10 11;
   --vx-fg-body: 63 63 70;
   --vx-fg-muted: 82 82 91;
@@ -100,8 +114,20 @@
   --vx-money: 138 90 0;
   --vx-money-ink: 255 255 255;
   --vx-danger: 196 36 26;
+  --vx-danger-ink: 255 255 255;
   --vx-warn: 43 78 190;
 }
+
+/* In-page anchors (/#explore, /#models, /#faq) glide instead of jumping.
+   <html> carries data-scroll-behavior so Next still jumps on a route change. */
+@media (prefers-reduced-motion: no-preference) {
+  html { scroll-behavior: smooth; }
+}
+/* Whatever the browser scrolls into view stops clear of the sticky 64px nav:
+   an in-page anchor, and a control reached with Tab or Shift+Tab, which used
+   to land underneath it (WCAG 2.4.11). On the scroller, so one rule covers
+   both; a scroll-margin on every [id] covered anchors only. */
+html { scroll-padding-top: 5rem; }
 
 body {
   background: rgb(var(--vx-base));
@@ -163,6 +189,58 @@ body {
 .vx-skip:focus {
   left: 0.75rem;
   top: 0.75rem;
+}
+
+/* ─── Focus ring ──────────────────────────────────────────────────────
+   The brand ring everywhere, not only under .vx-root: the sign-in dialog,
+   the floating buttons, the storage notice and the legal pages sit outside
+   it and fell back to the browser's blue. <main> is only ever a landing
+   place for the skip link and back-to-top, so it draws none. */
+:focus-visible {
+  outline: 2px solid rgb(var(--vx-accent));
+  outline-offset: 2px;
+}
+main:focus-visible { outline: none; }
+
+/* ─── Overlay motion ──────────────────────────────────────────────────
+   The design-system page has always specified these (overlays fade 200ms,
+   bottom sheets slide up 280ms); they were never written, so every dialog
+   appeared in one frame. Entrances only: each overlay unmounts on close.
+   The reduced-motion rule above switches all of them off. */
+@keyframes vx-fade { from { opacity: 0; } }
+@keyframes vx-pop { from { opacity: 0; transform: scale(0.96); } }
+@keyframes vx-drop { from { opacity: 0; transform: translateY(-8px); } }
+@keyframes vx-slide-up { from { transform: translateY(100%); } }
+.vx-fade-in { animation: vx-fade 180ms var(--vx-ease-out) backwards; }
+.vx-drop-in { animation: vx-drop 180ms var(--vx-ease-out) backwards; }
+.vx-slide-up { animation: vx-slide-up 260ms var(--vx-ease-out) backwards; }
+/* A scrim and the panel that is its first child. */
+.vx-overlay { animation: vx-fade 200ms var(--vx-ease-out) backwards; }
+.vx-overlay > :first-child { animation: vx-pop 200ms var(--vx-ease-out) backwards; }
+/* On a phone the panel is a bottom sheet; it rises on the slip's own curve. */
+@media (max-width: 639px) {
+  /* Not a scroll container while its panel rises from below: focusing the
+     first control would scroll the dialog after the panel and it would snap. */
+  .vx-overlay-sheet { overflow: clip; }
+  .vx-overlay-sheet > :first-child { animation: vx-slide-up 280ms cubic-bezier(0.32, 0.72, 0, 1) backwards; }
+}
+
+/* An opened FAQ answer grows and fades in rather than snapping; where the
+   browser cannot do it, it opens as before. Opt-in by class, so no other
+   <details> on the site changes. Clipped on the block axis only: a focus
+   ring at the answer's side edge still shows. Screen only: print shows
+   every answer through the rule below. */
+@media screen and (prefers-reduced-motion: no-preference) {
+  @supports selector(::details-content) {
+    .vx-details { interpolate-size: allow-keywords; }
+    .vx-details::details-content {
+      block-size: 0;
+      overflow-y: clip;
+      opacity: 0;
+      transition: block-size 220ms var(--vx-ease-out), opacity 160ms var(--vx-ease-out), content-visibility 220ms allow-discrete;
+    }
+    .vx-details[open]::details-content { block-size: auto; opacity: 1; }
+  }
 }
 
 /* ─── Print ───────────────────────────────────────────────────────────
@@ -287,5 +365,16 @@ body {
     --chart-scale-04: oklch(0.68 0.02 106);
     --chart-scale-05: oklch(0.55 0.025 106);
     --chart-scale-pattern-color: oklch(0.96 0.005 106);
+  }
+}
+
+/* iOS Safari zooms the page when a field under 16px takes focus, and does
+   not zoom back. Unlayered on purpose, so it outranks the text-size
+   utilities on touch devices only; a mouse keeps the designed sizes. */
+@media (pointer: coarse) {
+  input:not([type='checkbox'], [type='radio'], [type='range'], [type='file'], [type='color']),
+  textarea,
+  select {
+    font-size: 16px;
   }
 }
