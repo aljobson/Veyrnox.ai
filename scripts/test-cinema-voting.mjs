@@ -111,6 +111,15 @@ try {
   );
   await c.query(sql);
   await c.query(sql);
+  const truncateGuard = await readFile(
+    new URL(
+      '../packages/db/schema/supabase/0268_cinema_community_truncate_guard.sql',
+      import.meta.url,
+    ),
+    'utf8',
+  );
+  await c.query(truncateGuard);
+  await c.query(truncateGuard);
   const creator = await person('creator'),
     admin = await person('administrator'),
     viewer = await person(),
