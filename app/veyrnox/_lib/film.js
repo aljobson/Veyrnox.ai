@@ -19,14 +19,14 @@ export const LANDING_FILM = {
 // Owner-approved two-hit robot video with the Veyrnox.ai logo and creative
 // question composited into the frames. Provenance: docs/product/showcase-clips.md.
 export const BREAKTHROUGH_FILM = {
-  video: '/film/robot-creative-v4.mp4',
-  poster: '/film/robot-creative-v4.jpg',
+  video: '/film/robot-creative-v5.mp4',
+  poster: '/film/robot-creative-v5.jpg',
   width: 1280,
   height: 720,
   // A separate portrait composition preserves both hands on narrow screens.
   mobile: {
-    video: '/film/robot-creative-portrait-v2.mp4',
-    poster: '/film/robot-creative-portrait-v2.jpg',
+    video: '/film/robot-creative-portrait-v3.mp4',
+    poster: '/film/robot-creative-portrait-v3.jpg',
     width: 720,
     height: 1440,
   },
