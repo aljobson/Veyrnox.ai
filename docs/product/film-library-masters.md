@@ -1,18 +1,27 @@
 # Film Studio masters in the Library
 
 Film Studio browser exports are separate files from their generated source.
-An operator can save an owner-authorized, verified 1920×1080/24 fps MP4 master
-under its own immutable storage key. The Library shows these in “Saved Film
+An accepted 16:9 Library take offers **Prepare 16:9 master**, then a rights
+confirmation and **Save to Library**. The server verifies the immutable upload's
+size, SHA-256, 1920×1080 H.264 frame, 24 fps packet timing and duration before
+registering it. **View saved video** opens its Library card. Retrying the same
+source/master returns one saved card. Saving costs no Credits.
+
+The Library shows these in “Saved Film
 Studio masters”, with playback, download, measured duration, digest, source take
 and the source-aligned retention deadline. The account asset count includes
 these copies. Signing out or switching accounts clears the master cards.
 
-This release supplies a private read surface and a service-only import RPC.
-There is no public file upload route or new generation/credit operation.
-`FILM_LIBRARY_MASTERS_ENABLED` remains false until migration 0279 is approved
-and applied through the production migration workflow.
+`FILM_LIBRARY_SAVE_ENABLED` gates new authenticated saves;
+`FILM_LIBRARY_MASTERS_ENABLED` gates reads. Migrations 0129 and 0279 are already
+applied. There is no new generation/credit operation or migration. Uploads use
+the existing 10-object/200-MiB pending budget; temporary receipts and orphaned
+copies are cleaned after 24 hours. Each master is at most 25 MiB and each
+account can hold 100. Server inspection is structural, not a malware scan,
+moderation verdict or proof of the browser-rendered pixels' provenance.
+Local-file masters remain downloadable and do not offer direct Library save.
 
-## Operator procedure
+## Historical operator procedure
 
 1. Confirm the owner requested this exact generated master. Read the original
    stored job’s owner, digest, video type and retention deadline.
@@ -37,6 +46,14 @@ and applied through the production migration workflow.
 checks authenticated owner arguments, denied lookups, rate limits, no-store
 responses, signing lifetime, download headers, digest/expiry preservation,
 account counts and failure behavior with an unchanged zero Credit balance.
+
+`node --test tests/filmMasterSaveApi.test.mjs tests/filmMasterSaveClient.test.mjs`
+also exercises real synthetic MP4 inspection, owner/consent/expiry/budget checks,
+ticket integrity, bad or missing uploads, immutable copy/replay, a lost writer
+reply, client transfer failures and fail-closed orphan cleanup. Reticle verified
+the actual save component's confirmation, error and retry states using controlled
+responses in an excluded local fixture. Production acceptance must independently
+prove a real transfer, Library playback/download and unchanged Credits.
 
 The SQL replay check executes migration 0279 twice in PostgreSQL, exercises
 import/replay, owner/source/digest/bounds checks, private table/RPC privileges,

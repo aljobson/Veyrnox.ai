@@ -20,6 +20,7 @@ on:
       - "scripts/test-project-documents.mjs"
       - "scripts/test-project-document-timeline.mjs"
       - "scripts/test-project-document-multitrack.mjs"
+      - "scripts/test-editor-shared-storage.mjs"
       - "scripts/test-tenant-write-caps.mjs"
       - "scripts/test-project-assets.mjs"
       - "scripts/test-cinema-content.mjs"
@@ -33,6 +34,7 @@ on:
       - "scripts/test-cinema-comments.mjs"
       - "scripts/test-cinema-story-polls.mjs"
       - "scripts/test-cinema-discovery.mjs"
+      - "scripts/test-cinema-weighted-rankings.mjs"
       - "scripts/test-admin-credit-grant-guards.mjs"
       - "scripts/test-cinema-free-plays.mjs"
       - "scripts/test-ledger-backstops.mjs"
@@ -172,6 +174,7 @@ jobs:
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-project-documents.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-project-document-timeline.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-project-document-multitrack.mjs
+          DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-editor-shared-storage.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-tenant-write-caps.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-project-assets.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-content.mjs
@@ -189,6 +192,9 @@ jobs:
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-comments.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-story-polls.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-discovery.mjs
+          DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-weighted-rankings.mjs
+          DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-retention.mjs
+          DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-creator-analytics.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-admin-credit-grant-guards.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-operator-actions.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-administrator-provisioning.mjs

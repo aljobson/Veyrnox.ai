@@ -43,6 +43,19 @@ supplier video's dimensions. The exported master is decoded and its exact
 1920×1080 frame and duration are checked before Download is offered.
 
 Export uses the editor's existing desktop Chromium codec qualification and
-memory limits, can be cancelled, costs no Credits and saves locally. It does
-not create a second generation or upload the master to the Library. Stale
-passports, rejected takes, shorter videos and other film aspects are refused.
+memory limits, can be cancelled and costs no Credits. Stale passports,
+rejected takes, shorter videos and other film aspects are refused.
+
+When the master was prepared from its Library job ID, confirm your rights
+and press **Save to Library**. After the upload and server media checks succeed,
+**View saved video** opens its native Library card. Download remains available.
+Saving is free and reuses an existing card when the same source/master is
+saved again. Masters are limited to 25 MiB and 100 per account, and expire
+with their source take or after 90 days. Local-file exports offer Download;
+direct save requires an owned Library source. Browser studio JSON and ZIP
+backups still contain documents and references, not these media bytes.
+
+If the accepted prompt's Audio block is exactly `Silent`, `Silent video` or
+`No audio` (case-insensitive, with optional final punctuation), master
+preparation omits any audio the provider added. Other audio directions keep
+the source sound. The dimension and duration checks still apply unchanged.

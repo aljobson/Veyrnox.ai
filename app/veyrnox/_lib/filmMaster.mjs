@@ -14,6 +14,8 @@ export function filmMasterPlan(film, attempt, probe) {
   if (probe.kind !== 'video') throw new Error('Choose the video for this take.');
   const frames = Math.round(Number(shot.seconds) * FPS);
   const media = mediaFromProbe('film-take', shot.id, probe);
+  const audio = prompt.content.split('\n\n').find(block => block.startsWith('11. Audio\n'))?.slice('11. Audio\n'.length).trim();
+  if (/^(silent(?: video)?|no audio)[.!]?$/i.test(audio || '')) media.hasAudio = false;
   if (media.frames < frames) throw new Error('The take is shorter than the shot card.');
   let timeline = addMedia(emptyTimeline(), media);
   timeline = addVideoClip(timeline, media.id, {len:frames});

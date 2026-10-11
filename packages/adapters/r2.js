@@ -120,7 +120,7 @@ async function signingKey(secret, dateStamp) {
  * PUT an object to R2. Body must be a Uint8Array / ArrayBuffer / Blob.
  * Returns { ok, status, r2Key, size } or { ok:false, error }.
  */
-export async function putObject(key, body, contentType, cfg) {
+export async function putObject(key, body, contentType, cfg, { onlyIfAbsent = false } = {}) {
     if (!isConfigured(cfg)) {
         return { ok: false, error: 'R2 not configured' };
     }
@@ -139,9 +139,10 @@ export async function putObject(key, body, contentType, cfg) {
     const canonicalHeaders =
         `content-type:${contentType}\n` +
         `host:${host}\n` +
+        (onlyIfAbsent ? 'if-none-match:*\n' : '') +
         `x-amz-content-sha256:${payloadHash}\n` +
         `x-amz-date:${amzDate}\n`;
-    const signedHeaders = 'content-type;host;x-amz-content-sha256;x-amz-date';
+    const signedHeaders = `content-type;host;${onlyIfAbsent ? 'if-none-match;' : ''}x-amz-content-sha256;x-amz-date`;
     const canonicalRequest =
         `PUT\n${canonicalUri}\n\n${canonicalHeaders}\n${signedHeaders}\n${payloadHash}`;
 
@@ -160,6 +161,7 @@ export async function putObject(key, body, contentType, cfg) {
             headers: {
                 'content-type': contentType,
                 host,
+                ...(onlyIfAbsent ? { 'if-none-match': '*' } : {}),
                 'x-amz-content-sha256': payloadHash,
                 'x-amz-date': amzDate,
                 authorization,
@@ -170,6 +172,7 @@ export async function putObject(key, body, contentType, cfg) {
         console.error('R2 PUT failed:', err && err.name);
         return { ok: false, error: `R2 PUT transport: ${err && err.name}` };
     }
+    if (onlyIfAbsent && res.status === 412) return { ok: false, status: 412 };
     if (!res.ok) {
         const text = await res.text().catch(() => '');
         console.error('R2 PUT non-ok:', res.status, text.slice(0, 200));

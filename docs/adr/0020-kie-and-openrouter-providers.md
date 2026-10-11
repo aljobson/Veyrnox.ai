@@ -558,3 +558,20 @@ suite, and a running-app Reticle duration verdict with a delayed public
 catalog. Temporary verification instrumentation and the catalog fixture are
 excluded from the production patch. Production acceptance is recorded
 separately in the exported test evidence; submission alone is not a passed take.
+
+## Update 2026-10-11 — GrsAI Film Studio output delivery
+
+The authorized Morning light Film Studio run produced three successful GrsAI
+image tasks whose storage remained pending. The production five-minute sweep
+on 2026-10-11 at 07:30 UTC re-read the tasks with the deployed provider key
+and logged refused output hosts `file3.aitohumanize.com` (two tasks) and
+`file7.aitohumanize.com` (one task). The existing allowlist knew file1, file2, file4, file5, file6 and file8.
+
+Add these two exact HTTPS hosts. Retain refusal of unknown siblings, lookalikes
+and redirects, the output byte limit, content sniffing and absent CDN
+authorization. No wildcard, provider price, ledger, job state or refund change.
+The existing scheduled recovery retries the original tasks after deployment;
+no new generation or debit is needed. Successful live storage and image
+inspection remain the deployment verification, rather than inferring delivery
+from the provider's success status. Regression tests exercise storage from
+all eight hosts and refusal of redirects and unrecognized hosts.

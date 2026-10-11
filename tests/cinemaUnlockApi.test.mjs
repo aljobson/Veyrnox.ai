@@ -265,3 +265,36 @@ test('with the free ceiling on and unlocks off, every viewer action is refused b
     process.env.CINEMA_UNLOCKS_ENABLED = 'true';
   }
 });
+
+
+test('optional audience telemetry cannot prevent an already entitled signed playback', async () => {
+  const prior = process.env.CINEMA_AUDIENCE_ENABLED;
+  const viewing = process.env.CINEMA_VIEWING_ENABLED;
+  process.env.CINEMA_AUDIENCE_ENABLED = 'true';
+  process.env.CINEMA_VIEWING_ENABLED = 'true';
+  try {
+    for (const fails of [false, true]) {
+      let signed = false, session;
+      const h = unlockHandler({ action: 'play', sign: async () => { signed = true; return 'signed-token'; }, rpcCall: async (name, args) => {
+        if (name === 'consume_account_read_request') return { ok: true };
+        if (name === 'read_cinema_playback') return { stream_uid: uid };
+        assert.equal(name, 'begin_cinema_watch_session');
+        assert.equal(signed, true);
+        assert.equal(args.p_auth_id, id);
+        assert.equal(args.p_content_id, id);
+        session = args.p_session_id;
+        if (fails) throw Error('private upstream failure');
+        return { session_id: session };
+      } });
+      const res = await h(post('play', { content_id: id }));
+      assert.equal(res.status, 200);
+      const body = await res.json();
+      assert.equal(body.token, 'signed-token');
+      assert.equal(body.watch_session_id, fails ? undefined : session);
+      assert.ok(!JSON.stringify(body).includes('private upstream'));
+    }
+  } finally {
+    if (prior === undefined) delete process.env.CINEMA_AUDIENCE_ENABLED; else process.env.CINEMA_AUDIENCE_ENABLED = prior;
+    if (viewing === undefined) delete process.env.CINEMA_VIEWING_ENABLED; else process.env.CINEMA_VIEWING_ENABLED = viewing;
+  }
+});

@@ -5,13 +5,13 @@ import { paintFrame } from '../app/veyrnox/_lib/editorRender.mjs';
 import { ACCEPTANCE_CHECKS, STYLE_BOARDS, PROMPT_DETAILS, testMatrix, lockAsset, buildShotPrompt, nextPromptVersion, logFilmAttempt } from '../app/veyrnox/_lib/filmStudio.js';
 import { filmFixture } from './fixtures/filmStudio.mjs';
 
-function acceptedFilm() {
+function acceptedFilm(audio = 'Complete direction.') {
   let film=filmFixture();
   film.boards=[{id:'room',name:'@room:v1',type:'location',decision:'approved',references:Array.from({length:8},(_,i)=>({source:`room-${i}.png`,caption:`Room view ${i}`,kind:'reference'}))},...STYLE_BOARDS.map(name=>({id:name,name,type:'style',decision:'approved',references:[{source:`${name}.png`,caption:name,kind:'reference'}]}))];
   film.assets=[{tag:'@room',version:1,type:'location',descriptor:'Cream walls and oak floor, white window.',references:['room.png'],tests:{},lock:null}];
   film.assets[0].tests=Object.fromEntries(testMatrix(film,film.assets[0]).map(row=>[row.id,{result:`${row.id}.png`,verdict:'pass'}]));
   film=lockAsset(film,'@room:v1');
-  const content=buildShotPrompt(film,film.shots[0],Object.fromEntries(PROMPT_DETAILS.map(([key])=>[key,'Complete direction.'])));
+  const content=buildShotPrompt(film,film.shots[0],Object.fromEntries(PROMPT_DETAILS.map(([key])=>[key,key === 'audio' ? audio : 'Complete direction.'])));
   const prompt=nextPromptVersion(film,film.shots[0],content);film.prompts.push(prompt);
   return logFilmAttempt(film,prompt,{result:'take.mp4',changed:'First take',verdict:'accepted',checks:ACCEPTANCE_CHECKS});
 }
@@ -48,4 +48,14 @@ test('cover fills and centre-crops without stretching; existing default fitting 
   paintFrame(g,1920,1080,layers,{base:pic,over:null},'cover');
   const cover=rects.pop();assert(cover[0]<0);assert.equal(cover[1],0);assert.equal(cover[3],1080);
   assert(Math.abs(cover[2]/cover[3]-pic.width/pic.height)<1e-10);
+});
+
+for (const audio of ['Silent.', 'Silent video.', 'No audio', '  SILENT!  ']) test(`explicit ${audio.trim()} omits provider audio from the exact master`,()=>{
+  const film=acceptedFilm(audio),plan=filmMasterPlan(film,film.attempts[0],{...wide,seconds:10.08,hasAudio:true});
+  assert.equal(plan.timeline.media['film-take'].hasAudio,false);
+  assert.equal(plan.timeline.video[0].len,300);assert.equal(plan.seconds,10);
+});
+for (const audio of ['Quiet music.', 'Silent for five seconds, then music.', 'Room ambience.']) test(`${audio} keeps the source audio`,()=>{
+  const film=acceptedFilm(audio),plan=filmMasterPlan(film,film.attempts[0],{...wide,hasAudio:true});
+  assert.equal(plan.timeline.media['film-take'].hasAudio,true);
 });

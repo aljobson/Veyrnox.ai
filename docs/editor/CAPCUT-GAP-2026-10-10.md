@@ -65,35 +65,28 @@ The owner screenshots and raw UI/network evidence remain private local artifacts
 
 ## Boundaries that implementation must respect
 
-- The present schema is fixed at 30 fps, a 60-second edit, 24 media files, 10 video clips, 10 non-overlapping audio clips and 10 single-line text items. The Worker/document/SQL boundaries enforce these limits, including a 32-KiB project-document ceiling. Multitrack, richer persisted parameters and timebase changes require a coordinated migration; adding UI alone cannot supply them.
+- The foundation schema was fixed at 30 fps, a 60-second edit, 24 media files, 10 video clips, 10 non-overlapping audio clips and 10 single-line text items. The advanced version-3 schema supports independent tracks and longer edits, with its own bounded validator. The Worker/document/SQL boundaries enforce these limits, including a 32-KiB project-document ceiling. Multitrack, richer persisted parameters and timebase changes require a coordinated migration; adding UI alone cannot supply them.
 - Browser-local editing/export stays free. New remote operations require controlled live endpoint tests and provider invoice verification before publishing a price. Current hidden caption pricing and prototype restoration/slow-motion integrations are not verified prices for this rollout.
 - Licensed music/stock/fonts/provider catalogs need usage rights or an original alternative. Capability contracts and licences cannot be inferred from the passive CapCut capture.
 - Production server uploads still need the agreed moderation/inspection rollout. Cloud project saving has been prepared independently and follows its migration observation gate. The owner has not waived that gate.
 - CSP and identity isolation remain in place. A new WASM engine, origin or server rendering system needs its own decision and validation.
 
-## Advanced workspace implementation status
+## Advanced workspace and controls implementation status
 
-The next release implements the following browser-local capabilities behind
-`EDITOR_MULTITRACK_ENABLED`. The production flag remains false until migration
-0269 and its reconciliation gate are clear. This is implementation coverage,
-not full CapCut parity or a production activation announcement.
+The advanced workspace and the additional controls are implemented behind `EDITOR_MULTITRACK_ENABLED`. Production activation follows migration 0269 and its complete reconciliation window. Shared brand/review tools have the separate `EDITOR_SHARED_TOOLS_ENABLED` gate and migration 0280 window.
 
-| Area | Implemented | Remaining within the requested scope |
+| Area | Implemented | Outstanding |
 |---|---|---|
-| Workspace/media | Adjustable media panel, source viewer with in/out range, image import, thumbnails, waveforms, search/type filters, Library insertion, missing-source relink | Folders, proxy media, richer panel docking |
-| Timeline/commands | Independent timed video/audio/text tracks, overlap, track ordering, hide/mute/solo/lock, snap, trims, split, groups, multi-select, copy/paste, duplicate, lane ripple deletion and undo/redo | Global ripple modes and more keyboard/gesture qualification |
-| Picture | Crop, contain/cover, position/scale/rotation/flips, opacity, seven blends, geometric masks | Mask inversion/feather and animated mask geometry |
-| Colour/background | Brightness, contrast, saturation, hue and blur; reusable original looks; solid canvas colour | Exposure/temperature, per-channel HSL/curves, blur/image backgrounds |
-| Animation | Transform/opacity keyframes with four easing modes; original in/out presets | Combo presets, editable motion paths and additional parameter keyframes |
-| Audio/speed | Multiple overlapping sound tracks, synchronized audible preview, volume/fades/pan, three-band EQ, extraction, mute/solo, constant 0.1–8x rate | Pitch preservation, noise removal, voice transformation, speed ramps/reverse/freeze and optical flow |
-| Text/captions/transcript | Multiline typography, three system font families, alignment/colour/outline/background, original titles, timed manual captions, SRT/VTT/ASS/LRC import, SRT/VTT export, source-aligned range deletion and undo | Automatic transcription, word timings, translation/lyrics and text shadows/additional fonts |
-| Catalogs | Five original shapes, original looks, three replaceable-media templates, four effect choices and five transition types | Licensed stock/music/Giphy/avatar catalogs, tracked/body effects, broader catalogs and searchable licensing metadata |
-| Studio generation | Existing priced catalog/job/idempotency/Library path, prompts, model/duration/shape, Library sources, explicit source consent, progress/result insertion; unavailable live prices disable submission | Additional start/end source contracts, new smart-tool endpoints, live paid end-to-end qualification |
-| Export | File name, PNG cover, MP4/MOV H.264/AAC, six resolutions through 4K, five frame rates through 60 fps, bitrate presets, progress/cancel, encoded and working-memory guards | Real-footage qualification on smaller machines, proxy/server fallback, Library render storage |
-| Brand/plugins/review/publish | Existing Studio capabilities retained | Workspace brand kit, scoped plugin contract, permission-aware review/comments/collaboration and editor-to-Publish handoff |
+| Workspace/media | Dock/resize, compact fit-screen layout, source viewer, images, thumbnails/waveforms, folders/search/source/licence labels, Library/relink and local preview proxies | Empty folder tree and broader mobile/low-resource qualification |
+| Timeline/commands | Independent overlapping tracks, hide/mute/solo/lock, groups/multiselect, copy/paste/duplicate, trims/split, lane/global ripple, snapping and undo/redo | Broader gesture/keyboard qualification |
+| Picture | Transform/crop/fit/flips, blends/opacity, masks/invert/feather/keyframes, local chroma key, bilateral denoise and soft relight | AI segmentation, retouch, reframe, tracking, movement, stabilize/flicker restoration |
+| Colour/background | Exposure/temperature/tint/shadows/highlights/gamma, HSL/RGB curves, original looks, solid/blur/image clip backgrounds | Broader real-footage quality qualification |
+| Animation | Transform/opacity/easing, combo presets, editable paths and filter/colour parameter keys | Tracked/body effects |
+| Audio/speed | Overlapping sounds, gain/fades/pan/EQ, pitch preservation/shift, original DSP voices, learned noise suppression, ramps/reverse/freeze | Remote voice providers, optical flow and real-speech quality qualification |
+| Text/captions/transcript | Ten system fonts, rich multiline styles/shadows/animations, timed captions and word styling/import/export, source-aligned transcript range deletion | Automatic speech/translation/lyrics and licensed custom fonts |
+| Catalogs | Ten original shapes, eight title presets, original effects/transitions/looks and replaceable-media templates; four generated music loops and six sounds; searchable catalogs | Licensed stock/Giphy/avatar/provider/plugin catalogs |
+| Studio generation | Existing priced Studio catalog/jobs/Library path and editor insertion | Additional start/end source contracts and current paid live qualification |
+| Export | MP4/MOV H.264/AAC, settings through 4K/60 fps, progress/cancel and memory bounds; export retains originals with proxies | Long real-footage/smaller-machine qualification and render-to-Library/Publish handoff |
+| Brand/review | RLS workspace kits and inspected-asset references; saved-revision frame comments, resolve/reopen and permission-aware links; DB/API checks | Real hosted signed-in UI checks, approved production 0280 migration and clean independent window |
 
-Real browser checks, decoded files, database round-trips and remaining test
-limits are recorded in [the advanced workspace verification](MULTITRACK-VERIFICATION-2026-10-10.md).
-
-Every observed area remains in scope. Rows marked remaining are work still to
-implement and qualify; they are not working controls hidden behind a flag.
+See [advanced workspace verification](MULTITRACK-VERIFICATION-2026-10-10.md) and [additional controls verification](CONTROLS-VERIFICATION-2026-10-11.md) for actual verdicts, decoded files and limits. Every observed area remains in scope; outstanding rows are not completed features hidden by flags.
