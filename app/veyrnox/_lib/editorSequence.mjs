@@ -1,4 +1,10 @@
 // Version 3: independent, timed layers. Version 2 readers/operations remain available.
+import { slicedWords } from './editorWords.mjs';
+import { slicedAnimation } from './editorAnimation.mjs';
+import { backgroundMediaIds } from './editorBackground.mjs';
+import { sourceFrame, sourceAdvance, shiftedSpeedKeys } from './editorSpeed.mjs';
+export { sourceFrame } from './editorSpeed.mjs';
+import { sliceMaskKeyframes } from './editorMask.mjs';
 import { validateSequence } from './editorSequenceValidation.mjs';
 export const SEQUENCE_LIMITS = Object.freeze({ maxSeconds: 600, maxMedia: 40, maxVideoClips: 40, maxAudioClips: 40, maxTexts: 150, maxTracks: 16, maxTextChars: 1000 });
 export const SEQUENCE_MAX = 18000;
@@ -17,7 +23,6 @@ export function upgradeSequence(tl) {
 export const trackFor = (tl, item) => tl.tracks?.find(t => t.id === item.trackId);
 export const sequenceEnd = tl => Math.max(0, ...[...tl.video, ...tl.audio, ...tl.text].map(c => c.start + c.len));
 export const layerEnd = (tl, trackId) => Math.max(0, ...[...tl.video, ...tl.audio, ...tl.text].filter(c => c.trackId === trackId).map(c => c.start + c.len));
-export const sourceFrame = (clip, offset) => clip.in + offset * (clip.rate ?? 1);
 const error = message => ({ error: message });
 const checked = tl => { const bad = validateSequence(tl); return bad ? error(bad) : tl; };
 const editable = (tl, kind, id) => {
@@ -27,7 +32,7 @@ const editable = (tl, kind, id) => {
 export function addSequenceMedia(tl, media) {
     if (tl.media[media.id]) return tl;
     const clean = { id: media.id, kind: media.kind, frames: media.frames, name: String(media.name || 'Untitled').slice(0, 120),
-        hasAudio: !!media.hasAudio, width: media.width || 0, height: media.height || 0, ...(media.graphic ? { graphic: media.graphic } : {}) };
+        ...(media.sourceName?{sourceName:media.sourceName}:String(media.name||'').length>120?{sourceName:String(media.name).slice(0,255)}:{}),...(media.originalAudio?{originalAudio:media.originalAudio}:{}),...(media.assetSource?{assetSource:media.assetSource}:{}),...(media.folder!==undefined?{folder:media.folder}:{}),...(media.attribution?{attribution:media.attribution}:{}),hasAudio: !!media.hasAudio, width: media.width || 0, height: media.height || 0, ...(media.graphic ? { graphic: media.graphic } : {}) };
     return checked({ ...tl, media: { ...tl.media, [media.id]: clean } });
 }
 export function addSequenceClip(tl, kind, mediaId, { in: from = 0, len, start, trackId, ...options } = {}) {
@@ -44,6 +49,7 @@ export function addSequenceClip(tl, kind, mediaId, { in: from = 0, len, start, t
 }
 export function updateSequenceClip(tl, kind, id, patch) {
     const item = editable(tl, kind, id); if (item.error) return item;
+    if(kind==='text' && patch.text!==undefined && patch.text!==item.text && !Object.hasOwn(patch,'words') && item.words?.length)patch={...patch,words:[]};
     const destination = patch.trackId ? tl.tracks.find(t => t.id === patch.trackId) : null;
     if (destination?.locked) return error('Unlock the destination track first.');
     return checked({ ...tl, [kind]: tl[kind].map(c => c.id === id ? { ...c, ...patch, id: c.id } : c) });
@@ -57,11 +63,10 @@ export function splitSequenceClip(tl, kind, id, frame) {
     const offset = frame - item.start;
     if (!Number.isInteger(offset) || offset < 1 || offset >= item.len) return error('Move the playhead inside the clip to split it.');
     const seq = tl.seq + 1;
-    const cutKeys = side => item.keyframes?.filter(k => side === 'first' ? k.frame < offset : k.frame >= offset).map(k => ({ ...k, frame: side === 'first' ? k.frame : k.frame - offset }));
-    const first = { ...item, len: offset, ...(kind !== 'text' ? { fadeIn: Math.min(item.fadeIn || 0, offset), fadeOut: Math.min(item.fadeOut || 0, offset) } : {}), ...(item.keyframes ? { keyframes: cutKeys('first') } : {}) };
-    const second = { ...item, id: `${kind[0]}${seq}`, start: frame, len: item.len - offset, ...(kind !== 'text' ? { fadeIn: Math.min(item.fadeIn || 0, item.len - offset), fadeOut: Math.min(item.fadeOut || 0, item.len - offset) } : {}),
+    const first = { ...item, ...slicedAnimation(item,0), ...(item.maskKeyframes ? { maskKeyframes: sliceMaskKeyframes(item, 0, offset) } : {}), len: offset, ...(kind !== 'text' ? { fadeIn: Math.min(item.fadeIn || 0, offset), fadeOut: Math.min(item.fadeOut || 0, offset) } : {}),  };
+    const second = { ...item, ...slicedWords(item,offset), ...slicedAnimation(item,offset), ...(item.speedCurve ? {speedCurve:shiftedSpeedKeys(item,offset)}:{}), ...(item.maskKeyframes ? { maskKeyframes: sliceMaskKeyframes(item, offset, item.len - offset) } : {}), id: `${kind[0]}${seq}`, start: frame, len: item.len - offset, ...(kind !== 'text' ? { fadeIn: Math.min(item.fadeIn || 0, item.len - offset), fadeOut: Math.min(item.fadeOut || 0, item.len - offset) } : {}),
         ...(kind !== 'text' ? { in: sourceFrame(item, offset) } : {}), ...(kind === 'video' ? { transition: 0 } : {}),
-        ...(item.keyframes ? { keyframes: cutKeys('second') } : {}) };
+         };
     return checked({ ...tl, seq, [kind]: tl[kind].flatMap(c => c.id === id ? [first, second] : [c]) });
 }
 export function addSequenceText(tl, options = {}) {
@@ -100,22 +105,23 @@ export function moveSequence(tl, kind, id, start, trackId, snap = true, frame = 
 export function trimSequence(tl, kind, id, edge, delta) {
     const item = editable(tl, kind, id); if (item.error) return item;
     const fromStart = edge === 'in', len = item.len + (fromStart ? -delta : delta);
-    return updateSequenceClip(tl, kind, id, { len, ...(kind !== 'text' ? { fadeIn: Math.min(item.fadeIn || 0, len), fadeOut: Math.min(item.fadeOut || 0, len) } : {}),
+    return updateSequenceClip(tl, kind, id, { len, ...slicedWords(item,fromStart?delta:0), ...slicedAnimation(item,fromStart?delta:0), ...(item.speedCurve ? {speedCurve:shiftedSpeedKeys(item,fromStart?delta:0)}:{}), ...(item.maskKeyframes ? { maskKeyframes: sliceMaskKeyframes(item, fromStart ? delta : 0, len) } : {}), ...(kind !== 'text' ? { fadeIn: Math.min(item.fadeIn || 0, len), fadeOut: Math.min(item.fadeOut || 0, len) } : {}),
         ...(fromStart ? { start: item.start + delta, ...(kind !== 'text' ? { in: sourceFrame(item, delta) } : {}) } : {}),
-        ...(item.keyframes ? { keyframes: item.keyframes.filter(k => k.frame >= (fromStart ? delta : 0) && k.frame < item.len + (fromStart ? 0 : delta)).map(k => ({ ...k, frame: k.frame - (fromStart ? delta : 0) })) } : {}) });
+ });
 }
 export function sequenceBackground(tl, background) { return checked({ ...tl, background }); }
 
 export function setSequenceRate(tl, kind, id, rate) {
     const item = editable(tl, kind, id); if (item.error) return item;
     if (kind === 'text' || ['image', 'graphic'].includes(tl.media[item.mediaId].kind)) return error('Choose a video or audio clip.');
-    const sourceLength = item.len * (item.rate ?? 1);
+    const sourceLength = sourceAdvance(item,item.len);
     const len = Math.max(1, Math.floor(sourceLength / rate));
-    return updateSequenceClip(tl, kind, id, { rate, len, keyframes: [], fadeIn: Math.min(item.fadeIn || 0, len), fadeOut: Math.min(item.fadeOut || 0, len) });
+    const lower=Math.min(sourceFrame(item,0),sourceFrame(item,item.len-1));
+    return updateSequenceClip(tl, kind, id, { rate, len, speedCurve: [], ...(item.animation?{animation:{...item.animation,offset:0,span:len}}:{}), ...(item.reverse ? {in:lower+(len-1)*rate}:{}), keyframes: [], parameterKeyframes: [], maskKeyframes: [], fadeIn: Math.min(item.fadeIn || 0, len), fadeOut: Math.min(item.fadeOut || 0, len) });
 }
 export function extractSequenceAudio(tl, id) {
     const item = editable(tl, 'video', id); if (item.error) return item;
-    let next = addSequenceClip(tl, 'audio', item.mediaId, { start: item.start, in: item.in, len: item.len, rate: item.rate ?? 1, volume: item.volume, fadeIn: item.fadeIn || 0, fadeOut: item.fadeOut || 0 });
+    let next = addSequenceClip(tl, 'audio', item.mediaId, { start: item.start, in: item.in, len: item.len, rate: item.rate ?? 1, ...(item.speedCurve ? {speedCurve:item.speedCurve}:{}), ...(item.reverse!==undefined ? {reverse:item.reverse}:{}), ...(item.preservePitch!==undefined?{preservePitch:item.preservePitch}:{}),...(item.audioProcessing?{audioProcessing:item.audioProcessing}:{}),volume: item.volume, fadeIn: item.fadeIn || 0, fadeOut: item.fadeOut || 0 });
     return next.error ? next : updateSequenceClip(next, 'video', id, { volume: 0 });
 }
 export function sequenceTransition(tl, k) {
@@ -131,7 +137,7 @@ export function setSequenceTransition(tl, id, transitionType, transition) {
 }
 
 export function removeSequenceMedia(tl, id) {
-    if ([...tl.video, ...tl.audio].some(c => c.mediaId === id)) return error("Delete this media's timeline clips first. Undo keeps their source files available.");
+    if ([...tl.video, ...tl.audio].some(c => c.mediaId === id || backgroundMediaIds(c).includes(id))) return error("Remove this media from clips and backgrounds first. Undo keeps its source file available.");
     return checked({ ...tl, media: Object.fromEntries(Object.entries(tl.media).filter(([key]) => key !== id)) });
 }
 
@@ -139,4 +145,35 @@ export function removeSequenceMedia(tl, id) {
 export function sequenceTransitionAfter(tl, clip) {
     const k = tl.video.findIndex(c => c.trackId === clip.trackId && c.start === clip.start + clip.len);
     return k < 0 ? 0 : sequenceTransition(tl, k);
+}
+
+export function setSequenceSpeedCurve(tl,kind,id,points) {
+    const item=editable(tl,kind,id);if(item.error)return item;
+    if(kind==='text' || ['image','graphic'].includes(tl.media[item.mediaId].kind) || item.freezeFrame!==undefined)return error('Choose moving video or audio.');
+    if(!Array.isArray(points) || points.length<2 || points.length>12 || points[0].position!==0 || points.at(-1).position!==1 || points.some((p,i)=>!Number.isFinite(p.position) || !Number.isFinite(p.rate) || p.position<0 || p.position>1 || p.rate<.1 || p.rate>8 || (i && p.position<=points[i-1].position)))return error('Use 2–12 ordered speed points, from 0% to 100%.');
+    const average=points.slice(1).reduce((sum,p,i)=>sum+(p.position-points[i].position)*(p.rate+points[i].rate)/2,0),span=sourceAdvance(item,item.len),len=Math.max(1,Math.floor(span/average));
+    const speedCurve=points.map(p=>({frame:p.position*len,rate:p.rate})),lower=Math.min(sourceFrame(item,0),sourceFrame(item,item.len-1)),inPoint=item.reverse?lower+sourceAdvance({speedCurve},len-1):item.in;
+    return updateSequenceClip(tl,kind,id,{speedCurve,len,in:inPoint,...(item.animation?{animation:{...item.animation,offset:0,span:len}}:{}),keyframes:[],parameterKeyframes:[],maskKeyframes:[],fadeIn:Math.min(item.fadeIn || 0,len),fadeOut:Math.min(item.fadeOut || 0,len)});
+}
+export function reverseSequenceClip(tl,kind,id) {
+    const item=editable(tl,kind,id);if(item.error)return item;
+    if(kind==='text' || ['image','graphic'].includes(tl.media[item.mediaId].kind) || item.freezeFrame!==undefined)return error('Choose moving video or audio.');
+    return updateSequenceClip(tl,kind,id,{reverse:!item.reverse,in:sourceFrame(item,item.len-1),...(item.speedCurve?.length?{speedCurve:item.speedCurve.map(p=>({...p,frame:item.len-1-p.frame})).reverse()}: {})});
+}
+export function insertSequenceFreeze(tl,id,frame,length=60) {
+    const item=editable(tl,'video',id);if(item.error)return item;
+    if(frame<item.start || frame>=item.start+item.len)return error('Move the playhead inside the video.');
+    const still=sourceFrame(item,frame-item.start),offset=frame-item.start;
+    let next=offset>0?splitSequenceClip(tl,'video',id,frame):tl;if(next.error)return next;
+    next={...next,video:next.video.map(c=>c.trackId===item.trackId && c.start>=frame?{...c,start:c.start+length}:c)};
+    const {id:_id,...settings}=item;
+    return addSequenceClip(next,'video',item.mediaId,{...settings,start:frame,len:length,in:still,freezeFrame:still,volume:0,transition:0,speedCurve:[],keyframes:[],parameterKeyframes:[],maskKeyframes:[],animation:{in:'none',out:'none',duration:15}});
+}
+
+export function updateMediaDetails(tl,id,patch) {
+    const m=tl.media[id];if(!m)return {error:'Choose a media item first.'};
+    if(patch.name!==undefined && (typeof patch.name!=='string'||!patch.name.trim()||/[\u0000-\u001f\u007f]/.test(patch.name)))return {error:'Choose a non-empty media name without control characters.'};
+    if(Object.keys(patch).some(k=>!['name','folder','attribution'].includes(k)))return {error:'Invalid media details.'};
+    const next={...tl,media:{...tl.media,[id]:{...m,...patch,...(patch.name!==undefined?{sourceName:m.sourceName||m.name}:{})}}},error=validateSequence(next);
+    return error?{error}:next;
 }

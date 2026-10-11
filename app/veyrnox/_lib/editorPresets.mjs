@@ -13,6 +13,11 @@ export const TITLE_STYLES = Object.freeze([
     { name: 'Lower third', size: 5, y: 0.85, style: { ...TEXT_DEFAULTS, align: 'left', background: '#101827', backgroundOpacity: 0.9 }, x: 0.08 },
     { name: 'Editorial', size: 9, y: 0.5, style: { ...TEXT_DEFAULTS, font: 'serif', weight: 'normal', strokeWidth: 0 } },
     { name: 'Caption highlight', size: 5, y: 0.85, style: { ...TEXT_DEFAULTS, color: '#ffe66d', backgroundOpacity: 0.7 } },
+    { name:'Serif quote',size:7,y:.5,style:{...TEXT_DEFAULTS,font:'Georgia',weight:'normal',italic:true,lineHeight:1.4,strokeWidth:0,shadowColor:'#000000',shadowOpacity:.6,shadowBlur:6,shadowX:2,shadowY:2} },
+    { name:'Neon heading',size:10,y:.5,style:{...TEXT_DEFAULTS,color:'#32d6c5',strokeWidth:0,shadowColor:'#32d6c5',shadowOpacity:1,shadowBlur:12,shadowX:0,shadowY:0} },
+    { name:'Typewriter',size:6,y:.8,style:{...TEXT_DEFAULTS,font:'Courier New',weight:'normal',letterSpacing:2,background:'#101827',backgroundOpacity:.85,strokeWidth:0} },
+    { name:'Warm label',size:5,y:.85,style:{...TEXT_DEFAULTS,color:'#101827',background:'#ffe66d',backgroundOpacity:1,strokeWidth:0} },
+
 ]);
 export function insertTitlePreset(tl, name, frame) {
     const preset = TITLE_STYLES.find(s => s.name === name);

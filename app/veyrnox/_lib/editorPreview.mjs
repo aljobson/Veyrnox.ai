@@ -4,16 +4,16 @@ import { graphicCanvas } from './editorGraphics.mjs';
 // always wins, so a slow decode never paints over a later position.
 import { frameLayers, resolvePictures, paintFrame } from './editorRender.mjs';
 
-export function createPreviewer(blobs) {
+export function createPreviewer(blobs,proxies=new Map()) {
     const sinks = new Map(), images = new Map();
-    let latest = 0, disposed = false, painting = Promise.resolve();
+    let latest = 0, disposed = false, painting = Promise.resolve(),status={sources:[]};
     async function sinkFor(id, key) {
         if (!sinks.has(key)) {
             const entry = { input: null, ready: null, mediaId: id };
             entry.ready = (async () => {
                 const { Input, BlobSource, ALL_FORMATS, CanvasSink } = await import('mediabunny');
                 if (disposed || sinks.get(key) !== entry) return null;
-                const input = new Input({ source: new BlobSource(blobs.get(id)), formats: ALL_FORMATS });
+                const input = new Input({ source: new BlobSource(proxies.get(id)||blobs.get(id)), formats: ALL_FORMATS });
                 entry.input = input;
                 const track = await input.getPrimaryVideoTrack();
                 if (disposed || sinks.get(key) !== entry) return null;
@@ -34,8 +34,8 @@ export function createPreviewer(blobs) {
             const task = painting.then(async () => {
             if (disposed || ticket !== latest) return false;
             const layers = frameLayers(tl, frame);
-            const pics = await resolvePictures(layers, async (k, time) => {
-                const id = tl.video[k].mediaId;
+            const pics = await resolvePictures(layers, async (k, time, backgroundId) => {
+                const id = backgroundId || tl.video[k].mediaId;
                 if (tl.media[id].kind === 'graphic') { if (!images.has(id)) images.set(id, Promise.resolve(graphicCanvas(tl.media[id].graphic))); return await images.get(id); }
                 if (!blobs.has(id)) return null;
                 if (tl.media[id].kind === 'image') {
@@ -48,7 +48,8 @@ export function createPreviewer(blobs) {
             if (disposed || ticket !== latest) return false;
             paintFrame(canvas.getContext('2d'), canvas.width, canvas.height, layers, pics);
             const active = layers.visuals || [layers.base, layers.over].filter(Boolean);
-            const used = new Set(active.map(v => `${tl.video[v.k].mediaId}:${tl.video[v.k].id}`)), usedMedia = new Set(active.map(v => tl.video[v.k].mediaId));
+            status={sources:active.map((v,i)=>{const id=tl.video[v.k].mediaId,pic=layers.visuals?pics.visuals[i]:(i===0?pics.base:pics.over);return {id,proxy:proxies.has(id),width:pic?.width||0,height:pic?.height||0};})};
+            const used = new Set(active.map(v => `${tl.video[v.k].mediaId}:${tl.video[v.k].id}`)), usedMedia = new Set(active.flatMap(v => [tl.video[v.k].mediaId,...(v.clip?.background?.type==='image'?[v.clip.background.mediaId]:[])]));
             for (const [key, entry] of sinks) if (!used.has(key)) { entry.input?.dispose(); sinks.delete(key); }
             for (const [id, picture] of images) if (!usedMedia.has(id)) { picture.then(b => b.close?.(), () => {}); images.delete(id); }
             return true;
@@ -56,6 +57,7 @@ export function createPreviewer(blobs) {
             painting = task.catch(() => {});
             return task.catch(error => { if (disposed || ticket !== latest) return false; throw error; });
         },
+        status(){return status;},
         retain(ids, clipIds) { for (const [id, bitmap] of images) if (!ids.has(id)) { bitmap.then(b => b.close?.(), () => {}); images.delete(id); } for (const [key, entry] of sinks) if (!ids.has(entry.mediaId) || (clipIds && !clipIds.has(key.slice(key.lastIndexOf(':') + 1)))) { entry.input?.dispose(); sinks.delete(key); } },
         dispose() { for (const bitmap of images.values()) bitmap.then(b => b.close?.(), () => {}); images.clear(); disposed = true; latest++; for (const { input } of sinks.values()) input?.dispose(); sinks.clear(); },
     };
