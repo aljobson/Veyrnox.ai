@@ -18,8 +18,9 @@ import { STATE_TABS, KIND_TABS, KIND_LABEL, VIEWS, VIEW_KEY, filterRows, readVie
 import { readFavourites, toggleFavourite } from '../../_lib/favourites';
 import { formatWhen } from '../../_lib/formatWhen';
 import { FilmLibraryMasters } from '../../_components/film/FilmLibraryMasters';
+import { DeviceLibrary } from '../../_components/DeviceLibrary';
 import { EditorLibraryRenders } from '../../_components/editor/EditorLibraryRenders';
-import { getSession } from '../../../lib/authClient.js';
+import { getSession, getStoredUserId, onSessionChange } from '../../../lib/authClient.js';
 
 // Account list is authoritative; local history supplies cached display names.
 const STATE_UI = {
@@ -72,8 +73,7 @@ export default function Library() {
   const view = chosen ?? stored;
   const chooseView = (v) => { setChosen(v); try { window.localStorage.setItem(VIEW_KEY, v); } catch { /* not remembered */ } };
   const [balance, setBalance] = useState(null);
-  // History lives in localStorage, which the server cannot read. Start empty
-  // on both sides so hydration matches, then load it after mount.
+  // Hydrate cached history after mount to match the server.
   const [rows, setRows] = useState([]);
   const [historyLoaded, setHistoryLoaded] = useState(false);
   const [visible, setVisible] = useState(PAGE);
@@ -87,8 +87,10 @@ export default function Library() {
   const [selected, setSelected] = useState([]);
   const [editing, setEditing] = useState(false);
 
-  // load balance
-  const loadBalance = useCallback(async () => {
+  const actor=useSyncExternalStore(onSessionChange,getStoredUserId,()=>null);
+
+    const loadBalance = useCallback(async () => {
+    if(!getStoredUserId())return;
     try {
       const b = await gatewayFetch('/balance');
       setBalance(b.balance);
@@ -99,20 +101,17 @@ export default function Library() {
     const onBalance = () => loadBalance();
     window.addEventListener('veyrnox:balance-changed', onBalance);
     return () => window.removeEventListener('veyrnox:balance-changed', onBalance);
-  }, [loadBalance]);
+  }, [loadBalance,actor]);
 
-  // localStorage paints instantly and names the rows (the server has no
-  // display name), but it is one browser's 50-entry cache — it is no longer
-  // what the Library IS. The account's own list follows.
+  // Cached names paint first; the authoritative account list follows.
   useEffect(() => {
-    setRows(readJobHistory().map(hydrateFromHistory));
+    setRows(actor?readJobHistory().map(hydrateFromHistory):[]);
     setHistoryLoaded(true);
-  }, []);
+  }, [actor]);
 
-  // The account's jobs, newest first, from GET /api/v1/jobs. A second device
-  // or a cleared cache used to show "Nothing here yet" while the files sat
-  // in R2 (audit finding 11).
+  // Read the account list on each identity change, including a cleared cache.
   useEffect(() => {
+    if(!actor){setListLive(null);setNextCursor(null);return;}
     let cancelled = false;
     (async () => {
       try {
@@ -141,12 +140,12 @@ export default function Library() {
       }
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [actor]);
 
   // fetch: hydrate the visible window's real state; then poll the in-flight ones.
-  // ponytail: growing the window re-hydrates rows already fetched. That is a
-  // click-driven handful of requests; add a hydrated-id set if it ever bites.
+  // Growing the window re-hydrates a bounded page.
   useEffect(() => {
+    if(!actor)return;
     let cancelled = false;
     (async () => {
       const window_ = rowsRef.current.slice(0, visible);
@@ -178,11 +177,12 @@ export default function Library() {
       }
     })();
     return () => { cancelled = true; };
-  }, [visible, listLive]);
+  }, [visible, listLive,actor]);
 
   // poll any in-flight rows
   useEffect(() => {
     if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+    if(!actor)return;
     const hasInFlight = rows.some((r, i) => shouldPoll(r, i, visible));
     if (!hasInFlight) return;
     // Give up rather than hammer a server that is not answering. Every tick
@@ -227,9 +227,8 @@ export default function Library() {
       if (updates.some((u, i) => u !== rows[i])) setRows(updates);
     }, POLL_MS);
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
-  }, [rows, visible]);
+  }, [rows, visible,actor]);
 
-  // Older jobs, a page at a time, from the server's keyset cursor.
   const loadOlder = useCallback(async () => {
     if (!nextCursor) return;
     try {
@@ -273,7 +272,7 @@ export default function Library() {
 
   return (
     <div className="min-h-dvh">
-      <AppNav balance={balance} active="library" />
+      <AppNav balance={balance} active="library" readAccount={!!actor} />
       <Main>
       {listLive === false && (
         <div className="max-w-[1500px] mx-auto px-4 sm:px-8 pt-4">
@@ -336,6 +335,7 @@ export default function Library() {
         </div>
       </section>
 
+      <DeviceLibrary visible={['all','succeeded'].includes(tab) && !favOnly} kind={kind} />
       <EditorLibraryRenders visible={['all','succeeded'].includes(tab) && ['all','video'].includes(kind) && !favOnly}/>
       <FilmLibraryMasters visible={['all','succeeded'].includes(tab) && ['all','video'].includes(kind) && !favOnly}/>
 

@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { gatewayFetch } from '../../_lib/gateway';
-import { onSessionChange } from '../../../lib/authClient.js';
+import { getStoredUserId, onSessionChange } from '../../../lib/authClient.js';
 import { AssetRetention } from '../AssetRetention';
 
 export function FilmLibraryMasters({ visible = true, fetcher = gatewayFetch }) {
@@ -9,6 +9,7 @@ export function FilmLibraryMasters({ visible = true, fetcher = gatewayFetch }) {
   const [revision, setRevision] = useState(0);
   useEffect(()=>onSessionChange(()=>{setMasters([]);setError('');setRevision(n=>n+1);}),[]);
   useEffect(() => {
+    if(!getStoredUserId())return;
     let active=true;
     fetcher('/library/masters').then(response=>{if(active){setMasters(response.masters || []);setError('');}})
       .catch(e=>{if(active && e.code !== 'no_token' && e.code !== 'unauthenticated') setError('Saved Film Studio masters could not be loaded.');});

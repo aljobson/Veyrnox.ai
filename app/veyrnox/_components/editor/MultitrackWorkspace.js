@@ -1,4 +1,6 @@
 'use client';
+import { saveDeviceLibrary, loadDeviceLibrary } from '../../_lib/deviceLibrary.mjs';
+import { librarySourceFromId } from '../../_lib/editorLibraryCollection.mjs';
 import { CommandIcon } from './CommandIcon';
 import { OriginalAudioPanel } from './OriginalAudioPanel';
 import { restoreOriginalAudio } from '../../_lib/editorOriginalAudio.mjs';
@@ -67,7 +69,7 @@ export function MultitrackWorkspace() {
         const bad = validateSequence(next); if (bad) { setNotice(bad); return null; }
         pause(); setNotice(''); setResult(null); replace(commitHistory(ref.current, next)); return next;
     }, [pause, replace]);
-    const load = useCallback(next => { sourceGeneration.current++;privateSession.current=Object.values(next.media).some(m=>m.assetSource || m.id.startsWith('j-'));restoreOriginalAudio(next,blobs.current);setLoaded([...blobs.current.keys()]); abort.current?.abort();proxyGeneration.current++;setProxies(new Map());setPreviewStatus({sources:[]}); pause(); preview.current?.dispose(); preview.current = null; replace(createHistory(upgradeSequence(next))); setSelected(null); setSelection([]); setClipboard(null); setFrame(0); setResult(null); }, [pause, replace]);
+    const load = useCallback(next => { sourceGeneration.current++;privateSession.current=Object.values(next.media).some(m=>m.assetSource || m.id.startsWith('j-') || librarySourceFromId(m.id));restoreOriginalAudio(next,blobs.current);setLoaded([...blobs.current.keys()]); abort.current?.abort();proxyGeneration.current++;setProxies(new Map());setPreviewStatus({sources:[]}); pause(); preview.current?.dispose(); preview.current = null; replace(createHistory(upgradeSequence(next))); setSelected(null); setSelection([]); setClipboard(null); setFrame(0); setResult(null); }, [pause, replace]);
     useEffect(()=>{let actor=getStoredUserId();return onSessionChange(session=>{const next=session?.user?.id || null;if(next===actor)return;actor=next;sourceGeneration.current++;fontRegistry.current?.clear();setTick(n=>n+1);if(privateSession.current){blobs.current.clear();load(emptySequence());setNotice('Account changed. Reopen sources from your current account.');}});},[load]);
     const relinked = useCallback(() => {proxyGeneration.current++;setProxies(new Map()); preview.current?.dispose(); preview.current = null; setLoaded([...blobs.current.keys()]); setTick(n => n + 1); }, []);
     useEffect(() => { alive.current = true; return () => { alive.current = false; abort.current?.abort(); preview.current?.dispose(); preview.current = null; player.current?.dispose(); player.current = null; }; }, []);
@@ -87,8 +89,8 @@ export function MultitrackWorkspace() {
     function travel(operation) { pause(); setResult(null); replace(operation(ref.current)); setSelected(null); setSelection([]); }
     const add = (mediaId, options = {}) => apply(t => addSequenceClip(t, t.media[mediaId].kind === 'audio' ? 'audio' : 'video', mediaId, options));
     async function ingest(file, name = file.name, id = localMediaId(), assetSource,details = {}) {
-        const epoch=sourceGeneration.current,scoped=assetSource || id.startsWith('j-'),account=scoped?getStoredUserId():null;
-        const probe = await probeMedia(file);if(!alive.current || epoch!==sourceGeneration.current)throw new Error('The edit changed. Retry the source in the current edit.');if(scoped && (!account || account!==getStoredUserId()))throw new Error('The account changed. Retry the source from the current account.'); const problem = checkProbe(probe); if (problem) throw new Error(problem);
+        const epoch=sourceGeneration.current,scoped=assetSource || id.startsWith('j-') || librarySourceFromId(id),account=scoped?(getStoredUserId() || 'guest'):null;
+        const probe = await probeMedia(file);if(!alive.current || epoch!==sourceGeneration.current)throw new Error('The edit changed. Retry the source in the current edit.');if(scoped && account!==(getStoredUserId() || 'guest'))throw new Error('The account changed. Retry the source from the current account.'); const problem = checkProbe(probe); if (problem) throw new Error(problem);
         const media = {...mediaFromProbe(id, name, probe),...details,...(assetSource?{assetSource}:{})};
         const next = apply(t => { const withMedia = addSequenceMedia(t, media); if (withMedia.error) return withMedia; const inserted = addSequenceClip(withMedia, media.kind === 'audio' ? 'audio' : 'video', media.id); return inserted.error ? withMedia : inserted; });
         if (!next) throw new Error('This file could not be added within the project limits.');
@@ -96,9 +98,17 @@ export function MultitrackWorkspace() {
     }
     async function files(event) {
         const chosen = [...event.target.files]; event.target.value = ''; setBusy(true);
-        for (const file of chosen) { const bad = checkLocalFile(file).error; if (bad) { setNotice(bad); continue; } try { await ingest(file); } catch (e) { setNotice(e.message || 'Import failed.'); } }
+        for (const file of chosen) { const bad = checkLocalFile(file).error; if (bad) { setNotice(bad); continue; } try { const actor=getStoredUserId() || 'guest',probe=await probeMedia(file);const problem=checkProbe(probe);if(problem)throw new Error(problem);let saved,storageError;try{saved=await saveDeviceLibrary(actor,file,probe,{isCurrent:()=>alive.current && actor===(getStoredUserId() || 'guest')});}catch(e){storageError=e.message;}if(actor!==(getStoredUserId() || 'guest'))throw new Error('The account changed. Retry from the current account.');await ingest(file,file.name,saved?.mediaId || localMediaId());setNotice(saved?'Original saved in Library on this device.':`Imported for this edit only. ${storageError}`); } catch (e) { setNotice(e.message || 'Import failed.'); } }
         if (alive.current) setBusy(false);
     }
+    useEffect(()=>{
+        const id=new URLSearchParams(window.location.search).get('device');if(!id)return;
+        let current=true;const actor=getStoredUserId() || 'guest';
+        void loadDeviceLibrary(actor,id,{isCurrent:()=>current && actor===(getStoredUserId() || 'guest')}).then(({blob,label})=>current && ingest(blob,label,`d-${id}`)).catch(e=>current && setNotice(e.message));
+        return()=>{current=false;};
+        // The URL names a one-time device import; editing state must not restart it.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    },[]);
     async function relink(event) { const file = event.target.files[0]; event.target.value = ''; if (!file) return; setBusy(true); try { const bad = checkLocalFile(file).error; if (bad) throw new Error(bad); const probe = await probeMedia(file), problem = checkProbe(probe); if (problem) throw new Error(problem); const match = matchLocalFile(ref.current.now, file, probe, new Set(blobs.current.keys())); if (!match) throw new Error('Choose the original file with the same name, media type and duration.'); blobs.current.set(match.id, file); setNotice(''); relinked(); } catch (e) { setNotice(e.message); } finally { if (alive.current) setBusy(false); } }
     function selectClip(value, extend = false) {
         const linked = linkedSelection(ref.current.now, value);

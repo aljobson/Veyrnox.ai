@@ -2,9 +2,10 @@ import { EDITOR_RENDER_MAX_BYTES } from './editorDelivery.mjs';
 const HOSTS = new Set(['fb18d9f7052afbea5a5e0eae69948af2.r2.cloudflarestorage.com', 'fb18d9f7052afbea5a5e0eae69948af2.eu.r2.cloudflarestorage.com']);
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
 /** Read a fresh owned link, stream within the saved byte count and verify its hash. */
-export async function loadSavedRender(call, row, { signal, fetchBytes = fetch } = {}) {
+export async function loadSavedRender(call, row, { signal, fetchBytes = fetch, source = 'editor' } = {}) {
     if (!UUID.test(row?.id || '')) throw new Error('The saved video ID is invalid.');
-    const asset = await call(`/library/editor-renders/${row.id}/asset`);
+    if (!['editor','master'].includes(source)) throw new Error('The saved video source is invalid.');
+    const asset = await call(`/library/${source==='master'?'masters':'editor-renders'}/${row.id}/asset`);
     let url;
     try { url = new URL(asset.url); } catch { throw new Error('The saved video link is invalid.'); }
     if (url.protocol !== 'https:' || url.username || url.password || url.port

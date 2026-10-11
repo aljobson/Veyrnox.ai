@@ -1,6 +1,7 @@
 // Browser timeline editor, slice 3 (ADR-0080): a timeline saved inside a project document (v2, lib/projectDocument.js) and
 // reopened later. Pure helpers, no network: the page does the fetching. A document never carries media bytes, so reopening means
 // fetching every Library file again (its id names the generation) and asking for every local file again (never uploaded).
+import { librarySourceFromId } from './editorLibraryCollection.mjs';
 import { emptyTimeline, validateTimeline, FPS } from './editorTimeline.mjs';
 import { withTimeline } from '../../../lib/projectDocument.js';
 
@@ -24,6 +25,7 @@ export function mediaToRelink(tl, loaded = new Set()) {
     for (const m of Object.values(tl.media)) {
         if (loaded.has(m.id) || m.kind === 'graphic' || m.originalAudio) continue;
         if(m.assetSource){assets.push({id:m.id,...m.assetSource,name:m.name});continue;}
+        const saved=librarySourceFromId(m.id);if(saved){library.push({...saved,id:m.id,name:m.name});continue;}
         const jobId = jobIdFromMediaId(m.id);
         if (jobId) library.push({ id: m.id, jobId, name: m.name });
         else local.push({ id: m.id, name: m.name, frames: m.frames, kind: m.kind });
