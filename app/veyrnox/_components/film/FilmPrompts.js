@@ -43,6 +43,6 @@ export function FilmPrompts({film,update,models,live}){
       {failed>=15&&<p role="alert" className="text-sm">Fifteen attempts missed. Simplify the shot card: split the shot, remove an action or change its angle before making another prompt.</p>}
     </>}
     {error&&<p role="alert" className="text-sm text-vx-danger">{error}</p>}
-    {!!film.attempts.length&&<section><h3 className="font-bold">Recorded takes</h3><ul className="mt-3 space-y-2 text-sm">{film.attempts.filter(a=>a.shot===shot.id).map(a=><li key={a.version} className="rounded-lg border border-vx-border p-3">v{a.version} · {a.verdict} · {a.changed}<span className="mt-1 block text-xs text-vx-fg-muted">{a.result}</span><FilmMaster film={film} attempt={a}/></li>)}</ul></section>}
+    {!!film.attempts.length&&<section><h3 className="font-bold">Recorded takes</h3><ul className="mt-3 space-y-2 text-sm">{film.attempts.filter(a=>a.shot===shot.id).map(a=><li key={a.version} className="rounded-lg border border-vx-border p-3">v{a.version} · {a.verdict} · {a.changed}<span className="mt-1 block text-xs text-vx-fg-muted">{a.result}</span><FilmMaster key={`${promptContext(film,shot)}:${a.result}:${a.verdict}`} film={film} attempt={a}/></li>)}</ul></section>}
   </div>;
 }
