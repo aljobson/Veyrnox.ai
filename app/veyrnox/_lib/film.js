@@ -23,6 +23,13 @@ export const BREAKTHROUGH_FILM = {
   poster: '/film/robot-creative-v4.jpg',
   width: 1280,
   height: 720,
+  // A separate portrait composition preserves both hands on narrow screens.
+  mobile: {
+    video: '/film/robot-creative-portrait-v2.mp4',
+    poster: '/film/robot-creative-portrait-v2.jpg',
+    width: 720,
+    height: 1440,
+  },
 };
 
 // Each film is fetched only once half on screen. The cap catches a careless

@@ -15,6 +15,17 @@ const VIEW_THRESHOLD = 0.5;
 
 export function FilmPlayer({ film, label = 'the film', aspectRatio = '16 / 9', frameless = false, mobileFullscreen = false, children }) {
   const videoRef = useRef(null);
+  const [phoneLayout, setPhoneLayout] = useState(false);
+  const activeFilm = phoneLayout && film.mobile ? film.mobile : film;
+
+  useEffect(() => {
+    if (!film.mobile) return undefined;
+    const query = window.matchMedia('(max-width: 639px)');
+    const update = () => setPhoneLayout(query.matches);
+    update();
+    query.addEventListener('change', update);
+    return () => query.removeEventListener('change', update);
+  }, [film]);
   // The visitor pressed Pause: scrolling back must not restart it for them.
   const heldRef = useRef(false);
   const [playing, setPlaying] = useState(false);
@@ -50,7 +61,7 @@ export function FilmPlayer({ film, label = 'the film', aspectRatio = '16 / 9', f
       observer.disconnect();
       reducedQuery.removeEventListener('change', onReducedChange);
     };
-  }, []);
+  }, [activeFilm]);
 
   function toggle() {
     const video = videoRef.current;
@@ -66,10 +77,10 @@ export function FilmPlayer({ film, label = 'the film', aspectRatio = '16 / 9', f
       <div style={mobileFullscreen ? undefined : { aspectRatio }} className={`overflow-hidden bg-[#0a0a0b] ${mobileFullscreen ? 'aspect-auto h-[calc(100dvh-4rem)] sm:aspect-video sm:h-auto' : 'aspect-video'}${frameless ? '' : ' rounded-2xl border border-vx-border'}`}>
         <video
           ref={videoRef}
-          src={film.video}
-          poster={film.poster}
-          width={film.width}
-          height={film.height}
+          src={activeFilm.video}
+          poster={activeFilm.poster}
+          width={activeFilm.width}
+          height={activeFilm.height}
           muted
           loop
           playsInline
@@ -84,7 +95,7 @@ export function FilmPlayer({ film, label = 'the film', aspectRatio = '16 / 9', f
           onPlay={() => setPlaying(true)}
           onPause={() => setPlaying(false)}
           onError={() => setFailed(true)}
-          className={`block h-full w-full${mobileFullscreen ? ' object-cover object-[45%_center] sm:object-contain sm:object-center' : ''}`}
+          className={`block h-full w-full${mobileFullscreen ? ' object-contain object-center' : ''}`}
         />
       </div>
       {children}

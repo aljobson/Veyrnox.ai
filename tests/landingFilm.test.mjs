@@ -22,7 +22,7 @@ function filmPrices() {
 }
 
 test('the films and their posters are in public/, same-origin, with the right extensions', () => {
-    for (const film of [LANDING_FILM, BREAKTHROUGH_FILM]) {
+    for (const film of [LANDING_FILM, BREAKTHROUGH_FILM, BREAKTHROUGH_FILM.mobile]) {
         assert.match(film.video, /^\/film\/[a-z0-9-]+\.mp4$/);
         assert.match(film.poster, /^\/film\/[a-z0-9-]+\.jpg$/);
         assert.ok(existsSync(`${PUBLIC}${film.video}`), `${film.video} is not in public/`);
@@ -31,7 +31,7 @@ test('the films and their posters are in public/, same-origin, with the right ex
 });
 
 test('the films stay under the size cap', () => {
-    for (const film of [LANDING_FILM, BREAKTHROUGH_FILM]) {
+    for (const film of [LANDING_FILM, BREAKTHROUGH_FILM, BREAKTHROUGH_FILM.mobile]) {
         const { size } = statSync(`${PUBLIC}${film.video}`);
         assert.ok(size <= MAX_FILM_BYTES, `${film.video} is ${size} bytes, over the ${MAX_FILM_BYTES} cap: encode it again`);
         assert.ok(statSync(`${PUBLIC}${film.poster}`).size <= 150 * 1024, `${film.poster} is over 150 KB`);
