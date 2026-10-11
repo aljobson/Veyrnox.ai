@@ -147,3 +147,21 @@ or change customer billing.
   found exactly one matching +80 entry, `free_delta = 0`, unchanged zero Free
   and Subscription balances, and balance equal to the ledger sum. The native
   signed-in Credits page displayed 80 Credits.
+
+## 2026-10-11 — Additional tester grant
+
+Al Jobson requested a top-up for the tester account identified in chat, then
+explicitly selected 200 Credits. The Auth email was matched to exactly one
+public user; the account was not frozen and held 10 Free Credits.
+
+- Granted 200 paid-equivalent Credits through `public.ledger_grant` with
+  reason `grant:manual Al Jobson tester credit top-up` and idempotency key
+  `codex-tester-75f72797-20261011-200-01`. Reuse this key if the outcome is
+  unknown; do not issue a duplicate grant.
+- RPC result: `ok: true`, `idempotent: false`, ledger entry
+  `0c80b4f3-1705-48fa-9042-b0ca40018606`, balance 10 -> 210.
+- Read-only verification found exactly one matching grant totaling +200 and
+  balance equal to the ledger sum (210). The existing Free balance stayed 10
+  and the Subscription balance stayed zero.
+- This is a tester grant for real provider calls, not purchase revenue.
+  No balance or ledger row was edited directly.
