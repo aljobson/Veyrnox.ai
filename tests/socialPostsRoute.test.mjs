@@ -29,6 +29,20 @@ const validBody = () => ({
     media: [{ mediaType: 'image', jobId }],
 });
 
+test('POST: only the verified TikTok review subject can queue a sandbox image', async () => {
+    const names = ['PUBLISH_RELEASED_NETWORKS', 'TIKTOK_REVIEW_ENABLED', 'TIKTOK_REVIEW_AUTH_IDS'];
+    const previous = names.map(k => process.env[k]);
+    Object.assign(process.env, { PUBLISH_RELEASED_NETWORKS: 'youtube,linkedin', TIKTOK_REVIEW_ENABLED: 'true', TIKTOK_REVIEW_AUTH_IDS: auth });
+    try {
+        for (const identity of [auth, '99999999-9999-4999-8999-999999999999']) {
+            stub({ list_social_accounts: { ok: true, accounts: [{ id: accountId, network: 'tiktok', status: 'active' }] } });
+            const res = await POST(postRequest(validBody(), { 'x-veyrnox-auth-id': identity }));
+            assert.equal(res.status, identity === auth ? 201 : 400);
+            assert.equal(calls.some(c => c.name === 'create_social_post'), identity === auth);
+        }
+    } finally { names.forEach((k, i) => { if (previous[i] === undefined) delete process.env[k]; else process.env[k] = previous[i]; }); }
+});
+
 let calls;
 function stub(results = {}) {
     calls = [];

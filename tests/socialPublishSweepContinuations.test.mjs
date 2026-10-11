@@ -20,7 +20,7 @@ function target(overrides = {}) {
         target_id: 't-1', post_id: 'p-1', account_id: 'a-1', network: 'instagram',
         text_override: null, global_text: 'caption', brand_id: 'b-1', attempts: 1,
         access_token_enc: null, external_account_id: 'ig-42',
-        media_type: 'image', r2_key: 'assets/a.jpg',
+        media_type: 'image', mime_type: 'image/jpeg', r2_key: 'assets/a.jpg',
         ...overrides,
     };
 }
@@ -39,6 +39,22 @@ async function withFetch(rpcHandlers, run) {
 }
 
 // ── TikTok: MEDIA_UPLOAD mode, submit-then-poll ─────────────────────────
+
+test('TikTok: unsupported photo MIME fails without submitting to the provider', async () => {
+    const accessTokenEnc = await encryptToken('tt-access-token', cryptoCfg);
+    for (const mime of ['image/png', 'image/gif', undefined]) {
+        let failure;
+        await withFetch({
+            claim_due_social_post_targets: async () => [target({ network: 'tiktok', access_token_enc: accessTokenEnc, mime_type: mime })],
+            complete_social_post_target: async body => { failure = body; return { ok: true }; },
+        }, async () => {
+            const out = await runPublishSweep(asyncDeps);
+            assert.equal(out.failed, 1);
+            assert.equal(out.errors, 0);
+            assert.equal(failure.p_error, 'tiktok_photo_format_not_supported');
+        });
+    }
+});
 
 test('TikTok: first dispatch proxies the media through our own domain and reports the publish_id back as in-progress', async () => {
     const accessTokenEnc = await encryptToken('tt-access-token', cryptoCfg);

@@ -13,7 +13,7 @@ const reply = (body, status = 200) => NextResponse.json(body, { status, headers:
 function context(req) {
     const authId = req.headers.get('x-veyrnox-auth-id');
     if (!authId || !UUID_RE.test(authId)) return { error: reply({ error: 'not_authenticated' }, 401) };
-    if (!socialUploadsEnabled()) return { error: reply({ error: 'uploads_not_open' }, 503) };
+    if (!socialUploadsEnabled(process.env, authId)) return { error: reply({ error: 'uploads_not_open' }, 503) };
     const cfg = envConfig(), r2cfg = r2EnvConfig();
     if (!cfg.supabaseUrl || !cfg.serviceRoleKey || !isConfigured(r2cfg)) return { error: reply({ error: 'not_configured' }, 503) };
     return { authId, cfg, r2cfg };

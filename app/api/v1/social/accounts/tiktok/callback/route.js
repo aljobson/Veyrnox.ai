@@ -24,9 +24,10 @@
 
 import { NextResponse } from 'next/server';
 import { socialConnectionWriter, freeSocialAccountLimit } from '../../../../../../../lib/social/accountAllowance.js';
-import { networkReleased } from '../../../../../../../lib/social/networks.js';
+import { tiktokAvailable, tiktokReviewAllowed } from '../../../../../../../lib/social/tiktokReview.js';
+import { tiktokConnectionConfig, wrapTiktokToken } from '../../../../../../../lib/social/tiktokReviewTokens.js';
 import { rpc, envConfig, SupabaseError } from '../../../../../../../packages/db/supabase-client.js';
-import { tiktokConfig, exchangeCodeForToken, fetchConnectedAccount } from '../../../../../../../packages/adapters/social/tiktok.js';
+import { exchangeCodeForToken, fetchConnectedAccount } from '../../../../../../../packages/adapters/social/tiktok.js';
 import { verifyOAuthState } from '../../../../../../../lib/social/oauthState.js';
 import { tokenCryptoConfig, encryptToken } from '../../../../../../../lib/social/tokenCrypto.js';
 
@@ -41,10 +42,10 @@ export async function POST(req) {
         return NextResponse.json({ error: 'not_authenticated' }, { status: 401 });
     }
 
-    if (!networkReleased('tiktok')) return NextResponse.json({ error: 'network_unavailable' }, { status: 404 });
+    if (!tiktokAvailable(authId)) return NextResponse.json({ error: 'network_unavailable' }, { status: 404 });
 
     const cfg = envConfig();
-    const ttCfg = tiktokConfig();
+    const ttCfg = tiktokConnectionConfig(authId);
     const stateSecret = process.env.SOCIAL_OAUTH_STATE_SECRET;
     const cryptoCfg = tokenCryptoConfig();
     const publicHost = process.env.PUBLIC_HOST;
@@ -102,8 +103,9 @@ export async function POST(req) {
     let accessTokenEnc;
     let refreshTokenEnc = null;
     try {
-        accessTokenEnc = await encryptToken(account.accessToken, cryptoCfg);
-        if (account.refreshToken) refreshTokenEnc = await encryptToken(account.refreshToken, cryptoCfg);
+        const review = tiktokReviewAllowed(authId);
+        accessTokenEnc = wrapTiktokToken(await encryptToken(account.accessToken, cryptoCfg), review);
+        if (account.refreshToken) refreshTokenEnc = wrapTiktokToken(await encryptToken(account.refreshToken, cryptoCfg), review);
     } catch (err) {
         console.error('[api/v1/social/accounts/tiktok/callback] token encryption failed:', err && err.message);
         return NextResponse.json({ error: 'internal' }, { status: 502 });

@@ -411,6 +411,9 @@
   //                               calls (packages/adapters/social/twitter.js, ADR-0061). Not
   //                               yet provisioned.
   //   TIKTOK_CLIENT_KEY, TIKTOK_CLIENT_SECRET
+  //   TIKTOK_REVIEW_ENABLED          exact "true" opens only the review allowlist
+  //   TIKTOK_REVIEW_AUTH_IDS         verified Auth UUIDs; keep private
+  //   TIKTOK_REVIEW_CLIENT_KEY, TIKTOK_REVIEW_CLIENT_SECRET  sandbox app only
   //                               TikTok OAuth connect/callback + Content Posting API publish
   //                               (packages/adapters/social/tiktok.js, ADR-0061 Phase 5).
   //                               MEDIA_UPLOAD mode (draft to the creator's own TikTok inbox,

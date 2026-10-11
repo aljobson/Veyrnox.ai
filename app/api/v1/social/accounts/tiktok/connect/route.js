@@ -17,9 +17,10 @@
  */
 
 import { NextResponse } from 'next/server';
-import { networkReleased } from '../../../../../../../lib/social/networks.js';
+import { tiktokAvailable } from '../../../../../../../lib/social/tiktokReview.js';
+import { tiktokConnectionConfig } from '../../../../../../../lib/social/tiktokReviewTokens.js';
 import { envConfig } from '../../../../../../../packages/db/supabase-client.js';
-import { tiktokConfig, buildAuthorizeUrl } from '../../../../../../../packages/adapters/social/tiktok.js';
+import { buildAuthorizeUrl } from '../../../../../../../packages/adapters/social/tiktok.js';
 import { createOAuthState } from '../../../../../../../lib/social/oauthState.js';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -35,10 +36,10 @@ export async function POST(req) {
         return NextResponse.json({ error: 'not_authenticated' }, { status: 401 });
     }
 
-    if (!networkReleased('tiktok')) return NextResponse.json({ error: 'network_unavailable' }, { status: 404 });
+    if (!tiktokAvailable(authId)) return NextResponse.json({ error: 'network_unavailable' }, { status: 404 });
 
     const cfg = envConfig();
-    const ttCfg = tiktokConfig();
+    const ttCfg = tiktokConnectionConfig(authId);
     const stateSecret = process.env.SOCIAL_OAUTH_STATE_SECRET;
     const publicHost = process.env.PUBLIC_HOST;
     if (!cfg.supabaseUrl || !cfg.serviceRoleKey || !ttCfg || !stateSecret || !publicHost) {

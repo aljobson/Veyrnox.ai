@@ -72,6 +72,22 @@ test('disabled uploads and unauthenticated requests fail before network access',
     assert.equal((await GET(req(null,'GET'))).status,503);
     process.env.PUBLISH_UPLOADS_ENABLED = 'true'; assert.equal(called,false);
 });
+
+test('disabled public uploads stay closed to non-testers while the TikTok reviewer can reserve media', async () => {
+    const names = ['PUBLISH_UPLOADS_ENABLED','PUBLISH_RELEASED_NETWORKS','TIKTOK_REVIEW_ENABLED','TIKTOK_REVIEW_AUTH_IDS'];
+    const previous = names.map(k => process.env[k]);
+    Object.assign(process.env, { PUBLISH_UPLOADS_ENABLED:'false', PUBLISH_RELEASED_NETWORKS:'youtube,linkedin',
+        TIKTOK_REVIEW_ENABLED:'true', TIKTOK_REVIEW_AUTH_IDS:auth });
+    try {
+        let called = false; globalThis.fetch = async () => { called = true; throw new Error('unexpected'); };
+        assert.equal((await GET(req(null,'GET','99999999-9999-4999-8999-999999999999'))).status,503);
+        assert.equal(called,false);
+        const calls = stub();
+        const res = await POST(req({ action:'reserve',rights_confirmed:true,filename:'test.jpg',content_type:'image/jpeg',size_bytes:1024 }));
+        assert.equal(res.status,200);
+        assert.equal(calls.some(c => c.path.endsWith('/reserve_social_upload')),true);
+    } finally { names.forEach((k,i) => { if(previous[i]===undefined)delete process.env[k];else process.env[k]=previous[i]; }); }
+});
 test('files referenced by posts cannot be removed', async () => {
     stub({ removed:{ ok:false,code:'UPLOAD_IN_USE' } });
     assert.equal((await DELETE(req({ id },'DELETE'))).status,409);
