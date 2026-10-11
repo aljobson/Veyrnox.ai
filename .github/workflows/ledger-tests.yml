@@ -194,6 +194,7 @@ jobs:
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-discovery.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-weighted-rankings.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-retention.mjs
+          DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-creator-analytics.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-admin-credit-grant-guards.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-operator-actions.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-administrator-provisioning.mjs

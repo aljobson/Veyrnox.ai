@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { getSession, onSessionChange } from '../../../lib/authClient';
 import { gatewayFetch } from '../../_lib/gateway';
 import { VideoUpload } from './VideoUpload';
+import { CreatorAnalytics } from './CreatorAnalytics';
 import { Button } from '../../_components/Button';
 import { AI_DISCLOSURES, CINEMA_CATEGORIES, MAX_CATEGORIES } from '../../../../lib/cinema/domain';
 import { useCinemaPreview } from '../preview';
@@ -15,12 +16,12 @@ const RIGHTS_VERSION = 'rights-2026-09-26';
 const RIGHTS_TEXT = 'I own or hold the rights to everything in this title, including any real people, voices, music and footage, and I have declared its AI use truthfully. I understand it will be reviewed before it is published, that viewers may pay to watch it, and that a withdrawal or suspension refunds their credits.';
 const disclosureLabels = { generated_video: 'Generated video', generated_voice: 'Generated voice', generated_music: 'Generated music', synthetic_people: 'Synthetic people', face_replacement: 'Face replacement', cloned_voice: 'Cloned voice', generated_script: 'Generated script', manipulated_real_world_footage: 'Manipulated real-world footage' };
 const input = 'mt-2 w-full rounded-xl border border-vx-border bg-vx-panel px-4 py-3 text-vx-fg focus:outline-solid focus:outline-2 focus:outline-vx-accent';
-export function CreatorWorkspace({proxyUploadsEnabled=false}) {
+export function CreatorWorkspace({proxyUploadsEnabled=false, analyticsEnabled=false}) {
   const account = useSyncExternalStore(onSessionChange, identity, noIdentity);
   const preview = useCinemaPreview();
   if (!preview) return <p role="status" className="mt-8">The creator workspace is in preview and is not open yet.</p>;
   if (!account) return <div className="mt-8"><p className="mb-4">Sign in with your approved Cinema creator account.</p><Button onClick={() => window.dispatchEvent(new CustomEvent('veyrnox:auth-required'))}>Sign in</Button></div>;
-  return <Drafts key={account} proxyUploadsEnabled={proxyUploadsEnabled} />;
+  return <div key={account}><Drafts proxyUploadsEnabled={proxyUploadsEnabled} />{analyticsEnabled && <CreatorAnalytics />}</div>;
 }
 function Drafts({proxyUploadsEnabled}) {
   const [path, setPath] = useState([]), [items, setItems] = useState([]);
