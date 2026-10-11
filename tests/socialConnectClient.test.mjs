@@ -35,7 +35,7 @@ globalThis.window = {
 globalThis.CustomEvent = class CustomEvent { constructor(type, opts) { this.type = type; Object.assign(this, opts); } };
 
 const {
-    NETWORKS, connectNetwork, completeNetworkConnect, listSocialAccounts, disconnectSocialAccount,
+    NETWORKS, CATALOGUE_NETWORKS, connectNetwork, completeNetworkConnect, listSocialAccounts, disconnectSocialAccount,
 } = await import('../app/lib/socialConnectClient.js');
 
 const pkceKey = (network) => `veyrnox_social_pkce_verifier_${network}`;
@@ -50,8 +50,9 @@ function stubFetch(handler) {
 }
 const okJson = (obj) => new Response(JSON.stringify(obj), { status: 200, headers: { 'content-type': 'application/json' } });
 
-test('NETWORKS includes eleven native integrations and excludes Twitch from post destinations', () => {
+test('the catalogue removes Pinterest while preserving integration metadata and Twitch statistics', () => {
     assert.deepEqual(NETWORKS.map((n) => n.key), ['instagram', 'linkedin', 'twitter', 'tiktok', 'youtube', 'facebook', 'threads', 'pinterest', 'bluesky', 'twitch', 'gmb']);
+    assert.deepEqual(CATALOGUE_NETWORKS.map((n) => n.key), ['instagram', 'linkedin', 'twitter', 'tiktok', 'youtube', 'facebook', 'threads', 'bluesky', 'twitch', 'gmb']);
     assert.equal(NETWORKS.find((n) => n.key === 'twitch').media.length, 0);
 });
 

@@ -17,9 +17,10 @@
  */
 
 import { gatewayFetch } from '../veyrnox/_lib/gateway.js';
-import { SOCIAL_NETWORKS } from '../../lib/social/networks.js';
+import { SOCIAL_NETWORKS, SOCIAL_CATALOGUE } from '../../lib/social/networks.js';
 
 export const NETWORKS = SOCIAL_NETWORKS.map((network) => ({ ...network, live: true }));
+export const CATALOGUE_NETWORKS = SOCIAL_CATALOGUE.map((network) => ({ ...network, live: true }));
 
 function pkceKey(network) {
     return `veyrnox_social_pkce_verifier_${network}`;
