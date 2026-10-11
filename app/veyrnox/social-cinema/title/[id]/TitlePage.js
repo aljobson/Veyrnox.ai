@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { CinemaComments } from '../../CinemaComments';
 import { CinemaVoting } from '../../CinemaVoting.js';
+import { CinemaRetentionControls } from '../../CinemaRetention';
 import { CinemaShare } from '../../CinemaShare';
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import { Button } from '../../../_components/Button';
@@ -73,6 +74,7 @@ export function TitlePage({ id }) {
     <p className="mt-3 text-vx-fg-muted">by <Link href={`/social-cinema`} className="underline">{title.creator?.display_name}</Link> · {title.language}{title.categories?.length ? ` · ${title.categories.join(', ')}` : ''}{title.ai_disclosures?.length ? ` · AI: ${title.ai_disclosures.join(', ').replaceAll('_', ' ')}` : ''}</p>
     {title.synopsis && <p className="mt-6 max-w-2xl leading-relaxed text-vx-fg-body whitespace-pre-wrap wrap-break-word">{title.synopsis}</p>}
     <CinemaShare key={id} id={id} title={title.title} />
+    <CinemaRetentionControls contentId={id} />
     {notice && <p role="status" aria-live="polite" className="mt-6 rounded-lg border border-vx-border bg-vx-base/60 px-4 py-3 text-sm">{notice}</p>}
     {locked && account && <div className="mt-8 rounded-2xl border border-vx-border p-5">
       <label className="flex items-start gap-3 text-sm text-vx-fg-body"><input type="checkbox" className="mt-1" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} /><span>{CONSENT_TEXT}</span></label>
