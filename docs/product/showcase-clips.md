@@ -139,30 +139,43 @@ the second breaks it outward, then its head and shoulders emerge toward the
 viewer. The clip contains the official Veyrnox.ai mark and wordmark and a
 large “DO YOU FEEL CREATIVE?” question. No crowd appears.
 
-The animation was generated through Veyrnox with Kling 3.0 Pro image-to-video.
-The five-second motion was extended with a final-pose hold and the branding
-was composited locally. The approved export is `robot-hero-v4.mp4`; the
-matching poster is `robot-poster-v4.jpg`.
+The current portrait and landscape animations were generated through Veyrnox
+on 11 October 2026 with Kling 3.0 Pro image-to-video (`kie`, no audio),
+28 Credits per five-second render. Portrait job
+`d61b8b60-1fe7-4bc8-93e0-640ded264d19` and landscape job
+`57859cc3-6b6e-47a4-8abf-8663faeeb06c` use matching starting references
+with smooth, rigid, flat white chest armor. The owner approved the
+100-Credit administrative grant recorded in ADR-0096; the two renders
+consumed 56 Credits.
 
-`BREAKTHROUGH_FILM` serves the eight-second silent H.264 export from
-`/film/robot-creative-v4.mp4`, with `/film/robot-creative-v4.jpg` as its poster.
-The player spans the full viewport width immediately below the navigation,
-with no outer padding, border or rounded frame. Desktop displays the complete
-1,280 × 720 landscape frame without cropping. Below 640px, the player selects
-`/film/robot-creative-portrait-v2.mp4` and its matching JPG poster: a dedicated
-portrait scene generated through Veyrnox with Kling 2.6 Pro at 9:16. Its two
-separate impacts crack then break the glass, and the android brings its head
-and shoulders forward through the broken frame. Both hands stay within the
-narrow composition. This five-second native portrait animation is extended
-to eight seconds with a final-pose hold and the official Veyrnox.ai branding.
-The 720 × 1,280 motion has 80px of matching dark background above and below,
-producing a 720 × 1,440 export suited to the viewport below a phone's navigation.
-The complete portrait frame is contained in the hero, preserving the hands
-on other phone shapes too. A readable question and “Start creating” link sit
-over the lower part of the portrait video. The opening announcement is hidden
-on phones so this hero fills the first screen. Desktop keeps the creation
-link beneath the approved wide video; both links open `/app/create`. The
-fifteen-second product film follows it.
+Both clips show a first impact that cracks the glass, a retraction, a second
+impact that breaks it outward, and a forward head-and-shoulder breakout.
+The final extended index finger emits cyan light. Exact typography was
+composited locally: a white “DO YOU FEEL” line and larger aqua “CREATIVE?”
+line with a translucent projection beam connected to the fingertip. The
+hologram fades in from 3.6 to 4.0 seconds as the forward pose forms and stays
+through a three-second final hold. It floats above the finger without
+covering the face or hands. The official Veyrnox.ai mark and wordmark remain
+at the top left throughout. The exports are silent, eight-second H.264 files.
+
+`BREAKTHROUGH_FILM` serves `/film/robot-creative-v5.mp4` with its matching
+JPG poster. The player spans the full viewport width immediately below the
+navigation, with no outer padding, border or rounded frame. Desktop displays
+the complete 1,280 × 720 landscape frame without cropping. Below 640px, it
+selects `/film/robot-creative-portrait-v3.mp4` and its matching JPG poster.
+The portrait animation is scaled to 720 × 1,280 with 80px of matching dark
+background above and below, producing a 720 × 1,440 export. The complete
+portrait frame is contained in the full-screen stage below the phone's
+navigation, preserving both hands on other phone shapes too.
+
+The mobile question is baked into the video, with no duplicate bottom
+caption or large gradient obscuring the robot. “Start creating” remains a
+separate accessible link at the bottom of the phone stage. The opening
+announcement is hidden on phones so this hero fills the first screen.
+Desktop keeps its creation link beneath the wide video; both links open
+`/app/create`. The fifteen-second product film follows it.
+
 The existing `FilmPlayer` supplies visible Play/Pause, pauses off screen,
 leaves the poster still for reduced motion/data saver, and fetches the file
-only when playback begins. The video stays under the 2 MB film budget.
+only when playback begins. Both videos remain under the 2 MB film budget;
+posters remain under 150 KB. Posters use the final branded hologram pose.
