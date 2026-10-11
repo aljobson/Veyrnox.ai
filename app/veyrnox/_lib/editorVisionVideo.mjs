@@ -1,14 +1,18 @@
+import {personLightProblem,lightPersonPixels} from './editorPersonLight.mjs';
+import { regionBounds, smoothRegion, reshapeProblem, reshapePersonPixels } from './editorPersonGeometry.mjs';
 import { createVisionProcessor } from './editorVisionWorkerClient.mjs';
 import { processVisionPixels, personFraming, validateVisionSettings } from './editorVisionPixelProcessing.mjs';
 import { processMotionVideo } from './editorMotionVideo.mjs';
 import { MOTION_VIDEO_LIMITS, trackedCrop } from './editorMotionProcessing.mjs';
 import { checkMotionSignal } from './editorMotionAnalysis.mjs';
-export const VISION_TOOLS = Object.freeze(['remove-background', 'replace-background', 'skin-retouch', 'person-glow', 'person-reframe']);
+export const VISION_TOOLS = Object.freeze(['remove-background', 'replace-background', 'skin-retouch', 'person-glow', 'person-reframe', 'person-reshape', 'person-light']);
 /** Real local person segmentation, baked into an ordinary new MP4 without modifying the original. */
 export async function processVisionVideo(blob, options = {}) {
     if (!VISION_TOOLS.includes(options.tool)) throw new Error('Choose a local person tool.');
     if (options.tool === 'person-reframe' && ![9 / 16, 1, 16 / 9].includes(options.aspect)) throw new Error('Choose portrait, square or landscape framing.');
-    if (options.tool !== 'person-reframe') { const problem = validateVisionSettings(options); if (problem) throw new Error(problem); }
+    if (options.tool === 'person-light') { const problem = personLightProblem(options); if (problem) throw new Error(problem); }
+    if (options.tool === 'person-reshape') { const problem = reshapeProblem(options); if (problem) throw new Error(problem); }
+    if (!['person-reframe','person-reshape','person-light'].includes(options.tool)) { const problem = validateVisionSettings(options); if (problem) throw new Error(problem); }
     if (options.height !== undefined && ![360, 480, 720].includes(options.height)) throw new Error('Choose a supported processing size.');
     if (!(blob instanceof Blob) || blob.size < 1 || blob.size > MOTION_VIDEO_LIMITS.sourceBytes || !['video/mp4', 'video/quicktime', 'video/webm'].includes(blob.type)) throw new Error('Choose an MP4, MOV or WebM video under 100 MiB.');
     if (options.onProgress !== undefined && typeof options.onProgress !== 'function') throw new Error('Choose a valid processing callback.');
@@ -16,6 +20,7 @@ export async function processVisionVideo(blob, options = {}) {
     options.onProgress?.({ stage: 'model', done: 0, total: 1 });
     const processor = await createVisionProcessor({ signal: options.signal });
     options.onProgress?.({ stage: 'model', done: 1, total: 1 });
+    let regionFrames = 0, lastRegion = null;
     let personFrames = 0, noPersonFrames = 0, multipleFrames = 0, lastCentre = { x: .5, y: .5 }, masks, maskTime = -1, inferenceCount = 0;
     try {
         const result = await processMotionVideo(blob, {
@@ -34,12 +39,18 @@ export async function processVisionVideo(blob, options = {}) {
                     const crop = trackedCrop(picture.width, picture.height, options.aspect, lastCentre);
                     context.resetTransform(); context.clearRect(0, 0, width, height); context.drawImage(picture, crop.x, crop.y, crop.width, crop.height, 0, 0, width, height);
                 } else {
-                    const pixels = context.getImageData(0, 0, width, height), processed = processVisionPixels(pixels, masks, options);
+                    const pixels = context.getImageData(0, 0, width, height);
+                    lastRegion = ['person-reshape','person-light'].includes(options.tool) ? smoothRegion(lastRegion, regionBounds(masks, framing, options.tool==='person-light'?'body':options.region)) : null;
+                    if (lastRegion) regionFrames++;
+                    const processed = options.tool === 'person-light' ? lightPersonPixels(pixels,masks,lastRegion,options) : options.tool === 'person-reshape' ? reshapePersonPixels(pixels, lastRegion, options) : processVisionPixels(pixels, masks, options);
                     context.putImageData(new ImageData(processed.data, width, height), 0, 0);
                 }
             },
         });
-        result.report = { ...result.report, tool: options.tool, personFrames, noPersonFrames, multiplePersonRegionFrames: multipleFrames, inferenceCount, labels: processor.labels, limits: ['Uses a 256-pixel person model; hair, fast movement, low light and occlusion can reduce quality.'] };
+        if (['person-reshape','person-light'].includes(options.tool) && !regionFrames) throw new Error('No reliable '+(options.tool==='person-light'?'person':options.region)+' region was detected. Choose another source; no processed result was created.');
+        result.report = { ...result.report, tool: options.tool, ...(options.tool==='person-reshape'?{region:options.region}:{}), regionFrames, personFrames, noPersonFrames, multiplePersonRegionFrames: multipleFrames, inferenceCount, labels: processor.labels, limits: ['Uses a 256-pixel person model; hair, fast movement, low light and occlusion can reduce quality.'] };
+        if (options.tool === 'person-light') result.report.limits.push('Directional 2D colour/exposure follows the person matte. No depth estimation, reconstructed shadows or 3D surface normals. Review mask edges and clipped highlights.');
+        if (options.tool === 'person-reshape') result.report.limits.push(`2D ${options.region} warp follows the largest person region, with smoothed bounds. Nearby background can bend. ${personFrames + noPersonFrames - regionFrames} frames had no reliable reshape region and remain unchanged.`);
         if (options.tool === 'skin-retouch') result.report.limits.push('Mask-based smoothing and optional skin light adjustment; no face or body reshaping.');
         if (options.tool === 'remove-background') result.report.limits.push('Transparent VP9/WebM for silent videos only; source audio is never discarded.');
         if (options.tool === 'replace-background') result.report.limits.push('Bakes a chosen solid background into MP4; the output does not have an alpha channel.');
@@ -47,7 +58,7 @@ export async function processVisionVideo(blob, options = {}) {
         if (noPersonFrames) result.report.limits.push(`No reliable person mask in ${noPersonFrames} frames. Inspect the result.`);
         const name = String(options.name || 'source').replace(/\.[^.]+$/, '').replace(/[^\p{L}\p{N}_-]+/gu, '-').slice(0, 60) || 'source';
         const extension = options.tool === 'remove-background' ? 'webm' : 'mp4';
-        result.file = new File([result.blob], `${name}-${options.tool}.${extension}`, { type: result.blob.type });
+        result.file = new File([result.blob], `${name}-${options.tool}${options.tool==='person-reshape'?'-'+options.region:''}.${extension}`, { type: result.blob.type });
         return result;
     } finally { processor.close(); }
 }

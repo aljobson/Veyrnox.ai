@@ -1,6 +1,6 @@
 # Camera-generation controls — 11 October 2026
 
-Status: local implementation and explicit Reticle journeys passed; production release pending.
+Status: production release and actual live controls verified. PR #890 (squash `e90bab763ee6b4b8c206f92dac36ac293abb3e7c`) deployed successfully in run 38151336301 at 15:31:42 UTC. Worker `392d36da-a0b0-4e6e-9966-f5a8a2ba15c1` served 100%; live FAL/KIE direction, pace, quote and missing-source/full-prompt preflight passed without a paid job.
 
 ## Contract and scope
 
