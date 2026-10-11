@@ -30,7 +30,7 @@ export async function refreshAccessToken(_cfg, token, fetcher = fetch) {
     const { jwt, pds } = unpack(token);
     return session(await jsonRequest(`${pds}/xrpc/com.atproto.server.refreshSession`, { method: 'POST', headers: bearer(jwt) }, fetcher), pds);
 }
-export async function publishPost(token, { externalAccountId, caption, mediaType, mediaUrl, targetId }, fetcher = fetch) {
+export async function publishPost(token, { externalAccountId, caption, mediaType, mediaUrl, targetId }, fetcher = fetch, beforePublish = async () => {}) {
     requireImage(mediaType);
     if ([...new Intl.Segmenter('en', { granularity: 'grapheme' }).segment(caption)].length > 300) throw new Error('caption_too_long');
     const { jwt, pds } = unpack(token);
@@ -41,6 +41,7 @@ export async function publishPost(token, { externalAccountId, caption, mediaType
     const { bytes, mime } = await readImage(mediaUrl, 1000000, fetcher);
     const blob = await jsonRequest(`${pds}/xrpc/com.atproto.repo.uploadBlob`, { method: 'POST', headers: { ...bearer(jwt), 'Content-Type': mime }, body: bytes }, fetcher);
     if (!blob.blob) throw new Error('missing_blob');
+    await beforePublish();
     const data = await jsonRequest(`${pds}/xrpc/com.atproto.repo.putRecord`, { ...jsonBody({ repo: externalAccountId, collection: 'app.bsky.feed.post', rkey,
         record: { $type: 'app.bsky.feed.post', text: caption, createdAt: new Date().toISOString(),
             embed: { $type: 'app.bsky.embed.images', images: [{ alt: caption, image: blob.blob }] } } }),

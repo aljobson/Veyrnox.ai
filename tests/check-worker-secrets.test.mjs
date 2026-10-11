@@ -238,3 +238,13 @@ test('run as the workflow runs it: exit 0 when every name is there, exit 1 and t
         rmSync(dir, { recursive: true, force: true });
     }
 });
+
+test('scanner key is optional off, required on, and preserved once present', () => {
+    const off = { resources: { bindings: [{ name: 'CONTENT_SCAN_ENABLED', type: 'plain_text', text: 'false' }] } };
+    const on = { resources: { bindings: [{ name: 'CONTENT_SCAN_ENABLED', type: 'plain_text', text: 'true' }] } };
+    assert.doesNotThrow(() => assertPreserved([], [off]));
+    assert.throws(() => assertPreserved([], [on]), /OPENAI_API_KEY/);
+    on.resources.bindings.push({ name: 'OPENAI_API_KEY', type: 'secret_text' });
+    assert.doesNotThrow(() => assertPreserved([], [on]));
+    assert.throws(() => assertPreserved(['OPENAI_API_KEY'], [off]), /OPENAI_API_KEY/);
+});

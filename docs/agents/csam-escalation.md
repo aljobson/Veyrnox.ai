@@ -84,3 +84,9 @@ message about it gets no detail: "This account is under review."
 - A hotline. Users report through **Report** on a Library card or
   `/app/account/report`, which lands in `/app/admin/reports` with CSAM at the
   top. That page is checked at least daily while the site is live.
+
+## Scanner holds
+
+A scanner hold is a report for human review, never an automatic CSAM escalation. In the reports queue, use **View held image**: this administrator-only five-minute link logs `held_asset_viewed` on every inspection. If the image is CSAM, use **Escalate (CSAM)** from the violations page as today. The scanner's `sexual/minors` category is text-only, so image classification cannot determine this for you. Release a mistaken hold with a reason; the action is logged and open scanner reports are resolved. After a takedown, release resolves the report but cannot restore the deleted file.
+
+When disabling scanning, turn off `CONTENT_SCAN_ENABLED`, then use **Scanner: disarm monitoring** on the reports page with a reason. Monitoring remains armed through outages until explicitly disarmed. The reports page displays unavailable scans from the last 24 hours even when there are no reports; unavailable scans are never held.

@@ -125,7 +125,7 @@ export default function Library() {
             return { ...hydrateFromHistory({ ...h, job_id: j.job_id, model_id: j.model_id, credits: j.credits }),
               name: h.name || j.label, prompt: h.prompt || j.label,
               submitted_at: h.submitted_at || Date.parse(j.created_at) || undefined,
-              state: j.state, refunded: j.refunded, error_code: j.error_code, has_asset: j.has_asset, asset_expires_at: j.asset_expires_at };
+              state: j.state, refunded: j.refunded, error_code: j.error_code, has_asset: j.has_asset, held: j.held, ...(j.held ? { asset_url: undefined } : {}), asset_expires_at: j.asset_expires_at };
           });
           // A job submitted seconds ago may not be in this page yet; keep it.
           const seen = new Set(server.map((r) => r.job_id));
@@ -156,8 +156,8 @@ export default function Library() {
           if (j.state === 'succeeded') {
             try {
               const a = await gatewayFetch(`/jobs/${h.job_id}/asset`);
-              return { ...merged, asset_url: a.url, mime_type: a.mime_type, has_asset: true, asset_expires_at: a.asset_expires_at };
-            } catch { return merged; }
+              return { ...merged, asset_url: a.url, mime_type: a.mime_type, has_asset: true, held: false, asset_expires_at: a.asset_expires_at };
+            } catch (e) { return e.code === 'held' ? { ...merged, held: true, has_asset: false, asset_url: undefined } : merged; }
           }
           return merged;
         } catch (e) {
@@ -199,8 +199,8 @@ export default function Library() {
             try {
               const a = await gatewayFetch(`/jobs/${r.job_id}/asset`);
               notifyBalanceChanged();
-              return { ...r, ...j, asset_url: a.url, mime_type: a.mime_type, has_asset: true, asset_expires_at: a.asset_expires_at };
-            } catch { notifyBalanceChanged(); return { ...r, ...j }; }
+              return { ...r, ...j, asset_url: a.url, mime_type: a.mime_type, has_asset: true, held: false, asset_expires_at: a.asset_expires_at };
+            } catch (e) { notifyBalanceChanged(); return { ...r, ...j, ...(e.code === 'held' ? { held: true, has_asset: false, asset_url: undefined } : {}) }; }
           }
           if (j.state === 'failed') { notifyBalanceChanged(); return { ...r, ...j }; }
           // Same state as last tick: return the identical object so `rows` keeps
@@ -240,7 +240,7 @@ export default function Library() {
         const older = page.jobs.filter((j) => !seen.has(j.job_id)).map((j) => ({
           ...hydrateFromHistory({ job_id: j.job_id, model_id: j.model_id, credits: j.credits }),
           name: j.label, prompt: j.label, submitted_at: Date.parse(j.created_at) || undefined,
-          state: j.state, refunded: j.refunded, error_code: j.error_code, has_asset: j.has_asset, asset_expires_at: j.asset_expires_at,
+          state: j.state, refunded: j.refunded, error_code: j.error_code, has_asset: j.has_asset, held: j.held, ...(j.held ? { asset_url: undefined } : {}), asset_expires_at: j.asset_expires_at,
         }));
         return [...prev, ...older];
       });

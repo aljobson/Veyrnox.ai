@@ -34,9 +34,10 @@ export async function fetchCandidates(token, fetcher = fetch) {
     }
     return items;
 }
-export async function publishPost(token, { externalAccountId, caption, mediaType, mediaUrl }, fetcher = fetch) {
+export async function publishPost(token, { externalAccountId, caption, mediaType, mediaUrl }, fetcher = fetch, beforePublish = async () => {}) {
     requireImage(mediaType);
     if (!/^accounts\/\d+\/locations\/\d+$/.test(externalAccountId)) throw new Error('invalid_location');
+    await beforePublish();
     const data = await jsonRequest(`https://mybusiness.googleapis.com/v4/${externalAccountId}/localPosts`, {
         method: 'POST', headers: { ...bearer(token), 'Content-Type': 'application/json' },
         body: JSON.stringify({ languageCode: 'en', summary: caption, topicType: 'STANDARD', media: [{ mediaFormat: 'PHOTO', sourceUrl: mediaUrl }] }),

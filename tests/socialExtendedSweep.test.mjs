@@ -7,7 +7,7 @@ const cfg = { supabaseUrl: 'https://db.test', serviceRoleKey: 'service-test' };
 const cryptoCfg = tokenCryptoConfig({ SOCIAL_TOKEN_ENCRYPTION_KEY: Buffer.alloc(32, 7).toString('base64') });
 const r2cfg = { accountId: 'acct', accessKeyId: 'key', secretAccessKey: 'secret', bucket: 'bucket' };
 const targetId = '11111111-1111-4111-8111-111111111111';
-const deps = { cfg, cryptoCfg, r2cfg };
+const deps = { env: { SOCIAL_HOLD_CHECKS_ENABLED: 'true' }, cfg, cryptoCfg, r2cfg };
 async function target(state = {}) {
     return { target_id: targetId, account_id: 'account', external_account_id: '12345', network: 'facebook', claim_key: 'claim',
         access_token_enc: await encryptToken('page-token', cryptoCfg), media_type: 'image', r2_key: 'assets/image.jpg', global_text: 'Test', provider_state: state };
@@ -18,6 +18,7 @@ test('native submission is marked before the public request and its result is ch
         const u = new URL(url), name = u.pathname.split('/').pop();
         order.push(name);
         if (name === 'claim_due_social_post_targets') return Response.json([row]);
+        if (name === 'authorize_social_target_dispatch') return Response.json(JSON.parse(init.body).p_target_id === '00000000-0000-0000-0000-000000000000' ? { ok: false, code: 'CLAIM_LOST' } : { ok: true });
         if (name === 'mark_social_provider_submission') return Response.json({ ok: true });
         if (name === 'photos') return Response.json({ post_id: '12345_67890' });
         if (name === 'report_social_post_progress') { saved = JSON.parse(init.body).p_provider_state; return Response.json({ ok: true }); }
@@ -25,17 +26,18 @@ test('native submission is marked before the public request and its result is ch
         throw new Error(`unexpected request ${name}`);
     };
     assert.equal((await runPublishSweep(deps)).published, 0);
-    assert.deepEqual(order, ['claim_due_social_post_targets', 'mark_social_provider_submission', 'photos', 'report_social_post_progress']);
+    assert.deepEqual(order, ['authorize_social_target_dispatch', 'claim_due_social_post_targets', 'authorize_social_target_dispatch', 'mark_social_provider_submission', 'authorize_social_target_dispatch', 'photos', 'report_social_post_progress']);
     assert.equal(saved.result.platformPostId, '12345_67890');
     row.provider_state = saved; order.length = 0;
     assert.equal((await runPublishSweep(deps)).published, 1);
-    assert.deepEqual(order, ['claim_due_social_post_targets', 'complete_social_post_target']);
+    assert.deepEqual(order, ['authorize_social_target_dispatch', 'claim_due_social_post_targets', 'complete_social_post_target']);
 });
 test('an uncertain previous submission fails for reconciliation without another provider call', async () => {
     const row = await target({ submission_started: true });
     globalThis.fetch = async (url, init) => {
         const name = new URL(url).pathname.split('/').pop();
         if (name === 'claim_due_social_post_targets') return Response.json([row]);
+        if (name === 'authorize_social_target_dispatch') return Response.json({ ok: false, code: 'CLAIM_LOST' });
         assert.equal(name, 'complete_social_post_target');
         assert.equal(JSON.parse(init.body).p_error, 'provider_result_unknown_reconcile_before_retry');
         return Response.json({ ok: true });

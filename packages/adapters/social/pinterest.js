@@ -27,9 +27,10 @@ export async function fetchCandidates(token, fetcher = fetch) {
     }
     throw new Error('too_many_boards');
 }
-export async function publishPost(token, { externalAccountId, caption, mediaType, mediaUrl }, fetcher = fetch) {
+export async function publishPost(token, { externalAccountId, caption, mediaType, mediaUrl }, fetcher = fetch, beforePublish = async () => {}) {
     requireImage(mediaType);
     if (!/^\d+$/.test(externalAccountId)) throw new Error('invalid_board');
+    await beforePublish();
     const data = await jsonRequest(`${BASE}/pins`, { method: 'POST', headers: { ...bearer(token), 'Content-Type': 'application/json' },
         body: JSON.stringify({ board_id: externalAccountId, title: caption.slice(0, 100), description: caption,
             media_source: { source_type: 'image_url', url: mediaUrl } }) }, fetcher);

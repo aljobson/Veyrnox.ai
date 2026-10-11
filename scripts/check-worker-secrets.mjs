@@ -34,8 +34,11 @@ export function assertPreserved(required, versions) {
         throw new Error('Secret baseline or live versions unavailable');
     }
     for (const version of versions) {
+        // OPENAI_API_KEY is optional until CONTENT_SCAN_ENABLED is true.
+        const scanOn = version?.resources?.bindings?.some(b => b.name === 'CONTENT_SCAN_ENABLED' && b.text === 'true');
+        const expected = scanOn ? [...new Set([...required, 'OPENAI_API_KEY'])] : required;
         const names = new Set(secretNames(version));
-        const missing = required.filter((name) => !names.has(name));
+        const missing = expected.filter((name) => !names.has(name));
         if (missing.length) throw new Error(`Live Worker is missing secret bindings: ${missing.join(', ')}`);
     }
 }

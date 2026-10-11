@@ -76,7 +76,7 @@ export async function GET(req, { params }) {
         return NextResponse.json({ error: 'internal' }, { status: 502 });
     }
     if (!asset || asset.ok !== true) {
-        return NextResponse.json({ error: 'not_found' }, { status: 404 });
+        return NextResponse.json({ error: asset?.code === 'HELD' ? 'held' : 'not_found' }, { status: 404, headers: { 'Cache-Control': 'no-store' } });
     }
 
     let signed;

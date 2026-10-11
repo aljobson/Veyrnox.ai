@@ -108,7 +108,7 @@ export async function fetchConnectedAccount(accessToken, fetcher = fetch) {
  * referencing the uploaded image. Image posts only, matching every other
  * network's v1 MVP scope. Throws UNSUPPORTED_MEDIA_TYPE for anything else
  * so the caller fails the target cleanly instead of silently dropping it. */
-export async function publishPost(accessToken, { externalAccountId, caption, mediaType, mediaUrl }, fetcher = fetch) {
+export async function publishPost(accessToken, { externalAccountId, caption, mediaType, mediaUrl }, fetcher = fetch, beforePublish = async () => {}) {
     if (mediaType !== 'image') {
         const err = new Error(`unsupported media type: ${mediaType}`);
         err.code = 'UNSUPPORTED_MEDIA_TYPE';
@@ -150,6 +150,7 @@ export async function publishPost(accessToken, { externalAccountId, caption, med
     });
     if (!uploadRes.ok) throw new Error(`image_upload_failed_${uploadRes.status}`);
 
+    await beforePublish();
     const postRes = await fetcher(`${API_BASE}/rest/posts`, {
         method: 'POST',
         headers: apiHeaders({ 'Content-Type': 'application/json' }),

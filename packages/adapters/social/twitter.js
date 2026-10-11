@@ -143,7 +143,7 @@ export async function fetchConnectedAccount(accessToken, fetcher = fetch) {
  * fails the target cleanly instead of silently dropping it. `username` is
  * required to build the permalink — pass the value fetchConnectedAccount
  * returned at connect time. */
-export async function publishPost(accessToken, { username, caption, mediaType, mediaUrl }, fetcher = fetch) {
+export async function publishPost(accessToken, { username, caption, mediaType, mediaUrl }, fetcher = fetch, beforePublish = async () => {}) {
     if (mediaType !== 'image') {
         const err = new Error(`unsupported media type: ${mediaType}`);
         err.code = 'UNSUPPORTED_MEDIA_TYPE';
@@ -195,6 +195,7 @@ export async function publishPost(accessToken, { username, caption, mediaType, m
     }
     if (state === 'failed') throw new Error('media_processing_failed');
 
+    await beforePublish();
     const postRes = await fetcher(`${API_BASE}/2/tweets`, {
         method: 'POST',
         headers: { ...auth, 'Content-Type': 'application/json' },

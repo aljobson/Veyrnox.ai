@@ -61,7 +61,7 @@ test('GET lists open reports by default and passes the status filter', async () 
     await withEnv(CONFIGURED, async ({ GET }) => {
         const res = await GET(request('GET', ADMIN));
         assert.equal(res.headers.get('cache-control'), 'no-store');
-        assert.deepEqual(await res.json(), { reports: [{ id: REPORT, category: 'csam' }] });
+        assert.deepEqual(await res.json(), { reports: [{ id: REPORT, category: 'csam' }], unavailable_scans_24h: 0, asset_gone_scans_24h: 0 });
         await GET(request('GET', ADMIN, undefined, '?status=all&limit=10'));
         const bad = await GET(request('GET', ADMIN, undefined, '?status=closed'));
         assert.deepEqual([bad.status, (await bad.json()).error], [400, 'status_invalid']);
@@ -113,5 +113,32 @@ test('RPC refusals map to typed errors: not_admin 403, unknown report or action 
         assert.equal((await POST(request('POST', ADMIN, { report_id: REPORT, resolution: 'done' }))).status, 404);
         stubRpc(() => Response.json({ ok: false, code: 'ACTION_NOT_FOUND' }));
         assert.equal((await POST(request('POST', ADMIN, { release_action_id: ACTION, reason: 'retention over' }))).status, 404);
+    });
+});
+
+test('unavailable and already-gone counts survive an empty report queue', async () => {
+    stubRpc(() => Response.json({ ok: true, reports: [], unavailable_scans_24h: 31, asset_gone_scans_24h: 7 }));
+    await withEnv(CONFIGURED, async ({ GET }) => {
+        assert.deepEqual(await (await GET(request('GET', ADMIN))).json(), { reports: [], unavailable_scans_24h: 31, asset_gone_scans_24h: 7 });
+    });
+});
+test('scanner release and disarm validate reason and identity and call the intended RPC', async () => {
+    await withEnv(CONFIGURED, async ({ POST }) => {
+        for (const [body, name, args] of [
+            [{ release_job_id: REPORT, reason: ' reviewed ' }, 'release_content_hold', { p_job_id: REPORT }],
+            [{ scanner_disarm: true, reason: ' reviewed ' }, 'disarm_content_scan_monitor', {}],
+        ]) {
+            const calls = stubRpc((url, data) => {
+                assert.ok(url.endsWith('/' + name));
+                assert.deepEqual(data, { p_auth_id: 'auth-admin', p_reason: 'reviewed', ...args });
+                return Response.json({ ok: true, replayed: true });
+            });
+            assert.equal((await POST(request('POST', {}, body))).status, 401);
+            assert.equal((await POST(request('POST', ADMIN, { ...body, reason: 'x' }))).status, 400);
+            const res = await POST(request('POST', ADMIN, body));
+            assert.equal(res.headers.get('cache-control'), 'no-store'); assert.equal(res.status, 200); assert.equal(calls.length, 1);
+        }
+        assert.equal((await POST(request('POST', ADMIN, { release_job_id: 'bad', reason: 'reviewed' }))).status, 400);
+        assert.equal((await POST(request('POST', ADMIN, { scanner_disarm: false, reason: 'reviewed' }))).status, 400);
     });
 });

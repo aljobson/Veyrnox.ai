@@ -63,21 +63,22 @@ export async function POST(req) {
     if (b.response) return b.response;
     const { user_id: userId, credits, reason } = b.body;
     if (typeof userId !== 'string' || !UUID_RE.test(userId)) return NextResponse.json({ error: 'user_id_invalid' }, { status: 400 });
-    if (!Number.isInteger(credits) || credits < 1 || credits > MAX_GRANT) return NextResponse.json({ error: 'credits_invalid' }, { status: 400 });
+    if (!Number.isInteger(credits) || credits === 0 || Math.abs(credits) > MAX_GRANT) return NextResponse.json({ error: 'credits_invalid' }, { status: 400 });
     if (typeof reason !== 'string' || reason.trim().length < 3 || reason.length > 200) return NextResponse.json({ error: 'reason_invalid' }, { status: 400 });
 
     let result;
     try {
-        result = await rpc('admin_credit_grant_guarded', {
+        result = await rpc(credits < 0 ? 'admin_credit_clawback_guarded' : 'admin_credit_grant_guarded', {
             p_aal: 'aal2', p_mfa_at: mfaAt,
-            p_auth_id: g.authId, p_user_id: userId, p_credits: credits, p_reason: reason.trim(), p_idempotency_key: k.key,
+            p_auth_id: g.authId, p_user_id: userId, p_credits: Math.abs(credits), p_reason: reason.trim(), p_idempotency_key: k.key,
         }, g.cfg);
     } catch (err) {
         return rpcFailure(err, WHERE);
     }
+    if (result?.code === 'INSUFFICIENT_PACK_CREDITS') return NextResponse.json({ error: 'insufficient_pack_credits', pack_credits: result.pack_credits }, { status: 400, headers: NO_STORE });
     if (!result || result.ok !== true) return rpcRefusal(result, 'grant_rejected');
     const replayed = result.replayed === true;
-    if (!replayed) console.error(`[${WHERE}] granted`, credits, 'credits to', userId, 'action', result.action_id);
+    if (!replayed) console.error(`[${WHERE}] credit adjustment`, credits, 'credits to', userId, 'action', result.action_id);
     return NextResponse.json({
         action_id: result.action_id, entry_id: result.entry_id, credits_delta: result.credits_delta,
         balance_after: result.balance_after, replayed,

@@ -28,3 +28,7 @@ test('local hydration preserves account rows and retention metadata by job id', 
   assert.equal(merged[1].asset_expires_at, server[1].asset_expires_at);
   assert.equal(merged[1].asset_url, 'https://r2.test/a');
 });
+
+test('a held image explains its status instead of offering a file', () => {
+    assert.deepEqual(assetRetention({ state: 'succeeded', has_asset: false, held: true }), { text: 'Under review', urgent: false });
+});

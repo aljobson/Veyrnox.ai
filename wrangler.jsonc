@@ -32,7 +32,7 @@
   }],
   // Top-up backfill (#94): GitHub Actions schedules proved unreliable, so the
   // Worker runs POST /api/admin/top-up-backfill itself (worker.js).
-  "triggers": { "crons": ["*/5 * * * *"] },
+  "triggers": { "crons": ["*/5 * * * *", "* * * * *"] },
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
@@ -40,6 +40,10 @@
   // Public config — safe to commit. SUPABASE_URL used by middleware.js;
   // NEXT_PUBLIC_* by client bundle.
   "vars": {
+    // Generated image scans: production stays off until the owner enables the data flow.
+    "CONTENT_SCAN_ENABLED": "false",
+    // Switch on only after migration 0286 is applied.
+    "SOCIAL_HOLD_CHECKS_ENABLED": "false",
     "FILM_LIBRARY_MASTERS_ENABLED": "true",
     // Owner-requested private master saves; ADR-0085 amendment, no new migration.
     "FILM_LIBRARY_SAVE_ENABLED": "true",
@@ -244,8 +248,12 @@
         "namespace_id": "2026100902",
         "simple": { "limit": 10, "period": 60 }
       }],
-      "triggers": { "crons": ["*/5 * * * *"] },
+      "triggers": { "crons": ["*/5 * * * *", "* * * * *"] },
       "vars": {
+        // Exercise the scanner in staging; queued images drain oldest first.
+        "CONTENT_SCAN_ENABLED": "true",
+        // Switch on only after migration 0286 is applied.
+        "SOCIAL_HOLD_CHECKS_ENABLED": "true",
         "APP_ENV": "staging",
         "ACCESS_TEAM_DOMAIN": "fancy-lake-7c60.cloudflareaccess.com",
         "ACCESS_AUD": "90e88032af5e17f3e560fd12f33a182a9ff353ddf813514fcfe072f169efe1fd",
