@@ -13,7 +13,7 @@ import { playbackMode } from '../_lib/playbackPolicy';
 
 const VIEW_THRESHOLD = 0.5;
 
-export function FilmPlayer({ film, label = 'the film', aspectRatio = '16 / 9' }) {
+export function FilmPlayer({ film, label = 'the film', aspectRatio = '16 / 9', frameless = false }) {
   const videoRef = useRef(null);
   // The visitor pressed Pause: scrolling back must not restart it for them.
   const heldRef = useRef(false);
@@ -63,7 +63,7 @@ export function FilmPlayer({ film, label = 'the film', aspectRatio = '16 / 9' })
   return (
     <div className="relative">
       {/* Reserve the film's full frame before the poster arrives. */}
-      <div style={{ aspectRatio }} className="aspect-video overflow-hidden rounded-2xl border border-vx-border bg-[#0a0a0b]">
+      <div style={{ aspectRatio }} className={`aspect-video overflow-hidden bg-[#0a0a0b]${frameless ? '' : ' rounded-2xl border border-vx-border'}`}>
         <video
           ref={videoRef}
           src={film.video}
@@ -94,7 +94,7 @@ export function FilmPlayer({ film, label = 'the film', aspectRatio = '16 / 9' })
         type="button"
         onClick={toggle}
         aria-label={`${playing ? 'Pause' : 'Play'} ${label}`}
-        className="vx-press mt-3 inline-flex min-h-11 items-center gap-2 rounded-full border border-vx-border px-4 text-[13px] font-bold text-vx-fg-body hover:text-vx-fg sm:absolute sm:bottom-3 sm:left-3 sm:mt-0 sm:border-transparent sm:bg-black/70 sm:text-white sm:backdrop-blur-sm sm:hover:bg-black/85 sm:hover:text-white"
+        className={`vx-press mt-3 inline-flex min-h-11 items-center gap-2 rounded-full border border-vx-border px-4 text-[13px] font-bold text-vx-fg-body hover:text-vx-fg sm:absolute sm:bottom-3 sm:left-3 sm:mt-0 sm:border-transparent sm:bg-black/70 sm:text-white sm:backdrop-blur-sm sm:hover:bg-black/85 sm:hover:text-white${frameless ? ' ml-4 sm:ml-0' : ''}`}
       >
         <svg aria-hidden="true" viewBox="0 0 12 12" className="h-3 w-3 fill-current">
           {playing ? <path d="M2 1h3v10H2zM7 1h3v10H7z" /> : <path d="M2.5 1 11 6l-8.5 5z" />}
