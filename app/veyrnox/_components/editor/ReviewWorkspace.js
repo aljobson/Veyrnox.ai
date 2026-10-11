@@ -1,7 +1,6 @@
 'use client';
 import { useEffect,useRef,useState } from 'react';
 import { restoreOriginalAudio } from '../../_lib/editorOriginalAudio.mjs';
-import { AppNav } from '../NavBar';
 import { Button } from '../Button';
 import { ReviewPanel } from './ReviewPanel';
 import { useEditorResource } from './useEditorResource';
@@ -43,9 +42,9 @@ export function ReviewWorkspace({projectId,revision}) {
     async function play(){if(playing || preparing){pause();return;}player.current ||= createAudioPlayer();const ticket=++generation.current;setPreparing(true);try{if(await player.current.start(timeline,blobs.current,frame) && alive.current && ticket===generation.current)setPlaying(true);}catch(e){if(ticket===generation.current)setError(e.message);}finally{if(ticket===generation.current)setPreparing(false);}}
     async function relink(event){const file=event.target.files[0];event.target.value='';if(!file)return;const problem=checkLocalFile(file);if(problem.error){setError(problem.error);return;}const ticket=loadingGeneration.current;let probe;try{probe=await probeMedia(file);}catch{if(alive.current && ticket===loadingGeneration.current)setError('That source could not be decoded.');return;}const bad=checkProbe(probe);if(bad){setError(bad);return;}if(!alive.current || ticket!==loadingGeneration.current)return;const media=matchLocalFile(timeline,file,probe,new Set(blobs.current.keys()));if(!media){setError('Choose a matching original file with the same name and duration.');return;}blobs.current.set(media.id,file);const need=mediaToRelink(timeline,new Set(blobs.current.keys()));setMissing([...need.local,...need.library,...need.assets]);setTick(n=>n+1);setError('');}
     const size=timeline?timelineSize(timeline,720):{width:1280,height:720},total=timeline?sequenceEnd(timeline):0,project={id:projectId,revision,dirty:false};
-    return <><AppNav active="editor" readAccount={false} /><main className="mx-auto max-w-[1400px] space-y-4 px-4 py-8"><h1 className="text-2xl font-bold">Review saved version {revision}</h1><p className="text-sm">This view leaves the saved edit unchanged. The link uses the project’s existing access permissions.</p>
+    return <div className="space-y-4"><h1 className="text-2xl font-bold">Review saved version {revision}</h1><p className="text-sm">This view leaves the saved edit unchanged. The link uses the project’s existing access permissions.</p>
         {(resource.error || error) && <p role="alert">{resource.error || error}</p>}{resource.busy && <p role="status">Loading saved edit…</p>}
         {missing.length>0 && <section aria-label="Missing review sources" className="rounded border border-vx-border p-3"><p role="status">{missing.length} sources are unavailable. The preview is incomplete until they are relinked.</p><ul>{missing.map(m=><li key={m.id}>{m.name}</li>)}</ul><label className="text-vx-accent underline">Choose an original source<input className="sr-only" aria-label="Relink review source" type="file" onChange={relink} /></label></section>}
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]"><section className="space-y-3"><canvas ref={canvas} width={size.width} height={size.height} role="img" aria-label="Saved edit preview" className="max-h-[65vh] w-full bg-black object-contain" /><div className="flex gap-3"><Button disabled={!timeline || !total || missing.length>0} onClick={play}>{playing || preparing?'Pause':'Play'}</Button><input aria-label="Review playhead" type="range" min={0} max={Math.max(0,total-1)} value={frame} disabled={!timeline} onChange={e=>seek(Number(e.target.value))} className="min-w-0 flex-1" /><span className="text-xs">{formatTime(frame)} / {formatTime(total)}</span></div></section><aside><ReviewPanel project={project} frame={frame} disabled={!timeline || resource.busy} onSeek={seek} /></aside></div>
-    </main></>;
+    </div>;
 }
