@@ -48,7 +48,7 @@
     // Owner-requested private master saves; ADR-0085 amendment, no new migration.
     "FILM_LIBRARY_SAVE_ENABLED": "true",
     "APP_ENV": "production",
-    "TENANT_PROJECTS_ENABLED": "false",
+    "TENANT_PROJECTS_ENABLED": "true",
     // Cloud documents do not enable device-media uploads (ADR-0056 / roadmap D1).
     "PROJECT_MEDIA_UPLOADS_ENABLED": "false",
     // ADR-0075: stage uncertain fal submission handling before activation.
@@ -71,11 +71,12 @@
     // ADR-0080: free browser editing and MP4 export, visible in Studio (owner, 2026-10-10).
     // Cloud saving and Projects navigation share the separate TENANT_PROJECTS_ENABLED gate.
     "EDITOR_TIMELINE_ENABLED": "true",
-    "EDITOR_MULTITRACK_ENABLED": "false",
-    "EDITOR_SHARED_TOOLS_ENABLED": "false",
-    "EDITOR_LIBRARY_EXPORTS_ENABLED": "false",
-    "EDITOR_ORGANIZATION_ENABLED": "false",
-    "EDITOR_LOCAL_INFERENCE_ENABLED": "false",
+    // Owner requested release before the observation window (2026-10-11); ADR-0080 amendment.
+    "EDITOR_MULTITRACK_ENABLED": "true",
+    "EDITOR_SHARED_TOOLS_ENABLED": "true",
+    "EDITOR_LIBRARY_EXPORTS_ENABLED": "true",
+    "EDITOR_ORGANIZATION_ENABLED": "true",
+    "EDITOR_LOCAL_INFERENCE_ENABLED": "true",
     // ADR-0072: chat Personas, saved instructions with a default model and options. On in production since 2026-10-07: staging
     // acceptance passed 2026-10-06 and migration 0216 is applied on production. Staging has its own value below.
     "PERSONAS_ENABLED": "true",

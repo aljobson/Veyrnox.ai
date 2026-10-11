@@ -68,7 +68,7 @@ The owner screenshots and raw UI/network evidence remain private local artifacts
 - The foundation schema was fixed at 30 fps, a 60-second edit, 24 media files, 10 video clips, 10 non-overlapping audio clips and 10 single-line text items. The advanced version-3 schema supports independent tracks and longer edits, with its own bounded validator. The Worker/document/SQL boundaries enforce these limits, including a 32-KiB project-document ceiling. Multitrack, richer persisted parameters and timebase changes require a coordinated migration; adding UI alone cannot supply them.
 - Browser-local editing/export stays free. New remote operations require controlled live endpoint tests and provider invoice verification before publishing a price. Current hidden caption pricing and prototype restoration/slow-motion integrations are not verified prices for this rollout.
 - Licensed music/stock/fonts/provider catalogs need usage rights or an original alternative. Capability contracts and licences cannot be inferred from the passive CapCut capture.
-- Production server uploads still need the agreed moderation/inspection rollout. Cloud project saving has been prepared independently and follows its migration observation gate. The owner has not waived that gate.
+- Production server uploads still need the agreed moderation/inspection rollout. Cloud project saving has been prepared independently and follows its migration observation gate. The owner directed an early editor/cloud release on 11 October 2026; the scoped ADR-0080 exception preserves the unproven observation window and separate media-upload gate.
 - CSP and identity isolation remain in place. A new WASM engine, origin or server rendering system needs its own decision and validation.
 
 ## Advanced workspace and controls implementation status — updated 2026-10-11
@@ -101,3 +101,21 @@ The base advanced workspace follows `EDITOR_MULTITRACK_ENABLED` and migration 02
 See [foundation verification](FOUNDATION-VERIFICATION-2026-10-10.md), [advanced workspace verification](MULTITRACK-VERIFICATION-2026-10-10.md) and [additional controls verification](CONTROLS-VERIFICATION-2026-10-11.md) for the earlier recorded verdicts, decoded files and limits. Current completion contracts/evidence are in [processing/local assets ADR-0090](../adr/0090-editor-processing-and-local-assets.md), [speech/assets](SPEECH-ASSET-CONTRACTS-2026-10-11.md), [isolated recognition ADR-0091](../adr/0091-isolated-local-speech-recognition.md), [person/motion ADR-0092](../adr/0092-editor-isolated-person-vision-runtime.md), [source slots ADR-0094](../adr/0094-explicit-generation-source-slots.md), [private renders ADR-0089](../adr/0089-editor-private-library-delivery.md) and [native destinations ADR-0093](../adr/0093-native-editor-video-destinations.md).
 
 Cloud project saving, project media uploads and paid Cinema retain their own production gates. No code inventory or local success proves hosted activation or a complete reconciliation window. Every observed area remains in scope; the unresolved provider/licensing, translation, lyrics, semantic relight/reshape/movement, Ads and quality rows remain genuine gaps.
+
+
+## Owner-directed release amendment — 11 October 2026
+
+The owner requested activation now instead of waiting until tomorrow. The
+scoped [ADR-0080 exception](../adr/0080-browser-timeline-editor.md) enables the
+implemented advanced workspace, cloud documents, brand/review tools, private
+Library delivery, folders/fonts and local inference after fresh health checks
+and green release CI. All relevant production migrations have application
+receipts. Earlier table statements about pending production application are
+historical preparation notes; actual release evidence belongs in
+[the activation record](PRODUCTION-ACTIVATION-2026-10-11.md). The original
+missing midnight count sample remains unverified; activation is explicitly
+an owner-directed exception, not a clean-window announcement.
+
+The unresolved implementation, provider/licensing and output-quality rows above
+remain open. Native social destination, project media-upload and paid Cinema
+flags remain off.

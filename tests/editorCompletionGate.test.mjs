@@ -10,10 +10,10 @@ register('data:text/javascript,'+encodeURIComponent(`export async function resol
 const {NextRequest}=await import('next/server.js');
 const {middleware}=await import('../middleware.js');
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
-test('prepared document, private delivery and local inference features have independent production gates',()=>{
+test('owner-authorized document, private delivery and local inference features retain independent rollback gates',()=>{
     const config=parseJsonc(read('wrangler.jsonc'));
     for(const flag of ['EDITOR_LIBRARY_EXPORTS_ENABLED','EDITOR_ORGANIZATION_ENABLED','EDITOR_LOCAL_INFERENCE_ENABLED']){
-        assert.equal(config.vars[flag],'false');assert.equal(config.env.staging.vars[flag],'true');
+        assert.equal(config.vars[flag],'true');assert.equal(config.env.staging.vars[flag],'true');
     }
     assert.equal(config.vars.PUBLISH_VIDEO_DESTINATIONS_ENABLED,'false');
     assert.equal(config.env.staging.vars.PUBLISH_VIDEO_DESTINATIONS_ENABLED,'false');

@@ -192,3 +192,44 @@ New smart tools, licensed catalogs, plugins and collaboration remain requested
 work under their existing contract, price, licence and permission requirements.
 The [coverage inventory](../editor/CAPCUT-GAP-2026-10-10.md) distinguishes the
 implemented subset from the remaining full scope.
+
+
+## Owner-directed early production release — 11 October 2026
+
+The owner explicitly requested: “Finish all the remaining CapCut features while
+we wait for the checks. and launch now not tomorrow”. This supersedes the
+earlier instruction to wait for the complete reconciliation window for the
+editor rollout. Under CLAUDE.md’s requirement to explain rule exceptions in
+an ADR, this is a specific owner-directed exception to its 24-hour delivery
+gate for the implemented editor and cloud-document features. It is not a
+claim that the window passed, a permanent change to the delivery rule, or a
+waiver of the old missing midnight sample.
+
+Enable TENANT_PROJECTS_ENABLED, EDITOR_MULTITRACK_ENABLED,
+EDITOR_SHARED_TOOLS_ENABLED, EDITOR_LIBRARY_EXPORTS_ENABLED,
+EDITOR_ORGANIZATION_ENABLED and EDITOR_LOCAL_INFERENCE_ENABLED. The existing
+production migrations 0261, 0269, 0280, 0285 and 0286 have owner-approved
+application receipts. Fresh direct reconciliation at 14:38:42 UTC measured all
+seven counts at zero; the latest snapshot/render-expiry and nightly balance
+crons succeeded. Migration 0290 now retains actual measured counts. These
+checks qualify current health only: the original hourly evidence gap and the
+incomplete new 24-hour window remain explicit.
+
+Keep PROJECT_MEDIA_UPLOADS_ENABLED, PUBLISH_VIDEO_DESTINATIONS_ENABLED,
+CONTENT_SCAN_ENABLED, SOCIAL_HOLD_CHECKS_ENABLED and paid Cinema flags off.
+Native social destination qualification, licensed provider catalogs and new
+paid generation contracts are not established by this exception. No new
+price, provider job, payment or public post is part of activation. Existing
+Studio generation retains its normal quote, consent and debit/refund rules.
+
+Require exact-head green CI, squash merge, actual deploy-production success,
+live smoke checks, actual production flag readback and production editor/cloud
+journeys. Continue the durable reconciliation observation after activation.
+Any drift or failed check requires investigation and focused rollback; flag
+rollback does not remove stored project history. A base-editor rollback must
+keep advanced v3 documents intact and refuse an incompatible open.
+
+The release enables the implemented subset documented in the feature inventory.
+It does not claim full CapCut parity, licensed stock, semantic relighting,
+face/body reshaping, generative movement, lyric/vocal separation, TikTok Ads,
+or universal translation/device/output quality. Those remain requested work.
