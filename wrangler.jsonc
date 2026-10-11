@@ -40,7 +40,7 @@
   // Public config — safe to commit. SUPABASE_URL used by middleware.js;
   // NEXT_PUBLIC_* by client bundle.
   "vars": {
-    "FILM_LIBRARY_MASTERS_ENABLED": "false",
+    "FILM_LIBRARY_MASTERS_ENABLED": "true",
     "APP_ENV": "production",
     "TENANT_PROJECTS_ENABLED": "false",
     // Cloud documents do not enable device-media uploads (ADR-0056 / roadmap D1).
