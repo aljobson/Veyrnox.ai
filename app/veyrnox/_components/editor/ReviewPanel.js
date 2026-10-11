@@ -5,7 +5,8 @@ import { useEditorResource } from './useEditorResource';
 import { formatTime } from '../../_lib/editorTimeline.mjs';
 export function ReviewPanel({project,frame,disabled,onSeek}) {
     const resource=useEditorResource(project?.id && project.revision>0?`/projects/${project.id}/review?revision=${project.revision}`:null),[draft,setDraft]=useState(null);
-    const body=draft?.account===resource.accountId?draft.text:'',setBody=text=>setDraft({account:resource.accountId,text});
+    const draftScope=[resource.accountId,project?.id,project?.revision].join(':');
+    const body=draft?.scope===draftScope?draft.text:'',setBody=text=>setDraft({scope:draftScope,text});
     if(!project?.id || !project.revision)return <p className="text-xs">Save a project version to review it.</p>;
     async function add(){const result=await resource.mutate({revision:project.revision,frame,body},'POST');if(result){setBody('');resource.reload();}}
     async function resolve(comment){const result=await resource.mutate({comment_id:comment.id,expected_version:comment.version,resolved:!comment.resolved},'PATCH');if(result)resource.reload();}
