@@ -19,6 +19,7 @@ import { youtubeVisibilityEnabled } from '../../../../../lib/social/publishFeatu
 import { socialUploadsEnabled } from '../../../../../lib/social/uploadPolicy.js';
 import { networkEnabled, networkMedia } from '../../../../../lib/social/networks.js';
 import { networkReadiness } from '../../../../../lib/social/networkReadiness.js';
+import { tiktokReviewAllowed } from '../../../../../lib/social/tiktokReview.js';
 import { NextResponse } from 'next/server';
 import { accountReadLimit } from '../../../../../lib/accountReadLimit.js';
 import { rpc, envConfig, SupabaseError } from '../../../../../packages/db/supabase-client.js';
@@ -68,9 +69,10 @@ export async function GET(req) {
     return NextResponse.json({
         brand_id: brand.brand_id,
         accountLimit: freeSocialAccountLimit(),
-        accounts: (accounts.accounts || []).map((account) => ({ ...account, publishingEnabled: networkEnabled(account.network), supportedMedia: networkMedia(account.network) })),
-        uploadsEnabled: socialUploadsEnabled(),
+        accounts: (accounts.accounts || []).map((account) => ({ ...account, publishingEnabled: networkEnabled(account.network)
+            || (account.network === 'tiktok' && tiktokReviewAllowed(authId)), supportedMedia: networkMedia(account.network) })),
+        uploadsEnabled: socialUploadsEnabled(process.env, authId),
         youtubeVisibilityEnabled: youtubeVisibilityEnabled(),
-        networks: networkReadiness(),
+        networks: networkReadiness(process.env, authId),
     }, { headers: { 'Cache-Control': 'no-store' } });
 }

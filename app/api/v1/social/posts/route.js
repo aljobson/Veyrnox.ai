@@ -136,7 +136,7 @@ export async function POST(req) {
         const jobId = item && item.jobId;
         const uploadId = item && item.uploadId;
         if (!MEDIA_TYPES.has(mediaType) || (Boolean(jobId) === Boolean(uploadId))
-            || (jobId ? !isUuid(jobId) : !isUuid(uploadId) || !socialUploadsEnabled())) {
+            || (jobId ? !isUuid(jobId) : !isUuid(uploadId) || !socialUploadsEnabled(process.env, authId))) {
             return NextResponse.json({ error: 'invalid_media' }, { status: 400 });
         }
         mediaItems.push({ media_type: mediaType, ...(jobId ? { job_id: jobId } : { upload_id: uploadId }) });
@@ -154,7 +154,7 @@ export async function POST(req) {
         if (!listed?.ok || !Array.isArray(listed.accounts)) throw new Error('account_lookup_failed');
         const destinations = listed.accounts.filter((a) => accountIds.includes(a.id) && a.status === 'active');
         if (destinations.length !== new Set(accountIds).size) return NextResponse.json({ error: 'ACCOUNT_NOT_FOUND' }, { status: 404 });
-        const capabilityError = postCapabilityError(destinations, mediaItems, globalText);
+        const capabilityError = postCapabilityError(destinations, mediaItems, globalText, process.env, authId);
         if (capabilityError) return NextResponse.json({ error: capabilityError }, { status: 400 });
         result = await rpc(visibility !== undefined ? 'create_social_post_with_youtube_visibility' : 'create_social_post', {
             ...(visibility !== undefined ? { p_youtube_visibility: visibility } : {}),
