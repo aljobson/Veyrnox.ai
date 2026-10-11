@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { generationQuote, generationInputs, generationModelSupported, generationSources, generationAvatarSupported, generationModelsForMode, generationSourceLabel, generationPromptHelp } from '../app/veyrnox/_lib/editorGeneration.mjs';
+import { generationQuote, generationInputs, generationModelSupported, generationSources, generationAvatarSupported, generationModelsForMode, generationSourceLabel, generationPromptHelp, generationMovementSupported, generationMovementPrompt } from '../app/veyrnox/_lib/editorGeneration.mjs';
 const model = { id: 'existing-model', kind: 'video', credits: 12, takesPrompt: true, promptMax: 2000, durations: [5, 10], aspects: ['16:9', '9:16'] };
 test('editor quotes only live catalog credit units and supported generation inputs', () => {
     assert.equal(generationQuote(model, 10), 24); assert.equal(generationQuote({ ...model, kind: 'image' }, 10), 12);
@@ -71,4 +71,33 @@ test('existing Fal and KIE speech contracts are accepted only from the provided 
     assert.deepEqual(generationModelsForMode(voiceModels.slice(0,4),'voiceover').map(m => m.id),voiceModels.slice(0,4).map(m => m.id),'registered absent KIE/Qwen rows are never invented into a catalog result');
     for (const voice of voiceModels) assert.ok(generationInputs(voice,{ prompt: 'x'.repeat(voice.promptMax + 1),voice: 'Calm voice' }).error);
     assert.deepEqual(generationInputs(realAvatars[1],{ prompt: 'Hidden prompt',duration: 10 }),{ inputs: {} });
+});
+
+
+test('movement mode uses only existing image-driven FAL/KIE contracts and excludes speech, avatars, optional references and gated rows', () => {
+    const fal = fromRecord('kling-3.0-i2v','fal-ai/kling-video/v3/pro/image-to-video');
+    const kie = fromRecord('kling-3.0-i2v-kie','market:kling-3.0/video');
+    assert.deepEqual(generationModelsForMode([model,fal,kie,avatar,lipSync,{...fal,gated:true},{...fal,media:{image:{required:false}}}],'movement').map(m=>m.id),[fal.id,kie.id]);
+    assert.equal(generationMovementSupported({...fal,kind:'image'}),false);
+    assert.equal(generationMovementSupported({...fal,media:{image:{required:true},video:{required:false}}}),false);
+});
+test('complete movement directions retain gateway limits and unchanged source, duration and price semantics', () => {
+    const fal = fromRecord('kling-3.0-i2v','fal-ai/kling-video/v3/pro/image-to-video');
+    const values = {prompt:' A fox turns toward the camera. ',movement:'orbit-left',pace:'gentle'};
+    const result = generationMovementPrompt(fal,values);
+    assert.match(result.prompt,/^A fox turns toward the camera\./);
+    assert.match(result.prompt,/Orbit the camera to the left.*subtle, gradual/);
+    const prepared = generationInputs(fal,{prompt:result.prompt,duration:10});
+    assert.deepEqual(Object.keys(prepared.inputs).sort(),['duration_seconds','prompt']);
+    assert.equal(prepared.inputs.duration_seconds,10);
+    assert.deepEqual(generationSources(fal,{image:selection(start),endImage:selection(end)},true),{assets:[{asset_id:start,slot:'image'},{asset_id:end,slot:'endImage'}]});
+    assert.ok(generationSources(fal,{},true).error);
+    assert.ok(generationSources(fal,{image:selection(start)},false).error);
+    assert.equal(generationQuote(fal,10),24);
+    assert.notEqual(result.prompt,generationMovementPrompt(fal,{...values,pace:'fast'}).prompt,'changed directions change the existing idempotency signature');
+    const overhead = generationMovementPrompt(fal,{...values,prompt:'x'}).prompt.length-1;
+    assert.ok(generationMovementPrompt(fal,{...values,prompt:'x'.repeat(fal.promptMax-overhead)}).prompt);
+    assert.ok(generationMovementPrompt(fal,{...values,prompt:'x'.repeat(fal.promptMax-overhead+1)}).error);
+    for(const invalid of [{...values,movement:'provider-secret-option'},{...values,pace:'unbounded'},{...values,prompt:''}])assert.ok(generationMovementPrompt(fal,invalid).error);
+    assert.ok(generationMovementPrompt({...fal,promptMax:undefined},values).error);
 });

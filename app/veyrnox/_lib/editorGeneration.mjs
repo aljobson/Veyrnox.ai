@@ -30,8 +30,37 @@ export function generationAvatarSupported(model) {
         Number.isFinite(media.audio.maxSeconds) && media.audio.maxSeconds > 0 &&
         (!media.video || (Number.isFinite(media.video.maxSeconds) && media.video.maxSeconds > 0));
 }
+export function generationMovementSupported(model) {
+    return generationModelSupported(model) && model.kind === 'video' && !model.isSpeech &&
+        model.media?.image?.required === true && Object.keys(model.media).every(slot => ['image','endImage'].includes(slot));
+}
+export const CAMERA_MOVEMENTS = Object.freeze([
+    { id: 'push-in', label: 'Push in', direction: 'Move the camera forward toward the subject.' },
+    { id: 'pull-out', label: 'Pull out', direction: 'Move the camera backward, revealing more of the scene.' },
+    { id: 'pan-left', label: 'Pan left', direction: 'Pan the camera smoothly to the left.' },
+    { id: 'pan-right', label: 'Pan right', direction: 'Pan the camera smoothly to the right.' },
+    { id: 'orbit-left', label: 'Orbit left', direction: 'Orbit the camera to the left around the subject.' },
+    { id: 'orbit-right', label: 'Orbit right', direction: 'Orbit the camera to the right around the subject.' },
+    { id: 'tilt-up', label: 'Tilt up', direction: 'Tilt the camera upward through the scene.' },
+    { id: 'tilt-down', label: 'Tilt down', direction: 'Tilt the camera downward through the scene.' },
+    { id: 'locked', label: 'Locked camera', direction: 'Keep the camera fixed while the subject moves naturally.' },
+]);
+export const MOVEMENT_PACES = Object.freeze([
+    { id: 'gentle', label: 'Gentle', direction: 'Use subtle, gradual movement.' },
+    { id: 'steady', label: 'Steady', direction: 'Use continuous, even-paced movement.' },
+    { id: 'fast', label: 'Fast', direction: 'Use brisk, smooth movement without sudden cuts.' },
+]);
+export function generationMovementPrompt(model, { prompt, movement, pace }) {
+    if (!generationMovementSupported(model) || !Number.isInteger(model.promptMax) || model.promptMax < 1) return { error: 'Choose an available image-to-video model.' };
+    const camera = CAMERA_MOVEMENTS.find(item => item.id === movement), speed = MOVEMENT_PACES.find(item => item.id === pace);
+    if (!camera || !speed) return { error: 'Choose a camera movement and pace.' };
+    if (typeof prompt !== 'string' || !prompt.trim()) return { error: 'Describe the scene and subject movement.' };
+    const composed = `${prompt.trim()}\n\nCamera direction: ${camera.direction} ${speed.direction} Start from the supplied image. Preserve the subject and scene identity. Use one continuous shot.`;
+    if (composed.length > model.promptMax) return { error: `Shorten the scene description; the complete direction exceeds ${model.promptMax} characters.` };
+    return { prompt: composed };
+}
 export function generationModelsForMode(models,mode = 'media') {
-    return models.filter(model => mode === 'avatar' ? generationAvatarSupported(model) : generationModelSupported(model) && (mode !== 'voiceover' || model.isSpeech));
+    return models.filter(model => mode === 'avatar' ? generationAvatarSupported(model) : mode === 'movement' ? generationMovementSupported(model) : generationModelSupported(model) && (mode !== 'voiceover' || model.isSpeech));
 }
 export function generationSourceLabel(model,slot) {
     if (model?.media?.[slot]?.label) return model.media[slot].label;
