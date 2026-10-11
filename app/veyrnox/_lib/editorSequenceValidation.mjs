@@ -1,4 +1,5 @@
 import { SHAPES } from './editorGraphics.mjs';
+import {organizationProblem} from './editorOrganization.mjs';
 import { originalAudioProblem,originalAudioPreset } from './editorOriginalAudio.mjs';
 import { mediaDetailsProblem } from './editorMediaDetails.mjs';
 import { audioSettingsProblem } from './editorAudioSettings.mjs';
@@ -39,8 +40,9 @@ export function visualProblem(c) {
     return null;
 }
 export function validateSequence(tl) {
-    if (!exact(tl, ['schemaVersion', 'fps', 'seq', 'aspect', 'media', 'video', 'audio', 'text', 'tracks', 'background'])) return 'Invalid multitrack document.';
+    if (!exact(tl, ['schemaVersion', 'fps', 'seq', 'aspect', 'media', 'video', 'audio', 'text', 'tracks', 'background',...['folders','fonts'].filter(k=>tl[k]!==undefined)])) return 'Invalid multitrack document.';
     if (tl.schemaVersion !== 3 || tl.fps !== 30 || !int(tl.seq, 0, 1e6) || !['source', '16:9', '9:16', '1:1'].includes(tl.aspect) || !colour(tl.background)) return 'Invalid project settings.';
+    const organization=organizationProblem(tl);if(organization)return organization;
     if (!object(tl.media) || Object.keys(tl.media).length > 40) return 'A project holds up to 40 files.';
     for (const [id, m] of Object.entries(tl.media)) {
         if (!exact(m, ['id', 'kind', 'frames', 'name', 'hasAudio', 'width', 'height', ...(m.graphic !== undefined ? ['graphic'] : []),...['folder','attribution','sourceName','assetSource','originalAudio'].filter(k=>m[k]!==undefined)]) || id !== m.id || !/^[A-Za-z0-9_-]{1,64}$/.test(id) || !['video', 'audio', 'image', 'graphic'].includes(m.kind) || !int(m.frames, 1, 1e7) || typeof m.name !== 'string' || m.name.length > 120 || typeof m.hasAudio !== 'boolean' || !int(m.width, 0, 16384) || !int(m.height, 0, 16384)) return 'Invalid media entry.';

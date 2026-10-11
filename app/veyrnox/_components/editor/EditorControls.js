@@ -46,11 +46,11 @@ export function SoundControls({ item, onChange, onRate, onExtract }) {
         {onExtract && <Button size="sm" onClick={onExtract}>Extract audio</Button>}
     </div></details>;
 }
-export function TextControls({ item, frame, onChange }) {
+export function TextControls({ item, frame, onChange,fonts=[] }) {
     const style = { ...TEXT_DEFAULTS, ...item.style }, change = (key, value) => onChange({ style: { ...style, [key]: value } });
     return <div className="space-y-2"><NumberControl label="Text size (%)" value={item.size} min={2} max={40} step={1} onChange={size => onChange({ size })} />
         <NumberControl label="Text X (%)" value={item.x * 100} min={0} max={100} onChange={n => onChange({ x: n / 100 })} /><NumberControl label="Text Y (%)" value={item.y * 100} min={0} max={100} onChange={n => onChange({ y: n / 100 })} />
-        <SelectControl label="Font" value={style.font} options={TEXT_FONTS} onChange={v => change('font', v)} /><SelectControl label="Weight" value={style.weight} options={['normal', 'bold']} onChange={v => change('weight', v)} /><SelectControl label="Text alignment" value={style.align} options={['left', 'center', 'right']} onChange={v => change('align', v)} />
+        <label className="block text-xs">Font<select aria-label="Font" className="w-full rounded border border-vx-border bg-vx-base p-2 text-xs" value={style.font} onChange={e=>change('font',e.target.value)}>{TEXT_FONTS.map(f=><option key={f}>{f}</option>)}{fonts.map(f=><option key={f.family} value={f.family}>{f.name}</option>)}</select></label><SelectControl label="Weight" value={style.weight} options={['normal', 'bold']} onChange={v => change('weight', v)} /><SelectControl label="Text alignment" value={style.align} options={['left', 'center', 'right']} onChange={v => change('align', v)} />
         <ColorControl label="Text colour" value={style.color} onChange={v => change('color', v)} /><ColorControl label="Outline colour" value={style.stroke} onChange={v => change('stroke', v)} /><NumberControl label="Outline width" value={style.strokeWidth} min={0} max={12} onChange={v => change('strokeWidth', v)} />
         <ColorControl label="Text background" value={style.background} onChange={v => change('background', v)} /><NumberControl label="Text background opacity (%)" value={style.backgroundOpacity * 100} min={0} max={100} onChange={n => change('backgroundOpacity', n / 100)} /><WordTimingControls item={item} onChange={onChange} /><TypographyControls style={style} onChange={style=>onChange({style})} /><AnimationControls item={item} onChange={onChange} /><MotionControls item={item} frame={frame} onChange={onChange} />
     </div>;

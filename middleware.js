@@ -20,6 +20,8 @@ import { responseHeaders } from './packages/security/errors.js';
 import { recentMfaTimestamp } from './lib/cinema/strongAuth.js';
 import { NextResponse } from 'next/server';
 import { contentSecurityPolicy } from './lib/contentSecurityPolicy.mjs';
+import { LOCAL_SPEECH_WORKER_URL,localSpeechWorkerPolicy } from './app/veyrnox/_lib/localSpeechAssets.mjs';
+import {EDITOR_VISION_PATH,editorVisionWorkerPolicy} from './app/veyrnox/_lib/editorVisionRuntime.mjs';
 import { readToken, validateClaims, verifyES256 } from './lib/supabaseJwt.js';
 import { isPublishApiPath, publishShellAvailable, publishAllowed } from './lib/social/publishFeature.js';
 import { isUnknownStaticPage } from './lib/unknownStaticPage.js';
@@ -58,6 +60,15 @@ export async function middleware(req) {
     // policy to nonce framework/flight scripts; the response must match it.
     // NextRequest carries nextUrl; a plain Request (tests) only has url.
     const pathname = req.nextUrl?.pathname ?? new URL(req.url).pathname;
+    // Only this immutable local inference Worker can compile its pinned WASM.
+    // HTML and every other script keep the existing nonce policy.
+    if(pathname===LOCAL_SPEECH_WORKER_URL||pathname===`${EDITOR_VISION_PATH}/worker.mjs`){
+        if(process.env.EDITOR_LOCAL_INFERENCE_ENABLED!=='true')return new NextResponse(null,{status:404});
+        const response=NextResponse.next({request:{headers}});
+        response.headers.set('Content-Security-Policy',(pathname===LOCAL_SPEECH_WORKER_URL?localSpeechWorkerPolicy:editorVisionWorkerPolicy)(new URL(req.url).origin));
+        response.headers.set('Cache-Control','no-cache');
+        return response;
+    }
     if (pathname !== '/api/v1' && !pathname.startsWith('/api/v1/')) {
         const nonce = btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(16))));
         const policy = contentSecurityPolicy(nonce, process.env.NODE_ENV === 'development');

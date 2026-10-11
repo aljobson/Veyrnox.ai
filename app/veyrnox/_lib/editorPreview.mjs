@@ -1,4 +1,5 @@
 import { graphicCanvas } from './editorGraphics.mjs';
+import {registerLocalVp9AlphaDecoder} from './editorAlphaVideo.mjs';
 // Browser timeline editor (ADR-0080): draws the frame under the playhead on a canvas through editorRender.mjs, as the export does. Transport sound is provided by editorPlayback.mjs.
 // One decoder per clip, created on first use. Frames are asked for by time, so scrubbing in any direction works; a newer request
 // always wins, so a slow decode never paints over a later position.
@@ -17,7 +18,8 @@ export function createPreviewer(blobs,proxies=new Map()) {
                 entry.input = input;
                 const track = await input.getPrimaryVideoTrack();
                 if (disposed || sinks.get(key) !== entry) return null;
-                return track ? new CanvasSink(track, { poolSize: 2 }) : null;
+                if(track&&await track.canBeTransparent())await registerLocalVp9AlphaDecoder();
+                return track ? new CanvasSink(track, { poolSize: 2, alpha: true }) : null;
             })().catch(error => {
                 entry.input?.dispose();
                 if (sinks.get(key) === entry) sinks.delete(key);

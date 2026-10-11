@@ -16,10 +16,11 @@ const KINDS = {
   audio: { prefix: 'audio/', noun: 'audio', plural: 'audio files' },
 };
 
-export function LibraryPicker({ onPick, onClose, kind = 'image' }) {
+export function LibraryPicker({ onPick, onClose, kind = 'image', sourceLabel, mimeTypes }) {
   const [items, setItems] = useState(null);
   const [error, setError] = useState(false);
   const { prefix, noun, plural } = KINDS[kind] || KINDS.image;
+  const allowed = Array.isArray(mimeTypes) ? mimeTypes.join(',') : '';
 
   useEffect(() => {
     let cancelled = false;
@@ -32,7 +33,8 @@ export function LibraryPicker({ onPick, onClose, kind = 'image' }) {
           if (found.length >= SHOWN || cancelled) break;
           try {
             const a = await gatewayFetch(`/jobs/${j.job_id}/asset`);
-            if (String(a.mime_type).startsWith(prefix)) found.push({ id: j.job_id, url: a.url, label: j.label || `Library ${noun}` });
+            const mimeType = String(a.mime_type);
+            if (mimeType.startsWith(prefix) && (!allowed || allowed.split(',').includes(mimeType))) found.push({ id: j.job_id, url: a.url, mimeType, label: j.label || `Library ${noun}` });
           } catch { /* expired or unreadable: leave it out */ }
         }
         if (!cancelled) setItems(found);
@@ -41,15 +43,15 @@ export function LibraryPicker({ onPick, onClose, kind = 'image' }) {
       }
     })();
     return () => { cancelled = true; };
-  }, [prefix, noun]);
+  }, [prefix, noun, allowed]);
 
   return (
-    <div role="dialog" aria-modal="true" aria-label={`Choose ${kind === 'video' ? 'a video' : kind === 'audio' ? 'audio' : 'an image'} from your library`}
+    <div role="dialog" aria-modal="true" aria-label={sourceLabel ? `Choose ${sourceLabel.toLowerCase()} from your library` : `Choose ${kind === 'video' ? 'a video' : kind === 'audio' ? 'audio' : 'an image'} from your library`}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
       <div className="w-full max-w-[720px] max-h-[80dvh] overflow-y-auto rounded-2xl border border-vx-border bg-vx-panel p-5"
         onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between">
-          <h2 className="font-vx-mono text-[11px] tracking-[0.14em] text-vx-fg-muted">FROM YOUR LIBRARY</h2>
+          <h2 className="font-vx-mono text-[11px] tracking-[0.14em] text-vx-fg-muted">{sourceLabel ? `${sourceLabel.toUpperCase()} FROM YOUR LIBRARY` : 'FROM YOUR LIBRARY'}</h2>
           <button type="button" onClick={onClose} aria-label="Close" className="text-vx-fg-muted hover:text-vx-fg">✕</button>
         </div>
         {error && <p role="alert" className="mt-4 text-sm text-vx-danger">Your library could not be loaded. Upload a file instead.</p>}

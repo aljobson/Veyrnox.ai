@@ -1,0 +1,36 @@
+'use client';
+import {useEffect,useLayoutEffect,useRef,useState} from 'react';
+import {Button} from '../Button';
+import {NumberControl} from './EditorFields';
+import {processVisionVideo} from '../../_lib/editorVisionVideo.mjs';
+const tools={'replace-background':'Person cutout and background','remove-background':'Transparent person cutout','skin-retouch':'Face and body skin retouch','person-glow':'Tracked person glow','person-reframe':'Automatic person reframe'};
+export function PersonProcessingControls({media,blob,timeline,disabled,onIngest,onBusy,onError}){
+    const [tool,setTool]=useState('replace-background'),[colour,setColour]=useState('#32d6c5'),[strength,setStrength]=useState(.5),[region,setRegion]=useState('both'),[light,setLight]=useState(0),[aspect,setAspect]=useState(9/16),[progress,setProgress]=useState(null),[result,setResult]=useState(null),[inserting,setInserting]=useState(false);
+    const controller=useRef(null),alive=useRef(true),current=useRef(timeline),source=useRef(blob);
+    useLayoutEffect(()=>{current.current=timeline;source.current=blob;controller.current?.abort();},[timeline,blob]);
+    useEffect(()=>{alive.current=true;return()=>{alive.current=false;controller.current?.abort();onBusy(false);};},[onBusy]);
+    useEffect(()=>()=>{if(result)URL.revokeObjectURL(result.url);},[result]);
+    const ready=result?.snapshot===timeline&&result?.original===blob?result:null;
+    async function process(){
+        const snapshot=current.current,original=source.current,job=new AbortController();controller.current=job;onBusy(true);setResult(null);setProgress({stage:'model',done:0,total:1});
+        try{const output=await processVisionVideo(original,{tool,name:media.name,colour:[1,3,5].map(i=>parseInt(colour.slice(i,i+2),16)),strength:['remove-background','replace-background'].includes(tool)?1:strength,region,light,aspect,height:720,signal:job.signal,onProgress:p=>alive.current&&!job.signal.aborted&&setProgress(p)});if(!alive.current||job.signal.aborted||current.current!==snapshot||source.current!==original)return;setResult({...output,tool,url:URL.createObjectURL(output.blob),snapshot,original});}
+        catch(e){if(e.name!=='AbortError'&&alive.current)onError(e.message||'Person processing failed.');}
+        finally{if(controller.current===job){controller.current=null;if(alive.current){setProgress(null);onBusy(false);}}}
+    }
+    async function insert(){
+        if(!ready){onError('The edit changed. Process the current source again.');return;}setInserting(true);onBusy(true);
+        try{await onIngest(ready.file,ready.file.name,undefined,undefined,{...(media.attribution?{attribution:media.attribution}:{}),folder:'Processed video'});if(alive.current)setResult(null);}catch(e){if(alive.current)onError(e.message);}finally{if(alive.current){setInserting(false);onBusy(false);}}
+    }
+    const locked=disabled||!!progress||inserting;
+    return <details><summary className="cursor-pointer text-xs font-bold">Person and body tools</summary><div className="mt-2 space-y-2"><fieldset disabled={locked} className="space-y-2">
+        <label className="block text-xs">Person operation<select aria-label="Person operation" value={tool} onChange={e=>setTool(e.target.value)} className="w-full rounded border border-vx-border bg-vx-base p-2 text-xs">{Object.entries(tools).map(([id,label])=><option key={id} value={id}>{label}</option>)}</select></label>
+        {['replace-background','person-glow'].includes(tool)&&<label className="flex justify-between text-xs">Processed colour<input aria-label="Processed person colour" type="color" value={colour} onChange={e=>setColour(e.target.value)} /></label>}
+        {['skin-retouch','person-glow'].includes(tool)&&<NumberControl label="Person processing strength" value={strength} min={0} max={1} step={.05} onChange={setStrength} />}
+        {tool==='skin-retouch'&&<><label className="block text-xs">Skin region<select aria-label="Skin region" value={region} onChange={e=>setRegion(e.target.value)} className="w-full rounded bg-vx-base p-2 text-xs">{['face','body','both'].map(v=><option key={v}>{v}</option>)}</select></label><NumberControl label="Skin lighting" value={light} min={-.5} max={.5} step={.05} onChange={setLight} /></>}
+        {tool==='person-reframe'&&<label className="block text-xs">Person reframe shape<select aria-label="Person reframe shape" value={aspect} onChange={e=>setAspect(Number(e.target.value))} className="w-full rounded bg-vx-base p-2 text-xs"><option value={9/16}>Portrait</option><option value={1}>Square</option><option value={16/9}>Landscape</option></select></label>}
+        <Button size="sm" disabled={!blob} onClick={process}>Process person video</Button></fieldset>
+        <p className="text-xs text-vx-fg-muted">Runs the person model locally in a separate Worker. Up to 10 seconds at 720p; requires browser graphics support and downloads a model/runtime of about 28 MiB. Transparent cutout creates a silent VP9 WebM overlay and requires a silent source. Other operations create an opaque MP4 and preserve AAC audio. Retouch smooths detected skin and changes its light; it does not reshape faces or bodies. Reframe follows the largest detected person. Review edges, occlusions and multiple people.</p>
+        {progress&&<><progress aria-label="Person processing progress" max={1} value={progress.done/progress.total} className="w-full" /><p role="status" className="text-xs">{progress.stage==='model'?'Preparing person model':progress.stage==='analyse'?'Segmenting person':'Encoding person video'}</p><Button size="sm" onClick={()=>controller.current?.abort()}>Cancel person processing</Button></>}
+        {ready&&<section aria-label="Processed person result" className="space-y-2 text-xs"><p role="status">{tools[ready.tool]} ready · {ready.report.personFrames} detected frames · {ready.report.noPersonFrames} frames without a person</p>{ready.report.limits.map(v=><p key={v}>{v}</p>)}<a href={ready.url} download={ready.file.name} className="underline">Download person video</a><Button size="sm" disabled={locked} onClick={insert}>Add person video to edit</Button></section>}
+    </div></details>;
+}

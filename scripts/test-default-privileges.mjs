@@ -32,6 +32,13 @@ const BROWSER_CALLABLE = new Set([
     'private.org_role(uuid)',
     'private.workspace_role(uuid)',
     'private.project_role(uuid)',
+    // 0285: actor-owned private Library renders; only the Worker settles inspection.
+    'public.reserve_editor_library_render(text,text,bigint,boolean,text)',
+    'private.reserve_editor_library_render(text,text,bigint,boolean,text)',
+    'public.read_editor_library_renders(uuid)',
+    'private.read_editor_library_renders(uuid)',
+    'public.remove_editor_library_render(uuid)',
+    'private.remove_editor_library_render(uuid)',
     // 0280: authenticated, RLS-scoped brand/review invokers and their private operations.
     'public.read_editor_brand_kit(uuid)',
     'public.save_editor_brand_kit(uuid,integer,jsonb,text)',

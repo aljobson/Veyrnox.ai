@@ -4,6 +4,8 @@ const identityConfig = buildConfig(process.env);
 
 /** @type {import('next').NextConfig} */
 import { contentSecurityPolicy } from './lib/contentSecurityPolicy.mjs';
+import { LOCAL_SPEECH_WORKER_URL,localSpeechWorkerPolicy } from './app/veyrnox/_lib/localSpeechAssets.mjs';
+import {EDITOR_VISION_PATH,editorVisionWorkerPolicy} from './app/veyrnox/_lib/editorVisionRuntime.mjs';
 
 // All HTML uses middleware's fresh nonce policy (ADR-0060). API responses
 // keep a static restrictive policy without allowing inline scripts.
@@ -43,6 +45,14 @@ const nextConfig = {
         // Do not append a second CSP to middleware's nonce policy.
         source: '/api/:path*',
         headers: [{ key: 'Content-Security-Policy', value: CSP }],
+      },
+      {
+        source: LOCAL_SPEECH_WORKER_URL,
+        headers: [{key:'Content-Security-Policy',value:localSpeechWorkerPolicy(identityConfig.publicOrigin)}],
+      },
+      {
+        source: `${EDITOR_VISION_PATH}/worker.mjs`,
+        headers: [{key:'Content-Security-Policy',value:editorVisionWorkerPolicy(identityConfig.publicOrigin)}],
       },
     ];
   },

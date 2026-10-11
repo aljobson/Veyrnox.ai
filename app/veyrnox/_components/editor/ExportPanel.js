@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { Button } from '../Button';
+import { EditorDeliveryPanel } from './EditorDeliveryPanel';
 import { EDITOR_EXPORT_HEIGHTS, EDITOR_EXPORT_RATES, EXPORT_BITRATES } from '../../_lib/editorExportSettings.mjs';
 import { timelineSize } from '../../_lib/editorRender.mjs';
 export function ExportPanel({ tl, name, onName, height, onHeight, disabled, exporting, progress, result, blocker, onExport, onCancel, onCover }) {
@@ -16,5 +17,5 @@ export function ExportPanel({ tl, name, onName, height, onHeight, disabled, expo
         <label className="block text-xs">Quality<select aria-label="Export quality" className={field} value={quality} onChange={e => setQuality(e.target.value)}>{Object.entries(EXPORT_BITRATES).map(([q, rate]) => <option key={q} value={q}>{q} · {rate / 1000000} Mbps</option>)}</select></label>
         <Button size="sm" disabled={!tl.video.length && !tl.audio.length && !tl.text.length || !!blocker} onClick={() => onExport({ frameRate, format, quality })}>Export {format.toUpperCase()}</Button><Button size="sm" variant="ghost" onClick={coverFrame}>Save cover frame</Button>
     </fieldset>{blocker && <p className="text-xs">{blocker}</p>}{exporting && <><progress aria-label="Export progress" value={progress} max={1} className="w-full" /><Button size="sm" onClick={onCancel}>Cancel export</Button></>}
-    {result && <p role="status"><a className="text-xs text-vx-accent underline" href={result.url} download={result.name}>Download {result.name}</a></p>}{coverError && <p role="alert" className="text-xs">{coverError}</p>}{cover && <a className="block text-xs text-vx-accent underline" href={cover.url} download={cover.name}>Download cover PNG</a>}<p className="text-[10px] text-vx-fg-muted">Export uses the source frames at the chosen rate. Higher rates do not create new motion between source frames.</p></div>;
+    {result && <p role="status"><a className="text-xs text-vx-accent underline" href={result.url} download={result.name}>Download {result.name}</a></p>}{result && <EditorDeliveryPanel result={result} />}{coverError && <p role="alert" className="text-xs">{coverError}</p>}{cover && <a className="block text-xs text-vx-accent underline" href={cover.url} download={cover.name}>Download cover PNG</a>}<p className="text-[10px] text-vx-fg-muted">Export uses the source frames at the chosen rate. Higher rates do not create new motion between source frames.</p></div>;
 }

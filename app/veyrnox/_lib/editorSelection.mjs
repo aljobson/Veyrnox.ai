@@ -25,14 +25,14 @@ export function groupSelection(tl, selection, group = true) {
 }
 export function copySelection(tl, selection) {
     const items = selectionMembers(tl, selection);
-    return { items, media: Object.fromEntries(items.filter(c => c.mediaId).flatMap(c => [c.mediaId,...backgroundMediaIds(c)].map(id => [id,tl.media[id]]))) };
+    return { items, fonts:(tl.fonts||[]).filter(f=>items.some(c=>c.style?.font===f.family)), media: Object.fromEntries(items.filter(c => c.mediaId).flatMap(c => [c.mediaId,...backgroundMediaIds(c)].map(id => [id,tl.media[id]]))) };
 }
 export function pasteSelection(tl, clipboard, frame) {
     if (!clipboard?.items?.length) return { error: 'Copy clips first.' };
     if (locked(tl, clipboard.items)) return { error: 'Unlock the destination tracks first.' };
     const earliest = Math.min(...clipboard.items.map(c => c.start)), groups = new Map();
     let seq = tl.seq;
-    const next = { ...tl, media: { ...tl.media, ...clipboard.media }, video: [...tl.video], audio: [...tl.audio], text: [...tl.text] };
+    const next = { ...tl,...(clipboard.fonts?.length?{fonts:[...(tl.fonts||[]),...clipboard.fonts.filter(f=>!tl.fonts?.some(old=>old.family===f.family))]}:{}), media: { ...tl.media, ...clipboard.media }, video: [...tl.video], audio: [...tl.audio], text: [...tl.text] };
     for (const item of clipboard.items) {
         const { track, groupId, ...clip } = item;
         if (groupId && !groups.has(groupId)) groups.set(groupId, `g${++seq}`);

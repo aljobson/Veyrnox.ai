@@ -7,7 +7,7 @@ import { emptyProjectDocument,withTimeline,validProjectDocument } from '../lib/p
 const fixture=()=>addSequenceMedia(emptySequence(),{id:'local',kind:'video',frames:120,width:640,height:360,hasAudio:true,name:'Original.mp4'});
 test('renamed and organized media round-trip and still relink by original source identity',()=>{
     let tl=updateMediaDetails(fixture(),'local',{name:'Opening scene',folder:'Story/Intro',attribution:{credit:'Owner',usage:'Project footage',url:'https://example.com/rights'}});assert.equal(tl.error,undefined);
-    tl=updateMediaDetails(tl,'local',{name:'Revised opening'});assert.equal(tl.media.local.sourceName,'Original.mp4');assert.deepEqual(mediaFolders(tl),['Story/Intro']);
+    tl=updateMediaDetails(tl,'local',{name:'Revised opening'});assert.equal(tl.media.local.sourceName,'Original.mp4');assert.deepEqual(mediaFolders(tl),['Story','Story/Intro']);
     assert.equal(matchingMedia(tl,{folder:'Story/Intro',search:'Owner'}).length,1);assert.equal(matchingMedia(tl,{folder:''}).length,0);
     const match=matchLocalFile(tl,{name:'Original.mp4'},{seconds:4,kind:'video'});assert.equal(match.id,'local');
     const id='11111111-1111-4111-8111-111111111111';assert.equal(validProjectDocument(JSON.parse(JSON.stringify(withTimeline(emptyProjectDocument(id),tl))),id),true);
