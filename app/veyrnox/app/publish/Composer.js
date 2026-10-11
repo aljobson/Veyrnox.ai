@@ -5,6 +5,7 @@ import Link from 'next/link';
 import DeviceUploads from './DeviceUploads.js';
 import NetworkLogo from './NetworkLogo.js';
 import { gatewayFetch } from '../../_lib/gateway.js';
+import { ownedPublishUpload } from '../../_lib/editorDelivery.mjs';
 import { NETWORKS } from '../../../lib/socialConnectClient.js';
 import { createSocialPost, listSocialPosts, newIdempotencyKey } from '../../../lib/socialPostsClient.js';
 
@@ -87,16 +88,17 @@ function MediaPicker({ selected, onSelect }) {
     );
 }
 
-export function Composer({ accounts, onScheduled, initialJobId = null, uploadsEnabled = false, youtubeVisibilityEnabled = false }) {
-    const activeAccounts = (accounts || []).filter((a) => a.status === 'active' && a.publishingEnabled !== false && NETWORKS.find((n) => n.key === a.network)?.media.length);
+export function Composer({ accounts, onScheduled, initialJobId = null, initialUploadId = null, uploadsEnabled = false, youtubeVisibilityEnabled = false }) {
+    const activeAccounts = (accounts || []).filter((a) => a.status === 'active' && a.publishingEnabled !== false && (a.supportedMedia || NETWORKS.find((n) => n.key === a.network)?.media.filter(t => t !== 'video' || a.network === 'youtube'))?.length);
     const [selectedAccountIds, setSelectedAccountIds] = useState(() => new Set());
     const [caption, setCaption] = useState('');
     const [youtubeVisibility, setYoutubeVisibility] = useState('private');
     const hasYoutube = activeAccounts.some((a) => a.network === 'youtube' && selectedAccountIds.has(a.id));
     const [scheduledAt, setScheduledAt] = useState(defaultScheduleValue);
     const [mediaType, setMediaType] = useState('image');
+    const hasTiktokVideo = mediaType === 'video' && activeAccounts.some((a) => a.network === 'tiktok' && selectedAccountIds.has(a.id));
     const [selectedMedia, setSelectedMedia] = useState(null);
-    const [loadingMedia, setLoadingMedia] = useState(!!initialJobId);
+    const [loadingMedia, setLoadingMedia] = useState(!!initialJobId || !!initialUploadId);
     const [mediaError, setMediaError] = useState('');
     const [uploading, setUploading] = useState(false);
     const [pickerOpen, setPickerOpen] = useState(false);
@@ -126,6 +128,21 @@ export function Composer({ accounts, onScheduled, initialJobId = null, uploadsEn
         return () => { cancelled = true; };
     }, [initialJobId]);
 
+    useEffect(() => {
+        if (!initialUploadId || initialJobId) return;
+        let active = true;
+        Promise.resolve().then(async () => {
+            if (!active) return null;
+            if (!uploadsEnabled) throw new Error('uploads disabled');
+            setLoadingMedia(true);
+            return ownedPublishUpload(gatewayFetch, initialUploadId);
+        }).then(media => {
+            if (active && media) { setSelectedMedia(media); setMediaType('video'); setMediaError(''); }
+        }).catch(() => { if (active) setMediaError(uploadsEnabled ? 'This upload is unavailable for your account. Choose an image or video from your library or device.' : 'Video uploads are not open here yet.'); })
+            .finally(() => { if (active) setLoadingMedia(false); });
+        return () => { active = false; };
+    }, [initialUploadId, initialJobId, uploadsEnabled]);
+
     function toggleAccount(id) {
         setSelectedAccountIds((prev) => {
             const next = new Set(prev);
@@ -142,7 +159,7 @@ export function Composer({ accounts, onScheduled, initialJobId = null, uploadsEn
         for (const id of selectedAccountIds) {
             const account = activeAccounts.find((a) => a.id === id);
             const network = NETWORKS.find((n) => n.key === account?.network);
-            if (!network?.media.includes(mediaType)) { setError(`${network?.label || 'That account'} does not support this media type.`); return; }
+            if (!(account?.supportedMedia || network?.media.filter(t => t !== 'video' || account?.network === 'youtube'))?.includes(mediaType)) { setError(`${network?.label || 'That account'} does not support this media type.`); return; }
             const length = network.key === 'bluesky' ? [...new Intl.Segmenter('en', { granularity: 'grapheme' }).segment(caption)].length : [...caption].length;
             if (length > network.captionLimit) { setError(`${network.label} supports captions up to ${network.captionLimit} characters.`); return; }
         }
@@ -203,6 +220,8 @@ export function Composer({ accounts, onScheduled, initialJobId = null, uploadsEn
                     })}
                 </ul>
             </div>
+
+            {hasTiktokVideo && <p className="text-sm text-vx-fg-muted">TikTok receives an inbox draft at the chosen time. Finish caption, any AI disclosure and posting in TikTok; this does not publish automatically.</p>}
 
             {hasYoutube && <div>
                 {youtubeVisibilityEnabled ? <>

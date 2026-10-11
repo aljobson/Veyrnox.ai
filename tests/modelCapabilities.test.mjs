@@ -125,6 +125,9 @@ test('Kling 3.0 i2v record carries the corrected fal contract', () => {
         shapePayload(record, { prompt: 'p', image_url: 'https://r2.example/a.png', duration_seconds: 10 }),
         { prompt: 'p', start_image_url: 'https://r2.example/a.png', duration: '10', generate_audio: false },
     );
+    assert.deepEqual(shapePayload(record, { prompt: 'p', image_url: 'https://r2.example/start.png', endImage_url: 'https://r2.example/end.png', duration_seconds: 5 }),
+        { prompt: 'p', start_image_url: 'https://r2.example/start.png', end_image_url: 'https://r2.example/end.png', duration: '5', generate_audio: false });
+    assert.deepEqual(publicCapabilities(record).media, { image: { required: true, kind: 'image', label: 'Start frame' }, endImage: { required: false, kind: 'image', label: 'End frame' } });
 });
 
 test('undeclared keys are dropped by the gateway, and refused if they reach the check', () => {
@@ -159,7 +162,7 @@ test('the public view carries no provider field names, pins or assumptions', () 
     }
     assert.deepEqual(publicCapabilities(capabilityFor('fal-ai/veo3.1/fast')), {
         kind: 'video', lengths: [5],
-        inputs: { prompt: { type: 'string' }, negative_prompt: { type: 'string' }, seed: { type: 'int' },
+        inputs: { prompt: { type: 'string', max: 2000 }, negative_prompt: { type: 'string', max: 2000 }, seed: { type: 'int', max: 2147483647 },
             aspect_ratio: { type: 'enum', values: ['16:9', '9:16'] } },
         media: {},
     });
@@ -225,7 +228,7 @@ test('Qwen voice design sends the words as fal\'s text and the described voice a
     assert.deepEqual(declaredInputs(r, { prompt: 'p', voice_description: 'v', max_new_tokens: 1, language: 'Chinese',
         enable_safety_checker: false, audio_url: 'https://r2/voice.mp3', aspect_ratio: '16:9' }), { prompt: 'p', voice_description: 'v' });
     assert.deepEqual(r.media, {});
-    assert.deepEqual(publicCapabilities(r).inputs, { prompt: { type: 'string' }, voice_description: { type: 'string' } });
+    assert.deepEqual(publicCapabilities(r).inputs, { prompt: { type: 'string', max: 1000 }, voice_description: { type: 'string', max: 500 } });
 });
 
 test('MMAudio buys one 8s clip, and background removal sends only the image', () => {
@@ -299,4 +302,12 @@ test('staged Kling i2v advertises only supported controls and checks before debi
     }
     assert.equal(checkInputs(record, { prompt: 'p' }).error, 'inputs_invalid:image_url');
     assert.equal(checkInputs(record, { ...inputs, prompt: 'x'.repeat(2001) }).ok, false);
+});
+
+test('the public speech text bound matches pre-debit validation rather than offering an unpriced extra character',() => {
+    for (const endpoint of ['fal-ai/elevenlabs/tts/turbo-v2.5','fal-ai/minimax/speech-2.6-hd','fal-ai/elevenlabs/text-to-dialogue/eleven-v3','fal-ai/inworld-tts','market:elevenlabs/text-to-speech-turbo-2-5','market:elevenlabs/text-to-dialogue-v3']) {
+        const record = capabilityFor(endpoint), limit = publicCapabilities(record).inputs.prompt.max;
+        assert.equal(limit,endpoint === 'fal-ai/inworld-tts' ? 2000 : 1000);
+        assert.equal(checkInputs(record,{ prompt: 'x'.repeat(limit + 1) }).ok,false,endpoint);
+    }
 });

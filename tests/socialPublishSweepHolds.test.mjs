@@ -81,7 +81,7 @@ test('hold checks call the RPC only when the server gate is exactly true', async
             if (name === 'claim_due_social_post_targets') return Response.json([row]);
             if (name === 'threads') return Response.json({ id: 'container' });
             if (name === 'authorize_social_target_dispatch') {
-                assert.equal(flag, 'true', 'disabled deployment must not need migration 0286');
+                assert.equal(flag, 'true', 'disabled deployment must not need migration 0289');
             } else assert.equal(name, 'report_social_post_progress');
             return Response.json({ ok: true });
         };

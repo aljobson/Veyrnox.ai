@@ -8,7 +8,8 @@ import { refundRejectedSubmit, unknownSubmitResponse, recordSubmittedJob } from 
 import { freeAllowanceOn as isFreeAllowanceOn, takeFreeJob } from '../../../../lib/freeJob.js';
 import { templateStartId } from '../../../../lib/templateStart.js';
 import { classifySubmitFailure } from '../../../../lib/submitFailureClass.js';
-import { resolveUploadedSource, resolveAssetSource } from '../../../../lib/resolveSource.js';
+import { readGenerationSources, resolveGenerationSources, sourceErrorStatus } from '../../../../lib/generationSources.js';
+import { mediaInputKey } from '../../../../lib/generationSourceSlots.mjs';
 import { envConfig as r2EnvConfig, isConfigured as r2IsConfigured } from '../../../../packages/adapters/r2.js';
 import { editUnits, clipCaptionsEnabled, clipSlowEnabled } from '../../../../lib/clipEdit.js';
 import { compositeRefundGate } from '../../../../lib/compositeRefunds.js';
@@ -35,7 +36,6 @@ const MAX_INPUTS_BYTES = 8 * 1024;
 const UNIT_SECONDS = 5;
 const RATE_LIMIT_PER_WINDOW = 10;
 const RATE_WINDOW_SECONDS = 60;
-const MAX_SOURCES = 2;
 // `resolution` is deliberately absent: fal bills per tier and the catalog
 // holds one cost per model (its priced tier), so the server never lets a
 // request select a pricier tier. The provider default is the priced one.
@@ -190,76 +190,16 @@ export async function POST(req) {
         return NextResponse.json({ error: 'rate_check_unavailable' }, { status: 503 });
     }
 
-    // Resolved AFTER the rate-limit check, deliberately. This does a SigV4
-    // presign plus an R2 round trip, so running it first meant a request
-    // that was about to be 429'd had already spent that work — an unmetered
-    // path through a metered endpoint.
-    // A Transform job names an uploaded source by its R2 key. The client
-    // never sends a URL for it: the key is checked for ownership, the bytes
-    // are checked against what was declared at signing time, and only then
-    // does this server mint the short-lived URL the provider will fetch.
-    // The key is what persists in jobs.inputs; the signed URL does not.
-    // Lip sync takes two uploads (a face and the speech), so `source_keys`
-    // holds up to MAX_SOURCES; `source_key` is the one-upload form.
-    // An upload can carry someone's face or voice. The caller must state they
-    // own it or have consent (AUP, /legal/aup); the statement is recorded on
-    // the job by job_consent_attested (0096) once the debit has created it.
+    // Bounded references, never client URLs. Legacy arrays keep their meaning; explicit
+    // Library descriptors bind one asset to a model-declared slot (ADR-0094).
     const consent = body && body.consent === true;
-    const rawKeys = body && body.source_keys !== undefined ? body.source_keys
-        : body && body.source_key !== undefined ? [body.source_key] : [];
-    if (!Array.isArray(rawKeys) || rawKeys.length > MAX_SOURCES
-        || rawKeys.some((k) => typeof k !== 'string' || k.length > 200)) {
-        return NextResponse.json({ error: 'source_key_invalid' }, { status: 400 });
-    }
-    // A Library asset as a source, by the id of the job that made it. It shares
-    // the upload limit and the consent statement: it can carry a face as well.
-    const rawAssets = body && body.source_assets !== undefined ? body.source_assets : [];
-    if (!Array.isArray(rawAssets) || rawKeys.length + rawAssets.length > MAX_SOURCES
-        || rawAssets.some((k) => typeof k !== 'string' || k.length > 64)) {
-        return NextResponse.json({ error: 'source_asset_invalid' }, { status: 400 });
-    }
-    const sources = {};   // input field -> resolved source
-    const sourceKeys = {}; // input field -> upload key
-    const sourceAssets = {}; // input field -> job id of a Library asset
-    // A client-sent image_url/video_url is dropped here, ALWAYS — not only on
-    // the upload path. Inside `if (rawKeys.length)` these two deletes left a
-    // hole: a request with a media URL and no source key kept the client's
-    // host, and then checkSource saw no resolved source and enforced neither
-    // the model's maxPixels/maxSeconds cap (which its price is built on) nor
-    // the consent statement. The only source a model may read is one this
-    // server signed, so the key is the only way to name one.
-    delete inputs.image_url;
-    delete inputs.video_url;
+    const references = readGenerationSources(body);
+    if (!references.ok) return NextResponse.json({ error: references.error }, { status: 400 });
+    const rawKeys = references.keys, rawAssets = references.assets;
     if (rawKeys.length || rawAssets.length) {
         if (!consent) return NextResponse.json({ error: 'consent_required' }, { status: 400 });
-        const r2cfg = r2EnvConfig();
-        if (!r2IsConfigured(r2cfg)) {
-            return NextResponse.json({ error: 'gateway_not_configured' }, { status: 503 });
-        }
-        for (const key of rawKeys) {
-            const source = await resolveUploadedSource(authId, key, r2cfg);
-            if (!source.ok) {
-                const status = source.error === 'source_not_found' ? 404 : source.error === 'internal' ? 502 : 400;
-                return NextResponse.json({ error: source.error }, { status });
-            }
-            // Two uploads for one slot would leave one silently unused.
-            if (sources[source.field]) return NextResponse.json({ error: 'source_key_invalid' }, { status: 400 });
-            sources[source.field] = source;
-            sourceKeys[source.field] = key;
-            inputs[source.field] = source.url;
-        }
-        for (const jobId of rawAssets) {
-            const source = await resolveAssetSource(authId, jobId, r2cfg, cfg);
-            if (!source.ok) {
-                const status = source.error === 'source_not_found' ? 404 : source.error === 'internal' ? 502 : 400;
-                return NextResponse.json({ error: source.error }, { status });
-            }
-            if (sources[source.field]) return NextResponse.json({ error: 'source_key_invalid' }, { status: 400 });
-            sources[source.field] = source;
-            sourceAssets[source.field] = jobId;
-            inputs[source.field] = source.url;
-        }
     }
+    for (const slot of ['image','endImage','video','audio']) delete inputs[mediaInputKey(slot)];
 
     // 1. Look up the model in the catalog. The allowance column is asked for only when the flag is on, so a
     //    Worker running before migration 0205 is applied never queries a column that does not exist yet.
@@ -294,6 +234,15 @@ export async function POST(req) {
     if (modelRow.gated_flag) return NextResponse.json({ error: 'model_gated' }, { status: 402 });
     const providerKey = provider.key();
     if (!providerKey) return NextResponse.json({ error: 'gateway_not_configured' }, { status: 503 });
+    // Active capabilities precede source signing/inspection. Both frames pass caller
+    // ownership, expiry, MIME sniffing and bounded size/length checks before debit.
+    const r2cfg = rawKeys.length || rawAssets.length ? r2EnvConfig() : null;
+    if (r2cfg && !r2IsConfigured(r2cfg)) return NextResponse.json({ error: 'gateway_not_configured' }, { status: 503 });
+    const resolved = await resolveGenerationSources({ authId, keys: rawKeys, assets: rawAssets, record, r2cfg, dbcfg: cfg });
+    if (!resolved.ok) return NextResponse.json({ error: resolved.error }, { status: sourceErrorStatus(resolved.error) });
+    const { sources, sourceKeys, sourceAssets } = resolved;
+    Object.assign(inputs,resolved.inputs);
+
     // From here on only the keys this model declares exist: the create page
     // sends one control set for every model, and an undeclared key must not
     // reach the provider, the job row, or the price.
@@ -448,7 +397,7 @@ export async function POST(req) {
 
     const jobId = debit.job_id;
     const idempotent = debit.idempotent;
-    if (rawKeys.length && jobId) {
+    if ((rawKeys.length || rawAssets.length) && jobId) {
         // Recorded before the provider call: a job that spends money on
         // someone's likeness must carry the statement that allowed it.
         try {

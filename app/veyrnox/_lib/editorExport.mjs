@@ -12,6 +12,7 @@ import { graphicCanvas } from './editorGraphics.mjs';
 //   - Audio is mixed with an OfflineAudioContext and added to the muxer a second at a time, between video frames.
 //   - Cancel stops within a frame; the half-written output is discarded.
 import { Input, BlobSource, ALL_FORMATS, Output, BufferTarget, Mp4OutputFormat, MovOutputFormat, Quality, CanvasSink, CanvasSource, AudioBufferSource, canEncodeVideo, canEncodeAudio, QUALITY_HIGH } from 'mediabunny';
+import {registerLocalVp9AlphaDecoder} from './editorAlphaVideo.mjs';
 import { FPS, videoLayout, totalFrames, effectiveTransition } from './editorTimeline.mjs';
 import { frameLayers, resolvePictures, paintFrame, timelineSize } from './editorRender.mjs';
 export { EXPORT_HEIGHTS, outputSize } from './editorRender.mjs';
@@ -95,8 +96,9 @@ export async function exportTimeline(tl, blobs, { signal = new AbortController()
             if (images.has(clip.mediaId)) { readers.push({ at: async () => images.get(clip.mediaId), close: async () => {} }); continue; }
             const track = await inputs.get(clip.mediaId).getPrimaryVideoTrack();
             if (!track || !await track.canDecode()) throw new Error('This browser cannot decode one of the videos.');
+            if(await track.canBeTransparent())await registerLocalVp9AlphaDecoder();
             // A clip keeps playing under the next clip's dissolve, so its reader runs that much further (never past the file).
-            const sink=new CanvasSink(track,{poolSize:2}),range=sourceRange(clip,tl.schemaVersion===3?sequenceTransitionAfter(tl,clip):effectiveTransition(tl,k+1));
+            const sink=new CanvasSink(track,{poolSize:2,alpha:true}),range=sourceRange(clip,tl.schemaVersion===3?sequenceTransitionAfter(tl,clip):effectiveTransition(tl,k+1));
             readers.push(clip.reverse || clip.freezeFrame!==undefined ? new SeekReader(sink) : new Reader(sink, Math.max(0,range.from)/FPS, Math.min(range.to+1,tl.media[clip.mediaId].frames)/FPS));
         }
 

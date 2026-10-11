@@ -1,5 +1,6 @@
 import { Input, BlobSource, ALL_FORMATS, CanvasSink, AudioBufferSink } from 'mediabunny';
 import { graphicCanvas } from './editorGraphics.mjs';
+import {registerLocalVp9AlphaDecoder} from './editorAlphaVideo.mjs';
 const cache = new WeakMap();
 async function inspect(media, blob) {
     const thumbnails = [], peaks = new Array(120).fill(0); let input;
@@ -9,7 +10,7 @@ async function inspect(media, blob) {
         else {
             input = new Input({ source: new BlobSource(blob), formats: ALL_FORMATS });
             const video = await input.getPrimaryVideoTrack();
-            if (video) { const sink = new CanvasSink(video, { width: 160, height: 90, fit: 'contain', poolSize: 1 }); for (const fraction of [0, 0.33, 0.66]) await thumbnail((await sink.getCanvas(media.frames / 30 * fraction))?.canvas); }
+            if (video) { if(await video.canBeTransparent())await registerLocalVp9AlphaDecoder();const sink = new CanvasSink(video, { width: 160, height: 90, fit: 'contain', poolSize: 1, alpha: true }); for (const fraction of [0, 0.33, 0.66]) await thumbnail((await sink.getCanvas(media.frames / 30 * fraction))?.canvas); }
             const audio = media.hasAudio && await input.getPrimaryAudioTrack();
             if (audio) for await (const part of new AudioBufferSink(audio).buffers()) { const data = part.buffer.getChannelData(0); for (let i = 0; i < data.length; i += 32) { const at = Math.min(119, Math.max(0, Math.floor((part.timestamp + i / part.buffer.sampleRate) / (media.frames / 30) * 120))); peaks[at] = Math.max(peaks[at], Math.abs(data[i])); } }
         }

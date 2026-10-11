@@ -135,7 +135,7 @@ BEGIN
  PERFORM public.release_content_hold(admin_auth::text,j2,'reviewed stale claim');
  SELECT * INTO claimed FROM public.claim_due_social_post_targets(5);
  PERFORM pg_temp.check_ok(claimed.target_id=target);
- -- Model a claim made before 0286 introduced the snapshot columns.
+ -- Model a claim made before 0289 introduced the snapshot columns.
  UPDATE public.social_post_targets SET claimed_from_status=NULL,claimed_attempts=NULL,claimed_provider_state=NULL,provider_state='{"legacy":true}' WHERE id=target;
  UPDATE public.assets SET held_at=now() WHERE job_id=j2;
  r:=public.authorize_social_target_dispatch(target,claimed.claim_key);

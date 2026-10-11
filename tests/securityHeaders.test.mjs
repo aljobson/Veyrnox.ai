@@ -1,6 +1,8 @@
 /** Pins the shared CSP allowlists and global response hardening. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {LOCAL_SPEECH_WORKER_URL,localSpeechWorkerPolicy} from '../app/veyrnox/_lib/localSpeechAssets.mjs';
+import {EDITOR_VISION_PATH,editorVisionWorkerPolicy} from '../app/veyrnox/_lib/editorVisionRuntime.mjs';
 process.env.APP_ENV = 'production';
 const { default: nextConfig } = await import('../next.config.mjs');
 
@@ -10,10 +12,14 @@ const MIN_HSTS_AGE = 63072000;
 
 async function headerMap() {
     const groups = await nextConfig.headers();
-    assert.equal(groups.length, 2, 'global hardening and API CSP are separate');
+    assert.equal(groups.length, 4, 'global hardening, API CSP and the two exact inference Workers are separate');
     assert.equal(groups[1].source, '/api/:path*');
     assert.equal(groups[0].source, '/:path*');
-    return new Map(groups.flatMap(group => group.headers).map((h) => [h.key.toLowerCase(), h.value]));
+    assert.equal(groups[2].source,LOCAL_SPEECH_WORKER_URL);
+    assert.deepEqual(groups[2].headers,[{key:'Content-Security-Policy',value:localSpeechWorkerPolicy('https://veyrnox.ai')}]);
+    assert.equal(groups[3].source,`${EDITOR_VISION_PATH}/worker.mjs`);
+    assert.deepEqual(groups[3].headers,[{key:'Content-Security-Policy',value:editorVisionWorkerPolicy('https://veyrnox.ai')}]);
+    return new Map(groups.slice(0,2).flatMap(group => group.headers).map((h) => [h.key.toLowerCase(), h.value]));
 }
 
 function directives(csp) {

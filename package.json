@@ -15,7 +15,7 @@
     "start": "next start",
     "lint": "eslint app components lib middleware.js packages/security packages/provider-sdk packages/db/tenant-client.js",
     "setup": "npm install",
-    "build:worker": "npm run build && opennextjs-cloudflare build && npm run verify:video-enhance -- .open-next/assets",
+    "build:worker": "npm run build && opennextjs-cloudflare build && npm run verify:video-enhance -- .open-next/assets && node scripts/verify-local-speech.mjs .open-next/assets && node scripts/verify-editor-vision.mjs .open-next/assets",
     "preview": "opennextjs-cloudflare preview",
     "deploy": "opennextjs-cloudflare deploy",
     "migrate": "node scripts/migrate.mjs",
@@ -26,7 +26,7 @@
     "typecheck": "tsc -p packages/security/tsconfig.json",
     "test:integration": "node scripts/test-tenant-foundation.mjs",
     "test:security": "node scripts/check-security.mjs",
-    "prebuild": "npm run prepare:video-enhance",
+    "prebuild": "npm run prepare:video-enhance && node scripts/prepare-local-speech.mjs && node scripts/prepare-editor-vision.mjs",
     "verify:video-enhance": "node scripts/verify-video-enhance.mjs"
   },
   "dependencies": {

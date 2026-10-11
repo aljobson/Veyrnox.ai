@@ -217,7 +217,7 @@ test('the sellable Auto Short record takes only a topic', async () => {
     const { capabilityFor, publicCapabilities, checkInputs, declaredInputs } = await import('../lib/modelCapabilities.js');
     const record = capabilityFor('auto-short:v1');
     assert.equal(record.provider, 'veyrnox');
-    assert.deepEqual(publicCapabilities(record), { kind: 'video', lengths: [5], inputs: { topic: { type: 'string' } }, media: {} });
+    assert.deepEqual(publicCapabilities(record), { kind: 'video', lengths: [5], inputs: { topic: { type: 'string', max: 200 } }, media: {} });
     assert.deepEqual(declaredInputs(record, { topic: 'octopuses', prompt: 'x', aspect_ratio: '16:9' }), { topic: 'octopuses' });
     assert.equal(checkInputs(record, {}).ok, false);
 });

@@ -17,7 +17,7 @@
 import { freeSocialAccountLimit } from '../../../../../lib/social/accountAllowance.js';
 import { youtubeVisibilityEnabled } from '../../../../../lib/social/publishFeature.js';
 import { socialUploadsEnabled } from '../../../../../lib/social/uploadPolicy.js';
-import { networkEnabled } from '../../../../../lib/social/networks.js';
+import { networkEnabled, networkMedia } from '../../../../../lib/social/networks.js';
 import { networkReadiness } from '../../../../../lib/social/networkReadiness.js';
 import { NextResponse } from 'next/server';
 import { accountReadLimit } from '../../../../../lib/accountReadLimit.js';
@@ -68,7 +68,7 @@ export async function GET(req) {
     return NextResponse.json({
         brand_id: brand.brand_id,
         accountLimit: freeSocialAccountLimit(),
-        accounts: (accounts.accounts || []).map((account) => ({ ...account, publishingEnabled: networkEnabled(account.network) })),
+        accounts: (accounts.accounts || []).map((account) => ({ ...account, publishingEnabled: networkEnabled(account.network), supportedMedia: networkMedia(account.network) })),
         uploadsEnabled: socialUploadsEnabled(),
         youtubeVisibilityEnabled: youtubeVisibilityEnabled(),
         networks: networkReadiness(),

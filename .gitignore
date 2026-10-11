@@ -57,6 +57,8 @@ scripts/.auto-short-verify.json
 
 # Reproducible local-only Video Enhance model/runtime assets
 public/video-enhance/
+public/editor-speech/
+public/editor-vision/
 
 # Playwright (e2e/)
 test-results/

@@ -1,0 +1,22 @@
+Veyrnox local person segmentation runtime
+
+MediaPipe Tasks Vision 1.0.1: Apache License 2.0.
+Primary SDK source: https://github.com/google-ai-edge/mediapipe
+Existing pinned npm package: @mediapipe/tasks-vision@1.0.1.
+The module bundle and module WASM loader/binary are copied byte-for-byte.
+Apache licence text is retained as Apache-2.0.txt.
+
+Selfie Multiclass 256x256 float32 model, version 1:
+https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_multiclass_256x256/float32/1/selfie_multiclass_256x256.tflite
+16,371,837 bytes; SHA256 c6748b1253a99067ef71f7e26ca71096cd449baefa8f101900ea23016507e0e0.
+Primary model card explicitly licenses the model under Apache License Version 2.0, page 1:
+https://storage.googleapis.com/mediapipe-assets/Model%20Card%20Multiclass%20Segmentation.pdf
+Google author Adel Ahmadyan; model date 10 May 2023.
+Documentation: https://developers.google.com/edge/mediapipe/solutions/vision/image_segmenter
+The model classes are background, hair, body-skin, face-skin, clothes and other accessories.
+The model is not pixel-perfect. Low light, fast movement, noise, backlighting and occlusion reduce mask quality.
+No identity recognition or surveillance is implemented.
+
+Original Veyrnox worker/client and compositing code are independent application code.
+No CapCut code, runtime, weights, music, templates or test footage are copied.
+No person test image is shipped in runtime assets.

@@ -42,7 +42,7 @@
   "vars": {
     // Generated image scans: production stays off until the owner enables the data flow.
     "CONTENT_SCAN_ENABLED": "false",
-    // Switch on only after migration 0286 is applied.
+    // Switch on only after migration 0289 is applied.
     "SOCIAL_HOLD_CHECKS_ENABLED": "false",
     "FILM_LIBRARY_MASTERS_ENABLED": "true",
     // Owner-requested private master saves; ADR-0085 amendment, no new migration.
@@ -73,6 +73,9 @@
     "EDITOR_TIMELINE_ENABLED": "true",
     "EDITOR_MULTITRACK_ENABLED": "false",
     "EDITOR_SHARED_TOOLS_ENABLED": "false",
+    "EDITOR_LIBRARY_EXPORTS_ENABLED": "false",
+    "EDITOR_ORGANIZATION_ENABLED": "false",
+    "EDITOR_LOCAL_INFERENCE_ENABLED": "false",
     // ADR-0072: chat Personas, saved instructions with a default model and options. On in production since 2026-10-07: staging
     // acceptance passed 2026-10-06 and migration 0216 is applied on production. Staging has its own value below.
     "PERSONAS_ENABLED": "true",
@@ -199,6 +202,7 @@
     // The overall Publish launch still follows PUBLISH_ENABLED.
     "PUBLISH_CALENDAR_ENABLED": "true",
     "PUBLISH_UPLOADS_ENABLED": "false",
+    "PUBLISH_VIDEO_DESTINATIONS_ENABLED": "false",
     // Requires 0228 and provider app credentials before tester activation.
     "PUBLISH_EXTENDED_NETWORKS_ENABLED": "false",
     // Adds instagram_business_manage_insights to the Instagram consent
@@ -252,7 +256,7 @@
       "vars": {
         // Exercise the scanner in staging; queued images drain oldest first.
         "CONTENT_SCAN_ENABLED": "true",
-        // Switch on only after migration 0286 is applied.
+        // Switch on only after migration 0289 is applied.
         "SOCIAL_HOLD_CHECKS_ENABLED": "true",
         "APP_ENV": "staging",
         "ACCESS_TEAM_DOMAIN": "fancy-lake-7c60.cloudflareaccess.com",
@@ -304,6 +308,9 @@
         "EDITOR_TIMELINE_ENABLED": "true",
         "EDITOR_MULTITRACK_ENABLED": "true",
         "EDITOR_SHARED_TOOLS_ENABLED": "true",
+        "EDITOR_LIBRARY_EXPORTS_ENABLED": "true",
+        "EDITOR_ORGANIZATION_ENABLED": "true",
+        "EDITOR_LOCAL_INFERENCE_ENABLED": "true",
         // ADR-0072 (vars are not inherited). Flip to "true" on staging only after 0216 is applied there.
         "PERSONAS_ENABLED": "false",
         // Already live on staging; source must preserve the deployed preview and its recovery checks.
@@ -330,6 +337,7 @@
         "PUBLISH_CALENDAR_ENABLED": "true",
         // 0209 applied and real browser uploads verified on staging 2026-10-06.
         "PUBLISH_UPLOADS_ENABLED": "true",
+        "PUBLISH_VIDEO_DESTINATIONS_ENABLED": "false",
         // 0228 applied on staging 2026-10-08. Unconfigured providers remain unavailable.
         "PUBLISH_EXTENDED_NETWORKS_ENABLED": "true",
         // Provider review approvals are still outstanding.
