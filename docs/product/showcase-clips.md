@@ -131,26 +131,24 @@ instructions remain in `scripts/landing-film/README.md`.
 
 ## The breakthrough video
 
-The owner approved an original Veyrnox.ai version on 9 October 2026,
-replacing the previously imported Spider-Man Facebook reel. The five-second
-clip shows a blond LEGO-style hero in navy Captain America-style armour
-leaning forward to offer a branded latte mug out of a Veyrnox.ai
-Facebook-style post. The author label reads Veyrnox.ai, and the mug carries
-the owner's mint V and VEYRNOX.ai wordmark.
+The owner approved the branded robot version on 11 October 2026, replacing
+the previous coffee clip in the opening video section, before the product
+film and pricing hero.
+A realistic white android hits the glass twice: the first punch cracks it,
+the second breaks it outward, then its head and shoulders emerge toward the
+viewer. The clip contains the official Veyrnox.ai mark and wordmark and a
+large “DO YOU FEEL CREATIVE?” question. No crowd appears.
 
-The character and café were generated with FAL Nano Banana Pro. The approved
-animation used `fal-ai/kling-video/o3/pro/image-to-video`, request
-`01a122cb-0e02-7591-9a93-aa34e3fe696b`, with audio disabled. The
-[approved FAL output](https://v3b.fal.media/files/b/0aadbdf8/lfFUolQrcdtBZK3HjGD97_output.mp4)
-is 1,292 × 1,604, 24 fps and 5.041667 seconds long. It is scaled without
-cropping for the homepage; the complete approved motion is retained.
+The animation was generated through Veyrnox with Kling 3.0 Pro image-to-video.
+The five-second motion was extended with a final-pose hold and the branding
+was composited locally. The approved export is `robot-hero-v4.mp4`; the
+matching poster is `robot-poster-v4.jpg`.
 
-`BREAKTHROUGH_FILM` supplies the prominent portrait player immediately under
-the hero. The complete clip is served from `/film/breakthrough-veyrnox.mp4`
-as a silent H.264 file at 720 × 894, with no crop. Its poster is a frame at
-4.8 seconds showing the leaning hero and branded foreground mug. The
-previous Spider-Man video and poster are removed from `public/film/`.
-The existing `FilmPlayer` supplies visible Play/Pause, pauses
-off screen, leaves the poster still for reduced motion/data saver, and
-fetches the file only when playback begins. It is labelled as viral
-inspiration, without attributing it to a Veyrnox model.
+`BREAKTHROUGH_FILM` serves the eight-second silent H.264 export from
+`/film/robot-creative-v4.mp4`, with `/film/robot-creative-v4.jpg` as its poster.
+The full 1,280 × 720 landscape frame is displayed without cropping, keeping
+the logo, robot and question visible on desktop and mobile. A “Start creating”
+link below opens `/app/create`. The fifteen-second product film follows it.
+The existing `FilmPlayer` supplies visible Play/Pause, pauses off screen,
+leaves the poster still for reduced motion/data saver, and fetches the file
+only when playback begins. The video stays under the 2 MB film budget.

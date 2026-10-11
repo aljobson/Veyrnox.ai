@@ -16,12 +16,13 @@ export const LANDING_FILM = {
   renderedFrom: '37e3a2940363ef2a',
 };
 
-// Owner-approved FAL generation; provenance is in docs/product/showcase-clips.md.
+// Owner-approved two-hit robot video with the Veyrnox.ai logo and creative
+// question composited into the frames. Provenance: docs/product/showcase-clips.md.
 export const BREAKTHROUGH_FILM = {
-  video: '/film/breakthrough-veyrnox.mp4',
-  poster: '/film/breakthrough-veyrnox.jpg',
-  width: 720,
-  height: 894,
+  video: '/film/robot-creative-v4.mp4',
+  poster: '/film/robot-creative-v4.jpg',
+  width: 1280,
+  height: 720,
 };
 
 // Each film is fetched only once half on screen. The cap catches a careless

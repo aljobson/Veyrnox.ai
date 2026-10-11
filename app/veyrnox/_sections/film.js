@@ -5,14 +5,13 @@ import { BREAKTHROUGH_FILM, LANDING_FILM } from '../_lib/film';
 export function BreakthroughVideo() {
   return (
     <section id="breakthrough" aria-labelledby="breakthrough-title" className="scroll-mt-20 px-4 sm:px-6 max-w-[1300px] mx-auto pt-12 sm:pt-16 lg:pt-20 pb-16 lg:pb-24">
-      <div className="grid gap-8 lg:grid-cols-[1fr_420px] lg:gap-16 items-center rounded-2xl border border-vx-border bg-vx-panel p-6 sm:p-10">
-        <div>
-          <p className="text-xs font-bold tracking-wide text-vx-fg-muted">Viral inspiration · 5 seconds</p>
-          <h1 id="breakthrough-title" className="vx-display mt-4 text-[36px] sm:text-[48px] lg:text-[64px] text-balance">Feeling Creative, use VEYRNOX.AI to serve you something inspirational.</h1>
-          <Link href="/models" className="mt-7 inline-flex min-h-11 items-center text-[15px] font-bold text-vx-fg underline underline-offset-4 hover:text-vx-accent">Explore video models</Link>
-        </div>
-        <div className="order-first lg:order-last w-full max-w-[420px] mx-auto">
-          <FilmPlayer film={BREAKTHROUGH_FILM} label="the breakthrough video" aspectRatio="720 / 894" />
+      <div className="rounded-3xl border border-vx-border bg-vx-panel p-4 sm:p-8">
+        <h1 id="breakthrough-title" className="sr-only">Do you feel creative?</h1>
+        <p className="sr-only">A silent eight-second video of a realistic white android punching a glass screen twice. The first hit cracks the glass; the second breaks it outward. Its head and shoulders lean through the screen toward the viewer. The Veyrnox.ai logo and the question “Do you feel creative?” appear in the frame.</p>
+        <FilmPlayer film={BREAKTHROUGH_FILM} label="the robot video" />
+        <div className="mt-6 flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+          <p className="max-w-[48ch] text-base sm:text-lg text-vx-fg-body leading-relaxed">Turn your ideas into images, video and audio with Veyrnox.ai.</p>
+          <Link href="/app/create" className="vx-press inline-flex min-h-11 shrink-0 items-center justify-center rounded-full bg-vx-fg px-6 py-3 text-[15px] font-extrabold text-vx-base hover:bg-vx-fg/85">Start creating</Link>
         </div>
       </div>
     </section>
