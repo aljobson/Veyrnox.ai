@@ -16,7 +16,7 @@ test('child switches cannot bypass profile, subscription or upload prerequisites
   env.CINEMA_ENABLED = 'true';
   assert.ok(Object.values(cinemaFeatures(env)).every(v => v === true));
   env.SOCIAL_CINEMA_PROFILES_ENABLED = 'false';
-  for (const key of ['profiles','creators','content','uploads','unlocks','publishing','monetisation','voting','comments','storyPolls','ppv','premieres']) assert.equal(cinemaFeatures(env)[key], false);
+  for (const key of ['profiles','creators','content','uploads','unlocks','publishing','monetisation','voting','retention','comments','storyPolls','ppv','premieres']) assert.equal(cinemaFeatures(env)[key], false);
   env.SOCIAL_CINEMA_PROFILES_ENABLED = 'true';
   env.CINEMA_SUBSCRIPTIONS_ENABLED = 'false';
   assert.equal(cinemaFeatures(env).monetisation, false);
@@ -32,4 +32,10 @@ test('rollout state is immutable and re-evaluated per request', () => {
   assert.equal(cinemaFeatures(env).profiles, false);
   assert.equal(first.profiles, true);
   assert.ok(!JSON.stringify(first).includes('SECRET'));
+});
+
+test('private collections also require viewing to be open', () => {
+  const env = Object.fromEntries(Object.values(CINEMA_FEATURE_FLAGS).map(key => [key, 'true']));
+  env.CINEMA_ENABLED = 'true'; env.CINEMA_VIEWING_ENABLED = 'false';
+  assert.equal(cinemaFeatures(env).retention, false);
 });
