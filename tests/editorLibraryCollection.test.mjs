@@ -39,3 +39,11 @@ test('saved master imports verify owned URLs, byte count and SHA-256 before any 
  await assert.rejects(loadEditorLibraryItem(call,{mediaId:`f-${id}`},{actor,fetchBytes:async()=>new Response(new Uint8Array(4))}),/verified bytes/);
  await assert.rejects(loadEditorLibraryItem(call,{mediaId:`f-${id}`},{actor,isCurrent:()=>false,fetchBytes:async()=>new Response(bytes)}),/account changed/);
 });
+
+test('the unified Library retains six separate source IDs and reloads the selected instrument',async()=>{
+ const stems=['vocals','drums','bass','other','guitar','piano'];
+ const call=async path=>{if(path.startsWith('/jobs?'))return {jobs:[{job_id:id,has_asset:true,model_id:'demucs-stems',label:'Original song'}]};if(path.endsWith('/asset'))return {mime_type:'audio/mpeg',output_stems:stems};return {};};
+ const page=await listEditorLibrary(call,{actor,deviceList:async()=>[]});assert.equal(page.items.length,6);assert.equal(new Set(page.items.map(x=>x.mediaId)).size,6);
+ const bass=page.items.find(x=>x.stem==='bass');assert.equal(bass.mediaId,`j-${id}--bass`);let received=false;
+ const result=await loadEditorLibraryItem(async path=>{assert.equal(path,`/jobs/${id}/asset?stem=bass`);received=true;return {mime_type:'audio/mpeg',url:'https://assets.test/bass.mp3'};},bass,{actor,fetchBytes:async()=>new Response('audio')});assert.equal(received,true);assert.equal(result.kind,'audio');
+});
