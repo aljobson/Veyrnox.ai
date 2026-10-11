@@ -127,6 +127,8 @@
     "CINEMA_PUBLISHING_ENABLED": "true",
     "CINEMA_VIEWING_ENABLED": "true",
     "VOTING_ENABLED": "false",
+    "CINEMA_AUDIENCE_ENABLED": "false",
+    "CINEMA_RANKINGS_ENABLED": "false",
     "COMMENTS_ENABLED": "false",
     "STORY_POLLS_ENABLED": "false",
     "PPV_ENABLED": "false",
@@ -271,6 +273,8 @@
         "FAL_DISPATCH_QUEUE_ENABLED": "false",
         "SUBSCRIPTIONS_ENABLED": "false",
         "VOTING_ENABLED": "false",
+        "CINEMA_AUDIENCE_ENABLED": "false",
+        "CINEMA_RANKINGS_ENABLED": "false",
         "COMMENTS_ENABLED": "false",
         "STORY_POLLS_ENABLED": "false",
         // ADR-0067: Chat is open on staging for testing only. No text model is

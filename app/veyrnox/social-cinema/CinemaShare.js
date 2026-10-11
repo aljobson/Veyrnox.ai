@@ -1,17 +1,23 @@
 'use client';
 import { useRef, useState } from 'react';
 import { Button } from '../_components/Button';
+import { getSession } from '../../lib/authClient';
+import { gatewayFetch } from '../_lib/gateway';
 import { publicCinemaUrl } from '../../../lib/cinema/publicUrl';
 export function CinemaShare({ id, title, episode = false }) {
   const url = publicCinemaUrl(id, episode);
   const [busy, setBusy] = useState(false), [notice, setNotice] = useState(''), [manual, setManual] = useState(false);
   const input = useRef(null);
   if (!url) return null;
+  function record(kind) {
+    if (!getSession()?.user?.id) return;
+    void gatewayFetch('/cinema/audience', { method:'POST', body:JSON.stringify({action:'share',content_id:id,kind}), headers:{'idempotency-key':crypto.randomUUID()} }).catch(()=>{});
+  }
   async function copy() {
     setBusy(true); setNotice('');
     try {
       await navigator.clipboard.writeText(url);
-      setManual(false); setNotice('Public link copied.');
+      record('copy'); setManual(false); setNotice('Public link copied.');
     } catch { setManual(true); setNotice('Copy the public link below.'); }
     finally { setBusy(false); }
   }
@@ -20,7 +26,7 @@ export function CinemaShare({ id, title, episode = false }) {
     setBusy(true); setNotice('');
     try {
       await navigator.share({ title: String(title || 'Social Cinema').slice(0, 120), url });
-      setManual(false); setNotice('Share request completed.');
+      record('share'); setManual(false); setNotice('Share request completed.');
     } catch (error) {
       if (error?.name === 'AbortError') setNotice('Sharing cancelled.');
       else { setManual(true); setNotice('Sharing is unavailable. Copy the public link below.'); }

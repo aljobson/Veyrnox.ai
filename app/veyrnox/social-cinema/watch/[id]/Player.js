@@ -6,6 +6,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { Button } from '../../../_components/Button';
 import { getSession, onSessionChange } from '../../../../lib/authClient';
 import { gatewayFetch } from '../../../_lib/gateway';
+import { createWatchCoverage } from '../../../../../lib/cinema/watchCoverage';
 import { createPlaybackMeter } from '../../../../../lib/cinema/playbackMeter';
 
 const identity = () => getSession()?.user?.id || '';
@@ -32,6 +33,7 @@ export function Player({ id, titleId = null }) {
   const stream = useRef(null);
   const renewal = useRef(null);
   const resume = useRef(null);
+  const watchSession = useRef(null);
   const [scriptNonce, setScriptNonce] = useState('');
   const [sdkReady, setSdkReady] = useState(false);
 
@@ -43,6 +45,7 @@ export function Player({ id, titleId = null }) {
 
   useEffect(() => {
     let active = true;
+    watchSession.current=null;
     setSrc(''); setReason(''); setState('loading');
     if (!UUID.test(id)) { setState('missing'); return undefined; }
     if (!account) { setState('signin'); return undefined; }
@@ -56,6 +59,7 @@ export function Player({ id, titleId = null }) {
         const r = await gatewayFetch('/cinema/play', { method: 'POST', body: JSON.stringify({ content_id: id }) });
         if (!active) return;
         if (!CUSTOMER_CODE.test(r.customer_code || '') || !/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(r.token || '')) { setState('error'); return; }
+        watchSession.current = UUID.test(r.watch_session_id || '') ? r.watch_session_id : null;
         expires = Date.parse(r.expires_at);
         if (!Number.isFinite(expires)) { setState('error'); return; }
         if (stream.current) resume.current = { time: stream.current.currentTime, playing: !stream.current.paused && !stream.current.ended };
@@ -79,9 +83,24 @@ export function Player({ id, titleId = null }) {
     const player = window.Stream(frame.current);
     stream.current = player;
     const meter = createPlaybackMeter();
+    const coverage = createWatchCoverage();
+    let audienceSending = false, pendingAudience = null;
+    const sample = () => coverage.sample(player.currentTime, meter.isPlaying() && !player.paused && !player.ended && !player.seeking);
+    const flushAudience = () => {
+      if (!active || audienceSending || !watchSession.current) return;
+      sample();
+      if (!pendingAudience) { const data=coverage.take(); if(data) pendingAudience={key:crypto.randomUUID(),body:JSON.stringify({action:'watch',session_id:watchSession.current,...data})}; }
+      if(!pendingAudience)return;
+      const attempt=pendingAudience;audienceSending=true;
+      gatewayFetch('/cinema/audience',{method:'POST',body:attempt.body,headers:{'idempotency-key':attempt.key}})
+        .then(()=>{if(pendingAudience===attempt)pendingAudience=null;})
+        .catch(e=>{if([400,402,403,404,409].includes(e?.status)&&pendingAudience===attempt)pendingAudience=null;})
+        .finally(()=>{audienceSending=false;});
+    };
     meter.setVisible(document.visibilityState === 'visible');
     let sending = false;
     const flush = () => {
+      flushAudience();
       if (!active || sending) return;
       const seconds = meter.takeSeconds();
       if (!seconds) return;
@@ -95,7 +114,7 @@ export function Player({ id, titleId = null }) {
       if (document.visibilityState !== 'visible') { player.pause(); return; }
       meter.setPlaying(true); renewal.current?.();
     };
-    const stopped = () => { meter.setPlaying(false); flush(); };
+    const stopped = () => { sample(); coverage.reset(); meter.setPlaying(false); flush(); };
     const visibility = () => {
       const visible = document.visibilityState === 'visible';
       meter.setVisible(visible);
@@ -113,6 +132,7 @@ export function Player({ id, titleId = null }) {
     player.addEventListener('playing', started);
     for (const event of ['pause', 'ended', 'waiting', 'seeking', 'error', 'abort', 'emptied']) player.addEventListener(event, stopped);
     player.addEventListener('loadedmetadata', loaded);
+    player.addEventListener('timeupdate', sample);
     document.addEventListener('visibilitychange', visibility);
     const timer = setInterval(() => {
       if (player.paused || player.ended || player.seeking) meter.setPlaying(false);

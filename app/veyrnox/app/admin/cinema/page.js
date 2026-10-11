@@ -33,6 +33,7 @@ function Reviews() {
     <Link href="/app/admin" className="text-sm underline">Back to operations</Link>
     <Link href="/app/admin/cinema/voting" className="ml-4 text-sm underline">Voting operations</Link> <Link href="/app/admin/cinema/comments" className="ml-4 text-sm underline">Comment moderation</Link>
     <Link href="/app/admin/cinema/story-polls" className="ml-4 text-sm underline">Story poll operations</Link>
+    <Link href="/app/admin/cinema/rankings" className="ml-4 text-sm underline">Weekly rankings</Link>
     <h1 className="mt-5 text-3xl font-black">Cinema creator applications</h1>
     <p className="my-5 text-vx-fg-body">Review requires a Cinema administrator account and a fresh authenticator check. Approval grants a creator role only.</p>
     <MfaPanel requireFresh onVerified={load} />
