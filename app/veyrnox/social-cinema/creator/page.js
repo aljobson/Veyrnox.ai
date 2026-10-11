@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { cinemaFeatures } from '../../../../lib/cinema/features';
 import { AccountBoundary } from '../../_components/AccountBoundary';
 import { CreatorWorkspace } from './CreatorWorkspace';
 import { Main } from '../../_components/Main';
@@ -8,7 +9,7 @@ export default function CreatorPage() {
   return <Main className="mx-auto max-w-[1100px] px-4 py-10 pb-40 sm:px-8">
     <Link href="/social-cinema" className="text-sm text-vx-accent hover:underline">← Social Cinema</Link>
     <h1 className="mt-6 text-3xl font-black sm:text-4xl">Creator workspace</h1>
-    <p className="mt-4 max-w-2xl text-vx-fg-body">Develop your films and series in private. Review and publishing will follow in a later release.</p>
-    <AccountBoundary><CreatorWorkspace proxyUploadsEnabled={process.env.CINEMA_PROXY_UPLOADS_ENABLED === 'true'} /></AccountBoundary>
+    <p className="mt-4 max-w-2xl text-vx-fg-body">Develop your films and series, manage publication review and explore your audience.</p>
+    <AccountBoundary><CreatorWorkspace proxyUploadsEnabled={process.env.CINEMA_PROXY_UPLOADS_ENABLED === 'true'} analyticsEnabled={cinemaFeatures(process.env).creatorAnalytics} /></AccountBoundary>
   </Main>;
 }
