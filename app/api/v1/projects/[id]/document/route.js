@@ -1,3 +1,4 @@
+import { editorFeatureEnabled } from '../../../../../../lib/editorRuntimeFlags.mjs';
 import { tenantRequest } from '../../../../../../packages/db/tenant-client.js';
 import { protectedRoute } from '../../../../../../packages/security/route.js';
 import { ApiError } from '../../../../../../packages/security/errors.js';
@@ -28,7 +29,7 @@ export async function PUT(request, { params }) {
       : !validProjectDocument(body.document, id)) throw new ApiError(400, 'INVALID_DOCUMENT', 'The project document is invalid.');
     if (!restore && body.document?.schema_version === 3 && process.env.EDITOR_MULTITRACK_ENABLED !== 'true')
       throw new ApiError(404, 'NOT_FOUND', 'Multitrack saving is not available here yet.');
-    if (!restore && (body.document?.timeline?.folders!==undefined || body.document?.timeline?.fonts!==undefined) && process.env.EDITOR_ORGANIZATION_ENABLED !== 'true')
+    if (!restore && (body.document?.timeline?.folders!==undefined || body.document?.timeline?.fonts!==undefined) && !editorFeatureEnabled('EDITOR_ORGANIZATION_ENABLED'))
       throw new ApiError(404, 'NOT_FOUND', 'Folder and custom font saving is not available here yet.');
     const result = await tenantRequest(request, context, 'rpc/save_project_document', { method: 'POST', body: {
       p_project_id: id, p_expected_revision: body.expected_revision, p_document: restore ? null : body.document,

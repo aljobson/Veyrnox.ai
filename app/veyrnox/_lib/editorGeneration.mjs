@@ -1,3 +1,4 @@
+import { generationFileProblem } from './editorGenerationUploads.mjs';
 import { generationSlotKind, generationMimeTypes } from '../../../lib/generationSourceSlots.mjs';
 export function generationQuote(model, duration) {
     if (!model || !Number.isInteger(model.credits) || model.credits < 0) return null;
@@ -80,14 +81,19 @@ export function generationPromptHelp(model) {
 }
 
 export function generationSources(model, sources, consent) {
-    const media = model?.media || {}, assets = [];
+    const media = model?.media || {}, assets = [], uploads = [];
     if (Object.keys(media).length > 2 || Object.keys(media).some(slot => !generationSlotKind(slot))) return { error: 'Choose a supported generation model.' };
     for (const [slot,spec] of Object.entries(media)) {
         const selected = sources?.[slot], label = generationSourceLabel(model,slot);
         if (!selected) { if (spec.required) return { error: `Choose the ${label.toLowerCase()}.` }; continue; }
+        if (selected.file) {
+            const problem = generationFileProblem(slot,selected.file);
+            if (problem || typeof selected.localId !== 'string' || !selected.localId) return { error: problem || 'Choose the source again.' };
+            uploads.push({ slot,localId:selected.localId,file:selected.file,mimeType:selected.mimeType }); continue;
+        }
         if (typeof selected.assetId !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(selected.assetId) || !generationMimeTypes(generationSlotKind(slot)).includes(selected.mimeType)) return { error: `Choose a supported ${generationSlotKind(slot)} from your Library for ${label.toLowerCase()}.` };
         assets.push({ asset_id: selected.assetId, slot });
     }
-    if (assets.length && consent !== true) return { error: 'Confirm the source permission statement.' };
-    return { assets };
+    if ((assets.length || uploads.length) && consent !== true) return { error: 'Confirm the source permission statement.' };
+    return { assets,...(uploads.length ? { uploads } : {}) };
 }

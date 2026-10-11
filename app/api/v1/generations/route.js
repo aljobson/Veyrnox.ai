@@ -1,3 +1,4 @@
+import { editorFeatureEnabled } from '../../../../lib/editorRuntimeFlags.mjs';
 import { falDispatchEnabled, admitFalDispatch } from '../../../../lib/falDispatch.js';
 import { publishFalDispatchWakeup } from '../../../../lib/falDispatchWakeup.js';
 import { providerFor } from '../../../../packages/provider-sdk/registry.js';
@@ -231,7 +232,7 @@ export async function POST(req) {
         console.error('[generations] no capability record for', modelRow.id, modelRow.provider_endpoint);
         return NextResponse.json({ error: 'provider_unsupported' }, { status: 501 });
     }
-    if (record.outputStems && process.env.EDITOR_AUDIO_STEMS_ENABLED !== 'true') return NextResponse.json({ error: 'audio_stems_unavailable' }, { status: 503 });
+    if (record.outputStems && !editorFeatureEnabled('EDITOR_AUDIO_STEMS_ENABLED')) return NextResponse.json({ error: 'audio_stems_unavailable' }, { status: 503 });
     if (modelRow.gated_flag) return NextResponse.json({ error: 'model_gated' }, { status: 402 });
     const providerKey = provider.key();
     if (!providerKey) return NextResponse.json({ error: 'gateway_not_configured' }, { status: 503 });

@@ -33,3 +33,21 @@ The editor also exposes the existing `kling-avatar-v2` and `latentsync` contract
 
 
 Safe public input metadata now includes each registry's numeric `max`. This fixes the existing normalization mismatch where `useCatalog` requested the prompt bound but the public registry view omitted it, displaying 2000 characters for speech paths limited to 1000. Exact public-shape and editor/gateway bound tests retain the true model limits without publishing provider fields, prices or pinned values.
+
+
+## Device-original source amendment — 11 October 2026
+
+Editor generation also accepts original image, MP4 and MP3/WAV device files.
+Selection and previews remain local until Generate. The existing authenticated
+source-upload endpoint signs owned storage writes; strict `{key, slot}` upload
+descriptors assign start/end frames and audio/video roles. Legacy upload strings
+and Library descriptors retain their contracts. At most two combined references
+are accepted, and duplicate/undeclared slots fail before expensive inspection.
+No caller URL, duration or MIME claim becomes a trusted provider input.
+
+Completed uploads are reused across an unchanged partially failed attempt, and
+an ambiguous accepted generation retains its original idempotency key/body.
+Account changes/unmount abort pending uploads and prevent a changed-account
+request. Files and previews are cleared with the source/mode/session lifecycle.
+Normal source consent, byte/size/duration inspection and catalog pricing precede
+debit. This does not enable project-media persistence or a new paid provider.
