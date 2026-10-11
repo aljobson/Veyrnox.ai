@@ -1,6 +1,6 @@
 # Vocal/instrument separation preparation — 11 October 2026
 
-Status: implementation prepared; **not live**. `EDITOR_AUDIO_STEMS_ENABLED=false` in production. Migration `0291_audio_stems` requires the owner-approved main workflow. No paid provider job was submitted.
+Status: implementation prepared; **not live**. The production binding is omitted; exact-`true` guards keep `EDITOR_AUDIO_STEMS_ENABLED` off. Migration `0291_audio_stems` requires the owner-approved main workflow. No paid provider job was submitted.
 
 ## Contracts and database
 
@@ -27,3 +27,7 @@ The first panel-open check returned `no-fault/already_true` because the hidden s
 - A separate focused flag activation after qualification; this preparation cannot enable paid Cinema, project-media uploads or native social publishing.
 
 Library source completeness is already live in [PR #898](https://github.com/aljobson/Veyrnox.ai/pull/898). Its [verification record](LIBRARY-VERIFICATION-2026-10-11.md) is separate from this unreleased paid operation. Broader language, licensing, native publishing and long-footage/mobile gaps remain in [the CapCut matrix](CAPCUT-GAP-2026-10-10.md).
+
+## Worker binding capacity
+
+The first exact-head Cloudflare build compiled successfully but its preview upload refused 129 text bindings (Cloudflare error 10055, limit 128). Existing application and scheduled-worker bindings are retained. Preparation omits only the new false-valued production stem binding: undefined is explicitly tested as gated, and the generation handler requires exact `true` before debit. Staging retains its own true value. Production activation must first allocate binding capacity; no existing secret or active feature gate is removed to make this build pass.
