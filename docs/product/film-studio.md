@@ -54,3 +54,8 @@ saved again. Masters are limited to 25 MiB and 100 per account, and expire
 with their source take or after 90 days. Local-file exports offer Download;
 direct save requires an owned Library source. Browser studio JSON and ZIP
 backups still contain documents and references, not these media bytes.
+
+If the accepted prompt's Audio block is exactly `Silent`, `Silent video` or
+`No audio` (case-insensitive, with optional final punctuation), master
+preparation omits any audio the provider added. Other audio directions keep
+the source sound. The dimension and duration checks still apply unchanged.
