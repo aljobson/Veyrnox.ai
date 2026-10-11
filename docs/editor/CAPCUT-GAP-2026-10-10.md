@@ -183,3 +183,30 @@ Licensed stock/music/GIPHY entitlements, TikTok Ads advertiser authorization,
 lyric-specific recognition/alignment and broader real-media/mobile/provider
 output quality remain open. These releases are production-hosted owner tests
 before public launch, not a statement of full CapCut parity.
+
+
+## Supplied lyric alignment — 11 October 2026
+
+The caption panel now aligns user-supplied lyric display lines against existing
+word timestamps from imported word JSON/timestamped subtitles or local captions.
+Case/punctuation changes preserve their matched timestamps. One atomic edit
+replaces only the selected timed source, gives each display line karaoke word
+highlighting, and supports Undo/Redo, normal subtitle/video export and the
+existing version-3 document contract. Missing words, ambiguous repetitions,
+estimated/multiword/trimmed/overlapping timings, locked source tracks and project
+limits refuse without changing the timeline. A removed selected source requires
+a new selection instead of silently broadening the replacement.
+
+Five local Reticle state verdicts verify insertion/timing/karaoke, Undo/Redo and
+missing/repeated-word refusal. The actual MP4 exporter produced a fully decoded
+640x360/30-fps, 2.9-second/87-picture video with cumulative highlights inspected
+in decoded frames. Reticle's export verdict is presence-grade and its synthetic
+click reported occlusion; the visible output link was retrieved separately.
+Temporary development SDK/store/CSP wiring was removed before commit. Existing
+word/caption contracts and focused lyric safety/project-round-trip checks pass.
+
+This supplies lyric formatting/alignment with reviewed word timing. Automatic
+singing recognition accuracy, vocals isolation output quality and alignment of
+lyrics that differ from the transcript still need qualification; no paid job,
+new model, licensed lyrics or universal lyric accuracy is claimed. Production
+release and native verification are recorded separately.

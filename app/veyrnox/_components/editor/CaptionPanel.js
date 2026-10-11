@@ -8,6 +8,7 @@ import { TEXT_DEFAULTS } from '../../_lib/editorSequenceValidation.mjs';
 import { formatTime } from '../../_lib/editorTimeline.mjs';
 import { CaptionTranslationControls } from './CaptionTranslationControls';
 import { SpeechRecognitionControls } from './SpeechRecognitionControls';
+import { LyricAlignmentControls } from './LyricAlignmentControls';
 import { useEditorCompletionFlags } from './CompletionFlags';
 export function CaptionPanel({ tl, blobs, disabled, frame, apply, onSelect, onSeek, onError, onBusy }) {
     const {localInference}=useEditorCompletionFlags();
@@ -29,6 +30,7 @@ export function CaptionPanel({ tl, blobs, disabled, frame, apply, onSelect, onSe
         <Button size="sm" disabled={disabled} onClick={() => { const next = apply(t => addSequenceText(t, { text: 'Your caption', caption: true, start: Math.min(frame, 17910), len: 90 })); if (next) onSelect({ track: 'text', id: `t${next.seq}` }); }}>Add manual caption</Button>
         <CaptionTranslationControls tl={tl} disabled={disabled} apply={apply} onError={onError} onBusy={onBusy} />
         {localInference && <SpeechRecognitionControls tl={tl} blobs={blobs} disabled={disabled} apply={apply} onError={onError} onBusy={onBusy} />}
+        <LyricAlignmentControls tl={tl} disabled={disabled} apply={apply} />
         {!!items.length && <><div className="flex flex-wrap gap-2"><Button size="sm" disabled={disabled} onClick={() => save('srt')}>Export SRT</Button><Button size="sm" disabled={disabled} onClick={() => save('vtt')}>Export VTT</Button><Button size="sm" disabled={disabled} onClick={() => apply(t => applyCaptionStyle(t, { ...TEXT_DEFAULTS, color: '#ffe66d', backgroundOpacity: 0.7 }))}>Style all captions</Button></div>{download && <a className="text-xs text-vx-accent underline" href={download.url} download={download.name}>Download {download.name}</a>}</>}
         <fieldset disabled={disabled}><ol className="space-y-3">{items.map(c => <li key={c.id} className="space-y-2 rounded-lg border border-vx-border p-2">
             <button type="button" className="text-xs font-bold text-vx-accent" onClick={() => { onSeek(c.start); onSelect({ track: 'text', id: c.id }); }}>{formatTime(c.start)} — {formatTime(c.start + c.len)}</button>
