@@ -74,6 +74,12 @@ Check the Supabase migration list before picking a number, not the commit
 dates: a migration authored last week can be applied after one written today,
 and the applied order is what a fresh database has to reproduce.
 
+On 2026-10-11, PR #886 merged admin files numbered 0285/0286 while the
+editor's 0285/0286/0287 already had staging receipts. Both hosted ledgers
+confirmed the admin files were unapplied. PR #885 retains the applied editor
+names and moves only the unapplied admin files to 0288/0289, without changing
+their SQL. A fresh replay checks the combined order and both acceptance suites.
+
 On 2026-09-12 two sessions numbered migrations independently and produced
 five collisions at 0018 through 0022. Because the database's own list showed
 one file of each pair as applied, the four unapplied security migrations from

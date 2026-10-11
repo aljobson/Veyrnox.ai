@@ -42,7 +42,7 @@
   "vars": {
     // Generated image scans: production stays off until the owner enables the data flow.
     "CONTENT_SCAN_ENABLED": "false",
-    // Switch on only after migration 0286 is applied.
+    // Switch on only after migration 0289 is applied.
     "SOCIAL_HOLD_CHECKS_ENABLED": "false",
     "FILM_LIBRARY_MASTERS_ENABLED": "true",
     // Owner-requested private master saves; ADR-0085 amendment, no new migration.
@@ -256,7 +256,7 @@
       "vars": {
         // Exercise the scanner in staging; queued images drain oldest first.
         "CONTENT_SCAN_ENABLED": "true",
-        // Switch on only after migration 0286 is applied.
+        // Switch on only after migration 0289 is applied.
         "SOCIAL_HOLD_CHECKS_ENABLED": "true",
         "APP_ENV": "staging",
         "ACCESS_TEAM_DOMAIN": "fancy-lake-7c60.cloudflareaccess.com",

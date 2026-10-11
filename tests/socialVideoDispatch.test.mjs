@@ -18,11 +18,18 @@ async function target(network, provider_state = {}) {
         r2_key: 'social-uploads/owner/render.mp4', global_text: 'Original edit', provider_state };
 }
 async function drive(row, handler, settings = deps, controls = {}) {
-    const real = globalThis.fetch, order = []; let report, terminal;
+    const real = globalThis.fetch, order = []; let report, terminal, authorizations = 0;
     globalThis.fetch = async (url, init) => {
         const u = new URL(url), name = u.pathname.split('/').pop(); order.push(name);
         if (u.hostname !== 'db.test') return handler(u, init, order);
         const args = JSON.parse(init.body);
+        if (name === 'authorize_social_target_dispatch') {
+            if (args.p_target_id === '00000000-0000-0000-0000-000000000000') return Response.json({ ok: false, code: 'CLAIM_LOST' });
+            authorizations++;
+            assert.equal(args.p_claim_key, row.claim_key); assert.equal(args.p_target_id, row.target_id);
+            const denied = controls.denyAuthorization || authorizations > (controls.allowAuthorizations ?? Infinity);
+            return Response.json({ ok: !denied, code: denied ? 'MEDIA_HELD' : undefined });
+        }
         if (name === 'claim_due_social_post_targets') return Response.json([row]);
         if (name === 'mark_social_provider_submission') { if (controls.denyMark) return Response.json(null); assert.equal(args.p_claim_key, row.claim_key); assert.equal(args.p_target_id, row.target_id); assert.equal(args.p_network, row.network); row.provider_state = { ...row.provider_state, submission_started: true }; return Response.json({ ok: true }); }
         if (name === 'report_social_post_progress') { if (controls.failReport) throw Error('checkpoint response lost'); assert.equal(args.p_claim_key, row.claim_key); report = args; return Response.json({ ok: true }); }
@@ -118,4 +125,44 @@ test('TikTok status polling also refuses redirects without forwarding the accoun
     const row = await target('tiktok', { publish_id: 'video-publish:1', started_at: started, submission_started: true }); let polls = 0;
     const result = await drive(row, async (_url, init) => { polls++; assert.equal(init.redirect, 'manual'); return new Response(null, { status: 302, headers: { location: 'https://attacker.test/token' } }); });
     assert.equal(polls, 1); assert.equal(result.terminal.p_error, 'tiktok_status_failed');
+});
+
+test('held native videos are deferred before sharing a source or recording a submission', async () => {
+    const settings = { ...deps, env: { ...deps.env, SOCIAL_HOLD_CHECKS_ENABLED: 'true' } };
+    for (const network of ['instagram', 'facebook', 'tiktok']) {
+        const result = await drive(await target(network), () => assert.fail('held source reached provider'), settings, { denyAuthorization: true });
+        assert.equal(result.result.deferred, 1); assert.equal(result.report, undefined); assert.equal(result.terminal, undefined);
+        assert.deepEqual(result.order, ['authorize_social_target_dispatch', 'claim_due_social_post_targets', 'authorize_social_target_dispatch']);
+    }
+});
+
+test('native video submission rechecks holds immediately before the marker and irreversible request', async () => {
+    const settings = { ...deps, env: { ...deps.env, SOCIAL_HOLD_CHECKS_ENABLED: 'true' } };
+    for (const network of ['instagram', 'facebook', 'tiktok']) {
+        const row = await target(network, network === 'instagram' ? { container_id: '111111', started_at: started } : {});
+        const result = await drive(row, async (_url, init) => {
+            assert.notEqual(init.method, 'POST', 'held video made an irreversible request');
+            return Response.json({ status_code: 'FINISHED' });
+        }, settings, { allowAuthorizations: network === 'instagram' ? 0 : 1 });
+        assert.equal(result.result.deferred, 1); assert.equal(result.terminal, undefined);
+        assert.equal(result.order.includes('mark_social_provider_submission'), false);
+        assert.equal(row.provider_state.submission_started, undefined);
+    }
+});
+
+test('native video status reconciliation remains available while media is held', async () => {
+    const settings = { ...deps, env: { ...deps.env, SOCIAL_HOLD_CHECKS_ENABLED: 'true' } };
+    for (const [network, state, response] of [
+        ['instagram', { post_id: '123456', submission_started: true }, { permalink: 'https://www.instagram.com/p/test/' }],
+        ['facebook', { video_id: '123456', submission_started: true, started_at: started }, { status: { video_status: 'ready' } }],
+        ['tiktok', { publish_id: 'accepted-video', submission_started: true, started_at: started }, { data: { status: 'SEND_TO_USER_INBOX' } }],
+    ]) {
+        const result = await drive(await target(network, state), async (_url, init) => {
+            if (network !== 'tiktok') assert.notEqual(init.method, 'POST');
+            return Response.json(response);
+        }, settings, { denyAuthorization: true });
+        assert.equal(result.terminal.p_ok, true); assert.equal(result.result.deferred, undefined);
+        assert.equal(result.order.filter(name => name === 'authorize_social_target_dispatch').length, 1, 'only the availability probe is required for status reads');
+        assert.equal(result.order.includes('mark_social_provider_submission'), false);
+    }
 });
