@@ -1,6 +1,6 @@
 // /api/v1/admin/users/ledger (ADR-0083): one account's ledger and a reasoned
 // grant. Same gates as /api/v1/admin/violations, strict input shapes, and the
-// grant goes through admin_credit_grant with the caller's auth id and the
+// grant goes through admin_credit_grant_guarded with the caller's auth id and the
 // form's Idempotency-Key so the RPC can refuse non-admins and replays itself.
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -13,8 +13,8 @@ register('data:text/javascript,' + encodeURIComponent(
 const route = new URL('../app/api/v1/admin/users/ledger/route.js', import.meta.url);
 const USER = '11111111-1111-4111-8111-111111111111';
 const KEY = 'a1b2c3d4-0000-4000-8000-000000000001';
-const ADMIN = { 'x-veyrnox-auth-id': 'auth-admin', 'x-veyrnox-auth-aal': 'aal2', 'idempotency-key': KEY };
-const CONFIGURED = { SUPABASE_URL: 'https://db.test', SUPABASE_SERVICE_ROLE_KEY: 'service-test', ADMIN_REQUIRE_AAL2: 'true' };
+const ADMIN = { 'x-veyrnox-auth-mfa-at': String(Math.floor(Date.now()/1000)), 'x-veyrnox-auth-id': 'auth-admin', 'x-veyrnox-auth-aal': 'aal2', 'idempotency-key': KEY };
+const CONFIGURED = { SUPABASE_URL: 'https://db.test', SUPABASE_SERVICE_ROLE_KEY: 'service-test', ADMIN_REQUIRE_AAL2: 'true', ADMIN_CREDIT_GRANTS_ENABLED: 'true' };
 
 async function withEnv(env, run) {
     const before = {};
@@ -75,7 +75,7 @@ test('GET needs a user id and a sane limit; POST validates the body before the R
             const res = await POST(request('POST', ADMIN, body));
             assert.deepEqual([res.status, (await res.json()).error], [400, error], JSON.stringify(body));
         }
-        const noKey = await POST(request('POST', { 'x-veyrnox-auth-id': 'auth-admin', 'x-veyrnox-auth-aal': 'aal2' }, { user_id: USER, credits: 5, reason: 'note' }));
+        const noKey = await POST(request('POST', { 'x-veyrnox-auth-id': 'auth-admin', 'x-veyrnox-auth-aal': 'aal2', 'x-veyrnox-auth-mfa-at': ADMIN['x-veyrnox-auth-mfa-at'] }, { user_id: USER, credits: 5, reason: 'note' }));
         assert.deepEqual([noKey.status, (await noKey.json()).error], [400, 'idempotency_key_invalid']);
     });
     assert.equal(calls.length, 0);
@@ -98,10 +98,10 @@ test('GET reads admin_user_ledger with the admin auth id and never caches', asyn
     assert.deepEqual(calls[0].body, { p_auth_id: 'auth-admin', p_user_id: USER, p_limit: 50 });
 });
 
-test('a grant goes through admin_credit_grant with the trimmed note and the key, 201 when new, 200 on replay', async () => {
+test('a grant goes through admin_credit_grant_guarded with the trimmed note and the key, 201 when new, 200 on replay', async () => {
     let replayed = false;
     const calls = stubRpc((u) => {
-        assert.match(u, /\/rest\/v1\/rpc\/admin_credit_grant$/);
+        assert.match(u, /\/rest\/v1\/rpc\/admin_credit_grant_guarded$/);
         return Response.json({ ok: true, replayed, action_id: 'a1', entry_id: 'e1', credits_delta: 25, balance_after: 55 });
     });
     await withEnv(CONFIGURED, async ({ POST }) => {
@@ -114,7 +114,7 @@ test('a grant goes through admin_credit_grant with the trimmed note and the key,
         assert.equal((await again.json()).replayed, true);
     });
     assert.equal(calls.length, 2);
-    assert.deepEqual(calls[0].body, { p_auth_id: 'auth-admin', p_user_id: USER, p_credits: 25, p_reason: 'Goodwill after a failed export', p_idempotency_key: KEY });
+    assert.deepEqual(calls[0].body, { p_auth_id: 'auth-admin', p_aal: 'aal2', p_mfa_at: Number(ADMIN['x-veyrnox-auth-mfa-at']), p_user_id: USER, p_credits: 25, p_reason: 'Goodwill after a failed export', p_idempotency_key: KEY });
 });
 
 test('RPC refusals map to typed errors: not_admin 403, unknown user 404, others 400', async () => {
@@ -132,4 +132,17 @@ test('RPC refusals map to typed errors: not_admin 403, unknown user 404, others 
         const down = await GET(request('GET', ADMIN, undefined, `?user_id=${USER}`));
         assert.deepEqual([down.status, await down.json()], [502, { error: 'internal' }]);
     });
+});
+
+ test('grant switch and fresh MFA hold even when the general AAL flag is off', async () => {
+ const calls=stubRpc(()=>{throw Error('no RPC');});
+ await withEnv({...CONFIGURED, ADMIN_CREDIT_GRANTS_ENABLED:'false'},async({POST})=>{
+ assert.equal((await POST(request('POST',ADMIN,{user_id:USER,credits:5,reason:'note'}))).status,503);
+ });
+ await withEnv({...CONFIGURED,ADMIN_REQUIRE_AAL2:'false'},async({POST})=>{
+ for(const bad of ['', 'nope', String(Math.floor(Date.now()/1000)-301), String(Math.floor(Date.now()/1000)+30)]) {
+ const r=await POST(request('POST',{...ADMIN,'x-veyrnox-auth-mfa-at':bad},{user_id:USER,credits:5,reason:'note'}));
+ assert.deepEqual([r.status,await r.json()],[403,{error:'mfa_required'}]);
+ }
+ });assert.equal(calls.length,0);
 });

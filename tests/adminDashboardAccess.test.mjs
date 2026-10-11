@@ -13,10 +13,10 @@ const { requireDashboardAccess, verifyAccessLogin, _resetCertsCache } = await im
 const TEAM = 'team.cloudflareaccess.test';
 const AUD = 'a'.repeat(64);
 const ACCESS = { ACCESS_TEAM_DOMAIN: TEAM, ACCESS_AUD: AUD };
-const SUPABASE = { SUPABASE_URL: 'https://db.test', SUPABASE_SERVICE_ROLE_KEY: 'service-test', ADMIN_REQUIRE_AAL2: 'true' };
+const SUPABASE = { SUPABASE_URL: 'https://db.test', SUPABASE_SERVICE_ROLE_KEY: 'service-test', ADMIN_REQUIRE_AAL2: 'true', ADMIN_CREDIT_GRANTS_ENABLED: 'true' };
 const USER = '11111111-1111-4111-8111-111111111111';
 // The violations POST needs an Idempotency-Key since 0246; the other routes ignore it.
-const ADMIN = { 'x-veyrnox-auth-id': 'auth-admin', 'x-veyrnox-auth-aal': 'aal2', 'idempotency-key': 'access-test-key-0001' };
+const ADMIN = { 'x-veyrnox-auth-mfa-at': String(Math.floor(Date.now()/1000)), 'x-veyrnox-auth-id': 'auth-admin', 'x-veyrnox-auth-aal': 'aal2', 'idempotency-key': 'access-test-key-0001' };
 const EDGE = { 'cf-ray': '8f0a1b2c3d4e5f60-LHR' };
 const b64url = (bytes) => Buffer.from(bytes).toString('base64url');
 
