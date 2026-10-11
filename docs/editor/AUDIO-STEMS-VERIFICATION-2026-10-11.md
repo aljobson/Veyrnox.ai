@@ -1,6 +1,6 @@
 # Vocal/instrument separation preparation — 11 October 2026
 
-Status: implementation prepared; **not live**. The production binding is omitted; exact-`true` guards keep `EDITOR_AUDIO_STEMS_ENABLED` off. Migration `0291_audio_stems` requires the owner-approved main workflow. No paid provider job was submitted.
+Current status: **enabled on production for owner pre-launch testing** after explicit paid activation approval. Production migration 0291 is applied. The historical preparation notes below retain their scope; the activation receipt at the end supersedes disabled-preparation statements. No paid provider qualification job was submitted.
 
 ## Contracts and database
 
@@ -46,3 +46,22 @@ priced FAL separation activation. Current release preparation sets only the
 production group audioStems member to true; exact-head CI, actual deploy and
 catalog/flag/UI readback follow. No paid provider request or leakage/lyric-quality
 claim is included in the availability rollout.
+
+## Actual paid availability release
+
+The owner answered “Enable paid vocal separation” to the focused six-credit,
+120-second FAL activation question. PR #904 passed every required CI check and
+Workers Builds on 941ce64f91a725720bb0d418b9db219b01bb31ca and was squash-merged as
+ac6f85fb206dda07f1baff033a7d52ef456264f7 at 19:06:42 UTC. Actual deploy-production
+run 38166627806 succeeded; all five live smokes passed at 19:11:12 UTC, all 45
+secret binding names survived, workers.dev/preview closure passed and rollback
+was skipped. Deployment 2fd142ff-ebc3-4ea3-ada7-32b0f7123e05 serves version
+98e50e06-ed3c-4189-b065-fdedd9a51397 at 100% from 19:10:48.724773 UTC.
+
+Actual plaintext binding readback has EDITOR_RUNTIME_FLAGS.audioStems=true;
+Library, organization and local inference remain true in that group. The
+advanced workspace, shared tools and cloud documents remain true. Paid Cinema,
+project-media uploads and native publishing remain false. Native production UI
+readback exposes Demucs, six credits, the 120-second limit and device/Library
+audio pickers. This verifies availability, not successful paid separation or
+listening/output-quality qualification. Enabling ran no job automatically.

@@ -156,3 +156,30 @@ browser result remains a limitation for that browser, not evidence that desktop
 Chrome cannot translate. This qualifies the measured Chrome/language pair only;
 other pairs, lyric translation and wider device quality remain open. No hosted
 Reticle verdict or private media upload/provider job is claimed for this test.
+
+## Latest pre-launch testing completion — 11 October 2026
+
+Device generation sources from #902 and owner-approved FAL vocal separation
+availability from #904 are now deployed. The latter exposes six named stems
+through one quoted six-credit, inspected 120-second job; no paid qualification
+job was run. See their separate device-source and audio-stem verification
+records for actual production deploy and flag/UI readback. Paid Cinema,
+project-media uploads and native social publishing remain off.
+
+Native Chrome translation also exposed a stale availability label after the
+model had prepared. The focused fix refreshes availability after a translation
+finishes or is cancelled, with stale async language-pair responses still
+ignored. An actual native local Chrome model changed from downloadable to
+available, produced the timed Spanish cue, and retained Undo/Redo. Reticle
+readiness assertions and the Redo action returned explicit positive verdicts;
+coverage notes for virtualized unmounted rows remain in the private artifact.
+Four existing translation contract tests and focused lint passed. Temporary
+SDK/state/CSP wiring was restored before committing. No mocked Translator,
+audio upload or remote provider job was used. This qualifies the measured
+English/Spanish desktop flow; IAB support and broader language/device quality
+remain separate.
+
+Licensed stock/music/GIPHY entitlements, TikTok Ads advertiser authorization,
+lyric-specific recognition/alignment and broader real-media/mobile/provider
+output quality remain open. These releases are production-hosted owner tests
+before public launch, not a statement of full CapCut parity.

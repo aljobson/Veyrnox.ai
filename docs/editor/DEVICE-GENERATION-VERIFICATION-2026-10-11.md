@@ -34,3 +34,15 @@ provider billing. The existing Library inspection project remains untouched.
 Actual production deployment, effective flags and native source UI still require
 readback before reporting this change live. Caption translation, licensed
 catalog/provider entitlements, TikTok Ads and broader quality remain separate gaps.
+
+## Actual production availability
+
+PR #902 squash 4eeaa49039c5de82c14e3749fd0629f637759fb3 deployed successfully in
+run 38165969807. All five live smokes, preservation of 45 secret binding names
+and workers.dev/preview closure passed. Production native UI selected the
+repository-owned og.png in a device image slot, displayed its preview and
+Device source label, showed consent and upload-on-Generate wording, and cleared
+the selection. No upload or generation was submitted. A subsequent approved
+paid availability release (#904) retains these source controls and enables only
+the additional audioStems group member. Neither release proves provider output
+quality or live billed cost. The original inspection project remains untouched.
