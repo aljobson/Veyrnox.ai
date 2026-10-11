@@ -29,11 +29,13 @@ test('the announcement, when set, has an id and links to a page that exists', ()
 
 test('the bar sits above the marketing nav and can be dismissed', () => {
     const nav = readFileSync(new URL('../app/veyrnox/_components/NavBar.js', import.meta.url), 'utf8');
-    assert.match(nav, /<AnnouncementBar \/>\s*<header data-print="hide" className="sticky/);
+    assert.match(nav, /export function MarketingNav\(\{ hideAnnouncementOnMobile = false \}\)/);
+    assert.match(nav, /<div className=\{hideAnnouncementOnMobile \? 'hidden sm:block' : undefined\}><AnnouncementBar \/><\/div>\s*<header data-print="hide" className="sticky/);
     // The landing page takes the same nav as every other public page, so the
-    // nav places the bar there too. A bar of the page's own would show twice.
+    // nav places the bar there too. The phone hero opts out of the bar so
+    // it fills the first screen; desktop and other pages retain it.
     const home = readFileSync(new URL('../app/veyrnox/page.js', import.meta.url), 'utf8');
-    assert.match(home, /<div className="min-h-dvh">\s*<MarketingNav \/>/);
+    assert.match(home, /<div className="min-h-dvh">\s*<MarketingNav hideAnnouncementOnMobile \/>/);
     assert.doesNotMatch(home, /AnnouncementBar/);
     const bar = readFileSync(new URL('../app/veyrnox/_components/AnnouncementBar.js', import.meta.url), 'utf8');
     assert.match(bar, /aria-label="Dismiss announcement"/);
