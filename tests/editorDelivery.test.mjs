@@ -4,6 +4,14 @@ import { localExportFile, accountBoundCall, saveEditorRender, ownedPublishUpload
 const id = '11111111-1111-4111-8111-111111111111';
 const file = new File(['export'], 'My edit.mp4', { type: 'video/mp4' });
 
+test('delivery can read the retained export under a CSP that rejects blob fetches', async () => {
+    const result = { name: file.name, blob: file, url: 'blob:https://veyrnox.test/local-render' };
+    const loaded = await localExportFile(result, { origin: 'https://veyrnox.test', fetchBytes: () => assert.fail('CSP forbids fetching the blob URL') });
+    assert.equal(await loaded.text(), 'export');
+    assert.equal(loaded.name, file.name);
+    assert.equal(loaded.type, 'video/mp4');
+});
+
 test('delivery reads only the current origin local export; remote, MOV and empty exports issue no fetch', async () => {
     const result = { name: file.name, url: 'blob:https://veyrnox.test/local-render' };
     const loaded = await localExportFile(result, { origin: 'https://veyrnox.test', fetchBytes: async (url, init) => { assert.equal(url, result.url); assert.equal(init.credentials, 'omit'); assert.equal(init.redirect, 'error'); return new Response(file); } });

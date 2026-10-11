@@ -124,7 +124,7 @@ export function MultitrackWorkspace() {
     async function runExport(options = {}) {
         const fontProblem=missingCustomFont(ref.current.now,fontRegistry.current);if(fontProblem){setNotice(fontProblem);return;}
         const controller = new AbortController(); abort.current = controller; pause(); setResult(null); setExporting(true); setProgress(0); setNotice('');
-        try { const blob = await exportTimeline(ref.current.now, blobs.current, { ...options, signal: controller.signal, height, onProgress: p => alive.current && setProgress(p.done / p.total) }); if (alive.current) setResult({ url: URL.createObjectURL(blob), name: exportFileName(exportName, options.format), size: blob.size }); }
+        try { const blob = await exportTimeline(ref.current.now, blobs.current, { ...options, signal: controller.signal, height, onProgress: p => alive.current && setProgress(p.done / p.total) }); if (alive.current) setResult({ blob, url: URL.createObjectURL(blob), name: exportFileName(exportName, options.format), size: blob.size }); }
         catch (e) { if (e.name !== 'AbortError') setNotice(e.message || 'Export failed.'); }
         finally { abort.current = null; if (alive.current) setExporting(false); }
     }
