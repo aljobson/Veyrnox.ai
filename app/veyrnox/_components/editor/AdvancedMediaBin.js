@@ -1,8 +1,9 @@
 'use client';
 import { MediaDetails } from './MediaDetails';
 import { mediaFolders,matchingMedia } from '../../_lib/editorMediaDetails.mjs';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '../Button';
+import { getStoredUserId,onSessionChange } from '../../../lib/authClient';
 import { NumberControl } from './EditorControls';
 import { acquireMediaAnalysis } from '../../_lib/editorAnalysis.mjs';
 import { formatTime } from '../../_lib/editorTimeline.mjs';
@@ -19,10 +20,12 @@ export function MediaArtwork({ media, blobs, loaded, compact = false }) {
 }
 export function AdvancedMediaBin({ tl, blobs, loaded, disabled, onFiles, onIngest, onAdd, onRemove, onRelink, onDetails, proxies, onProxy, onRemoveProxy, onError }) {
     const [folder,setFolder]=useState('*'),[search, setSearch] = useState(''), [kind, setKind] = useState('all'), [library, setLibrary] = useState(null), [source, setSource] = useState(null), [sourceUrl, setSourceUrl] = useState(null), [from, setFrom] = useState(0), [to, setTo] = useState(3), [busy, setBusy] = useState(false);
+    const alive=useRef(true);
+    useEffect(()=>{alive.current=true;let actor=getStoredUserId();const unsubscribe=onSessionChange(session=>{const next=session?.user?.id || null;if(next===actor)return;actor=next;setLibrary(null);setSource(null);setSourceUrl(null);setBusy(false);});return()=>{alive.current=false;unsubscribe();};},[]);
     const selected = tl.media[source], entries = matchingMedia(tl,{search,kind,folder});
     useEffect(() => () => { if (sourceUrl) URL.revokeObjectURL(sourceUrl); }, [sourceUrl]);
-    async function openLibrary() { setBusy(true); try { setLibrary(await listLibraryMedia(gatewayFetch, { includeImages: true })); } catch (e) { onError(e.status === 401 ? 'Sign in to open your Library.' : 'Could not load the Library. Retry when connected.'); } finally { setBusy(false); } }
-    async function importLibrary(item) { setBusy(true); try { const { blob } = await loadLibraryBlob(gatewayFetch, item.jobId); await onIngest(blob, item.label, libraryMediaId(item.jobId)); } catch (e) { onError(e.message || 'Library import failed.'); } finally { setBusy(false); } }
+    async function openLibrary() {const account=getStoredUserId();setBusy(true);try {const items=await listLibraryMedia(gatewayFetch,{includeImages:true});if(alive.current && account===getStoredUserId())setLibrary(items);}catch(e){if(alive.current && account===getStoredUserId())onError(e.status===401?'Sign in to open your Library.':'Could not load the Library. Retry when connected.');}finally{if(alive.current && account===getStoredUserId())setBusy(false);}}
+    async function importLibrary(item) {const account=getStoredUserId();setBusy(true);try{const {blob}=await loadLibraryBlob(gatewayFetch,item.jobId);if(!alive.current || !account || account!==getStoredUserId())return;await onIngest(blob,item.label,libraryMediaId(item.jobId));}catch(e){if(alive.current && account===getStoredUserId())onError(e.message || 'Library import failed.');}finally{if(alive.current && account===getStoredUserId())setBusy(false);}}
     return <div className="space-y-3"><h2 className="text-sm font-bold">Media</h2><label className="block cursor-pointer rounded-lg border border-dashed border-vx-border p-3 text-center text-xs">Upload video, image or audio<input data-testid="editor-import" aria-label="Upload video, image or audio" className="sr-only" type="file" multiple accept="video/mp4,video/webm,video/quicktime,audio/mpeg,audio/wav,audio/mp4,image/png,image/jpeg,image/webp" disabled={disabled || busy} onChange={onFiles} /></label><Button size="sm" disabled={disabled || busy} onClick={openLibrary}>Add from my Library</Button>
     <input aria-label="Search media" placeholder="Search media" className="w-full rounded border border-vx-border bg-vx-base p-2 text-xs" value={search} onChange={e => setSearch(e.target.value)} /><select aria-label="Media type" className="w-full rounded bg-vx-base p-2 text-xs" value={kind} onChange={e => setKind(e.target.value)}>{['all','video','audio','image','graphic'].map(k => <option key={k}>{k}</option>)}</select>
     <select aria-label="Media folder filter" className="w-full rounded bg-vx-base p-2 text-xs" value={folder} onChange={e=>setFolder(e.target.value)}><option value="*">All folders</option><option value="">Unfiled</option>{mediaFolders(tl).map(name=><option key={name} value={name}>{name}</option>)}</select>

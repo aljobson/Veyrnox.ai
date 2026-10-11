@@ -13,7 +13,7 @@ import { ExportPanel } from './ExportPanel';
 import { CatalogPanel } from './CatalogPanel';
 import { CaptionPanel } from './CaptionPanel';
 import { LOOKS, TITLE_STYLES, insertTitlePreset, applyLook } from '../../_lib/editorPresets.mjs';
-import { getStoredUserId } from '../../../lib/authClient';
+import { getStoredUserId,onSessionChange } from '../../../lib/authClient';
 import { BrandKitPanel } from './BrandKitPanel';
 import { ReviewPanel } from './ReviewPanel';
 import { useEditorSharedEnabled } from './SharedToolsFlag';
@@ -42,7 +42,7 @@ export function MultitrackWorkspace() {
     const sharedTools=useEditorSharedEnabled(),[projectContext,setProjectContext]=useState(null);
     const [fitScreen,setFitScreen]=useState(true);
     const [layout,setLayout]=useState({...WORKSPACE_LAYOUT});
-    const [proxies,setProxies]=useState(()=>new Map()),[proxyJob,setProxyJob]=useState(null),[previewStatus,setPreviewStatus]=useState({sources:[]}),proxyGeneration=useRef(0);
+    const [proxies,setProxies]=useState(()=>new Map()),[proxyJob,setProxyJob]=useState(null),[previewStatus,setPreviewStatus]=useState({sources:[]}),proxyGeneration=useRef(0),sourceGeneration=useRef(0),privateSession=useRef(false);
     const [history, setHistory] = useState(() => createHistory(emptySequence())), ref = useRef(history);
     const tl = history.now, total = sequenceEnd(tl), blobs = useRef(new Map()), canvas = useRef(null), preview = useRef(null), player = useRef(null), abort = useRef(null), alive = useRef(true), request = useRef(0);
     const [frame, setFrame] = useState(0), [selected, setSelected] = useState(null), [selection, setSelection] = useState([]), [clipboard, setClipboard] = useState(null), [playing, setPlaying] = useState(false), [preparing, setPreparing] = useState(false), [notice, setNotice] = useState('');
@@ -57,7 +57,8 @@ export function MultitrackWorkspace() {
         const bad = validateSequence(next); if (bad) { setNotice(bad); return null; }
         pause(); setNotice(''); setResult(null); replace(commitHistory(ref.current, next)); return next;
     }, [pause, replace]);
-    const load = useCallback(next => { restoreOriginalAudio(next,blobs.current);setLoaded([...blobs.current.keys()]); abort.current?.abort();proxyGeneration.current++;setProxies(new Map());setPreviewStatus({sources:[]}); pause(); preview.current?.dispose(); preview.current = null; replace(createHistory(upgradeSequence(next))); setSelected(null); setSelection([]); setClipboard(null); setFrame(0); setResult(null); }, [pause, replace]);
+    const load = useCallback(next => { sourceGeneration.current++;privateSession.current=Object.values(next.media).some(m=>m.assetSource || m.id.startsWith('j-'));restoreOriginalAudio(next,blobs.current);setLoaded([...blobs.current.keys()]); abort.current?.abort();proxyGeneration.current++;setProxies(new Map());setPreviewStatus({sources:[]}); pause(); preview.current?.dispose(); preview.current = null; replace(createHistory(upgradeSequence(next))); setSelected(null); setSelection([]); setClipboard(null); setFrame(0); setResult(null); }, [pause, replace]);
+    useEffect(()=>{let actor=getStoredUserId();return onSessionChange(session=>{const next=session?.user?.id || null;if(next===actor)return;actor=next;sourceGeneration.current++;if(privateSession.current){blobs.current.clear();load(emptySequence());setNotice('Account changed. Reopen sources from your current account.');}});},[load]);
     const relinked = useCallback(() => {proxyGeneration.current++;setProxies(new Map()); preview.current?.dispose(); preview.current = null; setLoaded([...blobs.current.keys()]); setTick(n => n + 1); }, []);
     useEffect(() => { alive.current = true; return () => { alive.current = false; abort.current?.abort(); preview.current?.dispose(); preview.current = null; player.current?.dispose(); player.current = null; }; }, []);
     useEffect(() => { exportBlocker().then(reason => alive.current && setBlocker(reason || '')); }, []);
@@ -76,12 +77,12 @@ export function MultitrackWorkspace() {
     function travel(operation) { pause(); setResult(null); replace(operation(ref.current)); setSelected(null); setSelection([]); }
     const add = (mediaId, options = {}) => apply(t => addSequenceClip(t, t.media[mediaId].kind === 'audio' ? 'audio' : 'video', mediaId, options));
     async function ingest(file, name = file.name, id = localMediaId(), assetSource,details = {}) {
-        const scoped=assetSource || id.startsWith('j-'),account=scoped?getStoredUserId():null;
-        const probe = await probeMedia(file);if(scoped && (!account || account!==getStoredUserId()))throw new Error('The account changed. Retry the source from the current account.'); const problem = checkProbe(probe); if (problem) throw new Error(problem);
+        const epoch=sourceGeneration.current,scoped=assetSource || id.startsWith('j-'),account=scoped?getStoredUserId():null;
+        const probe = await probeMedia(file);if(!alive.current || epoch!==sourceGeneration.current)throw new Error('The edit changed. Retry the source in the current edit.');if(scoped && (!account || account!==getStoredUserId()))throw new Error('The account changed. Retry the source from the current account.'); const problem = checkProbe(probe); if (problem) throw new Error(problem);
         const media = {...mediaFromProbe(id, name, probe),...details,...(assetSource?{assetSource}:{})};
         const next = apply(t => { const withMedia = addSequenceMedia(t, media); if (withMedia.error) return withMedia; const inserted = addSequenceClip(withMedia, media.kind === 'audio' ? 'audio' : 'video', media.id); return inserted.error ? withMedia : inserted; });
         if (!next) throw new Error('This file could not be added within the project limits.');
-        if (next) { blobs.current.set(media.id, file); setLoaded([...blobs.current.keys()]); setTick(n => n + 1); }
+        if (next) {if(scoped)privateSession.current=true;blobs.current.set(media.id, file); setLoaded([...blobs.current.keys()]); setTick(n => n + 1); }
     }
     async function files(event) {
         const chosen = [...event.target.files]; event.target.value = ''; setBusy(true);
