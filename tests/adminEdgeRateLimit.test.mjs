@@ -153,7 +153,7 @@ test('scheduled recovery calls the app directly even when external rate limiting
         assert.equal(e, env); assert.equal(c, ctx);
         return new Response('{}');
     };
-    await worker.scheduled({}, env, ctx);
+    await worker.scheduled({ cron: '*/5 * * * *' }, env, ctx);
     assert.equal(backfills, 1);
 });
 test('deployment binds the intended namespace and quota', () => {

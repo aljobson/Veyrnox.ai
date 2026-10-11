@@ -2,6 +2,7 @@
 // PreToolUse runner for the Veyrnox.ai guards (see rules.mjs). Reads the hook
 // payload on stdin and prints a permission decision, or nothing to allow.
 // A guard that cannot run (no git, no network) allows: CI is the backstop.
+import { canonicalPath, checkoutRoot } from './checkout-root.mjs';
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, relative, resolve } from 'node:path';
@@ -50,7 +51,9 @@ function takenMigrationNumbers(ownName) {
 
 function checkFileEdit(input) {
   if (!input.file_path) return null;
-  const rel = relative(ROOT, resolve(input.file_path));
+  const file = canonicalPath(input.file_path);
+  const root = checkoutRoot(file, ROOT);
+  const rel = relative(root, file);
   if (rel.startsWith('..')) return null;
   const text = [input.content, input.new_string, ...(input.edits || []).map((e) => e.new_string)].filter(Boolean).join('\n');
   const name = rel.split('/').pop();
@@ -59,9 +62,9 @@ function checkFileEdit(input) {
     checkBundlerTraps(rel, text) ||
     (rel.startsWith(`${MIGRATION_DIR}/`) && rel.endsWith('.sql')
       ? checkMigrationPath(rel, {
-          exists: existsSync(resolve(ROOT, rel)),
+          exists: existsSync(resolve(root, rel)),
           onMain: run('git', ['cat-file', '-e', `origin/main:${rel}`]) !== null,
-          takenNumbers: existsSync(resolve(ROOT, rel)) ? new Map() : takenMigrationNumbers(name),
+          takenNumbers: existsSync(resolve(root, rel)) ? new Map() : takenMigrationNumbers(name),
         })
       : null)
   );

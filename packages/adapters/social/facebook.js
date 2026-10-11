@@ -34,9 +34,10 @@ export async function fetchCandidates(token, fetcher = fetch) {
     }
     throw new Error('too_many_pages');
 }
-export async function publishPost(token, { externalAccountId, caption, mediaType, mediaUrl }, fetcher = fetch) {
+export async function publishPost(token, { externalAccountId, caption, mediaType, mediaUrl }, fetcher = fetch, beforePublish = async () => {}) {
     requireImage(mediaType);
     if (!/^\d+$/.test(externalAccountId)) throw new Error('invalid_page');
+    await beforePublish();
     const result = await formToken(`${BASE}/${externalAccountId}/photos`, { url: mediaUrl, message: caption, published: 'true' }, fetcher, bearer(token));
     if (!result.post_id) throw new Error('missing_post_id');
     return { platformPostId: result.post_id, platformPostUrl: `https://www.facebook.com/${result.post_id}` };

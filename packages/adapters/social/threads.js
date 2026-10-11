@@ -37,11 +37,13 @@ export async function publishStep(token, { externalAccountId, caption, mediaType
         if (!data.id) throw new Error('missing_container_id');
         return { inProgress: true, providerState: { container_id: data.id, started_at: new Date().toISOString() }, nextCheckAt: new Date(Date.now() + 30000).toISOString() };
     }
-    if (Date.now() - Date.parse(state.started_at) > 2 * 60 * 60 * 1000) throw new Error('poll_timeout');
     const status = await jsonRequest(`${BASE}/${state.container_id}?fields=status,error_message`, { headers: bearer(token) }, fetcher);
     if (['ERROR', 'EXPIRED'].includes(status.status)) throw new Error('container_failed');
     if (status.status === 'PUBLISHED') throw new Error('published_container_requires_reconciliation');
-    if (status.status !== 'FINISHED') return { inProgress: true, providerState: state, nextCheckAt: new Date(Date.now() + 30000).toISOString() };
+    if (status.status !== 'FINISHED') {
+        if (Date.now() - Date.parse(state.started_at) > 2 * 60 * 60 * 1000) throw new Error('poll_timeout');
+        return { inProgress: true, providerState: state, nextCheckAt: new Date(Date.now() + 30000).toISOString() };
+    }
     await beforePublish();
     const data = await formToken(`${BASE}/${externalAccountId}/threads_publish`, { creation_id: state.container_id }, fetcher, bearer(token));
     if (!data.id) throw new Error('missing_post_id');

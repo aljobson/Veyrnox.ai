@@ -96,3 +96,10 @@ test('signed links carry retention separately from the 15-minute signing lifetim
         assert.equal(new URL(body.url).searchParams.get('X-Amz-Expires'), '900');
     }
 });
+
+test('held jobs expose the review state with no asset', async () => {
+    stub([{ ...row(1), has_asset: false, held: true }]);
+    const body = await (await get()).json();
+    assert.equal(body.jobs[0].held, true);
+    assert.equal(body.jobs[0].has_asset, false);
+});

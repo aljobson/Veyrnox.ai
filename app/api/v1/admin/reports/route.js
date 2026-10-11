@@ -33,7 +33,8 @@ export async function GET(req) {
         return rpcFailure(err, WHERE);
     }
     if (!result || result.ok !== true) return rpcRefusal(result, 'reports_unavailable');
-    return NextResponse.json({ reports: Array.isArray(result.reports) ? result.reports : [] }, { headers: NO_STORE });
+    return NextResponse.json({ reports: Array.isArray(result.reports) ? result.reports : [], unavailable_scans_24h: result.unavailable_scans_24h ?? 0,
+        asset_gone_scans_24h: result.asset_gone_scans_24h ?? 0 }, { headers: NO_STORE });
 }
 
 export async function POST(req) {
@@ -42,6 +43,7 @@ export async function POST(req) {
     const b = await readJsonObject(req);
     if (b.response) return b.response;
     const { report_id: reportId, resolution, release_action_id: releaseId, reason } = b.body;
+    if ('release_job_id' in b.body || 'scanner_disarm' in b.body) return scannerAction(g, b.body);
     if (typeof releaseId === 'string') return release(g, releaseId, reason);
     if (typeof reportId !== 'string' || !UUID_RE.test(reportId)) return NextResponse.json({ error: 'report_id_invalid' }, { status: 400 });
     if (typeof resolution !== 'string' || resolution.trim().length < 3 || resolution.length > 500) return NextResponse.json({ error: 'resolution_invalid' }, { status: 400 });
@@ -68,4 +70,19 @@ async function release(g, actionId, reason) {
     console.error(`[${WHERE}] evidence released for action`, actionId, 'keys', result.released);
     return NextResponse.json({ released: result.released, action_id: result.action_id || null, replayed: result.replayed === true },
         { status: result.replayed === true ? 200 : 201, headers: NO_STORE });
+}
+
+async function scannerAction(g, body) {
+    const disarm = body.scanner_disarm === true;
+    if ('scanner_disarm' in body && (!disarm || 'release_job_id' in body)) return NextResponse.json({ error: 'body_invalid' }, { status: 400 });
+    if (!disarm && (typeof body.release_job_id !== 'string' || !UUID_RE.test(body.release_job_id))) return NextResponse.json({ error: 'release_job_id_invalid' }, { status: 400 });
+    if (typeof body.reason !== 'string' || body.reason.trim().length < 3 || body.reason.length > 500) return NextResponse.json({ error: 'reason_invalid' }, { status: 400 });
+    let result;
+    try {
+        result = await rpc(disarm ? 'disarm_content_scan_monitor' : 'release_content_hold', {
+            p_auth_id: g.authId, p_reason: body.reason.trim(), ...(disarm ? {} : { p_job_id: body.release_job_id }),
+        }, g.cfg);
+    } catch (err) { return rpcFailure(err, WHERE); }
+    if (!result?.ok) return rpcRefusal(result, 'scanner_action_rejected', ['job_not_found']);
+    return NextResponse.json({ ok: true, replayed: result.replayed === true }, { headers: NO_STORE });
 }

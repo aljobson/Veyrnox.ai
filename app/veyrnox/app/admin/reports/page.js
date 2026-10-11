@@ -30,6 +30,8 @@ export default function Page() {
 function Reports() {
   const [status, setStatus] = useState('open');
   const [rows, setRows] = useState(null);
+  const [unavailable, setUnavailable] = useState(null);
+  const [assetGone, setAssetGone] = useState(0);
   const [error, setError] = useState('');
   const generation = useRef(0);
 
@@ -38,7 +40,7 @@ function Reports() {
     setError('');
     try {
       const data = await gatewayFetch(`/admin/reports?status=${encodeURIComponent(which)}&limit=100`);
-      if (version === generation.current) setRows(data.reports || []);
+      if (version === generation.current) { setRows(data.reports || []); setUnavailable(data.unavailable_scans_24h ?? 0); setAssetGone(data.asset_gone_scans_24h ?? 0); }
     } catch (e) {
       if (version === generation.current) { setRows([]); setError(message(e.code)); }
     }
@@ -59,6 +61,9 @@ function Reports() {
         then close the report here with a note. Reporters are not told the outcome.
       </p>
       <MfaPanel />
+      <ScannerAction disarm onDone={() => load(status)} />
+      {unavailable !== null && <p className="mt-4 text-sm">Unavailable scans in the last 24 hours: {unavailable}</p>}
+      {assetGone > 0 && <p className="mt-2 text-sm">Scans in the last 24 hours skipped, file already gone: {assetGone}</p>}
 
       <div className="mt-6 flex flex-wrap gap-2" role="tablist" aria-label="Report status">
         {['open', 'resolved'].map((s) => (
@@ -99,7 +104,7 @@ function ReportCard({ report: r, onDone }) {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <h2 className="font-bold">{CATEGORY[r.category] || r.category}</h2>
-          <div className="mt-1 text-xs text-vx-fg-muted">Reported {when(r.created_at)} by {r.reporter_email}</div>
+          <div className="mt-1 text-xs text-vx-fg-muted">Reported {when(r.created_at)} by {r.source === 'scanner' ? 'Scanner' : r.reporter_email}</div>
         </div>
         <div className="flex flex-wrap gap-2">
           <Chip tone={r.category === 'csam' ? 'danger' : 'neutral'} noGlyph>{r.subject_kind.replace('_', ' ')}</Chip>
@@ -116,6 +121,8 @@ function ReportCard({ report: r, onDone }) {
           {r.subject_kind === 'job' && !r.subject_user_id && ' · no such job'}
         </div>
       )}
+      {r.source === 'scanner' && <pre className="mt-3 whitespace-pre-wrap text-xs">{JSON.stringify(r.scores, null, 2)}</pre>}
+      {r.source === 'scanner' && r.held && <ScannerAction jobId={r.subject_id} onDone={onDone} />}
       {r.details && <p className="mt-3 text-sm whitespace-pre-wrap wrap-break-word">{r.details}</p>}
       {r.status === 'resolved' && <p className="mt-3 text-xs text-vx-fg-muted">Resolved {when(r.resolved_at)} by {r.resolved_by}: {r.resolution}</p>}
       {r.status === 'open' && !open && <Button className="mt-4" size="sm" variant="ghost" onClick={() => setOpen(true)}>Resolve</Button>}
@@ -147,4 +154,38 @@ function message(code) {
     resolution_invalid: 'Write 3 to 500 characters.',
     rate_limited: 'Too many requests. Wait a minute and try again.',
   })[code] || 'The reports queue is unavailable right now. Please retry.';
+}
+
+function ScannerAction({ jobId, disarm = false, onDone }) {
+  const [reason, setReason] = useState('');
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  async function view() {
+    // Open synchronously to avoid popup blocking; never hand the image an opener.
+    const tab = window.open('about:blank', '_blank');
+    if (tab) tab.opener = null;
+    try {
+      const data = await gatewayFetch(`/admin/reports/asset?job_id=${encodeURIComponent(jobId)}`);
+      if (tab) tab.location.replace(data.url);
+    } catch (e) { tab?.close(); setError(message(e.code)); }
+  }
+  async function submit(event) {
+    event.preventDefault(); setBusy(true); setError('');
+    try {
+      await gatewayFetch('/admin/reports', { method: 'POST', body: JSON.stringify({
+        ...(disarm ? { scanner_disarm: true } : { release_job_id: jobId }), reason: reason.trim(),
+      }) });
+      setReason(''); onDone();
+    } catch (e) { setError(message(e.code)); }
+    finally { setBusy(false); }
+  }
+  return <div className="mt-4">
+    {!disarm && <Button size="sm" variant="ghost" onClick={view}>View held image</Button>}
+    <form onSubmit={submit} className="mt-2 flex flex-wrap gap-2">
+      <input aria-label={disarm ? 'Reason for disarming monitoring' : 'Reason for releasing hold'} value={reason} onChange={e => setReason(e.target.value)}
+        placeholder="Reason" minLength={3} maxLength={500} required className="rounded border border-vx-border bg-vx-panel p-2 text-sm" />
+      <Button size="sm" type="submit" disabled={busy || reason.trim().length < 3}>{disarm ? 'Scanner: disarm monitoring' : 'Release'}</Button>
+    </form>
+    {error && <p role="alert" className="text-vx-danger">{error}</p>}
+  </div>;
 }

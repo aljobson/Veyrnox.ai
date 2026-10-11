@@ -93,7 +93,10 @@ function Account() {
       {error && <p role="alert" className="mt-4 text-vx-danger">{error}</p>}
 
       {lookup && <Standing user={lookup.user} balance={ledger?.balance} />}
-      {lookup && <GrantForm userId={lookup.user.id} onDone={refresh} />}
+      {lookup && <div className="grid gap-4 md:grid-cols-2">
+        <GrantForm key={`${lookup.user.id}-grant`} userId={lookup.user.id} onDone={refresh} />
+        <GrantForm key={`${lookup.user.id}-clawback`} userId={lookup.user.id} onDone={refresh} clawback pack={ledger?.balance ? ledger.balance.balance - (ledger.balance.free_balance ?? 0) - ledger.balance.subscription_balance : null} />
+      </div>}
       {ledger && <Entries rows={ledger.entries} />}
       {ledger && <Actions rows={ledger.actions} />}
     </div>
@@ -102,7 +105,7 @@ function Account() {
 
 function Standing({ user, balance }) {
   const live = balance && balance.subscription_expires_at && new Date(balance.subscription_expires_at) > new Date();
-  const pack = balance ? balance.balance - balance.free_balance - (live ? balance.subscription_balance : 0) : null;
+  const pack = balance ? balance.balance - (balance.free_balance ?? 0) - balance.subscription_balance : null;
   return (
     <section className="mt-8 rounded-2xl border border-vx-border bg-vx-panel p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -134,7 +137,8 @@ function Standing({ user, balance }) {
   );
 }
 
-function GrantForm({ userId, onDone }) {
+function GrantForm({ userId, onDone, clawback = false, pack }) {
+  const label = clawback ? 'Take back credits' : 'Grant credits';
   const [open, setOpen] = useState(false);
   const [credits, setCredits] = useState('');
   const [reason, setReason] = useState('');
@@ -148,7 +152,7 @@ function GrantForm({ userId, onDone }) {
   async function submit(event) {
     event.preventDefault();
     if (!valid) return;
-    const body = JSON.stringify({ user_id: userId, credits: amount, reason: reason.trim() });
+    const body = JSON.stringify({ user_id: userId, credits: clawback ? -amount : amount, reason: reason.trim() });
     // One key per distinct attempt: a resubmit of the same form replays, a changed form is a new grant.
     if (attempt.current?.body !== body) attempt.current = { body, key: crypto.randomUUID() };
     setBusy(true); setError('');
@@ -163,18 +167,18 @@ function GrantForm({ userId, onDone }) {
     }
   }
 
-  if (!open) return <Button className="mt-4" size="sm" variant="ghost" onClick={() => setOpen(true)}>Grant credits</Button>;
+  if (!open) return <Button className="mt-4" size="sm" variant="ghost" onClick={() => setOpen(true)}>{label}</Button>;
   if (result) {
     return (
       <div role="status" className="mt-4 rounded-lg border border-vx-border p-4 text-sm">
-        {result.replayed ? 'This grant was already recorded.' : `Granted ${nf.format(result.credits_delta)} credits.`}
+        {result.replayed ? 'This adjustment was already recorded.' : `Recorded ${signed(result.credits_delta)} credits.`}
         {' '}Balance is now {nf.format(result.balance_after)}.
         <div className="mt-3"><Button size="sm" onClick={() => { setOpen(false); setResult(null); setCredits(''); setReason(''); attempt.current = null; }}>Done</Button></div>
       </div>
     );
   }
   return (
-    <form onSubmit={submit} className="mt-4 rounded-lg border border-vx-border p-4 space-y-3" aria-label="Grant credits">
+    <form onSubmit={submit} className="mt-4 rounded-lg border border-vx-border p-4 space-y-3" aria-label={label}>
       <div className="flex flex-wrap gap-3">
         <label className="block text-sm w-40">
           Credits
@@ -188,12 +192,11 @@ function GrantForm({ userId, onDone }) {
         </label>
       </div>
       <p className="text-xs text-vx-fg-muted">
-        Appends a Pack grant to the ledger with your email as the actor. Name the ticket or the decision; do not paste the user&apos;s messages.
-        Credits cannot be taken back from here.
+        {clawback ? `Confirm taking back ${valid ? nf.format(amount) : '…'} Pack credits. Pack cap: ${pack == null ? 'loading' : nf.format(pack)}. Free and stored Subscription credits are protected.` : 'Appends a Pack grant to the ledger with your email as the actor. Name the ticket or the decision.'}
       </p>
       {error && <p role="alert" className="text-vx-danger text-sm">{error}</p>}
       <div className="flex gap-2">
-        <Button type="submit" size="sm" disabled={busy || !valid}>{busy ? 'Saving…' : `Grant ${valid ? nf.format(amount) : ''} credits`}</Button>
+        <Button type="submit" size="sm" disabled={busy || !valid}>{busy ? 'Saving…' : `${clawback ? 'Take back' : 'Grant'} ${valid ? nf.format(amount) : ''} credits`}</Button>
         <Button type="button" size="sm" variant="ghost" onClick={() => setOpen(false)} disabled={busy}>Cancel</Button>
       </div>
     </form>
@@ -296,6 +299,7 @@ function message(code) {
     user_not_found: 'No account matches that email, user id or job id.',
     email_invalid: 'That does not look like an email address.',
     lookup_invalid: 'Enter one email, user id or job id.',
+    insufficient_pack_credits: 'The amount exceeds the available Pack credits. Refresh the ledger.',
     credits_invalid: 'Credits must be a whole number from 1 to 100,000.',
     reason_invalid: 'Give a reason of 3 to 200 characters.',
     idempotency_key_reused: 'That attempt key was used for a different grant. Cancel and start again.',

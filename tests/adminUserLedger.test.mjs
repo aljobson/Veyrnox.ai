@@ -64,7 +64,7 @@ test('GET needs a user id and a sane limit; POST validates the body before the R
         for (const [body, error] of [
             [{ credits: 5, reason: 'note' }, 'user_id_invalid'],
             [{ user_id: USER, credits: 0, reason: 'note' }, 'credits_invalid'],
-            [{ user_id: USER, credits: -5, reason: 'note' }, 'credits_invalid'],
+            [{ user_id: USER, credits: -100001, reason: 'note' }, 'credits_invalid'],
             [{ user_id: USER, credits: 2.5, reason: 'note' }, 'credits_invalid'],
             [{ user_id: USER, credits: '5', reason: 'note' }, 'credits_invalid'],
             [{ user_id: USER, credits: 100001, reason: 'note' }, 'credits_invalid'],
@@ -145,4 +145,24 @@ test('RPC refusals map to typed errors: not_admin 403, unknown user 404, others 
  assert.deepEqual([r.status,await r.json()],[403,{error:'mfa_required'}]);
  }
  });assert.equal(calls.length,0);
+});
+
+test('negative credits dispatch positive magnitude to clawback RPC; exact replay and cap mapping', async () => {
+    await withEnv(CONFIGURED, async ({ POST }) => {
+        for (const replayed of [false, true]) {
+            stubRpc((u, body) => {
+                assert.match(u, /admin_credit_clawback_guarded$/);
+                assert.deepEqual(body, { p_auth_id: 'auth-admin', p_aal: 'aal2', p_mfa_at: Number(ADMIN['x-veyrnox-auth-mfa-at']), p_user_id: USER, p_credits: 40, p_reason: 'correct allocation', p_idempotency_key: KEY });
+                return Response.json({ ok: true, action_id: 'a', entry_id: 'e', credits_delta: -40, balance_after: 60, replayed });
+            });
+            const res = await POST(request('POST', ADMIN, { user_id: USER, credits: -40, reason: ' correct allocation ' }));
+            assert.equal(res.status, replayed ? 200 : 201);
+            assert.deepEqual(await res.json(), { action_id: 'a', entry_id: 'e', credits_delta: -40, balance_after: 60, replayed });
+        }
+        stubRpc(() => Response.json({ ok: false, code: 'INSUFFICIENT_PACK_CREDITS', pack_credits: 60 }));
+        const res = await POST(request('POST', ADMIN, { user_id: USER, credits: -61, reason: 'correct allocation' }));
+        assert.deepEqual([res.status, await res.json()], [400, { error: 'insufficient_pack_credits', pack_credits: 60 }]);
+        stubRpc(() => Response.json({ ok: false, code: 'IDEMPOTENCY_KEY_REUSED' }));
+        assert.equal((await POST(request('POST', ADMIN, { user_id: USER, credits: -40, reason: 'correct allocation' }))).status, 400);
+    });
 });

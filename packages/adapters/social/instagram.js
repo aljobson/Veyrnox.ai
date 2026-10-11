@@ -128,7 +128,7 @@ export async function fetchConnectedAccount(accessToken, fetcher = fetch) {
  * two-step flow is a follow-up, not built here. Throws
  * UNSUPPORTED_MEDIA_TYPE for anything else so the caller fails the target
  * cleanly instead of silently dropping it. */
-export async function publishPost(accessToken, { externalAccountId, caption, mediaType, mediaUrl }, fetcher = fetch) {
+export async function publishPost(accessToken, { externalAccountId, caption, mediaType, mediaUrl }, fetcher = fetch, beforePublish = async () => {}) {
     if (mediaType !== 'image') {
         const err = new Error(`unsupported media type: ${mediaType}`);
         err.code = 'UNSUPPORTED_MEDIA_TYPE';
@@ -144,6 +144,7 @@ export async function publishPost(accessToken, { externalAccountId, caption, med
     const publishUrl = new URL(`${GRAPH_BASE}/${externalAccountId}/media_publish`);
     publishUrl.searchParams.set('creation_id', container.id);
     publishUrl.searchParams.set('access_token', accessToken);
+    await beforePublish();
     const published = await postJson(publishUrl, fetcher);
     if (!published || typeof published.id !== 'string') throw new Error('media_publish_failed');
 

@@ -105,6 +105,7 @@ export async function GET(req) {
         created_at: j.created_at,
         label: j.label || undefined,
         has_asset: !!j.has_asset,
+        held: j.held === true,
         asset_expires_at: j.asset_expires_at ?? null,
     }));
     // A full page means there may be more; the cursor is the last row's key.

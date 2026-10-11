@@ -2,6 +2,7 @@ const DAY = 86_400_000;
 
 export function assetRetention(row, now = Date.now()) {
   if (row.state !== 'succeeded') return null;
+  if (row.held) return { text: 'Under review', urgent: false };
   if (row.has_asset === false) return { text: 'File unavailable. Generation history is kept.', urgent: false };
   const deadline = Date.parse(row.asset_expires_at);
   // Unknown is not a promise of permanent storage, or a guessed job date + 90d.

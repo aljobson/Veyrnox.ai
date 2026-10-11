@@ -13,7 +13,7 @@ const { requireDashboardAccess, verifyAccessLogin, _resetCertsCache } = await im
 const TEAM = 'team.cloudflareaccess.test';
 const AUD = 'a'.repeat(64);
 const ACCESS = { ACCESS_TEAM_DOMAIN: TEAM, ACCESS_AUD: AUD };
-const SUPABASE = { SUPABASE_URL: 'https://db.test', SUPABASE_SERVICE_ROLE_KEY: 'service-test', ADMIN_REQUIRE_AAL2: 'true', ADMIN_CREDIT_GRANTS_ENABLED: 'true' };
+const SUPABASE = { R2_ACCOUNT_ID: 'test', R2_ACCESS_KEY_ID: 'test', R2_SECRET_ACCESS_KEY: 'test', R2_BUCKET: 'test', SUPABASE_URL: 'https://db.test', SUPABASE_SERVICE_ROLE_KEY: 'service-test', ADMIN_REQUIRE_AAL2: 'true', ADMIN_CREDIT_GRANTS_ENABLED: 'true' };
 const USER = '11111111-1111-4111-8111-111111111111';
 // The violations POST needs an Idempotency-Key since 0246; the other routes ignore it.
 const ADMIN = { 'x-veyrnox-auth-mfa-at': String(Math.floor(Date.now()/1000)), 'x-veyrnox-auth-id': 'auth-admin', 'x-veyrnox-auth-aal': 'aal2', 'idempotency-key': 'access-test-key-0001' };
@@ -40,7 +40,7 @@ async function mint({ pair, jwk }, over = {}, base = PERSON) {
 }
 
 /** Answer the Access key set, and count anything that reaches Supabase. */
-function stubNetwork(jwks, rpc = () => Response.json({ ok: true, user: {}, jobs: [], action_id: 'a', tier: 'warning' })) {
+function stubNetwork(jwks, rpc = () => Response.json({ ok: true, user: {}, jobs: [], r2_key: 'held/test.png', mime_type: 'image/png', action_id: 'a', tier: 'warning' })) {
     const reached = [];
     globalThis.fetch = async (url, init) => {
         const u = String(url);
@@ -62,6 +62,7 @@ async function withEnv(env, run) {
 }
 
 const ROUTES = [
+    ['held asset GET', '../app/api/v1/admin/reports/asset/route.js', 'GET', `/api/v1/admin/reports/asset?job_id=${USER}`, undefined],
     ['metrics GET', '../app/api/v1/admin/metrics/route.js', 'GET', '/api/v1/admin/metrics', undefined],
     ['violations GET', '../app/api/v1/admin/violations/route.js', 'GET', '/api/v1/admin/violations', undefined],
     ['violations POST', '../app/api/v1/admin/violations/route.js', 'POST', '/api/v1/admin/violations', { user_id: USER, tier: 'warning', reason: 'test' }],
