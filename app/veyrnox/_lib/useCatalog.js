@@ -22,6 +22,7 @@ function fromApi(models) {
     durations: Array.isArray(m.durations) && m.durations.length ? m.durations : FALLBACK_DURATIONS,
     // Reference slots from the capability registry, e.g. { image: { required } }.
     media: (m.capabilities && m.capabilities.media) || {},
+    outputStems: m.capabilities?.outputStems || null,
     // Aspect ratios this model accepts, or null when it takes none.
     aspects: m.capabilities?.inputs?.aspect_ratio?.values || null,
     // Auto Short (ADR-0029): takes a topic instead of a prompt.

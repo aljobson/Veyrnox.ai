@@ -5,7 +5,7 @@ import { register } from 'node:module';
 import { STARTER_PROMPT, promptText, promptIsMissing, promptPlaceholder } from '../app/veyrnox/_lib/promptBox.js';
 import { MODELS, kindOf } from '../app/veyrnox/_lib/tokens.js';
 import { takeStudioDraft, writeStudioDraft } from '../app/veyrnox/_lib/landingDraft.js';
-import { REGISTRY, capabilityFor, checkInputs, publicCapabilities } from '../lib/modelCapabilities.js';
+import { REGISTRY, capabilityFor, checkInputs, checkSource, publicCapabilities } from '../lib/modelCapabilities.js';
 
 register('data:text/javascript,' + encodeURIComponent(
     `export async function resolve(s, c, next) { return next(s === 'next/server' ? 'next/server.js' : s, c); }`,
@@ -94,10 +94,9 @@ test('a sound model says what the box is for; every other placeholder is unchang
     assert.equal(promptPlaceholder(autoShort), 'A topic for a 32-second short, e.g. 3 facts about octopuses');
 });
 
-// The page's rule is the gateway's: every audio record requires its prompt,
-// so an empty box is a request the page knows will be refused.
-test('every audio capability record refuses an empty prompt', () => {
-    const records = Object.entries(REGISTRY).filter(([, r]) => r.kind === 'audio');
+// Text-to-audio needs a prompt; source-driven separation needs inspected audio.
+test('every text-driven audio capability record refuses an empty prompt', () => {
+    const records = Object.entries(REGISTRY).filter(([, r]) => r.kind === 'audio' && !r.media?.audio?.required);
     assert.deepEqual(records.map(([endpoint]) => endpoint).sort(), Object.values(LIVE_SOUND).sort(), 'the audio records are the four sound models');
     for (const [endpoint, record] of records) {
         assert.equal(record.inputs.prompt?.required, true, endpoint);
@@ -154,10 +153,9 @@ test('the tokens.js fallback gives a sound model the marks the live catalog does
 const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
 
 // The page reads a live row's kind from its modality, not from its capability
-// record. So a row the migrations insert with an audio modality must be bound
-// to a record that requires its prompt, or to none (lib/publicCatalog.js does
-// not list a row with no record). Otherwise Generate could never be pressed.
-test('every catalog row the picker reads as audio is bound to a record that requires its prompt', () => {
+// record. A live audio row must require its text or its inspected mixed-audio
+// source. Unbound rows are hidden by lib/publicCatalog.js.
+test('every audio catalog row requires either its prompt or an inspected mixed-audio source', () => {
     const rows = [];
     for (const dir of ['../packages/db/schema/', '../packages/db/schema/supabase/']) {
         for (const file of readdirSync(new URL(dir, import.meta.url)).filter((name) => name.endsWith('.sql'))) {
@@ -176,7 +174,12 @@ test('every catalog row the picker reads as audio is bound to a record that requ
         const record = capabilityFor(row.endpoint);
         if (!record) continue;
         assert.ok(record.kind === 'audio' || record.kind === 'speech', `${row.id} record kind`);
-        assert.equal(record.inputs.prompt?.required, true, `${row.id} requires its prompt`);
+        if (record.media?.audio?.required) {
+            assert.equal(row.modality, 'audio-to-audio', `${row.id} source-driven modality`);
+            assert.equal(record.inputs.prompt, undefined, `${row.id} does not invent a text prompt`);
+            assert.equal(checkInputs(record, {}).ok, false, `${row.id} refuses a missing audio source`);
+            assert.equal(checkSource(record, {audio_url:{seconds:121}}).ok, false, `${row.id} refuses an overlong source`);
+        } else assert.equal(record.inputs.prompt?.required, true, `${row.id} requires its prompt`);
     }
 });
 

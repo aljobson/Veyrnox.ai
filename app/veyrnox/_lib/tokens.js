@@ -326,5 +326,5 @@ export function distinctShelfNames(rows) {
 // `topic` clause below come out in the same commit.
 export function isShelfModel(capabilities) {
   const inputs = (capabilities && capabilities.inputs) || {};
-  return !(capabilities && capabilities.edit) && !inputs.clips && !inputs.topic && !inputs.plan_id;
+  return !(capabilities && (capabilities.edit || capabilities.outputStems)) && !inputs.clips && !inputs.topic && !inputs.plan_id;
 }

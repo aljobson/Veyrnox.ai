@@ -1,6 +1,7 @@
 // Browser timeline editor, slice 1 (ADR-0080): the user's own generations as editor sources. Uses the same two gateway calls as the
 // Library (GET /jobs and GET /jobs/:id/asset); the caller passes `fetcher` (gatewayFetch) so this stays testable without a browser.
 // A signed link lasts at most 15 minutes, so a link is fetched when a file is ADDED, never stored.
+import { AUDIO_STEMS, isAudioStem } from '../../../lib/audioStems.mjs';
 import { MEDIA_LIMITS } from './editorMedia.mjs';
 
 const kindOf = mime => (mime?.startsWith('video/') ? 'video' : mime?.startsWith('audio/') ? 'audio' : mime?.startsWith('image/') ? 'image' : null);
@@ -17,17 +18,22 @@ export async function listLibraryMedia(fetcher, { limit = 30, concurrency = 6, i
             try {
                 const asset = await fetcher(`/jobs/${encodeURIComponent(jobs[i].job_id)}/asset`);
                 const kind = kindOf(asset?.mime_type);
-                if (kind && (kind !== 'image' || includeImages)) found[i] = { jobId: jobs[i].job_id, label: String(jobs[i].label || jobs[i].model_id || 'Generation').slice(0, 80), kind };
+                if (kind && (kind !== 'image' || includeImages)) {
+                    const item = { jobId: jobs[i].job_id, label: String(jobs[i].label || jobs[i].model_id || 'Generation').slice(0, 80), kind };
+                    found[i] = jobs[i].model_id === 'demucs-stems' && kind === 'audio' && JSON.stringify(asset.output_stems) === JSON.stringify(AUDIO_STEMS)
+                        ? AUDIO_STEMS.map(stem => ({...item,stem,label:`${item.label} · ${stem}`})) : item;
+                }
             } catch (e) { if (e.status === 401) throw e; onUnavailable(e); }
         }
     }
     await Promise.all(Array.from({ length: Math.min(concurrency, jobs.length) }, worker));
-    return found.filter(Boolean);
+    return found.filter(Boolean).flat();
 }
 
 /** Fetch one generation's bytes. `fetchBytes` is `fetch`; the link is requested now and used straight away. */
-export async function loadLibraryBlob(fetcher, jobId, fetchBytes = fetch) {
-    const asset = await fetcher(`/jobs/${encodeURIComponent(jobId)}/asset`);
+export async function loadLibraryBlob(fetcher, jobId, fetchBytes = fetch, { stem } = {}) {
+    if (stem !== undefined && !isAudioStem(stem)) throw new Error('Choose a supported audio stem.');
+    const asset = await fetcher(`/jobs/${encodeURIComponent(jobId)}/asset${stem ? '?stem='+stem : ''}`);
     const kind = kindOf(asset?.mime_type);
     if (!kind || typeof asset.url !== 'string' || !asset.url.startsWith('https://')) throw new Error('That file is not available.');
     const res = await fetchBytes(asset.url, { credentials: 'omit' });
