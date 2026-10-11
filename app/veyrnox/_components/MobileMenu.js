@@ -1,16 +1,29 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { ThemeToggle } from './ThemeToggle';
 import { Icon } from './Icon';
+import { getStoredSession, onSessionChange } from '../../lib/authClient';
+import { useEditorEnabled } from './EditorFlag';
+import { useProjectsEnabled } from './ProjectsFlag';
+import { STUDIO_LINKS } from '../_lib/studioNavigation';
 
-// Hamburger + slide-down panel for the marketing navs. Below `sm` the nav
-// links were either hidden outright (MarketingNav) or pushed into a
-// horizontal scroller nobody scrolls (the landing nav), so on a phone half
-// the site was unreachable from the header.
-export function MobileMenu({ items, className = '' }) {
+const storedSignIn = () => Boolean(getStoredSession());
+const signedOut = () => false;
+
+// A visible menu keeps every destination reachable on a narrow screen.
+export function MobileMenu({ items, className = '', buttonLabel = 'Menu', navLabel = 'Site', activeHref, includeStudio = false }) {
   const [open, setOpen] = useState(false);
+  const triggerRef = useRef(null);
+  const signedIn = useSyncExternalStore(onSessionChange, storedSignIn, signedOut);
+  const editorEnabled = useEditorEnabled();
+  const projectsEnabled = useProjectsEnabled();
+  const studioItems = includeStudio && signedIn ? STUDIO_LINKS.filter((link) => {
+    if (link.href === '/app/editor') return editorEnabled;
+    if (link.href === '/app/projects') return projectsEnabled;
+    return true;
+  }) : [];
 
   // A phone menu that survives a route change covers the page you just
   // opened; close it whenever it opens a link, and on Escape.
@@ -21,7 +34,11 @@ export function MobileMenu({ items, className = '' }) {
     // than the page moving.
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    const onKey = (e) => { if (e.key === 'Escape') setOpen(false); };
+    const onKey = (e) => {
+      if (e.key !== 'Escape') return;
+      setOpen(false);
+      triggerRef.current?.focus();
+    };
     window.addEventListener('keydown', onKey);
     return () => {
       document.body.style.overflow = previousOverflow;
@@ -29,14 +46,32 @@ export function MobileMenu({ items, className = '' }) {
     };
   }, [open]);
 
+  const renderLinks = (list) => list.map((it) => {
+    // Home-page sections use a plain link, as on the marketing bar.
+    const Item = it.href.includes('#') ? 'a' : Link;
+    return (
+      <li key={it.href}>
+        <Item
+          href={it.href}
+          onClick={() => setOpen(false)}
+          aria-current={it.href === activeHref ? 'page' : undefined}
+          className={`block rounded-xl px-3 py-3 text-[15px] font-bold hover:bg-vx-panel hover:text-vx-fg ${it.href === activeHref ? 'bg-vx-panel text-vx-fg' : 'text-vx-fg-body'}`}
+        >
+          {it.label}
+        </Item>
+      </li>
+    );
+  });
+
   return (
     <div className={className} data-print="hide">
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         aria-controls="vx-mobile-menu"
-        aria-label="Menu"
+        aria-label={buttonLabel}
         className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-vx-border text-vx-fg-body hover:border-vx-accent hover:text-vx-fg"
       >
         <Icon name={open ? 'close' : 'menu'} size={18} />
@@ -56,27 +91,16 @@ export function MobileMenu({ items, className = '' }) {
           />
           <nav
             id="vx-mobile-menu"
-            aria-label="Site"
-            className="vx-drop-in fixed inset-x-0 top-16 z-40 border-b border-vx-border bg-vx-base px-4 py-3 shadow-xl"
+            aria-label={navLabel}
+            className="vx-drop-in fixed inset-x-0 top-16 z-40 max-h-[calc(100dvh-4rem)] overflow-y-auto border-b border-vx-border bg-vx-base px-4 py-3 shadow-xl"
           >
-            <ul className="flex flex-col">
-              {items.map((it) => {
-                // A section of the home page (`/#faq`) is a plain link, as
-                // on the bar (see MarketingNav).
-                const Item = it.href.includes('#') ? 'a' : Link;
-                return (
-                  <li key={it.href}>
-                    <Item
-                      href={it.href}
-                      onClick={() => setOpen(false)}
-                      className="block rounded-xl px-3 py-3 text-[15px] font-bold text-vx-fg-body hover:bg-vx-panel hover:text-vx-fg"
-                    >
-                      {it.label}
-                    </Item>
-                  </li>
-                );
-              })}
-            </ul>
+            {studioItems.length > 0 && (
+              <div className="mb-2 border-b border-vx-border pb-3">
+                <p className="px-3 pb-2 font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-faint">YOUR STUDIO</p>
+                <ul className="flex flex-col">{renderLinks(studioItems)}</ul>
+              </div>
+            )}
+            <ul className="flex flex-col">{renderLinks(items)}</ul>
             <div className="mt-2 flex items-center justify-between border-t border-vx-border pt-3">
               <span className="font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-faint">THEME</span>
               <ThemeToggle />
