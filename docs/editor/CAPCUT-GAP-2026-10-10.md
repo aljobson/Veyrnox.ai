@@ -139,3 +139,7 @@ This adds reviewable generation controls. Actual paid camera-movement output and
 billed-cost quality qualification remain open; prompting does not guarantee
 trajectory or proprietary CapCut model parity. The local-animation row above
 continues to describe browser camera crops, which remain a separate operation.
+
+## Person finishing completion — 11 October 2026
+
+Face/body region reshape and directional person lighting now have real local processing, downloadable H.264/AAC results, unchanged original sources, normal insertion/Undo, cancellation and no-person refusal. See [person finishing evidence](PERSON-FINISHING-2026-10-11.md). These bounded 2D mask-based controls do not recover depth/shadows or fine facial landmarks; their limitations and broader quality qualification stay explicit. Camera-generation controls from PR #890 are verified live; paid output quality remains unqualified.
