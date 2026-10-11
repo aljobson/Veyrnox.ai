@@ -216,6 +216,7 @@ test('a listed rate is the base price of its endpoint', () => {
         'inworld-tts': 'fal-ai/inworld-tts',
         'kling-avatar-v2': 'fal-ai/kling-video/ai-avatar/v2/standard',
         'mmaudio-v2-video': 'fal-ai/mmaudio-v2',
+        'demucs-stems': 'fal-ai/demucs',
     };
     assert.deepEqual(Object.keys(UNIT_RATES).sort(), Object.keys(endpoints).sort());
     for (const [id, endpoint] of Object.entries(endpoints)) {

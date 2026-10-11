@@ -167,3 +167,9 @@ test('the Download button asks for a save link once per click and only follows a
   assert.match(button, /setError\(assetErrorMessage\(e\)\)/);
   assert.match(button, /row\?\.state !== 'succeeded' \|\| row\.has_asset === false \|\| !row\.asset_url/, 'only a finished job with a file');
 });
+
+ test('stem download validates labels before quota and signs the exact owned stem with unchanged TTL',async()=>{
+ for(const query of ['?stem=unknown','?stem=','?stem=vocals&stem=bass']){stub();assert.equal((await get(query)).status,400);assert.deepEqual(calls,[]);}
+ stub('audio/mpeg');const r=await get('?stem=bass&download=1'),body=await r.json();assert.equal(r.status,200);assert.equal(r.headers.get('cache-control'),'no-store');assert.equal(body.expires_in,900);
+ assert.deepEqual(calls,['consume_asset_link_request','get_user_audio_stem']);assert.match(new URL(body.url).searchParams.get(DISPOSITION),/-bass.mp3/);
+ });

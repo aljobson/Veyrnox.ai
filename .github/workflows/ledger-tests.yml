@@ -56,6 +56,7 @@ on:
       - "scripts/test-cinema-pass-event-ordering.mjs"
       - "scripts/test-reconciliation-allowance-referrals.mjs"
       - "scripts/test-reconciliation-observations.mjs"
+      - "scripts/test-audio-stems.mjs"
       - "scripts/test-fal-dispatch.mjs"
       - "scripts/test-fal-admission-capacity.mjs"
       - "scripts/test-fal-admission-pause.mjs"
@@ -168,6 +169,7 @@ jobs:
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-pass-event-ordering.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-reconciliation-allowance-referrals.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-reconciliation-observations.mjs
+          DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-audio-stems.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-reconciliation-snapshot.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-social-free-multi-account.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-recovery-health.mjs

@@ -6,8 +6,8 @@ export function generationQuote(model, duration) {
     return model.credits * (model.kind === 'video' ? Math.ceil(duration / 5) : 1);
 }
 export function generationInputs(model, { prompt, duration, aspect, voice }) {
-    const avatar = generationAvatarSupported(model);
-    if (!model || model.isEdit || model.takesPlan || model.takesTopic || (!model.takesPrompt && !avatar)) return { error: 'Choose a supported generation model.' };
+    const avatar = generationAvatarSupported(model), separation = generationSeparationSupported(model);
+    if (!model || model.isEdit || model.takesPlan || model.takesTopic || (!model.takesPrompt && !avatar && !separation)) return { error: 'Choose a supported generation model.' };
     if (model.takesPrompt && (typeof prompt !== 'string' || !prompt.trim() || prompt.trim().length > model.promptMax)) return { error: 'Enter a prompt within this model’s limit.' };
     if (model.kind === 'video' && !avatar && !model.durations.includes(duration)) return { error: 'Choose a supported duration.' };
     if (model.takesVoice && (typeof voice !== 'string' || !voice.trim() || voice.trim().length > 500)) return { error: 'Describe the voice in up to 500 characters.' };
@@ -29,6 +29,11 @@ export function generationAvatarSupported(model) {
     return Object.keys(media).length === 2 && media.audio?.required === true && source?.required === true &&
         Number.isFinite(media.audio.maxSeconds) && media.audio.maxSeconds > 0 &&
         (!media.video || (Number.isFinite(media.video.maxSeconds) && media.video.maxSeconds > 0));
+}
+export function generationSeparationSupported(model) {
+    return commonSupported(model) && model.kind === 'audio' && !model.isSpeech && !model.takesPrompt && model.id === 'demucs-stems' &&
+        model.media?.audio?.required === true && model.media.audio.maxSeconds === 120 && Object.keys(model.media).length === 1 &&
+        Array.isArray(model.outputStems) && model.outputStems.join(',') === 'vocals,drums,bass,other,guitar,piano';
 }
 export function generationMovementSupported(model) {
     return generationModelSupported(model) && model.kind === 'video' && !model.isSpeech &&
@@ -60,7 +65,7 @@ export function generationMovementPrompt(model, { prompt, movement, pace }) {
     return { prompt: composed };
 }
 export function generationModelsForMode(models,mode = 'media') {
-    return models.filter(model => mode === 'avatar' ? generationAvatarSupported(model) : mode === 'movement' ? generationMovementSupported(model) : generationModelSupported(model) && (mode !== 'voiceover' || model.isSpeech));
+    return models.filter(model => mode === 'separation' ? generationSeparationSupported(model) : mode === 'avatar' ? generationAvatarSupported(model) : mode === 'movement' ? generationMovementSupported(model) : generationModelSupported(model) && (mode !== 'voiceover' || model.isSpeech));
 }
 export function generationSourceLabel(model,slot) {
     if (model?.media?.[slot]?.label) return model.media[slot].label;

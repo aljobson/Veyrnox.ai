@@ -14,6 +14,7 @@
 // When fal changes a price, change the rate here and correct the row's
 // provider_cost_per_unit (and credits_5s if the floor moves) by migration.
 export const UNIT_RATES = {
+    'demucs-stems': { rate: 0.0007, per: 's', quantity: 120 },
     // "$0.0002 per second of generated audio"; duration is pinned at 60.
     'ace-step': { rate: 0.0002, per: 's', quantity: 60 },
     // "$0.0003 per output second. Thinking-enabled requests run at 2x";
@@ -46,6 +47,7 @@ export const UNIT_RATES = {
 // there; tests/falBasePrice.test.mjs holds the two together). A newly
 // activated row prints "no base price recorded" with the figure to add.
 export const BASE_PRICES = {
+    'fal-ai/demucs': { price: 0.0007, unit: 'seconds' },
     'fal-ai/ace-step': { price: 0.0002, unit: 'seconds' },
     'fal-ai/ace-step-1.5': { price: 0.0003, unit: 'units' },
     'fal-ai/bria/background/remove': { price: 0.018, unit: 'generations' },

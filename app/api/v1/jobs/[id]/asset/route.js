@@ -18,6 +18,7 @@
 import { NextResponse } from 'next/server';
 import { rpc, envConfig } from '../../../../../../packages/db/supabase-client.js';
 import { presignGetUrl, isConfigured as r2IsConfigured, envConfig as r2EnvConfig } from '../../../../../../packages/adapters/r2.js';
+import { isAudioStem } from '../../../../../../lib/audioStems.mjs';
 import { assetDownloadName } from '../../../../../../lib/assetDownloadName.js';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -32,7 +33,9 @@ export async function GET(req, { params }) {
     if (!id || !UUID_RE.test(id)) {
         return NextResponse.json({ error: 'invalid_job_id' }, { status: 400 });
     }
-    const wanted = new URL(req.url).searchParams.getAll('download');
+    const query = new URL(req.url).searchParams, stem = query.getAll('stem');
+    if (stem.length > 1 || (stem.length && !isAudioStem(stem[0]))) return NextResponse.json({ error: 'invalid_stem' }, { status: 400 });
+    const wanted = query.getAll('download');
     if (wanted.length > 1 || (wanted.length === 1 && wanted[0] !== '1')) {
         return NextResponse.json({ error: 'invalid_download' }, { status: 400 });
     }
@@ -70,7 +73,7 @@ export async function GET(req, { params }) {
 
     let asset;
     try {
-        asset = await rpc('get_user_asset', { p_auth_id: authId, p_job_id: id }, cfg);
+        asset = await rpc(stem.length ? 'get_user_audio_stem' : 'get_user_asset', { p_auth_id: authId, p_job_id: id, ...(stem.length ? { p_label: stem[0] } : {}) }, cfg);
     } catch (err) {
         console.error('[jobs/asset] get_user_asset failed:', err);
         return NextResponse.json({ error: 'internal' }, { status: 502 });
@@ -82,7 +85,7 @@ export async function GET(req, { params }) {
     let signed;
     try {
         signed = await presignGetUrl(asset.r2_key, DEFAULT_EXPIRES_SEC, r2cfg,
-            wanted.length ? { downloadFilename: assetDownloadName(id, asset.mime_type) } : undefined);
+            wanted.length ? { downloadFilename: assetDownloadName(id, asset.mime_type).replace(/(?=\.[^.]+$)/, stem.length ? '-'+stem[0] : '') } : undefined);
     } catch (err) {
         console.error('[jobs/asset] presign failed:', err);
         return NextResponse.json({ error: 'internal' }, { status: 502 });
@@ -96,5 +99,6 @@ export async function GET(req, { params }) {
         size_bytes: asset.size_bytes,
         expires_in: signed.expires,
         asset_expires_at: asset.asset_expires_at ?? null,
+        ...(Array.isArray(asset.output_stems) ? { output_stems: asset.output_stems } : {}),
     }, { headers: { 'Cache-Control': 'no-store' } });
 }

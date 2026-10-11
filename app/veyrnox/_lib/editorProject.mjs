@@ -2,6 +2,7 @@
 // reopened later. Pure helpers, no network: the page does the fetching. A document never carries media bytes, so reopening means
 // fetching every Library file again (its id names the generation) and asking for every local file again (never uploaded).
 import { librarySourceFromId } from './editorLibraryCollection.mjs';
+import { isAudioStem } from '../../../lib/audioStems.mjs';
 import { emptyTimeline, validateTimeline, FPS } from './editorTimeline.mjs';
 import { withTimeline } from '../../../lib/projectDocument.js';
 
@@ -17,7 +18,11 @@ export function documentForTimeline(doc, tl) {
     return withTimeline(doc, tl);
 }
 
-export const jobIdFromMediaId = id => (typeof id === 'string' && id.startsWith('j-') ? id.slice(2) : null);
+export function jobIdFromMediaId(id) {
+    if (typeof id !== 'string' || !id.startsWith('j-')) return null;
+    const parts = id.slice(2).split('--');
+    return parts[0] && (parts.length === 1 || (parts.length === 2 && isAudioStem(parts[1]))) ? parts[0] : null;
+}
 
 /** What a reopened timeline needs before it can play: Library files to fetch again, local files to ask for again. */
 export function mediaToRelink(tl, loaded = new Set()) {
@@ -27,7 +32,7 @@ export function mediaToRelink(tl, loaded = new Set()) {
         if(m.assetSource){assets.push({id:m.id,...m.assetSource,name:m.name});continue;}
         const saved=librarySourceFromId(m.id);if(saved){library.push({...saved,id:m.id,name:m.name});continue;}
         const jobId = jobIdFromMediaId(m.id);
-        if (jobId) library.push({ id: m.id, jobId, name: m.name });
+        if (jobId) { const stem=m.id.split('--')[1]; library.push({ id: m.id, jobId, name: m.name, ...(isAudioStem(stem)?{stem}:{}) }); }
         else local.push({ id: m.id, name: m.name, frames: m.frames, kind: m.kind });
     }
     return { library, assets, local };
