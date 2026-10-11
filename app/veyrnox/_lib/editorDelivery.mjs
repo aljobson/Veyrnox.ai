@@ -1,4 +1,4 @@
-import { SOCIAL_NETWORKS } from '../../../lib/social/networks.js';
+import { SOCIAL_CATALOGUE } from '../../../lib/social/networks.js';
 
 export const EDITOR_RENDER_MAX_BYTES = 25 * 1024 * 1024;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -64,7 +64,7 @@ export async function ownedPublishUpload(call, id) {
 
 /** Ready means both deployed capability and an active, released connected account. */
 export function editorDestinations(data) {
-    return SOCIAL_NETWORKS.map(network => {
+    return SOCIAL_CATALOGUE.map(network => {
         const readiness = data?.networks?.find(n => n.key === network.key);
         const connected = data?.accounts?.filter(a => a.network === network.key && a.status === 'active' && a.publishingEnabled === true) || [];
         const supportsVideo = (readiness?.media || (network.key === 'youtube' ? ['video'] : [])).includes('video');

@@ -6,7 +6,7 @@ import { Main } from '../../_components/Main';
 import { ConfirmDialog } from '../../_components/ConfirmDialog';
 import { getSession, onSessionChange } from '../../../lib/authClient';
 import {
-  NETWORKS, listSocialAccounts, connectNetwork, disconnectSocialAccount,
+  NETWORKS, CATALOGUE_NETWORKS, listSocialAccounts, connectNetwork, disconnectSocialAccount,
 } from '../../../lib/socialConnectClient';
 import { Composer, ScheduledPosts } from './Composer';
 import { DraftReview } from './DraftReview';
@@ -32,7 +32,7 @@ export default function Publish() {
     <h1 className="text-3xl font-black mb-2">Veyrnox Publish</h1>
     <p className="text-sm text-vx-fg-muted mb-6">Connect your social accounts to schedule posts from Veyrnox. <Link href="/app/publish/analytics" className="text-vx-accent underline">See your analytics</Link></p>
     <ul aria-label="Social platforms" className="flex flex-wrap gap-3 mb-6">
-      {NETWORKS.map((n) => <li key={n.key} className="inline-flex items-center gap-2 rounded-full border border-vx-border px-3 py-2 text-sm font-bold text-vx-fg">
+      {CATALOGUE_NETWORKS.map((n) => <li key={n.key} className="inline-flex items-center gap-2 rounded-full border border-vx-border px-3 py-2 text-sm font-bold text-vx-fg">
         <NetworkLogo network={n.key} />{n.label}
       </li>)}
     </ul>
@@ -141,11 +141,11 @@ function PublishControls({ initialJobId, initialUploadId }) {
 
     <section className="rounded-2xl border border-vx-border p-5">
       <h2 className="font-bold mb-1">Connect an account</h2>
-      <p className="text-sm text-vx-fg-muted mb-4">Choose a platform to connect. Facebook uses Pages, Pinterest uses boards and Google Business Profile uses business locations. TikTok delivers a draft to your inbox. Twitch connects for video statistics.</p>
+      <p className="text-sm text-vx-fg-muted mb-4">Choose a platform to connect. Facebook uses Pages and Google Business Profile uses business locations. TikTok delivers a draft to your inbox. Twitch connects for video statistics.</p>
       {connectError && <p role="alert" className="text-sm text-vx-danger mb-3">{connectError}</p>}
       {atLimit && <p className="text-sm text-vx-fg-muted mb-3">{accountLimit === 5 ? 'You have reached the five-account free limit. Disconnect an account to connect another.' : 'Your plan connects one account. Disconnect it to connect a different one.'}</p>}
       <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {NETWORKS.map((n) => {
+        {CATALOGUE_NETWORKS.map((n) => {
           const connected = byNetwork.get(n.key);
           const readiness = networks.find((item) => item.key === n.key);
           return (
