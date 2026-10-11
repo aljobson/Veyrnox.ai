@@ -148,13 +148,21 @@ matching poster is `robot-poster-v4.jpg`.
 `/film/robot-creative-v4.mp4`, with `/film/robot-creative-v4.jpg` as its poster.
 The player spans the full viewport width immediately below the navigation,
 with no outer padding, border or rounded frame. Desktop displays the complete
-1,280 × 720 landscape frame without cropping. Below 640px, the video fills
-the phone viewport below the 64px navigation and crops around the android
-for a close-up. The navigation retains the Veyrnox.ai logo, and a readable
-question and “Start creating” link sit over the video rather than being
-cropped with it. The opening announcement is hidden on phones so this hero
-fills the first screen. Desktop keeps the creation link beneath the video;
-both links open `/app/create`. The fifteen-second product film follows it.
+1,280 × 720 landscape frame without cropping. Below 640px, the player selects
+`/film/robot-creative-portrait-v2.mp4` and its matching JPG poster: a dedicated
+portrait scene generated through Veyrnox with Kling 2.6 Pro at 9:16. Its two
+separate impacts crack then break the glass, and the android brings its head
+and shoulders forward through the broken frame. Both hands stay within the
+narrow composition. This five-second native portrait animation is extended
+to eight seconds with a final-pose hold and the official Veyrnox.ai branding.
+The 720 × 1,280 motion has 80px of matching dark background above and below,
+producing a 720 × 1,440 export suited to the viewport below a phone's navigation.
+The complete portrait frame is contained in the hero, preserving the hands
+on other phone shapes too. A readable question and “Start creating” link sit
+over the lower part of the portrait video. The opening announcement is hidden
+on phones so this hero fills the first screen. Desktop keeps the creation
+link beneath the approved wide video; both links open `/app/create`. The
+fifteen-second product film follows it.
 The existing `FilmPlayer` supplies visible Play/Pause, pauses off screen,
 leaves the poster still for reduced motion/data saver, and fetches the file
 only when playback begins. The video stays under the 2 MB film budget.
