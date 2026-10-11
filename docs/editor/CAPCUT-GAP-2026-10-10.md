@@ -143,3 +143,16 @@ continues to describe browser camera crops, which remain a separate operation.
 ## Person finishing completion — 11 October 2026
 
 Face/body region reshape and directional person lighting now have real local processing, downloadable H.264/AAC results, unchanged original sources, normal insertion/Undo, cancellation and no-person refusal. See [person finishing evidence](PERSON-FINISHING-2026-10-11.md). These bounded 2D mask-based controls do not recover depth/shadows or fine facial landmarks; their limitations and broader quality qualification stay explicit. Camera-generation controls from PR #890 are verified live; paid output quality remains unqualified.
+
+
+## Native caption translation qualification — 11 October 2026
+
+The actual production editor completed native Chrome English-to-Spanish
+translation of an original test sentence. Caption t1 retained start 0/duration
+3 seconds; Undo restored the English text and Redo restored Spanish. The normal
+Export SRT -> Download link produced independently read subtitles with the same
+0:00.000–0:03.000 interval and Spanish text. The earlier unsupported in-app
+browser result remains a limitation for that browser, not evidence that desktop
+Chrome cannot translate. This qualifies the measured Chrome/language pair only;
+other pairs, lyric translation and wider device quality remain open. No hosted
+Reticle verdict or private media upload/provider job is claimed for this test.

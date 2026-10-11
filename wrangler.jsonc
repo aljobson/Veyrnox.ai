@@ -75,7 +75,7 @@
     "EDITOR_MULTITRACK_ENABLED": "true",
     "EDITOR_SHARED_TOOLS_ENABLED": "true",
     // Preserve existing editor controls and leave paid separation closed.
-    "EDITOR_RUNTIME_FLAGS": "{\"libraryExports\":\"true\",\"organization\":\"true\",\"localInference\":\"true\",\"audioStems\":\"false\"}",
+    "EDITOR_RUNTIME_FLAGS": "{\"libraryExports\":\"true\",\"organization\":\"true\",\"localInference\":\"true\",\"audioStems\":\"true\"}",
     // ADR-0072: chat Personas, saved instructions with a default model and options. On in production since 2026-10-07: staging
     // acceptance passed 2026-10-06 and migration 0216 is applied on production. Staging has its own value below.
     "PERSONAS_ENABLED": "true",

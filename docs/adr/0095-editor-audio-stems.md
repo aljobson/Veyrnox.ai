@@ -43,3 +43,18 @@ the provider/billing exposure was not specifically authorized or qualified.
 The accepted alternative retains the paid flag as false. A separate focused
 activation requires explicit owner approval of that resulting provider spend;
 no paid request is submitted by this amendment.
+
+
+## Explicit production testing authorization
+
+The owner answered **"Enable paid vocal separation"** to the concrete activation
+question in this chat on 11 October 2026. That question identified FAL Demucs,
+the flat six-credit charge, $0.0007 per inspected audio second, the 120-second
+ceiling and maximum $0.084 advertised provider cost; enabling submits no jobs
+itself. This supersedes the earlier pending activation/review rejection for this
+specific feature. The focused activation changes only audioStems to true in the
+strict runtime group and updates its production expectation. Actual deployment,
+catalog and UI readback are required before reporting available. No automatic
+paid qualification request, commercial-license approval or complete clean-window
+pass is inferred. Project-media uploads, native publishing and paid Cinema keep
+their independent false values.

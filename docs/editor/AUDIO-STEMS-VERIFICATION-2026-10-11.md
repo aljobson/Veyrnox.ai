@@ -31,3 +31,18 @@ Library source completeness is already live in [PR #898](https://github.com/aljo
 ## Worker binding capacity
 
 The first exact-head Cloudflare build compiled successfully but its preview upload refused 129 text bindings (Cloudflare error 10055, limit 128). Existing application and scheduled-worker bindings are retained. Preparation omits only the new false-valued production stem binding: undefined is explicitly tested as gated, and the generation handler requires exact `true` before debit. Staging retains its own true value. Production activation must first allocate binding capacity; no existing secret or active feature gate is removed to make this build pass.
+
+
+## Owner-approved production activation follow-up
+
+Migration run 38162754740 completed successfully after the owner's approval;
+production receipt is 20261011181947, applied 11 October at 18:19:47.4595533 UTC.
+No pending migration is bypassed by this rollout. Source/capacity PR #902 merged
+as 4eeaa49039c5de82c14e3749fd0629f637759fb3 after every required check and Workers
+Builds passed on b6d12c183ae8f5888a042ecdc21be9f456d91732. It provides owned device
+sources as well as Library sources and frees two bindings without disabling
+existing controls. The owner subsequently explicitly approved the separately
+priced FAL separation activation. Current release preparation sets only the
+production group audioStems member to true; exact-head CI, actual deploy and
+catalog/flag/UI readback follow. No paid provider request or leakage/lyric-quality
+claim is included in the availability rollout.

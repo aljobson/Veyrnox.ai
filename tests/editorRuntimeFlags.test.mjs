@@ -23,10 +23,11 @@ test('malformed/missing/unknown grouped values fail closed; explicit legacy fals
     assert.equal(editorFeatureEnabled(names[3],{...env(group),[names[3]]:'true'}),true);
     assert.equal(editorFeatureEnabled(names[0],null),false);
 });
-test('committed production group retains existing behavior without widening any paid or unrelated gate',()=>{
+test('owner-approved production group enables stems while retaining all other existing and unrelated gates',()=>{
     const config=parseJsonc(readFileSync(new URL('../wrangler.jsonc',import.meta.url),'utf8'));
     for(const name of names.slice(0,3))assert.equal(editorFeatureEnabled(name,config.vars),true);
-    assert.equal(editorFeatureEnabled(names[3],config.vars),false);
+    assert.equal(editorFeatureEnabled(names[3],config.vars),true);
+    assert.equal(editorFeatureEnabled(names[3],{...config.vars,EDITOR_AUDIO_STEMS_ENABLED:'false'}),false,'independent emergency rollback remains available');
     for(const name of names)assert.equal(editorFeatureEnabled(name,config.env.staging.vars),true);
     for(const name of ['PROJECT_MEDIA_UPLOADS_ENABLED','PUBLISH_VIDEO_DESTINATIONS_ENABLED','CINEMA_SUBSCRIPTIONS_ENABLED','CINEMA_UNLOCKS_ENABLED'])assert.equal(config.vars[name],'false');
     assert.equal(Object.keys(config.vars).filter(k=>names.includes(k)).length,0);
