@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { CreatorApplication } from './CreatorApplication';
+import { CinemaWinners } from './CinemaWinners';
 import { CinemaDiscovery } from './CinemaDiscovery';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { Button } from '../_components/Button';
@@ -36,16 +37,7 @@ export function SocialCinema() {
         aria-current={section === index ? 'page' : undefined} onClick={() => setSection(index)}
         className={`shrink-0 rounded-full px-5 py-3 text-sm font-bold focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-vx-accent ${section === index ? 'bg-vx-accent text-vx-accent-ink' : 'text-vx-fg-muted hover:bg-vx-panel'}`}>{label}</button>)}
     </nav>
-    {section === 3 ? <section aria-live="polite" className="grid gap-8 py-10 sm:grid-cols-[1fr_240px] sm:items-center">
-      <div><p className="font-vx-mono text-xs text-vx-fg-muted">COMING NEXT</p>
-        <h2 className="mt-3 text-2xl font-extrabold">{sections[section][1]}</h2>
-        <p className="mt-4 max-w-lg leading-relaxed text-vx-fg-body">{sections[section][2]}</p>
-        <Link href="/app/create?model=wan-2.5-kie" className="mt-6 inline-flex rounded-full border border-vx-border px-5 py-3 text-sm font-bold hover:border-vx-accent">Make a video in Studio ↗</Link>
-      </div>
-      <div aria-hidden="true" className="hidden aspect-[3/4] items-center justify-center rounded-2xl border border-vx-border bg-vx-panel sm:flex">
-        <div className="text-center"><span className="text-5xl text-vx-accent">▷</span><p className="mt-6 font-vx-mono text-xs leading-loose text-vx-fg-muted">WATCH<br />VOTE<br />RETURN</p></div>
-      </div>
-    </section> : <CinemaDiscovery mode={['all', 'series', 'voting'][section]} onAvailability={section === 2 ? undefined : setViewingOpen} />}
+    {section === 3 ? <CinemaWinners /> : <CinemaDiscovery mode={['all', 'series', 'voting'][section]} onAvailability={section === 2 ? undefined : setViewingOpen} />}
     {preview && <section className="border-t border-vx-border pt-8" aria-labelledby="profile-title">
       <h2 id="profile-title" className="text-xl font-extrabold">Your Social Cinema profile</h2>
       {account ? <Profile key={account} /> : <div className="mt-4"><p className="mb-4 text-vx-fg-body">Use your Veyrnox.ai account to get started.</p><Button onClick={() => window.dispatchEvent(new CustomEvent('veyrnox:auth-required'))}>Sign in</Button></div>}
