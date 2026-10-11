@@ -6,8 +6,8 @@ const languages = [['en','English'],['es','Spanish'],['fr','French'],['de','Germ
 export function CaptionTranslationControls({ tl, disabled, apply, onError, onBusy }) {
     const [source,setSource]=useState('en'),[target,setTarget]=useState('es'),[availability,setAvailability]=useState(null),[progress,setProgress]=useState(null);
     const controller=useRef(null),current=useRef(tl),alive=useRef(true);
-    const pair=`${source}:${target}`,available=availability?.pair===pair?availability.value:'checking';
-    useEffect(()=>{let active=true;translationAvailability(source,target).then(value=>active&&setAvailability({pair,value}));return()=>{active=false;};},[source,target,pair]);
+    const pair=`${source}:${target}`,available=availability?.pair===pair?availability.value:'checking',busy=!!progress;
+    useEffect(()=>{if(busy)return;let active=true;translationAvailability(source,target).then(value=>active&&setAvailability({pair,value}));return()=>{active=false;};},[source,target,pair,busy]);
     useLayoutEffect(()=>{current.current=tl;controller.current?.abort();},[tl,source,target]);
     useEffect(()=>{alive.current=true;return()=>{alive.current=false;controller.current?.abort();onBusy?.(false);};},[onBusy]);
     async function translate() {
