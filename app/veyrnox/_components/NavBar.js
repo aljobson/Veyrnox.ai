@@ -19,12 +19,12 @@ import { AnnouncementBar } from './AnnouncementBar';
 // The public site's nav: every marketing page, the home page included. One
 // list (NAV_CATEGORIES), one order, set from the logo's edge so the links
 // hold their place when the right-hand side changes width (signed in or out).
-export function MarketingNav() {
+export function MarketingNav({ hideAnnouncementOnMobile = false }) {
   // Rewrites serve /veyrnox/* at /*, so the browser path has no prefix.
   const path = usePathname().replace(/^\/veyrnox/, '') || '/';
   return (
     <>
-    <AnnouncementBar />
+    <div className={hideAnnouncementOnMobile ? 'hidden sm:block' : undefined}><AnnouncementBar /></div>
     <header data-print="hide" className="sticky top-0 z-40 h-16 border-b border-vx-border bg-vx-base/88 backdrop-blur-sm">
       {/* Same 1300px column as the page body, so the logo sits on its edge. */}
       <div className="h-full max-w-[1300px] mx-auto px-4 sm:px-6 flex items-center gap-1 sm:gap-3 xl:gap-6">

@@ -65,7 +65,7 @@ export default async function VeyrnoxLanding() {
   const catalog = await loadCatalog();
   return (
     <div className="min-h-dvh">
-      <MarketingNav />
+      <MarketingNav hideAnnouncementOnMobile />
       <Main>
       <BreakthroughVideo />
       <LandingFilm />
