@@ -8,7 +8,7 @@ import { gatewayFetch } from '../../_lib/gateway';
 import { getStoredUserId,onSessionChange } from '../../../lib/authClient';
 import { timelineFromDocument,mediaToRelink,matchLocalFile } from '../../_lib/editorProject.mjs';
 import { upgradeSequence,sequenceEnd } from '../../_lib/editorSequence.mjs';
-import { loadLibraryBlob } from '../../_lib/editorLibrary.mjs';
+import { loadEditorLibraryItem } from '../../_lib/editorLibraryCollection.mjs';
 import { loadProjectAssetBlob } from '../../_lib/editorProjectAssets.mjs';
 import { checkLocalFile,probeMedia,checkProbe } from '../../_lib/editorMedia.mjs';
 import { createPreviewer } from '../../_lib/editorPreview.mjs';
@@ -30,7 +30,7 @@ export function ReviewWorkspace({projectId,revision}) {
             const opened=timelineFromDocument(resource.data.document);if(opened.problem){setTimeline(null);setMissing([]);setError('This saved timeline is invalid and cannot be reviewed.');return;}
             const tl=upgradeSequence(opened.timeline);restoreOriginalAudio(tl,blobs.current);const need=mediaToRelink(tl);setTimeline(tl);setError('');setMissing([...need.local,...need.library,...need.assets]);
             for(const item of [...need.library,...need.assets]){try{
-                const result=item.assetId?await loadProjectAssetBlob(gatewayFetch,{projectId:item.projectId,assetId:item.assetId}):await loadLibraryBlob(gatewayFetch,item.jobId);
+                const result=item.assetId?await loadProjectAssetBlob(gatewayFetch,{projectId:item.projectId,assetId:item.assetId}):await loadEditorLibraryItem(gatewayFetch,item,{actor:getStoredUserId() || 'guest',isCurrent:()=>alive.current && ticket===loadingGeneration.current});
                 if(!alive.current || ticket!==loadingGeneration.current)return;blobs.current.set(item.id,result.blob);
             }catch{/* unavailable sources remain visibly missing */}}
             if(alive.current && ticket===loadingGeneration.current){const remaining=mediaToRelink(tl,new Set(blobs.current.keys()));setMissing([...remaining.local,...remaining.library,...remaining.assets]);setTick(n=>n+1);}

@@ -11,7 +11,7 @@ import { useProjectsEnabled } from '../ProjectsFlag';
 import { equalProjectDocuments } from '../../../../lib/projectDocument.js';
 import { timelineFromDocument, documentForTimeline, mediaToRelink, matchLocalFile, saveProblem } from '../../_lib/editorProject.mjs';
 import { loadProjectAssetBlob } from '../../_lib/editorProjectAssets.mjs';
-import { loadLibraryBlob } from '../../_lib/editorLibrary.mjs';
+import { loadEditorLibraryItem } from '../../_lib/editorLibraryCollection.mjs';
 import { probeMedia, checkProbe, checkLocalFile } from '../../_lib/editorMedia.mjs';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -59,7 +59,7 @@ function ProjectSessionBar({ tl, blobs, onLoadTimeline, onRelinked, onContext,co
     const fetchLibrary = useCallback(async (items, timeline) => {
         setRelinking(true);
         for (const item of items) {
-            try { const { blob } = await (item.assetId?loadProjectAssetBlob(gatewayFetch,{projectId:item.projectId,assetId:item.assetId}):loadLibraryBlob(gatewayFetch, item.jobId)); if(!currentAccount())return;blobs.current.set(item.id, blob); }
+            try { const { blob } = await (item.assetId?loadProjectAssetBlob(gatewayFetch,{projectId:item.projectId,assetId:item.assetId}):loadEditorLibraryItem(gatewayFetch,item,{actor:getStoredUserId() || 'guest',isCurrent:currentAccount})); if(!currentAccount())return;blobs.current.set(item.id, blob); }
             catch { /* stays listed as missing */ }
         }
         if (currentAccount()) { setRelinking(false); refreshRelink(timeline); onRelinked(); }
