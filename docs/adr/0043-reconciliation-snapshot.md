@@ -35,3 +35,31 @@ The fixture rolls back. CI runs it against the fresh rebuild database.
 After approved application, verify cron scheduling, a successful refresh,
 zero drift and a green reconcile-watch. Failure to refresh is an operational
 incident; do not bypass the freshness check to silence it.
+
+## Amendment — retain measured launch evidence (2026-10-11)
+
+The singleton cannot prove a full clean observation window. Retained Actions
+samples jumped from 10 October 23:30:18 UTC to 11 October 01:16:38 UTC, leaving
+no measured counts in hour 00. Successful snapshot cron rows prove execution,
+not the counts then present. Latest zero counts cannot fill this gap.
+
+Migration 0290 adds private, append-only reconciliation observations. Each
+existing fifteen-minute refresh records all seven actual counts and updates
+the public singleton atomically from that same measurement. An aggregate
+failure writes neither record. Initial application and replay take new real
+measurements; no older snapshot is copied and no historical zero is inferred.
+The public freshness guard, anonymous counts-only RPC, existing cron cadence,
+ledger and pricing remain unchanged. The history has forced RLS, explicit
+browser/sequence revokes and service-only SELECT; the private schema stays
+unexposed. A statement trigger rejects UPDATE, DELETE and TRUNCATE.
+
+After owner-approved application, use the retained timestamps and counts to
+check the entire required window, including any nonzero samples and gaps.
+Repeated samples at one timestamp do not provide additional hourly coverage.
+History begins at application and does not retroactively clear the missing
+hour above. Keep launch flags closed until the required evidence is complete.
+
+A rollback-only local PostgreSQL acceptance test checks repeat application,
+matching history/snapshot counts, real fixture drift surviving a later clean
+refresh, failure atomicity, append-only enforcement, forced RLS and actual
+browser/service permissions. CI runs it against the fresh migration rebuild.
