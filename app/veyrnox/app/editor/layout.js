@@ -1,3 +1,4 @@
+import { SharedToolsFlagProvider } from '../../_components/editor/SharedToolsFlag';
 import { MultitrackFlagProvider } from '../../_components/editor/MultitrackFlag';
 import { notFound } from 'next/navigation';
 
@@ -7,5 +8,5 @@ export const dynamic = 'force-dynamic';
 // ADR-0080: the editor has no server API, so the route itself is what the flag closes. Read per request.
 export default function Layout({ children }) {
     if (process.env.EDITOR_TIMELINE_ENABLED !== 'true') notFound();
-    return <MultitrackFlagProvider enabled={process.env.EDITOR_MULTITRACK_ENABLED === 'true'}>{children}</MultitrackFlagProvider>;
+    return <MultitrackFlagProvider enabled={process.env.EDITOR_MULTITRACK_ENABLED === 'true'}><SharedToolsFlagProvider enabled={process.env.EDITOR_SHARED_TOOLS_ENABLED==='true'}>{children}</SharedToolsFlagProvider></MultitrackFlagProvider>;
 }

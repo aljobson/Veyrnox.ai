@@ -32,6 +32,17 @@ const BROWSER_CALLABLE = new Set([
     'private.org_role(uuid)',
     'private.workspace_role(uuid)',
     'private.project_role(uuid)',
+    // 0280: authenticated, RLS-scoped brand/review invokers and their private operations.
+    'public.read_editor_brand_kit(uuid)',
+    'public.save_editor_brand_kit(uuid,integer,jsonb,text)',
+    'public.read_editor_review(uuid,integer,uuid)',
+    'public.add_editor_review_comment(uuid,integer,integer,text,text)',
+    'public.resolve_editor_review_comment(uuid,uuid,integer,boolean,text)',
+    'private.read_editor_brand_kit(uuid)',
+    'private.save_editor_brand_kit(uuid,integer,jsonb,text)',
+    'private.read_editor_review(uuid,integer,uuid)',
+    'private.add_editor_review_comment(uuid,integer,integer,text,text)',
+    'private.resolve_editor_review_comment(uuid,uuid,integer,boolean,text)',
 ]);
 
 try {

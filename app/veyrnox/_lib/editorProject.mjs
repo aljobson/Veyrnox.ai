@@ -20,21 +20,22 @@ export const jobIdFromMediaId = id => (typeof id === 'string' && id.startsWith('
 
 /** What a reopened timeline needs before it can play: Library files to fetch again, local files to ask for again. */
 export function mediaToRelink(tl, loaded = new Set()) {
-    const library = [], local = [];
+    const library = [], assets=[],local = [];
     for (const m of Object.values(tl.media)) {
-        if (loaded.has(m.id) || m.kind === 'graphic') continue;
+        if (loaded.has(m.id) || m.kind === 'graphic' || m.originalAudio) continue;
+        if(m.assetSource){assets.push({id:m.id,...m.assetSource,name:m.name});continue;}
         const jobId = jobIdFromMediaId(m.id);
         if (jobId) library.push({ id: m.id, jobId, name: m.name });
         else local.push({ id: m.id, name: m.name, frames: m.frames, kind: m.kind });
     }
-    return { library, local };
+    return { library, assets, local };
 }
 
 /** The missing local media entry a chosen file stands in for: the same name and the same length to the frame, else null. */
 export function matchLocalFile(tl, file, probe, loaded = new Set()) {
     if (!file || !probe || probe.error) return null;
     const frames = Math.max(1, Math.floor(probe.seconds * FPS));
-    return Object.values(tl.media).find(m => !loaded.has(m.id) && !jobIdFromMediaId(m.id) && m.name === file.name && m.frames === frames && m.kind === probe.kind) || null;
+    return Object.values(tl.media).find(m => !loaded.has(m.id) && !jobIdFromMediaId(m.id) && (m.sourceName || m.name) === file.name && m.frames === frames && m.kind === probe.kind) || null;
 }
 
 /** Plain words for a save failure the page shows. */

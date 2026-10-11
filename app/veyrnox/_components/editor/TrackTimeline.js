@@ -17,17 +17,17 @@ function TimedClip({ clip, track, name, ppf, selected, disabled, onSelect, onTri
     return <div className={`absolute bottom-1 top-1 overflow-hidden rounded-md border ${selected ? 'border-vx-accent ring-2 ring-vx-accent' : 'border-vx-border'} ${track.kind === 'audio' ? 'bg-emerald-950' : track.kind === 'text' ? 'bg-violet-950' : 'bg-vx-panel'}`} style={{ left: Math.max(0, start) * ppf, width: Math.max(8, len * ppf - 2) }}>
         <button type="button" disabled={disabled || track.locked} draggable={!disabled && !track.locked} data-testid={`clip-${clip.id}`} aria-pressed={selected}
             aria-label={`${name}, ${track.name}, starts ${formatTime(clip.start)}, duration ${formatTime(clip.len)}`}
-            onDragStart={e => { if (!selected) onSelect({ track: track.kind, id: clip.id }); onDrag({ kind: track.kind, id: clip.id, offset: e.clientX - e.currentTarget.getBoundingClientRect().left }); e.dataTransfer.setData('text/plain', clip.id); }}
+            onDragEnd={()=>onDrag(null)} onDragStart={e => { if (!selected) onSelect({ track: track.kind, id: clip.id }); onDrag({ kind: track.kind, id: clip.id, offset: e.clientX - e.currentTarget.getBoundingClientRect().left }); e.dataTransfer.setData('text/plain', clip.id); }}
             onClick={e => { e.stopPropagation(); onSelect({ track: track.kind, id: clip.id }, e.shiftKey || e.metaKey || e.ctrlKey); }} className="h-full w-full truncate px-3 text-left text-xs font-bold">
             {media && <div className="absolute inset-0"><MediaArtwork compact media={media} blobs={blobs} loaded={loaded} /></div>}<span className="relative">{name}</span><span className="block text-[10px] font-normal opacity-70">{formatTime(clip.len)}{clip.rate && clip.rate !== 1 ? ` · ${clip.rate}×` : ''}</span>
         </button>
         {selected && !track.locked && ['in', 'out'].map(edge => <button key={edge} type="button" disabled={disabled} {...trim(edge)} aria-label={`Trim ${edge === 'in' ? 'start' : 'end'} of ${name}`} className={`absolute bottom-0 top-0 w-2 cursor-ew-resize touch-none bg-vx-accent/60 ${edge === 'in' ? 'left-0' : 'right-0'}`} />)}
     </div>;
 }
-export function TrackTimeline({ tl, frame, selected, selection = [], ppf, disabled, snap, onSelect, onSeek, onTrim, onMove, onTrack, onReorder, blobs, loaded }) {
+export function TrackTimeline({ height=420,onMediaDrop,tl, frame, selected, selection = [], ppf, disabled, snap, onSelect, onSeek, onTrim, onMove, onTrack, onReorder, blobs, loaded }) {
     const dragged = useRef(null), total = sequenceEnd(tl), width = Math.max(600, (total + 150) * ppf);
     const at = e => Math.max(0, Math.round((e.clientX - e.currentTarget.getBoundingClientRect().left) / ppf));
-    return <section aria-label="Multitrack timeline" className="overflow-hidden rounded-xl border border-vx-border">
+    return <section aria-label="Multitrack timeline" style={{maxHeight:height}} className="overflow-y-auto rounded-xl border border-vx-border">
         <div className="flex"><div className="w-40 shrink-0 border-r border-vx-border bg-vx-panel">
             <div className="h-7 px-3 pt-1 text-[10px] text-vx-fg-muted">TRACKS</div>
             {tl.tracks.map(t => <div key={t.id} className="h-20 border-t border-vx-border px-2 py-1">
@@ -45,8 +45,8 @@ export function TrackTimeline({ tl, frame, selected, selection = [], ppf, disabl
                 {Array.from({ length: Math.ceil(width / (30 * ppf)) }, (_, i) => <span key={i} className="absolute border-l border-vx-border pl-1" style={{ left: i * 30 * ppf }}>{i % (ppf < 1 ? 5 : 1) === 0 ? `${i}s` : ''}</span>)}
             </div>
             {tl.tracks.map(t => <div key={t.id} role="group" aria-label={`${t.name} timeline`} className="relative h-20 border-t border-vx-border bg-vx-base" onClick={e => onSeek(at(e))}
-                onDragOver={e => { if (!t.locked && !disabled && dragged.current?.kind === t.kind) e.preventDefault(); }}
-                onDrop={e => { e.preventDefault(); const source = dragged.current; dragged.current = null; if (source && source.kind === t.kind && !disabled && !t.locked) onMove(t.kind, source.id, Math.max(0, at(e) - Math.round(source.offset / ppf)), t.id, snap); }}>
+                onDragOver={e => { if (!t.locked && !disabled && (dragged.current?.kind === t.kind || (t.kind!=='text' && e.dataTransfer.types.includes('application/x-veyrnox-media')))) e.preventDefault(); }}
+                onDrop={e => { e.preventDefault();const mediaId=e.dataTransfer.getData('application/x-veyrnox-media');if(mediaId && t.kind!=='text' && !disabled && !t.locked){onMediaDrop?.(t.kind,mediaId,at(e),t.id);return;} const source = dragged.current; dragged.current = null; if (source && source.kind === t.kind && !disabled && !t.locked) onMove(t.kind, source.id, Math.max(0, at(e) - Math.round(source.offset / ppf)), t.id, snap); }}>
                 {tl[t.kind].filter(c => c.trackId === t.id).map(c => <TimedClip key={c.id} media={tl.media[c.mediaId]} blobs={blobs} loaded={loaded.includes(c.mediaId)} clip={c} track={trackFor(tl, c)} ppf={ppf} name={t.kind === 'text' ? c.text : tl.media[c.mediaId]?.name} selected={selection.some(s => s.id === c.id) || selected?.id === c.id} disabled={disabled} onSelect={onSelect} onTrim={onTrim} onDrag={source => { dragged.current = source; }} />)}
             </div>)}
             <div aria-hidden="true" className="pointer-events-none absolute bottom-0 top-0 w-px bg-vx-accent" style={{ left: frame * ppf }}><span className="absolute -left-1 top-0 size-2 rounded-full bg-vx-accent" /></div>

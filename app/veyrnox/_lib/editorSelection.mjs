@@ -1,3 +1,5 @@
+import { cutSequenceRange } from './editorCaptions.mjs';
+import { backgroundMediaIds } from './editorBackground.mjs';
 import { validateSequence } from './editorSequenceValidation.mjs';
 import { trackFor, moveSequence } from './editorSequence.mjs';
 const clips = tl => ['video', 'audio', 'text'].flatMap(track => tl[track].map(clip => ({ track, ...clip })));
@@ -23,7 +25,7 @@ export function groupSelection(tl, selection, group = true) {
 }
 export function copySelection(tl, selection) {
     const items = selectionMembers(tl, selection);
-    return { items, media: Object.fromEntries(items.filter(c => c.mediaId).map(c => [c.mediaId, tl.media[c.mediaId]])) };
+    return { items, media: Object.fromEntries(items.filter(c => c.mediaId).flatMap(c => [c.mediaId,...backgroundMediaIds(c)].map(id => [id,tl.media[id]]))) };
 }
 export function pasteSelection(tl, clipboard, frame) {
     if (!clipboard?.items?.length) return { error: 'Copy clips first.' };
@@ -43,6 +45,13 @@ export function deleteSelection(tl, selection, ripple = false) {
     if (!items.length) return { error: 'Select clips first.' };
     if (locked(tl, items)) return { error: 'Unlock every selected track first.' };
     const ids = new Set(items.map(c => c.id)), next = { ...tl };
+    if(ripple==='all') {
+        for(const kind of ['video','audio','text'])next[kind]=tl[kind].filter(c=>!ids.has(c.id));
+        const ranges=items.map(c=>[c.start,c.start+c.len]).sort((a,b)=>a[0]-b[0]),merged=[];
+        for(const range of ranges){const last=merged.at(-1);if(last && range[0]<=last[1])last[1]=Math.max(last[1],range[1]);else merged.push([...range]);}
+        let result=next;for(const [from,to] of merged.reverse()){result=cutSequenceRange(result,from,to);if(result.error)return result;}
+        return checked(result);
+    }
     for (const kind of ['video', 'audio', 'text']) next[kind] = tl[kind].filter(c => !ids.has(c.id)).map(c => {
         if (!ripple) return c;
         // Merge selected ranges first so overlapping clips do not remove the same gap twice.

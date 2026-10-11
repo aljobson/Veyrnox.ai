@@ -1,3 +1,5 @@
+import { backgroundMediaIds } from './editorBackground.mjs';
+import { sourceRange } from './editorSpeed.mjs';
 import { exportMemoryProblem } from './editorExportMemory.mjs';
 import { validateExportSettings, EXPORT_BITRATES } from './editorExportSettings.mjs';
 import { graphicCanvas } from './editorGraphics.mjs';
@@ -30,6 +32,12 @@ class Reader {
     }
 }
 
+class SeekReader {
+    constructor(sink) {this.sink=sink;this.time=null;this.picture=null;}
+    async at(time) {if(time!==this.time){this.picture=(await this.sink.getCanvas(time))?.canvas ?? null;this.time=time;}return this.picture;}
+    async close() {this.picture=null;this.sink=null;}
+}
+
 const abortError = () => Object.assign(new Error('Export cancelled.'), { name: 'AbortError' });
 
 
@@ -55,14 +63,15 @@ export async function exportBlocker(size = { width: 1280, height: 720 }) {
  * Render the timeline to an MP4 Blob. `blobs` maps media id to the file's bytes. `onProgress({ stage, done, total })`.
  * Rejects with an AbortError when `signal` aborts; any partial output is discarded.
  */
-export async function exportTimeline(tl, blobs, { signal = new AbortController().signal, height = 720, frameRate = 30, format = 'mp4', quality = 'standard', fitMode = 'contain', onProgress = () => {} } = {}) {
+export async function exportTimeline(tl, blobs, { signal = new AbortController().signal, height = 720, frameRate = 30, format = 'mp4', quality = 'standard', bitrate = EXPORT_BITRATES[quality], fitMode = 'contain', onProgress = () => {} } = {}) {
     if (signal.aborted) throw abortError();
+    if(!Number.isFinite(bitrate)||bitrate<128000||bitrate>32000000)throw new Error('Choose a supported video bitrate.');
     const total = totalFrames(tl);
     if (total < 1) throw new Error('Add a clip first.');
     const settingsProblem = validateExportSettings({ height, frameRate, format, quality }, total / FPS);
     if (settingsProblem) throw new Error(settingsProblem);
     if (!['contain', 'cover'].includes(fitMode)) throw new Error('Choose valid frame fitting.');
-    const memoryProblem = exportMemoryProblem(tl, height, quality); if (memoryProblem) throw new Error(memoryProblem);
+    const memoryProblem = exportMemoryProblem(tl, height, quality, bitrate); if (memoryProblem) throw new Error(memoryProblem);
     const outputFrames = Math.ceil(total / FPS * frameRate);
     const { width: W, height: H } = timelineSize(tl, height);
     const blocked = await exportBlocker({ width: W, height: H });
@@ -72,7 +81,7 @@ export async function exportTimeline(tl, blobs, { signal = new AbortController()
     const readers = [], images = new Map(), retired = new Set();
     let output;
     try {
-        for (const id of new Set([...tl.video, ...tl.audio].map(c => c.mediaId))) {
+        for (const id of new Set([...tl.video, ...tl.audio].flatMap(c => [c.mediaId,...backgroundMediaIds(c)]))) {
             if (tl.media[id].kind === 'graphic') { images.set(id, graphicCanvas(tl.media[id].graphic)); continue; }
             const blob = blobs.get(id);
             if (!blob) throw new Error('A file in this project is not loaded. Add it again.');
@@ -87,15 +96,15 @@ export async function exportTimeline(tl, blobs, { signal = new AbortController()
             const track = await inputs.get(clip.mediaId).getPrimaryVideoTrack();
             if (!track || !await track.canDecode()) throw new Error('This browser cannot decode one of the videos.');
             // A clip keeps playing under the next clip's dissolve, so its reader runs that much further (never past the file).
-            const to = Math.min(clip.in + clip.len * (clip.rate ?? 1) + (tl.schemaVersion === 3 ? sequenceTransitionAfter(tl, clip) * (clip.rate ?? 1) : effectiveTransition(tl, k + 1)), tl.media[clip.mediaId].frames) / FPS;
-            readers.push(new Reader(new CanvasSink(track, { poolSize: 2 }), clip.in / FPS, to));
+            const sink=new CanvasSink(track,{poolSize:2}),range=sourceRange(clip,tl.schemaVersion===3?sequenceTransitionAfter(tl,clip):effectiveTransition(tl,k+1));
+            readers.push(clip.reverse || clip.freezeFrame!==undefined ? new SeekReader(sink) : new Reader(sink, Math.max(0,range.from)/FPS, Math.min(range.to+1,tl.media[clip.mediaId].frames)/FPS));
         }
 
         onProgress({ stage: 'audio', done: 0, total });
         const mix = await mixAudio(tl, inputs, Math.ceil(total / FPS * SAMPLE_RATE), signal);
 
         output = new Output({ format: format === 'mov' ? new MovOutputFormat({ fastStart: 'in-memory' }) : new Mp4OutputFormat({ fastStart: 'in-memory' }), target: new BufferTarget() });
-        const video = new CanvasSource(canvas, { codec: 'avc', quality: new Quality({ bitrate: EXPORT_BITRATES[quality] }), keyFrameInterval: 2, hardwareAcceleration: 'prefer-software' });
+        const video = new CanvasSource(canvas, { codec: 'avc', quality: new Quality({ bitrate }), keyFrameInterval: 2, hardwareAcceleration: 'prefer-software' });
         output.addVideoTrack(video, { frameRate });
         const audio = mix ? new AudioBufferSource({ codec: 'aac', bitrate: 128000 }) : null;
         if (audio) output.addAudioTrack(audio);
@@ -112,7 +121,7 @@ export async function exportTimeline(tl, blobs, { signal = new AbortController()
         for (let i = 0; i < outputFrames; i++) {
             if (signal.aborted) throw abortError();
             const layers = frameLayers(tl, Math.min(total - 1, i / frameRate * FPS));
-            paintFrame(g, W, H, layers, await resolvePictures(layers, (k, time) => readers[k].at(time)), fitMode);
+            paintFrame(g, W, H, layers, await resolvePictures(layers, (k, time, backgroundId) => backgroundId ? images.get(backgroundId) : readers[k].at(time)), fitMode);
             for (const [k, entry] of layout.entries()) {
                 const until = entry.start + entry.clip.len + (tl.schemaVersion === 3 ? sequenceTransitionAfter(tl, entry.clip) : effectiveTransition(tl, k + 1));
                 if (!retired.has(k) && (i + 1) / frameRate * FPS >= until) { await readers[k].close(); retired.add(k); }
