@@ -8,11 +8,16 @@ import { parseJsonc } from '../scripts/check-migration-ledger.mjs';
 const read = f => readFileSync(new URL(`../${f}`, import.meta.url), 'utf8');
 
 // ADR-0080: free browser editing is open; project persistence has its own server gate.
-test('the editor rollout is preserved in both environments while production projects stay closed', () => {
+test('the editor rollout is preserved in both environments with owner-authorized production cloud saving', () => {
     const config = parseJsonc(read('wrangler.jsonc'));
     assert.equal(config.vars.EDITOR_TIMELINE_ENABLED, 'true');
     assert.equal(config.env.staging.vars.EDITOR_TIMELINE_ENABLED, 'true');
-    assert.equal(config.vars.TENANT_PROJECTS_ENABLED, 'false');
+    assert.equal(config.vars.TENANT_PROJECTS_ENABLED, 'true');
+    assert.equal(config.vars.EDITOR_MULTITRACK_ENABLED, 'true');
+    assert.equal(config.vars.EDITOR_SHARED_TOOLS_ENABLED, 'true');
+    assert.equal(config.vars.PROJECT_MEDIA_UPLOADS_ENABLED, 'false');
+    assert.equal(config.vars.CINEMA_SUBSCRIPTIONS_ENABLED, 'false');
+    assert.equal(config.vars.CINEMA_UNLOCKS_ENABLED, 'false');
 });
 
 test('the request-time server flag controls the route and the Studio navigation', () => {
