@@ -3,6 +3,40 @@ import assert from 'node:assert/strict';
 import { limitRequestBody, JSON_BODY_LIMIT, WEBHOOK_BODY_LIMIT } from '../lib/requestBodyLimit.js';
 const request = (body, path = '/api/v1/generations', headers = {}) => new Request(`https://veyrnox.test${path}`, { method: 'POST', body, headers, duplex: 'half' });
 
+// Workers exposes an empty stream for GET/HEAD with Content-Length: 0,
+// although the standard Request constructor forbids a body on those methods.
+function readRequestWithStream(method, body = new Uint8Array()) {
+    const original = request(body, '/media/social/synthetic-token', { 'content-length': '0' });
+    return {
+        ...Object.fromEntries(['url', 'headers', 'body', 'redirect', 'signal'].map(key => [key, original[key]])),
+        method,
+        cf: { country: 'GB' },
+    };
+}
+
+for (const method of ['GET', 'HEAD']) {
+    test(`${method} with an empty stream and Content-Length: 0 reaches the handler`, async () => {
+        const original = readRequestWithStream(method);
+        const result = await limitRequestBody(original);
+        assert.equal(result.response, undefined);
+        assert.equal(result.request.method, method);
+        assert.equal(result.request.url, original.url);
+        assert.equal(result.request.headers.get('content-length'), '0');
+        assert.equal(result.request.body, null);
+    });
+
+    test(`${method} with bytes is still rejected even when Content-Length claims zero`, async () => {
+        const result = await limitRequestBody(readRequestWithStream(method, 'unexpected body'));
+        assert.equal(result.response.status, 400);
+        assert.deepEqual(await result.response.json(), { error: 'invalid_body' });
+    });
+}
+
+test('GET streams still enforce the body ceiling', async () => {
+    const result = await limitRequestBody(readRequestWithStream('GET', new Uint8Array(JSON_BODY_LIMIT + 1)));
+    assert.equal(result.response.status, 413);
+});
+
 test('oversized bodies are rejected without trusting content-length', async () => {
     const { response } = await limitRequestBody(request('x'.repeat(JSON_BODY_LIMIT + 1), undefined, { 'content-length': '1' }));
     assert.equal(response.status, 413);
