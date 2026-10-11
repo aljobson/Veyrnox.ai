@@ -118,3 +118,32 @@ The balance was 12 Credits; one ten-second Kling take costs 56 Credits.
 - Purpose: one fresh ten-second take with the existing approved room
   references, then the free Film Studio 1920×1080 master export. These Credits
   fund an actual provider call and are not customer revenue or a purchase.
+
+## 2026-10-11 — Morning light Film Studio live test
+
+Al Jobson requested a new ten-second Morning light film in 16:9, with real
+image and video generation and direct Save to Library. After the estimated
+80-Credit first-pass budget was shown, he explicitly asked Codex to add the
+Credits to the account. This authorizes one 80-Credit test grant to the same
+founder-owned production account above; it does not authorize another grant
+or change customer billing.
+
+- The visible balance and ledger balance were both zero. The public user and
+  Auth identity match the previously approved Film Studio test account, which
+  is not frozen.
+- Grant: 80 paid-equivalent Credits through `public.ledger_grant`, with
+  `free_delta = 0` and no subscription-credit change; expected balance 0 -> 80.
+- Reason: `grant:manual Al Jobson Film Studio Morning light live test`.
+- Idempotency key: `codex-film-morning-light-20261011-01`. Reuse this exact key
+  if the outcome is unknown; never issue a duplicate grant.
+- Purpose: real references, a reference sheet and static stress tests, then
+  one ten-second Kling take and the free 1920×1080 master/save path. Three
+  available Nano Banana free-allowance images are used first. Failed quality
+  reviews may require revisions; they do not expand this grant authorization.
+- These Credits fund actual provider calls. No purchase, payment, revenue or
+  subscription is asserted. No balance or ledger row is edited directly.
+- Execution: RPC returned `ok: true`, `idempotent: false`, balance 80 and
+  ledger entry `44073782-bf53-4c13-9cdc-5fe36065f589`. Read-only verification
+  found exactly one matching +80 entry, `free_delta = 0`, unchanged zero Free
+  and Subscription balances, and balance equal to the ledger sum. The native
+  signed-in Credits page displayed 80 Credits.
