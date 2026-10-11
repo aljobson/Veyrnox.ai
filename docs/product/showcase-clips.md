@@ -146,8 +146,10 @@ matching poster is `robot-poster-v4.jpg`.
 
 `BREAKTHROUGH_FILM` serves the eight-second silent H.264 export from
 `/film/robot-creative-v4.mp4`, with `/film/robot-creative-v4.jpg` as its poster.
-The full 1,280 × 720 landscape frame is displayed without cropping, keeping
-the logo, robot and question visible on desktop and mobile. A “Start creating”
+The player spans the full viewport width immediately below the navigation,
+with no outer padding, border or rounded frame. The full 1,280 × 720 landscape
+image scales without cropping, keeping the logo, robot and question visible
+on desktop and mobile. A “Start creating”
 link below opens `/app/create`. The fifteen-second product film follows it.
 The existing `FilmPlayer` supplies visible Play/Pause, pauses off screen,
 leaves the poster still for reduced motion/data saver, and fetches the file
