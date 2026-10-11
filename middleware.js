@@ -15,6 +15,7 @@
  * deployment must not accept traffic.
  */
 
+import { editorFeatureEnabled } from './lib/editorRuntimeFlags.mjs';
 import { stripContext } from './packages/security/context.js';
 import { responseHeaders } from './packages/security/errors.js';
 import { recentMfaTimestamp } from './lib/cinema/strongAuth.js';
@@ -63,7 +64,7 @@ export async function middleware(req) {
     // Only this immutable local inference Worker can compile its pinned WASM.
     // HTML and every other script keep the existing nonce policy.
     if(pathname===LOCAL_SPEECH_WORKER_URL||pathname===`${EDITOR_VISION_PATH}/worker.mjs`){
-        if(process.env.EDITOR_LOCAL_INFERENCE_ENABLED!=='true')return new NextResponse(null,{status:404});
+        if(!editorFeatureEnabled('EDITOR_LOCAL_INFERENCE_ENABLED'))return new NextResponse(null,{status:404});
         const response=NextResponse.next({request:{headers}});
         response.headers.set('Content-Security-Policy',(pathname===LOCAL_SPEECH_WORKER_URL?localSpeechWorkerPolicy:editorVisionWorkerPolicy)(new URL(req.url).origin));
         response.headers.set('Cache-Control','no-cache');

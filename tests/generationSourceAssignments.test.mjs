@@ -177,3 +177,32 @@ test('the existing avatar takes owned photo/speech slots and refuses speech beyo
     } finally { net.restore(); }
     await rejected({ model_id: avatar.id,source_assets: [ref(START,'image'),ref(AUDIO,'audio')],inputs: { prompt: 'p' } },'source_too_long',{ model: avatar,overrides: { [AUDIO]: { bytes: wav(11) } } });
 });
+
+
+test('owned upload descriptors preserve start/end roles, deduplicate inspection and keep sweep identities',async()=>{
+    const net=network();
+    try {
+        const response=await post({source_assets:[],source_keys:[{key:UPLOAD,slot:'endImage'},{key:UPLOAD,slot:'image'}]});
+        assert.equal(response.status,200);
+        const payload=submits(net)[0].body;
+        assert.equal(payload.start_image_url,payload.end_image_url);
+        assert.equal(inspections(net).length,1);
+        assert.deepEqual(rpcCalls(net,'ledger_debit')[0].body.p_inputs.source_keys,{endImage_url:UPLOAD,image_url:UPLOAD});
+        assert.equal(rpcCalls(net,'ledger_debit')[0].body.p_credits,24);
+    }finally{net.restore();}
+    const mixed=network();try{
+        assert.equal((await post({source_assets:[ref(START,'image')],source_keys:[{key:UPLOAD,slot:'endImage'}]})).status,200);
+        assert.equal(new URL(submits(mixed)[0].body.end_image_url).pathname,`/test/${UPLOAD}`);
+    }finally{mixed.restore();}
+});
+test('malformed, conflicting, foreign and wrong-kind uploaded slots refuse without debit or dispatch',async()=>{
+    for(const [source_keys,source_assets,error] of [
+        [[{key:UPLOAD,slot:'start_image_url'}],[],'source_key_invalid'],
+        [[{key:UPLOAD,slot:'image',url:'https://outsider.example/a.png'}],[],'source_key_invalid'],
+        [[{key:UPLOAD,slot:'image'},{key:UPLOAD,slot:'image'}],[],'source_slot_invalid'],
+        [[{key:UPLOAD,slot:'image'}],[ref(START,'image')],'source_slot_invalid'],
+        [[{key:UPLOAD,slot:'video'}],[],'source_slot_invalid'],
+        [[{key:UPLOAD.replace(AUTH,FOREIGN),slot:'image'}],[],'source_not_found'],
+    ])await rejected({source_keys,source_assets},error);
+    await rejected({model_id:latent.id,inputs:{},source_assets:[],source_keys:[{key:UPLOAD,slot:'audio'}]},'source_type_unsupported',{model:latent});
+});

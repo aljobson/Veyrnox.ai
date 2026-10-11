@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {register} from 'node:module';
 import {parseJsonc} from '../scripts/check-migration-ledger.mjs';
+import {editorFeatureEnabled} from '../lib/editorRuntimeFlags.mjs';
 import {contentSecurityPolicy} from '../lib/contentSecurityPolicy.mjs';
 import {LOCAL_SPEECH_WORKER_URL,localSpeechWorkerPolicy} from '../app/veyrnox/_lib/localSpeechAssets.mjs';
 import {EDITOR_VISION_PATH,editorVisionWorkerPolicy} from '../app/veyrnox/_lib/editorVisionRuntime.mjs';
@@ -13,7 +14,7 @@ const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 test('owner-authorized document, private delivery and local inference features retain independent rollback gates',()=>{
     const config=parseJsonc(read('wrangler.jsonc'));
     for(const flag of ['EDITOR_LIBRARY_EXPORTS_ENABLED','EDITOR_ORGANIZATION_ENABLED','EDITOR_LOCAL_INFERENCE_ENABLED']){
-        assert.equal(config.vars[flag],'true');assert.equal(config.env.staging.vars[flag],'true');
+        assert.equal(editorFeatureEnabled(flag,config.vars),true);assert.equal(editorFeatureEnabled(flag,config.env.staging.vars),true);
     }
     assert.equal(config.vars.PUBLISH_VIDEO_DESTINATIONS_ENABLED,'false');
     assert.equal(config.env.staging.vars.PUBLISH_VIDEO_DESTINATIONS_ENABLED,'false');
