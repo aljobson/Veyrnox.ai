@@ -6,11 +6,14 @@ import { getFreshAccessToken, getStoredSession, onSessionChange, signOut } from 
 import { ConfirmDialog } from './ConfirmDialog';
 import { accountLabel } from '../_lib/account.js';
 import { usePublishEnabled } from './PublishFlag';
+import { useEditorEnabled } from './EditorFlag';
+import { useProjectsEnabled } from './ProjectsFlag';
+import { STUDIO_LINKS } from '../_lib/studioNavigation';
 
 const ACCOUNT_LINKS = [
   { href: '/social-cinema', label: 'Social Cinema' },
   { href: '/app', label: 'Open Studio' },
-  { href: '/app/library', label: 'Library' },
+  ...STUDIO_LINKS,
   { href: '/app/publish', label: 'Veyrnox Publish' },
   { href: '/app/credits', label: 'Credits' },
   { href: '/app/account', label: 'Account & security' },
@@ -36,7 +39,14 @@ export function NavAuthButtons({ account: given }) {
   const wrapRef = useRef(null);
   const triggerRef = useRef(null);
   const publishOpen = usePublishEnabled();
-  const links = publishOpen ? ACCOUNT_LINKS : ACCOUNT_LINKS.filter((l) => l.href !== '/app/publish');
+  const editorOpen = useEditorEnabled();
+  const projectsOpen = useProjectsEnabled();
+  const links = ACCOUNT_LINKS.filter((link) => {
+    if (link.href === '/app/publish') return publishOpen;
+    if (link.href === '/app/editor') return editorOpen;
+    if (link.href === '/app/projects') return projectsOpen;
+    return true;
+  });
 
   const account = given || sessionAccount;
   // Refresh an expired access token on mount. setSession notifies the store,
@@ -100,7 +110,7 @@ export function NavAuthButtons({ account: given }) {
         {menuOpen && (
           <div
             id="vx-account-menu"
-            className="absolute right-0 top-full mt-2 w-60 rounded-xl border border-vx-border bg-vx-panel p-1.5 shadow-2xl z-50"
+            className="absolute right-0 top-full mt-2 max-h-[calc(100dvh-5rem)] w-60 overflow-y-auto rounded-xl border border-vx-border bg-vx-panel p-1.5 shadow-2xl z-50"
           >
             <div className="px-3 py-2 border-b border-vx-border mb-1">
               <div className="text-sm font-bold text-vx-fg truncate">{account.name}</div>

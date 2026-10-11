@@ -65,7 +65,7 @@ export function MarketingNav() {
         <NavAuthButtons />
         {/* Below xl the links above are hidden: without this the only way
             off the page was the browser back button. */}
-        <MobileMenu items={NAV_CATEGORIES} className="xl:hidden" />
+        <MobileMenu items={NAV_CATEGORIES} includeStudio className="xl:hidden" />
       </div>
       </div>
     </header>
@@ -83,7 +83,7 @@ export function AppNav({ balance, active = 'explore', readAccount = true }) {
   const enhanceEnabled = useVideoEnhancePreview();
   const editorEnabled = useEditorEnabled();
   const tabs = useRef(null);
-  // Keeps the current tab on screen in the strip a phone scrolls sideways. The
+  // Keeps the current desktop tab on screen when the strip overflows. The
   // strip is moved by hand: scrollIntoView() also moves where the next Tab
   // starts from, so on every studio page the first Tab went past "Skip to
   // content" and the tabs before this one.
@@ -156,15 +156,19 @@ export function AppNav({ balance, active = 'explore', readAccount = true }) {
         aria-label="Veyrnox studio — explore"
         className={`items-center gap-2.5 shrink-0 ${account ? 'hidden sm:flex' : 'flex'}`}
       >
-        {/* Wordmark drops below sm so the three tabs and the balance pill
-            fit a 360px viewport without a sideways scroll. Signed in, the
-            mark goes too: measured at 360px the account block does not fit
-            beside it, and it only repeats where the Explore tab already
-            goes. */}
+        {/* On phones the Studio menu includes Explore, so signed-in users
+            have room for their balance and account controls. */}
         <Logo className="sm:hidden" />
         <Logo wordmark className="hidden sm:inline-flex" />
       </Link>
-      <nav ref={tabs} aria-label="Studio" className="flex min-w-0 overflow-x-auto gap-0.5 sm:gap-1 text-[12px] sm:text-sm font-semibold">
+      <MobileMenu
+        items={items}
+        activeHref={items.find((item) => item.key === active)?.href}
+        buttonLabel="Studio menu"
+        navLabel="Studio"
+        className="lg:hidden"
+      />
+      <nav ref={tabs} aria-label="Studio" className="hidden lg:flex min-w-0 overflow-x-auto gap-0.5 sm:gap-1 text-[12px] sm:text-sm font-semibold">
         {items.map((it) => (
           <Link
             key={it.key}

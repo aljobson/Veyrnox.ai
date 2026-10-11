@@ -56,7 +56,8 @@ test('a toggle has one name, and the password field is named by its label alone'
     assert.match(library, /aria-pressed=\{selected\} aria-label="Add to edit"/);
     const menu = read('app/veyrnox/_components/MobileMenu.js');
     assert.match(menu, /aria-expanded=\{open\}/);
-    assert.match(menu, /aria-label="Menu"/);
+    assert.match(menu, /buttonLabel = 'Menu'/);
+    assert.match(menu, /aria-label=\{buttonLabel\}/);
     const gate = read('components/AuthGate.jsx');
     // Its visible word changes (Show, Hide), so its name does, and it has no pressed state.
     assert.match(gate, /aria-label=\{showPassword \? "Hide password" : "Show password"\}/);
