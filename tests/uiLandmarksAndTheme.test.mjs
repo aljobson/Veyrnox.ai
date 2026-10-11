@@ -32,7 +32,7 @@ test('the nav is a <header> outside <main>, and the footer follows it', () => {
     assert.doesNotMatch(bars, /<div data-print="hide" className="sticky top-0/, 'a nav bar that is not a <header>');
     assert.ok((bars.match(/<header data-print="hide" className="sticky top-0/g) || []).length >= 2);
     const home = read('app/veyrnox/page.js');
-    assert.match(home, /Nav \/>\s*<Main>/, '<main> opens after the nav');
+    assert.match(home, /<MarketingNav hideAnnouncementOnMobile \/>\s*<Main>/, '<main> opens after the nav');
     assert.match(home, /<\/Main>\s*<FooterForest /, 'and closes before the footer');
     assert.match(read('app/layout.js'), /<a href="#main" className="vx-skip /);
     // The studio nav keeps its current tab in view by moving the strip itself:

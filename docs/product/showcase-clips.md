@@ -147,10 +147,14 @@ matching poster is `robot-poster-v4.jpg`.
 `BREAKTHROUGH_FILM` serves the eight-second silent H.264 export from
 `/film/robot-creative-v4.mp4`, with `/film/robot-creative-v4.jpg` as its poster.
 The player spans the full viewport width immediately below the navigation,
-with no outer padding, border or rounded frame. The full 1,280 × 720 landscape
-image scales without cropping, keeping the logo, robot and question visible
-on desktop and mobile. A “Start creating”
-link below opens `/app/create`. The fifteen-second product film follows it.
+with no outer padding, border or rounded frame. Desktop displays the complete
+1,280 × 720 landscape frame without cropping. Below 640px, the video fills
+the phone viewport below the 64px navigation and crops around the android
+for a close-up. The navigation retains the Veyrnox.ai logo, and a readable
+question and “Start creating” link sit over the video rather than being
+cropped with it. The opening announcement is hidden on phones so this hero
+fills the first screen. Desktop keeps the creation link beneath the video;
+both links open `/app/create`. The fifteen-second product film follows it.
 The existing `FilmPlayer` supplies visible Play/Pause, pauses off screen,
 leaves the poster still for reduced motion/data saver, and fetches the file
 only when playback begins. The video stays under the 2 MB film budget.
