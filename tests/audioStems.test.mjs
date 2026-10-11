@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import {toPublicModels} from '../lib/publicCatalog.js';
 import {AUDIO_STEMS,demucsOutputs} from '../lib/audioStems.mjs';
 import {capabilityFor,publicCapabilities,shapePayload,checkInputs,checkSource} from '../lib/modelCapabilities.js';
 import {generationModelsForMode,generationInputs,generationQuote,generationSources} from '../app/veyrnox/_lib/editorGeneration.mjs';
@@ -46,4 +47,12 @@ test('saved stem IDs reopen their exact owned output and malformed suffixes neve
  assert.deepEqual(mediaToRelink({media}).library.map(x=>[x.jobId,x.stem]),AUDIO_STEMS.map(x=>[id,x]));
  for(const bad of ['j-'+id+'--unknown','j-'+id+'--vocals--bass'])assert.equal(jobIdFromMediaId(bad),null);
  assert.equal(jobIdFromMediaId('j-old-library-id'),'old-library-id');
+});
+
+test('runtime rollout flag keeps the paid model gated until explicitly enabled',()=>{
+ const previous=process.env.EDITOR_AUDIO_STEMS_ENABLED;const row={id:'demucs-stems',name:'Demucs',modality:'audio-to-audio',credits_5s:6,provider_endpoint:'fal-ai/demucs',gated_flag:false};
+ try {for(const value of [undefined,'false','TRUE']){if(value===undefined)delete process.env.EDITOR_AUDIO_STEMS_ENABLED;else process.env.EDITOR_AUDIO_STEMS_ENABLED=value;assert.equal(toPublicModels([row])[0].gated,true);}
+ process.env.EDITOR_AUDIO_STEMS_ENABLED='true';const enabled=toPublicModels([row])[0];assert.equal(enabled.gated,false);assert.deepEqual(enabled.capabilities.outputStems,AUDIO_STEMS);assert.equal(enabled.credits,6);
+ assert.equal(toPublicModels([{...row,gated_flag:true}])[0].gated,true);
+ }finally{if(previous===undefined)delete process.env.EDITOR_AUDIO_STEMS_ENABLED;else process.env.EDITOR_AUDIO_STEMS_ENABLED=previous;}
 });
