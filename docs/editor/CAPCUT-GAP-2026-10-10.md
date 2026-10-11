@@ -119,3 +119,23 @@ an owner-directed exception, not a clean-window announcement.
 The unresolved implementation, provider/licensing and output-quality rows above
 remain open. Native social destination, project media-upload and paid Cinema
 flags remain off.
+
+Production activation and signed-in save/reload/history, brand/review, folder/font,
+private Library playback and independently decoded exports subsequently passed.
+The activation record above contains the actual deployment and flag readback.
+Historical preparation rows do not override this measured live status.
+
+## Camera-generation completion — 11 October 2026
+
+Dedicated AI camera movement now uses the existing live FAL/KIE image-to-video
+contracts, with nine direction presets, three paces, scene description, complete
+prompt preview, owned Library start/end sources where supported, and normal
+quote/consent/idempotency/job recovery. Full composed prompts retain provider
+limits. Local Reticle verified the live model filter, direction/pace/quote and
+overflow refusal without submitting a paid job; see
+[the camera verification record](CAMERA-VERIFICATION-2026-10-11.md).
+
+This adds reviewable generation controls. Actual paid camera-movement output and
+billed-cost quality qualification remain open; prompting does not guarantee
+trajectory or proprietary CapCut model parity. The local-animation row above
+continues to describe browser camera crops, which remain a separate operation.
