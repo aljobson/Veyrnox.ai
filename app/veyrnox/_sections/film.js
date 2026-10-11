@@ -5,7 +5,7 @@ import { BREAKTHROUGH_FILM, LANDING_FILM } from '../_lib/film';
 export function BreakthroughVideo() {
   return (
     <section id="breakthrough" aria-labelledby="breakthrough-title" className="scroll-mt-20 px-4 sm:px-6 max-w-[1300px] mx-auto pt-12 sm:pt-16 lg:pt-20 pb-16 lg:pb-24">
-      <div className="rounded-3xl border border-vx-border bg-vx-panel p-4 sm:p-8">
+      <div className="rounded-2xl border border-vx-border bg-vx-panel p-4 sm:p-8">
         <h1 id="breakthrough-title" className="sr-only">Do you feel creative?</h1>
         <p className="sr-only">A silent eight-second video of a realistic white android punching a glass screen twice. The first hit cracks the glass; the second breaks it outward. Its head and shoulders lean through the screen toward the viewer. The Veyrnox.ai logo and the question “Do you feel creative?” appear in the frame.</p>
         <FilmPlayer film={BREAKTHROUGH_FILM} label="the robot video" />
