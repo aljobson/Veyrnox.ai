@@ -294,3 +294,23 @@ build and complete repository lint with no errors. The full Node suite passed
 3,336 tests except for one sandbox-denied localhost listener; that exact
 six-test file passed outside the sandbox. Existing repository lint warnings
 remain unchanged.
+
+## Immersive workspace chrome — 13 October 2026
+
+The multitrack editor now opens as a dedicated dark production workspace even
+when the surrounding Veyrnox site uses its light theme. A compact Veyrnox Cut
+header replaces the two tall project rows and keeps cloud save/version state,
+local project import/download, workspace layout and the full-editor toggle
+available without taking canvas height. Edit commands and timeline controls use
+continuous dark toolbars; the media, preview and inspector columns share crisp
+panel dividers instead of separate page cards. The header and command bar scroll
+horizontally at narrow widths, while the existing tool rail switches to its
+mobile horizontal layout.
+
+Reticle produced positive verdicts for opening and closing the compact project
+file menu, opening the workspace-layout menu, leaving and re-entering the full
+editor, and switching the surrounding site to light theme. The first project
+menu assertion checked DOM presence rather than visibility and therefore
+returned `no-fault`; the corrected visible/hidden assertions both passed. Pixel
+captures at 1280×720 in dark and light site themes, plus 390×844, confirm that
+the editing surface remains dark and usable across those measured layouts.
