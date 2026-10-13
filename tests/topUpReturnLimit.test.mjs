@@ -7,7 +7,7 @@ Object.assign(process.env,{SUPABASE_URL:'https://db.test',SUPABASE_SERVICE_ROLE_
 const { POST } = await import('../app/api/v1/top-ups/[id]/return/route.js');
 const auth='11111111-1111-4111-8111-111111111111', id='22222222-2222-4222-8222-222222222222';
 const session='cs_test_'+'A'.repeat(64);
-const invoke=(identity=auth,top=id,body={session_id:session})=>POST(new Request('https://veyrnox.test/return',{method:'POST',headers:identity?{'x-veyrnox-auth-id':identity}:{},body:JSON.stringify(body)}),{params:Promise.resolve({id:top})});
+const invoke=(identity=auth,top=id,body={session_id:session})=>POST(new Request('https://veyrnox.test/return',{method:'POST',headers:{...(identity?{'x-veyrnox-auth-id':identity}:{}),'content-type':'application/json'},body:JSON.stringify(body)}),{params:Promise.resolve({id:top})});
 let calls;
 function stub(rate={ok:true}, result={ok:true}, fail) {
  calls=[];

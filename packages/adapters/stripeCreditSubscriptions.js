@@ -1,4 +1,4 @@
-import { TAX_CODE, invoiceSubscriptionId, invoicePayment } from './stripe.js';
+import { TAX_CODE, STRIPE_CHECKOUT_API_VERSION, invoiceSubscriptionId, invoicePayment } from './stripe.js';
 
 const BASE = 'https://api.stripe.com/v1';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -24,7 +24,8 @@ export async function creditStripeRequest(path, cfg, fields, key) {
       method: body ? 'POST' : 'GET', signal: AbortSignal.timeout(10000),
       headers: { Authorization: `Bearer ${cfg.apiKey}`, ...(body ? {
         'Content-Type': 'application/x-www-form-urlencoded', ...(key ? { 'Idempotency-Key': key } : {}),
-      } : {}) }, ...(body ? { body: body.toString() } : {}),
+      } : {}), ...(path === 'checkout/sessions' ? { 'Stripe-Version': STRIPE_CHECKOUT_API_VERSION } : {}) },
+      ...(body ? { body: body.toString() } : {}),
     });
     return res.ok ? await res.json() : null;
   } catch { return null; }
@@ -49,7 +50,7 @@ export async function createCreditSubscriptionCheckout(input, cfg) {
     'line_items[0][price_data][recurring][interval_count]': 1,
     'line_items[0][price_data][product_data][name]': `Veyrnox ${input.planId} (${input.credits} Credits per month)`,
     'line_items[0][price_data][product_data][tax_code]': TAX_CODE,
-    'automatic_tax[enabled]': cfg.automaticTax === false ? 'false' : 'true',
+    'managed_payments[enabled]': 'true',
     allow_promotion_codes: 'false', customer_email: input.email, expires_at: input.expiresAt,
     success_url: `${new URL('/app/credits', host)}?subscription=${input.subscriptionId}&checkout=done&session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${new URL('/app/credits', host)}?subscription=${input.subscriptionId}&checkout=cancelled`,

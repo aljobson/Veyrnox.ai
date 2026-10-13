@@ -26,6 +26,7 @@ import { NextResponse } from 'next/server';
 import { rpc, select, envConfig } from '../../../../packages/db/supabase-client.js';
 import { historyCursor, historyPage } from '../../../../lib/historyCursor.js';
 import { topUpReadLimit } from '../../../../lib/topUpReadLimit.js';
+import { limitRequestBody } from '../../../../lib/requestBodyLimit.js';
 import { createCheckout } from '../../../../packages/adapters/stripe.js';
 
 const PACK_ID_RE = /^[a-z0-9-]{1,32}$/;
@@ -37,6 +38,7 @@ const SUPPLY_CONSENT_VERSION = 'supply-consent-v1';
 const RATE_LIMIT_PER_WINDOW = 5;
 const RATE_WINDOW_SECONDS = 600;
 const CHECKOUT_TTL_MS = 60 * 60 * 1000;
+const TOP_UP_BODY_KEYS = new Set(['pack_id', 'idempotency_key', 'consent', 'consent_version']);
 
 const DB_CODE_STATUS = {
     PACK_NOT_FOUND: 404,
@@ -60,9 +62,18 @@ export async function POST(req) {
         return NextResponse.json({ error: 'top_ups_not_configured' }, { status: 503 });
     }
 
+    if (new URL(req.url).searchParams.size) {
+        return NextResponse.json({ error: 'invalid_request' }, { status: 400 });
+    }
+    if (req.headers.get('content-type')?.split(';')[0].trim() !== 'application/json') {
+        return NextResponse.json({ error: 'invalid_content_type' }, { status: 415 });
+    }
+    const limited = await limitRequestBody(req);
+    if (limited.response) return limited.response;
     let body;
-    try { body = await req.json(); } catch { return NextResponse.json({ error: 'invalid_json' }, { status: 400 }); }
-    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+    try { body = await limited.request.json(); } catch { return NextResponse.json({ error: 'invalid_json' }, { status: 400 }); }
+    if (!body || typeof body !== 'object' || Array.isArray(body)
+        || Object.keys(body).some((key) => !TOP_UP_BODY_KEYS.has(key))) {
         return NextResponse.json({ error: 'invalid_body' }, { status: 400 });
     }
     if (typeof body.pack_id !== 'string' || !PACK_ID_RE.test(body.pack_id)) {
@@ -154,13 +165,8 @@ export async function POST(req) {
             apiKey,
             publicHost,
             signingSecret,
-            // Stripe Managed Payments is enabled on both accounts, so Stripe
-            // is the Merchant of Record and handles the tax — and refuses a
-            // session with automatic tax off (ADR-0031, amendment 2026-09-23).
-            // On unless the var is exactly "false"; an unset var must not
-            // silently produce tax-off, which is what returned 502 on
-            // 2026-09-23.
-            automaticTax: process.env.STRIPE_AUTOMATIC_TAX !== 'false',
+            // The adapter explicitly enables Managed Payments and its tax
+            // handling on every Checkout Session (ADR-0031).
             idempotencyKey: `top_up:${created.top_up_id}:${bucket}`,
         },
     );

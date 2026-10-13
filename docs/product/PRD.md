@@ -166,7 +166,7 @@ only (ADR-0067).
 
 ### 3.4 Paying
 - **Credit Packs** via **Stripe Checkout**, Stripe Managed Payments as
-  Merchant of Record, automatic tax (ADR-0031): **100 for $10, 270 for $19,
+  Merchant of Record with Stripe-managed tax (ADR-0031): **100 for $10, 270 for $19,
   1,200 for $59, 3,000 for $129**, plus tax (0121, ADR-0037). Purchased
   Credits never expire. Supply-consent checkbox before purchase. Whether the
   100-credit pack stays on sale is an open owner decision (ISSUES P11).

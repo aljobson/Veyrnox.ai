@@ -164,13 +164,9 @@
     "SUPABASE_URL": "https://xdxdzmsztyzbnzeforxx.supabase.co",
     "NEXT_PUBLIC_SUPABASE_URL": "https://xdxdzmsztyzbnzeforxx.supabase.co",
     "NEXT_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_HwEQqi6FXJOmWpy5eqR9-A_Zvy8_ii1",
-    // Stripe Tax (ADR-0031, amendment 2026-09-23). Managed Payments is enabled
-    // on both accounts, so Stripe is the Merchant of Record and charges and
-    // remits the tax. Automatic tax is ON; unset means ON. Setting this to
-    // the exact string "false" is the only way off, and Stripe refuses such a
-    // session with a 400 while Managed Payments is enabled — which is how
-    // POST /api/v1/top-ups returned 502 checkout_failed on 2026-09-23.
-    // "STRIPE_AUTOMATIC_TAX": "false",
+    // Stripe Managed Payments is explicitly enabled per Checkout Session
+    // (ADR-0031). Stripe handles tax as Merchant of Record; do not add direct
+    // Stripe Tax parameters such as automatic_tax to those sessions.
     // "true" makes /api/v1/admin/metrics refuse any session that has not
     // satisfied a second factor (Supabase `aal` claim must be "aal2").
     // Switched on 2026-09-24: the owner enrolled TOTP at /app/admin first and

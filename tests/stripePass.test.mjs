@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   createPassCheckout, ensureIntroCoupon, verifyPassMetadata, interpretSubscription, invoiceSubscriptionId, invoicePayment,
   cancelSubscriptionAtPeriodEnd, cancelSubscriptionNow, createRefund, createPortalSession, fetchSubscription, fetchInvoice, fetchCharge, TAX_CODE,
+  STRIPE_CHECKOUT_API_VERSION,
 } from '../packages/adapters/stripe.js';
 
 const PASS = '0b6f3c1e-8d2a-4f5b-9c7e-1a2b3c4d5e6f';
@@ -20,12 +21,14 @@ test('a Pass checkout is recurring, signed on the session and the subscription, 
   assert.equal(body.get('line_items[0][price_data][unit_amount]'), '1499');
   assert.equal(body.get('line_items[0][price_data][recurring][interval]'), 'week');
   assert.equal(body.get('line_items[0][price_data][product_data][tax_code]'), TAX_CODE);
-  assert.equal(body.get('automatic_tax[enabled]'), 'true');
+  assert.equal(body.get('managed_payments[enabled]'), 'true');
+  assert.equal(body.has('automatic_tax[enabled]'), false);
   assert.equal(body.get('discounts[0][coupon]'), 'veyrnox-pass-intro-pass-weekly-300');
   assert.equal(body.get('metadata[cinema_pass_id]'), PASS);
   assert.equal(body.get('metadata[cinema_pass_sig]'), body.get('subscription_data[metadata][cinema_pass_sig]'));
   assert.match(body.get('success_url'), /^https:\/\/veyrnox\.ai\/social-cinema\/pass\?pass=.*session_id=\{CHECKOUT_SESSION_ID\}$/);
   assert.equal(seen.init.headers['Idempotency-Key'], `cinema_pass:${PASS}:1`);
+  assert.equal(seen.init.headers['Stripe-Version'], STRIPE_CHECKOUT_API_VERSION);
   assert.equal(await verifyPassMetadata({ cinema_pass_id: PASS, cinema_pass_sig: body.get('metadata[cinema_pass_sig]') }, SECRET), true);
   assert.equal(await verifyPassMetadata({ cinema_pass_id: PASS, cinema_pass_sig: 'ab'.repeat(32) }, SECRET), false);
   assert.equal(await verifyPassMetadata({ cinema_pass_id: PASS, cinema_pass_sig: body.get('metadata[cinema_pass_sig]') }, 'whsec_other'), false);
@@ -35,18 +38,17 @@ test('a Pass checkout is recurring, signed on the session and the subscription, 
   assert.equal(new URLSearchParams(seen.init.body).has('discounts[0][coupon]'), false);
 });
 
-test('a Pass checkout refuses bad input, tax off is explicit, and only stripe.com URLs are returned', async () => {
+test('a Pass checkout refuses bad input and only stripe.com URLs are returned', async () => {
   for (const input of [{ passId: 'x', planId: 'p', interval: 'week', priceUsdCents: 1499 }, { passId: PASS, planId: 'Bad Plan', interval: 'week', priceUsdCents: 1499 },
     { passId: PASS, planId: 'p', interval: 'day', priceUsdCents: 1499 }, { passId: PASS, planId: 'p', interval: 'week', priceUsdCents: 0 }, { passId: PASS, planId: 'p', interval: 'week', priceUsdCents: 1499, introCouponId: 'no spaces' }]) {
     assert.equal((await createPassCheckout(input, cfg(async () => okSession()))).ok, false, JSON.stringify(input));
   }
   const evil = await createPassCheckout({ passId: PASS, planId: 'p', interval: 'week', priceUsdCents: 1499 }, cfg(async () => Response.json({ id: 'cs_1', url: 'https://evil.example/pay', object: 'checkout.session' })));
   assert.equal(evil.ok, false);
+  const credentials = await createPassCheckout({ passId: PASS, planId: 'p', interval: 'week', priceUsdCents: 1499 }, cfg(async () => Response.json({ id: 'cs_1', url: 'https://attacker@checkout.stripe.com/pay', object: 'checkout.session' })));
+  assert.equal(credentials.ok, false);
   const http = await createPassCheckout({ passId: PASS, planId: 'p', interval: 'week', priceUsdCents: 1499 }, cfg(async () => okSession(), { publicHost: 'http://veyrnox.ai' }));
   assert.equal(http.ok, false);
-  let body;
-  await createPassCheckout({ passId: PASS, planId: 'p', interval: 'week', priceUsdCents: 1499 }, cfg(async (u, init) => { body = new URLSearchParams(init.body); return okSession(); }, { automaticTax: false }));
-  assert.equal(body.get('automatic_tax[enabled]'), 'false');
 });
 
 test('the intro coupon is created once with a deterministic id; an existing id is success', async () => {
@@ -108,11 +110,15 @@ test('cancel, refund, portal and re-reads use the right verbs and guard every id
   assert.deepEqual(portal, { ok: true, url: 'https://billing.stripe.com/p/session/x' });
   assert.equal(calls.at(-1).body.get('return_url'), 'https://veyrnox.ai/social-cinema/pass');
   assert.equal((await createPortalSession({ customerId: 'cus_1' }, cfg(fetcher(() => Response.json({ url: 'https://evil.example/x' }))))).ok, false);
+  assert.equal((await createPortalSession({ customerId: 'cus_1' }, cfg(fetcher(() => Response.json({ url: 'https://attacker@billing.stripe.com/x' }))))).ok, false);
   assert.equal((await createPortalSession({ customerId: 'nope' }, cfg(fetcher(() => okSession())))).ok, false);
   assert.equal((await fetchSubscription('sub_1', cfg(fetcher(() => Response.json({ object: 'subscription', id: 'sub_1' }))))).ok, true);
   assert.equal((await fetchSubscription('sub_1', cfg(fetcher(() => Response.json({ object: 'invoice' }))))).ok, false);
+  assert.equal((await fetchSubscription('sub_1', cfg(fetcher(() => Response.json({ object: 'subscription', id: 'sub_other' }))))).ok, false);
   assert.equal((await fetchInvoice('in_1', cfg(fetcher(() => Response.json({ object: 'invoice', id: 'in_1' }))))).ok, true);
+  assert.equal((await fetchInvoice('in_1', cfg(fetcher(() => Response.json({ object: 'invoice', id: 'in_other' }))))).ok, false);
   assert.equal((await fetchCharge('ch_1', cfg(fetcher(() => Response.json({ object: 'charge', id: 'ch_1', invoice: 'in_1' }))))).charge.invoice, 'in_1');
+  assert.equal((await fetchCharge('ch_1', cfg(fetcher(() => Response.json({ object: 'charge', id: 'ch_other' }))))).ok, false);
   assert.equal((await fetchCharge('pi_1', cfg(fetcher(() => okSession())))).ok, false);
   assert.ok(calls.every((c) => c.url.startsWith('https://api.stripe.com/v1/')));
 });

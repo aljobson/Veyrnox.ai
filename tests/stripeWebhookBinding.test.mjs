@@ -68,7 +68,8 @@ const sessionEvent = (id, metadata) => ({
 });
 
 const paidSession = (metadata) => ({
-    id: SESSION_ID, object: 'checkout.session', livemode: false, payment_status: 'paid',
+    id: SESSION_ID, object: 'checkout.session', mode: 'payment', client_reference_id: TOP_UP_ID,
+    livemode: false, payment_status: 'paid',
     amount_subtotal: 2500, amount_total: 2500, currency: 'usd', payment_intent: PAYMENT_INTENT,
     metadata,
 });
@@ -159,6 +160,17 @@ test('a forged Stripe-Signature is refused before any database read', async () =
         assert.deepEqual(await res.json(), { error: 'invalid_signature' });
         assert.equal(calls.length, 0, 'nothing was read');
     }
+});
+
+test('an oversized webhook is refused before signature work or any backend read', async () => {
+    const calls = stubFetch(routes());
+    const req = new Request('https://veyrnox.test/api/webhook/stripe', {
+        method: 'POST', headers: { 'stripe-signature': 't=1,v1=' + '0'.repeat(64), 'content-length': String(1024 * 1024 + 1) }, body: '{}',
+    });
+    const res = await stripeWebhook.POST(req);
+    assert.equal(res.status, 413);
+    assert.deepEqual(await res.json(), { error: 'body_too_large' });
+    assert.equal(calls.length, 0);
 });
 
 test('a redelivered event id is a no-op', async () => {

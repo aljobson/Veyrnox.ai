@@ -22,7 +22,9 @@ test('credit checkout signs a separate billing kind into both objects, uses data
   assert.equal(result.ok, true);
   assert.equal(fields.get('line_items[0][price_data][unit_amount]'), '1900');
   assert.equal(fields.get('mode'), 'subscription');
-  assert.equal(fields.get('automatic_tax[enabled]'), 'true');
+  assert.equal(fields.get('managed_payments[enabled]'), 'true');
+  assert.equal(fields.has('automatic_tax[enabled]'), false);
+  assert.equal(init.headers['Stripe-Version'], '2025-03-31.basil');
   assert.equal(fields.get('allow_promotion_codes'), 'false');
   assert.equal(init.headers['Idempotency-Key'], 'checkout_test');
   assert.match(fields.get('success_url'), /session_id=\{CHECKOUT_SESSION_ID\}$/);

@@ -51,7 +51,7 @@ Schema:
 - `apply_cinema_pass_event(p_stripe_subscription_id, p_event_id, p_type, p_status, p_period_end, p_cancel_at_period_end)` service-role only; looks the Pass up by subscription id and uses its `user_id`; older events cannot regress a newer period.
 - `cinema_entitlement` gains `pass` when an active Pass has `current_period_end > now()` and the calendar-month play total is under the 3,000-minute ceiling.
 
-Stripe: Checkout `mode=subscription`, `automatic_tax` on (ADR-0031), success URL with `{CHECKOUT_SESSION_ID}` like Top-ups (ADR-0033), Customer Portal link for cancel/change. Webhook route handles `customer.subscription.*`, `invoice.paid`, `invoice.payment_failed`; `charge.dispute.created` on a Pass invoice ends the Pass and calls `apply_dispute_event` (Freeze). Refund of a Pass invoice ends the Pass. Existing `webhook_events(source, external_id)` dedupe and ±5 min signature window apply unchanged.
+Stripe: Checkout `mode=subscription`, `managed_payments[enabled]=true` with direct Stripe Tax parameters omitted (ADR-0031), success URL with `{CHECKOUT_SESSION_ID}` like Top-ups (ADR-0033), Customer Portal link for cancel/change. Webhook route handles `customer.subscription.*`, `invoice.paid`, `invoice.payment_failed`; `charge.dispute.created` on a Pass invoice ends the Pass and calls `apply_dispute_event` (Freeze). Refund of a Pass invoice ends the Pass. Existing `webhook_events(source, external_id)` dedupe and ±5 min signature window apply unchanged.
 
 Consumer law: cancellation within 14 days of first purchase refunds pro rata through the Stripe API and ends the Pass; the wording comes from P3.
 

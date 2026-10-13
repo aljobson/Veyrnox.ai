@@ -14,7 +14,7 @@ const SESSION = 'cs_test_' + 'A'.repeat(64);
 Object.assign(process.env, { SUPABASE_URL: 'https://db.test', SUPABASE_SERVICE_ROLE_KEY: 'test-only' });
 function request(body, auth = ID) {
     return new Request('https://veyrnox.test/api/v1/top-ups/' + ID + '/return', {
-        method: 'POST', headers: auth ? { 'x-veyrnox-auth-id': auth } : {}, body: JSON.stringify(body),
+        method: 'POST', headers: { ...(auth ? { 'x-veyrnox-auth-id': auth } : {}), 'content-type': 'application/json' }, body: JSON.stringify(body),
     });
 }
 const params = { params: Promise.resolve({ id: ID.toUpperCase() }) };
@@ -41,6 +41,22 @@ test('return rejects absent auth, PaymentIntent, malformed, oversized and legacy
         assert.equal((await res.json()).error, 'invalid-session-id');
     }
     assert.equal((await POST(request({ order_id: '123', order_identifier: ID }), params)).status, 400);
+});
+
+test('return rejects extra fields, query parameters, wrong media types and oversized bodies before RPC', async () => {
+    globalThis.fetch = () => { throw new Error('no network expected'); };
+    assert.equal((await POST(request({ session_id: SESSION, top_up_id: ID }), params)).status, 400);
+    const headers = { 'x-veyrnox-auth-id': ID, 'content-type': 'application/json' };
+    assert.equal((await POST(new Request(`https://veyrnox.test/api/v1/top-ups/${ID}/return?session_id=${SESSION}`, {
+        method: 'POST', headers, body: JSON.stringify({ session_id: SESSION }),
+    }), params)).status, 400);
+    assert.equal((await POST(new Request(`https://veyrnox.test/api/v1/top-ups/${ID}/return`, {
+        method: 'POST', headers: { 'x-veyrnox-auth-id': ID, 'content-type': 'text/plain' }, body: JSON.stringify({ session_id: SESSION }),
+    }), params)).status, 415);
+    const oversized = JSON.stringify({ session_id: SESSION, padding: 'x'.repeat(64 * 1024) });
+    assert.equal((await POST(new Request(`https://veyrnox.test/api/v1/top-ups/${ID}/return`, {
+        method: 'POST', headers, body: oversized,
+    }), params)).status, 413);
 });
 
 test('return calls the session RPC with authenticated owner, normalized Top-up and unchanged token', async () => {

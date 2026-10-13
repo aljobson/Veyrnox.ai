@@ -91,6 +91,6 @@ test('changing read route or Top-up id cannot choose another quota bucket', asyn
 });
 test('Stripe return remains available independently of read quota', async () => {
     globalThis.fetch = async (url) => { assert.equal(new URL(url).pathname.split('/').pop(),'record_top_up_return_session'); return Response.json({ok:true}); };
-    const res = await returned.POST(new Request('https://veyrnox.test/api/v1/top-ups/'+id+'/return', {method:'POST', headers:{'x-veyrnox-auth-id':auth}, body:JSON.stringify({session_id:'cs_test_recovery'})}), {params:Promise.resolve({id})});
+    const res = await returned.POST(new Request('https://veyrnox.test/api/v1/top-ups/'+id+'/return', {method:'POST', headers:{'x-veyrnox-auth-id':auth,'content-type':'application/json'}, body:JSON.stringify({session_id:'cs_test_recovery'})}), {params:Promise.resolve({id})});
     assert.equal(res.status,200);
 });
