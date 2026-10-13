@@ -203,7 +203,7 @@ export function MultitrackWorkspace() {
         return updateSequenceClip(t, selected.track, selected.id, next);
     });
     const locked = item && trackFor(tl, item)?.locked, disabled = exporting || busy;
-    return <div role="region" aria-label="Multitrack editing workspace" style={EDITOR_PALETTE} className={`${fitScreen?"outline-none lg:fixed lg:inset-x-0 lg:top-16 lg:bottom-0 lg:z-30 lg:flex lg:flex-col lg:overflow-hidden":"space-y-3 rounded-2xl"} bg-vx-base text-vx-fg`} tabIndex={0} onKeyDown={keys}>
+    return <div role="region" aria-label="Multitrack editing workspace" style={EDITOR_PALETTE} className={`${fitScreen?"outline-none lg:fixed lg:inset-0 lg:z-[60] lg:flex lg:flex-col lg:overflow-hidden":"space-y-3 rounded-2xl"} bg-vx-base text-vx-fg`} tabIndex={0} onKeyDown={keys}>
         {shortcuts&&<ShortcutGuide onClose={()=>setShortcuts(false)} />}
         <header aria-label="Editor header" className="flex min-h-12 shrink-0 items-center gap-3 overflow-x-auto border-b border-vx-border bg-vx-panel px-3 py-1.5">
             <div className="flex shrink-0 items-center gap-2 border-r border-vx-border pr-3"><span aria-hidden="true" className="grid size-7 place-items-center rounded-lg bg-vx-accent font-black text-vx-accent-ink">V</span><span className="hidden text-xs font-black uppercase tracking-[0.14em] sm:inline">Veyrnox Cut</span></div>
