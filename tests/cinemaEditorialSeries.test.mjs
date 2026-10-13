@@ -11,8 +11,8 @@ import {
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 
-test('the public catalog contains 28 AI-made story series and 170 episodes', () => {
-  assert.equal(editorialSeries.length, 28);
+test('the public catalog contains 45 AI-made story series and 307 episodes', () => {
+  assert.equal(editorialSeries.length, 45);
   assert.deepEqual(editorialSeries.map((series) => [series.slug, series.episodes.length]), [
     ['mission-pandora-the-last-pilot', 17],
     ['black-dwarf', 9],
@@ -42,10 +42,27 @@ test('the public catalog contains 28 AI-made story series and 170 episodes', () 
     ['age-of-wings', 2],
     ['ark-7', 2],
     ['the-veiled-crown', 2],
+    ['phoenix-saga', 40],
+    ['clockwork-dimensions', 20],
+    ['the-pardaillans', 11],
+    ['i-fell-for-my-sisters-best-friend', 6],
+    ['rapunzel-2-mage-academy', 10],
+    ['the-cube-mystery', 5],
+    ['qareen', 3],
+    ['codename-j-season-1', 4],
+    ['codename-j-season-2', 4],
+    ['codename-j-hana-story', 4],
+    ['90-days-youre-mine', 5],
+    ['a-web-of-love-and-lies', 11],
+    ['amber-unmoored', 4],
+    ['project-d-living-the-dream', 2],
+    ['city-of-faces', 2],
+    ['silver-predator-unleashed', 4],
+    ['aquarius', 2],
   ]);
   const allEpisodes = editorialSeries.flatMap((series) => series.episodes);
-  assert.equal(allEpisodes.length, 170);
-  assert.equal(new Set(allEpisodes.map((episode) => episode.id)).size, 170);
+  assert.equal(allEpisodes.length, 307);
+  assert.equal(new Set(allEpisodes.map((episode) => episode.id)).size, 307);
   assert.ok(allEpisodes.every((episode) => episode.posterUrl?.startsWith('https://i.ytimg.com/vi/') || episode.id.startsWith('mission-pandora-')));
 
   const [series] = editorialSeries;
@@ -57,7 +74,7 @@ test('the public catalog contains 28 AI-made story series and 170 episodes', () 
   assert.ok(series.posterUrl.startsWith('https://i.ytimg.com/vi/'));
 
   const cards = editorialSeriesCards();
-  assert.equal(cards.length, 28);
+  assert.equal(cards.length, 45);
   const [card] = cards;
   assert.equal(card.content_type, 'SERIES');
   assert.equal(card.episode_count, 17);
