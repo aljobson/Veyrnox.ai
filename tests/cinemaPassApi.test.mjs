@@ -115,7 +115,7 @@ test('plans and the own Pass are read-only, and the projection never carries a S
 test('return records the session, then applies the subscription Stripe already shows for it', async () => {
   const ready = setup('return', {
     rpc: { record_cinema_pass_session: { ok: true, pass_id: PASS, status: 'pending' }, apply_cinema_pass_event: { ok: true, status: 'active', idempotent: false } },
-    stripe: { fetchSession: async () => ({ ok: true, session: { object: 'checkout.session', livemode: false, subscription: 'sub_1', metadata: { cinema_pass_id: PASS, cinema_pass_sig: 'good' } } }) },
+    stripe: { fetchSession: async () => ({ ok: true, session: { object: 'checkout.session', mode: 'subscription', client_reference_id: PASS, livemode: false, subscription: 'sub_1', metadata: { cinema_pass_id: PASS, cinema_pass_sig: 'good' } } }) },
   });
   const res = await ready.handle(post('/return', { pass_id: PASS, session_id: 'cs_test_1' }));
   assert.equal(res.status, 200);
@@ -125,7 +125,7 @@ test('return records the session, then applies the subscription Stripe already s
 
   const forged = setup('return', {
     rpc: { record_cinema_pass_session: { ok: true, pass_id: PASS, status: 'pending' } },
-    stripe: { fetchSession: async () => ({ ok: true, session: { object: 'checkout.session', livemode: false, subscription: 'sub_1', metadata: { cinema_pass_id: PASS, cinema_pass_sig: 'bad' } } }) },
+    stripe: { fetchSession: async () => ({ ok: true, session: { object: 'checkout.session', mode: 'subscription', client_reference_id: PASS, livemode: false, subscription: 'sub_1', metadata: { cinema_pass_id: PASS, cinema_pass_sig: 'bad' } } }) },
   });
   const f = await forged.handle(post('/return', { pass_id: PASS, session_id: 'cs_test_1' }));
   assert.deepEqual(await f.json().then((d) => [d.status, d.recovered]), ['pending', false]);
@@ -133,7 +133,7 @@ test('return records the session, then applies the subscription Stripe already s
 
   const flagged = setup('return', {
     rpc: { record_cinema_pass_session: { ok: true, pass_id: PASS, status: 'pending' }, apply_cinema_pass_event: { ok: true, status: 'flagged', flagged: true } },
-    stripe: { fetchSession: async () => ({ ok: true, session: { object: 'checkout.session', livemode: false, subscription: 'sub_1', metadata: { cinema_pass_id: PASS, cinema_pass_sig: 'good' } } }) },
+    stripe: { fetchSession: async () => ({ ok: true, session: { object: 'checkout.session', mode: 'subscription', client_reference_id: PASS, livemode: false, subscription: 'sub_1', metadata: { cinema_pass_id: PASS, cinema_pass_sig: 'good' } } }) },
   });
   assert.equal((await (await flagged.handle(post('/return', { pass_id: PASS, session_id: 'cs_test_1' }))).json()).status, 'flagged');
   assert.deepEqual(flagged.stripeCalls.at(-1).name, 'cancelSubscriptionNow', 'a double-paid Pass stops billing at once');

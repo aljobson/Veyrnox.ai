@@ -11,7 +11,8 @@ successful production payment. Open checks below remain launch obligations.
 
 Stripe Checkout is the purchase path. Under the amendment to
 [ADR-0031](../adr/0031-stripe-replaces-lemonsqueezy.md), Stripe Managed Payments
-is the Merchant of Record and automatic tax is on unless explicitly disabled.
+is the Merchant of Record and calculates/remits tax. Checkout Sessions enable
+Managed Payments explicitly and omit direct Stripe Tax parameters.
 The original standard-account/tax-off decision is historical, not current.
 The server prices a checkout from the pending Top-up's catalog snapshot;
 client-supplied prices and credits are never authoritative. Migration 0121

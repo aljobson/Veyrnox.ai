@@ -37,6 +37,7 @@ import { dedup, markProcessed } from '../../../../lib/providerCompletion.js';
 import { handleCreditSubscriptionEvent, handleCreditSubscriptionCharge, handleCreditSubscriptionCheckout } from '../../../../lib/subscriptions/webhook.js';
 import { invoiceForCharge, fetchCreditInvoice } from '../../../../packages/adapters/stripeCreditSubscriptions.js';
 import { withDeliveryLog } from '../../../../lib/webhookDelivery.js';
+import { limitRequestBody } from '../../../../lib/requestBodyLimit.js';
 
 const SOURCE = 'billing:stripe';
 const LOG = '[stripe-webhook]';
@@ -78,7 +79,9 @@ async function handler(req) {
         return NextResponse.json({ error: 'not_configured' }, { status: 503 });
     }
 
-    const raw = new Uint8Array(await req.arrayBuffer());
+    const limited = await limitRequestBody(req);
+    if (limited.response) return limited.response;
+    const raw = new Uint8Array(await limited.request.arrayBuffer());
     let verified;
     try {
         verified = await verifyWebhookSignature(raw, req.headers.get('stripe-signature'), secret);

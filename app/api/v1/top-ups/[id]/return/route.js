@@ -7,6 +7,7 @@
 
 import { NextResponse } from 'next/server';
 import { rpc, envConfig } from '../../../../../../packages/db/supabase-client.js';
+import { limitRequestBody } from '../../../../../../lib/requestBodyLimit.js';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const SESSION_ID_RE = /^cs_[A-Za-z0-9_]{1,251}$/;
@@ -18,9 +19,16 @@ export async function POST(req, { params }) {
     const { id } = await params;
     if (!id || !UUID_RE.test(id)) return NextResponse.json({ error: 'invalid-top-up-id' }, { status: 400 });
 
+    if (new URL(req.url).searchParams.size) return NextResponse.json({ error: 'invalid-request' }, { status: 400 });
+    if (req.headers.get('content-type')?.split(';')[0].trim() !== 'application/json') {
+        return NextResponse.json({ error: 'invalid-content-type' }, { status: 415 });
+    }
+    const limited = await limitRequestBody(req);
+    if (limited.response) return limited.response;
     let body;
-    try { body = await req.json(); } catch { return NextResponse.json({ error: 'invalid-json' }, { status: 400 }); }
-    if (!body || typeof body.session_id !== 'string' || !SESSION_ID_RE.test(body.session_id)) {
+    try { body = await limited.request.json(); } catch { return NextResponse.json({ error: 'invalid-json' }, { status: 400 }); }
+    if (!body || typeof body !== 'object' || Array.isArray(body) || Object.keys(body).some((key) => key !== 'session_id')
+        || typeof body.session_id !== 'string' || !SESSION_ID_RE.test(body.session_id)) {
         return NextResponse.json({ error: 'invalid-session-id' }, { status: 400 });
     }
 

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createHmac } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 
-import { createCheckout, verifyWebhookSignature, verifyTopUpMetadata, interpretSession, TAX_CODE } from '../packages/adapters/stripe.js';
+import { createCheckout, verifyWebhookSignature, verifyTopUpMetadata, interpretSession, TAX_CODE, STRIPE_CHECKOUT_API_VERSION } from '../packages/adapters/stripe.js';
 
 const TOP_UP = '0b6f3c1e-8d2a-4f5b-9c7e-1a2b3c4d5e6f';
 const SECRET = 'whsec_0123456789abcdef0123456789abcdef';
@@ -22,7 +22,8 @@ test('the checkout is built from our own price, with the AI tax code and both re
     assert.equal(body.get('line_items[0][price_data][currency]'), 'usd');
     assert.equal(body.get('line_items[0][price_data][product_data][tax_code]'), TAX_CODE);
     assert.equal(body.get('line_items[0][price_data][product_data][name]'), '300 Veyrnox credits');
-    assert.equal(body.get('automatic_tax[enabled]'), 'true');
+    assert.equal(body.get('managed_payments[enabled]'), 'true');
+    assert.equal(body.has('automatic_tax[enabled]'), false);
     assert.equal(body.get('client_reference_id'), TOP_UP);
     assert.equal(body.get('customer_email'), 'buyer@example.com');
     assert.match(body.get('success_url'), /^https:\/\/veyrnox\.ai\/app\/credits\?top_up=/);
@@ -30,33 +31,12 @@ test('the checkout is built from our own price, with the AI tax code and both re
     // The same signature travels on the PaymentIntent, which is what a dispute names.
     assert.equal(body.get('metadata[top_up_sig]'), body.get('payment_intent_data[metadata][top_up_sig]'));
     assert.equal(seen.init.headers.Authorization, 'Bearer sk_test_x');
+    assert.equal(seen.init.headers['Stripe-Version'], STRIPE_CHECKOUT_API_VERSION);
 });
 
-// Stripe Managed Payments is enabled on both accounts and refuses a session
-// with automatic_tax off: a checkout built with tax off is a 400, which is how
-// POST /api/v1/top-ups returned 502 checkout_failed on 2026-09-23.
-test('automatic tax is on unless a caller explicitly passes false', async () => {
-    const taxFlag = async (over) => {
-        let seen;
-        const r = await createCheckout({ topUpId: TOP_UP, priceUsdCents: 1000, credits: 100 },
-            cfg(async (_u, init) => { seen = new URLSearchParams(init.body); return okSession(); }, over));
-        assert.equal(r.ok, true);
-        return seen.get('automatic_tax[enabled]');
-    };
-    assert.equal(await taxFlag({}), 'true', 'omitted');
-    assert.equal(await taxFlag({ automaticTax: undefined }), 'true', 'undefined');
-    assert.equal(await taxFlag({ automaticTax: null }), 'true', 'null');
-    assert.equal(await taxFlag({ automaticTax: true }), 'true', 'true');
-    assert.equal(await taxFlag({ automaticTax: false }), 'false', 'the one explicit off switch');
-});
-
-// The 2026-09-23 outage: `=== 'true'` turned an unset var into an explicit
-// tax-off. The route is a Next.js module, so this pins its source the way
-// tests/uploadConsent.test.mjs does.
-test('the top-ups route cannot silently send tax-off from an unset env var', () => {
+test('the top-ups route delegates Managed Payments configuration to the adapter', () => {
     const route = readFileSync(new URL('../app/api/v1/top-ups/route.js', import.meta.url), 'utf8');
-    assert.match(route, /automaticTax: process\.env\.STRIPE_AUTOMATIC_TAX !== 'false',/);
-    assert.doesNotMatch(route, /STRIPE_AUTOMATIC_TAX === 'true'/);
+    assert.doesNotMatch(route, /STRIPE_AUTOMATIC_TAX|automaticTax/);
 });
 
 test('bad input never reaches Stripe', async () => {
@@ -69,7 +49,8 @@ test('bad input never reaches Stripe', async () => {
 
 test('a checkout url that is not on stripe.com is refused, not handed to the browser', async () => {
     // The caller navigates top-level to whatever comes back, so the host is checked.
-    for (const url of ['https://evil.example/c/pay/cs_test_123', 'http://checkout.stripe.com/c/pay/x', 'not a url']) {
+    for (const url of ['https://evil.example/c/pay/cs_test_123', 'http://checkout.stripe.com/c/pay/x',
+        'https://attacker@checkout.stripe.com/c/pay/x', 'not a url']) {
         const r = await createCheckout({ topUpId: TOP_UP, priceUsdCents: 1000, credits: 100 },
             cfg(async () => Response.json({ id: 'cs_test_123', url, object: 'checkout.session' })));
         assert.deepEqual(r, { ok: false, error: 'checkout url not on stripe.com' }, url);
@@ -114,8 +95,9 @@ test('only metadata we signed can name a Top-up', async () => {
 
 test('a session is credited only when it is paid, in the mode we expect', () => {
     const base = {
-        object: 'checkout.session', id: 'cs_test_123', payment_intent: 'pi_123', livemode: false,
-        payment_status: 'paid', amount_subtotal: 2500, amount_total: 3000, currency: 'USD',
+        object: 'checkout.session', id: 'cs_test_123', mode: 'payment', client_reference_id: TOP_UP,
+        payment_intent: 'pi_123', livemode: false,
+        payment_status: 'paid', amount_subtotal: 2500, amount_total: 3000, currency: 'usd',
         metadata: { top_up_id: TOP_UP },
     };
     assert.deepEqual(interpretSession(base, { expectLiveMode: false }),
@@ -124,5 +106,10 @@ test('a session is credited only when it is paid, in the mode we expect', () => 
     assert.equal(interpretSession(base, { expectLiveMode: true }).error, 'mode mismatch');
     assert.equal(interpretSession({ ...base, payment_status: 'unpaid' }, { expectLiveMode: false }).error, 'payment_status unpaid');
     assert.equal(interpretSession({ ...base, metadata: {} }, { expectLiveMode: false }).error, 'no top_up_id');
+    assert.equal(interpretSession({ ...base, mode: 'subscription' }, { expectLiveMode: false }).error, 'not a payment session');
+    assert.equal(interpretSession({ ...base, client_reference_id: 'other' }, { expectLiveMode: false }).error, 'top_up binding mismatch');
+    assert.equal(interpretSession({ ...base, amount_total: 2000 }, { expectLiveMode: false }).error, 'invalid amount');
+    assert.equal(interpretSession({ ...base, currency: 'US' }, { expectLiveMode: false }).error, 'invalid currency');
+    assert.equal(interpretSession({ ...base, payment_intent: null }, { expectLiveMode: false }).error, 'invalid payment intent');
     assert.equal(interpretSession({ object: 'event' }, { expectLiveMode: false }).error, 'not a session');
 });

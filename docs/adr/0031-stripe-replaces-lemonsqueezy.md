@@ -149,6 +149,17 @@ per-credit floors in ADR-0018; and what Stripe's MoR status means for the UK/EU
 consumer cancellation wording in the Refund Policy, which still describes a
 refund from us.
 
+### 2026-10-13 — Managed Payments is explicit per Checkout Session
+
+Stripe's current Managed Payments onboarding supersedes the request shape in
+the 2026-09-23 incident note. Every Checkout Session now sends
+`managed_payments[enabled]=true` with API version `2025-03-31.basil` or later.
+Managed Payments calculates and remits tax itself, so direct Stripe Tax
+parameters, including `automatic_tax`, are omitted. This applies to Credit
+Packs, Cinema Pass and Credit Subscription Checkout Sessions. Stripe remains
+the Merchant of Record; this changes the API contract, not the commercial or
+tax-liability decision above.
+
 ### 2026-10-02 — packs no longer need a variant (0167)
 
 The Consequences bullet that `credit_packs.variant_id` "stays populated and

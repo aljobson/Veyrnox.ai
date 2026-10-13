@@ -146,7 +146,7 @@ preview switch any more.
 | Exa | `adapters/exa.js` | the capped Web search for chat (0220); the price depends on the cap, so a capped row offers Web search only while the key is set | Bearer | synchronous |
 | GrsAI | `adapters/grsai.js` | Nano Banana Pro / edit | Bearer | **poll only** (`lib/grsaiSweep.js`) |
 | BytePlus ModelArk | `adapters/byteplus.js` | Seedance (rows staged inactive, ADR-0058) | Bearer | **poll only** (`lib/byteplusSweep.js`) |
-| Stripe | `adapters/stripe.js`, `stripeCreditSubscriptions.js` | Credit Packs (Checkout, Managed Payments, automatic tax); Cinema Pass; Credit Subscriptions (built, `SUBSCRIPTIONS_ENABLED` off). The Publish Plan is decided but not built | Bearer | `Stripe-Signature` HMAC with timestamp tolerance; top-up id in metadata is HMAC-signed |
+| Stripe | `adapters/stripe.js`, `stripeCreditSubscriptions.js` | Credit Packs (Checkout, Managed Payments tax handling); Cinema Pass; Credit Subscriptions (built, `SUBSCRIPTIONS_ENABLED` off). The Publish Plan is decided but not built | Bearer | `Stripe-Signature` HMAC with timestamp tolerance; top-up id in metadata is HMAC-signed |
 | Cloudflare R2 | `adapters/r2.js`, `r2Copy.js` | all media | SigV4 | presigned GET/PUT ≤ 15 min |
 | Cloudflare Stream | `lib/cinema/stream.js` | Cinema upload (tus) and signed playback | Bearer + signing JWK | webhook HMAC (`webhook-signature`) |
 | Cloudflare Access | `lib/accessJwt.js` | admin routes | — | Worker re-verifies the Access JWT |

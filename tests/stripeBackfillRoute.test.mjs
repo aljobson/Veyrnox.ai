@@ -22,7 +22,7 @@ test('cron runs with only Stripe configuration, uses credit_top_up and closes NU
         calls.push({ path, body: init.body && JSON.parse(init.body) });
         if (path.endsWith('/next_top_up_backfill_batch')) return Response.json([{ top_up_id: ID, order_id: SESSION, order_identifier: null }]);
         if (path === '/v1/checkout/sessions/' + SESSION) return Response.json({
-            id: SESSION, object: 'checkout.session', livemode: false, client_reference_id: ID,
+            id: SESSION, object: 'checkout.session', mode: 'payment', livemode: false, client_reference_id: ID,
             metadata: { top_up_id: ID, top_up_sig: createHmac('sha256', SECRET).update(`top_up:${ID}`).digest('hex') },
             payment_status: 'paid', payment_intent: 'pi_1', amount_subtotal: 2500, amount_total: 3000, currency: 'usd',
         });

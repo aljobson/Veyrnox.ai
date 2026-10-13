@@ -11,26 +11,25 @@
  * Configuration (read at the route layer):
  *   STRIPE_SECRET_KEY        Worker secret (sk_test_… or sk_live_…)
  *   STRIPE_WEBHOOK_SECRET    Worker secret (whsec_…), signs /api/webhook/stripe
- *   STRIPE_AUTOMATIC_TAX     Worker var. Automatic tax is ON; only the exact
- *                            string "false" turns it off. Stripe Managed
- *                            Payments is approved and enabled on both the
- *                            sandbox and the live account, which makes Stripe
- *                            the Merchant of Record and makes automatic tax
- *                            mandatory — a session without it is refused with
- *                            400 (ADR-0031, amendment 2026-09-23). The "false"
- *                            switch survives only for an account that has
- *                            Managed Payments disabled.
+ *   Stripe Managed Payments is explicitly enabled on every Checkout Session.
+ *   Stripe is the Merchant of Record and calculates/remits tax; parameters
+ *   from direct Stripe Tax integrations (including `automatic_tax`) are not
+ *   accepted on Managed Payments sessions (ADR-0031).
  *   PUBLIC_HOST              https origin the buyer returns to
  */
 
 const STRIPE_API_BASE = 'https://api.stripe.com/v1';
+export const STRIPE_CHECKOUT_API_VERSION = '2025-03-31.basil';
 // AI as a service (LLMs, image generators). The category Stripe's own
 // Managed Payments eligibility list names for this business.
 export const TAX_CODE = 'txcd_10105001';
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const SIGNATURE_TOLERANCE_SECONDS = 300;
+const STRIPE_TIMEOUT_MS = 10000;
 const RETURN_PATH = '/app/credits';
 const MAX_CENTS = 99_999_99;
+const SESSION_RE = /^cs_[A-Za-z0-9_]{1,251}$/;
+const PAYMENT_INTENT_RE = /^pi_[A-Za-z0-9_]{1,250}$/;
 
 const enc = (s) => new TextEncoder().encode(s);
 
@@ -70,9 +69,6 @@ const topUpMessage = (topUpId) => enc(`top_up:${topUpId}`);
  * @param {string} cfg.apiKey
  * @param {string} cfg.publicHost
  * @param {string} cfg.signingSecret   STRIPE_WEBHOOK_SECRET; signs the Top-up id
- * @param {boolean} [cfg.automaticTax=true] omitted or undefined leaves
- *   automatic tax ON; only an explicit `false` disables it, and Stripe rejects
- *   that while Managed Payments is enabled on the account.
  * @param {string} [cfg.idempotencyKey]
  * @returns {Promise<{ok:true, url:string, sessionId:string}|{ok:false, error:string}>}
  */
@@ -84,7 +80,7 @@ export async function createCheckout(input, cfg) {
     if (!Number.isSafeInteger(input.credits) || input.credits <= 0) return { ok: false, error: 'invalid credits' };
     let base;
     try { base = new URL(cfg.publicHost); } catch { return { ok: false, error: 'invalid publicHost' }; }
-    if (base.protocol !== 'https:') return { ok: false, error: 'publicHost must be https' };
+    if (base.protocol !== 'https:' || base.username || base.password) return { ok: false, error: 'publicHost must be https' };
 
     const sig = await hmacHex(topUpMessage(input.topUpId), cfg.signingSecret);
     const ret = new URL(RETURN_PATH, base);
@@ -95,10 +91,9 @@ export async function createCheckout(input, cfg) {
         'line_items[0][price_data][unit_amount]': input.priceUsdCents,
         'line_items[0][price_data][product_data][name]': `${input.credits} Veyrnox credits`,
         'line_items[0][price_data][product_data][tax_code]': TAX_CODE,
-        // Prices are what the catalog says; Stripe adds any tax on top, and
-        // under Managed Payments Stripe is the Merchant of Record that charges
-        // and remits it. On unless a caller explicitly passes false.
-        'automatic_tax[enabled]': cfg.automaticTax === false ? 'false' : 'true',
+        // Managed Payments makes Stripe the Merchant of Record. Stripe adds and
+        // remits tax; direct Stripe Tax parameters are incompatible here.
+        'managed_payments[enabled]': 'true',
         client_reference_id: input.topUpId,
         'metadata[top_up_id]': input.topUpId,
         'metadata[top_up_sig]': sig,
@@ -119,15 +114,17 @@ export async function createCheckout(input, cfg) {
             headers: {
                 Authorization: `Bearer ${cfg.apiKey}`,
                 'Content-Type': 'application/x-www-form-urlencoded',
+                'Stripe-Version': STRIPE_CHECKOUT_API_VERSION,
                 ...(cfg.idempotencyKey ? { 'Idempotency-Key': cfg.idempotencyKey } : {}),
             },
+            signal: AbortSignal.timeout(STRIPE_TIMEOUT_MS),
             body: body.toString(),
         });
     } catch (err) {
         return { ok: false, error: `transport: ${err && err.message}` };
     }
     const data = await res.json().catch(() => null);
-    if (!res.ok || !data || typeof data.url !== 'string' || typeof data.id !== 'string') {
+    if (!res.ok || !data || typeof data.url !== 'string' || !SESSION_RE.test(String(data.id))) {
         // Never surface a vendor payload to the client (CLAUDE.md, API gateway).
         console.error('[stripe] checkout create failed:', res.status, data && data.error && data.error.code);
         return { ok: false, error: `stripe ${res.status}` };
@@ -135,7 +132,7 @@ export async function createCheckout(input, cfg) {
     // The browser navigates top-level to this URL, so it must be Stripe's.
     let checkoutUrl;
     try { checkoutUrl = new URL(data.url); } catch { checkoutUrl = null; }
-    if (!checkoutUrl || checkoutUrl.protocol !== 'https:'
+    if (!checkoutUrl || checkoutUrl.protocol !== 'https:' || checkoutUrl.username || checkoutUrl.password
         || !(checkoutUrl.hostname === 'stripe.com' || checkoutUrl.hostname.endsWith('.stripe.com'))) {
         console.error('[stripe] checkout url not on stripe.com');
         return { ok: false, error: 'checkout url not on stripe.com' };
@@ -191,18 +188,19 @@ export async function verifyTopUpMetadata(metadata, secret) {
 
 /** Re-read a Checkout Session from Stripe: the webhook body is a pointer, not the truth. */
 export async function fetchSession(sessionId, cfg) {
-    if (typeof sessionId !== 'string' || !/^cs_[A-Za-z0-9_]{1,251}$/.test(sessionId)) return { ok: false, error: 'invalid sessionId' };
+    if (typeof sessionId !== 'string' || !SESSION_RE.test(sessionId)) return { ok: false, error: 'invalid sessionId' };
     let res;
     try {
         res = await cfg.fetch(`${STRIPE_API_BASE}/checkout/sessions/${sessionId}`, {
             headers: { Authorization: `Bearer ${cfg.apiKey}` },
+            signal: AbortSignal.timeout(STRIPE_TIMEOUT_MS),
         });
     } catch (err) {
         return { ok: false, error: `transport: ${err && err.message}` };
     }
     const data = await res.json().catch(() => null);
     // Stripe's own type name, dot and all — not the snake_case one.
-    if (!res.ok || !data || data.object !== 'checkout.session') return { ok: false, error: `stripe ${res.status}` };
+    if (!res.ok || !data || data.object !== 'checkout.session' || data.id !== sessionId) return { ok: false, error: `stripe ${res.status}` };
     return { ok: true, session: data };
 }
 
@@ -217,18 +215,24 @@ export async function fetchSession(sessionId, cfg) {
  */
 export function interpretSession(session, opts) {
     if (!session || session.object !== 'checkout.session') return { ok: false, error: 'not a session' };
+    if (!SESSION_RE.test(String(session.id)) || session.mode !== 'payment') return { ok: false, error: 'not a payment session' };
     if (Boolean(session.livemode) !== Boolean(opts.expectLiveMode)) return { ok: false, error: 'mode mismatch' };
     const topUpId = session.metadata && session.metadata.top_up_id;
     if (typeof topUpId !== 'string' || !UUID_RE.test(topUpId)) return { ok: false, error: 'no top_up_id' };
+    if (session.client_reference_id !== topUpId) return { ok: false, error: 'top_up binding mismatch' };
     if (session.payment_status !== 'paid') return { ok: false, error: `payment_status ${session.payment_status}` };
-    // amount_total includes any tax Stripe added; the pack price is
-    // amount_subtotal, which is what the Top-up row was created with.
-    const paidCents = Number.isSafeInteger(session.amount_subtotal) ? session.amount_subtotal : session.amount_total;
-    if (!Number.isSafeInteger(paidCents) || paidCents <= 0) return { ok: false, error: 'no amount' };
-    const orderId = typeof session.payment_intent === 'string' ? session.payment_intent : session.id;
+    if (!Number.isSafeInteger(session.amount_subtotal) || session.amount_subtotal <= 0
+        || !Number.isSafeInteger(session.amount_total) || session.amount_total < session.amount_subtotal) {
+        return { ok: false, error: 'invalid amount' };
+    }
+    // A syntactically valid non-USD payment still reaches credit_top_up, whose
+    // atomic catalog check flags it for an Operator refund instead of hiding a
+    // paid anomaly. Missing or malformed currency never reaches the ledger.
+    if (typeof session.currency !== 'string' || !/^[a-z]{3}$/.test(session.currency)) return { ok: false, error: 'invalid currency' };
+    if (!PAYMENT_INTENT_RE.test(String(session.payment_intent))) return { ok: false, error: 'invalid payment intent' };
     return {
         ok: true,
-        order: { orderId, topUpId, paidCents, currency: String(session.currency || 'usd').toLowerCase(), paid: true },
+        order: { orderId: session.payment_intent, topUpId, paidCents: session.amount_subtotal, currency: session.currency, paid: true },
     };
 }
 
@@ -264,8 +268,10 @@ async function stripePost(path, fields, cfg, idempotencyKey) {
             headers: {
                 Authorization: `Bearer ${cfg.apiKey}`,
                 'Content-Type': 'application/x-www-form-urlencoded',
+                ...(path === '/checkout/sessions' ? { 'Stripe-Version': STRIPE_CHECKOUT_API_VERSION } : {}),
                 ...(idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {}),
             },
+            signal: AbortSignal.timeout(STRIPE_TIMEOUT_MS),
             body: form(fields).toString(),
         });
     } catch (err) {
@@ -278,7 +284,10 @@ async function stripePost(path, fields, cfg, idempotencyKey) {
 async function stripeGet(path, cfg, expectObject) {
     let res;
     try {
-        res = await cfg.fetch(`${STRIPE_API_BASE}${path}`, { headers: { Authorization: `Bearer ${cfg.apiKey}` } });
+        res = await cfg.fetch(`${STRIPE_API_BASE}${path}`, {
+            headers: { Authorization: `Bearer ${cfg.apiKey}` },
+            signal: AbortSignal.timeout(STRIPE_TIMEOUT_MS),
+        });
     } catch (err) {
         return { ok: false, error: `transport: ${err && err.message}` };
     }
@@ -329,7 +338,7 @@ export async function createPassCheckout(input, cfg) {
     if (input.introCouponId !== undefined && !COUPON_RE.test(String(input.introCouponId))) return { ok: false, error: 'invalid coupon' };
     let base;
     try { base = new URL(cfg.publicHost); } catch { return { ok: false, error: 'invalid publicHost' }; }
-    if (base.protocol !== 'https:') return { ok: false, error: 'publicHost must be https' };
+    if (base.protocol !== 'https:' || base.username || base.password) return { ok: false, error: 'publicHost must be https' };
 
     const sig = await hmacHex(passMessage(input.passId), cfg.signingSecret);
     const ret = new URL(PASS_RETURN_PATH, base);
@@ -343,7 +352,7 @@ export async function createPassCheckout(input, cfg) {
         'line_items[0][price_data][recurring][interval_count]': 1,
         'line_items[0][price_data][product_data][name]': `Veyrnox Cinema Pass (${label})`,
         'line_items[0][price_data][product_data][tax_code]': TAX_CODE,
-        'automatic_tax[enabled]': cfg.automaticTax === false ? 'false' : 'true',
+        'managed_payments[enabled]': 'true',
         client_reference_id: input.passId,
         'metadata[cinema_pass_id]': input.passId,
         'metadata[cinema_pass_sig]': sig,
@@ -359,13 +368,13 @@ export async function createPassCheckout(input, cfg) {
     }, cfg, cfg.idempotencyKey);
     if (r.ok === false && r.error) return r;
     const data = r.data;
-    if (!r.ok || !data || typeof data.url !== 'string' || typeof data.id !== 'string') {
+    if (!r.ok || !data || typeof data.url !== 'string' || !SESSION_RE.test(String(data.id))) {
         console.error('[stripe] pass checkout create failed:', r.status, data && data.error && data.error.code);
         return { ok: false, error: `stripe ${r.status}` };
     }
     let checkoutUrl;
     try { checkoutUrl = new URL(data.url); } catch { checkoutUrl = null; }
-    if (!checkoutUrl || checkoutUrl.protocol !== 'https:'
+    if (!checkoutUrl || checkoutUrl.protocol !== 'https:' || checkoutUrl.username || checkoutUrl.password
         || !(checkoutUrl.hostname === 'stripe.com' || checkoutUrl.hostname.endsWith('.stripe.com'))) {
         console.error('[stripe] pass checkout url not on stripe.com');
         return { ok: false, error: 'checkout url not on stripe.com' };
@@ -377,14 +386,18 @@ export async function createPassCheckout(input, cfg) {
 export async function fetchSubscription(subscriptionId, cfg) {
     if (!SUBSCRIPTION_RE.test(String(subscriptionId))) return { ok: false, error: 'invalid subscriptionId' };
     const r = await stripeGet(`/subscriptions/${subscriptionId}`, cfg, 'subscription');
-    return r.ok ? { ok: true, subscription: r.data } : r;
+    return r.ok && r.data.id === subscriptionId
+        ? { ok: true, subscription: r.data }
+        : { ok: false, error: r.error || 'subscription id mismatch' };
 }
 
 /** Re-read an Invoice, to find the subscription a charge belongs to. */
 export async function fetchInvoice(invoiceId, cfg) {
     if (!INVOICE_RE.test(String(invoiceId))) return { ok: false, error: 'invalid invoiceId' };
     const r = await stripeGet(`/invoices/${invoiceId}`, cfg, 'invoice');
-    return r.ok ? { ok: true, invoice: r.data } : r;
+    return r.ok && r.data.id === invoiceId
+        ? { ok: true, invoice: r.data }
+        : { ok: false, error: r.error || 'invoice id mismatch' };
 }
 
 const unix = (v) => (Number.isSafeInteger(v) && v > 0 ? new Date(v * 1000).toISOString() : null);
@@ -450,7 +463,9 @@ export async function cancelSubscriptionAtPeriodEnd(subscriptionId, cfg) {
     if (!SUBSCRIPTION_RE.test(String(subscriptionId))) return { ok: false, error: 'invalid subscriptionId' };
     const r = await stripePost(`/subscriptions/${subscriptionId}`, { cancel_at_period_end: 'true' }, cfg);
     if (r.ok === false && r.error) return r;
-    if (!r.ok || !r.data || r.data.object !== 'subscription') return { ok: false, error: `stripe ${r.status}` };
+    if (!r.ok || !r.data || r.data.object !== 'subscription' || r.data.id !== subscriptionId) {
+        return { ok: false, error: `stripe ${r.status}` };
+    }
     return { ok: true };
 }
 
@@ -462,6 +477,7 @@ export async function cancelSubscriptionNow(subscriptionId, cfg) {
         res = await cfg.fetch(`${STRIPE_API_BASE}/subscriptions/${subscriptionId}`, {
             method: 'DELETE',
             headers: { Authorization: `Bearer ${cfg.apiKey}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+            signal: AbortSignal.timeout(STRIPE_TIMEOUT_MS),
             body: form({ prorate: 'false' }).toString(),
         });
     } catch (err) {
@@ -498,13 +514,14 @@ export async function createPortalSession({ customerId, returnPath = PASS_RETURN
     if (!CUSTOMER_RE.test(String(customerId))) return { ok: false, error: 'invalid customerId' };
     let base;
     try { base = new URL(cfg.publicHost); } catch { return { ok: false, error: 'invalid publicHost' }; }
-    if (base.protocol !== 'https:') return { ok: false, error: 'publicHost must be https' };
+    if (base.protocol !== 'https:' || base.username || base.password) return { ok: false, error: 'publicHost must be https' };
     const r = await stripePost('/billing_portal/sessions', { customer: customerId, return_url: new URL(returnPath, base).toString() }, cfg);
     if (r.ok === false && r.error) return r;
     if (!r.ok || !r.data || typeof r.data.url !== 'string') return { ok: false, error: `stripe ${r.status}` };
     let url;
     try { url = new URL(r.data.url); } catch { url = null; }
-    if (!url || url.protocol !== 'https:' || !(url.hostname === 'stripe.com' || url.hostname.endsWith('.stripe.com'))) {
+    if (!url || url.protocol !== 'https:' || url.username || url.password
+        || !(url.hostname === 'stripe.com' || url.hostname.endsWith('.stripe.com'))) {
         return { ok: false, error: 'portal url not on stripe.com' };
     }
     return { ok: true, url: r.data.url };
@@ -514,5 +531,7 @@ export async function createPortalSession({ customerId, returnPath = PASS_RETURN
 export async function fetchCharge(chargeId, cfg) {
     if (!/^ch_[A-Za-z0-9_]{1,250}$/.test(String(chargeId))) return { ok: false, error: 'invalid chargeId' };
     const r = await stripeGet(`/charges/${chargeId}`, cfg, 'charge');
-    return r.ok ? { ok: true, charge: r.data } : r;
+    return r.ok && r.data.id === chargeId
+        ? { ok: true, charge: r.data }
+        : { ok: false, error: r.error || 'charge id mismatch' };
 }

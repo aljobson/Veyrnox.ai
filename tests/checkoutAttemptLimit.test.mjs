@@ -16,7 +16,7 @@ const topUp = '22222222-2222-4222-8222-222222222222';
 const body = { pack_id: 'starter', idempotency_key: 'same-key-123', consent: true, consent_version: 'supply-consent-v1' };
 const created = { ok: true, idempotent: true, top_up_id: topUp, credits: 100, price_usd_cents: 1000 };
 const post = (payload = body, identity = auth) => POST(new Request('https://veyrnox.test/api/v1/top-ups', {
-    method: 'POST', headers: identity ? { 'x-veyrnox-auth-id': identity, 'x-veyrnox-auth-email': 'verified@test.invalid' } : {},
+    method: 'POST', headers: { ...(identity ? { 'x-veyrnox-auth-id': identity, 'x-veyrnox-auth-email': 'verified@test.invalid' } : {}), 'content-type': 'application/json' },
     body: typeof payload === 'string' ? payload : JSON.stringify(payload),
 }));
 let calls, stripeKeys;
@@ -42,7 +42,8 @@ function stub({ rate = { ok: true }, result = created, fail, stripeFailure = fal
         const form = new URLSearchParams(init.body);
         assert.equal(form.get('line_items[0][price_data][unit_amount]'), '1000');
         assert.equal(form.get('line_items[0][price_data][currency]'), 'usd');
-        assert.equal(form.get('automatic_tax[enabled]'), 'true');
+        assert.equal(form.get('managed_payments[enabled]'), 'true');
+        assert.equal(form.has('automatic_tax[enabled]'), false);
         assert.equal(form.get('client_reference_id'), topUp);
         assert.equal(form.get('customer_email'), 'verified@test.invalid');
         assert.ok(await verifyTopUpMetadata({ top_up_id: form.get('metadata[top_up_id]'), top_up_sig: form.get('metadata[top_up_sig]') }, process.env.STRIPE_WEBHOOK_SECRET));
@@ -63,6 +64,23 @@ test('identity and cheap validation reject before quota, Top-up writer or Stripe
         { ...body, consent: false }, { ...body, consent: 'true' }, { ...body, consent_version: 'wrong' }]) {
         assert.equal((await post(payload)).status, 400);
     }
+    assert.deepEqual(calls, []);
+});
+
+test('checkout rejects smuggled fields, query parameters, wrong media types and oversized bodies before any backend call', async () => {
+    stub();
+    assert.equal((await post({ ...body, price_usd_cents: 1 })).status, 400);
+    const headers = { 'x-veyrnox-auth-id': auth, 'content-type': 'application/json' };
+    assert.equal((await POST(new Request('https://veyrnox.test/api/v1/top-ups?pack_id=web-100', {
+        method: 'POST', headers, body: JSON.stringify(body),
+    }))).status, 400);
+    assert.equal((await POST(new Request('https://veyrnox.test/api/v1/top-ups', {
+        method: 'POST', headers: { 'x-veyrnox-auth-id': auth, 'content-type': 'text/plain' }, body: JSON.stringify(body),
+    }))).status, 415);
+    const oversized = JSON.stringify({ ...body, padding: 'x'.repeat(64 * 1024) });
+    assert.equal((await POST(new Request('https://veyrnox.test/api/v1/top-ups', {
+        method: 'POST', headers, body: oversized,
+    }))).status, 413);
     assert.deepEqual(calls, []);
 });
 test('quota denial stops before the writer and Stripe and returns bounded uncached Retry-After', async () => {

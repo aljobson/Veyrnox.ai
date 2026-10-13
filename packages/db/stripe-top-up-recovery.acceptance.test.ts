@@ -300,7 +300,7 @@ describe("Stripe Top-up recovery (0108)", { skip: !DATABASE_URL && "DATABASE_URL
             `SELECT public.credit_top_up($1, $2, $3, $4, $5) AS r`,
             [args.p_top_up_id, args.p_order_id, args.p_paid_usd_cents, args.p_currency, args.p_variant_id])).r;
         const session = {
-            id: cs, object: "checkout.session", livemode: false, client_reference_id: t.topUpId,
+            id: cs, object: "checkout.session", mode: "payment", livemode: false, client_reference_id: t.topUpId,
             metadata: { top_up_id: t.topUpId,
                 top_up_sig: createHmac("sha256", secret).update(`top_up:${t.topUpId}`).digest("hex") },
             payment_status: "paid", payment_intent: pi, amount_subtotal: t.price,
@@ -342,7 +342,7 @@ describe("Stripe Top-up recovery (0108)", { skip: !DATABASE_URL && "DATABASE_URL
             await recordSession(t.authId, t.topUpId, cs);
             const result = await runBackfill([{ top_up_id: t.topUpId, order_id: cs, order_identifier: null }], {
                 fetchSession: async () => ({ ok: true, session: {
-                    id: cs, object: "checkout.session", livemode: false, client_reference_id: t.topUpId,
+                    id: cs, object: "checkout.session", mode: "payment", livemode: false, client_reference_id: t.topUpId,
                     metadata: { top_up_id: t.topUpId,
                         top_up_sig: createHmac("sha256", secret).update(`top_up:${t.topUpId}`).digest("hex") },
                     payment_status: "paid", payment_intent: pi,

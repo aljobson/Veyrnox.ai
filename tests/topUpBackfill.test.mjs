@@ -9,7 +9,7 @@ const SECRET = 'whsec_test_only';
 const row = { top_up_id: TOP_UP, order_id: SESSION, order_identifier: null };
 const opts = { expectLiveMode: false, signingSecret: SECRET };
 function session(over = {}) {
-    return { id: SESSION, object: 'checkout.session', client_reference_id: TOP_UP,
+    return { id: SESSION, object: 'checkout.session', mode: 'payment', client_reference_id: TOP_UP,
         metadata: { top_up_id: TOP_UP, top_up_sig: createHmac('sha256', SECRET).update(`top_up:${TOP_UP}`).digest('hex') },
         livemode: false, payment_status: 'paid', payment_intent: 'pi_test_1', amount_subtotal: 2500,
         amount_total: 3000, currency: 'usd', ...over };
