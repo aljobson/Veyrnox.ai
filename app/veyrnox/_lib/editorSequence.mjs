@@ -92,6 +92,14 @@ export function addSequenceTrack(tl, kind) {
 export function updateSequenceTrack(tl, id, patch) {
     return checked({ ...tl, tracks: tl.tracks.map(t => t.id === id ? { ...t, ...patch, id: t.id, kind: t.kind } : t) });
 }
+export function removeSequenceTrack(tl, id) {
+    const lane = tl.tracks.find(t => t.id === id);
+    if (!lane) return error('Choose an existing track.');
+    if (lane.locked) return error('Unlock this track before removing it.');
+    if (tl[lane.kind].some(c => c.trackId === id)) return error('Move or remove every clip on this track first.');
+    if (tl.tracks.filter(t => t.kind === lane.kind).length === 1) return error(`Keep at least one ${lane.kind} track.`);
+    return checked({ ...tl, tracks: tl.tracks.filter(t => t.id !== id) });
+}
 export function moveSequence(tl, kind, id, start, trackId, snap = true, frame = 0) {
     const item = editable(tl, kind, id); if (item.error) return item;
     let at = Math.max(0, Math.round(start));
@@ -121,7 +129,7 @@ export function setSequenceRate(tl, kind, id, rate) {
 }
 export function extractSequenceAudio(tl, id) {
     const item = editable(tl, 'video', id); if (item.error) return item;
-    let next = addSequenceClip(tl, 'audio', item.mediaId, { start: item.start, in: item.in, len: item.len, rate: item.rate ?? 1, ...(item.speedCurve ? {speedCurve:item.speedCurve}:{}), ...(item.reverse!==undefined ? {reverse:item.reverse}:{}), ...(item.preservePitch!==undefined?{preservePitch:item.preservePitch}:{}),...(item.audioProcessing?{audioProcessing:item.audioProcessing}:{}),volume: item.volume, fadeIn: item.fadeIn || 0, fadeOut: item.fadeOut || 0 });
+    let next = addSequenceClip(tl, 'audio', item.mediaId, { start: item.start, in: item.in, len: item.len, rate: item.rate ?? 1, ...(item.speedCurve ? {speedCurve:item.speedCurve}:{}), ...(item.reverse!==undefined ? {reverse:item.reverse}:{}), ...(item.preservePitch!==undefined?{preservePitch:item.preservePitch}:{}),...(item.audioProcessing?{audioProcessing:item.audioProcessing}:{}),...(item.audioEffects?{audioEffects:item.audioEffects}:{}),volume: item.volume, fadeIn: item.fadeIn || 0, fadeOut: item.fadeOut || 0 });
     return next.error ? next : updateSequenceClip(next, 'video', id, { volume: 0 });
 }
 export function sequenceTransition(tl, k) {

@@ -1,5 +1,5 @@
 import { LOCAL_SPEECH_WORKER_URL } from './localSpeechAssets.mjs';
-import { SPEECH_LIMITS, timelineSpeechPCM } from './editorSpeechAudio.mjs';
+import { SPEECH_LIMITS, timelineSpeechPCM, speechSelection } from './editorSpeechAudio.mjs';
 import { speechResultCaptions } from './editorSpeechTiming.mjs';
 export const SPEECH_LANGUAGES = Object.freeze([['english','English'],['spanish','Spanish'],['french','French'],['german','German'],['italian','Italian'],['portuguese','Portuguese'],['japanese','Japanese'],['korean','Korean'],['chinese','Chinese'],['hindi','Hindi'],['arabic','Arabic']]);
 const aborted = () => new DOMException('Local automatic captions cancelled.', 'AbortError');
@@ -44,7 +44,10 @@ export function recognizeSpeechPCM(audio, { language = 'english', signal, onProg
     });
 }
 export async function recognizeTimelineSpeech(timeline, blobs, options = {}) {
-    const audio = await timelineSpeechPCM(timeline, blobs, options);
+    const selection = speechSelection(timeline, options);
+    const audio = await timelineSpeechPCM(timeline, blobs, { ...options, startFrame: selection.startFrame, endFrame: selection.endFrame });
     if (options.signal?.aborted) throw aborted();
-    return recognizeSpeechPCM(audio, options);
+    const cues = await recognizeSpeechPCM(audio, options);
+    if (options.signal?.aborted) throw aborted();
+    return cues.map(cue => ({ ...cue, start: cue.start + selection.startFrame }));
 }

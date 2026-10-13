@@ -1,7 +1,7 @@
 import { smartPicture,smartPictureActive } from './editorSmartPicture.mjs';
 import { captionPresentation,WORD_STYLE } from './editorWords.mjs';
 import { TEXT_EXTRAS } from './editorTextStyle.mjs';
-import { evaluatedTransform, evaluatedParameters } from './editorAnimation.mjs';
+import { evaluatedTransform, evaluatedParameters, evaluatedReveal } from './editorAnimation.mjs';
 export { evaluatedTransform } from './editorAnimation.mjs';
 import { paintBackground } from './editorBackground.mjs';
 import { colourPicture, neutralColour } from './editorColour.mjs';
@@ -29,13 +29,40 @@ export function sequenceLayers(tl, frame) {
     }
     return { visuals, texts: tl.text.filter(active).sort((a, b) => tl.tracks.findIndex(t => t.id === a.trackId) - tl.tracks.findIndex(t => t.id === b.trackId)).map(c => ({ ...c, offset: frame - c.start })), background: tl.background };
 }
+const revealActive=reveal=>reveal.x!==0||reveal.y!==0||reveal.width!==1||reveal.height!==1;
+function clipReveal(g,reveal,x,y,width,height) {
+    if(!revealActive(reveal))return;
+    g.beginPath();g.rect(x+width*reveal.x,y+height*reveal.y,width*reveal.width,height*reveal.height);g.clip();
+}
+/** Include styled line boxes, stroke and shadow so a wipe clips the entire title together. */
+function titleRevealBounds(g,lines,px,lineHeight,y0,style,H,W) {
+    const padding=Math.max(style.backgroundOpacity?8:0,style.strokeWidth/2+(style.shadowOpacity?style.shadowBlur*H/720*3:0));
+    const shadowX=style.shadowOpacity?style.shadowX*H/720:0,shadowY=style.shadowOpacity?style.shadowY*H/720:0;
+    let left=Infinity,right=-Infinity,top=Infinity,bottom=-Infinity;
+    for(const [index,line] of lines.entries()) {
+        const metrics=g.measureText(line),width=Math.min(metrics.width,W*.92);
+        // Match fillText's maximum width and alignment, not a font-dependent character count.
+        const y=y0+index*lineHeight,x=style.align==='center'?-width/2:style.align==='right'?-width:0;
+        const ratio=width/Math.max(1,metrics.width);
+        const inkLeft=Number.isFinite(metrics.actualBoundingBoxLeft)?-metrics.actualBoundingBoxLeft*ratio:x;
+        const inkRight=Number.isFinite(metrics.actualBoundingBoxRight)?metrics.actualBoundingBoxRight*ratio:x+width;
+        left=Math.min(left,x,inkLeft);right=Math.max(right,x+width,inkRight);
+        top=Math.min(top,y-Math.max(lineHeight/2,metrics.actualBoundingBoxAscent||px*.75));
+        bottom=Math.max(bottom,y+Math.max(lineHeight/2,metrics.actualBoundingBoxDescent||px*.25));
+    }
+    left+=Math.min(0,shadowX)-padding;right+=Math.max(0,shadowX)+padding;
+    top+=Math.min(0,shadowY)-padding;bottom+=Math.max(0,shadowY)+padding;
+    return {x:left,y:top,width:Math.max(0,right-left),height:Math.max(0,bottom-top)};
+}
 export function paintSequence(g, W, H, layers, pictures) {
     g.save(); g.globalAlpha = 1; g.globalCompositeOperation = 'source-over'; g.filter = 'none'; g.fillStyle = layers.background; g.fillRect(0, 0, W, H);
     layers.visuals.forEach((v, i) => {
         const pic = pictures.visuals[i]; if (!pic) return;
         const c = v.clip;
-        const t = evaluatedTransform(c, v.offset), parameters=evaluatedParameters(c,v.offset),f=parameters.filter;
+        const t = evaluatedTransform(c, v.offset), reveal=evaluatedReveal(c,v.offset), parameters=evaluatedParameters(c,v.offset),f=parameters.filter;
+        if(revealActive(reveal)){g.save();clipReveal(g,reveal,0,0,W,H);}
         paintBackground(g,W,H,c,pic,pictures.backgrounds?.[i],t.opacity*(v.alpha??1),v.wipe);
+        if(revealActive(reveal))g.restore();
         const crop = c.crop || { x: 0, y: 0, width: 1, height: 1 };
         const sw = pic.width * crop.width, sh = pic.height * crop.height;
         const factor = (c.fit === 'cover' ? Math.max : Math.min)(W / sw, H / sh);
@@ -44,6 +71,7 @@ export function paintSequence(g, W, H, layers, pictures) {
         g.globalAlpha = t.opacity * (v.alpha ?? 1); g.globalCompositeOperation = c.blend || 'source-over';
         g.filter = `brightness(${f.brightness}) contrast(${f.contrast}) saturate(${f.saturate}) hue-rotate(${f.hue}deg) blur(${f.blur}px)`;
         if (v.wipe !== undefined) { g.beginPath(); g.rect(-w / 2, -h / 2, w * v.wipe, h); g.clip(); }
+        clipReveal(g,reveal,-w/2,-h/2,w,h);
         const effect = c.effect;
         const processed=smartPictureActive(c.smartPicture)?smartPicture(pic,crop,c.smartPicture,w,h):pic;
         const processedCrop=processed===pic?crop:{x:0,y:0,width:1,height:1};
@@ -64,10 +92,11 @@ export function paintSequence(g, W, H, layers, pictures) {
 }
 export function paintStyledText(g, W, H, item) {
     const s = { ...TEXT_DEFAULTS,...TEXT_EXTRAS, ...item.style }, t = evaluatedTransform(item, item.offset || 0);
-    const presentation=captionPresentation(item,item.offset||0),px = Math.max(8, H * item.size / 100), lines = presentation.text.split('\n');
+    const reveal=evaluatedReveal(item,item.offset||0),presentation=captionPresentation(item,item.offset||0),px = Math.max(8, H * item.size / 100), lines = presentation.text.split('\n');
     g.save(); g.translate(W * item.x + (t.x - 0.5) * W, H * item.y + (t.y - 0.5) * H); g.scale(t.scale, t.scale); g.rotate(t.rotation * Math.PI / 180); g.globalAlpha = t.opacity;
     g.font = `${s.italic?'italic ':''}${s.weight} ${px}px "${s.font}", ${s.font==='serif' || ['Georgia','Times New Roman'].includes(s.font)?'serif':s.font==='monospace' || s.font==='Courier New'?'monospace':'sans-serif'}`; g.letterSpacing=`${s.letterSpacing*H/720}px`; g.textAlign = s.align; g.textBaseline = 'middle'; g.lineJoin = 'round';
     const h = px * s.lineHeight, y0 = -(lines.length - 1) * h / 2;
+    if(revealActive(reveal)){const bounds=titleRevealBounds(g,lines,px,h,y0,s,H,W);clipReveal(g,reveal,bounds.x,bounds.y,bounds.width,bounds.height);}
     let lineOffset=0;
     for (const [i, line] of lines.entries()) {
         const width = Math.min(g.measureText(line).width, W * 0.92), y = y0 + i * h;
