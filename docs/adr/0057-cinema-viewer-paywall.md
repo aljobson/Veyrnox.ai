@@ -183,9 +183,11 @@ Owner, 2026-10-10: build it. Built behind `CINEMA_FREE_CEILING_ENABLED`.
 Migration 0245 was applied to production (apply-migrations run 38053327460,
 after 0244) and to the staging database on 2026-10-10. The switch is `true`
 on staging. In production it is `true` since 2026-10-10 (owner), and has no
-effect there while `CINEMA_UNLOCKS_ENABLED` is `false`: it is read only after
-the unlocks gate. Playback in production still waits for the staging
-acceptance of the ceiling and 24 hours of clean reconciliation after 0245.
+effect there until the free-only gateway path is deployed. From 2026-10-13,
+`CINEMA_FREE_CEILING_ENABLED` independently opens only metered `free` access
+while `CINEMA_UNLOCKS_ENABLED` remains false. Paid, previously unlocked and
+Pass access still require the Unlock switch; the credit-spending route remains
+closed.
 
 - **The rule.** An account has `cinema_prices.free_ceiling_minutes` of free
   viewing per calendar month (UTC). The proposed value is 300 and the owner
@@ -220,7 +222,9 @@ acceptance of the ceiling and 24 hours of clean reconciliation after 0245.
   while the switch is on does the Worker call `cinema_metered_entitlement`,
   `start_cinema_playback` and `record_cinema_play` in their place. If the
   switch is on before 0245 is applied, those calls fail and playback answers
-  503, so apply the migration first.
+  503, so apply the migration first. When the paid Unlock switch is off, the
+  gateway accepts only a `free` result (or the `free_ceiling` refusal) from
+  those RPCs and signs no token for paid, unlocked or Pass access.
 - **Not covered.** The title page still labels a free title "Free" past the
   ceiling; the message is on the watch page. Pass Plays are recorded as
   before: the minute at a play start applies to free viewing only.

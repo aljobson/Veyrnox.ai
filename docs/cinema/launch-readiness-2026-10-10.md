@@ -4,6 +4,21 @@ Engineering preparation is authorized by the owner: “Proceed with the remainin
 Cinema checks and get it ready to go live. I will deal with Stripe.” This is a
 readiness record, not authorization to activate paid production before its gates.
 Production `CINEMA_UNLOCKS_ENABLED` and `CINEMA_SUBSCRIPTIONS_ENABLED` remain false.
+Free-title playback now has its own bounded production path through
+`CINEMA_FREE_CEILING_ENABLED`.
+
+## Free-playback activation — 13 October 2026
+
+- The 24-hour post-0245 reconciliation window completed. Immediately before
+  activation, `scripts/check-reconcile.mjs` reported zero rows for all seven
+  production reconciliation checks.
+- The owner confirmed the 300-minute monthly ceiling by directing the
+  free-streaming launch to proceed.
+- The production catalogue contained two reviewed, ready CC0 shorts: *Late
+  Afternoon Swans (CogVideoX)* and *Painting With The Breeze (CogVideoX)*.
+- The gateway now permits only `free` access while the Unlock switch is off.
+  Paid, previously unlocked and Pass access cannot mint a token through this
+  path; the credit Unlock route remains closed.
 
 ## Verified
 
@@ -66,9 +81,9 @@ Production `CINEMA_UNLOCKS_ENABLED` and `CINEMA_SUBSCRIPTIONS_ENABLED` remain fa
    verify Stream signing configuration and retain the existing binding names.
 2. Verify at least one production title and its ready upload, owner acceptance,
    the invoice rate, and the complete reconciliation window. Record evidence here.
-3. Enable `CINEMA_UNLOCKS_ENABLED=true` with `CINEMA_FREE_CEILING_ENABLED=true`;
-   leave `CINEMA_SUBSCRIPTIONS_ENABLED=false` for the first free/Unlock smoke check.
-   This opens free playback as well as credit Unlocks. Keep unrelated flags intact.
+3. Free playback is activated independently through
+   `CINEMA_FREE_CEILING_ENABLED=true`; keep `CINEMA_UNLOCKS_ENABLED=false` until
+   the paid Unlock gates pass. Keep unrelated flags intact.
 4. Enable `CINEMA_SUBSCRIPTIONS_ENABLED=true` only after the owner's Stripe work
    is complete. Re-read that only the USD 9.99 monthly plan is active. Verify
    Checkout, signed webhook processing, return-page entitlement, Customer Portal,
@@ -76,7 +91,7 @@ Production `CINEMA_UNLOCKS_ENABLED` and `CINEMA_SUBSCRIPTIONS_ENABLED` remain fa
 5. Re-read deployed flags and bindings, then capture the signed-in production
    viewer result. A failed/outage/unknown verification is not a launch pass.
 
-Rollback new sales/play-token requests by setting both paid switches false and
-deploying. Keep `CINEMA_FREE_CEILING_ENABLED=true`, signing secrets and the Stripe
+Rollback free play-token requests by setting `CINEMA_FREE_CEILING_ENABLED=false`
+and deploying. Paid switches stay false. Keep signing secrets and the Stripe
 webhook configured; already purchased Passes still need cancellation, refunds
 and event processing. Existing playback tokens expire within 15 minutes.
