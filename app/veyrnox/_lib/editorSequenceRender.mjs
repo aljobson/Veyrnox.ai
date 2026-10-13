@@ -19,11 +19,18 @@ export function sequenceLayers(tl, frame) {
             const k = tl.video.indexOf(previous);
             const under = { clip: previous, k, time: Math.max(0,Math.min(sourceFrame(previous, previous.len + visual.offset), tl.media[previous.mediaId].frames - 1)) / 30, offset: previous.len - 1 };
             const p = (visual.offset + 1) / duration, type = visual.clip.transitionType || 'dissolve';
-            visual.alpha = type === 'dip-black' ? Math.max(0, p * 2 - 1) : type === 'wipe-left' || type === 'slide' ? 1 : p;
+            const wipe=type.startsWith('wipe-'),slide=type==='slide'||type.startsWith('slide-');
+            visual.alpha = type === 'dip-black' ? Math.max(0, p * 2 - 1) : wipe || slide ? 1 : p;
             if (type === 'dip-black') under.alpha = Math.max(0, 1 - p * 2);
-            if (type === 'wipe-left') visual.wipe = p;
-            if (type === 'slide') visual.slide = 1 - p;
+            if (wipe) visual.wipe = {direction:type.slice(5),progress:p};
+            if (slide) {
+                const direction=type==='slide'?'left':type.slice(6),amount=1-p;
+                visual.slideX=direction==='left'?amount:direction==='right'?-amount:0;
+                visual.slideY=direction==='up'?amount:direction==='down'?-amount:0;
+            }
             if (type === 'zoom') visual.zoom = 0.8 + p * 0.2;
+            if (type === 'blur') visual.transitionBlur = (1-p)*18;
+            if (type === 'flash') visual.flash = Math.sin(p*Math.PI);
             visuals.splice(visuals.indexOf(visual), 0, under);
         }
     }
@@ -67,10 +74,10 @@ export function paintSequence(g, W, H, layers, pictures) {
         const sw = pic.width * crop.width, sh = pic.height * crop.height;
         const factor = (c.fit === 'cover' ? Math.max : Math.min)(W / sw, H / sh);
         const w = sw * factor, h = sh * factor;
-        g.save(); g.translate(W * (t.x + (v.slide || 0)), H * t.y); g.rotate(t.rotation * Math.PI / 180); g.scale(t.scale * (v.zoom || 1) * (t.flipX ? -1 : 1), t.scale * (v.zoom || 1) * (t.flipY ? -1 : 1));
+        g.save(); g.translate(W * (t.x + (v.slideX || 0)), H * (t.y + (v.slideY || 0))); g.rotate(t.rotation * Math.PI / 180); g.scale(t.scale * (v.zoom || 1) * (t.flipX ? -1 : 1), t.scale * (v.zoom || 1) * (t.flipY ? -1 : 1));
         g.globalAlpha = t.opacity * (v.alpha ?? 1); g.globalCompositeOperation = c.blend || 'source-over';
-        g.filter = `brightness(${f.brightness}) contrast(${f.contrast}) saturate(${f.saturate}) hue-rotate(${f.hue}deg) blur(${f.blur}px)`;
-        if (v.wipe !== undefined) { g.beginPath(); g.rect(-w / 2, -h / 2, w * v.wipe, h); g.clip(); }
+        g.filter = `brightness(${f.brightness}) contrast(${f.contrast}) saturate(${f.saturate}) hue-rotate(${f.hue}deg) blur(${f.blur+(v.transitionBlur||0)}px)`;
+        if (v.wipe !== undefined) clipPictureWipe(g,-w/2,-h/2,w,h,v.wipe);
         clipReveal(g,reveal,-w/2,-h/2,w,h);
         const effect = c.effect;
         const processed=smartPictureActive(c.smartPicture)?smartPicture(pic,crop,c.smartPicture,w,h):pic;
@@ -86,6 +93,7 @@ export function paintSequence(g, W, H, layers, pictures) {
             g.drawImage(adjusted, -w / 2, -h / 2, w, h);
         } else g.drawImage(adjustedColour, adjustedColour.width * colourCrop.x, adjustedColour.height * colourCrop.y, adjustedColour.width * colourCrop.width, adjustedColour.height * colourCrop.height, -w / 2, -h / 2, w, h);
         g.restore();
+        if(v.flash){g.save();g.globalCompositeOperation='screen';g.globalAlpha=v.flash*.75;g.fillStyle='#ffffff';g.fillRect(0,0,W,H);g.restore();}
     });
     for (const item of layers.texts) paintStyledText(g, W, H, item);
     g.restore();
@@ -113,19 +121,57 @@ export function paintStyledText(g, W, H, item) {
     g.restore();
 }
 
+function clipPictureWipe(g,x,y,w,h,wipe){
+    const progress=typeof wipe==='number'?wipe:wipe.progress,direction=typeof wipe==='number'?'left':wipe.direction;
+    const bounds=direction==='right'?[x+w*(1-progress),y,w*progress,h]:direction==='up'?[x,y+h*(1-progress),w,h*progress]:direction==='down'?[x,y,w,h*progress]:[x,y,w*progress,h];
+    g.beginPath();g.rect(...bounds);g.clip();
+}
+
 /** Effects are composed against the source alpha, so transparent elements keep transparent edges. */
 function effectPicture(pic, crop, effect, offset) {
     const w = Math.max(1, Math.ceil(pic.width * crop.width)), h = Math.max(1, Math.ceil(pic.height * crop.height));
+    if(effect.type==='posterize'){
+        // Quantisation reads pixels back to the CPU. Bound that surface for 2K/4K
+        // exports, then let the compositor scale the intentionally banded result.
+        const scale=Math.min(1,640/w,360/h),pw=Math.max(1,Math.round(w*scale)),ph=Math.max(1,Math.round(h*scale));
+        const posterized=new OffscreenCanvas(pw,ph),context=posterized.getContext('2d');
+        context.drawImage(pic,pic.width*crop.x,pic.height*crop.y,pic.width*crop.width,pic.height*crop.height,0,0,pw,ph);
+        const image=context.getImageData(0,0,pw,ph),levels=Math.max(2,Math.round(8-effect.intensity*5)),step=255/(levels-1);
+        for(let i=0;i<image.data.length;i+=4)for(let channel=0;channel<3;channel++)image.data[i+channel]=Math.round(image.data[i+channel]/step)*step;
+        context.putImageData(image,0,0);return posterized;
+    }
     const out = new OffscreenCanvas(w, h), g = out.getContext('2d');
+    const source=[pic,pic.width*crop.x,pic.height*crop.y,pic.width*crop.width,pic.height*crop.height,0,0,w,h];
     if (effect.type === 'pixelate') {
         const small = new OffscreenCanvas(Math.max(4, Math.round(w * (1 - effect.intensity * .98))), Math.max(4, Math.round(h * (1 - effect.intensity * .98))));
         small.getContext('2d').drawImage(pic, pic.width * crop.x, pic.height * crop.y, pic.width * crop.width, pic.height * crop.height, 0, 0, small.width, small.height);
         g.imageSmoothingEnabled = false; g.drawImage(small, 0, 0, w, h);
+    } else if(effect.type==='mirror'){
+        g.save();g.beginPath();g.rect(0,0,w/2,h);g.clip();g.drawImage(...source);g.restore();
+        g.save();g.beginPath();g.rect(w/2,0,w/2,h);g.clip();g.translate(w,0);g.scale(-1,1);g.drawImage(...source);g.restore();
+    } else if(effect.type==='tiles'){
+        const columns=effect.intensity>.65?4:effect.intensity>.3?3:2,rows=columns,tw=w/columns,th=h/rows,drift=Math.sin(offset*.12)*tw*.15*effect.intensity;
+        for(let y=0;y<rows;y++)for(let x=0;x<columns;x++){g.save();g.beginPath();g.rect(x*tw,y*th,tw,th);g.clip();g.drawImage(pic,pic.width*crop.x,pic.height*crop.y,pic.width*crop.width,pic.height*crop.height,x*tw+drift*(y%2?1:-1),y*th,tw,th);g.restore();}
     } else {
-        g.drawImage(pic, pic.width * crop.x, pic.height * crop.y, pic.width * crop.width, pic.height * crop.height, 0, 0, w, h);
+        if(effect.type==='mono')g.filter=`grayscale(${effect.intensity})`;
+        if(effect.type==='sepia')g.filter=`sepia(${effect.intensity})`;
+        if(effect.type==='old-film')g.filter=`sepia(${.25+.65*effect.intensity}) contrast(${1+.18*effect.intensity}) brightness(${.95+Math.sin(offset*.7)*.04*effect.intensity})`;
+        if(effect.type==='pulse')g.filter=`brightness(${1+(.5+.5*Math.sin(offset*.18))*effect.intensity*.75})`;
+        if(effect.type==='soft-glow'){g.filter=`blur(${2+effect.intensity*10}px) brightness(${1+effect.intensity*.4})`;g.globalAlpha=.45+effect.intensity*.3;}
+        g.drawImage(...source);g.filter='none';g.globalAlpha=1;
+        if(effect.type==='soft-glow'){g.globalCompositeOperation='screen';g.globalAlpha=.75;g.drawImage(...source);g.globalAlpha=1;}
+        if(effect.type==='chromatic'){
+            const shift=Math.max(1,Math.round(effect.intensity*w*.025));g.globalCompositeOperation='screen';g.globalAlpha=.38*effect.intensity;g.drawImage(pic,pic.width*crop.x,pic.height*crop.y,pic.width*crop.width,pic.height*crop.height,-shift,0,w,h);g.drawImage(pic,pic.width*crop.x,pic.height*crop.y,pic.width*crop.width,pic.height*crop.height,shift,0,w,h);g.globalAlpha=1;
+        }
         g.globalCompositeOperation = 'source-atop';
         if (effect.type === 'vignette') { const gradient = g.createRadialGradient(w / 2, h / 2, Math.min(w, h) * .2, w / 2, h / 2, Math.max(w, h) * .6); gradient.addColorStop(0, '#00000000'); gradient.addColorStop(1, `rgba(0,0,0,${effect.intensity})`); g.fillStyle = gradient; g.fillRect(0, 0, w, h); }
         if (effect.type === 'grain') { g.fillStyle = `rgba(255,255,255,${effect.intensity * .5})`; for (let n = 0; n < 150; n++) { const seed = (n * 137 + offset * 23) % 997; g.fillRect(seed / 997 * w, ((seed * 53) % 991) / 991 * h, 2, 2); } }
+        if(effect.type==='negative'){g.globalCompositeOperation='difference';g.globalAlpha=effect.intensity;g.fillStyle='#ffffff';g.fillRect(0,0,w,h);g.globalAlpha=1;}
+        if(effect.type==='scanlines'||effect.type==='old-film'){g.fillStyle=`rgba(0,0,0,${.08+.22*effect.intensity})`;const step=Math.max(3,Math.round(8-effect.intensity*5));for(let y=offset%step;y<h;y+=step)g.fillRect(0,y,w,1);}
+        if(effect.type==='old-film'){g.fillStyle=`rgba(255,246,214,${.12*effect.intensity})`;g.fillRect(0,0,w,h);g.fillStyle=`rgba(255,255,255,${.35*effect.intensity})`;for(let n=0;n<5;n++){const x=((n*211+offset*17)%997)/997*w;g.fillRect(x,0,Math.max(1,effect.intensity*2),h);}}
+        if(effect.type==='light-leak'){const x=((offset*7)%(w*2))-w/2,gradient=g.createRadialGradient(x,h*.45,0,x,h*.45,Math.max(w,h)*.7);gradient.addColorStop(0,`rgba(255,244,180,${.75*effect.intensity})`);gradient.addColorStop(.45,`rgba(255,92,64,${.35*effect.intensity})`);gradient.addColorStop(1,'rgba(255,40,20,0)');g.globalCompositeOperation='screen';g.fillStyle=gradient;g.fillRect(0,0,w,h);}
+        if(effect.type==='strobe'){const on=Math.sin(offset*.7)>0;g.globalCompositeOperation='screen';g.fillStyle=`rgba(255,255,255,${on?effect.intensity*.8:0})`;g.fillRect(0,0,w,h);}
+        if(effect.type==='duotone'){g.globalCompositeOperation='multiply';g.fillStyle=`rgba(66,31,121,${effect.intensity})`;g.fillRect(0,0,w,h);g.globalCompositeOperation='screen';g.fillStyle=`rgba(50,214,197,${effect.intensity*.7})`;g.fillRect(0,0,w,h);}
     }
     return out;
 }

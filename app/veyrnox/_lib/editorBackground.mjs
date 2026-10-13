@@ -7,11 +7,16 @@ export function backgroundProblem(value, media) {
     return null;
 }
 export const backgroundMediaIds = clip => clip.background?.type === 'image' ? [clip.background.mediaId] : [];
+function clipWipe(g,x,y,w,h,wipe) {
+    const progress=typeof wipe==='number'?wipe:wipe.progress,direction=typeof wipe==='number'?'left':wipe.direction;
+    const bounds=direction==='right'?[x+w*(1-progress),y,w*progress,h]:direction==='up'?[x,y+h*(1-progress),w,h*progress]:direction==='down'?[x,y,w,h*progress]:[x,y,w*progress,h];
+    g.beginPath();g.rect(...bounds);g.clip();
+}
 export function paintBackground(g,W,H,clip,picture,image,alpha=1,wipe) {
     const b=clip.background;
     if (!b || b.type === 'none') return;
     g.save();g.globalCompositeOperation='source-over';g.globalAlpha=alpha;g.filter='none';
-    if(wipe!==undefined){g.beginPath();g.rect(0,0,W*wipe,H);g.clip();}
+    if(wipe!==undefined)clipWipe(g,0,0,W,H,wipe);
     g.fillStyle=b.color;g.fillRect(0,0,W,H);
     const source=b.type==='blur'?picture:b.type==='image'?image:null;
     if(source) {
