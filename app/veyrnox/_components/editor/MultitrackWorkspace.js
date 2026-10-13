@@ -61,7 +61,7 @@ const EDITOR_PALETTE={
     '--vx-fg':'244 245 247','--vx-fg-body':'211 213 220','--vx-fg-muted':'160 163 174','--vx-fg-faint':'132 135 146','--vx-accent':'62 230 196','--vx-accent-hover':'111 242 216','--vx-accent-ink':'6 35 31',
     '--vx-money':'228 169 60','--vx-money-ink':'35 23 3','--vx-danger':'255 92 71','--vx-danger-ink':'40 6 2','--vx-warn':'139 167 255'
 };
-export function MultitrackWorkspace() {
+export function MultitrackWorkspace({ onCredits }) {
     const {organization,localInference}=useEditorCompletionFlags(),fontRegistry=useRef(null);
     const sharedTools=useEditorSharedEnabled(),[projectContext,setProjectContext]=useState(null);
     const [fitScreen,setFitScreen]=useState(true);
@@ -217,6 +217,7 @@ export function MultitrackWorkspace() {
             <div className="ml-auto flex shrink-0 items-center gap-2">
                 <ProjectFileControls compact tl={tl} onLoadTimeline={loadProjectFile} disabled={disabled} openDisabled={!!projectContext?.id} name={projectContext?.id ? 'veyrnox-cloud-project' : 'veyrnox-studio-project'} />
                 <WorkspaceLayout compact layout={layout} onChange={setLayout} />
+                <Button size="sm" variant="money" onClick={onCredits}>Credits</Button>
                 <Button size="sm" variant="ghost" aria-pressed={fitScreen} onClick={()=>setFitScreen(v=>!v)}>{fitScreen?'Exit full editor':'Full editor'}</Button>
             </div>
         </header>
