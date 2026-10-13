@@ -1,6 +1,6 @@
 'use client';
 import { MediaArtwork } from './AdvancedMediaBin';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { sequenceEnd, trackFor } from '../../_lib/editorSequence.mjs';
 import { formatTime } from '../../_lib/editorTimeline.mjs';
 const button = 'rounded border border-vx-border px-2 py-1 text-[10px] hover:border-vx-accent disabled:opacity-40';
@@ -24,9 +24,25 @@ function TimedClip({ clip, track, name, ppf, selected, disabled, onSelect, onTri
         {selected && !track.locked && ['in', 'out'].map(edge => <button key={edge} type="button" disabled={disabled} {...trim(edge)} aria-label={`Trim ${edge === 'in' ? 'start' : 'end'} of ${name}`} className={`absolute bottom-0 top-0 w-2 cursor-ew-resize touch-none bg-vx-accent/60 ${edge === 'in' ? 'left-0' : 'right-0'}`} />)}
     </div>;
 }
-export function TrackTimeline({ height=420,onMediaDrop,tl, frame, selected, selection = [], ppf, disabled, snap, onSelect, onSeek, onTrim, onMove, onTrack, onReorder, onRemove, blobs, loaded }) {
-    const dragged = useRef(null), total = sequenceEnd(tl), width = Math.max(600, (total + 150) * ppf);
+export function TrackTimeline({ height=420,onMediaDrop,tl, frame, selected, selection = [], ppf, disabled, snap, follow=false, onSelect, onSeek, onZoom, onViewport, onTrim, onMove, onTrack, onReorder, onRemove, blobs, loaded }) {
+    const dragged = useRef(null),scrubbing=useRef(false),scroll=useRef(null), total = sequenceEnd(tl), width = Math.max(480, (total + 150) * ppf);
     const at = e => Math.max(0, Math.round((e.clientX - e.currentTarget.getBoundingClientRect().left) / ppf));
+    useEffect(()=>{
+        const node=scroll.current;if(!node||!onViewport)return;
+        const report=()=>onViewport(node.clientWidth);
+        report();const observer=new ResizeObserver(report);observer.observe(node);return()=>observer.disconnect();
+    },[onViewport]);
+    useEffect(()=>{
+        const node=scroll.current;if(!node||!follow)return;
+        const x=frame*ppf,left=node.scrollLeft,right=left+node.clientWidth;
+        if(x<left+node.clientWidth*.15||x>right-node.clientWidth*.15)node.scrollTo({left:Math.max(0,x-node.clientWidth*.35),behavior:'smooth'});
+    },[follow,frame,ppf]);
+    const scrub={
+        onPointerDown:e=>{if(disabled)return;scrubbing.current=true;e.currentTarget.setPointerCapture(e.pointerId);onSeek(Math.min(at(e),Math.max(0,total-1)));},
+        onPointerMove:e=>{if(scrubbing.current)onSeek(Math.min(at(e),Math.max(0,total-1)));},
+        onPointerUp:e=>{scrubbing.current=false;e.currentTarget.releasePointerCapture?.(e.pointerId);},
+        onPointerCancel:()=>{scrubbing.current=false;},
+    };
     return <section aria-label="Multitrack timeline" style={{maxHeight:height}} className="overflow-y-auto rounded-xl border border-vx-border">
         <div className="flex"><div className="w-40 shrink-0 border-r border-vx-border bg-vx-panel">
             <div className="h-7 px-3 pt-1 text-[10px] text-vx-fg-muted">TRACKS</div>
@@ -41,8 +57,8 @@ export function TrackTimeline({ height=420,onMediaDrop,tl, frame, selected, sele
                     {onRemove && <button type="button" className={button} aria-label={`Remove empty ${t.name} track`} disabled={disabled || t.locked || tl[t.kind].some(c => c.trackId === t.id) || tl.tracks.filter(lane => lane.kind === t.kind).length === 1} onClick={() => onRemove(t.id)}>Remove</button>}
                 </div>
             </div>)}
-        </div><div className="min-w-0 flex-1 overflow-x-auto"><div className="relative" style={{ width }}>
-            <div className="relative h-7 cursor-crosshair text-[10px] text-vx-fg-muted" onClick={e => onSeek(at(e))}>
+        </div><div ref={scroll} className="min-w-0 flex-1 overflow-x-auto" onWheel={e=>{if(onZoom&&(e.ctrlKey||e.metaKey)){e.preventDefault();onZoom(e.deltaY<0?1:-1);}}}><div className="relative" style={{ width }}>
+            <div className="relative h-7 cursor-ew-resize touch-none select-none text-[10px] text-vx-fg-muted" aria-label="Timeline ruler" role="slider" aria-valuemin={0} aria-valuemax={Math.max(0,total-1)} aria-valuenow={Math.min(frame,Math.max(0,total-1))} tabIndex={0} {...scrub} onKeyDown={e=>{if(['ArrowLeft','ArrowRight'].includes(e.key)){e.preventDefault();onSeek(Math.max(0,Math.min(total-1,frame+(e.key==='ArrowLeft'?-1:1))));}}}>
                 {Array.from({ length: Math.ceil(width / (30 * ppf)) }, (_, i) => <span key={i} className="absolute border-l border-vx-border pl-1" style={{ left: i * 30 * ppf }}>{i % (ppf < 1 ? 5 : 1) === 0 ? `${i}s` : ''}</span>)}
             </div>
             {tl.tracks.map(t => <div key={t.id} role="group" aria-label={`${t.name} timeline`} className="relative h-20 border-t border-vx-border bg-vx-base" onClick={e => onSeek(at(e))}

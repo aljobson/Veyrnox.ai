@@ -261,3 +261,36 @@ model is qualified or activated. TikTok Ads still requires advertiser-account
 authorization, and broad long-edit, mobile, low-resource, real-footage and
 provider-output qualification remains separate. Native social publishing,
 project-media upload and paid Cinema flags remain off.
+
+## Professional transport and timeline interaction — 13 October 2026
+
+The editor now has a centred five-control transport for start, previous frame,
+play/pause, next frame and end; an editable `HH:MM:SS:FF` timecode; visible
+duration; fit-to-window and shortcut-guide actions; precise timeline zoom
+buttons; ruler drag scrubbing; keyboard ruler movement; playhead auto-follow;
+and command-wheel zoom. The command bar remains a single scrollable row, and
+the tool rail becomes a compact horizontal strip on narrow viewports while
+retaining the dense vertical CapCut-style workspace on desktop.
+
+Keyboard coverage now includes Space/L play, K pause, J back one second,
+frame/second stepping, Home/End, Split with S or Cmd/Ctrl+B, Escape to clear
+selection, Shift+Z to fit, plus/minus zoom and `?` for the discoverable shortcut
+guide. Timecode, fit and zoom calculations have bounded pure helpers with unit
+coverage.
+
+Reticle used an actual four-second video fixture and produced positive verdicts
+for one-frame stepping (`00:00:00:00` to `00:00:00:01`), typed timecode seeking
+to frame 75, zoom increments, fit-to-window and the shortcut dialog's playback,
+editing and timeline sections. The first typed-timecode check failed because
+synthetic Enter did not submit the form; an explicit Enter handler fixed the
+same flow, and the unchanged frame-75 assertion then passed. The initial fit
+assertion also expected the wrong viewport-specific zoom value; the measured
+3.75-to-3.50 fit consequence subsequently passed. These failures remain in the
+Reticle run history rather than being relabelled.
+
+Pixel captures at 720×900 and 1440×1000 confirmed the responsive rail and
+desktop workspace composition. The exact final source passed the production
+build and complete repository lint with no errors. The full Node suite passed
+3,336 tests except for one sandbox-denied localhost listener; that exact
+six-test file passed outside the sandbox. Existing repository lint warnings
+remain unchanged.
