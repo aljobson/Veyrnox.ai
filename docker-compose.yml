@@ -30,5 +30,51 @@ services:
       timeout: 2s
       retries: 30
 
+  clamav:
+    image: clamav/clamav:1.4
+    # The official 1.4 image is amd64-only. Docker Desktop uses Rosetta/QEMU
+    # for this local profile on Apple Silicon; production also runs amd64.
+    platform: linux/amd64
+    profiles: ["cinema-scanner"]
+    volumes:
+      - clamav_db:/var/lib/clamav
+      - cinema_quarantine:/quarantine:ro
+      - ./services/cinema-scanner/clamd.conf:/etc/clamav/clamd.conf:ro
+    healthcheck:
+      test: ["CMD", "clamdcheck.sh"]
+      start_period: 6m
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  cinema-scanner:
+    build:
+      context: .
+      dockerfile: services/cinema-scanner/Dockerfile
+    profiles: ["cinema-scanner"]
+    env_file:
+      - path: .env.local
+        required: false
+    environment:
+      CINEMA_QUARANTINE_SCANNER_ENABLED: "true"
+      CLAMD_HOST: clamav
+      CLAMD_PORT: "3310"
+    volumes:
+      - cinema_quarantine:/quarantine
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=64m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 64
+    depends_on:
+      clamav:
+        condition: service_healthy
+    restart: unless-stopped
+
 volumes:
   veyrnox_pg_data:
+  clamav_db:
+  cinema_quarantine:
