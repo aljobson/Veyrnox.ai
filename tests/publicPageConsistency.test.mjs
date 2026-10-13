@@ -31,7 +31,8 @@ test('there is one public nav, in one order', () => {
     const nav = read('app/veyrnox/_components/NavBar.js');
     const marketing = nav.slice(nav.indexOf('export function MarketingNav'), nav.indexOf('export function AppNav'));
     assert.match(marketing, /NAV_CATEGORIES\.map\(/, 'the links on the bar');
-    assert.match(marketing, /<MobileMenu items=\{NAV_CATEGORIES\} className="xl:hidden" \/>/, 'the phone menu has exactly the desktop links');
+    assert.match(marketing, /<MobileMenu items=\{MOBILE_NAV_CATEGORIES\} className="xl:hidden" \/>/, 'the phone menu uses the mobile-first order');
+    assert.match(nav, /const MOBILE_NAV_CATEGORIES = \[\s*\.\.\.NAV_CATEGORIES\.filter\(\(item\) => item\.href === '\/social-cinema'\),[\s\S]*\.\.\.NAV_CATEGORIES\.filter\(\(item\) => item\.href === '\/#faq'\),\s*\];/, 'the phone menu leads with Social Cinema and ends with FAQ');
     assert.doesNotMatch(marketing, /includeStudio/, 'the phone menu must not put app links ahead of the public nav');
     // Eight links, search and the account buttons need about 1,200px: the row shows from xl.
     assert.match(marketing, /<nav aria-label="Primary" className="hidden xl:flex /);
