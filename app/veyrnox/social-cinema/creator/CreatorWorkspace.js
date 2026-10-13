@@ -6,14 +6,15 @@ import { VideoUpload } from './VideoUpload';
 import { CreatorAnalytics } from './CreatorAnalytics';
 import { Button } from '../../_components/Button';
 import { AI_DISCLOSURES, CINEMA_CATEGORIES, MAX_CATEGORIES } from '../../../../lib/cinema/domain';
+import { CINEMA_POLICY_VERSION, CINEMA_RATINGS, CINEMA_WARNING_CODES } from '../../../../lib/cinema/safetyPolicy';
 import { useCinemaPreview } from '../preview';
 const identity = () => getSession()?.user?.id || '';
 const noIdentity = () => '';
 const labels = { FILM: 'Film', SHORT: 'Short', TRAILER: 'Trailer', SERIES: 'Series', SEASON: 'Season', EPISODE: 'Episode' };
 const stateLabels = { DRAFT: 'Private draft', UNDER_REVIEW: 'Under review', PUBLISHED: 'Published', SUSPENDED: 'Suspended' };
 // The Rights Declaration wording RIGHTS_VERSION stands for; a change needs a new version on both sides.
-const RIGHTS_VERSION = 'rights-2026-09-26';
-const RIGHTS_TEXT = 'I own or hold the rights to everything in this title, including any real people, voices, music and footage, and I have declared its AI use truthfully. I understand it will be reviewed before it is published, that viewers may pay to watch it, and that a withdrawal or suspension refunds their credits.';
+const RIGHTS_VERSION = 'rights-2026-10-13';
+const RIGHTS_TEXT = 'I own or hold the rights to everything in this title, including any real people, voices, music and footage, and I have declared its AI use truthfully.';
 const disclosureLabels = { generated_video: 'Generated video', generated_voice: 'Generated voice', generated_music: 'Generated music', synthetic_people: 'Synthetic people', face_replacement: 'Face replacement', cloned_voice: 'Cloned voice', generated_script: 'Generated script', manipulated_real_world_footage: 'Manipulated real-world footage' };
 const input = 'mt-2 w-full rounded-xl border border-vx-border bg-vx-panel px-4 py-3 text-vx-fg focus:outline-solid focus:outline-2 focus:outline-vx-accent';
 export function CreatorWorkspace({proxyUploadsEnabled=false, analyticsEnabled=false}) {
@@ -103,21 +104,35 @@ function message(code) {
   return ({ publishing_not_open: 'Publishing is not open yet.', category_required: 'Pick at least one category for this title before submitting it.', invalid_category: 'Choose up to two categories from the list.', not_withdrawable: 'This title cannot be withdrawn in its current state.', already_submitted: 'This title is already under review.', already_published: 'This title is already published.', suspended: 'This title was suspended by an administrator and cannot be resubmitted.', content_not_open: 'Draft creation is not open yet. Please check back soon.', creator_required: 'An approved Cinema creator account is required. Apply from your Social Cinema profile.', account_not_active: 'Your Cinema account cannot manage drafts right now. Contact support.', revision_conflict: 'This draft changed in another session. Copy any edits you want to keep, then reload the latest version.', position_taken: 'That number is already in use. Choose another.', draft_limit_reached: 'You have reached the preview draft limit. Contact support.', invalid_draft: 'Check the title, language and other fields, then try again.', rate_limited: 'Too many requests. Wait a minute and try again.', content_not_found: 'That draft is no longer available to your account.', idempotency_conflict: 'This save attempt changed. Reload your drafts before trying again.' })[code] || 'We could not load or save your drafts. Please try again.';
 }
 function SubmitForReview({ item, onClose, onDone }) {
-  const [busy, setBusy] = useState(false), [error, setError] = useState(''), [agreed, setAgreed] = useState(false);
+  const [busy, setBusy] = useState(false), [error, setError] = useState('');
   const attempt = useRef(null);
   async function submit(event) {
     event.preventDefault();
-    const body = JSON.stringify({ content_id: item.id, rights_version: RIGHTS_VERSION });
+    const form = new FormData(event.currentTarget);
+    const body = JSON.stringify({ content_id: item.id, rights_version: RIGHTS_VERSION, policy_version: CINEMA_POLICY_VERSION,
+      audience_rating: form.get('audience_rating'), content_warnings: form.getAll('content_warnings'),
+      safety_confirmed: form.get('safety_confirmed') === 'yes', malware_confirmed: form.get('malware_confirmed') === 'yes' });
     if (attempt.current?.body !== body) attempt.current = { body, key: crypto.randomUUID() };
     setBusy(true); setError('');
     try { await gatewayFetch('/cinema/content/submit', { method: 'POST', body, headers: { 'idempotency-key': attempt.current.key } }); onDone(); }
-    catch (e) { setError(e.code === 'video_not_ready' ? 'Every episode (or the film itself) needs a finished video upload before review.' : e.code === 'no_episodes' ? 'Add at least one episode to a season before submitting a series.' : e.code === 'rights_version_required' ? 'The rights wording changed. Reload and read it again.' : message(e.code)); setBusy(false); }
+    catch (e) { setError(e.code === 'video_not_ready' ? 'Every episode (or the film itself) needs a finished video upload before review.' : e.code === 'no_episodes' ? 'Add at least one episode to a season before submitting a series.' : ['rights_version_required', 'policy_version_required'].includes(e.code) ? 'The declaration changed. Reload and read it again.' : message(e.code)); setBusy(false); }
   }
   return <form onSubmit={submit} className="mt-6 max-w-2xl space-y-5">
     <h3 className="text-xl font-bold">Submit “{item.title}” for review</h3>
-    <p className="text-sm text-vx-fg-body">A Cinema administrator reviews the whole {labels[item.content_type].toLowerCase()}. On approval it is published and viewers can watch, unlock or use a Cinema Pass. While it is under review you cannot edit it.</p>
-    <label className="flex items-start gap-3 text-sm text-vx-fg-body"><input type="checkbox" className="mt-1 accent-vx-accent" checked={agreed} onChange={e => setAgreed(e.target.checked)} required /><span>{RIGHTS_TEXT}</span></label>
+    <p className="text-sm text-vx-fg-body">Automated content, child-safety and malware checks run first. A Cinema administrator reviews the results and the whole {labels[item.content_type].toLowerCase()} before publication. While it is under review you cannot edit it.</p>
+    <label className="block text-sm font-semibold" htmlFor="cinema-audience-rating">Audience rating
+      <select id="cinema-audience-rating" name="audience_rating" required defaultValue="" className={input}>
+        <option value="" disabled>Choose a rating…</option>{CINEMA_RATINGS.map(([code, label]) => <option key={code} value={code}>{label}</option>)}
+      </select>
+    </label>
+    <p className="text-xs text-vx-fg-muted">Veyrnox guidance only; these are not official BBFC classifications. 18+ permits strong themes, but never pornography, explicit sexual content or nudity.</p>
+    <fieldset><legend className="font-semibold">Content warnings</legend><p className="mt-2 text-sm text-vx-fg-muted">Select every warning that applies. Leave blank only when none apply.</p><div className="mt-3 grid gap-3 sm:grid-cols-2">{CINEMA_WARNING_CODES.map(([code, label]) => <label key={code} className="flex items-start gap-3 text-sm"><input type="checkbox" name="content_warnings" value={code} className="mt-1 accent-vx-accent" />{label}</label>)}</div></fieldset>
+    <div className="space-y-3 rounded-xl border border-vx-border p-4">
+      <label className="flex items-start gap-3 text-sm text-vx-fg-body"><input type="checkbox" name="rights_confirmed" value="yes" className="mt-1 accent-vx-accent" required /><span>{RIGHTS_TEXT}</span></label>
+      <label className="flex items-start gap-3 text-sm text-vx-fg-body"><input type="checkbox" name="safety_confirmed" value="yes" className="mt-1 accent-vx-accent" required /><span>This title contains no nudity, pornography, explicit sexual content, sexualised minors, non-consensual intimate imagery, sexual violence, or sexual deepfake of a real person. I have read the <a href="/legal/cinema-content" target="_blank" rel="noreferrer" className="font-semibold underline">Cinema Content Policy</a>.</span></label>
+      <label className="flex items-start gap-3 text-sm text-vx-fg-body"><input type="checkbox" name="malware_confirmed" value="yes" className="mt-1 accent-vx-accent" required /><span>I have not intentionally included malware, executable code, disguised files or links intended to compromise viewers or Veyrnox.</span></label>
+    </div>
     {error && <p role="alert">{error}</p>}
-    <div className="flex flex-wrap gap-3"><Button type="submit" disabled={busy || !agreed}>{busy ? 'Submitting…' : 'Submit for review'}</Button><Button type="button" variant="ghost" disabled={busy} onClick={onClose}>Cancel</Button></div>
+    <div className="flex flex-wrap gap-3"><Button type="submit" disabled={busy}>{busy ? 'Submitting…' : 'Submit for review'}</Button><Button type="button" variant="ghost" disabled={busy} onClick={onClose}>Cancel</Button></div>
   </form>;
 }

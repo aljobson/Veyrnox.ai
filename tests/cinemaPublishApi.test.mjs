@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { publishHandler, RIGHTS_VERSION } from '../lib/cinema/publishApi.js';
+import { publishHandler, RIGHTS_VERSION, CINEMA_POLICY_VERSION } from '../lib/cinema/publishApi.js';
 
 const id = '11111111-1111-4111-8111-111111111111';
 const other = '22222222-2222-4222-8222-222222222222';
@@ -9,6 +9,8 @@ Object.assign(process.env, { CINEMA_ENABLED: 'true', SOCIAL_CINEMA_PROFILES_ENAB
 const adminHeaders = { 'x-veyrnox-auth-aal': 'aal2', 'x-veyrnox-auth-mfa-at': String(Math.floor(NOW / 1000) - 10), 'cf-access-jwt-assertion': 'token' };
 const post = (path, body, headers = {}) => new Request(`https://test.invalid/api/v1/${path}`, { method: 'POST', headers: { 'x-veyrnox-auth-id': id, 'idempotency-key': id, 'content-type': 'application/json', ...headers }, body: JSON.stringify(body) });
 const get = (path, headers = {}) => new Request(`https://test.invalid/api/v1/${path}`, { headers: { 'x-veyrnox-auth-id': id, ...headers } });
+const submission = (patch = {}) => ({ content_id: id, rights_version: RIGHTS_VERSION, policy_version: CINEMA_POLICY_VERSION,
+  audience_rating: '15', content_warnings: ['violence'], safety_confirmed: true, malware_confirmed: true, ...patch });
 
 function setup(action, result, { rate = { ok: true }, access = async () => ({}) } = {}) {
   const calls = [];
@@ -18,25 +20,30 @@ function setup(action, result, { rate = { ok: true }, access = async () => ({}) 
 
 test('a submission needs identity, the publishing switch, a UUID key and the rights wording in force', async () => {
   const s = setup('submit', { id: other, content_id: id, status: 'pending', idempotent: false });
-  assert.equal((await s.handle(post('cinema/content/submit', { content_id: id, rights_version: RIGHTS_VERSION }, { 'x-veyrnox-auth-id': '' }))).status, 401);
-  for (const flag of ['CINEMA_ENABLED', 'CREATOR_CONTENT_ENABLED', 'CINEMA_PUBLISHING_ENABLED']) { process.env[flag] = 'false'; assert.equal((await s.handle(post('cinema/content/submit', { content_id: id, rights_version: RIGHTS_VERSION }))).status, 503); process.env[flag] = 'true'; }
-  assert.equal((await s.handle(post('cinema/content/submit', { content_id: id, rights_version: RIGHTS_VERSION }, { 'idempotency-key': 'nope' }))).status, 400);
-  const stale = await s.handle(post('cinema/content/submit', { content_id: id, rights_version: 'rights-2020-01-01' }));
+  assert.equal((await s.handle(post('cinema/content/submit', submission(), { 'x-veyrnox-auth-id': '' }))).status, 401);
+  for (const flag of ['CINEMA_ENABLED', 'CREATOR_CONTENT_ENABLED', 'CINEMA_PUBLISHING_ENABLED']) { process.env[flag] = 'false'; assert.equal((await s.handle(post('cinema/content/submit', submission()))).status, 503); process.env[flag] = 'true'; }
+  assert.equal((await s.handle(post('cinema/content/submit', submission(), { 'idempotency-key': 'nope' }))).status, 400);
+  const stale = await s.handle(post('cinema/content/submit', submission({ rights_version: 'rights-2020-01-01' })));
   assert.equal(stale.status, 400);
   assert.equal((await stale.json()).rights_version, RIGHTS_VERSION);
-  for (const body of [{ content_id: 'x', rights_version: RIGHTS_VERSION }, { content_id: id, rights_version: RIGHTS_VERSION, extra: 1 }, [1]]) assert.equal((await s.handle(post('cinema/content/submit', body))).status, 400);
+  const oldPolicy = await s.handle(post('cinema/content/submit', submission({ policy_version: 'cinema-safety-old' })));
+  assert.equal(oldPolicy.status, 400);
+  assert.equal((await oldPolicy.json()).policy_version, CINEMA_POLICY_VERSION);
+  for (const body of [submission({ content_id: 'x' }), submission({ audience_rating: 'R' }), submission({ content_warnings: ['unknown'] }), submission({ safety_confirmed: false }), submission({ malware_confirmed: false }), { ...submission(), extra: 1 }, [1]]) assert.equal((await s.handle(post('cinema/content/submit', body))).status, 400);
   assert.equal(s.calls.length, 0);
-  const res = await s.handle(post('cinema/content/submit', { content_id: id, rights_version: RIGHTS_VERSION }));
+  const res = await s.handle(post('cinema/content/submit', submission()));
   assert.equal(res.status, 201);
-  assert.deepEqual(s.calls[1].args, { p_auth_id: id, p_idempotency_key: id, p_content_id: id, p_rights_version: RIGHTS_VERSION });
+  assert.equal(s.calls[1].name, 'submit_cinema_title_safe');
+  assert.deepEqual(s.calls[1].args, { p_auth_id: id, p_idempotency_key: id, p_content_id: id, p_rights_version: RIGHTS_VERSION,
+    p_policy_version: CINEMA_POLICY_VERSION, p_audience_rating: '15', p_content_warnings: ['violence'], p_safety_confirmed: true, p_malware_confirmed: true });
   for (const [error, status] of [['video_not_ready', 422], ['no_episodes', 422], ['already_submitted', 409], ['already_published', 409], ['suspended', 409], ['creator_required', 403], ['content_not_found', 404], ['idempotency_conflict', 409], ['private_detail', 503]]) {
-    const r = await setup('submit', { error, missing: 2 }).handle(post('cinema/content/submit', { content_id: id, rights_version: RIGHTS_VERSION }));
+    const r = await setup('submit', { error, missing: 2 }).handle(post('cinema/content/submit', submission()));
     assert.equal(r.status, status, error);
     const data = await r.json();
     assert.equal(data.error, error === 'private_detail' ? 'temporarily_unavailable' : error);
     if (error === 'video_not_ready') assert.equal(data.missing, 2);
   }
-  const replay = await setup('submit', { id: other, content_id: id, status: 'pending', idempotent: true }).handle(post('cinema/content/submit', { content_id: id, rights_version: RIGHTS_VERSION }));
+  const replay = await setup('submit', { id: other, content_id: id, status: 'pending', idempotent: true }).handle(post('cinema/content/submit', submission()));
   assert.equal(replay.status, 200);
 });
 
@@ -74,7 +81,8 @@ test('the queue, review and suspend need a fresh second factor and an Access ass
   const args = review.calls.at(-1).args;
   assert.deepEqual([args.p_submission_id, args.p_decision, args.p_reason, args.p_creator_note, args.p_aal], [other, 'rejected', 'Audio missing', 'Please add audio to episode 3.', 'aal2']);
   assert.match(args.p_request_id, /^[0-9a-f-]{36}$/);
-  for (const [error, status] of [['self_review_forbidden', 403], ['already_reviewed', 409], ['submission_not_found', 404], ['not_authorized', 403]]) {
+  assert.equal(review.calls.at(-1).name, 'review_cinema_submission_safe');
+  for (const [error, status] of [['self_review_forbidden', 403], ['already_reviewed', 409], ['safety_checks_pending', 409], ['safety_checks_failed', 409], ['submission_not_found', 404], ['not_authorized', 403]]) {
     assert.equal((await setup('review', { error }).handle(post('admin/cinema/submissions', { submission_id: other, decision: 'approved', reason: 'Looks fine' }, adminHeaders))).status, status, error);
   }
   const suspend = setup('suspend', { content_id: id, status: 'SUSPENDED', unlocks_reversed: 1, credits_returned: 6, idempotent: false });
@@ -88,7 +96,7 @@ test('the queue, review and suspend need a fresh second factor and an Access ass
 
 test('upstream failures are redacted', async () => {
   const s = publishHandler({ action: 'submit', rpcCall: async () => { throw new Error('private connection string'); } });
-  const res = await s(post('cinema/content/submit', { content_id: id, rights_version: RIGHTS_VERSION }));
+  const res = await s(post('cinema/content/submit', submission()));
   assert.equal(res.status, 503);
   assert.ok(!(await res.text()).includes('private'));
 });
