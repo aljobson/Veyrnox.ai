@@ -8,6 +8,7 @@ import { getSession, onSessionChange } from '../../../../lib/authClient';
 import { gatewayFetch } from '../../../_lib/gateway';
 import { createWatchCoverage } from '../../../../../lib/cinema/watchCoverage';
 import { createPlaybackMeter } from '../../../../../lib/cinema/playbackMeter';
+import { editorialEpisodeContext } from '../../editorialSeries';
 
 const identity = () => getSession()?.user?.id || '';
 const noIdentity = () => '';
@@ -24,7 +25,7 @@ const RENEW_BEFORE_MS = 3 * 60 * 1000;
  * media events rather than the time the watch page is open. The server records
  * those for Cinema Pass viewing and, with the monthly ceiling on, free titles.
  */
-export function Player({ id, titleId = null }) {
+export function Player({ id, titleId = null, seriesSlug = null }) {
   const account = useSyncExternalStore(onSessionChange, identity, noIdentity);
   const [state, setState] = useState('loading');
   const [src, setSrc] = useState('');
@@ -149,16 +150,22 @@ export function Player({ id, titleId = null }) {
     };
   }, [id, account, src, state, sdkReady]);
 
-  const back = <p className="mt-6 text-sm">{UUID.test(titleId || '') && <><Link href={`/social-cinema/title/${titleId}`} className="underline">Back to the title</Link> · </>}<Link href="/social-cinema" className="underline">Social Cinema</Link></p>;
+  const episodeContext = editorialEpisodeContext(seriesSlug, id);
+  const series = episodeContext?.series || null;
+  const episode = episodeContext?.episode || null;
+  const nextEpisode = episodeContext?.nextEpisode || null;
+  const back = <p className="mt-6 text-sm">{series ? <><Link href={`/social-cinema/series/${series.slug}`} className="underline">Back to {series.title}</Link> · </> : UUID.test(titleId || '') && <><Link href={`/social-cinema/title/${titleId}`} className="underline">Back to the title</Link> · </>}<Link href="/social-cinema" className="underline">Social Cinema</Link></p>;
   const copy = { locked: 'This episode is locked. Unlock it from the title page or get a Cinema Pass.', not_ready: 'This video is still being prepared. Try again in a few minutes.', missing: 'This title is not available.', closed: 'Social Cinema viewing is not open yet.', pass_ceiling: 'Your Cinema Pass has reached its viewing limit for this month. You can still unlock episodes with credits.', free_ceiling: 'You have reached the free viewing limit for this month. Free viewing starts again next month.', error: 'Playback is unavailable right now. Try again in a moment.' };
 
   return <>{scriptNonce && account && <Script src="https://embed.cloudflarestream.com/embed/sdk.latest.js" nonce={scriptNonce || undefined} onReady={() => setSdkReady(typeof window.Stream === 'function')} onError={() => setState('error')} />}
   <div className="mx-auto max-w-[1300px] px-4 py-8 pb-40 sm:px-6 sm:pb-32"><div className="max-w-[952px]">
+    {episode && <header className="mb-6"><p className="font-vx-mono text-xs tracking-widest text-vx-accent uppercase">{series.title} · S{series.season} E{episode.position}</p><h1 className="mt-2 text-2xl font-extrabold wrap-break-word">{episode.title}</h1></header>}
     {state === 'playing' ? <div className="aspect-[9/16] w-full max-w-[420px] overflow-hidden rounded-2xl border border-vx-border bg-black mx-auto sm:aspect-video sm:max-w-none">
       <iframe ref={frame} title="Now playing" src={src} allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture" allowFullScreen className="h-full w-full" />
     </div> : state === 'loading' ? <p role="status" className="text-vx-fg-muted">Preparing playback…</p>
       : state === 'signin' ? <div><p className="mb-4 text-vx-fg-body">Sign in to watch.</p><Button onClick={() => window.dispatchEvent(new CustomEvent('veyrnox:auth-required'))}>Sign in</Button></div>
         : <p role="status">{copy[state === 'blocked' ? reason : state] || copy.error}</p>}
+    {nextEpisode && <Link href={`/social-cinema/watch/${nextEpisode.id}?series=${series.slug}`} className="mt-6 inline-flex rounded-full bg-vx-accent px-5 py-3 text-sm font-bold text-vx-accent-ink">Next episode: {nextEpisode.title} →</Link>}
     {back}
   </div></div></>;
 }
