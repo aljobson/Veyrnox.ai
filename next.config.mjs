@@ -46,6 +46,12 @@ const nextConfig = {
         headers: securityHeaders,
       },
       {
+        // Voiceover recording is available only inside the editor. Keep the
+        // default site-wide microphone denial and override it for this route.
+        source: '/app/editor/:path*',
+        headers: [{ key: 'Permissions-Policy', value: 'camera=(), microphone=(self), geolocation=()' }],
+      },
+      {
         // Do not append a second CSP to middleware's nonce policy.
         source: '/api/:path*',
         headers: [{ key: 'Content-Security-Policy', value: CSP }],

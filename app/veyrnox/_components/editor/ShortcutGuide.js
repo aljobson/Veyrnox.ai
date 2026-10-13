@@ -5,7 +5,7 @@ import { Modal } from '../Modal';
 const sections = [
     ['Playback', [['Space or L','Play or pause'],['K','Pause'],['J','Back one second'],['← / →','Previous or next frame'],['Shift + ← / →','Back or forward one second'],['Home / End','Go to the start or end']]],
     ['Editing', [['⌘/Ctrl + Z','Undo'],['⌘/Ctrl + Shift + Z','Redo'],['⌘/Ctrl + B or S','Split at the playhead'],['⌘/Ctrl + D','Duplicate selection'],['⌘/Ctrl + C / V','Copy or paste'],['Delete','Delete selection'],['Escape','Clear selection']]],
-    ['Timeline', [['Shift + Z','Fit the timeline'],['+ / −','Zoom the timeline'],['⌘/Ctrl + mouse wheel','Zoom at the timeline'],['?','Open this shortcut guide']]],
+    ['Timeline', [['M','Add marker at playhead'],['Shift + Z','Fit the timeline'],['+ / −','Zoom the timeline'],['⌘/Ctrl + mouse wheel','Zoom at the timeline'],['?','Open this shortcut guide']]],
 ];
 export function ShortcutGuide({onClose}) {
     const close=useRef(null);

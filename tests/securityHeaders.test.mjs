@@ -14,14 +14,15 @@ const MIN_HSTS_AGE = 63072000;
 
 async function headerMap() {
     const groups = await nextConfig.headers();
-    assert.equal(groups.length, 4, 'global hardening, API CSP and the two exact inference Workers are separate');
-    assert.equal(groups[1].source, '/api/:path*');
+    assert.equal(groups.length, 5, 'global hardening, editor microphone policy, API CSP and the two exact inference Workers are separate');
     assert.equal(groups[0].source, '/:path*');
-    assert.equal(groups[2].source,LOCAL_SPEECH_WORKER_URL);
-    assert.deepEqual(groups[2].headers,[{key:'Content-Security-Policy',value:localSpeechWorkerPolicy('https://veyrnox.ai')}]);
-    assert.equal(groups[3].source,`${EDITOR_VISION_PATH}/worker.mjs`);
-    assert.deepEqual(groups[3].headers,[{key:'Content-Security-Policy',value:editorVisionWorkerPolicy('https://veyrnox.ai')}]);
-    return new Map(groups.slice(0,2).flatMap(group => group.headers).map((h) => [h.key.toLowerCase(), h.value]));
+    assert.equal(groups[1].source, '/app/editor/:path*');
+    assert.equal(groups[2].source, '/api/:path*');
+    assert.equal(groups[3].source,LOCAL_SPEECH_WORKER_URL);
+    assert.deepEqual(groups[3].headers,[{key:'Content-Security-Policy',value:localSpeechWorkerPolicy('https://veyrnox.ai')}]);
+    assert.equal(groups[4].source,`${EDITOR_VISION_PATH}/worker.mjs`);
+    assert.deepEqual(groups[4].headers,[{key:'Content-Security-Policy',value:editorVisionWorkerPolicy('https://veyrnox.ai')}]);
+    return new Map([groups[0], groups[2]].flatMap(group => group.headers).map((h) => [h.key.toLowerCase(), h.value]));
 }
 
 function directives(csp) {
@@ -99,6 +100,16 @@ test('the remaining hardening headers are all present', async () => {
     assert.equal(h.get('x-content-type-options'), 'nosniff');
     assert.equal(h.get('referrer-policy'), 'strict-origin-when-cross-origin');
     assert.match(h.get('permissions-policy') ?? '', /camera=\(\)/);
+});
+
+test('microphone access remains denied globally and is allowed only for editor voiceover', async () => {
+    const groups = await nextConfig.headers();
+    const globalPolicy = groups.find((group) => group.source === '/:path*')?.headers
+        .find((header) => header.key === 'Permissions-Policy')?.value;
+    const editorPolicy = groups.find((group) => group.source === '/app/editor/:path*')?.headers
+        .find((header) => header.key === 'Permissions-Policy')?.value;
+    assert.equal(globalPolicy, 'camera=(), microphone=(), geolocation=()');
+    assert.equal(editorPolicy, 'camera=(), microphone=(self), geolocation=()');
 });
 
 test('the anon key in env is a publishable key, not a service-role key', async () => {
