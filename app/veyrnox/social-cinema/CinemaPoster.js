@@ -5,11 +5,19 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { cinemaPosterFor } from './cinemaPosters';
 
-export function CinemaPoster({ id, title, href, eager = false, sizes = '(min-width: 1024px) 30vw, (min-width: 640px) 50vw, 100vw', className = '' }) {
+const externalPoster = (value) => {
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' && url.hostname === 'i.ytimg.com' ? url.toString() : '';
+  } catch { return ''; }
+};
+
+export function CinemaPoster({ id, title, href, src: requestedSrc = '', eager = false, sizes = '(min-width: 1024px) 30vw, (min-width: 640px) 50vw, 100vw', className = '' }) {
   const [failed, setFailed] = useState('');
+  const external = externalPoster(requestedSrc);
   const curated = cinemaPosterFor(id);
   const automatic = `/api/cinema/posters/${encodeURIComponent(id)}`;
-  const src = curated && failed !== curated ? curated : automatic;
+  const src = external && failed !== external ? external : curated && failed !== curated ? curated : automatic;
   if (failed === automatic) return null;
 
   const image = <Image
@@ -20,7 +28,7 @@ export function CinemaPoster({ id, title, href, eager = false, sizes = '(min-wid
     loading={eager ? 'eager' : 'lazy'}
     alt={`${title} poster frame`}
     className="h-full w-full object-cover"
-    unoptimized={src === automatic}
+    unoptimized={src === automatic || src === external}
     onError={() => setFailed(src)}
   />;
 

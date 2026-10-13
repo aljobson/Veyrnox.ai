@@ -21,6 +21,9 @@ const securityHeaders = [
 ];
 
 const nextConfig = {
+  images: {
+    remotePatterns: [{ protocol: 'https', hostname: 'i.ytimg.com', pathname: '/vi/**' }],
+  },
   env: {
     NEXT_PUBLIC_SUPABASE_URL: identityConfig.supabaseUrl,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: identityConfig.publishableKey,

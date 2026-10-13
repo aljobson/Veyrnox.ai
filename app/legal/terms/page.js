@@ -9,7 +9,7 @@ export const metadata = {
 
 export default function Terms() {
     return (
-        <LegalPage title="Terms of Service" updated="24 September 2026">
+        <LegalPage title="Terms of Service" updated="13 October 2026">
             <p>These terms govern your use of Veyrnox.ai, operated by {ENTITY.name}, a company registered in {ENTITY.jurisdiction} (company no. {ENTITY.companyNo}), registered office {ENTITY.office}. By creating an account or generating content you agree to them.</p>
 
             <h2>1. The service</h2>
@@ -49,16 +49,19 @@ export default function Terms() {
             <h2>6. Availability</h2>
             <p>The service depends on third-party model providers and may be interrupted. We do not promise uninterrupted access. Failed generations are refunded; nothing more is owed for downtime.</p>
 
-            <h2>7. Liability</h2>
+            <h2>7. Embedded video</h2>
+            <p>Some free Social Cinema series play through the official YouTube embedded player. YouTube remains the source of those videos, and your use of that player is also governed by the <a href="https://www.youtube.com/t/terms">YouTube Terms of Service</a>. We may remove an embedded title if its creator disables embedding or removes the source video.</p>
+
+            <h2>8. Liability</h2>
             <p>Nothing in these terms limits liability that cannot be limited by law. Otherwise, our total liability to you in any 12-month period is limited to the amount you paid us in that period. We are not liable for indirect or consequential loss.</p>
 
-            <h2>8. Consumers</h2>
+            <h2>9. Consumers</h2>
             <p>If you are a consumer in the UK or EU, your statutory rights are not affected by these terms.</p>
 
-            <h2>9. Changes and termination</h2>
+            <h2>10. Changes and termination</h2>
             <p>We may update these terms; material changes will be announced on the site at least 14 days before they take effect. You may close your account at any time. We may terminate for breach with notice where practicable.</p>
 
-            <h2>10. Law</h2>
+            <h2>11. Law</h2>
             <p>These terms are governed by the laws of England and Wales. Consumers may also rely on mandatory protections of their home country.</p>
 
             <h2>Contact</h2>
