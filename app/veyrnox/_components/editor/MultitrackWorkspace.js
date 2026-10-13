@@ -8,6 +8,7 @@ import { restoreOriginalAudio } from '../../_lib/editorOriginalAudio.mjs';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { selectionMembers, linkedSelection, copySelection, pasteSelection, groupSelection, deleteSelection, moveSelection, reorderSequenceTrack } from '../../_lib/editorSelection.mjs';
 import { Button } from '../Button';
+import { Logo } from '../Logo';
 import { ProjectBar } from './ProjectBar';
 import { ProjectFileControls } from './ProjectFileControls';
 import { GenerationPanel } from './GenerationPanel';
@@ -206,7 +207,12 @@ export function MultitrackWorkspace() {
     return <div role="region" aria-label="Multitrack editing workspace" style={EDITOR_PALETTE} className={`${fitScreen?"outline-none lg:fixed lg:inset-0 lg:z-[60] lg:flex lg:flex-col lg:overflow-hidden":"space-y-3 rounded-2xl"} bg-vx-base text-vx-fg`} tabIndex={0} onKeyDown={keys}>
         {shortcuts&&<ShortcutGuide onClose={()=>setShortcuts(false)} />}
         <header aria-label="Editor header" className="flex min-h-12 shrink-0 items-center gap-3 overflow-x-auto border-b border-vx-border bg-vx-panel px-3 py-1.5">
-            <div className="flex shrink-0 items-center gap-2 border-r border-vx-border pr-3"><span aria-hidden="true" className="grid size-7 place-items-center rounded-lg bg-vx-accent font-black text-vx-accent-ink">V</span><span className="hidden text-xs font-black uppercase tracking-[0.14em] sm:inline">Veyrnox Cut</span></div>
+            <div className="flex shrink-0 items-center gap-2.5 border-r border-vx-border pr-3" aria-label="Veyrnox.ai Cut">
+                <Logo size={28} className="sm:hidden" />
+                <Logo size={28} wordmark className="hidden sm:inline-flex" />
+                <span aria-hidden="true" className="h-5 w-px bg-vx-border" />
+                <span className="text-[11px] font-black uppercase tracking-[0.16em] text-vx-fg-body">Cut</span>
+            </div>
             <ProjectBar compact onContext={setProjectContext} tl={tl} blobs={blobs} onLoadTimeline={load} onRelinked={relinked} />
             <div className="ml-auto flex shrink-0 items-center gap-2">
                 <ProjectFileControls compact tl={tl} onLoadTimeline={loadProjectFile} disabled={disabled} openDisabled={!!projectContext?.id} name={projectContext?.id ? 'veyrnox-cloud-project' : 'veyrnox-studio-project'} />
