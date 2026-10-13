@@ -15,7 +15,6 @@ const identity = () => getSession()?.user?.id || '';
 const noIdentity = () => '';
 
 const sections = [
-  ['For You', 'The first stories are still ahead.', 'The vertical episode feed is being built. Published stories will appear here when viewing opens.'],
   ['Series', 'Every episode starts with a story.', 'Creator series and episode publishing are in development. You can already make video in the Studio.'],
   ['Vote', 'Your next favourite deserves a voice.', 'Community voting will open with eligible episodes. There are no live competitions yet.'],
   ['Saved', 'Your next watch is waiting.', 'Your saved titles stay private.'],
@@ -32,15 +31,15 @@ export function SocialCinema() {
     <header className="max-w-2xl">
       <p className="mb-4 font-vx-mono text-xs tracking-widest text-vx-accent">SOCIAL CINEMA{viewingOpen ? '' : ' · IN DEVELOPMENT'}</p>
       <h1 className="vx-display vx-title-detail">Stories worth<br />coming back for.</h1>
-      <p className="mt-6 text-lg leading-relaxed text-vx-fg-body">Short episodes. Ongoing series. An audience with a say in what happens next.</p>
-      <p className="mt-3 text-sm text-vx-fg-muted">{viewingOpen ? 'Discover published stories, ongoing series and audience competitions.' : 'We’re building Social Cinema on Veyrnox.ai. Viewing and participation open after launch review.'}</p>
+      <p className="mt-6 text-lg leading-relaxed text-vx-fg-body">Original episodes. Ongoing series. An audience with a say in what happens next.</p>
+      <p className="mt-3 text-sm text-vx-fg-muted">{viewingOpen ? 'Choose a series and watch every episode in order.' : 'We’re building Social Cinema on Veyrnox.ai. Viewing and participation open after launch review.'}</p>
     </header>
     <nav aria-label="Social Cinema" className="mt-10 flex gap-1 overflow-x-auto border-b border-vx-border pb-3">
       {sections.map(([label], index) => <button key={label} type="button"
         aria-current={section === index ? 'page' : undefined} onClick={() => setSection(index)}
         className={`shrink-0 rounded-full px-5 py-3 text-sm font-bold focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-vx-accent ${section === index ? 'bg-vx-accent text-vx-accent-ink' : 'text-vx-fg-muted hover:bg-vx-panel'}`}>{label}</button>)}
     </nav>
-    {section === 5 ? <CinemaWinners /> : section === 3 ? <CinemaCollection kind="saved" /> : section === 4 ? <Following /> : <CinemaDiscovery mode={['all', 'series', 'voting'][section]} onAvailability={section === 2 ? undefined : setViewingOpen} />}
+    {section === 4 ? <CinemaWinners /> : section === 2 ? <CinemaCollection kind="saved" /> : section === 3 ? <Following /> : <CinemaDiscovery mode={section === 1 ? 'voting' : 'series'} onAvailability={section === 1 ? undefined : setViewingOpen} />}
     {preview && <section className="border-t border-vx-border pt-8" aria-labelledby="profile-title">
       <h2 id="profile-title" className="text-xl font-extrabold">Your Social Cinema profile</h2>
       {account ? <Profile key={account} /> : <div className="mt-4"><p className="mb-4 text-vx-fg-body">Use your Veyrnox.ai account to get started.</p><Button onClick={() => window.dispatchEvent(new CustomEvent('veyrnox:auth-required'))}>Sign in</Button></div>}

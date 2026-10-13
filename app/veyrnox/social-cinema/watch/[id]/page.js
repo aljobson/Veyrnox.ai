@@ -15,5 +15,6 @@ export default async function Page({ params, searchParams }) {
   const { id } = await params;
   const query = await searchParams;
   const titleId = typeof query?.title_id === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(query.title_id) ? query.title_id.toLowerCase() : null;
-  return <><MarketingNav /><Main><Player id={String(id || '').toLowerCase()} titleId={titleId} /><div className="mx-auto max-w-4xl px-4 pb-12"><CinemaVoting contentId={String(id || '').toLowerCase()} /><CinemaStoryPolls contentId={String(id || '').toLowerCase()} /><CinemaComments contentId={String(id || '').toLowerCase()} /></div></Main></>;
+  const seriesSlug = typeof query?.series === 'string' && /^[a-z0-9-]{1,80}$/.test(query.series) ? query.series : null;
+  return <><MarketingNav /><Main><Player id={String(id || '').toLowerCase()} titleId={titleId} seriesSlug={seriesSlug} /><div className="mx-auto max-w-4xl px-4 pb-12"><CinemaVoting contentId={String(id || '').toLowerCase()} /><CinemaStoryPolls contentId={String(id || '').toLowerCase()} /><CinemaComments contentId={String(id || '').toLowerCase()} /></div></Main></>;
 }

@@ -92,6 +92,7 @@ const nextConfig = {
         { source: '/social-cinema/creator', destination: '/veyrnox/social-cinema/creator' },
         // Cinema Pass (ADR-0057) and the viewer pages (ADR-0059).
         { source: '/social-cinema/pass', destination: '/veyrnox/social-cinema/pass' },
+        { source: '/social-cinema/series/:slug', destination: '/veyrnox/social-cinema/series/:slug' },
         { source: '/social-cinema/title/:id', destination: '/veyrnox/social-cinema/title/:id' },
         { source: '/social-cinema/watch/:id', destination: '/veyrnox/social-cinema/watch/:id' },
         { source: '/pricing', destination: '/veyrnox/pricing' },

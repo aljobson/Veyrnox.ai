@@ -5,6 +5,7 @@ import { Button } from '../_components/Button';
 import { CinemaShare } from './CinemaShare';
 import { CinemaPoster } from './CinemaPoster';
 import { cinemaDescription } from '../_lib/cinemaDescription';
+import { editorialSeriesCards } from './editorialSeries';
 const labels = { all: 'Now showing', series: 'Published series', voting: 'Open competitions' };
 export function CinemaDiscovery({ mode = 'all', onAvailability }) {
   // Switching tabs remounts the inventory: a late response cannot populate another tab.
@@ -29,7 +30,8 @@ function Inventory({ mode, onAvailability }) {
       if (seq !== generation.current) return;
       if (!response.ok) throw Object.assign(Error('failed'), { closed: response.status === 503 && ['viewing_not_open', 'voting_not_open'].includes(data.error) });
       if (!Array.isArray(data.titles) || !Array.isArray(data.categories) || data.mode !== mode) throw Error('bad response');
-      setTitles(previous => cursor ? [...new Map([...previous, ...data.titles].map(t => [t.id, t])).values()] : data.titles);
+      const received = mode === 'series' && !cursor ? [...editorialSeriesCards(slug), ...data.titles] : data.titles;
+      setTitles(previous => cursor ? [...new Map([...previous, ...received].map(t => [t.id, t])).values()] : received);
       setCategories(data.categories); setNext(data.next); setState('ready'); onAvailability?.(true);
     } catch (error) {
       if (seq !== generation.current) return;
@@ -52,9 +54,9 @@ function Inventory({ mode, onAvailability }) {
     {(state === 'ready' || state === 'more') && titles.length === 0 && <p role="status" className="mt-5 text-vx-fg-muted">{mode === 'voting' ? 'No eligible titles in open competitions' : mode === 'series' ? 'No series are published' : 'No titles are published'}{category ? ' in this category yet.' : ' yet.'}</p>}
     <ul className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
       {titles.map(t => {
-        const href = t.content_type === 'EPISODE' ? `/social-cinema/watch/${t.id}?title_id=${t.root_id}` : `/social-cinema/title/${t.id}`;
+        const href = t.series_slug ? `/social-cinema/series/${t.series_slug}` : t.content_type === 'EPISODE' ? `/social-cinema/watch/${t.id}?title_id=${t.root_id}` : `/social-cinema/title/${t.id}`;
         return <li key={t.id} className="flex flex-col overflow-hidden rounded-2xl border border-vx-border bg-vx-base/60" data-testid={`cinema-title-${t.id}`}>
-          <CinemaPoster id={t.id} title={t.title} href={href} />
+          <CinemaPoster id={t.poster_id || t.id} title={t.title} href={href} />
           <div className="flex flex-1 flex-col p-5">
           <p className="font-vx-mono text-xs tracking-widest text-vx-accent uppercase">{t.content_type}{t.content_type === 'SERIES' ? ` · ${t.episode_count} episodes` : t.duration_seconds ? ` · ${Math.max(1, Math.round(t.duration_seconds / 60))} min` : ''}</p>
           <h3 className="mt-2 text-xl font-bold wrap-break-word"><Link href={href} className="hover:underline">{t.title}</Link></h3>
