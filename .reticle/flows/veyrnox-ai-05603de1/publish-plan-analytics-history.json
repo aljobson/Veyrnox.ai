@@ -1,0 +1,82 @@
+{
+  "version": 2,
+  "name": "publish-plan-analytics-history",
+  "projectId": "veyrnox-ai-05603de1",
+  "createdAt": 1791924098309,
+  "steps": [
+    {
+      "tool": "reticle_act",
+      "anchor": {
+        "kind": "role",
+        "role": "checkbox",
+        "name": "Start my Publish Plan now. I understand it renews monthly until I cancel."
+      },
+      "args": {},
+      "action": "check",
+      "page": "/app/publish/plan"
+    },
+    {
+      "tool": "reticle_act",
+      "anchor": {
+        "kind": "role",
+        "role": "checkbox",
+        "name": "Start my Publish Plan now. I understand it renews monthly until I cancel."
+      },
+      "args": {},
+      "action": "uncheck",
+      "page": "/app/publish/plan"
+    },
+    {
+      "tool": "reticle_act",
+      "anchor": {
+        "kind": "role",
+        "role": "checkbox",
+        "name": "Start my Publish Plan now. I understand it renews monthly until I cancel."
+      },
+      "args": {},
+      "action": "check",
+      "expect": {
+        "kind": "allOf",
+        "predicates": [
+          {
+            "kind": "element",
+            "query": {
+              "role": "button",
+              "name": "Upgrade with Stripe"
+            },
+            "state": "enabled"
+          },
+          {
+            "kind": "text",
+            "contains": "12 months of analytics history"
+          },
+          {
+            "kind": "console",
+            "level": "error",
+            "absent": true
+          }
+        ]
+      },
+      "page": "/app/publish/plan"
+    }
+  ],
+  "startPath": "/app/publish/plan",
+  "intent": "A free-plan publisher sees the truthful 12-month analytics history entitlement and can enable the Stripe upgrade action after accepting the renewal consent.",
+  "requires": [
+    {
+      "kind": "route",
+      "pathname": "/app/publish/plan"
+    }
+  ],
+  "ensures": [
+    {
+      "kind": "route",
+      "pathname": "/app/publish/plan"
+    }
+  ],
+  "author": {
+    "agent": "codex-mcp-client",
+    "person": "al.jobson@21stclick.co.uk"
+  },
+  "intentId": "flow:publish-plan-analytics-history"
+}

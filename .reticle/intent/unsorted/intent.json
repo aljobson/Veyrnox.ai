@@ -68,6 +68,89 @@
         "route": "/app/publish/plan"
       },
       "updatedAt": 1791910774865
+    },
+    "inline:publish-analytics-x-194b806a": {
+      "binding": {
+        "kind": "allOf",
+        "predicates": [
+          {
+            "contains": "X metrics cover the latest 100 original posts",
+            "kind": "text"
+          },
+          {
+            "contains": "9,500",
+            "kind": "text"
+          },
+          {
+            "contains": "Impressions",
+            "kind": "text"
+          },
+          {
+            "absent": true,
+            "kind": "console"
+          }
+        ]
+      },
+      "declaredAt": 1791923958687,
+      "id": "inline:publish-analytics-x-194b806a",
+      "provenBy": {
+        "at": 1791924012131,
+        "grade": "presence",
+        "verdictId": "reticle_act_and_wait:1791924012131"
+      },
+      "state": "proved",
+      "statement": "publish-analytics-x",
+      "status": "proved",
+      "subject": "unsorted",
+      "surface": {
+        "files": [
+          "app/veyrnox/app/publish/analytics/page.js"
+        ],
+        "route": "/app/publish/analytics"
+      },
+      "updatedAt": 1791924012132
+    },
+    "inline:publish-plan-history-e9bb78c3": {
+      "binding": {
+        "kind": "allOf",
+        "predicates": [
+          {
+            "kind": "element",
+            "query": {
+              "name": "Upgrade with Stripe",
+              "role": "button"
+            },
+            "state": "enabled"
+          },
+          {
+            "contains": "12 months of analytics history",
+            "kind": "text"
+          },
+          {
+            "absent": true,
+            "kind": "console",
+            "level": "error"
+          }
+        ]
+      },
+      "declaredAt": 1791924063959,
+      "id": "inline:publish-plan-history-e9bb78c3",
+      "provenBy": {
+        "at": 1791924089452,
+        "grade": "presence",
+        "verdictId": "reticle_act_and_wait:1791924089452"
+      },
+      "state": "proved",
+      "statement": "publish-plan-history",
+      "status": "proved",
+      "subject": "unsorted",
+      "surface": {
+        "files": [
+          "app/veyrnox/app/publish/plan/PublishPlanPanel.js"
+        ],
+        "route": "/app/publish/plan"
+      },
+      "updatedAt": 1791924089479
     }
   },
   "subject": "unsorted",

@@ -7,6 +7,30 @@
       "subject": "drive-signed-out-users-can-dismiss-and-r"
     },
     {
+      "id": "flow:publish-analytics-portfolio-x",
+      "statement": "A signed-in publisher can compare supported social accounts together, s…",
+      "status": "proposed",
+      "subject": "publish-analytics-portfolio-x"
+    },
+    {
+      "id": "flow:publish-plan-analytics-history",
+      "statement": "A free-plan publisher sees the truthful 12-month analytics history enti…",
+      "status": "proposed",
+      "subject": "publish-plan-analytics-history"
+    },
+    {
+      "id": "inline:publish-analytics-x-194b806a",
+      "statement": "publish-analytics-x",
+      "status": "proved",
+      "subject": "unsorted"
+    },
+    {
+      "id": "inline:publish-plan-history-e9bb78c3",
+      "statement": "publish-plan-history",
+      "status": "proved",
+      "subject": "unsorted"
+    },
+    {
       "id": "inline:signed-out-users-can-dismiss-and-reopen-authenti-1d49d724",
       "statement": "Signed-out users can dismiss and reopen authentication from the Publish…",
       "status": "proposed",

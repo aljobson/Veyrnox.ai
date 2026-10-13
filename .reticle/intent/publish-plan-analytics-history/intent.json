@@ -1,0 +1,18 @@
+{
+  "intents": {
+    "flow:publish-plan-analytics-history": {
+      "declaredAt": 1791924098309,
+      "id": "flow:publish-plan-analytics-history",
+      "state": "declared",
+      "statement": "A free-plan publisher sees the truthful 12-month analytics history entitlement and can enable the Stripe upgrade action after accepting the renewal consent.",
+      "status": "proposed",
+      "subject": "publish-plan-analytics-history",
+      "surface": {
+        "flow": "publish-plan-analytics-history"
+      },
+      "updatedAt": 1791924098317
+    }
+  },
+  "subject": "publish-plan-analytics-history",
+  "version": 1
+}

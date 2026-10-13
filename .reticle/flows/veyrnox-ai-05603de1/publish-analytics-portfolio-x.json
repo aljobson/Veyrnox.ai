@@ -1,0 +1,80 @@
+{
+  "version": 2,
+  "name": "publish-analytics-portfolio-x",
+  "intent": "A signed-in publisher can compare supported social accounts together, see unsupported metrics left blank, select X, and see X impressions without them being relabelled as views.",
+  "intentId": "flow:publish-analytics-portfolio-x",
+  "projectId": "veyrnox-ai-05603de1",
+  "startPath": "/app/publish/analytics",
+  "requires": [
+    {
+      "kind": "route",
+      "pathname": "/app/publish/analytics"
+    }
+  ],
+  "ensures": [
+    {
+      "kind": "route",
+      "pathname": "/app/publish/analytics"
+    }
+  ],
+  "author": {
+    "agent": "codex-mcp-client",
+    "person": "al.jobson@21stclick.co.uk"
+  },
+  "createdAt": 1791924195827,
+  "steps": [
+    {
+      "tool": "reticle_act",
+      "anchor": {
+        "kind": "role",
+        "role": "combobox",
+        "name": "Account All supported accounts Instagram · Veyrnox Instagram X · Veyrnox X"
+      },
+      "source": {
+        "file": "app/veyrnox/app/publish/analytics/page.js",
+        "line": 94
+      },
+      "action": "select",
+      "args": {
+        "value": "x-1"
+      },
+      "expect": {
+        "kind": "allOf",
+        "predicates": [
+          {
+            "kind": "text",
+            "contains": "X metrics cover the latest 100 original posts"
+          },
+          {
+            "kind": "text",
+            "contains": "9,500"
+          },
+          {
+            "kind": "text",
+            "contains": "Impressions"
+          },
+          {
+            "kind": "console",
+            "absent": true
+          }
+        ]
+      },
+      "page": "/app/publish/analytics"
+    }
+  ],
+  "success": {
+    "kind": "allOf",
+    "predicates": [
+      {
+        "kind": "settled"
+      },
+      {
+        "kind": "net",
+        "method": "GET",
+        "urlContains": "/api/v1/social/analytics?accountId=x-1",
+        "status": 200,
+        "count": 2
+      }
+    ]
+  }
+}
