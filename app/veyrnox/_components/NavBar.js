@@ -16,9 +16,15 @@ import { useEditorEnabled } from './EditorFlag';
 import { NAV_CATEGORIES } from '../_lib/tokens';
 import { AnnouncementBar } from './AnnouncementBar';
 
+const MOBILE_NAV_CATEGORIES = [
+  ...NAV_CATEGORIES.filter((item) => item.href === '/social-cinema'),
+  ...NAV_CATEGORIES.filter((item) => item.href !== '/social-cinema' && item.href !== '/#faq'),
+  ...NAV_CATEGORIES.filter((item) => item.href === '/#faq'),
+];
+
 // The public site's nav: every marketing page, the home page included. One
-// list (NAV_CATEGORIES), one order, set from the logo's edge so the links
-// hold their place when the right-hand side changes width (signed in or out).
+// destination list, with a compact mobile order that leads with Cinema and
+// leaves FAQ at the bottom. Desktop keeps its established order.
 export function MarketingNav({ hideAnnouncementOnMobile = false }) {
   // Rewrites serve /veyrnox/* at /*, so the browser path has no prefix.
   const path = usePathname().replace(/^\/veyrnox/, '') || '/';
@@ -65,7 +71,7 @@ export function MarketingNav({ hideAnnouncementOnMobile = false }) {
         <NavAuthButtons />
         {/* Below xl the links above are hidden: without this the only way
             off the page was the browser back button. */}
-        <MobileMenu items={NAV_CATEGORIES} className="xl:hidden" />
+        <MobileMenu items={MOBILE_NAV_CATEGORIES} className="xl:hidden" />
       </div>
       </div>
     </header>
