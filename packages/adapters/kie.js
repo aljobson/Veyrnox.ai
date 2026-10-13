@@ -56,9 +56,10 @@ const CLIP_ASPECTS = new Set(['16:9', '9:16', '1:1']);
 const SEEDREAM_ASPECTS = new Set(['1:1', '4:3', '3:4', '16:9', '9:16', '2:3', '3:2', '21:9']);
 // One priced ElevenLabs unit is 1000 characters ($0.03); the record caps text there.
 const SPEECH_MAX_CHARS = 1000;
-// kie's default voice is a different one from fal's. Pin fal's default so the
-// swap does not change what users hear.
-const SPEECH_VOICE = 'Rachel';
+// Pin KIE's documented James voice ID. KIE's current contract uses provider
+// voice IDs; the older human-readable `Rachel` value is no longer the
+// documented request shape (verified 2026-10-13).
+const SPEECH_VOICE = 'EkK5I93UQWFDigLMpZcX';
 // Clip lengths our 5s unit can buy on the video market models: 5s, or 10s at
 // exactly twice the price (kie bills both per video, 10s = 2x 5s).
 const CLIP_SECONDS = new Set([5, 10]);
@@ -176,7 +177,18 @@ export function buildRequest(target, inputs) {
         if (aspect) return { ok: false, error: 'inputs_key_not_allowed:aspect_ratio' };
         if (inputs.image_url) return { ok: false, error: 'inputs_key_not_allowed:image_url' };
         if (prompt.length > SPEECH_MAX_CHARS) return { ok: false, error: 'inputs_invalid:prompt' };
-        return { ok: true, body: { model: target.model, input: { text: prompt, voice: SPEECH_VOICE, timestamps: false } } };
+        // Pin every control KIE's own Playground sent in its accepted task so
+        // provider defaults cannot change the request or its priced behavior.
+        return { ok: true, body: { model: target.model, input: {
+            text: prompt,
+            voice: SPEECH_VOICE,
+            stability: 0.5,
+            similarity_boost: 0.75,
+            style: 0,
+            speed: 1,
+            timestamps: false,
+            nsfw_checker: true,
+        } } };
     }
 
     if (target.model === 'elevenlabs/text-to-dialogue-v3' || target.model === 'flux-2/pro-text-to-image') {

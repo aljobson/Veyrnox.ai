@@ -66,13 +66,22 @@ test('Seedream 4.5 pins the basic tier and never sends the 4K one', () => {
     assert.equal(buildRequest(t, { prompt: 'p', image_url: 'https://r2.example/a.png' }).error, 'inputs_key_not_allowed:image_url');
 });
 
-test('ElevenLabs Turbo speaks the prompt with fal\'s default voice, capped at the 1000 characters priced', () => {
+test('ElevenLabs Turbo pins KIE\'s documented voice ID and accepted controls within the priced 1000-character unit', () => {
     const t = parseEndpoint('market:elevenlabs/text-to-speech-turbo-2-5');
     assert.deepEqual(buildRequest(t, { prompt: 'hello there' }).body,
-        { model: 'elevenlabs/text-to-speech-turbo-2-5', input: { text: 'hello there', voice: 'Rachel', timestamps: false } });
+        { model: 'elevenlabs/text-to-speech-turbo-2-5', input: {
+            text: 'hello there',
+            voice: 'EkK5I93UQWFDigLMpZcX',
+            stability: 0.5,
+            similarity_boost: 0.75,
+            style: 0,
+            speed: 1,
+            timestamps: false,
+            nsfw_checker: true,
+        } });
     assert.equal(buildRequest(t, { prompt: 'x'.repeat(1000) }).ok, true);
     assert.equal(buildRequest(t, { prompt: 'x'.repeat(1001) }).error, 'inputs_invalid:prompt');
-    assert.equal(buildRequest(t, { prompt: 'x', voice: 'Adam' }).body.input.voice, 'Rachel');
+    assert.equal(buildRequest(t, { prompt: 'x', voice: 'Adam' }).body.input.voice, 'EkK5I93UQWFDigLMpZcX');
     assert.equal(buildRequest(t, { prompt: 'x', aspect_ratio: '1:1' }).error, 'inputs_key_not_allowed:aspect_ratio');
 });
 
