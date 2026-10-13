@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
     xConfig, buildAuthorizeUrl, exchangeCodeForToken, fetchConnectedAccount, publishPost, X_SCOPES,
-    refreshAccessToken,
+    fetchAnalytics, refreshAccessToken,
 } from '../packages/adapters/social/twitter.js';
 
 const cfg = { clientId: 'test-client-id-abc123', clientSecret: 'a'.repeat(20) };
@@ -93,6 +93,64 @@ test('fetchConnectedAccount resolves the account via GET /2/users/me', async () 
 test('fetchConnectedAccount surfaces an upstream failure rather than crashing', async () => {
     const fetcher = async () => jsonRes({ title: 'Unauthorized' }, 401);
     await assert.rejects(fetchConnectedAccount('bad-token', fetcher), /Unauthorized/);
+});
+
+test('fetchAnalytics reads public account metrics and the latest original posts without relabelling impressions as views', async () => {
+    const calls = [];
+    const fetcher = async (url, init) => {
+        calls.push({ url: String(url), init });
+        const parsed = new URL(url);
+        if (parsed.pathname === '/2/users/me') return jsonRes({ data: { id: '123456789', public_metrics: {
+            followers_count: 42, following_count: 7, post_count: 12,
+        } } });
+        if (parsed.pathname === '/2/users/123456789/tweets') return jsonRes({ data: [
+            { id: '2109946167664476281', created_at: '2026-10-13T10:20:30.000Z', text: 'Hello from Veyrnox', public_metrics: {
+                impression_count: 1000, like_count: 11, reply_count: 2, bookmark_count: 3,
+                repost_count: 4, quote_count: 5,
+            } },
+            { id: '2109946167664476282', created_at: '2026-10-12T10:20:30Z', text: '=formula', public_metrics: {
+                impression_count: 80, like_count: 1, reply_count: 0, bookmark_count: 0,
+                retweet_count: 2, quote_count: 1,
+            } },
+        ], meta: { result_count: 2 } });
+        throw new Error(`unexpected url: ${url}`);
+    };
+    const result = await fetchAnalytics('user-token', { externalAccountId: '123456789' }, fetcher);
+    assert.deepEqual(result.metrics, { followers: 42, following: 7, posts_count: 12 });
+    assert.deepEqual(result.posts[0], {
+        id: '2109946167664476281', published_at: '2026-10-13T10:20:30.000Z', type: 'post',
+        permalink: 'https://x.com/i/web/status/2109946167664476281', caption: 'Hello from Veyrnox',
+        metrics: { impressions: 1000, likes: 11, comments: 2, saves: 3, shares: 9 },
+    });
+    assert.equal(result.posts[1].metrics.shares, 3, 'former retweet_count response spelling remains supported');
+    assert.equal(calls.length, 2);
+    assert.equal(new URL(calls[0].url).searchParams.get('user.fields'), 'public_metrics');
+    const postsUrl = new URL(calls[1].url);
+    assert.equal(postsUrl.searchParams.get('max_results'), '100');
+    assert.equal(postsUrl.searchParams.get('exclude'), 'replies,retweets');
+    assert.equal(postsUrl.searchParams.get('tweet.fields'), 'created_at,public_metrics,text');
+    assert.ok(calls.every((call) => call.init.headers.Authorization === 'Bearer user-token'));
+    assert.ok(!('views' in result.posts[0].metrics), 'impressions are not video views');
+});
+
+test('fetchAnalytics accepts an empty X timeline and the former tweet_count account field', async () => {
+    let call = 0;
+    const fetcher = async () => ++call === 1
+        ? jsonRes({ data: { id: '123', public_metrics: { followers_count: 1, tweet_count: 9 } } })
+        : jsonRes({ meta: { result_count: 0 } });
+    assert.deepEqual(await fetchAnalytics('token', { externalAccountId: '123' }, fetcher), {
+        metrics: { followers: 1, posts_count: 9 }, posts: [],
+    });
+});
+
+test('fetchAnalytics rejects an account mismatch, invalid response and upstream failure', async () => {
+    await assert.rejects(fetchAnalytics('token', { externalAccountId: 'expected' }, async () =>
+        jsonRes({ data: { id: 'other', public_metrics: {} } })), /x_account_mismatch/);
+    let call = 0;
+    await assert.rejects(fetchAnalytics('token', { externalAccountId: '123' }, async () => ++call === 1
+        ? jsonRes({ data: { id: '123', public_metrics: {} } }) : jsonRes({ nope: true })), /x_analytics_invalid_response/);
+    await assert.rejects(fetchAnalytics('token', { externalAccountId: '123' }, async () =>
+        jsonRes({ title: 'private vendor detail' }, 429)), /x_analytics_failed_429/);
 });
 
 test('publishPost refuses anything but an image, without calling the API', async () => {

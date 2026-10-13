@@ -191,10 +191,11 @@
     "PUBLISH_YOUTUBE_VISIBILITY_ENABLED": "true",
 
     "PUBLISH_RELEASED_NETWORKS": "youtube,linkedin,twitter",
-    // Production 0188 is applied; basic YouTube Data API statistics only.
+    // Production 0188 is applied; Instagram, YouTube, TikTok and X collectors
+    // activate only for accounts whose provider grants permit the read.
     "PUBLISH_ANALYTICS_ENABLED": "true",
-    // Weekly historical timing/frequency insights; requires 0191.
-    "PUBLISH_POSTING_INSIGHTS_ENABLED": "false",
+    // Weekly historical timing/frequency insights; production 0191 is applied.
+    "PUBLISH_POSTING_INSIGHTS_ENABLED": "true",
     // Month/week/list calendar and rescheduling; 0192 approved 2026-10-04.
     // The overall Publish launch still follows PUBLISH_ENABLED.
     "PUBLISH_CALENDAR_ENABLED": "true",

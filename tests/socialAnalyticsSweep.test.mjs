@@ -125,10 +125,10 @@ test('an account disconnected mid-fetch counts as failed; a report that throws c
     });
 });
 
-test('the default claim includes YouTube alongside Instagram', async () => {
+test('the default claim includes every built-in analytics adapter', async () => {
     await withRpc({ claim_social_analytics_accounts: async () => [] }, async (calls) => {
         await runAnalyticsSweep({ cfg, cryptoCfg, now });
-        assert.deepEqual(new Set(calls[0].args.p_networks), new Set(['instagram', 'youtube', 'tiktok']));
+        assert.deepEqual(new Set(calls[0].args.p_networks), new Set(['instagram', 'youtube', 'tiktok', 'twitter']));
     });
 });
 
@@ -163,6 +163,56 @@ test('a still-valid YouTube token needs no refresh configuration or update', asy
         assert.equal(out.synced, 1);
     });
 });
+
+test('X refresh atomically persists the rotated encrypted token pair before analytics', async () => {
+    const { decryptToken } = await import('../lib/social/tokenCrypto.js');
+    const row = await account({ network: 'twitter', external_account_id: 'x-1', token_expires_at: '2026-10-03T23:00:00Z',
+        refresh_token_enc: await encryptToken('old-refresh', cryptoCfg) });
+    const events = [];
+    await withRpc({
+        claim_social_analytics_accounts: async () => [row],
+        rotate_extended_social_tokens: async (args) => {
+            events.push('persist');
+            assert.equal(args.p_network, 'twitter');
+            assert.equal(args.p_expected_access_token_enc, row.access_token_enc);
+            assert.equal(args.p_expected_refresh_token_enc, row.refresh_token_enc);
+            assert.equal(await decryptToken(args.p_access_token_enc, cryptoCfg), 'new-access');
+            assert.equal(await decryptToken(args.p_refresh_token_enc, cryptoCfg), 'rotated-refresh');
+            assert.equal(args.p_token_expires_at, '2026-10-04T01:30:00Z');
+            return { ok: true };
+        },
+        record_social_analytics: async () => ({ ok: true }),
+    }, async () => {
+        const out = await runAnalyticsSweep({ cfg, cryptoCfg, now, twitterCfg: {},
+            refreshTwitter: async (_, token) => { events.push('refresh'); assert.equal(token, 'old-refresh');
+                return { accessToken: 'new-access', refreshToken: 'rotated-refresh', expiresAt: '2026-10-04T01:30:00Z' }; },
+            fetchers: { twitter: async (token) => { events.push('fetch'); assert.equal(token, 'new-access'); return { metrics: {}, posts: [] }; } },
+        });
+        assert.equal(out.synced, 1);
+        assert.deepEqual(events, ['refresh', 'persist', 'fetch']);
+    });
+});
+
+for (const failure of ['missing-refresh', 'missing-config', 'refresh-rejected', 'disconnected']) {
+    test(`X ${failure} is isolated and never fetches with an unpersisted token`, async () => {
+        const row = await account({ network: 'twitter', token_expires_at: '2026-10-03T23:00:00Z',
+            refresh_token_enc: failure === 'missing-refresh' ? null : await encryptToken('refresh', cryptoCfg) });
+        const good = await account({ account_id: 'good', network: 'twitter', token_expires_at: '2026-10-04T01:30:00Z' });
+        let fetched = 0;
+        await withRpc({ claim_social_analytics_accounts: async () => [row, good],
+            rotate_extended_social_tokens: async () => null,
+            record_social_analytics_failure: async (args) => { assert.equal(args.p_account_id, row.account_id); assert.ok(!args.p_error.includes('private')); return { ok: true }; },
+            record_social_analytics: async () => ({ ok: true }),
+        }, async () => {
+            const out = await runAnalyticsSweep({ cfg, cryptoCfg, now, twitterCfg: failure === 'missing-config' ? null : {},
+                refreshTwitter: async () => { if (failure === 'refresh-rejected') throw new Error('private vendor response');
+                    return { accessToken: 'new-access', refreshToken: 'new-refresh', expiresAt: '2026-10-04T01:30:00Z' }; },
+                fetchers: { twitter: async () => { fetched++; return {}; } },
+            });
+            assert.equal(out.failed, 1); assert.equal(out.synced, 1); assert.equal(fetched, 1);
+        });
+    });
+}
 
 for (const failure of ['missing-refresh', 'missing-config', 'refresh-rejected', 'disconnected', 'persist-error']) {
     test(`YouTube ${failure} is recorded and does not stop the next account`, async () => {

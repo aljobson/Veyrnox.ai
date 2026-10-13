@@ -7,7 +7,8 @@ import { getSession, onSessionChange } from '../../../../lib/authClient';
 import { NETWORKS, listSocialAccounts } from '../../../../lib/socialConnectClient';
 import { getSocialAnalytics } from '../../../../lib/socialAnalyticsClient';
 import { getPublishPlan } from '../../../../lib/publishPlanClient';
-import { postInteractions, rangeForDays, summarize, totalViews } from '../../../../../lib/social/analyticsSummary.js';
+import { analyticsCsv, postAnalyticsCsv, postInteractions, rangeForDays, summarize, summarizePortfolio, totalPostMetric, totalViews } from '../../../../../lib/social/analyticsSummary.js';
+import { analyticsCapabilities, hasAnalytics } from '../../../../../lib/social/analyticsCapabilities.js';
 import { FollowersChart } from './FollowersChart';
 import { PostingInsights } from './PostingInsights';
 import NetworkLogo from '../NetworkLogo';
@@ -15,14 +16,21 @@ import NetworkLogo from '../NetworkLogo';
 const currentAccount = () => getSession()?.user?.id || '';
 const noAccount = () => '';
 const button = 'rounded-full border border-vx-border px-4 py-2 text-sm font-bold disabled:opacity-50';
-// Networks the analytics sweep has a fetcher for (lib/socialAnalyticsSweep.js).
-const ANALYTICS_NETWORKS = new Set(['instagram', 'youtube', 'tiktok', 'twitch']);
-const RANGES = [{ days: 7, label: '7 days' }, { days: 30, label: '30 days' }, { days: 90, label: '90 days' }];
+const RANGES = [{ days: 7, label: '7 days' }, { days: 30, label: '30 days' }, { days: 90, label: '90 days', paid: true }, { days: 365, label: '12 months', paid: true }];
 const whole = new Intl.NumberFormat();
 const oneDecimal = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
 
 function networkLabel(key) {
   return NETWORKS.find((n) => n.key === key)?.label || key;
+}
+
+function downloadCsv(contents, filename) {
+  const url = URL.createObjectURL(new Blob([contents], { type: 'text/csv;charset=utf-8' }));
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 export default function PublishAnalytics() {
@@ -50,7 +58,10 @@ function Dashboard() {
     listSocialAccounts()
       .then(async (res) => {
         if (!active) return;
-        setAccounts((res.accounts || []).filter((a) => a.status === 'active'));
+        const nextAccounts = (res.accounts || []).filter((a) => a.status === 'active');
+        setAccounts(nextAccounts);
+        const supported = nextAccounts.filter((item) => hasAnalytics(item.network));
+        setChosenId(supported.length > 1 ? 'all' : supported[0]?.id || nextAccounts[0]?.id || '');
         if (res.plansEnabled === true) {
           try { const plan = await getPublishPlan(); if (active) setPlanTier(plan.entitlement?.tier || 'free'); }
           catch { if (active) setPlanTier('free'); }
@@ -69,20 +80,23 @@ function Dashboard() {
   }
 
   const selected = accounts.find((a) => a.id === chosenId) || accounts[0];
-  const ranges = planTier === 'free' ? RANGES.filter((range) => range.days <= 30) : RANGES;
+  const supportedAccounts = accounts.filter((item) => hasAnalytics(item.network));
+  const showPortfolio = chosenId === 'all' && supportedAccounts.length > 1;
+  const ranges = RANGES.filter((range) => !range.paid || planTier === 'publish');
   return <div className="space-y-6">
     {planTier === 'free' && <div className="rounded-2xl border border-vx-accent/40 bg-vx-accent/[0.06] p-4 text-sm text-vx-fg-body">
-      Free includes 30 days of analytics. <Link href="/app/publish/plan" className="font-bold text-vx-accent underline">Upgrade for full history and best-time recommendations</Link>.
+      Free includes 30 days of analytics. <Link href="/app/publish/plan" className="font-bold text-vx-accent underline">Upgrade for 12 months and best-time recommendations</Link>.
     </div>}
     <div className="flex flex-wrap items-center justify-between gap-3">
       <label className="inline-flex items-center gap-2 text-sm font-bold text-vx-fg">
-        <NetworkLogo network={selected.network} />
+        {showPortfolio ? <span aria-hidden="true" className="grid h-7 w-7 place-items-center rounded-full bg-vx-accent/15 text-vx-accent">Σ</span> : <NetworkLogo network={selected.network} />}
         <span className="sr-only">Account</span>
         <select
-          value={selected.id}
+          value={showPortfolio ? 'all' : selected.id}
           onChange={(e) => setChosenId(e.target.value)}
           className="rounded-full border border-vx-border bg-transparent px-4 py-2 text-sm font-bold"
         >
+          {supportedAccounts.length > 1 && <option value="all">All supported accounts</option>}
           {accounts.map((a) => (
             <option key={a.id} value={a.id}>{networkLabel(a.network)} · {a.display_name || a.external_account_id}</option>
           ))}
@@ -100,15 +114,81 @@ function Dashboard() {
         ))}
       </div>
     </div>
-    {ANALYTICS_NETWORKS.has(selected.network)
-      ? <AccountAnalytics key={`${selected.id}:${days}`} accountId={selected.id} network={selected.network} days={days} />
+    {showPortfolio
+      ? <PortfolioAnalytics key={`all:${days}`} accounts={supportedAccounts} days={days} />
+      : hasAnalytics(selected.network)
+      ? <AccountAnalytics key={`${selected.id}:${days}`} account={selected} days={days} />
       : <p className="rounded-2xl border border-vx-border p-5 text-sm text-vx-fg-body">
-          Analytics for {networkLabel(selected.network)} are not available yet. Instagram, YouTube, TikTok and Twitch are supported today.
+          Analytics for {networkLabel(selected.network)} are not available yet. Instagram, YouTube, TikTok, X and Twitch are supported today.
         </p>}
+    <CapabilityMatrix accounts={accounts} />
   </div>;
 }
 
-function AccountAnalytics({ accountId, network, days }) {
+function PortfolioAnalytics({ accounts, days }) {
+  const [result, setResult] = useState(null);
+
+  useEffect(() => {
+    let active = true;
+    const range = rangeForDays(days);
+    Promise.allSettled(accounts.map(async (account) => ({ account, data: await getSocialAnalytics({ accountId: account.id, ...range }) })))
+      .then((settled) => {
+        if (!active) return;
+        const entries = settled.filter((item) => item.status === 'fulfilled').map((item) => item.value);
+        setResult({ summary: summarizePortfolio(entries), failed: settled.length - entries.length });
+      });
+    return () => { active = false; };
+  }, [accounts, days]);
+
+  if (result === null) return <p className="text-sm text-vx-fg-muted">Loading all accounts…</p>;
+  if (result.summary.accounts === 0) return <p role="alert" className="text-sm text-vx-danger">Could not load analytics for your accounts. Check your connection and try again.</p>;
+  const summary = result.summary;
+  return <div className="space-y-6">
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <h2 className="text-xl font-black">Portfolio summary</h2>
+        <p className="text-sm text-vx-fg-muted">{summary.accounts} supported {summary.accounts === 1 ? 'account' : 'accounts'} · unsupported metrics stay blank.</p>
+      </div>
+      <button type="button" className={button} onClick={() => downloadCsv(analyticsCsv(summary.rows), `veyrnox-analytics-${days}-days.csv`)}>Export CSV</button>
+    </div>
+    {result.failed > 0 && <p role="status" className="rounded-xl border border-vx-border p-3 text-sm text-vx-fg-body">{result.failed} {result.failed === 1 ? 'account could' : 'accounts could'} not be loaded. The totals below include the others.</p>}
+    <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+      <Stat label="Audience" value={summary.followers === null ? '—' : whole.format(summary.followers)} note="Followers and subscribers reported by providers" />
+      <Stat label="Content" value={whole.format(summary.posts)} note="Posts and videos in this period" />
+      <Stat label="Interactions" value={whole.format(summary.interactions)} note="Likes, comments, saves and shares where supplied" />
+      <Stat label="Reach" value={summary.reach === null ? '—' : whole.format(summary.reach)} note="Only providers that report reach" />
+      <Stat label="Impressions" value={summary.impressions === null ? '—' : whole.format(summary.impressions)} note="Only providers that report impressions" />
+      <Stat label="Views" value={summary.views === null ? '—' : whole.format(summary.views)} note="Only providers that report views" />
+      <Stat label="Needs attention" value={whole.format(summary.staleAccounts)} note="Failed or awaiting a first sync" />
+    </dl>
+    <section className="rounded-2xl border border-vx-border p-5">
+      <h2 className="font-bold mb-4">Accounts</h2>
+      <PortfolioTable rows={summary.rows} />
+    </section>
+  </div>;
+}
+
+function PortfolioTable({ rows }) {
+  return <div className="overflow-x-auto"><table className="w-full text-sm">
+    <thead><tr className="text-left text-xs text-vx-fg-muted">
+      <th scope="col" className="pb-2 pr-3 font-bold">Account</th><th scope="col" className="pb-2 pr-3 font-bold text-right">Audience</th>
+      <th scope="col" className="pb-2 pr-3 font-bold text-right">Content</th><th scope="col" className="pb-2 pr-3 font-bold text-right">Interactions</th>
+      <th scope="col" className="pb-2 pr-3 font-bold text-right">Reach</th><th scope="col" className="pb-2 pr-3 font-bold text-right">Impressions</th><th scope="col" className="pb-2 font-bold text-right">Views</th>
+    </tr></thead>
+    <tbody>{rows.map((row) => <tr key={row.account.id} className="border-t border-vx-border">
+      <td className="py-3 pr-3"><span className="inline-flex items-center gap-2 font-bold"><NetworkLogo network={row.account.network} />{row.account.display_name || row.account.external_account_id}</span><span className="block text-xs font-normal text-vx-fg-muted">{networkLabel(row.account.network)} · {row.failing ? 'update failed' : row.lastOkAt ? 'updated' : 'awaiting first sync'}</span></td>
+      <td className="py-3 pr-3 text-right tabular-nums">{row.summary.followers === null ? '—' : whole.format(row.summary.followers)}</td>
+      <td className="py-3 pr-3 text-right tabular-nums">{whole.format(row.summary.posts)}</td>
+      <td className="py-3 pr-3 text-right tabular-nums">{whole.format(row.summary.interactions)}</td>
+      <td className="py-3 pr-3 text-right tabular-nums">{row.reach === null ? '—' : whole.format(row.reach)}</td>
+      <td className="py-3 pr-3 text-right tabular-nums">{row.impressions === null ? '—' : whole.format(row.impressions)}</td>
+      <td className="py-3 text-right tabular-nums">{row.views === null ? '—' : whole.format(row.views)}</td>
+    </tr>)}</tbody>
+  </table></div>;
+}
+
+function AccountAnalytics({ account, days }) {
+  const { id: accountId, network } = account;
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
   const [attempt, setAttempt] = useState(0);
@@ -130,6 +210,7 @@ function AccountAnalytics({ accountId, network, days }) {
   const summary = summarize(data);
   const youtube = network === 'youtube';
   const tiktok = network === 'tiktok';
+  const twitter = network === 'twitter';
   const videoNetwork = youtube || tiktok;
   const audienceLabel = youtube ? 'Subscribers' : 'Followers';
   const channelMetrics = data.evolution.at(-1)?.metrics || {};
@@ -160,7 +241,7 @@ function AccountAnalytics({ accountId, network, days }) {
         <Stat label="Views" value={whole.format(totalViews(data.posts))} note="Lifetime views of those videos" />
       </dl>
       <section className="rounded-2xl border border-vx-border p-5">
-        <h2 className="font-bold mb-4">Videos in this period</h2>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><h2 className="font-bold">Videos in this period</h2><ExportAccountButton account={account} data={data} /></div>
         <PostsTable posts={data.posts} withViews viewsOnly />
       </section>
       <p className="text-xs text-vx-fg-muted">Twitch shares a view count for each of your latest 20 videos. Follower, subscriber, like and comment numbers are not available.</p>
@@ -175,11 +256,12 @@ function AccountAnalytics({ accountId, network, days }) {
         note={summary.followersChange === null ? null : `${summary.followersChange >= 0 ? '+' : ''}${whole.format(summary.followersChange)} in this period`} />
       <Stat label={videoNetwork ? 'Videos' : 'Posts'} value={whole.format(summary.posts)} />
       <Stat label="Interactions" value={whole.format(summary.interactions)}
-        note={tiktok ? 'Likes, comments and shares' : summary.hasInsights ? 'Likes, comments, saves and shares' : 'Likes and comments'} />
+        note={twitter ? 'Likes, replies, bookmarks, reposts and quotes' : tiktok ? 'Likes, comments and shares' : summary.hasInsights ? 'Likes, comments, saves and shares' : 'Likes and comments'} />
       <Stat label="Engagement" value={summary.engagementPer1000 === null ? '—' : oneDecimal.format(summary.engagementPer1000)}
         note={youtube ? 'Interactions per video, per 1,000 subscribers' : tiktok ? 'Interactions per video, per 1,000 followers' : 'Interactions per post, per 1,000 followers'} />
       {youtube && <Stat label="Channel views" value={metric(channelMetrics.views)} note="Lifetime total" />}
       {tiktok && <Stat label="Account likes" value={metric(channelMetrics.likes)} note="Lifetime total" />}
+      {twitter && <Stat label="Impressions" value={metric(totalPostMetric(data.posts, 'impressions'))} note="For posts in this period" />}
       {videoNetwork && <Stat label="Public videos" value={metric(channelMetrics.posts_count)} note={youtube ? 'Channel total' : 'Account total'} />}
     </dl>
 
@@ -189,15 +271,36 @@ function AccountAnalytics({ accountId, network, days }) {
     </section>
 
     <section className="rounded-2xl border border-vx-border p-5">
-      <h2 className="font-bold mb-4">{videoNetwork ? 'Videos' : 'Posts'} in this period</h2>
-      <PostsTable posts={data.posts} withInsights={summary.hasInsights} withViews={summary.hasViews} withShares={tiktok} />
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><h2 className="font-bold">{videoNetwork ? 'Videos' : 'Posts'} in this period</h2><ExportAccountButton account={account} data={data} /></div>
+      <PostsTable posts={data.posts} withInsights={summary.hasInsights} withImpressions={summary.hasImpressions} withViews={summary.hasViews} withShares={tiktok || twitter} />
     </section>
 
     {data.postingInsightsEnabled && <PostingInsights accountId={accountId} />}
     {youtube && <p className="text-xs text-vx-fg-muted">YouTube subscriber counts are rounded. Video metrics are lifetime totals for videos published in this period. The latest 50 uploads refresh each round.</p>}
     {tiktok && <p className="text-xs text-vx-fg-muted">TikTok video metrics cover public videos only. Video metrics are lifetime totals for videos published in this period. The latest 50 public videos refresh each round. Missing numbers may need additional permissions: reconnect in Veyrnox Publish after analytics access is enabled.</p>}
+    {twitter && <p className="text-xs text-vx-fg-muted">X metrics cover the latest 100 original posts. Replies and reposts are excluded. Reposts and quotes appear together as shares.</p>}
     {updated}
   </div>;
+}
+
+function ExportAccountButton({ account, data }) {
+  return <button type="button" className={button} onClick={() => downloadCsv(postAnalyticsCsv(account, data.posts), `veyrnox-${account.network}-content.csv`)}>Export CSV</button>;
+}
+
+function CapabilityMatrix({ accounts }) {
+  return <section className="rounded-2xl border border-vx-border p-5" aria-labelledby="analytics-coverage">
+    <h2 id="analytics-coverage" className="text-lg font-black">Analytics coverage</h2>
+    <p className="mt-1 text-sm text-vx-fg-muted">Metrics vary by network. Veyrnox leaves unavailable values blank instead of estimating them.</p>
+    <ul className="mt-4 divide-y divide-vx-border">
+      {accounts.map((account) => {
+        const capabilities = analyticsCapabilities(account.network);
+        return <li key={account.id} className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <span className="inline-flex items-center gap-2 font-bold"><NetworkLogo network={account.network} />{account.display_name || account.external_account_id}</span>
+          <span className="text-sm text-vx-fg-muted">{capabilities.length ? capabilities.join(' · ') : `${networkLabel(account.network)} analytics are in development`}</span>
+        </li>;
+      })}
+    </ul>
+  </section>;
 }
 
 function Stat({ label, value, note }) {
@@ -208,7 +311,7 @@ function Stat({ label, value, note }) {
   </div>;
 }
 
-function PostsTable({ posts, withInsights, withViews, withShares, viewsOnly }) {
+function PostsTable({ posts, withInsights, withImpressions, withViews, withShares, viewsOnly }) {
   if (posts.length === 0) return <p className="text-sm text-vx-fg-muted">No posts in this period.</p>;
   return <div className="overflow-x-auto">
     <table className="w-full text-sm">
@@ -217,6 +320,7 @@ function PostsTable({ posts, withInsights, withViews, withShares, viewsOnly }) {
           <th scope="col" className="pb-2 pr-3 font-bold">Published</th>
           <th scope="col" className="pb-2 pr-3 font-bold">Post</th>
           {withInsights && <th scope="col" className="pb-2 pr-3 font-bold text-right">Reach</th>}
+          {withImpressions && <th scope="col" className="pb-2 pr-3 font-bold text-right">Impressions</th>}
           {withViews && <th scope="col" className="pb-2 pr-3 font-bold text-right">Views</th>}
           {!viewsOnly && <th scope="col" className="pb-2 pr-3 font-bold text-right">Likes</th>}
           {!viewsOnly && <th scope="col" className="pb-2 pr-3 font-bold text-right">Comments</th>}
@@ -239,6 +343,7 @@ function PostsTable({ posts, withInsights, withViews, withShares, viewsOnly }) {
               </span>
             </td>
             {withInsights && <td className="py-2 pr-3 text-right tabular-nums">{metric(p.metrics?.reach)}</td>}
+            {withImpressions && <td className="py-2 pr-3 text-right tabular-nums">{metric(p.metrics?.impressions)}</td>}
             {withViews && <td className="py-2 pr-3 text-right tabular-nums">{metric(p.metrics?.views)}</td>}
             {!viewsOnly && <td className="py-2 pr-3 text-right tabular-nums">{metric(p.metrics?.likes)}</td>}
             {!viewsOnly && <td className="py-2 pr-3 text-right tabular-nums">{metric(p.metrics?.comments)}</td>}
