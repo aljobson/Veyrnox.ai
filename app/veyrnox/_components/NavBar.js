@@ -65,7 +65,7 @@ export function MarketingNav({ hideAnnouncementOnMobile = false }) {
         <NavAuthButtons />
         {/* Below xl the links above are hidden: without this the only way
             off the page was the browser back button. */}
-        <MobileMenu items={NAV_CATEGORIES} includeStudio className="xl:hidden" />
+        <MobileMenu items={NAV_CATEGORIES} className="xl:hidden" />
       </div>
       </div>
     </header>

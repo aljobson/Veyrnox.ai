@@ -31,7 +31,8 @@ test('there is one public nav, in one order', () => {
     const nav = read('app/veyrnox/_components/NavBar.js');
     const marketing = nav.slice(nav.indexOf('export function MarketingNav'), nav.indexOf('export function AppNav'));
     assert.match(marketing, /NAV_CATEGORIES\.map\(/, 'the links on the bar');
-    assert.match(marketing, /<MobileMenu items=\{NAV_CATEGORIES\}/, 'the same links in the phone menu');
+    assert.match(marketing, /<MobileMenu items=\{NAV_CATEGORIES\} className="xl:hidden" \/>/, 'the phone menu has exactly the desktop links');
+    assert.doesNotMatch(marketing, /includeStudio/, 'the phone menu must not put app links ahead of the public nav');
     // Eight links, search and the account buttons need about 1,200px: the row shows from xl.
     assert.match(marketing, /<nav aria-label="Primary" className="hidden xl:flex /);
     // A home-page section is a plain link: the browser glides to it on the home page.
