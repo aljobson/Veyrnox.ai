@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button } from '../_components/Button';
 import { CinemaShare } from './CinemaShare';
+import { CinemaPoster } from './CinemaPoster';
 const labels = { all: 'Now showing', series: 'Published series', voting: 'Open competitions' };
 export function CinemaDiscovery({ mode = 'all', onAvailability }) {
   // Switching tabs remounts the inventory: a late response cannot populate another tab.
@@ -51,7 +52,9 @@ function Inventory({ mode, onAvailability }) {
     <ul className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
       {titles.map(t => {
         const href = t.content_type === 'EPISODE' ? `/social-cinema/watch/${t.id}?title_id=${t.root_id}` : `/social-cinema/title/${t.id}`;
-        return <li key={t.id} className="flex flex-col rounded-2xl border border-vx-border bg-vx-base/60 p-5" data-testid={`cinema-title-${t.id}`}>
+        return <li key={t.id} className="flex flex-col overflow-hidden rounded-2xl border border-vx-border bg-vx-base/60" data-testid={`cinema-title-${t.id}`}>
+          <CinemaPoster id={t.id} title={t.title} href={href} />
+          <div className="flex flex-1 flex-col p-5">
           <p className="font-vx-mono text-xs tracking-widest text-vx-accent uppercase">{t.content_type}{t.content_type === 'SERIES' ? ` · ${t.episode_count} episodes` : t.duration_seconds ? ` · ${Math.max(1, Math.round(t.duration_seconds / 60))} min` : ''}</p>
           <h3 className="mt-2 text-xl font-bold wrap-break-word"><Link href={href} className="hover:underline">{t.title}</Link></h3>
           {t.series_title && <Link href={`/social-cinema/title/${t.root_id}`} className="mt-1 text-sm underline">{t.series_title}</Link>}
@@ -60,6 +63,7 @@ function Inventory({ mode, onAvailability }) {
           {t.competitions.length > 0 && <ul className="mt-4 space-y-2 text-sm">{t.competitions.map(c => <li key={c.id}><span className="font-bold">{c.name}</span><br />{c.qualified_votes} qualified votes · Closes {new Date(c.ends_at).toLocaleString()}</li>)}</ul>}
           <Link href={href} className="mt-4 inline-flex self-start rounded-full bg-vx-accent px-4 py-2 text-sm font-bold text-vx-accent-ink">{mode === 'voting' ? 'Watch and vote' : 'Watch'}</Link>
           <CinemaShare id={t.id} title={t.title} episode={t.content_type === 'EPISODE'} />
+          </div>
         </li>;
       })}
     </ul>

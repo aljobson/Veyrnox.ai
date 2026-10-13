@@ -5,6 +5,7 @@ import { CinemaComments } from '../../CinemaComments';
 import { CinemaVoting } from '../../CinemaVoting.js';
 import { CinemaRetentionControls } from '../../CinemaRetention';
 import { CinemaShare } from '../../CinemaShare';
+import { CinemaPoster } from '../../CinemaPoster';
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import { Button } from '../../../_components/Button';
 import { getSession, onSessionChange } from '../../../../lib/authClient';
@@ -70,6 +71,7 @@ export function TitlePage({ id }) {
 
   return <div className="mx-auto max-w-[1300px] px-4 py-10 pb-40 sm:px-6 sm:py-16 sm:pb-32"><div className="max-w-[952px]">
     <p className="mb-4 font-vx-mono text-xs tracking-widest text-vx-accent">SOCIAL CINEMA · {labels[title.content_type]?.toUpperCase()}</p>
+    <CinemaPoster id={title.id} title={title.title} eager sizes="(min-width: 1024px) 952px, 100vw" className="mb-8" />
     <h1 className="vx-display vx-title-detail wrap-break-word">{title.title}</h1>
     <p className="mt-3 text-vx-fg-muted">by <Link href={`/social-cinema`} className="underline">{title.creator?.display_name}</Link> · {title.language}{title.categories?.length ? ` · ${title.categories.join(', ')}` : ''}{title.ai_disclosures?.length ? ` · AI: ${title.ai_disclosures.join(', ').replaceAll('_', ' ')}` : ''}</p>
     {title.synopsis && <p className="mt-6 max-w-2xl leading-relaxed text-vx-fg-body whitespace-pre-wrap wrap-break-word">{title.synopsis}</p>}
