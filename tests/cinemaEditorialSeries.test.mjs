@@ -11,39 +11,23 @@ import {
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 
-test('the public catalog contains 26 long-form AI story series and 170 episodes', () => {
-  assert.equal(editorialSeries.length, 26);
+test('the public catalog contains only long-form AI story series with at least 6 episodes', () => {
+  assert.equal(editorialSeries.length, 9);
   assert.deepEqual(editorialSeries.map((series) => [series.slug, series.episodes.length]), [
     ['black-dwarf', 9],
     ['humanoid-space-odyssey', 8],
-    ['symbols-of-fate', 4],
     ['the-shadow-realm', 13],
-    ['void-core', 5],
-    ['lilith', 5],
-    ['the-gloom', 4],
     ['the-buried-citadel', 6],
-    ['jx', 4],
-    ['black-genesis', 4],
-    ['zotrac-the-bounty-hunter', 2],
-    ['star-revolt', 2],
-    ['the-first-moon', 3],
-    ['age-of-wings', 2],
-    ['ark-7', 2],
     ['phoenix-saga', 40],
     ['the-pardaillans', 11],
     ['i-fell-for-my-sisters-best-friend', 6],
     ['rapunzel-2-mage-academy', 10],
-    ['the-cube-mystery', 5],
-    ['qareen', 3],
-    ['90-days-youre-mine', 5],
     ['a-web-of-love-and-lies', 11],
-    ['project-d-living-the-dream', 2],
-    ['city-of-faces', 2],
-    ['aquarius', 2],
   ]);
   const allEpisodes = editorialSeries.flatMap((series) => series.episodes);
-  assert.equal(allEpisodes.length, 170);
-  assert.equal(new Set(allEpisodes.map((episode) => episode.id)).size, 170);
+  assert.equal(allEpisodes.length, 114);
+  assert.equal(new Set(allEpisodes.map((episode) => episode.id)).size, 114);
+  assert.ok(editorialSeries.every((series) => series.episodes.length >= 6));
   assert.ok(allEpisodes.every((episode) => episode.posterUrl?.startsWith('https://i.ytimg.com/vi/')));
   assert.ok(allEpisodes.every((episode) => episode.durationSeconds >= 480));
 
@@ -54,7 +38,7 @@ test('the public catalog contains 26 long-form AI story series and 170 episodes'
   assert.ok(series.posterUrl.startsWith('https://i.ytimg.com/vi/'));
 
   const cards = editorialSeriesCards();
-  assert.equal(cards.length, 26);
+  assert.equal(cards.length, 9);
   const [card] = cards;
   assert.equal(card.content_type, 'SERIES');
   assert.equal(card.episode_count, 9);
