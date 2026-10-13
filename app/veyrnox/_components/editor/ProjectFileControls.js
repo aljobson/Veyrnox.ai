@@ -4,7 +4,7 @@ import { Button } from '../Button';
 import { exportProjectFile, readProjectFile } from '../../_lib/editorProjectFile.mjs';
 
 /** onLoadTimeline(next, details) owns the single undo boundary and ordinary source relinking. */
-export function ProjectFileControls({ tl, onLoadTimeline, disabled = false, openDisabled = false, name = 'veyrnox-studio-project', projectDocument = null }) {
+export function ProjectFileControls({ tl, onLoadTimeline, disabled = false, openDisabled = false, name = 'veyrnox-studio-project', projectDocument = null, compact = false }) {
     const chooser = useRef(null), alive = useRef(true), current = useRef({ tl, disabled }), running = useRef(false), downloads = useRef(new Map());
     const [busy, setBusy] = useState(false), [error, setError] = useState(''), [status, setStatus] = useState('');
     useEffect(() => { current.current = { tl, disabled }; }, [tl, disabled]);
@@ -38,7 +38,7 @@ export function ProjectFileControls({ tl, onLoadTimeline, disabled = false, open
         } catch (e) { if (alive.current) setError(e.message || 'The project file could not be opened.'); }
         finally { running.current = false; if (alive.current) setBusy(false); }
     }
-    return <section aria-label="Local project files" className="space-y-2">
+    const controls = <>
         <div className="flex flex-wrap gap-2">
             <Button type="button" size="sm" variant="ghost" disabled={disabled || busy} onClick={download}>Download project file</Button>
             <Button type="button" size="sm" variant="ghost" disabled={disabled || openDisabled || busy || !onLoadTimeline} onClick={() => chooser.current?.click()}>Open project file</Button>
@@ -49,5 +49,10 @@ export function ProjectFileControls({ tl, onLoadTimeline, disabled = false, open
         {busy && <p role="status" className="text-xs">Opening project file…</p>}
         {error && <p role="alert" className="text-xs">{error}</p>}
         {status && <p role="status" className="text-xs">{status}</p>}
-    </section>;
+    </>;
+    if (compact) return <details className="group relative shrink-0">
+        <summary className="cursor-pointer list-none rounded-lg border border-vx-border bg-vx-base/60 px-3 py-2 text-xs font-semibold transition-colors hover:border-vx-accent [&::-webkit-details-marker]:hidden">Project files</summary>
+        <section aria-label="Local project files" className="absolute right-0 top-full z-50 mt-2 w-[min(24rem,calc(100vw-2rem))] space-y-2 rounded-xl border border-vx-border bg-vx-panel p-3 shadow-2xl">{controls}</section>
+    </details>;
+    return <section aria-label="Local project files" className="space-y-2">{controls}</section>;
 }

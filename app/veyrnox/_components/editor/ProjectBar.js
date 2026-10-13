@@ -167,11 +167,11 @@ function ProjectSessionBar({ tl, blobs, onLoadTimeline, onRelinked, onContext,co
 
     if (!enabled) return null;
     const status = busy ? 'Saving…' : error ? 'Not saved' : dirty ? 'Unsaved changes' : savedAt ? `Saved · version ${revision}` : 'Not saved yet';
-    return <section aria-label="Project" className={`space-y-3 rounded-2xl border border-vx-border bg-vx-panel ${compact?"p-1.5":"p-4"}`}>
+    return <section aria-label="Project" className={compact?'shrink-0 space-y-2':'space-y-3 rounded-2xl border border-vx-border bg-vx-panel p-4'}>
         <div className="flex flex-wrap items-center gap-3">
             {projectId ? <>
-                <span className="text-sm font-bold">{name}</span>
-                <span role="status" className="text-xs text-vx-fg-muted">{status}</span>
+                <span className="max-w-48 truncate text-sm font-bold" title={name}>{name}</span>
+                <span role="status" className="hidden text-xs text-vx-fg-muted sm:inline">{status}</span>
                 <Button size="sm" disabled={busy || !dirty} onClick={() => save()}>Save</Button>
                 <Button size="sm" variant="ghost" disabled={busy} onClick={openVersions}>Versions</Button>
             </> : <Button size="sm" variant="ghost" disabled={busy} onClick={openPicker}>Save to a project</Button>}
