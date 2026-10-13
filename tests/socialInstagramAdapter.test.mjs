@@ -56,6 +56,30 @@ test('exchangeCodeForToken performs the two-step short→long-lived swap against
     assert.equal(calls[1].url.searchParams.get('access_token'), 'short-lived-token');
 });
 
+test('exchangeCodeForToken accepts the live top-level short-lived token response', async () => {
+    let call = 0;
+    const fetcher = async () => (++call === 1
+        ? jsonRes({ access_token: 'short-lived-token', user_id: '17841400000000000' })
+        : jsonRes({ access_token: 'long-lived-token', token_type: 'bearer', expires_in: 5184000 }));
+    const result = await exchangeCodeForToken(cfg, {
+        code: 'auth-code', redirectUri: 'https://veyrnox.ai/social/connect/callback/instagram',
+    }, fetcher);
+    assert.equal(result.accessToken, 'long-lived-token');
+    assert.equal(call, 2);
+});
+
+test('exchangeCodeForToken accepts an object-wrapped short-lived token response', async () => {
+    let call = 0;
+    const fetcher = async () => (++call === 1
+        ? jsonRes({ data: { access_token: 'short-lived-token', user_id: '17841400000000000' } })
+        : jsonRes({ access_token: 'long-lived-token', token_type: 'bearer', expires_in: 5184000 }));
+    const result = await exchangeCodeForToken(cfg, {
+        code: 'auth-code', redirectUri: 'https://veyrnox.ai/social/connect/callback/instagram',
+    }, fetcher);
+    assert.equal(result.accessToken, 'long-lived-token');
+    assert.equal(call, 2);
+});
+
 test('exchangeCodeForToken identifies a malformed short-lived response without exposing token data', async () => {
     const fetcher = async () => jsonRes({ data: [] });
     await assert.rejects(exchangeCodeForToken(cfg, { code: 'c', redirectUri: 'https://veyrnox.ai/cb' }, fetcher), /token_exchange_failed_short_response/);

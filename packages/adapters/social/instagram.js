@@ -72,9 +72,10 @@ export function buildAuthorizeUrl(cfg, { redirectUri, state }) {
  * then immediately swaps it for a long-lived one (~60 days) — Instagram
  * Login's own two-step requirement for durable server-side tokens, same
  * shape as before, different endpoints. The short-lived response is
- * `{ data: [{ access_token, user_id, permissions }] }` — Meta's own
- * array-wrapped shape for this specific endpoint, not the plain object
- * every other token endpoint here returns. */
+ * Meta documents `{ data: [{ access_token, user_id, permissions }] }`, but
+ * the live Instagram Login endpoint also returns the token fields directly
+ * for some app/account combinations. Accept both successful representations;
+ * every other shape still fails closed before the long-lived exchange. */
 export async function exchangeCodeForToken(cfg, { code, redirectUri }, fetcher = fetch) {
     const shortLived = await postForm(SHORT_LIVED_TOKEN_URL, {
         client_id: cfg.appId,
@@ -83,7 +84,13 @@ export async function exchangeCodeForToken(cfg, { code, redirectUri }, fetcher =
         redirect_uri: redirectUri,
         code,
     }, fetcher);
-    const first = shortLived && Array.isArray(shortLived.data) ? shortLived.data[0] : null;
+    const first = shortLived && Array.isArray(shortLived.data)
+        ? shortLived.data[0]
+        : shortLived && shortLived.data && typeof shortLived.data === 'object'
+            ? shortLived.data
+            : shortLived && typeof shortLived === 'object'
+                ? shortLived
+                : null;
     if (!first || typeof first.access_token !== 'string') throw new Error('token_exchange_failed_short_response');
 
     const longLivedUrl = new URL(LONG_LIVED_TOKEN_URL);
