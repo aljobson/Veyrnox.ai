@@ -6,48 +6,75 @@ import {
   editorialSeries,
   editorialSeriesCards,
   editorialSeriesForEpisode,
+  youtubeEmbedUrl,
 } from '../app/veyrnox/social-cinema/editorialSeries.js';
-import { cinemaPosterIds } from '../app/veyrnox/social-cinema/cinemaPosters.js';
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 
-test('the public catalog leads with one ordered anthology series', () => {
+test('the public catalog contains a complete AI-made story series', () => {
   assert.equal(editorialSeries.length, 1);
   const [series] = editorialSeries;
-  assert.equal(series.slug, 'ai-visual-studies');
-  assert.deepEqual(series.episodes.map((episode) => episode.position), [1, 2, 3, 4]);
-  assert.equal(new Set(series.episodes.map((episode) => episode.id)).size, 4);
-  assert.ok(series.episodes.every((episode) => cinemaPosterIds.includes(episode.id)));
+  assert.equal(series.slug, 'mission-pandora-the-last-pilot');
+  assert.equal(series.title, 'Mission Pandora: The Last Pilot');
+  assert.equal(series.episodes.length, 17);
+  assert.deepEqual(series.episodes.map((episode) => episode.position), Array.from({ length: 17 }, (_, index) => index + 1));
+  assert.equal(new Set(series.episodes.map((episode) => episode.id)).size, 17);
+  assert.ok(series.posterUrl.startsWith('https://i.ytimg.com/vi/'));
 
   const [card] = editorialSeriesCards();
   assert.equal(card.content_type, 'SERIES');
-  assert.equal(card.episode_count, 4);
+  assert.equal(card.episode_count, 17);
   assert.equal(card.series_slug, series.slug);
+  assert.equal(card.display_name, 'By Mission Pandora');
+  assert.equal(card.poster_src, series.posterUrl);
 });
 
-test('every anthology episode resolves its series and its next episode', () => {
+test('the 17 YouTube chapter episodes are contiguous and resolve in order', () => {
   const [series] = editorialSeries;
   for (const [index, episode] of series.episodes.entries()) {
     const membership = editorialSeriesForEpisode(episode.id);
     assert.equal(membership.series.slug, series.slug);
     assert.equal(membership.episode.position, index + 1);
+    assert.equal(episode.playback.provider, 'youtube');
+    assert.equal(episode.playback.videoId, 'g8FtPaZWGnA');
+    assert.equal(episode.durationSeconds, episode.playback.endSeconds - episode.playback.startSeconds);
+    if (index > 0) assert.equal(episode.playback.startSeconds, series.episodes[index - 1].playback.endSeconds);
+
     const context = editorialEpisodeContext(series.slug, episode.id);
     assert.equal(context.previousEpisode?.id || null, series.episodes[index - 1]?.id || null);
     assert.equal(context.nextEpisode?.id || null, series.episodes[index + 1]?.id || null);
   }
-  assert.equal(editorialEpisodeContext(series.slug, '00000000-0000-0000-0000-000000000000'), null);
+  assert.equal(series.episodes[0].playback.startSeconds, 0);
+  assert.equal(series.episodes.at(-1).playback.endSeconds, 2076);
+  assert.equal(editorialEpisodeContext(series.slug, 'missing-episode'), null);
 });
 
-test('Social Cinema presents series rather than a standalone clip feed', () => {
+test('YouTube chapter embeds use the privacy-enhanced player with fixed boundaries', () => {
+  const [episode] = editorialSeries[0].episodes;
+  assert.equal(youtubeEmbedUrl(episode.playback), 'https://www.youtube-nocookie.com/embed/g8FtPaZWGnA?start=0&end=68&playsinline=1&rel=0');
+  assert.equal(youtubeEmbedUrl({ ...episode.playback, videoId: '../invalid' }), null);
+  assert.equal(youtubeEmbedUrl({ ...episode.playback, endSeconds: 0 }), null);
+});
+
+test('Social Cinema presents the external series without copying the source video', () => {
   const home = read('app/veyrnox/social-cinema/SocialCinema.js');
   const discovery = read('app/veyrnox/social-cinema/CinemaDiscovery.js');
   const player = read('app/veyrnox/social-cinema/watch/[id]/Player.js');
+  const editorial = read('app/veyrnox/social-cinema/editorialSeries.js');
+  const policy = read('lib/contentSecurityPolicy.mjs');
   const nextConfig = read('next.config.mjs');
   const sitemap = read('app/sitemap.js');
   assert.doesNotMatch(home, /\['For You'/);
   assert.match(home, /mode=\{section === 1 \? 'voting' : 'series'\}/);
   assert.match(discovery, /editorialSeriesCards\(slug\)/);
+  assert.match(discovery, /else if \(mode === 'series'\)/);
+  assert.match(player, /youtubeEmbedUrl/);
+  assert.match(editorial, /www\.youtube-nocookie\.com/);
+  assert.match(player, /Free viewing via YouTube/);
   assert.match(player, /Next episode:/);
+  assert.match(policy, /https:\/\/www\.youtube-nocookie\.com/);
+  assert.match(policy, /https:\/\/i\.ytimg\.com/);
+  assert.match(nextConfig, /hostname: 'i\.ytimg\.com'/);
   assert.match(nextConfig, /source: '\/social-cinema\/series\/:slug', destination: '\/veyrnox\/social-cinema\/series\/:slug'/);
   assert.match(sitemap, /editorialSeries\.map/);
 });

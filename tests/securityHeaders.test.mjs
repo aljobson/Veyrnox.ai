@@ -8,6 +8,8 @@ const { default: nextConfig } = await import('../next.config.mjs');
 
 const SUPABASE_HOST = 'https://xdxdzmsztyzbnzeforxx.supabase.co';
 const TURNSTILE_HOST = 'https://challenges.cloudflare.com';
+const YOUTUBE_PLAYER_HOST = 'https://www.youtube-nocookie.com';
+const YOUTUBE_IMAGE_HOST = 'https://i.ytimg.com';
 const MIN_HSTS_AGE = 63072000;
 
 async function headerMap() {
@@ -56,12 +58,20 @@ test("no 'unsafe-eval' outside next dev, and no wildcard script source", async (
         `script-src may name only Turnstile as a remote origin: ${scriptSrc.join(' ')}`);
 });
 
-test('frame-src admits Turnstile and the Stream player, nothing else', async () => {
+test('frame-src admits Turnstile and the two documented cinema players, nothing else', async () => {
     // Without frame-src, frames fall back to default-src 'self' and the
     // widget's challenge iframe is blocked. The Stream player host is the
-    // one addition ADR-0059 allows, for /social-cinema/watch; it must stay this narrow.
+    // ADR-0059 admits Stream for owned titles. ADR-0098 admits YouTube's
+    // privacy-enhanced player for free curated titles; this must stay narrow.
     const csp = (await headerMap()).get('content-security-policy');
-    assert.deepEqual(directives(csp).get('frame-src'), [TURNSTILE_HOST, 'https://*.cloudflarestream.com']);
+    assert.deepEqual(directives(csp).get('frame-src'), [TURNSTILE_HOST, 'https://*.cloudflarestream.com', YOUTUBE_PLAYER_HOST]);
+});
+
+test('img-src admits only owned storage and the documented YouTube artwork host', async () => {
+    const csp = (await headerMap()).get('content-security-policy');
+    const imageSrc = directives(csp).get('img-src');
+    assert.ok(imageSrc.includes(YOUTUBE_IMAGE_HOST));
+    assert.deepEqual(imageSrc.filter((source) => source.startsWith('http') && !source.includes('r2.cloudflarestorage.com')), [YOUTUBE_IMAGE_HOST]);
 });
 
 test('connect-src permits only our backends and the exact Stream upload hosts (ADR-0052)', async () => {

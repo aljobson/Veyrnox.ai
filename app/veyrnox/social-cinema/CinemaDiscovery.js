@@ -36,7 +36,10 @@ function Inventory({ mode, onAvailability }) {
     } catch (error) {
       if (seq !== generation.current) return;
       if (cursor) { setMoreError(true); setState('ready'); }
-      else { setState(error.closed ? 'closed' : 'error'); if (error.closed) onAvailability?.(false); }
+      else if (mode === 'series') {
+        const published = editorialSeriesCards(slug);
+        setTitles(published); setState('ready'); onAvailability?.(published.length > 0);
+      } else { setState(error.closed ? 'closed' : 'error'); if (error.closed) onAvailability?.(false); }
     } finally { if (seq === generation.current) pending.current = false; }
   }, [mode, onAvailability]);
   useEffect(() => { load(); return () => { generation.current++; }; }, [load]);
@@ -53,10 +56,10 @@ function Inventory({ mode, onAvailability }) {
     {state === 'error' && <div className="mt-5"><p role="alert">Could not load Cinema titles. Please retry.</p><Button variant="ghost" className="mt-3" onClick={() => load()}>Retry titles</Button></div>}
     {(state === 'ready' || state === 'more') && titles.length === 0 && <p role="status" className="mt-5 text-vx-fg-muted">{mode === 'voting' ? 'No eligible titles in open competitions' : mode === 'series' ? 'No series are published' : 'No titles are published'}{category ? ' in this category yet.' : ' yet.'}</p>}
     <ul className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-      {titles.map(t => {
+      {titles.map((t, index) => {
         const href = t.series_slug ? `/social-cinema/series/${t.series_slug}` : t.content_type === 'EPISODE' ? `/social-cinema/watch/${t.id}?title_id=${t.root_id}` : `/social-cinema/title/${t.id}`;
         return <li key={t.id} className="flex flex-col overflow-hidden rounded-2xl border border-vx-border bg-vx-base/60" data-testid={`cinema-title-${t.id}`}>
-          <CinemaPoster id={t.poster_id || t.id} title={t.title} href={href} />
+          <CinemaPoster id={t.poster_id || t.id} src={t.poster_src} title={t.title} href={href} eager={index === 0} />
           <div className="flex flex-1 flex-col p-5">
           <p className="font-vx-mono text-xs tracking-widest text-vx-accent uppercase">{t.content_type}{t.content_type === 'SERIES' ? ` · ${t.episode_count} episodes` : t.duration_seconds ? ` · ${Math.max(1, Math.round(t.duration_seconds / 60))} min` : ''}</p>
           <h3 className="mt-2 text-xl font-bold wrap-break-word"><Link href={href} className="hover:underline">{t.title}</Link></h3>

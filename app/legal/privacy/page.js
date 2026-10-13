@@ -9,7 +9,7 @@ export const metadata = {
 
 export default function Privacy() {
     return (
-        <LegalPage title="Privacy Policy" updated="12 October 2026">
+        <LegalPage title="Privacy Policy" updated="13 October 2026">
             <p>{ENTITY.name} (&ldquo;we&rdquo;) is the data controller for personal data processed through Veyrnox.ai. Registered office: {ENTITY.office}. Contact: <a href={`mailto:${ENTITY.privacyEmail}`}>{ENTITY.privacyEmail}</a>.</p>
 
             <h2>What we collect</h2>
@@ -34,6 +34,7 @@ export default function Privacy() {
             <p>Some of the companies that process your personal data are outside the United Kingdom and the EEA: our edge hosting, the model providers, and Stripe, Inc. (United States), which is the Merchant of Record for credit pack purchases. Where your personal data is processed outside the United Kingdom or the EEA, we rely on the UK International Data Transfer Agreement or the EU Standard Contractual Clauses with the company concerned. If we move the database to another region we will update this page before the move takes effect.</p>
 
             <h2 id="youtube">YouTube data in Veyrnox Publish</h2>
+            <p>Social Cinema uses YouTube&rsquo;s privacy-enhanced embedded player for selected free-to-watch series. Before you press play, YouTube receives the technical information needed to display the thumbnail, title, playability and content restrictions. When you play a video, YouTube receives playback and device data and may set or read cookies according to the <a href="https://policies.google.com/privacy">Google Privacy Policy</a>. We do not download or store a copy of the embedded video.</p>
             <p>When you connect a YouTube channel to Veyrnox Publish, we ask Google for permission to identify your channel, read its supported channel and video statistics, and upload the videos you select. This consent is separate from Google sign-in. We use the read access to show your connected channel and basic posting analytics. We use upload access only to carry out your Post now or Schedule post instructions.</p>
             <p>We store the connected channel details, granted permissions, posting history and analytics in our Supabase database. Access and refresh tokens are encrypted before storage and used by our server to make the authorized YouTube API calls, including scheduled uploads. Selecting a Library video does not by itself upload it to YouTube. When you post or schedule it, we send the selected video and its title and description to YouTube.</p>
             <p>Disconnecting a channel removes its stored access and refresh tokens and stops further publishing and analytics collection for that connection. It does not delete videos already uploaded to YouTube. Account details, posting history and previously collected analytics remain part of your Veyrnox account; you can request their deletion using the contact and data-rights process below. You can also revoke Veyrnox Publish&rsquo;s access through your Google Account.</p>
