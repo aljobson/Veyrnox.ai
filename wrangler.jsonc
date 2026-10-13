@@ -115,7 +115,9 @@
     "CREATOR_UPLOADS_ENABLED": "true",
     "CINEMA_UPLOAD_RECOVERY_ENABLED": "true",
     "CINEMA_UPLOAD_REMOVAL_ENABLED": "true",
-    "CINEMA_PROXY_UPLOADS_ENABLED": "true",
+    // Fail closed until Cinema bytes enter private quarantine and the exact
+    // SHA-256 payload passes malware and media-structure inspection.
+    "CINEMA_PROXY_UPLOADS_ENABLED": "false",
     "CREATOR_MONETISATION_ENABLED": "false",
     "CINEMA_SUBSCRIPTIONS_ENABLED": "false",
     // Paid credit Unlocks remain closed. Free playback has its own bounded
