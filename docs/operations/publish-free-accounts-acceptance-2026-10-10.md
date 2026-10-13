@@ -85,11 +85,20 @@ After a fresh passkey sign-in as the existing Al Jobson staging user, the live
 Publish screen displayed **“Basic scheduling is free for up to five connected
 accounts.”** YouTube, TikTok, Bluesky and Google Business Profile remained
 available as connection choices according to their separate provider gates.
-The account response showed no currently connected social accounts. This proves
-the staged flag, signed-in read path and allowance copy; it does **not** prove a
-real fifth connection, sixth-account refusal, provider reconnect/disconnect or
-scheduler behavior with multiple live accounts. Those real-account checks remain
-required before production activation under step 4 above.
+The account initially had no active social connections. The existing TikTok
+sandbox grant then connected Flav, and the owner completed the staging Google
+warning/consent for the designated `jobsonal1` YouTube channel. Both accounts
+were active together. The composer exposed a target for each, and both targets
+were selected together with `aria-pressed=true`; no post or schedule request was
+sent.
+
+The TikTok connection was then disconnected through the confirmation dialog.
+The account and composer target disappeared, freeing the slot. Reconnecting
+through the existing sandbox grant restored Flav beside `jobsonal1`. This proves
+the staged writer with two real provider accounts, target selection and a real
+disconnect/reconnect cycle. It does **not** prove a real fifth connection,
+sixth-account refusal or scheduled-post delivery from a multi-account draft.
+Those checks remain required before production activation under step 4 above.
 
 Device uploads visible in staging remain governed by their separate rollout.
 Production `PUBLISH_UPLOADS_ENABLED` remains false; this change does not satisfy
