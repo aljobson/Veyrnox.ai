@@ -1,29 +1,14 @@
 'use client';
 
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ThemeToggle } from './ThemeToggle';
 import { Icon } from './Icon';
-import { getStoredSession, onSessionChange } from '../../lib/authClient';
-import { useEditorEnabled } from './EditorFlag';
-import { useProjectsEnabled } from './ProjectsFlag';
-import { STUDIO_LINKS } from '../_lib/studioNavigation';
-
-const storedSignIn = () => Boolean(getStoredSession());
-const signedOut = () => false;
 
 // A visible menu keeps every destination reachable on a narrow screen.
-export function MobileMenu({ items, className = '', buttonLabel = 'Menu', navLabel = 'Site', activeHref, includeStudio = false }) {
+export function MobileMenu({ items, className = '', buttonLabel = 'Menu', navLabel = 'Site', activeHref }) {
   const [open, setOpen] = useState(false);
   const triggerRef = useRef(null);
-  const signedIn = useSyncExternalStore(onSessionChange, storedSignIn, signedOut);
-  const editorEnabled = useEditorEnabled();
-  const projectsEnabled = useProjectsEnabled();
-  const studioItems = includeStudio && signedIn ? STUDIO_LINKS.filter((link) => {
-    if (link.href === '/app/editor') return editorEnabled;
-    if (link.href === '/app/projects') return projectsEnabled;
-    return true;
-  }) : [];
 
   // A phone menu that survives a route change covers the page you just
   // opened; close it whenever it opens a link, and on Escape.
@@ -94,12 +79,6 @@ export function MobileMenu({ items, className = '', buttonLabel = 'Menu', navLab
             aria-label={navLabel}
             className="vx-drop-in fixed inset-x-0 top-16 z-40 max-h-[calc(100dvh-4rem)] overflow-y-auto border-b border-vx-border bg-vx-base px-4 py-3 shadow-xl"
           >
-            {studioItems.length > 0 && (
-              <div className="mb-2 border-b border-vx-border pb-3">
-                <p className="px-3 pb-2 font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-faint">YOUR STUDIO</p>
-                <ul className="flex flex-col">{renderLinks(studioItems)}</ul>
-              </div>
-            )}
             <ul className="flex flex-col">{renderLinks(items)}</ul>
             <div className="mt-2 flex items-center justify-between border-t border-vx-border pt-3">
               <span className="font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-faint">THEME</span>
