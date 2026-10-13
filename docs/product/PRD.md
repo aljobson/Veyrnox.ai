@@ -233,7 +233,7 @@ Freezes), Cinema creator and submission review.
 
 | feature | decision | blocker |
 |---|---|---|
-| **Publish Plan** Free 1 account; $19/mo for 5 + $4/extra | ADR-0062/0063 Accepted | plan table, caps, Stripe product; no `publish_plan` code exists |
+| **Publish Plan** five accounts and basic scheduling free; $15/month for 366-day analytics history and best-time recommendations | ADR-0062/0063 amendments, 2026-10-13 | built in 0293 with Checkout, Portal and webhook lifecycle; `PUBLISH_RUNTIME_FLAGS.plans` remains off pending migration and staging payment acceptance |
 | **Subscription pricing UI and plan changes** (upgrade now, downgrade at period end, monthly-to-annual undecided) | ADR-0064 owner decisions 2026-10-03 | webhook acceptance on staging; the reviewed plan-change design (#508) needs a new migration |
 | Face Filters Transform (Slices 5–9) | upload spine shipped | fal cost data + CSAM hash matching |
 | Chat media tool calls (a model starting a priced job, with a confirm step) | ADR-0072 deferred v2 | own ADR; skills only prepare a draft today |

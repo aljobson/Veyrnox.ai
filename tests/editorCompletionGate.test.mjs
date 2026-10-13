@@ -4,6 +4,7 @@ import {readFileSync} from 'node:fs';
 import {register} from 'node:module';
 import {parseJsonc} from '../scripts/check-migration-ledger.mjs';
 import {editorFeatureEnabled} from '../lib/editorRuntimeFlags.mjs';
+import {publishRuntimeFeatureEnabled} from '../lib/social/runtimeFlags.js';
 import {contentSecurityPolicy} from '../lib/contentSecurityPolicy.mjs';
 import {LOCAL_SPEECH_WORKER_URL,localSpeechWorkerPolicy} from '../app/veyrnox/_lib/localSpeechAssets.mjs';
 import {EDITOR_VISION_PATH,editorVisionWorkerPolicy} from '../app/veyrnox/_lib/editorVisionRuntime.mjs';
@@ -16,8 +17,8 @@ test('owner-authorized document, private delivery and local inference features r
     for(const flag of ['EDITOR_LIBRARY_EXPORTS_ENABLED','EDITOR_ORGANIZATION_ENABLED','EDITOR_LOCAL_INFERENCE_ENABLED']){
         assert.equal(editorFeatureEnabled(flag,config.vars),true);assert.equal(editorFeatureEnabled(flag,config.env.staging.vars),true);
     }
-    assert.equal(config.vars.PUBLISH_VIDEO_DESTINATIONS_ENABLED,'false');
-    assert.equal(config.env.staging.vars.PUBLISH_VIDEO_DESTINATIONS_ENABLED,'false');
+    assert.equal(publishRuntimeFeatureEnabled('PUBLISH_VIDEO_DESTINATIONS_ENABLED',config.vars),false);
+    assert.equal(publishRuntimeFeatureEnabled('PUBLISH_VIDEO_DESTINATIONS_ENABLED',config.env.staging.vars),false);
 });
 test('only the exact enabled speech Worker receives a bounded WASM policy; the page and other paths remain closed',async()=>{
     const previous=process.env.EDITOR_LOCAL_INFERENCE_ENABLED;const nodeEnv=process.env.NODE_ENV;process.env.NODE_ENV='production';

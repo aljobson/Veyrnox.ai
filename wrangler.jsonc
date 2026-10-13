@@ -183,6 +183,9 @@
     // Previously queued targets continue even when public Publish is disabled.
     "PUBLISH_ENABLED": "true",
     "PUBLISH_MULTI_ACCOUNT_ENABLED": "false",
+    // Grouped to stay within Cloudflare's 128 text-binding limit. Apply 0293 and
+    // test Stripe before setting plans=true; qualify native video separately.
+    "PUBLISH_RUNTIME_FLAGS": "{\"plans\":\"false\",\"videoDestinations\":\"false\"}",
     // Preserve the private pilot secret and default YouTube uploads to Private.
     "PUBLISH_YOUTUBE_VISIBILITY_ENABLED": "true",
 
@@ -195,7 +198,6 @@
     // The overall Publish launch still follows PUBLISH_ENABLED.
     "PUBLISH_CALENDAR_ENABLED": "true",
     "PUBLISH_UPLOADS_ENABLED": "false",
-    "PUBLISH_VIDEO_DESTINATIONS_ENABLED": "false",
     // Requires 0228 and provider app credentials before tester activation.
     "PUBLISH_EXTENDED_NETWORKS_ENABLED": "false",
     // Adds instagram_business_manage_insights to the Instagram consent
@@ -322,6 +324,8 @@
         // Veyrnox Publish is open on staging for testing (see production).
         "PUBLISH_ENABLED": "true",
         "PUBLISH_MULTI_ACCOUNT_ENABLED": "true",
+        // Apply 0293 and install Stripe test keys before setting plans=true.
+        "PUBLISH_RUNTIME_FLAGS": "{\"plans\":\"false\",\"videoDestinations\":\"false\"}",
         "PUBLISH_TESTER_AUTH_IDS": "",
         "PUBLISH_YOUTUBE_VISIBILITY_ENABLED": "false",
         "PUBLISH_RELEASED_NETWORKS": "*",
@@ -331,7 +335,6 @@
         "PUBLISH_CALENDAR_ENABLED": "true",
         // 0209 applied and real browser uploads verified on staging 2026-10-06.
         "PUBLISH_UPLOADS_ENABLED": "true",
-        "PUBLISH_VIDEO_DESTINATIONS_ENABLED": "false",
         // 0228 applied on staging 2026-10-08. Unconfigured providers remain unavailable.
         "PUBLISH_EXTENDED_NETWORKS_ENABLED": "true",
         // Provider review approvals are still outstanding.

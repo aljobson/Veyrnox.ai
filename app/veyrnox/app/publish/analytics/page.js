@@ -6,6 +6,7 @@ import { Main } from '../../../_components/Main';
 import { getSession, onSessionChange } from '../../../../lib/authClient';
 import { NETWORKS, listSocialAccounts } from '../../../../lib/socialConnectClient';
 import { getSocialAnalytics } from '../../../../lib/socialAnalyticsClient';
+import { getPublishPlan } from '../../../../lib/publishPlanClient';
 import { postInteractions, rangeForDays, summarize, totalViews } from '../../../../../lib/social/analyticsSummary.js';
 import { FollowersChart } from './FollowersChart';
 import { PostingInsights } from './PostingInsights';
@@ -42,11 +43,19 @@ function Dashboard() {
   const [loadError, setLoadError] = useState('');
   const [chosenId, setChosenId] = useState('');
   const [days, setDays] = useState(30);
+  const [planTier, setPlanTier] = useState(null);
 
   useEffect(() => {
     let active = true;
     listSocialAccounts()
-      .then((res) => { if (active) setAccounts((res.accounts || []).filter((a) => a.status === 'active')); })
+      .then(async (res) => {
+        if (!active) return;
+        setAccounts((res.accounts || []).filter((a) => a.status === 'active'));
+        if (res.plansEnabled === true) {
+          try { const plan = await getPublishPlan(); if (active) setPlanTier(plan.entitlement?.tier || 'free'); }
+          catch { if (active) setPlanTier('free'); }
+        }
+      })
       .catch(() => { if (active) setLoadError('Could not load your connected accounts. Check your connection and try again.'); });
     return () => { active = false; };
   }, []);
@@ -60,7 +69,11 @@ function Dashboard() {
   }
 
   const selected = accounts.find((a) => a.id === chosenId) || accounts[0];
+  const ranges = planTier === 'free' ? RANGES.filter((range) => range.days <= 30) : RANGES;
   return <div className="space-y-6">
+    {planTier === 'free' && <div className="rounded-2xl border border-vx-accent/40 bg-vx-accent/[0.06] p-4 text-sm text-vx-fg-body">
+      Free includes 30 days of analytics. <Link href="/app/publish/plan" className="font-bold text-vx-accent underline">Upgrade for full history and best-time recommendations</Link>.
+    </div>}
     <div className="flex flex-wrap items-center justify-between gap-3">
       <label className="inline-flex items-center gap-2 text-sm font-bold text-vx-fg">
         <NetworkLogo network={selected.network} />
@@ -76,7 +89,7 @@ function Dashboard() {
         </select>
       </label>
       <div className="flex gap-2" role="group" aria-label="Date range">
-        {RANGES.map((r) => (
+        {ranges.map((r) => (
           <button
             key={r.days}
             type="button"

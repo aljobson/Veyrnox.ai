@@ -178,10 +178,9 @@ account. See §1.10.
 
 ## 1.8 Entitlement / plan model
 
-**Current owner decision (10 October 2026):** basic scheduling is free across
-several accounts; paid plans unlock advanced features. The initial allowance is
-five active accounts per user across owned brands. Premium feature boundaries
-and prices remain to be reviewed. The old $19/five-account and $4-extra-account
+**Current owner decision (13 October 2026):** basic scheduling is free across
+five active accounts per user across owned brands. The $15/month Publish Plan
+unlocks 366-day analytics history and best-time recommendations. The old $19/five-account and $4-extra-account
 proposal is superseded; [ADR-0062](../adr/0062-veyrnox-publish-entitlement-model.md)
 and [ADR-0063](../adr/0063-veyrnox-publish-plan-pricing.md) retain that history and
 record the owner's amendment. Future paid entitlement stays independent of the
@@ -191,9 +190,9 @@ generation-credit ledger.
 five-account cap and serialized concurrent callbacks. The Worker chooses it
 only when `PUBLISH_MULTI_ACCOUNT_ENABLED=true`; otherwise it retains 0169's
 one-account writer. The account screen reads the server's allowance and the
-callback gives the matching limit message. Both environment flags initially
-remain false pending migration, the clean window and acceptance. No premium
-checkout or entitlement is active. Existing posts, calendar and basic analytics
+callback gives the matching limit message. Migration 0293 adds the independent
+plan entitlement, Checkout/Portal endpoints and append-only Stripe lifecycle;
+`PUBLISH_RUNTIME_FLAGS.plans` remains false pending migration and staging payment acceptance. Existing posts, calendar and basic analytics
 remain available on released networks without charging generation Credits.
 
 The comparison below records the original account-based pricing rationale;
@@ -241,7 +240,7 @@ acceptance records in this folder.
 | Analytics dashboard | Built for Instagram, YouTube and TikTok (0188, 0190). X and LinkedIn analytics are not built. Twitch: the sweep collects the latest 20 videos with their own view counts (only while the extended switch and `PUBLISH_ANALYTICS_ENABLED` are on; no channel follower or subscriber totals), and the dashboard shows them as a Videos tile, a Views tile and a views-only table (#642, merged 2026-10-08; not yet seen against a real Twitch account). Facebook, Threads, Pinterest, Bluesky and Business Profile analytics are not built. |
 | Best time to post and posting frequency | Built as a weekly cached aggregate (0191) shown on the analytics page. It is not offered inside the composer. |
 | Approval workflow with reviewers, competitors, SmartLinks, hashtag tracker, inbox, flows, ads, reports | Not built. |
-| Publish Plan | Not built (§1.8). |
+| Publish Plan | Built behind `PUBLISH_RUNTIME_FLAGS.plans` (0293): $15/month for 366-day analytics history and best-time recommendations; basic scheduling and five accounts remain free. Migration and Stripe staging acceptance are still required. |
 | Publish switches for the new networks | `PUBLISH_EXTENDED_NETWORKS_ENABLED`: `"false"` in production, `"true"` on staging (PR #638, 2026-10-08). It gates new connections and new post creation only; targets already queued can finish. `PUBLISH_ENABLED` must also be true. |
 
 **What each of the eleven networks publishes** (from the adapters, `lib/social/networks.js` and `lib/socialPublishSweep.js`). The first five are the original adapters; the last six are tester-stage and have **not** been exercised against real provider accounts:

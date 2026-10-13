@@ -2,7 +2,8 @@
  * historical posting patterns, owned-account only. No network API calls. */
 import { NextResponse } from 'next/server';
 import { accountReadLimit } from '../../../../../lib/accountReadLimit.js';
-import { postingInsightsEnabled } from '../../../../../lib/social/publishFeature.js';
+import { postingInsightsEnabled, publishPlansEnabled } from '../../../../../lib/social/publishFeature.js';
+import { readPublishEntitlement } from '../../../../../lib/social/publishPlanApi.js';
 import { rpc, envConfig, SupabaseError } from '../../../../../packages/db/supabase-client.js';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -14,6 +15,16 @@ export async function GET(req) {
     if (!UUID_RE.test(accountId)) return NextResponse.json({ error: 'invalid_account_id' }, { status: 400 });
     const cfg = envConfig();
     if (!cfg.supabaseUrl || !cfg.serviceRoleKey) return NextResponse.json({ error: 'supabase_not_configured' }, { status: 503 });
+    if (publishPlansEnabled()) {
+        let entitlement;
+        try { entitlement = await readPublishEntitlement(authId, cfg); }
+        catch (err) {
+            console.error('[api/v1/social/best-time:GET] entitlement read failed:', err instanceof SupabaseError ? err.status : 0);
+            return NextResponse.json({ error: 'internal' }, { status: 502 });
+        }
+        if (!entitlement) return NextResponse.json({ error: 'internal' }, { status: 502 });
+        if (entitlement.best_time_enabled !== true) return NextResponse.json({ error: 'publish_plan_required' }, { status: 402 });
+    }
     const limited = await accountReadLimit(authId, cfg, { insights: null });
     if (limited) return limited;
     let result;

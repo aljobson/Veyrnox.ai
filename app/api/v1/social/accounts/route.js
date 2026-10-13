@@ -15,7 +15,7 @@
  */
 
 import { freeSocialAccountLimit } from '../../../../../lib/social/accountAllowance.js';
-import { youtubeVisibilityEnabled } from '../../../../../lib/social/publishFeature.js';
+import { publishPlansEnabled, youtubeVisibilityEnabled } from '../../../../../lib/social/publishFeature.js';
 import { socialUploadsEnabled } from '../../../../../lib/social/uploadPolicy.js';
 import { networkEnabled, networkMedia } from '../../../../../lib/social/networks.js';
 import { networkReadiness } from '../../../../../lib/social/networkReadiness.js';
@@ -73,6 +73,7 @@ export async function GET(req) {
             || (account.network === 'tiktok' && tiktokReviewAllowed(authId)), supportedMedia: networkMedia(account.network) })),
         uploadsEnabled: socialUploadsEnabled(process.env, authId),
         youtubeVisibilityEnabled: youtubeVisibilityEnabled(),
+        plansEnabled: publishPlansEnabled(),
         networks: networkReadiness(process.env, authId),
     }, { headers: { 'Cache-Control': 'no-store' } });
 }

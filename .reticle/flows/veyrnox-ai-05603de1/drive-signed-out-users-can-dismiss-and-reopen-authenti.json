@@ -1,0 +1,82 @@
+{
+  "version": 2,
+  "name": "drive-signed-out-users-can-dismiss-and-reopen-authenti",
+  "projectId": "veyrnox-ai-05603de1",
+  "createdAt": 1791910729182,
+  "steps": [
+    {
+      "tool": "reticle_act",
+      "anchor": {
+        "kind": "role",
+        "role": "button",
+        "name": "Close"
+      },
+      "args": {},
+      "action": "click",
+      "page": "/app/publish/plan"
+    },
+    {
+      "tool": "reticle_act",
+      "anchor": {
+        "kind": "role",
+        "role": "button",
+        "name": "Sign in",
+        "nth": 1,
+        "of": 2
+      },
+      "args": {},
+      "action": "click",
+      "page": "/app/publish/plan"
+    },
+    {
+      "tool": "reticle_act",
+      "anchor": {
+        "kind": "role",
+        "role": "button",
+        "name": "Close"
+      },
+      "args": {},
+      "action": "click",
+      "page": "/app/publish/plan"
+    },
+    {
+      "tool": "reticle_act",
+      "anchor": {
+        "kind": "role",
+        "role": "button",
+        "name": "Sign in",
+        "nth": 1,
+        "of": 2
+      },
+      "args": {},
+      "action": "click",
+      "expect": {
+        "kind": "element",
+        "query": {
+          "role": "dialog",
+          "name": "Sign in to Veyrnox"
+        },
+        "state": "visible"
+      },
+      "page": "/app/publish/plan"
+    }
+  ],
+  "startPath": "/app/publish/plan",
+  "intent": "Signed-out users can dismiss and reopen authentication from the Publish Plan page.",
+  "requires": [
+    {
+      "kind": "route",
+      "pathname": "/app/publish/plan"
+    }
+  ],
+  "ensures": [
+    {
+      "kind": "route",
+      "pathname": "/app/publish/plan"
+    }
+  ],
+  "author": {
+    "agent": "codex-http"
+  },
+  "intentId": "flow:drive-signed-out-users-can-dismiss-and-reopen-authenti"
+}

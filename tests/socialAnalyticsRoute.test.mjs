@@ -114,3 +114,28 @@ test('advertises posting insights only when its own switch is exactly true', asy
         }
     } finally { delete process.env.PUBLISH_POSTING_INSIGHTS_ENABLED; }
 });
+
+test('the Publish Plan limits Free analytics history and leaves paid history open', async () => {
+    const longRange = `?accountId=${accountId}&from=2026-07-06&to=2026-10-03`;
+    try {
+        process.env.PUBLISH_PLANS_ENABLED = 'true';
+        stub({ read_social_publish_entitlement: {
+            ok: true, tier: 'free', account_limit: 5, analytics_days: 30,
+            best_time_enabled: false, subscription: null,
+        } });
+        const blocked = await GET(request(longRange));
+        assert.equal(blocked.status, 402);
+        assert.deepEqual(await blocked.json(), { error: 'publish_plan_required', analytics_days: 30 });
+        assert.ok(!calls.some((call) => call.name === 'get_social_analytics'));
+
+        stub({ read_social_publish_entitlement: {
+            ok: true, tier: 'publish', account_limit: 5, analytics_days: 366,
+            best_time_enabled: true, subscription: { id: 'sub-local' },
+        } });
+        const allowed = await GET(request(longRange));
+        assert.equal(allowed.status, 200);
+        const body = await allowed.json();
+        assert.deepEqual([body.planTier, body.analyticsDays], ['publish', 366]);
+        assert.ok(calls.some((call) => call.name === 'get_social_analytics'));
+    } finally { delete process.env.PUBLISH_PLANS_ENABLED; }
+});

@@ -109,6 +109,7 @@ ownership (`social_brands.owner_user_id`). Migrations are in `packages/db/schema
 | 0192 | Calendar index `(brand_id, scheduled_at, id)`; `list_social_calendar`, `reschedule_social_post` |
 | 0223 | `social_uploads`, `social_post_media.source_upload_id`; `reserve_social_upload`, `read_social_upload`, `complete_social_upload`, `remove_social_upload`, `claim_social_upload_cleanup`, `release_social_upload`; `create_social_post` and the claim extended to uploads |
 | 0228 | `social_connection_selections` (the only table 0228 creates); `prepare_social_connection_selection`, `consume_social_connection_selection`, `rotate_extended_social_tokens`, `mark_social_provider_submission` (all `service_role` only). Table and function details below. |
+| 0293 | $15/month Publish Plan catalogue, user subscription and append-only event tables; service-only start/read/bind/cancel/end functions. Free remains five accounts plus basic scheduling; paid grants 366-day analytics and best-time recommendations. |
 
 (0176 added the missing foreign-key lookup indexes; 0177 added the append-only truncate guard.)
 
@@ -271,6 +272,10 @@ at the boundary, resolve the caller's default brand (`resolveBrand`) and call a 
 | `GET/POST/DELETE /api/v1/social/uploads` | List uploads; `{ action: "reserve", rights_confirmed: true, ... }` returns a signed R2 PUT, `{ action: "complete", id }` verifies it; remove one (0223). Only when `PUBLISH_UPLOADS_ENABLED`. |
 | `GET /api/v1/social/analytics?accountId=&from=&to=` | An account's stored evolution and per-post metrics for the dashboard (`from`/`to` are `YYYY-MM-DD`, at most 366 days). Owner only. |
 | `GET /api/v1/social/best-time?accountId=` | The cached posting-insights aggregate (0191). Only when `PUBLISH_POSTING_INSIGHTS_ENABLED`; otherwise 503 `posting_insights_not_open`. |
+| `GET /api/v1/social/plan` | Plans, public entitlement and current subscription state. Stripe ids stay server-side. Only when `PUBLISH_RUNTIME_FLAGS.plans`. |
+| `POST /api/v1/social/plan` | Records renewal consent and creates one server-priced Stripe Checkout session for the $15 monthly plan. |
+| `POST /api/v1/social/plan/return` | Re-reads Checkout and Subscription from Stripe, verifies signed metadata, and recovers a delayed webhook safely. |
+| `POST /api/v1/social/plan/cancel`, `POST /api/v1/social/plan/portal` | Cancel at period end or open Stripe Customer Portal using the server-owned customer/subscription binding. |
 | `GET /media/social/:token` | **Outside the gate, on purpose.** Public, short-lived HMAC token naming one R2 object. TikTok's `PULL_FROM_URL` fetch hits it; listed in `CLAUDE.md` and `tests/routesOutsideGate.test.mjs`. |
 
 Not built from the original design: `PATCH /posts/:id` (edit), `DELETE /posts/:id` (cancel),
@@ -393,13 +398,13 @@ wrapping it needs a migration that widens the list.
 | Twitch (tester-stage, 0228) | none (no follower or subscriber count is claimed) | views for the latest 20 videos (`helix/videos`), one `video` row each | extended switch and Twitch app credentials; no privileged scope. Shown on the dashboard as a Videos tile, a Views tile and a views-only video table (#642, merged 2026-10-08; not yet seen against a real Twitch account) |
 | X, LinkedIn, Facebook, Threads, Pinterest, Bluesky, Business Profile | not built (X reads are billed by X; LinkedIn member statistics need a different API product) | | |
 
-The dashboard (`/app/publish/analytics`) shows these for 7, 30 or 90 days. Date ranges select
+The dashboard (`/app/publish/analytics`) shows Free users 7 or 30 days and Publish Plan users 7, 30 or 90 days. The API enforces the 30-day Free limit when `PUBLISH_RUNTIME_FLAGS.plans`; the UI is not the boundary. Date ranges select
 publication dates; the counters are lifetime values, not views or interactions earned in the range.
 `ANALYTICS_NETWORKS` in the page and `FETCHERS` in the sweep must be kept in step when adding a network. Extended-network tokens are renewed by the analytics sweep too (see the token refresh bullet in §2.6).
 
 **Best time to post and frequency (`social_best_time_cache`, migration 0191)**: recomputed
 at most weekly after successful ingestion, behind `PUBLISH_POSTING_INSIGHTS_ENABLED` (default
-false). Use stored posts, because daily account snapshots do not contain publication hours.
+false), and readable only with the paid entitlement when `PUBLISH_RUNTIME_FLAGS.plans`. Use stored posts, because daily account snapshots do not contain publication hours.
 Store one aggregate per account so empty histories, timing cells and frequency rows update
 atomically. The brand timezone determines weekday/hour and twelve complete calendar weeks;
 invalid timezones fall back to UTC. This window is independent of the dashboard date filter.

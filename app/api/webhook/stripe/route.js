@@ -38,6 +38,8 @@ import { handleCreditSubscriptionEvent, handleCreditSubscriptionCharge, handleCr
 import { invoiceForCharge, fetchCreditInvoice } from '../../../../packages/adapters/stripeCreditSubscriptions.js';
 import { withDeliveryLog } from '../../../../lib/webhookDelivery.js';
 import { limitRequestBody } from '../../../../lib/requestBodyLimit.js';
+import { handlePublishPlanEvent, handlePublishPlanCharge } from '../../../../lib/social/publishPlanWebhook.js';
+import { publishPlansEnabled } from '../../../../lib/social/publishFeature.js';
 
 const SOURCE = 'billing:stripe';
 const LOG = '[stripe-webhook]';
@@ -327,6 +329,12 @@ async function handlePassEvent(cfg, { object, eventId, type, secret, apiKey, exp
     const s = interp.subscription;
     const credit = await handleCreditSubscriptionEvent(cfg, { s, object, eventId, type, secret, apiKey, expectLiveMode, eventCreated });
     if (credit) return credit;
+    const publish = publishPlansEnabled() ? await handlePublishPlanEvent({
+        rpcCall: rpc, cancelSubscriptionNow, cfg,
+        stripeConfig: { fetch: fetch.bind(globalThis), apiKey }, subscription: s,
+        eventId, type, signingSecret: secret, eventCreated, isYoung,
+    }) : null;
+    if (publish) { if (publish.ok) await markProcessed(cfg, SOURCE, eventId); return publish; }
     const isPass = await verifyPassMetadata(s.metadata, secret);
     const passId = isPass ? s.metadata.cinema_pass_id : null;
     const res = await rpc('apply_cinema_pass_event', {
@@ -398,6 +406,11 @@ async function handlePassCharge(cfg, { invoiceId, object, eventId, type, apiKey,
     }
     const credit = await handleCreditSubscriptionCharge(cfg, { invoice, object, eventId, type, apiKey, expectLiveMode, eventCreated });
     if (credit) return credit;
+    const publish = publishPlansEnabled() ? await handlePublishPlanCharge({
+        rpcCall: rpc, cfg, stripeSubscriptionId: subscriptionId, eventId, type,
+        reference, eventCreated,
+    }) : null;
+    if (publish) { if (publish.ok) await markProcessed(cfg, SOURCE, eventId); return publish; }
     const res = await rpc('end_cinema_pass', {
         p_subscription_id: subscriptionId,
         p_event_id: eventId,
