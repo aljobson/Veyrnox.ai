@@ -15,7 +15,11 @@ name: reconcile-watch
 
 on:
   schedule:
-    - cron: '23 * * * *'   # hourly; drift is money, it should not wait a day
+    # GitHub documents that scheduled runs can be delayed or dropped during
+    # load. Four deliberately off-peak attempts make it very unlikely that a
+    # whole UTC hour loses its retained count evidence. Do not add a
+    # cancel-in-progress concurrency group: every completed sample matters.
+    - cron: '7,22,37,52 * * * *'
   workflow_dispatch:
   push:
     branches: [main]
@@ -47,7 +51,8 @@ jobs:
         id: check
         run: |
           set +e
-          node scripts/check-reconcile.mjs > report.txt 2>&1
+          printf 'reconciliation_observed_at=%s\n' "$(date -u +'%Y-%m-%dT%H:%M:%S.%NZ')" > report.txt
+          node scripts/check-reconcile.mjs >> report.txt 2>&1
           code=$?
           cat report.txt
           echo "exit=$code" >> "$GITHUB_OUTPUT"
@@ -68,6 +73,17 @@ jobs:
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
           exit "$code"
+
+      # Keep the exact timestamped count report independently of the rendered
+      # job log. At four tiny reports per hour, 90 days remains only a few MB.
+      - name: Retain reconciliation count evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: reconcile-counts-${{ github.run_id }}-${{ github.run_attempt }}
+          path: report.txt
+          if-no-files-found: error
+          retention-days: 90
 
   # Only real drift files an issue. An outage (exit 2) already fails the run
   # above; it must not file drift that is not there. Scoped to its own job so
