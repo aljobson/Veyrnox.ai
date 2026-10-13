@@ -135,6 +135,88 @@ export async function fetchConnectedAccount(accessToken, fetcher = fetch) {
     };
 }
 
+/**
+ * Reads the connected member's public totals and latest 100 original posts.
+ * X exposes these through the existing tweet.read + users.read grants, so a
+ * member who already connected for publishing does not need to reconnect.
+ * Impression counts remain impressions (rather than being presented as
+ * video views), and reposts plus quotes are combined into the dashboard's
+ * existing "shares" interaction bucket.
+ *
+ * References checked 2026-10-13: docs.x.com/x-api/users/get-my-user,
+ * docs.x.com/x-api/users/get-posts and docs.x.com/x-api/fundamentals/metrics.
+ */
+export async function fetchAnalytics(accessToken, { externalAccountId } = {}, fetcher = fetch) {
+    const profileUrl = new URL(`${API_BASE}/2/users/me`);
+    profileUrl.searchParams.set('user.fields', 'public_metrics');
+    const profile = await analyticsGet(profileUrl, accessToken, fetcher);
+    const user = profile?.data;
+    if (!externalAccountId || user?.id !== externalAccountId) throw new Error('x_account_mismatch');
+    if (!user.public_metrics || typeof user.public_metrics !== 'object') throw new Error('x_analytics_invalid_response');
+    const metrics = analyticsNumbers({
+        followers: user.public_metrics.followers_count,
+        following: user.public_metrics.following_count,
+        // X renamed this field in its current docs; accept the former API
+        // spelling so accounts on either response version keep working.
+        posts_count: user.public_metrics.post_count ?? user.public_metrics.tweet_count,
+    });
+
+    const postsUrl = new URL(`${API_BASE}/2/users/${encodeURIComponent(externalAccountId)}/tweets`);
+    postsUrl.searchParams.set('max_results', '100');
+    postsUrl.searchParams.set('exclude', 'replies,retweets');
+    postsUrl.searchParams.set('tweet.fields', 'created_at,public_metrics,text');
+    const timeline = await analyticsGet(postsUrl, accessToken, fetcher);
+    const source = Array.isArray(timeline?.data)
+        ? timeline.data
+        : timeline?.meta?.result_count === 0 ? [] : null;
+    if (!source) throw new Error('x_analytics_invalid_response');
+
+    const posts = [];
+    const seen = new Set();
+    for (const post of source.slice(0, 100)) {
+        const published = Date.parse(post?.created_at);
+        if (typeof post?.id !== 'string' || !/^\d{1,30}$/.test(post.id) || seen.has(post.id) ||
+            !Number.isFinite(published) || !post.public_metrics || typeof post.public_metrics !== 'object') continue;
+        seen.add(post.id);
+        const reposts = numberOrZero(post.public_metrics.repost_count ?? post.public_metrics.retweet_count);
+        const quotes = numberOrZero(post.public_metrics.quote_count);
+        posts.push({
+            id: post.id,
+            published_at: new Date(published).toISOString(),
+            type: 'post',
+            permalink: `https://x.com/i/web/status/${post.id}`,
+            caption: typeof post.text === 'string' ? post.text.slice(0, 500) : null,
+            metrics: analyticsNumbers({
+                impressions: post.public_metrics.impression_count,
+                likes: post.public_metrics.like_count,
+                comments: post.public_metrics.reply_count,
+                saves: post.public_metrics.bookmark_count,
+                shares: reposts + quotes,
+            }),
+        });
+    }
+    return { metrics, posts };
+}
+
+async function analyticsGet(url, accessToken, fetcher) {
+    const res = await fetcher(url.toString(), {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        signal: AbortSignal.timeout(10000),
+    });
+    const body = await res.json().catch(() => null);
+    if (!res.ok) throw new Error(`x_analytics_failed_${res.status}`);
+    if (!body || typeof body !== 'object') throw new Error('x_analytics_invalid_response');
+    return body;
+}
+
+function analyticsNumbers(fields) {
+    return Object.fromEntries(Object.entries(fields).filter(([, value]) => Number.isSafeInteger(value) && value >= 0));
+}
+
+function numberOrZero(value) {
+    return Number.isSafeInteger(value) && value >= 0 ? value : 0;
+}
+
 /** Publishes a single-image post: the v2 chunked media upload flow
  * (initialize → one append → finalize, polling STATUS only if X reports
  * processing isn't already done), then POST /2/tweets referencing the

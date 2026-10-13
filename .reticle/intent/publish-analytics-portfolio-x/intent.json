@@ -1,0 +1,21 @@
+{
+  "intents": {
+    "flow:publish-analytics-portfolio-x": {
+      "binding": {
+        "flow": "publish-analytics-portfolio-x"
+      },
+      "declaredAt": 1791924020755,
+      "id": "flow:publish-analytics-portfolio-x",
+      "state": "bound",
+      "statement": "A signed-in publisher can compare supported social accounts together, see unsupported metrics left blank, select X, and see X impressions without them being relabelled as views.",
+      "status": "proposed",
+      "subject": "publish-analytics-portfolio-x",
+      "surface": {
+        "flow": "publish-analytics-portfolio-x"
+      },
+      "updatedAt": 1791924124339
+    }
+  },
+  "subject": "publish-analytics-portfolio-x",
+  "version": 1
+}

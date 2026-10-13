@@ -117,7 +117,7 @@ function Plan() {
       <h2 id="choose-plan" className="mt-2 text-2xl font-black">Publish Plan</h2>
       <p className="mt-3 text-4xl font-black">{money.format(plan.price_usd_cents / 100)}<span className="text-base font-normal text-vx-fg-muted"> / month</span></p>
       <ul className="mt-5 space-y-2 text-sm text-vx-fg-body">
-        <li>✓ Full analytics history</li>
+        <li>✓ 12 months of analytics history</li>
         <li>✓ Best-time recommendations from your posting history</li>
         <li>✓ {entitlement?.account_limit || 5} connected accounts and unlimited fair-use scheduling</li>
       </ul>

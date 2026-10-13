@@ -77,7 +77,8 @@ test('production activates only YouTube, LinkedIn and X; staging remains enabled
     assert.match(prod, /"PUBLISH_ENABLED": "true"/);
     assert.match(prod, /"PUBLISH_RELEASED_NETWORKS": "youtube,linkedin,twitter"/);
     assert.match(prod, /"PUBLISH_ANALYTICS_ENABLED": "true"/);
-    for (const flag of ['PUBLISH_UPLOADS_ENABLED', 'PUBLISH_POSTING_INSIGHTS_ENABLED', 'PUBLISH_EXTENDED_NETWORKS_ENABLED', 'INSTAGRAM_INSIGHTS_SCOPE_ENABLED', 'TIKTOK_ANALYTICS_SCOPE_ENABLED']) {
+    assert.match(prod, /"PUBLISH_POSTING_INSIGHTS_ENABLED": "true"/);
+    for (const flag of ['PUBLISH_UPLOADS_ENABLED', 'PUBLISH_EXTENDED_NETWORKS_ENABLED', 'INSTAGRAM_INSIGHTS_SCOPE_ENABLED', 'TIKTOK_ANALYTICS_SCOPE_ENABLED']) {
         assert.match(prod, new RegExp(`"${flag}": "false"`), flag);
     }
     assert.match(staging, /"PUBLISH_ENABLED": "true"/);
