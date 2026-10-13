@@ -183,9 +183,9 @@
     // Previously queued targets continue even when public Publish is disabled.
     "PUBLISH_ENABLED": "true",
     "PUBLISH_MULTI_ACCOUNT_ENABLED": "false",
-    // Grouped to stay within Cloudflare's 128 text-binding limit. Apply 0293 and
-    // test Stripe before setting plans=true; qualify native video separately.
-    "PUBLISH_RUNTIME_FLAGS": "{\"plans\":\"false\",\"videoDestinations\":\"false\"}",
+    // Grouped to stay within Cloudflare's 128 text-binding limit. Migration 0293
+    // and the Stripe checkout are live; qualify native video separately.
+    "PUBLISH_RUNTIME_FLAGS": "{\"plans\":\"true\",\"videoDestinations\":\"false\"}",
     // Preserve the private pilot secret and default YouTube uploads to Private.
     "PUBLISH_YOUTUBE_VISIBILITY_ENABLED": "true",
 
@@ -324,8 +324,8 @@
         // Veyrnox Publish is open on staging for testing (see production).
         "PUBLISH_ENABLED": "true",
         "PUBLISH_MULTI_ACCOUNT_ENABLED": "true",
-        // Apply 0293 and install Stripe test keys before setting plans=true.
-        "PUBLISH_RUNTIME_FLAGS": "{\"plans\":\"false\",\"videoDestinations\":\"false\"}",
+        // Migration 0293 and Stripe test keys are installed in staging.
+        "PUBLISH_RUNTIME_FLAGS": "{\"plans\":\"true\",\"videoDestinations\":\"false\"}",
         "PUBLISH_TESTER_AUTH_IDS": "",
         "PUBLISH_YOUTUBE_VISIBILITY_ENABLED": "false",
         "PUBLISH_RELEASED_NETWORKS": "*",

@@ -23,10 +23,10 @@ test('malformed, incomplete and unknown grouped Publish controls fail closed', (
     assert.equal(publishRuntimeFeatureEnabled('UNKNOWN', grouped('true', 'true')), false);
 });
 
-test('remote environments keep both grouped Publish controls off without individual bindings', () => {
+test('remote environments enable plans while native video destinations remain off', () => {
     const config = parseJsonc(readFileSync(new URL('../wrangler.jsonc', import.meta.url), 'utf8'));
     for (const vars of [config.vars, config.env.staging.vars]) {
-        assert.equal(publishRuntimeFeatureEnabled('PUBLISH_PLANS_ENABLED', vars), false);
+        assert.equal(publishRuntimeFeatureEnabled('PUBLISH_PLANS_ENABLED', vars), true);
         assert.equal(publishRuntimeFeatureEnabled('PUBLISH_VIDEO_DESTINATIONS_ENABLED', vars), false);
         assert.equal(Object.hasOwn(vars, 'PUBLISH_PLANS_ENABLED'), false);
         assert.equal(Object.hasOwn(vars, 'PUBLISH_VIDEO_DESTINATIONS_ENABLED'), false);
