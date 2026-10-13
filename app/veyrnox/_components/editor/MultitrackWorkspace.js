@@ -43,6 +43,8 @@ import { SpeedControls } from './SpeedControls';
 import { VisualControls, SoundControls, TextControls, NumberControl } from './EditorControls';
 import { CanvasHandles } from './CanvasHandles';
 import { TrackTimeline } from './TrackTimeline';
+import { EditorTransport } from './EditorTransport';
+import { ShortcutGuide } from './ShortcutGuide';
 import { emptySequence, upgradeSequence, sequenceEnd, SEQUENCE_MAX, addSequenceMedia, addSequenceClip, addSequenceText, addSequenceTrack, removeSequenceTrack, updateSequenceTrack, moveSequence, trimSequence, splitSequenceClip, updateSequenceClip, trackFor, removeSequenceMedia, setSequenceRate, setSequenceSpeedCurve, reverseSequenceClip, insertSequenceFreeze, extractSequenceAudio, updateMediaDetails } from '../../_lib/editorSequence.mjs';
 import { validateSequence } from '../../_lib/editorSequenceValidation.mjs';
 import { createHistory, commitHistory, undoHistory, redoHistory, retainedMedia } from '../../_lib/editorHistory.mjs';
@@ -51,7 +53,7 @@ import { createPreviewer } from '../../_lib/editorPreview.mjs';
 import { createAudioPlayer } from '../../_lib/editorPlayback.mjs';
 import { timelineSize } from '../../_lib/editorRender.mjs';
 import { exportBlocker, exportTimeline, exportFileName } from '../../_lib/editorExport.mjs';
-import { formatTime } from '../../_lib/editorTimeline.mjs';
+import { fitTimelineZoom, stepTimelineZoom } from '../../_lib/editorTransport.mjs';
 const field = 'w-full rounded-lg border border-vx-border bg-vx-base p-2 text-sm';
 export function MultitrackWorkspace() {
     const {organization,localInference}=useEditorCompletionFlags(),fontRegistry=useRef(null);
@@ -63,7 +65,7 @@ export function MultitrackWorkspace() {
     const tl = history.now, total = sequenceEnd(tl), blobs = useRef(new Map()), canvas = useRef(null), preview = useRef(null), player = useRef(null), abort = useRef(null), alive = useRef(true), request = useRef(0);
     const [frame, setFrame] = useState(0), [selected, setSelected] = useState(null), [selection, setSelection] = useState([]), [clipboard, setClipboard] = useState(null), [playing, setPlaying] = useState(false), [preparing, setPreparing] = useState(false), [notice, setNotice] = useState('');
     const [busy, setBusy] = useState(false), [exporting, setExporting] = useState(false), [progress, setProgress] = useState(0), [result, setResult] = useState(null), [tick, setTick] = useState(0), [loaded, setLoaded] = useState([]);
-    const [ppf, setPpf] = useState(2), [snap, setSnap] = useState(true), [ripple, setRipple] = useState('none'), [binWidth, setBinWidth] = useState(320), [panel, setPanel] = useState('Media'), [height, setHeight] = useState(720), [blocker, setBlocker] = useState(''), [exportName, setExportName] = useState('veyrnox-studio-edit');
+    const [ppf, setPpf] = useState(2), [timelineViewport,setTimelineViewport]=useState(800),[shortcuts,setShortcuts]=useState(false), [snap, setSnap] = useState(true), [ripple, setRipple] = useState('none'), [binWidth, setBinWidth] = useState(320), [panel, setPanel] = useState('Media'), [height, setHeight] = useState(720), [blocker, setBlocker] = useState(''), [exportName, setExportName] = useState('veyrnox-studio-edit');
     const size = useMemo(() => timelineSize(tl, 720), [tl]), item = selected ? tl[selected.track]?.find(c => c.id === selected.id) : null;
     const selectedBlob=useLocalMediaBlob(blobs,item?.mediaId,loaded);
     useEffect(()=>{fontRegistry.current=createFontRegistry();return()=>fontRegistry.current.clear();},[]);
@@ -144,6 +146,7 @@ export function MultitrackWorkspace() {
     const duplicate = () => { if (members.length) insertCopies(copySelection(tl, selection), Math.max(...members.map(c => c.start + c.len))); };
     const remove = () => { if (apply(t => deleteSelection(t, selection, ripple==='none'?false:ripple==='all'?'all':true))) { setSelected(null); setSelection([]); } };
     const paste = () => insertCopies(clipboard, frame);
+    const fitTimeline=()=>setPpf(fitTimelineZoom(total,timelineViewport));
     async function createProxy(media) {
         if(busy || exporting)return;const controller=new AbortController(),epoch=proxyGeneration.current;abort.current=controller;pause();setBusy(true);setNotice('');setProxyJob({id:media.id,progress:0});
         try{const blob=await createPreviewProxy(media,blobs.current,{signal:controller.signal,onProgress:p=>alive.current&&setProxyJob({id:media.id,progress:p.done/p.total})});if(controller.signal.aborted || epoch!==proxyGeneration.current)return;const problem=proxyCacheProblem(proxies,media.id,blob);if(problem)throw new Error(problem);preview.current?.dispose();preview.current=null;setProxies(new Map([...proxies,[media.id,blob]]));setTick(n=>n+1);}
@@ -166,12 +169,19 @@ export function MultitrackWorkspace() {
         else if (mod && key === 'v' && clipboard) { event.preventDefault(); paste(); }
         else if (mod && key === 'a') { event.preventDefault(); setSelection(['video', 'audio', 'text'].flatMap(track => tl[track].map(c => ({ track, id: c.id })))); }
         else if (mod && key === 'd' && item) { event.preventDefault(); duplicate(); }
-        else if (key === 's' && item) { event.preventDefault(); apply(t => splitSequenceClip(t, selected.track, item.id, frame)); }
+        else if ((key === 's' || (mod && key === 'b')) && item) { event.preventDefault(); apply(t => splitSequenceClip(t, selected.track, item.id, frame)); }
         else if (['delete', 'backspace'].includes(key) && item) { event.preventDefault(); remove(); }
         else if (key === ' ' && total && !event.target.closest('button, a')) { event.preventDefault(); void play(); }
         else if(key==='home'){event.preventDefault();seek(0);}
         else if(key==='end'){event.preventDefault();seek(Math.max(0,total-1));}
+        else if(key==='escape'){event.preventDefault();setSelected(null);setSelection([]);}
+        else if(key==='j'){event.preventDefault();seek(frame-30);}
         else if(key==='k'){event.preventDefault();pause();}
+        else if(key==='l'&&total){event.preventDefault();void play();}
+        else if(event.shiftKey&&key==='z'){event.preventDefault();fitTimeline();}
+        else if(['+','='].includes(key)){event.preventDefault();setPpf(value=>stepTimelineZoom(value,1));}
+        else if(key==='-'){event.preventDefault();setPpf(value=>stepTimelineZoom(value,-1));}
+        else if(key==='?'){event.preventDefault();pause();setShortcuts(true);}
         else if (['arrowleft', 'arrowright'].includes(key)) { event.preventDefault(); seek(frame + (key === 'arrowleft' ? -1 : 1) * (event.shiftKey ? 30 : 1)); }
     }
     const patch = next => apply(t => {
@@ -189,20 +199,21 @@ export function MultitrackWorkspace() {
     });
     const locked = item && trackFor(tl, item)?.locked, disabled = exporting || busy;
     return <div role="region" aria-label="Multitrack editing workspace" className={fitScreen?"space-y-4 outline-none lg:fixed lg:inset-x-0 lg:top-16 lg:bottom-0 lg:z-30 lg:flex lg:flex-col lg:gap-2 lg:space-y-0 lg:overflow-hidden lg:bg-vx-base lg:p-3":"space-y-4 outline-none"} tabIndex={0} onKeyDown={keys}>
+        {shortcuts&&<ShortcutGuide onClose={()=>setShortcuts(false)} />}
         <ProjectBar compact onContext={setProjectContext} tl={tl} blobs={blobs} onLoadTimeline={load} onRelinked={relinked} />
         <ProjectFileControls tl={tl} onLoadTimeline={loadProjectFile} disabled={disabled} openDisabled={!!projectContext?.id} name={projectContext?.id ? 'veyrnox-cloud-project' : 'veyrnox-studio-project'} />
-        <div className="flex flex-wrap items-center gap-2">
+        <div aria-label="Edit commands" className="flex shrink-0 items-center gap-1 overflow-x-auto pb-1">
             <Button aria-label="Undo" title="Undo" className="px-2" size="sm" disabled={!history.past.length || disabled} onClick={() => travel(undoHistory)}><CommandIcon name="Undo" /></Button><Button aria-label="Redo" title="Redo" className="px-2" size="sm" disabled={!history.future.length || disabled} onClick={() => travel(redoHistory)}><CommandIcon name="Redo" /></Button>
             <Button aria-label="Duplicate" title="Duplicate" className="px-2" size="sm" disabled={!members.length || selectionLocked || disabled} onClick={duplicate}><CommandIcon name="Duplicate" /></Button><Button aria-label="Split" title="Split" className="px-2" size="sm" disabled={!item || locked || disabled} onClick={() => apply(t => splitSequenceClip(t, selected.track, item.id, frame))}><CommandIcon name="Split" /></Button><Button aria-label="Delete" title="Delete" className="px-2" size="sm" disabled={!members.length || selectionLocked || disabled} onClick={remove}><CommandIcon name="Delete" /></Button>
             <Button aria-label="Copy" title="Copy" className="px-2" size="sm" variant="ghost" disabled={!members.length || disabled} onClick={() => setClipboard(copySelection(tl, selection))}><CommandIcon name="Copy" /></Button><Button aria-label="Paste at playhead" title="Paste at playhead" className="px-2" size="sm" variant="ghost" disabled={!clipboard || disabled} onClick={paste}><CommandIcon name="Paste at playhead" /></Button>
             <Button aria-label="Group" title="Group" className="px-2" size="sm" variant="ghost" disabled={members.length < 2 || selectionLocked || disabled} onClick={() => apply(t => groupSelection(t, selection))}><CommandIcon name="Group" /></Button><Button aria-label="Ungroup" title="Ungroup" className="px-2" size="sm" variant="ghost" disabled={!members.some(c => c.groupId) || selectionLocked || disabled} onClick={() => apply(t => groupSelection(t, selection, false))}><CommandIcon name="Ungroup" /></Button>
             {['video', 'audio', 'text'].map(kind => <Button key={kind} aria-label={`Add ${kind} track`} title={`Add ${kind} track`} size="sm" variant="ghost" disabled={disabled} onClick={() => apply(t => addSequenceTrack(t, kind))}>{kind} +</Button>)}
-            <label className="text-xs"><input type="checkbox" checked={snap} onChange={e => setSnap(e.target.checked)} /> Snap</label><label className="text-xs">Ripple delete<select aria-label="Ripple delete mode" className="ml-2 rounded border border-vx-border bg-vx-base p-1" value={ripple} onChange={e=>setRipple(e.target.value)}><option value="none">Off</option><option value="lane">Selected tracks</option><option value="all">All tracks</option></select></label>
+            <label className="ml-1 flex shrink-0 items-center gap-1 text-xs"><input type="checkbox" checked={snap} onChange={e => setSnap(e.target.checked)} /> Snap</label><label className="flex shrink-0 items-center text-xs">Ripple delete<select aria-label="Ripple delete mode" className="ml-2 rounded border border-vx-border bg-vx-base p-1" value={ripple} onChange={e=>setRipple(e.target.value)}><option value="none">Off</option><option value="lane">Selected tracks</option><option value="all">All tracks</option></select></label>
         </div>
         <div className="flex shrink-0 items-start gap-2"><Button size="sm" variant="ghost" aria-pressed={fitScreen} onClick={()=>setFitScreen(v=>!v)}>Fit workspace to screen</Button><WorkspaceLayout layout={layout} onChange={setLayout} /></div>
         {notice && <p role="alert" className="rounded-lg border border-vx-border p-3 text-sm">{notice}</p>}
         <div className={`grid min-h-0 gap-3 lg:grid-cols-[var(--workspace-columns)] ${fitScreen?"lg:flex-1 lg:[container-type:size] lg:[--panel-max-height:100%]":""}`} style={{ '--workspace-columns':workspaceColumns(layout,binWidth) }}>
-            <aside aria-label="Project media" hidden={layout.mediaDock==='hidden'} style={{order:layout.mediaDock==='right'?3:1,maxHeight:fitScreen?`var(--panel-max-height, ${layout.previewHeight+5}vh)`:`${layout.previewHeight+5}vh`}} className="flex gap-3 overflow-hidden rounded-xl border border-vx-border bg-vx-panel p-2">
+            <aside aria-label="Project media" hidden={layout.mediaDock==='hidden'} style={{order:layout.mediaDock==='right'?3:1,maxHeight:fitScreen?`var(--panel-max-height, ${layout.previewHeight+5}vh)`:`${layout.previewHeight+5}vh`}} className="flex flex-col gap-3 overflow-hidden rounded-xl border border-vx-border bg-vx-panel p-2 md:flex-row">
                 <EditorToolRail panel={panel} onPanel={setPanel} disabled={disabled} sharedTools={sharedTools}/><div className="min-w-0 flex-1 space-y-3 overflow-y-auto py-1 pr-1">
                 {panel === 'Media' && <><AdvancedMediaBin tl={tl} blobs={blobs} loaded={loaded} disabled={disabled} apply={apply} onFiles={files} onIngest={ingest} onAdd={add} onRemove={id => apply(t => removeSequenceMedia(t, id))} onRelink={relink} onDetails={(id,patch)=>apply(t=>updateMediaDetails(t,id,patch))} proxies={proxies} onProxy={createProxy} onRemoveProxy={removeProxy} onError={setNotice} />
                 {proxyJob && <div role="status" className="space-y-2 text-xs">Preparing preview proxy<progress aria-label="Preview proxy progress" max={1} value={proxyJob.progress} className="w-full" /><Button size="sm" onClick={()=>abort.current?.abort()}>Cancel preview proxy</Button></div>}
@@ -226,7 +237,7 @@ export function MultitrackWorkspace() {
             <section aria-label="Preview" style={{order:2}} className="flex min-h-0 flex-col gap-3 overflow-hidden rounded-xl border border-vx-border bg-vx-panel p-3">
                 <div className="relative mx-auto" style={{ width: `min(100%, calc(${fitScreen?`min(${layout.previewHeight}vh, max(48px, calc(100cqh - 68px)))`:`${layout.previewHeight}vh`} * ${size.width / size.height}))` }}><canvas ref={canvas} width={size.width} height={size.height} role="img" aria-label="Video preview" style={{maxHeight:fitScreen?`min(${layout.previewHeight}vh, max(48px, calc(100cqh - 68px)))`:`${layout.previewHeight}vh`}} className="w-full rounded-lg bg-black object-contain" /><CanvasHandles item={item && selected.track !== 'audio' && frame >= item.start && frame < item.start + item.len ? item : null} kind={selected?.track} frame={frame} disabled={disabled || locked} onChange={patch} /></div>
                 {previewStatus.sources.some(s=>s.proxy) && <p role="status" aria-label="Preview source quality" className="text-xs text-vx-fg-muted">Proxy preview · {previewStatus.sources.filter(s=>s.proxy).map(s=>`${s.width} × ${s.height}`).join(', ')} · export uses the original sources</p>}
-                <div className="flex items-center gap-3"><Button size="sm" disabled={!total || disabled} onClick={play}>{playing || preparing ? 'Pause' : 'Play'}</Button><span className="font-vx-mono text-xs">{formatTime(frame)} / {formatTime(total)}</span><input aria-label="Playhead" type="range" min={0} max={Math.max(0, total - 1)} value={Math.min(frame, Math.max(0, total - 1))} onChange={e => seek(Number(e.target.value))} className="min-w-0 flex-1 accent-vx-accent" /></div>
+                <EditorTransport frame={frame} total={total} playing={playing} preparing={preparing} disabled={disabled} onPlay={play} onPause={pause} onSeek={seek} onFit={fitTimeline} onShortcuts={()=>{pause();setShortcuts(true);}} />
             </section>
             <aside aria-label="Inspector" hidden={!layout.inspector} style={{order:layout.mediaDock==='right'?1:3,maxHeight:fitScreen?`var(--panel-max-height, ${layout.previewHeight+5}vh)`:`${layout.previewHeight+5}vh`}} className=" space-y-3 overflow-y-auto rounded-xl border border-vx-border bg-vx-panel p-3">
                 <fieldset disabled={disabled || locked} className="space-y-3">
@@ -253,8 +264,8 @@ export function MultitrackWorkspace() {
                 <ExportPanel tl={tl} name={exportName} onName={setExportName} height={height} onHeight={setHeight} disabled={disabled} exporting={exporting} progress={progress} result={result} blocker={blocker} onExport={runExport} onCancel={() => abort.current?.abort()} onCover={async () => { await preview.current.draw(tl, frame, canvas.current); return new Promise((resolve, reject) => canvas.current.toBlob(blob => blob ? resolve(blob) : reject(new Error('No frame')), 'image/png')); }} />
             </aside>
         </div>
-        <label className="flex items-center gap-2 text-xs">Timeline zoom<input aria-label="Timeline zoom" type="range" min={0.25} max={8} step={0.25} value={ppf} onChange={e => setPpf(Number(e.target.value))} className="accent-vx-accent" /></label>
-        <TrackTimeline height={fitScreen?`min(${layout.timelineHeight}px, 45svh)`:layout.timelineHeight} onMediaDrop={(kind,id,start,lane)=>apply(t=>addSequenceClip(t,kind,id,{start,trackId:lane}))} blobs={blobs} loaded={loaded} tl={tl} frame={frame} selected={selected} selection={selection} ppf={ppf} disabled={disabled} snap={snap} onSelect={selectClip} onSeek={seek} onTrim={(kind, id, edge, delta) => apply(t => trimSequence(t, kind, id, edge, delta))} onMove={(kind, id, at, lane, snap) => apply(t => moveSelection(t, selection, { track: kind, id }, at, lane, snap, frame))} onReorder={(id, direction) => apply(t => reorderSequenceTrack(t, id, direction))} onRemove={id => apply(t => removeSequenceTrack(t, id))} onTrack={(id, patch) => apply(t => updateSequenceTrack(t, id, patch))} />
+        <div className="flex shrink-0 items-center gap-3"><h2 className="text-xs font-extrabold uppercase tracking-wider text-vx-fg-muted">Timeline</h2><label className="flex min-w-0 flex-1 items-center gap-2 text-xs"><span className="sr-only">Timeline zoom</span><button type="button" aria-label="Zoom out timeline" disabled={ppf<=.25} onClick={()=>setPpf(value=>stepTimelineZoom(value,-1))} className="grid size-7 shrink-0 place-items-center rounded border border-vx-border hover:border-vx-accent disabled:opacity-35">−</button><input aria-label="Timeline zoom" aria-valuetext={`${ppf} pixels per frame`} type="range" min={0.25} max={8} step={0.25} value={ppf} onChange={e => setPpf(Number(e.target.value))} className="w-full max-w-48 accent-vx-accent" /><button type="button" aria-label="Zoom in timeline" disabled={ppf>=8} onClick={()=>setPpf(value=>stepTimelineZoom(value,1))} className="grid size-7 shrink-0 place-items-center rounded border border-vx-border hover:border-vx-accent disabled:opacity-35">+</button></label><span className="font-vx-mono text-[10px] text-vx-fg-muted">{ppf.toFixed(2)} px/frame</span></div>
+        <TrackTimeline height={fitScreen?`min(${layout.timelineHeight}px, 45svh)`:layout.timelineHeight} onMediaDrop={(kind,id,start,lane)=>apply(t=>addSequenceClip(t,kind,id,{start,trackId:lane}))} blobs={blobs} loaded={loaded} tl={tl} frame={frame} selected={selected} selection={selection} ppf={ppf} disabled={disabled} snap={snap} follow={playing} onViewport={setTimelineViewport} onZoom={direction=>setPpf(value=>stepTimelineZoom(value,direction))} onSelect={selectClip} onSeek={seek} onTrim={(kind, id, edge, delta) => apply(t => trimSequence(t, kind, id, edge, delta))} onMove={(kind, id, at, lane, snap) => apply(t => moveSelection(t, selection, { track: kind, id }, at, lane, snap, frame))} onReorder={(id, direction) => apply(t => reorderSequenceTrack(t, id, direction))} onRemove={id => apply(t => removeSequenceTrack(t, id))} onTrack={(id, patch) => apply(t => updateSequenceTrack(t, id, patch))} />
         <p className={`text-xs text-vx-fg-muted ${fitScreen?"lg:hidden":""}`}>Editing and export run in this browser. Imported files remain on this computer. Up to 10 minutes, 16 tracks and 40 video clips. Video tracks later in the track list draw over earlier ones. Shift-click clips to select several; groups move together.</p>
     </div>;
 }
