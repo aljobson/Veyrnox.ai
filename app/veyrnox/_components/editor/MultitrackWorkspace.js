@@ -8,13 +8,17 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { selectionMembers, linkedSelection, copySelection, pasteSelection, groupSelection, deleteSelection, moveSelection, reorderSequenceTrack } from '../../_lib/editorSelection.mjs';
 import { Button } from '../Button';
 import { ProjectBar } from './ProjectBar';
+import { ProjectFileControls } from './ProjectFileControls';
 import { GenerationPanel } from './GenerationPanel';
 import { AdvancedMediaBin } from './AdvancedMediaBin';
 import { matchLocalFile } from '../../_lib/editorProject.mjs';
 import { ExportPanel } from './ExportPanel';
 import { CatalogPanel } from './CatalogPanel';
 import { CaptionPanel } from './CaptionPanel';
-import { LOOKS, TITLE_STYLES, insertTitlePreset, applyLook } from '../../_lib/editorPresets.mjs';
+import { FilterPanel } from './FilterPanel';
+import { TranscriptPanel } from './TranscriptPanel';
+import { AnimationCatalogPanel } from './AnimationCatalogPanel';
+import { TITLE_STYLES, insertTitlePreset } from '../../_lib/editorPresets.mjs';
 import { getStoredUserId,onSessionChange } from '../../../lib/authClient';
 import { BrandKitPanel } from './BrandKitPanel';
 import { ReviewPanel } from './ReviewPanel';
@@ -30,6 +34,7 @@ import {createFontRegistry,missingCustomFont} from '../../_lib/editorCustomFonts
 import { WorkspaceLayout,WORKSPACE_LAYOUT,workspaceColumns } from './WorkspaceLayout';
 import { createPreviewProxy,proxyCacheProblem } from '../../_lib/editorProxy.mjs';
 import { AudioProcessingControls } from './AudioProcessingControls';
+import { AudioEffectsControls } from './AudioEffectsControls';
 import { AUDIO_DEFAULTS } from '../../_lib/editorAudioSettings.mjs';
 import { parameterKeyframe } from '../../_lib/editorAnimation.mjs';
 import { BackgroundControls } from './BackgroundControls';
@@ -37,7 +42,7 @@ import { SpeedControls } from './SpeedControls';
 import { VisualControls, SoundControls, TextControls, NumberControl } from './EditorControls';
 import { CanvasHandles } from './CanvasHandles';
 import { TrackTimeline } from './TrackTimeline';
-import { emptySequence, upgradeSequence, sequenceEnd, SEQUENCE_MAX, addSequenceMedia, addSequenceClip, addSequenceText, addSequenceTrack, updateSequenceTrack, moveSequence, trimSequence, splitSequenceClip, updateSequenceClip, trackFor, removeSequenceMedia, setSequenceRate, setSequenceSpeedCurve, reverseSequenceClip, insertSequenceFreeze, extractSequenceAudio, updateMediaDetails } from '../../_lib/editorSequence.mjs';
+import { emptySequence, upgradeSequence, sequenceEnd, SEQUENCE_MAX, addSequenceMedia, addSequenceClip, addSequenceText, addSequenceTrack, removeSequenceTrack, updateSequenceTrack, moveSequence, trimSequence, splitSequenceClip, updateSequenceClip, trackFor, removeSequenceMedia, setSequenceRate, setSequenceSpeedCurve, reverseSequenceClip, insertSequenceFreeze, extractSequenceAudio, updateMediaDetails } from '../../_lib/editorSequence.mjs';
 import { validateSequence } from '../../_lib/editorSequenceValidation.mjs';
 import { createHistory, commitHistory, undoHistory, redoHistory, retainedMedia } from '../../_lib/editorHistory.mjs';
 import { checkLocalFile, probeMedia, checkProbe, mediaFromProbe, localMediaId } from '../../_lib/editorMedia.mjs';
@@ -70,6 +75,20 @@ export function MultitrackWorkspace() {
         pause(); setNotice(''); setResult(null); replace(commitHistory(ref.current, next)); return next;
     }, [pause, replace]);
     const load = useCallback(next => { sourceGeneration.current++;privateSession.current=Object.values(next.media).some(m=>m.assetSource || m.id.startsWith('j-') || librarySourceFromId(m.id));restoreOriginalAudio(next,blobs.current);setLoaded([...blobs.current.keys()]); abort.current?.abort();proxyGeneration.current++;setProxies(new Map());setPreviewStatus({sources:[]}); pause(); preview.current?.dispose(); preview.current = null; replace(createHistory(upgradeSequence(next))); setSelected(null); setSelection([]); setClipboard(null); setFrame(0); setResult(null); }, [pause, replace]);
+    const loadProjectFile = useCallback(next => {
+        if (projectContext?.id) return false;
+        const remap = new Map(), media = {};
+        const sameSource = (a, b) => a && b && ['kind', 'frames', 'width', 'height', 'sourceName', 'name'].every(key => a[key] === b[key]);
+        for (const [id, source] of Object.entries(next.media)) {
+            const mapped = blobs.current.has(id) && !sameSource(tl.media[id], source) ? localMediaId() : id;
+            remap.set(id, mapped); media[mapped] = mapped === id ? source : { ...source, id: mapped };
+        }
+        const imported = { ...next, media, video: next.video.map(clip => ({ ...clip, mediaId: remap.get(clip.mediaId) })), audio: next.audio.map(clip => ({ ...clip, mediaId: remap.get(clip.mediaId) })) };
+        sourceGeneration.current++; privateSession.current = Object.values(imported.media).some(m => m.assetSource || m.id.startsWith('j-') || librarySourceFromId(m.id));
+        restoreOriginalAudio(imported, blobs.current); setLoaded([...blobs.current.keys()]); abort.current?.abort(); proxyGeneration.current++; setProxies(new Map()); setPreviewStatus({ sources: [] }); pause(); preview.current?.dispose(); preview.current = null;
+        replace(commitHistory(ref.current, imported)); setSelected(null); setSelection([]); setClipboard(null); setFrame(0); setResult(null); setNotice('');
+        return true;
+    }, [pause, projectContext?.id, replace, tl.media]);
     useEffect(()=>{let actor=getStoredUserId();return onSessionChange(session=>{const next=session?.user?.id || null;if(next===actor)return;actor=next;sourceGeneration.current++;fontRegistry.current?.clear();setTick(n=>n+1);if(privateSession.current){blobs.current.clear();load(emptySequence());setNotice('Account changed. Reopen sources from your current account.');}});},[load]);
     const relinked = useCallback(() => {proxyGeneration.current++;setProxies(new Map()); preview.current?.dispose(); preview.current = null; setLoaded([...blobs.current.keys()]); setTick(n => n + 1); }, []);
     useEffect(() => { alive.current = true; return () => { alive.current = false; abort.current?.abort(); preview.current?.dispose(); preview.current = null; player.current?.dispose(); player.current = null; }; }, []);
@@ -170,6 +189,7 @@ export function MultitrackWorkspace() {
     const locked = item && trackFor(tl, item)?.locked, disabled = exporting || busy;
     return <div role="region" aria-label="Multitrack editing workspace" className={fitScreen?"space-y-4 outline-none lg:fixed lg:inset-x-0 lg:top-16 lg:bottom-0 lg:z-30 lg:flex lg:flex-col lg:gap-2 lg:space-y-0 lg:overflow-hidden lg:bg-vx-base lg:p-3":"space-y-4 outline-none"} tabIndex={0} onKeyDown={keys}>
         <ProjectBar compact onContext={setProjectContext} tl={tl} blobs={blobs} onLoadTimeline={load} onRelinked={relinked} />
+        <ProjectFileControls tl={tl} onLoadTimeline={loadProjectFile} disabled={disabled} openDisabled={!!projectContext?.id} name={projectContext?.id ? 'veyrnox-cloud-project' : 'veyrnox-studio-project'} />
         <div className="flex flex-wrap items-center gap-2">
             <Button aria-label="Undo" title="Undo" className="px-2" size="sm" disabled={!history.past.length || disabled} onClick={() => travel(undoHistory)}><CommandIcon name="Undo" /></Button><Button aria-label="Redo" title="Redo" className="px-2" size="sm" disabled={!history.future.length || disabled} onClick={() => travel(redoHistory)}><CommandIcon name="Redo" /></Button>
             <Button aria-label="Duplicate" title="Duplicate" className="px-2" size="sm" disabled={!members.length || selectionLocked || disabled} onClick={duplicate}><CommandIcon name="Duplicate" /></Button><Button aria-label="Split" title="Split" className="px-2" size="sm" disabled={!item || locked || disabled} onClick={() => apply(t => splitSequenceClip(t, selected.track, item.id, frame))}><CommandIcon name="Split" /></Button><Button aria-label="Delete" title="Delete" className="px-2" size="sm" disabled={!members.length || selectionLocked || disabled} onClick={remove}><CommandIcon name="Delete" /></Button>
@@ -182,7 +202,7 @@ export function MultitrackWorkspace() {
         {notice && <p role="alert" className="rounded-lg border border-vx-border p-3 text-sm">{notice}</p>}
         <div className={`grid min-h-0 gap-3 lg:grid-cols-[var(--workspace-columns)] ${fitScreen?"lg:flex-1 lg:[container-type:size] lg:[--panel-max-height:100%]":""}`} style={{ '--workspace-columns':workspaceColumns(layout,binWidth) }}>
             <aside aria-label="Project media" hidden={layout.mediaDock==='hidden'} style={{order:layout.mediaDock==='right'?3:1,maxHeight:fitScreen?`var(--panel-max-height, ${layout.previewHeight+5}vh)`:`${layout.previewHeight+5}vh`}} className=" space-y-3 overflow-y-auto rounded-xl border border-vx-border bg-vx-panel p-3">
-                <nav aria-label="Editor tools" className="flex flex-wrap gap-1">{['Media', 'Audio', 'Generate', 'Templates', 'Elements', 'Text', 'Captions', 'Effects', 'Transitions', 'Filters', 'Plugins',...(sharedTools?['Brand kit','Review']:[])].map(name => <button key={name} type="button" aria-pressed={panel === name} className={`rounded-lg border px-2 py-1 text-xs ${panel === name ? 'border-vx-accent text-vx-accent' : 'border-vx-border'}`} disabled={disabled} onClick={() => setPanel(name)}>{name}</button>)}</nav>
+                <nav aria-label="Editor tools" className="flex flex-wrap gap-1">{['Media', 'Audio', 'Generate', 'Templates', 'Elements', 'Text', 'Captions', 'Transcript', 'Effects', 'Transitions', 'Filters', 'Animation', 'Plugins',...(sharedTools?['Brand kit','Review']:[])].map(name => <button key={name} type="button" aria-pressed={panel === name} className={`rounded-lg border px-2 py-1 text-xs ${panel === name ? 'border-vx-accent text-vx-accent' : 'border-vx-border'}`} disabled={disabled} onClick={() => setPanel(name)}>{name}</button>)}</nav>
                 {panel === 'Media' && <><AdvancedMediaBin tl={tl} blobs={blobs} loaded={loaded} disabled={disabled} apply={apply} onFiles={files} onIngest={ingest} onAdd={add} onRemove={id => apply(t => removeSequenceMedia(t, id))} onRelink={relink} onDetails={(id,patch)=>apply(t=>updateMediaDetails(t,id,patch))} proxies={proxies} onProxy={createProxy} onRemoveProxy={removeProxy} onError={setNotice} />
                 {proxyJob && <div role="status" className="space-y-2 text-xs">Preparing preview proxy<progress aria-label="Preview proxy progress" max={1} value={proxyJob.progress} className="w-full" /><Button size="sm" onClick={()=>abort.current?.abort()}>Cancel preview proxy</Button></div>}
                 <label className="block text-xs">Panel width<input aria-label="Media panel width" type="range" min={180} max={360} value={binWidth} onChange={e => setBinWidth(Number(e.target.value))} className="w-full accent-vx-accent" /></label>
@@ -193,11 +213,13 @@ export function MultitrackWorkspace() {
                 <div hidden={panel!=='Audio'}><GenerationPanel voiceover disabled={disabled} onIngest={ingest} /></div>
                 <div hidden={panel!=='Elements'}><GenerationPanel avatar disabled={disabled} onIngest={ingest} /></div>
                 {panel === 'Text' && <><h2 className="text-sm font-bold">Text styles</h2>{TITLE_STYLES.map(style => <Button key={style.name} size="sm" variant="ghost" disabled={disabled} onClick={() => { const next = apply(t => insertTitlePreset(t, style.name, frame)); if (next) selectClip({ track: 'text', id: `t${next.seq}` }); }}>{style.name}</Button>)}{organization&&<CustomFontPanel tl={tl} registry={fontRegistry} disabled={disabled} apply={apply} onError={setNotice} onLoaded={()=>setTick(n=>n+1)} onBusy={setBusy} />}</>}
-                {panel === 'Filters' && <><h2 className="text-sm font-bold">Original looks</h2><p className="text-xs text-vx-fg-muted">Select a video layer to apply a look.</p>{LOOKS.map(look => <Button key={look.id} size="sm" variant="ghost" disabled={disabled || selected?.track !== 'video'} onClick={() => apply(t => applyLook(t, selected.id, look.id))}>{look.name}</Button>)}</>}
+                {panel === 'Filters' && <FilterPanel tl={tl} selected={selected} selection={selection} disabled={disabled} apply={apply} />}
+                {panel === 'Animation' && <AnimationCatalogPanel tl={tl} selected={selected} disabled={disabled} apply={apply} />}
                 {['Templates', 'Elements', 'Effects', 'Transitions'].includes(panel) && <CatalogPanel key={panel} panel={panel} tl={tl} selected={selected} frame={frame} disabled={disabled} apply={apply} onSelect={selectClip} />}
                 {panel==='Brand kit' && sharedTools && <BrandKitPanel onIngest={ingest} project={projectContext} item={selected?.track==='text'?item:null} frame={frame} disabled={disabled} apply={apply} onSelect={selectClip} />}
                 {panel==='Review' && sharedTools && <ReviewPanel key={projectContext?.id} project={projectContext} frame={frame} disabled={disabled} onSeek={seek} />}
                 {panel === 'Captions' && <CaptionPanel tl={tl} blobs={blobs} disabled={disabled} frame={frame} apply={apply} onSelect={selectClip} onSeek={seek} onError={setNotice} onBusy={setBusy} />}
+                {panel === 'Transcript' && <TranscriptPanel tl={tl} blobs={blobs} disabled={disabled} frame={frame} apply={apply} onSelect={selectClip} onSeek={seek} onError={setNotice} onBusy={setBusy} />}
             </aside>
             <section aria-label="Preview" style={{order:2}} className="flex min-h-0 flex-col gap-3 overflow-hidden rounded-xl border border-vx-border bg-vx-panel p-3">
                 <div className="relative mx-auto" style={{ width: `min(100%, calc(${fitScreen?`min(${layout.previewHeight}vh, max(48px, calc(100cqh - 68px)))`:`${layout.previewHeight}vh`} * ${size.width / size.height}))` }}><canvas ref={canvas} width={size.width} height={size.height} role="img" aria-label="Video preview" style={{maxHeight:fitScreen?`min(${layout.previewHeight}vh, max(48px, calc(100cqh - 68px)))`:`${layout.previewHeight}vh`}} className="w-full rounded-lg bg-black object-contain" /><CanvasHandles item={item && selected.track !== 'audio' && frame >= item.start && frame < item.start + item.len ? item : null} kind={selected?.track} frame={frame} disabled={disabled || locked} onChange={patch} /></div>
@@ -218,7 +240,7 @@ export function MultitrackWorkspace() {
                             if([...t.video,...t.audio].some(c=>affected(c)&&trackFor(t,c)?.locked))return {error:'Unlock all affected sound tracks first.'};
                             const voice=c=>affected(c)?{...c,audioProcessing:{...AUDIO_DEFAULTS,...c.audioProcessing,voice:settings.voice,pitch:settings.pitch,gateDb:settings.gateDb}}:c;
                             return {...t,video:t.video.map(voice),audio:t.audio.map(voice)};
-                        })} /><SoundControls item={item} onChange={patch} onRate={item.freezeFrame===undefined && !['image', 'graphic'].includes(tl.media[item.mediaId]?.kind) ? n => apply(t => setSequenceRate(t, selected.track, item.id, n)) : null} onExtract={item.freezeFrame===undefined && selected.track === 'video' && tl.media[item.mediaId]?.hasAudio ? () => apply(t => extractSequenceAudio(t, item.id)) : null} />
+                        })} /><AudioEffectsControls item={item} media={tl.media[item.mediaId]} onChange={patch} /><SoundControls item={item} onChange={patch} onRate={item.freezeFrame===undefined && !['image', 'graphic'].includes(tl.media[item.mediaId]?.kind) ? n => apply(t => setSequenceRate(t, selected.track, item.id, n)) : null} onExtract={item.freezeFrame===undefined && selected.track === 'video' && tl.media[item.mediaId]?.hasAudio ? () => apply(t => extractSequenceAudio(t, item.id)) : null} />
                         {selected.track === 'video' && <NumberControl label="Dissolve duration (seconds)" value={item.transition / 30} min={0} max={2} onChange={n => patch({ transition: Math.round(n * 30) })} />}
                     </>}</>}
 
@@ -230,7 +252,7 @@ export function MultitrackWorkspace() {
             </aside>
         </div>
         <label className="flex items-center gap-2 text-xs">Timeline zoom<input aria-label="Timeline zoom" type="range" min={0.25} max={8} step={0.25} value={ppf} onChange={e => setPpf(Number(e.target.value))} className="accent-vx-accent" /></label>
-        <TrackTimeline height={fitScreen?`min(${layout.timelineHeight}px, 45svh)`:layout.timelineHeight} onMediaDrop={(kind,id,start,lane)=>apply(t=>addSequenceClip(t,kind,id,{start,trackId:lane}))} blobs={blobs} loaded={loaded} tl={tl} frame={frame} selected={selected} selection={selection} ppf={ppf} disabled={disabled} snap={snap} onSelect={selectClip} onSeek={seek} onTrim={(kind, id, edge, delta) => apply(t => trimSequence(t, kind, id, edge, delta))} onMove={(kind, id, at, lane, snap) => apply(t => moveSelection(t, selection, { track: kind, id }, at, lane, snap, frame))} onReorder={(id, direction) => apply(t => reorderSequenceTrack(t, id, direction))} onTrack={(id, patch) => apply(t => updateSequenceTrack(t, id, patch))} />
+        <TrackTimeline height={fitScreen?`min(${layout.timelineHeight}px, 45svh)`:layout.timelineHeight} onMediaDrop={(kind,id,start,lane)=>apply(t=>addSequenceClip(t,kind,id,{start,trackId:lane}))} blobs={blobs} loaded={loaded} tl={tl} frame={frame} selected={selected} selection={selection} ppf={ppf} disabled={disabled} snap={snap} onSelect={selectClip} onSeek={seek} onTrim={(kind, id, edge, delta) => apply(t => trimSequence(t, kind, id, edge, delta))} onMove={(kind, id, at, lane, snap) => apply(t => moveSelection(t, selection, { track: kind, id }, at, lane, snap, frame))} onReorder={(id, direction) => apply(t => reorderSequenceTrack(t, id, direction))} onRemove={id => apply(t => removeSequenceTrack(t, id))} onTrack={(id, patch) => apply(t => updateSequenceTrack(t, id, patch))} />
         <p className={`text-xs text-vx-fg-muted ${fitScreen?"lg:hidden":""}`}>Editing and export run in this browser. Imported files remain on this computer. Up to 10 minutes, 16 tracks and 40 video clips. Video tracks later in the track list draw over earlier ones. Shift-click clips to select several; groups move together.</p>
     </div>;
 }

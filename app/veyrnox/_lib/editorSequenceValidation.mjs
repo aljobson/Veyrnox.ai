@@ -3,9 +3,10 @@ import {organizationProblem} from './editorOrganization.mjs';
 import { originalAudioProblem,originalAudioPreset } from './editorOriginalAudio.mjs';
 import { mediaDetailsProblem } from './editorMediaDetails.mjs';
 import { audioSettingsProblem } from './editorAudioSettings.mjs';
+import { audioEffectsProblem } from './editorAudioEffects.mjs';
 import { wordTimingProblem } from './editorWords.mjs';
 import { TEXT_EXTRAS,textExtrasProblem } from './editorTextStyle.mjs';
-import { TRANSFORM_DEFAULTS,FILTER_DEFAULTS,COMBOS,parameterProblem } from './editorAnimation.mjs';
+import { TRANSFORM_DEFAULTS,FILTER_DEFAULTS,ANIMATIONS,COMBOS,parameterProblem } from './editorAnimation.mjs';
 export { TRANSFORM_DEFAULTS,FILTER_DEFAULTS } from './editorAnimation.mjs';
 import { backgroundProblem } from './editorBackground.mjs';
 import { speedProblem, sourceRange } from './editorSpeed.mjs';
@@ -21,7 +22,7 @@ const int = (n, min, max) => Number.isInteger(n) && number(n, min, max);
 const colour = v => typeof v === 'string' && /^#[0-9a-fA-F]{6}$/.test(v);
 export const TEXT_DEFAULTS = Object.freeze({ color: '#ffffff', background: '#000000', backgroundOpacity: 0, stroke: '#000000', strokeWidth: 2, weight: 'bold', font: 'sans-serif', align: 'center' });
 export const BLENDS = Object.freeze(['source-over', 'multiply', 'screen', 'overlay', 'darken', 'lighten', 'difference']);
-export const ANIMATIONS = Object.freeze(['none', 'fade', 'slide-left', 'slide-up', 'zoom']);
+export { ANIMATIONS } from './editorAnimation.mjs';
 export function visualProblem(c) {
     const smart=smartPictureProblem(c.smartPicture);if(smart)return smart;
     const badParameters=parameterProblem(c.parameterKeyframes);if(badParameters)return badParameters;
@@ -63,7 +64,7 @@ export function validateSequence(tl) {
         if (!Array.isArray(tl[kind]) || tl[kind].length > max) return `Too many ${kind} clips.`;
         for (const c of tl[kind]) {
             const common = ['id', 'start', 'len', 'trackId', 'animation', 'keyframes', 'groupId'];
-            const allowed = kind === 'text' ? [...common, 'text', 'x', 'y', 'size', 'style', 'caption', 'words', 'wordStyle', 'wordsEstimated'] : [...common, 'mediaId', 'in', 'volume', 'transition', 'rate', 'fadeIn', 'fadeOut', 'pan', 'eq', 'transform', 'filter', 'crop', 'mask', 'maskSettings', 'maskKeyframes', 'colourAdjustment', 'blend', 'fit', 'effect', 'transitionType', 'speedCurve', 'reverse', 'freezeFrame', 'background', 'parameterKeyframes', 'preservePitch', 'audioProcessing', 'smartPicture'];
+            const allowed = kind === 'text' ? [...common, 'text', 'x', 'y', 'size', 'style', 'caption', 'words', 'wordStyle', 'wordsEstimated'] : [...common, 'mediaId', 'in', 'volume', 'transition', 'rate', 'fadeIn', 'fadeOut', 'pan', 'eq', 'transform', 'filter', 'crop', 'mask', 'maskSettings', 'maskKeyframes', 'colourAdjustment', 'blend', 'fit', 'effect', 'transitionType', 'speedCurve', 'reverse', 'freezeFrame', 'background', 'parameterKeyframes', 'preservePitch', 'audioProcessing', 'audioEffects', 'smartPicture'];
             if (!only(c, allowed) || typeof c.id !== 'string' || !new RegExp(`^${kind[0]}[0-9]{1,7}$`).test(c.id) || seen.has(c.id)) return 'Invalid clip id.';
             seen.add(c.id);
             if (c.groupId !== undefined && !/^g[0-9]{1,7}$/.test(c.groupId)) return 'Invalid clip group.';
@@ -75,7 +76,8 @@ export function validateSequence(tl) {
                 if (c.style !== undefined && (!exact(c.style, [...Object.keys(TEXT_DEFAULTS),...Object.keys(TEXT_EXTRAS).filter(k=>c.style[k]!==undefined)]) || textExtrasProblem(c.style) || !colour(c.style.color) || !colour(c.style.background) || !colour(c.style.stroke) || !number(c.style.backgroundOpacity, 0, 1) || !number(c.style.strokeWidth, 0, 12) || !['normal', 'bold'].includes(c.style.weight)  || !['left', 'center', 'right'].includes(c.style.align))) return 'Invalid text style.';
             } else {
                 const m = tl.media[c.mediaId], rate = c.rate ?? 1;
-                const badAudio=audioSettingsProblem(c,m);if(badAudio)return badAudio;
+                const badAudio=audioSettingsProblem(c,m)||audioEffectsProblem(c.audioEffects);if(badAudio)return badAudio;
+                if(c.audioEffects!==undefined && !m?.hasAudio)return 'Audio effects need a source with sound.';
                 const badBackground=backgroundProblem(c.background,tl.media);if(badBackground)return badBackground;
                 const badSpeed=speedProblem(c);if(badSpeed)return badSpeed;
                 if(c.freezeFrame!==undefined && (kind!=='video' || !m || c.freezeFrame>=m.frames || c.volume!==0))return 'A freeze frame must hold a valid picture with no source sound.';

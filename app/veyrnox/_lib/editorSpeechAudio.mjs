@@ -1,5 +1,7 @@
 import { mixAudio, SAMPLE_RATE } from './editorAudio.mjs';
-import { sequenceEnd } from './editorSequence.mjs';
+import { audioClipInterval } from './editorAudioInterval.mjs';
+import { sequenceEnd, sequenceTransitionAfter } from './editorSequence.mjs';
+import { validateSequence } from './editorSequenceValidation.mjs';
 import { trackAudible } from './editorSelection.mjs';
 export const SPEECH_LIMITS = Object.freeze({ seconds: 120, sampleRate: 16000, samples: 120 * 16000 });
 const checkAbort = signal => { if (signal?.aborted) throw new DOMException('Transcription cancelled.', 'AbortError'); };
@@ -27,24 +29,36 @@ export async function resampleSpeechPCM(channels, sampleRate, { signal, onProgre
     }
     checkAbort(signal); onProgress({ stage: 'audio', fraction: 1 }); return output;
 }
-/** Recognition consumes the exact export mix, including mute/solo, envelopes, speed mapping and DSP. */
-export async function timelineSpeechPCM(timeline, blobs, { signal = new AbortController().signal, onProgress = () => {} } = {}) {
-    const end = sequenceEnd(timeline), seconds = end / timeline.fps;
-    if (!Number.isFinite(seconds) || seconds <= 0 || seconds > SPEECH_LIMITS.seconds) throw new Error('Automatic captions currently support edits up to two minutes. Trim or split this edit first.');
+/** A bounded view, never a persisted project or a destructive trim. Track selection respects mute and ignores other tracks' solo. */
+export function speechSelection(timeline, { trackId = 'mix', startFrame = 0, endFrame = sequenceEnd(timeline) } = {}) {
+    const problem = validateSequence(timeline); if (problem) throw new Error(problem);
+    if (!Number.isInteger(startFrame) || !Number.isInteger(endFrame) || startFrame < 0 || endFrame > sequenceEnd(timeline) || endFrame <= startFrame || endFrame - startFrame > SPEECH_LIMITS.seconds * timeline.fps) throw new Error('Choose a range within this edit, up to two minutes long.');
+    if (trackId !== 'mix' && !timeline.tracks.some(track => track.id === trackId && ['video', 'audio'].includes(track.kind))) throw new Error('Choose an existing video or audio track.');
+    const selected = trackId === 'mix' ? timeline : { ...timeline,
+        video: timeline.video.filter(clip => clip.trackId === trackId), audio: timeline.audio.filter(clip => clip.trackId === trackId),
+        tracks: timeline.tracks.map(track => ({ ...track, solo: false })) };
+    const ids = new Set();
+    for (const clip of [...selected.video, ...selected.audio]) {
+        const media = selected.media[clip.mediaId], interval = audioClipInterval(clip, media, sequenceTransitionAfter(selected, clip));
+        if (media?.hasAudio && clip.volume > 0 && clip.freezeFrame === undefined && trackAudible(selected, clip) && interval.startFrame < endFrame && interval.endFrame > startFrame) ids.add(media.id);
+    }
+    return { timeline: selected, startFrame, endFrame, seconds: (endFrame - startFrame) / timeline.fps, mediaIds: [...ids] };
+}
+/** Recognition consumes the chosen audible range with original fades, source-time mapping and DSP context. */
+export async function timelineSpeechPCM(timeline, blobs, { signal = new AbortController().signal, onProgress = () => {}, trackId = 'mix', startFrame = 0, endFrame = sequenceEnd(timeline), audioRuntime } = {}) {
+    const selection = speechSelection(timeline, { trackId, startFrame, endFrame });
     checkAbort(signal); onProgress({ stage: 'audio', fraction: 0 });
-    const { Input, BlobSource, ALL_FORMATS } = await import('mediabunny'), inputs = new Map();
+    const { Input, BlobSource, ALL_FORMATS } = audioRuntime || await import('mediabunny'), inputs = new Map();
     try {
-        for (const clip of [...timeline.video, ...timeline.audio]) {
-            const media = timeline.media[clip.mediaId];
-            if (!media?.hasAudio || clip.volume === 0 || clip.freezeFrame !== undefined || !trackAudible(timeline, clip) || inputs.has(media.id)) continue;
-            const blob = blobs.get(media.id);
-            if (!(blob instanceof Blob)) throw new Error(`Relink ${media.name} before transcribing the audible edit.`);
-            inputs.set(media.id, new Input({ source: new BlobSource(blob), formats: ALL_FORMATS }));
+        for (const id of selection.mediaIds) {
+            const media = timeline.media[id], blob = blobs.get(id);
+            if (!(blob instanceof Blob)) throw new Error(`Relink ${media.name} before transcribing this range.`);
+            inputs.set(id, new Input({ source: new BlobSource(blob), formats: ALL_FORMATS }));
         }
         checkAbort(signal);
-        const audio = await mixAudio(timeline, inputs, Math.ceil(seconds * SAMPLE_RATE), signal);
+        const audio = await (audioRuntime?.mixAudio || mixAudio)(selection.timeline, inputs, Math.round(selection.seconds * SAMPLE_RATE), signal, { startFrame, endFrame });
         checkAbort(signal);
-        if (!audio) throw new Error('This edit has no audible sound to transcribe.');
+        if (!audio) throw new Error('This selected range has no audible sound. Unmute its track or choose another range.');
         return await resampleSpeechPCM(Array.from({ length: Math.min(2, audio.numberOfChannels) }, (_, channel) => audio.getChannelData(channel)), audio.sampleRate, { signal, onProgress });
     } finally { for (const input of inputs.values()) input.dispose(); }
 }
