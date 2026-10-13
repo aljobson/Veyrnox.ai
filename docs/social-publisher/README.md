@@ -15,7 +15,8 @@ tracked in each ADR's "Open questions".
 **Built state (2026-10-08):** the schedule-and-publish engine, composer, device uploads, draft review,
 calendar with safe rescheduling, and analytics for Instagram, YouTube and TikTok are built. Production
 keeps `PUBLISH_ENABLED` off, so none of it is open to users there; staging has every Publish flag on
-except the two provider-consent switches. The Publish Plan (ADR-0062/0063) is not built. Eleven networks
+except the two provider-consent switches. The $15/month Publish Plan is built behind
+`PUBLISH_RUNTIME_FLAGS.plans` (default off) and waits for migration 0293 plus Stripe acceptance. Eleven networks
 have native adapters: Instagram, X, LinkedIn, TikTok and YouTube (the original five), plus Facebook, Threads,
 Pinterest, Bluesky, Twitch and Google Business Profile built for testers on 2026-10-08 (migration 0228) behind
 `PUBLISH_EXTENDED_NETWORKS_ENABLED` (off in production, on in staging). Only YouTube has been run against a
@@ -116,9 +117,9 @@ should look*.
    review before production posting scopes are granted — this can take weeks and should start in
    parallel with engineering, not after. Per-network status as of 2026-10-08 is in
    [06-oauth-review-runbook.md §6.0](06-oauth-review-runbook.md#60-review-status-by-network-2026-10-08).
-3. **Credit model** — decided (see Non-goals above), but **not built**: there is no Publish Plan code
-   or table (`social_publish_plans` appears only in ADR-0062/0063). Until it exists every user is on
-   Free, which the database caps at one active connected account (0169).
+3. **Publish billing rollout** — built but default-off: migration 0293 and the Stripe lifecycle must
+   pass staging payment acceptance before `PUBLISH_RUNTIME_FLAGS.plans` is enabled. Five connected accounts
+   and basic scheduling remain free; $15/month unlocks 366-day analytics and best-time recommendations.
 4. **Does Veyrnox already have a Metricool account for its own brand?** Yes — `getBrandSettings`
    shows a connected brand (`Veyrnox`, blogId `6457974`) with Instagram/X/LinkedIn/TikTok/YouTube
    linked. That account belongs to the separate sibling Veyrnox business's socials, not Veyrnox.ai's (hard wall in `CLAUDE.md`);

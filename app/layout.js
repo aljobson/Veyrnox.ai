@@ -1,3 +1,4 @@
+import { ReticleDev } from './reticle-dev';
 // ADR-0060: every HTML document must receive fresh nonced framework scripts.
 export const dynamic = 'force-dynamic';
 
@@ -54,7 +55,7 @@ export const viewport = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en" data-scroll-behavior="smooth" className={inter.variable}>
-      <body>
+      <body>{process.env.NODE_ENV === 'development' ? <ReticleDev /> : null}
         <a href="#main" className="vx-skip rounded-full bg-vx-accent px-4 py-2 text-sm font-extrabold text-vx-accent-ink">
           Skip to content
         </a>

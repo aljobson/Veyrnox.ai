@@ -32,6 +32,14 @@ controls remain. The earlier $19/five-account and $4-extra-account billing work
 is unmerged and will not be activated. Advanced feature boundaries and new
 pricing need a concrete product proposal before checkout is offered.
 
+## Owner amendment — 13 October 2026
+
+The owner approved that advanced offer at **$15/month**, using Metricool's
+plan-and-billing presentation as the behavioral reference. Five-account basic
+scheduling remains free. The paid Publish Plan unlocks full analytics history
+and best-time recommendations through the independent Stripe entitlement in
+this ADR; the retired $19 account bundle and $4 add-on do not return.
+
 ## Context
 
 ADR-0061 specified *what* Veyrnox Publish does and explicitly refused to decide *how
@@ -179,7 +187,7 @@ free-tier direction and sales channel below, with no changes. Concretely:
 - `CONTEXT.md` gains a **Publish Plan** glossary entry, with an explicit `_Avoid_:
   Subscription (reserved for the credit-allotment plan)` note, matching how ADR-0057
   added Cinema Pass terms.
-- A new feature switch, `PUBLISH_PLANS_ENABLED`, mirrors `CINEMA_SUBSCRIPTIONS_ENABLED`
+- A new feature switch, `PUBLISH_RUNTIME_FLAGS.plans`, mirrors `CINEMA_SUBSCRIPTIONS_ENABLED`
   in shape (master flag, ships off) — not the same flag, since Publish and Cinema are
   unrelated features that happen to share a billing pattern.
 - New Stripe webhook event handling is additive to the existing route, not a new

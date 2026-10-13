@@ -48,10 +48,9 @@ Each flow lists the trigger, steps, system behavior, and edge cases. States refe
 - **Threads and Twitch.** Ordinary consent and return; the profile or channel is the account.
 
 **Edge cases:**
-- Free users can connect **one** active account. The page disables the other Connect buttons and says
-  "Your plan connects one account. Disconnect it to connect a different one"; the database enforces the
-  same limit (`ACCOUNT_LIMIT`, 0169). Because the Publish Plan is not built, no user can raise it, so a
-  multi-network post is only possible for accounts connected before 0169.
+- Free users can connect **five** active accounts when the multi-account rollout is enabled. The page and
+  database enforce the same limit. The $15 Publish Plan does not raise that cap; it unlocks full analytics
+  history and best-time recommendations, while basic scheduling remains free.
 - Platform error or a failed exchange: the callback page shows a network-specific message and "Nothing
   was connected. Go back and try again." The provider's own error text is not surfaced.
 - A personal Instagram account cannot complete Instagram Login for publishing (Business or Creator

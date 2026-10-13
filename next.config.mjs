@@ -1,3 +1,4 @@
+import { withReticle } from '@reticlehq/next';
 import { buildConfig } from './packages/security/config.js';
 import { oauthProvidersFor } from './packages/security/environments.js';
 const identityConfig = buildConfig(process.env);
@@ -116,4 +117,4 @@ const nextConfig = {
   },
 };
 
-export default nextConfig;
+export default withReticle(nextConfig);

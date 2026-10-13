@@ -1,0 +1,35 @@
+{
+  "entries": [
+    {
+      "id": "flow:drive-signed-out-users-can-dismiss-and-reopen-authenti",
+      "statement": "Signed-out users can dismiss and reopen authentication from the Publish…",
+      "status": "proposed",
+      "subject": "drive-signed-out-users-can-dismiss-and-r"
+    },
+    {
+      "id": "inline:signed-out-users-can-dismiss-and-reopen-authenti-1d49d724",
+      "statement": "Signed-out users can dismiss and reopen authentication from the Publish…",
+      "status": "proposed",
+      "subject": "unsorted"
+    },
+    {
+      "id": "inline:signed-out-users-can-open-authentication-from-th-6fd59596",
+      "statement": "Signed-out users can open authentication from the Publish Plan billing…",
+      "status": "proved",
+      "subject": "unsorted"
+    },
+    {
+      "id": "publish-plan-access",
+      "statement": "Free users can see the plan and sign in to manage billing, while paid a…",
+      "status": "proposed",
+      "subject": "unsorted"
+    },
+    {
+      "id": "publish-plan-price",
+      "statement": "The Veyrnox Publish Plan is offered at $15 per month while five connect…",
+      "status": "proposed",
+      "subject": "unsorted"
+    }
+  ],
+  "version": 1
+}

@@ -54,6 +54,7 @@ test('nonce policy preserves the existing non-script directives and rejects head
 test('the local Reticle bridge is available only in the development CSP', () => {
     const development = contentSecurityPolicy(undefined, true, 'development');
     const production = contentSecurityPolicy(undefined, false, 'production');
+    assert.match(development, /connect-src[^;]*ws:\/\/localhost:4400[^;]*ws:\/\/127\.0\.0\.1:4400/);
     assert.match(development, /connect-src[^;]*ws:\/\/localhost:4401[^;]*ws:\/\/127\.0\.0\.1:4401/);
     assert.doesNotMatch(production, /ws:\/\//);
 });

@@ -11,7 +11,8 @@
  */
 
 import { NextResponse } from 'next/server';
-import { postingInsightsEnabled } from '../../../../../lib/social/publishFeature.js';
+import { postingInsightsEnabled, publishPlansEnabled } from '../../../../../lib/social/publishFeature.js';
+import { readPublishEntitlement } from '../../../../../lib/social/publishPlanApi.js';
 import { accountReadLimit } from '../../../../../lib/accountReadLimit.js';
 import { rpc, envConfig, SupabaseError } from '../../../../../packages/db/supabase-client.js';
 
@@ -54,6 +55,19 @@ export async function GET(req) {
     const limited = await accountReadLimit(authId, cfg, { account: null, sync: null, evolution: [], posts: [] });
     if (limited) return limited;
 
+    let entitlement = null;
+    if (publishPlansEnabled()) {
+        try { entitlement = await readPublishEntitlement(authId, cfg); }
+        catch (err) {
+            console.error('[api/v1/social/analytics:GET] entitlement read failed:', err instanceof SupabaseError ? err.status : 0);
+            return NextResponse.json({ error: 'internal' }, { status: 502 });
+        }
+        if (!entitlement) return NextResponse.json({ error: 'internal' }, { status: 502 });
+        if (entitlement.tier !== 'publish' && toMs - fromMs >= 30 * DAY_MS) {
+            return NextResponse.json({ error: 'publish_plan_required', analytics_days: 30 }, { status: 402 });
+        }
+    }
+
     let result;
     try {
         result = await rpc('get_social_analytics', {
@@ -75,6 +89,7 @@ export async function GET(req) {
     return NextResponse.json({
         account: result.account, sync: result.sync,
         evolution: result.evolution || [], posts: result.posts || [],
-        ...(postingInsightsEnabled() ? { postingInsightsEnabled: true } : {}),
+        ...(postingInsightsEnabled() && (!publishPlansEnabled() || entitlement?.tier === 'publish') ? { postingInsightsEnabled: true } : {}),
+        ...(publishPlansEnabled() ? { planTier: entitlement?.tier || 'free', analyticsDays: entitlement?.analytics_days || 30 } : {}),
     }, { headers: { 'Cache-Control': 'no-store' } });
 }

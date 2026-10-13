@@ -24,6 +24,14 @@ five accounts or $4/account as the current offer. Future premium feature and
 price proposals remain to be reviewed; this amendment does not approve a new
 premium price. The historic pricing rationale below is retained as history.
 
+## Owner amendment — 13 October 2026
+
+The owner approved a new advanced **Publish Plan at $15/month**, using Metricool's
+plan-and-billing presentation as the behavioral reference. The five-account basic
+scheduling allowance from the 10 October amendment remains free. The paid plan
+unlocks full analytics history and best-time recommendations; v1 remains monthly
+only. The historical $19 account-based offer and $4 account add-on remain retired.
+
 ## Context
 
 ADR-0062 decided Publish is billed as an independent recurring "Publish Plan," never touching

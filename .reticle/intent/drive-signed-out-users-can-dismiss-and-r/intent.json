@@ -1,0 +1,18 @@
+{
+  "intents": {
+    "flow:drive-signed-out-users-can-dismiss-and-reopen-authenti": {
+      "declaredAt": 1791910729183,
+      "id": "flow:drive-signed-out-users-can-dismiss-and-reopen-authenti",
+      "state": "declared",
+      "statement": "Signed-out users can dismiss and reopen authentication from the Publish Plan page.",
+      "status": "proposed",
+      "subject": "drive-signed-out-users-can-dismiss-and-r",
+      "surface": {
+        "flow": "drive-signed-out-users-can-dismiss-and-reopen-authenti"
+      },
+      "updatedAt": 1791910729251
+    }
+  },
+  "subject": "drive-signed-out-users-can-dismiss-and-r",
+  "version": 1
+}

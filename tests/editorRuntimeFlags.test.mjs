@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { editorFeatureEnabled } from '../lib/editorRuntimeFlags.mjs';
+import { publishRuntimeFeatureEnabled } from '../lib/social/runtimeFlags.js';
 import { parseJsonc } from '../scripts/check-migration-ledger.mjs';
 import { readPublicCatalog } from '../lib/publicCatalog.js';
 const names = ['EDITOR_LIBRARY_EXPORTS_ENABLED','EDITOR_ORGANIZATION_ENABLED','EDITOR_LOCAL_INFERENCE_ENABLED','EDITOR_AUDIO_STEMS_ENABLED'];
@@ -29,7 +30,8 @@ test('owner-approved production group enables stems while retaining all other ex
     assert.equal(editorFeatureEnabled(names[3],config.vars),true);
     assert.equal(editorFeatureEnabled(names[3],{...config.vars,EDITOR_AUDIO_STEMS_ENABLED:'false'}),false,'independent emergency rollback remains available');
     for(const name of names)assert.equal(editorFeatureEnabled(name,config.env.staging.vars),true);
-    for(const name of ['PROJECT_MEDIA_UPLOADS_ENABLED','PUBLISH_VIDEO_DESTINATIONS_ENABLED','CINEMA_SUBSCRIPTIONS_ENABLED','CINEMA_UNLOCKS_ENABLED'])assert.equal(config.vars[name],'false');
+    for(const name of ['PROJECT_MEDIA_UPLOADS_ENABLED','CINEMA_SUBSCRIPTIONS_ENABLED','CINEMA_UNLOCKS_ENABLED'])assert.equal(config.vars[name],'false');
+    assert.equal(publishRuntimeFeatureEnabled('PUBLISH_VIDEO_DESTINATIONS_ENABLED',config.vars),false);
     assert.equal(Object.keys(config.vars).filter(k=>names.includes(k)).length,0);
 });
 test('public catalog cache partitions the resolved paid gate so stale entries cannot hide activation or defeat rollback',async()=>{

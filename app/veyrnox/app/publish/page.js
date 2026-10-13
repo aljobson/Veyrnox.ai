@@ -48,6 +48,7 @@ function PublishControls({ initialJobId, initialUploadId }) {
   const [accountLimit, setAccountLimit] = useState(1);
   const [youtubeVisibilityEnabled, setYoutubeVisibilityEnabled] = useState(false);
   const [uploadsEnabled, setUploadsEnabled] = useState(false);
+  const [plansEnabled, setPlansEnabled] = useState(false);
   const [networks, setNetworks] = useState([]);
   const [blueskyOpen, setBlueskyOpen] = useState(false);
   const [loadError, setLoadError] = useState('');
@@ -65,6 +66,7 @@ function PublishControls({ initialJobId, initialUploadId }) {
       setAccountLimit(res.accountLimit === 5 ? 5 : 1);
       setUploadsEnabled(res.uploadsEnabled === true);
       setYoutubeVisibilityEnabled(res.youtubeVisibilityEnabled === true);
+      setPlansEnabled(res.plansEnabled === true);
       setNetworks(res.networks || []);
     } catch (err) {
       setLoadError(err.body?.error === 'publish_not_open' ? 'Publish is not available for this account yet.'
@@ -105,7 +107,10 @@ function PublishControls({ initialJobId, initialUploadId }) {
 
   return <div className="space-y-6">
     <section className="rounded-2xl border border-vx-border p-5">
-      <h2 className="font-bold mb-4">Connected accounts</h2>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <h2 className="font-bold">Connected accounts</h2>
+        {plansEnabled && <Link href="/app/publish/plan" className="text-sm font-bold text-vx-accent underline">Plans and billing</Link>}
+      </div>
       {accountLimit === 5 && <p className="text-sm text-vx-fg-muted mb-3">Basic scheduling is free for up to five connected accounts.</p>}
       {accounts === null && !loadError && <p className="text-sm text-vx-fg-muted">Loading…</p>}
       {loadError && <p role="alert" className="text-sm text-vx-danger mb-3">{loadError}</p>}
