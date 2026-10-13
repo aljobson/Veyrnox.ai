@@ -9,7 +9,7 @@ export const metadata = {
 
 export default function Privacy() {
     return (
-        <LegalPage title="Privacy Policy" updated="9 October 2026">
+        <LegalPage title="Privacy Policy" updated="12 October 2026">
             <p>{ENTITY.name} (&ldquo;we&rdquo;) is the data controller for personal data processed through Veyrnox.ai. Registered office: {ENTITY.office}. Contact: <a href={`mailto:${ENTITY.privacyEmail}`}>{ENTITY.privacyEmail}</a>.</p>
 
             <h2>What we collect</h2>
@@ -38,6 +38,14 @@ export default function Privacy() {
             <p>We store the connected channel details, granted permissions, posting history and analytics in our Supabase database. Access and refresh tokens are encrypted before storage and used by our server to make the authorized YouTube API calls, including scheduled uploads. Selecting a Library video does not by itself upload it to YouTube. When you post or schedule it, we send the selected video and its title and description to YouTube.</p>
             <p>Disconnecting a channel removes its stored access and refresh tokens and stops further publishing and analytics collection for that connection. It does not delete videos already uploaded to YouTube. Account details, posting history and previously collected analytics remain part of your Veyrnox account; you can request their deletion using the contact and data-rights process below. You can also revoke Veyrnox Publish&rsquo;s access through your Google Account.</p>
             <p>We do not use data obtained through the YouTube API to train AI models or for advertising targeting. Veyrnox Publish&rsquo;s use and transfer of information received from Google APIs adheres to the <a href="https://developers.google.com/terms/api-services-user-data-policy">Google API Services User Data Policy</a>, including its Limited Use requirements.</p>
+
+            <h2 id="data-protection">How we protect your data</h2>
+            <p>We use the following safeguards to protect personal data, including sensitive Google user data obtained through the YouTube API, against unauthorized access and disclosure:</p>
+            <ul>
+                <li><strong>Encryption in transit</strong> — we use HTTPS/TLS to encrypt data sent between your browser and Veyrnox.ai, and between our servers and Google&rsquo;s APIs and our database.</li>
+                <li><strong>Protection of stored OAuth tokens</strong> — YouTube access and refresh tokens are encrypted with AES-256-GCM before they are stored in our database. The encryption key is held separately in a server-side secret. Tokens are used by our servers for the features you authorize and are not returned to the browser in connected-account responses.</li>
+                <li><strong>Access controls</strong> — our APIs verify your signed-in identity and check that the connected accounts and associated data belong to you. Connected-account and analytics tables use database row-level security, with access through controlled server-side operations rather than direct browser access.</li>
+            </ul>
 
             <h2>Planned model processor: BytePlus</h2>
             <p>BytePlus Pte. Ltd. (Singapore) is a planned processor for selected Seedance video models. These models are not currently available on Veyrnox.ai. When enabled, choosing one of these models will send your prompt and any reference images to BytePlus ModelArk in Singapore to generate your video. This processing takes place outside the United Kingdom and the EEA; storing the finished video in our EU storage does not keep the generation processing within those regions.</p>
