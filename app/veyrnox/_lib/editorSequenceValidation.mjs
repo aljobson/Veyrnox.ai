@@ -14,6 +14,7 @@ import { assetSourceProblem } from './editorProjectAssets.mjs';
 import { smartPictureProblem } from './editorSmartPicture.mjs';
 import { colourProblem } from './editorColour.mjs';
 import { maskProblem } from './editorMask.mjs';
+import { EFFECT_TYPES, TRANSITION_TYPES } from './editorEffects.mjs';
 const object = v => v && typeof v === 'object' && !Array.isArray(v);
 const exact = (v, keys) => object(v) && Object.keys(v).length === keys.length && Object.keys(v).every(k => keys.includes(k));
 const only = (v, keys) => object(v) && Object.keys(v).every(k => keys.includes(k));
@@ -31,8 +32,8 @@ export function visualProblem(c) {
     if (c.transform !== undefined && (!exact(c.transform, Object.keys(TRANSFORM_DEFAULTS)) || !number(c.transform.x, -2, 3) || !number(c.transform.y, -2, 3) || !number(c.transform.scale, 0.05, 8) || !number(c.transform.rotation, -360, 360) || !number(c.transform.opacity, 0, 1) || typeof c.transform.flipX !== 'boolean' || typeof c.transform.flipY !== 'boolean')) return 'Invalid transform.';
     if (c.filter !== undefined && (!exact(c.filter, Object.keys(FILTER_DEFAULTS)) || !number(c.filter.brightness, 0, 3) || !number(c.filter.contrast, 0, 3) || !number(c.filter.saturate, 0, 3) || !number(c.filter.hue, -180, 180) || !number(c.filter.blur, 0, 30))) return 'Invalid colour adjustment.';
     if (c.crop !== undefined && (!exact(c.crop, ['x', 'y', 'width', 'height']) || !number(c.crop.x, 0, 1) || !number(c.crop.y, 0, 1) || !number(c.crop.width, 0.05, 1) || !number(c.crop.height, 0.05, 1) || c.crop.x + c.crop.width > 1.000001 || c.crop.y + c.crop.height > 1.000001)) return 'Crop is outside the picture.';
-    if (c.effect !== undefined && (!exact(c.effect, ['type', 'intensity']) || !['none', 'vignette', 'pixelate', 'grain'].includes(c.effect.type) || !number(c.effect.intensity, 0, 1))) return 'Invalid effect.';
-    if (c.transitionType !== undefined && !['dissolve', 'dip-black', 'wipe-left', 'slide', 'zoom'].includes(c.transitionType)) return 'Invalid transition type.';
+    if (c.effect !== undefined && (!exact(c.effect, ['type', 'intensity']) || !EFFECT_TYPES.includes(c.effect.type) || !number(c.effect.intensity, 0, 1))) return 'Invalid effect.';
+    if (c.transitionType !== undefined && !TRANSITION_TYPES.includes(c.transitionType)) return 'Invalid transition type.';
     if (c.mask !== undefined && !['none', 'circle', 'rounded', 'horizontal', 'vertical'].includes(c.mask)) return 'Invalid mask.';
     if (c.blend !== undefined && !BLENDS.includes(c.blend)) return 'Invalid blend mode.';
     if (c.fit !== undefined && !['contain', 'cover'].includes(c.fit)) return 'Invalid picture fit.';

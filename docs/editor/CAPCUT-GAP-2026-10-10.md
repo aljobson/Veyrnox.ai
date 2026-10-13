@@ -210,3 +210,54 @@ singing recognition accuracy, vocals isolation output quality and alignment of
 lyrics that differ from the transcript still need qualification; no paid job,
 new model, licensed lyrics or universal lyric accuracy is claimed. Production
 release and native verification are recorded separately.
+
+## CapCut workspace and original-catalog completion — 13 October 2026
+
+The signed-in CapCut workspace was re-audited across its Media, Templates,
+Elements, Audio, Text, Captions, Transcript, Effects, Transitions, Filters,
+Brand kit and Plugins areas, including the separate Video effects and Body
+effects surfaces. The evidence boundary above remains unchanged: passive REA
+evidence ID `ev_2c1bac8ec500c5671a3464e4ea887aa00f3b560650c791e8474d7cd1b5d5aeb8`,
+capture SHA-256 `6c21a5c7697572484b44d0d7dda7ebe33e09c661a2fb2549f59b628989d13913`,
+and a fresh runtime inspection of the signed-in interface. No CapCut code,
+assets, media, presets, music, stickers, templates or thumbnails were copied.
+
+Veyrnox now uses a compact vertical editing rail with independently scrolling
+tool panels and selected states. Its original, searchable visual catalogs
+include 18 video effects in six categories, 12 directional and compositing
+transitions, 20 editable graphic elements, 16 text styles and eight
+replaceable-media project templates. Body effects open the actual bounded
+person-processing controls rather than a placeholder list. Template actions
+create real editable timeline content, and effect intensity and transition
+duration remain ordinary project edits with Undo/Redo and document validation.
+
+The expanded effect and transition types are shared by preview and export.
+Directional wipes and slides, dissolve, dip-to-black, flash, blur and zoom use
+the same sequence metadata in both paths. The original effect compositor now
+implements pixelation, grain, glow, light leak, pulse, strobe, old film,
+scanlines, monochrome, sepia, chromatic separation, negative, mirror, tiles,
+duotone and posterization in addition to the existing neutral and vignette
+looks. Posterization bounds CPU pixel readback to a 640x360 working surface so
+2K/4K export does not require full-frame synchronous readback.
+
+Local Reticle journeys verified the dense rail and catalog switching, actual
+fixture import and clip selection, video-effect application, Body effects,
+element insertion, template insertion, a transition between two clips and a
+text-style insertion. Reticle exposed an invalid `Arial Black`/weight pairing
+in the first Bold Impact attempt; the preset now uses the valid Impact/bold
+contract and the repeated insertion produced a positive verdict. Source-state
+registration was unavailable in the zero-install session, so the recorded
+proof uses concrete DOM pressed/inserted consequences rather than claiming a
+store-state verdict. Exploratory locator failures remain preserved instead of
+being relabelled as passes.
+
+This completes the native workspace and original catalog implementation in the
+areas above. It does not claim CapCut's proprietary catalog, licensed stock,
+music or Giphy inventory. Those sources are optional integrations and require
+their own usage rights; original and owner-supplied media do not require a new
+catalog purchase. The approved KIE Turbo and dialogue qualifications both
+ended in provider Internal Error with zero credits consumed, so neither voice
+model is qualified or activated. TikTok Ads still requires advertiser-account
+authorization, and broad long-edit, mobile, low-resource, real-footage and
+provider-output qualification remains separate. Native social publishing,
+project-media upload and paid Cinema flags remain off.

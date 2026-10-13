@@ -17,7 +17,14 @@ export const TITLE_STYLES = Object.freeze([
     { name:'Neon heading',size:10,y:.5,style:{...TEXT_DEFAULTS,color:'#32d6c5',strokeWidth:0,shadowColor:'#32d6c5',shadowOpacity:1,shadowBlur:12,shadowX:0,shadowY:0} },
     { name:'Typewriter',size:6,y:.8,style:{...TEXT_DEFAULTS,font:'Courier New',weight:'normal',letterSpacing:2,background:'#101827',backgroundOpacity:.85,strokeWidth:0} },
     { name:'Warm label',size:5,y:.85,style:{...TEXT_DEFAULTS,color:'#101827',background:'#ffe66d',backgroundOpacity:1,strokeWidth:0} },
-
+    { name:'Bold impact',size:12,y:.5,style:{...TEXT_DEFAULTS,font:'Impact',weight:'bold',stroke:'#000000',strokeWidth:5,letterSpacing:-1} },
+    { name:'Minimal subtitle',size:4,y:.9,style:{...TEXT_DEFAULTS,weight:'normal',background:'#000000',backgroundOpacity:.55,strokeWidth:0} },
+    { name:'Retro pop',size:9,y:.5,style:{...TEXT_DEFAULTS,color:'#ff8bd1',stroke:'#34205c',strokeWidth:5,shadowColor:'#32d6c5',shadowOpacity:1,shadowBlur:0,shadowX:5,shadowY:5} },
+    { name:'Documentary',size:5,y:.82,style:{...TEXT_DEFAULTS,font:'Georgia',weight:'normal',align:'left',strokeWidth:0,background:'#000000',backgroundOpacity:.7},x:.08 },
+    { name:'Kinetic block',size:10,y:.5,style:{...TEXT_DEFAULTS,color:'#101827',background:'#32d6c5',backgroundOpacity:1,strokeWidth:0,letterSpacing:1} },
+    { name:'Luxury serif',size:8,y:.5,style:{...TEXT_DEFAULTS,font:'Times New Roman',weight:'normal',letterSpacing:4,strokeWidth:0,shadowColor:'#000000',shadowOpacity:.4,shadowBlur:8,shadowX:0,shadowY:3} },
+    { name:'Breaking headline',size:8,y:.78,style:{...TEXT_DEFAULTS,align:'left',color:'#ffffff',background:'#c62828',backgroundOpacity:1,strokeWidth:0},x:.06 },
+    { name:'Outlined',size:10,y:.5,style:{...TEXT_DEFAULTS,color:'#000000',stroke:'#ffffff',strokeWidth:4,shadowOpacity:0} },
 ]);
 export function insertTitlePreset(tl, name, frame) {
     const preset = TITLE_STYLES.find(s => s.name === name);
@@ -31,17 +38,33 @@ export function applyLook(tl, id, name, intensity = 1) {
     return updateSequenceClip(tl, 'video', id, { filter });
 }
 
-export const EDIT_TEMPLATES = Object.freeze(['Title intro', 'Slideshow', 'Picture in picture']);
+export const EDIT_TEMPLATE_CATALOG = Object.freeze([
+    {name:'Title intro',description:'A clean animated opening title.'},
+    {name:'Slideshow',description:'Append selected shots with gentle motion.'},
+    {name:'Picture in picture',description:'Overlay one source at the playhead.'},
+    {name:'Vlog opener',description:'Fast three-shot opener with a headline.'},
+    {name:'Split screen',description:'Place two sources side by side.'},
+    {name:'Social quote',description:'A bold quote card for vertical posts.'},
+    {name:'Product promo',description:'A product shot with a lower headline.'},
+    {name:'End card',description:'Append a short closing message.'},
+]);
+export const EDIT_TEMPLATES = Object.freeze(EDIT_TEMPLATE_CATALOG.map(template=>template.name));
 export function insertEditTemplate(tl, name, mediaIds, headline, frame) {
     if (!EDIT_TEMPLATES.includes(name)) return { error: 'Choose an edit template.' };
     const selected = mediaIds.map(id => tl.media[id]).filter(m => m && m.kind !== 'audio').slice(0, 5);
-    if (name !== 'Title intro' && !selected.length) return { error: 'Choose video or images in the media bin first.' };
+    if (!['Title intro','Social quote','End card'].includes(name) && !selected.length) return { error: 'Choose video or images in the media bin first.' };
+    if(name==='Split screen'&&selected.length<2)return {error:'Choose two video or image sources for split screen.'};
     const at = name === 'Picture in picture' ? frame : sequenceEnd(tl);
     let next = tl;
     if (name === 'Picture in picture') { next = addSequenceTrack(next, 'video'); if (next.error) return next; next = addSequenceClip(next, 'video', selected[0].id, { start: at, len: Math.min(90, selected[0].frames), trackId: next.tracks.at(-1).id, transform: { x: 0.75, y: 0.3, scale: 0.35, rotation: 0, opacity: 1, flipX: false, flipY: false }, mask: 'rounded' }); }
     else if (name === 'Slideshow') for (const media of selected) { next = addSequenceClip(next, 'video', media.id, { start: sequenceEnd(next), len: Math.min(90, media.frames), animation: { in: 'zoom', out: 'fade', duration: 15 } }); if (next.error) return next; }
+    else if(name==='Vlog opener')for(const [index,media] of selected.slice(0,3).entries()){next=addSequenceClip(next,'video',media.id,{start:sequenceEnd(next),len:Math.min(60,media.frames),animation:{in:index?'slide-left':'zoom',out:'fade',duration:12}});if(next.error)return next;}
+    else if(name==='Split screen'){
+        for(const [index,media] of selected.slice(0,2).entries()){next=addSequenceTrack(next,'video');if(next.error)return next;next=addSequenceClip(next,'video',media.id,{start:at,len:Math.min(120,media.frames),trackId:next.tracks.at(-1).id,transform:{x:index ? .75 : .25,y:.5,scale:.5,rotation:0,opacity:1,flipX:false,flipY:false},crop:{x:index ? .5 : 0,y:0,width:.5,height:1},fit:'cover'});if(next.error)return next;}
+    } else if(name==='Product promo')next=addSequenceClip(next,'video',selected[0].id,{start:sequenceEnd(next),len:Math.min(120,selected[0].frames),animation:{in:'zoom',out:'fade',duration:15}});
     if (next.error) return next;
-    return addSequenceText(next, { text: headline.trim() || 'Your story', start: at, len: 90, y: name === 'Slideshow' ? 0.85 : 0.5, size: 8, animation: { in: 'fade', out: 'fade', duration: 15 } });
+    const start=['Slideshow','Vlog opener','Product promo'].includes(name)?at:name==='End card'?sequenceEnd(next):at;
+    return addSequenceText(next, { text: headline.trim() || (name==='End card'?'Thanks for watching':'Your story'), start, len:name==='Vlog opener'?120:90, y:['Slideshow','Product promo'].includes(name) ? 0.85 : 0.5, size:name==='Social quote'?10:8, ...(name==='Social quote'?{style:{...TEXT_DEFAULTS,color:'#101827',background:'#ffe66d',backgroundOpacity:1,strokeWidth:0}}:{}), animation: { in: name==='Vlog opener'?'slide-left':'fade', out: 'fade', duration: 15 } });
 }
 export function insertGraphic(tl, shape, color, frame) {
     let next = addSequenceTrack(tl, 'video'); if (next.error) return next;
