@@ -314,3 +314,8 @@ menu assertion checked DOM presence rather than visibility and therefore
 returned `no-fault`; the corrected visible/hidden assertions both passed. Pixel
 captures at 1280×720 in dark and light site themes, plus 390×844, confirm that
 the editing surface remains dark and usable across those measured layouts.
+
+The desktop full-editor state now owns the complete viewport. Its Veyrnox Cut
+header replaces the surrounding site navigation until the user selects Exit
+full editor, matching the focused application boundary observed in CapCut and
+giving the canvas, inspector and timeline the recovered navigation height.
