@@ -6,6 +6,7 @@ Changes that touch the money spine, the ledger or the catalog are marked **[mone
 
 ## Unreleased (2026-10-05)
 
+- Social Cinema free playback now has its own production path: signed-in viewers can stream reviewed free titles under the existing 300-minute monthly ceiling while credit Unlocks, Cinema Pass subscriptions and creator monetisation remain closed.
 - **[money]** Admin Pack credit clawback with fresh MFA, a stored replay balance, strict key binding, and protection for Free and all stored Subscription credits.
 - Generated image scanning with leased OpenAI moderation, audited holds and review/release, social publication checks, and explicit scanner monitoring; production flags remain off. Apply migration 0286 before enabling `SOCIAL_HOLD_CHECKS_ENABLED` (off in production, on in staging). Worktree guard paths now resolve against the target checkout.
 

@@ -248,18 +248,43 @@ test('the free ceiling switch needs the Cinema master switch', async () => {
   assert.equal(cinemaFeatures({ CINEMA_ENABLED: 'true' }).freeCeiling, false);
 });
 
-test('with the free ceiling on and unlocks off, every viewer action is refused before any RPC', async () => {
-  // Production since 2026-10-10: the ceiling switch is on behind a closed unlocks switch.
+test('with the free ceiling on and unlocks off, free viewing works while every paid path stays closed', async () => {
   Object.assign(process.env, STREAM_ENV, { CINEMA_FREE_CEILING_ENABLED: 'true', CINEMA_UNLOCKS_ENABLED: 'false' });
   try {
-    const requests = { entitlement: requestFor('entitlement'), play: requestFor('play'), heartbeat: requestFor('heartbeat'), unlock: post('unlocks', consent) };
-    for (const [action, request] of Object.entries(requests)) {
-      const s = setup(action);
-      const res = await s.handle(request);
+    const ent = setup('entitlement', { cinema_metered_entitlement: { access: 'free', credits: 0 } });
+    assert.equal((await (await ent.handle(requestFor('entitlement'))).json()).access, 'free');
+
+    const play = setup('play', { start_cinema_playback: { access: 'free', stream_uid: uid } });
+    const played = await play.handle(requestFor('play'));
+    assert.equal(played.status, 200);
+    assert.match((await played.json()).token, /^signed:/);
+
+    const beat = setup('heartbeat', {
+      cinema_metered_entitlement: { access: 'free', credits: 0 },
+      record_cinema_play: { ok: true, recorded: true, access: 'free', seconds: 30, minutes_used: 1, ceiling_minutes: 300 },
+    });
+    assert.deepEqual([(await (await beat.handle(requestFor('heartbeat'))).json()).access, beat.calls.map((c) => c.name)], ['free', ['consume_account_read_request', 'cinema_metered_entitlement', 'record_cinema_play']]);
+
+    const ceiling = setup('play', { start_cinema_playback: { error: 'locked', credits: 0, reason: 'free_ceiling' } });
+    const capped = await ceiling.handle(requestFor('play'));
+    assert.deepEqual([capped.status, (await capped.json()).reason], [402, 'free_ceiling']);
+
+    for (const [action, response] of [
+      ['entitlement', { cinema_metered_entitlement: { access: 'locked', credits: 6 } }],
+      ['play', { start_cinema_playback: { access: 'unlocked', stream_uid: uid } }],
+      ['heartbeat', { cinema_metered_entitlement: { access: 'pass', credits: 0 } }],
+    ]) {
+      const s = setup(action, response);
+      const res = await s.handle(requestFor(action));
       assert.equal(res.status, 503, action);
       assert.equal((await res.json()).error, 'unlocks_not_open', action);
-      assert.deepEqual(s.calls, [], action);
     }
+
+    const unlock = setup('unlock');
+    const unlockRes = await unlock.handle(post('unlocks', consent));
+    assert.equal(unlockRes.status, 503);
+    assert.equal((await unlockRes.json()).error, 'unlocks_not_open');
+    assert.deepEqual(unlock.calls, []);
   } finally {
     delete process.env.CINEMA_FREE_CEILING_ENABLED;
     process.env.CINEMA_UNLOCKS_ENABLED = 'true';

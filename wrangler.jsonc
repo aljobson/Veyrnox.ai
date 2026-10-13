@@ -118,17 +118,14 @@
     "CINEMA_PROXY_UPLOADS_ENABLED": "true",
     "CREATOR_MONETISATION_ENABLED": "false",
     "CINEMA_SUBSCRIPTIONS_ENABLED": "false",
-    // CINEMA_UNLOCKS_ENABLED also opens playback of free titles. It stays
-    // "false" until the free ceiling is accepted on staging and the
-    // reconciliation job has run clean for 24 hours after 0245 (applied
-    // 2026-10-10 13:08 UTC). Never switch it on while
-    // CINEMA_FREE_CEILING_ENABLED is "false".
+    // Paid credit Unlocks remain closed. Free playback has its own bounded
+    // path through CINEMA_FREE_CEILING_ENABLED below.
     "CINEMA_UNLOCKS_ENABLED": "false",
     // Monthly ceiling on free viewing minutes per account (ADR-0057,
     // docs/cinema/paywall-plan.md P6). On since 2026-10-10 at the owner's
-    // request; migration 0245 is applied. It is read only after the unlocks
-    // gate, so it changes nothing while CINEMA_UNLOCKS_ENABLED is "false".
-    // Rollback: set "false" and deploy.
+    // request; migration 0245 is applied. Since 2026-10-13 this independently
+    // opens free-title playback while paid Unlocks remain closed. Rollback:
+    // set "false" and deploy.
     "CINEMA_FREE_CEILING_ENABLED": "true",
     // WEBHOOK_DELIVERY_LOG_ENABLED: one row per inbound provider webhook and
     // our answer (0276, ADR-0083), read at /app/admin/webhooks. Off until the
