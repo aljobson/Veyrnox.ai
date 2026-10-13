@@ -11,8 +11,19 @@ import {
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 
-test('the public catalog contains a complete AI-made story series', () => {
-  assert.equal(editorialSeries.length, 1);
+test('the public catalog contains four AI-made story series and 42 episodes', () => {
+  assert.equal(editorialSeries.length, 4);
+  assert.deepEqual(editorialSeries.map((series) => [series.slug, series.episodes.length]), [
+    ['mission-pandora-the-last-pilot', 17],
+    ['black-dwarf', 9],
+    ['hell-phyre', 8],
+    ['planet-9', 8],
+  ]);
+  const allEpisodes = editorialSeries.flatMap((series) => series.episodes);
+  assert.equal(allEpisodes.length, 42);
+  assert.equal(new Set(allEpisodes.map((episode) => episode.id)).size, 42);
+  assert.ok(allEpisodes.every((episode) => episode.posterUrl?.startsWith('https://i.ytimg.com/vi/') || episode.id.startsWith('mission-pandora-')));
+
   const [series] = editorialSeries;
   assert.equal(series.slug, 'mission-pandora-the-last-pilot');
   assert.equal(series.title, 'Mission Pandora: The Last Pilot');
@@ -21,7 +32,9 @@ test('the public catalog contains a complete AI-made story series', () => {
   assert.equal(new Set(series.episodes.map((episode) => episode.id)).size, 17);
   assert.ok(series.posterUrl.startsWith('https://i.ytimg.com/vi/'));
 
-  const [card] = editorialSeriesCards();
+  const cards = editorialSeriesCards();
+  assert.equal(cards.length, 4);
+  const [card] = cards;
   assert.equal(card.content_type, 'SERIES');
   assert.equal(card.episode_count, 17);
   assert.equal(card.series_slug, series.slug);
@@ -54,6 +67,22 @@ test('YouTube chapter embeds use the privacy-enhanced player with fixed boundari
   assert.equal(youtubeEmbedUrl(episode.playback), 'https://www.youtube-nocookie.com/embed/g8FtPaZWGnA?start=0&end=68&playsinline=1&rel=0');
   assert.equal(youtubeEmbedUrl({ ...episode.playback, videoId: '../invalid' }), null);
   assert.equal(youtubeEmbedUrl({ ...episode.playback, endSeconds: 0 }), null);
+});
+
+test('every multi-video episode uses its verified source video and full duration', () => {
+  for (const series of editorialSeries.slice(1)) {
+    assert.deepEqual(series.episodes.map((episode) => episode.position), Array.from({ length: series.episodes.length }, (_, index) => index + 1));
+    assert.equal(new Set(series.episodes.map((episode) => episode.playback.videoId)).size, series.episodes.length);
+    for (const [index, episode] of series.episodes.entries()) {
+      assert.equal(episode.playback.provider, 'youtube');
+      assert.equal(episode.playback.startSeconds, 0);
+      assert.equal(episode.playback.endSeconds, episode.durationSeconds);
+      assert.match(youtubeEmbedUrl(episode.playback), new RegExp(`^https://www\\.youtube-nocookie\\.com/embed/${episode.playback.videoId}\\?`));
+      const context = editorialEpisodeContext(series.slug, episode.id);
+      assert.equal(context.previousEpisode?.id || null, series.episodes[index - 1]?.id || null);
+      assert.equal(context.nextEpisode?.id || null, series.episodes[index + 1]?.id || null);
+    }
+  }
 });
 
 test('Social Cinema presents the external series without copying the source video', () => {

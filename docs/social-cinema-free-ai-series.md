@@ -7,6 +7,9 @@ Checked 13 October 2026. “Free to watch” does not by itself grant Veyrnox pe
 | Series | Published episodes | Source | Veyrnox delivery | Rights basis |
 | --- | ---: | --- | --- | --- |
 | Mission Pandora: The Last Pilot | 17 | `youtube.com/watch?v=g8FtPaZWGnA` | YouTube privacy-enhanced embed, with chapter start/end times | The public video reports embedding enabled. Veyrnox does not download, cache, gate, modify or re-host the audiovisual content. Creator and YouTube source remain visible. |
+| Black Dwarf | 9 public YouTube episodes | Shaun Dougherty, `youtube.com/@TheLoneBuck` | One privacy-enhanced YouTube embed per episode | All nine current creator-channel uploads report embedding enabled. The listed tenth episode, *Viaticum*, is not public on the creator channel and is not included. |
+| Hell PHYRE | 8 episodes, complete season one | Amnesty Sports, `youtube.com/playlist?list=PLaJZIsgrUMQysyHzkzl751YRAi3ZnaxdG` | One privacy-enhanced YouTube embed per episode | The official series site links the playlist and all eight season-one uploads; every upload reports embedding enabled. |
+| Planet 9 | 8 published entries covering chapters 1–9 | Last Sumerian, `youtube.com/@LastSumerian` | One privacy-enhanced YouTube embed per published entry | All eight official creator-channel uploads report embedding enabled; the last upload combines chapters 8 and 9. |
 
 ## Partnership queue
 
@@ -19,6 +22,7 @@ Checked 13 October 2026. “Free to watch” does not by itself grant Veyrnox pe
 | AEVUM | Six episodes announced | Only episode 1 was published at the check date. Recheck when the season has multiple released episodes. |
 | Monster Hunters | Pilot released | The description says all rights reserved and future episodes are crowdfunding-dependent. Partnership required. |
 | The Agency | Seven short episodes on the creator’s site | No redistribution licence was published. Partnership or an approved first-party embed is required. |
+| Black Dwarf: Viaticum | Listed as episode 10 by third-party catalogs | No public upload was found on Shaun Dougherty’s official YouTube channel at the check date. Add it only after an official embeddable source appears. |
 
 ## Provider rules for the active YouTube path
 
