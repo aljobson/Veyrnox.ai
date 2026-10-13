@@ -97,7 +97,12 @@ export async function exchangeCodeForToken(cfg, { code, redirectUri }, fetcher =
     longLivedUrl.searchParams.set('grant_type', 'ig_exchange_token');
     longLivedUrl.searchParams.set('client_secret', cfg.appSecret);
     longLivedUrl.searchParams.set('access_token', first.access_token);
-    const longLived = await getJson(longLivedUrl, fetcher);
+    let longLived;
+    try {
+        longLived = await getJson(longLivedUrl, fetcher);
+    } catch (err) {
+        throw new Error(`long_token_exchange_failed: ${err && err.message ? err.message : 'unknown'}`);
+    }
     if (!longLived || typeof longLived.access_token !== 'string') throw new Error('token_exchange_failed_long_response');
 
     const expiresInSec = Number.isFinite(longLived.expires_in) ? longLived.expires_in : 60 * 24 * 3600; // ~60 days is Meta's typical long-lived TTL
@@ -115,13 +120,18 @@ export async function exchangeCodeForToken(cfg, { code, redirectUri }, fetcher =
  * reaches this function as a distinct error to handle here. */
 export async function fetchConnectedAccount(accessToken, fetcher = fetch) {
     const url = new URL(`${GRAPH_BASE}/me`);
-    url.searchParams.set('fields', 'id,username,profile_picture_url');
+    url.searchParams.set('fields', 'user_id,username,profile_picture_url');
     url.searchParams.set('access_token', accessToken);
-    const profile = await getJson(url, fetcher);
-    if (!profile || typeof profile.id !== 'string') throw new Error('profile_fetch_failed');
+    const response = await getJson(url, fetcher);
+    // Current Instagram Login responses wrap the professional account in
+    // `data[0]` and identify it as `user_id`. Retain the older plain `id`
+    // shape for existing Graph versions while Meta completes the rollout.
+    const profile = response && Array.isArray(response.data) ? response.data[0] : response;
+    const externalAccountId = profile && (profile.user_id || profile.id);
+    if (typeof externalAccountId !== 'string') throw new Error('profile_fetch_failed');
 
     return {
-        externalAccountId: profile.id,
+        externalAccountId,
         displayName: profile.username ? `@${profile.username}` : null,
         avatarUrl: profile.profile_picture_url || null,
     };

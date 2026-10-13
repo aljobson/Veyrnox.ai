@@ -101,11 +101,22 @@ test('exchangeCodeForToken surfaces a Graph API error rather than swallowing it'
     );
 });
 
-test('fetchConnectedAccount resolves the Instagram account directly, with no Page-resolution chain', async () => {
+test('exchangeCodeForToken identifies an upstream long-token rejection', async () => {
+    let call = 0;
+    const fetcher = async () => (++call === 1
+        ? jsonRes({ access_token: 'short-lived-token' })
+        : jsonRes({ error: { message: 'Error validating access token' } }, 400));
+    await assert.rejects(
+        exchangeCodeForToken(cfg, { code: 'c', redirectUri: 'https://veyrnox.ai/cb' }, fetcher),
+        /long_token_exchange_failed: Error validating access token/,
+    );
+});
+
+test('fetchConnectedAccount resolves Meta\'s current array-wrapped professional account response', async () => {
     const calls = [];
     const fetcher = async (url) => {
         calls.push(new URL(url));
-        return jsonRes({ id: '17841400000000000', username: 'creator', profile_picture_url: 'https://example.com/a.jpg' });
+        return jsonRes({ data: [{ user_id: '17841400000000000', username: 'creator', profile_picture_url: 'https://example.com/a.jpg' }] });
     };
     const account = await fetchConnectedAccount('user-token', fetcher);
     assert.deepEqual(account, {
@@ -113,7 +124,13 @@ test('fetchConnectedAccount resolves the Instagram account directly, with no Pag
     });
     assert.equal(calls.length, 1, 'no Pages lookup — one direct call');
     assert.equal(calls[0].origin + calls[0].pathname, 'https://graph.instagram.com/v25.0/me');
+    assert.equal(calls[0].searchParams.get('fields'), 'user_id,username,profile_picture_url');
     assert.equal(calls[0].searchParams.get('access_token'), 'user-token');
+});
+
+test('fetchConnectedAccount retains the older plain id response during Meta\'s rollout', async () => {
+    const account = await fetchConnectedAccount('user-token', async () => jsonRes({ id: '17841400000000000', username: 'creator' }));
+    assert.equal(account.externalAccountId, '17841400000000000');
 });
 
 test('fetchConnectedAccount surfaces an upstream failure rather than crashing', async () => {
