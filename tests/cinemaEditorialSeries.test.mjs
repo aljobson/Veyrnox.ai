@@ -11,17 +11,26 @@ import {
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 
-test('the public catalog contains four AI-made story series and 42 episodes', () => {
-  assert.equal(editorialSeries.length, 4);
+test('the public catalog contains 13 AI-made story series and 101 episodes', () => {
+  assert.equal(editorialSeries.length, 13);
   assert.deepEqual(editorialSeries.map((series) => [series.slug, series.episodes.length]), [
     ['mission-pandora-the-last-pilot', 17],
     ['black-dwarf', 9],
     ['hell-phyre', 8],
     ['planet-9', 8],
+    ['eve-andromeda-space-commander', 13],
+    ['humanoid-space-odyssey', 8],
+    ['falcyon', 6],
+    ['shifters', 5],
+    ['computer-village', 5],
+    ['save-the-world', 2],
+    ['a-prince-in-disguise', 5],
+    ['crown-of-ashen-dragons', 11],
+    ['symbols-of-fate', 4],
   ]);
   const allEpisodes = editorialSeries.flatMap((series) => series.episodes);
-  assert.equal(allEpisodes.length, 42);
-  assert.equal(new Set(allEpisodes.map((episode) => episode.id)).size, 42);
+  assert.equal(allEpisodes.length, 101);
+  assert.equal(new Set(allEpisodes.map((episode) => episode.id)).size, 101);
   assert.ok(allEpisodes.every((episode) => episode.posterUrl?.startsWith('https://i.ytimg.com/vi/') || episode.id.startsWith('mission-pandora-')));
 
   const [series] = editorialSeries;
@@ -33,7 +42,7 @@ test('the public catalog contains four AI-made story series and 42 episodes', ()
   assert.ok(series.posterUrl.startsWith('https://i.ytimg.com/vi/'));
 
   const cards = editorialSeriesCards();
-  assert.equal(cards.length, 4);
+  assert.equal(cards.length, 13);
   const [card] = cards;
   assert.equal(card.content_type, 'SERIES');
   assert.equal(card.episode_count, 17);
