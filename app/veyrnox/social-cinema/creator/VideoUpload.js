@@ -1,4 +1,5 @@
 'use client';
+import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
 import { gatewayFetch } from '../../_lib/gateway';
 import { Button } from '../../_components/Button';
@@ -6,6 +7,7 @@ import { uploadProxyChunks } from './proxyUpload';
 import { fileFingerprint } from './tusUpload';
 import { MAX_UPLOAD_BYTES } from '../../../../lib/cinema/uploadPolicy';
 import { LibraryPicker } from '../../_components/LibraryPicker';
+import { getFreshAccessToken } from '../../../lib/authClient';
 export function VideoUpload({content,proxyUploadsEnabled=false,onClose}) {
   const [upload,setUpload]=useState(null),[state,setState]=useState('loading'),[error,setError]=useState(''),[progress,setProgress]=useState(0);
   const [proxyEnabled,setProxyEnabled]=useState(proxyUploadsEnabled);
@@ -67,6 +69,7 @@ export function VideoUpload({content,proxyUploadsEnabled=false,onClose}) {
     <h3 id="video-upload-title" className="wrap-break-word text-xl font-bold">Video for {content.title}</h3>
     <p className="text-sm text-vx-fg-body">Up to 2 GiB and 10 minutes. Uploads remain private. You can pause and resume with the same file within one hour, or pick a finished video from your Library and skip the upload.</p>
     {state==='loading'?<p role="status">Loading upload status…</p>:<p role="status">{status}</p>}
+    {upload?.state==='ready'&&<CreatorVideoPoster contentId={content.id} title={content.title} />}
     {!proxyEnabled&&state!=='loading'&&<p role="status">Video uploads and replacements are temporarily paused while we resolve an upload security issue. Your private drafts are safe.</p>}
     {proxyEnabled&&state!=='loading'&&state!=='blocked'&&!confirmRemoval&&(!upload||upload.state==='uploading')&&<form onSubmit={send} className="space-y-4">
       <label className="block font-semibold" htmlFor="cinema-video-file">Video file<input id="cinema-video-file" ref={file} type="file" accept="video/mp4,video/webm,video/quicktime" required disabled={busy} className="mt-2 block w-full min-w-0 rounded-xl border border-vx-border p-3 text-sm" /></label>
@@ -83,5 +86,22 @@ export function VideoUpload({content,proxyUploadsEnabled=false,onClose}) {
     {error&&<p role="alert">{error}</p>}
     <div className="flex flex-wrap gap-3">{upload&&<Button variant="ghost" disabled={busy||state==='checking'||confirmRemoval} onClick={refresh}>{state==='checking'?'Checking…':'Refresh status'}</Button>}{upload&&!['provisioning','deleting'].includes(upload.state)&&!confirmRemoval&&<Button ref={removeButton} variant="ghost" disabled={busy||state==='checking'} onClick={()=>{setError('');setConfirmRemoval(true);}}>Remove video</Button>}<Button variant="ghost" onClick={onClose}>Back to drafts</Button></div>
   </section>;
+}
+function CreatorVideoPoster({contentId,title}) {
+  const [src,setSrc]=useState('');
+  useEffect(()=>{
+    let active=true,url='';
+    (async()=>{
+      const token=await getFreshAccessToken();
+      if(!token)return;
+      const response=await fetch(`/api/v1/cinema/posters/${encodeURIComponent(contentId)}`,{headers:{Authorization:`Bearer ${token}`},cache:'no-store'});
+      if(!response.ok)return;
+      const blob=await response.blob();
+      if(active){url=URL.createObjectURL(blob);setSrc(url);}
+    })().catch(()=>{});
+    return()=>{active=false;if(url)URL.revokeObjectURL(url);};
+  },[contentId]);
+  if(!src)return null;
+  return <figure className="max-w-xl overflow-hidden rounded-2xl border border-vx-border bg-vx-panel"><Image src={src} width={1280} height={720} unoptimized alt={`${title} automatic poster frame`} className="aspect-video h-auto w-full object-cover" /><figcaption className="px-4 py-3 text-sm text-vx-fg-muted">Automatic poster frame</figcaption></figure>;
 }
 function copy(code){return ({upload_safety_hold:'Video uploads are temporarily paused while we resolve an upload security issue.',uploads_not_open:'This video action is not open yet.',upload_not_allowed:'This draft is unavailable, or your account cannot manage its video.',upload_capacity_reached:'The preview storage or daily upload limit is reached. Removing a video frees storage only after confirmation; the daily limit still applies.',rate_limited:'Too many requests. Wait a minute and try again.',upload_exists:'This draft already has a different video reserved. Remove it before uploading a replacement.',upload_removed:'That upload was removed. Refresh status before choosing a new video.',upload_needs_reconciliation:'The provider response needs checking. Contact support before retrying.',source_not_found:'That Library video is no longer available. It may have expired; choose another.',source_not_video:'Choose a finished video from your Library, not an image or audio.'})[code]||'The video action could not finish. Refresh its status and try again. If it remains unavailable, contact support.';}

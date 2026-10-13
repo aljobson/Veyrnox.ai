@@ -168,7 +168,7 @@ If a build starts failing after a dependency change, bisect these three first.
   that carries a user. The middleware does not run on other `/api/*` paths, so
   an inbound `x-veyrnox-auth-*` header is NOT stripped there: a route outside
   `/api/v1` must never read one. Each has its own protection:
-  - `/api/catalog`, `/api/credit-packs`, `/api/cinema/titles[/:id]`,
+  - `/api/catalog`, `/api/credit-packs`, `/api/cinema/titles[/:id]`, `/api/cinema/posters/:id`,
     `/api/popular-templates` — anonymous, read-only, cached public data
     (prices, packs, published titles, ranked template ids). Nothing per-user.
   - `/api/cinema/voting`, `/api/cinema/discovery`, `/api/cinema/winners`, `/api/cinema/comments`, `/api/cinema/story-polls`, `/api/credit-subscription-plans` — anonymous read-only, explicitly gated, no-store projections. Factories use `authed: false`, ignore inbound identity headers, and never return another account’s votes, pending comments, reports or billing records.
