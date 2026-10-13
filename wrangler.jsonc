@@ -186,14 +186,14 @@
     // provider_moderation / provider_input_rejected. off | shadow | enforce.
     // Needs the TYPESAFE_API_KEY secret; shadow only logs the label.
     "JEV_SUBMIT_ERRORS_MODE": "off",
-    // YouTube and LinkedIn public release; Google data-access review remains pending.
+    // YouTube, LinkedIn and X public release; Google data-access review remains pending.
     // Previously queued targets continue even when public Publish is disabled.
     "PUBLISH_ENABLED": "true",
     "PUBLISH_MULTI_ACCOUNT_ENABLED": "false",
     // Preserve the private pilot secret and default YouTube uploads to Private.
     "PUBLISH_YOUTUBE_VISIBILITY_ENABLED": "true",
 
-    "PUBLISH_RELEASED_NETWORKS": "youtube,linkedin",
+    "PUBLISH_RELEASED_NETWORKS": "youtube,linkedin,twitter",
     // Production 0188 is applied; basic YouTube Data API statistics only.
     "PUBLISH_ANALYTICS_ENABLED": "true",
     // Weekly historical timing/frequency insights; requires 0191.
