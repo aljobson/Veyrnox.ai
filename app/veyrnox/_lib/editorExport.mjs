@@ -16,7 +16,8 @@ import {registerLocalVp9AlphaDecoder} from './editorAlphaVideo.mjs';
 import { FPS, videoLayout, totalFrames, effectiveTransition } from './editorTimeline.mjs';
 import { frameLayers, resolvePictures, paintFrame, timelineSize } from './editorRender.mjs';
 export { EXPORT_HEIGHTS, outputSize } from './editorRender.mjs';
-import { validateExportBrowser } from './videoEnhance.mjs';
+import { usesWebKit, canEncodeSafariVideo, createSafariCanvasSource } from './editorSafariEncoder.mjs';
+import { createSafariAudioSource } from './editorSafariAudio.mjs';
 
 import { sequenceTransitionAfter } from './editorSequence.mjs';
 import { SAMPLE_RATE, mixAudio } from './editorAudio.mjs';
@@ -49,12 +50,11 @@ const slice = (mix, from, to) => {
 };
 
 /** Why export cannot run here, or null. A cheap check the page shows before the user spends time editing. */
-export async function exportBlocker(size = { width: 1280, height: 720 }) {
-    const browser = validateExportBrowser();
-    if (browser) return browser;
+export async function exportBlocker(size = { width: 1280, height: 720 }, options) {
     if (typeof VideoEncoder === 'undefined' || typeof OfflineAudioContext === 'undefined') return 'This browser cannot export video. Use desktop Google Chrome.';
     try {
-        if (!await canEncodeVideo('avc', { width: size.width, height: size.height, quality: QUALITY_HIGH })) return 'This browser cannot encode H.264 video. Use desktop Google Chrome.';
+        const supported = usesWebKit() ? await canEncodeSafariVideo(size, options) : await canEncodeVideo('avc', { width: size.width, height: size.height, quality: QUALITY_HIGH });
+        if (!supported) return 'This browser cannot encode H.264 video at this size and frame rate. Try a smaller export or desktop Google Chrome.';
         if (!await canEncodeAudio('aac')) return 'This browser cannot encode AAC audio. Use desktop Google Chrome.';
     } catch { return 'Export compatibility could not be checked. Use desktop Google Chrome.'; }
     return null;
@@ -75,12 +75,12 @@ export async function exportTimeline(tl, blobs, { signal = new AbortController()
     const memoryProblem = exportMemoryProblem(tl, height, quality, bitrate); if (memoryProblem) throw new Error(memoryProblem);
     const outputFrames = Math.ceil(total / FPS * frameRate);
     const { width: W, height: H } = timelineSize(tl, height);
-    const blocked = await exportBlocker({ width: W, height: H });
+    const blocked = await exportBlocker({ width: W, height: H }, { frameRate, bitrate });
     if (blocked) throw new Error(blocked);
 
     const inputs = new Map();
     const readers = [], images = new Map(), retired = new Set();
-    let output;
+    let output, video, audio;
     try {
         for (const id of new Set([...tl.video, ...tl.audio].flatMap(c => [c.mediaId,...backgroundMediaIds(c)]))) {
             if (tl.media[id].kind === 'graphic') { images.set(id, graphicCanvas(tl.media[id].graphic)); continue; }
@@ -106,10 +106,10 @@ export async function exportTimeline(tl, blobs, { signal = new AbortController()
         const mix = await mixAudio(tl, inputs, Math.ceil(total / FPS * SAMPLE_RATE), signal);
 
         output = new Output({ format: format === 'mov' ? new MovOutputFormat({ fastStart: 'in-memory' }) : new Mp4OutputFormat({ fastStart: 'in-memory' }), target: new BufferTarget() });
-        const video = new CanvasSource(canvas, { codec: 'avc', quality: new Quality({ bitrate }), keyFrameInterval: 2, hardwareAcceleration: 'prefer-software' });
-        output.addVideoTrack(video, { frameRate });
-        const audio = mix ? new AudioBufferSource({ codec: 'aac', bitrate: 128000 }) : null;
-        if (audio) output.addAudioTrack(audio);
+        video = usesWebKit() ? await createSafariCanvasSource(canvas, { frameRate, bitrate, signal }) : new CanvasSource(canvas, { codec: 'avc', quality: new Quality({ bitrate }), keyFrameInterval: 2, hardwareAcceleration: 'prefer-software' });
+        output.addVideoTrack(video.source || video, { frameRate });
+        audio = mix ? (usesWebKit() ? await createSafariAudioSource({ samples: mix.length, signal }) : new AudioBufferSource({ codec: 'aac', bitrate: 128000 })) : null;
+        if (audio) output.addAudioTrack(audio.source || audio);
         await output.start();
 
         let sent = 0;
@@ -133,7 +133,7 @@ export async function exportTimeline(tl, blobs, { signal = new AbortController()
         }
         await flush(mix ? mix.length : 0);
         video.close();
-        audio?.close();
+        await audio?.close();
         await output.finalize();
         onProgress({ stage: 'done', done: total, total });
         return new Blob([output.target.buffer], { type: format === 'mov' ? 'video/quicktime' : 'video/mp4' });
@@ -141,6 +141,8 @@ export async function exportTimeline(tl, blobs, { signal = new AbortController()
         if (output) await output.cancel().catch(() => {});
         throw signal.aborted ? abortError() : error;
     } finally {
+        video?.dispose?.();
+        audio?.dispose?.();
         await Promise.allSettled(readers.filter((_, k) => !retired.has(k)).map(reader => reader.close()));
         for (const input of inputs.values()) input.dispose();
         for (const bitmap of images.values()) bitmap.close?.();
