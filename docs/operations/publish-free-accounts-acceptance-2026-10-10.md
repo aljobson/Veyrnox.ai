@@ -73,3 +73,24 @@ from the resulting PR; local checks do not stand in for them.
 Advanced paid features/billing, extended provider approvals and IWF upload
 coverage remain separate work. This slice alone does not complete roadmap B3
 or the full production rollout.
+
+## Staging gate check — 13 October 2026
+
+The staging Worker was rebuilt with staging identity and deployed with
+`PUBLISH_MULTI_ACCOUNT_ENABLED=true` while the production flag remained false.
+The observed staging deployment version was
+`ba0216d5-ea4f-4485-8408-3d1b70b51e98`.
+
+After a fresh passkey sign-in as the existing Al Jobson staging user, the live
+Publish screen displayed **“Basic scheduling is free for up to five connected
+accounts.”** YouTube, TikTok, Bluesky and Google Business Profile remained
+available as connection choices according to their separate provider gates.
+The account response showed no currently connected social accounts. This proves
+the staged flag, signed-in read path and allowance copy; it does **not** prove a
+real fifth connection, sixth-account refusal, provider reconnect/disconnect or
+scheduler behavior with multiple live accounts. Those real-account checks remain
+required before production activation under step 4 above.
+
+Device uploads visible in staging remain governed by their separate rollout.
+Production `PUBLISH_UPLOADS_ENABLED` remains false; this change does not satisfy
+the pre-storage safety and provider-coverage gates for a public upload launch.
