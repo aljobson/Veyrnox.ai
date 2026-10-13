@@ -78,15 +78,21 @@ export async function POST(req) {
     }
     const redirectUri = new URL(CALLBACK_PATH, base).toString();
 
-    let account;
+    let token;
     try {
-        const { accessToken, expiresAt } = await exchangeCodeForToken(igCfg, { code, redirectUri });
-        const connected = await fetchConnectedAccount(accessToken);
-        account = { ...connected, accessToken, expiresAt };
+        token = await exchangeCodeForToken(igCfg, { code, redirectUri });
     } catch (err) {
         console.error('[api/v1/social/accounts/instagram/callback] token exchange failed:', err && err.message);
         return NextResponse.json({ error: 'connect_failed' }, { status: 502 });
     }
+    let connected;
+    try {
+        connected = await fetchConnectedAccount(token.accessToken);
+    } catch (err) {
+        console.error('[api/v1/social/accounts/instagram/callback] profile fetch failed:', err && err.message);
+        return NextResponse.json({ error: 'connect_failed' }, { status: 502 });
+    }
+    const account = { ...connected, ...token };
 
     let brand;
     try {
