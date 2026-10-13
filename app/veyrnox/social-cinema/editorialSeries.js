@@ -50,6 +50,8 @@ const youtubeSeries = ({
     youtubeEpisode(slug, index + 1, episodeTitle, videoId, durationSeconds))),
 });
 
+const MIN_EPISODES_PER_SERIES = 6;
+
 const SERIES = Object.freeze([
   Object.freeze({
     slug: 'black-dwarf',
@@ -566,7 +568,7 @@ const SERIES = Object.freeze([
       ['Too Late?', 'PhDEioYBtkQ', 502],
     ],
   }),
-]);
+].filter((series) => series.episodes.length >= MIN_EPISODES_PER_SERIES));
 
 export const editorialSeries = SERIES;
 
