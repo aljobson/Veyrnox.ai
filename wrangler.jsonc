@@ -328,7 +328,7 @@
         "JEV_SUBMIT_ERRORS_MODE": "off",
         // Veyrnox Publish is open on staging for testing (see production).
         "PUBLISH_ENABLED": "true",
-        "PUBLISH_MULTI_ACCOUNT_ENABLED": "false",
+        "PUBLISH_MULTI_ACCOUNT_ENABLED": "true",
         "PUBLISH_TESTER_AUTH_IDS": "",
         "PUBLISH_YOUTUBE_VISIBILITY_ENABLED": "false",
         "PUBLISH_RELEASED_NETWORKS": "*",
