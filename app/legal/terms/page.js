@@ -40,7 +40,7 @@ export default function Terms() {
                 <li>You keep whatever rights you hold in the prompts and reference files you upload. You grant us a licence to process them solely to run the service.</li>
                 <li>Subject to these terms and each underlying model provider&rsquo;s licence, you may use generated outputs for personal and commercial purposes.</li>
                 <li>Outputs are AI-generated. We do not currently attach content credentials or a machine-readable provenance signature to generated files. Where you publish an output, you are responsible for any labelling a platform or applicable law requires of you. If we begin attaching credentials we will say so here, and you must not then remove or alter them.</li>
-                <li>You must not use the service to generate sexually explicit content, unlawful content, content that infringes others&rsquo; rights, sexual content involving minors, non-consensual intimate imagery, or content intended to deceive in a way that causes harm.</li>
+                <li>You must not use the service to generate, upload or publish sexually explicit content, unlawful content, content that infringes others&rsquo; rights, sexualised content involving minors, non-consensual intimate imagery, sexual deepfakes, malware or content intended to deceive in a way that causes harm.</li>
             </ul>
 
             <h2>5. Acceptable use</h2>
@@ -51,6 +51,10 @@ export default function Terms() {
 
             <h2>7. Embedded video</h2>
             <p>Some free Social Cinema series play through the official YouTube embedded player. YouTube remains the source of those videos, and your use of that player is also governed by the <a href="https://www.youtube.com/t/terms">YouTube Terms of Service</a>. We may remove an embedded title if its creator disables embedding or removes the source video.</p>
+
+            <h2>7A. Social Cinema publication</h2>
+            <p>Approved creators must follow the <a href="/legal/cinema-content">Cinema Content Policy</a>, choose an accurate Veyrnox audience label, declare relevant content warnings, and submit only files they reasonably believe are safe. Veyrnox labels are guidance and are not official BBFC classifications. Submission does not guarantee publication.</p>
+            <p>We may automatically inspect metadata, images, sampled video frames, speech or captions and file-safety signals; quarantine a submission; require human review; or reject, restrict, suspend or remove a title. A required safety check must pass before publication. Creators may appeal a decision using the contact route in the Cinema Content Policy.</p>
 
             <h2>8. Liability</h2>
             <p>Nothing in these terms limits liability that cannot be limited by law. Otherwise, our total liability to you in any 12-month period is limited to the amount you paid us in that period. We are not liable for indirect or consequential loss.</p>

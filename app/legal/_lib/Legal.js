@@ -38,6 +38,7 @@ export function LegalPage({ title, updated, children }) {
                     <Link href="/legal/privacy" className="hover:text-vx-fg">Privacy</Link>
                     <Link href="/legal/refund" className="hover:text-vx-fg">Refunds</Link>
                     <Link href="/legal/aup" className="hover:text-vx-fg">Acceptable Use</Link>
+                    <Link href="/legal/cinema-content" className="hover:text-vx-fg">Cinema Content</Link>
                     <Link href="/legal/gdpr" className="hover:text-vx-fg">GDPR &amp; Data Rights</Link>
                 </nav>
             </div>

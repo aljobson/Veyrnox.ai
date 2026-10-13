@@ -7,6 +7,7 @@ import { AccountBoundary } from '../../../../_components/AccountBoundary';
 import { MfaPanel } from '../../../../_components/MfaPanel';
 import { Button } from '../../../../_components/Button';
 import { gatewayFetch } from '../../../../_lib/gateway';
+import { cinemaSafetyPassed } from '../../../../../../lib/cinema/safetyPolicy';
 
 export default function Page() {
   return <><AppNav /><Main><AccountBoundary><Queue /></AccountBoundary></Main></>;
@@ -60,14 +61,22 @@ function Submission({ item, onDone }) {
     try { await gatewayFetch('/admin/cinema/submissions', { method: 'POST', body, headers: { 'idempotency-key': attempt.current.key } }); onDone(); }
     catch (e) { setError(message(e.code)); setBusy(false); }
   }
+  const safe = cinemaSafetyPassed(item);
   return <article className="mt-6 rounded-2xl border border-vx-border p-5">
-    <p className="font-vx-mono text-xs text-vx-fg-muted">{labels[item.content_type]} · {item.language} · {item.content_type === 'SERIES' ? `${item.episode_count} episodes · ` : ''}{minutes(item.duration_seconds)} · {(item.categories || []).join(', ') || 'no category'} · rights {item.rights_version}{item.prior_actions > 0 ? ` · ${item.prior_actions} prior action(s)` : ''}</p>
+    <p className="font-vx-mono text-xs text-vx-fg-muted">{labels[item.content_type]} · {item.language} · {item.content_type === 'SERIES' ? `${item.episode_count} episodes · ` : ''}{minutes(item.duration_seconds)} · {(item.categories || []).join(', ') || 'no category'} · {item.audience_rating || 'unrated'} · rights {item.rights_version}{item.prior_actions > 0 ? ` · ${item.prior_actions} prior action(s)` : ''}</p>
     <h2 className="mt-2 text-xl font-bold wrap-break-word">{item.title}</h2>
     <p className="text-vx-fg-muted">{item.display_name} <span>@{item.username}</span></p>
     <p className="mt-4 whitespace-pre-wrap wrap-break-word text-vx-fg-body">{item.synopsis || 'No synopsis.'}</p>
     {item.ai_disclosures?.length > 0 && <p className="mt-3 text-sm text-vx-fg-muted">AI disclosures: {item.ai_disclosures.join(', ')}</p>}
+    {item.content_warnings?.length > 0 && <p className="mt-2 text-sm text-vx-fg-muted">Warnings: {item.content_warnings.join(', ')}</p>}
+    <dl className="mt-4 grid gap-2 text-sm sm:grid-cols-3">
+      <Check label="Content agent" value={item.content_status} />
+      <Check label="Child safety" value={item.child_safety_status} />
+      <Check label="Malware scan" value={item.malware_status} />
+    </dl>
+    {!safe && <p role="status" className="mt-3 text-sm font-semibold text-vx-danger">Approval is locked until all three checks pass. You can still reject the submission.</p>}
     <form onSubmit={submit} className="mt-5 space-y-4">
-      <label className="block">Decision<select name="decision" required className="ml-3 rounded-lg bg-vx-panel p-2"><option value="">Choose…</option><option value="approved">Approve and publish</option><option value="rejected">Reject</option></select></label>
+      <label className="block">Decision<select name="decision" required className="ml-3 rounded-lg bg-vx-panel p-2"><option value="">Choose…</option><option value="approved" disabled={!safe}>Approve and publish</option><option value="rejected">Reject</option></select></label>
       <label className="block">Internal review reason<textarea name="reason" required minLength={3} maxLength={500} rows={2} className="mt-2 w-full rounded-lg border border-vx-border bg-vx-panel p-3" /></label>
       <label className="block">Note to the creator <span className="text-vx-fg-muted">(shown on rejection, optional)</span><textarea name="creator_note" maxLength={500} rows={2} className="mt-2 w-full rounded-lg border border-vx-border bg-vx-panel p-3" /></label>
       <p className="text-xs text-vx-fg-muted">Both are recorded in the audit history. Do not include identity documents or other sensitive details.</p>
@@ -75,6 +84,11 @@ function Submission({ item, onDone }) {
       <Button type="submit" disabled={busy}>{busy ? 'Saving…' : 'Save decision'}</Button>
     </form>
   </article>;
+}
+
+function Check({ label, value }) {
+  const shown = value || 'pending';
+  return <div className="rounded-xl border border-vx-border p-3"><dt className="font-semibold">{label}</dt><dd className={shown === 'passed' ? 'text-vx-accent' : shown === 'flagged' ? 'text-vx-danger' : 'text-vx-fg-muted'}>{shown.replace('_', ' ')}</dd></div>;
 }
 
 function Suspend({ onDone }) {
@@ -109,5 +123,5 @@ function Suspend({ onDone }) {
 }
 
 function message(code) {
-  return ({ no_token: 'Sign in with your Cinema administrator account.', unauthenticated: 'Sign in with your Cinema administrator account.', recent_mfa_required: 'Enter a fresh authenticator code above, then try again.', not_authorized: 'This account does not have Cinema publication permission.', access_required: 'Open this page through the protected Veyrnox administrator site.', publishing_not_open: 'Publication is not open yet.', already_reviewed: 'Another reviewer has already decided this submission. Refresh the queue.', self_review_forbidden: 'You cannot review your own title.', account_not_active: 'The creator account is no longer eligible.', content_not_found: 'No title with that id.', already_suspended: 'That title is already suspended.', rate_limited: 'Too many requests. Wait a minute and try again.' })[code] || 'The queue is unavailable right now. Please retry.';
+  return ({ no_token: 'Sign in with your Cinema administrator account.', unauthenticated: 'Sign in with your Cinema administrator account.', recent_mfa_required: 'Enter a fresh authenticator code above, then try again.', not_authorized: 'This account does not have Cinema publication permission.', access_required: 'Open this page through the protected Veyrnox administrator site.', publishing_not_open: 'Publication is not open yet.', already_reviewed: 'Another reviewer has already decided this submission. Refresh the queue.', self_review_forbidden: 'You cannot review your own title.', safety_checks_pending: 'Approval is locked until every automated safety check passes.', safety_checks_failed: 'This submission has a flagged or unavailable safety check. Reject it or investigate the result.', account_not_active: 'The creator account is no longer eligible.', content_not_found: 'No title with that id.', already_suspended: 'That title is already suspended.', rate_limited: 'Too many requests. Wait a minute and try again.' })[code] || 'The queue is unavailable right now. Please retry.';
 }

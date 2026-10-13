@@ -162,6 +162,7 @@ export const SITE_PAGES = [
   { href: '/legal/privacy',     label: 'Privacy Policy',     description: 'What we process, why, and for how long.' },
   { href: '/legal/gdpr',        label: 'GDPR & Data Rights', description: 'Access, export and deletion requests.' },
   { href: '/legal/refund',      label: 'Refund Policy',      description: 'When credits come back to your balance.' },
+  { href: '/legal/cinema-content', label: 'Cinema Content Policy', description: 'Publication, audience labels and safety checks for Social Cinema.' },
   { href: '/design-system',     label: 'Design system',      description: 'Colour, type and component reference.' },
 ];
 
@@ -268,6 +269,7 @@ export const MORE_FEATURES = [
     { label: 'Privacy',            href: '/legal/privacy' },
     { label: 'GDPR & Data Rights', href: '/legal/gdpr' },
     { label: 'Refund Policy',      href: '/legal/refund' },
+    { label: 'Cinema Content',     href: '/legal/cinema-content' },
     { label: 'Contact',            href: `mailto:${SUPPORT_EMAIL}` },
   ] },
 ];

@@ -39,6 +39,7 @@ export default async function sitemap() {
     page('/legal/gdpr', 'yearly', 0.3),
     page('/legal/refund', 'yearly', 0.3),
     page('/legal/aup', 'yearly', 0.3),
+    page('/legal/cinema-content', 'yearly', 0.3),
     ...(await modelPages(page)),
   ];
 }

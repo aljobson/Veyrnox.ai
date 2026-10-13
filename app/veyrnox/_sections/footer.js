@@ -223,6 +223,7 @@ export function FooterForest({ catalog }) {
             <Link href="/legal/terms" className="py-2 transition-colors hover:text-vx-fg">Terms</Link>
             <Link href="/legal/privacy" className="py-2 transition-colors hover:text-vx-fg">Privacy</Link>
             <Link href="/legal/aup" className="py-2 transition-colors hover:text-vx-fg">Acceptable Use</Link>
+            <Link href="/legal/cinema-content" className="py-2 transition-colors hover:text-vx-fg">Cinema Content</Link>
             <Link href="/design-system" className="py-2 transition-colors hover:text-vx-fg">Design</Link>
           </div>
         </div>
