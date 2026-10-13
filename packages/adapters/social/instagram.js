@@ -84,14 +84,14 @@ export async function exchangeCodeForToken(cfg, { code, redirectUri }, fetcher =
         code,
     }, fetcher);
     const first = shortLived && Array.isArray(shortLived.data) ? shortLived.data[0] : null;
-    if (!first || typeof first.access_token !== 'string') throw new Error('token_exchange_failed');
+    if (!first || typeof first.access_token !== 'string') throw new Error('token_exchange_failed_short_response');
 
     const longLivedUrl = new URL(LONG_LIVED_TOKEN_URL);
     longLivedUrl.searchParams.set('grant_type', 'ig_exchange_token');
     longLivedUrl.searchParams.set('client_secret', cfg.appSecret);
     longLivedUrl.searchParams.set('access_token', first.access_token);
     const longLived = await getJson(longLivedUrl, fetcher);
-    if (!longLived || typeof longLived.access_token !== 'string') throw new Error('token_exchange_failed');
+    if (!longLived || typeof longLived.access_token !== 'string') throw new Error('token_exchange_failed_long_response');
 
     const expiresInSec = Number.isFinite(longLived.expires_in) ? longLived.expires_in : 60 * 24 * 3600; // ~60 days is Meta's typical long-lived TTL
     return {
@@ -260,10 +260,14 @@ function numbers(fields) {
 }
 
 async function postForm(url, params, fetcher) {
+    // Meta documents the Instagram Login code exchange as multipart form
+    // fields (`curl -F`). Let fetch set the multipart boundary rather than
+    // forcing an application/x-www-form-urlencoded body.
+    const form = new FormData();
+    for (const [key, value] of Object.entries(params)) form.set(key, value);
     const res = await fetcher(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams(params).toString(),
+        body: form,
         signal: AbortSignal.timeout(10000),
     });
     const body = await res.json().catch(() => null);

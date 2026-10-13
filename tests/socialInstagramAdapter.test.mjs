@@ -45,7 +45,9 @@ test('exchangeCodeForToken performs the two-step short→long-lived swap against
     assert.ok(new Date(result.expiresAt).getTime() > Date.now());
     assert.equal(calls[0].url.toString(), 'https://api.instagram.com/oauth/access_token');
     assert.equal(calls[0].init.method, 'POST');
-    const shortBody = new URLSearchParams(calls[0].init.body);
+    assert.ok(calls[0].init.body instanceof FormData, 'Meta requires a multipart form for Instagram Login token exchange');
+    assert.equal(calls[0].init.headers, undefined, 'fetch must set the multipart boundary');
+    const shortBody = calls[0].init.body;
     assert.equal(shortBody.get('grant_type'), 'authorization_code');
     assert.equal(shortBody.get('code'), 'auth-code');
     assert.equal(shortBody.get('client_secret'), cfg.appSecret);
@@ -54,9 +56,17 @@ test('exchangeCodeForToken performs the two-step short→long-lived swap against
     assert.equal(calls[1].url.searchParams.get('access_token'), 'short-lived-token');
 });
 
-test('exchangeCodeForToken surfaces a malformed short-lived response rather than a raw crash', async () => {
+test('exchangeCodeForToken identifies a malformed short-lived response without exposing token data', async () => {
     const fetcher = async () => jsonRes({ data: [] });
-    await assert.rejects(exchangeCodeForToken(cfg, { code: 'c', redirectUri: 'https://veyrnox.ai/cb' }, fetcher), /token_exchange_failed/);
+    await assert.rejects(exchangeCodeForToken(cfg, { code: 'c', redirectUri: 'https://veyrnox.ai/cb' }, fetcher), /token_exchange_failed_short_response/);
+});
+
+test('exchangeCodeForToken identifies a malformed long-lived response without exposing token data', async () => {
+    let call = 0;
+    const fetcher = async () => (++call === 1
+        ? jsonRes({ data: [{ access_token: 'short-lived-token' }] })
+        : jsonRes({ token_type: 'bearer' }));
+    await assert.rejects(exchangeCodeForToken(cfg, { code: 'c', redirectUri: 'https://veyrnox.ai/cb' }, fetcher), /token_exchange_failed_long_response/);
 });
 
 test('exchangeCodeForToken surfaces a Graph API error rather than swallowing it', async () => {
