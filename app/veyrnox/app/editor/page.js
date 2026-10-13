@@ -6,6 +6,7 @@ import { Button } from '../../_components/Button';
 import { TimelineView } from '../../_components/editor/TimelineView';
 import { ProjectBar } from '../../_components/editor/ProjectBar';
 import { MultitrackWorkspace } from '../../_components/editor/MultitrackWorkspace';
+import { EditorCreditsDialog } from '../../_components/editor/EditorCreditsDialog';
 import { useMultitrackEnabled } from '../../_components/editor/MultitrackFlag';
 import { MediaBin } from '../../_components/editor/MediaBin';
 import { importMedia, insertMedia, duplicateSelection, detachAudio, splitSelection, trimEdge, stepFrame, initialText, removeMedia } from '../../_lib/editorCommands.mjs';
@@ -283,8 +284,12 @@ function Editor() {
 
 export default function EditorPage() {
     const multitrack = useMultitrackEnabled();
+    const [creditsOpen, setCreditsOpen] = useState(false);
     return <><AppNav active="editor" readAccount={false} /><Main className="mx-auto max-w-[1600px] px-4 py-8 sm:px-8 sm:py-12">
-        <h1 className="mb-5 text-2xl font-black">Video editor</h1>
-        {multitrack ? <MultitrackWorkspace /> : <Editor />}
-    </Main></>;
+        <div className="mb-5 flex items-center justify-between gap-4">
+            <h1 className="text-2xl font-black">Video editor</h1>
+            {!multitrack && <Button size="sm" variant="money" onClick={() => setCreditsOpen(true)}>Credits</Button>}
+        </div>
+        {multitrack ? <MultitrackWorkspace onCredits={() => setCreditsOpen(true)} /> : <Editor />}
+    </Main>{creditsOpen && <EditorCreditsDialog open onClose={() => setCreditsOpen(false)} />}</>;
 }

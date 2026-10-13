@@ -127,7 +127,9 @@ export default function Credits() {
             <TopUpReturn />
 
             {/* Wait for balance to settle before loading the purchase controls. */}
-            {(error === 'sign_in_required' || balance != null) && <TopUpPacks signedIn={error !== 'sign_in_required'} />}
+            <div id="credit-packs">
+              {(error === 'sign_in_required' || balance != null) && <TopUpPacks signedIn={error !== 'sign_in_required'} />}
+            </div>
           </div>
 
           <div className="md:pt-2">
