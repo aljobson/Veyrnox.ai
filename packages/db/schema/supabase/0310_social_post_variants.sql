@@ -1,5 +1,12 @@
 BEGIN;
 
+-- This migration is also replayed on isolated acceptance-test databases that
+-- start after the tenant foundation migration. Keep its private helper schema
+-- self-contained so those clean replays match production permissions.
+CREATE SCHEMA IF NOT EXISTS private;
+REVOKE ALL ON SCHEMA private FROM PUBLIC, anon;
+GRANT USAGE ON SCHEMA private TO authenticated, service_role;
+
 -- Validate per-network text against the exact active destinations selected for
 -- the post. The Worker performs the user-facing validation; this is the
 -- transactional boundary that prevents forged RPC calls from persisting it.
