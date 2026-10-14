@@ -80,7 +80,7 @@ CREATE TRIGGER social_inbox_actions_append_only BEFORE UPDATE OR DELETE ON publi
 FOR EACH ROW EXECUTE FUNCTION public.social_inbox_actions_append_only();
 DROP TRIGGER IF EXISTS social_inbox_actions_no_truncate ON public.social_inbox_actions;
 CREATE TRIGGER social_inbox_actions_no_truncate BEFORE TRUNCATE ON public.social_inbox_actions
-FOR EACH STATEMENT EXECUTE FUNCTION public.append_only_no_truncate();
+FOR EACH STATEMENT EXECUTE FUNCTION public.social_inbox_actions_append_only();
 
 CREATE OR REPLACE FUNCTION public.social_inbox_paid_user(p_auth_id TEXT)
 RETURNS UUID LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = '' AS $$
