@@ -1,6 +1,6 @@
 # Landing showcase clips
 
-Every landing feature card, every tile in the eight-template wall, all 23
+Every landing feature card, every tile in the 12-template wall, all 31
 public preset cards and the three model-category cards have viral previews. The owner requested footage and prompts from [SYNTX Trends](https://syntx.ai/trends),
 [Higgsfield](https://higgsfield.ai/) and [CapCut](https://www.capcut.com/my-edit?start_tab=video) on 14 October 2026. This replaces the
 previous requirement to use only clips generated on Veyrnox.
@@ -19,12 +19,12 @@ the supported adaptation. Live credit prices come from the catalog.
 `app/veyrnox/_lib/showcase.js` maps all five `FEATURE_CARDS` keys and all
 `PRESETS` clip keys to local videos, posters, original titles and source names.
 `MODEL_SHOWCASE_KEYS` selects three dedicated clips for the Video, Image and
-Audio cards in `/#models`. `WALL_SHOWCASE_KEYS` selects eight dedicated
+Audio cards in `/#models`. `WALL_SHOWCASE_KEYS` selects 12 dedicated
 homepage previews with their own recipes. The shared
 `PresetCard` also brings the gallery previews to the studio Explore gallery.
 
-All 39 public tile placements use different footage: five feature cards,
-eight homepage template cards, three model-category cards and 23 gallery
+All 51 public tile placements use different footage: five feature cards,
+12 homepage template cards, three model-category cards and 31 gallery
 cards. Product Hero 360 appears in the gallery while Miniature Crew has its own
 landing template, prompt, video and poster, preserving distinct content across
 surfaces as requested by the owner.
@@ -75,10 +75,22 @@ excerpt. No audio is retained.
 | `wall-clean-cutout` | Vanish | [Higgsfield](https://cdn.higgsfield.ai/viral_hub/d63d47dd-d00f-42c8-9c45-9bddd3df7a38.mp4) | 0 s |
 | `wall-warm-portrait` | A Moment Between Strangers | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/ZIHALUhjLlXzmqu1ScRKcF00CaztsLlYoweeuLbd.webm) | 1 s |
 | `wall-film-portrait` | The Last Stagecoach | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/om40sLJ19J3k1oTRX48KPV8CJihmHZY28WWjMYev.webm) | 1 s |
+| `jellyfish-airlines` | Jellyfish Airlines | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/kkFbiXcjaS7Zn1J55xlPjgOXFalnAn7arge07BZv.webm) | 0 s |
+| `dandelion-ball` | Dandelion Ball | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/tsCtUsPSPTTG69sAaQj1PUe9pqB1CqEBWvXLSPIz.webm) | 0 s |
+| `sm-brand-new-day` | SM: Brand New Day | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/045JrMYwhs7xRpdiIZB3TjITBjVX1P4FLniwIfMj.mp4) | 0 s |
+| `who-was-that-business` | Who was that? Business | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/MwhzJoqQycAsEDuCPgPxrjI88Y39J1g5pRTqCH2u.mp4) | 0 s |
+| `scrapbook-collage` | Scrapbook Collage | [Higgsfield](https://cdn.higgsfield.ai/viral_hub/84f761d0-2033-417f-aee0-a2029cfb78fe.mp4) | 0 s |
+| `stop-world` | Stop World | [Higgsfield](https://cdn.higgsfield.ai/viral_hub/fd94af6b-adf5-4eb2-90f7-22e92e34bb5a.mp4) | 0 s |
+| `earth-zoom` | Earth Zoom | [Higgsfield](https://cdn.higgsfield.ai/viral_hub_preset/d1b7d148-46a1-4e57-b808-4af2e8c823f1.mp4) | 0 s |
+| `comic` | Comic | [Higgsfield](https://cdn.higgsfield.ai/mixed_media_preset/b2836797-7dc2-481c-8929-abc1ddbbb891.mp4) | 0 s |
+| `wall-trick-or-skin` | Trick or Skin | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/zaYfIC1D02bQck4RIdU4uHaPrhIHuKnVtz3gwjT6.mp4) | 0 s |
+| `wall-the-wrong-one` | The Wrong One | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/gUUIJ3nDMG1ddMFo62W9JESljWZHxyQFHr6xZCHl.mp4) | 0 s |
+| `wall-pigeons` | Pigeons | [Higgsfield](https://cdn.higgsfield.ai/viral_hub/95e80ebb-98d7-41d6-ad33-e81d405d9400.mp4) | 0 s |
+| `wall-mighty-fighter` | Mighty Fighter | [Higgsfield](https://cdn.higgsfield.ai/viral_hub_preset/e68f7c19-0247-4832-9c7f-98807635b6bd.mp4) | 0 s |
 
 ## Playback and budgets
 
-- MP4, H.264, 24 fps, maximum 720 pixels on either side, no audio track.
+- MP4, H.264, 20–24 fps, maximum 720 pixels on either side, no audio track.
 - Five seconds per clip; each video stays under `MAX_CLIP_BYTES` (2 MB).
 - Representative JPG posters, each under 80 KB.
 - Files live in `public/showcase/`, so the existing same-origin CSP applies.

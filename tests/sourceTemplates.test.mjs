@@ -9,8 +9,8 @@ import { isUnknownStaticPage } from '../lib/unknownStaticPage.js';
 import { templateStartId } from '../lib/templateStart.js';
 
 test('every imported clip has its own matching recipe and a supported video model', () => {
-  assert.equal(SOURCE_TEMPLATES.length, 39);
-  assert.equal(new Set(SOURCE_TEMPLATES.map((p) => p.clipKey)).size, 39);
+  assert.equal(SOURCE_TEMPLATES.length, 51);
+  assert.equal(new Set(SOURCE_TEMPLATES.map((p) => p.clipKey)).size, 51);
   for (const preset of SOURCE_TEMPLATES) {
     const clip = SHOWCASE_CLIPS[preset.clipKey];
     assert.ok(clip, preset.id);
@@ -26,10 +26,10 @@ test('every imported clip has its own matching recipe and a supported video mode
 });
 
 test('gallery and homepage templates describe separate footage, with reachable recipe URLs', () => {
-  assert.equal(PRESETS.length, 23);
-  assert.equal(WALL_PRESETS.length, 8);
+  assert.equal(PRESETS.length, 31);
+  assert.equal(WALL_PRESETS.length, 12);
   const visible = [...PRESETS, ...WALL_PRESETS];
-  assert.equal(new Set(visible.map((p) => p.clipKey)).size, 31);
+  assert.equal(new Set(visible.map((p) => p.clipKey)).size, 43);
   for (const preset of visible) {
     assert.equal(templateById(preset.id), preset);
     assert.equal(isUnknownStaticPage(`/presets/${preset.id}`), false);
@@ -50,7 +50,7 @@ test('old template bookmarks retain their original recipe without unrelated vide
 
 test('published prompts and private effect workflows are clearly distinguished', () => {
   const syntx = SOURCE_TEMPLATES.filter((p) => p.sourceRecipe.name === 'SYNTX');
-  assert.equal(syntx.length, 11);
+  assert.equal(syntx.length, 17);
   for (const { sourceRecipe: source } of syntx) {
     assert.equal(source.promptOrigin, 'published');
     assert.ok(source.prompt.length > 100);
