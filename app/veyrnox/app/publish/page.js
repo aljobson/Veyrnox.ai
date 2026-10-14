@@ -55,6 +55,7 @@ function PublishControls({ initialJobId, initialUploadId }) {
   const [contentPresetsEnabled, setContentPresetsEnabled] = useState(false);
   const [queuesEnabled, setQueuesEnabled] = useState(false);
   const [approvalsEnabled, setApprovalsEnabled] = useState(false);
+  const [teamsEnabled, setTeamsEnabled] = useState(false);
   const [planTier, setPlanTier] = useState('free');
   const [networks, setNetworks] = useState([]);
   const [blueskyOpen, setBlueskyOpen] = useState(false);
@@ -80,6 +81,7 @@ function PublishControls({ initialJobId, initialUploadId }) {
       setContentPresetsEnabled(res.contentPresetsEnabled === true);
       setQueuesEnabled(res.queuesEnabled === true);
       setApprovalsEnabled(res.approvalsEnabled === true);
+      setTeamsEnabled(res.teamsEnabled === true);
       setPlanTier(res.planTier === 'publish' ? 'publish' : 'free');
       setNetworks(res.networks || []);
     } catch (err) {
@@ -128,6 +130,7 @@ function PublishControls({ initialJobId, initialUploadId }) {
           {inboxEnabled && <Link href="/app/publish/inbox" className="text-sm font-bold text-vx-accent underline">Social inbox</Link>}
           {smartlinksEnabled && <Link href="/app/publish/smartlink" className="text-sm font-bold text-vx-accent underline">SmartLink</Link>}
           {queuesEnabled && paid && <Link href="/app/publish/queues" className="text-sm font-bold text-vx-accent underline">Posting queues</Link>}
+          {teamsEnabled && paid && <Link href="/app/publish/team" className="text-sm font-bold text-vx-accent underline">Team</Link>}
           {plansEnabled && <Link href="/app/publish/plan" className="text-sm font-bold text-vx-accent underline">Plans and billing</Link>}
         </div>
       </div>
