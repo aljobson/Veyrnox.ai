@@ -30,9 +30,7 @@ export function PresetWall({ catalog }) {
                 <div className="pt-3 flex items-baseline justify-between gap-3">
                   <div className="min-w-0">
                     <div className="font-black tracking-tight text-[15px]">{presetTitle(preset.name)}</div>
-                    <div className="mt-0.5 text-vx-fg-muted truncate text-xs">
-                      {preset.model}{preset.sourceRecipe?.name ? ` · prompt from ${preset.sourceRecipe.name}` : ''}
-                    </div>
+                    <div className="mt-0.5 text-vx-fg-muted truncate text-xs">{preset.model}</div>
                     <p className="mt-2 line-clamp-2 text-xs leading-5 text-vx-fg-muted">{preset.prompt}</p>
                   </div>
                   <div className="shrink-0 font-vx-mono font-bold text-vx-money vx-num text-[13px]">{presetCredits(preset, catalog)} cr</div>
