@@ -22,6 +22,8 @@ CREATE TABLE IF NOT EXISTS public.social_publish_autolists (
 );
 CREATE UNIQUE INDEX IF NOT EXISTS social_publish_autolists_brand_name_idx ON public.social_publish_autolists(brand_id,lower(name));
 CREATE INDEX IF NOT EXISTS social_publish_autolists_due_idx ON public.social_publish_autolists(next_refresh_at) WHERE enabled;
+CREATE INDEX IF NOT EXISTS social_publish_autolists_queue_idx ON public.social_publish_autolists(queue_id);
+CREATE INDEX IF NOT EXISTS social_publish_autolists_creator_idx ON public.social_publish_autolists(created_by_user_id);
 ALTER TABLE public.social_publish_autolists ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.social_publish_autolists FORCE ROW LEVEL SECURITY;
 REVOKE ALL ON public.social_publish_autolists FROM PUBLIC,anon,authenticated,service_role;
@@ -41,6 +43,15 @@ CREATE TABLE IF NOT EXISTS public.social_publish_autolist_items (
   CHECK ((status='scheduled')=(post_id IS NOT NULL))
 );
 CREATE INDEX IF NOT EXISTS social_publish_autolist_items_status_idx ON public.social_publish_autolist_items(autolist_id,status,coalesce(published_at,created_at),id);
+CREATE INDEX IF NOT EXISTS social_publish_autolist_items_post_idx ON public.social_publish_autolist_items(post_id) WHERE post_id IS NOT NULL;
+
+-- The preceding 0320/0321 slices introduced single-column references too.
+-- Keep the fresh-replay FK index invariant intact at the end of this stack.
+CREATE INDEX IF NOT EXISTS social_inbox_workflows_creator_idx ON public.social_inbox_workflows(created_by_user_id);
+CREATE INDEX IF NOT EXISTS social_inbox_suggestions_workflow_idx ON public.social_inbox_suggestions(workflow_id) WHERE workflow_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS social_inbox_suggestions_decider_idx ON public.social_inbox_suggestions(decided_by_user_id) WHERE decided_by_user_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS social_ad_campaigns_creator_idx ON public.social_ad_campaigns(created_by_user_id);
+CREATE INDEX IF NOT EXISTS social_commerce_products_creator_idx ON public.social_commerce_products(created_by_user_id);
 ALTER TABLE public.social_publish_autolist_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.social_publish_autolist_items FORCE ROW LEVEL SECURITY;
 REVOKE ALL ON public.social_publish_autolist_items FROM PUBLIC,anon,authenticated,service_role;
