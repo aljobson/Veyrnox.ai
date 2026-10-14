@@ -30,7 +30,7 @@
     "verify:video-enhance": "node scripts/verify-video-enhance.mjs"
   },
   "dependencies": {
-    "@mediapipe/tasks-vision": "1.1.0",
+    "@mediapipe/tasks-vision": "1.0.1",
     "@number-flow/react": "^0.6.2",
     "@visx/curve": "^4.0.1-alpha.0",
     "@visx/event": "^4.0.1-alpha.0",
@@ -43,7 +43,7 @@
     "clsx": "^2.1.1",
     "d3-array": "^3.2.4",
     "d3-shape": "^3.2.0",
-    "mediabunny": "1.61.3",
+    "mediabunny": "1.60.0",
     "motion": "^14.1.0",
     "next": "^16.4.0",
     "qrcode.react": "^4.2.0",
