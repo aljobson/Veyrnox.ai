@@ -30,7 +30,7 @@ export default function Publish() {
   const account = useSyncExternalStore(onSessionChange, currentAccount, noAccount);
   return <><AppNav /><Main className="max-w-[900px] mx-auto px-4 sm:px-8 py-10">
     <h1 className="text-3xl font-black mb-2">Veyrnox Publish</h1>
-    <p className="text-sm text-vx-fg-muted mb-6">Connect a social account and publish from Veyrnox. <Link href="/app/publish/analytics" className="text-vx-accent underline">See analytics and insights</Link></p>
+    <p className="text-sm text-vx-fg-muted mb-6">Connect a social account and publish from Veyrnox. <Link href="/app/publish/analytics" className="text-vx-accent underline">See analytics and insights</Link>.</p>
     <ul aria-label="Social platforms" className="flex flex-wrap gap-3 mb-6">
       {CATALOGUE_NETWORKS.map((n) => <li key={n.key} className="inline-flex items-center gap-2 rounded-full border border-vx-border px-3 py-2 text-sm font-bold text-vx-fg">
         <NetworkLogo network={n.key} />{n.label}
@@ -49,6 +49,7 @@ function PublishControls({ initialJobId, initialUploadId }) {
   const [youtubeVisibilityEnabled, setYoutubeVisibilityEnabled] = useState(false);
   const [uploadsEnabled, setUploadsEnabled] = useState(false);
   const [plansEnabled, setPlansEnabled] = useState(false);
+  const [inboxEnabled, setInboxEnabled] = useState(false);
   const [planTier, setPlanTier] = useState('free');
   const [networks, setNetworks] = useState([]);
   const [blueskyOpen, setBlueskyOpen] = useState(false);
@@ -68,6 +69,7 @@ function PublishControls({ initialJobId, initialUploadId }) {
       setUploadsEnabled(res.uploadsEnabled === true);
       setYoutubeVisibilityEnabled(res.youtubeVisibilityEnabled === true);
       setPlansEnabled(res.plansEnabled === true);
+      setInboxEnabled(res.inboxEnabled === true);
       setPlanTier(res.planTier === 'publish' ? 'publish' : 'free');
       setNetworks(res.networks || []);
     } catch (err) {
@@ -112,7 +114,10 @@ function PublishControls({ initialJobId, initialUploadId }) {
     <section className="rounded-2xl border border-vx-border p-5">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h2 className="font-bold">Connected accounts</h2>
-        {plansEnabled && <Link href="/app/publish/plan" className="text-sm font-bold text-vx-accent underline">Plans and billing</Link>}
+        <div className="flex flex-wrap gap-4">
+          {inboxEnabled && <Link href="/app/publish/inbox" className="text-sm font-bold text-vx-accent underline">Social inbox</Link>}
+          {plansEnabled && <Link href="/app/publish/plan" className="text-sm font-bold text-vx-accent underline">Plans and billing</Link>}
+        </div>
       </div>
       <p className="text-sm text-vx-fg-muted mb-3">
         {paid ? `Your Publish Plan includes up to ${accountLimit} connected accounts, scheduling and analytics.` : 'Free includes one connected account and Post now.'}

@@ -25,6 +25,7 @@ const OUTSIDE = {
     'app/api/webhook/fal/route.js': 'provider signature',
     'app/api/webhook/kie/route.js': 'provider signature',
     'app/api/webhook/openrouter/route.js': 'provider signature',
+    'app/api/webhook/social/meta/route.js': 'provider signature',
     'app/api/webhook/stripe/route.js': 'provider signature',
     'app/api/webhook/montage/route.js': 'provider signature',
     'app/api/webhook/cinema-stream/route.js': 'provider signature',

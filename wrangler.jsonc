@@ -188,7 +188,7 @@
     "PUBLISH_MULTI_ACCOUNT_ENABLED": "true",
     // Grouped to stay within Cloudflare's 128 text-binding limit. Migration 0293
     // and the Stripe checkout are live; qualify native video separately.
-    "PUBLISH_RUNTIME_FLAGS": "{\"plans\":\"true\",\"videoDestinations\":\"false\"}",
+    "PUBLISH_RUNTIME_FLAGS": "{\"plans\":\"true\",\"videoDestinations\":\"false\",\"inbox\":\"false\"}",
     // Preserve the private pilot secret and default YouTube uploads to Private.
     "PUBLISH_YOUTUBE_VISIBILITY_ENABLED": "true",
 
@@ -208,6 +208,10 @@
     // screen (reach, views, saves, shares). Only "true" asks for it; turn it
     // on after Meta approves the permission in app review.
     "INSTAGRAM_INSIGHTS_SCOPE_ENABLED": "false",
+    // Comment/message scopes stay opt-in until Meta review approves them.
+    // Existing connections must reconnect after either switch is enabled.
+    "INSTAGRAM_ENGAGEMENT_SCOPE_ENABLED": "false",
+    "FACEBOOK_ENGAGEMENT_SCOPE_ENABLED": "false",
     // TikTok analytics consent (user.info.stats + video.list). Enable after
     // Display API approval; existing connections need to reconnect.
     "TIKTOK_ANALYTICS_SCOPE_ENABLED": "false",
@@ -329,7 +333,7 @@
         "PUBLISH_ENABLED": "true",
         "PUBLISH_MULTI_ACCOUNT_ENABLED": "true",
         // Migration 0293 and Stripe test keys are installed in staging.
-        "PUBLISH_RUNTIME_FLAGS": "{\"plans\":\"true\",\"videoDestinations\":\"false\"}",
+        "PUBLISH_RUNTIME_FLAGS": "{\"plans\":\"true\",\"videoDestinations\":\"false\",\"inbox\":\"false\"}",
         "PUBLISH_TESTER_AUTH_IDS": "",
         "PUBLISH_YOUTUBE_VISIBILITY_ENABLED": "false",
         "PUBLISH_RELEASED_NETWORKS": "*",
@@ -343,6 +347,8 @@
         "PUBLISH_EXTENDED_NETWORKS_ENABLED": "true",
         // Provider review approvals are still outstanding.
         "INSTAGRAM_INSIGHTS_SCOPE_ENABLED": "false",
+        "INSTAGRAM_ENGAGEMENT_SCOPE_ENABLED": "false",
+        "FACEBOOK_ENGAGEMENT_SCOPE_ENABLED": "false",
         "TIKTOK_ANALYTICS_SCOPE_ENABLED": "false",
         // Cinema Stream upload preview (ADR-0052/0053/0054). Staging only:
         // vars are not inherited by environments and production keeps every
@@ -405,6 +411,11 @@
   //   META_APP_ID, META_APP_SECRET
   //                               Shared Meta fallback credentials and Facebook credentials
   //                               when FACEBOOK_CLIENT_ID/SECRET are not set.
+  //   META_WEBHOOK_VERIFY_TOKEN   private value entered in Meta's webhook setup;
+  //                               /api/webhook/social/meta validates it before subscription.
+  //   META_WEBHOOK_APP_SECRET     signs Meta webhook payloads. Use the secret for the
+  //                               exact Meta app that owns the webhook subscription;
+  //                               META_APP_SECRET remains a backwards-compatible fallback.
   //   LINKEDIN_CLIENT_ID, LINKEDIN_CLIENT_SECRET
   //                               LinkedIn OAuth connect/callback + Posts/Images API calls
   //                               (packages/adapters/social/linkedin.js, ADR-0061). Not yet

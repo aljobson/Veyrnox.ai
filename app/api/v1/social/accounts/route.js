@@ -14,7 +14,7 @@
  * client-supplied id can never reach this handler.
  */
 
-import { publishPlansEnabled, youtubeVisibilityEnabled } from '../../../../../lib/social/publishFeature.js';
+import { publishPlansEnabled, socialInboxEnabled, youtubeVisibilityEnabled } from '../../../../../lib/social/publishFeature.js';
 import { readPublishEntitlement } from '../../../../../lib/social/publishPlanApi.js';
 import { socialUploadsEnabled } from '../../../../../lib/social/uploadPolicy.js';
 import { networkEnabled, networkMedia } from '../../../../../lib/social/networks.js';
@@ -85,6 +85,7 @@ export async function GET(req) {
         uploadsEnabled: socialUploadsEnabled(process.env, authId),
         youtubeVisibilityEnabled: youtubeVisibilityEnabled(),
         plansEnabled: publishPlansEnabled(),
+        inboxEnabled: socialInboxEnabled(),
         networks: networkReadiness(process.env, authId),
     }, { headers: { 'Cache-Control': 'no-store' } });
 }
