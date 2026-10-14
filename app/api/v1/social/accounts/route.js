@@ -14,7 +14,7 @@
  * client-supplied id can never reach this handler.
  */
 
-import { publishPlansEnabled, socialApprovalsEnabled, socialContentPresetsEnabled, socialContentVariantsEnabled, socialCustomerApiEnabled, socialInboxEnabled, socialQueuesEnabled, socialReportsEnabled, socialSmartLinksEnabled, socialTeamsEnabled, youtubeVisibilityEnabled } from '../../../../../lib/social/publishFeature.js';
+import { publishPlansEnabled, socialApprovalsEnabled, socialContentPresetsEnabled, socialContentVariantsEnabled, socialCustomerApiEnabled, socialCustomerWebhooksEnabled, socialInboxEnabled, socialQueuesEnabled, socialReportsEnabled, socialSmartLinksEnabled, socialTeamsEnabled, youtubeVisibilityEnabled } from '../../../../../lib/social/publishFeature.js';
 import { readPublishEntitlement } from '../../../../../lib/social/publishPlanApi.js';
 import { socialUploadsEnabled } from '../../../../../lib/social/uploadPolicy.js';
 import { networkEnabled, networkMedia } from '../../../../../lib/social/networks.js';
@@ -87,6 +87,7 @@ export async function GET(req) {
         variantsEnabled: socialContentVariantsEnabled(),
         reportsEnabled: socialReportsEnabled(),
         customerApiEnabled: socialCustomerApiEnabled(),
+        customerWebhooksEnabled: socialCustomerWebhooksEnabled(),
         networks: networkReadiness(process.env, authId),
     }, { headers: { 'Cache-Control': 'no-store' } });
 }

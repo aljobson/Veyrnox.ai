@@ -11,7 +11,7 @@ describe('actor-aware team publishing (0308)', { skip: !process.env.DATABASE_URL
 
   before(async () => {
     pool = new pg.Pool({ connectionString: process.env.DATABASE_URL, max: 4 });
-    for (const file of ['0305_social_team_roles.sql', '0306_social_brand_access.sql', '0307_social_team_actions.sql', '0308_social_team_publishing.sql', '0311_social_post_cancel_restore.sql', '0312_social_report_templates.sql', '0313_social_customer_api.sql']) {
+    for (const file of ['0305_social_team_roles.sql', '0306_social_brand_access.sql', '0307_social_team_actions.sql', '0308_social_team_publishing.sql', '0311_social_post_cancel_restore.sql', '0312_social_report_templates.sql', '0313_social_customer_api.sql', '0314_social_customer_webhooks.sql']) {
       const migration = await readFile(new URL(`./schema/supabase/${file}`, import.meta.url), 'utf8');
       await pool.query(migration); await pool.query(migration);
     }
@@ -200,6 +200,38 @@ describe('actor-aware team publishing (0308)', { skip: !process.env.DATABASE_URL
     assert.equal(await value(`SELECT count(*)::int value FROM public.social_account_actions WHERE brand_id=$1 AND action IN ('create_api_key','revoke_api_key')`, [brand]), 4);
   });
 
+  it('enqueues terminal post events once and audits webhook retries without exposing secrets', async () => {
+    const owner = await user('webhook-owner'); const manager = await user('webhook-manager'); const freeOwner = await user('webhook-free');
+    const brand = (await value('SELECT public.get_or_create_default_social_brand($1) value', [owner.auth])).brand_id;
+    const freeBrand = (await value('SELECT public.get_or_create_default_social_brand($1) value', [freeOwner.auth])).brand_id;
+    await pool.query(`INSERT INTO public.social_publish_subscriptions(user_id,plan_id,idempotency_key,price_usd_cents,consent_version,status,current_period_end)
+      VALUES($1,'publish',$2,1500,'publish-plan-2026-10-13','active',now()+interval '30 days')`, [owner.id, `webhook-${randomUUID()}`]);
+    await pool.query(`INSERT INTO public.social_brand_members(brand_id,user_id,role,invited_by) VALUES($1,$2,'manager',$3)`, [brand, manager.id, owner.id]);
+    const account = await value(`INSERT INTO public.social_accounts(brand_id,network,external_account_id,access_token_enc,status)
+      VALUES($1,'instagram',$2,decode('00','hex'),'active') RETURNING id value`, [brand, `webhook-${randomUUID()}`]);
+    const secret = `\\x${'aa'.repeat(60)}`;
+    const created = await value(`SELECT public.create_social_webhook_endpoint($1,$2,'Production','https://hooks.example.com/veyrnox',$3,$4) value`,
+      [manager.auth, brand, secret, ['post.published','post.failed']]);
+    assert.equal(created.ok, true);
+    const listed = await value('SELECT public.list_social_webhook_endpoints($1,$2) value', [owner.auth, brand]);
+    assert.equal(listed.endpoints[0].url, 'https://hooks.example.com/veyrnox'); assert.equal(Object.hasOwn(listed.endpoints[0], 'secret_enc'), false);
+    assert.equal((await value(`SELECT public.create_social_webhook_endpoint($1,$2,'Free','https://hooks.example.com/free',$3,$4) value`, [freeOwner.auth, freeBrand, secret, ['post.failed']])).code, 'PLAN_REQUIRED');
+
+    const post = await createPost(owner.auth, brand, account, await readyUpload(owner.id));
+    const target = await value('SELECT id value FROM public.social_post_targets WHERE post_id=$1', [post.post_id]);
+    await pool.query(`UPDATE public.social_post_targets SET publish_status='published',platform_post_id='ig-1',platform_post_url='https://instagram.example/p/1' WHERE id=$1`, [target]);
+    await pool.query(`UPDATE public.social_post_targets SET publish_status='published' WHERE id=$1`, [target]);
+    assert.equal(await value('SELECT count(*)::int value FROM public.social_webhook_outbox WHERE target_id=$1', [target]), 1);
+    const claimed = await value('SELECT public.claim_social_webhook_deliveries(20) value');
+    assert.equal(claimed.events.length, 1); assert.equal(Object.hasOwn(claimed.events[0], 'secret_enc'), true);
+    const retried = await value('SELECT public.complete_social_webhook_delivery($1,$2,false,503,$3) value', [claimed.events[0].id, claimed.events[0].claim_key, 'http_503']);
+    assert.equal(retried.outcome, 'retrying');
+    const logs = await value('SELECT public.list_social_webhook_deliveries($1,$2,50) value', [manager.auth, brand]);
+    assert.equal(logs.deliveries[0].last_error, 'http_503'); assert.equal(Object.hasOwn(logs.deliveries[0], 'payload'), false);
+    assert.equal((await value('SELECT public.revoke_social_webhook_endpoint($1,$2,$3) value', [owner.auth, brand, created.endpoint_id])).ok, true);
+    assert.equal(await value('SELECT failed_at IS NOT NULL value FROM public.social_webhook_outbox WHERE target_id=$1', [target]), true);
+  });
+
   it('keeps every delegated publishing function service-only with locked search paths', async () => {
     for (const signature of [
       'social_brand_role_context(text,uuid,text[],boolean)', 'create_social_post(text,uuid,timestamptz,text,text,uuid[],jsonb)',
@@ -209,6 +241,9 @@ describe('actor-aware team publishing (0308)', { skip: !process.env.DATABASE_URL
       'delete_social_report_template(text,uuid,uuid)',
       'list_social_api_keys(text,uuid)', 'create_social_api_key(text,uuid,text,text,text,text[],timestamp with time zone)',
       'revoke_social_api_key(text,uuid,uuid)', 'authenticate_social_api_key(text,text)',
+      'list_social_webhook_endpoints(text,uuid)', 'create_social_webhook_endpoint(text,uuid,text,text,text,text[])',
+      'revoke_social_webhook_endpoint(text,uuid,uuid)', 'list_social_webhook_deliveries(text,uuid,integer)',
+      'claim_social_webhook_deliveries(integer)', 'complete_social_webhook_delivery(uuid,uuid,boolean,integer,text)',
       'save_social_content_preset(text,uuid,uuid,text,text,uuid[])', 'delete_social_content_preset(text,uuid,uuid)',
       'reserve_social_publish_queue_slot(text,uuid,uuid,text)', 'social_brand_contains_queue_assignment(text,uuid,uuid)',
       'confirm_social_publish_queue_slot(text,uuid,uuid)', 'approve_social_post_batch(text,uuid,uuid)',

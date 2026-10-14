@@ -47,7 +47,8 @@ import { youtubeConfig } from './packages/adapters/social/youtube.js';
 import { runAnalyticsSweep } from './lib/socialAnalyticsSweep.js';
 import { tokenCryptoConfig } from './lib/social/tokenCrypto.js';
 import { runBrandDrafts } from './lib/social/brandDrafts.js';
-import { publishEnabled, postingInsightsEnabled } from './lib/social/publishFeature.js';
+import { runSocialCustomerWebhookSweep } from './lib/social/customerWebhook.js';
+import { publishEnabled, postingInsightsEnabled, socialCustomerWebhooksEnabled } from './lib/social/publishFeature.js';
 import { listModels } from './app/veyrnox/_lib/modelPages.js';
 
 export default {
@@ -104,6 +105,13 @@ export default {
                 cfg: { supabaseUrl: env.SUPABASE_URL, serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY },
                 cryptoCfg: tokenCryptoConfig(env),
             }).then((out) => { if (out.claimed || out.ok === false) console.error('[analytics-sweep]', JSON.stringify(out)); return out; })] : []),
+            // Customer webhooks have their own durable outbox. This is not a
+            // recovery-health task because the health schema has no task row for it.
+            ...(socialCustomerWebhooksEnabled(env) ? [runSocialCustomerWebhookSweep({
+                env,
+                cfg: { supabaseUrl: env.SUPABASE_URL, serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY },
+                cryptoCfg: tokenCryptoConfig(env),
+            }).then((out) => { if (out.claimed || out.ok === false) console.error('[customer-webhooks]', JSON.stringify(out)); return out; })] : []),
             // Weekly brand drafts (ADR-0061 amendment): nothing publishes
             // until the owner approves the batch on /app/publish.
             runBrandDrafts({
