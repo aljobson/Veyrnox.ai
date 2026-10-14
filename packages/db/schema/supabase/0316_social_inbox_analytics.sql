@@ -52,9 +52,9 @@ BEGIN
     FROM public.social_inbox_messages m JOIN public.social_inbox_threads t ON t.id=m.thread_id JOIN public.social_accounts a ON a.id=t.account_id
     WHERE t.brand_id=p_brand_id AND m.sent_at>=v_since AND (p_account_id IS NULL OR t.account_id=p_account_id) GROUP BY a.network) q;
 
-  SELECT coalesce(jsonb_agg(jsonb_build_object('weekday',q.weekday,'hour',q.hour,'received',q.received) ORDER BY q.weekday,q.hour),'[]'::JSONB)
-    INTO v_heatmap FROM (SELECT extract(isodow FROM m.sent_at AT TIME ZONE 'UTC')::INTEGER weekday,
-      extract(hour FROM m.sent_at AT TIME ZONE 'UTC')::INTEGER hour,count(*) received
+  SELECT coalesce(jsonb_agg(jsonb_build_object('weekday',q.weekday_number,'hour',q.hour_number,'received',q.received) ORDER BY q.weekday_number,q.hour_number),'[]'::JSONB)
+    INTO v_heatmap FROM (SELECT extract(isodow FROM m.sent_at AT TIME ZONE 'UTC')::INTEGER weekday_number,
+      extract(hour FROM m.sent_at AT TIME ZONE 'UTC')::INTEGER hour_number,count(*) received
     FROM public.social_inbox_messages m JOIN public.social_inbox_threads t ON t.id=m.thread_id
     WHERE t.brand_id=p_brand_id AND m.direction='inbound' AND m.sent_at>=v_since AND (p_account_id IS NULL OR t.account_id=p_account_id)
     GROUP BY 1,2) q;
