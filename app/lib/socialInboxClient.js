@@ -29,6 +29,16 @@ export function getSocialInboxAnalytics({ accountId, days = 30 } = {}) {
     return gatewayFetch(`/social/inbox/analytics?${params}`);
 }
 
+export const listSocialInboxWorkflows = () => gatewayFetch('/social/workflows');
+export const saveSocialInboxWorkflow = (workflow) => gatewayFetch('/social/workflows', {
+    method: 'PUT', body: JSON.stringify(workflow),
+});
+export const deleteSocialInboxWorkflow = (id) => gatewayFetch(`/social/workflows?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+export const listSocialInboxSuggestions = (threadId) => gatewayFetch(`/social/inbox/${encodeURIComponent(threadId)}/suggestions`);
+export const decideSocialInboxSuggestion = (threadId, suggestionId, action) => gatewayFetch(`/social/inbox/${encodeURIComponent(threadId)}/suggestions`, {
+    method: 'PATCH', body: JSON.stringify({ suggestionId, action }),
+});
+
 export function listSocialInboxContacts({ accountId, network, subscriptionStatus, search, tag } = {}) {
     const params = new URLSearchParams();
     if (accountId) params.set('accountId', accountId);

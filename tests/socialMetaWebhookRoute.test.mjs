@@ -61,3 +61,19 @@ test('a signed Meta event is normalized and passed to the idempotent inbox RPC',
         p_sent_at: new Date(1791970000 * 1000).toISOString(),
     });
 });
+
+test('an enabled workflow evaluates a newly stored inbound event without sending anything', async () => {
+    process.env.PUBLISH_RUNTIME_FLAGS = '{"inbox":"true","inboxWorkflows":"true"}';
+    const calls = [];
+    globalThis.fetch = async (url, init) => {
+        const name = new URL(url).pathname.split('/').pop(); calls.push({ name, body: JSON.parse(init.body) });
+        return Response.json(name === 'ingest_social_inbox_event'
+            ? { ok: true, idempotent: false, thread_id: '11111111-1111-4111-8111-111111111111', message_id: '22222222-2222-4222-8222-222222222222' }
+            : { ok: true, matched: 1 });
+    };
+    try {
+        const response = await POST(signedRequest()); assert.equal(response.status, 200);
+        assert.deepEqual(calls.map((call) => call.name), ['ingest_social_inbox_event', 'evaluate_social_inbox_workflows']);
+        assert.deepEqual(calls[1].body, { p_thread_id: '11111111-1111-4111-8111-111111111111', p_message_id: '22222222-2222-4222-8222-222222222222' });
+    } finally { process.env.PUBLISH_RUNTIME_FLAGS = '{"inbox":"true"}'; }
+});

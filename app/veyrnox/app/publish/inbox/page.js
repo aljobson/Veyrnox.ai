@@ -6,10 +6,11 @@ import { AppNav } from '../../../_components/NavBar';
 import { Main } from '../../../_components/Main';
 import { getSession, onSessionChange } from '../../../../lib/authClient';
 import { listSocialAccounts, NETWORKS } from '../../../../lib/socialConnectClient';
-import { addSocialInboxNote, getSocialInboxThread, listSocialInbox, replyToSocialInboxThread, updateSocialInboxThread } from '../../../../lib/socialInboxClient';
+import { addSocialInboxNote, getSocialInboxThread, listSocialInbox, listSocialInboxSuggestions, replyToSocialInboxThread, updateSocialInboxThread } from '../../../../lib/socialInboxClient';
 import NetworkLogo from '../NetworkLogo';
 import BrandSwitcher from '../BrandSwitcher';
 import InboxAnalytics from './InboxAnalytics';
+import InboxReplySuggestions from './InboxReplySuggestions';
 
 const currentAccount = () => getSession()?.user?.id || '';
 const noAccount = () => '';
@@ -33,6 +34,7 @@ export default function PublishInbox() {
       <Link href="/app/publish/calendar" className="text-vx-accent underline">Calendar</Link>
       <Link href="/app/publish/analytics" className="text-vx-accent underline">Analytics</Link>
       <Link href="/app/publish/contacts" className="text-vx-accent underline">Contacts</Link>
+      <Link href="/app/publish/workflows" className="text-vx-accent underline">Workflows</Link>
     </nav>
     <h1 className="text-3xl font-black">Inbox</h1>
     <p className="mt-2 mb-4 text-sm text-vx-fg-muted">Read messages, comments and reviews across connected accounts. Switch to one account whenever you need its own inbox.</p>
@@ -50,6 +52,7 @@ function InboxDashboard() {
   const [accounts, setAccounts] = useState(null);
   const [brandRole, setBrandRole] = useState('owner');
   const [enabled, setEnabled] = useState(null);
+  const [workflowsEnabled, setWorkflowsEnabled] = useState(false);
   const [paid, setPaid] = useState(null);
   const [accountId, setAccountId] = useState('');
   const [state, setState] = useState('unresolved');
@@ -73,6 +76,7 @@ function InboxDashboard() {
       setAccounts((accountResult.accounts || []).filter((item) => item.status === 'active'));
       setBrandRole(accountResult.brandRole || 'owner');
       setEnabled(accountResult.inboxEnabled === true);
+      setWorkflowsEnabled(accountResult.inboxWorkflowsEnabled === true);
       setPaid(accountResult.planTier === 'publish');
     }).catch(() => { if (active) setError('Could not load the inbox. Check your connection and try again.'); });
     return () => { active = false; };
@@ -97,7 +101,8 @@ function InboxDashboard() {
     setSelected({ loading: true, summary: thread });
     try {
       const detail = await getSocialInboxThread(thread.id);
-      setSelected(detail);
+      const suggestions = workflowsEnabled ? await listSocialInboxSuggestions(thread.id).then((result) => result.suggestions || []).catch(() => []) : [];
+      setSelected({ ...detail, suggestions });
       if (canTriage && thread.unread_count > 0) {
         await updateSocialInboxThread(thread.id, 'read');
         setRefresh((value) => value + 1);
@@ -180,9 +185,11 @@ function InboxDashboard() {
           </button>
         </li>)}</ul>
       </section>
-      <Conversation selected={selected} members={listing?.members || []} canTriage={canTriage} canReply={canReply} onAction={act} onReplied={async () => {
+      <Conversation key={selected?.thread?.id || selected?.summary?.id || 'empty'} selected={selected} members={listing?.members || []} canTriage={canTriage} canReply={canReply} onAction={act} onReplied={async () => {
         if (!selected?.thread) return;
-        setSelected(await getSocialInboxThread(selected.thread.id)); setRefresh((value) => value + 1);
+        const detail = await getSocialInboxThread(selected.thread.id);
+        const suggestions = workflowsEnabled ? await listSocialInboxSuggestions(selected.thread.id).then((result) => result.suggestions || []).catch(() => []) : [];
+        setSelected({ ...detail, suggestions }); setRefresh((value) => value + 1);
       }} />
     </div>
   </div>;
@@ -203,6 +210,7 @@ function Empty({ accountId }) {
 }
 
 function Conversation({ selected, members, canTriage, canReply, onAction, onReplied }) {
+  const [replyDraft, setReplyDraft] = useState('');
   if (!selected) return <section className="grid place-items-center p-8 text-center"><div><h2 className="font-bold">Choose a conversation</h2><p className="mt-2 text-sm text-vx-fg-muted">Open a message, comment or review to read its history and respond where supported.</p></div></section>;
   if (selected.loading) return <p className="p-6 text-sm text-vx-fg-muted">Loading conversation…</p>;
   if (selected.error) return <p role="alert" className="p-6 text-sm text-vx-danger">Could not load this conversation. Try again.</p>;
@@ -221,8 +229,9 @@ function Conversation({ selected, members, canTriage, canReply, onAction, onRepl
         <p className={`mt-2 text-xs ${message.direction === 'outbound' ? 'text-black/70' : 'text-vx-fg-muted'}`}>{dateTime.format(new Date(message.sent_at))}{message.delivery_status === 'failed' ? ' · Failed' : ''}</p>
       </div>
     </li>)}</ol>
+    {canReply && <InboxReplySuggestions threadId={thread.id} suggestions={selected.suggestions || []} onUse={setReplyDraft} onChanged={onReplied} />}
     <Notes thread={thread} notes={selected.notes || []} canWrite={canTriage} onAdded={onReplied} />
-    {canReply ? <Reply thread={thread} onReplied={onReplied} /> : <div className="border-t border-vx-border p-4"><p className="text-sm text-vx-fg-muted">Your team role can read this conversation{canTriage ? ' and manage its workflow' : ''}, but cannot reply.</p></div>}
+    {canReply ? <Reply thread={thread} body={replyDraft} onBodyChange={setReplyDraft} onReplied={onReplied} /> : <div className="border-t border-vx-border p-4"><p className="text-sm text-vx-fg-muted">Your team role can read this conversation{canTriage ? ' and manage its workflow' : ''}, but cannot reply.</p></div>}
   </section>;
 }
 
@@ -267,20 +276,19 @@ function Notes({ thread, notes, canWrite, onAdded }) {
   </section>;
 }
 
-function Reply({ thread, onReplied }) {
-  const [body, setBody] = useState('');
+function Reply({ thread, body, onBodyChange, onReplied }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   if (!thread.can_reply) return <div className="border-t border-vx-border p-4"><p className="text-sm text-vx-fg-muted">Read only for this connection. Replies become available after the platform grants its comment-management permission.</p></div>;
   async function submit(event) {
     event.preventDefault(); if (!body.trim() || busy) return;
     setBusy(true); setError('');
-    try { await replyToSocialInboxThread(thread.id, body.trim()); setBody(''); await onReplied(); }
+    try { await replyToSocialInboxThread(thread.id, body.trim()); onBodyChange(''); await onReplied(); }
     catch { setError('The reply was not delivered. Check the connected account and try again.'); }
     finally { setBusy(false); }
   }
   return <form onSubmit={submit} className="border-t border-vx-border p-4">
-    <label className="grid gap-2 text-sm font-bold">Reply<textarea className={`${input} min-h-24 resize-y font-normal`} value={body} maxLength={8000} onChange={(event) => setBody(event.target.value)} /></label>
+    <label className="grid gap-2 text-sm font-bold">Reply<textarea className={`${input} min-h-24 resize-y font-normal`} value={body} maxLength={8000} onChange={(event) => onBodyChange(event.target.value)} /></label>
     <div className="mt-3 flex items-center justify-between gap-3"><span className="text-xs text-vx-fg-muted">{body.length}/8000</span><button type="submit" className={`${button} border-vx-accent bg-vx-accent text-black`} disabled={busy || !body.trim()}>{busy ? 'Sending…' : 'Send reply'}</button></div>
     {error && <p role="alert" className="mt-3 text-sm text-vx-danger">{error}</p>}
   </form>;

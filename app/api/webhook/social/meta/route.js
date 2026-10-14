@@ -1,6 +1,6 @@
 import { limitRequestBody } from '../../../../../lib/requestBodyLimit.js';
 import { parseMetaInboxEvents, verifyMetaWebhookSignature } from '../../../../../lib/social/metaInboxWebhook.js';
-import { socialInboxEnabled } from '../../../../../lib/social/publishFeature.js';
+import { socialInboxEnabled, socialInboxWorkflowsEnabled } from '../../../../../lib/social/publishFeature.js';
 import { envConfig, rpc } from '../../../../../packages/db/supabase-client.js';
 
 const headers = { 'Cache-Control': 'no-store', 'Content-Type': 'application/json', 'X-Content-Type-Options': 'nosniff' };
@@ -39,7 +39,14 @@ export async function POST(req) {
                 p_participant_avatar_url: event.participantAvatarUrl, p_subject: event.subject, p_provider_url: event.providerUrl,
                 p_can_reply: event.canReply, p_sent_at: event.sentAt,
             }, cfg);
-            if (result?.ok) accepted += 1;
+            if (result?.ok) {
+                accepted += 1;
+                if (socialInboxWorkflowsEnabled() && !result.idempotent && event.direction === 'inbound' && result.thread_id && result.message_id) {
+                    try {
+                        await rpc('evaluate_social_inbox_workflows', { p_thread_id: result.thread_id, p_message_id: result.message_id }, cfg);
+                    } catch { console.error('[webhook/social/meta] inbox workflow evaluation failed'); }
+                }
+            }
         } catch { console.error('[webhook/social/meta] inbox event storage failed'); }
     }
     return json({ received: true, accepted });
