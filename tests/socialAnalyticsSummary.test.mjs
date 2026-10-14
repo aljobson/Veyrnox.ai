@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { analyticsCsv, metricChange, postAnalyticsCsv, postInteractions, previousRange, rangeForDays, summarize, summarizePortfolio, totalPostMetric, totalViews } from '../lib/social/analyticsSummary.js';
+import { analyticsCsv, contentTypePerformance, hashtagPerformance, metricChange, postAnalyticsCsv, postInteractions, previousRange, rangeForDays, summarize, summarizePortfolio, topContent, totalPostMetric, totalViews } from '../lib/social/analyticsSummary.js';
 
 test('rangeForDays is inclusive of today and counts in UTC', () => {
     assert.deepEqual(rangeForDays(30, new Date('2026-10-03T23:59:00Z')), { from: '2026-09-04', to: '2026-10-03' });
@@ -72,6 +72,41 @@ test('totalViews adds the views networks reported and ignores the rest', () => {
 test('totalPostMetric returns null rather than inventing unsupported zeroes', () => {
     assert.equal(totalPostMetric([{ metrics: { likes: 2 } }], 'reach'), null);
     assert.equal(totalPostMetric([{ metrics: { reach: 0 } }, { metrics: { reach: 12 } }], 'reach'), 12);
+});
+
+test('contentTypePerformance compares formats without converting unavailable metrics to zero', () => {
+    assert.deepEqual(contentTypePerformance([
+        { type: 'REEL', metrics: { likes: 8, comments: 2, reach: 100, views: 220 } },
+        { type: 'reel', metrics: { likes: 2, reach: 50 } },
+        { type: 'image', metrics: { likes: 4, impressions: 80 } },
+    ]), [
+        { type: 'reel', posts: 2, interactions: 12, interactionsPerPost: 6, reach: 150, impressions: null, views: 220 },
+        { type: 'image', posts: 1, interactions: 4, interactionsPerPost: 4, reach: null, impressions: 80, views: null },
+    ]);
+});
+
+test('topContent ranks only posts with the chosen metric', () => {
+    const posts = [
+        { id: 'a', published_at: '2026-10-01', metrics: { reach: 20, likes: 2 } },
+        { id: 'b', published_at: '2026-10-02', metrics: { likes: 10 } },
+        { id: 'c', published_at: '2026-10-03', metrics: { reach: 50, likes: 1 } },
+    ];
+    assert.deepEqual(topContent(posts, 'reach', 2).map(({ post, value }) => [post.id, value]), [['c', 50], ['a', 20]]);
+    assert.deepEqual(topContent(posts, 'interactions', 2).map(({ post, value }) => [post.id, value]), [['b', 10], ['a', 2]]);
+    assert.deepEqual(topContent(posts, 'unsupported'), []);
+});
+
+test('hashtagPerformance counts a hashtag once per post and ranks its average interactions', () => {
+    const rows = hashtagPerformance([
+        { caption: '#Launch #launch #AI', metrics: { likes: 6 } },
+        { caption: 'More #launch', metrics: { likes: 2 } },
+        { caption: 'Quiet #design', metrics: { likes: 5 } },
+    ]);
+    assert.deepEqual(rows, [
+        { hashtag: '#ai', posts: 1, interactions: 6, interactionsPerPost: 6 },
+        { hashtag: '#design', posts: 1, interactions: 5, interactionsPerPost: 5 },
+        { hashtag: '#launch', posts: 2, interactions: 8, interactionsPerPost: 4 },
+    ]);
 });
 
 test('summarizePortfolio combines only metrics supplied by each provider', () => {

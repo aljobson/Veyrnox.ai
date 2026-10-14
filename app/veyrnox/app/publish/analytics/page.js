@@ -7,7 +7,7 @@ import { getSession, onSessionChange } from '../../../../lib/authClient';
 import { NETWORKS, listSocialAccounts } from '../../../../lib/socialConnectClient';
 import { getSocialAnalytics } from '../../../../lib/socialAnalyticsClient';
 import { getPublishPlan } from '../../../../lib/publishPlanClient';
-import { analyticsCsv, metricChange, postAnalyticsCsv, postInteractions, previousRange, rangeForDays, summarize, summarizePortfolio, totalPostMetric, totalViews } from '../../../../../lib/social/analyticsSummary.js';
+import { analyticsCsv, contentTypePerformance, hashtagPerformance, metricChange, postAnalyticsCsv, postInteractions, previousRange, rangeForDays, summarize, summarizePortfolio, topContent, totalPostMetric, totalViews } from '../../../../../lib/social/analyticsSummary.js';
 import { analyticsCapabilities, hasAnalytics } from '../../../../../lib/social/analyticsCapabilities.js';
 import { FollowersChart } from './FollowersChart';
 import { PostingInsights } from './PostingInsights';
@@ -356,12 +356,39 @@ function AccountAnalytics({ account, range, comparisonRange }) {
       <PostsTable posts={currentData.posts} withInsights={summary.hasInsights} withImpressions={summary.hasImpressions} withViews={summary.hasViews} withShares={tiktok || twitter} />
     </section>
 
+    <ContentPerformance posts={currentData.posts} />
+
     {currentData.postingInsightsEnabled && <PostingInsights accountId={accountId} />}
     {youtube && <p className="text-xs text-vx-fg-muted">YouTube subscriber counts are rounded. Video metrics are lifetime totals for videos published in this period. The latest 50 uploads refresh each round.</p>}
     {tiktok && <p className="text-xs text-vx-fg-muted">TikTok video metrics cover public videos only. Video metrics are lifetime totals for videos published in this period. The latest 50 public videos refresh each round. Missing numbers may need additional permissions: reconnect in Veyrnox Publish after analytics access is enabled.</p>}
     {twitter && <p className="text-xs text-vx-fg-muted">X metrics cover the latest 100 original posts. Replies and reposts are excluded. Reposts and quotes appear together as shares.</p>}
     {updated}
   </div>;
+}
+
+function ContentPerformance({ posts }) {
+  const [rankingMetric, setRankingMetric] = useState('interactions');
+  if (!posts.length) return null;
+  const formats = contentTypePerformance(posts);
+  const metricOptions = [
+    ['interactions', 'Interactions'], ['reach', 'Reach'], ['impressions', 'Impressions'], ['views', 'Views'],
+    ['likes', 'Likes'], ['comments', 'Comments'], ['saves', 'Saves'], ['shares', 'Shares'],
+  ].filter(([key]) => key === 'interactions' || posts.some((post) => Number.isFinite(post.metrics?.[key])));
+  const effectiveMetric = metricOptions.some(([key]) => key === rankingMetric) ? rankingMetric : 'interactions';
+  const leaders = topContent(posts, effectiveMetric);
+  const hashtags = hashtagPerformance(posts);
+  return <section className="rounded-2xl border border-vx-border p-5 space-y-6" aria-labelledby="content-performance-heading">
+    <div><h2 id="content-performance-heading" className="font-bold">Content performance</h2><p className="mt-1 text-sm text-vx-fg-muted">Compare formats, find your strongest posts and see which hashtags accompany engagement. Metrics are lifetime totals reported by the platform.</p></div>
+    <div className="overflow-x-auto"><table className="w-full text-sm">
+      <thead><tr className="text-left text-xs text-vx-fg-muted"><th scope="col" className="pb-2 pr-3">Format</th><th scope="col" className="pb-2 pr-3 text-right">Posts</th><th scope="col" className="pb-2 pr-3 text-right">Interactions / post</th><th scope="col" className="pb-2 pr-3 text-right">Reach</th><th scope="col" className="pb-2 text-right">Views</th></tr></thead>
+      <tbody>{formats.map((row) => <tr key={row.type} className="border-t border-vx-border"><td className="py-2 pr-3 font-bold capitalize">{row.type}</td><td className="py-2 pr-3 text-right tabular-nums">{whole.format(row.posts)}</td><td className="py-2 pr-3 text-right tabular-nums">{oneDecimal.format(row.interactionsPerPost)}</td><td className="py-2 pr-3 text-right tabular-nums">{metric(row.reach)}</td><td className="py-2 text-right tabular-nums">{metric(row.views)}</td></tr>)}</tbody>
+    </table></div>
+    <div>
+      <div className="flex flex-wrap items-center justify-between gap-3"><h3 className="font-bold">Top content</h3><label className="text-sm font-bold">Rank by <select value={effectiveMetric} onChange={(event) => setRankingMetric(event.target.value)} className="ml-2 rounded-full border border-vx-border bg-transparent px-3 py-2 font-normal">{metricOptions.map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label></div>
+      <ol className="mt-3 divide-y divide-vx-border">{leaders.map(({ post, value }, index) => <li key={post.id || `${post.published_at}:${index}`} className="flex items-start gap-3 py-3"><span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-vx-accent/15 text-sm font-black text-vx-accent">{index + 1}</span><div className="min-w-0 flex-1"><p className="line-clamp-2 text-sm text-vx-fg-body">{post.caption || 'No caption'}</p><p className="mt-1 text-xs text-vx-fg-muted">{post.type || 'post'} · {new Date(post.published_at).toLocaleDateString()}</p></div><strong className="tabular-nums">{whole.format(value)}</strong></li>)}</ol>
+    </div>
+    {hashtags.length > 0 && <div><h3 className="font-bold">Hashtag performance</h3><div className="mt-3 overflow-x-auto"><table className="w-full text-sm"><thead><tr className="text-left text-xs text-vx-fg-muted"><th scope="col" className="pb-2 pr-3">Hashtag</th><th scope="col" className="pb-2 pr-3 text-right">Posts</th><th scope="col" className="pb-2 text-right">Interactions / post</th></tr></thead><tbody>{hashtags.map((row) => <tr key={row.hashtag} className="border-t border-vx-border"><td className="py-2 pr-3 font-bold">{row.hashtag}</td><td className="py-2 pr-3 text-right tabular-nums">{whole.format(row.posts)}</td><td className="py-2 text-right tabular-nums">{oneDecimal.format(row.interactionsPerPost)}</td></tr>)}</tbody></table></div></div>}
+  </section>;
 }
 
 function ExportAccountButton({ account, data }) {
