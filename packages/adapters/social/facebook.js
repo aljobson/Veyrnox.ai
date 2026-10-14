@@ -9,7 +9,9 @@ export function config(env = process.env) {
 export const buildAuthorizeUrl = (cfg, input) => authorizeUrl('https://www.facebook.com/v23.0/dialog/oauth', cfg, input, SCOPES);
 async function exchangeFacebookToken(stage, endpoint, params, fetcher) {
     try {
-        const result = await formToken(endpoint, params, fetcher);
+        const url = new URL(endpoint);
+        Object.entries(params).forEach(([key, value]) => url.searchParams.set(key, value));
+        const result = await jsonRequest(url, {}, fetcher);
         if (typeof result.access_token !== 'string' || !result.access_token) throw new Error(`facebook_${stage}_token_missing`);
         return result;
     } catch (error) {

@@ -69,6 +69,23 @@ test('Facebook token exchange identifies the failed phase without retaining prov
     done();
 });
 
+test('Facebook exchanges authorization and long-lived tokens with query-based GET requests', async () => {
+    const { fetcher, calls, done } = sequence([
+        { body: { access_token: 'short-token' } },
+        { body: { access_token: 'long-token' } },
+    ]);
+    const result = await adapters.facebook.exchangeCodeForToken(cfg,
+        { code: 'auth-code', redirectUri: 'https://staging.test/social/connect/callback/facebook' }, fetcher);
+    assert.equal(result.accessToken, 'long-token');
+    assert.equal(calls[0].init.method, undefined);
+    assert.equal(calls[0].url.searchParams.get('code'), 'auth-code');
+    assert.equal(calls[0].url.searchParams.get('redirect_uri'), 'https://staging.test/social/connect/callback/facebook');
+    assert.equal(calls[1].init.method, undefined);
+    assert.equal(calls[1].url.searchParams.get('grant_type'), 'fb_exchange_token');
+    assert.equal(calls[1].url.searchParams.get('fb_exchange_token'), 'short-token');
+    done();
+});
+
 test('Facebook publishes an image on the selected Page, never a personal profile', async () => {
     const { fetcher, done } = sequence([{ check: ({ url, init }) => {
         assert.equal(url.pathname, '/v23.0/12345/photos');
