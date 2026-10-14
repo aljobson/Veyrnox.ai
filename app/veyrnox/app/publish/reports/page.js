@@ -8,13 +8,14 @@ import { getSession, onSessionChange } from '../../../../lib/authClient';
 import { listSocialAccounts, NETWORKS } from '../../../../lib/socialConnectClient';
 import { deleteSocialReportTemplate, listSocialReportTemplates, saveSocialReportTemplate } from '../../../../lib/socialReportsClient';
 import BrandSwitcher from '../BrandSwitcher';
+import { ReportScheduleFields } from './ReportScheduleFields';
 
 const currentAccount=()=>getSession()?.user?.id||'';
 const noAccount=()=>'';
 const button='rounded-full border border-vx-border px-4 py-2 text-sm font-bold disabled:opacity-50 focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-vx-accent';
 const input='rounded-lg border border-vx-border bg-vx-panel px-3 py-2 text-sm';
 const editableRoles=new Set(['owner','manager','editor','analyst']);
-const empty={id:null,name:'',accountId:'',rangeDays:30,comparePrevious:true,includeContent:true,reportTitle:'',accentColor:'#38bdf8'};
+const empty={id:null,name:'',accountId:'',rangeDays:30,comparePrevious:true,includeContent:true,reportTitle:'',accentColor:'#38bdf8',deliveryCadence:'manual',deliveryHourUtc:9,deliveryWeekday:1,deliveryDay:1};
 const networkLabel=(network)=>NETWORKS.find((item)=>item.key===network)?.label||network;
 
 export default function Reports(){
@@ -29,12 +30,12 @@ export default function Reports(){
 }
 
 function ReportTemplates(){
-  const [accounts,setAccounts]=useState([]),[templates,setTemplates]=useState(null),[role,setRole]=useState('viewer');
+  const [accounts,setAccounts]=useState([]),[templates,setTemplates]=useState(null),[role,setRole]=useState('viewer'),[scheduledEnabled,setScheduledEnabled]=useState(false);
   const [form,setForm]=useState(empty),[busy,setBusy]=useState(false),[message,setMessage]=useState(''),[error,setError]=useState('');
   const [deleteTarget,setDeleteTarget]=useState(null);
   const load=useCallback(async()=>{setError('');try{
     const [accountResult,reportResult]=await Promise.all([listSocialAccounts(),listSocialReportTemplates()]);
-    setAccounts((accountResult.accounts||[]).filter((item)=>item.status==='active'));setTemplates(reportResult.templates||[]);setRole(reportResult.brandRole||accountResult.brandRole||'viewer');
+    setAccounts((accountResult.accounts||[]).filter((item)=>item.status==='active'));setTemplates(reportResult.templates||[]);setRole(reportResult.brandRole||accountResult.brandRole||'viewer');setScheduledEnabled(reportResult.scheduledReportsEnabled===true);
   }catch(err){setTemplates([]);setError(err?.code==='publish_plan_required'?'The Publish Plan is required for reports.':'Could not load report templates. Check your connection and try again.');}},[]);
   useEffect(()=>{void Promise.resolve().then(load);},[load]);
   const canEdit=editableRoles.has(role);
@@ -56,6 +57,7 @@ function ReportTemplates(){
         <label className="text-sm font-bold">Period<select className={`${input} mt-1 block w-full`} value={form.rangeDays} onChange={(event)=>setForm({...form,rangeDays:Number(event.target.value)})}>{[7,30,90,365].map((days)=><option key={days} value={days}>{days===365?'12 months':`${days} days`}</option>)}</select></label>
         <label className="text-sm font-bold">Accent color<span className="mt-1 flex items-center gap-2"><input aria-label="Accent color picker" type="color" value={form.accentColor} onChange={(event)=>setForm({...form,accentColor:event.target.value})}/><input aria-label="Accent color hex" pattern="#[0-9A-Fa-f]{6}" className={`${input} min-w-0 flex-1`} value={form.accentColor} onChange={(event)=>setForm({...form,accentColor:event.target.value})}/></span></label>
         <div className="space-y-2 pt-6"><label className="flex items-center gap-2 text-sm font-bold"><input type="checkbox" checked={form.comparePrevious} onChange={(event)=>setForm({...form,comparePrevious:event.target.checked})}/>Compare with previous period</label><label className="flex items-center gap-2 text-sm font-bold"><input type="checkbox" checked={form.includeContent} onChange={(event)=>setForm({...form,includeContent:event.target.checked})}/>Include content tables</label></div>
+        <ReportScheduleFields enabled={scheduledEnabled} value={form} onChange={setForm}/>
       </div>
       <div className="flex flex-wrap gap-3"><button type="submit" className={`${button} bg-vx-accent text-black`} disabled={busy}>{busy?'Saving…':'Save template'}</button>{form.id&&<button type="button" className={button} disabled={busy} onClick={()=>setForm(empty)}>Cancel editing</button>}</div>
     </form>}
@@ -63,7 +65,8 @@ function ReportTemplates(){
       {!templates.length?<p className="mt-3 text-sm text-vx-fg-muted">No report templates yet.</p>:<ul className="mt-4 space-y-3">{templates.map((template)=>{
         const params=new URLSearchParams({days:String(template.range_days),compare:template.compare_previous?'1':'0',content:template.include_content?'1':'0',accent:template.accent_color});
         if(template.account_id)params.set('account',template.account_id);if(template.report_title)params.set('reportTitle',template.report_title);
-        return <li key={template.id} className="rounded-xl border border-vx-border p-4" style={{borderLeftColor:template.accent_color,borderLeftWidth:4}}><div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="font-bold">{template.name}</h3><p className="mt-1 text-xs text-vx-fg-muted">{template.range_days===365?'12 months':`${template.range_days} days`} · {template.account_id?'One account':'All supported accounts'} · {template.compare_previous?'Previous-period comparison':'No comparison'} · {template.include_content?'Content included':'Summary only'}</p></div><div className="flex flex-wrap gap-3"><Link className={`${button} bg-vx-accent text-black`} href={`/app/publish/analytics?${params}`}>Run report</Link>{canEdit&&<><button type="button" className={button} disabled={busy} onClick={()=>setForm({id:template.id,name:template.name,accountId:template.account_id||'',rangeDays:template.range_days,comparePrevious:template.compare_previous,includeContent:template.include_content,reportTitle:template.report_title||'',accentColor:template.accent_color})}>Edit</button><button type="button" className={`${button} text-vx-danger`} disabled={busy} onClick={()=>setDeleteTarget(template)}>Delete</button></>}</div></div></li>;
+        const delivery=template.delivery_cadence==='weekly'?'Weekly schedule':template.delivery_cadence==='monthly'?'Monthly schedule':'Manual';
+        return <li key={template.id} className="rounded-xl border border-vx-border p-4" style={{borderLeftColor:template.accent_color,borderLeftWidth:4}}><div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="font-bold">{template.name}</h3><p className="mt-1 text-xs text-vx-fg-muted">{template.range_days===365?'12 months':`${template.range_days} days`} · {template.account_id?'One account':'All supported accounts'} · {template.compare_previous?'Previous-period comparison':'No comparison'} · {template.include_content?'Content included':'Summary only'} · {delivery}</p>{template.next_delivery_at&&<p className="mt-1 text-xs text-vx-fg-muted">Next run {new Date(template.next_delivery_at).toLocaleString()}{template.last_delivery_status?` · Last run ${template.last_delivery_status}`:''}</p>}</div><div className="flex flex-wrap gap-3"><Link className={`${button} bg-vx-accent text-black`} href={`/app/publish/analytics?${params}`}>Run report</Link>{canEdit&&<><button type="button" className={button} disabled={busy} onClick={()=>setForm({id:template.id,name:template.name,accountId:template.account_id||'',rangeDays:template.range_days,comparePrevious:template.compare_previous,includeContent:template.include_content,reportTitle:template.report_title||'',accentColor:template.accent_color,deliveryCadence:template.delivery_cadence||'manual',deliveryHourUtc:template.delivery_hour_utc??9,deliveryWeekday:template.delivery_weekday??1,deliveryDay:template.delivery_day??1})}>Edit</button><button type="button" className={`${button} text-vx-danger`} disabled={busy} onClick={()=>setDeleteTarget(template)}>Delete</button></>}</div></div></li>;
       })}</ul>}
     </section>
     {!canEdit&&<p className="text-sm text-vx-fg-muted">Your {role} role can run saved reports. Owners, managers, editors and analysts can change templates.</p>}

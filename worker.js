@@ -48,7 +48,8 @@ import { runAnalyticsSweep } from './lib/socialAnalyticsSweep.js';
 import { tokenCryptoConfig } from './lib/social/tokenCrypto.js';
 import { runBrandDrafts } from './lib/social/brandDrafts.js';
 import { runSocialCustomerWebhookSweep } from './lib/social/customerWebhook.js';
-import { publishEnabled, postingInsightsEnabled, socialCustomerWebhooksEnabled } from './lib/social/publishFeature.js';
+import { runSocialReportScheduleSweep } from './lib/social/reportSchedule.js';
+import { publishEnabled, postingInsightsEnabled, socialCustomerWebhooksEnabled, socialScheduledReportsEnabled } from './lib/social/publishFeature.js';
 import { listModels } from './app/veyrnox/_lib/modelPages.js';
 
 export default {
@@ -112,6 +113,9 @@ export default {
                 cfg: { supabaseUrl: env.SUPABASE_URL, serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY },
                 cryptoCfg: tokenCryptoConfig(env),
             }).then((out) => { if (out.claimed || out.ok === false) console.error('[customer-webhooks]', JSON.stringify(out)); return out; })] : []),
+            ...(socialScheduledReportsEnabled(env) ? [runSocialReportScheduleSweep({
+                env, cfg: { supabaseUrl: env.SUPABASE_URL, serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY },
+            }).then((out) => { if (out.claimed || out.ok === false) console.error('[scheduled-reports]', JSON.stringify(out)); return out; })] : []),
             // Weekly brand drafts (ADR-0061 amendment): nothing publishes
             // until the owner approves the batch on /app/publish.
             runBrandDrafts({

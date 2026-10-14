@@ -11,7 +11,7 @@ describe('actor-aware team publishing (0308)', { skip: !process.env.DATABASE_URL
 
   before(async () => {
     pool = new pg.Pool({ connectionString: process.env.DATABASE_URL, max: 4 });
-    for (const file of ['0305_social_team_roles.sql', '0306_social_brand_access.sql', '0307_social_team_actions.sql', '0308_social_team_publishing.sql', '0311_social_post_cancel_restore.sql', '0312_social_report_templates.sql', '0313_social_customer_api.sql', '0314_social_customer_webhooks.sql', '0315_social_customer_api_logs.sql']) {
+    for (const file of ['0305_social_team_roles.sql', '0306_social_brand_access.sql', '0307_social_team_actions.sql', '0308_social_team_publishing.sql', '0311_social_post_cancel_restore.sql', '0312_social_report_templates.sql', '0313_social_customer_api.sql', '0314_social_customer_webhooks.sql', '0315_social_customer_api_logs.sql', '0317_social_scheduled_reports.sql']) {
       const migration = await readFile(new URL(`./schema/supabase/${file}`, import.meta.url), 'utf8');
       await pool.query(migration); await pool.query(migration);
     }
@@ -160,9 +160,17 @@ describe('actor-aware team publishing (0308)', { skip: !process.env.DATABASE_URL
     assert.equal((await value(`SELECT public.save_social_report_template($1,$2,NULL,'Wrong account',$3,30,false,true,NULL,'#112233') value`, [analyst.auth, brand, otherAccount])).code, 'INVALID_INPUT');
     assert.equal((await value(`SELECT public.save_social_report_template($1,$2,NULL,'Viewer edit',NULL,30,false,true,NULL,'#112233') value`, [viewer.auth, brand])).code, 'FORBIDDEN');
     assert.equal((await value(`SELECT public.save_social_report_template($1,$2,NULL,'Free report',NULL,30,false,true,NULL,'#112233') value`, [freeOwner.auth, freeBrand])).code, 'PLAN_REQUIRED');
+    const scheduled = await value(`SELECT public.save_social_report_template_v2($1,$2,$3,'Quarterly client report',$4,90,false,false,NULL,'#112233','weekly',9,1,NULL) value`, [analyst.auth, brand, saved.template_id, account]);
+    assert.equal(scheduled.ok, true); assert.ok(scheduled.next_delivery_at);
+    await pool.query('UPDATE public.social_report_templates SET next_delivery_at=now()-interval \'1 minute\' WHERE id=$1', [saved.template_id]);
+    const claimed = await value('SELECT public.claim_social_report_deliveries(10) value');
+    assert.equal(claimed.reports.length, 1); assert.equal(claimed.reports[0].id, saved.template_id);
+    assert.equal((await value('SELECT public.complete_social_report_delivery($1,$2,true,NULL,NULL) value', [saved.template_id, claimed.reports[0].claim_key])).ok, true);
+    const ready = (await value('SELECT public.list_social_report_templates($1,$2) value', [viewer.auth, brand])).templates[0];
+    assert.equal(ready.delivery_cadence, 'weekly'); assert.equal(ready.last_delivery_status, 'ready'); assert.ok(ready.next_delivery_at);
     assert.equal((await value('SELECT public.delete_social_report_template($1,$2,$3) value', [analyst.auth, brand, saved.template_id])).ok, true);
     assert.equal((await value('SELECT public.list_social_report_templates($1,$2) value', [viewer.auth, brand])).templates.length, 0);
-    assert.equal(await value(`SELECT count(*)::int value FROM public.social_account_actions WHERE brand_id=$1 AND actor_id=$2 AND action IN ('save_report_template','delete_report_template')`, [brand, analyst.id]), 3);
+    assert.equal(await value(`SELECT count(*)::int value FROM public.social_account_actions WHERE brand_id=$1 AND actor_id=$2 AND action IN ('save_report_template','delete_report_template')`, [brand, analyst.id]), 4);
   });
 
   it('issues scoped hash-only customer API keys and invalidates lost access', async () => {
@@ -242,6 +250,8 @@ describe('actor-aware team publishing (0308)', { skip: !process.env.DATABASE_URL
       'social_brand_contains_post(text,uuid,uuid)', 'reschedule_social_post(text,uuid,timestamptz,timestamptz)',
       'cancel_social_post(text,uuid,timestamptz)', 'restore_social_post(text,uuid,timestamptz,timestamptz)',
       'list_social_report_templates(text,uuid)', 'save_social_report_template(text,uuid,uuid,text,uuid,integer,boolean,boolean,text,text)',
+      'save_social_report_template_v2(text,uuid,uuid,text,uuid,integer,boolean,boolean,text,text,text,integer,integer,integer)',
+      'claim_social_report_deliveries(integer)', 'complete_social_report_delivery(uuid,uuid,boolean,text,text)',
       'delete_social_report_template(text,uuid,uuid)',
       'list_social_api_keys(text,uuid)', 'create_social_api_key(text,uuid,text,text,text,text[],timestamp with time zone)',
       'revoke_social_api_key(text,uuid,uuid)', 'authenticate_social_api_key(text,text)', 'authenticate_social_api_key(text,text,text,text)',

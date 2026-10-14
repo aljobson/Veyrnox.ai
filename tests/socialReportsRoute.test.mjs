@@ -14,6 +14,7 @@ Object.assign(process.env, {
   SUPABASE_URL: 'https://db.test',
   SUPABASE_SERVICE_ROLE_KEY: 'test',
   PUBLISH_REPORTS_ENABLED: 'true',
+  PUBLISH_SCHEDULED_REPORTS_ENABLED: 'true',
   ACCOUNT_READ_RATE_LIMIT_ENABLED: 'true',
 });
 
@@ -38,7 +39,7 @@ function stub(overrides = {}) {
         ok: true,
         templates: [{ id: template, name: 'Monthly client report', account_id: account, range_days: 30, compare_previous: true, include_content: true, report_title: 'October performance', accent_color: '#38bdf8' }],
       },
-      save_social_report_template: { ok: true, template_id: template },
+      save_social_report_template_v2: { ok: true, template_id: template },
       delete_social_report_template: { ok: true },
     };
     return Response.json(overrides[name] ?? defaults[name]);
@@ -52,6 +53,7 @@ test('lists report templates for the selected brand without caching', async () =
   assert.equal(response.headers.get('cache-control'), 'no-store');
   const body = await response.json();
   assert.equal(body.templates[0].report_title, 'October performance');
+  assert.equal(body.scheduledReportsEnabled, true);
   assert.equal(calls.at(-1).name, 'list_social_report_templates');
   assert.deepEqual(calls.at(-1).args, { p_auth_id: auth, p_brand_id: brand });
 });
@@ -71,16 +73,31 @@ test('saves a bounded branded report definition', async () => {
   }));
   assert.equal(response.status, 200);
   assert.deepEqual(await response.json(), { template_id: template });
-  assert.equal(calls.at(-1).name, 'save_social_report_template');
+  assert.equal(calls.at(-1).name, 'save_social_report_template_v2');
   assert.deepEqual(calls.at(-1).args, {
     p_auth_id: auth, p_brand_id: brand, p_id: null, p_name: 'Monthly client report', p_account_id: account,
     p_range_days: 90, p_compare_previous: true, p_include_content: false,
-    p_report_title: 'Quarterly review', p_accent_color: '#aabbcc',
+    p_report_title: 'Quarterly review', p_accent_color: '#aabbcc', p_delivery_cadence: 'manual',
+    p_delivery_hour_utc: null, p_delivery_weekday: null, p_delivery_day: null,
   });
 });
 
+test('saves a validated weekly report schedule', async () => {
+  stub();
+  const response = await PUT(request('PUT', { name: 'Weekly', rangeDays: 7, comparePrevious: true, includeContent: true,
+    accentColor: '#38bdf8', deliveryCadence: 'weekly', deliveryHourUtc: 9, deliveryWeekday: 1 }));
+  assert.equal(response.status, 200);
+  assert.deepEqual(Object.fromEntries(Object.entries(calls.at(-1).args).filter(([key]) => key.startsWith('p_delivery'))), {
+    p_delivery_cadence: 'weekly', p_delivery_hour_utc: 9, p_delivery_weekday: 1, p_delivery_day: null,
+  });
+  stub();
+  const invalid = await PUT(request('PUT', { name: 'Bad schedule', rangeDays: 7, comparePrevious: true, includeContent: true,
+    accentColor: '#38bdf8', deliveryCadence: 'monthly', deliveryHourUtc: 24, deliveryDay: 31 }));
+  assert.equal(invalid.status, 400); assert.equal(calls.length, 0);
+});
+
 test('maps report conflicts and provider failures without leaking details', async () => {
-  stub({ save_social_report_template: { ok: false, code: 'REPORT_NAME_TAKEN' } });
+  stub({ save_social_report_template_v2: { ok: false, code: 'REPORT_NAME_TAKEN' } });
   const conflict = await PUT(request('PUT', { name: 'Monthly', rangeDays: 30, comparePrevious: false, includeContent: true, accentColor: '#38bdf8' }));
   assert.equal(conflict.status, 409);
   assert.deepEqual(await conflict.json(), { error: 'report_name_taken' });
