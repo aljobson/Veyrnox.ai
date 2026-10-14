@@ -14,7 +14,15 @@ describe('social inbox (0299)', { skip: !process.env.DATABASE_URL }, () => {
     await pool.query(`DO $$ DECLARE r TEXT; BEGIN FOREACH r IN ARRAY ARRAY['anon','authenticated','service_role'] LOOP
       IF NOT EXISTS(SELECT 1 FROM pg_roles WHERE rolname=r) THEN EXECUTE format('CREATE ROLE %I NOLOGIN',r); END IF;
     END LOOP; END $$`);
+    // Acceptance CI starts from packages/db/schema only. Apply this migration's
+    // Supabase dependency explicitly so the file also passes in isolation.
+    const users = await readFile(new URL('./schema/supabase/0071_signup_grant_on_email_confirmation.sql', import.meta.url), 'utf8');
+    const foundation = await readFile(new URL('./schema/supabase/0154_social_publish_foundation.sql', import.meta.url), 'utf8');
+    const plans = await readFile(new URL('./schema/supabase/0293_social_publish_plans.sql', import.meta.url), 'utf8');
     const migration = await readFile(new URL('./schema/supabase/0299_social_inbox.sql', import.meta.url), 'utf8');
+    await pool.query(users); await pool.query(users);
+    await pool.query(foundation); await pool.query(foundation);
+    await pool.query(plans); await pool.query(plans);
     await pool.query(migration); await pool.query(migration);
   });
   after(async () => { if (pool) await pool.end(); });
