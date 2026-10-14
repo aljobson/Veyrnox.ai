@@ -1,6 +1,6 @@
 # Landing showcase clips
 
-Every landing feature card, every tile in the 12-template wall, all 31
+Every landing feature card, every tile in the 20-template wall, all 40
 public preset cards and the three model-category cards have viral previews. The owner requested footage and prompts from [SYNTX Trends](https://syntx.ai/trends),
 [Higgsfield](https://higgsfield.ai/) and [CapCut](https://www.capcut.com/my-edit?start_tab=video) on 14 October 2026. This replaces the
 previous requirement to use only clips generated on Veyrnox.
@@ -9,22 +9,21 @@ Imported clips are source previews. Frozen In Motion now uses the owner's
 approved output generated through Veyrnox with its published template prompt.
 Template clips now link to their own matching recipes and compatible remix
 prompts (see [template recipes](template-recipes.md)). Imported tiles display a generic “Viral inspiration”
-badge; the tested example displays “Generated on Veyrnox”. The owner requested removal of visible SYNTX and Higgsfield labels and
-page credits on 9 October 2026; provenance remains recorded here and in the
-manifest. Product Hero 360 and Miniature Crew preserve their published CapCut
-prompts alongside supported Veyrnox adaptations. Model-category and feature
-cards remain inspiration; template pages distinguish the original recipe from
-the supported adaptation. Live credit prices come from the catalog.
+badge; the tested example displays “Generated on Veyrnox”. Public cards,
+template data, page copy and media filenames contain no source-platform names,
+links or credits. Internal provenance remains recorded in this document only.
+Model-category and feature cards remain inspiration; template pages show only
+the supported Veyrnox adaptation. Live credit prices come from the catalog.
 
 `app/veyrnox/_lib/showcase.js` maps all five `FEATURE_CARDS` keys and all
-`PRESETS` clip keys to local videos, posters, original titles and source names.
+`PRESETS` clip keys to local videos, posters and neutral titles.
 `MODEL_SHOWCASE_KEYS` selects three dedicated clips for the Video, Image and
-Audio cards in `/#models`. `WALL_SHOWCASE_KEYS` selects 12 dedicated
+Audio cards in `/#models`. `WALL_SHOWCASE_KEYS` selects 20 dedicated
 homepage previews with their own recipes. The shared
 `PresetCard` also brings the gallery previews to the studio Explore gallery.
 
-All 51 public tile placements use different footage: five feature cards,
-12 homepage template cards, three model-category cards and 31 gallery
+All 68 public tile placements use different footage: five feature cards,
+20 homepage template cards, three model-category cards and 40 gallery
 cards. Product Hero 360 appears in the gallery while Miniature Crew has its own
 landing template, prompt, video and poster, preserving distinct content across
 surfaces as requested by the owner.
@@ -87,6 +86,14 @@ excerpt. No audio is retained.
 | `wall-the-wrong-one` | The Wrong One | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/gUUIJ3nDMG1ddMFo62W9JESljWZHxyQFHr6xZCHl.mp4) | 0 s |
 | `wall-pigeons` | Pigeons | [Higgsfield](https://cdn.higgsfield.ai/viral_hub/95e80ebb-98d7-41d6-ad33-e81d405d9400.mp4) | 0 s |
 | `wall-mighty-fighter` | Mighty Fighter | [Higgsfield](https://cdn.higgsfield.ai/viral_hub_preset/e68f7c19-0247-4832-9c7f-98807635b6bd.mp4) | 0 s |
+
+The 14 October expansion adds nine gallery previews—Enchanted Forest Selfie,
+Pumpkin Lings, Don't Blow Out the Pumpkin, Rap Takeover, Urban Broomstick Flight,
+Hotel Window Watch, Broomstick Flight, Money Flex and Epic Slap Knockout—and
+eight landing-wall previews—Agamemnon, Blue Depth, Cyclope, Fairytale Castle,
+Infinite Clones, Moonwalk, Skatedog and Windows. The original files were checked
+against all existing previews before encoding; every resulting video and poster
+has a different SHA-256. Public assets use only neutral `viral-*` filenames.
 
 ## Playback and budgets
 

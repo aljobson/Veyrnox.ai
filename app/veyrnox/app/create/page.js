@@ -384,7 +384,7 @@ export default function CreateStudio() {
             className="mt-3 w-full bg-vx-panel border border-vx-field rounded-lg p-3.5 text-sm text-vx-fg placeholder:text-vx-fg-faint resize-none focus:outline-hidden focus:border-vx-accent"
             placeholder={promptPlaceholder(model)}
           />
-          {activeTemplate?.sourceRecipe && (
+          {activeTemplate?.inspired && (
             <p className="mt-2 text-sm text-vx-fg-body">
               {activeTemplate.needs}. This prompt creates a similar scene using your image.
             </p>

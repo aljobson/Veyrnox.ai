@@ -1,8 +1,8 @@
 // Bento layout for the landing preset wall. Kept out of the component so the
 // "no empty cell" rule is unit-tested (tests/presetWall.test.mjs).
 //
-// Eight presets keep the original featured bento. Twelve extend it to four
-// complete desktop rows, retaining one hero and one closing wide tile.
+// Eight presets keep the original featured bento. Twelve and twenty extend it
+// to complete desktop rows, retaining one hero and one closing wide tile.
 //
 // Any other count falls back to a uniform grid. That is only a safety net: the
 // test fails for a count that leaves a hole, so adding or removing a preset
@@ -20,6 +20,7 @@ export function wallShapes(count) {
   if (count === 7) return [HERO, TILE, TILE, TILE, TILE, WIDE, WIDE];
   if (count === 8) return [HERO, TILE, TILE, TILE, TILE, TILE, TILE, FULL_WIDE];
   if (count === 12) return [HERO, TILE, TILE, TILE, TILE, TILE, TILE, TILE, TILE, TILE, TILE, FULL_WIDE];
+  if (count === 20) return [HERO, ...Array.from({ length: 18 }, () => TILE), FULL_WIDE];
   return Array.from({ length: count }, () => TILE);
 }
 

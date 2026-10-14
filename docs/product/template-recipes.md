@@ -4,12 +4,14 @@ On 10 October 2026 the owner requested usable recipes for the imported previews,
 including prompts and inputs, rather than unrelated footage in preset cards.
 The source template workflows were inspected with Agent Reach and the REA skill.
 
-`sourceTemplates.js` associates each of the 51 effect recipes with its own title,
+`sourceTemplates.js` associates each of the 68 effect recipes with its own title,
 clip key, Veyrnox remix prompt, supported video model, duration, upload guidance
-and original recipe. The gallery exposes 31 recipes; the homepage wall exposes
-12 different recipes. These 43 visible template placements retain distinct
+and neutral inspiration marker. The gallery exposes 40 recipes; the homepage wall exposes
+20 different recipes. These 60 visible template placements retain distinct
 footage. The remaining source records describe the feature/model inspiration
 clips. A detail page intentionally reuses the preview of the card it describes.
+Source-platform names, URLs and raw source recipes are not included in public
+template objects, browser payloads or media filenames.
 
 The original 22 hand-authored recipes remain in `LEGACY_PRESETS` so saved URLs
 retain their original prompts. They no longer display unrelated imported video.
@@ -62,7 +64,7 @@ image references or an arbitrary external motion-video URL. Our compatible
 prompts therefore describe similar content using existing supported inputs:
 Kling 3.0 I2V with one required starting image and a five-second unit, or
 Seedance 2.0 Fast with an optional starting image and ten seconds for the longer
-story scenes. The original setup is expandable and copyable separately.
+story scenes.
 No source reference or preview is silently used as the customer's upload.
 
 The detail page shows the full uncropped local preview, editable remix prompt,
@@ -72,11 +74,11 @@ override only their matching recipe. Prompt, duration and supported negative
 prompt carry through; unsupported aspect controls are hidden. Ten-second recipes
 quote twice the live five-second catalog price and open with that duration.
 
-Verification includes source prompt hashes, one-to-one clip/title mapping,
-model/type and input bounds, legacy URLs, global video uniqueness, direct-link
+Verification includes one-to-one clip/title mapping, model/type and input bounds,
+legacy URLs, global video and poster uniqueness, source-platform-neutral public data, direct-link
 draft restoration and live-price multiplication. Browser checks confirmed the
-matching playable preview, the copy action's success status, published source
-references and navigation to the correct model/preset sign-in gate. The in-app
+matching playable preview, the copy action's success status and navigation to
+the correct model/preset sign-in gate. The in-app
 browser clipboard reader returned an empty string, so clipboard contents and
 the authenticated studio were not independently verified in this session.
 Actual model output can vary; the UI describes this as creating similar content.
@@ -94,8 +96,8 @@ camera motion; there is slight hair/clothing drift.
 The owner then approved this generated video as the template preview.
 The card and detail page label it as generated on Veyrnox, and input guidance
 now specifies a person already suspended mid-leap. The runnable prompt,
-negative prompt, model, duration and credit cost are unchanged. The imported
-source recipe remains available separately. See [showcase provenance](showcase-clips.md)
+negative prompt, model, duration and credit cost are unchanged. Internal
+provenance remains documented separately. See [showcase provenance](showcase-clips.md)
 for output hashes and encode details, and [ADR-0022](../adr/0022-manual-test-credit-grant.md)
 for the approved one-time test grant. This verifies one example, not every
 possible customer upload or repeated generation.

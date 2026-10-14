@@ -45,7 +45,7 @@ export function UseTemplate({ preset, prompt = preset.prompt }) {
         disabled={!prompt.trim()}
         className="vx-press mt-6 inline-flex items-center gap-4 rounded-full bg-vx-accent px-6 py-3.5 font-extrabold text-vx-accent-ink hover:bg-vx-accent-hover disabled:opacity-50"
       >
-        <span>{preset.sourceRecipe ? 'Create a similar video' : 'Use this template'}</span>
+        <span>{preset.inspired ? 'Create a similar video' : 'Use this template'}</span>
         <span className="font-vx-mono vx-num text-[15px] font-bold">{credits} cr</span>
       </button>
       <p className="mt-3 text-[13px] text-vx-fg-muted">Nothing is charged until you press Generate. Failed generations refund in full.</p>
