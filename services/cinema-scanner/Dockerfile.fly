@@ -1,0 +1,23 @@
+FROM node:22-alpine AS node
+
+# The 1.4 line is the long-term-support ClamAV release. The digest pins the
+# amd64 image that was exercised with the Cinema 2 GiB limits.
+FROM clamav/clamav:1.4@sha256:b5b910ce43d595bf8a2fe401e34db56434602b2c755b7c2b07f00c917d04d469
+
+COPY --from=node /usr/local /usr/local
+RUN apk add --no-cache file ffmpeg su-exec \
+    && addgroup -S scanner \
+    && adduser -S -G scanner -h /app scanner \
+    && mkdir -p /app /quarantine /run/clamav \
+    && chown scanner:scanner /app /quarantine \
+    && chown clamav:clamav /run/clamav /var/lib/clamav
+
+WORKDIR /app
+COPY --chown=scanner:scanner services/cinema-scanner ./services/cinema-scanner
+COPY services/cinema-scanner/clamd.conf /etc/clamav/clamd.conf
+COPY --chown=scanner:scanner lib ./lib
+COPY --chown=scanner:scanner packages/adapters ./packages/adapters
+COPY --chown=scanner:scanner packages/db/supabase-client.js ./packages/db/supabase-client.js
+RUN chmod 0755 services/cinema-scanner/fly-entrypoint.sh
+
+ENTRYPOINT ["/sbin/tini", "--", "/app/services/cinema-scanner/fly-entrypoint.sh"]

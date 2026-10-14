@@ -1,19 +1,26 @@
 import { mkdir, unlink } from 'node:fs/promises';
+import { createServer } from 'node:http';
+import { once } from 'node:events';
 import { rpc, envConfig as databaseConfig } from '../../packages/db/supabase-client.js';
 import { envConfig as r2Config, isConfigured as r2Configured, presignGetUrl } from '../../packages/adapters/r2.js';
-import { createStreamUpload, streamConfig } from '../../lib/cinema/stream.js';
-import { downloadExact, inspectVideo, scanWithClamd, uploadTusFile } from './scan-file.mjs';
+import { createStreamUpload } from '../../lib/cinema/stream.js';
+import { checkClamd, downloadExact, inspectVideo, scanWithClamd, uploadTusFile } from './scan-file.mjs';
 
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
 const SAFE_REASONS = new Set(['size_mismatch', 'unsupported_media_type', 'invalid_media']);
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+export function scannerStreamConfig(env = process.env) {
+    if (!/^[a-f0-9]{32}$/.test(env.CINEMA_STREAM_ACCOUNT_ID || '') || !env.CINEMA_STREAM_API_TOKEN) throw Error('stream_unconfigured');
+    return { account: env.CINEMA_STREAM_ACCOUNT_ID, token: env.CINEMA_STREAM_API_TOKEN };
+}
 
 export async function processScan(row, env = process.env, deps = {}) {
     const call = deps.rpcCall || rpc, sign = deps.presign || presignGetUrl;
     const download = deps.download || downloadExact, inspect = deps.inspect || inspectVideo;
     const antivirus = deps.antivirus || scanWithClamd, createVideo = deps.createVideo || createStreamUpload;
     const upload = deps.upload || uploadTusFile;
-    const db = deps.db || databaseConfig(), storage = deps.storage || r2Config(), stream = deps.stream || streamConfig(env);
+    const db = deps.db || databaseConfig(), storage = deps.storage || r2Config(), stream = deps.stream || scannerStreamConfig(env);
     if (!UUID.test(row?.upload_id || '') || !UUID.test(row?.claim_token || '') || typeof row.r2_key !== 'string'
         || !Number.isSafeInteger(Number(row.expected_size)) || !['video/mp4', 'video/webm', 'video/quicktime'].includes(row.expected_mime)) throw Error('invalid_claim');
     const size = Number(row.expected_size), path = `/quarantine/${row.upload_id}.video`;
@@ -75,11 +82,39 @@ export async function drainScans(env = process.env, deps = {}) {
         flagged: result.verdict === 'flagged' ? 1 : 0, unavailable: result.verdict === 'unavailable' ? 1 : 0 };
 }
 
+export async function scannerHealth(env = process.env, deps = {}) {
+    const clamd = await (deps.checkClamd || checkClamd)({
+        host: env.CLAMD_HOST || 'clamav', port: Number(env.CLAMD_PORT || 3310), timeoutMs: 3000,
+    });
+    if (env.CINEMA_QUARANTINE_SCANNER_ENABLED !== 'true') return { ok: true, mode: 'disabled', clamd: clamd.version };
+    const db = deps.db || databaseConfig(), storage = deps.storage || r2Config();
+    if (!db.supabaseUrl || !db.serviceRoleKey || !r2Configured(storage)) throw Error('scanner_unconfigured');
+    scannerStreamConfig(env);
+    return { ok: true, mode: 'enabled', clamd: clamd.version };
+}
+
+export async function startHealthServer(env = process.env, deps = {}) {
+    const host = deps.host || '0.0.0.0', port = Number(deps.port ?? env.PORT ?? 8080);
+    const server = createServer(async (request, response) => {
+        response.setHeader('content-type', 'application/json; charset=utf-8');
+        response.setHeader('cache-control', 'no-store');
+        if (request.method !== 'GET' || request.url !== '/healthz') {
+            response.statusCode = 404; response.end(JSON.stringify({ ok: false })); return;
+        }
+        try { response.statusCode = 200; response.end(JSON.stringify(await scannerHealth(env, deps))); }
+        catch { response.statusCode = 503; response.end(JSON.stringify({ ok: false, code: 'scanner_unavailable' })); }
+    });
+    server.listen(port, host);
+    await once(server, 'listening');
+    return server;
+}
+
 async function main() {
     await mkdir('/quarantine', { recursive: true, mode: 0o700 });
     let stopping = false;
     process.once('SIGTERM', () => { stopping = true; });
     process.once('SIGINT', () => { stopping = true; });
+    const health = await startHealthServer();
     while (!stopping) {
         try {
             const result = await drainScans();
@@ -90,6 +125,7 @@ async function main() {
             await wait(5000);
         }
     }
+    await new Promise(resolve => health.close(resolve));
 }
 
 if (process.argv[1] && new URL(import.meta.url).pathname === process.argv[1]) main();

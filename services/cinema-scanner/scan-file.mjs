@@ -112,6 +112,12 @@ function clamdCommand(command, { host = 'clamav', port = 3310, timeoutMs = 60000
     });
 }
 
+export async function checkClamd(options = {}) {
+    const version = await clamdCommand('VERSION', { ...options, timeoutMs: Math.min(options.timeoutMs || 10000, 10000) });
+    if (!/^ClamAV(?:\/|\s)/.test(version)) throw Error('clamd_unavailable');
+    return { ok: true, version: version.slice(0, 160) };
+}
+
 export async function scanWithClamd(path, options = {}) {
     if (!/^\/quarantine\/[a-f0-9-]{36}\.video$/.test(path)) throw Error('invalid_scan_path');
     const [version, answer] = await Promise.all([
