@@ -143,7 +143,18 @@ export function checkBase(endpoint, readings, basePrices = {}) {
 /** One catalog row against its fal page: the "$" figures, and the billing figure as `base`. */
 export function checkPage(row, html, unitRates = {}, basePrices = {}) {
     const base = checkBase(row.provider_endpoint, extractBilling(html, row.provider_endpoint), basePrices);
-    return { ...checkRow(row, extractPrices(html), unitRates), base };
+    const prices = extractPrices(html);
+    const listed = unitRates[row.id];
+    // fal sometimes serves the machine-readable endpointBilling payload but
+    // omits the rendered "Your request will cost $..." sentence (Demucs did
+    // this in the 2026-10-12 and 2026-10-14 Actions reads). When there is no
+    // price text at all, the exact, independently pinned billing figure is a
+    // stronger source than treating the absent sentence as a price move.
+    // A visible, conflicting price still goes through unchanged and drifts.
+    if (prices.length === 0 && listed && base.status === 'ok' && base.recorded.price === listed.rate) {
+        prices.push(base.recorded.price);
+    }
+    return { ...checkRow(row, prices, unitRates), base };
 }
 
 /** A row whose page no longer shows what is expected of it. */
