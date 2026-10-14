@@ -142,7 +142,7 @@ function PublishControls({ initialJobId, initialUploadId }) {
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h2 className="font-bold">Connected accounts</h2>
         <div className="flex flex-wrap gap-4">
-          {inboxEnabled && <Link href="/app/publish/inbox" className="text-sm font-bold text-vx-accent underline">Social inbox</Link>}
+          {inboxEnabled && <><Link href="/app/publish/inbox" className="text-sm font-bold text-vx-accent underline">Social inbox</Link><Link href="/app/publish/contacts" className="text-sm font-bold text-vx-accent underline">Contacts</Link></>}
           {smartlinksEnabled && <Link href="/app/publish/smartlink" className="text-sm font-bold text-vx-accent underline">SmartLink</Link>}
           {reportsEnabled && paid && <Link href="/app/publish/reports" className="text-sm font-bold text-vx-accent underline">Reports</Link>}
           {(customerApiEnabled || customerWebhooksEnabled) && paid && ['owner', 'manager'].includes(brandRole) && <Link href="/app/publish/developer" className="text-sm font-bold text-vx-accent underline">Developer API</Link>}

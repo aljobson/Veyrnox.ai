@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import pg from 'pg';
 
-describe('team inbox workflow and analytics (0309, 0316)', { skip: !process.env.DATABASE_URL }, () => {
+describe('team inbox workflow, analytics and contacts (0309, 0316, 0318)', { skip: !process.env.DATABASE_URL }, () => {
   let pool: pg.Pool;
   const one = async (sql: string, args: unknown[] = []) => (await pool.query(sql, args)).rows[0];
   const value = async (sql: string, args: unknown[] = []) => (await one(sql, args)).value;
@@ -14,7 +14,7 @@ describe('team inbox workflow and analytics (0309, 0316)', { skip: !process.env.
     for (const file of ['0071_signup_grant_on_email_confirmation.sql', '0154_social_publish_foundation.sql',
       '0293_social_publish_plans.sql', '0299_social_inbox.sql', '0305_social_team_roles.sql',
       '0306_social_brand_access.sql', '0307_social_team_actions.sql', '0308_social_team_publishing.sql',
-      '0309_social_inbox_workflow.sql', '0316_social_inbox_analytics.sql']) {
+      '0309_social_inbox_workflow.sql', '0316_social_inbox_analytics.sql', '0318_social_inbox_contacts.sql']) {
       const migration = await readFile(new URL(`./schema/supabase/${file}`, import.meta.url), 'utf8');
       await pool.query(migration); await pool.query(migration);
     }
@@ -108,13 +108,49 @@ describe('team inbox workflow and analytics (0309, 0316)', { skip: !process.env.
     assert.equal((await value('SELECT public.get_social_inbox_analytics($1,$2,NULL,14) value', [owner.auth, brand])).code, 'INVALID_RANGE');
   });
 
+  it('builds a paid contact directory from conversations and stores team context separately', async () => {
+    const owner = await user('inbox-contact-owner'); const viewer = await user('inbox-contact-viewer');
+    const outsider = await user('inbox-contact-outsider');
+    const brand = (await value('SELECT public.get_or_create_default_social_brand($1) value', [owner.auth])).brand_id;
+    await value('SELECT public.get_or_create_default_social_brand($1) value', [outsider.auth]);
+    await pool.query(`INSERT INTO public.social_publish_subscriptions(user_id,plan_id,idempotency_key,price_usd_cents,consent_version,status,current_period_end)
+      VALUES($1,'publish',$2,1500,'publish-plan-2026-10-13','active',now()+interval '30 days')`, [owner.id, `inbox-contacts-${randomUUID()}`]);
+    await pool.query(`INSERT INTO public.social_brand_members(brand_id,user_id,role,invited_by) VALUES($1,$2,'viewer',$3)`, [brand, viewer.id, owner.id]);
+    const external = `contacts-${randomUUID()}`;
+    const account = (await one(`INSERT INTO public.social_accounts(brand_id,network,external_account_id,display_name,scopes_granted,access_token_enc,status)
+      VALUES($1,'facebook',$2,'Veyrnox Page',ARRAY['pages_manage_posts'],decode('00','hex'),'active') RETURNING id`, [brand, external])).id;
+    await value(`SELECT public.ingest_social_inbox_event(
+      'facebook',$1,'contact-thread-one','message','contact-one','inbound','Hello','[]'::jsonb,
+      'contact-42','Alex Customer',NULL,'First question',NULL,true,now()-interval '1 hour') value`, [external]);
+    await value(`SELECT public.ingest_social_inbox_event(
+      'facebook',$1,'contact-thread-two','comment','contact-two','inbound','Interested','[]'::jsonb,
+      'contact-42','Alex Customer',NULL,'Second question',NULL,true,now()) value`, [external]);
+
+    const initial = await value('SELECT public.list_social_inbox_contacts($1,$2,$3,NULL,NULL,NULL,NULL) value', [viewer.auth, brand, account]);
+    assert.equal(initial.ok, true); assert.equal(initial.contacts.length, 1);
+    assert.deepEqual([initial.contacts[0].thread_count, initial.contacts[0].message_count, initial.contacts[0].unread_count], [2, 2, 2]);
+    assert.deepEqual([initial.contacts[0].subscription_status, initial.contacts[0].tags], ['unknown', []]);
+
+    const updated = await value(`SELECT public.update_social_inbox_contact($1,$2,$3,'contact-42',$4::jsonb,'subscribed',$5) value`,
+      [owner.auth, brand, account, JSON.stringify(['VIP', 'customer', 'vip']), 'Asked about annual pricing.']);
+    assert.deepEqual(updated, { ok: true, tags: ['customer', 'vip'], subscription_status: 'subscribed' });
+    const filtered = await value(`SELECT public.list_social_inbox_contacts($1,$2,NULL,'facebook','subscribed','alex','vip') value`, [viewer.auth, brand]);
+    assert.equal(filtered.contacts.length, 1); assert.equal(filtered.contacts[0].notes, 'Asked about annual pricing.');
+    assert.equal((await value(`SELECT public.update_social_inbox_contact($1,$2,$3,'contact-42','[]'::jsonb,'unknown',NULL) value`,
+      [viewer.auth, brand, account])).code, 'FORBIDDEN');
+    assert.equal((await value('SELECT public.list_social_inbox_contacts($1,$2,NULL,NULL,NULL,NULL,NULL) value', [outsider.auth, brand])).code, 'BRAND_NOT_FOUND');
+  });
+
   it('keeps workflow tables and functions service-only', async () => {
     for (const role of ['anon', 'authenticated']) {
       assert.equal((await one("SELECT has_table_privilege($1,'public.social_inbox_notes','SELECT') allowed", [role])).allowed, false);
+      assert.equal((await one("SELECT has_table_privilege($1,'public.social_inbox_contact_profiles','SELECT') allowed", [role])).allowed, false);
       for (const signature of ['list_social_inbox(text,uuid,uuid,text,text,text,text,text,text)',
         'get_social_inbox_thread(text,uuid,uuid)', 'update_social_inbox_thread(text,uuid,uuid,text)',
         'update_social_inbox_workflow(text,uuid,uuid,text,jsonb)', 'add_social_inbox_note(text,uuid,uuid,text)',
-        'create_social_inbox_reply(text,uuid,uuid,text,text)', 'get_social_inbox_analytics(text,uuid,uuid,integer)']) {
+        'create_social_inbox_reply(text,uuid,uuid,text,text)', 'get_social_inbox_analytics(text,uuid,uuid,integer)',
+        'list_social_inbox_contacts(text,uuid,uuid,text,text,text,text)',
+        'update_social_inbox_contact(text,uuid,uuid,text,jsonb,text,text)']) {
         assert.equal((await one("SELECT has_function_privilege($1,$2,'EXECUTE') allowed", [role, `public.${signature}`])).allowed, false);
       }
     }

@@ -28,3 +28,17 @@ export function getSocialInboxAnalytics({ accountId, days = 30 } = {}) {
     if (accountId) params.set('accountId', accountId);
     return gatewayFetch(`/social/inbox/analytics?${params}`);
 }
+
+export function listSocialInboxContacts({ accountId, network, subscriptionStatus, search, tag } = {}) {
+    const params = new URLSearchParams();
+    if (accountId) params.set('accountId', accountId);
+    if (network) params.set('network', network);
+    if (subscriptionStatus) params.set('subscriptionStatus', subscriptionStatus);
+    if (search) params.set('search', search);
+    if (tag) params.set('tag', tag);
+    return gatewayFetch(`/social/contacts?${params}`);
+}
+
+export const updateSocialInboxContact = (contact) => gatewayFetch('/social/contacts', {
+    method: 'PATCH', body: JSON.stringify(contact),
+});

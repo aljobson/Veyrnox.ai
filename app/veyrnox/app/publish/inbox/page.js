@@ -32,6 +32,7 @@ export default function PublishInbox() {
       <Link href="/app/publish" className="text-vx-accent underline">Veyrnox Publish</Link>
       <Link href="/app/publish/calendar" className="text-vx-accent underline">Calendar</Link>
       <Link href="/app/publish/analytics" className="text-vx-accent underline">Analytics</Link>
+      <Link href="/app/publish/contacts" className="text-vx-accent underline">Contacts</Link>
     </nav>
     <h1 className="text-3xl font-black">Inbox</h1>
     <p className="mt-2 mb-4 text-sm text-vx-fg-muted">Read messages, comments and reviews across connected accounts. Switch to one account whenever you need its own inbox.</p>
