@@ -125,7 +125,9 @@ function PublishControls({ initialJobId, initialUploadId }) {
   const byNetwork = new Map(active.map((a) => [a.network, a]));
   const atLimit = active.length >= accountLimit;
   const paid = !plansEnabled || planTier === 'publish';
-  const canWrite = brandRole === 'owner';
+  const canPublish = ['owner', 'manager', 'editor'].includes(brandRole);
+  const canReviewDrafts = ['owner', 'manager', 'reviewer'].includes(brandRole);
+  const canManageAccounts = brandRole === 'owner';
 
   return <div className="space-y-6">
     <section className="rounded-2xl border border-vx-border p-5">
@@ -137,13 +139,13 @@ function PublishControls({ initialJobId, initialUploadId }) {
           {queuesEnabled && paid && <Link href="/app/publish/queues" className="text-sm font-bold text-vx-accent underline">Posting queues</Link>}
           {teamsEnabled && paid && ['owner', 'manager'].includes(brandRole) && <Link href="/app/publish/team" className="text-sm font-bold text-vx-accent underline">Team</Link>}
           {teamsEnabled && paid && ['owner', 'manager'].includes(brandRole) && <Link href="/app/publish/activity" className="text-sm font-bold text-vx-accent underline">Activity</Link>}
-          {plansEnabled && canWrite && <Link href="/app/publish/plan" className="text-sm font-bold text-vx-accent underline">Plans and billing</Link>}
+          {plansEnabled && canManageAccounts && <Link href="/app/publish/plan" className="text-sm font-bold text-vx-accent underline">Plans and billing</Link>}
         </div>
       </div>
       <p className="text-sm text-vx-fg-muted mb-3">
-        {paid ? `${canWrite ? 'Your' : 'This brand’s'} Publish Plan includes up to ${accountLimit} connected accounts, scheduling and analytics.` : 'Free includes one connected account and Post now.'}
+        {paid ? `${canManageAccounts ? 'Your' : 'This brand’s'} Publish Plan includes up to ${accountLimit} connected accounts, scheduling and analytics.` : 'Free includes one connected account and Post now.'}
       </p>
-      {!canWrite && <p role="status" className="mb-3 rounded-xl bg-vx-panel p-3 text-sm">You are viewing this brand as {brandRole}. Managers and editors can manage the inbox, queues and SmartLink; publishing and account connections remain with the owner.</p>}
+      {!canManageAccounts && <p role="status" className="mb-3 rounded-xl bg-vx-panel p-3 text-sm">You are viewing this brand as {brandRole}. Managers and editors can create and schedule posts; reviewers can approve drafts. Account connections and billing remain with the owner.</p>}
       {accounts === null && !loadError && <p className="text-sm text-vx-fg-muted">Loading…</p>}
       {loadError && <p role="alert" className="text-sm text-vx-danger mb-3">{loadError}</p>}
       {accounts !== null && active.length === 0 && !loadError && (
@@ -163,7 +165,7 @@ function PublishControls({ initialJobId, initialUploadId }) {
                 <div className="flex items-center gap-1.5 text-xs text-vx-fg-muted"><NetworkLogo network={a.network} className="h-3.5 w-3.5" />{networkLabel(a.network)} · {a.status}</div>
               </div>
             </div>
-            {canWrite && <button
+            {canManageAccounts && <button
               type="button"
               disabled={disconnecting === a.id}
               className={button}
@@ -176,13 +178,13 @@ function PublishControls({ initialJobId, initialUploadId }) {
       </ul>
     </section>
 
-    {approvalsEnabled && paid && ['owner', 'manager'].includes(brandRole) && <section className="rounded-2xl border border-vx-border p-5">
+    {approvalsEnabled && paid && ['owner', 'manager', 'editor'].includes(brandRole) && <section className="rounded-2xl border border-vx-border p-5">
       <h2 className="font-bold mb-1">Approval requests</h2>
       <p className="text-sm text-vx-fg-muted mb-4">Share a signed link with each reviewer. Posts stay paused until the approval rule passes.</p>
       <ApprovalRequests refreshToken={postsRefreshToken} />
     </section>}
 
-    {canWrite && <section className="rounded-2xl border border-vx-border p-5">
+    {canManageAccounts && <section className="rounded-2xl border border-vx-border p-5">
       <h2 className="font-bold mb-1">Connect an account</h2>
       <p className="text-sm text-vx-fg-muted mb-4">Choose a platform to connect. Facebook uses Pages and Google Business Profile uses business locations. TikTok delivers a draft to your inbox. Twitch connects for video statistics.</p>
       {connectError && <p role="alert" className="text-sm text-vx-danger mb-3">{connectError}</p>}
@@ -224,20 +226,20 @@ function PublishControls({ initialJobId, initialUploadId }) {
       />
     )}
 
-    {canWrite && <section className="rounded-2xl border border-vx-border p-5">
+    {canReviewDrafts && <section className="rounded-2xl border border-vx-border p-5">
       <h2 className="font-bold mb-1">Drafts to review</h2>
       <p className="text-sm text-vx-fg-muted mb-4">Nothing here is posted until you approve its batch.</p>
       <DraftReview onApproved={() => setPostsRefreshToken((n) => n + 1)} />
     </section>}
 
-    {canWrite && <section className="rounded-2xl border border-vx-border p-5">
+    {canPublish && <section className="rounded-2xl border border-vx-border p-5">
       <h2 id="schedule" className="font-bold mb-4 scroll-mt-6">Create a post</h2>
       <Composer approvalsEnabled={approvalsEnabled && paid} queuesEnabled={queuesEnabled && paid} presetsEnabled={contentPresetsEnabled && paid} multiAccountEnabled={paid} scheduleEnabled={paid} youtubeVisibilityEnabled={youtubeVisibilityEnabled} key={initialJobId || initialUploadId || 'library'} initialJobId={initialJobId} initialUploadId={initialUploadId} reusablePost={reusablePost} accounts={accounts} uploadsEnabled={uploadsEnabled} onScheduled={() => setPostsRefreshToken((n) => n + 1)} />
     </section>}
 
     <section className="rounded-2xl border border-vx-border p-5">
       <h2 className="font-bold mb-4">Scheduled &amp; published</h2>
-      <ScheduledPosts refreshToken={postsRefreshToken} scheduleEnabled={paid} onReuse={canWrite ? (post) => { setReusablePost({ ...post, reuseKey: Date.now() }); document.getElementById('schedule')?.scrollIntoView({ behavior: 'smooth' }); } : undefined} />
+      <ScheduledPosts refreshToken={postsRefreshToken} scheduleEnabled={paid} onReuse={canPublish ? (post) => { setReusablePost({ ...post, reuseKey: Date.now() }); document.getElementById('schedule')?.scrollIntoView({ behavior: 'smooth' }); } : undefined} />
     </section>
   </div>;
 }

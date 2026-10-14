@@ -73,7 +73,7 @@ function CalendarControls({today}) {
     function drop(event,day){
         event.preventDefault();
         const post=posts.find(p=>p.id===event.dataTransfer.getData('application/x-veyrnox-post'));
-        if(brandRole==='owner'&&post?.can_reschedule)setEdit({post,value:droppedSchedule(post,day)});
+        if(['owner','manager','editor'].includes(brandRole)&&post?.can_reschedule)setEdit({post,value:droppedSchedule(post,day)});
     }
     const groups=new Map(range.days.map(day=>[day,posts.filter(p=>dateKey(p.scheduled_at)===day)]));
     return <div className="space-y-5">
@@ -97,7 +97,7 @@ function CalendarControls({today}) {
             {loadError&&<p role="alert" className="text-sm text-vx-danger">{loadError}</p>}
             {!loadError&&posts.length===0&&<p className="text-sm text-vx-fg-muted">No posts in this period match your filters.</p>}
             {view==='list'?<div className="space-y-4">{range.days.filter(day=>groups.get(day).length).map(day=><section key={day} aria-label={dayLabel(day)}>
-                <h3 className="font-bold mb-2">{dayLabel(day)}</h3><ul className="space-y-2">{groups.get(day).map(post=><li key={post.id}><PostCard post={post} canWrite={brandRole==='owner'} onEdit={()=>setEdit({post,value:localInput(post.scheduled_at)})}/></li>)}</ul>
+                <h3 className="font-bold mb-2">{dayLabel(day)}</h3><ul className="space-y-2">{groups.get(day).map(post=><li key={post.id}><PostCard post={post} canWrite={['owner','manager','editor'].includes(brandRole)} onEdit={()=>setEdit({post,value:localInput(post.scheduled_at)})}/></li>)}</ul>
             </section>)}</div>:<div className="relative overflow-x-auto rounded-xl border border-vx-border focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-vx-accent" tabIndex={0} role="region" aria-label={`${view} calendar, scroll horizontally on smaller screens`}>
                 <table className="w-full min-w-[840px] table-fixed text-sm">
                     <caption className="sr-only">{title}. Scheduled posts by local date.</caption>
@@ -105,7 +105,7 @@ function CalendarControls({today}) {
                     <tbody>{Array.from({length:range.days.length/7},(_,week)=><tr key={week}>{range.days.slice(week*7,week*7+7).map(day=><td key={day} className={`align-top border-t border-r border-vx-border p-2 ${day===currentDay?'bg-vx-accent/10':''}`}
                         onDragOver={e=>{if(e.dataTransfer.types.includes('application/x-veyrnox-post'))e.preventDefault();}} onDrop={e=>drop(e,day)} data-calendar-day={day}>
                         <div className="min-h-28"><h3 className="text-xs font-bold mb-2">{dayLabel(day)}{day===currentDay&&<span className="sr-only">, today</span>}</h3>
-                        <ul className="space-y-2">{groups.get(day).map(post=><li key={post.id}><PostCard post={post} canWrite={brandRole==='owner'} onEdit={()=>setEdit({post,value:localInput(post.scheduled_at)})}/></li>)}</ul></div>
+                        <ul className="space-y-2">{groups.get(day).map(post=><li key={post.id}><PostCard post={post} canWrite={['owner','manager','editor'].includes(brandRole)} onEdit={()=>setEdit({post,value:localInput(post.scheduled_at)})}/></li>)}</ul></div>
                     </td>)}</tr>)}</tbody>
                 </table>
             </div>}

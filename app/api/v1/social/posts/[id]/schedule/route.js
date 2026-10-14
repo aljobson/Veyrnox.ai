@@ -16,7 +16,7 @@ export async function PATCH(req,{params}) {
     if(!instant(body?.scheduledAt)||!instant(body?.expectedAt))return NextResponse.json({error:'invalid_schedule'},{status:400});
     const cfg=envConfig();
     if(!cfg.supabaseUrl||!cfg.serviceRoleKey)return NextResponse.json({error:'supabase_not_configured'},{status:503});
-    const brand=await resolveBrand(authId,cfg,'api/v1/social/posts/[id]/schedule:PATCH',{request:req,allowedRoles:['owner']});
+    const brand=await resolveBrand(authId,cfg,'api/v1/social/posts/[id]/schedule:PATCH',{request:req,allowedRoles:['owner','manager','editor']});
     if(brand.error)return brand.error;
     if(publishPlansEnabled()){
         try{
@@ -34,7 +34,7 @@ export async function PATCH(req,{params}) {
         }
         const result=await rpc('reschedule_social_post',{p_auth_id:authId,p_post_id:id,p_expected_at:body.expectedAt,p_scheduled_at:body.scheduledAt},cfg);
         if(result?.ok!==true){
-            const status=result?.code==='USER_NOT_FOUND'?401:result?.code==='POST_NOT_FOUND'?404
+            const status=result?.code==='USER_NOT_FOUND'?401:result?.code==='FORBIDDEN'?403:result?.code==='PLAN_REQUIRED'?402:result?.code==='POST_NOT_FOUND'?404
                 :['POST_STARTED','SCHEDULE_CHANGED','POST_BUSY'].includes(result?.code)?409:result?.code==='INVALID_SCHEDULE'?400:502;
             return NextResponse.json({error:status===502?'internal':result.code},{status});
         }

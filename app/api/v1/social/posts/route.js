@@ -135,23 +135,6 @@ export async function POST(req) {
         return NextResponse.json({ error: 'invalid_account_ids' }, { status: 400 });
     }
 
-    if (publishPlansEnabled()) {
-        let entitlement;
-        try { entitlement = await readPublishEntitlement(authId, cfg); }
-        catch (err) {
-            console.error('[api/v1/social/posts:POST] entitlement read failed:', err instanceof SupabaseError ? err.status : 0);
-            return NextResponse.json({ error: 'internal' }, { status: 502 });
-        }
-        if (!entitlement) return NextResponse.json({ error: 'internal' }, { status: 502 });
-        if (entitlement.tier !== 'publish') {
-            if (accountIds.length > 1) {
-                return NextResponse.json({ error: 'publish_plan_required', feature: 'multiple_accounts' }, { status: 402 });
-            }
-            if (body?.publishNow !== true) {
-                return NextResponse.json({ error: 'publish_plan_required', feature: 'scheduling' }, { status: 402 });
-            }
-        }
-    }
     const media = body && body.media;
     if (!Array.isArray(media) || media.length < 1 || media.length > 10) {
         return NextResponse.json({ error: 'invalid_media' }, { status: 400 });
@@ -171,13 +154,32 @@ export async function POST(req) {
     const limited = await socialPostWriteLimit(authId, cfg);
     if (limited) return limited;
 
-    const brand = await resolveBrand(authId, cfg, 'api/v1/social/posts:POST', { request: req, allowedRoles: ['owner'] });
+    const brand = await resolveBrand(authId, cfg, 'api/v1/social/posts:POST', { request: req, allowedRoles: ['owner', 'manager', 'editor'] });
     if (brand.error) return brand.error;
+
+    if (publishPlansEnabled()) {
+        let entitlement;
+        try { entitlement = await readPublishEntitlement(brand.rpcAuthId, cfg); }
+        catch (err) {
+            console.error('[api/v1/social/posts:POST] entitlement read failed:', err instanceof SupabaseError ? err.status : 0);
+            return NextResponse.json({ error: 'internal' }, { status: 502 });
+        }
+        if (!entitlement) return NextResponse.json({ error: 'internal' }, { status: 502 });
+        if (entitlement.tier !== 'publish') {
+            if (accountIds.length > 1) {
+                return NextResponse.json({ error: 'publish_plan_required', feature: 'multiple_accounts' }, { status: 402 });
+            }
+            if (body?.publishNow !== true) {
+                return NextResponse.json({ error: 'publish_plan_required', feature: 'scheduling' }, { status: 402 });
+            }
+        }
+    }
+
     const brandId = brand.brandId;
 
     let result;
     try {
-        const listed = await rpc('list_social_accounts', { p_auth_id: authId, p_brand_id: brandId }, cfg);
+        const listed = await rpc('list_social_accounts', { p_auth_id: brand.rpcAuthId, p_brand_id: brandId }, cfg);
         if (!listed?.ok || !Array.isArray(listed.accounts)) throw new Error('account_lookup_failed');
         const destinations = listed.accounts.filter((a) => accountIds.includes(a.id) && a.status === 'active');
         if (destinations.length !== new Set(accountIds).size) return NextResponse.json({ error: 'ACCOUNT_NOT_FOUND' }, { status: 404 });
@@ -200,7 +202,7 @@ export async function POST(req) {
     }
     if (!result || result.ok !== true) {
         const code = result && result.code;
-        const status = code === 'USER_NOT_FOUND' ? 401
+        const status = code === 'USER_NOT_FOUND' ? 401 : code === 'FORBIDDEN' ? 403 : code === 'PLAN_REQUIRED' ? 402
             : ['BRAND_NOT_FOUND', 'ACCOUNT_NOT_FOUND', 'MEDIA_NOT_FOUND'].includes(code) ? 404
             : ['INVALID_IDEMPOTENCY_KEY', 'INVALID_SCHEDULE', 'NO_TARGET_ACCOUNTS', 'INVALID_MEDIA', 'INVALID_YOUTUBE_VISIBILITY'].includes(code) ? 400
             : 502;

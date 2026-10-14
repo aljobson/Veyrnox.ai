@@ -86,7 +86,7 @@ export async function POST(req) {
 
     const limited = await socialPostWriteLimit(authId, cfg);
     if (limited) return limited;
-    const brand = await resolveBrand(authId, cfg, 'api/v1/social/drafts:POST', { request: req, allowedRoles: ['owner'] });
+    const brand = await resolveBrand(authId, cfg, 'api/v1/social/drafts:POST', { request: req, allowedRoles: ['owner', 'manager', 'reviewer'] });
     if (brand.error) return brand.error;
 
     if (action === 'approve' && publishPlansEnabled()) {
@@ -116,7 +116,7 @@ export async function POST(req) {
     const r = out.result;
     if (!r || r.ok !== true) {
         const code = r && r.code;
-        const status = code === 'BRAND_NOT_FOUND' ? 404 : code === 'INVALID_BATCH' ? 400 : 502;
+        const status = code === 'BRAND_NOT_FOUND' ? 404 : code === 'FORBIDDEN' ? 403 : code === 'PLAN_REQUIRED' ? 402 : code === 'INVALID_BATCH' ? 400 : 502;
         return NextResponse.json({ error: code ? code.toLowerCase() : 'internal' }, { status });
     }
     const payload = action === 'approve' ? { approved: r.approved, failed: r.failed } : { discarded: r.discarded };

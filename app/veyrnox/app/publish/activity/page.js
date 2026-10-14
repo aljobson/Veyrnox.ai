@@ -14,7 +14,8 @@ const button = 'rounded-full border border-vx-border px-4 py-2 text-sm font-bold
 const time = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 const labels = {
   connected: 'Connected an account', disconnected: 'Disconnected an account', created_post: 'Created a post',
-  rescheduled_post: 'Rescheduled a post', approved_draft: 'Approved a draft', discarded_draft: 'Discarded a draft',
+  rescheduled_post: 'Rescheduled a post', post_rescheduled: 'Rescheduled a post', approved_draft: 'Approved drafts',
+  approve_drafts: 'Approved drafts', discarded_draft: 'Discarded drafts', discard_drafts: 'Discarded drafts',
   save_content_preset: 'Saved a content preset', delete_content_preset: 'Deleted a content preset',
   save_publish_queue: 'Saved a posting queue', delete_publish_queue: 'Deleted a posting queue', queue_social_post: 'Queued a post',
   save_smartlink: 'Saved the SmartLink', read: 'Marked a conversation read', unread: 'Marked a conversation unread',

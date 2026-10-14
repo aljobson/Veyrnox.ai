@@ -13,6 +13,7 @@ const brandId = '22222222-2222-4222-8222-222222222222';
 const accountId = '33333333-3333-4333-8333-333333333333';
 const jobId = '44444444-4444-4444-8444-444444444444';
 const postId = '55555555-5555-4555-8555-555555555555';
+const ownerAuth = '66666666-6666-4666-8666-666666666666';
 
 const getRequest = (headers = {}, search = '') => new Request(`https://veyrnox.test/api/v1/social/posts${search}`, {
     headers: { 'x-veyrnox-auth-id': auth, ...headers },
@@ -171,6 +172,29 @@ test('POST: schedules a post and returns its id', async () => {
         p_idempotency_key: 'a'.repeat(16), p_account_ids: [accountId],
         p_media: [{ media_type: 'image', job_id: jobId }],
     });
+});
+
+test('POST: an editor reads owner-scoped account data but creates as the acting teammate', async () => {
+    const previousTeams = process.env.PUBLISH_TEAMS_ENABLED;
+    const previousPlans = process.env.PUBLISH_PLANS_ENABLED;
+    process.env.PUBLISH_TEAMS_ENABLED = 'true';
+    process.env.PUBLISH_PLANS_ENABLED = 'true';
+    try {
+        stub({ get_social_brand_access: { ok: true, brand_id: brandId, label: 'Studio', role: 'editor', owner_auth_id: ownerAuth, paid: true } });
+        const res = await POST(postRequest(validBody(), { 'x-publish-brand-id': brandId }));
+        assert.equal(res.status, 201);
+        assert.equal(calls.find((call) => call.name === 'read_social_publish_entitlement').args.p_auth_id, ownerAuth);
+        assert.equal(calls.find((call) => call.name === 'list_social_accounts').args.p_auth_id, ownerAuth);
+        assert.equal(calls.find((call) => call.name === 'create_social_post').args.p_auth_id, auth);
+
+        stub({ get_social_brand_access: { ok: true, brand_id: brandId, label: 'Studio', role: 'analyst', owner_auth_id: ownerAuth, paid: true } });
+        const blocked = await POST(postRequest(validBody(), { 'x-publish-brand-id': brandId }));
+        assert.equal(blocked.status, 403);
+        assert.equal(calls.some((call) => call.name === 'create_social_post'), false);
+    } finally {
+        if (previousTeams === undefined) delete process.env.PUBLISH_TEAMS_ENABLED; else process.env.PUBLISH_TEAMS_ENABLED = previousTeams;
+        if (previousPlans === undefined) delete process.env.PUBLISH_PLANS_ENABLED; else process.env.PUBLISH_PLANS_ENABLED = previousPlans;
+    }
 });
 
 test('POST: Post now uses server time and ignores a missing or invalid device schedule', async () => {

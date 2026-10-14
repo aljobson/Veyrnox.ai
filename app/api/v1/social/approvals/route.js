@@ -25,6 +25,7 @@ function setup(req) {
 
 function statusFor(code) {
     if (code === 'PLAN_REQUIRED') return 402;
+    if (code === 'FORBIDDEN') return 403;
     if (['BRAND_NOT_FOUND', 'ACCOUNT_NOT_FOUND', 'MEDIA_NOT_FOUND'].includes(code)) return 404;
     if (['INVALID_APPROVAL', 'INVALID_REVIEWERS', 'INVALID_IDEMPOTENCY_KEY', 'INVALID_SCHEDULE', 'NO_TARGET_ACCOUNTS', 'INVALID_MEDIA', 'IDEMPOTENCY_CONFLICT'].includes(code)) return 400;
     return 502;
@@ -44,9 +45,9 @@ export async function GET(req) {
     if (limited) return limited;
     const brand = await resolveBrand(authId, cfg, 'api/v1/social/approvals:GET', {
         // This response contains freshly signed external-review links. Keep
-        // those bearer links with the brand administrators rather than
+        // those bearer links with publishing roles rather than
         // exposing them through general read-only brand access.
-        request: req, allowedRoles: ['owner', 'manager'],
+        request: req, allowedRoles: ['owner', 'manager', 'editor'],
     });
     if (brand.error) return brand.error;
     try {
@@ -98,10 +99,10 @@ export async function POST(req) {
     }
     const limited = await socialPostWriteLimit(authId, cfg);
     if (limited) return limited;
-    const brand = await resolveBrand(authId, cfg, 'api/v1/social/approvals:POST', { request: req, allowedRoles: ['owner'] });
+    const brand = await resolveBrand(authId, cfg, 'api/v1/social/approvals:POST', { request: req, allowedRoles: ['owner', 'manager', 'editor'] });
     if (brand.error) return brand.error;
     try {
-        const listed = await rpc('list_social_accounts', { p_auth_id: authId, p_brand_id: brand.brandId }, cfg);
+        const listed = await rpc('list_social_accounts', { p_auth_id: brand.rpcAuthId, p_brand_id: brand.brandId }, cfg);
         const destinations = (listed?.accounts || []).filter((account) => accountIds.includes(account.id) && account.status === 'active');
         if (!listed?.ok || destinations.length !== new Set(accountIds).size) return NextResponse.json({ error: 'ACCOUNT_NOT_FOUND' }, { status: 404 });
         const capabilityError = postCapabilityError(destinations, media, globalText, process.env, authId);

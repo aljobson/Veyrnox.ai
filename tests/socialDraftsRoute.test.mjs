@@ -12,6 +12,7 @@ const auth = '11111111-1111-4111-8111-111111111111';
 const brandId = '22222222-2222-4222-8222-222222222222';
 const batchId = '33333333-3333-4333-8333-333333333333';
 const postId = '55555555-5555-4555-8555-555555555555';
+const ownerAuth = '66666666-6666-4666-8666-666666666666';
 
 const getRequest = (headers = {}) => new Request('https://veyrnox.test/api/v1/social/drafts', {
     headers: { 'x-veyrnox-auth-id': auth, ...headers },
@@ -84,6 +85,28 @@ test('approve schedules the batch through the write limit and the owner\'s brand
     assert.deepEqual(await res.json(), { approved: 3, failed: 1 });
     assert.deepEqual(names(), ['consume_social_post_write_request', 'get_or_create_default_social_brand', 'approve_social_post_batch']);
     assert.deepEqual(calls[2].args, { p_auth_id: auth, p_brand_id: brandId, p_batch_id: batchId });
+});
+
+test('a reviewer approves the selected brand batch as the acting teammate', async () => {
+    const previousTeams = process.env.PUBLISH_TEAMS_ENABLED;
+    const previousPlans = process.env.PUBLISH_PLANS_ENABLED;
+    process.env.PUBLISH_TEAMS_ENABLED = 'true';
+    process.env.PUBLISH_PLANS_ENABLED = 'true';
+    try {
+        stub({ get_social_brand_access: { ok: true, brand_id: brandId, label: 'Studio', role: 'reviewer', owner_auth_id: ownerAuth, paid: true } });
+        const res = await POST(postRequest({ action: 'approve', batchId }, { 'x-publish-brand-id': brandId }));
+        assert.equal(res.status, 200);
+        assert.equal(calls.find((call) => call.name === 'read_social_publish_entitlement').args.p_auth_id, ownerAuth);
+        assert.equal(calls.find((call) => call.name === 'approve_social_post_batch').args.p_auth_id, auth);
+
+        stub({ get_social_brand_access: { ok: true, brand_id: brandId, label: 'Studio', role: 'editor', owner_auth_id: ownerAuth, paid: true } });
+        const blocked = await POST(postRequest({ action: 'approve', batchId }, { 'x-publish-brand-id': brandId }));
+        assert.equal(blocked.status, 403);
+        assert.equal(calls.some((call) => call.name === 'approve_social_post_batch'), false);
+    } finally {
+        if (previousTeams === undefined) delete process.env.PUBLISH_TEAMS_ENABLED; else process.env.PUBLISH_TEAMS_ENABLED = previousTeams;
+        if (previousPlans === undefined) delete process.env.PUBLISH_PLANS_ENABLED; else process.env.PUBLISH_PLANS_ENABLED = previousPlans;
+    }
 });
 
 test('Free cannot approve a draft batch into the schedule while plans are enabled', async () => {

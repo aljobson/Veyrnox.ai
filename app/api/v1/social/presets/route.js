@@ -20,6 +20,7 @@ function mapResult(result) {
   if (result?.ok) return null;
   const code = result?.code;
   const status = code === 'PLAN_REQUIRED' ? 402
+    : code === 'FORBIDDEN' ? 403
     : ['BRAND_NOT_FOUND', 'PRESET_NOT_FOUND'].includes(code) ? 404
     : ['PRESET_NAME_TAKEN', 'PRESET_LIMIT'].includes(code) ? 409
     : code?.startsWith('INVALID_') ? 400 : 502;
@@ -51,7 +52,7 @@ export async function PUT(req) {
     return NextResponse.json({ error: 'invalid_body' }, { status: 400 });
   }
   const limited = await socialPostWriteLimit(authId, cfg); if (limited) return limited;
-  const brand = await resolveBrand(authId, cfg, 'api/v1/social/presets:PUT', { request: req, allowedRoles: ['owner'] }); if (brand.error) return brand.error;
+  const brand = await resolveBrand(authId, cfg, 'api/v1/social/presets:PUT', { request: req, allowedRoles: ['owner', 'manager', 'editor'] }); if (brand.error) return brand.error;
   try {
     const result = await rpc('save_social_content_preset', { p_auth_id: authId, p_brand_id: brand.brandId, p_id: id,
       p_name: name, p_caption: caption, p_account_ids: accountIds }, cfg);
@@ -67,7 +68,7 @@ export async function DELETE(req) {
   const id = new URL(req.url).searchParams.get('id');
   if (!UUID.test(id || '')) return NextResponse.json({ error: 'invalid_id' }, { status: 400 });
   const limited = await socialPostWriteLimit(authId, cfg); if (limited) return limited;
-  const brand = await resolveBrand(authId, cfg, 'api/v1/social/presets:DELETE', { request: req, allowedRoles: ['owner'] }); if (brand.error) return brand.error;
+  const brand = await resolveBrand(authId, cfg, 'api/v1/social/presets:DELETE', { request: req, allowedRoles: ['owner', 'manager', 'editor'] }); if (brand.error) return brand.error;
   try {
     const result = await rpc('delete_social_content_preset', { p_auth_id: authId, p_brand_id: brand.brandId, p_id: id }, cfg);
     return mapResult(result) || NextResponse.json({ ok: true });
