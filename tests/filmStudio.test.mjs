@@ -98,7 +98,12 @@ test('storage isolates accounts, rejects malformed imports and reports write fai
 test('older Film Studio files gain a 60-second target without losing their work',()=>{
   const old=filmFixture();delete old.targetSeconds;
   const parsed=parseFilm(JSON.stringify(old));
-  assert.equal(parsed.targetSeconds,60);assert.equal(parsed.name,old.name);assert.equal(parsed.shots.length,1);
+  assert.equal(parsed.targetSeconds,60);assert.equal(parsed.templateId,'');assert.equal(parsed.name,old.name);assert.equal(parsed.shots.length,1);
+});
+test('Film Studio exports preserve a linked template and reject invalid template identities',()=>{
+  const film={...filmFixture(),templateId:'paper-fragments'};
+  assert.equal(parseFilm(JSON.stringify(film)).templateId,'paper-fragments');
+  assert.throws(()=>parseFilm(JSON.stringify({...film,templateId:'../other'})),/valid Film Studio export/);
 });
 test('exports preserve the studio structure, all prompt versions and separate edit text',()=>{
   const f=readyFilm();f.shots[0].text='OPEN';f.shots[0].textPlacement='Top left';f.shots[0].textContext='Opening title';

@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { getStoredUserId, onSessionChange } from '../../../lib/authClient';
-import { FILM_STAGES, accessibleStage, emptyFilm, stageIssues } from '../../_lib/filmStudio';
+import { FILM_STAGES, accessibleStage, emptyFilm, filmFromTemplate, stageIssues } from '../../_lib/filmStudio';
 import { readFilm, writeFilm } from '../../_lib/filmStudioStorage';
 import { useCatalog } from '../../_lib/useCatalog';
 import { FilmIssues } from './FilmFields';
@@ -15,12 +15,28 @@ import { FilmTests } from './FilmTests';
 import { FilmPrompts } from './FilmPrompts';
 import { filmStudioStore } from '../../_lib/filmStudioStore';
 import { takeFilmStarter } from '../../_lib/filmTemplateDraft';
-import { modelIdForName } from '../../_lib/tokens';
+import { modelIdForName, presetTitle, templateById, templateHref } from '../../_lib/tokens';
+import { SHOWCASE_CLIPS } from '../../_lib/showcase';
 
 const storage = () => { try { return window.localStorage; } catch { return null; } };
 const serverState={film:emptyFilm(),stage:0,ready:false,userId:null,error:null,saved:false};
-const seededFilm = starter => ({...emptyFilm(),name:starter.title,script:starter.prompt,targetSeconds:starter.targetSeconds,
-  stack:{...emptyFilm().stack,video:modelIdForName(starter.model)||'',aspect:starter.aspect,seconds:'10'}});
+const seededFilm = starter => filmFromTemplate(starter, modelIdForName(starter.model) || '');
+
+function SelectedTemplate({ templateId, targetSeconds, pending = false }) {
+  const template = templateById(templateId);
+  if (!template) return null;
+  const clip = SHOWCASE_CLIPS[template.clipKey];
+  return <div className={`grid overflow-hidden rounded-xl border ${pending ? 'mt-3 border-vx-border bg-vx-base/60' : 'mb-7 border-vx-accent bg-vx-panel/50'} sm:grid-cols-[9rem_minmax(0,1fr)]`}>
+    {clip?.poster ? <img src={clip.poster} alt={`${presetTitle(template.name)} template preview`} className="h-36 w-full object-cover sm:h-full" style={{objectPosition:clip.objectPosition || '50% 50%'}}/> : <div className="h-28 bg-vx-panel"/>}
+    <div className="p-4">
+      <p className="font-vx-mono text-[10px] font-bold tracking-[0.14em] text-vx-accent">{pending ? 'READY TO START' : 'SELECTED TEMPLATE'}</p>
+      <h2 className="mt-1 text-lg font-black">{presetTitle(template.name)}</h2>
+      <p className="mt-1 text-xs text-vx-fg-muted">{template.category} · {template.model} · {targetSeconds}-second film</p>
+      <p className="mt-2 text-sm text-vx-fg-body">Its prompt, model, frame format and target runtime are linked to this Film Studio project.</p>
+      <Link href={templateHref(template)} className="mt-3 inline-block text-sm font-bold text-vx-accent">View template →</Link>
+    </div>
+  </div>;
+}
 export function FilmWorkspace() {
   const [state,setState]=useState(serverState);
   const [pendingStarter,setPendingStarter]=useState(null);
@@ -60,7 +76,8 @@ export function FilmWorkspace() {
       <FilmFiles film={film} onImport={next=>{update(next);setStage(accessibleStage(next));}}/>
     </header>
     {error&&<p role="alert" className="mb-5 text-sm text-vx-danger">{error}</p>}
-    {pendingStarter&&<div className="mb-5 rounded-xl border border-vx-accent p-4 text-sm"><p className="font-bold">A template is ready for a {pendingStarter.targetSeconds}-second film.</p><p className="mt-1 text-vx-fg-muted">Your current film is still here. Export it first if you want to keep a separate copy.</p><button type="button" className="mt-3 rounded-full bg-vx-accent px-4 py-2 font-bold text-vx-accent-ink" onClick={()=>{update(seededFilm(pendingStarter));setStage(0);setPendingStarter(null);}}>Start a new film from this template</button></div>}
+    {film.templateId&&<SelectedTemplate templateId={film.templateId} targetSeconds={film.targetSeconds}/>}
+    {pendingStarter&&<div className="mb-5 rounded-xl border border-vx-accent p-4 text-sm"><p className="font-bold">A template is ready for a {pendingStarter.targetSeconds}-second film.</p><p className="mt-1 text-vx-fg-muted">Your current film is still here. Export it first if you want to keep a separate copy.</p><SelectedTemplate templateId={pendingStarter.templateId} targetSeconds={pendingStarter.targetSeconds} pending/><button type="button" className="mt-3 rounded-full bg-vx-accent px-4 py-2 font-bold text-vx-accent-ink" onClick={()=>{update(seededFilm(pendingStarter));setStage(0);setPendingStarter(null);}}>Start a new film from this template</button></div>}
     <div className="grid items-start gap-7 lg:grid-cols-[240px_minmax(0,1fr)]">
       <nav aria-label="Film Studio stages"><ol className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1">{FILM_STAGES.map(([id,title],i)=><li key={id}>
         <button type="button" onClick={()=>setStage(i)} disabled={i>available} aria-current={i===current?'step':undefined} className={`w-full rounded-xl border p-3 text-left text-sm disabled:opacity-40 ${i===current?'border-vx-accent bg-vx-panel':'border-vx-border'}`}>
