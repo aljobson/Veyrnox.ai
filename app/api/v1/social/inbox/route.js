@@ -7,6 +7,7 @@ import { envConfig, rpc, SupabaseError } from '../../../../../packages/db/supaba
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const STATES = new Set(['all', 'unread', 'unresolved', 'resolved']);
 const KINDS = new Set(['message', 'comment', 'review']);
+const PRIORITIES = new Set(['normal', 'high', 'urgent']);
 const headers = { 'Cache-Control': 'no-store' };
 
 export async function GET(req) {
@@ -21,7 +22,14 @@ export async function GET(req) {
     const state = url.searchParams.get('state') || 'unresolved';
     const kind = url.searchParams.get('kind') || null;
     const search = url.searchParams.get('search')?.trim() || null;
+    const assignee = url.searchParams.get('assignee') || null;
+    const priority = url.searchParams.get('priority') || null;
+    const tag = url.searchParams.get('tag')?.trim().toLowerCase() || null;
     if ((accountId && !UUID.test(accountId)) || !STATES.has(state) || (kind && !KINDS.has(kind)) || (search && search.length > 100)) {
+        return NextResponse.json({ error: 'invalid_filter' }, { status: 400, headers });
+    }
+    if ((assignee && assignee !== 'unassigned' && !UUID.test(assignee)) || (priority && !PRIORITIES.has(priority))
+        || (tag && (tag.length > 32 || !/^[a-z0-9][a-z0-9 _-]*$/.test(tag)))) {
         return NextResponse.json({ error: 'invalid_filter' }, { status: 400, headers });
     }
     const limited = await accountReadLimit(authId, cfg, { counts: { all: 0, unread: 0, unresolved: 0 }, threads: [] });
@@ -31,9 +39,11 @@ export async function GET(req) {
     });
     if (brand.error) return brand.error;
     try {
-        const result = await rpc('list_social_inbox', { p_auth_id: brand.rpcAuthId, p_brand_id: brand.brandId,
-            p_account_id: accountId, p_state: state, p_kind: kind, p_search: search }, cfg);
-        if (result?.ok === true) return NextResponse.json({ brand_id: brand.brandId, counts: result.counts, threads: result.threads || [] }, { headers });
+        const result = await rpc('list_social_inbox', { p_auth_id: authId, p_brand_id: brand.brandId,
+            p_account_id: accountId, p_state: state, p_kind: kind, p_search: search,
+            p_assignee: assignee, p_priority: priority, p_tag: tag }, cfg);
+        if (result?.ok === true) return NextResponse.json({ brand_id: brand.brandId, counts: result.counts,
+            members: result.members || [], tags: result.tags || [], threads: result.threads || [] }, { headers });
         const status = result?.code === 'PLAN_REQUIRED' ? 402 : result?.code === 'ACCOUNT_NOT_FOUND' ? 404 : result?.code === 'INVALID_FILTER' ? 400 : 502;
         return NextResponse.json({ error: String(result?.code || 'internal').toLowerCase() }, { status, headers });
     } catch (error) {

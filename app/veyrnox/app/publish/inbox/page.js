@@ -6,7 +6,7 @@ import { AppNav } from '../../../_components/NavBar';
 import { Main } from '../../../_components/Main';
 import { getSession, onSessionChange } from '../../../../lib/authClient';
 import { listSocialAccounts, NETWORKS } from '../../../../lib/socialConnectClient';
-import { getSocialInboxThread, listSocialInbox, replyToSocialInboxThread, updateSocialInboxThread } from '../../../../lib/socialInboxClient';
+import { addSocialInboxNote, getSocialInboxThread, listSocialInbox, replyToSocialInboxThread, updateSocialInboxThread } from '../../../../lib/socialInboxClient';
 import NetworkLogo from '../NetworkLogo';
 import BrandSwitcher from '../BrandSwitcher';
 
@@ -52,13 +52,17 @@ function InboxDashboard() {
   const [accountId, setAccountId] = useState('');
   const [state, setState] = useState('unresolved');
   const [kind, setKind] = useState('');
+  const [assignee, setAssignee] = useState('');
+  const [priority, setPriority] = useState('');
+  const [tag, setTag] = useState('');
   const [searchDraft, setSearchDraft] = useState('');
   const [search, setSearch] = useState('');
   const [listing, setListing] = useState(null);
   const [selected, setSelected] = useState(null);
   const [error, setError] = useState('');
   const [refresh, setRefresh] = useState(0);
-  const canWrite = ['owner', 'manager', 'editor'].includes(brandRole);
+  const canTriage = ['owner', 'manager', 'editor', 'reviewer'].includes(brandRole);
+  const canReply = ['owner', 'manager', 'editor'].includes(brandRole);
 
   useEffect(() => {
     let active = true;
@@ -75,10 +79,11 @@ function InboxDashboard() {
   const load = useCallback(() => {
     if (paid !== true || enabled !== true) return;
     setError('');
-    listSocialInbox({ accountId: accountId || undefined, state, kind: kind || undefined, search: search || undefined })
+    listSocialInbox({ accountId: accountId || undefined, state, kind: kind || undefined, search: search || undefined,
+      assignee: assignee || undefined, priority: priority || undefined, tag: tag || undefined })
       .then((result) => setListing(result))
       .catch((nextError) => setError(errorText(nextError, 'Could not load conversations. Check your connection and try again.')));
-  }, [accountId, enabled, kind, paid, search, state]);
+  }, [accountId, assignee, enabled, kind, paid, priority, search, state, tag]);
   useEffect(() => { load(); }, [load, refresh]);
 
   if (error && error !== 'plan_required') return <p role="alert" className="text-sm text-vx-danger">{error}</p>;
@@ -91,17 +96,17 @@ function InboxDashboard() {
     try {
       const detail = await getSocialInboxThread(thread.id);
       setSelected(detail);
-      if (canWrite && thread.unread_count > 0) {
+      if (canTriage && thread.unread_count > 0) {
         await updateSocialInboxThread(thread.id, 'read');
         setRefresh((value) => value + 1);
       }
     } catch { setSelected({ error: true, summary: thread }); }
   }
 
-  async function act(action) {
+  async function act(action, value) {
     if (!selected?.thread) return;
     try {
-      await updateSocialInboxThread(selected.thread.id, action);
+      await updateSocialInboxThread(selected.thread.id, action, value);
       const detail = await getSocialInboxThread(selected.thread.id);
       setSelected(detail); setRefresh((value) => value + 1);
     } catch { setError('That conversation could not be updated. Try again.'); }
@@ -119,6 +124,22 @@ function InboxDashboard() {
         <label className="grid gap-1 text-xs font-bold text-vx-fg-muted">Activity
           <select className={input} value={kind} onChange={(event) => { setKind(event.target.value); setSelected(null); }}>
             {kinds.map((item) => <option key={item.key} value={item.key}>{item.label}</option>)}
+          </select>
+        </label>
+        <label className="grid gap-1 text-xs font-bold text-vx-fg-muted">Assigned to
+          <select className={input} value={assignee} onChange={(event) => { setAssignee(event.target.value); setSelected(null); }}>
+            <option value="">Anyone</option><option value="unassigned">Unassigned</option>
+            {(listing?.members || []).map((member) => <option key={member.user_id} value={member.user_id}>{member.email}</option>)}
+          </select>
+        </label>
+        <label className="grid gap-1 text-xs font-bold text-vx-fg-muted">Priority
+          <select className={input} value={priority} onChange={(event) => { setPriority(event.target.value); setSelected(null); }}>
+            <option value="">Any priority</option><option value="normal">Normal</option><option value="high">High</option><option value="urgent">Urgent</option>
+          </select>
+        </label>
+        <label className="grid gap-1 text-xs font-bold text-vx-fg-muted">Tag
+          <select className={input} value={tag} onChange={(event) => { setTag(event.target.value); setSelected(null); }}>
+            <option value="">Any tag</option>{(listing?.tags || []).map((item) => <option key={item} value={item}>{item}</option>)}
           </select>
         </label>
         <form className="flex flex-1 gap-2" onSubmit={(event) => { event.preventDefault(); setSearch(searchDraft.trim()); setSelected(null); }}>
@@ -147,13 +168,16 @@ function InboxDashboard() {
                 {thread.unread_count > 0 && <span className="rounded-full bg-vx-accent px-2 py-0.5 text-xs font-black text-black">{thread.unread_count}</span>}</span>
                 <span className="mt-1 block truncate text-xs text-vx-fg-muted">{label(thread.network)} · {thread.kind} · {thread.account_name || 'Account'}</span>
                 <span className="mt-2 block text-sm text-vx-fg-body line-clamp-2">{thread.preview || thread.subject || 'Media activity'}</span>
+                <span className="mt-2 flex flex-wrap gap-1">{thread.priority !== 'normal' && <span className="rounded-full border border-vx-border px-2 py-0.5 text-[11px] font-bold capitalize">{thread.priority}</span>}
+                  {thread.assigned_email && <span className="rounded-full border border-vx-border px-2 py-0.5 text-[11px]">{thread.assigned_email}</span>}
+                  {(thread.tags || []).map((item) => <span key={item} className="rounded-full bg-vx-panel px-2 py-0.5 text-[11px]">{item}</span>)}</span>
                 <span className="mt-2 block text-xs text-vx-fg-muted">{dateTime.format(new Date(thread.latest_message_at))}{thread.status === 'resolved' ? ' · Resolved' : ''}</span>
               </span>
             </div>
           </button>
         </li>)}</ul>
       </section>
-      <Conversation selected={selected} canWrite={canWrite} onAction={act} onReplied={async () => {
+      <Conversation selected={selected} members={listing?.members || []} canTriage={canTriage} canReply={canReply} onAction={act} onReplied={async () => {
         if (!selected?.thread) return;
         setSelected(await getSocialInboxThread(selected.thread.id)); setRefresh((value) => value + 1);
       }} />
@@ -175,7 +199,7 @@ function Empty({ accountId }) {
     <p className="mt-2 text-sm text-vx-fg-muted">{accountId ? 'This account has no matching conversations yet.' : 'Connected-platform conversations will appear here as their inbox permissions are approved and enabled.'}</p></div>;
 }
 
-function Conversation({ selected, canWrite, onAction, onReplied }) {
+function Conversation({ selected, members, canTriage, canReply, onAction, onReplied }) {
   if (!selected) return <section className="grid place-items-center p-8 text-center"><div><h2 className="font-bold">Choose a conversation</h2><p className="mt-2 text-sm text-vx-fg-muted">Open a message, comment or review to read its history and respond where supported.</p></div></section>;
   if (selected.loading) return <p className="p-6 text-sm text-vx-fg-muted">Loading conversation…</p>;
   if (selected.error) return <p role="alert" className="p-6 text-sm text-vx-danger">Could not load this conversation. Try again.</p>;
@@ -184,16 +208,59 @@ function Conversation({ selected, canWrite, onAction, onReplied }) {
     <header className="flex flex-wrap items-start justify-between gap-3 border-b border-vx-border p-4">
       <div><h2 className="flex items-center gap-2 font-bold"><NetworkLogo network={thread.network} />{thread.participant_name || 'Social user'}</h2>
         <p className="mt-1 text-xs text-vx-fg-muted">{label(thread.network)} · {thread.kind} · {thread.account_name || 'Account'}</p></div>
-      <div className="flex gap-2">{canWrite && <button type="button" className={button} onClick={() => onAction(thread.status === 'resolved' ? 'reopen' : 'resolve')}>{thread.status === 'resolved' ? 'Reopen' : 'Resolve'}</button>}
+      <div className="flex gap-2">{canTriage && <button type="button" className={button} onClick={() => onAction(thread.status === 'resolved' ? 'reopen' : 'resolve')}>{thread.status === 'resolved' ? 'Reopen' : 'Resolve'}</button>}
         {thread.provider_url && <a className={button} href={thread.provider_url} target="_blank" rel="noreferrer">Open on {label(thread.network)}</a>}</div>
     </header>
+    {canTriage && <Workflow key={`${thread.id}:${(thread.tags || []).join('|')}`} thread={thread} members={members} onAction={onAction} />}
     <ol className="flex-1 space-y-3 overflow-y-auto p-4">{messages.map((message) => <li key={message.id} className={`flex ${message.direction === 'outbound' ? 'justify-end' : 'justify-start'}`}>
       <div className={`max-w-[85%] rounded-2xl px-4 py-3 ${message.direction === 'outbound' ? 'bg-vx-accent text-black' : 'bg-vx-panel text-vx-fg'}`}>
         <p className="whitespace-pre-wrap text-sm">{message.body || 'Media attachment'}</p>
         <p className={`mt-2 text-xs ${message.direction === 'outbound' ? 'text-black/70' : 'text-vx-fg-muted'}`}>{dateTime.format(new Date(message.sent_at))}{message.delivery_status === 'failed' ? ' · Failed' : ''}</p>
       </div>
     </li>)}</ol>
-    {canWrite ? <Reply thread={thread} onReplied={onReplied} /> : <div className="border-t border-vx-border p-4"><p className="text-sm text-vx-fg-muted">Your team role can read this inbox but cannot reply or change conversation status.</p></div>}
+    <Notes thread={thread} notes={selected.notes || []} canWrite={canTriage} onAdded={onReplied} />
+    {canReply ? <Reply thread={thread} onReplied={onReplied} /> : <div className="border-t border-vx-border p-4"><p className="text-sm text-vx-fg-muted">Your team role can read this conversation{canTriage ? ' and manage its workflow' : ''}, but cannot reply.</p></div>}
+  </section>;
+}
+
+function Workflow({ thread, members, onAction }) {
+  const [tags, setTags] = useState((thread.tags || []).join(', '));
+  return <section aria-label="Conversation workflow" className="grid gap-3 border-b border-vx-border bg-vx-panel/40 p-4 sm:grid-cols-3">
+    <label className="grid gap-1 text-xs font-bold text-vx-fg-muted">Assigned to
+      <select className={input} value={thread.assigned_user_id || ''} onChange={(event) => onAction(event.target.value ? 'assign' : 'unassign', event.target.value ? { userId: event.target.value } : undefined)}>
+        <option value="">Unassigned</option>{members.map((member) => <option key={member.user_id} value={member.user_id}>{member.email}</option>)}
+      </select>
+    </label>
+    <label className="grid gap-1 text-xs font-bold text-vx-fg-muted">Priority
+      <select className={input} value={thread.priority || 'normal'} onChange={(event) => onAction('priority', { priority: event.target.value })}>
+        <option value="normal">Normal</option><option value="high">High</option><option value="urgent">Urgent</option>
+      </select>
+    </label>
+    <form className="grid gap-1" onSubmit={(event) => { event.preventDefault(); onAction('tags', { tags: tags.split(',').map((item) => item.trim()).filter(Boolean) }); }}>
+      <label className="text-xs font-bold text-vx-fg-muted" htmlFor={`tags-${thread.id}`}>Tags, separated by commas</label>
+      <div className="flex gap-2"><input id={`tags-${thread.id}`} className={`${input} min-w-0 flex-1`} value={tags} maxLength={320} onChange={(event) => setTags(event.target.value)} />
+        <button type="submit" className={button}>Save</button></div>
+    </form>
+  </section>;
+}
+
+function Notes({ thread, notes, canWrite, onAdded }) {
+  const [note, setNote] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  async function submit(event) {
+    event.preventDefault(); if (!note.trim() || busy) return;
+    setBusy(true); setError('');
+    try { await addSocialInboxNote(thread.id, note.trim()); setNote(''); await onAdded(); }
+    catch { setError('The internal note could not be saved. Try again.'); }
+    finally { setBusy(false); }
+  }
+  return <section aria-label="Internal notes" className="border-t border-vx-border bg-vx-panel/30 p-4">
+    <h3 className="text-sm font-black">Internal notes</h3>
+    {notes.length === 0 ? <p className="mt-2 text-xs text-vx-fg-muted">No team notes yet.</p> : <ol className="mt-3 space-y-2">{notes.map((item) => <li key={item.id} className="rounded-xl border border-vx-border bg-vx-bg p-3"><p className="whitespace-pre-wrap text-sm">{item.body}</p><p className="mt-2 text-xs text-vx-fg-muted">{item.actor_email} · {dateTime.format(new Date(item.created_at))}</p></li>)}</ol>}
+    {canWrite && <form onSubmit={submit} className="mt-3 flex gap-2"><input className={`${input} min-w-0 flex-1`} value={note} maxLength={2000} placeholder="Add a note for your team" onChange={(event) => setNote(event.target.value)} />
+      <button type="submit" className={button} disabled={busy || !note.trim()}>{busy ? 'Saving…' : 'Add note'}</button></form>}
+    {error && <p role="alert" className="mt-2 text-sm text-vx-danger">{error}</p>}
   </section>;
 }
 

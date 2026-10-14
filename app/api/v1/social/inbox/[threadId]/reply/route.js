@@ -31,12 +31,7 @@ export async function POST(req, context) {
     if (brand.error) return brand.error;
     let created;
     try {
-        const detail = await rpc('get_social_inbox_thread', { p_auth_id: brand.rpcAuthId, p_thread_id: threadId }, cfg);
-        const accounts = detail?.ok ? await rpc('list_social_accounts', { p_auth_id: brand.rpcAuthId, p_brand_id: brand.brandId }, cfg) : null;
-        if (!detail?.ok || !accounts?.ok || !accounts.accounts?.some((account) => account.id === detail.thread?.account_id)) {
-            return NextResponse.json({ error: 'thread_not_found' }, { status: 404, headers });
-        }
-        created = await rpc('create_social_inbox_reply', { p_auth_id: authId, p_thread_id: threadId,
+        created = await rpc('create_social_inbox_reply', { p_auth_id: authId, p_brand_id: brand.brandId, p_thread_id: threadId,
             p_body: body.body, p_idempotency_key: body.idempotencyKey }, cfg);
     }
     catch (error) {

@@ -22,24 +22,42 @@ const request = (method = 'GET', body) => new Request(`https://veyrnox.test/api/
     ...(body ? { body: JSON.stringify(body) } : {}),
 });
 
-test('thread detail and state updates stay owner-scoped through their RPCs', async () => {
+test('thread detail and state updates use the selected brand and actor identity', async () => {
     const calls = [];
     globalThis.fetch = async (url, init) => {
         const name = new URL(url).pathname.split('/').pop();
         calls.push({ name, body: JSON.parse(init.body) });
         if (name === 'get_or_create_default_social_brand') return Response.json({ ok: true, brand_id: brandId });
-        if (name === 'list_social_accounts') return Response.json({ ok: true, accounts: [{ id: accountId }] });
         if (name === 'consume_social_post_write_request') return Response.json({ ok: true });
         if (name === 'update_social_inbox_thread') return Response.json({ ok: true });
         return Response.json({ ok: true, thread: { id: threadId, account_id: accountId, can_reply: false }, messages: [{ id: messageId }] });
     };
     const detail = await threadRoute.GET(request(), context);
     assert.equal(detail.status, 200);
-    assert.deepEqual(await detail.json(), { thread: { id: threadId, account_id: accountId, can_reply: false }, messages: [{ id: messageId }] });
+    assert.deepEqual(await detail.json(), { thread: { id: threadId, account_id: accountId, can_reply: false }, messages: [{ id: messageId }], notes: [] });
     const updated = await threadRoute.PATCH(request('PATCH', { action: 'resolve' }), context);
     assert.equal(updated.status, 200);
-    assert.deepEqual(calls.map((call) => call.name), ['get_or_create_default_social_brand', 'get_social_inbox_thread', 'list_social_accounts', 'get_or_create_default_social_brand', 'consume_social_post_write_request', 'get_social_inbox_thread', 'list_social_accounts', 'update_social_inbox_thread']);
-    assert.deepEqual(calls.at(-1).body, { p_auth_id: auth, p_thread_id: threadId, p_action: 'resolve' });
+    assert.deepEqual(calls.map((call) => call.name), ['get_or_create_default_social_brand', 'get_social_inbox_thread', 'get_or_create_default_social_brand', 'consume_social_post_write_request', 'update_social_inbox_thread']);
+    assert.deepEqual(calls.at(-1).body, { p_auth_id: auth, p_brand_id: brandId, p_thread_id: threadId, p_action: 'resolve' });
+});
+
+test('thread workflow changes and notes are validated and recorded through dedicated RPCs', async () => {
+    const calls = [];
+    globalThis.fetch = async (url, init) => {
+        const name = new URL(url).pathname.split('/').pop(); calls.push({ name, body: JSON.parse(init.body) });
+        if (name === 'get_or_create_default_social_brand') return Response.json({ ok: true, brand_id: brandId });
+        if (name === 'consume_social_post_write_request') return Response.json({ ok: true });
+        if (name === 'add_social_inbox_note') return Response.json({ ok: true, note: { id: messageId, body: 'Escalate this customer.' } });
+        return Response.json({ ok: true });
+    };
+    const priority = await threadRoute.PATCH(request('PATCH', { action: 'priority', priority: 'urgent' }), context);
+    assert.equal(priority.status, 200);
+    assert.deepEqual(calls.at(-1).body, { p_auth_id: auth, p_brand_id: brandId, p_thread_id: threadId,
+        p_action: 'priority', p_value: { priority: 'urgent' } });
+    const note = await threadRoute.POST(request('POST', { note: ' Escalate this customer. ' }), context);
+    assert.equal(note.status, 201);
+    assert.deepEqual(await note.json(), { note: { id: messageId, body: 'Escalate this customer.' } });
+    assert.deepEqual(calls.at(-1).body, { p_auth_id: auth, p_brand_id: brandId, p_thread_id: threadId, p_body: 'Escalate this customer.' });
 });
 
 test('thread updates reject unknown actions before consuming the write bucket', async () => {
@@ -60,8 +78,6 @@ test('comment replies decrypt the stored token only server-side and finalize pro
             calls.push({ kind: 'rpc', name, body: JSON.parse(init.body) });
             if (name === 'get_or_create_default_social_brand') return Response.json({ ok: true, brand_id: brandId });
             if (name === 'consume_social_post_write_request') return Response.json({ ok: true });
-            if (name === 'get_social_inbox_thread') return Response.json({ ok: true, thread: { id: threadId, account_id: accountId } });
-            if (name === 'list_social_accounts') return Response.json({ ok: true, accounts: [{ id: accountId }] });
             if (name === 'create_social_inbox_reply') return Response.json({ ok: true, idempotent: false,
                 message_id: messageId, network: 'instagram', provider_thread_id: 'comment-42', access_token_enc: encrypted });
             if (name === 'finish_social_inbox_reply') return Response.json({ ok: true });
@@ -81,6 +97,7 @@ test('comment replies decrypt the stored token only server-side and finalize pro
     assert.equal(provider.authorization, 'Bearer provider-access-token');
     assert.equal(provider.message, 'Thanks for the comment.');
     assert.deepEqual(calls.filter((call) => call.kind === 'rpc').map((call) => call.name),
-        ['consume_social_post_write_request', 'get_or_create_default_social_brand', 'get_social_inbox_thread', 'list_social_accounts', 'create_social_inbox_reply', 'finish_social_inbox_reply']);
+        ['consume_social_post_write_request', 'get_or_create_default_social_brand', 'create_social_inbox_reply', 'finish_social_inbox_reply']);
+    assert.equal(calls.find((call) => call.name === 'create_social_inbox_reply').body.p_brand_id, brandId);
     assert.equal(JSON.stringify(responseBody).includes('provider-access-token'), false);
 });

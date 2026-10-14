@@ -18,21 +18,24 @@ function stub(results = {}) {
         calls.push({ name, args: JSON.parse(init.body) });
         return Response.json(results[name] ?? ({ consume_account_read_request: { ok: true },
             get_or_create_default_social_brand: { ok: true, brand_id: brand },
-            list_social_inbox: { ok: true, counts: { all: 1, unread: 1, unresolved: 1 }, threads: [{ id: 'thread' }] } })[name]);
+            list_social_inbox: { ok: true, counts: { all: 1, unread: 1, unresolved: 1 }, members: [{ user_id: auth, email: 'owner@test' }], tags: ['sales'], threads: [{ id: 'thread' }] } })[name]);
     };
 }
 
-test('lists a paid inbox using server-owned identity and validated filters', async () => {
+test('lists a paid inbox using actor identity and validated workflow filters', async () => {
     stub();
-    const response = await GET(request(`?accountId=${account}&state=unread&kind=comment&search=hello`));
+    const response = await GET(request(`?accountId=${account}&state=unread&kind=comment&search=hello&assignee=unassigned&priority=high&tag=sales`));
     assert.equal(response.status, 200);
-    assert.deepEqual(await response.json(), { brand_id: brand, counts: { all: 1, unread: 1, unresolved: 1 }, threads: [{ id: 'thread' }] });
+    assert.deepEqual(await response.json(), { brand_id: brand, counts: { all: 1, unread: 1, unresolved: 1 },
+        members: [{ user_id: auth, email: 'owner@test' }], tags: ['sales'], threads: [{ id: 'thread' }] });
     assert.deepEqual(calls.at(-1), { name: 'list_social_inbox', args: { p_auth_id: auth, p_brand_id: brand,
-        p_account_id: account, p_state: 'unread', p_kind: 'comment', p_search: 'hello' } });
+        p_account_id: account, p_state: 'unread', p_kind: 'comment', p_search: 'hello',
+        p_assignee: 'unassigned', p_priority: 'high', p_tag: 'sales' } });
 });
 
 test('rejects malformed identities and filters before inbox storage is read', async () => {
-    for (const [url, identity] of [['', 'bad'], ['?state=unknown', auth], ['?accountId=bad', auth], [`?search=${'x'.repeat(101)}`, auth]]) {
+    for (const [url, identity] of [['', 'bad'], ['?state=unknown', auth], ['?accountId=bad', auth], [`?search=${'x'.repeat(101)}`, auth],
+        ['?assignee=bad', auth], ['?priority=low', auth], ['?tag=%3Cscript%3E', auth]]) {
         stub(); const response = await GET(request(url, identity));
         assert.equal(response.status, identity === 'bad' ? 401 : 400);
         assert.equal(calls.length, 0);
