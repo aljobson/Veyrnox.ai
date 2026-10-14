@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { accountReadLimit } from '../../../../../lib/accountReadLimit.js';
-import { calendarEnabled } from '../../../../../lib/social/publishFeature.js';
+import { calendarEnabled, publishPlansEnabled } from '../../../../../lib/social/publishFeature.js';
+import { readPublishEntitlement } from '../../../../../lib/social/publishPlanApi.js';
 import { instant, POST_STATUSES, UUID_RE } from '../../../../../lib/social/calendar.js';
 const NETWORK_KEYS = new Set(['instagram','facebook','twitter','linkedin','tiktok','youtube','pinterest','threads','bluesky','twitch','gmb']);
 import { rpc, envConfig } from '../../../../../packages/db/supabase-client.js';
@@ -19,6 +20,13 @@ export async function GET(req) {
     }
     const cfg=envConfig();
     if (!cfg.supabaseUrl || !cfg.serviceRoleKey) return NextResponse.json({error:'supabase_not_configured'},{status:503});
+    if (publishPlansEnabled()) {
+        try {
+            const entitlement=await readPublishEntitlement(authId,cfg);
+            if(!entitlement)return NextResponse.json({error:'internal'},{status:502});
+            if(entitlement.tier!=='publish')return NextResponse.json({error:'publish_plan_required',feature:'calendar'},{status:402});
+        } catch { return NextResponse.json({error:'internal'},{status:502}); }
+    }
     const limited=await accountReadLimit(authId,cfg,{posts:[],next:null});if(limited)return limited;
     const {brandId,error}=await resolveBrand(authId,cfg,'social/calendar:GET');if(error)return error;
     try {

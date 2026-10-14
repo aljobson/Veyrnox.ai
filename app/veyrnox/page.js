@@ -81,9 +81,9 @@ export default async function VeyrnoxLanding() {
         <div className="border-t border-vx-border pt-16">
         <h2 id="publish-title" className="vx-display text-[36px] sm:text-[48px]">Veyrnox Publish</h2>
         <p className="mt-5 max-w-[68ch] text-vx-fg-body text-[16px] leading-[1.7]">
-          Our social publishing workspace is being prepared for release, starting with YouTube.
-          Connect your channel, choose a video from your Library, and choose Post now or Schedule post.
-          A calendar keeps track of your posts, and basic analytics shows your connected channel and video statistics.
+          Connect a social account, choose media from your Library or device, and publish immediately.
+          The Publish Plan adds multi-account publishing, scheduling and rescheduling, a content calendar,
+          cross-account analytics, CSV exports, and best-time and posting-frequency recommendations.
         </p>
         <p className="mt-4 max-w-[68ch] text-vx-fg-body text-[16px] leading-[1.7]">
           Connecting YouTube is a separate consent step from signing in to Veyrnox.ai.

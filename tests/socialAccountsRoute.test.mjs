@@ -25,6 +25,7 @@ function stub(results = {}) {
             consume_account_read_request: { ok: true },
             get_or_create_default_social_brand: { ok: true, idempotent: true, brand_id: brandId, label: 'My Brand', timezone: 'UTC' },
             list_social_accounts: { ok: true, accounts: [] },
+            read_social_publish_entitlement: { ok: true, tier: 'free', account_limit: 1, analytics_days: 0, best_time_enabled: false, subscription: null },
         })[name];
         if (result instanceof Error) throw result;
         return Response.json(result);
@@ -96,16 +97,18 @@ test('an account list failure never leaks upstream detail', async () => {
     assert.deepEqual(await res.json(), { error: 'internal' });
 });
 
-test('account allowance follows the exact server rollout flag, without client overrides', async () => {
-    const previous = process.env.PUBLISH_MULTI_ACCOUNT_ENABLED;
+test('account allowance follows the authenticated Publish entitlement, without client overrides', async () => {
+    const previous = process.env.PUBLISH_PLANS_ENABLED;
     try {
-        for (const flag of ['true', 'false', 'TRUE', '1']) {
-            process.env.PUBLISH_MULTI_ACCOUNT_ENABLED = flag; stub();
-            const res = await GET(request({ 'x-veyrnox-account-limit': '50' }));
-            assert.equal((await res.json()).accountLimit, flag === 'true' ? 5 : 1);
-        }
+        process.env.PUBLISH_PLANS_ENABLED = 'true';
+        stub();
+        let body = await (await GET(request({ 'x-veyrnox-account-limit': '50' }))).json();
+        assert.deepEqual([body.accountLimit, body.planTier], [1, 'free']);
+        stub({ read_social_publish_entitlement: { ok: true, tier: 'publish', account_limit: 5, analytics_days: 366, best_time_enabled: true, subscription: { id: 'paid' } } });
+        body = await (await GET(request({ 'x-veyrnox-account-limit': '50' }))).json();
+        assert.deepEqual([body.accountLimit, body.planTier], [5, 'publish']);
     } finally {
-        if (previous === undefined) delete process.env.PUBLISH_MULTI_ACCOUNT_ENABLED;
-        else process.env.PUBLISH_MULTI_ACCOUNT_ENABLED = previous;
+        if (previous === undefined) delete process.env.PUBLISH_PLANS_ENABLED;
+        else process.env.PUBLISH_PLANS_ENABLED = previous;
     }
 });

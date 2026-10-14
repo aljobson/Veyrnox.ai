@@ -119,7 +119,7 @@ should look*.
    [06-oauth-review-runbook.md §6.0](06-oauth-review-runbook.md#60-review-status-by-network-2026-10-08).
 3. **Publish billing rollout** — built but default-off: migration 0293 and the Stripe lifecycle must
    pass staging payment acceptance before `PUBLISH_RUNTIME_FLAGS.plans` is enabled. Five connected accounts
-   and basic scheduling remain free; $15/month unlocks 366-day analytics and best-time recommendations.
+   Post now on one connected account remains free; $15/month unlocks up to five accounts, scheduling, analytics and best-time recommendations.
 4. **Does Veyrnox already have a Metricool account for its own brand?** Yes — `getBrandSettings`
    shows a connected brand (`Veyrnox`, blogId `6457974`) with Instagram/X/LinkedIn/TikTok/YouTube
    linked. That account belongs to the separate sibling Veyrnox business's socials, not Veyrnox.ai's (hard wall in `CLAUDE.md`);

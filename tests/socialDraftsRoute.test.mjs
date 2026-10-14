@@ -32,6 +32,7 @@ function stub(results = {}) {
             consume_social_post_write_request: { ok: true },
             get_or_create_default_social_brand: { ok: true, idempotent: true, brand_id: brandId },
             list_social_post_drafts: { ok: true, drafts: [] },
+            read_social_publish_entitlement: { ok: true, tier: 'publish', account_limit: 5, analytics_days: 366, best_time_enabled: true, subscription: null },
             approve_social_post_batch: { ok: true, approved: 3, failed: 1 },
             discard_social_post_drafts: { ok: true, discarded: 1 },
         })[name];
@@ -83,6 +84,24 @@ test('approve schedules the batch through the write limit and the owner\'s brand
     assert.deepEqual(await res.json(), { approved: 3, failed: 1 });
     assert.deepEqual(names(), ['consume_social_post_write_request', 'get_or_create_default_social_brand', 'approve_social_post_batch']);
     assert.deepEqual(calls[2].args, { p_auth_id: auth, p_brand_id: brandId, p_batch_id: batchId });
+});
+
+test('Free cannot approve a draft batch into the schedule while plans are enabled', async () => {
+    process.env.PUBLISH_PLANS_ENABLED = 'true';
+    try {
+        stub({ read_social_publish_entitlement: {
+            ok: true, tier: 'free', account_limit: 1, analytics_days: 0,
+            best_time_enabled: false, subscription: null,
+        } });
+        const res = await POST(postRequest({ action: 'approve', batchId }));
+        assert.equal(res.status, 402);
+        assert.deepEqual(await res.json(), { error: 'publish_plan_required', feature: 'scheduling' });
+        assert.deepEqual(names(), ['read_social_publish_entitlement']);
+
+        stub();
+        assert.equal((await POST(postRequest({ action: 'discard', batchId }))).status, 200);
+        assert.equal(names().includes('discard_social_post_drafts'), true);
+    } finally { delete process.env.PUBLISH_PLANS_ENABLED; }
 });
 
 test('discard takes one post or the whole batch', async () => {

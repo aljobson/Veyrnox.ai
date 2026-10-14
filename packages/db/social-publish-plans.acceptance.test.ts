@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import pg from 'pg';
 
-describe('social Publish Plan entitlement (0293)', { skip: !process.env.DATABASE_URL }, () => {
+describe('social Publish Plan entitlement (0293, 0298)', { skip: !process.env.DATABASE_URL }, () => {
   let pool: pg.Pool;
   const one = async (sql: string, args: unknown[] = []) => (await pool.query(sql, args)).rows[0];
   const value = async (sql: string, args: unknown[] = []) => (await one(sql, args)).value;
@@ -16,8 +16,11 @@ describe('social Publish Plan entitlement (0293)', { skip: !process.env.DATABASE
         IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = r) THEN EXECUTE format('CREATE ROLE %I NOLOGIN', r); END IF;
       END LOOP; END $$`);
     const migration = await readFile(new URL('./schema/supabase/0293_social_publish_plans.sql', import.meta.url), 'utf8');
+    const entitlementMigration = await readFile(new URL('./schema/supabase/0298_social_publish_paid_entitlements.sql', import.meta.url), 'utf8');
     await pool.query(migration);
     await pool.query(migration);
+    await pool.query(entitlementMigration);
+    await pool.query(entitlementMigration);
   });
 
   after(async () => { if (pool) await pool.end(); });
@@ -44,7 +47,7 @@ describe('social Publish Plan entitlement (0293)', { skip: !process.env.DATABASE
     assert.deepEqual(plans, [{ id: 'publish', name: 'Publish Plan', billing_interval: 'month', price_usd_cents: 1500, analytics_days: 366, best_time_enabled: true }]);
     const auth = await user();
     const own = await entitlement(auth);
-    assert.deepEqual([own.tier, own.account_limit, own.analytics_days, own.best_time_enabled, own.subscription], ['free', 5, 30, false, null]);
+    assert.deepEqual([own.tier, own.account_limit, own.analytics_days, own.best_time_enabled, own.subscription], ['free', 1, 0, false, null]);
   });
 
   it('activates from a signed binding, grants advanced features, and ignores older events', async () => {
@@ -58,7 +61,7 @@ describe('social Publish Plan entitlement (0293)', { skip: !process.env.DATABASE
     const active = await apply(`evt_active_${suffix}`, `sub_${suffix}`, created.subscription_id, 'active', initialAt);
     assert.deepEqual([active.ok, active.status, active.flagged], [true, 'active', false]);
     const own = await entitlement(auth);
-    assert.deepEqual([own.tier, own.analytics_days, own.best_time_enabled], ['publish', 366, true]);
+    assert.deepEqual([own.tier, own.account_limit, own.analytics_days, own.best_time_enabled], ['publish', 5, 366, true]);
     const stale = await apply(`evt_old_${suffix}`, `sub_${suffix}`, null, 'ended', new Date(Date.parse(initialAt) - 1000).toISOString());
     assert.deepEqual([stale.stale, stale.status], [true, 'active']);
     assert.equal((await entitlement(auth)).tier, 'publish');

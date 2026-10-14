@@ -88,7 +88,7 @@ function MediaPicker({ selected, onSelect }) {
     );
 }
 
-export function Composer({ accounts, onScheduled, initialJobId = null, initialUploadId = null, uploadsEnabled = false, youtubeVisibilityEnabled = false }) {
+export function Composer({ accounts, onScheduled, initialJobId = null, initialUploadId = null, uploadsEnabled = false, youtubeVisibilityEnabled = false, scheduleEnabled = true, multiAccountEnabled = true }) {
     const activeAccounts = (accounts || []).filter((a) => a.status === 'active' && a.publishingEnabled !== false && (a.supportedMedia || NETWORKS.find((n) => n.key === a.network)?.media.filter(t => t !== 'video' || a.network === 'youtube'))?.length);
     const [selectedAccountIds, setSelectedAccountIds] = useState(() => new Set());
     const [caption, setCaption] = useState('');
@@ -145,6 +145,7 @@ export function Composer({ accounts, onScheduled, initialJobId = null, initialUp
 
     function toggleAccount(id) {
         setSelectedAccountIds((prev) => {
+            if (!multiAccountEnabled && !prev.has(id)) return new Set([id]);
             const next = new Set(prev);
             if (next.has(id)) next.delete(id); else next.add(id);
             return next;
@@ -219,6 +220,7 @@ export function Composer({ accounts, onScheduled, initialJobId = null, initialUp
                         );
                     })}
                 </ul>
+                {!multiAccountEnabled && activeAccounts.length > 1 && <p className="mt-2 text-xs text-vx-fg-muted">Free posts to one account at a time. <Link href="/app/publish/plan" className="font-bold text-vx-accent underline">Upgrade for multi-account publishing</Link>.</p>}
             </div>
 
             {hasTiktokVideo && <p className="text-sm text-vx-fg-muted">TikTok receives an inbox draft at the chosen time. Finish caption, any AI disclosure and posting in TikTok; this does not publish automatically.</p>}
@@ -273,16 +275,12 @@ export function Composer({ accounts, onScheduled, initialJobId = null, initialUp
                 )}
             </div>
 
-            <div>
+            {scheduleEnabled ? <div>
                 <label htmlFor="publish-schedule" className="text-sm font-bold mb-2 block">Schedule for</label>
-                <input
-                    id="publish-schedule"
-                    type="datetime-local"
-                    value={scheduledAt}
-                    onChange={(e) => setScheduledAt(e.target.value)}
-                    className="rounded-lg border border-vx-border bg-transparent px-3 py-2 text-sm"
-                />
-            </div>
+                <input id="publish-schedule" type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} className="rounded-lg border border-vx-border bg-transparent px-3 py-2 text-sm" />
+            </div> : <p className="rounded-xl border border-vx-accent/40 bg-vx-accent/[0.06] p-3 text-sm text-vx-fg-body">
+                Post now is included with Free. <Link href="/app/publish/plan" className="font-bold text-vx-accent underline">Upgrade to schedule posts</Link>.
+            </p>}
 
             {error && <p role="alert" className="text-sm text-vx-danger">{error}</p>}
             {success && <p className="text-sm text-vx-accent">{success}</p>}
@@ -291,11 +289,11 @@ export function Composer({ accounts, onScheduled, initialJobId = null, initialUp
                 <button type="submit" value="now" formNoValidate disabled={submitting || loadingMedia || uploading || !activeAccounts.length} className={primaryButton}>
                     {submitting === 'now' ? 'Submitting…' : 'Post now'}
                 </button>
-                <button type="submit" value="schedule" disabled={submitting || loadingMedia || uploading || !activeAccounts.length} className={button}>
+                {scheduleEnabled && <button type="submit" value="schedule" disabled={submitting || loadingMedia || uploading || !activeAccounts.length} className={button}>
                     {submitting === 'schedule' ? 'Scheduling…' : 'Schedule post'}
-                </button>
+                </button>}
             </div>
-            <p className="text-xs text-vx-fg-muted">Post now starts publishing as soon as possible. Schedule post uses the date and time above. Publishing can take a few minutes.</p>
+            <p className="text-xs text-vx-fg-muted">Post now starts publishing as soon as possible.{scheduleEnabled ? ' Schedule post uses the date and time above.' : ''} Publishing can take a few minutes.</p>
         </form>
     );
 }
@@ -320,7 +318,7 @@ function TargetBadge({ target }) {
     );
 }
 
-export function ScheduledPosts({ refreshToken }) {
+export function ScheduledPosts({ refreshToken, scheduleEnabled = true }) {
     const [posts, setPosts] = useState(null);
     const [calendarOpen, setCalendarOpen] = useState(false);
     const [loadError, setLoadError] = useState('');
@@ -342,7 +340,7 @@ export function ScheduledPosts({ refreshToken }) {
 
     return (
         <div>
-        {calendarOpen && <Link href="/app/publish/calendar" className="inline-block text-sm text-vx-accent underline mb-4">Open calendar</Link>}
+        {calendarOpen && scheduleEnabled && <Link href="/app/publish/calendar" className="inline-block text-sm text-vx-accent underline mb-4">Open calendar</Link>}
         {posts.length === 0 && <p className="text-sm text-vx-fg-muted">Nothing scheduled yet.</p>}
         <ul className="space-y-3">
             {posts.map((p) => (

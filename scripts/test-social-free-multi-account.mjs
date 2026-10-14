@@ -13,6 +13,15 @@ const signature = 'public.record_social_multi_account_connection(text,uuid,text,
 const argsFor = (u, external = randomUUID(), brand = u.brand) => [u.auth, brand, 'youtube', external, 'Fixture', null, ['scope'], Buffer.from('cipher'), null, null];
 const sql = 'SELECT public.record_social_multi_account_connection($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) AS r';
 const connect = (args, db = c) => db.query(sql, args).then(r => r.rows[0].r);
+const startPlan = (auth, key = `publish-${randomUUID().replaceAll('-', '')}`) => val(
+    'SELECT public.start_social_publish_subscription($1,$2,$3,$4,5,600) AS r',
+    [auth, 'publish', key, 'publish-plan-ci'],
+);
+const activatePlan = (subscriptionId, suffix = randomUUID().replaceAll('-', '')) => val(
+    'SELECT public.apply_social_publish_subscription_event($1,$2,$3,$4,$5,$6,$7,$8,$9) AS r',
+    [`evt_${suffix}`, 'customer.subscription.updated', subscriptionId, `sub_${suffix}`, `cus_${suffix}`, 'active',
+        new Date(Date.now() + 31 * 86400000).toISOString(), false, new Date().toISOString()],
+);
 async function user() {
     const auth = randomUUID();
     await q('INSERT INTO auth.users(id,email) VALUES($1,$2)', [auth, `${auth}@example.invalid`]);
@@ -31,27 +40,36 @@ try {
     assert.equal((await connect(argsFor({ ...a, auth: 'bad' }))).code, 'USER_NOT_FOUND');
     assert.equal((await connect(argsFor({ ...a, auth: randomUUID() }))).code, 'USER_NOT_FOUND');
     assert.equal((await connect(argsFor({ ...b, brand: a.brand }))).code, 'BRAND_NOT_FOUND');
-    const channels = Array.from({ length: 5 }, () => randomUUID());
-    for (const channel of channels) assert.equal((await connect(argsFor(a, channel))).ok, true);
-    assert.deepEqual(await connect(argsFor(a)), { ok: false, code: 'ACCOUNT_LIMIT', limit: 5 });
-    // Every brand owned by this user consumes the same allowance.
+    const freeChannel = randomUUID();
+    assert.equal((await connect(argsFor(a, freeChannel))).ok, true);
+    assert.deepEqual(await connect(argsFor(a)), { ok: false, code: 'ACCOUNT_LIMIT', limit: 1 });
+    // Every brand owned by this user consumes the same free allowance.
     const secondBrand = randomUUID();
     await q("INSERT INTO public.social_brands(id,owner_user_id,label) VALUES($1,$2,'Fixture brand')", [secondBrand, a.id]);
     assert.equal((await connect(argsFor(a, randomUUID(), secondBrand))).code, 'ACCOUNT_LIMIT');
-    const reconnect = await connect(argsFor(a, channels[0]));
+    const reconnect = await connect(argsFor(a, freeChannel));
     assert.equal(reconnect.ok, true); assert.equal(reconnect.idempotent, true);
     const disconnected = await val('SELECT public.disconnect_social_account($1,$2) AS r', [a.auth, reconnect.account_id]);
     assert.equal(disconnected.ok, true);
     const replacement = await connect(argsFor(a, randomUUID(), secondBrand)); assert.equal(replacement.ok, true);
-    assert.equal((await connect(argsFor(a, channels[0]))).code, 'ACCOUNT_LIMIT', 'revoked reconnect consumes a slot');
-    // An old deployment cannot silently open the new allowance.
+    assert.equal((await connect(argsFor(a, freeChannel))).code, 'ACCOUNT_LIMIT', 'revoked reconnect consumes a slot');
+    // The legacy callback cannot silently bypass the paid boundary.
     assert.equal((await val(sql.replace('record_social_multi_account_connection', 'record_social_account_connection'), argsFor(a))).code, 'ACCOUNT_LIMIT');
-    // Grandfathered accounts may refresh, but cannot add or reactivate at/over the cap.
-    const sixth = randomUUID();
-    await q("INSERT INTO public.social_accounts(brand_id,network,external_account_id,access_token_enc,status) VALUES($1,'youtube',$2,$3,'active')", [a.brand, sixth, Buffer.from('cipher')]);
-    assert.equal((await connect(argsFor(a, sixth))).ok, true);
+    // Grandfathered accounts may refresh, but cannot add or reactivate over the free cap.
+    const grandfathered = randomUUID();
+    await q("INSERT INTO public.social_accounts(brand_id,network,external_account_id,access_token_enc,status) VALUES($1,'youtube',$2,$3,'active')", [a.brand, grandfathered, Buffer.from('cipher')]);
+    assert.equal((await connect(argsFor(a, grandfathered))).ok, true);
     assert.equal((await connect(argsFor(a))).code, 'ACCOUNT_LIMIT');
-    assert.equal((await connect(argsFor(a, channels[0]))).code, 'ACCOUNT_LIMIT');
+    assert.equal((await connect(argsFor(a, freeChannel))).code, 'ACCOUNT_LIMIT');
+
+    // A live Publish Plan raises the same user-wide cap to five accounts.
+    const started = await startPlan(b.auth);
+    assert.equal(started.ok, true);
+    assert.equal((await activatePlan(started.subscription_id)).ok, true);
+    const paidChannels = Array.from({ length: 5 }, () => randomUUID());
+    for (const channel of paidChannels) assert.equal((await connect(argsFor(b, channel))).ok, true);
+    assert.deepEqual(await connect(argsFor(b)), { ok: false, code: 'ACCOUNT_LIMIT', limit: 5 });
+    assert.equal((await connect(argsFor(b, paidChannels[0]))).ok, true, 'paid active reconnect remains idempotent');
     assert.equal(await val('SELECT count(*)::int AS r FROM public.ledger_entries'), ledger);
     assert.deepEqual(await q('SELECT user_id,balance,free_balance,subscription_balance FROM public.credit_balances ORDER BY user_id'), balances);
     for (const fn of ['reconcile_balances','reconcile_free_credits','reconcile_top_ups','reconcile_failed_refunds','reconcile_subscription_credits','reconcile_free_allowance','reconcile_referrals']) {
@@ -65,17 +83,16 @@ try {
     assert.equal(await val("SELECT has_function_privilege('service_role',$1,'EXECUTE') AS r", [signature]), true);
     const def = (await q("SELECT proconfig,prosecdef FROM pg_proc WHERE oid=$1::regprocedure", [signature]))[0];
     assert.equal(def.prosecdef, true); assert.ok(def.proconfig.includes('search_path=""'));
-    await q('SET LOCAL ROLE service_role'); assert.equal((await connect(argsFor(b))).ok, true); await q('RESET ROLE');
+    await q('SET LOCAL ROLE service_role'); assert.equal((await connect(argsFor(b, paidChannels[0]))).ok, true); await q('RESET ROLE');
     await q('ROLLBACK');
     // Commit only synthetic local fixtures so independent connections can see them.
     const race = await user();
-    for (let i = 0; i < 4; i++) assert.equal((await connect(argsFor(race))).ok, true);
     const results = await Promise.all(Array.from({ length: 2 }, async () => {
         const db = new pg.Client({ connectionString: url }); await db.connect();
         try { return await connect(argsFor(race), db); } finally { await db.end(); }
     }));
     assert.equal(results.filter(r => r.ok).length, 1);
     assert.equal(results.filter(r => r.code === 'ACCOUNT_LIMIT').length, 1);
-    assert.equal(await val("SELECT count(*)::int AS r FROM public.social_accounts a JOIN public.social_brands b ON b.id=a.brand_id WHERE b.owner_user_id=$1 AND a.status='active'", [race.id]), 5);
-    console.log('Free multi-account Publish: five free slots, sixth denial, cross-brand cap, reconnect/revoked/grandfathered behavior, ownership/ACL, unchanged ledger and competing callbacks passed');
+    assert.equal(await val("SELECT count(*)::int AS r FROM public.social_accounts a JOIN public.social_brands b ON b.id=a.brand_id WHERE b.owner_user_id=$1 AND a.status='active'", [race.id]), 1);
+    console.log('Publish account entitlements: one free slot, five paid slots, cross-brand cap, reconnect/revoked/grandfathered behavior, ownership/ACL, unchanged ledger and competing callbacks passed');
 } finally { await c.query('ROLLBACK').catch(() => {}); await c.end(); }

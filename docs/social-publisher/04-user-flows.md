@@ -50,7 +50,7 @@ Each flow lists the trigger, steps, system behavior, and edge cases. States refe
 **Edge cases:**
 - Free users can connect **five** active accounts when the multi-account rollout is enabled. The page and
   database enforce the same limit. The $15 Publish Plan does not raise that cap; it unlocks full analytics
-  history and best-time recommendations, while basic scheduling remains free.
+  history and best-time recommendations. Free includes one connected account and Post now.
 - Platform error or a failed exchange: the callback page shows a network-specific message and "Nothing
   was connected. Go back and try again." The provider's own error text is not surfaced.
 - A personal Instagram account cannot complete Instagram Login for publishing (Business or Creator

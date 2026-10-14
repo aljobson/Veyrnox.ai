@@ -97,7 +97,9 @@ function Plan() {
         <div>
           <p className="text-xs font-bold uppercase tracking-widest text-vx-accent">Current plan</p>
           <h2 id="current-plan" className="mt-2 text-2xl font-black">{paid ? 'Publish Plan' : 'Free'}</h2>
-          <p className="mt-2 text-sm text-vx-fg-muted">{entitlement?.account_limit || 5} connected accounts and basic scheduling are included.</p>
+          <p className="mt-2 text-sm text-vx-fg-muted">{paid
+            ? `Up to ${entitlement?.account_limit || 5} connected accounts, scheduling and analytics are included.`
+            : 'One connected account and Post now are included.'}</p>
         </div>
         <span className="rounded-full border border-vx-border px-3 py-1 text-xs font-bold">{paid ? 'Active' : 'Free'}</span>
       </div>
@@ -117,9 +119,13 @@ function Plan() {
       <h2 id="choose-plan" className="mt-2 text-2xl font-black">Publish Plan</h2>
       <p className="mt-3 text-4xl font-black">{money.format(plan.price_usd_cents / 100)}<span className="text-base font-normal text-vx-fg-muted"> / month</span></p>
       <ul className="mt-5 space-y-2 text-sm text-vx-fg-body">
-        <li>✓ 12 months of analytics history</li>
-        <li>✓ Best-time recommendations from your posting history</li>
-        <li>✓ {entitlement?.account_limit || 5} connected accounts and unlimited fair-use scheduling</li>
+        <li>✓ Up to 5 connected accounts</li>
+        <li>✓ Multi-account publishing</li>
+        <li>✓ Unlimited fair-use scheduling</li>
+        <li>✓ Calendar and post rescheduling</li>
+        <li>✓ Cross-account analytics and 12 months of history</li>
+        <li>✓ CSV analytics exports</li>
+        <li>✓ Best-time and posting-frequency recommendations</li>
       </ul>
       <p className="mt-5 text-xs text-vx-fg-muted">Monthly billing in USD. Tax is calculated at checkout. Cancel any time.</p>
       <label className="mt-4 flex items-start gap-3 text-sm text-vx-fg-body">

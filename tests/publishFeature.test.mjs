@@ -84,11 +84,11 @@ test('production activates only YouTube, LinkedIn and X; staging remains enabled
     assert.match(staging, /"PUBLISH_ENABLED": "true"/);
 });
 
-test('every OAuth callback turns the Free-tier refusal into a typed 409', () => {
+test('every OAuth callback returns the entitlement account limit in a typed 409', () => {
     for (const n of ['instagram', 'linkedin', 'twitter', 'tiktok', 'youtube']) {
         const src = read(`app/api/v1/social/accounts/${n}/callback/route.js`);
         assert.match(src, /recorded\.code === 'ACCOUNT_LIMIT'/, n);
-        assert.match(src, /\{ ok: false, code: 'ACCOUNT_LIMIT', limit: freeSocialAccountLimit\(\) \}, \{ status: 409 \}/, n);
+        assert.match(src, /\{ ok: false, code: 'ACCOUNT_LIMIT', limit: Number\(recorded\.limit\) \|\| 1 \}, \{ status: 409 \}/, n);
     }
     assert.match(read('app/social/connect/callback/[network]/page.js'), /ACCOUNT_LIMIT:/);
 });
