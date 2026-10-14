@@ -56,6 +56,19 @@ test('Facebook returns eligible Pages with Page tokens; pagination never follows
     assert.equal(pages.length, 1); assert.equal(pages[0].accessToken, 'page-token'); done();
 });
 
+test('Facebook token exchange identifies the failed phase without retaining provider payloads', async () => {
+    const input = { code: 'auth-code', redirectUri: 'https://staging.test/social/connect/callback/facebook' };
+    await assert.rejects(adapters.facebook.exchangeCodeForToken(cfg, input, async () => Response.json({ message: 'secret' })),
+        (error) => error.message === 'facebook_short_token_missing' && !error.message.includes('secret'));
+    const { fetcher, done } = sequence([
+        { body: { access_token: 'short-token' } },
+        { response: Response.json({ error: { message: 'secret-provider-payload' } }, { status: 400 }) },
+    ]);
+    await assert.rejects(adapters.facebook.exchangeCodeForToken(cfg, input, fetcher),
+        (error) => error.message === 'facebook_long_token_failed_400' && !error.message.includes('secret-provider-payload'));
+    done();
+});
+
 test('Facebook publishes an image on the selected Page, never a personal profile', async () => {
     const { fetcher, done } = sequence([{ check: ({ url, init }) => {
         assert.equal(url.pathname, '/v23.0/12345/photos');

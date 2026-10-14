@@ -7,12 +7,22 @@ export function config(env = process.env) {
     return /^\d{5,32}$/.test(clientId || '') && clientSecret?.length >= 8 ? { clientId, clientSecret } : null;
 }
 export const buildAuthorizeUrl = (cfg, input) => authorizeUrl('https://www.facebook.com/v23.0/dialog/oauth', cfg, input, SCOPES);
+async function exchangeFacebookToken(stage, endpoint, params, fetcher) {
+    try {
+        const result = await formToken(endpoint, params, fetcher);
+        if (typeof result.access_token !== 'string' || !result.access_token) throw new Error(`facebook_${stage}_token_missing`);
+        return result;
+    } catch (error) {
+        if (error?.message === `facebook_${stage}_token_missing`) throw error;
+        const status = /^provider_request_failed_([0-9]{3})$/.exec(error?.message || '')?.[1];
+        throw new Error(`facebook_${stage}_token_failed${status ? `_${status}` : ''}`);
+    }
+}
 export async function exchangeCodeForToken(cfg, { code, redirectUri }, fetcher = fetch) {
-    const short = await formToken(`${BASE}/oauth/access_token`, { client_id: cfg.clientId, client_secret: cfg.clientSecret,
+    const short = await exchangeFacebookToken('short', `${BASE}/oauth/access_token`, { client_id: cfg.clientId, client_secret: cfg.clientSecret,
         redirect_uri: redirectUri, code }, fetcher);
-    const long = await formToken(`${BASE}/oauth/access_token`, { grant_type: 'fb_exchange_token', client_id: cfg.clientId,
+    const long = await exchangeFacebookToken('long', `${BASE}/oauth/access_token`, { grant_type: 'fb_exchange_token', client_id: cfg.clientId,
         client_secret: cfg.clientSecret, fb_exchange_token: short.access_token }, fetcher);
-    if (!long.access_token) throw new Error('invalid_access_token');
     return { accessToken: long.access_token, refreshToken: null, expiresAt: null };
 }
 // Each candidate is a Page and carries its own Page token, never a personal

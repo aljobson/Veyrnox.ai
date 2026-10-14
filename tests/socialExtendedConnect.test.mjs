@@ -67,7 +67,7 @@ test('Facebook OAuth logs the failing server-side stage without exposing provide
         const res = await finishExtendedConnect(request({ code: 'code', codeVerifier: 'a'.repeat(43), state }), 'facebook');
         assert.equal(res.status, 502);
         assert.deepEqual(await res.json(), { error: 'connect_failed' });
-        assert.deepEqual(calls, [['[social-connect] failed', 'facebook', 'token_exchange', 'provider_request_failed_400']]);
+        assert.deepEqual(calls, [['[social-connect] failed', 'facebook', 'token_exchange', 'facebook_short_token_failed_400']]);
         assert.equal(JSON.stringify(calls).includes('secret-provider-payload'), false);
     } finally {
         console.error = originalError;
