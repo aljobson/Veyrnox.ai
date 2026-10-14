@@ -138,4 +138,6 @@ test('the wall builds its links and prices through the shared helpers', () => {
     assert.match(wall, /templateHref\(preset\)/, 'wall must show the matching recipe before the studio');
     assert.match(wall, /presetCredits\(preset, catalog\)/, 'wall prices must resolve through the catalog');
     assert.ok(!/\{preset\.credits\}/.test(wall), 'must not print the hardcoded preset credits');
+    assert.ok(!/sourceRecipe(?:\?\.)?\.name/.test(wall), 'video cards must not expose source brand names');
+    assert.doesNotMatch(wall, /Higgsfield|CapCut|SYNTX/i, 'video cards must use brand-neutral labels');
 });
