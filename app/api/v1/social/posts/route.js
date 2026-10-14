@@ -53,6 +53,11 @@ export async function GET(req) {
     const url = new URL(req.url);
     const beforeCreatedAt = url.searchParams.get('before_created_at') || undefined;
     const beforeId = url.searchParams.get('before_id') || undefined;
+    const rawLimit = url.searchParams.get('limit');
+    const limit = rawLimit === null ? 24 : Number(rawLimit);
+    if (!Number.isInteger(limit) || limit < 1 || limit > 50) {
+        return NextResponse.json({ error: 'invalid_limit' }, { status: 400 });
+    }
     if (beforeId && !isUuid(beforeId)) {
         return NextResponse.json({ error: 'invalid_cursor' }, { status: 400 });
     }
@@ -64,7 +69,7 @@ export async function GET(req) {
     try {
         posts = await rpc('list_social_posts', {
             p_auth_id: authId, p_brand_id: brandId,
-            p_before_created_at: beforeCreatedAt || null, p_before_id: beforeId || null,
+            p_limit: limit, p_before_created_at: beforeCreatedAt || null, p_before_id: beforeId || null,
         }, cfg);
     } catch (err) {
         const status = err instanceof SupabaseError ? err.status : 0;

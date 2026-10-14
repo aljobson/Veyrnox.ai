@@ -9,8 +9,9 @@
 import { gatewayFetch } from '../veyrnox/_lib/gateway.js';
 
 /** Lists the caller's scheduled/published posts, newest first. */
-export async function listSocialPosts({ beforeCreatedAt, beforeId } = {}) {
+export async function listSocialPosts({ beforeCreatedAt, beforeId, limit } = {}) {
     const params = new URLSearchParams();
+    if (limit) params.set('limit', String(limit));
     if (beforeCreatedAt && beforeId) {
         params.set('before_created_at', beforeCreatedAt);
         params.set('before_id', beforeId);

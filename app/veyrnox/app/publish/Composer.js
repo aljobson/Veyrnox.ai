@@ -88,7 +88,7 @@ function MediaPicker({ selected, onSelect }) {
     );
 }
 
-export function Composer({ accounts, onScheduled, initialJobId = null, initialUploadId = null, uploadsEnabled = false, youtubeVisibilityEnabled = false, scheduleEnabled = true, multiAccountEnabled = true }) {
+export function Composer({ accounts, onScheduled, initialJobId = null, initialUploadId = null, reusablePost = null, uploadsEnabled = false, youtubeVisibilityEnabled = false, scheduleEnabled = true, multiAccountEnabled = true }) {
     const activeAccounts = (accounts || []).filter((a) => a.status === 'active' && a.publishingEnabled !== false && (a.supportedMedia || NETWORKS.find((n) => n.key === a.network)?.media.filter(t => t !== 'video' || a.network === 'youtube'))?.length);
     const [selectedAccountIds, setSelectedAccountIds] = useState(() => new Set());
     const [caption, setCaption] = useState('');
@@ -142,6 +142,32 @@ export function Composer({ accounts, onScheduled, initialJobId = null, initialUp
             .finally(() => { if (active) setLoadingMedia(false); });
         return () => { active = false; };
     }, [initialUploadId, initialJobId, uploadsEnabled]);
+
+    useEffect(() => {
+        if (!reusablePost?.reuseKey) return;
+        let active = true;
+        Promise.resolve().then(async () => {
+            if (!active) return;
+            const source = reusablePost.media?.[0];
+            setCaption(reusablePost.global_text || '');
+            setSelectedAccountIds(new Set((reusablePost.targets || []).map((target) => target.account_id).filter((id) => activeAccounts.some((account) => account.id === id))));
+            setSuccess('Previous post loaded. Review everything before posting again.');
+            setError(''); setMediaError(''); setSelectedMedia(null);
+            idempotencyKey.current = newIdempotencyKey();
+            if (!source) { setMediaError('The previous post has no reusable media. Choose media below.'); return; }
+            setLoadingMedia(true);
+            const media = source.job_id
+                ? await gatewayFetch(`/jobs/${encodeURIComponent(source.job_id)}/asset`).then((asset) => ({ jobId: source.job_id, thumbUrl: asset.url, mediaType: source.media_type }))
+                : uploadsEnabled && source.upload_id
+                    ? await ownedPublishUpload(gatewayFetch, source.upload_id)
+                    : await Promise.reject(new Error('media unavailable'));
+            if (active) { setSelectedMedia(media); setMediaType(media.mediaType); }
+        }).catch(() => { if (active) setMediaError('That post’s media is no longer available. Choose another image or video.'); })
+            .finally(() => { if (active) setLoadingMedia(false); });
+        return () => { active = false; };
+    // activeAccounts is derived from the account prop; the reuse key is the intentional trigger.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [reusablePost?.reuseKey, uploadsEnabled]);
 
     function toggleAccount(id) {
         setSelectedAccountIds((prev) => {
@@ -318,15 +344,16 @@ function TargetBadge({ target }) {
     );
 }
 
-export function ScheduledPosts({ refreshToken, scheduleEnabled = true }) {
+export function ScheduledPosts({ refreshToken, scheduleEnabled = true, onReuse }) {
     const [posts, setPosts] = useState(null);
+    const [query, setQuery] = useState('');
     const [calendarOpen, setCalendarOpen] = useState(false);
     const [loadError, setLoadError] = useState('');
 
     const load = useCallback(async () => {
         setLoadError('');
         try {
-            const res = await listSocialPosts();
+            const res = await listSocialPosts({ limit: 50 });
             setPosts(res.posts || []);
             setCalendarOpen(res.calendarEnabled === true);
         } catch {
@@ -338,17 +365,23 @@ export function ScheduledPosts({ refreshToken, scheduleEnabled = true }) {
     if (loadError) return <p role="alert" className="text-sm text-vx-danger">{loadError}</p>;
     if (posts === null) return <p className="text-sm text-vx-fg-muted">Loading…</p>;
 
+    const visible = posts.filter((post) => !query || `${post.global_text || ''} ${(post.targets || []).map((target) => networkLabel(target.network)).join(' ')}`.toLowerCase().includes(query.toLowerCase()));
     return (
         <div>
-        {calendarOpen && scheduleEnabled && <Link href="/app/publish/calendar" className="inline-block text-sm text-vx-accent underline mb-4">Open calendar</Link>}
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+            {calendarOpen && scheduleEnabled && <Link href="/app/publish/calendar" className="text-sm text-vx-accent underline">Open calendar</Link>}
+            {scheduleEnabled && posts.length > 0 && <label className="ml-auto text-sm"><span className="sr-only">Search previous posts</span><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search previous posts" className="rounded-full border border-vx-border bg-transparent px-4 py-2 text-sm" /></label>}
+        </div>
         {posts.length === 0 && <p className="text-sm text-vx-fg-muted">Nothing scheduled yet.</p>}
+        {posts.length > 0 && visible.length === 0 && <p className="text-sm text-vx-fg-muted">No previous posts match that search.</p>}
         <ul className="space-y-3">
-            {posts.map((p) => (
+            {visible.map((p) => (
                 <li key={p.id} className="rounded-xl border border-vx-border p-3">
                     <div className="flex items-center justify-between gap-3 mb-2">
                         <span className="text-xs font-bold text-vx-fg-muted">
                             {p.status} · {new Date(p.scheduled_at).toLocaleString()}
                         </span>
+                        {scheduleEnabled && (p.media || []).length > 0 && <button type="button" className={button} onClick={() => onReuse?.(p)}>Use again</button>}
                     </div>
                     {p.global_text && <p className="text-sm text-vx-fg mb-2 line-clamp-2">{p.global_text}</p>}
                     <div className="flex flex-wrap gap-x-3 gap-y-1">

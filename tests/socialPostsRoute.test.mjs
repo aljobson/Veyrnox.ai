@@ -81,7 +81,7 @@ test('GET: auto-creates the brand and lists posts', async () => {
     assert.equal(body.posts.length, 1);
     assert.deepEqual(calls[2], {
         name: 'list_social_posts',
-        args: { p_auth_id: auth, p_brand_id: brandId, p_before_created_at: null, p_before_id: null },
+        args: { p_auth_id: auth, p_brand_id: brandId, p_limit: 24, p_before_created_at: null, p_before_id: null },
     });
 });
 
@@ -89,7 +89,20 @@ test('GET: paginates via before_created_at/before_id query params', async () => 
     stub();
     const before = '2026-01-01T00:00:00.000Z';
     await GET(getRequest({}, `?before_created_at=${encodeURIComponent(before)}&before_id=${postId}`));
-    assert.deepEqual(calls[2].args, { p_auth_id: auth, p_brand_id: brandId, p_before_created_at: before, p_before_id: postId });
+    assert.deepEqual(calls[2].args, { p_auth_id: auth, p_brand_id: brandId, p_limit: 24, p_before_created_at: before, p_before_id: postId });
+});
+
+test('GET: accepts a bounded library limit and rejects anything outside 1..50', async () => {
+    stub();
+    assert.equal((await GET(getRequest({}, '?limit=50'))).status, 200);
+    assert.equal(calls[2].args.p_limit, 50);
+    for (const limit of ['0', '51', '2.5', 'nope']) {
+        stub();
+        const res = await GET(getRequest({}, `?limit=${limit}`));
+        assert.equal(res.status, 400, limit);
+        assert.deepEqual(await res.json(), { error: 'invalid_limit' });
+        assert.equal(calls.some((call) => call.name === 'list_social_posts'), false);
+    }
 });
 
 test('GET: a malformed cursor is rejected before any list RPC', async () => {

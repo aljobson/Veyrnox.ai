@@ -60,6 +60,7 @@ function PublishControls({ initialJobId, initialUploadId }) {
   const [disconnecting, setDisconnecting] = useState(null);
   const [confirmDisconnect, setConfirmDisconnect] = useState(null);
   const [postsRefreshToken, setPostsRefreshToken] = useState(0);
+  const [reusablePost, setReusablePost] = useState(null);
 
   const load = useCallback(async () => {
     setLoadError('');
@@ -207,12 +208,12 @@ function PublishControls({ initialJobId, initialUploadId }) {
 
     <section className="rounded-2xl border border-vx-border p-5">
       <h2 id="schedule" className="font-bold mb-4 scroll-mt-6">Create a post</h2>
-      <Composer multiAccountEnabled={paid} scheduleEnabled={paid} youtubeVisibilityEnabled={youtubeVisibilityEnabled} key={initialJobId || initialUploadId || 'library'} initialJobId={initialJobId} initialUploadId={initialUploadId} accounts={accounts} uploadsEnabled={uploadsEnabled} onScheduled={() => setPostsRefreshToken((n) => n + 1)} />
+      <Composer multiAccountEnabled={paid} scheduleEnabled={paid} youtubeVisibilityEnabled={youtubeVisibilityEnabled} key={initialJobId || initialUploadId || 'library'} initialJobId={initialJobId} initialUploadId={initialUploadId} reusablePost={reusablePost} accounts={accounts} uploadsEnabled={uploadsEnabled} onScheduled={() => setPostsRefreshToken((n) => n + 1)} />
     </section>
 
     <section className="rounded-2xl border border-vx-border p-5">
       <h2 className="font-bold mb-4">Scheduled &amp; published</h2>
-      <ScheduledPosts refreshToken={postsRefreshToken} scheduleEnabled={paid} />
+      <ScheduledPosts refreshToken={postsRefreshToken} scheduleEnabled={paid} onReuse={(post) => { setReusablePost({ ...post, reuseKey: Date.now() }); document.getElementById('schedule')?.scrollIntoView({ behavior: 'smooth' }); }} />
     </section>
   </div>;
 }
