@@ -11,7 +11,7 @@ export const SEQUENCE_MAX = 18000;
 const track = (id, kind, name) => ({ id, kind, name, locked: false, muted: false, hidden: false });
 export function emptySequence() {
     return { schemaVersion: 3, fps: 30, seq: 0, aspect: '16:9', media: {}, video: [], audio: [], text: [],
-        tracks: [track('video-0', 'video', 'Video 1'), track('audio-0', 'audio', 'Audio 1'), track('text-0', 'text', 'Text 1')], background: '#000000' };
+        tracks: [track('video-0', 'video', 'Video 1'), track('audio-0', 'audio', 'Audio 1'), track('text-0', 'text', 'Text 1')], markers: [], background: '#000000' };
 }
 export function upgradeSequence(tl) {
     if (tl.schemaVersion === 3) return tl;
@@ -54,6 +54,17 @@ export function updateSequenceClip(tl, kind, id, patch) {
     if (destination?.locked) return error('Unlock the destination track first.');
     return checked({ ...tl, [kind]: tl[kind].map(c => c.id === id ? { ...c, ...patch, id: c.id } : c) });
 }
+export function replaceSequenceClipMedia(tl,kind,id,mediaId) {
+    const item=editable(tl,kind,id);if(item.error)return item;
+    if(kind==='text')return error('Choose a video or audio clip to replace.');
+    const current=tl.media[item.mediaId],replacement=tl.media[mediaId];
+    if(!replacement)return error('Choose media already in this project.');
+    if(current?.kind!==replacement.kind)return error('Replace with the same media type to preserve every edit.');
+    if(kind==='audio'&&!replacement.hasAudio)return error('Choose media with sound.');
+    const inPoint=item.reverse?sourceAdvance(item,item.len-1):0;
+    const next=updateSequenceClip(tl,kind,id,{mediaId,in:inPoint});
+    return next.error?error('The replacement is too short for this edited clip. Choose a longer source or trim the clip first.'):next;
+}
 export function removeSequenceClip(tl, kind, id, ripple = false) {
     const item = editable(tl, kind, id); if (item.error) return item;
     return checked({ ...tl, [kind]: tl[kind].filter(c => c.id !== id).map(c => ripple && c.trackId === item.trackId && c.start >= item.start + item.len ? { ...c, start: c.start - item.len } : c) });
@@ -91,6 +102,20 @@ export function addSequenceTrack(tl, kind) {
 }
 export function updateSequenceTrack(tl, id, patch) {
     return checked({ ...tl, tracks: tl.tracks.map(t => t.id === id ? { ...t, ...patch, id: t.id, kind: t.kind } : t) });
+}
+export function addSequenceMarker(tl, frame, label = '') {
+    if((tl.markers || []).length>=100)return error('A project holds up to 100 markers.');
+    const seq=tl.seq+1,marker={id:`m${seq}`,frame:Math.max(0,Math.min(SEQUENCE_MAX,Math.round(frame))),label:String(label || `Marker ${(tl.markers || []).length+1}`).trim().slice(0,80),color:'#3ee6c4'};
+    return checked({...tl,seq,markers:[...(tl.markers || []),marker].sort((a,b)=>a.frame-b.frame || a.id.localeCompare(b.id))});
+}
+export function updateSequenceMarker(tl,id,patch) {
+    if(!(tl.markers || []).some(marker=>marker.id===id))return error('Choose an existing marker.');
+    const allowed=['frame','label','color'];if(Object.keys(patch).some(key=>!allowed.includes(key)))return error('Invalid marker change.');
+    return checked({...tl,markers:tl.markers.map(marker=>marker.id===id?{...marker,...patch,id:marker.id}:marker).sort((a,b)=>a.frame-b.frame || a.id.localeCompare(b.id))});
+}
+export function removeSequenceMarker(tl,id) {
+    if(!(tl.markers || []).some(marker=>marker.id===id))return error('Choose an existing marker.');
+    return checked({...tl,markers:tl.markers.filter(marker=>marker.id!==id)});
 }
 export function removeSequenceTrack(tl, id) {
     const lane = tl.tracks.find(t => t.id === id);

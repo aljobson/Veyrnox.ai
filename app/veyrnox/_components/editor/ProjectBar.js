@@ -87,7 +87,7 @@ function ProjectSessionBar({ tl, blobs, onLoadTimeline, onRelinked, onContext,co
 
     const current = doc ? documentForTimeline(doc, tl) : null;
     const dirty = !!doc && !equalProjectDocuments(doc, current);
-    useEffect(()=>{onContext?.({id:projectId,workspaceId,revision,dirty});},[onContext,projectId,workspaceId,revision,dirty]);
+    useEffect(()=>{onContext?.({id:projectId,workspaceId,revision,dirty,busy,error:!!error,savedAt});},[onContext,projectId,workspaceId,revision,dirty,busy,error,savedAt]);
     const save = useCallback(async ({ against = revision, restore = null } = {}) => {
         if (!currentAccount() || !endpoint || !doc) return;
         const snapshot = restore ? null : documentForTimeline(doc, tl);

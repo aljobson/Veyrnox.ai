@@ -42,7 +42,7 @@ export function visualProblem(c) {
     return null;
 }
 export function validateSequence(tl) {
-    if (!exact(tl, ['schemaVersion', 'fps', 'seq', 'aspect', 'media', 'video', 'audio', 'text', 'tracks', 'background',...['folders','fonts'].filter(k=>tl[k]!==undefined)])) return 'Invalid multitrack document.';
+    if (!exact(tl, ['schemaVersion', 'fps', 'seq', 'aspect', 'media', 'video', 'audio', 'text', 'tracks', 'background',...['folders','fonts','markers'].filter(k=>tl[k]!==undefined)])) return 'Invalid multitrack document.';
     if (tl.schemaVersion !== 3 || tl.fps !== 30 || !int(tl.seq, 0, 1e6) || !['source', '16:9', '9:16', '1:1'].includes(tl.aspect) || !colour(tl.background)) return 'Invalid project settings.';
     const organization=organizationProblem(tl);if(organization)return organization;
     if (!object(tl.media) || Object.keys(tl.media).length > 40) return 'A project holds up to 40 files.';
@@ -60,6 +60,7 @@ export function validateSequence(tl) {
         lanes.set(t.id, t);
     }
     if (['video', 'audio', 'text'].some(kind => !tl.tracks.some(t => t.kind === kind))) return 'Keep a video, audio and text track.';
+    if(tl.markers!==undefined && (!Array.isArray(tl.markers) || tl.markers.length>100 || tl.markers.some((marker,index)=>!exact(marker,['id','frame','label','color']) || !/^m[0-9]{1,7}$/.test(marker.id) || !int(marker.frame,0,18000) || typeof marker.label!=='string' || !marker.label.trim() || marker.label.length>80 || /[\u0000-\u001f\u007f]/.test(marker.label) || !colour(marker.color) || tl.markers.some((other,otherIndex)=>otherIndex!==index && other.id===marker.id))))return 'Invalid timeline marker.';
     const seen = new Set();
     for (const [kind, max] of [['video', 40], ['audio', 40], ['text', 150]]) {
         if (!Array.isArray(tl[kind]) || tl[kind].length > max) return `Too many ${kind} clips.`;
