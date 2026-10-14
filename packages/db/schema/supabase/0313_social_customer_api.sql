@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS public.social_api_keys (
   CHECK (cardinality(scopes) BETWEEN 1 AND 3)
 );
 CREATE INDEX IF NOT EXISTS social_api_keys_brand_created_idx ON public.social_api_keys(brand_id,created_at DESC,id DESC);
+CREATE INDEX IF NOT EXISTS social_api_keys_creator_idx ON public.social_api_keys(created_by_user_id);
 ALTER TABLE public.social_api_keys ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.social_api_keys FORCE ROW LEVEL SECURITY;
 REVOKE ALL ON public.social_api_keys FROM PUBLIC,anon,authenticated,service_role;

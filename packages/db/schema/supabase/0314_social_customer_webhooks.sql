@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS public.social_webhook_endpoints (
   revoked_at TIMESTAMPTZ NULL
 );
 CREATE INDEX IF NOT EXISTS social_webhook_endpoints_brand_idx ON public.social_webhook_endpoints(brand_id,created_at DESC);
+CREATE INDEX IF NOT EXISTS social_webhook_endpoints_creator_idx ON public.social_webhook_endpoints(created_by_user_id);
 ALTER TABLE public.social_webhook_endpoints ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.social_webhook_endpoints FORCE ROW LEVEL SECURITY;
 REVOKE ALL ON public.social_webhook_endpoints FROM PUBLIC,anon,authenticated,service_role;
@@ -40,6 +41,7 @@ CREATE TABLE IF NOT EXISTS public.social_webhook_outbox (
 CREATE INDEX IF NOT EXISTS social_webhook_outbox_due_idx ON public.social_webhook_outbox(next_attempt_at,created_at)
   WHERE delivered_at IS NULL AND failed_at IS NULL;
 CREATE INDEX IF NOT EXISTS social_webhook_outbox_brand_idx ON public.social_webhook_outbox(brand_id,created_at DESC);
+CREATE INDEX IF NOT EXISTS social_webhook_outbox_target_idx ON public.social_webhook_outbox(target_id);
 ALTER TABLE public.social_webhook_outbox ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.social_webhook_outbox FORCE ROW LEVEL SECURITY;
 REVOKE ALL ON public.social_webhook_outbox FROM PUBLIC,anon,authenticated,service_role;

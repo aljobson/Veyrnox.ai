@@ -17,6 +17,8 @@ CREATE TABLE IF NOT EXISTS public.social_report_templates (
 );
 CREATE UNIQUE INDEX IF NOT EXISTS social_report_templates_brand_name_idx ON public.social_report_templates(brand_id,lower(name));
 CREATE INDEX IF NOT EXISTS social_report_templates_brand_updated_idx ON public.social_report_templates(brand_id,updated_at DESC,id DESC);
+CREATE INDEX IF NOT EXISTS social_report_templates_creator_idx ON public.social_report_templates(created_by_user_id);
+CREATE INDEX IF NOT EXISTS social_report_templates_account_idx ON public.social_report_templates(account_id) WHERE account_id IS NOT NULL;
 ALTER TABLE public.social_report_templates ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.social_report_templates FORCE ROW LEVEL SECURITY;
 REVOKE ALL ON public.social_report_templates FROM PUBLIC,anon,authenticated,service_role;
