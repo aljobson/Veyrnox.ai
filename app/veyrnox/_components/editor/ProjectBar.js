@@ -204,14 +204,14 @@ function ProjectSessionBar({ tl, blobs, onLoadTimeline, onRelinked, onContext,co
 
     if (!enabled) return null;
     const status = busy ? 'Saving…' : error ? 'Not saved' : dirty ? 'Unsaved changes' : savedAt ? `Saved · version ${revision}` : 'Not saved yet';
-    return <section aria-label="Project" className={compact?'shrink-0 space-y-2':'space-y-3 rounded-2xl border border-vx-border bg-vx-panel p-4'}>
-        <div className="flex flex-wrap items-center gap-3">
+    return <section aria-label="Project" className={compact?'min-w-0 flex-1 space-y-2':'space-y-3 rounded-2xl border border-vx-border bg-vx-panel p-4'}>
+        <div className={`flex items-center ${compact?'min-w-0 gap-2':'flex-wrap gap-3'}`}>
             {projectId ? <>
-                <span className="max-w-48 truncate text-sm font-bold" title={name}>{name}</span>
+                <span className="min-w-0 max-w-48 flex-1 truncate text-sm font-bold" title={name}>{name}</span>
                 <span role="status" className="hidden text-xs text-vx-fg-muted sm:inline">{status}</span>
-                <Button size="sm" disabled={busy || !dirty} onClick={() => save()}>Save</Button>
-                <Button size="sm" variant="ghost" disabled={busy} onClick={openVersions}>Versions</Button>
-            </> : <Button size="sm" variant="ghost" disabled={busy} onClick={openPicker}>Save to a project</Button>}
+                <Button className="shrink-0 px-3" size="sm" disabled={busy || !dirty} onClick={() => save()}>Save</Button>
+                <Button className="hidden shrink-0 px-3 sm:inline-flex" size="sm" variant="ghost" disabled={busy} onClick={openVersions}>Versions</Button>
+            </> : <Button className="max-w-full px-3" size="sm" variant="ghost" disabled={busy} onClick={openPicker}><span className="sm:hidden">Save project</span><span className="hidden sm:inline">Save to a project</span></Button>}
             {relinking && <span role="status" className="text-xs text-vx-fg-muted">Fetching the project files…</span>}
         </div>
         {error && <p role="alert" className="text-sm">{error}</p>}

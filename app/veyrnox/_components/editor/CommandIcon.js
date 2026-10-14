@@ -5,5 +5,7 @@ const paths={
     Copy:'M9 9h12v12H9zM4 15V4h11','Paste at playhead':'M8 4H5v17h14V4h-3M8 3h8v4H8zM9 13h6m-6 4h6',
     Group:'M3 3h7v7H3zm11 0h7v7h-7zM3 14h7v7H3zm11 0h7v7h-7zM7 10v4m10-4v4M10 7h4m-4 10h4',
     Ungroup:'M3 3h7v7H3zm11 0h7v7h-7zM3 14h7v7H3zm11 0h7v7h-7z',
+    Video:'M3 6h12v12H3zM15 10l6-3v10l-6-3zM9 9v6M6 12h6',Audio:'M9 18V5l10-2v13M9 9l10-2M6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm10-2a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z',
+    Text:'M4 5h16M12 5v15M8 20h8M18 14v6m-3-3h6',Marker:'M6 3v18M6 4h11l-2.5 4L17 12H6',Options:'M5 12h.01M12 12h.01M19 12h.01',
 };
 export function CommandIcon({name}){return <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d={paths[name]} /></svg>;}
