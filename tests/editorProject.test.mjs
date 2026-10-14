@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { timelineFromDocument, documentForTimeline, mediaToRelink, matchLocalFile, jobIdFromMediaId, saveProblem } from '../app/veyrnox/_lib/editorProject.mjs';
+import { readFileSync } from 'node:fs';
+import { conflictCopyName, timelineFromDocument, documentForTimeline, mediaToRelink, matchLocalFile, jobIdFromMediaId, projectDocumentDifferences, remoteSaveLabel, saveProblem } from '../app/veyrnox/_lib/editorProject.mjs';
 import { FPS, emptyTimeline, addMedia, addVideoClip } from '../app/veyrnox/_lib/editorTimeline.mjs';
 import { emptyProjectDocument, validProjectDocument } from '../lib/projectDocument.js';
 
@@ -56,4 +57,29 @@ test('save problems are plain words with no server detail', () => {
     assert.match(saveProblem({ status: 400 }), /could not be saved/);
     assert.match(saveProblem({ status: 500, message: 'relation x does not exist' }), /connection/);
     assert.doesNotMatch(saveProblem({ status: 500, message: 'relation x does not exist' }), /relation/);
+});
+
+test('conflict comparison explains saved timeline changes without exposing actor IDs', () => {
+    const local = documentForTimeline(emptyProjectDocument(id), tl());
+    const savedTimeline = structuredClone(tl());
+    savedTimeline.video.push({ ...savedTimeline.video[0], id: 'clip-two', start: 180 });
+    savedTimeline.markers = [{ id: 'marker-1', frame: 30, label: 'Review', color: '#3ee6c4' }];
+    const saved = documentForTimeline(emptyProjectDocument(id), savedTimeline);
+    assert.deepEqual(projectDocumentDifferences(local, saved), ['Video clips: 1 → 2', 'Markers: 0 → 1']);
+    assert.equal(remoteSaveLabel('actor-a', 'actor-a'), 'Another device');
+    assert.equal(remoteSaveLabel('actor-b', 'actor-a'), 'A collaborator');
+});
+
+test('conflict copy names remain valid at the project API boundary', () => {
+    assert.equal(conflictCopyName('Campaign'), 'Campaign — edit copy');
+    assert.equal(conflictCopyName('x'.repeat(200)).length, 120);
+    assert.equal(conflictCopyName('   '), 'Project — edit copy');
+});
+
+test('the project bar preserves both edits instead of overwriting a newer saved version', () => {
+    const source = readFileSync(new URL('../app/veyrnox/_components/editor/ProjectBar.js', import.meta.url), 'utf8');
+    assert.match(source, /Keep my edit as a copy/);
+    assert.match(source, /Discard mine and load latest/);
+    assert.match(source, /setInterval\(check, 15000\)/);
+    assert.doesNotMatch(source, /Save mine instead|save\(\{ against: remote\.revision \}\)/);
 });
