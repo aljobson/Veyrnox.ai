@@ -10,9 +10,9 @@ const SLUG = /^[a-z0-9](?:[a-z0-9-]{1,46}[a-z0-9])?$/;
 const THEMES = new Set(['midnight', 'light', 'sunset']);
 
 function setup(req) {
-  if (!socialSmartLinksEnabled()) return { error: NextResponse.json({ error: 'smartlinks_not_open' }, { status: 404 }) };
   const authId = req.headers.get('x-veyrnox-auth-id');
   if (!UUID.test(authId || '')) return { error: NextResponse.json({ error: 'not_authenticated' }, { status: 401 }) };
+  if (!socialSmartLinksEnabled()) return { error: NextResponse.json({ error: 'smartlinks_not_open' }, { status: 404 }) };
   const cfg = envConfig();
   if (!cfg.supabaseUrl || !cfg.serviceRoleKey) return { error: NextResponse.json({ error: 'supabase_not_configured' }, { status: 503 }) };
   return { authId, cfg };

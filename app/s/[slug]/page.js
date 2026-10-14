@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import { Main } from '../../veyrnox/_components/Main';
 import { socialSmartLinksEnabled } from '../../../lib/social/publishFeature.js';
 import { envConfig, rpc } from '../../../packages/db/supabase-client.js';
 
@@ -22,7 +23,7 @@ export default async function SmartLinkPage({ params }) {
   const { slug } = await params; const result = await read(slug, true); if (!result) notFound();
   const link = result.smartlink;
   const themes = { midnight: 'bg-[#080b14] text-white', light: 'bg-[#f5f5f2] text-[#171717]', sunset: 'bg-gradient-to-br from-[#35133d] via-[#9d3155] to-[#f49b55] text-white' };
-  return <main className={`min-h-screen px-5 py-14 ${themes[link.theme] || themes.midnight}`}>
+  return <Main className={`min-h-screen px-5 py-14 ${themes[link.theme] || themes.midnight}`}>
     <div className="mx-auto max-w-xl text-center">
       {link.avatar_url ? <img src={link.avatar_url} alt="" className="mx-auto mb-5 h-24 w-24 rounded-full border-2 border-current/20 object-cover" /> : <div aria-hidden="true" className="mx-auto mb-5 grid h-24 w-24 place-items-center rounded-full bg-current/10 text-3xl font-black">{link.title.slice(0,1)}</div>}
       <h1 className="text-3xl font-black">{link.title}</h1>
@@ -32,5 +33,5 @@ export default async function SmartLinkPage({ params }) {
       </nav>
       <a href="https://veyrnox.ai" className="mt-10 inline-block text-xs font-bold uppercase tracking-[0.2em] opacity-60">Made with Veyrnox</a>
     </div>
-  </main>;
+  </Main>;
 }
