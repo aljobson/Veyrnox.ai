@@ -30,6 +30,7 @@ export async function GET(_req, { params }) {
             request_status: review.request_status, policy: review.policy, scheduled_at: review.scheduled_at,
             global_text: review.global_text, brand_name: review.brand_name,
             networks: Array.isArray(review.networks) ? review.networks : [],
+            targets: Array.isArray(review.targets) ? review.targets : [],
             media: media ? { media_type: media.media_type, mime_type: media.mime_type, preview_url } : null },
             { headers: { 'Cache-Control': 'no-store' } });
     } catch (err) {

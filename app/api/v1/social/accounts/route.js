@@ -14,7 +14,7 @@
  * client-supplied id can never reach this handler.
  */
 
-import { publishPlansEnabled, socialApprovalsEnabled, socialContentPresetsEnabled, socialInboxEnabled, socialQueuesEnabled, socialSmartLinksEnabled, socialTeamsEnabled, youtubeVisibilityEnabled } from '../../../../../lib/social/publishFeature.js';
+import { publishPlansEnabled, socialApprovalsEnabled, socialContentPresetsEnabled, socialContentVariantsEnabled, socialInboxEnabled, socialQueuesEnabled, socialSmartLinksEnabled, socialTeamsEnabled, youtubeVisibilityEnabled } from '../../../../../lib/social/publishFeature.js';
 import { readPublishEntitlement } from '../../../../../lib/social/publishPlanApi.js';
 import { socialUploadsEnabled } from '../../../../../lib/social/uploadPolicy.js';
 import { networkEnabled, networkMedia } from '../../../../../lib/social/networks.js';
@@ -84,6 +84,7 @@ export async function GET(req) {
         queuesEnabled: socialQueuesEnabled(),
         approvalsEnabled: socialApprovalsEnabled(),
         teamsEnabled: socialTeamsEnabled(),
+        variantsEnabled: socialContentVariantsEnabled(),
         networks: networkReadiness(process.env, authId),
     }, { headers: { 'Cache-Control': 'no-store' } });
 }

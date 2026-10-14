@@ -17,7 +17,7 @@
  */
 
 import { socialUploadsEnabled } from '../../../../../lib/social/uploadPolicy.js';
-import { calendarEnabled, publishPlansEnabled, youtubeVisibilityEnabled } from '../../../../../lib/social/publishFeature.js';
+import { calendarEnabled, publishPlansEnabled, socialContentVariantsEnabled, youtubeVisibilityEnabled } from '../../../../../lib/social/publishFeature.js';
 import { readPublishEntitlement } from '../../../../../lib/social/publishPlanApi.js';
 import { postCapabilityError } from '../../../../../lib/social/postCapabilities.js';
 import { NextResponse } from 'next/server';
@@ -25,6 +25,7 @@ import { accountReadLimit } from '../../../../../lib/accountReadLimit.js';
 import { socialPostWriteLimit } from '../../../../../lib/socialPostWriteLimit.js';
 import { rpc, envConfig, SupabaseError } from '../../../../../packages/db/supabase-client.js';
 import { resolveBrand } from '../../../../../lib/social/resolveBrand.js';
+import { parsePostVariants } from '../../../../../lib/social/postVariants.js';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const MEDIA_TYPES = new Set(['image', 'video']);
@@ -125,6 +126,14 @@ export async function POST(req) {
         && (typeof globalText !== 'string' || globalText.length > 4000)) {
         return NextResponse.json({ error: 'invalid_global_text' }, { status: 400 });
     }
+    const rawNetworkText = body?.networkText;
+    if (rawNetworkText != null && (!rawNetworkText || typeof rawNetworkText !== 'object' || Array.isArray(rawNetworkText))) {
+        return NextResponse.json({ error: 'invalid_network_text' }, { status: 400 });
+    }
+    const hasVariants = rawNetworkText != null && Object.keys(rawNetworkText).length > 0;
+    if (hasVariants && !socialContentVariantsEnabled()) {
+        return NextResponse.json({ error: 'variants_not_open' }, { status: 404 });
+    }
     const idempotencyKey = body && body.idempotencyKey;
     if (typeof idempotencyKey !== 'string' || !/^[A-Za-z0-9_-]{8,128}$/.test(idempotencyKey)) {
         return NextResponse.json({ error: 'invalid_idempotency_key' }, { status: 400 });
@@ -157,8 +166,8 @@ export async function POST(req) {
     const brand = await resolveBrand(authId, cfg, 'api/v1/social/posts:POST', { request: req, allowedRoles: ['owner', 'manager', 'editor'] });
     if (brand.error) return brand.error;
 
+    let entitlement = null;
     if (publishPlansEnabled()) {
-        let entitlement;
         try { entitlement = await readPublishEntitlement(brand.rpcAuthId, cfg); }
         catch (err) {
             console.error('[api/v1/social/posts:POST] entitlement read failed:', err instanceof SupabaseError ? err.status : 0);
@@ -172,7 +181,12 @@ export async function POST(req) {
             if (body?.publishNow !== true) {
                 return NextResponse.json({ error: 'publish_plan_required', feature: 'scheduling' }, { status: 402 });
             }
+            if (hasVariants) {
+                return NextResponse.json({ error: 'publish_plan_required', feature: 'platform_variants' }, { status: 402 });
+            }
         }
+    } else if (hasVariants) {
+        return NextResponse.json({ error: 'variants_not_configured' }, { status: 503 });
     }
 
     const brandId = brand.brandId;
@@ -183,10 +197,13 @@ export async function POST(req) {
         if (!listed?.ok || !Array.isArray(listed.accounts)) throw new Error('account_lookup_failed');
         const destinations = listed.accounts.filter((a) => accountIds.includes(a.id) && a.status === 'active');
         if (destinations.length !== new Set(accountIds).size) return NextResponse.json({ error: 'ACCOUNT_NOT_FOUND' }, { status: 404 });
-        const capabilityError = postCapabilityError(destinations, mediaItems, globalText, process.env, authId);
+        const parsed = parsePostVariants(rawNetworkText, destinations.map((account) => account.network));
+        if (parsed.error) return NextResponse.json({ error: parsed.error }, { status: 400 });
+        const capabilityError = postCapabilityError(destinations, mediaItems, globalText, process.env, authId, parsed.variants);
         if (capabilityError) return NextResponse.json({ error: capabilityError }, { status: 400 });
-        result = await rpc(visibility !== undefined ? 'create_social_post_with_youtube_visibility' : 'create_social_post', {
-            ...(visibility !== undefined ? { p_youtube_visibility: visibility } : {}),
+        result = await rpc(hasVariants ? 'create_social_post_with_options' : visibility !== undefined ? 'create_social_post_with_youtube_visibility' : 'create_social_post', {
+            ...(hasVariants ? { p_network_text: parsed.variants, p_youtube_visibility: visibility || null }
+                : visibility !== undefined ? { p_youtube_visibility: visibility } : {}),
             p_auth_id: authId,
             p_brand_id: brandId,
             p_scheduled_at: scheduledAt,
@@ -204,7 +221,7 @@ export async function POST(req) {
         const code = result && result.code;
         const status = code === 'USER_NOT_FOUND' ? 401 : code === 'FORBIDDEN' ? 403 : code === 'PLAN_REQUIRED' ? 402
             : ['BRAND_NOT_FOUND', 'ACCOUNT_NOT_FOUND', 'MEDIA_NOT_FOUND'].includes(code) ? 404
-            : ['INVALID_IDEMPOTENCY_KEY', 'INVALID_SCHEDULE', 'NO_TARGET_ACCOUNTS', 'INVALID_MEDIA', 'INVALID_YOUTUBE_VISIBILITY'].includes(code) ? 400
+            : ['INVALID_IDEMPOTENCY_KEY', 'INVALID_SCHEDULE', 'NO_TARGET_ACCOUNTS', 'INVALID_MEDIA', 'INVALID_YOUTUBE_VISIBILITY', 'INVALID_NETWORK_TEXT'].includes(code) ? 400
             : 502;
         return NextResponse.json({ error: code || 'internal' }, { status });
     }

@@ -18,6 +18,12 @@ function networkLabel(key) {
     return NETWORKS.find((n) => n.key === key)?.label || key;
 }
 
+function captionLength(network, value) {
+    return network === 'bluesky'
+        ? [...new Intl.Segmenter('en', { granularity: 'grapheme' }).segment(value)].length
+        : [...value].length;
+}
+
 function defaultScheduleValue() {
     // Local time an hour out, trimmed to what <input type="datetime-local"> accepts.
     const d = new Date(Date.now() + 60 * 60 * 1000);
@@ -164,10 +170,12 @@ function MediaPicker({ selected, onSelect }) {
     );
 }
 
-export function Composer({ accounts, onScheduled, initialJobId = null, initialUploadId = null, reusablePost = null, uploadsEnabled = false, youtubeVisibilityEnabled = false, scheduleEnabled = true, multiAccountEnabled = true, presetsEnabled = false, queuesEnabled = false, approvalsEnabled = false }) {
+export function Composer({ accounts, onScheduled, initialJobId = null, initialUploadId = null, reusablePost = null, uploadsEnabled = false, youtubeVisibilityEnabled = false, scheduleEnabled = true, multiAccountEnabled = true, presetsEnabled = false, queuesEnabled = false, approvalsEnabled = false, variantsEnabled = false }) {
     const activeAccounts = (accounts || []).filter((a) => a.status === 'active' && a.publishingEnabled !== false && (a.supportedMedia || NETWORKS.find((n) => n.key === a.network)?.media.filter(t => t !== 'video' || a.network === 'youtube'))?.length);
     const [selectedAccountIds, setSelectedAccountIds] = useState(() => new Set());
     const [caption, setCaption] = useState('');
+    const [networkText, setNetworkText] = useState({});
+    const [previewNetwork, setPreviewNetwork] = useState('');
     const [youtubeVisibility, setYoutubeVisibility] = useState('private');
     const hasYoutube = activeAccounts.some((a) => a.network === 'youtube' && selectedAccountIds.has(a.id));
     const [scheduledAt, setScheduledAt] = useState(defaultScheduleValue);
@@ -239,6 +247,7 @@ export function Composer({ accounts, onScheduled, initialJobId = null, initialUp
             if (!active) return;
             const source = reusablePost.media?.[0];
             setCaption(reusablePost.global_text || '');
+            setNetworkText(Object.fromEntries((reusablePost.targets || []).filter((target) => target.text_override).map((target) => [target.network, target.text_override])));
             setSelectedAccountIds(new Set((reusablePost.targets || []).map((target) => target.account_id).filter((id) => activeAccounts.some((account) => account.id === id))));
             setSuccess('Previous post loaded. Review everything before posting again.');
             setError(''); setMediaError(''); setSelectedMedia(null);
@@ -258,6 +267,9 @@ export function Composer({ accounts, onScheduled, initialJobId = null, initialUp
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [reusablePost?.reuseKey, uploadsEnabled]);
 
+    const selectedNetworks = [...new Set(activeAccounts.filter((account) => selectedAccountIds.has(account.id)).map((account) => account.network))];
+    const activePreviewNetwork = selectedNetworks.includes(previewNetwork) ? previewNetwork : selectedNetworks[0] || '';
+
     function toggleAccount(id) {
         setSelectedAccountIds((prev) => {
             if (!multiAccountEnabled && !prev.has(id)) return new Set([id]);
@@ -276,7 +288,8 @@ export function Composer({ accounts, onScheduled, initialJobId = null, initialUp
             const account = activeAccounts.find((a) => a.id === id);
             const network = NETWORKS.find((n) => n.key === account?.network);
             if (!(account?.supportedMedia || network?.media.filter(t => t !== 'video' || account?.network === 'youtube'))?.includes(mediaType)) { setError(`${network?.label || 'That account'} does not support this media type.`); return; }
-            const length = network.key === 'bluesky' ? [...new Intl.Segmenter('en', { granularity: 'grapheme' }).segment(caption)].length : [...caption].length;
+            const effectiveCaption = networkText[network.key] || caption;
+            const length = captionLength(network.key, effectiveCaption);
             if (length > network.captionLimit) { setError(`${network.label} supports captions up to ${network.captionLimit} characters.`); return; }
         }
         const mode = e.nativeEvent.submitter?.value;
@@ -298,6 +311,7 @@ export function Composer({ accounts, onScheduled, initialJobId = null, initialUp
             const payload = {
                 ...(publishNow ? { publishNow: true } : { scheduledAt: useQueue ? reservation.scheduled_at : schedule.toISOString() }),
                 globalText: caption,
+                ...(variantsEnabled ? { networkText: Object.fromEntries(Object.entries(networkText).filter(([network, text]) => selectedNetworks.includes(network) && text.trim())) } : {}),
                 ...(hasYoutube && youtubeVisibilityEnabled ? { youtubeVisibility } : {}),
                 idempotencyKey: idempotencyKey.current,
                 accountIds: useQueue ? reservation.account_ids : [...selectedAccountIds],
@@ -309,7 +323,7 @@ export function Composer({ accounts, onScheduled, initialJobId = null, initialUp
             if (reservation) await confirmSocialQueueSlot(reservation.assignment_id, result.post_id);
             setSuccess(useApproval ? 'Review links created. This post stays paused until the approval rule passes.' : publishNow ? 'Post queued for publishing. It can take a few minutes to appear.' : useQueue ? 'Post added to the next open queue slot.' : 'Post scheduled.');
             setReviewLinks(result.review_links || []);
-            setCaption(''); setSelectedAccountIds(new Set()); setSelectedMedia(null);
+            setCaption(''); setNetworkText({}); setPreviewNetwork(''); setSelectedAccountIds(new Set()); setSelectedMedia(null);
             setScheduledAt(defaultScheduleValue());
             setQueueId('');
             setYoutubeVisibility('private');
@@ -382,8 +396,44 @@ export function Composer({ accounts, onScheduled, initialJobId = null, initialUp
                 />
             </div>
 
+            {variantsEnabled && selectedNetworks.length > 0 && <section aria-label="Platform-specific captions" className="rounded-xl border border-vx-border p-4 space-y-3">
+                <div>
+                    <h3 className="text-sm font-bold">Customize by platform</h3>
+                    <p className="text-xs text-vx-fg-muted">Choose a platform and tailor its caption. Leave it empty to use the main caption.</p>
+                </div>
+                <div role="tablist" aria-label="Platform preview" className="flex flex-wrap gap-2">
+                    {selectedNetworks.map((network) => <button key={network} type="button" role="tab" aria-selected={activePreviewNetwork === network}
+                        onClick={() => setPreviewNetwork(network)} className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-bold ${activePreviewNetwork === network ? 'border-vx-accent text-vx-accent' : 'border-vx-border'}`}>
+                        <NetworkLogo network={network} className="h-4 w-4" />{networkLabel(network)}
+                    </button>)}
+                </div>
+                {activePreviewNetwork && (() => {
+                    const network = NETWORKS.find((item) => item.key === activePreviewNetwork);
+                    const override = networkText[activePreviewNetwork] || '';
+                    const effective = override || caption;
+                    const length = captionLength(activePreviewNetwork, effective);
+                    const names = activeAccounts.filter((account) => selectedAccountIds.has(account.id) && account.network === activePreviewNetwork).map((account) => account.display_name || account.external_account_id);
+                    return <div className="grid gap-4 lg:grid-cols-2">
+                        <div>
+                            <label htmlFor={`platform-caption-${activePreviewNetwork}`} className="mb-2 block text-sm font-bold">{network.label} caption</label>
+                            <textarea id={`platform-caption-${activePreviewNetwork}`} rows={4} value={override}
+                                onChange={(event) => setNetworkText((current) => ({ ...current, [activePreviewNetwork]: event.target.value }))}
+                                placeholder={`Use main caption for ${network.label}`} className="w-full rounded-xl border border-vx-border bg-transparent p-3 text-sm" />
+                            <div className="mt-1 flex justify-between text-xs text-vx-fg-muted"><span>{override ? 'Custom caption' : 'Using main caption'}</span><span className={length > network.captionLimit ? 'text-vx-danger' : ''}>{length} / {network.captionLimit}</span></div>
+                        </div>
+                        <article aria-label={`${network.label} post preview`} className="overflow-hidden rounded-xl border border-vx-border bg-vx-panel">
+                            <header className="flex items-center gap-2 border-b border-vx-border p-3 text-sm font-bold"><NetworkLogo network={activePreviewNetwork} className="h-5 w-5" /><span>{names.join(', ')}</span></header>
+                            {selectedMedia?.thumbUrl && (mediaType === 'video'
+                                ? <video src={selectedMedia.thumbUrl} muted playsInline preload="metadata" className="aspect-video w-full object-cover" />
+                                : <img src={selectedMedia.thumbUrl} alt="Selected post preview" className="aspect-video w-full object-cover" />)}
+                            <p className="whitespace-pre-wrap break-words p-3 text-sm">{effective || 'Your caption preview will appear here.'}</p>
+                        </article>
+                    </div>;
+                })()}
+            </section>}
+
             {presetsEnabled && <ContentPresets accounts={activeAccounts} caption={caption} selectedAccountIds={selectedAccountIds}
-                onApply={(nextCaption, accountIds) => { setCaption(nextCaption); setSelectedAccountIds(new Set(accountIds)); setError(''); setSuccess(''); idempotencyKey.current = newIdempotencyKey(); }} />}
+                onApply={(nextCaption, accountIds) => { setCaption(nextCaption); setNetworkText({}); setPreviewNetwork(''); setSelectedAccountIds(new Set(accountIds)); setError(''); setSuccess(''); idempotencyKey.current = newIdempotencyKey(); }} />}
 
             <div>
                 <div className="text-sm font-bold mb-2">Media</div>

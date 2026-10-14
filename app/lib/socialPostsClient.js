@@ -26,17 +26,17 @@ export async function listSocialPosts({ beforeCreatedAt, beforeId, limit } = {})
  * comment in packages/db/schema/supabase/0156): [{ mediaType, jobId }].
  * Returns { post_id, idempotent, target_count }. Throws GatewayError.
  */
-export async function createSocialPost({ scheduledAt, publishNow, globalText, idempotencyKey, accountIds, media, youtubeVisibility }) {
+export async function createSocialPost({ scheduledAt, publishNow, globalText, networkText, idempotencyKey, accountIds, media, youtubeVisibility }) {
     return gatewayFetch('/social/posts', {
         method: 'POST',
-        body: JSON.stringify({ scheduledAt, ...(publishNow !== undefined ? { publishNow } : {}), globalText: globalText || null, idempotencyKey, accountIds, media, youtubeVisibility }),
+        body: JSON.stringify({ scheduledAt, ...(publishNow !== undefined ? { publishNow } : {}), globalText: globalText || null, networkText, idempotencyKey, accountIds, media, youtubeVisibility }),
     });
 }
 
 /** Creates an inert scheduled draft and signed links for its reviewers. */
-export async function createSocialApproval({ scheduledAt, globalText, idempotencyKey, accountIds, media, reviewers, policy, youtubeVisibility }) {
+export async function createSocialApproval({ scheduledAt, globalText, networkText, idempotencyKey, accountIds, media, reviewers, policy, youtubeVisibility }) {
     return gatewayFetch('/social/approvals', {
-        method: 'POST', body: JSON.stringify({ scheduledAt, globalText: globalText || null, idempotencyKey, accountIds, media, reviewers, policy, youtubeVisibility }),
+        method: 'POST', body: JSON.stringify({ scheduledAt, globalText: globalText || null, networkText, idempotencyKey, accountIds, media, reviewers, policy, youtubeVisibility }),
     });
 }
 

@@ -19,6 +19,8 @@ function stub(overrides={}){calls=[];globalThis.fetch=async(url,init)=>{const na
   consume_account_read_request:{ok:true},consume_social_post_write_request:{ok:true},get_or_create_default_social_brand:{ok:true,brand_id:brand},
   list_social_accounts:{ok:true,accounts:[{id:account,status:'active',network:'instagram'}]},
   create_social_post_approval:{ok:true,request_id:requestId,post_id:postId,idempotent:false,reviewers:[{id:reviewerId,email:'reviewer@example.com'}]},
+  create_social_post_approval_with_variants:{ok:true,request_id:requestId,post_id:postId,idempotent:false,reviewers:[{id:reviewerId,email:'reviewer@example.com'}]},
+  read_social_publish_entitlement:{ok:true,tier:'publish',account_limit:5},
   list_social_approvals:{ok:true,requests:[]},get_social_approval_review:{ok:true,reviewer_id:reviewerId,email:'reviewer@example.com',decision:'pending',request_status:'pending',policy:'all',scheduled_at:'2026-11-01T10:00:00Z',global_text:'Review me',brand_name:'Veyrnox',networks:['instagram'],media:null},
   decide_social_approval:{ok:true,idempotent:false,decision:'approved',request_status:'approved'},
 })[name]);};}
@@ -26,6 +28,10 @@ function stub(overrides={}){calls=[];globalThis.fetch=async(url,init)=>{const na
 test('owner creates a validated approval request and receives signed links',async()=>{stub();const res=await ownerRoute.POST(request('https://veyrnox.ai/api/v1/social/approvals','POST',{
   scheduledAt:'2026-11-01T10:00:00Z',globalText:'Review me',idempotencyKey:'approval_12345678',accountIds:[account],media:[{mediaType:'image',jobId:job}],policy:'all',reviewers:['Reviewer@Example.com']
 }));assert.equal(res.status,201);const body=await res.json();assert.equal(body.review_links[0].email,'reviewer@example.com');assert.match(body.review_links[0].url,/^https:\/\/veyrnox\.ai\/social\/review\//);assert.equal(calls.at(-1).name,'create_social_post_approval');assert.deepEqual(calls.at(-1).args.p_reviewer_emails,['reviewer@example.com']);});
+
+test('approval requests persist paid platform-specific copy atomically',async()=>{const previousVariants=process.env.PUBLISH_CONTENT_VARIANTS_ENABLED,previousPlans=process.env.PUBLISH_PLANS_ENABLED;process.env.PUBLISH_CONTENT_VARIANTS_ENABLED='true';process.env.PUBLISH_PLANS_ENABLED='true';try{stub();const res=await ownerRoute.POST(request('https://veyrnox.ai/api/v1/social/approvals','POST',{
+  scheduledAt:'2026-11-01T10:00:00Z',globalText:'Fallback',networkText:{instagram:'Instagram review copy'},idempotencyKey:'approval_12345678',accountIds:[account],media:[{mediaType:'image',jobId:job}],policy:'all',reviewers:['reviewer@example.com']
+}));assert.equal(res.status,201);const create=calls.find((call)=>call.name==='create_social_post_approval_with_variants');assert.deepEqual(create.args.p_network_text,{instagram:'Instagram review copy'});}finally{if(previousVariants===undefined)delete process.env.PUBLISH_CONTENT_VARIANTS_ENABLED;else process.env.PUBLISH_CONTENT_VARIANTS_ENABLED=previousVariants;if(previousPlans===undefined)delete process.env.PUBLISH_PLANS_ENABLED;else process.env.PUBLISH_PLANS_ENABLED=previousPlans;}});
 
 test('owner route rejects invalid reviewers before database access',async()=>{stub();const res=await ownerRoute.POST(request('https://veyrnox.ai/api/v1/social/approvals','POST',{
   scheduledAt:'2026-11-01T10:00:00Z',globalText:'Review me',idempotencyKey:'approval_12345678',accountIds:[account],media:[{mediaType:'image',jobId:job}],policy:'all',reviewers:['bad']

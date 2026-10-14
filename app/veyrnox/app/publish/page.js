@@ -58,6 +58,7 @@ function PublishControls({ initialJobId, initialUploadId }) {
   const [queuesEnabled, setQueuesEnabled] = useState(false);
   const [approvalsEnabled, setApprovalsEnabled] = useState(false);
   const [teamsEnabled, setTeamsEnabled] = useState(false);
+  const [variantsEnabled, setVariantsEnabled] = useState(false);
   const [brandRole, setBrandRole] = useState('owner');
   const [planTier, setPlanTier] = useState('free');
   const [networks, setNetworks] = useState([]);
@@ -85,6 +86,7 @@ function PublishControls({ initialJobId, initialUploadId }) {
       setQueuesEnabled(res.queuesEnabled === true);
       setApprovalsEnabled(res.approvalsEnabled === true);
       setTeamsEnabled(res.teamsEnabled === true);
+      setVariantsEnabled(res.variantsEnabled === true);
       setBrandRole(res.brandRole || 'owner');
       setPlanTier(res.planTier === 'publish' ? 'publish' : 'free');
       setNetworks(res.networks || []);
@@ -234,7 +236,7 @@ function PublishControls({ initialJobId, initialUploadId }) {
 
     {canPublish && <section className="rounded-2xl border border-vx-border p-5">
       <h2 id="schedule" className="font-bold mb-4 scroll-mt-6">Create a post</h2>
-      <Composer approvalsEnabled={approvalsEnabled && paid} queuesEnabled={queuesEnabled && paid} presetsEnabled={contentPresetsEnabled && paid} multiAccountEnabled={paid} scheduleEnabled={paid} youtubeVisibilityEnabled={youtubeVisibilityEnabled} key={initialJobId || initialUploadId || 'library'} initialJobId={initialJobId} initialUploadId={initialUploadId} reusablePost={reusablePost} accounts={accounts} uploadsEnabled={uploadsEnabled} onScheduled={() => setPostsRefreshToken((n) => n + 1)} />
+      <Composer variantsEnabled={variantsEnabled && paid} approvalsEnabled={approvalsEnabled && paid} queuesEnabled={queuesEnabled && paid} presetsEnabled={contentPresetsEnabled && paid} multiAccountEnabled={paid} scheduleEnabled={paid} youtubeVisibilityEnabled={youtubeVisibilityEnabled} key={initialJobId || initialUploadId || 'library'} initialJobId={initialJobId} initialUploadId={initialUploadId} reusablePost={reusablePost} accounts={accounts} uploadsEnabled={uploadsEnabled} onScheduled={() => setPostsRefreshToken((n) => n + 1)} />
     </section>}
 
     <section className="rounded-2xl border border-vx-border p-5">

@@ -174,6 +174,50 @@ test('POST: schedules a post and returns its id', async () => {
     });
 });
 
+test('POST: paid platform variants use the atomic options RPC', async () => {
+    const previousVariants = process.env.PUBLISH_CONTENT_VARIANTS_ENABLED;
+    const previousPlans = process.env.PUBLISH_PLANS_ENABLED;
+    process.env.PUBLISH_CONTENT_VARIANTS_ENABLED = 'true';
+    process.env.PUBLISH_PLANS_ENABLED = 'true';
+    try {
+        stub({ create_social_post_with_options: { ok: true, idempotent: false, post_id: postId, target_count: 1 } });
+        const res = await POST(postRequest({ ...validBody(), networkText: { instagram: 'Instagram copy' } }));
+        assert.equal(res.status, 201);
+        const create = calls.find((call) => call.name === 'create_social_post_with_options');
+        assert.deepEqual(create.args.p_network_text, { instagram: 'Instagram copy' });
+        assert.equal(create.args.p_youtube_visibility, null);
+    } finally {
+        if (previousVariants === undefined) delete process.env.PUBLISH_CONTENT_VARIANTS_ENABLED; else process.env.PUBLISH_CONTENT_VARIANTS_ENABLED = previousVariants;
+        if (previousPlans === undefined) delete process.env.PUBLISH_PLANS_ENABLED; else process.env.PUBLISH_PLANS_ENABLED = previousPlans;
+    }
+});
+
+test('POST: platform variants fail closed and cannot target an unselected network', async () => {
+    stub();
+    let res = await POST(postRequest({ ...validBody(), networkText: { instagram: 'Instagram copy' } }));
+    assert.equal(res.status, 404);
+    assert.deepEqual(await res.json(), { error: 'variants_not_open' });
+    assert.deepEqual(calls, []);
+
+    process.env.PUBLISH_CONTENT_VARIANTS_ENABLED = 'true';
+    process.env.PUBLISH_PLANS_ENABLED = 'true';
+    try {
+        stub();
+        res = await POST(postRequest({ ...validBody(), networkText: { twitter: 'Not selected' } }));
+        assert.equal(res.status, 400);
+        assert.deepEqual(await res.json(), { error: 'invalid_network_text' });
+        assert.equal(calls.some((call) => call.name === 'create_social_post_with_options'), false);
+
+        stub({ read_social_publish_entitlement: { ok: true, tier: 'free', account_limit: 1, analytics_days: 0, best_time_enabled: false, subscription: null } });
+        res = await POST(postRequest({ ...validBody(), publishNow: true, networkText: { instagram: 'Paid copy' } }));
+        assert.equal(res.status, 402);
+        assert.deepEqual(await res.json(), { error: 'publish_plan_required', feature: 'platform_variants' });
+    } finally {
+        delete process.env.PUBLISH_CONTENT_VARIANTS_ENABLED;
+        delete process.env.PUBLISH_PLANS_ENABLED;
+    }
+});
+
 test('POST: an editor reads owner-scoped account data but creates as the acting teammate', async () => {
     const previousTeams = process.env.PUBLISH_TEAMS_ENABLED;
     const previousPlans = process.env.PUBLISH_PLANS_ENABLED;

@@ -46,7 +46,10 @@ export default function SocialReviewPage() {
             {review.media?.preview_url && (review.media.media_type === 'video'
                 ? <video src={review.media.preview_url} controls playsInline className="max-h-[420px] w-full rounded-xl bg-black object-contain" />
                 : <img src={review.media.preview_url} alt="Post preview" className="max-h-[420px] w-full rounded-xl object-contain" />)}
-            {review.global_text && <p className="whitespace-pre-wrap text-sm text-vx-fg-body">{review.global_text}</p>}
+            {(review.targets || []).length > 0 ? <div className="space-y-3">{review.targets.map((target) => <section key={target.network} className="rounded-xl border border-vx-border p-3">
+                <div className="mb-2 flex items-center gap-2 text-sm font-bold"><NetworkLogo network={target.network} className="h-4 w-4" />{target.network}</div>
+                <p className="whitespace-pre-wrap text-sm text-vx-fg-body">{target.text}</p>
+            </section>)}</div> : review.global_text && <p className="whitespace-pre-wrap text-sm text-vx-fg-body">{review.global_text}</p>}
             <p className="text-xs text-vx-fg-muted">Planned for {new Date(review.scheduled_at).toLocaleString()}. {review.policy === 'all' ? 'Every reviewer must approve.' : 'One approval is enough.'}</p>
             {review.decision === 'pending' && review.request_status === 'pending' ? <>
                 <div><label htmlFor="review-comment" className="mb-2 block text-sm font-bold">Comment (optional)</label><textarea id="review-comment" rows={3} maxLength={2000} value={comment} onChange={(event) => setComment(event.target.value)} className="w-full rounded-xl border border-vx-border bg-transparent p-3 text-sm" /></div>
