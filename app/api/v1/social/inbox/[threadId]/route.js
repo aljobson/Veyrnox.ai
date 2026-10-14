@@ -21,7 +21,7 @@ function identity(req, threadId) {
 }
 
 function rpcFailure(result) {
-    const status = result?.code === 'PLAN_REQUIRED' ? 402 : result?.code === 'THREAD_NOT_FOUND' ? 404
+    const status = result?.code === 'PLAN_REQUIRED' ? 402 : result?.code === 'FORBIDDEN' ? 403 : result?.code === 'THREAD_NOT_FOUND' ? 404
         : ['INVALID_ACTION'].includes(result?.code) ? 400 : 502;
     return NextResponse.json({ error: String(result?.code || 'internal').toLowerCase() }, { status, headers });
 }
@@ -52,14 +52,14 @@ export async function PATCH(req, context) {
     const limited = await limitRequestBody(req); if (limited.response) return limited.response;
     let body; try { body = await limited.request.json(); } catch { return NextResponse.json({ error: 'invalid_body' }, { status: 400, headers }); }
     if (!body || Object.keys(body).length !== 1 || !ACTIONS.has(body.action)) return NextResponse.json({ error: 'invalid_action' }, { status: 400, headers });
-    const brand = await resolveBrand(resolved.authId, resolved.cfg, 'api/v1/social/inbox/thread:PATCH', { request: req, allowedRoles: ['owner'] });
+    const brand = await resolveBrand(resolved.authId, resolved.cfg, 'api/v1/social/inbox/thread:PATCH', { request: req, allowedRoles: ['owner', 'manager', 'editor'] });
     if (brand.error) return brand.error;
     const rate = await socialPostWriteLimit(resolved.authId, resolved.cfg); if (rate) return rate;
     try {
         const detail = await rpc('get_social_inbox_thread', { p_auth_id: brand.rpcAuthId, p_thread_id: threadId }, resolved.cfg);
         const accounts = detail?.ok ? await rpc('list_social_accounts', { p_auth_id: brand.rpcAuthId, p_brand_id: brand.brandId }, resolved.cfg) : null;
         if (!detail?.ok || !accounts?.ok || !accounts.accounts?.some((account) => account.id === detail.thread?.account_id)) return rpcFailure({ code: 'THREAD_NOT_FOUND' });
-        const result = await rpc('update_social_inbox_thread', { p_auth_id: brand.rpcAuthId, p_thread_id: threadId, p_action: body.action }, resolved.cfg);
+        const result = await rpc('update_social_inbox_thread', { p_auth_id: resolved.authId, p_thread_id: threadId, p_action: body.action }, resolved.cfg);
         return result?.ok === true ? NextResponse.json({ updated: true }, { headers }) : rpcFailure(result);
     } catch (error) {
         console.error('[api/v1/social/inbox/thread:PATCH] update failed:', error instanceof SupabaseError ? error.status : 0);

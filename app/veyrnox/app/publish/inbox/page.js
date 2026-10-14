@@ -58,6 +58,7 @@ function InboxDashboard() {
   const [selected, setSelected] = useState(null);
   const [error, setError] = useState('');
   const [refresh, setRefresh] = useState(0);
+  const canWrite = ['owner', 'manager', 'editor'].includes(brandRole);
 
   useEffect(() => {
     let active = true;
@@ -90,7 +91,7 @@ function InboxDashboard() {
     try {
       const detail = await getSocialInboxThread(thread.id);
       setSelected(detail);
-      if (brandRole === 'owner' && thread.unread_count > 0) {
+      if (canWrite && thread.unread_count > 0) {
         await updateSocialInboxThread(thread.id, 'read');
         setRefresh((value) => value + 1);
       }
@@ -152,7 +153,7 @@ function InboxDashboard() {
           </button>
         </li>)}</ul>
       </section>
-      <Conversation selected={selected} canWrite={brandRole === 'owner'} onAction={act} onReplied={async () => {
+      <Conversation selected={selected} canWrite={canWrite} onAction={act} onReplied={async () => {
         if (!selected?.thread) return;
         setSelected(await getSocialInboxThread(selected.thread.id)); setRefresh((value) => value + 1);
       }} />
@@ -192,7 +193,7 @@ function Conversation({ selected, canWrite, onAction, onReplied }) {
         <p className={`mt-2 text-xs ${message.direction === 'outbound' ? 'text-black/70' : 'text-vx-fg-muted'}`}>{dateTime.format(new Date(message.sent_at))}{message.delivery_status === 'failed' ? ' · Failed' : ''}</p>
       </div>
     </li>)}</ol>
-    {canWrite ? <Reply thread={thread} onReplied={onReplied} /> : <div className="border-t border-vx-border p-4"><p className="text-sm text-vx-fg-muted">Read-only team access. The brand owner handles replies and conversation status.</p></div>}
+    {canWrite ? <Reply thread={thread} onReplied={onReplied} /> : <div className="border-t border-vx-border p-4"><p className="text-sm text-vx-fg-muted">Your team role can read this inbox but cannot reply or change conversation status.</p></div>}
   </section>;
 }
 

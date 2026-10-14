@@ -17,7 +17,7 @@ const control = 'rounded-xl border border-vx-border bg-vx-panel px-3 py-2 text-s
 export default function PublishTeamPage() {
     const account = useSyncExternalStore(onSessionChange, currentAccount, noAccount);
     return <><AppNav /><Main className="mx-auto max-w-[1000px] px-4 py-10 sm:px-8">
-        <nav aria-label="Publish" className="mb-2 flex flex-wrap gap-4 text-sm"><Link href="/app/publish" className="text-vx-accent underline">Veyrnox Publish</Link><Link href="/app/publish/analytics" className="text-vx-accent underline">Analytics</Link></nav>
+        <nav aria-label="Publish" className="mb-2 flex flex-wrap gap-4 text-sm"><Link href="/app/publish" className="text-vx-accent underline">Veyrnox Publish</Link><Link href="/app/publish/analytics" className="text-vx-accent underline">Analytics</Link><Link href="/app/publish/activity" className="text-vx-accent underline">Activity</Link></nav>
         <h1 className="text-3xl font-black">Team</h1>
         <p className="mt-2 mb-4 text-sm text-vx-fg-muted">Invite people to your brand, assign clear roles and keep access under your control.</p>
         {account && <BrandSwitcher />}

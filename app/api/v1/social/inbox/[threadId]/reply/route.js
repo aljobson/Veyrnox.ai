@@ -27,7 +27,7 @@ export async function POST(req, context) {
         return NextResponse.json({ error: 'invalid_reply' }, { status: 400, headers });
     }
     const rate = await socialPostWriteLimit(authId, cfg); if (rate) return rate;
-    const brand = await resolveBrand(authId, cfg, 'api/v1/social/inbox/reply:POST', { request: req, allowedRoles: ['owner'] });
+    const brand = await resolveBrand(authId, cfg, 'api/v1/social/inbox/reply:POST', { request: req, allowedRoles: ['owner', 'manager', 'editor'] });
     if (brand.error) return brand.error;
     let created;
     try {
@@ -36,7 +36,7 @@ export async function POST(req, context) {
         if (!detail?.ok || !accounts?.ok || !accounts.accounts?.some((account) => account.id === detail.thread?.account_id)) {
             return NextResponse.json({ error: 'thread_not_found' }, { status: 404, headers });
         }
-        created = await rpc('create_social_inbox_reply', { p_auth_id: brand.rpcAuthId, p_thread_id: threadId,
+        created = await rpc('create_social_inbox_reply', { p_auth_id: authId, p_thread_id: threadId,
             p_body: body.body, p_idempotency_key: body.idempotencyKey }, cfg);
     }
     catch (error) {
@@ -44,7 +44,7 @@ export async function POST(req, context) {
         return NextResponse.json({ error: 'internal' }, { status: 502, headers });
     }
     if (created?.ok !== true) {
-        const status = created?.code === 'PLAN_REQUIRED' ? 402 : created?.code === 'THREAD_NOT_FOUND' ? 404
+        const status = created?.code === 'PLAN_REQUIRED' ? 402 : created?.code === 'FORBIDDEN' ? 403 : created?.code === 'THREAD_NOT_FOUND' ? 404
             : created?.code === 'REPLY_UNAVAILABLE' ? 409 : created?.code === 'ACCOUNT_UNAVAILABLE' ? 409 : 400;
         return NextResponse.json({ error: String(created?.code || 'internal').toLowerCase() }, { status, headers });
     }

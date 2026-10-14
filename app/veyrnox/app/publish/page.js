@@ -136,13 +136,14 @@ function PublishControls({ initialJobId, initialUploadId }) {
           {smartlinksEnabled && <Link href="/app/publish/smartlink" className="text-sm font-bold text-vx-accent underline">SmartLink</Link>}
           {queuesEnabled && paid && <Link href="/app/publish/queues" className="text-sm font-bold text-vx-accent underline">Posting queues</Link>}
           {teamsEnabled && paid && ['owner', 'manager'].includes(brandRole) && <Link href="/app/publish/team" className="text-sm font-bold text-vx-accent underline">Team</Link>}
+          {teamsEnabled && paid && ['owner', 'manager'].includes(brandRole) && <Link href="/app/publish/activity" className="text-sm font-bold text-vx-accent underline">Activity</Link>}
           {plansEnabled && canWrite && <Link href="/app/publish/plan" className="text-sm font-bold text-vx-accent underline">Plans and billing</Link>}
         </div>
       </div>
       <p className="text-sm text-vx-fg-muted mb-3">
         {paid ? `${canWrite ? 'Your' : 'This brand’s'} Publish Plan includes up to ${accountLimit} connected accounts, scheduling and analytics.` : 'Free includes one connected account and Post now.'}
       </p>
-      {!canWrite && <p role="status" className="mb-3 rounded-xl bg-vx-panel p-3 text-sm">You are viewing this brand as {brandRole}. Posting and account changes remain with the owner while delegated write actions are being enabled.</p>}
+      {!canWrite && <p role="status" className="mb-3 rounded-xl bg-vx-panel p-3 text-sm">You are viewing this brand as {brandRole}. Managers and editors can manage the inbox, queues and SmartLink; publishing and account connections remain with the owner.</p>}
       {accounts === null && !loadError && <p className="text-sm text-vx-fg-muted">Loading…</p>}
       {loadError && <p role="alert" className="text-sm text-vx-danger mb-3">{loadError}</p>}
       {accounts !== null && active.length === 0 && !loadError && (
