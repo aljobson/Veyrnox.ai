@@ -20,6 +20,7 @@ const ACE_CUT = String.raw`\"endpointBilling\":{\"endpoint\":\"fal-ai/ace-step\"
 const KLING_CUT = String.raw`\"endpointBilling\":{\"endpoint\":\"fal-ai/kling-video/v3/pro/image-to-video\",\"billing_unit\":\"seconds\",\"price\":0.14,\"provider_type\":\"partner\",\"is_partner_api\":true,\"balance_check\":false,\"enterprise_status\":\"ready\"},\"endpointMessages\"`;
 const SEEDREAM = 'fal-ai/bytedance/seedream/v4/text-to-image';
 const ACE_PAGE = `<p>Your request will cost $0.0002 per second of generated audio.</p>${payload('fal-ai/ace-step', 'seconds', 0.0002)}`;
+const ACE_BILLING_ONLY_PAGE = `<p>ACE Step audio generation</p>${payload('fal-ai/ace-step', 'seconds', 0.0002)}`;
 // The sentence is the price of one second with audio off; the object is the base.
 const KLING_PAGE = `you will be charged **$0.112** (audio off) or **$0.168** (audio on)${payload(KLING, 'seconds', 0.14, true)}`;
 // One of the six pages with no "$" figure of its own.
@@ -97,6 +98,20 @@ test('a row whose base price matches prints the line it always printed', () => {
         assert.deepEqual(rowLines(checked), rowLines(checkRow(r, extractPrices(html), UNIT_RATES)));
     }
     assert.deepEqual(rowLines(page(SEEDREAM_ROW, SEEDREAM_PAGE)), ['ok    seedream-4           $0.0300 per generation 2cr  margin 54.5%']);
+});
+
+test('an exact billing payload stands in only when a listed page has no price text', () => {
+    const ace = row({ id: 'ace-step', provider_endpoint: 'fal-ai/ace-step', credits_5s: 1, provider_cost_per_unit: 0.012 });
+    const omitted = page(ace, ACE_BILLING_ONLY_PAGE);
+    assert.equal(omitted.verdict, 'ok');
+    assert.deepEqual(omitted.seen, [0.0002]);
+    assert.deepEqual(rowLines(omitted), ['ok    ace-step             $0.0002 /s x 60        1cr  margin 63.6%']);
+
+    // The fallback must not mask a rendered rate that disagrees with billing.
+    const conflicting = page(ace, `<p>Your request will cost $0.0004 per second.</p>${payload('fal-ai/ace-step', 'seconds', 0.0002)}`);
+    assert.equal(conflicting.verdict, 'drift');
+    assert.deepEqual(conflicting.seen, [0.0004]);
+    assert.deepEqual([drifts(conflicting), driftsExactly(conflicting)], [true, true]);
 });
 
 // Seedream's page shows no "$" figure, so until now nothing on it was compared.
