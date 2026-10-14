@@ -11,16 +11,24 @@ async function exchangeFacebookToken(stage, endpoint, params, fetcher) {
     try {
         const url = new URL(endpoint);
         Object.entries(params).forEach(([key, value]) => url.searchParams.set(key, value));
-        // Cloudflare's outbound fetch path is stricter than browsers about
-        // RequestInfo objects. Pass the fully encoded URL string so the token
-        // endpoint receives the query exactly as Meta documents it.
-        const result = await jsonRequest(url.toString(), {}, fetcher);
+        // Meta may redirect successful exchanges within graph.facebook.com.
+        // The shared transport rejects every redirect, so handle this endpoint
+        // explicitly and verify the final URL never leaves Meta's HTTPS host.
+        const response = await fetcher(url.toString(), { redirect: 'follow', signal: AbortSignal.timeout(15000) });
+        if (response.url) {
+            const finalUrl = new URL(response.url);
+            if (finalUrl.protocol !== 'https:' || finalUrl.hostname !== 'graph.facebook.com')
+                throw new Error(`facebook_${stage}_token_redirect_invalid`);
+        }
+        const result = await response.json().catch(() => null);
+        if (!response.ok || !result || result.error) throw new Error(`provider_request_failed_${response.status}`);
         if (typeof result.access_token !== 'string' || !result.access_token) throw new Error(`facebook_${stage}_token_missing`);
         return result;
     } catch (error) {
         if (error?.message === `facebook_${stage}_token_missing`) throw error;
         const status = /^provider_request_failed_([0-9]{3})$/.exec(error?.message || '')?.[1];
-        const kind = status ? status
+        const kind = error?.message === `facebook_${stage}_token_redirect_invalid` ? 'redirect'
+            : status ? status
             : ['AbortError', 'TimeoutError'].includes(error?.name) ? 'timeout'
                 : error?.name === 'TypeError' ? 'transport' : 'unexpected';
         throw new Error(`facebook_${stage}_token_failed_${kind}`);

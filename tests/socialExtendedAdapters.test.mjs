@@ -78,6 +78,7 @@ test('Facebook exchanges authorization and long-lived tokens with query-based GE
         { code: 'auth-code', redirectUri: 'https://staging.test/social/connect/callback/facebook' }, fetcher);
     assert.equal(result.accessToken, 'long-token');
     assert.equal(calls[0].init.method, undefined);
+    assert.equal(calls[0].init.redirect, 'follow');
     assert.equal(typeof calls[0].rawUrl, 'string');
     assert.equal(calls[0].url.searchParams.get('code'), 'auth-code');
     assert.equal(calls[0].url.searchParams.get('redirect_uri'), 'https://staging.test/social/connect/callback/facebook');
