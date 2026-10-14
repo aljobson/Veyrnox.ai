@@ -50,6 +50,7 @@ function PublishControls({ initialJobId, initialUploadId }) {
   const [uploadsEnabled, setUploadsEnabled] = useState(false);
   const [plansEnabled, setPlansEnabled] = useState(false);
   const [inboxEnabled, setInboxEnabled] = useState(false);
+  const [smartlinksEnabled, setSmartlinksEnabled] = useState(false);
   const [planTier, setPlanTier] = useState('free');
   const [networks, setNetworks] = useState([]);
   const [blueskyOpen, setBlueskyOpen] = useState(false);
@@ -70,6 +71,7 @@ function PublishControls({ initialJobId, initialUploadId }) {
       setYoutubeVisibilityEnabled(res.youtubeVisibilityEnabled === true);
       setPlansEnabled(res.plansEnabled === true);
       setInboxEnabled(res.inboxEnabled === true);
+      setSmartlinksEnabled(res.smartlinksEnabled === true);
       setPlanTier(res.planTier === 'publish' ? 'publish' : 'free');
       setNetworks(res.networks || []);
     } catch (err) {
@@ -116,6 +118,7 @@ function PublishControls({ initialJobId, initialUploadId }) {
         <h2 className="font-bold">Connected accounts</h2>
         <div className="flex flex-wrap gap-4">
           {inboxEnabled && <Link href="/app/publish/inbox" className="text-sm font-bold text-vx-accent underline">Social inbox</Link>}
+          {smartlinksEnabled && <Link href="/app/publish/smartlink" className="text-sm font-bold text-vx-accent underline">SmartLink</Link>}
           {plansEnabled && <Link href="/app/publish/plan" className="text-sm font-bold text-vx-accent underline">Plans and billing</Link>}
         </div>
       </div>

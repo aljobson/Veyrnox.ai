@@ -32,6 +32,7 @@ const OUTSIDE = {
     'app/api/admin/reap-assets/route.js': 'access + token',
     'app/api/admin/top-up-backfill/route.js': 'access + token',
     'app/media/social/[token]/route.js': 'signed token',
+    'app/s/[slug]/go/[itemId]/route.js': 'public SmartLink redirect',
     'app/api/turnstile-failure/route.js': 'rate limit + fixed body',
 };
 
