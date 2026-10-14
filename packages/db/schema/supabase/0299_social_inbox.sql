@@ -74,7 +74,7 @@ REVOKE ALL ON public.social_inbox_actions FROM PUBLIC, anon, authenticated, serv
 
 CREATE OR REPLACE FUNCTION public.social_inbox_actions_append_only()
 RETURNS TRIGGER LANGUAGE plpgsql SET search_path = '' AS $$
-BEGIN RAISE EXCEPTION 'social_inbox_actions is append-only'; END $$;
+BEGIN RAISE EXCEPTION 'social_inbox_actions is append-only (attempted %)', TG_OP; END $$;
 DROP TRIGGER IF EXISTS social_inbox_actions_append_only ON public.social_inbox_actions;
 CREATE TRIGGER social_inbox_actions_append_only BEFORE UPDATE OR DELETE ON public.social_inbox_actions
 FOR EACH ROW EXECUTE FUNCTION public.social_inbox_actions_append_only();
