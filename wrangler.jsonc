@@ -397,11 +397,14 @@
   //   STRIPE_WEBHOOK_SECRET       whsec_… signs /api/webhook/stripe AND the Top-up id in session metadata (#93)
   //   TOP_UP_BACKFILL_TOKEN       bearer for /api/admin/top-up-backfill (#94); same value in the TOP_UP_BACKFILL_TOKEN Actions secret
   //   ADMIN_REAP_TOKEN            /api/admin/reap-assets shared secret (ADR-0008)
-  //   META_APP_ID, META_APP_SECRET
+  //   INSTAGRAM_CLIENT_ID, INSTAGRAM_CLIENT_SECRET
   //                               Instagram OAuth connect/callback + Graph API calls, via
   //                               Instagram API with Instagram Login (packages/adapters/social/
-  //                               instagram.js, ADR-0061). Not yet provisioned — see
-  //                               docs/social-publisher/06-oauth-review-runbook.md.
+  //                               instagram.js, ADR-0061). Falls back to META_APP_ID/SECRET for
+  //                               older apps that share one credential pair.
+  //   META_APP_ID, META_APP_SECRET
+  //                               Shared Meta fallback credentials and Facebook credentials
+  //                               when FACEBOOK_CLIENT_ID/SECRET are not set.
   //   LINKEDIN_CLIENT_ID, LINKEDIN_CLIENT_SECRET
   //                               LinkedIn OAuth connect/callback + Posts/Images API calls
   //                               (packages/adapters/social/linkedin.js, ADR-0061). Not yet

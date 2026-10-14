@@ -64,7 +64,7 @@ Threads media transfer also needs `SOCIAL_MEDIA_PROXY_SECRET`.
 
 | Network | Worker secrets | Callback path / consent |
 | --- | --- | --- |
-| Instagram | `META_APP_ID`, `META_APP_SECRET` | `/social/connect/callback/instagram`; `instagram_business_basic`, `instagram_business_content_publish` |
+| Instagram | `INSTAGRAM_CLIENT_ID`, `INSTAGRAM_CLIENT_SECRET` (fallback `META_APP_ID/SECRET`) | `/social/connect/callback/instagram`; `instagram_business_basic`, `instagram_business_content_publish` |
 | LinkedIn | `LINKEDIN_CLIENT_ID`, `LINKEDIN_CLIENT_SECRET` | `/social/connect/callback/linkedin`; `openid`, `profile`, `w_member_social` |
 | X | `X_CLIENT_ID`, `X_CLIENT_SECRET` | `/social/connect/callback/twitter`; `tweet.read`, `tweet.write`, `users.read`, `offline.access`, `media.write` |
 | TikTok | `TIKTOK_CLIENT_KEY`, `TIKTOK_CLIENT_SECRET` | `/social/connect/callback/tiktok`; `user.info.basic`, `video.upload` |
