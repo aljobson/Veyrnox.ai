@@ -43,13 +43,14 @@ export function instagramScopes(cfg) {
     return cfg && cfg.insights ? [...INSTAGRAM_SCOPES, INSTAGRAM_INSIGHTS_SCOPE] : INSTAGRAM_SCOPES;
 }
 
-/** Loads and validates Meta app config from Worker secrets. Returns null
- * on any misconfiguration — callers degrade to a clean 503, never a
- * throw. Same Meta App (and so the same META_APP_ID/META_APP_SECRET) as
- * the Facebook Login surface this adapter no longer uses. */
+/** Loads and validates Instagram Login config from Worker secrets. Returns
+ * null on any misconfiguration — callers degrade to a clean 503, never a
+ * throw. Meta can issue an Instagram-specific app ID and secret for this
+ * login surface, so those bindings take precedence. The META_* fallback
+ * preserves existing deployments where both products still share one pair. */
 export function instagramConfig(env = process.env) {
-    const appId = env.META_APP_ID || '';
-    const appSecret = env.META_APP_SECRET || '';
+    const appId = env.INSTAGRAM_CLIENT_ID || env.META_APP_ID || '';
+    const appSecret = env.INSTAGRAM_CLIENT_SECRET || env.META_APP_SECRET || '';
     if (!/^[0-9]{6,20}$/.test(appId) || appSecret.length < 16) return null;
     return { appId, appSecret, insights: env.INSTAGRAM_INSIGHTS_SCOPE_ENABLED === 'true' };
 }

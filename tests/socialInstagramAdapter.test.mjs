@@ -13,6 +13,19 @@ test('instagramConfig rejects malformed or missing env', () => {
     assert.deepEqual(instagramConfig({ META_APP_ID: '123456789012345', META_APP_SECRET: 'a'.repeat(32) }), cfg);
 });
 
+test('instagramConfig prefers Instagram-specific credentials and keeps the Meta fallback', () => {
+    assert.deepEqual(instagramConfig({
+        INSTAGRAM_CLIENT_ID: '1116196098057142',
+        INSTAGRAM_CLIENT_SECRET: 'i'.repeat(32),
+        META_APP_ID: '2428989684301953',
+        META_APP_SECRET: 'm'.repeat(32),
+    }), { appId: '1116196098057142', appSecret: 'i'.repeat(32), insights: false });
+    assert.deepEqual(instagramConfig({
+        META_APP_ID: '2428989684301953',
+        META_APP_SECRET: 'm'.repeat(32),
+    }), { appId: '2428989684301953', appSecret: 'm'.repeat(32), insights: false });
+});
+
 test('buildAuthorizeUrl uses Instagram Login (not Facebook Login) with state and the exact v1 scopes, and no PKCE params it does not document', () => {
     const url = new URL(buildAuthorizeUrl(cfg, {
         redirectUri: 'https://veyrnox.ai/social/connect/callback/instagram', state: 'signed-state-token',
