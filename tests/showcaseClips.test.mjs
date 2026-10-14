@@ -138,6 +138,7 @@ test('previews keep their title and source credit', () => {
     assert.deepEqual(SHOWCASE_SOURCES.map((source) => source.url), [
         'https://syntx.ai/trends',
         'https://higgsfield.ai/',
+        'https://www.capcut.com/my-edit?start_tab=video',
         'https://veyrnox.ai/',
     ]);
 });

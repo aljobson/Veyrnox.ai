@@ -86,10 +86,10 @@ export const LEGACY_PRESETS = [
     prompt: 'Tilt-shift timelapse of a busy city crossroads that looks like a toy model, tiny cars and people streaming past, saturated colours, high vantage point' },
 ];
 
-// The landing wall's seven, each with a showcase clip (showcase.js); its
+// The landing wall's eight, each with a showcase clip (showcase.js); its
 // bento is shaped for exactly this many (presetWall.js).
-const GALLERY_CLIP_KEYS = LEGACY_PRESETS.map((p) => p.id);
-const WALL_CLIP_KEYS = ['wall-cctv-night', 'wall-sunset-drift', 'wall-neon-alley', 'wall-warm-portrait', 'wall-film-portrait', 'wall-talking-head', 'wall-clean-cutout'];
+const GALLERY_CLIP_KEYS = ['product-hero-360', ...LEGACY_PRESETS.map((p) => p.id)];
+const WALL_CLIP_KEYS = ['wall-product-hero-360', 'wall-cctv-night', 'wall-sunset-drift', 'wall-neon-alley', 'wall-warm-portrait', 'wall-film-portrait', 'wall-talking-head', 'wall-clean-cutout'];
 export const PRESETS = GALLERY_CLIP_KEYS.map((key) => SOURCE_TEMPLATES.find((p) => p.clipKey === key));
 export const WALL_PRESETS = WALL_CLIP_KEYS.map((key) => SOURCE_TEMPLATES.find((p) => p.clipKey === key));
 // Old bookmarks retain their original prompt, without an unrelated demo clip.
