@@ -104,7 +104,7 @@ describe('team inbox workflow and analytics (0309, 0316)', { skip: !process.env.
     assert.deepEqual([result.platforms[0].received, result.platforms[0].sent, result.platforms[0].failed], [1, 1, 1]);
     assert.equal(result.trend.reduce((sum: number, day: { received: number }) => sum + day.received, 0), 1);
     assert.equal(result.heatmap.reduce((sum: number, cell: { received: number }) => sum + cell.received, 0), 1);
-    assert.equal((await value('SELECT public.get_social_inbox_analytics($1,$2,NULL,30) value', [outsider.auth, brand])).code, 'FORBIDDEN');
+    assert.equal((await value('SELECT public.get_social_inbox_analytics($1,$2,NULL,30) value', [outsider.auth, brand])).code, 'BRAND_NOT_FOUND');
     assert.equal((await value('SELECT public.get_social_inbox_analytics($1,$2,NULL,14) value', [owner.auth, brand])).code, 'INVALID_RANGE');
   });
 
