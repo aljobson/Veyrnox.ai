@@ -62,6 +62,8 @@ function PublishControls({ initialJobId, initialUploadId }) {
   const [reportsEnabled, setReportsEnabled] = useState(false);
   const [customerApiEnabled, setCustomerApiEnabled] = useState(false);
   const [customerWebhooksEnabled, setCustomerWebhooksEnabled] = useState(false);
+  const [adsEnabled, setAdsEnabled] = useState(false);
+  const [commerceEnabled, setCommerceEnabled] = useState(false);
   const [brandRole, setBrandRole] = useState('owner');
   const [planTier, setPlanTier] = useState('free');
   const [networks, setNetworks] = useState([]);
@@ -93,6 +95,8 @@ function PublishControls({ initialJobId, initialUploadId }) {
       setReportsEnabled(res.reportsEnabled === true);
       setCustomerApiEnabled(res.customerApiEnabled === true);
       setCustomerWebhooksEnabled(res.customerWebhooksEnabled === true);
+      setAdsEnabled(res.adsEnabled === true);
+      setCommerceEnabled(res.commerceEnabled === true);
       setBrandRole(res.brandRole || 'owner');
       setPlanTier(res.planTier === 'publish' ? 'publish' : 'free');
       setNetworks(res.networks || []);
@@ -145,6 +149,8 @@ function PublishControls({ initialJobId, initialUploadId }) {
           {inboxEnabled && <><Link href="/app/publish/inbox" className="text-sm font-bold text-vx-accent underline">Social inbox</Link><Link href="/app/publish/contacts" className="text-sm font-bold text-vx-accent underline">Contacts</Link></>}
           {smartlinksEnabled && <Link href="/app/publish/smartlink" className="text-sm font-bold text-vx-accent underline">SmartLink</Link>}
           {reportsEnabled && paid && <Link href="/app/publish/reports" className="text-sm font-bold text-vx-accent underline">Reports</Link>}
+          {adsEnabled && paid && <Link href="/app/publish/ads" className="text-sm font-bold text-vx-accent underline">Ads</Link>}
+          {commerceEnabled && paid && <Link href="/app/publish/commerce" className="text-sm font-bold text-vx-accent underline">Commerce</Link>}
           {(customerApiEnabled || customerWebhooksEnabled) && paid && ['owner', 'manager'].includes(brandRole) && <Link href="/app/publish/developer" className="text-sm font-bold text-vx-accent underline">Developer API</Link>}
           {queuesEnabled && paid && <Link href="/app/publish/queues" className="text-sm font-bold text-vx-accent underline">Posting queues</Link>}
           {teamsEnabled && paid && ['owner', 'manager'].includes(brandRole) && <Link href="/app/publish/team" className="text-sm font-bold text-vx-accent underline">Team</Link>}
