@@ -64,6 +64,7 @@ function PublishControls({ initialJobId, initialUploadId }) {
   const [customerWebhooksEnabled, setCustomerWebhooksEnabled] = useState(false);
   const [adsEnabled, setAdsEnabled] = useState(false);
   const [commerceEnabled, setCommerceEnabled] = useState(false);
+  const [rssAutolistsEnabled, setRssAutolistsEnabled] = useState(false);
   const [brandRole, setBrandRole] = useState('owner');
   const [planTier, setPlanTier] = useState('free');
   const [networks, setNetworks] = useState([]);
@@ -97,6 +98,7 @@ function PublishControls({ initialJobId, initialUploadId }) {
       setCustomerWebhooksEnabled(res.customerWebhooksEnabled === true);
       setAdsEnabled(res.adsEnabled === true);
       setCommerceEnabled(res.commerceEnabled === true);
+      setRssAutolistsEnabled(res.rssAutolistsEnabled === true);
       setBrandRole(res.brandRole || 'owner');
       setPlanTier(res.planTier === 'publish' ? 'publish' : 'free');
       setNetworks(res.networks || []);
@@ -153,6 +155,7 @@ function PublishControls({ initialJobId, initialUploadId }) {
           {commerceEnabled && paid && <Link href="/app/publish/commerce" className="text-sm font-bold text-vx-accent underline">Commerce</Link>}
           {(customerApiEnabled || customerWebhooksEnabled) && paid && ['owner', 'manager'].includes(brandRole) && <Link href="/app/publish/developer" className="text-sm font-bold text-vx-accent underline">Developer API</Link>}
           {queuesEnabled && paid && <Link href="/app/publish/queues" className="text-sm font-bold text-vx-accent underline">Posting queues</Link>}
+          {rssAutolistsEnabled && queuesEnabled && paid && <Link href="/app/publish/autolists" className="text-sm font-bold text-vx-accent underline">RSS Autolists</Link>}
           {teamsEnabled && paid && ['owner', 'manager'].includes(brandRole) && <Link href="/app/publish/team" className="text-sm font-bold text-vx-accent underline">Team</Link>}
           {teamsEnabled && paid && ['owner', 'manager'].includes(brandRole) && <Link href="/app/publish/activity" className="text-sm font-bold text-vx-accent underline">Activity</Link>}
           {plansEnabled && canManageAccounts && <Link href="/app/publish/plan" className="text-sm font-bold text-vx-accent underline">Plans and billing</Link>}
