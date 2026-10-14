@@ -6,10 +6,11 @@ import { AppNav } from '../../../_components/NavBar';
 import { Main } from '../../../_components/Main';
 import { getSession, onSessionChange } from '../../../../lib/authClient';
 import { listSocialAccounts, NETWORKS } from '../../../../lib/socialConnectClient';
-import { listSocialInboxContacts, updateSocialInboxContact } from '../../../../lib/socialInboxClient';
+import { importSocialInboxContacts, listSocialInboxContacts, updateSocialInboxContact } from '../../../../lib/socialInboxClient';
 import BrandSwitcher from '../BrandSwitcher';
 import NetworkLogo from '../NetworkLogo';
 import ContactProfileEditor from './ContactProfileEditor';
+import ContactImportPanel from './ContactImportPanel';
 
 const currentAccount = () => getSession()?.user?.id || '';
 const noAccount = () => '';
@@ -46,6 +47,7 @@ function ContactsDashboard() {
   const [contacts, setContacts] = useState(null);
   const [error, setError] = useState('');
   const editable = ['owner', 'manager', 'editor', 'reviewer'].includes(brandRole);
+  const canImport = ['owner', 'manager', 'editor'].includes(brandRole);
 
   useEffect(() => {
     let active = true;
@@ -76,6 +78,12 @@ function ContactsDashboard() {
     <Link href="/app/publish/plan" className="mt-5 inline-block rounded-full bg-vx-accent px-5 py-2.5 text-sm font-bold text-black">View Publish Plan</Link></section>;
 
   return <div className="space-y-5">
+    {canImport && <ContactImportPanel accounts={accounts.map((item) => ({ id: item.id,
+      label: `${label(item.network)} · ${item.display_name || item.external_account_id}` }))}
+      onImport={async (selectedAccountId, importedContacts, source) => {
+        const result = await importSocialInboxContacts(selectedAccountId, importedContacts, source);
+        load(); return result;
+      }} />}
     <section aria-label="Contact filters" className="rounded-2xl border border-vx-border p-4">
       <div className="flex flex-wrap items-end gap-3">
         <label className="grid gap-1 text-xs font-bold text-vx-fg-muted">Account<select className={input} value={filters.accountId} onChange={(event) => setFilters({ ...filters, accountId: event.target.value })}>

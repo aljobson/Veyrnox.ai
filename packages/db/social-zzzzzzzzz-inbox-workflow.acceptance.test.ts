@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import pg from 'pg';
 
-describe('team inbox workflow, analytics and contacts (0309, 0316, 0318)', { skip: !process.env.DATABASE_URL }, () => {
+describe('team inbox workflow, analytics and contacts (0309, 0316, 0318, 0319)', { skip: !process.env.DATABASE_URL }, () => {
   let pool: pg.Pool;
   const one = async (sql: string, args: unknown[] = []) => (await pool.query(sql, args)).rows[0];
   const value = async (sql: string, args: unknown[] = []) => (await one(sql, args)).value;
@@ -14,7 +14,8 @@ describe('team inbox workflow, analytics and contacts (0309, 0316, 0318)', { ski
     for (const file of ['0071_signup_grant_on_email_confirmation.sql', '0154_social_publish_foundation.sql',
       '0293_social_publish_plans.sql', '0299_social_inbox.sql', '0305_social_team_roles.sql',
       '0306_social_brand_access.sql', '0307_social_team_actions.sql', '0308_social_team_publishing.sql',
-      '0309_social_inbox_workflow.sql', '0316_social_inbox_analytics.sql', '0318_social_inbox_contacts.sql']) {
+      '0309_social_inbox_workflow.sql', '0316_social_inbox_analytics.sql', '0318_social_inbox_contacts.sql',
+      '0319_social_contact_import.sql']) {
       const migration = await readFile(new URL(`./schema/supabase/${file}`, import.meta.url), 'utf8');
       await pool.query(migration); await pool.query(migration);
     }
@@ -136,6 +137,16 @@ describe('team inbox workflow, analytics and contacts (0309, 0316, 0318)', { ski
     assert.deepEqual(updated, { ok: true, tags: ['customer', 'vip'], subscription_status: 'subscribed' });
     const filtered = await value(`SELECT public.list_social_inbox_contacts($1,$2,NULL,'facebook','subscribed','alex','vip') value`, [viewer.auth, brand]);
     assert.equal(filtered.contacts.length, 1); assert.equal(filtered.contacts[0].notes, 'Asked about annual pricing.');
+    const imported = await value(`SELECT public.import_social_inbox_contacts($1,$2,$3,'csv',$4::jsonb) value`, [owner.auth, brand, account,
+      JSON.stringify([{ external_id: 'manual-7', name: 'Manual Contact', tags: ['lead'], subscription_status: 'unknown', notes: 'Imported.' }])]);
+    assert.deepEqual(imported, { ok: true, imported: 1 });
+    const directory = await value(`SELECT public.list_social_inbox_contacts($1,$2,$3,'facebook',NULL,NULL,NULL) value`, [viewer.auth, brand, account]);
+    assert.equal(directory.contacts.length, 2);
+    const manual = directory.contacts.find((contact: { external_id: string }) => contact.external_id === 'manual-7');
+    assert.deepEqual([manual.name, manual.source, manual.thread_count, manual.message_count, manual.notes],
+      ['Manual Contact', 'csv', 0, 0, 'Imported.']);
+    assert.equal((await value(`SELECT public.import_social_inbox_contacts($1,$2,$3,'manual',$4::jsonb) value`,
+      [viewer.auth, brand, account, JSON.stringify([{ external_id: 'denied', name: 'Denied' }])])).code, 'FORBIDDEN');
     assert.equal((await value(`SELECT public.update_social_inbox_contact($1,$2,$3,'contact-42','[]'::jsonb,'unknown',NULL) value`,
       [viewer.auth, brand, account])).code, 'FORBIDDEN');
     assert.equal((await value('SELECT public.list_social_inbox_contacts($1,$2,NULL,NULL,NULL,NULL,NULL) value', [outsider.auth, brand])).code, 'BRAND_NOT_FOUND');
@@ -150,7 +161,8 @@ describe('team inbox workflow, analytics and contacts (0309, 0316, 0318)', { ski
         'update_social_inbox_workflow(text,uuid,uuid,text,jsonb)', 'add_social_inbox_note(text,uuid,uuid,text)',
         'create_social_inbox_reply(text,uuid,uuid,text,text)', 'get_social_inbox_analytics(text,uuid,uuid,integer)',
         'list_social_inbox_contacts(text,uuid,uuid,text,text,text,text)',
-        'update_social_inbox_contact(text,uuid,uuid,text,jsonb,text,text)']) {
+        'update_social_inbox_contact(text,uuid,uuid,text,jsonb,text,text)',
+        'import_social_inbox_contacts(text,uuid,uuid,text,jsonb)']) {
         assert.equal((await one("SELECT has_function_privilege($1,$2,'EXECUTE') allowed", [role, `public.${signature}`])).allowed, false);
       }
     }

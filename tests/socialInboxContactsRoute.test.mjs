@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { register } from 'node:module';
 register('data:text/javascript,' + encodeURIComponent(`export async function resolve(s,c,next){return next(s==='next/server'?'next/server.js':s,c)}`));
-const { GET, PATCH } = await import('../app/api/v1/social/contacts/route.js');
+const { GET, PATCH, POST } = await import('../app/api/v1/social/contacts/route.js');
 
 const auth = '11111111-1111-4111-8111-111111111111';
 const brand = '22222222-2222-4222-8222-222222222222';
@@ -20,6 +20,7 @@ function stub(results = {}) {
       get_or_create_default_social_brand: { ok: true, brand_id: brand, role: 'owner' },
       list_social_inbox_contacts: { ok: true, contacts: [{ external_id: 'person-1', tags: [] }] },
       update_social_inbox_contact: { ok: true, tags: ['vip'], subscription_status: 'subscribed' },
+      import_social_inbox_contacts: { ok: true, imported: 2 },
     })[name]);
   };
 }
@@ -69,5 +70,35 @@ test('maps database access boundaries without exposing internal errors', async (
     stub({ list_social_inbox_contacts: { ok: false, code } });
     const response = await GET(request()); assert.equal(response.status, status);
     assert.deepEqual(await response.json(), { error: status === 502 ? 'internal' : code.toLowerCase() });
+  }
+});
+
+test('imports normalized contacts into one selected account', async () => {
+  stub();
+  const response = await POST(new Request('https://veyrnox.test/api/v1/social/contacts', { method: 'POST',
+    headers: { 'x-veyrnox-auth-id': auth, 'content-type': 'application/json' }, body: JSON.stringify({ accountId: account, source: 'csv', contacts: [
+      { externalId: ' alex ', name: ' Alex ', tags: [' VIP ', 'customer'], subscriptionStatus: 'subscribed', notes: ' Hello ' },
+      { externalId: 'sam', name: 'Sam', tags: [], subscriptionStatus: 'unknown', notes: '' },
+    ] }) }));
+  assert.equal(response.status, 201); assert.deepEqual(await response.json(), { imported: 2 });
+  assert.deepEqual(calls.at(-1), { name: 'import_social_inbox_contacts', args: { p_auth_id: auth, p_brand_id: brand,
+    p_account_id: account, p_source: 'csv', p_contacts: [
+      { external_id: 'alex', name: 'Alex', tags: ['vip', 'customer'], subscription_status: 'subscribed', notes: 'Hello' },
+      { external_id: 'sam', name: 'Sam', tags: [], subscription_status: 'unknown', notes: '' },
+    ] } });
+});
+
+test('rejects duplicate, oversized and malformed imports before consuming write quota', async () => {
+  const valid = { externalId: 'alex', name: 'Alex', tags: [], subscriptionStatus: 'unknown', notes: '' };
+  for (const body of [
+    { accountId: 'bad', source: 'csv', contacts: [valid] },
+    { accountId: account, source: 'api', contacts: [valid] },
+    { accountId: account, source: 'csv', contacts: [] },
+    { accountId: account, source: 'csv', contacts: [valid, valid] },
+    { accountId: account, source: 'csv', contacts: [{ ...valid, tags: ['<bad>'] }] },
+  ]) {
+    stub(); const response = await POST(new Request('https://veyrnox.test/api/v1/social/contacts', { method: 'POST',
+      headers: { 'x-veyrnox-auth-id': auth, 'content-type': 'application/json' }, body: JSON.stringify(body) }));
+    assert.equal(response.status, 400); assert.equal(calls.length, 0);
   }
 });

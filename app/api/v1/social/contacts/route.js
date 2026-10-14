@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { accountReadLimit } from '../../../../../lib/accountReadLimit.js';
+import { limitRequestBody } from '../../../../../lib/requestBodyLimit.js';
 import { socialPostWriteLimit } from '../../../../../lib/socialPostWriteLimit.js';
 import { publishPlansEnabled, socialInboxEnabled } from '../../../../../lib/social/publishFeature.js';
 import { resolveBrand } from '../../../../../lib/social/resolveBrand.js';
@@ -78,6 +79,41 @@ export async function PATCH(req) {
     return mapped(result) || NextResponse.json({ ok: true, tags: result.tags || [], subscriptionStatus: result.subscription_status }, { headers });
   } catch (err) {
     console.error('[api/v1/social/contacts:PATCH] failed:', err instanceof SupabaseError ? err.status : 0);
+    return NextResponse.json({ error: 'internal' }, { status: 502, headers });
+  }
+}
+
+export async function POST(req) {
+  const { authId, cfg, error } = setup(req); if (error) return error;
+  const limitedBody = await limitRequestBody(req); if (limitedBody.response) return limitedBody.response;
+  let body; try { body = await limitedBody.request.json(); } catch { return NextResponse.json({ error: 'invalid_body' }, { status: 400, headers }); }
+  const accountId = body?.accountId;
+  const source = body?.source;
+  if (!UUID.test(accountId || '') || !['manual', 'csv'].includes(source) || !Array.isArray(body?.contacts)
+    || body.contacts.length < 1 || body.contacts.length > 250) return NextResponse.json({ error: 'invalid_body' }, { status: 400, headers });
+  const contacts = body.contacts.map((item) => ({
+    external_id: typeof item?.externalId === 'string' ? item.externalId.trim() : '',
+    name: typeof item?.name === 'string' ? item.name.trim() : '',
+    tags: Array.isArray(item?.tags) ? [...new Set(item.tags.map((tag) => typeof tag === 'string' ? tag.trim().toLowerCase() : ''))] : null,
+    subscription_status: item?.subscriptionStatus || 'unknown',
+    notes: typeof item?.notes === 'string' ? item.notes.trim() : '',
+  }));
+  if (contacts.some((item) => !item.external_id || item.external_id.length > 256 || !item.name || item.name.length > 120
+    || !item.tags || item.tags.length > 10 || item.tags.some((tag) => !tag || tag.length > 32 || !TAG.test(tag))
+    || !STATUSES.has(item.subscription_status) || item.notes.length > 2000)
+    || new Set(contacts.map((item) => item.external_id)).size !== contacts.length) {
+    return NextResponse.json({ error: 'invalid_body' }, { status: 400, headers });
+  }
+  const limited = await socialPostWriteLimit(authId, cfg); if (limited) return limited;
+  const brand = await resolveBrand(authId, cfg, 'api/v1/social/contacts:POST', {
+    request: req, allowedRoles: ['owner', 'manager', 'editor'],
+  }); if (brand.error) return brand.error;
+  try {
+    const result = await rpc('import_social_inbox_contacts', { p_auth_id: authId, p_brand_id: brand.brandId,
+      p_account_id: accountId, p_source: source, p_contacts: contacts }, cfg);
+    return mapped(result) || NextResponse.json({ imported: result.imported }, { status: 201, headers });
+  } catch (err) {
+    console.error('[api/v1/social/contacts:POST] failed:', err instanceof SupabaseError ? err.status : 0);
     return NextResponse.json({ error: 'internal' }, { status: 502, headers });
   }
 }

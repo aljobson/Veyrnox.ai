@@ -42,3 +42,6 @@ export function listSocialInboxContacts({ accountId, network, subscriptionStatus
 export const updateSocialInboxContact = (contact) => gatewayFetch('/social/contacts', {
     method: 'PATCH', body: JSON.stringify(contact),
 });
+export const importSocialInboxContacts = (accountId, contacts, source = 'csv') => gatewayFetch('/social/contacts', {
+    method: 'POST', body: JSON.stringify({ accountId, contacts, source }),
+});
