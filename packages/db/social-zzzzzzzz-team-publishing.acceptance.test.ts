@@ -11,7 +11,7 @@ describe('actor-aware team publishing (0308)', { skip: !process.env.DATABASE_URL
 
   before(async () => {
     pool = new pg.Pool({ connectionString: process.env.DATABASE_URL, max: 4 });
-    for (const file of ['0305_social_team_roles.sql', '0306_social_brand_access.sql', '0307_social_team_actions.sql', '0308_social_team_publishing.sql', '0311_social_post_cancel_restore.sql', '0312_social_report_templates.sql']) {
+    for (const file of ['0305_social_team_roles.sql', '0306_social_brand_access.sql', '0307_social_team_actions.sql', '0308_social_team_publishing.sql', '0311_social_post_cancel_restore.sql', '0312_social_report_templates.sql', '0313_social_customer_api.sql']) {
       const migration = await readFile(new URL(`./schema/supabase/${file}`, import.meta.url), 'utf8');
       await pool.query(migration); await pool.query(migration);
     }
@@ -165,6 +165,41 @@ describe('actor-aware team publishing (0308)', { skip: !process.env.DATABASE_URL
     assert.equal(await value(`SELECT count(*)::int value FROM public.social_account_actions WHERE brand_id=$1 AND actor_id=$2 AND action IN ('save_report_template','delete_report_template')`, [brand, analyst.id]), 3);
   });
 
+  it('issues scoped hash-only customer API keys and invalidates lost access', async () => {
+    const owner = await user('api-owner'); const manager = await user('api-manager'); const viewer = await user('api-viewer'); const freeOwner = await user('api-free');
+    const brand = (await value('SELECT public.get_or_create_default_social_brand($1) value', [owner.auth])).brand_id;
+    const freeBrand = (await value('SELECT public.get_or_create_default_social_brand($1) value', [freeOwner.auth])).brand_id;
+    await pool.query(`INSERT INTO public.social_publish_subscriptions(user_id,plan_id,idempotency_key,price_usd_cents,consent_version,status,current_period_end)
+      VALUES($1,'publish',$2,1500,'publish-plan-2026-10-13','active',now()+interval '30 days')`, [owner.id, `api-${randomUUID()}`]);
+    await pool.query(`INSERT INTO public.social_brand_members(brand_id,user_id,role,invited_by) VALUES
+      ($1,$2,'manager',$4),($1,$3,'viewer',$4)`, [brand, manager.id, viewer.id, owner.id]);
+
+    const created = await value(`SELECT public.create_social_api_key($1,$2,'Automation','vxpub_abcdefgh',$3,$4,now()+interval '90 days') value`,
+      [owner.auth, brand, '11'.repeat(32), ['accounts:read','posts:write']]);
+    assert.equal(created.ok, true);
+    const listed = await value('SELECT public.list_social_api_keys($1,$2) value', [manager.auth, brand]);
+    assert.equal(listed.keys[0].key_prefix, 'vxpub_abcdefgh'); assert.equal(Object.hasOwn(listed.keys[0], 'key_hash'), false);
+    assert.equal((await value(`SELECT public.authenticate_social_api_key($1,'accounts:read') value`, ['11'.repeat(32)])).auth_id, owner.auth);
+    assert.equal((await value(`SELECT public.authenticate_social_api_key($1,'posts:read') value`, ['11'.repeat(32)])).code, 'INSUFFICIENT_SCOPE');
+    assert.equal((await value(`SELECT public.create_social_api_key($1,$2,'Viewer','vxpub_viewer123',$3,$4,now()+interval '30 days') value`, [viewer.auth, brand, '44'.repeat(32), ['accounts:read']])).code, 'FORBIDDEN');
+    assert.equal((await value(`SELECT public.create_social_api_key($1,$2,'Free','vxpub_free12345',$3,$4,now()+interval '30 days') value`, [freeOwner.auth, freeBrand, '55'.repeat(32), ['accounts:read']])).code, 'PLAN_REQUIRED');
+
+    assert.equal((await value(`SELECT public.create_social_api_key($1,$2,'Manager','vxpub_manager12',$3,$4,now()+interval '30 days') value`, [manager.auth, brand, '22'.repeat(32), ['accounts:read']])).ok, true);
+    await pool.query('DELETE FROM public.social_brand_members WHERE brand_id=$1 AND user_id=$2', [brand, manager.id]);
+    assert.equal((await value(`SELECT public.authenticate_social_api_key($1,'accounts:read') value`, ['22'.repeat(32)])).code, 'INVALID_API_KEY');
+
+    assert.equal((await value('SELECT public.revoke_social_api_key($1,$2,$3) value', [owner.auth, brand, created.key_id])).ok, true);
+    assert.equal((await value(`SELECT public.authenticate_social_api_key($1,'accounts:read') value`, ['11'.repeat(32)])).code, 'INVALID_API_KEY');
+
+    const limited = await value(`SELECT public.create_social_api_key($1,$2,'Rate limited','vxpub_rate12345',$3,$4,now()+interval '30 days') value`, [owner.auth, brand, '33'.repeat(32), ['accounts:read']]);
+    assert.equal(limited.ok, true);
+    assert.equal((await value(`SELECT public.authenticate_social_api_key($1,'accounts:read') value`, ['33'.repeat(32)])).ok, true);
+    await pool.query(`INSERT INTO public.social_api_key_requests(api_key_id) SELECT $1 FROM generate_series(1,119)`, [limited.key_id]);
+    const rate = await value(`SELECT public.authenticate_social_api_key($1,'accounts:read') value`, ['33'.repeat(32)]);
+    assert.equal(rate.code, 'RATE_LIMITED'); assert.ok(rate.retry_after_seconds >= 1);
+    assert.equal(await value(`SELECT count(*)::int value FROM public.social_account_actions WHERE brand_id=$1 AND action IN ('create_api_key','revoke_api_key')`, [brand]), 4);
+  });
+
   it('keeps every delegated publishing function service-only with locked search paths', async () => {
     for (const signature of [
       'social_brand_role_context(text,uuid,text[],boolean)', 'create_social_post(text,uuid,timestamptz,text,text,uuid[],jsonb)',
@@ -172,6 +207,8 @@ describe('actor-aware team publishing (0308)', { skip: !process.env.DATABASE_URL
       'cancel_social_post(text,uuid,timestamptz)', 'restore_social_post(text,uuid,timestamptz,timestamptz)',
       'list_social_report_templates(text,uuid)', 'save_social_report_template(text,uuid,uuid,text,uuid,integer,boolean,boolean,text,text)',
       'delete_social_report_template(text,uuid,uuid)',
+      'list_social_api_keys(text,uuid)', 'create_social_api_key(text,uuid,text,text,text,text[],timestamp with time zone)',
+      'revoke_social_api_key(text,uuid,uuid)', 'authenticate_social_api_key(text,text)',
       'save_social_content_preset(text,uuid,uuid,text,text,uuid[])', 'delete_social_content_preset(text,uuid,uuid)',
       'reserve_social_publish_queue_slot(text,uuid,uuid,text)', 'social_brand_contains_queue_assignment(text,uuid,uuid)',
       'confirm_social_publish_queue_slot(text,uuid,uuid)', 'approve_social_post_batch(text,uuid,uuid)',

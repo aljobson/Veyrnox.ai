@@ -67,6 +67,19 @@ test('reports availability is exposed only when its rollout switch is enabled', 
     }
 });
 
+test('customer API availability is exposed only when its rollout switch is enabled', async () => {
+    const previous = process.env.PUBLISH_CUSTOMER_API_ENABLED;
+    try {
+        process.env.PUBLISH_CUSTOMER_API_ENABLED = 'true'; stub();
+        assert.equal((await (await GET(request())).json()).customerApiEnabled, true);
+        process.env.PUBLISH_CUSTOMER_API_ENABLED = 'false'; stub();
+        assert.equal((await (await GET(request())).json()).customerApiEnabled, false);
+    } finally {
+        if (previous === undefined) delete process.env.PUBLISH_CUSTOMER_API_ENABLED;
+        else process.env.PUBLISH_CUSTOMER_API_ENABLED = previous;
+    }
+});
+
 test('rate limiting stops the request before any RPC call', async () => {
     stub({ consume_account_read_request: { ok: false, code: 'RATE_LIMITED', retry_after_seconds: 45 } });
     const res = await GET(request());

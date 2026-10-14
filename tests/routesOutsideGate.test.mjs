@@ -34,6 +34,8 @@ const OUTSIDE = {
     'app/media/social/[token]/route.js': 'signed token',
     'app/api/social/approvals/[token]/route.js': 'signed token',
     'app/api/social/team/[token]/route.js': 'signed token',
+    'app/api/publish/v1/accounts/route.js': 'publish API key',
+    'app/api/publish/v1/posts/route.js': 'publish API key',
     'app/s/[slug]/go/[itemId]/route.js': 'public SmartLink redirect',
     'app/api/turnstile-failure/route.js': 'rate limit + fixed body',
 };
@@ -66,6 +68,12 @@ test('the admin routes check Cloudflare Access and a token', () => {
     }
 });
 
+test('customer Publish routes authenticate a scoped API key', () => {
+    for (const file of found.filter((f) => OUTSIDE[f] === 'publish API key')) {
+        assert.match(readFileSync(join(ROOT, file), 'utf8'), /authenticateSocialCustomerApiRequest\(/, file);
+    }
+});
+
 // An anonymous write: the Worker limits it per connecting IP before the app,
 // and the handler takes one Turnstile error code or one fixed word and
 // nothing else (ADR-0026 amendments 2 and 5, tests/turnstileFailureReport.test.mjs).
@@ -83,7 +91,7 @@ test('the anonymous report is rate limited in the Worker and handled in one plac
 
 test('CLAUDE.md names the public routes', () => {
     const rules = readFileSync(join(ROOT, 'CLAUDE.md'), 'utf8');
-    for (const path of ['/api/catalog', '/api/credit-packs', '/api/cinema/titles', '/api/cinema/posters/:id', '/api/cinema/voting', '/api/cinema/discovery', '/api/cinema/winners', '/api/cinema/comments', '/api/cinema/story-polls', '/api/credit-subscription-plans', '/api/webhook/*', '/api/admin/*', '/media/social/:token', '/api/social/approvals/:token', '/api/social/team/:token', '/api/turnstile-failure']) {
+    for (const path of ['/api/catalog', '/api/credit-packs', '/api/cinema/titles', '/api/cinema/posters/:id', '/api/cinema/voting', '/api/cinema/discovery', '/api/cinema/winners', '/api/cinema/comments', '/api/cinema/story-polls', '/api/credit-subscription-plans', '/api/webhook/*', '/api/admin/*', '/media/social/:token', '/api/social/approvals/:token', '/api/social/team/:token', '/api/publish/v1/*', '/api/turnstile-failure']) {
         assert.ok(rules.includes(path), `CLAUDE.md does not mention ${path}`);
     }
 });
