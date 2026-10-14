@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { accountReadLimit } from '../../../../../lib/accountReadLimit.js';
 import { socialPostWriteLimit } from '../../../../../lib/socialPostWriteLimit.js';
-import { socialReportsEnabled, socialScheduledReportsEnabled } from '../../../../../lib/social/publishFeature.js';
+import { socialReportDeliveryEnabled, socialReportExportsEnabled, socialReportsEnabled, socialScheduledReportsEnabled } from '../../../../../lib/social/publishFeature.js';
 import { resolveBrand } from '../../../../../lib/social/resolveBrand.js';
 import { envConfig, rpc, SupabaseError } from '../../../../../packages/db/supabase-client.js';
 
@@ -9,6 +9,8 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const RANGES = new Set([7, 30, 90, 365]);
 const COLOR = /^#[0-9a-f]{6}$/i;
 const CADENCES = new Set(['manual', 'weekly', 'monthly']);
+const FORMATS = new Set(['pdf', 'pptx']);
+const EMAIL = /^[^\s<>@]+@[^\s<>@]+\.[^\s<>@]+$/;
 
 function setup(req) {
   const authId = req.headers.get('x-veyrnox-auth-id');
@@ -35,7 +37,9 @@ export async function GET(req) {
   const brand = await resolveBrand(authId, cfg, 'api/v1/social/reports:GET', { request: req, allowedRoles: ['owner', 'manager', 'editor', 'reviewer', 'analyst', 'viewer'] }); if (brand.error) return brand.error;
   try {
     const result = await rpc('list_social_report_templates', { p_auth_id: authId, p_brand_id: brand.brandId }, cfg);
-    return mapped(result) || NextResponse.json({ templates: result.templates || [], brandRole: brand.role, scheduledReportsEnabled: socialScheduledReportsEnabled() }, { headers: { 'Cache-Control': 'no-store' } });
+    return mapped(result) || NextResponse.json({ templates: result.templates || [], brandRole: brand.role,
+      scheduledReportsEnabled: socialScheduledReportsEnabled(), reportExportsEnabled: socialReportExportsEnabled(),
+      reportDeliveryEnabled: socialReportDeliveryEnabled() }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (err) {
     console.error('[api/v1/social/reports:GET] failed:', err instanceof SupabaseError ? err.status : 0);
     return NextResponse.json({ error: 'internal' }, { status: 502 });
@@ -54,21 +58,29 @@ export async function PUT(req) {
   const deliveryHourUtc = deliveryCadence === 'manual' ? null : body?.deliveryHourUtc;
   const deliveryWeekday = deliveryCadence === 'weekly' ? body?.deliveryWeekday : null;
   const deliveryDay = deliveryCadence === 'monthly' ? body?.deliveryDay : null;
+  const deliveryRecipients = Array.isArray(body?.deliveryRecipients) ? [...new Set(body.deliveryRecipients.map((value) => typeof value === 'string' ? value.trim().toLowerCase() : ''))] : [];
+  const deliveryReplyTo = typeof body?.deliveryReplyTo === 'string' ? body.deliveryReplyTo.trim().toLowerCase() : '';
+  const deliveryMessage = typeof body?.deliveryMessage === 'string' ? body.deliveryMessage.trim() : '';
+  const deliveryFormat = typeof body?.deliveryFormat === 'string' ? body.deliveryFormat : 'pdf';
   if (deliveryCadence !== 'manual' && !socialScheduledReportsEnabled()) return NextResponse.json({ error: 'scheduled_reports_not_open' }, { status: 404 });
   if ((id !== null && !UUID.test(id)) || !name || name.length > 80 || (accountId !== null && !UUID.test(accountId))
     || !RANGES.has(body?.rangeDays) || typeof body?.comparePrevious !== 'boolean' || typeof body?.includeContent !== 'boolean'
     || reportTitle.length > 100 || !COLOR.test(accentColor) || !CADENCES.has(deliveryCadence)
     || (deliveryCadence !== 'manual' && (!Number.isInteger(deliveryHourUtc) || deliveryHourUtc < 0 || deliveryHourUtc > 23))
     || (deliveryCadence === 'weekly' && (!Number.isInteger(deliveryWeekday) || deliveryWeekday < 1 || deliveryWeekday > 7))
-    || (deliveryCadence === 'monthly' && (!Number.isInteger(deliveryDay) || deliveryDay < 1 || deliveryDay > 28))) return NextResponse.json({ error: 'invalid_body' }, { status: 400 });
+    || (deliveryCadence === 'monthly' && (!Number.isInteger(deliveryDay) || deliveryDay < 1 || deliveryDay > 28))
+    || deliveryRecipients.length > 10 || deliveryRecipients.some((value) => !EMAIL.test(value) || value.length > 254)
+    || (deliveryCadence !== 'manual' && !deliveryRecipients.length) || (deliveryReplyTo && (!EMAIL.test(deliveryReplyTo) || deliveryReplyTo.length > 254))
+    || deliveryMessage.length > 1000 || !FORMATS.has(deliveryFormat)) return NextResponse.json({ error: 'invalid_body' }, { status: 400 });
   const limited = await socialPostWriteLimit(authId, cfg); if (limited) return limited;
   const brand = await resolveBrand(authId, cfg, 'api/v1/social/reports:PUT', { request: req, allowedRoles: ['owner', 'manager', 'editor', 'analyst'] }); if (brand.error) return brand.error;
   try {
-    const result = await rpc('save_social_report_template_v2', { p_auth_id: authId, p_brand_id: brand.brandId, p_id: id, p_name: name,
+    const result = await rpc('save_social_report_template_v3', { p_auth_id: authId, p_brand_id: brand.brandId, p_id: id, p_name: name,
       p_account_id: accountId, p_range_days: body.rangeDays, p_compare_previous: body.comparePrevious,
       p_include_content: body.includeContent, p_report_title: reportTitle || null, p_accent_color: accentColor,
       p_delivery_cadence: deliveryCadence, p_delivery_hour_utc: deliveryHourUtc,
-      p_delivery_weekday: deliveryWeekday, p_delivery_day: deliveryDay }, cfg);
+      p_delivery_weekday: deliveryWeekday, p_delivery_day: deliveryDay, p_delivery_recipients: deliveryRecipients,
+      p_delivery_reply_to: deliveryReplyTo || null, p_delivery_message: deliveryMessage || null, p_delivery_format: deliveryFormat }, cfg);
     return mapped(result) || NextResponse.json({ template_id: result.template_id });
   } catch (err) {
     console.error('[api/v1/social/reports:PUT] failed:', err instanceof SupabaseError ? err.status : 0);

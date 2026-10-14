@@ -30,6 +30,14 @@ test('one POST to Resend with the key, the idempotency key and a single recipien
     assert.deepEqual(JSON.parse(seen.init.body), { from: mail.from, to: ['user@example.com'], subject: 'S', text: 'T' });
 });
 
+test('report messages can override reply-to and carry a bounded base64 attachment', async () => {
+    let body;
+    const out = await sendEmail(mail, { ...message, replyTo: 'account@example.com', attachments: [{ filename: 'report.pdf', content: 'JVBERg==' }] }, async (_url, init) => { body = JSON.parse(init.body); return Response.json({ id: 'email_report' }); });
+    assert.equal(out.ok, true); assert.equal(body.reply_to, 'account@example.com'); assert.deepEqual(body.attachments, [{ filename: 'report.pdf', content: 'JVBERg==' }]);
+    const never = async () => assert.fail('invalid attachment must not send');
+    assert.deepEqual(await sendEmail(mail, { ...message, attachments: [{ filename: '../secret', content: 'AA==' }] }, never), { ok: false, error: 'invalid_attachment' });
+});
+
 test('nothing is sent when unconfigured, or to a malformed recipient or key', async () => {
     const never = async () => assert.fail('must not call Resend');
     assert.deepEqual(await sendEmail({}, message, never), { ok: false, error: 'not_configured' });

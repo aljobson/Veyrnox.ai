@@ -91,6 +91,29 @@ export async function gatewayFetch(path, init = {}) {
   return body;
 }
 
+/** Authenticated binary download with the same account/brand guards as gatewayFetch. */
+export async function gatewayDownload(path) {
+  const token = await getFreshAccessToken();
+  if (!token) { dispatchAuthRequired(); throw new GatewayError('not authenticated', { status: 401, code: 'no_token' }); }
+  const account = getSession()?.user?.id;
+  const headers = { Authorization: `Bearer ${token}` };
+  const selectedBrand = getSelectedSocialBrand();
+  if (selectedBrand) headers['x-publish-brand-id'] = selectedBrand;
+  const res = await fetch(`/api/v1${path}`, { headers });
+  if (!getSession() || getSession()?.user?.id !== account) throw new GatewayError('account changed', { status: 409, code: 'account_changed' });
+  if (res.status === 401) { clearSession(); dispatchAuthRequired(); throw new GatewayError('unauthenticated', { status: 401, code: 'unauthenticated' }); }
+  if (!res.ok) {
+    let body = null; try { body = await res.json(); } catch { /* binary failures are not expected */ }
+    throw new GatewayError(body?.error || `HTTP ${res.status}`, { status: res.status, code: body?.error || 'gateway_error', body });
+  }
+  return { blob: await res.blob(), filename: contentDispositionFilename(res.headers.get('content-disposition')) || 'veyrnox-report' };
+}
+
+function contentDispositionFilename(value) {
+  const match = typeof value === 'string' ? /filename="([A-Za-z0-9._-]{1,100})"/.exec(value) : null;
+  return match?.[1] || null;
+}
+
 function dispatchAuthRequired() {
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('veyrnox:auth-required'));

@@ -3,7 +3,7 @@
 const input = 'rounded-lg border border-vx-border bg-vx-panel px-3 py-2 text-sm';
 const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
-export function ReportScheduleFields({ enabled, value, onChange }) {
+export function ReportScheduleFields({ enabled, deliveryEnabled, value, onChange }) {
   if (!enabled) return null;
   const change = (field, next) => onChange({ ...value, [field]: next });
   return <>
@@ -27,6 +27,17 @@ export function ReportScheduleFields({ enabled, value, onChange }) {
           {Array.from({ length: 28 }, (_, index) => <option key={index + 1} value={index + 1}>{index + 1}</option>)}
         </select>
       </label>}
+      {deliveryEnabled ? <>
+        <label className="text-sm font-bold sm:col-span-2">Email recipients
+          <textarea required aria-label="Email recipients" rows={2} placeholder="client@example.com, team@example.com" className={`${input} mt-1 block w-full`} value={value.deliveryRecipients.join(', ')} onChange={(event) => change('deliveryRecipients', event.target.value.split(/[\s,;]+/).filter(Boolean))}/>
+          <span className="mt-1 block text-xs font-normal text-vx-fg-muted">Up to 10 addresses. Each scheduled run sends the selected PDF or PowerPoint.</span>
+        </label>
+        <label className="text-sm font-bold">Attachment format
+          <select aria-label="Attachment format" className={`${input} mt-1 block w-full`} value={value.deliveryFormat} onChange={(event) => change('deliveryFormat', event.target.value)}><option value="pdf">PDF</option><option value="pptx">PowerPoint</option></select>
+        </label>
+        <label className="text-sm font-bold">Reply-to address<input type="email" maxLength={254} className={`${input} mt-1 block w-full`} value={value.deliveryReplyTo} onChange={(event) => change('deliveryReplyTo', event.target.value)}/></label>
+        <label className="text-sm font-bold sm:col-span-2">Email message<textarea rows={3} maxLength={1000} className={`${input} mt-1 block w-full`} value={value.deliveryMessage} onChange={(event) => change('deliveryMessage', event.target.value)}/></label>
+      </> : <p className="text-sm text-vx-fg-muted sm:col-span-2">Scheduled email delivery is being rolled out separately. You can save the schedule now; it will not send until delivery is enabled.</p>}
     </>}
   </>;
 }
