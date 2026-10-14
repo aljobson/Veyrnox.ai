@@ -4,10 +4,10 @@ On 10 October 2026 the owner requested usable recipes for the imported previews,
 including prompts and inputs, rather than unrelated footage in preset cards.
 The source template workflows were inspected with Agent Reach and the REA skill.
 
-`sourceTemplates.js` associates each of the 37 effect recipes with its own title,
+`sourceTemplates.js` associates each of the 51 effect recipes with its own title,
 clip key, Veyrnox remix prompt, supported video model, duration, upload guidance
-and original recipe. The gallery exposes 22 recipes; the homepage wall exposes
-seven different recipes. These 29 visible template placements retain distinct
+and original recipe. The gallery exposes 31 recipes; the homepage wall exposes
+12 different recipes. These 43 visible template placements retain distinct
 footage. The remaining source records describe the feature/model inspiration
 clips. A detail page intentionally reuses the preview of the card it describes.
 
@@ -20,12 +20,14 @@ start attribution. Homepage template links now open the matching recipe page.
 
 SYNTX's shipped TrendsCard and public read-only trends API expose the exact
 prompt, `generation_settings`, image/video reference roles and unlocked reference
-assets. Each of our 11 SYNTX clips matched an API preview variant. The published
+assets. Each of our 17 SYNTX clips matched an API preview variant. The published
 prompt is preserved verbatim with its SHA-256, source model/settings and reference
 links. Six recipes use a supplied motion video; Train supplies an environment
 image. These source references are distinct from the five-second muted previews.
-The Last Stagecoach uses source Seedance 2.0 Pro; the other ten use source
-Seedance 2.5. Train's prompt says NO AUDIO while its settings enable audio; the
+Among the original eleven, The Last Stagecoach uses source Seedance 2.0 Pro;
+the other ten use source Seedance 2.5. The six additions inspected on 14 October 2026 are prompt-led
+Seedance 2.5 trends with one image reference and no supplied motion reference.
+Train's prompt says NO AUDIO while its settings enable audio; the
 verbatim source record preserves both without resolving that inconsistency.
 
 Higgsfield's public effect pages expose effect UUIDs, descriptions, required and
@@ -34,6 +36,9 @@ pages, 26 example pages and 238 example jobs found no nonempty internal prompt
 or model. The optional customization fields begin blank. We preserve the effect
 setup and explicitly mark the internal prompt as not public. The local prompt
 is an authored Veyrnox adaptation, not an extracted Higgsfield system prompt.
+Six further canonical effects were added from the public effects inventory on
+14 October 2026; their public previews and workflow URLs are preserved without
+claiming access to a private internal prompt.
 Lidar's public description incorrectly repeats Incline; its adaptation follows
 the verified cyan point-cloud flower-field footage instead.
 

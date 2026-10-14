@@ -292,6 +292,90 @@ export const SHOWCASE_CLIPS = {
     title: 'Superstar',
     source: 'Higgsfield',
   },
+  'jellyfish-airlines': {
+    video: '/showcase/syntx-jellyfish-airlines.mp4',
+    aspectRatio: '720 / 406',
+    poster: '/showcase/syntx-jellyfish-airlines.jpg',
+    title: 'Jellyfish Airlines',
+    source: 'SYNTX',
+  },
+  'dandelion-ball': {
+    video: '/showcase/syntx-dandelion-ball.mp4',
+    aspectRatio: '720 / 406',
+    poster: '/showcase/syntx-dandelion-ball.jpg',
+    title: 'Dandelion Ball',
+    source: 'SYNTX',
+  },
+  'sm-brand-new-day': {
+    video: '/showcase/syntx-sm-brand-new-day.mp4',
+    aspectRatio: '720 / 406',
+    poster: '/showcase/syntx-sm-brand-new-day.jpg',
+    title: 'SM: Brand New Day',
+    source: 'SYNTX',
+  },
+  'who-was-that-business': {
+    video: '/showcase/syntx-who-was-that-business.mp4',
+    aspectRatio: '720 / 540',
+    poster: '/showcase/syntx-who-was-that-business.jpg',
+    title: 'Who was that? Business',
+    source: 'SYNTX',
+  },
+  'scrapbook-collage': {
+    video: '/showcase/higgsfield-scrapbook-collage.mp4',
+    aspectRatio: '406 / 720',
+    poster: '/showcase/higgsfield-scrapbook-collage.jpg',
+    title: 'Scrapbook Collage',
+    source: 'Higgsfield',
+  },
+  'stop-world': {
+    video: '/showcase/higgsfield-stop-world.mp4',
+    aspectRatio: '540 / 720',
+    poster: '/showcase/higgsfield-stop-world.jpg',
+    title: 'Stop World',
+    source: 'Higgsfield',
+  },
+  'earth-zoom': {
+    video: '/showcase/higgsfield-earth-zoom.mp4',
+    aspectRatio: '406 / 720',
+    poster: '/showcase/higgsfield-earth-zoom.jpg',
+    title: 'Earth Zoom',
+    source: 'Higgsfield',
+  },
+  comic: {
+    video: '/showcase/higgsfield-comic.mp4',
+    aspectRatio: '720 / 398',
+    poster: '/showcase/higgsfield-comic.jpg',
+    title: 'Comic',
+    source: 'Higgsfield',
+  },
+  'wall-trick-or-skin': {
+    video: '/showcase/syntx-trick-or-skin.mp4',
+    aspectRatio: '720 / 404',
+    poster: '/showcase/syntx-trick-or-skin.jpg',
+    title: 'Trick or Skin',
+    source: 'SYNTX',
+  },
+  'wall-the-wrong-one': {
+    video: '/showcase/syntx-the-wrong-one.mp4',
+    aspectRatio: '720 / 406',
+    poster: '/showcase/syntx-the-wrong-one.jpg',
+    title: 'The Wrong One',
+    source: 'SYNTX',
+  },
+  'wall-pigeons': {
+    video: '/showcase/higgsfield-pigeons.mp4',
+    aspectRatio: '1 / 1',
+    poster: '/showcase/higgsfield-pigeons.jpg',
+    title: 'Pigeons',
+    source: 'Higgsfield',
+  },
+  'wall-mighty-fighter': {
+    video: '/showcase/higgsfield-mighty-fighter.mp4',
+    aspectRatio: '406 / 720',
+    poster: '/showcase/higgsfield-mighty-fighter.jpg',
+    title: 'Mighty Fighter',
+    source: 'Higgsfield',
+  },
 };
 
 // Give each public placement its own clip, including templates also on /presets.
@@ -304,6 +388,10 @@ export const WALL_SHOWCASE_KEYS = {
   'the-last-stagecoach': 'wall-film-portrait',
   'clones': 'wall-talking-head',
   'vanish': 'wall-clean-cutout',
+  'trick-or-skin': 'wall-trick-or-skin',
+  'the-wrong-one': 'wall-the-wrong-one',
+  'pigeons': 'wall-pigeons',
+  'mighty-fighter': 'wall-mighty-fighter',
 };
 
 export const MODEL_SHOWCASE_KEYS = {

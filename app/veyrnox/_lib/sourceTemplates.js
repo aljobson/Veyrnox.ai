@@ -1,3 +1,5 @@
+import { SOURCE_TEMPLATE_EXPANSION } from './sourceTemplateExpansion.js';
+
 // Matched recipes inspected on 10 October 2026. Prompts are Veyrnox adaptations;
 // sourceRecipe preserves the published prompt or the original effect setup.
 // See docs/product/template-recipes.md for evidence and coverage limits.
@@ -353,4 +355,5 @@ export const SOURCE_TEMPLATES = [
     "negativePrompt": "identity drift, unintended extra limbs, malformed hands, ghost duplicates, flicker, captions, watermark", "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
     "sourceRecipe": {"name": "Higgsfield", "url": "https://higgsfield.ai/effects/use/superstar", "description": "Stadium lights, a sea of raised phones, and a face taking over the jumbotron—all seen from deep inside the crowd. Raw and charged—an instant hook for high-energy intros", "prompt": null, "promptOrigin": "not-public", "effectId": "6551373d-7ad9-4f33-8bb1-9bb7b570cf6e", "model": null, "settings": {"resolution": "720p", "aspect_ratio": "9:16"}, "durationSeconds": 15, "inputs": [{"slot": "Upload image", "kind": "image", "required": true, "providedBySource": false, "role": "Upload image"}], "references": [], "evidenceId": "ev_06751a373bab1cc06fab03783d139376da57ecf5581624b6499861014f803c37"},
   },
+  ...SOURCE_TEMPLATE_EXPANSION,
 ];
