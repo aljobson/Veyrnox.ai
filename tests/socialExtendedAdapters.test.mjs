@@ -13,7 +13,7 @@ function sequence(steps) {
     const fetcher = async (url, init = {}) => {
         const step = steps.shift();
         assert.ok(step, `unexpected call ${new URL(url).pathname}`);
-        calls.push({ url: new URL(url), init });
+        calls.push({ rawUrl: url, url: new URL(url), init });
         step.check?.(calls.at(-1));
         return step.response || Response.json(step.body);
     };
@@ -54,6 +54,38 @@ test('Facebook returns eligible Pages with Page tokens; pagination never follows
     ]);
     const pages = await adapters.facebook.fetchCandidates(token, fetcher);
     assert.equal(pages.length, 1); assert.equal(pages[0].accessToken, 'page-token'); done();
+});
+
+test('Facebook token exchange identifies the failed phase without retaining provider payloads', async () => {
+    const input = { code: 'auth-code', redirectUri: 'https://staging.test/social/connect/callback/facebook' };
+    await assert.rejects(adapters.facebook.exchangeCodeForToken(cfg, input, async () => Response.json({ message: 'secret' })),
+        (error) => error.message === 'facebook_short_token_missing' && !error.message.includes('secret'));
+    const { fetcher, done } = sequence([
+        { body: { access_token: 'short-token' } },
+        { response: Response.json({ error: { message: 'secret-provider-payload' } }, { status: 400 }) },
+    ]);
+    await assert.rejects(adapters.facebook.exchangeCodeForToken(cfg, input, fetcher),
+        (error) => error.message === 'facebook_long_token_failed_400' && !error.message.includes('secret-provider-payload'));
+    done();
+});
+
+test('Facebook exchanges authorization and long-lived tokens with query-based GET requests', async () => {
+    const { fetcher, calls, done } = sequence([
+        { body: { access_token: 'short-token' } },
+        { body: { access_token: 'long-token' } },
+    ]);
+    const result = await adapters.facebook.exchangeCodeForToken(cfg,
+        { code: 'auth-code', redirectUri: 'https://staging.test/social/connect/callback/facebook' }, fetcher);
+    assert.equal(result.accessToken, 'long-token');
+    assert.equal(calls[0].init.method, undefined);
+    assert.equal(calls[0].init.redirect, 'follow');
+    assert.equal(typeof calls[0].rawUrl, 'string');
+    assert.equal(calls[0].url.searchParams.get('code'), 'auth-code');
+    assert.equal(calls[0].url.searchParams.get('redirect_uri'), 'https://staging.test/social/connect/callback/facebook');
+    assert.equal(calls[1].init.method, undefined);
+    assert.equal(calls[1].url.searchParams.get('grant_type'), 'fb_exchange_token');
+    assert.equal(calls[1].url.searchParams.get('fb_exchange_token'), 'short-token');
+    done();
 });
 
 test('Facebook publishes an image on the selected Page, never a personal profile', async () => {

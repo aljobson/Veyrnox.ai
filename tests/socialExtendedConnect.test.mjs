@@ -57,6 +57,23 @@ test('Facebook OAuth stores candidate tokens encrypted and returns only labels a
     assert.equal(candidates[0].accessToken, 'page-secret');
 });
 
+test('Facebook OAuth logs the failing server-side stage without exposing provider details', async () => {
+    const state = await createOAuthState({ authId: auth, network: 'facebook' }, process.env.SOCIAL_OAUTH_STATE_SECRET);
+    globalThis.fetch = async () => Response.json({ error: { message: 'secret-provider-payload' } }, { status: 400 });
+    const calls = [];
+    const originalError = console.error;
+    console.error = (...args) => calls.push(args);
+    try {
+        const res = await finishExtendedConnect(request({ code: 'code', codeVerifier: 'a'.repeat(43), state }), 'facebook');
+        assert.equal(res.status, 502);
+        assert.deepEqual(await res.json(), { error: 'connect_failed', stage: 'token_exchange', code: 'facebook_short_token_failed_400' });
+        assert.deepEqual(calls, [['[social-connect] failed', 'facebook', 'token_exchange', 'facebook_short_token_failed_400']]);
+        assert.equal(JSON.stringify(calls).includes('secret-provider-payload'), false);
+    } finally {
+        console.error = originalError;
+    }
+});
+
 test('selection records only the selected Page with encrypted credentials', async () => {
     const payload = await encryptToken(JSON.stringify([{ externalAccountId: '123', displayName: 'Chosen', accessToken: 'page-secret' },
         { externalAccountId: '456', displayName: 'Other', accessToken: 'other-secret' }]), cryptoCfg);

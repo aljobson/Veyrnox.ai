@@ -7,12 +7,38 @@ export function config(env = process.env) {
     return /^\d{5,32}$/.test(clientId || '') && clientSecret?.length >= 8 ? { clientId, clientSecret } : null;
 }
 export const buildAuthorizeUrl = (cfg, input) => authorizeUrl('https://www.facebook.com/v23.0/dialog/oauth', cfg, input, SCOPES);
+async function exchangeFacebookToken(stage, endpoint, params, fetcher) {
+    try {
+        const url = new URL(endpoint);
+        Object.entries(params).forEach(([key, value]) => url.searchParams.set(key, value));
+        // Meta may redirect successful exchanges within graph.facebook.com.
+        // The shared transport rejects every redirect, so handle this endpoint
+        // explicitly and verify the final URL never leaves Meta's HTTPS host.
+        const response = await fetcher(url.toString(), { redirect: 'follow', signal: AbortSignal.timeout(15000) });
+        if (response.url) {
+            const finalUrl = new URL(response.url);
+            if (finalUrl.protocol !== 'https:' || finalUrl.hostname !== 'graph.facebook.com')
+                throw new Error(`facebook_${stage}_token_redirect_invalid`);
+        }
+        const result = await response.json().catch(() => null);
+        if (!response.ok || !result || result.error) throw new Error(`provider_request_failed_${response.status}`);
+        if (typeof result.access_token !== 'string' || !result.access_token) throw new Error(`facebook_${stage}_token_missing`);
+        return result;
+    } catch (error) {
+        if (error?.message === `facebook_${stage}_token_missing`) throw error;
+        const status = /^provider_request_failed_([0-9]{3})$/.exec(error?.message || '')?.[1];
+        const kind = error?.message === `facebook_${stage}_token_redirect_invalid` ? 'redirect'
+            : status ? status
+            : ['AbortError', 'TimeoutError'].includes(error?.name) ? 'timeout'
+                : error?.name === 'TypeError' ? 'transport' : 'unexpected';
+        throw new Error(`facebook_${stage}_token_failed_${kind}`);
+    }
+}
 export async function exchangeCodeForToken(cfg, { code, redirectUri }, fetcher = fetch) {
-    const short = await formToken(`${BASE}/oauth/access_token`, { client_id: cfg.clientId, client_secret: cfg.clientSecret,
+    const short = await exchangeFacebookToken('short', `${BASE}/oauth/access_token`, { client_id: cfg.clientId, client_secret: cfg.clientSecret,
         redirect_uri: redirectUri, code }, fetcher);
-    const long = await formToken(`${BASE}/oauth/access_token`, { grant_type: 'fb_exchange_token', client_id: cfg.clientId,
+    const long = await exchangeFacebookToken('long', `${BASE}/oauth/access_token`, { grant_type: 'fb_exchange_token', client_id: cfg.clientId,
         client_secret: cfg.clientSecret, fb_exchange_token: short.access_token }, fetcher);
-    if (!long.access_token) throw new Error('invalid_access_token');
     return { accessToken: long.access_token, refreshToken: null, expiresAt: null };
 }
 // Each candidate is a Page and carries its own Page token, never a personal
