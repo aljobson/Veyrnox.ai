@@ -52,6 +52,21 @@ test('auto-creates the caller\'s brand and lists their accounts', async () => {
     assert.deepEqual(calls[2], { name: 'list_social_accounts', args: { p_auth_id: auth, p_brand_id: brandId } });
 });
 
+test('reports availability is exposed only when its rollout switch is enabled', async () => {
+    const previous = process.env.PUBLISH_REPORTS_ENABLED;
+    try {
+        process.env.PUBLISH_REPORTS_ENABLED = 'true';
+        stub();
+        assert.equal((await (await GET(request())).json()).reportsEnabled, true);
+        process.env.PUBLISH_REPORTS_ENABLED = 'false';
+        stub();
+        assert.equal((await (await GET(request())).json()).reportsEnabled, false);
+    } finally {
+        if (previous === undefined) delete process.env.PUBLISH_REPORTS_ENABLED;
+        else process.env.PUBLISH_REPORTS_ENABLED = previous;
+    }
+});
+
 test('rate limiting stops the request before any RPC call', async () => {
     stub({ consume_account_read_request: { ok: false, code: 'RATE_LIMITED', retry_after_seconds: 45 } });
     const res = await GET(request());

@@ -47,6 +47,20 @@ function downloadCsv(contents, filename) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+const defaultReport = { days: 30, compare: false, account: '', includeContent: true, title: '', accent: '#38bdf8' };
+const subscribeLocation = () => () => {};
+const readLocationSearch = () => window.location.search;
+const readServerSearch = () => '';
+
+function reportOptions(search) {
+  if (!search) return defaultReport;
+  const query = new URLSearchParams(search);
+  const days = [7, 30, 90, 365].includes(Number(query.get('days'))) ? Number(query.get('days')) : 30;
+  const title = (query.get('reportTitle') || '').slice(0, 100);
+  const accent = /^#[0-9a-f]{6}$/i.test(query.get('accent') || '') ? query.get('accent').toLowerCase() : '#38bdf8';
+  return { days, compare: query.get('compare') === '1', account: query.get('account') || '', includeContent: query.get('content') !== '0', title, accent };
+}
+
 export default function PublishAnalytics() {
   const account = useSyncExternalStore(onSessionChange, currentAccount, noAccount);
   return <><AppNav /><Main className="max-w-[900px] mx-auto px-4 sm:px-8 py-10">
@@ -62,12 +76,17 @@ export default function PublishAnalytics() {
 }
 
 function Dashboard() {
+  const search = useSyncExternalStore(subscribeLocation, readLocationSearch, readServerSearch);
+  return <DashboardView key={search} report={reportOptions(search)} />;
+}
+
+function DashboardView({ report }) {
   const [accounts, setAccounts] = useState(null);
   const [loadError, setLoadError] = useState('');
   const [chosenId, setChosenId] = useState('');
-  const [range, setRange] = useState(() => rangeForDays(30));
-  const [presetDays, setPresetDays] = useState(30);
-  const [comparePrevious, setComparePrevious] = useState(false);
+  const [range, setRange] = useState(() => rangeForDays(report.days));
+  const [presetDays, setPresetDays] = useState(report.days);
+  const [comparePrevious, setComparePrevious] = useState(report.compare);
   const [planTier, setPlanTier] = useState(null);
 
   useEffect(() => {
@@ -78,7 +97,7 @@ function Dashboard() {
         const nextAccounts = (res.accounts || []).filter((a) => a.status === 'active');
         setAccounts(nextAccounts);
         const supported = nextAccounts.filter((item) => hasAnalytics(item.network));
-        setChosenId(supported.length > 1 ? 'all' : supported[0]?.id || nextAccounts[0]?.id || '');
+        setChosenId(supported.some((item)=>item.id===report.account) ? report.account : supported.length > 1 ? 'all' : supported[0]?.id || nextAccounts[0]?.id || '');
         if (res.plansEnabled === true) {
           try { const plan = await getPublishPlan(); if (active) setPlanTier(plan.entitlement?.tier || 'free'); }
           catch { if (active) setPlanTier('free'); }
@@ -86,7 +105,7 @@ function Dashboard() {
       })
       .catch(() => { if (active) setLoadError('Could not load your connected accounts. Check your connection and try again.'); });
     return () => { active = false; };
-  }, []);
+  }, [report.account]);
 
   if (loadError) return <p role="alert" className="text-sm text-vx-danger">{loadError}</p>;
   if (accounts === null) return <p className="text-sm text-vx-fg-muted">Loading…</p>;
@@ -110,6 +129,7 @@ function Dashboard() {
   const ranges = RANGES.filter((range) => !range.paid || planTier === 'publish');
   const comparisonRange = comparePrevious ? previousRange(range) : null;
   return <div className="space-y-6">
+    {report.title&&<section className="rounded-2xl border border-vx-border p-5" style={{borderLeftColor:report.accent,borderLeftWidth:4}}><p className="text-xs font-bold uppercase tracking-widest text-vx-fg-muted">Saved report</p><h2 className="mt-1 text-2xl font-black">{report.title}</h2></section>}
     <div className="flex flex-wrap items-center justify-between gap-3">
       <label className="inline-flex items-center gap-2 text-sm font-bold text-vx-fg">
         {showPortfolio ? <span aria-hidden="true" className="grid h-7 w-7 place-items-center rounded-full bg-vx-accent/15 text-vx-accent">Σ</span> : <NetworkLogo network={selected.network} />}
@@ -152,9 +172,9 @@ function Dashboard() {
       <p className="mt-2 text-xs text-vx-fg-muted">Showing {formatRange(range)}{comparisonRange ? ` · comparing with ${formatRange(comparisonRange)}` : ''}. Up to 12 months.</p>
     </section>
     {showPortfolio
-      ? <PortfolioAnalytics key={`all:${range.from}:${range.to}:${comparePrevious}`} accounts={supportedAccounts} range={range} comparisonRange={comparisonRange} />
+      ? <PortfolioAnalytics key={`all:${range.from}:${range.to}:${comparePrevious}`} accounts={supportedAccounts} range={range} comparisonRange={comparisonRange} includeContent={report.includeContent} />
       : hasAnalytics(selected.network)
-      ? <AccountAnalytics key={`${selected.id}:${range.from}:${range.to}:${comparePrevious}`} account={selected} range={range} comparisonRange={comparisonRange} />
+      ? <AccountAnalytics key={`${selected.id}:${range.from}:${range.to}:${comparePrevious}`} account={selected} range={range} comparisonRange={comparisonRange} includeContent={report.includeContent} />
       : <p className="rounded-2xl border border-vx-border p-5 text-sm text-vx-fg-body">
           Analytics for {networkLabel(selected.network)} are not available yet. Instagram, YouTube, TikTok, X and Twitch are supported today.
         </p>}
@@ -162,7 +182,7 @@ function Dashboard() {
   </div>;
 }
 
-function PortfolioAnalytics({ accounts, range, comparisonRange }) {
+function PortfolioAnalytics({ accounts, range, comparisonRange, includeContent }) {
   const [result, setResult] = useState(null);
 
   useEffect(() => {
@@ -212,10 +232,10 @@ function PortfolioAnalytics({ accounts, range, comparisonRange }) {
       {result.comparison.missing > 0 && <p role="status" className="rounded-xl border border-vx-border p-3 text-sm text-vx-fg-body">Previous-period data was unavailable for {result.comparison.missing} {result.comparison.missing === 1 ? 'account' : 'accounts'}; the comparison includes only matched accounts.</p>}
       <ComparisonCards current={result.comparison.current} previous={result.comparison.previous} />
     </>}
-    <section className="rounded-2xl border border-vx-border p-5">
+    {includeContent&&<section className="rounded-2xl border border-vx-border p-5">
       <h2 className="font-bold mb-4">Accounts</h2>
       <PortfolioTable rows={summary.rows} />
-    </section>
+    </section>}
   </div>;
 }
 
@@ -259,7 +279,7 @@ function ComparisonCards({ current, previous, compact = false }) {
   </section>;
 }
 
-function AccountAnalytics({ account, range, comparisonRange }) {
+function AccountAnalytics({ account, range, comparisonRange, includeContent }) {
   const { id: accountId, network } = account;
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
@@ -320,10 +340,10 @@ function AccountAnalytics({ account, range, comparisonRange }) {
         <Stat label="Views" value={whole.format(totalViews(currentData.posts))} note="Lifetime views of those videos" />
       </dl>
       {previousSummary && <ComparisonCards current={{ posts: summary.posts, interactions: summary.interactions, views: totalViews(currentData.posts) }} previous={{ posts: previousSummary.posts, interactions: previousSummary.interactions, views: totalViews(data.previous.posts) }} compact />}
-      <section className="rounded-2xl border border-vx-border p-5">
+      {includeContent&&<section className="rounded-2xl border border-vx-border p-5">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><h2 className="font-bold">Videos in this period</h2><ExportAccountButton account={account} data={currentData} /></div>
         <PostsTable posts={currentData.posts} withViews viewsOnly />
-      </section>
+      </section>}
       <p className="text-xs text-vx-fg-muted">Twitch shares a view count for each of your latest 20 videos. Follower, subscriber, like and comment numbers are not available.</p>
       {updated}
     </div>;
@@ -346,17 +366,18 @@ function AccountAnalytics({ account, range, comparisonRange }) {
     </dl>
     {previousSummary && <ComparisonCards current={{ posts: summary.posts, interactions: summary.interactions, reach: totalPostMetric(currentData.posts, 'reach'), impressions: totalPostMetric(currentData.posts, 'impressions'), views: totalPostMetric(currentData.posts, 'views') }} previous={{ posts: previousSummary.posts, interactions: previousSummary.interactions, reach: totalPostMetric(data.previous.posts, 'reach'), impressions: totalPostMetric(data.previous.posts, 'impressions'), views: totalPostMetric(data.previous.posts, 'views') }} />}
 
-    <section className="rounded-2xl border border-vx-border p-5">
-      <h2 className="font-bold mb-4">{audienceLabel}</h2>
-      <FollowersChart series={summary.series} label={audienceLabel} />
-    </section>
+    {includeContent&&<>
+      <section className="rounded-2xl border border-vx-border p-5">
+        <h2 className="font-bold mb-4">{audienceLabel}</h2>
+        <FollowersChart series={summary.series} label={audienceLabel} />
+      </section>
+      <section className="rounded-2xl border border-vx-border p-5">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><h2 className="font-bold">{videoNetwork ? 'Videos' : 'Posts'} in this period</h2><ExportAccountButton account={account} data={currentData} /></div>
+        <PostsTable posts={currentData.posts} withInsights={summary.hasInsights} withImpressions={summary.hasImpressions} withViews={summary.hasViews} withShares={tiktok || twitter} />
+      </section>
+    </>}
 
-    <section className="rounded-2xl border border-vx-border p-5">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><h2 className="font-bold">{videoNetwork ? 'Videos' : 'Posts'} in this period</h2><ExportAccountButton account={account} data={currentData} /></div>
-      <PostsTable posts={currentData.posts} withInsights={summary.hasInsights} withImpressions={summary.hasImpressions} withViews={summary.hasViews} withShares={tiktok || twitter} />
-    </section>
-
-    <ContentPerformance posts={currentData.posts} />
+    {includeContent&&<ContentPerformance posts={currentData.posts} />}
 
     {currentData.postingInsightsEnabled && <PostingInsights accountId={accountId} />}
     {youtube && <p className="text-xs text-vx-fg-muted">YouTube subscriber counts are rounded. Video metrics are lifetime totals for videos published in this period. The latest 50 uploads refresh each round.</p>}

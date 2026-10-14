@@ -59,6 +59,7 @@ function PublishControls({ initialJobId, initialUploadId }) {
   const [approvalsEnabled, setApprovalsEnabled] = useState(false);
   const [teamsEnabled, setTeamsEnabled] = useState(false);
   const [variantsEnabled, setVariantsEnabled] = useState(false);
+  const [reportsEnabled, setReportsEnabled] = useState(false);
   const [brandRole, setBrandRole] = useState('owner');
   const [planTier, setPlanTier] = useState('free');
   const [networks, setNetworks] = useState([]);
@@ -87,6 +88,7 @@ function PublishControls({ initialJobId, initialUploadId }) {
       setApprovalsEnabled(res.approvalsEnabled === true);
       setTeamsEnabled(res.teamsEnabled === true);
       setVariantsEnabled(res.variantsEnabled === true);
+      setReportsEnabled(res.reportsEnabled === true);
       setBrandRole(res.brandRole || 'owner');
       setPlanTier(res.planTier === 'publish' ? 'publish' : 'free');
       setNetworks(res.networks || []);
@@ -138,6 +140,7 @@ function PublishControls({ initialJobId, initialUploadId }) {
         <div className="flex flex-wrap gap-4">
           {inboxEnabled && <Link href="/app/publish/inbox" className="text-sm font-bold text-vx-accent underline">Social inbox</Link>}
           {smartlinksEnabled && <Link href="/app/publish/smartlink" className="text-sm font-bold text-vx-accent underline">SmartLink</Link>}
+          {reportsEnabled && paid && <Link href="/app/publish/reports" className="text-sm font-bold text-vx-accent underline">Reports</Link>}
           {queuesEnabled && paid && <Link href="/app/publish/queues" className="text-sm font-bold text-vx-accent underline">Posting queues</Link>}
           {teamsEnabled && paid && ['owner', 'manager'].includes(brandRole) && <Link href="/app/publish/team" className="text-sm font-bold text-vx-accent underline">Team</Link>}
           {teamsEnabled && paid && ['owner', 'manager'].includes(brandRole) && <Link href="/app/publish/activity" className="text-sm font-bold text-vx-accent underline">Activity</Link>}

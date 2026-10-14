@@ -11,7 +11,7 @@ describe('actor-aware team publishing (0308)', { skip: !process.env.DATABASE_URL
 
   before(async () => {
     pool = new pg.Pool({ connectionString: process.env.DATABASE_URL, max: 4 });
-    for (const file of ['0305_social_team_roles.sql', '0306_social_brand_access.sql', '0307_social_team_actions.sql', '0308_social_team_publishing.sql', '0311_social_post_cancel_restore.sql']) {
+    for (const file of ['0305_social_team_roles.sql', '0306_social_brand_access.sql', '0307_social_team_actions.sql', '0308_social_team_publishing.sql', '0311_social_post_cancel_restore.sql', '0312_social_report_templates.sql']) {
       const migration = await readFile(new URL(`./schema/supabase/${file}`, import.meta.url), 'utf8');
       await pool.query(migration); await pool.query(migration);
     }
@@ -136,11 +136,42 @@ describe('actor-aware team publishing (0308)', { skip: !process.env.DATABASE_URL
     assert.equal((await value('SELECT public.cancel_social_post($1,$2,$3) value', [editor.auth, created.post_id, initial.updated_at])).code, 'POST_CHANGED');
   });
 
+  it('lets paid analysts manage branded report templates while viewers can run them', async () => {
+    const owner = await user('report-owner'); const analyst = await user('report-analyst'); const viewer = await user('report-viewer'); const freeOwner = await user('free-report-owner');
+    const brand = (await value('SELECT public.get_or_create_default_social_brand($1) value', [owner.auth])).brand_id;
+    const freeBrand = (await value('SELECT public.get_or_create_default_social_brand($1) value', [freeOwner.auth])).brand_id;
+    await pool.query(`INSERT INTO public.social_publish_subscriptions(user_id,plan_id,idempotency_key,price_usd_cents,consent_version,status,current_period_end)
+      VALUES($1,'publish',$2,1500,'publish-plan-2026-10-13','active',now()+interval '30 days')`, [owner.id, `report-${randomUUID()}`]);
+    await pool.query(`INSERT INTO public.social_brand_members(brand_id,user_id,role,invited_by) VALUES
+      ($1,$2,'analyst',$4),($1,$3,'viewer',$4)`, [brand, analyst.id, viewer.id, owner.id]);
+    const account = await value(`INSERT INTO public.social_accounts(brand_id,network,external_account_id,display_name,access_token_enc,status)
+      VALUES($1,'instagram',$2,'Report account',decode('00','hex'),'active') RETURNING id value`, [brand, `report-${randomUUID()}`]);
+    const otherAccount = await value(`INSERT INTO public.social_accounts(brand_id,network,external_account_id,access_token_enc,status)
+      VALUES($1,'instagram',$2,decode('00','hex'),'active') RETURNING id value`, [freeBrand, `other-${randomUUID()}`]);
+
+    const saved = await value(`SELECT public.save_social_report_template($1,$2,NULL,'Monthly client report',$3,30,true,true,'Veyrnox performance','#38BDF8') value`, [analyst.auth, brand, account]);
+    assert.equal(saved.ok, true);
+    const listed = await value('SELECT public.list_social_report_templates($1,$2) value', [viewer.auth, brand]);
+    assert.equal(listed.ok, true); assert.equal(listed.templates.length, 1);
+    assert.equal(listed.templates[0].report_title, 'Veyrnox performance'); assert.equal(listed.templates[0].accent_color, '#38bdf8');
+    const updated = await value(`SELECT public.save_social_report_template($1,$2,$3,'Quarterly client report',$4,90,false,false,NULL,'#112233') value`, [analyst.auth, brand, saved.template_id, account]);
+    assert.equal(updated.ok, true);
+    assert.equal((await value('SELECT public.list_social_report_templates($1,$2) value', [owner.auth, brand])).templates[0].range_days, 90);
+    assert.equal((await value(`SELECT public.save_social_report_template($1,$2,NULL,'Wrong account',$3,30,false,true,NULL,'#112233') value`, [analyst.auth, brand, otherAccount])).code, 'INVALID_INPUT');
+    assert.equal((await value(`SELECT public.save_social_report_template($1,$2,NULL,'Viewer edit',NULL,30,false,true,NULL,'#112233') value`, [viewer.auth, brand])).code, 'FORBIDDEN');
+    assert.equal((await value(`SELECT public.save_social_report_template($1,$2,NULL,'Free report',NULL,30,false,true,NULL,'#112233') value`, [freeOwner.auth, freeBrand])).code, 'PLAN_REQUIRED');
+    assert.equal((await value('SELECT public.delete_social_report_template($1,$2,$3) value', [analyst.auth, brand, saved.template_id])).ok, true);
+    assert.equal((await value('SELECT public.list_social_report_templates($1,$2) value', [viewer.auth, brand])).templates.length, 0);
+    assert.equal(await value(`SELECT count(*)::int value FROM public.social_account_actions WHERE brand_id=$1 AND actor_id=$2 AND action IN ('save_report_template','delete_report_template')`, [brand, analyst.id]), 3);
+  });
+
   it('keeps every delegated publishing function service-only with locked search paths', async () => {
     for (const signature of [
       'social_brand_role_context(text,uuid,text[],boolean)', 'create_social_post(text,uuid,timestamptz,text,text,uuid[],jsonb)',
       'social_brand_contains_post(text,uuid,uuid)', 'reschedule_social_post(text,uuid,timestamptz,timestamptz)',
       'cancel_social_post(text,uuid,timestamptz)', 'restore_social_post(text,uuid,timestamptz,timestamptz)',
+      'list_social_report_templates(text,uuid)', 'save_social_report_template(text,uuid,uuid,text,uuid,integer,boolean,boolean,text,text)',
+      'delete_social_report_template(text,uuid,uuid)',
       'save_social_content_preset(text,uuid,uuid,text,text,uuid[])', 'delete_social_content_preset(text,uuid,uuid)',
       'reserve_social_publish_queue_slot(text,uuid,uuid,text)', 'social_brand_contains_queue_assignment(text,uuid,uuid)',
       'confirm_social_publish_queue_slot(text,uuid,uuid)', 'approve_social_post_batch(text,uuid,uuid)',
