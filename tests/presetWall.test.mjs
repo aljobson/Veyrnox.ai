@@ -125,10 +125,11 @@ test('the class strings match the layout metadata', () => {
 test('a wall tile prints the live catalog price, falling back to the preset figure', () => {
     const p = PRESETS.find((x) => modelIdForName(x.model));
     const id = modelIdForName(p.model);
-    assert.equal(presetCredits(p, [{ id, credits: p.credits + 5 }]), p.credits + 5, 're-priced row wins');
-    assert.equal(presetCredits(p, undefined), p.credits, 'no catalog');
-    assert.equal(presetCredits(p, []), p.credits, 'model not in the catalog');
-    assert.equal(presetCredits(p, [{ id, credits: null }]), p.credits, 'non-numeric row price');
+    const multiplier = p.durationSeconds === 10 ? 2 : 1;
+    assert.equal(presetCredits(p, [{ id, credits: p.credits + 5 }]), (p.credits + 5) * multiplier, 're-priced row wins');
+    assert.equal(presetCredits(p, undefined), p.credits * multiplier, 'no catalog');
+    assert.equal(presetCredits(p, []), p.credits * multiplier, 'model not in the catalog');
+    assert.equal(presetCredits(p, [{ id, credits: null }]), p.credits * multiplier, 'non-numeric row price');
 });
 
 test('the wall builds its links and prices through the shared helpers', () => {

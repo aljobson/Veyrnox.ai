@@ -11,8 +11,8 @@ import { isUnknownStaticPage } from '../lib/unknownStaticPage.js';
 import { templateStartId } from '../lib/templateStart.js';
 
 test('every imported clip has its own matching recipe and a supported video model', () => {
-  assert.equal(SOURCE_TEMPLATES.length, 68);
-  assert.equal(new Set(SOURCE_TEMPLATES.map((p) => p.clipKey)).size, 68);
+  assert.equal(SOURCE_TEMPLATES.length, 80);
+  assert.equal(new Set(SOURCE_TEMPLATES.map((p) => p.clipKey)).size, 80);
   for (const preset of SOURCE_TEMPLATES) {
     const clip = SHOWCASE_CLIPS[preset.clipKey];
     assert.ok(clip, preset.id);
@@ -23,15 +23,18 @@ test('every imported clip has its own matching recipe and a supported video mode
     assert.doesNotMatch(preset.prompt, /@(image|video)\d/, 'unsupported source reference slots must not leak into runnable prompt');
     assert.equal(preset.promptOrigin, 'veyrnox-adaptation');
     assert.ok(preset.needs);
-    assert.ok([5, 10].includes(preset.durationSeconds));
+    assert.equal(preset.durationSeconds, 10);
+    const model = MODELS.find((m) => m.id === modelIdForName(preset.model));
+    assert.ok(model?.durations?.includes(10));
+    if (preset.aspect && model?.aspects) assert.ok(model.aspects.includes(preset.aspect), `${preset.id} uses unsupported ${preset.aspect}`);
   }
 });
 
 test('gallery and homepage templates describe separate footage, with reachable recipe URLs', () => {
-  assert.equal(PRESETS.length, 40);
-  assert.equal(WALL_PRESETS.length, 20);
+  assert.equal(PRESETS.length, 48);
+  assert.equal(WALL_PRESETS.length, 24);
   const visible = [...PRESETS, ...WALL_PRESETS];
-  assert.equal(new Set(visible.map((p) => p.clipKey)).size, 60);
+  assert.equal(new Set(visible.map((p) => p.clipKey)).size, 72);
   for (const preset of visible) {
     assert.equal(templateById(preset.id), preset);
     assert.equal(isUnknownStaticPage(`/presets/${preset.id}`), false);
@@ -65,7 +68,7 @@ test('public template data and media paths are source-platform neutral', () => {
 
 test('every public video and poster is a unique local asset', () => {
   const clips = Object.values(SHOWCASE_CLIPS);
-  assert.equal(clips.length, 68);
+  assert.equal(clips.length, 80);
   for (const field of ['video', 'poster']) {
     const paths = clips.map((clip) => clip[field]);
     assert.equal(new Set(paths).size, paths.length, `${field} paths must be unique`);

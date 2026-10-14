@@ -98,10 +98,10 @@ export function modelIdForName(name) {
  * in the catalog) plus the preset id, so Create records which card sent the
  * user. Shared by the /presets gallery cards and the landing wall.
  */
-export function presetHref(preset) {
+export function presetHref(preset, durationSeconds = preset.durationSeconds) {
   const modelId = modelIdForName(preset.model);
   return modelId
-    ? `/app/create?model=${encodeURIComponent(modelId)}&preset=${encodeURIComponent(preset.id)}${preset.durationSeconds === 10 ? '&duration=10s' : ''}`
+    ? `/app/create?model=${encodeURIComponent(modelId)}&preset=${encodeURIComponent(preset.id)}${durationSeconds === 10 ? '&duration=10s' : ''}`
     : `/app/create?preset=${encodeURIComponent(preset.id)}`;
 }
 
@@ -112,11 +112,11 @@ export function presetHref(preset) {
  * back to the preset's own figure when the catalog is missing, the model has
  * drifted out of it, or the row carries no numeric price.
  */
-export function presetCredits(preset, catalog) {
+export function presetCredits(preset, catalog, durationSeconds = preset.durationSeconds) {
   const id = modelIdForName(preset.model);
   const row = id && Array.isArray(catalog) ? catalog.find((m) => m.id === id) : null;
   const unit = row && typeof row.credits === 'number' ? row.credits : preset.credits;
-  return unit * (preset.durationSeconds === 10 ? COST_MULTIPLIER_10S : 1);
+  return unit * (durationSeconds === 10 ? COST_MULTIPLIER_10S : 1);
 }
 
 export const ASPECT_RATIOS = ['16:9', '9:16', '1:1', '4:5', '21:9'];

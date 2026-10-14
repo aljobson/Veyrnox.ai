@@ -95,6 +95,11 @@ test('storage isolates accounts, rejects malformed imports and reports write fai
   assert.throws(()=>parseFilm('{broken'));assert.throws(()=>parseFilm(JSON.stringify({...f,shots:[null]})));assert.throws(()=>parseFilm('x'.repeat(1_000_001)));
   Object.assign(storage,values);clearFilmLocal(storage);assert.equal(readFilm(storage,'alice').film.name,'');
 });
+test('older Film Studio files gain a 60-second target without losing their work',()=>{
+  const old=filmFixture();delete old.targetSeconds;
+  const parsed=parseFilm(JSON.stringify(old));
+  assert.equal(parsed.targetSeconds,60);assert.equal(parsed.name,old.name);assert.equal(parsed.shots.length,1);
+});
 test('exports preserve the studio structure, all prompt versions and separate edit text',()=>{
   const f=readyFilm();f.shots[0].text='OPEN';f.shots[0].textPlacement='Top left';f.shots[0].textContext='Opening title';
   const files=studioFiles(f);assert.equal(files['AGENTS.md'],files['CLAUDE.md']);

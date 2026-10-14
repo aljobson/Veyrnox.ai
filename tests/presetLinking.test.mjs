@@ -43,6 +43,8 @@ test('the template card navigates to its template page', () => {
     // The template page's "Use this template" opens the studio on the model.
     const withModel = PRESETS.find((p) => modelIdForName(p.model));
     assert.match(presetHref(withModel), /^\/app\/create\?model=/);
+    assert.match(presetHref(withModel, 10), /duration=10s/);
+    assert.doesNotMatch(presetHref(withModel, 5), /duration=/);
 });
 
 test('every template carries a prompt, a unique id and a known category', () => {
