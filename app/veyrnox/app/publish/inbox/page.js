@@ -9,6 +9,7 @@ import { listSocialAccounts, NETWORKS } from '../../../../lib/socialConnectClien
 import { addSocialInboxNote, getSocialInboxThread, listSocialInbox, replyToSocialInboxThread, updateSocialInboxThread } from '../../../../lib/socialInboxClient';
 import NetworkLogo from '../NetworkLogo';
 import BrandSwitcher from '../BrandSwitcher';
+import InboxAnalytics from './InboxAnalytics';
 
 const currentAccount = () => getSession()?.user?.id || '';
 const noAccount = () => '';
@@ -113,6 +114,7 @@ function InboxDashboard() {
   }
 
   return <div className="space-y-5">
+    <InboxAnalytics accountId={accountId} />
     <section aria-label="Inbox filters" className="rounded-2xl border border-vx-border p-4">
       <div className="flex flex-wrap items-end gap-3">
         <label className="grid gap-1 text-xs font-bold text-vx-fg-muted">Account

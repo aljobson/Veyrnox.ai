@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import pg from 'pg';
 
-describe('team inbox workflow (0309)', { skip: !process.env.DATABASE_URL }, () => {
+describe('team inbox workflow and analytics (0309, 0316)', { skip: !process.env.DATABASE_URL }, () => {
   let pool: pg.Pool;
   const one = async (sql: string, args: unknown[] = []) => (await pool.query(sql, args)).rows[0];
   const value = async (sql: string, args: unknown[] = []) => (await one(sql, args)).value;
@@ -14,7 +14,7 @@ describe('team inbox workflow (0309)', { skip: !process.env.DATABASE_URL }, () =
     for (const file of ['0071_signup_grant_on_email_confirmation.sql', '0154_social_publish_foundation.sql',
       '0293_social_publish_plans.sql', '0299_social_inbox.sql', '0305_social_team_roles.sql',
       '0306_social_brand_access.sql', '0307_social_team_actions.sql', '0308_social_team_publishing.sql',
-      '0309_social_inbox_workflow.sql']) {
+      '0309_social_inbox_workflow.sql', '0316_social_inbox_analytics.sql']) {
       const migration = await readFile(new URL(`./schema/supabase/${file}`, import.meta.url), 'utf8');
       await pool.query(migration); await pool.query(migration);
     }
@@ -71,13 +71,50 @@ describe('team inbox workflow (0309)', { skip: !process.env.DATABASE_URL }, () =
       [reviewer.auth, brand, event.thread_id, 'Thanks', `reply-${randomUUID()}`])).code, 'FORBIDDEN');
   });
 
+  it('summarizes paid inbox volume, delivery and first-response time without crossing brands', async () => {
+    const owner = await user('inbox-analytics-owner');
+    const outsider = await user('inbox-analytics-outsider');
+    const brand = (await value('SELECT public.get_or_create_default_social_brand($1) value', [owner.auth])).brand_id;
+    const outsideBrand = (await value('SELECT public.get_or_create_default_social_brand($1) value', [outsider.auth])).brand_id;
+    await pool.query(`INSERT INTO public.social_publish_subscriptions(user_id,plan_id,idempotency_key,price_usd_cents,consent_version,status,current_period_end)
+      VALUES($1,'publish',$2,1500,'publish-plan-2026-10-13','active',now()+interval '30 days')`, [owner.id, `inbox-analytics-${randomUUID()}`]);
+    const external = `analytics-${randomUUID()}`;
+    const outsideExternal = `outside-${randomUUID()}`;
+    const account = (await one(`INSERT INTO public.social_accounts(brand_id,network,external_account_id,display_name,scopes_granted,access_token_enc,status)
+      VALUES($1,'instagram',$2,'@analytics',ARRAY['instagram_business_manage_comments'],decode('00','hex'),'active') RETURNING id`, [brand, external])).id;
+    await pool.query(`INSERT INTO public.social_accounts(brand_id,network,external_account_id,display_name,scopes_granted,access_token_enc,status)
+      VALUES($1,'facebook',$2,'Outside',ARRAY['pages_manage_posts'],decode('00','hex'),'active')`, [outsideBrand, outsideExternal]);
+    const receivedAt = new Date(Date.now() - 30 * 60 * 1000);
+    const event = await value(`SELECT public.ingest_social_inbox_event(
+      'instagram',$1,'analytics-thread','comment','analytics-inbound','inbound','Question','[]'::jsonb,
+      'customer-analytics','Customer',NULL,'Question','https://instagram.com/p/analytics',true,$2) value`, [external, receivedAt]);
+    await pool.query(`INSERT INTO public.social_inbox_messages(thread_id,direction,body,delivery_status,sent_at)
+      VALUES($1,'outbound','Answer','sent',$2),($1,'outbound','Retry','failed',$3)`,
+      [event.thread_id, new Date(receivedAt.getTime() + 120_000), new Date(receivedAt.getTime() + 180_000)]);
+    await pool.query(`INSERT INTO public.social_inbox_actions(brand_id,thread_id,actor_id,action,detail,created_at)
+      VALUES($1,$2,$3,'read','{}'::jsonb,now())`, [brand, event.thread_id, owner.id]);
+    await value(`SELECT public.ingest_social_inbox_event(
+      'facebook',$1,'outside-thread','message','outside-inbound','inbound','Private','[]'::jsonb,
+      'outside-customer','Outside',NULL,NULL,NULL,false,now()) value`, [outsideExternal]);
+
+    const result = await value('SELECT public.get_social_inbox_analytics($1,$2,$3,30) value', [owner.auth, brand, account]);
+    assert.equal(result.ok, true);
+    assert.deepEqual(result.summary, { conversations: 1, received: 1, sent: 1, failed: 1, read_actions: 1, median_response_seconds: 120 });
+    assert.equal(result.platforms[0].network, 'instagram');
+    assert.deepEqual([result.platforms[0].received, result.platforms[0].sent, result.platforms[0].failed], [1, 1, 1]);
+    assert.equal(result.trend.reduce((sum: number, day: { received: number }) => sum + day.received, 0), 1);
+    assert.equal(result.heatmap.reduce((sum: number, cell: { received: number }) => sum + cell.received, 0), 1);
+    assert.equal((await value('SELECT public.get_social_inbox_analytics($1,$2,NULL,30) value', [outsider.auth, brand])).code, 'FORBIDDEN');
+    assert.equal((await value('SELECT public.get_social_inbox_analytics($1,$2,NULL,14) value', [owner.auth, brand])).code, 'INVALID_RANGE');
+  });
+
   it('keeps workflow tables and functions service-only', async () => {
     for (const role of ['anon', 'authenticated']) {
       assert.equal((await one("SELECT has_table_privilege($1,'public.social_inbox_notes','SELECT') allowed", [role])).allowed, false);
       for (const signature of ['list_social_inbox(text,uuid,uuid,text,text,text,text,text,text)',
         'get_social_inbox_thread(text,uuid,uuid)', 'update_social_inbox_thread(text,uuid,uuid,text)',
         'update_social_inbox_workflow(text,uuid,uuid,text,jsonb)', 'add_social_inbox_note(text,uuid,uuid,text)',
-        'create_social_inbox_reply(text,uuid,uuid,text,text)']) {
+        'create_social_inbox_reply(text,uuid,uuid,text,text)', 'get_social_inbox_analytics(text,uuid,uuid,integer)']) {
         assert.equal((await one("SELECT has_function_privilege($1,$2,'EXECUTE') allowed", [role, `public.${signature}`])).allowed, false);
       }
     }

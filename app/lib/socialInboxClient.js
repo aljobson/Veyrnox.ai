@@ -23,3 +23,8 @@ export const addSocialInboxNote = (threadId, note) => gatewayFetch(`/social/inbo
 export const replyToSocialInboxThread = (threadId, body, idempotencyKey = makeIdempotencyKey()) => gatewayFetch(`/social/inbox/${encodeURIComponent(threadId)}/reply`, {
     method: 'POST', body: JSON.stringify({ body, idempotencyKey }),
 });
+export function getSocialInboxAnalytics({ accountId, days = 30 } = {}) {
+    const params = new URLSearchParams({ days: String(days) });
+    if (accountId) params.set('accountId', accountId);
+    return gatewayFetch(`/social/inbox/analytics?${params}`);
+}
