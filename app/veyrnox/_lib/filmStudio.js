@@ -23,8 +23,13 @@ export function assetType(film, key) {
   return film.shots.some(s=>assetTags(s.characters).includes(key))?'character':'prop';
 }
 export function emptyFilm() {
-  return { schema: 1, name: '', targetSeconds: 60, stack: { image: '', video: '', imageAccess: 'Studio', videoAccess: 'Studio', seconds: '10', aspect: '16:9' },
+  return { schema: 1, name: '', templateId: '', targetSeconds: 60, stack: { image: '', video: '', imageAccess: 'Studio', videoAccess: 'Studio', seconds: '10', aspect: '16:9' },
     script: '', shots: [], boards: [], assets: [], prompts: [], attempts: [] };
+}
+export function filmFromTemplate(starter, videoModelId = '') {
+  const film = emptyFilm();
+  return { ...film, name: starter.title, templateId: starter.templateId, script: starter.prompt, targetSeconds: starter.targetSeconds,
+    stack: { ...film.stack, video: videoModelId, aspect: starter.aspect, seconds: '10' } };
 }
 export function shotIssues(s) {
   const issues = SHOT_LANES.flatMap(([, fields]) => fields.filter(([key]) => !present(s[key])).map(([, label]) => `${label} is missing.`));

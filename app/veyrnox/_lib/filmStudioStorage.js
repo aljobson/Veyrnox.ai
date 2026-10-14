@@ -11,8 +11,9 @@ export function parseFilm(raw) {
   let f;
   try { f = JSON.parse(raw); } catch { throw new Error('Choose a Film Studio JSON export.'); }
   if (object(f) && f.targetSeconds === undefined) f = { ...f, targetSeconds: 60 };
+  if (object(f) && f.templateId === undefined) f = { ...f, templateId: '' };
   const template = emptyFilm();
-  if (!object(f) || f.schema !== 1 || !strings(f, ['name', 'script']) || ![30, 60, 90, 120].includes(f.targetSeconds) || !strings(f.stack, Object.keys(template.stack))
+  if (!object(f) || f.schema !== 1 || !strings(f, ['name', 'script', 'templateId']) || !/^(?:|[a-z0-9][a-z0-9-]{0,99})$/.test(f.templateId) || ![30, 60, 90, 120].includes(f.targetSeconds) || !strings(f.stack, Object.keys(template.stack))
     || !['16:9', '9:16', '1:1'].includes(f.stack.aspect)
     || !list(f.shots, 200, s => strings(s, SHOT_LANES.flatMap(([,fields]) => fields.map(([k]) => k))) && /^[a-zA-Z0-9][a-zA-Z0-9_-]{0,60}$/.test(s.id) && typeof s.oneAction === 'boolean')
     || !list(f.boards, 300, b => strings(b, ['id', 'name', 'type', 'decision']) && ['character', 'location', 'prop', 'style'].includes(b.type)
