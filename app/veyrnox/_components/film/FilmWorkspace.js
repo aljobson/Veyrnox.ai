@@ -70,8 +70,20 @@ export function FilmWorkspace() {
   const issues=stageIssues(film,current);
   if(!ready) return <p role="status" className="p-8">Loading Film Studio…</p>;
   return <div className="mx-auto max-w-6xl px-4 py-8 sm:px-8">
-    <header className="mb-8"><p className="font-vx-mono text-xs tracking-widest text-vx-fg-muted">FILM STUDIO</p><h1 className="mt-2 text-3xl font-black">From story to consistent shots.</h1>
-      <p className="mt-3 max-w-2xl text-sm text-vx-fg-muted">Seven stages keep the references, characters and direction consistent across your film.</p>
+    <header className="mb-8"><p className="font-vx-mono text-xs tracking-widest text-vx-fg-muted">FILM STUDIO</p><h1 className="mt-2 text-3xl font-black">Plan your AI film, shot by shot.</h1>
+      <p className="mt-3 max-w-2xl text-sm text-vx-fg-muted">Film Studio helps you keep characters, locations and style consistent. It prepares each shot for generation; it does not make or edit the whole film for you.</p>
+      <section aria-labelledby="film-studio-how-to" className="mt-5 max-w-4xl rounded-xl border border-vx-border bg-vx-panel p-4">
+        <h2 id="film-studio-how-to" className="text-sm font-bold">How to use it</h2>
+        <ol className="mt-3 grid gap-2 text-sm text-vx-fg-muted sm:grid-cols-2">
+          <li><span className="font-semibold text-vx-fg">1.</span> Choose your image and video tools.</li>
+          <li><span className="font-semibold text-vx-fg">2.</span> Add your story and split it into short shots.</li>
+          <li><span className="font-semibold text-vx-fg">3.</span> Add and approve your visual references.</li>
+          <li><span className="font-semibold text-vx-fg">4.</span> Describe each character, location and prop.</li>
+          <li><span className="font-semibold text-vx-fg">5.</span> Generate test images and lock the ones that match.</li>
+          <li><span className="font-semibold text-vx-fg">6.</span> Build the final prompt for each shot.</li>
+          <li><span className="font-semibold text-vx-fg">7.</span> Open it in Create, generate the clip and record the result.</li>
+        </ol>
+      </section>
       <p role="status" className="mt-3 text-xs text-vx-fg-muted">{saved?'Saved in this browser. Export a copy to keep it when you sign out.':userId?'Changes are not saved.':'Sign in to save in this browser. You can work and export without signing in.'}</p>
       <FilmFiles film={film} onImport={next=>{update(next);setStage(accessibleStage(next));}}/>
     </header>
