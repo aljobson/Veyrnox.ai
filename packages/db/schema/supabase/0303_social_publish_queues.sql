@@ -40,6 +40,7 @@ CREATE TABLE IF NOT EXISTS public.social_publish_queue_assignments (
   UNIQUE(brand_id,idempotency_key)
 );
 CREATE INDEX IF NOT EXISTS social_queue_assignments_slot_idx ON public.social_publish_queue_assignments(queue_id,scheduled_at);
+CREATE INDEX IF NOT EXISTS social_queue_assignments_post_idx ON public.social_publish_queue_assignments(post_id);
 ALTER TABLE public.social_publish_queue_assignments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.social_publish_queue_assignments FORCE ROW LEVEL SECURITY;
 REVOKE ALL ON public.social_publish_queue_assignments FROM PUBLIC,anon,authenticated,service_role;
