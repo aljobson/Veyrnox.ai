@@ -1,0 +1,44 @@
+app = "veyrnox-cinema-scanner"
+primary_region = "ams"
+kill_signal = "SIGTERM"
+kill_timeout = 900
+
+[build]
+  dockerfile = "services/cinema-scanner/Dockerfile.fly"
+
+[env]
+  PORT = "8080"
+  CLAMD_HOST = "127.0.0.1"
+  CLAMD_PORT = "3310"
+  FRESHCLAM_CHECKS = "24"
+  CINEMA_QUARANTINE_SCANNER_ENABLED = "false"
+  SUPABASE_URL = "https://xdxdzmsztyzbnzeforxx.supabase.co"
+  R2_ACCOUNT_ID = "fb18d9f7052afbea5a5e0eae69948af2"
+  R2_BUCKET = "veyrnox-ai-media"
+  R2_JURISDICTION = "eu"
+  CINEMA_STREAM_ACCOUNT_ID = "fb18d9f7052afbea5a5e0eae69948af2"
+
+[checks.scanner]
+  type = "http"
+  port = 8080
+  method = "GET"
+  path = "/healthz"
+  interval = "30s"
+  timeout = "5s"
+  grace_period = "10m"
+
+[checks.clamav]
+  type = "tcp"
+  port = 3310
+  interval = "30s"
+  timeout = "5s"
+  grace_period = "10m"
+
+[[restart]]
+  policy = "on-failure"
+  max_retries = 10
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 2
+  memory = "4gb"
