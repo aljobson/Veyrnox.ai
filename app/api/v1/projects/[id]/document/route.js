@@ -12,9 +12,9 @@ export async function GET(request, { params }) {
     if (revision !== null && (!/^[1-9]\d{0,8}$/.test(revision))) throw new ApiError(400, 'INVALID_REVISION', 'A positive revision is required.');
     const projects = await tenantRequest(request, context, `projects?id=eq.${id}&select=id&limit=1`);
     if (!projects[0]) throw new ApiError(404, 'NOT_FOUND', 'The project was not found.');
-    const rows = await tenantRequest(request, context, `project_document_versions?project_id=eq.${id}&select=revision,document,created_at,restored_from&order=revision.desc&limit=1${revision ? `&revision=eq.${revision}` : ''}`);
+    const rows = await tenantRequest(request, context, `project_document_versions?project_id=eq.${id}&select=revision,document,actor_id,created_at,restored_from&order=revision.desc&limit=1${revision ? `&revision=eq.${revision}` : ''}`);
     if (revision && !rows[0]) throw new ApiError(404, 'NOT_FOUND', 'The version was not found.');
-    return Response.json(rows[0] || { revision: 0, document: emptyProjectDocument(id), created_at: null, restored_from: null });
+    return Response.json(rows[0] || { revision: 0, document: emptyProjectDocument(id), actor_id: null, created_at: null, restored_from: null });
   });
 }
 export async function PUT(request, { params }) {

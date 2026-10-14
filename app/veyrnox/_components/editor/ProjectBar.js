@@ -9,7 +9,7 @@ import { Modal } from '../Modal';
 import { gatewayFetch, makeIdempotencyKey } from '../../_lib/gateway';
 import { useProjectsEnabled } from '../ProjectsFlag';
 import { equalProjectDocuments } from '../../../../lib/projectDocument.js';
-import { timelineFromDocument, documentForTimeline, mediaToRelink, matchLocalFile, saveProblem } from '../../_lib/editorProject.mjs';
+import { conflictCopyName, documentForTimeline, matchLocalFile, mediaToRelink, projectDocumentDifferences, remoteSaveLabel, saveProblem, timelineFromDocument } from '../../_lib/editorProject.mjs';
 import { loadProjectAssetBlob } from '../../_lib/editorProjectAssets.mjs';
 import { loadEditorLibraryItem } from '../../_lib/editorLibraryCollection.mjs';
 import { probeMedia, checkProbe, checkLocalFile } from '../../_lib/editorMedia.mjs';
@@ -38,7 +38,7 @@ function ProjectSessionBar({ tl, blobs, onLoadTimeline, onRelinked, onContext,co
     const enabled = useProjectsEnabled();
     const multitrack = useMultitrackEnabled();
     const actor=useRef(getStoredUserId()).current;
-    const alive = useRef(true), pending = useRef(null), timer = useRef(null);
+    const alive = useRef(true), pending = useRef(null), copyPending = useRef(null), timer = useRef(null);
     const currentAccount=useCallback(()=>alive.current && actor===getStoredUserId(),[actor]);
     const [workspaceId,setWorkspaceId]=useState(null);
     const [projectId, setProjectId] = useState(null), [name, setName] = useState('');
@@ -112,6 +112,21 @@ function ProjectSessionBar({ tl, blobs, onLoadTimeline, onRelinked, onContext,co
         if (dirty && !busy && !remote && !error) timer.current = setTimeout(() => save(), 3000);
         return () => clearTimeout(timer.current);
     }, [dirty, busy, remote, error, save]);
+    // Saved versions are immutable. Polling the head lets another device or collaborator surface before this tab overwrites it.
+    useEffect(() => {
+        if (!endpoint || busy || remote) return;
+        let cancelled = false;
+        const check = async () => {
+            if (document.visibilityState === 'hidden') return;
+            try {
+                const latest = await gatewayFetch(`${endpoint}/document`);
+                if (!cancelled && currentAccount() && latest.revision > revision) setRemote(latest);
+            } catch { /* background sync never replaces the active save status */ }
+        };
+        const interval = window.setInterval(check, 15000);
+        window.addEventListener('focus', check);
+        return () => { cancelled = true; window.clearInterval(interval); window.removeEventListener('focus', check); };
+    }, [endpoint, revision, busy, remote, currentAccount]);
 
     async function chooseAgain(event) {
         const file = event.target.files[0]; event.target.value = '';
@@ -164,6 +179,28 @@ function ProjectSessionBar({ tl, blobs, onLoadTimeline, onRelinked, onContext,co
     async function viewVersion(n) {
         try { const r = await gatewayFetch(`${endpoint}/document?revision=${n}`); if (currentAccount()) setPreview(r); } catch { if (currentAccount()) setError('Could not load that version.'); }
     }
+    function loadRemote() {
+        const { timeline } = timelineFromDocument(remote.document);
+        setDoc(remote.document); setRevision(remote.revision); setSavedAt(remote.created_at); setRemote(null); setError(''); pending.current = null;
+        onLoadTimeline(timeline); const need = refreshRelink(timeline); if (need.library.length || need.assets.length) fetchLibrary([...need.library,...need.assets], timeline);
+    }
+    async function keepLocalCopy() {
+        if (!workspaceId || !doc || !remote || !currentAccount()) return;
+        const localTimeline = tl, copy = copyPending.current ||= { createKey: makeIdempotencyKey(), saveKey: makeIdempotencyKey(), name: conflictCopyName(name), projectId: null };
+        setBusy(true); setError('');
+        try {
+            if (!copy.projectId) {
+                const created = await gatewayFetch('/projects', { method: 'POST', body: JSON.stringify({ workspace_id: workspaceId, name: copy.name }), headers: { 'idempotency-key': copy.createKey } });
+                copy.projectId = created.project.id; copy.name = created.project.name;
+            }
+            const copyDocument = documentForTimeline({ ...doc, project_id: copy.projectId }, localTimeline);
+            const saved = await gatewayFetch(`/projects/${encodeURIComponent(copy.projectId)}/document`, { method: 'PUT', body: JSON.stringify({ expected_revision: 0, document: copyDocument }), headers: { 'idempotency-key': copy.saveKey }, signal: AbortSignal.timeout(15000) });
+            if (!currentAccount()) return;
+            window.history.replaceState(null, '', `${window.location.pathname}?project=${encodeURIComponent(copy.projectId)}`);
+            setProjectId(copy.projectId); setName(copy.name); setDoc(saved.document); setRevision(saved.revision); setSavedAt(saved.created_at); setRemote(null); pending.current = null; copyPending.current = null;
+        } catch (e) { if (currentAccount()) setError(e.status === 429 ? 'Too many project saves for now. Try this copy again in a minute.' : 'Could not save the copy. Your edit is still open; try again.'); }
+        finally { if (currentAccount()) setBusy(false); }
+    }
 
     if (!enabled) return null;
     const status = busy ? 'Saving…' : error ? 'Not saved' : dirty ? 'Unsaved changes' : savedAt ? `Saved · version ${revision}` : 'Not saved yet';
@@ -178,10 +215,10 @@ function ProjectSessionBar({ tl, blobs, onLoadTimeline, onRelinked, onContext,co
             {relinking && <span role="status" className="text-xs text-vx-fg-muted">Fetching the project files…</span>}
         </div>
         {error && <p role="alert" className="text-sm">{error}</p>}
-        {remote && <div className="rounded-xl border border-vx-accent p-3 text-sm"><p>Saved version {remote.revision} is newer than what you have.</p>{remote.document.schema_version === 3 && !multitrack && <p role="alert">Open this project in the multitrack editor to resolve the conflict. Both versions are kept.</p>}
+        {remote && <div className="rounded-xl border border-vx-accent p-3 text-sm" role="alert"><p className="font-bold">{remoteSaveLabel(remote.actor_id,actor)} saved version {remote.revision}.</p><p className="mt-1 text-xs text-vx-fg-muted">Your open edit is still here. Keep it as a separate project or discard it and load the latest saved version.</p>{projectDocumentDifferences(current,remote.document).length>0 && <ul className="mt-2 list-disc pl-5 text-xs">{projectDocumentDifferences(current,remote.document).map(change=><li key={change}>{change}</li>)}</ul>}{remote.document.schema_version === 3 && !multitrack && <p>Open this project in the multitrack editor to load the newer version.</p>}
             <div className="mt-2 flex flex-wrap gap-2">
-                <Button size="sm" variant="ghost" disabled={busy || (remote.document.schema_version === 3 && !multitrack)} onClick={() => { const { timeline } = timelineFromDocument(remote.document); setDoc(remote.document); setRevision(remote.revision); setSavedAt(remote.created_at); setRemote(null); setError(''); onLoadTimeline(timeline); const need = refreshRelink(timeline); if (need.library.length || need.assets.length) fetchLibrary([...need.library,...need.assets], timeline); }}>Use saved version</Button>
-                <Button size="sm" disabled={busy || (remote.document.schema_version === 3 && !multitrack)} onClick={() => save({ against: remote.revision })}>Save mine instead</Button>
+                <Button size="sm" disabled={busy} onClick={keepLocalCopy}>Keep my edit as a copy</Button>
+                <Button size="sm" variant="ghost" disabled={busy || (remote.document.schema_version === 3 && !multitrack)} onClick={loadRemote}>Discard mine and load latest</Button>
             </div></div>}
         {relink.local.length > 0 && <div className="rounded-xl border border-vx-border p-3 text-sm">
             <p>This project needs files from your computer again (they were never uploaded):</p>
@@ -201,7 +238,7 @@ function ProjectSessionBar({ tl, blobs, onLoadTimeline, onRelinked, onContext,co
         {versions && <Modal aria-label="Versions" onCancel={() => { setVersions(null); setPreview(null); }} className="items-center justify-center p-4"><div className="w-full max-w-md rounded-2xl border border-vx-border bg-vx-base p-6">
             <h2 className="text-lg font-black">Versions</h2>
             {versions.length === 0 ? <p className="mt-3 text-sm text-vx-fg-muted">No versions yet.</p> : <ol className="mt-3 max-h-60 space-y-2 overflow-auto">
-                {versions.map(v => <li key={v.revision}><button type="button" className={`${field} w-full text-left`} onClick={() => viewVersion(v.revision)}>Version {v.revision}{v.revision === revision ? ' · Current' : ''}<span className="block text-xs text-vx-fg-muted">{date(v.created_at)}{v.restored_from ? ` · restored from ${v.restored_from}` : ''}</span></button></li>)}
+                {versions.map(v => <li key={v.revision}><button type="button" className={`${field} w-full text-left`} onClick={() => viewVersion(v.revision)}>Version {v.revision}{v.revision === revision ? ' · Current' : ''}<span className="block text-xs text-vx-fg-muted">{v.actor_id===actor?'You':'Collaborator'} · {date(v.created_at)}{v.restored_from ? ` · restored from ${v.restored_from}` : ''}</span></button></li>)}
             </ol>}
             {preview && <div className="mt-4 rounded-xl border border-vx-border p-3 text-sm"><p className="font-bold">Version {preview.revision}</p><p className="text-xs text-vx-fg-muted">{date(preview.created_at)} · {[2, 3].includes(preview.document.schema_version) && preview.document.timeline ? `${preview.document.timeline.video.length} video clips, ${preview.document.timeline.audio.length} sounds, ${preview.document.timeline.text.length} texts` : 'no timeline'}</p>
                 <p className="mt-2 text-xs text-vx-fg-muted">{dirty ? 'Save your current work before restoring.' : 'Restoring makes a new version; history is kept.'}</p>

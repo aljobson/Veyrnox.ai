@@ -54,3 +54,30 @@ export function saveProblem(error) {
     if (error.status === 400) return 'This timeline could not be saved. Remove the last change and try again.';
     return 'Could not save. Check your connection and try again.';
 }
+
+const documentCounts = doc => {
+    const timeline = doc?.timeline;
+    return {
+        video: Array.isArray(timeline?.video) ? timeline.video.length : 0,
+        audio: Array.isArray(timeline?.audio) ? timeline.audio.length : 0,
+        text: Array.isArray(timeline?.text) ? timeline.text.length : 0,
+        markers: Array.isArray(timeline?.markers) ? timeline.markers.length : 0,
+    };
+};
+
+/** A compact, non-destructive comparison for two valid saved editor documents. */
+export function projectDocumentDifferences(local, saved) {
+    const before = documentCounts(local), after = documentCounts(saved), labels = { video: 'Video clips', audio: 'Audio clips', text: 'Text layers', markers: 'Markers' };
+    return Object.keys(labels).filter(key => before[key] !== after[key]).map(key => `${labels[key]}: ${before[key]} → ${after[key]}`);
+}
+
+/** Name a conflict copy without exceeding the project API's 120-character limit. */
+export function conflictCopyName(name) {
+    const base = typeof name === 'string' && name.trim() ? name.trim() : 'Project';
+    const suffix = ' — edit copy';
+    return `${base.slice(0, 120 - suffix.length).trimEnd()}${suffix}`;
+}
+
+export function remoteSaveLabel(actorId, currentActorId) {
+    return actorId && actorId === currentActorId ? 'Another device' : 'A collaborator';
+}

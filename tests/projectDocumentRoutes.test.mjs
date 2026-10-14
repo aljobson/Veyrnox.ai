@@ -39,8 +39,14 @@ test('save and restore forward only validated intent and preserve user JWT',asyn
 test('history pagination is bounded and excludes document content',async()=>{
  const urls=[];globalThis.fetch=async(url)=>{urls.push(String(url));return Response.json(urls.length===1?[{id}]:[]);};
  const r=await history(req(undefined,'?before=40'),params);assert.equal(r.status,200);
- assert.match(urls[1],/limit=50/);assert.match(urls[1],/revision=lt.40/);assert.ok(!urls[1].includes(',document'));
+ assert.match(urls[1],/limit=50/);assert.match(urls[1],/revision=lt.40/);assert.match(urls[1],/actor_id/);assert.ok(!urls[1].includes(',document'));
  assert.equal((await history(req(undefined,'?before=0'),params)).status,400);
+});
+
+test('document reads include the saved actor for collaborator-aware conflict handling',async()=>{
+ const urls=[];globalThis.fetch=async url=>{urls.push(String(url));return Response.json(urls.length===1?[{id}]:[]);};
+ const response=await GET(req(),params);assert.equal(response.status,200);assert.match(urls[1],/actor_id/);
+ const empty=await response.json();assert.equal(empty.actor_id,null);
 });
 test('a v2 document with a timeline forwards; a damaged timeline never reaches upstream (ADR-0080 slice 3)',async()=>{
  const { withTimeline } = await import('../lib/projectDocument.js');
