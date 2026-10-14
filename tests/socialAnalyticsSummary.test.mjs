@@ -1,10 +1,23 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { analyticsCsv, postAnalyticsCsv, postInteractions, rangeForDays, summarize, summarizePortfolio, totalPostMetric, totalViews } from '../lib/social/analyticsSummary.js';
+import { analyticsCsv, metricChange, postAnalyticsCsv, postInteractions, previousRange, rangeForDays, summarize, summarizePortfolio, totalPostMetric, totalViews } from '../lib/social/analyticsSummary.js';
 
 test('rangeForDays is inclusive of today and counts in UTC', () => {
     assert.deepEqual(rangeForDays(30, new Date('2026-10-03T23:59:00Z')), { from: '2026-09-04', to: '2026-10-03' });
     assert.deepEqual(rangeForDays(1, new Date('2026-10-03T00:00:00Z')), { from: '2026-10-03', to: '2026-10-03' });
+});
+
+test('previousRange returns the adjacent inclusive period with equal length', () => {
+    assert.deepEqual(previousRange({ from: '2026-10-01', to: '2026-10-07' }), { from: '2026-09-24', to: '2026-09-30' });
+    assert.deepEqual(previousRange({ from: '2026-10-03', to: '2026-10-03' }), { from: '2026-10-02', to: '2026-10-02' });
+    assert.equal(previousRange({ from: '2026-10-04', to: '2026-10-03' }), null);
+});
+
+test('metricChange only compares metrics supplied in both periods', () => {
+    assert.equal(metricChange(12, 5), 7);
+    assert.equal(metricChange(0, 5), -5);
+    assert.equal(metricChange(null, 5), null);
+    assert.equal(metricChange(12, undefined), null);
 });
 
 test('postInteractions adds whatever the network reported and ignores the rest', () => {

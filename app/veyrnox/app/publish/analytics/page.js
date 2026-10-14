@@ -7,7 +7,7 @@ import { getSession, onSessionChange } from '../../../../lib/authClient';
 import { NETWORKS, listSocialAccounts } from '../../../../lib/socialConnectClient';
 import { getSocialAnalytics } from '../../../../lib/socialAnalyticsClient';
 import { getPublishPlan } from '../../../../lib/publishPlanClient';
-import { analyticsCsv, postAnalyticsCsv, postInteractions, rangeForDays, summarize, summarizePortfolio, totalPostMetric, totalViews } from '../../../../../lib/social/analyticsSummary.js';
+import { analyticsCsv, metricChange, postAnalyticsCsv, postInteractions, previousRange, rangeForDays, summarize, summarizePortfolio, totalPostMetric, totalViews } from '../../../../../lib/social/analyticsSummary.js';
 import { analyticsCapabilities, hasAnalytics } from '../../../../../lib/social/analyticsCapabilities.js';
 import { FollowersChart } from './FollowersChart';
 import { PostingInsights } from './PostingInsights';
@@ -20,9 +20,22 @@ const button = 'rounded-full border border-vx-border px-4 py-2 text-sm font-bold
 const RANGES = [{ days: 7, label: '7 days' }, { days: 30, label: '30 days' }, { days: 90, label: '90 days', paid: true }, { days: 365, label: '12 months', paid: true }];
 const whole = new Intl.NumberFormat();
 const oneDecimal = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
+const dateLabel = new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
 
 function networkLabel(key) {
   return NETWORKS.find((n) => n.key === key)?.label || key;
+}
+
+function formatRange(range) {
+  const from = new Date(`${range.from}T12:00:00Z`);
+  const to = new Date(`${range.to}T12:00:00Z`);
+  return Number.isNaN(from.getTime()) || Number.isNaN(to.getTime()) ? 'Choose a valid period' : `${dateLabel.format(from)} – ${dateLabel.format(to)}`;
+}
+
+function changeLabel(value) {
+  if (!Number.isFinite(value)) return 'Not comparable';
+  if (value === 0) return 'No change';
+  return `${value > 0 ? '+' : ''}${whole.format(value)}`;
 }
 
 function downloadCsv(contents, filename) {
@@ -52,7 +65,9 @@ function Dashboard() {
   const [accounts, setAccounts] = useState(null);
   const [loadError, setLoadError] = useState('');
   const [chosenId, setChosenId] = useState('');
-  const [days, setDays] = useState(30);
+  const [range, setRange] = useState(() => rangeForDays(30));
+  const [presetDays, setPresetDays] = useState(30);
+  const [comparePrevious, setComparePrevious] = useState(false);
   const [planTier, setPlanTier] = useState(null);
 
   useEffect(() => {
@@ -93,6 +108,7 @@ function Dashboard() {
   const supportedAccounts = accounts.filter((item) => hasAnalytics(item.network));
   const showPortfolio = chosenId === 'all' && supportedAccounts.length > 1;
   const ranges = RANGES.filter((range) => !range.paid || planTier === 'publish');
+  const comparisonRange = comparePrevious ? previousRange(range) : null;
   return <div className="space-y-6">
     <div className="flex flex-wrap items-center justify-between gap-3">
       <label className="inline-flex items-center gap-2 text-sm font-bold text-vx-fg">
@@ -109,22 +125,36 @@ function Dashboard() {
           ))}
         </select>
       </label>
-      <div className="flex gap-2" role="group" aria-label="Date range">
+      <div className="flex flex-wrap gap-2" role="group" aria-label="Date range presets">
         {ranges.map((r) => (
           <button
             key={r.days}
             type="button"
-            aria-pressed={days === r.days}
-            className={`${button} ${days === r.days ? 'bg-vx-accent text-black border-vx-accent' : ''}`}
-            onClick={() => setDays(r.days)}
+            aria-pressed={presetDays === r.days}
+            className={`${button} ${presetDays === r.days ? 'bg-vx-accent text-black border-vx-accent' : ''}`}
+            onClick={() => { setRange(rangeForDays(r.days)); setPresetDays(r.days); }}
           >{r.label}</button>
         ))}
       </div>
     </div>
+    <section className="rounded-2xl border border-vx-border p-4" aria-label="Custom analytics period">
+      <div className="flex flex-wrap items-end gap-3">
+        <label className="text-sm font-bold">From<input type="date" value={range.from} min={rangeForDays(366).from} max={range.to}
+          onChange={(event) => { if (event.target.value) { setRange((current) => ({ ...current, from: event.target.value })); setPresetDays(0); } }}
+          className="mt-1 block rounded-lg border border-vx-border bg-transparent px-3 py-2 font-normal" /></label>
+        <label className="text-sm font-bold">To<input type="date" value={range.to} min={range.from} max={rangeForDays(1).to}
+          onChange={(event) => { if (event.target.value) { setRange((current) => ({ ...current, to: event.target.value })); setPresetDays(0); } }}
+          className="mt-1 block rounded-lg border border-vx-border bg-transparent px-3 py-2 font-normal" /></label>
+        <label className="inline-flex items-center gap-2 rounded-full border border-vx-border px-4 py-2 text-sm font-bold">
+          <input type="checkbox" checked={comparePrevious} onChange={(event) => setComparePrevious(event.target.checked)} />Compare with previous period
+        </label>
+      </div>
+      <p className="mt-2 text-xs text-vx-fg-muted">Showing {formatRange(range)}{comparisonRange ? ` · comparing with ${formatRange(comparisonRange)}` : ''}. Up to 12 months.</p>
+    </section>
     {showPortfolio
-      ? <PortfolioAnalytics key={`all:${days}`} accounts={supportedAccounts} days={days} />
+      ? <PortfolioAnalytics key={`all:${range.from}:${range.to}:${comparePrevious}`} accounts={supportedAccounts} range={range} comparisonRange={comparisonRange} />
       : hasAnalytics(selected.network)
-      ? <AccountAnalytics key={`${selected.id}:${days}`} account={selected} days={days} />
+      ? <AccountAnalytics key={`${selected.id}:${range.from}:${range.to}:${comparePrevious}`} account={selected} range={range} comparisonRange={comparisonRange} />
       : <p className="rounded-2xl border border-vx-border p-5 text-sm text-vx-fg-body">
           Analytics for {networkLabel(selected.network)} are not available yet. Instagram, YouTube, TikTok, X and Twitch are supported today.
         </p>}
@@ -132,20 +162,30 @@ function Dashboard() {
   </div>;
 }
 
-function PortfolioAnalytics({ accounts, days }) {
+function PortfolioAnalytics({ accounts, range, comparisonRange }) {
   const [result, setResult] = useState(null);
 
   useEffect(() => {
     let active = true;
-    const range = rangeForDays(days);
-    Promise.allSettled(accounts.map(async (account) => ({ account, data: await getSocialAnalytics({ accountId: account.id, ...range }) })))
-      .then((settled) => {
+    Promise.all(accounts.map(async (account) => {
+      const [current, previous] = await Promise.allSettled([
+        getSocialAnalytics({ accountId: account.id, ...range }),
+        comparisonRange ? getSocialAnalytics({ accountId: account.id, ...comparisonRange }) : Promise.resolve(null),
+      ]);
+      return { account, current, previous };
+    })).then((settled) => {
         if (!active) return;
-        const entries = settled.filter((item) => item.status === 'fulfilled').map((item) => item.value);
-        setResult({ summary: summarizePortfolio(entries), failed: settled.length - entries.length });
+        const entries = settled.filter((item) => item.current.status === 'fulfilled').map((item) => ({ account: item.account, data: item.current.value }));
+        const matched = settled.filter((item) => item.current.status === 'fulfilled' && item.previous.status === 'fulfilled' && item.previous.value);
+        const comparison = comparisonRange ? {
+          current: summarizePortfolio(matched.map((item) => ({ account: item.account, data: item.current.value }))),
+          previous: summarizePortfolio(matched.map((item) => ({ account: item.account, data: item.previous.value }))),
+          missing: entries.length - matched.length,
+        } : null;
+        setResult({ summary: summarizePortfolio(entries), comparison, failed: settled.length - entries.length });
       });
     return () => { active = false; };
-  }, [accounts, days]);
+  }, [accounts, range.from, range.to, comparisonRange?.from, comparisonRange?.to]);
 
   if (result === null) return <p className="text-sm text-vx-fg-muted">Loading all accounts…</p>;
   if (result.summary.accounts === 0) return <p role="alert" className="text-sm text-vx-danger">Could not load analytics for your accounts. Check your connection and try again.</p>;
@@ -156,7 +196,7 @@ function PortfolioAnalytics({ accounts, days }) {
         <h2 className="text-xl font-black">Portfolio summary</h2>
         <p className="text-sm text-vx-fg-muted">{summary.accounts} supported {summary.accounts === 1 ? 'account' : 'accounts'} · unsupported metrics stay blank.</p>
       </div>
-      <button type="button" className={button} onClick={() => downloadCsv(analyticsCsv(summary.rows), `veyrnox-analytics-${days}-days.csv`)}>Export CSV</button>
+      <button type="button" className={button} onClick={() => downloadCsv(analyticsCsv(summary.rows), `veyrnox-analytics-${range.from}-to-${range.to}.csv`)}>Export CSV</button>
     </div>
     {result.failed > 0 && <p role="status" className="rounded-xl border border-vx-border p-3 text-sm text-vx-fg-body">{result.failed} {result.failed === 1 ? 'account could' : 'accounts could'} not be loaded. The totals below include the others.</p>}
     <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -168,6 +208,10 @@ function PortfolioAnalytics({ accounts, days }) {
       <Stat label="Views" value={summary.views === null ? '—' : whole.format(summary.views)} note="Only providers that report views" />
       <Stat label="Needs attention" value={whole.format(summary.staleAccounts)} note="Failed or awaiting a first sync" />
     </dl>
+    {result.comparison && <>
+      {result.comparison.missing > 0 && <p role="status" className="rounded-xl border border-vx-border p-3 text-sm text-vx-fg-body">Previous-period data was unavailable for {result.comparison.missing} {result.comparison.missing === 1 ? 'account' : 'accounts'}; the comparison includes only matched accounts.</p>}
+      <ComparisonCards current={result.comparison.current} previous={result.comparison.previous} />
+    </>}
     <section className="rounded-2xl border border-vx-border p-5">
       <h2 className="font-bold mb-4">Accounts</h2>
       <PortfolioTable rows={summary.rows} />
@@ -194,7 +238,28 @@ function PortfolioTable({ rows }) {
   </table></div>;
 }
 
-function AccountAnalytics({ account, days }) {
+function ComparisonCards({ current, previous, compact = false }) {
+  const candidates = [
+    ['Content', 'posts'], ['Interactions', 'interactions'], ['Reach', 'reach'],
+    ['Impressions', 'impressions'], ['Views', 'views'],
+  ];
+  const metrics = candidates.filter(([, key]) => Number.isFinite(current[key]) || Number.isFinite(previous[key]));
+  return <section className="rounded-2xl border border-vx-border p-5" aria-labelledby={compact ? 'account-period-comparison' : 'period-comparison'}>
+    <h2 id={compact ? 'account-period-comparison' : 'period-comparison'} className="font-bold">Compared with previous period</h2>
+    <dl className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-5">
+      {metrics.map(([label, key]) => {
+        const change = metricChange(current[key], previous[key]);
+        return <div key={key} className="rounded-xl bg-vx-panel p-3">
+          <dt className="text-xs font-bold text-vx-fg-muted">{label}</dt>
+          <dd className="mt-1 font-black tabular-nums">{changeLabel(change)}</dd>
+          <dd className="text-xs text-vx-fg-muted">Previous: {Number.isFinite(previous[key]) ? whole.format(previous[key]) : '—'}</dd>
+        </div>;
+      })}
+    </dl>
+  </section>;
+}
+
+function AccountAnalytics({ account, range, comparisonRange }) {
   const { id: accountId, network } = account;
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
@@ -202,11 +267,16 @@ function AccountAnalytics({ account, days }) {
 
   useEffect(() => {
     let active = true;
-    getSocialAnalytics({ accountId, ...rangeForDays(days) })
-      .then((res) => { if (active) setData(res); })
-      .catch(() => { if (active) setError('Could not load analytics for this account. Check your connection and try again.'); });
+    Promise.allSettled([
+      getSocialAnalytics({ accountId, ...range }),
+      comparisonRange ? getSocialAnalytics({ accountId, ...comparisonRange }) : Promise.resolve(null),
+    ]).then(([current, previous]) => {
+      if (!active) return;
+      if (current.status === 'rejected') setError('Could not load analytics for this account. Check your connection and try again.');
+      else setData({ current: current.value, previous: previous.status === 'fulfilled' ? previous.value : null });
+    });
     return () => { active = false; };
-  }, [accountId, days, attempt]);
+  }, [accountId, range.from, range.to, comparisonRange?.from, comparisonRange?.to, attempt]);
 
   if (error) return <div>
     <p role="alert" className="text-sm text-vx-danger mb-3">{error}</p>
@@ -214,28 +284,30 @@ function AccountAnalytics({ account, days }) {
   </div>;
   if (data === null) return <p className="text-sm text-vx-fg-muted">Loading…</p>;
 
-  const summary = summarize(data);
+  const currentData = data.current;
+  const summary = summarize(currentData);
+  const previousSummary = data.previous ? summarize(data.previous) : null;
   const youtube = network === 'youtube';
   const tiktok = network === 'tiktok';
   const twitter = network === 'twitter';
   const videoNetwork = youtube || tiktok;
   const audienceLabel = youtube ? 'Subscribers' : 'Followers';
-  const channelMetrics = data.evolution.at(-1)?.metrics || {};
+  const channelMetrics = currentData.evolution.at(-1)?.metrics || {};
   const twitch = network === 'twitch';
-  const neverSynced = !data.sync?.last_ok_at;
-  if (neverSynced && data.evolution.length === 0) {
+  const neverSynced = !currentData.sync?.last_ok_at;
+  if (neverSynced && currentData.evolution.length === 0) {
     return <p className="rounded-2xl border border-vx-border p-5 text-sm text-vx-fg-body">
-      {data.sync?.failing
+      {currentData.sync?.failing
         ? 'We could not read this account’s numbers. Reconnecting it in Veyrnox Publish usually fixes this.'
         : 'No numbers yet. The first ones arrive within a few hours of connecting an account.'}
     </p>;
   }
 
-  const failing = data.sync?.failing && <p role="status" className="text-sm text-vx-fg-muted">
+  const failing = currentData.sync?.failing && <p role="status" className="text-sm text-vx-fg-muted">
     The latest update for this account failed, so these numbers may be out of date. Reconnecting it in Veyrnox Publish usually fixes this.
   </p>;
-  const updated = data.sync?.last_ok_at && <p className="text-xs text-vx-fg-muted">
-    Updated {new Date(data.sync.last_ok_at).toLocaleString()}. Numbers refresh every few hours.
+  const updated = currentData.sync?.last_ok_at && <p className="text-xs text-vx-fg-muted">
+    Updated {new Date(currentData.sync.last_ok_at).toLocaleString()}. Numbers refresh every few hours.
   </p>;
 
   // Twitch reports a view count per video and nothing else, so it gets its own
@@ -244,12 +316,13 @@ function AccountAnalytics({ account, days }) {
     return <div className="space-y-6">
       {failing}
       <dl className="grid grid-cols-2 gap-3">
-        <Stat label="Videos" value={whole.format(data.posts.length)} note="In this period, from your latest 20" />
-        <Stat label="Views" value={whole.format(totalViews(data.posts))} note="Lifetime views of those videos" />
+        <Stat label="Videos" value={whole.format(currentData.posts.length)} note="In this period, from your latest 20" />
+        <Stat label="Views" value={whole.format(totalViews(currentData.posts))} note="Lifetime views of those videos" />
       </dl>
+      {previousSummary && <ComparisonCards current={{ posts: summary.posts, interactions: summary.interactions, views: totalViews(currentData.posts) }} previous={{ posts: previousSummary.posts, interactions: previousSummary.interactions, views: totalViews(data.previous.posts) }} compact />}
       <section className="rounded-2xl border border-vx-border p-5">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><h2 className="font-bold">Videos in this period</h2><ExportAccountButton account={account} data={data} /></div>
-        <PostsTable posts={data.posts} withViews viewsOnly />
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><h2 className="font-bold">Videos in this period</h2><ExportAccountButton account={account} data={currentData} /></div>
+        <PostsTable posts={currentData.posts} withViews viewsOnly />
       </section>
       <p className="text-xs text-vx-fg-muted">Twitch shares a view count for each of your latest 20 videos. Follower, subscriber, like and comment numbers are not available.</p>
       {updated}
@@ -268,9 +341,10 @@ function AccountAnalytics({ account, days }) {
         note={youtube ? 'Interactions per video, per 1,000 subscribers' : tiktok ? 'Interactions per video, per 1,000 followers' : 'Interactions per post, per 1,000 followers'} />
       {youtube && <Stat label="Channel views" value={metric(channelMetrics.views)} note="Lifetime total" />}
       {tiktok && <Stat label="Account likes" value={metric(channelMetrics.likes)} note="Lifetime total" />}
-      {twitter && <Stat label="Impressions" value={metric(totalPostMetric(data.posts, 'impressions'))} note="For posts in this period" />}
+      {twitter && <Stat label="Impressions" value={metric(totalPostMetric(currentData.posts, 'impressions'))} note="For posts in this period" />}
       {videoNetwork && <Stat label="Public videos" value={metric(channelMetrics.posts_count)} note={youtube ? 'Channel total' : 'Account total'} />}
     </dl>
+    {previousSummary && <ComparisonCards current={{ posts: summary.posts, interactions: summary.interactions, reach: totalPostMetric(currentData.posts, 'reach'), impressions: totalPostMetric(currentData.posts, 'impressions'), views: totalPostMetric(currentData.posts, 'views') }} previous={{ posts: previousSummary.posts, interactions: previousSummary.interactions, reach: totalPostMetric(data.previous.posts, 'reach'), impressions: totalPostMetric(data.previous.posts, 'impressions'), views: totalPostMetric(data.previous.posts, 'views') }} />}
 
     <section className="rounded-2xl border border-vx-border p-5">
       <h2 className="font-bold mb-4">{audienceLabel}</h2>
@@ -278,11 +352,11 @@ function AccountAnalytics({ account, days }) {
     </section>
 
     <section className="rounded-2xl border border-vx-border p-5">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><h2 className="font-bold">{videoNetwork ? 'Videos' : 'Posts'} in this period</h2><ExportAccountButton account={account} data={data} /></div>
-      <PostsTable posts={data.posts} withInsights={summary.hasInsights} withImpressions={summary.hasImpressions} withViews={summary.hasViews} withShares={tiktok || twitter} />
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><h2 className="font-bold">{videoNetwork ? 'Videos' : 'Posts'} in this period</h2><ExportAccountButton account={account} data={currentData} /></div>
+      <PostsTable posts={currentData.posts} withInsights={summary.hasInsights} withImpressions={summary.hasImpressions} withViews={summary.hasViews} withShares={tiktok || twitter} />
     </section>
 
-    {data.postingInsightsEnabled && <PostingInsights accountId={accountId} />}
+    {currentData.postingInsightsEnabled && <PostingInsights accountId={accountId} />}
     {youtube && <p className="text-xs text-vx-fg-muted">YouTube subscriber counts are rounded. Video metrics are lifetime totals for videos published in this period. The latest 50 uploads refresh each round.</p>}
     {tiktok && <p className="text-xs text-vx-fg-muted">TikTok video metrics cover public videos only. Video metrics are lifetime totals for videos published in this period. The latest 50 public videos refresh each round. Missing numbers may need additional permissions: reconnect in Veyrnox Publish after analytics access is enabled.</p>}
     {twitter && <p className="text-xs text-vx-fg-muted">X metrics cover the latest 100 original posts. Replies and reposts are excluded. Reposts and quotes appear together as shares.</p>}
