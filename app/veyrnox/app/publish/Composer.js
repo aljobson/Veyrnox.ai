@@ -9,6 +9,7 @@ import { ownedPublishUpload } from '../../_lib/editorDelivery.mjs';
 import { NETWORKS } from '../../../lib/socialConnectClient.js';
 import { createSocialPost, listSocialPosts, newIdempotencyKey } from '../../../lib/socialPostsClient.js';
 import { deleteSocialPreset, listSocialPresets, saveSocialPreset } from '../../../lib/socialPresetsClient.js';
+import { confirmSocialQueueSlot, listSocialQueues, reserveSocialQueueSlot } from '../../../lib/socialQueuesClient.js';
 
 const button = 'rounded-full border border-vx-border px-4 py-2 text-sm font-bold disabled:opacity-50';
 const primaryButton = 'rounded-full bg-vx-accent text-black px-4 py-2 text-sm font-bold disabled:opacity-50';
@@ -163,7 +164,7 @@ function MediaPicker({ selected, onSelect }) {
     );
 }
 
-export function Composer({ accounts, onScheduled, initialJobId = null, initialUploadId = null, reusablePost = null, uploadsEnabled = false, youtubeVisibilityEnabled = false, scheduleEnabled = true, multiAccountEnabled = true, presetsEnabled = false }) {
+export function Composer({ accounts, onScheduled, initialJobId = null, initialUploadId = null, reusablePost = null, uploadsEnabled = false, youtubeVisibilityEnabled = false, scheduleEnabled = true, multiAccountEnabled = true, presetsEnabled = false, queuesEnabled = false }) {
     const activeAccounts = (accounts || []).filter((a) => a.status === 'active' && a.publishingEnabled !== false && (a.supportedMedia || NETWORKS.find((n) => n.key === a.network)?.media.filter(t => t !== 'video' || a.network === 'youtube'))?.length);
     const [selectedAccountIds, setSelectedAccountIds] = useState(() => new Set());
     const [caption, setCaption] = useState('');
@@ -180,7 +181,17 @@ export function Composer({ accounts, onScheduled, initialJobId = null, initialUp
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
+    const [queues, setQueues] = useState(null);
+    const [queueId, setQueueId] = useState('');
     const idempotencyKey = useRef(newIdempotencyKey());
+
+    useEffect(() => {
+        if (!queuesEnabled) return;
+        let active = true;
+        listSocialQueues().then((result) => { if (active) setQueues((result.queues || []).filter((queue) => queue.enabled)); })
+            .catch(() => { if (active) setQueues([]); });
+        return () => { active = false; };
+    }, [queuesEnabled]);
 
     useEffect(() => {
         if (!initialJobId) return;
@@ -265,24 +276,30 @@ export function Composer({ accounts, onScheduled, initialJobId = null, initialUp
             const length = network.key === 'bluesky' ? [...new Intl.Segmenter('en', { granularity: 'grapheme' }).segment(caption)].length : [...caption].length;
             if (length > network.captionLimit) { setError(`${network.label} supports captions up to ${network.captionLimit} characters.`); return; }
         }
-        const publishNow = e.nativeEvent.submitter?.value === 'now';
+        const mode = e.nativeEvent.submitter?.value;
+        const publishNow = mode === 'now';
+        const useQueue = mode === 'queue';
+        if (useQueue && !queueId) { setError('Choose a posting queue.'); return; }
         const schedule = new Date(scheduledAt);
-        if (!publishNow && (!Number.isFinite(schedule.getTime()) || schedule.getTime() <= Date.now())) {
+        if (!publishNow && !useQueue && (!Number.isFinite(schedule.getTime()) || schedule.getTime() <= Date.now())) {
             setError('Choose a future date and time to schedule your post.'); return;
         }
-        setSubmitting(publishNow ? 'now' : 'schedule');
+        setSubmitting(mode);
         try {
-            await createSocialPost({
-                ...(publishNow ? { publishNow: true } : { scheduledAt: schedule.toISOString() }),
+            const reservation = useQueue ? await reserveSocialQueueSlot(queueId, idempotencyKey.current) : null;
+            const result = await createSocialPost({
+                ...(publishNow ? { publishNow: true } : { scheduledAt: useQueue ? reservation.scheduled_at : schedule.toISOString() }),
                 globalText: caption,
                 ...(hasYoutube && youtubeVisibilityEnabled ? { youtubeVisibility } : {}),
                 idempotencyKey: idempotencyKey.current,
-                accountIds: [...selectedAccountIds],
+                accountIds: useQueue ? reservation.account_ids : [...selectedAccountIds],
                 media: [{ mediaType, ...(selectedMedia.uploadId ? { uploadId: selectedMedia.uploadId } : { jobId: selectedMedia.jobId }) }],
             });
-            setSuccess(publishNow ? 'Post queued for publishing. It can take a few minutes to appear.' : 'Post scheduled.');
+            if (reservation) await confirmSocialQueueSlot(reservation.assignment_id, result.post_id);
+            setSuccess(publishNow ? 'Post queued for publishing. It can take a few minutes to appear.' : useQueue ? 'Post added to the next open queue slot.' : 'Post scheduled.');
             setCaption(''); setSelectedAccountIds(new Set()); setSelectedMedia(null);
             setScheduledAt(defaultScheduleValue());
+            setQueueId('');
             setYoutubeVisibility('private');
             idempotencyKey.current = newIdempotencyKey();
             onScheduled?.();
@@ -292,6 +309,8 @@ export function Composer({ accounts, onScheduled, initialJobId = null, initialUp
                 ? 'Too many posts scheduled at once. Wait a moment and try again.'
                 : ['unsupported_media_type', 'publishing_not_supported'].includes(err.body?.error) ? 'That destination does not support this media type.'
                 : err.body?.error === 'caption_too_long' ? 'The caption is too long for a selected platform.'
+                : err.body?.error === 'no_queue_slot' ? 'That queue has no open slot in the next eight weeks.'
+                : err.body?.error === 'queue_disabled' ? 'That queue is paused. Choose another queue.'
                 : 'Could not submit that post. Check your connection and try again.');
         } finally {
             setSubmitting(false);
@@ -386,6 +405,18 @@ export function Composer({ accounts, onScheduled, initialJobId = null, initialUp
                 Post now is included with Free. <Link href="/app/publish/plan" className="font-bold text-vx-accent underline">Upgrade to schedule posts</Link>.
             </p>}
 
+            {queuesEnabled && <div>
+                <label htmlFor="publish-queue" className="text-sm font-bold mb-2 block">Posting queue</label>
+                <div className="flex flex-wrap gap-3">
+                    <select id="publish-queue" value={queueId} disabled={Boolean(submitting) || queues === null} onChange={(e) => { const id=e.target.value;setQueueId(id);const queue=(queues||[]).find((item)=>item.id===id);if(queue)setSelectedAccountIds(new Set(queue.account_ids.filter((accountId)=>activeAccounts.some((account)=>account.id===accountId)))); }} className="rounded-lg border border-vx-border bg-transparent px-3 py-2 text-sm">
+                        <option value="">{queues===null?'Loading queues…':queues.length?'Choose a queue':'No active queues'}</option>
+                        {(queues||[]).map((queue)=><option key={queue.id} value={queue.id}>{queue.name}</option>)}
+                    </select>
+                    <Link href="/app/publish/queues" className="self-center text-sm font-bold text-vx-accent underline">Manage queues</Link>
+                </div>
+                <p className="mt-2 text-xs text-vx-fg-muted">The chosen queue selects its saved accounts and the next open weekly time.</p>
+            </div>}
+
             {error && <p role="alert" className="text-sm text-vx-danger">{error}</p>}
             {success && <p className="text-sm text-vx-accent">{success}</p>}
 
@@ -395,6 +426,9 @@ export function Composer({ accounts, onScheduled, initialJobId = null, initialUp
                 </button>
                 {scheduleEnabled && <button type="submit" value="schedule" disabled={submitting || loadingMedia || uploading || !activeAccounts.length} className={button}>
                     {submitting === 'schedule' ? 'Scheduling…' : 'Schedule post'}
+                </button>}
+                {queuesEnabled && <button type="submit" value="queue" disabled={submitting || loadingMedia || uploading || !activeAccounts.length || !queueId} className={button}>
+                    {submitting === 'queue' ? 'Adding…' : 'Add to queue'}
                 </button>}
             </div>
             <p className="text-xs text-vx-fg-muted">Post now starts publishing as soon as possible.{scheduleEnabled ? ' Schedule post uses the date and time above.' : ''} Publishing can take a few minutes.</p>

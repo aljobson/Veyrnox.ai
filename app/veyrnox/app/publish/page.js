@@ -52,6 +52,7 @@ function PublishControls({ initialJobId, initialUploadId }) {
   const [inboxEnabled, setInboxEnabled] = useState(false);
   const [smartlinksEnabled, setSmartlinksEnabled] = useState(false);
   const [contentPresetsEnabled, setContentPresetsEnabled] = useState(false);
+  const [queuesEnabled, setQueuesEnabled] = useState(false);
   const [planTier, setPlanTier] = useState('free');
   const [networks, setNetworks] = useState([]);
   const [blueskyOpen, setBlueskyOpen] = useState(false);
@@ -75,6 +76,7 @@ function PublishControls({ initialJobId, initialUploadId }) {
       setInboxEnabled(res.inboxEnabled === true);
       setSmartlinksEnabled(res.smartlinksEnabled === true);
       setContentPresetsEnabled(res.contentPresetsEnabled === true);
+      setQueuesEnabled(res.queuesEnabled === true);
       setPlanTier(res.planTier === 'publish' ? 'publish' : 'free');
       setNetworks(res.networks || []);
     } catch (err) {
@@ -122,6 +124,7 @@ function PublishControls({ initialJobId, initialUploadId }) {
         <div className="flex flex-wrap gap-4">
           {inboxEnabled && <Link href="/app/publish/inbox" className="text-sm font-bold text-vx-accent underline">Social inbox</Link>}
           {smartlinksEnabled && <Link href="/app/publish/smartlink" className="text-sm font-bold text-vx-accent underline">SmartLink</Link>}
+          {queuesEnabled && paid && <Link href="/app/publish/queues" className="text-sm font-bold text-vx-accent underline">Posting queues</Link>}
           {plansEnabled && <Link href="/app/publish/plan" className="text-sm font-bold text-vx-accent underline">Plans and billing</Link>}
         </div>
       </div>
@@ -210,7 +213,7 @@ function PublishControls({ initialJobId, initialUploadId }) {
 
     <section className="rounded-2xl border border-vx-border p-5">
       <h2 id="schedule" className="font-bold mb-4 scroll-mt-6">Create a post</h2>
-      <Composer presetsEnabled={contentPresetsEnabled && paid} multiAccountEnabled={paid} scheduleEnabled={paid} youtubeVisibilityEnabled={youtubeVisibilityEnabled} key={initialJobId || initialUploadId || 'library'} initialJobId={initialJobId} initialUploadId={initialUploadId} reusablePost={reusablePost} accounts={accounts} uploadsEnabled={uploadsEnabled} onScheduled={() => setPostsRefreshToken((n) => n + 1)} />
+      <Composer queuesEnabled={queuesEnabled && paid} presetsEnabled={contentPresetsEnabled && paid} multiAccountEnabled={paid} scheduleEnabled={paid} youtubeVisibilityEnabled={youtubeVisibilityEnabled} key={initialJobId || initialUploadId || 'library'} initialJobId={initialJobId} initialUploadId={initialUploadId} reusablePost={reusablePost} accounts={accounts} uploadsEnabled={uploadsEnabled} onScheduled={() => setPostsRefreshToken((n) => n + 1)} />
     </section>
 
     <section className="rounded-2xl border border-vx-border p-5">

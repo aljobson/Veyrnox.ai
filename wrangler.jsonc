@@ -188,7 +188,7 @@
     "PUBLISH_MULTI_ACCOUNT_ENABLED": "true",
     // Grouped to stay within Cloudflare's 128 text-binding limit. Migration 0293
     // and the Stripe checkout are live; qualify native video separately.
-  "PUBLISH_RUNTIME_FLAGS": "{\"plans\":\"true\",\"videoDestinations\":\"false\",\"inbox\":\"false\",\"smartlinks\":\"false\",\"contentPresets\":\"false\"}",
+  "PUBLISH_RUNTIME_FLAGS": "{\"plans\":\"true\",\"videoDestinations\":\"false\",\"inbox\":\"false\",\"smartlinks\":\"false\",\"contentPresets\":\"false\",\"queues\":\"false\"}",
     // Preserve the private pilot secret and default YouTube uploads to Private.
     "PUBLISH_YOUTUBE_VISIBILITY_ENABLED": "true",
 
@@ -333,7 +333,7 @@
         "PUBLISH_ENABLED": "true",
         "PUBLISH_MULTI_ACCOUNT_ENABLED": "true",
         // Migration 0293 and Stripe test keys are installed in staging.
-      "PUBLISH_RUNTIME_FLAGS": "{\"plans\":\"true\",\"videoDestinations\":\"false\",\"inbox\":\"false\",\"smartlinks\":\"false\",\"contentPresets\":\"false\"}",
+      "PUBLISH_RUNTIME_FLAGS": "{\"plans\":\"true\",\"videoDestinations\":\"false\",\"inbox\":\"false\",\"smartlinks\":\"false\",\"contentPresets\":\"false\",\"queues\":\"false\"}",
         "PUBLISH_TESTER_AUTH_IDS": "",
         "PUBLISH_YOUTUBE_VISIBILITY_ENABLED": "false",
         "PUBLISH_RELEASED_NETWORKS": "*",
