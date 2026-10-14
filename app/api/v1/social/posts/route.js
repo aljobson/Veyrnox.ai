@@ -17,7 +17,8 @@
  */
 
 import { socialUploadsEnabled } from '../../../../../lib/social/uploadPolicy.js';
-import { calendarEnabled, youtubeVisibilityEnabled } from '../../../../../lib/social/publishFeature.js';
+import { calendarEnabled, publishPlansEnabled, youtubeVisibilityEnabled } from '../../../../../lib/social/publishFeature.js';
+import { readPublishEntitlement } from '../../../../../lib/social/publishPlanApi.js';
 import { postCapabilityError } from '../../../../../lib/social/postCapabilities.js';
 import { NextResponse } from 'next/server';
 import { accountReadLimit } from '../../../../../lib/accountReadLimit.js';
@@ -125,6 +126,24 @@ export async function POST(req) {
     if (!Array.isArray(accountIds) || accountIds.length < 1 || accountIds.length > 20
         || !accountIds.every(isUuid)) {
         return NextResponse.json({ error: 'invalid_account_ids' }, { status: 400 });
+    }
+
+    if (publishPlansEnabled()) {
+        let entitlement;
+        try { entitlement = await readPublishEntitlement(authId, cfg); }
+        catch (err) {
+            console.error('[api/v1/social/posts:POST] entitlement read failed:', err instanceof SupabaseError ? err.status : 0);
+            return NextResponse.json({ error: 'internal' }, { status: 502 });
+        }
+        if (!entitlement) return NextResponse.json({ error: 'internal' }, { status: 502 });
+        if (entitlement.tier !== 'publish') {
+            if (accountIds.length > 1) {
+                return NextResponse.json({ error: 'publish_plan_required', feature: 'multiple_accounts' }, { status: 402 });
+            }
+            if (body?.publishNow !== true) {
+                return NextResponse.json({ error: 'publish_plan_required', feature: 'scheduling' }, { status: 402 });
+            }
+        }
     }
     const media = body && body.media;
     if (!Array.isArray(media) || media.length < 1 || media.length > 10) {

@@ -8,6 +8,7 @@ import NetworkLogo from '../NetworkLogo';
 import { getSession, onSessionChange } from '../../../../lib/authClient';
 import { NETWORKS } from '../../../../lib/socialConnectClient';
 import { listSocialCalendar, rescheduleSocialPost } from '../../../../lib/socialPostsClient';
+import { getPublishPlan } from '../../../../lib/publishPlanClient';
 import { calendarWindow, shiftCalendar, dateKey, droppedSchedule, localInput, localSchedule, POST_STATUSES } from '../../../../../lib/social/calendar.js';
 
 const button='rounded-full border border-vx-border px-4 py-2 text-sm font-bold disabled:opacity-50 focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-vx-accent';
@@ -32,21 +33,26 @@ export default function Calendar() {
 }
 
 function CalendarControls({today}) {
+    const [planTier,setPlanTier]=useState(null);
     const [anchor,setAnchor]=useState(today),[view,setView]=useState('month');
     const [status,setStatus]=useState(''),[network,setNetwork]=useState('');
     const [refresh,setRefresh]=useState(0),[result,setResult]=useState(null),[loadError,setLoadError]=useState('');
     const [moreLoading,setMoreLoading]=useState(false),[edit,setEdit]=useState(null),[message,setMessage]=useState('');
     const requestId=useRef(0);
+    useEffect(()=>{let active=true;getPublishPlan().then(data=>{if(active)setPlanTier(data.entitlement?.tier||'free');}).catch(()=>{if(active)setPlanTier('free');});return()=>{active=false;};},[]);
     const range=calendarWindow(anchor,view);
     const queryKey=JSON.stringify([range.from,range.to,status,network,refresh]);
     useEffect(()=>{
+        if(planTier!=='publish')return;
         const id=++requestId.current;
         let active=true;
         listSocialCalendar({from:range.from,to:range.to,status,network}).then(data=>{
             if(active&&id===requestId.current){setResult({...data,key:queryKey});setLoadError('');}
         }).catch(()=>{if(active&&id===requestId.current){setResult({posts:[],next:null,key:queryKey});setLoadError('Could not load your calendar. Try again.');}});
         return()=>{active=false;};
-    },[queryKey,range.from,range.to,status,network]);
+    },[queryKey,range.from,range.to,status,network,planTier]);
+    if(planTier===null)return <p className="text-sm text-vx-fg-muted">Loading your plan…</p>;
+    if(planTier!=='publish')return <section className="rounded-2xl border border-vx-accent/40 bg-vx-accent/[0.06] p-6"><p className="text-xs font-bold uppercase tracking-widest text-vx-accent">Publish Plan</p><h2 className="mt-2 text-2xl font-black">Unlock scheduling</h2><p className="mt-3 text-sm text-vx-fg-body">The calendar, scheduled posts and rescheduling are included with the Publish Plan.</p><Link href="/app/publish/plan" className="mt-5 inline-block rounded-full bg-vx-accent px-5 py-2.5 text-sm font-bold text-black">View Publish Plan</Link></section>;
     const loading=result?.key!==queryKey;
     const posts=loading?[]:result.posts;
     const currentDay=dateKey(new Date());

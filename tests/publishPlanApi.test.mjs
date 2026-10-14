@@ -15,7 +15,7 @@ const request = (path = '', body, headers = {}) => new Request(`https://veyrnox.
   headers: { 'x-veyrnox-auth-id': auth, ...(body === undefined ? {} : { 'content-type': 'application/json' }), ...headers },
   ...(body === undefined ? {} : { body: typeof body === 'string' ? body : JSON.stringify(body) }),
 });
-const entitlement = (over = {}) => ({ ok: true, tier: 'free', account_limit: 5, analytics_days: 30, best_time_enabled: false, subscription: null, ...over });
+const entitlement = (over = {}) => ({ ok: true, tier: 'free', account_limit: 1, analytics_days: 0, best_time_enabled: false, subscription: null, ...over });
 
 function setup(action, rpcValues = {}, stripeValues = {}) {
   const calls = [];
@@ -41,7 +41,8 @@ test('read returns only public entitlement fields and the $15 plan', async () =>
   const body = await response.json();
   assert.equal(body.plans[0].price_usd_cents, 1500);
   assert.equal(body.plans[0].internal, undefined);
-  assert.equal(body.entitlement.account_limit, 5);
+  assert.equal(body.entitlement.account_limit, 1);
+  assert.equal(body.entitlement.analytics_days, 0);
   assert.equal(body.consent_version, PUBLISH_PLAN_CONSENT_VERSION);
 });
 
@@ -92,4 +93,5 @@ test('public entitlement never exposes Stripe ids', () => {
   } }));
   assert.equal(value.subscription.stripe_subscription_id, undefined);
   assert.equal(value.subscription.stripe_customer_id, undefined);
+  assert.equal(value.account_limit, 5);
 });

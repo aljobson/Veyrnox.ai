@@ -22,7 +22,7 @@
  */
 
 import { NextResponse } from 'next/server';
-import { socialConnectionWriter, freeSocialAccountLimit } from '../../../../../../../lib/social/accountAllowance.js';
+import { socialConnectionWriter } from '../../../../../../../lib/social/accountAllowance.js';
 import { networkReleased } from '../../../../../../../lib/social/networks.js';
 import { rpc, envConfig, SupabaseError } from '../../../../../../../packages/db/supabase-client.js';
 import { linkedinConfig, exchangeCodeForToken, fetchConnectedAccount, LINKEDIN_SCOPES } from '../../../../../../../packages/adapters/social/linkedin.js';
@@ -128,7 +128,7 @@ export async function POST(req) {
         return NextResponse.json({ error: 'internal' }, { status: 502 });
     }
     if (recorded && recorded.code === 'ACCOUNT_LIMIT') {
-        return NextResponse.json({ ok: false, code: 'ACCOUNT_LIMIT', limit: freeSocialAccountLimit() }, { status: 409 });
+        return NextResponse.json({ ok: false, code: 'ACCOUNT_LIMIT', limit: Number(recorded.limit) || 1 }, { status: 409 });
     }
     if (!recorded || recorded.ok !== true) {
         return NextResponse.json({ error: 'internal' }, { status: 502 });

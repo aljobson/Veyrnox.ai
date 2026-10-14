@@ -1,11 +1,9 @@
 # 1. Product Specification — Veyrnox Publish
 
-> Current owner direction (10 October 2026): basic scheduling is free across
-> several accounts; paid plans unlock advanced features. Initial implementation
-> allowance is five free active accounts per user across brands, behind
-> `PUBLISH_MULTI_ACCOUNT_ENABLED`. This supersedes historical account-based
-> pricing and the one-account boundary below; see ADR-0062/0063 amendments.
-> Premium feature boundaries/prices are not yet approved.
+> Current owner direction (14 October 2026): Free includes one connected social
+> account and Post now. The $15/month Publish Plan unlocks up to five connected
+> accounts, scheduling, analytics and the available advanced publishing tools.
+> This supersedes the earlier five-free-account decision below.
 
 
 > **As of 2026-10-08 (repo `main` at `bee1ea4f`, which includes PR #637 and #638).** §1.1 to §1.6 are the original product vision and
@@ -178,16 +176,17 @@ account. See §1.10.
 
 ## 1.8 Entitlement / plan model
 
-**Current owner decision (13 October 2026):** basic scheduling is free across
-five active accounts per user across owned brands. The $15/month Publish Plan
-unlocks 366-day analytics history and best-time recommendations. The old $19/five-account and $4-extra-account
+**Current owner decision (14 October 2026):** Free includes one active account
+per user across owned brands and Post now. The $15/month Publish Plan unlocks
+up to five accounts, scheduling, 366-day analytics history and best-time recommendations. The old $19/five-account and $4-extra-account
 proposal is superseded; [ADR-0062](../adr/0062-veyrnox-publish-entitlement-model.md)
 and [ADR-0063](../adr/0063-veyrnox-publish-plan-pricing.md) retain that history and
 record the owner's amendment. Future paid entitlement stays independent of the
 generation-credit ledger.
 
-**Implementation:** migration 0265 adds a service-only writer with an exact
-five-account cap and serialized concurrent callbacks. The Worker chooses it
+**Implementation:** migration 0265 adds the service-only writer and serialized
+concurrent callbacks. Migration 0298 makes its cap entitlement-aware: one for
+Free and five for a live Publish Plan. The Worker chooses it
 only when `PUBLISH_MULTI_ACCOUNT_ENABLED=true`; otherwise it retains 0169's
 one-account writer. The account screen reads the server's allowance and the
 callback gives the matching limit message. Migration 0293 adds the independent
@@ -240,7 +239,7 @@ acceptance records in this folder.
 | Analytics dashboard | Built for Instagram, YouTube and TikTok (0188, 0190). X and LinkedIn analytics are not built. Twitch: the sweep collects the latest 20 videos with their own view counts (only while the extended switch and `PUBLISH_ANALYTICS_ENABLED` are on; no channel follower or subscriber totals), and the dashboard shows them as a Videos tile, a Views tile and a views-only table (#642, merged 2026-10-08; not yet seen against a real Twitch account). Facebook, Threads, Pinterest, Bluesky and Business Profile analytics are not built. |
 | Best time to post and posting frequency | Built as a weekly cached aggregate (0191) shown on the analytics page. It is not offered inside the composer. |
 | Approval workflow with reviewers, competitors, SmartLinks, hashtag tracker, inbox, flows, ads, reports | Not built. |
-| Publish Plan | Built behind `PUBLISH_RUNTIME_FLAGS.plans` (0293): $15/month for 366-day analytics history and best-time recommendations; basic scheduling and five accounts remain free. Migration and Stripe staging acceptance are still required. |
+| Publish Plan | Built behind `PUBLISH_RUNTIME_FLAGS.plans` (0293, 0298): $15/month for up to five accounts, scheduling, 366-day analytics history and best-time recommendations. Free includes one account and Post now. |
 | Publish switches for the new networks | `PUBLISH_EXTENDED_NETWORKS_ENABLED`: `"false"` in production, `"true"` on staging (PR #638, 2026-10-08). It gates new connections and new post creation only; targets already queued can finish. `PUBLISH_ENABLED` must also be true. |
 
 **What each of the eleven networks publishes** (from the adapters, `lib/social/networks.js` and `lib/socialPublishSweep.js`). The first five are the original adapters; the last six are tester-stage and have **not** been exercised against real provider accounts:

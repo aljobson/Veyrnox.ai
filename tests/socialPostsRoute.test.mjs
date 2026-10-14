@@ -56,6 +56,7 @@ function stub(results = {}) {
             list_social_posts: { ok: true, posts: [] },
             list_social_accounts: { ok: true, accounts: [{ id: accountId, network: 'instagram', status: 'active' }] },
             create_social_post: { ok: true, idempotent: false, post_id: postId, target_count: 1 },
+            read_social_publish_entitlement: { ok: true, tier: 'publish', account_limit: 5, analytics_days: 366, best_time_enabled: true, subscription: { id: 'paid' } },
         })[name];
         if (result instanceof Error) throw result;
         return Response.json(result);
@@ -169,6 +170,30 @@ test('POST: Post now uses server time and ignores a missing or invalid device sc
         const time = Date.parse(create.args.p_scheduled_at);
         assert.ok(time >= start && time <= Date.now());
         assert.equal(create.args.p_idempotency_key, 'a'.repeat(16));
+    }
+});
+
+test('POST: Free can post now but scheduling requires the Publish Plan', async () => {
+    const previous = process.env.PUBLISH_PLANS_ENABLED;
+    process.env.PUBLISH_PLANS_ENABLED = 'true';
+    try {
+        const free = { ok: true, tier: 'free', account_limit: 1, analytics_days: 0, best_time_enabled: false, subscription: null };
+        stub({ read_social_publish_entitlement: free });
+        const blocked = await POST(postRequest(validBody()));
+        assert.equal(blocked.status, 402);
+        assert.deepEqual(await blocked.json(), { error: 'publish_plan_required', feature: 'scheduling' });
+        assert.ok(!calls.some((call) => call.name === 'create_social_post'));
+
+        stub({ read_social_publish_entitlement: free });
+        assert.equal((await POST(postRequest({ ...validBody(), publishNow: true }))).status, 201);
+
+        stub({ read_social_publish_entitlement: free });
+        const multiple = await POST(postRequest({ ...validBody(), publishNow: true, accountIds: [accountId, '66666666-6666-4666-8666-666666666666'] }));
+        assert.equal(multiple.status, 402);
+        assert.deepEqual(await multiple.json(), { error: 'publish_plan_required', feature: 'multiple_accounts' });
+    } finally {
+        if (previous === undefined) delete process.env.PUBLISH_PLANS_ENABLED;
+        else process.env.PUBLISH_PLANS_ENABLED = previous;
     }
 });
 

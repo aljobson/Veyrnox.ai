@@ -52,7 +52,7 @@ test('best-time recommendations require the Publish Plan when plans are open', a
     try {
         process.env.PUBLISH_PLANS_ENABLED = 'true';
         stub({ ok: true, insights: { sample_posts: 10 } }, { ok: true }, {
-            ok: true, tier: 'free', account_limit: 5, analytics_days: 30,
+            ok: true, tier: 'free', account_limit: 1, analytics_days: 0,
             best_time_enabled: false, subscription: null,
         });
         const blocked = await GET(request());

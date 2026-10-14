@@ -16,6 +16,8 @@
 import { NextResponse } from 'next/server';
 import { accountReadLimit } from '../../../../../lib/accountReadLimit.js';
 import { socialPostWriteLimit } from '../../../../../lib/socialPostWriteLimit.js';
+import { publishPlansEnabled } from '../../../../../lib/social/publishFeature.js';
+import { readPublishEntitlement } from '../../../../../lib/social/publishPlanApi.js';
 import { resolveBrand } from '../../../../../lib/social/resolveBrand.js';
 import { rpc, envConfig, SupabaseError } from '../../../../../packages/db/supabase-client.js';
 
@@ -78,6 +80,19 @@ export async function POST(req) {
     const postId = body.postId ?? null;
     if (postId !== null && (action !== 'discard' || !isUuid(postId))) {
         return NextResponse.json({ error: 'invalid_post_id' }, { status: 400 });
+    }
+
+    if (action === 'approve' && publishPlansEnabled()) {
+        let entitlement;
+        try { entitlement = await readPublishEntitlement(authId, cfg); }
+        catch (err) {
+            console.error('[api/v1/social/drafts:POST] entitlement read failed:', err instanceof SupabaseError ? err.status : 0);
+            return NextResponse.json({ error: 'internal' }, { status: 502 });
+        }
+        if (!entitlement) return NextResponse.json({ error: 'internal' }, { status: 502 });
+        if (entitlement.tier !== 'publish') {
+            return NextResponse.json({ error: 'publish_plan_required', feature: 'scheduling' }, { status: 402 });
+        }
     }
 
     const limited = await socialPostWriteLimit(authId, cfg);

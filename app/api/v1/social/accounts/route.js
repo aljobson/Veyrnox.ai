@@ -14,8 +14,8 @@
  * client-supplied id can never reach this handler.
  */
 
-import { freeSocialAccountLimit } from '../../../../../lib/social/accountAllowance.js';
 import { publishPlansEnabled, youtubeVisibilityEnabled } from '../../../../../lib/social/publishFeature.js';
+import { readPublishEntitlement } from '../../../../../lib/social/publishPlanApi.js';
 import { socialUploadsEnabled } from '../../../../../lib/social/uploadPolicy.js';
 import { networkEnabled, networkMedia } from '../../../../../lib/social/networks.js';
 import { networkReadiness } from '../../../../../lib/social/networkReadiness.js';
@@ -66,9 +66,20 @@ export async function GET(req) {
         return NextResponse.json({ error: 'internal' }, { status: 502 });
     }
 
+    let entitlement = null;
+    if (publishPlansEnabled()) {
+        try { entitlement = await readPublishEntitlement(authId, cfg); }
+        catch (err) {
+            console.error('[api/v1/social/accounts] entitlement lookup failed:', err instanceof SupabaseError ? err.status : 0);
+            return NextResponse.json({ error: 'internal' }, { status: 502 });
+        }
+        if (!entitlement) return NextResponse.json({ error: 'internal' }, { status: 502 });
+    }
+
     return NextResponse.json({
         brand_id: brand.brand_id,
-        accountLimit: freeSocialAccountLimit(),
+        accountLimit: entitlement?.account_limit || 1,
+        ...(entitlement ? { planTier: entitlement.tier } : {}),
         accounts: (accounts.accounts || []).map((account) => ({ ...account, publishingEnabled: networkEnabled(account.network)
             || (account.network === 'tiktok' && tiktokReviewAllowed(authId)), supportedMedia: networkMedia(account.network) })),
         uploadsEnabled: socialUploadsEnabled(process.env, authId),

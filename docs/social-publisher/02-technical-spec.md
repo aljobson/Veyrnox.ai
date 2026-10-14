@@ -109,7 +109,8 @@ ownership (`social_brands.owner_user_id`). Migrations are in `packages/db/schema
 | 0192 | Calendar index `(brand_id, scheduled_at, id)`; `list_social_calendar`, `reschedule_social_post` |
 | 0223 | `social_uploads`, `social_post_media.source_upload_id`; `reserve_social_upload`, `read_social_upload`, `complete_social_upload`, `remove_social_upload`, `claim_social_upload_cleanup`, `release_social_upload`; `create_social_post` and the claim extended to uploads |
 | 0228 | `social_connection_selections` (the only table 0228 creates); `prepare_social_connection_selection`, `consume_social_connection_selection`, `rotate_extended_social_tokens`, `mark_social_provider_submission` (all `service_role` only). Table and function details below. |
-| 0293 | $15/month Publish Plan catalogue, user subscription and append-only event tables; service-only start/read/bind/cancel/end functions. Free remains five accounts plus basic scheduling; paid grants 366-day analytics and best-time recommendations. |
+| 0293 | $15/month Publish Plan catalogue, user subscription and append-only event tables; service-only start/read/bind/cancel/end functions. |
+| 0298 | Free remains one connected account plus Post now; paid grants five accounts, scheduling, 366-day analytics and best-time recommendations. |
 
 (0176 added the missing foreign-key lookup indexes; 0177 added the append-only truncate guard.)
 

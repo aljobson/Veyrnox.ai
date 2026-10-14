@@ -63,8 +63,8 @@ export async function GET(req) {
             return NextResponse.json({ error: 'internal' }, { status: 502 });
         }
         if (!entitlement) return NextResponse.json({ error: 'internal' }, { status: 502 });
-        if (entitlement.tier !== 'publish' && toMs - fromMs >= 30 * DAY_MS) {
-            return NextResponse.json({ error: 'publish_plan_required', analytics_days: 30 }, { status: 402 });
+        if (entitlement.tier !== 'publish') {
+            return NextResponse.json({ error: 'publish_plan_required', feature: 'analytics' }, { status: 402 });
         }
     }
 
@@ -90,6 +90,6 @@ export async function GET(req) {
         account: result.account, sync: result.sync,
         evolution: result.evolution || [], posts: result.posts || [],
         ...(postingInsightsEnabled() && (!publishPlansEnabled() || entitlement?.tier === 'publish') ? { postingInsightsEnabled: true } : {}),
-        ...(publishPlansEnabled() ? { planTier: entitlement?.tier || 'free', analyticsDays: entitlement?.analytics_days || 30 } : {}),
+        ...(publishPlansEnabled() ? { planTier: entitlement?.tier || 'free', analyticsDays: entitlement?.analytics_days || 0 } : {}),
     }, { headers: { 'Cache-Control': 'no-store' } });
 }

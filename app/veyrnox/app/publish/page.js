@@ -30,7 +30,7 @@ export default function Publish() {
   const account = useSyncExternalStore(onSessionChange, currentAccount, noAccount);
   return <><AppNav /><Main className="max-w-[900px] mx-auto px-4 sm:px-8 py-10">
     <h1 className="text-3xl font-black mb-2">Veyrnox Publish</h1>
-    <p className="text-sm text-vx-fg-muted mb-6">Connect your social accounts to schedule posts from Veyrnox. <Link href="/app/publish/analytics" className="text-vx-accent underline">See your analytics</Link></p>
+    <p className="text-sm text-vx-fg-muted mb-6">Connect a social account and publish from Veyrnox. <Link href="/app/publish/analytics" className="text-vx-accent underline">See analytics and insights</Link></p>
     <ul aria-label="Social platforms" className="flex flex-wrap gap-3 mb-6">
       {CATALOGUE_NETWORKS.map((n) => <li key={n.key} className="inline-flex items-center gap-2 rounded-full border border-vx-border px-3 py-2 text-sm font-bold text-vx-fg">
         <NetworkLogo network={n.key} />{n.label}
@@ -49,6 +49,7 @@ function PublishControls({ initialJobId, initialUploadId }) {
   const [youtubeVisibilityEnabled, setYoutubeVisibilityEnabled] = useState(false);
   const [uploadsEnabled, setUploadsEnabled] = useState(false);
   const [plansEnabled, setPlansEnabled] = useState(false);
+  const [planTier, setPlanTier] = useState('free');
   const [networks, setNetworks] = useState([]);
   const [blueskyOpen, setBlueskyOpen] = useState(false);
   const [loadError, setLoadError] = useState('');
@@ -67,6 +68,7 @@ function PublishControls({ initialJobId, initialUploadId }) {
       setUploadsEnabled(res.uploadsEnabled === true);
       setYoutubeVisibilityEnabled(res.youtubeVisibilityEnabled === true);
       setPlansEnabled(res.plansEnabled === true);
+      setPlanTier(res.planTier === 'publish' ? 'publish' : 'free');
       setNetworks(res.networks || []);
     } catch (err) {
       setLoadError(err.body?.error === 'publish_not_open' ? 'Publish is not available for this account yet.'
@@ -104,6 +106,7 @@ function PublishControls({ initialJobId, initialUploadId }) {
   const active = (accounts || []).filter((a) => a.status === 'active');
   const byNetwork = new Map(active.map((a) => [a.network, a]));
   const atLimit = active.length >= accountLimit;
+  const paid = !plansEnabled || planTier === 'publish';
 
   return <div className="space-y-6">
     <section className="rounded-2xl border border-vx-border p-5">
@@ -111,7 +114,9 @@ function PublishControls({ initialJobId, initialUploadId }) {
         <h2 className="font-bold">Connected accounts</h2>
         {plansEnabled && <Link href="/app/publish/plan" className="text-sm font-bold text-vx-accent underline">Plans and billing</Link>}
       </div>
-      {accountLimit === 5 && <p className="text-sm text-vx-fg-muted mb-3">Basic scheduling is free for up to five connected accounts.</p>}
+      <p className="text-sm text-vx-fg-muted mb-3">
+        {paid ? `Your Publish Plan includes up to ${accountLimit} connected accounts, scheduling and analytics.` : 'Free includes one connected account and Post now.'}
+      </p>
       {accounts === null && !loadError && <p className="text-sm text-vx-fg-muted">Loading…</p>}
       {loadError && <p role="alert" className="text-sm text-vx-danger mb-3">{loadError}</p>}
       {accounts !== null && active.length === 0 && !loadError && (
@@ -148,7 +153,9 @@ function PublishControls({ initialJobId, initialUploadId }) {
       <h2 className="font-bold mb-1">Connect an account</h2>
       <p className="text-sm text-vx-fg-muted mb-4">Choose a platform to connect. Facebook uses Pages and Google Business Profile uses business locations. TikTok delivers a draft to your inbox. Twitch connects for video statistics.</p>
       {connectError && <p role="alert" className="text-sm text-vx-danger mb-3">{connectError}</p>}
-      {atLimit && <p className="text-sm text-vx-fg-muted mb-3">{accountLimit === 5 ? 'You have reached the five-account free limit. Disconnect an account to connect another.' : 'Your plan connects one account. Disconnect it to connect a different one.'}</p>}
+      {atLimit && <p className="text-sm text-vx-fg-muted mb-3">
+        {paid ? `You have reached your ${accountLimit}-account limit. Disconnect an account to connect another.` : <>Free includes one account. <Link href="/app/publish/plan" className="font-bold text-vx-accent underline">Upgrade to connect more</Link>.</>}
+      </p>}
       <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {CATALOGUE_NETWORKS.map((n) => {
           const connected = byNetwork.get(n.key);
@@ -192,12 +199,12 @@ function PublishControls({ initialJobId, initialUploadId }) {
 
     <section className="rounded-2xl border border-vx-border p-5">
       <h2 id="schedule" className="font-bold mb-4 scroll-mt-6">Create a post</h2>
-      <Composer youtubeVisibilityEnabled={youtubeVisibilityEnabled} key={initialJobId || initialUploadId || 'library'} initialJobId={initialJobId} initialUploadId={initialUploadId} accounts={accounts} uploadsEnabled={uploadsEnabled} onScheduled={() => setPostsRefreshToken((n) => n + 1)} />
+      <Composer multiAccountEnabled={paid} scheduleEnabled={paid} youtubeVisibilityEnabled={youtubeVisibilityEnabled} key={initialJobId || initialUploadId || 'library'} initialJobId={initialJobId} initialUploadId={initialUploadId} accounts={accounts} uploadsEnabled={uploadsEnabled} onScheduled={() => setPostsRefreshToken((n) => n + 1)} />
     </section>
 
     <section className="rounded-2xl border border-vx-border p-5">
       <h2 className="font-bold mb-4">Scheduled &amp; published</h2>
-      <ScheduledPosts refreshToken={postsRefreshToken} />
+      <ScheduledPosts refreshToken={postsRefreshToken} scheduleEnabled={paid} />
     </section>
   </div>;
 }

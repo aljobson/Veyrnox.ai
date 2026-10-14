@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { calendarEnabled } from '../../../../../../../lib/social/publishFeature.js';
+import { calendarEnabled, publishPlansEnabled } from '../../../../../../../lib/social/publishFeature.js';
+import { readPublishEntitlement } from '../../../../../../../lib/social/publishPlanApi.js';
 import { socialPostWriteLimit } from '../../../../../../../lib/socialPostWriteLimit.js';
 import { instant, UUID_RE } from '../../../../../../../lib/social/calendar.js';
 import { rpc, envConfig } from '../../../../../../../packages/db/supabase-client.js';
@@ -14,6 +15,13 @@ export async function PATCH(req,{params}) {
     if(!instant(body?.scheduledAt)||!instant(body?.expectedAt))return NextResponse.json({error:'invalid_schedule'},{status:400});
     const cfg=envConfig();
     if(!cfg.supabaseUrl||!cfg.serviceRoleKey)return NextResponse.json({error:'supabase_not_configured'},{status:503});
+    if(publishPlansEnabled()){
+        try{
+            const entitlement=await readPublishEntitlement(authId,cfg);
+            if(!entitlement)return NextResponse.json({error:'internal'},{status:502});
+            if(entitlement.tier!=='publish')return NextResponse.json({error:'publish_plan_required',feature:'scheduling'},{status:402});
+        }catch{return NextResponse.json({error:'internal'},{status:502});}
+    }
     const limited=await socialPostWriteLimit(authId,cfg);if(limited)return limited;
     try{
         const result=await rpc('reschedule_social_post',{p_auth_id:authId,p_post_id:id,p_expected_at:body.expectedAt,p_scheduled_at:body.scheduledAt},cfg);

@@ -65,7 +65,7 @@ function Dashboard() {
         if (res.plansEnabled === true) {
           try { const plan = await getPublishPlan(); if (active) setPlanTier(plan.entitlement?.tier || 'free'); }
           catch { if (active) setPlanTier('free'); }
-        }
+        } else if (active) setPlanTier('legacy');
       })
       .catch(() => { if (active) setLoadError('Could not load your connected accounts. Check your connection and try again.'); });
     return () => { active = false; };
@@ -79,14 +79,19 @@ function Dashboard() {
     </p>;
   }
 
+  if (planTier === null) return <p className="text-sm text-vx-fg-muted">Loading your plan…</p>;
+  if (planTier === 'free') return <section className="rounded-2xl border border-vx-accent/40 bg-vx-accent/[0.06] p-6">
+    <p className="text-xs font-bold uppercase tracking-widest text-vx-accent">Publish Plan</p>
+    <h2 className="mt-2 text-2xl font-black">Unlock analytics</h2>
+    <p className="mt-3 text-sm text-vx-fg-body">Analytics, CSV exports, cross-account reporting and best-time recommendations are included with the Publish Plan.</p>
+    <Link href="/app/publish/plan" className="mt-5 inline-block rounded-full bg-vx-accent px-5 py-2.5 text-sm font-bold text-black">View Publish Plan</Link>
+  </section>;
+
   const selected = accounts.find((a) => a.id === chosenId) || accounts[0];
   const supportedAccounts = accounts.filter((item) => hasAnalytics(item.network));
   const showPortfolio = chosenId === 'all' && supportedAccounts.length > 1;
   const ranges = RANGES.filter((range) => !range.paid || planTier === 'publish');
   return <div className="space-y-6">
-    {planTier === 'free' && <div className="rounded-2xl border border-vx-accent/40 bg-vx-accent/[0.06] p-4 text-sm text-vx-fg-body">
-      Free includes 30 days of analytics. <Link href="/app/publish/plan" className="font-bold text-vx-accent underline">Upgrade for 12 months and best-time recommendations</Link>.
-    </div>}
     <div className="flex flex-wrap items-center justify-between gap-3">
       <label className="inline-flex items-center gap-2 text-sm font-bold text-vx-fg">
         {showPortfolio ? <span aria-hidden="true" className="grid h-7 w-7 place-items-center rounded-full bg-vx-accent/15 text-vx-accent">Σ</span> : <NetworkLogo network={selected.network} />}
