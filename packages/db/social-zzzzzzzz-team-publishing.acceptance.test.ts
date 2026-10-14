@@ -11,7 +11,7 @@ describe('actor-aware team publishing (0308)', { skip: !process.env.DATABASE_URL
 
   before(async () => {
     pool = new pg.Pool({ connectionString: process.env.DATABASE_URL, max: 4 });
-    for (const file of ['0305_social_team_roles.sql', '0306_social_brand_access.sql', '0307_social_team_actions.sql', '0308_social_team_publishing.sql']) {
+    for (const file of ['0305_social_team_roles.sql', '0306_social_brand_access.sql', '0307_social_team_actions.sql', '0308_social_team_publishing.sql', '0311_social_post_cancel_restore.sql']) {
       const migration = await readFile(new URL(`./schema/supabase/${file}`, import.meta.url), 'utf8');
       await pool.query(migration); await pool.query(migration);
     }
@@ -104,10 +104,43 @@ describe('actor-aware team publishing (0308)', { skip: !process.env.DATABASE_URL
     assert.equal((await createPost(editor.auth, brand, account, await readyUpload(editor.id))).code, 'PLAN_REQUIRED');
   });
 
+  it('lets editors cancel untouched schedules and restore them without deleting provider posts', async () => {
+    const owner = await user('cancel-owner'); const editor = await user('cancel-editor');
+    const brand = (await value('SELECT public.get_or_create_default_social_brand($1) value', [owner.auth])).brand_id;
+    await pool.query(`INSERT INTO public.social_publish_subscriptions(user_id,plan_id,idempotency_key,price_usd_cents,consent_version,status,current_period_end)
+      VALUES($1,'publish',$2,1500,'publish-plan-2026-10-13','active',now()+interval '30 days')`, [owner.id, `cancel-${randomUUID()}`]);
+    await pool.query(`INSERT INTO public.social_brand_members(brand_id,user_id,role,invited_by) VALUES($1,$2,'editor',$3)`, [brand, editor.id, owner.id]);
+    const account = await value(`INSERT INTO public.social_accounts(brand_id,network,external_account_id,access_token_enc,status)
+      VALUES($1,'instagram',$2,decode('00','hex'),'active') RETURNING id value`, [brand, `cancel-${randomUUID()}`]);
+    const created = await createPost(editor.auth, brand, account, await readyUpload(editor.id));
+    const initial = await one('SELECT updated_at::text updated_at,scheduled_at FROM public.social_posts WHERE id=$1', [created.post_id]);
+    const canceled = await value('SELECT public.cancel_social_post($1,$2,$3) value', [editor.auth, created.post_id, initial.updated_at]);
+    assert.equal(canceled.ok, true); assert.equal(canceled.idempotent, false);
+    assert.equal(await value('SELECT status value FROM public.social_posts WHERE id=$1', [created.post_id]), 'canceled');
+    const calendar = await value(`SELECT public.list_social_calendar($1,$2,now(),now()+interval '2 days',NULL,NULL,NULL,NULL) value`, [owner.auth, brand]);
+    const listed = calendar.posts.find((post:any) => post.id === created.post_id);
+    assert.equal(listed.can_cancel, false); assert.equal(listed.can_restore, true); assert.ok(listed.updated_at);
+    const restoredAt = new Date(Date.now() + 5 * 60 * 60 * 1000).toISOString();
+    const restored = await value('SELECT public.restore_social_post($1,$2,$3,$4) value', [editor.auth, created.post_id, canceled.updated_at, restoredAt]);
+    assert.equal(restored.ok, true); assert.equal(restored.idempotent, false);
+    const target = await one(`SELECT p.status,p.scheduled_at,t.next_attempt_at,t.publish_status,t.attempts,t.claimed_at
+      FROM public.social_posts p JOIN public.social_post_targets t ON t.post_id=p.id WHERE p.id=$1`, [created.post_id]);
+    assert.equal(target.status, 'scheduled'); assert.equal(target.scheduled_at.toISOString(), restoredAt); assert.equal(target.next_attempt_at.toISOString(), restoredAt);
+    assert.equal(target.publish_status, 'pending'); assert.equal(target.attempts, 0); assert.equal(target.claimed_at, null);
+    assert.equal(await value(`SELECT count(*)::int value FROM public.social_account_actions WHERE target_id=$1 AND action IN ('canceled_post','restored_post')`, [created.post_id]), 2);
+
+    const started = await createPost(editor.auth, brand, account, await readyUpload(editor.id));
+    const startedVersion = await value('SELECT updated_at::text value FROM public.social_posts WHERE id=$1', [started.post_id]);
+    await pool.query("UPDATE public.social_post_targets SET attempts=1 WHERE post_id=$1", [started.post_id]);
+    assert.equal((await value('SELECT public.cancel_social_post($1,$2,$3) value', [editor.auth, started.post_id, startedVersion])).code, 'POST_STARTED');
+    assert.equal((await value('SELECT public.cancel_social_post($1,$2,$3) value', [editor.auth, created.post_id, initial.updated_at])).code, 'POST_CHANGED');
+  });
+
   it('keeps every delegated publishing function service-only with locked search paths', async () => {
     for (const signature of [
       'social_brand_role_context(text,uuid,text[],boolean)', 'create_social_post(text,uuid,timestamptz,text,text,uuid[],jsonb)',
       'social_brand_contains_post(text,uuid,uuid)', 'reschedule_social_post(text,uuid,timestamptz,timestamptz)',
+      'cancel_social_post(text,uuid,timestamptz)', 'restore_social_post(text,uuid,timestamptz,timestamptz)',
       'save_social_content_preset(text,uuid,uuid,text,text,uuid[])', 'delete_social_content_preset(text,uuid,uuid)',
       'reserve_social_publish_queue_slot(text,uuid,uuid,text)', 'social_brand_contains_queue_assignment(text,uuid,uuid)',
       'confirm_social_publish_queue_slot(text,uuid,uuid)', 'approve_social_post_batch(text,uuid,uuid)',

@@ -76,3 +76,15 @@ export async function rescheduleSocialPost(postId, expectedAt, scheduledAt) {
         method:'PATCH',body:JSON.stringify({expectedAt,scheduledAt}),
     });
 }
+
+export async function cancelSocialPost(postId, expectedUpdatedAt) {
+    return gatewayFetch(`/social/posts/${encodeURIComponent(postId)}`, {
+        method:'PATCH',body:JSON.stringify({action:'cancel',expectedUpdatedAt}),
+    });
+}
+
+export async function restoreSocialPost(postId, expectedUpdatedAt, scheduledAt) {
+    return gatewayFetch(`/social/posts/${encodeURIComponent(postId)}`, {
+        method:'PATCH',body:JSON.stringify({action:'restore',expectedUpdatedAt,scheduledAt}),
+    });
+}
