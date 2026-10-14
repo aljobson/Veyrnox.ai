@@ -5,6 +5,7 @@ import { rpc, envConfig as databaseConfig } from '../../packages/db/supabase-cli
 import { envConfig as r2Config, isConfigured as r2Configured, presignGetUrl } from '../../packages/adapters/r2.js';
 import { createStreamUpload } from '../../lib/cinema/stream.js';
 import { checkClamd, downloadExact, inspectVideo, scanWithClamd, uploadTusFile } from './scan-file.mjs';
+import { moderateSubmission, moderateVideo } from './moderate.mjs';
 
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
 const SAFE_REASONS = new Set(['size_mismatch', 'unsupported_media_type', 'invalid_media']);
@@ -19,12 +20,12 @@ export async function processScan(row, env = process.env, deps = {}) {
     const call = deps.rpcCall || rpc, sign = deps.presign || presignGetUrl;
     const download = deps.download || downloadExact, inspect = deps.inspect || inspectVideo;
     const antivirus = deps.antivirus || scanWithClamd, createVideo = deps.createVideo || createStreamUpload;
-    const upload = deps.upload || uploadTusFile;
+    const upload = deps.upload || uploadTusFile, moderate = deps.moderate || moderateVideo;
     const db = deps.db || databaseConfig(), storage = deps.storage || r2Config(), stream = deps.stream || scannerStreamConfig(env);
     if (!UUID.test(row?.upload_id || '') || !UUID.test(row?.claim_token || '') || typeof row.r2_key !== 'string'
         || !Number.isSafeInteger(Number(row.expected_size)) || !['video/mp4', 'video/webm', 'video/quicktime'].includes(row.expected_mime)) throw Error('invalid_claim');
     const size = Number(row.expected_size), path = `/quarantine/${row.upload_id}.video`;
-    let sha256 = null, media = null, clamd = null, prepared = null;
+    let sha256 = null, media = null, clamd = null, prepared = null, finalized = false;
     try {
         const signed = await sign(row.r2_key, 900, storage);
         ({ sha256 } = await download(signed.url, path, size));
@@ -46,9 +47,22 @@ export async function processScan(row, env = process.env, deps = {}) {
             return { ok: true, verdict: 'flagged' };
         }
         if (clamd.verdict !== 'passed') throw Error('clamd_unavailable');
-        const video = await createVideo({ id: row.upload_id, file_size: size, expires_at: row.expires_at }, stream);
         const details = { reason: 'clean', format: media.format, codec: media.codec, duration_seconds: media.duration_seconds,
             width: media.width, height: media.height };
+        if (env.CINEMA_CONTENT_MODERATOR_ENABLED === 'true') {
+            const moderation = await moderate(path, media, env);
+            if (!['passed', 'flagged', 'unavailable'].includes(moderation?.status)) throw Error('invalid_moderation_result');
+            const saved = await call('record_cinema_upload_content_check', { p_upload_id: row.upload_id, p_claim_token: row.claim_token,
+                p_verdict: moderation.status, p_sha256: sha256, p_provider: moderation.provider, p_model: moderation.model,
+                p_details: moderation.details, p_sniffed_mime: media.mime, p_scanner_version: clamd.version,
+                p_malware_details: details }, db);
+            if (saved?.ok !== true) throw Error('content_record_failed');
+            if (moderation.status !== 'passed') {
+                finalized = true;
+                return { ok: moderation.status === 'flagged', verdict: moderation.status };
+            }
+        }
+        const video = await createVideo({ id: row.upload_id, file_size: size, expires_at: row.expires_at }, stream);
         prepared = await call('prepare_cinema_scanned_upload', { p_upload_id: row.upload_id, p_claim_token: row.claim_token,
             p_sha256: sha256, p_sniffed_mime: media.mime, p_scanner_version: clamd.version, p_details: details,
             p_uid: video.uid, p_url: video.url }, db);
@@ -60,7 +74,7 @@ export async function processScan(row, env = process.env, deps = {}) {
         }
         return { ok: true, verdict: 'passed' };
     } catch (error) {
-        if (!prepared?.ok) {
+        if (!prepared?.ok && !finalized) {
             await call('record_cinema_malware_scan', { p_upload_id: row.upload_id, p_claim_token: row.claim_token,
                 p_verdict: 'unavailable', p_sha256: sha256, p_sniffed_mime: media?.mime || null,
                 p_scanner_version: clamd?.version || null, p_details: { reason: 'scanner_unavailable' } }, db).catch(() => {});
@@ -82,6 +96,24 @@ export async function drainScans(env = process.env, deps = {}) {
         flagged: result.verdict === 'flagged' ? 1 : 0, unavailable: result.verdict === 'unavailable' ? 1 : 0 };
 }
 
+export async function drainSubmissionModeration(env = process.env, deps = {}) {
+    if (env.CINEMA_CONTENT_MODERATOR_ENABLED !== 'true') return { ok: true, skipped: 'disabled' };
+    const db = deps.db || databaseConfig();
+    if (!db.supabaseUrl || !db.serviceRoleKey || !env.ANTHROPIC_API_KEY || env.ANTHROPIC_API_KEY.length < 20) throw Error('moderator_unconfigured');
+    const call = deps.rpcCall || rpc, moderate = deps.moderateSubmission || moderateSubmission;
+    const rows = await call('claim_cinema_submission_moderation', { p_lease_seconds: 900 }, db);
+    if (!Array.isArray(rows) || rows.length > 1) throw Error('invalid_moderation_claim');
+    if (!rows.length) return { ok: true, claimed: 0, passed: 0, flagged: 0, unavailable: 0 };
+    const row = rows[0], result = await moderate(row, env);
+    if (!['passed', 'flagged', 'unavailable'].includes(result?.status)) throw Error('invalid_moderation_result');
+    const saved = await call('record_cinema_submission_content_moderation', { p_submission_id: row.submission_id,
+        p_claim_token: row.claim_token, p_verdict: result.status, p_model: result.model,
+        p_evidence_sha256: row.evidence_sha256, p_details: result.details }, db);
+    if (saved?.ok !== true) throw Error('moderation_record_failed');
+    return { ok: result.status !== 'unavailable', claimed: 1, passed: result.status === 'passed' ? 1 : 0,
+        flagged: result.status === 'flagged' ? 1 : 0, unavailable: result.status === 'unavailable' ? 1 : 0 };
+}
+
 export async function scannerHealth(env = process.env, deps = {}) {
     const clamd = await (deps.checkClamd || checkClamd)({
         host: env.CLAMD_HOST || 'clamav', port: Number(env.CLAMD_PORT || 3310), timeoutMs: 3000,
@@ -90,7 +122,10 @@ export async function scannerHealth(env = process.env, deps = {}) {
     const db = deps.db || databaseConfig(), storage = deps.storage || r2Config();
     if (!db.supabaseUrl || !db.serviceRoleKey || !r2Configured(storage)) throw Error('scanner_unconfigured');
     scannerStreamConfig(env);
-    return { ok: true, mode: 'enabled', clamd: clamd.version };
+    const contentModeration = env.CINEMA_CONTENT_MODERATOR_ENABLED === 'true' ? 'enabled' : 'disabled';
+    if (contentModeration === 'enabled' && (!env.ANTHROPIC_API_KEY || env.ANTHROPIC_API_KEY.length < 20)) throw Error('anthropic_unconfigured');
+    return { ok: true, mode: 'enabled', clamd: clamd.version, content_moderation: contentModeration,
+        ...(contentModeration === 'enabled' ? { content_model: env.CINEMA_CONTENT_MODEL || 'claude-haiku-5-5' } : {}) };
 }
 
 export async function startHealthServer(env = process.env, deps = {}) {
@@ -117,11 +152,11 @@ async function main() {
     const health = await startHealthServer();
     while (!stopping) {
         try {
-            const result = await drainScans();
-            console.info(JSON.stringify({ event: 'cinema.malware_scan', ...result }));
-            if (!result.claimed) await wait(5000);
+            const malware = await drainScans(), content = await drainSubmissionModeration();
+            console.info(JSON.stringify({ event: 'cinema.moderation_cycle', malware, content }));
+            if (!malware.claimed && !content.claimed) await wait(5000);
         } catch (error) {
-            console.error(JSON.stringify({ event: 'cinema.malware_scan', ok: false, code: error?.message || 'scanner_failed' }));
+            console.error(JSON.stringify({ event: 'cinema.moderation_cycle', ok: false, code: error?.message || 'scanner_failed' }));
             await wait(5000);
         }
     }
