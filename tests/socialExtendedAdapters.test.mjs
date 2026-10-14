@@ -78,7 +78,7 @@ test('Facebook exchanges authorization and long-lived tokens with query-based GE
         { code: 'auth-code', redirectUri: 'https://staging.test/social/connect/callback/facebook' }, fetcher);
     assert.equal(result.accessToken, 'long-token');
     assert.equal(calls[0].init.method, undefined);
-    assert.equal(calls[0].init.redirect, 'follow');
+    assert.equal(calls[0].init.redirect, 'manual');
     assert.equal(typeof calls[0].rawUrl, 'string');
     assert.equal(calls[0].url.searchParams.get('code'), 'auth-code');
     assert.equal(calls[0].url.searchParams.get('redirect_uri'), 'https://staging.test/social/connect/callback/facebook');
@@ -86,6 +86,18 @@ test('Facebook exchanges authorization and long-lived tokens with query-based GE
     assert.equal(calls[1].url.searchParams.get('grant_type'), 'fb_exchange_token');
     assert.equal(calls[1].url.searchParams.get('fb_exchange_token'), 'short-token');
     done();
+});
+
+test('Facebook refuses an off-host redirect before forwarding OAuth credentials', async () => {
+    let calls = 0;
+    const fetcher = async () => {
+        calls += 1;
+        return new Response(null, { status: 302, headers: { location: 'https://attacker.test/collect' } });
+    };
+    await assert.rejects(adapters.facebook.exchangeCodeForToken(cfg,
+        { code: 'auth-code', redirectUri: 'https://staging.test/social/connect/callback/facebook' }, fetcher),
+    /facebook_short_token_failed_redirect/);
+    assert.equal(calls, 1);
 });
 
 test('Facebook publishes an image on the selected Page, never a personal profile', async () => {
