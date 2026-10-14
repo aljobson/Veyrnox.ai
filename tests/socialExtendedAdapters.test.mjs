@@ -13,7 +13,7 @@ function sequence(steps) {
     const fetcher = async (url, init = {}) => {
         const step = steps.shift();
         assert.ok(step, `unexpected call ${new URL(url).pathname}`);
-        calls.push({ url: new URL(url), init });
+        calls.push({ rawUrl: url, url: new URL(url), init });
         step.check?.(calls.at(-1));
         return step.response || Response.json(step.body);
     };
@@ -78,6 +78,7 @@ test('Facebook exchanges authorization and long-lived tokens with query-based GE
         { code: 'auth-code', redirectUri: 'https://staging.test/social/connect/callback/facebook' }, fetcher);
     assert.equal(result.accessToken, 'long-token');
     assert.equal(calls[0].init.method, undefined);
+    assert.equal(typeof calls[0].rawUrl, 'string');
     assert.equal(calls[0].url.searchParams.get('code'), 'auth-code');
     assert.equal(calls[0].url.searchParams.get('redirect_uri'), 'https://staging.test/social/connect/callback/facebook');
     assert.equal(calls[1].init.method, undefined);

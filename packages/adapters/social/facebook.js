@@ -11,13 +11,19 @@ async function exchangeFacebookToken(stage, endpoint, params, fetcher) {
     try {
         const url = new URL(endpoint);
         Object.entries(params).forEach(([key, value]) => url.searchParams.set(key, value));
-        const result = await jsonRequest(url, {}, fetcher);
+        // Cloudflare's outbound fetch path is stricter than browsers about
+        // RequestInfo objects. Pass the fully encoded URL string so the token
+        // endpoint receives the query exactly as Meta documents it.
+        const result = await jsonRequest(url.toString(), {}, fetcher);
         if (typeof result.access_token !== 'string' || !result.access_token) throw new Error(`facebook_${stage}_token_missing`);
         return result;
     } catch (error) {
         if (error?.message === `facebook_${stage}_token_missing`) throw error;
         const status = /^provider_request_failed_([0-9]{3})$/.exec(error?.message || '')?.[1];
-        throw new Error(`facebook_${stage}_token_failed${status ? `_${status}` : ''}`);
+        const kind = status ? status
+            : ['AbortError', 'TimeoutError'].includes(error?.name) ? 'timeout'
+                : error?.name === 'TypeError' ? 'transport' : 'unexpected';
+        throw new Error(`facebook_${stage}_token_failed_${kind}`);
     }
 }
 export async function exchangeCodeForToken(cfg, { code, redirectUri }, fetcher = fetch) {
