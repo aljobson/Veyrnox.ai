@@ -1,4 +1,5 @@
 import { authorizeUrl, bearer, requireImage } from './common.js';
+import { publishScopeFeatureEnabled } from '../../../lib/social/scopeFlags.js';
 
 const BASE = 'https://graph.facebook.com/v23.0';
 export const SCOPES = ['pages_show_list', 'pages_read_engagement', 'pages_manage_posts'];
@@ -7,7 +8,7 @@ export const scopes = (cfg) => [...SCOPES, ...(cfg?.engagement ? ENGAGEMENT_SCOP
 export function config(env = process.env) {
     const clientId = env.FACEBOOK_CLIENT_ID || env.META_APP_ID, clientSecret = env.FACEBOOK_CLIENT_SECRET || env.META_APP_SECRET;
     return /^\d{5,32}$/.test(clientId || '') && clientSecret?.length >= 8 ? { clientId, clientSecret,
-        engagement: env.FACEBOOK_ENGAGEMENT_SCOPE_ENABLED === 'true' } : null;
+        engagement: publishScopeFeatureEnabled('FACEBOOK_ENGAGEMENT_SCOPE_ENABLED', env) } : null;
 }
 export const buildAuthorizeUrl = (cfg, input) => authorizeUrl('https://www.facebook.com/v23.0/dialog/oauth', cfg, input, scopes(cfg));
 function trustedGraphUrl(value, base) {

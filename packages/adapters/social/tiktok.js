@@ -27,6 +27,8 @@
 //
 // Scope also keeps user.info.basic for identity resolution.
 
+import { publishScopeFeatureEnabled } from '../../../lib/social/scopeFlags.js';
+
 const AUTHORIZE_URL = 'https://www.tiktok.com/v2/auth/authorize/';
 const TOKEN_URL = 'https://open.tiktokapis.com/v2/oauth/token/';
 const API_BASE = 'https://open.tiktokapis.com';
@@ -49,7 +51,8 @@ export function tiktokConfig(env = process.env) {
     const clientKey = env.TIKTOK_CLIENT_KEY || '';
     const clientSecret = env.TIKTOK_CLIENT_SECRET || '';
     if (!/^[A-Za-z0-9]{6,40}$/.test(clientKey) || clientSecret.length < 8) return null;
-    return { clientKey, clientSecret, ...(env.TIKTOK_ANALYTICS_SCOPE_ENABLED === 'true' ? { analyticsScopeEnabled: true } : {}) };
+    return { clientKey, clientSecret,
+        ...(publishScopeFeatureEnabled('TIKTOK_ANALYTICS_SCOPE_ENABLED', env) ? { analyticsScopeEnabled: true } : {}) };
 }
 
 /** Builds TikTok's OAuth authorize URL. redirectUri must already be built
