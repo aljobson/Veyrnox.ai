@@ -28,9 +28,9 @@ function mapResult(result) {
 export async function GET(req) {
   const { authId, cfg, error } = setup(req); if (error) return error;
   const limited = await accountReadLimit(authId, cfg, { smartlink: null, items: [], totals: { views: 0, clicks: 0 } }); if (limited) return limited;
-  const brand = await resolveBrand(authId, cfg, 'api/v1/social/smartlink:GET'); if (brand.error) return brand.error;
+  const brand = await resolveBrand(authId, cfg, 'api/v1/social/smartlink:GET', { request: req, allowedRoles: ['owner', 'manager', 'editor', 'reviewer', 'analyst', 'viewer'] }); if (brand.error) return brand.error;
   try {
-    const result = await rpc('get_social_smartlink_editor', { p_auth_id: authId, p_brand_id: brand.brandId }, cfg);
+    const result = await rpc('get_social_smartlink_editor', { p_auth_id: brand.rpcAuthId, p_brand_id: brand.brandId }, cfg);
     return mapResult(result) || NextResponse.json({ brand_id: brand.brandId, smartlink: result.smartlink, items: result.items || [], totals: result.totals || { views: 0, clicks: 0 } }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (err) {
     console.error('[api/v1/social/smartlink:GET] failed:', err instanceof SupabaseError ? err.status : 0);
@@ -51,7 +51,7 @@ export async function PUT(req) {
       items.some((item) => !item || typeof item.label !== 'string' || !item.label.trim() || item.label.trim().length > 60 || typeof item.url !== 'string' || !/^https:\/\//.test(item.url) || item.url.length > 1000 || typeof item.enabled !== 'boolean') ||
       (avatarUrl && (!/^https:\/\//.test(avatarUrl) || avatarUrl.length > 1000))) return NextResponse.json({ error: 'invalid_body' }, { status: 400 });
   const limited = await socialPostWriteLimit(authId, cfg); if (limited) return limited;
-  const brand = await resolveBrand(authId, cfg, 'api/v1/social/smartlink:PUT'); if (brand.error) return brand.error;
+  const brand = await resolveBrand(authId, cfg, 'api/v1/social/smartlink:PUT', { request: req, allowedRoles: ['owner'] }); if (brand.error) return brand.error;
   try {
     const result = await rpc('save_social_smartlink', { p_auth_id: authId, p_brand_id: brand.brandId, p_slug: slug, p_title: title,
       p_bio: bio || null, p_avatar_url: avatarUrl || null, p_theme: theme, p_published: body.published,

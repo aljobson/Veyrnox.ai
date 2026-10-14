@@ -10,6 +10,8 @@ const replyRoute = await import('../app/api/v1/social/inbox/[threadId]/reply/rou
 const auth = '11111111-1111-4111-8111-111111111111';
 const threadId = '22222222-2222-4222-8222-222222222222';
 const messageId = '33333333-3333-4333-8333-333333333333';
+const accountId = '44444444-4444-4444-8444-444444444444';
+const brandId = '55555555-5555-4555-8555-555555555555';
 const key = Buffer.alloc(32, 17).toString('base64');
 Object.assign(process.env, { SUPABASE_URL: 'https://db.test', SUPABASE_SERVICE_ROLE_KEY: 'service-test',
     SOCIAL_TOKEN_ENCRYPTION_KEY: key, PUBLISH_RUNTIME_FLAGS: '{"plans":"true","inbox":"true"}' });
@@ -25,16 +27,18 @@ test('thread detail and state updates stay owner-scoped through their RPCs', asy
     globalThis.fetch = async (url, init) => {
         const name = new URL(url).pathname.split('/').pop();
         calls.push({ name, body: JSON.parse(init.body) });
+        if (name === 'get_or_create_default_social_brand') return Response.json({ ok: true, brand_id: brandId });
+        if (name === 'list_social_accounts') return Response.json({ ok: true, accounts: [{ id: accountId }] });
         if (name === 'consume_social_post_write_request') return Response.json({ ok: true });
         if (name === 'update_social_inbox_thread') return Response.json({ ok: true });
-        return Response.json({ ok: true, thread: { id: threadId, can_reply: false }, messages: [{ id: messageId }] });
+        return Response.json({ ok: true, thread: { id: threadId, account_id: accountId, can_reply: false }, messages: [{ id: messageId }] });
     };
     const detail = await threadRoute.GET(request(), context);
     assert.equal(detail.status, 200);
-    assert.deepEqual(await detail.json(), { thread: { id: threadId, can_reply: false }, messages: [{ id: messageId }] });
+    assert.deepEqual(await detail.json(), { thread: { id: threadId, account_id: accountId, can_reply: false }, messages: [{ id: messageId }] });
     const updated = await threadRoute.PATCH(request('PATCH', { action: 'resolve' }), context);
     assert.equal(updated.status, 200);
-    assert.deepEqual(calls.map((call) => call.name), ['get_social_inbox_thread', 'consume_social_post_write_request', 'update_social_inbox_thread']);
+    assert.deepEqual(calls.map((call) => call.name), ['get_or_create_default_social_brand', 'get_social_inbox_thread', 'list_social_accounts', 'get_or_create_default_social_brand', 'consume_social_post_write_request', 'get_social_inbox_thread', 'list_social_accounts', 'update_social_inbox_thread']);
     assert.deepEqual(calls.at(-1).body, { p_auth_id: auth, p_thread_id: threadId, p_action: 'resolve' });
 });
 
@@ -54,7 +58,10 @@ test('comment replies decrypt the stored token only server-side and finalize pro
         if (value.startsWith('https://db.test/')) {
             const name = new URL(value).pathname.split('/').pop();
             calls.push({ kind: 'rpc', name, body: JSON.parse(init.body) });
+            if (name === 'get_or_create_default_social_brand') return Response.json({ ok: true, brand_id: brandId });
             if (name === 'consume_social_post_write_request') return Response.json({ ok: true });
+            if (name === 'get_social_inbox_thread') return Response.json({ ok: true, thread: { id: threadId, account_id: accountId } });
+            if (name === 'list_social_accounts') return Response.json({ ok: true, accounts: [{ id: accountId }] });
             if (name === 'create_social_inbox_reply') return Response.json({ ok: true, idempotent: false,
                 message_id: messageId, network: 'instagram', provider_thread_id: 'comment-42', access_token_enc: encrypted });
             if (name === 'finish_social_inbox_reply') return Response.json({ ok: true });
@@ -74,6 +81,6 @@ test('comment replies decrypt the stored token only server-side and finalize pro
     assert.equal(provider.authorization, 'Bearer provider-access-token');
     assert.equal(provider.message, 'Thanks for the comment.');
     assert.deepEqual(calls.filter((call) => call.kind === 'rpc').map((call) => call.name),
-        ['consume_social_post_write_request', 'create_social_inbox_reply', 'finish_social_inbox_reply']);
+        ['consume_social_post_write_request', 'get_or_create_default_social_brand', 'get_social_inbox_thread', 'list_social_accounts', 'create_social_inbox_reply', 'finish_social_inbox_reply']);
     assert.equal(JSON.stringify(responseBody).includes('provider-access-token'), false);
 });

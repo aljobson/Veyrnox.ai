@@ -42,10 +42,15 @@ export async function GET(req) {
     if (error) return error;
     const limited = await accountReadLimit(authId, cfg, { brand_id: null, requests: [] });
     if (limited) return limited;
-    const brand = await resolveBrand(authId, cfg, 'api/v1/social/approvals:GET');
+    const brand = await resolveBrand(authId, cfg, 'api/v1/social/approvals:GET', {
+        // This response contains freshly signed external-review links. Keep
+        // those bearer links with the brand administrators rather than
+        // exposing them through general read-only brand access.
+        request: req, allowedRoles: ['owner', 'manager'],
+    });
     if (brand.error) return brand.error;
     try {
-        const listed = await rpc('list_social_approvals', { p_auth_id: authId, p_brand_id: brand.brandId }, cfg);
+        const listed = await rpc('list_social_approvals', { p_auth_id: brand.rpcAuthId, p_brand_id: brand.brandId }, cfg);
         if (!listed?.ok) return NextResponse.json({ error: listed?.code || 'internal' }, { status: statusFor(listed?.code) });
         const origin = new URL(req.url).origin;
         const requests = await Promise.all((listed.requests || []).map(async (request) => ({
@@ -93,7 +98,7 @@ export async function POST(req) {
     }
     const limited = await socialPostWriteLimit(authId, cfg);
     if (limited) return limited;
-    const brand = await resolveBrand(authId, cfg, 'api/v1/social/approvals:POST');
+    const brand = await resolveBrand(authId, cfg, 'api/v1/social/approvals:POST', { request: req, allowedRoles: ['owner'] });
     if (brand.error) return brand.error;
     try {
         const listed = await rpc('list_social_accounts', { p_auth_id: authId, p_brand_id: brand.brandId }, cfg);

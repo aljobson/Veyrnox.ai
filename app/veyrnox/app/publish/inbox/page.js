@@ -6,9 +6,9 @@ import { AppNav } from '../../../_components/NavBar';
 import { Main } from '../../../_components/Main';
 import { getSession, onSessionChange } from '../../../../lib/authClient';
 import { listSocialAccounts, NETWORKS } from '../../../../lib/socialConnectClient';
-import { getPublishPlan } from '../../../../lib/publishPlanClient';
 import { getSocialInboxThread, listSocialInbox, replyToSocialInboxThread, updateSocialInboxThread } from '../../../../lib/socialInboxClient';
 import NetworkLogo from '../NetworkLogo';
+import BrandSwitcher from '../BrandSwitcher';
 
 const currentAccount = () => getSession()?.user?.id || '';
 const noAccount = () => '';
@@ -33,7 +33,8 @@ export default function PublishInbox() {
       <Link href="/app/publish/analytics" className="text-vx-accent underline">Analytics</Link>
     </nav>
     <h1 className="text-3xl font-black">Inbox</h1>
-    <p className="mt-2 mb-6 text-sm text-vx-fg-muted">Read messages, comments and reviews across connected accounts. Switch to one account whenever you need its own inbox.</p>
+    <p className="mt-2 mb-4 text-sm text-vx-fg-muted">Read messages, comments and reviews across connected accounts. Switch to one account whenever you need its own inbox.</p>
+    {account && <BrandSwitcher />}
     {account ? <InboxDashboard key={account} /> : <SignIn />}
   </Main></>;
 }
@@ -45,6 +46,7 @@ function SignIn() {
 
 function InboxDashboard() {
   const [accounts, setAccounts] = useState(null);
+  const [brandRole, setBrandRole] = useState('owner');
   const [enabled, setEnabled] = useState(null);
   const [paid, setPaid] = useState(null);
   const [accountId, setAccountId] = useState('');
@@ -59,11 +61,12 @@ function InboxDashboard() {
 
   useEffect(() => {
     let active = true;
-    Promise.all([listSocialAccounts(), getPublishPlan()]).then(([accountResult, plan]) => {
+    listSocialAccounts().then((accountResult) => {
       if (!active) return;
       setAccounts((accountResult.accounts || []).filter((item) => item.status === 'active'));
+      setBrandRole(accountResult.brandRole || 'owner');
       setEnabled(accountResult.inboxEnabled === true);
-      setPaid(plan.entitlement?.tier === 'publish');
+      setPaid(accountResult.planTier === 'publish');
     }).catch(() => { if (active) setError('Could not load the inbox. Check your connection and try again.'); });
     return () => { active = false; };
   }, []);
@@ -87,7 +90,7 @@ function InboxDashboard() {
     try {
       const detail = await getSocialInboxThread(thread.id);
       setSelected(detail);
-      if (thread.unread_count > 0) {
+      if (brandRole === 'owner' && thread.unread_count > 0) {
         await updateSocialInboxThread(thread.id, 'read');
         setRefresh((value) => value + 1);
       }
@@ -149,7 +152,7 @@ function InboxDashboard() {
           </button>
         </li>)}</ul>
       </section>
-      <Conversation selected={selected} onAction={act} onReplied={async () => {
+      <Conversation selected={selected} canWrite={brandRole === 'owner'} onAction={act} onReplied={async () => {
         if (!selected?.thread) return;
         setSelected(await getSocialInboxThread(selected.thread.id)); setRefresh((value) => value + 1);
       }} />
@@ -171,7 +174,7 @@ function Empty({ accountId }) {
     <p className="mt-2 text-sm text-vx-fg-muted">{accountId ? 'This account has no matching conversations yet.' : 'Connected-platform conversations will appear here as their inbox permissions are approved and enabled.'}</p></div>;
 }
 
-function Conversation({ selected, onAction, onReplied }) {
+function Conversation({ selected, canWrite, onAction, onReplied }) {
   if (!selected) return <section className="grid place-items-center p-8 text-center"><div><h2 className="font-bold">Choose a conversation</h2><p className="mt-2 text-sm text-vx-fg-muted">Open a message, comment or review to read its history and respond where supported.</p></div></section>;
   if (selected.loading) return <p className="p-6 text-sm text-vx-fg-muted">Loading conversation…</p>;
   if (selected.error) return <p role="alert" className="p-6 text-sm text-vx-danger">Could not load this conversation. Try again.</p>;
@@ -180,7 +183,7 @@ function Conversation({ selected, onAction, onReplied }) {
     <header className="flex flex-wrap items-start justify-between gap-3 border-b border-vx-border p-4">
       <div><h2 className="flex items-center gap-2 font-bold"><NetworkLogo network={thread.network} />{thread.participant_name || 'Social user'}</h2>
         <p className="mt-1 text-xs text-vx-fg-muted">{label(thread.network)} · {thread.kind} · {thread.account_name || 'Account'}</p></div>
-      <div className="flex gap-2"><button type="button" className={button} onClick={() => onAction(thread.status === 'resolved' ? 'reopen' : 'resolve')}>{thread.status === 'resolved' ? 'Reopen' : 'Resolve'}</button>
+      <div className="flex gap-2">{canWrite && <button type="button" className={button} onClick={() => onAction(thread.status === 'resolved' ? 'reopen' : 'resolve')}>{thread.status === 'resolved' ? 'Reopen' : 'Resolve'}</button>}
         {thread.provider_url && <a className={button} href={thread.provider_url} target="_blank" rel="noreferrer">Open on {label(thread.network)}</a>}</div>
     </header>
     <ol className="flex-1 space-y-3 overflow-y-auto p-4">{messages.map((message) => <li key={message.id} className={`flex ${message.direction === 'outbound' ? 'justify-end' : 'justify-start'}`}>
@@ -189,7 +192,7 @@ function Conversation({ selected, onAction, onReplied }) {
         <p className={`mt-2 text-xs ${message.direction === 'outbound' ? 'text-black/70' : 'text-vx-fg-muted'}`}>{dateTime.format(new Date(message.sent_at))}{message.delivery_status === 'failed' ? ' · Failed' : ''}</p>
       </div>
     </li>)}</ol>
-    <Reply thread={thread} onReplied={onReplied} />
+    {canWrite ? <Reply thread={thread} onReplied={onReplied} /> : <div className="border-t border-vx-border p-4"><p className="text-sm text-vx-fg-muted">Read-only team access. The brand owner handles replies and conversation status.</p></div>}
   </section>;
 }
 

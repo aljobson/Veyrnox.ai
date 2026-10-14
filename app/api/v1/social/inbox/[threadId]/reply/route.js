@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { limitRequestBody } from '../../../../../../../lib/requestBodyLimit.js';
 import { publishPlansEnabled, socialInboxEnabled } from '../../../../../../../lib/social/publishFeature.js';
 import { socialPostWriteLimit } from '../../../../../../../lib/socialPostWriteLimit.js';
+import { resolveBrand } from '../../../../../../../lib/social/resolveBrand.js';
 import { decryptToken, tokenCryptoConfig } from '../../../../../../../lib/social/tokenCrypto.js';
 import { sendInboxReply, safeInboxFailureCode } from '../../../../../../../packages/adapters/social/inbox.js';
 import { envConfig, rpc, SupabaseError } from '../../../../../../../packages/db/supabase-client.js';
@@ -26,9 +27,18 @@ export async function POST(req, context) {
         return NextResponse.json({ error: 'invalid_reply' }, { status: 400, headers });
     }
     const rate = await socialPostWriteLimit(authId, cfg); if (rate) return rate;
+    const brand = await resolveBrand(authId, cfg, 'api/v1/social/inbox/reply:POST', { request: req, allowedRoles: ['owner'] });
+    if (brand.error) return brand.error;
     let created;
-    try { created = await rpc('create_social_inbox_reply', { p_auth_id: authId, p_thread_id: threadId,
-        p_body: body.body, p_idempotency_key: body.idempotencyKey }, cfg); }
+    try {
+        const detail = await rpc('get_social_inbox_thread', { p_auth_id: brand.rpcAuthId, p_thread_id: threadId }, cfg);
+        const accounts = detail?.ok ? await rpc('list_social_accounts', { p_auth_id: brand.rpcAuthId, p_brand_id: brand.brandId }, cfg) : null;
+        if (!detail?.ok || !accounts?.ok || !accounts.accounts?.some((account) => account.id === detail.thread?.account_id)) {
+            return NextResponse.json({ error: 'thread_not_found' }, { status: 404, headers });
+        }
+        created = await rpc('create_social_inbox_reply', { p_auth_id: brand.rpcAuthId, p_thread_id: threadId,
+            p_body: body.body, p_idempotency_key: body.idempotencyKey }, cfg);
+    }
     catch (error) {
         console.error('[api/v1/social/inbox/reply] create failed:', error instanceof SupabaseError ? error.status : 0);
         return NextResponse.json({ error: 'internal' }, { status: 502, headers });

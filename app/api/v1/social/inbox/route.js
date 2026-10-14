@@ -26,10 +26,12 @@ export async function GET(req) {
     }
     const limited = await accountReadLimit(authId, cfg, { counts: { all: 0, unread: 0, unresolved: 0 }, threads: [] });
     if (limited) return limited;
-    const brand = await resolveBrand(authId, cfg, 'api/v1/social/inbox:GET');
+    const brand = await resolveBrand(authId, cfg, 'api/v1/social/inbox:GET', {
+        request: req, allowedRoles: ['owner', 'manager', 'editor', 'reviewer', 'analyst', 'viewer'],
+    });
     if (brand.error) return brand.error;
     try {
-        const result = await rpc('list_social_inbox', { p_auth_id: authId, p_brand_id: brand.brandId,
+        const result = await rpc('list_social_inbox', { p_auth_id: brand.rpcAuthId, p_brand_id: brand.brandId,
             p_account_id: accountId, p_state: state, p_kind: kind, p_search: search }, cfg);
         if (result?.ok === true) return NextResponse.json({ brand_id: brand.brandId, counts: result.counts, threads: result.threads || [] }, { headers });
         const status = result?.code === 'PLAN_REQUIRED' ? 402 : result?.code === 'ACCOUNT_NOT_FOUND' ? 404 : result?.code === 'INVALID_FILTER' ? 400 : 502;

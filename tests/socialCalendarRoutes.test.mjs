@@ -11,7 +11,7 @@ const body={expectedAt:'2026-10-04T10:00:00Z',scheduledAt:'2026-10-05T10:00:00Z'
 const req=(query='',data,identity=auth)=>new Request('https://veyrnox.test/api/v1/social/calendar'+query,{headers:{'x-veyrnox-auth-id':identity},...(data?{method:'PATCH',body:JSON.stringify(data)}:{})});
 const ctx={params:Promise.resolve({id})};
 let calls=[];
-function stub(results={}){calls=[];globalThis.fetch=async(url,init)=>{const name=new URL(url).pathname.split('/').pop();calls.push({name,args:JSON.parse(init.body)});const r=results[name]??({consume_account_read_request:{ok:true},consume_social_post_write_request:{ok:true},get_or_create_default_social_brand:{ok:true,brand_id:id},list_social_calendar:{ok:true,posts:[],next:null},reschedule_social_post:{ok:true,scheduled_at:body.scheduledAt,idempotent:false},read_social_publish_entitlement:{ok:true,tier:'publish',account_limit:5,analytics_days:366,best_time_enabled:true,subscription:{id:'paid'}}})[name];if(r instanceof Error)throw r;return Response.json(r);};}
+function stub(results={}){calls=[];globalThis.fetch=async(url,init)=>{const name=new URL(url).pathname.split('/').pop();calls.push({name,args:JSON.parse(init.body)});const r=results[name]??({consume_account_read_request:{ok:true},consume_social_post_write_request:{ok:true},get_or_create_default_social_brand:{ok:true,brand_id:id},social_brand_contains_post:{ok:true},list_social_calendar:{ok:true,posts:[],next:null},reschedule_social_post:{ok:true,scheduled_at:body.scheduledAt,idempotent:false},read_social_publish_entitlement:{ok:true,tier:'publish',account_limit:5,analytics_days:366,best_time_enabled:true,subscription:{id:'paid'}}})[name];if(r instanceof Error)throw r;return Response.json(r);};}
 test('identity and calendar gates precede database calls',async()=>{
     stub();assert.equal((await GET(req(valid,undefined,''))).status,401);
     process.env.PUBLISH_CALENDAR_ENABLED='false';assert.equal((await GET(req(valid))).status,503);assert.equal((await PATCH(req('',body),ctx)).status,503);
@@ -57,6 +57,6 @@ test('reschedule handles stale/started posts, owner refusals and rate limits wit
     for(const [code,status] of [['POST_BUSY',409],['POST_STARTED',409],['SCHEDULE_CHANGED',409],['POST_NOT_FOUND',404],['USER_NOT_FOUND',401],['INVALID_SCHEDULE',400]]){
         stub({reschedule_social_post:{ok:false,code,secret:'private'}});const res=await PATCH(req('',body),ctx);assert.equal(res.status,status);assert.ok(!(await res.text()).includes('private'));
     }
-    stub({consume_social_post_write_request:{ok:false,code:'RATE_LIMITED'}});assert.equal((await PATCH(req('',body),ctx)).status,429);assert.equal(calls.length,1);
+    stub({consume_social_post_write_request:{ok:false,code:'RATE_LIMITED'}});assert.equal((await PATCH(req('',body),ctx)).status,429);assert.equal(calls.at(-1).name,'consume_social_post_write_request');
     stub({reschedule_social_post:new Error('private')});assert.deepEqual(await (await PATCH(req('',body),ctx)).json(),{error:'internal'});
 });

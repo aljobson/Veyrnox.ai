@@ -47,8 +47,10 @@ export async function GET(req) {
     const limited = await accountReadLimit(authId, cfg, { brand_id: null, posts: [] });
     if (limited) return limited;
 
-    const { brandId, error } = await resolveBrand(authId, cfg, 'api/v1/social/posts:GET');
-    if (error) return error;
+    const brand = await resolveBrand(authId, cfg, 'api/v1/social/posts:GET', {
+        request: req, allowedRoles: ['owner', 'manager', 'editor', 'reviewer', 'analyst', 'viewer'],
+    });
+    if (brand.error) return brand.error;
 
     const url = new URL(req.url);
     const beforeCreatedAt = url.searchParams.get('before_created_at') || undefined;
@@ -68,7 +70,7 @@ export async function GET(req) {
     let posts;
     try {
         posts = await rpc('list_social_posts', {
-            p_auth_id: authId, p_brand_id: brandId,
+            p_auth_id: brand.rpcAuthId, p_brand_id: brand.brandId,
             p_limit: limit, p_before_created_at: beforeCreatedAt || null, p_before_id: beforeId || null,
         }, cfg);
     } catch (err) {
@@ -80,7 +82,7 @@ export async function GET(req) {
         return NextResponse.json({ error: 'internal' }, { status: 502 });
     }
 
-    return NextResponse.json({ brand_id: brandId, posts: posts.posts || [], ...(calendarEnabled() ? { calendarEnabled: true } : {}) },
+    return NextResponse.json({ brand_id: brand.brandId, brandRole: brand.role, posts: posts.posts || [], ...(calendarEnabled() ? { calendarEnabled: true } : {}) },
         { headers: { 'Cache-Control': 'no-store' } });
 }
 
@@ -169,8 +171,9 @@ export async function POST(req) {
     const limited = await socialPostWriteLimit(authId, cfg);
     if (limited) return limited;
 
-    const { brandId, error } = await resolveBrand(authId, cfg, 'api/v1/social/posts:POST');
-    if (error) return error;
+    const brand = await resolveBrand(authId, cfg, 'api/v1/social/posts:POST', { request: req, allowedRoles: ['owner'] });
+    if (brand.error) return brand.error;
+    const brandId = brand.brandId;
 
     let result;
     try {

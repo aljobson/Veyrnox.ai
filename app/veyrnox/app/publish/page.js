@@ -13,6 +13,7 @@ import { DraftReview } from './DraftReview';
 import NetworkLogo from './NetworkLogo';
 import BlueskyConnect from './BlueskyConnect';
 import { ApprovalRequests } from './ApprovalRequests';
+import BrandSwitcher from './BrandSwitcher';
 
 const currentAccount = () => getSession()?.user?.id || '';
 const noAccount = () => '';
@@ -31,7 +32,8 @@ export default function Publish() {
   const account = useSyncExternalStore(onSessionChange, currentAccount, noAccount);
   return <><AppNav /><Main className="max-w-[900px] mx-auto px-4 sm:px-8 py-10">
     <h1 className="text-3xl font-black mb-2">Veyrnox Publish</h1>
-    <p className="text-sm text-vx-fg-muted mb-6">Connect a social account and publish from Veyrnox. <Link href="/app/publish/analytics" className="text-vx-accent underline">See analytics and insights</Link>.</p>
+    <p className="text-sm text-vx-fg-muted mb-4">Connect a social account and publish from Veyrnox. <Link href="/app/publish/analytics" className="text-vx-accent underline">See analytics and insights</Link>.</p>
+    {account && <BrandSwitcher />}
     <ul aria-label="Social platforms" className="flex flex-wrap gap-3 mb-6">
       {CATALOGUE_NETWORKS.map((n) => <li key={n.key} className="inline-flex items-center gap-2 rounded-full border border-vx-border px-3 py-2 text-sm font-bold text-vx-fg">
         <NetworkLogo network={n.key} />{n.label}
@@ -56,6 +58,7 @@ function PublishControls({ initialJobId, initialUploadId }) {
   const [queuesEnabled, setQueuesEnabled] = useState(false);
   const [approvalsEnabled, setApprovalsEnabled] = useState(false);
   const [teamsEnabled, setTeamsEnabled] = useState(false);
+  const [brandRole, setBrandRole] = useState('owner');
   const [planTier, setPlanTier] = useState('free');
   const [networks, setNetworks] = useState([]);
   const [blueskyOpen, setBlueskyOpen] = useState(false);
@@ -82,6 +85,7 @@ function PublishControls({ initialJobId, initialUploadId }) {
       setQueuesEnabled(res.queuesEnabled === true);
       setApprovalsEnabled(res.approvalsEnabled === true);
       setTeamsEnabled(res.teamsEnabled === true);
+      setBrandRole(res.brandRole || 'owner');
       setPlanTier(res.planTier === 'publish' ? 'publish' : 'free');
       setNetworks(res.networks || []);
     } catch (err) {
@@ -121,6 +125,7 @@ function PublishControls({ initialJobId, initialUploadId }) {
   const byNetwork = new Map(active.map((a) => [a.network, a]));
   const atLimit = active.length >= accountLimit;
   const paid = !plansEnabled || planTier === 'publish';
+  const canWrite = brandRole === 'owner';
 
   return <div className="space-y-6">
     <section className="rounded-2xl border border-vx-border p-5">
@@ -130,13 +135,14 @@ function PublishControls({ initialJobId, initialUploadId }) {
           {inboxEnabled && <Link href="/app/publish/inbox" className="text-sm font-bold text-vx-accent underline">Social inbox</Link>}
           {smartlinksEnabled && <Link href="/app/publish/smartlink" className="text-sm font-bold text-vx-accent underline">SmartLink</Link>}
           {queuesEnabled && paid && <Link href="/app/publish/queues" className="text-sm font-bold text-vx-accent underline">Posting queues</Link>}
-          {teamsEnabled && paid && <Link href="/app/publish/team" className="text-sm font-bold text-vx-accent underline">Team</Link>}
-          {plansEnabled && <Link href="/app/publish/plan" className="text-sm font-bold text-vx-accent underline">Plans and billing</Link>}
+          {teamsEnabled && paid && ['owner', 'manager'].includes(brandRole) && <Link href="/app/publish/team" className="text-sm font-bold text-vx-accent underline">Team</Link>}
+          {plansEnabled && canWrite && <Link href="/app/publish/plan" className="text-sm font-bold text-vx-accent underline">Plans and billing</Link>}
         </div>
       </div>
       <p className="text-sm text-vx-fg-muted mb-3">
-        {paid ? `Your Publish Plan includes up to ${accountLimit} connected accounts, scheduling and analytics.` : 'Free includes one connected account and Post now.'}
+        {paid ? `${canWrite ? 'Your' : 'This brand’s'} Publish Plan includes up to ${accountLimit} connected accounts, scheduling and analytics.` : 'Free includes one connected account and Post now.'}
       </p>
+      {!canWrite && <p role="status" className="mb-3 rounded-xl bg-vx-panel p-3 text-sm">You are viewing this brand as {brandRole}. Posting and account changes remain with the owner while delegated write actions are being enabled.</p>}
       {accounts === null && !loadError && <p className="text-sm text-vx-fg-muted">Loading…</p>}
       {loadError && <p role="alert" className="text-sm text-vx-danger mb-3">{loadError}</p>}
       {accounts !== null && active.length === 0 && !loadError && (
@@ -156,26 +162,26 @@ function PublishControls({ initialJobId, initialUploadId }) {
                 <div className="flex items-center gap-1.5 text-xs text-vx-fg-muted"><NetworkLogo network={a.network} className="h-3.5 w-3.5" />{networkLabel(a.network)} · {a.status}</div>
               </div>
             </div>
-            <button
+            {canWrite && <button
               type="button"
               disabled={disconnecting === a.id}
               className={button}
               onClick={() => setConfirmDisconnect(a)}
             >
               {disconnecting === a.id ? 'Disconnecting…' : 'Disconnect'}
-            </button>
+            </button>}
           </li>
         ))}
       </ul>
     </section>
 
-    {approvalsEnabled && paid && <section className="rounded-2xl border border-vx-border p-5">
+    {approvalsEnabled && paid && ['owner', 'manager'].includes(brandRole) && <section className="rounded-2xl border border-vx-border p-5">
       <h2 className="font-bold mb-1">Approval requests</h2>
       <p className="text-sm text-vx-fg-muted mb-4">Share a signed link with each reviewer. Posts stay paused until the approval rule passes.</p>
       <ApprovalRequests refreshToken={postsRefreshToken} />
     </section>}
 
-    <section className="rounded-2xl border border-vx-border p-5">
+    {canWrite && <section className="rounded-2xl border border-vx-border p-5">
       <h2 className="font-bold mb-1">Connect an account</h2>
       <p className="text-sm text-vx-fg-muted mb-4">Choose a platform to connect. Facebook uses Pages and Google Business Profile uses business locations. TikTok delivers a draft to your inbox. Twitch connects for video statistics.</p>
       {connectError && <p role="alert" className="text-sm text-vx-danger mb-3">{connectError}</p>}
@@ -204,7 +210,7 @@ function PublishControls({ initialJobId, initialUploadId }) {
         })}
       </ul>
       {blueskyOpen && <div className="mt-4"><BlueskyConnect onCancel={() => setBlueskyOpen(false)} onConnected={async () => { setBlueskyOpen(false); await load(); }} /></div>}
-    </section>
+    </section>}
 
     {confirmDisconnect && (
       <ConfirmDialog
@@ -217,20 +223,20 @@ function PublishControls({ initialJobId, initialUploadId }) {
       />
     )}
 
-    <section className="rounded-2xl border border-vx-border p-5">
+    {canWrite && <section className="rounded-2xl border border-vx-border p-5">
       <h2 className="font-bold mb-1">Drafts to review</h2>
       <p className="text-sm text-vx-fg-muted mb-4">Nothing here is posted until you approve its batch.</p>
       <DraftReview onApproved={() => setPostsRefreshToken((n) => n + 1)} />
-    </section>
+    </section>}
 
-    <section className="rounded-2xl border border-vx-border p-5">
+    {canWrite && <section className="rounded-2xl border border-vx-border p-5">
       <h2 id="schedule" className="font-bold mb-4 scroll-mt-6">Create a post</h2>
       <Composer approvalsEnabled={approvalsEnabled && paid} queuesEnabled={queuesEnabled && paid} presetsEnabled={contentPresetsEnabled && paid} multiAccountEnabled={paid} scheduleEnabled={paid} youtubeVisibilityEnabled={youtubeVisibilityEnabled} key={initialJobId || initialUploadId || 'library'} initialJobId={initialJobId} initialUploadId={initialUploadId} reusablePost={reusablePost} accounts={accounts} uploadsEnabled={uploadsEnabled} onScheduled={() => setPostsRefreshToken((n) => n + 1)} />
-    </section>
+    </section>}
 
     <section className="rounded-2xl border border-vx-border p-5">
       <h2 className="font-bold mb-4">Scheduled &amp; published</h2>
-      <ScheduledPosts refreshToken={postsRefreshToken} scheduleEnabled={paid} onReuse={(post) => { setReusablePost({ ...post, reuseKey: Date.now() }); document.getElementById('schedule')?.scrollIntoView({ behavior: 'smooth' }); }} />
+      <ScheduledPosts refreshToken={postsRefreshToken} scheduleEnabled={paid} onReuse={canWrite ? (post) => { setReusablePost({ ...post, reuseKey: Date.now() }); document.getElementById('schedule')?.scrollIntoView({ behavior: 'smooth' }); } : undefined} />
     </section>
   </div>;
 }

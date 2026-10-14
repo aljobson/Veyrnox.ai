@@ -29,9 +29,9 @@ function mapResult(result) {
 export async function GET(req) {
   const { authId, cfg, error } = setup(req); if (error) return error;
   const limited = await accountReadLimit(authId, cfg, { presets: [] }); if (limited) return limited;
-  const brand = await resolveBrand(authId, cfg, 'api/v1/social/presets:GET'); if (brand.error) return brand.error;
+  const brand = await resolveBrand(authId, cfg, 'api/v1/social/presets:GET', { request: req, allowedRoles: ['owner', 'manager', 'editor', 'reviewer', 'analyst', 'viewer'] }); if (brand.error) return brand.error;
   try {
-    const result = await rpc('list_social_content_presets', { p_auth_id: authId, p_brand_id: brand.brandId }, cfg);
+    const result = await rpc('list_social_content_presets', { p_auth_id: brand.rpcAuthId, p_brand_id: brand.brandId }, cfg);
     return mapResult(result) || NextResponse.json({ presets: result.presets || [] }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (err) {
     console.error('[api/v1/social/presets:GET] failed:', err instanceof SupabaseError ? err.status : 0);
@@ -51,7 +51,7 @@ export async function PUT(req) {
     return NextResponse.json({ error: 'invalid_body' }, { status: 400 });
   }
   const limited = await socialPostWriteLimit(authId, cfg); if (limited) return limited;
-  const brand = await resolveBrand(authId, cfg, 'api/v1/social/presets:PUT'); if (brand.error) return brand.error;
+  const brand = await resolveBrand(authId, cfg, 'api/v1/social/presets:PUT', { request: req, allowedRoles: ['owner'] }); if (brand.error) return brand.error;
   try {
     const result = await rpc('save_social_content_preset', { p_auth_id: authId, p_brand_id: brand.brandId, p_id: id,
       p_name: name, p_caption: caption, p_account_ids: accountIds }, cfg);
@@ -67,7 +67,7 @@ export async function DELETE(req) {
   const id = new URL(req.url).searchParams.get('id');
   if (!UUID.test(id || '')) return NextResponse.json({ error: 'invalid_id' }, { status: 400 });
   const limited = await socialPostWriteLimit(authId, cfg); if (limited) return limited;
-  const brand = await resolveBrand(authId, cfg, 'api/v1/social/presets:DELETE'); if (brand.error) return brand.error;
+  const brand = await resolveBrand(authId, cfg, 'api/v1/social/presets:DELETE', { request: req, allowedRoles: ['owner'] }); if (brand.error) return brand.error;
   try {
     const result = await rpc('delete_social_content_preset', { p_auth_id: authId, p_brand_id: brand.brandId, p_id: id }, cfg);
     return mapResult(result) || NextResponse.json({ ok: true });

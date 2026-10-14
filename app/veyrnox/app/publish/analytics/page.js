@@ -12,6 +12,7 @@ import { analyticsCapabilities, hasAnalytics } from '../../../../../lib/social/a
 import { FollowersChart } from './FollowersChart';
 import { PostingInsights } from './PostingInsights';
 import NetworkLogo from '../NetworkLogo';
+import BrandSwitcher from '../BrandSwitcher';
 
 const currentAccount = () => getSession()?.user?.id || '';
 const noAccount = () => '';
@@ -38,7 +39,8 @@ export default function PublishAnalytics() {
   return <><AppNav /><Main className="max-w-[900px] mx-auto px-4 sm:px-8 py-10">
     <p className="text-sm mb-2"><Link href="/app/publish" className="text-vx-accent underline">Veyrnox Publish</Link></p>
     <h1 className="text-3xl font-black mb-2">Analytics</h1>
-    <p className="text-sm text-vx-fg-muted mb-6">How your connected accounts and their posts are doing.</p>
+    <p className="text-sm text-vx-fg-muted mb-4">How your connected accounts and their posts are doing.</p>
+    {account && <BrandSwitcher />}
     {account ? <Dashboard key={account} /> : <div className="text-vx-fg-body">
       <p className="mb-4">Sign in to see your analytics.</p>
       <button type="button" className={button} onClick={() => window.dispatchEvent(new CustomEvent('veyrnox:auth-required'))}>Sign in</button>

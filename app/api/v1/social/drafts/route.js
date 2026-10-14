@@ -49,10 +49,12 @@ export async function GET(req) {
     if (error) return error;
     const limited = await accountReadLimit(authId, cfg, { brand_id: null, drafts: [] });
     if (limited) return limited;
-    const brand = await resolveBrand(authId, cfg, 'api/v1/social/drafts:GET');
+    const brand = await resolveBrand(authId, cfg, 'api/v1/social/drafts:GET', {
+        request: req, allowedRoles: ['owner', 'manager', 'editor', 'reviewer', 'analyst', 'viewer'],
+    });
     if (brand.error) return brand.error;
 
-    const listed = await call('list_social_post_drafts', { p_auth_id: authId, p_brand_id: brand.brandId }, cfg, 'api/v1/social/drafts:GET');
+    const listed = await call('list_social_post_drafts', { p_auth_id: brand.rpcAuthId, p_brand_id: brand.brandId }, cfg, 'api/v1/social/drafts:GET');
     if (listed.error) return listed.error;
     if (!listed.result || listed.result.ok !== true) return NextResponse.json({ error: 'internal' }, { status: 502 });
 
@@ -82,9 +84,14 @@ export async function POST(req) {
         return NextResponse.json({ error: 'invalid_post_id' }, { status: 400 });
     }
 
+    const limited = await socialPostWriteLimit(authId, cfg);
+    if (limited) return limited;
+    const brand = await resolveBrand(authId, cfg, 'api/v1/social/drafts:POST', { request: req, allowedRoles: ['owner'] });
+    if (brand.error) return brand.error;
+
     if (action === 'approve' && publishPlansEnabled()) {
         let entitlement;
-        try { entitlement = await readPublishEntitlement(authId, cfg); }
+        try { entitlement = await readPublishEntitlement(brand.rpcAuthId, cfg); }
         catch (err) {
             console.error('[api/v1/social/drafts:POST] entitlement read failed:', err instanceof SupabaseError ? err.status : 0);
             return NextResponse.json({ error: 'internal' }, { status: 502 });
@@ -94,11 +101,6 @@ export async function POST(req) {
             return NextResponse.json({ error: 'publish_plan_required', feature: 'scheduling' }, { status: 402 });
         }
     }
-
-    const limited = await socialPostWriteLimit(authId, cfg);
-    if (limited) return limited;
-    const brand = await resolveBrand(authId, cfg, 'api/v1/social/drafts:POST');
-    if (brand.error) return brand.error;
 
     const tag = 'api/v1/social/drafts:POST';
     // The batch RPC approves all targets atomically but has no network filter.

@@ -5,8 +5,9 @@ import { AppNav } from '../../../_components/NavBar';
 import { Main } from '../../../_components/Main';
 import { Modal } from '../../../_components/Modal';
 import NetworkLogo from '../NetworkLogo';
+import BrandSwitcher from '../BrandSwitcher';
 import { getSession, onSessionChange } from '../../../../lib/authClient';
-import { NETWORKS } from '../../../../lib/socialConnectClient';
+import { listSocialAccounts, NETWORKS } from '../../../../lib/socialConnectClient';
 import { listSocialCalendar, rescheduleSocialPost } from '../../../../lib/socialPostsClient';
 import { getPublishPlan } from '../../../../lib/publishPlanClient';
 import { calendarWindow, shiftCalendar, dateKey, droppedSchedule, localInput, localSchedule, POST_STATUSES } from '../../../../../lib/social/calendar.js';
@@ -27,19 +28,21 @@ export default function Calendar() {
     return <><AppNav/><Main className="max-w-[1100px] mx-auto px-4 sm:px-8 py-10">
         <Link href="/app/publish" className="text-sm text-vx-accent underline">Veyrnox Publish</Link>
         <h1 className="text-3xl font-black mt-3 mb-2">Publishing calendar</h1>
-        <p className="text-sm text-vx-fg-muted mb-6">Scheduled and completed posts. Drafts appear here once approved.</p>
+        <p className="text-sm text-vx-fg-muted mb-4">Scheduled and completed posts. Drafts appear here once approved.</p>
+        {account && <BrandSwitcher />}
         {account&&date?<CalendarControls key={account} today={date}/>:<p className="text-sm">Sign in to view your calendar. <button type="button" className={button} onClick={()=>window.dispatchEvent(new CustomEvent('veyrnox:auth-required'))}>Sign in</button></p>}
     </Main></>;
 }
 
 function CalendarControls({today}) {
     const [planTier,setPlanTier]=useState(null);
+    const [brandRole,setBrandRole]=useState('owner');
     const [anchor,setAnchor]=useState(today),[view,setView]=useState('month');
     const [status,setStatus]=useState(''),[network,setNetwork]=useState('');
     const [refresh,setRefresh]=useState(0),[result,setResult]=useState(null),[loadError,setLoadError]=useState('');
     const [moreLoading,setMoreLoading]=useState(false),[edit,setEdit]=useState(null),[message,setMessage]=useState('');
     const requestId=useRef(0);
-    useEffect(()=>{let active=true;getPublishPlan().then(data=>{if(active)setPlanTier(data.entitlement?.tier||'free');}).catch(()=>{if(active)setPlanTier('free');});return()=>{active=false;};},[]);
+    useEffect(()=>{let active=true;Promise.all([getPublishPlan(),listSocialAccounts()]).then(([data,accountResult])=>{if(active){setPlanTier(accountResult.planTier||data.entitlement?.tier||'free');setBrandRole(accountResult.brandRole||'owner');}}).catch(()=>{if(active)setPlanTier('free');});return()=>{active=false;};},[]);
     const range=calendarWindow(anchor,view);
     const queryKey=JSON.stringify([range.from,range.to,status,network,refresh]);
     useEffect(()=>{
@@ -70,7 +73,7 @@ function CalendarControls({today}) {
     function drop(event,day){
         event.preventDefault();
         const post=posts.find(p=>p.id===event.dataTransfer.getData('application/x-veyrnox-post'));
-        if(post?.can_reschedule)setEdit({post,value:droppedSchedule(post,day)});
+        if(brandRole==='owner'&&post?.can_reschedule)setEdit({post,value:droppedSchedule(post,day)});
     }
     const groups=new Map(range.days.map(day=>[day,posts.filter(p=>dateKey(p.scheduled_at)===day)]));
     return <div className="space-y-5">
@@ -94,7 +97,7 @@ function CalendarControls({today}) {
             {loadError&&<p role="alert" className="text-sm text-vx-danger">{loadError}</p>}
             {!loadError&&posts.length===0&&<p className="text-sm text-vx-fg-muted">No posts in this period match your filters.</p>}
             {view==='list'?<div className="space-y-4">{range.days.filter(day=>groups.get(day).length).map(day=><section key={day} aria-label={dayLabel(day)}>
-                <h3 className="font-bold mb-2">{dayLabel(day)}</h3><ul className="space-y-2">{groups.get(day).map(post=><li key={post.id}><PostCard post={post} onEdit={()=>setEdit({post,value:localInput(post.scheduled_at)})}/></li>)}</ul>
+                <h3 className="font-bold mb-2">{dayLabel(day)}</h3><ul className="space-y-2">{groups.get(day).map(post=><li key={post.id}><PostCard post={post} canWrite={brandRole==='owner'} onEdit={()=>setEdit({post,value:localInput(post.scheduled_at)})}/></li>)}</ul>
             </section>)}</div>:<div className="relative overflow-x-auto rounded-xl border border-vx-border focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-vx-accent" tabIndex={0} role="region" aria-label={`${view} calendar, scroll horizontally on smaller screens`}>
                 <table className="w-full min-w-[840px] table-fixed text-sm">
                     <caption className="sr-only">{title}. Scheduled posts by local date.</caption>
@@ -102,7 +105,7 @@ function CalendarControls({today}) {
                     <tbody>{Array.from({length:range.days.length/7},(_,week)=><tr key={week}>{range.days.slice(week*7,week*7+7).map(day=><td key={day} className={`align-top border-t border-r border-vx-border p-2 ${day===currentDay?'bg-vx-accent/10':''}`}
                         onDragOver={e=>{if(e.dataTransfer.types.includes('application/x-veyrnox-post'))e.preventDefault();}} onDrop={e=>drop(e,day)} data-calendar-day={day}>
                         <div className="min-h-28"><h3 className="text-xs font-bold mb-2">{dayLabel(day)}{day===currentDay&&<span className="sr-only">, today</span>}</h3>
-                        <ul className="space-y-2">{groups.get(day).map(post=><li key={post.id}><PostCard post={post} onEdit={()=>setEdit({post,value:localInput(post.scheduled_at)})}/></li>)}</ul></div>
+                        <ul className="space-y-2">{groups.get(day).map(post=><li key={post.id}><PostCard post={post} canWrite={brandRole==='owner'} onEdit={()=>setEdit({post,value:localInput(post.scheduled_at)})}/></li>)}</ul></div>
                     </td>)}</tr>)}</tbody>
                 </table>
             </div>}
@@ -112,15 +115,15 @@ function CalendarControls({today}) {
     </div>;
 }
 
-function PostCard({post,onEdit}) {
-    return <article className="rounded-lg border border-vx-border bg-vx-panel p-2 space-y-2 wrap-break-word" draggable={post.can_reschedule===true}
-        onDragStart={e=>{if(!post.can_reschedule){e.preventDefault();return;}e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('application/x-veyrnox-post',post.id);}} data-calendar-post={post.id}>
+function PostCard({post,canWrite,onEdit}) {
+    return <article className="rounded-lg border border-vx-border bg-vx-panel p-2 space-y-2 wrap-break-word" draggable={canWrite&&post.can_reschedule===true}
+        onDragStart={e=>{if(!canWrite||!post.can_reschedule){e.preventDefault();return;}e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('application/x-veyrnox-post',post.id);}} data-calendar-post={post.id}>
         <p className="text-xs font-bold"><time dateTime={post.scheduled_at}>{timeLabel(post.scheduled_at)}</time> · {post.status}</p>
         <p className="text-sm line-clamp-3">{post.global_text||'Media post'}</p>
         <ul className="text-xs text-vx-fg-muted space-y-1">{(post.targets||[]).map(t=><li key={t.id} className="flex flex-wrap items-center gap-1"><NetworkLogo network={t.network} className="h-3.5 w-3.5" />{networkLabel(t.network)}: {t.publish_status==='delivered'?'delivered, finish in TikTok':t.publish_status==='submitted'?'in progress':t.publish_status}
             {t.publish_status==='published'&&/^https:\/\//.test(t.platform_post_url||'')&&<> · <a href={t.platform_post_url} target="_blank" rel="noreferrer" className="underline">View post</a></>}
         </li>)}</ul>
-        {post.can_reschedule?<button type="button" className="text-xs font-bold text-vx-accent underline focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-vx-accent" onClick={onEdit}>Reschedule<span className="sr-only"> {post.global_text||'media post'}</span></button>:<p className="text-xs text-vx-fg-muted">Schedule locked</p>}
+        {canWrite&&post.can_reschedule?<button type="button" className="text-xs font-bold text-vx-accent underline focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-vx-accent" onClick={onEdit}>Reschedule<span className="sr-only"> {post.global_text||'media post'}</span></button>:<p className="text-xs text-vx-fg-muted">{canWrite?'Schedule locked':'Read only'}</p>}
     </article>;
 }
 

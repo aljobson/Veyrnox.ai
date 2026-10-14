@@ -96,7 +96,7 @@ test('Free cannot approve a draft batch into the schedule while plans are enable
         const res = await POST(postRequest({ action: 'approve', batchId }));
         assert.equal(res.status, 402);
         assert.deepEqual(await res.json(), { error: 'publish_plan_required', feature: 'scheduling' });
-        assert.deepEqual(names(), ['read_social_publish_entitlement']);
+        assert.deepEqual(names(), ['consume_social_post_write_request', 'get_or_create_default_social_brand', 'read_social_publish_entitlement']);
 
         stub();
         assert.equal((await POST(postRequest({ action: 'discard', batchId }))).status, 200);

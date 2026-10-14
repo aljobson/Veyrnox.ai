@@ -5,6 +5,7 @@
 // typed GatewayError otherwise so callers can branch on .code.
 
 import { getFreshAccessToken, getSession, clearSession } from '../../lib/authClient.js';
+import { getSelectedSocialBrand } from '../../lib/socialBrandSelection.js';
 
 // A Frozen account (Chargeback, #97): generating and buying are refused.
 export const ACCOUNT_PAUSED_COPY =
@@ -56,6 +57,8 @@ export async function gatewayFetch(path, init = {}) {
     ...(init.headers || {}),
     Authorization: `Bearer ${token}`,
   };
+  const selectedBrand = getSelectedSocialBrand();
+  if (selectedBrand) headers['x-publish-brand-id'] = selectedBrand;
   if (init.body && typeof init.body === 'string' && !headers['content-type']) {
     headers['content-type'] = 'application/json';
   }
