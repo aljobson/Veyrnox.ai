@@ -1,7 +1,7 @@
 app = "veyrnox-cinema-scanner"
 primary_region = "ams"
 kill_signal = "SIGTERM"
-kill_timeout = 900
+kill_timeout = 300
 
 [build]
   dockerfile = "services/cinema-scanner/Dockerfile.fly"
