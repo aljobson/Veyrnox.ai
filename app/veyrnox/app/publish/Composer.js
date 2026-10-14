@@ -8,6 +8,7 @@ import { gatewayFetch } from '../../_lib/gateway.js';
 import { ownedPublishUpload } from '../../_lib/editorDelivery.mjs';
 import { NETWORKS } from '../../../lib/socialConnectClient.js';
 import { createSocialPost, listSocialPosts, newIdempotencyKey } from '../../../lib/socialPostsClient.js';
+import { deleteSocialPreset, listSocialPresets, saveSocialPreset } from '../../../lib/socialPresetsClient.js';
 
 const button = 'rounded-full border border-vx-border px-4 py-2 text-sm font-bold disabled:opacity-50';
 const primaryButton = 'rounded-full bg-vx-accent text-black px-4 py-2 text-sm font-bold disabled:opacity-50';
@@ -22,6 +23,80 @@ function defaultScheduleValue() {
     d.setSeconds(0, 0);
     d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
     return d.toISOString().slice(0, 16);
+}
+
+function ContentPresets({ accounts, caption, selectedAccountIds, onApply }) {
+    const [presets, setPresets] = useState(null);
+    const [selectedId, setSelectedId] = useState('');
+    const [name, setName] = useState('');
+    const [busy, setBusy] = useState(false);
+    const [message, setMessage] = useState('');
+    const [error, setError] = useState('');
+
+    const load = useCallback(async () => {
+        try {
+            const result = await listSocialPresets();
+            setPresets(result.presets || []);
+        } catch {
+            setError('Could not load your saved presets.');
+        }
+    }, []);
+    useEffect(() => { load(); }, [load]);
+
+    function apply() {
+        const preset = (presets || []).find((item) => item.id === selectedId);
+        if (!preset) { setError('Choose a saved preset first.'); return; }
+        const availableIds = new Set(accounts.map((account) => account.id));
+        onApply(preset.caption, (preset.account_ids || []).filter((id) => availableIds.has(id)));
+        setName(preset.name); setError('');
+        setMessage('Preset loaded. Review everything before posting.');
+    }
+
+    async function save() {
+        const cleanName = name.trim();
+        if (!cleanName) { setError('Give this preset a name.'); return; }
+        if (!caption) { setError('Write a caption before saving a preset.'); return; }
+        setBusy(true); setError(''); setMessage('');
+        try {
+            const existing = (presets || []).find((item) => item.id === selectedId);
+            const result = await saveSocialPreset({ id: existing?.id || null, name: cleanName, caption, accountIds: [...selectedAccountIds] });
+            await load(); setSelectedId(result.preset_id); setMessage(existing ? 'Preset updated.' : 'Preset saved.');
+        } catch (err) {
+            setError(err?.body?.error === 'preset_name_taken' ? 'A preset with that name already exists.' : 'Could not save that preset. Try again.');
+        } finally { setBusy(false); }
+    }
+
+    async function remove() {
+        if (!selectedId) { setError('Choose a saved preset first.'); return; }
+        setBusy(true); setError(''); setMessage('');
+        try {
+            await deleteSocialPreset(selectedId);
+            setSelectedId(''); setName(''); await load(); setMessage('Preset deleted.');
+        } catch { setError('Could not delete that preset. Try again.'); }
+        finally { setBusy(false); }
+    }
+
+    return <section aria-label="Saved content presets" className="rounded-xl border border-vx-border p-3 space-y-3">
+        <div>
+            <h3 className="text-sm font-bold">Saved captions and destinations</h3>
+            <p className="text-xs text-vx-fg-muted">Reuse caption text and connected accounts. Media is always chosen separately.</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+            <select aria-label="Saved preset" value={selectedId} disabled={busy || presets === null} onChange={(e) => { const id=e.target.value; setSelectedId(id); setName((presets || []).find((item)=>item.id===id)?.name || ''); setError(''); setMessage(''); }} className="min-w-48 rounded-lg border border-vx-border bg-transparent px-3 py-2 text-sm">
+                <option value="">{presets === null ? 'Loading presets…' : presets.length ? 'Choose a preset' : 'No saved presets'}</option>
+                {(presets || []).map((preset) => <option key={preset.id} value={preset.id}>{preset.name}</option>)}
+            </select>
+            <button type="button" className={button} disabled={busy || !selectedId} onClick={apply}>Apply preset</button>
+            <button type="button" className={button} disabled={busy || !selectedId} onClick={remove}>Delete</button>
+        </div>
+        <div className="flex flex-wrap gap-2">
+            <label htmlFor="preset-name" className="sr-only">Preset name</label>
+            <input id="preset-name" value={name} maxLength={80} onChange={(e)=>setName(e.target.value)} placeholder="Preset name" className="min-w-56 flex-1 rounded-lg border border-vx-border bg-transparent px-3 py-2 text-sm" />
+            <button type="button" className={button} disabled={busy} onClick={save}>{busy ? 'Saving…' : selectedId ? 'Update preset' : 'Save current'}</button>
+        </div>
+        {error && <p role="alert" className="text-sm text-vx-danger">{error}</p>}
+        {message && <p role="status" className="text-sm text-vx-accent">{message}</p>}
+    </section>;
 }
 
 /** The account's own recent library, single-select, for the composer's one media slot. */
@@ -88,7 +163,7 @@ function MediaPicker({ selected, onSelect }) {
     );
 }
 
-export function Composer({ accounts, onScheduled, initialJobId = null, initialUploadId = null, reusablePost = null, uploadsEnabled = false, youtubeVisibilityEnabled = false, scheduleEnabled = true, multiAccountEnabled = true }) {
+export function Composer({ accounts, onScheduled, initialJobId = null, initialUploadId = null, reusablePost = null, uploadsEnabled = false, youtubeVisibilityEnabled = false, scheduleEnabled = true, multiAccountEnabled = true, presetsEnabled = false }) {
     const activeAccounts = (accounts || []).filter((a) => a.status === 'active' && a.publishingEnabled !== false && (a.supportedMedia || NETWORKS.find((n) => n.key === a.network)?.media.filter(t => t !== 'video' || a.network === 'youtube'))?.length);
     const [selectedAccountIds, setSelectedAccountIds] = useState(() => new Set());
     const [caption, setCaption] = useState('');
@@ -274,6 +349,9 @@ export function Composer({ accounts, onScheduled, initialJobId = null, initialUp
                     placeholder="Write a caption…"
                 />
             </div>
+
+            {presetsEnabled && <ContentPresets accounts={activeAccounts} caption={caption} selectedAccountIds={selectedAccountIds}
+                onApply={(nextCaption, accountIds) => { setCaption(nextCaption); setSelectedAccountIds(new Set(accountIds)); setError(''); setSuccess(''); idempotencyKey.current = newIdempotencyKey(); }} />}
 
             <div>
                 <div className="text-sm font-bold mb-2">Media</div>
