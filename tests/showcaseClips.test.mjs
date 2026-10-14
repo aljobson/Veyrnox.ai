@@ -10,7 +10,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, wri
 import { createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { SHOWCASE_CLIPS, SHOWCASE_SOURCES, MODEL_SHOWCASE_KEYS, WALL_SHOWCASE_KEYS, MAX_CLIP_BYTES } from '../app/veyrnox/_lib/showcase.js';
+import { SHOWCASE_CLIPS, MODEL_SHOWCASE_KEYS, WALL_SHOWCASE_KEYS, MAX_CLIP_BYTES } from '../app/veyrnox/_lib/showcase.js';
 import { FEATURE_CARDS, PRESETS, WALL_PRESETS } from '../app/veyrnox/_lib/tokens.js';
 
 const PUBLIC = new URL('../public', import.meta.url).pathname;
@@ -129,18 +129,12 @@ test('every homepage template has its own wall placement', () => {
     }
 });
 
-test('previews keep their title and source credit', () => {
-    const sources = new Set(SHOWCASE_SOURCES.map((source) => source.name));
+test('previews keep their titles without exposing source-platform metadata', () => {
     for (const [key, clip] of Object.entries(SHOWCASE_CLIPS)) {
-        assert.ok(clip.title?.trim(), `${key} has no source title`);
-        assert.ok(sources.has(clip.source), `${key} has an unknown source`);
+        assert.ok(clip.title?.trim(), `${key} has no title`);
+        assert.ok(!Object.hasOwn(clip, 'source'), `${key} exposes source metadata`);
+        assert.doesNotMatch(JSON.stringify(clip), /higgsfield|capcut|syntx/i, `${key} exposes a platform name`);
     }
-    assert.deepEqual(SHOWCASE_SOURCES.map((source) => source.url), [
-        'https://syntx.ai/trends',
-        'https://higgsfield.ai/',
-        'https://www.capcut.com/my-edit?start_tab=video',
-        'https://veyrnox.ai/',
-    ]);
 });
 
 test('the full preset gallery has a distinct preview and poster for every filter result', () => {

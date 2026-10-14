@@ -99,6 +99,15 @@ const GALLERY_CLIP_KEYS = [
   'stop-world',
   'earth-zoom',
   'comic',
+  'enchanted-forest-selfie',
+  'pumpkin-lings',
+  'dont-blow-out-the-pumpkin',
+  'rap-takeover',
+  'urban-broomstick-flight',
+  'hotel-window-watch',
+  'broomstick-flight',
+  'money-flex',
+  'epic-slap-knockout',
 ];
 const WALL_CLIP_KEYS = [
   'wall-product-hero-360',
@@ -113,6 +122,14 @@ const WALL_CLIP_KEYS = [
   'wall-the-wrong-one',
   'wall-pigeons',
   'wall-mighty-fighter',
+  'wall-agamemnon',
+  'wall-blue-depth',
+  'wall-cyclope',
+  'wall-fairytale-castle',
+  'wall-infinite-clones',
+  'wall-moonwalk',
+  'wall-skatedog',
+  'wall-windows',
 ];
 export const PRESETS = GALLERY_CLIP_KEYS.map((key) => SOURCE_TEMPLATES.find((p) => p.clipKey === key));
 export const WALL_PRESETS = WALL_CLIP_KEYS.map((key) => SOURCE_TEMPLATES.find((p) => p.clipKey === key));
