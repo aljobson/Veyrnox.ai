@@ -3,7 +3,9 @@ import { MediaArtwork } from './AdvancedMediaBin';
 import { useEffect, useRef, useState } from 'react';
 import { sequenceEnd, trackFor } from '../../_lib/editorSequence.mjs';
 import { formatTime } from '../../_lib/editorTimeline.mjs';
-const button = 'min-h-8 min-w-8 rounded border border-vx-border px-2 py-1 text-[10px] hover:border-vx-accent disabled:opacity-40';
+const button = 'grid size-6 place-items-center rounded border border-vx-border text-vx-fg-muted transition-colors hover:border-vx-accent hover:text-vx-fg disabled:opacity-40';
+const controlPaths={lock:'M7 10V7a5 5 0 0 1 10 0v3M5 10h14v11H5z',unlock:'M8 10V7a4 4 0 0 1 7.5-2M5 10h14v11H5z',mute:'M4 10h4l5-4v12l-5-4H4zM17 9l4 6m0-6-4 6',sound:'M4 10h4l5-4v12l-5-4H4zM17 9a4 4 0 0 1 0 6m2-8a7 7 0 0 1 0 10',solo:'M7 8c0-2 2-3 5-3s5 1 5 3-2 3-5 3-5 1-5 3 2 3 5 3 5-1 5-3',up:'m7 14 5-5 5 5',down:'m7 10 5 5 5-5',show:'M3 12s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6Zm9 3a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z',hide:'m3 3 18 18M10.6 10.7A2 2 0 0 0 13.3 13.4M9.9 4.2A10 10 0 0 1 21 12a13 13 0 0 1-2.2 3.1M6.2 6.2A13 13 0 0 0 3 12s3.5 6 9 6c1 0 1.9-.2 2.8-.5',remove:'M4 7h16M9 7V4h6v3M6 7l1 14h10l1-14'};
+function TrackControl({name,label,pressed,disabled,onClick}) {return <button type="button" className={button} title={label} aria-label={label} aria-pressed={pressed} disabled={disabled} onClick={onClick}><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d={controlPaths[name]}/></svg></button>;}
 function TimedClip({ clip, track, name, ppf, selected, disabled, onSelect, onTrim, onDrag, media, blobs, loaded, sourceRevision }) {
     const gesture = useRef(null), [preview, setPreview] = useState(null);
     const trim = edge => ({
@@ -43,18 +45,18 @@ export function TrackTimeline({ height=420,onMediaDrop,tl, frame, selected, sele
         onPointerUp:e=>{scrubbing.current=false;e.currentTarget.releasePointerCapture?.(e.pointerId);},
         onPointerCancel:()=>{scrubbing.current=false;},
     };
-    return <section aria-label="Multitrack timeline" style={{maxHeight:height}} className="overflow-y-auto rounded-xl border border-vx-border">
-        <div className="flex"><div className="w-28 shrink-0 border-r border-vx-border bg-vx-panel sm:w-40">
+    return <section aria-label="Multitrack timeline" style={{height,maxHeight:height}} className="min-h-0 overflow-y-auto rounded-xl border border-vx-border">
+        <div className="flex"><div className="w-32 shrink-0 border-r border-vx-border bg-vx-panel sm:w-40">
             <div className="h-7 px-3 pt-1 text-[10px] text-vx-fg-muted">TRACKS</div>
             {tl.tracks.map(t => <div key={t.id} className="h-20 border-t border-vx-border px-2 py-1">
                 <input aria-label={`Rename ${t.name}`} className="w-full bg-transparent text-xs font-bold" key={`${t.id}:${t.name}`} defaultValue={t.name} maxLength={40} disabled={disabled} onBlur={e => { if (e.target.value.trim()) onTrack(t.id, { name: e.target.value.trim() }); }} />
-                <div className="mt-1 flex flex-wrap gap-1">
-                    <button type="button" className={button} aria-label={`${t.locked ? 'Unlock' : 'Lock'} ${t.name}`} aria-pressed={t.locked} disabled={disabled} onClick={() => onTrack(t.id, { locked: !t.locked })}>{t.locked ? 'Locked' : 'Lock'}</button>
-                    <button type="button" className={button} aria-label={`${t.muted ? 'Unmute' : 'Mute'} ${t.name}`} aria-pressed={t.muted} disabled={disabled} onClick={() => onTrack(t.id, { muted: !t.muted })}>{t.muted ? 'Muted' : 'Mute'}</button>
-                    {t.kind !== 'text' && <button type="button" className={button} aria-label={`${t.solo ? 'Unsolo' : 'Solo'} ${t.name}`} aria-pressed={!!t.solo} disabled={disabled} onClick={() => onTrack(t.id, { solo: !t.solo })}>Solo</button>}
-                    <button type="button" className={button} aria-label={`Move ${t.name} up`} disabled={disabled || tl.tracks[0].id === t.id} onClick={() => onReorder(t.id, -1)}>↑</button><button type="button" className={button} aria-label={`Move ${t.name} down`} disabled={disabled || tl.tracks.at(-1).id === t.id} onClick={() => onReorder(t.id, 1)}>↓</button>
-                    {t.kind !== 'audio'  && <button type="button" className={button} aria-label={`${t.hidden ? 'Show' : 'Hide'} ${t.name}`} aria-pressed={t.hidden} disabled={disabled} onClick={() => onTrack(t.id, { hidden: !t.hidden })}>{t.hidden ? 'Hidden' : 'Hide'}</button>}
-                    {onRemove && <button type="button" className={button} aria-label={`Remove empty ${t.name} track`} disabled={disabled || t.locked || tl[t.kind].some(c => c.trackId === t.id) || tl.tracks.filter(lane => lane.kind === t.kind).length === 1} onClick={() => onRemove(t.id)}>Remove</button>}
+                <div className="mt-1 grid grid-cols-4 gap-0.5 sm:flex sm:flex-wrap sm:gap-1">
+                    <TrackControl name={t.locked?'unlock':'lock'} label={`${t.locked ? 'Unlock' : 'Lock'} ${t.name}`} pressed={t.locked} disabled={disabled} onClick={() => onTrack(t.id, { locked: !t.locked })} />
+                    <TrackControl name={t.muted?'sound':'mute'} label={`${t.muted ? 'Unmute' : 'Mute'} ${t.name}`} pressed={t.muted} disabled={disabled} onClick={() => onTrack(t.id, { muted: !t.muted })} />
+                    {t.kind !== 'text' && <TrackControl name="solo" label={`${t.solo ? 'Unsolo' : 'Solo'} ${t.name}`} pressed={!!t.solo} disabled={disabled} onClick={() => onTrack(t.id, { solo: !t.solo })} />}
+                    <TrackControl name="up" label={`Move ${t.name} up`} disabled={disabled || tl.tracks[0].id === t.id} onClick={() => onReorder(t.id, -1)} /><TrackControl name="down" label={`Move ${t.name} down`} disabled={disabled || tl.tracks.at(-1).id === t.id} onClick={() => onReorder(t.id, 1)} />
+                    {t.kind !== 'audio' && <TrackControl name={t.hidden?'show':'hide'} label={`${t.hidden ? 'Show' : 'Hide'} ${t.name}`} pressed={t.hidden} disabled={disabled} onClick={() => onTrack(t.id, { hidden: !t.hidden })} />}
+                    {onRemove && <TrackControl name="remove" label={`Remove empty ${t.name} track`} disabled={disabled || t.locked || tl[t.kind].some(c => c.trackId === t.id) || tl.tracks.filter(lane => lane.kind === t.kind).length === 1} onClick={() => onRemove(t.id)} />}
                 </div>
             </div>)}
         </div><div ref={scroll} className="min-w-0 flex-1 overflow-x-auto" onWheel={e=>{if(onZoom&&(e.ctrlKey||e.metaKey)){e.preventDefault();onZoom(e.deltaY<0?1:-1);}}}><div className="relative" style={{ width }}>
