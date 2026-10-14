@@ -1,4 +1,4 @@
-import { authorizeUrl, bearer, formToken, jsonRequest, requireImage } from './common.js';
+import { authorizeUrl, bearer, requireImage } from './common.js';
 
 const BASE = 'https://graph.facebook.com/v23.0';
 export const SCOPES = ['pages_show_list', 'pages_read_engagement', 'pages_manage_posts'];
@@ -7,27 +7,41 @@ export function config(env = process.env) {
     return /^\d{5,32}$/.test(clientId || '') && clientSecret?.length >= 8 ? { clientId, clientSecret } : null;
 }
 export const buildAuthorizeUrl = (cfg, input) => authorizeUrl('https://www.facebook.com/v23.0/dialog/oauth', cfg, input, SCOPES);
+function trustedGraphUrl(value, base) {
+    const url = new URL(value, base);
+    if (url.protocol !== 'https:' || url.hostname !== 'graph.facebook.com') throw new Error('facebook_redirect_invalid');
+    return url;
+}
+async function facebookRequest(input, init = {}, fetcher = fetch) {
+    let url = trustedGraphUrl(input);
+    for (let redirects = 0; redirects < 4; redirects++) {
+        const response = await fetcher(url.toString(), { ...init, redirect: 'manual',
+            signal: init.signal || AbortSignal.timeout(15000) });
+        if (response.status >= 300 && response.status < 400) {
+            const location = response.headers.get('location');
+            if (!location) throw new Error('facebook_redirect_invalid');
+            url = trustedGraphUrl(location, url);
+            continue;
+        }
+        const result = await response.json().catch(() => null);
+        if (!response.ok || !result || result.error) throw new Error(`provider_request_failed_${response.status}`);
+        return result;
+    }
+    throw new Error('facebook_redirect_invalid');
+}
 async function exchangeFacebookToken(stage, endpoint, params, fetcher) {
     try {
         const url = new URL(endpoint);
         Object.entries(params).forEach(([key, value]) => url.searchParams.set(key, value));
-        // Meta may redirect successful exchanges within graph.facebook.com.
-        // The shared transport rejects every redirect, so handle this endpoint
-        // explicitly and verify the final URL never leaves Meta's HTTPS host.
-        const response = await fetcher(url.toString(), { redirect: 'follow', signal: AbortSignal.timeout(15000) });
-        if (response.url) {
-            const finalUrl = new URL(response.url);
-            if (finalUrl.protocol !== 'https:' || finalUrl.hostname !== 'graph.facebook.com')
-                throw new Error(`facebook_${stage}_token_redirect_invalid`);
-        }
-        const result = await response.json().catch(() => null);
-        if (!response.ok || !result || result.error) throw new Error(`provider_request_failed_${response.status}`);
+        // Meta may redirect exchanges within graph.facebook.com. Follow only
+        // after validating each hop, before credentials leave this host.
+        const result = await facebookRequest(url, {}, fetcher);
         if (typeof result.access_token !== 'string' || !result.access_token) throw new Error(`facebook_${stage}_token_missing`);
         return result;
     } catch (error) {
         if (error?.message === `facebook_${stage}_token_missing`) throw error;
         const status = /^provider_request_failed_([0-9]{3})$/.exec(error?.message || '')?.[1];
-        const kind = error?.message === `facebook_${stage}_token_redirect_invalid` ? 'redirect'
+        const kind = error?.message === 'facebook_redirect_invalid' ? 'redirect'
             : status ? status
             : ['AbortError', 'TimeoutError'].includes(error?.name) ? 'timeout'
                 : error?.name === 'TypeError' ? 'transport' : 'unexpected';
@@ -51,7 +65,7 @@ export async function fetchCandidates(token, fetcher = fetch) {
         url.searchParams.set('fields', 'id,name,access_token,tasks');
         url.searchParams.set('limit', '100');
         if (after) url.searchParams.set('after', after);
-        const data = await jsonRequest(url, { headers: bearer(token) }, fetcher);
+        const data = await facebookRequest(url, { headers: bearer(token) }, fetcher);
         items.push(...(data.data || []).filter((p) => p.id && p.access_token && p.tasks?.some((t) => ['CREATE_CONTENT', 'MANAGE'].includes(t)))
             .map((p) => ({ externalAccountId: p.id, displayName: p.name, avatarUrl: null, accessToken: p.access_token, expiresAt: null })));
         if (!data.paging?.next) return items;
@@ -64,7 +78,9 @@ export async function publishPost(token, { externalAccountId, caption, mediaType
     requireImage(mediaType);
     if (!/^\d+$/.test(externalAccountId)) throw new Error('invalid_page');
     await beforePublish();
-    const result = await formToken(`${BASE}/${externalAccountId}/photos`, { url: mediaUrl, message: caption, published: 'true' }, fetcher, bearer(token));
+    const result = await facebookRequest(`${BASE}/${externalAccountId}/photos`, { method: 'POST',
+        headers: { ...bearer(token), 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ url: mediaUrl, message: caption, published: 'true' }).toString() }, fetcher);
     if (!result.post_id) throw new Error('missing_post_id');
     return { platformPostId: result.post_id, platformPostUrl: `https://www.facebook.com/${result.post_id}` };
 }
