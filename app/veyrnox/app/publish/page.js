@@ -12,6 +12,7 @@ import { Composer, ScheduledPosts } from './Composer';
 import { DraftReview } from './DraftReview';
 import NetworkLogo from './NetworkLogo';
 import BlueskyConnect from './BlueskyConnect';
+import { ApprovalRequests } from './ApprovalRequests';
 
 const currentAccount = () => getSession()?.user?.id || '';
 const noAccount = () => '';
@@ -53,6 +54,7 @@ function PublishControls({ initialJobId, initialUploadId }) {
   const [smartlinksEnabled, setSmartlinksEnabled] = useState(false);
   const [contentPresetsEnabled, setContentPresetsEnabled] = useState(false);
   const [queuesEnabled, setQueuesEnabled] = useState(false);
+  const [approvalsEnabled, setApprovalsEnabled] = useState(false);
   const [planTier, setPlanTier] = useState('free');
   const [networks, setNetworks] = useState([]);
   const [blueskyOpen, setBlueskyOpen] = useState(false);
@@ -77,6 +79,7 @@ function PublishControls({ initialJobId, initialUploadId }) {
       setSmartlinksEnabled(res.smartlinksEnabled === true);
       setContentPresetsEnabled(res.contentPresetsEnabled === true);
       setQueuesEnabled(res.queuesEnabled === true);
+      setApprovalsEnabled(res.approvalsEnabled === true);
       setPlanTier(res.planTier === 'publish' ? 'publish' : 'free');
       setNetworks(res.networks || []);
     } catch (err) {
@@ -163,6 +166,12 @@ function PublishControls({ initialJobId, initialUploadId }) {
       </ul>
     </section>
 
+    {approvalsEnabled && paid && <section className="rounded-2xl border border-vx-border p-5">
+      <h2 className="font-bold mb-1">Approval requests</h2>
+      <p className="text-sm text-vx-fg-muted mb-4">Share a signed link with each reviewer. Posts stay paused until the approval rule passes.</p>
+      <ApprovalRequests refreshToken={postsRefreshToken} />
+    </section>}
+
     <section className="rounded-2xl border border-vx-border p-5">
       <h2 className="font-bold mb-1">Connect an account</h2>
       <p className="text-sm text-vx-fg-muted mb-4">Choose a platform to connect. Facebook uses Pages and Google Business Profile uses business locations. TikTok delivers a draft to your inbox. Twitch connects for video statistics.</p>
@@ -213,7 +222,7 @@ function PublishControls({ initialJobId, initialUploadId }) {
 
     <section className="rounded-2xl border border-vx-border p-5">
       <h2 id="schedule" className="font-bold mb-4 scroll-mt-6">Create a post</h2>
-      <Composer queuesEnabled={queuesEnabled && paid} presetsEnabled={contentPresetsEnabled && paid} multiAccountEnabled={paid} scheduleEnabled={paid} youtubeVisibilityEnabled={youtubeVisibilityEnabled} key={initialJobId || initialUploadId || 'library'} initialJobId={initialJobId} initialUploadId={initialUploadId} reusablePost={reusablePost} accounts={accounts} uploadsEnabled={uploadsEnabled} onScheduled={() => setPostsRefreshToken((n) => n + 1)} />
+      <Composer approvalsEnabled={approvalsEnabled && paid} queuesEnabled={queuesEnabled && paid} presetsEnabled={contentPresetsEnabled && paid} multiAccountEnabled={paid} scheduleEnabled={paid} youtubeVisibilityEnabled={youtubeVisibilityEnabled} key={initialJobId || initialUploadId || 'library'} initialJobId={initialJobId} initialUploadId={initialUploadId} reusablePost={reusablePost} accounts={accounts} uploadsEnabled={uploadsEnabled} onScheduled={() => setPostsRefreshToken((n) => n + 1)} />
     </section>
 
     <section className="rounded-2xl border border-vx-border p-5">

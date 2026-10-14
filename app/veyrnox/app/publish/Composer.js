@@ -7,7 +7,7 @@ import NetworkLogo from './NetworkLogo.js';
 import { gatewayFetch } from '../../_lib/gateway.js';
 import { ownedPublishUpload } from '../../_lib/editorDelivery.mjs';
 import { NETWORKS } from '../../../lib/socialConnectClient.js';
-import { createSocialPost, listSocialPosts, newIdempotencyKey } from '../../../lib/socialPostsClient.js';
+import { createSocialApproval, createSocialPost, listSocialPosts, newIdempotencyKey } from '../../../lib/socialPostsClient.js';
 import { deleteSocialPreset, listSocialPresets, saveSocialPreset } from '../../../lib/socialPresetsClient.js';
 import { confirmSocialQueueSlot, listSocialQueues, reserveSocialQueueSlot } from '../../../lib/socialQueuesClient.js';
 
@@ -164,7 +164,7 @@ function MediaPicker({ selected, onSelect }) {
     );
 }
 
-export function Composer({ accounts, onScheduled, initialJobId = null, initialUploadId = null, reusablePost = null, uploadsEnabled = false, youtubeVisibilityEnabled = false, scheduleEnabled = true, multiAccountEnabled = true, presetsEnabled = false, queuesEnabled = false }) {
+export function Composer({ accounts, onScheduled, initialJobId = null, initialUploadId = null, reusablePost = null, uploadsEnabled = false, youtubeVisibilityEnabled = false, scheduleEnabled = true, multiAccountEnabled = true, presetsEnabled = false, queuesEnabled = false, approvalsEnabled = false }) {
     const activeAccounts = (accounts || []).filter((a) => a.status === 'active' && a.publishingEnabled !== false && (a.supportedMedia || NETWORKS.find((n) => n.key === a.network)?.media.filter(t => t !== 'video' || a.network === 'youtube'))?.length);
     const [selectedAccountIds, setSelectedAccountIds] = useState(() => new Set());
     const [caption, setCaption] = useState('');
@@ -183,6 +183,9 @@ export function Composer({ accounts, onScheduled, initialJobId = null, initialUp
     const [success, setSuccess] = useState('');
     const [queues, setQueues] = useState(null);
     const [queueId, setQueueId] = useState('');
+    const [reviewerEmails, setReviewerEmails] = useState('');
+    const [approvalPolicy, setApprovalPolicy] = useState('all');
+    const [reviewLinks, setReviewLinks] = useState([]);
     const idempotencyKey = useRef(newIdempotencyKey());
 
     useEffect(() => {
@@ -266,7 +269,7 @@ export function Composer({ accounts, onScheduled, initialJobId = null, initialUp
 
     async function onSubmit(e) {
         e.preventDefault();
-        setError(''); setSuccess('');
+        setError(''); setSuccess(''); setReviewLinks([]);
         if (selectedAccountIds.size === 0) { setError('Pick at least one connected account.'); return; }
         if (!selectedMedia) { setError('Choose an image or video from your library or device.'); return; }
         for (const id of selectedAccountIds) {
@@ -279,28 +282,38 @@ export function Composer({ accounts, onScheduled, initialJobId = null, initialUp
         const mode = e.nativeEvent.submitter?.value;
         const publishNow = mode === 'now';
         const useQueue = mode === 'queue';
+        const useApproval = mode === 'review';
         if (useQueue && !queueId) { setError('Choose a posting queue.'); return; }
         const schedule = new Date(scheduledAt);
         if (!publishNow && !useQueue && (!Number.isFinite(schedule.getTime()) || schedule.getTime() <= Date.now())) {
             setError('Choose a future date and time to schedule your post.'); return;
         }
+        const reviewers = reviewerEmails.split(/[\n,;]/).map((email) => email.trim().toLowerCase()).filter(Boolean);
+        if (useApproval && (reviewers.length < 1 || reviewers.length > 10 || reviewers.some((email) => !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)))) {
+            setError('Add 1 to 10 valid reviewer email addresses.'); return;
+        }
         setSubmitting(mode);
         try {
             const reservation = useQueue ? await reserveSocialQueueSlot(queueId, idempotencyKey.current) : null;
-            const result = await createSocialPost({
+            const payload = {
                 ...(publishNow ? { publishNow: true } : { scheduledAt: useQueue ? reservation.scheduled_at : schedule.toISOString() }),
                 globalText: caption,
                 ...(hasYoutube && youtubeVisibilityEnabled ? { youtubeVisibility } : {}),
                 idempotencyKey: idempotencyKey.current,
                 accountIds: useQueue ? reservation.account_ids : [...selectedAccountIds],
                 media: [{ mediaType, ...(selectedMedia.uploadId ? { uploadId: selectedMedia.uploadId } : { jobId: selectedMedia.jobId }) }],
-            });
+            };
+            const result = useApproval
+                ? await createSocialApproval({ ...payload, reviewers, policy: approvalPolicy })
+                : await createSocialPost(payload);
             if (reservation) await confirmSocialQueueSlot(reservation.assignment_id, result.post_id);
-            setSuccess(publishNow ? 'Post queued for publishing. It can take a few minutes to appear.' : useQueue ? 'Post added to the next open queue slot.' : 'Post scheduled.');
+            setSuccess(useApproval ? 'Review links created. This post stays paused until the approval rule passes.' : publishNow ? 'Post queued for publishing. It can take a few minutes to appear.' : useQueue ? 'Post added to the next open queue slot.' : 'Post scheduled.');
+            setReviewLinks(result.review_links || []);
             setCaption(''); setSelectedAccountIds(new Set()); setSelectedMedia(null);
             setScheduledAt(defaultScheduleValue());
             setQueueId('');
             setYoutubeVisibility('private');
+            if (!useApproval) setReviewerEmails('');
             idempotencyKey.current = newIdempotencyKey();
             onScheduled?.();
         } catch (err) {
@@ -417,8 +430,16 @@ export function Composer({ accounts, onScheduled, initialJobId = null, initialUp
                 <p className="mt-2 text-xs text-vx-fg-muted">The chosen queue selects its saved accounts and the next open weekly time.</p>
             </div>}
 
+            {approvalsEnabled && <div className="rounded-xl border border-vx-border p-4">
+                <label htmlFor="publish-reviewers" className="text-sm font-bold mb-2 block">Reviewers</label>
+                <textarea id="publish-reviewers" rows={2} value={reviewerEmails} onChange={(event) => setReviewerEmails(event.target.value)} className="w-full rounded-lg border border-vx-border bg-transparent px-3 py-2 text-sm" placeholder="alex@example.com, sam@example.com" />
+                <div className="mt-3 flex flex-wrap items-center gap-3"><label htmlFor="publish-approval-policy" className="text-sm font-bold">Approval rule</label><select id="publish-approval-policy" value={approvalPolicy} onChange={(event) => setApprovalPolicy(event.target.value)} className="rounded-lg border border-vx-border bg-transparent px-3 py-2 text-sm"><option value="all">Everyone must approve</option><option value="any">Any one reviewer can approve</option></select></div>
+                <p className="mt-2 text-xs text-vx-fg-muted">Reviewers use a signed link without creating an account. Any rejection cancels the post before publishing.</p>
+            </div>}
+
             {error && <p role="alert" className="text-sm text-vx-danger">{error}</p>}
             {success && <p className="text-sm text-vx-accent">{success}</p>}
+            {reviewLinks.length > 0 && <ul aria-label="Review links" className="space-y-2 rounded-xl border border-vx-border p-3">{reviewLinks.map((link) => <li key={link.email} className="flex flex-wrap items-center justify-between gap-2 text-sm"><span className="font-bold">{link.email}</span><button type="button" className={button} onClick={() => navigator.clipboard.writeText(link.url)}>Copy review link</button></li>)}</ul>}
 
             <div className="flex flex-wrap gap-3">
                 <button type="submit" value="now" formNoValidate disabled={submitting || loadingMedia || uploading || !activeAccounts.length} className={primaryButton}>
@@ -429,6 +450,9 @@ export function Composer({ accounts, onScheduled, initialJobId = null, initialUp
                 </button>}
                 {queuesEnabled && <button type="submit" value="queue" disabled={submitting || loadingMedia || uploading || !activeAccounts.length || !queueId} className={button}>
                     {submitting === 'queue' ? 'Adding…' : 'Add to queue'}
+                </button>}
+                {approvalsEnabled && <button type="submit" value="review" disabled={submitting || loadingMedia || uploading || !activeAccounts.length} className={button}>
+                    {submitting === 'review' ? 'Creating review…' : 'Send for approval'}
                 </button>}
             </div>
             <p className="text-xs text-vx-fg-muted">Post now starts publishing as soon as possible.{scheduleEnabled ? ' Schedule post uses the date and time above.' : ''} Publishing can take a few minutes.</p>

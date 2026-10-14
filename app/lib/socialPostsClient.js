@@ -33,6 +33,17 @@ export async function createSocialPost({ scheduledAt, publishNow, globalText, id
     });
 }
 
+/** Creates an inert scheduled draft and signed links for its reviewers. */
+export async function createSocialApproval({ scheduledAt, globalText, idempotencyKey, accountIds, media, reviewers, policy, youtubeVisibility }) {
+    return gatewayFetch('/social/approvals', {
+        method: 'POST', body: JSON.stringify({ scheduledAt, globalText: globalText || null, idempotencyKey, accountIds, media, reviewers, policy, youtubeVisibility }),
+    });
+}
+
+export async function listSocialApprovals() {
+    return gatewayFetch('/social/approvals');
+}
+
 /** A fresh key for one schedule attempt — a retried submit must reuse it. */
 export function newIdempotencyKey() {
     return crypto.randomUUID().replace(/-/g, '');
