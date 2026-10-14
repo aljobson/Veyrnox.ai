@@ -10,6 +10,27 @@ describe('social content reuse (0301)', { skip: !process.env.DATABASE_URL }, () 
   const value = async (sql: string, args: unknown[] = []) => (await one(sql, args)).value;
   before(async () => {
     pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+    // Acceptance CI starts from packages/db/schema and runs files by name, so
+    // the scheduler acceptance suite has not installed create_social_post yet.
+    // Apply this feature's Supabase dependencies explicitly and prove replay.
+    for (const file of ['0071_signup_grant_on_email_confirmation.sql', '0154_social_publish_foundation.sql']) {
+      const migration = await readFile(new URL(`./schema/supabase/${file}`, import.meta.url), 'utf8');
+      await pool.query(migration); await pool.query(migration);
+    }
+    const schedulerReady = await one(`SELECT to_regprocedure('public.create_social_post(text,uuid,timestamptz,text,text,uuid[],jsonb)') IS NOT NULL
+      AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='social_post_media' AND column_name='source_upload_id') AS ready`);
+    if (!schedulerReady.ready) {
+      for (const file of [
+        '0156_social_publish_scheduling.sql',
+        '0160_social_publish_composer.sql',
+        '0161_social_publish_async_engine.sql',
+        '0168_social_publish_claim_guards.sql',
+        '0223_social_device_uploads.sql',
+      ]) {
+        const migration = await readFile(new URL(`./schema/supabase/${file}`, import.meta.url), 'utf8');
+        await pool.query(migration);
+      }
+    }
     const migration = await readFile(new URL('./schema/supabase/0301_social_content_library.sql', import.meta.url), 'utf8');
     await pool.query(migration); await pool.query(migration);
   });
@@ -22,10 +43,8 @@ describe('social content reuse (0301)', { skip: !process.env.DATABASE_URL }, () 
     const brand = (await value('SELECT public.get_or_create_default_social_brand($1) AS value', [auth])).brand_id;
     const account = (await one(`INSERT INTO public.social_accounts(brand_id,network,external_account_id,access_token_enc,status)
       VALUES($1,'instagram',$2,$3,'active') RETURNING id`, [brand, `ig-${randomUUID()}`, Buffer.from('cipher')])).id;
-    await pool.query(`SELECT public.ledger_grant($1,100,$2)`, [userId, `grant:reuse-${randomUUID()}`]);
-    const debit = await value(`SELECT public.ledger_debit($1,$2,4,'debit:generation','seedance-2.0-fast','{}'::jsonb) AS value`, [userId, randomUUID()]);
-    assert.equal(debit.ok, true, JSON.stringify(debit));
-    const job = debit.job_id;
+    const job = (await one(`INSERT INTO public.jobs(user_id,idempotency_key,model_id,credits,state,inputs)
+      VALUES($1,$2,'content-reuse-fixture',1,'STORED','{}'::jsonb) RETURNING id`, [userId, `reuse-${randomUUID()}`])).id;
     await pool.query(`INSERT INTO public.assets(job_id,r2_key,mime_type,size_bytes)
       VALUES($1,$2,'image/png',10)`, [job, `reuse/${randomUUID()}.png`]);
     const made = await value('SELECT public.create_social_post($1,$2,now(),$3,$4,$5,$6) AS value',
