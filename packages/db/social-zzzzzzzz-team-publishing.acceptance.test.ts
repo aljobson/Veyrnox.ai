@@ -11,7 +11,7 @@ describe('actor-aware team publishing (0308)', { skip: !process.env.DATABASE_URL
 
   before(async () => {
     pool = new pg.Pool({ connectionString: process.env.DATABASE_URL, max: 4 });
-    for (const file of ['0305_social_team_roles.sql', '0306_social_brand_access.sql', '0307_social_team_actions.sql', '0308_social_team_publishing.sql', '0311_social_post_cancel_restore.sql', '0312_social_report_templates.sql', '0313_social_customer_api.sql', '0314_social_customer_webhooks.sql']) {
+    for (const file of ['0305_social_team_roles.sql', '0306_social_brand_access.sql', '0307_social_team_actions.sql', '0308_social_team_publishing.sql', '0311_social_post_cancel_restore.sql', '0312_social_report_templates.sql', '0313_social_customer_api.sql', '0314_social_customer_webhooks.sql', '0315_social_customer_api_logs.sql']) {
       const migration = await readFile(new URL(`./schema/supabase/${file}`, import.meta.url), 'utf8');
       await pool.query(migration); await pool.query(migration);
     }
@@ -179,23 +179,27 @@ describe('actor-aware team publishing (0308)', { skip: !process.env.DATABASE_URL
     assert.equal(created.ok, true);
     const listed = await value('SELECT public.list_social_api_keys($1,$2) value', [manager.auth, brand]);
     assert.equal(listed.keys[0].key_prefix, 'vxpub_abcdefgh'); assert.equal(Object.hasOwn(listed.keys[0], 'key_hash'), false);
-    assert.equal((await value(`SELECT public.authenticate_social_api_key($1,'accounts:read') value`, ['11'.repeat(32)])).auth_id, owner.auth);
-    assert.equal((await value(`SELECT public.authenticate_social_api_key($1,'posts:read') value`, ['11'.repeat(32)])).code, 'INSUFFICIENT_SCOPE');
+    const authenticated = await value(`SELECT public.authenticate_social_api_key($1,'accounts:read','GET','/api/publish/v1/accounts') value`, ['11'.repeat(32)]);
+    assert.equal(authenticated.auth_id, owner.auth);
+    assert.equal((await value('SELECT public.complete_social_api_key_request($1,$2,200,NULL) value', [authenticated.request_id, created.key_id])).ok, true);
+    const logs = await value(`SELECT public.list_social_api_request_logs($1,$2,'success','/api/publish/v1/accounts','Automation',25) value`, [manager.auth, brand]);
+    assert.equal(logs.logs.length, 1); assert.equal(logs.logs[0].response_status, 200); assert.equal(Object.hasOwn(logs.logs[0], 'key_hash'), false);
+    assert.equal((await value(`SELECT public.authenticate_social_api_key($1,'posts:read','GET','/api/publish/v1/posts') value`, ['11'.repeat(32)])).code, 'INSUFFICIENT_SCOPE');
     assert.equal((await value(`SELECT public.create_social_api_key($1,$2,'Viewer','vxpub_viewer123',$3,$4,now()+interval '30 days') value`, [viewer.auth, brand, '44'.repeat(32), ['accounts:read']])).code, 'FORBIDDEN');
     assert.equal((await value(`SELECT public.create_social_api_key($1,$2,'Free','vxpub_free12345',$3,$4,now()+interval '30 days') value`, [freeOwner.auth, freeBrand, '55'.repeat(32), ['accounts:read']])).code, 'PLAN_REQUIRED');
 
     assert.equal((await value(`SELECT public.create_social_api_key($1,$2,'Manager','vxpub_manager12',$3,$4,now()+interval '30 days') value`, [manager.auth, brand, '22'.repeat(32), ['accounts:read']])).ok, true);
     await pool.query('DELETE FROM public.social_brand_members WHERE brand_id=$1 AND user_id=$2', [brand, manager.id]);
-    assert.equal((await value(`SELECT public.authenticate_social_api_key($1,'accounts:read') value`, ['22'.repeat(32)])).code, 'INVALID_API_KEY');
+    assert.equal((await value(`SELECT public.authenticate_social_api_key($1,'accounts:read','GET','/api/publish/v1/accounts') value`, ['22'.repeat(32)])).code, 'INVALID_API_KEY');
 
     assert.equal((await value('SELECT public.revoke_social_api_key($1,$2,$3) value', [owner.auth, brand, created.key_id])).ok, true);
-    assert.equal((await value(`SELECT public.authenticate_social_api_key($1,'accounts:read') value`, ['11'.repeat(32)])).code, 'INVALID_API_KEY');
+    assert.equal((await value(`SELECT public.authenticate_social_api_key($1,'accounts:read','GET','/api/publish/v1/accounts') value`, ['11'.repeat(32)])).code, 'INVALID_API_KEY');
 
     const limited = await value(`SELECT public.create_social_api_key($1,$2,'Rate limited','vxpub_rate12345',$3,$4,now()+interval '30 days') value`, [owner.auth, brand, '33'.repeat(32), ['accounts:read']]);
     assert.equal(limited.ok, true);
-    assert.equal((await value(`SELECT public.authenticate_social_api_key($1,'accounts:read') value`, ['33'.repeat(32)])).ok, true);
+    assert.equal((await value(`SELECT public.authenticate_social_api_key($1,'accounts:read','GET','/api/publish/v1/accounts') value`, ['33'.repeat(32)])).ok, true);
     await pool.query(`INSERT INTO public.social_api_key_requests(api_key_id) SELECT $1 FROM generate_series(1,119)`, [limited.key_id]);
-    const rate = await value(`SELECT public.authenticate_social_api_key($1,'accounts:read') value`, ['33'.repeat(32)]);
+    const rate = await value(`SELECT public.authenticate_social_api_key($1,'accounts:read','GET','/api/publish/v1/accounts') value`, ['33'.repeat(32)]);
     assert.equal(rate.code, 'RATE_LIMITED'); assert.ok(rate.retry_after_seconds >= 1);
     assert.equal(await value(`SELECT count(*)::int value FROM public.social_account_actions WHERE brand_id=$1 AND action IN ('create_api_key','revoke_api_key')`, [brand]), 4);
   });
@@ -240,7 +244,8 @@ describe('actor-aware team publishing (0308)', { skip: !process.env.DATABASE_URL
       'list_social_report_templates(text,uuid)', 'save_social_report_template(text,uuid,uuid,text,uuid,integer,boolean,boolean,text,text)',
       'delete_social_report_template(text,uuid,uuid)',
       'list_social_api_keys(text,uuid)', 'create_social_api_key(text,uuid,text,text,text,text[],timestamp with time zone)',
-      'revoke_social_api_key(text,uuid,uuid)', 'authenticate_social_api_key(text,text)',
+      'revoke_social_api_key(text,uuid,uuid)', 'authenticate_social_api_key(text,text)', 'authenticate_social_api_key(text,text,text,text)',
+      'complete_social_api_key_request(bigint,uuid,integer,text)', 'list_social_api_request_logs(text,uuid,text,text,text,integer)',
       'list_social_webhook_endpoints(text,uuid)', 'create_social_webhook_endpoint(text,uuid,text,text,text,text[])',
       'revoke_social_webhook_endpoint(text,uuid,uuid)', 'list_social_webhook_deliveries(text,uuid,integer)',
       'claim_social_webhook_deliveries(integer)', 'complete_social_webhook_delivery(uuid,uuid,boolean,integer,text)',

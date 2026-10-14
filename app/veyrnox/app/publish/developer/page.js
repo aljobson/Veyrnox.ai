@@ -5,7 +5,7 @@ import { AppNav } from '../../../_components/NavBar';
 import { ConfirmDialog } from '../../../_components/ConfirmDialog';
 import { Main } from '../../../_components/Main';
 import { getSession, onSessionChange } from '../../../../lib/authClient';
-import { createSocialApiKey, createSocialWebhook, listSocialApiKeys, listSocialWebhooks, revokeSocialApiKey, revokeSocialWebhook } from '../../../../lib/socialDeveloperClient';
+import { createSocialApiKey, createSocialWebhook, listSocialApiKeys, listSocialApiLogs, listSocialWebhooks, revokeSocialApiKey, revokeSocialWebhook } from '../../../../lib/socialDeveloperClient';
 import BrandSwitcher from '../BrandSwitcher';
 
 const currentAccount=()=>getSession()?.user?.id||'';
@@ -24,8 +24,29 @@ export default function Developer(){
     <h1 className="mt-3 text-3xl font-black">Developer tools</h1>
     <p className="mt-2 mb-4 text-sm text-vx-fg-muted">Create scoped API keys and signed webhook endpoints for your Publish integrations. Secrets are shown once.</p>
     {account&&<BrandSwitcher/>}
-    {account?<div className="space-y-10"><ApiKeys key={`keys-${account}`}/><Webhooks key={`webhooks-${account}`}/></div>:<p className="text-sm">Sign in to manage API keys. <button type="button" className={button} onClick={()=>window.dispatchEvent(new CustomEvent('veyrnox:auth-required'))}>Sign in</button></p>}
+    {account?<div className="space-y-10"><ApiKeys key={`keys-${account}`}/><ApiLogs key={`logs-${account}`}/><Webhooks key={`webhooks-${account}`}/></div>:<p className="text-sm">Sign in to manage API keys. <button type="button" className={button} onClick={()=>window.dispatchEvent(new CustomEvent('veyrnox:auth-required'))}>Sign in</button></p>}
   </Main></>;
+}
+
+function ApiLogs(){
+  const [logs,setLogs]=useState(null),[filters,setFilters]=useState({status:'',route:'',q:''}),[query,setQuery]=useState(''),[live,setLive]=useState(false),[error,setError]=useState('');
+  const load=useCallback(async()=>{setError('');try{const result=await listSocialApiLogs(filters);setLogs(result.logs||[]);}catch(err){if(err?.code==='customer_api_not_open'){setLogs(false);return;}setLogs([]);setError(err?.code==='publish_plan_required'?'The Publish Plan is required for request logs.':'Could not load request logs. Check your connection and try again.');}},[filters]);
+  useEffect(()=>{void Promise.resolve().then(load);if(!live)return;const timer=setInterval(()=>void load(),10000);return()=>clearInterval(timer);},[load,live]);
+  function search(event){event.preventDefault();setFilters((value)=>({...value,q:query.trim()}));}
+  function exportCsv(){const rows=[['Time','API key','Method','Route','Status','Error'],...(logs||[]).map((log)=>[log.requested_at,log.api_key_label,log.method,log.route,log.response_status||'Pending',log.error_code||''])];const cell=(value)=>`"${String(value??'').replaceAll('"','""')}"`;const blob=new Blob([rows.map((row)=>row.map(cell).join(',')).join('\n')],{type:'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download=`veyrnox-api-logs-${new Date().toISOString().slice(0,10)}.csv`;link.click();URL.revokeObjectURL(url);}
+  if(logs===null)return <p className="text-sm text-vx-fg-muted">Loading request logs…</p>;
+  if(logs===false)return null;
+  return <section className="space-y-4 border-t border-vx-border pt-8">
+    <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-2xl font-black">API request logs</h2><p className="mt-1 text-sm text-vx-fg-muted">Inspect recent customer API outcomes without exposing request bodies or credentials.</p></div><div className="flex gap-2"><button type="button" className={button} onClick={()=>void load()}>Refresh</button><button type="button" className={button} disabled={!logs.length} onClick={exportCsv}>Export CSV</button></div></div>
+    {error&&<p role="alert" className="text-sm text-vx-danger">{error}</p>}
+    <form onSubmit={search} className="grid gap-3 rounded-2xl border border-vx-border p-4 sm:grid-cols-[1fr_auto_auto_auto]">
+      <label className="text-sm font-bold">Search<input className={`${input} mt-1 block w-full`} value={query} maxLength={80} placeholder="Key, route or error" onChange={(event)=>setQuery(event.target.value)}/></label>
+      <label className="text-sm font-bold">Status<select className={`${input} mt-1 block w-full`} value={filters.status} onChange={(event)=>setFilters({...filters,status:event.target.value})}><option value="">All</option><option value="success">Success</option><option value="error">Errors</option><option value="pending">Pending</option></select></label>
+      <label className="text-sm font-bold">Route<select className={`${input} mt-1 block w-full`} value={filters.route} onChange={(event)=>setFilters({...filters,route:event.target.value})}><option value="">All</option><option value="/api/publish/v1/accounts">Accounts</option><option value="/api/publish/v1/posts">Posts</option></select></label>
+      <div className="flex items-end gap-3"><button type="submit" className={`${button} bg-vx-accent text-black`}>Apply</button><label className="mb-2 flex items-center gap-2 whitespace-nowrap text-sm"><input type="checkbox" checked={live} onChange={(event)=>setLive(event.target.checked)}/>Live</label></div>
+    </form>
+    <div className="overflow-x-auto rounded-2xl border border-vx-border p-5">{!logs.length?<p className="text-sm text-vx-fg-muted">No matching API requests yet.</p>:<table className="w-full text-left text-sm"><thead><tr className="border-b border-vx-border"><th className="py-2 pr-4">Time</th><th className="py-2 pr-4">API key</th><th className="py-2 pr-4">Request</th><th className="py-2 pr-4">Status</th><th className="py-2">Error</th></tr></thead><tbody>{logs.map((log)=><tr key={log.id} className="border-b border-vx-border/60"><td className="py-3 pr-4 whitespace-nowrap">{new Date(log.requested_at).toLocaleString()}</td><td className="py-3 pr-4">{log.api_key_label}<br/><code className="text-xs text-vx-fg-muted">{log.key_prefix}…</code></td><td className="py-3 pr-4"><code>{log.method} {log.route}</code></td><td className="py-3 pr-4">{log.response_status||'Pending'}</td><td className="py-3"><code>{log.error_code||'—'}</code></td></tr>)}</tbody></table>}</div>
+  </section>;
 }
 
 function Webhooks(){

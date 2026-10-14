@@ -7,3 +7,7 @@ export const revokeSocialApiKey = (id) => gatewayFetch(`/social/developer/keys?i
 export const listSocialWebhooks = () => gatewayFetch('/social/developer/webhooks');
 export const createSocialWebhook = (body) => gatewayFetch('/social/developer/webhooks', { method: 'POST', body: JSON.stringify(body) });
 export const revokeSocialWebhook = (id) => gatewayFetch(`/social/developer/webhooks?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+export const listSocialApiLogs = (filters = {}) => {
+  const query = new URLSearchParams(Object.entries(filters).filter(([, value]) => value));
+  return gatewayFetch(`/social/developer/logs${query.size ? `?${query}` : ''}`);
+};

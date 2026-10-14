@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { authenticateSocialCustomerApiRequest, generateSocialCustomerApiKey, hashSocialCustomerApiKey } from '../lib/social/customerApiAuth.js';
+import { authenticateSocialCustomerApiRequest, generateSocialCustomerApiKey, hashSocialCustomerApiKey, socialCustomerApiResponse } from '../lib/social/customerApiAuth.js';
 
 Object.assign(process.env,{SUPABASE_URL:'https://db.test',SUPABASE_SERVICE_ROLE_KEY:'test-only',PUBLISH_CUSTOMER_API_ENABLED:'true'});
 const request=(token)=>new Request('https://veyrnox.test/api/publish/v1/accounts',{headers:token?{authorization:`Bearer ${token}`}:{}});
@@ -21,9 +21,14 @@ test('invalid credentials fail before database access',async()=>{
 
 test('valid credentials authenticate by hash and return key context',async()=>{
   const key=await generateSocialCustomerApiKey();stub({ok:true,key_id:'key',brand_id:'brand',auth_id:'auth'});
-  const result=await authenticateSocialCustomerApiRequest(request(key.token),'posts:read','test');
+  const result=await authenticateSocialCustomerApiRequest(request(key.token),'posts:read','test','/api/publish/v1/accounts');
   assert.deepEqual({keyId:result.keyId,brandId:result.brandId,authId:result.authId},{keyId:'key',brandId:'brand',authId:'auth'});
-  assert.deepEqual(calls[0].args,{p_key_hash:key.hash,p_scope:'posts:read'});assert.ok(!JSON.stringify(calls).includes(key.token));
+  assert.deepEqual(calls[0].args,{p_key_hash:key.hash,p_scope:'posts:read',p_method:'GET',p_route:'/api/publish/v1/accounts'});assert.ok(!JSON.stringify(calls).includes(key.token));
+});
+
+test('authenticated responses record only bounded outcome metadata',async()=>{
+  stub({ok:true});const response=await socialCustomerApiResponse({requestId:17,keyId:'key',cfg:{supabaseUrl:'https://db.test',serviceRoleKey:'test-only'}},{error:'invalid_body'},400,'invalid_body');
+  assert.equal(response.status,400);assert.deepEqual(calls[0].args,{p_request_id:17,p_api_key_id:'key',p_status:400,p_error_code:'invalid_body'});
 });
 
 test('authentication maps scope, plan and rate-limit failures',async()=>{
