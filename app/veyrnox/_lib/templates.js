@@ -108,6 +108,14 @@ const GALLERY_CLIP_KEYS = [
   'broomstick-flight',
   'money-flex',
   'epic-slap-knockout',
+  'city-trailer',
+  'city-vlog',
+  'floral-pool-portrait',
+  'paper-fragments',
+  'ink-sprint',
+  'motorcycle-double',
+  'laundromat-monster',
+  'curtain-reveal',
 ];
 const WALL_CLIP_KEYS = [
   'wall-product-hero-360',
@@ -130,6 +138,10 @@ const WALL_CLIP_KEYS = [
   'wall-moonwalk',
   'wall-skatedog',
   'wall-windows',
+  'wall-behind-the-lens',
+  'wall-sticker-peel-reveal',
+  'wall-dolphin-surf-ride',
+  'wall-event-character-swap',
 ];
 export const PRESETS = GALLERY_CLIP_KEYS.map((key) => SOURCE_TEMPLATES.find((p) => p.clipKey === key));
 export const WALL_PRESETS = WALL_CLIP_KEYS.map((key) => SOURCE_TEMPLATES.find((p) => p.clipKey === key));

@@ -23,7 +23,7 @@ export function assetType(film, key) {
   return film.shots.some(s=>assetTags(s.characters).includes(key))?'character':'prop';
 }
 export function emptyFilm() {
-  return { schema: 1, name: '', stack: { image: '', video: '', imageAccess: 'Studio', videoAccess: 'Studio', seconds: '10', aspect: '16:9' },
+  return { schema: 1, name: '', targetSeconds: 60, stack: { image: '', video: '', imageAccess: 'Studio', videoAccess: 'Studio', seconds: '10', aspect: '16:9' },
     script: '', shots: [], boards: [], assets: [], prompts: [], attempts: [] };
 }
 export function shotIssues(s) {

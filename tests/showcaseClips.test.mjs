@@ -84,7 +84,7 @@ test('the validator rejects a clip over the size cap and accepts one under it', 
 });
 
 test('the size cap is a sane hover-preview budget', () => {
-    assert.equal(MAX_CLIP_BYTES, 2 * 1024 * 1024);
+    assert.equal(MAX_CLIP_BYTES, 6 * 1024 * 1024);
 });
 
 test('the real manifest is sound', () => {

@@ -13,7 +13,9 @@ export function FilmBreakdown({ film, update }) {
     Object.assign(next,{id:`sc01-sh${String(n).padStart(2,'0')}`,seconds:film.stack.seconds,characters:'none',props:'none',dialogue:'none',oneAction:false,text:'',textPlacement:'',textContext:''});
     setIndex(film.shots.length); update({...film,shots:[...film.shots,next]});
   };
+  const plannedSeconds=film.shots.reduce((total,item)=>total+(Number(item.seconds)||0),0);
   return <div className="space-y-5"><FilmField label="Script, treatment or idea" multiline value={film.script} onChange={script=>update({...film,script})} hint="Keep supplied dialogue unchanged. Resolve gaps scene by scene."/>
+    <p className="rounded-xl border border-vx-border p-3 text-sm"><span className="font-bold">Runtime plan:</span> {plannedSeconds}s planned of {film.targetSeconds}s target. Add focused shots until the planned runtime reaches your target.</p>
     <div className="flex flex-wrap gap-2" aria-label="Shot cards">{film.shots.map((s,i)=><button key={s.id} type="button" aria-pressed={s===shot} onClick={()=>setIndex(i)} className="rounded-lg border border-vx-border px-3 py-2 text-sm">{s.id}</button>)}
       <button type="button" onClick={add} disabled={film.shots.length>=200} className="rounded-lg border border-vx-accent px-3 py-2 text-sm text-vx-accent">Add shot</button></div>
     {shot&&<>

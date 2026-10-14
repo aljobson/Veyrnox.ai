@@ -1,6 +1,6 @@
 # Landing showcase clips
 
-Every landing feature card, every tile in the 20-template wall, all 40
+Every landing feature card, every tile in the 24-template wall, all 48
 public preset cards and the three model-category cards have viral previews. The owner requested footage and prompts from [SYNTX Trends](https://syntx.ai/trends),
 [Higgsfield](https://higgsfield.ai/) and [CapCut](https://www.capcut.com/my-edit?start_tab=video) on 14 October 2026. This replaces the
 previous requirement to use only clips generated on Veyrnox.
@@ -18,12 +18,12 @@ the supported Veyrnox adaptation. Live credit prices come from the catalog.
 `app/veyrnox/_lib/showcase.js` maps all five `FEATURE_CARDS` keys and all
 `PRESETS` clip keys to local videos, posters and neutral titles.
 `MODEL_SHOWCASE_KEYS` selects three dedicated clips for the Video, Image and
-Audio cards in `/#models`. `WALL_SHOWCASE_KEYS` selects 20 dedicated
+Audio cards in `/#models`. `WALL_SHOWCASE_KEYS` selects 24 dedicated
 homepage previews with their own recipes. The shared
 `PresetCard` also brings the gallery previews to the studio Explore gallery.
 
-All 68 public tile placements use different footage: five feature cards,
-20 homepage template cards, three model-category cards and 40 gallery
+All 80 public tile placements use different footage: five feature cards,
+24 homepage template cards, three model-category cards and 48 gallery
 cards. Product Hero 360 appears in the gallery while Miniature Crew has its own
 landing template, prompt, video and poster, preserving distinct content across
 surfaces as requested by the owner.
@@ -86,6 +86,18 @@ excerpt. No audio is retained.
 | `wall-the-wrong-one` | The Wrong One | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/gUUIJ3nDMG1ddMFo62W9JESljWZHxyQFHr6xZCHl.mp4) | 0 s |
 | `wall-pigeons` | Pigeons | [Higgsfield](https://cdn.higgsfield.ai/viral_hub/95e80ebb-98d7-41d6-ad33-e81d405d9400.mp4) | 0 s |
 | `wall-mighty-fighter` | Mighty Fighter | [Higgsfield](https://cdn.higgsfield.ai/viral_hub_preset/e68f7c19-0247-4832-9c7f-98807635b6bd.mp4) | 0 s |
+| `city-trailer` | City Trailer | [CapCut](https://www.capcut.com/my-edit?start_tab=video) | 5 s |
+| `city-vlog` | City Vlog | [CapCut](https://www.capcut.com/my-edit?start_tab=video) | 8 s |
+| `floral-pool-portrait` | Floral Pool Portrait | [CapCut](https://www.capcut.com/my-edit?start_tab=video) | 0 s |
+| `wall-behind-the-lens` | Behind the Lens | [CapCut](https://www.capcut.com/my-edit?start_tab=video) | 0 s |
+| `paper-fragments` | Paper Fragments | [Higgsfield](https://cdn.higgsfield.ai/mixed_media_preset/4f884245-2915-4a24-a19a-b18cd252ab1f.mp4) | 0 s |
+| `ink-sprint` | Ink Sprint | [Higgsfield](https://cdn.higgsfield.ai/mixed_media_preset/c3fcf814-6542-4b51-a704-3b76153c91c6.mp4) | 0 s |
+| `motorcycle-double` | Motorcycle Double | [Higgsfield](https://cdn.higgsfield.ai/viral_hub/f0eee690-e157-4188-bcaa-5670edaae510.mp4) | 0 s |
+| `laundromat-monster` | Laundromat Monster | [Higgsfield](https://cdn.higgsfield.ai/viral_hub_preset/13be43ee-5c17-456f-a08c-1e2d1a13c718.mp4) | 0 s |
+| `wall-sticker-peel-reveal` | Sticker Peel Reveal | [Higgsfield](https://cdn.higgsfield.ai/viral_hub/c560128d-9812-4211-8d96-c1c5ce909f09.mp4) | 0 s |
+| `wall-dolphin-surf-ride` | Dolphin Surf Ride | [Higgsfield](https://cdn.higgsfield.ai/viral_hub/b9e49ad8-6009-44cc-84c4-06cd3ea71e24.mp4) | 0 s |
+| `wall-event-character-swap` | Event Character Swap | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/xYiIvO9c3Z6twpkbKiuzt6gjS5cde5PeaCtLawe8.webm) | 8 s |
+| `curtain-reveal` | Curtain Reveal | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/MpwEhL4jUVA0GFrduEONJ8pgbimuW862BVszSwsv.webm) | 10 s |
 
 The 14 October expansion adds nine gallery previews—Enchanted Forest Selfie,
 Pumpkin Lings, Don't Blow Out the Pumpkin, Rap Takeover, Urban Broomstick Flight,
@@ -95,10 +107,16 @@ Infinite Clones, Moonwalk, Skatedog and Windows. The original files were checked
 against all existing previews before encoding; every resulting video and poster
 has a different SHA-256. Public assets use only neutral `viral-*` filenames.
 
+The later expansion adds eight gallery previews—City Trailer, City Vlog,
+Floral Pool Portrait, Paper Fragments, Ink Sprint, Motorcycle Double,
+Laundromat Monster and Curtain Reveal—and four landing-wall previews—Behind
+the Lens, Sticker Peel Reveal, Dolphin Surf Ride and Event Character Swap.
+Every public placement remains backed by a different source clip.
+
 ## Playback and budgets
 
-- MP4, H.264, 20–24 fps, maximum 720 pixels on either side, no audio track.
-- Five seconds per clip; each video stays under `MAX_CLIP_BYTES` (2 MB).
+- MP4, H.264 High profile, 24 fps, native dimensions preserved up to 1080 pixels on either side, no audio track.
+- Five seconds per clip, encoded at CRF 20 (CRF 23 fallback only when needed); each video stays under `MAX_CLIP_BYTES` (6 MB).
 - Representative JPG posters, each under 80 KB.
 - Files live in `public/showcase/`, so the existing same-origin CSP applies.
 - Desktop previews play on hover or keyboard focus while visible.
@@ -112,8 +130,8 @@ landscape or wide tiles without distorting the subject.
 
 ```bash
 ffmpeg -ss START -i original -t 5 -an \
-  -vf "scale=w='min(720,iw)':h='min(720,ih)':force_original_aspect_ratio=decrease:force_divisible_by=2,fps=24" \
-  -c:v libx264 -crf 27 -preset slow -pix_fmt yuv420p -movflags +faststart \
+  -vf "scale=w='min(1080,iw)':h='min(1080,ih)':force_original_aspect_ratio=decrease:force_divisible_by=2,fps=24" \
+  -c:v libx264 -profile:v high -crf 20 -preset slow -pix_fmt yuv420p -movflags +faststart \
   public/showcase/SLUG.mp4
 ffmpeg -ss POSTER_TIME -i public/showcase/SLUG.mp4 -frames:v 1 -q:v 4 public/showcase/SLUG.jpg
 ```

@@ -1,7 +1,7 @@
 const base = {
   model: 'Kling 3.0 · I2V',
   credits: 34,
-  durationSeconds: 5,
+  durationSeconds: 10,
   isNew: true,
   inspired: true,
   promptOrigin: 'veyrnox-adaptation',
@@ -10,7 +10,7 @@ const base = {
 
 const steps = [
   'Upload a clear starting image that matches the subject guidance.',
-  'Use this template to load its five-second prompt and settings.',
+  'Use this template to load its ten-second prompt and settings.',
   'Review the framing and identity details before generating.',
 ];
 

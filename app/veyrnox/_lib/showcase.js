@@ -385,6 +385,54 @@ export const SHOWCASE_CLIPS = {
     video: '/showcase/viral-windows.mp4', aspectRatio: '600 / 338',
     poster: '/showcase/viral-windows.jpg', title: 'Windows',
   },
+  'city-trailer': {
+    video: '/showcase/viral-city-trailer.mp4', aspectRatio: '720 / 1280',
+    poster: '/showcase/viral-city-trailer.jpg', title: 'City Trailer',
+  },
+  'city-vlog': {
+    video: '/showcase/viral-city-vlog.mp4', aspectRatio: '720 / 1280',
+    poster: '/showcase/viral-city-vlog.jpg', title: 'City Vlog',
+  },
+  'floral-pool-portrait': {
+    video: '/showcase/viral-floral-pool-portrait.mp4', aspectRatio: '720 / 1280',
+    poster: '/showcase/viral-floral-pool-portrait.jpg', title: 'Floral Pool Portrait',
+  },
+  'paper-fragments': {
+    video: '/showcase/viral-paper-fragments.mp4', aspectRatio: '1200 / 662',
+    poster: '/showcase/viral-paper-fragments.jpg', title: 'Paper Fragments',
+  },
+  'ink-sprint': {
+    video: '/showcase/viral-ink-sprint.mp4', aspectRatio: '1280 / 720',
+    poster: '/showcase/viral-ink-sprint.jpg', title: 'Ink Sprint',
+  },
+  'motorcycle-double': {
+    video: '/showcase/viral-motorcycle-double.mp4', aspectRatio: '3 / 4',
+    poster: '/showcase/viral-motorcycle-double.jpg', title: 'Motorcycle Double',
+  },
+  'laundromat-monster': {
+    video: '/showcase/viral-laundromat-monster.mp4', aspectRatio: '1280 / 720',
+    poster: '/showcase/viral-laundromat-monster.jpg', title: 'Laundromat Monster',
+  },
+  'curtain-reveal': {
+    video: '/showcase/viral-curtain-reveal.mp4', aspectRatio: '4 / 3',
+    poster: '/showcase/viral-curtain-reveal.jpg', title: 'Curtain Reveal',
+  },
+  'wall-behind-the-lens': {
+    video: '/showcase/viral-behind-the-lens.mp4', aspectRatio: '720 / 1280',
+    poster: '/showcase/viral-behind-the-lens.jpg', title: 'Behind the Lens',
+  },
+  'wall-sticker-peel-reveal': {
+    video: '/showcase/viral-sticker-peel-reveal.mp4', aspectRatio: '720 / 1280',
+    poster: '/showcase/viral-sticker-peel-reveal.jpg', title: 'Sticker Peel Reveal',
+  },
+  'wall-dolphin-surf-ride': {
+    video: '/showcase/viral-dolphin-surf-ride.mp4', aspectRatio: '1 / 1',
+    poster: '/showcase/viral-dolphin-surf-ride.jpg', title: 'Dolphin Surf Ride',
+  },
+  'wall-event-character-swap': {
+    video: '/showcase/viral-event-character-swap.mp4', aspectRatio: '720 / 1280',
+    poster: '/showcase/viral-event-character-swap.jpg', title: 'Event Character Swap',
+  },
 };
 
 // Give each public placement its own clip, including templates also on /presets.
@@ -409,6 +457,10 @@ export const WALL_SHOWCASE_KEYS = {
   moonwalk: 'wall-moonwalk',
   skatedog: 'wall-skatedog',
   windows: 'wall-windows',
+  'behind-the-lens': 'wall-behind-the-lens',
+  'sticker-peel-reveal': 'wall-sticker-peel-reveal',
+  'dolphin-surf-ride': 'wall-dolphin-surf-ride',
+  'event-character-swap': 'wall-event-character-swap',
 };
 
 export const MODEL_SHOWCASE_KEYS = {
@@ -417,5 +469,6 @@ export const MODEL_SHOWCASE_KEYS = {
   audio: 'model-audio',
 };
 
-// A five-second muted preview stays small even when every tile has footage.
-export const MAX_CLIP_BYTES = 2 * 1024 * 1024;
+// Five-second previews are lazily loaded. Keep enough room for a clean,
+// source-resolution encode instead of forcing detailed footage below 2 MB.
+export const MAX_CLIP_BYTES = 6 * 1024 * 1024;

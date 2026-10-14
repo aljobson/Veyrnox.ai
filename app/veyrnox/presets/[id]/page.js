@@ -71,7 +71,7 @@ export default async function TemplatePage({ params }) {
               <div className="relative mx-auto max-w-[480px]">
                 <FilmPlayer key={t.id} film={clip} label={`${presetTitle(t.name)} preview`} aspectRatio={clip.aspectRatio || t.previewAspect || '9 / 16'} />
                 <ClipBadge clip={clip} />
-                <p className="mt-3 text-sm text-vx-fg-muted">{clip.generatedOnVeyrnox ? 'Five-second example generated on Veyrnox with the prompt below.' : 'Five-second inspiration preview. Use the recipe to create your own version.'}</p>
+                <p className="mt-3 text-sm text-vx-fg-muted">{clip.generatedOnVeyrnox ? 'High-quality five-second preview generated on Veyrnox with the prompt below.' : 'High-quality five-second inspiration preview. Generate a 5s or 10s shot, or plan a 30–120s multi-shot film.'}</p>
               </div>
             ) : <div className="min-h-[280px] lg:min-h-[480px] rounded-2xl" style={{ background: t.bg }} aria-hidden />}
           </div>

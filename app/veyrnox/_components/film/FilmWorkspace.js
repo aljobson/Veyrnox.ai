@@ -14,11 +14,16 @@ import { FilmFiles } from './FilmFiles';
 import { FilmTests } from './FilmTests';
 import { FilmPrompts } from './FilmPrompts';
 import { filmStudioStore } from '../../_lib/filmStudioStore';
+import { takeFilmStarter } from '../../_lib/filmTemplateDraft';
+import { modelIdForName } from '../../_lib/tokens';
 
 const storage = () => { try { return window.localStorage; } catch { return null; } };
 const serverState={film:emptyFilm(),stage:0,ready:false,userId:null,error:null,saved:false};
+const seededFilm = starter => ({...emptyFilm(),name:starter.title,script:starter.prompt,targetSeconds:starter.targetSeconds,
+  stack:{...emptyFilm().stack,video:modelIdForName(starter.model)||'',aspect:starter.aspect,seconds:'10'}});
 export function FilmWorkspace() {
   const [state,setState]=useState(serverState);
+  const [pendingStarter,setPendingStarter]=useState(null);
   const {film,stage,ready,userId,error,saved}=state;
   useEffect(()=>{
     const sync=()=>setState(filmStudioStore.getState());
@@ -29,6 +34,12 @@ export function FilmWorkspace() {
   useEffect(()=>{
     const load = (force=false) => {
       const id=getStoredUserId(); const loaded=readFilm(storage(),id);
+      const starter=takeFilmStarter(window.sessionStorage);
+      const blank=!loaded.film.name&&!loaded.film.script&&!loaded.film.shots.length;
+      if(starter&&blank){
+        loaded.film=seededFilm(starter);
+        try { if(id) writeFilm(storage(),id,loaded.film); } catch { /* The seeded project still works in memory. */ }
+      } else if(starter) setPendingStarter(starter);
       if(!force&&filmStudioStore.getState().ready&&filmStudioStore.getState().userId===id) {filmStudioStore.set({ready:true});return;}
       filmStudioStore.set({userId:id,film:loaded.film,error:loaded.error,saved:!!id&&!loaded.error,stage:accessibleStage(loaded.film),ready:true});
     };
@@ -49,6 +60,7 @@ export function FilmWorkspace() {
       <FilmFiles film={film} onImport={next=>{update(next);setStage(accessibleStage(next));}}/>
     </header>
     {error&&<p role="alert" className="mb-5 text-sm text-vx-danger">{error}</p>}
+    {pendingStarter&&<div className="mb-5 rounded-xl border border-vx-accent p-4 text-sm"><p className="font-bold">A template is ready for a {pendingStarter.targetSeconds}-second film.</p><p className="mt-1 text-vx-fg-muted">Your current film is still here. Export it first if you want to keep a separate copy.</p><button type="button" className="mt-3 rounded-full bg-vx-accent px-4 py-2 font-bold text-vx-accent-ink" onClick={()=>{update(seededFilm(pendingStarter));setStage(0);setPendingStarter(null);}}>Start a new film from this template</button></div>}
     <div className="grid items-start gap-7 lg:grid-cols-[240px_minmax(0,1fr)]">
       <nav aria-label="Film Studio stages"><ol className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1">{FILM_STAGES.map(([id,title],i)=><li key={id}>
         <button type="button" onClick={()=>setStage(i)} disabled={i>available} aria-current={i===current?'step':undefined} className={`w-full rounded-xl border p-3 text-left text-sm disabled:opacity-40 ${i===current?'border-vx-accent bg-vx-panel':'border-vx-border'}`}>

@@ -10,8 +10,9 @@ export function parseFilm(raw) {
   if (typeof raw !== 'string' || new TextEncoder().encode(raw).length > MAX_FILM_BYTES) throw new Error('The studio file must be smaller than 1 MB.');
   let f;
   try { f = JSON.parse(raw); } catch { throw new Error('Choose a Film Studio JSON export.'); }
+  if (object(f) && f.targetSeconds === undefined) f = { ...f, targetSeconds: 60 };
   const template = emptyFilm();
-  if (!object(f) || f.schema !== 1 || !strings(f, ['name', 'script']) || !strings(f.stack, Object.keys(template.stack))
+  if (!object(f) || f.schema !== 1 || !strings(f, ['name', 'script']) || ![30, 60, 90, 120].includes(f.targetSeconds) || !strings(f.stack, Object.keys(template.stack))
     || !['16:9', '9:16', '1:1'].includes(f.stack.aspect)
     || !list(f.shots, 200, s => strings(s, SHOT_LANES.flatMap(([,fields]) => fields.map(([k]) => k))) && /^[a-zA-Z0-9][a-zA-Z0-9_-]{0,60}$/.test(s.id) && typeof s.oneAction === 'boolean')
     || !list(f.boards, 300, b => strings(b, ['id', 'name', 'type', 'decision']) && ['character', 'location', 'prop', 'style'].includes(b.type)

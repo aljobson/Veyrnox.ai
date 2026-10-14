@@ -33,7 +33,7 @@ export function PresetCard({ preset, size = 'md', onClick, catalog }) {
         <div className="pt-3 flex items-baseline gap-2">
           <div className="min-w-0">
             <div className={`font-extrabold tracking-tight truncate ${s.title}`}>{presetTitle(preset.name)}</div>
-            <div className="mt-0.5 text-vx-fg-muted text-xs truncate">{preset.model}{preset.durationSeconds ? ` · ${preset.durationSeconds}s` : ''}</div>
+            <div className="mt-0.5 text-vx-fg-muted text-xs truncate">{preset.model}{preset.durationSeconds ? ` · up to ${preset.durationSeconds}s clips · long-film ready` : ''}</div>
             <div className="mt-1 line-clamp-1 text-[11px] text-vx-fg-muted">{preset.prompt}</div>
           </div>
           <span aria-hidden className="vx-leader flex-1 self-start mt-3 text-vx-fg-muted" />
