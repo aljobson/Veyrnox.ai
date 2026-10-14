@@ -9,8 +9,8 @@ import { isUnknownStaticPage } from '../lib/unknownStaticPage.js';
 import { templateStartId } from '../lib/templateStart.js';
 
 test('every imported clip has its own matching recipe and a supported video model', () => {
-  assert.equal(SOURCE_TEMPLATES.length, 37);
-  assert.equal(new Set(SOURCE_TEMPLATES.map((p) => p.clipKey)).size, 37);
+  assert.equal(SOURCE_TEMPLATES.length, 39);
+  assert.equal(new Set(SOURCE_TEMPLATES.map((p) => p.clipKey)).size, 39);
   for (const preset of SOURCE_TEMPLATES) {
     const clip = SHOWCASE_CLIPS[preset.clipKey];
     assert.ok(clip, preset.id);
@@ -26,10 +26,10 @@ test('every imported clip has its own matching recipe and a supported video mode
 });
 
 test('gallery and homepage templates describe separate footage, with reachable recipe URLs', () => {
-  assert.equal(PRESETS.length, 22);
-  assert.equal(WALL_PRESETS.length, 7);
+  assert.equal(PRESETS.length, 23);
+  assert.equal(WALL_PRESETS.length, 8);
   const visible = [...PRESETS, ...WALL_PRESETS];
-  assert.equal(new Set(visible.map((p) => p.clipKey)).size, 29);
+  assert.equal(new Set(visible.map((p) => p.clipKey)).size, 31);
   for (const preset of visible) {
     assert.equal(templateById(preset.id), preset);
     assert.equal(isUnknownStaticPage(`/presets/${preset.id}`), false);
@@ -56,6 +56,14 @@ test('published prompts and private effect workflows are clearly distinguished',
     assert.ok(source.prompt.length > 100);
     assert.equal(createHash('sha256').update(source.prompt).digest('hex'), source.promptSha256);
     for (const ref of source.references) assert.match(ref.url, /^https:\/\/r2\.syntx\.ai\//);
+  }
+  const capcut = SOURCE_TEMPLATES.filter((p) => p.sourceRecipe.name === 'CapCut');
+  assert.equal(capcut.length, 2);
+  for (const { sourceRecipe: source } of capcut) {
+    assert.equal(source.promptOrigin, 'published');
+    assert.ok(source.prompt.length > 100);
+    assert.equal(createHash('sha256').update(source.prompt).digest('hex'), source.promptSha256);
+    assert.match(source.url, /^https:\/\/www\.capcut\.com\/my-edit\?/);
   }
   for (const { sourceRecipe: source } of SOURCE_TEMPLATES.filter((p) => p.sourceRecipe.name === 'Higgsfield')) {
     assert.equal(source.prompt, null);

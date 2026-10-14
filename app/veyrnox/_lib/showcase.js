@@ -7,10 +7,19 @@
 export const SHOWCASE_SOURCES = [
   { name: 'SYNTX', url: 'https://syntx.ai/trends' },
   { name: 'Higgsfield', url: 'https://higgsfield.ai/' },
+  { name: 'CapCut', url: 'https://www.capcut.com/my-edit?start_tab=video' },
   { name: 'Veyrnox', url: 'https://veyrnox.ai/' },
 ];
 
 export const SHOWCASE_CLIPS = {
+  'product-hero-360': {
+    video: '/showcase/capcut-product-hero-360.mp4',
+    aspectRatio: '482 / 720',
+    poster: '/showcase/capcut-product-hero-360.jpg',
+    title: 'Product Hero 360',
+    source: 'CapCut',
+    objectPosition: '50% 48%',
+  },
   'wan-2.5-kie': {
     video: '/showcase/higgsfield-high-flip.mp4',
     aspectRatio: '406 / 720',
@@ -205,6 +214,14 @@ export const SHOWCASE_CLIPS = {
     title: 'Dreamworks Castle',
     source: 'SYNTX',
   },
+  'wall-product-hero-360': {
+    video: '/showcase/capcut-miniature-crew-wall.mp4',
+    aspectRatio: '540 / 720',
+    poster: '/showcase/capcut-miniature-crew-wall.jpg',
+    title: 'Miniature Crew',
+    source: 'CapCut',
+    objectPosition: '50% 45%',
+  },
   'wall-cctv-night': {
     video: '/showcase/higgsfield-lidar.mp4',
     aspectRatio: '406 / 720',
@@ -279,6 +296,7 @@ export const SHOWCASE_CLIPS = {
 
 // Give each public placement its own clip, including templates also on /presets.
 export const WALL_SHOWCASE_KEYS = {
+  'miniature-crew-wall': 'wall-product-hero-360',
   'lidar': 'wall-cctv-night',
   'boarding-pass': 'wall-sunset-drift',
   'architecture-wave': 'wall-neon-alley',
