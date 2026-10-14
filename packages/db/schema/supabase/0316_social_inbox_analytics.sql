@@ -36,14 +36,14 @@ BEGIN
     'median_response_seconds',(SELECT round(percentile_cont(0.5) WITHIN GROUP(ORDER BY seconds)::NUMERIC) FROM responses)
   ) INTO v_summary;
 
-  WITH days AS (SELECT generate_series(v_since::DATE,(now() AT TIME ZONE 'UTC')::DATE,'1 day'::INTERVAL)::DATE day),counts AS (
-    SELECT (m.sent_at AT TIME ZONE 'UTC')::DATE day,count(*) FILTER(WHERE m.direction='inbound') received,
+  WITH days AS (SELECT generate_series(v_since::DATE,(now() AT TIME ZONE 'UTC')::DATE,'1 day'::INTERVAL)::DATE report_date),counts AS (
+    SELECT (m.sent_at AT TIME ZONE 'UTC')::DATE report_date,count(*) FILTER(WHERE m.direction='inbound') received,
       count(*) FILTER(WHERE m.direction='outbound' AND m.delivery_status='sent') sent,
       count(*) FILTER(WHERE m.direction='outbound' AND m.delivery_status='failed') failed
     FROM public.social_inbox_messages m JOIN public.social_inbox_threads t ON t.id=m.thread_id
     WHERE t.brand_id=p_brand_id AND m.sent_at>=v_since AND (p_account_id IS NULL OR t.account_id=p_account_id) GROUP BY 1
-  ) SELECT coalesce(jsonb_agg(jsonb_build_object('date',d.day,'received',coalesce(c.received,0),'sent',coalesce(c.sent,0),'failed',coalesce(c.failed,0)) ORDER BY d.day),'[]'::JSONB)
-    INTO v_trend FROM days d LEFT JOIN counts c USING(day);
+  ) SELECT coalesce(jsonb_agg(jsonb_build_object('date',d.report_date,'received',coalesce(c.received,0),'sent',coalesce(c.sent,0),'failed',coalesce(c.failed,0)) ORDER BY d.report_date),'[]'::JSONB)
+    INTO v_trend FROM days d LEFT JOIN counts c USING(report_date);
 
   SELECT coalesce(jsonb_agg(jsonb_build_object('network',q.network,'received',q.received,'sent',q.sent,'failed',q.failed) ORDER BY q.received DESC,q.network),'[]'::JSONB)
     INTO v_platforms FROM (SELECT a.network,count(*) FILTER(WHERE m.direction='inbound') received,
