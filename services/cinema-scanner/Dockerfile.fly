@@ -20,4 +20,4 @@ COPY --chown=scanner:scanner packages/adapters ./packages/adapters
 COPY --chown=scanner:scanner packages/db/supabase-client.js ./packages/db/supabase-client.js
 RUN chmod 0755 services/cinema-scanner/fly-entrypoint.sh
 
-ENTRYPOINT ["/sbin/tini", "--", "/app/services/cinema-scanner/fly-entrypoint.sh"]
+ENTRYPOINT ["/sbin/tini", "-s", "--", "/app/services/cinema-scanner/fly-entrypoint.sh"]
