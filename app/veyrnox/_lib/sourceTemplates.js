@@ -1,6 +1,7 @@
 import { SOURCE_TEMPLATE_EXPANSION } from './sourceTemplateExpansion.js';
 import { SOURCE_TEMPLATE_EXPANSION_2 } from './sourceTemplateExpansion2.js';
 import { SOURCE_TEMPLATE_EXPANSION_3 } from './sourceTemplateExpansion3.js';
+import { SOURCE_TEMPLATE_EXPANSION_4 } from './sourceTemplateExpansion4.js';
 
 // Matched recipes inspected on 10 October 2026. Prompts are Veyrnox adaptations;
 // public template objects intentionally contain no source-platform names or URLs.
@@ -360,4 +361,5 @@ export const SOURCE_TEMPLATES = [
   ...SOURCE_TEMPLATE_EXPANSION,
   ...SOURCE_TEMPLATE_EXPANSION_2,
   ...SOURCE_TEMPLATE_EXPANSION_3,
+  ...SOURCE_TEMPLATE_EXPANSION_4,
 ];

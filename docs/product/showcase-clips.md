@@ -1,6 +1,6 @@
 # Landing showcase clips
 
-Every landing feature card, every tile in the 24-template wall, all 48
+Every landing feature card, every tile in the 24-template wall, all 98
 public preset cards and the three model-category cards have viral previews. The owner requested footage and prompts from [SYNTX Trends](https://syntx.ai/trends),
 [Higgsfield](https://higgsfield.ai/) and [CapCut](https://www.capcut.com/my-edit?start_tab=video) on 14 October 2026. This replaces the
 previous requirement to use only clips generated on Veyrnox.
@@ -22,8 +22,8 @@ Audio cards in `/#models`. `WALL_SHOWCASE_KEYS` selects 24 dedicated
 homepage previews with their own recipes. The shared
 `PresetCard` also brings the gallery previews to the studio Explore gallery.
 
-All 80 public tile placements use different footage: five feature cards,
-24 homepage template cards, three model-category cards and 48 gallery
+All 130 public tile placements use different footage: five feature cards,
+24 homepage template cards, three model-category cards and 98 gallery
 cards. Product Hero 360 appears in the gallery while Miniature Crew has its own
 landing template, prompt, video and poster, preserving distinct content across
 surfaces as requested by the owner.
@@ -98,6 +98,56 @@ excerpt. No audio is retained.
 | `wall-dolphin-surf-ride` | Dolphin Surf Ride | [Higgsfield](https://cdn.higgsfield.ai/viral_hub/b9e49ad8-6009-44cc-84c4-06cd3ea71e24.mp4) | 0 s |
 | `wall-event-character-swap` | Event Character Swap | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/xYiIvO9c3Z6twpkbKiuzt6gjS5cde5PeaCtLawe8.webm) | 8 s |
 | `curtain-reveal` | Curtain Reveal | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/MpwEhL4jUVA0GFrduEONJ8pgbimuW862BVszSwsv.webm) | 10 s |
+| `race-track` | Race Track | [Higgsfield](https://cdn.higgsfield.ai/viral_hub_preset/9f0c4caa-06f5-4e12-bb4f-a2a221a8afc8.mp4) | 0 s |
+| `modern-montage` | Modern Montage | [Higgsfield](https://cdn.higgsfield.ai/mixed_media_preset/04bab337-d074-465d-9c5f-27e4eb270225.mp4) | 0 s |
+| `vintage-montage` | Vintage Montage | [Higgsfield](https://cdn.higgsfield.ai/mixed_media_preset/9b029b09-f910-431e-94c0-b9ca6db41715.mp4) | 0 s |
+| `action-figure` | Action Figure | [Higgsfield](https://cdn.higgsfield.ai/viral_hub_preset/b98ae9ed-ec67-4e73-8e1d-df440181e908.mp4) | 0 s |
+| `paper-world` | Paper World | [Higgsfield](https://cdn.higgsfield.ai/mixed_media_preset/e908cd25-8fc5-43b5-9835-f5193fcb1d46.mp4) | 0 s |
+| `broken-mirror` | Broken Mirror | [Higgsfield](https://cdn.higgsfield.ai/mixed_media_preset/20397c83-0280-4dc2-950c-5b72a548bd5f.mp4) | 0 s |
+| `puffin-flight` | Puffin Flight | [Higgsfield](https://cdn.higgsfield.ai/viral_hub/4616788e-abf2-45fd-bbde-23a92100ef70.mp4) | 0 s |
+| `three-d-render` | 3D Render | [Higgsfield](https://cdn.higgsfield.ai/viral_hub_preset/d215b031-c484-405e-bb3e-79ae0912f0f8.mp4) | 0 s |
+| `orbital-presence` | Orbital Presence | [Higgsfield](https://cdn.higgsfield.ai/viral_hub_preset/88c7e4e9-ffd1-44fa-8e70-91ddd6e3e756.mp4) | 0 s |
+| `hand-painted` | Hand Painted | [Higgsfield](https://cdn.higgsfield.ai/mixed_media_preset/0adfa8b5-7e87-461b-90a8-5542a506d0f6.mp4) | 0 s |
+| `origami-fold` | Origami Fold | [Higgsfield](https://cdn.higgsfield.ai/mixed_media_preset/4b844a70-1eb9-4ac2-b2ea-9e017f7fa31a.mp4) | 0 s |
+| `orbit-360` | Orbit 360 | [Higgsfield](https://cdn.higgsfield.ai/viral_hub_preset/4b866a81-e773-4be5-b041-9dcad102e9b9.mp4) | 0 s |
+| `toxic-glitch` | Toxic Glitch | [Higgsfield](https://cdn.higgsfield.ai/mixed_media_preset/9ea0e5af-9f30-4a2e-89ea-54fbf2ad4874.mp4) | 0 s |
+| `marble-statue` | Marble Statue | [Higgsfield](https://cdn.higgsfield.ai/mixed_media_preset/f300c8f1-9071-4737-abd0-9f7dbd354519.mp4) | 0 s |
+| `ultraviolet-night` | Ultraviolet Night | [Higgsfield](https://cdn.higgsfield.ai/mixed_media_preset/dd675cab-cc8e-4305-96b7-9a808df33321.mp4) | 0 s |
+| `bubble-world` | Bubble World | [Higgsfield](https://cdn.higgsfield.ai/mixed_media_preset/6eee81db-e7d6-4794-9190-39d0a8c1693c.mp4) | 0 s |
+| `acid-colour` | Acid Colour | [Higgsfield](https://cdn.higgsfield.ai/mixed_media_preset/d1cdb860-cff9-46de-b75f-4e821317bd30.mp4) | 0 s |
+| `flash-comic` | Flash Comic | [Higgsfield](https://cdn.higgsfield.ai/mixed_media_preset/cd6524d8-d06f-4d6c-8883-9177b537840f.mp4) | 0 s |
+| `radiant-glow` | Radiant Glow | [Higgsfield](https://cdn.higgsfield.ai/mixed_media_preset/7f697ee1-9df8-45c5-8523-005fb7482278.mp4) | 0 s |
+| `lava-flow` | Lava Flow | [Higgsfield](https://cdn.higgsfield.ai/mixed_media_preset/d62537bf-2356-4131-90bb-c398a27c46c7.mp4) | 0 s |
+| `duotone-motion` | Duotone Motion | [Higgsfield](https://cdn.higgsfield.ai/mixed_media_preset/70c0bc83-9ba2-49c5-9a5d-80fa7c118dcc.mp4) | 0 s |
+| `particle-burst` | Particle Burst | [Higgsfield](https://cdn.higgsfield.ai/mixed_media_preset/27b85cfd-0747-4375-969f-b93eb9da19de.mp4) | 0 s |
+| `canvas-paint` | Canvas Paint | [Higgsfield](https://cdn.higgsfield.ai/mixed_media_preset/ecdb540e-d1d6-4562-b29f-0bafe2961cdf.mp4) | 0 s |
+| `motion-tracking` | Motion Tracking | [Higgsfield](https://cdn.higgsfield.ai/mixed_media_preset/c694ed05-d2b0-4850-a1e9-2b90dcee95d8.mp4) | 0 s |
+| `prism-dream` | Prism Dream | [Higgsfield](https://cdn.higgsfield.ai/mixed_media_preset/f2163456-4099-4b1e-9f62-2d4953d2b7bf.mp4) | 0 s |
+| `colour-palette` | Colour Palette | [Higgsfield](https://cdn.higgsfield.ai/mixed_media_preset/26bed71d-7789-4a45-8d95-7c01f1474ca1.mp4) | 0 s |
+| `knights-diary` | Knight's Diary | [Higgsfield](https://cdn.higgsfield.ai/viral_hub/eefdd4a1-d9d6-484a-b257-2bb5ccea9a3d.mp4) | 0 s |
+| `magazine-cover` | Magazine Cover | [Higgsfield](https://cdn.higgsfield.ai/mixed_media_preset/f48ae4ba-635d-47ed-bbe5-0d519c009106.mp4) | 0 s |
+| `overexposed-flash` | Overexposed Flash | [Higgsfield](https://cdn.higgsfield.ai/mixed_media_preset/2b60f7f8-19ab-4e0a-ad83-a96e4d4fb3d0.mp4) | 0 s |
+| `multiverse-doors` | Multiverse Doors | [Higgsfield](https://cdn.higgsfield.ai/mixed_media_preset/f12b80d6-b7dc-48ac-8a77-8eadcee6e3ac.mp4) | 0 s |
+| `impressionist-muse` | Impressionist Muse | [Higgsfield](https://cdn.higgsfield.ai/viral_hub/c1782da6-1348-4f62-90a0-24c9ed57da91.mp4) | 0 s |
+| `many-eyed-portrait` | Many-Eyed Portrait | [Higgsfield](https://cdn.higgsfield.ai/viral_hub/b69c6fa1-ca41-4c26-9237-f59682eb991f.mp4) | 0 s |
+| `cold-vision` | Cold Vision | [Higgsfield](https://cdn.higgsfield.ai/mixed_media_preset/a1a4d75a-b6e9-42fb-af01-be96d279b375.mp4) | 0 s |
+| `sketch-world` | Sketch World | [Higgsfield](https://cdn.higgsfield.ai/mixed_media_preset/5e169eba-a6db-41a7-afed-d852615efc07.mp4) | 0 s |
+| `lost-in-a-book` | Lost in a Book | [Higgsfield](https://cdn.higgsfield.ai/viral_hub/fc52785d-4f15-4835-a4a0-003aa7c8ac88.mp4) | 0 s |
+| `retro-paparazzi` | Retro Paparazzi | [Higgsfield](https://cdn.higgsfield.ai/viral_hub/5ec2d059-facf-45a5-968c-7fa45b090a8a.mp4) | 0 s |
+| `noir-city` | Noir City | [Higgsfield](https://cdn.higgsfield.ai/mixed_media_preset/9f68f799-81a0-47c0-8ed9-437a10c71cb9.mp4) | 0 s |
+| `ocean-room` | Ocean Room | [Higgsfield](https://cdn.higgsfield.ai/mixed_media_preset/bcc94f8c-d4f6-4f1c-870c-258a98529418.mp4) | 0 s |
+| `chromatic-surge` | Chromatic Surge | [Higgsfield](https://cdn.higgsfield.ai/mixed_media_preset/59a6a0fb-834e-4e86-b41e-5f21ce8ee55a.mp4) | 0 s |
+| `penguin-flight` | Penguin Flight | [Higgsfield](https://cdn.higgsfield.ai/viral_hub/b7ca03e3-5105-45e2-a674-f4e13d0f071c.mp4) | 0 s |
+| `character-takeover` | Character Takeover | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/2EbVbiK0Bypw71il6nn4IXIBL8Wd6cZpB3bxsFDb.webm) | 0 s |
+| `escalator-loop` | Escalator Loop | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/BaAZGUzSuLF0o5vAj9XKcvvOFQQDpPehGsfBew8z.webm) | 0 s |
+| `blood-moon-dance` | Blood Moon Dance | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/NAVfzuYkyTWvyiRha2J8GQCjUfgmZ22a5a9OHALi.webm) | 0 s |
+| `red-thread-story` | Red Thread Story | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/4Bk6SfPvZW5MRnAbcNmAre7CXdtOEML2i4UTI7jE.webm) | 0 s |
+| `meal-together` | Meal Together | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/8cFD6QEwDOWvmxUtrqtzFnaHdYyptp9jNtYC7BoO.webm) | 0 s |
+| `tentacle-breakout` | Tentacle Breakout | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/qoEMQ7cU2DtoMUViUl9QUzmmQu201HL4ap6G8Zt3.webm) | 0 s |
+| `sheep-kingdom` | Sheep Kingdom | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/prHMOoBBsjBRYmsqZM4e6PY6nNVcyKXtaZRUYm8m.webm) | 0 s |
+| `pumpkin-night` | Pumpkin Night | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/HLT1ZxijsxEcuDy5SFOqR4eGixgfZlphZ0wofy3A.webm) | 0 s |
+| `fashion-catch` | Fashion Catch | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/9xWMcI5PT1Clb27KF6FVdNl9iP0RPGfu6cHWBfTt.webm) | 0 s |
+| `desert-train-heist` | Desert Train Heist | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/LwC1bYg2nRihXesJYJi9Uv584QBVkkYoPSWR8pci.webm) | 0 s |
 
 The 14 October expansion adds nine gallery previews—Enchanted Forest Selfie,
 Pumpkin Lings, Don't Blow Out the Pumpkin, Rap Takeover, Urban Broomstick Flight,
@@ -112,6 +162,11 @@ Floral Pool Portrait, Paper Fragments, Ink Sprint, Motorcycle Double,
 Laundromat Monster and Curtain Reveal—and four landing-wall previews—Behind
 the Lens, Sticker Peel Reveal, Dolphin Surf Ride and Event Character Swap.
 Every public placement remains backed by a different source clip.
+
+The 50-template expansion adds 40 transformation and visual-style recipes plus
+10 cinematic and trend-driven recipes to the gallery. Each one has its own
+neutral public name, adapted ten-second prompt, source-native preview crop and
+local poster. The same SHA-256 uniqueness checks cover all 130 placements.
 
 ## Playback and budgets
 

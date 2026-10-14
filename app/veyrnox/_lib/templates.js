@@ -10,6 +10,7 @@
 
 // CARTOONS, MOVIES, FANTASY and REALISTIC are the Trends categories (ADR-0072); each has at least one template, or its filter would show an empty page.
 import { SOURCE_TEMPLATES } from './sourceTemplates.js';
+import { SOURCE_TEMPLATE_EXPANSION_4 } from './sourceTemplateExpansion4.js';
 
 const CATEGORY_ORDER = ['YOUR PHOTO', 'CINEMATIC', 'ANIME', 'CARTOONS', 'MOVIES', 'FANTASY', 'REALISTIC', 'FASHION', 'PRODUCTS', 'VFX', 'UGC', 'ADS'];
 
@@ -116,6 +117,7 @@ const GALLERY_CLIP_KEYS = [
   'motorcycle-double',
   'laundromat-monster',
   'curtain-reveal',
+  ...SOURCE_TEMPLATE_EXPANSION_4.map((template) => template.clipKey),
 ];
 const WALL_CLIP_KEYS = [
   'wall-product-hero-360',

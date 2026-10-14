@@ -3,6 +3,8 @@
 // docs/product/showcase-clips.md
 //
 // Local files keep playback within the existing same-origin media policy.
+import { SHOWCASE_CLIP_EXPANSION_4 } from './sourceTemplateExpansion4.js';
+
 export const SHOWCASE_CLIPS = {
   'product-hero-360': {
     video: '/showcase/viral-product-hero-360.mp4',
@@ -433,6 +435,7 @@ export const SHOWCASE_CLIPS = {
     video: '/showcase/viral-event-character-swap.mp4', aspectRatio: '720 / 1280',
     poster: '/showcase/viral-event-character-swap.jpg', title: 'Event Character Swap',
   },
+  ...SHOWCASE_CLIP_EXPANSION_4,
 };
 
 // Give each public placement its own clip, including templates also on /presets.
