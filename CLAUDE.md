@@ -179,6 +179,9 @@ If a build starts failing after a dependency change, bisect these three first.
     pages whose body is one Turnstile error code or the word `unsupported`,
     rate limited per connecting IP in `worker.js`. It logs that and nothing
     about the sender (ADR-0026 amendments 2 and 5).
+  - `/.well-known/oauth-protected-resource/api/v1/mcp` — anonymous, read-only
+    OAuth protected-resource metadata for MCP discovery. It names the public
+    MCP resource and Supabase issuer only; it carries no user or secret data.
 
   A new route outside `/api/v1` needs one of these and an entry in
   `tests/routesOutsideGate.test.mjs`.

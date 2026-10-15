@@ -18,7 +18,8 @@ const SOURCES = execFileSync('git', ['ls-files', '-co', '--exclude-standard', 'a
 // keeps its own size (veyrnox.css says why). Its hero line is checked below.
 const INDEX_PAGES = [
     'app/veyrnox/pricing/page.js', 'app/veyrnox/models/page.js',
-    'app/veyrnox/presets/page.js', 'app/veyrnox/tools/page.js', 'app/veyrnox/guides/page.js', 'app/not-found.js',
+    'app/veyrnox/presets/page.js', 'app/veyrnox/tools/page.js', 'app/veyrnox/guides/page.js',
+    'app/veyrnox/mcp/page.js', 'app/not-found.js',
 ];
 const DETAIL_PAGES = [
     'app/veyrnox/models/[id]/page.js', 'app/veyrnox/presets/[id]/page.js', 'app/veyrnox/guides/[id]/page.js',
@@ -40,7 +41,7 @@ test('there is one public nav, in one order', () => {
     assert.match(marketing, /const Item = section \? 'a' : Link;/);
     assert.match(read('app/veyrnox/_components/MobileMenu.js'), /const Item = it\.href\.includes\('#'\) \? 'a' : Link;/);
     assert.deepEqual(NAV_CATEGORIES.map((c) => c.label),
-        ['Explore', 'Models', 'Templates', 'Tools', 'LLM Chat', 'Pricing', 'FAQ', 'Social Cinema']);
+        ['Explore', 'Models', 'Templates', 'Tools', 'MCP', 'LLM Chat', 'Pricing', 'FAQ', 'Social Cinema']);
     // The home page's sections stay one press away from every page.
     for (const href of ['/#explore', '/#models', '/#faq']) assert.ok(NAV_CATEGORIES.some((c) => c.href === href), href);
     assert.equal(NAV_CATEGORIES.at(-1).href, '/social-cinema', 'a page that says it is not open yet does not lead');

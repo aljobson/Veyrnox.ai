@@ -59,7 +59,7 @@ test('a session that starts or ends anywhere empties the fields', () => {
 test('a sent form does not keep the password while it waits on an email', () => {
     const submit = body('async function handleSubmit(');
     assert.match(submit, /if \(needsConfirmation\) \{\s*setPassword\(""\);/);
-    assert.match(submit, /await sendMagicLink\(email, captcha\);\s*setPassword\(""\);/);
+    assert.match(submit, /await sendMagicLink\(email, captcha, authCallbackUrl\(returnTo\.current, window\.location\.origin\)\);\s*setPassword\(""\);/);
 });
 
 test('neither value is logged', () => {

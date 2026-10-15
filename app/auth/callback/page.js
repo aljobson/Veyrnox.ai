@@ -9,6 +9,7 @@
 import { useEffect, useState } from "react";
 import { completeFromFragment, completeOAuthFromCode, oauthCallbackError } from "../../lib/authClient.js";
 import { MAGIC_VERIFIER_TTL_MS } from "../../lib/pkceVerifier.js";
+import { safeAuthReturnPath } from "../../lib/authReturn.js";
 import { Main } from "../../veyrnox/_components/Main.js";
 
 const TRY_AGAIN = "Nothing was changed. Go back and try signing in again.";
@@ -22,6 +23,8 @@ export default function AuthCallback() {
     useEffect(() => {
         const fail = (message) => { setStatus(message); setFailed(true); };
         const href = window.location.href;
+        const requestedNext = new URL(href).searchParams.get('next');
+        const next = safeAuthReturnPath(requestedNext) || '/';
         const providerError = oauthCallbackError(href);
         if (providerError) {
             // The provider or our Auth config refused: not a browser problem.
@@ -51,7 +54,7 @@ export default function AuthCallback() {
             .then((s) => {
                 if (s) {
                     setStatus("Signed in. Redirecting…");
-                    window.location.replace("/");
+                    window.location.replace(next);
                 } else {
                     fail(NOT_STARTED_HERE);
                 }

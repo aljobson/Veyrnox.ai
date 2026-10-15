@@ -137,10 +137,14 @@ export async function POST(req) {
     try { body = await req.json(); } catch { return NextResponse.json({ error: 'invalid_json' }, { status: 400 }); }
     const modelId = body && body.model_id;
     const idempotencyKey = body && body.idempotency_key;
+    const confirmedCredits = body && body.confirmed_credits;
     const inputs = body && body.inputs;
     if (typeof modelId !== 'string' || !MODEL_ID_RE.test(modelId)) return NextResponse.json({ error: 'model_id_required' }, { status: 400 });
     if (typeof idempotencyKey !== 'string' || !IDEMPOTENCY_RE.test(idempotencyKey)) {
         return NextResponse.json({ error: 'idempotency_key_required' }, { status: 400 });
+    }
+    if (confirmedCredits !== undefined && (!Number.isInteger(confirmedCredits) || confirmedCredits < 0)) {
+        return NextResponse.json({ error: 'confirmed_credits_invalid' }, { status: 400 });
     }
     if (!inputs || typeof inputs !== 'object' || Array.isArray(inputs)) {
         return NextResponse.json({ error: 'inputs_must_be_object' }, { status: 400 });
@@ -305,6 +309,19 @@ export async function POST(req) {
         pricedInputs = { duration_seconds: editUnits(resolved.edit) * UNIT_SECONDS };
     }
 
+    // An API client may pin the maximum charge it showed to a person. Check
+    // against this uncached catalog row after all pricing inputs are resolved,
+    // so a price change can never turn an old confirmation into permission to
+    // spend more. Browser clients omit the field and keep their existing flow.
+    const quotedCredits = priceFor(modelRow, pricedInputs);
+    if (confirmedCredits !== undefined && confirmedCredits !== quotedCredits) {
+        return NextResponse.json({
+            error: 'credit_confirmation_mismatch',
+            confirmed_credits: confirmedCredits,
+            expected_credits: quotedCredits,
+        }, { status: 409 });
+    }
+
     // 2. Resolve users.id from auth_id.
     let userId;
     try {
@@ -336,7 +353,7 @@ export async function POST(req) {
 
     // 3. Debit atomically. Creates jobs row too. Price = catalog unit price
     //    times the validated unit count; never a client-supplied number.
-    let credits = priceFor(modelRow, pricedInputs);
+    let credits = quotedCredits;
     // ADR-0072: the template this started from, recorded on the job for the Popular ranking only. It is believed only if it names a
     // real template that belongs to this model, it never reaches a provider (the provider gets storedInputs / modelInputs below),
     // and a bad or missing one is simply ignored.
