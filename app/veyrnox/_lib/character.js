@@ -191,7 +191,7 @@ export const ODDLING_ARCHETYPES = [
     name: 'Tall Order',
     hook: 'A long-limbed basics critic testing whether ordinary clothes can keep up.',
     accent: 'EXTRA LONG EDITION',
-    picks: { character_type: 'Human', gender: 'Female', ethnicity_origin_base: 'Asian', age: '20s', skin_tone: 'Golden', body_type: 'Very Skinny', height: 'Very Tall', proportions: 'Tiny Torso', hair: 'Tube Tower', hair_color: 'Copper', wardrobe_style: 'Modern Basics', rendering_style: 'Hyper-Realistic', oddling_name: 'Tall Order', oddling_obsession: 'plain white T-shirts, impossible inseams, and door frames that interrupt the outfit', oddling_voice: 'Dry oracle', oddling_show: 'Five-second verdicts', oddling_rule: 'extremely tall very skinny body with very long limbs, towering copper tube hair, fitted white T-shirt, indigo skinny jeans, white sneakers' },
+    picks: { character_type: 'Human', gender: 'Female', ethnicity_origin_base: 'Asian', age: '20s', skin_tone: 'Golden', body_type: 'Very Skinny', height: 'Tall', proportions: 'Natural', hair: 'Tube Tower', hair_color: 'Copper', wardrobe_style: 'Modern Basics', rendering_style: 'Hyper-Realistic', oddling_name: 'Tall Order', oddling_obsession: 'plain white T-shirts, impossible inseams, and door frames that interrupt the outfit', oddling_voice: 'Dry oracle', oddling_show: 'Five-second verdicts', oddling_rule: 'tall very skinny adult with natural human proportions, copper tube hair, fitted white T-shirt, indigo skinny jeans, white sneakers' },
   },
   {
     id: 'bubble-barry',
