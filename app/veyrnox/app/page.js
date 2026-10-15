@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import Image from 'next/image';
 import { AppNav } from '../_components/NavBar';
 import { Main } from '../_components/Main';
 import { PresetGallery } from '../_components/PresetGallery';
@@ -16,6 +17,25 @@ export default function Explore() {
         <p className="mt-3 mb-8 text-vx-fg-body max-w-[52ch] leading-[1.6]">
           Each one opens the studio on its model and prompt, priced before you press Generate.
         </p>
+        <Link href="/app/oddlings" className="group mb-4 grid overflow-hidden rounded-2xl border border-vx-border bg-vx-panel transition-colors hover:border-vx-accent lg:grid-cols-[1.15fr_.85fr]">
+          <div className="relative min-h-56 overflow-hidden bg-vx-base">
+            <Image
+              src="/oddlings/oddling-body-chaos.webp"
+              width={1600}
+              height={800}
+              alt="Four funny human Oddling creators with radically different silhouettes"
+              className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+            />
+            <div className="absolute inset-0 bg-linear-to-t from-black/65 via-transparent to-transparent" />
+            <span className="absolute bottom-4 left-4 rounded-full border border-white/20 bg-black/45 px-3 py-1.5 font-vx-mono text-[9px] font-bold tracking-[0.14em] text-white backdrop-blur-sm">ORIGINAL FICTIONAL CAST</span>
+          </div>
+          <span className="flex flex-col justify-center p-6 sm:p-8">
+            <span className="font-vx-mono text-[10px] font-bold tracking-[0.16em] text-vx-accent">NEW · ODDLINGS</span>
+            <span className="vx-display mt-3 text-[34px] sm:text-[42px]">Make the silhouette impossible to ignore.</span>
+            <span className="mt-4 max-w-[38ch] leading-relaxed text-vx-fg-body">Fat, muscles, bug-head mask, impossible hair: build a funny human whose body language is part of the premise, then lock the visual canon and recurring show.</span>
+            <span className="mt-5 font-bold text-vx-accent">Open the full Oddling Studio →</span>
+          </span>
+        </Link>
         <Link href="/app/chat" className="mb-8 flex flex-col gap-1 rounded-2xl border border-vx-border bg-vx-panel p-5 transition-colors hover:border-vx-accent sm:flex-row sm:items-center sm:justify-between">
           <span>
             <span className="block text-lg font-semibold">LLM Chat</span>
