@@ -395,33 +395,33 @@ export default function MascotAssistant() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 12, scale: 0.98 }}
             transition={{ duration: 0.2 }}
-            className="fixed bottom-4 left-4 z-[60] flex max-h-[min(680px,calc(100dvh-90px))] w-[min(410px,calc(100vw-32px))] flex-col overflow-hidden rounded-2xl border border-vx-border bg-vx-panel/95 shadow-2xl backdrop-blur-xl"
+            className="fixed bottom-[max(8px,env(safe-area-inset-bottom))] left-2 sm:bottom-4 sm:left-4 z-[60] flex h-[clamp(220px,34dvh,280px)] max-h-[calc(100dvh-80px)] sm:h-auto sm:max-h-[min(680px,calc(100dvh-90px))] w-[min(330px,calc(100vw-16px))] sm:w-[min(410px,calc(100vw-32px))] flex-col overflow-hidden rounded-2xl border border-vx-border bg-vx-panel/95 shadow-2xl backdrop-blur-xl"
           >
-            <header className="flex items-center justify-between gap-3 border-b border-vx-border px-5 py-4">
+            <header className="flex shrink-0 items-center justify-between gap-2 border-b border-vx-border px-3 py-1 sm:gap-3 sm:px-5 sm:py-4">
               <div>
-                <h2 id="vx-helper-title" className="text-base font-black">Ask Vey</h2>
-                <p className="mt-0.5 text-xs text-vx-fg-muted">Your animated Veyrnox guide</p>
+                <h2 id="vx-helper-title" className="text-sm font-black sm:text-base">Ask Vey</h2>
+                <p className="mt-0.5 hidden text-xs text-vx-fg-muted sm:block">Your animated Veyrnox guide</p>
               </div>
               <div className="flex items-center gap-2">
                 {messages.length > 0 && (
                   <button type="button" onClick={resetConversation} aria-label="Start a new Vey conversation"
-                    className="rounded-full border border-vx-border px-3 py-1.5 text-xs font-semibold text-vx-fg-muted hover:text-vx-fg">New</button>
+                    className="min-h-11 rounded-full border border-vx-border px-3 py-1.5 text-xs font-semibold text-vx-fg-muted hover:text-vx-fg sm:min-h-0">New</button>
                 )}
                 <button type="button" onClick={() => { setOpen(false); launcherRef.current?.focus(); }} aria-label="Close helper"
-                  className="rounded-full border border-vx-border px-3 py-1.5 text-sm text-vx-fg-muted hover:text-vx-fg">✕</button>
+                  className="min-h-11 min-w-11 rounded-full border border-vx-border px-3 py-1.5 text-sm text-vx-fg-muted hover:text-vx-fg sm:min-h-0 sm:min-w-0">✕</button>
               </div>
             </header>
 
-            <div ref={transcriptRef} role="log" aria-label="Conversation with Vey" className="overflow-y-auto px-5 py-4">
+            <div ref={transcriptRef} role="log" aria-label="Conversation with Vey" className="min-h-0 flex-1 overflow-y-auto px-3 py-2 sm:flex-initial sm:px-5 sm:py-4">
               <VeyConversation messages={messages} answer={answer} plan={plan} busy={busy}
                 showButton={showButton} actionLabel={plan?.savedOddlingId ? 'Show this saved passport' : (action?.label || `Show ${targetLabel}`)}
                 doAction={doAction} activeTarget={activeTarget} park={() => { clearTarget(); moveMascot(homePosition()); }}
                 answerSource={answerSource} feedback={feedback} rateAnswer={rateAnswer} starters={starters} ask={ask} />
             </div>
 
-            <form className="mt-auto border-t border-vx-border p-3" onSubmit={(event) => { event.preventDefault(); ask(question); }}>
+            <form className="mt-auto shrink-0 border-t border-vx-border p-2 sm:p-3" onSubmit={(event) => { event.preventDefault(); ask(question); }}>
               <label htmlFor="vx-helper-question" className="sr-only">Ask how to use Veyrnox</label>
-              <div className="flex items-end gap-2 rounded-2xl border border-vx-border bg-vx-base p-2 focus-within:border-vx-accent">
+              <div className="flex items-end gap-2 rounded-2xl border border-vx-border bg-vx-base p-1 sm:p-2 focus-within:border-vx-accent">
                 <textarea
                   ref={inputRef}
                   id="vx-helper-question"
@@ -430,14 +430,14 @@ export default function MascotAssistant() {
                   value={question}
                   onChange={(event) => setQuestion(event.target.value)}
                   placeholder="How do I…?"
-                  className="min-h-11 flex-1 resize-none bg-transparent px-2 py-1.5 text-sm text-vx-fg outline-hidden placeholder:text-vx-fg-faint"
+                  className="min-h-11 min-w-0 flex-1 resize-none bg-transparent px-2 py-1.5 text-base text-vx-fg outline-hidden placeholder:text-vx-fg-faint sm:text-sm"
                 />
                 <button type="submit" disabled={busy || !question.trim()}
-                  className="rounded-full bg-vx-accent px-4 py-2 text-sm font-extrabold text-vx-accent-ink disabled:opacity-40">
+                  className="min-h-11 shrink-0 rounded-full bg-vx-accent px-3 py-2 text-sm font-extrabold text-vx-accent-ink disabled:opacity-40 sm:min-h-0 sm:px-4">
                   {busy ? 'Thinking…' : 'Ask'}
                 </button>
               </div>
-              <p className="px-2 pt-2 text-[11px] leading-4 text-vx-fg-faint">Vey can guide and open safe areas. You always confirm spending, publishing and deletion.</p>
+              <p className="px-1 pt-1 text-[10px] leading-3 text-vx-fg-faint sm:px-2 sm:pt-2 sm:text-[11px] sm:leading-4"><span className="hidden sm:inline">Vey can guide and open safe areas. </span>You confirm spending, publishing and deletion.</p>
             </form>
           </motion.section>
         )}
