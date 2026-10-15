@@ -1,12 +1,13 @@
 'use client';
 import { useEffect } from 'react';
+import { journeyStore } from './veyrnox/_lib/veyJourneyStore';
 
 /** Dev-only: connect Reticle + install the React adapter, after hydration. */
 export function ReticleDev() {
   useEffect(() => {
     if (process.env.NODE_ENV !== 'development') return;
     void import('@reticlehq/react').then(
-      ({ reticle, install, registerCapabilities }) => {
+      ({ reticle, install, registerCapabilities, registerStore }) => {
         install();
         // Both provided by withReticle() in next.config. The bridge rejects a connect with no token;
         // the root makes source paths repo-relative instead of absolute.
@@ -29,11 +30,11 @@ export function ReticleDev() {
         // BELIEVES, not just what it rendered. Pass the STORE, not `() => store.getState()` — the
         // store form wires `subscribe` too, so every mutation emits a diff; the getter form is
         // read-only.
-        // No state library detected. If you add one, register it here — see https://docs.reticle.sh/state-management
+        registerStore('veyTask', journeyStore);
         registerCapabilities({
           testids: ['editor-import'],
           signals: [], // names you pass to reticle.signal()
-          stores: [], // the keys you registered above
+          stores: ['veyTask'],
         });
       },
     );

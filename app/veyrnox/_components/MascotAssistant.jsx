@@ -17,17 +17,17 @@ import {
   normaliseHelpPlan,
 } from '../../../lib/productHelp.js';
 import VeyCharacter from './VeyCharacter';
-import ImageWalkthrough from './ImageWalkthrough';
+import VeyTaskGuide from './VeyTaskGuide';
+import { getJourney } from '../_lib/veyJourneyStore';
+import { journeyStep } from '../../../lib/veyJourney';
 
 const HOME = { x: 18, y: 0 };
 const CHARACTER = { width: 112, height: 116 };
 const WELCOME = 'Hi, I’m Vey. Ask me how to use Veyrnox and I’ll show you where to go.';
 const MAX_CONVERSATION_MESSAGES = 10;
-
 function browserPath(pathname) {
   return (pathname || '/app').replace(/^\/veyrnox/, '') || '/app';
 }
-
 function resolveHelpAction(plan) {
   if (!plan?.action || plan.action === 'none') return null;
   const target = plan.target && HELP_TARGETS[plan.target];
@@ -72,7 +72,7 @@ export default function MascotAssistant() {
   const savedSubjectRef = useRef(null);
   const [travelling, setTravelling] = useState(false);
   const [actionPhase, setActionPhase] = useState('none');
-  const [imageTourActive, setImageTourActive] = useState(false);
+  const [journeyActive, setJourneyActive] = useState(false);
 
   const homePosition = useCallback(() => ({
     x: 18,
@@ -118,7 +118,9 @@ export default function MascotAssistant() {
     const roomLeft = rect.left >= CHARACTER.width + gap;
     let x = roomLeft ? rect.left - CHARACTER.width - gap : rect.right + gap;
     x = Math.max(8, Math.min(window.innerWidth - CHARACTER.width - 8, x));
-    const y = Math.max(72, Math.min(window.innerHeight - CHARACTER.height - 8, rect.top + rect.height / 2 - CHARACTER.height / 2));
+    const beside = roomLeft || rect.right + CHARACTER.width + gap < window.innerWidth;
+    const targetY = beside ? rect.top + rect.height / 2 - CHARACTER.height / 2 : rect.top > CHARACTER.height + 80 ? rect.top - CHARACTER.height - 8 : rect.bottom + 8;
+    const y = Math.max(72, Math.min(window.innerHeight - CHARACTER.height - 8, targetY));
     targetRef.current = element;
     setFacing(roomLeft ? 1 : -1);
     moveMascot({ x, y });
@@ -244,7 +246,9 @@ export default function MascotAssistant() {
     const asked = String(text || '').trim();
     if (!asked || busy) return;
     const history = publicHelpHistory(messages);
-    const local = savedOddlingHelp(asked, window.localStorage, {
+    const currentTask = getJourney();
+    const nextStep = currentTask.task && /\b(next|progress|task|walkthrough|what now|where am i)\b/i.test(asked) ? journeyStep(currentTask.task, { ...currentTask.view, route: pathname }) : null;
+    const local = nextStep ? { message: `${nextStep.title}. ${nextStep.message}`, target: nextStep.target, action: 'show_target', source: 'local', localOnly: true } : savedOddlingHelp(asked, window.localStorage, {
       selectedId, previousId: savedSubjectRef.current, pathname,
       loadedId: document.querySelector('[data-assistant-loaded-passport]')?.getAttribute('data-assistant-loaded-passport'),
     });
@@ -357,6 +361,7 @@ export default function MascotAssistant() {
 
   return (
     <>
+      <VeyTaskGuide visible={open} pathname={pathname} onPoint={showTarget} onStop={clearTarget} onActiveChange={setJourneyActive} />
       <AnimatePresence>
         {highlight && (
           <motion.div
@@ -432,7 +437,7 @@ export default function MascotAssistant() {
       </motion.div>
 
       <AnimatePresence>
-        {open && (
+        {open && !journeyActive && (
           <motion.section
             role="dialog"
             aria-modal="false"
@@ -459,16 +464,12 @@ export default function MascotAssistant() {
             </header>
 
             <div ref={transcriptRef} role="log" aria-label="Conversation with Vey" className="overflow-y-auto px-5 py-4">
-              <div hidden={pathname !== '/app/create'}><ImageWalkthrough onPoint={showTarget} onStop={clearTarget} onActiveChange={setImageTourActive} /></div>
-              {(!imageTourActive || pathname !== '/app/create') && <>
               <VeyConversation messages={messages} answer={answer} plan={plan} busy={busy}
                 showButton={showButton} actionLabel={plan?.savedOddlingId ? 'Show this saved passport' : (action?.label || `Show ${targetLabel}`)}
                 doAction={doAction} activeTarget={activeTarget} park={() => { clearTarget(); moveMascot(homePosition()); }}
                 answerSource={answerSource} feedback={feedback} rateAnswer={rateAnswer} starters={starters} ask={ask} />
-              </>}
             </div>
 
-            {(!imageTourActive || pathname !== '/app/create') &&
             <form className="mt-auto border-t border-vx-border p-3" onSubmit={(event) => { event.preventDefault(); ask(question); }}>
               <label htmlFor="vx-helper-question" className="sr-only">Ask how to use Veyrnox</label>
               <div className="flex items-end gap-2 rounded-2xl border border-vx-border bg-vx-base p-2 focus-within:border-vx-accent">
@@ -488,7 +489,7 @@ export default function MascotAssistant() {
                 </button>
               </div>
               <p className="px-2 pt-2 text-[11px] leading-4 text-vx-fg-faint">Vey can guide and open safe areas. You always confirm spending, publishing and deletion.</p>
-            </form>}
+            </form>
           </motion.section>
         )}
       </AnimatePresence>
