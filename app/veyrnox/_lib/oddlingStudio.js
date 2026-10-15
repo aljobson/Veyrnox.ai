@@ -10,7 +10,7 @@ export const ODDLING_STUDIO_SECTIONS = [
   { id: 'identity', label: 'Identity', hint: 'Adult age, gender, heritage and skin tone', groupIds: ['gender', 'ethnicity_origin_base', 'age', 'skin_tone'] },
   { id: 'build', label: 'Build & proportions', hint: 'Body, height, hands, feet and proportions', groupIds: ['body_type', 'height', 'proportions', 'hand_size', 'foot_size'] },
   { id: 'hair', label: 'Hair sculpture', hint: 'Geometry, scale and color', groupIds: ['hair', 'hair_color'] },
-  { id: 'head', label: 'Head & eyes', hint: 'Face silhouette, neck, eye shape and color', groupIds: ['head_shape', 'neck', 'eye_shape', 'eye_color'] },
+  { id: 'head', label: 'Head & eyes', hint: 'Head size and shape, neck, eye shape and color', groupIds: ['head_shape', 'head_size', 'neck', 'eye_shape', 'eye_color'] },
   { id: 'features', label: 'Face details', hint: 'Eye, mouth, ear and nose sizes, makeup and expressive details', groupIds: ['eyes_type', 'eyes_details', 'eye_size', 'mouth', 'mouth_size', 'ears', 'ear_size', 'nose_size', 'horns', 'skin_conditions', 'face_features', 'facial_hair'] },
   { id: 'body-details', label: 'Body details', hint: 'Material, pattern and limb design', groupIds: ['face_skin_material', 'face_surface_pattern', 'left_arm', 'right_arm', 'left_leg', 'right_leg'] },
   { id: 'style', label: 'Style world', hint: 'Wardrobe, accessories, prop and finish', groupIds: ['wardrobe_style', 'accessories', 'distinctive_features', 'rendering_style'] },
@@ -74,8 +74,11 @@ export function randomizeOddlingStyle(picks, random = Math.random) {
   for (const id of RANDOM_STYLE_GROUPS) {
     const group = groupById(id);
     if (!group?.options.length) continue;
-    const index = Math.min(group.options.length - 1, Math.floor(Math.max(0, random()) * group.options.length));
-    next[id] = group.options[index][0];
+    const options = id === 'head_shape' && next.head_size
+      ? group.options.filter(([value]) => !['Tiny Head', 'Oversized Head'].includes(value))
+      : group.options;
+    const index = Math.min(options.length - 1, Math.floor(Math.max(0, random()) * options.length));
+    next[id] = options[index][0];
   }
   return next;
 }

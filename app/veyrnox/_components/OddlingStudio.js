@@ -367,7 +367,7 @@ export default function OddlingStudio() {
               <div>
                 <span className="font-vx-mono text-[10px] font-bold tracking-[0.16em] text-vx-accent">24 HUMAN ORIGINALS · 4 OTHER BEINGS</span>
                 <h2 className="vx-display mt-2 text-5xl sm:text-6xl">Your original character, your recurring hit.</h2>
-                <p className="mt-3 max-w-2xl text-vx-fg-body">Explore expressive silhouettes, statement fashion, sculptural hair and contemporary basics. Choose body, hand, foot, eye, mouth, ear and nose sizes independently, then refine your character for portraits and motion.</p>
+                <p className="mt-3 max-w-2xl text-vx-fg-body">Explore expressive silhouettes, statement fashion, sculptural hair and contemporary basics. Choose head, body and individual feature sizes independently, then refine your character for portraits and motion.</p>
               </div>
               <div className="flex rounded-xl border border-vx-border bg-vx-panel p-1" role="tablist" aria-label="Workspace view">
                 <button type="button" role="tab" aria-selected={workspace === 'explore'} onClick={() => setWorkspace('explore')} className={`rounded-lg px-4 py-2 text-sm font-bold ${workspace === 'explore' ? 'bg-vx-base text-vx-fg' : 'text-vx-fg-muted'}`}>Explore</button>
