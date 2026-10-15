@@ -13,7 +13,7 @@ const studio = read('OddlingStudio.js');
 test('gallery loops are presentation-only and never submit or upload a generation', () => {
   assert.doesNotMatch(preview, /fetch\s*\(|gatewayFetch|\/generations|\/uploads|onAnimate|router\.push/);
   assert.match(studio, /previewsPlaying=\{previewsPlaying && motionAllowed\}/);
-  assert.match(studio, /Free puppet previews/);
+  assert.match(studio, /Free dancing puppet previews/);
   assert.match(studio, /no generation or credits/);
   const renderer = readFileSync(new URL('../app/veyrnox/_lib/oddlingPuppetRenderer.js', import.meta.url), 'utf8');
   assert.doesNotMatch(renderer, /fetch\s*\(|gatewayFetch|\/generations|\/uploads/);
@@ -29,7 +29,7 @@ test('loops pause off-screen, in hidden tabs, on user request and for reduced mo
   assert.match(preview, /renderer\?\.destroy\(\)/);
   assert.match(css, /prefers-reduced-motion: reduce[\s\S]*display: none/);
   assert.match(studio, /aria-pressed=\{previewsPlaying\}/);
-  assert.match(studio, /'Pause previews' : 'Play previews'/);
+  assert.match(studio, /'Pause dancing' : 'Play dancing'/);
 });
 
 test('motion never zooms beyond the full portrait and leaves the source untouched', () => {
@@ -73,7 +73,7 @@ test('every rig blinks, breathes, moves its head, sways its arms and takes in-pl
       assert.ok(poses.some((pose) => Math.abs(pose[feature]) > (feature === 'blink' ? 0.97 : 0.001)), `${id}: ${feature}`);
     }
     assert.ok(poses.every(({ blink, breath, angle, nod, armSwing, weightShift, step, torsoSway }) => blink >= 0 && blink <= 1
-      && Math.abs(breath) <= 0.018 && Math.abs(angle) <= puppetRig(id).tilt && Math.abs(nod) <= 2.2
+      && Math.abs(breath) <= 0.026 && Math.abs(angle) <= puppetRig(id).tilt && Math.abs(nod) <= 4.4
       && [armSwing, weightShift, step, torsoSway].every((value) => Math.abs(value) <= 1)));
     assert.deepEqual(puppetPose(NaN, id), puppetPose(0, id));
   }
@@ -104,4 +104,6 @@ test('stationary plate retains every pixel outside the head matte and never edit
   assert.match(PUPPET_FRAGMENT_SHADER, /max\(0\.0, 1\.0 - dot\(localChest, localChest\)\)/);
   assert.match(PUPPET_FRAGMENT_SHADER, /armWeight0/);
   assert.match(PUPPET_FRAGMENT_SHADER, /lowerWeight/);
+  assert.match(PUPPET_FRAGMENT_SHADER, /pose2\.x \* 26\.0/);
+  assert.match(PUPPET_FRAGMENT_SHADER, /pose2\.y \* 14\.0/);
 });
