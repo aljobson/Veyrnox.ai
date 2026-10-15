@@ -25,6 +25,7 @@ import { configuredProviders, readAuthSettings, providerAvailable, passkeyUnavai
 import { Turnstile, TURNSTILE_SITE_KEY } from "./Turnstile.jsx";
 import { AppleMark, PasskeyMark, GoogleMark } from "./AuthMarks.jsx";
 import { captchaNotice, noticeAfterCaptchaFailure, noticeAfterCaptchaToken, noticeWhileCaptchaWaits, CAPTCHA_BLOCKED_CODE, CAPTCHA_UNSUPPORTED, CAPTCHA_WAITING } from "../app/lib/turnstileFailure.js";
+import { authCallbackUrl, safeAuthReturnPath } from "../app/lib/authReturn.js";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -73,6 +74,7 @@ export default function AuthGate() {
     const [busy, setBusy] = useState(false);
     const [notice, setNotice] = useState(null);
     const [showPassword, setShowPassword] = useState(false);
+    const returnTo = useRef(null);
     // Turnstile (ADR-0026). Tokens are single-use, so every submit bumps
     // captchaReset and the widget issues a fresh one.
     const [captcha, setCaptcha] = useState(null);
@@ -145,6 +147,10 @@ export default function AuthGate() {
             // If a session already exists (race with a refresh), skip.
             if (getSession()) return;
             const wanted = ev && ev.detail && ev.detail.mode;
+            const wantedReturn = ev && ev.detail && ev.detail.returnTo;
+            // Internal path only. It is later placed in the callback URL and
+            // must never become an open redirect.
+            returnTo.current = safeAuthReturnPath(wantedReturn);
             if (wanted === "sign_up" || wanted === "sign_in" || wanted === "magic") {
                 setMode(wanted);
             }
@@ -208,7 +214,7 @@ export default function AuthGate() {
             return;
         }
         try {
-            await signInWithOAuth(provider);
+            await signInWithOAuth(provider, authCallbackUrl(returnTo.current, window.location.origin));
         } catch (err) {
             setBusy(false);
             setNotice({ kind: "error", text: humanAuthError(err) });
@@ -279,7 +285,7 @@ export default function AuthGate() {
                 await signInWithPassword(email, password, captcha);
                 close();
             } else {
-                await sendMagicLink(email, captcha);
+                await sendMagicLink(email, captcha, authCallbackUrl(returnTo.current, window.location.origin));
                 setPassword("");
                 setNotice({ kind: "success", text: "Check your email for a sign-in link." });
             }

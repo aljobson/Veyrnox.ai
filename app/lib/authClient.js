@@ -291,10 +291,10 @@ export async function signUp(email, password, captchaToken) {
  * @param {string} email
  * @param {string} [captchaToken]  Turnstile token (ADR-0026)
  */
-export async function sendMagicLink(email, captchaToken) {
+export async function sendMagicLink(email, captchaToken, redirectTo) {
     const verifier = randomVerifier();
     keepMagicVerifier(verifier);
-    const redirect = `${window.location.origin}/auth/callback`;
+    const redirect = redirectTo || `${window.location.origin}/auth/callback`;
     await post(`/auth/v1/otp?redirect_to=${encodeURIComponent(redirect)}`, withCaptcha({
         email, create_user: true, code_challenge: await s256(verifier), code_challenge_method: 's256',
     }, captchaToken));
@@ -439,6 +439,20 @@ export async function signOut() {
         method: "POST",
         headers: { apikey: anonKey, Authorization: `Bearer ${token}` },
     }).catch(() => {});
+}
+
+// Supabase OAuth 2.1 authorization-server consent. These endpoints act on
+// the signed-in resource owner; the MCP client never receives the browser's
+// Veyrnox session token.
+export function getOAuthAuthorizationDetails(authorizationId) {
+    return authed(`/auth/v1/oauth/authorizations/${encodeURIComponent(authorizationId)}`, { method: 'GET' });
+}
+
+export function respondToOAuthAuthorization(authorizationId, action) {
+    if (action !== 'approve' && action !== 'deny') throw new Error('invalid OAuth consent action');
+    return authed(`/auth/v1/oauth/authorizations/${encodeURIComponent(authorizationId)}/consent`, {
+        body: { action },
+    });
 }
 
 // ─── MFA (TOTP) ─────────────────────────────────────────────────────────────

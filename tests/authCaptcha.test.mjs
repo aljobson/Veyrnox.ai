@@ -55,7 +55,7 @@ test('AuthGate passes the widget token to every email auth call', () => {
     const src = readFileSync(new URL('../components/AuthGate.jsx', import.meta.url), 'utf8');
     assert.match(src, /signUp\(email, password, captcha\)/);
     assert.match(src, /signInWithPassword\(email, password, captcha\)/);
-    assert.match(src, /sendMagicLink\(email, captcha\)/);
+    assert.match(src, /sendMagicLink\(email, captcha, authCallbackUrl\(returnTo\.current, window\.location\.origin\)\)/);
 });
 
 test('the site key is a public Turnstile site key', async () => {

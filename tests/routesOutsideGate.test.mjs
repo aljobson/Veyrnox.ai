@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url';
 // "Routes outside the gate"). A new one fails this test until it is added on
 // purpose.
 const OUTSIDE = {
+    'app/.well-known/oauth-protected-resource/api/v1/mcp/route.js': 'public OAuth metadata',
     'app/api/catalog/route.js': 'public read',
     'app/api/credit-packs/route.js': 'public read',
     'app/api/credit-subscription-plans/route.js': 'public read',

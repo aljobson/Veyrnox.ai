@@ -180,8 +180,21 @@ const ERROR_HEADERS = {
     'referrer-policy': 'strict-origin-when-cross-origin',
 };
 
-function jsonError(status, body) {
-    return new NextResponse(JSON.stringify(body), { status, headers: { ...ERROR_HEADERS, 'x-request-id': body.requestId || crypto.randomUUID() } });
+function jsonError(status, body, extraHeaders = {}) {
+    return new NextResponse(JSON.stringify(body), {
+        status,
+        headers: { ...ERROR_HEADERS, ...extraHeaders, 'x-request-id': body.requestId || crypto.randomUUID() },
+    });
+}
+
+function mcpChallenge(req, reason) {
+    const pathname = new URL(req.url).pathname;
+    if (pathname !== '/api/v1/mcp') return {};
+    const origin = (process.env.PUBLIC_HOST || 'https://veyrnox.ai').replace(/\/$/, '');
+    const metadata = `${origin}/.well-known/oauth-protected-resource/api/v1/mcp`;
+    return {
+        'www-authenticate': `Bearer resource_metadata="${metadata}"${reason === 'missing' ? '' : ', error="invalid_token"'}`,
+    };
 }
 
 /**
@@ -194,5 +207,5 @@ function jsonError(status, body) {
  */
 function reject(req, reason, requestId) {
     console.error('[auth] rejected', new URL(req.url).pathname, 'reason:', reason);
-    return jsonError(401, { error: 'unauthorized', reason, requestId });
+    return jsonError(401, { error: 'unauthorized', reason, requestId }, mcpChallenge(req, reason));
 }
