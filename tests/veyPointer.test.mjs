@@ -20,8 +20,17 @@ function check(rect, viewport, obstacle) {
 }
 const rect = (left, top, width, height) => ({ left, top, width, height, right: left + width, bottom: top + height });
 
+test('Vey is half the original dimensions and retains a touch-friendly launcher', async () => {
+  assert.deepEqual(VEY_SIZE, { width: 112 / 2, height: 116 / 2 });
+  assert.ok(VEY_SIZE.width >= 44 && VEY_SIZE.height >= 44);
+  const { readFile } = await import('node:fs/promises');
+  const component = await readFile(new URL('../app/veyrnox/_components/MascotAssistant.jsx', import.meta.url), 'utf8');
+  assert.match(component, /width: CHARACTER.width, height: CHARACTER.height, scaleX: facing/);
+  assert.doesNotMatch(component, /h-\[116px\]|w-\[112px\]/);
+});
+
 test('fingertip lands in the exact control on narrow, wide, scrolled and resized layouts', () => {
-  for (const viewport of [{ width: 390, height: 844 }, { width: 643, height: 764 }, { width: 1440, height: 900 }]) {
+  for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 }, { width: 643, height: 764 }, { width: 1440, height: 900 }]) {
     for (const r of [rect(48, 195, 13, 13), rect(32, 120, viewport.width - 64, 160), rect(36, 540, 50, 30), rect(viewport.width - 150, 160, 100, 40)]) check(r, viewport);
   }
 });
