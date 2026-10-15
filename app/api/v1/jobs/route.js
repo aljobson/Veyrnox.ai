@@ -18,6 +18,7 @@
 import { NextResponse } from 'next/server';
 import { jobReadLimitResponse } from '../../../../lib/jobReadLimit.js';
 import { rpc, envConfig } from '../../../../packages/db/supabase-client.js';
+import { jobCursorTimestamp } from '../../../../lib/jobListCursor.js';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const PUBLIC_ERROR_RE = /^[a-z0-9_]{1,64}$/;
@@ -62,12 +63,15 @@ export async function GET(req) {
     }
 
     // The cursor is ours, handed back from `next`; both halves or neither.
-    const before = url.searchParams.get('before');
+    let before = url.searchParams.get('before');
     const beforeId = url.searchParams.get('before_id');
     if ((before === null) !== (beforeId === null)) {
         return NextResponse.json({ error: 'invalid_cursor' }, { status: 400 });
     }
-    if (before !== null && (Number.isNaN(Date.parse(before)) || !UUID_RE.test(beforeId))) {
+    try { if (before !== null) before = jobCursorTimestamp(before); } catch {
+        return NextResponse.json({ error: 'invalid_cursor' }, { status: 400 });
+    }
+    if (before !== null && !UUID_RE.test(beforeId)) {
         return NextResponse.json({ error: 'invalid_cursor' }, { status: 400 });
     }
 
@@ -113,6 +117,6 @@ export async function GET(req) {
 
     return NextResponse.json({
         jobs,
-        next: last ? { before: last.created_at, before_id: last.job_id } : null,
+        next: last ? { before: jobCursorTimestamp(last.created_at), before_id: last.job_id } : null,
     }, { headers: { 'Cache-Control': 'no-store' } });
 }

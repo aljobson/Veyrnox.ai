@@ -21,6 +21,7 @@ import { FilmLibraryMasters } from '../../_components/film/FilmLibraryMasters';
 import { DeviceLibrary } from '../../_components/DeviceLibrary';
 import { EditorLibraryRenders } from '../../_components/editor/EditorLibraryRenders';
 import { getSession, getStoredUserId, onSessionChange } from '../../../lib/authClient.js';
+import { useOlderLibraryJobs } from '../../_lib/useOlderLibraryJobs';
 
 // Account list is authoritative; local history supplies cached display names.
 const STATE_UI = {
@@ -112,6 +113,7 @@ export default function Library() {
   // Read the account list on each identity change, including a cleared cache.
   useEffect(() => {
     if(!actor){setListLive(null);setNextCursor(null);return;}
+    setNextCursor(null); setVisible(PAGE); setListLive(null);
     let cancelled = false;
     (async () => {
       try {
@@ -229,25 +231,7 @@ export default function Library() {
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [rows, visible,actor]);
 
-  const loadOlder = useCallback(async () => {
-    if (!nextCursor) return;
-    try {
-      const q = new URLSearchParams({ limit: String(PAGE * 2), before: nextCursor.before, before_id: nextCursor.before_id });
-      const page = await gatewayFetch(`/jobs?${q}`);
-      if (!Array.isArray(page.jobs)) return;
-      setRows((prev) => {
-        const seen = new Set(prev.map((r) => r.job_id));
-        const older = page.jobs.filter((j) => !seen.has(j.job_id)).map((j) => ({
-          ...hydrateFromHistory({ job_id: j.job_id, model_id: j.model_id, credits: j.credits }),
-          name: j.label, prompt: j.label, submitted_at: Date.parse(j.created_at) || undefined,
-          state: j.state, refunded: j.refunded, error_code: j.error_code, has_asset: j.has_asset, held: j.held, ...(j.held ? { asset_url: undefined } : {}), asset_expires_at: j.asset_expires_at,
-        }));
-        return [...prev, ...older];
-      });
-      setVisible((v) => v + PAGE * 2);
-      setNextCursor(page.next || null);
-    } catch { /* the button stays; the next click retries */ }
-  }, [nextCursor]);
+  const { loadOlder, loadingOlder, olderError } = useOlderLibraryJobs({ actor, nextCursor, setNextCursor, setRows, setVisible, hydrateFromHistory, pageSize: PAGE });
 
   const shown = rows.slice(0, visible);
   const list = filterRows(shown, { state: tab, kind, favourites: favOnly ? favourites : null }, models);
@@ -358,14 +342,17 @@ export default function Library() {
             ))}
           </div>
         )}
+        {olderError && <p role="alert" className="mt-4 text-center text-sm text-vx-danger">{olderError}</p>}
         {(hasMore || nextCursor) && (
           <div className="mt-6 flex justify-center">
             <button
               onClick={() => (hasMore ? setVisible((v) => v + PAGE) : loadOlder())}
               type="button"
-              className="vx-press rounded-full px-5 py-2.5 border border-vx-border text-[14px] font-bold text-vx-fg hover:border-vx-fg-muted"
+              disabled={loadingOlder}
+              aria-busy={loadingOlder}
+              className="vx-press rounded-full px-5 py-2.5 border border-vx-border text-[14px] font-bold text-vx-fg hover:border-vx-fg-muted disabled:opacity-50"
             >
-              {hasMore ? `Show ${rows.length - visible} older` : 'Load older'}
+              {loadingOlder ? 'Loading older…' : hasMore ? `Show ${Math.min(PAGE, rows.length - visible)} older` : 'Load older'}
             </button>
           </div>
         )}

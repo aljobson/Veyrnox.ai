@@ -54,6 +54,8 @@ The visible activation sequence is walk, point, tap, then click. The click is de
 
 Vey never generates or sends content, spends Credits, buys a pack, accepts terms, confirms rights, publishes, approves, connects accounts, changes security, deletes, suspends or performs moderation decisions.
 
+Library and the Create source picker both support older account jobs. Use **Load older** in Library or **Load older images** in the picker; already shown items remain on a failed read, and retry does not submit generation. Cursor timestamps retain database microseconds and use a transport-safe UTC suffix, so paging does not silently stop at a UTC offset. Source-picker previews remain bounded per click rather than fetching every asset at once.
+
 ## Adding or changing a feature
 
 1. Build the route with clear headings, labels and explanatory copy. Vey learns the basic feature automatically on the next dev or build.
