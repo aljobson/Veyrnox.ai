@@ -28,7 +28,7 @@ export default function ContactImportPanel({ accounts, onImport }) {
           subscriptionStatus, notes: notes.trim() }];
       }
       setBusy(true); const result = await onImport(accountId, contacts, mode);
-      setMessage(`${result.imported} contact${result.imported === 1 ? '' : 's'} added.`);
+      setMessage(`${result.imported} contact${result.imported === 1 ? '' : 's'} imported.`);
       if (mode === 'manual') { setExternalId(''); setName(''); setTags(''); setSubscriptionStatus('unknown'); setNotes(''); }
       else setFile(null);
     } catch (nextError) { setError(nextError?.message || 'Could not import contacts.'); }

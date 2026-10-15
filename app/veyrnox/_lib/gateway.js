@@ -5,7 +5,7 @@
 // typed GatewayError otherwise so callers can branch on .code.
 
 import { getFreshAccessToken, getSession, clearSession } from '../../lib/authClient.js';
-import { getSelectedSocialBrand } from '../../lib/socialBrandSelection.js';
+import { getSelectedSocialBrand, setSelectedSocialBrand } from '../../lib/socialBrandSelection.js';
 import { captureOperationalError } from '../../lib/analyticsClient.js';
 import { normaliseGatewayPath } from '../../lib/analyticsPrivacy.js';
 
@@ -40,7 +40,7 @@ export class GatewayError extends Error {
  * @param {string} path       leading slash, e.g. '/balance', '/jobs/123'
  * @param {RequestInit} [init]
  */
-export async function gatewayFetch(path, init = {}) {
+export async function gatewayFetch(path, init = {}, brandRetried = false) {
   const token = await getFreshAccessToken();
   if (!token) {
     dispatchAuthRequired();
@@ -93,6 +93,15 @@ export async function gatewayFetch(path, init = {}) {
   try { body = await res.json(); } catch { /* no body */ }
   assertCurrentAccount();
   if (!res.ok) {
+    // A removed team membership must not strand read pages on a stale brand.
+    // Retry only reads, once, under the current/default authorized brand.
+    if (!brandRetried && path.startsWith('/social/') && selectedBrand && res.status === 404 && body?.error === 'brand_not_found'
+        && String(init.method || 'GET').toUpperCase() === 'GET') {
+      if (getSelectedSocialBrand() === selectedBrand) setSelectedSocialBrand('');
+      const recovered = await gatewayFetch(path, init, true);
+      assertCurrentAccount();
+      return recovered;
+    }
     if (res.status >= 500) {
       captureOperationalError('gateway_server_error', {
         route: normaliseGatewayPath(path),

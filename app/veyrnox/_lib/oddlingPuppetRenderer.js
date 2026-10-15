@@ -17,11 +17,15 @@ uniform sampler2D head;
 uniform vec2 size;
 uniform vec2 pivot;
 uniform vec4 chest;
+uniform vec4 arm0;
+uniform vec4 arm1;
+uniform vec4 lower;
 uniform vec4 eye0;
 uniform vec4 eye1;
 uniform vec3 lid0;
 uniform vec3 lid1;
 uniform vec4 pose; // blink, breath, angle, nod
+uniform vec4 pose2; // arm swing, weight shift, alternating step, torso sway
 
 vec3 eyelid(vec3 color, vec2 point, vec4 eye, vec3 lid) {
   vec2 d = (point - eye.xy) / eye.zw;
@@ -36,8 +40,23 @@ void main() {
   vec2 point = uv * size;
   vec2 localChest = (point - chest.xy) / chest.zw;
   float weight = pow(max(0.0, 1.0 - dot(localChest, localChest)), 2.0);
-  // The warp is zero at/outside the chest boundary: backdrop and feet stay fixed.
+  // Every warp reaches zero at its body-zone boundary, keeping the backdrop fixed.
   vec2 bodyPoint = point - (point - chest.xy) * pose.y * weight;
+  bodyPoint.x -= pose2.w * 6.0 * weight;
+
+  vec2 localArm0 = (point - arm0.xy) / arm0.zw;
+  vec2 localArm1 = (point - arm1.xy) / arm1.zw;
+  float armWeight0 = pow(max(0.0, 1.0 - dot(localArm0, localArm0)), 2.0);
+  float armWeight1 = pow(max(0.0, 1.0 - dot(localArm1, localArm1)), 2.0);
+  float reach0 = 0.45 + 0.55 * smoothstep(-1.0, 1.0, localArm0.y);
+  float reach1 = 0.45 + 0.55 * smoothstep(-1.0, 1.0, localArm1.y);
+  bodyPoint -= vec2(pose2.x * 14.0 * reach0, abs(pose2.x) * 3.0) * armWeight0;
+  bodyPoint -= vec2(-pose2.x * 14.0 * reach1, abs(pose2.x) * 3.0) * armWeight1;
+
+  vec2 localLower = (point - lower.xy) / lower.zw;
+  float lowerWeight = pow(max(0.0, 1.0 - dot(localLower, localLower)), 2.0);
+  float legSide = smoothstep(-0.18, 0.18, localLower.x) * 2.0 - 1.0;
+  bodyPoint -= vec2(pose2.y * 8.0, pose2.z * 6.0 * legSide) * lowerWeight;
   vec3 color = texture2D(plate, bodyPoint / size).rgb;
 
   float c = cos(pose.z), s = sin(pose.z);
@@ -177,6 +196,8 @@ export function createOddlingPuppet(canvas, image, id, rig) {
     gl.uniform2f(gl.getUniformLocation(program, 'size'), width, height);
     gl.uniform2fv(gl.getUniformLocation(program, 'pivot'), rig.pivot);
     gl.uniform4fv(gl.getUniformLocation(program, 'chest'), rig.chest);
+    rig.arms.forEach((arm, index) => gl.uniform4fv(gl.getUniformLocation(program, `arm${index}`), arm));
+    gl.uniform4fv(gl.getUniformLocation(program, 'lower'), rig.lower);
     rig.eyes.forEach((eye, index) => {
       gl.uniform4fv(gl.getUniformLocation(program, `eye${index}`), eye);
       gl.uniform3fv(gl.getUniformLocation(program, `lid${index}`), layers.lids[index]);
@@ -184,6 +205,7 @@ export function createOddlingPuppet(canvas, image, id, rig) {
     canvas.width = 512; canvas.height = 768;
     gl.viewport(0, 0, canvas.width, canvas.height);
     const poseLocation = gl.getUniformLocation(program, 'pose');
+    const pose2Location = gl.getUniformLocation(program, 'pose2');
     let lost = false;
     const onLost = (event) => { event.preventDefault(); lost = true; };
     canvas.addEventListener('webglcontextlost', onLost);
@@ -192,9 +214,12 @@ export function createOddlingPuppet(canvas, image, id, rig) {
         if (lost || gl.isContextLost()) return false;
         const pose = puppetPose(seconds, id, rig);
         gl.uniform4f(poseLocation, pose.blink, pose.breath, pose.angle, pose.nod);
+        gl.uniform4f(pose2Location, pose.armSwing, pose.weightShift, pose.step, pose.torsoSway);
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
         const blinkState = pose.blink > 0.9 ? 'closed' : 'open';
         if (canvas.dataset.blinkState !== blinkState) canvas.dataset.blinkState = blinkState;
+        const bodyState = pose.step > 0.35 ? 'right-step' : pose.step < -0.35 ? 'left-step' : 'weight-shift';
+        if (canvas.dataset.bodyMotionState !== bodyState) canvas.dataset.bodyMotionState = bodyState;
         return true;
       },
       destroy() { canvas.removeEventListener('webglcontextlost', onLost); destroy(); },

@@ -48,14 +48,14 @@ export async function PUT(req) {
   const theme = body?.theme;
   const items = body?.items;
   if (!SLUG.test(slug) || !title || title.length > 80 || bio.length > 280 || !THEMES.has(theme) || typeof body?.published !== 'boolean' || !Array.isArray(items) || items.length > 20 ||
-      items.some((item) => !item || typeof item.label !== 'string' || !item.label.trim() || item.label.trim().length > 60 || typeof item.url !== 'string' || !/^https:\/\//.test(item.url) || item.url.length > 1000 || typeof item.enabled !== 'boolean') ||
+      items.some((item) => !item || (item.id != null && (typeof item.id !== 'string' || !UUID.test(item.id))) || typeof item.label !== 'string' || !item.label.trim() || item.label.trim().length > 60 || typeof item.url !== 'string' || !/^https:\/\//.test(item.url) || item.url.length > 1000 || typeof item.enabled !== 'boolean') ||
       (avatarUrl && (!/^https:\/\//.test(avatarUrl) || avatarUrl.length > 1000))) return NextResponse.json({ error: 'invalid_body' }, { status: 400 });
   const limited = await socialPostWriteLimit(authId, cfg); if (limited) return limited;
   const brand = await resolveBrand(authId, cfg, 'api/v1/social/smartlink:PUT', { request: req, allowedRoles: ['owner', 'manager', 'editor'] }); if (brand.error) return brand.error;
   try {
     const result = await rpc('save_social_smartlink', { p_auth_id: authId, p_brand_id: brand.brandId, p_slug: slug, p_title: title,
       p_bio: bio || null, p_avatar_url: avatarUrl || null, p_theme: theme, p_published: body.published,
-      p_items: items.map((item) => ({ label: item.label.trim(), url: item.url, enabled: item.enabled })) }, cfg);
+      p_items: items.map((item) => ({ ...(item.id ? { id: item.id } : {}), label: item.label.trim(), url: item.url, enabled: item.enabled })) }, cfg);
     return mapResult(result) || NextResponse.json({ smartlink_id: result.smartlink_id });
   } catch (err) {
     console.error('[api/v1/social/smartlink:PUT] failed:', err instanceof SupabaseError ? err.status : 0);
