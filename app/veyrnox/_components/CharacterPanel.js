@@ -120,7 +120,7 @@ export function CharacterPanel({ enabled, onToggle, picks, onChange }) {
                 <span className="font-vx-mono text-[9px] text-vx-fg-faint">{starters.length} STARTERS</span>
               </div>
               <div className="mb-2 flex gap-2" aria-label="Starter type">
-                <button type="button" onClick={() => setStarterKind('human')} aria-pressed={isHuman} className={pill(isHuman)}>Weird humans</button>
+                <button type="button" onClick={() => setStarterKind('human')} aria-pressed={isHuman} className={pill(isHuman)}>Human characters</button>
                 <button type="button" onClick={() => setStarterKind('creature')} aria-pressed={!isHuman} className={pill(!isHuman)}>Other beings</button>
               </div>
               <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
