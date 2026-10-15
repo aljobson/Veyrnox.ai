@@ -35,6 +35,8 @@ import { settingsInputs, voiceIsMissing } from '../../_lib/generationSettings';
 import { promptText, promptIsMissing, promptPlaceholder } from '../../_lib/promptBox';
 import { ParticleButton } from '@/components/ParticleButton';
 import { jobStateUi, SLOW_MODEL_WAIT } from '../../_lib/studioStates';
+import { useCreateJourney } from '../../_lib/useCreateJourney';
+import { getJourney, trackJourneyJob } from '../../_lib/veyJourneyStore';
 const DEFAULT_MODEL = 'wan-2.5-kie';
 // Auto Short stays hidden until launch unless this browser opts in
 // (CLAUDE.md "Delivery": new user paths behind localStorage.veyrnox_*).
@@ -180,6 +182,9 @@ export default function CreateStudio() {
   // job to ledger_debit, and a second debit. The server is idempotent per
   // key; the client was defeating it by changing the key.
   const inFlight = useRef(false);
+  useCreateJourney({ model, models, catalogLive, prompt, characterOn, character, sources, duration, aspect, n, cost, balance,
+    missingSource, missingConsent, missingPrompt, missingVoice, animationMismatch, generating, sending, jobs, error, seed, negative, cinemaOn, cinema,
+    setModelId, setPrompt, setSources, setConsent, setDuration, setAnimationPortrait });
 
   // A 10s selection must not survive a switch to a model that only sells 5s:
   // the gateway would reject it and the quoted price would have been double.
@@ -192,6 +197,7 @@ export default function CreateStudio() {
   }, [catalogLoading, model, durationKey, duration]);
 
   function pickSource(slot, file, asset = null) {
+    setConsent(false);
     setSources((prev) => {
       if (prev[slot]?.file) URL.revokeObjectURL(prev[slot].previewUrl);
       const next = { ...prev };
@@ -276,6 +282,7 @@ export default function CreateStudio() {
     if (missingVoice) { inFlight.current = false; setError({ code: 'inputs_invalid:voice_description' }); return; }
     setError(null);
     setSending(true);
+    const submittedTask = getJourney().task;
     const keys = Array.from({ length: n }, () => makeIdempotencyKey());
     // An Auto Short takes only its topic; the pipeline picks the format.
     const inputs = isShort ? { topic: prompt.trim() } : {
@@ -312,6 +319,7 @@ export default function CreateStudio() {
         const jobCredits = submitted.free_allowance === true ? 0 : unitCost;
         // The first accepted job replaces the previous click's jobs.
         (i === 0 ? startJobs : addJob)({ job_id: submitted.job_id, state: 'queued', credits: jobCredits, model_id: modelId });
+        if (i === 0) trackJourneyJob(submitted.job_id, model.kind, submittedTask);
         pushJobHistory({
           job_id: submitted.job_id,
           model_id: modelId,
@@ -357,6 +365,7 @@ export default function CreateStudio() {
             <Chip tone="neutral">UNSAVED DRAFT</Chip>
           </div>
 
+          <div data-assistant-target="create.result" className="scroll-mt-24">
           {jobs.length > 1 ? <StudioJobGrid jobs={jobs} aspect={aspect} /> : (
             <div
               className={`relative rounded-2xl border border-vx-border bg-vx-panel overflow-hidden ${generating ? 'vx-shimmer' : ''}`}
@@ -398,6 +407,7 @@ export default function CreateStudio() {
               )}
             </div>
           )}
+          </div>
 
           <textarea
             data-assistant-target="create.prompt"
