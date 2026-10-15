@@ -121,7 +121,7 @@ export default function MascotAssistant() {
     const beside = roomLeft || rect.right + CHARACTER.width + gap < window.innerWidth;
     const targetY = beside ? rect.top + rect.height / 2 - CHARACTER.height / 2 : rect.top > CHARACTER.height + 80 ? rect.top - CHARACTER.height - 8 : rect.bottom + 8;
     const y = Math.max(72, Math.min(window.innerHeight - CHARACTER.height - 8, targetY));
-    targetRef.current = element;
+    targetRef.current = { element, id };
     setFacing(roomLeft ? 1 : -1);
     moveMascot({ x, y });
     setHighlight({ left: rect.left, top: rect.top, width: rect.width, height: rect.height });
@@ -190,7 +190,7 @@ export default function MascotAssistant() {
 
   useEffect(() => {
     const update = () => {
-      if (targetRef.current && activeTarget) measureTarget(targetRef.current, activeTarget);
+      if (targetRef.current) measureTarget(targetRef.current.element, targetRef.current.id);
       else setPosition(open ? perchPosition() : homePosition());
     };
     window.addEventListener('resize', update);
@@ -199,7 +199,7 @@ export default function MascotAssistant() {
       window.removeEventListener('resize', update);
       window.removeEventListener('scroll', update);
     };
-  }, [activeTarget, homePosition, measureTarget, open, perchPosition]);
+  }, [homePosition, measureTarget, open, perchPosition]);
 
   // Re-subscribing scroll listeners must not cancel a journey already in flight.
   useEffect(() => () => {
@@ -361,7 +361,7 @@ export default function MascotAssistant() {
 
   return (
     <>
-      <VeyTaskGuide visible={open} pathname={pathname} onPoint={showTarget} onStop={clearTarget} onActiveChange={setJourneyActive} />
+      <VeyTaskGuide visible={open} pathname={pathname} onPoint={showTarget} onStop={clearTarget} onActiveChange={setJourneyActive} onAsk={ask} />
       <AnimatePresence>
         {highlight && (
           <motion.div
@@ -372,7 +372,7 @@ export default function MascotAssistant() {
             className="pointer-events-none fixed z-[58] rounded-xl border-2 border-vx-accent shadow-[0_0_0_5px_rgb(var(--vx-accent)/0.18),0_0_34px_rgb(var(--vx-accent)/0.34)]"
             initial={reduceMotion ? false : { opacity: 0, scale: 0.92 }}
             animate={{ opacity: [0.72, 1, 0.72], scale: 1 }}
-            exit={{ opacity: 0 }}
+            exit={{ opacity: 0, transition: { duration: 0.15, repeat: 0 } }}
             transition={{ opacity: { duration: 1.4, repeat: Infinity }, scale: { duration: 0.25 } }}
             style={highlight}
           />
@@ -389,7 +389,7 @@ export default function MascotAssistant() {
             style={{ left: highlight.left + highlight.width / 2 - 16, top: highlight.top + highlight.height / 2 - 16 }}
             initial={reduceMotion ? false : { opacity: 0.95, scale: 0.35 }}
             animate={reduceMotion ? { opacity: 0.9, scale: 1 } : { opacity: [0.95, 0], scale: [0.35, 2.1] }}
-            exit={{ opacity: 0 }}
+            exit={{ opacity: 0, transition: { duration: 0.15, repeat: 0 } }}
             transition={{ duration: 0.52, repeat: reduceMotion ? 0 : Infinity, ease: 'easeOut' }}
           />
         )}
