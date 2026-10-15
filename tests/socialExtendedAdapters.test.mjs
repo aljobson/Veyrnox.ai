@@ -34,6 +34,18 @@ test('readiness exposes eleven networks but no credentials, with explicit flag a
     assert.equal(networkReadiness({ ...env, SOCIAL_TOKEN_ENCRYPTION_KEY: '' }).every((n) => !n.available), true);
 });
 
+test('Facebook reuses a shared Instagram Meta app when dedicated bindings are absent', () => {
+    const shared = adapters.facebook.config({
+        INSTAGRAM_CLIENT_ID: '2428989684301953',
+        META_APP_SECRET: 'shared-meta-secret',
+    });
+    assert.deepEqual(shared, { clientId: '2428989684301953', clientSecret: 'shared-meta-secret' });
+    assert.deepEqual(adapters.facebook.config({
+        FACEBOOK_CLIENT_ID: '123456789', FACEBOOK_CLIENT_SECRET: 'facebook-secret',
+        INSTAGRAM_CLIENT_ID: '2428989684301953', META_APP_SECRET: 'shared-meta-secret',
+    }), { clientId: '123456789', clientSecret: 'facebook-secret' });
+});
+
 test('each new OAuth URL binds state and uses its own registered HTTPS callback', () => {
     for (const network of ['facebook', 'threads', 'pinterest', 'twitch', 'gmb']) {
         const redirectUri = `https://staging.test/social/connect/callback/${network}`;

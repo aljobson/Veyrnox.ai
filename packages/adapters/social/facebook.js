@@ -3,7 +3,12 @@ import { authorizeUrl, bearer, requireImage } from './common.js';
 const BASE = 'https://graph.facebook.com/v23.0';
 export const SCOPES = ['pages_show_list', 'pages_read_engagement', 'pages_manage_posts'];
 export function config(env = process.env) {
-    const clientId = env.FACEBOOK_CLIENT_ID || env.META_APP_ID, clientSecret = env.FACEBOOK_CLIENT_SECRET || env.META_APP_SECRET;
+    // A single Meta app can serve both Instagram Login and Facebook Login.
+    // Production names its public app id INSTAGRAM_CLIENT_ID to avoid spending
+    // another Worker binding on a duplicate value, so keep that as the final
+    // fallback while allowing dedicated Facebook credentials to win.
+    const clientId = env.FACEBOOK_CLIENT_ID || env.META_APP_ID || env.INSTAGRAM_CLIENT_ID;
+    const clientSecret = env.FACEBOOK_CLIENT_SECRET || env.META_APP_SECRET || env.INSTAGRAM_CLIENT_SECRET;
     return /^\d{5,32}$/.test(clientId || '') && clientSecret?.length >= 8 ? { clientId, clientSecret } : null;
 }
 export const buildAuthorizeUrl = (cfg, input) => authorizeUrl('https://www.facebook.com/v23.0/dialog/oauth', cfg, input, SCOPES);
