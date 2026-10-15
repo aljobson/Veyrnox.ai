@@ -46,7 +46,7 @@ export function SourcePickers({ media, sources, onPick, onDraw, onLibrary }) {
           <button onClick={onDraw} className={pill}>Draw</button>
         )}
         {slot === 'image' && onLibrary && (
-          <button type="button" onClick={() => onLibrary(slot)} className={pill}>From library</button>
+          <button data-assistant-control="create.upload" type="button" onClick={() => onLibrary(slot)} className={pill}>From library</button>
         )}
         <label className={`${pill} cursor-pointer has-focus-visible:outline-solid has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-vx-accent`}>
           {picked ? 'Replace' : ui.add}

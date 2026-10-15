@@ -482,7 +482,7 @@ export default function CreateStudio() {
         {/* ============ CONTROLS ============ */}
         <aside className="flex flex-col gap-5">
           <div className="rounded-2xl border border-vx-border bg-vx-panel p-5">
-            <div data-assistant-target="create.models" data-selected-kind={model?.kind} className="scroll-mt-24 flex items-baseline justify-between mb-3">
+            <div className="flex items-baseline justify-between mb-3">
               <span className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">MODEL</span>
               {catalogLive ? (
                 <span className="inline-flex items-center gap-1 font-vx-mono text-[9px] tracking-[0.12em] text-vx-accent">
@@ -506,10 +506,12 @@ export default function CreateStudio() {
                 </button>
               ))}
             </div>
-            <div role="group" aria-label="Model" className="flex flex-col gap-1.5">
+            <div data-assistant-target="create.models" data-selected-kind={model?.kind} role="group" aria-label="Model" className="scroll-mt-24 flex flex-col gap-1.5">
               {visibleModels.map((m) => (
                 <button
                   key={m.id}
+                  data-model-kind={m.kind}
+                  data-requires-image={m.media?.image?.required ? 'true' : undefined}
                   onClick={() => setModelId(m.id)}
                   aria-pressed={modelId === m.id}
                   className={`flex items-center justify-between rounded-lg px-3 py-2.5 border ${
@@ -533,7 +535,7 @@ export default function CreateStudio() {
             </div>
           </div>
 
-          {model?.kind === 'video' && durations.length > 1 && (
+          {model?.kind === 'video' && (
             <ControlRow assistantTarget="create.duration" label="DURATION" options={durations} value={duration} onChange={setDuration} />
           )}
           {aspectOptions.length > 0 && (

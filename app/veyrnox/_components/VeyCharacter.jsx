@@ -1,4 +1,5 @@
 import { AnimatePresence, motion } from 'motion/react';
+import { VEY_SHOULDER } from '../../../lib/veyPointer';
 
 const LOOP = { duration: 1.8, repeat: Infinity, ease: 'easeInOut' };
 const QUICK_LOOP = { duration: 0.52, repeat: Infinity, ease: 'easeInOut' };
@@ -7,12 +8,16 @@ function animated(reducedMotion, active, still) {
   return reducedMotion ? still : active;
 }
 
-export default function VeyCharacter({ pose = 'idle', reducedMotion = false }) {
+export default function VeyCharacter({ pose = 'idle', reducedMotion = false, hand = null }) {
   const walking = pose === 'walking';
   const pointing = pose === 'guiding' || pose === 'tapping';
   const tapping = pose === 'tapping';
   const thinking = pose === 'thinking';
   const listening = pose === 'listening';
+  const aimed = pointing && hand;
+  const dx = hand ? hand.x - VEY_SHOULDER.x : 0, dy = hand ? hand.y - VEY_SHOULDER.y : 0;
+  const reach = Math.hypot(dx, dy);
+  const angle = Math.atan2(dy, dx) * 180 / Math.PI;
 
   const headAnimation = animated(reducedMotion,
     thinking
@@ -50,7 +55,7 @@ export default function VeyCharacter({ pose = 'idle', reducedMotion = false }) {
     <svg
       aria-hidden="true"
       viewBox="0 0 160 170"
-      className="h-full w-full overflow-visible drop-shadow-[0_12px_22px_rgb(0_0_0/0.34)]"
+      className="pointer-events-none h-full w-full overflow-visible drop-shadow-[0_12px_22px_rgb(0_0_0/0.34)]"
       data-vey-pose={pose}
     >
       <defs>
@@ -125,7 +130,14 @@ export default function VeyCharacter({ pose = 'idle', reducedMotion = false }) {
         </motion.g>
       </motion.g>
 
-      <motion.g
+      {aimed ? <g data-part="aimed-arm" transform={`translate(${VEY_SHOULDER.x} ${VEY_SHOULDER.y}) rotate(${angle})`}>
+        <path d={`M0 0 L${Math.max(0, reach - 20)} 0`} fill="none" stroke="#172329" strokeWidth="13" strokeLinecap="round" />
+        <path d={`M0 -2 L${Math.max(0, reach - 20)} -2`} fill="none" stroke="#718f94" strokeWidth="3" strokeLinecap="round" />
+        <g data-part="pointing-hand" transform={`translate(${reach} 0)`}>
+          <path d="M-24 -6 Q-28 -8 -29 -2 Q-30 6 -22 9 L-14 9 Q-9 9 -10 4 L-8 3 L0 0 Q2 -2 -1 -4 L-17 -3 L-17 -7 Q-20 -10 -24 -6Z" fill="url(#vey-shell)" stroke="#789b9f" strokeWidth="1.5" />
+          <circle data-testid="assistant-fingertip" cx="0" cy="0" r="2" fill="#23e6c3" />
+        </g>
+      </g> : <motion.g
         data-part="right-arm"
         style={{ transformBox: 'fill-box', transformOrigin: 'left center' }}
         animate={rightArmAnimation}
@@ -144,7 +156,7 @@ export default function VeyCharacter({ pose = 'idle', reducedMotion = false }) {
           <path d="M139 59 C137 54 139 50 143 50 C146 50 147 53 146 56 L153 48 C156 45 160 48 158 52 L151 62 C149 68 143 72 138 69 C134 67 134 62 139 59Z" fill="#172329" stroke="#6b858b" strokeWidth="1.5" />
           <path d="M146 56 L151 61 M149 53 L154 58" stroke="#92adb1" strokeWidth="1" strokeLinecap="round" />
         </motion.g>
-      </motion.g>
+      </motion.g>}
 
       <motion.g
         data-part="body"
@@ -196,7 +208,7 @@ export default function VeyCharacter({ pose = 'idle', reducedMotion = false }) {
       </motion.g>
 
       <AnimatePresence>
-        {tapping && (
+        {tapping && !aimed && (
           <motion.g
             data-part="tap-ripple"
             initial={reducedMotion ? false : { opacity: 0.9, scale: 0.3 }}
