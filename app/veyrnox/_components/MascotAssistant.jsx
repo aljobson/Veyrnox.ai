@@ -93,6 +93,10 @@ export default function MascotAssistant() {
   }, [activeTarget, homePosition, open, perchPosition]);
 
   const clearTarget = useCallback(() => {
+    window.clearTimeout(timerRef.current);
+    window.clearTimeout(actionTimerRef.current);
+    setActionPhase('none');
+    setPendingTarget(null);
     targetRef.current = null;
     setActiveTarget(null);
     setHighlight(null);
@@ -142,6 +146,8 @@ export default function MascotAssistant() {
     if (!definition) return false;
     const element = firstVisible(definition.selector);
     if (!element) return false;
+    window.clearTimeout(actionTimerRef.current);
+    setActionPhase('none');
     element.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center', inline: 'nearest' });
     window.clearTimeout(timerRef.current);
     timerRef.current = window.setTimeout(() => {
@@ -190,11 +196,15 @@ export default function MascotAssistant() {
     return () => {
       window.removeEventListener('resize', update);
       window.removeEventListener('scroll', update);
-      window.clearTimeout(timerRef.current);
-      window.clearTimeout(travelTimerRef.current);
-      window.clearTimeout(actionTimerRef.current);
     };
   }, [activeTarget, homePosition, measureTarget, open, perchPosition]);
+
+  // Re-subscribing scroll listeners must not cancel a journey already in flight.
+  useEffect(() => () => {
+    window.clearTimeout(timerRef.current);
+    window.clearTimeout(travelTimerRef.current);
+    window.clearTimeout(actionTimerRef.current);
+  }, [pathname]);
 
   useEffect(() => {
     if (!open) return;
