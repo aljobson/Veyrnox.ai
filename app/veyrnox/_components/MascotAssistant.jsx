@@ -372,7 +372,7 @@ export default function MascotAssistant() {
             className="pointer-events-none fixed z-[58] rounded-xl border-2 border-vx-accent shadow-[0_0_0_5px_rgb(var(--vx-accent)/0.18),0_0_34px_rgb(var(--vx-accent)/0.34)]"
             initial={reduceMotion ? false : { opacity: 0, scale: 0.92 }}
             animate={{ opacity: [0.72, 1, 0.72], scale: 1 }}
-            exit={{ opacity: 0 }}
+            exit={{ opacity: 0, transition: { duration: 0.15, repeat: 0 } }}
             transition={{ opacity: { duration: 1.4, repeat: Infinity }, scale: { duration: 0.25 } }}
             style={highlight}
           />
@@ -389,7 +389,7 @@ export default function MascotAssistant() {
             style={{ left: highlight.left + highlight.width / 2 - 16, top: highlight.top + highlight.height / 2 - 16 }}
             initial={reduceMotion ? false : { opacity: 0.95, scale: 0.35 }}
             animate={reduceMotion ? { opacity: 0.9, scale: 1 } : { opacity: [0.95, 0], scale: [0.35, 2.1] }}
-            exit={{ opacity: 0 }}
+            exit={{ opacity: 0, transition: { duration: 0.15, repeat: 0 } }}
             transition={{ duration: 0.52, repeat: reduceMotion ? 0 : Infinity, ease: 'easeOut' }}
           />
         )}
