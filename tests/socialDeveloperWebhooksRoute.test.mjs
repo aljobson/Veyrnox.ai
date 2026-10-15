@@ -1,0 +1,18 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { register } from 'node:module';
+register('data:text/javascript,'+encodeURIComponent(`export async function resolve(s,c,next){return next(s==='next/server'?'next/server.js':s,c)}`));
+Object.assign(process.env,{SUPABASE_URL:'https://db.test',SUPABASE_SERVICE_ROLE_KEY:'test-only',SOCIAL_TOKEN_ENCRYPTION_KEY:Buffer.alloc(32,9).toString('base64'),PUBLISH_CUSTOMER_WEBHOOKS_ENABLED:'true',ACCOUNT_READ_RATE_LIMIT_ENABLED:'true'});
+const {GET,POST,DELETE}=await import('../app/api/v1/social/developer/webhooks/route.js');
+const auth='11111111-1111-4111-8111-111111111111',brand='22222222-2222-4222-8222-222222222222',endpoint='33333333-3333-4333-8333-333333333333';
+const request=(url='https://veyrnox.test/api/v1/social/developer/webhooks',init={})=>new Request(url,{...init,headers:{'x-veyrnox-auth-id':auth,...init.headers}});
+let calls=[];
+function stub(overrides={}){calls=[];globalThis.fetch=async(url,init)=>{const name=new URL(url).pathname.split('/').pop(),args=JSON.parse(init.body);calls.push({name,args});const result=overrides[name]??({consume_account_read_request:{ok:true},consume_social_post_write_request:{ok:true},get_or_create_default_social_brand:{ok:true,brand_id:brand,label:'Veyrnox'},list_social_webhook_endpoints:{ok:true,endpoints:[]},list_social_webhook_deliveries:{ok:true,deliveries:[]},create_social_webhook_endpoint:{ok:true,endpoint_id:endpoint},revoke_social_webhook_endpoint:{ok:true}})[name];return Response.json(result);};}
+
+test('webhook endpoints and delivery logs are listed without encrypted secrets or payloads',async()=>{stub({list_social_webhook_endpoints:{ok:true,endpoints:[{id:endpoint,label:'Production',url:'https://hooks.example.com/events',events:['post.published'],active:true}]},list_social_webhook_deliveries:{ok:true,deliveries:[{id:'event',event_type:'post.published',outcome:'delivered'}]}});const response=await GET(request());assert.equal(response.status,200);const body=await response.json();assert.equal(body.endpoints.length,1);assert.equal(body.deliveries.length,1);assert.ok(!JSON.stringify(body).includes('secret_enc'));assert.ok(!JSON.stringify(body).includes('payload'));});
+
+test('creating a webhook returns its secret once and stores only encrypted material',async()=>{stub();const response=await POST(request(undefined,{method:'POST',body:JSON.stringify({label:'Production',url:'https://hooks.example.com/events',events:['post.published','post.failed']})}));assert.equal(response.status,201);const body=await response.json();assert.match(body.signing_secret,/^vxwhsec_[A-Za-z0-9_-]{43}$/);const create=calls.find((call)=>call.name==='create_social_webhook_endpoint');assert.match(create.args.p_secret_enc,/^\\x[0-9a-f]+$/);assert.ok(!JSON.stringify(create).includes(body.signing_secret));assert.deepEqual(create.args.p_events,['post.published','post.failed']);});
+
+test('unsafe webhook URLs are rejected before brand or database work',async()=>{stub();for(const url of ['http://example.com/hook','https://127.0.0.1/hook','https://localhost/hook']){calls=[];const response=await POST(request(undefined,{method:'POST',body:JSON.stringify({label:'Bad',url,events:['post.failed']})}));assert.equal(response.status,400);assert.deepEqual(calls,[]);}});
+
+test('an endpoint can be revoked',async()=>{stub();const response=await DELETE(request(`https://veyrnox.test/api/v1/social/developer/webhooks?id=${endpoint}`,{method:'DELETE'}));assert.equal(response.status,200);assert.deepEqual(calls.find((call)=>call.name==='revoke_social_webhook_endpoint').args,{p_auth_id:auth,p_brand_id:brand,p_endpoint_id:endpoint});});

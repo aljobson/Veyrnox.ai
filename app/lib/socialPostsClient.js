@@ -9,8 +9,9 @@
 import { gatewayFetch } from '../veyrnox/_lib/gateway.js';
 
 /** Lists the caller's scheduled/published posts, newest first. */
-export async function listSocialPosts({ beforeCreatedAt, beforeId } = {}) {
+export async function listSocialPosts({ beforeCreatedAt, beforeId, limit } = {}) {
     const params = new URLSearchParams();
+    if (limit) params.set('limit', String(limit));
     if (beforeCreatedAt && beforeId) {
         params.set('before_created_at', beforeCreatedAt);
         params.set('before_id', beforeId);
@@ -25,11 +26,22 @@ export async function listSocialPosts({ beforeCreatedAt, beforeId } = {}) {
  * comment in packages/db/schema/supabase/0156): [{ mediaType, jobId }].
  * Returns { post_id, idempotent, target_count }. Throws GatewayError.
  */
-export async function createSocialPost({ scheduledAt, publishNow, globalText, idempotencyKey, accountIds, media, youtubeVisibility }) {
+export async function createSocialPost({ scheduledAt, publishNow, globalText, networkText, idempotencyKey, accountIds, media, youtubeVisibility }) {
     return gatewayFetch('/social/posts', {
         method: 'POST',
-        body: JSON.stringify({ scheduledAt, ...(publishNow !== undefined ? { publishNow } : {}), globalText: globalText || null, idempotencyKey, accountIds, media, youtubeVisibility }),
+        body: JSON.stringify({ scheduledAt, ...(publishNow !== undefined ? { publishNow } : {}), globalText: globalText || null, networkText, idempotencyKey, accountIds, media, youtubeVisibility }),
     });
+}
+
+/** Creates an inert scheduled draft and signed links for its reviewers. */
+export async function createSocialApproval({ scheduledAt, globalText, networkText, idempotencyKey, accountIds, media, reviewers, policy, youtubeVisibility }) {
+    return gatewayFetch('/social/approvals', {
+        method: 'POST', body: JSON.stringify({ scheduledAt, globalText: globalText || null, networkText, idempotencyKey, accountIds, media, reviewers, policy, youtubeVisibility }),
+    });
+}
+
+export async function listSocialApprovals() {
+    return gatewayFetch('/social/approvals');
 }
 
 /** A fresh key for one schedule attempt — a retried submit must reuse it. */
@@ -62,5 +74,17 @@ export async function listSocialCalendar({ from, to, status, network, afterAt, a
 export async function rescheduleSocialPost(postId, expectedAt, scheduledAt) {
     return gatewayFetch(`/social/posts/${encodeURIComponent(postId)}/schedule`, {
         method:'PATCH',body:JSON.stringify({expectedAt,scheduledAt}),
+    });
+}
+
+export async function cancelSocialPost(postId, expectedUpdatedAt) {
+    return gatewayFetch(`/social/posts/${encodeURIComponent(postId)}`, {
+        method:'PATCH',body:JSON.stringify({action:'cancel',expectedUpdatedAt}),
+    });
+}
+
+export async function restoreSocialPost(postId, expectedUpdatedAt, scheduledAt) {
+    return gatewayFetch(`/social/posts/${encodeURIComponent(postId)}`, {
+        method:'PATCH',body:JSON.stringify({action:'restore',expectedUpdatedAt,scheduledAt}),
     });
 }

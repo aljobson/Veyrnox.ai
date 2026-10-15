@@ -1,7 +1,10 @@
 import { authorizeUrl, bearer, requireImage } from './common.js';
+import { publishScopeFeatureEnabled } from '../../../lib/social/scopeFlags.js';
 
 const BASE = 'https://graph.facebook.com/v23.0';
 export const SCOPES = ['pages_show_list', 'pages_read_engagement', 'pages_manage_posts'];
+export const ENGAGEMENT_SCOPES = ['pages_manage_engagement', 'pages_messaging'];
+export const scopes = (cfg) => [...SCOPES, ...(cfg?.engagement ? ENGAGEMENT_SCOPES : [])];
 export function config(env = process.env) {
     // A single Meta app can serve both Instagram Login and Facebook Login.
     // Production names its public app id INSTAGRAM_CLIENT_ID to avoid spending
@@ -9,9 +12,11 @@ export function config(env = process.env) {
     // fallback while allowing dedicated Facebook credentials to win.
     const clientId = env.FACEBOOK_CLIENT_ID || env.META_APP_ID || env.INSTAGRAM_CLIENT_ID;
     const clientSecret = env.FACEBOOK_CLIENT_SECRET || env.META_APP_SECRET || env.INSTAGRAM_CLIENT_SECRET;
-    return /^\d{5,32}$/.test(clientId || '') && clientSecret?.length >= 8 ? { clientId, clientSecret } : null;
+    const engagement = publishScopeFeatureEnabled('FACEBOOK_ENGAGEMENT_SCOPE_ENABLED', env);
+    return /^\d{5,32}$/.test(clientId || '') && clientSecret?.length >= 8 ? { clientId, clientSecret,
+        ...(engagement ? { engagement: true } : {}) } : null;
 }
-export const buildAuthorizeUrl = (cfg, input) => authorizeUrl('https://www.facebook.com/v23.0/dialog/oauth', cfg, input, SCOPES);
+export const buildAuthorizeUrl = (cfg, input) => authorizeUrl('https://www.facebook.com/v23.0/dialog/oauth', cfg, input, scopes(cfg));
 function trustedGraphUrl(value, base) {
     const url = new URL(value, base);
     if (url.protocol !== 'https:' || url.hostname !== 'graph.facebook.com') throw new Error('facebook_redirect_invalid');

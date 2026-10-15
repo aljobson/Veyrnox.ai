@@ -12,10 +12,16 @@ const TIMEOUT_MS = 8000;
 const FROM_RE = /^(?:[^<>\r\n]{1,80} <[^\s<>@]+@[^\s<>@]+\.[^\s<>@]+>|[^\s<>@]+@[^\s<>@]+\.[^\s<>@]+)$/;
 const TO_RE = /^[^\s<>@]+@[^\s<>@]+\.[^\s<>@]+$/;
 const KEY_RE = /^[A-Za-z0-9_-]{8,128}$/;
+const FILE_RE = /^[A-Za-z0-9._-]{1,100}$/;
 
 /** @param {Record<string, string | undefined>} [env] */
 export function resendConfig(env = process.env) {
     return { apiKey: env.RESEND_API_KEY, from: env.VIOLATION_EMAIL_FROM, replyTo: env.VIOLATION_EMAIL_REPLY_TO };
+}
+
+/** Dedicated sender for analytics reports; never silently borrows the violation sender. */
+export function reportResendConfig(env = process.env) {
+    return { apiKey: env.RESEND_API_KEY, from: env.REPORT_EMAIL_FROM, replyTo: env.REPORT_EMAIL_REPLY_TO };
 }
 
 export function isConfigured(cfg) {
@@ -30,13 +36,21 @@ export function isConfigured(cfg) {
  * A `replyTo` that is not a plain address is left out, so replies go to `from`.
  *
  * @param {{ apiKey?: string, from?: string, replyTo?: string }} cfg
- * @param {{ to: string, subject: string, text: string, idempotencyKey: string }} message
+ * @param {{ to: string, subject: string, text: string, idempotencyKey: string, replyTo?: string,
+ *   attachments?: {filename:string,content:string}[] }} message
  */
-export async function sendEmail(cfg, { to, subject, text, idempotencyKey }, fetcher = fetchWithTimeout) {
+export async function sendEmail(cfg, { to, subject, text, idempotencyKey, replyTo: messageReplyTo, attachments }, fetcher = fetchWithTimeout) {
     if (!isConfigured(cfg)) return { ok: false, error: 'not_configured' };
     if (typeof to !== 'string' || !TO_RE.test(to)) return { ok: false, error: 'invalid_recipient' };
     if (typeof idempotencyKey !== 'string' || !KEY_RE.test(idempotencyKey)) return { ok: false, error: 'invalid_idempotency_key' };
-    const replyTo = typeof cfg.replyTo === 'string' && TO_RE.test(cfg.replyTo) ? { reply_to: cfg.replyTo } : {};
+    const selectedReplyTo = typeof messageReplyTo === 'string' && TO_RE.test(messageReplyTo) ? messageReplyTo
+        : typeof cfg.replyTo === 'string' && TO_RE.test(cfg.replyTo) ? cfg.replyTo : null;
+    const replyTo = selectedReplyTo ? { reply_to: selectedReplyTo } : {};
+    const files = attachments == null ? [] : attachments;
+    if (!Array.isArray(files) || files.length > 3 || files.some((file) => !file || !FILE_RE.test(file.filename)
+        || typeof file.content !== 'string' || file.content.length > 7_000_000 || !/^[A-Za-z0-9+/]*={0,2}$/.test(file.content))) {
+        return { ok: false, error: 'invalid_attachment' };
+    }
     let res;
     try {
         res = await fetcher(RESEND_EMAILS_URL, {
@@ -46,7 +60,8 @@ export async function sendEmail(cfg, { to, subject, text, idempotencyKey }, fetc
                 'Content-Type': 'application/json',
                 'Idempotency-Key': idempotencyKey,
             },
-            body: JSON.stringify({ from: cfg.from, to: [to], subject, text, ...replyTo }),
+            body: JSON.stringify({ from: cfg.from, to: [to], subject, text, ...replyTo,
+                ...(files.length ? { attachments: files } : {}) }),
         }, TIMEOUT_MS);
     } catch {
         return { ok: false, error: 'unreachable' };
