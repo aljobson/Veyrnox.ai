@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { pointerPlacement, VEY_SIZE } from '../lib/veyPointer.js';
+import { mobileGuideScroll, pointerPlacement, VEY_SIZE } from '../lib/veyPointer.js';
 
 function check(rect, viewport, obstacle) {
   const result = pointerPlacement(rect, viewport, obstacle);
@@ -19,6 +19,16 @@ function check(rect, viewport, obstacle) {
   return result;
 }
 const rect = (left, top, width, height) => ({ left, top, width, height, right: left + width, bottom: top + height });
+
+test('mobile controls scroll clear of the dock and expanded details, not desktop or unrelated areas', () => {
+  const control = rect(32, 640, 100, 44);
+  assert.equal(mobileGuideScroll(control, rect(8, 650, 330, 186), { width: 390 }), 46);
+  assert.equal(mobileGuideScroll(control, rect(8, 480, 330, 356), { width: 390 }), 216);
+  assert.equal(mobileGuideScroll(rect(32, 420, 100, 44), rect(8, 650, 330, 186), { width: 390 }), 0);
+  assert.equal(mobileGuideScroll(control, rect(8, 650, 330, 186), { width: 640 }), 0);
+  assert.equal(mobileGuideScroll(control, rect(200, 650, 180, 186), { width: 390 }), 0);
+  assert.equal(mobileGuideScroll(control, null, { width: 390 }), 0);
+});
 
 test('Vey is half the original dimensions and retains a touch-friendly launcher', async () => {
   assert.deepEqual(VEY_SIZE, { width: 112 / 2, height: 116 / 2 });

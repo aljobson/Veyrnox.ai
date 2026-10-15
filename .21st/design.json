@@ -86,7 +86,13 @@
       "Amber accents unrelated to money"
     ]
   },
-  "decisions": [],
+  "decisions": [
+    {
+      "id": "vey-mobile-guide-compact",
+      "decision": "Below 640px, Vey uses a compact step card with two-line guidance and primary actions. More reveals secondary controls and full guidance; desktop remains expanded. Keep highlighted controls above the panel and preserve touch-sized actions.",
+      "source": "User request: make the mobile guidance panel smaller so it does not cover controls or the image."
+    }
+  ],
   "evidence": [
     {
       "fact": "design.tokens",
