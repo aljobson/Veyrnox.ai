@@ -11,16 +11,17 @@ import { REVEAL_SAVED_ODDLING } from '../../../lib/savedOddlingHelp';
 const EMPTY = { task: null, view: {} };
 const pill = 'rounded-full border border-vx-border px-3 py-2 text-xs font-semibold hover:border-vx-accent disabled:opacity-40';
 
-export default function VeyTaskGuide({ visible, pathname, onPoint, onStop, onActiveChange }) {
+export default function VeyTaskGuide({ visible, pathname, onPoint, onStop, onActiveChange, onAsk }) {
   const { task, view } = useSyncExternalStore(subscribeJourney, getJourney, () => EMPTY);
   const [choosing, setChoosing] = useState(false);
+  const [chatting, setChatting] = useState(false);
   const [library, setLibrary] = useState([]);
   const [recovered, setRecovered] = useState(null);
   const [recoveryError, setRecoveryError] = useState('');
   const [side, setSide] = useState('right');
   const router = useRouter();
-  useEffect(() => { initialiseJourney(); return onSessionChange(() => { initialiseJourney(); setChoosing(false); setRecovered(null); }); }, []);
-  useEffect(() => { onActiveChange(!!task || choosing); }, [task, choosing, onActiveChange]);
+  useEffect(() => { initialiseJourney(); return onSessionChange(() => { initialiseJourney(); setChoosing(false); setChatting(false); setRecovered(null); }); }, []);
+  useEffect(() => { onActiveChange((!!task || choosing) && !chatting); }, [task, choosing, chatting, onActiveChange]);
   const jobId = task?.phase === 'video' ? task.videoJob : task?.imageJob;
   const liveJob = view.jobs?.find((job) => job.job_id === jobId);
   useEffect(() => {
@@ -43,8 +44,8 @@ export default function VeyTaskGuide({ visible, pathname, onPoint, onStop, onAct
   if (liveJob && ['succeeded', 'failed'].includes(liveJob.state)) effectiveView.jobs = view.jobs;
   const step = journeyStep(task, effectiveView);
   useEffect(() => {
-    if (visible && step?.target && !['recover', 'waiting'].includes(step.key)) onPoint(step.target, { align: 'start' });
-  }, [visible, step?.key, step?.target, onPoint]);
+    if (visible && !chatting && step?.target && !['recover', 'waiting'].includes(step.key)) onPoint(step.target, { align: 'start' });
+  }, [visible, chatting, step?.key, step?.target, onPoint]);
   useEffect(() => {
     if (!visible || step?.key !== 'load' || pathname !== '/app/oddlings') return;
     const reveal = () => window.dispatchEvent(new CustomEvent(REVEAL_SAVED_ODDLING, { detail: { id: task.passportId } }));
@@ -52,13 +53,14 @@ export default function VeyTaskGuide({ visible, pathname, onPoint, onStop, onAct
     return () => clearTimeout(timer);
   }, [visible, step?.key, pathname, task?.passportId, onPoint]);
   if (!visible) return null;
-  if (!task && !choosing) return <button type="button" onClick={() => { setLibrary(readOddlingLibrary(localStorage)); setChoosing(true); }}
+  if (task && chatting) return <button type="button" className="fixed bottom-4 right-4 z-[62] rounded-full border border-vx-accent bg-vx-panel px-4 py-3 text-xs font-bold text-vx-accent shadow-xl" onClick={() => setChatting(false)}>Resume {task.phase} walkthrough</button>;
+  if (!task && !choosing) return <button type="button" onClick={() => { setLibrary(readOddlingLibrary(localStorage)); setChatting(false); setChoosing(true); }}
     className="fixed right-4 top-24 z-[62] rounded-xl border border-vx-accent/40 bg-vx-panel px-4 py-3 text-sm font-bold text-vx-accent shadow-xl">Saved Oddling → image → video</button>;
   const prepare = () => {
     if (pathname !== '/app/create') { router.push('/app/create'); return; }
     window.dispatchEvent(new Event(PREPARE_VIDEO));
   };
-  return <section aria-label="Vey task walkthrough" data-step={step?.key || 'choose'} className={`fixed ${side === 'right' ? 'right-3' : 'left-3'} top-20 z-[62] max-h-[calc(60dvh)] w-[min(330px,calc(100vw-24px))] overflow-y-auto rounded-2xl border border-vx-accent/40 bg-vx-panel p-4 shadow-2xl`}>
+  return <section aria-label="Vey task walkthrough" data-step={step?.key || 'choose'} className={`fixed ${side === 'right' ? 'right-3' : 'left-3'} bottom-4 z-[62] max-h-[calc(50dvh)] w-[min(330px,calc(100vw-24px))] overflow-y-auto rounded-2xl border border-vx-accent/40 bg-vx-panel p-4 shadow-2xl`}>
     <div className="flex items-center justify-between gap-2"><p className="text-xs font-bold text-vx-accent">{task ? `Vey · ${task.phase === 'image' ? 'Image' : 'Video'} task` : 'Choose your starting point'}</p>
       <button type="button" className="text-xs text-vx-fg-muted" onClick={() => setSide(side === 'right' ? 'left' : 'right')}>Move guide</button></div>
     {choosing && !task ? <>
@@ -80,7 +82,8 @@ export default function VeyTaskGuide({ visible, pathname, onPoint, onStop, onAct
         {step.adopt && <button type="button" className={pill} onClick={() => updateJourney({ imageId: view.sourceId, reviewed: {} })}>Use this selected Library image</button>}
         {step.prepare && <button type="button" disabled={view.preparing} className={pill} onClick={prepare}>{view.preparing ? 'Preparing…' : 'Prepare video from this image'}</button>}
         {step.retry && <button type="button" className={pill} onClick={() => updateJourney({ [task.phase === 'video' ? 'videoJob' : 'imageJob']: null, reviewed: {} })}>Review a new attempt</button>}
-        <button type="button" className={pill} onClick={() => { updateJourney(null); setChoosing(false); publishJourneyView({ handedOff: false }); onStop(); }}>End walkthrough</button>
+        <button type="button" className={pill} onClick={() => { setChatting(true); onAsk('What is the next step in my current task?'); }}>Ask about this step</button>
+        <button type="button" className={pill} onClick={() => { updateJourney(null); setChoosing(false); setChatting(false); publishJourneyView({ handedOff: false }); onStop(); }}>End walkthrough</button>
       </div>
       <p className="mt-3 text-[11px] text-vx-fg-muted">You confirm rights and press Generate. Closing Vey pauses the guide, not a submitted job.</p>
     </>}

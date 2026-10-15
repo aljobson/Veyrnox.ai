@@ -361,7 +361,7 @@ export default function MascotAssistant() {
 
   return (
     <>
-      <VeyTaskGuide visible={open} pathname={pathname} onPoint={showTarget} onStop={clearTarget} onActiveChange={setJourneyActive} />
+      <VeyTaskGuide visible={open} pathname={pathname} onPoint={showTarget} onStop={clearTarget} onActiveChange={setJourneyActive} onAsk={ask} />
       <AnimatePresence>
         {highlight && (
           <motion.div
