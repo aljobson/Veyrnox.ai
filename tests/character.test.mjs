@@ -41,7 +41,7 @@ test('Oddlings add a bounded creator identity and recurring show to the visual p
     };
     assert.deepEqual(oddlingIdentity(picks), [
         'fictional creator named Auntie Antenna',
-        'obsessed with emotional weather',
+        'interested in emotional weather',
         'deadpan, precise, faintly prophetic delivery',
         'reports emotional weather from places that cannot exist',
         'immutable visual canon: plum coat and copper antennae',

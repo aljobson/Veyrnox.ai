@@ -13,6 +13,7 @@ import {
   writeOddlingDraft,
 } from '../_lib/character';
 import { writeStudioDraft } from '../_lib/landingDraft';
+import { characterOptionLabel, changeCharacterPick } from '../_lib/characterOptions';
 import {
   ODDLING_MOTIONS,
   ODDLING_PRESET_SOURCES,
@@ -49,7 +50,7 @@ function TraitGroup({ group, value, onChange }) {
         <button type="button" onClick={() => onChange(group.id, '')} aria-pressed={!value} className={chip(!value)}>Any</button>
         {group.options.map(([label]) => (
           <button key={label} type="button" onClick={() => onChange(group.id, label)} aria-pressed={value === label} className={chip(value === label)}>
-            {label}
+            {characterOptionLabel(group.id, label)}
           </button>
         ))}
       </div>
@@ -59,7 +60,7 @@ function TraitGroup({ group, value, onChange }) {
 function CharacterSheet({ oddling, onClose, onRecreate, onAnimate }) {
   if (!oddling) return null;
   const picks = oddling.picks;
-  const traits = CHARACTER_GROUPS.flatMap((group) => picks[group.id] ? [`${group.label}: ${picks[group.id]}`] : []);
+  const traits = CHARACTER_GROUPS.flatMap((group) => picks[group.id] ? [`${group.label}: ${characterOptionLabel(group.id, picks[group.id])}`] : []);
   const identity = oddlingIdentity(picks);
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
@@ -158,11 +159,7 @@ export default function OddlingStudio() {
   const selectedTraits = CHARACTER_GROUPS.filter((group) => picks[group.id]).length;
 
   function setPick(key, value) {
-    setPicks((current) => {
-      const next = { ...current };
-      if (value) next[key] = value; else delete next[key];
-      return next;
-    });
+    setPicks((current) => changeCharacterPick(current, key, value));
     setNotice('');
   }
 
@@ -351,7 +348,7 @@ export default function OddlingStudio() {
               <div>
                 <span className="font-vx-mono text-[10px] font-bold tracking-[0.16em] text-vx-accent">24 HUMAN ORIGINALS · 4 OTHER BEINGS</span>
                 <h2 className="vx-display mt-2 text-5xl sm:text-6xl">Your original character, your recurring hit.</h2>
-                <p className="mt-3 max-w-2xl text-vx-fg-body">Start with body chaos, impossible silhouettes, fashion disasters, sculptural hair or weird modern basics. Inspect the character sheet, then remake every trait for portraits and motion.</p>
+                <p className="mt-3 max-w-2xl text-vx-fg-body">Explore expressive silhouettes, statement fashion, sculptural hair and contemporary basics. Choose body, hand and foot sizes independently, then refine your character for portraits and motion.</p>
               </div>
               <div className="flex rounded-xl border border-vx-border bg-vx-panel p-1" role="tablist" aria-label="Workspace view">
                 <button type="button" role="tab" aria-selected={workspace === 'explore'} onClick={() => setWorkspace('explore')} className={`rounded-lg px-4 py-2 text-sm font-bold ${workspace === 'explore' ? 'bg-vx-base text-vx-fg' : 'text-vx-fg-muted'}`}>Explore</button>
