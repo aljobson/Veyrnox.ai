@@ -11,7 +11,7 @@ export const ODDLING_STUDIO_SECTIONS = [
   { id: 'build', label: 'Build & proportions', hint: 'Body, height, hands, feet and proportions', groupIds: ['body_type', 'height', 'proportions', 'hand_size', 'foot_size'] },
   { id: 'hair', label: 'Hair sculpture', hint: 'Geometry, scale and color', groupIds: ['hair', 'hair_color'] },
   { id: 'head', label: 'Head & eyes', hint: 'Face silhouette, neck, eye shape and color', groupIds: ['head_shape', 'neck', 'eye_shape', 'eye_color'] },
-  { id: 'features', label: 'Face details', hint: 'Makeup, facial hair and expressive details', groupIds: ['eyes_type', 'eyes_details', 'mouth', 'ears', 'horns', 'skin_conditions', 'face_features', 'facial_hair'] },
+  { id: 'features', label: 'Face details', hint: 'Ear and nose sizes, makeup and expressive details', groupIds: ['eyes_type', 'eyes_details', 'mouth', 'ears', 'ear_size', 'nose_size', 'horns', 'skin_conditions', 'face_features', 'facial_hair'] },
   { id: 'body-details', label: 'Body details', hint: 'Material, pattern and limb design', groupIds: ['face_skin_material', 'face_surface_pattern', 'left_arm', 'right_arm', 'left_leg', 'right_leg'] },
   { id: 'style', label: 'Style world', hint: 'Wardrobe, accessories, prop and finish', groupIds: ['wardrobe_style', 'accessories', 'distinctive_features', 'rendering_style'] },
 ];

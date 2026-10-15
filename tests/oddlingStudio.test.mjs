@@ -27,6 +27,18 @@ test('every full-studio section resolves to real character groups', () => {
         for (const id of section.groupIds) assert.ok(ids.has(id), `${section.id} references missing ${id}`);
     }
 });
+test('face details exposes independent ear and nose size controls in portrait and motion prompts', () => {
+    const section = ODDLING_STUDIO_SECTIONS.find((item) => item.id === 'features');
+    for (const id of ['ear_size', 'nose_size']) assert.ok(section.groupIds.includes(id));
+    for (const mode of ['portrait', 'motion']) {
+        const prompt = buildOddlingStudioPrompt({ mode, picks: {
+            character_type: 'Human', ears: 'Elf Ears', ear_size: 'Extra Large', nose_size: 'Extra Large',
+        } });
+        assert.match(prompt, /pointed elf ears/);
+        assert.match(prompt, /extra-large ears relative to the head/);
+        assert.match(prompt, /extra-large nose relative to the face/);
+    }
+});
 test('motion drafts combine identity, visual canon, action and scene', () => {
     const picks = ODDLING_ARCHETYPES.find((item) => item.id === 'bughead-brenda').picks;
     const prompt = buildOddlingStudioPrompt({
