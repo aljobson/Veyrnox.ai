@@ -10,6 +10,20 @@ export function normaliseReplaySampleRate(value, fallback = 0.2) {
   return Math.min(1, Math.max(0, parsed));
 }
 
+export function setReplayCapture(posthog, { enabled, forceSampling = false }) {
+  if (!enabled) {
+    posthog.stopSessionRecording();
+    posthog.set_config({ disable_session_recording: true });
+    return;
+  }
+
+  // The provider starts with replay disabled so no recorder can run before
+  // consent. Clear that runtime gate before asking PostHog to start recording.
+  posthog.set_config({ disable_session_recording: false });
+  if (forceSampling) posthog.startSessionRecording({ sampling: true });
+  else posthog.startSessionRecording();
+}
+
 const BLOCKED_REPLAY_PREFIXES = [
   '/auth',
   '/app/account',

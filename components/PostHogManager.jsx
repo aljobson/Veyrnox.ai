@@ -12,6 +12,7 @@ import {
   readAnalyticsPreference,
   replayAllowedOnPath,
   sanitisePostHogEvent,
+  setReplayCapture,
   writeAnalyticsPreference,
 } from '../app/lib/analyticsPrivacy.js';
 
@@ -98,9 +99,7 @@ export default function PostHogManager() {
 
   useEffect(() => {
     const shouldRecord = Boolean(preference?.analytics && preference?.replay && replayAllowedOnPath(pathname));
-    if (shouldRecord && forceConsentedReplay) posthog.startSessionRecording({ sampling: true });
-    else if (shouldRecord) posthog.startSessionRecording();
-    else posthog.stopSessionRecording();
+    setReplayCapture(posthog, { enabled: shouldRecord, forceSampling: forceConsentedReplay });
   }, [pathname, posthog, preference?.analytics, preference?.replay]);
 
   useEffect(() => {
