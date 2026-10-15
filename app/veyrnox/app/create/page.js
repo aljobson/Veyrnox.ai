@@ -376,12 +376,13 @@ export default function CreateStudio() {
           )}
 
           <textarea
+            data-assistant-target="create.prompt"
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             aria-label={isShort ? 'Topic' : 'Prompt'}
             maxLength={isShort ? 200 : undefined}
             rows={3}
-            className="mt-3 w-full bg-vx-panel border border-vx-field rounded-lg p-3.5 text-sm text-vx-fg placeholder:text-vx-fg-faint resize-none focus:outline-hidden focus:border-vx-accent"
+            className="scroll-mt-24 mt-3 w-full bg-vx-panel border border-vx-field rounded-lg p-3.5 text-sm text-vx-fg placeholder:text-vx-fg-faint resize-none focus:outline-hidden focus:border-vx-accent"
             placeholder={promptPlaceholder(model)}
           />
           {activeTemplate?.inspired && (
@@ -401,15 +402,17 @@ export default function CreateStudio() {
             </p>
           )}
 
-          <SourcePickers media={media} sources={sources} onPick={pickSource}
-            onDraw={model?.kind === 'image' ? () => setDrawing(true) : null} onLibrary={setLibraryFor} />
+          <div className="scroll-mt-24" data-assistant-target={Object.keys(media).length ? 'create.upload' : undefined}>
+            <SourcePickers media={media} sources={sources} onPick={pickSource}
+              onDraw={model?.kind === 'image' ? () => setDrawing(true) : null} onLibrary={setLibraryFor} />
+          </div>
           {libraryFor && (
             <LibraryPicker onClose={() => setLibraryFor(null)}
               onPick={(item) => { pickSource(libraryFor, null, item); setLibraryFor(null); }} />
           )}
 
           {hasUpload && (
-            <label className="mt-3 flex items-start gap-2.5 rounded-lg border border-vx-border bg-vx-panel px-4 py-3 text-sm text-vx-fg-body cursor-pointer">
+            <label data-assistant-target="create.consent" className="scroll-mt-24 mt-3 flex items-start gap-2.5 rounded-lg border border-vx-border bg-vx-panel px-4 py-3 text-sm text-vx-fg-body cursor-pointer">
               <input
                 type="checkbox"
                 checked={consent}
@@ -444,7 +447,7 @@ export default function CreateStudio() {
         {/* ============ CONTROLS ============ */}
         <aside className="flex flex-col gap-5">
           <div className="rounded-2xl border border-vx-border bg-vx-panel p-5">
-            <div className="flex items-baseline justify-between mb-3">
+            <div data-assistant-target="create.models" data-selected-kind={model?.kind} className="scroll-mt-24 flex items-baseline justify-between mb-3">
               <span className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">MODEL</span>
               {catalogLive ? (
                 <span className="inline-flex items-center gap-1 font-vx-mono text-[9px] tracking-[0.12em] text-vx-accent">
@@ -496,29 +499,29 @@ export default function CreateStudio() {
           </div>
 
           {model?.kind === 'video' && durations.length > 1 && (
-            <ControlRow label="DURATION" options={durations} value={duration} onChange={setDuration} />
+            <ControlRow assistantTarget="create.duration" label="DURATION" options={durations} value={duration} onChange={setDuration} />
           )}
           {aspectOptions.length > 0 && (
-            <ControlRow label="ASPECT" options={aspectOptions} value={aspect} onChange={setAspect} />
+            <ControlRow assistantTarget="create.aspect" label="ASPECT" options={aspectOptions} value={aspect} onChange={setAspect} />
           )}
           {takesImageCount(model) && (
-            <ControlRow label="IMAGES" options={IMAGE_COUNTS} value={count} onChange={setCount} />
+            <ControlRow assistantTarget="create.count" label="IMAGES" options={IMAGE_COUNTS} value={count} onChange={setCount} />
           )}
 
           {model?.kind === 'image' && (
-            <CharacterPanel enabled={characterOn} onToggle={setCharacterOn} picks={character} onChange={setCharacter} />
+            <div className="scroll-mt-24" data-assistant-target="create.character"><CharacterPanel enabled={characterOn} onToggle={setCharacterOn} picks={character} onChange={setCharacter} /></div>
           )}
 
           {!isShort && (
-            <GenerationSettings model={model} seed={seed} onSeed={setSeed} negative={negative} onNegative={setNegative} />
+            <div className="scroll-mt-24" data-assistant-target="create.settings"><GenerationSettings model={model} seed={seed} onSeed={setSeed} negative={negative} onNegative={setNegative} /></div>
           )}
 
           {takesCamera && (
-            <CameraPanel enabled={cinemaOn} onToggle={setCinemaOn} settings={cinema} onChange={setCinema} />
+            <div className="scroll-mt-24" data-assistant-target="create.camera"><CameraPanel enabled={cinemaOn} onToggle={setCinemaOn} settings={cinema} onChange={setCinema} /></div>
           )}
 
           <div className="mt-2 rounded-2xl border border-vx-border bg-vx-panel p-5">
-            <div className="flex items-baseline justify-between">
+            <div data-assistant-target="create.cost" className="scroll-mt-24 flex items-baseline justify-between">
               <span className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">TOTAL COST</span>
               <span className="font-vx-mono text-[12px] text-vx-fg-muted vx-num">
                 balance {balance == null ? '—' : balance.toLocaleString('en-US')} cr
@@ -531,8 +534,9 @@ export default function CreateStudio() {
               </div>
             )}
             <ParticleButton
+              data-assistant-target="create.generate"
               onClick={generating ? cancel : onSubmit}
-              className="mt-4 w-full flex items-center justify-between bg-vx-accent text-vx-accent-ink rounded-full px-6 py-3.5 font-extrabold hover:bg-vx-accent-hover disabled:opacity-40 disabled:cursor-not-allowed"
+              className="scroll-mt-24 mt-4 w-full flex items-center justify-between bg-vx-accent text-vx-accent-ink rounded-full px-6 py-3.5 font-extrabold hover:bg-vx-accent-hover disabled:opacity-40 disabled:cursor-not-allowed"
               disabled={sending || (!generating && (!model || model.gated || missingPrompt || missingVoice || balance == null || cost > balance || missingSource || missingConsent))}
               aria-label={sending || generating || model?.gated ? undefined : `Generate ${n > 1 ? `${n} images ` : ''}for ${cost} credits`}
             >
