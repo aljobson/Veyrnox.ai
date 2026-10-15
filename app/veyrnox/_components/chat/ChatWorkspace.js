@@ -18,6 +18,7 @@ import { useCatalog } from '../../_lib/useCatalog';
 import { skillById, skillInstructions } from '../../_lib/studioSkills';
 import { ChatText } from './ChatText';
 import { SettingsPanel } from './SettingsPanel';
+import { ComposerControls } from './ComposerControls';
 import { ThreadList } from './ThreadList';
 import { useChatSend } from './useChatSend';
 import { ALL_CHATS } from '../../_lib/chatFolders';
@@ -366,7 +367,6 @@ export function ChatWorkspace() {
             {researchOn && (
               <p className="mb-2 text-xs text-vx-fg-muted">Plans a few searches, reads what the web returns, then writes a cited answer. It can take up to about a minute and works on text only. If it fails before the answer starts, the Credits come back.</p>
             )}
-            <AttachChips items={att.items} onRemove={att.remove} disabled={busy} />
             {hasImages && !imagesBlocked && (
               <p className="mb-2 text-xs text-vx-fg-muted">
                 {att.items.some((i) => i.asset)
@@ -382,40 +382,32 @@ export function ChatWorkspace() {
                 {imagesBlocked ? (researchOn ? 'Deep research reads text only. Remove the images or turn it off.' : 'This model cannot read images. Remove them or pick another model.') : att.notice}
               </p>
             )}
-            {((offer.web && !researchOn) || offer.images || skillId) && (
+            {skillId && !active && (
               <div className="mb-2 flex flex-wrap gap-2">
-                {skillId && !active && (
-                  <button type="button" onClick={clearSkill} disabled={busy} aria-label={`Skill: ${skillById(skillId)?.name}. Remove`}
-                    className="rounded-full border border-vx-accent px-3 py-1.5 text-xs font-semibold text-vx-fg disabled:opacity-50">
-                    Skill: {skillById(skillId)?.name} <span aria-hidden="true">×</span>
-                  </button>
-                )}
-                {offer.web && !researchOn && (
-                  <button type="button" aria-pressed={opts.web} disabled={busy}
-                    aria-label={`Web search, plus ${credits(offer.web.extra_credits)}`}
-                    onClick={() => setOpts({ ...opts, web: !opts.web, research: false })}
-                    className={`rounded-full border px-3 py-1.5 text-xs font-semibold disabled:opacity-50 ${opts.web ? 'border-vx-accent text-vx-fg' : 'border-vx-border text-vx-fg-muted hover:text-vx-fg'}`}>
-                    Web search <span className="font-vx-mono vx-num">+{offer.web.extra_credits}</span>
-                  </button>
-                )}
-                {offer.images && (
-                  <button type="button" disabled={busy || att.items.length >= limits.maxAttachments} onClick={() => setPickingLibrary(true)}
-                    title={att.items.length >= limits.maxAttachments ? 'The most images for one reply' : 'Use an image you already made'}
-                    className="rounded-full border border-vx-border px-3 py-1.5 text-xs font-semibold text-vx-fg-muted hover:text-vx-fg disabled:opacity-50">
-                    From library
-                  </button>
-                )}
+                <button type="button" onClick={clearSkill} disabled={busy} aria-label={`Skill: ${skillById(skillId)?.name}. Remove`}
+                  className="rounded-full border border-vx-accent px-3 py-1.5 text-xs font-semibold text-vx-fg disabled:opacity-50">
+                  Skill: {skillById(skillId)?.name} <span aria-hidden="true">×</span>
+                </button>
               </div>
             )}
-            <div className="flex items-end gap-2 rounded-2xl border border-vx-border bg-vx-panel p-2 focus-within:border-vx-accent">
-              {offer.images && <AttachButton onPick={att.add} disabled={busy} full={att.items.length >= limits.maxAttachments} />}
-              <label className="sr-only" htmlFor="chat-msg">Message</label>
-              <textarea id="chat-msg" rows={1} value={text} maxLength={MAX_TEXT} placeholder={skillById(skillId)?.starter || 'Message'} onChange={(e) => setText(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
-                className="max-h-48 min-h-10 flex-1 resize-none bg-transparent px-2 py-2 text-[15px] text-vx-fg outline-hidden placeholder:text-vx-fg-faint" />
-              {busy
-                ? <button type="button" onClick={stop} disabled={stopping || checking} className="rounded-full border border-vx-border px-4 py-2 text-sm font-semibold disabled:opacity-50">{stopping ? 'Stopping' : checking ? 'Checking' : 'Stop'}</button>
-                : <button type="button" onClick={send} disabled={!text.trim() || imagesBlocked} className="rounded-full bg-vx-accent px-4 py-2 text-sm font-semibold text-vx-accent-ink disabled:opacity-50">{isFree ? `Send free (${freeLeft} left today)` : `Send for ${credits(price)}`}</button>}
+            <div className="overflow-hidden rounded-[20px] border border-vx-border bg-vx-panel shadow-[0_18px_50px_rgba(0,0,0,0.18)] focus-within:border-vx-accent">
+              <ComposerControls models={models} model={model} offer={offer} opts={opts} busy={busy} onSelectModel={selectModel} onOpts={setOpts}
+                onLibrary={() => setPickingLibrary(true)} libraryDisabled={att.items.length >= limits.maxAttachments} />
+              {hasImages && (
+                <div className="border-t border-vx-border px-3 pt-3">
+                  <AttachChips items={att.items} onRemove={att.remove} disabled={busy} />
+                </div>
+              )}
+              <div className="flex items-end gap-2 px-2 pb-2">
+                {offer.images && <AttachButton onPick={att.add} disabled={busy} full={att.items.length >= limits.maxAttachments} />}
+                <label className="sr-only" htmlFor="chat-msg">Message</label>
+                <textarea id="chat-msg" rows={1} value={text} maxLength={MAX_TEXT} placeholder={skillById(skillId)?.starter || 'Ask anything…'} onChange={(e) => setText(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
+                  className="max-h-48 min-h-14 min-w-0 flex-1 resize-none bg-transparent px-2 py-3 text-[15px] text-vx-fg outline-hidden placeholder:text-vx-fg-faint" />
+                {busy
+                  ? <button type="button" onClick={stop} disabled={stopping || checking} className="mb-1 rounded-xl border border-vx-border px-4 py-2.5 text-sm font-semibold disabled:opacity-50">{stopping ? 'Stopping' : checking ? 'Checking' : 'Stop'}</button>
+                  : <button type="button" onClick={send} disabled={!text.trim() || imagesBlocked} className="mb-1 min-w-28 rounded-xl bg-vx-accent px-4 py-2.5 text-sm font-semibold text-vx-accent-ink transition-colors hover:bg-vx-accent-hover disabled:opacity-50">{isFree ? 'Send free' : `Send · ${credits(price)}`}</button>}
+              </div>
             </div>
             <p className="mt-1.5 px-1 text-xs text-vx-fg-muted">
               <span className="font-vx-mono text-vx-money vx-num">{isFree ? 'Free' : credits(price)}</span> per reply{chosen.thinking || chosen.web ? ` (with ${[chosen.thinking && 'Thinking', chosen.web && 'Web search'].filter(Boolean).join(' and ')})` : ''}, up to about {wordsFor(model.max_reply_tokens)} words. Stop after text appears and you keep it and the price. If nothing arrives, the Credits come back.
