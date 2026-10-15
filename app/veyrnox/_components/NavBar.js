@@ -140,13 +140,23 @@ export function AppNav({ balance, active = 'explore', readAccount = true }) {
     ...(projectsEnabled ? [{ key: 'projects', href: '/app/projects', label: 'Projects' }] : []),
     ...(enhanceEnabled ? [{ key: 'enhance', href: '/app/enhance', label: 'Enhance' }] : []),
   ];
+  // Who is signed in. The session in localStorage is the gate — it needs no
+  // network, so public app pages never make an authenticated request merely
+  // to draw their nav. It also already holds the display name: Google puts
+  // one in user_metadata, and public.users has no such column. The endpoint
+  // only supplies the email, for the sessions that carry none.
+  const [session, setSession] = useState(null);
+  useEffect(() => {
+    setSession(getSession());
+    return onSessionChange(setSession);
+  }, []);
   // One server read for all three figures: who you are, the balance and
   // the true asset count for the account (not this browser's history).
   // A generation both spends credits and stores an asset, so the existing
   // veyrnox:balance-changed is already the moment all of it moved.
   const [summary, setSummary] = useState(null);
   const loadSummary = useCallback(async () => {
-    if (!readAccount) { setSummary(null); return; }
+    if (!readAccount || !session) { setSummary(null); return; }
     try {
       setSummary(await gatewayFetch('/account'));
     } catch (e) {
@@ -155,25 +165,13 @@ export function AppNav({ balance, active = 'explore', readAccount = true }) {
       // an unanswered read renders "—", never a spinner.
       if (e instanceof GatewayError && e.status === 401) setSummary(null);
     }
-  }, [readAccount]);
+  }, [readAccount, session]);
   useEffect(() => {
     loadSummary();
     const onBal = () => loadSummary();
     window.addEventListener('veyrnox:balance-changed', onBal);
     return () => window.removeEventListener('veyrnox:balance-changed', onBal);
   }, [loadSummary]);
-
-  // Who is signed in. The session in localStorage is the gate — it needs no
-  // network, so the sign-in button is never wrong while /account is in
-  // flight — and null until mount on both sides so the server and client
-  // markup match. It also already holds the display name: Google puts one
-  // in user_metadata, and public.users has no such column. The endpoint
-  // only supplies the email, for the sessions that carry none.
-  const [session, setSession] = useState(null);
-  useEffect(() => {
-    setSession(getSession());
-    return onSessionChange(setSession);
-  }, []);
   const account = accountLabel(session, summary?.email || '');
 
   const assets = summary?.assets ?? null;
