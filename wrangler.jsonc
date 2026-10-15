@@ -329,8 +329,12 @@
         "JEV_SUBMIT_ERRORS_MODE": "off",
         // Veyrnox Publish is open on staging for testing (see production).
         "PUBLISH_ENABLED": "true",
-        // Migration 0293 and Stripe test keys are installed in staging.
-      "PUBLISH_RUNTIME_FLAGS": "{\"multiAccount\":\"true\",\"plans\":\"true\",\"videoDestinations\":\"false\",\"inbox\":\"false\",\"smartlinks\":\"false\",\"contentPresets\":\"false\",\"queues\":\"false\",\"approvals\":\"false\",\"teams\":\"false\",\"variants\":\"false\",\"reportExports\":\"false\",\"reportDelivery\":\"false\"}",
+        // Publish migrations through 0323 are installed in staging. These
+        // management surfaces are enabled here for acceptance before any
+        // production rollout; native video destinations remain separately gated.
+        "PUBLISH_RUNTIME_FLAGS": "{\"multiAccount\":\"true\",\"plans\":\"true\",\"videoDestinations\":\"false\",\"inbox\":\"true\",\"inboxWorkflows\":\"true\",\"smartlinks\":\"true\",\"contentPresets\":\"true\",\"queues\":\"true\",\"approvals\":\"true\",\"teams\":\"true\",\"variants\":\"true\",\"reports\":\"true\",\"scheduledReports\":\"true\",\"reportExports\":\"true\",\"reportDelivery\":\"true\",\"customerApi\":\"true\",\"customerWebhooks\":\"true\",\"ads\":\"true\",\"commerce\":\"true\",\"rssAutolists\":\"true\"}",
+        "REPORT_EMAIL_FROM": "Veyrnox Reports <support@veyrnox.ai>",
+        "REPORT_EMAIL_REPLY_TO": "support@veyrnox.ai",
         "PUBLISH_TESTER_AUTH_IDS": "",
         "PUBLISH_YOUTUBE_VISIBILITY_ENABLED": "false",
         "PUBLISH_RELEASED_NETWORKS": "*",

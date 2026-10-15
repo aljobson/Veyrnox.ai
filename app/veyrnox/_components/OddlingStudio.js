@@ -37,6 +37,8 @@ function artworkStyle(oddling) {
     backgroundImage: `url(${source.image})`,
     backgroundSize: '400% 100%',
     backgroundPosition: `${source.panel * 33.333}% center`,
+    backgroundRepeat: 'no-repeat',
+    aspectRatio: source.aspectRatio,
   };
 }
 
@@ -63,8 +65,10 @@ function CharacterSheet({ oddling, onClose, onRecreate }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
       <section role="dialog" aria-modal="true" aria-labelledby="character-sheet-title" className="max-h-[90dvh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-vx-border bg-vx-panel shadow-2xl">
-        <div className="grid md:grid-cols-[.8fr_1.2fr]">
-          <div role="img" aria-label={`${oddling.name} cast portrait`} style={artworkStyle(oddling)} className="min-h-80 bg-cover bg-center" />
+        <div className="grid md:grid-cols-[.8fr_1.2fr] md:items-start">
+          <div className="flex items-start justify-center bg-vx-base p-3 sm:p-4">
+            <div role="img" aria-label={`${oddling.name} cast portrait`} style={artworkStyle(oddling)} className="w-full max-w-72 self-start bg-center" />
+          </div>
           <div className="p-6 sm:p-8">
             <div className="flex items-start justify-between gap-4">
               <div>
@@ -101,7 +105,9 @@ function CharacterSheet({ oddling, onClose, onRecreate }) {
 function GalleryCard({ oddling, onSheet, onRecreate }) {
   return (
     <article className="group overflow-hidden rounded-2xl border border-vx-border bg-vx-panel">
-      <div role="img" aria-label={`${oddling.name}, ${oddling.hook}`} style={artworkStyle(oddling)} className="aspect-[4/5] bg-cover bg-center transition-transform duration-500 group-hover:scale-[1.02]" />
+      <div className="flex aspect-[4/5] items-center justify-center overflow-hidden bg-vx-base">
+        <div role="img" aria-label={`${oddling.name}, ${oddling.hook}`} style={artworkStyle(oddling)} className="h-full max-w-full bg-center transition-transform duration-500 group-hover:scale-[1.02]" />
+      </div>
       <div className="p-4">
         <span className="font-vx-mono text-[8px] font-bold tracking-[0.14em] text-vx-accent">{oddling.accent}</span>
         <h3 className="mt-1 text-lg font-extrabold">{oddling.name}</h3>

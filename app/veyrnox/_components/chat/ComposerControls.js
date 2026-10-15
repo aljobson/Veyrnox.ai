@@ -1,5 +1,6 @@
 'use client';
 import { optionsForReplyMode, REPLY_MODES, replyMode } from '../../_lib/chatComposer';
+import { COMPOSER_KINDS } from '../../_lib/chatMedia';
 
 const credits = (n) => `${n} Credit${n === 1 ? '' : 's'}`;
 const control = 'relative inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-vx-border bg-vx-base px-3 text-xs font-semibold text-vx-fg-muted transition-colors hover:border-vx-accent hover:text-vx-fg focus-within:border-vx-accent focus-within:outline-solid focus-within:outline-2 focus-within:outline-vx-accent disabled:opacity-50';
@@ -24,6 +25,27 @@ function LibraryIcon() {
   return <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden="true"><rect x="2" y="2.5" width="12" height="11" rx="2" /><circle cx="5.25" cy="5.75" r="1" /><path d="m3.5 11 3-3 2.2 2.1 1.5-1.5 2.3 2.4" /></svg>;
 }
 
+const composerKinds = [
+  { id: COMPOSER_KINDS.CHAT, label: 'Chat', glyph: '◇' },
+  { id: COMPOSER_KINDS.IMAGE, label: 'Image', glyph: '▧' },
+  { id: COMPOSER_KINDS.VIDEO, label: 'Video', glyph: '▷' },
+  { id: COMPOSER_KINDS.AUDIO, label: 'Audio', glyph: '◖' },
+];
+
+export function ComposerTypeTabs({ value, onChange, disabled = false }) {
+  return (
+    <div className="scrollbar-none flex gap-1 overflow-x-auto border-b border-vx-border px-3 py-2" role="tablist" aria-label="Composer type">
+      {composerKinds.map((item) => (
+        <button key={item.id} type="button" role="tab" aria-selected={value === item.id} disabled={disabled && value !== item.id}
+          onClick={() => onChange(item.id)}
+          className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-transparent px-3 text-xs font-semibold text-vx-fg-muted transition-colors hover:text-vx-fg aria-selected:border-vx-accent aria-selected:bg-vx-accent/[0.08] aria-selected:text-vx-accent disabled:opacity-40">
+          <span aria-hidden="true">{item.glyph}</span>{item.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function SelectControl({ label, ariaLabel, value, disabled, onChange, children, icon }) {
   return (
     <label className={`${control} ${disabled ? 'opacity-50' : ''}`}>
@@ -43,7 +65,7 @@ export function ComposerControls({ models, model, offer, opts, busy, onSelectMod
   const modeLabel = mode === REPLY_MODES.RESEARCH ? 'Deep research' : mode === REPLY_MODES.THINKING ? 'Thinking' : 'Standard';
 
   return (
-    <div className="scrollbar-none flex gap-1.5 overflow-x-auto px-3 py-2" role="group" aria-label="Reply setup">
+    <div className="scrollbar-none flex gap-1.5 overflow-x-auto border-b border-vx-border px-3 py-2" role="group" aria-label="Reply setup">
       <SelectControl label={model.name} ariaLabel="Model for next reply" value={model.id} disabled={busy} onChange={onSelectModel} icon={<ModelIcon />}>
         {models.map((item) => <option key={item.id} value={item.id}>{item.name} · {credits(item.credits_per_reply)}</option>)}
       </SelectControl>

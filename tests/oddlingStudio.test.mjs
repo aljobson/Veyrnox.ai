@@ -70,6 +70,7 @@ test('gallery art maps every original character to a four-panel cast asset', () 
         const source = gallerySource(oddling);
         assert.match(source.image, /^\/oddlings\/oddling-.+\.webp$/);
         assert.ok(source.panel >= 0 && source.panel <= 3);
+        assert.match(source.aspectRatio, /^\d+ \/ \d+$/);
     }
 });
 
@@ -95,8 +96,10 @@ test('the four new human collections use their dedicated original artwork', () =
         ['denim', '/oddlings/oddling-denim-basics.webp'],
     ]);
     for (const [sourceId, image] of expected) {
+        const aspectRatio = sourceId === 'denim' ? '3 / 8' : '1 / 2';
         assert.deepEqual(oddlingsForSource(sourceId).map(gallerySource), [
-            { image, panel: 0 }, { image, panel: 1 }, { image, panel: 2 }, { image, panel: 3 },
+            { image, panel: 0, aspectRatio }, { image, panel: 1, aspectRatio },
+            { image, panel: 2, aspectRatio }, { image, panel: 3, aspectRatio },
         ]);
     }
 });

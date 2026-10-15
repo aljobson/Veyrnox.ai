@@ -151,7 +151,7 @@ test('undeclared keys are dropped by the gateway, and refused if they reach the 
     assert.deepEqual(checkInputs(nanoKie, { prompt: 'p', duration_seconds: 10 }), { ok: false, error: 'duration_not_supported' });
 });
 
-test('the public view carries no provider field names, pins or assumptions', () => {
+test('the public view carries no provider field names or editable pins', () => {
     for (const [ep, record] of Object.entries(REGISTRY)) {
         const view = JSON.stringify(publicCapabilities(record));
         for (const secret of [ep, ...Object.keys(record.fixed), ...Object.keys(record.assumes),
@@ -165,7 +165,18 @@ test('the public view carries no provider field names, pins or assumptions', () 
         inputs: { prompt: { type: 'string', max: 2000 }, negative_prompt: { type: 'string', max: 2000 }, seed: { type: 'int', max: 2147483647 },
             aspect_ratio: { type: 'enum', values: ['16:9', '9:16'] } },
         media: {},
+        presentation: { resolutionLabel: '720p', audioIncluded: true, fixedDurationLabel: '4s' },
     });
+});
+
+test('the public output presentation describes the priced tier without exposing provider controls', () => {
+    assert.deepEqual(publicCapabilities(capabilityFor('market:wan/2-5-text-to-video')).presentation, {
+        resolutionLabel: '720p', durationByOption: { 5: '5', 10: '10' },
+    });
+    assert.deepEqual(publicCapabilities(capabilityFor('market:kling-2.6/text-to-video')).presentation, {
+        audioIncluded: false, durationByOption: { 5: '5', 10: '10' },
+    });
+    assert.deepEqual(publicCapabilities(capabilityFor('fal-ai/ace-step')).presentation, { fixedDurationLabel: '60s' });
 });
 
 test('the tokens.js fallback offers the lengths the live catalog does', () => {
