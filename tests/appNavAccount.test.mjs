@@ -128,24 +128,25 @@ test('amber means credits and nothing else', () => {
 
 test('the whole nav still fits a phone', () => {
     // Measured: side by side the two figures need 459px of nav and a 360px
-    // phone gives 328. The mark yields below sm so the menu, Oddlings
-    // shortcut and stacked account block remain within that width.
+    // phone gives 328. The mark yields below sm so the menu and stacked
+    // account block remain within that width.
     assert.match(signedIn, /flex flex-col gap-px/, 'the two figures stack');
-    assert.match(appNav, /className="hidden items-center gap-2\.5 shrink-0 sm:flex"/,
-        'the mark yields below sm so the menu, Oddlings shortcut and account controls fit');
+    assert.match(appNav, /\$\{account \? 'hidden sm:flex' : 'flex'\}/,
+        'the mark yields to signed-in account controls below sm, and only then');
     assert.match(appNav, /className="hidden lg:flex [^"]*gap-0\.5 sm:gap-1 text-\[12px\] sm:text-sm font-semibold"/,
         'the tab strip is for desktop; phones use the Studio menu');
     assert.match(appNav, /<nav[^>]*min-w-0 overflow-x-auto/,
         'desktop tabs can scroll without pushing account controls away');
 });
 
-test('Oddlings stays one press away on phone and is prominent on desktop', () => {
-    assert.match(appNav, /href="\/app\/oddlings"[\s\S]*aria-current=\{active === 'oddlings'/,
-        'the phone bar has a direct Oddlings link outside the menu');
+test('Oddlings is prominent without crowding the phone bar', () => {
     assert.match(appNav, /\{ key: 'oddlings', href: '\/app\/oddlings', label: 'Oddlings', featured: true \}/,
         'the desktop tab and phone menu share the featured destination');
     assert.ok(appNav.indexOf("key: 'oddlings'") < appNav.indexOf("key: 'create'"),
         'Oddlings appears before Create in the studio destination list');
+    const compactBar = appNav.slice(appNav.indexOf('<MobileMenu'), appNav.indexOf('<nav ref={tabs}'));
+    assert.doesNotMatch(compactBar, /href="\/app\/oddlings"/,
+        'the compact bar does not duplicate the highlighted Oddlings menu item');
 });
 
 // One asset is not "1 assets". Run the component's own two lines rather
