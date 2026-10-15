@@ -20,17 +20,17 @@ export async function GET(req) {
     }
     const cfg=envConfig();
     if (!cfg.supabaseUrl || !cfg.serviceRoleKey) return NextResponse.json({error:'supabase_not_configured'},{status:503});
+    const brand=await resolveBrand(authId,cfg,'social/calendar:GET',{request:req,allowedRoles:['owner','manager','editor','reviewer','analyst','viewer']});if(brand.error)return brand.error;
     if (publishPlansEnabled()) {
         try {
-            const entitlement=await readPublishEntitlement(authId,cfg);
+            const entitlement=await readPublishEntitlement(brand.rpcAuthId,cfg);
             if(!entitlement)return NextResponse.json({error:'internal'},{status:502});
             if(entitlement.tier!=='publish')return NextResponse.json({error:'publish_plan_required',feature:'calendar'},{status:402});
         } catch { return NextResponse.json({error:'internal'},{status:502}); }
     }
     const limited=await accountReadLimit(authId,cfg,{posts:[],next:null});if(limited)return limited;
-    const {brandId,error}=await resolveBrand(authId,cfg,'social/calendar:GET');if(error)return error;
     try {
-        const result=await rpc('list_social_calendar',{p_auth_id:authId,p_brand_id:brandId,p_from:from,p_to:to,
+        const result=await rpc('list_social_calendar',{p_auth_id:brand.rpcAuthId,p_brand_id:brand.brandId,p_from:from,p_to:to,
             p_status:status||null,p_network:network||null,p_after_at:afterAt||null,p_after_id:afterId||null},cfg);
         if(result?.ok!==true) return NextResponse.json({error:'internal'},{status:502});
         // Avoid '+' in the UTC query cursor while preserving PostgreSQL microseconds.

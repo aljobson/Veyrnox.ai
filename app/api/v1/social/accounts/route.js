@@ -14,12 +14,13 @@
  * client-supplied id can never reach this handler.
  */
 
-import { publishPlansEnabled, youtubeVisibilityEnabled } from '../../../../../lib/social/publishFeature.js';
+import { publishPlansEnabled, socialAdsEnabled, socialApprovalsEnabled, socialCommerceEnabled, socialContentPresetsEnabled, socialContentVariantsEnabled, socialCustomerApiEnabled, socialCustomerWebhooksEnabled, socialInboxEnabled, socialInboxWorkflowsEnabled, socialQueuesEnabled, socialReportsEnabled, socialRssAutolistsEnabled, socialSmartLinksEnabled, socialTeamsEnabled, youtubeVisibilityEnabled } from '../../../../../lib/social/publishFeature.js';
 import { readPublishEntitlement } from '../../../../../lib/social/publishPlanApi.js';
 import { socialUploadsEnabled } from '../../../../../lib/social/uploadPolicy.js';
 import { networkEnabled, networkMedia } from '../../../../../lib/social/networks.js';
 import { networkReadiness } from '../../../../../lib/social/networkReadiness.js';
 import { tiktokReviewAllowed } from '../../../../../lib/social/tiktokReview.js';
+import { resolveBrand } from '../../../../../lib/social/resolveBrand.js';
 import { NextResponse } from 'next/server';
 import { accountReadLimit } from '../../../../../lib/accountReadLimit.js';
 import { rpc, envConfig, SupabaseError } from '../../../../../packages/db/supabase-client.js';
@@ -40,23 +41,14 @@ export async function GET(req) {
     const limited = await accountReadLimit(authId, cfg, { brand_id: null, accounts: [] });
     if (limited) return limited;
 
-    let brand;
-    try {
-        brand = await rpc('get_or_create_default_social_brand', { p_auth_id: authId }, cfg);
-    } catch (err) {
-        const status = err instanceof SupabaseError ? err.status : 0;
-        console.error('[api/v1/social/accounts] brand lookup failed:', status, err && err.body);
-        return NextResponse.json({ error: 'internal' }, { status: 502 });
-    }
-    if (!brand || brand.ok !== true) {
-        const code = brand && brand.code === 'USER_NOT_FOUND' ? 'not_authenticated' : 'internal';
-        const status = code === 'not_authenticated' ? 401 : 502;
-        return NextResponse.json({ error: code }, { status });
-    }
+    const brand = await resolveBrand(authId, cfg, 'api/v1/social/accounts:GET', {
+        request: req, allowedRoles: ['owner', 'manager', 'editor', 'reviewer', 'analyst', 'viewer'],
+    });
+    if (brand.error) return brand.error;
 
     let accounts;
     try {
-        accounts = await rpc('list_social_accounts', { p_auth_id: authId, p_brand_id: brand.brand_id }, cfg);
+        accounts = await rpc('list_social_accounts', { p_auth_id: brand.rpcAuthId, p_brand_id: brand.brandId }, cfg);
     } catch (err) {
         const status = err instanceof SupabaseError ? err.status : 0;
         console.error('[api/v1/social/accounts] account list failed:', status, err && err.body);
@@ -68,7 +60,7 @@ export async function GET(req) {
 
     let entitlement = null;
     if (publishPlansEnabled()) {
-        try { entitlement = await readPublishEntitlement(authId, cfg); }
+        try { entitlement = await readPublishEntitlement(brand.rpcAuthId, cfg); }
         catch (err) {
             console.error('[api/v1/social/accounts] entitlement lookup failed:', err instanceof SupabaseError ? err.status : 0);
             return NextResponse.json({ error: 'internal' }, { status: 502 });
@@ -77,7 +69,8 @@ export async function GET(req) {
     }
 
     return NextResponse.json({
-        brand_id: brand.brand_id,
+        brand_id: brand.brandId,
+        brandRole: brand.role,
         accountLimit: entitlement?.account_limit || 1,
         ...(entitlement ? { planTier: entitlement.tier } : {}),
         accounts: (accounts.accounts || []).map((account) => ({ ...account, publishingEnabled: networkEnabled(account.network)
@@ -85,6 +78,20 @@ export async function GET(req) {
         uploadsEnabled: socialUploadsEnabled(process.env, authId),
         youtubeVisibilityEnabled: youtubeVisibilityEnabled(),
         plansEnabled: publishPlansEnabled(),
+        inboxEnabled: socialInboxEnabled(),
+        inboxWorkflowsEnabled: socialInboxWorkflowsEnabled(),
+        smartlinksEnabled: socialSmartLinksEnabled(),
+        contentPresetsEnabled: socialContentPresetsEnabled(),
+        queuesEnabled: socialQueuesEnabled(),
+        approvalsEnabled: socialApprovalsEnabled(),
+        teamsEnabled: socialTeamsEnabled(),
+        variantsEnabled: socialContentVariantsEnabled(),
+        reportsEnabled: socialReportsEnabled(),
+        customerApiEnabled: socialCustomerApiEnabled(),
+        customerWebhooksEnabled: socialCustomerWebhooksEnabled(),
+        adsEnabled: socialAdsEnabled(),
+        commerceEnabled: socialCommerceEnabled(),
+        rssAutolistsEnabled: socialRssAutolistsEnabled(),
         networks: networkReadiness(process.env, authId),
     }, { headers: { 'Cache-Control': 'no-store' } });
 }

@@ -126,6 +126,8 @@ function Plan() {
         <li>✓ Cross-account analytics and 12 months of history</li>
         <li>✓ CSV analytics exports</li>
         <li>✓ Best-time and posting-frequency recommendations</li>
+        <li>✓ Unified and per-account social inbox</li>
+        <li>✓ Comment replies where the platform grants access</li>
       </ul>
       <p className="mt-5 text-xs text-vx-fg-muted">Monthly billing in USD. Tax is calculated at checkout. Cancel any time.</p>
       <label className="mt-4 flex items-start gap-3 text-sm text-vx-fg-body">

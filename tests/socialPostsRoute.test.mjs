@@ -13,6 +13,7 @@ const brandId = '22222222-2222-4222-8222-222222222222';
 const accountId = '33333333-3333-4333-8333-333333333333';
 const jobId = '44444444-4444-4444-8444-444444444444';
 const postId = '55555555-5555-4555-8555-555555555555';
+const ownerAuth = '66666666-6666-4666-8666-666666666666';
 
 const getRequest = (headers = {}, search = '') => new Request(`https://veyrnox.test/api/v1/social/posts${search}`, {
     headers: { 'x-veyrnox-auth-id': auth, ...headers },
@@ -81,7 +82,7 @@ test('GET: auto-creates the brand and lists posts', async () => {
     assert.equal(body.posts.length, 1);
     assert.deepEqual(calls[2], {
         name: 'list_social_posts',
-        args: { p_auth_id: auth, p_brand_id: brandId, p_before_created_at: null, p_before_id: null },
+        args: { p_auth_id: auth, p_brand_id: brandId, p_limit: 24, p_before_created_at: null, p_before_id: null },
     });
 });
 
@@ -89,7 +90,20 @@ test('GET: paginates via before_created_at/before_id query params', async () => 
     stub();
     const before = '2026-01-01T00:00:00.000Z';
     await GET(getRequest({}, `?before_created_at=${encodeURIComponent(before)}&before_id=${postId}`));
-    assert.deepEqual(calls[2].args, { p_auth_id: auth, p_brand_id: brandId, p_before_created_at: before, p_before_id: postId });
+    assert.deepEqual(calls[2].args, { p_auth_id: auth, p_brand_id: brandId, p_limit: 24, p_before_created_at: before, p_before_id: postId });
+});
+
+test('GET: accepts a bounded library limit and rejects anything outside 1..50', async () => {
+    stub();
+    assert.equal((await GET(getRequest({}, '?limit=50'))).status, 200);
+    assert.equal(calls[2].args.p_limit, 50);
+    for (const limit of ['0', '51', '2.5', 'nope']) {
+        stub();
+        const res = await GET(getRequest({}, `?limit=${limit}`));
+        assert.equal(res.status, 400, limit);
+        assert.deepEqual(await res.json(), { error: 'invalid_limit' });
+        assert.equal(calls.some((call) => call.name === 'list_social_posts'), false);
+    }
 });
 
 test('GET: a malformed cursor is rejected before any list RPC', async () => {
@@ -158,6 +172,73 @@ test('POST: schedules a post and returns its id', async () => {
         p_idempotency_key: 'a'.repeat(16), p_account_ids: [accountId],
         p_media: [{ media_type: 'image', job_id: jobId }],
     });
+});
+
+test('POST: paid platform variants use the atomic options RPC', async () => {
+    const previousVariants = process.env.PUBLISH_CONTENT_VARIANTS_ENABLED;
+    const previousPlans = process.env.PUBLISH_PLANS_ENABLED;
+    process.env.PUBLISH_CONTENT_VARIANTS_ENABLED = 'true';
+    process.env.PUBLISH_PLANS_ENABLED = 'true';
+    try {
+        stub({ create_social_post_with_options: { ok: true, idempotent: false, post_id: postId, target_count: 1 } });
+        const res = await POST(postRequest({ ...validBody(), networkText: { instagram: 'Instagram copy' } }));
+        assert.equal(res.status, 201);
+        const create = calls.find((call) => call.name === 'create_social_post_with_options');
+        assert.deepEqual(create.args.p_network_text, { instagram: 'Instagram copy' });
+        assert.equal(create.args.p_youtube_visibility, null);
+    } finally {
+        if (previousVariants === undefined) delete process.env.PUBLISH_CONTENT_VARIANTS_ENABLED; else process.env.PUBLISH_CONTENT_VARIANTS_ENABLED = previousVariants;
+        if (previousPlans === undefined) delete process.env.PUBLISH_PLANS_ENABLED; else process.env.PUBLISH_PLANS_ENABLED = previousPlans;
+    }
+});
+
+test('POST: platform variants fail closed and cannot target an unselected network', async () => {
+    stub();
+    let res = await POST(postRequest({ ...validBody(), networkText: { instagram: 'Instagram copy' } }));
+    assert.equal(res.status, 404);
+    assert.deepEqual(await res.json(), { error: 'variants_not_open' });
+    assert.deepEqual(calls, []);
+
+    process.env.PUBLISH_CONTENT_VARIANTS_ENABLED = 'true';
+    process.env.PUBLISH_PLANS_ENABLED = 'true';
+    try {
+        stub();
+        res = await POST(postRequest({ ...validBody(), networkText: { twitter: 'Not selected' } }));
+        assert.equal(res.status, 400);
+        assert.deepEqual(await res.json(), { error: 'invalid_network_text' });
+        assert.equal(calls.some((call) => call.name === 'create_social_post_with_options'), false);
+
+        stub({ read_social_publish_entitlement: { ok: true, tier: 'free', account_limit: 1, analytics_days: 0, best_time_enabled: false, subscription: null } });
+        res = await POST(postRequest({ ...validBody(), publishNow: true, networkText: { instagram: 'Paid copy' } }));
+        assert.equal(res.status, 402);
+        assert.deepEqual(await res.json(), { error: 'publish_plan_required', feature: 'platform_variants' });
+    } finally {
+        delete process.env.PUBLISH_CONTENT_VARIANTS_ENABLED;
+        delete process.env.PUBLISH_PLANS_ENABLED;
+    }
+});
+
+test('POST: an editor reads owner-scoped account data but creates as the acting teammate', async () => {
+    const previousTeams = process.env.PUBLISH_TEAMS_ENABLED;
+    const previousPlans = process.env.PUBLISH_PLANS_ENABLED;
+    process.env.PUBLISH_TEAMS_ENABLED = 'true';
+    process.env.PUBLISH_PLANS_ENABLED = 'true';
+    try {
+        stub({ get_social_brand_access: { ok: true, brand_id: brandId, label: 'Studio', role: 'editor', owner_auth_id: ownerAuth, paid: true } });
+        const res = await POST(postRequest(validBody(), { 'x-publish-brand-id': brandId }));
+        assert.equal(res.status, 201);
+        assert.equal(calls.find((call) => call.name === 'read_social_publish_entitlement').args.p_auth_id, ownerAuth);
+        assert.equal(calls.find((call) => call.name === 'list_social_accounts').args.p_auth_id, ownerAuth);
+        assert.equal(calls.find((call) => call.name === 'create_social_post').args.p_auth_id, auth);
+
+        stub({ get_social_brand_access: { ok: true, brand_id: brandId, label: 'Studio', role: 'analyst', owner_auth_id: ownerAuth, paid: true } });
+        const blocked = await POST(postRequest(validBody(), { 'x-publish-brand-id': brandId }));
+        assert.equal(blocked.status, 403);
+        assert.equal(calls.some((call) => call.name === 'create_social_post'), false);
+    } finally {
+        if (previousTeams === undefined) delete process.env.PUBLISH_TEAMS_ENABLED; else process.env.PUBLISH_TEAMS_ENABLED = previousTeams;
+        if (previousPlans === undefined) delete process.env.PUBLISH_PLANS_ENABLED; else process.env.PUBLISH_PLANS_ENABLED = previousPlans;
+    }
 });
 
 test('POST: Post now uses server time and ignores a missing or invalid device schedule', async () => {

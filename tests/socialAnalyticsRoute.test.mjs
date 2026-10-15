@@ -31,6 +31,7 @@ function stub(results = {}) {
         calls.push({ name, args: JSON.parse(init.body) });
         const result = results[name] ?? ({
             consume_account_read_request: { ok: true },
+            get_or_create_default_social_brand: { ok: true, brand_id: '22222222-2222-4222-8222-222222222222' },
             get_social_analytics: okResult,
         })[name];
         if (result instanceof Error) throw result;
@@ -72,7 +73,7 @@ test('returns the caller\'s analytics, uncached, without the ok flag', async () 
     assert.equal(res.headers.get('cache-control'), 'no-store');
     const { ok: _ok, ...expected } = okResult;
     assert.deepEqual(await res.json(), expected);
-    assert.deepEqual(calls[1], {
+    assert.deepEqual(calls[2], {
         name: 'get_social_analytics',
         args: { p_auth_id: auth, p_account_id: accountId, p_from: '2026-09-04', p_to: '2026-10-03' },
     });

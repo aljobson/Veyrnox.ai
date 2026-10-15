@@ -13,6 +13,7 @@ function stub(result = { ok: true, insights: null }, limit = { ok: true }, entit
     globalThis.fetch = async (url, init) => {
         const name = new URL(url).pathname.split('/').pop(); calls.push({ name, args: JSON.parse(init.body) });
         if (name === 'consume_account_read_request') return Response.json(limit);
+        if (name === 'get_or_create_default_social_brand') return Response.json({ ok: true, brand_id: '22222222-2222-4222-8222-222222222222' });
         if (name === 'read_social_publish_entitlement' && entitlement) return Response.json(entitlement);
         if (result instanceof Error) throw result;
         return Response.json(result);
@@ -32,7 +33,7 @@ test('read is owner-bound, uncached, and missing aggregates remain null', async 
     stub(); const res = await GET(request());
     assert.equal(res.status, 200); assert.equal(res.headers.get('cache-control'), 'no-store');
     assert.deepEqual(await res.json(), { insights: null });
-    assert.deepEqual(calls[1], { name: 'get_social_posting_insights', args: { p_auth_id: auth, p_account_id: account } });
+    assert.deepEqual(calls[2], { name: 'get_social_posting_insights', args: { p_auth_id: auth, p_account_id: account } });
 });
 
 test('maps denied reads and DB failures to typed errors without leaking vendor detail', async () => {
@@ -58,7 +59,7 @@ test('best-time recommendations require the Publish Plan when plans are open', a
         const blocked = await GET(request());
         assert.equal(blocked.status, 402);
         assert.deepEqual(await blocked.json(), { error: 'publish_plan_required' });
-        assert.deepEqual(calls.map((call) => call.name), ['read_social_publish_entitlement']);
+        assert.deepEqual(calls.map((call) => call.name), ['consume_account_read_request', 'get_or_create_default_social_brand', 'read_social_publish_entitlement']);
 
         stub({ ok: true, insights: { sample_posts: 10 } }, { ok: true }, {
             ok: true, tier: 'publish', account_limit: 5, analytics_days: 366,
