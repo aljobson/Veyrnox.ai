@@ -51,14 +51,15 @@ test('Oddlings add a bounded creator identity and recurring show to the visual p
 });
 
 test('Oddling starters lead with weird humans and retain an optional creature cast', () => {
-    assert.equal(ODDLING_ARCHETYPES.length, 12);
+    assert.equal(ODDLING_ARCHETYPES.length, 28);
     assert.equal(ODDLING_ARCHETYPES[0].kind, 'human');
-    assert.equal(ODDLING_ARCHETYPES.filter((oddling) => oddling.kind === 'human').length, 8);
+    assert.equal(ODDLING_ARCHETYPES.filter((oddling) => oddling.kind === 'human').length, 24);
     assert.equal(ODDLING_ARCHETYPES.filter((oddling) => oddling.kind === 'creature').length, 4);
     for (const oddling of ODDLING_ARCHETYPES) {
         assert.equal(oddling.picks.oddling_name, oddling.name);
         assert.equal(oddling.picks.character_type === 'Human', oddling.kind === 'human');
         assert.match(buildCharacterPrompt('', oddling.picks), /original adult character, not a real person/);
+        assert.deepEqual(sanitizeOddlingPicks(oddling.picks), oddling.picks, `${oddling.id} uses only builder-supported traits`);
     }
 });
 
@@ -69,6 +70,18 @@ test('human starters cover intentionally different body silhouettes and wearable
     assert.equal(byId['bughead-brenda'].picks.character_type, 'Human');
     assert.equal(byId['bughead-brenda'].picks.accessories, 'Bug Head Mask');
     assert.equal(byId['pam-bouffant'].picks.hair, 'Monumental Hair');
+    assert.equal(byId['olive-orbit'].picks.body_type, 'Very Skinny');
+    assert.equal(byId['brick-picnic'].picks.body_type, 'Barrel');
+    assert.equal(byId['madame-scissors'].picks.body_type, 'Pear');
+    assert.equal(byId['pocket-atlas'].picks.body_type, 'Hyper-Muscular');
+    assert.equal(byId['taffy-tessa'].picks.body_type, 'Fat');
+    assert.equal(byId['tuesday-triangle'].picks.body_type, 'Inverted Triangle');
+    assert.equal(byId['colonel-crumb'].picks.body_type, 'Very Skinny');
+    assert.equal(byId['baron-boucle'].picks.body_type, 'Fat');
+    assert.equal(byId['tall-order'].picks.body_type, 'Very Skinny');
+    assert.equal(byId['bubble-barry'].picks.body_type, 'Fat');
+    assert.equal(byId['max-rep'].picks.body_type, 'Hyper-Muscular');
+    assert.equal(byId['shelf-life'].picks.body_type, 'Pear');
     for (const id of ['duchess-volume', 'major-minor', 'bughead-brenda', 'pam-bouffant']) {
         assert.match(buildCharacterPrompt('', byId[id].picks), /original adult character, not a real person/);
     }
@@ -80,9 +93,11 @@ test('the builder offers graphic hair shapes and a broad, deliberate body vocabu
     for (const label of ['Very Skinny', 'Lanky', 'Compact', 'Pear', 'Inverted Triangle', 'Barrel', 'Long Torso', 'Long Legs', 'Fat', 'Hyper-Muscular']) {
         assert.ok(bodies.options.some(([option]) => option === label), `missing body option: ${label}`);
     }
-    for (const label of ['Cube Cut', 'Sphere Cut', 'Wedge Cut', 'Tabletop', 'Spiral Tower', 'Crescent Cut', 'Twin Discs', 'Zigzag Cut']) {
+    for (const label of ['Cube Cut', 'Sphere Cut', 'Wedge Cut', 'Tabletop', 'Spiral Tower', 'Crescent Cut', 'Twin Discs', 'Zigzag Cut', 'Anvil Cut', 'Donut Halo', 'Tube Tower', 'Shelf Cut']) {
         assert.ok(hair.options.some(([option]) => option === label), `missing hair option: ${label}`);
     }
+    const wardrobe = CHARACTER_GROUPS.find((group) => group.id === 'wardrobe_style');
+    assert.ok(wardrobe.options.some(([option]) => option === 'Modern Basics'));
 });
 
 test('Oddling passports save only bounded known fields and survive blocked storage', () => {

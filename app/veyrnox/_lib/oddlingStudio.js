@@ -36,6 +36,27 @@ export const ODDLING_SCENES = [
   'Walking into frame for the first episode of a strange recurring show',
 ];
 
+const ODDLING_GALLERY_SHEETS = [
+  { image: '/oddlings/oddling-body-chaos.webp', ids: ['duchess-volume', 'major-minor', 'bughead-brenda', 'pam-bouffant'] },
+  { image: '/oddlings/oddling-humans.webp', ids: ['vera-static', 'mister-monday', 'bloom-service', 'coupon-saint'] },
+  { image: '/oddlings/oddling-silhouette-parade.webp', ids: ['olive-orbit', 'brick-picnic', 'madame-scissors', 'pocket-atlas'] },
+  { image: '/oddlings/oddling-fashion-disasters.webp', ids: ['noodle-duke', 'taffy-tessa', 'tuesday-triangle', 'colonel-crumb'] },
+  { image: '/oddlings/oddling-hair-parade.webp', ids: ['disco-anvil', 'cloudette-forecast', 'ziggy-receipt', 'baron-boucle'] },
+  { image: '/oddlings/oddling-denim-basics.webp', ids: ['tall-order', 'bubble-barry', 'max-rep', 'shelf-life'] },
+  { image: '/oddlings/oddling-cast.webp', ids: ['auntie-antenna', 'brine-minister', 'mossbyte', 'receipt-wraith'] },
+];
+
+export const ODDLING_PRESET_SOURCES = [
+  { id: 'body', label: 'Body chaos', ids: ODDLING_GALLERY_SHEETS[0].ids },
+  { id: 'silhouettes', label: 'Extreme silhouettes', ids: ODDLING_GALLERY_SHEETS[2].ids },
+  { id: 'fashion', label: 'Fashion disasters', ids: ODDLING_GALLERY_SHEETS[3].ids },
+  { id: 'hair', label: 'Hair sculptures', ids: ODDLING_GALLERY_SHEETS[4].ids },
+  { id: 'denim', label: 'Tee + tight jeans', ids: ODDLING_GALLERY_SHEETS[5].ids },
+  { id: 'oddities', label: 'Human oddities', ids: ODDLING_GALLERY_SHEETS[1].ids },
+  { id: 'humans', label: 'All weird humans', kind: 'human' },
+  { id: 'beings', label: 'Other beings', kind: 'creature' },
+];
+
 export const ODDLING_LIBRARY_KEY = 'veyrnox_oddling_library_v1';
 const LIBRARY_LIMIT = 24;
 const RANDOM_STYLE_GROUPS = [
@@ -116,11 +137,15 @@ export function saveOddlingToLibrary(storage, picks, motionId = '', now = Date.n
 }
 
 export function gallerySource(oddling) {
-  const humans = ODDLING_ARCHETYPES.filter((item) => item.kind === 'human');
-  const creatures = ODDLING_ARCHETYPES.filter((item) => item.kind === 'creature');
-  const humanIndex = humans.findIndex((item) => item.id === oddling.id);
-  const creatureIndex = creatures.findIndex((item) => item.id === oddling.id);
-  if (humanIndex >= 0 && humanIndex < 4) return { image: '/oddlings/oddling-body-chaos.webp', panel: humanIndex };
-  if (humanIndex >= 4) return { image: '/oddlings/oddling-humans.webp', panel: humanIndex - 4 };
-  return { image: '/oddlings/oddling-cast.webp', panel: Math.max(0, creatureIndex) };
+  for (const sheet of ODDLING_GALLERY_SHEETS) {
+    const panel = sheet.ids.indexOf(oddling?.id);
+    if (panel >= 0) return { image: sheet.image, panel };
+  }
+  return { image: '/oddlings/oddling-cast.webp', panel: 0 };
+}
+
+export function oddlingsForSource(sourceId) {
+  const source = ODDLING_PRESET_SOURCES.find((item) => item.id === sourceId) || ODDLING_PRESET_SOURCES[0];
+  if (source.ids) return source.ids.map((id) => ODDLING_ARCHETYPES.find((item) => item.id === id)).filter(Boolean);
+  return ODDLING_ARCHETYPES.filter((item) => item.kind === source.kind);
 }

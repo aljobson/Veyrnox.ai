@@ -3,9 +3,11 @@ import assert from 'node:assert/strict';
 import { CHARACTER_GROUPS, ODDLING_ARCHETYPES } from '../app/veyrnox/_lib/character.js';
 import {
     ODDLING_MOTIONS,
+    ODDLING_PRESET_SOURCES,
     ODDLING_STUDIO_SECTIONS,
     buildOddlingStudioPrompt,
     gallerySource,
+    oddlingsForSource,
     randomizeOddlingStyle,
     readOddlingLibrary,
     saveOddlingToLibrary,
@@ -68,5 +70,33 @@ test('gallery art maps every original character to a four-panel cast asset', () 
         const source = gallerySource(oddling);
         assert.match(source.image, /^\/oddlings\/oddling-.+\.webp$/);
         assert.ok(source.panel >= 0 && source.panel <= 3);
+    }
+});
+
+test('human preset collections are complete, distinct, and human-first', () => {
+    assert.deepEqual(ODDLING_PRESET_SOURCES.map((source) => source.id), [
+        'body', 'silhouettes', 'fashion', 'hair', 'denim', 'oddities', 'humans', 'beings',
+    ]);
+    for (const source of ODDLING_PRESET_SOURCES.slice(0, 6)) {
+        const oddlings = oddlingsForSource(source.id);
+        assert.equal(oddlings.length, 4, `${source.id} should contain one four-character art sheet`);
+        assert.ok(oddlings.every((oddling) => oddling.kind === 'human'));
+    }
+    assert.equal(oddlingsForSource('humans').length, 24);
+    assert.equal(oddlingsForSource('beings').length, 4);
+    assert.deepEqual(oddlingsForSource('unknown').map((oddling) => oddling.id), oddlingsForSource('body').map((oddling) => oddling.id));
+});
+
+test('the four new human collections use their dedicated original artwork', () => {
+    const expected = new Map([
+        ['silhouettes', '/oddlings/oddling-silhouette-parade.webp'],
+        ['fashion', '/oddlings/oddling-fashion-disasters.webp'],
+        ['hair', '/oddlings/oddling-hair-parade.webp'],
+        ['denim', '/oddlings/oddling-denim-basics.webp'],
+    ]);
+    for (const [sourceId, image] of expected) {
+        assert.deepEqual(oddlingsForSource(sourceId).map(gallerySource), [
+            { image, panel: 0 }, { image, panel: 1 }, { image, panel: 2 }, { image, panel: 3 },
+        ]);
     }
 });
