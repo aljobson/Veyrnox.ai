@@ -42,7 +42,7 @@ void main() {
   float weight = pow(max(0.0, 1.0 - dot(localChest, localChest)), 2.0);
   // Every warp reaches zero at its body-zone boundary, keeping the backdrop fixed.
   vec2 bodyPoint = point - (point - chest.xy) * pose.y * weight;
-  bodyPoint.x -= pose2.w * 6.0 * weight;
+  bodyPoint -= vec2(pose2.w * 12.0, abs(pose2.z) * 5.0) * weight;
 
   vec2 localArm0 = (point - arm0.xy) / arm0.zw;
   vec2 localArm1 = (point - arm1.xy) / arm1.zw;
@@ -50,13 +50,13 @@ void main() {
   float armWeight1 = pow(max(0.0, 1.0 - dot(localArm1, localArm1)), 2.0);
   float reach0 = 0.45 + 0.55 * smoothstep(-1.0, 1.0, localArm0.y);
   float reach1 = 0.45 + 0.55 * smoothstep(-1.0, 1.0, localArm1.y);
-  bodyPoint -= vec2(pose2.x * 14.0 * reach0, abs(pose2.x) * 3.0) * armWeight0;
-  bodyPoint -= vec2(-pose2.x * 14.0 * reach1, abs(pose2.x) * 3.0) * armWeight1;
+  bodyPoint -= vec2(pose2.x * 26.0 * reach0, abs(pose2.x) * 7.0) * armWeight0;
+  bodyPoint -= vec2(-pose2.x * 26.0 * reach1, abs(pose2.x) * 7.0) * armWeight1;
 
   vec2 localLower = (point - lower.xy) / lower.zw;
   float lowerWeight = pow(max(0.0, 1.0 - dot(localLower, localLower)), 2.0);
   float legSide = smoothstep(-0.18, 0.18, localLower.x) * 2.0 - 1.0;
-  bodyPoint -= vec2(pose2.y * 8.0, pose2.z * 6.0 * legSide) * lowerWeight;
+  bodyPoint -= vec2(pose2.y * 14.0, pose2.z * 10.0 * legSide) * lowerWeight;
   vec3 color = texture2D(plate, bodyPoint / size).rgb;
 
   float c = cos(pose.z), s = sin(pose.z);
@@ -220,6 +220,7 @@ export function createOddlingPuppet(canvas, image, id, rig) {
         if (canvas.dataset.blinkState !== blinkState) canvas.dataset.blinkState = blinkState;
         const bodyState = pose.step > 0.35 ? 'right-step' : pose.step < -0.35 ? 'left-step' : 'weight-shift';
         if (canvas.dataset.bodyMotionState !== bodyState) canvas.dataset.bodyMotionState = bodyState;
+        canvas.dataset.danceState = bodyState;
         return true;
       },
       destroy() { canvas.removeEventListener('webglcontextlost', onLost); destroy(); },
