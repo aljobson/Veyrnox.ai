@@ -567,7 +567,7 @@ export function ScheduledPosts({ refreshToken, scheduleEnabled = true, onReuse }
                         <span className="text-xs font-bold text-vx-fg-muted">
                             {p.status} · {new Date(p.scheduled_at).toLocaleString()}
                         </span>
-                        {scheduleEnabled && (p.media || []).length > 0 && <button type="button" className={button} onClick={() => onReuse?.(p)}>Use again</button>}
+                        {scheduleEnabled && onReuse && (p.media || []).length > 0 && <button type="button" className={button} onClick={() => onReuse?.(p)}>Use again</button>}
                     </div>
                     {p.global_text && <p className="text-sm text-vx-fg mb-2 line-clamp-2">{p.global_text}</p>}
                     <div className="flex flex-wrap gap-x-3 gap-y-1">

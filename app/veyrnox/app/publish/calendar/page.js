@@ -9,7 +9,6 @@ import BrandSwitcher from '../BrandSwitcher';
 import { getSession, onSessionChange } from '../../../../lib/authClient';
 import { listSocialAccounts, NETWORKS } from '../../../../lib/socialConnectClient';
 import { cancelSocialPost, listSocialCalendar, rescheduleSocialPost, restoreSocialPost } from '../../../../lib/socialPostsClient';
-import { getPublishPlan } from '../../../../lib/publishPlanClient';
 import { calendarWindow, shiftCalendar, dateKey, droppedSchedule, localInput, localSchedule, POST_STATUSES } from '../../../../../lib/social/calendar.js';
 
 const button='rounded-full border border-vx-border px-4 py-2 text-sm font-bold disabled:opacity-50 focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-vx-accent';
@@ -43,7 +42,7 @@ function CalendarControls({today}) {
     const [refresh,setRefresh]=useState(0),[result,setResult]=useState(null),[loadError,setLoadError]=useState('');
     const [moreLoading,setMoreLoading]=useState(false),[edit,setEdit]=useState(null),[cancelPost,setCancelPost]=useState(null),[message,setMessage]=useState('');
     const requestId=useRef(0);
-    useEffect(()=>{let active=true;Promise.all([getPublishPlan(),listSocialAccounts()]).then(([data,accountResult])=>{if(active){setPlanTier(accountResult.planTier||data.entitlement?.tier||'free');setBrandRole(accountResult.brandRole||'owner');}}).catch(()=>{if(active)setPlanTier('free');});return()=>{active=false;};},[]);
+    useEffect(()=>{let active=true;listSocialAccounts().then((accountResult)=>{if(active){setPlanTier(accountResult.planTier||'free');setBrandRole(accountResult.brandRole||'owner');}}).catch(()=>{if(active)setPlanTier('free');});return()=>{active=false;};},[]);
     const range=calendarWindow(anchor,view);
     const queryKey=JSON.stringify([range.from,range.to,status,network,refresh]);
     useEffect(()=>{

@@ -16,3 +16,10 @@ test('validates the full SmartLink payload before consuming the write bucket',as
 test('saves only bounded HTTPS destinations and maps slug conflicts',async()=>{stub({save_social_smartlink:{ok:false,code:'SLUG_TAKEN'}});const res=await PUT(request('PUT',{slug:'veyrnox-ai',title:'Veyrnox',bio:'Create and publish',avatarUrl:'',theme:'sunset',published:true,items:[{label:'Start creating',url:'https://veyrnox.ai/app/create',enabled:true}]}));assert.equal(res.status,409);assert.equal(calls.at(-1).name,'save_social_smartlink');assert.deepEqual(calls.at(-1).args.p_items,[{label:'Start creating',url:'https://veyrnox.ai/app/create',enabled:true}]);});
 
 test('feature flag fails closed',async()=>{const previous=process.env.PUBLISH_SMARTLINKS_ENABLED;process.env.PUBLISH_SMARTLINKS_ENABLED='false';try{stub();const res=await GET(request());assert.equal(res.status,404);assert.equal(calls.length,0);}finally{process.env.PUBLISH_SMARTLINKS_ENABLED=previous;}});
+
+test('retains destination IDs on save and rejects malformed IDs',async()=>{
+ const id='44444444-4444-4444-8444-444444444444';
+ const body={slug:'veyrnox-ai',title:'Veyrnox',theme:'midnight',published:false,items:[{id,label:'Home',url:'https://veyrnox.ai',enabled:true}]};
+ stub();assert.equal((await PUT(request('PUT',body))).status,200);assert.equal(calls.at(-1).args.p_items[0].id,id);
+ stub();body.items[0].id='invalid';assert.equal((await PUT(request('PUT',body))).status,400);assert.equal(calls.length,0);
+});
