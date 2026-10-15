@@ -27,7 +27,7 @@ test('saved characters retain their legacy choices while all trait views use neu
 
 test('all size choices reach prompts, survive saving, and stay deliberate during styling remixes', () => {
   for (const group of CHARACTER_SIZE_GROUPS) for (const [size, phrase] of group.options) {
-    const picks = { character_type: 'Human', body_type: 'Slim', arm_size: 'Small', leg_size: 'Extra Large', head_size: 'Extra Large', hand_size: 'Small', foot_size: 'Extra Large', ear_size: 'Extra Large', nose_size: 'Small', eye_size: 'Small', mouth_size: 'Extra Large', [group.id]: size };
+    const picks = { character_type: 'Human', body_type: 'Slim', neck_size: 'Extra Large', arm_size: 'Small', leg_size: 'Extra Large', head_size: 'Extra Large', hand_size: 'Small', foot_size: 'Extra Large', ear_size: 'Extra Large', nose_size: 'Small', eye_size: 'Small', mouth_size: 'Extra Large', [group.id]: size };
     assert.deepEqual(sanitizeOddlingPicks(picks), picks);
     assert.ok(buildCharacterPrompt('Full-body portrait', picks).includes(phrase));
     assert.ok(buildCharacterPrompt('', picks).includes('both feet fully visible'));
@@ -46,16 +46,36 @@ test('all size choices reach prompts, survive saving, and stay deliberate during
     assert.equal(remixed.head_size, picks.head_size);
     assert.equal(remixed.arm_size, picks.arm_size);
     assert.equal(remixed.leg_size, picks.leg_size);
+    assert.equal(remixed.neck_size, picks.neck_size);
   }
-  assert.deepEqual(sanitizeOddlingPicks({ arm_size: 'invalid', leg_size: 'invalid', head_size: 'invalid', foot_size: 'gigantic unbounded value', ear_size: 'invalid', nose_size: 'invalid', eye_size: 'invalid', mouth_size: 'invalid' }), {});
+  assert.deepEqual(sanitizeOddlingPicks({ neck_size: 'invalid', arm_size: 'invalid', leg_size: 'invalid', head_size: 'invalid', foot_size: 'gigantic unbounded value', ear_size: 'invalid', nose_size: 'invalid', eye_size: 'invalid', mouth_size: 'invalid' }), {});
 });
 
 test('all feature size controls offer the same size range', () => {
-  for (const id of ['arm_size', 'leg_size', 'head_size', 'ear_size', 'nose_size', 'eye_size', 'mouth_size', 'hand_size', 'foot_size']) {
+  for (const id of ['neck_size', 'arm_size', 'leg_size', 'head_size', 'ear_size', 'nose_size', 'eye_size', 'mouth_size', 'hand_size', 'foot_size']) {
     const group = CHARACTER_GROUPS.find((item) => item.id === id);
     assert.deepEqual(group.options.map(([value]) => value), ['Small', 'Medium', 'Large', 'Extra Large']);
-    assert.equal(group.tab, ['arm_size', 'leg_size', 'hand_size', 'foot_size'].includes(id) ? 'Body' : 'Face');
+    assert.equal(group.tab, ['neck_size', 'arm_size', 'leg_size', 'hand_size', 'foot_size'].includes(id) ? 'Body' : 'Face');
   }
+});
+
+test('neck size stays independent of styling and replaces conflicting legacy neck proportions', () => {
+  const picks = { neck: 'Stacked Rings', head_size: 'Small', proportions: 'Wide Shoulders' };
+  assert.deepEqual(changeCharacterPick(picks, 'neck_size', 'Extra Large'), { ...picks, neck_size: 'Extra Large' });
+  assert.deepEqual(changeCharacterPick({ neck_size: 'Extra Large' }, 'neck', 'Ruff'),
+    { neck_size: 'Extra Large', neck: 'Ruff' });
+  for (const proportions of ['Long Neck', 'No Visible Neck']) {
+    assert.deepEqual(changeCharacterPick({ proportions, neck: 'Bare' }, 'neck_size', 'Extra Large'),
+      { neck: 'Bare', neck_size: 'Extra Large' });
+    assert.deepEqual(changeCharacterPick({ neck_size: 'Small', neck: 'Bare' }, 'proportions', proportions),
+      { neck: 'Bare', proportions });
+    const saved = storage();
+    assert.equal(writeOddlingDraft(saved, { proportions }, 123), true);
+    assert.deepEqual(readOddlingDraft(saved).picks, { proportions });
+  }
+  assert.deepEqual(changeCharacterPick({ neck: 'Bare', neck_size: 'Large' }, 'neck_size', ''), { neck: 'Bare' });
+  assert.deepEqual(changeCharacterPick({ neck_size: 'Extra Large' }, 'proportions', 'Huge Hands'),
+    { neck_size: 'Extra Large', proportions: 'Huge Hands' });
 });
 
 test('arm and leg sizes remain independent of limb type and each other', () => {

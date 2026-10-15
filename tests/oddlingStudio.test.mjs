@@ -54,16 +54,19 @@ test('face details exposes independent face size controls in portrait and motion
         assert.match(prompt, /extra-large mouth relative to the face/);
     }
 });
-test('Head & eyes exposes head size separately from shape in portrait and motion prompts', () => {
+test('Head & eyes exposes head and neck sizes separately from shape and styling in portrait and motion prompts', () => {
     const section = ODDLING_STUDIO_SECTIONS.find((item) => item.id === 'head');
     assert.ok(section.groupIds.includes('head_size'));
+    assert.ok(section.groupIds.includes('neck_size'));
     for (const mode of ['portrait', 'motion']) {
         const prompt = buildOddlingStudioPrompt({ mode, picks: {
-            character_type: 'Human', head_shape: 'Square', head_size: 'Extra Large', eye_size: 'Small',
+            character_type: 'Human', head_shape: 'Square', head_size: 'Extra Large', eye_size: 'Small', neck_size: 'Extra Large', neck: 'Stacked Rings',
         } });
         assert.match(prompt, /strong square head shape/);
         assert.match(prompt, /extra-large head relative to the body, entire head fully visible/);
         assert.match(prompt, /small eyes relative to the face/);
+        assert.match(prompt, /extra-large neck relative to the body/);
+        assert.match(prompt, /stacked metallic neck rings/);
     }
 });
 test('motion drafts combine identity, visual canon, action and scene', () => {
