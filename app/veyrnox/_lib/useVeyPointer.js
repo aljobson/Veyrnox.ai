@@ -30,7 +30,7 @@ function controlFor(id, options) {
   return root;
 }
 
-export default function useVeyPointer({ reduceMotion, moveMascot, setFacing, activateTarget, clearAction }) {
+export default function useVeyPointer({ reduceMotion, moveMascot, setFacing, activateTarget, clearAction, manualPosition }) {
   const [target, setTarget] = useState(null);
   const [geometry, setGeometry] = useState(null);
   const last = useRef('');
@@ -69,11 +69,11 @@ export default function useVeyPointer({ reduceMotion, moveMascot, setFacing, act
       }
       const scroll = mobileGuideScroll(rect, obstacle, { width: innerWidth });
       if (scroll > 0) window.scrollBy({ top: scroll, behavior: 'instant' });
-      const next = { ...pointerPlacement(rect, { width: innerWidth, height: innerHeight }, obstacle), rect };
+      const next = { ...pointerPlacement(rect, { width: innerWidth, height: innerHeight }, obstacle, manualPosition), rect };
       const signature = JSON.stringify(next);
       if (signature === last.current) return;
       last.current = signature;
-      setGeometry(next); setFacing(next.facing); moveMascot(next.position);
+      setGeometry(next); setFacing(next.facing); moveMascot(next.position, !!manualPosition);
     };
     const schedule = () => { cancelAnimationFrame(frame); frame = requestAnimationFrame(measure); };
     const observer = new ResizeObserver(schedule);
@@ -93,6 +93,6 @@ export default function useVeyPointer({ reduceMotion, moveMascot, setFacing, act
       window.visualViewport?.removeEventListener('resize', schedule);
       if (main && main.style.paddingBottom === appliedPadding) main.style.paddingBottom = previousPadding;
     };
-  }, [target, moveMascot, setFacing]);
+  }, [target, moveMascot, setFacing, manualPosition]);
   return { activeTarget: target?.id, highlight: geometry?.rect, hand: geometry?.hand, point: geometry?.point, locate, clear };
 }

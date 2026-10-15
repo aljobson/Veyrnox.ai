@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mobileGuideScroll, pointerPlacement, VEY_SIZE } from '../lib/veyPointer.js';
+import { clampVeyPosition, dragVeyPosition, mobileGuideScroll, pointerPlacement, VEY_SIZE } from '../lib/veyPointer.js';
 
-function check(rect, viewport, obstacle) {
-  const result = pointerPlacement(rect, viewport, obstacle);
+function check(rect, viewport, obstacle, manualPosition) {
+  const result = pointerPlacement(rect, viewport, obstacle, manualPosition);
   const { position, facing, hand, point } = result;
   assert.ok(position.x >= 8 && position.x + VEY_SIZE.width <= viewport.width - 8);
   assert.ok(position.y >= 72 && position.y + VEY_SIZE.height <= viewport.height - 8);
@@ -19,6 +19,24 @@ function check(rect, viewport, obstacle) {
   return result;
 }
 const rect = (left, top, width, height) => ({ left, top, width, height, right: left + width, bottom: top + height });
+
+test('manual Vey positions stay in the viewport while the actual fingertip still touches the control', () => {
+  for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 }, { width: 1280, height: 900 }]) {
+    for (const position of [{ x: 8, y: 72 }, { x: 200, y: 250 }, { x: -100, y: 2000 }]) {
+      const placed = check(rect(40, 250, 13, 13), viewport, null, position);
+      assert.deepEqual(placed.position, clampVeyPosition(position, viewport));
+      assert.deepEqual(placed.point, { x: 46.5, y: 256.5 });
+    }
+  }
+});
+
+test('a tap-sized movement does not drag; a real drag uses screen coordinates and clamps its destination', () => {
+  const start = { pointer: { x: 110, y: 210 }, position: { x: 100, y: 200 } };
+  const viewport = { width: 390, height: 844 };
+  assert.equal(dragVeyPosition(start, { x: 113, y: 213 }, viewport), null);
+  assert.deepEqual(dragVeyPosition(start, { x: 210, y: 160 }, viewport), { x: 200, y: 150 });
+  assert.deepEqual(dragVeyPosition(start, { x: -500, y: 2000 }, viewport), { x: 8, y: 778 });
+});
 
 test('mobile controls scroll clear of the dock and expanded details, not desktop or unrelated areas', () => {
   const control = rect(32, 640, 100, 44);
