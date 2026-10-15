@@ -18,11 +18,15 @@ import { useCatalog } from '../../_lib/useCatalog';
 import { skillById, skillInstructions } from '../../_lib/studioSkills';
 import { ChatText } from './ChatText';
 import { SettingsPanel } from './SettingsPanel';
-import { ComposerControls } from './ComposerControls';
+import { ComposerControls, ComposerTypeTabs } from './ComposerControls';
+import { MediaComposer } from './MediaComposer';
+import { MediaCanvas } from './MediaCanvas';
+import { useChatMediaGeneration } from './useChatMediaGeneration';
 import { ThreadList } from './ThreadList';
 import { useChatSend } from './useChatSend';
 import { ALL_CHATS } from '../../_lib/chatFolders';
 import { defaultModel } from '../../_lib/chatModels';
+import { COMPOSER_KINDS } from '../../_lib/chatMedia';
 import { CHAT_SCREEN_COPY, chatScreen, loadFailure } from '../../_lib/chatScreen';
 import { ask, enter, forget, giveUp, land, leave, newChatView, onScreen } from '../../_lib/chatSendHome';
 import { askKeptWarning, settleKeptWarning } from '../../_lib/chatWarning';
@@ -80,7 +84,10 @@ export function ChatWorkspace() {
   const att = useAttachments(limits.maxAttachments);
   const [pickingLibrary, setPickingLibrary] = useState(false);
   const [skillId, setSkillId] = useState(''); // a Studio skill chosen for a chat that has not started (ADR-0073)
-  const { models: studioModels, loading: studioLoading } = useCatalog();
+  const { models: studioModels, live: studioCatalogLive, loading: studioLoading } = useCatalog();
+  const [composerKind, setComposerKind] = useState(COMPOSER_KINDS.CHAT);
+  const [mediaPrompt, setMediaPrompt] = useState('');
+  const mediaGeneration = useChatMediaGeneration({ kind: composerKind, models: studioModels, catalogLive: studioCatalogLive });
   const freeMap = useFreeAllowance(); // free replies left today per model; empty while the feature is off
   const [error, setError] = useState(() => waiting(NEW_CHAT)); // a page that has just loaded shows a chat that has not started, and what waits for it
   const [closed, setClosed] = useState(false);
@@ -316,15 +323,18 @@ export function ChatWorkspace() {
         <div className="flex items-center gap-2 border-b border-vx-border px-4 py-2">
           <button type="button" className="rounded-full border border-vx-border px-3 py-1.5 text-sm md:hidden" onClick={() => setDrawer(true)}>Chats</button>
           <p className="min-w-0 flex-1 truncate text-sm" aria-live="polite">
-            <span className="font-semibold">{model.name}</span> <span className="font-vx-mono text-xs text-vx-money vx-num">{credits(model.credits_per_reply)} per reply</span>
+            <span className="font-semibold">{composerKind === COMPOSER_KINDS.CHAT ? model.name : mediaGeneration.model?.name || `No ${composerKind} model`}</span>{' '}
+            <span className="font-vx-mono text-xs text-vx-money vx-num">
+              {composerKind === COMPOSER_KINDS.CHAT ? `${credits(model.credits_per_reply)} per reply` : mediaGeneration.model ? `${mediaGeneration.model.credits} cr base` : ''}
+            </span>
           </p>
-          <button type="button" aria-expanded={settingsOpen} onClick={() => setSettingsOpen(true)} className="rounded-full border border-vx-border px-3 py-1.5 text-sm xl:hidden">Settings</button>
-          <button type="button" disabled={!active || stars.length === 0} aria-pressed={starredOnly} onClick={() => setStarredOnly((v) => !v)}
-            className="rounded-full border border-vx-border px-3 py-1.5 text-sm aria-pressed:border-vx-accent disabled:opacity-50">★ Starred</button>
+          {composerKind === COMPOSER_KINDS.CHAT && <button type="button" aria-expanded={settingsOpen} onClick={() => setSettingsOpen(true)} className="rounded-full border border-vx-border px-3 py-1.5 text-sm xl:hidden">Settings</button>}
+          {composerKind === COMPOSER_KINDS.CHAT && <button type="button" disabled={!active || stars.length === 0} aria-pressed={starredOnly} onClick={() => setStarredOnly((v) => !v)}
+            className="rounded-full border border-vx-border px-3 py-1.5 text-sm aria-pressed:border-vx-accent disabled:opacity-50">★ Starred</button>}
         </div>
 
         <div className="flex-1 overflow-y-auto">
-          <div className="mx-auto max-w-[760px] space-y-6 px-4 py-6">
+          {composerKind !== COMPOSER_KINDS.CHAT ? <MediaCanvas kind={composerKind} media={mediaGeneration} /> : <div className="mx-auto max-w-[760px] space-y-6 px-4 py-6">
             {messages.length === 0 && (
               <div className="py-16 text-center">
                 <h1 className="vx-display text-[32px]">What do you want to work on?</h1>
@@ -354,20 +364,20 @@ export function ChatWorkspace() {
               </article>
             ))}
             <div ref={endRef} />
-          </div>
+          </div>}
         </div>
 
         <div className="border-t border-vx-border px-4 py-3">
           <div className="mx-auto max-w-[820px]">
-            {error && (
+            {composerKind === COMPOSER_KINDS.CHAT && error && (
               <div role="alert" className="mb-2 rounded-lg border border-vx-danger/40 bg-vx-danger/[0.07] px-4 py-3 text-sm text-vx-danger">
                 {error} {error.includes('Top up') && <Link className="underline" href="/app/credits">Top up</Link>}
               </div>
             )}
-            {researchOn && (
+            {composerKind === COMPOSER_KINDS.CHAT && researchOn && (
               <p className="mb-2 text-xs text-vx-fg-muted">Plans a few searches, reads what the web returns, then writes a cited answer. It can take up to about a minute and works on text only. If it fails before the answer starts, the Credits come back.</p>
             )}
-            {hasImages && !imagesBlocked && (
+            {composerKind === COMPOSER_KINDS.CHAT && hasImages && !imagesBlocked && (
               <p className="mb-2 text-xs text-vx-fg-muted">
                 {att.items.some((i) => i.asset)
                   ? (att.items.some((i) => !i.asset)
@@ -377,12 +387,12 @@ export function ChatWorkspace() {
                 {att.items.some((i) => i.video) && ' Your video is not uploaded: only a few frames from it, taken on your device, are.'}
               </p>
             )}
-            {(att.notice || imagesBlocked) && (
+            {composerKind === COMPOSER_KINDS.CHAT && (att.notice || imagesBlocked) && (
               <p role="status" className="mb-2 text-sm text-vx-fg-muted">
                 {imagesBlocked ? (researchOn ? 'Deep research reads text only. Remove the images or turn it off.' : 'This model cannot read images. Remove them or pick another model.') : att.notice}
               </p>
             )}
-            {skillId && !active && (
+            {composerKind === COMPOSER_KINDS.CHAT && skillId && !active && (
               <div className="mb-2 flex flex-wrap gap-2">
                 <button type="button" onClick={clearSkill} disabled={busy} aria-label={`Skill: ${skillById(skillId)?.name}. Remove`}
                   className="rounded-full border border-vx-accent px-3 py-1.5 text-xs font-semibold text-vx-fg disabled:opacity-50">
@@ -391,7 +401,12 @@ export function ChatWorkspace() {
               </div>
             )}
             <div className="overflow-hidden rounded-[20px] border border-vx-border bg-vx-panel shadow-[0_18px_50px_rgba(0,0,0,0.18)] focus-within:border-vx-accent">
-              <ComposerControls models={models} model={model} offer={offer} opts={opts} busy={busy} onSelectModel={selectModel} onOpts={setOpts}
+              <ComposerTypeTabs value={composerKind} disabled={busy || mediaGeneration.sending} onChange={(next) => {
+                if (next !== COMPOSER_KINDS.CHAT && mediaGeneration.jobKind && next !== mediaGeneration.jobKind) mediaGeneration.clearJobs();
+                setComposerKind(next);
+                setSettingsOpen(false);
+              }} />
+              {composerKind === COMPOSER_KINDS.CHAT ? <><ComposerControls models={models} model={model} offer={offer} opts={opts} busy={busy} onSelectModel={selectModel} onOpts={setOpts}
                 onLibrary={() => setPickingLibrary(true)} libraryDisabled={att.items.length >= limits.maxAttachments} />
               {hasImages && (
                 <div className="border-t border-vx-border px-3 pt-3">
@@ -408,15 +423,16 @@ export function ChatWorkspace() {
                   ? <button type="button" onClick={stop} disabled={stopping || checking} className="mb-1 rounded-xl border border-vx-border px-4 py-2.5 text-sm font-semibold disabled:opacity-50">{stopping ? 'Stopping' : checking ? 'Checking' : 'Stop'}</button>
                   : <button type="button" onClick={send} disabled={!text.trim() || imagesBlocked} className="mb-1 min-w-28 rounded-xl bg-vx-accent px-4 py-2.5 text-sm font-semibold text-vx-accent-ink transition-colors hover:bg-vx-accent-hover disabled:opacity-50">{isFree ? 'Send free' : `Send · ${credits(price)}`}</button>}
               </div>
+              </> : <MediaComposer kind={composerKind} media={mediaGeneration} prompt={mediaPrompt} onPrompt={setMediaPrompt} />}
             </div>
-            <p className="mt-1.5 px-1 text-xs text-vx-fg-muted">
+            {composerKind === COMPOSER_KINDS.CHAT && <p className="mt-1.5 px-1 text-xs text-vx-fg-muted">
               <span className="font-vx-mono text-vx-money vx-num">{isFree ? 'Free' : credits(price)}</span> per reply{chosen.thinking || chosen.web ? ` (with ${[chosen.thinking && 'Thinking', chosen.web && 'Web search'].filter(Boolean).join(' and ')})` : ''}, up to about {wordsFor(model.max_reply_tokens)} words. Stop after text appears and you keep it and the price. If nothing arrives, the Credits come back.
-            </p>
+            </p>}
           </div>
         </div>
       </section>
-      <aside className="hidden w-[320px] shrink-0 border-l border-vx-border bg-vx-base xl:block">{settings}</aside>
-      {pickingLibrary && <LibraryPicker onPick={pickFromLibrary} onClose={() => setPickingLibrary(false)} />}
+      {composerKind === COMPOSER_KINDS.CHAT && <aside className="hidden w-[320px] shrink-0 border-l border-vx-border bg-vx-base xl:block">{settings}</aside>}
+      {composerKind === COMPOSER_KINDS.CHAT && pickingLibrary && <LibraryPicker onPick={pickFromLibrary} onClose={() => setPickingLibrary(false)} />}
       {settingsOpen && (
         <div className="fixed inset-0 z-40 flex justify-end xl:hidden" role="dialog" aria-modal="true" aria-label="Chat settings">
           <button type="button" aria-label="Close settings" className="flex-1 bg-black/50" onClick={() => setSettingsOpen(false)} />
