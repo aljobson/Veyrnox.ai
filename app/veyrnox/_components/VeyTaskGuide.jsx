@@ -56,7 +56,7 @@ export default function VeyTaskGuide({ visible, pathname, onPoint, onStop, onAct
     return () => clearTimeout(timer);
   }, [visible, step?.key, pathname, task?.passportId, onPoint]);
   if (!visible) return null;
-  if (task && chatting) return <button type="button" className="fixed bottom-4 right-4 z-[62] rounded-full border border-vx-accent bg-vx-panel px-4 py-3 text-xs font-bold text-vx-accent shadow-xl" onClick={() => setChatting(false)}>Resume {task.phase} walkthrough</button>;
+  if (task && chatting) return <button type="button" className="fixed bottom-[calc(clamp(220px,34dvh,280px)+max(8px,env(safe-area-inset-bottom))+8px)] right-2 sm:bottom-4 sm:right-4 z-[62] rounded-full border border-vx-accent bg-vx-panel px-4 py-3 text-xs font-bold text-vx-accent shadow-xl" onClick={() => setChatting(false)}>Resume {task.phase} walkthrough</button>;
   if (!task && !choosing) return <button type="button" onClick={() => { setLibrary(readOddlingLibrary(localStorage)); setChatting(false); setChoosing(true); }}
     className="fixed right-4 top-24 z-[62] rounded-xl border border-vx-accent/40 bg-vx-panel px-4 py-3 text-sm font-bold text-vx-accent shadow-xl">Saved Oddling → image → video</button>;
   const prepare = () => {

@@ -88,6 +88,11 @@
   },
   "decisions": [
     {
+      "id": "vey-mobile-chat-compact",
+      "decision": "The mobile question panel uses 34dvh, bounded to 220–280px so the fixed composer fits on short screens; conversation scrolls internally. The Resume walkthrough action sits above, not over, the composer. Keep desktop chat sizing unchanged.",
+      "source": "User request: the question guide takes up the whole screen and needs to be much smaller."
+    },
+    {
       "id": "vey-manual-position",
       "decision": "Drag the existing touch-sized Vey launcher to position the mascot. Taps still toggle help; keyboard Alt+arrows move and Escape resets. Manual placement lasts until reset or reload, with precise pointing retained. No floating text badges or tooltips around the mascot; retain screen-reader labels and the separate walkthrough card.",
       "source": "User request to position Vey around the screen during the mobile Max Rep walkthrough."

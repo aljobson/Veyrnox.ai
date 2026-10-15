@@ -4,6 +4,15 @@ import { readFile } from 'node:fs/promises';
 
 const root = new URL('../', import.meta.url);
 
+test('mobile questions stay in a short panel with a fixed composer and a scrolling transcript', async () => {
+    const source = await readFile(new URL('app/veyrnox/_components/MascotAssistant.jsx', root), 'utf8');
+    const guide = await readFile(new URL('app/veyrnox/_components/VeyTaskGuide.jsx', root), 'utf8');
+    assert.match(source, /h-\[clamp\(220px,34dvh,280px\)\]/);
+    assert.match(source, /min-h-0 flex-1 overflow-y-auto/);
+    assert.match(source, /<form className="mt-auto shrink-0/);
+    assert.match(guide, /bottom-\[calc\(clamp\(220px,34dvh,280px\)/);
+});
+
 test('Vey has no floating text badges but retains accessible launcher and movement instructions', async () => {
     const source = await readFile(new URL('app/veyrnox/_components/MascotAssistant.jsx', root), 'utf8');
     assert.doesNotMatch(source, /ASK VEY|POINTING|MOVING|THINKING|TAPPING/);
