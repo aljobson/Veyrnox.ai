@@ -6,6 +6,7 @@ import {
   firstOpenMediaModel,
   mediaGenerationCount,
   mediaGenerationCredits,
+  mediaOutputSettings,
   outputDurationLabel,
   resolutionLabel,
   supportedAspect,
@@ -28,6 +29,18 @@ test('chat media modes only list direct generation models and prefer an open one
   assert.deepEqual(chatMediaModels(models, COMPOSER_KINDS.VIDEO).map((m) => m.id), ['closed', 'video']);
   assert.equal(firstOpenMediaModel(models, COMPOSER_KINDS.VIDEO).id, 'video');
   assert.equal(firstOpenMediaModel(models, COMPOSER_KINDS.AUDIO), null);
+});
+
+test('output choices retain false and reset unsupported values when the model changes', () => {
+  const model = { kind: 'video', credits: 28, resolutions: ['480p', '720p'], audioOptions: [true, false],
+    presentation: { resolutionLabel: '720p', audioIncluded: true } };
+  assert.deepEqual(mediaOutputSettings(model, null, null), { output_resolution: '720p', audio_enabled: true });
+  assert.deepEqual(mediaOutputSettings(model, '480p', false), { output_resolution: '480p', audio_enabled: false });
+  assert.deepEqual(mediaOutputSettings(model, '1080p', 'false'), { output_resolution: '720p', audio_enabled: true });
+  assert.deepEqual(mediaOutputSettings(models[4], '480p', false), {});
+  assert.equal(mediaGenerationCredits(model, 5, 1), 28);
+  assert.equal(videoAudioLabel(model, false), 'Audio off');
+  assert.equal(resolutionLabel(model, '480p'), '480p');
 });
 
 test('duration, aspect, quantity and credits stay inside the selected model contract', () => {

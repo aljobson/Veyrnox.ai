@@ -30,6 +30,20 @@ test('job interpretation covers every terminal state with a typed code, never ve
     assert.equal(interpretJob({ status: 'in_progress' }).state, 'pending');
 });
 
+test('Seedance output choices reach the provider and refuse unpriced resolutions and nonboolean audio', () => {
+    for (const output_resolution of ['480p', '720p']) for (const audio_enabled of [true, false]) {
+        const result = buildRequest('bytedance/seedance-2.0-fast', { prompt: 'waves', output_resolution, audio_enabled });
+        assert.equal(result.ok, true);
+        assert.equal(result.body.resolution, output_resolution);
+        assert.equal(result.body.generate_audio, audio_enabled);
+        assert.equal(result.body.duration, 5);
+    }
+    for (const output_resolution of ['1080p', '4k', 720, '']) {
+        assert.equal(buildRequest('bytedance/seedance-2.0-fast', { prompt: 'waves', output_resolution }).error, 'inputs_invalid:output_resolution');
+    }
+    assert.equal(buildRequest('bytedance/seedance-2.0-fast', { prompt: 'waves', audio_enabled: 'false' }).error, 'inputs_invalid:audio_enabled');
+});
+
 // Fake fetch that records the one outbound request and answers with `reply`.
 function fakeFetch(reply) {
     const seen = [];

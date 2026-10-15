@@ -53,13 +53,25 @@ export function outputDurationLabel(model, selectedDuration) {
   return model?.kind === COMPOSER_KINDS.VIDEO ? `${supportedDuration(model, selectedDuration)}s` : null;
 }
 
-export function videoAudioLabel(model) {
-  const included = model?.presentation?.audioIncluded;
+export function videoAudioLabel(model, selectedAudio) {
+  const included = typeof selectedAudio === 'boolean' ? selectedAudio : model?.presentation?.audioIncluded;
   if (included === true) return 'Audio on';
   if (included === false) return 'Audio off';
   return 'Audio model default';
 }
 
-export function resolutionLabel(model) {
-  return model?.presentation?.resolutionLabel || 'Model resolution';
+export function resolutionLabel(model, selectedResolution) {
+  return selectedResolution || model?.presentation?.resolutionLabel || 'Model resolution';
+}
+
+/** Only emit controls declared by this model; switching models cannot carry a stale tier to the server. */
+export function mediaOutputSettings(model, resolution, audio) {
+  const settings = {};
+  const resolutions = model?.resolutions || [];
+  const audioOptions = model?.audioOptions || [];
+  if (resolutions.length) settings.output_resolution = resolutions.includes(resolution) ? resolution
+    : resolutions.includes(model.presentation?.resolutionLabel) ? model.presentation.resolutionLabel : resolutions[0];
+  if (audioOptions.length) settings.audio_enabled = audioOptions.includes(audio) ? audio
+    : audioOptions.includes(model.presentation?.audioIncluded) ? model.presentation.audioIncluded : audioOptions[0];
+  return settings;
 }
