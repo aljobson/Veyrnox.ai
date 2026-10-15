@@ -1,0 +1,174 @@
+{
+  "generatedAt": "2026-10-15",
+  "workflow": "Built-in image generation, one standalone full-body portrait per character. Original PNGs converted losslessly in geometry to WebP quality 86; no crop, stretching or panel extraction.",
+  "portraits": [
+    {
+      "id": "duchess-volume",
+      "name": "Duchess Volume",
+      "prompt": "Portrait of an original adult character, not a real person, cinematic lighting, sharp detail, human features, fat adult with a large soft body, portrayed confidently and respectfully, carefully sculpted vintage waves, comically tiny silver handbag, hyper-realistic 8k photograph, fictional creator named Duchess Volume, obsessed with tiny snacks, enormous entrances, and whether a room has enough drama, formal, theatrical, ceremonial delivery, gives sharp five-second verdicts on fashion, food, or design, immutable visual canon: large soft body, circular ivory quilted couture, miniature silver handbag, tiny crown, pearl details, Full-body studio portrait, entire hairstyle and shoes visible, natural anatomy",
+      "asset": "public/oddlings/portraits/duchess-volume.webp"
+    },
+    {
+      "id": "major-minor",
+      "name": "Major Minor",
+      "prompt": "Portrait of an original adult character, not a real person, cinematic lighting, sharp detail, human features, exaggerated hyper-muscular bodybuilder physique, short hair, delicately holding a miniature porcelain teacup, hyper-realistic 8k photograph, fictional creator named Major Minor, obsessed with miniature teacups, model furniture, and objects too delicate for his hands, deadpan, precise, faintly prophetic delivery, reviews ordinary human objects as if they are rare artifacts, immutable visual canon: extreme bodybuilder silhouette, miniature brown office tailoring, round glasses, tiny porcelain teacup, Full-body studio portrait, entire hairstyle and shoes visible, natural anatomy",
+      "asset": "public/oddlings/portraits/major-minor.webp"
+    },
+    {
+      "id": "bughead-brenda",
+      "name": "Bughead Brenda",
+      "prompt": "Portrait of an original adult character, not a real person, cinematic lighting, sharp detail, human features, fit athletic body, bald head, enormous iridescent jewel-beetle fashion helmet, visibly a wearable mask, hyper-realistic 8k photograph, fictional creator named Bughead Brenda, obsessed with awkward greetings, personal space, and surviving dinner parties in a huge helmet, fast, obsessive, unexpectedly well-informed delivery, delivers compact field reports about overlooked everyday rituals, immutable visual canon: ordinary human body and hands, enormous iridescent jewel-beetle fashion helmet, orange utility jumpsuit, holographic boots, Full-body studio portrait, entire hairstyle and shoes visible, natural anatomy",
+      "asset": "public/oddlings/portraits/bughead-brenda.webp"
+    },
+    {
+      "id": "pam-bouffant",
+      "name": "Pam Bouffant",
+      "prompt": "Portrait of an original adult character, not a real person, cinematic lighting, sharp detail, human features, monumental cloud-shaped hair at least three times wider than the shoulders, comically tiny oval sunglasses, hyper-realistic 8k photograph, fictional creator named Pam Bouffant, obsessed with wind direction, hairspray pressure, and forecasts that threaten the silhouette, soft-spoken warmth with an unsettling edge, reports emotional weather from places that cannot exist, immutable visual canon: monumental cloud-shaped platinum hair three times wider than shoulders, tiny sunglasses, powder-blue cloud suit, miniature wind meter, Full-body studio portrait, entire hairstyle and shoes visible, natural anatomy",
+      "asset": "public/oddlings/portraits/pam-bouffant.webp"
+    },
+    {
+      "id": "vera-static",
+      "name": "Vera Static",
+      "prompt": "Portrait of an original adult character, not a real person, cinematic lighting, sharp detail, human features, razor-sharp geometric bob haircut, translucent geometric fashion veil, hyper-realistic 8k photograph, fictional creator named Vera Static, obsessed with the private omens hiding in dead air, hold music, and crossed wires, deadpan, precise, faintly prophetic delivery, reports emotional weather from places that cannot exist, immutable visual canon: razor-sharp black bob, translucent geometric veil, one vintage radio earpiece, silver graphic eyeliner, Full-body studio portrait, entire hairstyle and shoes visible, natural anatomy",
+      "asset": "public/oddlings/portraits/vera-static.webp"
+    },
+    {
+      "id": "mister-monday",
+      "name": "Mister Monday",
+      "prompt": "Portrait of an original adult character, not a real person, cinematic lighting, sharp detail, human features, carefully sculpted vintage waves, miniature everyday-object jewellery, hyper-realistic 8k photograph, fictional creator named Mister Monday, obsessed with staplers, beige mugs, calendar etiquette, and tiny workplace dramas, formal, theatrical, ceremonial delivery, reviews ordinary human objects as if they are rare artifacts, immutable visual canon: immaculate pinstripe suit, sculpted dark waves, round glasses, tiny clock-and-stapler jewellery, beige mug, Full-body studio portrait, entire hairstyle and shoes visible, natural anatomy",
+      "asset": "public/oddlings/portraits/mister-monday.webp"
+    },
+    {
+      "id": "bloom-service",
+      "name": "Bloom Service",
+      "prompt": "Portrait of an original adult character, not a real person, cinematic lighting, sharp detail, human features, living flowers growing from the head, graphic chrome lacquer eyebrows, hyper-realistic 8k photograph, fictional creator named Bloom Service, obsessed with plants with bad boundaries and the rituals people invent to keep them alive, fast, obsessive, unexpectedly well-informed delivery, delivers compact field reports about overlooked everyday rituals, immutable visual canon: living flower headpiece, green lacquer brows, cream utility tailoring, tiny pruning-shear brooch, Full-body studio portrait, entire hairstyle and shoes visible, natural anatomy",
+      "asset": "public/oddlings/portraits/bloom-service.webp"
+    },
+    {
+      "id": "coupon-saint",
+      "name": "Coupon Saint",
+      "prompt": "Portrait of an original adult character, not a real person, cinematic lighting, sharp detail, human features, short hair, couture ribbons made from receipt-like paper, hyper-realistic 8k photograph, fictional creator named Coupon Saint, obsessed with discount rituals, loyalty points, and purchases that become personality tests, soft-spoken warmth with an unsettling edge, gives sharp five-second verdicts on fashion, food, or design, immutable visual canon: receipt-ribbon couture, metallic grocery-label crown, pearl makeup, restrained gold tailoring, Full-body studio portrait, entire hairstyle and shoes visible, natural anatomy",
+      "asset": "public/oddlings/portraits/coupon-saint.webp"
+    },
+    {
+      "id": "olive-orbit",
+      "name": "Olive Orbit",
+      "prompt": "Portrait of an original adult character, not a real person, cinematic lighting, sharp detail, human features, female, african heritage, adult in their sixties, deep dark skin tone, very skinny adult physique with an extremely narrow silhouette and long slender limbs, extremely tall adult stature, elegantly exaggerated long neck, perfectly spherical globe-shaped haircut surrounding the head, silver hair, surreal corporate tailoring with absurd proportions, carrying an impractically shaped geometric handbag, wearing a miniature portable weather station, hyper-realistic 8k photograph, fictional creator named Olive Orbit, obsessed with doorways, entrances, and rooms that have not earned the right to contain her, deadpan, precise, faintly prophetic delivery, gives sharp five-second verdicts on fashion, food, or design, immutable visual canon: seven-foot extremely slim silhouette, perfect silver sphere hair, emerald floor-length tailoring, tiny silver orb handbag, Full-body studio portrait, entire hairstyle and shoes visible, natural anatomy",
+      "asset": "public/oddlings/portraits/olive-orbit.webp"
+    },
+    {
+      "id": "brick-picnic",
+      "name": "Brick Picnic",
+      "prompt": "Portrait of an original adult character, not a real person, cinematic lighting, sharp detail, human features, male, east asian heritage, adult in their forties, golden skin tone, rounded barrel-shaped torso and sturdy limbs, very short adult stature, head visually tucked into the shoulders, impossibly precise cube-shaped haircut with sharp right-angle edges, black hair, surreal corporate tailoring with absurd proportions, comically tiny oval sunglasses, holding a polished miniature thermos flask, hyper-realistic 8k photograph, fictional creator named Brick Picnic, obsessed with sandwich engineering, tiny thermoses, and lunches that could survive an earthquake, fast, obsessive, unexpectedly well-informed delivery, reviews ordinary human objects as if they are rare artifacts, immutable visual canon: very short barrel-shaped body, glossy black cube haircut, brown checkerboard suit, miniature chrome thermos, Full-body studio portrait, entire hairstyle and shoes visible, natural anatomy",
+      "asset": "public/oddlings/portraits/brick-picnic.webp"
+    },
+    {
+      "id": "madame-scissors",
+      "name": "Madame Scissors",
+      "prompt": "Portrait of an original adult character, not a real person, cinematic lighting, sharp detail, human features, female, south asian indian heritage, adult in their fifties, warm brown skin tone, strong pear-shaped silhouette with narrow shoulders and wide hips, tall adult stature, extremely narrow shoulders, giant triangular wedge-shaped haircut with a razor-straight silhouette, black hair, wearable soft-sculpture fashion with rounded forms, miniature everyday-object jewellery, carrying an impractically shaped geometric handbag, hyper-realistic 8k photograph, fictional creator named Madame Scissors, obsessed with silhouette crimes, dramatic hems, and the emotional consequences of a weak shoulder line, soft-spoken warmth with an unsettling edge, gives sharp five-second verdicts on fashion, food, or design, immutable visual canon: tall pear-shaped silhouette, enormous black triangular wedge hair, pleated rust architectural coat, sharp gold jewellery, Full-body studio portrait, entire hairstyle and shoes visible, natural anatomy",
+      "asset": "public/oddlings/portraits/madame-scissors.webp"
+    },
+    {
+      "id": "pocket-atlas",
+      "name": "Pocket Atlas",
+      "prompt": "Portrait of an original adult character, not a real person, cinematic lighting, sharp detail, human features, non-binary character, multiracial mixed heritage, adult in their thirties, rich brown skin tone, exaggerated hyper-muscular bodybuilder physique, short adult stature, comically oversized hands, short hair, black hair, sportswear treated like formal ceremonial dress, miniature everyday-object jewellery, carrying a perfect miniature chair, hyper-realistic 8k photograph, fictional creator named Pocket Atlas, obsessed with pocket globes, tiny furniture, and feats of strength too small for anyone else to notice, formal, theatrical, ceremonial delivery, delivers compact field reports about overlooked everyday rituals, immutable visual canon: short hyper-muscular body, deliberately tiny head, cobalt suit with globe buttons, enormous hands holding a miniature chair, Full-body studio portrait, entire hairstyle and shoes visible, natural anatomy",
+      "asset": "public/oddlings/portraits/pocket-atlas.webp"
+    },
+    {
+      "id": "noodle-duke",
+      "name": "Noodle Duke",
+      "prompt": "Portrait of an original adult character, not a real person, cinematic lighting, sharp detail, human features, male, middle eastern heritage, adult in their thirties, olive skin tone, very tall lanky adult with exaggerated long arms and legs, extremely tall adult stature, tiny compact torso with very long limbs, towering spiral haircut rising high above the head, black hair, deliberately undersized immaculate formal tailoring, miniature everyday-object jewellery, presenting an ordinary stapler like a sacred artifact, hyper-realistic 8k photograph, fictional creator named Noodle Duke, obsessed with long corridors, tiny jackets, and turning trivial errands into royal processions, formal, theatrical, ceremonial delivery, delivers compact field reports about overlooked everyday rituals, immutable visual canon: impossibly lanky body with extremely long limbs, towering spiral hair, shrunken burgundy formal jacket, floor-length tie, Full-body studio portrait, entire hairstyle and shoes visible, natural anatomy",
+      "asset": "public/oddlings/portraits/noodle-duke.webp"
+    },
+    {
+      "id": "taffy-tessa",
+      "name": "Taffy Tessa",
+      "prompt": "Portrait of an original adult character, not a real person, cinematic lighting, sharp detail, human features, female, european heritage, adult in their forties, fair skin tone, fat adult with a large soft body, portrayed confidently and respectfully, average adult height, natural human proportions, two enormous perfectly circular hair discs on either side of the head, brown hair, wearable soft-sculpture fashion with rounded forms, comically tiny silver handbag, wearing a miniature portable weather station, hyper-realistic 8k photograph, fictional creator named Taffy Tessa, obsessed with indoor drizzle, inflatable coats, and forecasts delivered from inside emotional bubbles, friendly, curious, matter-of-fact alien perspective, reports emotional weather from places that cannot exist, immutable visual canon: confident fat body, two enormous brown hair discs, glossy orange bubble raincoat, tiny violet handbag, Full-body studio portrait, entire hairstyle and shoes visible, natural anatomy",
+      "asset": "public/oddlings/portraits/taffy-tessa.webp"
+    },
+    {
+      "id": "tuesday-triangle",
+      "name": "Tuesday Triangle",
+      "prompt": "Portrait of an original adult character, not a real person, cinematic lighting, sharp detail, human features, female, multiracial mixed heritage, adult in their thirties, warm brown skin tone, graphic inverted-triangle silhouette with very broad shoulders and a narrow waist, tall adult stature, extremely wide shoulders, sculptural crescent-moon-shaped haircut, black hair, sportswear treated like formal ceremonial dress, graphic chrome lacquer eyebrows, carrying an enormous sculptural comb, hyper-realistic 8k photograph, fictional creator named Tuesday Triangle, obsessed with one-move dances, shoulder geometry, and defeating the emotional shape of Tuesday, fast, obsessive, unexpectedly well-informed delivery, gives sharp five-second verdicts on fashion, food, or design, immutable visual canon: powerful inverted-triangle body, enormous black crescent hair, black-and-yellow origami suit, geometric chrome eyebrows, Full-body studio portrait, entire hairstyle and shoes visible, natural anatomy",
+      "asset": "public/oddlings/portraits/tuesday-triangle.webp"
+    },
+    {
+      "id": "colonel-crumb",
+      "name": "Colonel Crumb",
+      "prompt": "Portrait of an original adult character, not a real person, cinematic lighting, sharp detail, human features, male, european heritage, older adult over seventy, fair skin tone, very skinny adult physique with an extremely narrow silhouette and long slender limbs, extremely tall adult stature, comically oversized hands, extremely wide perfectly flat tabletop haircut, white hair, deliberately undersized immaculate formal tailoring, miniature everyday-object jewellery, presenting a perfect miniature layer cake, hyper-realistic 8k photograph, fictional creator named Colonel Crumb, obsessed with tiny cakes, dramatic cuffs, and desserts that maintain military discipline, formal, theatrical, ceremonial delivery, reviews ordinary human objects as if they are rare artifacts, immutable visual canon: very tall razor-thin older man, enormous white tabletop hair, tiny plum waistcoat, gigantic cream sleeves, miniature cake, Full-body studio portrait, entire hairstyle and shoes visible, natural anatomy",
+      "asset": "public/oddlings/portraits/colonel-crumb.webp"
+    },
+    {
+      "id": "disco-anvil",
+      "name": "Disco Anvil",
+      "prompt": "Portrait of an original adult character, not a real person, cinematic lighting, sharp detail, human features, female, african heritage, adult in their twenties, deep dark skin tone, fit athletic body, tall adult stature, extremely wide shoulders, wide sculptural haircut shaped like an industrial anvil, electric-blue hair, sportswear treated like formal ceremonial dress, graphic chrome lacquer eyebrows, holding a comically tiny reporter microphone, hyper-realistic 8k photograph, fictional creator named Disco Anvil, obsessed with repairing bad parties, heavy beats, and hairstyles with industrial load ratings, fast, obsessive, unexpectedly well-informed delivery, delivers compact field reports about overlooked everyday rituals, immutable visual canon: tall athletic body, electric-blue hair sculpted like a steel anvil, chrome-and-magenta ceremonial tracksuit, tiny microphone, Full-body studio portrait, entire hairstyle and shoes visible, natural anatomy",
+      "asset": "public/oddlings/portraits/disco-anvil.webp"
+    },
+    {
+      "id": "cloudette-forecast",
+      "name": "Cloudette Forecast",
+      "prompt": "Portrait of an original adult character, not a real person, cinematic lighting, sharp detail, human features, female, east asian heritage, adult in their fifties, golden skin tone, curvy body type, short adult stature, head visually tucked into the shoulders, monumental cloud-shaped hair at least three times wider than the shoulders, white hair, fashion patterned like clouds, rain maps, and pressure systems, comically tiny oval sunglasses, wearing a miniature portable weather station, hyper-realistic 8k photograph, fictional creator named Cloudette Forecast, obsessed with social pressure systems, indoor fog, and storms caused by unspoken family opinions, soft-spoken warmth with an unsettling edge, reports emotional weather from places that cannot exist, immutable visual canon: petite curvy older woman, monumental white cloud hair, powder-blue weather-map suit, tiny oval sunglasses, Full-body studio portrait, entire hairstyle and shoes visible, natural anatomy",
+      "asset": "public/oddlings/portraits/cloudette-forecast.webp"
+    },
+    {
+      "id": "ziggy-receipt",
+      "name": "Ziggy Receipt",
+      "prompt": "Portrait of an original adult character, not a real person, cinematic lighting, sharp detail, human features, non-binary character, multiracial mixed heritage, adult in their twenties, olive skin tone, slim slender physique, tall adult stature, very long torso with short limbs, bold lightning-bolt zigzag haircut with crisp geometric edges, copper orange hair, surreal corporate tailoring with absurd proportions, couture ribbons made from receipt-like paper, a long flowing train made from receipt-like paper, hyper-realistic 8k photograph, fictional creator named Ziggy Receipt, obsessed with hidden costs, loyalty-card confessions, and purchases that arrive with emotional paperwork, deadpan, precise, faintly prophetic delivery, gives sharp five-second verdicts on fashion, food, or design, immutable visual canon: tall slim silhouette, copper lightning-bolt hair, ivory-and-red receipt couture, very long printed paper train, Full-body studio portrait, entire hairstyle and shoes visible, natural anatomy",
+      "asset": "public/oddlings/portraits/ziggy-receipt.webp"
+    },
+    {
+      "id": "baron-boucle",
+      "name": "Baron Bouclé",
+      "prompt": "Portrait of an original adult character, not a real person, cinematic lighting, sharp detail, human features, male, south asian indian heritage, adult in their sixties, warm brown skin tone, fat adult with a large soft body, portrayed confidently and respectfully, short adult stature, head visually tucked into the shoulders, enormous circular ring of hair floating around the head like a donut halo, deep burgundy red hair, wearable soft-sculpture fashion with rounded forms, one comically tiny gold monocle, carrying an impractically shaped geometric handbag, hyper-realistic 8k photograph, fictional creator named Baron Bouclé, obsessed with luxury texture, suspicious upholstery, and tailoring that fails the fingertip test, deadpan, precise, faintly prophetic delivery, reviews ordinary human objects as if they are rare artifacts, immutable visual canon: short fat older man, giant burgundy donut-halo hair, tiny monocle, velvet jacket and enormous burgundy balloon trousers, Full-body studio portrait, entire hairstyle and shoes visible, natural anatomy",
+      "asset": "public/oddlings/portraits/baron-boucle.webp"
+    },
+    {
+      "id": "tall-order",
+      "name": "Tall Order",
+      "prompt": "Portrait of an original adult character, not a real person, cinematic lighting, sharp detail, human features, female, east asian heritage, adult in their twenties, golden skin tone, very skinny adult physique with an extremely narrow silhouette and long slender limbs, tall adult stature, natural human proportions, extremely tall cylindrical tube-shaped haircut rising vertically, copper orange hair, plain fitted crew-neck T-shirt with contemporary tight skinny jeans, hyper-realistic 8k photograph, fictional creator named Tall Order, obsessed with plain white T-shirts, impossible inseams, and door frames that interrupt the outfit, deadpan, precise, faintly prophetic delivery, gives sharp five-second verdicts on fashion, food, or design, immutable visual canon: tall very skinny adult with natural human proportions, copper tube hair, fitted white T-shirt, indigo skinny jeans, white sneakers, Full-body studio portrait, entire hairstyle and shoes visible, natural anatomy",
+      "asset": "public/oddlings/portraits/tall-order.webp"
+    },
+    {
+      "id": "bubble-barry",
+      "name": "Bubble Barry",
+      "prompt": "Portrait of an original adult character, not a real person, cinematic lighting, sharp detail, human features, male, african heritage, adult in their thirties, deep dark skin tone, fat adult with a large soft body, portrayed confidently and respectfully, short adult stature, head visually tucked into the shoulders, perfectly spherical globe-shaped haircut surrounding the head, bubblegum-pink hair, plain fitted crew-neck T-shirt with contemporary tight skinny jeans, hyper-realistic 8k photograph, fictional creator named Bubble Barry, obsessed with perfect T-shirt weight, black denim, and whether a basic outfit can still enter a room first, friendly, curious, matter-of-fact alien perspective, reviews ordinary human objects as if they are rare artifacts, immutable visual canon: short fat man with a large soft round body, enormous bubblegum-pink spherical afro, fitted mustard T-shirt, black tight jeans, ankle boots, Full-body studio portrait, entire hairstyle and shoes visible, natural anatomy",
+      "asset": "public/oddlings/portraits/bubble-barry.webp"
+    },
+    {
+      "id": "max-rep",
+      "name": "Max Rep",
+      "prompt": "Portrait of an original adult character, not a real person, cinematic lighting, sharp detail, human features, female, multiracial mixed heritage, adult in their thirties, warm brown skin tone, exaggerated hyper-muscular bodybuilder physique, tall adult stature, extremely wide shoulders, towering glossy black hair sculpture rising two head-heights above the scalp in three oversized stacked S-shaped waves, with a giant curled crest; the entire tall hair sculpture visible in frame, black hair, plain fitted crew-neck T-shirt with contemporary tight skinny jeans, hyper-realistic 8k photograph, fictional creator named Max Rep, obsessed with sleeve tension, stretch denim, and clothes that remain calm around unreasonable muscles, fast, obsessive, unexpectedly well-informed delivery, gives sharp five-second verdicts on fashion, food, or design, immutable visual canon: hyper-muscular woman, towering black S-wave hair sculpture, blue fitted T-shirt, acid-green tight jeans, white trainers, Full-body studio portrait, entire hairstyle and shoes visible, natural anatomy",
+      "asset": "public/oddlings/portraits/max-rep.webp"
+    },
+    {
+      "id": "shelf-life",
+      "name": "Shelf Life",
+      "prompt": "Portrait of an original adult character, not a real person, cinematic lighting, sharp detail, human features, non-binary character, south asian indian heritage, adult in their thirties, warm brown skin tone, strong pear-shaped silhouette with narrow shoulders and wide hips, very short adult stature, extremely narrow shoulders, enormous perfectly flat horizontal shelf haircut wider than the shoulders, black hair, plain fitted crew-neck T-shirt with contemporary tight skinny jeans, hyper-realistic 8k photograph, fictional creator named Shelf Life, obsessed with perfectly plain tees, red sneakers, and storing unpopular opinions in a very wide haircut, soft-spoken warmth with an unsettling edge, delivers compact field reports about overlooked everyday rituals, immutable visual canon: very short pear-shaped body with wide hips and sturdy legs, enormous flat black shelf hair, fitted lilac T-shirt, dark tight jeans, red sneakers, Full-body studio portrait, entire hairstyle and shoes visible, natural anatomy",
+      "asset": "public/oddlings/portraits/shelf-life.webp"
+    },
+    {
+      "id": "auntie-antenna",
+      "name": "Auntie Antenna",
+      "prompt": "Portrait of an original adult character, not a real person, cinematic lighting, sharp detail, velvet moth humanoid with expressive antennae, amber eyes, soft fur covered face, two long expressive antennae, hyper-realistic 8k photograph, fictional creator named Auntie Antenna, obsessed with the emotional weather hiding inside ordinary days, deadpan, precise, faintly prophetic delivery, reports emotional weather from places that cannot exist, immutable visual canon: velvet plum coat, copper antennae, amber compound eyes, Full-body studio portrait, entire hairstyle and shoes visible, natural anatomy",
+      "asset": "public/oddlings/portraits/auntie-antenna.webp"
+    },
+    {
+      "id": "brine-minister",
+      "name": "Brine Minister",
+      "prompt": "Portrait of an original adult character, not a real person, cinematic lighting, sharp detail, aquatic octopus hybrid, smooth moist amphibian skin, gradient skin coloring, hyper-realistic 8k photograph, fictional creator named Brine Minister, obsessed with public seating, service stations, and minor diplomatic incidents, formal, theatrical, ceremonial delivery, reviews ordinary human objects as if they are rare artifacts, immutable visual canon: translucent sea-glass skin, eight elegant limbs, navy ceremonial sash, Full-body studio portrait, entire hairstyle and shoes visible, natural anatomy",
+      "asset": "public/oddlings/portraits/brine-minister.webp"
+    },
+    {
+      "id": "mossbyte",
+      "name": "Mossbyte",
+      "prompt": "Portrait of an original adult character, not a real person, cinematic lighting, sharp detail, alien creature, mechanical cyborg eyes, polished metallic skin, translucent skin with neon veins, living flowers growing from the head, hyper-realistic 8k photograph, fictional creator named Mossbyte, obsessed with plants, obsolete screens, and forecasts that almost make sense, fast, obsessive, unexpectedly well-informed delivery, delivers compact field reports about overlooked everyday rituals, immutable visual canon: brushed chrome face, living flowers for antennae, acid-green light seams, Full-body studio portrait, entire hairstyle and shoes visible, natural anatomy",
+      "asset": "public/oddlings/portraits/mossbyte.webp"
+    },
+    {
+      "id": "receipt-wraith",
+      "name": "Receipt Wraith",
+      "prompt": "Portrait of an original adult character, not a real person, cinematic lighting, sharp detail, elegant spectral humanoid with an uncanny silhouette, solid black void eyes, glazed porcelain skin, fine cracked glaze pattern, hyper-realistic 8k photograph, fictional creator named Receipt Wraith, obsessed with tiny purchases with catastrophic emotional overhead, soft-spoken warmth with an unsettling edge, gives sharp five-second verdicts on fashion, food, or design, immutable visual canon: cracked white porcelain face, ink-black eyes, thermal-paper veil, Full-body studio portrait, entire hairstyle and shoes visible, natural anatomy",
+      "asset": "public/oddlings/portraits/receipt-wraith.webp"
+    }
+  ]
+}

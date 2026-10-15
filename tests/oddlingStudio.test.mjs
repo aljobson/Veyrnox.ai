@@ -1,5 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+import sharp from 'sharp';
 import { CHARACTER_GROUPS, ODDLING_ARCHETYPES } from '../app/veyrnox/_lib/character.js';
 import {
     ODDLING_MOTIONS,
@@ -7,6 +10,9 @@ import {
     ODDLING_STUDIO_SECTIONS,
     buildOddlingStudioPrompt,
     gallerySource,
+    oddlingPortrait,
+    animationModel,
+    buildOddlingAnimationPrompt,
     oddlingsForSource,
     randomizeOddlingStyle,
     readOddlingLibrary,
@@ -65,13 +71,22 @@ test('local History stores bounded sanitized passports newest first', () => {
     assert.equal(history[1].picks.body_type, 'Fat');
 });
 
-test('gallery art maps every original character to a four-panel cast asset', () => {
+test('every character has its own standalone portrait instead of a sprite panel', async () => {
+    const images = new Set();
+    const hashes = new Set();
     for (const oddling of ODDLING_ARCHETYPES) {
         const source = gallerySource(oddling);
-        assert.match(source.image, /^\/oddlings\/oddling-.+\.webp$/);
-        assert.ok(source.panel >= 0 && source.panel <= 3);
-        assert.match(source.aspectRatio, /^\d+ \/ \d+$/);
+        assert.equal(source.image, `/oddlings/portraits/${oddling.id}.webp`);
+        assert.equal(source.panel, undefined);
+        images.add(source.image);
+        const bytes = await readFile(new URL(`../public${source.image}`, import.meta.url));
+        hashes.add(createHash('sha256').update(bytes).digest('hex'));
+        const metadata = await sharp(bytes).metadata();
+        assert.equal(metadata.width, 1024);
+        assert.equal(metadata.height, 1536);
     }
+    assert.equal(images.size, 28);
+    assert.equal(hashes.size, 28, 'no character reuses another character image');
 });
 
 test('human preset collections are complete, distinct, and human-first', () => {
@@ -88,18 +103,19 @@ test('human preset collections are complete, distinct, and human-first', () => {
     assert.deepEqual(oddlingsForSource('unknown').map((oddling) => oddling.id), oddlingsForSource('body').map((oddling) => oddling.id));
 });
 
-test('the four new human collections use their dedicated original artwork', () => {
-    const expected = new Map([
-        ['silhouettes', '/oddlings/oddling-silhouette-parade.webp'],
-        ['fashion', '/oddlings/oddling-fashion-disasters.webp'],
-        ['hair', '/oddlings/oddling-hair-parade.webp'],
-        ['denim', '/oddlings/oddling-denim-basics.webp'],
-    ]);
-    for (const [sourceId, image] of expected) {
-        const aspectRatio = sourceId === 'denim' ? '3 / 8' : '1 / 2';
-        assert.deepEqual(oddlingsForSource(sourceId).map(gallerySource), [
-            { image, panel: 0, aspectRatio }, { image, panel: 1, aspectRatio },
-            { image, panel: 2, aspectRatio }, { image, panel: 3, aspectRatio },
-        ]);
-    }
+test('animation only resolves known portrait ids and image-to-video models', () => {
+    assert.equal(oddlingPortrait('../../etc/passwd'), null);
+    assert.equal(oddlingPortrait('https://example.com/portrait.webp'), null);
+    const textOnly = { id: 'wan', kind: 'video', credits: 19, media: {} };
+    const imageVideo = { id: 'kling-3.0-i2v', kind: 'video', credits: 34, media: { image: { required: true } } };
+    assert.equal(animationModel([textOnly]), undefined);
+    assert.equal(animationModel([textOnly, imageVideo]), imageVideo);
+    assert.equal(animationModel([{ ...imageVideo, gated: true }]), undefined);
+    assert.equal(animationModel([{ ...imageVideo, media: { image: { required: true }, audio: { required: true } } }]), undefined);
+    assert.equal(animationModel([{ ...imageVideo, durations: [10] }]), undefined);
+    assert.equal(buildOddlingAnimationPrompt('unknown', 'deadpan-turn'), '');
+    const prompt = buildOddlingAnimationPrompt('shelf-life', 'micro-dance');
+    assert.match(prompt, /exact single character in the start image/);
+    assert.match(prompt, /one simple repeatable dance move/);
+    assert.match(prompt, /Preserve the face, body shape and size, outfit colors and fit/);
 });

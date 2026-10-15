@@ -16,6 +16,7 @@ import { useCatalog } from '../../_lib/useCatalog';
 import { useFreeAllowance } from '../../_lib/useFreeAllowance';
 import { freeCost, freeLeftFor } from '../../_lib/freeAllowance';
 import { takeStudioDraft } from '../../_lib/landingDraft';
+import { oddlingPortrait, buildOddlingAnimationPrompt } from '../../_lib/oddlingStudio';
 import { templateById } from '../../_lib/templates';
 import { resolveTemplateDraft } from '../../_lib/templateDraft';
 import { templateStartId } from '../../../../lib/templateStart';
@@ -67,6 +68,8 @@ export default function CreateStudio() {
   // Sources for the model's media slots: { image|video|audio: { file, previewUrl } },
   // or { assetId, previewUrl, label } for an image picked from the Library.
   const [sources, setSources] = useState({});
+  const [animationPortrait, setAnimationPortrait] = useState(null);
+  const [portraitStatus, setPortraitStatus] = useState('');
   const [libraryFor, setLibraryFor] = useState(null);
   const [drawing, setDrawing] = useState(false);
   // Uploads can carry a real face or voice: the AUP consent statement is
@@ -103,11 +106,30 @@ export default function CreateStudio() {
     if (params.get('duration') === '10s') setDuration('10s');
     let storedDraft = null;
     try { storedDraft = takeStudioDraft(window.sessionStorage, wanted); } catch { /* The URL recipe still works. */ }
-    const draft = resolveTemplateDraft(preset, wanted, storedDraft);
+    const portrait = oddlingPortrait(params.get('oddlingPhoto'));
+    const draft = resolveTemplateDraft(preset, wanted, storedDraft)
+      || (portrait ? { prompt: buildOddlingAnimationPrompt(portrait.id, params.get('motion')), durationSeconds: 5 } : null);
     if (draft) setPrompt(draft.prompt);
     if (draft?.aspect) setAspect(draft.aspect);
     if (draft?.durationSeconds) setDuration(`${draft.durationSeconds}s`);
     if (draft?.negativePrompt) setNegative(draft.negativePrompt);
+    const controller = new AbortController();
+    if (portrait) {
+      setAnimationPortrait(portrait);
+      setPortraitStatus(`Loading ${portrait.name}'s animation start frame…`);
+      fetch(portrait.image, { signal: controller.signal }).then(async (response) => {
+        if (!response.ok) throw new Error('portrait_load_failed');
+        const blob = await response.blob();
+        if (blob.type !== 'image/webp' || !blob.size || blob.size > 5 * 1024 * 1024) throw new Error('portrait_invalid');
+        if (controller.signal.aborted) return;
+        const file = new File([blob], `${portrait.id}.webp`, { type: 'image/webp' });
+        setSources((current) => ({ ...current, image: { file, previewUrl: portrait.image, label: portrait.name } }));
+        setPortraitStatus(`${portrait.name}'s portrait is ready as the animation start frame.`);
+      }).catch(() => {
+        if (!controller.signal.aborted) setPortraitStatus('The character photo could not load. Reload before generating.');
+      });
+    }
+    return () => controller.abort();
   }, []);
 
   // If the selected id isn't in the (live or fallback) catalog, fall back to
@@ -131,6 +153,7 @@ export default function CreateStudio() {
   // Rendering anything else offers a price the server then refuses.
   const durations = (model && model.durations && model.durations.length ? model.durations : [5]).map((s) => `${s}s`);
   const media = model?.media || {};
+  const animationMismatch = !!animationPortrait && (model?.kind !== 'video' || !media.image?.required);
   const missingSource = Object.entries(media).some(([slot, spec]) => spec.required && !sources[slot]);
   const hasUpload = Object.keys(media).some((slot) => sources[slot]);
   const missingConsent = hasUpload && !consent;
@@ -246,6 +269,7 @@ export default function CreateStudio() {
     if (inFlight.current || sending || generating || !model || balance == null || cost > balance) return;
     inFlight.current = true;
     if (model.gated) { inFlight.current = false; setError({ code: 'model_gated' }); return; }
+    if (animationMismatch) { inFlight.current = false; setError({ code: 'source_required' }); return; }
     if (missingSource) { inFlight.current = false; setError({ code: 'source_required' }); return; }
     if (missingConsent) { inFlight.current = false; setError({ code: 'consent_required' }); return; }
     if (missingPrompt) { inFlight.current = false; setError({ code: 'inputs_invalid:prompt' }); return; }
@@ -402,6 +426,7 @@ export default function CreateStudio() {
             </p>
           )}
 
+          {animationPortrait && <div role="status" className="mt-4 rounded-xl border border-vx-accent/30 bg-vx-panel p-4 text-sm text-vx-fg-body">{portraitStatus}{animationMismatch && <p className="mt-2 text-vx-danger">Choose an image-to-video model with a required start frame to animate this photo.</p>}</div>}
           <div className="scroll-mt-24" data-assistant-target={Object.keys(media).length ? 'create.upload' : undefined}>
             <SourcePickers media={media} sources={sources} onPick={pickSource}
               onDraw={model?.kind === 'image' ? () => setDrawing(true) : null} onLibrary={setLibraryFor} />
@@ -537,7 +562,7 @@ export default function CreateStudio() {
               data-assistant-target="create.generate"
               onClick={generating ? cancel : onSubmit}
               className="scroll-mt-24 mt-4 w-full flex items-center justify-between bg-vx-accent text-vx-accent-ink rounded-full px-6 py-3.5 font-extrabold hover:bg-vx-accent-hover disabled:opacity-40 disabled:cursor-not-allowed"
-              disabled={sending || (!generating && (!model || model.gated || missingPrompt || missingVoice || balance == null || cost > balance || missingSource || missingConsent))}
+              disabled={sending || (!generating && (!model || model.gated || animationMismatch || missingPrompt || missingVoice || balance == null || cost > balance || missingSource || missingConsent))}
               aria-label={sending || generating || model?.gated ? undefined : `Generate ${n > 1 ? `${n} images ` : ''}for ${cost} credits`}
             >
               <span>{sending ? 'Sending…' : generating ? 'New generation' : model?.gated ? 'Premium — gated' : n > 1 ? `Generate ${n}` : 'Generate'}</span>

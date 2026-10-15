@@ -78,6 +78,7 @@ export function CharacterPanel({ enabled, onToggle, picks, onChange }) {
   const named = picks.oddling_name || 'Untitled Oddling';
   const starters = ODDLING_ARCHETYPES.filter((oddling) => oddling.kind === starterKind);
   const isHuman = starterKind === 'human';
+  const original = ODDLING_ARCHETYPES.find((item) => item.name === picks.oddling_name);
 
   return (
     <section className="overflow-hidden rounded-2xl border border-vx-border bg-vx-panel" aria-labelledby="vx-character-title">
@@ -98,18 +99,18 @@ export function CharacterPanel({ enabled, onToggle, picks, onChange }) {
 
       {enabled && (
         <div className="border-t border-vx-border">
-          <figure className="relative border-b border-vx-border bg-vx-base">
+          {original && <figure className="relative border-b border-vx-border bg-vx-base">
             <Image
-              src={isHuman ? '/oddlings/oddling-body-chaos.webp' : '/oddlings/oddling-cast.webp'}
-              width={1600}
-              height={800}
-              alt={isHuman ? 'Four fictional human characters with quilted couture, a muscular build, a beetle fashion helmet and cloud-shaped hair' : 'Four original fictional fantasy characters: a moth oracle, octopus diplomat, botanical machine and spectral accountant'}
-              className="aspect-[2/1] w-full object-cover"
+              src={`/oddlings/portraits/${original.id}.webp`}
+              width={1024}
+              height={1536}
+              alt={`${original.name} original individual portrait`}
+              className="h-72 w-full object-contain"
             />
             <figcaption className="absolute inset-x-2 bottom-2 rounded-lg bg-black/70 px-2.5 py-1.5 font-vx-mono text-[8px] tracking-[0.1em] text-white/80 backdrop-blur-sm">
-              {isHuman ? 'HUMAN CHARACTER STUDY' : 'FANTASY CHARACTER STUDY'} · AI-CREATED FICTIONAL CHARACTERS
+              {original.name} · AI-CREATED FICTIONAL CHARACTER · ORIGINAL PORTRAIT
             </figcaption>
-          </figure>
+          </figure>}
 
           <div className="space-y-5 p-5">
             <div>
