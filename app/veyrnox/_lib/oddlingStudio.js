@@ -96,7 +96,7 @@ export function buildOddlingStudioPrompt({ picks, mode = 'portrait', motionId = 
 function cleanLibraryItem(item) {
   if (!item || typeof item !== 'object') return null;
   const savedAt = Number(item.savedAt);
-  if (!Number.isFinite(savedAt)) return null;
+  if (!Number.isFinite(savedAt) || !Number.isFinite(new Date(savedAt).getTime())) return null;
   const picks = sanitizeOddlingPicks(item.picks);
   const name = picks.oddling_name || 'Untitled Oddling';
   return {
