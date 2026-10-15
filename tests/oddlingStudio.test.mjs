@@ -127,22 +127,38 @@ test('every character has its own standalone portrait instead of a sprite panel'
         assert.equal(metadata.width, 1024);
         assert.equal(metadata.height, 1536);
     }
-    assert.equal(images.size, 28);
-    assert.equal(hashes.size, 28, 'no character reuses another character image');
+    assert.equal(images.size, 32);
+    assert.equal(hashes.size, 32, 'no character reuses another character image');
 });
 
 test('human preset collections are complete, distinct, and human-first', () => {
     assert.deepEqual(ODDLING_PRESET_SOURCES.map((source) => source.id), [
-        'body', 'silhouettes', 'fashion', 'hair', 'denim', 'oddities', 'humans', 'beings',
+        'body', 'silhouettes', 'fashion', 'hair', 'denim', 'oddities', 'torsos', 'humans', 'beings',
     ]);
     for (const source of ODDLING_PRESET_SOURCES.slice(0, 6)) {
         const oddlings = oddlingsForSource(source.id);
         assert.equal(oddlings.length, 4, `${source.id} should contain one four-character art sheet`);
         assert.ok(oddlings.every((oddling) => oddling.kind === 'human'));
     }
-    assert.equal(oddlingsForSource('humans').length, 24);
+    assert.equal(oddlingsForSource('humans').length, 28);
     assert.equal(oddlingsForSource('beings').length, 4);
     assert.deepEqual(oddlingsForSource('unknown').map((oddling) => oddling.id), oddlingsForSource('body').map((oddling) => oddling.id));
+});
+
+test('new torso collection covers all sizes with unique original characters and recreatable passports', () => {
+    const characters = oddlingsForSource('torsos');
+    assert.deepEqual(characters.map(({ id }) => id), ['pip-parcel', 'mira-measure', 'arlo-archive', 'orla-overture']);
+    assert.deepEqual(characters.map(({ picks }) => picks.torso_size), ['Small', 'Medium', 'Large', 'Extra Large']);
+    assert.ok(ODDLING_STUDIO_SECTIONS.find(({ id }) => id === 'build').groupIds.includes('torso_size'));
+    for (const character of characters) {
+        assert.equal(character.kind, 'human');
+        for (const mode of ['portrait', 'motion']) {
+            const prompt = buildOddlingStudioPrompt({ mode, picks: character.picks });
+            assert.ok(prompt.includes(character.name));
+            assert.match(prompt, /torso relative to the head and limbs/);
+        }
+        assert.match(gallerySource(character).image, new RegExp(`${character.id}\\.webp$`));
+    }
 });
 
 test('animation only resolves known portrait ids and image-to-video models', () => {

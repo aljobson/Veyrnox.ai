@@ -27,7 +27,7 @@ test('saved characters retain their legacy choices while all trait views use neu
 
 test('all size choices reach prompts, survive saving, and stay deliberate during styling remixes', () => {
   for (const group of CHARACTER_SIZE_GROUPS) for (const [size, phrase] of group.options) {
-    const picks = { character_type: 'Human', body_type: 'Slim', neck_size: 'Extra Large', arm_size: 'Small', leg_size: 'Extra Large', head_size: 'Extra Large', hand_size: 'Small', foot_size: 'Extra Large', ear_size: 'Extra Large', nose_size: 'Small', eye_size: 'Small', mouth_size: 'Extra Large', [group.id]: size };
+    const picks = { character_type: 'Human', body_type: 'Slim', torso_size: 'Extra Large', neck_size: 'Extra Large', arm_size: 'Small', leg_size: 'Extra Large', head_size: 'Extra Large', hand_size: 'Small', foot_size: 'Extra Large', ear_size: 'Extra Large', nose_size: 'Small', eye_size: 'Small', mouth_size: 'Extra Large', [group.id]: size };
     assert.deepEqual(sanitizeOddlingPicks(picks), picks);
     assert.ok(buildCharacterPrompt('Full-body portrait', picks).includes(phrase));
     assert.ok(buildCharacterPrompt('', picks).includes('both feet fully visible'));
@@ -47,16 +47,31 @@ test('all size choices reach prompts, survive saving, and stay deliberate during
     assert.equal(remixed.arm_size, picks.arm_size);
     assert.equal(remixed.leg_size, picks.leg_size);
     assert.equal(remixed.neck_size, picks.neck_size);
+    assert.equal(remixed.torso_size, picks.torso_size);
   }
-  assert.deepEqual(sanitizeOddlingPicks({ neck_size: 'invalid', arm_size: 'invalid', leg_size: 'invalid', head_size: 'invalid', foot_size: 'gigantic unbounded value', ear_size: 'invalid', nose_size: 'invalid', eye_size: 'invalid', mouth_size: 'invalid' }), {});
+  assert.deepEqual(sanitizeOddlingPicks({ torso_size: 'invalid', neck_size: 'invalid', arm_size: 'invalid', leg_size: 'invalid', head_size: 'invalid', foot_size: 'gigantic unbounded value', ear_size: 'invalid', nose_size: 'invalid', eye_size: 'invalid', mouth_size: 'invalid' }), {});
 });
 
 test('all feature size controls offer the same size range', () => {
-  for (const id of ['neck_size', 'arm_size', 'leg_size', 'head_size', 'ear_size', 'nose_size', 'eye_size', 'mouth_size', 'hand_size', 'foot_size']) {
+  for (const id of ['torso_size', 'neck_size', 'arm_size', 'leg_size', 'head_size', 'ear_size', 'nose_size', 'eye_size', 'mouth_size', 'hand_size', 'foot_size']) {
     const group = CHARACTER_GROUPS.find((item) => item.id === id);
     assert.deepEqual(group.options.map(([value]) => value), ['Small', 'Medium', 'Large', 'Extra Large']);
-    assert.equal(group.tab, ['neck_size', 'arm_size', 'leg_size', 'hand_size', 'foot_size'].includes(id) ? 'Body' : 'Face');
+    assert.equal(group.tab, ['torso_size', 'neck_size', 'arm_size', 'leg_size', 'hand_size', 'foot_size'].includes(id) ? 'Body' : 'Face');
   }
+});
+
+test('explicit torso size replaces legacy torso proportions without resetting unrelated traits', () => {
+  for (const [key, values] of [['proportions', ['Tiny Torso', 'Long Torso']], ['body_type', ['Long Torso', 'Long Legs']]]) {
+    for (const value of values) {
+      assert.deepEqual(changeCharacterPick({ [key]: value, head_size: 'Small' }, 'torso_size', 'Extra Large'),
+        { head_size: 'Small', torso_size: 'Extra Large' });
+      assert.deepEqual(changeCharacterPick({ torso_size: 'Small', head_size: 'Large' }, key, value),
+        { head_size: 'Large', [key]: value });
+    }
+  }
+  const picks = { body_type: 'Curvy', proportions: 'Wide Shoulders', head_size: 'Small' };
+  assert.deepEqual(changeCharacterPick(picks, 'torso_size', 'Large'), { ...picks, torso_size: 'Large' });
+  assert.deepEqual(changeCharacterPick({ ...picks, torso_size: 'Small' }, 'torso_size', ''), picks);
 });
 
 test('neck size stays independent of styling and replaces conflicting legacy neck proportions', () => {
