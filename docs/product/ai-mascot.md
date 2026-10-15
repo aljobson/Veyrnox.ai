@@ -34,6 +34,8 @@ Coverage includes Explore/Templates/Models/Tools, image/video/audio generation, 
 
 ## UI control contract
 
+In Create, open Ask Vey and choose Start image walkthrough. The tour points to the model picker, focuses the prompt, covers source uploads and consent when present, then aspect, image count, optional character/camera/advanced controls, total cost and the final Generate button. Next step skips unsupported optional controls. The model step requires the user to choose an image model. The walkthrough never changes inputs, ticks consent, generates or spends Credits. Results appear in Create and Library after the user generates.
+
 `lib/productHelp.js` owns the only selectors and actions Vey may use. The model can return an allowlisted target id; it can never return CSS or arbitrary JavaScript. `show_target` may navigate, scroll and highlight. `focus_target` is further restricted to reviewed writing fields.
 
 `activate_target` can click only targets explicitly carrying `canActivate: true` in that registry. It is intended for reversible interface controls such as opening Chat settings or an Oddling History tab. Any other target is downgraded to highlighting.
