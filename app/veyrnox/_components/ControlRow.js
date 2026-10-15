@@ -1,9 +1,9 @@
 'use client';
 
 // A labelled row of single-choice pills (duration, aspect) in the studio.
-export function ControlRow({ label, options, value, onChange }) {
+export function ControlRow({ label, options, value, onChange, assistantTarget }) {
   return (
-    <div className="rounded-2xl border border-vx-border bg-vx-panel p-5">
+    <div data-assistant-target={assistantTarget} className="scroll-mt-24 rounded-2xl border border-vx-border bg-vx-panel p-5">
       <div className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted mb-3">{label}</div>
       <div className="flex flex-wrap gap-1.5" role="group" aria-label={label}>
         {options.map((o) => (

@@ -13,6 +13,7 @@ import {
   normaliseHelpPlan,
 } from '../../../lib/productHelp.js';
 import VeyCharacter from './VeyCharacter';
+import ImageWalkthrough from './ImageWalkthrough';
 
 const HOME = { x: 18, y: 0 };
 const CHARACTER = { width: 112, height: 116 };
@@ -73,6 +74,7 @@ export default function MascotAssistant() {
   const [pendingTarget, setPendingTarget] = useState(null);
   const [travelling, setTravelling] = useState(false);
   const [actionPhase, setActionPhase] = useState('none');
+  const [imageTourActive, setImageTourActive] = useState(false);
 
   const homePosition = useCallback(() => ({
     x: 18,
@@ -148,7 +150,7 @@ export default function MascotAssistant() {
     if (!element) return false;
     window.clearTimeout(actionTimerRef.current);
     setActionPhase('none');
-    element.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center', inline: 'nearest' });
+    element.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: options.align || 'center', inline: 'nearest' });
     window.clearTimeout(timerRef.current);
     timerRef.current = window.setTimeout(() => {
       if (!measureTarget(element, id)) return;
@@ -431,6 +433,8 @@ export default function MascotAssistant() {
             </header>
 
             <div ref={transcriptRef} role="log" aria-label="Conversation with Vey" className="overflow-y-auto px-5 py-4">
+              <div hidden={pathname !== '/app/create'}><ImageWalkthrough onPoint={showTarget} onStop={clearTarget} onActiveChange={setImageTourActive} /></div>
+              {(!imageTourActive || pathname !== '/app/create') && <>
               {messages.length === 0 ? (
                 <div role="status" aria-live="polite" className="rounded-2xl rounded-bl-md bg-vx-base px-4 py-3 text-sm leading-6 text-vx-fg-body">
                   {answer}
@@ -492,8 +496,10 @@ export default function MascotAssistant() {
                   ))}
                 </div>
               )}
+              </>}
             </div>
 
+            {(!imageTourActive || pathname !== '/app/create') &&
             <form className="mt-auto border-t border-vx-border p-3" onSubmit={(event) => { event.preventDefault(); ask(question); }}>
               <label htmlFor="vx-helper-question" className="sr-only">Ask how to use Veyrnox</label>
               <div className="flex items-end gap-2 rounded-2xl border border-vx-border bg-vx-base p-2 focus-within:border-vx-accent">
@@ -513,7 +519,7 @@ export default function MascotAssistant() {
                 </button>
               </div>
               <p className="px-2 pt-2 text-[11px] leading-4 text-vx-fg-faint">Vey can guide and open safe areas. You always confirm spending, publishing and deletion.</p>
-            </form>
+            </form>}
           </motion.section>
         )}
       </AnimatePresence>
