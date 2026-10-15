@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useCatalog } from '../_lib/useCatalog';
 import { REVEAL_SAVED_ODDLING } from '../../../lib/savedOddlingHelp.js';
+import { OddlingGalleryPreview, useGalleryMotionAllowed } from './OddlingGalleryPreview';
 import {
   CHARACTER_GROUPS,
   ODDLING_ARCHETYPES,
@@ -104,12 +105,12 @@ function CharacterSheet({ oddling, onClose, onRecreate, onAnimate }) {
   );
 }
 
-function GalleryCard({ oddling, onSheet, onRecreate, onAnimate }) {
+function GalleryCard({ oddling, onSheet, onRecreate, onAnimate, previewsPlaying }) {
   return (
     <article className="group overflow-hidden rounded-2xl border border-vx-border bg-vx-panel">
-      <div className="flex aspect-[4/5] items-center justify-center overflow-hidden bg-vx-base">
+      <OddlingGalleryPreview id={oddling.id} playing={previewsPlaying}>
         <CharacterPortrait oddling={oddling} />
-      </div>
+      </OddlingGalleryPreview>
       <div className="p-4">
         <span className="font-vx-mono text-[8px] font-bold tracking-[0.14em] text-vx-accent">{oddling.accent}</span>
         <h3 className="mt-1 text-lg font-extrabold">{oddling.name}</h3>
@@ -126,6 +127,8 @@ function GalleryCard({ oddling, onSheet, onRecreate, onAnimate }) {
 
 export default function OddlingStudio() {
   const router = useRouter();
+  const [previewsPlaying, setPreviewsPlaying] = useState(true);
+  const motionAllowed = useGalleryMotionAllowed();
   const { models, live: catalogLive } = useCatalog();
   const videoModel = animationModel(models);
   const [portraitId, setPortraitId] = useState(ODDLING_ARCHETYPES[0].id);
@@ -364,7 +367,7 @@ export default function OddlingStudio() {
               <div>
                 <span className="font-vx-mono text-[10px] font-bold tracking-[0.16em] text-vx-accent">24 HUMAN ORIGINALS · 4 OTHER BEINGS</span>
                 <h2 className="vx-display mt-2 text-5xl sm:text-6xl">Your original character, your recurring hit.</h2>
-                <p className="mt-3 max-w-2xl text-vx-fg-body">Explore expressive silhouettes, statement fashion, sculptural hair and contemporary basics. Choose body, hand, foot, ear and nose sizes independently, then refine your character for portraits and motion.</p>
+                <p className="mt-3 max-w-2xl text-vx-fg-body">Explore expressive silhouettes, statement fashion, sculptural hair and contemporary basics. Choose body, hand, foot, eye, mouth, ear and nose sizes independently, then refine your character for portraits and motion.</p>
               </div>
               <div className="flex rounded-xl border border-vx-border bg-vx-panel p-1" role="tablist" aria-label="Workspace view">
                 <button type="button" role="tab" aria-selected={workspace === 'explore'} onClick={() => setWorkspace('explore')} className={`rounded-lg px-4 py-2 text-sm font-bold ${workspace === 'explore' ? 'bg-vx-base text-vx-fg' : 'text-vx-fg-muted'}`}>Explore</button>
@@ -377,9 +380,13 @@ export default function OddlingStudio() {
                 <div className="mt-8 flex flex-wrap gap-2" role="tablist" aria-label="Preset source">
                   {ODDLING_PRESET_SOURCES.map(({ id, label }) => <button key={id} type="button" role="tab" aria-selected={source === id} onClick={() => setSource(id)} className={chip(source === id)}>{label}</button>)}
                 </div>
-                <p className="mt-3 font-vx-mono text-[9px] font-bold tracking-[0.12em] text-vx-fg-faint">{gallery.length} ORIGINAL CHARACTER{gallery.length === 1 ? '' : 'S'}</p>
+                <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                  <p className="font-vx-mono text-[9px] font-bold tracking-[0.12em] text-vx-fg-faint">{gallery.length} ORIGINAL CHARACTER{gallery.length === 1 ? '' : 'S'}</p>
+                  <button type="button" aria-pressed={previewsPlaying} onClick={() => setPreviewsPlaying((current) => !current)} className={chip(previewsPlaying)}>{previewsPlaying ? 'Pause previews' : 'Play previews'}</button>
+                </div>
+                <p className="mt-2 text-xs text-vx-fg-muted">Free photo-motion previews · no generation or credits · reduced-motion settings respected. For character actions, use Animate this character (paid).</p>
                 <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
-                  {gallery.map((oddling) => <GalleryCard key={oddling.id} oddling={oddling} onSheet={setSheet} onRecreate={loadOddling} onAnimate={animateOddling} />)}
+                  {gallery.map((oddling) => <GalleryCard key={oddling.id} oddling={oddling} onSheet={setSheet} onRecreate={loadOddling} onAnimate={animateOddling} previewsPlaying={previewsPlaying && motionAllowed} />)}
                 </div>
               </>
             ) : library.length ? (

@@ -30,10 +30,24 @@ export function changeCharacterPick(picks, key, value) {
   if (key === 'proportions' && ['Huge Hands', 'Tiny Hands'].includes(value)) delete next.hand_size;
   if (key === 'ear_size' && value && next.ears === 'No Ears') delete next.ears;
   if (key === 'ears' && value === 'No Ears') delete next.ear_size;
+  if (key === 'mouth_size' && value && ['Small Mouth', 'Large Mouth'].includes(next.mouth)) delete next.mouth;
+  if (key === 'mouth' && ['Small Mouth', 'Large Mouth'].includes(value)) delete next.mouth_size;
   return next;
 }
 
 export const CHARACTER_SIZE_GROUPS = [
+  { id: 'eye_size', tab: 'Face', label: 'Eye Size', options: [
+    ['Small', 'small eyes relative to the face'],
+    ['Medium', 'medium-sized eyes relative to the face'],
+    ['Large', 'large eyes relative to the face'],
+    ['Extra Large', 'extra-large eyes relative to the face, eyes clearly visible'],
+  ] },
+  { id: 'mouth_size', tab: 'Face', label: 'Mouth Size', options: [
+    ['Small', 'small mouth relative to the face'],
+    ['Medium', 'medium-sized mouth relative to the face'],
+    ['Large', 'large mouth relative to the face'],
+    ['Extra Large', 'extra-large mouth relative to the face, mouth clearly visible'],
+  ] },
   { id: 'ear_size', tab: 'Face', label: 'Ear Size', options: [
     ['Small', 'small ears relative to the head'],
     ['Medium', 'medium-sized ears relative to the head'],

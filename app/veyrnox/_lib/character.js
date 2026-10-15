@@ -325,7 +325,7 @@ export const CHARACTER_GROUPS = [
       ['Mechanical', 'mechanical cyborg eyes'],
   ] },
   { id: 'eye_shape', tab: 'Face', label: 'Eye Shape', options: [
-      ['Round', 'large round eye shape'],
+      ['Round', 'round eye shape'],
       ['Narrow', 'narrow elongated eye shape'],
       ['Downturned', 'soft downturned eye shape'],
       ['Upturned', 'dramatic upturned eye shape'],
