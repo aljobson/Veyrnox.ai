@@ -141,6 +141,7 @@ export const NAV_CATEGORIES = [
   { href: '/#models',    label: 'Models' },
   { href: '/presets',   label: 'Templates' },
   { href: '/tools',     label: 'Tools' },
+  { href: '/guides',    label: 'Guides' },
   { href: '/mcp',       label: 'MCP' },
   { href: '/app/chat',  label: 'LLM Chat' },
   { href: '/pricing',   label: 'Pricing' },

@@ -85,6 +85,15 @@ test('public app pages do not open sign-in merely to draw their nav', () => {
         'signing in later reruns the account summary without a reload');
 });
 
+test('the studio nav exposes the rest of the public site on desktop and mobile', () => {
+    assert.match(src, /const APP_BROWSE_CATEGORIES = NAV_CATEGORIES\.filter/,
+        'the public destination list stays derived from the shared site nav');
+    assert.match(appNav, /const menuItems = \[[\s\S]*\.\.\.items,[\s\S]*\.\.\.APP_BROWSE_CATEGORIES\.filter/,
+        'the phone menu combines studio tools with the public site');
+    assert.match(appNav, /items=\{APP_BROWSE_CATEGORIES\}[\s\S]*buttonText="Browse"[\s\S]*className="hidden lg:block"/,
+        'desktop studio pages provide a clearly labelled public browse menu');
+});
+
 test('credits and assets come from the endpoint, the name from the session', () => {
     assert.match(appNav, /await gatewayFetch\('\/account'\)/, 'one gateway read for the lot');
     assert.match(appNav, /const assets = summary\?\.assets \?\? null;/, 'the count is the server count');

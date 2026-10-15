@@ -6,7 +6,7 @@ import { ThemeToggle } from './ThemeToggle';
 import { Icon } from './Icon';
 
 // A visible menu keeps every destination reachable on a narrow screen.
-export function MobileMenu({ items, className = '', buttonLabel = 'Menu', navLabel = 'Site', activeHref }) {
+export function MobileMenu({ items, className = '', buttonLabel = 'Menu', buttonText = '', navLabel = 'Site', activeHref }) {
   const [open, setOpen] = useState(false);
   const triggerRef = useRef(null);
 
@@ -66,9 +66,10 @@ export function MobileMenu({ items, className = '', buttonLabel = 'Menu', navLab
         aria-expanded={open}
         aria-controls="vx-mobile-menu"
         aria-label={buttonLabel}
-        className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-vx-border text-vx-fg-body hover:border-vx-accent hover:text-vx-fg"
+        className={`inline-flex h-10 items-center justify-center rounded-full border border-vx-border text-vx-fg-body hover:border-vx-accent hover:text-vx-fg ${buttonText ? 'gap-2 px-3' : 'w-10'}`}
       >
         <Icon name={open ? 'close' : 'menu'} size={18} />
+        {buttonText && <span className="text-[13px] font-bold">{buttonText}</span>}
       </button>
 
       {open && (
@@ -88,7 +89,7 @@ export function MobileMenu({ items, className = '', buttonLabel = 'Menu', navLab
             aria-label={navLabel}
             className="vx-drop-in fixed inset-x-0 top-16 z-40 max-h-[calc(100dvh-4rem)] overflow-y-auto border-b border-vx-border bg-vx-base px-4 py-3 shadow-xl"
           >
-            <ul className="flex flex-col">{renderLinks(items)}</ul>
+            <ul className="grid gap-1 sm:grid-cols-2 lg:grid-cols-3">{renderLinks(items)}</ul>
             <div className="mt-2 flex items-center justify-between border-t border-vx-border pt-3">
               <span className="font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-faint">THEME</span>
               <ThemeToggle />
