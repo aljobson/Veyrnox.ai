@@ -34,10 +34,18 @@ export function changeCharacterPick(picks, key, value) {
   if (key === 'mouth' && ['Small Mouth', 'Large Mouth'].includes(value)) delete next.mouth_size;
   if (key === 'head_size' && value && ['Tiny Head', 'Oversized Head'].includes(next.head_shape)) delete next.head_shape;
   if (key === 'head_shape' && ['Tiny Head', 'Oversized Head'].includes(value)) delete next.head_size;
+  if (key === 'neck_size' && value && ['Long Neck', 'No Visible Neck'].includes(next.proportions)) delete next.proportions;
+  if (key === 'proportions' && ['Long Neck', 'No Visible Neck'].includes(value)) delete next.neck_size;
   return next;
 }
 
 export const CHARACTER_SIZE_GROUPS = [
+  { id: 'neck_size', tab: 'Body', label: 'Neck Size', options: [
+    ['Small', 'small neck relative to the body'],
+    ['Medium', 'medium-sized neck relative to the body'],
+    ['Large', 'large neck relative to the body'],
+    ['Extra Large', 'extra-large neck relative to the body'],
+  ] },
   { id: 'arm_size', tab: 'Body', label: 'Arm Size', options: [
     ['Small', 'small arms relative to the body'],
     ['Medium', 'medium-sized arms relative to the body'],
