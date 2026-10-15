@@ -32,16 +32,18 @@ test('there is one public nav, in one order', () => {
     const nav = read('app/veyrnox/_components/NavBar.js');
     const marketing = nav.slice(nav.indexOf('export function MarketingNav'), nav.indexOf('export function AppNav'));
     assert.match(marketing, /NAV_CATEGORIES\.map\(/, 'the links on the bar');
-    assert.match(marketing, /<MobileMenu items=\{MOBILE_NAV_CATEGORIES\} className="xl:hidden" \/>/, 'the phone menu uses the mobile-first order');
-    assert.match(nav, /const MOBILE_NAV_CATEGORIES = \[\s*\.\.\.NAV_CATEGORIES\.filter\(\(item\) => item\.href === '\/social-cinema'\),[\s\S]*\.\.\.NAV_CATEGORIES\.filter\(\(item\) => item\.href === '\/#faq'\),\s*\];/, 'the phone menu leads with Social Cinema and ends with FAQ');
+    assert.match(marketing, /<MobileMenu items=\{MOBILE_NAV_CATEGORIES\} className="min-\[1700px\]:hidden" \/>/, 'the compact menu uses the mobile-first order');
+    assert.match(nav, /const MOBILE_NAV_CATEGORIES = \[\s*\.\.\.NAV_CATEGORIES\.filter\(\(item\) => item\.href === '\/app\/oddlings'\),[\s\S]*\.\.\.NAV_CATEGORIES\.filter\(\(item\) => item\.href === '\/#faq'\),\s*\];/, 'the phone menu leads with Oddlings and ends with FAQ');
     assert.doesNotMatch(marketing, /includeStudio/, 'the phone menu must not put app links ahead of the public nav');
-    // Eight links, search and the account buttons need about 1,200px: the row shows from xl.
-    assert.match(marketing, /<nav aria-label="Primary" className="hidden xl:flex /);
+    // Ten links, search and the account buttons need at least 1700px.
+    assert.match(marketing, /<nav aria-label="Primary" className="hidden min-\[1700px\]:flex /);
     // A home-page section is a plain link: the browser glides to it on the home page.
     assert.match(marketing, /const Item = section \? 'a' : Link;/);
     assert.match(read('app/veyrnox/_components/MobileMenu.js'), /const Item = it\.href\.includes\('#'\) \? 'a' : Link;/);
     assert.deepEqual(NAV_CATEGORIES.map((c) => c.label),
-        ['Explore', 'Models', 'Templates', 'Tools', 'MCP', 'LLM Chat', 'Pricing', 'FAQ', 'Social Cinema']);
+        ['Explore', 'Oddlings', 'Models', 'Templates', 'Tools', 'MCP', 'LLM Chat', 'Pricing', 'FAQ', 'Social Cinema']);
+    assert.equal(NAV_CATEGORIES.find((item) => item.href === '/app/oddlings')?.featured, true,
+        'Oddlings is a primary public destination, not an unstyled utility link');
     // The home page's sections stay one press away from every page.
     for (const href of ['/#explore', '/#models', '/#faq']) assert.ok(NAV_CATEGORIES.some((c) => c.href === href), href);
     assert.equal(NAV_CATEGORIES.at(-1).href, '/social-cinema', 'a page that says it is not open yet does not lead');

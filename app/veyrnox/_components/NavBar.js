@@ -17,8 +17,9 @@ import { NAV_CATEGORIES } from '../_lib/tokens';
 import { AnnouncementBar } from './AnnouncementBar';
 
 const MOBILE_NAV_CATEGORIES = [
+  ...NAV_CATEGORIES.filter((item) => item.href === '/app/oddlings'),
   ...NAV_CATEGORIES.filter((item) => item.href === '/social-cinema'),
-  ...NAV_CATEGORIES.filter((item) => item.href !== '/social-cinema' && item.href !== '/#faq'),
+  ...NAV_CATEGORIES.filter((item) => item.href !== '/app/oddlings' && item.href !== '/social-cinema' && item.href !== '/#faq'),
   ...NAV_CATEGORIES.filter((item) => item.href === '/#faq'),
 ];
 
@@ -38,10 +39,10 @@ export function MarketingNav({ hideAnnouncementOnMobile = false }) {
         <Logo className="min-[360px]:hidden" />
         <Logo wordmark className="hidden min-[360px]:inline-flex" />
       </Link>
-      {/* From xl, not lg: the eight links, search and the account buttons
-          need about 1,200px, and between 1024 and 1200 the links ran under
-          the search box. Below xl they are in the menu. */}
-      <nav aria-label="Primary" className="hidden xl:flex flex-1 min-w-0 items-center gap-1 text-[13px] font-semibold">
+      {/* Ten destinations, search and account controls need at least 1700px.
+          Below that the complete list stays in the menu while the
+          featured Oddlings shortcut remains visible in the bar. */}
+      <nav aria-label="Primary" className="hidden min-[1700px]:flex flex-1 min-w-0 items-center gap-1 text-[13px] font-semibold">
         {NAV_CATEGORIES.map((it) => {
           // A section of the home page (`/#faq`) is never the current page,
           // and it is a plain link: on the home page the browser glides to
@@ -49,29 +50,42 @@ export function MarketingNav({ hideAnnouncementOnMobile = false }) {
           // lands on it.
           const section = it.href.includes('#');
           const active = !section && path.startsWith(it.href);
+          const featured = it.featured === true;
           const Item = section ? 'a' : Link;
           return (
             <Item
               key={it.href}
               href={it.href}
               aria-current={active ? 'page' : undefined}
-              className={`shrink-0 px-3.5 py-2 rounded-full transition-colors ${
-                active ? 'bg-vx-panel text-vx-fg' : 'text-vx-fg-body hover:text-vx-fg hover:bg-vx-panel'
+              className={`inline-flex shrink-0 items-center gap-2 rounded-full px-3.5 py-2 transition-colors ${
+                active
+                  ? 'bg-vx-accent text-vx-accent-ink'
+                  : featured
+                    ? 'border border-vx-accent/50 bg-vx-accent/10 text-vx-accent hover:bg-vx-accent/20'
+                    : 'text-vx-fg-body hover:bg-vx-panel hover:text-vx-fg'
               }`}
             >
+              {featured && <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-current" />}
               {it.label}
             </Item>
           );
         })}
       </nav>
-      <div className="flex flex-1 xl:flex-none items-center justify-end gap-1 sm:gap-2 shrink-0">
+      <div className="flex flex-1 min-[1700px]:flex-none items-center justify-end gap-1 sm:gap-2 shrink-0">
+        <Link
+          href="/app/oddlings"
+          className="inline-flex h-10 items-center gap-2 rounded-full border border-vx-accent/50 bg-vx-accent/10 px-3 text-[13px] font-extrabold text-vx-accent hover:bg-vx-accent/20 min-[1700px]:hidden"
+        >
+          <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-current" />
+          Oddlings
+        </Link>
         <SiteSearch className="hidden sm:inline-flex" />
-        {/* Below xl the theme switch is inside the menu. */}
-        <ThemeToggle className="hidden xl:inline-flex" />
+        {/* Below 1700px the theme switch is inside the menu. */}
+        <ThemeToggle className="hidden min-[1700px]:inline-flex" />
         <NavAuthButtons />
-        {/* Below xl the links above are hidden: without this the only way
+        {/* Below 1700px the links above are hidden: without this the only way
             off the page was the browser back button. */}
-        <MobileMenu items={MOBILE_NAV_CATEGORIES} className="xl:hidden" />
+        <MobileMenu items={MOBILE_NAV_CATEGORIES} className="min-[1700px]:hidden" />
       </div>
       </div>
     </header>
@@ -104,8 +118,8 @@ export function AppNav({ balance, active = 'explore', readAccount = true }) {
   }, [active, projectsEnabled, enhanceEnabled, editorEnabled]);
   const items = [
     { key: 'explore', href: '/app',         label: 'Explore' },
+    { key: 'oddlings', href: '/app/oddlings', label: 'Oddlings', featured: true },
     { key: 'create',  href: '/app/create',  label: 'Create' },
-    { key: 'oddlings', href: '/app/oddlings', label: 'Oddlings' },
     // Video agent (ADR-0074): bought from a plan on its own page, so it has its own tab and is not in the Create picker.
     { key: 'agent', href: '/app/video-agent', label: 'Video agent' },
     { key: 'chat', href: '/app/chat', label: 'LLM Chat' },
@@ -161,10 +175,10 @@ export function AppNav({ balance, active = 'explore', readAccount = true }) {
       <Link
         href="/app"
         aria-label="Veyrnox studio — explore"
-        className={`items-center gap-2.5 shrink-0 ${account ? 'hidden sm:flex' : 'flex'}`}
+        className="hidden items-center gap-2.5 shrink-0 sm:flex"
       >
-        {/* On phones the Studio menu includes Explore, so signed-in users
-            have room for their balance and account controls. */}
+        {/* On phones the Studio menu includes Explore; the mark yields so
+            Oddlings and the account controls stay immediately reachable. */}
         <Logo className="sm:hidden" />
         <Logo wordmark className="hidden sm:inline-flex" />
       </Link>
@@ -175,19 +189,39 @@ export function AppNav({ balance, active = 'explore', readAccount = true }) {
         navLabel="Studio"
         className="lg:hidden"
       />
+      <Link
+        href="/app/oddlings"
+        aria-current={active === 'oddlings' ? 'page' : undefined}
+        className={`inline-flex h-10 items-center gap-2 rounded-full border px-3 text-[13px] font-extrabold lg:hidden ${
+          active === 'oddlings'
+            ? 'border-vx-accent bg-vx-accent text-vx-accent-ink'
+            : 'border-vx-accent/50 bg-vx-accent/10 text-vx-accent hover:bg-vx-accent/20'
+        }`}
+      >
+        <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-current" />
+        Oddlings
+      </Link>
       <nav ref={tabs} aria-label="Studio" className="hidden lg:flex min-w-0 overflow-x-auto gap-0.5 sm:gap-1 text-[12px] sm:text-sm font-semibold">
-        {items.map((it) => (
-          <Link
-            key={it.key}
-            href={it.href}
-            aria-current={active === it.key ? 'page' : undefined}
-            className={`shrink-0 px-2 sm:px-4 py-2 rounded-full transition-colors ${
-              active === it.key ? 'bg-vx-panel text-vx-fg' : 'text-vx-fg-muted hover:text-vx-fg'
-            }`}
-          >
-            {it.label}
-          </Link>
-        ))}
+        {items.map((it) => {
+          const current = active === it.key;
+          return (
+            <Link
+              key={it.key}
+              href={it.href}
+              aria-current={current ? 'page' : undefined}
+              className={`inline-flex shrink-0 items-center gap-2 rounded-full px-2 py-2 transition-colors sm:px-4 ${
+                current
+                  ? it.featured ? 'bg-vx-accent text-vx-accent-ink' : 'bg-vx-panel text-vx-fg'
+                  : it.featured
+                    ? 'border border-vx-accent/50 bg-vx-accent/10 text-vx-accent hover:bg-vx-accent/20'
+                    : 'text-vx-fg-muted hover:text-vx-fg'
+              }`}
+            >
+              {it.featured && <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-current" />}
+              {it.label}
+            </Link>
+          );
+        })}
       </nav>
       <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
         <ThemeToggle className="hidden md:inline-flex" />
