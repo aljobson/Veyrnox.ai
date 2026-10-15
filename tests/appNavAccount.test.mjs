@@ -75,6 +75,16 @@ test('the summary follows veyrnox:balance-changed', () => {
         'and it unsubscribes');
 });
 
+test('public app pages do not open sign-in merely to draw their nav', () => {
+    const loadSummary = appNav.slice(appNav.indexOf('const loadSummary'), appNav.indexOf('useEffect', appNav.indexOf('const loadSummary')));
+    assert.match(loadSummary, /if \(!readAccount \|\| !session\) \{ setSummary\(null\); return; \}/,
+        'a signed-out visitor stops before the authenticated account request');
+    assert.ok(loadSummary.indexOf('!session') < loadSummary.indexOf("gatewayFetch('/account')"),
+        'the local session check happens before the API wrapper can raise the auth gate');
+    assert.match(loadSummary, /\[readAccount, session\]/,
+        'signing in later reruns the account summary without a reload');
+});
+
 test('credits and assets come from the endpoint, the name from the session', () => {
     assert.match(appNav, /await gatewayFetch\('\/account'\)/, 'one gateway read for the lot');
     assert.match(appNav, /const assets = summary\?\.assets \?\? null;/, 'the count is the server count');
