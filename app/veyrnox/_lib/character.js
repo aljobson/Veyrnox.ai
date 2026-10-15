@@ -6,6 +6,8 @@
 // (Terms: no minors, no deepfakes). Client-side only: it changes the prompt,
 // never the model or the price.
 
+import { CHARACTER_SIZE_GROUPS } from './characterOptions.js';
+
 export const CHARACTER_TABS = ['Face', 'Body', 'Style'];
 
 export const ODDLING_TONES = [
@@ -29,7 +31,7 @@ export const ODDLING_ARCHETYPES = [
     id: 'duchess-volume',
     kind: 'human',
     name: 'Duchess Volume',
-    hook: 'A fat maximalist reviewing tiny snacks with royal seriousness.',
+    hook: 'A maximalist creator reviewing tiny snacks with royal seriousness.',
     accent: 'MORE IS MORE',
     picks: { character_type: 'Human', body_type: 'Fat', hair: 'Sculpted Waves', accessories: 'Tiny Handbag', rendering_style: 'Hyper-Realistic', oddling_name: 'Duchess Volume', oddling_obsession: 'tiny snacks, enormous entrances, and whether a room has enough drama', oddling_voice: 'Grand ceremony', oddling_show: 'Five-second verdicts', oddling_rule: 'large soft body, circular ivory quilted couture, miniature silver handbag, tiny crown, pearl details' },
   },
@@ -37,7 +39,7 @@ export const ODDLING_ARCHETYPES = [
     id: 'major-minor',
     kind: 'human',
     name: 'Major Minor',
-    hook: 'A colossal bodybuilder curating the world’s smallest objects.',
+    hook: 'A bodybuilder curating the world’s smallest objects.',
     accent: 'TINY THINGS UNIT',
     picks: { character_type: 'Human', body_type: 'Hyper-Muscular', hair: 'Short Hair', accessories: 'Tiny Teacup', rendering_style: 'Hyper-Realistic', oddling_name: 'Major Minor', oddling_obsession: 'miniature teacups, model furniture, and objects too delicate for his hands', oddling_voice: 'Dry oracle', oddling_show: 'Human object reviews', oddling_rule: 'extreme bodybuilder silhouette, miniature brown office tailoring, round glasses, tiny porcelain teacup' },
   },
@@ -103,15 +105,15 @@ export const ODDLING_ARCHETYPES = [
     name: 'Brick Picnic',
     hook: 'A compact lunch critic judging sandwiches by structural integrity.',
     accent: 'LOAD-BEARING LUNCH',
-    picks: { character_type: 'Human', gender: 'Male', ethnicity_origin_base: 'Asian', age: '40s', skin_tone: 'Golden', body_type: 'Barrel', height: 'Very Short', proportions: 'No Visible Neck', hair: 'Cube Cut', hair_color: 'Black', wardrobe_style: 'Office Surrealist', accessories: 'Tiny Sunglasses', distinctive_features: 'Miniature Thermos', rendering_style: 'Hyper-Realistic', oddling_name: 'Brick Picnic', oddling_obsession: 'sandwich engineering, tiny thermoses, and lunches that could survive an earthquake', oddling_voice: 'Chaotic expert', oddling_show: 'Human object reviews', oddling_rule: 'very short barrel-shaped body, glossy black cube haircut, brown checkerboard suit, miniature chrome thermos' },
+    picks: { character_type: 'Human', gender: 'Male', ethnicity_origin_base: 'Asian', age: '40s', skin_tone: 'Golden', body_type: 'Barrel', height: 'Very Short', proportions: 'No Visible Neck', hair: 'Cube Cut', hair_color: 'Black', wardrobe_style: 'Office Surrealist', accessories: 'Tiny Sunglasses', distinctive_features: 'Miniature Thermos', rendering_style: 'Hyper-Realistic', oddling_name: 'Brick Picnic', oddling_obsession: 'sandwich engineering, tiny thermoses, and lunches that could survive an earthquake', oddling_voice: 'Chaotic expert', oddling_show: 'Human object reviews', oddling_rule: 'short rounded torso, glossy black cube haircut, brown checkerboard suit, miniature chrome thermos' },
   },
   {
     id: 'madame-scissors',
     kind: 'human',
     name: 'Madame Scissors',
-    hook: 'A pear-shaped fashion judge cutting bad silhouettes down to size.',
+    hook: 'A fashion commentator exploring expressive silhouettes and dramatic tailoring.',
     accent: 'SHAPE AUTHORITY',
-    picks: { character_type: 'Human', gender: 'Female', ethnicity_origin_base: 'Indian', age: '50s', skin_tone: 'Warm Brown', body_type: 'Pear', height: 'Tall', proportions: 'Narrow Shoulders', hair: 'Wedge Cut', hair_color: 'Black', wardrobe_style: 'Soft Sculpture', accessories: 'Object Jewellery', distinctive_features: 'Impossible Handbag', rendering_style: 'Hyper-Realistic', oddling_name: 'Madame Scissors', oddling_obsession: 'silhouette crimes, dramatic hems, and the emotional consequences of a weak shoulder line', oddling_voice: 'Tender menace', oddling_show: 'Five-second verdicts', oddling_rule: 'tall pear-shaped silhouette, enormous black triangular wedge hair, pleated rust architectural coat, sharp gold jewellery' },
+    picks: { character_type: 'Human', gender: 'Female', ethnicity_origin_base: 'Indian', age: '50s', skin_tone: 'Warm Brown', body_type: 'Pear', height: 'Tall', proportions: 'Narrow Shoulders', hair: 'Wedge Cut', hair_color: 'Black', wardrobe_style: 'Soft Sculpture', accessories: 'Object Jewellery', distinctive_features: 'Impossible Handbag', rendering_style: 'Hyper-Realistic', oddling_name: 'Madame Scissors', oddling_obsession: 'sculptural silhouettes, dramatic hems, and the expressive details of tailoring', oddling_voice: 'Tender menace', oddling_show: 'Five-second verdicts', oddling_rule: 'tall pear-shaped silhouette, enormous black triangular wedge hair, pleated rust architectural coat, sharp gold jewellery' },
   },
   {
     id: 'pocket-atlas',
@@ -125,9 +127,9 @@ export const ODDLING_ARCHETYPES = [
     id: 'noodle-duke',
     kind: 'human',
     name: 'Noodle Duke',
-    hook: 'A wildly lanky aristocrat solving everyday problems with unnecessary ceremony.',
+    hook: 'A theatrical aristocrat solving everyday problems with elaborate ceremony.',
     accent: 'LONG FORM LIVING',
-    picks: { character_type: 'Human', gender: 'Male', ethnicity_origin_base: 'Middle Eastern', age: '30s', skin_tone: 'Olive', body_type: 'Lanky', height: 'Very Tall', proportions: 'Tiny Torso', hair: 'Spiral Tower', hair_color: 'Black', wardrobe_style: 'Tiny Formalwear', accessories: 'Object Jewellery', distinctive_features: 'Sacred Stapler', rendering_style: 'Hyper-Realistic', oddling_name: 'Noodle Duke', oddling_obsession: 'long corridors, tiny jackets, and turning trivial errands into royal processions', oddling_voice: 'Grand ceremony', oddling_show: 'Tiny field reports', oddling_rule: 'impossibly lanky body with extremely long limbs, towering spiral hair, shrunken burgundy formal jacket, floor-length tie' },
+    picks: { character_type: 'Human', gender: 'Male', ethnicity_origin_base: 'Middle Eastern', age: '30s', skin_tone: 'Olive', body_type: 'Lanky', height: 'Very Tall', proportions: 'Tiny Torso', hair: 'Spiral Tower', hair_color: 'Black', wardrobe_style: 'Tiny Formalwear', accessories: 'Object Jewellery', distinctive_features: 'Sacred Stapler', rendering_style: 'Hyper-Realistic', oddling_name: 'Noodle Duke', oddling_obsession: 'long corridors, tiny jackets, and turning trivial errands into royal processions', oddling_voice: 'Grand ceremony', oddling_show: 'Tiny field reports', oddling_rule: 'tall slender body with long limbs, towering spiral hair, shrunken burgundy formal jacket, floor-length tie' },
   },
   {
     id: 'taffy-tessa',
@@ -135,7 +137,7 @@ export const ODDLING_ARCHETYPES = [
     name: 'Taffy Tessa',
     hook: 'A soft-sculpture rain correspondent dressed for weather that does not exist.',
     accent: 'BUBBLE WARNING',
-    picks: { character_type: 'Human', gender: 'Female', ethnicity_origin_base: 'European', age: '40s', skin_tone: 'Fair', body_type: 'Fat', height: 'Average', proportions: 'Natural', hair: 'Twin Discs', hair_color: 'Brown', wardrobe_style: 'Soft Sculpture', accessories: 'Tiny Handbag', distinctive_features: 'Pocket Weather Station', rendering_style: 'Hyper-Realistic', oddling_name: 'Taffy Tessa', oddling_obsession: 'indoor drizzle, inflatable coats, and forecasts delivered from inside emotional bubbles', oddling_voice: 'Cosmic neighbour', oddling_show: 'Impossible weather', oddling_rule: 'confident fat body, two enormous brown hair discs, glossy orange bubble raincoat, tiny violet handbag' },
+    picks: { character_type: 'Human', gender: 'Female', ethnicity_origin_base: 'European', age: '40s', skin_tone: 'Fair', body_type: 'Fat', height: 'Average', proportions: 'Natural', hair: 'Twin Discs', hair_color: 'Brown', wardrobe_style: 'Soft Sculpture', accessories: 'Tiny Handbag', distinctive_features: 'Pocket Weather Station', rendering_style: 'Hyper-Realistic', oddling_name: 'Taffy Tessa', oddling_obsession: 'indoor drizzle, inflatable coats, and forecasts delivered from inside emotional bubbles', oddling_voice: 'Cosmic neighbour', oddling_show: 'Impossible weather', oddling_rule: 'confident full-bodied adult, two enormous brown hair discs, glossy orange bubble raincoat, tiny violet handbag' },
   },
   {
     id: 'tuesday-triangle',
@@ -149,9 +151,9 @@ export const ODDLING_ARCHETYPES = [
     id: 'colonel-crumb',
     kind: 'human',
     name: 'Colonel Crumb',
-    hook: 'A razor-thin cake marshal reviewing desserts smaller than his sleeves.',
+    hook: 'A ceremonial cake reviewer presenting desserts smaller than his sleeves.',
     accent: 'CRUMB COMMAND',
-    picks: { character_type: 'Human', gender: 'Male', ethnicity_origin_base: 'European', age: '70+', skin_tone: 'Fair', body_type: 'Very Skinny', height: 'Very Tall', proportions: 'Huge Hands', hair: 'Tabletop', hair_color: 'White', wardrobe_style: 'Tiny Formalwear', accessories: 'Object Jewellery', distinctive_features: 'Miniature Cake', rendering_style: 'Hyper-Realistic', oddling_name: 'Colonel Crumb', oddling_obsession: 'tiny cakes, dramatic cuffs, and desserts that maintain military discipline', oddling_voice: 'Grand ceremony', oddling_show: 'Human object reviews', oddling_rule: 'very tall razor-thin older man, enormous white tabletop hair, tiny plum waistcoat, gigantic cream sleeves, miniature cake' },
+    picks: { character_type: 'Human', gender: 'Male', ethnicity_origin_base: 'European', age: '70+', skin_tone: 'Fair', body_type: 'Very Skinny', height: 'Very Tall', proportions: 'Huge Hands', hair: 'Tabletop', hair_color: 'White', wardrobe_style: 'Tiny Formalwear', accessories: 'Object Jewellery', distinctive_features: 'Miniature Cake', rendering_style: 'Hyper-Realistic', oddling_name: 'Colonel Crumb', oddling_obsession: 'tiny cakes, dramatic cuffs, and desserts that maintain military discipline', oddling_voice: 'Grand ceremony', oddling_show: 'Human object reviews', oddling_rule: 'very tall slender older man, enormous white tabletop hair, tiny plum waistcoat, gigantic cream sleeves, miniature cake' },
   },
   {
     id: 'disco-anvil',
@@ -165,9 +167,9 @@ export const ODDLING_ARCHETYPES = [
     id: 'cloudette-forecast',
     kind: 'human',
     name: 'Cloudette Forecast',
-    hook: 'A petite storm auntie predicting social pressure with enormous hair.',
+    hook: 'A weather presenter predicting social pressure with sculptural cloud-shaped hair.',
     accent: 'CLOUDS WITH OPINIONS',
-    picks: { character_type: 'Human', gender: 'Female', ethnicity_origin_base: 'Asian', age: '50s', skin_tone: 'Golden', body_type: 'Curvy', height: 'Short', proportions: 'No Visible Neck', hair: 'Monumental Hair', hair_color: 'White', wardrobe_style: 'Weather Couture', accessories: 'Tiny Sunglasses', distinctive_features: 'Pocket Weather Station', rendering_style: 'Hyper-Realistic', oddling_name: 'Cloudette Forecast', oddling_obsession: 'social pressure systems, indoor fog, and storms caused by unspoken family opinions', oddling_voice: 'Tender menace', oddling_show: 'Impossible weather', oddling_rule: 'petite curvy older woman, monumental white cloud hair, powder-blue weather-map suit, tiny oval sunglasses' },
+    picks: { character_type: 'Human', gender: 'Female', ethnicity_origin_base: 'Asian', age: '50s', skin_tone: 'Golden', body_type: 'Curvy', height: 'Short', proportions: 'No Visible Neck', hair: 'Monumental Hair', hair_color: 'White', wardrobe_style: 'Weather Couture', accessories: 'Tiny Sunglasses', distinctive_features: 'Pocket Weather Station', rendering_style: 'Hyper-Realistic', oddling_name: 'Cloudette Forecast', oddling_obsession: 'social pressure systems, indoor fog, and storms caused by unspoken family opinions', oddling_voice: 'Tender menace', oddling_show: 'Impossible weather', oddling_rule: 'short curvy older woman, monumental white cloud hair, powder-blue weather-map suit, tiny oval sunglasses' },
   },
   {
     id: 'ziggy-receipt',
@@ -181,9 +183,9 @@ export const ODDLING_ARCHETYPES = [
     id: 'baron-boucle',
     kind: 'human',
     name: 'Baron Bouclé',
-    hook: 'A round luxury detective investigating crimes against texture.',
+    hook: 'A luxury detective investigating the stories behind unusual textures.',
     accent: 'TACTILE JUSTICE',
-    picks: { character_type: 'Human', gender: 'Male', ethnicity_origin_base: 'Indian', age: '60s', skin_tone: 'Warm Brown', body_type: 'Fat', height: 'Short', proportions: 'No Visible Neck', hair: 'Donut Halo', hair_color: 'Burgundy', wardrobe_style: 'Soft Sculpture', accessories: 'Tiny Monocle', distinctive_features: 'Impossible Handbag', rendering_style: 'Hyper-Realistic', oddling_name: 'Baron Bouclé', oddling_obsession: 'luxury texture, suspicious upholstery, and tailoring that fails the fingertip test', oddling_voice: 'Dry oracle', oddling_show: 'Human object reviews', oddling_rule: 'short fat older man, giant burgundy donut-halo hair, tiny monocle, velvet jacket and enormous burgundy balloon trousers' },
+    picks: { character_type: 'Human', gender: 'Male', ethnicity_origin_base: 'Indian', age: '60s', skin_tone: 'Warm Brown', body_type: 'Fat', height: 'Short', proportions: 'No Visible Neck', hair: 'Donut Halo', hair_color: 'Burgundy', wardrobe_style: 'Soft Sculpture', accessories: 'Tiny Monocle', distinctive_features: 'Impossible Handbag', rendering_style: 'Hyper-Realistic', oddling_name: 'Baron Bouclé', oddling_obsession: 'luxury texture, suspicious upholstery, and tailoring that fails the fingertip test', oddling_voice: 'Dry oracle', oddling_show: 'Human object reviews', oddling_rule: 'short full-bodied older man, giant burgundy donut-halo hair, tiny monocle, velvet jacket and enormous burgundy balloon trousers' },
   },
   {
     id: 'tall-order',
@@ -191,23 +193,23 @@ export const ODDLING_ARCHETYPES = [
     name: 'Tall Order',
     hook: 'A long-limbed basics critic testing whether ordinary clothes can keep up.',
     accent: 'EXTRA LONG EDITION',
-    picks: { character_type: 'Human', gender: 'Female', ethnicity_origin_base: 'Asian', age: '20s', skin_tone: 'Golden', body_type: 'Very Skinny', height: 'Tall', proportions: 'Natural', hair: 'Tube Tower', hair_color: 'Copper', wardrobe_style: 'Modern Basics', rendering_style: 'Hyper-Realistic', oddling_name: 'Tall Order', oddling_obsession: 'plain white T-shirts, impossible inseams, and door frames that interrupt the outfit', oddling_voice: 'Dry oracle', oddling_show: 'Five-second verdicts', oddling_rule: 'tall very skinny adult with natural human proportions, copper tube hair, fitted white T-shirt, indigo skinny jeans, white sneakers' },
+    picks: { character_type: 'Human', gender: 'Female', ethnicity_origin_base: 'Asian', age: '20s', skin_tone: 'Golden', body_type: 'Very Skinny', height: 'Tall', proportions: 'Natural', hair: 'Tube Tower', hair_color: 'Copper', wardrobe_style: 'Modern Basics', rendering_style: 'Hyper-Realistic', oddling_name: 'Tall Order', oddling_obsession: 'plain white T-shirts, impossible inseams, and door frames that interrupt the outfit', oddling_voice: 'Dry oracle', oddling_show: 'Five-second verdicts', oddling_rule: 'tall very slender adult with natural human proportions, copper tube hair, fitted white T-shirt, indigo skinny jeans, white sneakers' },
   },
   {
     id: 'bubble-barry',
     kind: 'human',
     name: 'Bubble Barry',
-    hook: 'A cheerful denim philosopher proving that basic never means small.',
+    hook: 'A cheerful denim enthusiast finding creative possibilities in everyday outfits.',
     accent: 'BIG HAIR · BASIC FIT',
-    picks: { character_type: 'Human', gender: 'Male', ethnicity_origin_base: 'African', age: '30s', skin_tone: 'Deep', body_type: 'Fat', height: 'Short', proportions: 'No Visible Neck', hair: 'Sphere Cut', hair_color: 'Pink', wardrobe_style: 'Modern Basics', rendering_style: 'Hyper-Realistic', oddling_name: 'Bubble Barry', oddling_obsession: 'perfect T-shirt weight, black denim, and whether a basic outfit can still enter a room first', oddling_voice: 'Cosmic neighbour', oddling_show: 'Human object reviews', oddling_rule: 'short fat man with a large soft round body, enormous bubblegum-pink spherical afro, fitted mustard T-shirt, black tight jeans, ankle boots' },
+    picks: { character_type: 'Human', gender: 'Male', ethnicity_origin_base: 'African', age: '30s', skin_tone: 'Deep', body_type: 'Fat', height: 'Short', proportions: 'No Visible Neck', hair: 'Sphere Cut', hair_color: 'Pink', wardrobe_style: 'Modern Basics', rendering_style: 'Hyper-Realistic', oddling_name: 'Bubble Barry', oddling_obsession: 'perfect T-shirt weight, black denim, and whether a basic outfit can still enter a room first', oddling_voice: 'Cosmic neighbour', oddling_show: 'Human object reviews', oddling_rule: 'short full-bodied man with a rounded build, enormous bubblegum-pink spherical afro, fitted mustard T-shirt, black tight jeans, ankle boots' },
   },
   {
     id: 'max-rep',
     kind: 'human',
     name: 'Max Rep',
-    hook: 'A hyper-muscular fit checker reviewing sleeves under extreme conditions.',
+    hook: 'A sportswear creator reviewing sleeves and stretch fabrics.',
     accent: 'THE STRETCH TEST',
-    picks: { character_type: 'Human', gender: 'Female', ethnicity_origin_base: 'Mixed', age: '30s', skin_tone: 'Warm Brown', body_type: 'Hyper-Muscular', height: 'Tall', proportions: 'Wide Shoulders', hair: 'Sculptural Wave Tower', hair_color: 'Black', wardrobe_style: 'Modern Basics', rendering_style: 'Hyper-Realistic', oddling_name: 'Max Rep', oddling_obsession: 'sleeve tension, stretch denim, and clothes that remain calm around unreasonable muscles', oddling_voice: 'Chaotic expert', oddling_show: 'Five-second verdicts', oddling_rule: 'hyper-muscular woman, towering black S-wave hair sculpture, blue fitted T-shirt, acid-green tight jeans, white trainers' },
+    picks: { character_type: 'Human', gender: 'Female', ethnicity_origin_base: 'Mixed', age: '30s', skin_tone: 'Warm Brown', body_type: 'Hyper-Muscular', height: 'Tall', proportions: 'Wide Shoulders', hair: 'Sculptural Wave Tower', hair_color: 'Black', wardrobe_style: 'Modern Basics', rendering_style: 'Hyper-Realistic', oddling_name: 'Max Rep', oddling_obsession: 'sleeve tension, stretch denim, and clothes designed for a muscular build', oddling_voice: 'Chaotic expert', oddling_show: 'Five-second verdicts', oddling_rule: 'very muscular woman, towering black S-wave hair sculpture, blue fitted T-shirt, acid-green tight jeans, white trainers' },
   },
   {
     id: 'shelf-life',
@@ -278,7 +280,7 @@ export const CHARACTER_GROUPS = [
       ['Trans Man', 'transgender man'],
       ['Trans Woman', 'transgender woman'],
   ] },
-  { id: 'ethnicity_origin_base', tab: 'Face', label: 'Ethnicity / Origin', options: [
+  { id: 'ethnicity_origin_base', tab: 'Face', label: 'Heritage', options: [
       ['African', 'african heritage'],
       ['Asian', 'east asian heritage'],
       ['European', 'european heritage'],
@@ -315,10 +317,10 @@ export const CHARACTER_GROUPS = [
       ['Deep Brown', 'deep dark brown eyes'],
       ['White', 'white eyes'],
       ['Solid Black', 'solid black void eyes'],
-      ['Blind / Empty', 'blind empty white eyes'],
+      ['Blind / Empty', 'pupil-free white eyes as a fictional visual effect'],
   ] },
   { id: 'eyes_type', tab: 'Face', label: 'Eye Type', options: [
-      ['Human', 'normal human eyes'],
+      ['Human', 'human eyes'],
       ['Reptile', 'reptile slit-pupil eyes'],
       ['Mechanical', 'mechanical cyborg eyes'],
   ] },
@@ -333,7 +335,7 @@ export const CHARACTER_GROUPS = [
   ] },
   { id: 'eyes_details', tab: 'Face', label: 'Eye Features', options: [
       ['Heterochromia', 'heterochromia different eye colors'],
-      ['Blind Eye', 'one cloudy blind eye'],
+      ['Blind Eye', 'one cloudy eye'],
       ['Scarred Eye', 'scar running across one eye'],
       ['Glowing Eye', 'glowing magical eyes'],
   ] },
@@ -347,7 +349,7 @@ export const CHARACTER_GROUPS = [
       ['Two Tongues', 'two separate tongues'],
   ] },
   { id: 'ears', tab: 'Face', label: 'Ears', options: [
-      ['Human', 'normal human ears'],
+      ['Human', 'human ears'],
       ['Elf Ears', 'pointed elf ears'],
       ['No Ears', 'no visible ears'],
       ['Wing Ears', 'wing ears'],
@@ -357,16 +359,16 @@ export const CHARACTER_GROUPS = [
       ['Big Horns', 'large curved horns'],
       ['Antlers', 'deer antlers on head'],
   ] },
-  { id: 'skin_conditions', tab: 'Face', label: 'Skin Conditions', options: [
-      ['Vitiligo', 'vitiligo skin condition'],
+  { id: 'skin_conditions', tab: 'Face', label: 'Skin Features', options: [
+      ['Vitiligo', 'skin with vitiligo pigmentation'],
       ['Pigmentation', 'hyperpigmentation'],
       ['Freckles', 'freckled skin'],
       ['Birthmarks', 'visible birthmarks'],
       ['Scars', 'scarred skin'],
-      ['Burns', 'burn marks on skin'],
-      ['Albinism', 'albinism pale white skin'],
+      ['Burns', 'skin with healed burn scars'],
+      ['Albinism', 'a person with albinism and light pigmentation'],
       ['Cracked Skin', 'cracked dry skin texture'],
-      ['Wrinkled', 'wrinkled aged skin'],
+      ['Wrinkled', 'skin with natural age lines'],
   ] },
   { id: 'head_shape', tab: 'Face', label: 'Head Shape', options: [
       ['Long Oval', 'exaggerated long oval head shape'],
@@ -406,7 +408,7 @@ export const CHARACTER_GROUPS = [
   ] },
   { id: 'face_surface_pattern', tab: 'Body', label: 'Skin Pattern', options: [
       ['Solid', 'solid color skin'],
-      ['Stripes', 'exotic striped skin pattern'],
+      ['Stripes', 'striped skin pattern'],
       ['Spots', 'dappled spotted skin'],
       ['Chess', 'checkerboard skin pattern'],
       ['Veins', 'translucent skin with neon veins'],
@@ -417,21 +419,21 @@ export const CHARACTER_GROUPS = [
   { id: 'body_type', tab: 'Body', label: 'Body Shape & Size', options: [
       ['Slim', 'slim slender physique'],
       ['Lean', 'lean toned physique'],
-      ['Very Skinny', 'very skinny adult physique with an extremely narrow silhouette and long slender limbs'],
-      ['Lanky', 'very tall lanky adult with exaggerated long arms and legs'],
+      ['Very Skinny', 'very slender adult build with a narrow silhouette and long limbs'],
+      ['Lanky', 'tall adult with long arms and legs'],
       ['Compact', 'very short compact adult silhouette'],
-      ['Athletic', 'fit athletic body'],
+      ['Athletic', 'athletic build'],
       ['Muscular', 'strong muscular build'],
       ['Hyper-Muscular', 'exaggerated hyper-muscular bodybuilder physique'],
       ['Curvy', 'curvy body type'],
       ['Pear', 'strong pear-shaped silhouette with narrow shoulders and wide hips'],
       ['Inverted Triangle', 'graphic inverted-triangle silhouette with very broad shoulders and a narrow waist'],
-      ['Barrel', 'rounded barrel-shaped torso and sturdy limbs'],
+      ['Barrel', 'rounded torso and sturdy limbs'],
       ['Long Torso', 'exaggeratedly long torso with proportionally short legs'],
       ['Long Legs', 'exaggeratedly long legs with a compact torso'],
-      ['Heavy', 'heavy set build'],
-      ['Fat', 'fat adult with a large soft body, portrayed confidently and respectfully'],
-      ['Skinny', 'very skinny thin build'],
+      ['Heavy', 'broad adult build'],
+      ['Fat', 'full-bodied adult with a large soft build'],
+      ['Skinny', 'slender adult build'],
   ] },
   { id: 'height', tab: 'Body', label: 'Height', options: [
       ['Very Short', 'very short adult stature'],
@@ -444,13 +446,14 @@ export const CHARACTER_GROUPS = [
       ['Natural', 'natural human proportions'],
       ['Tiny Torso', 'tiny compact torso with very long limbs'],
       ['Long Torso', 'very long torso with short limbs'],
-      ['Huge Hands', 'comically oversized hands'],
-      ['Tiny Hands', 'comically tiny hands'],
+      ['Huge Hands', 'large hands relative to the body'],
+      ['Tiny Hands', 'small hands relative to the body'],
       ['Wide Shoulders', 'extremely wide shoulders'],
       ['Narrow Shoulders', 'extremely narrow shoulders'],
       ['Long Neck', 'elegantly exaggerated long neck'],
       ['No Visible Neck', 'head visually tucked into the shoulders'],
   ] },
+  ...CHARACTER_SIZE_GROUPS,
   { id: 'neck', tab: 'Body', label: 'Neck Styling', options: [
       ['Bare', 'bare neck'],
       ['Tower Collar', 'towering architectural collar surrounding the neck'],
@@ -460,32 +463,32 @@ export const CHARACTER_GROUPS = [
       ['Feather Halo', 'soft feather halo around the neck'],
   ] },
   { id: 'left_arm', tab: 'Body', label: 'Left Arm', options: [
-      ['Normal', 'normal left arm'],
-      ['Cute Prosthetic', 'stylish pink prosthetic left arm with cute stickers'],
+      ['Normal', 'biological left arm'],
+      ['Cute Prosthetic', 'pink prosthetic left arm with decorative stickers'],
       ['Robotic', 'robotic left arm'],
       ['Prosthetic', 'prosthetic left arm'],
       ['Mechanical', 'mechanical left arm'],
       ['None', 'no left arm'],
   ] },
   { id: 'right_arm', tab: 'Body', label: 'Right Arm', options: [
-      ['Normal', 'normal right arm'],
-      ['Cute Prosthetic', 'stylish pink prosthetic right arm with cute stickers'],
+      ['Normal', 'biological right arm'],
+      ['Cute Prosthetic', 'pink prosthetic right arm with decorative stickers'],
       ['Robotic', 'robotic right arm'],
       ['Prosthetic', 'prosthetic right arm'],
       ['Mechanical', 'mechanical right arm'],
       ['None', 'no right arm'],
   ] },
   { id: 'left_leg', tab: 'Body', label: 'Left Leg', options: [
-      ['Normal', 'normal left leg'],
-      ['Cute Prosthetic', 'stylish pink prosthetic left leg with cute stickers'],
+      ['Normal', 'biological left leg'],
+      ['Cute Prosthetic', 'pink prosthetic left leg with decorative stickers'],
       ['Robotic', 'robotic left leg'],
       ['Prosthetic', 'prosthetic left leg'],
       ['Mechanical', 'mechanical left leg'],
       ['None', 'no left leg'],
   ] },
   { id: 'right_leg', tab: 'Body', label: 'Right Leg', options: [
-      ['Normal', 'normal right leg'],
-      ['Cute Prosthetic', 'stylish pink prosthetic right leg with cute stickers'],
+      ['Normal', 'biological right leg'],
+      ['Cute Prosthetic', 'pink prosthetic right leg with decorative stickers'],
       ['Robotic', 'robotic right leg'],
       ['Prosthetic', 'prosthetic right leg'],
       ['Mechanical', 'mechanical right leg'],
@@ -557,8 +560,8 @@ export const CHARACTER_GROUPS = [
       ['Impossible Handbag', 'carrying an impractically shaped geometric handbag'],
       ['Tattoos', 'covered in tattoos'],
       ['Piercings', 'multiple piercings'],
-      ['Scarification', 'ritual scarification marks'],
-      ['Symbols / Markings', 'symbolic tribal markings'],
+      ['Scarification', 'decorative scar patterns'],
+      ['Symbols / Markings', 'original geometric body art with fictional symbols'],
       ['Cyber Markings', 'cyberpunk circuit markings'],
   ] },
   { id: 'distinctive_features', tab: 'Style', label: 'Signature Prop', options: [
@@ -613,7 +616,7 @@ export function oddlingIdentity(picks) {
   const voice = optionPhrase(ODDLING_TONES, picks?.oddling_voice);
   const show = optionPhrase(ODDLING_SHOWS, picks?.oddling_show);
   if (name) parts.push(`fictional creator named ${name}`);
-  if (obsession) parts.push(`obsessed with ${obsession}`);
+  if (obsession) parts.push(`interested in ${obsession}`);
   if (voice) parts.push(voice);
   if (show) parts.push(show);
   if (rule) parts.push(`immutable visual canon: ${rule}`);

@@ -8,12 +8,12 @@ import {
 export const ODDLING_STUDIO_SECTIONS = [
   { id: 'signal', label: 'Character signal', hint: 'Human-first, with other beings optional', groupIds: ['character_type'] },
   { id: 'identity', label: 'Identity', hint: 'Adult age, gender, heritage and skin tone', groupIds: ['gender', 'ethnicity_origin_base', 'age', 'skin_tone'] },
-  { id: 'build', label: 'Build & proportions', hint: 'Shape, size, height and graphic proportions', groupIds: ['body_type', 'height', 'proportions'] },
+  { id: 'build', label: 'Build & proportions', hint: 'Body, height, hands, feet and proportions', groupIds: ['body_type', 'height', 'proportions', 'hand_size', 'foot_size'] },
   { id: 'hair', label: 'Hair sculpture', hint: 'Geometry, scale and color', groupIds: ['hair', 'hair_color'] },
   { id: 'head', label: 'Head & eyes', hint: 'Face silhouette, neck, eye shape and color', groupIds: ['head_shape', 'neck', 'eye_shape', 'eye_color'] },
   { id: 'features', label: 'Face details', hint: 'Makeup, facial hair and expressive details', groupIds: ['eyes_type', 'eyes_details', 'mouth', 'ears', 'horns', 'skin_conditions', 'face_features', 'facial_hair'] },
   { id: 'body-details', label: 'Body details', hint: 'Material, pattern and limb design', groupIds: ['face_skin_material', 'face_surface_pattern', 'left_arm', 'right_arm', 'left_leg', 'right_leg'] },
-  { id: 'style', label: 'Style world', hint: 'Wardrobe, wearable oddity, prop and finish', groupIds: ['wardrobe_style', 'accessories', 'distinctive_features', 'rendering_style'] },
+  { id: 'style', label: 'Style world', hint: 'Wardrobe, accessories, prop and finish', groupIds: ['wardrobe_style', 'accessories', 'distinctive_features', 'rendering_style'] },
 ];
 
 export const ODDLING_MOTIONS = [
@@ -47,9 +47,9 @@ const ODDLING_GALLERY_SHEETS = [
 ];
 
 export const ODDLING_PRESET_SOURCES = [
-  { id: 'body', label: 'Body chaos', ids: ODDLING_GALLERY_SHEETS[0].ids },
-  { id: 'silhouettes', label: 'Extreme silhouettes', ids: ODDLING_GALLERY_SHEETS[2].ids },
-  { id: 'fashion', label: 'Fashion disasters', ids: ODDLING_GALLERY_SHEETS[3].ids },
+  { id: 'body', label: 'Character collection', ids: ODDLING_GALLERY_SHEETS[0].ids },
+  { id: 'silhouettes', label: 'Distinctive silhouettes', ids: ODDLING_GALLERY_SHEETS[2].ids },
+  { id: 'fashion', label: 'Statement fashion', ids: ODDLING_GALLERY_SHEETS[3].ids },
   { id: 'hair', label: 'Hair sculptures', ids: ODDLING_GALLERY_SHEETS[4].ids },
   { id: 'denim', label: 'Tee + tight jeans', ids: ODDLING_GALLERY_SHEETS[5].ids },
   { id: 'oddities', label: 'Surreal characters', ids: ODDLING_GALLERY_SHEETS[1].ids },
