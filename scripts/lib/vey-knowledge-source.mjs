@@ -5,6 +5,7 @@ import path from 'node:path';
 const PAGE_FILE = /\/page\.(?:js|jsx|mjs|tsx)$/;
 const SOURCE_EXTENSIONS = ['.js', '.jsx', '.mjs', '.tsx'];
 const DOCUMENT_SOURCES = Object.freeze([
+  'docs/product/ai-mascot.md',
   'docs/product/APP-FLOW.md',
   'docs/product/film-studio.md',
   'docs/social-publisher/01-product-spec.md',
