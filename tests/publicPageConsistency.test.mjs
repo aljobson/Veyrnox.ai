@@ -31,12 +31,17 @@ test('there is one public nav, in one order', () => {
     for (const [f, src] of SOURCES) assert.doesNotMatch(src, /\bWideNav\b/, `${f} still has a second nav`);
     const nav = read('app/veyrnox/_components/NavBar.js');
     const marketing = nav.slice(nav.indexOf('export function MarketingNav'), nav.indexOf('export function AppNav'));
-    assert.match(marketing, /NAV_CATEGORIES\.map\(/, 'the links on the bar');
-    assert.match(marketing, /<MobileMenu items=\{MOBILE_NAV_CATEGORIES\} className="min-\[1700px\]:hidden" \/>/, 'the compact menu uses the mobile-first order');
+    assert.match(marketing, /COMPACT_NAV_CATEGORIES\.map\(/, 'the stable desktop links on the bar');
+    assert.match(marketing, /items=\{MOBILE_NAV_CATEGORIES\}[\s\S]*buttonLabel="More navigation"/, 'the compact menu exposes the complete mobile-first order');
     assert.match(nav, /const MOBILE_NAV_CATEGORIES = \[\s*\.\.\.NAV_CATEGORIES\.filter\(\(item\) => item\.href === '\/app\/oddlings'\),[\s\S]*\.\.\.NAV_CATEGORIES\.filter\(\(item\) => item\.href === '\/#faq'\),\s*\];/, 'the phone menu leads with Oddlings and ends with FAQ');
     assert.doesNotMatch(marketing, /includeStudio/, 'the phone menu must not put app links ahead of the public nav');
-    // Ten links, search and the account buttons need at least 1700px.
-    assert.match(marketing, /<nav aria-label="Primary" className="hidden min-\[1700px\]:flex /);
+    // A compact real nav is visible on laptops and wide screens. The menu
+    // keeps the rest reachable without a second row colliding with controls.
+    assert.match(marketing, /<nav aria-label="Primary" className="hidden xl:flex /);
+    assert.equal((marketing.match(/<nav aria-label="Primary"/g) || []).length, 1,
+        'the header never renders two competing primary navigation rows');
+    assert.doesNotMatch(marketing, /href="\/app\/oddlings"[\s\S]*min-\[1700px\]:hidden[\s\S]*>\s*Oddlings\s*<\/Link>/,
+        'the compact header does not add a duplicate Oddlings pill beside the nav controls');
     // A home-page section is a plain link: the browser glides to it on the home page.
     assert.match(marketing, /const Item = section \? 'a' : Link;/);
     assert.match(read('app/veyrnox/_components/MobileMenu.js'), /const Item = it\.href\.includes\('#'\) \? 'a' : Link;/);

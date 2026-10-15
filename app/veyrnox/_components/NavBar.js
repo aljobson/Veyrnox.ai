@@ -23,8 +23,16 @@ const MOBILE_NAV_CATEGORIES = [
   ...NAV_CATEGORIES.filter((item) => item.href === '/#faq'),
 ];
 
+const COMPACT_NAV_CATEGORIES = NAV_CATEGORIES.filter((item) => [
+  '/app/oddlings',
+  '/#explore',
+  '/#models',
+  '/presets',
+  '/pricing',
+].includes(item.href));
+
 // The public site's nav: every marketing page, the home page included. One
-// destination list, with a compact mobile order that leads with Cinema and
+// destination list, with a compact menu order that leads with Oddlings and
 // leaves FAQ at the bottom. Desktop keeps its established order.
 export function MarketingNav({ hideAnnouncementOnMobile = false }) {
   // Rewrites serve /veyrnox/* at /*, so the browser path has no prefix.
@@ -39,15 +47,11 @@ export function MarketingNav({ hideAnnouncementOnMobile = false }) {
         <Logo className="min-[360px]:hidden" />
         <Logo wordmark className="hidden min-[360px]:inline-flex" />
       </Link>
-      {/* Ten destinations, search and account controls need at least 1700px.
-          Below that the complete list stays in the menu while the
-          featured Oddlings shortcut remains visible in the bar. */}
-      <nav aria-label="Primary" className="hidden min-[1700px]:flex flex-1 min-w-0 items-center gap-1 text-[13px] font-semibold">
-        {NAV_CATEGORIES.map((it) => {
-          // A section of the home page (`/#faq`) is never the current page,
-          // and it is a plain link: on the home page the browser glides to
-          // it, and from another page the home page loads and SectionJump
-          // lands on it.
+      {/* Keep the five primary destinations visible at ordinary desktop
+          widths. The adjacent menu carries the complete list without ever
+          forcing the logo or account controls out of the bar. */}
+      <nav aria-label="Primary" className="hidden xl:flex flex-1 min-w-0 items-center gap-0.5 text-[12px] font-semibold">
+        {COMPACT_NAV_CATEGORIES.map((it) => {
           const section = it.href.includes('#');
           const active = !section && path.startsWith(it.href);
           const featured = it.featured === true;
@@ -57,7 +61,7 @@ export function MarketingNav({ hideAnnouncementOnMobile = false }) {
               key={it.href}
               href={it.href}
               aria-current={active ? 'page' : undefined}
-              className={`inline-flex shrink-0 items-center gap-2 rounded-full px-3.5 py-2 transition-colors ${
+              className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-2 transition-colors ${
                 active
                   ? 'bg-vx-accent text-vx-accent-ink'
                   : featured
@@ -71,21 +75,14 @@ export function MarketingNav({ hideAnnouncementOnMobile = false }) {
           );
         })}
       </nav>
-      <div className="flex flex-1 min-[1700px]:flex-none items-center justify-end gap-1 sm:gap-2 shrink-0">
-        <Link
-          href="/app/oddlings"
-          className="inline-flex h-10 items-center gap-2 rounded-full border border-vx-accent/50 bg-vx-accent/10 px-3 text-[13px] font-extrabold text-vx-accent hover:bg-vx-accent/20 min-[1700px]:hidden"
-        >
-          <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-current" />
-          Oddlings
-        </Link>
+      <div className="flex flex-1 xl:flex-none items-center justify-end gap-1 sm:gap-2 shrink-0">
         <SiteSearch className="hidden sm:inline-flex" />
-        {/* Below 1700px the theme switch is inside the menu. */}
-        <ThemeToggle className="hidden min-[1700px]:inline-flex" />
+        <ThemeToggle className="hidden xl:inline-flex" />
         <NavAuthButtons />
-        {/* Below 1700px the links above are hidden: without this the only way
-            off the page was the browser back button. */}
-        <MobileMenu items={MOBILE_NAV_CATEGORIES} className="min-[1700px]:hidden" />
+        <MobileMenu
+          items={MOBILE_NAV_CATEGORIES}
+          buttonLabel="More navigation"
+        />
       </div>
       </div>
     </header>
@@ -175,10 +172,10 @@ export function AppNav({ balance, active = 'explore', readAccount = true }) {
       <Link
         href="/app"
         aria-label="Veyrnox studio — explore"
-        className="hidden items-center gap-2.5 shrink-0 sm:flex"
+        className={`items-center gap-2.5 shrink-0 ${account ? 'hidden sm:flex' : 'flex'}`}
       >
-        {/* On phones the Studio menu includes Explore; the mark yields so
-            Oddlings and the account controls stay immediately reachable. */}
+        {/* On signed-in phones the Studio menu carries every destination, so
+            the mark yields to the balance and account controls. */}
         <Logo className="sm:hidden" />
         <Logo wordmark className="hidden sm:inline-flex" />
       </Link>
@@ -189,18 +186,6 @@ export function AppNav({ balance, active = 'explore', readAccount = true }) {
         navLabel="Studio"
         className="lg:hidden"
       />
-      <Link
-        href="/app/oddlings"
-        aria-current={active === 'oddlings' ? 'page' : undefined}
-        className={`inline-flex h-10 items-center gap-2 rounded-full border px-3 text-[13px] font-extrabold lg:hidden ${
-          active === 'oddlings'
-            ? 'border-vx-accent bg-vx-accent text-vx-accent-ink'
-            : 'border-vx-accent/50 bg-vx-accent/10 text-vx-accent hover:bg-vx-accent/20'
-        }`}
-      >
-        <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-current" />
-        Oddlings
-      </Link>
       <nav ref={tabs} aria-label="Studio" className="hidden lg:flex min-w-0 overflow-x-auto gap-0.5 sm:gap-1 text-[12px] sm:text-sm font-semibold">
         {items.map((it) => {
           const current = active === it.key;
