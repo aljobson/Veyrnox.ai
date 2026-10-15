@@ -1,4 +1,5 @@
 import { withReticle } from '@reticlehq/next';
+import { withPostHogConfig } from '@posthog/nextjs-config';
 import { buildConfig } from './packages/security/config.js';
 import { oauthProvidersFor } from './packages/security/environments.js';
 const identityConfig = buildConfig(process.env);
@@ -34,6 +35,9 @@ const nextConfig = {
     // the pre-CAPTCHA behaviour. Never empty this while Supabase CAPTCHA is on:
     // every email/password sign-in would fail (ADR-0026).
     NEXT_PUBLIC_TURNSTILE_SITE_KEY: '0x4AAAAAAE-nahDRUDwD5HEx',
+    // Public PostHog project token. Empty keeps analytics, replay, consent UI,
+    // proxying and error delivery completely dormant.
+    NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY || '',
     // Edge middleware bakes env at build time.
     SUPABASE_URL: identityConfig.supabaseUrl,
     APP_ENV: identityConfig.appEnv,
@@ -123,4 +127,30 @@ const nextConfig = {
   },
 };
 
-export default withReticle(nextConfig);
+const postHogSourceMapsEnabled = Boolean(
+  process.env.NEXT_PUBLIC_POSTHOG_KEY?.startsWith('phc_')
+  && process.env.POSTHOG_PERSONAL_API_KEY
+  && process.env.POSTHOG_PROJECT_ID
+);
+
+const reticleConfig = withReticle(nextConfig);
+const postHogConfig = {
+  personalApiKey: process.env.POSTHOG_PERSONAL_API_KEY || '',
+  projectId: process.env.POSTHOG_PROJECT_ID,
+  host: 'https://eu.posthog.com',
+  sourcemaps: {
+    enabled: postHogSourceMapsEnabled,
+    deleteAfterUpload: true,
+    releaseName: 'veyrnox-web',
+    releaseVersion: process.env.GITHUB_SHA,
+    releaseMode: 'event',
+  },
+};
+
+// PostHog must be the outermost wrapper when enabled so its production-
+// compile hook can upload browser source maps. Keep the ordinary config object
+// shape when credentials are absent; local builds and tests then generate and
+// send nothing and existing config consumers do not become async.
+export default postHogSourceMapsEnabled
+  ? withPostHogConfig(reticleConfig, postHogConfig)
+  : reticleConfig;

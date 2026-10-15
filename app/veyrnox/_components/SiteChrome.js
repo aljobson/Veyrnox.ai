@@ -31,10 +31,13 @@ const noticeUnread = () => {
 };
 const noticeOnServer = () => false;
 
-export default function SiteChrome() {
+export default function SiteChrome({ analyticsEnabled = false }) {
   const unread = useSyncExternalStore(never, noticeUnread, noticeOnServer);
   const [acked, setAcked] = useState(false);
-  const noticeOpen = unread && !acked;
+  // The analytics consent panel includes the necessary-storage wording. Keep
+  // this older notice only while PostHog is not configured, so visitors never
+  // receive two overlapping or contradictory privacy notices.
+  const noticeOpen = !analyticsEnabled && unread && !acked;
   // The chat composer sits at the bottom edge, so the buttons ride above it there.
   const onChat = (usePathname() || '').startsWith('/app/chat');
 
@@ -174,10 +177,8 @@ function FloatingActions({ raised = false, tucked = false }) {
 }
 
 /* ─── Browser-storage notice ───
-   Veyrnox sets no advertising or analytics cookies — the session and a
-   couple of preferences live in localStorage, which is exempt from consent
-   as strictly necessary. So this tells the truth and offers a dismiss; it
-   does not pretend to gate consent it does not need. */
+   Used only when optional analytics is not configured. When it is configured,
+   PostHogManager owns the combined storage and consent notice instead. */
 function StorageNotice({ onDismiss }) {
   return (
     <div

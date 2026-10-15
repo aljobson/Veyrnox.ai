@@ -5,6 +5,8 @@
 // typed GatewayError otherwise so callers can branch on .code.
 
 import { getFreshAccessToken, getSession, clearSession } from '../../lib/authClient.js';
+import { captureOperationalError } from '../../lib/analyticsClient.js';
+import { normaliseGatewayPath } from '../../lib/analyticsPrivacy.js';
 
 // A Frozen account (Chargeback, #97): generating and buying are refused.
 export const ACCOUNT_PAUSED_COPY =
@@ -59,7 +61,16 @@ export async function gatewayFetch(path, init = {}) {
   if (init.body && typeof init.body === 'string' && !headers['content-type']) {
     headers['content-type'] = 'application/json';
   }
-  const res = await fetch(`/api/v1${path}`, { ...init, headers });
+  let res;
+  try {
+    res = await fetch(`/api/v1${path}`, { ...init, headers });
+  } catch {
+    captureOperationalError('gateway_network_error', {
+      route: normaliseGatewayPath(path),
+      method: String(init.method || 'GET').toUpperCase(),
+    });
+    throw new GatewayError('network unavailable', { code: 'network_error' });
+  }
 
   assertCurrentAccount();
   if (res.status === 401) {
@@ -79,6 +90,13 @@ export async function gatewayFetch(path, init = {}) {
   try { body = await res.json(); } catch { /* no body */ }
   assertCurrentAccount();
   if (!res.ok) {
+    if (res.status >= 500) {
+      captureOperationalError('gateway_server_error', {
+        route: normaliseGatewayPath(path),
+        method: String(init.method || 'GET').toUpperCase(),
+        status: res.status,
+      });
+    }
     throw new GatewayError(body?.error || `HTTP ${res.status}`, {
       status: res.status,
       code: body?.error || 'gateway_error',

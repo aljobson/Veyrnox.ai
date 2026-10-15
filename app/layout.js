@@ -6,6 +6,7 @@ import './globals.css';
 import localFont from "next/font/local";
 import ToasterMount from '../components/ToasterMount';
 import AuthGate from '../components/AuthGate.jsx';
+import AnalyticsProvider, { analyticsEnabled } from '../components/AnalyticsProvider.jsx';
 import SiteChrome from './veyrnox/_components/SiteChrome';
 import { OG_IMAGE, ORG_LD, JsonLd } from './seo';
 
@@ -55,17 +56,20 @@ export const viewport = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en" data-scroll-behavior="smooth" className={inter.variable}>
-      <body>{process.env.NODE_ENV === 'development' ? <ReticleDev /> : null}
-        <a href="#main" className="vx-skip rounded-full bg-vx-accent px-4 py-2 text-sm font-extrabold text-vx-accent-ink">
-          Skip to content
-        </a>
-        {/* #main is the page's own Main (app/veyrnox/_components/Main.js): it
-            starts after the nav, so this link skips it. */}
-        {children}
-        <SiteChrome />
-        <ToasterMount />
-        <AuthGate />
-        <JsonLd data={ORG_LD} />
+      <body>
+        <AnalyticsProvider>
+          {process.env.NODE_ENV === 'development' ? <ReticleDev /> : null}
+          <a href="#main" className="vx-skip rounded-full bg-vx-accent px-4 py-2 text-sm font-extrabold text-vx-accent-ink">
+            Skip to content
+          </a>
+          {/* #main is the page's own Main (app/veyrnox/_components/Main.js): it
+              starts after the nav, so this link skips it. */}
+          {children}
+          <SiteChrome analyticsEnabled={analyticsEnabled} />
+          <ToasterMount />
+          <AuthGate />
+          <JsonLd data={ORG_LD} />
+        </AnalyticsProvider>
       </body>
     </html>
   );
