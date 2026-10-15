@@ -21,7 +21,8 @@ import VeyTaskGuide from './VeyTaskGuide';
 import { getJourney } from '../_lib/veyJourneyStore';
 import { journeyStep } from '../../../lib/veyJourney';
 import useVeyPointer from '../_lib/useVeyPointer';
-import { VEY_SIZE as CHARACTER } from '../../../lib/veyPointer';
+import useVeyDrag from '../_lib/useVeyDrag';
+import { clampVeyPosition, VEY_SIZE as CHARACTER } from '../../../lib/veyPointer';
 
 const HOME = { x: 18, y: 0 };
 const WELCOME = 'Hi, I’m Vey. Ask me how to use Veyrnox and I’ll show you where to go.';
@@ -64,6 +65,7 @@ export default function MascotAssistant() {
   const [answerSource, setAnswerSource] = useState(null);
   const [feedback, setFeedback] = useState(null);
   const [position, setPosition] = useState(HOME);
+  const [manualPosition, setManualPosition] = useState(null);
   const [facing, setFacing] = useState(1);
   const [pendingTarget, setPendingTarget] = useState(null);
   const [pendingSavedId, setPendingSavedId] = useState(null);
@@ -87,11 +89,11 @@ export default function MascotAssistant() {
     setActionPhase('none');
   }, []);
 
-  const moveMascot = useCallback((nextPosition) => {
+  const moveMascot = useCallback((nextPosition, instant = false) => {
     window.clearTimeout(travelTimerRef.current);
-    setTravelling(!reduceMotion);
+    setTravelling(!reduceMotion && !instant);
     setPosition(nextPosition);
-    if (reduceMotion) return;
+    if (reduceMotion || instant) return;
     travelTimerRef.current = window.setTimeout(() => setTravelling(false), 760);
   }, [reduceMotion]);
 
@@ -109,18 +111,21 @@ export default function MascotAssistant() {
     }, travelDelay);
   }, [pathname, reduceMotion]);
 
-  const { activeTarget, highlight, hand, point, locate: locateTarget, clear: clearPointer } = useVeyPointer({ reduceMotion, moveMascot, setFacing, activateTarget, clearAction });
+  const resetPosition = useCallback(() => setManualPosition(null), []);
+  const drag = useVeyDrag({ onStart: clearAction, onReset: resetPosition,
+    onMove: (next) => { window.clearTimeout(travelTimerRef.current); setTravelling(false); setManualPosition(next); setPosition(next); } });
+  const { activeTarget, highlight, hand, point, locate: locateTarget, clear: clearPointer } = useVeyPointer({ reduceMotion, moveMascot, setFacing, activateTarget, clearAction, manualPosition });
   const clearTarget = useCallback(() => {
     window.clearTimeout(timerRef.current);
     clearAction(); clearPointer(); setPendingTarget(null);
   }, [clearAction, clearPointer]);
 
   useEffect(() => {
-    const update = () => { if (!activeTarget) setPosition(open ? perchPosition() : homePosition()); };
+    const update = () => { if (!activeTarget) setPosition(manualPosition ? clampVeyPosition(manualPosition, { width: innerWidth, height: innerHeight }) : open ? perchPosition() : homePosition()); };
     const frame = requestAnimationFrame(update);
     window.addEventListener('resize', update);
     return () => { cancelAnimationFrame(frame); window.removeEventListener('resize', update); };
-  }, [activeTarget, homePosition, open, perchPosition]);
+  }, [activeTarget, homePosition, open, perchPosition, manualPosition]);
 
   const showTarget = useCallback((id, options = {}) => {
     const definition = HELP_TARGETS[id];
@@ -310,7 +315,7 @@ export default function MascotAssistant() {
 
   return (
     <>
-      <VeyTaskGuide visible={open} pathname={pathname} onPoint={showTarget} onStop={clearTarget} onActiveChange={setJourneyActive} onAsk={ask} />
+      <VeyTaskGuide visible={open} pathname={pathname} onPoint={showTarget} onStop={clearTarget} onActiveChange={setJourneyActive} onAsk={ask} manualPosition={!!manualPosition} onResetPosition={resetPosition} />
       <AnimatePresence>
         {highlight && (
           <motion.div
@@ -348,40 +353,35 @@ export default function MascotAssistant() {
         data-testid="assistant-mascot"
         data-targeting={activeTarget || undefined}
         data-mood={mood}
+        data-position-mode={manualPosition ? 'manual' : 'auto'}
+        data-dragging={drag.dragging}
         className="pointer-events-none fixed left-0 top-0 z-[61]"
         animate={{ x: position.x, y: position.y }}
-        transition={reduceMotion ? { duration: 0 } : { type: 'spring', stiffness: 115, damping: 18, mass: 0.8 }}
+        transition={reduceMotion || manualPosition ? { duration: 0 } : { type: 'spring', stiffness: 115, damping: 18, mass: 0.8 }}
       >
         <motion.button
           ref={launcherRef}
           type="button"
           aria-label={open ? 'Close Veyrnox helper' : 'Ask Veyrnox helper'}
           aria-expanded={open}
+          aria-describedby="vey-position-help"
+          {...drag.handlers}
           onClick={() => {
             setOpen((value) => !value);
             captureProductEvent('helper_toggle', { open: !open, route: pathname });
           }}
-          className="pointer-events-auto group relative block rounded-[17px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vx-accent"
-          animate={activeTarget || reduceMotion ? { y: 0 } : travelling
+          className="pointer-events-auto touch-none select-none cursor-grab active:cursor-grabbing group relative block rounded-[17px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vx-accent"
+          animate={activeTarget || manualPosition || reduceMotion ? { y: 0 } : travelling
             ? { y: [0, -5, 0] }
             : { y: [0, -3, 0] }}
           transition={{ duration: travelling ? 0.52 : 2.8, repeat: Infinity, ease: 'easeInOut' }}
           style={{ width: CHARACTER.width, height: CHARACTER.height, scaleX: facing }}
         >
+          <span id="vey-position-help" className="sr-only">Drag Vey to position it. With Vey focused, use Alt and arrow keys to move, or Escape to return to automatic positioning.</span>
           <span className="absolute inset-x-4 bottom-2 h-5 rounded-full bg-black/35 blur-md" aria-hidden="true" />
           <span className="relative block h-full w-full transition-[filter] group-hover:brightness-110">
             <VeyCharacter pose={mood} reducedMotion={reduceMotion} hand={hand} />
           </span>
-          {!open && !activeTarget && !busy && (
-            <span className="absolute -right-2 top-0 rounded-full border border-vx-border bg-vx-panel px-2.5 py-1 font-vx-mono text-[10px] font-bold tracking-[0.08em] text-vx-accent shadow-lg" style={{ transform: `scaleX(${facing})` }}>
-              ASK VEY
-            </span>
-          )}
-          {(busy || activeTarget) && (
-            <span className="absolute -right-3 top-0 rounded-full border border-vx-accent/40 bg-vx-panel px-2.5 py-1 font-vx-mono text-[9px] font-bold tracking-[0.08em] text-vx-accent shadow-lg" style={{ transform: `scaleX(${facing})` }}>
-              {actionPhase === 'tapping' ? 'TAPPING' : travelling ? 'MOVING' : busy ? 'THINKING' : 'POINTING'}
-            </span>
-          )}
         </motion.button>
       </motion.div>
 

@@ -11,7 +11,7 @@ import { REVEAL_SAVED_ODDLING } from '../../../lib/savedOddlingHelp';
 const EMPTY = { task: null, view: {} };
 const pill = 'min-h-11 rounded-full border border-vx-border px-3 py-2 text-xs font-semibold hover:border-vx-accent focus-visible:outline-2 focus-visible:outline-vx-accent disabled:opacity-40 sm:min-h-0';
 
-export default function VeyTaskGuide({ visible, pathname, onPoint, onStop, onActiveChange, onAsk }) {
+export default function VeyTaskGuide({ visible, pathname, onPoint, onStop, onActiveChange, onAsk, manualPosition, onResetPosition }) {
   const { task, view } = useSyncExternalStore(subscribeJourney, getJourney, () => EMPTY);
   const [choosing, setChoosing] = useState(false);
   const [chatting, setChatting] = useState(false);
@@ -90,11 +90,13 @@ export default function VeyTaskGuide({ visible, pathname, onPoint, onStop, onAct
       <div id="vey-guide-secondary" className={secondary}>
         {jobId && <p className="mt-2 break-all font-vx-mono text-[10px] text-vx-fg-muted">Tracked job: {jobId}{task.phase === 'image' ? ' · first image if generating a batch' : ''}</p>}
         <div className="mt-2 flex flex-wrap gap-2">
+          {manualPosition && <button type="button" className={pill} onClick={onResetPosition}>Reset Vey position</button>}
           <button type="button" className={`${pill} sm:hidden`} onClick={() => setSide(side === 'right' ? 'left' : 'right')}>Move guide</button>
           <button type="button" className={pill} onClick={() => { setChatting(true); onAsk('What is the next step in my current task?'); }}>Ask about this step</button>
           <button type="button" className={pill} onClick={() => { updateJourney(null); setDetailsKey(null); setChoosing(false); setChatting(false); publishJourneyView({ handedOff: false }); onStop(); }}>End walkthrough</button>
         </div>
         <p className="mt-3 text-[11px] text-vx-fg-muted">You confirm rights and press Generate. Closing Vey pauses the guide, not a submitted job.</p>
+        <p className="mt-2 text-[11px] text-vx-fg-muted">Drag Vey to move it anywhere on screen. Your placement stays until you reset it or reload.</p>
       </div>
     </>}
   </section>;

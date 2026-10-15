@@ -88,6 +88,11 @@
   },
   "decisions": [
     {
+      "id": "vey-manual-position",
+      "decision": "Drag the existing touch-sized Vey launcher to position the mascot. Taps still toggle help; keyboard Alt+arrows move and Escape resets. Manual placement lasts until reset or reload, with precise pointing retained. No floating text badges or tooltips around the mascot; retain screen-reader labels and the separate walkthrough card.",
+      "source": "User request to position Vey around the screen during the mobile Max Rep walkthrough."
+    },
+    {
       "id": "vey-mobile-guide-compact",
       "decision": "Below 640px, Vey uses a compact step card with two-line guidance and primary actions. More reveals secondary controls and full guidance; desktop remains expanded. Keep highlighted controls above the panel and preserve touch-sized actions.",
       "source": "User request: make the mobile guidance panel smaller so it does not cover controls or the image."

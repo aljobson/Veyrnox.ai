@@ -4,6 +4,13 @@ import { readFile } from 'node:fs/promises';
 
 const root = new URL('../', import.meta.url);
 
+test('Vey has no floating text badges but retains accessible launcher and movement instructions', async () => {
+    const source = await readFile(new URL('app/veyrnox/_components/MascotAssistant.jsx', root), 'utf8');
+    assert.doesNotMatch(source, /ASK VEY|POINTING|MOVING|THINKING|TAPPING/);
+    assert.match(source, /aria-label=\{open \? 'Close Veyrnox helper' : 'Ask Veyrnox helper'\}/);
+    assert.match(source, /id="vey-position-help" className="sr-only"/);
+});
+
 test('Vey is articulated into independently animated body parts', async () => {
     const source = await readFile(new URL('app/veyrnox/_components/VeyCharacter.jsx', root), 'utf8');
     for (const part of ['head', 'left-arm', 'left-hand', 'right-arm', 'right-hand', 'left-leg', 'right-leg', 'eyes']) {

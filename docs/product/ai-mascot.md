@@ -6,6 +6,8 @@ Vey is the animated helper mounted once in the Veyrnox product layout, so it is 
 
 Vey is a code-native articulated character rather than a single moving image. Its head, eyes, arms, hands, legs and feet animate independently across six product states: idle, listening, walking, thinking, pointing and tapping. Vey turns toward the selected control and respects the user's reduced-motion preference.
 
+Drag Vey's body with touch or a mouse to position it on screen. A tap still opens or closes help. Manual placement stays through walkthrough steps until reset or reload, stays within the viewport, and preserves exact fingertip pointing. In the walkthrough, open More on mobile and choose Reset Vey position to restore automatic placement. Keyboard users can focus Vey, hold Alt and press arrow keys to move (Shift moves farther), or press Escape to reset. Dragging never confirms rights, submits a generation, or spends Credits.
+
 When Vey directs someone to a control, it walks beside the target, points with its hand and keeps a pulsing outline around the control. For a reviewed reversible control, Vey shows a tap ripple and hand-tap animation before activating it. The user must first choose Vey's suggested action; Vey never clicks arbitrary page content.
 
 ## Knowledge model
