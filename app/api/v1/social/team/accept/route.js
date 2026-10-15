@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { socialPostWriteLimit } from '../../../../../../lib/socialPostWriteLimit.js';
 import { socialTeamsEnabled } from '../../../../../../lib/social/publishFeature.js';
-import { verifyTeamInviteToken } from '../../../../../../lib/social/teamInviteToken.js';
+import { teamInviteSigningSecret, verifyTeamInviteToken } from '../../../../../../lib/social/teamInviteToken.js';
 import { envConfig, rpc, SupabaseError } from '../../../../../../packages/db/supabase-client.js';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -10,9 +10,10 @@ export async function POST(req) {
     if (!UUID_RE.test(authId || '')) return NextResponse.json({ error: 'not_authenticated' }, { status: 401 });
     if (!socialTeamsEnabled()) return NextResponse.json({ error: 'teams_not_open' }, { status: 404 });
     const cfg = envConfig();
-    if (!cfg.supabaseUrl || !cfg.serviceRoleKey || !process.env.SOCIAL_TEAM_INVITE_SECRET) return NextResponse.json({ error: 'teams_not_configured' }, { status: 503 });
+    const signingSecret = teamInviteSigningSecret();
+    if (!cfg.supabaseUrl || !cfg.serviceRoleKey || !signingSecret) return NextResponse.json({ error: 'teams_not_configured' }, { status: 503 });
     let body; try { body = await req.json(); } catch { return NextResponse.json({ error: 'invalid_body' }, { status: 400 }); }
-    const inviteId = await verifyTeamInviteToken(body?.token, process.env.SOCIAL_TEAM_INVITE_SECRET);
+    const inviteId = await verifyTeamInviteToken(body?.token, signingSecret);
     if (!inviteId) return NextResponse.json({ error: 'invalid_or_expired_link' }, { status: 404 });
     const limited = await socialPostWriteLimit(authId, cfg); if (limited) return limited;
     try {

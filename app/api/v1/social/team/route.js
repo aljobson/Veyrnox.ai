@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { accountReadLimit } from '../../../../../lib/accountReadLimit.js';
-import { createTeamInviteToken } from '../../../../../lib/social/teamInviteToken.js';
+import { createTeamInviteToken, teamInviteSigningSecret } from '../../../../../lib/social/teamInviteToken.js';
 import { socialTeamsEnabled } from '../../../../../lib/social/publishFeature.js';
 import { resolveBrand } from '../../../../../lib/social/resolveBrand.js';
 import { socialPostWriteLimit } from '../../../../../lib/socialPostWriteLimit.js';
@@ -15,8 +15,9 @@ function setup(req) {
     if (!UUID_RE.test(authId || '')) return { error: NextResponse.json({ error: 'not_authenticated' }, { status: 401 }) };
     if (!socialTeamsEnabled()) return { error: NextResponse.json({ error: 'teams_not_open' }, { status: 404 }) };
     const cfg = envConfig();
-    if (!cfg.supabaseUrl || !cfg.serviceRoleKey || !process.env.SOCIAL_TEAM_INVITE_SECRET) return { error: NextResponse.json({ error: 'teams_not_configured' }, { status: 503 }) };
-    return { authId, cfg };
+    const signingSecret = teamInviteSigningSecret();
+    if (!cfg.supabaseUrl || !cfg.serviceRoleKey || !signingSecret) return { error: NextResponse.json({ error: 'teams_not_configured' }, { status: 503 }) };
+    return { authId, cfg, signingSecret };
 }
 function mapped(result) {
     if (result?.ok) return null;
@@ -31,14 +32,14 @@ async function brandIdFor(req, authId, cfg, routeTag, supplied) {
     const brand = await resolveBrand(authId, cfg, routeTag);
     return brand.error ? brand : brand.brandId;
 }
-async function withLinks(invitations, origin) {
+async function withLinks(invitations, origin, signingSecret) {
     return Promise.all((invitations || []).map(async (invitation) => ({ ...invitation,
-        url: `${origin}/social/team/invite/${encodeURIComponent(await createTeamInviteToken({ inviteId: invitation.id }, process.env.SOCIAL_TEAM_INVITE_SECRET))}`,
+        url: `${origin}/social/team/invite/${encodeURIComponent(await createTeamInviteToken({ inviteId: invitation.id }, signingSecret))}`,
     })));
 }
 
 export async function GET(req) {
-    const { authId, cfg, error } = setup(req); if (error) return error;
+    const { authId, cfg, signingSecret, error } = setup(req); if (error) return error;
     const limited = await accountReadLimit(authId, cfg, { members: [], invitations: [] }); if (limited) return limited;
     try {
         const requested = new URL(req.url).searchParams.get('brand_id');
@@ -48,7 +49,7 @@ export async function GET(req) {
         const result = await rpc('list_social_team', { p_auth_id: authId, p_brand_id: resolved }, cfg);
         const response = mapped(result); if (response) return response;
         return NextResponse.json({ brand_id: result.brand_id, brand_name: result.brand_name, actor_role: result.actor_role,
-            members: result.members || [], invitations: await withLinks(result.invitations, new URL(req.url).origin) }, { headers: { 'Cache-Control': 'no-store' } });
+            members: result.members || [], invitations: await withLinks(result.invitations, new URL(req.url).origin, signingSecret) }, { headers: { 'Cache-Control': 'no-store' } });
     } catch (err) {
         console.error('[api/v1/social/team:GET] failed:', err instanceof SupabaseError ? err.status : 0);
         return NextResponse.json({ error: 'internal' }, { status: 502 });
@@ -56,7 +57,7 @@ export async function GET(req) {
 }
 
 export async function POST(req) {
-    const { authId, cfg, error } = setup(req); if (error) return error;
+    const { authId, cfg, signingSecret, error } = setup(req); if (error) return error;
     let body; try { body = await req.json(); } catch { return NextResponse.json({ error: 'invalid_body' }, { status: 400 }); }
     const email = typeof body?.email === 'string' ? body.email.trim().toLowerCase() : '';
     if (!EMAIL_RE.test(email) || email.length > 254 || !ROLES.has(body?.role) || body?.brandId != null && !UUID_RE.test(body.brandId)) return NextResponse.json({ error: 'invalid_body' }, { status: 400 });
@@ -66,7 +67,7 @@ export async function POST(req) {
         if (resolved?.error) return resolved.error;
         const result = await rpc('invite_social_team_member', { p_auth_id: authId, p_brand_id: resolved, p_email: email, p_role: body.role }, cfg);
         const response = mapped(result); if (response) return response;
-        const url = `${new URL(req.url).origin}/social/team/invite/${encodeURIComponent(await createTeamInviteToken({ inviteId: result.invite_id }, process.env.SOCIAL_TEAM_INVITE_SECRET))}`;
+        const url = `${new URL(req.url).origin}/social/team/invite/${encodeURIComponent(await createTeamInviteToken({ inviteId: result.invite_id }, signingSecret))}`;
         return NextResponse.json({ invitation: { id: result.invite_id, email: result.email, role: result.role, expires_at: result.expires_at, url }, idempotent: result.idempotent }, { status: 201 });
     } catch (err) {
         console.error('[api/v1/social/team:POST] failed:', err instanceof SupabaseError ? err.status : 0);

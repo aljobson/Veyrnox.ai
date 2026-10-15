@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server';
 import { socialTeamsEnabled } from '../../../../../lib/social/publishFeature.js';
-import { verifyTeamInviteToken } from '../../../../../lib/social/teamInviteToken.js';
+import { teamInviteSigningSecret, verifyTeamInviteToken } from '../../../../../lib/social/teamInviteToken.js';
 import { envConfig, rpc, SupabaseError } from '../../../../../packages/db/supabase-client.js';
 
 export async function GET(_req, { params }) {
     if (!socialTeamsEnabled()) return NextResponse.json({ error: 'not_found' }, { status: 404 });
     const cfg = envConfig();
     const { token } = await params;
-    const inviteId = await verifyTeamInviteToken(token, process.env.SOCIAL_TEAM_INVITE_SECRET);
+    const inviteId = await verifyTeamInviteToken(token, teamInviteSigningSecret());
     if (!inviteId || !cfg.supabaseUrl || !cfg.serviceRoleKey) {
         return NextResponse.json({ error: 'invalid_or_expired_link' }, { status: 404 });
     }

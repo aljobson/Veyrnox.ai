@@ -13,6 +13,8 @@ const FROM_RE = /^(?:[^<>\r\n]{1,80} <[^\s<>@]+@[^\s<>@]+\.[^\s<>@]+>|[^\s<>@]+@
 const TO_RE = /^[^\s<>@]+@[^\s<>@]+\.[^\s<>@]+$/;
 const KEY_RE = /^[A-Za-z0-9_-]{8,128}$/;
 const FILE_RE = /^[A-Za-z0-9._-]{1,100}$/;
+const DEFAULT_REPORT_FROM = 'Veyrnox Reports <support@veyrnox.ai>';
+const DEFAULT_REPORT_REPLY_TO = 'support@veyrnox.ai';
 
 /** @param {Record<string, string | undefined>} [env] */
 export function resendConfig(env = process.env) {
@@ -21,7 +23,11 @@ export function resendConfig(env = process.env) {
 
 /** Dedicated sender for analytics reports; never silently borrows the violation sender. */
 export function reportResendConfig(env = process.env) {
-    return { apiKey: env.RESEND_API_KEY, from: env.REPORT_EMAIL_FROM, replyTo: env.REPORT_EMAIL_REPLY_TO };
+    return {
+        apiKey: env.RESEND_API_KEY,
+        from: env.REPORT_EMAIL_FROM || DEFAULT_REPORT_FROM,
+        replyTo: env.REPORT_EMAIL_REPLY_TO || DEFAULT_REPORT_REPLY_TO,
+    };
 }
 
 export function isConfigured(cfg) {
