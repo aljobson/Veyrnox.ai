@@ -28,7 +28,17 @@ const COMPACT_NAV_CATEGORIES = NAV_CATEGORIES.filter((item) => [
   '/#explore',
   '/#models',
   '/presets',
+  '/tools',
+  '/guides',
   '/pricing',
+].includes(item.href));
+
+// Studio pages keep the making tools in the tab strip. This complementary
+// list makes the rest of the public site reachable from that same header,
+// without pretending private account areas are public destinations.
+const APP_BROWSE_CATEGORIES = NAV_CATEGORIES.filter((item) => ![
+  '/app/oddlings',
+  '/app/chat',
 ].includes(item.href));
 
 // The public site's nav: every marketing page, the home page included. One
@@ -140,6 +150,10 @@ export function AppNav({ balance, active = 'explore', readAccount = true }) {
     ...(projectsEnabled ? [{ key: 'projects', href: '/app/projects', label: 'Projects' }] : []),
     ...(enhanceEnabled ? [{ key: 'enhance', href: '/app/enhance', label: 'Enhance' }] : []),
   ];
+  const menuItems = [
+    ...items,
+    ...APP_BROWSE_CATEGORIES.filter((browse) => !items.some((item) => item.href === browse.href)),
+  ];
   // Who is signed in. The session in localStorage is the gate — it needs no
   // network, so public app pages never make an authenticated request merely
   // to draw their nav. It also already holds the display name: Google puts
@@ -192,7 +206,7 @@ export function AppNav({ balance, active = 'explore', readAccount = true }) {
         <Logo wordmark className="hidden sm:inline-flex" />
       </Link>
       <MobileMenu
-        items={items}
+        items={menuItems}
         activeHref={items.find((item) => item.key === active)?.href}
         buttonLabel="Studio menu"
         navLabel="Studio"
@@ -221,6 +235,13 @@ export function AppNav({ balance, active = 'explore', readAccount = true }) {
         })}
       </nav>
       <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        <MobileMenu
+          items={APP_BROWSE_CATEGORIES}
+          buttonLabel="Browse more Veyrnox pages"
+          buttonText="Browse"
+          navLabel="More Veyrnox pages"
+          className="hidden lg:block"
+        />
         <ThemeToggle className="hidden md:inline-flex" />
         {account ? (
           <>
