@@ -23,7 +23,7 @@ export default function Explore() {
               src="/oddlings/oddling-body-chaos.webp"
               width={1600}
               height={800}
-              alt="Four funny human Oddling creators with radically different silhouettes"
+              alt="Four fictional human Oddling creators with distinctive silhouettes and costumes"
               className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
             />
             <div className="absolute inset-0 bg-linear-to-t from-black/65 via-transparent to-transparent" />
@@ -32,7 +32,7 @@ export default function Explore() {
           <span className="flex flex-col justify-center p-6 sm:p-8">
             <span className="font-vx-mono text-[10px] font-bold tracking-[0.16em] text-vx-accent">NEW · ODDLINGS</span>
             <span className="vx-display mt-3 text-[34px] sm:text-[42px]">Make the silhouette impossible to ignore.</span>
-            <span className="mt-4 max-w-[38ch] leading-relaxed text-vx-fg-body">Fat, muscles, bug-head mask, impossible hair: build a funny human whose body language is part of the premise, then lock the visual canon and recurring show.</span>
+            <span className="mt-4 max-w-[38ch] leading-relaxed text-vx-fg-body">Explore expressive silhouettes, sculptural hair and imaginative costumes. Give your fictional creator a distinctive personality, visual style and recurring show.</span>
             <span className="mt-5 font-bold text-vx-accent">Open the full Oddling Studio →</span>
           </span>
         </Link>
