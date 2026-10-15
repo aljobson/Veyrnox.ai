@@ -6,6 +6,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { captureOperationalError, captureProductEvent } from '../../lib/analyticsClient.js';
 import { getSession } from '../../lib/authClient.js';
 import { gatewayFetch } from '../_lib/gateway';
+import VeyConversation from './VeyConversation';
+import { firstVisible } from '../../../lib/mascotDom.js';
+import { readOddlingLibrary } from '../_lib/oddlingStudio';
+import { publicHelpHistory, REVEAL_SAVED_ODDLING, savedOddlingHelp } from '../../../lib/savedOddlingHelp.js';
 import {
   HELP_ACTIONS,
   HELP_TARGETS,
@@ -22,14 +26,6 @@ const MAX_CONVERSATION_MESSAGES = 10;
 
 function browserPath(pathname) {
   return (pathname || '/app').replace(/^\/veyrnox/, '') || '/app';
-}
-
-function firstVisible(selector) {
-  return [...document.querySelectorAll(selector)].find((element) => {
-    const rect = element.getBoundingClientRect();
-    const style = window.getComputedStyle(element);
-    return rect.width > 0 && rect.height > 0 && style.visibility !== 'hidden' && style.display !== 'none';
-  }) || null;
 }
 
 function resolveHelpAction(plan) {
@@ -72,6 +68,8 @@ export default function MascotAssistant() {
   const [position, setPosition] = useState(HOME);
   const [facing, setFacing] = useState(1);
   const [pendingTarget, setPendingTarget] = useState(null);
+  const [pendingSavedId, setPendingSavedId] = useState(null);
+  const savedSubjectRef = useRef(null);
   const [travelling, setTravelling] = useState(false);
   const [actionPhase, setActionPhase] = useState('none');
   const [imageTourActive, setImageTourActive] = useState(false);
@@ -227,13 +225,30 @@ export default function MascotAssistant() {
   const availableTargets = useMemo(() => Object.keys(HELP_TARGETS), []);
   const starters = useMemo(() => helpStartersForPath(pathname), [pathname]);
 
-  const ask = useCallback(async (text) => {
+  useEffect(() => {
+    if (!pendingSavedId || pathname !== '/app/oddlings') return;
+    let attempts = 0;
+    const reveal = () => {
+      window.dispatchEvent(new CustomEvent(REVEAL_SAVED_ODDLING, { detail: { id: pendingSavedId } }));
+      if (firstVisible(HELP_TARGETS['oddlings.saved'].selector)?.getAttribute('data-saved-passport-id') === pendingSavedId) {
+        showTarget('oddlings.saved', { align: 'start' });
+        setPendingSavedId(null);
+      } else if (++attempts < 15) timer = window.setTimeout(reveal, 120);
+      else setPendingSavedId(null);
+    };
+    let timer = window.setTimeout(reveal, 0);
+    return () => window.clearTimeout(timer);
+  }, [pathname, pendingSavedId, showTarget]);
+
+  const ask = useCallback(async (text, selectedId) => {
     const asked = String(text || '').trim();
     if (!asked || busy) return;
-    const history = messages
-      .filter((message) => !message.pending)
-      .slice(-6)
-      .map(({ role, content }) => ({ role, content }));
+    const history = publicHelpHistory(messages);
+    const local = savedOddlingHelp(asked, window.localStorage, {
+      selectedId, previousId: savedSubjectRef.current, pathname,
+      loadedId: document.querySelector('[data-assistant-loaded-passport]')?.getAttribute('data-assistant-loaded-passport'),
+    });
+    savedSubjectRef.current = local?.selectedSavedId || null;
     const userId = ++messageIdRef.current;
     const assistantId = ++messageIdRef.current;
     setQuestion('');
@@ -242,11 +257,11 @@ export default function MascotAssistant() {
     setFeedback(null);
     setAnswerSource(null);
     setAnswer('Let me check…');
-    setMessages((current) => [...current, { id: userId, role: 'user', content: asked }, { id: assistantId, role: 'assistant', content: 'Let me check…', pending: true }].slice(-MAX_CONVERSATION_MESSAGES));
+    setMessages((current) => [...current, { id: userId, role: 'user', content: asked, localOnly: !!local }, { id: assistantId, role: 'assistant', content: 'Let me check…', pending: true, localOnly: !!local }].slice(-MAX_CONVERSATION_MESSAGES));
     captureProductEvent('helper_question', { route: pathname, starter: starters.includes(asked) });
     const startedAt = performance.now();
-    let next;
-    try {
+    let next = local;
+    if (!next) try {
       if (!getSession()) throw new Error('signed_out');
       const visibleTargets = Object.entries(HELP_TARGETS)
         .filter(([, definition]) => pathname.startsWith(definition.route) && firstVisible(definition.selector))
@@ -265,7 +280,7 @@ export default function MascotAssistant() {
     setPlan(next);
     setAnswerSource(next.source);
     setMessages((current) => current.map((message) => message.id === assistantId
-      ? { id: assistantId, role: 'assistant', content: next.message, source: next.source }
+      ? { id: assistantId, role: 'assistant', content: next.message, source: next.source, localOnly: !!next.localOnly }
       : message));
     setBusy(false);
     captureProductEvent('helper_answer', {
@@ -278,6 +293,15 @@ export default function MascotAssistant() {
   }, [availableTargets, busy, messages, pathname, showTarget, starters]);
 
   const doAction = useCallback(() => {
+    if (plan?.savedOddlingId) {
+      if (!readOddlingLibrary(window.localStorage).some(({ id }) => id === plan.savedOddlingId)) {
+        ask('Where are my saved Oddling passports?');
+        return;
+      }
+      setPendingSavedId(plan.savedOddlingId);
+      if (pathname !== '/app/oddlings') router.push('/app/oddlings');
+      return;
+    }
     const action = resolveHelpAction(plan);
     if (!action) {
       if (plan?.target) showTarget(plan.target);
@@ -296,7 +320,7 @@ export default function MascotAssistant() {
     if (action.target) {
       showTarget(action.target, { focus: action.focus || plan.action === 'focus_prompt', activate: action.activate });
     }
-  }, [pathname, plan, router, showTarget]);
+  }, [ask, pathname, plan, router, showTarget]);
 
   const action = resolveHelpAction(plan);
   const targetLabel = plan?.target ? HELP_TARGETS[plan.target]?.label : null;
@@ -314,6 +338,8 @@ export default function MascotAssistant() {
             : 'idle';
 
   const resetConversation = useCallback(() => {
+    savedSubjectRef.current = null;
+    setPendingSavedId(null);
     setMessages([]);
     setAnswer(WELCOME);
     setPlan(null);
@@ -435,67 +461,10 @@ export default function MascotAssistant() {
             <div ref={transcriptRef} role="log" aria-label="Conversation with Vey" className="overflow-y-auto px-5 py-4">
               <div hidden={pathname !== '/app/create'}><ImageWalkthrough onPoint={showTarget} onStop={clearTarget} onActiveChange={setImageTourActive} /></div>
               {(!imageTourActive || pathname !== '/app/create') && <>
-              {messages.length === 0 ? (
-                <div role="status" aria-live="polite" className="rounded-2xl rounded-bl-md bg-vx-base px-4 py-3 text-sm leading-6 text-vx-fg-body">
-                  {answer}
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {messages.map((message, index) => {
-                    const lastAssistant = message.role === 'assistant' && index === messages.length - 1;
-                    return (
-                      <div key={message.id} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                        <div
-                          role={lastAssistant ? 'status' : undefined}
-                          aria-live={lastAssistant ? 'polite' : undefined}
-                          className={`max-w-[92%] rounded-2xl px-4 py-3 text-sm leading-6 ${message.role === 'user'
-                            ? 'rounded-br-md bg-vx-accent text-vx-accent-ink'
-                            : 'rounded-bl-md bg-vx-base text-vx-fg-body'} ${message.pending ? 'animate-pulse' : ''}`}
-                        >
-                          {message.content}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-              {showButton && (
-                <button type="button" onClick={doAction}
-                  className="mt-3 rounded-full bg-vx-accent px-4 py-2 text-sm font-extrabold text-vx-accent-ink hover:bg-vx-accent-hover">
-                  {action?.label || `Show ${targetLabel}`}
-                </button>
-              )}
-              {activeTarget && (
-                <button type="button" onClick={() => { clearTarget(); moveMascot(homePosition()); }}
-                  className="ml-2 mt-3 rounded-full border border-vx-border px-4 py-2 text-sm font-semibold text-vx-fg-muted hover:text-vx-fg">
-                  Park Vey
-                </button>
-              )}
-
-              {plan && !busy && (
-                <div className="mt-3 flex items-center justify-between gap-3 border-t border-vx-border/70 pt-3">
-                  <span className="font-vx-mono text-[9px] font-bold uppercase tracking-[0.1em] text-vx-fg-faint">
-                    {answerSource === 'ai' ? 'Live AI · grounded in Veyrnox' : 'Built-in Veyrnox guide'}
-                  </span>
-                  <div className="flex items-center gap-1" aria-label="Was this answer useful?">
-                    <button type="button" onClick={() => rateAnswer(true)} aria-label="Helpful answer" aria-pressed={feedback === 'helpful'}
-                      className={`rounded-full px-2 py-1 text-xs ${feedback === 'helpful' ? 'bg-vx-accent/15 text-vx-accent' : 'text-vx-fg-faint hover:text-vx-fg'}`}>Yes</button>
-                    <button type="button" onClick={() => rateAnswer(false)} aria-label="Unhelpful answer" aria-pressed={feedback === 'not_helpful'}
-                      className={`rounded-full px-2 py-1 text-xs ${feedback === 'not_helpful' ? 'bg-vx-fg/10 text-vx-fg' : 'text-vx-fg-faint hover:text-vx-fg'}`}>No</button>
-                  </div>
-                </div>
-              )}
-
-              {!plan && messages.length === 0 && (
-                <div className="mt-4 flex flex-col gap-2">
-                  {starters.map((starter) => (
-                    <button key={starter} type="button" disabled={busy} onClick={() => ask(starter)}
-                      className="rounded-xl border border-vx-border px-3 py-2.5 text-left text-sm font-semibold text-vx-fg-body hover:border-vx-accent hover:text-vx-fg disabled:opacity-50">
-                      {starter}
-                    </button>
-                  ))}
-                </div>
-              )}
+              <VeyConversation messages={messages} answer={answer} plan={plan} busy={busy}
+                showButton={showButton} actionLabel={plan?.savedOddlingId ? 'Show this saved passport' : (action?.label || `Show ${targetLabel}`)}
+                doAction={doAction} activeTarget={activeTarget} park={() => { clearTarget(); moveMascot(homePosition()); }}
+                answerSource={answerSource} feedback={feedback} rateAnswer={rateAnswer} starters={starters} ask={ask} />
               </>}
             </div>
 

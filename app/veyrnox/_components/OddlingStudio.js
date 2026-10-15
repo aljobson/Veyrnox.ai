@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useCatalog } from '../_lib/useCatalog';
+import { REVEAL_SAVED_ODDLING } from '../../../lib/savedOddlingHelp.js';
 import {
   CHARACTER_GROUPS,
   ODDLING_ARCHETYPES,
@@ -141,6 +142,20 @@ export default function OddlingStudio() {
   const [library, setLibrary] = useState([]);
   const [sheet, setSheet] = useState(null);
   const [notice, setNotice] = useState('');
+  const [highlightedPassportId, setHighlightedPassportId] = useState(null);
+  const [loadedPassportId, setLoadedPassportId] = useState(null);
+
+  useEffect(() => {
+    const reveal = (event) => {
+      const items = readOddlingLibrary(window.localStorage);
+      if (!items.some(({ id }) => id === event.detail?.id)) return;
+      setLibrary(items);
+      setWorkspace('history');
+      setHighlightedPassportId(event.detail.id);
+    };
+    window.addEventListener(REVEAL_SAVED_ODDLING, reveal);
+    return () => window.removeEventListener(REVEAL_SAVED_ODDLING, reveal);
+  }, []);
 
   useEffect(() => {
     const timer = window.setTimeout(() => setLibrary(readOddlingLibrary(window.localStorage)), 0);
@@ -164,6 +179,7 @@ export default function OddlingStudio() {
   }
 
   function loadOddling(oddling) {
+    setLoadedPassportId(null);
     setPicks({ ...oddling.picks });
     setPortraitId(oddling.id || '');
     setSheet(null);
@@ -222,7 +238,7 @@ export default function OddlingStudio() {
   return (
     <>
       <div className="grid min-h-[calc(100dvh-4rem)] xl:grid-cols-[430px_minmax(0,1fr)]">
-        <aside data-assistant-target="oddlings.builder" className="border-b border-vx-border bg-vx-panel xl:border-b-0 xl:border-r">
+        <aside data-assistant-target="oddlings.builder" data-assistant-loaded-passport={loadedPassportId || undefined} className="border-b border-vx-border bg-vx-panel xl:border-b-0 xl:border-r">
           <div className="sticky top-16 max-h-[calc(100dvh-4rem)] overflow-y-auto p-5 sm:p-7">
             <div className="flex items-center justify-between gap-4">
               <div>
@@ -369,12 +385,17 @@ export default function OddlingStudio() {
             ) : library.length ? (
               <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {library.map((item) => (
-                  <article key={item.id} className="rounded-2xl border border-vx-border bg-vx-panel p-5">
+                  <article key={item.id} data-saved-passport-id={item.id} data-assistant-target={highlightedPassportId === item.id ? 'oddlings.saved' : undefined} className="scroll-mt-24 rounded-2xl border border-vx-border bg-vx-panel p-5">
                     <span className="font-vx-mono text-[9px] font-bold tracking-[0.12em] text-vx-accent">SAVED PASSPORT</span>
                     <h3 className="mt-2 text-xl font-extrabold">{item.name}</h3>
                     <p className="mt-2 text-xs leading-relaxed text-vx-fg-muted">{item.picks.oddling_obsession || 'No creator premise yet.'}</p>
                     <p className="mt-4 font-vx-mono text-[9px] text-vx-fg-faint">{new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(item.savedAt)}</p>
-                    <button type="button" onClick={() => loadOddling({ name: item.name, hook: item.picks.oddling_obsession || 'Saved Oddling', picks: item.picks })} className={`${chip(true)} mt-4`}>Load and edit</button>
+                    <button type="button" onClick={() => {
+                      loadOddling({ name: item.name, hook: item.picks.oddling_obsession || 'Saved Oddling', picks: item.picks });
+                      setMode('portrait');
+                      setMotionId(item.motionId || ODDLING_MOTIONS[0].id);
+                      setLoadedPassportId(item.id);
+                    }} className={`${chip(true)} mt-4`}>Load and edit</button>
                   </article>
                 ))}
               </div>

@@ -34,6 +34,10 @@ Coverage includes Explore/Templates/Models/Tools, image/video/audio generation, 
 
 ## UI control contract
 
+Saved Oddling help is browser-local. Ask about a saved name or “my saved Oddlings” to inspect passport traits, voice, recurring show and visual canon. Duplicate names offer a version picker. “Show this saved passport” opens History and points to that exact card without loading it. The user chooses Load and edit; Vey then guides prompt review, Continue and the price in Create. Loading a saved custom character uses portrait mode, because it has no built-in cast animation portrait.
+
+`lib/savedOddlingHelp.js` rereads the sanitised passport library on each question. Saved-passport questions and answers are marked local-only and excluded from subsequent help API history. Passport contents, names and local guidance are not uploaded to the model provider or included in helper analytics. This is structured local guidance, not an AI analysis of private passports. Clearing browser storage or using a different browser removes that context.
+
 In Create, open Ask Vey and choose Start image walkthrough. The tour points to the model picker, focuses the prompt, covers source uploads and consent when present, then aspect, image count, optional character/camera/advanced controls, total cost and the final Generate button. Next step skips unsupported optional controls. The model step requires the user to choose an image model. The walkthrough never changes inputs, ticks consent, generates or spends Credits. Results appear in Create and Library after the user generates.
 
 `lib/productHelp.js` owns the only selectors and actions Vey may use. The model can return an allowlisted target id; it can never return CSS or arbitrary JavaScript. `show_target` may navigate, scroll and highlight. `focus_target` is further restricted to reviewed writing fields.
