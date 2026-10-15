@@ -137,11 +137,27 @@ export function saveOddlingToLibrary(storage, picks, motionId = '', now = Date.n
 }
 
 export function gallerySource(oddling) {
-  for (const sheet of ODDLING_GALLERY_SHEETS) {
-    const panel = sheet.ids.indexOf(oddling?.id);
-    if (panel >= 0) return { image: sheet.image, panel, aspectRatio: sheet.aspectRatio };
-  }
-  return { image: '/oddlings/oddling-cast.webp', panel: 0, aspectRatio: '1 / 2' };
+  const character = ODDLING_ARCHETYPES.find((item) => item.id === oddling?.id);
+  return character ? { image: `/oddlings/portraits/${character.id}.webp`, aspectRatio: '2 / 3' } : null;
+}
+
+export function oddlingPortrait(id) {
+  const character = ODDLING_ARCHETYPES.find((item) => item.id === id);
+  return character ? { id: character.id, name: character.name, ...gallerySource(character) } : null;
+}
+
+export function animationModel(models) {
+  const eligible = models.filter((model) => model.kind === 'video' && !model.gated
+    && model.media?.image?.required && (model.durations || [5]).includes(5)
+    && !Object.entries(model.media).some(([slot, spec]) => slot !== 'image' && spec.required));
+  return eligible.find((model) => model.id === 'kling-3.0-i2v') || eligible[0];
+}
+
+export function buildOddlingAnimationPrompt(id, motionId) {
+  const portrait = oddlingPortrait(id);
+  if (!portrait) return '';
+  const motion = ODDLING_MOTIONS.find((item) => item.id === motionId) || ODDLING_MOTIONS[0];
+  return `Animate ${portrait.name}, the exact single character in the start image. The character ${motion.phrase}. Preserve the face, body shape and size, outfit colors and fit, props, and exact sculptural hairstyle from the image throughout. Keep the whole silhouette and hairstyle in frame, stable camera, natural coherent movement, same background and lighting.`;
 }
 
 export function oddlingsForSource(sourceId) {
