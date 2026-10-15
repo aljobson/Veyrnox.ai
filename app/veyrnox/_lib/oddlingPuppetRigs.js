@@ -1,8 +1,24 @@
 // Hand-calibrated against the standalone 1024×1536 portraits, never group sheets.
 // Coordinates are image pixels: head outline, neck pivot, two eye ellipses,
 // and an interior chest ellipse. Shutters preserve opaque lenses/compound eyes.
+// Arm and lower-body zones are deliberately derived from each portrait's
+// calibrated chest: deformation stays inside the person instead of shifting
+// the whole photograph or its backdrop.
+const motionZones = ([x, y, rx, ry]) => ({
+  arms: [
+    [x - rx * 0.78, y + ry * 0.42, Math.max(28, rx * 0.46), Math.max(65, ry * 1.45)],
+    [x + rx * 0.78, y + ry * 0.42, Math.max(28, rx * 0.46), Math.max(65, ry * 1.45)],
+  ],
+  lower: [
+    x,
+    y + Math.max(270, ry * 3.1),
+    Math.max(55, rx * 0.78),
+    Math.max(180, (1536 - y) * 0.36),
+  ],
+});
+
 const rig = (head, pivot, eyes, chest, shutter = false, tilt = 0.012) => ({
-  head, pivot, eyes, chest, shutter, tilt,
+  head, pivot, eyes, chest, shutter, tilt, ...motionZones(chest),
 });
 
 export const ODDLING_PUPPET_RIGS = {
@@ -57,5 +73,9 @@ export function puppetPose(seconds, id, rigData = puppetRig(id)) {
     breath: Math.sin(time * Math.PI * 2 / (4.2 + seed % 5 * 0.2)) * 0.018,
     angle: Math.sin(time * Math.PI * 2 / (6.1 + seed % 7 * 0.3)) * rigData.tilt,
     nod: Math.sin(time * Math.PI * 2 / (5.3 + seed % 5 * 0.3)) * 2.2,
+    armSwing: Math.sin(time * Math.PI * 2 / (4.8 + seed % 6 * 0.24)),
+    weightShift: Math.sin(time * Math.PI * 2 / (5.7 + seed % 5 * 0.31)),
+    step: Math.sin(time * Math.PI * 2 / (3.9 + seed % 7 * 0.17)),
+    torsoSway: Math.sin(time * Math.PI * 2 / (6.4 + seed % 5 * 0.29)),
   };
 }
