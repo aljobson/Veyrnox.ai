@@ -144,7 +144,9 @@
     "STORY_POLLS_ENABLED": "false",
     "PPV_ENABLED": "false",
     "PREMIERES_ENABLED": "false",
-    "AI_RECOMMENDATIONS_ENABLED": "false",
+    // AI recommendations stay closed when this reserved switch is absent.
+    // Do not spend a Worker text binding on an explicit false value: production
+    // is at Cloudflare's 128-binding ceiling.
     // Enable only after migration 0129, bucket CORS and real browser/R2 checks (ADR-0044). 0129 is applied. On
     // Production CORS now allows If-None-Match (read back 2026-10-10). Keep the flag off until the
     // browser File / real R2 success, wrong-length and replacement checks in ADR-0044 are recorded.
