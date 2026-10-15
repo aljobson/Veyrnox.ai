@@ -52,8 +52,8 @@ export const ODDLING_PRESET_SOURCES = [
   { id: 'fashion', label: 'Fashion disasters', ids: ODDLING_GALLERY_SHEETS[3].ids },
   { id: 'hair', label: 'Hair sculptures', ids: ODDLING_GALLERY_SHEETS[4].ids },
   { id: 'denim', label: 'Tee + tight jeans', ids: ODDLING_GALLERY_SHEETS[5].ids },
-  { id: 'oddities', label: 'Human oddities', ids: ODDLING_GALLERY_SHEETS[1].ids },
-  { id: 'humans', label: 'All weird humans', kind: 'human' },
+  { id: 'oddities', label: 'Surreal characters', ids: ODDLING_GALLERY_SHEETS[1].ids },
+  { id: 'humans', label: 'All human characters', kind: 'human' },
   { id: 'beings', label: 'Other beings', kind: 'creature' },
 ];
 

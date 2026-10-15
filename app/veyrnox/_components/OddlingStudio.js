@@ -331,7 +331,7 @@ export default function OddlingStudio() {
             <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
               <div>
                 <span className="font-vx-mono text-[10px] font-bold tracking-[0.16em] text-vx-accent">24 HUMAN ORIGINALS · 4 OTHER BEINGS</span>
-                <h2 className="vx-display mt-2 text-5xl sm:text-6xl">Your weird human, your recurring hit.</h2>
+                <h2 className="vx-display mt-2 text-5xl sm:text-6xl">Your original character, your recurring hit.</h2>
                 <p className="mt-3 max-w-2xl text-vx-fg-body">Start with body chaos, impossible silhouettes, fashion disasters, sculptural hair or weird modern basics. Inspect the character sheet, then remake every trait for portraits and motion.</p>
               </div>
               <div className="flex rounded-xl border border-vx-border bg-vx-panel p-1" role="tablist" aria-label="Workspace view">
