@@ -37,9 +37,8 @@ const MAX_INPUTS_BYTES = 8 * 1024;
 const UNIT_SECONDS = 5;
 const RATE_LIMIT_PER_WINDOW = 10;
 const RATE_WINDOW_SECONDS = 60;
-// `resolution` is deliberately absent: fal bills per tier and the catalog
-// holds one cost per model (its priced tier), so the server never lets a
-// request select a pricier tier. The provider default is the priced one.
+// Output choices are bounded again by the model contract before the debit.
+// Only tiers at or below the catalog's priced ceiling are declared there.
 const ALLOWED_INPUTS = {
     prompt: { kind: 'string', max: 2000 },
     negative_prompt: { kind: 'string', max: 2000 },
@@ -55,6 +54,8 @@ const ALLOWED_INPUTS = {
     captions: { kind: 'edit' },
     aspect_ratio: { kind: 'enum', values: ['16:9', '9:16', '1:1', '4:3', '3:4', '4:5', '21:9'] },
     duration_seconds: { kind: 'enum', values: [5, 10] },
+    output_resolution: { kind: 'enum', values: ['480p', '720p'] },
+    audio_enabled: { kind: 'bool' },
     seed: { kind: 'int', min: 0, max: 2147483647 },
     image_url: { kind: 'url' },
     // Transform filters that operate on a clip (PRD A6). Same rule as
@@ -238,6 +239,11 @@ export async function POST(req) {
     }
     if (record.outputStems && !editorFeatureEnabled('EDITOR_AUDIO_STEMS_ENABLED')) return NextResponse.json({ error: 'audio_stems_unavailable' }, { status: 503 });
     if (modelRow.gated_flag) return NextResponse.json({ error: 'model_gated' }, { status: 402 });
+    for (const key of ['output_resolution', 'audio_enabled']) {
+        if (inputs[key] !== undefined && !Object.hasOwn(record.inputs, key)) {
+            return NextResponse.json({ error: `inputs_key_not_allowed:${key}` }, { status: 400 });
+        }
+    }
     const providerKey = provider.key();
     if (!providerKey) return NextResponse.json({ error: 'gateway_not_configured' }, { status: 503 });
     // Active capabilities precede source signing/inspection. Both frames pass caller
