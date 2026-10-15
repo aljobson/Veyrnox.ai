@@ -9,7 +9,7 @@ export const metadata = {
 
 export default function Privacy() {
     return (
-        <LegalPage title="Privacy Policy" updated="14 October 2026">
+        <LegalPage title="Privacy Policy" updated="15 October 2026">
             <p>{ENTITY.name} (&ldquo;we&rdquo;) is the data controller for personal data processed through Veyrnox.ai. Registered office: {ENTITY.office}. Contact: <a href={`mailto:${ENTITY.privacyEmail}`}>{ENTITY.privacyEmail}</a>.</p>
 
             <h2>What we collect</h2>
@@ -19,7 +19,7 @@ export default function Privacy() {
                 <li><strong>Publish data</strong> — connected social account details, media you upload, captions, schedules and posting analytics needed to publish to the accounts you select.</li>
                 <li><strong>Technical data</strong> — IP address, browser and device information, and request logs needed to keep the service secure.</li>
                 <li><strong>Optional product analytics</strong> — if you consent, page paths, button and form interactions, web performance measurements and technical error details. We do not send URL query strings, prompts, chat text, form values, uploaded or generated media, passwords or payment details.</li>
-                <li><strong>Optional session replay</strong> — if you separately consent, a privacy-masked reconstruction of up to 20% of eligible browser sessions. All text and inputs are masked; images, video, audio, canvas and iframes are blocked; console output, request or response bodies and headers are not recorded; and replay is disabled on sign-in, account, admin and payment pages.</li>
+                <li><strong>Optional session replay</strong> — if you separately consent, a privacy-masked reconstruction of up to 100% of eligible browser sessions. All text and inputs are masked; images, video, audio, canvas and iframes are blocked; console output, request or response bodies and headers are not recorded; and replay is disabled on sign-in, account, admin and payment pages.</li>
                 <li><strong>Payment data</strong> — credit packs are sold through Stripe Managed Payments, under which Stripe, Inc. is the Merchant of Record and seller of record, and charges and remits any VAT or sales tax. Stripe collects your payment details, billing address and any tax information as its own controller, under its own privacy policy. We receive the payment reference, amount, currency, country and email so we can add the credits to your account. We never see or store full card numbers.</li>
             </ul>
 

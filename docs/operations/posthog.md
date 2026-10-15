@@ -13,11 +13,12 @@ The code is safe to deploy without PostHog configuration: it renders no consent 
 ## Configuration
 
 - GitHub environment variable `NEXT_PUBLIC_POSTHOG_KEY`: the public `phc_…` project token.
+- GitHub environment variable `NEXT_PUBLIC_POSTHOG_REPLAY_SAMPLE_RATE`: a number from `0` to `1`; production is temporarily `1` for deterministic replay validation.
 - GitHub environment variable `POSTHOG_PROJECT_ID`: the EU project id.
 - GitHub environment secret `POSTHOG_PERSONAL_API_KEY`: build-only source-map key.
 - Local development: put the same names in `.env.local` only when testing the integration. Never commit that file.
 
-The public token alone enables consented events and replay. Source-map upload additionally requires both build-only values. Replay is capped at 20% in `components/AnalyticsProvider.jsx`; the project setting may reduce that sample but must not be used to promise a higher rate.
+The public token alone enables consented events and replay. Source-map upload additionally requires both build-only values. The replay rate defaults to 20% when the sampling variable is missing or invalid and is bounded to the inclusive `0`–`1` range. At `1`, the consent manager explicitly overrides PostHog's sampling control so every separately consented eligible session can be validated; project-level replay must still be enabled. Consent, sensitive-route exclusions and masking apply to every recording. Lower the environment value and redeploy after deterministic validation is complete.
 
 ## First-release checks
 

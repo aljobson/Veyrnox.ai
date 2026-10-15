@@ -3,12 +3,21 @@ import assert from 'node:assert/strict';
 import {
     ANALYTICS_PREFERENCE_KEY,
     normaliseGatewayPath,
+    normaliseReplaySampleRate,
     pathOnlyUrl,
     readAnalyticsPreference,
     replayAllowedOnPath,
     sanitisePostHogEvent,
     writeAnalyticsPreference,
 } from '../app/lib/analyticsPrivacy.js';
+
+test('replay sampling accepts a bounded build-time rate', () => {
+    assert.equal(normaliseReplaySampleRate('1'), 1);
+    assert.equal(normaliseReplaySampleRate('0.5'), 0.5);
+    assert.equal(normaliseReplaySampleRate('2'), 1);
+    assert.equal(normaliseReplaySampleRate('-1'), 0);
+    assert.equal(normaliseReplaySampleRate('not-a-rate'), 0.2);
+});
 
 test('analytics URLs never retain a query string or fragment', () => {
     assert.equal(pathOnlyUrl('https://veyrnox.ai/auth/callback?code=secret#token'), 'https://veyrnox.ai/auth/callback');

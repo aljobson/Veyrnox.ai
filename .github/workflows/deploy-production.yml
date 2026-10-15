@@ -71,6 +71,7 @@ jobs:
       # personal key is build-only and uploads source maps; it never reaches
       # the Worker or browser.
       NEXT_PUBLIC_POSTHOG_KEY: ${{ vars.NEXT_PUBLIC_POSTHOG_KEY }}
+      NEXT_PUBLIC_POSTHOG_REPLAY_SAMPLE_RATE: ${{ vars.NEXT_PUBLIC_POSTHOG_REPLAY_SAMPLE_RATE }}
       POSTHOG_PROJECT_ID: ${{ vars.POSTHOG_PROJECT_ID }}
       POSTHOG_PERSONAL_API_KEY: ${{ secrets.POSTHOG_PERSONAL_API_KEY }}
     # closed, open or unknown; empty when nothing was deployed. A check that

@@ -4,6 +4,12 @@
 export const POSTHOG_CONSENT_KEY = 'veyrnox_analytics_consent';
 export const ANALYTICS_PREFERENCE_KEY = 'veyrnox_analytics_preference_v1';
 
+export function normaliseReplaySampleRate(value, fallback = 0.2) {
+  const parsed = typeof value === 'number' ? value : Number.parseFloat(value);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.min(1, Math.max(0, parsed));
+}
+
 const BLOCKED_REPLAY_PREFIXES = [
   '/auth',
   '/app/account',
