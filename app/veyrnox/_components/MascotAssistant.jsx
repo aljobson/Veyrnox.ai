@@ -121,7 +121,7 @@ export default function MascotAssistant() {
     const beside = roomLeft || rect.right + CHARACTER.width + gap < window.innerWidth;
     const targetY = beside ? rect.top + rect.height / 2 - CHARACTER.height / 2 : rect.top > CHARACTER.height + 80 ? rect.top - CHARACTER.height - 8 : rect.bottom + 8;
     const y = Math.max(72, Math.min(window.innerHeight - CHARACTER.height - 8, targetY));
-    targetRef.current = element;
+    targetRef.current = { element, id };
     setFacing(roomLeft ? 1 : -1);
     moveMascot({ x, y });
     setHighlight({ left: rect.left, top: rect.top, width: rect.width, height: rect.height });
@@ -190,7 +190,7 @@ export default function MascotAssistant() {
 
   useEffect(() => {
     const update = () => {
-      if (targetRef.current && activeTarget) measureTarget(targetRef.current, activeTarget);
+      if (targetRef.current) measureTarget(targetRef.current.element, targetRef.current.id);
       else setPosition(open ? perchPosition() : homePosition());
     };
     window.addEventListener('resize', update);
@@ -199,7 +199,7 @@ export default function MascotAssistant() {
       window.removeEventListener('resize', update);
       window.removeEventListener('scroll', update);
     };
-  }, [activeTarget, homePosition, measureTarget, open, perchPosition]);
+  }, [homePosition, measureTarget, open, perchPosition]);
 
   // Re-subscribing scroll listeners must not cancel a journey already in flight.
   useEffect(() => () => {
