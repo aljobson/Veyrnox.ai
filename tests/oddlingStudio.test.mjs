@@ -27,6 +27,19 @@ test('every full-studio section resolves to real character groups', () => {
         for (const id of section.groupIds) assert.ok(ids.has(id), `${section.id} references missing ${id}`);
     }
 });
+test('Build & proportions exposes independent arm and leg sizes in portrait and motion prompts', () => {
+    const section = ODDLING_STUDIO_SECTIONS.find((item) => item.id === 'build');
+    for (const id of ['arm_size', 'leg_size']) assert.ok(section.groupIds.includes(id));
+    for (const mode of ['portrait', 'motion']) {
+        const prompt = buildOddlingStudioPrompt({ mode, picks: {
+            character_type: 'Human', arm_size: 'Extra Large', leg_size: 'Extra Large', hand_size: 'Small', foot_size: 'Small',
+        } });
+        assert.match(prompt, /extra-large arms relative to the body/);
+        assert.match(prompt, /extra-large legs relative to the body/);
+        assert.match(prompt, /small hands relative to the body/);
+        assert.match(prompt, /small feet relative to the body/);
+    }
+});
 test('face details exposes independent face size controls in portrait and motion prompts', () => {
     const section = ODDLING_STUDIO_SECTIONS.find((item) => item.id === 'features');
     for (const id of ['ear_size', 'nose_size', 'eye_size', 'mouth_size']) assert.ok(section.groupIds.includes(id));
@@ -39,6 +52,18 @@ test('face details exposes independent face size controls in portrait and motion
         assert.match(prompt, /extra-large nose relative to the face/);
         assert.match(prompt, /extra-large eyes relative to the face/);
         assert.match(prompt, /extra-large mouth relative to the face/);
+    }
+});
+test('Head & eyes exposes head size separately from shape in portrait and motion prompts', () => {
+    const section = ODDLING_STUDIO_SECTIONS.find((item) => item.id === 'head');
+    assert.ok(section.groupIds.includes('head_size'));
+    for (const mode of ['portrait', 'motion']) {
+        const prompt = buildOddlingStudioPrompt({ mode, picks: {
+            character_type: 'Human', head_shape: 'Square', head_size: 'Extra Large', eye_size: 'Small',
+        } });
+        assert.match(prompt, /strong square head shape/);
+        assert.match(prompt, /extra-large head relative to the body, entire head fully visible/);
+        assert.match(prompt, /small eyes relative to the face/);
     }
 });
 test('motion drafts combine identity, visual canon, action and scene', () => {
