@@ -193,6 +193,9 @@
     "PUBLISH_YOUTUBE_VISIBILITY_ENABLED": "true",
 
     "PUBLISH_RELEASED_NETWORKS": "youtube,linkedin,twitter",
+    // Public Meta app identifier. Keeping this out of Worker secrets leaves
+    // the final production binding slot available for INSTAGRAM_CLIENT_SECRET.
+    "INSTAGRAM_CLIENT_ID": "2428989684301953",
     // Production 0188 is applied; Instagram, YouTube, TikTok and X collectors
     // activate only for accounts whose provider grants permit the read.
     "PUBLISH_ANALYTICS_ENABLED": "true",
@@ -204,13 +207,9 @@
     "PUBLISH_UPLOADS_ENABLED": "false",
     // Requires 0228 and provider app credentials before tester activation.
     "PUBLISH_EXTENDED_NETWORKS_ENABLED": "false",
-    // Adds instagram_business_manage_insights to the Instagram consent
-    // screen (reach, views, saves, shares). Only "true" asks for it; turn it
-    // on after Meta approves the permission in app review.
-    "INSTAGRAM_INSIGHTS_SCOPE_ENABLED": "false",
-    // TikTok analytics consent (user.info.stats + video.list). Enable after
-    // Display API approval; existing connections need to reconnect.
-    "TIKTOK_ANALYTICS_SCOPE_ENABLED": "false",
+    // The optional Instagram-insights and TikTok-analytics scope switches are
+    // deliberately absent in production. Both fail closed when unset and
+    // omitting them preserves Worker binding capacity for provider secrets.
     // Sender for violation notices (lib/violationEmail.js, issue #479). The
     // domain is verified in Resend; nothing sends until RESEND_API_KEY is set.
     "VIOLATION_EMAIL_FROM": "Veyrnox.ai <support@veyrnox.ai>",

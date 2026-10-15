@@ -71,15 +71,20 @@ test('the page, the OAuth landing and the menu link are gated on the same switch
     assert.match(nav, /\{links\.map\(/);
 });
 
-test('production activates only YouTube, LinkedIn and X; staging remains enabled', () => {
+test('production prepares Instagram credentials while keeping its release closed', () => {
     const wrangler = read('wrangler.jsonc');
     const [prod, staging] = wrangler.split('"env": {');
     assert.match(prod, /"PUBLISH_ENABLED": "true"/);
     assert.match(prod, /"PUBLISH_RELEASED_NETWORKS": "youtube,linkedin,twitter"/);
+    assert.match(prod, /"INSTAGRAM_CLIENT_ID": "2428989684301953"/);
     assert.match(prod, /"PUBLISH_ANALYTICS_ENABLED": "true"/);
     assert.match(prod, /"PUBLISH_POSTING_INSIGHTS_ENABLED": "true"/);
-    for (const flag of ['PUBLISH_UPLOADS_ENABLED', 'PUBLISH_EXTENDED_NETWORKS_ENABLED', 'INSTAGRAM_INSIGHTS_SCOPE_ENABLED', 'TIKTOK_ANALYTICS_SCOPE_ENABLED']) {
+    for (const flag of ['PUBLISH_UPLOADS_ENABLED', 'PUBLISH_EXTENDED_NETWORKS_ENABLED']) {
         assert.match(prod, new RegExp(`"${flag}": "false"`), flag);
+    }
+    for (const flag of ['INSTAGRAM_INSIGHTS_SCOPE_ENABLED', 'TIKTOK_ANALYTICS_SCOPE_ENABLED']) {
+        assert.doesNotMatch(prod, new RegExp(`"${flag}"`), flag);
+        assert.match(staging, new RegExp(`"${flag}": "false"`), flag);
     }
     assert.match(staging, /"PUBLISH_ENABLED": "true"/);
 });
