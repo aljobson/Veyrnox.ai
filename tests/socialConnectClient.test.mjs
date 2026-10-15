@@ -139,14 +139,16 @@ test('disconnectSocialAccount calls DELETE on the account path', async () => {
     assert.equal(calls[0].init.method, 'DELETE');
 });
 
-test('post client forwards explicit YouTube visibility without adding it to legacy requests', async () => {
+test('post client forwards explicit YouTube visibility and platform copy without adding them to legacy requests', async () => {
     const { createSocialPost } = await import('../app/lib/socialPostsClient.js');
     const calls = stubFetch(() => okJson({ post_id: 'post-test' }));
     const body = { publishNow: true, globalText: 'Test', idempotencyKey: 'test-key-123', accountIds: ['account'], media: [] };
-    await createSocialPost({ ...body, youtubeVisibility: 'private' });
+    await createSocialPost({ ...body, youtubeVisibility: 'private', networkText: { instagram: 'Instagram copy' } });
     assert.equal(JSON.parse(calls[0].init.body).youtubeVisibility, 'private');
+    assert.deepEqual(JSON.parse(calls[0].init.body).networkText, { instagram: 'Instagram copy' });
     await createSocialPost(body);
     assert.equal('youtubeVisibility' in JSON.parse(calls[1].init.body), false);
+    assert.equal('networkText' in JSON.parse(calls[1].init.body), false);
 });
 
 test('five-account callback refusal preserves the server limit for correct browser guidance', async () => {

@@ -82,9 +82,11 @@ test('production prepares Instagram credentials while keeping its release closed
     for (const flag of ['PUBLISH_UPLOADS_ENABLED', 'PUBLISH_EXTENDED_NETWORKS_ENABLED']) {
         assert.match(prod, new RegExp(`"${flag}": "false"`), flag);
     }
-    for (const flag of ['INSTAGRAM_INSIGHTS_SCOPE_ENABLED', 'TIKTOK_ANALYTICS_SCOPE_ENABLED']) {
-        assert.doesNotMatch(prod, new RegExp(`"${flag}"`), flag);
-        assert.match(staging, new RegExp(`"${flag}": "false"`), flag);
+    assert.match(prod, /"PUBLISH_SCOPE_FLAGS": "\{\\"instagramInsights\\":\\"false\\",\\"instagramEngagement\\":\\"false\\",\\"facebookEngagement\\":\\"false\\",\\"tiktokAnalytics\\":\\"false\\"\}"/);
+    assert.match(staging, /"PUBLISH_SCOPE_FLAGS": "\{\\"instagramInsights\\":\\"false\\",\\"instagramEngagement\\":\\"false\\",\\"facebookEngagement\\":\\"false\\",\\"tiktokAnalytics\\":\\"false\\"\}"/);
+    for (const flag of ['INSTAGRAM_INSIGHTS_SCOPE_ENABLED', 'INSTAGRAM_ENGAGEMENT_SCOPE_ENABLED', 'FACEBOOK_ENGAGEMENT_SCOPE_ENABLED', 'TIKTOK_ANALYTICS_SCOPE_ENABLED']) {
+        assert.doesNotMatch(prod, new RegExp(`"${flag}"\\s*:`), flag);
+        assert.doesNotMatch(staging, new RegExp(`"${flag}"\\s*:`), flag);
     }
     assert.match(staging, /"PUBLISH_ENABLED": "true"/);
 });

@@ -175,6 +175,9 @@ If a build starts failing after a dependency change, bisect these three first.
   - `/api/webhook/*` — the provider's signature (see Provider webhooks).
   - `/api/admin/*` — Cloudflare Access plus a shared token; cron callers only.
   - `/media/social/:token` — a short-lived HMAC token naming one R2 object.
+  - `/api/social/approvals/:token` — an expiring HMAC token naming one reviewer; it returns only the post review projection and accepts that reviewer's one decision.
+  - `/api/social/team/:token` — an expiring HMAC token naming one team invitation; it returns only the invited email, role, brand label and expiry. Acceptance remains behind authenticated `/api/v1`.
+  - `/api/publish/v1/*` — an expiring, scoped Publish customer API key. Only a SHA-256 hash is stored; each key is limited to 120 requests per minute and stops working when revoked, expired, removed from its brand role, or no longer covered by an active Publish Plan.
   - `/api/turnstile-failure` — anonymous and write-only: a POST from our own
     pages whose body is one Turnstile error code or the word `unsupported`,
     rate limited per connecting IP in `worker.js`. It logs that and nothing

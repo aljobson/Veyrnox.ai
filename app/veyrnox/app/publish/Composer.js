@@ -7,7 +7,9 @@ import NetworkLogo from './NetworkLogo.js';
 import { gatewayFetch } from '../../_lib/gateway.js';
 import { ownedPublishUpload } from '../../_lib/editorDelivery.mjs';
 import { NETWORKS } from '../../../lib/socialConnectClient.js';
-import { createSocialPost, listSocialPosts, newIdempotencyKey } from '../../../lib/socialPostsClient.js';
+import { createSocialApproval, createSocialPost, listSocialPosts, newIdempotencyKey } from '../../../lib/socialPostsClient.js';
+import { deleteSocialPreset, listSocialPresets, saveSocialPreset } from '../../../lib/socialPresetsClient.js';
+import { confirmSocialQueueSlot, listSocialQueues, reserveSocialQueueSlot } from '../../../lib/socialQueuesClient.js';
 
 const button = 'rounded-full border border-vx-border px-4 py-2 text-sm font-bold disabled:opacity-50';
 const primaryButton = 'rounded-full bg-vx-accent text-black px-4 py-2 text-sm font-bold disabled:opacity-50';
@@ -16,12 +18,92 @@ function networkLabel(key) {
     return NETWORKS.find((n) => n.key === key)?.label || key;
 }
 
+function captionLength(network, value) {
+    return network === 'bluesky'
+        ? [...new Intl.Segmenter('en', { granularity: 'grapheme' }).segment(value)].length
+        : [...value].length;
+}
+
 function defaultScheduleValue() {
     // Local time an hour out, trimmed to what <input type="datetime-local"> accepts.
     const d = new Date(Date.now() + 60 * 60 * 1000);
     d.setSeconds(0, 0);
     d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
     return d.toISOString().slice(0, 16);
+}
+
+function ContentPresets({ accounts, caption, selectedAccountIds, onApply }) {
+    const [presets, setPresets] = useState(null);
+    const [selectedId, setSelectedId] = useState('');
+    const [name, setName] = useState('');
+    const [busy, setBusy] = useState(false);
+    const [message, setMessage] = useState('');
+    const [error, setError] = useState('');
+
+    const load = useCallback(async () => {
+        try {
+            const result = await listSocialPresets();
+            setPresets(result.presets || []);
+        } catch {
+            setError('Could not load your saved presets.');
+        }
+    }, []);
+    useEffect(() => { load(); }, [load]);
+
+    function apply() {
+        const preset = (presets || []).find((item) => item.id === selectedId);
+        if (!preset) { setError('Choose a saved preset first.'); return; }
+        const availableIds = new Set(accounts.map((account) => account.id));
+        onApply(preset.caption, (preset.account_ids || []).filter((id) => availableIds.has(id)));
+        setName(preset.name); setError('');
+        setMessage('Preset loaded. Review everything before posting.');
+    }
+
+    async function save() {
+        const cleanName = name.trim();
+        if (!cleanName) { setError('Give this preset a name.'); return; }
+        if (!caption) { setError('Write a caption before saving a preset.'); return; }
+        setBusy(true); setError(''); setMessage('');
+        try {
+            const existing = (presets || []).find((item) => item.id === selectedId);
+            const result = await saveSocialPreset({ id: existing?.id || null, name: cleanName, caption, accountIds: [...selectedAccountIds] });
+            await load(); setSelectedId(result.preset_id); setMessage(existing ? 'Preset updated.' : 'Preset saved.');
+        } catch (err) {
+            setError(err?.body?.error === 'preset_name_taken' ? 'A preset with that name already exists.' : 'Could not save that preset. Try again.');
+        } finally { setBusy(false); }
+    }
+
+    async function remove() {
+        if (!selectedId) { setError('Choose a saved preset first.'); return; }
+        setBusy(true); setError(''); setMessage('');
+        try {
+            await deleteSocialPreset(selectedId);
+            setSelectedId(''); setName(''); await load(); setMessage('Preset deleted.');
+        } catch { setError('Could not delete that preset. Try again.'); }
+        finally { setBusy(false); }
+    }
+
+    return <section aria-label="Saved content presets" className="rounded-xl border border-vx-border p-3 space-y-3">
+        <div>
+            <h3 className="text-sm font-bold">Saved captions and destinations</h3>
+            <p className="text-xs text-vx-fg-muted">Reuse caption text and connected accounts. Media is always chosen separately.</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+            <select aria-label="Saved preset" value={selectedId} disabled={busy || presets === null} onChange={(e) => { const id=e.target.value; setSelectedId(id); setName((presets || []).find((item)=>item.id===id)?.name || ''); setError(''); setMessage(''); }} className="min-w-48 rounded-lg border border-vx-border bg-transparent px-3 py-2 text-sm">
+                <option value="">{presets === null ? 'Loading presets…' : presets.length ? 'Choose a preset' : 'No saved presets'}</option>
+                {(presets || []).map((preset) => <option key={preset.id} value={preset.id}>{preset.name}</option>)}
+            </select>
+            <button type="button" className={button} disabled={busy || !selectedId} onClick={apply}>Apply preset</button>
+            <button type="button" className={button} disabled={busy || !selectedId} onClick={remove}>Delete</button>
+        </div>
+        <div className="flex flex-wrap gap-2">
+            <label htmlFor="preset-name" className="sr-only">Preset name</label>
+            <input id="preset-name" value={name} maxLength={80} onChange={(e)=>setName(e.target.value)} placeholder="Preset name" className="min-w-56 flex-1 rounded-lg border border-vx-border bg-transparent px-3 py-2 text-sm" />
+            <button type="button" className={button} disabled={busy} onClick={save}>{busy ? 'Saving…' : selectedId ? 'Update preset' : 'Save current'}</button>
+        </div>
+        {error && <p role="alert" className="text-sm text-vx-danger">{error}</p>}
+        {message && <p role="status" className="text-sm text-vx-accent">{message}</p>}
+    </section>;
 }
 
 /** The account's own recent library, single-select, for the composer's one media slot. */
@@ -88,10 +170,12 @@ function MediaPicker({ selected, onSelect }) {
     );
 }
 
-export function Composer({ accounts, onScheduled, initialJobId = null, initialUploadId = null, uploadsEnabled = false, youtubeVisibilityEnabled = false, scheduleEnabled = true, multiAccountEnabled = true }) {
+export function Composer({ accounts, onScheduled, initialJobId = null, initialUploadId = null, reusablePost = null, uploadsEnabled = false, youtubeVisibilityEnabled = false, scheduleEnabled = true, multiAccountEnabled = true, presetsEnabled = false, queuesEnabled = false, approvalsEnabled = false, variantsEnabled = false }) {
     const activeAccounts = (accounts || []).filter((a) => a.status === 'active' && a.publishingEnabled !== false && (a.supportedMedia || NETWORKS.find((n) => n.key === a.network)?.media.filter(t => t !== 'video' || a.network === 'youtube'))?.length);
     const [selectedAccountIds, setSelectedAccountIds] = useState(() => new Set());
     const [caption, setCaption] = useState('');
+    const [networkText, setNetworkText] = useState({});
+    const [previewNetwork, setPreviewNetwork] = useState('');
     const [youtubeVisibility, setYoutubeVisibility] = useState('private');
     const hasYoutube = activeAccounts.some((a) => a.network === 'youtube' && selectedAccountIds.has(a.id));
     const [scheduledAt, setScheduledAt] = useState(defaultScheduleValue);
@@ -105,7 +189,20 @@ export function Composer({ accounts, onScheduled, initialJobId = null, initialUp
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
+    const [queues, setQueues] = useState(null);
+    const [queueId, setQueueId] = useState('');
+    const [reviewerEmails, setReviewerEmails] = useState('');
+    const [approvalPolicy, setApprovalPolicy] = useState('all');
+    const [reviewLinks, setReviewLinks] = useState([]);
     const idempotencyKey = useRef(newIdempotencyKey());
+
+    useEffect(() => {
+        if (!queuesEnabled) return;
+        let active = true;
+        listSocialQueues().then((result) => { if (active) setQueues((result.queues || []).filter((queue) => queue.enabled)); })
+            .catch(() => { if (active) setQueues([]); });
+        return () => { active = false; };
+    }, [queuesEnabled]);
 
     useEffect(() => {
         if (!initialJobId) return;
@@ -143,6 +240,36 @@ export function Composer({ accounts, onScheduled, initialJobId = null, initialUp
         return () => { active = false; };
     }, [initialUploadId, initialJobId, uploadsEnabled]);
 
+    useEffect(() => {
+        if (!reusablePost?.reuseKey) return;
+        let active = true;
+        Promise.resolve().then(async () => {
+            if (!active) return;
+            const source = reusablePost.media?.[0];
+            setCaption(reusablePost.global_text || '');
+            setNetworkText(Object.fromEntries((reusablePost.targets || []).filter((target) => target.text_override).map((target) => [target.network, target.text_override])));
+            setSelectedAccountIds(new Set((reusablePost.targets || []).map((target) => target.account_id).filter((id) => activeAccounts.some((account) => account.id === id))));
+            setSuccess('Previous post loaded. Review everything before posting again.');
+            setError(''); setMediaError(''); setSelectedMedia(null);
+            idempotencyKey.current = newIdempotencyKey();
+            if (!source) { setMediaError('The previous post has no reusable media. Choose media below.'); return; }
+            setLoadingMedia(true);
+            const media = source.job_id
+                ? await gatewayFetch(`/jobs/${encodeURIComponent(source.job_id)}/asset`).then((asset) => ({ jobId: source.job_id, thumbUrl: asset.url, mediaType: source.media_type }))
+                : uploadsEnabled && source.upload_id
+                    ? await ownedPublishUpload(gatewayFetch, source.upload_id)
+                    : await Promise.reject(new Error('media unavailable'));
+            if (active) { setSelectedMedia(media); setMediaType(media.mediaType); }
+        }).catch(() => { if (active) setMediaError('That post’s media is no longer available. Choose another image or video.'); })
+            .finally(() => { if (active) setLoadingMedia(false); });
+        return () => { active = false; };
+    // activeAccounts is derived from the account prop; the reuse key is the intentional trigger.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [reusablePost?.reuseKey, uploadsEnabled]);
+
+    const selectedNetworks = [...new Set(activeAccounts.filter((account) => selectedAccountIds.has(account.id)).map((account) => account.network))];
+    const activePreviewNetwork = selectedNetworks.includes(previewNetwork) ? previewNetwork : selectedNetworks[0] || '';
+
     function toggleAccount(id) {
         setSelectedAccountIds((prev) => {
             if (!multiAccountEnabled && !prev.has(id)) return new Set([id]);
@@ -154,35 +281,53 @@ export function Composer({ accounts, onScheduled, initialJobId = null, initialUp
 
     async function onSubmit(e) {
         e.preventDefault();
-        setError(''); setSuccess('');
+        setError(''); setSuccess(''); setReviewLinks([]);
         if (selectedAccountIds.size === 0) { setError('Pick at least one connected account.'); return; }
         if (!selectedMedia) { setError('Choose an image or video from your library or device.'); return; }
         for (const id of selectedAccountIds) {
             const account = activeAccounts.find((a) => a.id === id);
             const network = NETWORKS.find((n) => n.key === account?.network);
             if (!(account?.supportedMedia || network?.media.filter(t => t !== 'video' || account?.network === 'youtube'))?.includes(mediaType)) { setError(`${network?.label || 'That account'} does not support this media type.`); return; }
-            const length = network.key === 'bluesky' ? [...new Intl.Segmenter('en', { granularity: 'grapheme' }).segment(caption)].length : [...caption].length;
+            const effectiveCaption = networkText[network.key] || caption;
+            const length = captionLength(network.key, effectiveCaption);
             if (length > network.captionLimit) { setError(`${network.label} supports captions up to ${network.captionLimit} characters.`); return; }
         }
-        const publishNow = e.nativeEvent.submitter?.value === 'now';
+        const mode = e.nativeEvent.submitter?.value;
+        const publishNow = mode === 'now';
+        const useQueue = mode === 'queue';
+        const useApproval = mode === 'review';
+        if (useQueue && !queueId) { setError('Choose a posting queue.'); return; }
         const schedule = new Date(scheduledAt);
-        if (!publishNow && (!Number.isFinite(schedule.getTime()) || schedule.getTime() <= Date.now())) {
+        if (!publishNow && !useQueue && (!Number.isFinite(schedule.getTime()) || schedule.getTime() <= Date.now())) {
             setError('Choose a future date and time to schedule your post.'); return;
         }
-        setSubmitting(publishNow ? 'now' : 'schedule');
+        const reviewers = reviewerEmails.split(/[\n,;]/).map((email) => email.trim().toLowerCase()).filter(Boolean);
+        if (useApproval && (reviewers.length < 1 || reviewers.length > 10 || reviewers.some((email) => !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)))) {
+            setError('Add 1 to 10 valid reviewer email addresses.'); return;
+        }
+        setSubmitting(mode);
         try {
-            await createSocialPost({
-                ...(publishNow ? { publishNow: true } : { scheduledAt: schedule.toISOString() }),
+            const reservation = useQueue ? await reserveSocialQueueSlot(queueId, idempotencyKey.current) : null;
+            const payload = {
+                ...(publishNow ? { publishNow: true } : { scheduledAt: useQueue ? reservation.scheduled_at : schedule.toISOString() }),
                 globalText: caption,
+                ...(variantsEnabled ? { networkText: Object.fromEntries(Object.entries(networkText).filter(([network, text]) => selectedNetworks.includes(network) && text.trim())) } : {}),
                 ...(hasYoutube && youtubeVisibilityEnabled ? { youtubeVisibility } : {}),
                 idempotencyKey: idempotencyKey.current,
-                accountIds: [...selectedAccountIds],
+                accountIds: useQueue ? reservation.account_ids : [...selectedAccountIds],
                 media: [{ mediaType, ...(selectedMedia.uploadId ? { uploadId: selectedMedia.uploadId } : { jobId: selectedMedia.jobId }) }],
-            });
-            setSuccess(publishNow ? 'Post queued for publishing. It can take a few minutes to appear.' : 'Post scheduled.');
-            setCaption(''); setSelectedAccountIds(new Set()); setSelectedMedia(null);
+            };
+            const result = useApproval
+                ? await createSocialApproval({ ...payload, reviewers, policy: approvalPolicy })
+                : await createSocialPost(payload);
+            if (reservation) await confirmSocialQueueSlot(reservation.assignment_id, result.post_id);
+            setSuccess(useApproval ? 'Review links created. This post stays paused until the approval rule passes.' : publishNow ? 'Post queued for publishing. It can take a few minutes to appear.' : useQueue ? 'Post added to the next open queue slot.' : 'Post scheduled.');
+            setReviewLinks(result.review_links || []);
+            setCaption(''); setNetworkText({}); setPreviewNetwork(''); setSelectedAccountIds(new Set()); setSelectedMedia(null);
             setScheduledAt(defaultScheduleValue());
+            setQueueId('');
             setYoutubeVisibility('private');
+            if (!useApproval) setReviewerEmails('');
             idempotencyKey.current = newIdempotencyKey();
             onScheduled?.();
         } catch (err) {
@@ -191,6 +336,8 @@ export function Composer({ accounts, onScheduled, initialJobId = null, initialUp
                 ? 'Too many posts scheduled at once. Wait a moment and try again.'
                 : ['unsupported_media_type', 'publishing_not_supported'].includes(err.body?.error) ? 'That destination does not support this media type.'
                 : err.body?.error === 'caption_too_long' ? 'The caption is too long for a selected platform.'
+                : err.body?.error === 'no_queue_slot' ? 'That queue has no open slot in the next eight weeks.'
+                : err.body?.error === 'queue_disabled' ? 'That queue is paused. Choose another queue.'
                 : 'Could not submit that post. Check your connection and try again.');
         } finally {
             setSubmitting(false);
@@ -249,6 +396,45 @@ export function Composer({ accounts, onScheduled, initialJobId = null, initialUp
                 />
             </div>
 
+            {variantsEnabled && selectedNetworks.length > 0 && <section aria-label="Platform-specific captions" className="rounded-xl border border-vx-border p-4 space-y-3">
+                <div>
+                    <h3 className="text-sm font-bold">Customize by platform</h3>
+                    <p className="text-xs text-vx-fg-muted">Choose a platform and tailor its caption. Leave it empty to use the main caption.</p>
+                </div>
+                <div role="tablist" aria-label="Platform preview" className="flex flex-wrap gap-2">
+                    {selectedNetworks.map((network) => <button key={network} type="button" role="tab" aria-selected={activePreviewNetwork === network}
+                        onClick={() => setPreviewNetwork(network)} className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-bold ${activePreviewNetwork === network ? 'border-vx-accent text-vx-accent' : 'border-vx-border'}`}>
+                        <NetworkLogo network={network} className="h-4 w-4" />{networkLabel(network)}
+                    </button>)}
+                </div>
+                {activePreviewNetwork && (() => {
+                    const network = NETWORKS.find((item) => item.key === activePreviewNetwork);
+                    const override = networkText[activePreviewNetwork] || '';
+                    const effective = override || caption;
+                    const length = captionLength(activePreviewNetwork, effective);
+                    const names = activeAccounts.filter((account) => selectedAccountIds.has(account.id) && account.network === activePreviewNetwork).map((account) => account.display_name || account.external_account_id);
+                    return <div className="grid gap-4 lg:grid-cols-2">
+                        <div>
+                            <label htmlFor={`platform-caption-${activePreviewNetwork}`} className="mb-2 block text-sm font-bold">{network.label} caption</label>
+                            <textarea id={`platform-caption-${activePreviewNetwork}`} rows={4} value={override}
+                                onChange={(event) => setNetworkText((current) => ({ ...current, [activePreviewNetwork]: event.target.value }))}
+                                placeholder={`Use main caption for ${network.label}`} className="w-full rounded-xl border border-vx-border bg-transparent p-3 text-sm" />
+                            <div className="mt-1 flex justify-between text-xs text-vx-fg-muted"><span>{override ? 'Custom caption' : 'Using main caption'}</span><span className={length > network.captionLimit ? 'text-vx-danger' : ''}>{length} / {network.captionLimit}</span></div>
+                        </div>
+                        <article aria-label={`${network.label} post preview`} className="overflow-hidden rounded-xl border border-vx-border bg-vx-panel">
+                            <header className="flex items-center gap-2 border-b border-vx-border p-3 text-sm font-bold"><NetworkLogo network={activePreviewNetwork} className="h-5 w-5" /><span>{names.join(', ')}</span></header>
+                            {selectedMedia?.thumbUrl && (mediaType === 'video'
+                                ? <video src={selectedMedia.thumbUrl} muted playsInline preload="metadata" className="aspect-video w-full object-cover" />
+                                : <img src={selectedMedia.thumbUrl} alt="Selected post preview" className="aspect-video w-full object-cover" />)}
+                            <p className="whitespace-pre-wrap break-words p-3 text-sm">{effective || 'Your caption preview will appear here.'}</p>
+                        </article>
+                    </div>;
+                })()}
+            </section>}
+
+            {presetsEnabled && <ContentPresets accounts={activeAccounts} caption={caption} selectedAccountIds={selectedAccountIds}
+                onApply={(nextCaption, accountIds) => { setCaption(nextCaption); setNetworkText({}); setPreviewNetwork(''); setSelectedAccountIds(new Set(accountIds)); setError(''); setSuccess(''); idempotencyKey.current = newIdempotencyKey(); }} />}
+
             <div>
                 <div className="text-sm font-bold mb-2">Media</div>
                 <div className="flex flex-wrap items-center gap-3 mb-2">
@@ -282,8 +468,28 @@ export function Composer({ accounts, onScheduled, initialJobId = null, initialUp
                 Post now is included with Free. <Link href="/app/publish/plan" className="font-bold text-vx-accent underline">Upgrade to schedule posts</Link>.
             </p>}
 
+            {queuesEnabled && <div>
+                <label htmlFor="publish-queue" className="text-sm font-bold mb-2 block">Posting queue</label>
+                <div className="flex flex-wrap gap-3">
+                    <select id="publish-queue" value={queueId} disabled={Boolean(submitting) || queues === null} onChange={(e) => { const id=e.target.value;setQueueId(id);const queue=(queues||[]).find((item)=>item.id===id);if(queue)setSelectedAccountIds(new Set(queue.account_ids.filter((accountId)=>activeAccounts.some((account)=>account.id===accountId)))); }} className="rounded-lg border border-vx-border bg-transparent px-3 py-2 text-sm">
+                        <option value="">{queues===null?'Loading queues…':queues.length?'Choose a queue':'No active queues'}</option>
+                        {(queues||[]).map((queue)=><option key={queue.id} value={queue.id}>{queue.name}</option>)}
+                    </select>
+                    <Link href="/app/publish/queues" className="self-center text-sm font-bold text-vx-accent underline">Manage queues</Link>
+                </div>
+                <p className="mt-2 text-xs text-vx-fg-muted">The chosen queue selects its saved accounts and the next open weekly time.</p>
+            </div>}
+
+            {approvalsEnabled && <div className="rounded-xl border border-vx-border p-4">
+                <label htmlFor="publish-reviewers" className="text-sm font-bold mb-2 block">Reviewers</label>
+                <textarea id="publish-reviewers" rows={2} value={reviewerEmails} onChange={(event) => setReviewerEmails(event.target.value)} className="w-full rounded-lg border border-vx-border bg-transparent px-3 py-2 text-sm" placeholder="alex@example.com, sam@example.com" />
+                <div className="mt-3 flex flex-wrap items-center gap-3"><label htmlFor="publish-approval-policy" className="text-sm font-bold">Approval rule</label><select id="publish-approval-policy" value={approvalPolicy} onChange={(event) => setApprovalPolicy(event.target.value)} className="rounded-lg border border-vx-border bg-transparent px-3 py-2 text-sm"><option value="all">Everyone must approve</option><option value="any">Any one reviewer can approve</option></select></div>
+                <p className="mt-2 text-xs text-vx-fg-muted">Reviewers use a signed link without creating an account. Any rejection cancels the post before publishing.</p>
+            </div>}
+
             {error && <p role="alert" className="text-sm text-vx-danger">{error}</p>}
             {success && <p className="text-sm text-vx-accent">{success}</p>}
+            {reviewLinks.length > 0 && <ul aria-label="Review links" className="space-y-2 rounded-xl border border-vx-border p-3">{reviewLinks.map((link) => <li key={link.email} className="flex flex-wrap items-center justify-between gap-2 text-sm"><span className="font-bold">{link.email}</span><button type="button" className={button} onClick={() => navigator.clipboard.writeText(link.url)}>Copy review link</button></li>)}</ul>}
 
             <div className="flex flex-wrap gap-3">
                 <button type="submit" value="now" formNoValidate disabled={submitting || loadingMedia || uploading || !activeAccounts.length} className={primaryButton}>
@@ -291,6 +497,12 @@ export function Composer({ accounts, onScheduled, initialJobId = null, initialUp
                 </button>
                 {scheduleEnabled && <button type="submit" value="schedule" disabled={submitting || loadingMedia || uploading || !activeAccounts.length} className={button}>
                     {submitting === 'schedule' ? 'Scheduling…' : 'Schedule post'}
+                </button>}
+                {queuesEnabled && <button type="submit" value="queue" disabled={submitting || loadingMedia || uploading || !activeAccounts.length || !queueId} className={button}>
+                    {submitting === 'queue' ? 'Adding…' : 'Add to queue'}
+                </button>}
+                {approvalsEnabled && <button type="submit" value="review" disabled={submitting || loadingMedia || uploading || !activeAccounts.length} className={button}>
+                    {submitting === 'review' ? 'Creating review…' : 'Send for approval'}
                 </button>}
             </div>
             <p className="text-xs text-vx-fg-muted">Post now starts publishing as soon as possible.{scheduleEnabled ? ' Schedule post uses the date and time above.' : ''} Publishing can take a few minutes.</p>
@@ -318,15 +530,16 @@ function TargetBadge({ target }) {
     );
 }
 
-export function ScheduledPosts({ refreshToken, scheduleEnabled = true }) {
+export function ScheduledPosts({ refreshToken, scheduleEnabled = true, onReuse }) {
     const [posts, setPosts] = useState(null);
+    const [query, setQuery] = useState('');
     const [calendarOpen, setCalendarOpen] = useState(false);
     const [loadError, setLoadError] = useState('');
 
     const load = useCallback(async () => {
         setLoadError('');
         try {
-            const res = await listSocialPosts();
+            const res = await listSocialPosts({ limit: 50 });
             setPosts(res.posts || []);
             setCalendarOpen(res.calendarEnabled === true);
         } catch {
@@ -338,17 +551,23 @@ export function ScheduledPosts({ refreshToken, scheduleEnabled = true }) {
     if (loadError) return <p role="alert" className="text-sm text-vx-danger">{loadError}</p>;
     if (posts === null) return <p className="text-sm text-vx-fg-muted">Loading…</p>;
 
+    const visible = posts.filter((post) => !query || `${post.global_text || ''} ${(post.targets || []).map((target) => networkLabel(target.network)).join(' ')}`.toLowerCase().includes(query.toLowerCase()));
     return (
         <div>
-        {calendarOpen && scheduleEnabled && <Link href="/app/publish/calendar" className="inline-block text-sm text-vx-accent underline mb-4">Open calendar</Link>}
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+            {calendarOpen && scheduleEnabled && <Link href="/app/publish/calendar" className="text-sm text-vx-accent underline">Open calendar</Link>}
+            {scheduleEnabled && posts.length > 0 && <label className="ml-auto text-sm"><span className="sr-only">Search previous posts</span><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search previous posts" className="rounded-full border border-vx-border bg-transparent px-4 py-2 text-sm" /></label>}
+        </div>
         {posts.length === 0 && <p className="text-sm text-vx-fg-muted">Nothing scheduled yet.</p>}
+        {posts.length > 0 && visible.length === 0 && <p className="text-sm text-vx-fg-muted">No previous posts match that search.</p>}
         <ul className="space-y-3">
-            {posts.map((p) => (
+            {visible.map((p) => (
                 <li key={p.id} className="rounded-xl border border-vx-border p-3">
                     <div className="flex items-center justify-between gap-3 mb-2">
                         <span className="text-xs font-bold text-vx-fg-muted">
                             {p.status} · {new Date(p.scheduled_at).toLocaleString()}
                         </span>
+                        {scheduleEnabled && (p.media || []).length > 0 && <button type="button" className={button} onClick={() => onReuse?.(p)}>Use again</button>}
                     </div>
                     {p.global_text && <p className="text-sm text-vx-fg mb-2 line-clamp-2">{p.global_text}</p>}
                     <div className="flex flex-wrap gap-x-3 gap-y-1">

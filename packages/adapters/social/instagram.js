@@ -25,6 +25,8 @@
 // app/lib/socialConnectClient.js's connect/callback contract stays
 // identical across every network (same reasoning as the LinkedIn adapter).
 
+import { publishScopeFeatureEnabled } from '../../../lib/social/scopeFlags.js';
+
 const GRAPH_API_VERSION = 'v25.0';
 const GRAPH_BASE = `https://graph.instagram.com/${GRAPH_API_VERSION}`;
 const AUTHORIZE_URL = 'https://www.instagram.com/oauth/authorize';
@@ -37,10 +39,13 @@ export const INSTAGRAM_SCOPES = ['instagram_business_basic', 'instagram_business
 // consent screen for everyone. Accounts connected before the switch keep
 // their old grant until they reconnect.
 export const INSTAGRAM_INSIGHTS_SCOPE = 'instagram_business_manage_insights';
+export const INSTAGRAM_ENGAGEMENT_SCOPES = ['instagram_business_manage_comments', 'instagram_business_manage_messages'];
 
 /** The scopes this deployment asks for, and so the ones a new connection is granted. */
 export function instagramScopes(cfg) {
-    return cfg && cfg.insights ? [...INSTAGRAM_SCOPES, INSTAGRAM_INSIGHTS_SCOPE] : INSTAGRAM_SCOPES;
+    return [...INSTAGRAM_SCOPES,
+        ...(cfg?.insights ? [INSTAGRAM_INSIGHTS_SCOPE] : []),
+        ...(cfg?.engagement ? INSTAGRAM_ENGAGEMENT_SCOPES : [])];
 }
 
 /** Loads and validates Instagram Login config from Worker secrets. Returns
@@ -52,7 +57,8 @@ export function instagramConfig(env = process.env) {
     const appId = env.INSTAGRAM_CLIENT_ID || env.META_APP_ID || '';
     const appSecret = env.INSTAGRAM_CLIENT_SECRET || env.META_APP_SECRET || '';
     if (!/^[0-9]{6,20}$/.test(appId) || appSecret.length < 16) return null;
-    return { appId, appSecret, insights: env.INSTAGRAM_INSIGHTS_SCOPE_ENABLED === 'true' };
+    return { appId, appSecret, insights: publishScopeFeatureEnabled('INSTAGRAM_INSIGHTS_SCOPE_ENABLED', env),
+        ...(publishScopeFeatureEnabled('INSTAGRAM_ENGAGEMENT_SCOPE_ENABLED', env) ? { engagement: true } : {}) };
 }
 
 /** Builds Instagram's OAuth authorize URL. redirectUri must already be
