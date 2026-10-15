@@ -8,6 +8,7 @@ import {
     readAnalyticsPreference,
     replayAllowedOnPath,
     sanitisePostHogEvent,
+    setReplayCapture,
     writeAnalyticsPreference,
 } from '../app/lib/analyticsPrivacy.js';
 
@@ -17,6 +18,28 @@ test('replay sampling accepts a bounded build-time rate', () => {
     assert.equal(normaliseReplaySampleRate('2'), 1);
     assert.equal(normaliseReplaySampleRate('-1'), 0);
     assert.equal(normaliseReplaySampleRate('not-a-rate'), 0.2);
+});
+
+test('replay consent clears the startup gate before recording and restores it when disabled', () => {
+    const calls = [];
+    const posthog = {
+        set_config: (value) => calls.push(['config', value]),
+        startSessionRecording: (value) => calls.push(['start', value]),
+        stopSessionRecording: () => calls.push(['stop']),
+    };
+
+    setReplayCapture(posthog, { enabled: true, forceSampling: true });
+    assert.deepEqual(calls, [
+        ['config', { disable_session_recording: false }],
+        ['start', { sampling: true }],
+    ]);
+
+    calls.length = 0;
+    setReplayCapture(posthog, { enabled: false });
+    assert.deepEqual(calls, [
+        ['stop'],
+        ['config', { disable_session_recording: true }],
+    ]);
 });
 
 test('analytics URLs never retain a query string or fragment', () => {
