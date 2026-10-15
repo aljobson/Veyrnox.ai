@@ -259,20 +259,22 @@ test('every character has its own standalone portrait instead of a sprite panel'
         assert.equal(metadata.width, 1024);
         assert.equal(metadata.height, 1536);
     }
-    assert.equal(images.size, 32);
-    assert.equal(hashes.size, 32, 'no character reuses another character image');
+    assert.equal(images.size, 72);
+    assert.equal(hashes.size, 72, 'no character reuses another character image');
 });
 
 test('human preset collections are complete, distinct, and human-first', () => {
     assert.deepEqual(ODDLING_PRESET_SOURCES.map((source) => source.id), [
-        'all', 'body', 'silhouettes', 'fashion', 'hair', 'denim', 'oddities', 'torsos', 'humans', 'beings',
+        'all', 'body', 'silhouettes', 'fashion', 'hair', 'denim', 'oddities', 'torsos',
+        'head-sizes', 'neck-sizes', 'arm-sizes', 'leg-sizes', 'hand-sizes', 'foot-sizes',
+        'eye-sizes', 'mouth-sizes', 'ear-sizes', 'nose-sizes', 'humans', 'beings',
     ]);
     for (const source of ODDLING_PRESET_SOURCES.slice(1, 7)) {
         const oddlings = oddlingsForSource(source.id);
         assert.equal(oddlings.length, 4, `${source.id} should contain one four-character art sheet`);
         assert.ok(oddlings.every((oddling) => oddling.kind === 'human'));
     }
-    assert.equal(oddlingsForSource('humans').length, 28);
+    assert.equal(oddlingsForSource('humans').length, 68);
     assert.equal(oddlingsForSource('beings').length, 4);
 });
 

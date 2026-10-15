@@ -7,6 +7,7 @@
 // never the model or the price.
 
 import { CHARACTER_SIZE_GROUPS, conflictTopicPicks, extendCharacterGroups, resolveExclusivePicks } from './characterOptions.js';
+import { ODDLING_FEATURE_CHARACTERS } from './oddlingFeatureCharacters.js';
 
 export const CHARACTER_TABS = ['Face', 'Body', 'Style'];
 
@@ -251,6 +252,7 @@ export const ODDLING_ARCHETYPES = [
     accent: 'BIG HAIR · TINY TUNING FORK',
     picks: { character_type: 'Human', torso_size: 'Extra Large', gender: 'Female', age: '50s', skin_tone: 'Fair', body_type: 'Barrel', height: 'Short', proportions: 'No Visible Neck', hair: 'Donut Halo', hair_color: 'Silver', wardrobe_style: 'Ceremonial Sportswear', distinctive_features: 'Tiny Microphone', rendering_style: 'Hyper-Realistic', oddling_name: 'Orla Overture', oddling_obsession: 'everyday sounds that deserve an opening night', oddling_voice: 'Grand ceremony', oddling_show: 'Tiny field reports', oddling_rule: 'huge oval barrel torso, no neck, short legs, monumental silver-black gramophone hair, fitted plum jumpsuit, tiny tuning fork sceptre' },
   },
+  ...ODDLING_FEATURE_CHARACTERS,
   {
     id: 'auntie-antenna',
     kind: 'creature',
