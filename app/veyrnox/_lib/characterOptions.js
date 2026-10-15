@@ -32,10 +32,18 @@ export function changeCharacterPick(picks, key, value) {
   if (key === 'ears' && value === 'No Ears') delete next.ear_size;
   if (key === 'mouth_size' && value && ['Small Mouth', 'Large Mouth'].includes(next.mouth)) delete next.mouth;
   if (key === 'mouth' && ['Small Mouth', 'Large Mouth'].includes(value)) delete next.mouth_size;
+  if (key === 'head_size' && value && ['Tiny Head', 'Oversized Head'].includes(next.head_shape)) delete next.head_shape;
+  if (key === 'head_shape' && ['Tiny Head', 'Oversized Head'].includes(value)) delete next.head_size;
   return next;
 }
 
 export const CHARACTER_SIZE_GROUPS = [
+  { id: 'head_size', tab: 'Face', label: 'Head Size', options: [
+    ['Small', 'small head relative to the body'],
+    ['Medium', 'medium-sized head relative to the body'],
+    ['Large', 'large head relative to the body'],
+    ['Extra Large', 'extra-large head relative to the body, entire head fully visible in the frame'],
+  ] },
   { id: 'eye_size', tab: 'Face', label: 'Eye Size', options: [
     ['Small', 'small eyes relative to the face'],
     ['Medium', 'medium-sized eyes relative to the face'],

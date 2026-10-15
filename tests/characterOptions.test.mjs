@@ -27,7 +27,7 @@ test('saved characters retain their legacy choices while all trait views use neu
 
 test('all size choices reach prompts, survive saving, and stay deliberate during styling remixes', () => {
   for (const group of CHARACTER_SIZE_GROUPS) for (const [size, phrase] of group.options) {
-    const picks = { character_type: 'Human', body_type: 'Slim', hand_size: 'Small', foot_size: 'Extra Large', ear_size: 'Extra Large', nose_size: 'Small', eye_size: 'Small', mouth_size: 'Extra Large', [group.id]: size };
+    const picks = { character_type: 'Human', body_type: 'Slim', head_size: 'Extra Large', hand_size: 'Small', foot_size: 'Extra Large', ear_size: 'Extra Large', nose_size: 'Small', eye_size: 'Small', mouth_size: 'Extra Large', [group.id]: size };
     assert.deepEqual(sanitizeOddlingPicks(picks), picks);
     assert.ok(buildCharacterPrompt('Full-body portrait', picks).includes(phrase));
     assert.ok(buildCharacterPrompt('', picks).includes('both feet fully visible'));
@@ -43,15 +43,43 @@ test('all size choices reach prompts, survive saving, and stay deliberate during
     assert.equal(remixed.nose_size, picks.nose_size);
     assert.equal(remixed.eye_size, picks.eye_size);
     assert.equal(remixed.mouth_size, picks.mouth_size);
+    assert.equal(remixed.head_size, picks.head_size);
   }
-  assert.deepEqual(sanitizeOddlingPicks({ foot_size: 'gigantic unbounded value', ear_size: 'invalid', nose_size: 'invalid', eye_size: 'invalid', mouth_size: 'invalid' }), {});
+  assert.deepEqual(sanitizeOddlingPicks({ head_size: 'invalid', foot_size: 'gigantic unbounded value', ear_size: 'invalid', nose_size: 'invalid', eye_size: 'invalid', mouth_size: 'invalid' }), {});
 });
 
 test('all face size controls offer the same size range as hands and feet', () => {
-  for (const id of ['ear_size', 'nose_size', 'eye_size', 'mouth_size', 'hand_size', 'foot_size']) {
+  for (const id of ['head_size', 'ear_size', 'nose_size', 'eye_size', 'mouth_size', 'hand_size', 'foot_size']) {
     const group = CHARACTER_GROUPS.find((item) => item.id === id);
     assert.deepEqual(group.options.map(([value]) => value), ['Small', 'Medium', 'Large', 'Extra Large']);
     assert.equal(group.tab, ['hand_size', 'foot_size'].includes(id) ? 'Body' : 'Face');
+  }
+});
+
+test('head size stays independent from shape and replaces legacy size-only shapes', () => {
+  assert.deepEqual(changeCharacterPick({ head_shape: 'Square', eye_size: 'Small' }, 'head_size', 'Extra Large'),
+    { head_shape: 'Square', eye_size: 'Small', head_size: 'Extra Large' });
+  assert.deepEqual(changeCharacterPick({ head_size: 'Extra Large' }, 'head_shape', 'Heart'),
+    { head_shape: 'Heart', head_size: 'Extra Large' });
+  for (const head_shape of ['Tiny Head', 'Oversized Head']) {
+    assert.deepEqual(changeCharacterPick({ head_shape, eye_size: 'Small' }, 'head_size', 'Large'),
+      { eye_size: 'Small', head_size: 'Large' });
+    assert.deepEqual(changeCharacterPick({ head_size: 'Large', eye_size: 'Small' }, 'head_shape', head_shape),
+      { head_shape, eye_size: 'Small' });
+    const saved = storage();
+    assert.equal(writeOddlingDraft(saved, { head_shape }, 123), true);
+    assert.deepEqual(readOddlingDraft(saved).picks, { head_shape });
+  }
+  assert.deepEqual(changeCharacterPick({ head_shape: 'Square', head_size: 'Large' }, 'head_size', ''),
+    { head_shape: 'Square' });
+});
+
+test('random styling never overrides explicit head size with a legacy size-only shape', () => {
+  for (const random of [0, 0.5, 0.8, 0.99, 1]) {
+    const remixed = randomizeOddlingStyle({ head_size: 'Small' }, () => random);
+    assert.equal(remixed.head_size, 'Small');
+    assert.ok(!['Tiny Head', 'Oversized Head'].includes(remixed.head_shape));
+    assert.ok(buildCharacterPrompt('', remixed).includes('small head relative to the body'));
   }
 });
 
