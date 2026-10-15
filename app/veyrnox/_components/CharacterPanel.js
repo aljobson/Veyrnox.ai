@@ -9,6 +9,7 @@ import {
   ODDLING_SHOWS,
   ODDLING_TONES,
   readOddlingDraft,
+  readOddlingPassport,
   writeOddlingDraft,
 } from '../_lib/character';
 
@@ -37,14 +38,16 @@ export function CharacterPanel({ enabled, onToggle, picks, onChange }) {
     const timer = window.setTimeout(() => {
       const draft = readOddlingDraft(window.localStorage);
       setSaved(draft);
-      if (draft && new URLSearchParams(window.location.search).get('passport') === '1') {
-        onChange(draft.picks);
-        setStarterKind(draft.picks.character_type === 'Human' ? 'human' : 'creature');
-        setNotice('Oddling Studio passport loaded.');
+      const passport = readOddlingPassport(window.localStorage, window.location.search);
+      if (passport) {
+        onChange(passport.picks);
+        onToggle(true);
+        setStarterKind(passport.picks.character_type === 'Human' ? 'human' : 'creature');
+        setNotice(`${passport.picks.oddling_name || 'Oddling'} passport loaded and active. Current model pricing is shown below.`);
       }
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [onChange]);
+  }, [onChange, onToggle]);
 
   function setPick(key, value) {
     const next = { ...picks };

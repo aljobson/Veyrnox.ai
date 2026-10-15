@@ -667,3 +667,13 @@ export function readOddlingDraft(storage) {
     return null;
   }
 }
+
+/** Only opt Create into a saved character when the user arrived via a passport handoff. */
+export function readOddlingPassport(storage, search = '') {
+  try {
+    if (new URLSearchParams(String(search)).get('passport') !== '1') return null;
+    return readOddlingDraft(storage);
+  } catch {
+    return null;
+  }
+}
